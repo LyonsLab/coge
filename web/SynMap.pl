@@ -259,14 +259,16 @@ sub gen_body
 	{
 		$template->param( $ALGO_LOOKUP->{6}{opt} => "selected" );
 	}
-	my ( $D, $A, $Dm, $gm, $dt, $cvalue );
+	my ( $D, $A, $Dm, $gm, $dt, $dupdist, $cscore);
 	$D      = $FORM->param('D');
 	$A      = $FORM->param('A');
 	$Dm     = $FORM->param('Dm');
 	$gm     = $FORM->param('gm');
 	$gm     = 40 unless defined $gm;
 	$dt     = $FORM->param('dt');
-	$cvalue = $FORM->param('c');       #different c value than the one for cytology.  But if you get that, you probably shouldn't be reading this code
+	$cscore     = $FORM->param('csco');
+	$dupdist     = $FORM->param('tdd');
+#	$cvalue = $FORM->param('c');       #different c value than the one for cytology.  But if you get that, you probably shouldn't be reading this code
 
 	my $display_dagchainer_settings;
 	if ( $D && $A && $dt )
@@ -289,8 +291,11 @@ sub gen_body
 		$template->param( 'DAG_GENE_SELECT' => 'checked' );
 		$display_dagchainer_settings = qq{display_dagchainer_settings();};
 	}
-	$cvalue = 4 unless defined $cvalue;
-	$template->param( 'CVALUE'                      => $cvalue );
+#	$cvalue = 4 unless defined $cvalue;
+#	$template->param( 'CVALUE'                      => $cvalue );
+	$dupdist=10 unless defined $dupdist;
+	$template->param( 'DUPDIST'                      => $dupdist );
+	$template->param( 'CSCORE'                      => $cscore ) if defined $cscore;
 	$template->param( 'DISPLAY_DAGCHAINER_SETTINGS' => $display_dagchainer_settings );
 	$template->param( 'MIN_CHR_SIZE'                => $FORM->param('mcs') ) if $FORM->param('mcs');
 
@@ -1058,6 +1063,8 @@ sub run_blast2raw
 	my $bedfile1  = $opts{bedfile1};
 	my $bedfile2  = $opts{bedfile2};
 	my $outfile   = $opts{outfile};
+	my $tandem_distance = $opts{tandem_distance};
+	my $cscore = $opts{cscore};
 	while ( -e "$outfile.running" )
 	{
 		print STDERR "detecting $outfile.running.  Waiting. . .\n";
@@ -1072,9 +1079,11 @@ sub run_blast2raw
 	CoGe::Accessory::Web::gunzip("$bedfile1.gz")  if -r "$bedfile1.gz";
 	CoGe::Accessory::Web::gunzip("$bedfile2.gz")  if -r "$bedfile2.gz";
 
-	my $tandem_distance = $opts{tandem_distance};
+
 	$tandem_distance = 10 unless defined $tandem_distance;
-	my $cmd = $BLAST2RAW . " $blastfile --localdups --qbed $bedfile1 --sbed $bedfile2 --tandem_Nmax $tandem_distance > $outfile";
+	my $cmd = $BLAST2RAW . " $blastfile --localdups --qbed $bedfile1 --sbed $bedfile2 --tandem_Nmax $tandem_distance";
+	$cmd .= " --cscore=$cscore" if $cscore;
+	$cmd .= " > $outfile";
 	CoGe::Accessory::Web::write_log( "finding and removing local duplications", $cogeweb->logfile );
 	system "/usr/bin/touch $outfile.running";    #track that this is running
 	CoGe::Accessory::Web::write_log( "running:\n\t$cmd", $cogeweb->logfile );
@@ -1789,12 +1798,12 @@ DNA_align_2
 	close IN;
 	my $MAX_RUNS = $MAX_PROC;
 	my $ports    = initialize_nwalign_servers( start_port => 3000, procs => $MAX_RUNS );
-	my $pm       = new Parallel::ForkManager( $MAX_RUNS * 2 );
+	my $pm       = new Parallel::ForkManager( $MAX_RUNS * 4 );
 	my $i        = 0;
 	foreach my $item (@data)
 	{
 		$i++;
-		$i = 0 if $i == $MAX_RUNS;
+		$i = 0 if $i == $MAX_RUNS*4;
 		$pm->start and next;
 		my ($fid1) = $item->[2] =~ /(^\d+$)/;
 		my ($fid2) = $item->[3] =~ /(^\d+$)/;
@@ -1841,7 +1850,7 @@ INSERT INTO ks_data (fid1, fid2, dS, dN, dN_dS, protein_align_1, protein_align_2
 			$insert_success = $dbh->do($insert);
 			unless ($insert_success)
 			{
-				print STDERR $insert;
+#				print STDERR $insert;
 				sleep .1;
 			}
 		}
@@ -2360,7 +2369,9 @@ sub go
 	my $gm           = $opts{gm};
 	($Dm) = $Dm =~ /(\d+)/;
 	($gm) = $gm =~ /(\d+)/;
-	my $repeat_filter_cvalue = $opts{c};              #parameter to be passed to run_adjust_dagchainer_evals
+#	my $repeat_filter_cvalue = $opts{c};              #parameter to be passed to run_adjust_dagchainer_evals
+	my $cscore               =$opts{csco}; #c-score for filtering low quality blast hits, fed to blast to raw
+	my $dupdist               =$opts{tdd}; #tandem duplication distance, fed to blast to raw
 	my $regen_images         = $opts{regen_images};
 	my $email                = $opts{email};
 	my $job_title            = $opts{jobtitle};
@@ -2450,8 +2461,10 @@ sub go
 
 	$cogeweb = CoGe::Accessory::Web::initialize_basefile( basename => $basename, tempdir => $TEMPDIR );
 	print STDERR Dumper $cogeweb;
-	my $synmap_link = $SERVER . "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;c=$repeat_filter_cvalue;D=$dagchainer_D;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2;autogo=1";
+	my $synmap_link = $SERVER . "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;D=$dagchainer_D;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2;autogo=1";
 	$synmap_link .= ";Dm=$Dm" if defined $Dm;
+	$synmap_link .= ";csco=$cscore" if $cscore;
+	$synmap_link .= ";tdd=$dupdist" if defined $dupdist;
 	$synmap_link .= ";gm=$gm" if defined $gm;
 	$synmap_link .= ";snsd=$snsd";
 
@@ -2630,19 +2643,22 @@ sub go
 	blast2bed( infile => $raw_blastfile, outfile1 => $bedfile1, outfile2 => $bedfile2 );
 	CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
 	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-	my $filtered_blastfile = $raw_blastfile . ".filtered";
+	my $filtered_blastfile = $raw_blastfile;
+	$filtered_blastfile .= ".tdd$dupdist";
+	$filtered_blastfile .= ".cs$cscore" if $cscore;
+	$filtered_blastfile .= ".filtered";
 	CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
 	CoGe::Accessory::Web::write_log( "Filtering results of tandem duplicates", $cogeweb->logfile );
-	run_blast2raw( blastfile => $raw_blastfile, bedfile1 => $bedfile1, bedfile2 => $bedfile2, outfile => $filtered_blastfile );
+	run_blast2raw( blastfile => $raw_blastfile, bedfile1 => $bedfile1, bedfile2 => $bedfile2, outfile => $filtered_blastfile, tandem_distance=>$dupdist, cscore=>$cscore );
 	CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
 	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 	$filtered_blastfile = $raw_blastfile unless ( -r $filtered_blastfile && -s $filtered_blastfile ) || ( -r "$filtered_blastfile.gz" && -s "$filtered_blastfile.gz" );
-
 	#    my $synteny_score_db = run_synteny_score (blastfile=>$filtered_blastfile, bedfile1=>$bedfile1, bedfile2=>$bedfile2, outfile=>$org_dirs{$orgkey1."_".$orgkey2}{dir}."/".$dsgid1."_".$dsgid2.".$feat_type1-$feat_type2"); #needed to comment out as the bed files and blast files have changed in SynFind
 	my $local_dup_time = timestr( timediff( $t2, $t1 ) );
 
 	#prepare dag for synteny analysis
-	my $dag_file12     = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{dir} . "/" . $org_dirs{ $orgkey1 . "_" . $orgkey2 }{basename} . ".dag";    #."_c".$repeat_filter_cvalue.".dag";
+#	my $dag_file12      = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{dir} . "/" . $org_dirs{ $orgkey1 . "_" . $orgkey2 }{basename} . ".dag";
+	my $dag_file12 = $filtered_blastfile.".dag";
 	my $dag_file12_all = $dag_file12 . ".all";
 	CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
 	CoGe::Accessory::Web::write_log( "Converting blast file to dagchainer input file", $cogeweb->logfile );
@@ -2668,10 +2684,10 @@ sub go
 	$dag_file12 .= ".go" if $dagchainer_type eq "geneorder";
 
 	#B Pedersen's program for automatically adjusting the evals in the dag file to remove bias from local gene duplicates and transposons
-	$dag_file12 .= "_c" . $repeat_filter_cvalue;
+#	$dag_file12 .= "_c" . $repeat_filter_cvalue;
 	CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
 	CoGe::Accessory::Web::write_log( "Adjusting evalue of blast hits to correct for repeat sequences", $cogeweb->logfile );
-	run_adjust_dagchainer_evals( infile => $all_file, outfile => $dag_file12, cvalue => $repeat_filter_cvalue );
+#	run_adjust_dagchainer_evals( infile => $all_file, outfile => $dag_file12, cvalue => $repeat_filter_cvalue );
 	CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
 	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
@@ -3218,21 +3234,24 @@ sub get_previous_analyses
 			my ( $dsgid1, $dsgid2, $type1, $type2 ) = $file =~ /^(\d+)_(\d+)\.(\w+)-(\w+)/;
 			$type1 = "CDS" if $type1 eq "protein";
 			$type2 = "CDS" if $type2 eq "protein";
-			my ($repeat_filter) = $file =~ /_c(\d+)/;
+#			print STDERR $file,"\n";
+#			my ($repeat_filter) = $file =~ /_c(\d+)/;
 			next unless ( $dsgid1 && $dsgid2 && $type1 && $type2 );
+			my ($dupdist) = $file =~/tdd(\d+)/;
 			my %data = (
-									 repeat_filter => $repeat_filter,
-									 D             => $D,
-									 g             => $g,
-									 A             => $A,
-									 Dm            => $Dm,
-									 gm            => $gm,
-									 ma            => $ma,
-									 merge_algo    => $merge_algo,
-									 blast         => $blast,
-									 dsgid1        => $dsgid1,
-									 dsgid2        => $dsgid2,
-									 select_val    => $select_val
+#									 repeat_filter => $repeat_filter,
+				    tdd=>$dupdist,
+				    D             => $D,
+				    g             => $g,
+				    A             => $A,
+				    Dm            => $Dm,
+				    gm            => $gm,
+				    ma            => $ma,
+				    merge_algo    => $merge_algo,
+				    blast         => $blast,
+				    dsgid1        => $dsgid1,
+				    dsgid2        => $dsgid2,
+				    select_val    => $select_val
 			);
 			my $geneorder = $file =~ /\.go/;
 			my $dsg1 = $coge->resultset('Genome')->find($dsgid1);
@@ -3273,12 +3292,12 @@ sub get_previous_analyses
 	$size = 8 if $size > 8;
 	my $html;
 	my $prev_table = qq{<table id=prev_table class="small resultborder">};
-	$prev_table .= qq{<THEAD><TR><TH>} . join( "<TH>", qw(Org1 Genome1 Ver1 Genome%20Type1 Sequence%20Type1 Org2 Genome2 Ver2 Genome%20Type2 Sequence%20type2 Algo Dist%20Type Repeat%20Filter Ave%20Dist(g) Max%20Dist(D) Min%20Pairs(A)) ) . "</THEAD><TBODY>\n";
+	$prev_table .= qq{<THEAD><TR><TH>} . join( "<TH>", qw(Org1 Genome1 Ver1 Genome%20Type1 Sequence%20Type1 Org2 Genome2 Ver2 Genome%20Type2 Sequence%20type2 Algo Dist%20Type Dup%20Dist Ave%20Dist(g) Max%20Dist(D) Min%20Pairs(A)) ) . "</THEAD><TBODY>\n";
 	my %seen;
 
 	foreach my $item ( sort { $b->{dsgid1} <=> $a->{dsgid1} || $b->{dsgid2} <=> $a->{dsgid2} } @items )
 	{
-		my $val = join( "_", $item->{g}, $item->{D}, $item->{A}, $oid1, $item->{dsgid1}, $item->{type1}, $oid2, $item->{dsgid2}, $item->{type2}, $item->{select_val}, $item->{dagtype}, $item->{repeat_filter} );
+		my $val = join( "_", $item->{g}, $item->{D}, $item->{A}, $oid1, $item->{dsgid1}, $item->{type1}, $oid2, $item->{dsgid2}, $item->{type2}, $item->{select_val}, $item->{dagtype}, $item->{tdd});
 		next if $seen{$val};
 		$seen{$val} = 1;
 		$prev_table .= qq{<TR class=feat onclick="update_params('$val')" align=center><td>};
@@ -3286,7 +3305,7 @@ sub get_previous_analyses
 		$ver1 = "0" . $ver1 if $ver1 =~ /^\./;
 		my $ver2 = $item->{dsg2}->version;
 		$ver2 = "0" . $ver2 if $ver2 =~ /^\./;
-		$prev_table .= join( "<td>", $item->{dsg1}->organism->name, $item->{genome1}, $ver1, $item->{dsg1}->type->name, $item->{type_name1}, $item->{dsg2}->organism->name, $item->{genome2}, $ver2, $item->{dsg2}->type->name, $item->{type_name2}, $item->{blast}, $item->{dagtype}, $item->{repeat_filter}, $item->{g}, $item->{D}, $item->{A} ) . "\n";
+		$prev_table .= join( "<td>", $item->{dsg1}->organism->name, $item->{genome1}, $ver1, $item->{dsg1}->type->name, $item->{type_name1}, $item->{dsg2}->organism->name, $item->{genome2}, $ver2, $item->{dsg2}->type->name, $item->{type_name2}, $item->{blast}, $item->{dagtype}, $item->{tdd}, $item->{g}, $item->{D}, $item->{A} ) . "\n";
 	}
 	$prev_table .= qq{</TBODY></table>};
 	$html       .= $prev_table;
