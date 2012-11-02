@@ -268,7 +268,7 @@ sub load_experiment {
 		my ($fileext) = $filename =~ /\.([^\.]+)$/;
 #		print STDERR "$path $filename $fileext\n";
 		if ($fileext eq 'gz') { 
-			my $cmd = "gunzip $fullpath"; #FIXME use gunzip in Web.pm
+			my $cmd = $P->{GUNZIP} . ' ' . $fullpath;
 #			print STDERR "$cmd\n";
 			`$cmd`;
 			$fullpath =~ s/\.$fileext$//;

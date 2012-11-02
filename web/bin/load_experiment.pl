@@ -8,15 +8,15 @@ use Data::Dumper;
 use Getopt::Long;
 use File::Path;
 use URI::Escape::JavaScript qw(escape unescape);
+use CoGe::Accessory::Web qw(get_defaults);
 
 use vars qw($staging_dir $install_dir $data_file 
 			$name $description $version $restricted 
 			$gid $source_name $user_name
-			$host $port $db $user $pass);
+			$host $port $db $user $pass $P);
 
 my $MIN_COLUMNS = 5;
 my $MAX_COLUMNS = 6;
-my $FASTBIT_PATH = '/home/mbomhoff/fastbit-ibis1.3.3/install/bin'; #FIXME load from coge.conf
 
 GetOptions(
 	"staging_dir=s"	=> \$staging_dir,
@@ -49,6 +49,17 @@ my $logfile = "$staging_dir/log.txt";
 open(my $log, ">>$logfile") or die "Error opening log file";
 $log->autoflush(1);
 
+# Open system config file
+$P = CoGe::Accessory::Web::get_defaults();
+my $FASTBIT_LOAD = $P->{FASTBIT_LOAD};
+my $FASTBIT_QUERY = $P->{FASTBIT_QUERY};
+if (not $FASTBIT_LOAD or not $FASTBIT_QUERY or not -e $FASTBIT_LOAD or not -e $FASTBIT_QUERY) {
+	print STDERR "FASTBIT_LOAD: $FASTBIT_LOAD\n";
+	print STDERR "FASTBIT_QUERY: $FASTBIT_QUERY\n";
+	print $log "log: error: can't find fastbit commands\n";
+	exit(-1);
+}
+
 # Validate the data file
 my ($filename) = $data_file =~ /^.+\/([^\/]+)$/;
 print $log "log: Validating $filename\n";
@@ -65,7 +76,7 @@ my $cmd = "cp -f $data_file $staging_dir";
 my $staged_data_file = $staging_dir . '/' . $filename;
 
 print $log "log: Generating database\n";
-$cmd = "$FASTBIT_PATH/ardea -d $staging_dir -m \"chr:key, start:unsigned long, stop:unsigned long, strand:byte, value1:double, value2:double\" -t $staged_data_file";
+$cmd = "$FASTBIT_LOAD -d $staging_dir -m \"chr:key, start:unsigned long, stop:unsigned long, strand:byte, value1:double, value2:double\" -t $staged_data_file";
 print STDERR $cmd, "\n";
 my $rc = system($cmd);
 if ($rc != 0) {
@@ -74,7 +85,7 @@ if ($rc != 0) {
 }
 
 print $log "log: Indexing database\n";
-$cmd = "$FASTBIT_PATH/ibis -d $staging_dir -v -b \"<binning precision=2/><encoding equality/>\"";
+$cmd = "$FASTBIT_QUERY -d $staging_dir -v -b \"<binning precision=2/><encoding equality/>\"";
 print STDERR $cmd, "\n";
 $rc = system($cmd);
 if ($rc != 0) {
