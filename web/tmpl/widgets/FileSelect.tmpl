@@ -302,6 +302,10 @@ function load_from_ftp() {
 		},
 		success : function(data) {
 			var filelist = jQuery.parseJSON(data);
+			if (!filelist || filelist.length == 0) {
+				alert("File not found.");
+				return;
+			}
 			if (filelist.length > <TMPL_VAR NAME='MAX_FTP_FILES'>) {
 				alert("Too many files (" + filelist.length + ") at specified location, limit is <TMPL_VAR NAME='MAX_FTP_FILES'>.");
 				return;
@@ -368,7 +372,7 @@ function load_from_ncbi() {
 
   <div id="tab-2" class="small">
     URL: <input id="input_url" size="30" />
-    <span id="ftp_get_button" onClick="load_from_ftp();" class='ui-state-disabled ui-button ui-corner-all ui-button-go'> Get Files</span>
+    <span id="ftp_get_button" onClick="load_from_ftp();" class='ui-state-disabled ui-button ui-corner-all ui-button-go'> Get </span>
   </div> <!-- tab-2 -->
 
   <TMPL_IF NAME='ENABLE_NCBI'>

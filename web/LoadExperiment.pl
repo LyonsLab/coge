@@ -145,23 +145,26 @@ sub irods_get_file {
 sub load_from_ftp {
 	my %opts = @_;
 	my $url = $opts{url};
+	print STDERR "load_from_ftp: $url\n";
 	
 	my @files;
 	
 	my ($content_type) = head($url);
-	if ($content_type eq 'text/ftp-dir-listing') {
-		my $listing = get($url);
-		my $dir = parse_dir($listing);
-		foreach (@$dir) {
-			my ($filename, $filetype, $filesize, $filetime, $filemode) = @$_;
-			if ($filetype eq 'f') {
-				push @files, { name => $filename, url => $url . $filename };
+	if ($content_type) {
+		if ($content_type eq 'text/ftp-dir-listing') {
+			my $listing = get($url);
+			my $dir = parse_dir($listing);
+			foreach (@$dir) {
+				my ($filename, $filetype, $filesize, $filetime, $filemode) = @$_;
+				if ($filetype eq 'f') {
+					push @files, { name => $filename, url => $url . $filename };
+				}
 			}
 		}
-	}
-	else {
-		my ($filename) = $url =~ /([^\/]+)\s*$/;
-		push @files, { name => $filename, url => $url};
+		else {
+			my ($filename) = $url =~ /([^\/]+)\s*$/;
+			push @files, { name => $filename, url => $url};
+		}
 	}
 		
 	return encode_json( \@files );
@@ -285,7 +288,7 @@ sub load_experiment {
 			  '-version "' . escape($version) . '" ' .
 			  "-restricted " . ($restricted eq 'true') . ' ' .
 			  "-gid $gid " . 
-			  "-source_name " . $USER->display_name . ' ' .
+			  '-source_name "' . escape($USER->display_name) . '" ' .
 			  "-staging_dir $stagepath " .
 			  "-install_dir " . $P->{DATADIR} . '/experiments ' .
 			  '-data_file "' . escape( join(',', @files) ) . '" ' .
