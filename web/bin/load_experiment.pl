@@ -101,17 +101,30 @@ if ($rc != 0) {
 my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
 my $coge    = CoGeX->connect( $connstr, $user, $pass );
 unless ($coge) {
-	print $log "Couldn't connect to database\n";
+	print $log "log: couldn't connect to database\n";
 	exit(-1);
 }
-
-#TODO check that chromosomes match correctly here
 
 # Retrieve genome
 my $genome = $coge->resultset('Genome')->find( { genome_id => $gid } );
 unless ($genome) {
-	print $log "Error finding genome\n";
+	print $log "log: error finding genome\n";
 	exit(-1);
+}
+
+# Verify that chromosome names in input file match those for genome
+my %genome_chr = map { $_ => 1 } $genome->chromosomes;
+foreach (keys %genome_chr) {
+	print $log "genome chromosome $_\n";
+}
+foreach (keys %$pChromosomes) {
+	print $log "input chromosome $_\n";
+}
+foreach (keys %$pChromosomes) {
+	if (not defined $genome_chr{$_}) {
+		print $log "log: error: chromosome '$_' not found in genome\n";
+		exit(-1);
+	}
 }
 
 # Create datasource
@@ -197,6 +210,21 @@ sub validate_data_file {
 		if ($val1 < 0 or $val1 > 1) {
 			print $log "log: error at line $line_num: value 1 not between 0 and 1\n";
 			return;
+		}
+		
+		# Fix chromosome identifier
+		$chr =~ s/^lcl\|//;
+		$chr =~ s/chromosome//i;
+		$chr =~ s/^chr//i;
+		$chr =~ s/^0+//;
+		$chr =~ s/^_+//;
+		$chr =~ s/\s+/ /;
+		$chr =~ s/^\s//;
+		$chr =~ s/\s$//;
+		
+		if (not $chr) {
+			print $log "log: error at line $line_num: trouble parsing chromosome\n";
+			return;			
 		}
 		
 		$chromosomes{$chr}++;
