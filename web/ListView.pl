@@ -305,13 +305,14 @@ sub get_list_annotations {
 			
 			$html .= "<td>";
 			my $image_link = ($a->image ? 'image.pl?id=' . $a->image->id : '');
-			my $image_info = ($a->image ? "<a href='$image_link' target='_blank'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='padding:1px;border:1px solid lightgray;vertical-align:text-top;'></a>" : '');
+			my $image_info = ($a->image ? "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='padding:1px;border:1px solid lightgray;vertical-align:text-top;'></a>" : '');
 			$html .= $image_info if $image_info;
 			$html .= "</td>";
 
-			my $a_info .= ($a->link ? linkify($a->link, $a->info) : $a->info);
-			$html .= "<td class='data5'>$a_info</td>";
-			
+			$html .= "<td class='data5'>".$a->info."</td>";
+			$html .= "<td>";
+			$html .= linkify($a->link, "Link") if $a->link;
+			$html .= "</td>";
 			if ($user_can_edit) {
 				$html .= "<td><span onClick=\"\$(this).fadeOut(); remove_list_annotation({lid: '$lid', laid: '" . $a->id . "'});\" class='link ui-icon ui-icon-trash'></span></td>";
 			}
