@@ -1101,7 +1101,7 @@ sub info_html
 {
 	my $self = shift;
 	my $info = $self->info;
-	return qq{<span class=link onclick='window.open("GenomeView.pl?eid=} .$self->id. qq{")'>} . $info . "</span>";
+	return qq{<span class=link onclick='window.open("OrganismView.pl?dsgid=} .$self->id. qq{")'>} . $info . "</span>";
 }
 
 =head1 BUGS
