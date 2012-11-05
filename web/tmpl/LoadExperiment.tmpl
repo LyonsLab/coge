@@ -62,14 +62,28 @@ function load_experiment() {
 		return;
 	}
 	
-	reset_log();
-	
 	var name = $('#edit_name').val();
 	var description = $('#edit_description').val();
 	var version = $('#edit_version').val();
 	var restricted = $('#restricted').is(':checked');
+	var genome = $('#edit_genome').val();
 	var gid = $('#gid').val();
 	var json = JSON.stringify(items);
+	
+	if (!name) {
+		alert('Please specify an experiment name.');
+		return; 
+	}
+	if (!version) {
+		alert('Please specify an experiment version.');
+		return; 
+	}
+	if (!genome) {
+		alert('Please specify a genome.');
+		return; 
+	}
+	
+	reset_log();	
 	
 	$.ajax({
 		data: {

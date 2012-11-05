@@ -85,7 +85,7 @@ if ($rc != 0) {
 	exit(-1);
 }
 
-print $log "log: Indexing database\n";
+print $log "log: Indexing database (may take a few minutes)\n";
 $cmd = "$FASTBIT_QUERY -d $staging_dir -v -b \"<binning precision=2/><encoding equality/>\"";
 print STDERR $cmd, "\n";
 $rc = system($cmd);
