@@ -16,6 +16,8 @@ $(document).ready(function(){
 	$('#load_experiment_dialog').dialog("widget").find('.ui-dialog-titlebar-close').hide();
 	$('#load_experiment_dialog').dialog({modal: true, closeOnEscape: false})
 	
+	set_input('edit_genome');
+	
 	$("#edit_genome").autocomplete({
 		source:[],
 		select: function(event, ui) {
@@ -29,6 +31,25 @@ $(document).ready(function(){
 		}
 	});
 });
+
+function set_input(id) {
+	var obj = $('#'+id);
+	var val = obj.val();
+	
+	if ( val && val != 'Search' ) {
+		obj.css({"font-style": "normal", "color": "black"});
+	}
+	else {
+		if (obj.is(":focus")) {
+			obj.val('');
+			obj.css({"font-style": "normal", "color": "black"});
+		}
+		else {
+			obj.val('Search');
+			obj.css({"font-style": "italic", "color": "gray"});
+		}
+	}
+}
 
 function file_selected(filename, url) {
 	$('#file_select_dialog').dialog('close');
@@ -205,7 +226,7 @@ function search_genomes (search_term) {
   <tr>
     <td>Genome:</td>
     <td>
-      <input id="edit_genome" onkeypress="wait_to_search(search_genomes, this.value);" size="58" />
+      <input id="edit_genome" onfocus="set_input('edit_genome');" onblur="set_input('edit_genome');" onkeypress="wait_to_search(search_genomes, this.value);" size="58" />
       <input id="gid" type="hidden" />
     </td>
   </tr>
