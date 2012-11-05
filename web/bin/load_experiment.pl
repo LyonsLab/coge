@@ -162,7 +162,7 @@ print STDERR "$cmd\n";
 `$cmd`;
 
 # Yay!
-print $log "All done!";
+print $log "log: All done!";
 print STDERR "All done!";
 close($log);
 exit;
