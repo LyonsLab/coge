@@ -60,7 +60,6 @@ my ($cas_ticket) = $FORM->param('ticket');
 $USER = undef;
 ($USER) = CoGe::Accessory::Web->login_cas( cookie_name => $COOKIE_NAME, ticket => $cas_ticket, coge => $coge, this_url => $FORM->url() ) if ($cas_ticket);
 ($USER) = CoGe::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
-
 my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
 $link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );
 
@@ -304,9 +303,13 @@ sub get_list_annotations {
 		foreach my $a ( sort {$a->id <=> $b->id} @{$groups{$group}} ) {
 			$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=" . @{$groups{$group}} . " style='font-weight:normal;background-color:white'>$group:</th>" : '');
 			
+			$html .= "<td>";
 			my $image_link = ($a->image ? 'image.pl?id=' . $a->image->id : '');
-			my $a_info = ($a->image ? "<a href='$image_link' target='_blank'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='padding:1px;border:1px solid lightgray;vertical-align:text-top;'></a>" : '');
-			$a_info .= ' ' . ($a->link ? linkify($a->link, $a->info) : $a->info);
+			my $image_info = ($a->image ? "<a href='$image_link' target='_blank'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='padding:1px;border:1px solid lightgray;vertical-align:text-top;'></a>" : '');
+			$html .= $image_info if $image_info;
+			$html .= "</td>";
+
+			my $a_info .= ($a->link ? linkify($a->link, $a->info) : $a->info);
 			$html .= "<td class='data5'>$a_info</td>";
 			
 			if ($user_can_edit) {
