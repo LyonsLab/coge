@@ -42,6 +42,7 @@ $data_file = unescape($data_file);
 $name = unescape($name);
 $description = unescape($description);
 $version = unescape($version);
+$source_name = unescape($source_name);
 
 # Open log file
 $| = 1;
