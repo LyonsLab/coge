@@ -120,12 +120,14 @@ foreach (keys %genome_chr) {
 foreach (keys %$pChromosomes) {
 	print $log "input chromosome $_\n";
 }
+my $error = 0;
 foreach (keys %$pChromosomes) {
 	if (not defined $genome_chr{$_}) {
 		print $log "log: error: chromosome '$_' not found in genome\n";
-		exit(-1);
+		$error++;
 	}
 }
+exit(-1) if ($error);
 
 # Create datasource
 my $datasource = $coge->resultset('DataSource')->find_or_create( { name => $source_name, description => "Loaded into CoGe via LoadExperiment" } );
