@@ -70,7 +70,42 @@ if (not $count) {
 }
 print $log "log: Successfully read $count lines\n";
 
-# Copy to staging area and generate fastbit database/index
+# Connect to database
+my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
+my $coge    = CoGeX->connect( $connstr, $user, $pass );
+unless ($coge) {
+	print $log "log: couldn't connect to database\n";
+	exit(-1);
+}
+
+# Retrieve genome
+my $genome = $coge->resultset('Genome')->find( { genome_id => $gid } );
+unless ($genome) {
+	print $log "log: error finding genome\n";
+	exit(-1);
+}
+
+# Verify that chromosome names in input file match those for genome
+my %genome_chr = map { $_ => 1 } $genome->chromosomes;
+foreach (sort keys %genome_chr) {
+	print $log "genome chromosome $_\n";
+}
+foreach (sort keys %$pChromosomes) {
+	print $log "input chromosome $_\n";
+}
+my $error = 0;
+foreach (sort keys %$pChromosomes) {
+	if (not defined $genome_chr{$_}) {
+		print $log "log: chromosome '$_' not found in genome\n";
+		$error++;
+	}
+}
+if ($error) {
+	print $log "log: error: input chromosome names don't match genome\n";
+	exit(-1);	
+}
+
+# Copy input file to staging area and generate fastbit database/index
 my $cmd = "cp -f $data_file $staging_dir";
 `$cmd`;
 
@@ -95,42 +130,8 @@ if ($rc != 0) {
 }
 
 # If we've made it this far without error then we can feel confident about
-# the input data.  Now we can go ahead and create the db entities and install the files.
-
-# Connect to database
-my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
-my $coge    = CoGeX->connect( $connstr, $user, $pass );
-unless ($coge) {
-	print $log "log: couldn't connect to database\n";
-	exit(-1);
-}
-
-# Retrieve genome
-my $genome = $coge->resultset('Genome')->find( { genome_id => $gid } );
-unless ($genome) {
-	print $log "log: error finding genome\n";
-	exit(-1);
-}
-
-# Verify that chromosome names in input file match those for genome
-my %genome_chr = map { $_ => 1 } $genome->chromosomes;
-foreach (keys %genome_chr) {
-	print $log "genome chromosome $_\n";
-}
-foreach (keys %$pChromosomes) {
-	print $log "input chromosome $_\n";
-}
-my $error = 0;
-foreach (keys %$pChromosomes) {
-	if (not defined $genome_chr{$_}) {
-		print $log "log: chromosome '$_' not found in genome\n";
-		$error++;
-	}
-}
-if ($error) {
-	print $log "log: error: input chromosome names don't match genome\n";
-	exit(-1);	
-}
+# the input data.  Now we can go ahead and create the db entities and 
+# install the files.
 
 # Create datasource
 my $datasource = $coge->resultset('DataSource')->find_or_create( { name => $source_name, description => "Loaded into CoGe via LoadExperiment" } );
