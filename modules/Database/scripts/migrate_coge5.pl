@@ -207,6 +207,7 @@ create table list_annotation
 	annotation_type_id INT(11) NOT NULL,
 	annotation TEXT NOT NULL,
 	link TEXT DEFAULT NULL,
+	image_id INT(11) DEFAULT NULL,
 	PRIMARY KEY (list_annotation_id),
 	INDEX (list_id),
 	INDEX (annotation_type_id),
@@ -220,7 +221,6 @@ sql(<<SQL);
 create table image
 (
 	image_id int(11) NOT NULL AUTO_INCREMENT,
-	list_annotation_id int(11) NOT NULL,
     filename varchar(255) NOT NULL,
     image longblob NOT NULL,
     PRIMARY KEY (image_id)
@@ -256,6 +256,7 @@ sql('alter table genome change dataset_group_id genome_id INT(11) NOT NULL AUTO_
 # feature_annotation table
 sql('rename table annotation to feature_annotation');
 sql('alter table feature_annotation change annotation_id feature_annotation_id INT(11) NOT NULL AUTO_INCREMENT'); # rename annotation_id to feature_annotation_id
+#add_column('feature_annotation', 'image_id INT(11) DEFAULT NULL');
 
 # data_source table
 sql('alter table data_source change data_source_id data_source_id INT(11) NOT NULL AUTO_INCREMENT'); # change from INT(10) to INT(11)
@@ -273,6 +274,7 @@ drop_column('experiment', 'link'); #sql('alter table experiment drop column link
 
 # experiment_annotation table
 add_column('experiment_annotation', 'link TEXT'); #sql('alter table experiment_annotation add link TEXT');
+add_column('experiment_annotation', 'image_id INT(11) DEFAULT NULL');
 
 # feature table
 sql('alter table feature change feature_id feature_id INT(11) NOT NULL AUTO_INCREMENT'); # change from INT(10) to INT(11)
