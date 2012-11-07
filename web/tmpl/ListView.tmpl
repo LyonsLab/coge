@@ -1,4 +1,4 @@
-<TMPL_IF NAME=MAIN>
+<TMPL_IF NAME="MAIN">
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/filterlist.js"></SCRIPT>
@@ -13,10 +13,10 @@ $(document).ready(function(){
 		cache: false,
 	});
 	
+	$(".dialog_box").dialog({autoOpen: false, width: 450});
+
 	set_contents_table();
 	set_annotation_table();
-	
-	$(".dialog_box").dialog({autoOpen: false});
 	
 	pageObj.timestamp = new Array();
 	pageObj.timers = new Array();
@@ -60,88 +60,74 @@ function edit_list_info (opts) {
 	});
 }
 
-function update_list_info (opts){
+function update_list_info (){
 	name = $('#edit_name').val();
 	desc = $('#edit_desc').val();
 	type = $('#edit_type').val();
-	lid = opts.lid;
 	if (name) {
 		$.ajax({
 			data: {
 				jquery_ajax: 1,
 				fname: 'update_list_info',
-				lid: lid,
+				lid: "<TMPL_VAR NAME='LID'>",
 				name: name,
 				desc: desc,
 				type: type
 			},
 			success : function(val) {
 				$("#list_info_edit_box").dialog('close');
-				run_get_list_info({divid: 'list_info', lid: lid});
+				get_list_info();
 			},
 		});
 	}
 	else { alert ('Error!  Must have a name!');}
 }
 
-function run_get_list_info(opts){
-	if (!opts){opts={};}
-	divid = opts.divid; //were results will be displayed in page
-	// create a new closure who's scope does *not*
-	// include the `divid` value so that callback will 
-	// not clobber the `divid` variable 
-	var create_callback = function(divid) {
-		var local_divid = divid;
-		return function (data) {
-			$('#'+local_divid).html(data);
-		};
-	}; 
-
+function get_list_info() {
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
 			fname: 'get_list_info',
-			lid: lid
+			lid: "<TMPL_VAR NAME='LID'>"
 		},
-		success : create_callback(divid)
-	});
-}
-
-function make_list_public (opts) {
-	lid = opts.lid;
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'make_list_public',
-			lid: lid,
-		},
-		success : function(val) {
-			run_get_list_info({divid: 'list_info', lid: lid});
+		success : function (data) {
+			$('#list_info').html(data);
 		}
 	});
 }
 
-function make_list_private (opts) {
-	lid = opts.lid;
+function make_list_public () {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'make_list_public',
+			lid: "<TMPL_VAR NAME='LID'>",
+		},
+		success : function(val) {
+			get_list_info();
+		}
+	});
+}
+
+function make_list_private () {
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
 			fname: 'make_list_private',
-			lid: lid,
+			lid: "<TMPL_VAR NAME='LID'>",
 		},
 		success : function(val) {
-			run_get_list_info({divid: 'list_info', lid: lid});
+			get_list_info();
 		},
 	});
 }
 
 function add_list_items (opts) {
-	lid = opts.lid;
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
 			fname: 'add_list_items',
-			lid: lid,
+			lid: "<TMPL_VAR NAME='LID'>",
 		},
 		success : function(data) {
 			data = eval('('+data+')');
@@ -151,19 +137,16 @@ function add_list_items (opts) {
 	});
 }
 
-function add_selected_items (opts){
-	select_id = opts.select_id;
-	lid = opts.lid;
+function add_selected_items (select_id){
 	num_items = $('#' + select_id).find('option:selected').length;
 	$('#' + select_id).find('option:selected').each(
 		function() {
 			var item_spec = $(this).attr("value");
-			//$(this).remove();
 			$.ajax({
 				data: {
 					jquery_ajax: 1,
 					fname: 'add_item_to_list',
-					lid: lid,
+					lid: "<TMPL_VAR NAME='LID'>",
 					item_spec : item_spec,
 				},
 				success : 
@@ -171,7 +154,7 @@ function add_selected_items (opts){
 						if (data != 1) { alert(data); }
 						else {
 							if (--num_items == 0) { // only do update on last item
-								run_get_list_contents({divid: 'list_contents', lid: lid});
+								get_list_contents();
 							}
 						}
 					},
@@ -182,7 +165,6 @@ function add_selected_items (opts){
 }
 
 function remove_list_item (obj, opts) {
-	lid = opts.lid;
 	item_id = opts.item_id;
 	item_type = opts.item_type;
 	
@@ -192,53 +174,43 @@ function remove_list_item (obj, opts) {
 		data: {
 			jquery_ajax: 1,
 			fname: 'remove_list_item',
-			lid: lid,
+			lid: "<TMPL_VAR NAME='LID'>",
 			item_id: item_id,
 			item_type: item_type,
 		},
 		success : function(val) {
-			run_get_list_contents({divid: 'list_contents', lid: lid});
+			get_list_contents();
 		},
 	});
 }
 
-function run_get_list_contents(opts) {
-	if (!opts){opts={};}
-	divid = opts.divid; //were results will be displayed in page
-	// create a new closure who's scope does *not*
-	// include the `divid` value so that callback will 
-	// not clobber the `divid` variable 
-	var create_callback = function(divid) {
-		var local_divid = divid;
-		return function (data) {
-			$('#'+local_divid).html(data);
-			set_contents_table();
-		};
-	}; 
-
+function get_list_contents() {
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
 			fname: 'get_list_contents',
-			lid: lid
+			lid: "<TMPL_VAR NAME='LID'>",
 		},
-		success : create_callback(divid)
+		success : function (data) {
+			$('#list_contents').html(data);
+			set_contents_table();
+		}
 	});
 }
 
-function add_list_annotation (opts) {
-	lid = opts.lid;
+/*
+function dialog_add_annotation (opts) {
+	lid = opts.id;
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
-			fname: 'add_list_annotation',
+			fname: 'dialog_add_annotation',
 			lid: lid,
 		},
 		success : function(data) {
 			data = eval('('+data+')');
-			title = data.title;
 			$("#list_annotation_edit_box").dialog({
-				title: title,
+				title: data.title,
 				beforeClose: 
 					function() {
 						//$("#edit_annotation_type").autocomplete('close');
@@ -256,23 +228,23 @@ function add_list_annotation (opts) {
 		},
 	});
 }
+*/
 
-function add_annotation_to_list (opts) {
-	annotation = $('#edit_annotation').val();
-	type = $('#edit_annotation_type').val();
+function add_annotation () {
+	var annotation = $('#edit_annotation').val();
+	var type = $('#edit_annotation_type').val();
 	
 	if (annotation && type) {
-		lid = opts.lid;
-		type_group = $('#edit_annotation_type_group').val();
-		link = 	$('#edit_link').val();
+		var type_group = $('#edit_annotation_type_group').val();
+		var link = $('#edit_link').val();
 
-		annotation_image_file = $('#edit_annotation_image')[0].files[0];
+		var annotation_image_file = $('#edit_annotation_image')[0].files[0];
 
 		if (annotation_image_file) {		
 			ext = annotation_image_file.name.split('.').pop();
 			if (ext != 'jpg' && ext != 'gif' && ext != 'png') {
 				alert('Error: specified file is not an image');
-				return;		
+				return;
 			}
 	
 			if (annotation_image_file.size > 1*1024*1024) {
@@ -285,76 +257,64 @@ function add_annotation_to_list (opts) {
 		else {
 			annotation_image_file = '';
 		}
-
+		
 		$('#edit_annotation_image').fileupload({
         	dataType: 'json',
 			done: 
 				function(e, data) {
+					$("#wait_annotation").hide();
 					$("#list_annotation_edit_box").dialog('close');
-					run_get_list_annotations({divid: 'list_annotations', lid: lid});					
+					get_list_annotations();					
 				}
 		});
 
 		$('#edit_annotation_image').fileupload('send', {
 			files: annotation_image_file,
 			formData: {
-				fname: 'add_annotation_to_list',
-				lid: lid,
+				fname: 'add_annotation',
+				lid: "<TMPL_VAR NAME='LID'>",
 				type_group: type_group,
 				type: type,
 				annotation: annotation,
 				link: link
 			}
-		});
+		});			
 	}
 	else { alert ('Error: Must have type and annotation specified!');}
 }
 
-function run_get_list_annotations(opts) {
-	if (!opts){opts={};}
-	divid = opts.divid; //were results will be displayed in page
-	// create a new closure who's scope does *not*
-	// include the `divid` value so that callback will 
-	// not clobber the `divid` variable 
-	var create_callback = function(divid) {
-		var local_divid = divid;
-		return function (data) {
-			$('#'+local_divid).html(data);
-			set_annotation_table();
-		};
-	}; 
-
+function get_list_annotations() {
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
 			fname: 'get_list_annotations',
-			lid: lid
+			lid: "<TMPL_VAR NAME='LID'>",
 		},
-		success : create_callback(divid)
+		success : function(data) {
+			$('#list_annotations').html(data);
+			set_annotation_table();
+		}
 	});
 }
 
 function remove_list_annotation (opts) {
-	lid = opts.lid;
 	laid = opts.laid;
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
 			fname: 'remove_list_annotation',
-			lid: lid,
+			lid: "<TMPL_VAR NAME='LID'>",
 			laid: laid,
 		},
 		success : function(val) {
-			run_get_list_annotations({divid: 'list_annotations', lid: lid});
+			get_list_annotations();
 		},
 	});
 }
 
-function wait_to_search (search_func, lid, search_term) {
+function wait_to_search (search_func, search_term) {
 	if (!search_term || search_term.length > 2) {
 		pageObj.search_term = search_term;
-		pageObj.lid = lid;
-			
 		if (pageObj.time) {
 			clearTimeout(pageObj.time);
 		}
@@ -362,7 +322,7 @@ function wait_to_search (search_func, lid, search_term) {
 		// FIXME: could generalize by passing select id instead of separate search_* functions
 		pageObj.time = setTimeout(
 			function() { 
-				search_func(pageObj.lid, pageObj.search_term); 
+				search_func(pageObj.search_term); 
 			},
 			500
 		);
@@ -371,7 +331,7 @@ function wait_to_search (search_func, lid, search_term) {
 
 // FIXME: the search functions below are all the same, consolidate?
 
-function search_mystuff (lid, search_term) {
+function search_mystuff (search_term) {
 	$("#wait_mystuff").animate({opacity:1});
 	$("#select_mystuff_items").html("<option disabled='disabled'>Searching...</option>");
 	pageObj.timestamp['mystuff'] = new Date().getTime();
@@ -379,7 +339,7 @@ function search_mystuff (lid, search_term) {
 		data: {
 			jquery_ajax: 1,
 			fname: 'search_mystuff',
-			lid: lid,
+			lid: '<TMPL_VAR NAME="LID">',
 			search_term: search_term,
 			timestamp: pageObj.timestamp['mystuff']
 		},
@@ -393,7 +353,7 @@ function search_mystuff (lid, search_term) {
 	});
 }
 
-function search_genomes (lid, search_term) {
+function search_genomes (search_term) {
 	$("#wait_genome").animate({opacity:1});
 	$("#select_genome_items").html("<option disabled='disabled'>Searching...</option>");
 	pageObj.timestamp['genomes'] = new Date().getTime();
@@ -401,7 +361,7 @@ function search_genomes (lid, search_term) {
 		data: {
 			jquery_ajax: 1,
 			fname: 'search_genomes',
-			lid: lid,
+			lid: '<TMPL_VAR NAME="LID">',
 			search_term: search_term,
 			timestamp: pageObj.timestamp['genomes']
 		},
@@ -415,7 +375,7 @@ function search_genomes (lid, search_term) {
 	});
 }
 
-function search_experiments (lid, search_term) {
+function search_experiments (search_term) {
 	$("#wait_experiment").animate({opacity:1});
 	$("#select_experiments_items").html("<option disabled='disabled'>Searching...</option>");
 	pageObj.timestamp['experiments'] = new Date().getTime();
@@ -423,7 +383,7 @@ function search_experiments (lid, search_term) {
 		data: {
 			jquery_ajax: 1,
 			fname: 'search_experiments',
-			lid: lid,
+			lid: '<TMPL_VAR NAME="LID">',
 			search_term: search_term,
 			timestamp: pageObj.timestamp['experiments']
 		},
@@ -437,7 +397,7 @@ function search_experiments (lid, search_term) {
 	});
 }
 
-function search_features (lid, search_term) {
+function search_features (search_term) {
 	$("#wait_feature").animate({opacity:1});
 	$("#select_feature_items").html("<option disabled='disabled'>Searching...</option>");
 	pageObj.timestamp['features'] = new Date().getTime();
@@ -445,7 +405,7 @@ function search_features (lid, search_term) {
 		data: {
 			jquery_ajax: 1,
 			fname: 'search_features',
-			lid: lid,
+			lid: '<TMPL_VAR NAME="LID">',
 			search_term: search_term,
 			timestamp: pageObj.timestamp['features']
 		},
@@ -459,7 +419,7 @@ function search_features (lid, search_term) {
 	});
 }
 
-function search_lists (lid, search_term) {
+function search_lists (search_term) {
 	$("#wait_list").animate({opacity:1});
 	$("#select_list_items").html("<option disabled='disabled'>Searching...</option>");
 	pageObj.timestamp['lists'] = new Date().getTime();
@@ -467,7 +427,7 @@ function search_lists (lid, search_term) {
 		data: {
 			jquery_ajax: 1,
 			fname: 'search_lists',
-			lid: lid,
+			lid: '<TMPL_VAR NAME="LID">',
 			search_term: search_term,
 			timestamp: pageObj.timestamp['lists']
 		},
@@ -481,49 +441,16 @@ function search_lists (lid, search_term) {
 	});
 }
 
-function search_annotation_types () {
-	type_group  = $("#edit_annotation_type_group").val();
-	search_term = $("#edit_annotation_type").val();
-	if (search_term.length > 2) {
-		$.ajax({
-			data: {
-				jquery_ajax: 1,
-				fname: 'search_annotation_types',
-				type_group: type_group,
-				search_term: search_term,
-			},
-			success : function(val) {
-				var items = jQuery.parseJSON(val);
-				$("#edit_annotation_type").autocomplete({source: items});
-				$("#edit_annotation_type").autocomplete("search");
-			},
-		});
-	}
-}
-
-function get_annotation_type_groups () {
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'get_annotation_type_groups',
-		},
-		success : function(val) {
-			var items = jQuery.parseJSON(val);
-			$("#edit_annotation_type_group").autocomplete({source: items});
-		},
-	});
-}
-
-function dialog_delete_list (opts) {
+function dialog_delete_list () {
 	show_dialog('list_delete_box', 'Delete List?', '', 450);
 }
 
-function delete_list (opts) {
+function delete_list () {
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
 			fname: 'delete_list',
-			lid: opts.lid,
+			lid: '<TMPL_VAR NAME="LID">',
 		},
 		success : function(val) {
 			location.reload();
@@ -538,7 +465,7 @@ function send_list_to() {
 		data: {
 			jquery_ajax: 1,
 			fname: action,
-			lid: <TMPL_VAR NAME=LID>
+			lid: '<TMPL_VAR NAME="LID">'
 		},
 		success : function(val) {
 			var items = jQuery.parseJSON(val);
@@ -625,13 +552,15 @@ Send list to:
 </div>
 
 <div id="list_info_edit_box" class="dialog_box"></div>
-<div id="list_annotation_edit_box" class="dialog_box"></div>
+<div id="list_annotation_edit_box" class="dialog_box" title="Add Annotation">
+  <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'>
+</div>
 <div id="list_contents_edit_box" class="dialog_box"></div>
 
 <div id="list_delete_box" class="dialog_box" style='display:none;' align='center'>
 Are you sure you want to permanently delete this list?<p>
  <div>
-  <span style="font-size:.75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_list({lid: '<TMPL_VAR NAME=LID>'});">Yes</span>
+  <span style="font-size:.75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_list();">Yes</span>
   <span style="font-size:.75em" class='ui-button ui-button-go ui-corner-all' onClick="$('#list_delete_box').dialog('close');">No</span>
  </div>
 </div>
@@ -665,52 +594,16 @@ Are you sure you want to permanently delete this list?<p>
 
 
 
-<TMPL_IF NAME='ADD_LIST_ANNOTATION'> <!-- FIXME: this is redundant with ExperimentView.tmpl, move into own sub-template? -->
-<script>
-	$("#edit_annotation_type").autocomplete({source:[]});
-	$("#edit_annotation_type_group").autocomplete({source:[]});
-	get_annotation_type_groups();
-</script>
-<table class="small">
- <tr valign='top'>
-  <td>Annotation:</td>
-  <td><textarea id="edit_annotation" rows=5 cols=50 ><TMPL_VAR NAME=ANNOTATION></textarea></td>
- </tr>
- <tr>
-  <td>Link:</td>
-  <td><input id="edit_link" type="textbox" size="53" value="<TMPL_VAR NAME=LINK>"></td>
- </tr>
- <tr>
-  <td>Type:</td>
-  <td><input id="edit_annotation_type" onkeypress="wait_to_search(search_annotation_types, 0, this.value);" size="53" value="<TMPL_VAR NAME=DEFAULT_TYPE>"></td>
- </tr> 
- <tr>
-  <td>Type Group:</td>
-  <td><input id="edit_annotation_type_group" size="53"> (optional)</td>
- </tr>
- <tr>
-  <td valign='top'>Image:</td>
-  <td>
-   <input id="edit_annotation_image" name="edit_annotation_image" type="file" data-url='ListView.pl'>
-  </td>
- </tr>
-</table>
-<span onClick="add_annotation_to_list({lid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-corner-all ui-button-go'>Add</span>
-<img id="wait_annotation" src="picts/ajax-loader.gif" style="opacity: 0;" />
-</TMPL_IF> <!-- ADD_LIST_ANNOTATION -->
-
-
-
 <TMPL_IF NAME='ADD_LIST_ITEMS'>
 <SCRIPT language="JavaScript">
 $(document).ready(function(){
 	$(function() { $("#tabs").tabs({selected:0}); });
 	
-	search_mystuff(<TMPL_VAR NAME='LID'>, '');
-	setTimeout(function() { search_genomes(<TMPL_VAR NAME='LID'>, ''); },     500);
-	setTimeout(function() { search_experiments(<TMPL_VAR NAME='LID'>, ''); }, 1000);
-	setTimeout(function() { search_features(<TMPL_VAR NAME='LID'>, ''); },    1500);
-	setTimeout(function() { search_lists(<TMPL_VAR NAME='LID'>, ''); },       2000);
+	search_mystuff();
+	setTimeout(search_genomes(),     500);
+	setTimeout(search_experiments(), 1000);
+	setTimeout(search_features(),    1500);
+	setTimeout(search_lists(),       2000);
 });
 </SCRIPT>
 
@@ -728,8 +621,8 @@ $(document).ready(function(){
   <tr align='left'>
    <td>
     Search:
-    <input type="textbox" size="53" id="edit_mystuff_search" onkeyup="wait_to_search(search_mystuff, <TMPL_VAR NAME=LID>, this.value);">
-    <span class='ui-button ui-corner-all' onclick="search_mystuff(<TMPL_VAR NAME=LID>, $('#edit_mystuff_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+    <input type="textbox" size="53" id="edit_mystuff_search" onkeyup="wait_to_search(search_mystuff, this.value);">
+    <span class='ui-button ui-corner-all' onclick="search_mystuff($('#edit_mystuff_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
     <img id="wait_mystuff" src="picts/ajax-loader.gif" style="opacity: 0;" />
    </td>
   </tr>
@@ -743,7 +636,7 @@ $(document).ready(function(){
    <td><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
   </tr>
  </table>
- <span href="javascript:void(0)" onClick="add_selected_items({select_id: 'select_mystuff_items', lid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
+ <span href="javascript:void(0)" onClick="add_selected_items('select_mystuff_items');" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
 </div> <!-- tab-1 -->
 
 <div id="tab-2">
@@ -751,8 +644,8 @@ $(document).ready(function(){
   <tr align='left'>
    <td>
     Search:
-    <input type="textbox" size="53" id="edit_genome_search" onkeyup="wait_to_search(search_genomes, <TMPL_VAR NAME=LID>, this.value);">
-    <span class='ui-button ui-corner-all' onclick="search_genomes(<TMPL_VAR NAME=LID>, $('#edit_genome_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+    <input type="textbox" size="53" id="edit_genome_search" onkeyup="wait_to_search(search_genomes, this.value);">
+    <span class='ui-button ui-corner-all' onclick="search_genomes($('#edit_genome_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
     <img id="wait_genome" src="picts/ajax-loader.gif" style="opacity: 0;" />
    </td>
   </tr>
@@ -766,7 +659,7 @@ $(document).ready(function(){
    <td><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
   </tr>
  </table>
- <span href="javascript:void(0)" onClick="add_selected_items({select_id: 'select_genome_items', lid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
+ <span href="javascript:void(0)" onClick="add_selected_items('select_genome_items');" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
 </div> <!-- tab-2 -->
 
 <div id="tab-3">
@@ -774,8 +667,8 @@ $(document).ready(function(){
   <tr align='left'>
    <td>
     Search:
-    <input type="textbox" size="53" id="edit_experiment_search" onkeyup="wait_to_search(search_experiments, <TMPL_VAR NAME=LID>, this.value);">
-    <span class='ui-button ui-corner-all' onclick="search_experiments(<TMPL_VAR NAME=LID>, $('#edit_experiment_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+    <input type="textbox" size="53" id="edit_experiment_search" onkeyup="wait_to_search(search_experiments, this.value);">
+    <span class='ui-button ui-corner-all' onclick="search_experiments($('#edit_experiment_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
     <img id="wait_experiment" src="picts/ajax-loader.gif" style="opacity: 0;" />
    </td>
   </tr>
@@ -789,7 +682,7 @@ $(document).ready(function(){
    <td><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
   </tr>
  </table>
- <span href="javascript:void(0)" onClick="add_selected_items({select_id: 'select_experiment_items', lid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
+ <span href="javascript:void(0)" onClick="add_selected_items('select_experiment_items');" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
 </div> <!-- tab-3 -->
 
 <div id="tab-4">
@@ -797,8 +690,8 @@ $(document).ready(function(){
   <tr align='left'>
    <td>
     Search:
-    <input type="textbox" size="53" id="edit_feature_search" onkeyup="wait_to_search(search_features, <TMPL_VAR NAME=LID>, this.value);">
-    <span class='ui-button ui-corner-all' onclick="search_features(<TMPL_VAR NAME=LID>, $('#edit_feature_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+    <input type="textbox" size="53" id="edit_feature_search" onkeyup="wait_to_search(search_features, this.value);">
+    <span class='ui-button ui-corner-all' onclick="search_features($('#edit_feature_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
     <img id="wait_feature" src="picts/ajax-loader.gif" style="opacity: 0;" />
    </td>
   </tr>
@@ -812,7 +705,7 @@ $(document).ready(function(){
    <td colspan='2'><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
   </tr>
  </table>
- <span href="javascript:void(0)" onClick="add_selected_items({select_id: 'select_feature_items', lid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
+ <span href="javascript:void(0)" onClick="add_selected_items('select_feature_items');" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
 </div> <!-- tab-4 -->
 
 <div id="tab-5">
@@ -820,8 +713,8 @@ $(document).ready(function(){
   <tr align='left'>
    <td>
     Search:
-    <input type="textbox" size="53" id="edit_list_search" onkeyup="wait_to_search(search_lists, <TMPL_VAR NAME=LID>, this.value);">
-    <span class='ui-button ui-corner-all' onclick="search_lists(<TMPL_VAR NAME=LID>, $('#edit_list_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+    <input type="textbox" size="53" id="edit_list_search" onkeyup="wait_to_search(search_lists, this.value);">
+    <span class='ui-button ui-corner-all' onclick="search_lists($('#edit_list_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
     <img id="wait_list" src="picts/ajax-loader.gif" style="opacity: 0;" />
    </td>  
   </tr>
@@ -835,7 +728,7 @@ $(document).ready(function(){
    <td colspan='2'><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
   </tr>
  </table>
- <span href="javascript:void(0)" onClick="add_selected_items({select_id: 'select_list_items', lid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
+ <span href="javascript:void(0)" onClick="add_selected_items('select_list_items');" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
 
 </div> <!-- tab-5 -->
 </div> <!-- tabs -->

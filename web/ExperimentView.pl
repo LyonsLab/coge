@@ -18,7 +18,7 @@ use File::Path;
 use Sort::Versions;
 no warnings 'redefine';
 
-use vars qw( $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME
+use vars qw( $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE 
 	$TEMPDIR $USER $DATE $COGEDIR $coge $FORM $URL
 	$TEMPURL $COOKIE_NAME %FUNCTION);
 
@@ -30,11 +30,12 @@ $DATE = sprintf(
 	"%04d-%02d-%02d %02d:%02d:%02d",
 	sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }->(localtime)
 );
-$PAGE_NAME = "ExperimentView.pl";
 
-$TEMPDIR = $P->{TEMPDIR} . "ExperimentView/";
+$PAGE_TITLE = "ExperimentView";
+
+$TEMPDIR = $P->{TEMPDIR} . "$PAGE_TITLE/";
 mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-$TEMPURL = $P->{TEMPURL} . "ExperimentView/";
+$TEMPURL = $P->{TEMPURL} . "$PAGE_TITLE/";
 
 $FORM = new CGI;
 
@@ -70,35 +71,31 @@ $USER = undef;
 	get_experiment_types    => \&get_experiment_types,
 	get_type_description    => \&get_type_description,
 	remove_experiment_type  => \&remove_experiment_type,
-	get_experiment_annotations   => \&get_experiment_annotations,
-	add_experiment_annotation    => \&add_experiment_annotation,
-	add_annotation_to_experiment => \&add_annotation_to_experiment,
-	remove_experiment_annotation => \&remove_experiment_annotation,
-	search_annotation_types      => \&search_annotation_types,
-	get_annotation_type_groups   => \&get_annotation_type_groups,
+	get_experiment_annotations		=> \&get_experiment_annotations,
+	add_annotation					=> \&add_annotation,
+	remove_experiment_annotation	=> \&remove_experiment_annotation,
+	search_annotation_types			=> \&search_annotation_types,
+	get_annotation_type_groups		=> \&get_annotation_type_groups,
 );
 
-if ( $FORM->param('jquery_ajax') ) {
-	dispatch();
-}
-else {
-	print $FORM->header, "\n", generate_html();
-}
+dispatch();
 
 sub dispatch {
 	my %args  = $FORM->Vars;
 	my $fname = $args{'fname'};
-	if ($fname)
-	{
-		if ( $args{args} )
-		{
+	if ($fname) {
+		die if not defined $FUNCTION{$fname};
+		#print STDERR Dumper \%args;
+		if ( $args{args} ) {
 			my @args_list = split( /,/, $args{args} );
 			print $FORM->header, $FUNCTION{$fname}->(@args_list);
 		}
-		else
-		{
+		else {
 			print $FORM->header, $FUNCTION{$fname}->(%args);
 		}
+	}
+	else {
+		print $FORM->header, generate_html();
 	}
 }
 
@@ -118,7 +115,7 @@ sub edit_experiment_info {
 	my $exp = $coge->resultset('Experiment')->find($eid);
 	my $desc = ( $exp->description ? $exp->description : '' );
 
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'ExperimentView.tmpl' );
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
 	$template->param( EDIT_EXPERIMENT_INFO => 1 );
 	$template->param( EID            => $eid );
 	$template->param( NAME           => $exp->name );
@@ -242,7 +239,7 @@ sub add_experiment_type {
 
 	my $exp = $coge->resultset('Experiment')->find($eid);
 
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'ExperimentView.tmpl' );
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
 	$template->param( ADD_EXPERIMENT_TYPE => 1 );
 	$template->param( EID => $eid );
 
@@ -346,53 +343,38 @@ sub get_experiment_annotations {
 		push @{$groups{$group}}, $a;
 	}
 	
+	my $html = '<table id="experiment_annotation_table" cellpadding=0 class="ui-widget-content ui-corner-all small" style="max-width:400px;overflow:hidden;word-wrap:break-word;"><thead style="display:none"></thead><tbody>';
 	foreach my $group (sort keys %groups) {
-		foreach my $a ( @{$groups{$group}} ) { #( $list->annotations ) {
-			my $anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . $group . "</span>" );
-			$anno_type->Type_delimit(": <td class=\"data5\">");
-			$anno_type->Val_delimit("<br>");
-			my $a_info = ($a->link ? linkify($a->link, $a->info) : $a->info);
-			$a_info .= ($user_can_edit ? "<span onClick=\"remove_experiment_annotation({eid: '$eid', eaid: '" . $a->id . "'});\" class=\"link ui-icon ui-icon-trash\"></span>" : '');
-			$anno_type->add_Annot($a_info);
-			$anno_obj->add_Annot($anno_type);
+		my $first = 1;
+		foreach my $a ( sort {$a->id <=> $b->id} @{$groups{$group}} ) {
+			$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=" . @{$groups{$group}} . " style='font-weight:normal;background-color:white'>$group:</th>" : '');
+			
+			$html .= "<td>";
+			my $image_link = ($a->image ? 'image.pl?id=' . $a->image->id : '');
+			my $image_info = ($a->image ? "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='padding:1px;border:1px solid lightgray;vertical-align:text-top;'></a>" : '');
+			$html .= $image_info if $image_info;
+			$html .= "</td>";
+
+			$html .= "<td class='data5'>".$a->info."</td>";
+			$html .= "<td>";
+			$html .= linkify($a->link, "Link") if $a->link;
+			$html .= "</td>";
+			if ($user_can_edit) {
+				$html .= "<td><span onClick=\"\$(this).fadeOut(); remove_experiment_annotation({eaid: '" . $a->id . "'});\" class='link ui-icon ui-icon-trash'></span></td>";
+			}
+			$html .= '</tr>';
 		}
 	}
-	my $html = "<table cellpadding=0 class='ui-widget-content ui-corner-all small'>" . $anno_obj->to_String . "</table>";
+	$html .= '</tbody></table>';
 
 	if ($user_can_edit) {
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="add_experiment_annotation({eid: $eid});"><span class="ui-icon ui-icon-plus"></span>Add Annotation</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="\$('#experiment_annotation_edit_box').dialog('open');"><span class="ui-icon ui-icon-plus"></span>Add Annotation</span>};
 	}
 
 	return $html;
 }
 
-sub add_experiment_annotation {
-	my %opts = @_;
-	my $eid  = $opts{eid};
-	return 0 unless $eid;
-
-	my $exp = $coge->resultset('Experiment')->find($eid);
-
-#	my $groups = $coge->resultset('AnnotationTypeGroup');
-#	while( my $group = $groups->next ) {
-#		foreach my $type ($group->annotation_types) {
-#			push @types, { type_name => $type->name, type_id => $type->id };
-#		}		
-#	}
-
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'ExperimentView.tmpl' );
-	$template->param( ADD_EXPERIMENT_ANNOTATION => 1 );
-	$template->param( EID => $eid );
-	$template->param( DEFAULT_TYPE => 'note' );
-
-	my %data;
-	$data{title} = 'Add Annotation';
-	$data{output} = $template->output;
-
-	return encode_json( \%data );
-}
-
-sub add_annotation_to_experiment {
+sub add_annotation {
 	my %opts = @_;
 	my $eid  = $opts{eid};
 	return 0 unless $eid;
@@ -401,8 +383,9 @@ sub add_annotation_to_experiment {
 	return 0 unless $type;
 	my $annotation = $opts{annotation};
 	my $link = $opts{link};
-	
-#	print STDERR "add_annotation_to_list: $lid $type $annotation $link\n";	
+	my $image_filename = $opts{edit_annotation_image};
+	my $fh = $FORM->upload('edit_annotation_image');	
+#	print STDERR "add_annotation: $eid $type $annotation $link\n";	
 	
 	my $group_rs;
 	if ($type_group) {
@@ -432,13 +415,27 @@ sub add_annotation_to_experiment {
 	
 #	print STDERR "type_rs.id=" . ($type_rs ? $type_rs->id : 'undef') . "\n";
 	
+	# Create the image
+	my $image;
+	if ($fh) {
+		read($fh, my $contents, -s $fh);
+		$image = $coge->resultset('Image')->create(
+			{	filename => $image_filename,
+				image => $contents
+			}
+		);
+		return 0 unless $image;
+	}
+	
 	# Create the annotation
-	$coge->resultset('ExperimentAnnotation')->create( 
+	my $annot = $coge->resultset('ExperimentAnnotation')->create( 
 		{ experiment_id => $eid, 
 		  annotation => $annotation, 
 		  link => $link,
-		  annotation_type_id => $type_rs->id
-		} );	
+		  annotation_type_id => $type_rs->id,
+		  image_id => ($image ? $image->id : undef)
+		} );
+	return 0 unless $annot;	
 	
 	return 1;
 }
@@ -458,16 +455,14 @@ sub remove_experiment_annotation {
 }
 
 sub generate_html {
-	my $html;
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-	$template->param( PAGE_TITLE => 'ExperimentView' );
-	$template->param( HELP       => '/wiki/index.php?title=ExperimentView' );
+	$template->param( PAGE_TITLE => $PAGE_TITLE );
+	$template->param( HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
 	my $name = $USER->user_name;
 	$name = $USER->first_name if $USER->first_name;
-	$name .= ' ' . $USER->last_name
-		if ( $USER->first_name && $USER->last_name );
+	$name .= ' ' . $USER->last_name if ( $USER->first_name && $USER->last_name );
 	$template->param( USER     => $name );
-	$template->param( LOGO_PNG => "ExperimentView-logo.png" );
+	$template->param( LOGO_PNG => "$PAGE_TITLE-logo.png" );
 	$template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
 	$template->param( DATE     => $DATE );
 	my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
@@ -479,10 +474,10 @@ sub generate_html {
 #	$template->param( BOX_NAME   => $box_name );
 
 	my ($body) = generate_body();
-	$template->param( BODY       => $body );
+	$template->param( BODY => $body );
 
 	$template->param( ADJUST_BOX => 1 );
-	$html .= $template->output;
+	return $template->output;
 }
 
 sub get_groups {
@@ -517,99 +512,17 @@ sub generate_body {
 	my $eid = $FORM->param('eid');
 	return "Need a valid experiment id\n" unless $eid;
 	
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'ExperimentView.tmpl' );
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
 	$template->param( MAIN => 1 );
+	$template->param( PAGE_NAME => $PAGE_TITLE . '.pl');
 	$template->param( EXPERIMENT_INFO => get_experiment_info(eid=>$eid) );
 	$template->param( EXPERIMENT_ANNOTATIONS => get_experiment_annotations(eid => $eid) );
+	$template->param( EID => $eid );
+	
+	# For AddAnnotation.tmpl widget
+	$template->param( DEFAULT_TYPE => 'note' );
+	
 	return $template->output;
-
-#	my $EXPID  = $expid;
-#	my $exp;
-#	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'ExperimentView.tmpl' );
-#
-#	# Create make private/public button
-#	my $access_button;
-#	my $edit_button;
-#	if (1)
-#	{    #$USER->is_owner(dsg=>$dsgid) || $USER->is_admin) {
-#		if ( $exp->restricted )
-#		{
-#			$access_button = qq{<span class="ui-button ui-corner-all ui-button-go" onClick="make_experiment_public('$EXPID')">Make Experiment Public</span>};
-#		}
-#		else
-#		{
-#			$access_button = qq{<span class="ui-button ui-corner-all ui-button-go" onClick="make_experiment_private('$EXPID')">Make Experiment Private</span>};
-#		}
-#		$edit_button = qq{<span class="ui-button ui-corner-all ui-button-go" onClick="edit_experiment_info('$EXPID')">Edit Experiment Info</span>};
-#	}
-#
-#	# Build sub-table of types
-#	my %types;
-#	foreach ( $exp->types )
-#	{
-#		my $key = $_->name . ( $_->desc ? ': ' . $_->desc : '' );
-#		$types{$key}++;
-#	}
-#	my $type_tbl = '<table class="small"><tbody>';
-#	foreach ( sort keys %types )
-#	{
-#		$type_tbl .= "<tr><td>$_</td></tr>";
-#	}
-#	$type_tbl .= '</tbody></table>';
-#
-#	# Build source link
-#	my $src  = $exp->source;
-#	my $link = $src->link;
-#	$link = 'http://' . $link if ( $link and not $link =~ /^http:\/\// );
-#	my $source;
-#	$source .= "<span class='link' onclick=window.open('$link');>" if ($link);
-#	$source .= $src->name . ( $src->desc ? ': ' . $src->desc : '' );
-#	$source .= "</span>" if ($link);
-#
-#	# Build sub-table of annotations
-#	%types = ();
-#	foreach ( $exp->annotations )
-#	{
-#		my $type      = $_->annotation_type;
-#		my $group     = $type->group;
-#		my $groupname = ( $group ? $group->name : '' );
-#		my $typename  = $type->name;
-#		push @{ $types{$groupname}{$typename} }, $_->annotation;
-#	}
-#	my $annot_tbl;
-#	foreach my $groupname ( sort keys %types )
-#	{
-#		my $first1 = 1;
-#		foreach my $typename ( sort keys %{ $types{$groupname} } )
-#		{
-#			my $first2 = 1;
-#			foreach my $annot ( sort @{ $types{$groupname}{$typename} } )
-#			{
-#				$annot_tbl .= '<tr>';
-#				$annot_tbl .= '<td>' . ( $first1 ? $groupname : '' ) . '</td>'
-#					if ($groupname);
-#				$annot_tbl .= '<td>' . ( $first2 ? $typename : '' ) . '</td>';
-#				$annot_tbl .= '<td></td>' if ( not $groupname );
-#				$annot_tbl .= '<td>' . $annot . '</td></tr>';
-#				$first1 = $first2 = 0;
-#			}
-#		}
-#	}
-#	# Build sub-table of user groups
-#	my $groups = get_groups( expid => $EXPID );
-#
-#	# Populate the template
-#	$template->param( EXP_NAME      => $exp->name );
-#	$template->param( EXP_DESC      => $exp->desc );
-#	$template->param( EXP_TYPE      => $type_tbl );
-#	$template->param( EXP_SOURCE    => $source );
-#	$template->param( EXP_VER       => $exp->version );
-#	$template->param( ACCESS_BUTTON => $access_button );
-#	$template->param( EDIT_BUTTON   => $edit_button );
-#	$template->param( EXP_ANNOT     => $annot_tbl );
-#	$template->param( GROUPS        => $groups );
-#
-#	return $template->output;
 }
 
 sub get_experiment_info {
@@ -622,16 +535,16 @@ sub get_experiment_info {
 	my $html = $exp->annotation_pretty_print_html(allow_delete => $allow_edit);
 	
 	if ($allow_edit) {
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_experiment_info({eid: '$eid'});">Edit Info</span>};
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="add_experiment_type({eid: '$eid'});">Add Type</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_experiment_info();">Edit Info</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="add_experiment_type();">Add Type</span>};
 	}
 	
 	if ($USER->is_admin || $USER->is_owner(experiment => $eid)) {
 		if ( $exp->restricted ) {
-			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_experiment_public({eid: '$eid'});">Make Public</span>};
+			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_experiment_public();">Make Public</span>};
 		}
 		else {
-			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_experiment_private({eid: '$eid'});">Make Private</span>};
+			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_experiment_private();">Make Private</span>};
 		}
 	}	
 	

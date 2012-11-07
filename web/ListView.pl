@@ -76,8 +76,7 @@ $link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, 
 	add_item_to_list           	=> \&add_item_to_list,
 	remove_list_item	       	=> \&remove_list_item,
 	get_list_annotations       	=> \&get_list_annotations,
-	add_list_annotation        	=> \&add_list_annotation,
-	add_annotation_to_list     	=> \&add_annotation_to_list,
+	add_annotation     			=> \&add_annotation,
 	remove_list_annotation     	=> \&remove_list_annotation,
 	search_mystuff				=> \&search_mystuff,
 	search_genomes             	=> \&search_genomes,
@@ -155,7 +154,9 @@ sub gen_body {
 	$template->param( LIST_CONTENTS    => get_list_contents( lid => $lid ) );
 	$template->param( LID              => $lid );
 	$template->param( ADMIN_AREA       => 1 ) if $USER->is_admin;
-	#$template->param( BOX_NAME        => ... ); #FIXME
+	
+	# For AddAnnotation.tmpl widget
+	$template->param( DEFAULT_TYPE => 'note' );
 
 	return $template->output;
 }
@@ -173,17 +174,17 @@ sub get_list_info {
 	my $html = $list->annotation_pretty_print_html();
 
 	if ($USER->is_admin || (not $list->locked && $USER->is_owner_editor(list => $lid))) {
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_list_info({lid: '$lid'});">Edit&nbspList&nbspInfo</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_list_info();">Edit List Info</span>};
 	}
 	
 	if ($USER->is_admin || (not $list->locked && $USER->is_owner(list => $lid))) {
 		if ( $list->restricted ) {
-			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_list_public({lid: '$lid'});">Make&nbspList&nbspPublic</span>};
+			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_list_public();">Make List Public</span>};
 		}
 		else {
-			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_list_private({lid: '$lid'});">Make&nbspList&nbspPrivate</span>};
+			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_list_private();">Make List Private</span>};
 		}
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_list({lid: '$lid'});">Delete&nbspList</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_list();">Delete List</span>};
 	}
 
 	return $html;
@@ -286,11 +287,6 @@ sub get_list_annotations {
 	
 	my $user_can_edit = $USER->is_admin || (!$list->locked && $USER->is_owner_editor(list => $lid));
 	
-	my $anno_obj = new CoGe::Accessory::Annotation( Type => 'anno' );
-	$anno_obj->Val_delimit("\n");
-	$anno_obj->Add_type(0);
-	$anno_obj->String_end("\n");
-	
 	my %groups;
 	foreach my $a ( $list->annotations ) {
 		my $group = (defined $a->type->group ? $a->type->group->name . ':' . $a->type->name : $a->type->name);
@@ -314,7 +310,7 @@ sub get_list_annotations {
 			$html .= linkify($a->link, "Link") if $a->link;
 			$html .= "</td>";
 			if ($user_can_edit) {
-				$html .= "<td><span onClick=\"\$(this).fadeOut(); remove_list_annotation({lid: '$lid', laid: '" . $a->id . "'});\" class='link ui-icon ui-icon-trash'></span></td>";
+				$html .= "<td><span onClick=\"\$(this).fadeOut(); remove_list_annotation({laid: '" . $a->id . "'});\" class='link ui-icon ui-icon-trash'></span></td>";
 			}
 			$html .= '</tr>';
 		}
@@ -322,39 +318,13 @@ sub get_list_annotations {
 	$html .= '</tbody></table>';
 	
 	if ($user_can_edit) {
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="add_list_annotation({lid: $lid});"><span class="ui-icon ui-icon-plus"></span>Add Annotation</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="\$('#list_annotation_edit_box').dialog('open');"><span class="ui-icon ui-icon-plus"></span>Add Annotation</span>};
 	}
 
 	return $html;
 }
 
-sub add_list_annotation {
-	my %opts = @_;
-	my $lid  = $opts{lid};
-	return 0 unless $lid;
-
-	my $list = $coge->resultset('List')->find($lid);
-
-#	my $groups = $coge->resultset('AnnotationTypeGroup');
-#	while( my $group = $groups->next ) {
-#		foreach my $type ($group->annotation_types) {
-#			push @types, { type_name => $type->name, type_id => $type->id };
-#		}		
-#	}
-
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'ListView.tmpl' );
-	$template->param( ADD_LIST_ANNOTATION => 1 );
-	$template->param( LID => $lid );
-	$template->param( DEFAULT_TYPE => 'note' );
-
-	my %data;
-	$data{title} = 'Add Annotation';
-	$data{output} = $template->output;
-
-	return encode_json( \%data );
-}
-
-sub add_annotation_to_list {
+sub add_annotation {
 	my %opts = @_;
 	my $lid  = $opts{lid};
 	return 0 unless $lid;
@@ -366,6 +336,7 @@ sub add_annotation_to_list {
 	my $image_filename = $opts{edit_annotation_image};
 	my $fh = $FORM->upload('edit_annotation_image');
 	#return "Image file is too large (>10MB)" if (-s $fh > 10*1024*1024); # FIXME
+	print STDERR "add_annotation: $lid\n";
 	
 	if ($link) {
 		$link =~ s/^\s+//;
@@ -395,26 +366,31 @@ sub add_annotation_to_list {
 			  annotation_type_group_id => ($group_rs ? $group_rs->id : undef)
 			} );
 	}
+
+	# Create the image
+	my $image;
+	if ($fh) {
+#		print STDERR "size: " . (-s $fh) . "\n";
+		read($fh, my $contents, -s $fh);
+		$image = $coge->resultset('Image')->create(
+			{	filename => $image_filename,
+				image => $contents
+			}
+		);
+		return 0 unless $image;
+	}
 	
 	# Create the annotation
 	my $la = $coge->resultset('ListAnnotation')->create( 
 		{ list_id => $lid, 
 		  annotation => $annotation, 
 		  link => $link,
-		  annotation_type_id => $type_rs->id
+		  annotation_type_id => $type_rs->id,
+		  image_id => ($image ? $image->id : undef)
 		} );
-
-	# Create the image
-	if ($fh) {
-		read($fh, my $image, -s $fh);
-		$coge->resultset('Image')->create(
-			{	list_annotation_id => $la->id,
-				filename => $image_filename,
-				image => $image
-			}
-		);
-	}
+	return 0 unless $la;
 	
+	print STDERR "add_annotation: done\n";
 	return 1;
 }
 
@@ -460,7 +436,7 @@ sub get_list_contents {
 		my $gid = $genome->id;
 		$html .= qq{<td class='data5'><span id='genome$gid' class='link' onclick="window.open('OrganismView.pl?dsgid=$gid')">} . $genome->info . "</span></td>";
 		if ($user_can_edit) {
-			$html .= "<td><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '".$list_types->{genome}."', item_id: '$gid'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
+			$html .= "<td><span onClick=\"remove_list_item(this, {item_type: '".$list_types->{genome}."', item_id: '$gid'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
 		}
 		$html .= '</tr>';
 	}
@@ -503,7 +479,7 @@ sub get_list_contents {
 	$html .= '</tbody></table>';
 	
 	if ($user_can_edit) {
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="add_list_items({lid: $lid});"><span class="ui-icon ui-icon-plus"></span>Add Items</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="add_list_items();"><span class="ui-icon ui-icon-plus"></span>Add Items</span>};
 		
 	}
 	
