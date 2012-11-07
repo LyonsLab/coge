@@ -318,15 +318,15 @@ sub get_load_experiment_log {
 	my $eid;
 	my $status = 0;
 	while (<$fh>) {
-		push @lines, $1 if ($_ =~ /^log: (.+)/);
-		if ($_ =~ /All done/) {
+		push @lines, $1 if ($_ =~ /^log: (.+)/i);
+		if ($_ =~ /All done/i) {
 			$status = 1;
 			last;	
 		}
-		elsif ($_ =~ /experiment id: (\d+)/) {
+		elsif ($_ =~ /experiment id: (\d+)/i) {
 			$eid = $1;
 		}		
-		elsif ($_ =~ /log: error/) {
+		elsif ($_ =~ /log: error/i) {
 			$status = -1;
 			last;	
 		}
