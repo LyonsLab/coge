@@ -49,22 +49,24 @@ Belongs to CCoGeX::Result::List> via C<list_id>
 
 __PACKAGE__->table("list_annotation");
 __PACKAGE__->add_columns(
-  "list_annotation_id",
-  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
-  "list_id",
-  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
-  "annotation_type_id",
-  { data_type => "INT", default_value => undef, is_nullable => 1, size => 11 },
-  "annotation",
-  { data_type => "TEXT", default_value => undef, is_nullable => 0 },
-  "link",
-  { data_type => "VARCHAR", default_value => "", is_nullable => 1, size => 1024 },
+	"list_annotation_id",
+	{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
+	"list_id",
+	{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
+	"annotation_type_id",
+	{ data_type => "INT", default_value => undef, is_nullable => 1, size => 11 },
+	"annotation",
+	{ data_type => "TEXT", default_value => undef, is_nullable => 0 },
+	"link",
+	{ data_type => "VARCHAR", default_value => "", is_nullable => 1, size => 1024 },
+	"image_id",
+	{ data_type => "INT", default_value => undef, is_nullable => 1, size => 11 },  
 );
 __PACKAGE__->set_primary_key("list_annotation_id");
 
 __PACKAGE__->belongs_to( annotation_type => 'CoGeX::Result::AnnotationType', 'annotation_type_id');
 __PACKAGE__->belongs_to( list => 'CoGeX::Result::List', 'list_id');
-__PACKAGE__->has_one('image'=>'CoGeX::Result::Image', 'list_annotation_id');
+__PACKAGE__->belongs_to( image => 'CoGeX::Result::Image', 'image_id');
 
 
 

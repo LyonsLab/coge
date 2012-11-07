@@ -48,8 +48,6 @@ __PACKAGE__->table("image");
 __PACKAGE__->add_columns(
   "image_id",
   { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
-   "list_annotation_id",
-  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 }, 
   "filename",
   { data_type => "VARCHAR", default_value => "", is_nullable => 0, size =>256 },
   "image",
@@ -61,7 +59,7 @@ __PACKAGE__->add_columns(
   },
 );
 __PACKAGE__->set_primary_key("image_id");
-__PACKAGE__->belongs_to( list_annotation => 'CoGeX::Result::ListAnnotation', 'list_annotation_id');
+__PACKAGE__->has_one( list_annotation => 'CoGeX::Result::ListAnnotation', 'image_id');
 
 1;
 

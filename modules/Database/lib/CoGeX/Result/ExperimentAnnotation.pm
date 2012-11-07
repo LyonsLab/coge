@@ -57,11 +57,14 @@ __PACKAGE__->add_columns(
   { data_type => "INT", default_value => "1", is_nullable => 0, size => 11 },
   "link",
   { data_type => "VARCHAR", default_value => "", is_nullable => 1, size => 1024 },
+   "image_id",
+  { data_type => "INT", default_value => undef, is_nullable => 1, size => 11 },
 );
 __PACKAGE__->set_primary_key("experiment_annotation_id");
 
 __PACKAGE__->belongs_to( annotation_type => 'CoGeX::Result::AnnotationType', 'annotation_type_id');
 __PACKAGE__->belongs_to( experiment => 'CoGeX::Result::Experiment', 'experiment_id');
+__PACKAGE__->belongs_to( image => 'CoGeX::Result::Image', 'image_id');
 
 
 
