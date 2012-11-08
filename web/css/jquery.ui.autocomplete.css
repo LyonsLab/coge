@@ -48,6 +48,7 @@
 	padding:.2em .4em;
 	line-height:1.5;
 	zoom:1;
+	font-size: small; /* mdb added 11/7/12 */
 }
 .ui-menu .ui-menu-item a.ui-state-hover,
 .ui-menu .ui-menu-item a.ui-state-active {
