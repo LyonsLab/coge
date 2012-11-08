@@ -77,16 +77,6 @@ function add_annotation () {
 			annotation_image_file = '';
 		}
 		
-		$('#edit_annotation_image').fileupload({
-        	dataType: 'json',
-			done: 
-				function(e, data) {
-					get_annotations();
-					$("#wait_annotation").hide();
-					$("#annotation_edit_box").dialog('close');
-				}
-		});
-
 		var parent_id = $('#annotation_edit_box').data('parent_id');
 		$('#edit_annotation_image').fileupload('send', {
 			files: annotation_image_file,
@@ -111,6 +101,7 @@ function update_annotation() {
 		var link = $('#edit_annotation_link').val();
 		var aid = $('#update_annotation_button').data('annotation_id');
 		var annotation_image_file = $('#edit_annotation_image')[0].files[0];
+		
 		if (annotation_image_file) {		
 			if (!verify_image_file(annotation_image_file)) {
 				return;
@@ -120,16 +111,6 @@ function update_annotation() {
 		else {
 			annotation_image_file = '';
 		}
-		
-		$('#edit_annotation_image').fileupload({
-        	dataType: 'json',
-			done: 
-				function(e, data) {
-					get_annotations();
-					$("#wait_annotation").hide();
-					$("#annotation_edit_box").dialog('close');
-				}
-		});
 
 		$('#edit_annotation_image').fileupload('send', {
 			files: annotation_image_file,
@@ -146,6 +127,26 @@ function update_annotation() {
 }
 
 // End Widget API -------------------------------------------------------------
+
+$(function() {
+	$("#edit_annotation_type").autocomplete({source:[]});
+	$("#edit_annotation_type_group").autocomplete({source: function() { get_annotation_type_groups(); }});
+	
+		$('#edit_annotation_image').fileupload({
+	       	dataType: 'json',
+	       	replaceFileInput: false,
+	       	add:
+	       		function(e, data) {
+	       			return true;
+	       		},
+			done: 
+				function(e, data) {
+					get_annotations();
+					$("#wait_annotation").hide();
+					$("#annotation_edit_box").dialog('close');
+				}
+		});		
+});
 
 function wait_to_search (search_func) {
 	if (pageObj.time) {
@@ -203,12 +204,6 @@ function verify_image_file(file) {
 	
 	return 1;
 }
-
-$(function() {
-	$("#edit_annotation_type").autocomplete({source:[]});
-	$("#edit_annotation_type_group").autocomplete({source: function() { get_annotation_type_groups(); }});
-	//get_annotation_type_groups();
-});
 </SCRIPT>
 
 <div id="annotation_edit_box" class="dialog_box">
