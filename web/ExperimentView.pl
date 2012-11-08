@@ -285,7 +285,7 @@ sub get_annotations {
 	foreach my $group (sort keys %groups) {
 		my $first = 1;
 		foreach my $a ( sort {$a->id <=> $b->id} @{$groups{$group}} ) {
-			$html .= "<tr valign='top'>";
+			$html .= "<tr style='vertical-align:top;'>";
 			$html .= "<th align='right' class='title5' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;' rowspan=" . @{$groups{$group}} . ">$group:</th>" if ($first-- > 0);
 			
 			$html .= '<td>';
@@ -295,7 +295,7 @@ sub get_annotations {
 			$html .= "</td>";
 
 			$html .= "<td class='data5'>".$a->info.'</td>';
-			$html .= '<td>';
+			$html .= '<td style="padding-left:5px;">';
 			$html .= linkify($a->link, 'Link') if $a->link;
 			$html .= '</td>';
 			if ($user_can_edit) {
@@ -337,7 +337,7 @@ sub get_annotation {
 
 sub add_annotation {
 	my %opts = @_;
-	my $eid  = $opts{eid};
+	my $eid  = $opts{parent_id};
 	return 0 unless $eid;
 	my $type_group = $opts{type_group};
 	my $type = $opts{type};
@@ -510,8 +510,6 @@ sub generate_body {
 	$template->param( EXPERIMENT_INFO => get_experiment_info(eid=>$eid) );
 	$template->param( EXPERIMENT_ANNOTATIONS => get_annotations(eid => $eid) );
 	$template->param( EID => $eid );
-	
-	# For AddAnnotation.tmpl widget
 	$template->param( DEFAULT_TYPE => 'note' );
 	
 	return $template->output;

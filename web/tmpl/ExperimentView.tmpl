@@ -4,7 +4,9 @@
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
 <SCRIPT language="JavaScript">
 
-$(document).ready(function(){
+$(document).ready(function() {
+	pageObj.timers = new Array();
+	
 	$.ajaxSetup({
 		type: "GET",
 		url: "<TMPL_VAR NAME='PAGE_NAME'>",
@@ -20,8 +22,8 @@ $(document).ready(function(){
 	});
 
 	set_annotation_table();
-
-	pageObj.timers = new Array();
+	
+	init_annotation_dialog(<TMPL_VAR NAME="EID">, '<TMPL_VAR NAME="DEFAULT_TYPE">');
 });
 
 function set_annotation_table() {
@@ -58,19 +60,19 @@ function edit_experiment_info() {
 function update_experiment_info (){
 	var name = $('#edit_name').val();
 	if (!name) {
-		alert('Error: Must have a name');
+		alert('Please specify a name.');
 		return;
 	}
 	
 	var version = $('#edit_version').val();
 	if (!version) {
-		alert('Error: Must have a version');
+		alert('Please specify a version');
 		return;	
 	}	
 	
 	var source_id = parseInt( $('#edit_source_id').val() );
 	if (!source_id) {
-		alert('Error: Must have a source');
+		alert('Please specify a source');
 		return;	
 	}	
 	
@@ -188,137 +190,6 @@ function remove_experiment_type (opts) {
 	});
 }
 
-function add_annotation_dialog() {
-	$('#edit_annotation').val('');
-	$('#edit_link').val('');
-	$('#edit_annotation_type').val('');
-	$('#edit_annotation_type_group').val('');
-	$('#edit_image').val('');
-	
-	$('#add_annotation_button').show();
-	$('#update_annotation_button').hide();
-	
-	$("#experiment_annotation_edit_box").dialog({title: "Add Annotation"}).dialog('open');
-}
-
-function add_annotation () {
-	var annotation = $('#edit_annotation').val();
-	var type = $('#edit_annotation_type').val();
-	
-	if (!annotation) {
-		alert('Please enter some annotation text.');
-	}
-	else if(!type) {
-		alert ('Please specify a type.');
-	}
-	else {	
-		var type_group = $('#edit_annotation_type_group').val();
-		var link = $('#edit_link').val();
-	
-		var annotation_image_file = $('#edit_annotation_image')[0].files[0];
-		if (annotation_image_file) {		
-			if (!verify_image_file(annotation_image_file)) { 
-				return; 
-			}
-			$("#wait_annotation").animate({opacity:1});
-		}
-		else {
-			annotation_image_file = '';
-		}
-		
-		$('#edit_annotation_image').fileupload({
-        	dataType: 'json',
-			done: 
-				function(e, data) {
-					get_annotations();
-					$("#wait_annotation").hide();
-					$("#experiment_annotation_edit_box").dialog('close');
-				}
-		});
-
-		$('#edit_annotation_image').fileupload('send', {
-			files: annotation_image_file,
-			formData: {
-				fname: 'add_annotation',
-				eid: "<TMPL_VAR NAME='EID'>",
-				type_group: type_group,
-				type: type,
-				annotation: annotation,
-				link: link
-			}
-		});			
-	}
-}
-
-function edit_annotation_dialog(aid) {
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'get_annotation',
-			aid: aid
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			if (obj) {
-				$('#edit_annotation').val(obj.annotation);
-				$('#edit_link').val(obj.link);
-				$('#edit_annotation_type').val(obj.type);
-				$('#edit_annotation_type_group').val(obj.type_group);
-				$('#edit_image').val('');
-				
-				$('#add_annotation_button').hide();
-				$('#update_annotation_button').data({annotation_id: aid}).show();
-				
-				
-				$("#experiment_annotation_edit_box").dialog({title: "Edit Annotation"}).dialog('open');
-			}
-		}
-	});
-}
-
-function update_annotation() {
-	var annotation = $('#edit_annotation').val();
-	var type = $('#edit_annotation_type').val();
-	
-	if (annotation && type) {
-		var type_group = $('#edit_annotation_type_group').val();
-		var link = $('#edit_link').val();
-		var aid = $('#update_annotation_button').data('annotation_id');
-		var annotation_image_file = $('#edit_annotation_image')[0].files[0];
-		if (annotation_image_file) {		
-			if (!verify_image_file(annotation_image_file)) {
-				return;
-			}
-			$("#wait_annotation").animate({opacity:1});
-		}
-		else {
-			annotation_image_file = '';
-		}
-		
-		$('#edit_annotation_image').fileupload({
-        	dataType: 'json',
-			done: 
-				function(e, data) {
-					get_annotations();
-					$("#wait_annotation").hide();
-					$("#experiment_annotation_edit_box").dialog('close');
-				}
-		});
-
-		$('#edit_annotation_image').fileupload('send', {
-			files: annotation_image_file,
-			formData: {
-				fname: 'update_annotation',
-				aid: aid,
-				type_group: type_group,
-				type: type,
-				annotation: annotation,
-				link: link
-			}
-		});			
-	}
-}
-
 function get_annotations() {
 	$.ajax({
 		data: {
@@ -433,9 +304,7 @@ function image_preview(obj, preview) {
   <span onClick="add_type_to_experiment();" class='ui-button ui-corner-all ui-button-go'>Add</span>
 </div>
 
-<div id="experiment_annotation_edit_box" class="dialog_box">
-  <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'>
-</div>
+<TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'> <!-- Add/Edit Annotation Dialog -->
 
 </TMPL_IF> <!-- MAIN -->
 

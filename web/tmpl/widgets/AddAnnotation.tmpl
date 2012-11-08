@@ -1,8 +1,150 @@
 <SCRIPT language="JavaScript">
 // Begin Widget API -----------------------------------------------------------
-// callbacks:
-//		add_annotation()
-//		update_annotation()
+// Required user-defined Perl AJAX functions:
+//		get_annotation
+//		add_annotation
+//		update_annotation
+// Must call init_annotation_dialog() on page load
+
+function init_annotation_dialog(parent_id, default_type) {
+	$('#annotation_edit_box').data({ parent_id: parent_id, default_type: default_type });
+}
+
+function add_annotation_dialog() {
+	$('#edit_annotation').val('');
+	$('#edit_annotation_link').val('');
+	var default_type = $('#annotation_edit_box').data('default_type');
+	$('#edit_annotation_type').val(default_type);
+	$('#edit_annotation_type_group').val('');
+	$('#edit_annotation_image').val('');
+	
+	$('#add_annotation_button').show();
+	$('#update_annotation_button').hide();
+	
+	$("#annotation_edit_box").dialog({title: "Add Annotation"}).dialog('open');
+}
+
+function edit_annotation_dialog(aid) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_annotation',
+			aid: aid
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj) {
+				$('#edit_annotation').val(obj.annotation);
+				$('#edit_annotation_link').val(obj.link);
+				$('#edit_annotation_type').val(obj.type);
+				$('#edit_annotation_type_group').val(obj.type_group);
+				$('#edit_annotation_image').val('');
+				
+				$('#add_annotation_button').hide();
+				$('#update_annotation_button').data({annotation_id: aid}).show();
+				
+				
+				$("#annotation_edit_box").dialog({title: "Edit Annotation"}).dialog('open');
+			}
+		}
+	});
+}
+
+function add_annotation () {
+	var annotation = $('#edit_annotation').val();
+	var type = $('#edit_annotation_type').val();
+	
+	if (!annotation) {
+		alert('Please enter some annotation text.');
+	}
+	else if(!type) {
+		alert ('Please specify a type.');
+	}
+	else {
+		var type_group = $('#edit_annotation_type_group').val();
+		var link = $('#edit_annotation_link').val();
+
+		var annotation_image_file = $('#edit_annotation_image')[0].files[0];
+
+		if (annotation_image_file) {		
+			if (!verify_image_file(annotation_image_file)) { 
+				return; 
+			}
+			
+			$("#wait_annotation").animate({opacity:1});
+		}
+		else {
+			annotation_image_file = '';
+		}
+		
+		$('#edit_annotation_image').fileupload({
+        	dataType: 'json',
+			done: 
+				function(e, data) {
+					get_annotations();
+					$("#wait_annotation").hide();
+					$("#annotation_edit_box").dialog('close');
+				}
+		});
+
+		var parent_id = $('#annotation_edit_box').data('parent_id');
+		$('#edit_annotation_image').fileupload('send', {
+			files: annotation_image_file,
+			formData: {
+				fname: 'add_annotation',
+				parent_id: parent_id,
+				type_group: type_group,
+				type: type,
+				annotation: annotation,
+				link: link
+			}
+		});			
+	}
+}
+
+function update_annotation() {
+	var annotation = $('#edit_annotation').val();
+	var type = $('#edit_annotation_type').val();
+	
+	if (annotation && type) {
+		var type_group = $('#edit_annotation_type_group').val();
+		var link = $('#edit_annotation_link').val();
+		var aid = $('#update_annotation_button').data('annotation_id');
+		var annotation_image_file = $('#edit_annotation_image')[0].files[0];
+		if (annotation_image_file) {		
+			if (!verify_image_file(annotation_image_file)) {
+				return;
+			}
+			$("#wait_annotation").animate({opacity:1});
+		}
+		else {
+			annotation_image_file = '';
+		}
+		
+		$('#edit_annotation_image').fileupload({
+        	dataType: 'json',
+			done: 
+				function(e, data) {
+					get_annotations();
+					$("#wait_annotation").hide();
+					$("#annotation_edit_box").dialog('close');
+				}
+		});
+
+		$('#edit_annotation_image').fileupload('send', {
+			files: annotation_image_file,
+			formData: {
+				fname: 'update_annotation',
+				aid: aid,
+				type_group: type_group,
+				type: type,
+				annotation: annotation,
+				link: link
+			}
+		});			
+	}
+}
+
 // End Widget API -------------------------------------------------------------
 
 function wait_to_search (search_func) {
@@ -68,30 +210,33 @@ $(function() {
 	//get_annotation_type_groups();
 });
 </SCRIPT>
-<table class="small">
- <tr valign='top'>
-  <td>Annotation:</td>
-  <td><textarea id="edit_annotation" rows=5 cols=50 ><TMPL_VAR NAME=ANNOTATION></textarea></td>
- </tr>
- <tr>
-  <td>Link:</td>
-  <td><input id="edit_link" type="textbox" size="53" value="<TMPL_VAR NAME=LINK>"></td>
- </tr>
- <tr>
-  <td>Type:</td>
-  <td><input id="edit_annotation_type" onkeypress="wait_to_search(search_annotation_types, 0, this.value);" size="53" value="<TMPL_VAR NAME=DEFAULT_TYPE>"></td>
- </tr> 
- <tr>
-  <td>Type Group:</td>
-  <td><input id="edit_annotation_type_group" size="53"> (optional)</td>
- </tr>
- <tr>
-  <td valign='top'>Image:</td>
-  <td>
-   <input id="edit_annotation_image" name="edit_annotation_image" type="file">
-  </td>
- </tr>
-</table>
-<span id='add_annotation_button' onClick="add_annotation();" class='ui-button ui-corner-all ui-button-go'>Add</span>
-<span id='update_annotation_button' onClick="update_annotation();" style='display:none;' class='ui-button ui-corner-all ui-button-go'>Update</span>
-<img id="wait_annotation" src="picts/ajax-loader.gif" style="opacity: 0;" />
+
+<div id="annotation_edit_box" class="dialog_box">
+  <table class="small">
+    <tr valign='top'>
+      <td>Annotation:</td>
+      <td><textarea id="edit_annotation" rows=5 cols=50 ></textarea></td>
+    </tr>
+    <tr>
+      <td>Link:</td>
+      <td><input id="edit_annotation_link" type="textbox" size="53" /></td>
+    </tr>
+    <tr>
+      <td>Type:</td>
+      <td><input id="edit_annotation_type" onkeypress="wait_to_search(search_annotation_types, 0, this.value);" size="53" /></td>
+    </tr> 
+    <tr>
+      <td>Type Group:</td>
+      <td><input id="edit_annotation_type_group" size="53" /> (optional)</td>
+    </tr>
+    <tr>
+      <td valign='top'>Image:</td>
+      <td>
+        <input id="edit_annotation_image" name="edit_annotation_image" type="file" />
+      </td>
+    </tr>
+  </table>
+  <span id='add_annotation_button' onClick="add_annotation();" class='ui-button ui-corner-all ui-button-go'>Add</span>
+  <span id='update_annotation_button' onClick="update_annotation();" style='display:none;' class='ui-button ui-corner-all ui-button-go'>Update</span>
+  <img id="wait_annotation" src="picts/ajax-loader.gif" style="opacity: 0;" />
+</div>

@@ -6,9 +6,12 @@
 
 <SCRIPT language="JavaScript">
 $(document).ready(function(){
+	pageObj.timestamp = new Array();
+	pageObj.timers = new Array();
+	
 	$.ajaxSetup({
 		type: "POST",
-		url: "<TMPL_VAR NAME=PAGE_NAME>",
+		url: "<TMPL_VAR NAME='PAGE_NAME'>",
 		dataType: "html",
 		cache: false,
 	});
@@ -18,8 +21,7 @@ $(document).ready(function(){
 	set_contents_table();
 	set_annotation_table();
 	
-	pageObj.timestamp = new Array();
-	pageObj.timers = new Array();
+	init_annotation_dialog(<TMPL_VAR NAME="LID">, '<TMPL_VAR NAME="DEFAULT_TYPE">');
 });
 
 function set_contents_table() {
@@ -60,25 +62,28 @@ function edit_list_info () {
 
 function update_list_info (){
 	var name = $('#edit_name').val();
+	if (!name) {
+		alert('Please specify a name.');
+		return;
+	}
+	
 	var desc = $('#edit_desc').val();
 	var type = $('#edit_type').val();
-	if (name) {
-		$.ajax({
-			data: {
-				jquery_ajax: 1,
-				fname: 'update_list_info',
-				lid: "<TMPL_VAR NAME='LID'>",
-				name: name,
-				desc: desc,
-				type: type
-			},
-			success : function(val) {
-				get_list_info();
-				$("#list_info_edit_box").dialog('close');
-			},
-		});
-	}
-	else { alert ('Error!  Must have a name!');}
+
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'update_list_info',
+			lid: "<TMPL_VAR NAME='LID'>",
+			name: name,
+			desc: desc,
+			type: type
+		},
+		success : function(val) {
+			get_list_info();
+			$("#list_info_edit_box").dialog('close');
+		},
+	});
 }
 
 function get_list_info() {
@@ -193,146 +198,6 @@ function get_list_contents() {
 			set_contents_table();
 		}
 	});
-}
-
-function add_annotation_dialog() {
-	$('#edit_annotation').val('');
-	$('#edit_link').val('');
-	$('#edit_annotation_type').val('');
-	$('#edit_annotation_type_group').val('');
-	$('#edit_image').val('');
-	
-	$('#add_annotation_button').show();
-	$('#update_annotation_button').hide();
-	
-	$("#list_annotation_edit_box").dialog({title: "Add Annotation"}).dialog('open');
-}
-
-function add_annotation () {
-	var annotation = $('#edit_annotation').val();
-	var type = $('#edit_annotation_type').val();
-	
-	if (!annotation) {
-		alert('Please enter some annotation text.');
-	}
-	else if(!type) {
-		alert ('Please specify a type.');
-	}
-	else {
-		var type_group = $('#edit_annotation_type_group').val();
-		var link = $('#edit_link').val();
-
-		var annotation_image_file = $('#edit_annotation_image')[0].files[0];
-
-		if (annotation_image_file) {		
-			ext = annotation_image_file.name.split('.').pop();
-			if (ext != 'jpg' && ext != 'gif' && ext != 'png') {
-				alert('Error: specified file is not an image');
-				return;
-			}
-	
-			if (annotation_image_file.size > 1*1024*1024) {
-				alert('Error: image file is too large (>1MB)');
-				return;
-			}
-			
-			$("#wait_annotation").animate({opacity:1});
-		}
-		else {
-			annotation_image_file = '';
-		}
-		
-		$('#edit_annotation_image').fileupload({
-        	dataType: 'json',
-			done: 
-				function(e, data) {
-					get_annotations();	
-					$("#wait_annotation").hide();
-					$("#list_annotation_edit_box").dialog('close');
-				}
-		});
-
-		$('#edit_annotation_image').fileupload('send', {
-			files: annotation_image_file,
-			formData: {
-				fname: 'add_annotation',
-				lid: "<TMPL_VAR NAME='LID'>",
-				type_group: type_group,
-				type: type,
-				annotation: annotation,
-				link: link
-			}
-		});			
-	}
-}
-
-function edit_annotation_dialog(aid) {
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'get_annotation',
-			aid: aid
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			if (obj) {
-				$('#edit_annotation').val(obj.annotation);
-				$('#edit_link').val(obj.link);
-				$('#edit_annotation_type').val(obj.type);
-				$('#edit_annotation_type_group').val(obj.type_group);
-				$('#edit_image').val('');
-				
-				$('#add_annotation_button').hide();
-				$('#update_annotation_button').data({annotation_id: aid}).show();
-				
-				
-				$("#list_annotation_edit_box").dialog({title: "Edit Annotation"}).dialog('open');
-			}
-		}
-	});
-}
-
-function update_annotation() {
-	var annotation = $('#edit_annotation').val();
-	var type = $('#edit_annotation_type').val();
-	
-	if (annotation && type) {
-		var type_group = $('#edit_annotation_type_group').val();
-		var link = $('#edit_link').val();
-		var aid = $('#update_annotation_button').data('annotation_id');
-		var annotation_image_file = $('#edit_annotation_image')[0].files[0];
-		if (annotation_image_file) {		
-			if (!verify_image_file(annotation_image_file)) {
-				return;
-			}
-			$("#wait_annotation").animate({opacity:1});
-		}
-		else {
-			annotation_image_file = '';
-		}
-		
-		$('#edit_annotation_image').fileupload({
-        	dataType: 'json',
-			done: 
-				function(e, data) {
-					get_annotations();
-					$("#wait_annotation").hide();
-					$("#list_annotation_edit_box").dialog('close');
-				}
-		});
-
-		$('#edit_annotation_image').fileupload('send', {
-			files: annotation_image_file,
-			formData: {
-				fname: 'update_annotation',
-				aid: aid,
-				type_group: type_group,
-				type: type,
-				annotation: annotation,
-				link: link
-			}
-		});			
-	}
 }
 
 function get_annotations() {
@@ -595,7 +460,7 @@ function image_preview(obj, preview) {
 <div>
  <span style="color:dimgray;font-weight:bold;">List Contents</span><br>
  <div id="list_contents">
-  <TMPL_VAR NAME=LIST_CONTENTS>
+  <TMPL_VAR NAME="LIST_CONTENTS">
  </div>
 </div>
 
@@ -618,9 +483,9 @@ Send list to:
 </div>
 
 <div id="list_info_edit_box" class="dialog_box" title="Edit List Info"></div>
-<div id="list_annotation_edit_box" class="dialog_box" title="Add Annotation">
-  <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'>
-</div>
+
+<TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'> <!-- Add/Edit Annotation Dialog -->
+
 <div id="list_contents_edit_box" class="dialog_box" title="Add Items to List"></div>
 
 <div id="list_delete_box" class="dialog_box" style='display:none;' align='center'>
@@ -666,7 +531,7 @@ Are you sure you want to permanently delete this list?<p>
 $(document).ready(function() {
 	$(function() { $("#tabs").tabs({selected:0}); });
 	
-	search_mystuff();
+	setTimeout(search_mystuff,     100);
 	setTimeout(search_genomes,     500);
 	setTimeout(search_experiments, 1000);
 	setTimeout(search_features,    1500);

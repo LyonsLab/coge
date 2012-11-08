@@ -156,8 +156,6 @@ sub gen_body {
 	$template->param( LIST_CONTENTS    => get_list_contents( lid => $lid ) );
 	$template->param( LID              => $lid );
 	$template->param( ADMIN_AREA       => 1 ) if $USER->is_admin;
-	
-	# For AddAnnotation.tmpl widget
 	$template->param( DEFAULT_TYPE => 'note' );
 
 	return $template->output;
@@ -315,7 +313,7 @@ sub get_annotations {
 			$html .= "</td>";
 
 			$html .= "<td class='data5'>".$a->info."</td>";
-			$html .= "<td>";
+			$html .= "<td style='padding-left:5px;'>";
 			$html .= linkify($a->link, "Link") if $a->link;
 			$html .= "</td>";
 			if ($user_can_edit) {
@@ -357,7 +355,7 @@ sub get_annotation {
 
 sub add_annotation {
 	my %opts = @_;
-	my $lid  = $opts{lid};
+	my $lid  = $opts{parent_id};
 	return 0 unless $lid;
 	my $type_group = $opts{type_group};
 	my $type = $opts{type};
