@@ -32,7 +32,7 @@ function set_annotation_table() {
 
 function show_dialog(id, title, html, width, height) {
 	var d = $('#'+id);
-	d.dialog("option", "title", title);
+	if (title) { d.dialog("option", "title", title); }
 	if (html) { d.html(html); }
 	if (width) { d.dialog('option', 'width', width); }
 	else { width = d.dialog('option', 'width') };
@@ -44,26 +44,24 @@ function show_dialog(id, title, html, width, height) {
 	d.dialog('open');
 }
 
-function edit_list_info (opts) {
-	lid = opts.lid;
+function edit_list_info () {
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
 			fname: 'edit_list_info',
-			lid: lid,
+			lid: "<TMPL_VAR NAME='LID'>",
 		},
 		success : function(data) {
-			data = eval('('+data+')');
-			title = data.title;
-			show_dialog('list_info_edit_box', title, data.output, 450);
+			var obj = jQuery.parseJSON(data);
+			show_dialog('list_info_edit_box', '', obj.output, 450);
 		},
 	});
 }
 
 function update_list_info (){
-	name = $('#edit_name').val();
-	desc = $('#edit_desc').val();
-	type = $('#edit_type').val();
+	var name = $('#edit_name').val();
+	var desc = $('#edit_desc').val();
+	var type = $('#edit_type').val();
 	if (name) {
 		$.ajax({
 			data: {
@@ -75,8 +73,8 @@ function update_list_info (){
 				type: type
 			},
 			success : function(val) {
-				$("#list_info_edit_box").dialog('close');
 				get_list_info();
+				$("#list_info_edit_box").dialog('close');
 			},
 		});
 	}
@@ -130,15 +128,14 @@ function add_list_items (opts) {
 			lid: "<TMPL_VAR NAME='LID'>",
 		},
 		success : function(data) {
-			data = eval('('+data+')');
-			title = data.title;
-			show_dialog('list_contents_edit_box', title, data.output, 600);
+			var obj = jQuery.parseJSON(data);
+			show_dialog('list_contents_edit_box', '', obj.output, 600);
 		},
 	});
 }
 
 function add_selected_items (select_id){
-	num_items = $('#' + select_id).find('option:selected').length;
+	var num_items = $('#' + select_id).find('option:selected').length;
 	$('#' + select_id).find('option:selected').each(
 		function() {
 			var item_spec = $(this).attr("value");
@@ -165,8 +162,8 @@ function add_selected_items (select_id){
 }
 
 function remove_list_item (obj, opts) {
-	item_id = opts.item_id;
-	item_type = opts.item_type;
+	var item_id = opts.item_id;
+	var item_type = opts.item_type;
 	
 	$(obj).closest('tr').children().animate({opacity:0});
 	
@@ -198,43 +195,30 @@ function get_list_contents() {
 	});
 }
 
-/*
-function dialog_add_annotation (opts) {
-	lid = opts.id;
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'dialog_add_annotation',
-			lid: lid,
-		},
-		success : function(data) {
-			data = eval('('+data+')');
-			$("#list_annotation_edit_box").dialog({
-				title: data.title,
-				beforeClose: 
-					function() {
-						//$("#edit_annotation_type").autocomplete('close');
-						//$("#edit_annotation_type_group").autocomplete('close');
-					}
-			});
-			$("#list_annotation_edit_box").html(data.output);
-			var width = 500;
-			var xpos = $(window).width()/2 - width/2;
-			var ypos = 100;//$(window).height()/2 - height/2; // hardcode height because jquery not correctly reporting $(window).height()
-			$("#list_annotation_edit_box").dialog('option', 'width', width);
-			$("#list_annotation_edit_box").dialog('option', 'position', [xpos, 100]);
-			$("#list_annotation_edit_box").dialog('open');
-			//setup_button_states();
-		},
-	});
+function add_annotation_dialog() {
+	$('#edit_annotation').val('');
+	$('#edit_link').val('');
+	$('#edit_annotation_type').val('');
+	$('#edit_annotation_type_group').val('');
+	$('#edit_image').val('');
+	
+	$('#add_annotation_button').show();
+	$('#update_annotation_button').hide();
+	
+	$("#list_annotation_edit_box").dialog({title: "Add Annotation"}).dialog('open');
 }
-*/
 
 function add_annotation () {
 	var annotation = $('#edit_annotation').val();
 	var type = $('#edit_annotation_type').val();
 	
-	if (annotation && type) {
+	if (!annotation) {
+		alert('Please enter some annotation text.');
+	}
+	else if(!type) {
+		alert ('Please specify a type.');
+	}
+	else {
 		var type_group = $('#edit_annotation_type_group').val();
 		var link = $('#edit_link').val();
 
@@ -262,9 +246,9 @@ function add_annotation () {
         	dataType: 'json',
 			done: 
 				function(e, data) {
+					get_annotations();	
 					$("#wait_annotation").hide();
 					$("#list_annotation_edit_box").dialog('close');
-					get_list_annotations();					
 				}
 		});
 
@@ -280,14 +264,82 @@ function add_annotation () {
 			}
 		});			
 	}
-	else { alert ('Error: Must have type and annotation specified!');}
 }
 
-function get_list_annotations() {
+function edit_annotation_dialog(aid) {
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
-			fname: 'get_list_annotations',
+			fname: 'get_annotation',
+			aid: aid
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj) {
+				$('#edit_annotation').val(obj.annotation);
+				$('#edit_link').val(obj.link);
+				$('#edit_annotation_type').val(obj.type);
+				$('#edit_annotation_type_group').val(obj.type_group);
+				$('#edit_image').val('');
+				
+				$('#add_annotation_button').hide();
+				$('#update_annotation_button').data({annotation_id: aid}).show();
+				
+				
+				$("#list_annotation_edit_box").dialog({title: "Edit Annotation"}).dialog('open');
+			}
+		}
+	});
+}
+
+function update_annotation() {
+	var annotation = $('#edit_annotation').val();
+	var type = $('#edit_annotation_type').val();
+	
+	if (annotation && type) {
+		var type_group = $('#edit_annotation_type_group').val();
+		var link = $('#edit_link').val();
+		var aid = $('#update_annotation_button').data('annotation_id');
+		var annotation_image_file = $('#edit_annotation_image')[0].files[0];
+		if (annotation_image_file) {		
+			if (!verify_image_file(annotation_image_file)) {
+				return;
+			}
+			$("#wait_annotation").animate({opacity:1});
+		}
+		else {
+			annotation_image_file = '';
+		}
+		
+		$('#edit_annotation_image').fileupload({
+        	dataType: 'json',
+			done: 
+				function(e, data) {
+					get_annotations();
+					$("#wait_annotation").hide();
+					$("#list_annotation_edit_box").dialog('close');
+				}
+		});
+
+		$('#edit_annotation_image').fileupload('send', {
+			files: annotation_image_file,
+			formData: {
+				fname: 'update_annotation',
+				aid: aid,
+				type_group: type_group,
+				type: type,
+				annotation: annotation,
+				link: link
+			}
+		});			
+	}
+}
+
+function get_annotations() {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_annotations',
 			lid: "<TMPL_VAR NAME='LID'>",
 		},
 		success : function(data) {
@@ -297,17 +349,16 @@ function get_list_annotations() {
 	});
 }
 
-function remove_list_annotation (opts) {
-	laid = opts.laid;
+function remove_annotation (laid) {
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
-			fname: 'remove_list_annotation',
+			fname: 'remove_annotation',
 			lid: "<TMPL_VAR NAME='LID'>",
 			laid: laid,
 		},
 		success : function(val) {
-			get_list_annotations();
+			get_annotations();
 		},
 	});
 }
@@ -331,10 +382,13 @@ function wait_to_search (search_func, search_term) {
 
 // FIXME: the search functions below are all the same, consolidate?
 
-function search_mystuff (search_term) {
+function search_mystuff () {
+	var search_term = $('#edit_mystuff_search').attr('value');
+	
 	$("#wait_mystuff").animate({opacity:1});
 	$("#select_mystuff_items").html("<option disabled='disabled'>Searching...</option>");
 	pageObj.timestamp['mystuff'] = new Date().getTime();
+	
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
@@ -353,10 +407,13 @@ function search_mystuff (search_term) {
 	});
 }
 
-function search_genomes (search_term) {
+function search_genomes () {
+	var search_term = $('#edit_genome_search').val();
+	
 	$("#wait_genome").animate({opacity:1});
 	$("#select_genome_items").html("<option disabled='disabled'>Searching...</option>");
 	pageObj.timestamp['genomes'] = new Date().getTime();
+	
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
@@ -376,9 +433,12 @@ function search_genomes (search_term) {
 }
 
 function search_experiments (search_term) {
+	var search_term = $('#edit_experiment_search').val();
+	
 	$("#wait_experiment").animate({opacity:1});
 	$("#select_experiments_items").html("<option disabled='disabled'>Searching...</option>");
 	pageObj.timestamp['experiments'] = new Date().getTime();
+	
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
@@ -397,10 +457,13 @@ function search_experiments (search_term) {
 	});
 }
 
-function search_features (search_term) {
+function search_features () {
+	var search_term = $('#edit_feature_search').attr('value');
+	
 	$("#wait_feature").animate({opacity:1});
 	$("#select_feature_items").html("<option disabled='disabled'>Searching...</option>");
 	pageObj.timestamp['features'] = new Date().getTime();
+	
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
@@ -419,10 +482,13 @@ function search_features (search_term) {
 	});
 }
 
-function search_lists (search_term) {
+function search_lists () {
+	var search_term = $('#edit_list_search').attr('value');
+	
 	$("#wait_list").animate({opacity:1});
 	$("#select_list_items").html("<option disabled='disabled'>Searching...</option>");
 	pageObj.timestamp['lists'] = new Date().getTime();
+	
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
@@ -508,14 +574,14 @@ function image_preview(obj, preview) {
 </SCRIPT>
 
 <table>
- <tr valign='top'>
+ <tr valign="top">
   <td>
+   <span style="color:dimgray;font-weight:bold;">List Info</span><br>
    <div id="list_info">
-    <span style="color:dimgray;font-weight:bold;">List Info</span><br>
     <TMPL_VAR NAME=LIST_INFO>
    </div>
   </td>
-  <td style='padding-left:20px'>
+  <td style="padding-left:20px;">
    <span style="color:dimgray;font-weight:bold;">List Annotations</span><br>
    <div id='list_annotations'>
     <TMPL_VAR NAME=LIST_ANNOTATIONS>
@@ -551,11 +617,11 @@ Send list to:
  <span class='ui-button ui-corner-all ui-button-icon-right ui-button-go' onclick="send_list_to();"><span class="ui-icon ui-icon-extlink"></span>Go</span>
 </div>
 
-<div id="list_info_edit_box" class="dialog_box"></div>
+<div id="list_info_edit_box" class="dialog_box" title="Edit List Info"></div>
 <div id="list_annotation_edit_box" class="dialog_box" title="Add Annotation">
   <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'>
 </div>
-<div id="list_contents_edit_box" class="dialog_box"></div>
+<div id="list_contents_edit_box" class="dialog_box" title="Add Items to List"></div>
 
 <div id="list_delete_box" class="dialog_box" style='display:none;' align='center'>
 Are you sure you want to permanently delete this list?<p>
@@ -589,31 +655,32 @@ Are you sure you want to permanently delete this list?<p>
   </td>
  <tr> 
 </table>
-<span onClick="update_list_info({lid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-corner-all ui-button-go'>Update List Info</span>
+<br>
+<span onClick="update_list_info();" class='ui-button ui-corner-all ui-button-go'>Update</span>
 </TMPL_IF> <!-- EDIT_LIST_INFO -->
 
 
 
 <TMPL_IF NAME='ADD_LIST_ITEMS'>
 <SCRIPT language="JavaScript">
-$(document).ready(function(){
+$(document).ready(function() {
 	$(function() { $("#tabs").tabs({selected:0}); });
 	
 	search_mystuff();
-	setTimeout(search_genomes(),     500);
-	setTimeout(search_experiments(), 1000);
-	setTimeout(search_features(),    1500);
-	setTimeout(search_lists(),       2000);
+	setTimeout(search_genomes,     500);
+	setTimeout(search_experiments, 1000);
+	setTimeout(search_features,    1500);
+	setTimeout(search_lists,       2000);
 });
 </SCRIPT>
 
 <div id='tabs' style='margin-top: 0.5em'>
 <ul>
- <li class=small><a href="#tab-1">My Stuff</a></li>
- <li class=small><a href="#tab-2">Genomes</a></li>
- <li class=small><a href="#tab-3">Experiments</a></li>
- <li class=small><a href="#tab-4">Features</a></li>
- <li class=small><a href="#tab-5">Lists</a></li>
+ <li class="small"><a href="#tab-1">My Stuff</a></li>
+ <li class="small"><a href="#tab-2">Genomes</a></li>
+ <li class="small"><a href="#tab-3">Experiments</a></li>
+ <li class="small"><a href="#tab-4">Features</a></li>
+ <li class="small"><a href="#tab-5">Lists</a></li>
 </ul>
 
 <div id="tab-1">
@@ -622,7 +689,7 @@ $(document).ready(function(){
    <td>
     Search:
     <input type="textbox" size="53" id="edit_mystuff_search" onkeyup="wait_to_search(search_mystuff, this.value);">
-    <span class='ui-button ui-corner-all' onclick="search_mystuff($('#edit_mystuff_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+    <span class='ui-button ui-corner-all' onclick="search_mystuff();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
     <img id="wait_mystuff" src="picts/ajax-loader.gif" style="opacity: 0;" />
    </td>
   </tr>
@@ -633,7 +700,7 @@ $(document).ready(function(){
    </td>
   </tr>
   <tr>
-   <td><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
+   <td><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span></td>
   </tr>
  </table>
  <span href="javascript:void(0)" onClick="add_selected_items('select_mystuff_items');" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
@@ -645,7 +712,7 @@ $(document).ready(function(){
    <td>
     Search:
     <input type="textbox" size="53" id="edit_genome_search" onkeyup="wait_to_search(search_genomes, this.value);">
-    <span class='ui-button ui-corner-all' onclick="search_genomes($('#edit_genome_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+    <span class='ui-button ui-corner-all' onclick="search_genomes();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
     <img id="wait_genome" src="picts/ajax-loader.gif" style="opacity: 0;" />
    </td>
   </tr>
@@ -656,7 +723,7 @@ $(document).ready(function(){
    </td>
   </tr>
   <tr>
-   <td><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
+   <td><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span></td>
   </tr>
  </table>
  <span href="javascript:void(0)" onClick="add_selected_items('select_genome_items');" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
@@ -668,7 +735,7 @@ $(document).ready(function(){
    <td>
     Search:
     <input type="textbox" size="53" id="edit_experiment_search" onkeyup="wait_to_search(search_experiments, this.value);">
-    <span class='ui-button ui-corner-all' onclick="search_experiments($('#edit_experiment_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+    <span class='ui-button ui-corner-all' onclick="search_experiments();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
     <img id="wait_experiment" src="picts/ajax-loader.gif" style="opacity: 0;" />
    </td>
   </tr>
@@ -679,7 +746,7 @@ $(document).ready(function(){
    </td>
   </tr>
   <tr>
-   <td><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
+   <td><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span></td>
   </tr>
  </table>
  <span href="javascript:void(0)" onClick="add_selected_items('select_experiment_items');" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
@@ -691,7 +758,7 @@ $(document).ready(function(){
    <td>
     Search:
     <input type="textbox" size="53" id="edit_feature_search" onkeyup="wait_to_search(search_features, this.value);">
-    <span class='ui-button ui-corner-all' onclick="search_features($('#edit_feature_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+    <span class='ui-button ui-corner-all' onclick="search_features();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
     <img id="wait_feature" src="picts/ajax-loader.gif" style="opacity: 0;" />
    </td>
   </tr>
@@ -702,7 +769,7 @@ $(document).ready(function(){
    </td>
   </tr>
   <tr>
-   <td colspan='2'><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
+   <td colspan='2'><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span></td>
   </tr>
  </table>
  <span href="javascript:void(0)" onClick="add_selected_items('select_feature_items');" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
@@ -714,7 +781,7 @@ $(document).ready(function(){
    <td>
     Search:
     <input type="textbox" size="53" id="edit_list_search" onkeyup="wait_to_search(search_lists, this.value);">
-    <span class='ui-button ui-corner-all' onclick="search_lists($('#edit_list_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+    <span class='ui-button ui-corner-all' onclick="search_lists();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
     <img id="wait_list" src="picts/ajax-loader.gif" style="opacity: 0;" />
    </td>  
   </tr>
@@ -725,7 +792,7 @@ $(document).ready(function(){
    </td>
   </tr>
   <tr>
-   <td colspan='2'><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
+   <td colspan='2'><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span></td>
   </tr>
  </table>
  <span href="javascript:void(0)" onClick="add_selected_items('select_list_items');" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
@@ -745,7 +812,6 @@ Admin Functions:<br>
 To do:
    - If only one item in add item list, auto-select it
    - Disable add button if no items left to add
-   - show count in search results (x of y)
 </div>
 </TMPL_IF> <!-- ADMIN_AREA -->
 

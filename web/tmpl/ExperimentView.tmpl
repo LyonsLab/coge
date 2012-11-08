@@ -1,4 +1,4 @@
-<TMPL_IF NAME=MAIN>
+<TMPL_IF NAME="MAIN">
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
@@ -12,25 +12,23 @@ $(document).ready(function(){
 		cache: false,
 	});
 	
-	$(".dialog_box").dialog({autoOpen: 0, width:450});
-     
+	$(".dialog_box").dialog({autoOpen: 0, width: 450});
+
+	$("#edit_type_name").autocomplete({
+		source: function() { get_experiment_types(); },
+		select: function(event, ui) { get_type_description( ui.item.label ); }
+	});
+
+	set_annotation_table();
+
 	pageObj.timers = new Array();
 });
 
-function get_experiment_info(opts){
-	if (!opts){opts={};}
-	divid = opts.divid; //were results will be displayed in page
-	// create a new closure who's scope does *not*
-	// include the `divid` value so that callback will 
-	// not clobber the `divid` variable 
-	var create_callback = function(divid) {
-		var local_divid = divid;
-		return function (data) {
-			$('#'+local_divid).html(data);
-			//set_table();
-		};
-	}; 
+function set_annotation_table() {
+	$('#experiment_annotation_table').tablesorter({widgets: ['zebra']});
+}
 
+function get_experiment_info() {
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
@@ -43,12 +41,7 @@ function get_experiment_info(opts){
 	});
 }
 
-function format_box_info (data) {
-	output = data.output;
-	return output;
-}
-
-function edit_experiment_info () {
+function edit_experiment_info() {
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
@@ -56,41 +49,32 @@ function edit_experiment_info () {
 			eid: "<TMPL_VAR NAME='EID'>",
 		},
 		success : function(data) {
-			data = eval('('+data+')');
-			$("#experiment_info_edit_box").dialog("option", "title", data.title);
-			$("#experiment_info_edit_box").html(format_box_info(data));
-			$("#experiment_info_edit_box").dialog('open');
-			//setup_button_states();
+			var obj = jQuery.parseJSON(data);
+			$("#experiment_info_edit_box").html(obj.output).dialog('open');
 		},
 	});
 }
 
 function update_experiment_info (){
-	name = $('#edit_name').val();
+	var name = $('#edit_name').val();
 	if (!name) {
 		alert('Error: Must have a name');
 		return;
 	}
 	
-	genome_id = parseInt( $('#edit_genome_id').val() );
-	if (!genome_id) {
-		alert('Error: Must be assigned to a genome');
-		return;	
-	}
-	
-	version = $('#edit_version').val();
+	var version = $('#edit_version').val();
 	if (!version) {
 		alert('Error: Must have a version');
 		return;	
 	}	
 	
-	source_id = parseInt( $('#edit_source_id').val() );
+	var source_id = parseInt( $('#edit_source_id').val() );
 	if (!source_id) {
 		alert('Error: Must have a source');
 		return;	
 	}	
 	
-	desc = $('#edit_desc').val();
+	var desc = $('#edit_desc').val();
 	
 	$.ajax({
 		data: {
@@ -99,14 +83,13 @@ function update_experiment_info (){
 			eid: "<TMPL_VAR NAME='EID'>",
 			name: name,
 			desc: desc,
-			genome_id: genome_id,
 			source_id: source_id,
 			version: version
 		},
 		success : function(val) {
-			$("#experiment_info_edit_box").dialog('close');
 			get_experiment_info();
-		},
+			$("#experiment_info_edit_box").dialog('close');
+		}
 	});
 }
 
@@ -116,11 +99,10 @@ function get_sources () {
 			jquery_ajax: 1,
 			fname: 'get_sources'
 		},
-		success : function(val) {
-			var items = jQuery.parseJSON(val);
-			$("#edit_source").autocomplete("option", "source", items);
-			$("#edit_source").autocomplete("search");
-		},
+		success : function(data) {
+			var items = jQuery.parseJSON(data);
+			$("#edit_source").autocomplete("option", "source", items).autocomplete("search");
+		}
 	});
 }
 
@@ -129,7 +111,7 @@ function make_experiment_public () {
 		data: {
 			jquery_ajax: 1,
 			fname: 'make_experiment_public',
-			eid: "<TMPL_VAR NAME='EID'>",
+			eid: "<TMPL_VAR NAME='EID'>"
 		},
 		success : function(val) {
 			get_experiment_info();
@@ -142,11 +124,11 @@ function make_experiment_private () {
 		data: {
 			jquery_ajax: 1,
 			fname: 'make_experiment_private',
-			eid: "<TMPL_VAR NAME='EID'>",
+			eid: "<TMPL_VAR NAME='EID'>"
 		},
 		success : function(val) {
 			get_experiment_info();
-		},
+		}
 	});
 }
 
@@ -155,27 +137,23 @@ function add_experiment_type () {
 		data: {
 			jquery_ajax: 1,
 			fname: 'add_experiment_type',
-			eid: "<TMPL_VAR NAME='EID'>",
+			eid: "<TMPL_VAR NAME='EID'>"
 		},
 		success : function(data) {
-			data = eval('('+data+')');
 			$("#experiment_type_edit_box").dialog({
-				title: data.title,
-				beforeClose: 
+				beforeClose:
 					function() {
 						$("#edit_type_name").autocomplete('close');
-					}				
+					}
 			});
-			$("#experiment_type_edit_box").html(format_box_info(data));
-			$("#experiment_type_edit_box").dialog('open');
-			//setup_button_states();
-		},
+			$("#experiment_type_edit_box").html(data).dialog('open');
+		}
 	});
 }
 
 function add_type_to_experiment () {
-	name = $('#edit_type_name').val();
-	description = $('#edit_type_description').val();
+	var name = $('#edit_type_name').val();
+	var description = $('#edit_type_description').val();
 	
 	if (name) {
 		$.ajax({
@@ -187,8 +165,8 @@ function add_type_to_experiment () {
 				description: description
 			},
 			success : function(val) {
-				$("#experiment_type_edit_box").dialog('close');
 				get_experiment_info();
+				$("#experiment_type_edit_box").dialog('close');
 			},
 		});
 	}
@@ -210,28 +188,38 @@ function remove_experiment_type (opts) {
 	});
 }
 
+function add_annotation_dialog() {
+	$('#edit_annotation').val('');
+	$('#edit_link').val('');
+	$('#edit_annotation_type').val('');
+	$('#edit_annotation_type_group').val('');
+	$('#edit_image').val('');
+	
+	$('#add_annotation_button').show();
+	$('#update_annotation_button').hide();
+	
+	$("#experiment_annotation_edit_box").dialog({title: "Add Annotation"}).dialog('open');
+}
+
 function add_annotation () {
 	var annotation = $('#edit_annotation').val();
 	var type = $('#edit_annotation_type').val();
 	
-	if (annotation && type) {
+	if (!annotation) {
+		alert('Please enter some annotation text.');
+	}
+	else if(!type) {
+		alert ('Please specify a type.');
+	}
+	else {	
 		var type_group = $('#edit_annotation_type_group').val();
 		var link = $('#edit_link').val();
 	
 		var annotation_image_file = $('#edit_annotation_image')[0].files[0];
-
 		if (annotation_image_file) {		
-			ext = annotation_image_file.name.split('.').pop();
-			if (ext != 'jpg' && ext != 'gif' && ext != 'png') {
-				alert('Error: specified file is not an image');
-				return;
+			if (!verify_image_file(annotation_image_file)) { 
+				return; 
 			}
-	
-			if (annotation_image_file.size > 1*1024*1024) {
-				alert('Error: image file is too large (>1MB)');
-				return;
-			}
-			
 			$("#wait_annotation").animate({opacity:1});
 		}
 		else {
@@ -242,9 +230,9 @@ function add_annotation () {
         	dataType: 'json',
 			done: 
 				function(e, data) {
+					get_annotations();
 					$("#wait_annotation").hide();
 					$("#experiment_annotation_edit_box").dialog('close');
-					get_experiment_annotations();				
 				}
 		});
 
@@ -260,58 +248,103 @@ function add_annotation () {
 			}
 		});			
 	}
-	else { alert ('Error: Must have type and annotation specified!');}
 }
 
-function get_experiment_annotations() {
+function edit_annotation_dialog(aid) {
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
-			fname: 'get_experiment_annotations',
-			eid: "<TMPL_VAR NAME='EID'>",
+			fname: 'get_annotation',
+			aid: aid
 		},
 		success : function(data) {
-			$('#experiment_annotations').html(data);
+			var obj = jQuery.parseJSON(data);
+			if (obj) {
+				$('#edit_annotation').val(obj.annotation);
+				$('#edit_link').val(obj.link);
+				$('#edit_annotation_type').val(obj.type);
+				$('#edit_annotation_type_group').val(obj.type_group);
+				$('#edit_image').val('');
+				
+				$('#add_annotation_button').hide();
+				$('#update_annotation_button').data({annotation_id: aid}).show();
+				
+				
+				$("#experiment_annotation_edit_box").dialog({title: "Edit Annotation"}).dialog('open');
+			}
 		}
 	});
 }
 
-function remove_experiment_annotation (opts) {
-	eaid = opts.eaid;
+function update_annotation() {
+	var annotation = $('#edit_annotation').val();
+	var type = $('#edit_annotation_type').val();
+	
+	if (annotation && type) {
+		var type_group = $('#edit_annotation_type_group').val();
+		var link = $('#edit_link').val();
+		var aid = $('#update_annotation_button').data('annotation_id');
+		var annotation_image_file = $('#edit_annotation_image')[0].files[0];
+		if (annotation_image_file) {		
+			if (!verify_image_file(annotation_image_file)) {
+				return;
+			}
+			$("#wait_annotation").animate({opacity:1});
+		}
+		else {
+			annotation_image_file = '';
+		}
+		
+		$('#edit_annotation_image').fileupload({
+        	dataType: 'json',
+			done: 
+				function(e, data) {
+					get_annotations();
+					$("#wait_annotation").hide();
+					$("#experiment_annotation_edit_box").dialog('close');
+				}
+		});
+
+		$('#edit_annotation_image').fileupload('send', {
+			files: annotation_image_file,
+			formData: {
+				fname: 'update_annotation',
+				aid: aid,
+				type_group: type_group,
+				type: type,
+				annotation: annotation,
+				link: link
+			}
+		});			
+	}
+}
+
+function get_annotations() {
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
-			fname: 'remove_experiment_annotation',
+			fname: 'get_annotations',
+			eid: "<TMPL_VAR NAME='EID'>",
+		},
+		success : function(data) {
+			$('#experiment_annotations').html(data);
+			set_annotation_table();
+		}
+	});
+}
+
+function remove_annotation (eaid) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'remove_annotation',
 			eid: "<TMPL_VAR NAME='EID'>",
 			eaid: eaid,
 		},
 		success : function() {
-			get_experiment_annotations();
+			get_annotations();
 		},
 	});
-}
-
-function search_genomes () {
-	search_term = $("#edit_genome").val();
-	if (search_term.length > 2) {
-		$.ajax({
-			data: {
-				jquery_ajax: 1,
-				fname: 'search_genomes',
-				search_term: search_term,
-			},
-			success : function(val) {
-				var items = jQuery.parseJSON(val);
-				$("#edit_genome").autocomplete("option", "source", items);
-				$("#edit_genome").autocomplete("search");
-			},
-		});
-	}
-}
-
-function clear_edit_genome() {
-	$("#edit_genome").val('');
-	$("#edit_genome_id").val(0);		
 }
 
 function get_experiment_types () {
@@ -322,8 +355,7 @@ function get_experiment_types () {
 		},
 		success : function(val) {
 			var items = jQuery.parseJSON(val);
-			$("#edit_type_name").autocomplete("option", "source", items);
-			$("#edit_type_name").autocomplete("search");
+			$("#edit_type_name").autocomplete("option", "source", items).autocomplete("search");
 		},
 	});
 }
@@ -370,7 +402,7 @@ function image_preview(obj, preview) {
 </SCRIPT>
 
 <div>
- Experiment Info:<br>
+ <span style="color:dimgray;font-weight:bold;">Experiment Info</span><br>
  <div id='experiment_info'>
   <TMPL_VAR NAME="EXPERIMENT_INFO">
  </div>
@@ -379,15 +411,29 @@ function image_preview(obj, preview) {
 <br>
 
 <div>
- Experiment Annotations:<br>
+ <span style="color:dimgray;font-weight:bold;">Experiment Annotations</span><br>
  <div id="experiment_annotations">
   <TMPL_VAR NAME="EXPERIMENT_ANNOTATIONS">
  </div>
 </div>
 
-<div id="experiment_info_edit_box" class="dialog_box"></div>
-<div id="experiment_type_edit_box" class="dialog_box"></div>
-<div id="experiment_annotation_edit_box" class="dialog_box" title="Add Annotation">
+<div id="experiment_info_edit_box" class="dialog_box" title="Edit Experiment Info"></div>
+
+<div id="experiment_type_edit_box" class="dialog_box" title="Add Experiment Type">
+  <table class="small">
+   <tr>
+    <td>Name:</td>
+    <td><input id="edit_type_name" size="53" value=""></td>
+   </tr>
+   <tr valign="top">
+    <td>Description:</td>
+    <td><textarea id="edit_type_description" rows="5" cols="50"></textarea></td>
+   </tr>
+  </table>
+  <span onClick="add_type_to_experiment();" class='ui-button ui-corner-all ui-button-go'>Add</span>
+</div>
+
+<div id="experiment_annotation_edit_box" class="dialog_box">
   <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'>
 </div>
 
@@ -397,6 +443,7 @@ function image_preview(obj, preview) {
 
 <TMPL_IF NAME="EDIT_EXPERIMENT_INFO">
 <SCRIPT>
+$(function() {
 	$("#edit_source").autocomplete({
 	    source: 
 	    	function() {
@@ -409,72 +456,29 @@ function image_preview(obj, preview) {
 	    		return false;
 	    	}
 	});
-
-	$("#edit_genome").autocomplete({
-	    source: [],
-	    select: 
-	    	function(event, ui) {
-	    		$("#edit_genome").val( ui.item.label );
-	    		$("#edit_genome_id").val( ui.item.value );
-	    		return false;
-	    	}
-	});
+});
 </SCRIPT>
 <table class="small">
  <tr>
   <td>Name:</td>
-  <td><input id="edit_name" type="textbox" size="53" value="<TMPL_VAR NAME=NAME>"></td>
+  <td><input id="edit_name" type="textbox" size="53" value="<TMPL_VAR NAME='NAME'>"></td>
  </tr>
  <tr>
   <td>Description:</td>
-  <td><textarea id="edit_desc" rows=5 cols=50 ><TMPL_VAR NAME=DESC></textarea></td>
- </tr>
- <tr>
-  <td>Genome:</td>
-  <td>
-   <input id="edit_genome" onkeypress="wait_to_search(search_genomes);" size="50" value="<TMPL_VAR NAME=GENOME>">
-   <span onClick="clear_edit_genome()" class="link ui-icon ui-icon-circlesmall-close"></span>
-   <input id="edit_genome_id" type="hidden" value="<TMPL_VAR NAME=GENOME_ID>">
-  </td>
+  <td><textarea id="edit_desc" rows="5" cols="50"><TMPL_VAR NAME='DESC'></textarea></td>
  </tr>
  <tr>
   <td>Source:</td>
   <td>
-   <input id="edit_source" size="53" value="<TMPL_VAR NAME=SOURCE>">
-   <input id="edit_source_id" type="hidden" value="<TMPL_VAR NAME=SOURCE_ID>">
+   <input id="edit_source" size="53" value="<TMPL_VAR NAME='SOURCE'>">
+   <input id="edit_source_id" type="hidden" value="<TMPL_VAR NAME='SOURCE_ID'>">
   </td>
  </tr>
  <tr>
   <td>Version:</td>
-  <td><input id="edit_version" type="textbox" size="53" value="<TMPL_VAR NAME=VERSION>"></td>
- </tr>  
+  <td><input id="edit_version" type="textbox" size="53" value="<TMPL_VAR NAME='VERSION'>"></td>
+ </tr>
 </table>
 <br>
-<span onClick="update_experiment_info();" class='ui-button ui-corner-all ui-button-go'>Update Experiment Info</span>
-</TMPL_IF>
-
-
-
-<TMPL_IF NAME=ADD_EXPERIMENT_TYPE>
-<SCRIPT>
-	$("#edit_type_name").autocomplete({
-	    source: function() {
-	    			get_experiment_types();
-	    		},
-	    select: function(event, ui) {
-	    			get_type_description( ui.item.label );
-	    		}
-	});
-</SCRIPT>
-<table class="small">
- <tr>
-  <td>Name:</td>
-  <td><input id="edit_type_name" size="53" value="<TMPL_VAR NAME=NAME>"></td>
- </tr>
- <tr valign='top'>
-  <td>Description:</td>
-  <td><textarea id="edit_type_description" rows=5 cols=50 ><TMPL_VAR NAME=DESC></textarea></td>
- </tr>
-</table>
-<span onClick="add_type_to_experiment();" class='ui-button ui-corner-all ui-button-go'>Add</span>
-</TMPL_IF>
+<span onClick="update_experiment_info();" class='ui-button ui-corner-all ui-button-go'>Update</span>
+</TMPL_IF> <!-- EDIT_EXPERIMENT_INFO -->

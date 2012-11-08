@@ -65,17 +65,17 @@ $USER = undef;
 	get_sources             => \&get_sources,
 	make_experiment_public  => \&make_experiment_public,
 	make_experiment_private => \&make_experiment_private,
-	search_genomes          => \&search_genomes,
-	add_experiment_type     => \&add_experiment_type,
 	add_type_to_experiment  => \&add_type_to_experiment,
 	get_experiment_types    => \&get_experiment_types,
 	get_type_description    => \&get_type_description,
 	remove_experiment_type  => \&remove_experiment_type,
-	get_experiment_annotations		=> \&get_experiment_annotations,
-	add_annotation					=> \&add_annotation,
-	remove_experiment_annotation	=> \&remove_experiment_annotation,
-	search_annotation_types			=> \&search_annotation_types,
-	get_annotation_type_groups		=> \&get_annotation_type_groups,
+	get_annotations			=> \&get_annotations,
+	add_annotation			=> \&add_annotation,
+	update_annotation		=> \&update_annotation,
+	remove_annotation		=> \&remove_annotation,
+	get_annotation			=> \&get_annotation,
+	search_annotation_types	=> \&search_annotation_types,
+	get_annotation_type_groups => \&get_annotation_type_groups,
 );
 
 dispatch();
@@ -120,14 +120,11 @@ sub edit_experiment_info {
 	$template->param( EID            => $eid );
 	$template->param( NAME           => $exp->name );
 	$template->param( DESC           => $desc );
-	$template->param( GENOME         => $exp->genome->info );
-	$template->param( GENOME_ID      => $exp->genome->id );
 	$template->param( SOURCE         => $exp->source->name );
 	$template->param( SOURCE_ID      => $exp->source->id );
 	$template->param( VERSION        => $exp->version );
 
 	my %data;
-	$data{title} = 'Edit Experiment Info';
 	$data{name}   = $exp->name;
 	$data{desc}   = $desc;
 	$data{output} = $template->output;
@@ -142,7 +139,6 @@ sub update_experiment_info {
 	my $name = $opts{name};
 	return 0 unless $name;
 	my $desc = $opts{desc};
-	my $genome_id = $opts{genome_id};
 	my $source_id = $opts{source_id};
 	my $version = $opts{version};
 
@@ -150,7 +146,6 @@ sub update_experiment_info {
 	$exp->name($name);
 	$exp->description($desc) if $desc;
 	$exp->version($version);
-	$exp->genome_id($genome_id);
 	$exp->data_source_id($source_id);
 	$exp->update;
 
@@ -196,58 +191,6 @@ sub make_experiment_private {
 sub genomecmp { # FIXME mdb 8/24/12 - redundant declaration in ListView.pl
 	no warnings 'uninitialized'; # disable warnings for undef values in sort
 	versioncmp($b->version, $a->version) || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id
-}
-
-sub search_genomes {
-	my %opts = @_;
-	my $search_term = $opts{search_term};
-#	print STDERR "$search_term\n";
-	return '' unless $search_term and length $search_term > 0;
-	
-	$search_term = '%'.$search_term.'%';
-	
-	my @organisms = $coge->resultset("Organism")->search(
-		\[ 'name LIKE ? OR description LIKE ?', 
-		['name', $search_term ], ['description', $search_term] ]);
-
-	my @genomes = $coge->resultset("Genome")->search(
-		\[ 'restricted=? AND (name LIKE ? OR description LIKE ?)', 
-		['restricted', 0], ['name', $search_term ], ['description', $search_term] ]);
-
-	# Combine genomes with organism search but prevent duplicates
-	# FIXME mdb 8/21/12 - could be done more elegantly
-	my %gid;
-	map { $gid{$_->id}++ } @genomes;
-	foreach (@organisms) {
-		foreach ($_->genomes) {
-			push @genomes, $_ if (not defined $gid{$_->id});
-		}
-	}
-	
-	my @results;
-	foreach (sort genomecmp @genomes) {
-		push @results, { 'label' => $_->info, 'value' => $_->id }; 
-	}
-	
-	return encode_json( \@results );
-}
-
-sub add_experiment_type {
-	my %opts = @_;
-	my $eid  = $opts{eid};
-	return 0 unless $eid;
-
-	my $exp = $coge->resultset('Experiment')->find($eid);
-
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
-	$template->param( ADD_EXPERIMENT_TYPE => 1 );
-	$template->param( EID => $eid );
-
-	my %data;
-	$data{title} = 'Add Experiment Type';
-	$data{output} = $template->output;
-
-	return encode_json( \%data );
 }
 
 sub add_type_to_experiment {
@@ -304,7 +247,7 @@ sub get_type_description {
 
 sub linkify {
 	my ($link, $desc) = @_;
-	return "<span class='link' onclick=\"window.open('$link')\">" . $desc . "</span>";
+	return "<span class='link' onclick=\"window.open('$link')\">$desc</span>";
 }
 
 sub remove_experiment_type {
@@ -321,21 +264,16 @@ sub remove_experiment_type {
 	return 1;
 }
 
-sub get_experiment_annotations {
+sub get_annotations {
 	my %opts = @_;
 	my $eid  = $opts{eid};
 	return "Must have valid experiment id\n" unless ($eid);
 	return "Access denied\n" unless ($USER->has_access(experiment=>$eid));
 	
-	my ($exp) = $coge->resultset('Experiment')->find($eid);
+	my $exp = $coge->resultset('Experiment')->find($eid);
 	return unless $exp;
 	
 	my $user_can_edit = ($USER->is_admin || $USER->is_owner_editor(experiment => $eid));
-	
-	my $anno_obj = new CoGe::Accessory::Annotation( Type => 'anno' );
-	$anno_obj->Val_delimit("\n");
-	$anno_obj->Add_type(0);
-	$anno_obj->String_end("\n");
 	
 	my %groups;
 	foreach my $a ( $exp->annotations ) {
@@ -343,24 +281,29 @@ sub get_experiment_annotations {
 		push @{$groups{$group}}, $a;
 	}
 	
-	my $html = '<table id="experiment_annotation_table" cellpadding=0 class="ui-widget-content ui-corner-all small" style="max-width:400px;overflow:hidden;word-wrap:break-word;"><thead style="display:none"></thead><tbody>';
+	my $html = '<table id="experiment_annotation_table" class="ui-widget-content ui-corner-all small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;border-collapse:collapse;"><thead style="display:none"></thead><tbody>';
 	foreach my $group (sort keys %groups) {
 		my $first = 1;
 		foreach my $a ( sort {$a->id <=> $b->id} @{$groups{$group}} ) {
-			$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=" . @{$groups{$group}} . " style='font-weight:normal;background-color:white'>$group:</th>" : '');
+			$html .= "<tr valign='top'>";
+			$html .= "<th align='right' class='title5' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;' rowspan=" . @{$groups{$group}} . ">$group:</th>" if ($first-- > 0);
 			
-			$html .= "<td>";
+			$html .= '<td>';
 			my $image_link = ($a->image ? 'image.pl?id=' . $a->image->id : '');
 			my $image_info = ($a->image ? "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='padding:1px;border:1px solid lightgray;vertical-align:text-top;'></a>" : '');
 			$html .= $image_info if $image_info;
 			$html .= "</td>";
 
-			$html .= "<td class='data5'>".$a->info."</td>";
-			$html .= "<td>";
-			$html .= linkify($a->link, "Link") if $a->link;
-			$html .= "</td>";
+			$html .= "<td class='data5'>".$a->info.'</td>';
+			$html .= '<td>';
+			$html .= linkify($a->link, 'Link') if $a->link;
+			$html .= '</td>';
 			if ($user_can_edit) {
-				$html .= "<td><span onClick=\"\$(this).fadeOut(); remove_experiment_annotation({eaid: '" . $a->id . "'});\" class='link ui-icon ui-icon-trash'></span></td>";
+				my $aid = $a->id;
+				$html .= '<td style="padding-left:20px;white-space:nowrap;">' . 
+						 "<span onClick=\"edit_annotation_dialog($aid);\" class='link ui-icon ui-icon-gear'></span>" .
+						 "<span onClick=\"\$(this).fadeOut(); remove_annotation($aid);\" class='link ui-icon ui-icon-trash'></span>" .
+						 '</td>';
 			}
 			$html .= '</tr>';
 		}
@@ -368,10 +311,28 @@ sub get_experiment_annotations {
 	$html .= '</tbody></table>';
 
 	if ($user_can_edit) {
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="\$('#experiment_annotation_edit_box').dialog('open');"><span class="ui-icon ui-icon-plus"></span>Add Annotation</span>};
+		$html .= qq{<span onClick="add_annotation_dialog();" style="font-size: .75em" class='ui-button ui-button-go ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add Annotation</span>};
 	}
 
 	return $html;
+}
+
+sub get_annotation {
+	my %opts  = @_;
+	my $aid = $opts{aid};
+	return unless $aid;
+	#TODO check user access here
+	
+	my $ea = $coge->resultset('ExperimentAnnotation')->find($aid);
+	return unless $ea;
+	
+	my $type = '';
+	my $type_group = '';
+	if ($ea->type) {
+		$type = $ea->type->name;
+		$type_group = $ea->type->group->name if ($ea->type->group);
+	}
+	return encode_json({ annotation => $ea->annotation, link => $ea->link, type => $type, type_group => $type_group });
 }
 
 sub add_annotation {
@@ -387,33 +348,15 @@ sub add_annotation {
 	my $fh = $FORM->upload('edit_annotation_image');	
 #	print STDERR "add_annotation: $eid $type $annotation $link\n";	
 	
+	# Create the type and type group if not already present
 	my $group_rs;
 	if ($type_group) {
-		$group_rs = $coge->resultset('AnnotationTypeGroup')->find( { name => $type_group } );
-		
-		# Create type group if it doesn't already exist
-		if (not $group_rs) {
-			$group_rs = $coge->resultset('AnnotationTypeGroup')->create( { name => $type_group } );
-#			print STDERR "created annotation_type_group " . $group_rs->id . "\n";
-		}
+		$group_rs = $coge->resultset('AnnotationTypeGroup')->find_or_create( { name => $type_group } );
 	}
-	
-	my $type_rs;
-	$type_rs = $coge->resultset('AnnotationType')->find( 
+	my $type_rs = $coge->resultset('AnnotationType')->find_or_create( 
 		{ name => $type, 
 		  annotation_type_group_id => ($group_rs ? $group_rs->id : undef) 
 		} );
-	
-	# Create type if it doesn't already exist
-	if (not $type_rs) {
-		$type_rs = $coge->resultset('AnnotationType')->create( 
-			{ name => $type, 
-			  annotation_type_group_id => ($group_rs ? $group_rs->id : undef)
-			} );
-#		print STDERR "created annotation_type " . $type_rs->id . "\n";
-	}
-	
-#	print STDERR "type_rs.id=" . ($type_rs ? $type_rs->id : 'undef') . "\n";
 	
 	# Create the image
 	my $image;
@@ -440,7 +383,56 @@ sub add_annotation {
 	return 1;
 }
 
-sub remove_experiment_annotation {
+sub update_annotation {
+	my %opts  = @_;
+	my $aid = $opts{aid};
+	return unless $aid;
+	my $type_group = $opts{type_group};
+	my $type = $opts{type};
+	return 0 unless $type;
+	my $annotation = $opts{annotation};
+	my $link = $opts{link};
+	my $image_filename = $opts{edit_annotation_image};
+	my $fh = $FORM->upload('edit_annotation_image');	
+	#TODO check user access here
+	
+	my $ea = $coge->resultset('ExperimentAnnotation')->find($aid);
+	return unless $ea;
+
+	# Create the type and type group if not already present
+	my $group_rs;
+	if ($type_group) {
+		$group_rs = $coge->resultset('AnnotationTypeGroup')->find_or_create( { name => $type_group } );
+	}
+	my $type_rs;
+	my $type_rs = $coge->resultset('AnnotationType')->find_or_create( 
+		{ name => $type, 
+		  annotation_type_group_id => ($group_rs ? $group_rs->id : undef) 
+		} );
+	
+	# Create the image
+	#TODO if image was changed delete previous image
+	my $image;
+	if ($fh) {
+		read($fh, my $contents, -s $fh);
+		$image = $coge->resultset('Image')->create(
+			{	filename => $image_filename,
+				image => $contents
+			}
+		);
+		return 0 unless $image;
+	}
+	
+	$ea->annotation($annotation);
+	$ea->link($link);
+	$ea->annotation_type_id($type_rs->id);
+	$ea->image_id($image->id) if ($image);
+	$ea->update;
+	
+	return;
+}
+
+sub remove_annotation {
 	my %opts  = @_;
 	my $eid = $opts{eid};
 	return "No experiment ID specified" unless $eid;
@@ -516,7 +508,7 @@ sub generate_body {
 	$template->param( MAIN => 1 );
 	$template->param( PAGE_NAME => $PAGE_TITLE . '.pl');
 	$template->param( EXPERIMENT_INFO => get_experiment_info(eid=>$eid) );
-	$template->param( EXPERIMENT_ANNOTATIONS => get_experiment_annotations(eid => $eid) );
+	$template->param( EXPERIMENT_ANNOTATIONS => get_annotations(eid => $eid) );
 	$template->param( EID => $eid );
 	
 	# For AddAnnotation.tmpl widget
@@ -536,7 +528,7 @@ sub get_experiment_info {
 	
 	if ($allow_edit) {
 		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_experiment_info();">Edit Info</span>};
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="add_experiment_type();">Add Type</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="\$('#experiment_type_edit_box').dialog('open');">Add Type</span>};
 	}
 	
 	if ($USER->is_admin || $USER->is_owner(experiment => $eid)) {

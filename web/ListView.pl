@@ -75,9 +75,11 @@ $link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, 
 	add_list_items		       	=> \&add_list_items,
 	add_item_to_list           	=> \&add_item_to_list,
 	remove_list_item	       	=> \&remove_list_item,
-	get_list_annotations       	=> \&get_list_annotations,
+	get_annotations       		=> \&get_annotations,
 	add_annotation     			=> \&add_annotation,
-	remove_list_annotation     	=> \&remove_list_annotation,
+	get_annotation				=> \&get_annotation,
+	update_annotation			=> \&update_annotation,
+	remove_annotation     		=> \&remove_annotation,
 	search_mystuff				=> \&search_mystuff,
 	search_genomes             	=> \&search_genomes,
 	search_experiments         	=> \&search_experiments,
@@ -150,7 +152,7 @@ sub gen_body {
 	$template->param( PAGE_NAME        => $FORM->url );
 	$template->param( MAIN             => 1 );
 	$template->param( LIST_INFO        => get_list_info( lid => $lid ) );
-	$template->param( LIST_ANNOTATIONS => get_list_annotations( lid => $lid ) );
+	$template->param( LIST_ANNOTATIONS => get_annotations( lid => $lid ) );
 	$template->param( LIST_CONTENTS    => get_list_contents( lid => $lid ) );
 	$template->param( LID              => $lid );
 	$template->param( ADMIN_AREA       => 1 ) if $USER->is_admin;
@@ -210,17 +212,17 @@ sub edit_list_info {
 	return 0 unless $lid;
 
 	my $list = $coge->resultset('List')->find($lid);
+	return 0 unless $list;
+	
 	my $desc = ( $list->description ? $list->description : '' );
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'ListView.tmpl' );
 	$template->param( EDIT_LIST_INFO => 1 );
-	$template->param( LID            => $lid );
 	$template->param( NAME           => $list->name );
 	$template->param( DESC           => $desc );
 	$template->param( TYPE_LOOP      => get_list_types($list->type->id) );
 
 	my %data;
-	$data{title} = 'Edit List Info';
 	$data{name}   = $list->name;
 	$data{desc}   = $desc;
 	$data{output} = $template->output;
@@ -238,6 +240,8 @@ sub update_list_info {
 	my $type = $opts{type};
 
 	my $list = $coge->resultset('List')->find($lid);
+	return 0 unless $list;
+	
 	$list->name($name);
 	$list->description($desc) if $desc;
 	$list->list_type_id($type);
@@ -253,6 +257,8 @@ sub make_list_public {
 	#return unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
 	
 	my $list = $coge->resultset('List')->find($lid);
+	return 0 unless $list;
+	
 	$list->restricted(0);
 	$list->update;
 
@@ -264,7 +270,10 @@ sub make_list_private {
 	my $lid = $opts{lid};
 	return unless $lid;
 	#return unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
+	
 	my $list = $coge->resultset('List')->find($lid);
+	return 0 unless $list;
+	
 	$list->restricted(1);
 	$list->update;
 
@@ -276,7 +285,7 @@ sub linkify {
 	return "<span class='link' onclick=\"window.open('$link')\">" . $desc . "</span>";
 }
 
-sub get_list_annotations {
+sub get_annotations {
 	my %opts = @_;
 	my $lid  = $opts{lid};
 	return unless ($lid);
@@ -293,11 +302,11 @@ sub get_list_annotations {
 		push @{$groups{$group}}, $a;
 	}
 	
-	my $html = '<table id="list_annotation_table" cellpadding=0 class="ui-widget-content ui-corner-all small" style="max-width:400px;overflow:hidden;word-wrap:break-word;"><thead style="display:none"></thead><tbody>';
+	my $html = '<table id="list_annotation_table" class="ui-widget-content ui-corner-all small" style="max-width:400px;overflow:hidden;word-wrap:break-word;border-spacing:0;border-collapse:collapse;"><thead style="display:none"></thead><tbody>';
 	foreach my $group (sort keys %groups) {
 		my $first = 1;
 		foreach my $a ( sort {$a->id <=> $b->id} @{$groups{$group}} ) {
-			$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=" . @{$groups{$group}} . " style='font-weight:normal;background-color:white'>$group:</th>" : '');
+			$html .= "<tr style='vertical-align:top;'>" . ($first-- > 0 ? "<th align='right' class='title5' rowspan='" . @{$groups{$group}} . "' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;'>$group:</th>" : '');
 			
 			$html .= "<td>";
 			my $image_link = ($a->image ? 'image.pl?id=' . $a->image->id : '');
@@ -310,7 +319,11 @@ sub get_list_annotations {
 			$html .= linkify($a->link, "Link") if $a->link;
 			$html .= "</td>";
 			if ($user_can_edit) {
-				$html .= "<td><span onClick=\"\$(this).fadeOut(); remove_list_annotation({laid: '" . $a->id . "'});\" class='link ui-icon ui-icon-trash'></span></td>";
+				my $aid = $a->id;
+				$html .= '<td style="padding-left:20px;white-space:nowrap;">' . 
+						 "<span onClick=\"edit_annotation_dialog($aid);\" class='link ui-icon ui-icon-gear'></span>" .
+						 "<span onClick=\"\$(this).fadeOut(); remove_annotation($aid);\" class='link ui-icon ui-icon-trash'></span>" .
+						 '</td>';
 			}
 			$html .= '</tr>';
 		}
@@ -318,10 +331,28 @@ sub get_list_annotations {
 	$html .= '</tbody></table>';
 	
 	if ($user_can_edit) {
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="\$('#list_annotation_edit_box').dialog('open');"><span class="ui-icon ui-icon-plus"></span>Add Annotation</span>};
+		$html .= qq{<span onClick="add_annotation_dialog();" style="font-size: .75em" class='ui-button ui-button-go ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add Annotation</span>};
 	}
 
 	return $html;
+}
+
+sub get_annotation {
+	my %opts  = @_;
+	my $aid = $opts{aid};
+	return unless $aid;
+	#TODO check user access here
+	
+	my $ea = $coge->resultset('ListAnnotation')->find($aid);
+	return unless $ea;
+	
+	my $type = '';
+	my $type_group = '';
+	if ($ea->type) {
+		$type = $ea->type->name;
+		$type_group = $ea->type->group->name if ($ea->type->group);
+	}
+	return encode_json({ annotation => $ea->annotation, link => $ea->link, type => $type, type_group => $type_group });
 }
 
 sub add_annotation {
@@ -394,7 +425,55 @@ sub add_annotation {
 	return 1;
 }
 
-sub remove_list_annotation {
+sub update_annotation {
+	my %opts  = @_;
+	my $aid = $opts{aid};
+	return unless $aid;
+	my $type_group = $opts{type_group};
+	my $type = $opts{type};
+	return 0 unless $type;
+	my $annotation = $opts{annotation};
+	my $link = $opts{link};
+	my $image_filename = $opts{edit_annotation_image};
+	my $fh = $FORM->upload('edit_annotation_image');	
+	#TODO check user access here
+	
+	my $ea = $coge->resultset('ListAnnotation')->find($aid);
+	return unless $ea;
+
+	# Create the type and type group if not already present
+	my $group_rs;
+	if ($type_group) {
+		$group_rs = $coge->resultset('AnnotationTypeGroup')->find_or_create( { name => $type_group } );
+	}
+	my $type_rs = $coge->resultset('AnnotationType')->find_or_create( 
+		{ name => $type, 
+		  annotation_type_group_id => ($group_rs ? $group_rs->id : undef) 
+		} );
+	
+	# Create the image
+	#TODO if image was changed delete previous image
+	my $image;
+	if ($fh) {
+		read($fh, my $contents, -s $fh);
+		$image = $coge->resultset('Image')->create(
+			{	filename => $image_filename,
+				image => $contents
+			}
+		);
+		return 0 unless $image;
+	}
+	
+	$ea->annotation($annotation);
+	$ea->link($link);
+	$ea->annotation_type_id($type_rs->id);
+	$ea->image_id($image->id) if ($image);
+	$ea->update;
+	
+	return;
+}
+
+sub remove_annotation {
 	my %opts  = @_;
 	my $lid = $opts{lid};
 	return "No list ID specified" unless $lid;
@@ -406,6 +485,7 @@ sub remove_list_annotation {
 	return 0 if ($list->locked and not $USER->is_admin);
 	
 	my $la = $coge->resultset('ListAnnotation')->find( { list_annotation_id => $laid } );
+	return 0 unless $la;
 	$la->delete();
 	
 	return 1;
@@ -426,17 +506,17 @@ sub get_list_contents {
 	
 	my $html;
 	my $first = 1;
-	$html = '<table id="list_contents_table" class="small ui-widget-content ui-corner-all"><thead style="display:none"></thead><tbody>';
+	$html = '<table id="list_contents_table" class="small ui-widget-content ui-corner-all" style="border-spacing:0;border-collapse:collapse;"><thead style="display:none;"></thead><tbody>';
 
 	my $list_types = CoGeX::list_child_types();
 	my $genome_count = $list->genomes(count=>1); #EL: moved outside of loop; massive speed improvement due to cost of this call
 	foreach my $genome ( sort genomecmp $list->genomes ) {
 		
-		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=$genome_count style='font-weight:normal;background-color:white'>Genomes ($genome_count):</th>" : '');
+		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' rowspan='$genome_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Genomes ($genome_count):</th>" : '');
 		my $gid = $genome->id;
 		$html .= qq{<td class='data5'><span id='genome$gid' class='link' onclick="window.open('OrganismView.pl?dsgid=$gid')">} . $genome->info . "</span></td>";
 		if ($user_can_edit) {
-			$html .= "<td><span onClick=\"remove_list_item(this, {item_type: '".$list_types->{genome}."', item_id: '$gid'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
+			$html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {item_type: '".$list_types->{genome}."', item_id: '$gid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
 		}
 		$html .= '</tr>';
 	}
@@ -444,11 +524,11 @@ sub get_list_contents {
 	my $exp_count = $list->experiments(count=>1); #EL: moved outside of loop; massive speed improvement
 	foreach my $experiment (sort experimentcmp $list->experiments ) {
 
-		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=$exp_count style='font-weight:normal;background-color:white'>Experiments ($exp_count):</th>" : '');
+		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' rowspan='$exp_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Experiments ($exp_count):</th>" : '');
 		my $eid = $experiment->id;
 		$html .= qq{<td class='data5'><span id='experiment$eid' class='link' onclick="window.open('ExperimentView.pl?eid=$eid')">} . $experiment->info . "</span></td>";
 		if ($user_can_edit) {
-			$html .= "<td><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '".$list_types->{experiment}."', item_id: '$eid'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
+			$html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '".$list_types->{experiment}."', item_id: '$eid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
 		}
 		$html .= '</tr>';
 	}
@@ -456,22 +536,22 @@ sub get_list_contents {
 	my $feat_count = $list->features(count=>1); #EL: moved outside of loop; massive speed improvement
 	foreach my $feature (sort featurecmp $list->features ) {
 
-		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=$feat_count style='font-weight:normal;background-color:white'>Features ($feat_count):</th>" : '');
+		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' rowspan='$feat_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Features ($feat_count):</th>" : '');
 		my $fid = $feature->id;
 		$html .= qq{<td class='data5'><span id='feature$fid' class='link' onclick="window.open('FeatView.pl?fid=$fid')">} . $feature->info . "</span></td>";
 		if ($user_can_edit) {
-			$html .= "<td><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '".$list_types->{feature}."', item_id: '$fid'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
+			$html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '".$list_types->{feature}."', item_id: '$fid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
 		}
 		$html .= '</tr>';
 	}
 	$first = 1;
 	my $list_count = $list->lists(count=>1);
 	foreach my $list (sort listcmp $list->lists ) {
-		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=$list_count style='font-weight:normal;background-color:white'>Lists ($list_count):</th>" : '');
+		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' rowspan='$list_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Lists ($list_count):</th>" : '');
 		my $child_id = $list->id;
 		$html .= qq{<td class='data5'><span id='list$child_id' class='link' onclick="window.open('ListView.pl?lid=$child_id')">} . $list->info . "</span></td>";
 		if ($user_can_edit) {
-			$html .= "<td><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '".$list_types->{list}."', item_id: '$child_id'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
+			$html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '".$list_types->{list}."', item_id: '$child_id'});\" class='link ui-icon ui-icon-closethick'></span></td>";
 		}
 		$html .= '</tr>';
 	}		
@@ -492,17 +572,17 @@ sub add_list_items {
 	return 0 unless $lid;
 
 	my $list = $coge->resultset('List')->find($lid);
+	return 0 unless $list;
+	
 	my $desc = ( $list->description ? $list->description : '' );
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'ListView.tmpl' );
 	$template->param( ADD_LIST_ITEMS => 1 );
-	$template->param( LID            => $lid );
 	$template->param( NAME           => $list->name );
 	$template->param( DESC           => $desc );
 
 	# Setup dialog title and data fields
 	my %data;
-	$data{title}  = 'Add Items to List';
 	$data{name}   = $list->name;
 	$data{desc}   = $desc;
 	$data{output} = $template->output;
