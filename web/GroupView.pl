@@ -116,6 +116,11 @@ sub gen_body {
 	$template->param( PAGE_NAME  => $FORM->url );
 	$template->param( MAIN       => 1 );
 	my $ugid = $FORM->param('ugid');
+	my %groups = map {$_->id=>1} $USER->groups;
+	unless ($groups{$ugid} || $USER->is_admin)
+	{
+	 return "Permission denied";
+	}
 	my ($group_info) = get_group_info( ugid => $ugid );
 	$template->param( GROUP_INFO => $group_info );
 	$template->param( UGID       => $ugid );
