@@ -591,9 +591,9 @@ function blastOff() {
 	);
 */
 	$.ajax({
+		type: "POST",
 		data: {
 			jquery_ajax: 	1,
-			type:			'POST',
 			fname:			'blast_search',
 			program:		program,
 			expect:			expect,
