@@ -1,37 +1,215 @@
 <TMPL_IF NAME=MAIN>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
 
-<SCRIPT language="JavaScript">
-$(document).ready(function(){
+<link rel="stylesheet" href="js/slickgrid/slick.grid.css" type="text/css"/>
+<link rel="stylesheet" href="js/slickgrid/controls/slick.pager.css" type="text/css"/>
+<link rel="stylesheet" href="js/slickgrid/css/smoothness/jquery-ui-1.8.16.custom.css" type="text/css"/>
+<link rel="stylesheet" href="js/slickgrid/controls/slick.columnpicker.css" type="text/css"/>
+  <style>
+    .cell-centered {
+		text-align: center;
+		vertical-align: middle;
+		font-size: small;
+    }
+    .cell-normal {
+		vertical-align: middle;
+		font-size: small;    	
+    }
+  </style>
+
+<!--<script src="js/slickgrid/lib/jquery-1.7.min.js"></script>-->
+<script src="js/slickgrid/lib/jquery-ui-1.8.16.custom.min.js"></script>
+<script src="js/slickgrid/lib/jquery.event.drag-2.0.min.js"></script>
+
+<script src="js/slickgrid/slick.core.js"></script>
+<script src="js/slickgrid/slick.formatters.js"></script>
+<script src="js/slickgrid/slick.editors.js"></script>
+<script src="js/slickgrid/plugins/slick.rowselectionmodel.js"></script>
+<script src="js/slickgrid/slick.grid.js"></script>
+<script src="js/slickgrid/slick.dataview.js"></script>
+<script src="js/slickgrid/controls/slick.pager.js"></script>
+<script src="js/slickgrid/controls/slick.columnpicker.js"></script>
+
+<script>
+var data = [];
+var grid;
+var dataView;
+var columns = [
+	{id: "starred", name: "", field: "starred", maxWidth: 25, cssClass: "cell-centered",
+		formatter: linkFormatter = function (row, cell, value, columnDef, dataContext) {
+			if (value) {
+				return '<img id="'+dataContext['id']+'" src="picts/star-full.png" onclick="toggle_star(this);">'
+			}
+			return '<img id="'+dataContext['id']+'" src="picts/star-hollow.png" onclick="toggle_star(this);">';
+		}},
+	{id: "date_time", name: "Date/Time", field: "date_time", minWidth: 160, maxWidth: 160, cssClass: "cell-centered"},
+	{id: "user", name: "User", field: "user", minWidth: 30, maxWidth: 100, cssClass: "cell-normal"},
+	{id: "page", name: "Page", field: "page", minWidth: 90, maxWidth: 150, cssClass: "cell-normal"},
+	{id: "description", name: "Description", field: "description", minWidth: 100, cssClass: "cell-normal"},
+	{id: "link", name: "Link", field: "link", minWidth: 230, maxWidth: 250, cssClass: "cell-normal",
+		formatter: linkFormatter = function ( row, cell, value, columnDef, dataContext ) {
+            return '<a target="_blank" href="' + value + '">' + value + '</a>';
+        }},
+	{id: "comment", name: "Comments (click to edit)", field: "comment", minWidth: 200, sortable: true, cssClass: "cell-normal",
+		editor: Slick.Editors.Text, validator: requiredFieldValidator}
+];
+
+var options = {
+	editable: true,
+	enableAddRow: false,
+	enableCellNavigation: true,
+	asyncEditorLoading: true,
+	forceFitColumns: true,
+};
+
+$(function () {
 	$.ajaxSetup({
 		type: "POST",
 		url: "<TMPL_VAR NAME=PAGE_NAME>",
 		dataType: "html",
 		cache: false,
 	});
-	
-	set_table();
-	
+
 	$(".dialog_box").dialog({autoOpen: false, width: 600});
 
-	// Create new case-insensitive "contains" selector function in jQuery
-/*
-	jQuery.expr[":"].icontains = jQuery.expr.createPseudo(function(arg) {
-	    return function( elem ) {
-	        return jQuery(elem).text().toUpperCase().indexOf(arg.toUpperCase()) >= 0;
-	    };
+	$('#filter_count').html('Loading ... <img src="picts/ajax-loader.gif"/>');
+
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_history_for_user',
+			time_range: 0,
+		},
+		success : function(val) {
+			data = jQuery.parseJSON(val);
+			dataView.beginUpdate();
+			dataView.setItems(data);
+			dataView.setFilterArgs({
+				show: 0,
+				searchType: 1,
+				searchString: ''
+			});
+			dataView.setFilter(myFilter);
+			dataView.endUpdate();
+			updateFilter();
+		}
 	});
-*/
-	
-	// Setup filter input
-	$("#search_bar").keyup( function() { wait_to_filter( $(this).val() ); });
-	$('#search_type').mouseup( function() { wait_to_filter( $('#search_bar').val() ); });
-	filter_rows();
-	
-	// Reset dropdown default value
-	$('#time_range option:contains(24)').attr('selected', 'selected');
+
+	dataView = new Slick.Data.DataView({ inlineFilters: true });
+	grid = new Slick.Grid("#myGrid", dataView, columns, options);
+
+	var columnpicker = new Slick.Controls.ColumnPicker(columns, grid, options);
+
+	grid.onCellChange.subscribe(function (e, args) {
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'update_comment',
+				log_id: args.item.id,
+				comment: args.item.comment
+			},
+			success: function() {
+				dataView.updateItem(args.item.id, args.item);
+			}
+		});
+	});
+
+	// Wire up model events to drive the grid
+	dataView.onRowCountChanged.subscribe(function (e, args) {
+		grid.updateRowCount();
+		grid.render();
+		if ($("#myGrid").is(":not(visible)")) {
+			$("#myGrid").slideDown();
+		}
+	});
+	dataView.onRowsChanged.subscribe(function (e, args) {
+		grid.invalidateRows(args.rows);
+		grid.render();
+	});
+
+	// Wire up the show selector to apply the filter to the model
+	$("#show_select,#search_type").change(function (e) {
+		updateFilter();
+	});	
+
+	// Wire up the search textbox to apply the filter to the model
+	$("#search_input").keyup(function (e) {
+		Slick.GlobalEditorLock.cancelCurrentEdit();
+
+		if (e.which == 27) { // Clear on Esc
+			this.value = "";
+		}
+
+		updateFilter();
+	});
 });
+
+function requiredFieldValidator(value) {
+	return {valid: true, msg: null};
+	// if (value == null || value == undefined || !value.length) {
+	// 	return {valid: false, msg: "This is a required field"};
+	// }
+	// else {
+	// 	return {valid: true, msg: null};
+	// }
+}
+
+function myFilter(item, args) {
+	var date_time = item['date_time'];
+	var user_name = item['user'];
+	var comment = item['comment'];
+
+	if (args.show != 0) {
+		if (args.show == -1) { // Starred
+			return item['starred'];
+		}
+		else if (args.show == -2) { // Commented
+			return comment;
+		}
+		else if (args.show == -3) { // Mine
+			return (user_name == '<TMPL_VAR NAME="USER_NAME">');
+		}
+		else if (args.show > 0) { // Time Range
+			var diff = new Date() - new Date(date_time.replace(/-/g, '/'));
+			return (diff <= args.show*60*60*1000);
+		}
+	}
+
+	if (args.searchString != "") {
+		//FIXME optimize
+		if (args.searchType == 1) { // Contains
+			if (date_time.toLowerCase().indexOf(args.searchString) == -1 &&
+				user_name.toLowerCase().indexOf(args.searchString) == -1 &&
+				item['description'].toLowerCase().indexOf(args.searchString) == -1 &&
+				item['page'].toLowerCase().indexOf(args.searchString) == -1 &&
+				item['link'].toLowerCase().indexOf(args.searchString) == -1 ) 
+			{
+				return false;
+			}
+		}
+		else { // Does not contain
+			if (date_time.toLowerCase().indexOf(args.searchString) != -1 ||
+				user_name.toLowerCase().indexOf(args.searchString) != -1 ||
+				item['description'].toLowerCase().indexOf(args.searchString) != -1 ||
+				item['page'].toLowerCase().indexOf(args.searchString) != -1 ||
+				item['link'].toLowerCase().indexOf(args.searchString) != -1 )
+			{
+				return false;
+			}		
+		}
+	}
+
+	return true;
+}
+
+function updateFilter() {
+	dataView.setFilterArgs({
+		show: $('#show_select').val(),
+		searchType: $('#search_type').val(),
+		searchString: $('#search_input').val().toLowerCase()
+	});
+    dataView.refresh();
+    $('#filter_count').html('Showing ' + dataView.getLength() + ' of ' + data.length + ' results');
+}
 
 function toggle_star(img) {
 	$.ajax({
@@ -47,70 +225,8 @@ function toggle_star(img) {
 	});
 }
 
-function edit_comment(td) {
-	var width = $(td).width();
-	$(td).find('span').hide();
-	$(td).find('input').width(width);
-	$(td).find('input').show();
-	$(td).find('input').focus();
-}
-
-function update_comment(td) {
-	var old_comment = $(td).find('span').html();
-	var new_comment = $(td).find('input').val();
-	
-	if (new_comment != old_comment) {
-		$.ajax({
-			data: {
-				jquery_ajax: 1,
-				fname: 'update_comment',
-				log_id: td.id,
-				comment: new_comment
-			},
-		});
-	}
-	
-	$(td).find('input').hide();
-	$(td).find('span').html(new_comment);
-	$(td).find('span').show();
-}
-
-function set_table () {
-	$('#history_table').tablesorter({widgets: ['zebra']});
-}
-
-function filter_busy(busy) {
-	if (busy) {
-		$('#filter_busy').fadeIn();
-	}
-	else {
-		$('#filter_busy').fadeOut();
-	}	
-}
-
-//Filters Rows for search_text - Case sensitive as of now, and searches hidden columns...
 /*
-function filter_rows (search_text) {
-	filter_busy(1);
-	
-	if (!search_text) { 
-		$("#history_table tr:hidden").show(0); 
-	}
-	else if (search_text.length >= 3) {
-		$("#history_table_body tr:hidden").show(0);
-		if( $('#search_type').val() == 1 ) { 
-			$("#history_table_body tr:not(:icontains('"+search_text+"'))").hide(); 
-		}
-		else { 
-			$("#history_table_body tr:icontains('"+search_text+"')").hide(); 
-		}
-	}
-	
-	filter_busy(0);
-	$('#filter_count').html('Showing ' + $("#history_table_body tr:visible").length + ' of ' + $("#history_table_body tr").length + ' entries');
-}
-*/
-function filter_rows (search_text) { // more code but much faster than old version
+function filter_rows (search_text) { // fast filter search
 	var visible = 0;
 	var total = 0;
 	
@@ -158,146 +274,49 @@ function filter_rows (search_text) { // more code but much faster than old versi
 		);
 	}
 	
+	//set_table();
 	filter_busy(0);
-	$('#filter_count').html('Showing ' + visible + ' of ' + total + ' entries');
+	$('#filter_count').html('Showing ' + visible + ' of ' + total + ' rows');
 }
-
-function wait_to_filter (search_term) {
-	if (!search_term || search_term.length > 2) {
-		pageObj.search_term = search_term;
-			
-		if (pageObj.time) {
-			clearTimeout(pageObj.time);
-		}
-		
-		pageObj.time = setTimeout(
-			function() { 
-				filter_rows(pageObj.search_term); 
-			},
-			500
-		);
-	}
-}
-
-function run_get_history() {
-	time_range = $('#time_range').val();
-	search_term = $('#search_bar').val();
-	
-	filter_busy(1);
-	
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'get_history_for_user',
-			time_range: time_range,
-		},
-		success : function (data) {
-			$('#history').html(data);
-			set_table();
-			filter_rows(search_term);
-		}
-	});
-}
+*/
 </SCRIPT>
 
-
-
 <div class="small" style="padding-top:15px;padding-bottom:5px;height:27px;">
- <span style="padding-right:10px">
+  <span style="padding-right:10px">
   Show: 
-  <select id="time_range" onchange="run_get_history();">
+  <select id="show_select">
    <option value="0">All</option>
-   <option value="-3">Mine</option>
+   <option selected='selected' value="-3">Mine</option>
    <option value="-1">Starred</option>
    <option value="-2">Comments</option>
    <option value="1">Last hour</option>
    <option value="12">Last 12 hrs</option>
-   <option selected='selected' value="24">Last 24 hrs</option>
+   <option value="24">Last 24 hrs</option>
    <option value="168">Last week</option>
    <option value="720">Last month</option>
   </select>
  </span>
  <span>
   Filter: 
-  <input type="text" id="search_bar">
+  <input id="search_input" type="text">
   <select id="search_type">
    <option value="1">Contains</option>
    <option value="0">Does NOT contain</option>
   </select>
-  <!-- <span class=small>Tip: Use "*" for wildcards, and "!" to search for not containing</span> -->
   <span id='filter_count' style="margin-left:20px;color:darkgray;font-style:italic;"></span>
-  <img id='filter_busy' src="picts/ajax-loader.gif" style="display:none;vertical-align:middle;" />
  </span>
 </div>
 
-<div id='history'>
- <TMPL_VAR NAME=HISTORY_CONTENTS>
-</div>
+<div id="myGrid" style="max-width:90%;height:90%;display:none;"></div>
 
 </TMPL_IF> <!-- MAIN -->
 
-<TMPL_IF NAME=HISTORY>
-<SCRIPT language="JavaScript">
-$(document).ready(function() {
-	$('img.star').click(
-		function() {
-			toggle_star(this);
-		}
-	);
-	$('td.comment').click(
-		function() {
-			edit_comment(this);
-		}
-	);
-	$('td.comment').focusout(
-		function() {
-			update_comment(this);
-		}
-	);
-	$('td input').bind('keypress', function(e) {
-		if (e.keyCode==13) {
-			update_comment(this);
-			$(this).blur();
-		}
-	});
-});
-</SCRIPT>
-<div id='history'>
-<table id='history_table' class="small ui-widget-content ui-corner-all">
- <thead align="left"> 
-  <tr>
-   <th></th>
-   <th>Date/Time</th>
-   <th>User</th>
-   <th>Page</th>
-   <th>Description</th>
-   <th>Link</th>
-   <th>Comments <span style='color:gray;'>(click to edit)</span></th>
-  </tr>
- </thead>
- <tbody id='history_table_body' align="left" valign="top" class="small">
-  <TMPL_LOOP NAME=HISTORY_LOOP>
-  <tr valign="top">
-   <td align='center'><img id='<TMPL_VAR NAME=LOG_ID>' class='link star' src='<TMPL_VAR NAME=STAR_ICON>'></td>
-   <td style="white-space:nowrap"><TMPL_VAR NAME=TIME></td>
-   <td><TMPL_VAR NAME=USER></td>
-   <td><TMPL_VAR NAME=PAGE></td>
-   <td><TMPL_VAR NAME=DESCRIPTION></td>
-   <td><TMPL_VAR NAME=LINK></td>
-   <td id='<TMPL_VAR NAME=LOG_ID>' style='cursor:text' class='comment'>
-    <input type='text' style='display:none;font-size:0.9em;font-style:italic;' maxlength='255' value='<TMPL_VAR NAME=COMMENT>'>
-    <span style='font-style:italic;color:gray;'><TMPL_VAR NAME=COMMENT></span>
-   </td>
-  </tr>
-  </TMPL_LOOP>
- </tbody>
-</table>
-</div>
-</TMPL_IF> <!-- HISTORY -->
 
 
-
-<TMPL_IF NAME=ADMIN_AREA>
+<TMPL_IF NAME='ADMIN_AREA'>
+<!--
 <hr>
 Admin Functions:<br>
+none at the moment
+-->
 </TMPL_IF> <!-- ADMIN_AREA -->
