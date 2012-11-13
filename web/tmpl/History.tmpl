@@ -49,7 +49,7 @@ var columns = [
             return value;
         }},
 	{id: "link", name: "Link", field: "link", minWidth: 230, maxWidth: 250, cssClass: "cell-normal",
-		formatter: linkFormatter = function ( row, cell, value, columnDef, dataContext ) {
+		formatter: function ( row, cell, value, columnDef, dataContext ) {
             return '<a target="_blank" href="' + value + '">' + value + '</a>';
         }},
 	{id: "comment", name: "Comments (click to edit)", field: "comment", minWidth: 200, sortable: true, cssClass: "cell-normal",

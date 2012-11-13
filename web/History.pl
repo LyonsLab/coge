@@ -144,7 +144,7 @@ sub get_history_for_user
 			};
 	}
 
-	print STDERR "items: " . @items . "\n";
+	# print STDERR "items: " . @items . "\n";
 	return encode_json(\@items);
 }
 
