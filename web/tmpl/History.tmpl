@@ -44,7 +44,10 @@ var columns = [
 	{id: "date_time", name: "Date/Time", field: "date_time", minWidth: 160, maxWidth: 160, cssClass: "cell-centered"},
 	{id: "user", name: "User", field: "user", minWidth: 30, maxWidth: 100, cssClass: "cell-normal"},
 	{id: "page", name: "Page", field: "page", minWidth: 90, maxWidth: 150, cssClass: "cell-normal"},
-	{id: "description", name: "Description", field: "description", minWidth: 100, cssClass: "cell-normal"},
+	{id: "description", name: "Description", field: "description", minWidth: 100, cssClass: "cell-normal",
+		formatter: function ( row, cell, value, columnDef, dataContext ) {
+            return value;
+        }},
 	{id: "link", name: "Link", field: "link", minWidth: 230, maxWidth: 250, cssClass: "cell-normal",
 		formatter: linkFormatter = function ( row, cell, value, columnDef, dataContext ) {
             return '<a target="_blank" href="' + value + '">' + value + '</a>';
@@ -200,7 +203,7 @@ function myFilter(item, args) {
 				item['description'].toLowerCase().indexOf(args.searchString) != -1 ||
 				item['page'].toLowerCase().indexOf(args.searchString) != -1 ||
 				item['link'].toLowerCase().indexOf(args.searchString) != -1 ||
-				comment.toLowerCase().indexOf(args.searchString) == -1 )
+				comment.toLowerCase().indexOf(args.searchString) != -1 )
 			{
 				return false;
 			}		
