@@ -24,7 +24,7 @@ no warnings 'redefine';
 
 use vars qw(
 	$P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE 
-	$TEMPDIR $USER $DATE $COGEDIR $coge $FORM $URL $TEMPURL $COOKIE_NAME 
+	$TEMPDIR $BINDIR $USER $DATE $COGEDIR $coge $FORM $URL $TEMPURL $COOKIE_NAME 
 	%FUNCTION $MAX_SEARCH_RESULTS
 );
 
@@ -57,6 +57,8 @@ $USER = undef;
 
 $TEMPDIR = $P->{TEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/';
 mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
+
+$BINDIR = $P->{BINDIR};
 
 $MAX_SEARCH_RESULTS = 100;
 
@@ -316,7 +318,7 @@ sub load_genome {
 	}
 
 	print $log "Calling bin/load_genome.pl ...\n";
-	my $cmd = '/opt/apache/CoGe-Dev/bin/load_genome.pl ' . 
+	my $cmd = "$BINDIR/load_genome.pl " .
 			  "-user_name " . $USER->user_name . ' ' .
 			  '-name "' . escape($name) . '" ' .
 			  '-desc "' . escape($description) . '" ' .
