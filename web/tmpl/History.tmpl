@@ -41,28 +41,29 @@ var columns = [
 			}
 			return '<img id="'+dataContext['id']+'" src="picts/star-hollow.png" onclick="toggle_star(this);">';
 		}},
-	{id: "date_time", name: "Date/Time", field: "date_time", minWidth: 160, maxWidth: 160, cssClass: "cell-centered"},
-	{id: "user", name: "User", field: "user", minWidth: 30, maxWidth: 100, cssClass: "cell-normal"},
-	{id: "page", name: "Page", field: "page", minWidth: 90, maxWidth: 150, cssClass: "cell-normal"},
-	{id: "description", name: "Description", field: "description", minWidth: 100, cssClass: "cell-normal",
+	{id: "date_time", name: "Date/Time", field: "date_time", minWidth: 160, maxWidth: 160, sortable: true, cssClass: "cell-centered"},
+	{id: "user", name: "User", field: "user", minWidth: 30, maxWidth: 80, sortable: true, cssClass: "cell-normal"},
+	{id: "page", name: "Page", field: "page", minWidth: 90, maxWidth: 100, sortable: true, cssClass: "cell-normal"},
+	{id: "description", name: "Description", field: "description", minWidth: 100, sortable: true, cssClass: "cell-normal",
 		formatter: function ( row, cell, value, columnDef, dataContext ) {
             return '<span>' + value + '</span>';
         }},
-	{id: "link", name: "Link", field: "link", minWidth: 230, maxWidth: 250, cssClass: "cell-normal",
+	{id: "link", name: "Link", field: "link", minWidth: 100, maxWidth: 250, cssClass: "cell-normal",
 		formatter: function ( row, cell, value, columnDef, dataContext ) {
             return '<a target="_blank" href="' + value + '">' + value + '</a>';
         }},
-	{id: "comment", name: "Comments (click to edit)", field: "comment", minWidth: 200, sortable: true, cssClass: "cell-normal",
+	{id: "comment", name: "Comments (click to edit)", field: "comment", minWidth: 100, sortable: true, cssClass: "cell-normal",
 		editor: Slick.Editors.Text, validator: requiredFieldValidator}
 ];
 
 var options = {
 	editable: true,
-	enableAddRow: false,
 	enableCellNavigation: true,
 	asyncEditorLoading: true,
 	forceFitColumns: true,
 };
+
+var sortcol;
 
 $(function () {
 	$.ajaxSetup({
@@ -116,6 +117,11 @@ $(function () {
 		});
 	});
 
+	grid.onSort.subscribe(function (e, args) {
+		sortcol = args.sortCol.field;
+		dataView.sort(comparer, args.sortAsc);
+	});	
+
 	// Wire up model events to drive the grid
 	dataView.onRowCountChanged.subscribe(function (e, args) {
 		grid.updateRowCount();
@@ -146,14 +152,14 @@ $(function () {
 	});
 });
 
+function comparer(a, b) {
+	if (!sortcol) { return 0; }
+	var x = a[sortcol], y = b[sortcol];
+	return (x == y ? 0 : (x > y ? 1 : -1));
+}
+
 function requiredFieldValidator(value) {
 	return {valid: true, msg: null};
-	// if (value == null || value == undefined || !value.length) {
-	// 	return {valid: false, msg: "This is a required field"};
-	// }
-	// else {
-	// 	return {valid: true, msg: null};
-	// }
 }
 
 function myFilter(item, args) {
