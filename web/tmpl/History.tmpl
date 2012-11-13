@@ -35,7 +35,7 @@ var grid;
 var dataView;
 var columns = [
 	{id: "starred", name: "", field: "starred", maxWidth: 25, cssClass: "cell-centered",
-		formatter: linkFormatter = function (row, cell, value, columnDef, dataContext) {
+		formatter: function (row, cell, value, columnDef, dataContext) {
 			if (value) {
 				return '<img id="'+dataContext['id']+'" src="picts/star-full.png" onclick="toggle_star(this);">'
 			}
@@ -46,7 +46,7 @@ var columns = [
 	{id: "page", name: "Page", field: "page", minWidth: 90, maxWidth: 150, cssClass: "cell-normal"},
 	{id: "description", name: "Description", field: "description", minWidth: 100, cssClass: "cell-normal",
 		formatter: function ( row, cell, value, columnDef, dataContext ) {
-            return value;
+            return '<span>' + value + '</span>';
         }},
 	{id: "link", name: "Link", field: "link", minWidth: 230, maxWidth: 250, cssClass: "cell-normal",
 		formatter: function ( row, cell, value, columnDef, dataContext ) {
