@@ -264,10 +264,10 @@ sub owner_group {
 
 sub owner_list {
 	my $self = shift;
-	foreach my $list ( $self->lists ) {
-		return $list if ($list->locked && $list->list_type_id == 3); # FIXME list type hardcoded
-	}
-	return;
+	# foreach my $list ( $self->lists ) {
+	# 	return $list if ($list->locked && $list->list_type_id == 3); # FIXME list type hardcoded
+	# }
+	return $self->owner_group->owner_list;
 }
 
 ################################################ subroutine header begin ##
