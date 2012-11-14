@@ -209,13 +209,14 @@ sub update_group_info {
 	return 0 unless $ugid;
 	my $name = $opts{name};
 	return 0 unless $name;
-
 	my $desc = $opts{desc};
+	my $roleid = $opts{roleid};
 	my $group = $coge->resultset('UserGroup')->find($ugid);
 	return 0 unless user_can_edit($group);
 	
 	$group->name($name);
 	$group->description($desc) if $desc;
+	$group->role_id($roleid) if $roleid;
 	$group->update;
 
 	return 1;
