@@ -44,6 +44,7 @@ function edit_group_info (opts) {
 function update_group_info (opts){
 	name = $('#edit_name').val();
 	desc = $('#edit_desc').val();
+	roleid = $('#edit_role').val();
 	ugid = opts.ugid;
 	if (name) {
 		$.ajax({
@@ -52,7 +53,8 @@ function update_group_info (opts){
 				fname: 'update_group_info',
 				ugid: ugid,
 				name: name,
-				desc: desc
+				desc: desc,
+				roleid: roleid
 			},
 			success : function(val) {
 				$("#group_info_edit_box").dialog('close');
