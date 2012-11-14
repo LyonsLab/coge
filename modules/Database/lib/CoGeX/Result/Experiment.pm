@@ -466,7 +466,7 @@ sub info
 {
 	my $self = shift;
 	my $info;
-	$info .= "(R)" if $self->restricted;
+	$info .= "&reg; " if $self->restricted;
 	$info .= $self->name;
 	$info .= ": " . $self->description if $self->description;
 	$info .= " (v" . $self->version . ", eid" . $self->id . "): " . $self->source->name;

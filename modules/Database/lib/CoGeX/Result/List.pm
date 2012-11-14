@@ -269,7 +269,7 @@ sub info
 {
 	my $self = shift;
 	my $info = $self->name;
-	$info = "(R)" . $info if $self->restricted;
+	$info = "&reg; " . $info if $self->restricted;
 	$info .= ": " . $self->description      if $self->description;
 	$info .= " (" . $self->type->name . ")" if $self->type;
 	return $info;

@@ -1070,7 +1070,7 @@ See Also   :
 sub info {
 	my $self = shift;
 	my $info;
-	$info .= "(R)" if $self->restricted;
+	$info .= "&reg; " if $self->restricted;
 	$info .= $self->organism->name if $self->organism;
 	$info .= " (".$self->name.")" if $self->name;
 	$info .= ": ".$self->description if $self->description;
