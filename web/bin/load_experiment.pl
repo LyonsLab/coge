@@ -55,8 +55,8 @@ $P = CoGe::Accessory::Web::get_defaults();
 my $FASTBIT_LOAD = $P->{FASTBIT_LOAD};
 my $FASTBIT_QUERY = $P->{FASTBIT_QUERY};
 if (not $FASTBIT_LOAD or not $FASTBIT_QUERY or not -e $FASTBIT_LOAD or not -e $FASTBIT_QUERY) {
-	print STDERR "FASTBIT_LOAD: $FASTBIT_LOAD\n";
-	print STDERR "FASTBIT_QUERY: $FASTBIT_QUERY\n";
+	print $log "FASTBIT_LOAD: $FASTBIT_LOAD\n";
+	print $log "FASTBIT_QUERY: $FASTBIT_QUERY\n";
 	print $log "log: error: can't find fastbit commands\n";
 	exit(-1);
 }
@@ -113,7 +113,7 @@ my $staged_data_file = $staging_dir . '/' . $filename;
 
 print $log "log: Generating database\n";
 $cmd = "$FASTBIT_LOAD -d $staging_dir -m \"chr:key, start:unsigned long, stop:unsigned long, strand:byte, value1:double, value2:double\" -t $staged_data_file";
-print STDERR $cmd, "\n";
+print $log $cmd, "\n";
 my $rc = system($cmd);
 if ($rc != 0) {
 	print $log "log: error executing ardea command: $rc\n";
@@ -122,7 +122,7 @@ if ($rc != 0) {
 
 print $log "log: Indexing database (may take a few minutes)\n";
 $cmd = "$FASTBIT_QUERY -d $staging_dir -v -b \"<binning precision=2/><encoding equality/>\"";
-print STDERR $cmd, "\n";
+print $log $cmd, "\n";
 $rc = system($cmd);
 if ($rc != 0) {
 	print $log "log: error executing ibis command: $rc\n";
@@ -135,7 +135,10 @@ if ($rc != 0) {
 
 # Create datasource
 my $datasource = $coge->resultset('DataSource')->find_or_create( { name => $source_name, description => "Loaded into CoGe via LoadExperiment" } );
-die "Error creating data source" unless $datasource;
+unless ($datasource) {
+	print $log "log: error creating data source\n";
+	exit(-1);
+}
 
 # Create experiment
 my $experiment = $coge->resultset('Experiment')->create(
@@ -148,11 +151,10 @@ my $experiment = $coge->resultset('Experiment')->create(
 	  restricted		=> $restricted
 	});
 my $storage_path = "$install_dir/".$experiment->get_path;
-print STDERR 'Storage path: ', $storage_path, "\n";
+print $log 'Storage path: ', $storage_path, "\n";
 $experiment->storage_path($storage_path);			
 $experiment->update;
 
-print STDERR "experiment id: " . $experiment->id . "\n";
 print $log "experiment id: " . $experiment->id . "\n"; # don't change, gets parsed by calling code
 
 #TODO create experiment type & connector
@@ -160,7 +162,7 @@ print $log "experiment id: " . $experiment->id . "\n"; # don't change, gets pars
 # Add new experiment to user's owner list
 my $user = $coge->resultset('User')->find( { user_name => $user_name } );
 unless ($user) {
-	print $log "Error finding user '$user_name'\n";
+	print $log "log: error finding user '$user_name'\n";
 	exit(-1);
 }
 my $child_types = CoGeX::list_child_types();
@@ -170,19 +172,18 @@ my $listconn = $coge->resultset('ListConnector')->create(
 	  child_type => $child_types->{experiment}
 	} );
 unless ($listconn) {
-	print $log "Error creating list connector\n";
+	print $log "log: error creating list connector\n";
 	exit(-1);
 }
 
 ## Copy files from staging directory to installation directory
-mkpath($install_dir);
-$cmd = "cp -r $staging_dir $storage_path";
-print STDERR "$cmd\n";
+mkpath($storage_path);
+$cmd = "cp -r $staging_dir/* $storage_path";
+print $log "$cmd\n";
 `$cmd`;
 
 # Yay!
 print $log "log: All done!";
-print STDERR "All done!";
 close($log);
 exit;
 
@@ -193,7 +194,7 @@ sub validate_data_file {
 	my %chromosomes;
 	my $line_num = 1;
 	
-	print STDERR "validate_data_file: $filepath\n";
+	print $log "validate_data_file: $filepath\n";
 	open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
 	while (my $line = <$in>) {
 		$line_num++;
