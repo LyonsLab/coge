@@ -10,6 +10,7 @@ use CoGe::Accessory::Web;
 use CoGe::Accessory::SynMap_report;
 use IO::Compress::Gzip;
 use File::Path;
+use Digest::MD5 qw(md5_hex);
 
 use vars qw($synfile $coge $DEBUG $join $FORM $P $GZIP $GUNZIP $TAR $conffile $link $TEMPDIR $PAGE_NAME $COOKIE_NAME $USER);
 
@@ -67,12 +68,14 @@ my $synmap_report = new CoGe::Accessory::SynMap_report;
 $synfile = gunzip($synfile);
 $synfile = gunzip($synfile.".gz");
 
+
 my ($chr1, $chr2, $dsgid1, $dsgid2) = $synmap_report->parse_syn_blocks(file=>$synfile);
-#print STDERR Dumper $chr1, $chr2;
-#exit;
-#gzip($synfile);
-($chr1, $chr2, $dsgid1, $dsgid2) = ($chr2, $chr1, $dsgid2, $dsgid1) if scalar keys %{$chr1->[0]} < scalar keys %{$chr2->[0]};
-my $tarfile .= "$dsgid1-$dsgid2.tar.gz";
+($chr1, $chr2, $dsgid1, $dsgid2) = ($chr2, $chr1, $dsgid2, $dsgid1) if scalar @$chr1 < scalar @$chr2;
+
+
+my $basename = "$dsgid1-$dsgid2"."_".md5_hex($synfile);
+
+my $tarfile .= "$basename.tar.gz";
 if (-r "$TEMPDIR/$tarfile")
   {
    print qq{Content-Type: application/force-download
@@ -103,7 +106,7 @@ unless ($dsg2)
     exit;
   }
 
-$TEMPDIR = $TEMPDIR."/$dsgid1-$dsgid2/";
+$TEMPDIR = $TEMPDIR."/$basename/";
 mkpath($TEMPDIR, 0, 0777);
 my $logfile = $TEMPDIR."log.txt";
 open (LOG, ">".$logfile);
