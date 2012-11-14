@@ -174,17 +174,17 @@ sub get_list_info {
 	my $html = $list->annotation_pretty_print_html();
 
 	if ($USER->is_admin || (not $list->locked && $USER->is_owner_editor(list => $lid))) {
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_list_info();">Edit List Info</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_list_info();">Edit&nbspList&nbspInfo</span>};
 	}
 	
 	if ($USER->is_admin || (not $list->locked && $USER->is_owner(list => $lid))) {
 		if ( $list->restricted ) {
-			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_list_public();">Make List Public</span>};
+			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_list_public();">Make&nbspList&nbspPublic</span>};
 		}
 		else {
 			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_list_private();">Make List Private</span>};
 		}
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_list();">Delete List</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_list();">Delete&nbspList</span>};
 	}
 
 	return $html;
