@@ -126,8 +126,7 @@ sub get_sources {
 	my @sources;
 	foreach my $source ( sort {$a->name cmp $b->name } $coge->resultset('DataSource')->all() ) {
 		push @sources, 
-		  { NAME  => $source->name,
-			ID  => $source->id,
+		  { NAME  => $source->name . ' (id' . $source->id . ')',
 			DESC  => ($source->description ? $source->description : undef),
 			LINK  => ($source->link ? '<a href="' . $source->link . '" target=_blank>' . $source->link . '</a>' : undef),
 			BUTTONS => $USER->is_admin,
@@ -203,8 +202,8 @@ sub gen_html {
 	$template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
 	$template->param( DATE       => $DATE );
 	$template->param( BODY       => gen_body() );
-	$template->param( BOX_NAME   => " Data Sources:" );
-	$template->param( ADJUST_BOX => 1 );
+	#$template->param( BOX_NAME   => " Data Sources:" );
+	#$template->param( ADJUST_BOX => 1 );
 	$html .= $template->output;
 }
 
@@ -212,10 +211,8 @@ sub gen_body {
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'Sources.tmpl' );
 	$template->param( PAGE_NAME => $FORM->url );
 	$template->param( MAIN      => 1 );
-	my ($source_info) = get_sources();
-	$template->param( SOURCE_INFO => $source_info );
+	$template->param( SOURCE_INFO => get_sources() );
 	$template->param( BUTTONS => $USER->is_admin );
 	$template->param( ADMIN_AREA => $USER->is_admin );
 	return $template->output;
 }
-

@@ -108,7 +108,7 @@ function edit_source_info (opts) {
 	});
 }
 
-function update_source_info (opts){
+function update_source_info (dsid){
 	name = $('#edit_name').val();
 	if (!name) {
 		alert('Error: Must have a name');
@@ -117,7 +117,6 @@ function update_source_info (opts){
 	
 	desc = $('#edit_desc').val();
 	link = $('#edit_link').val();
-	dsid = opts.dsid;
 
 	$.ajax({
 		data: {
@@ -152,7 +151,6 @@ function update_source_info (opts){
 <table id="source_table" class="small ui-widget-content ui-corner-all">
  <thead align="left"> 
   <tr>
-   <th>ID</th>
    <th>Name</th>
    <th>Description</th>
    <th>Link</th>
@@ -165,7 +163,6 @@ function update_source_info (opts){
  <tbody align="left" valign="top" id="source_table_body" class="small">
   <TMPL_LOOP NAME=SOURCE_LOOP>
   <tr valign="middle">
-   <td><TMPL_VAR NAME=ID></td>
    <td><TMPL_VAR NAME=NAME></td>
    <td><TMPL_VAR NAME=DESC></td>
    <td><TMPL_VAR NAME=LINK></td>
@@ -183,7 +180,6 @@ function update_source_info (opts){
    </td>
   </tr>
   <tr id='create_source_shown' style="display:none;">
-   <td></td>
    <td><input type="textbox" size="16" name="name" id="name" value='Name' style="font-style:italic;color:gray;" onFocus="input_focus('name')"></td>
    <td><input type="textbox" size="40" name="desc" id="desc" value='Description' style="font-style:italic;color:gray;" onFocus="input_focus('desc')"></td>
    <td><input type="textbox" size="40" name="link" id="link" value='Link' style="font-style:italic;color:gray;" onFocus="input_focus('link')"></td>
@@ -212,11 +208,13 @@ function update_source_info (opts){
  </tr>  
 </table>
 <br>
-<span onClick="update_source_info({dsid: '<TMPL_VAR NAME=DSID>'});" class='ui-button ui-corner-all ui-button-go'>Update Source Info</span>
+<span onClick="update_source_info('<TMPL_VAR NAME=DSID>');" class='ui-button ui-corner-all ui-button-go'>Update Source Info</span>
 </TMPL_IF> <!-- EDIT_SOURCE_INFO -->
 
 
 <TMPL_IF NAME=ADMIN_AREA>
+<!--
 <hr>
 Admin Functions:<br>
+-->
 </TMPL_IF> <!-- ADMIN_AREA -->
