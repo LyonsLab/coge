@@ -68,6 +68,7 @@ function reset_log() {
 	$('#loading_msg').show();
 	$('#finished_msg').hide();
 	$('#error_msg').hide();
+	$('#ok_button').hide();
 	$('#finish_load_experiment_button').hide();
 	$('#cancel_load_experiment_button').hide();
 }
@@ -99,7 +100,7 @@ function load_experiment() {
 		alert('Please specify an experiment version.');
 		return;
 	}
-	if (!genome) {
+	if (!genome || genome == 'Search') {
 		alert('Please specify a genome.');
 		return;
 	}
@@ -144,6 +145,7 @@ function get_load_experiment_log(load_id) {
 				$('#experiment_id').val( obj.experiment_id );
 				$('#loading_msg').hide();
 				$('#finished_msg').fadeIn();
+				$('#ok_button').fadeIn();
 				$('#finish_load_experiment_button').fadeIn();
 			}
 			else if (obj.status == -1) {
@@ -193,6 +195,9 @@ function search_genomes (search_term) {
 			success : function(data) {
 				var obj = jQuery.parseJSON(data);
 				if (obj.items) {
+					obj.items.forEach(function(element) {
+						element.label = element.label.replace(/&reg;/g, "\u00ae"); // (R)
+					});
 					$("#edit_genome").autocomplete({source: obj.items});
 					$("#edit_genome").autocomplete("search");
 				}
@@ -246,6 +251,7 @@ function search_genomes (search_term) {
 
 <div id="file_select_dialog" class="dialog_box" title="Select Data File ...">
   <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
+  <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
 </div> <!-- file_select_dialog -->
 
 
@@ -258,7 +264,8 @@ function search_genomes (search_term) {
   <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
   <span id="error_msg" style="display:none;">An error occurred <img src="picts/thumbs_down.png"></span>
   <input id="experiment_id" type="hidden" /> 
-  <span id="finish_load_experiment_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Continue to ExperimentView</span>
+  <span id="ok_button" onClick="$('#load_experiment_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">OK</span>
+  <span id="finish_load_experiment_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">ExperimentView</span>
   <span id="cancel_load_experiment_button" onClick="$('#load_experiment_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
 </div> <!-- load_experiment_dialog -->
 

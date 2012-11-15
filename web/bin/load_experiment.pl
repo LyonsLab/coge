@@ -111,6 +111,8 @@ my $cmd = "cp -f $data_file $staging_dir";
 
 my $staged_data_file = $staging_dir . '/' . $filename;
 
+#TODO redirect fastbit output to log file instead of stderr
+
 print $log "log: Generating database\n";
 $cmd = "$FASTBIT_LOAD -d $staging_dir -m \"chr:key, start:unsigned long, stop:unsigned long, strand:byte, value1:double, value2:double\" -t $staged_data_file";
 print $log $cmd, "\n";

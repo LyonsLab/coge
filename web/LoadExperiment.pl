@@ -313,7 +313,9 @@ sub get_load_experiment_log {
 	my $load_id = $opts{load_id};
 	
 	my $logfile = $TEMPDIR . "staging/$load_id/log.txt";
-	open(my $fh, $logfile) or die "Error opening log file";
+	open(my $fh, $logfile) 
+		or return encode_json({ status => -1, log => "Error opening log file" });
+
 	my @lines;
 	my $eid;
 	my $status = 0;
@@ -331,6 +333,7 @@ sub get_load_experiment_log {
 			last;	
 		}
 	}
+
 	close($fh);
 	
 	return encode_json({ status => $status, experiment_id => $eid, log => join("<BR>\n", @lines) });
@@ -358,9 +361,9 @@ sub search_genomes {
 
 	# Combine matching genomes with matching organism genomes, preventing duplicates
 	my %unique;
-	map { $unique{$_->id} = $_->info if (not $_->restricted or $USER->has_access_to_genome($_)) } @genomes;
+	map { $unique{$_->id} = $_ if (not $_->restricted or $USER->has_access_to_genome($_)) } @genomes;
 	foreach my $organism (@organisms) {
-		map { $unique{$_->id} = $_->info if (not $_->restricted or $USER->has_access_to_genome($_)) } $organism->genomes;
+		map { $unique{$_->id} = $_ if (not $_->restricted or $USER->has_access_to_genome($_)) } $organism->genomes;
 	}
 	
 	# Limit number of results displayed
@@ -369,11 +372,17 @@ sub search_genomes {
 	}	
 	
 	my @items;
-	foreach (keys %unique) {
-		push @items, { label => $unique{$_}, value => $_ };	
+	foreach (sort genomecmp values %unique) {#(keys %unique) {
+		push @items, { label => $_->info, value => $_->id };	
 	}
 	
 	return encode_json({timestamp => $timestamp, items => \@items});
+}
+
+# FIXME this comparison routine is duplicated elsewhere
+sub genomecmp {
+	no warnings 'uninitialized'; # disable warnings for undef values in sort
+	$a->organism->name cmp $b->organism->name || versioncmp($b->version, $a->version) || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id
 }
 
 sub generate_html {
@@ -404,6 +413,7 @@ sub generate_body {
 	$template->param( PAGE_NAME => $PAGE_TITLE . '.pl' );
 	
 	$template->param( FILE_SELECT_SINGLE => 1 );
+	$template->param( DEFAULT_TAB => 2 );
 	$template->param( DISABLE_IRODS_GET_ALL => 1 );
 	$template->param( MAX_IRODS_LIST_FILES => 100 );
 	$template->param( MAX_IRODS_TRANSFER_FILES => 30 );
