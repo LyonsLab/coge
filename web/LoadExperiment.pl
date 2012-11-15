@@ -412,6 +412,8 @@ sub generate_body {
 	$template->param( MAIN => 1 );
 	$template->param( PAGE_NAME => $PAGE_TITLE . '.pl' );
 	
+	return "Access denied" if ($USER->name eq 'public');
+	
 	$template->param( FILE_SELECT_SINGLE => 1 );
 	$template->param( DEFAULT_TAB => 2 );
 	$template->param( DISABLE_IRODS_GET_ALL => 1 );

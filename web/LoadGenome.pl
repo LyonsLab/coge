@@ -514,6 +514,8 @@ sub generate_body {
 	$template->param( MAIN => 1 );
 	$template->param( PAGE_NAME => $PAGE_TITLE . '.pl' );
 	
+	return "Access denied" if ($USER->name eq 'public');
+
 	$template->param( ENABLE_NCBI => 1 );
 	$template->param( DEFAULT_TAB => 3 );
 	$template->param( MAX_IRODS_LIST_FILES => 100 );
