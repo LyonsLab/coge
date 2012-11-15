@@ -75,8 +75,11 @@ $MAX_SEARCH_RESULTS = 100;
 	load_genome				=> \&load_genome,
 	get_sequence_types		=> \&get_sequence_types,
 	create_sequence_type	=> \&create_sequence_type,
+	create_source			=> \&create_source,
 	create_organism			=> \&create_organism,
 	search_organisms		=> \&search_organisms,
+	search_users			=> \&search_users,
+	get_sources				=> \&get_sources,
 	get_load_genome_log		=> \&get_load_genome_log,
 );
 
@@ -278,14 +281,20 @@ sub load_genome {
 	my $description = $opts{description};
 	my $version = $opts{version};
 	my $type_id = $opts{type_id};
+	my $source_name = $opts{source_name};
 	my $restricted = $opts{restricted};
 	my $org_name = $opts{org_name};
+	my $user_name = $opts{user_name};
 	my $items = $opts{items};
 	return unless $items;
 #	print STDERR "load_genome: name=$name description=$description version=$version type_id=$type_id restricted=$restricted org_name=$org_name\n";
 	
 	$items = decode_json($items);
 #	print STDERR Dumper $items;
+
+	if (!$user_name || !$USER->is_admin) {
+		$user_name = $USER->user_name;
+	}
 
 	# Setup staging area and log file
 	my $stagepath = $TEMPDIR . 'staging/';
@@ -319,14 +328,14 @@ sub load_genome {
 
 	print $log "Calling bin/load_genome.pl ...\n";
 	my $cmd = "$BINDIR/load_genome.pl " .
-			  "-user_name " . $USER->user_name . ' ' .
+			  "-user_name " . $user_name . ' ' .
 			  '-name "' . escape($name) . '" ' .
 			  '-desc "' . escape($description) . '" ' .
 			  '-version "' . escape($version) . '" ' .
 			  "-type_id $type_id " .
 			  "-restricted " . ($restricted eq 'true') . ' ' .
 			  '-org_name "' . escape($org_name) . '" ' .
-			  "-source_name " . $USER->display_name . ' ' .
+			  '-source_name "' . escape($source_name) . '" ' .
 			  "-staging_dir $stagepath " .
 			  "-install_dir " . $P->{DATADIR} . ' ' .
 			  '-fasta_files "' . escape(join(',', @files)) . '" ' .
@@ -356,14 +365,18 @@ sub get_load_genome_log {
 	my $gid;
 	my $status = 0;
 	while (<$fh>) {
-		if ($_ =~ /All done/) {
+		push @lines, $1 if ($_ =~ /^log: (.+)/i);
+		if ($_ =~ /All done/i) {
 			$status = 1;
 			last;	
 		}
-		elsif ($_ =~ /genome id: (\d+)/) {
+		elsif ($_ =~ /genome id: (\d+)/i) {
 			$gid = $1;
-		}
-		push @lines, $1 if ($_ =~ /^log: (.+)/);
+		}		
+		elsif ($_ =~ /log: error/i) {
+			$status = -1;
+			last;	
+		}		
 	}
 	close($fh);
 	
@@ -391,6 +404,21 @@ sub create_sequence_type {
 	return unless $type;
 	
 	return $type->id;
+}
+
+sub create_source {
+	my %opts = @_;
+	my $name = $opts{name};
+	return unless $name;
+	my $desc = $opts{desc};
+	my $link = $opts{link};
+	$link =~ s/^\s+//;
+	$link = 'http://' . $link if (not $link =~ /^(\w+)\:\/\//);	
+	
+	my $source = $coge->resultset('DataSource')->find_or_create( { name => $name, description => $desc, link => $link } );
+	return unless ($source);
+	
+	return $name;
 }
 
 sub create_organism {
@@ -423,12 +451,40 @@ sub search_organisms {
 		return encode_json({timestamp => $timestamp, items => undef});
 	}
 	
+	my %unique = map { $_->name => 1 } @organisms;
+	return encode_json({timestamp => $timestamp, items => [sort keys %unique]});
+}
+
+sub search_users {
+	my %opts = @_;
+	my $search_term = $opts{search_term};
+	my $timestamp = $opts{timestamp};
+	#print STDERR "$search_term $timestamp\n";
+	return unless $search_term;
+
+	# Perform search
+	$search_term = '%'.$search_term.'%';
+	my @users = $coge->resultset("User")->search(
+		\[ 'user_name LIKE ? OR first_name LIKE ? OR last_name LIKE ?', 
+		['user_name', $search_term], ['first_name', $search_term], ['last_name', $search_term] ]);
+
+	# Limit number of results displayed
+	# if (@users > $MAX_SEARCH_RESULTS) {
+	# 	return encode_json({timestamp => $timestamp, items => undef});
+	# }
+	
+	return encode_json({timestamp => $timestamp, items => [sort map { $_->user_name } @users]});
+}
+
+sub get_sources {
+	#my %opts = @_;
+	
 	my %unique;
-	foreach (@organisms) {
+	foreach ($coge->resultset('DataSource')->all()) {
 		$unique{$_->name}++;
 	}
 	
-	return encode_json({timestamp => $timestamp, items => [sort keys %unique]});
+	return encode_json([sort keys %unique]);
 }
 
 sub generate_html {
@@ -459,9 +515,11 @@ sub generate_body {
 	$template->param( PAGE_NAME => $PAGE_TITLE . '.pl' );
 	
 	$template->param( ENABLE_NCBI => 1 );
+	$template->param( DEFAULT_TAB => 3 );
 	$template->param( MAX_IRODS_LIST_FILES => 100 );
 	$template->param( MAX_IRODS_TRANSFER_FILES => 30 );
 	$template->param( MAX_FTP_FILES => 30 );
+	$template->param( ADMIN_AREA    => 1 ) if $USER->is_admin;
 	
 	return $template->output;
 }

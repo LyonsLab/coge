@@ -14,10 +14,35 @@ $(document).ready(function(){
 	
 	$(".dialog_box").dialog({autoOpen: false, width: 500});
 	
+	set_input('edit_organism');
+	set_input('edit_source');
+
 	get_sequence_types();
-	
-	$("#edit_organism").autocomplete({source:[]});
+	get_sources();
+	$("#edit_organism").autocomplete({
+		source:[], 
+		focus: function() { return false; },
+	});
 });
+
+function set_input(id) {
+	var obj = $('#'+id);
+	var val = obj.val();
+	
+	if ( val && val != 'Search' ) {
+		obj.css({"font-style": "normal", "color": "black"});
+	}
+	else {
+		if (obj.is(":focus")) {
+			obj.val('');
+			obj.css({"font-style": "normal", "color": "black"});
+		}
+		else {
+			obj.val('Search');
+			obj.css({"font-style": "italic", "color": "gray"});
+		}
+	}
+}
 
 function file_selected(filename, url) {
 	$('#files_clear').removeClass('ui-state-disabled');
@@ -41,7 +66,7 @@ function get_sequence_types(id) {
 			if (id) {
 				$('#select_type').val(id);
 			}
-		},
+		}
 	});
 }
 
@@ -60,7 +85,29 @@ function create_sequence_type() {
 			if (id) {
 				get_sequence_types(id);
 			}
+		}
+	});
+}
+
+function create_source() {
+	var name = $('#edit_source_name').val();
+	var desc = $('#edit_source_desc').val();
+	var link = $('#edit_source_link').val();
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'create_source',
+			name: name,
+			desc: desc,
+			link: link,
 		},
+		success : function(name) {
+			$('#create_new_source_dialog').dialog('close');
+			if (name) {
+				$('#edit_source').val(name);
+				set_input('edit_source');
+			}
+		}
 	});
 }
 
@@ -77,8 +124,18 @@ function create_organism() {
 		success : function() {
 			$('#create_new_organism_dialog').dialog('close');
 			$('#edit_organism').val(name);
-		},
+		}
 	});
+}
+
+function reset_log() {
+	$('#load_genome_log').html('');
+	$('#loading_msg').show();
+	$('#finished_msg').hide();
+	$('#error_msg').hide();
+	$('#ok_button').hide();
+	$('#finish_load_genome_button').hide();
+	$('#cancel_load_genome_button').hide();
 }
 
 function load_genome() {
@@ -86,20 +143,41 @@ function load_genome() {
 	if (items == null) {
 		alert('Files are still being transferred, please wait.');
 		return;
-	}	
+	}
 	else if (items.length == 0) {
 		alert('Please select some sequence files or an FTP site.');
 		return;
 	}
-	
+
+	var org_name = $('#edit_organism').val();
+	if (!org_name || org_name == 'Search') {
+		alert('Please select an organism.');
+		return;
+	}
+
+	var version = $('#edit_version').val();
+	if (!version) {
+		alert('Please specify a genome version.');
+		return;
+	}
+
+	var source = $('#edit_source').val();
+	if (!source || source == 'Search') {
+		alert('Please specify a data source.');
+		return;
+	}
+
+	var user_name = $('#edit_user').val(); // only exists if admin
+	if (user_name == 'Search') { user_name = ''; }
+
 	var name = $('#edit_name').val();
 	var description = $('#edit_description').val();
-	var version = $('#edit_version').val();
 	var type_id = $('#select_type').val();
 	var restricted = $('#restricted').is(':checked');
-	var org_name = $('#edit_organism').val();
 	var json = JSON.stringify(items);
 	
+	reset_log();
+
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
@@ -110,6 +188,8 @@ function load_genome() {
 			type_id: type_id,
 			restricted: restricted,
 			org_name: org_name,
+			source_name: source,
+			user_name: user_name,
 			items: json,
 			timestamp: new Date().getTime()
 		},
@@ -139,7 +219,13 @@ function get_load_genome_log(load_id) {
 				$('#genome_id').val( obj.genome_id );
 				$('#loading_msg').hide();
 				$('#finished_msg').fadeIn();
+				$('#ok_button').fadeIn();
 				$('#finish_load_genome_button').fadeIn();
+			}
+			else if (obj.status == -1) {
+				$('#loading_msg').hide();
+				$('#error_msg').fadeIn();
+				$('#cancel_load_genome_button').fadeIn();
 			}
 			else {
 				setTimeout(function() { get_load_genome_log(load_id); }, 1000);
@@ -154,21 +240,19 @@ function continue_to_view() {
 }
 
 function wait_to_search (search_func, search_term) {
-	if (!search_term || search_term.length > 2) {
-		pageObj.search_term = search_term;
-			
-		if (pageObj.time) {
-			clearTimeout(pageObj.time);
-		}
+	pageObj.search_term = search_term;
 		
-		// FIXME: could generalize by passing select id instead of separate search_* functions
-		pageObj.time = setTimeout(
-			function() { 
-				search_func(pageObj.search_term); 
-			},
-			500
-		);
+	if (pageObj.time) {
+		clearTimeout(pageObj.time);
 	}
+	
+	// FIXME: could generalize by passing select id instead of separate search_* functions
+	pageObj.time = setTimeout(
+		function() { 
+			search_func(pageObj.search_term); 
+		},
+		500
+	);
 }
 
 function search_organisms (search_term) {
@@ -182,13 +266,52 @@ function search_organisms (search_term) {
 			},
 			success : function(data) {
 				var obj = jQuery.parseJSON(data);
-				if (obj.items) {
+				if (obj && obj.items) {
 					$("#edit_organism").autocomplete({source: obj.items});
 					$("#edit_organism").autocomplete("search");
 				}
 			},
 		});
 	}
+}
+
+function search_users (search_term) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'search_users',
+			search_term: search_term,
+			timestamp: new Date().getTime()
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj && obj.items) {
+				$("#edit_user").autocomplete({source: obj.items});
+				$("#edit_user").autocomplete("search");
+			}
+		},
+	});
+}
+
+function get_sources () {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_sources',
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj) {
+				$("#edit_source").autocomplete({source: obj});
+			}
+		},
+	});
+}
+
+function more() {
+	$('#more').hide();
+	$('#edit_name').closest('tr').fadeIn();
+	$('#edit_description').closest('tr').fadeIn();
 }
 
 </SCRIPT>
@@ -198,13 +321,12 @@ function search_organisms (search_term) {
 <span style="color:dimgray;font-weight:bold;">Genome Info</span><br>
 <table class="small ui-widget-content ui-corner-all">
   <tr>
-    <td>Name:</td>
-    <td><input id="edit_name" type="textbox" size="58" value="<TMPL_VAR NAME=NAME>" /></td>
-  </tr>
-  <tr>
-    <td>Description:</td>
-    <td><textarea id="edit_description" rows=5 cols=50 ><TMPL_VAR NAME=DESC></textarea></td>
-  </tr>
+    <td>Organism:</td>
+    <td>
+      <input id="edit_organism" onkeyup="wait_to_search(search_organisms, this.value);" onfocus="set_input('edit_organism');" onblur="set_input('edit_organism');" size="45" />
+      <span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all ui-button-go'>New</span>
+    </td>
+  </tr>	
   <tr>
     <td>Version:</td>
     <td><input id="edit_version" type="textbox" size="10" value="<TMPL_VAR NAME=NAME>" /></td>
@@ -217,15 +339,26 @@ function search_organisms (search_term) {
     </td>
   </tr>
   <tr>
+    <td>Source:</td>
+    <td>
+      <input id="edit_source" onfocus="set_input('edit_source');" onblur="set_input('edit_source');" size="45" />
+      <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all ui-button-go'>New</span>
+    </td>
+  </tr>
+  <tr>
     <td>Restricted?</td>
     <td><input id="restricted" type="checkbox" checked></td>
   </tr>
-  <tr>
-    <td>Organism:</td>
-    <td>
-      <input id="edit_organism" onkeypress="wait_to_search(search_organisms, this.value);" size="45" />
-      <span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all ui-button-go'>New</span>
-    </td>
+  <tr id='more'>
+    <td colspan="2"><span class="link" onclick="more();">more...</span></td>
+  </tr>  
+  <tr style='display:none;'>
+    <td>Name:</td>
+    <td><input id="edit_name" type="textbox" size="58" value="<TMPL_VAR NAME='NAME'>" /></td>
+  </tr>
+  <tr style='display:none;'>
+    <td>Description:</td>
+    <td><textarea id="edit_description" rows="5" cols="50" ><TMPL_VAR NAME='DESC'></textarea></td>
   </tr>
 </table>
 
@@ -236,7 +369,7 @@ function search_organisms (search_term) {
 <span id="files_clear" onClick="clear_list();" class='ui-state-disabled ui-button ui-corner-all ui-button-go'>Clear List</span>
 <br>
 <br>
-<span onClick="load_genome();" class='ui-button ui-corner-all ui-button-go'>Load Genome</span>
+<span onClick="load_genome();" style="font-size:1em;" class='ui-button ui-corner-all ui-button-go'>Load Genome</span>
 
 
 
@@ -269,7 +402,28 @@ function search_organisms (search_term) {
     </tr>
   </table>
   <br>
-  <span id="create_organism_button" onClick="create_organism();" class="ui-state-disabled ui-button ui-corner-all ui-button-go">Create new organism</span>
+  <span id="create_organism_button" onClick="create_organism();" class="ui-state-disabled ui-button ui-corner-all ui-button-go">Create</span>
+</div>
+
+
+
+<div id="create_new_source_dialog" class="dialog_box" title="Create New Source">
+  <table class="small">
+    <tr>
+      <td>Name:</td>
+      <td><input id="edit_source_name" type="textbox" size="53" onkeyup="activate_on_input('edit_source_name', 'create_source_button');" /></td>
+    </tr>
+    <tr>
+      <td>Description:</td>
+      <td><textarea id="edit_source_desc" rows="5" cols="50" ></textarea></td>
+    </tr>
+    <tr>
+      <td>Link:</td>
+      <td><input id="edit_source_link" type="textbox" size="53" /></td>
+    </tr>
+  </table>
+  <br>
+  <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all ui-button-go">Create</span>
 </div>
 
 
@@ -281,15 +435,41 @@ function search_organisms (search_term) {
   <span id="loading_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
   <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
   <input id="genome_id" type="hidden" /> 
+  <span id="ok_button" onClick="$('#load_genome_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">OK</span>
   <span id="finish_load_genome_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Continue to OrganismView</span>
+  <span id="cancel_load_genome_button" onClick="$('#load_genome_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
 </div>
 
 
 
 <div id="file_select_dialog" class="dialog_box" title="Select Data File ...">
   <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
+  <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all ui-button-go">Done</span>
 </div> <!-- file_select_dialog -->
 
 
+
+<TMPL_IF NAME='ADMIN_AREA'>
+<script>
+$(document).ready(function() {
+	set_input('edit_user');
+	$("#edit_user").autocomplete({
+		source:[], 
+		focus: function() { return false; },
+	});	
+});
+</script>
+<br><br><hr>
+<span style="color:dimgray;font-weight:bold;">Admin Functions</span><br>
+<table class="small ui-widget-content ui-corner-all">
+  <tr>
+    <td>Assign to user:</td>
+    <td>
+      <input id="edit_user" onkeyup="wait_to_search(search_users, this.value);" onfocus="set_input('edit_user');" onblur="set_input('edit_user');" size="10" />
+    </td>
+  </tr>
+</table>
+<br>
+</TMPL_IF> <!-- ADMIN_AREA -->
 
 </TMPL_IF> <!-- MAIN -->

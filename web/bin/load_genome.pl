@@ -40,6 +40,7 @@ $name = unescape($name);
 $description = unescape($description);
 $version = unescape($version);
 $org_name = unescape($org_name);
+$source_name = unescape($source_name);
 
 # Open log file
 $| = 1;
@@ -62,19 +63,22 @@ foreach my $file (@files) {
 my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
 my $coge    = CoGeX->connect( $connstr, $user, $pass );
 unless ($coge) {
-	print $log "Couldn't connect to database\n";
-	die;	
+	print $log "log: error: couldn't connect to database\n";
+	exit(-1);
 }
 
 # Retrieve organism
 my $organism = $coge->resultset('Organism')->find( { name => $org_name } );
-die "Error finding organism" unless ($organism);
-print STDERR "organism id: " . $organism->id . "\n";
+unless ($organism) {
+	print $log "log: error finding organism\n";
+	exit(-1);
+}
+print $log "organism id: " . $organism->id . "\n";
 	
 # Create datasource
-my $datasource = $coge->resultset('DataSource')->find_or_create( { name => $source_name, description => "Loaded into CoGe via LoadGenome" } );
-die "Error creating data source" unless $datasource;
-print STDERR "datasource id: " . $datasource->id . "\n";
+my $datasource = $coge->resultset('DataSource')->find_or_create( { name => $source_name } );
+die "Error creating/finding data source" unless $datasource;
+print $log "datasource id: " . $datasource->id . "\n";
 	
 # Create genome
 my $genome = $coge->resultset('Genome')->create( 
@@ -86,10 +90,9 @@ my $genome = $coge->resultset('Genome')->create(
   	restricted => $restricted
   } );
 unless ($genome) {
-	print $log "Error creating genome\n";
-	die;	
+	print $log "log: error creating genome\n";
+	exit(-1);	
 }
-print STDERR "genome id: " . $genome->id . "\n";
 print $log "genome id: " . $genome->id . "\n"; # don't change, gets parsed by calling code
 
 $install_dir = "$install_dir/" . $genome->get_path . "/";# . $genome->id . ".faa";
@@ -99,8 +102,8 @@ $genome->update;
 # Add new genome to user's owner list
 my $user = $coge->resultset('User')->find( { user_name => $user_name } );
 unless ($user) {
-	print $log "Error finding user '$user_name'\n";
-	die;
+	print $log "log: error finding user '$user_name'\n";
+	exit(-1);
 }
 my $child_types = CoGeX::list_child_types();
 my $listconn = $coge->resultset('ListConnector')->create(
@@ -109,8 +112,8 @@ my $listconn = $coge->resultset('ListConnector')->create(
 	  child_type => $child_types->{genome}
 	} );
 unless ($listconn) {
-	print $log "Error creating list connector\n";
-	die;
+	print $log "log: error creating list connector\n";
+	exit(-1);
 }
 
 # Create datasets
@@ -125,17 +128,17 @@ foreach my $file (@files) {
 		restricted => $restricted,
 	  } );
 	unless ($dataset) {
-		print $log "Error creating dataset\n";
-		die;
+		print $log "log: error creating dataset\n";
+		exit(-1);
 	}
-	#TODO set link field if from FTP
-	print STDERR "dataset id: " . $dataset->id . "\n";
+	#TODO set link field if loaded from FTP
+	print $log "dataset id: " . $dataset->id . "\n";
 	$datasets{$file} = $dataset->id;
 		
 	my $dsconn = $coge->resultset('DatasetConnector')->create( { dataset_id => $dataset->id, genome_id => $genome->id } );
 	unless ($dsconn) {
-		print $log "Error creating dataset connector\n";
-		die;
+		print $log "log: error creating dataset connector\n";
+		exit(-1);
 	}
 }
 
@@ -168,20 +171,19 @@ foreach my $chr (sort keys %sequences) {
 }
 
 # Copy files from staging directory to installation directory
-print STDERR "install_dir=$install_dir\n";
+print $log "install_dir: $install_dir\n";
 mkpath($install_dir);
 mkpath( $install_dir . "/chr" );
 my $cmd = "cp -r $staging_dir/chr $install_dir";
-print STDERR "$cmd\n";
+print $log "$cmd\n";
 `$cmd`;
 my $genome_filename = $genome->id . ".faa";
 $cmd = "cp $staging_dir/genome.faa $install_dir/$genome_filename";
-print STDERR "$cmd\n";
+print $log "$cmd\n";
 `$cmd`;
 
 # Yay!
-print $log "All done!";
-print STDERR "All done!";
+print $log "log: All done!";
 close($log);
 exit;
 
@@ -191,7 +193,7 @@ sub process_fasta_file {
 	my $filepath = shift;
 	my $target_dir = shift;
 	
-	print STDERR "process_fasta_file: $filepath\n";
+	print $log "process_fasta_file: $filepath\n";
 	$/ = "\n>";
 	open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
 

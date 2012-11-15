@@ -29,7 +29,7 @@ function get_selected_files() {
 // End Widget API -------------------------------------------------------------
 
 $(document).ready(function() {
-	$(function() { $("#tabs").tabs({selected:2}); });
+	$(function() { $("#tabs").tabs({selected:<TMPL_VAR NAME='DEFAULT_TAB'>}); });
 	
 	irods_get_path();
 	
@@ -79,7 +79,7 @@ function add_file_to_list(filename, url) {
 		return 0;
 	}
 	
-	var tr = $('<tr style="font-style:italic;color:gray;"><td style="padding-right:15px">' + filename + '</td>' + '</tr>');
+	var tr = $('<tr style="font-style:italic;color:gray;"><td style="padding-right:15px;">' + filename + '</td>' + '</tr>');
 	var td = $('<td style="float:right;"><img src="picts/ajax-loader.gif"/></td>');
 	$(tr).append(td).fadeIn();
 	$(tr).data('url', url);
