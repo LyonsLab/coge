@@ -240,7 +240,7 @@ sub get_groups_for_user
 		my %lists;
 		foreach my $list (sort { $a->type->name cmp $b->type->name || $a->name cmp $b->name } $group->lists ) {
 			my $name;
-			$name .= "&reg; " if !$list->restricted;    #list is open to the public (P)
+			$name .= "&reg; " if $list->restricted;
 			$name .= $list->name;
 			$name = qq{<span class="link" onclick="window.open('ListView.pl?lid=} . $list->id . qq{');">} . $name . "</span>";
 			push @{ $lists{ $list->type->name } }, $name;
