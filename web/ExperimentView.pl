@@ -289,13 +289,13 @@ sub get_annotations {
 			$html .= "<tr style='vertical-align:top;'>";
 			$html .= "<th align='right' class='title5' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;' rowspan=" . @{$groups{$group}} . ">$group:</th>" if ($first-- > 0);
 			
-			$html .= '<td>';
+			#$html .= '<td>';
 			my $image_link = ($a->image ? 'image.pl?id=' . $a->image->id : '');
-			my $image_info = ($a->image ? "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='padding:1px;border:1px solid lightgray;vertical-align:text-top;'></a>" : '');
-			$html .= $image_info if $image_info;
-			$html .= "</td>";
+			my $image_info = ($a->image ? "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='float:left;padding:1px;border:1px solid lightgray;margin-right:5px;'></a>" : '');
+			#$html .= $image_info if $image_info;
+			#$html .= "</td>";
 
-			$html .= "<td class='data5'>".$a->info.'</td>';
+			$html .= "<td class='data5'>".$image_info.$a->info.'</td>';
 			$html .= '<td style="padding-left:5px;">';
 			$html .= linkify($a->link, 'Link') if $a->link;
 			$html .= '</td>';
