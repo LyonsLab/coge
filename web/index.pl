@@ -52,8 +52,8 @@ $USER = undef;
 #logout is only called through this program!  All logouts from other pages are redirected to this page
 CoGe::Accessory::Web->logout_cas(cookie_name=>$COOKIE_NAME, coge=>$coge, user=>$USER, form=>$FORM) if $FORM->param('logout');
 
-print $FORM->header, gen_html();
-#print $pj->build_html($FORM, \&gen_html);
+#print $FORM->header, gen_html();
+print $pj->build_html($FORM, \&gen_html);
 
 
 sub gen_html
@@ -106,17 +106,17 @@ sub gen_body
       {
 	$tmpl->param(update=>1);
       }
-    elsif ($USER && !$FORM->param('logout') && !$FORM->param('login'))
-      {
+#    elsif ($USER && !$FORM->param('logout') && !$FORM->param('login'))
+#      {
 	$tmpl->param(ACTIONS=>[map {{ACTION=>$_->{NAME}, DESC=>$_->{DESC}, LINK=>$_->{LINK}}} sort {$a->{ID} <=> $b->{ID}}@{actions()}  ]);
 	$tmpl->param('INTRO'=>1);
-      }
-    my $url = $FORM->param('url') if $FORM->param('url');
-    if ($url)
-     {
-        $url =~ s/:::/;/g if $url;
-        $tmpl->param(url=>$url);
-     }
+#      }
+#    my $url = $FORM->param('url') if $FORM->param('url');
+#    if ($url)
+#     {
+#        $url =~ s/:::/;/g if $url;
+#        $tmpl->param(URL=>$url);
+#     }
     $html .= $tmpl->output;
     return $html;
   }
