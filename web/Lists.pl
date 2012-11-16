@@ -127,31 +127,39 @@ sub delete_list {
 sub get_lists_for_user {
 	#my %opts = @_;
 	
-	my @lists;
+	my (@lists, @admin_lists);
 	if ( $USER->is_admin ) {
-		@lists = $coge->resultset('List')->all();
+	  @admin_lists = $coge->resultset('List')->all();
 	}
-	else {
-		@lists = $USER->lists;
-	}	
-
+	@lists = $USER->lists;
+	my %user_list_ids = map{$_->id, 1} @lists; #for admins -- marks lists that they don't own
+	my %seen_list_ids; #for admins -- their lists are listed first, then all lists
 	my @list_info;
-	foreach my $list ( sort {$a->name cmp $b->name } @lists ) {
-		push @list_info, 
-		  { NAME  => qq{<span class=link onclick='window.open("ListView.pl?lid=} . $list->id . qq{")'>} . $list->name . "</span>",
-			DESC  => $list->description,
-			TYPE  => ( $list->type ? $list->type->name : '' ),
-			ANNO  => join( "<br>", map { $_->type->name . ": " . $_->annotation . ($_->image ? ' (image)' : '') } sort sortAnno $list->annotations ),
-			DATA  => $list->data_summary(),
-			GROUP => $list->group->info_html,
-			RESTRICTED => ($list->restricted ? 'yes' : 'no'),
-			EDIT_BUTTON => $list->locked ?
-				"<span class='link ui-icon ui-icon-locked' onclick=\"alert('This list is locked and cannot be edited.')\"></span>" :
-				"<span class='link ui-icon ui-icon-gear' onclick=\"window.open('ListView.pl?lid=" . $list->id . "')\"></span>",
-			DELETE_BUTTON => $list->locked ?
-				"<span class='link ui-icon ui-icon-locked' onclick=\"alert('This list is locked and cannot be deleted.')\"></span>" :
-				"<span class='link ui-icon ui-icon-trash' onclick=\"dialog_delete_list({lid: '" . $list->id . "'});\"></span>"
-		  };
+	@lists = sort sort {$a->name cmp $b->name } @lists;
+	push @lists, sort sort {$a->name cmp $b->name } @admin_lists;
+	foreach my $list (@lists ) {
+	  next if $seen_list_ids{$list->id};
+	  $seen_list_ids{$list->id}=1;
+	  my $name = qq{<span class=link onclick='window.open("ListView.pl?lid=} . $list->id . qq{")'>} . $list->name . "</span>";
+	  $name = "(R)".$name if $list->restricted;
+	  $name = "A:".$name if !$user_list_ids{$list->id};
+
+	  push @list_info, 
+	    { 
+	     NAME  => $name,
+	     DESC  => $list->description,
+	     TYPE  => ( $list->type ? $list->type->name : '' ),
+	     ANNO  => join( "<br>", map { $_->type->name . ": " . $_->annotation . ($_->image ? ' (image)' : '') } sort sortAnno $list->annotations ),
+	     DATA  => $list->data_summary(),
+	     GROUP => $list->group->info_html,
+	     RESTRICTED => ($list->restricted ? 'yes' : 'no'),
+	     EDIT_BUTTON => $list->locked ?
+	     "<span class='link ui-icon ui-icon-locked' onclick=\"alert('This list is locked and cannot be edited.')\"></span>" :
+	     "<span class='link ui-icon ui-icon-gear' onclick=\"window.open('ListView.pl?lid=" . $list->id . "')\"></span>",
+	     DELETE_BUTTON => $list->locked ?
+	     "<span class='link ui-icon ui-icon-locked' onclick=\"alert('This list is locked and cannot be deleted.')\"></span>" :
+	     "<span class='link ui-icon ui-icon-trash' onclick=\"dialog_delete_list({lid: '" . $list->id . "'});\"></span>"
+	    };
 	}
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'Lists.tmpl' );
