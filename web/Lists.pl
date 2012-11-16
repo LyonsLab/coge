@@ -15,7 +15,7 @@ use CoGeX;
 no warnings 'redefine';
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS
-  $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE
+  $connstr $PAGE_TITLE $TEMPDIR $USER $DATE $BASEFILE
   $coge $cogeweb %FUNCTION $COOKIE_NAME $FORM $URL
   $COGEDIR $TEMPDIR $TEMPURL);
   
@@ -25,7 +25,7 @@ $DATE = sprintf(
 	"%04d-%02d-%02d %02d:%02d:%02d",
 	sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }->(localtime)
 );
-$PAGE_NAME = 'Lists.pl';
+$PAGE_TITLE = 'Lists';
 
 $FORM = new CGI;
 
@@ -40,9 +40,9 @@ $coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
 $COOKIE_NAME = $P->{COOKIE_NAME};
 $URL         = $P->{URL};
 $COGEDIR     = $P->{COGEDIR};
-$TEMPDIR     = $P->{TEMPDIR} . "Lists/";
+$TEMPDIR     = $P->{TEMPDIR} . "$PAGE_TITLE/";
 mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-$TEMPURL = $P->{TEMPURL} . "Lists/";
+$TEMPURL = $P->{TEMPURL} . "$PAGE_TITLE/";
 
 my ($cas_ticket) = $FORM->param('ticket');
 $USER = undef;
@@ -50,7 +50,7 @@ $USER = undef;
 ($USER) = CoGe::Accessory::LogUser->get_user(cookie_name => $COOKIE_NAME, coge => $coge) unless $USER;
 
 my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );
+$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", url => $link );
 
 
 %FUNCTION = (
@@ -100,7 +100,7 @@ sub create_list {
 		restricted => 1
 	  } );
 	
-	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => $PAGE_NAME, description => 'create list id' . $list->id );
+	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'create list id' . $list->id );
 
 	return 1;
 }
@@ -119,7 +119,7 @@ sub delete_list {
 	return 0 if ($list->locked);
 	$list->delete;
 	
-	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => $PAGE_NAME, description => 'delete list id' . $list->id );
+	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'delete list id' . $list->id );
 
 	return 1;
 }
@@ -141,8 +141,8 @@ sub get_lists_for_user {
 	  next if $seen_list_ids{$list->id};
 	  $seen_list_ids{$list->id}=1;
 	  my $name = qq{<span class=link onclick='window.open("ListView.pl?lid=} . $list->id . qq{")'>} . $list->name . "</span>";
-	  $name = "(R)".$name if $list->restricted;
-	  $name = "A:".$name if !$user_list_ids{$list->id};
+	  $name = '&reg; '.$name if $list->restricted;
+	  $name = '&alpha; '.$name if !$user_list_ids{$list->id};
 
 	  push @list_info, 
 	    { 
@@ -162,7 +162,7 @@ sub get_lists_for_user {
 	    };
 	}
 
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'Lists.tmpl' );
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 	$template->param( LIST_STUFF => 1 );
 	$template->param( LIST_LOOP  => \@list_info );
 	$template->param( TYPE_LOOP => get_list_types() );
@@ -187,14 +187,14 @@ sub get_list_types {
 sub gen_html {
 	my $html;
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-	$template->param( HELP => '/wiki/index.php?title=Lists' );
+	$template->param( HELP => "/wiki/index.php?title=$PAGE_TITLE" );
 	my $name = $USER->user_name;
 	$name = $USER->first_name if $USER->first_name;
 	$name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
 	$template->param( USER       => $name );
 	$template->param( TITLE      => qq{} );
-	$template->param( PAGE_TITLE => qq{Lists} );
-	$template->param( LOGO_PNG   => "Lists-logo.png" );
+	$template->param( PAGE_TITLE => $PAGE_TITLE );
+	$template->param( LOGO_PNG   => "$PAGE_TITLE-logo.png" );
 	$template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
 	$template->param( DATE       => $DATE );
 	$template->param( BODY       => gen_body() );
@@ -205,8 +205,8 @@ sub gen_html {
 }
 
 sub gen_body {
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'Lists.tmpl' );
-	$template->param( PAGE_NAME  => $FORM->url );
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+	$template->param( PAGE_NAME  => "$PAGE_TITLE.pl" );
 	$template->param( MAIN       => 1 );
 	$template->param( LIST_INFO  => get_lists_for_user() );
 	$template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
