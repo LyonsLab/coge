@@ -28,7 +28,6 @@ $(function() {		$("#accordion3").accordion({collapsible:true, active: false, dis
 $(function() {		$("#accordion4").accordion({collapsible:true, active: false});	});
 
 function cross_fade() {
-
  var pause_time = 10000;
  var fade_time = 3000;
  var image = new Array(
@@ -56,10 +55,6 @@ function cross_fade() {
    ["GEvo-ecoli-insertion-direct-repeats.png", "Identifying direct repeats flanking an insertion in E. coli", " Analysis_of_variations_found_in_genomes_of_Escherichia_coli_strain_K12_DH10B_and_strain_B_REL606_using_SynMap_and_GEvo_analysis#High-resolution_GEvo_analysis_of_an_insertion:_finding_direct_sequence_repeats"],
    ["800px-GeLo-nucleotides.png", "Visualizing individual nucleotides with GenomeView", "GenomeView_examples#Chromosome_Background"],
    ["600px-Phylogeny_fr_PhyML.png","Linking to phylogeny.fr for one-click phylogenetics","Phylogenetics_in_CoGe#Send_sequences_to_phylogeny.fr"]
-
-
-   
-
   );
   var index = pageObj.index;
   $('#crossfade').fadeOut(fade_time);
@@ -137,14 +132,14 @@ CoGe's Entrance Tools:<br>
 </div>
 <div id="accordion4">
    <h3 onclick="get_latest_genomes(['args__limit','limit'],[handle_latest_genome_list]);"><a href="#">Latest Genomes</a></h3>
-   <div style="height: 100px">
+   <div style="min-height: 300px">
 Number returned: <input id=limit class=backbox type=textbox size=3 value=20><span class='ui-button ui-corner-all' onClick="$('#latest_genomes').html('loading. . .');get_latest_genomes(['args__limit','limit'],[handle_latest_genome_list])">Go</span>
      <div id=latest_genomes></div>
    </div>
 </div>
 </div>
 <div style="float:left; width:50px">&nbsp</div>
-<div id=crossfade style="float: left;"></div>
+<div id="crossfade" style="float: left;"></div>
 
 <div style="clear: both;"> </div>
 
