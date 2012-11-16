@@ -1,0 +1,153 @@
+<TMPL_IF NAME="MAIN">
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
+
+<SCRIPT language="JavaScript">
+$(document).ready(function(){
+	pageObj.timestamp = new Array();
+	pageObj.timers = new Array();
+	
+	$.ajaxSetup({
+		type: "POST",
+		url: "<TMPL_VAR NAME='PAGE_NAME'>",
+		dataType: "html",
+		cache: false,
+	});
+	
+});
+</SCRIPT>
+
+<table class="ui-widget-content ui-corner-all small">
+	<tr style="vertical-align:top">
+		<td style="text-align:center">
+			<div><img src="picts/smiley_default.png" width='100' height='100' style="padding:1px;border:1px solid lightgray;"/></div>
+			<TMPL_IF NAME="CAN_EDIT"><span class="link" >click to change</span></TMPL_IF>
+		</td>
+		<td>
+			<table>
+				<tr>
+					<td>User name:</td>
+					<td><TMPL_VAR NAME='USER_NAME'></td>
+				</tr>
+				<tr>
+					<td>Full name:</td>
+					<td><TMPL_VAR NAME='FULL_NAME'></td>
+				</tr>
+				<tr>
+					<td></td>
+					<td class="small"><TMPL_VAR NAME='DESCRIPTION'></td>
+				</tr>
+				<tr>
+					<td>Email:</td>
+					<td><a href="mailto:<TMPL_VAR NAME='EMAIL'>"><TMPL_VAR NAME='EMAIL'></a></td>
+				</tr>
+				<tr>
+					<td>History:</td>
+					<td>
+						<a href="History.pl" target="_blank"><TMPL_VAR NAME='HISTORY_COUNT'></a>
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+</table>
+
+<br>
+
+<table class="ui-widget-content ui-corner-all small" style="table-layout:fixed;width:75%;height:500px;max-width:75%;overflow:hidden;">
+	<tr style="vertical-align:top;">
+		<td>
+			<img src="picts/group.png" width='40' height='40'/>
+			<span class="large">My Groups</span>
+			<TMPL_VAR NAME='GROUPS'>
+			<img src="picts/smiley_face.png" width='40' height='40'/>
+			<span class="large">My Collaborators</span>
+			<TMPL_VAR NAME='COLLABORATORS'>
+		</td>
+		<td>
+			<img src="picts/notebook.png" width='40' height='40'/>
+			<span class="large">My Lists</span>
+			<TMPL_VAR NAME='LISTS'>
+		</td>
+	</tr>
+	<tr style="vertical-align:top;">
+		<td>
+			<img src="picts/dna.png" width='40' height='40'/>
+			<span class="large">My Genomes</span>
+			<TMPL_VAR NAME='GENOMES'>
+		</td>
+		<td>
+			<img src="picts/test_tube.png" width='40' height='40'/>
+			<span class="large">My Experiments</span>
+			<TMPL_VAR NAME='EXPERIMENTS'>
+		</td>
+	</tr>
+</table>
+
+</TMPL_IF> <!-- MAIN -->
+
+
+
+<TMPL_IF NAME='GROUP_TABLE'>
+<div class="small ui-widget-content ui-corner-all" style="max-height:100px;overflow-y:auto">
+	<table class="small">
+		<TMPL_LOOP NAME="GROUP_LOOP">
+		<tr valign="top">
+			<td><TMPL_VAR NAME="GROUP_NAME"></td>
+			<td><TMPL_VAR NAME="GROUP_ROLE"></td>
+			<td><TMPL_VAR NAME="GROUP_DESC"></td>
+		</tr>
+		</TMPL_LOOP>
+	</table>
+</div>
+</TMPL_IF> <!-- GROUPS_TABLE -->
+
+
+
+<TMPL_IF NAME='COLLABORATOR_TABLE'>
+<div class="small ui-widget-content ui-corner-all" style="max-height:100px;overflow-y:auto">
+	<TMPL_LOOP NAME="COLLABORATOR_LOOP">
+		<TMPL_VAR NAME="COLLABORATOR_INFO"><br>
+	</TMPL_LOOP>
+</div>
+</TMPL_IF> <!-- COLLABORATOR_TABLE -->
+
+
+
+<TMPL_IF NAME='LIST_TABLE'>
+<div class="small ui-widget-content ui-corner-all" style="max-height:200px;overflow-y:auto">
+	<TMPL_LOOP NAME="LIST_LOOP">
+		<TMPL_VAR NAME="LIST_INFO"><br>
+	</TMPL_LOOP>
+</div>
+</TMPL_IF> <!-- LIST_TABLE -->
+
+
+
+<TMPL_IF NAME='GENOME_TABLE'>
+<div class="small ui-widget-content ui-corner-all" style="max-height:200px;overflow-y:auto">
+	<TMPL_LOOP NAME="GENOME_LOOP">
+		<TMPL_VAR NAME="GENOME_INFO"><br>
+	</TMPL_LOOP>
+</div>
+</TMPL_IF> <!-- GENOME_TABLE -->
+
+
+
+<TMPL_IF NAME='EXPERIMENT_TABLE'>
+<div class="small ui-widget-content ui-corner-all" style="max-height:200px;overflow-y:auto">
+	<TMPL_LOOP NAME="EXPERIMENT_LOOP">
+		<TMPL_VAR NAME="EXPERIMENT_INFO"><br>
+	</TMPL_LOOP>
+</div>
+</TMPL_IF> <!-- EXPERIMENT_TABLE -->
+
+
+
+<TMPL_IF NAME='ADMIN_AREA'>
+<br>
+<hr>
+Admin Functions:<br>
+- Add "make admin" function
+</TMPL_IF> <!-- ADMIN_AREA -->
