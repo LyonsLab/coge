@@ -98,6 +98,7 @@ __PACKAGE__->has_many( 'sessions'  => "CoGeX::Result::UserSession", 'user_id' );
 __PACKAGE__->has_many( 'works'     => "CoGeX::Result::Work",        'user_id' );
 __PACKAGE__->has_many( 'workflows' => "CoGeX::Result::Workflow",    'user_id' );
 __PACKAGE__->has_many( 'user_group_connectors' => "CoGeX::Result::UserGroupConnector", 'user_id' );
+__PACKAGE__->has_many( 'logs' => "CoGeX::Result::Log",    'user_id' );
 
 
 ################################################ subroutine header begin ##
@@ -222,6 +223,35 @@ sub user_groups {
 
 sub groups {
 	return shift->user_groups(@_);
+}
+
+################################################ subroutine header begin ##
+
+=head2 collaborators
+
+ Usage     : 
+ Purpose   : return user's collaborators
+ Returns   : wantarray of user objects
+ Argument  : 
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub collaborators {
+	my $self = shift;
+
+	my %users;
+	foreach my $group ( $self->groups ) {
+		foreach my $user ( $group->users ) {
+			next if ($user->id == $self->id);
+			$users{$user->id} = $user;
+		}
+	}
+
+	return wantarray ? values %users : [ values %users ];
 }
 
 ################################################ subroutine header begin ##
@@ -806,6 +836,34 @@ sub features {
 		map { $features{ $_->id } = $_ } $ug->features;
 	}
 	return wantarray ? values %features : [ values %features ];
+}
+
+################################################ subroutine header begin ##
+
+=head2 history
+
+ Usage     : $self->history
+ Purpose   : get the user's history
+ Returns   : wantarray or count of history objects
+ Argument  : 
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub history {
+	my $self = shift;
+	my %opts = @_;
+	my $count = $opts{count}; #return count;
+
+	if ($count) {
+	    return $self->logs->count();
+	}
+
+	my @history = $self->logs;
+	return wantarray ? @history : \@history;
 }
 
 ################################################ subroutine header begin ##
