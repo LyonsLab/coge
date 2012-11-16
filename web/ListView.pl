@@ -165,19 +165,20 @@ sub get_list_info {
 	my %opts = @_;
 	my $lid  = $opts{lid};
 	return unless ($lid);
-	return unless ($USER->has_access(list=>$lid));
-	
 	my ($list) = $coge->resultset('List')->find($lid);
+	return unless ($USER->has_access(list=>$lid) || !$list->restricted);
+	
+
 	return "List id$lid does not exist.<br>" .
 			"Click <a href='Lists.pl'>here</a> to view a table of all lists." unless ($list);	
 
 	my $html = $list->annotation_pretty_print_html();
+	my $user_can_edit = $USER->is_admin || (!$list->locked && $USER->is_owner_editor(list => $lid));
 
-	if ($USER->is_admin || (not $list->locked && $USER->is_owner_editor(list => $lid))) {
+	if ($user_can_edit) {
 		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_list_info();">Edit&nbspList&nbspInfo</span>};
 	}
-	
-	if ($USER->is_admin || (not $list->locked && $USER->is_owner(list => $lid))) {
+	if ($USER->is_admin || (!$list->locked && $USER->is_owner(list => $lid))) {
 		if ( $list->restricted ) {
 			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_list_public();">Make&nbspList&nbspPublic</span>};
 		}
@@ -287,9 +288,10 @@ sub get_annotations {
 	my %opts = @_;
 	my $lid  = $opts{lid};
 	return unless ($lid);
-	return unless ($USER->has_access(list=>$lid));
+	my ($list) = $coge->resultset('List')->find($lid);	
+	return unless ($USER->has_access(list=>$lid) || !$list->restricted);
 	
-	my ($list) = $coge->resultset('List')->find($lid);
+
 	return unless $list;
 	
 	my $user_can_edit = $USER->is_admin || (!$list->locked && $USER->is_owner_editor(list => $lid));
@@ -369,7 +371,7 @@ sub add_annotation {
 	
 	if ($link) {
 		$link =~ s/^\s+//;
-		$link = 'http://' . $link if (not $link =~ /^(\w+)\:\/\//);
+		$link = 'http://' . $link if (!$link =~ /^(\w+)\:\/\//);
 	}
 
 	my $group_rs;
@@ -377,7 +379,7 @@ sub add_annotation {
 		$group_rs = $coge->resultset('AnnotationTypeGroup')->find( { name => $type_group } );
 		
 		# Create type group if it doesn't already exist
-		if (not $group_rs) {
+		if (!$group_rs) {
 			$group_rs = $coge->resultset('AnnotationTypeGroup')->create( { name => $type_group } );
 		}
 	}
@@ -389,7 +391,7 @@ sub add_annotation {
 		} );
 	
 	# Create type if it doesn't already exist
-	if (not $type_rs) {
+	if (!$type_rs) {
 		$type_rs = $coge->resultset('AnnotationType')->create( 
 			{ name => $type, 
 			  annotation_type_group_id => ($group_rs ? $group_rs->id : undef)
@@ -480,7 +482,7 @@ sub remove_annotation {
 	#return "Permission denied" unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
 	
 	my $list = $coge->resultset('List')->find($lid);
-	return 0 if ($list->locked and not $USER->is_admin);
+	return 0 if ($list->locked && !$USER->is_admin);
 	
 	my $la = $coge->resultset('ListAnnotation')->find( { list_annotation_id => $laid } );
 	return 0 unless $la;
@@ -498,7 +500,7 @@ sub get_list_contents {
 	return "List id$lid does not exist.<br>" .
 			"Click <a href='Lists.pl'>here</a> to view all lists." unless $list;
 			
-	return "Access denied\n" unless ($USER->has_access(list=>$lid));
+	return "Access denied\n" unless ($USER->has_access(list=>$lid) || !$list->restricted);
 		
 	my $user_can_edit = $USER->is_admin || (!$list->locked && $USER->is_owner_editor(list => $lid));
 	
@@ -610,7 +612,7 @@ sub remove_list_item {
 	#return "Permission denied" unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
 	
 	my $list = $coge->resultset('List')->find($lid);
-	return 0 if ($list->locked and not $USER->is_admin);
+	return 0 if ($list->locked && !$USER->is_admin);
 	
 	my $item_type = $opts{item_type};
 	my $item_id = $opts{item_id};
@@ -647,7 +649,7 @@ sub search_mystuff {
 	
 	my $type = $child_types->{experiment};
 	foreach my $e ($USER->experiments) {#(sort experimentcmp $USER->experiments) {
-		if (not $search_term or $e->info =~ /$search_term/i) {
+		if (!$search_term or $e->info =~ /$search_term/i) {
 			push @{$mystuff{$type}}, $e;
 			last if $num_results++ > $MAX_SEARCH_RESULTS;
 		}
@@ -655,7 +657,7 @@ sub search_mystuff {
 	
 	$type = $child_types->{genome};
 	foreach my $g ($USER->genomes) {#(sort genomecmp $USER->genomes) {
-		if (not $search_term or $g->info =~ /$search_term/i) {
+		if (!$search_term or $g->info =~ /$search_term/i) {
 			push @{$mystuff{$type}}, $g;
 			last if $num_results++ > $MAX_SEARCH_RESULTS;
 		}
@@ -663,7 +665,7 @@ sub search_mystuff {
 	
 	$type = $child_types->{feature};
 	foreach my $f ($USER->features) {#(sort featurecmp $USER->features) {
-		if (not $search_term or $f->info =~ /$search_term/i) {
+		if (!$search_term or $f->info =~ /$search_term/i) {
 			push @{$mystuff{$type}}, $f;
 			last if $num_results++ > $MAX_SEARCH_RESULTS;
 		}
@@ -673,7 +675,7 @@ sub search_mystuff {
 	foreach my $l ($USER->lists) {#(sort listcmp $USER->lists) {
 		next if ($l->id == $list->id); # can't add a list to itself!
 		next if ($l->locked); # exclude user's master list
-		if (not $search_term or $l->info =~ /$search_term/i) {
+		if (!$search_term or $l->info =~ /$search_term/i) {
 			push @{$mystuff{$type}}, $l;
 			last if $num_results++ > $MAX_SEARCH_RESULTS;
 		}
@@ -722,12 +724,12 @@ sub search_genomes {
 	my $num_results;
 	
 	# Try to get all items if blank search term
-	if (not $search_term) {
+	if (!$search_term) {
 		# Get all genomes
 		$num_results = $coge->resultset("Genome")->count;
 		if ($num_results < $MAX_SEARCH_RESULTS) {
 			my @genomes = $coge->resultset("Genome")->all;
-			map { $unique{$_->id} = $_ if (not $_->restricted or $USER->has_access_to_genome($_)) } @genomes;
+			map { $unique{$_->id} = $_ if (!$_->restricted or $USER->has_access_to_genome($_)) } @genomes;
 		}
 	}
 	# Perform search
@@ -745,9 +747,9 @@ sub search_genomes {
 			['name', $search_term], ['description', $search_term] ]);
 
 		# Combine matching genomes with matching organism genomes, preventing duplicates
-		map { $unique{$_->id} = $_ if (not $_->restricted or $USER->has_access_to_genome($_)) } @genomes;
+		map { $unique{$_->id} = $_ if (!$_->restricted or $USER->has_access_to_genome($_)) } @genomes;
 		foreach my $organism (@organisms) {
-			map { $unique{$_->id} = $_ if (not $_->restricted or $USER->has_access_to_genome($_)) } $organism->genomes;
+			map { $unique{$_->id} = $_ if (!$_->restricted or $USER->has_access_to_genome($_)) } $organism->genomes;
 		}
 		
 		$num_results = keys %unique;
@@ -791,7 +793,7 @@ sub search_experiments {
 	my $num_results;
 	
 	# Try to get all items if blank search term
-	if (not $search_term) {
+	if (!$search_term) {
 		# Get all experiments
 		$num_results = $coge->resultset("Experiment")->count;
 		if ($num_results < $MAX_SEARCH_RESULTS) {
@@ -852,7 +854,7 @@ sub search_features {
 	my $num_results;
 	
 	# Try to display all items if blank search term
-	if (not $search_term) {
+	if (!$search_term) {
 		# Get all features
 		$num_results = $coge->resultset("FeatureName")->count;
 		if ($num_results < $MAX_SEARCH_RESULTS) {
@@ -910,7 +912,7 @@ sub search_lists { # list of lists
 	my $group_str = join(',', map { $_->id } $USER->groups);
 	
 	# Try to get all items if blank search term
-	if (not $search_term) {
+	if (!$search_term) {
 		# Get all lists
 		my $sql = "locked=0 AND (restricted=0 OR user_group_id IN ( $group_str ))";
 		$num_results = $coge->resultset("List")->count_literal($sql);
