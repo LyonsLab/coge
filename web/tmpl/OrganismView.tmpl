@@ -494,7 +494,7 @@ function update_genome_info (dsgid) {
 
 function export_gff () {
  var server = '<TMPL_VAR NAME="SERVER">';
- var link = server+"coge_gff.pl?dsgid=";
+ var link = server+"bin/export/coge_gff.pl?dsgid=";
  link += $('#dsg_id').val();
  if ($('#cds_only')[0].checked) {link += ";cds=1";}
  if ($('#annos')[0].checked) {link += ";annos=1";}
@@ -508,10 +508,16 @@ function export_gff () {
 
 function export_tbl () {
  var server = '<TMPL_VAR NAME="SERVER">';
- var link = server+"export_NCBI_TBL.pl?dsgid=";
+ var link = server+"bin/export/export_NCBI_TBL.pl?dsgid=";
  link += $('#dsg_id').val();
  window.open(link);
+}
 
+function export_bed () {
+ var server = '<TMPL_VAR NAME="SERVER">';
+ var link = server+"bin/export/coge2bed.pl?gid=";
+ link += $('#dsg_id').val();
+ window.open(link);
 }
 
 </script>
