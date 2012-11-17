@@ -598,6 +598,7 @@ sub get_genome_info
 <tr><td>Noncoding sequence:<td><div id=dsg_noncoding_gc class="link" onclick = "gen_data(['args__loading...'],['dsg_noncoding_gc']);\$('#dsg_noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsgid','dsg_id','args__gstid', 'gstid'],['dsg_noncoding_gc']);">Click for percent GC content</div></td></tr> 
 } if $total_length;
     my $seq_file = $dsg->file_path;
+    print STDERR Dumper $seq_file;
     $seq_file =~ s/\/opt\/apache2?//i;
     $html .= qq{<TR><TD>Download:</td>};
     $html .= qq{<td>};
@@ -606,6 +607,8 @@ sub get_genome_info
     $html .= qq{<span class=link onclick="\$('#gff_export').dialog('option', 'width', 400).dialog('open')">Export GFF</span>};
     $html .= qq{&nbsp|&nbsp};
     $html .= qq{<span class=link onclick="export_tbl()"">Export TBL</span>};
+    $html .= qq{&nbsp|&nbsp};
+    $html .= qq{<span class=link onclick="export_bed()"">Export bed</span>};
 #    $html .= qq{<a href='coge_gff.pl?dsgid=$dsgid;cds=1' target=_new>GFF CDS; Names Only</a>};
 #    $html .= qq{&nbsp|&nbsp};
 #    $html .= qq{<a href='coge_gff.pl?dsgid=$dsgid;cds=1;annos=1' target=_new>GFF CDS; with Annotations</a>};
