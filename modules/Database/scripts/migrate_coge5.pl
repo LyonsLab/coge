@@ -271,6 +271,7 @@ sql('alter table dataset_connector change dataset_group_id genome_id INT(11) NOT
 # experiment table
 sql('alter table experiment change dataset_group_id genome_id INT(11) NOT NULL'); # rename dataset_group_id to genome_id
 drop_column('experiment', 'link'); #sql('alter table experiment drop column link'); # remove link
+add_coolumn('date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,');
 
 # experiment_annotation table
 add_column('experiment_annotation', 'link TEXT'); #sql('alter table experiment_annotation add link TEXT');
@@ -296,6 +297,7 @@ sql('alter table organism change name name VARCHAR(255) NOT NULL'); # change fro
 
 # user table
 sql('alter table user change user_id user_id INT(11) NOT NULL AUTO_INCREMENT'); # change from INT(10) to INT(11)
+add_column('user', 'image_id INT(11) DEFAULT NULL');
 
 # user_group_connector table
 sql('alter table user_group_connector change user_group_connector_id user_group_connector_id INT(11) NOT NULL AUTO_INCREMENT'); # change from INT(10) to INT(11)
