@@ -39,6 +39,8 @@ $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
+$COOKIE_NAME = $P->{COOKIE_NAME};
+
 my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
 ($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
@@ -134,7 +136,7 @@ sub get_locs {
                 });
 
         my %chrs;
-        print STDERR "dataset_ids: " . join(",", @$datasets) . ";  chr: $chr\n";
+#        print STDERR "dataset_ids: " . join(",", @$datasets) . ";  chr: $chr\n";
         while(my $g = $gene_rs->next()){
 	  if ($fids{$g->feature_id}){ next; }
 	  $fids{$g->feature_id} = 1;
