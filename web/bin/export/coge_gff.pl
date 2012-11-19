@@ -16,6 +16,15 @@ my $DBPASS = $P->{DBPASS};
 my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 my $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 my $FORM = new CGI;
+
+my $COOKIE_NAME = $P->{COOKIE_NAME};
+
+my ($cas_ticket) =$FORM->param('ticket');
+my $USER = undef;
+($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+
+
 my $dsgid = $FORM->param('dsgid');
 my $dsid = $FORM->param('dsid');
 my $id_type = $FORM->param('id_type');
@@ -26,7 +35,6 @@ $cds = $FORM->param('cds') if $FORM->param('cds');
 my $name_unique = 0;
 $name_unique = $FORM->param('nu') if $FORM->param('nu');
 my $upa = $FORM->param('upa') if $FORM->param('upa'); #unqiue_parent_annotations
-my ($USER) = CoGe::Accessory::LogUser->get_user();
 
 my $item;
 my $id;
@@ -34,14 +42,19 @@ my $org;
 if ($dsgid)
   {
     $item = $coge->resultset('Genome')->find($dsgid);
-    next if $USER->user_name =~ /public/i && $item->organism->restricted;
+    if($item && $item->restricted){
+      if(!$USER->has_access_to_genome($item)){
+	print $FORM->header;
+	print "Error: permission denied\n";
+	exit;
+      }
+    }
     $id = $dsgid;
     $org = $item->organism->name."_dsgid";
   }
 elsif ($dsid)
   {
     $item = $coge->resultset('Dataset')->find($dsid);
-    next if $USER->user_name =~ /public/i && $item->organism->restricted;
     $id = $dsid;
     $org = $item->organism->name."_dsid";
   }
