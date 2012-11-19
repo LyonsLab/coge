@@ -132,7 +132,7 @@ $DAG_TOOL      = $P->{DAG_TOOL};
 $BLAST2BED     = $P->{BLAST2BED};
 $TANDEM_FINDER = $P->{TANDEM_FINDER} . " -d 5 -s -r";      #-d option is the distance (in genes) between dups -- not sure if the -s and -r options are needed -- they create dups files based on the input file name
 
-#$RUN_DAGCHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05 -s";
+#$RUN_DAGHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05 -s";
 $RUN_DAGCHAINER = $P->{DAGCHAINER};
 $EVAL_ADJUST    = $P->{EVALUE_ADJUST};
 
@@ -1465,7 +1465,7 @@ sub run_dagchainer
 	my $Dm    = $opts{Dm};        #maximum distance between sytnenic blocks for merging syntenic blocks
 	my $gm    = $opts{gm};        #average distance between sytnenic blocks for merging syntenic blocks
 	my $merge = $opts{merge};     #flag to use the merge function of this algo;
-
+	my $self_self = $opts{self_self}; #flag that it is a self-self run
 	unless ($merge)               #turn off merging options unless $merge is set to true
 	{
 		$Dm = 0;
@@ -1510,7 +1510,7 @@ sub run_dagchainer
 	$cmd .= " -A $A"    if defined $A;
 	$cmd .= " --Dm $Dm" if $Dm;
 	$cmd .= " --gm $gm" if $gm;
-
+	$cmd .= " --new_behavior" if $self_self;
 	if ( $Dm && $gm )
 	{
 		$cmd .= " --merge $outfile";
@@ -2460,7 +2460,7 @@ sub go
 	}
 
 	$cogeweb = CoGe::Accessory::Web::initialize_basefile( basename => $basename, tempdir => $TEMPDIR );
-	print STDERR Dumper $cogeweb;
+#	print STDERR Dumper $cogeweb;
 	my $synmap_link = $SERVER . "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;D=$dagchainer_D;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2;autogo=1";
 	$synmap_link .= ";Dm=$Dm" if defined $Dm;
 	$synmap_link .= ";csco=$cscore" if $cscore;
@@ -2685,11 +2685,11 @@ sub go
 
 	#B Pedersen's program for automatically adjusting the evals in the dag file to remove bias from local gene duplicates and transposons
 #	$dag_file12 .= "_c" . $repeat_filter_cvalue;
-	CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "Adjusting evalue of blast hits to correct for repeat sequences", $cogeweb->logfile );
+#	CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
+#	CoGe::Accessory::Web::write_log( "Adjusting evalue of blast hits to correct for repeat sequences", $cogeweb->logfile );
 #	run_adjust_dagchainer_evals( infile => $all_file, outfile => $dag_file12, cvalue => $repeat_filter_cvalue );
-	CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+#	CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
+#	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
 	my $t3_5 = new Benchmark;
 
@@ -2697,7 +2697,7 @@ sub go
 	unless ( ( -r $dag_file12 && -s $dag_file12 ) || ( -r $dag_file12 . ".gz" && -s $dag_file12 . ".gz" ) )
 	{
 		$dag_file12 = $all_file;
-		CoGe::Accessory::Web::write_log( "WARNING:  sub run_adjust_dagchainer_evals failed.  Perhaps due to Out of Memory error.  Proceeding without this step!", $cogeweb->logfile );
+#		CoGe::Accessory::Web::write_log( "WARNING:  sub run_adjust_dagchainer_evals failed.  Perhaps due to Out of Memory error.  Proceeding without this step!", $cogeweb->logfile );
 	}
 	my $run_adjust_eval_time = timestr( timediff( $t3_5, $t3 ) );
 	#############
@@ -2706,7 +2706,9 @@ sub go
 	my $dag_merge = 1 if $merge_algo == 2;    #this is for using dagchainer's merge function;
 	CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
 	CoGe::Accessory::Web::write_log( "Running DagChainer", $cogeweb->logfile );
-	my ( $dagchainer_file, $merged_dagchainer_file ) = run_dagchainer( infile => $dag_file12, D => $dagchainer_D, A => $dagchainer_A, type => $dagchainer_type, Dm => $Dm, gm => $gm, merge => $dag_merge );
+	my $self_self = 0;
+	$self_self = 1 if $dsgid1 eq $dsgid2;
+	my ( $dagchainer_file, $merged_dagchainer_file ) = run_dagchainer( infile => $dag_file12, D => $dagchainer_D, A => $dagchainer_A, type => $dagchainer_type, Dm => $Dm, gm => $gm, merge => $dag_merge, self_self=>$self_self);
 	CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
 	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
@@ -3182,6 +3184,8 @@ sub get_previous_analyses
 		$tmp =~ s/://g;
 		$tmp =~ s/;//g;
 		$tmp =~ s/#/_/g;
+		$tmp =~ s/'//g;
+		$tmp =~ s/"//g;
 	}
 
 	my $dir = $tmp1 . "/" . $tmp2;
