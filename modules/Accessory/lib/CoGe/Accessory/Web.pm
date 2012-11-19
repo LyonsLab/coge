@@ -262,12 +262,12 @@ sub login_cas {
 	$session =~ s/\+/1/g;
 	my $sid = $coge->log_user( user => $coge_user, session => $session );
 
-	# mdb added 10/19/12
+	# mdb added 10/19/12 - FIXME key/secret are hardcoded - wait: this will get replaced by openauth soon
 	#$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0; # this doesn't work for bypassing cert check, need line in apache cfg
-	$request_ua = HTTP::Request->new( POST => 'https://elliot.iplantcollaborative.org/api/v1/service/coge/add/' . $uname );
-	$request_ua->authorization_basic('', 'e34ae90f5366e3afde196a96438e0558b9bad2f6');
+	$request_ua = HTTP::Request->new( POST => 'https://user.iplantcollaborative.org/api/v1/service/coge/add/' . $uname );
+	$request_ua->authorization_basic('6mv9x9lyts8oje8uj3t6yo', 'f59ba33ee35d363ffefd8b27b375e587b0e5c7a1');
 	print STDERR "matt: request uri: " . $request_ua->uri . "\n";
-	$request_ua->content($request);
+	#$request_ua->content($request);
 	$request_ua->content_type("text/xml; charset=utf-8");
 	my $response = $ua->request($request_ua);
 	#if ($response->is_success()) {
@@ -592,15 +592,19 @@ sub irods_ils {
 		return;	
 	}
 
-	my $cmd = "export irodsEnvFile='$env_file'; ils -l $path";
+	my $cmd = "export irodsEnvFile='$env_file'; ils -l $path 2>&1";
 #	print STDERR "cmd: $cmd\n";
 	my @ils = `$cmd`;
-	
+
 	$path = shift @ils;
+	if ($path =~ /^ERROR/) { # iRODS error message
+		my $result = { type => 'error', name => $path };
+		return wantarray ? ($result) : [$result];
+	}
 	chomp($path);
 	chop($path);
 #	print STDERR "irods_ils: path=$path\n";
-	
+
 	my @result;
 	foreach my $line (@ils) {
 		my ($type, $size, $timestamp, $name);
@@ -627,6 +631,7 @@ sub irods_ils {
 			  path => $path . '/' . $name
 			};
 	}
+	@result = sort {$a->{type} cmp $b->{type}} @result; # directories before files
 	
 	return wantarray ? @result : \@result;
 }
