@@ -130,6 +130,8 @@ if ($axis_metric && $axis_metric =~ /gene/) #add in gene information
     get_gene_info(dsgid=>$dsgid1, info=>$org1info);
     get_gene_info(dsgid=>$dsgid2, info=>$org2info);
   }
+print STDERR Dumper $org1info,"\n";
+print STDERR Dumper $org2info,"\n";
 #print STDERR Dumper $org1info, $org2info;
 
 #will need to reorder whichever genome has more chromosomes/contigs
@@ -310,6 +312,7 @@ $size = 5 if $x_pix_per_bp >5;
 $size = 5 if $y_pix_per_bp >5;
 $size = $dotsize if $dotsize;
 
+#print STDERR $alignfile,"\n";
 my $box_coords = draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, size=>$size, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log, metric=>$axis_metric, colors=>\@colors, color_type=>$color_type, color_scheme=>$color_scheme, fid1=>$fid1, fid2=>$fid2);
 
 draw_boxes(gd=>$graphics_context, boxes=>$box_coords) if $box_diags && $box_coords && @$box_coords;
@@ -498,7 +501,6 @@ sub draw_dots
 		next if $chr2 ne $CHR2;
 	      }
 	  }
-
 	next unless $org1->{$chr1} && $org2->{$chr2}; #sometimes there will be data that is skipped, e.g. where chromosome="random";
 	my ($xmin, $ymin);
 	my ($midx, $midy);
@@ -1302,7 +1304,7 @@ SELECT count(distinct(feature_id))
 	my ($res) = $dbh->selectrow_array($query);
 	
 	$info->{$tmp_chr}{gene_length}=$res;
-	next unless $res;
+	next unless defined $res;
 	$info->{$tmp_chr}{length}=$res;
 	#get gene order
 	$query = qq{
