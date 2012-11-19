@@ -1,0 +1,141 @@
+<TMPL_IF NAME='MAIN'>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
+<SCRIPT language="JavaScript">
+
+$(document).ready(function(){
+  $.ajaxSetup({
+    type: "GET",
+    url: '<TMPL_VAR NAME='PAGE_NAME'>'+'.pl',
+    dataType: "html",
+    cache: false,
+  });
+  	
+  $(".dialog_box").dialog({autoOpen: false});
+
+  set_table();
+});
+
+//Filters Rows for search_text - Case sensitive as of now, and searches hidden columns...
+function filter_rows (search_text){
+	if(!search_text) { $("#genome_table_body tr:hidden").show(0);}
+	else if (search_text.length >= 3) {
+		$("#genome_table_body tr:hidden").show(0);
+		if( $('#search_type').val() == 1 ) { $("#genome_table_body tr:not(:icontains('"+search_text+"'))").hide(); }
+		else { $("#genome_table_body tr:icontains('"+search_text+"')").hide(); }
+	}
+	$('#filter_count').html('Showing ' + $("#genome_table_body tr:visible").length + ' of ' + $("#genome_table_body tr").length + ' genomes');
+}
+
+function set_table () {  
+  $('#genome_table').tablesorter({widgets: ['zebra']});
+}
+
+function get_genomes_for_user(opts){
+  $.ajax({
+    data: {
+      jquery_ajax: 1,
+      fname: 'get_genomes_for_user',
+    },
+    success : function (data) {
+      $('#genomes').html(data);
+      set_table();
+    }
+  });
+}
+
+function delete_genome () {
+  var eid = $('#genome_delete_gid').val();
+  $.ajax({
+    data: {
+      jquery_ajax: 1,
+      fname: 'delete_genome',
+      gid: gid,
+    },
+    success : function() {
+      get_genomes_for_user();
+    },
+  });
+  $("#genome_delete_box").dialog('close');
+}
+
+function dialog_delete_genome (opts) {
+  $("#genome_delete_box").dialog("option", "title", "Delete Genome?");
+  $("#genome_delete_box").dialog("option", "width", "450");
+  $("#genome_delete_box").dialog('open');
+  $('#genome_delete_eid').val(opts.eid);
+}
+</SCRIPT>
+
+<div id="genomes"><TMPL_VAR NAME="GENOME_TABLE"></div>
+
+<div id="genome_delete_box" class="dialog_box" style='display:none;' align='center'>
+Are you sure you want to permanently delete this genome?<p>
+ <div>
+  <input type='hidden' id='genome_delete_gid'>
+  <span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_genome();">Yes</span>
+  <span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="$('#genome_delete_box').dialog('close');">No</span>
+ </div>
+</div>
+
+</TMPL_IF> <!-- MAIN -->
+
+
+
+<TMPL_IF NAME='DO_GENOME_TABLE'>
+<SCRIPT language="JavaScript">
+$(document).ready(function(){
+	// Create new case-insensitive "contains" selector function in jQuery
+	jQuery.expr[":"].icontains = jQuery.expr.createPseudo(function(arg) {
+		return function( elem ) {
+			return jQuery(elem).text().toUpperCase().indexOf(arg.toUpperCase()) >= 0;
+		};
+	});
+
+	// Setup filter input
+	$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
+	$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
+	filter_rows();
+});
+</SCRIPT>
+
+<div class='small' style="padding-top:5px;padding-bottom:5px;">
+ Filter: 
+ <input type="text" id="search_bar">
+ <select id="search_type">
+  <option value="1">Contains</option>
+  <option value="0">Does NOT contain</option>
+ </select>
+ <span id='filter_count' style="margin-left:20px;"></span>
+</div>
+
+<table id="genome_table" class="small ui-widget-content ui-corner-all">
+ <thead align="left"> 
+  <tr>
+   <th>Name</th>
+   <th>Version</th>
+   <th>Date Loaded</th>
+   <th>Edit</th>
+   <th>Delete</th>
+  </tr>
+ </thead>
+ <tfoot>
+  <tr>
+   <td colspan='9' height='26'>
+    <span style="font-size: 1em" class='ui-button ui-button-go ui-corner-all' onClick="window.open('LoadGenome.pl');">Load new genome</span>
+   </td>
+  </tr>
+ </tfoot>
+ <tbody align="left" valign="top" id="genome_table_body" class="small">
+  <TMPL_LOOP NAME='GENOME_LOOP'>
+  <tr style="vertical-align:middle;">
+   <td><TMPL_VAR NAME='NAME'></td>
+   <td style='text-align:center;'><TMPL_VAR NAME='VERSION'></td>
+   <td style='text-align:center;'><TMPL_VAR NAME='DATE'></td>
+   <td style='text-align:center;'><TMPL_VAR NAME='EDIT_BUTTON'></td>
+   <td style='text-align:center;'><TMPL_VAR NAME='DELETE_BUTTON'></td>
+  </tr>
+  </TMPL_LOOP>
+ </tbody>
+</table>
+</TMPL_IF> <!-- GENOME_TABLE -->
