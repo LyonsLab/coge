@@ -1066,7 +1066,6 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-
 sub info {
 	my $self = shift;
 	my $info;
@@ -1102,6 +1101,31 @@ sub info_html
 	my $self = shift;
 	my $info = $self->info;
 	return qq{<span class=link onclick='window.open("OrganismView.pl?dsgid=} .$self->id. qq{")'>} . $info . "</span>";
+}
+
+############################################### subroutine header begin ##
+
+=head2 date
+
+ Usage     : 
+ Purpose   : returns load data from first dataset entry
+ Returns   : a string
+ Argument  : 
+ Throws    : 
+ Comments  :
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub date
+{
+	my $self = shift;
+	my ($ds) = $self->datasets;
+	print STDERR "matt: " . $ds->date . "\n";
+	return $ds ? $ds->date : '';
 }
 
 =head1 BUGS

@@ -93,7 +93,9 @@ __PACKAGE__->add_columns(
 	"restricted",
 	{ data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
 	"access_count",
-	{ data_type => "int", default_value => "0", is_nullable => 1, size => 10 }
+	{ data_type => "int", default_value => "0", is_nullable => 1, size => 10 },
+	"date",
+	{ data_type => "TIMESTAMP", default_value => undef, is_nullable => 0 }
 );
 
 __PACKAGE__->set_primary_key("experiment_id");

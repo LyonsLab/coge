@@ -43,5 +43,26 @@ __PACKAGE__->set_primary_key("log_id");
 __PACKAGE__->belongs_to('user' => "CoGeX::Result::User", 'user_id');
 
 
+################################################ subroutine header begin ##
+
+=head2 info
+
+ Usage     : $self->info
+ Purpose   : generate a string of information about the log entry
+ Returns   : a string
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub info {
+	my $self = shift;
+	my $user_name = ($self->user ? $self->user->user_name : '');
+	return $self->time.' '.$user_name.' '.$self->page.' '.$self->description.' '.$self->link.' '.$self->comment; 
+}
+
 
 1;
