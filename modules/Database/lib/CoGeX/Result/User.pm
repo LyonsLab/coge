@@ -92,6 +92,13 @@ __PACKAGE__->add_columns(
 		is_nullable   => 1,
 		size          => 255,
 	},
+	"image_id",
+	{
+		data_type => "INT", 
+		default_value => undef, 
+		is_nullable => 1, 
+		size => 11 
+	},
 );
 __PACKAGE__->set_primary_key("user_id");
 __PACKAGE__->has_many( 'sessions'  => "CoGeX::Result::UserSession", 'user_id' );
@@ -99,6 +106,7 @@ __PACKAGE__->has_many( 'works'     => "CoGeX::Result::Work",        'user_id' );
 __PACKAGE__->has_many( 'workflows' => "CoGeX::Result::Workflow",    'user_id' );
 __PACKAGE__->has_many( 'user_group_connectors' => "CoGeX::Result::UserGroupConnector", 'user_id' );
 __PACKAGE__->has_many( 'logs' => "CoGeX::Result::Log",    'user_id' );
+__PACKAGE__->belongs_to( image => 'CoGeX::Result::Image', 'image_id');
 
 
 ################################################ subroutine header begin ##
