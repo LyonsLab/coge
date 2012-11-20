@@ -74,16 +74,6 @@ function reset_log() {
 }
 
 function load_experiment() {
-	var items = get_selected_files();
-	if (items == null) {
-		alert('Files are still being transferred, please wait.');
-		return;
-	}
-	else if (items.length == 0) {
-		alert('Please select a data file.');
-		return;
-	}
-	
 	var name = $('#edit_name').val();
 	var description = $('#edit_description').val();
 	var version = $('#edit_version').val();
@@ -102,6 +92,16 @@ function load_experiment() {
 	}
 	if (!genome || genome == 'Search') {
 		alert('Please specify a genome.');
+		return;
+	}
+
+	var items = get_selected_files();
+	if (items == null) {
+		alert('Files are still being transferred, please wait.');
+		return;
+	}
+	else if (items.length == 0) {
+		alert('Please select a data file.');
 		return;
 	}
 	

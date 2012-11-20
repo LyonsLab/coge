@@ -63,12 +63,14 @@ $link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, 
 
 
 %FUNCTION = (
-	gen_html	=> \&gen_html,
+	gen_html			=> \&gen_html,
+	get_logs			=> \&get_logs,
+	upload_image_file	=> \&upload_image_file,
 );
 
 # debug for fileupload:
-#print STDERR $ENV{'REQUEST_METHOD'} . "\n" . $FORM->url . "\n" . Dumper($FORM->Vars) . "\n";	# debug
-#print "data begin\n" . $FORM->param('POSTDATA') . "\ndata end\n" if ($FORM->param('POSTDATA'));
+# print STDERR $ENV{'REQUEST_METHOD'} . "\n" . $FORM->url . "\n" . Dumper($FORM->Vars) . "\n";	# debug
+# print "data begin\n" . $FORM->param('POSTDATA') . "\ndata end\n" if ($FORM->param('POSTDATA'));
 
 dispatch();
 
@@ -123,13 +125,15 @@ sub gen_body {
 	$template->param( MAIN             => 1 );
 	$template->param( ADMIN_AREA       => 1 ) if $USER->is_admin;
 
-	$template->param( CAN_EDIT => ($user == $USER) );
+	my $is_user = ($user->id == $USER->id);
+	$template->param( IS_USER => $is_user );
 	$template->param( USER_NAME => $user->user_name );
 	$template->param( FULL_NAME => $user->display_name );
 	$template->param( DESCRIPTION => $user->description );
 	$template->param( EMAIL => $user->email );
-	$template->param( HISTORY_COUNT => $user->history(count=>1) );
+	$template->param( USER_IMAGE => ($user->image_id ? 'image.pl?id=' . $user->image_id : ($is_user ? 'picts/smiley_default.png' : 'picts/smiley_default2.png') ) );
 
+	$template->param( LOGS => get_logs() );
 	$template->param( GROUPS => get_groups($user) );
 	$template->param( COLLABORATORS => get_collaborators($user) );
 	$template->param( LISTS => get_lists($user) );
@@ -243,6 +247,64 @@ sub get_experiments {
 	$template->param( EXPERIMENT_TABLE => 1 );
 	$template->param( EXPERIMENT_LOOP => \@rows );
 	return $template->output;
+}
+
+sub get_logs {
+	my %opts = @_;
+	my $type = $opts{type};
+
+	my @logs;
+
+	if (!$type or $type eq 'recent') {
+		@logs = $coge->resultset('Log')->search( { user_id => $USER->id }, { order_by => { -desc => 'time' } } ); # $user->logs;
+		#my @logs = reverse $coge->resultset('Log')->search_literal( 'user_id = ' . $user->id . ' AND time >= DATE_SUB(NOW(), INTERVAL 1 HOUR)' );
+	}
+	else {
+		@logs = $coge->resultset('Log')->search( { user_id => $USER->id, status => 1 }, { order_by => { -desc => 'time' } } );
+	}
+
+	my @rows;
+	foreach (splice(@logs, 0, 100)) {
+		push @rows, { LOG_TIME => $_->time,
+					  LOG_PAGE => $_->page,
+					  LOG_DESC => $_->description,
+					  LOG_LINK => $_->link
+					};
+	}
+
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+	$template->param( LOG_TABLE => 1 );
+	$template->param( LOG_LOOP => \@rows );
+	return $template->output;
+}
+
+sub upload_image_file {
+	return if ($USER->user_name eq "public");
+
+	my %opts = @_;
+	my $image_filename = '' . $FORM->param('input_upload_file');
+	my $fh = $FORM->upload('input_upload_file');
+	return if (-s $fh > 2*1024*1024); # limit to 2MB
+
+	# Create the image
+	my $image;
+	if ($fh) {
+		#print STDERR "$image_filename size=" . (-s $fh) . "\n";
+		read($fh, my $contents, -s $fh);
+		$image = $coge->resultset('Image')->create(
+		  {	filename => $image_filename,
+			image => $contents
+		  }
+		);
+		return unless $image;
+
+		# Link to user
+		$USER->image_id($image->id);
+		$USER->update;
+		return encode_json({ link => 'image.pl?id=' . $image->id });
+	}
+	
+	return;
 }
 
 # FIXME these comparison routines are duplicated elsewhere

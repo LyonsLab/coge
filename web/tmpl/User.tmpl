@@ -14,18 +14,90 @@ $(document).ready(function(){
 		dataType: "html",
 		cache: false,
 	});
-	
 });
+
+<TMPL_IF NAME="IS_USER">
+$(function(){
+	$('#input_upload_file').fileupload({
+    	dataType: 'json',
+    	formData: {
+    		jquery_ajax: 1,
+    		fname: 'upload_image_file',
+    	},
+       	add:
+    		function(e, data) {
+				if ( verify_image_file(data.files[0]) ) {
+					$('#user_image').attr('src', 'picts/ajax-loader-large.gif');
+					data.submit();
+				}
+    		}, 	
+		done: 
+			function(e, data) {
+				if (data.result && data.result.link) {
+					$('#user_image').attr('src', data.result.link);
+				}
+			},
+	});
+});
+function show_recent_activity() {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_logs',
+			type: 'recent'
+		},
+		success : function(data) {
+			$('#logs').html(data);
+			$('#recent').css('font-weight', 'bold');
+			$('#important').css('font-weight', 'normal');
+		}
+	});
+}
+function show_important_activity() {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_logs',
+			type: 'important'
+		},
+		success : function(data) {
+			$('#logs').html(data);
+			$('#recent').css('font-weight', 'normal');
+			$('#important').css('font-weight', 'bold');
+		}
+	});
+}
+function select_image_file() {
+	$('#input_upload_file').click();
+}
+function verify_image_file(file) {
+	var ext = file.name.split('.').pop();
+	if (ext != 'jpg' && ext != 'gif' && ext != 'png') {
+		alert('Error: specified file is not an image');
+		return 0;
+	}
+	
+	if (file.size > 2*1024*1024) {
+		alert('Error: image file is too large (>2MB)');
+		return 0;
+	}
+	
+	return 1;
+}
+</TMPL_IF>
 </SCRIPT>
 
-<table class="ui-widget-content ui-corner-all small">
+<table class="ui-widget-content ui-corner-all">
 	<tr style="vertical-align:top">
 		<td style="text-align:center">
-			<div><img src="picts/smiley_default.png" width='100' height='100' style="padding:1px;border:1px solid lightgray;"/></div>
-			<TMPL_IF NAME="CAN_EDIT"><span class="link" >click to change</span></TMPL_IF>
+			<div><img id='user_image' src="<TMPL_VAR NAME='USER_IMAGE'>" width='100' height='100' class="link" style="padding:1px;border:1px solid lightgray;" onclick="select_image_file();"/></div>
+			<TMPL_IF NAME="IS_USER">
+				<span onclick="select_image_file();" class="small link" >click to change</span>
+				<input id="input_upload_file" name="input_upload_file" type="file" data-url='<TMPL_VAR NAME="PAGE_NAME">' style="display:none;"/>
+			</TMPL_IF>
 		</td>
 		<td>
-			<table>
+			<table style="white-space:nowrap;">
 				<tr>
 					<td>User name:</td>
 					<td><TMPL_VAR NAME='USER_NAME'></td>
@@ -42,60 +114,62 @@ $(document).ready(function(){
 					<td>Email:</td>
 					<td><a href="mailto:<TMPL_VAR NAME='EMAIL'>"><TMPL_VAR NAME='EMAIL'></a></td>
 				</tr>
-				<tr>
-					<td>History:</td>
-					<td>
-						<a href="History.pl" target="_blank"><TMPL_VAR NAME='HISTORY_COUNT'></a>
-					</td>
-				</tr>
 			</table>
 		</td>
+		<TMPL_IF NAME="IS_USER">
+		<td style="padding-left:50px;">
+			Activity <span class='link ui-icon ui-icon-extlink' onclick="window.open('History.pl')"></span>
+			<span style="padding-left:5px;">
+				<span id='recent' class='small link' style="font-weight:bold;" onclick="show_recent_activity();">recent</span>
+				<span id='important' class='small link' style="padding-left:5px;" onclick="show_important_activity();">important</span>
+			</span>
+			<div id='logs' class="small ui-widget-content ui-corner-all" style="min-width:300px;max-width:400px;height:150px;overflow:auto">
+				<TMPL_VAR NAME='LOGS'>
+			</div>
+		</td>
+		</TMPL_IF> <!-- IS_USER -->
 	</tr>
 </table>
 
 <br>
 
-<table class="ui-widget-content ui-corner-all small" style="table-layout:fixed;width:75%;height:500px;max-width:75%;overflow:hidden;">
+<table class="small" style="overflow:hidden;">
 	<tr style="vertical-align:top;">
 		<td>
-			<img src="picts/group.png" width='40' height='40'/>
-			<span class="large">My Groups</span>
+			<span class="large"><img src="picts/group-icon.png" width='20' height='20'/> My Groups <span class='link ui-icon ui-icon-extlink' onclick="window.open('Groups.pl')"></span></span>
 			<TMPL_VAR NAME='GROUPS'>
-			<img src="picts/smiley_face.png" width='40' height='40'/>
+		</td>
+		<td>
+			<img src="picts/user-icon.png" width='20' height='20'/>
 			<span class="large">My Collaborators</span>
 			<TMPL_VAR NAME='COLLABORATORS'>
 		</td>
-		<td>
-			<img src="picts/notebook.png" width='40' height='40'/>
-			<span class="large">My Lists</span>
-			<TMPL_VAR NAME='LISTS'>
-		</td>
-	</tr>
-	<tr style="vertical-align:top;">
-		<td>
-			<img src="picts/dna.png" width='40' height='40'/>
-			<span class="large">My Genomes</span>
-			<TMPL_VAR NAME='GENOMES'>
-		</td>
-		<td>
-			<img src="picts/test_tube.png" width='40' height='40'/>
-			<span class="large">My Experiments</span>
-			<TMPL_VAR NAME='EXPERIMENTS'>
-		</td>
 	</tr>
 </table>
+<br>
+
+<span class="large"><img src="picts/notebook-icon.png" width='20' height='20'/> My Notebooks <span class='link ui-icon ui-icon-extlink' onclick="window.open('Lists.pl')"></span></span>
+<TMPL_VAR NAME='LISTS'>
+<br>
+
+<span class="large"><img src="picts/dna-icon.png" width='20' height='20'/> My Genomes <span class='link ui-icon ui-icon-extlink' onclick="window.open('Genomes.pl')"></span></span>
+<TMPL_VAR NAME='GENOMES'>
+<br>
+
+<span class="large"><img src="picts/testtube-icon.png" width='20' height='20'/> My Experiments <span class='link ui-icon ui-icon-extlink' onclick="window.open('Experiments.pl')"></span></span>
+<TMPL_VAR NAME='EXPERIMENTS'>
 
 </TMPL_IF> <!-- MAIN -->
 
 
 
 <TMPL_IF NAME='GROUP_TABLE'>
-<div class="small ui-widget-content ui-corner-all" style="max-height:100px;overflow-y:auto">
+<div class="small ui-widget-content ui-corner-all" style="width:500px;height:100px;overflow-y:auto">
 	<table class="small">
 		<TMPL_LOOP NAME="GROUP_LOOP">
 		<tr valign="top">
-			<td><TMPL_VAR NAME="GROUP_NAME"></td>
-			<td><TMPL_VAR NAME="GROUP_ROLE"></td>
+			<td style="white-space:nowrap;"><TMPL_VAR NAME="GROUP_NAME"></td>
+			<td style="white-space:nowrap;"><TMPL_VAR NAME="GROUP_ROLE"></td>
 			<td><TMPL_VAR NAME="GROUP_DESC"></td>
 		</tr>
 		</TMPL_LOOP>
@@ -106,7 +180,7 @@ $(document).ready(function(){
 
 
 <TMPL_IF NAME='COLLABORATOR_TABLE'>
-<div class="small ui-widget-content ui-corner-all" style="max-height:100px;overflow-y:auto">
+<div class="small ui-widget-content ui-corner-all" style="width:160px;height:100px;overflow-y:auto">
 	<TMPL_LOOP NAME="COLLABORATOR_LOOP">
 		<TMPL_VAR NAME="COLLABORATOR_INFO"><br>
 	</TMPL_LOOP>
@@ -116,7 +190,7 @@ $(document).ready(function(){
 
 
 <TMPL_IF NAME='LIST_TABLE'>
-<div class="small ui-widget-content ui-corner-all" style="max-height:200px;overflow-y:auto">
+<div class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
 	<TMPL_LOOP NAME="LIST_LOOP">
 		<TMPL_VAR NAME="LIST_INFO"><br>
 	</TMPL_LOOP>
@@ -126,7 +200,7 @@ $(document).ready(function(){
 
 
 <TMPL_IF NAME='GENOME_TABLE'>
-<div class="small ui-widget-content ui-corner-all" style="max-height:200px;overflow-y:auto">
+<div class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
 	<TMPL_LOOP NAME="GENOME_LOOP">
 		<TMPL_VAR NAME="GENOME_INFO"><br>
 	</TMPL_LOOP>
@@ -136,12 +210,26 @@ $(document).ready(function(){
 
 
 <TMPL_IF NAME='EXPERIMENT_TABLE'>
-<div class="small ui-widget-content ui-corner-all" style="max-height:200px;overflow-y:auto">
+<div class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
 	<TMPL_LOOP NAME="EXPERIMENT_LOOP">
 		<TMPL_VAR NAME="EXPERIMENT_INFO"><br>
 	</TMPL_LOOP>
 </div>
 </TMPL_IF> <!-- EXPERIMENT_TABLE -->
+
+
+
+<TMPL_IF NAME='LOG_TABLE'>
+	<table class="small" style="border-collapse:collapse;">
+		<TMPL_LOOP NAME="LOG_LOOP">
+			<tr class="link" style="white-space:nowrap;" onclick="window.open('<TMPL_VAR NAME="LOG_LINK">')">
+				<td><TMPL_VAR NAME="LOG_TIME"></td>
+				<td><TMPL_VAR NAME="LOG_PAGE"></td>
+				<td><TMPL_VAR NAME="LOG_DESC"></td>
+			</tr>
+		</TMPL_LOOP>
+	</table>
+</TMPL_IF> <!-- LOG_TABLE -->
 
 
 
