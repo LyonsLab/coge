@@ -80,7 +80,6 @@ function load_experiment() {
 	var restricted = $('#restricted').is(':checked');
 	var genome = $('#edit_genome').val();
 	var gid = $('#gid').val();
-	var json = JSON.stringify(items);
 	
 	if (!name) {
 		alert('Please specify an experiment name.');
@@ -104,6 +103,7 @@ function load_experiment() {
 		alert('Please select a data file.');
 		return;
 	}
+	var json = JSON.stringify(items);
 	
 	reset_log();	
 	

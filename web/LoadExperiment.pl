@@ -244,8 +244,8 @@ sub load_experiment {
 	my $restricted = $opts{restricted};
 	my $gid = $opts{gid};
 	my $items = $opts{items};
+	# print STDERR "load_experiment: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
 	return unless $items;
-#	print STDERR "load_experiment: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
 	
 	$items = decode_json($items);
 #	print STDERR Dumper $items;
@@ -256,10 +256,10 @@ sub load_experiment {
 	for ($i = 1;  -e "$stagepath$i";  $i++) { };
 	$stagepath .= $i;
 	mkpath $stagepath;
-	
+
 	my $logfile = $stagepath . '/log.txt';
 	open(my $log, ">$logfile") or die "Error creating log file";
-	print $log "Starting load genome $stagepath\n" .
+	print $log "Starting load experiment $stagepath\n" .
 			   "name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
 
 	# Verify and decompress files
@@ -293,6 +293,7 @@ sub load_experiment {
 			  "-install_dir " . $P->{DATADIR} . '/experiments ' .
 			  '-data_file "' . escape( join(',', @files) ) . '" ' .
 			  "-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
+	print STDERR "$cmd\n";
 	print $log "$cmd\n";	
 	close($log);
 
