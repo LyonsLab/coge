@@ -262,6 +262,17 @@ sub collaborators {
 	return wantarray ? values %users : [ values %users ];
 }
 
+sub has_collaborator {
+	my $self = shift;
+	my $uid = shift;
+	foreach my $group ( $self->groups ) {
+		foreach my $user ( $group->users ) {
+			return 1 if ($user->id == $uid);
+		}
+	}	
+	return 0;
+}
+
 ################################################ subroutine header begin ##
 
 =head2 owner_group
