@@ -61,7 +61,12 @@ function show_important_activity() {
 			type: 'important'
 		},
 		success : function(data) {
-			$('#logs').html(data);
+			if (data) {
+				$('#logs').html(data);
+			}
+			else {
+				$('#logs').html("<span style='font-style:italic;color:gray;'>None ... click the <img src='picts/star-hollow.png'> icon  in your <a href='History.pl' target='_blank'>History</a> to mark items as important.</span>");
+			}
 			$('#recent').css('font-weight', 'normal');
 			$('#important').css('font-weight', 'bold');
 		}
@@ -117,13 +122,13 @@ function verify_image_file(file) {
 			</table>
 		</td>
 		<TMPL_IF NAME="IS_USER">
-		<td style="padding-left:50px;">
+		<td style="padding-left:40px;">
 			Activity <span class='link ui-icon ui-icon-extlink' onclick="window.open('History.pl')"></span>
 			<span style="padding-left:5px;">
 				<span id='recent' class='small link' style="font-weight:bold;" onclick="show_recent_activity();">recent</span>
 				<span id='important' class='small link' style="padding-left:5px;" onclick="show_important_activity();">important</span>
 			</span>
-			<div id='logs' class="small ui-widget-content ui-corner-all" style="min-width:300px;max-width:400px;height:150px;overflow:auto">
+			<div id='logs' class="small ui-widget-content ui-corner-all" style="width:350px;height:150px;overflow:auto">
 				<TMPL_VAR NAME='LOGS'>
 			</div>
 		</td>
@@ -136,35 +141,44 @@ function verify_image_file(file) {
 <table class="small" style="overflow:hidden;">
 	<tr style="vertical-align:top;">
 		<td>
-			<span class="large"><img src="picts/group-icon.png" width='20' height='20'/> My Groups <span class='link ui-icon ui-icon-extlink' onclick="window.open('Groups.pl')"></span></span>
+			<span class="large"><img src="picts/group-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Groups <span class='link ui-icon ui-icon-extlink' onclick="window.open('Groups.pl')"></span></span>
+			<div class="small ui-widget-content ui-corner-all" style="width:500px;height:100px;overflow-y:auto">
 			<TMPL_VAR NAME='GROUPS'>
+			</div>
 		</td>
 		<td>
 			<img src="picts/user-icon.png" width='20' height='20'/>
-			<span class="large">My Collaborators</span>
+			<span class="large"> <TMPL_IF NAME="IS_USER">My </TMPL_IF> Collaborators</span>
+			<div class="small ui-widget-content ui-corner-all" style="width:160px;height:100px;overflow-y:auto">
 			<TMPL_VAR NAME='COLLABORATORS'>
+			</div>
 		</td>
 	</tr>
 </table>
 <br>
 
-<span class="large"><img src="picts/notebook-icon.png" width='20' height='20'/> My Notebooks <span class='link ui-icon ui-icon-extlink' onclick="window.open('Lists.pl')"></span></span>
+<span class="large"><img src="picts/notebook-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Notebooks <span class='link ui-icon ui-icon-extlink' onclick="window.open('Lists.pl')"></span></span>
+<div class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
 <TMPL_VAR NAME='LISTS'>
+</div>
 <br>
 
-<span class="large"><img src="picts/dna-icon.png" width='20' height='20'/> My Genomes <span class='link ui-icon ui-icon-extlink' onclick="window.open('Genomes.pl')"></span></span>
+<span class="large"><img src="picts/dna-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Genomes <span class='link ui-icon ui-icon-extlink' onclick="window.open('Genomes.pl')"></span></span>
+<div class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
 <TMPL_VAR NAME='GENOMES'>
+</div>
 <br>
 
-<span class="large"><img src="picts/testtube-icon.png" width='20' height='20'/> My Experiments <span class='link ui-icon ui-icon-extlink' onclick="window.open('Experiments.pl')"></span></span>
+<span class="large"><img src="picts/testtube-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Experiments <span class='link ui-icon ui-icon-extlink' onclick="window.open('Experiments.pl')"></span></span>
+<div class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
 <TMPL_VAR NAME='EXPERIMENTS'>
+</div>
 
 </TMPL_IF> <!-- MAIN -->
 
 
 
 <TMPL_IF NAME='GROUP_TABLE'>
-<div class="small ui-widget-content ui-corner-all" style="width:500px;height:100px;overflow-y:auto">
 	<table class="small">
 		<TMPL_LOOP NAME="GROUP_LOOP">
 		<tr valign="top">
@@ -174,47 +188,38 @@ function verify_image_file(file) {
 		</tr>
 		</TMPL_LOOP>
 	</table>
-</div>
 </TMPL_IF> <!-- GROUPS_TABLE -->
 
 
 
 <TMPL_IF NAME='COLLABORATOR_TABLE'>
-<div class="small ui-widget-content ui-corner-all" style="width:160px;height:100px;overflow-y:auto">
 	<TMPL_LOOP NAME="COLLABORATOR_LOOP">
 		<TMPL_VAR NAME="COLLABORATOR_INFO"><br>
 	</TMPL_LOOP>
-</div>
 </TMPL_IF> <!-- COLLABORATOR_TABLE -->
 
 
 
 <TMPL_IF NAME='LIST_TABLE'>
-<div class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
 	<TMPL_LOOP NAME="LIST_LOOP">
 		<TMPL_VAR NAME="LIST_INFO"><br>
 	</TMPL_LOOP>
-</div>
 </TMPL_IF> <!-- LIST_TABLE -->
 
 
 
 <TMPL_IF NAME='GENOME_TABLE'>
-<div class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
 	<TMPL_LOOP NAME="GENOME_LOOP">
 		<TMPL_VAR NAME="GENOME_INFO"><br>
 	</TMPL_LOOP>
-</div>
 </TMPL_IF> <!-- GENOME_TABLE -->
 
 
 
 <TMPL_IF NAME='EXPERIMENT_TABLE'>
-<div class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
 	<TMPL_LOOP NAME="EXPERIMENT_LOOP">
 		<TMPL_VAR NAME="EXPERIMENT_INFO"><br>
 	</TMPL_LOOP>
-</div>
 </TMPL_IF> <!-- EXPERIMENT_TABLE -->
 
 
