@@ -494,7 +494,6 @@ sub gen_body {
 	#param for whether the dust/seg filter is on or off
 	my $bnF = "F";
 	$bnF = $form->param('bnF') if defined $form->param('bnF');
-	print STDERR $bnF,"\n";
 	if ( $bnF eq "F" ) {
 		$template->param( BLAST_FILTER_NO => "selected" );
 	}
@@ -505,7 +504,6 @@ sub gen_body {
 	my $hide_stop;
 	$hide_stop = $form->param('hs') if defined $form->param('hs');
 
-	print STDERR $hide_stop,"\n";
 	if ( $hide_stop ) {
 		$template->param( HIDE_STOP_YES => "checked" );
 	}
