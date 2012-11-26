@@ -297,7 +297,7 @@ sub info_html
 {
 	my $self = shift;
 	my $info = $self->info;
-	return qq{<span class=link onclick='window.open("ListView.pl?lid=} . $self->id. qq{")'>} . $info . "</span>";
+	return qq{<span class=link onclick='window.open("NotebookView.pl?lid=} . $self->id. qq{")'>} . $info . "</span>";
 }
 
 ################################################ subroutine header begin ##
@@ -329,7 +329,7 @@ sub data_summary
 	my $genomes = $self->genomes(count=>1);
 	push @stuff, "Genomes: "     . $genomes if $genomes;
 	my $lists = $self->lists(count=>1);
-	push @stuff, "Lists: "       . $lists if $lists;
+	push @stuff, "Notebooks: "       . $lists if $lists;
 	return join( "; ", @stuff );
 }
 
@@ -482,7 +482,7 @@ sub contents_summary_html
 	$html .= 'Genomes: ' . @{$self->genomes} . '<br>' if (@{$self->genomes});
 	$html .= 'Experiments: ' . @{$self->experiments} . '<br>' if (@{$self->experiments});
 	$html .= 'Features: ' . @{$self->features} . '<br>' if (@{$self->features});
-	$html .= 'Lists: ' . @{$self->lists} . '<br>' if (@{$self->lists});
+	$html .= 'Notebooks: ' . @{$self->lists} . '<br>' if (@{$self->lists});
 
 	return $html;	
 }

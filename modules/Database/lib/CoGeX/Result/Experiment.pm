@@ -377,7 +377,7 @@ sub annotation_pretty_print_html
 		}
 	$anno_obj->add_Annot($anno_type);
 
-	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . "Lists" . "</span>" );
+	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . "Notebooks" . "</span>" );
 	$anno_type->Type_delimit(": <td class=\"data5\">");
 	$anno_type->Val_delimit("<br>");
 	foreach my $list ($self->lists)
