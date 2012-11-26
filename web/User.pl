@@ -147,12 +147,14 @@ sub gen_body {
 
 sub get_groups {
 	my $user = shift;
+	my $is_user = ($user->id == $USER->id);
 	my @groups = $user->groups;
 	
 	my @rows;
 	foreach my $group (sort {$a->name cmp $b->name} @groups) {
+		next if (!$is_user && !$group->has_member($USER));
+
 		my $id = $group->id;
-				
 		my %row;
 		$row{GROUP_NAME} = qq{<span class="link" onclick='window.open("GroupView.pl?ugid=$id")'>} . $group->name . "</span>";
 		
@@ -174,12 +176,14 @@ sub get_groups {
 
 sub get_collaborators {
 	my $user = shift;
+	my $is_user = ($user->id == $USER->id);
 	my @users = $user->collaborators;
 	
 	my @rows;
 	foreach my $u (sort {$a->display_name cmp $b->display_name} @users) {
+		next if (!$is_user && !$u->has_collaborator($USER));
+
 		my $id = $u->id;
-				
 		my %row;
 		$row{COLLABORATOR_INFO} = qq{<span class="link" onclick='window.open("User.pl?uid=$id")'>} . $u->display_name . "</span>";
 		
@@ -200,7 +204,7 @@ sub get_lists {
 
 	my @rows;
 	foreach my $list (sort listcmp @lists) {
-		next if ($list->restricted && !$is_user && !$user->has_access({list => $list}));
+		next if ($list->restricted && !$is_user && !$user->has_access(list => $list));
 
 		my $id = $list->id;
 		my %row;
@@ -224,7 +228,7 @@ sub get_genomes {
 
 	my @rows;
 	foreach my $genome (sort genomecmp @genomes) {
-		next if ($genome->restricted && !$is_user && !$user->has_access({dsg => $genome}));
+		next if ($genome->restricted && !$is_user && !$user->has_access(dsg => $genome));
 
 		my $id = $genome->id;
 		my %row;
@@ -247,7 +251,7 @@ sub get_experiments {
 
 	my @rows;
 	foreach my $exp (sort experimentcmp @experiments) {
-		next if ($exp->restricted && !$is_user && !$user->has_access({experiment => $exp}));
+		next if ($exp->restricted && !$is_user && !$user->has_access(experiment => $exp));
 
 		my $id = $exp->id;
 		my %row;
