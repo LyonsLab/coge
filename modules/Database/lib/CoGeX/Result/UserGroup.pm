@@ -113,6 +113,35 @@ sub creator
 
 ################################################ subroutine header begin ##
 
+=head2 has_member
+
+ Usage     : 
+ Purpose   : Check if group contains specified user
+ Returns   : 0 or 1
+ Argument  : user id or user object
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub has_member
+{
+	my $self  = shift;
+	my $user = shift;
+	my $uid = $user =~ /^\d+$/ ? $user : $user->id;
+
+	foreach my $ugc ( $self->user_group_connectors() )
+	{
+		return 1 if ($ugc->user_id == $uid);
+	}
+
+	return 0;
+}
+
+################################################ subroutine header begin ##
+
 =head2 experiments
 
  Usage     : 

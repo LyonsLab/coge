@@ -264,7 +264,8 @@ sub collaborators {
 
 sub has_collaborator {
 	my $self = shift;
-	my $uid = shift;
+	my $user = shift;
+	my $uid = $user =~ /^\d+$/ ? $user : $user->id;
 	foreach my $group ( $self->groups ) {
 		foreach my $user ( $group->users ) {
 			return 1 if ($user->id == $uid);
