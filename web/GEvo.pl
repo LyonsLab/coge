@@ -491,14 +491,26 @@ sub gen_body {
 	my $bne = 30;
 	$bne = $form->param('bne') if defined $form->param('bne');
 	$template->param( BLAST_EVAL => $bne );
+	#param for whether the dust/seg filter is on or off
 	my $bnF = "F";
 	$bnF = $form->param('bnF') if defined $form->param('bnF');
-
+	print STDERR $bnF,"\n";
 	if ( $bnF eq "F" ) {
-		$template->param( BLAST_FILTER_NO => "checked" );
+		$template->param( BLAST_FILTER_NO => "selected" );
 	}
 	else {
-		$template->param( BLAST_FILTER_YES => "checked" );
+		$template->param( BLAST_FILTER_YES => "selected" );
+	}
+	#param for whether or not hsps with stop codons are shown during tblastx runs
+	my $hide_stop;
+	$hide_stop = $form->param('hs') if defined $form->param('hs');
+
+	print STDERR $hide_stop,"\n";
+	if ( $hide_stop ) {
+		$template->param( HIDE_STOP_YES => "checked" );
+	}
+	else {
+		$template->param( HIDE_STOP_NO => "checked" );
 	}
 	my $bzW = 8;
 	$bzW = $form->param('bzW') if defined $form->param('bzW');
@@ -655,6 +667,7 @@ sub run {
 	$gevo_link .= ";spike_len=$spike_len";
 	$gevo_link .= ";skip_feat_overlap=$skip_feat_overlap_search" if defined $skip_feat_overlap_search;
 	$gevo_link .= ";skip_hsp_overlap=$skip_hsp_overlap_search" if defined $skip_hsp_overlap_search;
+	$gevo_link .= ";hs=$show_hsps_with_stop_codon" if defined $show_hsps_with_stop_codon;
 	$gevo_link .= $add_gevo_link;
 	my @gevo_link_seqs;
 	my @coge_seqs; #place to store stuff for parallel creation of sequence file from genome database
