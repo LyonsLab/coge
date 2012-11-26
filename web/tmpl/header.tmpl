@@ -34,10 +34,10 @@ content="LFIw-oo_UpW85cg_ONvoPuH1IpWYjlfmipsWhOvo1kk" />
 <link rel="stylesheet" type="text/css" href="css/styled.css" />
 
 
- <TMPL_VAR NAME=HEAD>
+<TMPL_VAR NAME=HEAD>
 
- <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
- <link rel="shortcut icon" href="picts/urlicon/favicon.ico">
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<link rel="shortcut icon" href="picts/urlicon/favicon.ico">
 </HEAD>
 
 <BODY <TMPL_VAR NAME="BODY_ONLOAD">>
@@ -120,8 +120,8 @@ $(document).ready( function() {
 });
 
 </SCRIPT>
-<div id=main_alert style="color: red; font-size: 1em; text-align: center"></div>
-<div id=signin_popup class="image_window" style="display:none"></div>
+<div id="main_alert" style="color: red; font-size: 1em; text-align: center"></div>
+<div id="signin_popup" class="image_window" style="display:none"></div>
 
 <TMPL_UNLESS NAME=MENU>
   <div style="float:right"><!-- open A -->
@@ -136,7 +136,7 @@ $(document).ready( function() {
  
     <div style="float:right;margin-right: 73px;">
 	<ul class="sf-menu" >
-	 <li><a id=home href="index.pl" target="_self">Home</a></li>
+	 <li><a id="home" href="index.pl" target="_self">Home</a></li>
 	 <li><a href='javascript:void(0)'>Applications</a>
 	  <ul>
 	  <li><a href="OrganismView.pl" target="_self">OrganismView</a></li>
@@ -159,12 +159,12 @@ $(document).ready( function() {
 
 	</li>	
 -->
-        <li><a id=forums href="https://forums.iplantcollaborative.org/viewforum.php?f=10" target="_self">Forums</a></li>
+        <li><a id="forums" href="https://forums.iplantcollaborative.org/viewforum.php?f=10" target="_self">Forums</a></li>
 	<li><a href='javascript:void(0)'>Data</a>
 	 <ul>
-	   <li><a href="UserPage.pl" target="_self">User Profile</a></li>
-	   <li><a href="Groups.pl" target="_self">User Groups</a></li>
-	   <li><a href="Lists.pl" target="_self">Data Lists</a></li>
+	   <li><a href="UserPage.pl" target="_self">Profile</a></li>
+	   <li><a href="Groups.pl" target="_self">Groups</a></li>
+	   <li><a href="Notebooks.pl" target="_self">Notebooks</a></li>
 	   <li><a href="History.pl" target="_self">History</a></li>
 <!--	  <li><a href="javascript:void(0)" target="_self">Animation</a>
 	    <ul class="animations">
@@ -185,7 +185,7 @@ $(document).ready( function() {
 	      <li><a href="/wiki/index.php/Tutorials" target="_blank">Tutorials</a></li>
 	      <li><a href="/wiki/index.php/Contact_Page" target="_blank">Contact or Cite Us</a></li>
 	      <li><a href="/wiki/index.php/System_Support" target="_blank">System Support</a></li>
-              <li><a href="/wiki/index.php/CoGepedia:Current_events" target="_blank">Latest News</a><li>
+          <li><a href="/wiki/index.php/CoGepedia:Current_events" target="_blank">Latest News</a><li>
 	</ul>
 	</li>
 	</ul>

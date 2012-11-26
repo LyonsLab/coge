@@ -242,7 +242,7 @@ sub get_groups_for_user
 			my $name;
 			$name .= "&reg; " if $list->restricted;
 			$name .= $list->name;
-			$name = qq{<span class="link" onclick="window.open('ListView.pl?lid=} . $list->id . qq{');">} . $name . "</span>";
+			$name = qq{<span class="link" onclick="window.open('NotebookView.pl?lid=} . $list->id . qq{');">} . $name . "</span>";
 			push @{ $lists{ $list->type->name } }, $name;
 		}
 		my $lists;

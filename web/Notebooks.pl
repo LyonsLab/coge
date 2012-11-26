@@ -25,7 +25,8 @@ $DATE = sprintf(
 	"%04d-%02d-%02d %02d:%02d:%02d",
 	sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }->(localtime)
 );
-$PAGE_TITLE = 'Lists';
+
+$PAGE_TITLE = 'Notebooks';
 
 $FORM = new CGI;
 
@@ -83,7 +84,7 @@ sub dispatch {
 
 sub create_list {
 	my %opts = @_;
-	return "You need to be a registered user to create a new list!" unless $USER->id;
+	return "You need to be a registered user to create a new notebook." unless $USER->id;
 	return "No specified name!" unless $opts{name};
 	return "No specified type!" unless $opts{typeid};
 	
@@ -100,7 +101,7 @@ sub create_list {
 		restricted => 1
 	  } );
 	
-	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'create list id' . $list->id );
+	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'create notebook id' . $list->id );
 
 	return 1;
 }
@@ -108,7 +109,7 @@ sub create_list {
 sub delete_list {
 	my %opts = @_;
 	my $lid = $opts{lid};
-	return "Must have valid list id\n" unless ($lid);
+	return "Must have valid notebook id\n" unless ($lid);
 	
 	# Get owner user group for the new list
 	my $ug = $USER->owner_group; 
@@ -119,7 +120,7 @@ sub delete_list {
 	return 0 if ($list->locked);
 	$list->delete;
 	
-	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'delete list id' . $list->id );
+	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'delete notebook id' . $list->id );
 
 	return 1;
 }
@@ -140,7 +141,7 @@ sub get_lists_for_user {
 	foreach my $list (@lists ) {
 	  next if $seen_list_ids{$list->id};
 	  $seen_list_ids{$list->id}=1;
-	  my $name = qq{<span class=link onclick='window.open("ListView.pl?lid=} . $list->id . qq{")'>} . $list->name . "</span>";
+	  my $name = qq{<span class=link onclick='window.open("NotebookView.pl?lid=} . $list->id . qq{")'>} . $list->name . "</span>";
 	  $name = '&reg; '.$name if $list->restricted;
 	  $name = '&alpha; '.$name if !$user_list_ids{$list->id};
 
@@ -155,7 +156,7 @@ sub get_lists_for_user {
 	     RESTRICTED => ($list->restricted ? 'yes' : 'no'),
 	     EDIT_BUTTON => $list->locked ?
 	     "<span class='link ui-icon ui-icon-locked' onclick=\"alert('This list is locked and cannot be edited.')\"></span>" :
-	     "<span class='link ui-icon ui-icon-gear' onclick=\"window.open('ListView.pl?lid=" . $list->id . "')\"></span>",
+	     "<span class='link ui-icon ui-icon-gear' onclick=\"window.open('NotebookView.pl?lid=" . $list->id . "')\"></span>",
 	     DELETE_BUTTON => $list->locked ?
 	     "<span class='link ui-icon ui-icon-locked' onclick=\"alert('This list is locked and cannot be deleted.')\"></span>" :
 	     "<span class='link ui-icon ui-icon-trash' onclick=\"dialog_delete_list({lid: '" . $list->id . "'});\"></span>"

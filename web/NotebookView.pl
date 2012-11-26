@@ -23,7 +23,7 @@ use CoGeX::ResultSet::Feature;
 use Benchmark;
 no warnings 'redefine';
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE $PAGE_NAME
   $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION
   $COOKIE_NAME $FORM $URL $COGEDIR $TEMPDIR $TEMPURL $MAX_SEARCH_RESULTS);
 $P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
@@ -33,7 +33,8 @@ $DATE = sprintf(
 	sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }->(localtime)
 );
 
-$PAGE_NAME = 'ListView.pl';
+$PAGE_TITLE = 'NotebookView';
+$PAGE_NAME = "$PAGE_TITLE.pl";
 
 $FORM = new CGI;
 
@@ -50,9 +51,9 @@ $coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
 $COOKIE_NAME = $P->{COOKIE_NAME};
 $URL         = $P->{URL};
 $COGEDIR     = $P->{COGEDIR};
-$TEMPDIR     = $P->{TEMPDIR} . "ListView/";
+$TEMPDIR     = $P->{TEMPDIR} . "$PAGE_TITLE/";
 mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-$TEMPURL = $P->{TEMPURL} . "ListView/";
+$TEMPURL = $P->{TEMPURL} . "$PAGE_TITLE/";
 
 $MAX_SEARCH_RESULTS = 1000;
 
@@ -127,14 +128,14 @@ sub dispatch {
 
 sub gen_html {
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-	$template->param( HELP       => '/wiki/index.php?title=ListView' );
+	$template->param( HELP       => "/wiki/index.php?title=$PAGE_TITLE" );
 	my $name = $USER->user_name;
 	$name = $USER->first_name if $USER->first_name;
 	$name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
 	$template->param( USER       => $name );	
-	$template->param( TITLE      => qq{Managing Data} );
-	$template->param( PAGE_TITLE => qq{ListView} );
-	$template->param( LOGO_PNG   => "ListView-logo.png" );
+	$template->param( TITLE      => 'Managing Data' );
+	$template->param( PAGE_TITLE => $PAGE_TITLE );
+	$template->param( LOGO_PNG   => "$PAGE_TITLE-logo.png" );
 	$template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
 	$template->param( DATE       => $DATE );
 	$template->param( BODY       => gen_body() );
@@ -146,9 +147,9 @@ sub gen_html {
 
 sub gen_body {
 	my $lid = $FORM->param('lid');
-	return "Must have valid list id\n" unless ($lid);
+	return "Must have valid notebook id\n" unless ($lid);
 
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'ListView.tmpl' );
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 	$template->param( PAGE_NAME        => $FORM->url );
 	$template->param( MAIN             => 1 );
 	$template->param( LIST_INFO        => get_list_info( lid => $lid ) );
@@ -169,23 +170,23 @@ sub get_list_info {
 	return unless ($USER->has_access(list=>$lid) || !$list->restricted);
 	
 
-	return "List id$lid does not exist.<br>" .
-			"Click <a href='Lists.pl'>here</a> to view a table of all lists." unless ($list);	
+	return "Notebook id$lid does not exist.<br>" .
+			"Click <a href='Notebooks.pl'>here</a> to view a table of all notebooks." unless ($list);	
 
 	my $html = $list->annotation_pretty_print_html();
 	my $user_can_edit = $USER->is_admin || (!$list->locked && $USER->is_owner_editor(list => $lid));
 
 	if ($user_can_edit) {
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_list_info();">Edit&nbspList&nbspInfo</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_list_info();">Edit Info</span>};
 	}
 	if ($USER->is_admin || (!$list->locked && $USER->is_owner(list => $lid))) {
 		if ( $list->restricted ) {
-			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_list_public();">Make&nbspList&nbspPublic</span>};
+			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_list_public();">Make Public</span>};
 		}
 		else {
-			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_list_private();">Make List Private</span>};
+			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_list_private();">Make Private</span>};
 		}
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_list();">Delete&nbspList</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_list();">Delete</span>};
 	}
 
 	return $html;
@@ -215,7 +216,7 @@ sub edit_list_info {
 	
 	my $desc = ( $list->description ? $list->description : '' );
 
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'ListView.tmpl' );
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 	$template->param( EDIT_LIST_INFO => 1 );
 	$template->param( NAME           => $list->name );
 	$template->param( DESC           => $desc );
@@ -476,9 +477,9 @@ sub update_annotation {
 sub remove_annotation {
 	my %opts  = @_;
 	my $lid = $opts{lid};
-	return "No list ID specified" unless $lid;
+	return "No notebook ID specified" unless $lid;
 	my $laid = $opts{laid};
-	return "No list annotation ID specified" unless $laid;	
+	return "No notebook annotation ID specified" unless $laid;	
 	#return "Permission denied" unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
 	
 	my $list = $coge->resultset('List')->find($lid);
@@ -494,11 +495,11 @@ sub remove_annotation {
 sub get_list_contents {
 	my %opts = @_;
 	my $lid  = $opts{lid};
-	return "Must have valid list id\n" unless ($lid);
+	return "Must have valid notebook id\n" unless ($lid);
 	
 	my $list = $coge->resultset('List')->find($lid);
-	return "List id$lid does not exist.<br>" .
-			"Click <a href='Lists.pl'>here</a> to view all lists." unless $list;
+	return "Notebook id$lid does not exist.<br>" .
+			"Click <a href='Notebooks.pl'>here</a> to view all notebooks." unless $list;
 			
 	return "Access denied\n" unless ($USER->has_access(list=>$lid) || !$list->restricted);
 		
@@ -547,9 +548,9 @@ sub get_list_contents {
 	$first = 1;
 	my $list_count = $list->lists(count=>1);
 	foreach my $list (sort listcmp $list->lists ) {
-		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' rowspan='$list_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Lists ($list_count):</th>" : '');
+		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' rowspan='$list_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Notebooks ($list_count):</th>" : '');
 		my $child_id = $list->id;
-		$html .= qq{<td class='data5'><span id='list$child_id' class='link' onclick="window.open('ListView.pl?lid=$child_id')">} . $list->info . "</span></td>";
+		$html .= qq{<td class='data5'><span id='list$child_id' class='link' onclick="window.open('$PAGE_TITLE.pl?lid=$child_id')">} . $list->info . "</span></td>";
 		if ($user_can_edit) {
 			$html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '".$list_types->{list}."', item_id: '$child_id'});\" class='link ui-icon ui-icon-closethick'></span></td>";
 		}
@@ -576,7 +577,7 @@ sub add_list_items {
 	
 	my $desc = ( $list->description ? $list->description : '' );
 
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'ListView.tmpl' );
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 	$template->param( ADD_LIST_ITEMS => 1 );
 	$template->param( NAME           => $list->name );
 	$template->param( DESC           => $desc );
@@ -693,6 +694,7 @@ sub search_mystuff {
 	my $html;
 	foreach my $type (sort keys %mystuff) {
 		my ($type_name) = grep { $child_types->{$_} eq $type } keys %$child_types;
+		$type_name = 'notebook' if ($type_name eq 'list');
 		my $type_count = @{$mystuff{$type}};
 		$html .= "<optgroup label='" . ucfirst($type_name) . "s ($type_count)'>";
 		foreach my $item (@{$mystuff{$type}}) {

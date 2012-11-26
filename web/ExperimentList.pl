@@ -380,7 +380,7 @@ sub send_to_list    #send to list
 	
 	$coge->resultset('Log')->create( { user_id => $USER->id, page => $PAGE_NAME, description => 'create list from experiments id' . $list->id } );	
 	
-	my $url = "ListView.pl?lid=" .  $list->id;
+	my $url = "NotebookView.pl?lid=" .  $list->id;
 	return $url;
 }
 

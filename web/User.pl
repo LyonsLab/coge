@@ -204,7 +204,7 @@ sub get_lists {
 
 		my $id = $list->id;
 		my %row;
-		$row{LIST_INFO} = qq{<span class="link" onclick='window.open("ListView.pl?lid=$id")'>} . $list->info . "</span>";
+		$row{LIST_INFO} = qq{<span class="link" onclick='window.open("NotebookView.pl?lid=$id")'>} . $list->info . "</span>";
 		
 		push @rows, \%row;
 	}

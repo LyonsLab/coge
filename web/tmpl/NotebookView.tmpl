@@ -373,7 +373,7 @@ function search_lists () {
 }
 
 function dialog_delete_list () {
-	show_dialog('list_delete_box', 'Delete List?', '', 450);
+	show_dialog('list_delete_box', 'Delete Notebook?', '', 450);
 }
 
 function delete_list () {
@@ -441,13 +441,13 @@ function image_preview(obj, preview) {
 <table>
  <tr valign="top">
   <td>
-   <span style="color:dimgray;font-weight:bold;">List Info</span><br>
+   <span style="color:dimgray;font-weight:bold;">Info</span><br>
    <div id="list_info">
     <TMPL_VAR NAME=LIST_INFO>
    </div>
   </td>
   <td style="padding-left:20px;">
-   <span style="color:dimgray;font-weight:bold;">List Annotations</span><br>
+   <span style="color:dimgray;font-weight:bold;">Annotations</span><br>
    <div id='list_annotations'>
     <TMPL_VAR NAME=LIST_ANNOTATIONS>
    </div>
@@ -458,7 +458,7 @@ function image_preview(obj, preview) {
 <br>
 
 <div>
- <span style="color:dimgray;font-weight:bold;">List Contents</span><br>
+ <span style="color:dimgray;font-weight:bold;">Contents</span><br>
  <div id="list_contents">
   <TMPL_VAR NAME="LIST_CONTENTS">
  </div>
@@ -466,7 +466,7 @@ function image_preview(obj, preview) {
 
 <br>
 <div class='small'>
-Send list to:  
+Send contents to:  
  <select name="checked_action" id="checked_action">
   <option value="send_to_blast">CoGeBlast (genomes only)</option>
   <option value="send_to_featlist">FeatList (features only)</option>
@@ -482,14 +482,14 @@ Send list to:
  <span class='ui-button ui-corner-all ui-button-icon-right ui-button-go' onclick="send_list_to();"><span class="ui-icon ui-icon-extlink"></span>Go</span>
 </div>
 
-<div id="list_info_edit_box" class="dialog_box" title="Edit List Info"></div>
+<div id="list_info_edit_box" class="dialog_box" title="Edit Notebook Info"></div>
 
 <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'> <!-- Add/Edit Annotation Dialog -->
 
-<div id="list_contents_edit_box" class="dialog_box" title="Add Items to List"></div>
+<div id="list_contents_edit_box" class="dialog_box" title="Add Items to Notebook"></div>
 
 <div id="list_delete_box" class="dialog_box" style='display:none;' align='center'>
-Are you sure you want to permanently delete this list?<p>
+Are you sure you want to permanently delete this notebook?<p>
  <div>
   <span style="font-size:.75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_list();">Yes</span>
   <span style="font-size:.75em" class='ui-button ui-button-go ui-corner-all' onClick="$('#list_delete_box').dialog('close');">No</span>
@@ -513,8 +513,8 @@ Are you sure you want to permanently delete this list?<p>
  <tr>
   <td>Type:</td>
   <td><select id="edit_type">
-   <TMPL_LOOP NAME=TYPE_LOOP>
-    <OPTION <TMPL_VAR NAME=TYPE_SELECTED> value=<TMPL_VAR NAME=TID>><TMPL_VAR NAME=NAME></OPTION>
+   <TMPL_LOOP NAME="TYPE_LOOP">
+    <OPTION <TMPL_VAR NAME="TYPE_SELECTED"> value=<TMPL_VAR NAME=TID>><TMPL_VAR NAME=NAME></OPTION>
    </TMPL_LOOP>
    </select>
   </td>
@@ -545,7 +545,7 @@ $(document).ready(function() {
  <li class="small"><a href="#tab-2">Genomes</a></li>
  <li class="small"><a href="#tab-3">Experiments</a></li>
  <li class="small"><a href="#tab-4">Features</a></li>
- <li class="small"><a href="#tab-5">Lists</a></li>
+ <li class="small"><a href="#tab-5">Notebooks</a></li>
 </ul>
 
 <div id="tab-1">
