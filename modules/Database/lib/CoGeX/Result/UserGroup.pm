@@ -419,12 +419,11 @@ sub annotation_pretty_print_html
 	$anno_type->Type_delimit(": <td class=\"data5\">");
 	$anno_type->Val_delimit("<br>");
 	foreach my $user (sort { $a->info cmp $b->info } $self->users) {
+		my $user_info = qq{<span class="link" onclick="window.open('User.pl?uid=} . $user->id . qq{');">} . $user->info . '</span>';
 		if ($user->id == $self->creator_user_id) {
-			$anno_type->add_Annot('<b>' . $user->info . ' (creator)</b>');
+			$user_info = '<b>' . $user->info . ' (creator)</b>';
 		}
-		else {
-			$anno_type->add_Annot($user->info);
-		}
+		$anno_type->add_Annot($user_info);
 	}
 	$anno_obj->add_Annot($anno_type);
 
