@@ -212,7 +212,7 @@ sub get_lists {
 
 	my @rows;
 	foreach my $list (sort listcmp @lists) {
-		next if ($list->restricted && !$USER->is_admin && !$is_user && !$user->has_access(list => $list));
+		next if ($list->restricted && !$USER->is_admin && !$is_user && !$USER->has_access(list => $list));
 
 		my $id = $list->id;
 		my %row;
@@ -236,7 +236,7 @@ sub get_genomes {
 
 	my @rows;
 	foreach my $genome (sort genomecmp @genomes) {
-		next if ($genome->restricted && !$USER->is_admin && !$is_user && !$user->has_access(dsg => $genome));
+		next if ($genome->restricted && !$USER->is_admin && !$is_user && !$USER->has_access(dsg => $genome));
 
 		my $id = $genome->id;
 		my %row;
@@ -259,7 +259,7 @@ sub get_experiments {
 
 	my @rows;
 	foreach my $exp (sort experimentcmp @experiments) {
-		next if ($exp->restricted && !$USER->is_admin && !$is_user && !$user->has_access(experiment => $exp));
+		next if ($exp->restricted && !$USER->is_admin && !$is_user && !$USER->has_access(experiment => $exp));
 
 		my $id = $exp->id;
 		my %row;
