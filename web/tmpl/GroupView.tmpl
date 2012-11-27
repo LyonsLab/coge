@@ -331,10 +331,10 @@ function delete_group (opts) {
 
 
 <div id="group_info">
- <TMPL_VAR NAME=GROUP_INFO>
+ <TMPL_VAR NAME="GROUP_INFO">
 </div>
 
-<div id="group_info_edit_box" class="dialog_box"></div>
+<div id="group_info_edit_box"  class="dialog_box"></div>
 <div id="group_users_edit_box" class="dialog_box"></div>
 <div id="group_lists_edit_box" class="dialog_box"></div>
 
@@ -351,21 +351,21 @@ Are you sure you want to permanently delete this group?<p>
 
 
 
-<TMPL_IF NAME=EDIT_GROUP_INFO>
+<TMPL_IF NAME="EDIT_GROUP_INFO">
 <table class="small">
  <tr>
   <td>Name:</td>
-  <td><input type="textbox" size=53 id="edit_name" value="<TMPL_VAR NAME=NAME>"></td>
+  <td><input type="textbox" size="53" id="edit_name" value="<TMPL_VAR NAME='NAME'>"></td>
  </TR>
  <tr>
   <td>Description:</td>
-  <td><textarea id="edit_desc" rows=5 cols=50 ><TMPL_VAR NAME=DESC></textarea></td>
+  <td><textarea id="edit_desc" rows="5" cols="50"><TMPL_VAR NAME="DESC"></textarea></td>
  </tr>
  <tr>
   <td>Role:</td>
   <td><select id="edit_role" style="max-width: 265px;">
-   <TMPL_LOOP NAME=ROLE_LOOP>
-    <OPTION <TMPL_VAR NAME=ROLE_SELECTED> value=<TMPL_VAR NAME=ROLE_ID>><TMPL_VAR NAME=ROLE_NAME></OPTION>
+   <TMPL_LOOP NAME="ROLE_LOOP">
+    <OPTION <TMPL_VAR NAME="ROLE_SELECTED"> value=<TMPL_VAR NAME="ROLE_ID">><TMPL_VAR NAME="ROLE_NAME"></OPTION>
    </TMPL_LOOP>
    </select>
   </td>
@@ -376,22 +376,22 @@ Are you sure you want to permanently delete this group?<p>
 
 
 
-<TMPL_IF NAME=MODIFY_USERS>
+<TMPL_IF NAME="MODIFY_USERS">
 <table class="small">
  <tr>
   <td>
    <b>Current Members</b><br>
    <form name="current_users">
-    <select multiple id="ugid" name="current_ugid" onclick="show_add()" ondblclick="remove_user({ugid: '<TMPL_VAR NAME=UGID>'})" size=10 >
-     <TMPL_LOOP NAME=UGID_LOOP>
-      <OPTION value=<TMPL_VAR NAME=UID>><TMPL_VAR NAME=UID_NAME></OPTION>
+    <select multiple id="ugid" name="current_ugid" onclick="show_add()" ondblclick="remove_user({ugid: '<TMPL_VAR NAME="UGID">'})" size=10 >
+     <TMPL_LOOP NAME="UGID_LOOP">
+      <OPTION value=<TMPL_VAR NAME="UID">><TMPL_VAR NAME="UID_NAME"></OPTION>
      </TMPL_LOOP>
     </select>
    </form>
    <SCRIPT TYPE="text/javascript"> 
     var current_user_filter = new filterlist(document.current_users.current_ugid);
    </SCRIPT>
-   Filter: <INPUT NAME=regexp onKeyUp="current_user_filter.set(this.value)">
+   Filter: <INPUT NAME="regexp" onKeyUp="current_user_filter.set(this.value)">
   </td> 
   <td>
    <span id="remove_user" href="javascript:void(0)" onClick="remove_user({ugid: '<TMPL_VAR NAME=UGID>'});" style="display:none" class='ui-button ui-button-go ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span>
@@ -436,16 +436,14 @@ search_lists(<TMPL_VAR NAME=UGID>, '');
    <div id="list_preview" style="display:none;color:Gray;height:131px;border:1px solid LightGray;padding: 1px 4px 4px 4px;font-family:Arial, Helvetica, sans-serif;font-size:0.8em;"></div>
   </td>
  </tr>
- <tr>
-  <td colspan='2' style='color:gray;'><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
- </tr>
 </table>
+<span class='small' style='color:gray;float:right;font-style:italic;'>Hold down SHIFT or CTRL to select multiple items</span><br>
 <span href="javascript:void(0)" onClick="add_lists_to_group({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
 </TMPL_IF> <!-- ADD_LISTS -->
 
 
 
-<TMPL_IF NAME=SET_GROUP_CREATOR>
+<TMPL_IF NAME="SET_GROUP_CREATOR">
 <table class="small">
  <tr>
   <td>

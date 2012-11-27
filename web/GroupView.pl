@@ -170,9 +170,9 @@ sub get_group_info {
 	
 	my $html = $group->annotation_pretty_print_html(allow_delete => $user_can_edit);
 	if ($user_can_edit) {
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_group_info({ugid: '$ugid'});">Edit Group Info</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_group_info({ugid: '$ugid'});">Edit Info</span>};
 		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="modify_users({ugid: '$ugid'});">Modify Users</span>};
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="add_lists({ugid: '$ugid'});">Add Lists</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="add_lists({ugid: '$ugid'});">Add Notebook</span>};
 		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_group();">Delete Group</span>};
 	}
 	
@@ -320,7 +320,7 @@ sub add_lists {
 	$template->param( UGID      => $ugid );
 
 	my %data;
-	$data{title} = 'Add Lists';
+	$data{title} = 'Add Notebook';
 	$data{output} = $template->output;
 
 	return encode_json( \%data );
@@ -439,7 +439,7 @@ sub get_list_preview {
 	my $html = '';
 	if ($list) {
 		my $contents_summary = $list->contents_summary_html;
-		$html .= "List <b>'" . $list->name . "'</b> (id" . $list->id . ') ';
+		$html .= "Notebook <b>'" . $list->name . "'</b> (id" . $list->id . ') ';
 		if ($contents_summary) {
 			$html .= 'contains:<div style="padding-left: 10px; padding-top: 3px;">' . $contents_summary . '</div>';
 		}

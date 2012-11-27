@@ -115,17 +115,25 @@ sub gen_body {
 	return 'Access Denied' if ($USER->user_name eq 'public');
 
 	# Other user specified as param, only allow access if collaborator
-	my $uid = $FORM->param('uid');
 	my $user = $USER;
+	my $uid = $FORM->param('uid');
 	if ($uid) {
-		return '' if (not $USER->has_collaborator($uid));
+		return '' if (!$USER->is_admin && !$USER->has_collaborator($uid));
 		$user = $coge->resultset('User')->find($uid);
+	}
+	else {
+		my $uname = $FORM->param('name');
+		if ($uname) {
+			my $u = $coge->resultset('User')->find({user_name => $uname});
+			return '' if (!$u || (!$USER->is_admin && !$USER->has_collaborator($u)));
+			$user = $u;
+		}
 	}
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-	$template->param( PAGE_NAME        => "$PAGE_TITLE.pl" );
-	$template->param( MAIN             => 1 );
-	$template->param( ADMIN_AREA       => 1 ) if $USER->is_admin;
+	$template->param( PAGE_NAME  => "$PAGE_TITLE.pl" );
+	$template->param( MAIN       => 1 );
+	$template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 
 	my $is_user = ($user->id == $USER->id);
 	$template->param( IS_USER => $is_user );
@@ -152,7 +160,7 @@ sub get_groups {
 	
 	my @rows;
 	foreach my $group (sort {$a->name cmp $b->name} @groups) {
-		next if (!$is_user && !$group->has_member($USER));
+		next if (!$USER->is_admin && !$is_user && !$group->has_member($USER));
 
 		my $id = $group->id;
 		my %row;
@@ -181,7 +189,7 @@ sub get_collaborators {
 	
 	my @rows;
 	foreach my $u (sort {$a->display_name cmp $b->display_name} @users) {
-		next if (!$is_user && !$u->has_collaborator($USER));
+		next if (!$USER->is_admin && !$is_user && !$u->has_collaborator($USER));
 
 		my $id = $u->id;
 		my %row;
@@ -204,7 +212,7 @@ sub get_lists {
 
 	my @rows;
 	foreach my $list (sort listcmp @lists) {
-		next if ($list->restricted && !$is_user && !$user->has_access(list => $list));
+		next if ($list->restricted && !$USER->is_admin && !$is_user && !$user->has_access(list => $list));
 
 		my $id = $list->id;
 		my %row;
@@ -228,7 +236,7 @@ sub get_genomes {
 
 	my @rows;
 	foreach my $genome (sort genomecmp @genomes) {
-		next if ($genome->restricted && !$is_user && !$user->has_access(dsg => $genome));
+		next if ($genome->restricted && !$USER->is_admin && !$is_user && !$user->has_access(dsg => $genome));
 
 		my $id = $genome->id;
 		my %row;
@@ -251,7 +259,7 @@ sub get_experiments {
 
 	my @rows;
 	foreach my $exp (sort experimentcmp @experiments) {
-		next if ($exp->restricted && !$is_user && !$user->has_access(experiment => $exp));
+		next if ($exp->restricted && !$USER->is_admin && !$is_user && !$user->has_access(experiment => $exp));
 
 		my $id = $exp->id;
 		my %row;

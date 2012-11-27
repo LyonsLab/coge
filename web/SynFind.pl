@@ -1747,7 +1747,7 @@ sub get_unique_genes
 	$list->add_to_list_connectors_as_parent({child_id=>$fid, child_type=>4});
       }
     print $form->header;
-    my $listview = $SERVER."ListView.pl?lid=".$list->id;
+    my $listview = $SERVER."NotebookView.pl?lid=".$list->id;
     print qq{<meta HTTP-EQUIV="REFRESH" content="0; url=$listview">};
     exit;
   }

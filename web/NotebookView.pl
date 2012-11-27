@@ -186,7 +186,7 @@ sub get_list_info {
 		else {
 			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_list_private();">Make Private</span>};
 		}
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_list();">Delete</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_list();">Delete Notebook</span>};
 	}
 
 	return $html;
