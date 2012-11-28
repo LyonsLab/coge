@@ -767,6 +767,7 @@ sub gen_results_page {
 				my ($chr) = $hsp->subject_name =~ /\|(\S*)/;
 				$chr = $hsp->subject_name unless $chr;
 				$chr =~ s/\s+$//;
+				my ($ds) = $dsg->datasets( chr => $chr );
 				my ($org) = $set->{organism};
 				next unless $dsg && defined $chr;
 				$hsp_count{$org}++;
@@ -791,6 +792,8 @@ sub gen_results_page {
 				$query_hit_count{$qname}{orig_name} = $hsp->query_name;
 				$query_hit_count{$qname}{color}     = $hsp->{color}
 				  if $hsp->{color};
+				my $rc = $hsp->strand =~ /-/ ? 1 : 0;
+				my $seqview_link = qq{<span class="small link" onclick="window.open('SeqView.pl?dsid=}.$ds->id.qq{;chr=$chr;start=}.$hsp->subject_start.";stop=".$hsp->subject_stop.qq{;rc=$rc')" target=_new>SeqView</span>};
 				push @hsp,
 				  {
 					CHECKBOX => $id . "_" . $chr . "_" . $hsp->subject_start . "no",
@@ -807,6 +810,7 @@ sub gen_results_page {
 					HSP_CHR     => $chr,
 					HSP_LINK    => $feat_link,
 					HSP_QUALITY => sprintf( "%.1f", $hsp->quality ) . "%",
+				        SEQVIEW => $seqview_link,
 				  };
 			}
 		}
@@ -2343,6 +2347,7 @@ sub save_settings_cogeblast {
 				11 => 'QualD',
 				12 => 'FeatD',
 				13 => 'DistD',
+				14 => 'SeqViewD',
 			);
 			foreach my $index ( split(/,/, $opts{$key}) ) {
 				$prefs->{$key}{ $settings{$index} } = 1;
