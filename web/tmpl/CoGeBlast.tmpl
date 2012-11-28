@@ -166,7 +166,7 @@ function click_all_feat_links(){
 }
  
 function update_sorting_table() {
-	if (ajax.length) {
+	if ($.ajax.length) {
 		setTimeout("update_sorting_table()",100);
 		return;
 	}
@@ -1170,7 +1170,7 @@ function check_display() {
 function save_display_settings() {
 	var i=1;
 	var index;
-	$("input.hsp_display[@type=checkbox]").each(function(){
+	$(".hsp_display").each(function(){
 		if($(this)[0].checked) {
 			if (index) {index= index +","+i;}
 			else {index = i;}
@@ -1253,7 +1253,8 @@ function toggle_title(id, full, partial) {
         <td><input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(12);" <TMPL_VAR NAME="FeatD">>Closest Genomic Feature</td>
       </tr>
       <tr>
-        <td><input class="hsp_display" type=c heckbox onclick="toggle_hsp_column(13);"<TMPL_VAR NAME="DistD">>Distance to Closest Feature</td>
+        <td><input class="hsp_display" type=checkbox onclick="toggle_hsp_column(13);"<TMPL_VAR NAME="DistD">>Distance to Closest Feature</td>
+        <td><input class="hsp_display" type=checkbox onclick="toggle_hsp_column(14);"<TMPL_VAR NAME="SeqViewD">>Link to SeqView for HSP Sequence</td>
       </tr>
       <TMPL_IF NAME="SAVE_DISPLAY">
       <tr>
@@ -1507,10 +1508,9 @@ function toggle_title(id, full, partial) {
             <TH nowrap class="header">Perc ID</TH>
             <TH nowrap class="header">Score</TH>
             <TH nowrap class="header">Quality</TH>
-            <TH class="header">Closest Genomic Feature
-              <br><span class="small link" onclick="click_all_feat_links();$('#click_links').hide(0)">Find All</span> 
-            </TH>
-            <TH nowrap class="header">Distance(bp)</TH>
+            <TH class="header">Closest Genomic Feature </TH>
+            <TH class="header">Distance to Genomic Feature (bp) </TH>
+            <TH nowrap class="header">HSP Sequence </TH>
           </TR>
         </THEAD>
         <TBODY id="hsp_result_table_body" style="overflow-y: auto;overflow-x: hidden;">
@@ -1538,6 +1538,7 @@ function toggle_title(id, full, partial) {
               <td>
                 <div id="dist<TMPL_VAR NAME=ID>">-</div>
               </td>
+              <td><TMPL_VAR NAME=SEQVIEW></td>
             </tr>
           </TMPL_LOOP>
         </tbody>
