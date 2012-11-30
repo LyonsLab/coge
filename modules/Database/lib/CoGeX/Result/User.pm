@@ -313,11 +313,52 @@ sub owner_group {
 ################################################## subroutine header end ##
 
 sub owner_list {
+	return shift->owner_group->owner_list;
+}
+
+################################################ subroutine header begin ##
+
+=head2 shared_group
+
+ Usage     : 
+ Purpose   : return user's shared group
+ Returns   : user_group object
+ Argument  : 
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub shared_group {
 	my $self = shift;
-	# foreach my $list ( $self->lists ) {
-	# 	return $list if ($list->locked && $list->list_type_id == 3); # FIXME list type hardcoded
-	# }
-	return $self->owner_group->owner_list;
+	foreach my $group ( $self->groups ) {
+		return $group if ($group->locked && $group->name eq $self->name && $group->description =~ /shared/i && $group->role->name =~ /reader/i);
+	}
+	return;
+}
+
+################################################ subroutine header begin ##
+
+=head2 owner_list
+
+ Usage     : return user's shared list
+ Purpose   : 
+ Returns   : list object
+ Argument  : 
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub shared_list {
+	my $self = shift;
+	my $group = $self->shared_group;
+	return if (not $group);
+	return $group->shared_list;
 }
 
 ################################################ subroutine header begin ##

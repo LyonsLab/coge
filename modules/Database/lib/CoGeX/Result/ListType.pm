@@ -67,5 +67,34 @@ __PACKAGE__->has_many('lists'=>"CoGeX::Result::List",'list_type_id');
 
 ################################################## subroutine header end ##
 
+sub is_genome
+{
+  return shift->list_type_id == 1;
+}
+
+sub is_experiment
+{
+  return shift->list_type_id == 2;
+}
+
+sub is_owner
+{
+  return shift->list_type_id == 3;
+}
+
+sub is_feature
+{
+  return shift->list_type_id == 4;
+}
+
+sub is_mixed
+{
+  return shift->list_type_id == 5;
+}
+
+sub is_other
+{
+  return shift->list_type_id == 6;
+}
 
 1;

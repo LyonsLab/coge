@@ -142,6 +142,52 @@ sub has_member
 
 ################################################ subroutine header begin ##
 
+=head2 owner_list
+
+ Usage     : return group's owner list
+ Purpose   : 
+ Returns   : list object
+ Argument  : 
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub owner_list {
+	my $self = shift;
+	foreach my $list ( $self->lists ) {
+		return $list if ($list->list_type_id == 3 && $list->description =~ /owner/i); # FIXME list type hardcoded
+	}
+	return;
+}
+
+################################################ subroutine header begin ##
+
+=head2 shared_list
+
+ Usage     : return group's shared list
+ Purpose   : 
+ Returns   : list object
+ Argument  : 
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub shared_list {
+	my $self = shift;
+	foreach my $list ( $self->lists ) {
+		return $list if ($list->list_type_id == 7 && $list->description =~ /shared/i); # FIXME list type hardcoded
+	}
+	return;
+}
+
+################################################ subroutine header begin ##
+
 =head2 experiments
 
  Usage     : 
@@ -437,29 +483,6 @@ sub annotation_pretty_print_html
 	$anno_obj->add_Annot($anno_type);
 
   return "<table cellpadding=0 class='ui-widget-content ui-corner-all small'>".$anno_obj->to_String."</table>";
-}
-
-################################################ subroutine header begin ##
-
-=head2 owner_list
-
- Usage     : return group's owner list
- Purpose   : 
- Returns   : list object
- Argument  : 
- Throws    : None
- Comments  : 
-
-=cut
-
-################################################## subroutine header end ##
-
-sub owner_list {
-	my $self = shift;
-	foreach my $list ( $self->lists ) {
-		return $list if ($list->list_type_id == 3); # FIXME list type hardcoded
-	}
-	return;
 }
 
 =head1 BUGS

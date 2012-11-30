@@ -244,7 +244,37 @@ See Also   : ListType
 
 sub type
 {
-	return shift->list_type();
+	return shift->list_type;
+}
+
+sub is_genome
+{
+	return shift->list_type->is_genome;
+}
+
+sub is_experiment
+{
+	return shift->list_type->is_experiment;
+}
+
+sub is_owner
+{
+	return shift->list_type->is_owner;
+}
+
+sub is_feature
+{
+	return shift->list_type->is_feature;
+}
+
+sub is_mixed
+{
+	return shift->list_type->is_mixed;
+}
+
+sub is_other
+{
+	return shift->list_type->is_other;
 }
 
 ################################################ subroutine header begin ##

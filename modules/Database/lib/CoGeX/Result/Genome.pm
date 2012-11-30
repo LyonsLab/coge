@@ -149,7 +149,7 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-sub lists() {    
+sub lists {    
 
 	my $self = shift;
 	my @lists = ();
@@ -160,6 +160,19 @@ sub lists() {
 	}
 
 	return wantarray ? @lists : \@lists;
+}
+
+sub owner_list {    
+
+	my $self = shift;
+
+	foreach	my $conn ( $self->list_connectors )
+	{
+		my $list = $conn->parent_list();
+		return $list if ($list and $list->is_owner);
+	}
+
+	return;
 }
 
 ################################################ subroutine header begin ##
