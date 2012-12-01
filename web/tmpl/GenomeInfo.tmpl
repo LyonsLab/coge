@@ -1,0 +1,793 @@
+<TMPL_IF NAME='MAIN'>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
+<SCRIPT TYPE="text/javascript" SRC="./js/filterlist.js"></SCRIPT>
+
+<SCRIPT language="JavaScript">
+$(document).ready(function(){
+	$.ajaxSetup({
+		type: "GET",
+		url: '<TMPL_VAR NAME='PAGE_NAME'>',
+		dataType: "html",
+		cache: false,
+	});
+	
+	$(".dialog_box").dialog({
+		autoOpen: false, 
+		width: 500, 
+  	});
+});
+
+function set_input(id, text) {
+	var obj = $('#'+id);
+	var val = obj.val();
+	if (!text) {
+		text = 'Search';
+	}	
+	
+	if ( val && val != text ) {
+		obj.css({"font-style": "normal", "color": "black"});
+	}
+	else {
+		if (obj.is(":focus")) {
+			obj.val('');
+			obj.css({"font-style": "normal", "color": "black"});
+		}
+		else {
+			obj.val(text);
+			obj.css({"font-style": "italic", "color": "gray"});
+		}
+	}
+
+	// Init event handlers
+	$('#'+id).unbind('blur').bind('keypress', 	function() { set_input(id, text); })
+			 .unbind('blur').bind('blur', 		function() { set_input(id, text); })
+			 .unbind('focus').bind('focus', 	function() { set_input(id, text); });
+}
+
+function wait_to_search (search_func, search_term) {
+	pageObj.search_term = search_term;
+		
+	if (pageObj.time) {
+		clearTimeout(pageObj.time);
+	}
+	
+	// FIXME: could generalize by passing select id instead of separate search_* functions
+	pageObj.time = setTimeout(
+		function() { 
+			search_func(pageObj.search_term); 
+		},
+		500
+	);
+}
+
+function search_organisms (search_term) {
+	if (search_term.length > 2) {
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'search_organisms',
+				search_term: search_term,
+				timestamp: new Date().getTime()
+			},
+			success : function(data) {
+				var obj = jQuery.parseJSON(data);
+				if (obj && obj.items) {
+					$("#edit_organism").autocomplete({source: obj.items});
+					$("#edit_organism").autocomplete("search");
+				}
+			}
+		});
+	}
+}
+
+function search_users (search_term) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'search_users',
+			search_term: search_term,
+			timestamp: new Date().getTime()
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj && obj.items) {
+				$("#edit_user").autocomplete({source: obj.items});
+				$("#edit_user").autocomplete("search");
+			}
+		},
+	});
+}
+
+function get_genome_info () {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_genome_info',
+			gid: <TMPL_VAR NAME='GID'>
+		},
+		success : function(data) {
+			if (data) {
+				$("#genome_info").html(data);
+			}
+		}
+	});
+}
+
+function edit_genome_info () {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'edit_genome_info',
+			gid: <TMPL_VAR NAME='GID'>
+		},
+		success : function(data) {
+			if (data) {
+				$("#genome_info_edit_box").html(data).dialog('open');
+			}
+		}
+	});
+}
+
+function update_genome_info (){
+	var org_name = $('#edit_organism').val();
+	if (!org_name || org_name == 'Search') {
+		alert('Please select an organism.');
+		return;
+	}
+
+	var version = $('#edit_version').val();
+	if (!version) {
+		alert('Please specify a genome version.');
+		return;
+	}
+
+	var source_name = $('#edit_source').val();
+	if (!source_name || source_name == 'Search') {
+		alert('Please specify a data source.');
+		return;
+	}
+
+	var name = $('#edit_name').val();
+	if (name == 'Optional') { name = ''; }
+
+	var description = $('#edit_description').val();
+	if (description == 'Optional') { description = ''; }
+
+	var type_id = $('#select_type').val();
+	var restricted = $('#restricted').is(':checked');
+
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'update_genome_info',
+			gid: "<TMPL_VAR NAME='GID'>",
+			name: name,
+			description: description,
+			version: version,
+			type_id: type_id,
+			restricted: restricted,
+			org_name: org_name,
+			source_name: source_name,
+			timestamp: new Date().getTime()
+		},
+		success : function(val) {
+			if (val) {
+				alert(val);
+			}
+			else {
+				get_genome_info();
+				$("#genome_info_edit_box").dialog('close');
+			}
+		}
+	});
+}
+
+function get_users_with_access () {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_users_with_access',
+			gid: <TMPL_VAR NAME='GID'>
+		},
+		success : function(data) {
+			if (data) {
+				$("#users_with_access").html(data);
+			}
+		}
+	});
+}
+
+function get_groups_with_access () {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_groups_with_access',
+			gid: <TMPL_VAR NAME='GID'>
+		},
+		success : function(data) {
+			if (data) {
+				$("#groups_with_access").html(data);
+			}
+		}
+	});
+}
+
+function get_available_users () {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_available_users',
+			gid: <TMPL_VAR NAME='GID'>
+		},
+		success : function(data) {
+			if (data) {
+				$("#genome_users_edit_box").html(data).dialog('open');
+			}
+		}
+	});
+}
+
+function get_available_groups () {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_available_groups',
+			gid: <TMPL_VAR NAME='GID'>
+		},
+		success : function(data) {
+			if (data) {
+				$("#genome_groups_edit_box").html(data).dialog('open');
+			}
+		}
+	});
+}
+
+function add_user() {
+	$('#select_user > option:selected').each( function(){
+		var uid = $(this).attr("value");
+		$(this).remove();
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'add_user',
+				gid: <TMPL_VAR NAME='GID'>,
+				uid: uid
+			},
+			success : function(data) {
+				if (data) {
+					get_users_with_access();
+					get_groups_with_access();
+				}
+			},
+		});
+	});
+};
+
+function remove_user (uid) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'remove_user',
+			gid: <TMPL_VAR NAME='GID'>,
+			uid: uid
+		},
+		success : function(data) {
+			if (data) {
+				get_users_with_access();
+				get_groups_with_access();
+			}
+		},
+	});
+}
+
+function add_group() {
+	$('#select_group > option:selected').each( function(){
+		var ugid = $(this).attr("value");
+		$(this).remove();
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'add_group',
+				gid: <TMPL_VAR NAME='GID'>,
+				ugid: ugid
+			},
+			success : function(data) {
+				if (data) {
+					get_users_with_access();
+					get_groups_with_access();
+				}
+			},
+		});
+	});
+};
+
+function remove_group (ugid) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'remove_group',
+			gid: <TMPL_VAR NAME='GID'>,
+			ugid: ugid
+		},
+		success : function(data) {
+			if (data) {
+				get_users_with_access();
+				get_groups_with_access();
+			}
+		},
+	});
+}
+
+function get_notebooks () {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_notebooks',
+			gid: <TMPL_VAR NAME='GID'>
+		},
+		success : function(data) {
+			if (data) {
+				$("#notebooks").html(data);
+			}
+		}
+	});
+}
+
+function add_to_notebook () {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'add_to_notebook',
+			gid: <TMPL_VAR NAME="GID">,
+		},
+		success : function(data) {
+			$("#genome_notebooks_edit_box").html(data).dialog('open');
+		},
+	});
+}
+
+function add_genome_to_notebook () {
+	$('#select_list_items > option:selected').each(
+		function() {
+			var nid = $(this).attr("value");
+			$.ajax({
+				data: {
+					jquery_ajax: 1,
+					fname: 'add_genome_to_notebook',
+					gid: <TMPL_VAR NAME="GID">,
+					nid: nid
+				},
+				success : function(data) {
+						if (data) {
+							get_notebooks();
+						}
+					}
+			});
+		}
+	);
+	$("#genome_notebooks_edit_box").dialog('close');
+}
+
+function remove_genome_from_notebook (nid) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'remove_genome_from_notebook',
+			gid: <TMPL_VAR NAME="GID">,
+			nid: nid
+		},
+		success : function(val) {
+			if (val) {
+				get_notebooks();
+			}
+		},
+	});
+}
+
+function search_notebooks (search_term) {
+	$("#wait_list").animate({opacity:1});
+	$("#select_list_items").html("<option disabled='disabled'>Searching...</option>");
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'search_notebooks',
+			gid: <TMPL_VAR NAME="GID">,
+			search_term: search_term,
+			timestamp: new Date().getTime()
+		},
+		success : function(val) {
+			var items = jQuery.parseJSON(val);
+			if (!pageObj.timestamp_lists || items.timestamp > pageObj.timestamp_lists) {
+				pageObj.timestamp_lists = items.timestamp;
+				$('#list_preview').hide();
+				$("#select_list_items").html(items.html);
+				var width = $("#genome_notebooks_edit_box").dialog("option", "width");
+				$("#select_list_items").width(width-40);
+				$("#wait_list").animate({opacity:0});
+			}
+		},
+	});
+}
+
+function get_list_preview (opts) {
+	$('#list_preview').hide();
+	$('#select_list_items > option:selected:last').each(
+		function() {
+			var nid = $(this).attr("value");
+			$.ajax({
+				data: {
+					jquery_ajax: 1,
+					fname: 'get_notebook_preview',
+					nid: nid,
+				},
+				success : 
+					function(data) {
+						var width = $("#genome_notebooks_edit_box").dialog("option", "width");
+						$("#select_list_items").width(width/2-30);
+						$('#list_preview').width(width/2-30);
+						$('#list_preview').html(data);
+						$('#list_preview').fadeIn('fast');
+					}
+			});
+		}
+	);
+}
+</SCRIPT>
+
+
+<table style="overflow:hidden;">
+	<tr style="vertical-align:top;">
+		<td>
+			<span style="color:dimgray;font-weight:bold;">Genome Info</span>
+			<div id='genome_info' class="small ui-widget-content ui-corner-all" style="width:400px;"><TMPL_VAR NAME="GENOME_INFO"></div>
+			<span class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="edit_genome_info();"><span class="ui-icon ui-icon-gear"></span>Edit Info</span>
+		</td>
+		<td>
+			<span id='genome_data' style="color:dimgray;font-weight:bold;">Genome Data</span>
+			<div class="small ui-widget-content ui-corner-all"><TMPL_VAR NAME="GENOME_DATA"></div>
+			<span class='ui-button ui-corner-all ui-button-icon-right ui-button-go' onclick="window.open('GenomeView.pl?gid=<TMPL_VAR NAME=GID>')"><span class="ui-icon ui-icon-extlink"></span>Genome View</span>
+		</td>
+	</tr>
+</table>
+<br>
+
+<span style="color:dimgray;font-weight:bold;">Experiments</span>
+<div class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;">
+<TMPL_VAR NAME='EXPERIMENTS'>
+</div>
+<span class='ui-button ui-corner-all ui-button-icon-right ui-button-go' onclick="window.open('LoadExperiment.pl?gid=<TMPL_VAR NAME=GID>')"><span class="ui-icon ui-icon-extlink"></span>Load Experiment</span>
+<br><br>
+
+<span style="color:dimgray;font-weight:bold;">Notebooks</span>
+<div id="notebooks" class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;">
+<TMPL_VAR NAME='NOTEBOOKS'>
+</div>
+<span class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="add_to_notebook();"><span class="ui-icon ui-icon-plus"></span>Add to Notebook</span>
+<br><br>
+
+<table style="overflow:hidden;">
+	<tr style="vertical-align:top;">
+		<td>
+			<span style="color:dimgray;font-weight:bold;">Groups with Access</span>
+			<div id="groups_with_access" class="small ui-widget-content ui-corner-all" style="width:500px;height:100px;overflow-y:auto;">
+				<TMPL_VAR NAME='GROUPS'>
+			</div>
+			<!-- <span class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="get_available_groups();"><span class="ui-icon ui-icon-plus"></span>Add to Group</span> -->
+		</td>
+		<td>
+			<span style="color:dimgray;font-weight:bold;">Users with Access</span>
+			<div id="users_with_access" class="small ui-widget-content ui-corner-all" style="width:160px;height:100px;overflow-y:auto;">
+				<TMPL_VAR NAME='USERS'>
+			</div>
+			<span class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="get_available_users();"><span class="ui-icon ui-icon-plus"></span>Add Users</span>
+		</td>
+	</tr>
+</table>
+
+<div id="genome_info_edit_box" class="dialog_box" title="Edit Genome Info"></div>
+<div id="genome_notebooks_edit_box" class="dialog_box" title="Add to Notebook"></div>
+<div id="genome_users_edit_box" class="dialog_box" title="Add Users"></div>
+<div id="genome_groups_edit_box" class="dialog_box" title="Add Groups"></div>
+
+</TMPL_IF> <!-- MAIN -->
+
+
+
+<TMPL_IF NAME="DO_GENOME_INFO">
+	<table class="small">
+		<tr>
+	 		<td class='title5'>Organism:</td>
+			<td class='data5'><span class="link" onclick="window.open('OrganismView.pl?gid=<TMPL_VAR NAME=GID>')"><TMPL_VAR NAME="ORGANISM"></span></td>
+		</tr>
+		<tr>
+			<td class='title5'>Version:</td>
+			<td class='data5'><TMPL_VAR NAME="VERSION"></td>
+		</tr>
+		<tr>
+			<td class='title5'>Type:</td>
+			<td class='data5'><TMPL_VAR NAME="TYPE"></td>
+		</tr>
+		<tr>
+			<td class='title5'>Source:</td>
+			<td class='data5'><TMPL_VAR NAME="SOURCE"></td>
+		</tr>
+		<tr>
+			<td class='title5'>Restricted:</td>
+			<td class='data5'><TMPL_VAR NAME="RESTRICTED"></td>
+		</tr>
+		<tr>
+			<td class='title5'>Name:</td>
+			<td class='data5'><TMPL_VAR NAME="NAME"></td>
+		</tr>
+		<tr>
+			<td class='title5'>Description:</td>
+			<td class='data5'><TMPL_VAR NAME="DESCRIPTION"></td>
+		</tr>
+	</table>
+</TMPL_IF>
+
+
+
+<TMPL_IF NAME="EDIT_GENOME_INFO">
+	<script>
+	$(function() {
+		$("#edit_source").autocomplete({source: <TMPL_VAR NAME='SOURCES'>});
+	});
+	set_input('edit_organism');
+	set_input('edit_source');
+	set_input('edit_name', 'Optional');
+	set_input('edit_description', 'Optional');
+	</script>
+	
+	<table class="small">
+	  <tr>
+	    <td>Organism:</td>
+	    <td>
+	      <input id="edit_organism" onkeyup="wait_to_search(search_organisms, this.value);" size="45" value="<TMPL_VAR NAME='ORGANISM'>"/>
+	      <!--<span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all ui-button-go'>New</span>-->
+	    </td>
+	  </tr>	
+	  <tr>
+	    <td>Version:</td>
+	    <td><input id="edit_version" type="textbox" size="10" value="<TMPL_VAR NAME='VERSION'>" /></td>
+	  </tr>
+	  <tr>
+	    <td>Type:</td>
+	    <td>
+	      <select id="select_type" style="width:230px;" value="<TMPL_VAR NAME='TYPES'>"></select>
+	      <!-- <span id="new_type_button" onClick="$('#create_new_type_dialog').dialog('open'); activate_on_input('edit_type_name', 'create_type_button');" class='ui-button ui-corner-all ui-button-go'>New</span> -->
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>Source:</td>
+	    <td>
+	      <input id="edit_source" size="45" value="<TMPL_VAR NAME='SOURCE'>"/>
+	      <!-- <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all ui-button-go'>New</span> -->
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>Restricted?</td>
+	    <td><input id="restricted" type="checkbox" <TMPL_IF NAME='RESTRICTED'>checked</TMPL_IF>></td>
+	  </tr>
+	  <tr>
+	    <td>Name:</td>
+	    <td><input id="edit_name" type="textbox" size="58" value="<TMPL_VAR NAME='NAME'>" /></td>
+	  </tr>
+	  <tr>
+	    <td>Description:</td>
+	    <td><textarea id="edit_description" rows="5" cols="50" ><TMPL_VAR NAME='DESCRIPTION'></textarea></td>
+	  </tr>
+	</table>
+	<br>
+	<span onClick="update_genome_info();" class='ui-button ui-corner-all ui-button-go'>Update</span>
+</TMPL_IF>
+
+
+
+<TMPL_IF NAME="ADD_TO_NOTEBOOK">
+	<script>
+		$(function() {
+			search_notebooks('');
+		});
+	</script>
+	<table class="small">
+		<tr>
+			<td colspan='2'>
+				Search: <input type="textbox" size="53" id="edit_list_search" onkeyup="wait_to_search(search_notebooks, this.value);"/><span class='ui-button ui-corner-all' onclick="search_notebooks($('#edit_list_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+			</td>
+		</tr>
+		<tr>
+			<td valign='top'>
+				<select id="select_list_items" size="10" style='width:460px;height:138px;' onClick="get_list_preview();">
+				</select>
+			</td>
+			<td valign='top'>
+				<div id="list_preview" style="display:none;color:Gray;height:131px;border:1px solid LightGray;padding: 1px 4px 4px 4px;font-family:Arial, Helvetica, sans-serif;font-size:0.8em;"></div>
+			</td>
+		</tr>
+	</table>
+	<span href="javascript:void(0)" onClick="add_genome_to_notebook();" class='ui-button ui-button-go ui-corner-all'>Add</span>
+</TMPL_IF> <!-- ADD_LISTS -->
+
+
+
+<TMPL_IF NAME="ADD_USERS">
+	<script TYPE="text/javascript">
+		$(function() {
+			user_filter = new filterlist(document.new_users.select_user);
+			set_input("input_user");
+		});
+	</script>
+	<table class="small">
+		<tr>
+			<td>
+				<input id="input_user" onKeyUp="user_filter.set(this.value)" style="width:200px;"/>
+				<form name="new_users">
+					<select multiple id="select_user" name="select_user" ondblclick="add_user();" size="10" style="min-width:200px;">
+						<TMPL_LOOP NAME="ALL_UID_LOOP">
+							<OPTION <TMPL_VAR NAME="USELECTED"> value=<TMPL_VAR NAME="UID">><TMPL_VAR NAME="UNAME"></OPTION>
+						</TMPL_LOOP>
+					</select>
+				</form>
+				<input id="notify" type="checkbox" />Notify users via email
+			</td>
+		</tr>
+	</table>
+	<br>
+	<span onClick="add_user();" class="ui-button ui-corner-all ui-button-go">Add</span>
+	<span onClick="$(this).parent().dialog('close');" class="ui-button ui-corner-all ui-button-go">Done</span>
+</TMPL_IF>
+
+
+
+<TMPL_IF NAME="ADD_GROUPS">
+	<script TYPE="text/javascript">
+		$(function() {
+			group_filter = new filterlist(document.new_groups.select_group);
+			set_input("input_group");
+		});
+	</script>
+	<table class="small">
+		<tr>
+			<td>
+				<input id="input_group" onKeyUp="group_filter.set(this.value)" style="width:200px;"/>
+				<form name="new_groups">
+					<select multiple id="select_group" name="select_group" ondblclick="add_group();" size="10" style="min-width:200px;">
+						<TMPL_LOOP NAME="ALL_UGID_LOOP">
+							<OPTION <TMPL_VAR NAME="UGSELECTED"> value=<TMPL_VAR NAME="UGID">><TMPL_VAR NAME="UGNAME"></OPTION>
+						</TMPL_LOOP>
+					</select>
+				</form>
+			</td>
+		</tr>
+	</table>
+	<br>
+	<span onClick="add_group();" class="ui-button ui-corner-all ui-button-go">Add</span>
+	<span onClick="$(this).parent().dialog('close');" class="ui-button ui-corner-all ui-button-go">Done</span>
+</TMPL_IF>
+
+
+
+<TMPL_IF NAME="DO_GENOME_DATA">
+	<table class="small">
+		<tr>
+	 		<td class='title5'>Chromosomes:</td>
+			<td class='data5'><TMPL_VAR NAME="CHROMOSOME_COUNT"></td>
+		</tr>
+		<tr>
+			<td class='title5'>Length:</td>
+			<td class='data5'><TMPL_VAR NAME="LENGTH"></td>
+		</tr>
+	</table>
+</TMPL_IF>
+
+
+
+<TMPL_IF NAME='DO_GROUPS'>
+	<table class="small">
+		<TMPL_LOOP NAME="GROUP_LOOP">
+		<tr valign="top">
+			<td style="white-space:nowrap;"><TMPL_VAR NAME="GROUP_NAME"></td>
+			<td style="white-space:nowrap;">(<TMPL_VAR NAME="GROUP_ROLE">)</td>
+			<td><TMPL_VAR NAME="GROUP_DESC"></td>
+			<td style="float:right;">
+				<TMPL_IF NAME="GROUP_ID">
+					<span class='link ui-icon ui-icon-closethick' onclick="remove_group(<TMPL_VAR NAME=GROUP_ID>)"></span>
+				</TMPL_IF>
+			</td>
+		</tr>
+		</TMPL_LOOP>
+	</table>
+</TMPL_IF>
+
+
+
+<TMPL_IF NAME='DO_USERS'>
+	<table class="small">
+		<TMPL_LOOP NAME="USER_LOOP">
+		<tr valign="top">
+			<td><TMPL_VAR NAME="USER_INFO"></td>
+			<td style="float:right;">
+				<TMPL_IF NAME="USER_ID">
+					<span class='link ui-icon ui-icon-closethick' onclick="remove_user(<TMPL_VAR NAME='USER_ID'>)"></span>
+				</TMPL_IF>
+			</td>
+		</tr>
+		</TMPL_LOOP>
+	</table>
+</TMPL_IF>
+
+
+
+<TMPL_IF NAME='DO_NOTEBOOKS'>
+	<table class="small">
+		<TMPL_LOOP NAME="NOTEBOOK_LOOP">
+		<tr valign="top">
+			<td><TMPL_VAR NAME="NOTEBOOK_INFO"></td>
+			<td style="float:right;">
+				<TMPL_IF NAME="NOTEBOOK_ID">
+					<span class='link ui-icon ui-icon-closethick' onclick="remove_genome_from_notebook(<TMPL_VAR NAME='NOTEBOOK_ID'>)"></span>
+				</TMPL_IF>
+			</td>
+		</tr>
+		</TMPL_LOOP>
+	</table>
+</TMPL_IF>
+
+
+
+<TMPL_IF NAME='DO_EXPERIMENTS'>
+	<TMPL_LOOP NAME="EXPERIMENT_LOOP">
+		<TMPL_VAR NAME="EXPERIMENT_INFO"><br>
+	</TMPL_LOOP>
+</TMPL_IF>
+
+
+
+<TMPL_IF NAME='ADMIN_AREA'>
+	<script>
+	$(document).ready(function() {
+		set_input('edit_user');
+		$("#edit_user").autocomplete({
+			source:[], 
+			focus: function() { return false; },
+		});	
+	});
+	function update_owner () {
+		var user_name = $('#edit_user').val();
+		if (!user_name || user_name == 'Search') {
+			alert('Please specify a user.');
+			return;
+		}
+
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'update_owner',
+				gid: "<TMPL_VAR NAME='GID'>",
+				user_name: user_name,
+				timestamp: new Date().getTime()
+			},
+			success : function(val) {
+				if (val) {
+					get_users_with_access();
+					get_groups_with_access();
+				}
+			}
+		});
+	}
+	</script>
+	<br><br><hr>
+	<span style="color:dimgray;font-weight:bold;">Admin Functions</span><br>
+	<table class="small ui-widget-content ui-corner-all">
+	  <tr>
+	    <td>Assign to user:</td>
+	    <td>
+	      <input id="edit_user" onkeyup="wait_to_search(search_users, this.value);" size="10" />
+	      <span onClick="update_owner();" class='ui-button ui-corner-all ui-button-go'>Go</span>
+	    </td>
+	  </tr>
+	</table>
+	<br>
+</TMPL_IF> <!-- ADMIN_AREA -->

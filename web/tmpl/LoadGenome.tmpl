@@ -12,10 +12,18 @@ $(document).ready(function(){
 		cache: false,
 	});
 	
-	$(".dialog_box").dialog({autoOpen: false, width: 500});
+	$(".dialog_box").dialog({
+		autoOpen: false, 
+		width: 500, 
+		//position: [$(window).width()/2-250, 200]
+  	});
+
+  	$("#load_genome_dialog").dialog({modal: true});
 	
 	set_input('edit_organism');
 	set_input('edit_source');
+	set_input('edit_name', 'Optional');
+	set_input('edit_description', 'Optional');
 
 	get_sequence_types();
 	get_sources();
@@ -25,11 +33,14 @@ $(document).ready(function(){
 	});
 });
 
-function set_input(id) {
+function set_input(id, text) {
 	var obj = $('#'+id);
 	var val = obj.val();
+	if (!text) {
+		text = 'Search';
+	}	
 	
-	if ( val && val != 'Search' ) {
+	if ( val && val != text ) {
 		obj.css({"font-style": "normal", "color": "black"});
 	}
 	else {
@@ -38,10 +49,14 @@ function set_input(id) {
 			obj.css({"font-style": "normal", "color": "black"});
 		}
 		else {
-			obj.val('Search');
+			obj.val(text);
 			obj.css({"font-style": "italic", "color": "gray"});
 		}
 	}
+
+	// Init event handlers
+	$('#'+id).unbind('blur').bind('blur', function() { set_input(id, text); })
+			 .unbind('focus').bind('focus', function() { set_input(id, text); });
 }
 
 function file_selected(filename, url) {
@@ -171,7 +186,11 @@ function load_genome() {
 	if (user_name == 'Search') { user_name = ''; }
 
 	var name = $('#edit_name').val();
+	if (name == 'Optional') { name = ''; }
+
 	var description = $('#edit_description').val();
+	if (description == 'Optional') { description = ''; }
+
 	var type_id = $('#select_type').val();
 	var restricted = $('#restricted').is(':checked');
 	var json = JSON.stringify(items);
@@ -323,13 +342,13 @@ function more() {
   <tr>
     <td>Organism:</td>
     <td>
-      <input id="edit_organism" onkeyup="wait_to_search(search_organisms, this.value);" onfocus="set_input('edit_organism');" onblur="set_input('edit_organism');" size="45" />
+      <input id="edit_organism" onkeyup="wait_to_search(search_organisms, this.value);" size="45" />
       <span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all ui-button-go'>New</span>
     </td>
   </tr>	
   <tr>
     <td>Version:</td>
-    <td><input id="edit_version" type="textbox" size="10" value="<TMPL_VAR NAME=NAME>" /></td>
+    <td><input id="edit_version" type="textbox" size="10" /></td>
   </tr>
   <tr>
     <td>Type:</td>
@@ -341,7 +360,7 @@ function more() {
   <tr>
     <td>Source:</td>
     <td>
-      <input id="edit_source" onfocus="set_input('edit_source');" onblur="set_input('edit_source');" size="45" />
+      <input id="edit_source" size="45" />
       <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all ui-button-go'>New</span>
     </td>
   </tr>
@@ -354,22 +373,22 @@ function more() {
   </tr>  
   <tr style='display:none;'>
     <td>Name:</td>
-    <td><input id="edit_name" type="textbox" size="58" value="<TMPL_VAR NAME='NAME'>" /></td>
+    <td><input id="edit_name" type="textbox" size="58" /></td>
   </tr>
   <tr style='display:none;'>
     <td>Description:</td>
-    <td><textarea id="edit_description" rows="5" cols="50" ><TMPL_VAR NAME='DESC'></textarea></td>
+    <td><textarea id="edit_description" rows="5" cols="50" ></textarea></td>
   </tr>
 </table>
 
 <br>
-<span style="color:dimgray;font-weight:bold;">Genome Data</span><br>
+<span id='genome_data' style="color:dimgray;font-weight:bold;">Genome Data</span><br>
 <table id='file_table' class="small ui-widget-content ui-corner-all"></table>
-<span onClick="$('#file_select_dialog').dialog('open')" class='ui-button ui-corner-all ui-button-go'>Add Sequences Files</span>
+<span onClick="$('#file_select_dialog').dialog('open')" class='ui-button ui-corner-all ui-button-go'>Add Sequence Files</span>
 <span id="files_clear" onClick="clear_list();" class='ui-state-disabled ui-button ui-corner-all ui-button-go'>Clear List</span>
 <br>
 <br>
-<span onClick="load_genome();" style="font-size:1em;" class='ui-button ui-corner-all ui-button-go'>Load Genome</span>
+<span id="load_genome_button" onDblClick="load_genome();" onClick="load_genome();" style="font-size:1em;" class='ui-button ui-corner-all ui-button-go'>Load Genome</span>
 
 
 
@@ -465,7 +484,7 @@ $(document).ready(function() {
   <tr>
     <td>Assign to user:</td>
     <td>
-      <input id="edit_user" onkeyup="wait_to_search(search_users, this.value);" onfocus="set_input('edit_user');" onblur="set_input('edit_user');" size="10" />
+      <input id="edit_user" onkeyup="wait_to_search(search_users, this.value);" size="10" />
     </td>
   </tr>
 </table>

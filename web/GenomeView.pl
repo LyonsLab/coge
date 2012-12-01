@@ -89,6 +89,7 @@ sub gen_body
 	$gstid       = $form->param('gstid') if $form->param('gstid');
 	$fid         = $form->param('fid')   if $form->param('fid');
 	$dsgid       = $form->param('dsgid') if $form->param('dsgid');
+	$dsgid       = $form->param('gid')   if $form->param('gid');
 	$show_legend = $form->param('sl')    if $form->param('sl');
 	$prefs = CoGe::Accessory::Web::load_settings( user => $USER, page => $PAGE_NAME, coge => $coge );
 	my ( $ds, $dsg, $gst );

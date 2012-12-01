@@ -17,6 +17,7 @@ use File::Path;
 use Sort::Versions;
 use LWP::UserAgent;
 use LWP::Simple;
+use HTTP::Status qw(:constants);
 use File::Listing;
 use File::Copy;
 use XML::Simple;
@@ -156,19 +157,24 @@ sub load_from_ftp {
 	my @files;
 	
 	my ($content_type) = head($url);
-	if ($content_type eq 'text/ftp-dir-listing') {
-		my $listing = get($url);
-		my $dir = parse_dir($listing);
-		foreach (@$dir) {
-			my ($filename, $filetype, $filesize, $filetime, $filemode) = @$_;
-			if ($filetype eq 'f') {
-				push @files, { name => $filename, url => $url . $filename };
+	if ($content_type) {
+		if ($content_type eq 'text/ftp-dir-listing') { # directory
+			my $listing = get($url);
+			my $dir = parse_dir($listing);
+			foreach (@$dir) {
+				my ($filename, $filetype, $filesize, $filetime, $filemode) = @$_;
+				if ($filetype eq 'f') {
+					push @files, { name => $filename, url => $url . $filename };
+				}
 			}
 		}
+		else { # file
+			my ($filename) = $url =~ /([^\/]+)\s*$/;
+			push @files, { name => $filename, url => $url};
+		}
 	}
-	else {
-		my ($filename) = $url =~ /([^\/]+)\s*$/;
-		push @files, { name => $filename, url => $url};
+	else { # error (url not found)
+		return;
 	}
 		
 	return encode_json( \@files );
@@ -177,19 +183,24 @@ sub load_from_ftp {
 sub ftp_get_file {
 	my %opts = @_;
 	my $url = $opts{url};
+	my $username = $opts{username};
+	my $password = $opts{password};
 	my $timestamp = $opts{timestamp};
 	
 	my ($type, $filepath, $filename) = $url =~ /^(ftp|http):\/\/(.+)\/(\S+)$/;
-#	print STDERR "$type $filepath $filename\n";
+	# print STDERR "$type $filepath $filename $username $password\n";
 	return unless ($type and $filepath and $filename);
 	
+	my $path = 'ftp/' . $filepath . '/' . $filename;
 	my $fullfilepath = $TEMPDIR . 'ftp/' . $filepath;
 	mkpath($fullfilepath);
+
+	# Simplest method (but doesn't allow login)
 #	print STDERR "getstore: $url\n";
-	my $res_code = getstore($url, $fullfilepath . '/' . $filename);
+#	my $res_code = getstore($url, $fullfilepath . '/' . $filename);
 #	print STDERR "response: $res_code\n";
 
-	# Alternate method
+	# Alternate method with progress callback
 #	my $ua = new LWP::UserAgent;
 #	my $expected_length;
 #	my $bytes_received = 0;
@@ -212,8 +223,31 @@ sub ftp_get_file {
 ##			print STDERR $chunk;
 #		});
 
-	my $path = 'ftp/' . $filepath . '/' . $filename;
-	return encode_json( { timestamp => $timestamp, path=> $path, size => -s $fullfilepath . '/' . $filename } );
+	# Current method (allows optional login)
+	my $ua = new LWP::UserAgent;
+	my $request = HTTP::Request->new(GET => $url);
+	$request->authorization_basic($username, $password) if ($username and $password);
+	#print STDERR "request uri: " . $request->uri . "\n";
+	$request->content_type("text/xml; charset=utf-8");
+	my $response = $ua->request($request);
+	if ($response->is_success()) {
+		#my $header = $response->header;
+		my $result = $response->content;
+		#print STDERR "content: <begin>$result<end>\n";
+		open(my $fh, ">$fullfilepath/$filename");
+		if ($fh) {
+			binmode $fh; # could be binary data
+			print $fh $result;
+			close($fh);
+		}
+	}
+	else { # error
+		my $status = $response->status_line();
+		print STDERR "status_line: $status\n";
+		return encode_json({ timestamp => $timestamp, path=> $path, size => "Failed: $status" });
+	}
+	
+	return encode_json({ timestamp => $timestamp, path=> $path, size => -s $fullfilepath . '/' . $filename });
 }
 
 sub ncbi_search {

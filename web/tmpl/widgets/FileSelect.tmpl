@@ -85,7 +85,7 @@ function add_file_to_list(filename, url) {
 		return 0;
 	}
 	
-	var tr = $('<tr style="font-style:italic;color:gray;"><td style="padding-right:15px;">' + filename + '</td>' + '</tr>');
+	var tr = $('<tr class="note"><td style="padding-right:15px;">' + filename + '</td>' + '</tr>');
 	var td = $('<td style="float:right;"><img src="picts/ajax-loader.gif"/></td>');
 	$(tr).append(td).fadeIn();
 	$(tr).data('url', url);
@@ -138,8 +138,6 @@ function activate_on_input(input_id, button_id) {
 
 function irods_get_path (path) {
 	$('#ids_loading').hide();
-	//$('#ids_table').html('<tr><td colspan="3" style="white-space:nowrap;"><i>Under Construction</i></td></tr>');
-	//return;
 
 	$.ajax({
 		data: {
@@ -273,7 +271,10 @@ function irods_get_all_files (path) {
 }
 
 function units(val) {
-	if (val < 1024) { //>
+	if (isNaN(val)) {
+		return val;
+	}
+	else if (val < 1024) { //>
 		return val;
 	}
 	else if (val < 1024*1024) { //>
@@ -287,12 +288,14 @@ function units(val) {
 	}
 }
 
-function ftp_get_file(url) {
+function ftp_get_file(url, username, password) {
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
 			fname: 'ftp_get_file',
 			url: url,
+			username: username,
+			password: password,
 			timestamp: new Date().getTime()
 		},
 		success : function(data) {
@@ -306,11 +309,15 @@ function ftp_get_file(url) {
 
 function load_from_ftp() {
 	var url = $('#input_url').val();
+	var username = $('#input_username').val();
+	var password = $('#input_password').val();
 	var timestamp = new Date().getTime();
 	pageObj.timestamp = timestamp;
 	
 	$('#ftp_get_button').addClass('ui-state-disabled');
 	
+	$('#ftp_status').html('<img src="picts/ajax-loader.gif"/> Contacting host...');
+
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
@@ -321,7 +328,7 @@ function load_from_ftp() {
 		success : function(data) {
 			var filelist = jQuery.parseJSON(data);
 			if (!filelist || filelist.length == 0) {
-				alert("File not found.");
+				alert("Location not found.");
 				return;
 			}
 			if (filelist.length > <TMPL_VAR NAME='MAX_FTP_FILES'>) {
@@ -330,6 +337,7 @@ function load_from_ftp() {
 			}
 			
 			pageObj.filecount = filelist.length;
+			$('#ftp_status').html('<img src="picts/ajax-loader.gif"/> Retrieving '+pageObj.filecount+' files');
 			
 			var count = 0;
 			filelist.forEach(
@@ -337,10 +345,11 @@ function load_from_ftp() {
 					setTimeout(
 						function() {
 							if (add_file_to_list(obj.name, obj.url)) {
-								ftp_get_file(obj.url);
+								ftp_get_file(obj.url, username, password);
 							}
 							if (--pageObj.filecount == 0) { // FTP transfer complete
 								$('#ftp_get_button').removeClass('ui-state-disabled');
+								$('#ftp_status').html('');
 							}
 						},
 						500 * count++
@@ -373,7 +382,7 @@ function load_from_ncbi() {
 <div id='tabs' style='margin-top:0.5em;margin-bottom:1em;'>
   <ul>
     <li class="small"><a href="#tab-1">iPlant Data Store</a></li>
-    <li class="small"><a href="#tab-2">FTP</a></li>
+    <li class="small"><a href="#tab-2">FTP/HTTP</a></li>
     <TMPL_IF NAME='ENABLE_NCBI'>
     <li class="small"><a href="#tab-3">NCBI</a></li>
     </TMPL_IF>
@@ -382,15 +391,25 @@ function load_from_ncbi() {
 
   <div id="tab-1" class="small">
     <div style="overflow-y:auto;height:200px;">
-      <span id="ids_loading" style="color:gray;font-style:italic;">Loading <img id="wait_annotation" src="picts/ajax-loader.gif" /></span>
+      <span id="ids_loading" class="note">Loading <img id="wait_annotation" src="picts/ajax-loader.gif" /></span>
       <table id="ids_table" class='small'>
       </table>
     </div>
   </div> <!-- tab-1 -->
 
-  <div id="tab-2" class="small">
-    URL: <input id="input_url" size="60" />
-    <span id="ftp_get_button" onClick="load_from_ftp();" class='ui-state-disabled ui-button ui-corner-all ui-button-go'> Get </span>
+  <div id="tab-2" class="small" >
+  	Enter the location of the file or directory to retrieve.<br><br>
+    URL: <input id="input_url" size="60" style="color:gray;"/>
+    <span id="ftp_get_button" onClick="load_from_ftp();" class='ui-state-disabled ui-button ui-corner-all ui-button-go'> Get </span><br>
+    <div class="link" onclick="$(this).hide(); $('#ftp_login').fadeIn();" style="padding-top:5px;">Login (optional)...</div>
+    <div id="ftp_login" style="display:none;padding-top:5px;">
+    	Username: <input id="input_username" size="15" style="color:gray;"/>
+    	Password: <input id="input_password" size="15" style="color:gray;"/>
+    </div>
+    <br>
+    <div id="ftp_status" class="note"></div>
+    <br>
+    <span class="note">Note: FTP/HTTP transfers, including login information, are not secure (encrypted).</span>
   </div> <!-- tab-2 -->
 
   <TMPL_IF NAME='ENABLE_NCBI'>

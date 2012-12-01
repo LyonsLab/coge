@@ -166,6 +166,7 @@ sub gen_body
     my $dsname = $form->param('dsname');
     my $dsid = $form->param('dsid');
     my $dsgid = $form->param('dsgid');
+    $dsgid = $form->param('gid') if ($form->param('gid'));
     my ($dsg) = $coge->resultset('Genome')->find($dsgid) if $dsgid;
 
     my $link = "http://" . $P->{SERVER} .$PAGE_NAME."?";

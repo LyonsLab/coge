@@ -20,6 +20,10 @@ a:hover {
   cursor: pointer;
 }*/
 
+.note {
+  color:gray;
+  font-style:italic;
+}
 
 .coge_link {
   color:#660066;

@@ -3,6 +3,7 @@
 use DBI;
 use strict;
 use CoGeX;
+use CoGe::Accessory::Web;
 use Roman;
 use Data::Dumper;
 use Getopt::Long;
@@ -95,8 +96,8 @@ unless ($genome) {
 }
 print $log "genome id: " . $genome->id . "\n"; # don't change, gets parsed by calling code
 
-$install_dir = "$install_dir/" . $genome->get_path . "/";# . $genome->id . ".faa";
-$genome->file_path($install_dir);
+$install_dir = "$install_dir/" . $genome->get_path . "/";
+$genome->file_path($install_dir . $genome->id . ".faa");
 $genome->update;
 
 # Add new genome to user's owner list
@@ -183,6 +184,7 @@ print $log "$cmd\n";
 `$cmd`;
 
 # Yay!
+CoGe::Accessory::Web::log_history( db => $coge, user_id => $user->id, page => "load_genome.pl", description => 'load genome id' . $genome->id, link => 'GenomeInfo.pl?gid=' . $genome->id );
 print $log "log: All done!";
 close($log);
 exit;

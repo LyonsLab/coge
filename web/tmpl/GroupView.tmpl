@@ -382,7 +382,7 @@ Are you sure you want to permanently delete this group?<p>
   <td>
    <b>Current Members</b><br>
    <form name="current_users">
-    <select multiple id="ugid" name="current_ugid" onclick="show_add()" ondblclick="remove_user({ugid: '<TMPL_VAR NAME="UGID">'})" size=10 >
+    <select multiple id="ugid" name="current_ugid" onclick="show_add()" ondblclick="remove_user({ugid: '<TMPL_VAR NAME="UGID">'})" size="10">
      <TMPL_LOOP NAME="UGID_LOOP">
       <OPTION value=<TMPL_VAR NAME="UID">><TMPL_VAR NAME="UID_NAME"></OPTION>
      </TMPL_LOOP>
@@ -391,7 +391,7 @@ Are you sure you want to permanently delete this group?<p>
    <SCRIPT TYPE="text/javascript"> 
     var current_user_filter = new filterlist(document.current_users.current_ugid);
    </SCRIPT>
-   Filter: <INPUT NAME="regexp" onKeyUp="current_user_filter.set(this.value)">
+   Filter: <INPUT NAME="regexp" onKeyUp="current_user_filter.set(this.value)" size="10"/>
   </td> 
   <td>
    <span id="remove_user" href="javascript:void(0)" onClick="remove_user({ugid: '<TMPL_VAR NAME=UGID>'});" style="display:none" class='ui-button ui-button-go ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span>
@@ -400,7 +400,7 @@ Are you sure you want to permanently delete this group?<p>
   <td>
    <b>Available Users</b><br>
    <form name="new_users">
-    <select multiple id="new_ugid" name="new_ugid" onclick="show_add(1)" ondblclick="add_user({ugid: '<TMPL_VAR NAME=UGID>'})" size=10>
+    <select multiple id="new_ugid" name="new_ugid" onclick="show_add(1)" ondblclick="add_user({ugid: '<TMPL_VAR NAME=UGID>'})" size="10">
      <TMPL_LOOP NAME=ALL_UGID_LOOP>
       <OPTION <TMPL_VAR NAME=SELECTED> value=<TMPL_VAR NAME=UID>><TMPL_VAR NAME=UID_NAME></OPTION>
      </TMPL_LOOP>
@@ -410,11 +410,14 @@ Are you sure you want to permanently delete this group?<p>
    <SCRIPT TYPE="text/javascript"> 
     var new_user_filter = new filterlist(document.new_users.new_ugid);
    </SCRIPT>
-   Filter: <INPUT name="regexp" onKeyUp="new_user_filter.set(this.value)">
+   Filter: <INPUT name="regexp" onKeyUp="new_user_filter.set(this.value)" size="10"/>
   </td>
  </tr>
 </table>
-<span id="refresh_modify_users" href="javascript:void(0)" onClick="modify_users({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Refresh</span> <span class="small" style="font-style:italic;color:gray;">(Displayed lists can get out of sync when filtering for names)</small>
+<!--
+<span id="refresh_modify_users" href="javascript:void(0)" onClick="modify_users({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Refresh</span> <span class="small" style="font-style:italic;color:gray;">(Displayed lists can get out of sync when filtering for names)</span>
+-->
+<span onClick="$(this).parent().dialog('close');" style="float:right;margin-top:15px;" class="ui-button ui-corner-all ui-button-go">Done</span>
 </TMPL_IF>
 
 
