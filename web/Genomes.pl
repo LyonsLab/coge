@@ -110,7 +110,7 @@ sub get_genomes_for_user {
 #		@genomes = $coge->resultset('Genome')->all();
 #	}
 #	else {
-		@genomes = $USER->owner_list->genomes;
+		push @genomes, $USER->owner_list->genomes;
 #	}
 
 	my @genome_info;
