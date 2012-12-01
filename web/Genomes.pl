@@ -16,7 +16,6 @@ use Digest::MD5 qw(md5_base64);
 use DBIxProfiler;
 use File::Path;
 use Sort::Versions;
-use Data::UUID;
 no warnings 'redefine';
 
 use vars qw(
