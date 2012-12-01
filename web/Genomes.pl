@@ -21,7 +21,7 @@ no warnings 'redefine';
 use vars qw(
 	$P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE 
 	$TEMPDIR $USER $DATE $COGEDIR $coge $FORM $URL $TEMPURL $COOKIE_NAME 
-	$IRODS_ENV_FILE %FUNCTION
+	%FUNCTION
 );
 
 $P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
@@ -38,12 +38,6 @@ $PAGE_TITLE = 'Genomes';
 $TEMPDIR = $P->{TEMPDIR} . $PAGE_TITLE . '/';
 mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
 $TEMPURL = $P->{TEMPURL} . $PAGE_TITLE . '/';
-
-$IRODS_ENV_FILE = '/opt/apache/CoGe-Dev/irodsEnv'; # FIXME load from config
-if (not -e $IRODS_ENV_FILE) {
-	print STDERR "fatal error: irods env file missing!\n";
-	return;	
-}
 
 $FORM = new CGI;
 
