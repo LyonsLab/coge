@@ -90,7 +90,7 @@ function feature_checkboxes(){
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
-			fname: action,
+			fname: 'action',
 			accn_list: accn
 		},
 		success : function(url) {
@@ -126,33 +126,74 @@ function show_all_codon_tables(num) {
 }
 
 function get_codon_table (num) {
-if (ajax.length)
-   {
-    setTimeout("get_codon_table("+num+")",100);
-    return;
-   }
-   var fid =    $('#CDS'+num).val();
-   codon_table(['args__fid','args__'+fid],['codon_usage'+num]);
+  // if (ajax.length)
+  // {
+  //   setTimeout("get_codon_table("+num+")",100);
+  //   return;
+  // }
+  var fid = $('#CDS'+num).val();
+  codon_table(fid, num); //codon_table(['args__fid','args__'+fid],['codon_usage'+num]);
+}
+
+function codon_table(fid, num) {
+   $.ajax({
+      data: {
+        jquery_ajax: 1,
+        fname: 'codon_table',
+        fid: fid
+      },
+      success : function(data) {
+        $('#codon_usage'+num).html(data);
+      }
+   });  
 }
 
 function update_table() {
- if (ajax.length)
-  {
-    setTimeout("update_table()",100);
-    return;
-  }
+ // if (ajax.length)
+ //  {
+ //    setTimeout("update_table()",100);
+ //    return;
+ //  }
   $('#feat_table').trigger("update");	
  }
+
+function get_anno(fid, num) {
+   $.ajax({
+      data: {
+        jquery_ajax: 1,
+        fname: 'get_anno',
+        fid: fid
+      },
+      success : function(data) {
+        $('#anno_'+num).hide().html(data).slideDown();
+      }
+   });  
+}
 
 function get_all_annos(num) {
  for (var i=1; i<=num; i++)
   {
    $('#anno_'+i).removeClass('link');
    var fid = $('#fid_'+i).val();
-   get_anno(['args__fid','args__'+fid],['anno_'+i]);
+   get_anno(fid, i); //get_anno(['args__fid','args__'+fid],['anno_'+i]);
   }
   $('#get_all_annos').remove();
   update_table();
+}
+
+function get_gc(fid, num) {
+   $.ajax({
+      data: {
+        jquery_ajax: 1,
+        fname: 'get_gc',
+        fid: fid
+      },
+      success : function(data) {
+        var obj = jQuery.parseJSON(data);
+        $('#gc_'+num).html(obj[0]);
+        $('#at_'+num).html(obj[1]);
+      }
+   });  
 }
 
 function get_all_gc(num) {
@@ -161,10 +202,25 @@ function get_all_gc(num) {
    $('#gc_'+i).removeClass('link');
    $('#at_'+i).removeClass('link');
    var fid = $('#fid_'+i).val();
-   get_gc(['args__fid','args__'+fid],['gc_'+i,'at_'+i]);
+   get_gc(fid, i); //get_gc(['args__fid','args__'+fid],['gc_'+i,'at_'+i]);
   }
   $('#get_all_gc').remove();
     update_table();
+}
+
+function get_wobble_gc(fid, num) {
+   $.ajax({
+      data: {
+        jquery_ajax: 1,
+        fname: 'get_wobble_gc',
+        fid: fid
+      },
+      success : function(data) {
+        var obj = jQuery.parseJSON(data);
+        $('#wgc_'+num).html(obj[0]);
+        $('#wat_'+num).html(obj[1]);
+      }
+   });  
 }
 
 function get_all_wgc(num) {
@@ -175,7 +231,7 @@ function get_all_wgc(num) {
    var fid = $('#fid_'+i).val();
    if ($('#wgc_'+i).html())
     {
-      get_wobble_gc(['args__fid','args__'+fid],['wgc_'+i,'wat_'+i]);
+      get_wobble_gc(fid, i); //get_wobble_gc(['args__fid','args__'+fid],['wgc_'+i,'wat_'+i]);
     }
   }
   $('#get_all_wgc').remove();
@@ -320,10 +376,10 @@ Filter:
       <TD align='right'><TMPL_VAR NAME=STOP></TD>
       <TD align='center'><TMPL_VAR NAME=STRAND></TD>
       <TD align='right'><TMPL_VAR NAME=LENGTH></TD>
-      <TD align='right' id="gc_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_gc(['args__fid','args__<TMPL_VAR NAME=FEATID>'],['gc_<TMPL_VAR NAME=COUNT>', 'at_<TMPL_VAR NAME=COUNT>'])"><TMPL_VAR NAME=GC></TD>
-      <TD align='right' id="at_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_gc(['args__fid','args__<TMPL_VAR NAME=FEATID>'],['gc_<TMPL_VAR NAME=COUNT>', 'at_<TMPL_VAR NAME=COUNT>'])"><TMPL_VAR NAME=AT></TD>
-      <TD align='right' id="wgc_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#wgc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#wat_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_wobble_gc(['args__fid','args__<TMPL_VAR NAME=FEATID>'],['wgc_<TMPL_VAR NAME=COUNT>', 'wat_<TMPL_VAR NAME=COUNT>'])"><TMPL_VAR NAME=WGC></TD>
-      <TD align='right' id="wat_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#wgc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#wat_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_wobble_gc(['args__fid','args__<TMPL_VAR NAME=FEATID>'],['wgc_<TMPL_VAR NAME=COUNT>', 'wat_<TMPL_VAR NAME=COUNT>'])"><TMPL_VAR NAME=WAT></TD>
+      <TD align='right' id="gc_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_gc('<TMPL_VAR NAME=FEATID>',<TMPL_VAR NAME=COUNT>)"><TMPL_VAR NAME=GC></TD>
+      <TD align='right' id="at_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_gc('<TMPL_VAR NAME=FEATID>', <TMPL_VAR NAME=COUNT>)"><TMPL_VAR NAME=AT></TD>
+      <TD align='right' id="wgc_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#wgc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#wat_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_wobble_gc('<TMPL_VAR NAME=FEATID>', <TMPL_VAR NAME=COUNT>)"><TMPL_VAR NAME=WGC></TD>
+      <TD align='right' id="wat_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#wgc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#wat_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_wobble_gc('<TMPL_VAR NAME=FEATID>', <TMPL_VAR NAME=COUNT>)"><TMPL_VAR NAME=WAT></TD>
       <TD><TMPL_VAR NAME=ORG></TD>
       <TD><TMPL_VAR NAME=HPP></TD>
       <TD nowrap><TMPL_VAR NAME=OTHER></TD>

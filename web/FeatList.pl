@@ -360,16 +360,12 @@ sub generate_table {
 		my $featid = $feat->id;
 		$item = $featid . "_" . $feats{$item}{gstid} unless $item =~ /_/;
 		my ($name) = $feat->names;
-		my $hpp =
-qq{<div id=anno_$count class="link" onclick="get_anno(['args__fid','args__$item'],['anno_$count'])">}
-		  . qq{Get Annotation}
-		  . qq{</div>};
+		my $hpp = qq{<div id="anno_$count" class="link" onclick="get_anno('$item', $count);">Get Annotation</div>};
 		my $other;
 		my $cds_count = $feat_types{CDS};
-		$other .=
-"<div class=link id=codon_usage$cds_count><DIV onclick=\" \$('#codon_usage$cds_count').removeClass('link'); codon_table(['args__fid','args__$item'],['codon_usage$cds_count'])\">"
+		$other .= qq{<div class='link' id='codon_usage$cds_count'><DIV onclick="\$('#codon_usage$cds_count').removeClass('link'); codon_table('$item',$cds_count);">}
 		  . "Click for codon usage"
-		  . "</DIV></DIV><input type=hidden id=CDS$cds_count value=$item>"
+		  . "</DIV></DIV><input type='hidden' id='CDS$cds_count' value='$item'>"
 		  if $feat->type->name eq "CDS";
 		my $gc = qq{Get GC};
 		my $at = qq{Get GC};
@@ -735,7 +731,7 @@ sub get_gc {
 	my ( $gc, $at, $n ) = $feat->gc_content( gstid => $gstid );
 	$at *= 100;
 	$gc *= 100;
-	return ( $gc, $at );
+	return encode_json( [$gc, $at] );
 }
 
 sub get_wobble_gc {
@@ -750,7 +746,7 @@ sub get_wobble_gc {
 	my ( $wgc, $wat ) = $feat->wobble_content( gstid => $gstid );
 	$wat *= 100;
 	$wgc *= 100;
-	return ( $wgc, $wat );
+	return encode_json( [$wgc, $wat] );
 }
 
 sub save_FeatList_settings {
