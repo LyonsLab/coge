@@ -119,7 +119,7 @@ sub get_genomes_for_user {
 		  { NAME  => qq{<span class="link" onclick='window.open("OrganismView.pl?lid=} . $g->id . qq{")'>} . $g->info . "</span>",
 			VERSION  => $g->version,
 			DATE =>  $g->date,
-			EDIT_BUTTON => "<span class='link ui-icon ui-icon-gear' onclick=\"window.open('OrganismView.pl?gid=" . $g->id . "')\"></span>",
+			EDIT_BUTTON => "<span class='link ui-icon ui-icon-gear' onclick=\"window.open('GenomeInfo.pl?gid=" . $g->id . "')\"></span>",
 			DELETE_BUTTON => "<span class='link ui-icon ui-icon-trash' onclick=\"dialog_delete_genome({gid: '" . $g->id . "'});\"></span>"
 		  };
 	}

@@ -255,7 +255,7 @@ function get_load_genome_log(load_id) {
 
 function continue_to_view() {
 	var gid = $('#genome_id').val();
-	window.location.href = "OrganismView.pl?dsgid=" + gid;
+	window.location.href = "GenomeInfo.pl?gid=" + gid;
 }
 
 function wait_to_search (search_func, search_term) {
@@ -455,7 +455,7 @@ function more() {
   <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
   <input id="genome_id" type="hidden" /> 
   <span id="ok_button" onClick="$('#load_genome_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">OK</span>
-  <span id="finish_load_genome_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Continue to OrganismView</span>
+  <span id="finish_load_genome_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Continue to GenomeInfo</span>
   <span id="cancel_load_genome_button" onClick="$('#load_genome_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
 </div>
 

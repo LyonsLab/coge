@@ -113,8 +113,8 @@ sub get_genome_info {
 	return "Genome not found" unless ($genome);
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
-	$template->param( 
-		DO_GENOME_INFO => 1, 
+	$template->param(
+		DO_GENOME_INFO => 1,
 		ORGANISM => $genome->organism->name,
 		VERSION => $genome->version,
 		TYPE => $genome->type->name,
