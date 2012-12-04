@@ -1,5 +1,7 @@
 #! /usr/bin/perl -w
 
+# NOTE: this file shares a lot of code with LoadExperiment.pl, replicate changes when applicable.
+
 use strict;
 use CGI;
 use CoGeX;
@@ -199,6 +201,7 @@ sub ftp_get_file {
 #	print STDERR "getstore: $url\n";
 #	my $res_code = getstore($url, $fullfilepath . '/' . $filename);
 #	print STDERR "response: $res_code\n";
+	# TODO check response code here
 
 	# Alternate method with progress callback
 #	my $ua = new LWP::UserAgent;
@@ -291,7 +294,7 @@ sub upload_file {
 	my $timestamp = $opts{timestamp};
 	my $filename = '' . $FORM->param('input_upload_file');
 	my $fh = $FORM->upload('input_upload_file');
-	print STDERR "upload_file: $filename\n";
+#	print STDERR "upload_file: $filename\n";
 	
 	my $size = 0;
 	my $path;
@@ -301,7 +304,7 @@ sub upload_file {
 		my $targetpath = $TEMPDIR . 'upload/';
 		mkpath($targetpath);
 		$targetpath .= $filename;
-		print STDERR "temp files: $tmpfilename $targetpath\n";
+#		print STDERR "temp files: $tmpfilename $targetpath\n";
 		copy($tmpfilename, $targetpath);
 		$size = -s $fh;
 	}
@@ -351,7 +354,7 @@ sub load_genome {
 		my ($fileext) = $filename =~ /\.([^\.]+)$/;
 #		print STDERR "$path $filename $fileext\n";
 		if ($fileext eq 'gz') { 
-			my $cmd = "gunzip $fullpath"; #FIXME use gunzip in Web.pm
+			my $cmd = $P->{GUNZIP} . ' ' . $fullpath;
 #			print STDERR "$cmd\n";
 			`$cmd`;
 			$fullpath =~ s/\.$fileext$//;
@@ -374,6 +377,7 @@ sub load_genome {
 			  "-install_dir " . $P->{DATADIR} . ' ' .
 			  '-fasta_files "' . escape(join(',', @files)) . '" ' .
 			  "-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
+	print STDERR "$cmd\n";
 	print $log "$cmd\n";	
 	close($log);
 
@@ -394,7 +398,9 @@ sub get_load_genome_log {
 	my $load_id = $opts{load_id};
 	
 	my $logfile = $TEMPDIR . "staging/$load_id/log.txt";
-	open(my $fh, $logfile) or die "Error opening log file";
+	open(my $fh, $logfile) 
+		or return encode_json({ status => -1, log => "Error opening log file" });
+
 	my @lines;
 	my $gid;
 	my $status = 0;
@@ -438,21 +444,6 @@ sub create_sequence_type {
 	return unless $type;
 	
 	return $type->id;
-}
-
-sub create_source {
-	my %opts = @_;
-	my $name = $opts{name};
-	return unless $name;
-	my $desc = $opts{desc};
-	my $link = $opts{link};
-	$link =~ s/^\s+//;
-	$link = 'http://' . $link if (not $link =~ /^(\w+)\:\/\//);	
-	
-	my $source = $coge->resultset('DataSource')->find_or_create( { name => $name, description => $desc, link => $link } );
-	return unless ($source);
-	
-	return $name;
 }
 
 sub create_organism {
@@ -519,6 +510,21 @@ sub get_sources {
 	}
 	
 	return encode_json([sort keys %unique]);
+}
+
+sub create_source {
+	my %opts = @_;
+	my $name = $opts{name};
+	return unless $name;
+	my $desc = $opts{desc};
+	my $link = $opts{link};
+	$link =~ s/^\s+//;
+	$link = 'http://' . $link if (not $link =~ /^(\w+)\:\/\//);	
+	
+	my $source = $coge->resultset('DataSource')->find_or_create( { name => $name, description => $desc, link => $link } );
+	return unless ($source);
+	
+	return $name;
 }
 
 sub generate_html {

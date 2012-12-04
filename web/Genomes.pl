@@ -60,7 +60,7 @@ $USER = undef;
 %FUNCTION = (
 	generate_html			=> \&generate_html,
 	create_genome			=> \&create_genome,
-	delete_genome			=> \&delete_genome,
+	# delete_genome			=> \&delete_genome,
 	get_genomes_for_user	=> \&get_genomes_for_user,
 );
 
@@ -81,26 +81,26 @@ else {
 	print $FORM->header, "\n", generate_html();
 }
 
-sub delete_genome {
-	my %opts = @_;
-	my $gid = $opts{gid};
-	return "Must have valid genome id\n" unless ($gid);
+# sub delete_genome {
+# 	my %opts = @_;
+# 	my $gid = $opts{gid};
+# 	return "Must have valid genome id\n" unless ($gid);
 	
-	# Security check
-	if (not $USER->is_owner(dsg => $gid)) {
-		return 0;
-	}
+# 	# Security check
+# 	if (not $USER->is_owner(dsg => $gid)) {
+# 		return 0;
+# 	}
 
-	# Delete the genome and associated connectors & datasets
-	#FIXME add some error checking/logging here
-	my $genome = $coge->resultset('Genome')->find($gid);
-	return 0 unless ($genome);
-	$genome->delete;
+# 	# Delete the genome and associated connectors & datasets
+# 	#FIXME add some error checking/logging here
+# 	my $genome = $coge->resultset('Genome')->find($gid);
+# 	return 0 unless ($genome);
+# 	$genome->delete; #FIXME doesn't delete list connectors
 	
-	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'delete genome id' . $genome->id );
+# 	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'delete genome id' . $genome->id );
 
-	return 1;
-}
+# 	return 1;
+# }
 
 sub get_genomes_for_user {
 	#my %opts = @_;
@@ -116,7 +116,7 @@ sub get_genomes_for_user {
 	my @genome_info;
 	foreach my $g (@genomes) {#( sort genomecmp @genomes ) {
 		push @genome_info, 
-		  { NAME  => qq{<span class="link" onclick='window.open("OrganismView.pl?lid=} . $g->id . qq{")'>} . $g->info . "</span>",
+		  { NAME  => qq{<span class="link" onclick='window.open("GenomeInfo.pl?gid=} . $g->id . qq{")'>} . $g->info . "</span>",
 			VERSION  => $g->version,
 			DATE =>  $g->date,
 			EDIT_BUTTON => "<span class='link ui-icon ui-icon-gear' onclick=\"window.open('GenomeInfo.pl?gid=" . $g->id . "')\"></span>",

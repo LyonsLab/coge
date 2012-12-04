@@ -1,5 +1,7 @@
 #! /usr/bin/perl -w
 
+# NOTE: this file shares a lot of code with LoadGenome.pl, replicate changes when applicable.
+
 use strict;
 use CGI;
 use CoGeX;
@@ -72,7 +74,10 @@ $MAX_SEARCH_RESULTS = 100;
 	ftp_get_file			=> \&ftp_get_file,
 	upload_file				=> \&upload_file,
 	load_experiment			=> \&load_experiment,
+	get_sources				=> \&get_sources,
+	create_source			=> \&create_source,
 	search_genomes			=> \&search_genomes,
+	search_users			=> \&search_users,
 	get_load_experiment_log	=> \&get_load_experiment_log,
 );
 
@@ -145,13 +150,12 @@ sub irods_get_file {
 sub load_from_ftp {
 	my %opts = @_;
 	my $url = $opts{url};
-	print STDERR "load_from_ftp: $url\n";
 	
 	my @files;
 	
 	my ($content_type) = head($url);
 	if ($content_type) {
-		if ($content_type eq 'text/ftp-dir-listing') {
+		if ($content_type eq 'text/ftp-dir-listing') { # directory
 			my $listing = get($url);
 			my $dir = parse_dir($listing);
 			foreach (@$dir) {
@@ -161,10 +165,13 @@ sub load_from_ftp {
 				}
 			}
 		}
-		else {
+		else { # file
 			my ($filename) = $url =~ /([^\/]+)\s*$/;
 			push @files, { name => $filename, url => $url};
 		}
+	}
+	else { # error (url not found)
+		return;
 	}
 		
 	return encode_json( \@files );
@@ -173,20 +180,25 @@ sub load_from_ftp {
 sub ftp_get_file {
 	my %opts = @_;
 	my $url = $opts{url};
+	my $username = $opts{username};
+	my $password = $opts{password};
 	my $timestamp = $opts{timestamp};
 	
 	my ($type, $filepath, $filename) = $url =~ /^(ftp|http):\/\/(.+)\/(\S+)$/;
-#	print STDERR "$type $filepath $filename\n";
+	# print STDERR "$type $filepath $filename $username $password\n";
 	return unless ($type and $filepath and $filename);
 	
+	my $path = 'ftp/' . $filepath . '/' . $filename;
 	my $fullfilepath = $TEMPDIR . 'ftp/' . $filepath;
 	mkpath($fullfilepath);
+
+	# Simplest method (but doesn't allow login)
 #	print STDERR "getstore: $url\n";
-	my $res_code = getstore($url, $fullfilepath . '/' . $filename);
+#	my $res_code = getstore($url, $fullfilepath . '/' . $filename);
 #	print STDERR "response: $res_code\n";
 	# TODO check response code here
 
-	# Alternate method
+	# Alternate method with progress callback
 #	my $ua = new LWP::UserAgent;
 #	my $expected_length;
 #	my $bytes_received = 0;
@@ -209,8 +221,67 @@ sub ftp_get_file {
 ##			print STDERR $chunk;
 #		});
 
-	my $path = 'ftp/' . $filepath . '/' . $filename;
-	return encode_json( { timestamp => $timestamp, path=> $path, size => -s $fullfilepath . '/' . $filename } );
+	# Current method (allows optional login)
+	my $ua = new LWP::UserAgent;
+	my $request = HTTP::Request->new(GET => $url);
+	$request->authorization_basic($username, $password) if ($username and $password);
+	#print STDERR "request uri: " . $request->uri . "\n";
+	$request->content_type("text/xml; charset=utf-8");
+	my $response = $ua->request($request);
+	if ($response->is_success()) {
+		#my $header = $response->header;
+		my $result = $response->content;
+		#print STDERR "content: <begin>$result<end>\n";
+		open(my $fh, ">$fullfilepath/$filename");
+		if ($fh) {
+			binmode $fh; # could be binary data
+			print $fh $result;
+			close($fh);
+		}
+	}
+	else { # error
+		my $status = $response->status_line();
+		print STDERR "status_line: $status\n";
+		return encode_json({ timestamp => $timestamp, path=> $path, size => "Failed: $status" });
+	}
+	
+	return encode_json({ timestamp => $timestamp, path=> $path, size => -s $fullfilepath . '/' . $filename });
+}
+
+sub ncbi_search {
+	my %opts = @_;
+	my $accn = $opts{accn};
+	my $timestamp = $opts{timestamp};
+	my $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=$accn";
+	my $result = get( $esearch );
+	#print STDERR $result;
+	
+	my $record = XMLin($result);
+	#print STDERR Dumper $record;
+	
+	my $id = $record->{IdList}->{Id};
+	print STDERR "id = $id\n";
+	
+	my $title;
+	if ($id) {
+		$esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nucleotide&id=$id";
+		my $result = get( $esearch );
+		#print STDERR $result;
+		
+		$record = XMLin($result);
+		#print STDERR Dumper $record;
+		
+		foreach (@{$record->{DocSum}->{Item}}) { #FIXME use grep here instead
+			if ($_->{Name} eq 'Title') {
+				$title = $_->{content};
+				print STDERR "title=$title\n";
+				last;
+			}
+		}
+	}
+	
+	return unless $id and $title;
+	return encode_json( { timestamp => $timestamp, name => $title, id => $id } );
 }
 
 sub upload_file {
@@ -241,7 +312,9 @@ sub load_experiment {
 	my $name = $opts{name};
 	my $description = $opts{description};
 	my $version = $opts{version};
+	my $source_name = $opts{source_name};
 	my $restricted = $opts{restricted};
+	my $user_name = $opts{user_name};
 	my $gid = $opts{gid};
 	my $items = $opts{items};
 	# print STDERR "load_experiment: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
@@ -249,6 +322,10 @@ sub load_experiment {
 	
 	$items = decode_json($items);
 #	print STDERR Dumper $items;
+
+	if (!$user_name || !$USER->is_admin) {
+		$user_name = $USER->user_name;
+	}
 
 	# Setup staging area and log file
 	my $stagepath = $TEMPDIR . 'staging/';
@@ -282,13 +359,13 @@ sub load_experiment {
 
 	print $log "Calling bin/load_experiment.pl ...\n";
 	my $cmd = "$BINDIR/load_experiment.pl " .
-			  "-user_name " . $USER->user_name . ' ' .
+			  "-user_name $user_name " .
 			  '-name "' . escape($name) . '" ' .
 			  '-desc "' . escape($description) . '" ' . 
 			  '-version "' . escape($version) . '" ' .
 			  "-restricted " . ($restricted eq 'true') . ' ' .
 			  "-gid $gid " . 
-			  '-source_name "' . escape($USER->display_name) . '" ' .
+			  '-source_name "' . escape($source_name) . '" ' .
 			  "-staging_dir $stagepath " .
 			  "-install_dir " . $P->{DATADIR} . '/experiments ' .
 			  '-data_file "' . escape( join(',', @files) ) . '" ' .
@@ -386,6 +463,53 @@ sub genomecmp {
 	$a->organism->name cmp $b->organism->name || versioncmp($b->version, $a->version) || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id
 }
 
+sub search_users {
+	my %opts = @_;
+	my $search_term = $opts{search_term};
+	my $timestamp = $opts{timestamp};
+	#print STDERR "$search_term $timestamp\n";
+	return unless $search_term;
+
+	# Perform search
+	$search_term = '%'.$search_term.'%';
+	my @users = $coge->resultset("User")->search(
+		\[ 'user_name LIKE ? OR first_name LIKE ? OR last_name LIKE ?', 
+		['user_name', $search_term], ['first_name', $search_term], ['last_name', $search_term] ]);
+
+	# Limit number of results displayed
+	# if (@users > $MAX_SEARCH_RESULTS) {
+	# 	return encode_json({timestamp => $timestamp, items => undef});
+	# }
+	
+	return encode_json({timestamp => $timestamp, items => [sort map { $_->user_name } @users]});
+}
+
+sub get_sources {
+	#my %opts = @_;
+	
+	my %unique;
+	foreach ($coge->resultset('DataSource')->all()) {
+		$unique{$_->name}++;
+	}
+	
+	return encode_json([sort keys %unique]);
+}
+
+sub create_source {
+	my %opts = @_;
+	my $name = $opts{name};
+	return unless $name;
+	my $desc = $opts{desc};
+	my $link = $opts{link};
+	$link =~ s/^\s+//;
+	$link = 'http://' . $link if (not $link =~ /^(\w+)\:\/\//);	
+	
+	my $source = $coge->resultset('DataSource')->find_or_create( { name => $name, description => $desc, link => $link } );
+	return unless ($source);
+	
+	return $name;
+}
+
 sub generate_html {
 	my $html;
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
@@ -420,7 +544,8 @@ sub generate_body {
 	$template->param( DISABLE_IRODS_GET_ALL => 1 );
 	$template->param( MAX_IRODS_LIST_FILES => 100 );
 	$template->param( MAX_IRODS_TRANSFER_FILES => 30 );
-	$template->param( MAX_FTP_FILES => 1 );
+	$template->param( MAX_FTP_FILES => 30 );
+	$template->param( ADMIN_AREA    => 1 ) if $USER->is_admin;
 	
 	return $template->output;
 }

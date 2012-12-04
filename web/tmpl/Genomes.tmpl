@@ -30,8 +30,8 @@ function filter_rows (search_text){
 function set_table () {  
   $('#genome_table').tablesorter({widgets: ['zebra']});
 }
-
-function get_genomes_for_user(opts){
+ 
+function get_genomes_for_user(opts) {
   $.ajax({
     data: {
       jquery_ajax: 1,
@@ -44,6 +44,7 @@ function get_genomes_for_user(opts){
   });
 }
 
+/*
 function delete_genome () {
   var eid = $('#genome_delete_gid').val();
   $.ajax({
@@ -65,10 +66,12 @@ function dialog_delete_genome (opts) {
   $("#genome_delete_box").dialog('open');
   $('#genome_delete_eid').val(opts.eid);
 }
+*/
 </SCRIPT>
 
 <div id="genomes"><TMPL_VAR NAME="GENOME_TABLE"></div>
 
+<!--
 <div id="genome_delete_box" class="dialog_box" style='display:none;' align='center'>
 Are you sure you want to permanently delete this genome?<p>
  <div>
@@ -76,6 +79,7 @@ Are you sure you want to permanently delete this genome?<p>
   <span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_genome();">Yes</span>
   <span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="$('#genome_delete_box').dialog('close');">No</span>
  </div>
+-->
 </div>
 
 </TMPL_IF> <!-- MAIN -->
@@ -116,7 +120,7 @@ $(document).ready(function(){
    <th>Version</th>
    <th>Date Loaded</th>
    <th>Edit</th>
-   <th>Delete</th>
+   <!--<th>Delete</th>-->
   </tr>
  </thead>
  <tfoot>
@@ -133,7 +137,7 @@ $(document).ready(function(){
    <td style='text-align:center;'><TMPL_VAR NAME='VERSION'></td>
    <td style='text-align:center;'><TMPL_VAR NAME='DATE'></td>
    <td style='text-align:center;'><TMPL_VAR NAME='EDIT_BUTTON'></td>
-   <td style='text-align:center;'><TMPL_VAR NAME='DELETE_BUTTON'></td>
+   <!--<td style='text-align:center;'><TMPL_VAR NAME='DELETE_BUTTON'></td>-->
   </tr>
   </TMPL_LOOP>
  </tbody>

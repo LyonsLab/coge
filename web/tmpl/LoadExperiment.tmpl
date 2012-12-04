@@ -17,7 +17,10 @@ $(document).ready(function(){
 	$('#load_experiment_dialog').dialog({modal: true, closeOnEscape: false})
 	
 	set_input('edit_genome');
+	set_input('edit_source');
 	
+	get_sources();
+
 	$("#edit_genome").autocomplete({
 		source:[],
 		select: function(event, ui) {
@@ -32,11 +35,14 @@ $(document).ready(function(){
 	});
 });
 
-function set_input(id) {
+function set_input(id, text) {
 	var obj = $('#'+id);
 	var val = obj.val();
+	if (!text) {
+		text = 'Search';
+	}	
 	
-	if ( val && val != 'Search' ) {
+	if ( val && val != text ) {
 		obj.css({"font-style": "normal", "color": "black"});
 	}
 	else {
@@ -45,10 +51,14 @@ function set_input(id) {
 			obj.css({"font-style": "normal", "color": "black"});
 		}
 		else {
-			obj.val('Search');
+			obj.val(text);
 			obj.css({"font-style": "italic", "color": "gray"});
 		}
 	}
+
+	// Init event handlers
+	$('#'+id).unbind('blur').bind('blur', function() { set_input(id, text); })
+			 .unbind('focus').bind('focus', function() { set_input(id, text); });
 }
 
 function file_selected(filename, url) {
@@ -61,6 +71,28 @@ function file_finished(size, url) {
 
 function file_canceled() {
 	$('#select_file_button').fadeIn();
+}
+
+function create_source() {
+	var name = $('#edit_source_name').val();
+	var desc = $('#edit_source_desc').val();
+	var link = $('#edit_source_link').val();
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'create_source',
+			name: name,
+			desc: desc,
+			link: link,
+		},
+		success : function(name) {
+			$('#create_new_source_dialog').dialog('close');
+			if (name) {
+				$('#edit_source').val(name);
+				set_input('edit_source');
+			}
+		}
+	});
 }
 
 function reset_log() {
@@ -94,6 +126,12 @@ function load_experiment() {
 		return;
 	}
 
+	var source = $('#edit_source').val();
+	if (!source || source == 'Search') {
+		alert('Please specify a data source.');
+		return;
+	}	
+
 	var items = get_selected_files();
 	if (items == null) {
 		alert('Files are still being transferred, please wait.');
@@ -104,6 +142,9 @@ function load_experiment() {
 		return;
 	}
 	var json = JSON.stringify(items);
+	
+	var user_name = $('#edit_user').val(); // only exists if admin
+	if (user_name == 'Search') { user_name = ''; }	
 	
 	reset_log();	
 	
@@ -116,6 +157,8 @@ function load_experiment() {
 			version: version,
 			restricted: restricted,
 			gid: gid,
+			source_name: source,
+			user_name: user_name,
 			items: json,
 			timestamp: new Date().getTime()
 		},
@@ -205,6 +248,39 @@ function search_genomes (search_term) {
 		});
 	}
 }
+
+function search_users (search_term) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'search_users',
+			search_term: search_term,
+			timestamp: new Date().getTime()
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj && obj.items) {
+				$("#edit_user").autocomplete({source: obj.items});
+				$("#edit_user").autocomplete("search");
+			}
+		},
+	});
+}
+
+function get_sources () {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_sources',
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj) {
+				$("#edit_source").autocomplete({source: obj});
+			}
+		},
+	});
+}
 </SCRIPT>
 
 
@@ -225,13 +301,20 @@ function search_genomes (search_term) {
     <td><input id="edit_version" type="textbox" size="10" value="<TMPL_VAR NAME=NAME>" /></td>
   </tr>
   <tr>
+    <td>Source:</td>
+    <td>
+      <input id="edit_source" size="45" />
+      <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all ui-button-go'>New</span>
+    </td>
+  </tr> 
+  <tr>
     <td>Restricted?</td>
     <td><input id="restricted" type="checkbox" checked></td>
   </tr>
   <tr>
     <td>Genome:</td>
     <td>
-      <input id="edit_genome" onfocus="set_input('edit_genome');" onblur="set_input('edit_genome');" onkeypress="wait_to_search(search_genomes, this.value);" size="58" />
+      <input id="edit_genome" onkeypress="wait_to_search(search_genomes, this.value);" size="58" />
       <input id="gid" type="hidden" />
     </td>
   </tr>
@@ -269,5 +352,50 @@ function search_genomes (search_term) {
   <span id="cancel_load_experiment_button" onClick="$('#load_experiment_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
 </div> <!-- load_experiment_dialog -->
 
+
+
+<div id="create_new_source_dialog" class="dialog_box" title="Create New Source">
+  <table class="small">
+    <tr>
+      <td>Name:</td>
+      <td><input id="edit_source_name" type="textbox" size="53" onkeyup="activate_on_input('edit_source_name', 'create_source_button');" /></td>
+    </tr>
+    <tr>
+      <td>Description:</td>
+      <td><textarea id="edit_source_desc" rows="5" cols="50" ></textarea></td>
+    </tr>
+    <tr>
+      <td>Link:</td>
+      <td><input id="edit_source_link" type="textbox" size="53" /></td>
+    </tr>
+  </table>
+  <br>
+  <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all ui-button-go">Create</span>
+</div>
+
+
+
+<TMPL_IF NAME='ADMIN_AREA'>
+<script>
+$(document).ready(function() {
+	set_input('edit_user');
+	$("#edit_user").autocomplete({
+		source:[], 
+		focus: function() { return false; },
+	});	
+});
+</script>
+<br><br><hr>
+<span style="color:dimgray;font-weight:bold;">Admin Functions</span><br>
+<table class="small ui-widget-content ui-corner-all">
+  <tr>
+    <td>Assign to user:</td>
+    <td>
+      <input id="edit_user" onkeyup="wait_to_search(search_users, this.value);" size="10" />
+    </td>
+  </tr>
+</table>
+<br>
+</TMPL_IF> <!-- ADMIN_AREA -->
 
 </TMPL_IF> <!-- MAIN -->

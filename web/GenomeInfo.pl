@@ -752,8 +752,9 @@ sub generate_html {
 		LOGO_PNG => $PAGE_TITLE . "-logo.png",
 		DATE     => $DATE,
 		BODY => generate_body(),
-		ADJUST_BOX => 1 );	
-	$template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
+		ADJUST_BOX => 1 
+	);	
+	$template->param( LOGON    => 1 ) unless ($USER->user_name eq "public");
 
 	return $template->output;
 }
@@ -763,7 +764,7 @@ sub generate_body {
 	$template->param( MAIN => 1, PAGE_NAME => $PAGE_TITLE . '.pl' );
 	
 	my $gid = $FORM->param('gid');
-	return unless $gid;
+	return "Error: no genome specified" unless $gid;
 
 	$template->param( 
 		GID 			=> $gid,
