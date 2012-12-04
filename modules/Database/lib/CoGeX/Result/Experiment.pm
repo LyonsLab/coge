@@ -354,7 +354,7 @@ sub annotation_pretty_print_html
 
 	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class=\"title5\">" . "Source" . "</span>" );
 	$anno_type->Type_delimit(": <td class=\"data5\">");
-	$anno_type->add_Annot( $self->source->info_html . "</td>" );
+	$anno_type->add_Annot( ($self->source ? $self->source->info_html : '') . "</td>" );
 	$anno_obj->add_Annot($anno_type);
 
 	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class=\"title5\">" . "Version" . "</span>" );
