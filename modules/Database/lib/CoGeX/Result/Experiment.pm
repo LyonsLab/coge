@@ -471,7 +471,7 @@ sub info
 	$info .= "&reg; " if $self->restricted;
 	$info .= $self->name;
 	$info .= ": " . $self->description if $self->description;
-	$info .= " (v" . $self->version . ", eid" . $self->id . "): " . $self->source->name;
+	$info .= " (v" . $self->version . ", eid" . $self->id . "): " . ($self->source ? $self->source->name : '');
 	return $info;
 }
 

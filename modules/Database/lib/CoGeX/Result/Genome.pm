@@ -1137,7 +1137,6 @@ sub date
 {
 	my $self = shift;
 	my ($ds) = $self->datasets;
-	print STDERR "matt: " . $ds->date . "\n";
 	return $ds ? $ds->date : '';
 }
 
