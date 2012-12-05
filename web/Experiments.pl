@@ -141,7 +141,6 @@ sub get_experiments_for_user {
 }
 
 sub generate_html {
-	my $html;
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
 	$template->param( PAGE_TITLE => $PAGE_TITLE );
 	$template->param( HELP       => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl' );
@@ -158,7 +157,7 @@ sub generate_html {
 	$template->param( BODY => generate_body() );
 	$template->param( ADJUST_BOX => 1 );
 
-	$html .= $template->output;
+	return $template->output;
 }
 
 sub generate_body {

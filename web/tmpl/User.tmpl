@@ -163,13 +163,13 @@ function verify_image_file(file) {
 </div>
 <br>
 
-<span class="large"><img src="picts/dna-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Genomes <span class='link ui-icon ui-icon-extlink' onclick="window.open('Genomes.pl')"></span></span>
+<span class="large"><img src="picts/dna-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Genomes</span> <span class='link ui-icon ui-icon-extlink' onclick="window.open('Genomes.pl')"></span> <span class='link ui-icon ui-icon-plus' onclick="window.open('LoadGenome.pl')"></span>
 <div class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
 <TMPL_VAR NAME='GENOMES'>
 </div>
 <br>
 
-<span class="large"><img src="picts/testtube-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Experiments <span class='link ui-icon ui-icon-extlink' onclick="window.open('Experiments.pl')"></span></span>
+<span class="large"><img src="picts/testtube-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Experiments</span> <span class='link ui-icon ui-icon-extlink' onclick="window.open('Experiments.pl')"></span> <span class='link ui-icon ui-icon-plus' onclick="window.open('LoadExperiment.pl')"></span>
 <div class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
 <TMPL_VAR NAME='EXPERIMENTS'>
 </div>
