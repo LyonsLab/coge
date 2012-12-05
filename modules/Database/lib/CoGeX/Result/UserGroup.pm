@@ -142,6 +142,26 @@ sub has_member
 
 ################################################ subroutine header begin ##
 
+=head2 is_owner
+
+ Usage     : is this an owner group?
+ Purpose   : 
+ Returns   : 0 or 1
+ Argument  : 
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub is_owner {
+	my $self = shift;
+	return $self->role->name =~ /owner/i;
+}
+
+################################################ subroutine header begin ##
+
 =head2 owner_list
 
  Usage     : return group's owner list
