@@ -338,11 +338,12 @@ sub get_groups_with_access {
 	my @rows;
 	foreach my $group (sort {$a->name cmp $b->name} @groups) {
 		#next if (!$USER->is_admin && !$is_user && !$group->has_member($USER));
+		next if ($group->is_owner and !$USER->is_admin);
 
 		my $id = $group->id;
 		my %row;
 		$row{GROUP_NAME} = qq{<span class="link" onclick='window.open("GroupView.pl?ugid=$id")'>} . $group->name . "</span>";
-		$row{GROUP_ROLE} = $group->role->name;
+		$row{GROUP_ROLE} = '(' . $group->role->name . ')';
 		$row{GROUP_DESC} = $group->description if $group->description;
 		#$row{GROUP_ID} = $id;
 		push @rows, \%row;
@@ -375,6 +376,7 @@ sub get_users_with_access {
 	foreach my $u (sort {$a->display_name cmp $b->display_name} values %users) {
 		my $id = $u->id;
 		my $is_owner = ($id == $owner->id);
+
 		my %row;
 		$row{USER_INFO} = qq{<span class="link" onclick='window.open("User.pl?uid=$id")'>} . $u->display_name . "</span>" . ($is_owner ? ' (owner)' : '');
 		$row{USER_ID} = $id if (not $is_owner);
@@ -468,7 +470,8 @@ sub create_shared_group_and_list {
 		description => "Shared list",
 		list_type_id => 7, #FIXME hardcoded value for "shared" list type
 		user_group_id => $shared_group->id,
-		locked => 1
+		locked => 1,
+		restricted => 1
 	});
 	return unless $shared_list;
 
@@ -697,6 +700,7 @@ sub get_notebooks {
 	my @rows;
 	foreach my $list (sort listcmp @lists) {
 		#next if ($list->restricted && !$USER->is_admin && !$is_user && !$USER->has_access(list => $list));
+		next if ($list->is_owner and !$USER->is_admin);
 
 		my $id = $list->id;
 		my %row;

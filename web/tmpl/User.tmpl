@@ -89,6 +89,28 @@ function verify_image_file(file) {
 	
 	return 1;
 }
+function new_group() {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'new_group',
+		},
+		success : function(data) {
+			$('#groups').html(data);
+		}
+	});
+}
+function new_notebook() {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'new_notebook',
+		},
+		success : function(data) {
+			$('#notebooks').html(data);
+		}
+	});
+}
 </TMPL_IF>
 </SCRIPT>
 
@@ -104,31 +126,31 @@ function verify_image_file(file) {
 		<td>
 			<table style="white-space:nowrap;">
 				<tr>
-					<td>User name:</td>
-					<td><TMPL_VAR NAME='USER_NAME'></td>
+					<td style="font-weight:bold;color:dimgray;float:right;">User name</td>
+					<td style="padding-left:10px;"><TMPL_VAR NAME='USER_NAME'></td>
 				</tr>
 				<tr>
-					<td>Full name:</td>
-					<td><TMPL_VAR NAME='FULL_NAME'></td>
+					<td style="font-weight:bold;color:dimgray;float:right;">Full name</td>
+					<td style="padding-left:10px;"><TMPL_VAR NAME='FULL_NAME'></td>
 				</tr>
 				<tr>
 					<td></td>
-					<td class="small"><TMPL_VAR NAME='DESCRIPTION'></td>
+					<td class="small" style="padding-left:10px;"><TMPL_VAR NAME='DESCRIPTION'></td>
 				</tr>
 				<tr>
-					<td>Email:</td>
-					<td><a href="mailto:<TMPL_VAR NAME='EMAIL'>"><TMPL_VAR NAME='EMAIL'></a></td>
+					<td style="font-weight:bold;color:dimgray;float:right;">Email</td>
+					<td style="padding-left:10px;"><a href="mailto:<TMPL_VAR NAME='EMAIL'>"><TMPL_VAR NAME='EMAIL'></a></td>
 				</tr>
 			</table>
 		</td>
 		<TMPL_IF NAME="IS_USER">
 		<td style="padding-left:40px;">
-			Activity <span class='link ui-icon ui-icon-extlink' onclick="window.open('History.pl')"></span>
+			<span style="font-weight:bold;color:dimgray;">History</span> <span class='link ui-icon ui-icon-extlink' onclick="window.open('History.pl')"></span>
 			<span style="padding-left:5px;">
 				<span id='recent' class='small link' style="font-weight:bold;" onclick="show_recent_activity();">recent</span>
 				<span id='important' class='small link' style="padding-left:5px;" onclick="show_important_activity();">important</span>
 			</span>
-			<div id='logs' class="small ui-widget-content ui-corner-all" style="width:350px;height:150px;overflow:auto">
+			<div id='logs' class="small ui-widget-content ui-corner-all" style="width:350px;height:100px;overflow:auto">
 				<TMPL_VAR NAME='LOGS'>
 			</div>
 		</td>
@@ -141,14 +163,14 @@ function verify_image_file(file) {
 <table class="small" style="overflow:hidden;">
 	<tr style="vertical-align:top;">
 		<td>
-			<span class="large"><img src="picts/group-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Groups <span class='link ui-icon ui-icon-extlink' onclick="window.open('Groups.pl')"></span></span>
-			<div class="small ui-widget-content ui-corner-all" style="width:500px;height:100px;overflow-y:auto">
+			<span class="large" style="font-weight:bold;color:dimgray;"><img src="picts/group-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Groups</span> <span class='link ui-icon ui-icon-extlink' onclick="window.open('Groups.pl')"></span> <span class='link ui-icon ui-icon-plus' onclick="new_group();"></span>
+			<div id="groups" class="small ui-widget-content ui-corner-all" style="width:500px;height:100px;overflow-y:auto">
 			<TMPL_VAR NAME='GROUPS'>
 			</div>
 		</td>
 		<td>
 			<img src="picts/user-icon.png" width='20' height='20'/>
-			<span class="large"> <TMPL_IF NAME="IS_USER">My </TMPL_IF> Collaborators</span>
+			<span class="large" style="font-weight:bold;color:dimgray;"> <TMPL_IF NAME="IS_USER">My </TMPL_IF> Collaborators</span>
 			<div class="small ui-widget-content ui-corner-all" style="width:160px;height:100px;overflow-y:auto">
 			<TMPL_VAR NAME='COLLABORATORS'>
 			</div>
@@ -157,19 +179,19 @@ function verify_image_file(file) {
 </table>
 <br>
 
-<span class="large"><img src="picts/notebook-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Notebooks <span class='link ui-icon ui-icon-extlink' onclick="window.open('Notebooks.pl')"></span></span>
-<div class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
+<span class="large" style="font-weight:bold;color:dimgray;"><img src="picts/notebook-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Notebooks</span> <span class='link ui-icon ui-icon-extlink' onclick="window.open('Notebooks.pl')"></span> <span class='link ui-icon ui-icon-plus' onclick="new_notebook();"></span>
+<div id="notebooks" class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
 <TMPL_VAR NAME='LISTS'>
 </div>
 <br>
 
-<span class="large"><img src="picts/dna-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Genomes</span> <span class='link ui-icon ui-icon-extlink' onclick="window.open('Genomes.pl')"></span> <span class='link ui-icon ui-icon-plus' onclick="window.open('LoadGenome.pl')"></span>
+<span class="large" style="font-weight:bold;color:dimgray;"><img src="picts/dna-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Genomes</span> <span class='link ui-icon ui-icon-extlink' onclick="window.open('Genomes.pl')"></span> <span class='link ui-icon ui-icon-plus' onclick="window.open('LoadGenome.pl')"></span>
 <div class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
 <TMPL_VAR NAME='GENOMES'>
 </div>
 <br>
 
-<span class="large"><img src="picts/testtube-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Experiments</span> <span class='link ui-icon ui-icon-extlink' onclick="window.open('Experiments.pl')"></span> <span class='link ui-icon ui-icon-plus' onclick="window.open('LoadExperiment.pl')"></span>
+<span class="large" style="font-weight:bold;color:dimgray;"><img src="picts/testtube-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Experiments</span> <span class='link ui-icon ui-icon-extlink' onclick="window.open('Experiments.pl')"></span> <span class='link ui-icon ui-icon-plus' onclick="window.open('LoadExperiment.pl')"></span>
 <div class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
 <TMPL_VAR NAME='EXPERIMENTS'>
 </div>
@@ -183,7 +205,7 @@ function verify_image_file(file) {
 		<TMPL_LOOP NAME="GROUP_LOOP">
 		<tr valign="top">
 			<td style="white-space:nowrap;"><TMPL_VAR NAME="GROUP_NAME"></td>
-			<td style="white-space:nowrap;">(<TMPL_VAR NAME="GROUP_ROLE">)</td>
+			<td style="white-space:nowrap;"><TMPL_VAR NAME="GROUP_ROLE"></td>
 			<td><TMPL_VAR NAME="GROUP_DESC"></td>
 		</tr>
 		</TMPL_LOOP>

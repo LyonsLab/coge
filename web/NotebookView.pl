@@ -148,6 +148,9 @@ sub gen_html {
 sub gen_body {
 	my $lid = $FORM->param('lid');
 	return "Must have valid notebook id\n" unless ($lid);
+	my ($list) = $coge->resultset('List')->find($lid);
+	return "<br>Notebook id$lid does not exist.<br>" .
+			"Click <a href='Notebooks.pl'>here</a> to view a table of all notebooks.<br><br>" unless ($list);
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 	$template->param( PAGE_NAME        => $FORM->url );
@@ -167,12 +170,8 @@ sub get_list_info {
 	my $lid  = $opts{lid};
 	return unless ($lid);
 	my ($list) = $coge->resultset('List')->find($lid);
-	return unless ($USER->has_access(list=>$lid) || !$list->restricted);
+	return unless ($list && ($USER->has_access(list=>$lid) || !$list->restricted));
 	
-
-	return "Notebook id$lid does not exist.<br>" .
-			"Click <a href='Notebooks.pl'>here</a> to view a table of all notebooks." unless ($list);	
-
 	my $html = $list->annotation_pretty_print_html();
 	my $user_can_edit = $USER->is_admin || (!$list->locked && $USER->is_owner_editor(list => $lid));
 
@@ -290,7 +289,7 @@ sub get_annotations {
 	my $lid  = $opts{lid};
 	return unless ($lid);
 	my ($list) = $coge->resultset('List')->find($lid);	
-	return unless ($USER->has_access(list=>$lid) || !$list->restricted);
+	return unless ($list && ($USER->has_access(list=>$lid) || !$list->restricted));
 	
 
 	return unless $list;

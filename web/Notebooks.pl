@@ -136,31 +136,32 @@ sub get_lists_for_user {
 	my %user_list_ids = map{$_->id, 1} @lists; #for admins -- marks lists that they don't own
 	my %seen_list_ids; #for admins -- their lists are listed first, then all lists
 	my @list_info;
-	@lists = sort sort {$a->name cmp $b->name } @lists;
-	push @lists, sort sort {$a->name cmp $b->name } @admin_lists;
+	@lists = sort listcmp @lists;
+	push @lists, sort listcmp @admin_lists;
 	foreach my $list (@lists ) {
-	  next if $seen_list_ids{$list->id};
-	  $seen_list_ids{$list->id}=1;
-	  my $name = qq{<span class=link onclick='window.open("NotebookView.pl?lid=} . $list->id . qq{")'>} . $list->name . "</span>";
-	  $name = '&reg; '.$name if $list->restricted;
-	  $name = '&alpha; '.$name if !$user_list_ids{$list->id};
+		next if ($list->is_owner && !$USER->is_admin); # skip owner lists
+		next if $seen_list_ids{$list->id};
+		$seen_list_ids{$list->id}=1;
+		my $name = qq{<span class=link onclick='window.open("NotebookView.pl?lid=} . $list->id . qq{")'>} . $list->name . "</span>";
+		$name = '&reg; '.$name if $list->restricted;
+		$name = '&alpha; '.$name if !$user_list_ids{$list->id};
 
-	  push @list_info, 
-	    { 
-	     NAME  => $name,
-	     DESC  => $list->description,
-	     TYPE  => ( $list->type ? $list->type->name : '' ),
-	     ANNO  => join( "<br>", map { $_->type->name . ": " . $_->annotation . ($_->image ? ' (image)' : '') } sort sortAnno $list->annotations ),
-	     DATA  => $list->data_summary(),
-	     GROUP => $list->group->info_html,
-	     RESTRICTED => ($list->restricted ? 'yes' : 'no'),
-	     EDIT_BUTTON => $list->locked ?
-	     "<span class='link ui-icon ui-icon-locked' onclick=\"alert('This list is locked and cannot be edited.')\"></span>" :
-	     "<span class='link ui-icon ui-icon-gear' onclick=\"window.open('NotebookView.pl?lid=" . $list->id . "')\"></span>",
-	     DELETE_BUTTON => $list->locked ?
-	     "<span class='link ui-icon ui-icon-locked' onclick=\"alert('This list is locked and cannot be deleted.')\"></span>" :
-	     "<span class='link ui-icon ui-icon-trash' onclick=\"dialog_delete_list({lid: '" . $list->id . "'});\"></span>"
-	    };
+		push @list_info, 
+		{ 
+			NAME  => $name,
+			DESC  => $list->description,
+			TYPE  => ( $list->type ? $list->type->name : '' ),
+			ANNO  => join( "<br>", map { $_->type->name . ": " . $_->annotation . ($_->image ? ' (image)' : '') } sort sortAnno $list->annotations ),
+			DATA  => $list->data_summary(),
+			GROUP => $list->group->info_html,
+			RESTRICTED => ($list->restricted ? 'yes' : 'no'),
+			EDIT_BUTTON => $list->locked ?
+			"<span class='link ui-icon ui-icon-locked' onclick=\"alert('This list is locked and cannot be edited.')\"></span>" :
+			"<span class='link ui-icon ui-icon-gear' onclick=\"window.open('NotebookView.pl?lid=" . $list->id . "')\"></span>",
+			DELETE_BUTTON => $list->locked ?
+			"<span class='link ui-icon ui-icon-locked' onclick=\"alert('This list is locked and cannot be deleted.')\"></span>" :
+			"<span class='link ui-icon ui-icon-trash' onclick=\"dialog_delete_list({lid: '" . $list->id . "'});\"></span>"
+		};
 	}
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
@@ -214,3 +215,8 @@ sub gen_body {
 	return $template->output;
 }
 
+#FIXME this routine duplicated elsewhere
+sub listcmp {
+	no warnings 'uninitialized'; # disable warnings for undef values in sort
+	$a->name cmp $b->name
+}

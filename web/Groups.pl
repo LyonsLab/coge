@@ -103,8 +103,7 @@ sub gen_html {
 }
 
 sub gen_body {
-	my $template =
-	  HTML::Template->new( filename => $P->{TMPLDIR} . 'Groups.tmpl' );
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'Groups.tmpl' );
 	$template->param( PAGE_NAME => $FORM->url );
 	$template->param( MAIN      => 1 );
 	my $groups = get_groups_for_user();
@@ -213,6 +212,8 @@ sub get_groups_for_user
 	
 	my @groups;
 	foreach my $group (@group_list) {
+		next if ($group->is_owner && !$USER->is_admin); # skip owner groups
+		
 		my $id = $group->id;
 		my $is_editable = (($USER->is_admin or $USER->is_owner_editor(group => $group) or $USER->id == $group->creator_user_id) and not $group->locked);
 				

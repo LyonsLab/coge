@@ -66,6 +66,8 @@ $link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, 
 	gen_html			=> \&gen_html,
 	get_logs			=> \&get_logs,
 	upload_image_file	=> \&upload_image_file,
+	new_group			=> \&new_group,
+	new_notebook		=> \&new_notebook,
 );
 
 # debug for fileupload:
@@ -161,6 +163,7 @@ sub get_groups {
 	my @rows;
 	foreach my $group (sort {$a->name cmp $b->name} @groups) {
 		next if (!$USER->is_admin && !$is_user && !$group->has_member($USER));
+		next if ($group->is_owner and !$USER->is_admin); #skip owner groups
 
 		my $id = $group->id;
 		my %row;
@@ -168,7 +171,7 @@ sub get_groups {
 		
 		my $role = $group->role->name;
 #		$role .= ": ".$group->role->description if $group->role->description;
-		$row{GROUP_ROLE} = $role;
+		$row{GROUP_ROLE} = '(' . $role . ')';
 
 		$row{GROUP_DESC} = $group->description if $group->description;
 
@@ -213,6 +216,7 @@ sub get_lists {
 	my @rows;
 	foreach my $list (sort listcmp @lists) {
 		next if ($list->restricted && !$USER->is_admin && !$is_user && !$USER->has_access(list => $list));
+		next if ($list->is_owner and !$USER->is_admin); # skip owner lists
 
 		my $id = $list->id;
 		my %row;
@@ -240,7 +244,7 @@ sub get_genomes {
 
 		my $id = $genome->id;
 		my %row;
-		$row{GENOME_INFO} = qq{<span class="link" onclick='window.open("OrganismView.pl?dsgid=$id")'>} . $genome->info . "</span>";
+		$row{GENOME_INFO} = qq{<span class="link" onclick='window.open("GenomeInfo.pl?gid=$id")'>} . $genome->info . "</span>";
 		
 		push @rows, \%row;
 	}
@@ -335,6 +339,49 @@ sub upload_image_file {
 	}
 	
 	return;
+}
+
+sub new_group {
+	return if ($USER->user_name eq "public");
+
+	my $role = $coge->resultset('Role')->find( { name => "Reader" } );
+	return unless $role;
+
+	my $group = $coge->resultset('UserGroup')->create( 
+	  { creator_user_id => $USER->id, 
+	  	name => 'My Group', 
+	  	description => 'New empty group',
+	  	role_id => $role->id 
+	  });
+	return unless $group;
+
+	my $conn = $coge->resultset('UserGroupConnector')->create( { user_id => $USER->id, user_group_id => $group->id } );
+	return unless $conn;
+
+	$coge->resultset('Log')->create( { user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'create user group id' . $group->id } );
+
+	return get_groups($USER);
+}
+
+sub new_notebook {
+	return if ($USER->user_name eq "public");
+
+	# Get owner user group for the new list
+	my $owner = $USER->owner_group;
+	return unless $owner;
+	
+	# Create the new list
+	my $list = $coge->resultset('List')->create( 
+	  { name => 'My Notebook',
+		description => 'New empty notebook',
+		list_type_id => 5, #FIXME hardcoded "mixed" list type
+		user_group_id => $owner->id,
+		restricted => 1
+	  } );
+	
+	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'create notebook id' . $list->id );
+
+	return get_lists($USER);
 }
 
 # FIXME these comparison routines are duplicated elsewhere
