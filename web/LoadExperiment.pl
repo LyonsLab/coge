@@ -539,12 +539,21 @@ sub generate_body {
 	
 	return "Access denied" if ($USER->name eq 'public');
 	
-	$template->param( FILE_SELECT_SINGLE => 1 );
-	$template->param( DEFAULT_TAB => 2 );
-	$template->param( DISABLE_IRODS_GET_ALL => 1 );
-	$template->param( MAX_IRODS_LIST_FILES => 100 );
-	$template->param( MAX_IRODS_TRANSFER_FILES => 30 );
-	$template->param( MAX_FTP_FILES => 30 );
+	my $gid = $FORM->param('gid');
+	if ($gid) {
+		my $genome = $coge->resultset('Genome')->find($gid);
+		#TODO check permissions
+		if ($genome) {
+			$template->param( GENOME_NAME => $genome->info, GENOME_ID => $genome->id );
+		}
+	}
+
+	$template->param( FILE_SELECT_SINGLE => 1,
+					  DEFAULT_TAB => 2,
+					  DISABLE_IRODS_GET_ALL => 1,
+					  MAX_IRODS_LIST_FILES => 100,
+					  MAX_IRODS_TRANSFER_FILES => 30,
+					  MAX_FTP_FILES => 30 );
 	$template->param( ADMIN_AREA    => 1 ) if $USER->is_admin;
 	
 	return $template->output;
