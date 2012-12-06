@@ -770,6 +770,8 @@ sub generate_body {
 	my $gid = $FORM->param('gid');
 	return "Error: no genome specified" unless $gid;
 
+	return "Access denied" unless ($USER->is_admin or $USER->has_access_to_genome($gid));
+
 	$template->param( 
 		GID 			=> $gid,
 		CHR 			=> '1', #FIXME temporary hack
