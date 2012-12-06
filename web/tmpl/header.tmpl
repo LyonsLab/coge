@@ -6,11 +6,9 @@
 <meta name="keywords" content="Genetics, Genome, Genomics, Human Genome, Genome Project, Genomics, Homolog, Homologue, Homologous, Homology, Molecular Genetics, Genomes, bioinformatics, mirna, microrna, dna sequencing, computational biology, gene sequencing, shotgun sequencing, Genome Browser, Genetic Information, Biology Genetics, Genome Sequence, Genome Sequencing, Homologous Chromosomes, DNA Genetics, DNA, Genetics Research, Genome Research, Functional Genomics, Genetics Genes, Genetics Map, Genome Analysis, Comparative Genomics, Genome Biology, Genomics Genetics, Homologous Chromosome, Mouse Genome, Human Genome, Yeast Genome, Complete Genomics, Bioinformatics, Bioinformatics genomics, gene genome, homologs, structural genomics, genetic genome, yeast genetics, bioinformatics genome, genes, genome, syntenic, whole genome sequencing, comparative genome, genetic variations, genome sequences, genome genetics, homologous gene, snp genome" />
 <meta name="google-site-verification" content="Pp2O8PKsZWc6dO67lYe2ONCofCYgMwQcoy6bWhkvbXs" />
 <meta name="google-site-verification" content="voXZn_uzuPQj7YtCxw5ogRAW5PgalKg-8rA_VT7TooA" />
-<meta name="google-site-verification"
-content="LFIw-oo_UpW85cg_ONvoPuH1IpWYjlfmipsWhOvo1kk" />
+<meta name="google-site-verification" content="LFIw-oo_UpW85cg_ONvoPuH1IpWYjlfmipsWhOvo1kk" />
 <TMPL_UNLESS NAME="NO_JQUERY">
 <link rel="stylesheet" type="text/css" href="css/superfish.css" />
-
 
 <!-- This is the implementation of jquery into the header of all CoGe pages -->
 <!-- <SCRIPT language="JavaScript" type="text/javascript" src="js/jquery-1.3.2.min.js"></SCRIPT> -->
@@ -24,7 +22,7 @@ content="LFIw-oo_UpW85cg_ONvoPuH1IpWYjlfmipsWhOvo1kk" />
 <link rel="stylesheet" type="text/css" href="css/jquery-ui-coge-supplement.css" />
 <link rel="stylesheet" type="text/css" href="css/jquery.ui.autocomplete.css" />
 
- <SCRIPT language="JavaScript" type="text/javascript" src="js/jquery.cookie.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="js/jquery.cookie.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="js/superfish.js"></SCRIPT>
 <!-- The following javascript file is an addon for superfish - it is beta, so beware for bugs and updates -->
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/supersubs.js"></SCRIPT>
@@ -33,33 +31,26 @@ content="LFIw-oo_UpW85cg_ONvoPuH1IpWYjlfmipsWhOvo1kk" />
 </TMPL_UNLESS>
 <link rel="stylesheet" type="text/css" href="css/styled.css" />
 
-
-<TMPL_VAR NAME=HEAD>
+<TMPL_VAR NAME="HEAD">
 
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 <link rel="shortcut icon" href="picts/urlicon/favicon.ico">
 </HEAD>
 
 <BODY <TMPL_VAR NAME="BODY_ONLOAD">>
-<TMPL_VAR NAME=JAVASCRIPT>
+<TMPL_VAR NAME="JAVASCRIPT">
 <SCRIPT language="JavaScript">
-
-
-
-
 jQuery(document).ready(function(){ 
   pageObj = new Object();
   if (jQuery.browser.msie) {browserAlert()};
   setup_button_states();
 });
 
-
 function browserAlert()
 {
  $('#main_alert').html('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
  alert('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
 }
-
 
 //set up the jquery ui button behavior
 function setup_button_states (id) {
@@ -105,7 +96,6 @@ function add_button_states (ids) {
          setup_button_states(ids[i]);
     }
 }
-//}); 
 
 //initialize superfish plugin (dropdown menu)
 $(document).ready( function() {
@@ -148,18 +138,15 @@ $(document).ready( function() {
 	 </ul>
 	</li>
 
-<!--	  <li><a href="MSAView.pl" target="_self">MSAView</a></li>
-	  <li><a href="TreeView.pl" target="_self">TreeView</a></li>-->
-<!--      </ul>
+	<!--<li><a href="MSAView.pl" target="_self">MSAView</a></li>
+	<li><a href="TreeView.pl" target="_self">TreeView</a></li>-->
+	<!--</ul>
 	<li><a href='javascript:void(0)'>Downloads</a>
 	 <ul>	   
 	  <li><a href="/wiki/index.php/Syntenic_gene_sets" target="_self">Syntenic gene sets</a></li>
 	  <li><a href="/wiki/index.php/Source_code" target="_self">CoGe Source Code</a></li>
-
-
-	</li>	
--->
-        <li><a id="forums" href="https://forums.iplantcollaborative.org/viewforum.php?f=10" target="_self">Forums</a></li>
+	</li>-->
+    <li><a id="forums" href="https://forums.iplantcollaborative.org/viewforum.php?f=10" target="_self">Forums</a></li>
 	<li><a href='javascript:void(0)'>Data</a>
 	 <ul>
 	   <li><a href="User.pl" target="_self">Profile</a></li>
@@ -194,11 +181,11 @@ $(document).ready( function() {
 </div><!-- CLOSE A -->
 </TMPL_UNLESS>
 
-<div><TMPL_IF NAME=LOGO_PNG><img style="vertical-align: bottom;" onclick="window.open('<TMPL_VAR NAME=HELP>')" src='picts/<TMPL_VAR NAME=LOGO_PNG>' border=0></TMPL_IF>
-      <span style="vertical-align: 50%; font-size: 1.5em")><TMPL_VAR NAME=TITLE></span>
+<div><TMPL_IF NAME="LOGO_PNG"><img style="vertical-align: bottom;" onclick="window.open('<TMPL_VAR NAME=HELP>')" src='picts/<TMPL_VAR NAME="LOGO_PNG">' border=0></TMPL_IF>
+      <span style="vertical-align: 50%; font-size: 1.5em")><TMPL_VAR NAME="TITLE"></span>
 </div>
-      <TMPL_IF NAME=DEV><br><span class=alert>WARNING: THIS IS A DEVELOPMENT SERVER</span><br>Software may not work, system may be down, etc.<br>Please use <a href="http://genomevolution.org/CoGe"> our production server: genomevolution.org/CoGe</a></TMPL_IF>
-<div class=alert></div>
+      <TMPL_IF NAME="DEV"><br><span class="alert">WARNING: THIS IS A DEVELOPMENT SERVER</span><br>Software may not work, system may be down, etc.<br>Please use <a href="http://genomevolution.org/CoGe"> our production server: genomevolution.org/CoGe</a></TMPL_IF>
+<div class="alert"></div>
  
 <noscript>
 Welcome to CoGe -- a new system for a new kind of comparative genomics.  CoGe is designed for easily visualizing, comparing, and understanding the evolution, struture and dynamics of genomes.
