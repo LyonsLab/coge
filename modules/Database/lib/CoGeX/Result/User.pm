@@ -651,7 +651,7 @@ sub is_role {
 	if ($dsg) {
 		my $dsgid = $dsg =~ /^\d+$/ ? $dsg : $dsg->id;
 		foreach my $group ( $self->groups ) {
-			next unless $group->role->name =~ /$role/i or $group->creator->id == $self->id;
+			next unless $group->role->name =~ /$role/i or $group->creator_user_id == $self->id;
 			foreach my $genome ( $group->genomes ) {
 				return 1 if $genome->id == $dsgid;
 			}
@@ -661,7 +661,7 @@ sub is_role {
 	if ($ds) {
 		my $dsid = $ds =~ /^\d+$/ ? $ds : $ds->id;
 		foreach my $group ( $self->groups ) {
-			next unless $group->role->name =~ /$role/i or $group->creator->id == $self->id;
+			next unless $group->role->name =~ /$role/i or $group->creator_user_id == $self->id;
 			foreach my $ds ( $group->datasets ) {
 				return 1 if $ds->id == $dsid;
 			}
@@ -671,7 +671,7 @@ sub is_role {
 	if ($list) {
 		my $lid = $list =~ /^\d+$/ ? $list : $list->id;
 		foreach my $group ( $self->groups ) {
-			next unless $group->role->name =~ /$role/i or $group->creator->id == $self->id;
+			next unless $group->role->name =~ /$role/i or $group->creator_user_id == $self->id;
 			foreach my $l ( $group->lists ) {
 				return 1 if $l->id == $lid;
 			}
@@ -681,7 +681,7 @@ sub is_role {
 	if ($experiment) {
 		my $eid = $experiment =~ /^\d+$/ ? $experiment : $experiment->id;
 		foreach my $group ( $self->groups ) {
-			next unless $group->role->name =~ /$role/i or $group->creator->id == $self->id;
+			next unless $group->role->name =~ /$role/i or $group->creator_user_id == $self->id;
 			foreach my $e ( $group->experiments ) {
 				return 1 if $e->id == $eid;
 			}
