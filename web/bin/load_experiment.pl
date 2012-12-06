@@ -206,11 +206,11 @@ sub validate_data_file {
 		
 		# Validate format
 		if (@tok < $MIN_COLUMNS) {
-			print $log "log: error at line $line_num: more columns expected\n";
+			print $log "log: error at line $line_num: more columns expected (" . @tok . "< $MIN_COLUMNS\n";
 			return;
 		}
 		elsif (@tok > $MAX_COLUMNS) {
-			print $log "log: error at line $line_num: fewer columns expected\n";
+			print $log "log: error at line $line_num: fewer columns expected (" . @tok . "> $MAX_COLUMNS\n";
 			return;
 		}
 		
