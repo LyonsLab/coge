@@ -125,6 +125,7 @@ sub get_genome_info {
 	);
 
 	$template->param( GID => $gid );
+	$template->param( CHR => '1' ); #FIXME temporary hack
 
 	return $template->output;
 }

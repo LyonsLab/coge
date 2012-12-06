@@ -446,7 +446,7 @@ function get_list_preview (opts) {
 		<td>
 			<span id='genome_data' style="color:dimgray;font-weight:bold;">Genome Data</span>
 			<div class="small ui-widget-content ui-corner-all"><TMPL_VAR NAME="GENOME_DATA"></div>
-			<span class='ui-button ui-corner-all ui-button-icon-right ui-button-go' onclick="window.open('GenomeView.pl?gid=<TMPL_VAR NAME=GID>')"><span class="ui-icon ui-icon-extlink"></span>Genome View</span>
+			<span class='ui-button ui-corner-all ui-button-icon-right ui-button-go' onclick="window.open('GenomeView.pl?dsgid=<TMPL_VAR NAME=GID>;chr=<TMPL_VAR NAME=CHR>')"><span class="ui-icon ui-icon-extlink"></span>Genome View</span>
 		</td>
 	</tr>
 </table>
