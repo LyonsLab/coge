@@ -107,10 +107,13 @@ else {
 sub get_genome_info {
 	my %opts = @_;
 	my $gid  = $opts{gid};
-	return unless ($gid);
+	my $genome  = $opts{genome};
+	return unless ($gid or $genome);
 
-	my $genome = $coge->resultset('Genome')->find($gid);
-	return "Genome not found" unless ($genome);
+	unless ($genome) {
+		$genome = $coge->resultset('Genome')->find($gid);
+		return unless ($genome);
+	}
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
 	$template->param(
@@ -124,7 +127,7 @@ sub get_genome_info {
 		DESCRIPTION => $genome->description,
 	);
 
-	$template->param( GID => $gid );
+	$template->param( GID => $genome->id );
 
 	return $template->output;
 }
@@ -268,28 +271,27 @@ sub search_users {
 sub get_genome_data {
 	my %opts = @_;
 	my $gid  = $opts{gid};
-	return unless ($gid);
+	my $genome  = $opts{genome};
+	return unless ($gid or $genome);
 
-	my $genome = $coge->resultset('Genome')->find($gid);
-	return "Genome not found" unless ($genome);
+	unless ($genome) {
+		$genome = $coge->resultset('Genome')->find($gid);
+		return unless ($genome);
+	}
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
 	$template->param( 
 		DO_GENOME_DATA => 1,
 		CHROMOSOME_COUNT => commify($genome->chromosome_count()),
 		LENGTH => commify($genome->length),
-		GID => $gid );
+		GID => $genome->id );
 	
 	return $template->output;
 }
 
 sub get_genome_owner {
-	my %opts = @_;
-	my $gid  = $opts{gid};
-	return unless ($gid);
-
-	my $genome = $coge->resultset('Genome')->find($gid);
-	return unless ($genome);
+	my $genome = shift;
+	return unless $genome;
 
 	my $owner_list = $genome->owner_list;
 	return unless ($owner_list);
@@ -328,10 +330,13 @@ sub get_sources {
 sub get_groups_with_access {
 	my %opts = @_;
 	my $gid  = $opts{gid};
-	return unless ($gid);
+	my $genome  = $opts{genome};
+	return unless ($gid or $genome);
 
-	my $genome = $coge->resultset('Genome')->find($gid);
-	return unless ($genome);
+	unless ($genome) {
+		$genome = $coge->resultset('Genome')->find($gid);
+		return unless ($genome);
+	}
 
 	my @groups = map { $_->group } $genome->lists;
 	
@@ -358,30 +363,34 @@ sub get_groups_with_access {
 sub get_users_with_access {
 	my %opts = @_;
 	my $gid  = $opts{gid};
-	return unless ($gid);
+	my $genome  = $opts{genome};
+	return unless ($gid or $genome);
 
-	my $genome = $coge->resultset('Genome')->find($gid);
-	return unless ($genome);
-
-	my $owner = get_genome_owner(gid => $gid);
-	return unless $owner;
-
-	my %users;
-	foreach my $list ($genome->lists) {
-		foreach my $user ($list->group->users) {
-			$users{$user->id} = $user;
-		}
+	unless ($genome) {
+		$genome = $coge->resultset('Genome')->find($gid);
+		return unless $genome;
 	}
-	
-	my @rows;
-	foreach my $u (sort {$a->display_name cmp $b->display_name} values %users) {
-		my $id = $u->id;
-		my $is_owner = ($id == $owner->id);
 
-		my %row;
-		$row{USER_INFO} = qq{<span class="link" onclick='window.open("User.pl?uid=$id")'>} . $u->display_name . "</span>" . ($is_owner ? ' (owner)' : '');
-		$row{USER_ID} = $id if (not $is_owner);
-		push @rows, \%row;
+	my @rows;
+	my $owner = get_genome_owner($genome);
+	if ($owner) {
+		my %users;
+		foreach my $list ($genome->lists) {
+			foreach my $user ($list->group->users) {
+				$users{$user->id} = $user;
+			}
+		}
+		
+		
+		foreach my $u (sort {$a->display_name cmp $b->display_name} values %users) {
+			my $id = $u->id;
+			my $is_owner = ($id == $owner->id);
+
+			my %row;
+			$row{USER_INFO} = qq{<span class="link" onclick='window.open("User.pl?uid=$id")'>} . $u->display_name . "</span>" . ($is_owner ? ' (owner)' : '');
+			$row{USER_ID} = $id if (not $is_owner);
+			push @rows, \%row;
+		}
 	}
 	push @rows, {USER_INFO => '<span style="font-style:italic;color:gray;">None</span>'} unless (@rows);
 
@@ -413,7 +422,7 @@ sub get_available_users {
 	
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 	$template->param( ADD_USERS => 1 );
-	$template->param( GID         => $gid );
+	$template->param( GID         => $genome->id );
 	$template->param( ALL_UID_LOOP => [sort {$a->{UNAME} cmp $b->{UNAME}} @all_users] );
 
 	return $template->output;
@@ -437,7 +446,7 @@ sub get_available_groups {
 	
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 	$template->param( ADD_GROUPS => 1 );
-	$template->param( GID        => $gid );
+	$template->param( GID        => $genome->id );
 	$template->param( ALL_UGID_LOOP => [sort {$a->{UGNAME} cmp $b->{UGNAME}} @all_groups] );
 
 	return $template->output;
@@ -549,7 +558,7 @@ sub add_to_notebook {
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 	$template->param( ADD_TO_NOTEBOOK => 1 );
-	$template->param( GID      => $gid );
+	$template->param( GID      => $genome->id );
 
 	return $template->output;
 }
@@ -691,10 +700,13 @@ sub get_notebook_preview {
 sub get_notebooks {
 	my %opts = @_;
 	my $gid  = $opts{gid};
-	return unless ($gid);
+	my $genome  = $opts{genome};
+	return unless ($gid or $genome);
 
-	my $genome = $coge->resultset('Genome')->find($gid);
-	return unless ($genome);
+	unless ($genome) {
+		$genome = $coge->resultset('Genome')->find($gid);
+		return unless ($genome);
+	}
 
 	my @lists = $genome->lists;
 
@@ -720,10 +732,13 @@ sub get_notebooks {
 sub get_experiments {
 	my %opts = @_;
 	my $gid  = $opts{gid};
-	return unless ($gid);
+	my $genome  = $opts{genome};
+	return unless ($gid or $genome);
 
-	my $genome = $coge->resultset('Genome')->find($gid);
-	return unless ($genome);
+	unless ($genome) {
+		$genome = $coge->resultset('Genome')->find($gid);
+		return unless ($genome);
+	}
 
 	my @experiments = $genome->experiments;
 
@@ -751,15 +766,15 @@ sub generate_html {
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
 	$template->param( 
-		PAGE_TITLE => $PAGE_TITLE,
-		HELP       => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl',
-		USER     => $name,
-		LOGO_PNG => $PAGE_TITLE . "-logo.png",
-		DATE     => $DATE,
-		BODY => generate_body(),
-		ADJUST_BOX => 1 
+		PAGE_TITLE 	=> $PAGE_TITLE,
+		HELP       	=> '/wiki/index.php?title=' . $PAGE_TITLE . '.pl',
+		USER     	=> $name,
+		LOGO_PNG 	=> $PAGE_TITLE . "-logo.png",
+		DATE     	=> $DATE,
+		BODY 		=> generate_body(),
+		ADJUST_BOX 	=> 1 
 	);	
-	$template->param( LOGON    => 1 ) unless ($USER->user_name eq "public");
+	$template->param( LOGON => 1 ) unless ($USER->user_name eq "public");
 
 	return $template->output;
 }
@@ -780,13 +795,13 @@ sub generate_body {
 
 	$template->param(
 		GID 			=> $gid,
-		CHR 			=> $first_chr,
-		GENOME_INFO 	=> get_genome_info(gid => $gid),
-		GENOME_DATA 	=> get_genome_data(gid => $gid),
-		GROUPS 			=> get_groups_with_access(gid => $gid),
-		USERS 			=> get_users_with_access(gid => $gid),
-		NOTEBOOKS 		=> get_notebooks(gid => $gid),
-		EXPERIMENTS 	=> get_experiments(gid => $gid) 
+		CHR 			=> ($first_chr ? $first_chr : ''),
+		GENOME_INFO 	=> get_genome_info(genome => $genome),
+	 	GENOME_DATA 	=> get_genome_data(genome => $genome),
+		GROUPS 			=> get_groups_with_access(genome => $genome),
+		USERS 			=> get_users_with_access(genome => $genome),
+		NOTEBOOKS 		=> get_notebooks(genome => $genome),
+		EXPERIMENTS 	=> get_experiments(genome => $genome) 
 	);
 
 	$template->param( ADMIN_AREA => 1 ) if ($USER->is_admin);
