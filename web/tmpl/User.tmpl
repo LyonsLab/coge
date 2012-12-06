@@ -96,7 +96,11 @@ function new_group() {
 			fname: 'new_group',
 		},
 		success : function(data) {
-			$('#groups').html(data);
+			var obj = jQuery.parseJSON(data);
+			if (obj) {			
+				$('#groups').html(obj.groups);
+				window.open('GroupView.pl?ugid='+obj.ugid);
+			}
 		}
 	});
 }
@@ -107,7 +111,11 @@ function new_notebook() {
 			fname: 'new_notebook',
 		},
 		success : function(data) {
-			$('#notebooks').html(data);
+			var obj = jQuery.parseJSON(data);
+			if (obj) {
+				$('#notebooks').html(obj.notebooks);
+				window.open('NotebookView.pl?nid='+obj.nid);
+			}
 		}
 	});
 }
@@ -145,7 +153,7 @@ function new_notebook() {
 		</td>
 		<TMPL_IF NAME="IS_USER">
 		<td style="padding-left:40px;">
-			<span style="font-weight:bold;color:dimgray;">History</span> <span class='link ui-icon ui-icon-extlink' onclick="window.open('History.pl')"></span>
+			<span style="font-weight:bold;color:dimgray;">History</span> <span class='link ui-icon ui-icon-extlink' onclick="window.open('History.pl');"></span>
 			<span style="padding-left:5px;">
 				<span id='recent' class='small link' style="font-weight:bold;" onclick="show_recent_activity();">recent</span>
 				<span id='important' class='small link' style="padding-left:5px;" onclick="show_important_activity();">important</span>

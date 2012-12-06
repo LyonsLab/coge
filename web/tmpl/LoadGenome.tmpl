@@ -56,7 +56,8 @@ function set_input(id, text) {
 
 	// Init event handlers
 	$('#'+id).unbind('blur').bind('blur', function() { set_input(id, text); })
-			 .unbind('focus').bind('focus', function() { set_input(id, text); });
+			 .unbind('focus').bind('focus', function() { set_input(id, text); })
+			 .unbind('click').bind('click', function() { set_input(id, text); });
 }
 
 function file_selected(filename, url) {

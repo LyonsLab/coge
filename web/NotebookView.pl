@@ -147,6 +147,7 @@ sub gen_html {
 
 sub gen_body {
 	my $lid = $FORM->param('lid');
+	$lid = $FORM->param('nid') unless $lid; # alias
 	return "Must have valid notebook id\n" unless ($lid);
 	my ($list) = $coge->resultset('List')->find($lid);
 	return "<br>Notebook id$lid does not exist.<br>" .

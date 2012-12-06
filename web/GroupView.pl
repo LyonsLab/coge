@@ -535,5 +535,5 @@ sub user_can_edit {
 	my $group = shift;
 	return ($USER->is_admin or 
 			$USER->is_owner_editor(group => $group) or 
-			$USER->id == $group->creator->id);
+			$USER->id == $group->creator_user_id);
 }

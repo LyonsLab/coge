@@ -174,7 +174,7 @@ function irods_get_path (path) {
 			get_icon = "<span class='link' style='padding-left:15px;' onclick='irods_get_all_files(\""+result.path+"\")'><span class='ui-icon ui-icon-transferthick-e-w' />Get All Files</span>";
 			</TMPL_UNLESS>
 			
-			$('#ids_table').append('<tr><td colspan="3" style="white-space:nowrap;border-bottom-style: solid; border-bottom-width: thin;">'+up_icon+refresh_icon+home_icon+get_icon+'</td></tr>').append('<tr><td colspan="3" style="white-space:nowrap;font-weight:bold;">'+result.path+'</td></tr>');
+			$('#ids_table').append('<tr><td colspan="3" style="white-space:nowrap;border-bottom-style:solid;border-bottom-width:thin;">'+up_icon+refresh_icon+home_icon+get_icon+'</td></tr>').append('<tr><td colspan="3" style="white-space:nowrap;font-weight:bold;">'+result.path+'</td></tr>');
 			
 			result.items.forEach(
 				function(obj) {

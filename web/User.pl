@@ -360,7 +360,7 @@ sub new_group {
 
 	$coge->resultset('Log')->create( { user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'create user group id' . $group->id } );
 
-	return get_groups($USER);
+	return encode_json({ groups => get_groups($USER), ugid => $group->id });
 }
 
 sub new_notebook {
@@ -381,7 +381,7 @@ sub new_notebook {
 	
 	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'create notebook id' . $list->id );
 
-	return get_lists($USER);
+	return encode_json({ notebooks => get_lists($USER), nid => $list->id });
 }
 
 # FIXME these comparison routines are duplicated elsewhere

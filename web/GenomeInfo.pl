@@ -768,13 +768,18 @@ sub generate_body {
 	$template->param( MAIN => 1, PAGE_NAME => $PAGE_TITLE . '.pl' );
 	
 	my $gid = $FORM->param('gid');
-	return "Error: no genome specified" unless $gid;
+	return "No genome specified" unless $gid;
 
-	return "Access denied" unless ($USER->is_admin or $USER->has_access_to_genome($gid));
+	my $genome = $coge->resultset('Genome')->find($gid);
+	return "Genome id$gid not found" unless ($genome);	
 
-	$template->param( 
+	return "Access denied" unless (!$genome->restricted or $USER->is_admin or $USER->has_access_to_genome($genome));
+
+	my ($first_chr) = $genome->chromosomes;
+
+	$template->param(
 		GID 			=> $gid,
-		CHR 			=> '1', #FIXME temporary hack
+		CHR 			=> $first_chr,
 		GENOME_INFO 	=> get_genome_info(gid => $gid),
 		GENOME_DATA 	=> get_genome_data(gid => $gid),
 		GROUPS 			=> get_groups_with_access(gid => $gid),
