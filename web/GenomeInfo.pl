@@ -364,6 +364,7 @@ sub get_users_with_access {
 	return unless ($genome);
 
 	my $owner = get_genome_owner(gid => $gid);
+	return unless $owner;
 
 	my %users;
 	foreach my $list ($genome->lists) {
