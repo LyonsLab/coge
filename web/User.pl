@@ -236,7 +236,7 @@ sub get_lists {
 sub get_genomes {
 	my $user = shift;
 	my $is_user = ($user->id == $USER->id);
-	my @genomes = $user->owner_group->owner_list->genomes;
+	my @genomes = $user->genomes;#my @genomes = $user->owner_group->owner_list->genomes;
 
 	my @rows;
 	foreach my $genome (sort genomecmp @genomes) {
@@ -259,7 +259,7 @@ sub get_genomes {
 sub get_experiments {
 	my $user = shift;
 	my $is_user = ($user->id == $USER->id);
-	my @experiments = $user->owner_group->owner_list->experiments;
+	my @experiments = $user->experiments;#my @experiments = $user->owner_group->owner_list->experiments;
 
 	my @rows;
 	foreach my $exp (sort experimentcmp @experiments) {
