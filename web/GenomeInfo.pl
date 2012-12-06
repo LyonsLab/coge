@@ -125,7 +125,6 @@ sub get_genome_info {
 	);
 
 	$template->param( GID => $gid );
-	$template->param( CHR => '1' ); #FIXME temporary hack
 
 	return $template->output;
 }
@@ -773,6 +772,7 @@ sub generate_body {
 
 	$template->param( 
 		GID 			=> $gid,
+		CHR 			=> '1', #FIXME temporary hack
 		GENOME_INFO 	=> get_genome_info(gid => $gid),
 		GENOME_DATA 	=> get_genome_data(gid => $gid),
 		GROUPS 			=> get_groups_with_access(gid => $gid),
