@@ -85,34 +85,6 @@ sub users
 
 ################################################ subroutine header begin ##
 
-=head2 creator
-
- Usage     : 
- Purpose   : Returns user object for creator
- Returns   : user object
- Argument  : None
- Throws    : None
- Comments  : 
-
-=cut
-
-################################################## subroutine header end ##
-
-sub creator
-{
-	my $self  = shift;
-	my @users = ();
-
-	foreach my $ugc ( $self->user_group_connectors() )
-	{
-		push @users, $ugc->user;
-	}
-
-	return wantarray ? @users : \@users;
-}
-
-################################################ subroutine header begin ##
-
 =head2 has_member
 
  Usage     : 
