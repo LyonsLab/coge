@@ -1,26 +1,26 @@
-<br>
-<HR>
-<div style="float:right"><image src="./picts/iplant_power.png"></div>
-<DIV>
-<br><span class="xsmall">Date: <TMPL_VAR NAME=DATE> </span>
-
-</DIV>
-
-
-<font class = "small"><span style="color: red;">Warning:</span>  This site uses <a href="http://en.wikipedia.org/wiki/Ajax_(programming)">AJAX</a>.  Don't press your browser's back button!</font>
-
+<div style="float:right;" >
+	<a target="_blank" href="http://www.moore.org" style="float:left;padding-top:7px;">
+		<img style="padding-right:15px;" src="./picts/Moore_Foundation.png"/>
+	</a>
+	<a target="_blank" href="http://www.iplantcollaborative.org" style="float:right">
+		<img src="./picts/iplant_power.png"/>
+	</a>
+</div>
+<!--
+<div><br><span class="xsmall">Date: <TMPL_VAR NAME=DATE> </span></div>
+<font class="small"><span style="color:red;">Warning:</span> This site uses <a href="http://en.wikipedia.org/wiki/Ajax_(programming)">AJAX</a>.  Don't press your browser's back button!</font>
+-->
 
 <script type="text/javascript">
-
 function login_cas(){
 	document.location.href='https://auth.iplantcollaborative.org/cas/loginPost?service='+document.location.href;
-	
-	 return true;
+	return true;
 }
 
 var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
 document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
 </script>
+
 <script type="text/javascript">
 $(document).ready(function(){
 	var user = "<TMPL_VAR NAME=USER>";
@@ -34,5 +34,6 @@ var pageTracker = _gat._getTracker("UA-3802985-1");
 pageTracker._initData();
 pageTracker._trackPageview();
 </script>
+
 </BODY>
 </HTML>

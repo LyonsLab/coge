@@ -1,7 +1,7 @@
 <HTML>
 <HEAD>
 <meta http-equiv="Pragma" content="no-cache">
-<TITLE>CoGe: <TMPL_VAR NAME=PAGE_TITLE></TITLE>
+<TITLE>CoGe: <TMPL_VAR NAME="PAGE_TITLE"></TITLE>
 <meta name="description" content="The CoGe Comparative Genomics Platform.  A software suite of interlinked and interconnected web-based tools for easily visualizing, comparing, and understanding the evolution, struture and dynamics of genomes." />
 <meta name="keywords" content="Genetics, Genome, Genomics, Human Genome, Genome Project, Genomics, Homolog, Homologue, Homologous, Homology, Molecular Genetics, Genomes, bioinformatics, mirna, microrna, dna sequencing, computational biology, gene sequencing, shotgun sequencing, Genome Browser, Genetic Information, Biology Genetics, Genome Sequence, Genome Sequencing, Homologous Chromosomes, DNA Genetics, DNA, Genetics Research, Genome Research, Functional Genomics, Genetics Genes, Genetics Map, Genome Analysis, Comparative Genomics, Genome Biology, Genomics Genetics, Homologous Chromosome, Mouse Genome, Human Genome, Yeast Genome, Complete Genomics, Bioinformatics, Bioinformatics genomics, gene genome, homologs, structural genomics, genetic genome, yeast genetics, bioinformatics genome, genes, genome, syntenic, whole genome sequencing, comparative genome, genetic variations, genome sequences, genome genetics, homologous gene, snp genome" />
 <meta name="google-site-verification" content="Pp2O8PKsZWc6dO67lYe2ONCofCYgMwQcoy6bWhkvbXs" />
@@ -41,15 +41,14 @@
 <TMPL_VAR NAME="JAVASCRIPT">
 <SCRIPT language="JavaScript">
 jQuery(document).ready(function(){ 
-  pageObj = new Object();
-  if (jQuery.browser.msie) {browserAlert()};
-  setup_button_states();
+	pageObj = new Object();
+	if (jQuery.browser.msie) {browserAlert()};
+	setup_button_states();
 });
 
-function browserAlert()
-{
- $('#main_alert').html('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
- alert('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
+function browserAlert(){
+	$('#main_alert').html('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
+	alert('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
 }
 
 //set up the jquery ui button behavior
@@ -113,76 +112,60 @@ $(document).ready( function() {
 <div id="main_alert" style="color: red; font-size: 1em; text-align: center"></div>
 <div id="signin_popup" class="image_window" style="display:none"></div>
 
-<TMPL_UNLESS NAME=MENU>
-  <div style="float:right"><!-- open A -->
- 
-    <span style="color: gray; margin-right: 50px;">
-     <TMPL_IF NAME=LOGON>
-      <span class="small">You are logged-in as <b><TMPL_VAR NAME=USER></b> - <a href="index.pl?logout=1" class="small"><b>Sign-out</b></a></span>
-	 <TMPL_ELSE>
-	  <span class="small">Welcome! You are not logged-in ... <a href="javascript:void(0)" onClick="login_cas();return true;" class="small"><b>Sign-in.</b></a> <a href="http://genomevolution.org/wiki/index.php/How_to_get_a_CoGe_account" target=_login_info><br>(Get a CoGe account)</a></span>
+<TMPL_UNLESS NAME="MENU">
+<div style="float:right;">
+	<span style="float:left;color:gray; margin-right:50px;">
+		<TMPL_IF NAME="LOGON">
+			<span class="small">You are logged-in as <b><TMPL_VAR NAME="USER"></b> - <a href="index.pl?logout=1" class="small"><b>Sign-out</b></a></span>
+		<TMPL_ELSE>
+			<span class="small">Welcome! You are not logged-in ... <a href="javascript:void(0)" onClick="login_cas();return true;" class="small"><b>Sign-in.</b></a> <a href="http://genomevolution.org/wiki/index.php/How_to_get_a_CoGe_account" target=_login_info><br>(Get a CoGe account)</a></span>
      </TMPL_IF>
 	</span>
  
-    <div style="float:right;margin-right: 73px;">
-	<ul class="sf-menu" >
-	 <li><a id="home" href="index.pl" target="_self">Home</a></li>
-	 <li><a href='javascript:void(0)'>Applications</a>
-	  <ul>
-	  <li><a href="OrganismView.pl" target="_self">OrganismView</a></li>
-	  <li><a href="CoGeBlast.pl" target="_self">CoGeBlast</a></li>
-	  <li><a href="FeatView.pl" target="_self">FeatView</a></li>
-	  <li><a href="SynFind.pl" target="_self">SynFind</a></li>
-	  <li><a href="SynMap.pl" target="_self">SynMap</a></li>
-	  <li><a href="GEvo.pl" target="_self">GEvo</a></li>
-	 </ul>
-	</li>
-
-	<!--<li><a href="MSAView.pl" target="_self">MSAView</a></li>
-	<li><a href="TreeView.pl" target="_self">TreeView</a></li>-->
-	<!--</ul>
-	<li><a href='javascript:void(0)'>Downloads</a>
-	 <ul>	   
-	  <li><a href="/wiki/index.php/Syntenic_gene_sets" target="_self">Syntenic gene sets</a></li>
-	  <li><a href="/wiki/index.php/Source_code" target="_self">CoGe Source Code</a></li>
-	</li>-->
-    <li><a id="forums" href="https://forums.iplantcollaborative.org/viewforum.php?f=10" target="_self">Forums</a></li>
-	<li><a href='javascript:void(0)'>Data</a>
-	 <ul>
-	   <li><a href="User.pl" target="_self">Profile</a></li>
-	   <li><a href="Groups.pl" target="_self">Groups</a></li>
-	   <li><a href="Notebooks.pl" target="_self">Notebooks</a></li>
-	   <li><a href="History.pl" target="_self">History</a></li>
-<!--	  <li><a href="javascript:void(0)" target="_self">Animation</a>
-	    <ul class="animations">
-	      <li><a href="javascript:void(0)" target="_self" onClick="define_animation_speed(0)">Off</a></li>
-	      <li><a href="javascript:void(0)" target="_self" onClick="define_animation_speed(600)">&radic; Slow</a></li>
-	      <li><a href="javascript:void(0)" target="_self" onClick="define_animation_speed(400)">Medium</a></li>
-	      <li><a href="javascript:void(0)" target="_self" onClick="define_animation_speed(200)">Fast</a></li>
-	     </ul>
-	   </li>-->
-	  </ul>
-	 </li>
-	<li><a href='javascript:void(0)'>Help</a>
-	 <ul>
-	      <li><a href="/wiki" target="_blank">CoGePedia</a></li>
-	      <li><a href="<TMPL_VAR NAME=HELP>" target="_blank">Page Docs</a></li>
-	      <li><a href="https://forums.iplantcollaborative.org/viewforum.php?f=10" target="_blank">Forums</a></li>
-	      <li><a href="/wiki/index.php/FAQs" target="_blank">About CoGe</a></li>
-	      <li><a href="/wiki/index.php/Tutorials" target="_blank">Tutorials</a></li>
-	      <li><a href="/wiki/index.php/Contact_Page" target="_blank">Contact or Cite Us</a></li>
-	      <li><a href="/wiki/index.php/System_Support" target="_blank">System Support</a></li>
-          <li><a href="/wiki/index.php/CoGepedia:Current_events" target="_blank">Latest News</a><li>
-	</ul>
-	</li>
-	</ul>
-
-    </div>
-</div><!-- CLOSE A -->
+	<span style="float:right; margin-right: 70px;">
+		<ul class="sf-menu">
+			<li><a id="home" href="index.pl" target="_self">Home</a></li>
+			<li><a href='javascript:void(0)'>Tools</a>
+				<ul>
+					<li><a href="OrganismView.pl" target="_self">OrganismView</a></li>
+					<li><a href="CoGeBlast.pl" target="_self">CoGeBlast</a></li>
+					<li><a href="FeatView.pl" target="_self">FeatView</a></li>
+					<li><a href="SynFind.pl" target="_self">SynFind</a></li>
+					<li><a href="SynMap.pl" target="_self">SynMap</a></li>
+					<li><a href="GEvo.pl" target="_self">GEvo</a></li>
+				</ul>
+			</li>
+			<li><a id="forums" href="https://forums.iplantcollaborative.org/viewforum.php?f=10" target="_self">Forums</a></li>
+			<li><a href='javascript:void(0)'>Data</a>
+				<ul>
+					<li><a href="User.pl" target="_self">Profile</a></li>
+					<li><a href="Groups.pl" target="_self">Groups</a></li>
+					<li><a href="Notebooks.pl" target="_self">Notebooks</a></li>
+					<li><a href="History.pl" target="_self">History</a></li>
+				</ul>
+			</li>
+			<li><a href='javascript:void(0)'>Help</a>
+				<ul>
+					<li><a href="/wiki" target="_blank">CoGePedia</a></li>
+					<li><a href="<TMPL_VAR NAME=HELP>" target="_blank">Page Docs</a></li>
+					<li><a href="https://forums.iplantcollaborative.org/viewforum.php?f=10" target="_blank">Forums</a></li>
+					<li><a href="/wiki/index.php/FAQs" target="_blank">About CoGe</a></li>
+					<li><a href="/wiki/index.php/Tutorials" target="_blank">Tutorials</a></li>
+					<li><a href="/wiki/index.php/Contact_Page" target="_blank">Contact or Cite Us</a></li>
+					<li><a href="/wiki/index.php/System_Support" target="_blank">System Support</a></li>
+					<li><a href="/wiki/index.php/CoGepedia:Current_events" target="_blank">Latest News</a><li>
+				</ul>
+			</li>
+		</ul>
+	</span>
+</div>
 </TMPL_UNLESS>
 
-<div><TMPL_IF NAME="LOGO_PNG"><img style="vertical-align: bottom;" onclick="window.open('<TMPL_VAR NAME=HELP>')" src='picts/<TMPL_VAR NAME="LOGO_PNG">' border=0></TMPL_IF>
-      <span style="vertical-align: 50%; font-size: 1.5em")><TMPL_VAR NAME="TITLE"></span>
+<div>
+	<TMPL_IF NAME="LOGO_PNG">
+		<img style="vertical-align:bottom;" onclick="window.open('<TMPL_VAR NAME=HELP>')" src='picts/<TMPL_VAR NAME="LOGO_PNG">'>
+	</TMPL_IF>
+	<span style="vertical-align: 50%; font-size: 1.5em")><TMPL_VAR NAME="TITLE"></span>
 </div>
       <TMPL_IF NAME="DEV"><br><span class="alert">WARNING: THIS IS A DEVELOPMENT SERVER</span><br>Software may not work, system may be down, etc.<br>Please use <a href="http://genomevolution.org/CoGe"> our production server: genomevolution.org/CoGe</a></TMPL_IF>
 <div class="alert"></div>

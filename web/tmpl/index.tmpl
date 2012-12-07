@@ -1,153 +1,164 @@
-<!--<style type="text/css">@import "css/jquery.svg.css";</style> -->
-<!--<script type="text/javascript" src="js/jquery.svg.js">-->
-<!--<script type="text/javascript" src="js/jquery.svganim.pack.js">-->
 <SCRIPT language="JavaScript">
-
 $(document).ready(function(){
-  $('#uname').focus();
-  pageObj = new Object();
-  pageObj.index=0;//Math.floor(Math.random()*20);
-  cross_fade();
+	$('#uname').focus();
+	pageObj = new Object();
+	pageObj.index=0;//Math.floor(Math.random()*20);
+	cross_fade(1);
 });
 
-//$('#nav').svg({onLoad: drawIntro}); 
+$(function() { $("#accordion").accordion({collapsible:true, active: false}); });
+$(function() { $("#accordion2").accordion({collapsible:true, active: false, disabled:true}); });
+$(function() { $("#accordion3").accordion({collapsible:true, active: false, disabled:true}); });
+$(function() { $("#accordion4").accordion({collapsible:true, active: false}); });
 
-function drawIntro(svg) {
-svg.circle(75, 75, 50, 
-        {fill: 'none', stroke: 'red', strokeWidth: 3}); 
-    var g = svg.group({stroke: 'black', strokeWidth: 2}); 
-    svg.line(g, 15, 75, 135, 75); 
-    svg.line(g, 75, 15, 75, 135); 
+function cross_fade(first_time) {
+	var pause_time = 8000;
+	var fade_time = 3000;
+	var image = new Array(
+		["500px-SynPlot-Chr1-At-v-Al.png","Syntenic dotplot of Arabidopsis thaliana versus Arabidopsis lyrata with synonymous mutations","Syntenic_comparison_of_Arabidopsis_thaliana_and_Arabidopsis_lyrata"],
+		["GenomeView-MG1655.png", "Visualizing a prophage insertion in E. coli K12 MG1655 by differences in genome structure", "Horizontal_Gene_Transfer"],
+		["Os-Sb-CNS-rich.png", "Syntenic MYB with many conserved non-coding-sequences(CNSs).  Purple were computationally predicted; pink with lines are emperically determined for proofing.", "CNS-rich_grass_MYB_gene"],
+		["600px-Maize-sorghum-cns.png", "Identifying fractionation and conserved non-coding sequences in maize and sorghum", "Maize_Sorghum_Syntenic_dotplot"],
+		["gevo-synteny.png", "High-resolution sequence analysis of syntenic regions of Arabidopsis derived from its most recent genome duplication event.", "Syntenic_comparison_of_Arabidopsis_thaliana_and_Arabidopsis_lyrata"],
+		["500px-3440_3441.CDS-CDS.blastn.dag_geneorder_D20_g10_A5.1-1.w800.png", "Shewanella baltica strains syntenic dotplot showing an x-alignment","X-alignment"],
+		["800px-Master_3068_8.CDS-CDS.blastn_geneorder_D20_g10_A5.w2000.ks.png","Syntenic dotplot of Arabidopsis thaliana vs lyrata","Syntenic_comparison_of_Arabidopsis_thaliana_and_Arabidopsis_lyrata"],
+		["Master_2361_2360.CDS-CDS.blastn_geneorder_D20_g10_A5.w500.png","Acidovorax syntenic dotplot showing an x-alignment","X-alignment"],
+		["600px-System_framework.png","CoGe's open-ended interconnected analysis network","CoGe_system_arcitecture"],
+		["600px-Syntenic_dotplot_medicago_truncatula_v2_vs_v3.png","Comparison of new and old genome assemblies of Medicago truncatula","Syntenic_dotplot_medicago_truncatula_version_3_versus_version_2"],
+		["800px-GenomeView_GEvo-links.png", "Visualizing variation in GC content and links for syntenic gene analyses", "GenomeView_examples#GEvo_Links"],
 
-}
+		["500px-Reconstructingchromosomes.png", "Reconstruting maize chromosomes through syntenic dotplot comparisons to sorghum", "Splitting_maize_genome"],
+		["Grapevine-peach_K2_historgram.png","Historgram of synonymous mutation values between grape and peach","Syntenic_dotplot_of_peach_versus_grape"],
+		["k12-CDS-aa-usage.png","E. coli's amino acid usage as a function of CDS GC content","CodeOn"],
+		["600px-Plasmodium-codon-substitution-matirx.png", "Codon substitution matrix of two Plasmodia species","Plasmodia_comparative_genomics"],
+		["800px-Human-mouse-tandem-gene-duplication.png","Human-mouse syntenic comparison showing a conserved tandem gene cluster","Local_Gene_Duplication"],
+		["600px-SynPlot-Chr1-At-v-Al.png", "Synonymous mutation histogram of syntenic genes between two species of Arabidopsis showing orthologous pairs and those derived from a shared whole genome duplication event","Syntenic_comparison_of_Arabidopsis_thaliana_and_Arabidopsis_lyrata"],
+		["600px-CoGeBlast-At1g02120-eval.png", "CoGeBlast evaluating potential homologous hits", "Phylogenetics_in_CoGe#Evaluate_potential_homologs_in_CoGeBlast_and_select_the_.22good.22_ones"],
+		["Plasmodium_knowlesi_cds_gc_content_histogram.png", "GC content distribution for all protein sequences of a Plasmodium species","Plasmodia_comparative_genomics"],
+		["FeatMap-screenshot.png", "Identifying genomic distributions of gene families", "GenomeMap"],
+		["GEvo-ecoli-insertion-direct-repeats.png", "Identifying direct repeats flanking an insertion in E. coli", " Analysis_of_variations_found_in_genomes_of_Escherichia_coli_strain_K12_DH10B_and_strain_B_REL606_using_SynMap_and_GEvo_analysis#High-resolution_GEvo_analysis_of_an_insertion:_finding_direct_sequence_repeats"],
+		["800px-GeLo-nucleotides.png", "Visualizing individual nucleotides with GenomeView", "GenomeView_examples#Chromosome_Background"],
+		["600px-Phylogeny_fr_PhyML.png","Linking to phylogeny.fr for one-click phylogenetics","Phylogenetics_in_CoGe#Send_sequences_to_phylogeny.fr"]
+	);
+	var index = pageObj.index;
+	link = "http://genomevolution.org/wiki/index.php/"+image[index][2];
+	newStuff = "<div onclick=window.open('"+link+"')><img style='width: 400px; height: 225px' src='./picts/home_page/"+image[index][0]+"'><br><div style='width:400; text-align:center'>"+image[index][1]+"</div></div>";
+	
+	if (first_time) { 
+		$('#crossfade').html(newStuff).show();
+	}
+	else {
+		$('#crossfade').fadeOut(fade_time,
+			function() {
+				$('#crossfade').html(newStuff).fadeIn(fade_time)
+			}
+		);
+	}
 
+	index = Math.floor(Math.random()*image.length);
+	if (index == image.length) { index=0; }
+	pageObj.index = index;
 
-$(function() {		$("#accordion").accordion({collapsible:true, active: false});	});
-$(function() {		$("#accordion2").accordion({collapsible:true, active: false, disabled:true});	});
-$(function() {		$("#accordion3").accordion({collapsible:true, active: false, disabled:true});	});
-$(function() {		$("#accordion4").accordion({collapsible:true, active: false});	});
-
-function cross_fade() {
- var pause_time = 10000;
- var fade_time = 3000;
- var image = new Array(
-   ["500px-SynPlot-Chr1-At-v-Al.png","Syntenic dotplot of Arabidopsis thaliana versus Arabidopsis lyrata with synonymous mutations","Syntenic_comparison_of_Arabidopsis_thaliana_and_Arabidopsis_lyrata"],
-   ["GenomeView-MG1655.png", "Visualizing a prophage insertion in E. coli K12 MG1655 by differences in genome structure", "Horizontal_Gene_Transfer"],
-   ["Os-Sb-CNS-rich.png", "Syntenic MYB with many conserved non-coding-sequences(CNSs).  Purple were computationally predicted; pink with lines are emperically determined for proofing.", "CNS-rich_grass_MYB_gene"],
-   ["600px-Maize-sorghum-cns.png", "Identifying fractionation and conserved non-coding sequences in maize and sorghum", "Maize_Sorghum_Syntenic_dotplot"],
-   ["gevo-synteny.png", "High-resolution sequence analysis of syntenic regions of Arabidopsis derived from its most recent genome duplication event.", "Syntenic_comparison_of_Arabidopsis_thaliana_and_Arabidopsis_lyrata"],
-   ["500px-3440_3441.CDS-CDS.blastn.dag_geneorder_D20_g10_A5.1-1.w800.png", "Shewanella baltica strains syntenic dotplot showing an x-alignment","X-alignment"],
-   ["800px-Master_3068_8.CDS-CDS.blastn_geneorder_D20_g10_A5.w2000.ks.png","Syntenic dotplot of Arabidopsis thaliana vs lyrata","Syntenic_comparison_of_Arabidopsis_thaliana_and_Arabidopsis_lyrata"],
-   ["Master_2361_2360.CDS-CDS.blastn_geneorder_D20_g10_A5.w500.png","Acidovorax syntenic dotplot showing an x-alignment","X-alignment"],
-   ["600px-System_framework.png","CoGe's open-ended interconnected analysis network","CoGe_system_arcitecture"],
-   ["600px-Syntenic_dotplot_medicago_truncatula_v2_vs_v3.png","Comparison of new and old genome assemblies of Medicago truncatula","Syntenic_dotplot_medicago_truncatula_version_3_versus_version_2"],
-   ["800px-GenomeView_GEvo-links.png", "Visualizing variation in GC content and links for syntenic gene analyses", "GenomeView_examples#GEvo_Links"],
-
-   ["500px-Reconstructingchromosomes.png", "Reconstruting maize chromosomes through syntenic dotplot comparisons to sorghum", "Splitting_maize_genome"],
-   ["Grapevine-peach_K2_historgram.png","Historgram of synonymous mutation values between grape and peach","Syntenic_dotplot_of_peach_versus_grape"],
-   ["k12-CDS-aa-usage.png","E. coli's amino acid usage as a function of CDS GC content","CodeOn"],
-   ["600px-Plasmodium-codon-substitution-matirx.png", "Codon substitution matrix of two Plasmodia species","Plasmodia_comparative_genomics"],
-   ["800px-Human-mouse-tandem-gene-duplication.png","Human-mouse syntenic comparison showing a conserved tandem gene cluster","Local_Gene_Duplication"],
-   ["600px-SynPlot-Chr1-At-v-Al.png", "Synonymous mutation histogram of syntenic genes between two species of Arabidopsis showing orthologous pairs and those derived from a shared whole genome duplication event","Syntenic_comparison_of_Arabidopsis_thaliana_and_Arabidopsis_lyrata"],
-   ["600px-CoGeBlast-At1g02120-eval.png", "CoGeBlast evaluating potential homologous hits", "Phylogenetics_in_CoGe#Evaluate_potential_homologs_in_CoGeBlast_and_select_the_.22good.22_ones"],
-   ["Plasmodium_knowlesi_cds_gc_content_histogram.png", "GC content distribution for all protein sequences of a Plasmodium species","Plasmodia_comparative_genomics"],
-   ["FeatMap-screenshot.png", "Identifying genomic distributions of gene families", "GenomeMap"],
-   ["GEvo-ecoli-insertion-direct-repeats.png", "Identifying direct repeats flanking an insertion in E. coli", " Analysis_of_variations_found_in_genomes_of_Escherichia_coli_strain_K12_DH10B_and_strain_B_REL606_using_SynMap_and_GEvo_analysis#High-resolution_GEvo_analysis_of_an_insertion:_finding_direct_sequence_repeats"],
-   ["800px-GeLo-nucleotides.png", "Visualizing individual nucleotides with GenomeView", "GenomeView_examples#Chromosome_Background"],
-   ["600px-Phylogeny_fr_PhyML.png","Linking to phylogeny.fr for one-click phylogenetics","Phylogenetics_in_CoGe#Send_sequences_to_phylogeny.fr"]
-  );
-  var index = pageObj.index;
-  $('#crossfade').fadeOut(fade_time);
-  link ="http://genomevolution.org/wiki/index.php/"+image[index][2];
-  newStuff="<div onclick=window.open('"+link+"')><img style='width: 400px; height: 225px' src='./picts/home_page/"+image[index][0]+"'><br><div style='width:400; text-align:center'>"+image[index][1]+"</div></div>";
-  setTimeout("$('#crossfade').html(newStuff)", fade_time);
-  $('#crossfade').fadeIn(fade_time);
-  index=Math.floor(Math.random()*image.length);
-
-  if (index == image.length) {index=0};
-  pageObj.index=index;  
-  setTimeout("cross_fade();",pause_time);
-
+	setTimeout("cross_fade();", pause_time);
 }
 
 function handle_latest_genome_list(list) {
-$('#latest_genomes').html(list);
-setup_button_states();
-
+	$('#latest_genomes').html(list);
+	setup_button_states();
 }
-
-
 </SCRIPT>
 
-<div id=nav></div>
+<div id="nav"></div>
 
 <TMPL_IF NAME="INTRO">
+	<div style="font-weight:bold;">
+		Welcome to CoGe!
+		<span class='small'>
+			<span style="padding-left:15px;">Organisms: <span style="color:darkgreen"><TMPL_VAR NAME="ORG_COUNT"></span></span>
+			<span style="padding-left:15px;">Genomes: <span style="color:darkgreen"><TMPL_VAR NAME="GEN_COUNT"></span></span>
+			<span style="padding-left:15px;">Nucleotides: <span style="color:darkgreen"><TMPL_VAR NAME="NUCL_COUNT"></span></span>
+			<span style="padding-left:15px;">Genomic Features: <span style="color:darkgreen"><TMPL_VAR NAME="FEAT_COUNT"></span></span>
+			<span style="padding-left:15px;">Annotations: <span style="color:darkgreen"><TMPL_VAR NAME="ANNOT_COUNT"></span></span>
+		</span>
+	</div>
+	
+	<!--
+	<div>
+	  <div style="float:left">
+	  	What is CoGe?<br>
+	  	<div id="accordion" style="font-size: 0.7em">
+	      <h3><a href="#">CoGe is a comparative genomics platform for all genomes across all domains of life in any state of assembly</a></h3>
+	      <div><img class ="ui-corner-all ui-widget-content" style="width: 80%" src=./picts/home_page/OrganismView-search.png><br>Searching for organisms with "proteo" in their taxonomic description.<br><span class=link onclick="window.open('OrganismView.pl?org_desc=proteo')">Open this search in OrganismView</span></div>
+	      <h3><a href="#">CoGe allows you to easily find and analyze genomic data from any organism</a></h3>
+	      <div><img class ="ui-corner-all ui-widget-content" style="width: 80%" src=./picts/home_page/GenomeView-MG1655.png><br>Visualizing a prophage insertion in E. coli K12 MG1655 by differences in genome structure and GC3 content.<br><span class=link onclick="window.open('GenomeView.pl?z=7&x=570000&dsgid=1&chr=1')">Visualize this genomic region in GenomeView</span></div>
+	      <h3><a href="#">CoGe provides analysis tools for finding and comparing homologous sequences from any set of organisms</a></h3>
+	      <div><img class ="ui-corner-all ui-widget-content" style="width: 80%" src=./picts/home_page/600px-CoGeBlast-At1g02120-eval.png><br>Using CoGeBlast to find and evaluate potential homologous hits.<br><span class="link" onclick="window.open('CoGeBlast.pl')">Open CoGeBlast</span></div>
+	      <h3><a href="#">CoGe allows you to find syntenic regions from between or within any organism</a></h3>
+	      <div><img class ="ui-corner-all ui-widget-content" style="width: 50%" src=./picts/home_page/600px-SynPlot-Chr1-At-v-Al.png><br>Syntenic dotplot between chromosome 1 of Arabidopsis thaliana and Arabidopsis lyrata and histogram of synonymous mutation values of syntenic gene pairs.  Different colors and peaks show orthologous gene-pairs and those derived from a shared whole genome duplication event.<br> <span class=link onclick="window.open('SynMap.pl?dsgid1=3068;dsgid2=8;D=20;g=10;A=5;w=0;b=1;ft1=1;ft2=1;dt=geneorder;ks=1;autogo=1')">Generate a syntenic dotplot of these two Arabidopsis species</span></div>
+	      <h3><a href="#">CoGe allows high-resolution sequence analysis for multiple genomic regions</a></h3>
+	      <div>
+	      	<img class ="ui-corner-all ui-widget-content" style="width: 100%" src=./picts/home_page/600px-Maize-sorghum-cns.png><br>Identifying fractionation and conserved non-coding sequences in maize and sorghum.<br>
+	      	<span class="link" onclick="window.open('GEvo.pl?prog=blastn;spike_len=15;accn1=GRMZM2G039600;fid1=56240081;dsid1=42027;dsgid1=8082;chr1=10;dr1up=95763;dr1down=-74353;ref1=0;accn2=Sb06g020590;fid2=19419168;dsid2=34580;dsgid2=6807;chr2=6;dr2up=136165;dr2down=-116723;ref2=1;accn3=GRMZM2G100815;fid3=56252347;dsid3=42027;dsgid3=8082;chr3=2;dr3up=240339;dr3down=-239410;rev3=1;ref3=0;num_seqs=3;hsp_overlap_limit=0;hsp_size_limit=0;autogo=1')">Run this analysis in GEvo</span>
+	      </div>
+	  </div>
+	</div>
+	-->
+	
+	<div style="padding-top:25px;">
+		New to CoGe?<br>
+		<div style="float:left;padding-right:50px;">
+			  <div id="accordion2" style="font-size: 0.7em; width:150px;">
+				<h3 onclick='window.open("http://genomevolution.org/wiki/index.php/New_to_CoGe")'><a href="http://genomevolution.org/wiki/index.php/New_to_CoGe">How to get started</a></h3>
+				<div></div>
+				<h3 onclick='window.open("http://genomevolution.org/wiki/index.php/Tutorials")'><a href="http://genomevolution.org/wiki/index.php/Tutorials">Tutorials</a></h3>
+				<div></div>
+				<h3 onclick='window.open("http://genomevolution.org/wiki")'><a href="http://genomevolution.org/wiki">CoGePedia docs</a></h3>
+				<DIV></div>
+				<h3 onclick='window.open("http://genomevolution.org/wiki/index.php/FAQs")'><a href="http://genomevolution.org/wiki/index.php/FAQs">FAQs</a></h3>
+				<div></div>
+				<h3 onclick='window.open("http://genomevolution.org/wiki/index.php/CoGepedia:Current_events")'><a href="http://genomevolution.org/wiki/index.php/CoGepedia:Current_events">Latest News</a></h3>
+				<div></div>
+			  </div>
+			</div>
+		
+			<div style="color:dimgray;width:80%;">
+				Welcome to CoGe, the definitive platform for comparative genomics.
+				<br><br>
+				CoGe's unique system architecture provides many <a target="_blank" href="http://genomevolution.org/wiki/index.php/Documentation#Web_Application_Documentation">interconnected tools</a> to create <a target="_blank" href="http://genomevolution.org/wiki/index.php/Open-ended_Analysis_Network">open-ended analysis networks</a>.
+				CoGe also provides an easy-to-use framework to organize and share your data and analyses.
+				<br><br>
+				There is no defined place to start an anlysis on CoGe, pick any tool below to begin!
+			</div>
+	</div>
+	
+	<div style="clear:both;"></div>
+	<br><br>
 
-<div>
-
-<div style="float:left">
-What is CoGe?<br>
-<div id="accordion" style="font-size: 0.7em">
-    <h3><a href="#">CoGe is a comparative genomics platform for all genomes across all domains of life in any state of assembly</a></h3>
-    <div><img class ="ui-corner-all ui-widget-content" style="width: 80%" src=./picts/home_page/OrganismView-search.png><br>Searching for organisms with "proteo" in their taxonomic description.<br><span class=link onclick="window.open('OrganismView.pl?org_desc=proteo')">Open this search in OrganismView</span></div>
-    <h3><a href="#">CoGe allows you to easily find and analyze genomic data from any organism</a></h3>
-    <div><img class ="ui-corner-all ui-widget-content" style="width: 80%" src=./picts/home_page/GenomeView-MG1655.png><br>Visualizing a prophage insertion in E. coli K12 MG1655 by differences in genome structure and GC3 content.<br><span class=link onclick="window.open('GenomeView.pl?z=7&x=570000&dsgid=1&chr=1')">Visualize this genomic region in GenomeView</span></div>
-    <h3><a href="#">CoGe provides analysis tools for finding and comparing homologous sequences from any set of organisms</a></h3>
-    <div><img class ="ui-corner-all ui-widget-content" style="width: 80%" src=./picts/home_page/600px-CoGeBlast-At1g02120-eval.png><br>Using CoGeBlast to find and evaluate potential homologous hits.<br><span class="link" onclick="window.open('CoGeBlast.pl')">Open CoGeBlast</span></div>
-    <h3><a href="#">CoGe allows you to find syntenic regions from between or within any organism</a></h3>
-    <div><img class ="ui-corner-all ui-widget-content" style="width: 50%" src=./picts/home_page/600px-SynPlot-Chr1-At-v-Al.png><br>Syntenic dotplot between chromosome 1 of Arabidopsis thaliana and Arabidopsis lyrata and histogram of synonymous mutation values of syntenic gene pairs.  Different colors and peaks show orthologous gene-pairs and those derived from a shared whole genome duplication event.<br> <span class=link onclick="window.open('SynMap.pl?dsgid1=3068;dsgid2=8;D=20;g=10;A=5;w=0;b=1;ft1=1;ft2=1;dt=geneorder;ks=1;autogo=1')">Generate a syntenic dotplot of these two Arabidopsis species</span></div>
-    <h3><a href="#">CoGe allows high-resolution sequence analysis for multiple genomic regions</a></h3>
-    <div><img class ="ui-corner-all ui-widget-content" style="width: 100%" src=./picts/home_page/600px-Maize-sorghum-cns.png><br>Identifying fractionation and conserved non-coding sequences in maize and sorghum.<br><span class="link" onclick="window.open('GEvo.pl?prog=blastn;spike_len=15;accn1=GRMZM2G039600;fid1=56240081;dsid1=42027;dsgid1=8082;chr1=10;dr1up=95763;dr1down=-74353;ref1=0;accn2=Sb06g020590;fid2=19419168;dsid2=34580;dsgid2=6807;chr2=6;dr2up=136165;dr2down=-116723;ref2=1;accn3=GRMZM2G100815;fid3=56252347;dsid3=42027;dsgid3=8082;chr3=2;dr3up=240339;dr3down=-239410;rev3=1;ref3=0;num_seqs=3;hsp_overlap_limit=0;hsp_size_limit=0;autogo=1')">Run this analysis in GEvo</span></div>
-
-</div>
-</div>
-
-<div style="float:left; width:50px">&nbsp</div>
-<div style="float:left">
-New to CoGe?<br>
-<div id="accordion2" style="font-size: 0.7em">
-    <h3 onclick=window.open("http://genomevolution.org/wiki/index.php/New_to_CoGe")><a href="http://genomevolution.org/wiki/index.php/New_to_CoGe">How to get started</a></h3>
-    <div></div>
-    <h3 onclick=window.open("http://genomevolution.org/wiki/index.php/Tutorials")><a href="http://genomevolution.org/wiki/index.php/Tutorials">Tutorials</a></h3>
-    <div></div>
-    <h3 onclick=window.open("http://genomevolution.org/wiki")><a href="http://genomevolution.org/wiki">CoGePedia docs</a></h3>
-    <DIV></div>
-    <h3 onclick=window.open("http://genomevolution.org/wiki/index.php/FAQs")><a href="http://genomevolution.org/wiki/index.php/FAQs">FAQs</a></h3>
-    <div></div>
-<h3 onclick=window.open("http://genomevolution.org/wiki/index.php/CoGepedia:Current_events")><a href="http://genomevolution.org/wiki/index.php/CoGepedia:Current_events">Latest News</a></h3>
-    <div></div>
-</div>
-</div>
-
-<div style="clear: both;"> </div>
-<hr>
-CoGe's Entrance Tools:<br>
-<div style="font-size: .6em; width: 500px">CoGe's unique system architecture provides many <a ref="http://genomevolution.org/wiki/index.php/Documentation#Web_Application_Documentation">interconnected tools</a> to create <a ref="http://genomevolution.org/wiki/index.php/Open-ended_Analysis_Network">open-ended analysis networks</a>.  While there is no defined place to start an anlysis on CoGe, here are the common tools used to begin an analysis:</div>
-<div style="font-size: 0.7em; width: 500px; float: left">
-<div id="accordion3">
-   <TMPL_LOOP NAME=ACTIONS>
-    <h3 onclick=window.open("<TMPL_VAR NAME=LINK>")><a href="#"><TMPL_VAR NAME=ACTION></a></h3>
-    <div><TMPL_VAR NAME=DESC></div>
-   </TMPL_LOOP>
-</div>
-<div id="accordion4">
-   <h3 onclick="get_latest_genomes(['args__limit','limit'],[handle_latest_genome_list]);"><a href="#">Latest Genomes</a></h3>
-   <div style="min-height: 300px">
-Number returned: <input id=limit class=backbox type=textbox size=3 value=20><span class='ui-button ui-corner-all' onClick="$('#latest_genomes').html('loading. . .');get_latest_genomes(['args__limit','limit'],[handle_latest_genome_list])">Go</span>
-     <div id=latest_genomes></div>
-   </div>
-</div>
-</div>
-<div style="float:left; width:50px">&nbsp</div>
-<div id="crossfade" style="float: left;"></div>
-
-<div style="clear: both;"> </div>
-
-
+	<div>
+		CoGe's Tools<br>
+		<div style="font-size: 0.7em; width: 500px; float: left">
+			<div id="accordion3">
+				<TMPL_LOOP NAME="ACTIONS">
+					<h3 onclick=window.open("<TMPL_VAR NAME=LINK>")><a href="#"><TMPL_VAR NAME=ACTION></a></h3>
+					<div><TMPL_VAR NAME="DESC"></div>
+				</TMPL_LOOP>
+			</div>
+			<div id="accordion4">
+				<h3 onclick="get_latest_genomes(['args__limit','limit'],[handle_latest_genome_list]);"><a href="#">Latest Genomes</a></h3>
+				<div style="min-height: 300px">
+					Number returned: <input id=limit class=backbox type=textbox size=3 value=20><span class='ui-button ui-corner-all' onClick="$('#latest_genomes').html('loading. . .');get_latest_genomes(['args__limit','limit'],[handle_latest_genome_list])">Go</span>
+				<div id="latest_genomes"></div>
+				</div>
+			</div>
+		</div>
+	
+		<div id="crossfade" style="float:left;height:300px;padding-left:100px;"></div>
+	</div>
+	
+	<div style="clear:both;"></div>
 </TMPL_IF>
 
-<TMPL_IF NAME=UPDATE>
-The CoGe System is undergoing an update.  Please check back in a few hours.
-
+<TMPL_IF NAME="UPDATE">
+The CoGe system is undergoing an update.  Please check back in a few hours.
 </TMPL_IF>
 
