@@ -46,7 +46,7 @@ $source_name = unescape($source_name);
 
 $MAX_CHROMOSOMES = 100000; # max number of chromosomes or contigs
 $MAX_PRINT = 5;
-$MAX_SEQUENCE_SIZE = 1*1024*1024*1024; # 1 gig
+$MAX_SEQUENCE_SIZE = 5*1024*1024*1024; # 5 gig
 
 # Open log file
 $| = 1;
@@ -99,8 +99,9 @@ unless ($organism) {
 	exit(-1);
 }
 print $log "organism id: " . $organism->id . "\n";
-	
+
 # Create datasource
+print $log "log: Updating database ...\n";
 my $datasource = $coge->resultset('DataSource')->find_or_create( { name => $source_name } );
 die "Error creating/finding data source" unless $datasource;
 print $log "datasource id: " . $datasource->id . "\n";
@@ -196,6 +197,7 @@ foreach my $chr (sort keys %sequences) {
 }
 
 # Copy files from staging directory to installation directory
+print $log "log: Copying files ...\n";
 print $log "install_dir: $install_dir\n";
 mkpath($install_dir);
 mkpath( $install_dir . "/chr" );
