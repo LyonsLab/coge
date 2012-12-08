@@ -336,14 +336,14 @@ sub load_genome {
 	# Setup staging area and log file
 	my $stagepath = $TEMPDIR . 'staging/';
 	my $i;
-	for ($i = 1;  -e "$stagepath$i";  $i++) { };
+	for ($i = 1;  -e "$stagepath$i";  $i++) {};
 	$stagepath .= $i;
 	mkpath $stagepath;
 	
 	my $logfile = $stagepath . '/log.txt';
 	open(my $log, ">$logfile") or die "Error creating log file";
 	print $log "Starting load genome $stagepath\n" .
-			  "name=$name description=$description version=$version type_id=$type_id restricted=$restricted org_name=$org_name\n";
+			  "name=$name description=$description version=$version type_id=$type_id restricted=$restricted org_id=$org_name\n";
 
 	# Verify and decompress files
 	my @files;
@@ -371,7 +371,7 @@ sub load_genome {
 			  '-version "' . escape($version) . '" ' .
 			  "-type_id $type_id " .
 			  "-restricted " . ($restricted eq 'true') . ' ' .
-			  '-org_name "' . escape($org_name) . '" ' .
+			  "-org_name " . escape($org_name) . " " .
 			  '-source_name "' . escape($source_name) . '" ' .
 			  "-staging_dir $stagepath " .
 			  "-install_dir " . $P->{DATADIR} . ' ' .
@@ -468,7 +468,7 @@ sub search_organisms {
 	# Perform search
 	$search_term = '%'.$search_term.'%';
 	my @organisms = $coge->resultset("Organism")->search(
-		\[ 'name LIKE ? OR description LIKE ?', 
+		\[ 'name LIKE ? OR description LIKE ?',  #FIXME security hole: need to check 'restricted'
 		['name', $search_term ], ['description', $search_term] ]);
 
 	# Limit number of results displayed

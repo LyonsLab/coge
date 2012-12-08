@@ -9,11 +9,12 @@ use Data::Dumper;
 use Getopt::Long;
 use File::Path;
 use URI::Escape::JavaScript qw(escape unescape);
+use POSIX qw(ceil);
 
 use vars qw($staging_dir $install_dir $fasta_files 
 			$name $description $version $type_id $restricted 
 			$org_name $source_name $user_name
-			$host $port $db $user $pass);
+			$host $port $db $user $pass $MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE);
 
 GetOptions(
 	"staging_dir=s"	=> \$staging_dir,
@@ -24,7 +25,7 @@ GetOptions(
 	"version=s"		=> \$version,		# genome version (JS escaped)
 	"type_id=i"		=> \$type_id,		# genomic_sequence_type_id
 	"restricted=i"	=> \$restricted,	# genome restricted flag
-	"org_name=s"	=> \$org_name,		# organism name (JS escaped)
+	"org_name=s"	=> \$org_name,	# organism name #FIXME change to ID
 	"source_name=s"	=> \$source_name,	# data source name
 	"user_name=s"	=> \$user_name,		# user name
 	
@@ -38,10 +39,14 @@ GetOptions(
 
 $fasta_files = unescape($fasta_files);
 $name = unescape($name);
+$org_name = unescape($org_name);
 $description = unescape($description);
 $version = unescape($version);
-$org_name = unescape($org_name);
 $source_name = unescape($source_name);
+
+$MAX_CHROMOSOMES = 100000; # max number of chromosomes or contigs
+$MAX_PRINT = 5;
+$MAX_SEQUENCE_SIZE = 1*1024*1024*1024; # 1 gig
 
 # Open log file
 $| = 1;
@@ -52,9 +57,28 @@ $log->autoflush(1);
 # Process each file into staging area
 my @files = split(',', $fasta_files);
 my %sequences;
+my $seqLength;
+my $numSequences;
 foreach my $file (@files) {
-	process_fasta_file(\%sequences, $file, $staging_dir);
+	$seqLength += process_fasta_file(\%sequences, $file, $staging_dir);
+	$numSequences = keys %sequences;
+
+	if ($seqLength > $MAX_SEQUENCE_SIZE) {
+		print $log "log: error: total sequence size exceeds limit of " . units($MAX_SEQUENCE_SIZE) . "\n";
+		exit(-1);
+	}
+	if ($numSequences > $MAX_CHROMOSOMES) {
+		print $log "log: error: too many sequences, limit is $MAX_CHROMOSOMES\n";
+		exit(-1);
+	}
 }
+
+if ($numSequences == 0) { 
+	print $log "log: error: couldn't parse sequences\n";
+	exit(-1);
+}
+
+print $log "log: Processed $numSequences sequences total\n";
 
 # If we've made it this far without error then we can feel confident about our
 # ability to parse all of the input files.  Now we can go ahead and 
@@ -69,7 +93,7 @@ unless ($coge) {
 }
 
 # Retrieve organism
-my $organism = $coge->resultset('Organism')->find( { name => $org_name } );
+my $organism = $coge->resultset('Organism')->find({ name => $org_name }); #FIXME use ID instead due to dup names
 unless ($organism) {
 	print $log "log: error finding organism\n";
 	exit(-1);
@@ -199,6 +223,7 @@ sub process_fasta_file {
 	$/ = "\n>";
 	open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
 
+	my $totalLength = 0;
 	while (<$in>) {
 		s/>//g;
 		my ( $name, $seq ) = split /\n/, $_, 2;
@@ -220,7 +245,6 @@ sub process_fasta_file {
 		die "Duplicate section name '$chr'" if (defined $pSeq->{$chr});
 		
 		my ($filename) = $filepath =~ /^.+\/([^\/]+)$/;
-		print $log "log: Processed '$chr' in $filename\n";
 
 		# Append sequence to master file
 		open( my $out, ">>$target_dir/genome.faa" );
@@ -236,6 +260,41 @@ sub process_fasta_file {
 		close($out);
 		
 		$pSeq->{$chr} = { size => length $seq, file => $filepath };
+
+		# Print log message
+		my $count = keys %$pSeq;
+		$totalLength += length $seq;
+		if ($count > $MAX_CHROMOSOMES or $totalLength > $MAX_SEQUENCE_SIZE) {
+			return $totalLength;
+		}
+		if ($count <= $MAX_PRINT) { 
+			print $log "log: Processed '$chr' in $filename\n";
+		}
+		elsif ($count == $MAX_PRINT+1) {
+			print $log "log: (only showing first $MAX_PRINT)\n";
+		}
+		elsif (($count % 10000) == 0) {
+			print $log "log: Processed $count (" . units($totalLength) . ") sequences so far ...\n";
+		}		
 	}
 	close($in);
+
+	return $totalLength;
+}
+
+sub units {
+	my $val = shift;
+
+	if ($val < 1024) {
+		return $val;
+	}
+	elsif ($val < 1024*1024) { 
+		return ceil($val/1024) . 'K';
+	}
+	elsif ($val < 1024*1024*1024) {
+		return ceil($val/(1024*1024)) . 'M';
+	}
+	else {
+		return ceil($val/(1024*1024*1024)) . 'G';
+	}
 }

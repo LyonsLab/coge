@@ -140,6 +140,7 @@ function create_organism() {
 		success : function() {
 			$('#create_new_organism_dialog').dialog('close');
 			$('#edit_organism').val(name);
+			set_input('edit_organism');
 		}
 	});
 }
