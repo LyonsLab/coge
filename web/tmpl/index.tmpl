@@ -139,14 +139,14 @@ function handle_latest_genome_list(list) {
 		<div style="font-size: 0.7em; width: 500px; float: left">
 			<div id="accordion3">
 				<TMPL_LOOP NAME="ACTIONS">
-					<h3 onclick=window.open("<TMPL_VAR NAME=LINK>")><a href="#"><TMPL_VAR NAME=ACTION></a></h3>
+					<h3 onclick='window.open("<TMPL_VAR NAME=LINK>")'><a href="#"><TMPL_VAR NAME="ACTION"></a></h3>
 					<div><TMPL_VAR NAME="DESC"></div>
 				</TMPL_LOOP>
 			</div>
 			<div id="accordion4">
 				<h3 onclick="get_latest_genomes(['args__limit','limit'],[handle_latest_genome_list]);"><a href="#">Latest Genomes</a></h3>
 				<div style="min-height: 300px">
-					Number returned: <input id=limit class=backbox type=textbox size=3 value=20><span class='ui-button ui-corner-all' onClick="$('#latest_genomes').html('loading. . .');get_latest_genomes(['args__limit','limit'],[handle_latest_genome_list])">Go</span>
+					Number returned: <input id="limit" class="backbox" type="textbox" size="3" value="20"><span class='ui-button ui-corner-all' onClick="$('#latest_genomes').html('loading. . .');get_latest_genomes(['args__limit','limit'],[handle_latest_genome_list])">Go</span>
 				<div id="latest_genomes"></div>
 				</div>
 			</div>

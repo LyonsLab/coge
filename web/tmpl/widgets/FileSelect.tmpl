@@ -397,7 +397,7 @@ function load_from_ncbi() {
     </div>
   </div> <!-- tab-1 -->
 
-  <div id="tab-2" class="small" >
+  <div id="tab-2" class="small" style="height:200px;">
   	Enter the location of the file or directory to retrieve.<br><br>
     URL: <input id="input_url" size="60" style="color:gray;"/>
     <span id="ftp_get_button" onClick="load_from_ftp();" class='ui-state-disabled ui-button ui-corner-all ui-button-go'> Get </span><br>
@@ -413,14 +413,18 @@ function load_from_ncbi() {
   </div> <!-- tab-2 -->
 
   <TMPL_IF NAME='ENABLE_NCBI'>
-  <div id="tab-3" class="small">
-    Accession#: <input id="input_accn" size="15" />
+  <div id="tab-3" class="small" style="height:200px;">
+  	Coming soon ...<br><br>
+  	<!--
+    Accession #: <input id="input_accn" size="15" />
     <span id="ncbi_get_button" onClick="load_from_ncbi();" class='ui-button ui-corner-all ui-button-go'> Get </span>
+  	-->
   </div> <!-- tab-3 -->
   </TMPL_IF>
 
-  <div id="tab-4" class="small">
-  	Select a file to upload.<br><br>
+  <div id="tab-4" class="small" style="height:200px;">
+  	Select a file to upload from your computer.  This method is best for smaller files (less than 2GB). 
+  	For larger files use the iPlant Data Store. <br><br><br>
     File: <input id="input_upload_file" name="input_upload_file" type="file" size="30" data-url='<TMPL_VAR NAME="PAGE_NAME">' />
   </div> <!-- tab-4 -->
 

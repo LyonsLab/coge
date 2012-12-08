@@ -73,7 +73,7 @@ foreach my $file (@files) {
 	}
 }
 
-if ($numSequences == 0) { 
+if ($numSequences == 0 or $seqLength == 0) { 
 	print $log "log: error: couldn't parse sequences\n";
 	exit(-1);
 }

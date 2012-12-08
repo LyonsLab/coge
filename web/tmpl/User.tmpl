@@ -188,13 +188,13 @@ function new_notebook() {
 <br>
 
 <span class="large" style="font-weight:bold;color:dimgray;"><img src="picts/notebook-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Notebooks</span> <span class='link ui-icon ui-icon-extlink' onclick="window.open('Notebooks.pl')"></span> <span class='link ui-icon ui-icon-plus' onclick="new_notebook();"></span>
-<div id="notebooks" class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
+<div id="notebooks" class="small panel ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
 <TMPL_VAR NAME='LISTS'>
 </div>
 <br>
 
 <span class="large" style="font-weight:bold;color:dimgray;"><img src="picts/dna-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Genomes</span> <span class='link ui-icon ui-icon-extlink' onclick="window.open('Genomes.pl')"></span> <span class='link ui-icon ui-icon-plus' onclick="window.open('LoadGenome.pl')"></span>
-<div class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
+<div class="small panel ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
 <TMPL_VAR NAME='GENOMES'>
 </div>
 <br>

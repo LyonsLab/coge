@@ -46,6 +46,14 @@ a:hover {
   color: #000099;
 }
 
+div.box {
+  padding:10px;
+}
+
+div.panel {
+  padding:5px;
+}
+
 .prep {
   white-space:pre;
 }
@@ -741,7 +749,6 @@ tr.highlight {
  background-color: #90EE90;
 }
 
-
 #feature_count:hover {
   color: #009900;
   cursor: pointer;
@@ -767,7 +774,6 @@ td.link:hover {
   color: #0000EE;
   cursor: pointer;
 }
-
 
 .hsp_image {
   background-color: #FFF;
