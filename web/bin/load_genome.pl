@@ -14,7 +14,8 @@ use POSIX qw(ceil);
 use vars qw($staging_dir $install_dir $fasta_files 
 			$name $description $version $type_id $restricted 
 			$org_name $source_name $user_name
-			$host $port $db $user $pass $MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE);
+			$host $port $db $user $pass 
+			$MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE $MAX_CHR_NAME_LENGTH);
 
 GetOptions(
 	"staging_dir=s"	=> \$staging_dir,
@@ -47,6 +48,7 @@ $source_name = unescape($source_name);
 $MAX_CHROMOSOMES = 100000; # max number of chromosomes or contigs
 $MAX_PRINT = 5;
 $MAX_SEQUENCE_SIZE = 5*1024*1024*1024; # 5 gig
+$MAX_CHR_NAME_LENGTH = 255;
 
 # Open log file
 $| = 1;
@@ -60,6 +62,12 @@ my %sequences;
 my $seqLength;
 my $numSequences;
 foreach my $file (@files) {
+	if (-B $file) {
+		my ($filename) = $file =~ /^.+\/([^\/]+)$/;
+		print $log "log: error: '$filename' is a binary file\n";
+		exit(-1);
+	}
+
 	$seqLength += process_fasta_file(\%sequences, $file, $staging_dir);
 	$numSequences = keys %sequences;
 
@@ -211,6 +219,7 @@ print $log "$cmd\n";
 
 # Yay!
 CoGe::Accessory::Web::log_history( db => $coge, user_id => $user->id, page => "load_genome.pl", description => 'load genome id' . $genome->id, link => 'GenomeInfo.pl?gid=' . $genome->id );
+print $log "log: $numSequences sequences loaded totaling $seqLength nt\n";
 print $log "log: All done!";
 close($log);
 exit;
@@ -243,9 +252,19 @@ sub process_fasta_file {
 		$chr = 0 unless $chr;
 
 		#TODO add more checks on chr name and sequence here
-		die 'Error parsing section header' if (not $chr);
-		die "Duplicate section name '$chr'" if (defined $pSeq->{$chr});
-		
+		if (not $chr) {
+			print $log "log: error parsing section header\n";
+			exit(-1);
+		}
+		if (length($chr) > $MAX_CHR_NAME_LENGTH) {
+			print $log "log: error: section header name '$chr' is too long (>$MAX_CHR_NAME_LENGTH characters)\n";
+			exit(-1);
+		}
+		if (defined $pSeq->{$chr}) {
+			print $log "log: error: Duplicate section name '$chr'";
+			exit(-1);
+		}
+
 		my ($filename) = $filepath =~ /^.+\/([^\/]+)$/;
 
 		# Append sequence to master file
