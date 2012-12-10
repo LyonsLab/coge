@@ -5,7 +5,6 @@ use strict;
 use CGI;
 use CGI::Cookie;
 use CGI::Carp 'fatalsToBrowser';
-use CGI::Ajax;
 use HTML::Template;
 use Data::Dumper;
 use Digest::MD5 qw(md5_base64);
@@ -15,7 +14,8 @@ use CoGe::Accessory::Web;
 use CoGeX;
 
 no warnings 'redefine';
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $USER $FORM $DATE $URL $update $coge $COOKIE_NAME);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr 
+			$USER $FORM $DATE $URL $update $coge $COOKIE_NAME);
 
 $P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 $ENV{PATH} = $P->{COGEDIR};
@@ -26,10 +26,7 @@ $DATE = sprintf(
 	"%04d-%02d-%02d %02d:%02d:%02d",
 	sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }->(localtime)
 );
-my $pj = new CGI::Ajax(
-	gen_html           => \&gen_html,
-	get_latest_genomes => \&get_latest_genomes
-);
+
 $update = 0;
 
 $DBNAME  = $P->{DBNAME};
@@ -44,22 +41,37 @@ $COOKIE_NAME = $P->{COOKIE_NAME};
 
 my ($cas_ticket) = $FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-	cookie_name => $COOKIE_NAME,
-	ticket      => $cas_ticket,
-	coge        => $coge,
-	this_url    => $FORM->url()
-  )
-  if ($cas_ticket);
+($USER) = CoGe::Accessory::Web->login_cas( cookie_name => $COOKIE_NAME, ticket => $cas_ticket, coge => $coge, this_url => $FORM->url() ) if ($cas_ticket);
 ($USER) = CoGe::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
 
 #logout is only called through this program!  All logouts from other pages are redirected to this page
 CoGe::Accessory::Web->logout_cas( cookie_name => $COOKIE_NAME, coge => $coge, user => $USER, form => $FORM ) if $FORM->param('logout');
 
-#print $FORM->header, gen_html();
-print $pj->build_html( $FORM, \&gen_html );
+my %FUNCTION = (
+	generate_html      => \&generate_html,
+	get_latest_genomes => \&get_latest_genomes
+);
 
-sub gen_html {
+if ( $FORM->param('jquery_ajax') ) {
+	my %args  = $FORM->Vars;
+	my $fname = $args{'fname'};
+	if ($fname) {
+		die if (not defined $FUNCTION{$fname});
+		if ( $args{args} ) {
+			my @args_list = split( /,/, $args{args} );
+			print $FORM->header, $FUNCTION{$fname}->(@args_list);
+		}
+		else {
+			print $FORM->header, $FUNCTION{$fname}->(%args);
+		}
+	}
+}
+else {
+	print $FORM->header, "\n", generate_html();
+}
+#print $FORM->header, gen_html();
+
+sub generate_html {
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
 	my $name = $USER->user_name;
 	$name = $USER->first_name if $USER->first_name;
@@ -69,11 +81,11 @@ sub gen_html {
 		TITLE => 'Accelerating <span style="color: #119911">Co</span>mparative <span style="color: #119911">Ge</span>nomics',
 		PAGE_TITLE => 'ANKoCG',
 		HELP => '/wiki/index.php',
-		USER  => $name,
-		DATE  => $DATE,
-		ADJUST_BOX  => 1,
-		LOGO_PNG    => "CoGe-logo.png",
-		BODY        => gen_body(),
+		USER => $name,
+		DATE => $DATE,
+		ADJUST_BOX => 1,
+		LOGO_PNG => "CoGe-logo.png",
+		BODY => generate_body(),
 	);
 	
 	$template->param( LOGON => 1 ) unless $USER->user_name eq "public";
@@ -81,7 +93,7 @@ sub gen_html {
 	return $template->output;
 }
 
-sub gen_body {
+sub generate_body {
 	my $tmpl = HTML::Template->new( filename => $P->{TMPLDIR} . 'index.tmpl' );
 	my $html;
 	if ($update) {
@@ -207,6 +219,7 @@ sub actions {
 sub get_latest_genomes {
 	my %opts  = @_;
 	my $limit = $opts{limit} || 20;
+
 	my @db    = $coge->resultset("Genome")->search(
 		{},
 		{
@@ -218,10 +231,9 @@ sub get_latest_genomes {
 		}
 	);
 
-	#  ($USER) = CoGe::Accessory::LogUser->get_user();
-	my $html = "<table class=small>";
-	$html .= "<tr><th>"
-	  . join( "<th>", qw(Organism  &nbsp Length&nbsp(nt) &nbsp Related Link ) );
+	#($USER) = CoGe::Accessory::LogUser->get_user();
+	my $html = "<table class='small'>";
+	$html .= "<tr><th>" . join( "<th>", qw( Organism &nbsp Length&nbsp(nt) &nbsp Related Link ) );
 	my @opts;
 	my %org_names;
 	my $genome_count = 0;
@@ -231,18 +243,16 @@ sub get_latest_genomes {
 		last if $genome_count >= $limit;
 		$org_names{ $dsg->organism->name } = 1;
 		my $orgview_link = "OrganismView.pl?oid=" . $dsg->organism->id;
-		my $entry        = qq{<tr>};
-
-#	$entry .= qq{<td><span class='ui-button ui-corner-all' onClick="window.open('$orgview_link')"><span class="ui-icon ui-icon-link"></span>&nbsp&nbsp</span>};
-
-		$entry .=
-		  qq{<td><span class="link" onclick=window.open('$orgview_link')>};
+		my $entry = qq{<tr>};
+		
+		#$entry .= qq{<td><span class='ui-button ui-corner-all' onClick="window.open('$orgview_link')"><span class="ui-icon ui-icon-link"></span>&nbsp&nbsp</span>};
+		$entry .= qq{<td><span class="link" onclick=window.open('$orgview_link')>};
 		my $name = $dsg->organism->name;
 		$name = substr( $name, 0, 40 ) . "..." if length($name) > 40;
 		$entry .= $name;
 		$entry .= qq{</span>};
 
-		#	$entry .= ": ".$dsg->name if $dsg->name;
+		#$entry .= ": ".$dsg->name if $dsg->name;
 		$entry .= "<td>(v" . $dsg->version . ")&nbsp";
 		$entry .= "<td align=right>" . commify( $dsg->length ) . "<td>";
 		my @desc = split /;/, $dsg->organism->description;
@@ -260,8 +270,7 @@ sub get_latest_genomes {
 		$search_term =~ s/\s+/\+/g;
 		$entry .= qq{<img onclick="window.open('http://www.google.com/search?q=$search_term')" src="picts/other/google-icon.png" title="Google" class=link>};
 		$entry .= qq{</tr>};
-		push @opts, $entry
-		  ; #, "<OPTION value=\"".$item->organism->id."\">".$date." ".$item->organism->name." (id".$item->organism->id.") "."</OPTION>";
+		push @opts, $entry; #, "<OPTION value=\"".$item->organism->id."\">".$date." ".$item->organism->name." (id".$item->organism->id.") "."</OPTION>";
 		$genome_count++;
 	}
 	$html .= join "\n", @opts;

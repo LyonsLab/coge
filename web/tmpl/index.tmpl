@@ -62,9 +62,25 @@ function cross_fade(first_time) {
 	setTimeout("cross_fade();", pause_time);
 }
 
-function handle_latest_genome_list(list) {
-	$('#latest_genomes').html(list);
-	setup_button_states();
+function get_latest_genomes() {
+	var limit = $('#limit').val();
+
+	$('#latest_genomes').html('Loading...<img src="picts/ajax-loader.gif"/>');
+
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_latest_genomes',
+			limit: limit
+		},
+		success : function(html) {
+			$('#latest_genomes').fadeOut(
+				function() { 
+					$('#latest_genomes').html(html).slideDown(); 
+				}
+			);
+		}
+	});
 }
 </SCRIPT>
 
@@ -107,28 +123,28 @@ function handle_latest_genome_list(list) {
 	<div style="padding-top:25px;">
 		New to CoGe?<br>
 		<div style="float:left;padding-right:50px;">
-			  <div id="accordion2" style="font-size: 0.7em; width:150px;">
+			<div id="accordion2" style="font-size: 0.7em; width:150px;">
 				<h3 onclick='window.open("http://genomevolution.org/wiki/index.php/New_to_CoGe")'><a href="http://genomevolution.org/wiki/index.php/New_to_CoGe">How to get started</a></h3>
 				<div></div>
 				<h3 onclick='window.open("http://genomevolution.org/wiki/index.php/Tutorials")'><a href="http://genomevolution.org/wiki/index.php/Tutorials">Tutorials</a></h3>
 				<div></div>
 				<h3 onclick='window.open("http://genomevolution.org/wiki")'><a href="http://genomevolution.org/wiki">CoGePedia docs</a></h3>
-				<DIV></div>
+				<div></div>
 				<h3 onclick='window.open("http://genomevolution.org/wiki/index.php/FAQs")'><a href="http://genomevolution.org/wiki/index.php/FAQs">FAQs</a></h3>
 				<div></div>
 				<h3 onclick='window.open("http://genomevolution.org/wiki/index.php/CoGepedia:Current_events")'><a href="http://genomevolution.org/wiki/index.php/CoGepedia:Current_events">Latest News</a></h3>
 				<div></div>
-			  </div>
 			</div>
+		</div>
 		
-			<div style="color:dimgray;width:80%;">
-				Welcome to CoGe, the definitive platform for comparative genomics.
-				<br><br>
-				CoGe's unique system architecture provides many <a target="_blank" href="http://genomevolution.org/wiki/index.php/Documentation#Web_Application_Documentation">interconnected tools</a> to create <a target="_blank" href="http://genomevolution.org/wiki/index.php/Open-ended_Analysis_Network">open-ended analysis networks</a>.
-				CoGe also provides an easy-to-use framework to organize and share your data and analyses.
-				<br><br>
-				There is no defined place to start an analysis on CoGe, pick any tool below to begin!
-			</div>
+		<div style="color:dimgray;width:80%;">
+			Welcome to CoGe, the definitive platform for comparative genomics.
+			<br><br>
+			CoGe's unique system architecture provides many <a target="_blank" href="http://genomevolution.org/wiki/index.php/Documentation#Web_Application_Documentation">interconnected tools</a> to create <a target="_blank" href="http://genomevolution.org/wiki/index.php/Open-ended_Analysis_Network">open-ended analysis networks</a>.
+			CoGe also provides an easy-to-use framework to organize and share your data and analyses.
+			<br><br>
+			There is no defined place to start an analysis on CoGe, pick any tool below to begin!
+		</div>
 	</div>
 	
 	<div style="clear:both;"></div>
@@ -144,9 +160,9 @@ function handle_latest_genome_list(list) {
 				</TMPL_LOOP>
 			</div>
 			<div id="accordion4">
-				<h3 onclick="get_latest_genomes(['args__limit','limit'],[handle_latest_genome_list]);"><a href="#">Latest Genomes</a></h3>
-				<div style="min-height: 300px">
-					Number returned: <input id="limit" class="backbox" type="textbox" size="3" value="20"><span class='ui-button ui-corner-all' onClick="$('#latest_genomes').html('loading. . .');get_latest_genomes(['args__limit','limit'],[handle_latest_genome_list])">Go</span>
+				<h3 onclick="get_latest_genomes();"><a href="#">Latest Genomes</a></h3>
+				<div style="min-height: 200px;">
+					Number returned: <input id="limit" class="backbox" type="textbox" size="3" value="20"><span class='ui-button ui-corner-all' onClick="get_latest_genomes();">Go</span><br><br>
 				<div id="latest_genomes"></div>
 				</div>
 			</div>
