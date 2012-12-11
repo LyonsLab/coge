@@ -148,7 +148,7 @@ close AGP;
 
 chdir $TEMPDIR;
 chdir "..";
-my $cmd = $TAR ." -czf " . $tarfile ." ". "$dsgid1-$dsgid2";
+my $cmd = $TAR ." -czf " . $tarfile ." $basename";
 print LOG "Compressing directory: $cmd\n";
 close LOG;
 `$cmd`;
