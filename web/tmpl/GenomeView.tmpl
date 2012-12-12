@@ -58,6 +58,10 @@
         #other {
              color:orange;
         }
+
+		#map_OpenLayers_ViewPort { /* mdb added 12/12/12 - tempfix for experiment layers out of view in control */
+			overflow: auto !important;
+		}
     </style>
     
     <script src="js/OpenLayers.js"></script>
@@ -164,7 +168,8 @@
                  ,{isBaseLayer:false}
              );
 	    
-            map.addControl(new OpenLayers.Control.LayerSwitcher())
+            map.addControl(new OpenLayers.Control.LayerSwitcher());
+            //$('#OpenLayers.Control.LayerSwitcher_68).css({'overflow':'scroll'});
 
             gc.setVisibility(<TMPL_VAR NAME="GC">);
             map.addLayer(gc);
