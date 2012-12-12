@@ -166,16 +166,20 @@ function irods_get_path (path) {
 
 			$('#ids_table').html('');
 			var parent_path = result.path.split('/').slice(0,-2).join('/') + '/';
-			var up_icon  = "<span class='link' onclick='irods_get_path(\""+parent_path+"\")'><span class='ui-icon ui-icon-arrowreturnthick-1-n'/>Go Up</span>";
+			var up_icon  = "<span class='link' style='padding-left:15px;' onclick='irods_get_path(\""+parent_path+"\")'><span class='ui-icon ui-icon-arrowreturnthick-1-n'/>Go Up</span>";
 			var refresh_icon  = "<span class='link' style='padding-left:15px;' onclick='irods_get_path(\""+result.path+"\")'><span class='ui-icon ui-icon-refresh'/>Refresh</span>";
-			var home_icon  = "<span class='link' style='padding-left:15px;' onclick='irods_get_path()'><span class='ui-icon ui-icon-home'/>Home</span>";
+			var home_icon  = "<span class='link' onclick='irods_get_path()'><span class='ui-icon ui-icon-home'/>Home</span>";
 			var get_icon = '';
 			<TMPL_UNLESS NAME='DISABLE_IRODS_GET_ALL'>
 			get_icon = "<span class='link' style='padding-left:15px;' onclick='irods_get_all_files(\""+result.path+"\")'><span class='ui-icon ui-icon-transferthick-e-w' />Get All Files</span>";
 			</TMPL_UNLESS>
 			
-			$('#ids_table').append('<tr><td colspan="3" style="white-space:nowrap;border-bottom-style:solid;border-bottom-width:thin;">'+up_icon+refresh_icon+home_icon+get_icon+'</td></tr>').append('<tr><td colspan="3" style="white-space:nowrap;font-weight:bold;">'+result.path+'</td></tr>');
+			$('#ids_table').append('<tr><td colspan="3" style="white-space:nowrap;border-bottom-style:solid;border-bottom-width:thin;">'+home_icon+up_icon+refresh_icon+get_icon+'</td></tr>').append('<tr><td colspan="3" style="white-space:nowrap;font-weight:bold;">'+result.path+'</td></tr>');
 			
+			if (result.items.length == 0) {
+				$('#ids_table').append('<tr><td style="padding-left:20px;font-style:italic;color:gray;">(empty)</td></tr>');
+			}
+
 			result.items.forEach(
 				function(obj) {
 					var icon;
@@ -188,11 +192,11 @@ function irods_get_path (path) {
 					tr = $('<tr class="'+obj.type+'"><td style="white-space:nowrap;">'+icon+obj.name+'</td><td>'+obj.size+'</td><td>'+obj.timestamp+'</td></tr>');
 					
 					if (obj.type == 'directory') {
-						$(tr).click( 
+						$(tr).click(
 							function() {
 								irods_get_path(obj.path);
-							} 
-						);						
+							}
+						);
 					}
 					else {
 						$(tr).click( 
@@ -203,18 +207,18 @@ function irods_get_path (path) {
 								else {
 									alert('File already exists.');
 								}
-							} 
-						);					
+							}
+						);
 					}
 					
 					$(tr).hover(
 						function() {$(this).css({"cursor":"pointer", "background-color":"greenyellow"});},
 						function() {$(this).css("background-color", "white");}
 					);
-						
+					
 					$('#ids_table').append(tr);
 				}
-			);		
+			);
 		},
 	});
 }
