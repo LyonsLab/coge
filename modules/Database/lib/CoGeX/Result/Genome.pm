@@ -1086,7 +1086,7 @@ sub info {
 	$info .= $self->organism->name if $self->organism;
 	$info .= " (".$self->name.")" if $self->name;
 	$info .= ": ".$self->description if $self->description;
-	$info .= " (v".$self->version.", dsgid".$self->id. ")";
+	$info .= " (v".$self->version.", id".$self->id. ")";
 	$info .= ': ' . $self->genomic_sequence_type->name if $self->genomic_sequence_type;	
 	return $info;
 }
@@ -1113,7 +1113,7 @@ sub info_html
 {
 	my $self = shift;
 	my $info = $self->info;
-	return qq{<span class=link onclick='window.open("OrganismView.pl?dsgid=} .$self->id. qq{")'>} . $info . "</span>";
+	return qq{<span class=link onclick='window.open("OrganismView.pl?gid=} .$self->id. qq{")'>} . $info . "</span>";
 }
 
 ############################################### subroutine header begin ##
