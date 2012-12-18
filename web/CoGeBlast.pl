@@ -1181,7 +1181,7 @@ sub get_map {
 sub create_fasta_file {
 	my $seq = shift;
 	my %seqs;    #names and lengths
-	$seq =~ s/>\n//;
+	$seq =~ s/>\s*\n//;
 	$seq = ">seq\n" . $seq unless $seq =~ />/;
 	if ( $seq =~ />/ ) {
 		foreach ( split(/\n>/, $seq) ) {
