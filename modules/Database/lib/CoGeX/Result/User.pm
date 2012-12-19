@@ -105,6 +105,7 @@ __PACKAGE__->has_many( 'sessions'  => "CoGeX::Result::UserSession", 'user_id' );
 __PACKAGE__->has_many( 'works'     => "CoGeX::Result::Work",        'user_id' );
 __PACKAGE__->has_many( 'workflows' => "CoGeX::Result::Workflow",    'user_id' );
 __PACKAGE__->has_many( 'user_group_connectors' => "CoGeX::Result::UserGroupConnector", 'user_id' );
+__PACKAGE__->has_many( 'user_connectors' => "CoGeX::Result::UserConnector", 'parent_id' );
 __PACKAGE__->has_many( 'logs' => "CoGeX::Result::Log",    'user_id' );
 __PACKAGE__->belongs_to( image => 'CoGeX::Result::Image', 'image_id');
 
@@ -213,21 +214,6 @@ sub user_groups {
 
 	return wantarray ? @user_groups : \@user_groups;
 }
-
-################################################ subroutine header begin ##
-
-=head2 groups
-
- Usage     : 
- Purpose   : alias for $self->user_groups
- Returns   : array or arrayref of user_group objects
- Argument  : 
- Throws    : None
- Comments  : 
-
-=cut
-
-################################################## subroutine header end ##
 
 sub groups {
 	return shift->user_groups(@_);
@@ -386,10 +372,10 @@ sub is_admin {
 
 ################################################ subroutine header begin ##
 
-=head2 has_access_to_genome
+=head2 has_access_to_...
 
  Usage     : 
- Purpose   : checks to see if a user has access to a genome (dataset_group)
+ Purpose   : checks to see if a user has access to a ...
  Returns   : 1/0
  Argument  : None
  Throws    : None
@@ -398,6 +384,12 @@ sub is_admin {
 =cut
 
 ################################################## subroutine header end ##
+
+sub has_access_to_list {
+	my $self = shift @_;
+	my $list  = shift;
+	return $self->has_access(list => $list);
+}
 
 sub has_access_to_genome {
 	my $self = shift @_;
@@ -405,41 +397,11 @@ sub has_access_to_genome {
 	return $self->has_access(dsg => $dsg);
 }
 
-################################################ subroutine header begin ##
-
-=head2 has_access_to_experiment
-
- Usage     : 
- Purpose   : checks to see if a user has access to an experiment
- Returns   : 1/0
- Argument  : None
- Throws    : None
- Comments  : 
-
-=cut
-
-################################################## subroutine header end ##
-
 sub has_access_to_experiment {
 	my $self = shift @_;
 	my $experiment = shift;
 	return $self->has_access(experiment => $experiment);
 }
-
-################################################ subroutine header begin ##
-
-=head2 has_access_to_dataset
-
- Usage     : 
- Purpose   : checks to see if a user has access to a dataset
- Returns   : 1/0
- Argument  : None
- Throws    : None
- Comments  : 
-
-=cut
-
-################################################## subroutine header end ##
 
 sub has_access_to_dataset {
 	my $self = shift @_;
@@ -786,11 +748,14 @@ sub lists {
 
 sub experiments {
 	my $self = shift;
-#	my %opts = @_;
+	my %opts = @_;
+	my $include_deleted = $opts{include_deleted};
 	
 	my %experiments;
 	foreach my $ug ( $self->groups ) {
-		map { $experiments{ $_->id } = $_ } $ug->experiments;
+		map { 
+			$experiments{ $_->id } = $_ if (!$_->deleted || $include_deleted)
+		} $ug->experiments;
 	}
 	return wantarray ? values %experiments : [ values %experiments ];	
 }
@@ -812,11 +777,14 @@ sub experiments {
 
 sub restricted_experiments {
 	my $self = shift;
-#	my %opts = @_;
+	my %opts = @_;
+	my $include_deleted = $opts{include_deleted};
 	
 	my %experiments;
 	foreach my $ug ( $self->groups ) {
-		map { $experiments{ $_->id } = $_ } $ug->restricted_experiments;
+		map { 
+			$experiments{ $_->id } = $_ if (!$_->deleted || $include_deleted)
+		} $ug->restricted_experiments;
 	}
 	return wantarray ? values %experiments : [ values %experiments ];	
 }
@@ -838,11 +806,14 @@ sub restricted_experiments {
 
 sub genomes {
 	my $self = shift;
-#	my %opts = @_;
+	my %opts = @_;
+	my $include_deleted = $opts{include_deleted};
 
 	my %genomes;
 	foreach my $ug ( $self->groups ) {
-		map { $genomes{ $_->id } = $_ } $ug->genomes;
+		map { 
+			$genomes{ $_->id } = $_ if (!$_->deleted || $include_deleted)
+		} $ug->genomes;
 	}
 	return wantarray ? values %genomes : [ values %genomes ];
 }
@@ -865,10 +836,14 @@ sub genomes {
 sub restricted_genomes {
 	my $self = shift;
 	return unless $self->id;
+	my %opts = @_;
+	my $include_deleted = $opts{include_deleted};
 	
 	my %genomes;
 	foreach my $ug ( $self->groups ) {
-		map { $genomes{ $_->id } = $_ } $ug->restricted_genomes;
+		map { $genomes{ 
+			$_->id } = $_ if (!$_->deleted || $include_deleted)
+		} $ug->restricted_genomes;
 	}
 	return wantarray ? values %genomes : [ values %genomes ];	
 }

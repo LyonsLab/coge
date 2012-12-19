@@ -132,6 +132,11 @@ sub is_owner {
 	return $self->role->name =~ /owner/i;
 }
 
+sub is_admin {
+	my $self = shift;
+	return $self->role->name =~ /admin/i;
+}
+
 ################################################ subroutine header begin ##
 
 =head2 owner_list

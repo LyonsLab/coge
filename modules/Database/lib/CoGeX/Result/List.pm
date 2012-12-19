@@ -81,6 +81,17 @@ sub group
 	return shift->user_group(@_);
 }
 
+sub users {
+	my $self = shift;
+	my %users;
+
+	foreach ($self->group->users) {
+		$users{$_->id} = $_;
+	}
+
+	return wantarray ? values %users : [ values %users ];
+}
+
 sub lists
 {
 	my $self = shift;

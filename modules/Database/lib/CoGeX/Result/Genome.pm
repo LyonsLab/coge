@@ -117,6 +117,8 @@ __PACKAGE__->add_columns(
 		default_value => undef,
 		is_nullable   => 1,
 	},
+	"deleted",
+	{ data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
 );
 
 __PACKAGE__->set_primary_key("genome_id");
@@ -125,6 +127,7 @@ __PACKAGE__->has_many("genomic_sequences" => "CoGeX::Result::GenomicSequence", '
 __PACKAGE__->belongs_to("organism" => "CoGeX::Result::Organism", 'organism_id');
 __PACKAGE__->belongs_to("genomic_sequence_type" => "CoGeX::Result::GenomicSequenceType", 'genomic_sequence_type_id');
 __PACKAGE__->has_many( "list_connectors" => "CoGeX::Result::ListConnector", {'foreign.child_id' => 'self.genome_id'} );
+__PACKAGE__->has_many( "user_connectors" => "CoGeX::Result::UserConnector", {'foreign.child_id' => 'self.genome_id'} );
 __PACKAGE__->has_many("experiments" => "CoGeX::Result::Experiment", "genome_id");
 
 sub desc {
@@ -150,7 +153,6 @@ See Also   :
 ################################################## subroutine header end ##
 
 sub lists {    
-
 	my $self = shift;
 	my @lists = ();
 
@@ -162,8 +164,41 @@ sub lists {
 	return wantarray ? @lists : \@lists;
 }
 
-sub owner_list {    
+sub groups {
+	my $self = shift;
+	my %opts = @_;
 
+	my @groups = ();
+	foreach	my $conn ( $self->list_connectors )
+	{
+		push @groups, $conn->parent_list()->group;
+	}
+
+	return wantarray ? @groups : \@groups;
+}
+
+sub users {
+	my $self = shift;
+	my %opts = @_;
+	my $exclude_groups = $opts{exclude_groups};
+
+	my %users;
+	foreach ($self->lists) {
+		if (not $exclude_groups) {
+			foreach ($_->group->users) {
+				$users{$_->id} = $_;
+			}
+		}
+		foreach	( $self->user_connectors )
+		{
+			$users{$_->user_id} = $_->user;
+		}
+	}
+
+	return wantarray ? values %users : [ values %users ];
+}
+
+sub owner_list {    
 	my $self = shift;
 
 	foreach	my $conn ( $self->list_connectors )

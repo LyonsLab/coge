@@ -95,7 +95,9 @@ __PACKAGE__->add_columns(
 	"access_count",
 	{ data_type => "int", default_value => "0", is_nullable => 1, size => 10 },
 	"date",
-	{ data_type => "TIMESTAMP", default_value => undef, is_nullable => 0 }
+	{ data_type => "TIMESTAMP", default_value => undef, is_nullable => 0 },
+	"deleted",
+	{ data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
 );
 
 __PACKAGE__->set_primary_key("experiment_id");
@@ -313,18 +315,54 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-sub lists
-{
+# sub lists
+# {
+# 	my $self = shift;
+# 	my %opts = @_;
+# 	my @lists;
+# 	foreach my $lc ($self->list_connectors)
+# 	{
+# 		push @lists, $lc->parent_list if ($lc->child_type == 3); # FIXME hardcoded type value
+# 	}
+# 	return wantarray ? @lists : \@lists;
+# }
+
+sub lists {    
 	my $self = shift;
-	my %opts = @_;
-	my @lists;
-	foreach my $lc ($self->list_connectors)
+	my @lists = ();
+
+	foreach	my $conn ( $self->list_connectors )
 	{
-		push @lists, $lc->parent_list if ($lc->child_type == 3); # FIXME hardcoded type value
+		push( @lists, $conn->parent_list() );
 	}
+
 	return wantarray ? @lists : \@lists;
 }
 
+sub groups {
+	my $self = shift;
+	my @groups = ();
+
+	foreach	my $conn ( $self->list_connectors )
+	{
+		push @groups, $conn->parent_list()->group;
+	}
+
+	return wantarray ? @groups : \@groups;
+}
+
+sub users {
+	my $self = shift;
+	my %users;
+
+	foreach ($self->lists) {
+		foreach ($_->group->users) {
+			$users{$_->id} = $_;
+		}
+	}
+
+	return wantarray ? values %users : [ values %users ];
+}
 
 sub annotation_pretty_print_html
 {
