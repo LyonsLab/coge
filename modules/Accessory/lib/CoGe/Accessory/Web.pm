@@ -359,6 +359,7 @@ sub get_tiny_link {
 
 	# Log the page
 	if ($db and not $disable_logging) {
+		$page =~ s/.pl$//; # remove trailing .pl extension
 		log_history( db => $db, user_id => $user_id, page => $page, description => ($log_msg ? $log_msg : 'page access'), link => $tiny );
 	}
 
