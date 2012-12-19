@@ -81,7 +81,7 @@ unless ($coge) {
 # Retrieve genome
 my $genome = $coge->resultset('Genome')->find( { genome_id => $gid } );
 unless ($genome) {
-	print $log "log: error finding genome\n";
+	print $log "log: error finding genome id$gid\n";
 	exit(-1);
 }
 
@@ -185,6 +185,7 @@ print $log "$cmd\n";
 `$cmd`;
 
 # Yay!
+CoGe::Accessory::Web::log_history( db => $coge, user_id => $user->id, page => "LoadExperiment", description => 'load experiment id' . $experiment->id, link => 'ExperimentView.pl?eid=' . $experiment->id );
 print $log "log: All done!";
 close($log);
 exit;

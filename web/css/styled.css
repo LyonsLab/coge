@@ -857,3 +857,10 @@ dd {
    background: transparent none repeat scroll 0 0;
    color: black;
 }
+
+.ui-menu-item a.ui-state-hover,
+.ui-menu-item a.ui-state-active {
+	border:none;
+	margin:0px !important;
+	background:greenyellow;
+}

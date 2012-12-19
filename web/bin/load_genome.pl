@@ -12,8 +12,8 @@ use URI::Escape::JavaScript qw(escape unescape);
 use POSIX qw(ceil);
 
 use vars qw($staging_dir $install_dir $fasta_files 
-			$name $description $version $type_id $restricted 
-			$org_name $source_name $user_name
+			$name $description $link $version $type_id $restricted 
+			$organism_id $source_name $user_name
 			$host $port $db $user $pass 
 			$MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE $MAX_CHR_NAME_LENGTH);
 
@@ -23,10 +23,11 @@ GetOptions(
 	"fasta_files=s" => \$fasta_files,	# comma-separated list (JS escaped)
 	"name=s"		=> \$name,			# genome name (JS escaped)
 	"desc=s"		=> \$description,	# genome description (JS escaped)
+	"link=s"		=> \$link,			# link (JS escaped)
 	"version=s"		=> \$version,		# genome version (JS escaped)
 	"type_id=i"		=> \$type_id,		# genomic_sequence_type_id
 	"restricted=i"	=> \$restricted,	# genome restricted flag
-	"org_name=s"	=> \$org_name,	# organism name #FIXME change to ID
+	"organism_id=i"	=> \$organism_id,	# organism ID
 	"source_name=s"	=> \$source_name,	# data source name
 	"user_name=s"	=> \$user_name,		# user name
 	
@@ -40,8 +41,8 @@ GetOptions(
 
 $fasta_files = unescape($fasta_files);
 $name = unescape($name);
-$org_name = unescape($org_name);
 $description = unescape($description);
+$link = unescape($link);
 $version = unescape($version);
 $source_name = unescape($source_name);
 
@@ -101,12 +102,11 @@ unless ($coge) {
 }
 
 # Retrieve organism
-my $organism = $coge->resultset('Organism')->find({ name => $org_name }); #FIXME use ID instead due to dup names
+my $organism = $coge->resultset('Organism')->find($organism_id);
 unless ($organism) {
-	print $log "log: error finding organism\n";
+	print $log "log: error finding organism id$organism_id\n";
 	exit(-1);
 }
-print $log "organism id: " . $organism->id . "\n";
 
 # Create datasource
 print $log "log: Updating database ...\n";
@@ -117,7 +117,8 @@ print $log "datasource id: " . $datasource->id . "\n";
 # Create genome
 my $genome = $coge->resultset('Genome')->create( 
   { name => $name, 
-  	description => $description, 
+  	description => $description,
+  	link => $link,
   	version => $version, 
   	organism_id => $organism->id,
   	genomic_sequence_type_id => $type_id,
@@ -218,8 +219,8 @@ print $log "$cmd\n";
 `$cmd`;
 
 # Yay!
-CoGe::Accessory::Web::log_history( db => $coge, user_id => $user->id, page => "load_genome.pl", description => 'load genome id' . $genome->id, link => 'GenomeInfo.pl?gid=' . $genome->id );
-print $log "log: $numSequences sequences loaded totaling $seqLength nt\n";
+CoGe::Accessory::Web::log_history( db => $coge, user_id => $user->id, page => "LoadGenome", description => 'load genome id' . $genome->id, link => 'GenomeInfo.pl?gid=' . $genome->id );
+print $log "log: $numSequences sequences loaded totaling " . commify($seqLength) . " nt\n";
 print $log "log: All done!";
 close($log);
 exit;
@@ -318,4 +319,10 @@ sub units {
 	else {
 		return ceil($val/(1024*1024*1024)) . 'G';
 	}
+}
+
+sub commify {
+	my $text = reverse $_[0];
+	$text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
+	return scalar reverse $text;
 }

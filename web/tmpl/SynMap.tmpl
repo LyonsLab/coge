@@ -17,7 +17,6 @@ $(function() {$("#pair_info").draggable();});
 $(function() {$("#tabs").tabs({selected:0});});	     
 $(function() {$(".resizable").resizable();});
 
-
 function get_gc (dsgid, divid)
 {
   $('#'+divid).removeClass('link').html('loading...');
@@ -61,10 +60,7 @@ function populate_page_obj(basefile)
   pageObj.waittime = 1000;
  }
 
-
-
-
-function run_synmap(){
+function run_synmap(scheduled){
 //  generate_basefile([],[update_basename]);   
  populate_page_obj(); 
  var org_name1 = pageObj.org_name1;
@@ -92,42 +88,138 @@ function run_synmap(){
      }
  if(!pageObj.basename) 
   {
-  	setTimeout("run_synmap()", 100);
+  	setTimeout("run_synmap(0)", 100);
   	return;
   }
  
- if ($('#blast').val() == 5 && (feat_type1 != 1 || feat_type2 != 1) )
-  {
-   alert('BlastP only works if both genomes have protein coding sequences (CDS) AND CDS is selected for both!');
-  }
- else
-  {
-   jQuery('html, body').animate({scrollTop: 0}, 1000); 
-   $('#results').hide(0);  	
-   $('#log_text').html('Beginning run...');
-   $('#log_text').show(0);
-   pageObj.nolog=1;
-   setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__tempdir', 'args__'+pageObj.tempdir], [monitor_log])",pageObj.waittime);
-   go(['args__tdd','tdd','args__D','D', 'args__A','A','args__gm','gm','args__Dm','Dm','args__blast','blast', 'args__feat_type1','feat_type1', 'args__feat_type2','feat_type2','args__dsgid1','dsgid1', 'args__dsgid2','dsgid2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked, 'args__ks_type','ks_type', 'args__assemble','args__'+$('#assemble')[0].checked, 'args__axis_metric','axis_metric', 'args__axis_relationship','axis_relationship', 'args__min_chr_size', 'min_chr_size', 'args__spa_ref_genome','spa_ref_genome', 'args__show_non_syn','args__'+$('#show_non_syn')[0].checked, 'args__color_type','color_type', 'args__box_diags', 'args__'+$('#box_diags')[0].checked, 'args__merge_algo','merge_algo', 'args__depth_algo', 'depth_algo', 'args__depth_org_1_ratio', 'depth_org_1_ratio', 'args__depth_org_2_ratio', 'depth_org_2_ratio', 'args__depth_overlap', 'depth_overlap', 'args__fid1','args__'+pageObj.fid1, 'args__fid2','args__'+pageObj.fid2, 'args__show_non_syn_dots','args__'+$('#show_non_syn_dots')[0].checked,'args__flip','args__'+$('#flip')[0].checked,'args__clabel','args__'+$('#clabel')[0].checked,'args__skip_rand','args__'+$('#skiprand')[0].checked,'args__color_scheme','color_scheme', 'args__chr_sort_order','chr_sort_order', 'args__codeml_min', 'codeml_min', 'args__codeml_max', 'codeml_max', 'args__logks','args__'+$('#logks')[0].checked, 'args__csco','csco'],[handle_results] );
- }
+    if ($('#blast').val() == 5 && (feat_type1 != 1 || feat_type2 != 1) ) {
+        alert('BlastP only works if both genomes have protein coding sequences (CDS) AND CDS is selected for both!');
+    } else {
+        var args = {
+            tdd: $('tdd').val(),
+            D: $('#D').val(),
+            A: $('#A').val(),
+            gm: $('#gm').val(),
+            Dm: $('#Dm').val(),
+            blast: $('#blast').val(),
+            feat_type1: $('#feat_type1').val(),
+            feat_type2: $('#feat_type2').val(),
+            dsgid1: $('#dsgid1').val(),
+            dsgid2: $('#dsgid2').val(),
+            jobtitle: $('#jobtitle').val(),
+            basename: pageObj.basename,
+            email: $('#email').val(),
+            regen_images: $('#regen_images')[0].checked,
+            width: $('#master_width').val(),
+            dagchainer_type: $('#dagchainer_type')[0].checked,
+            ks_type: $('#ks_type').val(),
+            assemble: $('#assemble')[0].checked,
+            axis_metric: $('#axis_metric').val(),
+            axis_relationship: $('#axis_relationship').val(),
+            min_chr_size: $('#min_chr_size').val(),
+            spa_ref_genome: $('spa_ref_genome').val(),
+            show_non_syn: $('#show_non_syn')[0].checked,
+            color_type: $('#color_type'),
+            box_diags: $('#box_diags')[0].checked,
+            merg_algo: $('#merge_algo').val(),
+            depth_algo: $('#depth_algo').val(),
+            depth_org_1_ratio: $('#depth_org_1_ratio').val(),
+            depth_org_2_ratio: $('#depth_org_2_ratio').val(),
+            depth_overlap: $('#depth_overlap').val(),
+            fid1: pageObj.fid1,
+            fid2: pageObj.fid2,
+            show_non_syn_dots: $('#show_non_syn_dots')[0].checked,
+            flip: $('#flip')[0].checked,
+            clabel: $('#clabel')[0].checked,
+            skip_rand: $('#skiprand')[0].checked,
+            color_scheme: $('#color_scheme').val(),
+            chr_sort_order: $('#chr_sort_order').val(),
+            codeml_min: $('#codeml_min').val(),
+            codeml_max: $('#codeml_max').val(),
+            logks: $('#logks')[0].checked,
+            csco: $('#csco').val(),
+            jquery_ajax: 1,
+            fname: 'go'
+        };
+
+        if (scheduled) {
+            args['fname'] = 'get_query_link';
+            alert("Done");
+            $.ajax({
+                data: args,
+                success: function(data) {
+                    alert(data);
+                    window.location.href = data;
+                },
+                error: function(data) {
+                    alert("Error.");
+                }
+            });
+        } else {
+            jQuery('html, body').animate({scrollTop: 0}, 1000); 
+            $('#results').hide(0);  	
+            $('#log_text').html('Beginning run...');
+            $('#log_text').show(0);
+            pageObj.nolog=1;
+            // TODO: Scale polling time linearly with long running jobs
+            var duration = pageObj.waittime;
+        
+            setTimeout("read_log(pageObj.basename, pageObj.tempdir)", duration);
+
+            $.ajax({
+                data: arg,
+                success: function(data) {
+                    handle_results(data);
+                }
+            });
+        }
+    }
+}
+
+function read_log(name, dir) {
+    $.ajax({ 
+        data: {
+            jquery_ajax: 1,
+            fname: 'read_log',
+            logfile: name,
+            tempdir: dir, 
+        },
+        success : function(data) {
+            monitor_log(data);
+        }, 
+    });
 }
 
 function handle_results(val){
- $('#log_text').hide(0);
- $('#results').show(0).html(val);
- $(function() {$("#synmap_zoom_box").draggable();});
- setup_button_states();
- ajax_wait("check_previous_analyses();");
- 
+    $('#log_text').hide(0);
+    $('#results').show(0).html(val);
+    $(function() {$("#synmap_zoom_box").draggable();});
+    setup_button_states();
+    ajax_wait("check_previous_analyses();");
 }
 
 function check_previous_analyses(){
- get_previous_analyses(['args__oid1','org_id1', 'args__oid2','org_id2'],[load_previous_analyses]);
+    var gid1 = $('#org_id1').val();
+    var gid2 = $('#org_id2').val();
+    
+    if (gid1 && gid2) {
+        $.ajax({
+            data: {
+                jquery_ajax: 1,
+                oid1: gid1,
+                oid2: gid2,
+            },
+            success: function(data)  {
+                load_previous_analyses(data);
+            }
+        });
+    }
+//get_previous_analyses(['args__oid1','org_id1', 'args__oid2','org_id2'],[load_previous_analyses]);
 }
 
 function load_previous_analyses (stuff) {
- $('#previous_analyses').html(stuff);
- init_table();
+    $('#previous_analyses').html(stuff);
+    init_table();
 }
 
 function update_params(val) {
@@ -318,13 +410,11 @@ $(document).ready(function(){
  pageObj.fid2=<TMPL_VAR NAME=FID2>;
  pageObj.tempdir="<TMPL_VAR NAME=TEMPDIR>";
 
- var autogo = <TMPL_VAR NAME=AUTOGO>;
- if (autogo) {
-    run_synmap();
+    var autogo = <TMPL_VAR NAME=AUTOGO>;
+    if (autogo) {
+        run_synmap(autogo);
     }
-
  });
-
 
 function display_dagchainer_settings(params,type) {
  
@@ -487,7 +577,11 @@ function reset_basename(){
   if (!pageObj.finished && pageObj.nolog<8) {
     var waittime = pageObj.waittime;
     message+="<br/><br/>Next progress check in "+Math.floor(waittime/1000)+" seconds.";
-    setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__tempdir', 'args__'+pageObj.tempdir], [monitor_log])",pageObj.waittime);
+   
+   // TODO: Scale polling time linearly with long running jobs
+   var duration = pageObj.waittime;
+   
+    setTimeout("read_log(pageObj.basename, pageObj.tempdir)", duration);
   }
   
   if (message) $('#log_text').html(message);
@@ -597,7 +691,7 @@ function post_to_grimm(seq1, seq2)
 </table>
 
 
-<span style="font-size: 1em" class="ui-button ui-button-go ui-corner-all" id="synmap_go" onClick="run_synmap();" >Generate SynMap</span>
+<span style="font-size: 1em" class="ui-button ui-button-go ui-corner-all" id="synmap_go" onClick="run_synmap(0);" >Generate SynMap</span>
 
 <span style="font-size: 0.8em" class='ui-button ui-corner-all' onClick="$('#results').html('');" >Clear Results</span>
 

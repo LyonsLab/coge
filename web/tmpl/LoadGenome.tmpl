@@ -24,12 +24,20 @@ $(document).ready(function(){
 	set_input('edit_source');
 	set_input('edit_name', 'Optional');
 	set_input('edit_description', 'Optional');
+	set_input('edit_link', 'Optional');
 
 	get_sequence_types();
 	get_sources();
 	$("#edit_organism").autocomplete({
-		source:[], 
-		focus: function() { return false; },
+			source: [],
+			focus: function() { return false; },
+			select:
+		    	function(event, ui) {
+		    		$("#edit_organism")
+		    			.val( ui.item.label )
+		    			.data('organism_id', ui.item.value);
+		    		return false;
+		    	},	
 	});
 });
 
@@ -137,10 +145,12 @@ function create_organism() {
 			name: name,
 			desc: desc,
 		},
-		success : function() {
-			$('#create_new_organism_dialog').dialog('close');
-			$('#edit_organism').val(name);
-			set_input('edit_organism');
+		success : function(organism_id) {
+			if (organism_id) {
+				$('#create_new_organism_dialog').dialog('close');
+				$('#edit_organism').val(name).data("organism_id", organism_id);
+				set_input('edit_organism');
+			}
 		}
 	});
 }
@@ -166,8 +176,9 @@ function load_genome() {
 		return;
 	}
 
-	var org_name = $('#edit_organism').val();
-	if (!org_name || org_name == 'Search') {
+	var organism_name = $('#edit_organism').val();
+	var organism_id = $('#edit_organism').data("organism_id");
+	if (!organism_id || !organism_name || organism_name == 'Search') {
 		alert('Please select an organism.');
 		return;
 	}
@@ -193,6 +204,9 @@ function load_genome() {
 	var description = $('#edit_description').val();
 	if (description == 'Optional') { description = ''; }
 
+	var link = $('#edit_link').val();
+	if (link == 'Optional') { link = ''; }
+
 	var type_id = $('#select_type').val();
 	var restricted = $('#restricted').is(':checked');
 	var json = JSON.stringify(items);
@@ -205,10 +219,11 @@ function load_genome() {
 			fname: 'load_genome',
 			name: name,
 			description: description,
+			link: link,
 			version: version,
 			type_id: type_id,
 			restricted: restricted,
-			org_name: org_name,
+			organism_id: organism_id,
 			source_name: source,
 			user_name: user_name,
 			items: json,
@@ -288,8 +303,7 @@ function search_organisms (search_term) {
 			success : function(data) {
 				var obj = jQuery.parseJSON(data);
 				if (obj && obj.items) {
-					$("#edit_organism").autocomplete({source: obj.items});
-					$("#edit_organism").autocomplete("search");
+					$("#edit_organism").autocomplete({source: obj.items}).autocomplete("search");
 				}
 			},
 		});
@@ -337,8 +351,6 @@ function more() {
 
 </SCRIPT>
 
-
-<br>
 <span style="color:dimgray;font-weight:bold;">Genome Info</span><br>
 <table class="small ui-widget-content ui-corner-all">
   <tr>
@@ -381,6 +393,10 @@ function more() {
     <td>Description:</td>
     <td><textarea id="edit_description" rows="5" cols="50" ></textarea></td>
   </tr>
+  <tr style='display:none;'>
+    <td>Link:</td>
+    <td><input id="edit_link" type="textbox" size="58" /></td>
+  </tr> 
 </table>
 
 <br>
@@ -390,11 +406,11 @@ function more() {
 <span id="files_clear" onClick="clear_list();" class='ui-state-disabled ui-button ui-corner-all ui-button-go'>Clear List</span>
 <br>
 <br>
-<span id="load_genome_button" onDblClick="load_genome();" onClick="load_genome();" style="font-size:1em;" class='ui-button ui-corner-all ui-button-go'>Load Genome</span>
+<br>
+<span id="load_genome_button" onDblClick="load_genome();" onClick="load_genome();" style="font-size:1em;float-right;" class='ui-button ui-corner-all ui-button-go'>Load Genome</span>
 
 
-
-<div id="create_new_type_dialog" class="dialog_box" title="Create New Sequence Type">
+<div id="create_new_type_dialog" class="dialog_box" title="Create New Sequence Type" style="display:none;">
   <table class="small">
     <tr>
       <td>Name:</td>
@@ -411,7 +427,7 @@ function more() {
 
 
 
-<div id="create_new_organism_dialog" class="dialog_box" title="Create New Organism">
+<div id="create_new_organism_dialog" class="dialog_box" title="Create New Organism" style="display:none;">
   <table class="small">
     <tr>
       <td>Name:</td>
@@ -428,7 +444,7 @@ function more() {
 
 
 
-<div id="create_new_source_dialog" class="dialog_box" title="Create New Source">
+<div id="create_new_source_dialog" class="dialog_box" title="Create New Source" style="display:none;">
   <table class="small">
     <tr>
       <td>Name:</td>
@@ -449,7 +465,7 @@ function more() {
 
 
 
-<div id="load_genome_dialog" class="dialog_box" title="Loading Genome ...">
+<div id="load_genome_dialog" class="dialog_box" title="Loading Genome ..." style="display:none;">
   <div id="load_genome_log" class="small ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
   </div>
   <br>
@@ -463,7 +479,7 @@ function more() {
 
 
 
-<div id="file_select_dialog" class="dialog_box" title="Select Data File ...">
+<div id="file_select_dialog" class="dialog_box" title="Select Data File ..." style="display:none;">
   <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
   <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all ui-button-go">Done</span>
 </div> <!-- file_select_dialog -->

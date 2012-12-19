@@ -316,15 +316,16 @@ sub load_genome {
 	my %opts = @_;
 	my $name = $opts{name};
 	my $description = $opts{description};
+	my $link = $opts{link};
 	my $version = $opts{version};
 	my $type_id = $opts{type_id};
 	my $source_name = $opts{source_name};
 	my $restricted = $opts{restricted};
-	my $org_name = $opts{org_name};
+	my $organism_id = $opts{organism_id};
 	my $user_name = $opts{user_name};
 	my $items = $opts{items};
 	return unless $items;
-#	print STDERR "load_genome: name=$name description=$description version=$version type_id=$type_id restricted=$restricted org_name=$org_name\n";
+	print STDERR "load_genome: organism_id=$organism_id name=$name description=$description version=$version type_id=$type_id restricted=$restricted\n";
 	
 	$items = decode_json($items);
 #	print STDERR Dumper $items;
@@ -343,7 +344,7 @@ sub load_genome {
 	my $logfile = $stagepath . '/log.txt';
 	open(my $log, ">$logfile") or die "Error creating log file";
 	print $log "Starting load genome $stagepath\n" .
-			  "name=$name description=$description version=$version type_id=$type_id restricted=$restricted org_id=$org_name\n";
+			  "name=$name description=$description version=$version type_id=$type_id restricted=$restricted org_id=$organism_id\n";
 
 	# Verify and decompress files
 	my @files;
@@ -368,10 +369,11 @@ sub load_genome {
 			  "-user_name " . $user_name . ' ' .
 			  '-name "' . escape($name) . '" ' .
 			  '-desc "' . escape($description) . '" ' .
+			  '-link "' . escape($link) . '" ' .
 			  '-version "' . escape($version) . '" ' .
 			  "-type_id $type_id " .
 			  "-restricted " . ($restricted eq 'true') . ' ' .
-			  "-org_name " . escape($org_name) . " " .
+			  "-organism_id $organism_id " .
 			  '-source_name "' . escape($source_name) . '" ' .
 			  "-staging_dir $stagepath " .
 			  "-install_dir " . $P->{DATADIR} . ' ' .
@@ -427,7 +429,7 @@ sub get_sequence_types {
 	#my %opts = @_;
 	
 	my $html;
-	foreach my $type ( $coge->resultset('GenomicSequenceType')->all() ) {
+	foreach my $type ( sort {$a->name cmp $b->name} $coge->resultset('GenomicSequenceType')->all() ) {
 		$html .= '<option value="' . $type->id . '">' . $type->info . '</option>';
 	}
 	
@@ -476,8 +478,12 @@ sub search_organisms {
 		return encode_json({timestamp => $timestamp, items => undef});
 	}
 	
-	my %unique = map { $_->name => 1 } @organisms;
-	return encode_json({timestamp => $timestamp, items => [sort keys %unique]});
+	my @results;
+	foreach (sort {$a->name cmp $b->name} @organisms) {
+		push @results, { 'label' => $_->name, 'value' => $_->id };
+	}
+
+	return encode_json({timestamp => $timestamp, items => \@results});
 }
 
 sub search_users {

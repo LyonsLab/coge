@@ -185,7 +185,7 @@ sub edit_group_info {
 	return 0 unless $ugid;
 
 	my $group = $coge->resultset('UserGroup')->find($ugid);
-	return 0 unless user_can_edit($group);
+	return 0 unless $group && user_can_edit($group);
 	
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'GroupView.tmpl' );
 	$template->param( EDIT_GROUP_INFO => 1 );
@@ -212,7 +212,7 @@ sub update_group_info {
 	my $desc = $opts{desc};
 	my $roleid = $opts{roleid};
 	my $group = $coge->resultset('UserGroup')->find($ugid);
-	return 0 unless user_can_edit($group);
+	return 0 unless $group && user_can_edit($group);
 	
 	$group->name($name);
 	$group->description($desc) if $desc;
@@ -228,7 +228,7 @@ sub modify_users {
 	return 0 unless $ugid;
 	
 	my $group = $coge->resultset('UserGroup')->find($ugid);
-	return 0 unless user_can_edit($group);
+	return 0 unless $group && user_can_edit($group);
 	
 	my %data;
 	$data{title} = 'Modify Users';
@@ -270,7 +270,7 @@ sub add_user_to_group {
 	#return 1 if $uid == $USER->id;
 	return "UGID and/or UID not specified" unless $ugid && $uid;
 	my $group = $coge->resultset('UserGroup')->find($ugid);
-	return 0 unless user_can_edit($group);
+	return 0 unless $group && user_can_edit($group);
 	
 	if ( $group->locked && !$USER->is_admin ) {
 		return "This is a locked group.  Admin permission is needed to modify.";
@@ -294,7 +294,7 @@ sub remove_user_from_group {
 	}
 	
 	my $group = $coge->resultset('UserGroup')->find($ugid);
-	return 0 unless user_can_edit($group);
+	return 0 unless $group && user_can_edit($group);
 	
 	if ( $group->locked && !$USER->is_admin ) {
 		return "This is a locked group.  Admin permission is needed to modify.";
@@ -313,7 +313,7 @@ sub add_lists {
 	return 0 unless $ugid;
 
 	my $group = $coge->resultset('UserGroup')->find($ugid);
-	return 0 unless user_can_edit($group);
+	return 0 unless $group && user_can_edit($group);
 	
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'GroupView.tmpl' );
 	$template->param( ADD_LISTS => 1 );
@@ -355,10 +355,12 @@ sub remove_list_from_group {
 #	print STDERR "ugid=$ugid lid=$lid\n";
 	
 	my $group = $coge->resultset('UserGroup')->find($ugid);
+	return 0 unless $group;
 	return 0 if ($group->locked and !$USER->is_admin);
 	
 	# FIXME: upon review, is this really what we want? what about reassignin the list to owner list instead?
 	my $list = $coge->resultset('List')->find($lid);
+	return 0 unless $list;
 	$list->delete();
 	
 	return 1;
@@ -374,6 +376,8 @@ sub search_lists {
 	
 	# Get lists already in this group
 	my $group = $coge->resultset('UserGroup')->find($ugid);
+	return 0 unless $group;
+	
 	my %exists;
 	map { $exists{$_->id}++ } $group->lists;
 	
@@ -457,11 +461,10 @@ sub delete_group {
 	return "No UGID specified" unless $ugid;
 	
 	my $group = $coge->resultset('UserGroup')->find($ugid);
-	
-	return 0 unless user_can_edit();
+	return 0 unless $group && user_can_edit($group);
 	
 	if ( $group->locked && !$USER->is_admin ) {
-		return "This is a locked group.  Admin permission is needed to modify.";
+		return "This is a locked group.  Admin permission is needed to delete.";
 	}
 	
 	# Reassign this group's lists to user's owner group
@@ -486,6 +489,7 @@ sub dialog_set_group_creator {
 	return 0 unless $USER->is_admin;
 	
 	my $group = $coge->resultset('UserGroup')->find($ugid);
+	return 0 unless $group;
 	
 	my %data;
 	$data{title} = 'Set Creator';

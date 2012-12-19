@@ -798,9 +798,9 @@ sub generate_body {
 		CHR 			=> ($first_chr ? $first_chr : ''),
 		GENOME_INFO 	=> get_genome_info(genome => $genome),
 	 	GENOME_DATA 	=> get_genome_data(genome => $genome),
-		GROUPS 			=> get_groups_with_access(genome => $genome),
-		USERS 			=> get_users_with_access(genome => $genome),
-		NOTEBOOKS 		=> get_notebooks(genome => $genome),
+		#GROUPS 			=> get_groups_with_access(genome => $genome),
+		#USERS 			=> get_users_with_access(genome => $genome),
+		#NOTEBOOKS 		=> get_notebooks(genome => $genome),
 		EXPERIMENTS 	=> get_experiments(genome => $genome) 
 	);
 

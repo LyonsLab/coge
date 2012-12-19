@@ -133,7 +133,7 @@ sub gen_html {
 	$name = $USER->first_name if $USER->first_name;
 	$name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
 	$template->param( USER       => $name );	
-	$template->param( TITLE      => 'Managing Data' );
+	#$template->param( TITLE      => 'Managing Data' );
 	$template->param( PAGE_TITLE => $PAGE_TITLE );
 	$template->param( LOGO_PNG   => "$PAGE_TITLE-logo.png" );
 	$template->param( LOGON      => 1 ) unless $USER->user_name eq "public";

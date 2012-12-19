@@ -388,7 +388,7 @@ sub get_share_dialog {
 			return unless $genome;
 			next unless ($USER->is_admin or $USER->has_access_to_genome($genome));
 			map { $groups{$_->id} = $_ } $genome->groups;
-			map { $userconn{$_->id}  = $_ } $genome->user_connectors;
+			map { $userconn{$_->parent_id}  = $_ } $genome->user_connectors;
 		}
 		elsif ($item_type == $ITEM_TYPE{experiment}) {
 			my $experiment = $coge->resultset('Experiment')->find($item_id);

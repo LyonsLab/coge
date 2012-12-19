@@ -332,14 +332,14 @@ function get_sources () {
 
 
 
-<div id="file_select_dialog" class="dialog_box" title="Select Data File ...">
+<div id="file_select_dialog" class="dialog_box" title="Select Data File ..." style="display:none;">
   <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
   <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
 </div> <!-- file_select_dialog -->
 
 
 
-<div id="load_experiment_dialog" class="dialog_box" title="Loading Experiment ...">
+<div id="load_experiment_dialog" class="dialog_box" title="Loading Experiment ..." style="display:none;">
   <div id="load_experiment_log" class="small ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
   </div>
   <br>
@@ -354,7 +354,7 @@ function get_sources () {
 
 
 
-<div id="create_new_source_dialog" class="dialog_box" title="Create New Source">
+<div id="create_new_source_dialog" class="dialog_box" title="Create New Source" style="display:none;">
   <table class="small">
     <tr>
       <td>Name:</td>

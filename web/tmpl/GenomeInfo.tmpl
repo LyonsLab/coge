@@ -441,9 +441,9 @@ function get_list_preview (opts) {
 		<td>
 			<span style="color:dimgray;font-weight:bold;">Genome Info</span>
 			<div id='genome_info' class="small ui-widget-content ui-corner-all" style="width:400px;"><TMPL_VAR NAME="GENOME_INFO"></div>
-			<span class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="edit_genome_info();"><span class="ui-icon ui-icon-gear"></span>Edit Info</span>
+			<span class='ui-button ui-button-go ui-corner-all' onClick="edit_genome_info();">Edit Info</span>
 		</td>
-		<td>
+		<td style="padding-left:10px;">
 			<span id='genome_data' style="color:dimgray;font-weight:bold;">Genome Data</span>
 			<div class="small ui-widget-content ui-corner-all"><TMPL_VAR NAME="GENOME_DATA"></div>
 			<span class='ui-button ui-corner-all ui-button-icon-right ui-button-go' onclick="window.open('GenomeView.pl?dsgid=<TMPL_VAR NAME=GID>;chr=<TMPL_VAR NAME=CHR>')"><span class="ui-icon ui-icon-extlink"></span>Genome View</span>
@@ -459,6 +459,7 @@ function get_list_preview (opts) {
 <span class='ui-button ui-corner-all ui-button-icon-right ui-button-go' onclick="window.open('LoadExperiment.pl?gid=<TMPL_VAR NAME=GID>')"><span class="ui-icon ui-icon-extlink"></span>Load Experiment</span>
 <br><br>
 
+<!--
 <span style="color:dimgray;font-weight:bold;">Notebooks</span>
 <div id="notebooks" class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;">
 <TMPL_VAR NAME='NOTEBOOKS'>
@@ -473,7 +474,6 @@ function get_list_preview (opts) {
 			<div id="groups_with_access" class="small ui-widget-content ui-corner-all" style="width:500px;height:100px;overflow-y:auto;">
 				<TMPL_VAR NAME='GROUPS'>
 			</div>
-			<!-- <span class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="get_available_groups();"><span class="ui-icon ui-icon-plus"></span>Add to Group</span> -->
 		</td>
 		<td>
 			<span style="color:dimgray;font-weight:bold;">Users with Access</span>
@@ -484,11 +484,12 @@ function get_list_preview (opts) {
 		</td>
 	</tr>
 </table>
+-->
 
-<div id="genome_info_edit_box" class="dialog_box" title="Edit Genome Info"></div>
-<div id="genome_notebooks_edit_box" class="dialog_box" title="Add to Notebook"></div>
-<div id="genome_users_edit_box" class="dialog_box" title="Add Users"></div>
-<div id="genome_groups_edit_box" class="dialog_box" title="Add Groups"></div>
+<div id="genome_info_edit_box" class="dialog_box" title="Edit Genome Info" style="display:none;"></div>
+<div id="genome_notebooks_edit_box" class="dialog_box" title="Add to Notebook" style="display:none;"></div>
+<div id="genome_users_edit_box" class="dialog_box" title="Add Users" style="display:none;"></div>
+<div id="genome_groups_edit_box" class="dialog_box" title="Add Groups" style="display:none;"></div>
 
 </TMPL_IF> <!-- MAIN -->
 
