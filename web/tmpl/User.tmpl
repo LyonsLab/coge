@@ -3,21 +3,41 @@
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
 
+<style>
+div.deleted { display: none; }
+</style>
+
 <SCRIPT language="JavaScript">
-$(document).ready(function(){
+var POLL_TIME = 30*1000;
+var IDLE_TIME = 60*1000;
+
+var ITEM_TYPE_ALL 			= <TMPL_VAR NAME="ITEM_TYPE_ALL">;
+var ITEM_TYPE_SHARED 		= <TMPL_VAR NAME="ITEM_TYPE_SHARED">;
+var ITEM_TYPE_TRASH 		= <TMPL_VAR NAME="ITEM_TYPE_TRASH">;
+var ITEM_TYPE_USER 			= <TMPL_VAR NAME="ITEM_TYPE_USER">;
+var ITEM_TYPE_GROUP 		= <TMPL_VAR NAME="ITEM_TYPE_GROUP">;
+var ITEM_TYPE_NOTEBOOK 		= <TMPL_VAR NAME="ITEM_TYPE_NOTEBOOK">;
+var ITEM_TYPE_GENOME 		= <TMPL_VAR NAME="ITEM_TYPE_GENOME">;
+var ITEM_TYPE_EXPERIMENT	= <TMPL_VAR NAME="ITEM_TYPE_EXPERIMENT">;
+
+$(function() {
+	$(".dialog_box").dialog({autoOpen: false}); // initialize dialog boxes
+
+	// Initialize globals
 	pageObj.timestamp = new Array();
-	pageObj.timers = new Array();
+	pageObj.timer = new Array();
+	pageObj.timer['item'] = null;
+	pageObj.timestamp['idle'] = new Date().getTime();
 	
+	// Initialize AJAX
 	$.ajaxSetup({
 		type: "POST",
 		url: "<TMPL_VAR NAME='PAGE_NAME'>",
 		dataType: "html",
 		cache: false,
 	});
-});
 
-<TMPL_IF NAME="IS_USER">
-$(function(){
+	// Initialize fileupload plugin
 	$('#input_upload_file').fileupload({
     	dataType: 'json',
     	formData: {
@@ -38,7 +58,458 @@ $(function(){
 				}
 			},
 	});
+
+	// Initialize dropdown menus
+	$("#create_menu").menu()
+		.position({
+			my: "left top",
+			at: "left bottom",
+			of: "#create_button"
+		})
+		.css({ position: 'absolute', width: '130px' });
+	$("#send_menu").menu().css({ position: 'absolute', width: '90px' });
+
+	// Initialize main panels
+	exit_item(); // initialize info panel
+	select_content(ITEM_TYPE_ALL); // initialize toc panel
+	select_item(); // initialize content icon buttons
+
+	// Setup idle timer
+	$(document).mousemove(function() {
+		var currentTime = new Date().getTime();
+		var idleTime = currentTime - pageObj.timestamp['idle'];
+		pageObj.timestamp['idle'] = currentTime;
+
+		if (idleTime > IDLE_TIME) {
+			// User was idle for a while, refresh page
+			schedule_poll(1);
+		}
+	});
+
+	// Initiate refresh loop
+	schedule_poll();
+
+	setTimeout(search_notebooks, 1000); // initialize add-to-notebok dialog
 });
+
+function poll() {
+	get_contents(1);
+}
+
+function schedule_poll(now) {
+	cancel_poll();
+
+	if (now) {
+		pageObj.timer['poll'] = setTimeout(
+			function() { poll(); },
+			0
+		);		
+		return;
+	}
+
+	// Quit polling if page idle for too long
+	var idleTime = new Date().getTime() - pageObj.timestamp['idle'];
+	if (idleTime < IDLE_TIME) {
+		pageObj.timer['poll'] = setTimeout(
+			function() { poll(); },
+			POLL_TIME
+		);
+	}
+}
+
+function cancel_poll() {
+	clearTimeout(pageObj.timer['poll']);
+}
+
+function enter_item(obj) {
+	if (pageObj.timer['item']) {
+		clearTimeout(pageObj.timer['item']);
+	}
+
+	pageObj.timer['item'] = setTimeout(
+		function() {
+			$.ajax({
+				data: {
+					jquery_ajax: 1,
+					fname: 'get_item_info',
+					item_spec: obj.id,
+					timestamp: new Date().getTime()
+				},
+				success : function(data) {
+					var obj = jQuery.parseJSON(data);
+					var myName = arguments.callee.toString();
+					if (!pageObj.timestamp[myName] || obj.timestamp >= pageObj.timestamp[myName]) {
+						pageObj.timestamp[myName] = obj.timestamp;
+						$('#info_panel').html(obj.html);
+					}
+				}
+			});
+		},
+		500
+	);
+}
+
+function default_info() {
+	$('#info_panel').html("Hover over an item to view additional info.<br><br>Select one or more items to share, organize, delete, or send them to one of CoGe's tools.");
+}
+
+function exit_item(obj) {
+	if (pageObj.timer['item']) {
+		clearTimeout(pageObj.timer['item']);
+	}
+	pageObj.timer['item'] = setTimeout(
+		default_info,
+		500
+	);
+}
+
+function get_selected_items() {
+	return $('#contents_table input[type=checkbox]').filter(':checked').filter(':not(:hidden)');
+}
+
+function select_item() {
+	var selected = get_selected_items();
+	var num_items = selected.length;
+
+	if (num_items > 0) {
+		$('.item-button').removeClass('ui-state-disabled');
+		$('#info_panel').html(num_items + ' item' + (num_items > 1 ? 's' : '') + ' selected.<br><br>Click an action icon at the top to share, organize, delete, or analyze.');
+	}
+	else {
+		$('.item-button').addClass('ui-state-disabled');
+		default_info();
+	}
+}
+
+function sync_items(html) {
+	var content1 = $('#contents_table div');
+	var content2 = $(html).filter('div');
+
+	var insertIndex = 0;
+	content2.each(
+		function() {
+			var match = content1.filter('#'+this.id).get(0);
+			if (!match) { // item doesn't exist
+				//console.log(this.id);
+				$(this).insertBefore( content1.get(insertIndex) );
+			}
+			else { // item exists
+				var checked = $(match).children('input[type=checkbox]').is(':checked');
+				$(this).children('input[type=checkbox]').prop('checked', checked);
+				$(match).replaceWith(this);
+				insertIndex++;
+			}
+		}
+	);
+}
+
+function get_contents(poll) {
+	var myName = arguments.callee.toString();
+	pageObj.timestamp[myName] = new Date().getTime();
+
+	// Clear pending refresh
+	cancel_poll();
+
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_contents',
+			timestamp: pageObj.timestamp[myName]
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj) {
+				if (!pageObj.timestamp[myName] || obj.timestamp >= pageObj.timestamp[myName]) {
+					pageObj.timestamp[myName] = obj.timestamp;
+					
+					if (poll) {
+						sync_items(obj.html);
+					}
+					else {
+						$('#contents_table').html(obj.html);
+					}
+					filter_contents();
+				}
+			}
+
+			// Setup next refresh
+			schedule_poll();
+		}
+	});	
+}
+
+function filter_contents() {
+	var search_term = $('#search_input').val();
+	search_term = search_term.toLowerCase();
+
+	$('#contents_table div').each(
+		function() {
+			var show;
+
+			if (pageObj.content_type == ITEM_TYPE_ALL) {
+				show = !$(this).hasClass('deleted');
+			}
+			else if (pageObj.content_type == ITEM_TYPE_TRASH) {
+				show = $(this).hasClass('deleted');
+			}
+			else {
+				var tokens = this.id.split('_');
+				var item_id = tokens[1];
+				var item_type = tokens[2];
+				show = (item_type == pageObj.content_type && !$(this).hasClass('deleted'));
+			}
+
+			if (show && search_term) {
+				show = (this.innerHTML.toLowerCase().indexOf(search_term) >= 0);
+			}
+
+			if (show) { $(this).show(); }
+			else { $(this).hide(); }
+		}
+	);
+}
+
+function select_content(type) {
+	pageObj.content_type = type;
+
+	if (type == ITEM_TYPE_TRASH) {
+		$('#stuff_buttons').hide();
+		$('#trash_buttons').show();
+	}
+	else {
+		$('#trash_buttons').hide();
+		$('#stuff_buttons').show();
+	}
+
+	$('#search_input').val('');
+	filter_contents();
+	select_item();
+
+	$('#toc_panel div').css({'font-weight':'normal'});
+	$('#toc_'+type).css({'font-weight':'bold'});
+
+	var title = $('#toc_label_'+type).html();
+	$('#contents_title').html(title);
+}
+
+function delete_items() {
+	var selected = get_selected_items();
+	if (selected.length) {
+		selected.parent().fadeOut('fast', 
+			function() {
+				selected.parent().addClass('deleted');
+				selected.prop('checked', false);
+				select_item(); // reset button states
+			}
+		);
+
+		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'delete_items',
+				item_list: item_list
+			},
+			success : function(data) {
+			}
+		});		
+	}
+}
+
+function undelete_items() {
+	var selected = get_selected_items();
+	if (selected.length) {
+		selected.parent().fadeOut('fast', 
+			function() {
+				selected.parent().removeClass('deleted');
+				selected.prop('checked', false);
+				select_item(); // reset button states
+			}
+		);
+
+		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'undelete_items',
+				item_list: item_list
+			},
+			success : function(data) {
+			}
+		});		
+	}
+}
+
+function add_to_notebook_dialog() {
+	var selected = get_selected_items();
+	if (selected.length) {
+		$('#add_to_notebook_dialog').dialog({width:500,height:270}).dialog('open');
+	}
+}
+
+function wait_to_search (search_func, search_term) {
+	if (!search_term || search_term.length > 2) {
+		pageObj.search_term = search_term;
+		if (pageObj.timer['notebooks']) {
+			clearTimeout(pageObj.time);
+		}
+		
+		pageObj.timer['notebooks'] = setTimeout(
+			function() { 
+				search_func(pageObj.search_term); 
+			},
+			500
+		);
+	}
+}
+
+function search_notebooks () {
+	var search_term = $('#notebook_search_input').attr('value');
+	
+	$("#wait_notebook").animate({opacity:1});
+	$("#notebook_select").html("<option disabled='disabled'>Searching...</option>");
+	pageObj.timestamp['notebooks'] = new Date().getTime();
+	
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'search_notebooks',
+			search_term: search_term,
+			timestamp: pageObj.timestamp['notebooks']
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj.timestamp >= pageObj.timestamp['notebooks']) {
+				$("#notebook_select").html(obj.html);
+				$("#wait_notebook").animate({opacity:0});
+			}
+		},
+	});
+}
+
+function add_items_to_notebook() {
+	var selected = get_selected_items();
+	var nid = $('#notebook_select').find('option:selected').val();
+	if (nid && selected.length) {
+		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'add_items_to_notebook',
+				nid: nid,
+				item_list: item_list,
+			},
+			success : function(data) {
+				$('#add_to_notebook_dialog').dialog('close');
+			}
+		});
+	}
+	else {
+		$('#add_to_notebook_dialog').dialog('close');
+	}
+}
+
+function share_dialog() {
+	var selected = get_selected_items();
+	if (selected.length) {
+		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'get_share_dialog',
+				item_list: item_list,
+			},
+			success : function(data) {
+				$('#share_dialog').html(data).dialog({width:500,height:360}).dialog('open');
+			}
+		});	
+	}
+}
+
+function remove_items_from_user_or_group(target_item) {
+	var selected = get_selected_items();
+	if (target_item && selected.length) {
+		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'remove_items_from_user_or_group',
+				target_item: target_item,
+				item_list: item_list,
+			},
+			success : function(data) {
+				if (data) {
+					$('#share_dialog').html(data);
+				}
+			}
+		});
+	}
+}
+
+function add_items_to_user_or_group() {
+	var selected = get_selected_items();
+	var target_item = $('#share_input').data('select_id');
+	var role_id = $('#role_select').val();
+	if (target_item && selected.length) {
+		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'add_items_to_user_or_group',
+				target_item: target_item,
+				role_id: role_id,
+				item_list: item_list,
+			},
+			success : function(data) {
+				if (data) {
+					$('#share_dialog').html(data);
+				}
+			}
+		});
+	}
+}
+
+function search_share () {
+	var search_term = $('#share_input').attr('value');
+	
+	//$("#wait_notebook").animate({opacity:1});
+	pageObj.timestamp['share'] = new Date().getTime();
+	
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'search_share',
+			search_term: search_term,
+			timestamp: pageObj.timestamp['share']
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj && obj.items) {
+				$("#share_input").autocomplete({source: obj.items}).autocomplete("search");
+				//$("#wait_notebook").animate({opacity:0});
+			}
+		},
+	});
+}
+
+function hide_top_panel() {
+	top_panel_height = $('#top_panel').height();
+	$('#top_panel').slideUp('slow', 
+		function() {
+			$('#show_panel_button').show();
+		}
+	);
+	var contents_panel_height = $('#contents_table').height() + top_panel_height;
+	$('#contents_table').animate({height: contents_panel_height}, 'slow');
+}
+
+function show_top_panel() {
+	$('#show_panel_button').hide();
+	$('#top_panel').slideDown('slow');
+	var contents_panel_height = $('#contents_table').height() - top_panel_height;
+	$('#contents_table').animate({ height: contents_panel_height}, 'slow');
+}
+
 function show_recent_activity() {
 	$.ajax({
 		data: {
@@ -53,6 +524,7 @@ function show_recent_activity() {
 		}
 	});
 }
+
 function show_important_activity() {
 	$.ajax({
 		data: {
@@ -72,9 +544,11 @@ function show_important_activity() {
 		}
 	});
 }
+
 function select_image_file() {
 	$('#input_upload_file').click();
 }
+
 function verify_image_file(file) {
 	var ext = file.name.split('.').pop();
 	if (ext != 'jpg' && ext != 'gif' && ext != 'png') {
@@ -89,168 +563,302 @@ function verify_image_file(file) {
 	
 	return 1;
 }
-function new_group() {
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'new_group',
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			if (obj) {			
-				$('#groups').html(obj.groups);
-				window.open('GroupView.pl?ugid='+obj.ugid);
-			}
-		}
-	});
+
+function create_menu() {
+	var menu = $("#create_menu");
+
+	if (menu.is(":visible")) {
+		menu.hide();
+	}
+	else {
+		menu.show();
+		menu.one("mouseleave", function() { menu.hide(); } );
+	}
 }
-function new_notebook() {
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'new_notebook',
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			if (obj) {
-				$('#notebooks').html(obj.notebooks);
-				window.open('NotebookView.pl?nid='+obj.nid);
-			}
-		}
-	});
+
+function create_group_dialog() {
+	$('#edit_group_name').val('');
+	$('#edit_group_desc').val('');
+	$('#create_group_dialog').dialog({width:400,height:240}).dialog('open');
+	$('#create_menu').hide();
 }
-</TMPL_IF>
+
+function create_notebook_dialog() {
+	$('#edit_notebook_name').val('');
+	$('#edit_notebook_desc').val('');	
+	$('#create_notebook_dialog').dialog({width:400,height:240}).dialog('open');
+	$('#create_menu').hide();
+}
+
+function create_new_group() {
+	var name = $('#edit_group_name').val();
+	if (!name) {
+		alert('Please enter a group name.');
+	}
+	var desc = $('#edit_group_desc').val();
+	var role_id = $('#edit_group_role').val();
+
+    $.ajax({
+        data: {
+            jquery_ajax: 1,
+            fname: 'create_new_group',
+            name: name,
+            desc: desc,
+            role_id: role_id
+        },
+        success : function(data) {
+            if (data) {
+            	location.reload();
+            }
+        }
+    });
+}
+
+function create_new_notebook() {
+	var name = $('#edit_notebook_name').val();
+	if (!name) {
+		alert('Please enter a notebook name.');
+	}
+	var desc = $('#edit_notebook_desc').val();
+	var type_id = $('#edit_notebook_type').val();
+
+    $.ajax({
+        data: {
+            jquery_ajax: 1,
+            fname: 'create_new_notebook',
+            name: name,
+            desc: desc,
+            type_id: type_id
+        },
+        success : function(data) {
+            if (data) {
+            	location.reload();
+            }
+        }
+    });
+}
+
+function send_menu() {
+	var menu = $("#send_menu");
+
+	// Positioning is done here instead of onload to work-around misplacement problem
+	// due to contents title missing on page load.
+	if (!pageObj.positionMenu) {
+		menu.position({
+			my: "left top",
+			at: "left bottom",
+			of: "#send_button"
+		});
+		pageObj.positionMenu = 1;
+	}
+
+	if (menu.is(":visible")) {
+		menu.hide();
+	}
+	else {
+		menu.show();
+		menu.one("mouseleave", function() { menu.hide(); } );
+	}
+}
+
+
 </SCRIPT>
 
-<table class="ui-widget-content ui-corner-all">
-	<tr style="vertical-align:top">
-		<td style="text-align:center">
-			<div><img id='user_image' src="<TMPL_VAR NAME='USER_IMAGE'>" width='100' height='100' class="link" style="padding:1px;border:1px solid lightgray;" onclick="select_image_file();"/></div>
-			<TMPL_IF NAME="IS_USER">
-				<span onclick="select_image_file();" class="small link" >click to change</span>
-				<input id="input_upload_file" name="input_upload_file" type="file" data-url='<TMPL_VAR NAME="PAGE_NAME">' style="display:none;"/>
-			</TMPL_IF>
-		</td>
-		<td>
-			<table style="white-space:nowrap;">
-				<tr>
-					<td style="font-weight:bold;color:dimgray;float:right;">User name</td>
-					<td style="padding-left:10px;"><TMPL_VAR NAME='USER_NAME'></td>
-				</tr>
-				<tr>
-					<td style="font-weight:bold;color:dimgray;float:right;">Full name</td>
-					<td style="padding-left:10px;"><TMPL_VAR NAME='FULL_NAME'></td>
-				</tr>
-				<tr>
-					<td></td>
-					<td class="small" style="padding-left:10px;"><TMPL_VAR NAME='DESCRIPTION'></td>
-				</tr>
-				<tr>
-					<td style="font-weight:bold;color:dimgray;float:right;">Email</td>
-					<td style="padding-left:10px;"><a href="mailto:<TMPL_VAR NAME='EMAIL'>"><TMPL_VAR NAME='EMAIL'></a></td>
-				</tr>
-			</table>
-		</td>
-		<TMPL_IF NAME="IS_USER">
-		<td style="padding-left:40px;">
-			<span style="font-weight:bold;color:dimgray;">History</span> <span class='link ui-icon ui-icon-extlink' onclick="window.open('History.pl');"></span>
+<div id="top_panel">
+	<div style="width:100%;float:left;border-bottom:1px solid lightgray;">
+		<span id="hide_panel_button" onClick="hide_top_panel();" class="link ui-icon ui-icon-minus" style="float:right;margin-left:20px;margin-right:5px;border:1px solid lightgray;"></span>
+		<div style="float:right;">
+			<span style="font-weight:bold;color:dimgray;">History</span> 
+			<span class='link ui-icon ui-icon-extlink' onclick="window.open('History.pl');"></span>
 			<span style="padding-left:5px;">
 				<span id='recent' class='small link' style="font-weight:bold;" onclick="show_recent_activity();">recent</span>
 				<span id='important' class='small link' style="padding-left:5px;" onclick="show_important_activity();">important</span>
 			</span>
-			<div id='logs' class="small ui-widget-content ui-corner-all" style="width:350px;height:100px;overflow:auto">
+			<div id='logs' class="small" style="min-width:350px;max-width:500px;height:100px;overflow:auto;border-top:1px solid lightgray;background:#f8f8f8">
 				<TMPL_VAR NAME='LOGS'>
 			</div>
-		</td>
-		</TMPL_IF> <!-- IS_USER -->
-	</tr>
-</table>
+		</div>
 
-<br>
+		<table style="float:left;white-space:nowrap;text-align:center;padding-right:20px;">
+			<tr><td>
+				<img id='user_image' src="<TMPL_VAR NAME='USER_IMAGE'>" width='100' height='100' class="link" style="padding:1px;border:1px solid lightgray;" onclick="select_image_file();" />
+			</td></tr>
+			<tr><td>
+				<span onclick="select_image_file();" class="small link">
+					click to change</span>
+				<input id="input_upload_file" name="input_upload_file" type="file" data-url='<TMPL_VAR NAME="PAGE_NAME">' style="display:none;" />
+			</td></tr>
+		</table>
 
-<table class="small" style="overflow:hidden;">
-	<tr style="vertical-align:top;">
-		<td>
-			<span class="large" style="font-weight:bold;color:dimgray;"><img src="picts/group-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Groups</span> <span class='link ui-icon ui-icon-extlink' onclick="window.open('Groups.pl')"></span> <span class='link ui-icon ui-icon-plus' onclick="new_group();"></span>
-			<div id="groups" class="small ui-widget-content ui-corner-all" style="width:500px;height:100px;overflow-y:auto">
-			<TMPL_VAR NAME='GROUPS'>
-			</div>
-		</td>
-		<td>
-			<img src="picts/user-icon.png" width='20' height='20'/>
-			<span class="large" style="font-weight:bold;color:dimgray;"> <TMPL_IF NAME="IS_USER">My </TMPL_IF> Collaborators</span>
-			<div class="small ui-widget-content ui-corner-all" style="width:160px;height:100px;overflow-y:auto">
-			<TMPL_VAR NAME='COLLABORATORS'>
-			</div>
-		</td>
-	</tr>
-</table>
-<br>
-
-<span class="large" style="font-weight:bold;color:dimgray;"><img src="picts/notebook-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Notebooks</span> <span class='link ui-icon ui-icon-extlink' onclick="window.open('Notebooks.pl')"></span> <span class='link ui-icon ui-icon-plus' onclick="new_notebook();"></span>
-<div id="notebooks" class="small panel ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
-<TMPL_VAR NAME='LISTS'>
+		<table style="float:left;white-space:nowrap;padding-right:50px;">
+			<tr>
+				<td style="font-weight:bold;color:dimgray;float:right;">User name</td>
+				<td style="padding-left:10px;"><TMPL_VAR NAME='USER_NAME'></td>
+			</tr>
+			<tr>
+				<td style="font-weight:bold;color:dimgray;float:right;">Full name</td>
+				<td style="padding-left:10px;"><TMPL_VAR NAME='FULL_NAME'></td>
+			</tr>
+			<tr>
+				<td></td>
+				<td class="small" style="padding-left:10px;"><TMPL_VAR NAME='DESCRIPTION'></td>
+			</tr>
+			<tr>
+				<td style="font-weight:bold;color:dimgray;float:right;">Email</td>
+				<td style="padding-left:10px;"><a href="mailto:<TMPL_VAR NAME='EMAIL'>"><TMPL_VAR NAME='EMAIL'></a></td>
+			</tr>
+		</table>
+	</div>
+	<div style="clear:both;height:13px;"></div>
 </div>
-<br>
 
-<span class="large" style="font-weight:bold;color:dimgray;"><img src="picts/dna-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Genomes</span> <span class='link ui-icon ui-icon-extlink' onclick="window.open('Genomes.pl')"></span> <span class='link ui-icon ui-icon-plus' onclick="window.open('LoadGenome.pl')"></span>
-<div class="small panel ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
-<TMPL_VAR NAME='GENOMES'>
-</div>
-<br>
+<div id="bottom-panel" style="width:100%;">
+	<div style="float:right;width:200px;">
+		<span id="show_panel_button" onClick="show_top_panel();" class="link ui-icon ui-icon-plus" style="display:none;float:right;margin-right:5px;border:1px solid lightgray;"></span>
 
-<span class="large" style="font-weight:bold;color:dimgray;"><img src="picts/testtube-icon.png" width='20' height='20'/> <TMPL_IF NAME="IS_USER">My </TMPL_IF>Experiments</span> <span class='link ui-icon ui-icon-extlink' onclick="window.open('Experiments.pl')"></span> <span class='link ui-icon ui-icon-plus' onclick="window.open('LoadExperiment.pl')"></span>
-<div class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;resize:both;">
-<TMPL_VAR NAME='EXPERIMENTS'>
+		<div id="info_panel" class="small panel" style="overflow:auto;margin-left:10px;margin-top:29px;border-top:1px solid lightgray;color:gray;">
+		</div>
+	</div>
+
+	<div style="float:left;width:145px;float:left;margin-right:15px;">
+		<div id="toc_panel" class="small panel" style="overflow:auto;padding-right:20px;border-right:1px solid lightgray;margin-bottom:20px;">
+			<TMPL_VAR NAME='TOC'>
+		</div>
+		<span id="create_button" class='ui-button ui-corner-all ui-button-icon-right' style="font-size:0.85em;" onclick="create_menu();">CREATE<span class="ui-icon ui-icon-triangle-1-s"></span></span>
+		<ul id="create_menu" class="small" style="display:none;">
+			<li><a onclick="create_group_dialog();">New Group</a></li>
+			<li><a onclick="create_notebook_dialog();">New Notebook</a></li>
+			<li><a onclick="window.open('LoadGenome.pl');">Load Genome</a></li>
+			<li><a onclick="window.open('LoadExperiment.pl');">Load Experiment</a></li>
+		</ul>
+	</div>
+
+	<div style="height:24px;">
+		<span id="contents_title" style="float:left;width:130px;font-weight:bold;"><TMPL_VAR NAME="CONTENTS_TITLE"></span>
+		<span id="stuff_buttons">
+			<span onClick="share_dialog();" class="item-button link ui-icon ui-icon-person ui-state-disabled" style="margin-left:20px;margin-right:5px;border:1px solid lightgray;"></span>
+			<span onClick="add_to_notebook_dialog();" class="item-button link ui-icon ui-icon-folder-collapsed ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+			<span onClick="delete_items();" class="item-button link ui-icon ui-icon-trash ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+			<span id="send_button" onClick="send_menu();" class="item-button link ui-icon ui-icon-arrowthick-1-e ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+			<ul id="send_menu" class="small" style="display:none;">
+				<li><a onclick="send_items_to();">CoGeBlast</a></li>
+				<li><a onclick="send_items_to();">SynFind</a></li>
+				<li><a onclick="send_items_to();">SynMap</a></li>
+				<li><a onclick="send_items_to();">GEvo</a></li>
+			</ul>
+		</span>
+		<span id="trash_buttons">
+			<span onClick="undelete_items();" class="item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+		</span>
+		<input id="search_input" type="search" maxlength="20" style="float:right;margin-right:15px;vertical-align:top;border:1px solid lightgray;" onkeyup="filter_contents();" />
+	</div>
+
+	<div id="contents_panel" class="small panel">
+		<div id="contents_table" style="overflow:auto;height:70%;border-top:1px solid lightgray;">
+			<TMPL_VAR NAME='CONTENTS'>
+		</div>
+	</div>
 </div>
+
+<div id="add_to_notebook_dialog" class="dialog_box" title="Add Items to Notebook" style="display:none;">
+	<table class="small">
+		<tr align='left'>
+			<td>
+				<span style="float:right;">
+					<input type="textbox" size="53" id="notebook_search_input" onkeyup="wait_to_search(search_notebooks, this.value);" />
+					<span class='ui-button ui-corner-all' onclick="search_notebooks();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+					<img id="wait_notebook" src="picts/ajax-loader.gif" style="opacity: 0;" />
+				</span>
+				<span style="float:left;font-weight:bold;">Notebooks</span>
+			</td>  
+		</tr>
+		<tr>
+			<td colspan='2'>
+				<select id="notebook_select" size="10" style="width:450px;">
+				</select>
+			</td>
+		</tr>
+	</table>
+	<br>
+	<span href="javascript:void(0)" onClick="add_items_to_notebook();" class='ui-button ui-button-go ui-corner-all'>Add Items</span>
+</div>
+
+<div id="create_group_dialog" class="dialog_box" title="Create New Group" style="display:none;">
+	<table class="small">
+		<tr>
+			<td>Name:</td>
+			<td><input id="edit_group_name" type="textbox" size="53" value="" /></td>
+		</tr>
+		<tr>
+			<td>Description:</td>
+			<td><textarea id="edit_group_desc" rows="5" cols="50"></textarea></td>
+		</tr>
+		<tr>
+			<td>Role:</td>
+			<td>
+				<select id="edit_group_role" style="max-width:265px;">
+					<TMPL_VAR NAME="ROLES">
+				</select>
+			</td>
+		</tr> 
+	</table>
+	<br>
+	<span onClick="create_new_group();" class="ui-button ui-corner-all ui-button-go">Create Group</span>
+</div>
+
+<div id="create_notebook_dialog" class="dialog_box" title="Create New Notebook" style="display:none;">
+	<table class="small">
+		<tr>
+			<td>Name:</td>
+			<td><input id="edit_notebook_name" type="textbox" size="53" value="" /></td>
+		</tr>
+		<tr>
+			<td>Description:</td>
+			<td><textarea id="edit_notebook_desc" rows="5" cols="50"></textarea></td>
+		</tr>
+		<tr>
+			<td>Type:</td>
+			<td>
+				<select id="edit_notebook_type" style="max-width:265px;">
+					<TMPL_VAR NAME="NOTEBOOK_TYPES">
+				</select>
+			</td>
+		</tr> 
+	</table>
+	<br>
+	<span onClick="create_new_notebook();" class="ui-button ui-corner-all ui-button-go">Create Notebook</span>
+</div>
+
+<div id="share_dialog" class="dialog_box" title="Share Items" style="display:none;"></div>
 
 </TMPL_IF> <!-- MAIN -->
 
 
 
-<TMPL_IF NAME='GROUP_TABLE'>
-	<table class="small">
-		<TMPL_LOOP NAME="GROUP_LOOP">
-		<tr valign="top">
-			<td style="white-space:nowrap;"><TMPL_VAR NAME="GROUP_NAME"></td>
-			<td style="white-space:nowrap;"><TMPL_VAR NAME="GROUP_ROLE"></td>
-			<td><TMPL_VAR NAME="GROUP_DESC"></td>
-		</tr>
-		</TMPL_LOOP>
-	</table>
-</TMPL_IF> <!-- GROUPS_TABLE -->
-
-
-
-<TMPL_IF NAME='COLLABORATOR_TABLE'>
-	<TMPL_LOOP NAME="COLLABORATOR_LOOP">
-		<TMPL_VAR NAME="COLLABORATOR_INFO"><br>
+<TMPL_IF NAME="DO_TOC">
+	<TMPL_LOOP NAME="TOC_ITEM_LOOP">
+		<div id="toc_<TMPL_VAR NAME='TOC_ITEM_ID'>" class="link" style="padding-bottom:3px;padding-left:<TMPL_VAR NAME='TOC_ITEM_INDENT'>px;" onclick="select_content(<TMPL_VAR NAME='TOC_ITEM_ID'>);">
+			<TMPL_VAR NAME="TOC_ITEM_ICON"> 
+			<span id="toc_label_<TMPL_VAR NAME='TOC_ITEM_ID'>">
+				<TMPL_VAR NAME="TOC_ITEM_INFO">
+			</span>
+		</div>
 	</TMPL_LOOP>
-</TMPL_IF> <!-- COLLABORATOR_TABLE -->
+</TMPL_IF>
 
 
 
-<TMPL_IF NAME='LIST_TABLE'>
-	<TMPL_LOOP NAME="LIST_LOOP">
-		<TMPL_VAR NAME="LIST_INFO"><br>
+<TMPL_IF NAME="DO_CONTENTS">
+	<TMPL_LOOP NAME="CONTENTS_ITEM_LOOP">
+		<div id="content_<TMPL_VAR NAME='CONTENTS_ITEM_ID'>_<TMPL_VAR NAME='CONTENTS_ITEM_TYPE'>" style="display:none;border-bottom:1px solid lightgray;padding:3px;padding-left:<TMPL_VAR NAME='CONTENTS_ITEM_INDENT'>px;" class="<TMPL_IF NAME='CONTENTS_ITEM_DELETED'>deleted</TMPL_IF>">
+			<input type="checkbox" style="margin-right:8px;" onclick="select_item();" />
+			<span class="link" onmouseover="enter_item(this.parentNode);" onmouseout="exit_item(this.parentNode);" onclick="window.open('<TMPL_VAR NAME="CONTENTS_ITEM_LINK">');">
+				<TMPL_VAR NAME="CONTENTS_ITEM_ICON"> 
+				<TMPL_VAR NAME="CONTENTS_ITEM_INFO">
+			</span>
+		</div>
 	</TMPL_LOOP>
-</TMPL_IF> <!-- LIST_TABLE -->
-
-
-
-<TMPL_IF NAME='GENOME_TABLE'>
-	<TMPL_LOOP NAME="GENOME_LOOP">
-		<TMPL_VAR NAME="GENOME_INFO"><br>
-	</TMPL_LOOP>
-</TMPL_IF> <!-- GENOME_TABLE -->
-
-
-
-<TMPL_IF NAME='EXPERIMENT_TABLE'>
-	<TMPL_LOOP NAME="EXPERIMENT_LOOP">
-		<TMPL_VAR NAME="EXPERIMENT_INFO"><br>
-	</TMPL_LOOP>
-</TMPL_IF> <!-- EXPERIMENT_TABLE -->
+</TMPL_IF>
 
 
 
@@ -264,13 +872,69 @@ function new_notebook() {
 			</tr>
 		</TMPL_LOOP>
 	</table>
-</TMPL_IF> <!-- LOG_TABLE -->
+</TMPL_IF>
+
+
+
+<TMPL_IF NAME='SHARE_DIALOG'>
+	<script>
+	$(function(){
+		$("#share_input").autocomplete({
+			source: [],
+			focus: function() { return false; },
+			select:
+		    	function(event, ui) {
+		    		$("#share_input")
+		    			.val( ui.item.label )
+		    			.data('select_id', ui.item.value);
+		    		if (ui.item.value.split(':')[1] == ITEM_TYPE_USER) {
+		    			$('#role_select').show();
+		    		}
+		    		else {
+		    			$('#role_select').hide();
+		    		}
+		    		return false;
+		    	},
+		});
+	});
+	</script>
+	<span class="small" style="font-weight:bold;">Who Has Access</span>
+	<div class="small" style="overflow:auto;max-height:120px;padding-left:20px;padding-bottom:10px;border-top:1px solid lightgray;background-color:#f6f6f6;">
+		<TMPL_LOOP NAME="GROUP_LOOP">
+			<div>
+				<span style="color:dimgray;font-weight:bold;"><TMPL_VAR NAME="GROUP_NAME"> (<TMPL_VAR NAME="GROUP_ROLE">)</span>
+				<span onClick="remove_items_from_user_or_group('<TMPL_VAR NAME=GROUP_ITEM>');" class="link ui-icon ui-icon-close"></span>
+				<br>
+				<TMPL_LOOP NAME="GROUP_USER_LOOP">
+					<span style="color:dimgray;padding-left:20px;"><TMPL_VAR NAME="GROUP_USER_FULL_NAME"> (<TMPL_VAR NAME="GROUP_USER_NAME">)<span><br>
+				</TMPL_LOOP>
+			</div>
+		</TMPL_LOOP>
+		<TMPL_LOOP NAME="USER_LOOP">
+			<div>
+				<span style="color:dimgray;font-weight:bold;"><TMPL_VAR NAME="USER_FULL_NAME"> (<TMPL_VAR NAME="USER_NAME">) (<TMPL_VAR NAME="USER_ROLE">)<span>
+				<span onClick="$(this.parent).fadeOut(); remove_items_from_user_or_group('<TMPL_VAR NAME=USER_ITEM>');" class="link ui-icon ui-icon-close"></span><br>
+			</div>
+		</TMPL_LOOP>
+	</div>
+	<br>
+	<span class="small" style="font-weight:bold;">Add Access</span>
+	<div class="small" style="padding:20px;border-top:1px solid lightgray;">
+		<span style="color:dimgray">Enter names or groups:</span><br>
+		<input id="share_input" type="search" maxlength="40" style="width:300px;border:1px solid lightgray;" onkeyup="wait_to_search(search_share, this.value);" />
+		<select id="role_select" style="display:none;"><TMPL_VAR NAME="ROLES"></select>
+		<span href="javascript:void(0)" onClick="add_items_to_user_or_group();" class='ui-button ui-button-go ui-corner-all'>Add</span>
+	</div>
+	<br>
+	<span href="javascript:void(0)" onClick="$('#share_dialog').dialog('close')" class='ui-button ui-button-go ui-corner-all'>Done</span>
+</TMPL_IF>
 
 
 
 <TMPL_IF NAME='ADMIN_AREA'>
+<!--
 <br>
 <hr>
 Admin Functions:<br>
-- Add "make admin" function
+-->
 </TMPL_IF> <!-- ADMIN_AREA -->
