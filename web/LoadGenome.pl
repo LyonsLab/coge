@@ -568,7 +568,7 @@ sub generate_body {
 	return "Access denied" if ($USER->name eq 'public');
 
 	$template->param( ENABLE_NCBI => 1 );
-	$template->param( DEFAULT_TAB => 3 );
+	$template->param( DEFAULT_TAB => 1 );
 	$template->param( MAX_IRODS_LIST_FILES => 100 );
 	$template->param( MAX_IRODS_TRANSFER_FILES => 30 );
 	$template->param( MAX_FTP_FILES => 30 );
