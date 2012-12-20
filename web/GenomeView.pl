@@ -224,7 +224,7 @@ map.addLayer($layer_name);\n
   $count =0;
 	foreach my $exp ($dsg->experiments) #this genome has experiments, let's create layers for those experiments.  This will need to be greatly expanded for the final EPIC-CoGe project so that users can do fancy stuff
 	{
-		
+		next if $exp->deleted;
 			my $expid = $exp->id;
 			my $name = $exp->name;
 			my $layer_name = "exp_layer$count";
