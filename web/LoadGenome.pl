@@ -426,11 +426,16 @@ sub get_load_genome_log {
 }
 
 sub get_sequence_types {
-	#my %opts = @_;
+	my $selected = 1;
 	
 	my $html;
 	foreach my $type ( sort {$a->name cmp $b->name} $coge->resultset('GenomicSequenceType')->all() ) {
-		$html .= '<option value="' . $type->id . '">' . $type->info . '</option>';
+		$html .= '<option value="' . $type->id . '"';
+		if ($selected && $type->id == $selected) { #$type->name =~ /$selected/i) {
+			$html .= ' selected';
+			$selected = '';
+		}
+		$html .= '>' . $type->info . '</option>';
 	}
 	
 	return $html;
