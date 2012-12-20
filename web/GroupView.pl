@@ -172,7 +172,7 @@ sub get_group_info {
 	if ($user_can_edit) {
 		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_group_info({ugid: '$ugid'});">Edit Info</span>};
 		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="modify_users({ugid: '$ugid'});">Modify Users</span>};
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="add_lists({ugid: '$ugid'});">Add Notebook</span>};
+		#$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="add_lists({ugid: '$ugid'});">Add Notebook</span>};
 		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_group();">Delete Group</span>};
 	}
 	
