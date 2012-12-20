@@ -792,7 +792,7 @@ sub generate_body {
 
 	return "Access denied" unless (!$genome->restricted or $USER->is_admin or $USER->has_access_to_genome($genome));
 
-	my ($first_chr) = sort {$b->sequence_length <=> $a->sequence_length} $genome->chromosomes;
+	my ($first_chr) = $genome->chromosomes;
 
 	$template->param(
 		GID 			=> $gid,
