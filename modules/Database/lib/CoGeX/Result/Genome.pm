@@ -621,7 +621,7 @@ See Also   :
 
 sub get_chromosomes {
 	my $self = shift;
-	my @data = map { $_->chromosome } $self->genomic_sequences();
+	my @data = map { $_->chromosome } sort { $b->sequence_length <=> $a->sequence_length } $self->genomic_sequences();
 	return wantarray ? @data : \@data;
 }
 
