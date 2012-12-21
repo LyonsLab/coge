@@ -15,6 +15,9 @@ $(document).ready(function(){
 	$(".dialog_box").dialog({
 		autoOpen: false, 
 		width: 500, 
+		// open: function (e, ui) {
+  //       	$(this).closest('.ui-dialog').css({position: 'fixed'});
+  //       }
 		//position: [$(window).width()/2-250, 200]
   	});
 
@@ -69,6 +72,7 @@ function set_input(id, text) {
 }
 
 function file_selected(filename, url) {
+	$('#file_select_dialog').dialog('close');
 	$('#files_clear').removeClass('ui-state-disabled');
 }
 
@@ -482,7 +486,7 @@ function more() {
 <div id="file_select_dialog" class="dialog_box" title="Select Data File ..." style="display:none;">
   <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
   <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all ui-button-go">Done</span>
-</div> <!-- file_select_dialog -->
+</div>
 
 
 

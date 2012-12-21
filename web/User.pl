@@ -75,6 +75,7 @@ $link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, 
 	search_share			=> \&search_share,
 	add_items_to_user_or_group 		=> \&add_items_to_user_or_group,
 	remove_items_from_user_or_group	=> \&remove_items_from_user_or_group,
+	send_items_to					=> \&send_items_to,
 	create_new_group		=> \&create_new_group,
 	create_new_notebook		=> \&create_new_notebook,
 );
@@ -236,7 +237,7 @@ sub get_item_info {
 				 '<b>Source:</b> ' . ($genome->source ? $genome->source->[0]->name : '') . '<br>';
 		$html .= '<b>Groups with access:</b><br>' .
 				 '<div style="padding-left:20px;">' .
-				 join('<br>', map { $_->name } sort $genome->groups) . '<br>' .
+				 (join('<br>', map { $_->name } sort $genome->groups(exclude_owner=>1)) ? $_ : 'None') . '<br>' .
 				 '</div>' .
 				 '<b>Users with access:</b><br>' .
 				 '<div style="padding-left:20px;">';
@@ -286,7 +287,7 @@ sub delete_items {
 		my ($item_id, $item_type) = $_ =~ /content_(\d+)_(\d+)/;
 		next unless ($item_id and $item_type);
 
-		print STDERR "delete $item_id $item_type\n";
+		# print STDERR "delete $item_id $item_type\n";
 		if ($item_type == $ITEM_TYPE{group}) {
 			my $group = $coge->resultset('UserGroup')->find($item_id);
 			return unless $group;
@@ -334,7 +335,7 @@ sub undelete_items {
 		my ($item_id, $item_type) = $_ =~ /content_(\d+)_(\d+)/;
 		next unless ($item_id and $item_type);
 
-		print STDERR "undelete $item_id $item_type\n";
+		# print STDERR "undelete $item_id $item_type\n";
 		if ($item_type == $ITEM_TYPE{genome}) {
 			my $genome = $coge->resultset('Genome')->find($item_id);
 			return unless $genome;
@@ -382,7 +383,7 @@ sub get_share_dialog {
 		my ($item_id, $item_type) = $_ =~ /content_(\d+)_(\d+)/;
 		next unless ($item_id and $item_type);
 
-		print STDERR "get_share $item_id $item_type\n";
+		# print STDERR "get_share $item_id $item_type\n";
 		if ($item_type == $ITEM_TYPE{genome}) {
 			my $genome = $coge->resultset('Genome')->find($item_id);
 			return unless $genome;
@@ -400,36 +401,35 @@ sub get_share_dialog {
 	}
 
 	my @user_rows;
-	foreach my $conn (sort {$a->user->display_name cmp $b->user->display_name} values %userconn) {
+	foreach my $conn (values %userconn) {
 		if ($conn->parent_type == 5) { #FIXME hardcoded type
-			print STDERR "matt: user " . $conn->user->display_name . "\n";
-			push @user_rows, { USER_ITEM => $conn->user->id.':5', #FIXME hardcoded type
-						   USER_FULL_NAME => $conn->user->display_name, 
-						   USER_NAME => $conn->user->name,
-						   USER_ROLE => $conn->role->name };
+			push @user_rows, { 	USER_ITEM => $conn->user->id.':5', #FIXME hardcoded type
+						   		USER_FULL_NAME => $conn->user->display_name, 
+						   		USER_NAME => $conn->user->name,
+						   		USER_ROLE => $conn->role->name };
 		}
 		if ($conn->parent_type == 6) { #FIXME hardcoded type
 			my $group = $conn->user_group;
-			print STDERR "matt: group " . $group->name . "\n";
 			$groups{$group->id} = $group;
 		}
 	}
 
 	my @group_rows;
 	foreach my $group (sort groupcmp values %groups) {
+		next if $group->is_owner;
 		my @users = map { { GROUP_USER_FULL_NAME => $_->display_name, 
 							GROUP_USER_NAME => $_->name } 
 						} sort usercmp $group->users;
 		push @group_rows, { GROUP_ITEM => $group->id.':6', #FIXME hardcoded type
-					   GROUP_NAME => $group->name, 
-					   GROUP_ROLE => $group->role->name,
-					   GROUP_USER_LOOP => \@users };
+					   		GROUP_NAME => $group->name, 
+					   		GROUP_ROLE => $group->role->name,
+					   		GROUP_USER_LOOP => \@users };
 	}
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 	$template->param( SHARE_DIALOG => 1 );
 	$template->param( GROUP_LOOP => \@group_rows );
-	$template->param( USER_LOOP => \@user_rows );
+	$template->param( USER_LOOP => [sort {$a->{USER_FULL_NAME} cmp $b->{USER_FULL_NAME}} @user_rows] );
 	$template->param( ROLES => get_roles('reader') );
 	return $template->output;
 }
@@ -439,7 +439,7 @@ sub search_share {
 	return if ($USER->user_name eq 'public');
 	my $search_term	= escape($opts{search_term});
 	my $timestamp	= $opts{timestamp};
-	print STDERR "search_share $search_term $timestamp\n";
+	# print STDERR "search_share $search_term $timestamp\n";
 	
 	my @results;
 
@@ -588,6 +588,52 @@ sub remove_items_from_user_or_group {
 	}
 
 	return get_share_dialog(item_list => $item_list);
+}
+
+sub send_items_to {
+	my %opts = @_;
+	my $page_name = $opts{page_name};
+	return unless $page_name;
+	my $format = $opts{format};
+	my $item_list = $opts{item_list};
+	my @items = split(',', $item_list);
+	return unless @items;
+
+	my %fields;
+	foreach (@items) {
+		my ($item_id, $item_type) = $_ =~ /content_(\d+)_(\d+)/;
+		next unless ($item_id and $item_type);
+		push @{$fields{$item_type}}, $item_id;
+	}
+
+	my $url;
+	my $num = 1;
+	foreach my $type (keys %fields) {
+		my $name;
+		if ($type == $ITEM_TYPE{genome}) {
+			$name = 'dsgid';
+		}
+		elsif ($type == $ITEM_TYPE{experiment}) {
+			$name = 'eid';
+		}
+		elsif ($type == $ITEM_TYPE{notebook}) {
+			$name = 'nid';
+		}
+
+		if ($format == 1) { # numbered
+			$url .= join(';', map { $name.($num++).'='.$_ } @{$fields{$type}});
+		}
+		elsif ($format == 2) { # list
+			$url .= $name . '=' . join(',', @{$fields{$type}});
+		}
+		else {
+			$url .= join(';', map { $name.'='.$_ } @{$fields{$type}});
+		}
+	}
+
+	$url = $page_name.'.pl?'.$url if ($url);
+
+	return $url;
 }
 
 sub get_toc {
@@ -861,6 +907,7 @@ sub create_new_notebook {
 	my $desc = $opts{desc};
 	my $type_id = $opts{type_id};
 	return unless $name && $type_id;
+	my $item_list = $opts{item_list}; # optional
 
     return if ($USER->user_name eq "public");
 
@@ -869,13 +916,15 @@ sub create_new_notebook {
     return unless $owner;
 
     # Create the new list
-    my $list = $coge->resultset('List')->create(
-      { name => $name,
+    my $list = $coge->resultset('List')->create({ 
+    	name => $name,
         description => $desc,
         list_type_id => $type_id,
         user_group_id => $owner->id,
         restricted => 1
-      } );
+    });
+
+	add_items_to_notebook(nid => $list->id, item_list => $item_list) if ($item_list);
 
     CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'create notebook id' . $list->id );
 
@@ -887,7 +936,7 @@ sub get_notebook_types {
 	my $html;
 	foreach my $type ( $coge->resultset('ListType')->all() ) {
 		next if ($type->name =~ /owner/i); # reserve this type for system-created lists
-		my $name = $type->name . ($type->description ? ": " . $type->description : '');
+		my $name = $type->name;# . ($type->description ? ": " . $type->description : '');
 		$html .= '<option value="' . $type->id . '" ' . ($type->id eq $selected || $type->name =~ /$selected/i ? 'selected': '') . '>' . $name . '</option>';
 	}
 	return $html;

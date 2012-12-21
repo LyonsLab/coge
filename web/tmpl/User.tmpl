@@ -9,7 +9,7 @@ div.deleted { display: none; }
 
 <SCRIPT language="JavaScript">
 var POLL_TIME = 30*1000;
-var IDLE_TIME = 60*1000;
+var IDLE_TIME = 40*1000;
 
 var ITEM_TYPE_ALL 			= <TMPL_VAR NAME="ITEM_TYPE_ALL">;
 var ITEM_TYPE_SHARED 		= <TMPL_VAR NAME="ITEM_TYPE_SHARED">;
@@ -21,7 +21,8 @@ var ITEM_TYPE_GENOME 		= <TMPL_VAR NAME="ITEM_TYPE_GENOME">;
 var ITEM_TYPE_EXPERIMENT	= <TMPL_VAR NAME="ITEM_TYPE_EXPERIMENT">;
 
 $(function() {
-	$(".dialog_box").dialog({autoOpen: false}); // initialize dialog boxes
+	// Initialize dialog boxes
+	$(".dialog_box").dialog({autoOpen: false, resizable: false});
 
 	// Initialize globals
 	pageObj.timestamp = new Array();
@@ -89,7 +90,8 @@ $(function() {
 	// Initiate refresh loop
 	schedule_poll();
 
-	setTimeout(search_notebooks, 1000); // initialize add-to-notebok dialog
+	// Initialize add-to-notebok dialog
+	setTimeout(search_notebooks, 1000);
 });
 
 function poll() {
@@ -165,6 +167,10 @@ function exit_item(obj) {
 
 function get_selected_items() {
 	return $('#contents_table input[type=checkbox]').filter(':checked').filter(':not(:hidden)');
+}
+
+function get_item_type(obj) {
+	return obj.id.match(/content_\w+_(\w+)/)[1];
 }
 
 function select_item() {
@@ -295,6 +301,9 @@ function select_content(type) {
 function delete_items() {
 	var selected = get_selected_items();
 	if (selected.length) {
+		//FIXME: notebooks/groups are permanently deleted, don't move them to trash
+		//var item_type = get_item_type(this);
+
 		selected.parent().fadeOut('fast', 
 			function() {
 				selected.parent().addClass('deleted');
@@ -594,6 +603,7 @@ function create_new_group() {
 	var name = $('#edit_group_name').val();
 	if (!name) {
 		alert('Please enter a group name.');
+		return;
 	}
 	var desc = $('#edit_group_desc').val();
 	var role_id = $('#edit_group_role').val();
@@ -618,24 +628,31 @@ function create_new_notebook() {
 	var name = $('#edit_notebook_name').val();
 	if (!name) {
 		alert('Please enter a notebook name.');
+		return;
 	}
 	var desc = $('#edit_notebook_desc').val();
 	var type_id = $('#edit_notebook_type').val();
 
-    $.ajax({
-        data: {
-            jquery_ajax: 1,
-            fname: 'create_new_notebook',
-            name: name,
-            desc: desc,
-            type_id: type_id
-        },
-        success : function(data) {
-            if (data) {
-            	location.reload();
-            }
-        }
-    });
+	var selected = get_selected_items();
+	if (selected.length) {
+		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
+
+	    $.ajax({
+	        data: {
+	            jquery_ajax: 1,
+	            fname: 'create_new_notebook',
+	            name: name,
+	            desc: desc,
+	            type_id: type_id,
+	            item_list: item_list,
+	        },
+	        success : function(data) {
+	            if (data) {
+	            	location.reload();
+	            }
+	        }
+	    });
+	}
 }
 
 function send_menu() {
@@ -661,6 +678,26 @@ function send_menu() {
 	}
 }
 
+function send_items_to(page_name, format) {
+	var selected = get_selected_items();
+	if (selected.length) {
+		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'send_items_to',
+				page_name: page_name,
+				format: format,
+				item_list: item_list,
+			},
+			success : function(url) {
+				if (url) {
+					window.open(url);
+				}
+			}
+		});
+	}	
+}
 
 </SCRIPT>
 
@@ -741,10 +778,10 @@ function send_menu() {
 			<span onClick="delete_items();" class="item-button link ui-icon ui-icon-trash ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
 			<span id="send_button" onClick="send_menu();" class="item-button link ui-icon ui-icon-arrowthick-1-e ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
 			<ul id="send_menu" class="small" style="display:none;">
-				<li><a onclick="send_items_to();">CoGeBlast</a></li>
-				<li><a onclick="send_items_to();">SynFind</a></li>
-				<li><a onclick="send_items_to();">SynMap</a></li>
-				<li><a onclick="send_items_to();">GEvo</a></li>
+				<li><a onclick="send_items_to('CoGeBlast', 2);">CoGeBlast</a></li>
+				<li><a onclick="send_items_to('SynFind');">SynFind</a></li>
+				<li><a onclick="send_items_to('SynMap', 1);">SynMap</a></li>
+				<li><a onclick="send_items_to('GEvo', 1);">GEvo</a></li>
 			</ul>
 		</span>
 		<span id="trash_buttons">

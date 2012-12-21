@@ -89,9 +89,11 @@ function add_file_to_list(filename, url) {
 	var td = $('<td style="float:right;"><img src="picts/ajax-loader.gif"/></td>');
 	$(tr).append(td).fadeIn();
 	$(tr).data('url', url);
-	if ("<TMPL_VAR NAME='FILE_SELECT_SINGLE'>") {
+	
+	<TMPL_IF NAME='FILE_SELECT_SINGLE'>
 		$('#file_table').empty(); // remove all rows
-	}
+	</TMPL_IF>
+
 	$('#file_table').append(tr);
 	
 	// Call template user's generic hander if defined
@@ -405,7 +407,7 @@ function load_from_ncbi() {
   </ul>
 
   <div id="tab-1" class="small">
-	<div style="white-space:nowrap;border-bottom:1px solid gray;">
+	<div style="white-space:nowrap;border-bottom:1px solid gray;>
 		<img id="ids_loading" src="picts/ajax-loader.gif" style="float:right;"/>
 		<span class='link' onclick='irods_get_path()'><span class='ui-icon ui-icon-home'></span>Home</span>
 		<span class='link' style='padding-left:15px;' onclick='irods_get_path("..")'><span class='ui-icon ui-icon-arrowreturnthick-1-n'></span>Go Up</span>
@@ -415,8 +417,8 @@ function load_from_ncbi() {
 		</TMPL_UNLESS>
 	</div>
 	<div id="ids_current_path" style="font-weight:bold;padding-top:10px;"></div>
-    <div style="overflow-y:auto;height:200px;">
-    	<table id="ids_table" class="small" style="width:100%"></table>
+    <div style="overflow-y:auto;height:154px;">
+    	<table id="ids_table" class="small" style="width:100%;"></table>
     </div>
   </div> <!-- tab-1 -->
 
