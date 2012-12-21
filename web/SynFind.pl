@@ -14,6 +14,8 @@ use File::Path;
 use Benchmark qw(:all);
 use Parallel::ForkManager;
 use DBI;
+use Sort::Versions;
+
 no warnings 'redefine';
 
 #example URL: http://toxic.berkeley.edu/CoGe/SynFind.pl?fid=34519245;qdsgid=3;dsgid=4241,6872,7084,7094,7111
@@ -296,7 +298,8 @@ sub gen_dsg_menu
     my $oid = $opts{oid};
     my $dsgid = $opts{dsgid};
     my @dsg_menu;
-    foreach my $dsg (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $coge->resultset('Genome')->search({organism_id=>$oid},{prefetch=>['genomic_sequence_type']}))
+    foreach my $dsg (sort {versioncmp($b->version, 
+$a->version) || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id} $coge->resultset('Genome')->search({organism_id=>$oid},{prefetch=>['genomic_sequence_type']}))
       {
 	next if $dsg->deleted;
 	next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
@@ -1766,6 +1769,7 @@ sub get_master_histograms
     my $total_feature_count = get_feature_count(dsgid=>$query_dsgid);
 
     my $html;
+    my @all;
     foreach my $item (@$target_dbs)
       {
 	my $db = $item->{synteny_score_db};
@@ -1786,7 +1790,9 @@ sub get_master_histograms
 	    my $sdsgid = $data[7]; #target genome ID
 	    $data{$id}++; #data{query_feature_id}{subject_genome_id}
 	  }
-	$html .= qq{<span class=link onclick='window.open("OrganismView.pl?dsgid=}.$item->{dsgid2}."\")'>".$item->{org_name}."</span>";
+	my $genome = $coge->resultset('Genome')->find($item->{dsgid2});
+
+	$html .= qq{<span class=link onclick='window.open("OrganismView.pl?dsgid=}.$item->{dsgid2}."\")'>".$genome->info."</span>";
 	if ($query_dsgid eq $item->{dsgid2})
 	  {
 	    $html .= "<br><span class=small>(self-self comparison: self-self syntenic regions ignored)</span>";
@@ -1795,22 +1801,59 @@ sub get_master_histograms
 	$html .= qq{<br><span class="small link" onclick=window.open('$link')>Query genome unique genes</span>};
 	$link = $unique_gene_link.";ug=1;qdsgid=".$item->{dsgid2}.";sdsgid=$query_dsgid";
 	$html .= qq{<br><span class="small link" onclick=window.open('$link')>Target genome unique genes</span>};
-	$html .= depth_table(depth_data=>\%data, total=>$total_feature_count);
+	my $depths;
+	$html .= depth_table(depth_data=>\%data, total=>$total_feature_count, depths=>\$depths);
+	push @all, [$depths, $item->{dsgid2}];
       }
+    $html .= master_depth_table(data=>\@all);
     return $html;
   }
+
+sub master_depth_table
+    {
+      my %opts = @_;
+      my $data = $opts{data};
+      my $html = "<table class='small  ui-widget-content ui-corner-all'>";
+      my $max=0;
+      foreach my $item (sort {scalar @{$b->[0]} <=> scalar @{$a->[0]} } @$data)
+	{
+	  unless ($max)
+	    {
+	      $max = scalar @{$item->[0]};
+	      $html .= "<tr>"."<th>Org";
+	      foreach (my $i=0; $i<$max; $i++)
+		{
+		  $html .= "<th>Depth: $i";
+		}
+	      $html .="</tr>\n";
+	    }
+	  $html .= "<tr>";
+	  my $genome = $coge->resultset('Genome')->find($item->[1]);
+	  $html .= "<td>".$genome->info;
+	  foreach (my $i=0; $i<$max; $i++)
+	    {
+	      my $val = $item->[0][$i] ? $item->[0][$i] : 0;
+	      $html .= "<td>$val";
+	    }
+	  $html .= "</tr>\n";
+	}
+      $html .= "</table>";
+      return $html;
+    }
 
 sub depth_table
   {
     my %opts = @_;
     my $data = $opts{depth_data};
     my $total = $opts{total}; #total number of features;
+    my $depths = $opts{depths};
     my %depths;
     map {$depths{$_}++} values %$data;
     my $total_w_depth = 0;
     map {$total_w_depth += $_} values %depths;
     $depths{0}=($total-$total_w_depth);
     my $html = "<table class='small  ui-widget-content ui-corner-all'>";
+    my @depths;
     foreach my $depth (sort {$a <=> $b} keys %depths)
       {
 	$html .= "<tr>";
@@ -1820,8 +1863,10 @@ sub depth_table
 	$html .= "<td>$total";
 	$html .= "<td>".sprintf("%.2f", $depths{$depth}/$total*100)."%";
 	$html .= "</tr>";
+	push @depths, $depths{$depth};
       }
     $html .= "</table>";
+    $$depths=\@depths;
     return $html;
   }
 
