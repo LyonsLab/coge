@@ -85,16 +85,15 @@ sub delete_experiment {
 	my $eid = $opts{eid};
 	return "Must have valid experiment id\n" unless ($eid);
 	
-	# Security check
-	if (not $USER->is_owner(experiment => $eid)) {
-		return 0;
-	}
+	# Check permissions
+	return unless ($USER->is_admin or $USER->is_owner(experiment => $eid));
 
 	# Delete the experiment and associated connectors & annotations
 	#FIXME add some error checking/logging here
 	my $experiment = $coge->resultset('Experiment')->find($eid);
-	return 0 unless ($experiment);
-	$experiment->delete;
+	return 0 unless $experiment;
+	$experiment->deleted(1);
+	$experiment->update;
 	
 	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'delete experiment id' . $experiment->id );
 
@@ -109,7 +108,7 @@ sub get_experiments_for_user {
 #		@experiments = $coge->resultset('Experiment')->all();
 #	}
 #	else {
-		@experiments = $USER->owner_list->experiments;
+		@experiments = $USER->experiments;
 #	}
 
 	my @rows;

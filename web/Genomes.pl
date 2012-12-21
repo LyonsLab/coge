@@ -60,7 +60,7 @@ $USER = undef;
 %FUNCTION = (
 	generate_html			=> \&generate_html,
 	create_genome			=> \&create_genome,
-	# delete_genome			=> \&delete_genome,
+	delete_genome			=> \&delete_genome,
 	get_genomes_for_user	=> \&get_genomes_for_user,
 );
 
@@ -81,26 +81,25 @@ else {
 	print $FORM->header, "\n", generate_html();
 }
 
-# sub delete_genome {
-# 	my %opts = @_;
-# 	my $gid = $opts{gid};
-# 	return "Must have valid genome id\n" unless ($gid);
+sub delete_genome {
+	my %opts = @_;
+	my $gid = $opts{gid};
+	return "Must have valid genome id\n" unless ($gid);
+	print STDERR "delete_genome $gid\n";
 	
-# 	# Security check
-# 	if (not $USER->is_owner(dsg => $gid)) {
-# 		return 0;
-# 	}
+	# Check permission
+	return 0 unless ($USER->is_admin or $USER->is_owner(dsg => $gid));
 
-# 	# Delete the genome and associated connectors & datasets
-# 	#FIXME add some error checking/logging here
-# 	my $genome = $coge->resultset('Genome')->find($gid);
-# 	return 0 unless ($genome);
-# 	$genome->delete; #FIXME doesn't delete list connectors
+	# Delete the genome and associated connectors & datasets
+	my $genome = $coge->resultset('Genome')->find($gid);
+	return 0 unless $genome;
+	$genome->deleted(1);
+	$genome->update;
 	
-# 	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'delete genome id' . $genome->id );
+	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'delete genome id' . $genome->id );
 
-# 	return 1;
-# }
+	return 1;
+}
 
 sub get_genomes_for_user {
 	#my %opts = @_;
@@ -110,7 +109,7 @@ sub get_genomes_for_user {
 #		@genomes = $coge->resultset('Genome')->all();
 #	}
 #	else {
-		push @genomes, $USER->owner_list->genomes;
+		push @genomes, $USER->genomes;
 #	}
 
 	my @genome_info;
@@ -161,7 +160,7 @@ sub generate_body {
 	return $template->output;
 }
 
-# FIXME these comparison routines are duplicated elsewhere
+# FIXME this comparison routine is duplicated elsewhere
 sub genomecmp {
 	no warnings 'uninitialized'; # disable warnings for undef values in sort
 	$a->organism->name cmp $b->organism->name || versioncmp($b->version, $a->version) || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id
