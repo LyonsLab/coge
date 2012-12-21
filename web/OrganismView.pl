@@ -478,6 +478,7 @@ sub get_genome_list_for_org
       my @dsg;
       foreach my $dsg ($org->genomes)
 	{
+	  next if $dsg->deleted;
 	  next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	  $dsg->name($org->name) unless $dsg->name;
     	  push @dsg, $dsg;
@@ -504,6 +505,7 @@ sub get_genomes
 	  my @dsg;
 	  foreach my $dsg ($org->genomes)
 	    {
+	      next if $dsg->deleted;
 	      next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	      push @dsg, $dsg
 	    }
@@ -622,6 +624,8 @@ sub get_genome_info
     $html .= "<tr><td>Links:</td>";
     $html .= qq{<td>};
     $html .= "<a href='OrganismView.pl?dsgid=$dsgid' target=_new>OrganismView</a>&nbsp|&nbsp<a href='CodeOn.pl?dsgid=$dsgid' target=_new>CodeOn</a>";
+    $html .= qq{&nbsp|&nbsp};
+    $html .= qq{<span class='link' onclick="window.open('GenomeInfo.pl?gid=$dsgid');">GenomeInfo</span>};
     $html .= qq{&nbsp|&nbsp};
     $html .= qq{<span class='link' onclick="window.open('SynMap.pl?dsgid1=$dsgid;dsgid2=$dsgid');">SynMap</span>};
     $html .= qq{&nbsp|&nbsp};
