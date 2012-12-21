@@ -128,7 +128,12 @@ div.panel {
   color: #009900;
 }
 
-
+.error-box {
+  border:1px solid lightgray;
+  padding:5px;
+  color:dimgray;
+  background-color:mistyrose;
+}
 
 .container{
   border: 1px solid red;

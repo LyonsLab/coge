@@ -220,7 +220,7 @@ sub gen_body {
 	my @seq_nums;
 	my @seq_sub;
 	for ( my $i = 1 ; $i <= $num_seqs ; $i++ ) {
-		my ($draccn, $pos, $chr, $fid, $dsid, $dsgid,  $gstid, $mask, $display_order);
+		my ($draccn, $pos, $chr, $fid, $dsid, $dsgid, $gstid, $mask, $display_order);
 
 		#order by which genomi regions are displayed, top to bottom
 		$display_order = $i unless $display_order;
@@ -337,59 +337,43 @@ sub gen_body {
 	$nt_color = 1 unless defined $nt_color;
 	my $cbc_color = get_opt( params => $prefs, form => $form, param => 'cbc' );
 	$cbc_color = 0 unless $cbc_color;
-	my $skip_feat_overlap_adjust =
-	  get_opt( params => $prefs, form => $form, param => 'skip_feat_overlap' );
+	my $skip_feat_overlap_adjust = get_opt( params => $prefs, form => $form, param => 'skip_feat_overlap' );
 	$skip_feat_overlap_adjust = 1 unless defined $skip_feat_overlap_adjust;
-	my $skip_hsp_overlap_adjust =
-	  get_opt( params => $prefs, form => $form, param => 'skip_hsp_overlap' );
+	my $skip_hsp_overlap_adjust = get_opt( params => $prefs, form => $form, param => 'skip_hsp_overlap' );
 	$skip_hsp_overlap_adjust = 1 unless defined $skip_hsp_overlap_adjust;
 	my $hiqual = get_opt( params => $prefs, form => $form, param => 'hiqual' );
 	$hiqual = 0 unless $hiqual;
-	my $comp_adj =
-	  get_opt( params => $prefs, form => $form, param => 'comp_adj' );
+	my $comp_adj = get_opt( params => $prefs, form => $form, param => 'comp_adj' );
 	$comp_adj = 0 unless $comp_adj;
-	my $hsp_track =
-	  get_opt( params => $prefs, form => $form, param => 'hsp_track' );
+	my $hsp_track = get_opt( params => $prefs, form => $form, param => 'hsp_track' );
 	$hsp_track = 0 unless $hsp_track;
-	my $hsp_top =
-	  get_opt( params => $prefs, form => $form, param => 'hsp_top' );
+	my $hsp_top = get_opt( params => $prefs, form => $form, param => 'hsp_top' );
 	$hsp_top = 0 unless $hsp_top;
-	my $color_hsp =
-	  get_opt( params => $prefs, form => $form, param => 'color_hsp' );
+	my $color_hsp = get_opt( params => $prefs, form => $form, param => 'color_hsp' );
 	$color_hsp = 0 unless $color_hsp;
-	my $color_feat =
-	  get_opt( params => $prefs, form => $form, param => 'colorfeat' );
+	my $color_feat = get_opt( params => $prefs, form => $form, param => 'colorfeat' );
 	$color_feat = 0 unless $color_feat;
-	my $hsp_label =
-	  get_opt( params => $prefs, form => $form, param => 'hsp_labels' );
+	my $hsp_label = get_opt( params => $prefs, form => $form, param => 'hsp_labels' );
 	$hsp_label = undef unless defined $hsp_label;
 
 #    my $hsp_limit = get_opt(params=>$prefs, form=>$form, param=>'hsplim');
 #    $hsp_limit = 0 unless $hsp_limit;
 #    my $hsp_limit_num = get_opt(params=>$prefs, form=>$form, param=>'hsplimnum');
 #    $hsp_limit_num = 20 unless defined $hsp_limit_num;
-	my $draw_model =
-	  get_opt( params => $prefs, form => $form, param => 'draw_model' );
+	my $draw_model = get_opt( params => $prefs, form => $form, param => 'draw_model' );
 	$draw_model = "full" unless $draw_model;
-	my $hsp_overlap_limit =
-	  get_opt( params => $prefs, form => $form, param => 'hsp_overlap_limit' );
+	my $hsp_overlap_limit = get_opt( params => $prefs, form => $form, param => 'hsp_overlap_limit' );
 	$hsp_overlap_limit = 0 unless $hsp_overlap_limit;
-	my $hsp_size_limit =
-	  get_opt( params => $prefs, form => $form, param => 'hsp_size_limit' );
+	my $hsp_size_limit = get_opt( params => $prefs, form => $form, param => 'hsp_size_limit' );
 	$hsp_size_limit = 0 unless $hsp_size_limit;
-	my $show_cns =
-	  get_opt( params => $prefs, form => $form, param => 'show_cns' );
+	my $show_cns = get_opt( params => $prefs, form => $form, param => 'show_cns' );
 	$show_cns = 0 unless $show_cns;
-	my $feat_labels =
-	  get_opt( params => $prefs, form => $form, param => 'feat_labels' );
+	my $feat_labels = get_opt( params => $prefs, form => $form, param => 'feat_labels' );
 	$feat_labels = 0 unless $feat_labels;
-	my $show_gene_space =
-	  get_opt( params => $prefs, form => $form, param => 'show_gene_space' );
-	my $show_contigs =
-	  get_opt( params => $prefs, form => $form, param => 'show_contigs' );
+	my $show_gene_space = get_opt( params => $prefs, form => $form, param => 'show_gene_space' );
+	my $show_contigs = get_opt( params => $prefs, form => $form, param => 'show_contigs' );
 	$show_gene_space = 0 unless $show_gene_space;
-	my $template =
-	  HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo.tmpl' );
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo.tmpl' );
 	$template->param( PAD_GS            => $pad_gs );
 	$template->param( APPLY_ALL         => $apply_all );
 	$template->param( IMAGE_WIDTH       => $image_width );
@@ -568,7 +552,7 @@ sub gen_body {
 	my $gobe_version = `$cmd`;
 	$gobe_version =~ s/\n//g;
 	$template->param( GOBE_VERSION       => $gobe_version );
-	$box->param( BOX_NAME                => "GEvo Configuration:" );
+	#$box->param( BOX_NAME                => "GEvo Configuration:" );
 	$template->param( OPTIONS            => 1 );
 	$template->param( ALIGNMENT_PROGRAMS => algorithm_list($prog) );
 	$template->param( SAVE_SETTINGS      => gen_save_settings($num_seqs) )

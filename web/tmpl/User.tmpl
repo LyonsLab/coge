@@ -8,8 +8,8 @@ div.deleted { display: none; }
 </style>
 
 <SCRIPT language="JavaScript">
-var POLL_TIME = 30*1000;
-var IDLE_TIME = 40*1000;
+var POLL_TIME = 30*1000; // polling rate when user is not idle
+var IDLE_TIME = 30*1000; // stop polling after this lapse, then poll on next mousemove
 
 var ITEM_TYPE_ALL 			= <TMPL_VAR NAME="ITEM_TYPE_ALL">;
 var ITEM_TYPE_SHARED 		= <TMPL_VAR NAME="ITEM_TYPE_SHARED">;

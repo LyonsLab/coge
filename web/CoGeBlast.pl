@@ -204,6 +204,8 @@ sub gen_body {
 	my $downstream = $form->param('downstream') || 0;
 	my $dsid       = $form->param('dsid') || 0;
 	my $dsgid      = $form->param('dsgid') || 0;
+	my $gid        = $form->param('gid');
+	$dsgid = $gid if $gid; # alias
 	my $lid        = $form->param('lid') || 0;
 	my $rc         = $form->param('rc') || 0;
 	my $seq        = $form->param('seq');

@@ -183,7 +183,7 @@ function load_genome() {
 	var organism_name = $('#edit_organism').val();
 	var organism_id = $('#edit_organism').data("organism_id");
 	if (!organism_id || !organism_name || organism_name == 'Search') {
-		alert('Please select an organism.');
+		alert('Organism not found.');
 		return;
 	}
 

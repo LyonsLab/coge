@@ -186,7 +186,7 @@ sub get_list_info {
 		else {
 			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_list_private();">Make Private</span>};
 		}
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_list();">Delete Notebook</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_list();">Delete</span>};
 	}
 
 	return $html;
@@ -515,7 +515,7 @@ sub get_list_contents {
 		
 		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' rowspan='$genome_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Genomes ($genome_count):</th>" : '');
 		my $gid = $genome->id;
-		$html .= qq{<td class='data5'><span id='genome$gid' class='link' onclick="window.open('OrganismView.pl?dsgid=$gid')">} . $genome->info . "</span></td>";
+		$html .= qq{<td class='data5'><span id='genome$gid' class='link' onclick="window.open('GenomeInfo.pl?gid=$gid')">} . $genome->info . "</span></td>";
 		if ($user_can_edit) {
 			$html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {item_type: '".$list_types->{genome}."', item_id: '$gid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
 		}
