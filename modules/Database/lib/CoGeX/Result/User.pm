@@ -107,6 +107,7 @@ __PACKAGE__->has_many( 'workflows' => "CoGeX::Result::Workflow",    'user_id' );
 __PACKAGE__->has_many( 'user_group_connectors' => "CoGeX::Result::UserGroupConnector", 'user_id' );
 __PACKAGE__->has_many( 'user_connectors' => "CoGeX::Result::UserConnector", 'parent_id' );
 __PACKAGE__->has_many( 'logs' => "CoGeX::Result::Log",    'user_id' );
+__PACKAGE__->has_many( 'jobs' => "CoGeX::Result::Job",    'user_id' );
 __PACKAGE__->belongs_to( image => 'CoGeX::Result::Image', 'image_id');
 
 
@@ -448,7 +449,7 @@ sub has_access {
 	
 	if ($dsg) {
 		my $dsgid = $dsg =~ /^\d+$/ ? $dsg : $dsg->id;
-		foreach my $genome ( $self->genomes() ) {
+		foreach my $genome ( $self->genomes(include_deleted => 1) ) {
 			if ( $dsgid == $genome->id ) {
 				return 1;
 			}
@@ -466,7 +467,7 @@ sub has_access {
 	
 	if ($experiment) {
 		my $eid = $experiment =~ /^\d+$/ ? $experiment : $experiment->id;
-		foreach my $e ( $self->experiments() ) {
+		foreach my $e ( $self->experiments(include_deleted => 1) ) {
 			if ( $eid == $e->id ) {
 				return 1;
 			}
