@@ -183,7 +183,9 @@ sub gen_body
     $template->param(ORG_LIST_FEAT=>get_orgs_feat(type=>"none"));
     my $doc_ready;
     $doc_ready .= qq{search_chain(1);\n} if $accn;
-    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
+    #This was changed because of an error it was causing in some browsers on Windows where the "()" were causing JS errors.  This bug was reported by johannes.hofberger and this fixed his problem (Eric L.)
+	my $prefs;# = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
+    ####
     if ($form->param('dsgid'))
       {
 	foreach my $item ($form->param('dsgid'))
@@ -296,6 +298,7 @@ sub gen_dsg_menu
     my @dsg_menu;
     foreach my $dsg (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $coge->resultset('Genome')->search({organism_id=>$oid},{prefetch=>['genomic_sequence_type']}))
       {
+	next if $dsg->deleted;
 	next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	$dsgid=$dsg->id unless $dsgid;
 	my $name = join (", ", map{$_->name} $dsg->source) .": ";
@@ -642,6 +645,7 @@ sub get_data_source_info_for_accn
 	next if $feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset);
 	foreach my $dsg ($feat->dataset->genomes)
 	  {
+	next if $dsg->deleted;
 	    next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	    my $org = $dsg->organism->name if $dsg->organism;
 	    if (keys %org_ids) {next unless $org_ids{$dsg->organism->id};}
