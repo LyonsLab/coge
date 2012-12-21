@@ -130,9 +130,6 @@ if ($axis_metric && $axis_metric =~ /gene/) #add in gene information
     get_gene_info(dsgid=>$dsgid1, info=>$org1info);
     get_gene_info(dsgid=>$dsgid2, info=>$org2info);
   }
-#print STDERR Dumper $org1info,"\n";
-#print STDERR Dumper $org2info,"\n";
-#print STDERR Dumper $org1info, $org2info;
 
 #will need to reorder whichever genome has more chromosomes/contigs
 
@@ -141,7 +138,6 @@ if ($assemble)
   {
     my $skip_non_aligned_contigs = $assemble && $assemble =~ /2/ ? 1 : 0;
     my ($org1_association, $org2_association) = $synmap_report->parse_syn_blocks(file=>$alignfile) if $assemble;
-    #print STDERR Dumper $synmap_report;
     my $output;
     if (@$org1_association > @$org2_association && $assemble > 0 || @$org1_association < @$org2_association && $assemble < 0 ) 
       {
@@ -170,7 +166,6 @@ calc_abs_start_pos(order=>$org2_order, info=>$org2info);
 my $org1length =0;
 map {$org1length+=$_->{length}} values %$org1info;
 #my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size, order=>$org2_order, metric=>$axis_metric, chr_sort_order=>$chr_sort_order, skip_random=>$skip_random);
-#print Dumper $org2info;
 my $org2length =0;
 map {$org2length+=$_->{length}} values %$org2info;
 
@@ -504,6 +499,7 @@ sub draw_dots
 	next unless $org1->{$chr1} && $org2->{$chr2}; #sometimes there will be data that is skipped, e.g. where chromosome="random";
 	my ($xmin, $ymin);
 	my ($midx, $midy);
+
 	if ($metric && $metric =~ /gene/i )
 	  {
 	    next unless $fid1 && $fid2;
@@ -546,6 +542,7 @@ sub draw_dots
 	$tuse_color = $colors->[0] unless $tuse_color; #default val just in case
 	push @points, [ $y, $y_real, $tsize, $tsize, 0, 360, $tuse_color, $val] if ($add_inverse && !$CHR1 && $x ne $y);
 	push @points, [ $y, $y_real, $tsize, $tsize, 0, 360, $tuse_color, $val] if ($add_inverse && $chr1 eq $chr2 && $x ne $y);
+
 	if ($link_type == 1)
 	  {
 	    #working here.  Need to build a GEvo link using datasets/chr/position if dealing with genomic data.
