@@ -405,7 +405,7 @@ sub annotation_pretty_print_html
 	$anno_obj->String_end("\n");
 	my $anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class='title5'>" . "Name" . "</span>" );
 	$anno_type->Type_delimit(": <td class='data5'>");
-	$anno_type->add_Annot( $self->name . "</td>" );
+	$anno_type->add_Annot( $self->name ." (id".$self->id.")". "</td>" );
 	$anno_obj->add_Annot($anno_type);
 	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class='title5'>" . "Description" . "</span>" );
 	$anno_type->Type_delimit(": <td class='data5' style='max-width:400px;overflow:hidden;word-wrap:break-word;'>");
