@@ -79,7 +79,7 @@ sub generate_html {
 	
 	$template->param(
 		TITLE => 'Accelerating <span style="color: #119911">Co</span>mparative <span style="color: #119911">Ge</span>nomics',
-		PAGE_TITLE => 'ANKoCG',
+		PAGE_TITLE => 'Comparative Genomics',
 		HELP => '/wiki/index.php',
 		USER => $name,
 		DATE => $DATE,
