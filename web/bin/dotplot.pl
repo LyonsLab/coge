@@ -12,6 +12,7 @@ use DBI;
 use Data::Dumper;
 use DBI;
 use POSIX;
+use Sort::Versions;
 
 use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order $font $GZIP $GUNZIP $URL $conffile $skip_random $force_box $chr_order $dotsize);
 #17:1:14:5:7:18:3:4:11:9:13:6:8:12:10:19:2:15:16
@@ -1253,20 +1254,22 @@ sub get_dsg_order
     my @ordered;
     if ($chr_sort_order =~ /^n/i) #sorting by name
       {
-	my @numbered;
-	my @lettered;
-	foreach my $chr (keys %data)
-	  {
-	    if ($chr =~ /\d+/)
-	      {
-		push @numbered, $chr;
-	      }
-	    else
-	      {
-		push @lettered, $chr;
-	      }
-	  }
-	@ordered = ( (sort {chr_sort($a) <=> chr_sort($b) } @numbered), (sort { $a cmp $b } @lettered));
+	@ordered = sort{versioncmp($a, $b)} keys %data;
+	#old below
+#	my @numbered;
+#	my @lettered;
+#	foreach my $chr (keys %data)
+#	  {
+#	    if ($chr =~ /\d+/)
+#	      {
+#		push @numbered, $chr;
+#	      }
+#	    else
+#	      {
+#		push @lettered, $chr;
+#	      }
+#	  }
+#	@ordered = ( (sort {chr_sort($a) <=> chr_sort($b) } @numbered), (sort { $a cmp $b } @lettered));
       }
     elsif ($chr_sort_order =~ /^s/i) #sorting by size
       {
