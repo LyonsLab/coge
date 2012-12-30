@@ -1418,7 +1418,7 @@ sub html_code_table
       my ($min_val) = sort {$a <=> $b} map {$data->{$_}} keys %{$code};
       my $range = $max_val-$min_val;
       my $html;
-      $html .= "<table class='ui-widget-content ui-corner-all'><tr><td nowrap>";
+      $html .= "<table class='ui-widget-content ui-corner-all xsmall'><tr><td nowrap>";
       my $count = 0;
       my $codon_set_total =0;
       foreach my $codon (sort { $self->sort_nt1(substr($a, 0, 1)) <=> $self->sort_nt1(substr($b,0, 1)) || $self->sort_nt2(substr($a,1,1)) <=> $self->sort_nt2(substr($b,1,1)) || $self->sort_nt3(substr($a,2,1)) <=> $self->sort_nt3(substr($b,2,1)) } keys %{$code})
@@ -1629,7 +1629,7 @@ sub html_aa_new
     my ($min_val) = sort {$a<=>$b} map{$data->{$_}} keys %$aa_sort;
     my $range = $max_val-$min_val;
     my $html;
-    $html .= qq{<table id="$table_name" class='ui-widget-content ui-corner-all'><Thead><tr>
+    $html .= qq{<table id="$table_name" class='ui-widget-content ui-corner-all xsmall'><Thead><tr>
  <th>AA</th>
  <th>Polarity</th>
  <th>Charge pH7.4</th>
