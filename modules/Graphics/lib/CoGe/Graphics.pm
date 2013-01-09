@@ -658,7 +658,7 @@ feat: foreach my $feat ( values %feats )
 		{
 
 			#next unless $coge->resultset('Annotation')->count({feature_id=>$feat->id, annotation_type_id=>$gevo_link_type->id});
-			next unless $coge->resultset('Annotation')->count( { feature_id => $feat->id, annotation_type_group_id => $gevo_link_group->id }, { join => 'annotation_type' } );
+			next unless $coge->resultset('FeatureAnnotation')->count( { feature_id => $feat->id, annotation_type_group_id => $gevo_link_group->id }, { join => 'annotation_type' } );
 			my $f = CoGe::Graphics::Feature::Link->new();
 			$f->color( [ 50, 200, 200, 50 ] );
 			foreach my $loc ( $feat->locs )
@@ -772,7 +772,7 @@ feat: foreach my $feat ( values %feats )
 		if ( ( $layers->{features}{local_dup} || $layers->{all} ) && $feat->type->name =~ /CDS/i )
 		{
 			my $color;
-			if ( $coge->resultset('Annotation')->count( { feature_id => $feat->id, annotation_type_group_id => $tandem_type_group->id }, { join => 'annotation_type' } ) )
+			if ( $coge->resultset('FeatureAnnotation')->count( { feature_id => $feat->id, annotation_type_group_id => $tandem_type_group->id }, { join => 'annotation_type' } ) )
 			{
 				$color = [ 0, 225, 255, 50 ];
 			}
