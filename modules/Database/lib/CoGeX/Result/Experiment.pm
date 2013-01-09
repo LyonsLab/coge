@@ -104,6 +104,7 @@ __PACKAGE__->set_primary_key("experiment_id");
 __PACKAGE__->has_many( "experiment_type_connectors" => "CoGeX::Result::ExperimentTypeConnector", 'experiment_id' );
 __PACKAGE__->has_many( "experiment_annotations"     => "CoGeX::Result::ExperimentAnnotation",    'experiment_id' );
 __PACKAGE__->has_many( "list_connectors" => "CoGeX::Result::ListConnector", {'foreign.child_id' => 'self.experiment_id'} );
+__PACKAGE__->has_many( "user_connectors" => "CoGeX::Result::UserConnector", {'foreign.child_id' => 'self.experiment_id'} );
 __PACKAGE__->belongs_to( "data_source" => "CoGeX::Result::DataSource", 'data_source_id' );
 __PACKAGE__->belongs_to( "genome"      => "CoGeX::Result::Genome",     'genome_id' );
 
