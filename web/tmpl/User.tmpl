@@ -429,7 +429,7 @@ function share_dialog() {
 				item_list: item_list,
 			},
 			success : function(data) {
-				$('#share_dialog').html(data).dialog({width:500,height:360}).dialog('open');
+				$('#share_dialog').html(data).dialog({width:500}).dialog('open');
 			}
 		});	
 	}
@@ -633,26 +633,27 @@ function create_new_notebook() {
 	var desc = $('#edit_notebook_desc').val();
 	var type_id = $('#edit_notebook_type').val();
 
+	var item_list;
 	var selected = get_selected_items();
 	if (selected.length) {
-		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
-
-	    $.ajax({
-	        data: {
-	            jquery_ajax: 1,
-	            fname: 'create_new_notebook',
-	            name: name,
-	            desc: desc,
-	            type_id: type_id,
-	            item_list: item_list,
-	        },
-	        success : function(data) {
-	            if (data) {
-	            	location.reload();
-	            }
-	        }
-	    });
+		item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
 	}
+
+    $.ajax({
+        data: {
+            jquery_ajax: 1,
+            fname: 'create_new_notebook',
+            name: name,
+            desc: desc,
+            type_id: type_id,
+            item_list: item_list,
+        },
+        success : function(data) {
+            if (data) {
+            	location.reload();
+            }
+        }
+    });
 }
 
 function send_menu() {
@@ -711,7 +712,7 @@ function send_items_to(page_name, format) {
 				<span id='recent' class='small link' style="font-weight:bold;" onclick="show_recent_activity();">recent</span>
 				<span id='important' class='small link' style="padding-left:5px;" onclick="show_important_activity();">important</span>
 			</span>
-			<div id='logs' class="small" style="min-width:350px;max-width:500px;height:100px;overflow:auto;border-top:1px solid lightgray;background:#f8f8f8">
+			<div id='logs' class="small" style="min-width:350px;max-width:420px;height:100px;overflow:auto;border-top:1px solid lightgray;background:#f8f8f8">
 				<TMPL_VAR NAME='LOGS'>
 			</div>
 		</div>
@@ -727,7 +728,7 @@ function send_items_to(page_name, format) {
 			</td></tr>
 		</table>
 
-		<table style="float:left;white-space:nowrap;padding-right:50px;">
+		<table style="float:left;white-space:nowrap;padding-right:5px;">
 			<tr>
 				<td style="font-weight:bold;color:dimgray;float:right;">User name</td>
 				<td style="padding-left:10px;"><TMPL_VAR NAME='USER_NAME'></td>
@@ -935,35 +936,42 @@ function send_items_to(page_name, format) {
 		});
 	});
 	</script>
-	<span class="small" style="font-weight:bold;">Who Has Access</span>
-	<div class="small" style="overflow:auto;max-height:120px;padding-left:20px;padding-bottom:10px;border-top:1px solid lightgray;background-color:#f6f6f6;">
-		<TMPL_LOOP NAME="GROUP_LOOP">
-			<div>
-				<span style="color:dimgray;font-weight:bold;"><TMPL_VAR NAME="GROUP_NAME"> (<TMPL_VAR NAME="GROUP_ROLE">)</span>
-				<span onClick="remove_items_from_user_or_group('<TMPL_VAR NAME=GROUP_ITEM>');" class="link ui-icon ui-icon-close"></span>
-				<br>
-				<TMPL_LOOP NAME="GROUP_USER_LOOP">
-					<span style="color:dimgray;padding-left:20px;"><TMPL_VAR NAME="GROUP_USER_FULL_NAME"> (<TMPL_VAR NAME="GROUP_USER_NAME">)<span><br>
-				</TMPL_LOOP>
-			</div>
-		</TMPL_LOOP>
-		<TMPL_LOOP NAME="USER_LOOP">
-			<div>
-				<span style="color:dimgray;font-weight:bold;"><TMPL_VAR NAME="USER_FULL_NAME"> (<TMPL_VAR NAME="USER_NAME">) (<TMPL_VAR NAME="USER_ROLE">)<span>
-				<span onClick="$(this.parent).fadeOut(); remove_items_from_user_or_group('<TMPL_VAR NAME=USER_ITEM>');" class="link ui-icon ui-icon-close"></span><br>
-			</div>
-		</TMPL_LOOP>
+	<div style="margin:20px;margin-left:5px;">
+		<span class="small" style="font-weight:bold;color:dimgray;">Who Has Access</span>
+		<div class="small" style="overflow:auto;max-height:120px;padding-left:30px;padding-bottom:10px;border-top:1px solid lightgray;">
+			<TMPL_LOOP NAME="GROUP_LOOP">
+				<div>
+					<span style="color:dimgray;font-weight:bold;"><TMPL_VAR NAME="GROUP_NAME"> (<TMPL_VAR NAME="GROUP_ROLE">)</span>
+					<span onClick="remove_items_from_user_or_group('<TMPL_VAR NAME=GROUP_ITEM>');" class="link ui-icon ui-icon-close"></span>
+					<br>
+					<TMPL_LOOP NAME="GROUP_USER_LOOP">
+						<span style="color:dimgray;padding-left:20px;"><TMPL_VAR NAME="GROUP_USER_FULL_NAME"> (<TMPL_VAR NAME="GROUP_USER_NAME">)<span><br>
+					</TMPL_LOOP>
+				</div>
+			</TMPL_LOOP>
+			<TMPL_LOOP NAME="USER_LOOP">
+				<div>
+					<span style="color:dimgray;font-weight:bold;"><TMPL_VAR NAME="USER_FULL_NAME"> (<TMPL_VAR NAME="USER_NAME">) (<TMPL_VAR NAME="USER_ROLE">)<span>
+					<span onClick="$(this.parent).fadeOut(); remove_items_from_user_or_group('<TMPL_VAR NAME=USER_ITEM>');" class="link ui-icon ui-icon-close"></span><br>
+				</div>
+			</TMPL_LOOP>
+			<TMPL_IF NAME="ACCESS_MSG">
+				<div style="color:dimgray;padding-top:10px;font-style:italic;">
+					<TMPL_VAR NAME="ACCESS_MSG">
+				</div>
+			</TMPL_IF>
+		</div>
+		<br>
+		<span class="small" style="font-weight:bold;color:dimgray;">Add Access</span>
+		<div class="small" style="padding:20px;padding-left:30px;border-top:1px solid lightgray;">
+			<span style="color:dimgray">Enter names or groups:</span><br>
+			<input id="share_input" type="search" maxlength="40" style="width:270px;border:1px solid lightgray;" onkeyup="wait_to_search(search_share, this.value);" />
+			<select id="role_select" style="display:none;"><TMPL_VAR NAME="ROLES"></select>
+			<span href="javascript:void(0)" onClick="add_items_to_user_or_group();" class='ui-button ui-button-go ui-corner-all'>Add</span>
+		</div>
+		<br>
+		<span href="javascript:void(0)" onClick="$('#share_dialog').dialog('close')" class='ui-button ui-button-go ui-corner-all'>Done</span>
 	</div>
-	<br>
-	<span class="small" style="font-weight:bold;">Add Access</span>
-	<div class="small" style="padding:20px;border-top:1px solid lightgray;">
-		<span style="color:dimgray">Enter names or groups:</span><br>
-		<input id="share_input" type="search" maxlength="40" style="width:300px;border:1px solid lightgray;" onkeyup="wait_to_search(search_share, this.value);" />
-		<select id="role_select" style="display:none;"><TMPL_VAR NAME="ROLES"></select>
-		<span href="javascript:void(0)" onClick="add_items_to_user_or_group();" class='ui-button ui-button-go ui-corner-all'>Add</span>
-	</div>
-	<br>
-	<span href="javascript:void(0)" onClick="$('#share_dialog').dialog('close')" class='ui-button ui-button-go ui-corner-all'>Done</span>
 </TMPL_IF>
 
 

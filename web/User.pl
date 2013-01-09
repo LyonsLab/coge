@@ -261,7 +261,7 @@ sub get_item_info {
 				 '<b>Source:</b> ' . ($experiment->source ? $experiment->source->name : '') . '<br>' .
 		$html .= '<b>Groups with access:</b><br>' .
 				 '<div style="padding-left:20px;">' .
-				 join('<br>', map { $_->name } sort $experiment->groups) . '<br>' .
+				 (join('<br>', map { $_->name } sort $experiment->groups(exclude_owner=>1)) ? $_ : 'None') . '<br>' .
 				 '</div>' .				 
 				 '<b>Users with access:</b><br>' .
 				 '<div style="padding-left:20px;">';		 
@@ -379,6 +379,7 @@ sub get_share_dialog {
 	return unless @items;
 
 	my (%groups, %userconn);
+	my $isPublic = 0;
 	foreach (@items) {
 		my ($item_id, $item_type) = $_ =~ /content_(\d+)_(\d+)/;
 		next unless ($item_id and $item_type);
@@ -390,6 +391,7 @@ sub get_share_dialog {
 			next unless ($USER->is_admin or $USER->has_access_to_genome($genome));
 			map { $groups{$_->id} = $_ } $genome->groups;
 			map { $userconn{$_->parent_id}  = $_ } $genome->user_connectors;
+			$isPublic = 1 if (not $genome->restricted);
 		}
 		elsif ($item_type == $ITEM_TYPE{experiment}) {
 			my $experiment = $coge->resultset('Experiment')->find($item_id);
@@ -397,6 +399,7 @@ sub get_share_dialog {
 			next unless ($USER->is_admin or $USER->has_access_to_experiment($experiment));
 			map { $groups{$_->id} = $_ } $experiment->groups;
 			# map { $userconn{$_->id}  = $_ } $experiment->user_conn;
+			$isPublic = 1 if (not $experiment->restricted);
 		}
 	}
 
@@ -416,7 +419,7 @@ sub get_share_dialog {
 
 	my @group_rows;
 	foreach my $group (sort groupcmp values %groups) {
-		next if $group->is_owner;
+		next if $group->is_owner; # skip owner groups
 		my @users = map { { GROUP_USER_FULL_NAME => $_->display_name, 
 							GROUP_USER_NAME => $_->name } 
 						} sort usercmp $group->users;
@@ -431,6 +434,14 @@ sub get_share_dialog {
 	$template->param( GROUP_LOOP => \@group_rows );
 	$template->param( USER_LOOP => [sort {$a->{USER_FULL_NAME} cmp $b->{USER_FULL_NAME}} @user_rows] );
 	$template->param( ROLES => get_roles('reader') );
+
+	if ($isPublic) {
+		$template->param( ACCESS_MSG => 'Everyone' );
+	}
+	elsif (!@user_rows && !@group_rows) {
+		$template->param( ACCESS_MSG => 'Only me' );
+	}
+
 	return $template->output;
 }
 
@@ -453,6 +464,7 @@ sub search_share {
 	}
 
 	foreach ($coge->resultset('UserGroup')->all) {
+		next if ($_->is_owner); #FIXME will go away with new user_connector table
 		next unless ($_->name =~ /$search_term/i);
 		my $label = $_->name.' ('.$_->role->name.' group)';
 		push @results, { 'label' => $label, 'value' => $_->id.':'.$ITEM_TYPE{group} }
@@ -495,7 +507,7 @@ sub add_items_to_user_or_group {
 	# Assign each item to user/group
 	my ($target_id, $target_type) = $target_item =~ /(\d+)\:(\d+)/;
 	next unless ($target_id and $target_type);
-	# print STDERR "add_items_to_user_or_group $target_id $target_type\n";
+	print STDERR "add_items_to_user_or_group $target_id $target_type\n";
 	
 	#TODO verify that user can use role (for admin/owner roles)
 
@@ -505,6 +517,7 @@ sub add_items_to_user_or_group {
 
 		foreach (@verified) {
 			my ($item_id, $item_type) = $_ =~ /content_(\d+)_(\d+)/;
+			print STDERR "   $item_id $item_type\n";
 			my $conn = $coge->resultset('UserConnector')->find_or_create(
 				{ parent_id => $target_id,
 				  parent_type => 5, # FIXME hardcoded 
@@ -522,6 +535,7 @@ sub add_items_to_user_or_group {
 
 		foreach (@verified) {
 			my ($item_id, $item_type) = $_ =~ /content_(\d+)_(\d+)/;
+			print STDERR "   $item_id $item_type\n";
 			my $conn = $coge->resultset('UserConnector')->find_or_create(
 				{ parent_id => $target_id, 
 				  parent_type => 6, # FIXME hardcoded
