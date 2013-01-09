@@ -939,27 +939,29 @@ function send_items_to(page_name, format) {
 	<div style="margin:20px;margin-left:5px;">
 		<span class="small" style="font-weight:bold;color:dimgray;">Who Has Access</span>
 		<div class="small" style="overflow:auto;max-height:120px;padding-left:30px;padding-bottom:10px;border-top:1px solid lightgray;">
-			<TMPL_LOOP NAME="GROUP_LOOP">
-				<div>
-					<span style="color:dimgray;font-weight:bold;"><TMPL_VAR NAME="GROUP_NAME"> (<TMPL_VAR NAME="GROUP_ROLE">)</span>
-					<span onClick="remove_items_from_user_or_group('<TMPL_VAR NAME=GROUP_ITEM>');" class="link ui-icon ui-icon-close"></span>
-					<br>
-					<TMPL_LOOP NAME="GROUP_USER_LOOP">
-						<span style="color:dimgray;padding-left:20px;"><TMPL_VAR NAME="GROUP_USER_FULL_NAME"> (<TMPL_VAR NAME="GROUP_USER_NAME">)<span><br>
-					</TMPL_LOOP>
-				</div>
-			</TMPL_LOOP>
-			<TMPL_LOOP NAME="USER_LOOP">
-				<div>
-					<span style="color:dimgray;font-weight:bold;"><TMPL_VAR NAME="USER_FULL_NAME"> (<TMPL_VAR NAME="USER_NAME">) (<TMPL_VAR NAME="USER_ROLE">)<span>
-					<span onClick="$(this.parent).fadeOut(); remove_items_from_user_or_group('<TMPL_VAR NAME=USER_ITEM>');" class="link ui-icon ui-icon-close"></span><br>
-				</div>
-			</TMPL_LOOP>
-			<TMPL_IF NAME="ACCESS_MSG">
-				<div style="color:dimgray;padding-top:10px;font-style:italic;">
-					<TMPL_VAR NAME="ACCESS_MSG">
-				</div>
-			</TMPL_IF>
+			<div style="padding-top:10px;">
+				<TMPL_LOOP NAME="GROUP_LOOP">
+					<div>
+						<span style="color:dimgray;font-weight:bold;"><TMPL_VAR NAME="GROUP_NAME"> (<TMPL_VAR NAME="GROUP_ROLE">)</span>
+						<span onClick="remove_items_from_user_or_group('<TMPL_VAR NAME=GROUP_ITEM>');" class="link ui-icon ui-icon-close"></span>
+						<br>
+						<TMPL_LOOP NAME="GROUP_USER_LOOP">
+							<span style="color:dimgray;padding:5px;padding-left:20px;"><TMPL_VAR NAME="GROUP_USER_FULL_NAME"> (<TMPL_VAR NAME="GROUP_USER_NAME">)<span><br>
+						</TMPL_LOOP>
+					</div>
+				</TMPL_LOOP>
+				<TMPL_LOOP NAME="USER_LOOP">
+					<div>
+						<span style="color:dimgray;font-weight:bold;"><TMPL_VAR NAME="USER_FULL_NAME"> (<TMPL_VAR NAME="USER_NAME">) (<TMPL_VAR NAME="USER_ROLE">)<span>
+						<span onClick="$(this.parent).fadeOut(); remove_items_from_user_or_group('<TMPL_VAR NAME=USER_ITEM>');" class="link ui-icon ui-icon-close"></span><br>
+					</div>
+				</TMPL_LOOP>
+				<TMPL_IF NAME="ACCESS_MSG">
+					<div style="color:dimgray;font-style:italic;">
+						<TMPL_VAR NAME="ACCESS_MSG">
+					</div>
+				</TMPL_IF>
+			</div>
 		</div>
 		<br>
 		<span class="small" style="font-weight:bold;color:dimgray;">Add Access</span>

@@ -384,7 +384,7 @@ sub get_share_dialog {
 		my ($item_id, $item_type) = $_ =~ /content_(\d+)_(\d+)/;
 		next unless ($item_id and $item_type);
 
-		# print STDERR "get_share $item_id $item_type\n";
+		print STDERR "get_share $item_id $item_type\n";
 		if ($item_type == $ITEM_TYPE{genome}) {
 			my $genome = $coge->resultset('Genome')->find($item_id);
 			return unless $genome;
@@ -398,9 +398,17 @@ sub get_share_dialog {
 			return unless $experiment;
 			next unless ($USER->is_admin or $USER->has_access_to_experiment($experiment));
 			map { $groups{$_->id} = $_ } $experiment->groups;
-			# map { $userconn{$_->id}  = $_ } $experiment->user_conn;
+			map { $userconn{$_->id}  = $_ } $experiment->user_connectors;
 			$isPublic = 1 if (not $experiment->restricted);
 		}
+		elsif ($item_type == $ITEM_TYPE{notebook}) {
+			my $notebook = $coge->resultset('List')->find($item_id);
+			return unless $notebook;
+			next unless ($USER->is_admin or $USER->has_access_to_list($notebook));
+			map { $groups{$_->id} = $_ } $notebook->groups;
+			map { $userconn{$_->id}  = $_ } $notebook->user_connectors;
+			$isPublic = 1 if (not $notebook->restricted);
+		}		
 	}
 
 	my @user_rows;
@@ -502,6 +510,12 @@ sub add_items_to_user_or_group {
 			next unless ($USER->is_admin or $USER->has_access_to_experiment($experiment));
 			push @verified, $item;
 		}
+		elsif ($item_type == $ITEM_TYPE{notebook}) {
+			my $notebook = $coge->resultset('List')->find($item_id);
+			return unless $notebook;
+			next unless ($USER->is_admin or $USER->has_access_to_list($notebook));
+			push @verified, $item;
+		}
 	}
 
 	# Assign each item to user/group
@@ -509,7 +523,7 @@ sub add_items_to_user_or_group {
 	next unless ($target_id and $target_type);
 	print STDERR "add_items_to_user_or_group $target_id $target_type\n";
 	
-	#TODO verify that user can use role (for admin/owner roles)
+	#TODO verify that user can use specified role (for admin/owner roles)
 
 	if ($target_type == $ITEM_TYPE{user}) {
 		my $user = $coge->resultset('User')->find($target_id);
@@ -517,7 +531,7 @@ sub add_items_to_user_or_group {
 
 		foreach (@verified) {
 			my ($item_id, $item_type) = $_ =~ /content_(\d+)_(\d+)/;
-			print STDERR "   $item_id $item_type\n";
+			print STDERR "   user: $item_id $item_type\n";
 			my $conn = $coge->resultset('UserConnector')->find_or_create(
 				{ parent_id => $target_id,
 				  parent_type => 5, # FIXME hardcoded 
@@ -535,7 +549,7 @@ sub add_items_to_user_or_group {
 
 		foreach (@verified) {
 			my ($item_id, $item_type) = $_ =~ /content_(\d+)_(\d+)/;
-			print STDERR "   $item_id $item_type\n";
+			print STDERR "   group: $item_id $item_type\n";
 			my $conn = $coge->resultset('UserConnector')->find_or_create(
 				{ parent_id => $target_id, 
 				  parent_type => 6, # FIXME hardcoded
