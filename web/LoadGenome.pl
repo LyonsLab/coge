@@ -120,6 +120,7 @@ sub irods_get_path {
 	}
 	
 	my $items = CoGe::Accessory::Web::irods_ils($path);
+print STDERR Dumper $items;
 	return encode_json( { timestamp => $timestamp, path => $path, items => $items } );
 }
 

@@ -130,11 +130,27 @@ function cancel_callback() {
 }
 
 function activate_on_input(input_id, button_id) {
-	if ( $('#'+input_id).val() ) {
-		$('#'+button_id).removeClass('ui-state-disabled');
+	var a;
+	if (input_id instanceof Array) {
+		a = input_id;
 	}
 	else {
+		a = new Array(1);
+		a[0] = input_id;
+	}
+
+	var hide = a.length;
+	for (var i in a) {
+		if ( $('#'+a[i]).val() ) {
+			hide--;
+		}
+	}
+
+	if (hide) {
 		$('#'+button_id).addClass('ui-state-disabled');
+	}
+	else {
+		$('#'+button_id).removeClass('ui-state-disabled');
 	}
 }
 

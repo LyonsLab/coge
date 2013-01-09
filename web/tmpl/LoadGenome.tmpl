@@ -16,9 +16,9 @@ $(document).ready(function(){
 		autoOpen: false, 
 		width: 500, 
 		// open: function (e, ui) {
-  //       	$(this).closest('.ui-dialog').css({position: 'fixed'});
-  //       }
-		//position: [$(window).width()/2-250, 200]
+		//       	$(this).closest('.ui-dialog').css({position: 'fixed'});
+  		//       }
+		// position: [$(window).width()/2-250, 200]
   	});
 
   	$("#load_genome_dialog").dialog({modal: true});
@@ -141,7 +141,21 @@ function create_source() {
 
 function create_organism() {
 	var name = $('#edit_organism_name').val();
+	if (!name) {
+		alert('Please specify the organism name.');
+		return;
+	}
+
 	var desc = $('#edit_organism_desc').val();
+	if (!desc) {
+		alert('Please specify the organism description.');
+		return;
+	}
+	if (desc.split(';').length < 2) {
+		alert('Please specify an NCBI taxonomy of classes separated\nby semicolons for the organism description.');
+		return;
+	}
+
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
@@ -414,6 +428,7 @@ function more() {
 <span id="load_genome_button" onDblClick="load_genome();" onClick="load_genome();" style="font-size:1em;float-right;" class='ui-button ui-corner-all ui-button-go'>Load Genome</span>
 
 
+
 <div id="create_new_type_dialog" class="dialog_box" title="Create New Sequence Type" style="display:none;">
   <table class="small">
     <tr>
@@ -435,11 +450,26 @@ function more() {
   <table class="small">
     <tr>
       <td>Name:</td>
-      <td><input id="edit_organism_name" type="textbox" size="53" onkeyup="activate_on_input('edit_organism_name', 'create_organism_button');" /></td>
+      <td><input id="edit_organism_name" type="textbox" size="80" onkeyup="activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');" /></td>
     </tr>
     <tr>
       <td>Description:</td>
-      <td><textarea id="edit_organism_desc" rows="5" cols="50" ></textarea></td>
+      <td><textarea id="edit_organism_desc" rows="5" cols="77" onkeyup="activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');"></textarea></td>
+    </tr>
+    <tr>
+    	<td></td>
+    	<td>
+    		<span style="color:dimgray;">
+		    	Please specify a full <a target="_blank" href="http://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Root">NCBI taxonomy</a> for the organism description.<br>
+		    	<span class="link" onclick="$(this).hide().next().show();">Example</span>
+		    	<span style="display:none;">
+			    	Example for <i>Oryza sativa japonica</i>:<br>
+			    	<div style="padding-left:15px;font-family:Courier New, Courier, monospace;">
+			    	Eukaryota; Viridiplantae; Streptophyta; Streptophytina; Embryophyta; Tracheophyta; Euphyllophyta; Spermatophyta; Magnoliophyta; Liliopsida; commelinids; Poales; Poaceae; BEP clade; Ehrhartoideae; Oryzeae; Oryza
+			    	</div>
+		   		</span>
+    		</span>
+    	</td>
     </tr>
   </table>
   <br>
