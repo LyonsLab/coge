@@ -195,7 +195,7 @@ sub users {
 		foreach	( $self->user_connectors )
 		{
 			if ($_->parent_type == 5) { #FIXME hardcoded type
-				$users{$_->user_id} = $_->user;
+				$users{$_->parent_id} = $_->user;
 			}
 			elsif (not $exclude_groups && $_->parent_type == 6) { #FIXME hardcoded type
 				#TODO add group's users

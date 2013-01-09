@@ -75,10 +75,17 @@ __PACKAGE__->belongs_to( "list_type"  => "CoGeX::Result::ListType",  'list_type_
 __PACKAGE__->has_many( "list_annotations"          => "CoGeX::Result::ListAnnotation", 'list_id' );
 __PACKAGE__->has_many( "list_connectors_as_child"  => "CoGeX::Result::ListConnector",  {'foreign.child_id' => 'self.list_id' } );
 __PACKAGE__->has_many( "list_connectors_as_parent" => "CoGeX::Result::ListConnector",  {'foreign.parent_id' => 'self.list_id' } );
+__PACKAGE__->has_many( "user_connectors" => "CoGeX::Result::UserConnector", {'foreign.child_id' => 'self.list_id'} );
+
 
 sub group
 {
 	return shift->user_group(@_);
+}
+
+sub groups
+{
+	return shift->group;
 }
 
 sub users {
@@ -87,6 +94,16 @@ sub users {
 
 	foreach ($self->group->users) {
 		$users{$_->id} = $_;
+	}
+
+	foreach	( $self->user_connectors )
+	{
+		if ($_->parent_type == 5) { #FIXME hardcoded type
+			$users{$_->parent_id} = $_->user;
+		}
+		# elsif (not $exclude_groups && $_->parent_type == 6) { #FIXME hardcoded type
+		# 	#TODO add group's users
+		# }
 	}
 
 	return wantarray ? values %users : [ values %users ];
