@@ -729,6 +729,12 @@ sub lists {
 	foreach my $ug ( $self->groups ) {
 		map { $lists{ $_->id } = $_ } $ug->lists;
 	}
+	foreach my $uc ( $self->user_connectors ) {
+		if ($uc->type == 1) { # FIXME hardcoded type
+			$lists{ $uc->child_id } = $uc->list;
+		}
+	}
+
 	return wantarray ? values %lists : [ values %lists ];
 }
 
@@ -758,6 +764,12 @@ sub experiments {
 			$experiments{ $_->id } = $_ if (!$_->deleted || $include_deleted)
 		} $ug->experiments;
 	}
+	foreach my $uc ( $self->user_connectors ) {
+		if ($uc->type == 3) { # FIXME hardcoded type
+			$experiments{ $uc->child_id } = $uc->experiment;
+		}
+	}
+
 	return wantarray ? values %experiments : [ values %experiments ];	
 }
 
@@ -816,6 +828,12 @@ sub genomes {
 			$genomes{ $_->id } = $_ if (!$_->deleted || $include_deleted)
 		} $ug->genomes;
 	}
+	foreach my $uc ( $self->user_connectors ) {
+		if ($uc->type == 2) { # FIXME hardcoded type
+			$genomes{ $uc->child_id } = $uc->genome;
+		}
+	}
+
 	return wantarray ? values %genomes : [ values %genomes ];
 }
 

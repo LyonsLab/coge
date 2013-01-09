@@ -48,6 +48,7 @@ __PACKAGE__->set_primary_key("user_connector_id");
 __PACKAGE__->belongs_to("experiment" => "CoGeX::Result::Experiment", "child_id");
 __PACKAGE__->belongs_to("genome"     => "CoGeX::Result::Genome",     "child_id");
 __PACKAGE__->belongs_to("feature"    => "CoGeX::Result::Feature",    "child_id");
+__PACKAGE__->belongs_to("list" => "CoGeX::Result::List", "child_id");
 
 __PACKAGE__->belongs_to("role" => "CoGeX::Result::Role", "role_id" );
 __PACKAGE__->belongs_to("user" => "CoGeX::Result::User", { "foreign.user_id" => "self.parent_id" } );
