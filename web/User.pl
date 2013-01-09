@@ -612,7 +612,23 @@ sub remove_items_from_user_or_group {
 			return unless $conn;
 
 			$conn->delete;
-		}		
+		}
+		elsif ($item_type == $ITEM_TYPE{notebook}) {
+			my $notebook = $coge->resultset('List')->find($item_id);
+			return unless $notebook;
+			next unless ($USER->is_admin or $USER->has_access_to_list($notebook));
+
+			my $conn = $coge->resultset('UserConnector')->find(
+				{ parent_id => $target_id, 
+				  parent_type => $target_type, #FIXME hardcoded
+				  child_id => $notebook->id, 
+				  child_type => $ITEM_TYPE{notebook}
+				}
+			);
+			return unless $conn;
+
+			$conn->delete;
+		}	
 	}
 
 	return get_share_dialog(item_list => $item_list);
