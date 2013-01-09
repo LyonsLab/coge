@@ -613,7 +613,7 @@ sub irods_ils {
 		chomp $line;
 		if ($line =~ /^\s*C\-/) { # directory
 			$type = 'directory';
-			($name) = $line =~ /(\w+)\s*$/;
+			($name) = $line =~ /([^\/\s]+)\s*$/;
 			if ($name) { $name .= '/'; }
 			else { $name = 'error' };
 			($size, $timestamp) = ('', '');
@@ -623,7 +623,7 @@ sub irods_ils {
 			(undef, undef, undef, undef, $size, $timestamp, undef, $name) = split(/\s+/, $line);
 		}
 		
-#		print STDERR "$type: $name\n";
+		print STDERR "$type: $name\n";
 		push @result, 
 			{ type => $type, 
 			  size => $size, 
