@@ -1,4 +1,6 @@
 #! /usr/bin/perl -w
+use v5.10;
+
 use strict;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
@@ -24,14 +26,14 @@ use Sort::Versions;
 no warnings 'redefine';
 
 umask(0);
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG 
-			$DIR $URL $SERVER $USER $FORM $coge $cogeweb $PAGE_NAME 
-			$FORMATDB $BLAST $TBLASTX $BLASTN $BLASTP $LASTZ $LAST $DATADIR 
-			$FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $PYTHON26 
-			$TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT 
-			$SVG_DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW 
-			$BASE_URL $BLAST2BED $SYNTENY_SCORE $TEMPDIR $TEMPURL $ALGO_LOOKUP 
-			$GZIP $GUNZIP $COOKIE_NAME);
+our($P, $DBNAME, $DBHOST, $DBPORT, $DBUSER, $DBPASS, $connstr, $DATE, $DEBUG,
+    $DIR, $URL, $SERVER, $USER, $FORM, $coge, $cogeweb, $PAGE_NAME,
+    $FORMATDB, $BLAST, $TBLASTX, $BLASTN, $BLASTP, $LASTZ, $LAST, $DATADIR,
+    $FASTADIR, $BLASTDBDIR, $DIAGSDIR, $MAX_PROC, $DAG_TOOL, $PYTHON,
+    $PYTHON26, $TANDEM_FINDER, $RUN_DAGCHAINER, $EVAL_ADJUST, $FIND_NEARBY,
+    $DOTPLOT,  $SVG_DOTPLOT, $NWALIGN, $QUOTA_ALIGN, $CLUSTER_UTILS,
+    $BLAST2RAW, $BASE_URL, $BLAST2BED, $SYNTENY_SCORE, $TEMPDIR, $TEMPURL,
+    $ALGO_LOOKUP, $GZIP, $GUNZIP, $COOKIE_NAME, %FUNCTIONS, $PAGE_TITLE);
 
 $P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 $ENV{PATH}       = join ":", ( $P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR} . "SynMap", "/usr/bin", "/usr/local/bin" );
@@ -157,8 +159,8 @@ $DATE = sprintf(
 		->(localtime)
 );
 $FORM = new CGI;
-
-$PAGE_NAME = "SynMap.pl";
+$PAGE_TITLE = "SynMap";
+$PAGE_NAME = $PAGE_TITLE . ".pl";
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
 
@@ -178,22 +180,46 @@ $USER = undef;
 ($USER) = CoGe::Accessory::Web->login_cas( cookie_name => $COOKIE_NAME, ticket => $cas_ticket, coge => $coge, this_url => $FORM->url() ) if ($cas_ticket);
 ($USER) = CoGe::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
 
-my $pj = new CGI::Ajax(
-												get_orgs               => \&get_orgs,
-												get_genome_info => \&get_genome_info,
-												get_previous_analyses  => \&get_previous_analyses,
-												get_pair_info          => \&get_pair_info,
-												go                     => \&go,
-												check_address_validity => \&check_address_validity,
-												generate_basefile      => \&generate_basefile,
-												get_dotplot            => \&get_dotplot,
-												gen_dsg_menu           => \&gen_dsg_menu,
-												get_dsg_gc             => \&get_dsg_gc,
-												%ajax,
-);
-print $pj->build_html( $FORM, \&gen_html );
+#print $pj->build_html( $FORM, \&gen_html );
 
 #print "Content-Type: text/html\n\n";print gen_html($FORM);
+
+%FUNCTIONS = (
+    go => \&go,
+    get_orgs               => \&get_orgs,
+    get_genome_info => \&get_genome_info,
+    get_previous_analyses  => \&get_previous_analyses,
+    get_pair_info          => \&get_pair_info,
+    check_address_validity => \&check_address_validity,
+    generate_basefile      => \&generate_basefile,
+    get_dotplot            => \&get_dotplot,
+    gen_dsg_menu           => \&gen_dsg_menu,
+    get_dsg_gc             => \&get_dsg_gc,
+    get_query_link => \&get_query_link,
+    read_log  => \&CoGe::Accessory::Web::read_log,
+    %ajax,
+);
+
+my $pj = new CGI::Ajax(%FUNCTIONS);
+if ( $FORM->param('jquery_ajax') ) {
+	my %args  = $FORM->Vars;
+	my $fname = $args{'fname'};
+	#print STDERR Dumper \%args;
+	if ($fname and defined $FUNCTIONS{$fname}) {
+		if ( $args{args} ) {
+			my @args_list = split( /,/, $args{args} );
+			print $FORM->header, $FUNCTIONS{$fname}->(@args_list);
+		}
+		else {
+			print $FORM->header, $FUNCTIONS{$fname}->(%args);
+		}
+	}
+}
+else {
+	$pj->js_encode_function('escape');
+    print $pj->build_html( $FORM, \&gen_html );
+#	print $FORM->header; print gen_html();
+}
 
 sub read_log_test
 {
@@ -463,6 +489,7 @@ sub gen_body
 	my $fid2 = 0;
 	$fid2 = $FORM->param('fid2') if $FORM->param('fid2');
 	$template->param( 'FID2'    => $fid2 );
+	$template->param( 'PAGE_NAME' => $PAGE_NAME);
 	$template->param( 'TEMPDIR' => $TEMPDIR );
 	return $template->output;
 }
@@ -1800,7 +1827,17 @@ DNA_align_2
 	my $ports    = initialize_nwalign_servers( start_port => 3000, procs => $MAX_RUNS );
 	my $pm       = new Parallel::ForkManager( $MAX_RUNS * 4 );
 	my $i        = 0;
-	foreach my $item (@data)
+
+    my $start_time = new Benchmark;
+    my $dbh = DBI->connect( "dbi:SQLite:dbname=$outfile", "", "" );
+    
+    $dbh->do("PRAGMA synchronous=OFF");
+    $dbh->do("PRAGMA cache_size = 50000");
+    $dbh->do("PRAGMA count_changes=OFF");
+    $dbh->do("PRAGMA journal_mode=MEMORY");
+    $dbh->do("PRAGMA temp_store=MEMORY");
+	
+    foreach my $item (@data)
 	{
 		$i++;
 		$i = 0 if $i == $MAX_RUNS*4;
@@ -1843,7 +1880,6 @@ DNA_align_2
 		my $insert = qq{
 INSERT INTO ks_data (fid1, fid2, dS, dN, dN_dS, protein_align_1, protein_align_2, DNA_align_1, DNA_align_2) values ($fid1, $fid2, "$dS", "$dN", "$dNS", "$palign1", "$palign2", "$dalign1", "$dalign2")
 };
-		my $dbh = DBI->connect( "dbi:SQLite:dbname=$outfile", "", "" );
 		my $insert_success = 0;
 		while ( !$insert_success )
 		{
@@ -1855,13 +1891,18 @@ INSERT INTO ks_data (fid1, fid2, dS, dN, dN_dS, protein_align_1, protein_align_2
 			}
 		}
 
-		$dbh->disconnect();
-
 		$pm->finish;
 	}
-	$pm->wait_all_children();
 
-	system "/bin/rm $outfile.running" if -r "$outfile.running";
+	$pm->wait_all_children();
+    $dbh->disconnect();
+    
+    # Database insertion benchmark
+    my $finished_time = new Benchmark;
+    my $completion_time = timestr( timediff( $finished_time, $start_time ));
+    say STDERR "Completed in: $completion_time";
+	
+    system "/bin/rm $outfile.running" if -r "$outfile.running";
 	;    #remove track file
 	CoGe::Accessory::Web::write_log( "Completed generating ks data.", $cogeweb->logfile );
 	return $outfile;
@@ -1873,9 +1914,14 @@ sub initialize_nwalign_servers
 	my $start_port = $opts{start_port};
 	my $procs      = $opts{procs};
 	my @ports;
-	for ( 1 .. $procs )
+    use IO::Socket;
+	
+    for ( 1 .. $procs )
 	{
-		system("$NWALIGN --server $start_port &");
+        unless(IO::Socket::INET->new(PeerAddr => 'localhost', PeerPort => $start_port)) {
+		    system("$NWALIGN --server $start_port &");
+        }
+
 		push @ports, $start_port;
 		$start_port++;
 	}
@@ -2108,6 +2154,7 @@ sub gen_ks_blocks_file
 	return $outfile;
 }
 
+
 sub gen_svg_file
 {
 	my %opts   = @_;
@@ -2243,6 +2290,7 @@ sub add_reverse_match    #this is for when there is a self-self comparison.  DAG
 
 }
 
+
 sub generate_dotplot
 {
 	my %opts    = @_;
@@ -2353,6 +2401,153 @@ sub generate_dotplot
 	return ($outfile) if -r "$outfile.html";
 }
 
+sub get_query_link
+{
+	my %url_options = @_;
+	my $dagchainer_D = $url_options{D};
+	
+    #    my $dagchainer_g = $url_options{g}; #depreciated -- will be a factor of -D
+	my $dagchainer_A = $url_options{A};
+	my $Dm           = $url_options{Dm};
+	my $gm           = $url_options{gm};
+	($Dm) = $Dm =~ /(\d+)/;
+	($gm) = $gm =~ /(\d+)/;
+
+    #	my $repeat_filter_cvalue = $url_options{c}; #parameter to be passed to run_adjust_dagchainer_evals
+	my $cscore               = $url_options{csco}; #c-score for filtering low quality blast hits, fed to blast to raw
+	my $dupdist              = $url_options{tdd}; #tandem duplication distance, fed to blast to raw
+	my $regen_images         = $url_options{regen_images};
+	my $email                = $url_options{email};
+	my $job_title            = $url_options{jobtitle};
+	my $width                = $url_options{width};
+	my $basename             = $url_options{basename};
+	my $blast                = $url_options{blast};
+
+	my $feat_type1 = $url_options{feat_type1};
+	my $feat_type2 = $url_options{feat_type2};
+
+	my $dsgid1   = $url_options{dsgid1};
+	my $dsgid2   = $url_options{dsgid2};
+	my $ks_type  = $url_options{ks_type};
+	my $assemble = $url_options{assemble} =~ /true/i ? 1 : 0;
+	$assemble = 2 if $assemble && $url_options{show_non_syn} =~ /true/i;
+	$assemble *= -1 if $assemble && $url_options{spa_ref_genome} < 0;
+	my $axis_metric       = $url_options{axis_metric};
+	my $axis_relationship = $url_options{axis_relationship};
+	my $min_chr_size      = $url_options{min_chr_size};
+	my $dagchainer_type   = $url_options{dagchainer_type};
+	my $color_type        = $url_options{color_type};
+	my $merge_algo        = $url_options{merge_algo};          #is there a merging function?
+
+	#options for finding syntenic depth coverage by quota align (Bao's algo)
+	my $depth_algo        = $url_options{depth_algo};
+	my $depth_org_1_ratio = $url_options{depth_org_1_ratio};
+	my $depth_org_2_ratio = $url_options{depth_org_2_ratio};
+	my $depth_overlap     = $url_options{depth_overlap};
+
+	#fids that are passed in for highlighting the pair in the dotplot
+	my $fid1 = $url_options{fid1};
+	my $fid2 = $url_options{fid2};
+
+	#will non-syntenic dots be shown?
+	my $snsd      = $url_options{show_non_syn_dots} =~ /true/i ? 1 : 0;
+	my $algo_name = $ALGO_LOOKUP->{$blast}{displayname};
+
+	#will the axis be flipped?
+	my $flip = $url_options{flip};
+	$flip = $flip =~ /true/i ? 1 : 0;
+
+	#are axes labeled?
+	my $clabel = $url_options{clabel};
+	$clabel = $clabel =~ /true/i ? 1 : 0;
+
+	#are random chr skipped
+	my $skip_rand = $url_options{skip_rand};
+	$skip_rand = $skip_rand =~ /true/i ? 1 : 0;
+
+	#which color scheme for ks/kn dots?
+	my $color_scheme = $url_options{color_scheme};
+
+	#codeml min and max calues
+	my $codeml_min = $url_options{codeml_min};
+	$codeml_min = undef unless $codeml_min =~ /\d/ && $codeml_min =~ /^-?\d*.?\d*$/;
+	my $codeml_max = $url_options{codeml_max};
+	$codeml_max = undef unless $codeml_max =~ /\d/ && $codeml_max =~ /^-?\d*.?\d*$/;
+	my $logks = $url_options{logks};
+	$logks = $logks eq "true" ? 1 : 0;
+
+	#how are the chromosomes to be sorted?
+	my $chr_sort_order = $url_options{chr_sort_order};
+	
+    #draw a box around identified diagonals?
+	my $box_diags = $url_options{box_diags};
+	$box_diags = $box_diags eq "true" ? 1 : 0;
+	my $synmap_link = $SERVER . "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2"
+        .";D=$dagchainer_D;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;"
+        ."ft2=$feat_type2;regen_images=1;autogo=1";
+
+	$synmap_link .= ";Dm=$Dm" if defined $Dm;
+	$synmap_link .= ";csco=$cscore" if $cscore;
+	$synmap_link .= ";tdd=$dupdist" if defined $dupdist;
+	$synmap_link .= ";gm=$gm" if defined $gm;
+	$synmap_link .= ";snsd=$snsd";
+
+	$synmap_link .= ";bd=$box_diags"          if $box_diags;
+	$synmap_link .= ";mcs=$min_chr_size"      if $min_chr_size;
+	$synmap_link .= ";sp=$assemble"           if $assemble;
+	$synmap_link .= ";ma=$merge_algo"         if $merge_algo;
+	$synmap_link .= ";da=$depth_algo"         if $depth_algo;
+	$synmap_link .= ";do1=$depth_org_1_ratio" if $depth_org_1_ratio;
+	$synmap_link .= ";do2=$depth_org_2_ratio" if $depth_org_2_ratio;
+	$synmap_link .= ";do=$depth_overlap"      if $depth_overlap;
+	$synmap_link .= ";flip=1"                 if $flip;
+	$synmap_link .= ";cs=$color_scheme";
+	$synmap_link .= ";cmin=$codeml_min"       if defined $codeml_min;    #$codeml_min=~/\d/ && $codeml_min=~/^\d*.?\d*$/;
+	$synmap_link .= ";cmax=$codeml_max"       if defined $codeml_max;    #$codeml_max=~/\d/ && $codeml_max=~/^\d*.?\d*$/;
+	$synmap_link .= ";logks=$logks"           if defined $logks;
+	$synmap_link .= ";cl=0" if $clabel eq "0";
+	$synmap_link .= ";sr=$skip_rand"       if defined $skip_rand;
+	$synmap_link .= ";cso=$chr_sort_order" if $chr_sort_order;
+
+	$email = 0 if check_address_validity($email) eq 'invalid';
+
+	$feat_type1 = $feat_type1 == 2 ? "genomic" : "CDS";
+	$feat_type2 = $feat_type2 == 2 ? "genomic" : "CDS";
+	$feat_type1 = "protein" if $blast == 5 && $feat_type1 eq "CDS";      #blastp time
+	$feat_type2 = "protein" if $blast == 5 && $feat_type2 eq "CDS";      #blastp time
+
+	$synmap_link .= ";dt=$dagchainer_type";
+
+	if ($ks_type)
+	{
+		my $num;
+		if    ( $ks_type eq "ks" )    { $num = 1; }
+		elsif ( $ks_type eq "kn" )    { $num = 2; }
+		elsif ( $ks_type eq "kn_ks" ) { $num = 3; }
+		$synmap_link .= ";ks=$num";
+	}
+	$synmap_link .= ";am=g" if $axis_metric       && $axis_metric       =~ /g/i;
+	$synmap_link .= ";ar=s" if $axis_relationship && $axis_relationship =~ /s/i;
+	$synmap_link .= ";ct=$color_type" if $color_type;
+	
+    my($org_name1, $title) = gen_org_name(dsgid => $dsgid1, feat_type => $feat_type1, write_log => 0);
+    my($org_name2, $title) = gen_org_name(dsgid => $dsgid2, feat_type => $feat_type2, write_log => 0);
+    my $log_msg = "<span class=link onclick=window.open('OrganismView.pl?dsgid=" . 
+        $dsgid1 . "')>$org_name1</span> v. <span class=link".
+	"onclick=window.open('OrganismView.pl?dsgid=$dsgid2')>$org_name2</span>";
+
+    $log_msg .= " Ks" if $ks_type;
+	my $cogeweb = CoGe::Accessory::Web::initialize_basefile(
+        basename => $basename,
+        tempdir => $TEMPDIR);
+
+	return  CoGe::Accessory::Web::get_tiny_link( db => $coge,
+        user_id => $USER->id, page => $PAGE_NAME, url => $synmap_link,
+        log_msg=> $log_msg);
+}
+
+
+#FIXME: The way the process is being forked needs to be cleaned up
 sub go
 {
 	my %opts = @_;
@@ -2362,6 +2557,12 @@ sub go
 		$opts{$k} =~ s/\s+$//;
 	}
 	my $dagchainer_D = $opts{D};
+	my $tiny_link = $opts{tiny_link};
+
+    say STDERR "tiny_link is required for logging." unless defined($tiny_link);
+    
+    #print STDERR "SUB GO:";
+    #print STDERR Dumper \%opts;
 
 	#    my $dagchainer_g = $opts{g}; #depreciated -- will be a factor of -D
 	my $dagchainer_A = $opts{A};
@@ -2372,6 +2573,8 @@ sub go
 #	my $repeat_filter_cvalue = $opts{c};              #parameter to be passed to run_adjust_dagchainer_evals
 	my $cscore               =$opts{csco}; #c-score for filtering low quality blast hits, fed to blast to raw
 	my $dupdist               =$opts{tdd}; #tandem duplication distance, fed to blast to raw
+	$dupdist = 10 unless defined($dupdist);
+
 	my $regen_images         = $opts{regen_images};
 	my $email                = $opts{email};
 	my $job_title            = $opts{jobtitle};
@@ -2439,7 +2642,7 @@ sub go
 	#how are the chromosomes to be sorted?
 	my $chr_sort_order = $opts{chr_sort_order};
 
-	$dagchainer_type = $dagchainer_type eq "true" ? "geneorder" : "distance";
+#	$dagchainer_type = $dagchainer_type eq "true" ? "geneorder" : "distance";
 
 	unless ( $dsgid1 && $dsgid2 )
 	{
@@ -2460,31 +2663,6 @@ sub go
 	}
 
 	$cogeweb = CoGe::Accessory::Web::initialize_basefile( basename => $basename, tempdir => $TEMPDIR );
-#	print STDERR Dumper $cogeweb;
-	my $synmap_link = $SERVER . "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;D=$dagchainer_D;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2;autogo=1";
-	$synmap_link .= ";Dm=$Dm" if defined $Dm;
-	$synmap_link .= ";csco=$cscore" if $cscore;
-	$synmap_link .= ";tdd=$dupdist" if defined $dupdist;
-	$synmap_link .= ";gm=$gm" if defined $gm;
-	$synmap_link .= ";snsd=$snsd";
-
-	$synmap_link .= ";bd=$box_diags"          if $box_diags;
-	$synmap_link .= ";mcs=$min_chr_size"      if $min_chr_size;
-	$synmap_link .= ";sp=$assemble"           if $assemble;
-	$synmap_link .= ";ma=$merge_algo"         if $merge_algo;
-	$synmap_link .= ";da=$depth_algo"         if $depth_algo;
-	$synmap_link .= ";do1=$depth_org_1_ratio" if $depth_org_1_ratio;
-	$synmap_link .= ";do2=$depth_org_2_ratio" if $depth_org_2_ratio;
-	$synmap_link .= ";do=$depth_overlap"      if $depth_overlap;
-	$synmap_link .= ";flip=1"                 if $flip;
-	$synmap_link .= ";cs=$color_scheme";
-	$synmap_link .= ";cmin=$codeml_min"       if defined $codeml_min;    #$codeml_min=~/\d/ && $codeml_min=~/^\d*.?\d*$/;
-	$synmap_link .= ";cmax=$codeml_max"       if defined $codeml_max;    #$codeml_max=~/\d/ && $codeml_max=~/^\d*.?\d*$/;
-	$synmap_link .= ";logks=$logks"           if defined $logks;
-	$synmap_link .= ";cl=0" if $clabel eq "0";
-	$synmap_link .= ";sr=$skip_rand"       if defined $skip_rand;
-	$synmap_link .= ";cso=$chr_sort_order" if $chr_sort_order;
-
 	$email = 0 if check_address_validity($email) eq 'invalid';
 
 	$feat_type1 = $feat_type1 == 2 ? "genomic" : "CDS";
@@ -2492,18 +2670,31 @@ sub go
 	$feat_type1 = "protein" if $blast == 5 && $feat_type1 eq "CDS";      #blastp time
 	$feat_type2 = "protein" if $blast == 5 && $feat_type2 eq "CDS";      #blastp time
 
-	$synmap_link .= ";dt=$dagchainer_type";
-	if ($ks_type)
-	{
-		my $num;
-		if    ( $ks_type eq "ks" )    { $num = 1; }
-		elsif ( $ks_type eq "kn" )    { $num = 2; }
-		elsif ( $ks_type eq "kn_ks" ) { $num = 3; }
-		$synmap_link .= ";ks=$num";
-	}
-	$synmap_link .= ";am=g" if $axis_metric       && $axis_metric       =~ /g/i;
-	$synmap_link .= ";ar=s" if $axis_relationship && $axis_relationship =~ /s/i;
-	$synmap_link .= ";ct=$color_type" if $color_type;
+    my $prev_submission = $coge->resultset('Job')->search({
+        link => $tiny_link
+    });
+
+    my $job;
+
+    #FIXME: the process should be a forked process of the function running. 
+    if($prev_submission->count < 1) {
+        $job = $coge->resultset('Job')->create({
+            "link" => $tiny_link,
+            "page" => $PAGE_TITLE, 
+            "process_id" => getpid(),
+            "user_id" => $USER->id,
+            "status" => 1
+        });
+    } else {
+        $job = $prev_submission->next;
+        $job->update({
+            status => 1,
+            process_id => getpid()
+        });
+    }
+
+    return unless defined($job);
+
 	##generate fasta files and blastdbs
 	my $t0   = new Benchmark;
 	my $pm   = new Parallel::ForkManager($MAX_PROC);
@@ -2531,6 +2722,9 @@ sub go
 	{
 		my $log = $cogeweb->logfile;
 		$log =~ s/$DIR/$URL/;
+        $job->update({ 
+            status => 4
+        });
 		return "<span class=alert>Something went wrong generating the fasta files: <a href=$log>log file</a></span>";
 	}
 	else
@@ -2556,6 +2750,10 @@ sub go
 	{
 		my $log = $cogeweb->logfile;
 		$log =~ s/$DIR/$URL/;
+        
+        $job->update({ 
+            status => 4
+        });
 		return "<span class=alert>Something went wrong generating the blastdb files: <a href=$log>log file</a></span>";
 	}
 	else
@@ -2718,7 +2916,6 @@ sub go
 	my $run_dagchainer_time = timestr( timediff( $t4, $t3_5 ) );
 	my ( $find_nearby_time, $gen_ks_db_time, $dotplot_time, $add_gevo_links_time );
 	my $final_results_files;
-	my $tiny_link;
 
 	if ( -r $dagchainer_file || -r $dagchainer_file . ".gz" )
 	{
@@ -2753,9 +2950,7 @@ sub go
 			CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
 			CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 		}
-#		print STDERR $quota_align_coverage,"\n";
 		my $final_dagchainer_file = $quota_align_coverage && ( -r $quota_align_coverage || -r $quota_align_coverage . ".gz" ) ? $quota_align_coverage : $post_dagchainer_file_w_nearby;
-#		print STDERR $final_dagchainer_file,"\n";
 		#convert to genomic coordinates if gene order was used
 		if ( $dagchainer_type eq "geneorder" )
 		{
@@ -3083,15 +3278,12 @@ sub go
 			$html .= "<tr><td>";
 			my $conffile = $ENV{HOME} . 'coge.conf';
 			$dagchainer_file =~ s/^$URL/$DIR/;
-			my $log_msg = "<span class=link onclick=window.open('OrganismView.pl?dsgid=$dsgid1')>$org_name1</span> v. <span class=link  onclick=window.open('OrganismView.pl?dsgid=$dsgid2')>$org_name2</span>";
-			$log_msg .= " Ks" if $ks_type;
-			$tiny_link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $synmap_link, log_msg=>$log_msg);
 			$html .= "<br>" . qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=$conffile;l=$tiny_link');" >Generate Pseudo-Assembled Genomic Sequence</span>} if $assemble;
 			$html .= qq{</table>};
 
 			CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
 			CoGe::Accessory::Web::write_log( "Link to Regenerate Analysis", $cogeweb->logfile );
-			CoGe::Accessory::Web::write_log( "$synmap_link",                $cogeweb->logfile );
+			CoGe::Accessory::Web::write_log( "$tiny_link",                $cogeweb->logfile );
 			CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
 			CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
@@ -3156,6 +3348,12 @@ GEvo links:               $add_gevo_links_time
 	CoGe::Accessory::Web::write_log( $benchmarks, $cogeweb->logfile );
 	CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
 	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+
+    # Update Job Status
+    $job->update({
+        status => 2
+    });
+
 	$html =~ s/<script src="\/CoGe\/js\/jquery-1.3.2.js"><\/script>//g;    #need to remove this from the output from dotplot -- otherwise it over-loads the stuff in the web-page already. This can mess up other loaded js such as tablesoter
 	return $html;
 }
