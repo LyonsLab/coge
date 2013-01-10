@@ -942,7 +942,7 @@ function send_items_to(page_name, format) {
 			<div style="padding-top:10px;">
 				<TMPL_LOOP NAME="GROUP_LOOP">
 					<div>
-						<span style="color:dimgray;font-weight:bold;"><TMPL_VAR NAME="GROUP_NAME"> (<TMPL_VAR NAME="GROUP_ROLE">)</span>
+						<span style="color:dimgray;"><TMPL_VAR NAME="GROUP_NAME"> (<TMPL_VAR NAME="GROUP_ROLE">)</span>
 						<span onClick="remove_items_from_user_or_group('<TMPL_VAR NAME=GROUP_ITEM>');" class="link ui-icon ui-icon-close"></span>
 						<br>
 						<TMPL_LOOP NAME="GROUP_USER_LOOP">
@@ -952,7 +952,7 @@ function send_items_to(page_name, format) {
 				</TMPL_LOOP>
 				<TMPL_LOOP NAME="USER_LOOP">
 					<div>
-						<span style="color:dimgray;font-weight:bold;"><TMPL_VAR NAME="USER_FULL_NAME"> (<TMPL_VAR NAME="USER_NAME">) (<TMPL_VAR NAME="USER_ROLE">)<span>
+						<span style="color:dimgray;"><TMPL_VAR NAME="USER_FULL_NAME"> (<TMPL_VAR NAME="USER_NAME">) (<TMPL_VAR NAME="USER_ROLE">)<span>
 						<span onClick="$(this.parent).fadeOut(); remove_items_from_user_or_group('<TMPL_VAR NAME=USER_ITEM>');" class="link ui-icon ui-icon-close"></span><br>
 					</div>
 				</TMPL_LOOP>
