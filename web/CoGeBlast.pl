@@ -35,14 +35,16 @@ use Parallel::ForkManager;
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME 
 			$TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB 
 			$BLAST_PROGS $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT 
-			$MAX_PROC $connstr $COOKIE_NAME $MAX_SEARCH_RESULTS %FUNCTION);
+			$MAX_PROC $connstr $COOKIE_NAME $MAX_SEARCH_RESULTS %FUNCTION
+            $PAGE_TITLE);
 
 $P             = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 $ENV{PATH}     = $P->{COGEDIR};
 $ENV{BLASTDB}  = $P->{BLASTDB};
 $ENV{BLASTMAT} = $P->{BLASTMATRIX};
 
-$PAGE_NAME = "CoGeBlast.pl";
+$PAGE_TITLE = "CoGeBlast";
+$PAGE_NAME = $PAGE_TITLE.".pl";
 $TEMPDIR   = $P->{TEMPDIR} . "CoGeBlast";
 mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
 $TEMPURL     = $P->{TEMPURL} . "CoGeBlast";
@@ -588,6 +590,12 @@ sub blast_search {
 	my $link = $P->{SERVER}.$PAGE_NAME."?dsgid=$blastable";
 	$link .= ";fid=$fid" if ($fid);
 	$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );	
+
+    my $job = CoGe::Accessory::Web::get_job(
+        tiny_link => $link, title => $PAGE_TITLE, user_id => $USER->id,
+        db_object => $coge);
+    
+    return unless defined($job);
 
 	$width = 400 unless $width =~ /^\d+$/; #something wrong with how width is calculated in tmpl file
 	

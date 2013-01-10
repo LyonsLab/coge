@@ -2670,29 +2670,10 @@ sub go
 	$feat_type1 = "protein" if $blast == 5 && $feat_type1 eq "CDS";      #blastp time
 	$feat_type2 = "protein" if $blast == 5 && $feat_type2 eq "CDS";      #blastp time
 
-    my $prev_submission = $coge->resultset('Job')->search({
-        link => $tiny_link
-    });
-
-    my $job;
-
-    #FIXME: the process should be a forked process of the function running. 
-    if($prev_submission->count < 1) {
-        $job = $coge->resultset('Job')->create({
-            "link" => $tiny_link,
-            "page" => $PAGE_TITLE, 
-            "process_id" => getpid(),
-            "user_id" => $USER->id,
-            "status" => 1
-        });
-    } else {
-        $job = $prev_submission->next;
-        $job->update({
-            status => 1,
-            process_id => getpid()
-        });
-    }
-
+    my $job = CoGe::Accessory::Web::get_job(
+        tiny_link => $tiny_link, title => $PAGE_TITLE, user_id => $USER->id,
+        db_object => $coge);
+    
     return unless defined($job);
 
 	##generate fasta files and blastdbs
