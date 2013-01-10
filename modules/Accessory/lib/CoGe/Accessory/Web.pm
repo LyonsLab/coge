@@ -16,6 +16,7 @@ use HTTP::Request;
 use XML::Simple;
 use CoGe::Accessory::LogUser;
 use Digest::MD5 qw(md5_base64);
+use POSIX;
 
 BEGIN {
 	use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK $Q $cogex $TEMPDIR $BASEDIR);
@@ -364,6 +365,37 @@ sub get_tiny_link {
 	}
 
 	return $tiny;
+}
+
+sub get_job {
+        my %args = @_;
+        my $job;
+        my $tiny_link = $args{tiny_link};
+        my $user_id = $args{user_id};
+        my $title = $args{title};
+	my $coge = $args{db_object};
+
+        my $prev_submission = $coge->resultset('Job')->search({
+                link => $tiny_link
+        });
+
+        if($prev_submission->count < 1) {
+                $job = $coge->resultset('Job')->create({
+                    "link" => $tiny_link,
+                    "page" => $title,
+                    "process_id" => getpid(),
+                    "user_id" => $user_id,
+                    "status" => 1
+                });
+        } else {
+            $job = $prev_submission->next;
+            $job->update({
+                status => 1,
+                process_id => getpid()
+            });
+        }
+
+        return $job;
 }
 
 sub write_log {
