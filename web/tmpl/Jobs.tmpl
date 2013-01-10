@@ -1,0 +1,269 @@
+<TMPL_IF NAME=MAIN>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
+
+<SCRIPT language="JavaScript">
+$(document).ready(function(){
+	$.ajaxSetup({
+		type: "POST",
+		url: "<TMPL_VAR NAME=PAGE_NAME>",
+		dataType: "html",
+		cache: false,
+	});
+	
+	set_table();
+	
+	$(".dialog_box").dialog({autoOpen: 0, width: 600});
+});
+
+function set_table () { 
+	$('#list_table').tablesorter({widgets: ['zebra']});	
+}
+
+function input_focus(div_id) {
+	$('#'+div_id).val("").css({fontStyle: "normal"});
+}
+
+//Filters Rows for search_text - Case sensitive as of now, and searches hidden columns...
+function filter_rows (search_text) { // fast filter search
+	var visible = 0;
+	var total = 0;
+	
+	if (search_text && search_text.length < 3) { //>
+		return;
+	}
+	
+	//filter_busy(1);
+	
+	if (!search_text) { 
+		$("#list_table_body tr").each(
+			function(index, element) {
+				total++;
+				visible++;
+				$(element).show();
+			}
+		);
+	}
+	else {
+		search_text = search_text.toLowerCase();
+		
+		$("#list_table_body tr").each(
+			function(index, element) {
+				total++;
+				
+				if (element.innerHTML.toLowerCase().indexOf(search_text) != -1) { // match
+					if ( $('#search_type').val() == 1 ) { 
+						$(element).show();
+						visible++;
+					}
+					else {
+						$(element).hide();
+					}
+				}
+				else { // mismatch
+					if ( $('#search_type').val() == 1 ) { 
+						$(element).hide();
+					}
+					else {
+						$(element).show();
+						visible++;				
+					}
+				}
+			}
+		);
+	}
+	
+	set_table();
+	//filter_busy(0);
+	$('#filter_count').html('Showing ' + visible + ' of ' + total + ' rows');
+}
+
+function run_get_lists_for_user(opts){
+	if (!opts) { opts={}; }
+	divid = opts.divid; // ID for DIV where results will be displayed in page
+	
+	// create a new closure who's scope does *not*
+	// include the `divid` value so that callback will 
+	// not clobber the `divid` variable 
+	var create_callback = function(divid) {
+		var local_divid = divid;
+		return function (data) {
+			$('#'+local_divid).html(data);
+			set_table();
+		};
+	};
+
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_lists_for_user',
+		},
+		success : create_callback(divid)
+	});
+}
+
+function create_list (opts){
+	name = $('#name').val();
+	desc = $('#desc').val();
+	typeid = $('#type option:selected').attr('value');
+	if (name) {
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'create_list',
+				name: name,
+				desc: desc,
+				typeid: typeid,
+			},
+			success : function(val) {
+				if (val != 1) {alert(val);}
+				run_get_lists_for_user({divid: 'lists'});
+			},
+		});
+	}
+	else { alert ('Error!  Must have a name!');}
+}
+
+function delete_list () {
+	lid = $('#list_delete_lid').val();
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'delete_list',
+			lid: lid,
+		},
+		success : function() {
+			run_get_lists_for_user({divid: 'lists'});
+		},
+	});
+	$("#list_delete_box").dialog('close');
+}
+
+function dialog_delete_list (opts) {
+	$("#list_delete_box").dialog("option", "title", "Delete Notebook?");
+	$("#list_delete_box").dialog("option", "width", "450");
+	$("#list_delete_box").dialog('open');
+	$('#list_delete_lid').val(opts.lid);
+}
+
+function cancel_job() {
+    var rows = $("#list_table_body input[type=checkbox]")
+        .filter(":checked")
+        .parent()
+        .parent()
+        .children()
+        .filter("td:nth-child(5)")
+        .filter(":contains('Running')")
+        .parent();
+
+    var status = rows.children()
+        .filter("td:nth-child(5)");
+
+
+    var jobs = rows.children() 
+        .filter("td:nth-child(2)")
+        .each(function(index) {
+            var argument_list =  {
+                fname: 'cancel_job',
+                job: $(this).text(),
+            };
+            
+            $.ajax({
+                type: "GET",
+                dataType: "text",
+                data: argument_list,
+                success: function(data) {
+                    if (data == "success") {
+                        var item = $(status.get(index));
+                        item.text("Cancelled")
+                            .fadeIn(2000);
+                    }
+                }
+            });
+        });
+}
+
+</SCRIPT>
+
+<div id="lists"><TMPL_VAR NAME="LIST_INFO"></div>
+
+<div id="edit_box" class="dialog_box" style="display:none;"></div>
+
+<div id="list_delete_box" class="dialog_box" style='display:none;' align='center'>
+Are you sure you want to permanently delete this notebook?<p>
+ <div>
+  <input type='hidden' id='list_delete_lid'>
+  <span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_list();">Yes</span>
+  <span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="$('#list_delete_box').dialog('close');">No</span>
+ </div>
+</div>
+
+<div id="admin_stuff"></div>
+</TMPL_IF> <!-- MAIN -->
+
+<TMPL_IF LIST_STUFF>
+<SCRIPT language="JavaScript">
+$(document).ready(function(){
+	// Setup filter input
+	$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
+	$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
+	filter_rows( $('#search_bar').val() );
+});
+</SCRIPT>
+
+<div class='small' style="padding-top:5px;padding-bottom:5px;">
+ Filter: 
+ <input type="text" id="search_bar">
+ <select id="search_type">
+  <option value="1">Contains</option>
+  <option value="0">Does NOT contain</option>
+ </select>
+ <span id='filter_count' style="margin-left:20px;"></span>
+ <!-- <img id='filter_busy' src="picts/ajax-loader.gif" style="display:none;" /> -->
+</div>
+<table style="width: 100%;" id="list_table" class="small ui-widget-content ui-corner-all">
+    <thead align="left"> 
+        <tr>
+            <th></th>
+            <th>Job ID</th>
+            <th>Link to the Analysis</th>
+            <th>Tool</th>
+            <th>Status</th>
+            <th>Running Time</th>
+            <th>Type</th>
+            <th>Process ID</th>
+            <th>History</th>
+        </tr>
+    </thead>
+    <tfoot>
+        <tr>
+            <td id='' colspan='9' height='26'></td>
+        </tr>
+    </tfoot>
+        <tbody align="left" valign="top" id="list_table_body" class="small">
+            <TMPL_LOOP NAME="JOB_LOOP">
+            <tr valign="middle">
+                <td><input class="display" type="checkbox" /></td>
+                <td><TMPL_VAR NAME="ID"></td>
+                <td>
+                    <a href="<TMPL_VAR NAME="LINK">"><TMPL_VAR NAME="LINK"></a>
+                </td>
+                <td><TMPL_VAR NAME="PAGE"></td>
+                <td><TMPL_VAR NAME="STATUS"></td>
+                <td><TMPL_VAR NAME="RUNTIME"></td>
+                <td><TMPL_VAR NAME="TYPE"></td>
+                <td><TMPL_VAR NAME="PID"></td>
+                <td><TMPL_VAR NAME="LOG">
+                </td>
+            </tr>
+            </TMPL_LOOP>
+        </tbody>
+</table>
+<div style="clear: both; display: inline;" class="ui-button ui-button-go ui-corner-all">Restart</div>
+<div style="display: inline;" class="ui-button ui-corner-all" onclick="cancel_job()">Cancel job</div>
+</TMPL_IF> <!-- LIST_STUFF -->
+
+<TMPL_IF NAME="ADMIN_AREA">
+<hr>
+Admin Functions:<br>
+</TMPL_IF> <!-- ADMIN_AREA -->
