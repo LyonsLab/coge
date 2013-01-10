@@ -167,14 +167,20 @@ sub lists {
 sub groups {
 	my $self = shift;
 	my %opts = @_;
-	my $exclude_owner = $opts{exclude_owner}; #NOTE this will go away someday due to new user_connector
+	my $exclude_owner = $opts{exclude_owner}; #FIXME will go away someday due to new user_connector
 
 	my @groups = ();
-	foreach	my $conn ( $self->list_connectors )
+	foreach my $conn ( $self->list_connectors ) #FIXME will go away someday due to new user_connector
 	{
 		my $group = $conn->parent_list()->group;
 		next if ($exclude_owner && $group->is_owner);
 		push @groups, $group;
+	}
+	foreach my $conn ( $self->user_connectors )
+	{
+		if ($conn->parent_type == 6) { #FIXME hardcoded type
+			push @groups, $conn->group;
+		}
 	}
 
 	return wantarray ? @groups : \@groups;

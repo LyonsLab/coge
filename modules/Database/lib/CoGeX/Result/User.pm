@@ -105,7 +105,7 @@ __PACKAGE__->has_many( 'sessions'  => "CoGeX::Result::UserSession", 'user_id' );
 __PACKAGE__->has_many( 'works'     => "CoGeX::Result::Work",        'user_id' );
 __PACKAGE__->has_many( 'workflows' => "CoGeX::Result::Workflow",    'user_id' );
 __PACKAGE__->has_many( 'user_group_connectors' => "CoGeX::Result::UserGroupConnector", 'user_id' );
-__PACKAGE__->has_many( 'user_connectors' => "CoGeX::Result::UserConnector", 'parent_id' );
+__PACKAGE__->has_many( 'user_connectors' => "CoGeX::Result::UserConnector", { "foreign.parent_id" => "self.user_id" } );
 __PACKAGE__->has_many( 'logs' => "CoGeX::Result::Log",    'user_id' );
 __PACKAGE__->has_many( 'jobs' => "CoGeX::Result::Job",    'user_id' );
 __PACKAGE__->belongs_to( image => 'CoGeX::Result::Image', 'image_id');

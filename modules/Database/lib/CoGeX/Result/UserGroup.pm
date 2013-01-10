@@ -51,6 +51,7 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("user_group_id");
 __PACKAGE__->has_many( 'user_group_connectors' => "CoGeX::Result::UserGroupConnector", 'user_group_id' );
+__PACKAGE__->has_many( 'user_connectors' => "CoGeX::Result::UserConnector", { "foreign.parent_id" => "self.user_group_id" } );
 __PACKAGE__->has_many( 'lists' => "CoGeX::Result::List", 'user_group_id' );
 __PACKAGE__->belongs_to( 'role' => "CoGeX::Result::Role", 'role_id' );
 __PACKAGE__->belongs_to( 'creator' => "CoGeX::Result::User", 'creator_user_id' );

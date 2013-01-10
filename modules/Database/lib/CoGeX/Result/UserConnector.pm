@@ -80,6 +80,28 @@ sub type
 
 ################################################ subroutine header begin ##
 
+=head2 group
+
+ Usage     : 
+ Purpose   : Alias to the user_group() method.
+ Returns   : See user_group()
+ Argument  : None
+ Throws    : 
+ Comments  : 
+ 
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub group
+{
+	return shift->user_group();
+}
+
+################################################ subroutine header begin ##
+
 =head2 is_list
 
  Usage     : 
