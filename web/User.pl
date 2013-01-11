@@ -208,15 +208,20 @@ sub get_item_info {
 		return unless $notebook;
 		return unless ($USER->is_admin or $USER->has_access_to_list($notebook));
 
+		my $group_str = join('<br>', sort map { $_->name } $notebook->groups(exclude_owner=>1));
 		$html .= '<b>Notebook id' . $notebook->id . '</b><br>' . 
 				 '<b>Name:</b> ' . $notebook->name . '<br>' . 
 				 '<b>Description:</b> ' . $notebook->description . '<br>' .
-				 '<b>Contents:</b>';
-		$html .= '<div style="padding-left:20px;">' . $notebook->contents_summary_html . '</div>' .
-				 '<b>Who can access:</b><br>';
-		$html .= '<div style="padding-left:20px;">';
+				 '<b>Contents:</b>' .
+				 '<div style="padding-left:20px;">' . $notebook->contents_summary_html . '</div>' .
+				 '<b>Groups with access:</b><br>' .
+				 '<div style="padding-left:20px;">' .
+				 ( $group_str ? $group_str : 'None') . '<br>' .
+				 '</div>' .
+				 '<b>Users with access:</b><br>' .
+				 '<div style="padding-left:20px;">';
 		if ($notebook->restricted) {
-			$html .= join('<br>', map { $_->display_name.' ('.$_->user_name.')' } sort usercmp $notebook->users);
+			$html .= join('<br>', sort map { $_->display_name.' ('.$_->user_name.')' } $notebook->users);
 		}
 		else {
 		 	$html .= 'Everyone';
@@ -228,21 +233,22 @@ sub get_item_info {
 		return unless $genome;
 		return unless ($USER->is_admin or $USER->has_access_to_genome($genome));
 	
+		my $group_str = join('<br>', sort map { $_->name } $genome->groups(exclude_owner=>1));
 		$html .= '<b>Genome id' . $genome->id . '</b><br>' . 
 				 '<b>Organism: </b>' . $genome->organism->name . '<br>' .
 				 '<b>Name:</b> ' . $genome->name . '<br>' . 
 				 '<b>Description:</b> ' . $genome->description . '<br>' .
 				 '<b>Version:</b> ' . $genome->version . '<br>' .
 				 '<b>Type:</b> ' . ($genome->type ? $genome->type->name : '') . '<br>' .
-				 '<b>Source:</b> ' . ($genome->source ? $genome->source->[0]->name : '') . '<br>';
-		$html .= '<b>Groups with access:</b><br>' .
+				 '<b>Source:</b> ' . ($genome->source ? $genome->source->[0]->name : '') . '<br>' .
+				 '<b>Groups with access:</b><br>' .
 				 '<div style="padding-left:20px;">' .
-				 (join('<br>', map { $_->name } sort $genome->groups(exclude_owner=>1)) ? $_ : 'None') . '<br>' .
+				 ($group_str ? $group_str : 'None') . '<br>' .
 				 '</div>' .
 				 '<b>Users with access:</b><br>' .
 				 '<div style="padding-left:20px;">';
 		if ($genome->restricted) {
-			$html .= join('<br>', map { $_->display_name.' ('.$_->user_name.')' } sort usercmp $genome->users);
+			$html .= join('<br>', sort map { $_->display_name.' ('.$_->user_name.')' } $genome->users);
 		}
 		else {
 		 	$html .= 'Everyone';
@@ -254,19 +260,20 @@ sub get_item_info {
 		return unless $experiment;
 		return unless ($USER->is_admin or $USER->has_access_to_experiment($experiment));
 	
+		my $group_str = join('<br>', sort map { $_->name } $experiment->groups(exclude_owner=>1));
 		$html .= '<b>Experiment id' . $experiment->id . '</b><br>' . 
 				 '<b>Name:</b> ' . $experiment->name . '<br>' . 
 				 '<b>Description:</b> ' . $experiment->description . '<br>' .
 				 '<b>Version:</b> ' . $experiment->version . '<br>' .
 				 '<b>Source:</b> ' . ($experiment->source ? $experiment->source->name : '') . '<br>' .
-		$html .= '<b>Groups with access:</b><br>' .
+				 '<b>Groups with access:</b><br>' .
 				 '<div style="padding-left:20px;">' .
-				 (join('<br>', map { $_->name } sort $experiment->groups(exclude_owner=>1)) ? $_ : 'None') . '<br>' .
+				 ($group_str ? $group_str : 'None') . '<br>' .
 				 '</div>' .				 
 				 '<b>Users with access:</b><br>' .
 				 '<div style="padding-left:20px;">';		 
 		if ($experiment->restricted) {
-			$html .= join('<br>', map { $_->display_name.' ('.$_->user_name.')' } sort usercmp $experiment->users);
+			$html .= join('<br>', sort map { $_->display_name.' ('.$_->user_name.')' } $experiment->users);
 		}
 		else {
 		 	$html .= 'Everyone';
@@ -417,7 +424,8 @@ sub get_share_dialog {
 			push @user_rows, { 	USER_ITEM => $conn->user->id.':5', #FIXME hardcoded type
 						   		USER_FULL_NAME => $conn->user->display_name, 
 						   		USER_NAME => $conn->user->name,
-						   		USER_ROLE => $conn->role->name };
+						   		USER_ROLE => $conn->role->name,
+								USER_DELETE => 1 };
 		}
 		if ($conn->parent_type == 6) { #FIXME hardcoded type
 			my $group = $conn->user_group;
@@ -427,7 +435,16 @@ sub get_share_dialog {
 
 	my @group_rows;
 	foreach my $group (sort groupcmp values %groups) {
-		next if $group->is_owner; # skip owner groups
+		if ($group->is_owner) { #FIXME will go away with new user_connector
+			my $u = $group->creator;
+			push @user_rows, { 	USER_ITEM => $u->id.':5', #FIXME hardcoded type
+						  	USER_FULL_NAME => $u->display_name, 
+						  	USER_NAME => $u->name,
+						   	USER_ROLE => 'Owner'
+					};
+			next;
+		}		
+
 		my @users = map { { GROUP_USER_FULL_NAME => $_->display_name, 
 							GROUP_USER_NAME => $_->name } 
 						} sort usercmp $group->users;
@@ -445,9 +462,6 @@ sub get_share_dialog {
 
 	if ($isPublic) {
 		$template->param( ACCESS_MSG => 'Everyone' );
-	}
-	elsif (!@user_rows && !@group_rows) {
-		$template->param( ACCESS_MSG => 'Only me' );
 	}
 
 	return $template->output;
@@ -952,7 +966,6 @@ sub create_new_notebook {
 	my $type_id = $opts{type_id};
 	return unless $name && $type_id;
 	my $item_list = $opts{item_list}; # optional
-
     return if ($USER->user_name eq "public");
 
     # Get owner user group for the new list
