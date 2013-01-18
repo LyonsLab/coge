@@ -433,7 +433,8 @@ sub has_access {
 	my $list = $opts{list};
 	my $experiment = $opts{experiment};
 	return 0 unless $dsg || $ds || $list || $experiment;
-	
+	return 0 unless $self->id;
+
 	foreach my $group ( $self->groups ) {
 		return 1 if $group->role->name eq "Admin";
 	}
