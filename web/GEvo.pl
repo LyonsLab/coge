@@ -4152,54 +4152,59 @@ sub dataset_search {
 	$dsid = $feat->dataset->id if $feat;
 	my $html;
 	my %sources;
-	if ($accn) {
-		my $rs = $coge->resultset('Dataset')->search(
-			{ 'feature_names.name' => $accn, },
-			{
-				'join' => { 'features' => 'feature_names', },
-
-				#						   'prefetch'=>['datasource', 'organism'],
-			}
-		);
-		while ( my $ds = $rs->next() ) {
-			my $skip = 0;
-			foreach my $item ( $ds->genomes ) {
-				next if $USER->is_admin;
-				$skip = 1
-				  if $item->restricted && !$USER->has_access_to_genome($item);
-			}
-			next if $skip;
-			my $ver     = $ds->version;
-			my $desc    = $ds->description;
-			my $sname   = $ds->data_source->name;
-			my $ds_name = $ds->name;
-			foreach my $seqtype ( $ds->sequence_type ) {
-				my $typeid = $seqtype->id if $seqtype;
-				unless ($typeid) {
-					print STDERR "Error retrieving sequence_type object for ",
-					  $ds->name, ": id ", $ds->id, "\n";
-					next;
-				}
-				my $title =
-				    "$ds_name ($sname, "
-				  . ( $ver ? "v$ver, " : '' ) . "dsid"
-				  . $ds->id . ")";
-
-				next
-				  if $sources{ $ds->id }
-				  && $sources{ $ds->id }{typeid} < $typeid;
-				if ( $dsgid && !$dsid ) {
-					foreach my $item ( $ds->genomes ) {
-						$dsid = $ds->id if $dsgid == $item->id;
-					}
-				}
-				$sources{ $ds->id } = {
-					title   => $title,
-					version => $ver,
-					typeid  => $typeid
-				};
-			}
-		}
+	my $rs;
+	if ($feat)
+	  {
+	    $rs = $coge->resultset('Dataset')->search({dataset_id=>$feat->dataset->id});
+	  }
+	elsif ($accn) {
+	  $rs = $coge->resultset('Dataset')->search(
+						    { 'feature_names.name' => $accn, },
+						    {
+						     'join' => { 'features' => 'feature_names', },
+						     
+						     #						   'prefetch'=>['datasource', 'organism'],
+						    }
+						   );
+	}
+	while ( my $ds = $rs->next() ) {
+	  my $skip = 0;
+	  foreach my $item ( $ds->genomes ) {
+	    next if $USER->is_admin;
+	    $skip = 1
+	      if $item->restricted && !$USER->has_access_to_genome($item);
+	  }
+	  next if $skip;
+	  my $ver     = $ds->version;
+	  my $desc    = $ds->description;
+	  my $sname   = $ds->data_source->name;
+	  my $ds_name = $ds->name;
+	  foreach my $seqtype ( $ds->sequence_type ) {
+	    my $typeid = $seqtype->id if $seqtype;
+	    unless ($typeid) {
+	      print STDERR "Error retrieving sequence_type object for ",
+		$ds->name, ": id ", $ds->id, "\n";
+	      next;
+	    }
+	    my $title =
+	      "$ds_name ($sname, "
+		. ( $ver ? "v$ver, " : '' ) . "dsid"
+		  . $ds->id . ")";
+	    
+	    next
+	      if $sources{ $ds->id }
+		&& $sources{ $ds->id }{typeid} < $typeid;
+	    if ( $dsgid && !$dsid ) {
+	      foreach my $item ( $ds->genomes ) {
+		$dsid = $ds->id if $dsgid == $item->id;
+	      }
+	    }
+	    $sources{ $ds->id } = {
+				   title   => $title,
+				   version => $ver,
+				   typeid  => $typeid
+				  };
+	  }
 	}
 
 	if ( keys %sources ) {
@@ -4379,6 +4384,11 @@ sub feat_search {
 	#    print STDERR "feat_search: accn=$accn\n";
 	$accn =~ s/^\s+// if $accn;
 	$accn =~ s/\s+$// if $accn;
+	my $feat = $coge->resultset('Feature')->find($featid) if $featid;
+	if ($feat)
+	  {
+	    $dsid = $feat->dataset->id;
+	  }
 	unless ($gstid) {
 		if ( $featid =~ /_/ ) {
 			( $featid, $gstid ) = split(/_/, $featid);
@@ -4415,6 +4425,7 @@ sub feat_search {
 		}
 		$seen{ $f->id } = 1;
 	}
+	push @feats, $feat unless @feats;
 	@feats = sort { $a->type->name cmp $b->type->name } @feats;
 	unshift @feats, @genes if @genes;
 	my $html;
