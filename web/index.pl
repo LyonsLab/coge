@@ -257,8 +257,8 @@ sub get_latest_genomes {
 		$entry .= "<td align=right>" . commify( $dsg->length ) . "<td>";
 		my @desc = split /;/, $dsg->organism->description;
 		while ( $desc[0] && !$desc[-1] ) { pop @desc; }
-		$desc[-1] =~ s/^\s+//;
-		$desc[-1] =~ s/\s+$//;
+		$desc[-1] =~ s/^\s+// if $desc[-1];
+		$desc[-1] =~ s/\s+$// if $desc[-1];
 		my $orgview_search = "OrganismView.pl?org_desc=" . $desc[-1];
 		$entry .= qq{<td><span class="link" onclick="window.open('$orgview_search')">Search</span>};
 		$entry .= qq{<td>};
