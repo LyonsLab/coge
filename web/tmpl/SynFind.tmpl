@@ -42,10 +42,12 @@ $(function() {
 	
 				  	
 	//Get org info
-	$("#genome_info_button").click(function() {
-					get_genome_info(['args__dsgid','dsgid'],['genome_info_popup']);
-					$('#genome_info_popup').dialog('open');
-			});
+	if ($('#dsgid').length > 0) { // mdb tempfix for issue #21
+		$("#genome_info_button").click(function() {
+						get_genome_info(['args__dsgid','dsgid'],['genome_info_popup']);
+						$('#genome_info_popup').dialog('open');
+				});
+	}
 });
 
 $(".dialog_box").dialog({ autoOpen: false, width: 500 });
@@ -327,7 +329,9 @@ function add_selected_orgs() {
     });
   if (count == 1)
    {
-    get_dsg_for_search_menu(['args__dsgid','dsgid'],[add_to_list]);
+		if ($('#dsgid').length > 0) { // mdb tempfix for issue #21
+    		get_dsg_for_search_menu(['args__dsgid','dsgid'],[add_to_list]);
+    	}
    }
   else
    {
@@ -595,7 +599,7 @@ search_chain(1);
 }
 
 function search_bar(div_id){
-  console.log(div_id);
+//  console.log(div_id);
   if($('#'+div_id).val() == "Search") $('#'+div_id).val("").css({fontStyle: "normal"});
 }
 
