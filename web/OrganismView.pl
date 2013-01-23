@@ -507,7 +507,7 @@ sub get_genomes
 	    {
 	      next if $dsg->deleted;
 	      next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
-	      push @dsg, $dsg
+	      push @dsg, $dsg;
 	    }
 	  foreach my $dsg (@dsg)
 	    {
