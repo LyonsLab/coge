@@ -511,8 +511,13 @@ sub get_list_contents {
 
 	my $list_types = CoGeX::list_child_types();
 	my $genome_count = $list->genomes(count=>1); #EL: moved outside of loop; massive speed improvement due to cost of this call
+	my $delete_count=0;
 	foreach my $genome ( sort genomecmp $list->genomes ) {
-		
+		if ($genome->deleted)
+		  {
+		    $delete_count++;
+		    next;
+		  }
 		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' rowspan='$genome_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Genomes ($genome_count):</th>" : '');
 		my $gid = $genome->id;
 		$html .= qq{<td class='data5'><span id='genome$gid' class='link' onclick="window.open('GenomeInfo.pl?gid=$gid')">} . $genome->info . "</span></td>";
@@ -521,6 +526,16 @@ sub get_list_contents {
 		}
 		$html .= '</tr>';
 	}
+	if ($delete_count)
+	  {
+	    $html .= "<tr valign='top'><td class='data5'><span>$delete_count genomes from this note book are deleted</span></td>";
+	    #need to add funtionality that clicking on the "X" will remove the deleted items from the notebook
+	    if ($user_can_edit) {
+	      $html .= "<td style='padding-left:20px;'><span onClick=\"\" class='link ui-icon ui-icon-closethick'></span></td>";
+	    }
+	    $html .= '</tr>';
+	  }
+	
 	$first = 1;
 	my $exp_count = $list->experiments(count=>1); #EL: moved outside of loop; massive speed improvement
 	foreach my $experiment (sort experimentcmp $list->experiments ) {
