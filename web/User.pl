@@ -88,7 +88,7 @@ $MAX_SEARCH_RESULTS = 100;
 
 %ITEM_TYPE = ( # content/toc types 		#FIXME use CoGeX::get_child_types
 	all 		=> 100,
-	shared 		=> 101,
+	shared 		=> 101, #FIXME not used
 	trash 		=> 102,
 	user 		=> 103,
 	group 		=> 104,
