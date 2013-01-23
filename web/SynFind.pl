@@ -383,6 +383,7 @@ sub get_dsg_for_search_menu
 	my @orgids = split(/,/,$orgids);
 	foreach my $dsg ($coge->resultset('Genome')->search({organism_id=>[@orgids]}))
 	  {
+	next if $dsg->deleted;
 	    $dsgs{$dsg->id}=$dsg;
 	  }
       }
