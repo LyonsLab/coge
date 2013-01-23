@@ -33,7 +33,7 @@ our($P, $DBNAME, $DBHOST, $DBPORT, $DBUSER, $DBPASS, $connstr, $DATE, $DEBUG,
     $PYTHON26, $TANDEM_FINDER, $RUN_DAGCHAINER, $EVAL_ADJUST, $FIND_NEARBY,
     $DOTPLOT,  $SVG_DOTPLOT, $NWALIGN, $QUOTA_ALIGN, $CLUSTER_UTILS,
     $BLAST2RAW, $BASE_URL, $BLAST2BED, $SYNTENY_SCORE, $TEMPDIR, $TEMPURL,
-    $ALGO_LOOKUP, $GZIP, $GUNZIP, $COOKIE_NAME, %FUNCTIONS, $PAGE_TITLE);
+    $ALGO_LOOKUP, $GZIP, $GUNZIP, $COOKIE_NAME, %FUNCTIONS);
 
 $P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 $ENV{PATH}       = join ":", ( $P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR} . "SynMap", "/usr/bin", "/usr/local/bin" );
@@ -159,8 +159,8 @@ $DATE = sprintf(
 		->(localtime)
 );
 $FORM = new CGI;
-$PAGE_TITLE = "SynMap";
-$PAGE_NAME = $PAGE_TITLE . ".pl";
+
+$PAGE_NAME = "SynMap.pl";
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
 
@@ -542,6 +542,7 @@ sub gen_dsg_menu
 	my @dsg_menu;
 	my $message;
 	my $org_name;
+#	print STDERR"here!\n";
 
 	foreach my $dsg ( $coge->resultset('Genome')->search( { organism_id => $oid }, { prefetch => ['genomic_sequence_type'] } ) )
 	{
@@ -1832,12 +1833,12 @@ DNA_align_2
     my $dbh = DBI->connect( "dbi:SQLite:dbname=$outfile", "", "" );
     
     $dbh->do("PRAGMA synchronous=OFF");
-    $dbh->do("PRAGMA cache_size = 50000");
+    $dbh->do("PRAGMA cache_size = 25000");
     $dbh->do("PRAGMA count_changes=OFF");
     $dbh->do("PRAGMA journal_mode=MEMORY");
     $dbh->do("PRAGMA temp_store=MEMORY");
-	
-    foreach my $item (@data)
+
+	foreach my $item (@data)
 	{
 		$i++;
 		$i = 0 if $i == $MAX_RUNS*4;
@@ -1880,7 +1881,8 @@ DNA_align_2
 		my $insert = qq{
 INSERT INTO ks_data (fid1, fid2, dS, dN, dN_dS, protein_align_1, protein_align_2, DNA_align_1, DNA_align_2) values ($fid1, $fid2, "$dS", "$dN", "$dNS", "$palign1", "$palign2", "$dalign1", "$dalign2")
 };
-		my $insert_success = 0;
+		
+        my $insert_success = 0;
 		while ( !$insert_success )
 		{
 			$insert_success = $dbh->do($insert);
@@ -1893,16 +1895,13 @@ INSERT INTO ks_data (fid1, fid2, dS, dN, dN_dS, protein_align_1, protein_align_2
 
 		$pm->finish;
 	}
-
 	$pm->wait_all_children();
-    $dbh->disconnect();
-    
-    # Database insertion benchmark
+	$dbh->disconnect();
     my $finished_time = new Benchmark;
     my $completion_time = timestr( timediff( $finished_time, $start_time ));
     say STDERR "Completed in: $completion_time";
-	
-    system "/bin/rm $outfile.running" if -r "$outfile.running";
+    
+	system "/bin/rm $outfile.running" if -r "$outfile.running";
 	;    #remove track file
 	CoGe::Accessory::Web::write_log( "Completed generating ks data.", $cogeweb->logfile );
 	return $outfile;
@@ -1915,8 +1914,8 @@ sub initialize_nwalign_servers
 	my $procs      = $opts{procs};
 	my @ports;
     use IO::Socket;
-	
-    for ( 1 .. $procs )
+
+	for ( 1 .. $procs )
 	{
         unless(IO::Socket::INET->new(PeerAddr => 'localhost', PeerPort => $start_port)) {
 		    system("$NWALIGN --server $start_port &");
@@ -2530,8 +2529,8 @@ sub get_query_link
 	$synmap_link .= ";ar=s" if $axis_relationship && $axis_relationship =~ /s/i;
 	$synmap_link .= ";ct=$color_type" if $color_type;
 	
-    my($org_name1, $title) = gen_org_name(dsgid => $dsgid1, feat_type => $feat_type1, write_log => 0);
-    my($org_name2, $title) = gen_org_name(dsgid => $dsgid2, feat_type => $feat_type2, write_log => 0);
+    my($org_name1, $titleA) = gen_org_name(dsgid => $dsgid1, feat_type => $feat_type1, write_log => 0);
+    my($org_name2, $titleB) = gen_org_name(dsgid => $dsgid2, feat_type => $feat_type2, write_log => 0);
     my $log_msg = "<span class=link onclick=window.open('OrganismView.pl?dsgid=" . 
         $dsgid1 . "')>$org_name1</span> v. <span class=link".
 	"onclick=window.open('OrganismView.pl?dsgid=$dsgid2')>$org_name2</span>";
@@ -2547,7 +2546,6 @@ sub get_query_link
 }
 
 
-#FIXME: The way the process is being forked needs to be cleaned up
 sub go
 {
 	my %opts = @_;
@@ -2670,12 +2668,6 @@ sub go
 	$feat_type1 = "protein" if $blast == 5 && $feat_type1 eq "CDS";      #blastp time
 	$feat_type2 = "protein" if $blast == 5 && $feat_type2 eq "CDS";      #blastp time
 
-    my $job = CoGe::Accessory::Web::get_job(
-        tiny_link => $tiny_link, title => $PAGE_TITLE, user_id => $USER->id,
-        db_object => $coge);
-    
-    return unless defined($job);
-
 	##generate fasta files and blastdbs
 	my $t0   = new Benchmark;
 	my $pm   = new Parallel::ForkManager($MAX_PROC);
@@ -2703,9 +2695,6 @@ sub go
 	{
 		my $log = $cogeweb->logfile;
 		$log =~ s/$DIR/$URL/;
-        $job->update({ 
-            status => 4
-        });
 		return "<span class=alert>Something went wrong generating the fasta files: <a href=$log>log file</a></span>";
 	}
 	else
@@ -2731,10 +2720,6 @@ sub go
 	{
 		my $log = $cogeweb->logfile;
 		$log =~ s/$DIR/$URL/;
-        
-        $job->update({ 
-            status => 4
-        });
 		return "<span class=alert>Something went wrong generating the blastdb files: <a href=$log>log file</a></span>";
 	}
 	else
@@ -3329,12 +3314,6 @@ GEvo links:               $add_gevo_links_time
 	CoGe::Accessory::Web::write_log( $benchmarks, $cogeweb->logfile );
 	CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
 	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-
-    # Update Job Status
-    $job->update({
-        status => 2
-    });
-
 	$html =~ s/<script src="\/CoGe\/js\/jquery-1.3.2.js"><\/script>//g;    #need to remove this from the output from dotplot -- otherwise it over-loads the stuff in the web-page already. This can mess up other loaded js such as tablesoter
 	return $html;
 }
