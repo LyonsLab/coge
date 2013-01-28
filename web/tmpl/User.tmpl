@@ -981,6 +981,12 @@ function send_items_to(page_name, format) {
 
 
 
+<TMPL_IF NAME='LOGIN'>
+	<TMPL_INCLUDE NAME="widgets/Login.tmpl">
+</TMPL_IF>
+
+
+
 <TMPL_IF NAME='ADMIN_AREA'>
 <!--
 <br>

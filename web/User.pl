@@ -138,7 +138,12 @@ sub gen_html {
 }
 
 sub gen_body {
-	return 'Access Denied' if ($USER->user_name eq 'public');
+	if ($USER->user_name eq 'public') {
+		my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+		$template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
+		$template->param( LOGIN     => 1 );
+		return $template->output;
+	}
 
 	# Other user specified as param, only allow access if collaborator
 	# my $user = $USER;
