@@ -214,12 +214,20 @@ sub update_owner {
 
 	# Remove from current owner list
 	if ($genome->owner_list) {
-		my $conn = $coge->resultset('ListConnector')->find({parent_id => $genome->owner_list->id, child_id => $gid});
+		my $conn = $coge->resultset('ListConnector')->find({
+			parent_id => $genome->owner_list->id, 
+			child_id => $gid,
+			child_type => 2 #FIXME hardcoded to "genome"
+		});
 		$conn->delete;
 	}
 
 	# Add to user's owner list
-	my $conn = $coge->resultset('ListConnector')->create({parent_id => $user->owner_list->id, child_id => $gid});
+	my $conn = $coge->resultset('ListConnector')->find_or_create({
+		parent_id => $user->owner_list->id, 
+		child_id => $gid, 
+		child_type => 2 #FIXME hardcoded to "genome"
+	});
 	return unless ($conn);
 
 	return 1;
