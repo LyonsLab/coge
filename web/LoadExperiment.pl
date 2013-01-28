@@ -533,11 +533,16 @@ sub generate_html {
 }
 
 sub generate_body {
+	if ($USER->user_name eq 'public') {
+		my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+		$template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
+		$template->param( LOGIN     => 1 );
+		return $template->output;
+	}
+
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
 	$template->param( MAIN => 1 );
 	$template->param( PAGE_NAME => $PAGE_TITLE . '.pl' );
-	
-	return "Access denied" if ($USER->name eq 'public');
 	
 	my $gid = $FORM->param('gid');
 	if ($gid) {
