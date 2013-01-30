@@ -1266,7 +1266,7 @@ sub generate_mGSV_files {
 				genome_id => $item->[4],
 				start     => $item->[2],
 				stop      => $item->[3],
-				name      => [0],
+				name      => $item->[0],
 				link      => $item->[6],
 				strand    => $item->[8],
 				anno      => $item->[7],
@@ -1308,13 +1308,16 @@ sub generate_mGSV_files {
 				my $strand = $item->{strand} eq 1 ? "+" : "-";
 				my ($feat) = $coge->resultset('Feature')->find( $item->{fid} );
 				my ($name) = $feat->names if $feat;
-				$name =
-				    "<a href=\""
-				  . $P->{SERVER}
-				  . "/FeatView.pl?fid="
-				  . $item->{fid} . "\">";
-				$name .= $name ? $name : $item->{fid};
-				$name .= "</a>";
+				if ($item->{fid})
+				    {
+				      $name =
+					"<a href=\""
+					  . $P->{SERVER}
+					    . "/FeatView.pl?fid="
+					      . $item->{fid} . "\">";
+				      $name .= $name ? $name : $item->{fid};
+				      $name .= "</a>";
+				    }
 				print OUT join(
 					"\t",
 					$genome_info{$genome_id},
@@ -2500,7 +2503,6 @@ sub get_obj_from_genome_db {
 		$dsid  = $ds->id;
 		$gstid = $dsg->type->id;
 	}
-
 	#let's get a unique file name for this sequence
 	my $seq_file = create_seq_file_name(%opts);
 	my $t1       = new Benchmark;
@@ -2519,7 +2521,7 @@ sub get_obj_from_genome_db {
 	my $seq;
 
 	if ($feat) {
-		$dsid = $feat->dataset->id;
+		$dsid = $feat->dataset->id unless $dsid;
 		if ($rev) {
 			$start = $feat->start - $down;
 			$stop  = $feat->stop + $up;
