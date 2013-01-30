@@ -366,6 +366,7 @@ sub load_genome {
 	}
 
 	print $log "Calling bin/load_genome.pl ...\n";
+	my $datadir = $P->{DATADIR} . '/genomic_sequence/';
 	my $cmd = "$BINDIR/load_genome.pl " .
 			  "-user_name " . $user_name . ' ' .
 			  '-name "' . escape($name) . '" ' .
@@ -377,7 +378,7 @@ sub load_genome {
 			  "-organism_id $organism_id " .
 			  '-source_name "' . escape($source_name) . '" ' .
 			  "-staging_dir $stagepath " .
-			  "-install_dir " . $P->{DATADIR} . ' ' .
+			  "-install_dir $datadir " .
 			  '-fasta_files "' . escape(join(',', @files)) . '" ' .
 			  "-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
 	print STDERR "$cmd\n";
@@ -413,7 +414,7 @@ sub get_load_genome_log {
 			$status = 1;
 			last;	
 		}
-		elsif ($_ =~ /genome id: (\d+)/i) {
+		elsif ($_ =~ /log: Added genome id(\d+)/i) {
 			$gid = $1;
 		}		
 		elsif ($_ =~ /log: error/i) {
