@@ -84,7 +84,7 @@ my $chrs = get_locs(\@datasets);
 
 
 
-  sub get_sizes {
+sub get_sizes {
     my $locs_ref = shift;
     my $n = scalar(@{$locs_ref});
     my $i=0;
@@ -129,7 +129,7 @@ sub get_locs {
                   'me.chromosome' => $chr,
                   # NOTE: should probably check for pseudogenes as well!!
                   'feature_type.name'  =>  { 'IN' => ['gene', 'pseudogene', 
-                                                      'transposon'] }
+                                                      'transposon', 'Transposable Element', 'transposable_element', 'transposable_element_gene'] }
                 } , { 
                    'prefetch'           => [ 'feature_type', 'feature_names'] 
                   ,'order_by'           => [ 'me.start']
@@ -219,7 +219,7 @@ sub get_locs {
 	  $data[1] = $start - 1;
 	  push(@data, get_sizes(\@locs));
 	  push(@data, get_starts(\@locs, $start));
-	  my $gstr = join("\t", @data);
+	  my $gstr = join("\t", @data, $g->type->name);
 	  print $gstr . "\n";
         }
       }
