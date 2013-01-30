@@ -128,7 +128,6 @@ unless ($genome) {
 	print $log "log: error creating genome\n";
 	exit(-1);	
 }
-print $log "genome id: " . $genome->id . "\n"; # don't change, gets parsed by calling code
 
 $install_dir = "$install_dir/" . $genome->get_path . "/";
 $genome->file_path($install_dir . $genome->id . ".faa");
@@ -205,24 +204,39 @@ foreach my $chr (sort keys %sequences) {
 	  } );
 }
 
+print $log "log: Added genome id" . $genome->id . "\n"; # don't change, gets parsed by calling code
+
 # Copy files from staging directory to installation directory
 print $log "log: Copying files ...\n";
 print $log "install_dir: $install_dir\n";
-mkpath($install_dir);
-mkpath( $install_dir . "/chr" );
+unless (mkpath($install_dir)) {
+	print $log "log: error in mkpath\n";
+	exit(-1);
+}
+unless (mkpath($install_dir . "/chr")) {
+	print $log "log: error in mkpath\n";
+	exit(-1);
+}
+
 my $cmd = "cp -r $staging_dir/chr $install_dir";
 print $log "$cmd\n";
 `$cmd`;
+
 my $genome_filename = $genome->id . ".faa";
 $cmd = "cp $staging_dir/genome.faa $install_dir/$genome_filename";
 print $log "$cmd\n";
 `$cmd`;
 
-# Yay!
+# Yay, log success!
 CoGe::Accessory::Web::log_history( db => $coge, user_id => $user->id, page => "LoadGenome", description => 'load genome id' . $genome->id, link => 'GenomeInfo.pl?gid=' . $genome->id );
 print $log "log: $numSequences sequences loaded totaling " . commify($seqLength) . " nt\n";
 print $log "log: All done!";
 close($log);
+
+# Copy log file from staging directory to installation directory
+$cmd = "cp $staging_dir/log.txt $install_dir/";
+`$cmd`;
+
 exit;
 
 #-------------------------------------------------------------------------------
@@ -243,6 +257,7 @@ sub process_fasta_file {
 
 		my ($chr) = split(/\s+/, $name);
 		$chr =~ s/^lcl\|//;
+		$chr =~ s/^gi\|//;
 		$chr =~ s/chromosome//i;
 		$chr =~ s/^chr//i;
 		$chr =~ s/^0+//;
