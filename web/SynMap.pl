@@ -2403,6 +2403,8 @@ sub generate_dotplot
 sub get_query_link
 {
 	my %url_options = @_;
+#  print STDERR Dumper \%url_options;
+
 	my $dagchainer_D = $url_options{D};
 	
     #    my $dagchainer_g = $url_options{g}; #depreciated -- will be a factor of -D
@@ -2560,7 +2562,7 @@ sub go
     say STDERR "tiny_link is required for logging." unless defined($tiny_link);
     
     #print STDERR "SUB GO:";
-    #print STDERR Dumper \%opts;
+#    print STDERR Dumper \%opts;
 
 	#    my $dagchainer_g = $opts{g}; #depreciated -- will be a factor of -D
 	my $dagchainer_A = $opts{A};
