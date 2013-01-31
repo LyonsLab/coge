@@ -281,21 +281,57 @@ sub get_genome_data {
 	my $gid  = $opts{gid};
 	my $genome  = $opts{genome};
 	return unless ($gid or $genome);
-
+	$gid = $genome->id if $genome;
 	unless ($genome) {
 		$genome = $coge->resultset('Genome')->find($gid);
 		return unless ($genome);
 	}
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+	#ERIC added these 1/31/2013
+	#TODO: this should happen in the genome object
+	my $seq_file = $genome->file_path;
+	my $cogedir = $P->{COGEDIR};
+	my $cogeurl = $P->{URL};
+	$seq_file =~ s/$cogedir/$cogeurl/i;
+	#TODO: this should happen in the genome object
+	my $download .= qq{<a class=link href='$seq_file' target="_new">Fasta Sequences</a>};
+	$download .= qq{&nbsp|&nbsp};
+	$download .= qq{<span class=link onclick="\$('#gff_export').dialog('option', 'width', 400).dialog('open')">Export GFF</span>};
+	$download .= qq{&nbsp|&nbsp};
+	$download .= qq{<span class=link onclick="export_tbl('$gid')"">Export TBL</span>};
+	$download .= qq{&nbsp|&nbsp};
+	$download .= qq{<span class=link onclick="export_bed('$gid')"">Export bed</span>};	
+	#TODO: this should happen in the genome object
+	my $links = "<a href='OrganismView.pl?dsgid=$gid' target=_new>OrganismView</a>";
+	$links .= qq{&nbsp|&nbsp};
+	$links .= "<a href='CodeOn.pl?dsgid=$gid' target=_new>CodeOn</a>";
+	$links .= qq{&nbsp|&nbsp};
+	$links .= qq{<span class='link' onclick="window.open('GenomeInfo.pl?gid=$gid');">GenomeInfo</span>};
+	$links .= qq{&nbsp|&nbsp};
+	$links .= qq{<span class='link' onclick="window.open('SynMap.pl?dsgid1=$gid;dsgid2=$gid');">SynMap</span>};
+	$links .= qq{&nbsp|&nbsp};
+	$links .= qq{<span class='link' onclick="window.open('CoGeBlast.pl?dsgid=$gid');">CoGeBlast</span>};
 	$template->param( 
-		DO_GENOME_DATA => 1,
-		CHROMOSOME_COUNT => commify($genome->chromosome_count()),
-		LENGTH => commify($genome->length),
-		GID => $genome->id );
-	
+			 DO_GENOME_DATA => 1,
+			 CHROMOSOME_COUNT => commify($genome->chromosome_count()),
+			 LENGTH => commify($genome->length),
+			 GID => $genome->id,
+			 DOWNLOAD=>$download,
+			 LINKS=>$links,
+			);
+
+
 	return $template->output;
 }
+
+sub get_genome_download_links
+  {
+    my $genome = shift;
+
+
+    
+  }
 
 sub get_genome_owner {
 	my $genome = shift;
@@ -801,6 +837,7 @@ sub generate_body {
 	return "Access denied" unless (!$genome->restricted or $USER->is_admin or $USER->has_access_to_genome($genome));
 
 	my ($first_chr) = $genome->chromosomes;
+
 
 	$template->param(
 		GID 			=> $gid,
