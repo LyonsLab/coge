@@ -11,6 +11,7 @@ use Data::Dumper;
 use HTML::Template;
 use URI::Escape;
 use Spreadsheet::WriteExcel;
+use File::Path;
 use Digest::MD5 qw(md5_base64);
 use Benchmark;
 use DBIxProfiler;
@@ -26,6 +27,7 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 $PAGE_NAME = "GenomeAlign.pl";
 
 $TEMPDIR = $P->{TEMPDIR}."GenomeAlign/";
+mkpath ($TEMPDIR,0,0777) unless -d $TEMPDIR;
 $TEMPURL = $P->{TEMPURL}."GenomeAlign/";
 $FORM = new CGI;
 $MAUVE = $P->{MAUVE};
