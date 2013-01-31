@@ -601,8 +601,11 @@ sub get_genome_info
 <tr><td>Noncoding sequence:<td><div id=dsg_noncoding_gc class="link" onclick = "gen_data(['args__loading...'],['dsg_noncoding_gc']);\$('#dsg_noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsgid','dsg_id','args__gstid', 'gstid'],['dsg_noncoding_gc']);">Click for percent GC content</div></td></tr> 
 } if $total_length;
     my $seq_file = $dsg->file_path;
-    print STDERR Dumper $seq_file;
-    $seq_file =~ s/\/opt\/apache2?//i;
+    my $cogedir = $P->{COGEDIR};
+    my $cogeurl = $P->{URL};
+    $seq_file =~ s/$cogedir/$cogeurl/i;
+
+    #print STDERR Dumper $seq_file;
     $html .= qq{<TR><TD>Download:</td>};
     $html .= qq{<td>};
     $html .= qq{<a class=link href='$seq_file' target="_new">Fasta Sequences</a>};
