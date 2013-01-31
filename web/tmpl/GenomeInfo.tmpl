@@ -433,13 +433,42 @@ function get_list_preview (opts) {
 		}
 	);
 }
+
+function export_gff (gid) {
+ var server = '<TMPL_VAR NAME="SERVER">';
+ var link = server+"bin/export/coge_gff.pl?dsgid=";
+ link += gid;
+ if ($('#cds_only')[0].checked) {link += ";cds=1";}
+ if ($('#annos')[0].checked) {link += ";annos=1";}
+ if ($('#name_unique')[0].checked) {link += ";nu=1";}
+ if ($('#upa')[0].checked) {link += ";upa=1";}
+ link += ";id_type="+$('#gff_id_type').val();
+ $('#export_gff_link').html("<a href="+link+" target=_new>Link: "+ link+"<\a>");
+ window.open(link);
+
+}
+
+function export_tbl (gid) {
+ var server = '<TMPL_VAR NAME="SERVER">';
+ var link = server+"bin/export/export_NCBI_TBL.pl?dsgid=";
+ link += gid;
+ window.open(link);
+}
+
+function export_bed (gid) {
+ var server = '<TMPL_VAR NAME="SERVER">';
+ var link = server+"bin/export/coge2bed.pl?gid=";
+ link += gid;
+ window.open(link);
+}
+
 </SCRIPT>
 
 
 <table style="overflow:hidden;">
 	<tr style="vertical-align:top;">
 		<td>
-			<span style="color:dimgray;font-weight:bold;">Genome Info</span>
+			<span style="color:dimgray;font-weight:bold;">Genome Info (gid: <TMPL_VAR NAME=GID>)</span>
 			<div id='genome_info' class="small ui-widget-content ui-corner-all" style="width:400px;"><TMPL_VAR NAME="GENOME_INFO"></div>
 			<span class='ui-button ui-button-go ui-corner-all' onClick="edit_genome_info();">Edit Info</span>
 		</td>
@@ -490,6 +519,38 @@ function get_list_preview (opts) {
 <div id="genome_notebooks_edit_box" class="dialog_box" title="Add to Notebook" style="display:none;"></div>
 <div id="genome_users_edit_box" class="dialog_box" title="Add Users" style="display:none;"></div>
 <div id="genome_groups_edit_box" class="dialog_box" title="Add Groups" style="display:none;"></div>
+
+<!--Added by Eric: 1/31/2013: dialog box for GFF exporter-->
+<DIV class="dialog_box" title="GFF Exporter" id="gff_export">
+<table class=small>
+ <tr>
+   <td>Do not generate features for ncRNA genes (CDS genes only)</td>
+   <td><input type=checkbox name="cds_only" id="cds_only"></td>
+ </tr>
+ <tr>
+   <td>Include feature annotations (descriptive text; Geneontology; etc)</td>
+   <td><input type=checkbox name="annos" id="annos" checked></td>
+ </tr>
+ <tr>
+   <td>Ensure that GFF Name tag is unique for each feature</td>
+   <td><input type=checkbox name="name_unique" id="name_unique" checked></td>
+ </tr>
+ <tr>
+   <td>Do not propagate duplicate annotations to children</td>
+   <td><input type=checkbox name="upa" id="upa" checked></td>
+ </tr>
+ <tr>
+   <td>For GFF "ID" and "Parent" tags, use unique:
+   <td>
+     <select id=gff_id_type>
+      <option value="name" selected>Name</option>
+      <option value="num">Number</option>
+     </select>
+ </tr>
+</table>
+<span class="ui-button ui-corner-all ui-button-go" onClick="export_gff(<TMPL_VAR NAME=GID>)">Export GFF File</span>
+<br><br><span class="small" id=export_gff_link></span>
+</div>
 
 </TMPL_IF> <!-- MAIN -->
 
@@ -681,6 +742,14 @@ function get_list_preview (opts) {
 			<td class='title5'>Length:</td>
 			<td class='data5'><TMPL_VAR NAME="LENGTH"></td>
 		</tr>
+		<tr>
+			<td class='title5'>Download:</td>
+			<td class='data5'><TMPL_VAR NAME="DOWNLOAD"></td>
+		</tr>
+		<tr>
+			<td class='title5'>Links:</td>
+			<td class='data5'><TMPL_VAR NAME="LINKS"></td>
+		</tr>
 	</table>
 </TMPL_IF>
 
@@ -793,3 +862,5 @@ function get_list_preview (opts) {
 	</table>
 	<br>
 </TMPL_IF> <!-- ADMIN_AREA -->
+
+
