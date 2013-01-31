@@ -11,6 +11,7 @@ use HTML::Template;
 use URI::Escape;
 use Spreadsheet::WriteExcel;
 use Benchmark;
+use File::Path;
 use DBIxProfiler;
 no warnings 'redefine';
 
@@ -31,7 +32,9 @@ $DATE      = sprintf(
 );
 $PAGE_NAME = "FeatList.pl";
 
-$TEMPDIR = $P->{TEMPDIR};
+$TEMPDIR = $P->{TEMPDIR}."FeatList";
+mkpath ($TEMPDIR,0,0777) unless -d $TEMPDIR;
+
 $FORM    = new CGI;
 $DBNAME  = $P->{DBNAME};
 $DBHOST  = $P->{DBHOST};
