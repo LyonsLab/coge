@@ -132,7 +132,7 @@ function run_synmap(scheduled){
         axis_metric: $('#axis_metric').val(),
         axis_relationship: $('#axis_relationship').val(),
         min_chr_size: $('#min_chr_size').val(),
-        spa_ref_genome: $('spa_ref_genome').val(),
+        spa_ref_genome: $('#spa_ref_genome').val(),
         show_non_syn: $('#show_non_syn')[0].checked,
         color_type: $('#color_type').val(),
         box_diags: $('#box_diags')[0].checked,
@@ -156,7 +156,7 @@ function run_synmap(scheduled){
         jquery_ajax: 1,
         regen_images: 1
     };
-
+//    console.log(argument_list);
     // TODO: Scale polling time linearly with long running jobs
     var duration = pageObj.waittime;
 
