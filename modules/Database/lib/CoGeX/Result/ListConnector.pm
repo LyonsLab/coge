@@ -220,7 +220,7 @@ sub child
 		return $self->child_list;	
 	}
 	else {
-		die;
+		die "uknown child type " . $self->child_type;
 	}
 
 	return;

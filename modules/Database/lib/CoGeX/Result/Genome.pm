@@ -198,14 +198,15 @@ sub users {
 				$users{$_->id} = $_;
 			}
 		}
-		foreach	( $self->user_connectors )
-		{
-			if ($_->parent_type == 5) { #FIXME hardcoded type
-				$users{$_->parent_id} = $_->user;
-			}
-			elsif (not $exclude_groups && $_->parent_type == 6) { #FIXME hardcoded type
-				#TODO add group's users
-			}
+	}
+
+	foreach	( $self->user_connectors )
+	{
+		if ($_->parent_type == 5) { #FIXME hardcoded type
+			$users{$_->parent_id} = $_->user;
+		}
+		elsif (not $exclude_groups && $_->parent_type == 6) { #FIXME hardcoded type
+			#TODO add group's users
 		}
 	}
 

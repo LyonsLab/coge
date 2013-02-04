@@ -318,7 +318,7 @@ sub owner_list {
 
 ################################################## subroutine header end ##
 
-sub shared_group {
+sub shared_group { #FIXME needs to be removed with addition of user_connector table
 	my $self = shift;
 	foreach my $group ( $self->groups ) {
 		return $group if ($group->locked && $group->name eq $self->name && $group->description =~ /shared/i && $group->role->name =~ /reader/i);
@@ -341,7 +341,7 @@ sub shared_group {
 
 ################################################## subroutine header end ##
 
-sub shared_list {
+sub shared_list { #FIXME needs to be removed with addition of user_connector table
 	my $self = shift;
 	my $group = $self->shared_group;
 	return if (not $group);
@@ -727,8 +727,14 @@ sub lists {
 	my %opts = @_;
 	
 	my %lists;
-	foreach my $ug ( $self->groups ) {
-		map { $lists{ $_->id } = $_ } $ug->lists;
+	foreach my $ug ( $self->groups ) { 
+		map { $lists{ $_->id } = $_ } $ug->lists; # FIXME will go away with new user_connector
+		
+		foreach my $uc ( $ug->user_connectors ) {
+			if ($uc->type == 1) { # FIXME hardcoded type
+				$lists{ $uc->child_id } = $uc->list;
+			}
+		}		
 	}
 	foreach my $uc ( $self->user_connectors ) {
 		if ($uc->type == 1) { # FIXME hardcoded type
@@ -761,9 +767,15 @@ sub experiments {
 	
 	my %experiments;
 	foreach my $ug ( $self->groups ) {
-		map { 
+		map { # FIXME will go away with new user_connector
 			$experiments{ $_->id } = $_ if (!$_->deleted || $include_deleted)
 		} $ug->experiments;
+		
+		foreach my $uc ( $ug->user_connectors ) {
+			if ($uc->type == 3) { # FIXME hardcoded type
+				$experiments{ $uc->child_id } = $uc->experiment;
+			}
+		}
 	}
 	foreach my $uc ( $self->user_connectors ) {
 		if ($uc->type == 3) { # FIXME hardcoded type
@@ -825,9 +837,15 @@ sub genomes {
 
 	my %genomes;
 	foreach my $ug ( $self->groups ) {
-		map { 
+		map { # FIXME will go away with new user_connector
 			$genomes{ $_->id } = $_ if (!$_->deleted || $include_deleted)
 		} $ug->genomes;
+		
+		foreach my $uc ( $ug->user_connectors ) {
+			if ($uc->type == 2) { # FIXME hardcoded type
+				$genomes{ $uc->child_id } = $uc->genome;
+			}
+		}		
 	}
 	foreach my $uc ( $self->user_connectors ) {
 		if ($uc->type == 2) { # FIXME hardcoded type

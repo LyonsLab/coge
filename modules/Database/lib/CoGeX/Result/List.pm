@@ -85,7 +85,22 @@ sub group
 
 sub groups
 {
-	return shift->group;
+	my $self = shift;
+	my %opts = @_;
+	my $exclude_owner = $opts{exclude_owner}; #FIXME will go away someday due to new user_connector
+
+	my @groups = ();
+	
+	push @groups, $self->group if (not $exclude_owner or not $self->group->is_owner); #FIXME will go away due to new user_connector
+	
+	foreach my $conn ( $self->user_connectors )
+	{
+		if ($conn->parent_type == 6) { #FIXME hardcoded type
+			push @groups, $conn->group;
+		}
+	}	
+	
+	return wantarray ? @groups : \@groups;
 }
 
 sub users {
