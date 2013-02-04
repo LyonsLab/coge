@@ -28,6 +28,7 @@ GetOptions (
 	"password|pw=s"=>\$pass,
 	"go=i"=>\$go
 );
+die "Missing DB params\n" unless ($db and $user and $pass);
 
 $| = 1;
 $DEBUG = 1 unless defined $DEBUG; # set to '1' to get updates on what's going on
