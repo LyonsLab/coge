@@ -114,7 +114,7 @@ sub gen_html
     my $html;
     my ($body) = gen_body();
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
-    $template->param(TITLE=>'Find Syntenic Region');
+    $template->param(TITLE=>'Syntenic Compiler');
     $template->param(PAGE_TITLE=>'SynFind');
     $template->param(HELP=>'/wiki/index.php?title=SynFind');
     my $name = $USER->user_name;
@@ -304,9 +304,7 @@ $a->version) || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id
 	next if $dsg->deleted;
 	next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	$dsgid=$dsg->id unless $dsgid;
-	my $name = join (", ", map{$_->name} $dsg->source) .": ";
-	$name .= $dsg->name.", " if $dsg->name;# : $dsg->datasets->[0]->name;
-	$name .=  "v".$dsg->version." ".$dsg->type->name." ".commify($dsg->length)."nt"." (dsgid".$dsg->id.")";
+	my $name = $dsg->info;
 	my $has_cds = has_cds($dsg->id);
 	$name .= " NO CDS ANNOTATIONS.  CAN'T BE USED." unless $has_cds;
 	push @dsg_menu, [$dsg->id, $name];
