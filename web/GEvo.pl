@@ -368,6 +368,8 @@ sub gen_body {
 	$hsp_size_limit = 0 unless $hsp_size_limit;
 	my $show_cns = get_opt( params => $prefs, form => $form, param => 'show_cns' );
 	$show_cns = 0 unless $show_cns;
+	my $show_ofeat = get_opt( params => $prefs, form => $form, param => 'show_ofeat' );
+	$show_ofeat = 0 unless $show_ofeat;
 	my $feat_labels = get_opt( params => $prefs, form => $form, param => 'feat_labels' );
 	$feat_labels = 0 unless $feat_labels;
 	my $show_gene_space = get_opt( params => $prefs, form => $form, param => 'show_gene_space' );
@@ -410,8 +412,12 @@ sub gen_body {
 	else { $template->param( COLOR_HSP_NO => "checked" ); }
 	if ($color_feat) { $template->param( COLOR_FEAT_YES => "checked" ); }
 	else { $template->param( COLOR_FEAT_NO => "checked" ); }
+
 	if ($show_cns) { $template->param( SHOW_CNS_YES => "checked" ); }
 	else { $template->param( SHOW_CNS_NO => "checked" ); }
+
+	if ($show_ofeat) { $template->param( SHOW_OFEAT_YES => "checked" ); }
+	else { $template->param( SHOW_OFEAT_NO => "checked" ); }
 
 	if ($show_gene_space) {
 		$template->param( SHOW_GENESPACE_YES => "checked" );
@@ -596,6 +602,7 @@ sub run {
 	my $hsp_overlap_length        = $opts{hsp_overlap_length};
 	my $email_address             = $opts{email};
 	my $show_cns                  = $opts{show_cns};
+	my $show_ofeat                  = $opts{show_ofeat};
 	my $show_gene_space           = $opts{show_gene_space};
 	my $show_contigs              = $opts{show_contigs};
 	my $skip_feat_overlap_search  = $opts{skip_feat_overlap};
@@ -633,6 +640,7 @@ sub run {
 	my $form      = $FORM;
 	my $gevo_link = $form->url . "?prog=$analysis_program";
 	$gevo_link .= ";show_cns=1"        if $show_cns;
+	$gevo_link .= ";show_ofeat=1"        if $show_ofeat;
 	$gevo_link .= ";show_gene_space=1" if $show_gene_space;
 	$gevo_link .= ";show_contigs=1"    if $show_contigs;
 	$gevo_link .= ";iw=$iw";
@@ -1036,6 +1044,7 @@ sub run {
 				color_overlapped_features => $color_overlapped_features,
 				hsp_overlap_length        => $hsp_overlap_length,
 				show_cns                  => $show_cns,
+				show_ofeat                  => $show_ofeat,
 				show_gene_space           => $show_gene_space,
 				show_contigs              => $show_contigs,
 				bitscore_cutoff           => $bitscore_cutoff,
@@ -1308,6 +1317,7 @@ sub generate_mGSV_files {
 				my $strand = $item->{strand} eq 1 ? "+" : "-";
 				my ($feat) = $coge->resultset('Feature')->find( $item->{fid} );
 				my ($name) = $feat->names if $feat;
+				$name = "NA" unless $name;
 				if ($item->{fid})
 				    {
 				      $name =
@@ -1369,6 +1379,7 @@ sub generate_image {
 	my $color_overlapped_features = $opts{color_overlapped_features};
 	my $hsp_overlap_length        = $opts{hsp_overlap_length};
 	my $show_cns                  = $opts{show_cns};
+	my $show_ofeat                  = $opts{show_ofeat};
 	my $show_gene_space           = $opts{show_gene_space};
 	my $show_contigs              = $opts{show_contigs};
 	my $graphic                   = new CoGe::Graphics;
@@ -1443,6 +1454,7 @@ sub generate_image {
 		color_overlapped_features => $color_overlapped_features,
 		cbc                       => $show_cbc,
 		cns                       => $show_cns,
+		ofeat                       => $show_ofeat,
 		gene_space                => $show_gene_space,
 		show_contigs              => $show_contigs,
 		feat_labels               => $feat_labels,
@@ -1559,7 +1571,7 @@ INSERT INTO image_info (id, display_id, iname, title, px_width, px_height, dsid,
 
 #    print STDERR $cogeweb->sqlitefile, "\n", $statement unless $dbh->do($statement);
 	foreach my $feat ( $gfx->get_feats ) {
-		print STDERR Dumper $feat unless $feat->color;
+#		print STDERR Dumper $feat unless $feat->color;
 		if ( $feat->fill ) {
 			next unless $feat->{"anchor"} || $feat->type eq "anchor";
 		}
@@ -1692,6 +1704,7 @@ sub process_features {
 	my $color_overlapped_features = $opts{color_overlapped_features};
 	my $cbc                       = $opts{cbc};
 	my $show_cns                  = $opts{cns};
+	my $show_ofeat                  = $opts{ofeat};
 	my $show_gene_space           = $opts{gene_space};
 
 	# TODO: remove the 1. here for testing.
@@ -1843,7 +1856,7 @@ sub process_features {
 			}
 
 		}
-		if ( $type =~ /repeat/i ) {
+		elsif ( $type =~ /repeat/i ) {
 			next unless $draw_model eq "full";
 			$f = CoGe::Graphics::Feature::Outline->new(
 				{
@@ -1985,6 +1998,32 @@ sub process_features {
 			#	    $c->add_feature($f);
 			#	    next;
 		}
+		elsif ( $show_ofeat) { #show everything else
+		  print STDERR $type,"\n";
+			my $strand = 1;
+			$strand = -1 if $feat->location =~ /complement/;
+
+			$f = CoGe::Graphics::Feature::HSP->new(
+				{
+					start  => $feat->blocks->[0][0],
+					stop   => $feat->blocks->[0][1],
+					strand => $strand
+				}
+			);
+			$f->color( [ 255, 150, 66 ] );
+			my $order = 1;
+
+			#	    $order = 0 if $feat->location =~ /complement/;
+
+			$f->order($order);
+			$f->overlay(-1);
+			$f->type($type);
+			$f->force_draw(1);
+			$f->description( $feat->annotation );
+			$c->add_feature($f);
+#			next;
+		}
+
 		else {
 
 			#	    print STDERR "Didn't draw feature_type: ", $type,"\n";
@@ -3532,6 +3571,7 @@ qq{'args__rgb$i', 'args__'+\$('#sample_color$i').css('backgroundColor'),};
         'args__hsp_overlap_length','hsp_overlap_length',
         'args__basefile','args__'+pageObj.basefile,
         'args__show_cns','show_cns',
+        'args__show_ofeat','show_ofeat',
         'args__font_size','font_size',
         'args__show_gene_space','show_gene_space',
 
