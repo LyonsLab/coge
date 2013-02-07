@@ -3551,15 +3551,16 @@ sub get_pair_info
 			next;
 		}
 		my $feat     = $coge->resultset('Feature')->find($fid);
-		my $anno     = "Name: " . join( ", ", map { "<a class=\"data link\" href=\"$URL/FeatView.pl?accn=" . $_ . "\" target=_new>" . $_ . "</a>" } $feat->names );
-		my $location = "Chr " . $feat->chromosome . " ";
-		$location .= commify( $feat->start ) . " - " . commify( $feat->stop );
+#		my $anno     = "Name: " . join( ", ", map { "<a class=\"data link\" href=\"$URL/FeatView.pl?accn=" . $_ . "\" target=_new>" . $_ . "</a>" } $feat->names );
+#		my $location = "Chr " . $feat->chromosome . " ";
+#		$location .= commify( $feat->start ) . " - " . commify( $feat->stop );
 
 		#	$location .=" (".$feat->strand.")";
-		push @anno, $location . "<br>" . $anno;
+#		push @anno, $location . "<br>" . $anno;
+		push @anno, $feat->annotation_pretty_print_html;
 	}
 	return unless @anno;
-	return "<table class=small><tr>" . join( "<td>", @anno ) . "</table>";
+	return "<table class=small valign=top>" . join ("\n",(map{"<tr><td>".$_."</td></tr>"} @anno))  . "</table>";
 }
 
 sub check_address_validity
@@ -3668,8 +3669,8 @@ sub get_dotplot
 	$png =~ s/$URL/$DIR/;
 	my $img = GD::Image->new($png);
 	my ( $w, $h ) = $img->getBounds();
-	$w += 500;
-	$h += 150;
+	$w += 600;
+	$h += 250;
 
 	if ($loc)
 	{
