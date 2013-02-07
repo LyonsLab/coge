@@ -677,8 +677,8 @@ Ergo, we rely on jQuery to detect when the DOM is fully loaded, and then run the
 <canvas id="myCanvas" border="0" style='position: absolute;left: $y;top:45px;' width="12" height="12" onmousemove="trackpointer(event);" onmousedown="trackclick(event, 'yes');">
 	Your browser does not have support for Canvas.
 </canvas>	
-<span class=xsmall style='position: absolute;left: $y;top: 45px;'>y-axis: $org2name: $CHR2 ($org2length)</span>
-<DIV id=pair_info class="ui-widget-content" style='position: absolute;left: 0px;top: 0px;'></DIV>
+<span class=xsmall style='position: absolute;left: $y;top: 25px;'>y-axis: $org2name: $CHR2 ($org2length)</span>
+<DIV id=pair_info class="ui-widget-content" style='position: absolute;left: 450px;top: 45px;'></DIV>
 
 };
 
@@ -699,7 +699,7 @@ Ergo, we rely on jQuery to detect when the DOM is fully loaded, and then run the
 	  }
 	print OUT qq{
 
-<span class=xsmall style='position: absolute;left: 0px;top: $pos;'><img src=$img.x.png><br>x-axis $org1name: $CHR1 ($org1length)
+<span class=xsmall style='position: absolute;left: 25px;top: $pos;'><img src=$img.x.png><br>x-axis $org1name: $CHR1 ($org1length)
    <a href = "$img.png" target=_new>Link to image</a>
 
 };
