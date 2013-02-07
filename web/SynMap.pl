@@ -3560,7 +3560,10 @@ sub get_pair_info
 		push @anno, $feat->annotation_pretty_print_html;
 	}
 	return unless @anno;
-	return "<table class=small valign=top>" . join ("\n",(map{"<tr><td>".$_."</td></tr>"} @anno))  . "</table>";
+	my $output = "<table class=small valign=top>" . join ("\n",(map{"<tr><td>".$_."</td></tr>"} @anno))  . "</table>";
+	my $URL = $P->{URL};
+	$output =~ s/window\.open\('(.*?)'\)/window.open('$URL$1')/g;
+	return $output;
 }
 
 sub check_address_validity
