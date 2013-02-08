@@ -52,12 +52,20 @@ my $dbh = $coge->storage->dbh;
 #-------------------------------------------------------------------------------
 if ($cleanup) {
 	foreach my $group ($coge->resultset('UserGroup')->all) {
-		# Delete owner group/list (auto-cascades down owner list and associated list_connectors)
+		# Delete owner group (auto-cascades down user_connector)
 		if ($group->description =~ /owner group/i and $group->locked and $group->role_id == 2) {
 			print STDERR "Deleting owner group '" . $group->name . "' id=" . $group->id . "\n";
 			$group->delete if ($go);
 		}
 	}
+	
+	foreach my $list ($coge->resultset('List')->all) {
+		# Delete owner list (auto-cascades down owner list and associated list_connectors)
+		if ($list->description =~ /owner list/i and $list->locked) {
+			print STDERR "Deleting owner list '" . $list->name . "' id=" . $list->id . "\n";
+			$list->delete if ($go);
+		}
+	}	
 
 	# Remove "locked" column from list table
 	#drop_column("list", "locked");
