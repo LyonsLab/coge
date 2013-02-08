@@ -20,13 +20,14 @@ use File::Path;
 
 use vars qw($DEBUG $coge);
 
-my ($db, $user, $pass, $go);
+my ($db, $user, $pass, $go, $cleanup);
 GetOptions (
 	"debug=s"		=> \$DEBUG,
 	"database|db=s"	=> \$db,
 	"user|u=s"		=> \$user,
 	"password|pw=s"	=> \$pass,
-	"go=i"			=> \$go
+	"go=i"			=> \$go,
+	"cleanup=i"		=> \$cleanup
 );
 die "Missing DB params\n" unless ($db and $user and $pass);
 
@@ -45,6 +46,32 @@ $coge = CoGeX->connect($connstr, $user, $pass);
 #$coge->storage->debug(1);
 
 my $dbh = $coge->storage->dbh;
+
+#-------------------------------------------------------------------------------
+# Cleanup
+#-------------------------------------------------------------------------------
+if ($cleanup) {
+	foreach my $group ($coge->resultset('UserGroup')->all) {
+		# Delete owner group/list (auto-cascades down owner list and associated list_connectors)
+		if ($group->description =~ /owner group/i and $group->locked and $group->role_id == 2) {
+			print STDERR "Deleting owner group '" . $group->name . "' id=" . $group->id . "\n";
+			$group->delete if ($go);
+		}
+	}
+
+	# Remove "locked" column from list table
+	#drop_column("list", "locked");
+	# Remove "user_group_id" column from list table
+	#drop_column("list", "user_group_id");
+	# Remove "locked" column from user_group
+	#drop_column("user_group", "locked");
+	# Remove "creator_user_id" from user_group table
+	#drop_column("user_group", "creator_user_id");
+	# Remove user_group_connector table
+	#sql("drop table user_group_connector");	
+	
+	exit;	
+}
 
 #-------------------------------------------------------------------------------
 # Create new tables
@@ -67,7 +94,7 @@ my $dbh = $coge->storage->dbh;
 #SQL
 #}
 
-add_column('user', 'admin TINYINT(1) NOT NULL DEFAULT 0') if ($go);
+#add_column('user', 'admin TINYINT(1) NOT NULL DEFAULT 0') if ($go);
 
 #-------------------------------------------------------------------------------
 # Migrate data:  remap group/list connectors to user_connector
@@ -100,9 +127,6 @@ foreach my $group ($coge->resultset('UserGroup')->all) {
 				}
 			}
 		}
-
-		# Delete owner group/list (auto-cascades down owner list and associated list_connectors)
-		#$group->delete;
 	}
 	else { # not owner group
 		# Map non-owner lists to parent groups in user_connector
@@ -141,17 +165,6 @@ foreach my $group ($coge->resultset('UserGroup')->all) {
 		}
 	}
 }
-
-# Remove "locked" column from list table
-#drop_column("list", "locked");
-# Remove "user_group_id" column from list table
-#drop_column("list", "user_group_id");
-# Remove "locked" column from user_group
-#drop_column("user_group", "locked");
-# Remove "creator_user_id" from user_group table
-#drop_column("user_group", "creator_user_id");
-# Remove user_group_connector table
-#sql("drop table user_group_connector");
 
 #-------------------------------------------------------------------------------
 # All done!
