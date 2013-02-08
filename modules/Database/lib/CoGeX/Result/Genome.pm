@@ -126,8 +126,8 @@ __PACKAGE__->has_many("dataset_connectors" => "CoGeX::Result::DatasetConnector",
 __PACKAGE__->has_many("genomic_sequences" => "CoGeX::Result::GenomicSequence", 'genome_id');
 __PACKAGE__->belongs_to("organism" => "CoGeX::Result::Organism", 'organism_id');
 __PACKAGE__->belongs_to("genomic_sequence_type" => "CoGeX::Result::GenomicSequenceType", 'genomic_sequence_type_id');
-__PACKAGE__->has_many( "list_connectors" => "CoGeX::Result::ListConnector", {'foreign.child_id' => 'self.genome_id'} );
-__PACKAGE__->has_many( "user_connectors" => "CoGeX::Result::UserConnector", {'foreign.child_id' => 'self.genome_id'} );
+__PACKAGE__->has_many("list_connectors" => "CoGeX::Result::ListConnector", {'foreign.child_id' => 'self.genome_id'} );
+__PACKAGE__->has_many("user_connectors" => "CoGeX::Result::UserConnector", {'foreign.child_id' => 'self.genome_id'} );#, { where => {child_type => 2 }} );
 __PACKAGE__->has_many("experiments" => "CoGeX::Result::Experiment", "genome_id");
 
 sub desc {
@@ -167,19 +167,19 @@ sub lists {
 sub groups {
 	my $self = shift;
 	my %opts = @_;
-	my $exclude_owner = $opts{exclude_owner}; #FIXME will go away someday due to new user_connector
+	# my $exclude_owner = $opts{exclude_owner}; #FIXME will go away someday due to new user_connector
 
 	my @groups = ();
-	foreach my $conn ( $self->list_connectors ) #FIXME will go away someday due to new user_connector
-	{
-		my $group = $conn->parent_list()->group;
-		next if ($exclude_owner && $group->is_owner);
-		push @groups, $group;
-	}
+	# foreach my $conn ( $self->list_connectors ) #FIXME will go away someday due to new user_connector
+	# {
+	# 	my $group = $conn->parent_list()->group;
+	# 	next if ($exclude_owner && $group->is_owner);
+	# 	push @groups, $group;
+	# }
 	foreach my $conn ( $self->user_connectors )
 	{
-		if ($conn->parent_type == 6) { #FIXME hardcoded type
-			push @groups, $conn->group;
+		if ($conn->is_parent_group) {
+			push @groups, $conn->parent;
 		}
 	}
 
@@ -189,41 +189,41 @@ sub groups {
 sub users {
 	my $self = shift;
 	my %opts = @_;
-	my $exclude_groups = $opts{exclude_groups};
+	my $exclude_groups = $opts{exclude_groups}; #FIXME is this still used?
 
 	my %users;
-	foreach ($self->lists) {
-		if (not $exclude_groups) {
-			foreach ($_->group->users) {
-				$users{$_->id} = $_;
-			}
-		}
-	}
+	# foreach ($self->lists) {
+	# 	if (not $exclude_groups) {
+	# 		foreach ($_->group->users) {
+	# 			$users{$_->id} = $_;
+	# 		}
+	# 	}
+	# }
 
 	foreach	( $self->user_connectors )
 	{
-		if ($_->parent_type == 5) { #FIXME hardcoded type
+		if ($_->is_parent_user) {
 			$users{$_->parent_id} = $_->user;
 		}
-		elsif (not $exclude_groups && $_->parent_type == 6) { #FIXME hardcoded type
-			#TODO add group's users
+		elsif (not $exclude_groups && $_->is_parent_group) {
+			map { $users{$_->id} = $_ } $_->group->users;
 		}
 	}
 
 	return wantarray ? values %users : [ values %users ];
 }
 
-sub owner_list {    
-	my $self = shift;
+# sub owner_list {    
+# 	my $self = shift;
 
-	foreach	my $conn ( $self->list_connectors )
-	{
-		my $list = $conn->parent_list();
-		return $list if ($list and $list->is_owner);
-	}
+# 	foreach	my $conn ( $self->list_connectors )
+# 	{
+# 		my $list = $conn->parent_list();
+# 		return $list if ($list and $list->is_owner);
+# 	}
 
-	return;
-}
+# 	return;
+# }
 
 ################################################ subroutine header begin ##
 

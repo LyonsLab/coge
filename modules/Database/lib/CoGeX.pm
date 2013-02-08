@@ -378,7 +378,7 @@ sub self_or_default
     }
 
 
-sub list_child_types
+sub node_types
     {
       my $self = shift;
       my %opts = @_;
@@ -387,7 +387,10 @@ sub list_child_types
 	 list=>1,
 	 genome=>2,
 	 experiment=>3,
-	 feature=>4
+	 feature=>4,
+   user=>5,
+   user_group=>6,
+   group=>6 # alias for user_group
 	);
       return wantarray ? %types : \%types;
     }

@@ -42,6 +42,8 @@ Type: VARCHAR, Default: undef, Nullable: yes, Size: 1024
 
 =cut
 
+my $node_types = CoGeX::node_types();
+
 __PACKAGE__->table("list");
 __PACKAGE__->add_columns(
 	"list_id",
@@ -49,54 +51,44 @@ __PACKAGE__->add_columns(
 	"name",
 	{ data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 255 },
 	"description",
-	{
-		data_type     => "VARCHAR",
-		default_value => undef,
-		is_nullable   => 1,
-		size          => 1024,
-	},
+	{ data_type => "VARCHAR", default_value => undef, is_nullable => 1, size => 1024 },
 	"list_type_id",
 	{ data_type => "INT", default_value => undef, is_nullable => 1, size => 11 },
-	"user_group_id",
-	{ data_type => "INT", default_value => undef, is_nullable => 1, size => 11 },
+	# "user_group_id",
+	# { data_type => "INT", default_value => undef, is_nullable => 1, size => 11 },
 	"restricted",
-	{
-		data_type     => "BOOLEAN",
-		default_value => 0,
-		is_nullable   => 0,
-		size          => 1
-	},
+	{ data_type => "BOOLEAN", default_value => 0, is_nullable => 0, size => 1 },
 	"locked",
 	{ data_type => "INT", default_value => "0", is_nullable => 0, size => 1 }
 );
 __PACKAGE__->set_primary_key("list_id");
-__PACKAGE__->belongs_to( "user_group" => "CoGeX::Result::UserGroup", 'user_group_id' );
+# __PACKAGE__->belongs_to( "user_group" => "CoGeX::Result::UserGroup", 'user_group_id' );
 __PACKAGE__->belongs_to( "list_type"  => "CoGeX::Result::ListType",  'list_type_id' );
 __PACKAGE__->has_many( "list_annotations"          => "CoGeX::Result::ListAnnotation", 'list_id' );
 __PACKAGE__->has_many( "list_connectors_as_child"  => "CoGeX::Result::ListConnector",  {'foreign.child_id' => 'self.list_id' } );
 __PACKAGE__->has_many( "list_connectors_as_parent" => "CoGeX::Result::ListConnector",  {'foreign.parent_id' => 'self.list_id' } );
-__PACKAGE__->has_many( "user_connectors" => "CoGeX::Result::UserConnector", {'foreign.child_id' => 'self.list_id'} );
+__PACKAGE__->has_many( "user_connectors" => "CoGeX::Result::UserConnector", {'foreign.child_id' => 'self.list_id'}, {where => {child_type => $node_types->{list}}} );
 
 
-sub group
-{
-	return shift->user_group(@_);
-}
+# sub group
+# {
+# 	return shift->user_group(@_);
+# }
 
 sub groups
 {
 	my $self = shift;
 	my %opts = @_;
-	my $exclude_owner = $opts{exclude_owner}; #FIXME will go away someday due to new user_connector
+	#my $exclude_owner = $opts{exclude_owner}; #FIXME will go away someday due to new user_connector
 
 	my @groups = ();
 	
-	push @groups, $self->group if (not $exclude_owner or not $self->group->is_owner); #FIXME will go away due to new user_connector
+	#push @groups, $self->group if (not $exclude_owner or not $self->group->is_owner); #FIXME will go away due to new user_connector
 	
 	foreach my $conn ( $self->user_connectors )
 	{
-		if ($conn->parent_type == 6) { #FIXME hardcoded type
-			push @groups, $conn->group;
+		if ($conn->is_parent_group) {
+			push @groups, $conn->parent;
 		}
 	}	
 	
@@ -107,14 +99,14 @@ sub users {
 	my $self = shift;
 	my %users;
 
-	foreach ($self->group->users) {
-		$users{$_->id} = $_;
-	}
+	# foreach ($self->group->users) {
+	# 	$users{$_->id} = $_;
+	# }
 
-	foreach	( $self->user_connectors )
+	foreach my $conn ( $self->user_connectors )
 	{
-		if ($_->parent_type == 5) { #FIXME hardcoded type
-			$users{$_->parent_id} = $_->user;
+		if ($conn->is_parent_user) {
+			$users{$conn->parent_id} = $conn->parent;
 		}
 		# elsif (not $exclude_groups && $_->parent_type == 6) { #FIXME hardcoded type
 		# 	#TODO add group's users
@@ -130,15 +122,14 @@ sub lists
 	my %opts = @_;
 	my $restricted = $opts{restricted}; # limit result to restricted lists
 	my $count = $opts{count}; #return count;
-	my $child_types = CoGeX::list_child_types();
 
 	if ($count)
 	  {
-	    return $self->list_connectors_as_parent->count({child_type=>$child_types->{list}});
+	    return $self->list_connectors_as_parent->count({child_type=>$node_types->{list}});
 	  }
 	
 	my @lists;
-	foreach my $conn ( $self->list_connectors_as_parent->search({child_type=>$child_types->{list}}) )
+	foreach my $conn ( $self->list_connectors_as_parent->search({child_type=>$node_types->{list}}) )
 	  {
 	    next if ($restricted and not $conn->child->restricted);
 	    push @lists, $conn->child;
@@ -152,15 +143,14 @@ sub features
     my %opts = @_;
     my $restricted = $opts{restricted}; # limit result to restricted features
     my $count = $opts{count}; #return count;
-    my $child_types = CoGeX::list_child_types();
     
     if ($count)
       {
-	return $self->list_connectors_as_parent->count({child_type=>$child_types->{feature}});
+	return $self->list_connectors_as_parent->count({child_type=>$node_types->{feature}});
       }
     
     my @features;
-    foreach my $conn ( $self->list_connectors_as_parent->search({child_type=>$child_types->{feature}})  )
+    foreach my $conn ( $self->list_connectors_as_parent->search({child_type=>$node_types->{feature}})  )
       {
 	next if ($restricted and not $conn->child->restricted);
 	push @features, $conn->child;
@@ -174,20 +164,20 @@ sub genomes
 	my $self = shift;
 	my %opts = @_;
 	my $restricted = $opts{restricted}; # limit result to restricted genomes
+	my $include_deleted = $opts{include_deleted};
 	my $count = $opts{count}; #return count;
-	my $child_types = CoGeX::list_child_types();
 	
-	if ($count)
-	  {
-	    return $self->list_connectors_as_parent->count({child_type=>$child_types->{genome}});
-	  }
+	if ($count) {
+		return $self->list_connectors_as_parent->count({child_type=>$node_types->{genome}});
+	}
 	
 	my @genomes;
-	foreach my $conn ( $self->list_connectors_as_parent->search({child_type=>$child_types->{genome}}) )
-	  {
-	    next if ($restricted and not $conn->child->restricted);
-	    push @genomes, $conn->child;
-	  }
+	foreach my $conn ( $self->list_connectors_as_parent->search({child_type=>$node_types->{genome}}) ) {
+	  	my $genome = $conn->child;
+	  	next if ($genome->deleted);
+	    next if ($restricted and not $genome->restricted);
+	    push @genomes, $genome;
+	}
 	return wantarray ? @genomes : \@genomes;	
 }
 
@@ -196,19 +186,19 @@ sub experiments
 	my $self = shift;
 	my %opts = @_;
 	my $restricted = $opts{restricted}; # limit result to restricted experiments
+	my $include_deleted = $opts{include_deleted};
 	my $count = $opts{count}; #return count;
-	my $child_types = CoGeX::list_child_types();
 
-	if ($count)
-	  {
-	    return $self->list_connectors_as_parent->count({child_type=>$child_types->{experiment}});
-	  }
+	if ($count) {
+	    return $self->list_connectors_as_parent->count({child_type=>$node_types->{experiment}});
+	}
 
 	my @experiments;
-	foreach my $conn ( $self->list_connectors_as_parent->search({child_type=>$child_types->{experiment}}) )
-	{
-	  next if ($restricted and not $conn->child->restricted);
-	  push @experiments, $conn->child;
+	foreach my $conn ( $self->list_connectors_as_parent->search({child_type=>$node_types->{experiment}}) ) {
+		my $experiment = $conn->child;
+		next if ($experiment->deleted);
+		next if ($restricted and not $experiment->restricted);
+		push @experiments, $experiment;
 	}
 	return wantarray ? @experiments : \@experiments;
 }
@@ -517,8 +507,8 @@ sub annotation_pretty_print_html
 	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td valign='top' nowrap='true'><span class='title5'>" . "User Group" . "</span>" );
 	$anno_type->Type_delimit(": <td class='data5'>");
 	$anno_type->Val_delimit("<br>");
-	my $group = $self->group->info_html;
-	$anno_type->add_Annot( $group );
+	# my $group = $self->group->info_html;
+	# $anno_type->add_Annot( $group );
 	$anno_type->add_Annot( "<span style='color:red;font-style:italic;'>Note: this list was created automatically and cannot be edited.</span>" ) if ($self->locked);
 	$anno_type->add_Annot( "</td>" );
 	$anno_obj->add_Annot($anno_type);

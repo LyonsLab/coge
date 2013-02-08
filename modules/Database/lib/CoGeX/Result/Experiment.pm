@@ -71,40 +71,26 @@ __PACKAGE__->add_columns(
 	"name",
 	{ data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 255 },
 	"description",
-	{
-		data_type     => "TEXT",
-		default_value => undef,
-		is_nullable   => 1,
-	},
+	{ data_type => "TEXT", default_value => undef, is_nullable => 1 },
 	"version",
-	{
-		data_type     => "VARCHAR",
-		default_value => undef,
-		is_nullable   => 0,
-		size          => 50,
-	},
+	{ data_type => "VARCHAR", default_value => undef, is_nullable => 0, size => 50 },
 	"storage_path",
-	{
-		data_type     => "VARCHAR",
-		default_value => undef,
-		is_nullable   => 0,
-		size          => 255,
-	},
+	{ data_type => "VARCHAR", default_value => undef, is_nullable => 0, size => 255 },
 	"restricted",
-	{ data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
+	{ data_type => "INT", default_value => "0", is_nullable => 0, size => 1 },
 	"access_count",
-	{ data_type => "int", default_value => "0", is_nullable => 1, size => 10 },
+	{ data_type => "INT", default_value => "0", is_nullable => 1, size => 10 },
 	"date",
 	{ data_type => "TIMESTAMP", default_value => undef, is_nullable => 0 },
 	"deleted",
-	{ data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
+	{ data_type => "INT", default_value => "0", is_nullable => 0, size => 1 },
 );
 
 __PACKAGE__->set_primary_key("experiment_id");
 __PACKAGE__->has_many( "experiment_type_connectors" => "CoGeX::Result::ExperimentTypeConnector", 'experiment_id' );
 __PACKAGE__->has_many( "experiment_annotations"     => "CoGeX::Result::ExperimentAnnotation",    'experiment_id' );
 __PACKAGE__->has_many( "list_connectors" => "CoGeX::Result::ListConnector", {'foreign.child_id' => 'self.experiment_id'} );
-__PACKAGE__->has_many( "user_connectors" => "CoGeX::Result::UserConnector", {'foreign.child_id' => 'self.experiment_id'} );
+__PACKAGE__->has_many( "user_connectors" => "CoGeX::Result::UserConnector", {'foreign.child_id' => 'self.experiment_id'}, {where => {child_type => 3}} ); #FIXME hardcoded to "experiment" type
 __PACKAGE__->belongs_to( "data_source" => "CoGeX::Result::DataSource", 'data_source_id' );
 __PACKAGE__->belongs_to( "genome"      => "CoGeX::Result::Genome",     'genome_id' );
 
@@ -221,28 +207,6 @@ sub types
 
 ################################################ subroutine header begin ##
 
-=head2 user_groups
-
- Usage     : 
- Purpose   : alias for $self->experiment_types
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
-sub user_groups
-{
-	map { $_->user_group } shift->user_group_experiment_connectors();
-}
-
-################################################ subroutine header begin ##
-
 =head2 get_path
 
  Usage     : 
@@ -253,7 +217,7 @@ sub user_groups
  Throws    : none
  Comments  : The idea is to build a dir structure that holds large amounts of
  			files, and is easy to lookup based on experiment ID number.
-			The strucuture is three levels of directorys, and each dir holds
+			The structure is three levels of directorys, and each dir holds
 			1000 files and/or directorys.
 			Thus:
 			./0/0/0/ will hold files 0-999
@@ -281,26 +245,6 @@ sub get_path
 
 ################################################ subroutine header begin ##
 
-=head2 annotation_pretty_print_html
-
- Usage     : my $pretty_annotation_html = $feat->annotation_pretty_print_html
- Purpose   : returns a string with information and annotations about a feature
-             in a nice html format with breaks and class tags (called "annotation")
- Returns   : returns a string
- Argument  : none
- Throws    : 
- Comments  : uses Coge::Genome::Accessory::Annotation to build the annotations,
-           : specifying delimters, and printing to string.   Pretty cool object.
-
-See Also   : CoGe::Accessory::Annotation
-
-=cut
-
-################################################## subroutine header end ##
-
-
-################################################ subroutine header begin ##
-
 =head2 lists
 
  Usage     : $self->lists
@@ -315,18 +259,6 @@ See Also   :
 =cut
 
 ################################################## subroutine header end ##
-
-# sub lists
-# {
-# 	my $self = shift;
-# 	my %opts = @_;
-# 	my @lists;
-# 	foreach my $lc ($self->list_connectors)
-# 	{
-# 		push @lists, $lc->parent_list if ($lc->child_type == 3); # FIXME hardcoded type value
-# 	}
-# 	return wantarray ? @lists : \@lists;
-# }
 
 sub lists {    
 	my $self = shift;
@@ -343,21 +275,21 @@ sub lists {
 sub groups {
 	my $self = shift;
 	my %opts = @_;
-	my $exclude_owner = $opts{exclude_owner}; #FIXME will go away someday due to new user_connector
+	# my $exclude_owner = $opts{exclude_owner}; #FIXME will go away someday due to new user_connector
 
 	my @groups = ();
-	foreach	my $conn ( $self->list_connectors ) #FIXME will go away someday due to new user_connector
-	{
-		my $group = $conn->parent_list()->group;
-		next if ($exclude_owner && $group->is_owner);
-		push @groups, $group;
-	}
+	# foreach	my $conn ( $self->list_connectors ) #FIXME will go away someday due to new user_connector
+	# {
+	# 	my $group = $conn->parent_list()->group;
+	# 	next if ($exclude_owner && $group->is_owner);
+	# 	push @groups, $group;
+	# }
 	foreach my $conn ( $self->user_connectors )
 	{
 		if ($conn->parent_type == 6) { #FIXME hardcoded type
 			push @groups, $conn->group;
 		}
-	}	
+	}
 
 	return wantarray ? @groups : \@groups;
 }
@@ -366,19 +298,19 @@ sub users {
 	my $self = shift;
 	my %users;
 
-	foreach ($self->lists) {
-		foreach ($_->group->users) {
-			$users{$_->id} = $_;
-		}
-	}
+	# foreach ($self->lists) {
+	# 	foreach ($_->group->users) {
+	# 		$users{$_->id} = $_;
+	# 	}
+	# }
 	
 	foreach	( $self->user_connectors )
 	{
-		if ($_->parent_type == 5) { #FIXME hardcoded type
+		if ($_->is_parent_user) {
 			$users{$_->parent_id} = $_->user;
 		}
-		elsif ($_->parent_type == 6) { #FIXME hardcoded type
-			#TODO add group's users
+		elsif ($_->is_parent_group) {
+			map { $users{$_->id} = $_ } $_->group->users;
 		}
 	}	
 
@@ -396,6 +328,7 @@ sub annotation_pretty_print_html
 	$anno_obj->Val_delimit("\n");
 	$anno_obj->Add_type(0);
 	$anno_obj->String_end("\n");
+	
 	my $anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class=\"title5\">" . "Name" . "</span>" );
 	$anno_type->Type_delimit(": <td class=\"data5\">");
 	$anno_type->add_Annot( $self->name . "</td>" );
@@ -500,7 +433,14 @@ sub annotation_pretty_print_html
 	$anno_type->Type_delimit(": <td class=\"data5\">");
 	my $restricted = $self->restricted ? "Yes" : "No";
 	$anno_type->add_Annot( $restricted . "</td>" );
-	$anno_obj->add_Annot($anno_type);	
+	$anno_obj->add_Annot($anno_type);
+	
+	if ($self->deleted) {
+		$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class=\"alert\">" . "Note" . "</span>" );
+		$anno_type->Type_delimit(": <td class=\"alert\">");
+		$anno_type->add_Annot( "This experiment is deleted" . "</td>" );
+		$anno_obj->add_Annot($anno_type);
+	}
 	
 	return "<table cellpadding=0 class='ui-widget-content ui-corner-all small'>" . $anno_obj->to_String . "</table>";
 }

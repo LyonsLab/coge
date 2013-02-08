@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
-#use CoGeX;
 
 =head1 NAME
 
@@ -25,84 +24,108 @@ The C<user_connector> table is used to associate C<experiment,genome,feature> re
 
 =cut
 
-# my $child_types = CoGeX::list_child_types();
-
+my $node_types = CoGeX::node_types();
 
 __PACKAGE__->table("user_connector");
 __PACKAGE__->add_columns(
 	"user_connector_id",
 	{ data_type => "INT", default_value => 1, is_nullable => 0, size => 11 },
 	"parent_id", # user_id or user_group_id
-	{ data_type => "INT", default_value => "", is_nullable => 1, size => 11 }, 
+	{ data_type => "INT", default_value => "", is_nullable => 1, size => 11 },
 	"parent_type",
-	{ data_type => "TINYINT", default_value => "", is_nullable => 0, size => 1 },	
+	{ data_type => "TINYINT", default_value => "", is_nullable => 0, size => 1 },
 	"child_id",
 	{ data_type => "INT", default_value => "", is_nullable => 0, size => 11 },
 	"child_type",
 	{ data_type => "TINYINT", default_value => "", is_nullable => 0, size => 1 },
 	"role_id",
-	{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },	
+	{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
 );
 __PACKAGE__->set_primary_key("user_connector_id");
 
-__PACKAGE__->belongs_to("experiment" => "CoGeX::Result::Experiment", "child_id");
-__PACKAGE__->belongs_to("genome"     => "CoGeX::Result::Genome",     "child_id");
-__PACKAGE__->belongs_to("feature"    => "CoGeX::Result::Feature",    "child_id");
-__PACKAGE__->belongs_to("list" => "CoGeX::Result::List", "child_id");
-
-__PACKAGE__->belongs_to("role" => "CoGeX::Result::Role", "role_id" );
-__PACKAGE__->belongs_to("user" => "CoGeX::Result::User", { "foreign.user_id" => "self.parent_id" } );
-__PACKAGE__->belongs_to("user_group" => "CoGeX::Result::UserGroup", { "foreign.user_group_id" => "self.parent_id" } );
-
+#FIXME hardcoded parent/child types below
+__PACKAGE__->belongs_to("user"			=> "CoGeX::Result::User", 		{ "foreign.user_id" => "self.parent_id" } );
+__PACKAGE__->belongs_to("parent_group" 	=> "CoGeX::Result::UserGroup",  { "foreign.user_group_id" => "self.parent_id" } );
+__PACKAGE__->belongs_to("child_group" 	=> "CoGeX::Result::UserGroup",  { "foreign.user_group_id" => "self.child_id" } );
+__PACKAGE__->belongs_to("experiment" 	=> "CoGeX::Result::Experiment",	{ "foreign.experiment_id" => "self.child_id" } );
+__PACKAGE__->belongs_to("genome"     	=> "CoGeX::Result::Genome",     { "foreign.genome_id" => "self.child_id" } );
+__PACKAGE__->belongs_to("feature"    	=> "CoGeX::Result::Feature",    { "foreign.feature_id" => "self.child_id" } );
+__PACKAGE__->belongs_to("list" 		 	=> "CoGeX::Result::List", 		{ "foreign.list_id" => "self.child_id" } );
+__PACKAGE__->belongs_to("role" 		 	=> "CoGeX::Result::Role", "role_id" );
 
 
 ################################################ subroutine header begin ##
 
-=head2 type
+=head2 is_parent_XXXXXXXX
 
  Usage     : 
- Purpose   : Alias to the child_type() method.
- Returns   : See child_type()
+ Purpose   : 
+ Returns   : 
  Argument  : None
  Throws    : 
  Comments  : 
- 
+
 See Also   : 
 
 =cut
 
 ################################################## subroutine header end ##
 
-sub type
+sub is_parent_user
 {
-	return shift->child_type();
+	return shift->parent_type() == $node_types->{user};
+}
+
+sub is_parent_group
+{
+	return shift->parent_type() == $node_types->{group};
 }
 
 ################################################ subroutine header begin ##
 
-=head2 group
+=head2 is_child_XXXXXXXX
 
  Usage     : 
- Purpose   : Alias to the user_group() method.
- Returns   : See user_group()
+ Purpose   : 
+ Returns   : 
  Argument  : None
  Throws    : 
  Comments  : 
- 
+
 See Also   : 
 
 =cut
 
 ################################################## subroutine header end ##
 
-sub group
+sub is_child_list
 {
-	return shift->user_group();
+	return shift->child_type() == $node_types->{list};
+}
+
+sub is_child_genome
+{
+	return shift->child_type() == $node_types->{genome};
+}
+
+sub is_child_feature
+{
+	return shift->child_type() == $node_types->{feature};
+}
+
+sub is_child_experiment
+{
+	return shift->child_type() == $node_types->{experiment};
+}
+
+sub is_child_group
+{
+	return shift->child_type() == $node_types->{group};
 }
 
 ################################################ subroutine header begin ##
 
-=head2 is_list
+=head2 parent
 
  Usage     : 
  Purpose   : 
@@ -117,78 +140,22 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-# sub is_list
-# {
-# 	return shift->child_type() == $child_types->{list};
-# }
+sub parent
+{
+	my $self = shift;
+	
+	if ($self->is_parent_user) {
+		return $self->user;
+	}
+	elsif ($self->is_parent_group) {
+		return $self->parent_group;
+	}
+	else {
+		die;
+	}
 
-################################################ subroutine header begin ##
-
-=head2 is_genome
-
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : None
- Throws    : 
- Comments  : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
-# sub is_genome
-# {
-# 	return shift->child_type() == $child_types->{genome};
-# }
-
-################################################ subroutine header begin ##
-
-=head2 is_feature
-
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : None
- Throws    : 
- Comments  : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
-# sub is_feature
-# {
-# 	return shift->child_type() == $child_types->{feature};
-# }
-
-
-################################################ subroutine header begin ##
-
-=head2 is_experiment
-
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : None
- Throws    : 
- Comments  : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
-# sub is_experiment
-# {
-# 	return shift->child_type() == $child_types->{experiment};
-# }
-
+	return;
+}
 
 ################################################ subroutine header begin ##
 
@@ -207,28 +174,31 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-# sub child
-# {
-# 	my $self = shift;
+sub child
+{
+	my $self = shift;
 	
-# 	if ($self->is_experiment) {
-# 		return $self->experiment;
-# 	}
-# 	elsif ($self->is_genome) {
-# 		return $self->genome;
-# 	}
-# 	elsif ($self->is_feature) {
-# 		return $self->feature;
-# 	}
-# 	elsif ($self->is_list) {
-# 		return $self->child_list;	
-# 	}
-# 	else {
-# 		die;
-# 	}
+	if ($self->is_child_experiment) {
+		return $self->experiment;
+	}
+	elsif ($self->is_child_genome) {
+		return $self->genome;
+	}
+	elsif ($self->is_child_feature) {
+		return $self->feature;
+	}
+	elsif ($self->is_child_list) {
+		return $self->list;	
+	}
+	elsif ($self->is_child_group) {
+		return $self->group;
+	}
+	else {
+		die;
+	}
 
-# 	return;
-# }
+	return;
+}
 
 
 1;

@@ -48,8 +48,7 @@ Belongs to CCoGeX::Result::List> via C<list_id>    -- parent list
 
 =cut
 
-my $child_types = CoGeX::list_child_types();
-
+my $node_types = CoGeX::node_types();
 
 __PACKAGE__->table("list_connector");
 __PACKAGE__->add_columns(
@@ -115,7 +114,7 @@ See Also   :
 
 sub is_list
 {
-	return shift->child_type() == $child_types->{list};
+	return shift->child_type() == $node_types->{list};
 }
 
 ################################################ subroutine header begin ##
@@ -137,7 +136,7 @@ See Also   :
 
 sub is_genome
 {
-	return shift->child_type() == $child_types->{genome};
+	return shift->child_type() == $node_types->{genome};
 }
 
 ################################################ subroutine header begin ##
@@ -159,7 +158,7 @@ See Also   :
 
 sub is_feature
 {
-	return shift->child_type() == $child_types->{feature};
+	return shift->child_type() == $node_types->{feature};
 }
 
 
@@ -182,7 +181,7 @@ See Also   :
 
 sub is_experiment
 {
-	return shift->child_type() == $child_types->{experiment};
+	return shift->child_type() == $node_types->{experiment};
 }
 
 
