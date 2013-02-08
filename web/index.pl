@@ -9,9 +9,9 @@ use HTML::Template;
 use Data::Dumper;
 use Digest::MD5 qw(md5_base64);
 use CGI::Log;
+use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
-use CoGeX;
 
 no warnings 'redefine';
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr 

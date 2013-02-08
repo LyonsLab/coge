@@ -12,6 +12,9 @@ use Data::Dumper;
 use File::Basename;
 use File::Temp;
 use File::Path;
+
+use CoGeX;
+use CoGeX::Result::Feature;
 use CoGe::Accessory::GenBank;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
@@ -34,10 +37,8 @@ use CoGe::Graphics::Feature::Domain;
 use CoGe::Graphics::Feature::HSP;
 use CoGe::Graphics::Feature::Block;
 use CoGe::Graphics::Feature::Outline;
-
 #use CoGe::Graphics::Feature::Line;
-use CoGeX;
-use CoGeX::Result::Feature;
+
 use DBIxProfiler;
 use DBI;
 use Parallel::ForkManager;

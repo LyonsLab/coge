@@ -5,9 +5,9 @@ use CGI;
 
 #use CGI::Ajax;
 use JSON::XS;
+use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
-use CoGeX;
 use HTML::Template;
 use Digest::MD5 qw(md5_base64);
 use URI::Escape;
@@ -168,8 +168,11 @@ sub create_group {
 	  	$desc, 
 	  	role_id => $rid 
 	  } );
-	my $ugc = $coge->resultset('UserGroupConnector')->create( { user_id => $USER->id, user_group_id => $group->id } );
-	
+	return unless $group;
+	# my $conn = $coge->resultset('UserGroupConnector')->create( { user_id => $USER->id, user_group_id => $group->id } );
+	my $conn = $coge->resultset('UserConnector')->create( { parent_id => $group->id, parent_type => 6, child_id => $USER->id, child_type => 5 } ); #FIXME hardcoded types
+	return unless $conn;
+
 	$coge->resultset('Log')->create( { user_id => $USER->id, page => $PAGE_NAME, description => 'create user group id' . $group->id } );
 	
 	return 1;
@@ -186,11 +189,11 @@ sub delete_group {
 	}
 	
 	# Reassign this group's lists to user's owner group
-	my $owner_group = $USER->owner_group;
-	foreach my $list ($group->lists) {
-		$list->user_group_id( $owner_group->id );
-		$list->update;
-	}
+#	my $owner_group = $USER->owner_group;
+#	foreach my $list ($group->lists) {
+#		$list->user_group_id( $owner_group->id );
+#		$list->update;
+#	}
 	
 	# OK, now delete the group
 	$group->delete();
@@ -212,10 +215,10 @@ sub get_groups_for_user
 	
 	my @groups;
 	foreach my $group (@group_list) {
-		next if ($group->is_owner && !$USER->is_admin); # skip owner groups
+		#next if ($group->is_owner && !$USER->is_admin); # skip owner groups
 		
 		my $id = $group->id;
-		my $is_editable = (($USER->is_admin or $USER->is_owner_editor(group => $group) or $USER->id == $group->creator_user_id) and not $group->locked);
+		my $is_editable = ($USER->is_admin or $USER->is_owner_editor(group => $group));
 				
 		my %row;
 		$row{NAME} = qq{<span class=link onclick='window.open("GroupView.pl?ugid=$id")'>} . $group->name . "</span>" . " (id$id)" ;

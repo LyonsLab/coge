@@ -5,10 +5,9 @@ use CGI::Ajax;
 use CGI::Carp 'fatalsToBrowser';
 use HTML::Template;
 use Data::Dumper;
-
+use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
-use CoGeX;
 use DBI;
 use Data::Dumper;
 no warnings 'redefine';

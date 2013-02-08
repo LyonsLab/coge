@@ -136,7 +136,7 @@ if ($rc != 0) {
 # install the files.
 
 # Create datasource
-my $datasource = $coge->resultset('DataSource')->find_or_create( { name => $source_name, description => "Loaded into CoGe via LoadExperiment" } );
+my $datasource = $coge->resultset('DataSource')->find_or_create( { name => $source_name, description => "" } );#, description => "Loaded into CoGe via LoadExperiment" } );
 unless ($datasource) {
 	print $log "log: error creating data source\n";
 	exit(-1);

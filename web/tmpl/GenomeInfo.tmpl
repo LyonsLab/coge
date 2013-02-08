@@ -81,23 +81,23 @@ function search_organisms (search_term) {
 	}
 }
 
-function search_users (search_term) {
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'search_users',
-			search_term: search_term,
-			timestamp: new Date().getTime()
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			if (obj && obj.items) {
-				$("#edit_user").autocomplete({source: obj.items});
-				$("#edit_user").autocomplete("search");
-			}
-		},
-	});
-}
+// function search_users (search_term) {
+// 	$.ajax({
+// 		data: {
+// 			jquery_ajax: 1,
+// 			fname: 'search_users',
+// 			search_term: search_term,
+// 			timestamp: new Date().getTime()
+// 		},
+// 		success : function(data) {
+// 			var obj = jQuery.parseJSON(data);
+// 			if (obj && obj.items) {
+// 				$("#edit_user").autocomplete({source: obj.items});
+// 				$("#edit_user").autocomplete("search");
+// 			}
+// 		},
+// 	});
+// }
 
 function get_genome_info () {
 	$.ajax({
@@ -183,283 +183,282 @@ function update_genome_info (){
 	});
 }
 
-function get_users_with_access () {
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'get_users_with_access',
-			gid: <TMPL_VAR NAME='GID'>
-		},
-		success : function(data) {
-			if (data) {
-				$("#users_with_access").html(data);
-			}
-		}
-	});
-}
+// function get_users_with_access () {
+// 	$.ajax({
+// 		data: {
+// 			jquery_ajax: 1,
+// 			fname: 'get_users_with_access',
+// 			gid: <TMPL_VAR NAME='GID'>
+// 		},
+// 		success : function(data) {
+// 			if (data) {
+// 				$("#users_with_access").html(data);
+// 			}
+// 		}
+// 	});
+// }
 
-function get_groups_with_access () {
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'get_groups_with_access',
-			gid: <TMPL_VAR NAME='GID'>
-		},
-		success : function(data) {
-			if (data) {
-				$("#groups_with_access").html(data);
-			}
-		}
-	});
-}
+// function get_groups_with_access () {
+// 	$.ajax({
+// 		data: {
+// 			jquery_ajax: 1,
+// 			fname: 'get_groups_with_access',
+// 			gid: <TMPL_VAR NAME='GID'>
+// 		},
+// 		success : function(data) {
+// 			if (data) {
+// 				$("#groups_with_access").html(data);
+// 			}
+// 		}
+// 	});
+// }
 
-function get_available_users () {
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'get_available_users',
-			gid: <TMPL_VAR NAME='GID'>
-		},
-		success : function(data) {
-			if (data) {
-				$("#genome_users_edit_box").html(data).dialog('open');
-			}
-		}
-	});
-}
+// function get_available_users () {
+// 	$.ajax({
+// 		data: {
+// 			jquery_ajax: 1,
+// 			fname: 'get_available_users',
+// 			gid: <TMPL_VAR NAME='GID'>
+// 		},
+// 		success : function(data) {
+// 			if (data) {
+// 				$("#genome_users_edit_box").html(data).dialog('open');
+// 			}
+// 		}
+// 	});
+// }
 
-function get_available_groups () {
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'get_available_groups',
-			gid: <TMPL_VAR NAME='GID'>
-		},
-		success : function(data) {
-			if (data) {
-				$("#genome_groups_edit_box").html(data).dialog('open');
-			}
-		}
-	});
-}
+// function get_available_groups () {
+// 	$.ajax({
+// 		data: {
+// 			jquery_ajax: 1,
+// 			fname: 'get_available_groups',
+// 			gid: <TMPL_VAR NAME='GID'>
+// 		},
+// 		success : function(data) {
+// 			if (data) {
+// 				$("#genome_groups_edit_box").html(data).dialog('open');
+// 			}
+// 		}
+// 	});
+// }
 
-function add_user() {
-	$('#select_user > option:selected').each( function(){
-		var uid = $(this).attr("value");
-		$(this).remove();
-		$.ajax({
-			data: {
-				jquery_ajax: 1,
-				fname: 'add_user',
-				gid: <TMPL_VAR NAME='GID'>,
-				uid: uid
-			},
-			success : function(data) {
-				if (data) {
-					get_users_with_access();
-					get_groups_with_access();
-				}
-			},
-		});
-	});
-};
+// function add_user() {
+// 	$('#select_user > option:selected').each( function(){
+// 		var uid = $(this).attr("value");
+// 		$(this).remove();
+// 		$.ajax({
+// 			data: {
+// 				jquery_ajax: 1,
+// 				fname: 'add_user',
+// 				gid: <TMPL_VAR NAME='GID'>,
+// 				uid: uid
+// 			},
+// 			success : function(data) {
+// 				if (data) {
+// 					get_users_with_access();
+// 					get_groups_with_access();
+// 				}
+// 			},
+// 		});
+// 	});
+// };
 
-function remove_user (uid) {
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'remove_user',
-			gid: <TMPL_VAR NAME='GID'>,
-			uid: uid
-		},
-		success : function(data) {
-			if (data) {
-				get_users_with_access();
-				get_groups_with_access();
-			}
-		},
-	});
-}
+// function remove_user (uid) {
+// 	$.ajax({
+// 		data: {
+// 			jquery_ajax: 1,
+// 			fname: 'remove_user',
+// 			gid: <TMPL_VAR NAME='GID'>,
+// 			uid: uid
+// 		},
+// 		success : function(data) {
+// 			if (data) {
+// 				get_users_with_access();
+// 				get_groups_with_access();
+// 			}
+// 		},
+// 	});
+// }
 
-function add_group() {
-	$('#select_group > option:selected').each( function(){
-		var ugid = $(this).attr("value");
-		$(this).remove();
-		$.ajax({
-			data: {
-				jquery_ajax: 1,
-				fname: 'add_group',
-				gid: <TMPL_VAR NAME='GID'>,
-				ugid: ugid
-			},
-			success : function(data) {
-				if (data) {
-					get_users_with_access();
-					get_groups_with_access();
-				}
-			},
-		});
-	});
-};
+// function add_group() {
+// 	$('#select_group > option:selected').each( function(){
+// 		var ugid = $(this).attr("value");
+// 		$(this).remove();
+// 		$.ajax({
+// 			data: {
+// 				jquery_ajax: 1,
+// 				fname: 'add_group',
+// 				gid: <TMPL_VAR NAME='GID'>,
+// 				ugid: ugid
+// 			},
+// 			success : function(data) {
+// 				if (data) {
+// 					get_users_with_access();
+// 					get_groups_with_access();
+// 				}
+// 			},
+// 		});
+// 	});
+// };
 
-function remove_group (ugid) {
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'remove_group',
-			gid: <TMPL_VAR NAME='GID'>,
-			ugid: ugid
-		},
-		success : function(data) {
-			if (data) {
-				get_users_with_access();
-				get_groups_with_access();
-			}
-		},
-	});
-}
+// function remove_group (ugid) {
+// 	$.ajax({
+// 		data: {
+// 			jquery_ajax: 1,
+// 			fname: 'remove_group',
+// 			gid: <TMPL_VAR NAME='GID'>,
+// 			ugid: ugid
+// 		},
+// 		success : function(data) {
+// 			if (data) {
+// 				get_users_with_access();
+// 				get_groups_with_access();
+// 			}
+// 		},
+// 	});
+// }
 
-function get_notebooks () {
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'get_notebooks',
-			gid: <TMPL_VAR NAME='GID'>
-		},
-		success : function(data) {
-			if (data) {
-				$("#notebooks").html(data);
-			}
-		}
-	});
-}
+// function get_notebooks () {
+// 	$.ajax({
+// 		data: {
+// 			jquery_ajax: 1,
+// 			fname: 'get_notebooks',
+// 			gid: <TMPL_VAR NAME='GID'>
+// 		},
+// 		success : function(data) {
+// 			if (data) {
+// 				$("#notebooks").html(data);
+// 			}
+// 		}
+// 	});
+// }
 
-function add_to_notebook () {
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'add_to_notebook',
-			gid: <TMPL_VAR NAME="GID">,
-		},
-		success : function(data) {
-			$("#genome_notebooks_edit_box").html(data).dialog('open');
-		},
-	});
-}
+// function add_to_notebook () {
+// 	$.ajax({
+// 		data: {
+// 			jquery_ajax: 1,
+// 			fname: 'add_to_notebook',
+// 			gid: <TMPL_VAR NAME="GID">,
+// 		},
+// 		success : function(data) {
+// 			$("#genome_notebooks_edit_box").html(data).dialog('open');
+// 		},
+// 	});
+// }
 
-function add_genome_to_notebook () {
-	$('#select_list_items > option:selected').each(
-		function() {
-			var nid = $(this).attr("value");
-			$.ajax({
-				data: {
-					jquery_ajax: 1,
-					fname: 'add_genome_to_notebook',
-					gid: <TMPL_VAR NAME="GID">,
-					nid: nid
-				},
-				success : function(data) {
-						if (data) {
-							get_notebooks();
-						}
-					}
-			});
-		}
-	);
-	$("#genome_notebooks_edit_box").dialog('close');
-}
+// function add_genome_to_notebook () {
+// 	$('#select_list_items > option:selected').each(
+// 		function() {
+// 			var nid = $(this).attr("value");
+// 			$.ajax({
+// 				data: {
+// 					jquery_ajax: 1,
+// 					fname: 'add_genome_to_notebook',
+// 					gid: <TMPL_VAR NAME="GID">,
+// 					nid: nid
+// 				},
+// 				success : function(data) {
+// 						if (data) {
+// 							get_notebooks();
+// 						}
+// 					}
+// 			});
+// 		}
+// 	);
+// 	$("#genome_notebooks_edit_box").dialog('close');
+// }
 
-function remove_genome_from_notebook (nid) {
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'remove_genome_from_notebook',
-			gid: <TMPL_VAR NAME="GID">,
-			nid: nid
-		},
-		success : function(val) {
-			if (val) {
-				get_notebooks();
-			}
-		},
-	});
-}
+// function remove_genome_from_notebook (nid) {
+// 	$.ajax({
+// 		data: {
+// 			jquery_ajax: 1,
+// 			fname: 'remove_genome_from_notebook',
+// 			gid: <TMPL_VAR NAME="GID">,
+// 			nid: nid
+// 		},
+// 		success : function(val) {
+// 			if (val) {
+// 				get_notebooks();
+// 			}
+// 		},
+// 	});
+// }
 
-function search_notebooks (search_term) {
-	$("#wait_list").animate({opacity:1});
-	$("#select_list_items").html("<option disabled='disabled'>Searching...</option>");
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'search_notebooks',
-			gid: <TMPL_VAR NAME="GID">,
-			search_term: search_term,
-			timestamp: new Date().getTime()
-		},
-		success : function(val) {
-			var items = jQuery.parseJSON(val);
-			if (!pageObj.timestamp_lists || items.timestamp > pageObj.timestamp_lists) {
-				pageObj.timestamp_lists = items.timestamp;
-				$('#list_preview').hide();
-				$("#select_list_items").html(items.html);
-				var width = $("#genome_notebooks_edit_box").dialog("option", "width");
-				$("#select_list_items").width(width-40);
-				$("#wait_list").animate({opacity:0});
-			}
-		},
-	});
-}
+// function search_notebooks (search_term) {
+// 	$("#wait_list").animate({opacity:1});
+// 	$("#select_list_items").html("<option disabled='disabled'>Searching...</option>");
+// 	$.ajax({
+// 		data: {
+// 			jquery_ajax: 1,
+// 			fname: 'search_notebooks',
+// 			gid: <TMPL_VAR NAME="GID">,
+// 			search_term: search_term,
+// 			timestamp: new Date().getTime()
+// 		},
+// 		success : function(val) {
+// 			var items = jQuery.parseJSON(val);
+// 			if (!pageObj.timestamp_lists || items.timestamp > pageObj.timestamp_lists) {
+// 				pageObj.timestamp_lists = items.timestamp;
+// 				$('#list_preview').hide();
+// 				$("#select_list_items").html(items.html);
+// 				var width = $("#genome_notebooks_edit_box").dialog("option", "width");
+// 				$("#select_list_items").width(width-40);
+// 				$("#wait_list").animate({opacity:0});
+// 			}
+// 		},
+// 	});
+// }
 
-function get_list_preview (opts) {
-	$('#list_preview').hide();
-	$('#select_list_items > option:selected:last').each(
-		function() {
-			var nid = $(this).attr("value");
-			$.ajax({
-				data: {
-					jquery_ajax: 1,
-					fname: 'get_notebook_preview',
-					nid: nid,
-				},
-				success : 
-					function(data) {
-						var width = $("#genome_notebooks_edit_box").dialog("option", "width");
-						$("#select_list_items").width(width/2-30);
-						$('#list_preview').width(width/2-30);
-						$('#list_preview').html(data);
-						$('#list_preview').fadeIn('fast');
-					}
-			});
-		}
-	);
-}
+// function get_list_preview (opts) {
+// 	$('#list_preview').hide();
+// 	$('#select_list_items > option:selected:last').each(
+// 		function() {
+// 			var nid = $(this).attr("value");
+// 			$.ajax({
+// 				data: {
+// 					jquery_ajax: 1,
+// 					fname: 'get_notebook_preview',
+// 					nid: nid,
+// 				},
+// 				success : 
+// 					function(data) {
+// 						var width = $("#genome_notebooks_edit_box").dialog("option", "width");
+// 						$("#select_list_items").width(width/2-30);
+// 						$('#list_preview').width(width/2-30);
+// 						$('#list_preview').html(data);
+// 						$('#list_preview').fadeIn('fast');
+// 					}
+// 			});
+// 		}
+// 	);
+// }
 
 function export_gff (gid) {
- var server = '<TMPL_VAR NAME="SERVER">';
- var link = server+"bin/export/coge_gff.pl?dsgid=";
- link += gid;
- if ($('#cds_only')[0].checked) {link += ";cds=1";}
- if ($('#annos')[0].checked) {link += ";annos=1";}
- if ($('#name_unique')[0].checked) {link += ";nu=1";}
- if ($('#upa')[0].checked) {link += ";upa=1";}
- link += ";id_type="+$('#gff_id_type').val();
- $('#export_gff_link').html("<a href="+link+" target=_new>Link: "+ link+"<\a>");
- window.open(link);
-
+	var server = '<TMPL_VAR NAME="SERVER">';
+	var link = server+"bin/export/coge_gff.pl?dsgid=";
+	link += gid;
+	if ($('#cds_only')[0].checked) {link += ";cds=1";}
+	if ($('#annos')[0].checked) {link += ";annos=1";}
+	if ($('#name_unique')[0].checked) {link += ";nu=1";}
+	if ($('#upa')[0].checked) {link += ";upa=1";}
+	link += ";id_type="+$('#gff_id_type').val();
+	$('#export_gff_link').html("<a href="+link+" target=_new>Link: "+ link+"<\a>");
+	window.open(link);
 }
 
 function export_tbl (gid) {
- var server = '<TMPL_VAR NAME="SERVER">';
- var link = server+"bin/export/export_NCBI_TBL.pl?dsgid=";
- link += gid;
- window.open(link);
+	var server = '<TMPL_VAR NAME="SERVER">';
+	var link = server+"bin/export/export_NCBI_TBL.pl?dsgid=";
+	link += gid;
+	window.open(link);
 }
 
 function export_bed (gid) {
- var server = '<TMPL_VAR NAME="SERVER">';
- var link = server+"bin/export/coge2bed.pl?gid=";
- link += gid;
- window.open(link);
+	var server = '<TMPL_VAR NAME="SERVER">';
+	var link = server+"bin/export/coge2bed.pl?gid=";
+	link += gid;
+	window.open(link);
 }
 
 </SCRIPT>
@@ -468,7 +467,7 @@ function export_bed (gid) {
 <table style="overflow:hidden;">
 	<tr style="vertical-align:top;">
 		<td>
-			<span style="color:dimgray;font-weight:bold;">Genome Info (gid: <TMPL_VAR NAME=GID>)</span>
+			<span style="color:dimgray;font-weight:bold;">Genome Info</span>
 			<div id='genome_info' class="small ui-widget-content ui-corner-all" style="width:400px;"><TMPL_VAR NAME="GENOME_INFO"></div>
 			<span class='ui-button ui-button-go ui-corner-all' onClick="edit_genome_info();">Edit Info</span>
 		</td>
@@ -482,9 +481,12 @@ function export_bed (gid) {
 <br>
 
 <span style="color:dimgray;font-weight:bold;">Experiments</span>
-<div class="small ui-widget-content ui-corner-all" style="width:670px;height:100px;overflow-y:auto;">
+<TMPL_IF NAME='EXPERIMENTS'>
+<div class="small ui-widget-content ui-corner-all">
 <TMPL_VAR NAME='EXPERIMENTS'>
 </div>
+</TMPL_IF>
+<br>
 <span class='ui-button ui-corner-all ui-button-icon-right ui-button-go' onclick="window.open('LoadExperiment.pl?gid=<TMPL_VAR NAME=GID>')"><span class="ui-icon ui-icon-extlink"></span>Load Experiment</span>
 <br><br>
 
@@ -542,22 +544,26 @@ function export_bed (gid) {
  <tr>
    <td>For GFF "ID" and "Parent" tags, use unique:
    <td>
-     <select id=gff_id_type>
+     <select id="gff_id_type">
       <option value="name" selected>Name</option>
       <option value="num">Number</option>
      </select>
  </tr>
 </table>
 <span class="ui-button ui-corner-all ui-button-go" onClick="export_gff(<TMPL_VAR NAME=GID>)">Export GFF File</span>
-<br><br><span class="small" id=export_gff_link></span>
+<br><br><span class="small" id="export_gff_link"></span>
 </div>
 
-</TMPL_IF> <!-- MAIN -->
+</TMPL_IF>
 
 
 
 <TMPL_IF NAME="DO_GENOME_INFO">
 	<table class="small">
+		<tr>
+	 		<td class='title5'>Genome ID:</td>
+			<td class='data5'><TMPL_VAR NAME="GID"></td>
+		</tr>	
 		<tr>
 	 		<td class='title5'>Organism:</td>
 			<td class='data5'><span class="link" onclick="window.open('OrganismView.pl?gid=<TMPL_VAR NAME=GID>')"><TMPL_VAR NAME="ORGANISM"></span></td>
@@ -586,6 +592,12 @@ function export_bed (gid) {
 			<td class='title5'>Description:</td>
 			<td class='data5'><TMPL_VAR NAME="DESCRIPTION"></td>
 		</tr>
+		<TMPL_IF NAME="DELETED">
+		<tr>
+			<td class='alert'>Note:</td>
+			<td class='alert'>This genome is deleted</td>
+		</tr>
+		</TMPL_IF>
 	</table>
 </TMPL_IF>
 
@@ -647,7 +659,7 @@ function export_bed (gid) {
 
 
 
-<TMPL_IF NAME="ADD_TO_NOTEBOOK">
+<!-- <TMPL_IF NAME="ADD_TO_NOTEBOOK">
 	<script>
 		$(function() {
 			search_notebooks('');
@@ -670,11 +682,11 @@ function export_bed (gid) {
 		</tr>
 	</table>
 	<span href="javascript:void(0)" onClick="add_genome_to_notebook();" class='ui-button ui-button-go ui-corner-all'>Add</span>
-</TMPL_IF> <!-- ADD_LISTS -->
+</TMPL_IF> -->
 
 
 
-<TMPL_IF NAME="ADD_USERS">
+<!-- <TMPL_IF NAME="ADD_USERS">
 	<script TYPE="text/javascript">
 		$(function() {
 			user_filter = new filterlist(document.new_users.select_user);
@@ -700,11 +712,11 @@ function export_bed (gid) {
 	<br>
 	<span onClick="add_user();" class="ui-button ui-corner-all ui-button-go">Add</span>
 	<span onClick="$(this).parent().dialog('close');" class="ui-button ui-corner-all ui-button-go">Done</span>
-</TMPL_IF>
+</TMPL_IF> -->
 
 
 
-<TMPL_IF NAME="ADD_GROUPS">
+<!-- <TMPL_IF NAME="ADD_GROUPS">
 	<script TYPE="text/javascript">
 		$(function() {
 			group_filter = new filterlist(document.new_groups.select_group);
@@ -728,7 +740,7 @@ function export_bed (gid) {
 	<br>
 	<span onClick="add_group();" class="ui-button ui-corner-all ui-button-go">Add</span>
 	<span onClick="$(this).parent().dialog('close');" class="ui-button ui-corner-all ui-button-go">Done</span>
-</TMPL_IF>
+</TMPL_IF> -->
 
 
 
@@ -755,7 +767,7 @@ function export_bed (gid) {
 
 
 
-<TMPL_IF NAME='DO_GROUPS'>
+<!-- <TMPL_IF NAME='DO_GROUPS'>
 	<table class="small">
 		<TMPL_LOOP NAME="GROUP_LOOP">
 		<tr valign="top">
@@ -770,11 +782,11 @@ function export_bed (gid) {
 		</tr>
 		</TMPL_LOOP>
 	</table>
-</TMPL_IF>
+</TMPL_IF> -->
 
 
 
-<TMPL_IF NAME='DO_USERS'>
+<!-- <TMPL_IF NAME='DO_USERS'>
 	<table class="small">
 		<TMPL_LOOP NAME="USER_LOOP">
 		<tr valign="top">
@@ -787,11 +799,11 @@ function export_bed (gid) {
 		</tr>
 		</TMPL_LOOP>
 	</table>
-</TMPL_IF>
+</TMPL_IF> -->
 
 
 
-<TMPL_IF NAME='DO_NOTEBOOKS'>
+<!-- <TMPL_IF NAME='DO_NOTEBOOKS'>
 	<table class="small">
 		<TMPL_LOOP NAME="NOTEBOOK_LOOP">
 		<tr valign="top">
@@ -804,7 +816,7 @@ function export_bed (gid) {
 		</tr>
 		</TMPL_LOOP>
 	</table>
-</TMPL_IF>
+</TMPL_IF> -->
 
 
 

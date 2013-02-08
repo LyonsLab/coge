@@ -29,7 +29,7 @@ use vars qw(
 	%FUNCTION $MAX_SEARCH_RESULTS
 );
 
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P         = CoGe::Accessory::Web::get_defaults("$ENV{HOME}/coge.conf");
 $ENV{PATH} = $P->{COGEDIR};
 $COGEDIR   = $P->{COGEDIR};
 $URL       = $P->{URL};
@@ -67,23 +67,23 @@ $MAX_SEARCH_RESULTS = 100;
 	generate_html			=> \&generate_html,
 	get_genome_info			=> \&get_genome_info,
 	get_genome_data			=> \&get_genome_data,
-	get_notebooks			=> \&get_notebooks,
-	get_users_with_access	=> \&get_users_with_access,
-	get_groups_with_access 	=> \&get_groups_with_access,
-	get_available_users		=> \&get_available_users,
-	get_available_groups	=> \&get_available_groups,
+	# get_notebooks			=> \&get_notebooks,
+	# get_users_with_access	=> \&get_users_with_access,
+	# get_groups_with_access 	=> \&get_groups_with_access,
+	# get_available_users		=> \&get_available_users,
+	# get_available_groups	=> \&get_available_groups,
 	edit_genome_info		=> \&edit_genome_info,
 	update_genome_info		=> \&update_genome_info,
-	update_owner			=> \&update_owner,
-	add_user				=> \&add_user,
-	remove_user				=> \&remove_user,
-	add_to_notebook			=> \&add_to_notebook,
-	add_genome_to_notebook	=> \&add_genome_to_notebook,
-	remove_genome_from_notebook	=> \&remove_genome_from_notebook,
-	get_notebook_preview	=> \&get_notebook_preview,
+	# update_owner			=> \&update_owner,
+	# add_user				=> \&add_user,
+	# remove_user				=> \&remove_user,
+	# add_to_notebook			=> \&add_to_notebook,
+	# add_genome_to_notebook	=> \&add_genome_to_notebook,
+	# remove_genome_from_notebook	=> \&remove_genome_from_notebook,
+	# get_notebook_preview	=> \&get_notebook_preview,
 	search_organisms		=> \&search_organisms,
-	search_users			=> \&search_users,
-	search_notebooks		=> \&search_notebooks,
+	# search_users			=> \&search_users,
+	# search_notebooks		=> \&search_notebooks,
 );
 
 if ( $FORM->param('jquery_ajax') ) {
@@ -107,7 +107,7 @@ else {
 sub get_genome_info {
 	my %opts = @_;
 	my $gid  = $opts{gid};
-	my $genome  = $opts{genome};
+	my $genome = $opts{genome};
 	return unless ($gid or $genome);
 
 	unless ($genome) {
@@ -125,6 +125,7 @@ sub get_genome_info {
 		RESTRICTED => ($genome->restricted ? 'Yes' : 'No'),
 		NAME => $genome->name,
 		DESCRIPTION => $genome->description,
+		DELETED => $genome->deleted
 	);
 
 	$template->param( GID => $genome->id );
@@ -200,38 +201,38 @@ sub update_genome_info {
 	return;
 }
 
-sub update_owner {
-	my %opts = @_;
-	my $gid  = $opts{gid};
-	my $user_name = $opts{user_name};
-	return unless ($gid and $user_name);
+# sub update_owner {
+# 	my %opts = @_;
+# 	my $gid  = $opts{gid};
+# 	my $user_name = $opts{user_name};
+# 	return unless ($gid and $user_name);
 
-	my $genome = $coge->resultset('Genome')->find($gid);
-	return unless ($genome);
+# 	my $genome = $coge->resultset('Genome')->find($gid);
+# 	return unless ($genome);
 
-	my $user = $coge->resultset('User')->find({user_name => $user_name});
-	return unless ($user);
+# 	my $user = $coge->resultset('User')->find({user_name => $user_name});
+# 	return unless ($user);
 
-	# Remove from current owner list
-	if ($genome->owner_list) {
-		my $conn = $coge->resultset('ListConnector')->find({
-			parent_id => $genome->owner_list->id, 
-			child_id => $gid,
-			child_type => 2 #FIXME hardcoded to "genome"
-		});
-		$conn->delete;
-	}
+# 	# Remove from current owner list
+# 	if ($genome->owner_list) {
+# 		my $conn = $coge->resultset('ListConnector')->find({
+# 			parent_id => $genome->owner_list->id, 
+# 			child_id => $gid,
+# 			child_type => 2 #FIXME hardcoded to "genome"
+# 		});
+# 		$conn->delete;
+# 	}
 
-	# Add to user's owner list
-	my $conn = $coge->resultset('ListConnector')->find_or_create({
-		parent_id => $user->owner_list->id, 
-		child_id => $gid, 
-		child_type => 2 #FIXME hardcoded to "genome"
-	});
-	return unless ($conn);
+# 	# Add to user's owner list
+# 	my $conn = $coge->resultset('ListConnector')->find_or_create({
+# 		parent_id => $user->owner_list->id, 
+# 		child_id => $gid, 
+# 		child_type => 2 #FIXME hardcoded to "genome"
+# 	});
+# 	return unless ($conn);
 
-	return 1;
-}
+# 	return 1;
+# }
 
 sub search_organisms {
 	my %opts = @_;
@@ -255,26 +256,26 @@ sub search_organisms {
 	return encode_json({timestamp => $timestamp, items => [sort keys %unique]});
 }
 
-sub search_users {
-	my %opts = @_;
-	my $search_term = $opts{search_term};
-	my $timestamp = $opts{timestamp};
-	#print STDERR "$search_term $timestamp\n";
-	return unless $search_term;
+# sub search_users {
+# 	my %opts = @_;
+# 	my $search_term = $opts{search_term};
+# 	my $timestamp = $opts{timestamp};
+# 	#print STDERR "$search_term $timestamp\n";
+# 	return unless $search_term;
 
-	# Perform search
-	$search_term = '%'.$search_term.'%';
-	my @users = $coge->resultset("User")->search(
-		\[ 'user_name LIKE ? OR first_name LIKE ? OR last_name LIKE ?', 
-		['user_name', $search_term], ['first_name', $search_term], ['last_name', $search_term] ]);
+# 	# Perform search
+# 	$search_term = '%'.$search_term.'%';
+# 	my @users = $coge->resultset("User")->search(
+# 		\[ 'user_name LIKE ? OR first_name LIKE ? OR last_name LIKE ?', 
+# 		['user_name', $search_term], ['first_name', $search_term], ['last_name', $search_term] ]);
 
-	# Limit number of results displayed
-	# if (@users > $MAX_SEARCH_RESULTS) {
-	# 	return encode_json({timestamp => $timestamp, items => undef});
-	# }
+# 	# Limit number of results displayed
+# 	# if (@users > $MAX_SEARCH_RESULTS) {
+# 	# 	return encode_json({timestamp => $timestamp, items => undef});
+# 	# }
 	
-	return encode_json({timestamp => $timestamp, items => [sort map { $_->user_name } @users]});
-}
+# 	return encode_json({timestamp => $timestamp, items => [sort map { $_->user_name } @users]});
+# }
 
 sub get_genome_data {
 	my %opts = @_;
@@ -328,26 +329,24 @@ sub get_genome_data {
 sub get_genome_download_links
   {
     my $genome = shift;
-
-
     
   }
 
-sub get_genome_owner {
-	my $genome = shift;
-	return unless $genome;
+# sub get_genome_owner {
+# 	my $genome = shift;
+# 	return unless $genome;
 
-	my $owner_list = $genome->owner_list;
-	return unless ($owner_list);
+# 	my $owner_list = $genome->owner_list;
+# 	return unless ($owner_list);
 
-	my $owner_group = $owner_list->group;
-	return unless ($owner_group);
+# 	my $owner_group = $owner_list->group;
+# 	return unless ($owner_group);
 
-	my $creator = $owner_group->creator;
-	return unless ($creator);
+# 	my $creator = $owner_group->creator;
+# 	return unless ($creator);
 
-	return $creator;
-}
+# 	return $creator;
+# }
 
 sub get_sequence_types {
 	my $type_id = shift;
@@ -371,407 +370,407 @@ sub get_sources {
 	return encode_json([sort keys %unique]);
 }
 
-sub get_groups_with_access {
-	my %opts = @_;
-	my $gid  = $opts{gid};
-	my $genome  = $opts{genome};
-	return unless ($gid or $genome);
+# sub get_groups_with_access {
+# 	my %opts = @_;
+# 	my $gid  = $opts{gid};
+# 	my $genome  = $opts{genome};
+# 	return unless ($gid or $genome);
 
-	unless ($genome) {
-		$genome = $coge->resultset('Genome')->find($gid);
-		return unless ($genome);
-	}
+# 	unless ($genome) {
+# 		$genome = $coge->resultset('Genome')->find($gid);
+# 		return unless ($genome);
+# 	}
 
-	my @groups = map { $_->group } $genome->lists;
+# 	my @groups = map { $_->group } $genome->lists;
 	
-	my @rows;
-	foreach my $group (sort {$a->name cmp $b->name} @groups) {
-		#next if (!$USER->is_admin && !$is_user && !$group->has_member($USER));
-		next if ($group->is_owner and !$USER->is_admin);
+# 	my @rows;
+# 	foreach my $group (sort {$a->name cmp $b->name} @groups) {
+# 		#next if (!$USER->is_admin && !$is_user && !$group->has_member($USER));
+# 		next if ($group->is_owner and !$USER->is_admin);
 
-		my $id = $group->id;
-		my %row;
-		$row{GROUP_NAME} = qq{<span class="link" onclick='window.open("GroupView.pl?ugid=$id")'>} . $group->name . "</span>";
-		$row{GROUP_ROLE} = '(' . $group->role->name . ')';
-		$row{GROUP_DESC} = $group->description if $group->description;
-		#$row{GROUP_ID} = $id;
-		push @rows, \%row;
-	}
-	push @rows, {GROUP_NAME => '<span style="font-style:italic;color:gray;">None</span>'} unless (@rows);
+# 		my $id = $group->id;
+# 		my %row;
+# 		$row{GROUP_NAME} = qq{<span class="link" onclick='window.open("GroupView.pl?ugid=$id")'>} . $group->name . "</span>";
+# 		$row{GROUP_ROLE} = '(' . $group->role->name . ')';
+# 		$row{GROUP_DESC} = $group->description if $group->description;
+# 		#$row{GROUP_ID} = $id;
+# 		push @rows, \%row;
+# 	}
+# 	push @rows, {GROUP_NAME => '<span style="font-style:italic;color:gray;">None</span>'} unless (@rows);
 
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-	$template->param( DO_GROUPS => 1, GROUP_LOOP => \@rows );
-	return $template->output;
-}
+# 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+# 	$template->param( DO_GROUPS => 1, GROUP_LOOP => \@rows );
+# 	return $template->output;
+# }
 
-sub get_users_with_access {
-	my %opts = @_;
-	my $gid  = $opts{gid};
-	my $genome  = $opts{genome};
-	return unless ($gid or $genome);
+# sub get_users_with_access {
+# 	my %opts = @_;
+# 	my $gid  = $opts{gid};
+# 	my $genome  = $opts{genome};
+# 	return unless ($gid or $genome);
 
-	unless ($genome) {
-		$genome = $coge->resultset('Genome')->find($gid);
-		return unless $genome;
-	}
+# 	unless ($genome) {
+# 		$genome = $coge->resultset('Genome')->find($gid);
+# 		return unless $genome;
+# 	}
 
-	my @rows;
-	my $owner = get_genome_owner($genome);
-	if ($owner) {
-		my %users;
-		foreach my $list ($genome->lists) {
-			foreach my $user ($list->group->users) {
-				$users{$user->id} = $user;
-			}
-		}
+# 	my @rows;
+# 	my $owner = get_genome_owner($genome);
+# 	if ($owner) {
+# 		my %users;
+# 		foreach my $list ($genome->lists) {
+# 			foreach my $user ($list->group->users) {
+# 				$users{$user->id} = $user;
+# 			}
+# 		}
 		
 		
-		foreach my $u (sort {$a->display_name cmp $b->display_name} values %users) {
-			my $id = $u->id;
-			my $is_owner = ($id == $owner->id);
+# 		foreach my $u (sort {$a->display_name cmp $b->display_name} values %users) {
+# 			my $id = $u->id;
+# 			my $is_owner = ($id == $owner->id);
 
-			my %row;
-			$row{USER_INFO} = qq{<span class="link" onclick='window.open("User.pl?uid=$id")'>} . $u->display_name . "</span>" . ($is_owner ? ' (owner)' : '');
-			$row{USER_ID} = $id if (not $is_owner);
-			push @rows, \%row;
-		}
-	}
-	push @rows, {USER_INFO => '<span style="font-style:italic;color:gray;">None</span>'} unless (@rows);
+# 			my %row;
+# 			$row{USER_INFO} = qq{<span class="link" onclick='window.open("User.pl?uid=$id")'>} . $u->display_name . "</span>" . ($is_owner ? ' (owner)' : '');
+# 			$row{USER_ID} = $id if (not $is_owner);
+# 			push @rows, \%row;
+# 		}
+# 	}
+# 	push @rows, {USER_INFO => '<span style="font-style:italic;color:gray;">None</span>'} unless (@rows);
 
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-	$template->param( DO_USERS => 1, USER_LOOP => \@rows );
-	return $template->output;
-}
+# 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+# 	$template->param( DO_USERS => 1, USER_LOOP => \@rows );
+# 	return $template->output;
+# }
 
-sub get_available_users {
-	my %opts = @_;
-	my $gid = $opts{gid};
-	return unless $gid;
+# sub get_available_users {
+# 	my %opts = @_;
+# 	my $gid = $opts{gid};
+# 	return unless $gid;
 	
-	my $genome = $coge->resultset('Genome')->find($gid);
-	return unless ($genome);
+# 	my $genome = $coge->resultset('Genome')->find($gid);
+# 	return unless ($genome);
 
-	my %exists;
-	foreach my $list ($genome->lists) {
-		foreach my $user ($list->group->users) {
-			$exists{$user->id} = $user;
-		}
-	}
+# 	my %exists;
+# 	foreach my $list ($genome->lists) {
+# 		foreach my $user ($list->group->users) {
+# 			$exists{$user->id} = $user;
+# 		}
+# 	}
 
-	my @all_users;
-	foreach ($coge->resultset('User')->all) {
-		next if $_->id == $USER->id; # skip self
-		push @all_users, { UID => $_->id, UNAME => $_->display_name } if (!$exists{$_->id});
-	}	
+# 	my @all_users;
+# 	foreach ($coge->resultset('User')->all) {
+# 		next if $_->id == $USER->id; # skip self
+# 		push @all_users, { UID => $_->id, UNAME => $_->display_name } if (!$exists{$_->id});
+# 	}	
 	
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-	$template->param( ADD_USERS => 1 );
-	$template->param( GID         => $genome->id );
-	$template->param( ALL_UID_LOOP => [sort {$a->{UNAME} cmp $b->{UNAME}} @all_users] );
+# 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+# 	$template->param( ADD_USERS => 1 );
+# 	$template->param( GID         => $genome->id );
+# 	$template->param( ALL_UID_LOOP => [sort {$a->{UNAME} cmp $b->{UNAME}} @all_users] );
 
-	return $template->output;
-}
+# 	return $template->output;
+# }
 
-sub get_available_groups {
-	my %opts = @_;
-	my $gid = $opts{gid};
-	return unless $gid;
+# sub get_available_groups {
+# 	my %opts = @_;
+# 	my $gid = $opts{gid};
+# 	return unless $gid;
 	
-	my $genome = $coge->resultset('Genome')->find($gid);
-	return unless ($genome);
+# 	my $genome = $coge->resultset('Genome')->find($gid);
+# 	return unless ($genome);
 
-	my %exists = map { $_->group->id => 1 } $genome->lists;
+# 	my %exists = map { $_->group->id => 1 } $genome->lists;
 
-	my @all_groups;
-	foreach ($USER->groups) {
-		#next if $_->id == $USER->id; # skip self
-		push @all_groups, { UGID => $_->id, UGNAME => $_->info } if (!$exists{$_->id});
-	}
+# 	my @all_groups;
+# 	foreach ($USER->groups) {
+# 		#next if $_->id == $USER->id; # skip self
+# 		push @all_groups, { UGID => $_->id, UGNAME => $_->info } if (!$exists{$_->id});
+# 	}
 	
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-	$template->param( ADD_GROUPS => 1 );
-	$template->param( GID        => $genome->id );
-	$template->param( ALL_UGID_LOOP => [sort {$a->{UGNAME} cmp $b->{UGNAME}} @all_groups] );
+# 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+# 	$template->param( ADD_GROUPS => 1 );
+# 	$template->param( GID        => $genome->id );
+# 	$template->param( ALL_UGID_LOOP => [sort {$a->{UGNAME} cmp $b->{UGNAME}} @all_groups] );
 
-	return $template->output;
-}
+# 	return $template->output;
+# }
 
-sub create_shared_group_and_list {
-	my %opts = @_;
-	my $dbx = $opts{dbx};
-	my $uid = $opts{uid};
+# sub create_shared_group_and_list {
+# 	my %opts = @_;
+# 	my $dbx = $opts{dbx};
+# 	my $uid = $opts{uid};
 
-	my $user = $coge->resultset('User')->find($uid);
-	return unless ($user);
+# 	my $user = $coge->resultset('User')->find($uid);
+# 	return unless ($user);
 
-	my $shared_group = $coge->resultset('UserGroup')->find_or_create({
-		creator_user_id => 0,
-		name => $user->name,
-		description => "Shared group",
-		role_id => 4, #FIXME hardcoded value for "reader" role
-		locked => 1
-	});
-	return unless $shared_group;
+# 	my $shared_group = $coge->resultset('UserGroup')->find_or_create({
+# 		creator_user_id => 0,
+# 		name => $user->name,
+# 		description => "Shared group",
+# 		role_id => 4, #FIXME hardcoded value for "reader" role
+# 		locked => 1
+# 	});
+# 	return unless $shared_group;
 
-	my $conn = $coge->resultset('UserGroupConnector')->find_or_create({
-		user_id => $uid,
-		user_group_id => $shared_group->id
-	});
-	return unless $conn;
+# 	my $conn = $coge->resultset('UserGroupConnector')->find_or_create({
+# 		user_id => $uid,
+# 		user_group_id => $shared_group->id
+# 	});
+# 	return unless $conn;
 
-	my $shared_list = $coge->resultset('List')->find_or_create({
-		name => $user->name,
-		description => "Shared list",
-		list_type_id => 7, #FIXME hardcoded value for "shared" list type
-		user_group_id => $shared_group->id,
-		locked => 1,
-		restricted => 1
-	});
-	return unless $shared_list;
+# 	my $shared_list = $coge->resultset('List')->find_or_create({
+# 		name => $user->name,
+# 		description => "Shared list",
+# 		list_type_id => 7, #FIXME hardcoded value for "shared" list type
+# 		user_group_id => $shared_group->id,
+# 		locked => 1,
+# 		restricted => 1
+# 	});
+# 	return unless $shared_list;
 
-	return $shared_group;
-}
+# 	return $shared_group;
+# }
 
-sub add_user {
-	my %opts = @_;
-	my $gid = $opts{gid};
-	my $uid = $opts{uid};
-	print STDERR "add_user: $gid $uid\n";
-	return unless ($gid and $uid);
+# sub add_user {
+# 	my %opts = @_;
+# 	my $gid = $opts{gid};
+# 	my $uid = $opts{uid};
+# 	print STDERR "add_user: $gid $uid\n";
+# 	return unless ($gid and $uid);
 	
-	my $genome = $coge->resultset('Genome')->find($gid);
-	return unless $genome;
+# 	my $genome = $coge->resultset('Genome')->find($gid);
+# 	return unless $genome;
 
-	my $user = $coge->resultset('User')->find($uid);
-	return unless $user;
+# 	my $user = $coge->resultset('User')->find($uid);
+# 	return unless $user;
 
-	my $shared_group = $USER->shared_group;
-	if (!$shared_group) {
-		$shared_group = create_shared_group_and_list(dbx => $coge, uid => $USER->id);
-		return unless $shared_group;
-	}
+# 	my $shared_group = $USER->shared_group;
+# 	if (!$shared_group) {
+# 		$shared_group = create_shared_group_and_list(dbx => $coge, uid => $USER->id);
+# 		return unless $shared_group;
+# 	}
 
-	my $conn = $coge->resultset('ListConnector')->find_or_create({
-		parent_id => $shared_group->shared_list->id,
-		child_id => $genome->id,
-		child_type => 2 #FIXME hardcoded "genome" child type
-	});
-	return unless $conn;
+# 	my $conn = $coge->resultset('ListConnector')->find_or_create({
+# 		parent_id => $shared_group->shared_list->id,
+# 		child_id => $genome->id,
+# 		child_type => 2 #FIXME hardcoded "genome" child type
+# 	});
+# 	return unless $conn;
 
-	$conn = $coge->resultset('UserGroupConnector')->find_or_create({
-		user_id => $uid,
-		user_group_id => $shared_group->id
-	});
-	return unless $conn;
+# 	$conn = $coge->resultset('UserGroupConnector')->find_or_create({
+# 		user_id => $uid,
+# 		user_group_id => $shared_group->id
+# 	});
+# 	return unless $conn;
 
-	return 1;
-}
+# 	return 1;
+# }
 
-sub remove_user {
-	my %opts = @_;
-	my $gid = $opts{gid};
-	my $uid = $opts{uid};
-	return unless ($gid and $uid);
+# sub remove_user {
+# 	my %opts = @_;
+# 	my $gid = $opts{gid};
+# 	my $uid = $opts{uid};
+# 	return unless ($gid and $uid);
 	
-	my $genome = $coge->resultset('Genome')->find($gid);
-	return unless ($genome);
+# 	my $genome = $coge->resultset('Genome')->find($gid);
+# 	return unless ($genome);
 
-	my $user = $coge->resultset('User')->find($uid);
-	return unless $user;
+# 	my $user = $coge->resultset('User')->find($uid);
+# 	return unless $user;
 
-	my $shared_group = $USER->shared_group;
-	return unless $shared_group;
+# 	my $shared_group = $USER->shared_group;
+# 	return unless $shared_group;
 
-	my $conn = $coge->resultset('UserGroupConnector')->find({
-		user_id => $uid,
-		user_group_id => $shared_group->id
-	});
-	return unless $conn;
-	$conn->delete;
+# 	my $conn = $coge->resultset('UserGroupConnector')->find({
+# 		user_id => $uid,
+# 		user_group_id => $shared_group->id
+# 	});
+# 	return unless $conn;
+# 	$conn->delete;
 
-	return 1;
-}
+# 	return 1;
+# }
 
-sub add_to_notebook {
-	my %opts = @_;
-	my $gid = $opts{gid};
-	return unless $gid;
+# sub add_to_notebook {
+# 	my %opts = @_;
+# 	my $gid = $opts{gid};
+# 	return unless $gid;
 	
-	my $genome = $coge->resultset('Genome')->find($gid);
-	return unless ($genome);
+# 	my $genome = $coge->resultset('Genome')->find($gid);
+# 	return unless ($genome);
 
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-	$template->param( ADD_TO_NOTEBOOK => 1 );
-	$template->param( GID      => $genome->id );
+# 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+# 	$template->param( ADD_TO_NOTEBOOK => 1 );
+# 	$template->param( GID      => $genome->id );
 
-	return $template->output;
-}
+# 	return $template->output;
+# }
 
-sub add_genome_to_notebook {
-	my %opts = @_;
-	my $gid  = $opts{gid};
-	my $nid  = $opts{nid};
-	# print STDERR "add_genome_to_notebook: $gid $nid\n";
-	return unless ($gid and $nid);
+# sub add_genome_to_notebook {
+# 	my %opts = @_;
+# 	my $gid  = $opts{gid};
+# 	my $nid  = $opts{nid};
+# 	# print STDERR "add_genome_to_notebook: $gid $nid\n";
+# 	return unless ($gid and $nid);
 	
-	my $genome = $coge->resultset('Genome')->find($gid);
-	return unless ($genome);
+# 	my $genome = $coge->resultset('Genome')->find($gid);
+# 	return unless ($genome);
 
-	my $list = $coge->resultset('List')->find($nid);
-	return unless ($list);
+# 	my $list = $coge->resultset('List')->find($nid);
+# 	return unless ($list);
 	
-	my $conn = $coge->resultset('ListConnector')->find_or_create({
-		parent_id => $nid,
-		child_id => $gid,
-		child_type => 2, #FIXME hardcoded "genome" child type
-	});
-	return unless $conn;
+# 	my $conn = $coge->resultset('ListConnector')->find_or_create({
+# 		parent_id => $nid,
+# 		child_id => $gid,
+# 		child_type => 2, #FIXME hardcoded "genome" child type
+# 	});
+# 	return unless $conn;
 	
-	return 1;
-}
+# 	return 1;
+# }
 
-sub remove_genome_from_notebook {
-	my %opts  = @_;
-	my $gid  = $opts{gid};
-	my $nid  = $opts{nid};
-	# print STDERR "remove_genome_from_notebook: $gid $nid\n";
-	return unless ($gid and $nid);
+# sub remove_genome_from_notebook {
+# 	my %opts  = @_;
+# 	my $gid  = $opts{gid};
+# 	my $nid  = $opts{nid};
+# 	# print STDERR "remove_genome_from_notebook: $gid $nid\n";
+# 	return unless ($gid and $nid);
 
-	my $genome = $coge->resultset('Genome')->find($gid);
-	return unless ($genome);
+# 	my $genome = $coge->resultset('Genome')->find($gid);
+# 	return unless ($genome);
 
-	my $list = $coge->resultset('List')->find($nid);
-	return unless ($list);
+# 	my $list = $coge->resultset('List')->find($nid);
+# 	return unless ($list);
 	
-	my $conn = $coge->resultset('ListConnector')->find_or_create({
-		parent_id => $nid,
-		child_id => $gid,
-		child_type => 2, #FIXME hardcoded "genome" child type
-	});
-	return unless $conn;
-	$conn->delete;
+# 	my $conn = $coge->resultset('ListConnector')->find_or_create({
+# 		parent_id => $nid,
+# 		child_id => $gid,
+# 		child_type => 2, #FIXME hardcoded "genome" child type
+# 	});
+# 	return unless $conn;
+# 	$conn->delete;
 	
-	return 1;
-}
+# 	return 1;
+# }
 
-sub search_notebooks { 
-	my %opts = @_;
-	my $gid 		= $opts{gid};
-	my $search_term	= $opts{search_term};
-	my $timestamp 	= $opts{timestamp};
-#	print STDERR "$ugid $search_term $timestamp\n";
-	return unless $gid;
+# sub search_notebooks { 
+# 	my %opts = @_;
+# 	my $gid 		= $opts{gid};
+# 	my $search_term	= $opts{search_term};
+# 	my $timestamp 	= $opts{timestamp};
+# #	print STDERR "$ugid $search_term $timestamp\n";
+# 	return unless $gid;
 	
-	my $genome = $coge->resultset('Genome')->find($gid);
-	return unless ($genome);
+# 	my $genome = $coge->resultset('Genome')->find($gid);
+# 	return unless ($genome);
 
-	# Get lists already containing this genome
-	my %exists = map { $_->id => 1 } $genome->lists;
+# 	# Get lists already containing this genome
+# 	my %exists = map { $_->id => 1 } $genome->lists;
 	
-	my @lists;
-	my $num_results;
-	my $group_str = join(',', map { $_->id } $USER->groups);
+# 	my @lists;
+# 	my $num_results;
+# 	my $group_str = join(',', map { $_->id } $USER->groups);
 	
-	# Try to get all items if blank search term
-	if (not $search_term) {
-		# Get all lists
-		if ($USER->is_admin) {
-			$num_results = $coge->resultset("List")->count;
-			if ($num_results < $MAX_SEARCH_RESULTS) {
-				@lists = $coge->resultset("List")->all;
-			}
-		}
-		else {
-			my $sql = "locked=0 AND (restricted=0 OR user_group_id IN ( $group_str ))";
-			$num_results = $coge->resultset("List")->count_literal($sql);
-			if ($num_results < $MAX_SEARCH_RESULTS) {
-				@lists = $coge->resultset("List")->search_literal($sql);
-			}
-		}
-	}
-	# Perform search
-	else {
-		$search_term = '%'.$search_term.'%';
-		if ($USER->is_admin) {
-			@lists = $coge->resultset("List")->search(
-				\[ 'name LIKE ? OR description LIKE ?', 
-				['name', $search_term ], ['description', $search_term] ]);		
-		}
-		else {
-			@lists = $coge->resultset("List")->search_literal("locked=0 AND (restricted=0 OR user_group_id IN ( $group_str )) AND (name LIKE '$search_term' OR description LIKE '$search_term')");
-		}
-		$num_results = @lists;
-	}
+# 	# Try to get all items if blank search term
+# 	if (not $search_term) {
+# 		# Get all lists
+# 		if ($USER->is_admin) {
+# 			$num_results = $coge->resultset("List")->count;
+# 			if ($num_results < $MAX_SEARCH_RESULTS) {
+# 				@lists = $coge->resultset("List")->all;
+# 			}
+# 		}
+# 		else {
+# 			my $sql = "locked=0 AND (restricted=0 OR user_group_id IN ( $group_str ))";
+# 			$num_results = $coge->resultset("List")->count_literal($sql);
+# 			if ($num_results < $MAX_SEARCH_RESULTS) {
+# 				@lists = $coge->resultset("List")->search_literal($sql);
+# 			}
+# 		}
+# 	}
+# 	# Perform search
+# 	else {
+# 		$search_term = '%'.$search_term.'%';
+# 		if ($USER->is_admin) {
+# 			@lists = $coge->resultset("List")->search(
+# 				\[ 'name LIKE ? OR description LIKE ?', 
+# 				['name', $search_term ], ['description', $search_term] ]);		
+# 		}
+# 		else {
+# 			@lists = $coge->resultset("List")->search_literal("locked=0 AND (restricted=0 OR user_group_id IN ( $group_str )) AND (name LIKE '$search_term' OR description LIKE '$search_term')");
+# 		}
+# 		$num_results = @lists;
+# 	}
 
-	# Limit number of results display
-	if ($num_results > $MAX_SEARCH_RESULTS) {
-		return encode_json({
-					timestamp => $timestamp,
-					html => "<option disabled='disabled'>$num_results results, please refine your search.</option>"
-		});
-	}
+# 	# Limit number of results display
+# 	if ($num_results > $MAX_SEARCH_RESULTS) {
+# 		return encode_json({
+# 					timestamp => $timestamp,
+# 					html => "<option disabled='disabled'>$num_results results, please refine your search.</option>"
+# 		});
+# 	}
 	
-	# Build select items out of results	
-	my $html = '';
-	foreach my $l (sort listcmp @lists) {
-		my $disable = $exists{$l->id} ? "disabled='disabled'" : '';
-		$html .= "<option $disable value='" . $l->id . "'>" . $l->info . "</option><br>\n";	
-	}
+# 	# Build select items out of results	
+# 	my $html = '';
+# 	foreach my $l (sort listcmp @lists) {
+# 		my $disable = $exists{$l->id} ? "disabled='disabled'" : '';
+# 		$html .= "<option $disable value='" . $l->id . "'>" . $l->info . "</option><br>\n";	
+# 	}
 	
-	return encode_json({timestamp => $timestamp, html => $html});
-}
+# 	return encode_json({timestamp => $timestamp, html => $html});
+# }
 
-sub get_notebook_preview {
-	my %opts  = @_;
-	my $nid = $opts{nid};
+# sub get_notebook_preview {
+# 	my %opts  = @_;
+# 	my $nid = $opts{nid};
 
-	my $list = $coge->resultset('List')->find($nid);
-	my $html = '';
-	if ($list) {
-		my $contents_summary = $list->contents_summary_html;
-		$html .= "Notebook <b>'" . $list->name . "'</b> (id" . $list->id . ') ';
-		if ($contents_summary) {
-			$html .= 'contains:<div style="padding-left: 10px; padding-top: 3px;">' . $contents_summary . '</div>';
-		}
-		else {
-			$html .= 'is empty.';
-		}	
-	}
+# 	my $list = $coge->resultset('List')->find($nid);
+# 	my $html = '';
+# 	if ($list) {
+# 		my $contents_summary = $list->contents_summary_html;
+# 		$html .= "Notebook <b>'" . $list->name . "'</b> (id" . $list->id . ') ';
+# 		if ($contents_summary) {
+# 			$html .= 'contains:<div style="padding-left: 10px; padding-top: 3px;">' . $contents_summary . '</div>';
+# 		}
+# 		else {
+# 			$html .= 'is empty.';
+# 		}	
+# 	}
 
-	return $html;	
-}
+# 	return $html;	
+# }
 
-sub get_notebooks {
-	my %opts = @_;
-	my $gid  = $opts{gid};
-	my $genome  = $opts{genome};
-	return unless ($gid or $genome);
+# sub get_notebooks {
+# 	my %opts = @_;
+# 	my $gid  = $opts{gid};
+# 	my $genome  = $opts{genome};
+# 	return unless ($gid or $genome);
 
-	unless ($genome) {
-		$genome = $coge->resultset('Genome')->find($gid);
-		return unless ($genome);
-	}
+# 	unless ($genome) {
+# 		$genome = $coge->resultset('Genome')->find($gid);
+# 		return unless ($genome);
+# 	}
 
-	my @lists = $genome->lists;
+# 	my @lists = $genome->lists;
 
-	my @rows;
-	foreach my $list (sort listcmp @lists) {
-		#next if ($list->restricted && !$USER->is_admin && !$is_user && !$USER->has_access(list => $list));
-		next if ($list->is_owner and !$USER->is_admin);
+# 	my @rows;
+# 	foreach my $list (sort listcmp @lists) {
+# 		#next if ($list->restricted && !$USER->is_admin && !$is_user && !$USER->has_access(list => $list));
+# 		next if ($list->is_owner and !$USER->is_admin);
 
-		my $id = $list->id;
-		my %row;
-		$row{NOTEBOOK_INFO} = qq{<span class="link" onclick='window.open("NotebookView.pl?lid=$id")'>} . $list->info . "</span>";
-		$row{NOTEBOOK_ID} = $id;
+# 		my $id = $list->id;
+# 		my %row;
+# 		$row{NOTEBOOK_INFO} = qq{<span class="link" onclick='window.open("NotebookView.pl?lid=$id")'>} . $list->info . "</span>";
+# 		$row{NOTEBOOK_ID} = $id;
 
-		push @rows, \%row;
-	}
-	push @rows, {NOTEBOOK_INFO => '<span style="font-style:italic;color:gray;">None</span>'} unless (@rows);
+# 		push @rows, \%row;
+# 	}
+# 	push @rows, {NOTEBOOK_INFO => '<span style="font-style:italic;color:gray;">None</span>'} unless (@rows);
 
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-	$template->param( DO_NOTEBOOKS => 1, NOTEBOOK_LOOP => \@rows );
-	return $template->output;
-}
+# 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+# 	$template->param( DO_NOTEBOOKS => 1, NOTEBOOK_LOOP => \@rows );
+# 	return $template->output;
+# }
 
 sub get_experiments {
 	my %opts = @_;
@@ -785,6 +784,7 @@ sub get_experiments {
 	}
 
 	my @experiments = $genome->experiments;
+	return "" unless @experiments;
 
 	my @rows;
 	foreach my $exp (sort experimentcmp @experiments) {
@@ -797,10 +797,11 @@ sub get_experiments {
 		
 		push @rows, \%row;
 	}
-	push @rows, {EXPERIMENT_INFO => '<span style="font-style:italic;color:gray;">None</span>'} unless (@rows);
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-	$template->param( DO_EXPERIMENTS => 1, EXPERIMENT_LOOP => \@rows );
+	$template->param( DO_EXPERIMENTS => 1,
+					  EXPERIMENT_LOOP => \@rows
+	);
 	return $template->output;
 }
 
@@ -838,7 +839,6 @@ sub generate_body {
 
 	my ($first_chr) = $genome->chromosomes;
 
-
 	$template->param(
 		GID 			=> $gid,
 		CHR 			=> ($first_chr ? $first_chr : ''),
@@ -856,20 +856,20 @@ sub generate_body {
 }
 
 # FIXME these comparison routines are duplicated elsewhere
-sub genomecmp {
-	no warnings 'uninitialized'; # disable warnings for undef values in sort
-	$a->organism->name cmp $b->organism->name || versioncmp($b->version, $a->version) || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id
-}
+# sub genomecmp {
+# 	no warnings 'uninitialized'; # disable warnings for undef values in sort
+# 	$a->organism->name cmp $b->organism->name || versioncmp($b->version, $a->version) || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id
+# }
 
 sub experimentcmp {
 	no warnings 'uninitialized'; # disable warnings for undef values in sort
 	versioncmp($b->version, $a->version) || $a->name cmp $b->name || $b->id cmp $a->id
 }
 
-sub listcmp {
-	no warnings 'uninitialized'; # disable warnings for undef values in sort
-	$a->name cmp $b->name
-}
+# sub listcmp {
+# 	no warnings 'uninitialized'; # disable warnings for undef values in sort
+# 	$a->name cmp $b->name
+# }
 
 # FIXME this routine is duplicated elsewhere
 sub commify {

@@ -1,9 +1,9 @@
 #! /usr/bin/perl -w
 use strict;
+use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::genetic_code;
-use CoGeX;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;

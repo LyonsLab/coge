@@ -810,13 +810,27 @@ sub send_to_list    #send to list
 		user_group_id => $USER->owner_group->id,
 		restricted => 1
 	  } );
+	return unless $list;
 	  
+	# Make this user the owner of the new list
+	my $conn = $coge->resultset('UserConnector')->create(
+	  { parent_id => $USER->id,
+	  	parent_type => 5, # FIXME hardcoded to "user"
+	  	child_id => $list->id,
+	  	child_type => 1, # FIXME hardcoded to "list"
+	  	role_id => 2, # FIXME hardcoded to "owner"
+	  } );
+	return unless $conn;
+	  
+	# Add each feature to the new list
 	foreach my $accn (split(/,/, $accn_list)) {
 		next if $accn =~ /no$/;
 		my ($gid) = split('_', $accn);
-		$coge->resultset('ListConnector')->create( { parent_id => $list->id, child_id => $gid, child_type => 2 } ); #FIXME hardcoded type!
+		my $conn = $coge->resultset('ListConnector')->create( { parent_id => $list->id, child_id => $gid, child_type => 2 } ); #FIXME hardcoded type!
+		return unless $conn;
 	}
 	
+	# Record in the log
 	$coge->resultset('Log')->create( { user_id => $USER->id, page => $PAGE_NAME, description => 'create list from genomes id' . $list->id } );	
 	
 	my $url = "NotebookView.pl?lid=" .  $list->id;

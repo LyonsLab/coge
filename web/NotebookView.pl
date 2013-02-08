@@ -14,9 +14,9 @@ use DBIxProfiler;
 use Data::Dumper;
 use File::Path;
 use File::stat;
+use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
-use CoGeX;
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
@@ -64,6 +64,7 @@ $USER = undef;
 my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
 $link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );
 
+my $node_types = CoGeX::node_types();
 
 %FUNCTION = (
 	gen_html          	       	=> \&gen_html,
@@ -177,14 +178,14 @@ sub get_list_info {
 	my $user_can_edit = $USER->is_admin || (!$list->locked && $USER->is_owner_editor(list => $lid));
 
 	if ($user_can_edit) {
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_list_info();">Edit Info</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="edit_list_info();">Edit Info</span>};
 	}
 	if ($USER->is_admin || (!$list->locked && $USER->is_owner(list => $lid))) {
 		if ( $list->restricted ) {
-			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_list_public();">Make Public</span>};
+			$html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_list_public();">Make Public</span>};
 		}
 		else {
-			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_list_private();">Make Private</span>};
+			$html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_list_private();">Make Private</span>};
 		}
 		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_list();">Delete</span>};
 	}
@@ -289,19 +290,19 @@ sub get_annotations {
 	my %opts = @_;
 	my $lid  = $opts{lid};
 	return unless ($lid);
-	my ($list) = $coge->resultset('List')->find($lid);	
+	my ($list) = $coge->resultset('List')->find($lid);
 	return unless ($list && ($USER->has_access(list=>$lid) || !$list->restricted));
-	
-
-	return unless $list;
 	
 	my $user_can_edit = $USER->is_admin || (!$list->locked && $USER->is_owner_editor(list => $lid));
 	
 	my %groups;
+	my $num_annot = 0;
 	foreach my $a ( $list->annotations ) {
 		my $group = (defined $a->type->group ? $a->type->group->name . ':' . $a->type->name : $a->type->name);
 		push @{$groups{$group}}, $a;
+		$num_annot++;
 	}
+	return unless ($num_annot or $user_can_edit);
 	
 	my $html = '<table id="list_annotation_table" class="ui-widget-content ui-corner-all small" style="max-width:400px;overflow:hidden;word-wrap:break-word;border-spacing:0;border-collapse:collapse;"><thead style="display:none"></thead><tbody>';
 	foreach my $group (sort keys %groups) {
@@ -332,7 +333,7 @@ sub get_annotations {
 	$html .= '</tbody></table>';
 	
 	if ($user_can_edit) {
-		$html .= qq{<span onClick="add_annotation_dialog();" style="font-size: .75em" class='ui-button ui-button-go ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add Annotation</span>};
+		$html .= qq{<span onClick="add_annotation_dialog();" style="font-size: .75em" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add Annotation</span>};
 	}
 
 	return $html;
@@ -506,47 +507,45 @@ sub get_list_contents {
 	my $user_can_edit = $USER->is_admin || (!$list->locked && $USER->is_owner_editor(list => $lid));
 	
 	my $html;
+	my $num_items = 0;
 	my $first = 1;
 	$html = '<table id="list_contents_table" class="small ui-widget-content ui-corner-all" style="border-spacing:0;border-collapse:collapse;"><thead style="display:none;"></thead><tbody>';
 
-	my $list_types = CoGeX::list_child_types();
 	my $genome_count = $list->genomes(count=>1); #EL: moved outside of loop; massive speed improvement due to cost of this call
 	my $delete_count=0;
 	foreach my $genome ( sort genomecmp $list->genomes ) {
-		if ($genome->deleted)
-		  {
-		    $delete_count++;
-		    next;
-		  }
 		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' rowspan='$genome_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Genomes ($genome_count):</th>" : '');
+		
+#		if ($genome->deleted) {
+#		    $delete_count++;
+#		    next;
+#		}
+		
 		my $gid = $genome->id;
 		$html .= qq{<td class='data5'><span id='genome$gid' class='link' onclick="window.open('GenomeInfo.pl?gid=$gid')">} . $genome->info . "</span></td>";
 		if ($user_can_edit) {
-			$html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {item_type: '".$list_types->{genome}."', item_id: '$gid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
+			$html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {item_type: '".$node_types->{genome}."', item_id: '$gid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
 		}
 		$html .= '</tr>';
+		$num_items++;
 	}
-	if ($delete_count)
-	  {
-	    $html .= "<tr valign='top'><td class='data5'><span>$delete_count genomes from this note book are deleted</span></td>";
-	    #need to add funtionality that clicking on the "X" will remove the deleted items from the notebook
-	    if ($user_can_edit) {
-	      $html .= "<td style='padding-left:20px;'><span onClick=\"\" class='link ui-icon ui-icon-closethick'></span></td>";
-	    }
-	    $html .= '</tr>';
-	  }
+#	if ($delete_count) {
+#	    $html .= "<tr valign='top'><th></th><td class='data5'><span>$delete_count genomes from this notebook are deleted</span></td>";
+#	    #TODO add functionality that clicking on the "X" will remove the deleted items from the notebook
+#	    $html .= '</tr>';
+#	}
 	
 	$first = 1;
 	my $exp_count = $list->experiments(count=>1); #EL: moved outside of loop; massive speed improvement
 	foreach my $experiment (sort experimentcmp $list->experiments ) {
-
 		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' rowspan='$exp_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Experiments ($exp_count):</th>" : '');
 		my $eid = $experiment->id;
 		$html .= qq{<td class='data5'><span id='experiment$eid' class='link' onclick="window.open('ExperimentView.pl?eid=$eid')">} . $experiment->info . "</span></td>";
 		if ($user_can_edit) {
-			$html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '".$list_types->{experiment}."', item_id: '$eid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
+			$html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '".$node_types->{experiment}."', item_id: '$eid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
 		}
 		$html .= '</tr>';
+		$num_items++;
 	}
 	$first = 1;
 	my $feat_count = $list->features(count=>1); #EL: moved outside of loop; massive speed improvement
@@ -556,9 +555,10 @@ sub get_list_contents {
 		my $fid = $feature->id;
 		$html .= qq{<td class='data5'><span id='feature$fid' class='link' onclick="window.open('FeatView.pl?fid=$fid')">} . $feature->info . "</span></td>";
 		if ($user_can_edit) {
-			$html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '".$list_types->{feature}."', item_id: '$fid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
+			$html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '".$node_types->{feature}."', item_id: '$fid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
 		}
 		$html .= '</tr>';
+		$num_items++;
 	}
 	$first = 1;
 	my $list_count = $list->lists(count=>1);
@@ -567,18 +567,20 @@ sub get_list_contents {
 		my $child_id = $list->id;
 		$html .= qq{<td class='data5'><span id='list$child_id' class='link' onclick="window.open('$PAGE_TITLE.pl?lid=$child_id')">} . $list->info . "</span></td>";
 		if ($user_can_edit) {
-			$html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '".$list_types->{list}."', item_id: '$child_id'});\" class='link ui-icon ui-icon-closethick'></span></td>";
+			$html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '".$node_types->{list}."', item_id: '$child_id'});\" class='link ui-icon ui-icon-closethick'></span></td>";
 		}
 		$html .= '</tr>';
+		$num_items++;
 	}		
 
 	$html .= '</tbody></table>';
 	
 	if ($user_can_edit) {
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="add_list_items();"><span class="ui-icon ui-icon-plus"></span>Add Items</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-icon-left ui-corner-all' onClick="add_list_items();"><span class="ui-icon ui-icon-plus"></span>Add Items</span>};
 		
 	}
 	
+	return unless ($num_items or $user_can_edit);
 	return $html;
 }
 
@@ -660,10 +662,9 @@ sub search_mystuff {
 	
 	# Get my stuff
 	my %mystuff;
-	my $child_types = CoGeX::list_child_types();
 	my $num_results = 0;
 	
-	my $type = $child_types->{experiment};
+	my $type = $node_types->{experiment};
 	foreach my $e ($USER->experiments) {#(sort experimentcmp $USER->experiments) {
 		if (!$search_term or $e->info =~ /$search_term/i) {
 			push @{$mystuff{$type}}, $e;
@@ -671,7 +672,7 @@ sub search_mystuff {
 		}
 	}
 	
-	$type = $child_types->{genome};
+	$type = $node_types->{genome};
 	foreach my $g ($USER->genomes) {#(sort genomecmp $USER->genomes) {
 		if (!$search_term or $g->info =~ /$search_term/i) {
 			push @{$mystuff{$type}}, $g;
@@ -679,7 +680,7 @@ sub search_mystuff {
 		}
 	}
 	
-	$type = $child_types->{feature};
+	$type = $node_types->{feature};
 	foreach my $f ($USER->features) {#(sort featurecmp $USER->features) {
 		if (!$search_term or $f->info =~ /$search_term/i) {
 			push @{$mystuff{$type}}, $f;
@@ -687,7 +688,7 @@ sub search_mystuff {
 		}
 	}
 	
-	$type = $child_types->{list};
+	$type = $node_types->{list};
 	foreach my $l ($USER->lists) {#(sort listcmp $USER->lists) {
 		next if ($l->id == $list->id); # can't add a list to itself!
 		next if ($l->locked); # exclude user's master list
@@ -708,7 +709,7 @@ sub search_mystuff {
 	# Build select items out of results
 	my $html;
 	foreach my $type (sort keys %mystuff) {
-		my ($type_name) = grep { $child_types->{$_} eq $type } keys %$child_types;
+		my ($type_name) = grep { $node_types->{$_} eq $type } keys %$node_types;
 		$type_name = 'notebook' if ($type_name eq 'list');
 		my $type_count = @{$mystuff{$type}};
 		$html .= "<optgroup label='" . ucfirst($type_name) . "s ($type_count)'>";
@@ -746,7 +747,7 @@ sub search_genomes {
 		$num_results = $coge->resultset("Genome")->count;
 		if ($num_results < $MAX_SEARCH_RESULTS) {
 			my @genomes = $coge->resultset("Genome")->all;
-			map { $unique{$_->id} = $_ if (!$_->restricted or $USER->has_access_to_genome($_)) } @genomes;
+			map { $unique{$_->id} = $_ if (!$_->deleted and (!$_->restricted or $USER->has_access_to_genome($_))) } @genomes;
 		}
 	}
 	# Perform search
@@ -764,9 +765,9 @@ sub search_genomes {
 			['name', $search_term], ['description', $search_term] ]);
 
 		# Combine matching genomes with matching organism genomes, preventing duplicates
-		map { $unique{$_->id} = $_ if (!$_->restricted or $USER->has_access_to_genome($_)) } @genomes;
+		map { $unique{$_->id} = $_ if (!$_->deleted and (!$_->restricted or $USER->has_access_to_genome($_))) } @genomes;
 		foreach my $organism (@organisms) {
-			map { $unique{$_->id} = $_ if (!$_->restricted or $USER->has_access_to_genome($_)) } $organism->genomes;
+			map { $unique{$_->id} = $_ if (!$_->deleted and (!$_->restricted or $USER->has_access_to_genome($_))) } $organism->genomes;
 		}
 		
 		$num_results = keys %unique;
@@ -781,11 +782,10 @@ sub search_genomes {
 	}
 	
 	# Build select options out of results
-	my $child_types = CoGeX::list_child_types;
 	my $html;
 	foreach my $g (sort genomecmp values %unique) {
 		my $disable = $exists{$g->id} ? "disabled='disabled'" : '';
-		my $item_spec = $child_types->{genome} . ':' . $g->id; 
+		my $item_spec = $node_types->{genome} . ':' . $g->id; 
 		$html .= "<option $disable value='$item_spec'>" . $g->info . "</option><br>\n";	
 	}
 	$html = "<option disabled='disabled'>No matching items</option>" unless $html;
@@ -814,7 +814,7 @@ sub search_experiments {
 		# Get all experiments
 		$num_results = $coge->resultset("Experiment")->count;
 		if ($num_results < $MAX_SEARCH_RESULTS) {
-			@experiments = $coge->resultset("Experiment")->all;
+			@experiments = $coge->resultset("Experiment")->search({deleted => 0});
 		}
 	}
 	# Perform search
@@ -827,8 +827,8 @@ sub search_experiments {
 		# Get all public experiments
 		$search_term = '%'.$search_term.'%';
 		push @experiments, $coge->resultset("Experiment")->search(
-			\[ 'restricted=? AND (name LIKE ? OR description LIKE ?)', 
-			['restricted', 0], ['name', $search_term ], ['description', $search_term] ]);
+			\[ 'restricted=? AND deleted=? AND (name LIKE ? OR description LIKE ?)', 
+			['restricted', 0], ['deleted', 0], ['name', $search_term ], ['description', $search_term] ]);
 			
 		$num_results = @experiments;
 	}
@@ -842,11 +842,10 @@ sub search_experiments {
 	}
 	
 	# Build select items out of results
-	my $child_types = CoGeX::list_child_types;
 	my $html;
 	foreach my $exp (sort experimentcmp @experiments) {
 		my $disable = $exists{$exp->id} ? "disabled='disabled'" : '';
-		my $item_spec = $child_types->{experiment} . ':' . $exp->id; 
+		my $item_spec = $node_types->{experiment} . ':' . $exp->id; 
 		$html .= "<option $disable value='$item_spec'>" . $exp->info . "</option><br>\n";	
 	}
 	$html = "<option disabled='disabled'>No matching items</option>" unless $html;
@@ -897,13 +896,12 @@ sub search_features {
 	}
 
 	# Build select items out of results
-	my $child_types = CoGeX::list_child_types;
 	my $html;
 	my %seen;
 	foreach my $f (sort featurecmp @fnames) {
 		next if ($seen{$f->feature_id}++);
 		my $disable = $exists{$f->feature_id} ? "disabled='disabled'" : '';
-		my $item_spec = $child_types->{feature} . ':' . $f->feature_id; 
+		my $item_spec = $node_types->{feature} . ':' . $f->feature_id; 
 		$html .= "<option $disable value='$item_spec'>" . $f->feature->info . "</option><br>\n";	
 	}
 	$html = "<option disabled='disabled'>No matching items</option>" unless $html;
@@ -956,12 +954,11 @@ sub search_lists { # list of lists
 	}
 	
 	# Build select items out of results
-	my $child_types = CoGeX::list_child_types;
 	my $html;
 	foreach my $l (sort listcmp @lists) {
 		next if ($l->id == $lid); # can't add a list to itself!
 		my $disable = $exists{$l->id} ? "disabled='disabled'" : '';
-		my $item_spec = $child_types->{list} . ':' . $l->id;
+		my $item_spec = $node_types->{list} . ':' . $l->id;
 		$html .= "<option $disable value='$item_spec'>" . $l->info . "</option><br>\n";	
 	}
 	$html = "<option disabled='disabled'>No matching items</option>" unless $html;

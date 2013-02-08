@@ -8,9 +8,9 @@ use Digest::MD5 qw(md5_base64);
 #use URI::Escape;
 use Data::Dumper;
 use File::Path;
+use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
-use CoGeX;
 
 no warnings 'redefine';
 
@@ -89,18 +89,30 @@ sub create_list {
 	return "No specified type!" unless $opts{typeid};
 	
 	# Get owner user group for the new list
-	my $ug = $USER->owner_group;
-	return "Internal error!  Please email $P->{SUPPORT_EMAIL} with a problem description.\n" unless $ug;
+#	my $ug = $USER->owner_group;
+#	return "Internal error!  Please email $P->{SUPPORT_EMAIL} with a problem description.\n" unless $ug;
 	
 	# Create the new list
 	my $list = $coge->resultset('List')->create( 
 	  { name => $opts{name},
 		description => $opts{desc},
 		list_type_id => $opts{typeid},
-		user_group_id => $ug->id,
+#		user_group_id => $ug->id,
 		restricted => 1
 	  } );
-	
+	return unless $list;
+	  
+	# Make this user the owner of the new list
+	my $conn = $coge->resultset('UserConnector')->create(
+	  { parent_id => $USER->id,
+	  	parent_type => 5, # FIXME hardcoded to "user"
+	  	child_id => $list->id,
+	  	child_type => 1, # FIXME hardcoded to "list"
+	  	role_id => 2, # FIXME hardcoded to "owner"
+	  } );
+	return unless $conn;
+	  
+	# Record in the log
 	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'create notebook id' . $list->id );
 
 	return 1;
@@ -111,11 +123,7 @@ sub delete_list {
 	my $lid = $opts{lid};
 	return "Must have valid notebook id\n" unless ($lid);
 	
-	# Get owner user group for the new list
-	my $ug = $USER->owner_group; 
-	
 	# Delete the list and associated connectors
-	#FIXME add some error checking/logging here
 	my $list = $coge->resultset('List')->find($lid);
 	return 0 if ($list->locked);
 	$list->delete;
@@ -139,7 +147,7 @@ sub get_lists_for_user {
 	@lists = sort listcmp @lists;
 	push @lists, sort listcmp @admin_lists;
 	foreach my $list (@lists ) {
-		next if ($list->is_owner && !$USER->is_admin); # skip owner lists
+		#next if ($list->is_owner && !$USER->is_admin); # skip owner lists
 		next if $seen_list_ids{$list->id};
 		$seen_list_ids{$list->id}=1;
 		my $name = qq{<span class=link onclick='window.open("NotebookView.pl?lid=} . $list->id . qq{")'>} . $list->name . "</span>";
@@ -153,7 +161,7 @@ sub get_lists_for_user {
 			TYPE  => ( $list->type ? $list->type->name : '' ),
 			ANNO  => join( "<br>", map { $_->type->name . ": " . $_->annotation . ($_->image ? ' (image)' : '') } sort sortAnno $list->annotations ),
 			DATA  => $list->data_summary(),
-			GROUP => $list->group->info_html,
+			#GROUP => $list->group->info_html,
 			RESTRICTED => ($list->restricted ? 'yes' : 'no'),
 			EDIT_BUTTON => $list->locked ?
 			"<span class='link ui-icon ui-icon-locked' onclick=\"alert('This list is locked and cannot be edited.')\"></span>" :

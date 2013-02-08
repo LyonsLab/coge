@@ -3,6 +3,7 @@
 no warnings('redefine');
 
 use strict;
+use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::blast_report;
@@ -11,7 +12,6 @@ use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
 use CoGe::Graphics::Feature::HSP;
-use CoGeX;
 use CGI;
 #use CGI::Ajax;
 use JSON::XS;

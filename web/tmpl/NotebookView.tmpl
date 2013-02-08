@@ -439,48 +439,51 @@ function image_preview(obj, preview) {
 </SCRIPT>
 
 <table>
- <tr valign="top">
-  <td>
-   <span style="color:dimgray;font-weight:bold;">Notebook Info</span><br>
-   <div id="list_info">
-    <TMPL_VAR NAME="LIST_INFO">
-   </div>
-  </td>
-  <td style="padding-left:20px;">
-   <span style="color:dimgray;font-weight:bold;">Annotations</span><br>
-   <div id='list_annotations'>
-    <TMPL_VAR NAME="LIST_ANNOTATIONS">
-   </div>
-  </td>
-  </tr>
+	<tr valign="top">
+		<td>
+			<span style="color:dimgray;font-weight:bold;">Notebook Info</span><br>
+			<div id="list_info">
+				<TMPL_VAR NAME="LIST_INFO">
+			</div>
+		</td>
+		<td style="padding-left:20px;">
+			<TMPL_IF NAME="LIST_ANNOTATIONS">
+				<span style="color:dimgray;font-weight:bold;">Annotations</span><br>
+				<div id='list_annotations'>
+					<TMPL_VAR NAME="LIST_ANNOTATIONS">
+				</div>
+			</TMPL_IF>
+		</td>
+	</tr>
 </table>
 
 <br>
 
-<div style="padding-left:5px;">
- <span style="color:dimgray;font-weight:bold;">Contents</span><br>
- <div id="list_contents">
-  <TMPL_VAR NAME="LIST_CONTENTS">
- </div>
-</div>
-
-<br> 
-<div class='small' style="padding-left:5px;">
-Send contents to:  
- <select name="checked_action" id="checked_action">
-  <option value="send_to_blast">CoGeBlast (genomes only)</option>
-  <option value="send_to_featlist">FeatList (features only)</option>
-  <option value="send_to_msa">CoGeAlign (features only)</option>
-  <option value="send_to_gevo">GEvo (features only)</option>
-  <option value="send_to_synfind">SynFind (genomes & first feature)</option>
-  <option value="send_to_featmap">Genome Map (features only)</option>
-  <option value="send_to_codeon">Coding Evolution (features only)</option>
-  <option value="send_to_fasta">FASTA Sequences (genomes only)</option>
-  <option value="send_to_csv">Export CSV (genomes only)</option>
-  <option value="send_to_xls">Export XLS (genomes only)</option>
- </select>
- <span class='ui-button ui-corner-all ui-button-icon-right ui-button-go' onclick="send_list_to();"><span class="ui-icon ui-icon-extlink"></span>Go</span>
-</div>
+<TMPL_IF NAME="LIST_CONTENTS">
+	<div style="padding-left:5px;">
+		<span style="color:dimgray;font-weight:bold;">Contents</span><br>
+		<div id="list_contents">
+			<TMPL_VAR NAME="LIST_CONTENTS">
+		</div>
+	</div>
+	<br> 
+	<div class='small' style="padding-left:5px;">
+		Send contents to:  
+		<select name="checked_action" id="checked_action">
+			<option value="send_to_blast">CoGeBlast (genomes only)</option>
+			<option value="send_to_featlist">FeatList (features only)</option>
+			<option value="send_to_msa">CoGeAlign (features only)</option>
+			<option value="send_to_gevo">GEvo (features only)</option>
+			<option value="send_to_synfind">SynFind (genomes & first feature)</option>
+			<option value="send_to_featmap">Genome Map (features only)</option>
+			<option value="send_to_codeon">Coding Evolution (features only)</option>
+			<option value="send_to_fasta">FASTA Sequences (genomes only)</option>
+			<option value="send_to_csv">Export CSV (genomes only)</option>
+			<option value="send_to_xls">Export XLS (genomes only)</option>
+		</select>
+		<span class='ui-button ui-corner-all ui-button-icon-right' onclick="send_list_to();"><span class="ui-icon ui-icon-extlink"></span>Go</span>
+	</div>
+</TMPL_IF>
 
 <div id="list_info_edit_box" class="dialog_box" title="Edit Notebook Info" style="display:none;"></div>
 
@@ -491,8 +494,8 @@ Send contents to:
 <div id="list_delete_box" class="dialog_box" style='display:none;' align='center'>
 Are you sure you want to permanently delete this notebook?<p>
  <div>
-  <span style="font-size:.75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_list();">Yes</span>
-  <span style="font-size:.75em" class='ui-button ui-button-go ui-corner-all' onClick="$('#list_delete_box').dialog('close');">No</span>
+  <span style="font-size:.75em" class='ui-button ui-corner-all' onClick="delete_list();">Yes</span>
+  <span style="font-size:.75em" class='ui-button ui-corner-all' onClick="$('#list_delete_box').dialog('close');">No</span>
  </div>
 </div>
 
@@ -521,7 +524,7 @@ Are you sure you want to permanently delete this notebook?<p>
  <tr> 
 </table>
 <br>
-<span onClick="update_list_info();" class='ui-button ui-corner-all ui-button-go'>Update</span>
+<span onClick="update_list_info();" class='ui-button ui-corner-all'>Update</span>
 </TMPL_IF> <!-- EDIT_LIST_INFO -->
 
 
@@ -568,7 +571,7 @@ $(document).ready(function() {
    <td><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span></td>
   </tr>
  </table>
- <span href="javascript:void(0)" onClick="add_selected_items('select_mystuff_items');" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
+ <span href="javascript:void(0)" onClick="add_selected_items('select_mystuff_items');" class='ui-button ui-corner-all'>Add Selected Items</span>
 </div> <!-- tab-1 -->
 
 <div id="tab-2">
@@ -591,7 +594,7 @@ $(document).ready(function() {
    <td><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span></td>
   </tr>
  </table>
- <span href="javascript:void(0)" onClick="add_selected_items('select_genome_items');" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
+ <span href="javascript:void(0)" onClick="add_selected_items('select_genome_items');" class='ui-button ui-corner-all'>Add Selected Items</span>
 </div> <!-- tab-2 -->
 
 <div id="tab-3">
@@ -614,7 +617,7 @@ $(document).ready(function() {
    <td><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span></td>
   </tr>
  </table>
- <span href="javascript:void(0)" onClick="add_selected_items('select_experiment_items');" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
+ <span href="javascript:void(0)" onClick="add_selected_items('select_experiment_items');" class='ui-button ui-corner-all'>Add Selected Items</span>
 </div> <!-- tab-3 -->
 
 <div id="tab-4">
@@ -637,7 +640,7 @@ $(document).ready(function() {
    <td colspan='2'><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span></td>
   </tr>
  </table>
- <span href="javascript:void(0)" onClick="add_selected_items('select_feature_items');" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
+ <span href="javascript:void(0)" onClick="add_selected_items('select_feature_items');" class='ui-button ui-corner-all'>Add Selected Items</span>
 </div> <!-- tab-4 -->
 
 <div id="tab-5">
@@ -660,7 +663,7 @@ $(document).ready(function() {
    <td colspan='2'><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span></td>
   </tr>
  </table>
- <span href="javascript:void(0)" onClick="add_selected_items('select_list_items');" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
+ <span href="javascript:void(0)" onClick="add_selected_items('select_list_items');" class='ui-button ui-corner-all'>Add Selected Items</span>
 
 </div> <!-- tab-5 -->
 </div> <!-- tabs -->

@@ -13,9 +13,9 @@ use URI::Escape::JavaScript qw(escape unescape);
 use Data::Dumper;
 use File::Path;
 use File::stat;
+use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
-use CoGeX;
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
@@ -26,7 +26,7 @@ use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE
   $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION
   $COOKIE_NAME $FORM $URL $COGEDIR $TEMPDIR $TEMPURL %ITEM_TYPE
   $MAX_SEARCH_RESULTS);
-$P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P = CoGe::Accessory::Web::get_defaults("$ENV{HOME}/coge.conf");
 
 $DATE = sprintf(
 	"%04d-%02d-%02d %02d:%02d:%02d",
@@ -213,7 +213,7 @@ sub get_item_info {
 		return unless $notebook;
 		return unless ($USER->is_admin or $USER->has_access_to_list($notebook));
 
-		my $group_str = join('<br>', sort map { $_->name } $notebook->groups(exclude_owner=>1));
+		my $group_str = join('<br>', sort map { $_->name } $notebook->groups);
 		$html .= '<b>Notebook id' . $notebook->id . '</b><br>' . 
 				 '<b>Name:</b> ' . $notebook->name . '<br>' . 
 				 '<b>Description:</b> ' . $notebook->description . '<br>' .
@@ -238,7 +238,7 @@ sub get_item_info {
 		return unless $genome;
 		return unless ($USER->is_admin or $USER->has_access_to_genome($genome));
 	
-		my $group_str = join('<br>', sort map { $_->name } $genome->groups(exclude_owner=>1));
+		my $group_str = join('<br>', sort map { $_->name } $genome->groups);
 		$html .= '<b>Genome id' . $genome->id . '</b><br>' . 
 				 '<b>Organism: </b>' . $genome->organism->name . '<br>' .
 				 '<b>Name:</b> ' . $genome->name . '<br>' . 
@@ -265,7 +265,7 @@ sub get_item_info {
 		return unless $experiment;
 		return unless ($USER->is_admin or $USER->has_access_to_experiment($experiment));
 	
-		my $group_str = join('<br>', sort map { $_->name } $experiment->groups(exclude_owner=>1));
+		my $group_str = join('<br>', sort map { $_->name } $experiment->groups);
 		$html .= '<b>Experiment id' . $experiment->id . '</b><br>' . 
 				 '<b>Name:</b> ' . $experiment->name . '<br>' . 
 				 '<b>Description:</b> ' . $experiment->description . '<br>' .
@@ -390,80 +390,96 @@ sub get_share_dialog {
 	my @items = split(',', $item_list);
 	return unless @items;
 
-	my (%groups, %userconn);
+	my %userconn;
 	my $isPublic = 0;
+	my $isEditable = 1;
 	foreach (@items) {
 		my ($item_id, $item_type) = $_ =~ /content_(\d+)_(\d+)/;
 		next unless ($item_id and $item_type);
 
-		print STDERR "get_share $item_id $item_type\n";
+		# print STDERR "get_share $item_id $item_type\n";
 		if ($item_type == $ITEM_TYPE{genome}) {
 			my $genome = $coge->resultset('Genome')->find($item_id);
 			return unless $genome;
 			next unless ($USER->is_admin or $USER->has_access_to_genome($genome));
-			map { $groups{$_->id} = $_ } $genome->groups;
+			#map { $groups{$_->id} = $_ } $genome->groups;
 			map { $userconn{$_->parent_id}  = $_ } $genome->user_connectors;
 			$isPublic = 1 if (not $genome->restricted);
+			$isEditable = 0 if (not $USER->is_owner_editor(dsg => $genome));
 		}
 		elsif ($item_type == $ITEM_TYPE{experiment}) {
 			my $experiment = $coge->resultset('Experiment')->find($item_id);
 			return unless $experiment;
 			next unless ($USER->is_admin or $USER->has_access_to_experiment($experiment));
-			map { $groups{$_->id} = $_ } $experiment->groups;
+			#map { $groups{$_->id} = $_ } $experiment->groups;
 			map { $userconn{$_->id}  = $_ } $experiment->user_connectors;
 			$isPublic = 1 if (not $experiment->restricted);
+			$isEditable = 0 if (not $USER->is_owner_editor(experiment => $experiment));
 		}
 		elsif ($item_type == $ITEM_TYPE{notebook}) {
 			my $notebook = $coge->resultset('List')->find($item_id);
 			return unless $notebook;
 			next unless ($USER->is_admin or $USER->has_access_to_list($notebook));
-			map { $groups{$_->id} = $_ } $notebook->groups;
+			#map { $groups{$_->id} = $_ } $notebook->groups;
 			map { $userconn{$_->id}  = $_ } $notebook->user_connectors;
 			$isPublic = 1 if (not $notebook->restricted);
-		}		
+			$isEditable = 0 if (not $USER->is_owner_editor(notebook => $notebook));
+		}
 	}
 
-	my @user_rows;
+	my (%user_rows, %group_rows);
 	foreach my $conn (values %userconn) {
-		if ($conn->parent_type == 5) { #FIXME hardcoded type
-			push @user_rows, { 	USER_ITEM => $conn->user->id.':5', #FIXME hardcoded type
-						   		USER_FULL_NAME => $conn->user->display_name, 
-						   		USER_NAME => $conn->user->name,
-						   		USER_ROLE => $conn->role->name,
-								USER_DELETE => 1 };
+		if ($conn->is_parent_user) {
+			my $user = $conn->parent;
+			$user_rows{$user->id} = 
+				{ USER_ITEM => $user->id.':'.$conn->parent_type,
+				  USER_FULL_NAME => $user->display_name, 
+				  USER_NAME => $user->name,
+				  USER_ROLE => $conn->role->name,
+				  USER_DELETE => $conn->role->name !~ /owner/i
+				};
 		}
-		if ($conn->parent_type == 6) { #FIXME hardcoded type
-			my $group = $conn->user_group;
-			$groups{$group->id} = $group;
+		elsif ($conn->is_parent_group) {
+			my $group = $conn->parent;
+
+			my @users = map { { GROUP_USER_FULL_NAME => $_->display_name, 
+								GROUP_USER_NAME => $_->name } 
+							} sort usercmp $group->users;
+			$group_rows{$group->id} =
+				{ GROUP_ITEM => $group->id.':'.$conn->parent_type,
+				  GROUP_NAME => $group->name,
+				  GROUP_ROLE => $group->role->name,
+				  GROUP_USER_LOOP => \@users
+				};
 		}
 	}
 
-	my @group_rows;
-	foreach my $group (sort groupcmp values %groups) {
-		if ($group->is_owner) { #FIXME will go away with new user_connector
-			my $u = $group->creator;
-			push @user_rows, { 	USER_ITEM => $u->id.':5', #FIXME hardcoded type
-						  	USER_FULL_NAME => $u->display_name, 
-						  	USER_NAME => $u->name,
-						   	USER_ROLE => 'Owner'
-					};
-			next;
-		}		
+	# foreach my $group (sort groupcmp values %groups) {
+	# 	# if ($group->is_owner) { #FIXME will go away with new user_connector
+	# 	# 	my $u = $group->creator;
+	# 	# 	push @user_rows, { 	USER_ITEM => $u->id.':5', #FIXME hardcoded type
+	# 	# 				  	USER_FULL_NAME => $u->display_name, 
+	# 	# 				  	USER_NAME => $u->name,
+	# 	# 				   	USER_ROLE => 'Owner'
+	# 	# 			};
+	# 	# 	next;
+	# 	# }
 
-		my @users = map { { GROUP_USER_FULL_NAME => $_->display_name, 
-							GROUP_USER_NAME => $_->name } 
-						} sort usercmp $group->users;
-		push @group_rows, { GROUP_ITEM => $group->id.':6', #FIXME hardcoded type
-					   		GROUP_NAME => $group->name, 
-					   		GROUP_ROLE => $group->role->name,
-					   		GROUP_USER_LOOP => \@users };
-	}
+	# 	my @users = map { { GROUP_USER_FULL_NAME => $_->display_name, 
+	# 						GROUP_USER_NAME => $_->name } 
+	# 					} sort usercmp $group->users;
+	# 	push @group_rows, { GROUP_ITEM => $group->id.':6', #FIXME hardcoded type
+	# 				   		GROUP_NAME => $group->name, 
+	# 				   		GROUP_ROLE => $group->role->name,
+	# 				   		GROUP_USER_LOOP => \@users };
+	# }
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 	$template->param( SHARE_DIALOG => 1 );
-	$template->param( GROUP_LOOP => \@group_rows );
-	$template->param( USER_LOOP => [sort {$a->{USER_FULL_NAME} cmp $b->{USER_FULL_NAME}} @user_rows] );
+	$template->param( GROUP_LOOP => [sort {$a->{GROUP_NAME} cmp $b->{GROUP_NAME}} values %group_rows] );
+	$template->param( USER_LOOP  => [sort {$a->{USER_FULL_NAME} cmp $b->{USER_FULL_NAME}} values %user_rows] );
 	$template->param( ROLES => get_roles('reader') );
+	$template->param( IS_EDITABLE => $isEditable );
 
 	if ($isPublic) {
 		$template->param( ACCESS_MSG => 'Everyone' );
@@ -491,7 +507,7 @@ sub search_share {
 	}
 
 	foreach ($coge->resultset('UserGroup')->all) {
-		next if ($_->is_owner); #FIXME will go away with new user_connector table
+		#next if ($_->is_owner); #FIXME will go away with new user_connector table
 		next unless ($_->name =~ /$search_term/i);
 		my $label = $_->name.' ('.$_->role->name.' group)';
 		push @results, { 'label' => $label, 'value' => $_->id.':'.$ITEM_TYPE{group} }
@@ -540,7 +556,7 @@ sub add_items_to_user_or_group {
 	# Assign each item to user/group
 	my ($target_id, $target_type) = $target_item =~ /(\d+)\:(\d+)/;
 	next unless ($target_id and $target_type);
-	print STDERR "add_items_to_user_or_group $target_id $target_type\n";
+	# print STDERR "add_items_to_user_or_group $target_id $target_type\n";
 	
 	#TODO verify that user can use specified role (for admin/owner roles)
 
@@ -550,7 +566,7 @@ sub add_items_to_user_or_group {
 
 		foreach (@verified) {
 			my ($item_id, $item_type) = $_ =~ /content_(\d+)_(\d+)/;
-			print STDERR "   user: $item_id $item_type\n";
+			# print STDERR "   user: $item_id $item_type\n";
 			my $conn = $coge->resultset('UserConnector')->find_or_create(
 				{ parent_id => $target_id,
 				  parent_type => 5, # FIXME hardcoded 
@@ -568,7 +584,7 @@ sub add_items_to_user_or_group {
 
 		foreach (@verified) {
 			my ($item_id, $item_type) = $_ =~ /content_(\d+)_(\d+)/;
-			print STDERR "   group: $item_id $item_type\n";
+			# print STDERR "   group: $item_id $item_type\n";
 			my $conn = $coge->resultset('UserConnector')->find_or_create(
 				{ parent_id => $target_id, 
 				  parent_type => 6, # FIXME hardcoded
@@ -744,7 +760,7 @@ sub get_contents {
 	if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{group}) {
 		$title = 'Groups';
 		foreach my $group (sort {$a->name cmp $b->name} $USER->groups) {
-			next if ($group->is_owner); # don't show owner groups
+			#next if ($group->is_owner); # don't show owner groups
 			push @rows, { CONTENTS_ITEM_ID => $group->id, 
 						  CONTENTS_ITEM_TYPE => $ITEM_TYPE{group}, 
 						  CONTENTS_ITEM_INFO => $group->info, 
@@ -755,7 +771,7 @@ sub get_contents {
 	if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{notebook}) {
 		$title = 'Notebooks';
 		foreach my $list (sort listcmp $USER->lists) {
-			next if ($list->is_owner); # don't show owner lists
+			#next if ($list->is_owner); # don't show owner lists
 			push @rows, { CONTENTS_ITEM_ID => $list->id, 
 						  CONTENTS_ITEM_TYPE => $ITEM_TYPE{notebook}, 
 						  CONTENTS_ITEM_INFO => $list->info, 
@@ -914,7 +930,7 @@ sub add_items_to_notebook {
 	my $item_list = $opts{item_list};
 	my @items = split(',', $item_list);
 	return unless @items;
-	print STDERR "add_items_to_notebook $nid $item_list\n";
+	# print STDERR "add_items_to_notebook $nid $item_list\n";
 
 	my $notebook = $coge->resultset('List')->find($nid);
 	return unless $notebook;
@@ -927,7 +943,7 @@ sub add_items_to_notebook {
 
 		#TODO check access permission on each item
 
-		print STDERR "add_item_to_notebook $item_id $item_type\n";
+		# print STDERR "add_item_to_notebook $item_id $item_type\n";
 
 		my $conn = $coge->resultset('ListConnector')->find_or_create( { parent_id => $nid, child_id => $item_id, child_type => $item_type } );	
 		return unless $conn;
@@ -948,6 +964,7 @@ sub create_new_group {
     my $role = $coge->resultset('Role')->find($role_id);
     return unless $role;
 
+    # Create the new group
     my $group = $coge->resultset('UserGroup')->create(
       { creator_user_id => $USER->id,
         name => $name,
@@ -956,9 +973,22 @@ sub create_new_group {
       });
     return unless $group;
 
-    my $conn = $coge->resultset('UserGroupConnector')->create( { user_id => $USER->id, user_group_id => $group->id } );
+    # Set user as owner
+    # my $conn = $coge->resultset('UserGroupConnector')->create( { user_id => $USER->id, user_group_id => $group->id } );
+    # return unless $conn;
+    my $conn = $coge->resultset('UserConnector')->create({
+    	parent_id => $USER->id,
+    	parent_type => 5, #FIXME hardcoded to "user"
+    	child_id => $group->id,
+    	child_type => 6, #FIXME hardcoded to "group"
+    	role_id => 2 #FIXME hardcoded to "owner"
+    });
     return unless $conn;
 
+    # Add selected items to new group
+    #TODO
+
+    # Record in log
     $coge->resultset('Log')->create( { user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'create user group id' . $group->id } );
 
     return 1;
@@ -974,20 +1004,33 @@ sub create_new_notebook {
     return if ($USER->user_name eq "public");
 
     # Get owner user group for the new list
-    my $owner = $USER->owner_group;
-    return unless $owner;
+    # my $owner = $USER->owner_group;
+    # return unless $owner;
 
     # Create the new list
     my $list = $coge->resultset('List')->create({ 
     	name => $name,
         description => $desc,
         list_type_id => $type_id,
-        user_group_id => $owner->id,
+        # user_group_id => $owner->id,
         restricted => 1
     });
+    return unless $list;
 
+    # Set user as owner
+    my $conn = $coge->resultset('UserConnector')->create({
+    	parent_id => $USER->id,
+    	parent_type => 5, #FIXME hardcoded to "user"
+    	child_id => $list->id,
+    	child_type => 1, #FIXME hardcoded to "list"
+    	role_id => 2 #FIXME hardcoded to "owner"
+    });
+    return unless $conn;
+
+    # Add selected items to new notebook
 	add_items_to_notebook(nid => $list->id, item_list => $item_list) if ($item_list);
 
+	# Record in log
     CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'create notebook id' . $list->id );
 
     return 1;

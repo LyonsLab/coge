@@ -4,7 +4,6 @@ use strict;
 use CGI;
 use CoGeX;
 use DBI;
-
 use Data::Dumper;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
@@ -16,7 +15,7 @@ use Digest::MD5 qw(md5_base64);
 use DBIxProfiler;
 use File::Path;
 use Sort::Versions;
-no warnings 'redefine';
+#no warnings 'redefine';
 
 use vars qw( $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE 
 	$TEMPDIR $USER $DATE $COGEDIR $coge $FORM $URL
@@ -57,7 +56,7 @@ $USER = undef;
 
 %FUNCTION = (
 	generate_html           => \&generate_html,
-	remove_group            => \&remove_group,
+	# remove_group            => \&remove_group,
 	get_groups              => \&get_groups,
 	get_experiment_info     => \&get_experiment_info,
 	edit_experiment_info    => \&edit_experiment_info,
@@ -99,13 +98,13 @@ sub dispatch {
 	}
 }
 
-sub remove_group {
-	my %opts  = @_;
-	my $ugid  = $opts{ugid};
-	my $expid = $opts{expid};
-	my $ugec  = $coge->resultset('UserGroupExperimentConnector')->find( { user_group_id => $ugid, experiment_id => $expid } );
-	$ugec->delete();
-}
+# sub remove_group {
+# 	my %opts  = @_;
+# 	my $ugid  = $opts{ugid};
+# 	my $expid = $opts{expid};
+# 	my $ugec  = $coge->resultset('UserGroupExperimentConnector')->find( { user_group_id => $ugid, experiment_id => $expid } );
+# 	$ugec->delete();
+# }
 
 sub edit_experiment_info {
 	my %opts = @_;
@@ -269,18 +268,19 @@ sub get_annotations {
 	my $eid  = $opts{eid};
 	return "Must have valid experiment id\n" unless ($eid);
 	my $exp = $coge->resultset('Experiment')->find($eid);
-	return "Access denied\n" unless ($USER->has_access(experiment=>$eid) || !$exp->restricted);
-	
-
 	return unless $exp;
+	return "Access denied\n" unless ($USER->has_access(experiment=>$eid) || !$exp->restricted);
 	
 	my $user_can_edit = ($USER->is_admin || $USER->is_owner_editor(experiment => $eid));
 	
 	my %groups;
+	my $num_annot = 0;
 	foreach my $a ( $exp->annotations ) {
 		my $group = (defined $a->type->group ? $a->type->group->name . ':' . $a->type->name : $a->type->name);
 		push @{$groups{$group}}, $a;
+		$num_annot++;
 	}
+	return unless ($num_annot or $user_can_edit);
 	
 	my $html = '<table id="experiment_annotation_table" class="ui-widget-content ui-corner-all small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;border-collapse:collapse;"><thead style="display:none"></thead><tbody>';
 	foreach my $group (sort keys %groups) {
@@ -312,7 +312,7 @@ sub get_annotations {
 	$html .= '</tbody></table>';
 
 	if ($user_can_edit) {
-		$html .= qq{<span onClick="add_annotation_dialog();" style="font-size: .75em" class='ui-button ui-button-go ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add Annotation</span>};
+		$html .= qq{<span onClick="add_annotation_dialog();" style="font-size: .75em" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add Annotation</span>};
 	}
 
 	return $html;
@@ -405,7 +405,6 @@ sub update_annotation {
 	if ($type_group) {
 		$group_rs = $coge->resultset('AnnotationTypeGroup')->find_or_create( { name => $type_group } );
 	}
-	my $type_rs;
 	my $type_rs = $coge->resultset('AnnotationType')->find_or_create( 
 		{ name => $type, 
 		  annotation_type_group_id => ($group_rs ? $group_rs->id : undef) 
@@ -525,19 +524,21 @@ sub get_experiment_info {
 	return "Unable to find an entry for $eid" unless $exp;
 
 	my $allow_edit = $USER->is_admin || $USER->is_owner_editor(experiment => $eid);
-	my $html = $exp->annotation_pretty_print_html(allow_delete => $allow_edit);
+	my $html;
+	
+	$html .= $exp->annotation_pretty_print_html(allow_delete => $allow_edit);
 	
 	if ($allow_edit) {
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_experiment_info();">Edit Info</span>};
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="\$('#experiment_type_edit_box').dialog('open');">Add Type</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="edit_experiment_info();">Edit Info</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="\$('#experiment_type_edit_box').dialog('open');">Add Type</span>};
 	}
 	
 	if ($USER->is_admin || $USER->is_owner(experiment => $eid)) {
 		if ( $exp->restricted ) {
-			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_experiment_public();">Make Public</span>};
+			$html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_experiment_public();">Make Public</span>};
 		}
 		else {
-			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_experiment_private();">Make Private</span>};
+			$html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_experiment_private();">Make Private</span>};
 		}
 	}	
 	

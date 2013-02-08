@@ -167,145 +167,145 @@ function remove_user (opts) {
 	});
 }
 
-function show_ladd(val) {
-	if(val==1) {
-		$('#remove_list').hide(0);
-		$('#add_list').show(0);
-	}
-	else {
-		$('#remove_list').show(0);
-		$('#add_list').hide(0);
-	}
-}
+// function show_ladd(val) {
+// 	if(val==1) {
+// 		$('#remove_list').hide(0);
+// 		$('#add_list').show(0);
+// 	}
+// 	else {
+// 		$('#remove_list').show(0);
+// 		$('#add_list').hide(0);
+// 	}
+// }
 
-function add_lists (opts) {
-	ugid = opts.ugid;
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'add_lists',
-			ugid: ugid,
-		},
-		success : function(data) {
-			data = eval('('+data+')');
-			title = data.title;
-			$("#group_lists_edit_box").dialog("option", "title", title);
-			$("#group_lists_edit_box").html(format_box_info(data));
-			$("#group_lists_edit_box").dialog('open');
-			//setup_button_states();
-		},
-	});
-}
+// function add_lists (opts) {
+// 	ugid = opts.ugid;
+// 	$.ajax({
+// 		data: {
+// 			jquery_ajax: 1,
+// 			fname: 'add_lists',
+// 			ugid: ugid,
+// 		},
+// 		success : function(data) {
+// 			data = eval('('+data+')');
+// 			title = data.title;
+// 			$("#group_lists_edit_box").dialog("option", "title", title);
+// 			$("#group_lists_edit_box").html(format_box_info(data));
+// 			$("#group_lists_edit_box").dialog('open');
+// 			//setup_button_states();
+// 		},
+// 	});
+// }
 
-function add_lists_to_group (opts) {
-	ugid = opts.ugid;
-	$('#select_list_items > option:selected').each(
-		function() {
-			var item_spec = $(this).attr("value");
-			//$(this).remove();
-			$.ajax({
-				data: {
-					jquery_ajax: 1,
-					fname: 'add_list_to_group',
-					ugid: ugid,
-					item_spec : item_spec,
-				},
-				success : 
-					function(data) {
-						if (data != 1) { alert(data); }
-						else {
-							run_get_group_info({divid: 'group_info', ugid: ugid}); // FIXME move outside loop
-						}
-					}
-			});
-		}
-	);
-	$("#group_lists_edit_box").dialog('close');
-}
+// function add_lists_to_group (opts) {
+// 	ugid = opts.ugid;
+// 	$('#select_list_items > option:selected').each(
+// 		function() {
+// 			var item_spec = $(this).attr("value");
+// 			//$(this).remove();
+// 			$.ajax({
+// 				data: {
+// 					jquery_ajax: 1,
+// 					fname: 'add_list_to_group',
+// 					ugid: ugid,
+// 					item_spec : item_spec,
+// 				},
+// 				success : 
+// 					function(data) {
+// 						if (data != 1) { alert(data); }
+// 						else {
+// 							run_get_group_info({divid: 'group_info', ugid: ugid}); // FIXME move outside loop
+// 						}
+// 					}
+// 			});
+// 		}
+// 	);
+// 	$("#group_lists_edit_box").dialog('close');
+// }
 
-function remove_list_from_group (opts) {
-	ugid = opts.ugid;
-	lid = opts.lid;
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'remove_list_from_group',
-			ugid: ugid,
-			lid: lid,
-		},
-		success : function(val) {
-			run_get_group_info({divid: 'group_info', ugid: ugid});
-		},
-	});
-}
+// function remove_list_from_group (opts) {
+// 	ugid = opts.ugid;
+// 	lid = opts.lid;
+// 	$.ajax({
+// 		data: {
+// 			jquery_ajax: 1,
+// 			fname: 'remove_list_from_group',
+// 			ugid: ugid,
+// 			lid: lid,
+// 		},
+// 		success : function(val) {
+// 			run_get_group_info({divid: 'group_info', ugid: ugid});
+// 		},
+// 	});
+// }
 
-function get_list_preview (opts) {
-	$('#list_preview').hide();
-	$('#select_list_items > option:selected:last').each(
-		function() {
-			var item_spec = $(this).attr("value");
-			$.ajax({
-				data: {
-					jquery_ajax: 1,
-					fname: 'get_list_preview',
-					item_spec: item_spec,
-				},
-				success : 
-					function(data) {
-						var width = $("#group_delete_box").dialog("option", "width");
-						$("#select_list_items").width(width/2-30);
-						$('#list_preview').width(width/2-30);
-						$('#list_preview').html(data);
-						$('#list_preview').fadeIn('fast');
-					}
-			});
-		}
-	);
-}
+// function get_list_preview (opts) {
+// 	$('#list_preview').hide();
+// 	$('#select_list_items > option:selected:last').each(
+// 		function() {
+// 			var item_spec = $(this).attr("value");
+// 			$.ajax({
+// 				data: {
+// 					jquery_ajax: 1,
+// 					fname: 'get_list_preview',
+// 					item_spec: item_spec,
+// 				},
+// 				success : 
+// 					function(data) {
+// 						var width = $("#group_delete_box").dialog("option", "width");
+// 						$("#select_list_items").width(width/2-30);
+// 						$('#list_preview').width(width/2-30);
+// 						$('#list_preview').html(data);
+// 						$('#list_preview').fadeIn('fast');
+// 					}
+// 			});
+// 		}
+// 	);
+// }
 
-function wait_to_search (search_func, ugid, search_term) {
-	if (!search_term || search_term.length > 2) {
-		pageObj.search_term = search_term;
-		pageObj.ugid = ugid;
+// function wait_to_search (search_func, ugid, search_term) {
+// 	if (!search_term || search_term.length > 2) {
+// 		pageObj.search_term = search_term;
+// 		pageObj.ugid = ugid;
 			
-		if (pageObj.time) {
-			clearTimeout(pageObj.time);
-		}
+// 		if (pageObj.time) {
+// 			clearTimeout(pageObj.time);
+// 		}
 		
-		// FIXME: could generalize by passing select id instead of separate search_* functions
-		pageObj.time = setTimeout(
-			function() { 
-				search_func(pageObj.ugid, pageObj.search_term); 
-			}, 
-			500
-		);
-	}
-}
+// 		// FIXME: could generalize by passing select id instead of separate search_* functions
+// 		pageObj.time = setTimeout(
+// 			function() { 
+// 				search_func(pageObj.ugid, pageObj.search_term); 
+// 			}, 
+// 			500
+// 		);
+// 	}
+// }
 
-function search_lists (ugid, search_term) {
-	$("#wait_list").animate({opacity:1});
-	$("#select_list_items").html("<option disabled='disabled'>Searching...</option>");
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'search_lists',
-			ugid: ugid,
-			search_term: search_term,
-			timestamp: new Date().getTime()
-		},
-		success : function(val) {
-			var items = jQuery.parseJSON(val);
-			if (!pageObj.timestamp_lists || items.timestamp > pageObj.timestamp_lists) {
-				pageObj.timestamp_lists = items.timestamp;
-				$('#list_preview').hide();
-				$("#select_list_items").html(items.html);
-				var width = $("#group_delete_box").dialog("option", "width");
-				$("#select_list_items").width(width-40);
-				$("#wait_list").animate({opacity:0});
-			}
-		},
-	});
-}
+// function search_lists (ugid, search_term) {
+// 	$("#wait_list").animate({opacity:1});
+// 	$("#select_list_items").html("<option disabled='disabled'>Searching...</option>");
+// 	$.ajax({
+// 		data: {
+// 			jquery_ajax: 1,
+// 			fname: 'search_lists',
+// 			ugid: ugid,
+// 			search_term: search_term,
+// 			timestamp: new Date().getTime()
+// 		},
+// 		success : function(val) {
+// 			var items = jQuery.parseJSON(val);
+// 			if (!pageObj.timestamp_lists || items.timestamp > pageObj.timestamp_lists) {
+// 				pageObj.timestamp_lists = items.timestamp;
+// 				$('#list_preview').hide();
+// 				$("#select_list_items").html(items.html);
+// 				var width = $("#group_delete_box").dialog("option", "width");
+// 				$("#select_list_items").width(width-40);
+// 				$("#wait_list").animate({opacity:0});
+// 			}
+// 		},
+// 	});
+// }
 
 function dialog_delete_group (opts) {
 	$("#group_delete_box").dialog("option", "title", "Delete Group");
@@ -334,15 +334,15 @@ function delete_group (opts) {
  <TMPL_VAR NAME="GROUP_INFO">
 </div>
 
-<div id="group_info_edit_box"  class="dialog_box" style="display:none;"></div>
+<div id="group_info_edit_box" class="dialog_box" style="display:none;"></div>
 <div id="group_users_edit_box" class="dialog_box" style="display:none;"></div>
 <div id="group_lists_edit_box" class="dialog_box" style="display:none;"></div>
 
 <div id="group_delete_box" class="dialog_box" style='display:none;' align='center'>
 Are you sure you want to permanently delete this group?<p>
  <div>
-  <span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_group({ugid: '<TMPL_VAR NAME=UGID>'});">Yes</span>
-  <span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="$('#group_delete_box').dialog('close');">No</span>
+  <span style="font-size: .75em" class='ui-button ui-corner-all' onClick="delete_group({ugid: '<TMPL_VAR NAME=UGID>'});">Yes</span>
+  <span style="font-size: .75em" class='ui-button ui-corner-all' onClick="$('#group_delete_box').dialog('close');">No</span>
  </div>
 </div>
 
@@ -372,7 +372,7 @@ Are you sure you want to permanently delete this group?<p>
  </tr> 
 </table>
 <br>
-<span onClick="update_group_info({ugid: '<TMPL_VAR NAME=UGID>'});" class="ui-button ui-corner-all ui-button-go">Update Group Info</span>
+<span onClick="update_group_info({ugid: '<TMPL_VAR NAME=UGID>'});" class="ui-button ui-corner-all">Update Group Info</span>
 </TMPL_IF>
 
 
@@ -395,8 +395,8 @@ Are you sure you want to permanently delete this group?<p>
    Filter: <INPUT NAME="regexp" onKeyUp="current_user_filter.set(this.value)" size="10"/>
   </td> 
   <td>
-   <span id="remove_user" href="javascript:void(0)" onClick="remove_user({ugid: '<TMPL_VAR NAME=UGID>'});" style="display:none" class='ui-button ui-button-go ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span>
-   <span id="add_user" href="javascript:void(0)" onClick="add_user({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-button-go ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>
+   <span id="remove_user" href="javascript:void(0)" onClick="remove_user({ugid: '<TMPL_VAR NAME=UGID>'});" style="display:none" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span>
+   <span id="add_user" href="javascript:void(0)" onClick="add_user({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>
   </td>
   <td>
    <b>Available Users</b><br>
@@ -423,7 +423,7 @@ Are you sure you want to permanently delete this group?<p>
 
 
 
-<TMPL_IF NAME=ADD_LISTS>
+<!-- <TMPL_IF NAME=ADD_LISTS>
 <SCRIPT language="JavaScript">
 search_lists(<TMPL_VAR NAME=UGID>, '');
 </SCRIPT>
@@ -443,7 +443,7 @@ search_lists(<TMPL_VAR NAME=UGID>, '');
 </table>
 <span class='small' style='color:gray;float:right;font-style:italic;'>Hold down SHIFT or CTRL to select multiple items</span><br>
 <span href="javascript:void(0)" onClick="add_lists_to_group({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
-</TMPL_IF> <!-- ADD_LISTS -->
+</TMPL_IF> -->
 
 
 
@@ -471,7 +471,7 @@ search_lists(<TMPL_VAR NAME=UGID>, '');
 
 
 
-<TMPL_IF NAME=ADMIN_AREA>
+<TMPL_IF NAME="ADMIN_AREA">
 <SCRIPT language="JavaScript">
 function dialog_set_group_creator (opts) {
 	ugid = opts.ugid;

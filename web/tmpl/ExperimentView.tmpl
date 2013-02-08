@@ -281,12 +281,14 @@ function image_preview(obj, preview) {
 
 <br>
 
+<TMPL_IF NAME="EXPERIMENT_ANNOTATIONS">
 <div>
  <span style="color:dimgray;font-weight:bold;">Experiment Annotations</span><br>
  <div id="experiment_annotations">
   <TMPL_VAR NAME="EXPERIMENT_ANNOTATIONS">
  </div>
 </div>
+</TMPL_IF>
 
 <div id="experiment_info_edit_box" class="dialog_box" title="Edit Experiment Info" style="display:none;"></div>
 
@@ -301,7 +303,7 @@ function image_preview(obj, preview) {
     <td><textarea id="edit_type_description" rows="5" cols="50"></textarea></td>
    </tr>
   </table>
-  <span onClick="add_type_to_experiment();" class='ui-button ui-corner-all ui-button-go'>Add</span>
+  <span onClick="add_type_to_experiment();" class='ui-button ui-corner-all'>Add</span>
 </div>
 
 <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'> <!-- Add/Edit Annotation Dialog -->
@@ -349,5 +351,5 @@ $(function() {
  </tr>
 </table>
 <br>
-<span onClick="update_experiment_info();" class='ui-button ui-corner-all ui-button-go'>Update</span>
+<span onClick="update_experiment_info();" class='ui-button ui-corner-all'>Update</span>
 </TMPL_IF> <!-- EDIT_EXPERIMENT_INFO -->

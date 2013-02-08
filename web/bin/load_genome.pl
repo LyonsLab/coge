@@ -110,7 +110,7 @@ unless ($organism) {
 
 # Create datasource
 print $log "log: Updating database ...\n";
-my $datasource = $coge->resultset('DataSource')->find_or_create( { name => $source_name } );
+my $datasource = $coge->resultset('DataSource')->find_or_create( { name => $source_name, description => "" } );
 die "Error creating/finding data source" unless $datasource;
 print $log "datasource id: " . $datasource->id . "\n";
 	

@@ -722,8 +722,7 @@ function send_items_to(page_name, format) {
 				<img id='user_image' src="<TMPL_VAR NAME='USER_IMAGE'>" width='100' height='100' class="link" style="padding:1px;border:1px solid lightgray;" onclick="select_image_file();" />
 			</td></tr>
 			<tr><td>
-				<span onclick="select_image_file();" class="small link">
-					click to change</span>
+				<!--<span onclick="select_image_file();" class="small link">click to change</span>-->
 				<input id="input_upload_file" name="input_upload_file" type="file" data-url='<TMPL_VAR NAME="PAGE_NAME">' style="display:none;" />
 			</td></tr>
 		</table>
@@ -942,7 +941,7 @@ function send_items_to(page_name, format) {
 			<div style="padding-top:10px;">
 				<TMPL_LOOP NAME="GROUP_LOOP">
 					<div>
-						<span style="color:dimgray;"><TMPL_VAR NAME="GROUP_NAME"> (<TMPL_VAR NAME="GROUP_ROLE">)</span>
+						<span style="color:dimgray;"><TMPL_VAR NAME="GROUP_NAME"> (group) - <TMPL_VAR NAME="GROUP_ROLE"></span>
 						<span onClick="remove_items_from_user_or_group('<TMPL_VAR NAME=GROUP_ITEM>');" class="link ui-icon ui-icon-close"></span>
 						<br>
 						<TMPL_LOOP NAME="GROUP_USER_LOOP">
@@ -952,7 +951,7 @@ function send_items_to(page_name, format) {
 				</TMPL_LOOP>
 				<TMPL_LOOP NAME="USER_LOOP">
 					<div>
-						<span style="color:dimgray;"><TMPL_VAR NAME="USER_FULL_NAME"> (<TMPL_VAR NAME="USER_NAME">) (<TMPL_VAR NAME="USER_ROLE">)<span>
+						<span style="color:dimgray;"><TMPL_VAR NAME="USER_FULL_NAME"> (<TMPL_VAR NAME="USER_NAME">) - <TMPL_VAR NAME="USER_ROLE"><span>
 						<TMPL_IF NAME="USER_DELETE">
 						<span onClick="$(this.parent).fadeOut(); remove_items_from_user_or_group('<TMPL_VAR NAME=USER_ITEM>');" class="link ui-icon ui-icon-close"></span>
 						</TMPL_IF>
@@ -969,13 +968,19 @@ function send_items_to(page_name, format) {
 		<br>
 		<span class="small" style="font-weight:bold;color:dimgray;">Add Access</span>
 		<div class="small" style="padding:20px;padding-left:30px;border-top:1px solid lightgray;">
-			<span style="color:dimgray">Enter names or groups:</span><br>
-			<input id="share_input" type="search" maxlength="40" style="width:270px;border:1px solid lightgray;" onkeyup="wait_to_search(search_share, this.value);" />
-			<select id="role_select" style="display:none;"><TMPL_VAR NAME="ROLES"></select>
-			<span href="javascript:void(0)" onClick="add_items_to_user_or_group();" class='ui-button ui-button-go ui-corner-all'>Add</span>
+			<TMPL_IF NAME="IS_EDITABLE">
+				<span style="color:dimgray">Enter names or groups:</span><br>
+				<input id="share_input" type="search" maxlength="40" style="width:270px;border:1px solid lightgray;" onkeyup="wait_to_search(search_share, this.value);" />
+				<select id="role_select" style="display:none;"><TMPL_VAR NAME="ROLES"></select>
+				<span href="javascript:void(0)" onClick="add_items_to_user_or_group();" class='ui-button ui-corner-all'>Add</span>
+			<TMPL_ELSE>
+				<span style="color:dimgray">
+					You don't have access to modify the selected item(s).
+				</span>
+			</TMPL_IF>
 		</div>
 		<br>
-		<span href="javascript:void(0)" onClick="$('#share_dialog').dialog('close')" class='ui-button ui-button-go ui-corner-all'>Done</span>
+		<span href="javascript:void(0)" onClick="$('#share_dialog').dialog('close')" class='ui-button ui-corner-all'>Done</span>
 	</div>
 </TMPL_IF>
 
