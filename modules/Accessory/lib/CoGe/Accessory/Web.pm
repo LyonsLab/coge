@@ -34,7 +34,7 @@ BEGIN {
 #    $cogex = CoGeX->dbconnect();
 #    $cogex->storage->debugobj(new DBIxProfiler());
 #    $cogex->storage->debug(1);
-	__PACKAGE__->mk_accessors qw(restricted_orgs basefilename basefile logfile sqlitefile);
+	__PACKAGE__->mk_accessors('restricted_orgs', 'basefilename basefile', 'logfile sqlitefile');
 }
 
 sub get_defaults {

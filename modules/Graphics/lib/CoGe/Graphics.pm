@@ -874,7 +874,7 @@ sub process_experiment
 	my $c = $opts{c};
 	my $color=$opts{color};
 	##we will need to abstract out the call to the data engine in order for this to be compatible on systems with multiple intsallations of coge using different databases
-	my $url = "http://genomevolution.org/CoGe/fastbit_query.pl?exp_id=$expid;chr=$chr;start=$start;stop=$stop";
+	my $url = "http://genomevolution.org/CoGe/bin/fastbit_query.pl?exp_id=$expid;chr=$chr;start=$start;stop=$stop";
 	my $cmd = "curl '$url'";
 	print STDERR "$cmd\n";
 	my $result = `$cmd`;
