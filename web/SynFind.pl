@@ -1737,9 +1737,9 @@ sub get_unique_genes
 	my $conn = $coge->resultset('UserConnector')->create(
 	  { parent_id => $USER->id,
 	  	parent_type => 5, # FIXME hardcoded to "user"
-	  	child_id = $list->id,
-	  	child_type = 1, # FIXME hardcoded to "list"
-	  	role_id = 2, # FIXME hardcoded to "owner"
+	  	child_id => $list->id,
+	  	child_type => 1, # FIXME hardcoded to "list"
+	  	role_id => 2, # FIXME hardcoded to "owner"
 	  } );
 	return unless $conn;
 

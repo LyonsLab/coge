@@ -4,9 +4,9 @@ use strict;
 use CGI;
 
 use JSON::XS;
+use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
-use CoGeX;
 use HTML::Template;
 use Digest::MD5 qw(md5_base64);
 use URI::Escape;
