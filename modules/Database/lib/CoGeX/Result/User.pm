@@ -583,7 +583,8 @@ sub is_role {
 	my $ds   = $opts{ds};
 	my $list = $opts{list};
 	my $experiment = $opts{experiment};
-	return 0 unless $dsg || $ds || $list || $experiment || $group;
+	return 0 unless $self->id;
+	return 0 unless  $dsg || $ds || $list || $experiment || $group;
 
 	if ($group) {
 		my $ugid = $group =~ /^\d+$/ ? $group : $group->id;
