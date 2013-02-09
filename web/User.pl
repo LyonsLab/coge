@@ -889,7 +889,7 @@ sub search_notebooks {
 
 	# Try to get all items if blank search term
 	if (!$search_term) {
-		my $sql = "locked=0 AND (restricted=0 OR user_group_id IN ( $group_str ))";
+		my $sql = "locked=0 AND restricted=0";# OR user_group_id IN ( $group_str ))"; # FIXME
 		$num_results = $coge->resultset("List")->count_literal($sql);
 		if ($num_results < $MAX_SEARCH_RESULTS) {
 			@notebooks = $coge->resultset("List")->search_literal($sql);
@@ -900,8 +900,8 @@ sub search_notebooks {
 		# Get public lists and user's private lists	
 		$search_term = '%'.$search_term.'%';
 		@notebooks = $coge->resultset("List")->search_literal(
-			"locked=0 AND (restricted=0 OR user_group_id IN ( $group_str )) \
-			 AND (name LIKE '$search_term' OR description LIKE '$search_term')");
+			"locked=0 " .  # AND (restricted=0 OR user_group_id IN ( $group_str )) \ # FIXME
+			"AND (name LIKE '$search_term' OR description LIKE '$search_term')");
 		$num_results = @notebooks;
 	}
 	
