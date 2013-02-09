@@ -2,10 +2,10 @@
 use v5.10;
 
 use strict;
+use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Algos::KsCalc;
-#use CoGeX;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;

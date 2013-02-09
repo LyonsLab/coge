@@ -4430,7 +4430,7 @@ sub feat_search {
 	my $feat = $coge->resultset('Feature')->find($featid) if $featid;
 	if ($feat)
 	  {
-	    $dsid = $feat->dataset->id;
+	    $dsid = $feat->dataset->id unless $dsid;
 	  }
 	unless ($gstid) {
 		if ( $featid =~ /_/ ) {
