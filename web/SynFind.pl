@@ -544,7 +544,9 @@ sub get_anno
     my $gstid = $dsg->type->id;
     foreach my $feat (@feats)
       {
-	next if $feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset);
+	my ($genome) = $feat->genomes;
+	return ("restricted",0) if $genome->restricted && !$USER->has_access_to_genome($genome);
+#	next if $feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset);
 	$i++;
 #	my $featid = $feat->id;
 #	my $chr = $feat->chr;
