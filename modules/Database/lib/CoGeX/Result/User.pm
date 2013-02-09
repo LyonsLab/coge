@@ -748,7 +748,7 @@ sub lists {
 	my %lists;
 	foreach my $ug ( $self->groups ) { 
 		#map { $lists{ $_->id } = $_ } $ug->lists; # FIXME will go away with new user_connector
-		foreach my $uc ( $ug->user_connectors ) {
+		foreach my $uc ( $ug->child_connectors ) {
 			if ($uc->is_child_list) {
 				$lists{ $uc->child_id } = $uc->child;
 			}
@@ -789,11 +789,15 @@ sub experiments {
 		# 	$experiments{ $_->id } = $_ if (!$_->deleted || $include_deleted)
 		# } $ug->experiments;
 		
-		foreach my $uc ( $ug->user_connectors ) {
+		foreach my $uc ( $ug->child_connectors ) {
 			if ($uc->is_child_experiment) {
 				my $experiment = $uc->child;
 				next if ($experiment->deleted && not $include_deleted);
 				$experiments{ $uc->child_id } = $experiment;
+			}
+			elsif ($uc->is_child_list) {
+				my $list = $uc->child;
+				map { $experiments{ $_->id } = $_ } $list->experiments( include_deleted => $include_deleted );
 			}
 		}
 	}
@@ -802,6 +806,10 @@ sub experiments {
 			my $experiment = $uc->child;
 			next if ($experiment->deleted && not $include_deleted);
 			$experiments{ $uc->child_id } = $experiment;
+		}
+		elsif ($uc->is_child_list) {
+			my $list = $uc->child;
+			map { $experiments{ $_->id } = $_ } $list->experiments( include_deleted => $include_deleted );
 		}
 	}
 
@@ -863,19 +871,27 @@ sub genomes {
 		# 	$genomes{ $_->id } = $_ if (!$_->deleted || $include_deleted)
 		# } $ug->genomes;
 		
-		foreach my $uc ( $ug->user_connectors ) {
+		foreach my $uc ( $ug->child_connectors ) {
 			if ($uc->is_child_genome) {
 				my $genome = $uc->child;
 				next if ($genome->deleted && not $include_deleted);
 				$genomes{ $uc->child_id } = $genome;
 			}
-		}		
+			elsif ($uc->is_child_list) {
+				my $list = $uc->child;
+				map { $genomes{ $_->id } = $_ } $list->genomes( include_deleted => $include_deleted );
+			}
+		}
 	}
 	foreach my $uc ( $self->user_connectors ) {
 		if ($uc->is_child_genome) {
 			my $genome = $uc->child;
 			next if ($genome->deleted && not $include_deleted);
 			$genomes{ $uc->child_id } = $genome;
+		}
+		elsif ($uc->is_child_list) {
+			my $list = $uc->child;
+			map { $genomes{ $_->id } = $_ } $list->genomes( include_deleted => $include_deleted );
 		}
 	}
 

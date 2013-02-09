@@ -52,7 +52,7 @@ my $dbh = $coge->storage->dbh;
 #-------------------------------------------------------------------------------
 if ($cleanup) {
 	foreach my $group ($coge->resultset('UserGroup')->all) {
-		# Delete owner group (auto-cascades down user_connector)
+		# Delete owner group
 		if ($group->description =~ /owner group/i and $group->locked and $group->role_id == 2) {
 			print STDERR "Deleting owner group '" . $group->name . "' id=" . $group->id . "\n";
 			$group->delete if ($go);
