@@ -703,6 +703,7 @@ function monitor_log(log)
   {
     var waittime = pageObj.waittime;
     pageObj.waittime = pageObj.waittime*2;
+    if (pageObj.waittime > 60000) {pageObj.waittime = 60000;}
     message+="<br/>Next progress check in "+waittime/1000+" seconds.";
     if (ajax.length) {setTimeout("read_log(['args__logfile', 'args__'+pageObj.basefile, 'args__tempdir', 'args__'+pageObj.tempdir], [monitor_log])",waittime);}
   }
