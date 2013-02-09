@@ -573,7 +573,7 @@ sub get_genome_info
 
     $html .= qq{<span class='link' onclick='window.open("}.$dsg->link.qq{")'> More information</span><br>} if $dsg->link;
     $html .= "&nbsp&nbsp&nbsp<span class=alert>You are a CoGe Admin.  Use your power wisely</span><br>" if $USER->is_admin;
-    $html .= "&nbsp&nbsp&nbsp<span class=alert>You are the owner of this genome.</span><br>" if $USER->id && $USER->is_owner(dsg=>$dsg);
+    $html .= "&nbsp&nbsp&nbsp<span class=alert>You are the owner of this genome.</span><br>" if $USER->is_owner(dsg=>$dsg);
     my $total_length = $dsg->length;
 #    my $chr_num = $dsg->genomic_sequences->count(); 
     my $chr_num = $dsg->chromosome_count();
@@ -647,7 +647,7 @@ sub get_genome_info
 <tr><td><div id=dsg_feature_count class="small link" onclick="gen_data(['args__loading...'],['dsg_features']); get_feature_counts(['args__dsgid','dsg_id', 'args__gstid','gstid'],['dsg_features']);" >Click for Features</div>};
     $html .= $feat_string;
     $html .= qq{<tr><td colspan=2><div><span class="ui-button ui-corner-all" onClick="update_genomelist(['args__genomeid','args__$dsgid'],[add_to_genomelist]);\$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add to Genome List</span>};
-    if ($USER->id && ($USER->is_owner(dsg=>$dsgid) || $USER->is_admin))
+    if ($USER->is_owner(dsg=>$dsgid) || $USER->is_admin)
       {
 	$html .= qq{<span class="ui-button ui-corner-all ui-button-go" onClick="make_dsg_public('$dsgid')">Make Genome Public</span>} if $dsg->restricted;
 	$html .= qq{<span class="ui-button ui-corner-all ui-button-go" onClick="make_dsg_private('$dsgid')">Make Genome Private</span>} if !$dsg->restricted;
