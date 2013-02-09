@@ -34,7 +34,7 @@ BEGIN {
 #    $cogex = CoGeX->dbconnect();
 #    $cogex->storage->debugobj(new DBIxProfiler());
 #    $cogex->storage->debug(1);
-	__PACKAGE__->mk_accessors('restricted_orgs', 'basefilename basefile', 'logfile sqlitefile');
+	__PACKAGE__->mk_accessors('restricted_orgs', 'basefilename',  'basefile', 'logfile',  'sqlitefile');
 }
 
 sub get_defaults {
@@ -231,29 +231,29 @@ sub login_cas {
 		); #do we have a valid user in the database, if not create
 		$coge_user->insert;
 
-		# Create new user's owner group and owner list -- mdb added 8/22/12
-		my $coge_user_group = $coge->resultset('UserGroup')->create(
-			{	creator_user_id => $coge_user->id,
-				name        	=> $uname,
-				description 	=> 'Owner group',
-				role_id     	=> 2, # FIXME hard coded, use config file instead $P->ROLE_OWNER,
-				locked 			=> 1
-			}
-		);
-		$coge->resultset('UserGroupConnector')->create(
-			{	user_id       => $coge_user->id,
-				user_group_id => $coge_user_group->id
-			}
-		);
-		$coge->resultset('List')->create(
-			{	name          => $uname,
-				description   => 'Owner list',
-				list_type_id  => 3, # FIXME hard coded, use config file instead $P->LIST_OWNER,
-				user_group_id => $coge_user_group->id,
-				restricted    => 1,
-				locked        => 1
-			}
-		);
+		# Create new user's owner group and owner list -- mdb added 8/22/12, removed 2/8/13 for v5.5
+#		my $coge_user_group = $coge->resultset('UserGroup')->create(
+#			{	creator_user_id => $coge_user->id,
+#				name        	=> $uname,
+#				description 	=> 'Owner group',
+#				role_id     	=> 2, # FIXME hard coded, use config file instead $P->ROLE_OWNER,
+#				locked 			=> 1
+#			}
+#		);
+#		$coge->resultset('UserGroupConnector')->create(
+#			{	user_id       => $coge_user->id,
+#				user_group_id => $coge_user_group->id
+#			}
+#		);
+#		$coge->resultset('List')->create(
+#			{	name          => $uname,
+#				description   => 'Owner list',
+#				list_type_id  => 3, # FIXME hard coded, use config file instead $P->LIST_OWNER,
+#				user_group_id => $coge_user_group->id,
+#				restricted    => 1,
+#				locked        => 1
+#			}
+#		);
 		
 		$coge->resultset('Log')->create( { user_id => $coge_user->id, page => 'Web.pm', description => 'create user' } );
 	}
