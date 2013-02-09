@@ -690,9 +690,12 @@ Ergo, we rely on jQuery to detect when the DOM is fully loaded, and then run the
 	$hist_width .="px";
 	if (-r $basename.".hist.png")
 	  {
+#<span style='position: absolute;left: $hist_width; top: 45px'>
+	    my $top = $graphics_context->height + 90;
+	    $top .= "px";
 	    print OUT qq{
-<span style='position: absolute;left: $hist_width; top: 45px'>
-<a class="small" href= "$img.hist.png" target=_new>Histogram of synonymous substitutions</a>
+<span style='position: absolute;left: 5; top: $top'>
+<a class="small" href= "$img.hist.png" target=_new>Histogram of synonymous substitutions</a><br>
 <img src= "$img.hist.png" >
 </span>
 }; 
