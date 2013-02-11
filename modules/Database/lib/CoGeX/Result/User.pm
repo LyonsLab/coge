@@ -184,8 +184,8 @@ sub user_groups {
 	# }
 
 	my @groups;
-	foreach my $conn ($self->user_connectors) {
-		push @groups, $conn->child_group if ($conn->parent_type == 5 and $conn->child_type == 6); # FIXME hardcoded to group and user types 
+	foreach my $conn ($self->user_connectors( {parent_type=>$node_types->{user}, child_type=>$node_types->{group} }) ) {
+		push @groups, $conn->child_group;
 	}
 	return wantarray ? @groups : \@groups;
 }
