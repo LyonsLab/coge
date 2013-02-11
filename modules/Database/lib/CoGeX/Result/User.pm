@@ -593,14 +593,14 @@ sub is_role {
 	my $ds   = $opts{ds};
 	my $list = $opts{list};
 	my $experiment = $opts{experiment};
-	return 0 unless $self->id;
-	return 0 unless  $dsg || $ds || $list || $experiment || $group;
+	return 0 unless $self->id; # not logged in
+	return 0 unless $dsg || $ds || $list || $experiment || $group;
 
 	if ($group) {
 		my $ugid = $group =~ /^\d+$/ ? $group : $group->id;
 		foreach my $conn ($self->user_connectors) {
 			return unless $conn->is_child_group;
-			return 1 if ($conn->child_id == $ugid and $conn->role->name =~ /$role/i);
+			return 1 if ($conn->child_id == $ugid and ($conn->role->name =~ /$role/i or $group->creator_user_id == $self->id));
 		}
 	}
 
@@ -608,7 +608,7 @@ sub is_role {
 		my $lid = $list =~ /^\d+$/ ? $list : $list->id;
 		foreach my $conn ($self->user_connectors) {
 			next unless $conn->is_child_list;
-			return 1 if ($conn->child_id == $lid and $conn->role->name =~ /$role/i);
+			return 1 if ($conn->child_id == $lid and ($conn->role->name =~ /$role/i or $group->creator_user_id == $self->id));
 		}
 	}
 
@@ -616,7 +616,7 @@ sub is_role {
 		my $dsgid = $dsg =~ /^\d+$/ ? $dsg : $dsg->id;
 		foreach my $conn ($self->user_connectors) {
 			next unless $conn->is_child_genome;
-			return 1 if ($conn->child_id == $dsgid and $conn->role->name =~ /$role/i);
+			return 1 if ($conn->child_id == $dsgid and ($conn->role->name =~ /$role/i or $group->creator_user_id == $self->id));
 		}
 	}
 
@@ -625,7 +625,7 @@ sub is_role {
 		foreach my $conn ($self->user_connectors) {
 			next unless $conn->is_child_genome;
 			foreach ($conn->child->datasets) {
-				return 1 if ($_->id == $dsid and $conn->role->name =~ /$role/i);
+				return 1 if ($_->id == $dsid and ($conn->role->name =~ /$role/i or $group->creator_user_id == $self->id));
 			}
 		}
 	}
@@ -634,7 +634,7 @@ sub is_role {
 		my $eid = $experiment =~ /^\d+$/ ? $experiment : $experiment->id;
 		foreach my $conn ($self->user_connectors) {
 			next unless $conn->is_child_experiment;
-			return 1 if ($conn->child_id == $eid and $conn->role->name =~ /$role/i);
+			return 1 if ($conn->child_id == $eid and ($conn->role->name =~ /$role/i or $group->creator_user_id == $self->id));
 		}
 	}
 
