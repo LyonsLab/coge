@@ -166,6 +166,7 @@ sub genomes
 	my $restricted = $opts{restricted}; # limit result to restricted genomes
 	my $include_deleted = $opts{include_deleted};
 	my $count = $opts{count}; #return count;
+	my $ids = $opts{ids}; #return genome ids only
 	
 	if ($count) {
 		return $self->list_connectors_as_parent->count({child_type=>$node_types->{genome}});
@@ -173,10 +174,17 @@ sub genomes
 	
 	my @genomes;
 	foreach my $conn ( $self->list_connectors_as_parent->search({child_type=>$node_types->{genome}}) ) {
-	  	my $genome = $conn->child;
-	  	next if ($genome->deleted);
-	    next if ($restricted and not $genome->restricted);
-	    push @genomes, $genome;
+	  if ($ids)
+	    {
+	      push @genomes, $conn->child_id;
+	    }
+	  else
+	    {
+	      my $genome = $conn->child;
+	      next if ($genome->deleted);
+	      next if ($restricted and not $genome->restricted);
+	      push @genomes, $genome;
+	    }
 	}
 	return wantarray ? @genomes : \@genomes;	
 }
