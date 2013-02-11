@@ -71,10 +71,6 @@ if ($cleanup) {
 	#drop_column("list", "locked");
 	# Remove "user_group_id" column from list table
 	#drop_column("list", "user_group_id");
-	# Remove "locked" column from user_group
-	#drop_column("user_group", "locked");
-	# Remove "creator_user_id" from user_group table
-	#drop_column("user_group", "creator_user_id");
 	# Remove user_group_connector table
 	#sql("drop table user_group_connector");	
 	
