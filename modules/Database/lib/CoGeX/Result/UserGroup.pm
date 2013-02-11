@@ -519,7 +519,7 @@ sub annotation_pretty_print_html
 	foreach my $user (sort { $a->info cmp $b->info } $self->users) {
 		my $user_info = qq{<span class="link" onclick="window.open('User.pl?uid=} . $user->id . qq{');">} . $user->info . '</span>';
 		if ($user->id == $self->creator_user_id) {
-			$user_info = '<b>' . $user->info . ' (creator)</b>';
+			$user_info = '<b>' . $user->info . ' - creator</b>';
 		}
 		$anno_type->add_Annot($user_info);
 	}

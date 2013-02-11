@@ -600,7 +600,7 @@ sub is_role {
 		my $ugid = $group =~ /^\d+$/ ? $group : $group->id;
 		foreach my $conn ($self->user_connectors) {
 			return unless $conn->is_child_group;
-			return 1 if $conn->child_id == $ugid and $_->role->name =~ /$role/i;
+			return 1 if ($conn->child_id == $ugid and $conn->role->name =~ /$role/i);
 		}
 	}
 
