@@ -84,7 +84,7 @@ sub users
 	# {
 	# 	push @users, $ugc->user;
 	# }
-	foreach my $conn ($self->user_connectors) {
+	foreach my $conn ($self->user_connectors({child_type=>$node_types->{group}})) { 
 		push @users, $conn->user if ($conn->parent_type == $node_types->{user});
 	}
 
