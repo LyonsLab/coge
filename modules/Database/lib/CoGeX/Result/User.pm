@@ -426,8 +426,18 @@ sub has_access {
 	
 	if ($dsg) {
 		my $dsgid = $dsg =~ /^\d+$/ ? $dsg : $dsg->id;
-		foreach my $genome ( $self->genomes(include_deleted => 1) ) {
-			if ( $dsgid == $genome->id ) {
+		my %genomes;
+
+		#get gids directly connected to user
+#		map {$genomes{$_->child_id}=1} $self->user_connectors({child_type=>2});
+		#check user lists to genomes
+#		foreach my $list ($self->lists)
+#		  {
+		    
+#		  }
+
+		foreach my $genome ( $self->genomes(include_deleted => 1, ids=>1) ) {
+			if ( $dsgid == $genome ) {
 				return 1;
 			}
 		}
@@ -865,6 +875,7 @@ sub genomes {
 	my $self = shift;
 	my %opts = @_;
 	my $include_deleted = $opts{include_deleted};
+	my $ids = ($opts{ids}); #return genome ids only
 
 	my %genomes;
 	foreach my $ug ( $self->groups ) {
@@ -874,29 +885,63 @@ sub genomes {
 		
 		foreach my $uc ( $ug->child_connectors ) {
 			if ($uc->is_child_genome) {
-				my $genome = $uc->child;
-				next if ($genome->deleted && not $include_deleted);
-				$genomes{ $uc->child_id } = $genome;
+###
+			  if ($ids)
+			    {
+			      $genomes{$uc->child_id}=1;
+			    }
+			  else
+			    {
+			      my $genome = $uc->child;
+			      next if ($genome->deleted && not $include_deleted);
+			      $genomes{ $uc->child_id } = $genome;
+			    }
+##
 			}
 			elsif ($uc->is_child_list) {
 				my $list = $uc->child;
-				map { $genomes{ $_->id } = $_ } $list->genomes( include_deleted => $include_deleted );
+				if ($ids)
+				  {
+				    map { $genomes{ $_ } = 1 } $list->genomes( include_deleted => $include_deleted, ids=>$ids );
+				  }
+				else
+				  {
+				    map { $genomes{ $_->id } = $_ } $list->genomes;
+				  }
 			}
 		}
 	}
 	foreach my $uc ( $self->user_connectors ) {
 		if ($uc->is_child_genome) {
-			my $genome = $uc->child;
-			next if ($genome->deleted && not $include_deleted);
-			$genomes{ $uc->child_id } = $genome;
+###
+			  if ($ids)
+			    {
+			      $genomes{$uc->child_id}=1;
+			    }
+			  else
+			    {
+			      my $genome = $uc->child;
+			      next if ($genome->deleted && not $include_deleted);
+			      $genomes{ $uc->child_id } = $genome;
+			    }
+##
 		}
 		elsif ($uc->is_child_list) {
 			my $list = $uc->child;
-			map { $genomes{ $_->id } = $_ } $list->genomes( include_deleted => $include_deleted );
+			if ($ids)
+			  {
+			    map { $genomes{ $_ } = 1 } $list->genomes( include_deleted => $include_deleted, ids=>$ids );
+			  }
+			else
+			  {
+			    map { $genomes{ $_->id } = $_ } $list->genomes( include_deleted => $include_deleted, ids=>$ids );
+			  }
 		}
 	}
-
-	return wantarray ? values %genomes : [ values %genomes ];
+	my @items;
+	if ($ids) {@items = keys %genomes;}
+	else {@items = values %genomes;}
+	return wantarray ? @items : [ @items ];
 }
 
 ################################################ subroutine header begin ##
