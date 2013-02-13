@@ -1066,6 +1066,10 @@ sub run_blast
 	return 1 if -r $outfile;
 }
 
+
+######
+#Target this program for integration into makeflow
+######
 sub blast2bed
 {
 	my %opts     = @_;
@@ -1079,11 +1083,18 @@ sub blast2bed
 		return;
 	}
 	CoGe::Accessory::Web::gunzip("$infile.gz") if -r "$infile.gz";
-	my $cmd = $BLAST2BED . " -infile $infile -outfile1 $outfile1 -outfile2 $outfile2";
+	##target for makeflow
+	#build command
+	my $cmd = $BLAST2BED . " -infile $infile -outfile1 $outfile1 -outfile2 $outfile2"; 
+	#log command to logfile for this SynMap run
 	CoGe::Accessory::Web::write_log( "Creating bed files: $cmd", $cogeweb->logfile );
+	#run command
 	`$cmd`;
 }
 
+######
+#Target this program for integration into makeflow
+######
 sub run_blast2raw
 {
 	my %opts      = @_;
@@ -1093,30 +1104,50 @@ sub run_blast2raw
 	my $outfile   = $opts{outfile};
 	my $tandem_distance = $opts{tandem_distance};
 	my $cscore = $opts{cscore};
+
+	#set defaults if necessary
+	$tandem_distance = 10 unless defined $tandem_distance;
+
+
+	#check to see if job is running.  If it is, wait.  Using a <filename>.running file to show that a program is running
 	while ( -e "$outfile.running" )
 	{
 		print STDERR "detecting $outfile.running.  Waiting. . .\n";
 		sleep 60;
 	}
+	#return output file if it already exists
 	if ( ( -r $outfile && -s $outfile ) || ( -r "$outfile.gz" && -s "$outfile.gz" ) )
 	{
 		CoGe::Accessory::Web::write_log( "Filtered blast file found where tandem dups have been removed: $outfile", $cogeweb->logfile );
 		return $outfile;
 	}
+	#decompress input files
 	CoGe::Accessory::Web::gunzip("$blastfile.gz") if -r "$blastfile.gz";
 	CoGe::Accessory::Web::gunzip("$bedfile1.gz")  if -r "$bedfile1.gz";
 	CoGe::Accessory::Web::gunzip("$bedfile2.gz")  if -r "$bedfile2.gz";
 
-
-	$tandem_distance = 10 unless defined $tandem_distance;
+	#target for makeflow
+	#build command
 	my $cmd = $BLAST2RAW . " $blastfile --localdups --qbed $bedfile1 --sbed $bedfile2 --tandem_Nmax $tandem_distance";
 	$cmd .= " --cscore=$cscore" if $cscore;
 	$cmd .= " > $outfile";
+
+	#log proceedure
 	CoGe::Accessory::Web::write_log( "finding and removing local duplications", $cogeweb->logfile );
+
+	#creating .running file to show that job is running
 	system "/usr/bin/touch $outfile.running";    #track that this is running
+
+	#log that command is running
 	CoGe::Accessory::Web::write_log( "running:\n\t$cmd", $cogeweb->logfile );
+
+	#run command
 	`$cmd`;
+
+	#remove .running file so other programs know that it is complete
 	system "/bin/rm $outfile.running" if -r "$outfile.running";    #remove track file
+
+	#return outfile
 	return $outfile;
 }
 

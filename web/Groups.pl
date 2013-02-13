@@ -159,20 +159,32 @@ sub create_group {
 	my $desc = $opts{desc};
 	my $rid  = $opts{rid};
 
-	my ($role) = $coge->resultset('Role')->find( { name => "Reader" } );
-	$rid = $role->id unless $rid;
-	my $group = $coge->resultset('UserGroup')->create( 
-	  { creator_user_id => $USER->id, 
-	  	name => $name, 
-	  	description => 
-	  	$desc, 
-	  	role_id => $rid 
+	unless ($rid) {
+		my $role = $coge->resultset('Role')->find( { name => "Reader" } );
+		$rid = $role->id;
+	}
+
+	# Create new group
+	my $group = $coge->resultset('UserGroup')->create(
+	  { creator_user_id => $USER->id,
+	  	name => $name,
+	  	description => $desc,
+	  	role_id => $rid
 	  } );
 	return unless $group;
+
+	# Make user the owner of new group
 	# my $conn = $coge->resultset('UserGroupConnector')->create( { user_id => $USER->id, user_group_id => $group->id } );
-	my $conn = $coge->resultset('UserConnector')->create( { parent_id => $group->id, parent_type => 6, child_id => $USER->id, child_type => 5 } ); #FIXME hardcoded types
+	my $conn = $coge->resultset('UserConnector')->create(
+	  { child_id => $group->id,
+	    child_type => 6, 		#FIXME hardcoded to "group"
+	    parent_id => $USER->id,
+	    parent_type => 5,		#FIXME hardcoded to "user"
+	    role_id => 2			#FIXME hardcoded to "owner"
+	  } );
 	return unless $conn;
 
+	# Record in log
 	$coge->resultset('Log')->create( { user_id => $USER->id, page => $PAGE_NAME, description => 'create user group id' . $group->id } );
 	
 	return 1;
@@ -198,6 +210,7 @@ sub delete_group {
 	# OK, now delete the group
 	$group->delete();
 
+	# Record in the log
 	$coge->resultset('Log')->create( { user_id => $USER->id, page => $PAGE_NAME, description => 'delete user group id' . $group->id } );
 }
 
@@ -218,7 +231,7 @@ sub get_groups_for_user
 		#next if ($group->is_owner && !$USER->is_admin); # skip owner groups
 		
 		my $id = $group->id;
-		my $is_editable = ($USER->is_admin or $USER->is_owner_editor(group => $group));
+		my $is_editable = user_can_edit($group);
 				
 		my %row;
 		$row{NAME} = qq{<span class=link onclick='window.open("GroupView.pl?ugid=$id")'>} . $group->name . "</span>" . " (id$id)" ;
@@ -255,17 +268,6 @@ sub get_groups_for_user
 		}
 		$row{LISTS} = $lists;
 
-###	my @genome;
-#	push @genome, "Apotheosis" if $group->role->name =~ /admin/i;
-#	foreach my $genome (sort {$a->organism->name cmp $b->organism->name || $a->version cmp $b->version || $a->genomic_sequence_type_id  <=> $b->genomic_sequence_type_id} $group->genomes)
-#	  {
-#	    my $name = $genome->organism->name;
-#	    $name .= " (v".$genome->version.", ".$genome->type->name.")";
-#	    $name = qq{<span class="link" onclick="window.open('OrganismView.pl?dsgid=}.$genome->id.qq{');">}.$name."</span>";
-#	    push @genome, $name;
-#	  }
-#	$row{GENOMES}=join (",<br>", @genome);
-
 		$row{BUTTONS} = 1;
 		if ($is_editable) {
 			$row{EDIT_BUTTON}   = "<span class='link ui-icon ui-icon-gear' onclick='window.open(\"GroupView.pl?ugid=$id\")'></span>";
@@ -286,3 +288,9 @@ sub get_groups_for_user
 	return $template->output;
 }
 
+sub user_can_edit {
+	my $group = shift;
+	return ($USER->is_admin or 
+			$USER->is_owner_editor(group => $group) or 
+			$USER->id == $group->creator_user_id);
+}

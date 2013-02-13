@@ -117,6 +117,7 @@ sub gen_body {
 	$template->param( MAIN       => 1 );
 	my $ugid = $FORM->param('ugid');
 	my %groups = map {$_->id=>1} $USER->groups;
+	print STDERR Dumper \%groups;
 	unless ($groups{$ugid} || $USER->is_admin)
 	{
 	 return "Permission denied";

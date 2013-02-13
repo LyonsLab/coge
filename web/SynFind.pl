@@ -1,6 +1,8 @@
 #! /usr/bin/perl -w
 use strict;
 use CoGeX;
+use DBIxProfiler;
+
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CGI;
@@ -9,7 +11,6 @@ use HTML::Template;
 use Data::Dumper;
 use Digest::MD5 qw(md5_base64);
 use POSIX;
-use DBIxProfiler;
 use File::Path;
 use Benchmark qw(:all);
 use Parallel::ForkManager;
@@ -66,6 +67,9 @@ $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+#$coge->storage->debugobj(new DBIxProfiler());
+#$coge->storage->debug(1);
+
 
 $COOKIE_NAME = $P->{COOKIE_NAME};
 
@@ -513,6 +517,9 @@ sub get_anno
     return unless $accn || $fid;
     
     my @feats;
+    my $genome = $coge->resultset('Genome')->find($dsgid);
+    next if $genome->restricted && !$USER->has_access_to_genome($genome);
+
     if ($accn)
       {
 	foreach my $feat ($coge->resultset('Feature')->search({
@@ -520,7 +527,6 @@ sub get_anno
 							       "dataset_connectors.genome_id"=>$dsgid
 							      },{join=>['feature_names',{'dataset'=>'dataset_connectors'} ]}))
 	  {
-	    next if $feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset);
 	    push @feats, $feat if ($feat->type->name eq $type);
 	  }
       }
@@ -646,10 +652,12 @@ sub get_data_source_info_for_accn
     my %sources;
     foreach my $feat (@feats)
       {
-	next if $feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset);
+#	my ($genome) = $feat->genomes;
+#	next if $genome->restricted && !$USER->has_access_to_genome($genome);
+#	next if $feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset);
 	foreach my $dsg ($feat->dataset->genomes)
 	  {
-	next if $dsg->deleted;
+	    next if $dsg->deleted;
 	    next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	    my $org = $dsg->organism->name if $dsg->organism;
 	    if (keys %org_ids) {next unless $org_ids{$dsg->organism->id};}
