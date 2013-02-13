@@ -506,12 +506,12 @@ sub annotation_pretty_print_html
 	$anno_type->add_Annot( $self->description . "</td>" );
 	$anno_obj->add_Annot($anno_type);
 
-	# $anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td valign='top' nowrap='true'><span class=\"title5\">" . "Role" . "</span>" );
-	# $anno_type->Type_delimit(": <td class=\"data5\">");
-	# $anno_type->Val_delimit("<br>");
-	# $anno_type->add_Annot( $self->role->name . ($self->role->description ? ' (' . $self->role->description . ')' : '') );
-	# $anno_type->add_Annot( "<span style='color:red;font-style:italic;'>Note: this group was created automatically and cannot be edited.</span>" ) if ($self->locked);
-	# $anno_obj->add_Annot($anno_type);
+	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td valign='top' nowrap='true'><span class=\"title5\">" . "Role" . "</span>" );
+	$anno_type->Type_delimit(": <td class=\"data5\">");
+	$anno_type->Val_delimit("<br>");
+	$anno_type->add_Annot( $self->role->name . ($self->role->description ? ' (' . $self->role->description . ')' : '') );
+	$anno_type->add_Annot( "<span style='color:red;font-style:italic;'>Note: this group is locked and cannot be edited.</span>" ) if ($self->locked);
+	$anno_obj->add_Annot($anno_type);
 
 	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td valign='top' nowrap='true'><span class=\"title5\">" . "Users" . "</span>" );
 	$anno_type->Type_delimit(": <td class=\"data5\">");
