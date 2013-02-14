@@ -88,7 +88,7 @@ mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
 $DEBUG     = 0;
 $BENCHMARK = 1;
 $NUM_SEQS  = 2;         #SHABARI EDIT
-$MAX_SEQS  = 21;
+$MAX_SEQS  = 25;
 $|         = 1;         # turn off buffering
 $DATE      = sprintf(
 	"%04d-%02d-%02d %02d:%02d:%02d",
@@ -350,6 +350,8 @@ sub gen_body {
 	$hsp_track = 0 unless $hsp_track;
 	my $hsp_top = get_opt( params => $prefs, form => $form, param => 'hsp_top' );
 	$hsp_top = 0 unless $hsp_top;
+	my $hsp_single_color = get_opt( params => $prefs, form => $form, param => 'hspsc' );
+	$hsp_single_color = 0 unless $hsp_single_color;
 	my $color_hsp = get_opt( params => $prefs, form => $form, param => 'color_hsp' );
 	$color_hsp = 0 unless $color_hsp;
 	my $color_feat = get_opt( params => $prefs, form => $form, param => 'colorfeat' );
@@ -407,6 +409,8 @@ sub gen_body {
 	else { $template->param( COMP_ADJ_NO => "checked" ); }
 	if ($hsp_top) { $template->param( HSP_TOP_YES => "checked" ); }
 	else { $template->param( HSP_TOP_NO => "checked" ); }
+	if ($hsp_single_color) { $template->param( HSP_SINGLE_COLOR_YES => "checked" ); }
+	else { $template->param( HSP_SINGLE_COLOR_NO => "checked" ); }
 	if ($hsp_track) { $template->param( HSP_TRACK_YES => "checked" ); }
 	else { $template->param( HSP_TRACK_NO => "checked" ); }
 	if ($color_hsp) { $template->param( COLOR_HSP_YES => "checked" ); }
@@ -587,6 +591,7 @@ sub run {
 	my $hsp_top           = $opts{hsp_top};
 	my $hsp_track         = $opts{hsp_track};
 	my $hsp_labels        = $opts{hsp_labels};
+	my $hsp_single_color  = $opts{hsp_single_color};
 	my $feat_labels       = $opts{feat_labels};
 	my $draw_model        = $opts{draw_model};
 	my $hsp_overlap_limit = $opts{hsp_overlap_limit};
@@ -650,6 +655,7 @@ sub run {
 	$gevo_link .= ";gc=$show_gc"       if $show_gc;
 	$gevo_link .= ";color_hsp=1"       if $color_hsp;
 	$gevo_link .= ";hsp_top=1"         if $hsp_top;
+	$gevo_link .= ";hspsc=1"         if $hsp_single_color;
 	$gevo_link .= ";hsp_track=1"       if $hsp_track;
 	$gevo_link .= ";comp_adj=1"        if $comp_adj;
 	$gevo_link .= ";colorfeat=1"       if $color_overlapped_features;
@@ -1035,6 +1041,7 @@ sub run {
 				hsp_top                   => $hsp_top,
 				hsp_track                 => $hsp_track,
 				hsp_colors                => \@hsp_colors,
+				hsp_single_color          => $hsp_single_color, #just use the first hsp_color for all of them
 				show_hsps_with_stop_codon => $show_hsps_with_stop_codon,
 				hiqual                    => $hiqual,
 				padding                   => $padding,
@@ -1367,6 +1374,7 @@ sub generate_image {
 	#    my $hsp_limit = $opts{hsp_limit};
 	#    my $hsp_limit_num = $opts{hsp_limit_num};
 	my $hsp_top                   = $opts{hsp_top};
+	my $hsp_single_color          = $opts{hsp_single_color};
 	my $hsp_track                 = $opts{hsp_track};
 	my $color_hsp                 = $opts{color_hsp};
 	my $bitscore_cutoff           = $opts{bitscore_cutoff};
@@ -1430,6 +1438,7 @@ sub generate_image {
 		gbobj                     => $gbobj,
 		color_hsp                 => $color_hsp,
 		hsp_top                   => $hsp_top,
+		hsp_single_color          => $hsp_single_color,
 		hsp_track                 => $hsp_track,
 		colors                    => $hsp_colors,
 		show_hsps_with_stop_codon => $show_hsps_with_stop_codon, #tblastx option
@@ -2116,6 +2125,7 @@ sub process_hsps {
 	my $eval_cutoff               = $opts{eval_cutoff};
 	my $bitscore_cutoff           = $opts{bitscore_cutoff};
 	my $hsp_top                   = $opts{hsp_top};
+	my $hsp_single_color          = $opts{hsp_single_color};
 	my $hsp_track                 = $opts{hsp_track};
 	my $color_hsp                 = $opts{color_hsp};
 	my $colors                    = $opts{colors};
@@ -2164,7 +2174,7 @@ sub process_hsps {
 			  if defined $bitscore_cutoff
 			  && defined $hsp->score
 			  && $hsp->score < $bitscore_cutoff;
-			my $color = $colors->[$i];
+			my $color = $hsp_single_color ? $colors->[0] : $colors->[$i];
 			my $skip  = 0;
 			next if $hsp_size_limit && $hsp->length < $hsp_size_limit;
 			if ( $show_hsps_with_stop_codon
@@ -3566,6 +3576,7 @@ qq{'args__rgb$i', 'args__'+\$('#sample_color$i').css('backgroundColor'),};
         'args__hsp_overlap_limit', 'hsp_overlap_limit',
         'args__hsp_size_limit', 'hsp_size_limit',
         'args__hsp_top','hsp_top',
+        'args__hsp_single_color','hsp_single_color',
         'args__hsp_track','hsp_track',
         'args__comp_adj','comp_adj',
         'args__color_overlapped_features','color_overlapped_features',
@@ -4321,6 +4332,7 @@ qq{<SELECT name="dsgid$num" id="dsgid$num" onChange="feat_search(['args__accn','
 sub save_settings_gevo {
 	my %opts = @_;
 	my $opts = Dumper \%opts;
+	print STDERR $opts;
 	my $item = CoGe::Accessory::Web::save_settings(
 		opts => $opts,
 		user => $USER,
