@@ -1231,6 +1231,7 @@ sub get_blast_db {
 	#$org_name .= " (".$gst->name.")" if $gst;
 
 	my $db = $dsg->file_path;
+	my $success = generate_blast_db(fasta=>$db, blastdb=>$db, org=>$dsg->organism->name);
 	return unless -r $db;
 	return $org_name, $db, $dsg;
 }
@@ -1263,6 +1264,7 @@ sub generate_blast_db {
 	my $fasta   = $opts{fasta};
 	my $blastdb = $opts{blastdb};
 	my $org     = $opts{org};
+	return 1 if -r "$blastdb.nsq";
 	my $command = $FORMATDB . " -p F";
 	$command .= " -i '$fasta'";
 	$command .= " -t '$org'";
