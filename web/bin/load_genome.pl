@@ -139,11 +139,11 @@ unless ($user) {
 	print $log "log: error finding user '$user_name'\n";
 	exit(-1);
 }
-my $child_types = CoGeX::list_child_types();
+my $node_types = CoGeX::node_types();
 my $listconn = $coge->resultset('ListConnector')->create(
 	{ parent_id => $user->owner_list->id,
 	  child_id => $genome->id,
-	  child_type => $child_types->{genome}
+	  child_type => $node_types->{genome}
 	} );
 unless ($listconn) {
 	print $log "log: error creating list connector\n";

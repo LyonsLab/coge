@@ -269,7 +269,7 @@ sub get_annotations {
 	return "Must have valid experiment id\n" unless ($eid);
 	my $exp = $coge->resultset('Experiment')->find($eid);
 	return unless $exp;
-	return "Access denied\n" unless ($USER->has_access(experiment=>$eid) || !$exp->restricted);
+	return "Access denied\n" unless ($USER->has_access_to_experiment($eid) || !$exp->restricted);
 	
 	my $user_can_edit = ($USER->is_admin || $USER->is_owner_editor(experiment => $eid));
 	
@@ -519,7 +519,7 @@ sub get_experiment_info {
 	my %opts = @_;
 	my $eid = $opts{eid};
 	my ($exp) = $coge->resultset('Experiment')->find($eid);
-	return "Access denied\n" unless ($USER->has_access(experiment=>$eid) || !$exp->restricted);
+	return "Access denied\n" unless ($USER->has_access_to_experiment($eid) || !$exp->restricted);
 
 	return "Unable to find an entry for $eid" unless $exp;
 

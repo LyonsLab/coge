@@ -172,7 +172,7 @@ sub get_list_info {
 	my $lid  = $opts{lid};
 	return unless ($lid);
 	my ($list) = $coge->resultset('List')->find($lid);
-	return unless ($list && ($USER->has_access(list=>$lid) || !$list->restricted));
+	return unless ($list && ($USER->has_access_to_list($lid) || !$list->restricted));
 	
 	my $html = $list->annotation_pretty_print_html();
 	my $user_can_edit = $USER->is_admin || (!$list->locked && $USER->is_owner_editor(list => $lid));
@@ -291,7 +291,7 @@ sub get_annotations {
 	my $lid  = $opts{lid};
 	return unless ($lid);
 	my ($list) = $coge->resultset('List')->find($lid);
-	return unless ($list && ($USER->has_access(list=>$lid) || !$list->restricted));
+	return unless ($list && ($USER->has_access_to_list($lid) || !$list->restricted));
 	
 	my $user_can_edit = $USER->is_admin || (!$list->locked && $USER->is_owner_editor(list => $lid));
 	
@@ -502,7 +502,7 @@ sub get_list_contents {
 	return "Notebook id$lid does not exist.<br>" .
 			"Click <a href='Notebooks.pl'>here</a> to view all notebooks." unless $list;
 			
-	return "Access denied\n" unless ($USER->has_access(list=>$lid) || !$list->restricted);
+	return "Access denied\n" unless ($USER->has_access_to_list($lid) || !$list->restricted);
 		
 	my $user_can_edit = $USER->is_admin || (!$list->locked && $USER->is_owner_editor(list => $lid));
 	

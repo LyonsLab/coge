@@ -117,7 +117,7 @@ sub gen_body {
 	$template->param( MAIN       => 1 );
 	my $ugid = $FORM->param('ugid');
 	my %groups = map {$_->id=>1} $USER->groups;
-	print STDERR Dumper \%groups;
+
 	unless ($groups{$ugid} || $USER->is_admin)
 	{
 	 return "Permission denied";
@@ -167,7 +167,7 @@ sub get_group_info {
 	return "User group id$ugid does not exist.<br>" .
 			"Click <a href='Groups.pl'>here</a> to view all groups." unless ($group);
 
-	my $user_can_edit = (user_can_edit($group) and (not $group->locked or $USER->is_admin));
+	my $user_can_edit = ($group->is_editable($USER) and (not $group->locked or $USER->is_admin));
 	
 	my $html = $group->annotation_pretty_print_html;#(allow_delete => $user_can_edit);
 	if ($user_can_edit) {
@@ -187,7 +187,7 @@ sub edit_group_info {
 	return 0 unless $ugid;
 
 	my $group = $coge->resultset('UserGroup')->find($ugid);
-	return 0 unless $group && user_can_edit($group);
+	return 0 unless $group && $group->is_editable($USER);
 	
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'GroupView.tmpl' );
 	$template->param( EDIT_GROUP_INFO => 1 );
@@ -212,13 +212,27 @@ sub update_group_info {
 	my $name = $opts{name};
 	return 0 unless $name;
 	my $desc = $opts{desc};
-	my $roleid = $opts{roleid};
-	my $group = $coge->resultset('UserGroup')->find($ugid);
-	return 0 unless $group && user_can_edit($group);
+	my $role_id = $opts{roleid};
+	return unless $role_id;
 	
+	my $group = $coge->resultset('UserGroup')->find($ugid);
+	return unless $group && $group->is_editable($USER);
+	
+	if ($role_id != $group->role_id) {
+		foreach my $conn ($group->child_connectors) {
+			$conn->role_id($role_id);
+			$conn->update;
+		}
+		foreach my $conn ($group->user_connectors) {
+			next if ($conn->role->is_owner);
+			$conn->role_id($role_id);
+			$conn->update;
+		}
+	}
+
 	$group->name($name);
 	$group->description($desc) if $desc;
-	$group->role_id($roleid) if $roleid;
+	$group->role_id($role_id);
 	$group->update;
 
 	return 1;
@@ -230,7 +244,7 @@ sub modify_users {
 	return 0 unless $ugid;
 	
 	my $group = $coge->resultset('UserGroup')->find($ugid);
-	return 0 unless $group && user_can_edit($group);
+	return 0 unless $group && $group->is_editable($USER);
 	
 	my %data;
 	$data{title} = 'Modify Users';
@@ -269,25 +283,29 @@ sub add_user_to_group {
 	my $ugid = $opts{ugid};
 	my $uid  = $opts{uid};
 
-	#return 1 if $uid == $USER->id;
 	return "UGID and/or UID not specified" unless $ugid && $uid;
+	#return 1 if $uid == $USER->id;
 
+	# Find group and check permission to modify
 	my $group = $coge->resultset('UserGroup')->find($ugid);
-	return 0 unless $group && user_can_edit($group);
-	
+	return 0 unless $group && $group->is_editable($USER);
 	if ( $group->locked && !$USER->is_admin ) {
-		return "This is a locked group.  Admin permission is needed to modify.";
+		return "This group is locked and cannot be modified.";
 	}
 	
+	# Create user connection to group
 	# my ($ugc) = $coge->resultset('UserGroupConnector')->find_or_create( { user_id => $uid, user_group_id => $ugid } );
     my $conn = $coge->resultset('UserConnector')->create({
     	parent_id => $uid,
     	parent_type => 5, #FIXME hardcoded to "user"
     	child_id => $ugid,
     	child_type => 6, #FIXME hardcoded to "group"
-    	role_id => 3 #FIXME hardcoded to "reader"
+    	role_id => $group->role_id
     });
     return 0 unless $conn;
+    
+	# Record in log
+	$coge->resultset('Log')->create( { user_id => $USER->id, page => $PAGE_NAME, description => 'add user id' . $uid . ' to group id' . $ugid } );	
 
 	return 1;
 }
@@ -297,17 +315,17 @@ sub remove_user_from_group {
 	my $ugid = $opts{ugid};
 	my $uid  = $opts{uid};
 	
-	if ( $uid == $USER->id && !$USER->is_admin ) { # only allow this for admins
-		return "Can't remove yourself from this group!";
-	}
-	
+	# Find group and check permission to modify
 	my $group = $coge->resultset('UserGroup')->find($ugid);
-	return 0 unless $group && user_can_edit($group);
-	
+	return 0 unless $group && $group->is_editable($USER);
 	if ( $group->locked && !$USER->is_admin ) {
-		return "This is a locked group.  Admin permission is needed to modify.";
+		return "This group is locked and cannot be modified.";
 	}
+	if ( $uid == $USER->id && !$USER->is_admin ) { # only allow this for admins
+		return "Can't remove yourself from a group!";
+	}	
 
+	# Remove user connections to group
 	# foreach my $ugc ( $coge->resultset('UserGroupConnector')->search( { user_id => $uid, user_group_id => $ugid } ) ) {
 	# 	$ugc->delete;
 	# }
@@ -320,6 +338,9 @@ sub remove_user_from_group {
 	foreach (@conns) {
 		$_->delete;
 	}
+	
+	# Record in log
+	$coge->resultset('Log')->create( { user_id => $USER->id, page => $PAGE_NAME, description => 'remove user id' . $uid . ' from group id' . $ugid } );	
 
 	return 1;
 }
@@ -478,7 +499,7 @@ sub delete_group {
 	return "No UGID specified" unless $ugid;
 	
 	my $group = $coge->resultset('UserGroup')->find($ugid);
-	return 0 unless $group && user_can_edit($group);
+	return 0 unless $group && $group->is_editable($USER);
 	
 	if ( $group->locked && !$USER->is_admin ) {
 		return "This is a locked group.  Admin permission is needed to delete.";
@@ -540,7 +561,7 @@ sub set_group_creator {
 	return "UGID and/or UID not specified" unless $ugid && $uid;
 	
 	my $group = $coge->resultset('UserGroup')->find($ugid);
-	return 0 unless user_can_edit($group);
+	return 0 unless $group->is_editable($USER);
 	
 	if ( $group->locked && !$USER->is_admin ) {
 		return "This is a locked group.  Admin permission is needed to modify.";
@@ -550,11 +571,4 @@ sub set_group_creator {
 	$group->update();	
 	
 	return 1;
-}
-
-sub user_can_edit {
-	my $group = shift;
-	return ($USER->is_admin or 
-			$USER->is_owner_editor(group => $group) or 
-			$USER->id == $group->creator_user_id);
 }

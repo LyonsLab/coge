@@ -122,7 +122,7 @@ sub get_roles {
 		$name .= ": " . $role->description if $role->description;
 		push @roles, { RID => $role->id, NAME => $name };
 	}
-	return \@roles;
+	return [reverse @roles]; # put "reader" first
 }
 
 #sub add_genome_to_group {
@@ -231,7 +231,7 @@ sub get_groups_for_user
 		#next if ($group->is_owner && !$USER->is_admin); # skip owner groups
 		
 		my $id = $group->id;
-		my $is_editable = user_can_edit($group);
+		my $is_editable = $group->is_editable($USER);
 				
 		my %row;
 		$row{NAME} = qq{<span class=link onclick='window.open("GroupView.pl?ugid=$id")'>} . $group->name . "</span>" . " (id$id)" ;
@@ -286,11 +286,4 @@ sub get_groups_for_user
 	$template->param( BUTTONS => 1 );
 	$template->param( ROLE_LOOP => get_roles() );
 	return $template->output;
-}
-
-sub user_can_edit {
-	my $group = shift;
-	return ($USER->is_admin or 
-			$USER->is_owner_editor(group => $group) or 
-			$USER->id == $group->creator_user_id);
 }

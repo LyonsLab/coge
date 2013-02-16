@@ -7,10 +7,11 @@
 $(document).ready(function(){
 	$.ajaxSetup({
 		type: "POST",
-		url: "<TMPL_VAR NAME=PAGE_NAME>",
+		//url: "<TMPL_VAR NAME=PAGE_NAME>",
 		dataType: "html",
 		cache: false,
 	});
+	
 	//set_table();
 	$(".dialog_box").dialog({autoOpen: false, width: 500, maxWidth: 600});
 });

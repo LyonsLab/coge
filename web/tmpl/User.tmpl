@@ -33,7 +33,7 @@ $(function() {
 	// Initialize AJAX
 	$.ajaxSetup({
 		type: "POST",
-		url: "<TMPL_VAR NAME='PAGE_NAME'>",
+		//url: "<TMPL_VAR NAME='PAGE_NAME'>",
 		dataType: "html",
 		cache: false,
 	});
@@ -939,25 +939,31 @@ function send_items_to(page_name, format) {
 		<span class="small" style="font-weight:bold;color:dimgray;">Who Has Access</span>
 		<div class="small" style="overflow:auto;max-height:120px;padding-left:30px;padding-bottom:10px;border-top:1px solid lightgray;">
 			<div style="padding-top:10px;">
-				<TMPL_LOOP NAME="GROUP_LOOP">
-					<div>
-						<span style="color:dimgray;"><TMPL_VAR NAME="GROUP_NAME"> (group) - <TMPL_VAR NAME="GROUP_ROLE"></span>
-						<span onClick="remove_items_from_user_or_group('<TMPL_VAR NAME=GROUP_ITEM>');" class="link ui-icon ui-icon-close"></span>
-						<br>
-						<TMPL_LOOP NAME="GROUP_USER_LOOP">
-							<span style="color:dimgray;padding:5px;padding-left:20px;"><TMPL_VAR NAME="GROUP_USER_FULL_NAME"> (<TMPL_VAR NAME="GROUP_USER_NAME">)<span><br>
-						</TMPL_LOOP>
-					</div>
-				</TMPL_LOOP>
 				<TMPL_LOOP NAME="USER_LOOP">
 					<div>
+						<img src="picts/user-icon.png" width="11" height="11"/>
 						<span style="color:dimgray;"><TMPL_VAR NAME="USER_FULL_NAME"> (<TMPL_VAR NAME="USER_NAME">) - <TMPL_VAR NAME="USER_ROLE"><span>
 						<TMPL_IF NAME="USER_DELETE">
-						<span onClick="$(this.parent).fadeOut(); remove_items_from_user_or_group('<TMPL_VAR NAME=USER_ITEM>');" class="link ui-icon ui-icon-close"></span>
+							<span onClick="$(this.parentNode).fadeOut('slow'); remove_items_from_user_or_group('<TMPL_VAR NAME=USER_ITEM>');" class="link ui-icon ui-icon-close"></span>
 						</TMPL_IF>
 						<br>
 					</div>
 				</TMPL_LOOP>
+				<TMPL_LOOP NAME="GROUP_LOOP">
+					<div>
+						<img src="picts/group-icon.png" width="11" height="11"/>
+						<span style="color:dimgray;"><TMPL_VAR NAME="GROUP_NAME"> (group) - <TMPL_VAR NAME="GROUP_ROLE"></span>
+						<TMPL_IF NAME="GROUP_DELETE">
+							<span onClick="$(this.parentNode).fadeOut('slow'); remove_items_from_user_or_group('<TMPL_VAR NAME=GROUP_ITEM>');" class="link ui-icon ui-icon-close"></span>
+						</TMPL_IF>
+						<br>
+						<TMPL_LOOP NAME="GROUP_USER_LOOP">
+							<span style="color:dimgray;padding:5px;padding-left:20px;">
+							<img src="picts/user-icon.png" width="11" height="11"/>
+							<TMPL_VAR NAME="GROUP_USER_FULL_NAME"> (<TMPL_VAR NAME="GROUP_USER_NAME">)<span><br>
+						</TMPL_LOOP>
+					</div>
+				</TMPL_LOOP>				
 				<TMPL_IF NAME="ACCESS_MSG">
 					<div style="color:dimgray;font-style:italic;">
 						<TMPL_VAR NAME="ACCESS_MSG">
@@ -975,7 +981,7 @@ function send_items_to(page_name, format) {
 				<span href="javascript:void(0)" onClick="add_items_to_user_or_group();" class='ui-button ui-corner-all'>Add</span>
 			<TMPL_ELSE>
 				<span style="color:dimgray">
-					You don't have access to modify the selected item(s).
+					You don't have permission to modify the selected item(s).
 				</span>
 			</TMPL_IF>
 		</div>

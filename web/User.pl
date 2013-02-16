@@ -50,7 +50,7 @@ $coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
 $COOKIE_NAME = $P->{COOKIE_NAME};
 $URL         = $P->{URL};
 $COGEDIR     = $P->{COGEDIR};
-$TEMPDIR     = $P->{TEMPDIR} . "PAGE_TITLE/";
+$TEMPDIR     = $P->{TEMPDIR} . "$PAGE_TITLE/";
 mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
 $TEMPURL = $P->{TEMPURL} . "PAGE_TITLE/";
 
@@ -86,15 +86,17 @@ $link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, 
 
 $MAX_SEARCH_RESULTS = 100;
 
-%ITEM_TYPE = ( # content/toc types 		#FIXME use CoGeX::get_child_types
+my $node_types = CoGeX::node_types();
+
+%ITEM_TYPE = ( # content/toc types
 	all 		=> 100,
 	shared 		=> 101, #FIXME not used
 	trash 		=> 102,
 	user 		=> 103,
 	group 		=> 104,
-	notebook 	=> 1, # note: should match child_type value for the list_connector table
-	genome 		=> 2, # note: should match child_type value for the list_connector table
-	experiment 	=> 3  # note: should match child_type value for the list_connector table
+	notebook 	=> $node_types->{list},
+	genome 		=> $node_types->{genome},
+	experiment 	=> $node_types->{experiment}
 );
 
 
@@ -213,7 +215,7 @@ sub get_item_info {
 		return unless $notebook;
 		return unless ($USER->is_admin or $USER->has_access_to_list($notebook));
 
-		my $group_str = join('<br>', sort map { $_->name } $notebook->groups);
+		my $group_str = join('<br>', sort map { $_->name } $USER->groups_with_access($notebook));
 		$html .= '<b>Notebook id' . $notebook->id . '</b><br>' . 
 				 '<b>Name:</b> ' . $notebook->name . '<br>' . 
 				 '<b>Description:</b> ' . $notebook->description . '<br>' .
@@ -226,7 +228,7 @@ sub get_item_info {
 				 '<b>Users with access:</b><br>' .
 				 '<div style="padding-left:20px;">';
 		if ($notebook->restricted) {
-			$html .= join('<br>', sort map { $_->display_name.' ('.$_->user_name.')' } $notebook->users);
+			$html .= join('<br>', sort map { $_->display_name.' ('.$_->user_name.')' } $USER->users_with_access($notebook));
 		}
 		else {
 		 	$html .= 'Everyone';
@@ -238,7 +240,7 @@ sub get_item_info {
 		return unless $genome;
 		return unless ($USER->is_admin or $USER->has_access_to_genome($genome));
 	
-		my $group_str = join('<br>', sort map { $_->name } $genome->groups);
+		my $group_str = join('<br>', sort map { $_->name } $USER->groups_with_access($genome));
 		$html .= '<b>Genome id' . $genome->id . '</b><br>' . 
 				 '<b>Organism: </b>' . $genome->organism->name . '<br>' .
 				 '<b>Name:</b> ' . $genome->name . '<br>' . 
@@ -253,7 +255,7 @@ sub get_item_info {
 				 '<b>Users with access:</b><br>' .
 				 '<div style="padding-left:20px;">';
 		if ($genome->restricted) {
-			$html .= join('<br>', sort map { $_->display_name.' ('.$_->user_name.')' } $genome->users);
+			$html .= join('<br>', sort map { $_->display_name.' ('.$_->user_name.')' } $USER->users_with_access($genome));		
 		}
 		else {
 		 	$html .= 'Everyone';
@@ -265,7 +267,7 @@ sub get_item_info {
 		return unless $experiment;
 		return unless ($USER->is_admin or $USER->has_access_to_experiment($experiment));
 	
-		my $group_str = join('<br>', sort map { $_->name } $experiment->groups);
+		my $group_str = join('<br>', sort map { $_->name } $USER->groups_with_access($experiment));
 		$html .= '<b>Experiment id' . $experiment->id . '</b><br>' . 
 				 '<b>Name:</b> ' . $experiment->name . '<br>' . 
 				 '<b>Description:</b> ' . $experiment->description . '<br>' .
@@ -278,13 +280,13 @@ sub get_item_info {
 				 '<b>Users with access:</b><br>' .
 				 '<div style="padding-left:20px;">';		 
 		if ($experiment->restricted) {
-			$html .= join('<br>', sort map { $_->display_name.' ('.$_->user_name.')' } $experiment->users);
+			$html .= join('<br>', sort map { $_->display_name.' ('.$_->user_name.')' } $USER->users_with_access($experiment));
 		}
 		else {
 		 	$html .= 'Everyone';
 		}
 		$html .= '</div>';				 
-	}	
+	}
 
 	return encode_json({ timestamp => $timestamp, html => $html });
 }
@@ -402,8 +404,7 @@ sub get_share_dialog {
 			my $genome = $coge->resultset('Genome')->find($item_id);
 			return unless $genome;
 			next unless ($USER->is_admin or $USER->has_access_to_genome($genome));
-			#map { $groups{$_->id} = $_ } $genome->groups;
-			map { $userconn{$_->parent_id}  = $_ } $genome->user_connectors;
+			map { $userconn{$_->parent_id}  = $_ } ($genome->user_connectors, $genome->group_connectors);
 			$isPublic = 1 if (not $genome->restricted);
 			$isEditable = 0 if (not $USER->is_owner_editor(dsg => $genome));
 		}
@@ -411,8 +412,7 @@ sub get_share_dialog {
 			my $experiment = $coge->resultset('Experiment')->find($item_id);
 			return unless $experiment;
 			next unless ($USER->is_admin or $USER->has_access_to_experiment($experiment));
-			#map { $groups{$_->id} = $_ } $experiment->groups;
-			map { $userconn{$_->id}  = $_ } $experiment->user_connectors;
+			map { $userconn{$_->id}  = $_ } ($experiment->user_connectors, $experiment->group_connectors);
 			$isPublic = 1 if (not $experiment->restricted);
 			$isEditable = 0 if (not $USER->is_owner_editor(experiment => $experiment));
 		}
@@ -420,10 +420,9 @@ sub get_share_dialog {
 			my $notebook = $coge->resultset('List')->find($item_id);
 			return unless $notebook;
 			next unless ($USER->is_admin or $USER->has_access_to_list($notebook));
-			#map { $groups{$_->id} = $_ } $notebook->groups;
-			map { $userconn{$_->id}  = $_ } $notebook->user_connectors;
+			map { $userconn{$_->id}  = $_ } ($notebook->user_connectors, $notebook->group_connectors);
 			$isPublic = 1 if (not $notebook->restricted);
-			$isEditable = 0 if (not $USER->is_owner_editor(notebook => $notebook));
+			$isEditable = 0 if (not $USER->is_owner_editor(list => $notebook));
 		}
 	}
 
@@ -436,7 +435,7 @@ sub get_share_dialog {
 				  USER_FULL_NAME => $user->display_name, 
 				  USER_NAME => $user->name,
 				  USER_ROLE => $conn->role->name,
-				  USER_DELETE => $conn->role->name !~ /owner/i
+				  USER_DELETE => $isEditable && !$conn->role->is_owner # owner can't be removed
 				};
 		}
 		elsif ($conn->is_parent_group) {
@@ -449,37 +448,19 @@ sub get_share_dialog {
 				{ GROUP_ITEM => $group->id.':'.$conn->parent_type,
 				  GROUP_NAME => $group->name,
 				  GROUP_ROLE => $group->role->name,
+				  GROUP_DELETE => $USER->is_owner_editor(group => $group->id),
 				  GROUP_USER_LOOP => \@users
 				};
 		}
 	}
-
-	# foreach my $group (sort groupcmp values %groups) {
-	# 	# if ($group->is_owner) { #FIXME will go away with new user_connector
-	# 	# 	my $u = $group->creator;
-	# 	# 	push @user_rows, { 	USER_ITEM => $u->id.':5', #FIXME hardcoded type
-	# 	# 				  	USER_FULL_NAME => $u->display_name, 
-	# 	# 				  	USER_NAME => $u->name,
-	# 	# 				   	USER_ROLE => 'Owner'
-	# 	# 			};
-	# 	# 	next;
-	# 	# }
-
-	# 	my @users = map { { GROUP_USER_FULL_NAME => $_->display_name, 
-	# 						GROUP_USER_NAME => $_->name } 
-	# 					} sort usercmp $group->users;
-	# 	push @group_rows, { GROUP_ITEM => $group->id.':6', #FIXME hardcoded type
-	# 				   		GROUP_NAME => $group->name, 
-	# 				   		GROUP_ROLE => $group->role->name,
-	# 				   		GROUP_USER_LOOP => \@users };
-	# }
-
+	
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-	$template->param( SHARE_DIALOG => 1 );
-	$template->param( GROUP_LOOP => [sort {$a->{GROUP_NAME} cmp $b->{GROUP_NAME}} values %group_rows] );
-	$template->param( USER_LOOP  => [sort {$a->{USER_FULL_NAME} cmp $b->{USER_FULL_NAME}} values %user_rows] );
-	$template->param( ROLES => get_roles('reader') );
-	$template->param( IS_EDITABLE => $isEditable );
+	$template->param( 	SHARE_DIALOG => 1,
+						IS_EDITABLE => $isEditable,
+						GROUP_LOOP => [sort {$a->{GROUP_NAME} cmp $b->{GROUP_NAME}} values %group_rows],
+						USER_LOOP  => [sort {$a->{USER_FULL_NAME} cmp $b->{USER_FULL_NAME}} values %user_rows],
+						ROLES => get_roles('reader'),
+	);
 
 	if ($isPublic) {
 		$template->param( ACCESS_MSG => 'Everyone' );
@@ -590,7 +571,7 @@ sub add_items_to_user_or_group {
 				  parent_type => 6, # FIXME hardcoded
 				  child_id => $item_id, 
 				  child_type => $item_type,
-				  role_id => $role_id
+				  role_id => $group->role_id
 				}
 			);
 			return unless $conn;
@@ -754,13 +735,24 @@ sub get_contents {
 	my $timestamp = $opts{timestamp};
 	my $html_only = $opts{html_only};
 
+	use Time::HiRes qw ( time );
+	my $start_time = time;
+
 	my $title;
 	my @rows;
 
+	my $children = $USER->children_by_type_and_id;
+#	foreach $type (keys %{$USER->children_by_type_and_id}) {
+#		print STDERR $type . "\n";
+#		foreach my $id (keys %{$USER->children_by_type_and_id->{$type}}) {
+#			print STDERR "   " . $id . "\n";	
+#		}
+#	}
+
 	if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{group}) {
 		$title = 'Groups';
-		foreach my $group (sort {$a->name cmp $b->name} $USER->groups) {
-			#next if ($group->is_owner); # don't show owner groups
+		#foreach my $group (sort {$a->name cmp $b->name} $USER->groups) {
+		foreach my $group (sort {$a->name cmp $b->name} values %{$children->{6}}) { #FIXME hardcoded type
 			push @rows, { CONTENTS_ITEM_ID => $group->id, 
 						  CONTENTS_ITEM_TYPE => $ITEM_TYPE{group}, 
 						  CONTENTS_ITEM_INFO => $group->info, 
@@ -768,20 +760,22 @@ sub get_contents {
 					  	  CONTENTS_ITEM_LINK =>  'GroupView.pl?ugid=' . $group->id };
 		}
 	}
+	
 	if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{notebook}) {
 		$title = 'Notebooks';
-		foreach my $list (sort listcmp $USER->lists) {
-			#next if ($list->is_owner); # don't show owner lists
+		#foreach my $list (sort listcmp $USER->lists) {
+		foreach my $list (sort listcmp values %{$children->{1}}) { #FIXME hardcoded type
 			push @rows, { CONTENTS_ITEM_ID => $list->id, 
 						  CONTENTS_ITEM_TYPE => $ITEM_TYPE{notebook}, 
 						  CONTENTS_ITEM_INFO => $list->info, 
 					  	  CONTENTS_ITEM_ICON => '<img src="picts/notebook-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
 					  	  CONTENTS_ITEM_LINK =>  'NotebookView.pl?nid=' . $list->id };
 		}
-	}	
+	}
 	if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{genome}) {
 		$title = 'Genomes';
-		foreach my $genome (sort genomecmp $USER->genomes(include_deleted => 1)) {
+		#foreach my $genome (sort genomecmp $USER->genomes(include_deleted => 1)) {
+		foreach my $genome (sort genomecmp values %{$children->{2}}) { #FIXME hardcoded type
 			push @rows, { CONTENTS_ITEM_ID => $genome->id, 
 						  CONTENTS_ITEM_TYPE => $ITEM_TYPE{genome},
 						  CONTENTS_ITEM_DELETED => $genome->deleted,
@@ -792,7 +786,8 @@ sub get_contents {
 	}
 	if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{experiment}) {
 		$title = 'Experiments';
-		foreach my $experiment (sort experimentcmp $USER->experiments(include_deleted => 1)) {
+		#foreach my $experiment (sort experimentcmp $USER->experiments(include_deleted => 1)) {
+		foreach my $experiment (sort experimentcmp values %{$children->{3}}) { #FIXME hardcoded type
 			push @rows, { CONTENTS_ITEM_ID => $experiment->id, 
 						  CONTENTS_ITEM_TYPE => $ITEM_TYPE{experiment}, 
 						  CONTENTS_ITEM_DELETED => $experiment->deleted,
@@ -809,6 +804,8 @@ sub get_contents {
 	$template->param( CONTENTS_TITLE => $title );
 	$template->param( CONTENTS_ITEM_LOOP => \@rows );
 	my $html = $template->output;
+
+#	print STDERR "get_contents: time=" . ((time - $start_time)*1000) . "\n";
 
 	return $html if ($html_only);
 	return encode_json({ timestamp => $timestamp, html => $html });
@@ -889,19 +886,23 @@ sub search_notebooks {
 
 	# Try to get all items if blank search term
 	if (!$search_term) {
-		my $sql = "locked=0 AND restricted=0";# OR user_group_id IN ( $group_str ))"; # FIXME
+		my $sql = "locked=0";# AND restricted=0 OR user_group_id IN ( $group_str ))"; # FIXME
 		$num_results = $coge->resultset("List")->count_literal($sql);
 		if ($num_results < $MAX_SEARCH_RESULTS) {
-			@notebooks = $coge->resultset("List")->search_literal($sql);
+			foreach my $notebook ($coge->resultset("List")->search_literal($sql)) {
+				next if ($notebook->restricted and not $USER->has_access_to_list($notebook));
+				push @notebooks, $notebook;
+			}
 		}
 	}
 	# Perform search
 	else {
 		# Get public lists and user's private lists	
 		$search_term = '%'.$search_term.'%';
-		@notebooks = $coge->resultset("List")->search_literal(
-			"locked=0 " .  # AND (restricted=0 OR user_group_id IN ( $group_str )) \ # FIXME
-			"AND (name LIKE '$search_term' OR description LIKE '$search_term')");
+		foreach my $notebook ($coge->resultset("List")->search_literal("locked=0 AND (name LIKE '$search_term' OR description LIKE '$search_term')")) {
+			next if ($notebook->restricted and not $USER->has_access_to_list($notebook));
+			push @notebooks, $notebook;
+		}
 		$num_results = @notebooks;
 	}
 	
