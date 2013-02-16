@@ -52,12 +52,32 @@ __PACKAGE__->add_columns(
 	{ data_type => "INT", default_value => "0", is_nullable => 0, size => 1 }
 );
 __PACKAGE__->set_primary_key("user_group_id");
-#__PACKAGE__->has_many( 'user_group_connectors' => "CoGeX::Result::UserGroupConnector", 'user_group_id' );
-__PACKAGE__->has_many( 'user_connectors' => "CoGeX::Result::UserConnector", { "foreign.child_id" => "self.user_group_id" } );   # parent users
-__PACKAGE__->has_many( 'child_connectors' => "CoGeX::Result::UserConnector", { "foreign.parent_id" => "self.user_group_id" } ); # child genomes/experiments/lists
-#__PACKAGE__->has_many( 'lists' => "CoGeX::Result::List", 'user_group_id' );
 __PACKAGE__->belongs_to( 'role' => "CoGeX::Result::Role", 'role_id' );
 __PACKAGE__->belongs_to( 'creator' => "CoGeX::Result::User", 'creator_user_id' );
+__PACKAGE__->has_many( # parent users
+	'user_connectors' => 'CoGeX::Result::UserConnector', 
+	{ "foreign.child_id" => "self.user_group_id" }, 
+	{ where => [ -and => [ parent_type => $node_types->{user}, child_type => $node_types->{group} ] ] } ); 
+__PACKAGE__->has_many( # all children (genomes/experiments/lists)
+	'child_connectors' => 'CoGeX::Result::UserConnector', 
+	{ "foreign.parent_id" => "self.user_group_id" }, 
+	{ where => { parent_type => $node_types->{group} } } ); 
+__PACKAGE__->has_many( # child genomes
+	'genome_connectors' => "CoGeX::Result::UserConnector", 
+	{ "foreign.parent_id" => "self.user_group_id" }, 
+	{ where => [ -and => [ parent_type => $node_types->{group}, child_type => $node_types->{genome} ] ] } );
+__PACKAGE__->has_many( # child experiments
+	'experiment_connectors' => "CoGeX::Result::UserConnector", 
+	{ "foreign.parent_id" => "self.user_group_id" }, 
+	{ where => [ -and => [ parent_type => $node_types->{group}, child_type => $node_types->{experiment} ] ] } );
+__PACKAGE__->has_many( # child features
+	'feature_connectors' => "CoGeX::Result::UserConnector", 
+	{ "foreign.parent_id" => "self.user_group_id" }, 
+	{ where => [ -and => [ parent_type => $node_types->{group}, child_type => $node_types->{feature} ] ] } );	
+__PACKAGE__->has_many( # child lists
+	'list_connectors' => "CoGeX::Result::UserConnector", 
+	{ "foreign.parent_id" => "self.user_group_id" }, 
+	{ where => [ -and => [ parent_type => $node_types->{group}, child_type => $node_types->{list} ] ] } );	
 
 
 ################################################ subroutine header begin ##
@@ -77,19 +97,23 @@ __PACKAGE__->belongs_to( 'creator' => "CoGeX::Result::User", 'creator_user_id' )
 
 sub users
 {
-	my $self  = shift;
-	my @users = ();
+	my $self = shift;
 	
-	# foreach my $ugc ( $self->user_group_connectors() )
-	# {
-	# 	push @users, $ugc->user;
-	# }
-	foreach my $conn ($self->user_connectors({child_type=>$node_types->{group}})) { 
-		push @users, $conn->user if ($conn->parent_type == $node_types->{user});
+	my @users;
+	foreach ($self->user_connectors) {
+		push @users, $_->parent;
 	}
-
-	return wantarray ? @users : \@users;
+	
+	return wantarray ? @users : \@users;		
 }
+
+#sub owner
+#{
+#	my $self = shift;
+#	foreach ($self->user_connectors) {
+#		return $_->parent if ($_->role->is_owner);
+#	}
+#}
 
 ################################################ subroutine header begin ##
 
@@ -112,22 +136,40 @@ sub has_member
 	my $user = shift;
 	my $uid = $user =~ /^\d+$/ ? $user : $user->id;
 
-	# foreach my $ugc ( $self->user_group_connectors() )
-	# {
-	# 	return 1 if ($ugc->user_id == $uid);
-	# }
-	foreach my $conn ($self->user_connectors) {
-		return 1 if ($conn->parent_id == $uid and $conn->parent_type == $node_types->{user});
-	}
+	return 1 if $self->user_connectors({parent_id => $uid});
 
 	return 0;
 }
 
 ################################################ subroutine header begin ##
 
-=head2 is_owner
+=head2 is_editable
 
- Usage     : is this an owner group?
+ Usage     : is this group editable by the specified user?
+ Purpose   : 
+ Returns   : 0 or 1
+ Argument  : 
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+sub is_editable {
+	my $self = shift;
+	my $user = shift;
+	
+	return ($user->is_admin or 
+			$user->is_owner_editor(group => $self) or 
+			$user->id == $self->creator_user_id or
+			$self->is_editor);
+}
+
+################################################ subroutine header begin ##
+
+=head2 is_<ROLE>
+
+ Usage     : does this group have the specified role?
  Purpose   : 
  Returns   : 0 or 1
  Argument  : 
@@ -138,60 +180,19 @@ sub has_member
 
 ################################################## subroutine header end ##
 
-# sub is_owner {
-# 	my $self = shift;
-# 	return $self->role->name =~ /owner/i;
-# }
+sub is_owner {
+	my $self = shift;
+ 	return $self->role->name =~ /owner/i;
+}
+
+sub is_editor {
+	my $self = shift;
+ 	return $self->role->name =~ /editor/i;
+}
 
 # sub is_admin {
 # 	my $self = shift;
 # 	return $self->role->name =~ /admin/i;
-# }
-
-################################################ subroutine header begin ##
-
-=head2 owner_list
-
- Usage     : return group's owner list
- Purpose   : 
- Returns   : list object
- Argument  : 
- Throws    : None
- Comments  : 
-
-=cut
-
-################################################## subroutine header end ##
-
-# sub owner_list {
-# 	my $self = shift;
-# 	foreach my $list ( $self->lists ) {
-# 		return $list if ($list->list_type_id == 3 && $list->description =~ /owner/i); # FIXME list type hardcoded
-# 	}
-# 	return;
-# }
-
-################################################ subroutine header begin ##
-
-=head2 shared_list
-
- Usage     : return group's shared list
- Purpose   : 
- Returns   : list object
- Argument  : 
- Throws    : None
- Comments  : 
-
-=cut
-
-################################################## subroutine header end ##
-
-# sub shared_list {
-# 	my $self = shift;
-# 	foreach my $list ( $self->lists ) {
-# 		return $list if ($list->list_type_id == 7 && $list->description =~ /shared/i); # FIXME list type hardcoded
-# 	}
-# 	return;
 # }
 
 ################################################ subroutine header begin ##
@@ -214,9 +215,10 @@ sub lists
 	my $self = shift;
 	
 	my @lists;
-	foreach my $conn ( $self->child_connectors) {
-		push @lists, $conn->child if ($conn->is_child_list);
+	foreach ($self->list_connectors) {
+		push @lists, $_->child;
 	}
+	
 	return wantarray ? @lists : \@lists;		
 }
 
@@ -239,44 +241,12 @@ sub experiments
 {
 	my $self = shift;
 	
-	# my %experiments;
-	# foreach my $list ( $self->lists) {
-	# 	map { $experiments{ $_->id } = $_ } $list->experiments;
-	# }
-	# return wantarray ? values %experiments : [ values %experiments ];
-
 	my @experiments;
-	foreach my $conn ($self->child_connectors) {
-		push @experiments, $conn->child if ($conn->is_child_experiment);
+	foreach ($self->experiment_connectors) {
+		push @experiments, $_->child;
 	}
 	return wantarray ? @experiments : \@experiments;	
 }
-
-################################################ subroutine header begin ##
-
-=head2 restricted_experiments
-
- Usage     : 
- Purpose   : Returns the set of restricted experiments associated with the user group
- Returns   : wantArray of experiments
- Argument  : None
- Throws    : None
- Comments  : 
-
-=cut
-
-################################################## subroutine header end ##
-
-# sub restricted_experiments
-# {
-# 	my $self = shift;
-	
-# 	my %experiments;
-# 	foreach my $list ( $self->lists) {
-# 		map { $experiments{ $_->id } = $_ } $list->experiments( restricted => 1 );
-# 	}
-# 	return wantarray ? values %experiments : [ values %experiments ];		
-# }
 
 ################################################ subroutine header begin ##
 
@@ -293,21 +263,14 @@ sub experiments
 
 ################################################## subroutine header end ##
 
-sub features
-{
+sub features {
 	my $self = shift;
-	
-	# my %features;
-	# foreach my $list ( $self->lists) {
-	# 	map { $features{ $_->id } = $_ } $list->features;
-	# }
-	# return wantarray ? values %features : [ values %features ];
 
 	my @features;
-	foreach my $conn ( $self->child_connectors) {
-		push @features, $conn->child if ($conn->is_child_feature);
+	foreach ($self->feature_connectors) {
+		push @features, $_->child;
 	}
-	return wantarray ? @features : \@features;	
+	return wantarray ? @features : \@features;
 }
 
 ################################################ subroutine header begin ##
@@ -328,43 +291,12 @@ sub features
 sub genomes {
 	my $self = shift;
 
-	# my %genomes;
-	# foreach my $list ( $self->lists) {
-	# 	map { $genomes{ $_->id } = $_ } $list->genomes;
-	# }
-	# return wantarray ? values %genomes : [ values %genomes ];
-
 	my @genomes;
-	foreach my $conn ( $self->child_connectors) {
-		push @genomes, $conn->child if ($conn->is_child_genome);
+	foreach ($self->genome_connectors) {
+		push @genomes, $_->child;
 	}
 	return wantarray ? @genomes : \@genomes;
 }
-
-################################################ subroutine header begin ##
-
-=head2 restricted_genomes
-
- Usage     : $self->restricted_genomes
- Purpose   : Returns the set of restricted genomes associated with the user group
- Returns   : wantArray of genomes
- Argument  : None
- Throws    : None
- Comments  : 
-
-=cut
-
-################################################## subroutine header end ##
-
-# sub restricted_genomes { 
-# 	my $self = shift;
-	
-# 	my %genomes;
-# 	foreach my $list ( $self->lists) {
-# 		map { $genomes{ $_->id } = $_ } $list->genomes(restricted => 1);
-# 	}
-# 	return wantarray ? values %genomes : [ values %genomes ];
-# }
 
 ################################################ subroutine header begin ##
 
@@ -517,11 +449,15 @@ sub annotation_pretty_print_html
 	$anno_type->Type_delimit(": <td class=\"data5\">");
 	$anno_type->Val_delimit("<br>");
 	foreach my $user (sort { $a->info cmp $b->info } $self->users) {
-		my $user_info = qq{<span class="link" onclick="window.open('User.pl?uid=} . $user->id . qq{');">} . $user->info . '</span>';
+		my $user_info = $user->info;#qq{<span class="link" onclick="window.open('User.pl?uid=} . $user->id . qq{');">} . $user->info . '</span>';
+		my @special_roles = ();
 		if ($user->id == $self->creator_user_id) {
-			$user_info = '<b>' . $user->info . ' - creator</b>';
+			push @special_roles, '<b>creator</b>';
 		}
-		$anno_type->add_Annot($user_info);
+		foreach ($self->user_connectors({parent_id=>$user->id})) {
+			push @special_roles, '<b>owner</b>' if ($_->role->is_owner);
+		}
+		$anno_type->add_Annot($user_info . (@special_roles ? ' - ' . join(', ', @special_roles) : ''));
 	}
 	$anno_obj->add_Annot($anno_type);
 

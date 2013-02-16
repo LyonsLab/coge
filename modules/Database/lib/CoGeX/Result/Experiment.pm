@@ -60,6 +60,8 @@ Has many CCoGeX::Result::ExperimentAnnotation> via C<experiment_id>
 
 =cut
 
+my $node_types = CoGeX::node_types();
+
 __PACKAGE__->table("experiment");
 __PACKAGE__->add_columns(
 	"experiment_id",
@@ -87,78 +89,39 @@ __PACKAGE__->add_columns(
 );
 
 __PACKAGE__->set_primary_key("experiment_id");
+__PACKAGE__->belongs_to( "data_source" => "CoGeX::Result::DataSource", 'data_source_id' );
+__PACKAGE__->belongs_to( "genome"      => "CoGeX::Result::Genome",     'genome_id' );
 __PACKAGE__->has_many( "experiment_type_connectors" => "CoGeX::Result::ExperimentTypeConnector", 'experiment_id' );
 __PACKAGE__->has_many( "experiment_annotations"     => "CoGeX::Result::ExperimentAnnotation",    'experiment_id' );
 __PACKAGE__->has_many( "list_connectors" => "CoGeX::Result::ListConnector", {'foreign.child_id' => 'self.experiment_id'} );
-__PACKAGE__->has_many( "user_connectors" => "CoGeX::Result::UserConnector", {'foreign.child_id' => 'self.experiment_id'}, {where => {child_type => 3}} ); #FIXME hardcoded to "experiment" type
-__PACKAGE__->belongs_to( "data_source" => "CoGeX::Result::DataSource", 'data_source_id' );
-__PACKAGE__->belongs_to( "genome"      => "CoGeX::Result::Genome",     'genome_id' );
+__PACKAGE__->has_many( # parent users
+	'user_connectors' => 'CoGeX::Result::UserConnector', 
+	{ "foreign.child_id" => "self.experiment_id" }, 
+	{ where => [ -and => [ parent_type => $node_types->{user}, child_type => $node_types->{experiment} ] ] } );
+__PACKAGE__->has_many( # parent groups
+	'group_connectors' => 'CoGeX::Result::UserConnector', 
+	{ "foreign.child_id" => "self.experiment_id" }, 
+	{ where => [ -and => [ parent_type => $node_types->{group}, child_type => $node_types->{experiment} ] ] } ); 	
 
-
-################################################ subroutine header begin ##
-
-=head2 desc
-
- Usage     : 
- Purpose   : alias for $self->description
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
 
 sub desc
 {
 	return shift->description(@_);
 }
 
-################################################ subroutine header begin ##
-
-=head2 source
-
- Usage     : 
- Purpose   : alias for $self->data_source
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
 sub source
 {
 	shift->data_source(@_);
 }
 
-################################################ subroutine header begin ##
-
-=head2 annotations
-
- Usage     : 
- Purpose   : alias for $self->experiment_annotations
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
 sub annotations
 {
 	shift->experiment_annotations(@_);
+}
+
+sub types
+{
+	shift->experiment_types(@_);
 }
 
 ################################################ subroutine header begin ##
@@ -181,28 +144,6 @@ See Also   :
 sub experiment_types
 {
 	map { $_->experiment_type } shift->experiment_type_connectors();
-}
-
-################################################ subroutine header begin ##
-
-=head2 types
-
- Usage     : 
- Purpose   : alias for $self->experiment_types
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
-sub types
-{
-	shift->experiment_types(@_);
 }
 
 ################################################ subroutine header begin ##
@@ -272,50 +213,37 @@ sub lists {
 	return wantarray ? @lists : \@lists;
 }
 
-sub groups {
-	my $self = shift;
-	my %opts = @_;
-	# my $exclude_owner = $opts{exclude_owner}; #FIXME will go away someday due to new user_connector
-
-	my @groups = ();
-	# foreach	my $conn ( $self->list_connectors ) #FIXME will go away someday due to new user_connector
-	# {
-	# 	my $group = $conn->parent_list()->group;
-	# 	next if ($exclude_owner && $group->is_owner);
-	# 	push @groups, $group;
-	# }
-	foreach my $conn ( $self->user_connectors )
-	{
-		if ($conn->parent_type == 6) { #FIXME hardcoded type
-			push @groups, $conn->group;
-		}
-	}
-
-	return wantarray ? @groups : \@groups;
-}
-
-sub users {
-	my $self = shift;
-	my %users;
-
-	# foreach ($self->lists) {
-	# 	foreach ($_->group->users) {
-	# 		$users{$_->id} = $_;
-	# 	}
-	# }
-	
-	foreach	( $self->user_connectors )
-	{
-		if ($_->is_parent_user) {
-			$users{$_->parent_id} = $_->user;
-		}
-		elsif ($_->is_parent_group) {
-			map { $users{$_->id} = $_ } $_->group->users;
-		}
-	}	
-
-	return wantarray ? values %users : [ values %users ];
-}
+#sub groups {
+#	my $self = shift;
+#	my %opts = @_;
+#
+#	my @groups = ();
+#	foreach my $conn ( $self->user_connectors )
+#	{
+#		if ($conn->parent_type == 6) { #FIXME hardcoded type
+#			push @groups, $conn->group;
+#		}
+#	}
+#
+#	return wantarray ? @groups : \@groups;
+#}
+#
+#sub users {
+#	my $self = shift;
+#	my %users;
+#
+#	foreach	( $self->user_connectors )
+#	{
+#		if ($_->is_parent_user) {
+#			$users{$_->parent_id} = $_->user;
+#		}
+#		elsif ($_->is_parent_group) {
+#			map { $users{$_->id} = $_ } $_->group->users;
+#		}
+#	}	
+#
+#	return wantarray ? values %users : [ values %users ];
+#}
 
 sub annotation_pretty_print_html
 {
@@ -379,55 +307,6 @@ sub annotation_pretty_print_html
 			$anno_type->add_Annot( $info);
 		}
 	$anno_obj->add_Annot($anno_type);
-
-#	foreach my $anno ( sort { uc( $a->type->name ) cmp uc( $b->type->name ) } $self->annotations( {}, { prefetch => { annotation_type => 'annotation_type_group' } } ) )
-#	{
-#		my $type      = $anno->type();
-#		my $group     = $type->group();
-#		my $anno_name = $type->name;
-#		$anno_name .= ", " . $type->description if $type->description;
-#		if ( ref($group) =~ /group/i && !( $type->name eq $group->name ) )
-#		{
-#			{
-#				$anno_name .= ":" unless $anno_name =~ /:$/;
-#				$anno_name = "<span class=\"title5\">" . $anno_name . "</span>";
-#			}
-#		}
-#		else
-#		{
-#			if ( $anno->link )
-#			{
-#				$anno_name = "<tr><td nowrap='true'><span class=\"coge_link\">" . $anno_name . "</span>";
-#			}
-#			else
-#			{
-#				$anno_name = "<tr><td nowrap='true'><span class=\"title5\">" . $anno_name . "</span>";
-#			}
-#		}
-#		my $anno_type = new CoGe::Accessory::Annotation( Type => $anno_name );
-#		$anno_type->Val_delimit("<br>");
-#		$anno_type->Type_delimit(" ");
-#		my $annotation = "<span class=\"data5";
-#		$annotation .= qq{ link" onclick="window.open('} . $anno->link . qq{')} if $anno->link;
-#		$annotation .= "\">" . $anno->annotation . "</span>";
-#		$anno_type->add_Annot($annotation) if $anno->annotation;
-#
-#		if ( ref($group) =~ /group/i && !( $type->name eq $group->name ) )
-#		{
-#			my $class = $anno->link ? "coge_link" : "title5";
-#			my $anno_g = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class=\"$class\">" . $group->name . "</span>" );
-#			$anno_g->add_Annot($anno_type);
-#			$anno_g->Type_delimit(":<td>");
-#			$anno_g->Val_delimit(", ");
-#			#$anno_g->Val_delimit(" ");
-#			$anno_obj->add_Annot($anno_g);
-#		}
-#		else
-#		{
-#			$anno_type->Type_delimit(":<td>");
-#			$anno_obj->add_Annot($anno_type);
-#		}
-#	}
 	
 	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class=\"title5\">" . "Restricted" . "</span>" );
 	$anno_type->Type_delimit(": <td class=\"data5\">");

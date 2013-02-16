@@ -56,6 +56,29 @@ __PACKAGE__->belongs_to("role" 		 	=> "CoGeX::Result::Role", "role_id" );
 
 ################################################ subroutine header begin ##
 
+=head2 debug
+
+ Usage     : print debug info to stderr 
+ Purpose   : 
+ Returns   : 
+ Argument  : None
+ Throws    : 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub debug
+{
+	my $self = shift;
+	print STDERR 'UserConnector: id=' . $self->id . ' parent=' . $self->parent_id . ':' . $self->parent_type . ' child=' . $self->child_id . ':' . $self->child_type . ' role_id=' . $self->role_id . "\n";
+}
+
+################################################ subroutine header begin ##
+
 =head2 is_parent_XXXXXXXX
 
  Usage     : 
@@ -191,7 +214,7 @@ sub child
 		return $self->list;	
 	}
 	elsif ($self->is_child_group) {
-		return $self->group;
+		return $self->child_group;
 	}
 	else {
 		die;

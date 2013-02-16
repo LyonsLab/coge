@@ -72,14 +72,32 @@ __PACKAGE__->add_columns(
 	{ data_type => "TINYINT", default_value => 0, is_nullable => 0, size => 1 }
 );
 __PACKAGE__->set_primary_key("user_id");
-__PACKAGE__->has_many( 'sessions'  => "CoGeX::Result::UserSession", 'user_id' );
-__PACKAGE__->has_many( 'works'     => "CoGeX::Result::Work",        'user_id' );
-__PACKAGE__->has_many( 'workflows' => "CoGeX::Result::Workflow",    'user_id' );
-#__PACKAGE__->has_many( 'user_group_connectors' => "CoGeX::Result::UserGroupConnector", 'user_id' );
-__PACKAGE__->has_many( 'user_connectors' => "CoGeX::Result::UserConnector", { "foreign.parent_id" => "self.user_id" } );
-__PACKAGE__->has_many( 'logs' => "CoGeX::Result::Log",    'user_id' );
-__PACKAGE__->has_many( 'jobs' => "CoGeX::Result::Job",    'user_id' );
-__PACKAGE__->belongs_to( image => 'CoGeX::Result::Image', 'image_id');
+__PACKAGE__->belongs_to( 'image' => 'CoGeX::Result::Image', 'image_id');
+__PACKAGE__->has_many( 'sessions' => "CoGeX::Result::UserSession", 'user_id' );
+__PACKAGE__->has_many( 'works' => "CoGeX::Result::Work", 'user_id' );
+__PACKAGE__->has_many( 'workflows' => "CoGeX::Result::Workflow", 'user_id' );
+__PACKAGE__->has_many( 'logs' => "CoGeX::Result::Log", 'user_id' );
+__PACKAGE__->has_many( 'jobs' => "CoGeX::Result::Job", 'user_id' );
+__PACKAGE__->has_many( # all children (groups/genomes/experiments/lists)
+	'child_connectors' => "CoGeX::Result::UserConnector", 
+	{ "foreign.parent_id" => "self.user_id" }, 
+	{ where => { parent_type => $node_types->{user} } } );
+__PACKAGE__->has_many( # child groups
+	'group_connectors' => "CoGeX::Result::UserConnector", 
+	{ "foreign.parent_id" => "self.user_id" }, 
+	{ where => [ -and => [ parent_type => $node_types->{user}, child_type => $node_types->{group} ] ] } );
+__PACKAGE__->has_many( # child genomes
+	'genome_connectors' => "CoGeX::Result::UserConnector", 
+	{ "foreign.parent_id" => "self.user_id" }, 
+	{ where => [ -and => [ parent_type => $node_types->{user}, child_type => $node_types->{genome} ] ] } );
+__PACKAGE__->has_many( # child experiments
+	'experiment_connectors' => "CoGeX::Result::UserConnector", 
+	{ "foreign.parent_id" => "self.user_id" }, 
+	{ where => [ -and => [ parent_type => $node_types->{user}, child_type => $node_types->{experiment} ] ] } );
+__PACKAGE__->has_many( # child lists
+	'list_connectors' => "CoGeX::Result::UserConnector", 
+	{ "foreign.parent_id" => "self.user_id" }, 
+	{ where => [ -and => [ parent_type => $node_types->{user}, child_type => $node_types->{list} ] ] } );	
 
 
 ################################################ subroutine header begin ##
@@ -177,16 +195,12 @@ sub user_groups {
 	my $self = shift;
 	return unless $self->id; # ignore public user
 
-	# my @user_groups = ();
-	# foreach my $user_group_connector ( $self->user_group_connectors() ) {
-	# 	push( @user_groups, $user_group_connector->user_group() )
-	# 	  if $user_group_connector->user_group();
-	# }
-
 	my @groups;
-	foreach my $conn ($self->user_connectors( {parent_type=>$node_types->{user}, child_type=>$node_types->{group} }) ) {
+	foreach my $conn ($self->group_connectors) {
 		push @groups, $conn->child_group;
 	}
+
+	#print STDERR join(',', map {$_->id } @groups) . "\n";
 	return wantarray ? @groups : \@groups;
 }
 
@@ -237,93 +251,6 @@ sub has_collaborator {
 
 ################################################ subroutine header begin ##
 
-=head2 owner_group
-
- Usage     : 
- Purpose   : return user's owner group
- Returns   : user_group object
- Argument  : 
- Throws    : None
- Comments  : 
-
-=cut
-
-################################################## subroutine header end ##
-
-# sub owner_group {
-# 	my $self = shift;
-# 	foreach my $group ( $self->groups ) {
-# 		return $group if ($group->locked && $group->role->name =~ /owner/i);
-# 	}
-# 	return;
-# }
-
-################################################ subroutine header begin ##
-
-=head2 owner_list
-
- Usage     : return user's owner list
- Purpose   : 
- Returns   : list object
- Argument  : 
- Throws    : None
- Comments  : 
-
-=cut
-
-################################################## subroutine header end ##
-
-# sub owner_list {
-# 	return shift->owner_group->owner_list;
-# }
-
-################################################ subroutine header begin ##
-
-=head2 shared_group
-
- Usage     : 
- Purpose   : return user's shared group
- Returns   : user_group object
- Argument  : 
- Throws    : None
- Comments  : 
-
-=cut
-
-################################################## subroutine header end ##
-
-# sub shared_group { #FIXME needs to be removed with addition of user_connector table
-# 	my $self = shift;
-# 	foreach my $group ( $self->groups ) {
-# 		return $group if ($group->locked && $group->name eq $self->name && $group->description =~ /shared/i && $group->role->name =~ /reader/i);
-# 	}
-# 	return;
-# }
-
-################################################ subroutine header begin ##
-
-=head2 owner_list
-
- Usage     : return user's shared list
- Purpose   : 
- Returns   : list object
- Argument  : 
- Throws    : None
- Comments  : 
-
-=cut
-
-################################################## subroutine header end ##
-
-# sub shared_list { #FIXME needs to be removed with addition of user_connector table
-# 	my $self = shift;
-# 	my $group = $self->shared_group;
-# 	return if (not $group);
-# 	return $group->shared_list;
-# }
-
-################################################ subroutine header begin ##
-
 =head2 is_admin
 
  Usage     : $self->is_admin
@@ -338,11 +265,6 @@ sub has_collaborator {
 ################################################## subroutine header end ##
 
 sub is_admin {
-	# my $self = shift;
-	# foreach my $group ( $self->groups ) {
-	# 	return 1 if $group->role->name =~ /admin/i;
-	# }
-	# return 0;
 	return shift->admin;
 }
 
@@ -362,105 +284,40 @@ sub is_admin {
 ################################################## subroutine header end ##
 
 sub has_access_to_list {
-	my $self = shift @_;
-	my $list  = shift;
-	return $self->has_access(list => $list);
+	my $self = shift;
+	return 1 if $self->is_admin;
+	my $list = shift;
+	my $lid = $list =~ /^\d+$/ ? $list : $list->id;
+	foreach ($self->lists) {
+		return 1 if ($_->id == $lid);	
+	}
+	return 0;
 }
 
 sub has_access_to_genome {
-	my $self = shift @_;
-	my $dsg  = shift;
-	return $self->has_access(dsg => $dsg);
+	my $self = shift;
+	my $genome  = shift;
+	my $gid = $genome =~ /^\d+$/ ? $genome : $genome->id;
+	return $self->is_admin || $self->child_connector(id => $gid, type => 'genome');
 }
 
 sub has_access_to_experiment {
-	my $self = shift @_;
-	my $experiment = shift;
-	return $self->has_access(experiment => $experiment);
+	my $self = shift;
+	my $experiment  = shift;
+	my $eid = $experiment =~ /^\d+$/ ? $experiment : $experiment->id;
+	return $self->is_admin || $self->child_connector(id => $eid, type => 'experiment');
 }
 
 sub has_access_to_dataset {
-	my $self = shift @_;
-	my $ds   = shift;
-	return $self->has_access(ds => $ds);
-}
-
-################################################ subroutine header begin ##
-
-=head2 has_access
-
- Usage     : 
- Purpose   : checks to see if a user has access to a dataset/genome/list/experiment
- Returns   : 1/0
- Argument  : None
- Throws    : None
- Comments  : 
-
-=cut
-
-################################################## subroutine header end ##
-
-sub has_access {
 	my $self = shift;
-	my %opts = @_;
-	my $dsg  = $opts{dsg};
-	my $ds   = $opts{ds};
-	my $list = $opts{list};
-	my $experiment = $opts{experiment};
-	return 0 unless $dsg || $ds || $list || $experiment;
-	return 0 unless $self->id;
-
-	# foreach my $group ( $self->groups ) {
-	# 	return 1 if $group->role->name eq "Admin";
-	# }
 	return 1 if $self->is_admin;
-
-	if ($ds) {
-		my $dsid = $ds =~ /^\d+$/ ? $ds : $ds->id;
-		foreach my $ds ( $self->datasets() ) {
-			if ( $dsid == $ds->id ) {
-				return 1;
-			}
+	my $ds = shift;
+	my $dsid = $ds =~ /^\d+$/ ? $ds : $ds->id;
+	foreach my $genome ($self->genomes(include_deleted => 1)) {
+		foreach my $dataset ($genome->datasets) {
+			return 1 if ($dataset->id == $dsid);	
 		}
 	}
-	
-	if ($dsg) {
-		my $dsgid = $dsg =~ /^\d+$/ ? $dsg : $dsg->id;
-		my %genomes;
-
-		#get gids directly connected to user
-#		map {$genomes{$_->child_id}=1} $self->user_connectors({child_type=>2});
-		#check user lists to genomes
-#		foreach my $list ($self->lists)
-#		  {
-		    
-#		  }
-
-		foreach my $genome ( $self->genomes(include_deleted => 1, ids=>1) ) {
-			if ( $dsgid == $genome ) {
-				return 1;
-			}
-		}
-	}
-	
-	if ($list) {
-		my $lid = $list =~ /^\d+$/ ? $list : $list->id;
-		foreach my $l ( $self->lists() ) {
-			if ( $lid == $l->id ) {
-				return 1;
-			}
-		}		
-	}
-	
-	if ($experiment) {
-		my $eid = $experiment =~ /^\d+$/ ? $experiment : $experiment->id;
-		foreach my $e ( $self->experiments(include_deleted => 1) ) {
-			if ( $eid == $e->id ) {
-				return 1;
-			}
-		}		
-	}	
-	
 	return 0;
 }
 
@@ -598,89 +455,37 @@ sub is_role {
 
 	if ($group) {
 		my $ugid = $group =~ /^\d+$/ ? $group : $group->id;
-		foreach my $conn ($self->user_connectors) {
-			return unless $conn->is_child_group;
-			return 1 if ($conn->child_id == $ugid and $conn->role->name =~ /$role/i);
+		foreach my $conn ($self->group_connectors({child_id => $ugid})) {
+			return 1 if ($conn->role->name =~ /$role/i);
 		}
 	}
 
 	if ($list) {
 		my $lid = $list =~ /^\d+$/ ? $list : $list->id;
-		foreach my $conn ($self->user_connectors) {
-			next unless $conn->is_child_list;
-			return 1 if ($conn->child_id == $lid and $conn->role->name =~ /$role/i);
-		}
+		my $conn = $self->child_connector(id=>$lid, type=>'list');
+		return 1 if ($conn && $conn->role->name =~ /$role/i);
 	}
 
 	if ($dsg) { # genome
 		my $dsgid = $dsg =~ /^\d+$/ ? $dsg : $dsg->id;
-		foreach my $conn ($self->user_connectors) {
-			next unless $conn->is_child_genome;
-			return 1 if ($conn->child_id == $dsgid and $conn->role->name =~ /$role/i);
-		}
+		my $conn = $self->child_connector(id=>$dsgid, type=>'genome');
+		return 1 if ($conn && $conn->role->name =~ /$role/i);
 	}
 
 	if ($ds) { # dataset
 		my $dsid = $ds =~ /^\d+$/ ? $ds : $ds->id;
-		foreach my $conn ($self->user_connectors) {
-			next unless $conn->is_child_genome;
+		foreach my $conn ($self->all_child_connectors(type=>'genome')) {
 			foreach ($conn->child->datasets) {
-				return 1 if ($_->id == $dsid and $conn->role->name =~ /$role/i);
+				return 1 if ($_->id == $dsid && $conn->role->name =~ /$role/i);
 			}
 		}
 	}
 
 	if ($experiment) {
 		my $eid = $experiment =~ /^\d+$/ ? $experiment : $experiment->id;
-		foreach my $conn ($self->user_connectors) {
-			next unless $conn->is_child_experiment;
-			return 1 if ($conn->child_id == $eid and $conn->role->name =~ /$role/i);
-		}
+		my $conn = $self->child_connector(id=>$eid, type=>'experiment');
+		return 1 if ($conn && $conn->role->name =~ /$role/i);
 	}
-
-	# if ($group) {
-	# 	return $group->role->name =~ /$role/i;
-	# }
-
-	# if ($dsg) {
-	# 	my $dsgid = $dsg =~ /^\d+$/ ? $dsg : $dsg->id;
-	# 	foreach my $group ( $self->groups ) {
-	# 		next unless $group->role->name =~ /$role/i or $group->creator_user_id == $self->id;
-	# 		foreach my $genome ( $group->genomes ) {
-	# 			return 1 if $genome->id == $dsgid;
-	# 		}
-	# 	}
-	# }
-
-	# if ($ds) {
-	# 	my $dsid = $ds =~ /^\d+$/ ? $ds : $ds->id;
-	# 	foreach my $group ( $self->groups ) {
-	# 		next unless $group->role->name =~ /$role/i or $group->creator_user_id == $self->id;
-	# 		foreach my $ds ( $group->datasets ) {
-	# 			return 1 if $ds->id == $dsid;
-	# 		}
-	# 	}
-	# }
-	
-	# if ($list) {
-	# 	my $lid = $list =~ /^\d+$/ ? $list : $list->id;
-	# 	foreach my $group ( $self->groups ) {
-	# 		next unless $group->role->name =~ /$role/i or $group->creator_user_id == $self->id;
-	# 		foreach my $l ( $group->lists ) {
-	# 			return 1 if $l->id == $lid;
-	# 		}
-	# 	}
-	# }	
-	
-	# if ($experiment) {
-	# 	my $eid = $experiment =~ /^\d+$/ ? $experiment : $experiment->id;
-	# 	foreach my $group ( $self->groups ) {
-	# 		next unless $group->role->name =~ /$role/i or $group->creator_user_id == $self->id;
-	# 		foreach my $e ( $group->experiments ) {
-	# 			return 1 if $e->id == $eid;
-	# 		}
-	# 	}
-	# }	
 
 	return 0;
 }
@@ -758,17 +563,12 @@ sub lists {
 	
 	my %lists;
 	foreach my $ug ( $self->groups ) { 
-		#map { $lists{ $_->id } = $_ } $ug->lists; # FIXME will go away with new user_connector
-		foreach my $uc ( $ug->child_connectors ) {
-			if ($uc->is_child_list) {
-				$lists{ $uc->child_id } = $uc->child;
-			}
-		}
-	}
-	foreach my $uc ( $self->user_connectors ) {
-		if ($uc->is_child_list) {
+		foreach my $uc ( $ug->list_connectors ) {
 			$lists{ $uc->child_id } = $uc->child;
 		}
+	}
+	foreach my $uc ( $self->list_connectors ) {
+		$lists{ $uc->child_id } = $uc->child;
 	}
 
 	return wantarray ? values %lists : [ values %lists ];
@@ -792,39 +592,41 @@ sub lists {
 sub experiments {
 	my $self = shift;
 	my %opts = @_;
-	my $include_deleted = $opts{include_deleted};
-	
-	my %experiments;
-	foreach my $ug ( $self->groups ) {
-		# map { # FIXME will go away with new user_connector
-		# 	$experiments{ $_->id } = $_ if (!$_->deleted || $include_deleted)
-		# } $ug->experiments;
-		
-		foreach my $uc ( $ug->child_connectors ) {
-			if ($uc->is_child_experiment) {
-				my $experiment = $uc->child;
-				next if ($experiment->deleted && not $include_deleted);
-				$experiments{ $uc->child_id } = $experiment;
-			}
-			elsif ($uc->is_child_list) {
-				my $list = $uc->child;
-				map { $experiments{ $_->id } = $_ } $list->experiments( include_deleted => $include_deleted );
-			}
-		}
-	}
-	foreach my $uc ( $self->user_connectors ) {
-		if ($uc->is_child_experiment) {
-			my $experiment = $uc->child;
-			next if ($experiment->deleted && not $include_deleted);
-			$experiments{ $uc->child_id } = $experiment;
-		}
-		elsif ($uc->is_child_list) {
-			my $list = $uc->child;
-			map { $experiments{ $_->id } = $_ } $list->experiments( include_deleted => $include_deleted );
-		}
-	}
+	my $include_deleted = $opts{include_deleted}; # optional flag to include deleted
 
-	return wantarray ? values %experiments : [ values %experiments ];	
+	my @experiments;
+	foreach ($self->children(type=>'experiment')) {
+		push @experiments, $_ unless ($_->deleted and not $include_deleted);
+	}
+	return wantarray ? @experiments : \@experiments;	
+	
+#	my $self = shift;
+#	my %opts = @_;
+#	my $include_deleted = $opts{include_deleted};
+#	
+#	my %experiments;
+#	foreach my $ug ( $self->groups ) {
+#		foreach my $uc ( $ug->experiment_connectors ) {
+#			my $experiment = $uc->child;
+#			next if ($experiment->deleted && not $include_deleted);
+#			$experiments{ $uc->child_id } = $experiment;
+#		}
+#		foreach my $uc ( $self->list_connectors ) {
+#			my $list = $uc->child;
+#			map { $experiments{ $_->id } = $_ } $list->experiments( include_deleted => $include_deleted );
+#		}
+#	}
+#	foreach my $uc ( $self->experiment_connectors ) {
+#		my $experiment = $uc->child;
+#		next if ($experiment->deleted && not $include_deleted);
+#		$experiments{ $uc->child_id } = $experiment;
+#	}
+#	foreach my $uc ( $self->list_connectors ) {
+#		my $list = $uc->child;
+#		map { $experiments{ $_->id } = $_ } $list->experiments( include_deleted => $include_deleted );
+#	}
+#
+#	return wantarray ? values %experiments : [ values %experiments ];	
 }
 
 ################################################ subroutine header begin ##
@@ -874,74 +676,263 @@ sub restricted_experiments {
 sub genomes {
 	my $self = shift;
 	my %opts = @_;
-	my $include_deleted = $opts{include_deleted};
-	my $ids = ($opts{ids}); #return genome ids only
+	my $include_deleted = $opts{include_deleted}; # optional flag to include deleted genomes
 
-	my %genomes;
-	foreach my $ug ( $self->groups ) {
-		# map { # FIXME will go away with new user_connector
-		# 	$genomes{ $_->id } = $_ if (!$_->deleted || $include_deleted)
-		# } $ug->genomes;
+	my @genomes;
+	foreach ($self->children(type=>'genome')) {
+		push @genomes, $_ unless ($_->deleted and not $include_deleted);
+	}
+	return wantarray ? @genomes : \@genomes;
+
+#	my %genomes;
+#	# Scan user's genomes
+#	foreach my $conn ($self->genome_connectors) {
+#		my $gid = $conn->child_id;
+#		
+#		if ($only_ids) {
+#		    $genomes{$gid} = $gid;
+#		}
+#		else {
+#		    my $genome = $conn->child;
+#		    next if ($genome->deleted && not $include_deleted);
+#		    $genomes{$gid} = $genome;
+#		}
+#	}
+#
+#	# Scan user's lists
+#	foreach my $conn ( $self->list_connectors ) {
+#		my $list = $conn->child;
+#		if ($only_ids) {
+#	    	map { $genomes{ $_ } = $_ } $list->genomes( include_deleted => $include_deleted, only_ids => $only_ids );
+#		}
+#		else {
+#			map { $genomes{ $_->id } = $_ } $list->genomes( include_deleted => $include_deleted );	
+#		}
+#	}
+#	
+#	# Scan user's groups
+#	foreach my $group ( $self->groups ) { #TODO move this coge into UserGroup.pm::genomes ...?
+#		# Scan group's genomes
+#		foreach my $conn ($group->genome_connectors) {
+#			my $gid = $conn->child_id;
+#			
+#			if ($only_ids) {
+#			    $genomes{$gid} = $gid;
+#			}
+#			else {
+#			    my $genome = $conn->child;
+#			    next if ($genome->deleted && not $include_deleted);
+#			    $genomes{$gid} = $genome;
+#			}
+#		}
+#		# Scan group's lists
+#		foreach my $conn ($group->list_connectors) {
+#			my $list = $conn->child;
+#			if ($only_ids) {
+#				map { $genomes{ $_ } = $_ } $list->genomes( include_deleted => $include_deleted, only_ids => $only_ids );
+#			}
+#			else {
+#				map { $genomes{ $_->id } = $_ } $list->genomes( include_deleted => $include_deleted );
+#			}
+#		}
+#	}
+#	return wantarray ? values %genomes : [ values %genomes ];
+}
+
+sub groups_with_access {
+	my $self = shift;
+	my $item = shift;
+	
+	my @groups = ();
+	foreach my $conn ( $item->group_connectors )
+	{
+		push @groups, $conn->parent;
+	}
+
+	return wantarray ? @groups : \@groups;	
+}
+
+sub users_with_access {
+	my $self = shift;
+	my $item = shift;
+	
+	my %users;
+	foreach my $conn ( $item->user_connectors )
+	{
+		$users{$conn->parent_id} = $conn->parent;
+	}
+	foreach my $group ( $self->groups_with_access($item) ) {
+		map { $users{$_->id} = $_ } $group->users;	
+	}
+
+	return wantarray ? values %users : [ values %users ];	
+}
+
+sub child_connector { # only call for type genome/experiment, not group/list
+	my $self = shift;
+	my %opts = @_;
+	my $id = $opts{id};
+	my $type = $opts{type};
+	my $type_num = $node_types->{$type};
+
+	# Scan user's items
+	foreach ($self->child_connectors({child_id=>$id, child_type=>$type_num})) {
+		return $_;
+	}
+
+	# Scan user's lists
+	if ($type ne 'list') {
+		foreach my $conn ($self->list_connectors) {
+			my $list = $conn->child;
+			foreach ($list->child_connectors({child_id=>$id, child_type=>$type_num})) {
+				return $conn;
+			}
+		}
+	}
+	
+	# Scan user's groups
+	foreach my $group ($self->groups) { #TODO move this coge into UserGroup.pm::genomes ...?
+		# Scan group's items
+		foreach ($group->child_connectors({child_id=>$id, child_type=>$type_num})) {
+			return $_;
+		}
+		# Scan group's lists
+		if ($type ne 'list') {
+			foreach my $conn ($group->list_connectors) {
+				my $list = $conn->child;
+				foreach ($list->child_connectors({child_id=>$id, child_type=>$type_num})) {
+					return $conn;	
+				}
+			}
+		}
+	}
+}
+
+sub all_child_connectors { #FIXME optimize by mimicking child_by_type_and_id, combine with child_connector
+	my $self = shift;
+	my %opts = @_;
+	my $type = $opts{type};
+	my $type_num = $node_types->{$type};
+
+	my %connectors;
+
+	# Scan user's items
+	foreach ($self->child_connectors({child_type=>$type_num})) {
+		$connectors{$_->id} = $_;
+	}
+
+	# Scan user's lists
+	if ($type ne 'list') {
+		foreach my $conn ($self->list_connectors) {
+			my $list = $conn->child;
+			foreach ($list->child_connectors({child_type=>$type_num})) {
+				$connectors{$_->id} = $_;
+			}
+		}
+	}
+
+	# Scan user's groups
+	foreach my $group ($self->groups) { #TODO move this coge into UserGroup.pm::genomes ...?
+		# Scan group's items
+		foreach ($group->child_connectors({child_type=>$type_num})) {
+			$connectors{$_->id} = $_;
+		}
+		# Scan group's lists
+		if ($type ne 'list') {
+			foreach my $conn ($group->list_connectors) {
+				my $list = $conn->child;
+				foreach ($list->child_connectors({child_type=>$type_num})) {
+					$connectors{$_->id} = $_;
+				}
+			}
+		}
+	}
+	
+	return wantarray ? values %connectors : [ values %connectors ];
+}
+
+sub children { #FIXME have this use child_by_type_and_id
+	my $self = shift;
+	my %opts = @_;
+	my $type = $opts{type};
+	my $type_num = $node_types->{$type};
+
+	my %children;
+
+	# Scan user's items
+	foreach ($self->child_connectors({child_type=>$type_num})) {
+		my $child = $_->child;
+		$children{$child->id} = $child;
+	}
+
+	# Scan user's lists
+	foreach my $conn ($self->list_connectors) {
+		my $list = $conn->child;
+		foreach ($list->child_connectors({child_type=>$type_num})) {
+			my $child = $_->child;
+			$children{$child->id} = $child;
+		}
+	}
+	
+	# Scan user's groups
+	foreach ($self->group_connectors) { #TODO move this coge into UserGroup.pm::genomes ...?
+		my $group = $_->child;
 		
-		foreach my $uc ( $ug->child_connectors ) {
-			if ($uc->is_child_genome) {
-###
-			  if ($ids)
-			    {
-			      $genomes{$uc->child_id}=1;
-			    }
-			  else
-			    {
-			      my $genome = $uc->child;
-			      next if ($genome->deleted && not $include_deleted);
-			      $genomes{ $uc->child_id } = $genome;
-			    }
-##
-			}
-			elsif ($uc->is_child_list) {
-				my $list = $uc->child;
-				if ($ids)
-				  {
-				    map { $genomes{ $_ } = 1 } $list->genomes( include_deleted => $include_deleted, ids=>$ids );
-				  }
-				else
-				  {
-				    map { $genomes{ $_->id } = $_ } $list->genomes;
-				  }
+		# Scan group's items
+		foreach ($group->child_connectors({child_type=>$type_num})) {
+			my $child = $_->child;
+			$children{$child->id} = $child;
+		}
+		# Scan group's lists
+		foreach my $conn ($group->list_connectors) {
+			my $list = $conn->child;
+			foreach ($list->child_connectors({child_type=>$type_num})) {
+				my $child = $_->child;
+				$children{$child->id} = $child;
 			}
 		}
 	}
-	foreach my $uc ( $self->user_connectors ) {
-		if ($uc->is_child_genome) {
-###
-			  if ($ids)
-			    {
-			      $genomes{$uc->child_id}=1;
-			    }
-			  else
-			    {
-			      my $genome = $uc->child;
-			      next if ($genome->deleted && not $include_deleted);
-			      $genomes{ $uc->child_id } = $genome;
-			    }
-##
+	
+	return wantarray ? values %children : [ values %children ];
+}
+
+sub children_by_type_and_id {
+	my $self = shift;
+	my %opts = @_;
+
+	use Time::HiRes qw ( time );
+	my $start_time = time;
+
+	my %children;
+
+	foreach my $c ($self->child_connectors) {
+		my $child = $c->child;
+		$children{$c->child_type}{$c->child_id} = $child;
+		
+		if ($c->child_type == $node_types->{list}) {
+			foreach my $c ($child->child_connectors) {
+				my $child = $c->child;
+				$children{$c->child_type}{$c->child_id} = $child;
+			}
 		}
-		elsif ($uc->is_child_list) {
-			my $list = $uc->child;
-			if ($ids)
-			  {
-			    map { $genomes{ $_ } = 1 } $list->genomes( include_deleted => $include_deleted, ids=>$ids );
-			  }
-			else
-			  {
-			    map { $genomes{ $_->id } = $_ } $list->genomes( include_deleted => $include_deleted, ids=>$ids );
-			  }
+		elsif ($c->child_type == $node_types->{group}) {
+			foreach my $c ($child->child_connectors) {
+				my $child = $c->child;
+				$children{$c->child_type}{$c->child_id} = $child;
+				
+				if ($c->child_type == $node_types->{list}) {
+					foreach my $c ($child->child_connectors) {
+						my $child = $c->child;
+						$children{$c->child_type}{$c->child_id} = $child;
+					}
+				}
+			}
 		}
 	}
-	my @items;
-	if ($ids) {@items = keys %genomes;}
-	else {@items = values %genomes;}
-	return wantarray ? @items : [ @items ];
+	
+#	print STDERR "children_by_type_and_id: time=" . ((time - $start_time)*1000) . "\n";
+
+	return \%children;
 }
 
 ################################################ subroutine header begin ##
@@ -994,8 +985,8 @@ sub features {
 #	my %opts = @_;
 	
 	my %features;
-	foreach my $ug ( $self->groups ) {
-		map { $features{ $_->id } = $_ } $ug->features;
+	foreach my $group ( $self->groups ) {
+		map { $features{ $_->id } = $_ } $group->features;
 	}
 	return wantarray ? values %features : [ values %features ];
 }

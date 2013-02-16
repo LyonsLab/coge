@@ -60,6 +60,8 @@ Has many CCoGeX::Result::GenomicSequence> via C<genome_id>
 
 =cut
 
+my $node_types = CoGeX::node_types();
+
 __PACKAGE__->table("genome");
 __PACKAGE__->add_columns(
 	"genome_id",
@@ -127,7 +129,14 @@ __PACKAGE__->has_many("genomic_sequences" => "CoGeX::Result::GenomicSequence", '
 __PACKAGE__->belongs_to("organism" => "CoGeX::Result::Organism", 'organism_id');
 __PACKAGE__->belongs_to("genomic_sequence_type" => "CoGeX::Result::GenomicSequenceType", 'genomic_sequence_type_id');
 __PACKAGE__->has_many("list_connectors" => "CoGeX::Result::ListConnector", {'foreign.child_id' => 'self.genome_id'} );
-__PACKAGE__->has_many("user_connectors" => "CoGeX::Result::UserConnector", {'foreign.child_id' => 'self.genome_id'} );#, { where => {child_type => 2 }} );
+__PACKAGE__->has_many( # parent users
+	'user_connectors' => 'CoGeX::Result::UserConnector', 
+	{ "foreign.child_id" => "self.genome_id" }, 
+	{ where => [ -and => [ parent_type => $node_types->{user}, child_type => $node_types->{genome} ] ] } );
+__PACKAGE__->has_many( # parent groups
+	'group_connectors' => 'CoGeX::Result::UserConnector', 
+	{ "foreign.child_id" => "self.genome_id" }, 
+	{ where => [ -and => [ parent_type => $node_types->{group}, child_type => $node_types->{genome} ] ] } ); 	
 __PACKAGE__->has_many("experiments" => "CoGeX::Result::Experiment", "genome_id");
 
 sub desc {
@@ -164,66 +173,36 @@ sub lists {
 	return wantarray ? @lists : \@lists;
 }
 
-sub groups {
-	my $self = shift;
-	my %opts = @_;
-	# my $exclude_owner = $opts{exclude_owner}; #FIXME will go away someday due to new user_connector
-
-	my @groups = ();
-	# foreach my $conn ( $self->list_connectors ) #FIXME will go away someday due to new user_connector
-	# {
-	# 	my $group = $conn->parent_list()->group;
-	# 	next if ($exclude_owner && $group->is_owner);
-	# 	push @groups, $group;
-	# }
-	foreach my $conn ( $self->user_connectors )
-	{
-		if ($conn->is_parent_group) {
-			push @groups, $conn->parent;
-		}
-	}
-
-	return wantarray ? @groups : \@groups;
-}
-
-sub users {
-	my $self = shift;
-	my %opts = @_;
-	my $exclude_groups = $opts{exclude_groups}; #FIXME is this still used?
-
-	my %users;
-	# foreach ($self->lists) {
-	# 	if (not $exclude_groups) {
-	# 		foreach ($_->group->users) {
-	# 			$users{$_->id} = $_;
-	# 		}
-	# 	}
-	# }
-
-	foreach	( $self->user_connectors )
-	{
-		if ($_->is_parent_user) {
-			$users{$_->parent_id} = $_->user;
-		}
-		elsif (not $exclude_groups && $_->is_parent_group) {
-			map { $users{$_->id} = $_ } $_->group->users;
-		}
-	}
-
-	return wantarray ? values %users : [ values %users ];
-}
-
-# sub owner_list {    
-# 	my $self = shift;
-
-# 	foreach	my $conn ( $self->list_connectors )
-# 	{
-# 		my $list = $conn->parent_list();
-# 		return $list if ($list and $list->is_owner);
-# 	}
-
-# 	return;
-# }
+#sub groups {
+#	my $self = shift;
+#	my %opts = @_;
+#
+#	my @groups = ();
+#	foreach my $conn ( $self->group_connectors )
+#	{
+#		push @groups, $conn->parent;
+#	}
+#
+#	return wantarray ? @groups : \@groups;
+#}
+#
+#sub users {
+#	my $self = shift;
+#	my %opts = @_;
+#	my $exclude_groups = $opts{exclude_groups};
+#
+#	my %users;
+#	foreach	( $self->user_connectors )
+#	{
+#		$users{$_->parent_id} = $_->user;
+#	}
+#	foreach my $group ( $self->groups )
+#	{
+#		map { $users{$_->id} = $_ } $group->users;
+#	}
+#
+#	return wantarray ? values %users : [ values %users ];
+#}
 
 ################################################ subroutine header begin ##
 

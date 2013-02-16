@@ -61,7 +61,36 @@ __PACKAGE__->has_many('user_connectors'=>'CoGeX::Result::UserConnector', 'role_i
 # You can replace this text with custom content, and it will be preserved on regeneration
 
 
+################################################ subroutine header begin ##
 
+=head2 is_<ROLE>
+
+ Usage     : 
+ Purpose   : 
+ Returns   :
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub is_owner
+ {
+   return shift->name =~ /owner/i;
+ }
+ 
+sub is_editor
+ {
+   return shift->name =~ /editor/i;
+ } 
+ 
+sub is_reader
+ {
+   return shift->name =~ /reader/i;
+ }
+ 
 ################################################ subroutine header begin ##
 
 =head2 groups
@@ -72,8 +101,6 @@ __PACKAGE__->has_many('user_connectors'=>'CoGeX::Result::UserConnector', 'role_i
  Argument  : None
  Throws    : None
  Comments  : 
-
-
 
 =cut
 
@@ -94,8 +121,6 @@ sub groups
  Argument  : None
  Throws    : None
  Comments  : 
-
-
 
 =cut
 

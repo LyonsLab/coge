@@ -54,91 +54,64 @@ __PACKAGE__->add_columns(
 	{ data_type => "VARCHAR", default_value => undef, is_nullable => 1, size => 1024 },
 	"list_type_id",
 	{ data_type => "INT", default_value => undef, is_nullable => 1, size => 11 },
-	# "user_group_id",
-	# { data_type => "INT", default_value => undef, is_nullable => 1, size => 11 },
 	"restricted",
 	{ data_type => "BOOLEAN", default_value => 0, is_nullable => 0, size => 1 },
 	"locked",
 	{ data_type => "INT", default_value => "0", is_nullable => 0, size => 1 }
 );
 __PACKAGE__->set_primary_key("list_id");
-# __PACKAGE__->belongs_to( "user_group" => "CoGeX::Result::UserGroup", 'user_group_id' );
 __PACKAGE__->belongs_to( "list_type"  => "CoGeX::Result::ListType",  'list_type_id' );
 __PACKAGE__->has_many( "list_annotations"          => "CoGeX::Result::ListAnnotation", 'list_id' );
-__PACKAGE__->has_many( "list_connectors_as_child"  => "CoGeX::Result::ListConnector",  {'foreign.child_id' => 'self.list_id' } );
-__PACKAGE__->has_many( "list_connectors_as_parent" => "CoGeX::Result::ListConnector",  {'foreign.parent_id' => 'self.list_id' } );
-__PACKAGE__->has_many( "user_connectors" => "CoGeX::Result::UserConnector", {'foreign.child_id' => 'self.list_id'}, {where => {child_type => $node_types->{list}}} );
+__PACKAGE__->has_many( # parent users
+	"user_connectors" => "CoGeX::Result::UserConnector", 
+	{'foreign.child_id' => 'self.list_id'}, 
+	{ where => [ -and => [ parent_type => $node_types->{user}, child_type => $node_types->{list} ] ] } );
+__PACKAGE__->has_many( # parent groups
+	"group_connectors" => "CoGeX::Result::UserConnector", 
+	{'foreign.child_id' => 'self.list_id'}, 
+	{ where => [ -and => [ parent_type => $node_types->{group}, child_type => $node_types->{list} ] ] } );
+__PACKAGE__->has_many( # all children (genomes/experiments/features/lists)
+	'child_connectors' => 'CoGeX::Result::ListConnector', 
+	{ "foreign.parent_id" => "self.list_id" } );
+__PACKAGE__->has_many( # child genomes
+	'genome_connectors' => "CoGeX::Result::ListConnector", 
+	{ "foreign.parent_id" => "self.list_id" }, 
+	{ where => { child_type => $node_types->{genome} } } );
+__PACKAGE__->has_many( # child experiments
+	'experiment_connectors' => "CoGeX::Result::ListConnector", 
+	{ "foreign.parent_id" => "self.list_id" }, 
+	{ where => { child_type => $node_types->{experiment} } } );
+__PACKAGE__->has_many( # child features
+	'feature_connectors' => "CoGeX::Result::ListConnector", 
+	{ "foreign.parent_id" => "self.list_id" }, 
+	{ where => { child_type => $node_types->{feature} } } );	
+__PACKAGE__->has_many( # child lists
+	'list_connectors' => "CoGeX::Result::ListConnector", 
+	{ "foreign.parent_id" => "self.list_id" }, 
+	{ where => { child_type => $node_types->{list} } } );
 
-
-# sub group
-# {
-# 	return shift->user_group(@_);
-# }
-
-sub groups
-{
-	my $self = shift;
-	my %opts = @_;
-	#my $exclude_owner = $opts{exclude_owner}; #FIXME will go away someday due to new user_connector
-
-	my @groups = ();
-	
-	#push @groups, $self->group if (not $exclude_owner or not $self->group->is_owner); #FIXME will go away due to new user_connector
-	
-	foreach my $conn ( $self->user_connectors )
-	{
-		if ($conn->is_parent_group) {
-			push @groups, $conn->parent;
-		}
-	}	
-	
-	return wantarray ? @groups : \@groups;
-}
-
-sub users {
-	my $self = shift;
-	my %users;
-
-	# foreach ($self->group->users) {
-	# 	$users{$_->id} = $_;
-	# }
-
-	foreach my $conn ( $self->user_connectors )
-	{
-		if ($conn->is_parent_user) {
-			$users{$conn->parent_id} = $conn->parent;
-		}
-		# elsif (not $exclude_groups && $_->parent_type == 6) { #FIXME hardcoded type
-		# 	#TODO add group's users
-		# }
-	}
-
-	return wantarray ? values %users : [ values %users ];
-}
-
-sub lists
+sub lists # return child lists within this list
 {
 	my $self = shift;
 	my %opts = @_;
 	my $restricted = $opts{restricted}; # limit result to restricted lists
 	my $count = $opts{count}; #return count;
 
-	if ($count)
-	  {
-	    return $self->list_connectors_as_parent->count({child_type=>$node_types->{list}});
-	  }
+	if ($count) {
+	    return $self->list_connectors->count();
+	}
 	
 	my @lists;
-	foreach my $conn ( $self->list_connectors_as_parent->search({child_type=>$node_types->{list}}) )
+	foreach my $conn ( $self->list_connectors )
 	  {
 	    next if ($restricted and not $conn->child->restricted);
 	    push @lists, $conn->child;
 	  }
 	return wantarray ? @lists : \@lists;		
-      }
+}
 
 sub features
-  {
+{
     my $self = shift;
     my %opts = @_;
     my $restricted = $opts{restricted}; # limit result to restricted features
@@ -146,45 +119,37 @@ sub features
     
     if ($count)
       {
-	return $self->list_connectors_as_parent->count({child_type=>$node_types->{feature}});
+	return $self->feature_connectors->count();
       }
     
     my @features;
-    foreach my $conn ( $self->list_connectors_as_parent->search({child_type=>$node_types->{feature}})  )
+    foreach my $conn ( $self->feature_connectors )
       {
 	next if ($restricted and not $conn->child->restricted);
 	push @features, $conn->child;
       }
     return wantarray ? @features : \@features;	
-  }
+}
 
 
 sub genomes
 {
 	my $self = shift;
 	my %opts = @_;
-	my $restricted = $opts{restricted}; # limit result to restricted genomes
-	my $include_deleted = $opts{include_deleted};
-	my $count = $opts{count}; #return count;
-	my $ids = $opts{ids}; #return genome ids only
+	my $restricted = $opts{restricted}; # option to limit result to restricted genomes
+	my $include_deleted = $opts{include_deleted}; # optional flag to include deleted genomes
+	my $count = $opts{count}; #optional flag to return count only
 	
 	if ($count) {
-		return $self->list_connectors_as_parent->count({child_type=>$node_types->{genome}});
+		return $self->genome_connectors->count();
 	}
 	
 	my @genomes;
-	foreach my $conn ( $self->list_connectors_as_parent->search({child_type=>$node_types->{genome}}) ) {
-	  if ($ids)
-	    {
-	      push @genomes, $conn->child_id;
-	    }
-	  else
-	    {
-	      my $genome = $conn->child;
-	      next if ($genome->deleted);
-	      next if ($restricted and not $genome->restricted);
-	      push @genomes, $genome;
-	    }
+	foreach my $conn ($self->genome_connectors) {
+	    my $genome = $conn->child;
+	    next if ($genome->deleted and not $include_deleted);
+	    next if ($restricted and not $genome->restricted);
+	    push @genomes, $genome;
 	}
 	return wantarray ? @genomes : \@genomes;	
 }
@@ -198,13 +163,13 @@ sub experiments
 	my $count = $opts{count}; #return count;
 
 	if ($count) {
-	    return $self->list_connectors_as_parent->count({child_type=>$node_types->{experiment}});
+	    return $self->experiment_connectors->count();
 	}
 
 	my @experiments;
-	foreach my $conn ( $self->list_connectors_as_parent->search({child_type=>$node_types->{experiment}}) ) {
+	foreach my $conn ( $self->experiment_connectors ) {
 		my $experiment = $conn->child;
-		next if ($experiment->deleted);
+		next if ($experiment->deleted and not $include_deleted);
 		next if ($restricted and not $experiment->restricted);
 		push @experiments, $experiment;
 	}
@@ -218,7 +183,7 @@ sub children
 	my $restricted = $opts{restricted}; # limit result to restricted children
 
 	my @children;
-	foreach my $conn ( $self->list_connectors_as_parent )
+	foreach my $conn ( $self->child_connectors )
 	{
 		next if ($restricted and not $conn->child->restricted);
 		push @children, $conn->child;
@@ -233,7 +198,7 @@ sub children_by_type
 	my $restricted = $opts{restricted}; # limit result to restricted children
 
 	my %children;
-	foreach my $conn ( $self->list_connectors_as_parent )
+	foreach my $conn ( $self->child_connectors )
 	{
 		next if ($restricted and not $conn->child->restricted);
 		my $type = $conn->child_type;
@@ -241,6 +206,36 @@ sub children_by_type
 	}
 	return \%children;	
 }
+
+#sub groups {
+#	my $self = shift;
+#
+#	my @groups = ();
+#	foreach my $conn ( $self->group_connectors )
+#	{
+#		push @groups, $conn->parent;
+#	}
+#
+#	return wantarray ? @groups : \@groups;
+#}
+#
+#sub users {
+#	my $self = shift;
+#	my %opts = @_;
+#	my $exclude_groups = $opts{exclude_groups};
+#
+#	my %users;
+#	foreach	( $self->user_connectors )
+#	{
+#		$users{$_->parent_id} = $_->user;
+#	}
+#	foreach my $group ( $self->groups )
+#	{
+#		map { $users{$_->id} = $_ } $group->users;
+#	}
+#
+#	return wantarray ? values %users : [ values %users ];
+#}
 
 ################################################ subroutine header begin ##
 
@@ -404,6 +399,19 @@ sub data_summary
 	return join( "; ", @stuff );
 }
 
+sub contents_summary_html
+{
+	my $self = shift;
+
+	my $html;
+	$html .= 'Genomes: ' . @{$self->genomes} . '<br>' if (@{$self->genomes});
+	$html .= 'Experiments: ' . @{$self->experiments} . '<br>' if (@{$self->experiments});
+	$html .= 'Features: ' . @{$self->features} . '<br>' if (@{$self->features});
+	$html .= 'Notebooks: ' . @{$self->lists} . '<br>' if (@{$self->lists});
+
+	return $html;
+}
+
 ################################################ subroutine header begin ##
 
 =head2 annotation_pretty_print_html
@@ -435,73 +443,13 @@ sub annotation_pretty_print_html
 	$anno_obj->String_end("\n");
 	my $anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class='title5'>" . "Name" . "</span>" );
 	$anno_type->Type_delimit(": <td class='data5'>");
-	$anno_type->add_Annot( $self->name ." (id".$self->id.")". "</td>" );
+	$anno_type->add_Annot( $self->name . '</td>' );
 	$anno_obj->add_Annot($anno_type);
 	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class='title5'>" . "Description" . "</span>" );
 	$anno_type->Type_delimit(": <td class='data5' style='max-width:400px;overflow:hidden;word-wrap:break-word;'>");
 	$anno_type->add_Annot( $self->description . "</td>" );
 	$anno_obj->add_Annot($anno_type);
 
-#	foreach my $anno ( sort { uc( $a->type->name ) cmp uc( $b->type->name ) } $self->annotations( {}, { prefetch => { annotation_type => 'annotation_type_group' } } ) )
-#	{
-#		my $type      = $anno->type();
-#		my $group;
-#		my $anno_name;
-#		
-#		if (not $type) {
-#			$group = 'undefined';
-#			$anno_name = 'undefined';			
-#		}
-#		else {
-#			$group     = $type->group();
-#			$anno_name = $type->name;
-#			$anno_name .= ", " . $type->description if $type->description;
-#			if ( ref($group) =~ /group/i && !( $type->name eq $group->name ) )
-#			{
-#				{
-#					$anno_name .= ":" unless $anno_name =~ /:$/;
-#					$anno_name = "<span class=\"title5\">" . $anno_name . "</span>";
-#				}
-#			}
-#			else
-#			{
-#				if ( $anno->link )
-#				{
-#					$anno_name = "<tr><td nowrap='true'><span class=\"coge_link\">" . $anno_name . "</span>";
-#				}
-#				else
-#				{
-#					$anno_name = "<tr><td nowrap='true'><span class=\"title5\">" . $anno_name . "</span>";
-#				}
-#			}
-#		}
-#		
-#		my $anno_type = new CoGe::Accessory::Annotation( Type => $anno_name );
-#		$anno_type->Val_delimit("<br>");
-#		$anno_type->Type_delimit(" ");
-#		my $annotation = "<span class=\"data5";
-#		$annotation .= qq{ link" onclick="window.open('} . $anno->link . qq{')} if $anno->link;
-#		$annotation .= "\">" . $anno->annotation . "</span>";
-#		$anno_type->add_Annot($annotation) if $anno->annotation;
-#
-#		if ( ref($group) =~ /group/i && !( $type->name eq $group->name ) )
-#		{
-#			my $class = $anno->link ? "coge_link" : "title5";
-#			my $anno_g = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class=\"$class\">" . $group->name . "</span>" );
-#			$anno_g->add_Annot($anno_type);
-#			$anno_g->Type_delimit(":<td>");
-#			$anno_g->Val_delimit(", ");
-#
-#			#	    $anno_g->Val_delimit(" ");
-#			$anno_obj->add_Annot($anno_g);
-#		}
-#		else
-#		{
-#			$anno_type->Type_delimit(":<td>");
-#			$anno_obj->add_Annot($anno_type);
-#		}
-#	}
-	
 	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class='title5'>" . "Type" . "</span>" );
 	$anno_type->Type_delimit(": <td class='data5'>");
 	if ($self->type)
@@ -512,12 +460,9 @@ sub annotation_pretty_print_html
 	}
 	$anno_obj->add_Annot($anno_type);
   
-	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td valign='top' nowrap='true'><span class='title5'>" . "User Group" . "</span>" );
+	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td valign='top' nowrap='true'><span class='title5'>" . "Note" . "</span>" );
 	$anno_type->Type_delimit(": <td class='data5'>");
-	$anno_type->Val_delimit("<br>");
-	# my $group = $self->group->info_html;
-	# $anno_type->add_Annot( $group );
-	$anno_type->add_Annot( "<span style='color:red;font-style:italic;'>Note: this list was created automatically and cannot be edited.</span>" ) if ($self->locked);
+	$anno_type->add_Annot( "<span style='color:red;font-style:italic;'>this list is locked and cannot be edited.</span>" ) if ($self->locked);
 	$anno_type->add_Annot( "</td>" );
 	$anno_obj->add_Annot($anno_type);
 
@@ -527,35 +472,7 @@ sub annotation_pretty_print_html
 	$anno_type->add_Annot( $restricted . "</td>" );
 	$anno_obj->add_Annot($anno_type);
 	
-#	if ( my @cols = $self->lists )
-#	{
-#		foreach my $col (@cols)
-#		{
-#			$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class=\"title5\">" . "List of lists" . "</span>" );
-#			$anno_type->Type_delimit(": <td class=\"data5\">");
-#			$anno_type->Val_delimit("<br>");
-#			my $col_name = $col->name;
-#			$col_name .= ": " . $col->description if $col->description;
-#			#$col_name = qq{<span class='link' onclick="window.open('} . $col->link . qq{')} . $col_name . "</span>" if $col->link;
-#			$anno_type->add_Annot( $col_name . "</td>" );
-#			$anno_obj->add_Annot($anno_type);
-#		}
-#	}
-
 	return "<table cellpadding=0 class='ui-widget-content ui-corner-all small'>" . $anno_obj->to_String . "</table>";
-}
-
-sub contents_summary_html 
-{
-	my $self = shift;
-
-	my $html;	
-	$html .= 'Genomes: ' . @{$self->genomes} . '<br>' if (@{$self->genomes});
-	$html .= 'Experiments: ' . @{$self->experiments} . '<br>' if (@{$self->experiments});
-	$html .= 'Features: ' . @{$self->features} . '<br>' if (@{$self->features});
-	$html .= 'Notebooks: ' . @{$self->lists} . '<br>' if (@{$self->lists});
-
-	return $html;	
 }
 
 1;
