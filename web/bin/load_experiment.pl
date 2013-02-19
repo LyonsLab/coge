@@ -167,14 +167,16 @@ unless ($user) {
 	print $log "log: error finding user '$user_name'\n";
 	exit(-1);
 }
-my $child_types = CoGeX::list_child_types();
-my $listconn = $coge->resultset('ListConnector')->create(
-	{ parent_id => $user->owner_list->id,
-	  child_id => $experiment->id,
-	  child_type => $child_types->{experiment}
-	} );
-unless ($listconn) {
-	print $log "log: error creating list connector\n";
+my $node_types = CoGeX::node_types();
+my $conn = $coge->resultset('UserConnector')->create(
+  { parent_id => $user->id,
+	parent_type => $node_types->{user},
+	child_id => $genome->id,
+	child_type => $node_types->{experiment},
+	role_id => 2 # FIXME hardcoded
+  } );
+unless ($conn) {
+	print $log "log: error creating user connector\n";
 	exit(-1);
 }
 

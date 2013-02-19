@@ -375,7 +375,7 @@ function more() {
     <td>Organism:</td>
     <td>
       <input id="edit_organism" onkeyup="wait_to_search(search_organisms, this.value);" size="45" />
-      <span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all ui-button-go'>New</span>
+      <span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all'>New</span>
     </td>
   </tr>	
   <tr>
@@ -386,14 +386,14 @@ function more() {
     <td>Type:</td>
     <td>
       <select id="select_type" style="width:230px;"></select>
-      <span id="new_type_button" onClick="$('#create_new_type_dialog').dialog('open'); activate_on_input('edit_type_name', 'create_type_button');" class='ui-button ui-corner-all ui-button-go'>New</span>
+      <span id="new_type_button" onClick="$('#create_new_type_dialog').dialog('open'); activate_on_input('edit_type_name', 'create_type_button');" class='ui-button ui-corner-all'>New</span>
     </td>
   </tr>
   <tr>
     <td>Source:</td>
     <td>
       <input id="edit_source" size="45" />
-      <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all ui-button-go'>New</span>
+      <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
     </td>
   </tr>
   <tr>
@@ -420,8 +420,8 @@ function more() {
 <br>
 <span id='genome_data' style="color:dimgray;font-weight:bold;">Genome Data</span><br>
 <table id='file_table' class="small ui-widget-content ui-corner-all"></table>
-<span onClick="$('#file_select_dialog').dialog('open')" class='ui-button ui-corner-all ui-button-go'>Add Sequence Files</span>
-<span id="files_clear" onClick="clear_list();" class='ui-state-disabled ui-button ui-corner-all ui-button-go'>Clear List</span>
+<span onClick="$('#file_select_dialog').dialog('open')" class='ui-button ui-corner-all'>Add Sequence Files</span>
+<span id="files_clear" onClick="clear_list();" class='ui-state-disabled ui-button ui-corner-all'>Clear List</span>
 <br>
 <br>
 <br>
@@ -441,7 +441,7 @@ function more() {
     </tr>
   </table>
   <br>
-  <span id="create_type_button" onClick="create_sequence_type();" class="ui-state-disabled ui-button ui-corner-all ui-button-go">Create new type</span>
+  <span id="create_type_button" onClick="create_sequence_type();" class="ui-state-disabled ui-button ui-corner-all">Create new type</span>
 </div>
 
 
@@ -506,8 +506,8 @@ function more() {
   <span id="loading_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
   <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
   <input id="genome_id" type="hidden" /> 
-  <span id="ok_button" onClick="$('#load_genome_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">OK</span>
-  <span id="finish_load_genome_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Continue to GenomeInfo</span>
+  <span id="ok_button" onClick="$('#load_genome_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all">OK</span>
+  <span id="finish_load_genome_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all">Continue to GenomeInfo</span>
   <span id="cancel_load_genome_button" onClick="$('#load_genome_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
 </div>
 
@@ -515,7 +515,7 @@ function more() {
 
 <div id="file_select_dialog" class="dialog_box" title="Select Data File ..." style="display:none;">
   <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
-  <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all ui-button-go">Done</span>
+  <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all">Done</span>
 </div>
 
 

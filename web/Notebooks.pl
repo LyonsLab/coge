@@ -88,16 +88,11 @@ sub create_list {
 	return "No specified name!" unless $opts{name};
 	return "No specified type!" unless $opts{typeid};
 	
-	# Get owner user group for the new list
-#	my $ug = $USER->owner_group;
-#	return "Internal error!  Please email $P->{SUPPORT_EMAIL} with a problem description.\n" unless $ug;
-	
 	# Create the new list
 	my $list = $coge->resultset('List')->create( 
 	  { name => $opts{name},
 		description => $opts{desc},
 		list_type_id => $opts{typeid},
-#		user_group_id => $ug->id,
 		restricted => 1
 	  } );
 	return unless $list;

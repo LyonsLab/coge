@@ -474,24 +474,27 @@ sub search_share {
 	return if ($USER->user_name eq 'public');
 	my $search_term	= escape($opts{search_term});
 	my $timestamp	= $opts{timestamp};
-	# print STDERR "search_share $search_term $timestamp\n";
+	#print STDERR "search_share $search_term $timestamp\n";
 	
 	my @results;
 
-	# Perform search
+	# Search for matching users
 	# $search_term = '%'.$search_term.'%';
 	# foreach ($coge->resultset('User')->search_literal(
 	# 		"user_name LIKE '$search_term' OR first_name LIKE '$search_term' OR last_name LIKE '$search_term'"))
 	foreach ($coge->resultset('User')->all) {
 		next unless ($_->user_name =~ /$search_term/i || $_->display_name =~ /$search_term/i);
-		push @results, { 'label' => $_->display_name, 'value' => $_->id.':'.$ITEM_TYPE{user} }
+		my $label = $_->display_name.' ('.$_->user_name.')';
+		my $value = $_->id.':'.$ITEM_TYPE{user};
+		push @results, { 'label' => $label, 'value' => $value };
 	}
 
+	# Search for matching groups
 	foreach ($coge->resultset('UserGroup')->all) {
-		#next if ($_->is_owner); #FIXME will go away with new user_connector table
 		next unless ($_->name =~ /$search_term/i);
 		my $label = $_->name.' ('.$_->role->name.' group)';
-		push @results, { 'label' => $label, 'value' => $_->id.':'.$ITEM_TYPE{group} }
+		my $value = $_->id.':'.$ITEM_TYPE{group};
+		push @results, { 'label' => $label, 'value' => $value };
 	}
 
 	return encode_json({timestamp => $timestamp, items => \@results });
@@ -975,8 +978,6 @@ sub create_new_group {
     return unless $group;
 
     # Set user as owner
-    # my $conn = $coge->resultset('UserGroupConnector')->create( { user_id => $USER->id, user_group_id => $group->id } );
-    # return unless $conn;
     my $conn = $coge->resultset('UserConnector')->create({
     	parent_id => $USER->id,
     	parent_type => 5, #FIXME hardcoded to "user"
@@ -1003,10 +1004,6 @@ sub create_new_notebook {
 	return unless $name && $type_id;
 	my $item_list = $opts{item_list}; # optional
     return if ($USER->user_name eq "public");
-
-    # Get owner user group for the new list
-    # my $owner = $USER->owner_group;
-    # return unless $owner;
 
     # Create the new list
     my $list = $coge->resultset('List')->create({ 

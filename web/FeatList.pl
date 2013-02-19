@@ -527,7 +527,6 @@ sub send_to_list    #send to list
 	  { name => 'featlist',
 		description => 'Created by FeatList',
 		list_type_id => 4, # FIXME hardcoded type!
-		user_group_id => $USER->owner_group->id,
 		restricted => 1
 	  } );
 	return unless $list;

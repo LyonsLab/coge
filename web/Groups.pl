@@ -200,13 +200,6 @@ sub delete_group {
 		return "This is a locked group.  Admin permission is needed to delete.";
 	}
 	
-	# Reassign this group's lists to user's owner group
-#	my $owner_group = $USER->owner_group;
-#	foreach my $list ($group->lists) {
-#		$list->user_group_id( $owner_group->id );
-#		$list->update;
-#	}
-	
 	# OK, now delete the group
 	$group->delete();
 

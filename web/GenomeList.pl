@@ -807,7 +807,6 @@ sub send_to_list    #send to list
 	  { name => 'genomelist',
 		description => 'Created by GenomeList',
 		list_type_id => 1, # FIXME hardcoded type!
-		user_group_id => $USER->owner_group->id,
 		restricted => 1
 	  } );
 	return unless $list;

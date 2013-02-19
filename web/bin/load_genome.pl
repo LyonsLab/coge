@@ -133,20 +133,22 @@ $install_dir = "$install_dir/" . $genome->get_path . "/";
 $genome->file_path($install_dir . $genome->id . ".faa");
 $genome->update;
 
-# Add new genome to user's owner list
+# Make user owner of new genome
 my $user = $coge->resultset('User')->find( { user_name => $user_name } );
 unless ($user) {
 	print $log "log: error finding user '$user_name'\n";
 	exit(-1);
 }
 my $node_types = CoGeX::node_types();
-my $listconn = $coge->resultset('ListConnector')->create(
-	{ parent_id => $user->owner_list->id,
-	  child_id => $genome->id,
-	  child_type => $node_types->{genome}
-	} );
-unless ($listconn) {
-	print $log "log: error creating list connector\n";
+my $conn = $coge->resultset('UserConnector')->create(
+  { parent_id => $user->id,
+	parent_type => $node_types->{user},
+	child_id => $genome->id,
+	child_type => $node_types->{genome},
+	role_id => 2 # FIXME hardcoded
+  } );
+unless ($conn) {
+	print $log "log: error creating user connector\n";
 	exit(-1);
 }
 

@@ -62,11 +62,6 @@ $link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, 
 	modify_users             => \&modify_users,
 	add_user_to_group        => \&add_user_to_group,
 	remove_user_from_group   => \&remove_user_from_group,
-	# add_lists                => \&add_lists,
-	# add_list_to_group        => \&add_list_to_group,
-	# remove_list_from_group   => \&remove_list_from_group,	
-	# search_lists             => \&search_lists,
-	# get_list_preview         => \&get_list_preview,
 	delete_group             => \&delete_group,
 	dialog_set_group_creator => \&dialog_set_group_creator,
 	set_group_creator      	 => \&set_group_creator,
@@ -120,7 +115,7 @@ sub gen_body {
 
 	unless ($groups{$ugid} || $USER->is_admin)
 	{
-	 return "Permission denied";
+	 return "Group not found";
 	}
 	my ($group_info) = get_group_info( ugid => $ugid );
 	$template->param( GROUP_INFO => $group_info );
@@ -294,7 +289,6 @@ sub add_user_to_group {
 	}
 	
 	# Create user connection to group
-	# my ($ugc) = $coge->resultset('UserGroupConnector')->find_or_create( { user_id => $uid, user_group_id => $ugid } );
     my $conn = $coge->resultset('UserConnector')->create({
     	parent_id => $uid,
     	parent_type => 5, #FIXME hardcoded to "user"
@@ -323,12 +317,12 @@ sub remove_user_from_group {
 	}
 	if ( $uid == $USER->id && !$USER->is_admin ) { # only allow this for admins
 		return "Can't remove yourself from a group!";
+	}
+	if ( $uid == $group->owner->id && !$USER->is_admin ) { # only allow this for admins
+		return "Can't remove the group owner!";
 	}	
 
-	# Remove user connections to group
-	# foreach my $ugc ( $coge->resultset('UserGroupConnector')->search( { user_id => $uid, user_group_id => $ugid } ) ) {
-	# 	$ugc->delete;
-	# }
+	# Remove all user connections to group
 	my @conns = $coge->resultset('UserConnector')->search({ 
     	parent_id => $uid,
     	parent_type => 5, #FIXME hardcoded to "user"
@@ -345,154 +339,6 @@ sub remove_user_from_group {
 	return 1;
 }
 
-# sub add_lists {
-# 	my %opts = @_;
-# 	my $ugid  = $opts{ugid};
-# 	return 0 unless $ugid;
-
-# 	my $group = $coge->resultset('UserGroup')->find($ugid);
-# 	return 0 unless $group && user_can_edit($group);
-	
-# 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'GroupView.tmpl' );
-# 	$template->param( ADD_LISTS => 1 );
-# 	$template->param( UGID      => $ugid );
-
-# 	my %data;
-# 	$data{title} = 'Add Notebook';
-# 	$data{output} = $template->output;
-
-# 	return encode_json( \%data );
-# }
-
-# sub add_list_to_group {
-# 	my %opts = @_;
-# 	my $ugid  = $opts{ugid};
-# 	return 0 unless $ugid;
-# 	my $item_spec = $opts{item_spec};
-# 	return 0 unless $item_spec;
-# #	print STDERR "$lid $item_spec\n";	
-	
-# 	# FIXME: check for user group locked?
-	
-# 	my ($item_type, $item_id) = split(/:/, $item_spec);
-# 	my $list = $coge->resultset('List')->find($item_id);
-# 	return 0 unless ($list);
-	
-# 	$list->user_group_id($ugid);
-# 	$list->update;
-	
-# 	return 1;
-# }
-
-# sub remove_list_from_group {
-# 	my %opts  = @_;
-# 	my $ugid = $opts{ugid};
-# 	return "No UGID specified" unless $ugid;
-# 	my $lid = $opts{lid};
-# 	return "No LID specified" unless $lid;
-# #	print STDERR "ugid=$ugid lid=$lid\n";
-	
-# 	my $group = $coge->resultset('UserGroup')->find($ugid);
-# 	return 0 unless $group;
-# 	return 0 if ($group->locked and !$USER->is_admin);
-	
-# 	# FIXME: upon review, is this really what we want? what about reassignin the list to owner list instead?
-# 	my $list = $coge->resultset('List')->find($lid);
-# 	return 0 unless $list;
-# 	$list->delete();
-	
-# 	return 1;
-# }
-
-# sub search_lists { 
-# 	my %opts = @_;
-# 	my $ugid 		= $opts{ugid};
-# 	my $search_term	= $opts{search_term};
-# 	my $timestamp 	= $opts{timestamp};
-# #	print STDERR "$ugid $search_term $timestamp\n";
-# 	return 0 unless $ugid;
-	
-# 	# Get lists already in this group
-# 	my $group = $coge->resultset('UserGroup')->find($ugid);
-# 	return 0 unless $group;
-	
-# 	my %exists;
-# 	map { $exists{$_->id}++ } $group->lists;
-	
-# 	my @lists;
-# 	my $num_results;
-# 	my $group_str = join(',', map { $_->id } $USER->groups);
-	
-# 	# Try to get all items if blank search term
-# 	if (not $search_term) {
-# 		# Get all lists
-# 		my $sql = "locked=0 AND (restricted=0 OR user_group_id IN ( $group_str ))";
-# 		$num_results = $coge->resultset("List")->count_literal($sql);
-# 		if ($num_results < $MAX_SEARCH_RESULTS) {
-# 			@lists = $coge->resultset("List")->search_literal($sql);
-# 		}
-# 	}
-# 	# Perform search
-# 	else {	
-# 		$search_term = '%'.$search_term.'%';
-# 		if ($USER->is_admin) {
-# 			@lists = $coge->resultset("List")->search(
-# 				\[ 'name LIKE ? OR description LIKE ?', 
-# 				['name', $search_term ], ['description', $search_term] ]);		
-# 		}
-# 		else {
-# 			@lists = $coge->resultset("List")->search_literal("locked=0 AND (restricted=0 OR user_group_id IN ( $group_str )) AND (name LIKE '$search_term' OR description LIKE '$search_term')");
-# 		}
-# 	}
-
-# 	# Limit number of results display
-# 	if ($num_results > $MAX_SEARCH_RESULTS) {
-# 		return encode_json({
-# 					timestamp => $timestamp,
-# 					html => "<option disabled='disabled'>$num_results results, please refine your search.</option>"
-# 		});
-# 	}
-	
-# 	# Build select items out of results	
-# 	my $html = '';
-# 	foreach my $l (sort listcmp @lists) {
-# 		my $disable = $exists{$l->id} ? "disabled='disabled'" : '';
-# 		#next if ($l->id == $lid); # can't add a list to itself!
-# 		my $item_spec = 1 . ':' . $l->id; #FIXME magic number for item_type
-# 		$html .= "<option $disable value='$item_spec'>" . $l->info . "</option><br>\n";	
-# 	}
-	
-# 	return encode_json({timestamp => $timestamp, html => $html});
-# }
-
-# FIXME mdb 8/29/12 - this routine is redundantly declared (e.g. ListView.pl)
-# sub listcmp {
-# 	no warnings 'uninitialized'; # disable warnings for undef values in sort
-# 	$a->name cmp $b->name
-# }
-
-# sub get_list_preview {
-# 	my %opts  = @_;
-# 	my $item_spec = $opts{item_spec};
-
-# 	my (undef, $lid) = split(':', $item_spec);
-
-# 	my $list = $coge->resultset('List')->find($lid);
-# 	my $html = '';
-# 	if ($list) {
-# 		my $contents_summary = $list->contents_summary_html;
-# 		$html .= "Notebook <b>'" . $list->name . "'</b> (id" . $list->id . ') ';
-# 		if ($contents_summary) {
-# 			$html .= 'contains:<div style="padding-left: 10px; padding-top: 3px;">' . $contents_summary . '</div>';
-# 		}
-# 		else {
-# 			$html .= 'is empty.';
-# 		}	
-# 	}
-
-# 	return $html;	
-# }
-
 sub delete_group {
 	my %opts  = @_;
 	my $ugid = $opts{ugid};
@@ -504,13 +350,6 @@ sub delete_group {
 	if ( $group->locked && !$USER->is_admin ) {
 		return "This is a locked group.  Admin permission is needed to delete.";
 	}
-	
-	# Reassign this group's lists to user's owner group
-#	my $owner_group = $USER->owner_group;
-#	foreach my $list ($group->lists) {
-#		$list->user_group_id( $owner_group->id );
-#		$list->update;
-#	}
 	
 	# OK, now delete the group
 	$group->delete();

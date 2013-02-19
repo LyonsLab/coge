@@ -302,7 +302,7 @@ function get_sources () {
     <td>Source:</td>
     <td>
       <input id="edit_source" size="45" />
-      <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all ui-button-go'>New</span>
+      <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
     </td>
   </tr> 
   <tr>
@@ -320,7 +320,7 @@ function get_sources () {
     <td>Data file:</td>
     <td>
       <table id='file_table' class="small"></table>
-      <span id="select_file_button" onClick="$('#file_select_dialog').dialog('open');" class='ui-button ui-corner-all ui-button-go'> Select Data File</span>
+      <span id="select_file_button" onClick="$('#file_select_dialog').dialog('open');" class='ui-button ui-corner-all'> Select Data File</span>
     </td>
   </tr>
 </table>
@@ -332,7 +332,7 @@ function get_sources () {
 
 <div id="file_select_dialog" class="dialog_box" title="Select Data File ..." style="display:none;">
   <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
-  <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
+  <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all">Done</span>
 </div> <!-- file_select_dialog -->
 
 
@@ -345,9 +345,9 @@ function get_sources () {
   <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
   <span id="error_msg" style="display:none;">An error occurred <img src="picts/thumbs_down.png"></span>
   <input id="experiment_id" type="hidden" /> 
-  <span id="ok_button" onClick="$('#load_experiment_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">OK</span>
-  <span id="finish_load_experiment_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">ExperimentView</span>
-  <span id="cancel_load_experiment_button" onClick="$('#load_experiment_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
+  <span id="ok_button" onClick="$('#load_experiment_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all">OK</span>
+  <span id="finish_load_experiment_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all">ExperimentView</span>
+  <span id="cancel_load_experiment_button" onClick="$('#load_experiment_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all">Cancel</span>
 </div> <!-- load_experiment_dialog -->
 
 

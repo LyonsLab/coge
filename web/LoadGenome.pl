@@ -405,7 +405,7 @@ sub get_load_genome_log {
 	open(my $fh, $logfile) 
 		or return encode_json({ status => -1, log => "Error opening log file" });
 
-	my @lines;
+	my @lines = ();
 	my $gid;
 	my $status = 0;
 	while (<$fh>) {

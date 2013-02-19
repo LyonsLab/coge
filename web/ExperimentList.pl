@@ -368,7 +368,6 @@ sub send_to_list    #send to list
 	  { name => 'experimentlist',
 		description => 'Created by ExperimentList',
 		list_type_id => 2, # FIXME hardcoded type!
-#		user_group_id => $USER->owner_group->id,
 		restricted => 1
 	  } );
 	return unless $list;

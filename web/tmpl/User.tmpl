@@ -359,15 +359,15 @@ function add_to_notebook_dialog() {
 function wait_to_search (search_func, search_term) {
 	if (!search_term || search_term.length > 2) {
 		pageObj.search_term = search_term;
-		if (pageObj.timer['notebooks']) {
-			clearTimeout(pageObj.time);
+		if (pageObj.timer['search']) {
+			clearTimeout(pageObj.timer['search']);
 		}
 		
-		pageObj.timer['notebooks'] = setTimeout(
+		pageObj.timer['search'] = setTimeout(
 			function() { 
 				search_func(pageObj.search_term); 
 			},
-			500
+			1000
 		);
 	}
 }
@@ -722,7 +722,6 @@ function send_items_to(page_name, format) {
 				<img id='user_image' src="<TMPL_VAR NAME='USER_IMAGE'>" width='100' height='100' class="link" style="padding:1px;border:1px solid lightgray;" onclick="select_image_file();" />
 			</td></tr>
 			<tr><td>
-				<!--<span onclick="select_image_file();" class="small link">click to change</span>-->
 				<input id="input_upload_file" name="input_upload_file" type="file" data-url='<TMPL_VAR NAME="PAGE_NAME">' style="display:none;" />
 			</td></tr>
 		</table>

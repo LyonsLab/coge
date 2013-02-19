@@ -394,7 +394,7 @@ sub get_load_experiment_log {
 	open(my $fh, $logfile) 
 		or return encode_json({ status => -1, log => "Error opening log file" });
 
-	my @lines;
+	my @lines = ();
 	my $eid;
 	my $status = 0;
 	while (<$fh>) {
