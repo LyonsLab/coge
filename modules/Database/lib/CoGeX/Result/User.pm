@@ -18,28 +18,6 @@ This object uses the DBIx::Class to define an interface to the C<user> table in 
 
 =head1 DESCRIPTION
 
-Has columns:
-C<user_id> (Primary Key)
-Type: INT, Default: undef, Nullable: no, Size: 10
-
-C<user_name>
-Type: VARCHAR, Default: "", Nullable: no, Size: 10
-
-C<first_name>
-Type: VARCHAR, Default: "", Nullable: no, Size: 10
-
-C<last_name>
-Type: VARCHAR, Default: "", Nullable: no, Size: 10
-
-C<email>
-Type: VARCHAR, Default: undef, Nullable: yes, Size: 50
-
-C<description>
-Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
-
-
-Has many CCoGeX::Result::UserSession> via C<user_id>
-
 =head1 USAGE
 
   use CoGeX;
@@ -599,34 +577,6 @@ sub experiments {
 		push @experiments, $_ unless ($_->deleted and not $include_deleted);
 	}
 	return wantarray ? @experiments : \@experiments;	
-	
-#	my $self = shift;
-#	my %opts = @_;
-#	my $include_deleted = $opts{include_deleted};
-#	
-#	my %experiments;
-#	foreach my $ug ( $self->groups ) {
-#		foreach my $uc ( $ug->experiment_connectors ) {
-#			my $experiment = $uc->child;
-#			next if ($experiment->deleted && not $include_deleted);
-#			$experiments{ $uc->child_id } = $experiment;
-#		}
-#		foreach my $uc ( $self->list_connectors ) {
-#			my $list = $uc->child;
-#			map { $experiments{ $_->id } = $_ } $list->experiments( include_deleted => $include_deleted );
-#		}
-#	}
-#	foreach my $uc ( $self->experiment_connectors ) {
-#		my $experiment = $uc->child;
-#		next if ($experiment->deleted && not $include_deleted);
-#		$experiments{ $uc->child_id } = $experiment;
-#	}
-#	foreach my $uc ( $self->list_connectors ) {
-#		my $list = $uc->child;
-#		map { $experiments{ $_->id } = $_ } $list->experiments( include_deleted => $include_deleted );
-#	}
-#
-#	return wantarray ? values %experiments : [ values %experiments ];	
 }
 
 ################################################ subroutine header begin ##
@@ -683,60 +633,6 @@ sub genomes {
 		push @genomes, $_ unless ($_->deleted and not $include_deleted);
 	}
 	return wantarray ? @genomes : \@genomes;
-
-#	my %genomes;
-#	# Scan user's genomes
-#	foreach my $conn ($self->genome_connectors) {
-#		my $gid = $conn->child_id;
-#		
-#		if ($only_ids) {
-#		    $genomes{$gid} = $gid;
-#		}
-#		else {
-#		    my $genome = $conn->child;
-#		    next if ($genome->deleted && not $include_deleted);
-#		    $genomes{$gid} = $genome;
-#		}
-#	}
-#
-#	# Scan user's lists
-#	foreach my $conn ( $self->list_connectors ) {
-#		my $list = $conn->child;
-#		if ($only_ids) {
-#	    	map { $genomes{ $_ } = $_ } $list->genomes( include_deleted => $include_deleted, only_ids => $only_ids );
-#		}
-#		else {
-#			map { $genomes{ $_->id } = $_ } $list->genomes( include_deleted => $include_deleted );	
-#		}
-#	}
-#	
-#	# Scan user's groups
-#	foreach my $group ( $self->groups ) { #TODO move this coge into UserGroup.pm::genomes ...?
-#		# Scan group's genomes
-#		foreach my $conn ($group->genome_connectors) {
-#			my $gid = $conn->child_id;
-#			
-#			if ($only_ids) {
-#			    $genomes{$gid} = $gid;
-#			}
-#			else {
-#			    my $genome = $conn->child;
-#			    next if ($genome->deleted && not $include_deleted);
-#			    $genomes{$gid} = $genome;
-#			}
-#		}
-#		# Scan group's lists
-#		foreach my $conn ($group->list_connectors) {
-#			my $list = $conn->child;
-#			if ($only_ids) {
-#				map { $genomes{ $_ } = $_ } $list->genomes( include_deleted => $include_deleted, only_ids => $only_ids );
-#			}
-#			else {
-#				map { $genomes{ $_->id } = $_ } $list->genomes( include_deleted => $include_deleted );
-#			}
-#		}
-#	}
-#	return wantarray ? values %genomes : [ values %genomes ];
 }
 
 sub groups_with_access {
@@ -1050,6 +946,7 @@ sub info {
 
  Eric Lyons
  Brent Pedersen
+ Matt Bomhoff
 
 =head1 COPYRIGHT
 

@@ -14,43 +14,9 @@ CoGeX::Result::Experiment
 
 =head1 SYNOPSIS
 
-This object uses the DBIx::Class to define an interface to the C<dataset_group> table in the CoGe database.
+This object uses the DBIx::Class to define an interface to the C<experiment> table in the CoGe database.
 
 =head1 DESCRIPTION
-
-Has columns:
-C<experiment_id> (Primary Key)
-Type: INT, Default: undef, Nullable: no, Size: 11
-
-C<genome_id> 
-Type: INT, Default: undef, Nullable: no, Size: 11
-
-C<data_source_id>
-Type: INT, Default: 0, Nullable: 0, Size: 11
-
-C<name>
-Type:VARCHAR, Default: "", Nullable: no, Size: 255
-
-C<description>
-Type: Text, Default: undef, Nullable: yes
-
-C<version>
-Type:VARCHAR, Default: undef, Nullable: no, Size: 50
-
-C<storage_path>
-Type: VARCHAR, Default: undef, Nullable: 0, Size: 255
-
-C<link>
-Type: TEXT, Defaullt:  undef, Nullable: 1
-
-C<restricted>
-Type: INT, Default: 0, Nullable: 0, Size: 1
-
-Belongs to CCoGeX::Result::DataSource> via C<data_source_id>
-Belongs to CCoGeX::Result::Genome> via C<genome_id>
-Has many CCoGeX::Result::ExperimentTypeConnector> via C<experiment_id>
-Has many CCoGeX::Result::ExperimentAnnotation> via C<experiment_id>
-
 
 =head1 USAGE
 

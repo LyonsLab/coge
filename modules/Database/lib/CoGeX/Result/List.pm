@@ -3,8 +3,6 @@ package CoGeX::Result::List;
 use strict;
 use warnings;
 use base 'DBIx::Class::Core';
-#use CoGeX;
-
 use CoGe::Accessory::Annotation;
 
 =head1 NAME
@@ -13,26 +11,9 @@ CoGeX::FeatureList
 
 =head1 SYNOPSIS
 
-This object uses the DBIx::Class to define an interface to the C<feature_list> table in the CoGe database.
+This object uses the DBIx::Class to define an interface to the C<list> table in the CoGe database.
 
 =head1 DESCRIPTION
-
-Has columns:
-C<feature_list_id> (Primary Key)
-Type: INT, Default: undef, Nullable: no, Size: 10
-
-C<name>
-Type: VARCHAR, Default: "", Nullable: no, Size: 50
-
-C<description>
-Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
-
-C<feature_list_group_id>
-Type: INT, Default: undef, Nullable: yes, Size: 10
-
-C<notes>
-Type: VARCHAR, Default: undef, Nullable: yes, Size: 1024
-
 
 =head1 USAGE
 

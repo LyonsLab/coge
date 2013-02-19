@@ -12,7 +12,7 @@ CoGeX::Result::UserConnector
 =head1 SYNOPSIS
 
 This object uses the DBIx::Class to define an interface to the C<user_connector> table in the CoGe database.
-The C<user_connector> table is used to associate C<experiment,genome,feature> records with C<user> records.
+The C<user_connector> table is used to associate C<list,experiment,genome,feature> records with C<user>  and C<user_group>records.
 
 =head1 DESCRIPTION
 

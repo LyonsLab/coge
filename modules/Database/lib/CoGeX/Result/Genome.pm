@@ -23,35 +23,6 @@ This object uses the DBIx::Class to define an interface to the C<genome> table i
 
 =head1 DESCRIPTION
 
-Has columns:
-C<genome_id> (Primary Key)
-Type: INT, Default: undef, Nullable: no, Size: 11
-
-C<name>
-Type:VARCHAR, Default: "", Nullable: no, Size: 200
-
-C<description>
-Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
-
-C<version>
-Type:VARCHAR, Default: undef, Nullable: no, Size: 50
-
-C<organism_id>
-Type: INT, Default: 0, Nullable: no, Size: 11
-
-C<genomic_sequence_type_id>
-Type: INT, Default: 0, Nullable: no, Size: 11
-
-C<file_path>
-Type: VARCHAR, Default: undef, Nullable: 0, Size: 255
-
-
-Belongs to CCoGeX::Result::Organism> via C<organism_id>
-Belongs to CCoGeX::Result::GenomicSequenceType> via C<genomic_sequence_type_id>
-Has many CCoGeX::Result::DatasetConnector> via C<genome_id>
-Has many CCoGeX::Result::GenomicSequence> via C<genome_id>
-
-
 =head1 USAGE
 
  use CoGeX;

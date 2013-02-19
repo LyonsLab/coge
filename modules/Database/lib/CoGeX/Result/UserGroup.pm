@@ -15,17 +15,6 @@ This object uses the DBIx::Class to define an interface to the C<user_group> tab
 
 =head1 DESCRIPTION
 
-Has columns:
-C<user_group_id> (Primary Key)
-Type: INT, Default: undef, Nullable: no, Size: 10
-
-C<name>
-Type: VARCHAR, Default: "", Nullable: no, Size: 50
-
-C<description>
-Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
-
-
 =head1 USAGE
 
   use CoGeX;
@@ -107,14 +96,6 @@ sub users
 	return wantarray ? @users : \@users;		
 }
 
-#sub owner
-#{
-#	my $self = shift;
-#	foreach ($self->user_connectors) {
-#		return $_->parent if ($_->role->is_owner);
-#	}
-#}
-
 ################################################ subroutine header begin ##
 
 =head2 has_member
@@ -139,6 +120,30 @@ sub has_member
 	return 1 if $self->user_connectors({parent_id => $uid});
 
 	return 0;
+}
+
+################################################ subroutine header begin ##
+
+=head2 owner
+
+ Usage     : 
+ Purpose   : Returns user object
+ Returns   : user object
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub owner
+{
+	my $self = shift;
+	
+	foreach ($self->user_connectors({role_id=>2})) { #FIXME hardcoded
+		return $_->parent;
+	}
 }
 
 ################################################ subroutine header begin ##
@@ -189,11 +194,6 @@ sub is_editor {
 	my $self = shift;
  	return $self->role->name =~ /editor/i;
 }
-
-# sub is_admin {
-# 	my $self = shift;
-# 	return $self->role->name =~ /admin/i;
-# }
 
 ################################################ subroutine header begin ##
 
