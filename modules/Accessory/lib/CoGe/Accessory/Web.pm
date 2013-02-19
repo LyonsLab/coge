@@ -17,6 +17,8 @@ use XML::Simple;
 use CoGe::Accessory::LogUser;
 use Digest::MD5 qw(md5_base64);
 use POSIX;
+use IPC::System::Simple qw(capture system $EXITVAL EXIT_ANY);
+use Mail::Mailer;
 
 BEGIN {
 	use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK $Q $cogex $TEMPDIR $BASEDIR);
@@ -617,26 +619,30 @@ sub gunzip {
 sub irods_ils {
 	my $path = shift;
 	$path = '' unless $path;
+#	print STDERR "irods_ils: path=$path\n";
 
 	my $P = get_defaults( $ENV{HOME} . 'coge.conf' );
 	my $env_file = $P->{IRODSENV};
 	if (not defined $env_file or not -e $env_file) {
 		print STDERR "fatal error: iRODS env file missing!\n";
-		return;	
+		return { error => "Error: iRODS env file missing" };
 	}
 
 	my $cmd = "export irodsEnvFile='$env_file'; ils -l $path 2>&1";
 #	print STDERR "cmd: $cmd\n";
-	my @ils = `$cmd`;
+#	my @ils = `$cmd`; # old way of executing command, replaced by better error checking below
+	my @ils = capture(EXIT_ANY, $cmd);
+   	if ($EXITVAL) {
+		return { error => "Error: ils rc=$EXITVAL" };
+	}
 
 	$path = shift @ils;
-	if ($path =~ /^ERROR/) { # iRODS error message
-		my $result = { type => 'error', name => $path };
-		return wantarray ? ($result) : [$result];
-	}
+#	if ($path =~ /^ERROR/) { # iRODS error message
+#		my $result = { type => 'error', name => $path };
+#		return wantarray ? ($result) : [$result];
+#	}
 	chomp($path);
 	chop($path);
-#	print STDERR "irods_ils: path=$path\n";
 
 	my @result;
 	foreach my $line (@ils) {
@@ -655,7 +661,6 @@ sub irods_ils {
 			(undef, undef, undef, undef, $size, $timestamp, undef, $name) = split(/\s+/, $line);
 		}
 		
-		print STDERR "$type: $name\n";
 		push @result, 
 			{ type => $type, 
 			  size => $size, 
@@ -666,7 +671,7 @@ sub irods_ils {
 	}
 	@result = sort {$a->{type} cmp $b->{type}} @result; # directories before files
 	
-	return wantarray ? @result : \@result;
+	return { items => \@result };
 }
 
 sub irods_chksum {
@@ -706,6 +711,26 @@ sub irods_iget {
 #	print STDERR "@ils";
 	
 	return;
+}
+
+sub send_email {
+	my %opts = @_;
+	my $from 	= $opts{from};
+	my $to 		= $opts{to};
+	my $subject = $opts{subject};
+	my $body 	= $opts{body};
+
+	print STDERR "Sending email: $from $to $subject\n";
+
+	my $mailer = Mail::Mailer->new("sendmail");
+	$mailer->open({
+		From    => $from,
+		To      => $to,
+		Subject => $subject,
+	}) or die "Can't open: $!\n";
+
+	print $mailer $body;
+	$mailer->close();
 }
 
 1;
