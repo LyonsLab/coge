@@ -17,7 +17,6 @@ use Parallel::ForkManager;
 use GD;
 use Digest::MD5 qw(md5_base64);
 use File::Path;
-use Mail::Mailer;
 use Benchmark;
 use DBI;
 use POSIX;
@@ -873,15 +872,6 @@ sub generate_fasta
 	{
 		my $count = 1;
 		my @feats = sort { $a->chromosome cmp $b->chromosome || $a->start <=> $b->start } $coge->resultset(
-																																																			 'Feature')->search(
-																																																													 {
-																																																														 feature_type_id  => [ 3, 5, 8 ],
-																																																														 genome_id => $dsgid
-																																																													 },
-																																																													 {
-																																																														 join     => [ { dataset => 'dataset_connectors' } ],
-																																																														 prefetch => ['feature_names']
-																																																													 }
 																																																			 );
 		CoGe::Accessory::Web::write_log( "Getting sequence for " . scalar(@feats) . " features of types CDS, tRNA, and rRNA.", $cogeweb->logfile );
 		foreach my $feat (@feats)
@@ -923,7 +913,6 @@ sub generate_fasta
 	}
 	else
 	{
-
 		my @chr = sort $dsg->get_chromosomes;
 		CoGe::Accessory::Web::write_log( "Getting sequence for " . scalar(@chr) . " chromosomes (genome sequence)", $cogeweb->logfile );
 		$file = $dsg->file_path;
@@ -2286,7 +2275,7 @@ sub add_reverse_match    #this is for when there is a self-self comparison.  DAG
 		$skip = 1 if /GEvo\.pl/;    #GEvo links have been added, this file was generated on a previous run.  Skip!
 		last if ($skip);
 		next unless $_;
-		my @line = split /\s+/;
+		my @line = split(/\s+/);
 		if (/^#/)
 		{
 			my $chr1 = $line[2];
@@ -3533,10 +3522,10 @@ sub get_dsg_gc
 	my $text  = $opts{text};
 	$dsg = $coge->resultset('Genome')->find($dsgid) if $dsgid;
 	my ( $gc, $at, $n, $x ) = $dsg->percent_gc;
-	$gc *= 100;
-	$at *= 100;
-	$n  *= 100;
-	$x  *= 100;
+	$gc *= 100 if (defined $gc);
+	$at *= 100 if (defined $at);
+	$n  *= 100 if (defined $n);
+	$x  *= 100 if (defined $x);
 
 	if ($text)
 	{
@@ -3608,41 +3597,17 @@ sub check_address_validity
 sub email_results
 {
 	my %opts          = @_;
-	my $email_address = $opts{email};
-
-	#	my $html = $opts{html};
-	my $org_name1 = $opts{org1};
-	my $org_name2 = $opts{org2};
-	my $job_title = $opts{jobtitle};
-	my $link      = $opts{link};
-	my $file      = $cogeweb->basefile . "_results.data";
-
-	#    open(NEW,"> $file") || die "Cannot Save $!\n";
-	#    print NEW $html;
-	#    close NEW;
+	my $email_address 	= $opts{email};
+	#my $html 			= $opts{html};
+	my $org_name1 		= $opts{org1};
+	my $org_name2 		= $opts{org2};
+	my $job_title 		= $opts{jobtitle};
+	my $link      		= $opts{link};
 
 	my $subject = "CoGe's SynMap Results are ready";
 	$subject .= ": $job_title" if $job_title;
-
-	#    ($file) = $file =~/SynMap\/(.+\.data)/;
-
-	my $server = $P . $ENV{SCRIPT_NAME};
-
-	my $url = "http://" . $server . "?file=" . $file;
-
-	my $mailer = Mail::Mailer->new("sendmail");
-	$mailer->open(
-								 {
-									 From    => 'CoGe <coge_results@genomevolution.org>',
-									 To      => $email_address,
-									 Subject => $subject,
-								 }
-		)
-		or die "Can't open: $!\n";
-	my $username = $USER->user_name;
-	$username = $USER->first_name if $USER->first_name;
-	$username .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-	my $body = qq{Dear $username,
+	my $name = $USER->display_name;
+	my $body = qq{Dear $name,
 		
 Thank you for using SynMap! The results from your latest analysis between $org_name1 and $org_name2 are ready.  To view your results, follow this link and press "Generate SynMap":
 	
@@ -3653,8 +3618,12 @@ Thank you for using the CoGe Software Package.
 - The CoGe Team
 };
 
-	print $mailer $body;
-	$mailer->close();
+	send_email({
+		from => 'CoGe <coge_results@genomevolution.org>',
+		to => $email_address,
+		subject => $subject,
+		body => $body
+	});
 }
 
 sub get_dotplot

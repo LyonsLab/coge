@@ -119,9 +119,14 @@ sub irods_get_path {
 		return;
 	}
 	
-	my $items = CoGe::Accessory::Web::irods_ils($path);
-print STDERR Dumper $items;
-	return encode_json( { timestamp => $timestamp, path => $path, items => $items } );
+	my $result = CoGe::Accessory::Web::irods_ils($path);
+	my $error = $result->{error};
+	if ($error) {
+		my $email = $P->{SUPPORT_EMAIL};
+		CoGe::Accessory::Web::send_email(from => $email, to => $email, subject => "System error notification from $PAGE_TITLE", body => $error);
+		return encode_json( { timestamp => $timestamp, error => $error } );
+	}
+	return encode_json( { timestamp => $timestamp, path => $path, items => $result->{items} } );
 }
 
 sub irods_get_file {
@@ -548,10 +553,10 @@ sub generate_html {
 	my $name = $USER->user_name;
 	$name = $USER->first_name if $USER->first_name;
 	$name .= ' ' . $USER->last_name if ( $USER->first_name && $USER->last_name );
-	$template->param( USER     => $name );
-	$template->param( LOGO_PNG => $PAGE_TITLE . "-logo.png" );
+	$template->param( USER     => $name,
+					  LOGO_PNG => $PAGE_TITLE . "-logo.png",
+					  DATE     => $DATE );
 	$template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-	$template->param( DATE     => $DATE );
 	my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
 	$link = CoGe::Accessory::Web::get_tiny_link( url => $link );
 
@@ -565,20 +570,22 @@ sub generate_html {
 sub generate_body {
 	if ($USER->user_name eq 'public') {
 		my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-		$template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
-		$template->param( LOGIN     => 1 );
+		$template->param( PAGE_NAME => "$PAGE_TITLE.pl",
+						  LOGIN     => 1 );
 		return $template->output;
 	}
 	
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
-	$template->param( MAIN => 1 );
-	$template->param( PAGE_NAME => $PAGE_TITLE . '.pl' );
+	$template->param( MAIN => 1,
+					  PAGE_NAME => $PAGE_TITLE . '.pl',
+					  SUPPORT_EMAIL => $P->{SUPPORT_EMAIL} );
 
 	$template->param( ENABLE_NCBI => 1,
 					  DEFAULT_TAB => 0,
 					  MAX_IRODS_LIST_FILES => 100,
 					  MAX_IRODS_TRANSFER_FILES => 30,
 					  MAX_FTP_FILES => 30 );
+					  
 	$template->param( ADMIN_AREA    => 1 ) if $USER->is_admin;
 	
 	return $template->output;

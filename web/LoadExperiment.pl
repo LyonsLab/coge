@@ -114,8 +114,13 @@ sub irods_get_path {
 		return;
 	}
 	
-	my $items = CoGe::Accessory::Web::irods_ils($path);
-	return encode_json( { timestamp => $timestamp, path => $path, items => $items } );
+	my $result = CoGe::Accessory::Web::irods_ils($path);
+	if ($result->{error}) {
+		my $email = $P->{SUPPORT_EMAIL};
+		CoGe::Accessory::Web::send_email(from => $email, to => $email, subject => "System error notification from $PAGE_TITLE", body => $error);
+		return encode_json( { timestamp => $timestamp, error => $result->{error} } );
+	}	
+	return encode_json( { timestamp => $timestamp, path => $path, items => $result->{items} } );
 }
 
 sub irods_get_file {
@@ -124,7 +129,7 @@ sub irods_get_file {
 	
 	my ($filename) = $path =~ /([^\/]+)\s*$/;
 	my ($remotepath) = $path =~ /(.*)$filename$/;
-#	print STDERR "get_file $path $filename\n";
+#	print STDERR "irods_get_file $path $filename\n";
 	
 	my $localpath = 'irods/' . $remotepath;
 	my $localfullpath = $TEMPDIR . $localpath;

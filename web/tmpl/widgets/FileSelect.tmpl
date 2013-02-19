@@ -183,15 +183,19 @@ function irods_get_path (path) {
 			if (result == null) {
 				return;
 			}
-			if (result) {
-				if (result.items[0] && result.items[0].type == 'error') {
-					$('#ids_table').html('<tr><td>'+result.items[0].name+'</td></tr>');
-					return;
-				}
-				if (result.items.length > <TMPL_VAR NAME='MAX_IRODS_LIST_FILES'>) {
-					alert("Too many files (" + filelist.length + ") at specified location, limit is <TMPL_VAR NAME='MAX_IRODS_LIST_FILES'>.");
-					return;
-				}
+			if (result.error) {
+				$('#ids_table')
+					.html('<tr><td><span class="alert">'
+					+ 'The following error occurred while accessing the Data Store.<br><br>'
+					+ result.error + '<br><br>'
+					+ 'We apologize for the inconvenience.  Our support staff have already been notified and will resolve the issue ASAP. '
+					+ 'Please contact <a href="mailto:<TMPL_VAR NAME=SUPPORT_EMAIL>"><TMPL_VAR NAME=SUPPORT_EMAIL></a> with any questions or comments.'
+					+'</span></td></tr>');
+				return;
+			}
+			if (result.items.length > <TMPL_VAR NAME='MAX_IRODS_LIST_FILES'>) {
+				alert("Too many files (" + filelist.length + ") at specified location, limit is <TMPL_VAR NAME='MAX_IRODS_LIST_FILES'>.");
+				return;
 			}
 
 			$('#ids_table').html('');

@@ -164,8 +164,9 @@ sub gen_body {
 	# }
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-	$template->param( PAGE_NAME  => "$PAGE_TITLE.pl" );
-	$template->param( MAIN       => 1 );
+	$template->param( PAGE_NAME  => "$PAGE_TITLE.pl",
+					  MAIN       => 1 );
+					  
 	$template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 
 	$template->param( USER_NAME => $USER->user_name );
@@ -745,9 +746,9 @@ sub get_contents {
 	my @rows;
 
 	my $children = $USER->children_by_type_and_id;
-#	foreach $type (keys %{$USER->children_by_type_and_id}) {
+#	foreach $type (sort {$a<=>$b} keys %{$USER->children_by_type_and_id}) {
 #		print STDERR $type . "\n";
-#		foreach my $id (keys %{$USER->children_by_type_and_id->{$type}}) {
+#		foreach my $id (sort {$a<=>$b} keys %{$USER->children_by_type_and_id->{$type}}) {
 #			print STDERR "   " . $id . "\n";	
 #		}
 #	}
