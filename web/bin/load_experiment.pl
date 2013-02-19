@@ -171,7 +171,7 @@ my $node_types = CoGeX::node_types();
 my $conn = $coge->resultset('UserConnector')->create(
   { parent_id => $user->id,
 	parent_type => $node_types->{user},
-	child_id => $genome->id,
+	child_id => $experiment->id,
 	child_type => $node_types->{experiment},
 	role_id => 2 # FIXME hardcoded
   } );
