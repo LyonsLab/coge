@@ -661,13 +661,24 @@ sub groups_with_access {
 	return unless $self->id; # ignore public user
 	my $item = shift;
 	
-	my @groups = ();
-	foreach my $conn ( $item->group_connectors )
-	{
-		push @groups, $conn->parent;
+	my %groups;
+	
+	# Groups
+	foreach my $conn ( $item->group_connectors ) {
+		my $group = $conn->parent;
+		$groups{$group->id} = $group;
 	}
 
-	return wantarray ? @groups : \@groups;	
+	# Lists
+	foreach my $conn ( $item->list_connectors ) {
+		my $list = $conn->parent_list;
+		foreach ($list->group_connectors) {
+			my $group = $_->parent;
+			$groups{$group->id} = $group;
+		}		
+	}
+
+	return wantarray ? values %groups : [ values %groups ];	
 }
 
 sub users_with_access {
@@ -676,12 +687,28 @@ sub users_with_access {
 	my $item = shift;
 	
 	my %users;
-	foreach my $conn ( $item->user_connectors )
-	{
+	
+	# Direct user connections
+	foreach my $conn ( $item->user_connectors ) {
 		$users{$conn->parent_id} = $conn->parent;
 	}
+	
+	# Users in groups
 	foreach my $group ( $self->groups_with_access($item) ) {
-		map { $users{$_->id} = $_ } $group->users;	
+		map { $users{$_->id} = $_ } $group->users;
+	}
+	
+	# Lists
+	foreach my $conn ( $item->list_connectors ) {
+		my $list = $conn->parent_list;
+		foreach ($list->user_connectors) {
+			my $user = $_->parent;
+			$users{$user->id} = $user;
+		}
+		foreach ($list->group_connectors) {
+			my $group = $_->parent;
+			map { $users{$_->id} = $_ } $group->users;
+		}		
 	}
 
 	return wantarray ? values %users : [ values %users ];	

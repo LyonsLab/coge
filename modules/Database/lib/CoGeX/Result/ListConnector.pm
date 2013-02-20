@@ -216,10 +216,10 @@ sub child
 		return $self->feature;
 	}
 	elsif ($self->is_list) {
-		return $self->child_list;	
+		return $self->child_list;
 	}
 	else {
-		die "uknown child type " . $self->child_type;
+		warn "unknown child type " . $self->child_type;
 	}
 
 	return;

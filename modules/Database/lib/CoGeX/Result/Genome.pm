@@ -99,7 +99,10 @@ __PACKAGE__->has_many("dataset_connectors" => "CoGeX::Result::DatasetConnector",
 __PACKAGE__->has_many("genomic_sequences" => "CoGeX::Result::GenomicSequence", 'genome_id');
 __PACKAGE__->belongs_to("organism" => "CoGeX::Result::Organism", 'organism_id');
 __PACKAGE__->belongs_to("genomic_sequence_type" => "CoGeX::Result::GenomicSequenceType", 'genomic_sequence_type_id');
-__PACKAGE__->has_many("list_connectors" => "CoGeX::Result::ListConnector", {'foreign.child_id' => 'self.genome_id'} );
+__PACKAGE__->has_many( # parent lists
+	'list_connectors' => 'CoGeX::Result::ListConnector', 
+	{'foreign.child_id' => 'self.genome_id'},
+	{ where => [ -and => [ child_type => $node_types->{genome} ] ] } );
 __PACKAGE__->has_many( # parent users
 	'user_connectors' => 'CoGeX::Result::UserConnector', 
 	{ "foreign.child_id" => "self.genome_id" }, 
@@ -311,8 +314,6 @@ See Also   :
 sub get_seq {
 	my $self = shift;
 	my %opts = @_;
-
-	#    print STDERR Dumper \%opts;
 	my $chr = $opts{chr};
 	$chr = $opts{chromosome} unless defined $chr;
 	$chr =~ s/gi\|//;
@@ -322,58 +323,54 @@ sub get_seq {
 	my $stop   = $opts{stop} || $opts{end};
 	my $strand = $opts{strand};
 	my $IN     = $opts{file_handle};
-	my $server =
-	  $opts{server}; #option for specifying a server for retrieving sequences if local sequences do not exist.
-	$server = "http://genomevolution.org" unless $server;
-	$server .= "/CoGe/GetSequence.pl"
-	  unless $server =~ /coge\/GetSequence\.pl/i;
+	my $server = $opts{server}; #option for specifying a server for retrieving sequences if local sequences do not exist.
+	#$server = "http://genomevolution.org" unless $server;
+	#$server .= "/CoGe/GetSequence.pl" unless $server =~ /coge\/GetSequence\.pl/i;
+	$server = "http://geco.iplantcollaborative.org/mbomhoff/CoGe/GetSequence.pl";
 	$strand = 1 unless defined $strand;
 	( $start, $stop ) = ( $stop, $start ) if $start && $stop && $start > $stop;
 	my $file = $self->file_path;
 	$file =~ s/\/[^\/]*\.faa$//;
 	$file .= "/chr/$chr";
 	my $seq;
-	my $close = 1
-	  ; #flag for determining of the filehandle is to be closed.  Set to 0 if a file_handle was passed in
+	my $close = 1; #flag for determining of the filehandle is to be closed.  Set to 0 if a file_handle was passed in
 
 	if ($IN) {
 		$close = 0;
 	}
 	else {
 		unless ( -r $file ) {
+			warn qq{!!!!!!!!!!!!!! $file does not exist for get_seq to extract sequence};
+			return;
+		
+# mdb removed 2/19/13, get() causes deep recursion from call to this routine in GetSequence.pl	
+#			#make this call a script at synteny/CoGe to retrieve the sequence.
+#			my $url = $server;
+#			$url .= "?" unless $server =~ /\?$/;
+#			$url .= "dsgid=" . $self->id;
+#			$url .= ";chr=" . $chr if defined $chr;
+#			$url .= ";start=" . $start if $start;
+#			$url .= ";stop=" . $stop if $stop;
+#			$url .= ";strand=" . $strand if $strand;
 
-			#make this call a script at synteny/CoGe to retrieve the sequence.
-			my $url = $server;
-			$url .= "?" unless $server =~ /\?$/;
-			$url .= "dsgid=" . $self->id;
-			$url .= ";chr=" . $chr if defined $chr;
-			$url .= ";start=" . $start if $start;
-			$url .= ";stop=" . $stop if $stop;
-			$url .= ";strand=" . $strand if $strand;
-
-			warn qq{
-##############
-$file does not exist for get_seq to extract sequence.
-Going to retrieve sequence from $url
-##############
-}; #change warning to state that sequence is being retrieved remotely from the kingdom of CoGe.
-			if (
-				$ENV{SERVER_NAME}
-				&& (   $ENV{SERVER_NAME} eq "synteny.cnr.berkeley.edu"
-					|| $ENV{SERVER_NAME} eq "genomevolution.org" )
-			  )
-			{
-				warn qq{
-##############
-MAJOR ERROR:  $file does not exist!
-This sequence file does not exist on the sequence server.  Please check the source of the sequence!
-##############
-	      };
-				return (0);
-			}
-			else {
-				return get($url);
-			}
+#			if (
+#				$ENV{SERVER_NAME}
+#				&& (   $ENV{SERVER_NAME} eq "synteny.cnr.berkeley.edu"
+#					|| $ENV{SERVER_NAME} eq "genomevolution.org" )
+#			  )
+#			{
+#				warn qq{
+###############
+#MAJOR ERROR:  $file does not exist!
+#This sequence file does not exist on the sequence server.  Please check the source of the sequence!
+###############
+#	      };
+#				return (0);
+#			}
+#			else {
+#				warn qq{!!!! retrieving sequence from $url};
+#				return get($url);
+#			}
 		}
 		open( $IN, $file );
 	}
