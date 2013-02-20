@@ -205,8 +205,7 @@ sub validate_data_file {
 		$line_num++;
 		next if ($line =~ /^\s*#/);
 		chomp $line;
-		my @tok = split(',', $line);
-		
+		my @tok = split(/,|\s+/, $line);
 		# Validate format
 		if (@tok < $MIN_COLUMNS) {
 			print $log "log: error at line $line_num: more columns expected (" . @tok . "< $MIN_COLUMNS\n";
