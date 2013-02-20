@@ -148,6 +148,7 @@ sub name {
 
 sub display_name {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	my $name = $self->user_name;
 	$name = $self->first_name if $self->first_name;
 	$name .= ' ' . $self->last_name if $self->first_name && $self->last_name;
@@ -183,7 +184,9 @@ sub user_groups {
 }
 
 sub groups {
-	return shift->user_groups(@_);
+	my $self = shift;
+	return unless $self->id; # ignore public user
+	return $self->user_groups(@_);
 }
 
 ################################################ subroutine header begin ##
@@ -203,6 +206,7 @@ sub groups {
 
 sub collaborators {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 
 	my %users;
 	foreach my $group ( $self->groups ) {
@@ -217,13 +221,16 @@ sub collaborators {
 
 sub has_collaborator {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	my $user = shift;
+
 	my $uid = $user =~ /^\d+$/ ? $user : $user->id;
 	foreach my $group ( $self->groups ) {
 		foreach my $user ( $group->users ) {
 			return 1 if ($user->id == $uid);
 		}
 	}	
+
 	return 0;
 }
 
@@ -263,17 +270,21 @@ sub is_admin {
 
 sub has_access_to_list {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	return 1 if $self->is_admin;
 	my $list = shift;
+
 	my $lid = $list =~ /^\d+$/ ? $list : $list->id;
 	foreach ($self->lists) {
 		return 1 if ($_->id == $lid);	
 	}
+
 	return 0;
 }
 
 sub has_access_to_genome {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	my $genome  = shift;
 	my $gid = $genome =~ /^\d+$/ ? $genome : $genome->id;
 	return $self->is_admin || $self->child_connector(id => $gid, type => 'genome');
@@ -281,6 +292,7 @@ sub has_access_to_genome {
 
 sub has_access_to_experiment {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	my $experiment  = shift;
 	my $eid = $experiment =~ /^\d+$/ ? $experiment : $experiment->id;
 	return $self->is_admin || $self->child_connector(id => $eid, type => 'experiment');
@@ -288,6 +300,7 @@ sub has_access_to_experiment {
 
 sub has_access_to_dataset {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	return 1 if $self->is_admin;
 	my $ds = shift;
 	my $dsid = $ds =~ /^\d+$/ ? $ds : $ds->id;
@@ -342,6 +355,7 @@ sub is_owner {
 
 sub is_editor {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	my %opts = @_;
 	$opts{role} = 'editor';
 	return is_role($self, %opts);
@@ -366,6 +380,7 @@ sub is_editor {
 
 sub is_owner_editor {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	my %opts = @_;
 
 	$opts{role} = 'editor';
@@ -394,6 +409,7 @@ sub is_owner_editor {
 
 sub is_reader {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	my %opts = @_;
 	$opts{role} = 'reader';
 	return is_role($self, %opts);
@@ -421,6 +437,7 @@ sub is_reader {
 
 sub is_role {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	my %opts = @_;
 	my $role = $opts{role};
 	my $group = $opts{group};
@@ -485,7 +502,7 @@ sub is_role {
 
 sub datasets {
 	my $self = shift;
-	return unless $self->id;
+	return unless $self->id; # ignore public user
 	
 	my %datasets;
 	foreach my $ug ( $self->groups ) {
@@ -511,7 +528,7 @@ sub datasets {
 
 sub restricted_datasets {
 	my $self = shift;
-	return unless $self->id;
+	return unless $self->id; # ignore public user
 	
 	my %datasets;
 	foreach my $ug ( $self->groups ) {
@@ -537,6 +554,7 @@ sub restricted_datasets {
 
 sub lists {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	my %opts = @_;
 	
 	my %lists;
@@ -569,6 +587,7 @@ sub lists {
 
 sub experiments {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	my %opts = @_;
 	my $include_deleted = $opts{include_deleted}; # optional flag to include deleted
 
@@ -596,6 +615,7 @@ sub experiments {
 
 sub restricted_experiments {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	my %opts = @_;
 	my $include_deleted = $opts{include_deleted};
 	
@@ -625,6 +645,7 @@ sub restricted_experiments {
 
 sub genomes {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	my %opts = @_;
 	my $include_deleted = $opts{include_deleted}; # optional flag to include deleted genomes
 
@@ -637,6 +658,7 @@ sub genomes {
 
 sub groups_with_access {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	my $item = shift;
 	
 	my @groups = ();
@@ -650,6 +672,7 @@ sub groups_with_access {
 
 sub users_with_access {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	my $item = shift;
 	
 	my %users;
@@ -666,6 +689,7 @@ sub users_with_access {
 
 sub child_connector { # only call for type genome/experiment, not group/list
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	my %opts = @_;
 	my $id = $opts{id};
 	my $type = $opts{type};
@@ -706,6 +730,7 @@ sub child_connector { # only call for type genome/experiment, not group/list
 
 sub all_child_connectors { #FIXME optimize by mimicking child_by_type_and_id, combine with child_connector
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	my %opts = @_;
 	my $type = $opts{type};
 	my $type_num = $node_types->{$type};
@@ -749,6 +774,7 @@ sub all_child_connectors { #FIXME optimize by mimicking child_by_type_and_id, co
 
 sub children { #FIXME have this use child_by_type_and_id
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	my %opts = @_;
 	my $type = $opts{type};
 	my $type_num = $node_types->{$type};
@@ -794,6 +820,7 @@ sub children { #FIXME have this use child_by_type_and_id
 
 sub children_by_type_and_id {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	my %opts = @_;
 
 	use Time::HiRes qw ( time );
@@ -848,7 +875,7 @@ sub children_by_type_and_id {
 
 sub restricted_genomes {
 	my $self = shift;
-	return unless $self->id;
+	return unless $self->id; # ignore public user
 	my %opts = @_;
 	my $include_deleted = $opts{include_deleted};
 	
@@ -878,6 +905,7 @@ sub restricted_genomes {
 
 sub features {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 #	my %opts = @_;
 	
 	my %features;
@@ -904,6 +932,7 @@ sub features {
 
 sub history {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	my %opts = @_;
 	my $count = $opts{count}; #return count;
 
@@ -932,6 +961,7 @@ sub history {
 
 sub info {
 	my $self = shift;
+	return unless $self->id; # ignore public user
 	return $self->user_name if (not $self->first_name and not $self->last_name); 
 	return $self->first_name . ' ' . $self->last_name . ' (' . $self->user_name . ')';
 }
