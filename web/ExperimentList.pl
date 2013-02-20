@@ -146,7 +146,7 @@ sub gen_body {
 			my $dsg = $coge->resultset('Genome')->find($dsgid);
 			next unless ($dsg);
 			foreach ( $dsg->experiments ) {
-				$expids{$_->id}++;
+				$expids{$_->id}++ unless $_->deleted;
 			}
 		}
 	}
@@ -265,7 +265,7 @@ sub generate_table {
 		push @table, 
 		{	COUNT		=> $count,
 			EXPID		=> $expid,
-			NAME		=> $exp->name,
+			NAME		=> $exp->name. " (id".$exp->id.")",
 			DESC		=> $exp->desc,
 			TYPE		=> $type_tbl,
 			ANNOTATION	=> $annot_tbl,
