@@ -962,6 +962,18 @@ function send_items_to(page_name, format) {
 							<TMPL_VAR NAME="GROUP_USER_FULL_NAME"> (<TMPL_VAR NAME="GROUP_USER_NAME">)<span><br>
 						</TMPL_LOOP>
 					</div>
+				</TMPL_LOOP>
+				<TMPL_LOOP NAME="NOTEBOOK_LOOP">
+					<div>
+						<img src="picts/notebook-icon.png" width="11" height="11"/>
+						<span style="color:dimgray;"><TMPL_VAR NAME="NOTEBOOK_NAME"> (notebook)</span>
+						<br>
+						<TMPL_LOOP NAME="NOTEBOOK_USER_LOOP">
+							<span style="color:dimgray;padding:5px;padding-left:20px;">
+							<img src="picts/user-icon.png" width="11" height="11"/>
+							<TMPL_VAR NAME="NOTEBOOK_USER_FULL_NAME"> (<TMPL_VAR NAME="NOTEBOOK_USER_NAME">)<span><br>
+						</TMPL_LOOP>
+					</div>
 				</TMPL_LOOP>				
 				<TMPL_IF NAME="ACCESS_MSG">
 					<div style="color:dimgray;font-style:italic;">

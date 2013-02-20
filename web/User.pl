@@ -387,13 +387,13 @@ sub get_roles {
 	return $html;
 }
 
-sub get_share_dialog {
+sub get_share_dialog { #FIXME this routine needs to be optimized
 	my %opts = @_;
 	my $item_list = $opts{item_list};
 	my @items = split(',', $item_list);
 	return unless @items;
 
-	my %userconn;
+	my (%userconn, %notebooks);
 	my $isPublic = 0;
 	my $isEditable = 1;
 	foreach (@items) {
@@ -406,6 +406,7 @@ sub get_share_dialog {
 			return unless $genome;
 			next unless ($USER->is_admin or $USER->has_access_to_genome($genome));
 			map { $userconn{$_->parent_id}  = $_ } ($genome->user_connectors, $genome->group_connectors);
+			map { $notebooks{$_->id}  = $_ } ($genome->lists);
 			$isPublic = 1 if (not $genome->restricted);
 			$isEditable = 0 if (not $USER->is_owner_editor(dsg => $genome));
 		}
@@ -414,6 +415,7 @@ sub get_share_dialog {
 			return unless $experiment;
 			next unless ($USER->is_admin or $USER->has_access_to_experiment($experiment));
 			map { $userconn{$_->id}  = $_ } ($experiment->user_connectors, $experiment->group_connectors);
+			map { $notebooks{$_->id}  = $_ } ($experiment->lists);
 			$isPublic = 1 if (not $experiment->restricted);
 			$isEditable = 0 if (not $USER->is_owner_editor(experiment => $experiment));
 		}
@@ -427,7 +429,7 @@ sub get_share_dialog {
 		}
 	}
 
-	my (%user_rows, %group_rows);
+	my (%user_rows, %group_rows, %notebook_rows);
 	foreach my $conn (values %userconn) {
 		if ($conn->is_parent_user) {
 			my $user = $conn->parent;
@@ -445,6 +447,7 @@ sub get_share_dialog {
 			my @users = map { { GROUP_USER_FULL_NAME => $_->display_name, 
 								GROUP_USER_NAME => $_->name } 
 							} sort usercmp $group->users;
+							
 			$group_rows{$group->id} =
 				{ GROUP_ITEM => $group->id.':'.$conn->parent_type,
 				  GROUP_NAME => $group->name,
@@ -455,11 +458,39 @@ sub get_share_dialog {
 		}
 	}
 	
+	foreach my $notebook (values %notebooks) {
+		my %users;
+		
+		foreach my $conn ($notebook->user_connectors) {
+			my $user = $conn->parent;
+			$users{$user->id} =
+				{ NOTEBOOK_USER_FULL_NAME => $user->display_name, 
+				  NOTEBOOK_USER_NAME => $user->name 
+				};
+		}
+		
+		foreach my $conn ($notebook->group_connectors) {
+			my $group = $conn->parent;
+			foreach ($group->users) {
+				$users{$_->id} =
+					{ NOTEBOOK_USER_FULL_NAME => $_->display_name, 
+					  NOTEBOOK_USER_NAME => $_->name 
+					};	
+			}
+		}		
+		
+		$notebook_rows{$notebook->id} =
+			{ NOTEBOOK_NAME => $notebook->name,
+			  NOTEBOOK_USER_LOOP => [values %users]
+			};
+	}
+	
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-	$template->param( 	SHARE_DIALOG => 1,
+	$template->param(	SHARE_DIALOG => 1,
 						IS_EDITABLE => $isEditable,
 						GROUP_LOOP => [sort {$a->{GROUP_NAME} cmp $b->{GROUP_NAME}} values %group_rows],
 						USER_LOOP  => [sort {$a->{USER_FULL_NAME} cmp $b->{USER_FULL_NAME}} values %user_rows],
+						NOTEBOOK_LOOP => [sort {$a->{NOTEBOOK_NAME} cmp $b->{NOTEBOOK_NAME}} values %notebook_rows],
 						ROLES => get_roles('reader'),
 	);
 
