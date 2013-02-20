@@ -62,12 +62,16 @@ if (not $FASTBIT_LOAD or not $FASTBIT_QUERY or not -e $FASTBIT_LOAD or not -e $F
 }
 
 # Validate the data file
-my ($filename) = $data_file =~ /^.+\/([^\/]+)$/;
-print $log "log: Validating $filename\n";
-my ($count, $pChromosomes) = validate_data_file($data_file);
+print $log "log: Validating $data_file\n";
+
+my $count = 0;
+my $pChromosomes;
+ ($data_file, $count, $pChromosomes) = validate_data_file($data_file);
 if (not $count) {
 	exit(-1);	
 }
+
+my ($filename) = $data_file =~ /^.+\/([^\/]+)$/;
 print $log "log: Successfully read $count lines\n";
 
 # Connect to database
@@ -188,6 +192,7 @@ print $log "$cmd\n";
 
 # Yay!
 CoGe::Accessory::Web::log_history( db => $coge, user_id => $user->id, page => "LoadExperiment", description => 'load experiment id' . $experiment->id, link => 'ExperimentView.pl?eid=' . $experiment->id );
+#print STDERR "experiment id: ".$experiment->id,"\n";
 print $log "log: All done!";
 close($log);
 exit;
@@ -201,11 +206,17 @@ sub validate_data_file {
 	
 	print $log "validate_data_file: $filepath\n";
 	open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
+	my $outfile = $filepath.".csv";
+	open (my $out, ">$outfile");
 	while (my $line = <$in>) {
 		$line_num++;
 		next if ($line =~ /^\s*#/);
 		chomp $line;
-		my @tok = split(/,|\s+/, $line);
+		my @tok = split(/,/, $line);
+		unless (@tok > $MIN_COLUMNS && @tok < $MAX_COLUMNS)
+		  {
+		    @tok = split (/\s+/,$line);
+		  }
 		# Validate format
 		if (@tok < $MIN_COLUMNS) {
 			print $log "log: error at line $line_num: more columns expected (" . @tok . "< $MIN_COLUMNS\n";
@@ -237,10 +248,11 @@ sub validate_data_file {
 			print $log "log: error at line $line_num: trouble parsing chromosome\n";
 			return;			
 		}
-		
+		$strand = $strand =~ /-/ ? -1 : 1;
+		print $out join (",", $chr, $start, $stop, $strand, $val1, $val2),"\n";
 		$chromosomes{$chr}++;
 	}
 	close($in);
-	
-	return ($line_num, \%chromosomes);
+	close($out);
+	return ($outfile, $line_num, \%chromosomes);
 }
