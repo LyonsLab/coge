@@ -2,9 +2,9 @@
 
 use strict;
 
+use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
-use CoGeX;
 
 use CGI;
 use DBI;
