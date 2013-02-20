@@ -38,7 +38,7 @@ use CoGe::Graphics::Feature::HSP;
 use CoGe::Graphics::Feature::Block;
 use CoGe::Graphics::Feature::Outline;
 #use CoGe::Graphics::Feature::Line;
-
+use Sort::Versions;
 use DBIxProfiler;
 use DBI;
 use Parallel::ForkManager;
@@ -4221,6 +4221,7 @@ sub dataset_search {
 						    }
 						   );
 	}
+	return unless $rs;
 	while ( my $ds = $rs->next() ) {
 	  my $skip = 0;
 	  foreach my $item ( $ds->genomes ) {
@@ -4310,7 +4311,7 @@ sub genome_search {
 qq{<SELECT name="dsgid$num" id="dsgid$num" onChange="feat_search(['args__accn','accn$num','args__dsid', 'dsid$num','args__dsgid', 'dsgid$num', 'args__num','args__$num', 'args__featid', 'args__$featid'],['feat$num']);">};
 	my $count = 0;
 	foreach my $dsg (
-		sort { $b->version <=> $a->version || $a->type->id <=> $b->type->id }
+		sort { versioncmp ($b->version, $a->version) || $a->type->id <=> $b->type->id }
 		$ds->genomes )
 	{
 		my $dsgid_tmp = $dsg->id;
@@ -4393,7 +4394,7 @@ sub get_org_info {
 	my $dsg_menu =
 qq{<span class="small">Genome: </span><SELECT name="dsgid$num" id="dsgid$num">};
 	foreach my $item (
-		sort { $b->version <=> $a->version || $a->type->id <=> $b->type->id }
+		sort { versioncmp ($b->version, $a->version) || $a->type->id <=> $b->type->id }
 		$dsg->organism->genomes )
 	{
 		if ( $dsg->restricted && !$USER->has_access_to_genome($dsg) ) {
