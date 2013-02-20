@@ -31,6 +31,9 @@ use File::Path;
 use Spreadsheet::WriteExcel;
 use Benchmark qw(:all);
 use Parallel::ForkManager;
+use Sort::Versions;
+
+
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME 
 			$TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB 
@@ -475,7 +478,7 @@ sub gen_dsg_menu {
 	
 	my @genomes;
 	foreach my $dsg (
-		sort { $b->version <=> $a->version || $a->type->id <=> $b->type->id }
+		sort { versioncmp ($b->version, $a->version) || $a->type->id <=> $b->type->id }
 		$coge->resultset('Genome')->search( { organism_id => $oid }, { prefetch    => ['genomic_sequence_type'] } ) )
 	{
 		next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
