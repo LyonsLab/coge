@@ -4481,7 +4481,10 @@ sub feat_search {
 		}
 		$seen{ $f->id } = 1;
 	}
-	push @feats, $feat unless @feats;
+	unless (@feats)
+	  {
+	    push @feats, $feat if $feat;
+	  }
 	@feats = sort { $a->type->name cmp $b->type->name } @feats;
 	unshift @feats, @genes if @genes;
 	my $html;
