@@ -141,7 +141,8 @@ sub lists {
 
 	foreach	my $conn ( $self->list_connectors )
 	{
-		push( @lists, $conn->parent_list() );
+		my $list = $conn->parent_list;
+		push @lists, $list if ($list);
 	}
 
 	return wantarray ? @lists : \@lists;
