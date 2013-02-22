@@ -3,10 +3,9 @@
 # Usage:
 #    ./audit_coge5.5.pl -database XXXXXXX -user XXXXXXX -password XXXXXXX
 #
-#	perl -I /home/mbomhoff/perl5 scripts/audit_coge5.5.pl -db coge_matt -u XXXXXXX -pw XXXXXXX
+#	perl -I /home/mbomhoff/perl5 scripts/audit_coge5.5.pl -db coge_matt -u XXXXXXX -p XXXXXXX
 #
-# Scan the database for discrepancies:
-#    - 
+# Scan the database and report inconsistencies.
 #
 #-------------------------------------------------------------------------------
 
@@ -22,11 +21,11 @@ use vars qw($DEBUG $coge);
 
 my ($db, $user, $pass, $go, $cleanup);
 GetOptions (
-	"debug=s"		=> \$DEBUG,
-	"database|db=s"	=> \$db,
-	"user|u=s"		=> \$user,
-	"password|pw=s"	=> \$pass,
-	"go=i"			=> \$go
+	"debug=s"			=> \$DEBUG,
+	"database|db=s"		=> \$db,
+	"user|u=s"			=> \$user,
+	"password|pw|p=s"	=> \$pass,
+	"go=i"				=> \$go
 );
 die "Missing DB params\n" unless ($db and $user and $pass);
 
@@ -91,23 +90,23 @@ foreach my $list ($coge->resultset('List')->all) {
 }
 
 # Find orphan list connectors -- FIXME: THIS IS SLOW
-my (%missing_parent, %missing_child);
-foreach my $conn ($coge->resultset('ListConnector')->all) {
-	# Check that each list connector has nodes
-	unless ($conn->parent_list) {
-		push @{$missing_parent{$conn->parent_id}}, $conn->id;
-		next;
-	}
-	unless ($conn->child) {
-		push @{$missing_child{$conn->child_id}}, $conn->id;
-	}
-}
-foreach my $lid (keys %missing_parent) {
-	print STDERR "Parent list " . $lid . " is missing for list connectors: " . join(', ', @{$missing_parent{$lid}}) . "\n";	
-}
-foreach my $child_id (keys %missing_child) {
-	print STDERR "Child  " . $child_id . " is missing for list connectors: " . join(', ', @{$missing_child{$child_id}}) . "\n";	
-}
+#my (%missing_parent, %missing_child);
+#foreach my $conn ($coge->resultset('ListConnector')->all) {
+#	# Check that each list connector has nodes
+#	unless ($conn->parent_list) {
+#		push @{$missing_parent{$conn->parent_id}}, $conn->id;
+#		next;
+#	}
+#	unless ($conn->child) {
+#		push @{$missing_child{$conn->child_id}}, $conn->id;
+#	}
+#}
+#foreach my $lid (keys %missing_parent) {
+#	print STDERR "Parent list " . $lid . " is missing for list connectors: " . join(', ', @{$missing_parent{$lid}}) . "\n";	
+#}
+#foreach my $child_id (keys %missing_child) {
+#	print STDERR "Child  " . $child_id . " is missing for list connectors: " . join(', ', @{$missing_child{$child_id}}) . "\n";	
+#}
 
 print STDERR "Verifying images ---------------------------------------------\n";
 # Find orphan images
@@ -123,6 +122,15 @@ foreach my $genome ($coge->resultset('Genome')->all) {
 		print STDERR "Genome ".$genome->id." is orphaned\n";
 		next;
 	}
+	my @datasets;
+	foreach ($genome->dataset_connectors) {
+		unless ($_->dataset) {
+			print STDERR "Dataset connector ".$_->id." for genome " .$genome->id. " is missing dataset\n";
+			next;
+		}
+		push @datasets, $_->dataset;
+	}
+	print STDERR "Genome ".$genome->id." has no datasets\n" if (not @datasets);
 }
 
 print STDERR "Verifying experiments ----------------------------------------\n";
