@@ -185,7 +185,7 @@ sub children_by_type
 		my $type = $conn->child_type;
 		push @{$children{$type}}, $conn->child;
 	}
-	return \%children;	
+	return \%children;
 }
 
 #sub groups {

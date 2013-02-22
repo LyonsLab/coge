@@ -217,7 +217,7 @@ sub child
 		return $self->child_group;
 	}
 	else {
-		die;
+		warn "Unknown type ".$self->child_type."\n";
 	}
 
 	return;
