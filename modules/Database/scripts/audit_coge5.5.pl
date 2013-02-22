@@ -90,23 +90,23 @@ foreach my $list ($coge->resultset('List')->all) {
 }
 
 # Find orphan list connectors -- FIXME: THIS IS SLOW
-#my (%missing_parent, %missing_child);
-#foreach my $conn ($coge->resultset('ListConnector')->all) {
-#	# Check that each list connector has nodes
-#	unless ($conn->parent_list) {
-#		push @{$missing_parent{$conn->parent_id}}, $conn->id;
-#		next;
-#	}
-#	unless ($conn->child) {
-#		push @{$missing_child{$conn->child_id}}, $conn->id;
-#	}
-#}
-#foreach my $lid (keys %missing_parent) {
-#	print STDERR "Parent list " . $lid . " is missing for list connectors: " . join(', ', @{$missing_parent{$lid}}) . "\n";	
-#}
-#foreach my $child_id (keys %missing_child) {
-#	print STDERR "Child  " . $child_id . " is missing for list connectors: " . join(', ', @{$missing_child{$child_id}}) . "\n";	
-#}
+my (%missing_parent, %missing_child);
+foreach my $conn ($coge->resultset('ListConnector')->all) {
+	# Check that each list connector has nodes
+	unless ($conn->parent_list) {
+		push @{$missing_parent{$conn->parent_id}}, $conn->id;
+		next;
+	}
+	unless ($conn->child) {
+		push @{$missing_child{$conn->child_id}}, $conn->id;
+	}
+}
+foreach my $lid (keys %missing_parent) {
+	print STDERR "Parent list " . $lid . " is missing for list connectors: " . join(', ', @{$missing_parent{$lid}}) . "\n";	
+}
+foreach my $child_id (keys %missing_child) {
+	print STDERR "Child  " . $child_id . " is missing for list connectors: " . join(', ', @{$missing_child{$child_id}}) . "\n";	
+}
 
 print STDERR "Verifying images ---------------------------------------------\n";
 # Find orphan images
