@@ -21,6 +21,7 @@ sub get_user {
 	unless ($user) {
 		$user = new CoGeX::Result::User;
 		$user->user_name("public");
+		$user->admin(0);
 	}
 	return ($user);
 }
