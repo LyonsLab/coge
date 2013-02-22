@@ -120,20 +120,18 @@ sub get_history_for_user
 	my %opts = @_;
 	my $time_range = $opts{time_range}; # in hours
 	$time_range = 24 if (not defined $time_range or $time_range !~ /[-\d]/);
-	my $last_id = $opts{last_id};
-#	print STDERR "get_history_for_user: $time_range $last_id\n";
+	my $include_page_accesses = $opts{include_pages_accesses};
 	
 	my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
 	my @entries;
 	if ( $USER->is_admin ) {
 		if ($time_range == 0) {
-			#$rs = $coge->resultset('Log')->search( undef, { result_class => 'DBIx::Class::ResultClass::HashRefInflator', order_by => { -desc => 'time' } });
-			@entries = $coge->resultset('Log')->search( undef, { order_by => { -desc => 'time' } });
+			@entries = $coge->resultset('Log')->search( { description => { 'not like' => 'page access' } }, { order_by => { -desc => 'time' } });
 		}
 	}
 	else {
 		if ($time_range == 0 or $time_range == -3) {
-			@entries = $coge->resultset('Log')->search( { user_id => $USER->id }, { order_by => { -desc => 'time' } } );
+			@entries = $coge->resultset('Log')->search( { user_id => $USER->id, description => { 'not like' => 'page access' } }, { order_by => { -desc => 'time' } } );
 		}
 	}
 
