@@ -406,7 +406,7 @@ sub get_share_dialog { #FIXME this routine needs to be optimized
 			return unless $genome;
 			next unless ($USER->is_admin or $USER->has_access_to_genome($genome));
 			map { $userconn{$_->parent_id}  = $_ } ($genome->user_connectors, $genome->group_connectors);
-			map { $notebooks{$_->id}  = $_ } ($genome->lists);
+			map { $notebooks{$_->id}  = $_ } $genome->lists;
 			$isPublic = 1 if (not $genome->restricted);
 			$isEditable = 0 if (not $USER->is_owner_editor(dsg => $genome));
 		}
@@ -415,7 +415,7 @@ sub get_share_dialog { #FIXME this routine needs to be optimized
 			return unless $experiment;
 			next unless ($USER->is_admin or $USER->has_access_to_experiment($experiment));
 			map { $userconn{$_->id}  = $_ } ($experiment->user_connectors, $experiment->group_connectors);
-			map { $notebooks{$_->id}  = $_ } ($experiment->lists);
+			map { $notebooks{$_->id}  = $_ } $experiment->lists;
 			$isPublic = 1 if (not $experiment->restricted);
 			$isEditable = 0 if (not $USER->is_owner_editor(experiment => $experiment));
 		}
