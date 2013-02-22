@@ -12,7 +12,7 @@ use CoGe::Accessory::Web qw(get_defaults);
 
 use vars qw($staging_dir $install_dir $data_file 
 			$name $description $version $restricted 
-			$gid $source_name $user_name
+			$gid $source_name $user_name $config
 			$host $port $db $user $pass $P);
 
 my $MIN_COLUMNS = 5;
@@ -36,7 +36,19 @@ GetOptions(
 	"database|db=s"		=> \$db,
 	"user|u=s"			=> \$user,
 	"password|pw=s"		=> \$pass,
+	
+	# Or use config file
+	"config=s"			=> \$config
 );
+
+if ($config) {
+	my $P = CoGe::Accessory::Web::get_defaults($config);
+	$db   = $P->{DBNAME};
+	$host = $P->{DBHOST};
+	$port = $P->{DBPORT};
+	$user = $P->{DBUSER};
+	$pass = $P->{DBPASS};	
+}
 
 $data_file = unescape($data_file);
 $name = unescape($name);

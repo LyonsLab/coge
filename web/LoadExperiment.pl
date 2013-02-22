@@ -27,10 +27,11 @@ no warnings 'redefine';
 use vars qw(
 	$P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE
 	$TEMPDIR $BINDIR $USER $DATE $COGEDIR $coge $FORM $URL $TEMPURL $COOKIE_NAME
-	%FUNCTION $MAX_SEARCH_RESULTS
+	%FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE
 );
 
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$CONFIGFILE = $ENV{HOME} . 'coge.conf';
+$P         = CoGe::Accessory::Web::get_defaults($CONFIGFILE);
 $ENV{PATH} = $P->{COGEDIR};
 $COGEDIR   = $P->{COGEDIR};
 $URL       = $P->{URL};
@@ -374,7 +375,8 @@ sub load_experiment {
 			  "-staging_dir $stagepath " .
 			  "-install_dir " . $P->{DATADIR} . '/experiments ' .
 			  '-data_file "' . escape( join(',', @files) ) . '" ' .
-			  "-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
+			  "-config $CONFIGFILE";
+			  #"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
 	print STDERR "$cmd\n";
 	print $log "$cmd\n";	
 	close($log);

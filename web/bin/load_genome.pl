@@ -14,7 +14,7 @@ use POSIX qw(ceil);
 use vars qw($staging_dir $install_dir $fasta_files 
 			$name $description $link $version $type_id $restricted 
 			$organism_id $source_name $user_name
-			$host $port $db $user $pass 
+			$host $port $db $user $pass $config
 			$MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE $MAX_CHR_NAME_LENGTH);
 
 GetOptions(
@@ -37,7 +37,19 @@ GetOptions(
 	"database|db=s"		=> \$db,
 	"user|u=s"			=> \$user,
 	"password|pw=s"		=> \$pass,
+	
+	# Or use config file
+	"config=s"			=> \$config
 );
+
+if ($config) {
+	my $P = CoGe::Accessory::Web::get_defaults($config);
+	$db   = $P->{DBNAME};
+	$host = $P->{DBHOST};
+	$port = $P->{DBPORT};
+	$user = $P->{DBUSER};
+	$pass = $P->{DBPASS};	
+}
 
 $fasta_files = unescape($fasta_files);
 $name = unescape($name);
