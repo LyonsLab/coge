@@ -95,7 +95,7 @@ sub delete_experiment {
 	$experiment->deleted(1);
 	$experiment->update;
 	
-	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'delete experiment id' . $experiment->id );
+	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE", description => 'delete experiment id' . $experiment->id );
 
 	return 1;
 }

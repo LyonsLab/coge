@@ -100,7 +100,7 @@ sub gen_html {
 sub gen_body {
 	if ($USER->user_name eq 'public') {
 		my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-		$template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
+		$template->param( PAGE_NAME => "$PAGE_TITLE" );
 		$template->param( LOGIN     => 1 );
 		return $template->output;
 	}

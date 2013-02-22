@@ -51,7 +51,7 @@ $USER = undef;
 ($USER) = CoGe::Accessory::LogUser->get_user(cookie_name => $COOKIE_NAME, coge => $coge) unless $USER;
 
 my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", url => $link );
+$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE", url => $link );
 
 
 %FUNCTION = (
@@ -108,7 +108,7 @@ sub create_list {
 	return unless $conn;
 	  
 	# Record in the log
-	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'create notebook id' . $list->id );
+	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE", description => 'create notebook id' . $list->id );
 
 	return 1;
 }
@@ -123,7 +123,7 @@ sub delete_list {
 	return 0 if ($list->locked);
 	$list->delete;
 	
-	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'delete notebook id' . $list->id );
+	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE", description => 'delete notebook id' . $list->id );
 
 	return 1;
 }

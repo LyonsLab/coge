@@ -59,7 +59,7 @@ $USER = undef;
 ($USER) = CoGe::Accessory::Web->login_cas( cookie_name => $COOKIE_NAME, ticket => $cas_ticket, coge => $coge, this_url => $FORM->url() ) if ($cas_ticket);
 ($USER) = CoGe::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
 my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", url => $link, disable_logging => 1 );
+$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE", url => $link, disable_logging => 1 );
 
 %FUNCTION = (
 	gen_html				=> \&gen_html,
@@ -1023,7 +1023,7 @@ sub create_new_group {
     #TODO
 
     # Record in log
-    $coge->resultset('Log')->create( { user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'create user group id' . $group->id } );
+    $coge->resultset('Log')->create( { user_id => $USER->id, page => "$PAGE_TITLE", description => 'create user group id' . $group->id } );
 
     return 1;
 }
@@ -1061,7 +1061,7 @@ sub create_new_notebook {
 	add_items_to_notebook(nid => $list->id, item_list => $item_list) if ($item_list);
 
 	# Record in log
-    CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'create notebook id' . $list->id );
+    CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE", description => 'create notebook id' . $list->id );
 
     return 1;
 }

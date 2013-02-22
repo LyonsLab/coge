@@ -521,7 +521,7 @@ sub generate_html {
 	my $html;
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
 	$template->param( PAGE_TITLE => $PAGE_TITLE );
-	$template->param( HELP       => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl' );
+	$template->param( HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
 	my $name = $USER->user_name;
 	$name = $USER->first_name if $USER->first_name;
 	$name .= ' ' . $USER->last_name if ( $USER->first_name && $USER->last_name );
@@ -542,14 +542,14 @@ sub generate_html {
 sub generate_body {
 	if ($USER->user_name eq 'public') {
 		my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-		$template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
+		$template->param( PAGE_NAME => "$PAGE_TITLE" );
 		$template->param( LOGIN     => 1 );
 		return $template->output;
 	}
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
 	$template->param( MAIN => 1 );
-	$template->param( PAGE_NAME => $PAGE_TITLE . '.pl' );
+	$template->param( PAGE_NAME => $PAGE_TITLE  );
 	
 	my $gid = $FORM->param('gid');
 	if ($gid) {

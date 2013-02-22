@@ -96,7 +96,7 @@ sub delete_genome {
 	$genome->deleted(1);
 	$genome->update;
 	
-	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE.pl", description => 'delete genome id' . $genome->id );
+	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => "$PAGE_TITLE", description => 'delete genome id' . $genome->id );
 
 	return 1;
 }

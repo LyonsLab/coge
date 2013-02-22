@@ -871,8 +871,16 @@ sub generate_fasta
 	if ( $type eq "CDS" || $type eq "protein" )
 	{
 		my $count = 1;
-		my @feats = sort { $a->chromosome cmp $b->chromosome || $a->start <=> $b->start } $coge->resultset(
-																																																			 );
+		my @feats = sort { $a->chromosome cmp $b->chromosome || $a->start <=> $b->start } $coge->resultset('Feature')->search(
+																      {
+																       feature_type_id  => [ 3, 5, 8 ],
+																       genome_id => $dsgid
+																      },
+																      {
+																       join     => [ { dataset => 'dataset_connectors' } ],
+																       prefetch => ['feature_names']
+																      }
+																     );
 		CoGe::Accessory::Web::write_log( "Getting sequence for " . scalar(@feats) . " features of types CDS, tRNA, and rRNA.", $cogeweb->logfile );
 		foreach my $feat (@feats)
 		{
