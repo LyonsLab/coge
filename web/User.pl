@@ -78,6 +78,7 @@ $link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, 
 	send_items_to					=> \&send_items_to,
 	create_new_group		=> \&create_new_group,
 	create_new_notebook		=> \&create_new_notebook,
+	toggle_star				=> \&toggle_star,
 );
 
 # debug for fileupload:
@@ -90,10 +91,12 @@ my $node_types = CoGeX::node_types();
 
 %ITEM_TYPE = ( # content/toc types
 	all 		=> 100,
-	shared 		=> 101, #FIXME not used
-	trash 		=> 102,
-	user 		=> 103,
-	group 		=> 104,
+	mine		=> 101,
+	shared 		=> 102,
+	activity 	=> 103,
+	trash 		=> 104,
+	user 		=> $node_types->{user},
+	group 		=> $node_types->{group},
 	notebook 	=> $node_types->{list},
 	genome 		=> $node_types->{genome},
 	experiment 	=> $node_types->{experiment}
@@ -178,7 +181,7 @@ sub gen_body {
 	foreach (keys %ITEM_TYPE) {
 		$template->param( 'ITEM_TYPE_' . uc($_) => $ITEM_TYPE{$_} );
 	}
-	$template->param( LOGS => get_logs() );
+	# $template->param( LOGS => get_logs() );
 	$template->param( TOC => get_toc() );
 	$template->param( CONTENTS => get_contents(html_only => 1) );
 	$template->param( ROLES => get_roles('reader') );
@@ -731,14 +734,10 @@ sub send_items_to {
 	return $url;
 }
 
-sub get_toc {
+sub get_toc { # table of contents
 	my @rows;
-	push @rows, { TOC_ITEM_ID => $ITEM_TYPE{all}, 
+	push @rows, { TOC_ITEM_ID => $ITEM_TYPE{mine}, 
 				  TOC_ITEM_INFO => 'My Stuff' };
-	push @rows, { TOC_ITEM_ID => $ITEM_TYPE{group}, 
-				  TOC_ITEM_INFO => 'Groups', 
-				  TOC_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15"/>', 
-				  TOC_ITEM_INDENT => 20 };
 	push @rows, { TOC_ITEM_ID => $ITEM_TYPE{notebook}, 
 				  TOC_ITEM_INFO => 'Notebooks', 
 				  TOC_ITEM_ICON => '<img src="picts/notebook-icon.png" width="15" height="15"/>', 
@@ -751,16 +750,21 @@ sub get_toc {
 				  TOC_ITEM_INFO => 'Experiments', 
 				  TOC_ITEM_ICON => '<img src="picts/testtube-icon.png" width="15" height="15"/>', 
 				  TOC_ITEM_INDENT => 20 };
+	# push @rows, { TOC_ITEM_ID => $ITEM_TYPE{group}, 
+	# 			  TOC_ITEM_INFO => 'Groups', 
+	# 			  TOC_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15"/>' };
 	# push @rows, { TOC_ITEM_ID => $ITEM_TYPE{shared}, 
 	# 			  TOC_ITEM_INFO => 'Shared with me' };
-	push @rows, { TOC_ITEM_ID => $ITEM_TYPE{trash}, 
-				  TOC_ITEM_INFO => 'Trash' };				  				  
+	push @rows, { TOC_ITEM_ID => $ITEM_TYPE{activity},
+				  TOC_ITEM_INFO => 'Activity' };
+	push @rows, { TOC_ITEM_ID => $ITEM_TYPE{trash},
+				  TOC_ITEM_INFO => 'Trash' };
 	
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 	$template->param( DO_TOC => 1 );
 	$template->param( TOC_ITEM_LOOP => \@rows );
-	return $template->output;	
+	return $template->output;
 }
 
 sub get_contents {
@@ -784,19 +788,21 @@ sub get_contents {
 #		}
 #	}
 
-	if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{group}) {
-		$title = 'Groups';
-		#foreach my $group (sort {$a->name cmp $b->name} $USER->groups) {
-		foreach my $group (sort {$a->name cmp $b->name} values %{$children->{6}}) { #FIXME hardcoded type
-			push @rows, { CONTENTS_ITEM_ID => $group->id, 
-						  CONTENTS_ITEM_TYPE => $ITEM_TYPE{group}, 
-						  CONTENTS_ITEM_INFO => $group->info, 
-					  	  CONTENTS_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
-					  	  CONTENTS_ITEM_LINK =>  'GroupView.pl?ugid=' . $group->id };
-		}
-	}
+	# print STDERR "get_contents: time1=" . ((time - $start_time)*1000) . "\n";
+
+	# if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{group}) {
+	# 	$title = 'Groups';
+	# 	#foreach my $group (sort {$a->name cmp $b->name} $USER->groups) {
+	# 	foreach my $group (sort {$a->name cmp $b->name} values %{$children->{6}}) { #FIXME hardcoded type
+	# 		push @rows, { CONTENTS_ITEM_ID => $group->id, 
+	# 					  CONTENTS_ITEM_TYPE => $ITEM_TYPE{group}, 
+	# 					  CONTENTS_ITEM_INFO => $group->info, 
+	# 				  	  CONTENTS_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
+	# 				  	  CONTENTS_ITEM_LINK =>  'GroupView.pl?ugid=' . $group->id };
+	# 	}
+	# }
 	
-	if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{notebook}) {
+	if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine} or $type == $ITEM_TYPE{notebook}) {
 		$title = 'Notebooks';
 		#foreach my $list (sort listcmp $USER->lists) {
 		foreach my $list (sort listcmp values %{$children->{1}}) { #FIXME hardcoded type
@@ -804,10 +810,12 @@ sub get_contents {
 						  CONTENTS_ITEM_TYPE => $ITEM_TYPE{notebook}, 
 						  CONTENTS_ITEM_INFO => $list->info, 
 					  	  CONTENTS_ITEM_ICON => '<img src="picts/notebook-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
-					  	  CONTENTS_ITEM_LINK =>  'NotebookView.pl?nid=' . $list->id };
+					  	  CONTENTS_ITEM_LINK =>  'NotebookView.pl?nid=' . $list->id,
+					  	  CONTENTS_ITEM_SELECTABLE => 1 };
 		}
 	}
-	if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{genome}) {
+	# print STDERR "get_contents: time2=" . ((time - $start_time)*1000) . "\n";
+	if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine} or $type == $ITEM_TYPE{genome}) {
 		$title = 'Genomes';
 		#foreach my $genome (sort genomecmp $USER->genomes(include_deleted => 1)) {
 		foreach my $genome (sort genomecmp values %{$children->{2}}) { #FIXME hardcoded type
@@ -816,10 +824,12 @@ sub get_contents {
 						  CONTENTS_ITEM_DELETED => $genome->deleted,
 						  CONTENTS_ITEM_INFO => $genome->info, 
 					  	  CONTENTS_ITEM_ICON => '<img src="picts/dna-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
-					  	  CONTENTS_ITEM_LINK =>  'GenomeInfo.pl?gid=' . $genome->id };
+					  	  CONTENTS_ITEM_LINK =>  'GenomeInfo.pl?gid=' . $genome->id,
+					  	  CONTENTS_ITEM_SELECTABLE => 1 };
 		}
 	}
-	if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{experiment}) {
+	# print STDERR "get_contents: time3=" . ((time - $start_time)*1000) . "\n";
+	if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine} or $type == $ITEM_TYPE{experiment}) {
 		$title = 'Experiments';
 		#foreach my $experiment (sort experimentcmp $USER->experiments(include_deleted => 1)) {
 		foreach my $experiment (sort experimentcmp values %{$children->{3}}) { #FIXME hardcoded type
@@ -828,11 +838,28 @@ sub get_contents {
 						  CONTENTS_ITEM_DELETED => $experiment->deleted,
 						  CONTENTS_ITEM_INFO => $experiment->info, 
 					  	  CONTENTS_ITEM_ICON => '<img src="picts/testtube-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
-					  	  CONTENTS_ITEM_LINK =>  'ExperimentView.pl?eid=' . $experiment->id };
+					  	  CONTENTS_ITEM_LINK =>  'ExperimentView.pl?eid=' . $experiment->id,
+					  	  CONTENTS_ITEM_SELECTABLE => 1 };
 		}
 	}
+	# print STDERR "get_contents: time4=" . ((time - $start_time)*1000) . "\n";
+	if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity}) {
+		$title = 'Activity';
+		foreach my $entry ($USER->logs({description => { '!=' => 'page access' }}, { order_by => { -desc => 'time' } })) { 
+			my $icon = '<img id="' . $entry->id . '" ' 
+				. ($entry->is_important ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"') . ' '
+				. 'width="15" height="15" style="vertical-align:middle;" '
+				. 'onclick="toggle_star(this);"'
+				. '/>';
+			push @rows, { CONTENTS_ITEM_ID => $entry->id,
+						  CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity},
+						  CONTENTS_ITEM_INFO => $entry->short_info,
+						  CONTENTS_ITEM_ICON => $icon,
+					  	  CONTENTS_ITEM_LINK => $entry->link };
+		}
+	}	
 
-	$title = 'My Stuff' if ($type == $ITEM_TYPE{all});
+	$title = 'My Stuff' if ($type == $ITEM_TYPE{mine});
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 	$template->param( DO_CONTENTS => 1 );
@@ -840,7 +867,7 @@ sub get_contents {
 	$template->param( CONTENTS_ITEM_LOOP => \@rows );
 	my $html = $template->output;
 
-#	print STDERR "get_contents: time=" . ((time - $start_time)*1000) . "\n";
+	# print STDERR "get_contents: time=" . ((time - $start_time)*1000) . "\n";
 
 	return $html if ($html_only);
 	return encode_json({ timestamp => $timestamp, html => $html });
@@ -854,7 +881,7 @@ sub get_logs {
 
 	my @logs;
 	if (!$type or $type eq 'recent') {
-		@logs = $coge->resultset('Log')->search( { user_id => $USER->id }, { order_by => { -desc => 'time' } } ); # $user->logs;
+		@logs = $coge->resultset('Log')->search( { user_id => $USER->id, description => { 'not like' => 'page access' } }, { order_by => { -desc => 'time' } } ); # $user->logs;
 		#my @logs = reverse $coge->resultset('Log')->search_literal( 'user_id = ' . $user->id . ' AND time >= DATE_SUB(NOW(), INTERVAL 1 HOUR)' );
 	}
 	else {
@@ -1075,6 +1102,20 @@ sub get_notebook_types {
 		$html .= '<option value="' . $type->id . '" ' . ($type->id eq $selected || $type->name =~ /$selected/i ? 'selected': '') . '>' . $name . '</option>';
 	}
 	return $html;
+}
+
+sub toggle_star {
+	my %opts = @_;
+	my $log_id = $opts{log_id};
+	
+	my $entry = $coge->resultset('Log')->find($log_id);
+	return '' unless $entry;
+	
+	my $status = $entry->status;
+	$entry->status(not $status);
+	$entry->update();
+	
+	return not $status;
 }
 
 # FIXME these comparison routines are duplicated elsewhere

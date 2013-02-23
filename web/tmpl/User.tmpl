@@ -12,8 +12,10 @@ var POLL_TIME = 30*1000; // polling rate when user is not idle
 var IDLE_TIME = 30*1000; // stop polling after this lapse, then poll on next mousemove
 
 var ITEM_TYPE_ALL 			= <TMPL_VAR NAME="ITEM_TYPE_ALL">;
+var ITEM_TYPE_MINE 			= <TMPL_VAR NAME="ITEM_TYPE_MINE">;
 var ITEM_TYPE_SHARED 		= <TMPL_VAR NAME="ITEM_TYPE_SHARED">;
 var ITEM_TYPE_TRASH 		= <TMPL_VAR NAME="ITEM_TYPE_TRASH">;
+var ITEM_TYPE_ACTIVITY 		= <TMPL_VAR NAME="ITEM_TYPE_ACTIVITY">;
 var ITEM_TYPE_USER 			= <TMPL_VAR NAME="ITEM_TYPE_USER">;
 var ITEM_TYPE_GROUP 		= <TMPL_VAR NAME="ITEM_TYPE_GROUP">;
 var ITEM_TYPE_NOTEBOOK 		= <TMPL_VAR NAME="ITEM_TYPE_NOTEBOOK">;
@@ -72,7 +74,7 @@ $(function() {
 
 	// Initialize main panels
 	exit_item(); // initialize info panel
-	select_content(ITEM_TYPE_ALL); // initialize toc panel
+	select_content(ITEM_TYPE_MINE); // initialize toc panel
 	select_item(); // initialize content icon buttons
 
 	// Setup idle timer
@@ -250,18 +252,16 @@ function filter_contents() {
 
 	$('#contents_table div').each(
 		function() {
+			var item_type = get_item_type(this);
 			var show;
 
-			if (pageObj.content_type == ITEM_TYPE_ALL) {
-				show = !$(this).hasClass('deleted');
+			if (pageObj.content_type == ITEM_TYPE_MINE) {
+				show = !$(this).hasClass('deleted') && item_type != ITEM_TYPE_ACTIVITY;
 			}
 			else if (pageObj.content_type == ITEM_TYPE_TRASH) {
 				show = $(this).hasClass('deleted');
 			}
 			else {
-				var tokens = this.id.split('_');
-				var item_id = tokens[1];
-				var item_type = tokens[2];
 				show = (item_type == pageObj.content_type && !$(this).hasClass('deleted'));
 			}
 
@@ -281,6 +281,10 @@ function select_content(type) {
 	if (type == ITEM_TYPE_TRASH) {
 		$('#stuff_buttons').hide();
 		$('#trash_buttons').show();
+	}
+	else if (type == ITEM_TYPE_ACTIVITY) {
+		$('#stuff_buttons').hide();
+		$('#trash_buttons').hide();
 	}
 	else {
 		$('#trash_buttons').hide();
@@ -700,12 +704,27 @@ function send_items_to(page_name, format) {
 	}	
 }
 
+function toggle_star(img) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'toggle_star',
+			log_id: img.id,
+		},
+		success :  function(val) {
+			if (val == 0) { $(img).attr({src:"picts/star-hollow.png"}); }
+			else { $(img).attr({src:"picts/star-full.png"}); }
+		}
+	});
+}
+
 </SCRIPT>
 
 <div id="top_panel">
 	<div style="width:100%;float:left;border-bottom:1px solid lightgray;">
 		<span id="hide_panel_button" onClick="hide_top_panel();" class="link ui-icon ui-icon-minus" style="float:right;margin-left:20px;margin-right:5px;border:1px solid lightgray;"></span>
-		<div style="float:right;">
+
+		<!--<div style="float:right;">
 			<span style="font-weight:bold;color:dimgray;">History</span> 
 			<span class='link ui-icon ui-icon-extlink' onclick="window.open('History.pl');"></span>
 			<span style="padding-left:5px;">
@@ -715,18 +734,22 @@ function send_items_to(page_name, format) {
 			<div id='logs' class="small" style="min-width:350px;max-width:420px;height:100px;overflow:auto;border-top:1px solid lightgray;background:#f8f8f8">
 				<TMPL_VAR NAME='LOGS'>
 			</div>
-		</div>
+		</div>-->
 
-		<table style="float:left;white-space:nowrap;text-align:center;padding-right:20px;">
+		<table style="float:left;white-space:nowrap;text-align:center;padding-right:15px;">
 			<tr><td>
-				<img id='user_image' src="<TMPL_VAR NAME='USER_IMAGE'>" width='100' height='100' class="link" style="padding:1px;border:1px solid lightgray;" onclick="select_image_file();" />
+				<img id='user_image' src="<TMPL_VAR NAME='USER_IMAGE'>" width='55' height='55' class="link" style="padding:1px;border:1px solid lightgray;" onclick="select_image_file();" />
 			</td></tr>
 			<tr><td>
 				<input id="input_upload_file" name="input_upload_file" type="file" data-url='<TMPL_VAR NAME="PAGE_NAME">' style="display:none;" />
 			</td></tr>
 		</table>
 
-		<table style="float:left;white-space:nowrap;padding-right:5px;">
+		<div style="padding-top:10px;color:gray;">
+			<div><b><TMPL_VAR NAME='FULL_NAME'></b> - <TMPL_VAR NAME='USER_NAME'></div>
+			<div><TMPL_VAR NAME='EMAIL'></div>
+		</div>
+		<!--<table style="float:left;white-space:nowrap;padding-right:5px;">
 			<tr>
 				<td style="font-weight:bold;color:dimgray;float:right;">User name</td>
 				<td style="padding-left:10px;color:dimgray;"><TMPL_VAR NAME='USER_NAME'></td>
@@ -743,7 +766,7 @@ function send_items_to(page_name, format) {
 				<td style="font-weight:bold;color:dimgray;float:right;">Email</td>
 				<td style="padding-left:10px;color:dimgray;"><TMPL_VAR NAME='EMAIL'></td>
 			</tr>
-		</table>
+		</table>-->
 	</div>
 	<div style="clear:both;height:13px;"></div>
 </div>
@@ -887,9 +910,11 @@ function send_items_to(page_name, format) {
 <TMPL_IF NAME="DO_CONTENTS">
 	<TMPL_LOOP NAME="CONTENTS_ITEM_LOOP">
 		<div id="content_<TMPL_VAR NAME='CONTENTS_ITEM_ID'>_<TMPL_VAR NAME='CONTENTS_ITEM_TYPE'>" style="display:none;border-bottom:1px solid lightgray;padding:3px;padding-left:<TMPL_VAR NAME='CONTENTS_ITEM_INDENT'>px;" class="<TMPL_IF NAME='CONTENTS_ITEM_DELETED'>deleted</TMPL_IF>">
-			<input type="checkbox" style="margin-right:8px;" onclick="select_item();" />
+			<TMPL_IF NAME="CONTENTS_ITEM_SELECTABLE">
+				<input type="checkbox" style="margin-right:8px;" onclick="select_item();" />
+			</TMPL_IF>
+			<TMPL_VAR NAME="CONTENTS_ITEM_ICON"> 
 			<span class="link" onmouseover="enter_item(this.parentNode);" onmouseout="exit_item(this.parentNode);" onclick="window.open('<TMPL_VAR NAME="CONTENTS_ITEM_LINK">');">
-				<TMPL_VAR NAME="CONTENTS_ITEM_ICON"> 
 				<TMPL_VAR NAME="CONTENTS_ITEM_INFO">
 			</span>
 		</div>
@@ -897,7 +922,7 @@ function send_items_to(page_name, format) {
 </TMPL_IF>
 
 
-
+<!--
 <TMPL_IF NAME='LOG_TABLE'>
 	<table class="small" style="border-collapse:collapse;">
 		<TMPL_LOOP NAME="LOG_LOOP">
@@ -909,7 +934,7 @@ function send_items_to(page_name, format) {
 		</TMPL_LOOP>
 	</table>
 </TMPL_IF>
-
+-->
 
 
 <TMPL_IF NAME='SHARE_DIALOG'>
