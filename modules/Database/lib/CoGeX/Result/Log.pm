@@ -64,5 +64,15 @@ sub info {
 	return $self->time.' '.$user_name.' '.$self->page.' '.$self->description.' '.$self->link.' '.$self->comment; 
 }
 
+sub short_info {
+	my $self = shift;
+	my $user_name = ($self->user ? $self->user->user_name : '');
+	return $self->time.' | '.$self->page.' | '.$self->description.($self->comment ? ' | '.$self->comment : ''); 
+}
+
+sub is_important {
+	return shift->status == 1;
+}
+
 
 1;
