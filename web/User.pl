@@ -63,7 +63,7 @@ $link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, 
 
 %FUNCTION = (
 	gen_html				=> \&gen_html,
-	get_logs				=> \&get_logs,
+	# get_logs				=> \&get_logs,
 	upload_image_file		=> \&upload_image_file,
 	get_item_info			=> \&get_item_info,
 	delete_items			=> \&delete_items,
@@ -737,7 +737,8 @@ sub send_items_to {
 sub get_toc { # table of contents
 	my @rows;
 	push @rows, { TOC_ITEM_ID => $ITEM_TYPE{mine}, 
-				  TOC_ITEM_INFO => 'My Stuff' };
+				  TOC_ITEM_INFO => 'My Stuff',
+				  TOC_ITEM_CHILDREN => 3 };
 	push @rows, { TOC_ITEM_ID => $ITEM_TYPE{notebook}, 
 				  TOC_ITEM_INFO => 'Notebooks', 
 				  TOC_ITEM_ICON => '<img src="picts/notebook-icon.png" width="15" height="15"/>', 
@@ -753,8 +754,8 @@ sub get_toc { # table of contents
 	# push @rows, { TOC_ITEM_ID => $ITEM_TYPE{group}, 
 	# 			  TOC_ITEM_INFO => 'Groups', 
 	# 			  TOC_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15"/>' };
-	# push @rows, { TOC_ITEM_ID => $ITEM_TYPE{shared}, 
-	# 			  TOC_ITEM_INFO => 'Shared with me' };
+	push @rows, { TOC_ITEM_ID => $ITEM_TYPE{shared}, 
+	 			  TOC_ITEM_INFO => 'Shared with me' };
 	push @rows, { TOC_ITEM_ID => $ITEM_TYPE{activity},
 				  TOC_ITEM_INFO => 'Activity' };
 	push @rows, { TOC_ITEM_ID => $ITEM_TYPE{trash},
@@ -780,13 +781,8 @@ sub get_contents {
 	my $title;
 	my @rows;
 
-	my $children = $USER->children_by_type_and_id;
-#	foreach $type (sort {$a<=>$b} keys %{$USER->children_by_type_and_id}) {
-#		print STDERR $type . "\n";
-#		foreach my $id (sort {$a<=>$b} keys %{$USER->children_by_type_and_id->{$type}}) {
-#			print STDERR "   " . $id . "\n";	
-#		}
-#	}
+	#my $children = $USER->children_by_type_and_id;
+	my ($children, $roles) = $USER->children_by_type_role_id;
 
 	# print STDERR "get_contents: time1=" . ((time - $start_time)*1000) . "\n";
 
@@ -802,12 +798,13 @@ sub get_contents {
 	# 	}
 	# }
 	
-	if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine} or $type == $ITEM_TYPE{notebook}) {
+	if ($type == $ITEM_TYPE{notebook} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine}) {
 		$title = 'Notebooks';
 		#foreach my $list (sort listcmp $USER->lists) {
 		foreach my $list (sort listcmp values %{$children->{1}}) { #FIXME hardcoded type
 			push @rows, { CONTENTS_ITEM_ID => $list->id, 
 						  CONTENTS_ITEM_TYPE => $ITEM_TYPE{notebook}, 
+						  CONTENTS_ITEM_SHARED => !$roles->{2}{$list->id}, #FIXME hardcoded role id
 						  CONTENTS_ITEM_INFO => $list->info, 
 					  	  CONTENTS_ITEM_ICON => '<img src="picts/notebook-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
 					  	  CONTENTS_ITEM_LINK =>  'NotebookView.pl?nid=' . $list->id,
@@ -815,13 +812,14 @@ sub get_contents {
 		}
 	}
 	# print STDERR "get_contents: time2=" . ((time - $start_time)*1000) . "\n";
-	if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine} or $type == $ITEM_TYPE{genome}) {
+	if ($type == $ITEM_TYPE{genome} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine}) {
 		$title = 'Genomes';
 		#foreach my $genome (sort genomecmp $USER->genomes(include_deleted => 1)) {
 		foreach my $genome (sort genomecmp values %{$children->{2}}) { #FIXME hardcoded type
 			push @rows, { CONTENTS_ITEM_ID => $genome->id, 
 						  CONTENTS_ITEM_TYPE => $ITEM_TYPE{genome},
 						  CONTENTS_ITEM_DELETED => $genome->deleted,
+						  CONTENTS_ITEM_SHARED => !$roles->{2}{$genome->id}, #FIXME hardcoded role id
 						  CONTENTS_ITEM_INFO => $genome->info, 
 					  	  CONTENTS_ITEM_ICON => '<img src="picts/dna-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
 					  	  CONTENTS_ITEM_LINK =>  'GenomeInfo.pl?gid=' . $genome->id,
@@ -829,13 +827,14 @@ sub get_contents {
 		}
 	}
 	# print STDERR "get_contents: time3=" . ((time - $start_time)*1000) . "\n";
-	if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine} or $type == $ITEM_TYPE{experiment}) {
+	if ($type == $ITEM_TYPE{experiment} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine}) {
 		$title = 'Experiments';
 		#foreach my $experiment (sort experimentcmp $USER->experiments(include_deleted => 1)) {
 		foreach my $experiment (sort experimentcmp values %{$children->{3}}) { #FIXME hardcoded type
 			push @rows, { CONTENTS_ITEM_ID => $experiment->id, 
 						  CONTENTS_ITEM_TYPE => $ITEM_TYPE{experiment}, 
 						  CONTENTS_ITEM_DELETED => $experiment->deleted,
+						  CONTENTS_ITEM_SHARED => !$roles->{2}{$experiment->id}, #FIXME hardcoded role id
 						  CONTENTS_ITEM_INFO => $experiment->info, 
 					  	  CONTENTS_ITEM_ICON => '<img src="picts/testtube-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
 					  	  CONTENTS_ITEM_LINK =>  'ExperimentView.pl?eid=' . $experiment->id,
@@ -873,36 +872,36 @@ sub get_contents {
 	return encode_json({ timestamp => $timestamp, html => $html });
 }
 
-sub get_logs {
-	return if ($USER->user_name eq "public");
+# sub get_logs {
+# 	return if ($USER->user_name eq "public");
 
-	my %opts = @_;
-	my $type = $opts{type};
+# 	my %opts = @_;
+# 	my $type = $opts{type};
 
-	my @logs;
-	if (!$type or $type eq 'recent') {
-		@logs = $coge->resultset('Log')->search( { user_id => $USER->id, description => { 'not like' => 'page access' } }, { order_by => { -desc => 'time' } } ); # $user->logs;
-		#my @logs = reverse $coge->resultset('Log')->search_literal( 'user_id = ' . $user->id . ' AND time >= DATE_SUB(NOW(), INTERVAL 1 HOUR)' );
-	}
-	else {
-		@logs = $coge->resultset('Log')->search( { user_id => $USER->id, status => 1 }, { order_by => { -desc => 'time' } } );
-	}
+# 	my @logs;
+# 	if (!$type or $type eq 'recent') {
+# 		@logs = $coge->resultset('Log')->search( { user_id => $USER->id, description => { 'not like' => 'page access' } }, { order_by => { -desc => 'time' } } ); # $user->logs;
+# 		#my @logs = reverse $coge->resultset('Log')->search_literal( 'user_id = ' . $user->id . ' AND time >= DATE_SUB(NOW(), INTERVAL 1 HOUR)' );
+# 	}
+# 	else {
+# 		@logs = $coge->resultset('Log')->search( { user_id => $USER->id, status => 1 }, { order_by => { -desc => 'time' } } );
+# 	}
 
-	my @rows;
-	foreach (splice(@logs, 0, 100)) {
-		push @rows, { LOG_TIME => $_->time,
-					  LOG_PAGE => $_->page,
-					  LOG_DESC => $_->description,
-					  LOG_LINK => $_->link
-					};
-	}
-	return if (not @rows);
+# 	my @rows;
+# 	foreach (splice(@logs, 0, 100)) {
+# 		push @rows, { LOG_TIME => $_->time,
+# 					  LOG_PAGE => $_->page,
+# 					  LOG_DESC => $_->description,
+# 					  LOG_LINK => $_->link
+# 					};
+# 	}
+# 	return if (not @rows);
 
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-	$template->param( LOG_TABLE => 1 );
-	$template->param( LOG_LOOP => \@rows );
-	return $template->output;
-}
+# 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+# 	$template->param( LOG_TABLE => 1 );
+# 	$template->param( LOG_LOOP => \@rows );
+# 	return $template->output;
+# }
 
 sub upload_image_file {
 	return if ($USER->user_name eq "public");

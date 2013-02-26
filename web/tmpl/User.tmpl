@@ -74,7 +74,7 @@ $(function() {
 
 	// Initialize main panels
 	exit_item(); // initialize info panel
-	select_content(ITEM_TYPE_MINE); // initialize toc panel
+	toc_select(ITEM_TYPE_MINE); // initialize toc panel
 	select_item(); // initialize content icon buttons
 
 	// Setup idle timer
@@ -123,6 +123,17 @@ function schedule_poll(now) {
 
 function cancel_poll() {
 	clearTimeout(pageObj.timer['poll']);
+}
+
+function toc_toggle_children(toc_id, num_children) {
+	//class="link ui-icon ui-icon-triangle-1-s"
+	$('#toc_'+toc_id)
+		.next()
+		.toggleClass('ui-icon-triangle-1-s ui-icon-triangle-1-e');
+	$('#toc_'+toc_id)
+		.parent()
+		.nextAll().slice(0, num_children)
+		.toggle();
 }
 
 function enter_item(obj) {
@@ -256,13 +267,22 @@ function filter_contents() {
 			var show;
 
 			if (pageObj.content_type == ITEM_TYPE_MINE) {
-				show = !$(this).hasClass('deleted') && item_type != ITEM_TYPE_ACTIVITY;
+				show = !$(this).hasClass('deleted') 
+						&& !$(this).hasClass('shared') 
+						&& item_type != ITEM_TYPE_ACTIVITY;
+			}
+			else if (pageObj.content_type == ITEM_TYPE_SHARED) {
+				show = $(this).hasClass('shared') 
+						&& !$(this).hasClass('deleted') 
+						&& item_type != ITEM_TYPE_ACTIVITY;
 			}
 			else if (pageObj.content_type == ITEM_TYPE_TRASH) {
 				show = $(this).hasClass('deleted');
 			}
 			else {
-				show = (item_type == pageObj.content_type && !$(this).hasClass('deleted'));
+				show = (item_type == pageObj.content_type 
+						&& !$(this).hasClass('deleted')
+						&& !$(this).hasClass('shared'));
 			}
 
 			if (show && search_term) {
@@ -275,14 +295,14 @@ function filter_contents() {
 	);
 }
 
-function select_content(type) {
-	pageObj.content_type = type;
+function toc_select(toc_id) {
+	pageObj.content_type = toc_id;
 
-	if (type == ITEM_TYPE_TRASH) {
+	if (toc_id == ITEM_TYPE_TRASH) {
 		$('#stuff_buttons').hide();
 		$('#trash_buttons').show();
 	}
-	else if (type == ITEM_TYPE_ACTIVITY) {
+	else if (toc_id == ITEM_TYPE_ACTIVITY) {
 		$('#stuff_buttons').hide();
 		$('#trash_buttons').hide();
 	}
@@ -295,10 +315,13 @@ function select_content(type) {
 	filter_contents();
 	select_item();
 
-	$('#toc_panel div').css({'font-weight':'normal'});
-	$('#toc_'+type).css({'font-weight':'bold'});
+	$('#toc_'+toc_id)
+		.parent()
+		.css({'font-weight':'bold'})
+		.siblings()
+		.css({'font-weight':'normal'});
 
-	var title = $('#toc_label_'+type).html();
+	var title = $('#toc_label_'+toc_id).html();
 	$('#contents_title').html(title);
 }
 
@@ -747,7 +770,7 @@ function toggle_star(img) {
 
 		<div style="padding-top:10px;color:gray;">
 			<div><b><TMPL_VAR NAME='FULL_NAME'></b> - <TMPL_VAR NAME='USER_NAME'></div>
-			<div><TMPL_VAR NAME='EMAIL'></div>
+			<div class="small"><TMPL_VAR NAME='EMAIL'></div>
 		</div>
 		<!--<table style="float:left;white-space:nowrap;padding-right:5px;">
 			<tr>
@@ -896,11 +919,16 @@ function toggle_star(img) {
 
 <TMPL_IF NAME="DO_TOC">
 	<TMPL_LOOP NAME="TOC_ITEM_LOOP">
-		<div id="toc_<TMPL_VAR NAME='TOC_ITEM_ID'>" class="link" style="padding-bottom:3px;padding-left:<TMPL_VAR NAME='TOC_ITEM_INDENT'>px;" onclick="select_content(<TMPL_VAR NAME='TOC_ITEM_ID'>);">
-			<TMPL_VAR NAME="TOC_ITEM_ICON"> 
-			<span id="toc_label_<TMPL_VAR NAME='TOC_ITEM_ID'>">
-				<TMPL_VAR NAME="TOC_ITEM_INFO">
+		<div style="padding-bottom:3px;padding-left:<TMPL_VAR NAME='TOC_ITEM_INDENT'>px;">
+			<span id="toc_<TMPL_VAR NAME='TOC_ITEM_ID'>" class="link" onclick="toc_select(<TMPL_VAR NAME='TOC_ITEM_ID'>);">
+				<TMPL_VAR NAME="TOC_ITEM_ICON">
+				<span id="toc_label_<TMPL_VAR NAME='TOC_ITEM_ID'>">
+					<TMPL_VAR NAME="TOC_ITEM_INFO">
+				</span>
 			</span>
+			<TMPL_IF NAME="TOC_ITEM_CHILDREN">
+				<span onClick="toc_toggle_children(<TMPL_VAR NAME='TOC_ITEM_ID'>, <TMPL_VAR NAME='TOC_ITEM_CHILDREN'>);" class="link ui-icon ui-icon-triangle-1-s"></span>
+			</TMPL_IF>
 		</div>
 	</TMPL_LOOP>
 </TMPL_IF>
@@ -909,7 +937,7 @@ function toggle_star(img) {
 
 <TMPL_IF NAME="DO_CONTENTS">
 	<TMPL_LOOP NAME="CONTENTS_ITEM_LOOP">
-		<div id="content_<TMPL_VAR NAME='CONTENTS_ITEM_ID'>_<TMPL_VAR NAME='CONTENTS_ITEM_TYPE'>" style="display:none;border-bottom:1px solid lightgray;padding:3px;padding-left:<TMPL_VAR NAME='CONTENTS_ITEM_INDENT'>px;" class="<TMPL_IF NAME='CONTENTS_ITEM_DELETED'>deleted</TMPL_IF>">
+		<div id="content_<TMPL_VAR NAME='CONTENTS_ITEM_ID'>_<TMPL_VAR NAME='CONTENTS_ITEM_TYPE'>" style="display:none;border-bottom:1px solid lightgray;padding:3px;padding-left:<TMPL_VAR NAME='CONTENTS_ITEM_INDENT'>px;" class="<TMPL_IF NAME='CONTENTS_ITEM_DELETED'>deleted</TMPL_IF> <TMPL_IF NAME='CONTENTS_ITEM_SHARED'>shared</TMPL_IF>">
 			<TMPL_IF NAME="CONTENTS_ITEM_SELECTABLE">
 				<input type="checkbox" style="margin-right:8px;" onclick="select_item();" />
 			</TMPL_IF>
