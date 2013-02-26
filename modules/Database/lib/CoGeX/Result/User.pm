@@ -850,8 +850,8 @@ sub children_by_type_and_id {
 	return unless $self->id; # ignore public user
 	my %opts = @_;
 
-	use Time::HiRes qw ( time );
-	my $start_time = time;
+	# use Time::HiRes qw ( time );
+	# my $start_time = time;
 
 	my %children;
 
@@ -883,6 +883,50 @@ sub children_by_type_and_id {
 #	print STDERR "children_by_type_and_id: time=" . ((time - $start_time)*1000) . "\n";
 
 	return \%children;
+}
+
+sub children_by_type_role_id {
+	my $self = shift;
+	return unless $self->id; # ignore public user
+	my %opts = @_;
+
+	# use Time::HiRes qw ( time );
+	# my $start_time = time;
+
+	my (%children, %roles);
+
+	foreach my $c ($self->child_connectors) {
+		my $child = $c->child;
+		$children{$c->child_type}{$c->child_id} = $child;
+		$roles{$c->role_id}{$c->child_id} = 1;
+		
+		if ($c->child_type == $node_types->{list}) {
+			foreach my $lc ($child->child_connectors) {
+				my $child = $lc->child;
+				$children{$lc->child_type}{$lc->child_id} = $child;
+				$roles{$c->role_id}{$lc->child_id} = 1;
+			}
+		}
+		elsif ($c->child_type == $node_types->{group}) {
+			foreach my $c ($child->child_connectors) {
+				my $child = $c->child;
+				$children{$c->child_type}{$c->child_id} = $child;
+				$roles{$c->role_id}{$c->child_id} = 1;
+				
+				if ($c->child_type == $node_types->{list}) {
+					foreach my $lc ($child->child_connectors) {
+						my $child = $lc->child;
+						$children{$lc->child_type}{$lc->child_id} = $child;
+						$roles{$c->role_id}{$lc->child_id} = 1;
+					}
+				}
+			}
+		}
+	}
+	
+#	print STDERR "children_by_type_and_id: time=" . ((time - $start_time)*1000) . "\n";
+
+	return (\%children, \%roles);
 }
 
 ################################################ subroutine header begin ##
