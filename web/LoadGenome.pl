@@ -407,6 +407,7 @@ sub load_genome {
 sub get_load_genome_log {
 	my %opts = @_;
 	my $load_id = $opts{load_id};
+	# print STDERR "get_load_genome_log $load_id\n";
 	
 	my $logfile = $TEMPDIR . "staging/$load_id/log.txt";
 	open(my $fh, $logfile) 
@@ -416,7 +417,7 @@ sub get_load_genome_log {
 	my $gid;
 	my $status = 0;
 	while (<$fh>) {
-		push @lines, $1 if ($_ =~ /^log: (.+)/i);
+		push @lines, $1 if ($_ =~ /^log:\s+(.+)/i);
 		if ($_ =~ /All done/i) {
 			$status = 1;
 			last;
@@ -431,7 +432,7 @@ sub get_load_genome_log {
 	}
 	close($fh);
 	
-	return encode_json({ status => $status, genome_id => $gid, log => join("<BR>\n", @lines) });
+	return encode_json({ status => $status, genome_id => $gid, log => \@lines });
 }
 
 sub get_sequence_types {
