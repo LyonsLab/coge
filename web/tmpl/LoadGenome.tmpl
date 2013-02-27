@@ -32,15 +32,15 @@ $(document).ready(function(){
 	get_sequence_types();
 	get_sources();
 	$("#edit_organism").autocomplete({
-			source: [],
-			focus: function() { return false; },
-			select:
-		    	function(event, ui) {
-		    		$("#edit_organism")
-		    			.val( ui.item.label )
-		    			.data('organism_id', ui.item.value);
-		    		return false;
-		    	},	
+		source: [],
+		focus: function() { return false; },
+		select:
+		   	function(event, ui) {
+		   		$("#edit_organism")
+		   			.val( ui.item.label )
+		   			.data('organism_id', ui.item.value);
+		   		return false;
+			}
 	});
 });
 
@@ -73,7 +73,7 @@ function set_input(id, text) {
 
 function file_selected(filename, url) {
 	$('#file_select_dialog').dialog('close');
-	$('#files_clear').removeClass('ui-state-disabled');
+	$('#files_clear').show().removeClass('ui-state-disabled');
 }
 
 function clear_list() {
@@ -140,6 +140,10 @@ function create_source() {
 }
 
 function create_organism() {
+	if ($('#create_organism_button').hasClass('ui-state-disabled')) {
+		return;
+	}
+
 	var name = $('#edit_organism_name').val();
 	if (!name) {
 		alert('Please specify the organism name.');
@@ -374,6 +378,35 @@ function more() {
 	$('#edit_description').closest('tr').fadeIn();
 }
 
+function search_ncbi_taxonomy (search_term) {
+	$("#wait_ncbi").animate({opacity:1});
+
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'search_ncbi_taxonomy',
+			search_term: search_term,
+			timestamp: new Date().getTime()
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj) {
+				$('#ncbi_result')
+					.html('<b>Name:</b> <i>'+obj.name+'</i><BR>'+'<b>Lineage:</b> <i>'+obj.lineage+'</i>');
+				$('#edit_organism_name').val(obj.name);
+				$('#edit_organism_desc').val(obj.lineage);
+				$('#create_organism_button').removeClass('ui-state-disabled');
+			}
+			else {
+				$('#ncbi_result')
+					.html('<i>No result</i>');
+				$('#create_organism_button').addClass('ui-state-disabled');
+			}
+			$("#wait_ncbi").animate({opacity:0});
+		},
+	});
+}
+
 </SCRIPT>
 
 <span style="color:dimgray;font-weight:bold;">Genome Info</span><br>
@@ -428,8 +461,13 @@ function more() {
 <span id='genome_data' style="color:dimgray;font-weight:bold;">Genome Data</span><br>
 <table id='file_table' class="small ui-widget-content ui-corner-all"></table>
 <span onClick="$('#file_select_dialog').dialog('open')" class='ui-button ui-corner-all'>Add Sequence Files</span>
-<span id="files_clear" onClick="clear_list();" class='ui-state-disabled ui-button ui-corner-all'>Clear List</span>
+<span id="files_clear" onClick="clear_list();" class='ui-button ui-corner-all' style="display:none;">Clear List</span>
 <br>
+<br>
+<div class="small note" style="width:450px;">
+	Note: currently only sequence FASTA files can be loaded.<br>
+	We are working on adding the ability to also load GFF annotation files and will hopefully make this available in the near future.
+</div>
 <br>
 <br>
 <span id="load_genome_button" onDblClick="load_genome();" onClick="load_genome();" style="font-size:1em;float-right;" class='ui-button ui-corner-all ui-button-go'>Load Genome</span>
@@ -454,14 +492,27 @@ function more() {
 
 
 <div id="create_new_organism_dialog" class="dialog_box" title="Create New Organism" style="display:none;">
-  <table class="small">
+	<div class="small">
+    	Search NCBI:
+    	<input type="textbox" size="80" spellcheck="false" onkeyup="activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button'); wait_to_search(search_ncbi_taxonomy, this.value);" />
+	    <img id="wait_ncbi" src="picts/ajax-loader.gif" style="opacity: 0;" />
+	</div>
+	<div id="ncbi_result" class="small" style="color:gray;padding-left:25px;padding-top:15px;">
+	</div>
+	<input id="edit_organism_name" type="hidden" />
+	<input id="edit_organism_desc" type="hidden" />
+
+  <!--<table class="small">
     <tr>
-      <td>Name:</td>
-      <td><input id="edit_organism_name" type="textbox" size="80" onkeyup="activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');" /></td>
+      <td>Search NCBI:</td>
+      <td><input id="edit_organism_name" type="textbox" size="80" spellcheck="false" onkeyup="activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button'); wait_to_search(search_ncbi_taxonomy, this.value);" /></td>
     </tr>
     <tr>
       <td>Description:</td>
-      <td><textarea id="edit_organism_desc" rows="5" cols="77" onkeyup="activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');"></textarea></td>
+      <td>
+      	<textarea id="edit_organism_desc" rows="5" cols="77" readonly onkeyup="activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');">
+      	</textarea>
+      </td>
     </tr>
     <tr>
     	<td></td>
@@ -478,8 +529,8 @@ function more() {
     		</span>
     	</td>
     </tr>
-  </table>
-  <br>
+  </table>-->
+  <br><br>
   <span id="create_organism_button" onClick="create_organism();" class="ui-state-disabled ui-button ui-corner-all ui-button-go">Create</span>
 </div>
 

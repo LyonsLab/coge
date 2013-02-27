@@ -75,7 +75,8 @@ $MAX_SEARCH_RESULTS = 100;
 	load_from_ftp			=> \&load_from_ftp,
 	ftp_get_file			=> \&ftp_get_file,
 	upload_file				=> \&upload_file,
-	ncbi_search				=> \&ncbi_search,
+#	search_ncbi_nucleotide	=> \&search_ncbi_nucleotide,
+	search_ncbi_taxonomy	=> \&search_ncbi_taxonomy,
 	load_genome				=> \&load_genome,
 	get_sequence_types		=> \&get_sequence_types,
 	create_sequence_type	=> \&create_sequence_type,
@@ -260,7 +261,7 @@ sub ftp_get_file {
 	return encode_json({ timestamp => $timestamp, path=> $path, size => -s $fullfilepath . '/' . $filename });
 }
 
-sub ncbi_search {
+sub search_ncbi_nucleotide {
 	my %opts = @_;
 	my $accn = $opts{accn};
 	my $timestamp = $opts{timestamp};
@@ -294,6 +295,35 @@ sub ncbi_search {
 	
 	return unless $id and $title;
 	return encode_json( { timestamp => $timestamp, name => $title, id => $id } );
+}
+
+sub search_ncbi_taxonomy {
+	my %opts = @_;
+	my $search_term = $opts{search_term};
+	my $timestamp = $opts{timestamp};
+	print STDERR "search_ncbi_taxonomy $search_term\n";
+
+	my $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=taxonomy&term=$search_term";
+	my $result = get($esearch);
+#	print STDERR $result;
+	my $record = XMLin($result);
+#	print STDERR Dumper $record;
+	my $id = $record->{IdList}->{Id};
+	my ($name, $lineage);
+	if ($id) {
+		print STDERR "id = $id\n";
+		$esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=$id";
+		my $result = get($esearch);
+#		print STDERR $result;
+		$record = XMLin($result);
+#		print STDERR Dumper $record;
+		$name = $record->{Taxon}->{ScientificName};
+		$lineage = $record->{Taxon}->{Lineage} . '; ';
+		print STDERR "lineage = $lineage\n" if ($lineage);
+	}
+	
+	return unless $id and $lineage;
+	return encode_json( { timestamp => $timestamp, name => $name, id => $id, lineage => $lineage } );
 }
 
 sub upload_file {
@@ -467,7 +497,8 @@ sub create_organism {
 	my %opts = @_;
 	my $name = $opts{name};
 	my $desc = $opts{desc};
-	return unless $name;
+	return unless $name and $desc;
+	print STDERR "create_organism $name $desc\n";
 	
 	my $organism = $coge->resultset('Organism')->find_or_create( { name => $name, description => $desc } );
 	return unless $organism;
