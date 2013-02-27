@@ -816,16 +816,16 @@ function rand ()
 
 <form method="post" enctype="multipart/form-data" name="main_form" onSubmit="">
 
-<div id=tabs>
+<div id="tabs">
 <!-- set up tabs -->
 <ul>
-  <li class=small><a href="#tabs-1">Sequence Submission</a></li>
-  <li class=small><a href="#tabs-2">Algorithm</a></li>
-  <li class=small><a href="#tabs-3">Results Visualization Options</a></li>
+  <li class="small"><a href="#tabs-1">Sequence Submission</a></li>
+  <li class="small"><a href="#tabs-2">Algorithm</a></li>
+  <li class="small"><a href="#tabs-3">Results Visualization Options</a></li>
 </ul>
 
 <div id="tabs-1">
-<input name=num_seqs id=num_seqs type="hidden"readonly value=<TMPL_VAR NAME ="NUM_SEQS">>
+<input name="num_seqs" id="num_seqs" type="hidden"readonly value=<TMPL_VAR NAME ="NUM_SEQS">>
   <span class='ui-button ui-corner-all ui-button-icon-left ' 
   onClick="add_seq(['num_seqs'],[process_add_seq]);  $('#new_drseq').remove;"><span class="ui-icon ui-icon-plus"></span>Add Sequence</span>
 
@@ -838,7 +838,7 @@ function rand ()
   <span class='ui-button ui-corner-all ui-button-icon-left ' 
   onClick="merge_previous(['previous_url','num_seqs'],[process_add_seq]); gen_hsp_colors(['args__num_seqs','num_seqs'],[add_hsp_colors]);"><span class="ui-icon ui-icon-plus"></span>Merge</span>
  <br><br>
-<span class="small">Change order by dragging boxes</span>
+<span class="small note">Change order by dragging boxes.</span><br><br>
   <table><tr><td>
     <div id="sorter" class="sorter">
           <TMPL_VAR NAME="SEQ_SUB">
@@ -849,7 +849,7 @@ function rand ()
      <span class='ui-button ui-corner-all ui-button-icon-left' onclick="walk(1)"><span class="ui-icon ui-icon-arrowthick-1-w"></span>Walk all sequences left</span>
        <span class='ui-button ui-corner-all ui-button-icon-right' onclick="walk(-1)"><span class="ui-icon ui-icon-arrowthick-1-e"></span>Walk all sequences right</span>
 
-     <div class=small>
+     <div class="small">
 <!--     Apply distance to all CoGe submissions?<input type="checkbox" name="apply_all" id="apply_all" value="0" />-->
     <br>
      Apply distance to all CoGe submissions: <input type="textbox" size=8 name="apply_all" id="apply_all" value="<TMPL_VAR NAME="APPLY_ALL">" />
@@ -1455,7 +1455,7 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
 <TABLE class="small">
       <TR valign="top">
       <TD>       
-     Paste fasta or genbank format sequence below:<BR> <textarea  name="dirseq<TMPL_VAR NAME="SEQ_NUM">" id="dirseq<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  rows="5" cols="30"></textarea><BR>
+     Paste fasta or genbank format sequence below:<BR> <textarea  name="dirseq<TMPL_VAR NAME="SEQ_NUM">" id="dirseq<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  rows="5" cols="90"></textarea><BR>
      <font class="small">Start: <input  type="text" name="dirstart<TMPL_VAR NAME="SEQ_NUM">" id="dirstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value="1" /></font>
      <font class="small">Length: <input  type="text" name="dirlength<TMPL_VAR NAME="SEQ_NUM">" id="dirlength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value=""  /></font><br>
 </table>
