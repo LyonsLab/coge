@@ -1,6 +1,4 @@
 <TMPL_IF NAME='MAIN'>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
 
 <SCRIPT language="JavaScript">
@@ -262,18 +260,17 @@ function get_load_genome_log(load_id) {
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
+			dataType: 'text',
 			fname: 'get_load_genome_log',
-			load_id: load_id,
-			timestamp: new Date().getTime()
+			load_id: load_id
 		},
 		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			
-			if (!obj) {
-				console.log(data);
+			if (!data) { // workaround for issue #45, jquery intermittently dropping payload
+				setTimeout(function() { get_load_genome_log(load_id); }, 1000);
 				return;
 			}
 
+			var obj = jQuery.parseJSON(data);
 			if (obj.log) {
 				$('#load_genome_log').html(obj.log.join('<BR>'));
 				var height = $('#load_genome_log')[0].scrollHeight;

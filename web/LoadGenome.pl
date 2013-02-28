@@ -437,7 +437,7 @@ sub load_genome {
 sub get_load_genome_log {
 	my %opts = @_;
 	my $load_id = $opts{load_id};
-	# print STDERR "get_load_genome_log $load_id\n";
+#	print STDERR "get_load_genome_log $load_id\n";
 	
 	my $logfile = $TEMPDIR . "staging/$load_id/log.txt";
 	open(my $fh, $logfile) 
@@ -462,6 +462,7 @@ sub get_load_genome_log {
 	}
 	close($fh);
 	
+#	print STDERR encode_json({ status => $status }) . "\n";
 	return encode_json({ status => $status, genome_id => $gid, log => \@lines });
 }
 
