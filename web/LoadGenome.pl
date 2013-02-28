@@ -441,7 +441,7 @@ sub get_load_genome_log {
 	
 	my $logfile = $TEMPDIR . "staging/$load_id/log.txt";
 	open(my $fh, $logfile) 
-		or return encode_json({ status => -1, log => "Error opening log file" });
+		or return encode_json({ status => -1, log => ["Error opening log file"] });
 
 	my @lines = ();
 	my $gid;
