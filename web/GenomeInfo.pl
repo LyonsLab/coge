@@ -106,7 +106,7 @@ sub get_genome_info {
 		DO_GENOME_INFO => 1,
 		ORGANISM => $genome->organism->name,
 		VERSION => $genome->version,
-		TYPE => $genome->type->name,
+		TYPE => $genome->type->info,
 		SOURCE => join(',', map { $_->name } $genome->source),
 		RESTRICTED => ($genome->restricted ? 'Yes' : 'No'),
 		NAME => $genome->name,
@@ -289,7 +289,7 @@ sub get_sequence_types {
 	my $type_id = shift;
 	
 	my $html;
-	foreach my $type ( sort {$a->name <=> $b->name} $coge->resultset('GenomicSequenceType')->all() ) {
+	foreach my $type ( sort {$a->info cmp $b->info} $coge->resultset('GenomicSequenceType')->all() ) {
 		$html .= '<option value="' . $type->id . '"' 
 			  . (defined $type_id && $type_id == $type->id ? ' selected' : '') . '>' 
 			  . $type->info 
