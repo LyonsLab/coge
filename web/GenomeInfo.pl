@@ -289,7 +289,7 @@ sub get_sequence_types {
 	my $type_id = shift;
 	
 	my $html;
-	foreach my $type ( sort $coge->resultset('GenomicSequenceType')->all() ) {
+	foreach my $type ( sort {$a->name <=> $b->name} $coge->resultset('GenomicSequenceType')->all() ) {
 		$html .= '<option value="' . $type->id . '"' 
 			  . (defined $type_id && $type_id == $type->id ? ' selected' : '') . '>' 
 			  . $type->info 
