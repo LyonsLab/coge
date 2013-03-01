@@ -1270,7 +1270,7 @@ sub run_dag_tools
 	return 1 if -r $outfile;
 }
 
-sub run_tandem_finder
+sub run_tandem_finder #FIXME mdb 2/28/13 - this doesn't get called ...?
 {
 	my %opts    = @_;
 	my $infile  = $opts{infile};    #dag file produced by dat_tools.py
