@@ -128,7 +128,7 @@ $USER = undef;
 	get_genomes_for_list	 => \&get_genomes_for_list,
 	get_orgs                 => \&get_orgs,
 	read_log				 => \&CoGe::Accessory::Web::read_log,
-	save_settings		 	 => \&CoGe::Accessory::Web::save_settings,
+	save_settings		 	 => \&save_settings,
 	#%ajax,
 );
 
@@ -297,7 +297,7 @@ sub gen_body {
 	my $resultslimit = $RESULTSLIMIT;
 	$resultslimit = $prefs->{'resultslimit'} if $prefs->{'resultslimit'};
 	$template->param( RESULTSLIMIT => $resultslimit );
-	#$template->param( SAVE_ORG_LIST => 1 ) unless $USER->user_name eq "public";
+	$template->param( SAVE_ORG_LIST => 1 ) unless $USER->user_name eq "public";
 	return $template->output;
 }
 
@@ -2340,6 +2340,16 @@ sub export_alignment_file {
 	return "$TEMPURL/alignment_file_$filename.txt";
 }
 
+sub save_settings {
+	my %opts  = @_;
+	return CoGe::Accessory::Web::save_settings(
+		coge => $coge, 
+		page => $PAGE_NAME,
+		user => $USER, 
+		opts => \%opts
+	);
+}
+
 sub save_settings_cogeblast {
 	my %opts  = @_;
 	
@@ -2420,61 +2430,54 @@ sub color_pallet {
 	return wantarray ? @colors : \@colors;
 }
 
-sub search_lists { 
+sub search_lists { # FIXME this coded is dup'ed in User.pl and NotebookView.pl 
 	my %opts = @_;
+	return if ($USER->user_name eq 'public');
 	my $search_term	= $opts{search_term};
-	my $timestamp 	= $opts{timestamp};
+	my $timestamp	= $opts{timestamp};
 #	print STDERR "$search_term $timestamp\n";
 	
-	return if $USER->name eq 'public';
-	
-	# Get lists already in this group
-#	my $group = $coge->resultset('UserGroup')->find($ugid);
-#	my %exists;
-#	map { $exists{$_->id}++ } $group->lists;
-	
-	my @lists;
+	my @notebooks;
 	my $num_results;
 	my $group_str = join(',', map { $_->id } $USER->groups);
-	
+
 	# Try to get all items if blank search term
-	if (not $search_term) {
-		# Get all lists
-		my $sql = "locked=0 AND (restricted=0 OR user_group_id IN ( $group_str ))";
+	if (!$search_term) {
+		my $sql = "locked=0";# AND restricted=0 OR user_group_id IN ( $group_str ))"; # FIXME
 		$num_results = $coge->resultset("List")->count_literal($sql);
-		if ($num_results < $RESULTSLIMIT) {
-			@lists = $coge->resultset("List")->search_literal($sql);
+		if ($num_results < $MAX_SEARCH_RESULTS) {
+			foreach my $notebook ($coge->resultset("List")->search_literal($sql)) {
+				next if ($notebook->restricted and not $USER->has_access_to_list($notebook));
+				push @notebooks, $notebook;
+			}
 		}
 	}
 	# Perform search
 	else {
+		# Get public lists and user's private lists	
 		$search_term = '%'.$search_term.'%';
-		if ($USER->is_admin) {
-			@lists = $coge->resultset("List")->search(
-				\[ 'name LIKE ? OR description LIKE ?', 
-				['name', $search_term ], ['description', $search_term] ]);		
+		foreach my $notebook ($coge->resultset("List")->search_literal("locked=0 AND (name LIKE '$search_term' OR description LIKE '$search_term')")) {
+			next if ($notebook->restricted and not $USER->has_access_to_list($notebook));
+			push @notebooks, $notebook;
 		}
-		else {
-			@lists = $coge->resultset("List")->search_literal("locked=0 AND (restricted=0 OR user_group_id IN ( $group_str )) AND (name LIKE '$search_term' OR description LIKE '$search_term')");
-		}
+		$num_results = @notebooks;
 	}
-
+	
 	# Limit number of results display
-	if ($num_results > $RESULTSLIMIT) {
+	if ($num_results > $MAX_SEARCH_RESULTS) {
 		return encode_json({
 					timestamp => $timestamp,
-					html => "<option disabled='disabled'>$num_results results, please refine your search.</option>"
+					html => "<option>$num_results matches, please refine your search.</option>"
 		});
 	}
 	
-	# Build select items out of results	
-	my $html = '';
-	foreach my $l (sort listcmp @lists) {
-		my $disable = '';#$exists{$l->id} ? "disabled='disabled'" : '';
-		#next if ($l->id == $lid); # can't add a list to itself!
-		my $item_spec = 1 . ':' . $l->id; #FIXME magic number for item_type
-		$html .= "<option $disable value='$item_spec'>" . $l->info . "</option><br>\n";	
+	# Build select items out of results
+	my $html;
+	foreach my $n (sort listcmp @notebooks) {
+		my $item_spec = 1 . ':' . $n->id; #FIXME magic number for item_type
+		$html .= "<option value='$item_spec'>" . $n->info . "</option><br>\n";	
 	}
+	$html = "<option disabled='disabled'>No matches</option>" unless $html;
 	
 	return encode_json({timestamp => $timestamp, html => $html});
 }

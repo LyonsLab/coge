@@ -909,59 +909,54 @@ sub search_features {
 	return encode_json({timestamp => $timestamp, html => $html});
 }
 
-sub search_lists { # list of lists
+sub search_lists { # FIXME this coded is dup'ed in CoGeBlast.pl and NotebookView.pl 
 	my %opts = @_;
-	my $lid 		= $opts{lid};
+	return if ($USER->user_name eq 'public');
 	my $search_term	= $opts{search_term};
 	my $timestamp	= $opts{timestamp};
-#	print STDERR "$lid $search_term $timestamp\n";
-	return 0 unless $lid;
+#	print STDERR "$search_term $timestamp\n";
 	
-	# Get lists already in this list
-	my $list = $coge->resultset('List')->find($lid);
-	my %exists;
-	map { $exists{$_->id}++ } $list->lists;
-
-	my @lists;
+	my @notebooks;
 	my $num_results;
 	my $group_str = join(',', map { $_->id } $USER->groups);
-	
+
 	# Try to get all items if blank search term
 	if (!$search_term) {
-		# Get all lists
-		my $sql = "locked=0 AND (restricted=0 OR user_group_id IN ( $group_str ))";
+		my $sql = "locked=0";# AND restricted=0 OR user_group_id IN ( $group_str ))"; # FIXME
 		$num_results = $coge->resultset("List")->count_literal($sql);
 		if ($num_results < $MAX_SEARCH_RESULTS) {
-			@lists = $coge->resultset("List")->search_literal($sql);
+			foreach my $notebook ($coge->resultset("List")->search_literal($sql)) {
+				next if ($notebook->restricted and not $USER->has_access_to_list($notebook));
+				push @notebooks, $notebook;
+			}
 		}
 	}
 	# Perform search
 	else {
 		# Get public lists and user's private lists	
 		$search_term = '%'.$search_term.'%';
-		@lists = $coge->resultset("List")->search_literal(
-			"locked=0 AND (restricted=0 OR user_group_id IN ( $group_str )) \
-			 AND (name LIKE '$search_term' OR description LIKE '$search_term')");
-		$num_results = @lists;
+		foreach my $notebook ($coge->resultset("List")->search_literal("locked=0 AND (name LIKE '$search_term' OR description LIKE '$search_term')")) {
+			next if ($notebook->restricted and not $USER->has_access_to_list($notebook));
+			push @notebooks, $notebook;
+		}
+		$num_results = @notebooks;
 	}
 	
 	# Limit number of results display
 	if ($num_results > $MAX_SEARCH_RESULTS) {
 		return encode_json({
 					timestamp => $timestamp,
-					html => "<option disabled='disabled'>$num_results results, please refine your search.</option>"
+					html => "<option>$num_results matches, please refine your search.</option>"
 		});
 	}
 	
 	# Build select items out of results
 	my $html;
-	foreach my $l (sort listcmp @lists) {
-		next if ($l->id == $lid); # can't add a list to itself!
-		my $disable = $exists{$l->id} ? "disabled='disabled'" : '';
-		my $item_spec = $node_types->{list} . ':' . $l->id;
-		$html .= "<option $disable value='$item_spec'>" . $l->info . "</option><br>\n";	
+	foreach my $n (sort listcmp @notebooks) {
+		my $item_spec = 1 . ':' . $n->id; #FIXME magic number for item_type
+		$html .= "<option value='$item_spec'>" . $n->info . "</option><br>\n";	
 	}
-	$html = "<option disabled='disabled'>No matching items</option>" unless $html;
+	$html = "<option disabled='disabled'>No matches</option>" unless $html;
 	
 	return encode_json({timestamp => $timestamp, html => $html});
 }
