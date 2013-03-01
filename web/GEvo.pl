@@ -924,7 +924,7 @@ sub run {
 	$gevo_link .= ";hsp_overlap_limit=" . $hsp_overlap_limit if defined $hsp_overlap_limit;
 	$gevo_link .= ";hsp_size_limit=" . $hsp_size_limit if defined $hsp_size_limit;
 	unless ( @sets > 1 ) {
-		$message .= "Problem retrieving information.  Please check submissions.\n";
+		$message .= "Problem retrieving information, please check submissions.  At least 2 sequences should be specified.\n";
 		return '', '', '', '', 0, '', '', $message;
 	}
 	my $t2 = new Benchmark;
@@ -1108,7 +1108,7 @@ qq{<td><a href="javascript:void(0);" id="history_dialog_button" class='ui-button
 	$html         .= $gobe_buttons;
 	$html         .= qq{<DIV id=flashcontent></DIV>};
 	$html         .=
-qq{<br><a href="http://genomevolution.org/wiki/index.php/Gobe" class=small style="color: red" target=_new>Click here for help!</a>  <a href="http://get.adobe.com/flashplayer/" target=_new >No results?  Rerun by pressing "Run GEvo Analysis!" again.  Still no results? Try installing the latest version of Flash</a>.};
+qq{<br><a href="http://genomevolution.org/wiki/index.php/Gobe" class="small" style="color: red" target=_new>Click here for help!</a>  <a href="http://get.adobe.com/flashplayer/" class="small" target=_new >No results?  Rerun by pressing "Run GEvo Analysis!" again.  Still no results? Try installing the latest version of Flash</a>.};
 	$html .= $gobe_buttons;
 	$html .= qq{<table class=small>};
 	$html .= qq{<tr valign=top><td><span class=bold>Alignment reports</span>};
