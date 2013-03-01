@@ -934,7 +934,7 @@ sub upload_image_file {
 	return;
 }
 
-sub search_notebooks { 
+sub search_notebooks { # FIXME this coded is dup'ed in CoGeBlast.pl and NotebookView.pl 
 	my %opts = @_;
 	return if ($USER->user_name eq 'public');
 	my $search_term	= $opts{search_term};
