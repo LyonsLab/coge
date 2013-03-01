@@ -11,9 +11,9 @@ use Digest::MD5 qw(md5_base64);
 #use URI::Escape;
 use Data::Dumper;
 use File::Path;
+use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
-use CoGeX;
 
 no warnings 'redefine';
 
@@ -69,7 +69,7 @@ my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
 $link = CoGe::Accessory::Web::get_tiny_link(
     db      => $coge,
     user_id => $USER->id,
-    page    => "$PAGE_TITLE",
+    page    => "$PAGE_TITLE.pl",
     url     => $link
 );
 
@@ -177,7 +177,7 @@ sub gen_html {
 sub gen_body {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-    $template->param( PAGE_NAME  => "$PAGE_TITLE" );
+    $template->param( PAGE_NAME  => "$PAGE_TITLE.pl" );
     $template->param( MAIN       => 1 );
     $template->param( LIST_INFO  => get_jobs_for_user() );
     $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
