@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 CONSTANT_MATCH_SCORE=None
 MAX_MATCH_SCORE=50.0
 
