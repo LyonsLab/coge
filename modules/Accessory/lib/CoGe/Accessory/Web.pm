@@ -262,10 +262,10 @@ sub login_cas {
 	#gen and set the web cookie, yum!
 	my $c = CoGe::Accessory::LogUser->gen_cookie(
 		session     => $session,
-		cookie_name => $cookie_name
+		cookie_name => $cookie_name,
 	);
 
-	#  print "Set-Cookie: $c\n";
+#	print STDERR "login_cas:  gen_cookie " . (Dumper $c) . "\n";
 	print CGI::header( -cookie => [$c] );
 	return $coge_user;
 }
