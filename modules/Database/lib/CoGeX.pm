@@ -352,7 +352,7 @@ sub log_user
 	return;
       }
     #FIRST REMOVE ALL ENTRIES FOR THIS USER
-    foreach my $item ($self->resultset('UserSession')->search(session=>$session))
+    foreach my $item ($self->resultset('UserSession')->search({session=>$session}))
       {
 	next unless $item;
 	$item->delete;
