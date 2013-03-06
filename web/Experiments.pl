@@ -103,15 +103,18 @@ sub delete_experiment {
 sub get_experiments_for_user {
 	#my %opts = @_;
 
+	my $user_can_edit = 0;
 	my %experiments;
 	if ($USER->is_admin) {
 		map { $experiments{$_->id} = $_ } $coge->resultset('Experiment')->all();
+		$user_can_edit = 1;
 	}
 	elsif ($USER->id == 0) { #FIXME: call $USER->is_public
 		map { $experiments{$_->id} = $_ } $coge->resultset('Experiment')->search({restricted=>0});
 	}
 	else {
 		map { $experiments{$_->id} = $_ } $USER->experiments, $coge->resultset('Experiment')->search({restricted=>0});
+		$user_can_edit = 1;
 	}
 	
 	print STDERR "matt: " . (values %experiments) . "\n";
@@ -122,12 +125,12 @@ sub get_experiments_for_user {
 		  { NAME  => qq{<span class="link" onclick='window.open("ExperimentView.pl?eid=} . $e->id . qq{")'>} . $e->info . "</span>",
 			VERSION  => $e->version,
 			DATE =>  $e->date,
-			EDIT_BUTTON => 0 ?
-				"<span class='link ui-icon ui-icon-locked' onclick=\"alert('This list is locked and cannot be edited.')\"></span>" :
-				"<span class='link ui-icon ui-icon-gear' onclick=\"window.open('ExperimentView.pl?eid=" . $e->id . "')\"></span>",
-			DELETE_BUTTON => 0 ?
-				"<span class='link ui-icon ui-icon-locked' onclick=\"alert('This list is locked and cannot be deleted.')\"></span>" :
-				"<span class='link ui-icon ui-icon-trash' onclick=\"dialog_delete_experiment({eid: '" . $e->id . "'});\"></span>"
+			EDIT_BUTTON => $user_can_edit ?
+				"<span class='link ui-icon ui-icon-gear' onclick=\"window.open('ExperimentView.pl?eid=" . $e->id . "')\"></span>" :
+				"<span class='link ui-icon ui-icon-locked' onclick=\"alert('This list is locked and cannot be edited.')\"></span>",
+			DELETE_BUTTON => $user_can_edit ?
+				"<span class='link ui-icon ui-icon-trash' onclick=\"dialog_delete_experiment({eid: '" . $e->id . "'});\"></span>" :
+				"<span class='link ui-icon ui-icon-locked' onclick=\"alert('This list is locked and cannot be deleted.')\"></span>"
 		  };
 	}
 
