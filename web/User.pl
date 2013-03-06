@@ -172,7 +172,7 @@ sub gen_body {
 					  
 	$template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 
-	$template->param( USER_NAME => $USER->user_name );
+	$template->param( USER_NAME => $USER->user_name." (id".$USER->id.")" );
 	$template->param( FULL_NAME => $USER->display_name );
 	$template->param( DESCRIPTION => $USER->description );
 	$template->param( EMAIL => $USER->email );
