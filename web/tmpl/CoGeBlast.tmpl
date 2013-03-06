@@ -1181,9 +1181,12 @@ function save_display_settings() {
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
-			fname: 'save_settings_cogeblast',
+			fname: 'save_settings',
 			display: index,
 		},
+		success: function() {
+			$('#table_opts_dialog').dialog('close');
+		}
 	});	
 }
 
@@ -1197,7 +1200,7 @@ function wait_to_search (search_func, search_term) {
 		
 		pageObj.time = setTimeout(
 			function() { 
-				search_func(pageObj.search_term); 
+				search_func(pageObj.search_term);
 			}, 
 			500
 		);

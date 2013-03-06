@@ -119,7 +119,6 @@ $USER = undef;
 	export_hsp_query_fasta   => \&export_hsp_query_fasta,
 	export_hsp_subject_fasta => \&export_hsp_subject_fasta,
 	export_alignment_file    => \&export_alignment_file,
-	save_settings_cogeblast  => \&save_settings_cogeblast,
 	generate_basefile        => \&generate_basefile,
 	get_dsg_for_menu         => \&get_dsg_for_menu,
 	get_genome_info          => \&get_genome_info,
@@ -2341,16 +2340,6 @@ sub export_alignment_file {
 }
 
 sub save_settings {
-	my %opts  = @_;
-	return CoGe::Accessory::Web::save_settings(
-		coge => $coge, 
-		page => $PAGE_NAME,
-		user => $USER, 
-		opts => \%opts
-	);
-}
-
-sub save_settings_cogeblast {
 	my %opts  = @_;
 	
 	my $prefs = CoGe::Accessory::Web::load_settings( user => $USER, page => $PAGE_NAME, coge => $coge );
