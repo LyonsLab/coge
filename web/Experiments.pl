@@ -103,16 +103,19 @@ sub delete_experiment {
 sub get_experiments_for_user {
 	#my %opts = @_;
 
-	my @experiments;
-#	if ( $USER->is_admin ) {
-#		@experiments = $coge->resultset('Experiment')->all();
-#	}
-#	else {
-		@experiments = $USER->experiments;
-#	}
+	my %experiments;
+	if ($USER->is_admin) {
+		map { $experiments{$_->id} => $_ } $coge->resultset('Experiment')->all();
+	}
+	elsif ($USER->id == 0) { #FIXME: call $USER->is_public
+		map { $experiments{$_->id} => $_ } $coge->resultset('Experiment')->search({restricted=>0});
+	}
+	else {
+		map { $experiments{$_->id} => $_ } ($USER->experiments, $coge->resultset('Experiment')->search({restricted=>0}));
+	}
 
 	my @rows;
-	foreach my $e (@experiments) {#( sort experimentcmp @experiments ) {
+	foreach my $e (sort experimentcmp values %experiments) {
 		push @rows, 
 		  { NAME  => qq{<span class="link" onclick='window.open("ExperimentView.pl?eid=} . $e->id . qq{")'>} . $e->info . "</span>",
 			VERSION  => $e->version,
