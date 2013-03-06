@@ -105,14 +105,16 @@ sub get_experiments_for_user {
 
 	my %experiments;
 	if ($USER->is_admin) {
-		map { $experiments{$_->id} => $_ } $coge->resultset('Experiment')->all();
+		map { $experiments{$_->id} = $_ } $coge->resultset('Experiment')->all();
 	}
 	elsif ($USER->id == 0) { #FIXME: call $USER->is_public
-		map { $experiments{$_->id} => $_ } $coge->resultset('Experiment')->search({restricted=>0});
+		map { $experiments{$_->id} = $_ } $coge->resultset('Experiment')->search({restricted=>0});
 	}
 	else {
-		map { $experiments{$_->id} => $_ } ($USER->experiments, $coge->resultset('Experiment')->search({restricted=>0}));
+		map { $experiments{$_->id} = $_ } $USER->experiments, $coge->resultset('Experiment')->search({restricted=>0});
 	}
+	
+	print STDERR "matt: " . (values %experiments) . "\n";
 
 	my @rows;
 	foreach my $e (sort experimentcmp values %experiments) {
