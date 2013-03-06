@@ -102,25 +102,21 @@ sub delete_experiment {
 
 sub get_experiments_for_user {
 	#my %opts = @_;
-
-	my $user_can_edit = 0;
+	
 	my %experiments;
 	if ($USER->is_admin) {
 		map { $experiments{$_->id} = $_ } $coge->resultset('Experiment')->all();
-		$user_can_edit = 1;
 	}
 	elsif ($USER->id == 0) { #FIXME: call $USER->is_public
 		map { $experiments{$_->id} = $_ } $coge->resultset('Experiment')->search({restricted=>0});
 	}
 	else {
 		map { $experiments{$_->id} = $_ } $USER->experiments, $coge->resultset('Experiment')->search({restricted=>0});
-		$user_can_edit = 1;
 	}
 	
-	print STDERR "matt: " . (values %experiments) . "\n";
-
 	my @rows;
 	foreach my $e (sort experimentcmp values %experiments) {
+		my $user_can_edit = $USER->is_admin || $USER->is_owner_editor(experiment => $e->id);
 		push @rows, 
 		  { NAME  => qq{<span class="link" onclick='window.open("ExperimentView.pl?eid=} . $e->id . qq{")'>} . $e->info . "</span>",
 			VERSION  => $e->version,
