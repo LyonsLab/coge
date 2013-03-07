@@ -600,10 +600,10 @@ sub send_to_xls {
 	$cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
 	my $basename = $cogeweb->basefile;
 	my ($filename) = $basename =~ /_(.*)$/;
-	$filename = $TEMPDIR.'/Excel_FeatList_'.$filename.'.xls';
+	$filename = 'Excel_FeatList_'.$filename.'.xls';
 	
-	print STDERR "matt: $filename $basename\n";	
-	my $workbook = Spreadsheet::WriteExcel->new($filename);
+	print STDERR "matt: $TEMPDIR $filename $basename\n";	
+	my $workbook = Spreadsheet::WriteExcel->new("$TEMPDIR/$filename");
 	$workbook->set_tempdir("$TEMPDIR");
 	my $worksheet = $workbook->add_worksheet();
 	my $i = 1;
@@ -667,7 +667,7 @@ sub send_to_xls {
 		$i++;
 	}
 	$workbook->close() or die "Error closing file: $!";
-	return $filename;
+	return "$TEMPDIR/$filename";
 }
 
 sub gc_content {
