@@ -21,7 +21,7 @@ use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME 
-			$TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM $COOKIE_NAME %FUNCTION);
+			$TEMPDIR $TEMPURL $USER $DATE $BASEFILE $coge $cogeweb $FORM $COOKIE_NAME %FUNCTION);
 
 $P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 $ENV{PATH} = $P->{COGEDIR};
@@ -49,6 +49,7 @@ $USER = undef;
 ($USER) = CoGe::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
 
 $TEMPDIR = $P->{TEMPDIR}.'FeatList/'.$USER->id;
+$TEMPURL = $P->{TEMPURL}.'FeatList/'.$USER->id;
 mkpath ($TEMPDIR,0,0777) unless -d $TEMPDIR;
 
 $SIG{'__WARN__'} = sub { };    #silence warnings
@@ -667,7 +668,7 @@ sub send_to_xls {
 		$i++;
 	}
 	$workbook->close() or die "Error closing file: $!";
-	return "$TEMPDIR/$filename";
+	return "$TEMPURL/$filename";
 }
 
 sub gc_content {
