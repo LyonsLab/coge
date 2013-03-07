@@ -603,7 +603,6 @@ sub send_to_xls {
 	my ($filename) = $basename =~ /_(.*)$/;
 	$filename = 'Excel_FeatList_'.$filename.'.xls';
 	
-	print STDERR "matt: $TEMPDIR $filename $basename\n";	
 	my $workbook = Spreadsheet::WriteExcel->new("$TEMPDIR/$filename");
 	$workbook->set_tempdir("$TEMPDIR");
 	my $worksheet = $workbook->add_worksheet();
