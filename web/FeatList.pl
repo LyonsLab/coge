@@ -32,9 +32,6 @@ $DATE      = sprintf(
 );
 $PAGE_NAME = "FeatList.pl";
 
-$TEMPDIR = $P->{TEMPDIR}."FeatList";
-mkpath ($TEMPDIR,0,0777) unless -d $TEMPDIR;
-
 $FORM    = new CGI;
 $DBNAME  = $P->{DBNAME};
 $DBHOST  = $P->{DBHOST};
@@ -50,6 +47,9 @@ my ($cas_ticket) = $FORM->param('ticket');
 $USER = undef;
 ($USER) = CoGe::Accessory::Web->login_cas( cookie_name => $COOKIE_NAME, ticket => $cas_ticket, coge => $coge, this_url => $FORM->url() ) if ($cas_ticket);
 ($USER) = CoGe::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
+
+$TEMPDIR = $P->{TEMPDIR}.'FeatList/'.$USER->id;
+mkpath ($TEMPDIR,0,0777) unless -d $TEMPDIR;
 
 $SIG{'__WARN__'} = sub { };    #silence warnings
 
@@ -596,10 +596,14 @@ sub send_to_xls {
 	my $accn_list = $opts{accn_list};
 	$accn_list =~ s/^,//;
 	$accn_list =~ s/,$//;
+	
 	$cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
 	my $basename = $cogeweb->basefile;
-	my ($filename) = $basename =~ /FeatList\/(FeatList_.+)/;
-	my $workbook = Spreadsheet::WriteExcel->new("$TEMPDIR/Excel_$filename.xls");
+	my ($filename) = $basename =~ /_(.*)$/;
+	$filename = $TEMPDIR.'/Excel_FeatList_'.$filename.'.xls';
+	
+	print STDERR "matt: $filename $basename\n";	
+	my $workbook = Spreadsheet::WriteExcel->new($filename);
 	$workbook->set_tempdir("$TEMPDIR");
 	my $worksheet = $workbook->add_worksheet();
 	my $i = 1;
@@ -663,7 +667,7 @@ sub send_to_xls {
 		$i++;
 	}
 	$workbook->close() or die "Error closing file: $!";
-	return "tmp/Excel_$filename.xls";
+	return $filename;
 }
 
 sub gc_content {
