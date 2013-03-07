@@ -172,20 +172,21 @@ sub gen_body {
 					  
 	$template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 
-	$template->param( USER_NAME => $USER->user_name." (id".$USER->id.")" );
-	$template->param( FULL_NAME => $USER->display_name );
-	$template->param( DESCRIPTION => $USER->description );
-	$template->param( EMAIL => $USER->email );
-	$template->param( USER_IMAGE => ($USER->image_id ? 'image.pl?id=' . $USER->image_id : 'picts/smiley_default.png' ) );
+	$template->param( USER_NAME => $USER->user_name,
+					  USER_ID => $USER->id,
+					  FULL_NAME => $USER->display_name,
+					  DESCRIPTION => $USER->description,
+					  EMAIL => $USER->email,
+					  USER_IMAGE => ($USER->image_id ? 'image.pl?id=' . $USER->image_id : 'picts/smiley_default.png') );
 
 	foreach (keys %ITEM_TYPE) {
 		$template->param( 'ITEM_TYPE_' . uc($_) => $ITEM_TYPE{$_} );
 	}
 	# $template->param( LOGS => get_logs() );
-	$template->param( TOC => get_toc() );
-	$template->param( CONTENTS => get_contents(html_only => 1) );
-	$template->param( ROLES => get_roles('reader') );
-	$template->param( NOTEBOOK_TYPES => get_notebook_types('mixed') );
+	$template->param( TOC => get_toc(),
+					  CONTENTS => get_contents(html_only => 1),
+					  ROLES => get_roles('reader'),
+					  NOTEBOOK_TYPES => get_notebook_types('mixed') );
 
 	return $template->output;
 }

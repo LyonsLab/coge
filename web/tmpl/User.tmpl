@@ -768,8 +768,9 @@ function toggle_star(img) {
 			</td></tr>
 		</table>
 
-		<div style="float:left;color:gray;padding-top:10px;">
-			<div><b><TMPL_VAR NAME='FULL_NAME'></b> - <TMPL_VAR NAME='USER_NAME'></div>
+		<div style="float:left;color:gray;padding-top:5px;">
+			<div><b><TMPL_VAR NAME='FULL_NAME'></b></div>
+			<div class="small">username '<TMPL_VAR NAME='USER_NAME'>' (id<TMPL_VAR NAME='USER_ID'>)</div>
 			<div class="small"><TMPL_VAR NAME='EMAIL'></div>
 		</div>
 		<!--<table style="float:left;white-space:nowrap;padding-right:5px;">
