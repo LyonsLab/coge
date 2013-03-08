@@ -248,7 +248,7 @@ function generate_blast(accn, filename) {
 			filename: filename,
 		},
 		success : function(data) {
-			export_file(data);
+			window.open(data);
 		},
 	});
 }
@@ -262,7 +262,7 @@ function generate_feat_list(accn, filename) {
 			filename: filename,
 		},
 		success : function(data) {
-			export_file(data);
+			window.open(data);
 		},
 	});
 }
@@ -276,7 +276,7 @@ function generate_tab_deliminated(accn, filename) {
 			filename: filename,
 		},
 		success : function(data) {
-			export_file(data);
+			window.open(data);
 		},
 	});
 }
@@ -290,7 +290,7 @@ function export_to_excel(accn, filename) {
 			filename: filename,
 		},
 		success : function(data) {
-			export_file(data);
+			window.open(data);
 		},
 	});
 }
@@ -303,7 +303,7 @@ function export_fasta_file(accn) {
 			accn: accn
 		},
 		success : function(data) {
-			export_file(data);
+			window.open(data);
 		},
 	});
 }
@@ -316,7 +316,7 @@ function export_CodeOn(accn) {
 			accn: accn
 		},
 		success : function(data) {
-			export_file(data);
+			window.open(data);
 		},
 	});
 }
@@ -328,8 +328,17 @@ function overlap_feats_parse(accn) {
 			fname: 'overlap_feats_parse',
 			accn: accn
 		},
-		success : function(url, count) {
-			send_to_gevo(url, count);
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj) {
+				if (obj.count > 10) {
+					var remove = obj.count - 10;
+					alert("You have exceeded the number of features you can send to GEvo ( 10 Max ). You currently have "+obj.count+" selected. Please uncheck "+remove+" of your checked item(s).");
+				}
+				else {
+					window.open(obj.url);
+				}
+			}
 		},
 	});
 }
@@ -342,7 +351,7 @@ function export_hsp_info() {
 			filename: pageObj.basename
 		},
 		success : function(data) {
-			export_file(data);
+			window.open(data);
 		},
 	});
 }
@@ -355,7 +364,7 @@ function export_hsp_query_fasta() {
 			filename: pageObj.basename
 		},
 		success : function(data) {
-			export_file(data);
+			window.open(data);
 		},
 	});
 }
@@ -369,7 +378,7 @@ function export_hsp_subject_fasta(dna) {
 			dna: dna,
 		},
 		success : function(data) {
-			export_file(data);
+			window.open(data);
 		},
 	});
 }
@@ -382,7 +391,7 @@ function export_alignment_file() {
 			filename: pageObj.basename,
 		},
 		success : function(data) {
-			export_file(data);
+			window.open(data);
 		},
 	});
 }
@@ -406,21 +415,6 @@ function get_subject_fasta(val) {
 
 function get_alignment_file() {
 	export_alignment_file(); //export_alignment_file(['args__'+pageObj.basename],[export_file]);
-}
-
-//This function might be redundant, considering the send_to_gevo function. Consider eliminating / consolidating the functions
-function export_file(dir) {
-	window.open(dir);
-}
-
-function send_to_gevo(url,num_accns) {
-	if (num_accns > 10) {
-		var remove = num_accns - 10;
-		alert("You have exceeded the number of features you can send to GEvo ( 10 Max ). You currently have "+num_accns+" selected. Please uncheck "+remove+" of your checked item(s).");
-	}
-	else {
-		window.open(url);
-	}
 }
 
 function enlarge_picture_window(id) {

@@ -1672,7 +1672,7 @@ sub overlap_feats_parse    #Send to GEvo
 	}
 	$count--;
 	$url .= "num_seqs=$count";
-	return ($url, $count);
+	return encode_json({url => $url, count => $count});
 }
 
 sub initialize_sqlite {
