@@ -600,8 +600,8 @@ sub blast_search {
     
     #return unless defined($job);
 
-    CoGe::Accessory::Web::write_log( "process $$", $cogeweb->logfile );
-
+	CoGe::Accessory::Web::write_log( "process $$", $cogeweb->logfile );
+	
 	$width = 400 unless $width =~ /^\d+$/; #something wrong with how width is calculated in tmpl file
 	
 	my $t1 = new Benchmark;
