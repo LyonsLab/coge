@@ -1671,9 +1671,8 @@ sub overlap_feats_parse    #Send to GEvo
 		$count++;
 	}
 	$count--;
-	return ( "alert", $count ) if $count > 20;
 	$url .= "num_seqs=$count";
-	return $url;
+	return ($url, $count);
 }
 
 sub initialize_sqlite {

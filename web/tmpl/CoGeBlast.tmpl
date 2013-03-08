@@ -328,8 +328,8 @@ function overlap_feats_parse(accn) {
 			fname: 'overlap_feats_parse',
 			accn: accn
 		},
-		success : function(data) {
-			send_to_gevo(data);
+		success : function(url, count) {
+			send_to_gevo(url, count);
 		},
 	});
 }
@@ -414,7 +414,7 @@ function export_file(dir) {
 }
 
 function send_to_gevo(url,num_accns) {
-	if (url == "alert") {
+	if (num_accns > 10) {
 		var remove = num_accns - 10;
 		alert("You have exceeded the number of features you can send to GEvo ( 10 Max ). You currently have "+num_accns+" selected. Please uncheck "+remove+" of your checked item(s).");
 	}
