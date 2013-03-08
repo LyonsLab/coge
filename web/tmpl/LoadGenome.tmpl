@@ -463,7 +463,6 @@ function search_ncbi_taxonomy(search_term) {
 								var id = $(this).children('TaxId').text();
 								var name = $(this).children('ScientificName').text();
 								var lineage = $(this).children('Lineage').text();
-								console.log(id+' '+name+' '+lineage);
 								results.push({id: id, name: name, lineage: lineage});
 							}
 						);
@@ -610,7 +609,6 @@ function taxonomy_get_node(id) { // FIXME: cleanup and merge common stuff with s
 								var id = $(this).children('TaxId').text();
 								var name = $(this).children('ScientificName').text();
 								var lineage = $(this).children('Lineage').text();
-								console.log(id+' '+name+' '+lineage);
 								results.push({id: id, name: name, lineage: lineage});
 							}
 						);

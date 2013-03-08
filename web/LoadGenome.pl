@@ -76,7 +76,7 @@ $MAX_SEARCH_RESULTS = 100;
 	ftp_get_file			=> \&ftp_get_file,
 	upload_file				=> \&upload_file,
 #	search_ncbi_nucleotide	=> \&search_ncbi_nucleotide,
-	search_ncbi_taxonomy	=> \&search_ncbi_taxonomy,
+	# search_ncbi_taxonomy	=> \&search_ncbi_taxonomy,
 	load_genome				=> \&load_genome,
 	get_sequence_types		=> \&get_sequence_types,
 	create_sequence_type	=> \&create_sequence_type,
@@ -302,46 +302,47 @@ sub search_ncbi_nucleotide {
 	return encode_json( { timestamp => $timestamp, name => $title, id => $id } );
 }
 
-sub search_ncbi_taxonomy {
-	my %opts = @_;
-	my $search_term = $opts{search_term};
-	my $get_children = $opts{get_children};
-	my $timestamp = $opts{timestamp};
-	print STDERR "ncbi_taxonomy_search $search_term\n";
+# moved to clientside javascript
+# sub search_ncbi_taxonomy {
+# 	my %opts = @_;
+# 	my $search_term = $opts{search_term};
+# 	my $get_children = $opts{get_children};
+# 	my $timestamp = $opts{timestamp};
+# 	print STDERR "ncbi_taxonomy_search $search_term\n";
 
-	my @results = ();
-	my $esearch;
+# 	my @results = ();
+# 	my $esearch;
 	
-	if ($get_children) {
-		$esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=taxonomy&term=$search_term&field=nxlv";
-	}
-	else {
-		$search_term .= '*';
-		$esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=taxonomy&term=$search_term";		
-	}
+# 	if ($get_children) {
+# 		$esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=taxonomy&term=$search_term&field=nxlv";
+# 	}
+# 	else {
+# 		$search_term .= '*';
+# 		$esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=taxonomy&term=$search_term";		
+# 	}
 	
-	my $result = get($esearch);
-	my $record = XMLin($result);
-	my $id = $record->{IdList}->{Id};
+# 	my $result = get($esearch);
+# 	my $record = XMLin($result);
+# 	my $id = $record->{IdList}->{Id};
 	
-	if ($id) {
-		my @ids = (ref($id) eq 'ARRAY' ? @$id : ($id));
-		$esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=" . join(',', @ids);
-		my $result = get($esearch);
-		$record = XMLin($result);
-#		print STDERR Dumper $record;
-		my @taxons = (ref($record->{Taxon}) eq 'ARRAY' ? @{$record->{Taxon}} : ($record->{Taxon}));
-		foreach (@taxons) {
-			my $id = $_->{TaxId};
-			my $name = $_->{ScientificName};
-			my $lineage = $_->{Lineage};
-			push @results, { id => $id, name => $name, lineage => $lineage };
-		}
-	}
+# 	if ($id) {
+# 		my @ids = (ref($id) eq 'ARRAY' ? @$id : ($id));
+# 		$esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=" . join(',', @ids);
+# 		my $result = get($esearch);
+# 		$record = XMLin($result);
+# #		print STDERR Dumper $record;
+# 		my @taxons = (ref($record->{Taxon}) eq 'ARRAY' ? @{$record->{Taxon}} : ($record->{Taxon}));
+# 		foreach (@taxons) {
+# 			my $id = $_->{TaxId};
+# 			my $name = $_->{ScientificName};
+# 			my $lineage = $_->{Lineage};
+# 			push @results, { id => $id, name => $name, lineage => $lineage };
+# 		}
+# 	}
 	
-	print STDERR encode_json( { timestamp => $timestamp, results => \@results } );
-	return encode_json( { timestamp => $timestamp, results => [sort {$a->{name} cmp $b->{name}} @results] } );
-}
+# 	print STDERR encode_json( { timestamp => $timestamp, results => \@results } );
+# 	return encode_json( { timestamp => $timestamp, results => [sort {$a->{name} cmp $b->{name}} @results] } );
+# }
 
 sub upload_file {
 	my %opts = @_;
