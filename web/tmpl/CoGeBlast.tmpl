@@ -165,6 +165,7 @@ function fill_nearby_feats(id_array) { // mdb rewritten 3/8/13 issue 47
 	else { // all done, init table sorting
 		init_table();
 		init_table_opts();
+		//$("#hsp_result_table").trigger("update");
 	}
 } 
 
@@ -183,15 +184,6 @@ function click_all_feat_links() { // mdb rewritten 3/8/13 issue 47
 	fill_nearby_feats(id_array);
 }
  
-function update_sorting_table() {
-	if ($.ajax.length) {
-		setTimeout("update_sorting_table()",100);
-		return;
-	}
-	
-	$("#hsp_result_table").trigger("update");
-}
-
 function update_checkbox(name, dist, hspid, id){
 	$('#feat'+hspid).html(name);
 	$('#dist'+hspid).html(dist);
@@ -683,7 +675,7 @@ function init_table () {
 			          9: {sorter: 'percent'},
 			          11: {sorter: 'percent'}
 			},					
-			sortList: [[2,0],[5,0]],
+			//sortList: [[2,0],[5,0]], // mdb removed 3/8/13 - misleading if column 2 or 5 is hidden
 		});
 	});
 }
