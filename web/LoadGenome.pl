@@ -124,8 +124,13 @@ sub irods_get_path {
 	my $result = CoGe::Accessory::Web::irods_ils($path);
 	my $error = $result->{error};
 	if ($error) {
+		my $body = 'User: ' . $USER->name . ' ' . $USER->id . "\n\n" . $error;
 		my $email = $P->{SUPPORT_EMAIL};
-		CoGe::Accessory::Web::send_email(from => $email, to => $email, subject => "System error notification from $PAGE_TITLE", body => $error);
+		CoGe::Accessory::Web::send_email(
+			from => $email, 
+			to => $email, 
+			subject => "System error notification from $PAGE_TITLE", 
+			body => $body);
 		return encode_json( { timestamp => $timestamp, error => $error } );
 	}
 	return encode_json( { timestamp => $timestamp, path => $path, items => $result->{items} } );
@@ -300,30 +305,42 @@ sub search_ncbi_nucleotide {
 sub search_ncbi_taxonomy {
 	my %opts = @_;
 	my $search_term = $opts{search_term};
+	my $get_children = $opts{get_children};
 	my $timestamp = $opts{timestamp};
-	print STDERR "search_ncbi_taxonomy $search_term\n";
+	print STDERR "ncbi_taxonomy_search $search_term\n";
 
-	my $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=taxonomy&term=$search_term";
-	my $result = get($esearch);
-#	print STDERR $result;
-	my $record = XMLin($result);
-#	print STDERR Dumper $record;
-	my $id = $record->{IdList}->{Id};
-	my ($name, $lineage);
-	if ($id) {
-		print STDERR "id = $id\n";
-		$esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=$id";
-		my $result = get($esearch);
-#		print STDERR $result;
-		$record = XMLin($result);
-#		print STDERR Dumper $record;
-		$name = $record->{Taxon}->{ScientificName};
-		$lineage = $record->{Taxon}->{Lineage} . '; ';
-		print STDERR "lineage = $lineage\n" if ($lineage);
+	my @results = ();
+	my $esearch;
+	
+	if ($get_children) {
+		$esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=taxonomy&term=$search_term&field=nxlv";
+	}
+	else {
+		$search_term .= '*';
+		$esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=taxonomy&term=$search_term";		
 	}
 	
-	return unless $id and $lineage;
-	return encode_json( { timestamp => $timestamp, name => $name, id => $id, lineage => $lineage } );
+	my $result = get($esearch);
+	my $record = XMLin($result);
+	my $id = $record->{IdList}->{Id};
+	
+	if ($id) {
+		my @ids = (ref($id) eq 'ARRAY' ? @$id : ($id));
+		$esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=" . join(',', @ids);
+		my $result = get($esearch);
+		$record = XMLin($result);
+#		print STDERR Dumper $record;
+		my @taxons = (ref($record->{Taxon}) eq 'ARRAY' ? @{$record->{Taxon}} : ($record->{Taxon}));
+		foreach (@taxons) {
+			my $id = $_->{TaxId};
+			my $name = $_->{ScientificName};
+			my $lineage = $_->{Lineage};
+			push @results, { id => $id, name => $name, lineage => $lineage };
+		}
+	}
+	
+	print STDERR encode_json( { timestamp => $timestamp, results => \@results } );
+	return encode_json( { timestamp => $timestamp, results => [sort {$a->{name} cmp $b->{name}} @results] } );
 }
 
 sub upload_file {

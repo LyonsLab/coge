@@ -1,8 +1,16 @@
 <TMPL_IF NAME='MAIN'>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
+<SCRIPT type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
+<SCRIPT type="text/javascript" src="./js/jquery.jstree.js"></SCRIPT>
 
-<SCRIPT language="JavaScript">
+<style type="text/css"> 
+.jstree li a ins { display:none !important; }
+.jstree.jstree-focused { background:white; }
+</style>
+
+<SCRIPT type="text/javascript">
 $(document).ready(function(){
+	timestamps = new Array();
+
 	$.ajaxSetup({
 		type: "POST",
 		//url: '<TMPL_VAR NAME='PAGE_NAME'>',
@@ -40,6 +48,10 @@ $(document).ready(function(){
 		   		return false;
 			}
 	});
+	
+	//$('#tax_tree')
+		//.jstree({ plugins: ["themes"] })
+		//.jstree("set_theme", "classic");
 });
 
 function set_input(id, text) {
@@ -75,7 +87,7 @@ function file_selected(filename, url) {
 }
 
 function clear_list() {
-	pageObj.timestamp = new Date().getTime(); // Cancel ftp transfers
+	timestamps['ftp'] = new Date().getTime(); // Cancel ftp transfers
 	$('#file_table').html('');
 	$('#ftp_get_button').removeClass('ui-state-disabled');
 	$('#files_clear').addClass('ui-state-disabled');
@@ -319,16 +331,17 @@ function wait_to_search (search_func, search_term) {
 
 function search_organisms (search_term) {
 	if (search_term.length > 2) {
+		timestamps['search_organisms'] = new Date().getTime();
 		$.ajax({
 			data: {
 				jquery_ajax: 1,
 				fname: 'search_organisms',
 				search_term: search_term,
-				timestamp: new Date().getTime()
+				timestamp: timestamps['search_organisms']
 			},
 			success : function(data) {
 				var obj = jQuery.parseJSON(data);
-				if (obj && obj.items) {
+				if (obj && obj.items && obj.timestamp == timestamps['search_organisms']) {
 					$("#edit_organism").autocomplete({source: obj.items}).autocomplete("search");
 				}
 			},
@@ -337,16 +350,17 @@ function search_organisms (search_term) {
 }
 
 function search_users (search_term) {
+	timestamps['search_users'] = new Date().getTime();
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
 			fname: 'search_users',
 			search_term: search_term,
-			timestamp: new Date().getTime()
+			timestamp: timestamps['search_users']
 		},
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
-			if (obj && obj.items) {
+			if (obj && obj.items && obj.timestamp == timestamps['search_users']) {
 				$("#edit_user").autocomplete({source: obj.items});
 				$("#edit_user").autocomplete("search");
 			}
@@ -375,34 +389,329 @@ function more() {
 	$('#edit_description').closest('tr').fadeIn();
 }
 
-function search_ncbi_taxonomy (search_term) {
-	$("#wait_ncbi").animate({opacity:1});
+function build_taxonomy_tree(items) {
+	if (items) {
+		var tree = $("#tax_tree");
+		if (items.length == 0) {
+			tree.slideUp('fast', 
+				function() {
+					tree.empty();
+					$('#tax_empty').fadeIn();
+					$('#edit_organism_name').val('');
+					$('#edit_organism_desc').val('');
+					activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');
+				}
+			);
+		}
+		else {
+			var list = $('<ul></ul>');
+			items.sort(sort_name).forEach(
+				function(e) {
+					var id = 'taxon' + e.id;
+					$(list)
+						.append('<li id="' + id + '" name="' + e.name + '">' +
+								'<a href="#">' + e.name + '</a></li>');
+					//tree.jstree("create_node", null, "last", {attr: {id: id}, data: e.name})
+				}
+			);
+			tree.empty()
+				.append(list)
+				.jstree()
+					.bind("select_node.jstree", 
+				      	function (event, data) { 
+							var id = data.rslt.obj.attr("id");
+							taxonomy_get_node(id);
+						}
+					)
+				.slideDown();
+		}
+	}
+	else {
+		$('#ncbi_result').html('<i>No result</i>');
+		$('#create_organism_button').addClass('ui-state-disabled');
+	}
+}
 
+//TODO break this out into a widget/plugin
+function search_ncbi_taxonomy(search_term) {
+	if (!search_term || search_term.length < 3) {
+		return;
+	}
+	
+	$("#wait_ncbi").animate({opacity:1});
+	$('#tax_empty').fadeOut();
+	$("#edit_organism_info").slideUp();
+
+	$.get(
+		"http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=taxonomy&term=" + search_term + "*",
+		function(xml) {
+			var ids;
+			$(xml).find("Id").each(
+				function() {
+					ids += $(this).text() + ',';
+				}
+			);
+			
+			if (ids) {
+				$.get(
+					"http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=" + ids,
+					function(xml) {
+						var results = new Array();
+						
+						$(xml).children("Taxon").each(
+							function() {
+								var id = $(this).children('TaxId').text();
+								var name = $(this).children('ScientificName').text();
+								var lineage = $(this).children('Lineage').text();
+								console.log(id+' '+name+' '+lineage);
+								results.push({id: id, name: name, lineage: lineage});
+							}
+						);
+						
+						build_taxonomy_tree(results);
+						
+						$("#wait_ncbi").animate({opacity:0});
+					}
+				);
+			}
+			else {
+				var tree = $("#tax_tree");
+				tree.slideUp('fast', 
+					function() {
+						tree.empty();
+						$('#tax_empty').fadeIn();
+						$('#edit_organism_name').val('');
+						$('#edit_organism_desc').val('');
+						activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');
+					}
+				);
+
+				$("#wait_ncbi").animate({opacity:0});
+			}
+		}
+	);
+}
+
+/*
+function search_ncbi_taxonomy (search_term) {
+	if (!search_term || search_term.length < 3) {
+		return;
+	}
+	
+	$("#wait_ncbi").animate({opacity:1});
+	$('#tax_empty').fadeOut();
+	$("#edit_organism_info").slideUp();
+	
+	timestamps['search_ncbi_taxonomy'] = new Date().getTime();
+	
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
 			fname: 'search_ncbi_taxonomy',
 			search_term: search_term,
-			timestamp: new Date().getTime()
+			timestamp: timestamps['search_ncbi_taxonomy']
 		},
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
 			if (obj) {
-				$('#ncbi_result')
-					.html('<b>Name:</b> <i>'+obj.name+'</i><BR>'+'<b>Lineage:</b> <i>'+obj.lineage+'</i>');
-				$('#edit_organism_name').val(obj.name);
-				$('#edit_organism_desc').val(obj.lineage);
-				$('#create_organism_button').removeClass('ui-state-disabled');
+				var tree = $("#tax_tree");
+				if (obj.timestamp == timestamps['search_ncbi_taxonomy']) {
+					if (obj.results.length == 0) {
+						tree.slideUp('fast', 
+							function() {
+								tree.empty();
+								$('#tax_empty').fadeIn();
+								$('#edit_organism_name').val('');
+								$('#edit_organism_desc').val('');
+								activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');
+							}
+						);
+					}
+					else {
+						var items = $('<ul></ul>');
+						obj.results.forEach(
+							function(e) {
+								var id = 'taxon' + e.id;
+								$(items)
+									.append('<li id="' + id + '" name="' + e.name + '">' +
+											'<a href="#">' + e.name + '</a></li>');
+								//tree.jstree("create_node", null, "last", {attr: {id: id}, data: e.name})
+							}
+						);
+						tree.empty()
+							.append(items)
+							.jstree()
+								.bind("select_node.jstree", 
+							      	function (event, data) { 
+										var id = data.rslt.obj.attr("id");
+										taxonomy_get_node(id);
+									}
+								)
+							.slideDown();
+					}
+				}
 			}
 			else {
-				$('#ncbi_result')
-					.html('<i>No result</i>');
+				$('#ncbi_result').html('<i>No result</i>');
 				$('#create_organism_button').addClass('ui-state-disabled');
 			}
 			$("#wait_ncbi").animate({opacity:0});
 		},
+		error : function() {
+			$('#ncbi_result').html('<span class="alert">Error occurred</span>');
+			$("#wait_ncbi").animate({opacity:0});
+		}
 	});
 }
+*/
+
+function taxonomy_get_node(id) { // FIXME: cleanup and merge common stuff with search_ncbi_taxonomy
+	var tree = $("#tax_tree");
+	var node = $("#"+id);
+	var name = $(node).attr('name');
+	
+	// If the node is open then it has children so just
+	// close the node and return.
+	var is_open = tree.jstree("is_open", node);
+	if (is_open) {
+		tree.jstree("close_node", node);
+		return;
+	}
+	
+	// If not a leaf node then we already retreived the children so
+	// just open the node and return.
+	var is_leaf = tree.jstree("is_leaf", node);
+	if (!is_leaf) {
+		tree.jstree("open_node", node);
+		return;
+	}
+
+	// Retrieve the children for this taxon.
+	$("#wait_ncbi").animate({opacity:1});
+
+	$.get(
+		"http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=taxonomy&term=" + name + "&field=nxlv",
+		function(xml) {
+			var ids;
+			$(xml).find("Id").each(
+				function() {
+					ids += $(this).text() + ',';
+				}
+			);
+			
+			if (ids) {
+				$.get(
+					"http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=" + ids,
+					function(xml) {
+						var results = new Array();
+						
+						$(xml).children("Taxon").each(
+							function() {
+								var id = $(this).children('TaxId').text();
+								var name = $(this).children('ScientificName').text();
+								var lineage = $(this).children('Lineage').text();
+								console.log(id+' '+name+' '+lineage);
+								results.push({id: id, name: name, lineage: lineage});
+							}
+						);
+						
+						if (results.length) {
+							results.sort(sort_name).forEach(
+								function(e) {
+									tree.jstree("create_node", node, "last", {attr: {id: 'taxon'+e.id, name: e.name}, data: e.name})
+										.data("lineage", e.lineage);
+								}
+							);
+							tree.jstree("open_node", node);
+						}
+						
+						$("#wait_ncbi").animate({opacity:0});
+					}
+				);
+			}
+			else {
+				var lineage = node.data("lineage");
+				$("#edit_organism_name").val(name);
+				$("#edit_organism_desc").val(lineage);
+				activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');
+				$("#edit_organism_info").slideDown();
+
+				$("#wait_ncbi").animate({opacity:0});
+			}
+		}
+	);
+
+}
+
+function sort_name (a,b) {
+	var nameA=a.name.toLowerCase(), nameB=b.name.toLowerCase()
+	if (nameA < nameB) //sort string ascending
+		return -1
+	if (nameA > nameB)
+		return 1
+	return 0 //default return value (no sorting)
+}
+
+/*
+function taxonomy_get_node (id) {
+	var tree = $("#tax_tree");
+	var node = $("#"+id);
+	var name = $(node).attr('name');
+	
+	// If the node is open then it has children so just
+	// close the node and return.
+	var is_open = tree.jstree("is_open", node);
+	if (is_open) {
+		tree.jstree("close_node", node);
+		return;
+	}
+	
+	// If not a leaf node then we already retreived the children so
+	// just open the node and return.
+	var is_leaf = tree.jstree("is_leaf", node);
+	if (!is_leaf) {
+		tree.jstree("open_node", node);
+		return;
+	}
+
+	// Retrieve the children for this taxon.
+	$("#wait_ncbi").animate({opacity:1});
+	timestamps['taxonomy_get_node'] = new Date().getTime();
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'search_ncbi_taxonomy',
+			search_term: name,
+			get_children: 1,
+			timestamp: timestamps['taxonomy_get_node']
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj) {
+				if (obj.timestamp == timestamps['taxonomy_get_node']) {
+					if (obj.results.length == 0) {
+						var lineage = node.data("lineage");
+						$("#edit_organism_name").val(name);
+						$("#edit_organism_desc").val(lineage);
+						activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');
+						$("#edit_organism_info").slideDown();
+					}
+					else {
+						obj.results.forEach(
+							function(e) {
+								tree.jstree("create_node", node, "last", {attr: {id: 'taxon'+e.id, name: e.name}, data: e.name})
+									.data("lineage", e.lineage);
+							}
+						);
+						tree.jstree("open_node", node);
+					}
+				}
+			}
+			$("#wait_ncbi").animate({opacity:0});	
+		}
+	});
+}
+*/
 
 </SCRIPT>
 
@@ -489,16 +798,31 @@ function search_ncbi_taxonomy (search_term) {
 
 
 <div id="create_new_organism_dialog" class="dialog_box" title="Create New Organism" style="display:none;">
-	<div class="small" style="padding-top:10px;">
-    	Search NCBI:
-    	<input type="textbox" size="70" spellcheck="false" onkeyup="activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button'); wait_to_search(search_ncbi_taxonomy, this.value);" />
+	<div style="padding-top:10px;">
+    	<span class="small">Search NCBI:</span>
+    	<input type="textbox" size="45" spellcheck="false" onkeyup="wait_to_search(search_ncbi_taxonomy, this.value);" />
 	    <img id="wait_ncbi" src="picts/ajax-loader.gif" style="opacity: 0;" />
 	</div>
-	<div id="ncbi_result" class="small" style="color:gray;padding-left:25px;padding-top:15px;">
+	<div id="tax_empty" class="small" style="display:none;font-style:italic;color:gray;margin-top:15px;margin-left:20px;">No matches</div>
+	<div id="tax_tree" class="small" style="display:none;border:1px solid lightgray;margin-top:5px;max-height:200px;max-width:415px;overflow-y:auto">
 	</div>
-	<input id="edit_organism_name" type="hidden" />
-	<input id="edit_organism_desc" type="hidden" />
-
+	<div id="edit_organism_info" style="display:none;padding-top:15px;">
+		<span class="small">You have selected:</span><br>
+		<table style="color:gray;">
+			<tr>
+				<td class="small" style="font-weight:bold;">Name</td>
+				<td>
+					<input id="edit_organism_name" type="textbox" size="54" spellcheck="false" style="color:gray;background-color:white;" onkeyup="activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');" />
+				</td>
+			</tr>
+			<tr>
+				<td class="small" style="font-weight:bold;">Description</td>
+				<td>
+					<textarea id="edit_organism_desc" rows="5" cols="57" spellcheck="false" style="color:gray;resize:none;border:1px solid lightgray;" onkeyup="activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');"></textarea>
+				</td>
+			</tr>
+		</table>
+	</div>
   <!--<table class="small">
     <tr>
       <td>Search NCBI:</td>
