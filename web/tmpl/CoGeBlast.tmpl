@@ -3,8 +3,6 @@
 <SCRIPT language="JavaScript">
 
 $(document).ready(function(){
-	featsRequested = featsReceived = 0; // mdb added 3/6/13 for issue #47
-	
 	$(".dialog_box").dialog({ autoOpen: false, width: 500 });
 
 	//Object Generation
@@ -138,36 +136,51 @@ function loading(id,msg) {
 	$('#'+id).html(message);
 }
 
-function fill_nearby_feats(id,update) {
+// FIXME mdb 3/8/13 - instead of separate ajax requests, all HSP's should be handled in one
+function fill_nearby_feats(id_array) { // mdb rewritten 3/8/13 issue 47
 	//get_nearby_feats(['args__basefile','args__'+pageObj.basename,'args__num','args__'+id],[update_checkbox]);
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'get_nearby_feats',
-			basefile: pageObj.basename,
-			num: id,
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			update_checkbox(obj.name, obj.distance, obj.hsp_id, obj.new_checkbox_info);
-			featsReceived++;
-		},
-	});		
-	if (update == "true") { update_sorting_table(); }
+	if (id_array.length) {
+		var id = id_array.shift();
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'get_nearby_feats',
+				basefile: pageObj.basename,
+				num: id
+			},
+			success: function(data) {
+				var obj = jQuery.parseJSON(data);
+				update_checkbox(obj.name, obj.distance, obj.hsp_id, obj.new_checkbox_info);
+			},
+			complete : function() {
+				setTimeout(
+					function() {
+						fill_nearby_feats(id_array);
+					}, 
+					0
+				);
+			}
+		});
+	}
+	else { // all done, init table sorting
+		init_table();
+		init_table_opts();
+	}
 } 
 
-function click_all_feat_links(){
-	var link_str = pageObj.featlinks;
-	var link_array = new Array();
-	link_array = link_str.split(',');
-	var count = 0;
-	for (var i = 0; i < link_array.length; i++) {
-		var val = link_array[i];
-		if (!val) {continue;}
-		fill_nearby_feats(link_array[i]);
-		count++;
-	}
-	return count;
+function click_all_feat_links() { // mdb rewritten 3/8/13 issue 47
+	var link_array = pageObj.featlinks.split(',');
+	var id_array = new Array();
+
+	link_array.forEach(
+		function(element, index, array) {
+			if (element) {
+				id_array.push(element);
+			}
+		}
+	);
+
+	fill_nearby_feats(id_array);
 }
  
 function update_sorting_table() {
@@ -195,7 +208,6 @@ function overlap_checkboxes() {
 	var accn="";
 	$('#hsp_result_table :checkbox').each(function(){
 		if (this.checked == true) {
-			//fill_nearby_feats($(this).parent().parent()[0].id); // this works!
 			accn = accn + this.id+",";
 		}
 	});
@@ -235,7 +247,7 @@ function overlap_checkboxes() {
 	}
 }
 
-function generate_feat_list(accn, filename) {
+function generate_blast(accn, filename) {
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
@@ -646,22 +658,8 @@ function blastresults(html, click_all_links){
 		if (table_height > max_height) $('#hsp_result_table_body').height(max_height);
 	}
 	setup_button_states();
-	featsRequested = click_all_feat_links();
+	click_all_feat_links();
 	check_display();
-	
-	wait_on_feat_links();
-}
-
-// mdb added 3/6/13 for issue #47
-function wait_on_feat_links() {
-	console.log("matt " + featsReceived + " " + featsRequested);
-	if (featsReceived < featsRequested) {
-		setTimeout(wait_on_feat_links, 500);
-	}
-	else {
-		init_table();
-		init_table_opts();
-	}
 }
 
 function init_table () {

@@ -24,6 +24,7 @@ use URI::Escape;
 use POSIX;
 use Digest::MD5 qw(md5_hex);
 use Digest::MD5 qw(md5_base64);
+use DBI;
 use DBIxProfiler;
 use File::Temp;
 use File::Basename;
@@ -788,7 +789,8 @@ sub gen_results_page {
 				populate_sqlite( $hsp, $dsg->id, $org, $chr );
 				my $id = $hsp->number . '_' . $dsg->id;
 				$click_all_links .= $id . ',';
-				my $feat_link = qq{<span class="link" onclick="fill_nearby_feats('$id','true')">Click for Closest Feature</span>};
+				#my $feat_link = qq{<span class="link" onclick="fill_nearby_feats('$id','true')">Click for Closest Feature</span>};
+				my $feat_link = qq{<span>Loading...</span>};
 
 				my $qname = $hsp->query_name;
 
