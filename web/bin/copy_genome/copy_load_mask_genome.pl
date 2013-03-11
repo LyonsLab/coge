@@ -7,7 +7,7 @@ use Data::Dumper;
 use Getopt::Long;
 use File::Path;
 
-use vars qw($DEBUG $GO $conf_file $coge $gid $restricted $P $mask);
+use vars qw($DEBUG $GO $conf_file $coge $gid $restricted $P $mask $uid);
 
 
 GetOptions ( "debug=s" => \$DEBUG,
@@ -16,6 +16,7 @@ GetOptions ( "debug=s" => \$DEBUG,
 	     "gid=i"=>\$gid,
 	     "restricted|r=i"=> \$restricted,
 	     "mask|m"=> \$mask,
+	     "uid=i"=> \$uid, #coge user id to whom the genome will be assigned
 	   );
 
 $P = CoGe::Accessory::Web::get_defaults($conf_file);
@@ -91,13 +92,38 @@ unless ($new_gid)
     print STDERR "Error: unable to capture a new genome id for the masked genome.  Exiting.\n";
     exit;
   }
-add_annotations(dsgid1=>$gid, dsgid2=>$new_gid);
+
+#assign genome to user
+if ($uid)
+  {
+    my $node_types = CoGeX::node_types();
+    my $uc = $coge->resultset('UserConnector')->find_or_create({
+								parent_id=>$uid,
+								parent_type => $node_types->{user},
+								child_id=>$new_gid,
+								child_type=>$node_types->{genome},
+								role_id=>2
+								});
+  }
+
+#copy_permissions (gid1=>$gid, gid2=>$new_gid);
+add_annotations(gid1=>$gid, gid2=>$new_gid);
+
+sub copy_permissions 
+  {
+    my %opts = @_;
+    my $gid1 = $opts{gid1};
+    my $gid2 = $opts{gid2};
+    #permissions will be copied from g1 to g2;
+    my $g1 = $coge->resultset('Genome')->find($gid1);
+    my $g2 = $coge->resultset('Genome')->find($gid2);
+  }
 
 sub add_annotations
   {
     my %opts = @_;
-    my $dsgid1 = $opts{dsgid1};
-    my $dsgid2 = $opts{dsgid2};
+    my $dsgid1 = $opts{gid1};
+    my $dsgid2 = $opts{gid2};
     my $cmd = $replicate_annotations;
     $cmd .= " -db " . $DBNAME;
     $cmd .= " -u " . $DBUSER;
@@ -219,7 +245,7 @@ Welcome to $0
 
 Purpose:  take a genome ID from coge, generate a masked version of the genome, load it into CoGe, and map over the annotations
 
-Usage:  $0  -conf_file <coge configuration file> -dsgid <coge database id for genome to be masked and copies> -go 1
+Usage:  $0  -conf_file <coge configuration file> -dsgid <coge database id for genome to be masked and copies> -uid <coge user id> -go 1
 
 Options:
    -go 1                  |      Make the database calls.  Default 0
@@ -231,6 +257,8 @@ Options:
    -mask                  |      Mask the genome with NCBI's windowmasker
 
    -restricted            |      mark genome as restricted (Defaults to whatever is set for gid's genome)
+
+   -uid                   |      CoGe user id to whom the new genome will be assigned
 
 
 Copyright Eric Lyons 2013
