@@ -225,7 +225,7 @@ sub validate_data_file {
 		next if ($line =~ /^\s*#/);
 		chomp $line;
 		my @tok = split(/,/, $line);
-		unless (@tok > $MIN_COLUMNS && @tok < $MAX_COLUMNS)
+		unless (@tok >= $MIN_COLUMNS && @tok <= $MAX_COLUMNS)
 		  {
 		    @tok = split (/\s+/,$line);
 		  }
