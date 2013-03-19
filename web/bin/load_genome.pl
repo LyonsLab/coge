@@ -13,7 +13,7 @@ use POSIX qw(ceil);
 
 use vars qw($staging_dir $install_dir $fasta_files 
 			$name $description $link $version $type_id $restricted 
-			$organism_id $source_name $user_name
+			$organism_id $source_name $user_name $keep_headers
 			$host $port $db $user $pass $config
 			$MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE $MAX_CHR_NAME_LENGTH);
 
@@ -30,6 +30,7 @@ GetOptions(
 	"organism_id=i"	=> \$organism_id,	# organism ID
 	"source_name=s"	=> \$source_name,	# data source name
 	"user_name=s"	=> \$user_name,		# user name
+	"keep_headers=i"=> \$keep_headers,	# flag to keep original headers (no parsing)
 	
 	# Database params
 	"host|h=s"			=> \$host,
@@ -263,27 +264,35 @@ sub process_fasta_file {
 	$/ = "\n>";
 	open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
 
+	my $fileSize = -s $filepath;
+	my $lineNum = 0;
 	my $totalLength = 0;
 	while (<$in>) {
 		s/>//g;
 		my ( $name, $seq ) = split /\n/, $_, 2;
 		$seq =~ s/\n//g;
+		$lineNum++;
 
-		my ($chr) = split(/\s+/, $name);
-		$chr =~ s/^lcl\|//;
-		$chr =~ s/^gi\|//;
-		$chr =~ s/chromosome//i;
-		$chr =~ s/^chr//i;
-		$chr =~ s/^0+//;
-		$chr =~ s/^_+//;
-		$chr =~ s/\s+/ /;
-		$chr =~ s/^\s//;
-		$chr =~ s/\s$//;
-		$chr = 0 unless $chr;
+		my $chr;
+		if ($keep_headers) {
+			$chr = $name;
+		}
+		else {
+			($chr) = split(/\s+/, $name);
+			$chr =~ s/^lcl\|//;
+			$chr =~ s/^gi\|//;
+			$chr =~ s/chromosome//i;
+			$chr =~ s/^chr//i;
+			$chr =~ s/^0+//;
+			$chr =~ s/^_+//;
+			$chr =~ s/\s+/ /;
+			$chr =~ s/^\s//;
+			$chr =~ s/\s$//;
+		}
 
 		#TODO add more checks on chr name and sequence here
 		if (not $chr) {
-			print $log "log: error parsing section header\n";
+			print $log "log: error parsing section header, line $lineNum, name='$name'\n";
 			exit(-1);
 		}
 		if (length($chr) > $MAX_CHR_NAME_LENGTH) {
@@ -325,7 +334,7 @@ sub process_fasta_file {
 			print $log "log: (only showing first $MAX_PRINT)\n";
 		}
 		elsif (($count % 10000) == 0) {
-			print $log "log: Processed $count (" . units($totalLength) . ") sequences so far ...\n";
+			print $log "log: Processed $count (" . units($totalLength) . ", " . int(100*$totalLength/$fileSize) . "%) sequences so far ...\n";
 		}		
 	}
 	close($in);
@@ -340,13 +349,13 @@ sub units {
 		return $val;
 	}
 	elsif ($val < 1024*1024) { 
-		return ceil($val/1024) . 'K';
+		return ceil($val/1024) . 'Kb';
 	}
 	elsif ($val < 1024*1024*1024) {
-		return ceil($val/(1024*1024)) . 'M';
+		return ceil($val/(1024*1024)) . 'Mb';
 	}
 	else {
-		return ceil($val/(1024*1024*1024)) . 'G';
+		return ceil($val/(1024*1024*1024)) . 'Gb';
 	}
 }
 

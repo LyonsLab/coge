@@ -229,6 +229,8 @@ function load_genome() {
 
 	var user_name = $('#edit_user').val(); // only exists if admin
 	if (user_name == 'Search') { user_name = ''; }
+	
+	var keep_headers = $('#keep_headers').is(':checked'); // only exists if admin
 
 	var name = $('#edit_name').val();
 	if (name == 'Optional') { name = ''; }
@@ -258,6 +260,7 @@ function load_genome() {
 			organism_id: organism_id,
 			source_name: source,
 			user_name: user_name,
+			keep_headers: keep_headers,
 			items: json,
 			timestamp: new Date().getTime()
 		},
@@ -909,10 +912,16 @@ $(document).ready(function() {
 <span style="color:dimgray;font-weight:bold;">Admin Functions</span><br>
 <table class="small ui-widget-content ui-corner-all">
   <tr>
-    <td>Assign to user:</td>
+    <td>Assign to user</td>
     <td>
       <input id="edit_user" onkeyup="wait_to_search(search_users, this.value);" size="10" />
     </td>
+  </tr>
+  <tr>
+  	<td>Keep section headers</td>
+  	<td>
+  		<input id="keep_headers" type="checkbox" />
+  	</td>
   </tr>
 </table>
 <br>

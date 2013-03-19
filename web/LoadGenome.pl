@@ -378,6 +378,7 @@ sub load_genome {
 	my $restricted = $opts{restricted};
 	my $organism_id = $opts{organism_id};
 	my $user_name = $opts{user_name};
+	my $keep_headers = $opts{keep_headers};
 	my $items = $opts{items};
 	return unless $items;
 	print STDERR "load_genome: organism_id=$organism_id name=$name description=$description version=$version type_id=$type_id restricted=$restricted\n";
@@ -422,7 +423,8 @@ sub load_genome {
 	print $log "Calling bin/load_genome.pl ...\n";
 	my $datadir = $P->{DATADIR} . '/genomic_sequence/';
 	my $cmd = "$BINDIR/load_genome.pl " .
-			  "-user_name " . $user_name . ' ' .
+			  "-user_name $user_name " .
+			  '-keep_headers ' . ($keep_headers eq 'true') . ' ' .
 			  '-name "' . escape($name) . '" ' .
 			  '-desc "' . escape($description) . '" ' .
 			  '-link "' . escape($link) . '" ' .
