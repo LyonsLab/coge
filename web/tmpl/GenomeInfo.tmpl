@@ -439,10 +439,9 @@ function export_bed (gid) {
 				user_name: user_name,
 				timestamp: new Date().getTime()
 			},
-			success : function(val) {
-				if (val) {
-					get_users_with_access();
-					get_groups_with_access();
+			success : function(data) {
+				if (data) {
+					alert(data);
 				}
 			}
 		});

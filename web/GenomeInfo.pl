@@ -29,6 +29,8 @@ use vars qw(
 	%FUNCTION $MAX_SEARCH_RESULTS
 );
 
+my $node_types = CoGeX::node_types();
+
 $P         = CoGe::Accessory::Web::get_defaults("$ENV{HOME}/coge.conf");
 $ENV{PATH} = $P->{COGEDIR};
 $COGEDIR   = $P->{COGEDIR};
@@ -69,6 +71,7 @@ $MAX_SEARCH_RESULTS = 100;
 	get_genome_data			=> \&get_genome_data,
 	edit_genome_info		=> \&edit_genome_info,
 	update_genome_info		=> \&update_genome_info,
+	update_owner			=> \&update_owner,
 	search_organisms		=> \&search_organisms,
 	search_users			=> \&search_users,
 );
@@ -229,6 +232,46 @@ sub search_users {
 	# }
 	
  	return encode_json({timestamp => $timestamp, items => [sort map { $_->user_name } @users]});
+}
+
+sub update_owner {
+	my %opts = @_;
+	my $gid = $opts{gid};
+	my $user_name = $opts{user_name};
+	return unless $gid and $user_name;
+	
+	# Admin-only function
+	return unless $USER->is_admin;
+
+	# Make new user owner of genome
+	my $user = $coge->resultset('User')->find( { user_name => $user_name } );
+	unless ($user) {
+		return "error finding user '$user_name'\n";
+	}
+	my $conn = $coge->resultset('UserConnector')->find_or_create(
+	  { parent_id => $user->id,
+		parent_type => $node_types->{user},
+		child_id => $gid,
+		child_type => $node_types->{genome},
+		role_id => 2 # FIXME hardcoded
+	  } );
+	unless ($conn) {
+		return "error creating user connector\n";
+	}
+	
+	# Remove admin user as owner
+	$conn = $coge->resultset('UserConnector')->find(
+	  { parent_id => $USER->id,
+		parent_type => $node_types->{user},
+		child_id => $gid,
+		child_type => $node_types->{genome},
+		role_id => 2 # FIXME hardcoded
+	  } );
+	if ($conn) {
+		$conn->delete;
+	}
+	
+	return;
 }
 
 sub get_genome_data {
