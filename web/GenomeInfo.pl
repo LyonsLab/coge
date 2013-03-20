@@ -70,6 +70,7 @@ $MAX_SEARCH_RESULTS = 100;
 	edit_genome_info		=> \&edit_genome_info,
 	update_genome_info		=> \&update_genome_info,
 	search_organisms		=> \&search_organisms,
+	search_users			=> \&search_users,
 );
 
 if ( $FORM->param('jquery_ajax') ) {
