@@ -4437,7 +4437,7 @@ sub feat_search {
 	my $featid = $opts{featid};
 	$accn = uri_unescape($accn);    # mdb added 10/9/12 issue #11
 
-	#    print STDERR "feat_search: accn=$accn\n";
+	#print STDERR "feat_search: accn=$accn\n";
 	$accn =~ s/^\s+// if $accn;
 	$accn =~ s/\s+$// if $accn;
 	my $feat = $coge->resultset('Feature')->find($featid) if $featid;
@@ -4497,7 +4497,7 @@ sub feat_search {
 			my $loc = "("
 			  . $feat->type->name
 			  . ") Chr:"
-			  . $feat->locations->next->chromosome . " "
+			  . ($feat->locations > 0 ? $feat->locations->next->chromosome : '') . " "
 			  . commify( $feat->start ) . "-"
 			  . commify( $feat->stop );
 			$loc =~ s/(complement)|(join)//g;
