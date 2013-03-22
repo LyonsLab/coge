@@ -240,6 +240,33 @@ sub desc
 
 ################################################ subroutine header begin ##
 
+=head2 info
+
+ Usage     : $self->info
+ Purpose   : returns a string of information about the data set.  
+
+ Returns   : returns a string
+ Argument  : none
+ Throws    : 
+ Comments  : To be used to quickly generate a string about the data set
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub info {
+	my $self = shift;
+	my $info;
+	$info .= $self->name if $self->name;
+	$info .= ": ".$self->description if $self->description;
+	$info .= " (v".$self->version.", ".$self->date.", id".$self->id. ")";
+	return $info;
+}
+
+################################################ subroutine header begin ##
+
 =head2 get_genomic_sequence 
 
  Usage     : 
@@ -452,7 +479,6 @@ See Also   :
 
 =cut
 
-################################################## subroutine header end ##
 ################################################## subroutine header end ##
 
 sub total_length
