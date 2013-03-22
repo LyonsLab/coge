@@ -457,23 +457,17 @@ function export_bed (gid) {
 	</script>
 	<br><br><hr>
 	<span style="color:dimgray;font-weight:bold;">Admin Functions</span><br>
-	<table class="small ui-widget-content ui-corner-all">
-	  <tr>
-	    <td>Assign to user:</td>
-	    <td>
-	      <input id="edit_user" onkeyup="wait_to_search(search_users, this.value);" size="10" />
-	      <span onClick="update_owner();" class='ui-button ui-corner-all ui-button-go'>Go</span>
-	    </td>
-	  </tr>
-	  <tr>
-	  	<td>
+	<div class="small">
+		Assign to user:
+	    <input id="edit_user" onkeyup="wait_to_search(search_users, this.value);" size="10" />
+	    <span onClick="update_owner();" class='ui-button ui-corner-all ui-button-go'>Go</span>
+	  	<div>
 	  	  Datasets:
-	  	  <div>
+	  	  <div style="padding-left:20px;">
 	  		<TMPL_VAR NAME="DATASETS">
 	  	  </div>
-	  	</td>
-	  </tr>
-	</table>
+	  	</div>
+	</div>
 	<br>
 </TMPL_IF> <!-- ADMIN_AREA -->
 
