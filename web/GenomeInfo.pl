@@ -387,6 +387,34 @@ sub get_experiments {
 	return $template->output;
 }
 
+sub get_datasets {
+	my %opts = @_;
+	my $gid  = $opts{gid};
+	my $genome  = $opts{genome};
+	return unless ($gid or $genome);
+
+	unless ($genome) {
+		$genome = $coge->resultset('Genome')->find($gid);
+		return unless ($genome);
+	}
+
+	my @datasets = $genome->datasets;
+	return "" unless @datasets;
+
+	my @rows;
+	foreach my $ds (sort @datasets) {
+		my %row;
+		$row{DATASET_INFO} = qq{<span>} . $ds->info . "</span>";
+		push @rows, \%row;
+	}
+
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+	$template->param( DO_DATASETS => 1,
+					  DATASET_LOOP => \@rows
+	);
+	return $template->output;
+}
+
 sub generate_html {
 	my $name = $USER->user_name;
 	$name = $USER->first_name if $USER->first_name;
@@ -429,7 +457,10 @@ sub generate_body {
 		EXPERIMENTS 	=> get_experiments(genome => $genome) 
 	);
 
-	$template->param( ADMIN_AREA => 1 ) if ($USER->is_admin);
+	if ($USER->is_admin) {
+		$template->param( ADMIN_AREA => 1,
+						  DATASETS => get_datasets(genome => $genome) );
+	}
 
 	return $template->output;
 }

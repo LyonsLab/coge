@@ -415,6 +415,14 @@ function export_bed (gid) {
 
 
 
+<TMPL_IF NAME='DO_DATASETS'>
+	<TMPL_LOOP NAME="DATASET_LOOP">
+		<TMPL_VAR NAME="DATASET_INFO"><br>
+	</TMPL_LOOP>
+</TMPL_IF>
+
+
+
 <TMPL_IF NAME='ADMIN_AREA'>
 	<script>
 	$(document).ready(function() {
@@ -456,6 +464,14 @@ function export_bed (gid) {
 	      <input id="edit_user" onkeyup="wait_to_search(search_users, this.value);" size="10" />
 	      <span onClick="update_owner();" class='ui-button ui-corner-all ui-button-go'>Go</span>
 	    </td>
+	  </tr>
+	  <tr>
+	  	<td>
+	  	  Datasets:
+	  	  <div>
+	  		<TMPL_VAR NAME="DATASETS">
+	  	  </div>
+	  	</td>
 	  </tr>
 	</table>
 	<br>
