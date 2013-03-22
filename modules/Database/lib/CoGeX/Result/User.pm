@@ -253,6 +253,10 @@ sub is_admin {
 	return shift->admin;
 }
 
+sub is_public {
+	return (shift->id == 0);	
+}
+
 ################################################ subroutine header begin ##
 
 =head2 has_access_to_...
