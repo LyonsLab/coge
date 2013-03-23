@@ -3651,6 +3651,9 @@ sub get_dotplot
 	my $color_type   = $opts{ct};
 	my $box_diags    = $opts{bd};
 	my $color_scheme = $opts{color_scheme};
+	my $fid1 = $opts{fid1};
+	my $fid2 = $opts{fid2};
+	#print STDERR Dumper \%opts;
 	$box_diags = $box_diags eq "true" ? 1 : 0;
 
 	# base=8_8.CDS-CDS.blastn.dag_geneorder_D60_g30_A5;
@@ -3669,6 +3672,8 @@ sub get_dotplot
 	$url .= ";ct=$color_type"   if $color_type;
 	$url .= ";bd=$box_diags"    if $box_diags;
 	$url .= ";cs=$color_scheme" if defined $color_scheme;
+	$url .= ";fid1=$fid1" if defined $fid1 && $fid1 =~ /^\d+$/;
+	$url .= ";fid2=$fid2" if defined $fid2 && $fid2 =~ /^\d+$/;
 	my $content = LWP::Simple::get($url);
 	unless ($content)
 	  {
