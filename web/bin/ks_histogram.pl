@@ -7,7 +7,7 @@ use Data::Dumper;
 use DBI;
 use Getopt::Long;
 use POSIX;
-use vars qw($help $ks_db $ks_type $outfile $width $height $log $pair_file $chr1 $chr2 $max $min $color_scheme);
+use vars qw($help $ks_db $ks_type $outfile $width $height $log $pair_file $chr1 $chr2 $max $min $color_scheme $fontsize);
 
 GetOptions(
 	   "ks_db|db=s"=>\$ks_db,
@@ -23,6 +23,7 @@ GetOptions(
 	   "max=s"=>\$max,
 	   "min=s"=>\$min,
 	   "color_scheme=s"=>\$color_scheme,
+	   "fontsize|fs=i" => \$fontsize,
 	   );
 
 usage() if $help;
@@ -31,7 +32,7 @@ $ks_type = "kS" unless $ks_type;
 $ks_type = uc($ks_type) if $ks_type;
 $width = 500 unless $width;
 $height = 500 unless $height;
-
+$fontsize = 8 unless $fontsize;
 my $pairs = get_pairs(file=>$pair_file, chr1=>$chr1, chr2=>$chr2) if $pair_file && -r $pair_file;
 my ($data) = get_ksdata(ks_db=>$ks_db, type=>$ks_type, pairs=>$pairs);
 my $x_title = "substitution rate for $ks_type";
@@ -86,11 +87,12 @@ $hist->set(histogram_bins=>100,
 	   title=>$title,
 	  );
 $hist->set(dclrs=>[@color_names]) if scalar @color_names;
-$hist->set_x_label_font("/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf",8);
-$hist->set_y_label_font("/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf",8);
-$hist->set_x_axis_font("/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf",8);
-$hist->set_y_axis_font("/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf",8);
-$hist->set_values_font("/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf",8);
+$hist->set_title_font("/usr/lib/perl5/CoGe/fonts/arial.ttf",$fontsize);
+$hist->set_x_label_font("/usr/lib/perl5/CoGe/fonts/arial.ttf",$fontsize);
+$hist->set_y_label_font("/usr/lib/perl5/CoGe/fonts/arial.ttf",$fontsize);
+$hist->set_x_axis_font("/usr/lib/perl5/CoGe/fonts/arial.ttf",$fontsize);
+$hist->set_y_axis_font("/usr/lib/perl5/CoGe/fonts/arial.ttf",$fontsize);
+$hist->set_values_font("/usr/lib/perl5/CoGe/fonts/arial.ttf",$fontsize);
 my $gd = $hist->plot(data=>\@data);
 if ($outfile)
   {
