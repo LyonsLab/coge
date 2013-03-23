@@ -49,6 +49,8 @@ my $relationship = $FORM->param('ar');
 my $box_diags = $FORM->param('bd');
 my $color_type = $FORM->param('ct');
 my $color_scheme = $FORM->param('cs');
+my $fid1 = $FORM->param('fid1');
+my $fid2 = $FORM->param('fid2');
 $box_diags = 1 if $box_diags && $box_diags eq "true";
 $grid = 1 unless defined $grid;
 $DEBUG=1 if $FORM->param('debug');
@@ -97,7 +99,7 @@ $outfile =~ s/://g;
 $outfile =~ s/;//g;
 $outfile = $dir."/html/".$basename.$outfile;
 #my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoords", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, grid=>$grid, ksdb=>$ksdb, kstype=>$kstype, log=>$log, min=>$min, max=>$max, metric=>$metric);
-my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, grid=>$grid, ksdb=>$ksdb, kstype=>$kstype, log=>$log, min=>$min, max=>$max, metric=>$metric, relationship=>$relationship, box_diags=>$box_diags, color_type=>$color_type, color_scheme=>$color_scheme);
+my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, grid=>$grid, ksdb=>$ksdb, kstype=>$kstype, log=>$log, min=>$min, max=>$max, metric=>$metric, relationship=>$relationship, box_diags=>$box_diags, color_type=>$color_type, color_scheme=>$color_scheme, fid1=>$fid1, fid2=>$fid2);
 if ($res)
   {
     $res=~s/$DIR/$URL/;
@@ -133,6 +135,8 @@ sub generate_dotplot
     my $outfile = $opts{outfile};
     my $dsgid1 = $opts{dsgid1};
     my $dsgid2 = $opts{dsgid2};
+    my $fid1 = $opts{fid1};
+    my $fid2 = $opts{fid2};
     my $qchr = $opts{qchr};
     my $schr = $opts{schr};
     my $flip = $opts{flip} || 0; 
@@ -167,6 +171,8 @@ sub generate_dotplot
     $outfile .= ".cs$color_scheme" if defined $color_scheme;
     $outfile .= ".$min" if defined $min && $min =~/\d/;
     $outfile .= ".$max" if defined $max && $max =~/\d/;
+    $outfile .= ".$fid1" if $fid1;
+    $outfile .= ".$fid2" if $fid2;
 
     my $tmp = $outfile;
     $tmp .= ".$min" if defined $min && $min =~/\d/;
@@ -178,6 +184,8 @@ sub generate_dotplot
       }
 
     $cmd .= qq{ -d $dag -a "$coords" -b "$outfile" -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 1 -chr1 "$qchr" -chr2 "$schr" -flip $flip -grid 1};
+    $cmd .= qq{ -fid1 $fid1} if $fid1;
+    $cmd .= qq{ -fid2 $fid2} if $fid2;
     $cmd .= qq { -am $metric} if $metric;
     $cmd .= qq { -fb} if $relationship && $relationship =~/s/i;
     $cmd .= qq { -cdt $color_type} if $color_type;
