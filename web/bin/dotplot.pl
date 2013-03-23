@@ -14,7 +14,7 @@ use DBI;
 use POSIX;
 use Sort::Versions;
 
-use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order $font $GZIP $GUNZIP $URL $conffile $skip_random $force_box $chr_order $dotsize);
+use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order $font $GZIP $GUNZIP $URL $conffile $skip_random $force_box $chr_order $dotsize $linesize);
 #17:1:14:5:7:18:3:4:11:9:13:6:8:12:10:19:2:15:16
 
 
@@ -55,6 +55,7 @@ GetOptions(
 	   "force_box|fb" => \$force_box, #flag to make dotplot dimensions a box instead of relative on genomic content
 	   "chr_order|co=s" => \$chr_order, #string of ":" delimted chromosome name order to display for the genome with fewer chromosomes
 	   "dotsize|ds=i"=>\$dotsize, #size of dots in dotplot
+	   "linesize|ls=i"=>\$linesize, #size of lines in dotplot
 	   );
 $selfself = 1 unless defined $selfself;
 $labels = 1 unless defined $labels;
@@ -211,6 +212,7 @@ if ($ks_db)
 #    $cmd .= ".$MIN" if defined $MIN;
 #    $cmd .= ".$MAX" if defined $MAX;
     $cmd .= ".hist.png";
+    print STDERR "HIST: ",$cmd,"\n";
     `$cmd &`;
   }
 
@@ -223,7 +225,7 @@ my $pairs = get_pairs(file=>$alignfile, chr1=>$CHR1, chr2=>$CHR2) if $alignfile 
 #Magic happens here.
 #Link type seems to indicate the type of tile; i.e. a 'master' (a large, all chromosome) or a blow up of a two chromosome intersection
 #draw_chromosome_grid draws either the black chomosome lines, or the light green tile lines, so its always called in addition to the draw_dots function.
-my $coords = draw_chromosome_grid(gd=>$graphics_context, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link=>$link, link_type=>$link_type, flip=>$flip, grid=>$grid, color=>$grey);
+my $coords = draw_chromosome_grid(gd=>$graphics_context, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link=>$link, link_type=>$link_type, flip=>$flip, grid=>$grid, color=>$grey, linesize=>$linesize);
 
 my $x_labels_gd = draw_x_labels(coords=>$coords, axis=>'x') if $labels;
 my $y_labels_gd = draw_y_labels(coords=>$coords, axis=>'y') if $labels;
@@ -308,6 +310,7 @@ $size = 5 if $x_pix_per_bp >5;
 $size = 5 if $y_pix_per_bp >5;
 $size = $dotsize if $dotsize;
 
+
 #print STDERR $alignfile,"\n";
 my $box_coords = draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, size=>$size, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log, metric=>$axis_metric, colors=>\@colors, color_type=>$color_type, color_scheme=>$color_scheme, fid1=>$fid1, fid2=>$fid2);
 
@@ -378,7 +381,6 @@ sub draw_dots
     my $order1 = $opts{order1}; #chromosome display order for genome 1
     my $order2 = $opts{order2}; #chromosome display order for genome 2
     my $color_scheme = $opts{color_scheme}; #color pattern for Ks/Kn caluclations
-
     #easier lookup, can scale to more pairs in the future
     my %fids;
     $fids{$fid1}=1 if $fid1;
@@ -729,6 +731,8 @@ sub draw_chromosome_grid
     my $link_type = $opts{link_type};
     my $grid = $opts{grid};
     my $color = $opts{color};
+    my $linesize = $opts{linesize};
+
     $color = $black unless $color;
     my $height = $graphics_context->height;
     my $width = $graphics_context->width;
@@ -758,7 +762,14 @@ sub draw_chromosome_grid
 		$graphics_context->line($tmp, 0, $tmp, $graphics_context->height, $span_color);		#Draw green lines?
 	      }
 	  }
-	$graphics_context->line($x, 0, $x, $graphics_context->height, $color);					#Draw black line
+	if ($linesize)
+	  {
+	    $graphics_context->filledRectangle($x-($linesize/2), 0, $x+($linesize/2), $graphics_context->height, $color);					#Draw black line
+	  }
+	else
+	  {
+	    $graphics_context->line($x, 0, $x, $graphics_context->height, $color);					#Draw black line
+	  }
 	$str_color = $org1->{$chr}{rev} ? $red : $black;
 #	if ($labels)
 	  # {#Draws name of chromosome
@@ -792,8 +803,14 @@ sub draw_chromosome_grid
 		$graphics_context->line(0, $tmp, $graphics_context->width, $tmp, $span_color);
 	      }
 	  }
-
-	$graphics_context->line(0, $y, $graphics_context->width, $y, $color);
+	if ($linesize)
+	  {
+	    $graphics_context->filledRectangle(0, $y-($linesize/2), $graphics_context->width, $y+($linesize/2), $color);
+	  }
+	else
+	  {
+	    $graphics_context->line(0, $y, $graphics_context->width, $y, $color);
+	  }
 	$str_color = $org2->{$chr}{rev} ? $red : $black;
 #	$graphics_context->string(gdSmallFont, 2, $y-15, $chr, $str_color) if $labels;
 	$data{y}{$pchr}=[$y, $pv, $str_color] if defined $pchr;
