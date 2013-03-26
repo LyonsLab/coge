@@ -363,7 +363,7 @@ sub load_experiment {
 		push @files, $fullpath;
 	}
 
-	print $log "Calling bin/load_experiment.pl ...\n";
+	print $log "Calling $BINDIR/load_experiment.pl ...\n";
 	my $cmd = "$BINDIR/load_experiment.pl " .
 			  "-user_name $user_name " .
 			  '-name "' . escape($name) . '" ' .
@@ -542,14 +542,14 @@ sub generate_html {
 sub generate_body {
 	if ($USER->user_name eq 'public') {
 		my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-		$template->param( PAGE_NAME => "$PAGE_TITLE" );
+		$template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
 		$template->param( LOGIN     => 1 );
 		return $template->output;
 	}
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
 	$template->param( MAIN => 1 );
-	$template->param( PAGE_NAME => $PAGE_TITLE  );
+	$template->param( PAGE_NAME => "$PAGE_TITLE.pl"  );
 	
 	my $gid = $FORM->param('gid');
 	if ($gid) {

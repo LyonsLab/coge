@@ -1,6 +1,4 @@
 <TMPL_IF NAME='MAIN'>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
 
 <SCRIPT language="JavaScript">
@@ -178,6 +176,11 @@ function get_load_experiment_log(load_id) {
 			timestamp: new Date().getTime()
 		},
 		success : function(data) {
+			if (!data) { // workaround for issue #45, jquery intermittently dropping payload
+				setTimeout(function() { get_load_experiment_log(load_id); }, 1000);
+				return;
+			}
+					
 			var obj = jQuery.parseJSON(data);
 			
 			$('#load_experiment_log').html(obj.log);
@@ -284,7 +287,6 @@ function get_sources () {
 </SCRIPT>
 
 
-<span style="color:dimgray;font-weight:bold;">Experiment Info</span><br>
 <table class="small ui-widget-content ui-corner-all">
   <tr>
     <td>Name:</td>
