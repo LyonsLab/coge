@@ -59,7 +59,7 @@ $source_name = unescape($source_name);
 # Open log file
 $| = 1;
 my $logfile = "$staging_dir/log.txt";
-open(my $log, ">>$logfile") or die "Error opening log file";
+open(my $log, ">>$logfile") or die "Error opening log file $logfile";
 $log->autoflush(1);
 
 # Open system config file
@@ -74,7 +74,7 @@ if (not $FASTBIT_LOAD or not $FASTBIT_QUERY or not -e $FASTBIT_LOAD or not -e $F
 }
 
 # Validate the data file
-print $log "log: Validating $data_file\n";
+print $log "log: Validating data file\n";
 
 my $count = 0;
 my $pChromosomes;
@@ -84,7 +84,7 @@ if (not $count) {
 }
 
 my ($filename) = $data_file =~ /^.+\/([^\/]+)$/;
-print $log "log: Successfully read $count lines\n";
+print $log "log: Successfully read " . commify($count) . " lines\n";
 
 # Connect to database
 my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
@@ -225,10 +225,10 @@ sub validate_data_file {
 		next if ($line =~ /^\s*#/);
 		chomp $line;
 		my @tok = split(/,/, $line);
-		unless (@tok >= $MIN_COLUMNS && @tok <= $MAX_COLUMNS)
-		  {
-		    @tok = split (/\s+/,$line);
-		  }
+		# If comma-delimited parsing didn't work try white-space delimited
+		unless (@tok >= $MIN_COLUMNS && @tok <= $MAX_COLUMNS) {
+			@tok = split (/\s+/,$line);
+		}
 		# Validate format
 		if (@tok < $MIN_COLUMNS) {
 			print $log "log: error at line $line_num: more columns expected (" . @tok . "< $MIN_COLUMNS\n";
@@ -267,4 +267,10 @@ sub validate_data_file {
 	close($in);
 	close($out);
 	return ($outfile, $line_num, \%chromosomes);
+}
+
+sub commify {
+	my $text = reverse $_[0];
+	$text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
+	return scalar reverse $text;
 }
