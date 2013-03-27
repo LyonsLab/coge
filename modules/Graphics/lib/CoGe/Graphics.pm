@@ -873,11 +873,22 @@ sub process_experiment
 	my $expid = $opts{expid};
 	my $c = $opts{c};
 	my $color=$opts{color};
+	
 	##we will need to abstract out the call to the data engine in order for this to be compatible on systems with multiple intsallations of coge using different databases
 	my $url = "http://genomevolution.org/CoGe/bin/fastbit_query.pl?exp_id=$expid;chr=$chr;start=$start;stop=$stop";
-	my $cmd = "curl '$url'";
-	print STDERR "$cmd\n";
-	my $result = `$cmd`;
+	
+# mdb removed 3/26/13
+#	my $cmd = "curl '$url'";
+#	print STDERR "$cmd\n";
+#	my $result = `$cmd`;
+	
+	# mdb added 3/26/13
+	#my $url = "http://geco.iplantcollaborative.org/mbomhoff/CoGe/bin/fastbit_query.pl?exp_id=$expid;chr=$chr;start=$start;stop=$stop";
+	#print STDERR "$url \n";
+	my $result = LWP::Simple::get($url);
+	#print STDERR "$result\n";
+	return unless $result;
+	
 	my $data = decode_json($result);
 	foreach my $quant (@{$data->{results}})
 	{
