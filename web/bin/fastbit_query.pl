@@ -69,7 +69,7 @@ my $t3 = new Benchmark;
 # -v 2 option.  Output parsing was modified accordingly for new output format.
 #my $cmd = "$CMDPATH -d $exp_storage_path -q \"select chr,start,stop,strand,value1,value2 where chr='$chr' and start > $start and stop < $stop\" 2>&1"; # mdb removed 3/27/13 issue 61
 my $cmd = "$CMDPATH -v 1 -d $exp_storage_path -q \"select chr,start,stop,strand,value1,value2 where 0.0=0.0 and chr='$chr' and start > $start and stop < $stop limit 999999999\" 2>&1"; # mdb added 3/27/13 issue 61
-#print STDERR $cmd;
+#print STDERR "$cmd\n";
 my @cmdOut = qx{$cmd};
 #print STDERR $cmdOut;
 my $cmdStatus = $?;
@@ -94,7 +94,7 @@ foreach (@cmdOut) { # mdb rewritten 3/27/13 issue 61
 
 my $t5 = new Benchmark;
 print "Content-type: text/json\n\n";
-print STDERR qq{{"results" : [$results]}} . "\n";
+#print STDERR qq{{"results" : [$results]}}."\n";
 print qq{{"results" : [$results]}};
 	
 #print STDERR "Initialize CoGe: ". timestr( timediff( $t2, $t1 ) ),"\n",
