@@ -68,7 +68,7 @@ my $t3 = new Benchmark;
 # format (see jira thread for explanation) so "0.0=0.0" was added along with
 # -v 2 option.  Output parsing was modified accordingly for new output format.
 #my $cmd = "$CMDPATH -d $exp_storage_path -q \"select chr,start,stop,strand,value1,value2 where chr='$chr' and start > $start and stop < $stop\" 2>&1"; # mdb removed 3/27/13 issue 61
-my $cmd = "$CMDPATH -v 2 -d $exp_storage_path -q \"select chr,start,stop,strand,value1,value2 where 0.0=0.0 and chr='$chr' and start > $start and stop < $stop\" 2>&1"; # mdb added 3/27/13 issue 61
+my $cmd = "$CMDPATH -v 1 -d $exp_storage_path -q \"select chr,start,stop,strand,value1,value2 where 0.0=0.0 and chr='$chr' and start > $start and stop < $stop limit 9999999\" 2>&1"; # mdb added 3/27/13 issue 61
 #print STDERR $cmd;
 my $cmdOut = qx{$cmd};
 #print STDERR $cmdOut;
@@ -85,7 +85,7 @@ foreach (@lines)  { # mdb rewritten 3/27/13 issue 61, could be optimized or perh
 		s/"//g;
 		s/, /,/g;
 		my @items = split(/,/);
-		next if (@items != $NUM_COL || $items[0] !~ /$chr/);
+		next if (@items != $NUM_COL || $items[0] !~ /^\"?$chr/);
 		for (my $i =0; $i<@items; $i++) {
 			$items[$i] = 1 if $items[$i] !~ /\w/;
 		}
