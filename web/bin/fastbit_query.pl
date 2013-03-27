@@ -68,26 +68,24 @@ my $t3 = new Benchmark;
 # format (see jira thread for explanation) so "0.0=0.0" was added along with
 # -v 2 option.  Output parsing was modified accordingly for new output format.
 #my $cmd = "$CMDPATH -d $exp_storage_path -q \"select chr,start,stop,strand,value1,value2 where chr='$chr' and start > $start and stop < $stop\" 2>&1"; # mdb removed 3/27/13 issue 61
-my $cmd = "$CMDPATH -v 1 -d $exp_storage_path -q \"select chr,start,stop,strand,value1,value2 where 0.0=0.0 and chr='$chr' and start > $start and stop < $stop limit 9999999\" 2>&1"; # mdb added 3/27/13 issue 61
+my $cmd = "$CMDPATH -v 1 -d $exp_storage_path -q \"select chr,start,stop,strand,value1,value2 where 0.0=0.0 and chr='$chr' and start > $start and stop < $stop limit 999999999\" 2>&1"; # mdb added 3/27/13 issue 61
 #print STDERR $cmd;
-my $cmdOut = qx{$cmd};
+my @cmdOut = qx{$cmd};
 #print STDERR $cmdOut;
 my $cmdStatus = $?;
 die "Error executing command $CMDPATH ($cmdStatus)" if ($cmdStatus != 0);
 my $t4 = new Benchmark;
 
 # Convert FastBit output into JSON
-my $results;
-
-my @lines = split("\n", $cmdOut);
-foreach (@lines)  { # mdb rewritten 3/27/13 issue 61, could be optimized or perhaps there is a better way to grab ouput (such as -o file option)
-	if (my @fields = /\"?([\w\.\+\-\_]*)\"?\,/g) { # result line
+my $results = '';
+foreach (@cmdOut) { # mdb rewritten 3/27/13 issue 61
+	chomp;
+	if (/^\"$chr\"/) { # potential result line
 		s/"//g;
-		s/, /,/g;
-		my @items = split(/,/);
-		next if (@items != $NUM_COL || $items[0] !~ /^\"?$chr/);
+		my @items = split(/,\s*/);
+		next if (@items != $NUM_COL || $items[0] !~ /^\"?$chr/); # make sure it's a row output line
 		for (my $i =0; $i<@items; $i++) {
-			$items[$i] = 1 if $items[$i] !~ /\w/;
+			$items[$i] = 1 if $items[$i] !~ /\w/; # what's this for?
 		}
 		$results .= ',' if ($results);
 		$results .= '[' . join(',', map {"\"$_\""} @items) . ']';
@@ -96,6 +94,7 @@ foreach (@lines)  { # mdb rewritten 3/27/13 issue 61, could be optimized or perh
 
 my $t5 = new Benchmark;
 print "Content-type: text/json\n\n";
+print STDERR qq{{"results" : [$results]}} . "\n";
 print qq{{"results" : [$results]}};
 	
 #print STDERR "Initialize CoGe: ". timestr( timediff( $t2, $t1 ) ),"\n",
