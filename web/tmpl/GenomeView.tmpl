@@ -178,12 +178,13 @@
             gbox.setVisibility(<TMPL_VAR NAME="GBOX">);
             map.addLayer(gbox);
 
-	    <TMPL_VAR NAME="DYNAMIC_LAYERS_ADD">
- 	    <TMPL_IF NAME="QUANT_LAYER">
-            </TMPL_IF>
+        genes.setVisibility(<TMPL_VAR NAME="GENES">);
+        map.addLayer(genes);
 
-            genes.setVisibility(<TMPL_VAR NAME="GENES">);
-            map.addLayer(genes);
+	    <TMPL_VAR NAME="DYNAMIC_LAYERS_ADD">
+	    
+ 	    <TMPL_IF NAME="QUANT_LAYER">
+        </TMPL_IF>
 
  	    <TMPL_IF NAME="TE_LAYER">
             transposable.setVisibility(<TMPL_VAR NAME="TE">);
@@ -329,7 +330,7 @@
      
      function info_popup(position_str) {
        var url = 'FeatAnno.pl?chr='+ chr + '&version='+version+'&org='+org+'&loc='
-       + parseInt(bp.element.innerHTML) +'&ds='+ds+'&gstid='+gstid+'&name_only='+1;
+       + parseInt(bp.element.innerHTML) +'&ds='+ds+'&dsg='+dsg+'&gstid='+gstid+'&name_only='+1;
        jfetch(url,'short_anno_popup');
        $('#short_anno_popup').dialog('open');
      }
@@ -341,7 +342,7 @@
         function query(x){
            var url = 'FeatAnno.pl?chr='
            + chr + '&version='+version+'&org='+org+'&loc='
-           + x+'&ds='+ds+'&gstid='+gstid; 
+           + x+'&ds='+ds+'&dsg='+dsg+'&gstid='+gstid; 
 	   $('#query_popup').html(' ');
            jfetch(url,'query_popup');
            $('#query_popup').dialog('open');
@@ -371,19 +372,19 @@
   }
  }
 
-function launch_seqview(dsid, chr, gstid)
+function launch_seqview(dsid, chr, gstid, dsgid)
  {
    start = $('#grab_from').val();
    stop = $('#grab_to').val();
-   if (stop > 0) {window.open("SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop+"&gstid="+gstid);}
+   if (stop > 0) {window.open("SeqView.pl?dsid="+dsid+"&dsgid="+dsg+"&chr="+chr+"&start="+start+"&stop="+stop+"&gstid="+gstid);}
    else {alert("stop position is: "+stop)};
  }
 
-function launch_featlist(dsid, chr, gstid)
+function launch_featlist(dsid, chr, gstid, dsgid)
  {
    start = $('#grab_from').val();
    stop = $('#grab_to').val();
-   if (stop > 0) {window.open("FeatList.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop+"&gstid="+gstid);}
+   if (stop > 0) {window.open("FeatList.pl?dsid="+dsid+"&dsgid="+dsg+"&chr="+chr+"&start="+start+"&stop="+stop+"&gstid="+gstid);}
    else {alert("stop position is: "+stop)};
  }
 
@@ -499,8 +500,8 @@ Window Width: <input type=textbox class=backbox size=4 id="width" onkeypress="on
 <span id="set_range" style="display:none" > 
   <input type=text id='grab_from' value=0> to <input type=text id="grab_to" value=0> 
  </span>
- <span id="grab_seq" style="display:none" class='ui-button ui-corner-all' onClick="launch_seqview('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>')"> View Sequence</span>
- <span id="extract_feat" style="display:none" class='ui-button ui-corner-all' onClick="launch_featlist('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>')">Get Features</span>
+ <span id="grab_seq" style="display:none" class='ui-button ui-corner-all' onClick="launch_seqview('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>','<TMPL_VAR NAME=DSG>')"> View Sequence</span>
+ <span id="extract_feat" style="display:none" class='ui-button ui-corner-all' onClick="launch_featlist('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>','<TMPL_VAR NAME=DSG>')">Get Features</span>
 </div>
 
 <div align="right">

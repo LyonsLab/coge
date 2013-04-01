@@ -91,13 +91,13 @@ sub gen_body
 	$dsgid       = $form->param('gid')   if $form->param('gid');
 	$show_legend = $form->param('sl')    if $form->param('sl');
 	$prefs = CoGe::Accessory::Web::load_settings( user => $USER, page => $PAGE_NAME, coge => $coge );
-	my ( $ds, $dsg, $gst );
+	my ( @ds, $dsg, $gst );
 
 	if ($fid)
 	{
 		my $feat = $coge->resultset('Feature')->find($fid);
 		$chr = $feat->chromosome;
-		$ds  = $feat->dataset;
+		push @ds, $feat->dataset;
 		$loc = $feat->start;
 	}
 	if ($dsgid)
@@ -105,17 +105,17 @@ sub gen_body
 		$dsg = $coge->resultset('Genome')->find($dsgid);
 		return "unable to find genome for $dsgid" unless $dsg;
 		$gst = $dsg->type;
-		($ds) = $dsg->datasets( chr => $chr );
-		my @ds = $dsg->datasets();
+		($chr) = $dsg->chromosomes unless ($chr);
+		@ds = $dsg->datasets( chr => $chr );
 	}
 
 	if ($dsid)
 	{
-		$ds = $coge->resultset('Dataset')->find($dsid);
+		push @ds, $coge->resultset('Dataset')->find($dsid);
 	}
 	unless ($dsg)
 	{
-		foreach my $dsgt ( sort { $a->genomic_sequence_type_id <=> $b->genomic_sequence_type_id } $ds->genomes )
+		foreach my $dsgt ( sort { $a->genomic_sequence_type_id <=> $b->genomic_sequence_type_id } $ds[0]->genomes )
 		{
 			last if $dsgid;
 			if ( $gstid && $dsgt->genomic_sequence_type_id == $gstid )
@@ -132,15 +132,16 @@ sub gen_body
 	}
 
 	$gst   = $dsg->type;
-	$dsid  = $ds->id;
 	$dsgid = $dsg->id;
 	$gstid = $gst->id;
 	my $ver        = $dsg->version;
-	my $org        = $ds->organism->name;
-	my $chr_length = $ds->last_chromosome_position($chr);
+	my $org        = $ds[0]->organism->name;
+	my $chr_length = $ds[0]->last_chromosome_position($chr);
 
 	my @feat_types;
-	my $query = qq{select distinct(feature_type_id) from feature where dataset_id = $dsid};
+	my $in_clause = "IN (". (join ",", map{$_->id} @ds).")"; 
+	#my $query = qq{select distinct(feature_type_id) from feature where dataset_id = $dsid};
+	my $query = qq{select distinct(feature_type_id) from feature where dataset_id $in_clause};
 	my $dbh   = DBI->connect( $connstr, $DBUSER, $DBPASS );
 	my $sth   = $dbh->prepare($query);
 	$sth->execute;
@@ -248,21 +249,20 @@ $layer_name.setVisibility(0);
 	my ($gevo_group) = $coge->resultset('AnnotationTypeGroup')->search( { name => "gevo link" } );
 	if ($gevo_group)
 	{
-		my ($anno) = $coge->resultset('FeatureAnnotation')->count( { 'feature.dataset_id' => $dsid, 'annotation_type.annotation_type_group_id' => $gevo_group->id }, { join => [ 'feature', 'annotation_type' ], limit => 1 } );
+		my ($anno) = $coge->resultset('FeatureAnnotation')->count( { 'feature.dataset_id' => [map{$_->id} @ds], 'annotation_type.annotation_type_group_id' => $gevo_group->id }, { join => [ 'feature', 'annotation_type' ], limit => 1 } );
 		$template->param( GEVO_LINK_LAYER => 1 ) if ($anno);
 	}
 
 	my ($tandem_group) = $coge->resultset('AnnotationTypeGroup')->search( { name => "Tandem duplicates" } );
 	if ($tandem_group)
 	{
-		my ($anno) = $coge->resultset('FeatureAnnotation')->count( { 'feature.dataset_id' => $dsid, 'annotation_type.annotation_type_group_id' => $tandem_group->id }, { join => [ 'feature', 'annotation_type' ], limit => 1 } );
+		my ($anno) = $coge->resultset('FeatureAnnotation')->count( { 'feature.dataset_id' => [map{$_->id} @ds], 'annotation_type.annotation_type_group_id' => $tandem_group->id }, { join => [ 'feature', 'annotation_type' ], limit => 1 } );
 		$template->param( LOCAL_DUP_LAYER => 1 ) if $anno;
 	}
-
 	$template->param( CHR           => $chr );
 	$template->param( VER           => $ver );
 	$template->param( ORG           => $org );
-	$template->param( DS            => $dsid );
+	$template->param( DS            => $dsid ) unless $dsgid;
 	$template->param( DSG           => $dsgid );
 	$template->param( LOC           => $loc );
 	$template->param( ZOOM          => $z );
@@ -292,7 +292,7 @@ $layer_name.setVisibility(0);
 	my $org_name = "<span class=link onclick=window.open('OrganismView.pl?dsgid=$dsgid')>$org (v$ver),";
 	$org_name .= " " . $dsg->name         if $dsg->name;
 	$org_name .= ": " . $dsg->description if $dsg->description;
-	$org_name .= " Chromosome: $chr " . $gst->name . " (dsgid$dsgid dsid$dsid)</span>";
+	$org_name .= " Chromosome: $chr " . $gst->name . " (dsgid$dsgid dsid".join (",", map {$_->id} @ds).")</span>";
 	return $html, $org_name;
 }
 
