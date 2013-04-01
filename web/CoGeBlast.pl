@@ -1831,25 +1831,22 @@ sub get_nearby_feats {
 		$chr    = $info->{schr};
 	}
 	my $dsg  = $coge->resultset('Genome')->find($dsgid);
-	my $ds   = $dsg->datasets( chr => $chr );
-	my $dsid = $ds->id;
+	my $dsids = join(',', map { $_->id } $dsg->datasets(chr => $chr));
 	my ( $start, $stop ) = ( $sstart, $sstop );
 	my @feat;
 	my $count  = 0;
 	my $mid    = ( $stop + $start ) / 2;
 	my $cogedb = DBI->connect( $connstr, $DBUSER, $DBPASS );
-	my $query  = qq!
-
+	my $query  = qq{
 select * from (
-  (SELECT * FROM ((SELECT * FROM feature where start<=$mid and dataset_id = $dsid and chromosome = '$chr' ORDER BY start DESC  LIMIT 10) 
-   UNION (SELECT * FROM feature where start>=$mid and dataset_id = $dsid and chromosome = '$chr' ORDER BY start LIMIT 10)) as u)
+  (SELECT * FROM ((SELECT * FROM feature where start<=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY start DESC  LIMIT 10) 
+   UNION (SELECT * FROM feature where start>=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY start LIMIT 10)) as u)
   UNION
-  (SELECT * FROM ((SELECT * FROM feature where stop<=$mid and dataset_id = $dsid and chromosome = '$chr' ORDER BY stop   DESC  LIMIT 10) 
-   UNION (SELECT * FROM feature where stop>=$mid and dataset_id = $dsid and chromosome = '$chr' ORDER BY stop LIMIT 10)) as v)
+  (SELECT * FROM ((SELECT * FROM feature where stop<=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY stop DESC  LIMIT 10) 
+   UNION (SELECT * FROM feature where stop>=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY stop LIMIT 10)) as v)
    ) as w
-order by abs((start + stop)/2 - $mid) LIMIT 10
+order by abs((start + stop)/2 - $mid) LIMIT 10};
 
-!;
 	my $handle = $cogedb->prepare($query);
 	$handle->execute();
 	my $new_checkbox_info;
