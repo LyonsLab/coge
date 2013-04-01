@@ -1394,10 +1394,11 @@ sub reverse_complement
 sub distinct_feature_type_ids
 {
 	my $self = shift;
-	my %ids = map { $_->id => 1 } 
+	my %ids = map { $_->feature_type_id => 1 } 
 		$self->features({}, {
-			select => [ { distinct => "me.feature_type_id" } ],
-			as     => ["feature_type_id"] });
+			columns => [ qw/feature_type_id/ ],
+			distinct => 1
+		});
 	return wantarray ? keys %ids : [ keys %ids ];
 }
 

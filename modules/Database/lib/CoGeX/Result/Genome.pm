@@ -203,7 +203,7 @@ sub datasets {
 	$chr = $opts{chromosome} unless defined $chr;
 	my $restricted = $opts{restricted};
 	
-	my @datasets;
+	my %datasets;
 	foreach my $dsc ( $self->dataset_connectors() ) {
 		my $ds = $dsc->dataset;
 		next if ($restricted and not $ds->restricted);
@@ -213,14 +213,14 @@ sub datasets {
 			#	print STDERR $ds_chr,"\n";
 			#	return $dsc->dataset if $ds_chr eq $chr;
 			#return $ds if $ds->has_chromosome( chr => $chr );
-			push @datasets, $ds;
+			$datasets{$ds->id} = $ds;
 			#}
 		}
 		else {
-			push @datasets, $ds;
+			$datasets{$ds->id} = $ds;
 		}
 	}
-	return wantarray ? @datasets : \@datasets;
+	return wantarray ? values %datasets : [ values %datasets];
 }
 
 ################################################ subroutine header begin ##
