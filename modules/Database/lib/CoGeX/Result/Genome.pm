@@ -212,7 +212,8 @@ sub datasets {
 			#foreach my $ds_chr ($dsc->dataset->chromosomes) {
 			#	print STDERR $ds_chr,"\n";
 			#	return $dsc->dataset if $ds_chr eq $chr;
-			return $ds if $ds->has_chromosome( chr => $chr );
+			#return $ds if $ds->has_chromosome( chr => $chr );
+			push @datasets, $ds;
 			#}
 		}
 		else {

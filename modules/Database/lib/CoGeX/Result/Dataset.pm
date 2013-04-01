@@ -1394,22 +1394,11 @@ sub reverse_complement
 sub distinct_feature_type_ids
 {
 	my $self = shift;
-	my %opts = @_;
-	my $type = $opts{type};      #not used. . .
-	my @ids;
-	foreach my $id (
-									 $self->features(
-																		{},
-																		{
-																			select => [ { distinct => "me.feature_type_id" } ],
-																			as     => ["feature_type_id"],
-																		}
-									 )
-		)
-	{
-		print STDERR $id, "\n";
-	}
-	return wantarray ? @ids : \@ids;
+	my %ids = map { $_->id => 1 } 
+		$self->features({}, {
+			select => [ { distinct => "me.feature_type_id" } ],
+			as     => ["feature_type_id"] });
+	return wantarray ? keys %ids : [ keys %ids ];
 }
 
 sub translation_type

@@ -165,18 +165,26 @@ sub get_features_in_region
     my $chr = $opts{chr};
     $chr = $opts{chromosome} unless defined $chr;
     my $dataset_id = $opts{dataset} || $opts{dataset_id} || $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID} ;
+    my $genome_id = $opts{gid};
     my $count_flag = $opts{count} || $opts{COUNT};
     my $ftid = $opts{ftid};
     if (ref ($ftid) =~ /array/i)
       {
 	$ftid = undef unless @$ftid;
       }
+    my @dsids;
+    push @dsids, $dataset_id if $dataset_id;
+    if ($genome_id)
+     {
+       my $genome = $self->resultset('Genome')->find($genome_id);
+       push @dsids, map {$_->id} $genome->datasets if $genome;
+     }
     if ($count_flag)
       {
 	return $self->resultset('Feature')->count(
 						  {
 						   "me.chromosome" => $chr,
-						   "me.dataset_id" => $dataset_id,
+						   "me.dataset_id" => [@dsids],
 						   -and=>[
 							  "me.start" =>  {"<="=> $stop},
 							  "me.stop" =>   {">=" =>$start},
@@ -204,7 +212,7 @@ sub get_features_in_region
 						 );
       }
     my %search = ("me.chromosome" => $chr,
-                 "me.dataset_id" => $dataset_id,
+                 "me.dataset_id" => [@dsids],
 		  -and=>[
 			 "me.start" =>  {"<="=> $stop},
 			 "me.stop" =>   {">=" =>$start},
