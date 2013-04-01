@@ -161,7 +161,7 @@ function load_annotation() {
 		},
 		success : function(load_id) {
 			$('#load_dialog').dialog('open');
-			setTimeout(function() { get_load_log(load_id); }, LOG_POLL_TIME);
+			setTimeout(function() { get_load_log(load_id); }, LOG_POLL_TIME/2);
 		}
 	});
 }
