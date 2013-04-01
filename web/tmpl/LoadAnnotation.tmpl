@@ -289,18 +289,16 @@ function get_sources () {
 		},
 	});
 }
+
+function more() {
+	$('#more').hide();
+	$('#edit_name').closest('tr').fadeIn();
+	$('#edit_description').closest('tr').fadeIn();
+}
 </SCRIPT>
 
 
 <table class="small ui-widget-content ui-corner-all">
-  <tr>
-    <td>Name:</td>
-    <td><input id="edit_name" type="textbox" size="58" value="<TMPL_VAR NAME='NAME'>" /></td>
-  </tr>
-  <tr>
-    <td>Description:</td>
-    <td><textarea id="edit_description" rows=5 cols=50 ><TMPL_VAR NAME='DESC'></textarea></td>
-  </tr>
   <tr>
     <td>Version:</td>
     <td><input id="edit_version" type="textbox" size="10" value="<TMPL_VAR NAME='NAME'>" /></td>
@@ -329,6 +327,17 @@ function get_sources () {
       <table id='file_table' class="small"></table>
       <span id="select_file_button" onClick="$('#file_select_dialog').dialog('open');" class='ui-button ui-corner-all'> Select Data File</span>
     </td>
+  </tr>
+  <tr id='more'>
+    <td colspan="2"><span class="link" onclick="more();">more...</span></td>
+  </tr>
+  <tr style='display:none;'>
+    <td>Name:</td>
+    <td><input id="edit_name" type="textbox" size="58" value="<TMPL_VAR NAME='NAME'>" /></td>
+  </tr>
+  <tr style='display:none;'>
+    <td>Description:</td>
+    <td><textarea id="edit_description" rows=5 cols=50 ><TMPL_VAR NAME='DESC'></textarea></td>
   </tr>
 </table>
 
