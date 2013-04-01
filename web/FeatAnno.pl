@@ -13,7 +13,7 @@ use CoGe::Accessory::LogUser;
 no warnings 'redefine';
 
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $FID $DS $CHR $LOC $ORG $VERSION $START $STOP $NAME_ONLY $coge $GSTID $COOKIE_NAME);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $FID $DS $DSG $CHR $LOC $ORG $VERSION $START $STOP $NAME_ONLY $coge $GSTID $COOKIE_NAME);
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $TEMPDIR = $P->{TEMPDIR};
@@ -26,6 +26,7 @@ $| = 1; # turn off buffering
 $FORM = new CGI;
 $FID = $FORM->param('fid');
 $DS = $FORM->param('ds');# || 61;
+$DSG = $FORM->param('dsg');# || 61;
 $CHR = $FORM->param('chr');# || 7;
 $LOC = $FORM->param('loc') || $FORM->param('pos') || $FORM->param('x');# || 6049802;
 $LOC = 0 unless $LOC;
@@ -46,7 +47,7 @@ $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 
 print "Content-Type: text/html\n\n";
-my $rhtml = gen_html(featid=>$FID, start=>$START, stop=>$STOP, chr=>$CHR, ds=>$DS, org=>$ORG, version=>$VERSION, name_only=>$NAME_ONLY, gstid=>$GSTID) if $START > 0 || $FID;
+my $rhtml = gen_html(featid=>$FID, start=>$START, stop=>$STOP, chr=>$CHR, ds=>$DS, dsg=>$DSG, org=>$ORG, version=>$VERSION, name_only=>$NAME_ONLY, gstid=>$GSTID) if $START > 0 || $FID;
 if ($START && $STOP)
   {
     if ($START == $STOP)
@@ -71,22 +72,34 @@ sub gen_html
     $stop = $start unless $stop;
     my $chr = $args{chr};
     my $ds = $args{ds};
+    my $dsg = $args{dsg};
     my $version = $args{version};
     my $name_only = $args{name_only};
     my $gstid = $args{gstid};
     ($ds) = $coge->resultset('Dataset')->resolve($ds) if $ds;
+    ($dsg) = $coge->resultset('Genome')->resolve($dsg) if $dsg;
+    my @ds;
+    push @ds, $ds if $ds;
+    push @ds, $dsg->datasets if $dsg;
     if ($ds) #there can be additional information about a chromosome for a particular version of the organism that is not in the same data_information.  Let's go find the organism_id and version for the specified data information item.
       {
 	$version = $ds->version unless $version;
 	($chr) = $ds->get_chromosomes() unless $chr;
       }
+    if ($dsg)
+	{
+	 $version = $dsg->version unless $version;
+	($chr) = $dsg->get_chromosomes() unless ($chr);
+	}	
     my @feats;
-    push @feats, $coge->get_features_in_region(dataset_id => $ds->id, 
+    foreach my $item (@ds)
+      {
+        push @feats, $coge->get_features_in_region(dataset_id => $item->id, 
 					       chr => $chr,
 					       start => $start,
 					       stop => $stop,
 					      ) if ($chr && $start && $stop);
-
+      }
     push @feats, $coge->resultset('Feature')->find($featid) if $featid;
     return " " unless @feats;
     my $html;

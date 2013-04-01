@@ -390,18 +390,20 @@ sub find_feats
 	my $dsid = $opts{'dsid'};
 	my $gstid = $opts{'gstid'};
 	my $dsgid = $opts{dsgid};
+        my @dsids;
+        push @dsids, $dsid if $dsid;
 	if ($dsgid)
 	  {
 	    my $dsg = $coge->resultset('Genome')->find($dsgid);
 	    return unless $dsg;
-	    $dsid = $dsg->datasets(chr=>$chr)->id;
+	    push @dsids, map {$_->id} $dsg->datasets;
 	    $gstid = $dsg->type->id;
 	  }
 	my $link = qq{<span class='ui-button ui-corner-all' " onClick="featlist('FeatList.pl?};
 	my %type;
-	$link .="start=$start;stop=$stop;chr=$chr;dsid=$dsid;gstid=$gstid".qq{')">Extract Features: <span>};
+	$link .="start=$start;stop=$stop;chr=$chr;dsid=$dsid;dsgid=$dsgid;gstid=$gstid".qq{')">Extract Features: <span>};
 	foreach my $ft ($coge->resultset('FeatureType')->search(
-								{"features.dataset_id"=>$dsid,
+								{"features.dataset_id"=>[@dsids],
 								 "features.chromosome"=>$chr},
 								{join=>"features",
 								 select=>[{"distinct"=>"me.feature_type_id"},"name"],
