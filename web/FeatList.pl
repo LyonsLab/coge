@@ -282,6 +282,10 @@ sub get_fids {
 	
 	if ( defined $start ) {
 		@ids = map { $_->id } $coge->get_features_in_region( dataset => $dsid, chr => $chr, start => $start, stop => $stop );
+		foreach my $item (@dsids)
+		 {
+			push @ids, map { $_->id } $coge->get_features_in_region( dataset => $item, chr => $chr, start => $start, stop => $stop );
+		}
 	}
 	else {
 		@ids = map { $_->id } $coge->resultset('Feature')->search($search);
