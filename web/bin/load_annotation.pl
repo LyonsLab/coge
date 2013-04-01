@@ -1,0 +1,544 @@
+#!/usr/bin/perl -w
+
+use strict;
+use Data::Dumper;
+use CoGeX;
+use Getopt::Long;
+use File::Path;
+use File::Basename;
+use URI::Escape;
+use URI::Escape::JavaScript qw(escape unescape);
+use CoGe::Accessory::Web qw(get_defaults);
+use List::Util qw( min max );
+use Benchmark;
+
+my $t1 = new Benchmark;
+
+my $GO = 1;
+my $DEBUG = 1;
+my $DB_BATCH_SZ = 10*1000;
+use vars qw($staging_dir $install_dir $data_file 
+			$name $description $version $restricted 
+			$gid $source_name $user_name $config
+			$host $port $db $user $pass);
+
+GetOptions(
+	"staging_dir=s"	=> \$staging_dir,
+	"install_dir=s" => \$install_dir,
+	"data_file=s" 	=> \$data_file,		# data file (JS escape)
+	"name=s"		=> \$name,			# experiment name (JS escaped)
+	"desc=s"		=> \$description,	# experiment description (JS escaped)
+	"version=s"		=> \$version,		# experiment version (JS escaped)
+	"restricted=i"	=> \$restricted,	# experiment restricted flag
+	"gid=s"			=> \$gid,			# genome id
+	"source_name=s"	=> \$source_name,	# data source name (JS escaped)
+	"user_name=s"	=> \$user_name,		# user name
+	
+	# Database params
+	"host|h=s"			=> \$host,
+	"port|p=s"			=> \$port,
+	"database|db=s"		=> \$db,
+	"user|u=s"			=> \$user,
+	"password|pw=s"		=> \$pass,	
+	
+	# Or use config file
+	"config=s"			=> \$config
+);
+
+if ($config) {
+	my $P = CoGe::Accessory::Web::get_defaults($config);
+	$db   = $P->{DBNAME};
+	$host = $P->{DBHOST};
+	$port = $P->{DBPORT};
+	$user = $P->{DBUSER};
+	$pass = $P->{DBPASS};	
+}
+
+$data_file = unescape($data_file);
+$name = unescape($name);
+$description = unescape($description);
+$version = unescape($version);
+$source_name = unescape($source_name);
+
+# Open log file
+$| = 1;
+my $logfile = "$staging_dir/log.txt";
+open(my $log, ">>$logfile") or die "Error opening log file $logfile";
+$log->autoflush(1);
+
+# Validate the data file
+print $log "log: Validating data file ...\n";
+unless (-e $data_file) {
+	print $log "log: can't find data file\n";
+	exit(-1);
+}
+
+# Connect to database
+my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
+my $coge    = CoGeX->connect( $connstr, $user, $pass );
+unless ($coge) {
+	print $log "log: couldn't connect to database\n";
+	exit(-1);
+}
+
+# Retrieve user (for verification now and used at end for logging)
+my $user = $coge->resultset('User')->find( { user_name => $user_name } );
+unless ($user) {
+	print $log "log: error finding user '$user_name'\n";
+	exit(-1);
+}
+
+# Retrieve genome
+my $genome = $coge->resultset('Genome')->find( { genome_id => $gid } );
+unless ($genome) {
+	print $log "log: error finding genome id$gid\n";
+	exit(-1);
+}
+
+# Get list of chromosomes for genome
+my %valid_chrs = map { $_ => 1 } $genome->chromosomes;
+
+# Some defaults to check for in names and annotations
+my @check_names = (
+	"ID",
+	"name",
+	"Name",
+	"Alias",
+	"gene",
+	"Parent",
+	"Locus_id",
+	"ID_converter",
+	"Gene_symbols",
+	"gene_id",
+);
+my %check_names = map { $_ => 1 } @check_names;
+
+my @skip_attr = (
+	"Link_to",
+	"References",
+	"Sequence_download",
+	"transcript_id",
+);
+my %skip_attr  = map { $_ => 1 } @skip_attr;
+
+my @anno_names = (
+	"Source",
+	"Note",
+	"NIAS_FLcDNA",
+	"Comment",
+	"GO",
+	"ORF_evidence", # can we link to SGD?
+	"Transcript_evidence",
+	"Status",
+	"InterPro",
+	"Description",
+	"Function",
+	"Derives_from",
+);
+my %anno_names  = map { $_ => 1 } @anno_names;
+
+my @skip_names_re = qw(
+  :five_prime
+  :three_prime
+  :exon
+  \.exon
+  :utr
+  \.utr
+  _utr
+  :cds
+  \.cds
+  cds\.
+  :hsp
+  \.hsp
+
+  intron
+  _E\d
+);
+
+my %data;
+my %annos;
+my %seen_types;
+my %seen_attr;
+
+# Load GFF file into %data
+#TODO copy gff file into staging directory to read from instead of upload directory
+my $total_annot = 0;
+unless ($total_annot = process_gff_file()) {
+	print $log "log: error parsing input file\n";
+	exit(-1);
+}
+
+# Create gene annotations if none present in GFF file
+unless ($seen_types{gene}) {
+	print $log "log: Creating gene entities\n";
+	foreach my $source ( keys %data ) {
+		foreach my $chr_loc ( keys %{ $data{$source} } ) {
+		  name: foreach my $name ( keys %{ $data{$source}{$chr_loc} } ) {
+				my ($chr, $start, $stop, $strand);
+				my %names;
+				my $name = $data{$source}{$chr_loc}{$name};
+				foreach my $type (keys %$name) {
+					map { $names{$_} = 1 } keys %{ $name->{$type}{names} };
+					foreach my $loc ( @{ $name->{$type}{loc} } ) {
+						next name if $type eq "gene";
+						$start 	= $loc->{start}  unless $start;
+						$start 	= $loc->{start}  if $loc->{start} < $start;
+						$stop 	= $loc->{stop}   unless $stop;
+						$stop   = $loc->{stop}   if $loc->{stop} > $stop;
+						$strand = $loc->{strand} if $loc->{strand};
+						$chr    = $loc->{chr};
+					}
+					foreach my $loc ( @{ $name->{$type}{loc} } ) {
+						$loc->{strand} = $strand;
+					}
+				}
+				$name->{gene}{loc} = [
+					{	start  => $start,
+						stop   => $stop,
+						strand => $strand,
+						chr    => $chr,
+					}
+				];
+				$name->{gene}{names} = \%names;
+				$seen_types{gene}++;
+			}
+		}
+	}
+}
+
+print $log "log: Annotation types:\n", join( "\n", map { "log: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$_."\t".commify($seen_types{$_}) } sort keys %seen_types ), "\n";
+print $log "log: Data types:\n", join( "\n", map { "log: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$_."\t".commify($seen_attr{$_}) } sort keys %seen_attr ), "\n";
+print $log "log: " . commify($total_annot) . " total annotations to load\n";
+#print STDERR Dumper \%data;
+
+my $t2 = new Benchmark;
+
+# If we've made it this far without error then we can feel confident about
+# the input data.  Now we can go ahead and create the db entities.
+
+# Create datasource
+my $datasource = $coge->resultset('DataSource')->find_or_create( { name => $source_name, description => "" } );#, description => "Loaded into CoGe via LoadExperiment" } );
+unless ($datasource) {
+	print $log "log: error creating data source\n";
+	exit(-1);
+}
+
+# Create dataset
+my $dataset = $coge->resultset('Dataset')->create( 
+  { data_source_id => $datasource->id,
+  	name => basename($data_file),
+  	description => $description,
+	version => $version,
+	restricted => $restricted,
+  } );
+unless ($dataset) {
+	print $log "log: error creating dataset\n";
+	exit(-1);
+}
+#TODO set link field if loaded from FTP
+print $log "dataset id: " . $dataset->id . "\n";
+	
+my $dsconn = $coge->resultset('DatasetConnector')->find_or_create( { dataset_id => $dataset->id, genome_id => $genome->id } );
+unless ($dsconn) {
+	print $log "log: error creating dataset connector\n";
+	exit(-1);
+}
+
+my %anno_types; # hash to store annotation type objects
+my %feat_types; # store feature type objects
+
+print $log "log: Loading database ...\n";
+my $loaded_annot = 0;
+my @loc_buffer;	 # buffer for bulk inserts into Location table
+my @anno_buffer; # buffer for bulk inserts into FeatureAnnotation table
+my @name_buffer; # buffer for bulk inserts into FeatureName table
+foreach my $source ( keys %data ) {
+	foreach my $chr_loc ( sort { $a cmp $b } keys %{ $data{$source} } ) {
+		foreach my $name ( sort { $a cmp $b } keys %{ $data{$source}{$chr_loc} } ) {
+			foreach my $feat_type ( sort { $a cmp $b } keys %{ $data{$source}{$chr_loc}{$name} } ) {
+				print $log "\n" if $DEBUG;
+
+				my $pctLoaded = int(100*$loaded_annot/$total_annot);
+				print $log "log: Loaded " . commify($loaded_annot) . " annotations (" . ($pctLoaded ? $pctLoaded : '<1') . "%)\n\n" if ($loaded_annot and ($loaded_annot % 1000) == 0);
+
+				my $loc = $data{$source}{$chr_loc}{$name}{$feat_type}{loc};
+				my $start = min map { $_->{start} } @$loc; #my ($start) = sort { $a <=> $b } map { $_->{start} } @$loc;
+				my $stop  = max map { $_->{stop} }  @$loc; #my ($stop) = sort { $b <=> $a } map { $_->{stop} } @$loc;
+				my ($strand) = map { $_->{strand} } @$loc;
+				my ($chr) = map { $_->{chr} } @$loc;
+				$feat_types{$feat_type} = $coge->resultset('FeatureType')->find_or_create( { name => $feat_type } )
+					if $GO && !$feat_types{$feat_type};
+				my $feat_type_obj = $feat_types{$feat_type};
+
+				print $log "Creating feature of type $feat_type\n" if $DEBUG;
+				#TODO this could be batched by nesting location & other inserts, see http://search.cpan.org/~abraxxa/DBIx-Class-0.08209/lib/DBIx/Class/ResultSet.pm#populate
+				my $feat = $dataset->add_to_features({ 
+					feature_type_id => $feat_type_obj->id, 
+					start => $start, 
+					stop => $stop, 
+					chromosome => $chr, 
+					strand => $strand 
+				}) if $GO;
+				
+				my $featid = $feat ? $feat->id : "no_go";
+				my %seen_locs;
+				my $loc_count = 0;
+				foreach my $loc ( sort { $a->{start} <=> $b->{start} } @$loc ) {
+					$loc_count++;
+					next if $feat_type eq "gene" && $loc_count > 1; #only use the first one as this will be the full length of the gene.  Stupid hack
+					next if $seen_locs{ $loc->{start} }{ $loc->{stop} };
+					$seen_locs{ $loc->{start} }{ $loc->{stop} } = 1;
+					print $log "Adding location $chr:(" . $loc->{start} . "-" . $loc->{stop} . ", $strand)\n" if $DEBUG;
+					$loaded_annot++;
+					batch_add(\@loc_buffer, 'Location', { #my $loc_tmp = $feat->add_to_locations({ 
+						feature_id => $feat->id,
+						chromosome => $loc->{chr},
+						start => $loc->{start}, 
+						stop => $loc->{stop},
+						strand => $loc->{strand}
+					}) if $GO;
+				}
+				
+				my %names = map { $_ => 1 } keys %{$data{$source}{$chr_loc}{$name}{$feat_type}{names}};
+				my %seen_annos; #hash to store annotations so duplicates aren't added
+				
+			  master_names: foreach my $tmp ( keys %names ) {
+					foreach my $re (@skip_names_re) {
+						next master_names if $tmp =~ /$re/i;
+					}
+					my $master = 0;
+					$master = 1 if $tmp eq $name;
+					print $log "Adding name $tmp to feature ", $featid, ($master ? " (MASTER)" : ''), "\n" if $DEBUG;
+
+					batch_add(\@name_buffer, 'FeatureName', { #my $feat_name = $feat->add_to_feature_names({ 
+						feature_id => $feat->id,
+						name => $tmp, 
+						primary_name => $master
+					}) if $GO;
+					
+					if ( $annos{$tmp} ) {
+						foreach my $anno ( keys %{ $annos{$tmp} } ) {
+							next unless $anno;
+							next if $seen_annos{$anno};
+							$seen_annos{$anno} = 1;
+							my $type_name = $annos{$tmp}{$anno}{type} || "Note";
+							my ($anno_type) = $anno_types{$type_name};
+							unless ($anno_type) {
+								($anno_type) = $coge->resultset('AnnotationType')->find_or_create( { name => $type_name } );
+								$anno_types{$type_name} = $anno_type;
+							}
+							my $link = $annos{$tmp}{$anno}{link};
+							print $log "Adding annotation ($type_name): $anno\n" . ($link ? "\tlink: $link" : '') . "\n" if $DEBUG;
+							batch_add(\@anno_buffer, 'FeatureAnnotation', { #$feat->add_to_annotations({ 
+								feature_id => $feat->id,
+								annotation_type_id => $anno_type->id,
+								annotation => $anno, 
+								link => $link
+							}) if $GO && $anno;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+# Flush insert buffers
+batch_add(\@loc_buffer, 'Location');
+batch_add(\@name_buffer, 'FeatureName');
+batch_add(\@anno_buffer, 'FeatureAnnotation');
+print $log "log: " . commify($loaded_annot) . " annotations loaded\n";
+
+my $t3 = new Benchmark;
+print $log "Time to parse: " . timestr( timediff( $t2, $t1 ) ) . ", Time to load: " . timestr( timediff( $t3, $t2 ) ) . "\n";
+
+# Yay!
+CoGe::Accessory::Web::log_history( db => $coge, user_id => $user->id, page => "LoadAnnotation", description => 'load dataset id' . $dataset->id, link => 'GenomeView.pl?gid=' . $genome->id );
+print $log "log: All done!";
+close($log);
+
+exit;
+
+#-------------------------------------------------------------------------------
+sub batch_add {
+	my $buffer = shift;
+	my $table_name = shift;
+	my $item = shift;
+	
+	push @$buffer, $item if (defined $item);
+	if (@$buffer >= $DB_BATCH_SZ or not defined $item) {
+		print $log "Populate $table_name " . @$buffer . "\n";
+		$coge->resultset($table_name)->populate($buffer);
+		@$buffer = ();
+	}
+}
+
+sub process_gff_file {
+	print $log "process_gff_file: $data_file\n";
+	
+	open(my $in, $data_file ) || die "can't open $data_file for reading: $!";
+	
+	my $line_num = 0;
+	my $gene_count = 0;
+	my $last_RNA   = "mRNA"; #storage for the last RNA type seen.  For converting exons to appropriate RNA type.
+	while (my $line = <$in>) {
+		$line_num++;
+		next if $line =~ /^#/;
+		next if $line =~ /^Error/;
+		chomp $line;
+		next unless $line;
+		print $log "log: Processed " . commify($line_num) . " lines\n" unless $line_num % 100000;
+	
+		my @line = split(/\t/, $line);
+		if (@line != 9) {
+			print $log "log: error:  Incorrect format (too many columns) at line $line_num\n";
+			return 0;
+		}
+		my $chr 	= $line[0];
+		my $source	= $line[1];
+		my $type 	= $line[2];
+		my $start	= $line[3];
+		my $stop	= $line[4];
+		my $strand 	= $line[6];
+		my $attr 	= $line[8];
+
+		# Ignore these types
+		#next if $type eq "";
+		next if $type eq "clone";
+		next if $type eq "intron";
+		next if $type eq "chromosome";
+		next if $type eq "start_codon";
+		next if $type eq "stop_codon";
+		next if $type eq "transcript";
+		next if $type eq "protein";
+	
+		# Process and check chromosomes
+		#$chr =~ s/ig_//;
+		$chr =~ s/%.*//;
+		$chr =~ s/chromosome//i;
+		$chr =~ s/^chr//i;
+		$chr =~ s/^_//i;
+		#$chr =~ s/^0//g;
+		($chr) = split(/\s+/, $chr);
+		unless ($valid_chrs{$chr}) {
+			print $log "log: error:  Chromosome '$chr' does not exist in the dataset.\n";
+			return 0;
+		}
+	
+		#$type = "mRNA" if $type eq "transcript";
+		# In many GFF files, the mRNA is what CoGe calls a Gene (the full extent 
+		# of the transcribed sequence including introns and exons.  Instead, 
+		# what the GFF calls an exon is really the transcribed mRNA.  In this 
+		# cases, we want to hold the mRNA information to link to Parents and 
+		# whatever annotation it contains, but don't want to actually add the 
+		# location.  We will change the feature type to something weird that 
+		# can be handled downstream correctly -- specifically the locations
+		if ( $type =~ /(.*RNA.*)/ ) {
+			$last_RNA = $type;
+			$type = "$1_no_locs";
+		}
+		$type = $last_RNA if $type eq "exon";
+		$type = $last_RNA if $type eq "five_prime_UTR";
+		$type = $last_RNA if $type eq "three_prime_UTR";
+		
+		$seen_types{$type}++;
+	
+		my %names;
+		my $name;
+		my ( $parent, $id );
+		foreach my $item ( split(/;/, $attr) ) {
+			$item =~ s/"//g;
+			$item =~ s/^\s+//;
+			$item =~ s/\s+$//;
+			next unless $item;
+			
+			my ( $key, $value ) = ( split(/[\s=]/, $item, 2) );
+			$seen_attr{$key}++;
+			$parent = $value if $key eq "Parent";
+			$id     = $value if $key eq "ID";
+			next if $skip_attr{$key};
+	
+			if ( $check_names{$key} ) {
+			outer: 
+				foreach my $item ( split(/,/, $value) ) {
+					$names{$item} = 1;
+
+					# these nexts will skip from using the primary name as the ID to the Parent name
+					foreach my $re (@skip_names_re) {
+						next outer if $item =~ /$re/i;
+					}
+					$name = $item unless $name;
+					if ( $item =~ /^LOC_/ ) {
+						my $tmp = $item;
+						$tmp =~ s/^LOC_//;
+						$names{$tmp} = 1;
+					}
+				}
+			}
+			next unless $name; # no name, don't know what to do!
+			$value = uri_unescape($value); # remove URL formatting
+			$annos{$name}{$value} = { type => $key } if $anno_names{$key};
+		}
+		next unless $name; # no name, don't know what to do!
+	
+		if ($strand =~ /-/) 	{ $strand = -1; }
+		elsif ($strand =~ /\+/) { $strand = 1;  }
+		elsif ($strand =~ /\./) { $strand = 0;  }
+		
+		my @types = ( $type );
+		#push @types, "CDS" if $add_cds && $type eq "mRNA";
+		# phytozome replications of CDS to mRNA
+		#push @types, "mRNA" if $type eq "CDS";
+		#push @types, "mRNA" if $type =~ /UTR/;
+		# replicate mRNA to gene
+		#push @types, "gene" if $type eq "mRNA";
+
+		foreach my $tmp (@types) {
+			my $tmp_name = $name;
+			my $type     = $tmp;
+			$type =~ s/_no_locs//;
+			$tmp_name = $parent if $type eq "gene" && $parent; # ugly hack
+			#print join ("\t", $name, $tmp_name),"\n";
+			
+			# initialize data structure
+			$data{$source}{$chr}{$tmp_name}{$type} = {} unless $data{$source}{$chr}{$tmp_name}{$type};
+			foreach my $n (keys %names) {
+				$data{$source}{$chr}{$tmp_name}{$type}{names}{$n} = 1;
+			}
+			next if $tmp =~ /_no_locs/; # skip adding locations for things like mRNA
+			push @{ $data{$source}{$chr}{$tmp_name}{$type}{loc} },
+			  {	start  => $start,
+				stop   => $stop,
+				strand => $strand,
+				chr    => $chr
+			  };
+		}
+		$total_annot++;
+	}
+
+	close($in);
+	print $log "log: Processed " . commify($line_num) . " total lines\n";
+	return $total_annot;
+}
+
+sub units {
+	my $val = shift;
+
+	if ($val < 1024) {
+		return $val;
+	}
+	elsif ($val < 1024*1024) { 
+		return ceil($val/1024) . 'Kb';
+	}
+	elsif ($val < 1024*1024*1024) {
+		return ceil($val/(1024*1024)) . 'Mb';
+	}
+	else {
+		return ceil($val/(1024*1024*1024)) . 'Gb';
+	}
+}
+
+sub commify {
+	my $text = reverse $_[0];
+	$text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
+	return scalar reverse $text;
+}

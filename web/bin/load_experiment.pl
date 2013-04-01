@@ -177,7 +177,7 @@ print $log "experiment id: " . $experiment->id . "\n"; # don't change, gets pars
 
 #TODO create experiment type & connector
 
-# Add new experiment to user's owner list
+# Make user owner of new experiment
 my $user = $coge->resultset('User')->find( { user_name => $user_name } );
 unless ($user) {
 	print $log "log: error finding user '$user_name'\n";

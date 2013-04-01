@@ -279,13 +279,13 @@ sub get_genome_data {
 	my $gid  = $opts{gid};
 	my $genome  = $opts{genome};
 	return unless ($gid or $genome);
+	
 	$gid = $genome->id if $genome;
 	unless ($genome) {
 		$genome = $coge->resultset('Genome')->find($gid);
 		return unless ($genome);
 	}
-
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+	
 	#ERIC added these 1/31/2013
 	#TODO: this should happen in the genome object
 	my $seq_file = $genome->file_path;
@@ -310,6 +310,8 @@ sub get_genome_data {
 	$links .= qq{<span class='link' onclick="window.open('SynMap.pl?dsgid1=$gid;dsgid2=$gid');">SynMap</span>};
 	$links .= qq{&nbsp|&nbsp};
 	$links .= qq{<span class='link' onclick="window.open('CoGeBlast.pl?dsgid=$gid');">CoGeBlast</span>};
+	
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
 	$template->param(
 		DO_GENOME_DATA => 1,
 		CHROMOSOME_COUNT => commify($genome->chromosome_count()),
@@ -318,7 +320,6 @@ sub get_genome_data {
 		DOWNLOAD=>$download,
 		LINKS=>$links,
 	);
-
 
 	return $template->output;
 }
@@ -387,10 +388,18 @@ sub get_experiments {
 	return $template->output;
 }
 
+sub filter_dataset { # detect chromosome-only datasets
+	my $ds = shift;
+
+	my @types = $ds->distinct_feature_type_ids;
+	return (@types <= 1 and shift(@types) == 4); #FIXME hardcoded type
+}
+
 sub get_datasets {
 	my %opts = @_;
 	my $gid  = $opts{gid};
 	my $genome  = $opts{genome};
+	my $exclude_seq = $opts{exclude_seq};
 	return unless ($gid or $genome);
 
 	unless ($genome) {
@@ -398,15 +407,12 @@ sub get_datasets {
 		return unless ($genome);
 	}
 
-	my @datasets = $genome->datasets;
-	return "" unless @datasets;
-
 	my @rows;
-	foreach my $ds (sort @datasets) {
-		my %row;
-		$row{DATASET_INFO} = qq{<span>} . $ds->info . "</span>";
-		push @rows, \%row;
+	foreach my $ds (sort {$a->id <=> $b->id} $genome->datasets) {
+		next if ($exclude_seq && filter_dataset($ds)); #FIXME add dataset "type" field instead?
+		push @rows, { DATASET_INFO => '<span>'.$ds->info.'</span>' };
 	}
+	return '' unless @rows;
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 	$template->param( DO_DATASETS => 1,
@@ -437,7 +443,7 @@ sub generate_html {
 
 sub generate_body {
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
-	$template->param( MAIN => 1, PAGE_NAME => $PAGE_TITLE . '.pl' );
+	$template->param( MAIN => 1, PAGE_NAME => "$PAGE_TITLE.pl" );
 	
 	my $gid = $FORM->param('gid');
 	return "No genome specified" unless $gid;
@@ -451,10 +457,10 @@ sub generate_body {
 
 	$template->param(
 		GID 			=> $gid,
-		CHR 			=> ($first_chr ? $first_chr : ''),
 		GENOME_INFO 	=> get_genome_info(genome => $genome),
 	 	GENOME_DATA 	=> get_genome_data(genome => $genome),
-		EXPERIMENTS 	=> get_experiments(genome => $genome) 
+		EXPERIMENTS 	=> get_experiments(genome => $genome),
+		ANNOTATION 		=> get_datasets(genome => $genome, exclude_seq => 1)
 	);
 
 	if ($USER->is_admin) {

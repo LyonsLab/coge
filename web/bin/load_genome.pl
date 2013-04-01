@@ -100,7 +100,7 @@ if ($numSequences == 0 or $seqLength == 0) {
 	exit(-1);
 }
 
-print $log "log: Processed $numSequences sequences total\n";
+print $log "log: Processed " . commify($numSequences) . " sequences total\n";
 
 # If we've made it this far without error then we can feel confident about our
 # ability to parse all of the input files.  Now we can go ahead and 
@@ -145,6 +145,13 @@ unless ($genome) {
 $install_dir = "$install_dir/" . $genome->get_path . "/";
 $genome->file_path($install_dir . $genome->id . ".faa");
 $genome->update;
+
+# This is a check for dev server which may be out-of-sync with prod
+if (-e $install_dir) {
+	print $log "install path $install_dir\n";
+	print $log "log: error: install path already exists\n";
+	exit(-1);
+}
 
 # Make user owner of new genome
 my $user = $coge->resultset('User')->find( { user_name => $user_name } );
@@ -244,7 +251,7 @@ print $log "$cmd\n";
 
 # Yay, log success!
 CoGe::Accessory::Web::log_history( db => $coge, user_id => $user->id, page => "LoadGenome", description => 'load genome id' . $genome->id, link => 'GenomeInfo.pl?gid=' . $genome->id );
-print $log "log: $numSequences sequences loaded totaling " . commify($seqLength) . " nt\n";
+print $log "log: " . commify($numSequences) . " sequences loaded totaling " . commify($seqLength) . " nt\n";
 print $log "log: All done!";
 close($log);
 
@@ -334,7 +341,7 @@ sub process_fasta_file {
 			print $log "log: (only showing first $MAX_PRINT)\n";
 		}
 		elsif (($count % 10000) == 0) {
-			print $log "log: Processed $count (" . units($totalLength) . ", " . int(100*$totalLength/$fileSize) . "%) sequences so far ...\n";
+			print $log "log: Processed " . commify($count) . " (" . units($totalLength) . ", " . int(100*$totalLength/$fileSize) . "%) sequences so far ...\n";
 		}		
 	}
 	close($in);

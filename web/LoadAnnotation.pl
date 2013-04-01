@@ -1,6 +1,6 @@
 #! /usr/bin/perl -w
 
-# NOTE: this file shares a lot of code with LoadExperiment.pl, replicate changes when applicable.
+# NOTE: this file shares a lot of code with LoadGenome.pl, replicate changes when applicable.
 
 use strict;
 use CGI;
@@ -19,15 +19,14 @@ use File::Path;
 use Sort::Versions;
 use LWP::UserAgent;
 use LWP::Simple;
-use HTTP::Status qw(:constants);
 use File::Listing;
 use File::Copy;
 use XML::Simple;
 no warnings 'redefine';
 
 use vars qw(
-	$P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE 
-	$TEMPDIR $BINDIR $USER $DATE $COGEDIR $coge $FORM $URL $TEMPURL $COOKIE_NAME 
+	$P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE
+	$TEMPDIR $BINDIR $USER $DATE $COGEDIR $coge $FORM $URL $TEMPURL $COOKIE_NAME
 	%FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE
 );
 
@@ -41,7 +40,7 @@ $DATE = sprintf(
 	sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }->(localtime)
 );
 
-$PAGE_TITLE = 'LoadGenome';
+$PAGE_TITLE = 'LoadAnnotation';
 
 $FORM = new CGI;
 
@@ -75,17 +74,11 @@ $MAX_SEARCH_RESULTS = 100;
 	load_from_ftp			=> \&load_from_ftp,
 	ftp_get_file			=> \&ftp_get_file,
 	upload_file				=> \&upload_file,
-#	search_ncbi_nucleotide	=> \&search_ncbi_nucleotide,
-	# search_ncbi_taxonomy	=> \&search_ncbi_taxonomy,
-	load_genome				=> \&load_genome,
-	get_sequence_types		=> \&get_sequence_types,
-	create_sequence_type	=> \&create_sequence_type,
-	create_source			=> \&create_source,
-	create_organism			=> \&create_organism,
-	search_organisms		=> \&search_organisms,
-	search_users			=> \&search_users,
+	load_annotation			=> \&load_annotation,
 	get_sources				=> \&get_sources,
-	get_load_genome_log		=> \&get_load_genome_log,
+	create_source			=> \&create_source,
+	search_genomes			=> \&search_genomes,
+	get_load_log			=> \&get_load_log,
 );
 
 if ( $FORM->param('jquery_ajax') ) {
@@ -122,17 +115,11 @@ sub irods_get_path {
 	}
 	
 	my $result = CoGe::Accessory::Web::irods_ils($path);
-	my $error = $result->{error};
-	if ($error) {
-		my $body = 'User: ' . $USER->name . ' ' . $USER->id . "\n\n" . $error;
+	if ($result->{error}) {
 		my $email = $P->{SUPPORT_EMAIL};
-		CoGe::Accessory::Web::send_email(
-			from => $email, 
-			to => $email, 
-			subject => "System error notification from $PAGE_TITLE", 
-			body => $body);
-		return encode_json( { timestamp => $timestamp, error => $error } );
-	}
+		CoGe::Accessory::Web::send_email(from => $email, to => $email, subject => "System error notification from $PAGE_TITLE", body => $result->{error});
+		return encode_json( { timestamp => $timestamp, error => $result->{error} } );
+	}	
 	return encode_json( { timestamp => $timestamp, path => $path, items => $result->{items} } );
 }
 
@@ -142,7 +129,7 @@ sub irods_get_file {
 	
 	my ($filename) = $path =~ /([^\/]+)\s*$/;
 	my ($remotepath) = $path =~ /(.*)$filename$/;
-#	print STDERR "get_file $path $filename\n";
+#	print STDERR "irods_get_file $path $filename\n";
 	
 	my $localpath = 'irods/' . $remotepath;
 	my $localfullpath = $TEMPDIR . $localpath;
@@ -266,84 +253,6 @@ sub ftp_get_file {
 	return encode_json({ timestamp => $timestamp, path=> $path, size => -s $fullfilepath . '/' . $filename });
 }
 
-sub search_ncbi_nucleotide {
-	my %opts = @_;
-	my $accn = $opts{accn};
-	my $timestamp = $opts{timestamp};
-	my $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=$accn";
-	my $result = get( $esearch );
-	#print STDERR $result;
-	
-	my $record = XMLin($result);
-	#print STDERR Dumper $record;
-	
-	my $id = $record->{IdList}->{Id};
-	print STDERR "id = $id\n";
-	
-	my $title;
-	if ($id) {
-		$esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nucleotide&id=$id";
-		my $result = get( $esearch );
-		#print STDERR $result;
-		
-		$record = XMLin($result);
-		#print STDERR Dumper $record;
-		
-		foreach (@{$record->{DocSum}->{Item}}) { #FIXME use grep here instead
-			if ($_->{Name} eq 'Title') {
-				$title = $_->{content};
-				print STDERR "title=$title\n";
-				last;
-			}
-		}
-	}
-	
-	return unless $id and $title;
-	return encode_json( { timestamp => $timestamp, name => $title, id => $id } );
-}
-
-# moved to clientside javascript
-# sub search_ncbi_taxonomy {
-# 	my %opts = @_;
-# 	my $search_term = $opts{search_term};
-# 	my $get_children = $opts{get_children};
-# 	my $timestamp = $opts{timestamp};
-# 	print STDERR "ncbi_taxonomy_search $search_term\n";
-
-# 	my @results = ();
-# 	my $esearch;
-	
-# 	if ($get_children) {
-# 		$esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=taxonomy&term=$search_term&field=nxlv";
-# 	}
-# 	else {
-# 		$search_term .= '*';
-# 		$esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=taxonomy&term=$search_term";		
-# 	}
-	
-# 	my $result = get($esearch);
-# 	my $record = XMLin($result);
-# 	my $id = $record->{IdList}->{Id};
-	
-# 	if ($id) {
-# 		my @ids = (ref($id) eq 'ARRAY' ? @$id : ($id));
-# 		$esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=" . join(',', @ids);
-# 		my $result = get($esearch);
-# 		$record = XMLin($result);
-# #		print STDERR Dumper $record;
-# 		my @taxons = (ref($record->{Taxon}) eq 'ARRAY' ? @{$record->{Taxon}} : ($record->{Taxon}));
-# 		foreach (@taxons) {
-# 			my $id = $_->{TaxId};
-# 			my $name = $_->{ScientificName};
-# 			my $lineage = $_->{Lineage};
-# 			push @results, { id => $id, name => $name, lineage => $lineage };
-# 		}
-# 	}
-	
-# 	print STDERR encode_json( { timestamp => $timestamp, results => \@results } );
-# 	return encode_json( { timestamp => $timestamp, results => [sort {$a->{name} cmp $b->{name}} @results] } );
-# }
-
 sub upload_file {
 	my %opts = @_;
 	my $timestamp = $opts{timestamp};
@@ -367,21 +276,18 @@ sub upload_file {
 	return encode_json( { timestamp => $timestamp, filename => $filename, path => $path, size => $size } );	
 }
 
-sub load_genome {
+sub load_annotation {
 	my %opts = @_;
 	my $name = $opts{name};
 	my $description = $opts{description};
-	my $link = $opts{link};
 	my $version = $opts{version};
-	my $type_id = $opts{type_id};
 	my $source_name = $opts{source_name};
 	my $restricted = $opts{restricted};
-	my $organism_id = $opts{organism_id};
 	my $user_name = $opts{user_name};
-	my $keep_headers = $opts{keep_headers};
+	my $gid = $opts{gid};
 	my $items = $opts{items};
+	# print STDERR "load_annotation: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
 	return unless $items;
-	print STDERR "load_genome: organism_id=$organism_id name=$name description=$description version=$version type_id=$type_id restricted=$restricted\n";
 	
 	$items = decode_json($items);
 #	print STDERR Dumper $items;
@@ -393,14 +299,14 @@ sub load_genome {
 	# Setup staging area and log file
 	my $stagepath = $TEMPDIR . 'staging/';
 	my $i;
-	for ($i = 1;  -e "$stagepath$i";  $i++) {};
+	for ($i = 1;  -e "$stagepath$i";  $i++) { };
 	$stagepath .= $i;
 	mkpath $stagepath;
-	
+
 	my $logfile = $stagepath . '/log.txt';
 	open(my $log, ">$logfile") or die "Error creating log file";
-	print $log "Starting load genome $stagepath\n" .
-			  "name=$name description=$description version=$version type_id=$type_id restricted=$restricted org_id=$organism_id\n";
+	print $log "Starting load annotation $stagepath\n" .
+			   "name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
 
 	# Verify and decompress files
 	my @files;
@@ -420,140 +326,69 @@ sub load_genome {
 		push @files, $fullpath;
 	}
 
-	print $log "Calling bin/load_genome.pl ...\n";
-	my $datadir = $P->{DATADIR} . '/genomic_sequence/';
-	my $cmd = "$BINDIR/load_genome.pl " .
+	print $log "Calling $BINDIR/load_annotation.pl ...\n";
+	my $cmd = "$BINDIR/load_annotation.pl " .
 			  "-user_name $user_name " .
-			  '-keep_headers ' . ($keep_headers eq 'true' ? '1' : '0') . ' ' .
 			  '-name "' . escape($name) . '" ' .
-			  '-desc "' . escape($description) . '" ' .
-			  '-link "' . escape($link) . '" ' .
+			  '-desc "' . escape($description) . '" ' . 
 			  '-version "' . escape($version) . '" ' .
-			  "-type_id $type_id " .
 			  "-restricted " . ($restricted eq 'true') . ' ' .
-			  "-organism_id $organism_id " .
+			  "-gid $gid " . 
 			  '-source_name "' . escape($source_name) . '" ' .
 			  "-staging_dir $stagepath " .
-			  "-install_dir $datadir " .
-			  '-fasta_files "' . escape(join(',', @files)) . '" ' .
+			  "-install_dir " . $P->{DATADIR} . '/annotation ' .
+			  '-data_file "' . escape( join(',', @files) ) . '" ' .
 			  "-config $CONFIGFILE";
-			  #"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
 	print STDERR "$cmd\n";
-	print $log "$cmd\n";	
+	print $log "$cmd\n";
 	close($log);
 
 	if (!defined(my $child_pid = fork())) {
 	    die "cannot fork: $!";
-	} 
+	}
 	elsif ($child_pid == 0) {
 		print STDERR "child running: $cmd\n";
 		`$cmd`;
 	    exit;
-	} 
+	}
 	
 	return $i;
 }
 
-sub get_load_genome_log {
+sub get_load_log {
 	my %opts = @_;
 	my $load_id = $opts{load_id};
-#	print STDERR "get_load_genome_log $load_id\n";
+	my $timestamp = $opts{timestamp};
+#	print STDERR "get_load_log: $load_id\n";
 	
 	my $logfile = $TEMPDIR . "staging/$load_id/log.txt";
 	open(my $fh, $logfile) 
-		or return encode_json({ status => -1, log => ["Error opening log file"] });
+		or return encode_json({ timestamp => $timestamp, status => -1, log => "Error opening log file" });
 
 	my @lines = ();
-	my $gid;
+	my $dsid;
 	my $status = 0;
 	while (<$fh>) {
-		push @lines, $1 if ($_ =~ /^log:\s+(.+)/i);
+		push @lines, $1 if ($_ =~ /^log: (.+)/i);
 		if ($_ =~ /All done/i) {
 			$status = 1;
-			last;
+			last;	
 		}
-		elsif ($_ =~ /log: Added genome id(\d+)/i) {
-			$gid = $1;
+		elsif ($_ =~ /dataset id: (\d+)/i) {
+			$dsid = $1;
 		}
 		elsif ($_ =~ /log: error/i) {
 			$status = -1;
-			last;
+			last;	
 		}
 	}
+
 	close($fh);
 	
-#	print STDERR encode_json({ status => $status }) . "\n";
-	return encode_json({ status => $status, genome_id => $gid, log => \@lines });
+	return encode_json({ timestamp => $timestamp, status => $status, dataset_id => $dsid, log => join("<BR>\n", @lines) });
 }
 
-sub get_sequence_types {
-	my $selected = 1;
-	
-	my $html;
-	foreach my $type ( sort {$a->name cmp $b->name} $coge->resultset('GenomicSequenceType')->all() ) {
-		$html .= '<option value="' . $type->id . '"';
-		if ($selected && $type->id == $selected) { #$type->name =~ /$selected/i) {
-			$html .= ' selected';
-			$selected = '';
-		}
-		$html .= '>' . $type->info . '</option>';
-	}
-	
-	return $html;
-}
-
-sub create_sequence_type {
-	my %opts = @_;
-	my $name = $opts{name};
-	my $desc = $opts{desc};
-	return unless $name;
-	
-	my $type = $coge->resultset('GenomicSequenceType')->find_or_create( { name => $name, description => $desc } );
-	return unless $type;
-	
-	return $type->id;
-}
-
-sub create_organism {
-	my %opts = @_;
-	my $name = $opts{name};
-	my $desc = $opts{desc};
-	return unless $name and $desc;
-	print STDERR "create_organism $name $desc\n";
-	
-	my $organism = $coge->resultset('Organism')->find_or_create( { name => $name, description => $desc } );
-	return unless $organism;
-	
-	return $organism->id;
-}
-
-sub search_organisms {
-	my %opts = @_;
-	my $search_term = $opts{search_term};
-	my $timestamp = $opts{timestamp};
-#	print STDERR "$search_term $timestamp\n";
-	return unless $search_term;
-
-	# Perform search
-	$search_term = '%'.$search_term.'%';
-	my @organisms = $coge->resultset("Organism")->search(
-		\[ 'name LIKE ? OR description LIKE ?',  #FIXME security hole: need to check 'restricted'
-		['name', $search_term ], ['description', $search_term] ]);
-
-	# Limit number of results displayed
-	if (@organisms > $MAX_SEARCH_RESULTS) {
-		return encode_json({timestamp => $timestamp, items => undef});
-	}
-	
-	my @results;
-	foreach (sort {$a->name cmp $b->name} @organisms) {
-		push @results, { 'label' => $_->name, 'value' => $_->id };
-	}
-
-	return encode_json({timestamp => $timestamp, items => \@results});
-}
-
-sub search_users {
+sub search_genomes {
 	my %opts = @_;
 	my $search_term = $opts{search_term};
 	my $timestamp = $opts{timestamp};
@@ -562,16 +397,41 @@ sub search_users {
 
 	# Perform search
 	$search_term = '%'.$search_term.'%';
-	my @users = $coge->resultset("User")->search(
-		\[ 'user_name LIKE ? OR first_name LIKE ? OR last_name LIKE ?', 
-		['user_name', $search_term], ['first_name', $search_term], ['last_name', $search_term] ]);
 
-	# Limit number of results displayed
-	# if (@users > $MAX_SEARCH_RESULTS) {
-	# 	return encode_json({timestamp => $timestamp, items => undef});
-	# }
+	# Get all matching organisms
+	my @organisms = $coge->resultset("Organism")->search(
+		\[ 'name LIKE ? OR description LIKE ?', 
+		['name', $search_term ], ['description', $search_term] ]);
+
+	# Get all matching genomes
+	my @genomes = $coge->resultset("Genome")->search(
+		\[ 'name LIKE ? OR description LIKE ?', 
+		['name', $search_term], ['description', $search_term] ]);
+
+	# Combine matching genomes with matching organism genomes, preventing duplicates
+	my %unique;
+	map { $unique{$_->id} = $_ if (not $_->restricted or $USER->has_access_to_genome($_)) } @genomes;
+	foreach my $organism (@organisms) {
+		map { $unique{$_->id} = $_ if (not $_->restricted or $USER->has_access_to_genome($_)) } $organism->genomes;
+	}
 	
-	return encode_json({timestamp => $timestamp, items => [sort map { $_->user_name } @users]});
+	# Limit number of results displayed
+	if (keys %unique > $MAX_SEARCH_RESULTS) {
+		return encode_json({timestamp => $timestamp, items => undef});
+	}	
+	
+	my @items;
+	foreach (sort genomecmp values %unique) {#(keys %unique) {
+		push @items, { label => $_->info, value => $_->id };	
+	}
+	
+	return encode_json({timestamp => $timestamp, items => \@items});
+}
+
+# FIXME this comparison routine is duplicated elsewhere
+sub genomecmp {
+	no warnings 'uninitialized'; # disable warnings for undef values in sort
+	$a->organism->name cmp $b->organism->name || versioncmp($b->version, $a->version) || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id
 }
 
 sub get_sources {
@@ -608,10 +468,10 @@ sub generate_html {
 	my $name = $USER->user_name;
 	$name = $USER->first_name if $USER->first_name;
 	$name .= ' ' . $USER->last_name if ( $USER->first_name && $USER->last_name );
-	$template->param( USER     => $name,
-					  LOGO_PNG => $PAGE_TITLE . "-logo.png",
-					  DATE     => $DATE );
+	$template->param( USER     => $name );
+	$template->param( LOGO_PNG => $PAGE_TITLE . "-logo.png" );
 	$template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
+	$template->param( DATE     => $DATE );
 	my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
 	$link = CoGe::Accessory::Web::get_tiny_link( url => $link );
 
@@ -625,22 +485,30 @@ sub generate_html {
 sub generate_body {
 	if ($USER->user_name eq 'public') {
 		my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-		$template->param( PAGE_NAME => "$PAGE_TITLE.pl",
-						  LOGIN     => 1 );
+		$template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
+		$template->param( LOGIN     => 1 );
 		return $template->output;
 	}
-	
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
-	$template->param( MAIN => 1,
-					  PAGE_NAME => $PAGE_TITLE . '.pl',
-					  SUPPORT_EMAIL => $P->{SUPPORT_EMAIL} );
 
-	$template->param( ENABLE_NCBI => 1,
-					  DEFAULT_TAB => 0,
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+	$template->param( MAIN => 1 );
+	$template->param( PAGE_NAME => "$PAGE_TITLE.pl"  );
+	
+	my $gid = $FORM->param('gid');
+	if ($gid) {
+		my $genome = $coge->resultset('Genome')->find($gid);
+		#TODO check permissions
+		if ($genome) {
+			$template->param( GENOME_NAME => $genome->info, GENOME_ID => $genome->id );
+		}
+	}
+
+	$template->param( FILE_SELECT_SINGLE => 1,
+					  DEFAULT_TAB => 2,
+					  DISABLE_IRODS_GET_ALL => 1,
 					  MAX_IRODS_LIST_FILES => 100,
 					  MAX_IRODS_TRANSFER_FILES => 30,
 					  MAX_FTP_FILES => 30 );
-					  
 	$template->param( ADMIN_AREA    => 1 ) if $USER->is_admin;
 	
 	return $template->output;
