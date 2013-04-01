@@ -221,44 +221,50 @@ sub genomic_view
 		($chr) = $ds->get_chromosomes() unless $chr;
 	}
 
-	unless ( defined $start && $ds && $chr )
+	unless ( defined $start && $chr && ($ds || $dsg) )
 	{
 		my $dsid = $ds ? $ds->id : "none";
-		carp "missing needed parameters: Start: $start, Info_id: " . $dsid . ", Chr: $chr\n";
+		carp "missing needed parameters: Start: $start, Dataset_id: " . $dsid . ", Genome_id: ".$dsgid.", Chr: $chr\n";
 		return 0;
 	}
+	if (!$org && $dsg)
+	{
+	  $org = $dsg->organism;
+	  $version = $dsg->version;
+	}	
+	
 	print STDERR "generating image for ds: " . $ds->name . " (" . $ds->id . ")\n" if $self->DEBUG;
 	my $ta = new Benchmark if $BENCHMARK;
 	my $tb = new Benchmark if $BENCHMARK;
 	my $finddid_time = timestr( timediff( $tb, $ta ) ) if $BENCHMARK;
-	my $last_position = $ds->last_chromosome_position($chr);
+	my $last_position;
+	if ($ds) {$last_position  = $ds->last_chromosome_position($chr);}
+	if ($dsg) {$last_position = $dsg->last_chromosome_position($chr);}
 	$self->initialize_c(
-											 ds                 => $ds,
-											 chr                => $chr,
-											 iw                 => $iw,
-											 ih                 => $ih,
-											 start              => $start,
-											 stop               => $stop,
-											 c                  => $c,
-											 ch                 => $chr_height,
-											 fh                 => $feat_height,
-											 feature_labels     => 1,
-											 major_tick_labels  => $major_tick_labels,
-											 minor_tick_labels  => $minor_tick_labels,
-											 max_track          => 2,
-											 overlap_adjustment => $layers->{features}{overlap_check},
+		 chr                => $chr,
+		 iw                 => $iw,
+		 ih                 => $ih,
+		 start              => $start,
+		 stop               => $stop,
+		 c                  => $c,
+		 ch                 => $chr_height,
+		 fh                 => $feat_height,
+		 feature_labels     => 1,
+		 major_tick_labels  => $major_tick_labels,
+		 minor_tick_labels  => $minor_tick_labels,
+		 max_track          => 2,
+		 overlap_adjustment => $layers->{features}{overlap_check},
 	);
 
 	if ( $last_position < $stop )
 	{
 		$c->chr_end($last_position);
-
 		#	$c->stop($last_position);
 		#	print STDERR join ("\t", $c->start, $c->stop, $c->chr_end, $c->chr_length),"\n" ;
 	}
 	my $tc = new Benchmark if $BENCHMARK;
 	print STDERR "processing nucleotides\n" if $self->DEBUG;
-	$self->process_nucleotides( start => $start, stop => $stop, chr => $chr, ds => $ds, c => $c, layers => $layers, gstid => $gstid ) if $layers->{get_nt_seq};
+	$self->process_nucleotides( start => $start, stop => $stop, chr => $chr, ds => $ds, dsg=>$dsg, c => $c, layers => $layers, gstid => $gstid ) if $layers->{get_nt_seq};
 	my $td = new Benchmark if $BENCHMARK;
 	my $init_c_time = timestr( timediff( $td, $tc ) ) if $BENCHMARK;
 
@@ -267,12 +273,13 @@ sub genomic_view
 		warn "error initializing the chromosome object.  Failed for valid chr_length\n";
 		return (0);
 	}
+	
 	my $t1  = new Benchmark if $BENCHMARK;
 	my $taa = new Benchmark if $BENCHMARK;
 	print STDERR "processing features\n" if $self->DEBUG;
 	foreach my $item ( $dsg->datasets( chr => $chr ) )
 	{
-		$self->process_features( start => $start, stop => $c->stop, chr => $chr, ds => $item, coge => $coge, c => $c, fids => $fids, fnames => $fnames, layers => $layers, gstid => $gstid, ftid => $ftid, color => $color ) unless $simple;
+		$self->process_features( start => $start, stop => $c->stop, chr => $chr, ds => $item, dsg=>$dsg, coge => $coge, c => $c, fids => $fids, fnames => $fnames, layers => $layers, gstid => $gstid, ftid => $ftid, color => $color ) unless $simple;
 		my $tab = new Benchmark if $BENCHMARK;
 		my $feat_time = timestr( timediff( $tab, $taa ) ) if $BENCHMARK;
 		print STDERR " processing features for dsid " . $item->name, " ", Dumper($layers), " (", $item->id, "):   $feat_time\n" if $BENCHMARK;
@@ -322,7 +329,6 @@ sub initialize_c
 
 	#    unless ref($self) =~ /Graphics/ unshift @_, $self;
 	my %opts               = @_;
-	my $ds                 = $opts{ds};
 	my $chr                = $opts{chr};
 	my $iw                 = $opts{iw};
 	my $ih                 = $opts{ih};
@@ -398,6 +404,7 @@ sub process_nucleotides
 	}
 	my $chr    = $opts{chr};
 	my $ds     = $opts{ds};
+	my $dsg     = $opts{dsg};
 	my $layers = $opts{layers};
 	my $c      = $opts{c};
 
@@ -405,8 +412,9 @@ sub process_nucleotides
 	my $t7 = new Benchmark if $BENCHMARK;
 	unless ($seq)
 	{
-		return unless $ds;
-		$seq = uc( $ds->get_genomic_sequence( start => $start, end => $stop, chr => $chr, gstid => $gstid ) );
+		#return unless $ds;
+		if ($ds) {$seq = uc( $ds->get_genomic_sequence( start => $start, end => $stop, chr => $chr, gstid => $gstid ) );}
+		if ($dsg) {$seq = uc( $dsg->get_genomic_sequence( start => $start, end => $stop, chr => $chr) );}
 	}
 	my $t8      = new Benchmark if $BENCHMARK;
 	my $seq_len = length $seq;
@@ -457,8 +465,12 @@ sub process_nucleotides
 	$pos = 0;
 	if ( $layers->{gbox} )
 	{
-		my $startseq = uc( $ds->get_genomic_sequence( start => $start - 5, end => $start - 1, chr => $chr, gstid => $gstid ) );
-		my $stopseq  = uc( $ds->get_genomic_sequence( start => $stop + 1,  end => $stop + 5,  chr => $chr, gstid => $gstid ) );
+		my $startseq; 
+		if ($ds) {$startseq = uc( $ds->get_genomic_sequence( start => $start - 5, end => $start - 1, chr => $chr, gstid => $gstid ) );}
+		if ($dsg) {$startseq = uc( $dsg->get_genomic_sequence( start => $start - 5, end => $start - 1, chr => $chr, gstid => $gstid ) );}
+		my $stopseq;  
+		if ($ds) {$stopseq = uc( $ds->get_genomic_sequence( start => $stop + 1,  end => $stop + 5,  chr => $chr, gstid => $gstid ) );}
+		if ($dsg) {$stopseq = uc( $dsg->get_genomic_sequence( start => $stop + 1,  end => $stop + 5,  chr => $chr, gstid => $gstid ) );}
 		my $tmpseq   = $seq;
 		$tmpseq = $startseq . $tmpseq if $startseq;
 		$tmpseq .= $stopseq if $stopseq;
@@ -534,6 +546,7 @@ sub process_features
 	my $stop        = $opts{stop};
 	my $chr         = $opts{chr};
 	my $ds          = $opts{ds};
+	my $dsg          = $opts{dsg};
 	my $dsid        = $opts{dsid};
 	my $coge        = $opts{coge};
 	my $c           = $opts{c};
@@ -554,7 +567,14 @@ sub process_features
 	my $tf3 = new Benchmark if $BENCHMARK;
 	my @cds_feats;
 	$dsid = $ds->id if $ds;
-	my @feats = $coge->get_features_in_region( start => $start, end => $stop, dataset => $dsid, chr => $chr, ftid => $ftid );
+	my @dsids;
+	push @dsids, $dsid if $dsid;
+	push @dsids, map {$_->id} $dsg->datasets if $dsg;
+	my @feats;
+	foreach my $id (@dsids)
+	  {
+	 	push @feats, $coge->get_features_in_region( start => $start, end => $stop, dataset => $id, chr => $chr, ftid => $ftid );
+	  }
 	my @tmp1;
 	my @tmp2;
 	shift @feats while ( scalar @feats && !$feats[0] );
@@ -576,7 +596,14 @@ sub process_features
 		$stop     = $tmpfeat->stop;
 		$research = 1;
 	}
-	@feats = $coge->get_features_in_region( start => $start, end => $stop, dataset => $dsid, chr => $chr, ftid => $ftid ) if $research;
+	if ($research)
+	  {
+            @feats = undef;
+            foreach my $id (@dsids)
+             {
+                push @feats, $coge->get_features_in_region( start => $start, end => $stop, dataset => $id, chr => $chr, ftid => $ftid );
+             }
+	  } 
 
 	#    print STDERR "$start - $stop\n";
 	my %feats = map { $_->id, $_ } @feats;
@@ -874,17 +901,18 @@ sub process_experiment
 	my $c = $opts{c};
 	my $color=$opts{color};
 	
-	##we will need to abstract out the call to the data engine in order for this to be compatible on systems with multiple intsallations of coge using different databases
-	my $url = "http://genomevolution.org/CoGe/bin/fastbit_query.pl?exp_id=$expid;chr=$chr;start=$start;stop=$stop";
+	# We will need to abstract out the call to the data engine in order for
+	# this to be compatible on systems with multiple intsallations of coge 
+	# using different databases
+	my $url = "http://genomevolution.org/CoGe/bin/fastbit_query.pl?exp_id=$expid;chr=$chr;start=$start;stop=$stop"; #FIXME hardcoded server
 	
 # mdb removed 3/26/13
 #	my $cmd = "curl '$url'";
 #	print STDERR "$cmd\n";
 #	my $result = `$cmd`;
-	
+
 	# mdb added 3/26/13
 	#my $url = "http://geco.iplantcollaborative.org/mbomhoff/CoGe/bin/fastbit_query.pl?exp_id=$expid;chr=$chr;start=$start;stop=$stop";
-	#print STDERR "$url \n";
 	my $result = LWP::Simple::get($url);
 	#print STDERR "$result\n";
 	return unless $result;
@@ -972,80 +1000,80 @@ sub process_layers
 {
 	my $layers = shift;
 	my %valid_layers = (
-											 ruler              => "ruler",
-											 chromosome         => "chromosome",
-											 chr                => "chromosome",
-											 cds                => "cds",
-											 coding             => "cds",
-											 exons              => "cds",
-											 exon               => "cds",
-											 rna                => "rna",
-											 mrna               => "mrna",
-											 gene               => "gene",
-											 proteins           => "protein",
-											 protein            => "protein",
-											 pro                => "protein",
-											 funcitonal_domains => "domain",
-											 domains            => "domain",
-											 domain             => "domain",
-											 other              => "other",
-											 cns                => "cns",
-											 nt                 => "nt",               #requres nt sequence
-											 nucleotides        => "nt",               #requres nt sequence
-											 nucleotide         => "nt",               #requres nt sequence
-											 nuc                => "nt",               #requres nt sequence
-											 gc                 => "gc",               #requres nt sequence
-											 background         => "background",
-											 all                => "all",              #requres nt sequence
-											 pseudogene         => "pseudogene",
-											 gene_space         => "gene_space",
-											 "local_dup"        => "local_dup",
-											 "local_dups"       => "local_dup",
-											 "tandem"           => "local_dup",
-											 "gaga"             => "gaga",             #requres nt sequence
-											 "gbox"             => "gbox",             #requres nt sequence
-											 "cbc"              => "cbc",              #color CDS by codon
-											 "cbc50"            => "cbc50",            #color CDS by codon
-											 "flat"             => "flat",             #are gene models draw 'flat' or pseudo-3D?
-											 "olc"              => "overlap_check",    #are features checked for overlap when drawing image?
-											 "overlap_check"    => "overlap_check",
-											 "repeats"          => "repeat",
-											 "repeat"           => "repeat",
-											 "repeat_region"    => "repeat",
-											 "gevo_link"        => "gevo_link",
-											 "TE"               => "transposable",
-											 "transposable"     => "transposable",
-											 "quant"            => "quant",            #quantitation
+		ruler              => "ruler",
+		chromosome         => "chromosome",
+		chr                => "chromosome",
+		cds                => "cds",
+		coding             => "cds",
+		exons              => "cds",
+		exon               => "cds",
+		rna                => "rna",
+		mrna               => "mrna",
+		gene               => "gene",
+		proteins           => "protein",
+		protein            => "protein",
+		pro                => "protein",
+		funcitonal_domains => "domain",
+		domains            => "domain",
+		domain             => "domain",
+		other              => "other",
+		cns                => "cns",
+		nt                 => "nt",               #requres nt sequence
+		nucleotides        => "nt",               #requres nt sequence
+		nucleotide         => "nt",               #requres nt sequence
+		nuc                => "nt",               #requres nt sequence
+		gc                 => "gc",               #requres nt sequence
+		background         => "background",
+		all                => "all",              #requres nt sequence
+		pseudogene         => "pseudogene",
+		gene_space         => "gene_space",
+		"local_dup"        => "local_dup",
+		"local_dups"       => "local_dup",
+		"tandem"           => "local_dup",
+		"gaga"             => "gaga",             #requres nt sequence
+		"gbox"             => "gbox",             #requres nt sequence
+		"cbc"              => "cbc",              #color CDS by codon
+		"cbc50"            => "cbc50",            #color CDS by codon
+		"flat"             => "flat",             #are gene models draw 'flat' or pseudo-3D?
+		"olc"              => "overlap_check",    #are features checked for overlap when drawing image?
+		"overlap_check"    => "overlap_check",
+		"repeats"          => "repeat",
+		"repeat"           => "repeat",
+		"repeat_region"    => "repeat",
+		"gevo_link"        => "gevo_link",
+		"TE"               => "transposable",
+		"transposable"     => "transposable",
+		"quant"            => "quant",            #quantitation
 	);
 	my %features = (
-									 cds             => 1,
-									 mrna            => 1,
-									 protein         => 1,
-									 gene            => 1,
-									 pseudogene      => 1,
-									 domain          => 1,
-									 other           => 1,
-									 cns             => 1,
-									 rna             => 1,
-									 local_dup       => 1,
-									 cbc             => 1,
-									 cbc50           => 1,
-									 gene_space      => 1,
-									 "flat"          => 1,
-									 "overlap_check" => 1,
-									 "repeat"        => 1,
-									 "gevo_link"     => 1,
-									 "transposable"  => 1,
-									 "quant"         => 1,
+		cds             => 1,
+		mrna            => 1,
+		protein         => 1,
+		gene            => 1,
+		pseudogene      => 1,
+		domain          => 1,
+		other           => 1,
+		cns             => 1,
+		rna             => 1,
+		local_dup       => 1,
+		cbc             => 1,
+		cbc50           => 1,
+		gene_space      => 1,
+		"flat"          => 1,
+		"overlap_check" => 1,
+		"repeat"        => 1,
+		"gevo_link"     => 1,
+		"transposable"  => 1,
+		"quant"         => 1,
 	);
 
 	#determine of nt sequence is needed
 	my %nt = (
-						 all  => 1,
-						 nt   => 1,
-						 gc   => 1,
-						 gaga => 1,
-						 gboc => 1,
+		all  => 1,
+		nt   => 1,
+		gc   => 1,
+		gaga => 1,
+		gboc => 1,
 	);
 	my %layers;
 	foreach my $layer (@$layers)
@@ -1065,7 +1093,7 @@ sub process_layers
 		{
 			$layers{ $valid_layers{$layer} } = 1;
 		}
-		$layers{quant} =1 if $layer eq "quant"; #this is temporary while "quant" is a feature option.  to remove when demo is removed from CoGe server.  Note to Matt and Eric.  Remove this.
+		$layers{quant} =1 if $layer eq "quant"; #FIXME this is temporary while "quant" is a feature option.  to remove when demo is removed from CoGe server.  Note to Matt and Eric.  Remove this.
 		$layers{get_nt_seq} = 1 if ( $nt{ $valid_layers{$layer} } );    #flag for whether nt sequence needs to be retrieved
 	}
 	$layers{all} = 1 unless keys %layers;
@@ -1073,6 +1101,3 @@ sub process_layers
 }
 
 1;
-
-# The preceding line will help the module return a true value
-

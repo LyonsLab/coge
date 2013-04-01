@@ -83,9 +83,6 @@ sub _initialize
     $self->order(1);
 #    $self->stop($self->start + length $self->nt-1) unless $self->stop;
     $self->skip_overlap_search(1); #make sure to skip searching for overlap for these guys.  Search can be slow
-    my $ga = 0;
-
-
 #    $self->color(\@color);
 #    $self->label($self->nt) if $self->nt && $self->show_label;
     $self->type('quant');
