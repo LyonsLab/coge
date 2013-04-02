@@ -523,11 +523,11 @@ function export_bed () {
 </script>
 <TABLE>
    <TR><TD valign='top'>
-    <table class="ui-widget-content ui-corner-all">
+    <table class="ui-widget-content ui-corner-all" style="min-width:330px;">
      <tr>
        <td>Organism Name:</td>
        <td>
-        <input type="text" size=15 value="<TMPL_VAR NAME="ORG_NAME">" name="org_name" id="org_name" style="font-style:italic" onFocus="search_bar('org_name')" onKeyUp='timing("org_name");'><span class='ui-button ui-corner-all' onClick="timing('org_name');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+         <input type="text" size=15 value="<TMPL_VAR NAME="ORG_NAME">" name="org_name" id="org_name" style="font-style:italic" onFocus="search_bar('org_name')" onKeyUp='timing("org_name");'><span class='ui-button ui-corner-all' onClick="timing('org_name');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
        </td>
      </tr>
      <tr>
