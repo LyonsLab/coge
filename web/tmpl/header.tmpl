@@ -44,6 +44,11 @@ jQuery(document).ready(function(){
 	pageObj = new Object();
 	if (jQuery.browser.msie) {browserAlert()};
 	setup_button_states();
+	
+	// Show indicator if not on main site
+	if (document.URL.indexOf('genomevolution.org') == -1) {
+		$('#dev').show();
+	}
 });
 
 function browserAlert(){
@@ -160,6 +165,7 @@ $(document).ready( function() {
 		</ul>
 	</span>
 </div>
+<div id="dev" class='small alert' style="display:none;">*** Development ***</div>
 </TMPL_UNLESS>
 
 <div>
