@@ -766,15 +766,14 @@ function taxonomy_get_node (id) {
 
 <br>
 <span id='genome_data' style="color:dimgray;font-weight:bold;">Genome Data</span><br>
+<div class="small note" style="width:450px;">
+	Note: only sequence FASTA files can be loaded at this stage.  
+	GFF annotation files can be loaded from the Genome Info menu after the sequence is loaded.<br>
+</div>
 <table id='file_table' class="small ui-widget-content ui-corner-all"></table>
 <span onClick="$('#file_select_dialog').dialog('open')" class='ui-button ui-corner-all'>Add Sequence Files</span>
 <span id="files_clear" onClick="clear_list();" class='ui-button ui-corner-all' style="display:none;">Clear List</span>
 <br>
-<br>
-<div class="small note" style="width:450px;">
-	Note: currently only sequence FASTA files can be loaded.<br>
-	We are working on adding the ability to also load GFF annotation files and will hopefully make this available in the near future.
-</div>
 <br>
 <br>
 <span id="load_genome_button" onDblClick="load_genome();" onClick="load_genome();" style="font-size:1em;float-right;" class='ui-button ui-corner-all ui-button-go'>Load Genome</span>
