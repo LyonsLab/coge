@@ -627,67 +627,6 @@ function sort_name (a,b) {
 	return 0 //default return value (no sorting)
 }
 
-/*
-function taxonomy_get_node (id) {
-	var tree = $("#tax_tree");
-	var node = $("#"+id);
-	var name = $(node).attr('name');
-	
-	// If the node is open then it has children so just
-	// close the node and return.
-	var is_open = tree.jstree("is_open", node);
-	if (is_open) {
-		tree.jstree("close_node", node);
-		return;
-	}
-	
-	// If not a leaf node then we already retreived the children so
-	// just open the node and return.
-	var is_leaf = tree.jstree("is_leaf", node);
-	if (!is_leaf) {
-		tree.jstree("open_node", node);
-		return;
-	}
-
-	// Retrieve the children for this taxon.
-	$("#wait_ncbi").animate({opacity:1});
-	timestamps['taxonomy_get_node'] = new Date().getTime();
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'search_ncbi_taxonomy',
-			search_term: name,
-			get_children: 1,
-			timestamp: timestamps['taxonomy_get_node']
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			if (obj) {
-				if (obj.timestamp == timestamps['taxonomy_get_node']) {
-					if (obj.results.length == 0) {
-						var lineage = node.data("lineage");
-						$("#edit_organism_name").val(name);
-						$("#edit_organism_desc").val(lineage);
-						activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');
-						$("#edit_organism_info").slideDown();
-					}
-					else {
-						obj.results.forEach(
-							function(e) {
-								tree.jstree("create_node", node, "last", {attr: {id: 'taxon'+e.id, name: e.name}, data: e.name})
-									.data("lineage", e.lineage);
-							}
-						);
-						tree.jstree("open_node", node);
-					}
-				}
-			}
-			$("#wait_ncbi").animate({opacity:0});	
-		}
-	});
-}
-*/
-
 </SCRIPT>
 
 <span style="color:dimgray;font-weight:bold;">Genome Info</span><br>
