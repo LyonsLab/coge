@@ -767,7 +767,7 @@ function taxonomy_get_node (id) {
 <br>
 <span id='genome_data' style="color:dimgray;font-weight:bold;">Genome Data</span><br>
 <div class="small note" style="width:450px;">
-	Note: only sequence FASTA files can be loaded at this stage.  
+	Only sequence FASTA files can be loaded at this stage.  
 	GFF annotation files can be loaded from the Genome Info menu after the sequence is loaded.<br>
 </div>
 <table id='file_table' class="small ui-widget-content ui-corner-all"></table>
@@ -777,7 +777,12 @@ function taxonomy_get_node (id) {
 <br>
 <br>
 <span id="load_genome_button" onDblClick="load_genome();" onClick="load_genome();" style="font-size:1em;float-right;" class='ui-button ui-corner-all ui-button-go'>Load Genome</span>
-
+<br>
+<br>
+<br>
+<br>
+<br>
+<TMPL_INCLUDE NAME='widgets/Beta.tmpl'>
 
 
 <div id="create_new_type_dialog" class="dialog_box" title="Create New Sequence Type" style="display:none;">
