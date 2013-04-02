@@ -364,11 +364,13 @@ sub batch_add {
 	my $table_name = shift;
 	my $item = shift;
 	
-	push @$buffer, $item if (defined $item);
-	if (@$buffer >= $DB_BATCH_SZ or not defined $item) {
-		print $log "Populate $table_name " . @$buffer . "\n";
-		$coge->resultset($table_name)->populate($buffer);
-		@$buffer = ();
+	if (defined $buffer) {
+		push @$buffer, $item if (defined $item);
+		if (@$buffer >= $DB_BATCH_SZ or not defined $item) {
+			print $log "Populate $table_name " . @$buffer . "\n";
+			$coge->resultset($table_name)->populate($buffer) if (@$buffer);
+			@$buffer = ();
+		}
 	}
 }
 
