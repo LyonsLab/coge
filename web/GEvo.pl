@@ -1153,7 +1153,7 @@ qq{<br><a href="http://genomevolution.org/wiki/index.php/Gobe" class="small" sty
 		next unless $anno_file;
 		my $basename = $TEMPURL . "/" . basename($anno_file);
 		my $accn     = $item->{accn};
-		$html .= qq{<div><a href = "http://baboon.math.berkeley.edu/mavid/gaf.html">GAF</a> Annotation: <A HREF="$basename" target=_new>$accn</A></font></DIV>\n};
+		$html .= qq{<div><a href = "http://genome.lbl.gov/vista/mvista/instructions.shtml">VISTA</a> Annotation: <A HREF="$basename" target=_new>$accn</A></font></DIV>\n};
 	}
 	my ( $synfile, $annofile ) = generate_mGSV_files( $cogeweb->sqlitefile );
 	$synfile  =~ s/$TEMPDIR/$TEMPURL/;
