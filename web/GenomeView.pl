@@ -108,10 +108,11 @@ sub gen_body
 		($chr) = $dsg->chromosomes unless ($chr);
 		@ds = $dsg->datasets( chr => $chr );
 	}
-
 	if ($dsid)
 	{
-		push @ds, $coge->resultset('Dataset')->find($dsid);
+		my $dataset = $coge->resultset('Dataset')->find($dsid);
+		push @ds, $dataset;
+		($chr) = $dataset->chromosomes unless ($chr);
 	}
 	unless ($dsg)
 	{
