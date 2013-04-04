@@ -199,10 +199,11 @@ sub login_cas {
 	my $this_url    = $opts{this_url};      #not sure what this does
 	my $coge        = $opts{coge};          #coge object
 
-	#  print STDERR Dumper \%opts;
+	#print STDERR Dumper \%opts;
 	my $ua = new LWP::UserAgent;
 
-	my $request = '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Header/><SOAP-ENV:Body><samlp:Request xmlns:samlp="urn:oasis:names:tc:SAML:1.0:protocol"  MajorVersion="1" MinorVersion="1" RequestID="_192.168.167.84.1024506224022"  IssueInstant="2010-05-13T16:43:48.099Z"><samlp:AssertionArtifact>'
+	my $request = '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">'.
+		'<SOAP-ENV:Header/><SOAP-ENV:Body><samlp:Request xmlns:samlp="urn:oasis:names:tc:SAML:1.0:protocol"  MajorVersion="1" MinorVersion="1" RequestID="_192.168.167.84.1024506224022"  IssueInstant="2010-05-13T16:43:48.099Z"><samlp:AssertionArtifact>'
 	  . $ticket . '</samlp:AssertionArtifact></samlp:Request></SOAP-ENV:Body></SOAP-ENV:Envelope>';
 
 	my $request_ua = HTTP::Request->new( POST => 'https://auth.iplantcollaborative.org/cas/samlValidate?TARGET=' . $this_url );
@@ -218,7 +219,8 @@ sub login_cas {
 	if ($result) {
 		( $uname, $fname, $lname, $email ) = parse_saml_response($result);
 	}
-	return unless $uname;    #not logged in.  Return
+	return unless $uname; # Not logged in.  Return
+	
 	my $coge_user;
 	($coge_user) = $coge->resultset('User')->search( { user_name => $uname } );
 	unless ($coge_user) {
@@ -273,20 +275,21 @@ sub login_cas {
 sub parse_saml_response {
 	my $response = $_[0];
 
-	if ( $response =~ m/samlp:Success/ ) {
+	# mdb modified 4/4/13 for iPlant CAS update
+	if ( $response =~ m/saml1p:Success/ ) {
 		my $ref = XMLin($response);
 		my ($user_id) =
-		  $ref->{'SOAP-ENV:Body'}->{Response}->{Assertion}->{AttributeStatement}
-		  ->{Subject}->{NameIdentifier};
+		  $ref->{'SOAP-ENV:Body'}->{'saml1p:Response'}->{'saml1:Assertion'}->{'saml1:AttributeStatement'}
+		  ->{'saml1:Subject'}->{'saml1:NameIdentifier'};
+		my @tmp = @{$ref->{'SOAP-ENV:Body'}->{'saml1p:Response'}->{'saml1:Assertion'}->{'saml1:AttributeStatement'}->{'saml1:Attribute'}};
 		my %attr =
-		  map { $_->{'AttributeName'}, $_->{'AttributeValue'} }
-		  @{ $ref->{'SOAP-ENV:Body'}->{Response}->{Assertion}
-			  ->{AttributeStatement}->{Attribute} };
-		my ($user_lname) = $attr{lastName};
-		my ($user_fname) = $attr{firstName};
-		my ($user_email) = $attr{email};
+		  map { $_->{'AttributeName'}, $_->{'saml1:AttributeValue'} }
+		  @{ $ref->{'SOAP-ENV:Body'}->{'saml1p:Response'}->{'saml1:Assertion'}->{'saml1:AttributeStatement'}->{'saml1:Attribute'} };
+		my ($user_lname) = $attr{lastName}->{content};
+		my ($user_fname) = $attr{firstName}->{content};
+		my ($user_email) = $attr{email}->{content};
 
-  #		print STDERR $user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email;
+		print STDERR "parse_saml_response: ".$user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email."\n";
 
 		return ( $user_id, $user_fname, $user_lname, $user_email );
 	}
