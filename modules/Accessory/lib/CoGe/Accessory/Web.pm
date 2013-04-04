@@ -275,7 +275,7 @@ sub login_cas {
 sub parse_saml_response {
 	my $response = $_[0];
 
-	# mdb modified 4/4/13 for iPlant CAS update
+	# mdb modified 4/4/13 for iPlant CAS update - XML::Simple doesn't support namespaces
 	if ( $response =~ m/saml1p:Success/ ) {
 		my $ref = XMLin($response);
 		my ($user_id) =
@@ -289,8 +289,7 @@ sub parse_saml_response {
 		my ($user_fname) = $attr{firstName}->{content};
 		my ($user_email) = $attr{email}->{content};
 
-		print STDERR "parse_saml_response: ".$user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email."\n";
-
+		#print STDERR "parse_saml_response: ".$user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email."\n";
 		return ( $user_id, $user_fname, $user_lname, $user_email );
 	}
 }
