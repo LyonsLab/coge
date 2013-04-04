@@ -593,7 +593,7 @@ sub get_genome_info
     $html .= qq{<tr><td><span class="link" onclick="window.open('SeqType.pl')">Sequence type: </span><td>}.$gst_name.qq{ (gstid$gstid)<input type=hidden id=gstid value=}.$gstid.qq{></td></tr>};
     $html .= qq{<tr><td>Length: </td>};
     $html .= qq{<td><div style="float: left;"> }.commify($total_length)." bp </div>";
-    my $gc = $total_length < 10000000 && $chr_num < 500 ? get_gc_for_chromosome(dsgid=>$dsgid): 0;
+    my $gc = $total_length < 10000000 && $chr_num < 20 ? get_gc_for_chromosome(dsgid=>$dsgid): 0;
     $gc = $gc ? $gc : qq{  <div style="float: left; text-indent: 1em;" id=datasetgroup_gc class="link" onclick="gen_data(['args__loading...'],['datasetgroup_gc']);\$('#datasetgroup_gc').removeClass('link'); get_gc_for_chromosome(['args__dsgid','dsg_id','args__gstid', 'gstid'],['datasetgroup_gc']);">  Click for percent GC content</div><br/>};
     $html .= "$gc</td></tr>";
 
