@@ -717,7 +717,7 @@ sub get_dataset
 sub get_dataset_info
   {
     my $dsd = shift;
-    my $chr_num_limit = 500;
+    my $chr_num_limit = 20;
     return qq{<input type="hidden" id="chr" value="">}, " ",0 unless ($dsd); # error flag for empty dataset
 
     my $ds = $coge->resultset("Dataset")->find($dsd);
