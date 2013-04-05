@@ -299,40 +299,40 @@ function export_bed (gid) {
 <TMPL_IF NAME="DO_GENOME_INFO">
 	<table class="small">
 		<tr>
-	 		<td class='title5'>Genome ID:</td>
+	 		<td class='title5' style='white-space:nowrap;'>Genome ID:</td>
 			<td class='data5'><TMPL_VAR NAME="GID"></td>
 		</tr>	
 		<tr>
-	 		<td class='title5'>Organism:</td>
+	 		<td class='title5' style='white-space:nowrap;'>Organism:</td>
 			<td class='data5'><span class="link" onclick="window.open('OrganismView.pl?gid=<TMPL_VAR NAME=GID>')"><TMPL_VAR NAME="ORGANISM"></span></td>
 		</tr>
 		<tr>
-			<td class='title5'>Version:</td>
+			<td class='title5' style='white-space:nowrap;'>Version:</td>
 			<td class='data5'><TMPL_VAR NAME="VERSION"></td>
 		</tr>
 		<tr>
-			<td class='title5'>Type:</td>
+			<td class='title5' style='white-space:nowrap;'>Type:</td>
 			<td class='data5'><TMPL_VAR NAME="TYPE"></td>
 		</tr>
 		<tr>
-			<td class='title5'>Source:</td>
+			<td class='title5' style='white-space:nowrap;'>Source:</td>
 			<td class='data5'><TMPL_VAR NAME="SOURCE"></td>
 		</tr>
 		<tr>
-			<td class='title5'>Restricted:</td>
+			<td class='title5' style='white-space:nowrap;'>Restricted:</td>
 			<td class='data5'><TMPL_VAR NAME="RESTRICTED"></td>
 		</tr>
 		<tr>
-			<td class='title5'>Name:</td>
+			<td class='title5' style='white-space:nowrap;'>Name:</td>
 			<td class='data5'><TMPL_VAR NAME="NAME"></td>
 		</tr>
 		<tr>
-			<td class='title5'>Description:</td>
+			<td class='title5' style='white-space:nowrap;'>Description:</td>
 			<td class='data5'><TMPL_VAR NAME="DESCRIPTION"></td>
 		</tr>
 		<TMPL_IF NAME="DELETED">
 		<tr>
-			<td class='alert'>Note:</td>
+			<td class='alert' style='white-space:nowrap;'>Note:</td>
 			<td class='alert'>This genome is deleted</td>
 		</tr>
 		</TMPL_IF>
