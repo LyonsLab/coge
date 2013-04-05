@@ -409,7 +409,7 @@ sub get_datasets {
 
 	my @rows;
 	foreach my $ds (sort {$a->id <=> $b->id} $genome->datasets) {
-		next if ($exclude_seq && filter_dataset($ds)); #FIXME add dataset "type" field instead?
+		#next if ($exclude_seq && filter_dataset($ds)); #FIXME add dataset "type" field instead?
 		push @rows, { DATASET_INFO => '<span>'.$ds->info.'</span>' };
 	}
 	return '' unless @rows;
