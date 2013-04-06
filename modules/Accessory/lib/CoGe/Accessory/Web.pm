@@ -348,17 +348,18 @@ sub get_tiny_link {
 }
 
 sub get_job {
-        my %args = @_;
-        my $job;
-        my $tiny_link = $args{tiny_link};
-        my $user_id = $args{user_id};
-        my $title = $args{title};
-	my $coge = $args{db_object};
+    my %args = @_;
+    my $job;
+    my $tiny_link = $args{tiny_link};
+    my $user_id = $args{user_id};
+    my $title = $args{title};
+    my $coge = $args{db_object};
 
-        my $prev_submission = $coge->resultset('Job')->search({
-                link => $tiny_link
-        });
+    my $prev_submission = $coge->resultset('Job')->search({
+            link => $tiny_link
+    });
 
+    if(defined($user_id)) {
         if($prev_submission->count < 1) {
                 $job = $coge->resultset('Job')->create({
                     "link" => $tiny_link,
@@ -374,8 +375,9 @@ sub get_job {
                 process_id => getpid()
             });
         }
+    }
 
-        return $job;
+    return $job;
 }
 
 sub write_log {
