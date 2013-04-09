@@ -355,26 +355,28 @@ sub get_job {
     my $title = $args{title};
     my $coge = $args{db_object};
 
+
+    $user_id = 0 unless defined($user_id);
+
     my $prev_submission = $coge->resultset('Job')->search({
-            link => $tiny_link
+        user_id => $user_id,
+        link => $tiny_link
     });
 
-    if(defined($user_id)) {
-        if($prev_submission->count < 1) {
-                $job = $coge->resultset('Job')->create({
-                    "link" => $tiny_link,
-                    "page" => $title,
-                    "process_id" => getpid(),
-                    "user_id" => $user_id,
-                    "status" => 1
-                });
-        } else {
-            $job = $prev_submission->next;
-            $job->update({
-                status => 1,
-                process_id => getpid()
+    if($prev_submission->count < 1) {
+            $job = $coge->resultset('Job')->create({
+                "link" => $tiny_link,
+                "page" => $title,
+                "process_id" => getpid(),
+                "user_id" => $user_id,
+                "status" => 1
             });
-        }
+    } else {
+        $job = $prev_submission->next;
+        $job->update({
+            status => 1,
+            process_id => getpid()
+        });
     }
 
     return $job;
