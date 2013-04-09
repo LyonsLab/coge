@@ -45,6 +45,9 @@ $exp_id = $FORM->param('exp_id')	unless defined $exp_id;
 $chr 	= $FORM->param('chr') 		unless defined $chr;
 $start 	= $FORM->param('start') 	unless defined $start;
 $stop 	= $FORM->param('stop') 		unless defined $stop;
+$stop 	= $FORM->param('end') 		unless defined $stop;
+
+#TODO need some param checking here
 
 # Connect to the database
 my $connstr = "dbi:mysql:dbname=$DBNAME;host=$DBHOST;port=$DBPORT";
@@ -66,12 +69,12 @@ my $t3 = new Benchmark;
 # Call FastBit to do query
 # Issue 61: query string must contain a "." for fastbit to use consistent
 # format (see jira thread for explanation) so "0.0=0.0" was added along with
-# -v 2 option.  Output parsing was modified accordingly for new output format.
+# -v option.  Output parsing was modified accordingly for new output format.
 #my $cmd = "$CMDPATH -d $exp_storage_path -q \"select chr,start,stop,strand,value1,value2 where chr='$chr' and start > $start and stop < $stop\" 2>&1"; # mdb removed 3/27/13 issue 61
-my $cmd = "$CMDPATH -v 1 -d $exp_storage_path -q \"select chr,start,stop,strand,value1,value2 where 0.0=0.0 and chr='$chr' and start > $start and stop < $stop limit 999999999\" 2>&1"; # mdb added 3/27/13 issue 61
+my $cmd = "$CMDPATH -v 1 -d $exp_storage_path -q \"select chr,start,stop,strand,value1,value2 where 0.0=0.0 and chr='$chr' and start > $start and stop < $stop order by start limit 999999999\" 2>&1"; # mdb added 3/27/13 issue 61
 #print STDERR "$cmd\n";
 my @cmdOut = qx{$cmd};
-#print STDERR $cmdOut;
+#print STDERR @cmdOut;
 my $cmdStatus = $?;
 die "Error executing command $CMDPATH ($cmdStatus)" if ($cmdStatus != 0);
 my $t4 = new Benchmark;
