@@ -284,6 +284,7 @@ sub genomic_view
 		my $feat_time = timestr( timediff( $tab, $taa ) ) if $BENCHMARK;
 		print STDERR " processing features for dsid " . $item->name, " ", Dumper($layers), " (", $item->id, "):   $feat_time\n" if $BENCHMARK;
 	}
+	
 	if ($expids && $layers->{quant} && ref ($expids) =~ /array/i)
 	{
 		foreach my $expid (@$expids)
@@ -914,7 +915,7 @@ sub process_experiment
 	# mdb added 3/26/13
 	#my $url = "http://geco.iplantcollaborative.org/mbomhoff/CoGe/bin/fastbit_query.pl?exp_id=$expid;chr=$chr;start=$start;stop=$stop";
 	my $result = LWP::Simple::get($url);
-	#print STDERR "$result\n";
+	#print STDERR "$url\n$result\n";
 	return unless $result;
 	
 	my $data = decode_json($result);
