@@ -14,6 +14,7 @@ use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $IMGURL $BASEDIR
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 my $cgi = CGI->new;
 
+
 $IMGURL = $P->{SERVER}.'GenomePNG.pl?';
 my $x;
 # where to start the caching
@@ -38,7 +39,6 @@ if(!-e $fn){
 #   chmod (0777, $fn);
 }
 
-
 # DUMP THE IMAGE
 {
 local( *IMG,$/ ); 
@@ -62,6 +62,7 @@ sub get_dir_array {
     my $dsg = $cgi->param('dsg');#delete $query_pairs{dsg};
     my $tilew = $cgi->param('width');#$query_pairs{width};
     my $gstid = $cgi->param('gstid');#$query_pairs{gstid};
+    my $expid = $cgi->param('expid');
     my $chr = $cgi->param('chr');
     my $layers = $cgi->param('layers');
     my $MAX = int(log(1000*abs($xmax - $xmin)/$tilew)/log(10));
@@ -70,6 +71,7 @@ sub get_dir_array {
     push @dir, ("chr__$chr");
     push @dir, ("layers__$layers");
     push @dir, ("gstid__$gstid");
+    push @dir, ("expid__$expid") if $expid;
     push @dir, ("width__$tilew");
     
     my @vals;
