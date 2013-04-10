@@ -907,10 +907,10 @@ sub process_experiment
 	# using different databases
 	my $url = "http://genomevolution.org/CoGe/bin/fastbit_query.pl?exp_id=$expid;chr=$chr;start=$start;stop=$stop"; #FIXME hardcoded server
 	
-# mdb removed 3/26/13
+	# mdb removed 3/26/13
 #	my $cmd = "curl '$url'";
-#	print STDERR "$cmd\n";
 #	my $result = `$cmd`;
+#	print STDERR "$cmd\n$result\n";
 
 	# mdb added 3/26/13
 	#my $url = "http://geco.iplantcollaborative.org/mbomhoff/CoGe/bin/fastbit_query.pl?exp_id=$expid;chr=$chr;start=$start;stop=$stop";
