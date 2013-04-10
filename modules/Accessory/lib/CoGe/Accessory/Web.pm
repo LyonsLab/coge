@@ -247,18 +247,18 @@ sub login_cas {
 	#$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0; # this doesn't work for bypassing cert check, need line in apache cfg
 	$request_ua = HTTP::Request->new( POST => 'https://user.iplantcollaborative.org/api/v1/service/coge/add/' . $uname );
 	$request_ua->authorization_basic('6mv9x9lyts8oje8uj3t6yo', 'f59ba33ee35d363ffefd8b27b375e587b0e5c7a1');
-	print STDERR "matt: request uri: " . $request_ua->uri . "\n";
+	#print STDERR "request uri: " . $request_ua->uri . "\n";
 	#$request_ua->content($request);
 	$request_ua->content_type("text/xml; charset=utf-8");
 	my $response = $ua->request($request_ua);
 	#if ($response->is_success()) {
-		print STDERR "matt: status_line: " . $response->status_line() . "\n";
+		#print STDERR "status_line: " . $response->status_line() . "\n";
 		#my $header = $response->header;
 		my $result = $response->content;
-		print STDERR "matt: content: <begin>$result<end>\n";
+		#print STDERR "content: <begin>$result<end>\n";
 	#}
 	#else {
-	#	print STDERR "matt: bad response\n";	
+	#	print STDERR "bad response\n";	
 	#}
 
 	#gen and set the web cookie, yum!
