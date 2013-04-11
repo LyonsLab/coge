@@ -35,7 +35,7 @@ $height = 500 unless $height;
 $fontsize = 8 unless $fontsize;
 my $pairs = get_pairs(file=>$pair_file, chr1=>$chr1, chr2=>$chr2) if $pair_file && -r $pair_file;
 my ($data) = get_ksdata(ks_db=>$ks_db, type=>$ks_type, pairs=>$pairs);
-my $x_title = "substitution rate for $ks_type";
+my $x_title = "substitution per site for $ks_type";
 $x_title = "log10() ".$x_title if $log;
 
 my @data;
