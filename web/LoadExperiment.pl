@@ -116,10 +116,17 @@ sub irods_get_path {
 	}
 	
 	my $result = CoGe::Accessory::Web::irods_ils($path);
-	if ($result->{error}) {
+	my $error = $result->{error};
+	if ($error) {
 		my $email = $P->{SUPPORT_EMAIL};
-		CoGe::Accessory::Web::send_email(from => $email, to => $email, subject => "System error notification from $PAGE_TITLE", body => $result->{error});
-		return encode_json( { timestamp => $timestamp, error => $result->{error} } );
+		my $body = 'irods ils command failed\n\n'.'User: ' . $USER->name . ' ' . $USER->id . "\n\n" . $error;
+		CoGe::Accessory::Web::send_email(
+			from => $email, 
+			to => $email, 
+			subject => "System error notification from $PAGE_TITLE",
+			body => $body
+		);
+		return encode_json( { timestamp => $timestamp, error => $error } );
 	}	
 	return encode_json( { timestamp => $timestamp, path => $path, items => $result->{items} } );
 }
