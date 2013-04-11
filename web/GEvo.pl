@@ -4600,7 +4600,8 @@ sub get_tiny_url {
 		db      => $coge,
 		user_id => $USER->id,
 		page    => $PAGE_NAME,
-		url     => $url
+		url     => $url,
+		log_msg => "GEvo link",
 	);
 	my $html .=
 qq{<a href=$tiny onclick=window.open('$tiny') target =_new>$tiny<br>(See log file for full link)</a>};
