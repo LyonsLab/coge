@@ -119,7 +119,7 @@ sub irods_get_path {
 	my $error = $result->{error};
 	if ($error) {
 		my $email = $P->{SUPPORT_EMAIL};
-		my $body = "irods ils command failed\n\n".'User: ' . $USER->name . ' ' . $USER->id . "\n\n" . $error . "\n\n" . $P->{SERVER};
+		my $body = "irods ils command failed\n\n".'User: ' . $USER->name . ' id=' . $USER->id . ' ' . $USER->date . "\n\n" . $error . "\n\n" . $P->{SERVER};
 		CoGe::Accessory::Web::send_email(
 			from => $email, 
 			to => $email, 
