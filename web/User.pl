@@ -90,16 +90,17 @@ $MAX_SEARCH_RESULTS = 100;
 my $node_types = CoGeX::node_types();
 
 %ITEM_TYPE = ( # content/toc types
-	all 		=> 100,
-	mine		=> 101,
-	shared 		=> 102,
-	activity 	=> 103,
-	trash 		=> 104,
-	user 		=> $node_types->{user},
-	group 		=> $node_types->{group},
-	notebook 	=> $node_types->{list},
-	genome 		=> $node_types->{genome},
-	experiment 	=> $node_types->{experiment}
+	all 			=> 100,
+	mine			=> 101,
+	shared 			=> 102,
+	activity 		=> 103,
+	trash 			=> 104,
+	activity_viz	=> 105,
+	user 			=> $node_types->{user},
+	group 			=> $node_types->{group},
+	notebook 		=> $node_types->{list},
+	genome 			=> $node_types->{genome},
+	experiment 		=> $node_types->{experiment}
 );
 
 
@@ -758,7 +759,11 @@ sub get_toc { # table of contents
 	push @rows, { TOC_ITEM_ID => $ITEM_TYPE{shared}, 
 	 			  TOC_ITEM_INFO => 'Shared with me' };
 	push @rows, { TOC_ITEM_ID => $ITEM_TYPE{activity},
-				  TOC_ITEM_INFO => 'Activity' };
+				  TOC_ITEM_INFO => 'Activity',
+				  TOC_ITEM_CHILDREN => 1 };
+	push @rows, { TOC_ITEM_ID => $ITEM_TYPE{activity_viz}, 
+				  TOC_ITEM_INFO => 'Graph', 
+				  TOC_ITEM_INDENT => 20 };				  
 	push @rows, { TOC_ITEM_ID => $ITEM_TYPE{trash},
 				  TOC_ITEM_INFO => 'Trash' };
 	
@@ -775,6 +780,7 @@ sub get_contents {
 	$type = $ITEM_TYPE{all} unless $type;
 	my $timestamp = $opts{timestamp};
 	my $html_only = $opts{html_only};
+	#print STDERR "get_contents $type $html_only\n";
 
 	use Time::HiRes qw ( time );
 	my $start_time = time;
@@ -800,7 +806,7 @@ sub get_contents {
 	# }
 	
 	if ($type == $ITEM_TYPE{notebook} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine}) {
-		$title = 'Notebooks';
+		#$title = 'Notebooks';
 		#foreach my $list (sort listcmp $USER->lists) {
 		foreach my $list (sort listcmp values %{$children->{1}}) { #FIXME hardcoded type
 			push @rows, { CONTENTS_ITEM_ID => $list->id, 
@@ -814,7 +820,7 @@ sub get_contents {
 	}
 	# print STDERR "get_contents: time2=" . ((time - $start_time)*1000) . "\n";
 	if ($type == $ITEM_TYPE{genome} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine}) {
-		$title = 'Genomes';
+		#$title = 'Genomes';
 		#foreach my $genome (sort genomecmp $USER->genomes(include_deleted => 1)) {
 		foreach my $genome (sort genomecmp values %{$children->{2}}) { #FIXME hardcoded type
 			push @rows, { CONTENTS_ITEM_ID => $genome->id, 
@@ -829,7 +835,7 @@ sub get_contents {
 	}
 	# print STDERR "get_contents: time3=" . ((time - $start_time)*1000) . "\n";
 	if ($type == $ITEM_TYPE{experiment} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine}) {
-		$title = 'Experiments';
+		#$title = 'Experiments';
 		#foreach my $experiment (sort experimentcmp $USER->experiments(include_deleted => 1)) {
 		foreach my $experiment (sort experimentcmp values %{$children->{3}}) { #FIXME hardcoded type
 			push @rows, { CONTENTS_ITEM_ID => $experiment->id, 
@@ -844,7 +850,7 @@ sub get_contents {
 	}
 	# print STDERR "get_contents: time4=" . ((time - $start_time)*1000) . "\n";
 	if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity}) {
-		$title = 'Activity';
+		#$title = 'Activity';
 		foreach my $entry ($USER->logs({description => { '!=' => 'page access' }}, { order_by => { -desc => 'time' } })) { 
 			my $icon = '<img id="' . $entry->id . '" ' 
 				. ($entry->is_important ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"') . ' '
@@ -857,13 +863,22 @@ sub get_contents {
 						  CONTENTS_ITEM_ICON => $icon,
 					  	  CONTENTS_ITEM_LINK => $entry->link };
 		}
-	}	
+	}
+	# print STDERR "get_contents: time5=" . ((time - $start_time)*1000) . "\n";
+	if ($html_only) { # only do this for initial page load, not polling
+		my $user_id = $USER->id;
+		push @rows, { CONTENTS_ITEM_ID => 0,
+					  CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_viz},
+					  CONTENTS_ITEM_INFO => qq{<iframe frameborder="0" width="100%" height="100%" scrolling="no" src="http://geco.iplantcollaborative.org/blacktea/standalone/$user_id"></iframe>}
+		};
+	}		
+	
 
 	$title = 'My Stuff' if ($type == $ITEM_TYPE{mine});
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 	$template->param( DO_CONTENTS => 1 );
-	$template->param( CONTENTS_TITLE => $title );
+	#$template->param( CONTENTS_TITLE => $title );
 	$template->param( CONTENTS_ITEM_LOOP => \@rows );
 	my $html = $template->output;
 

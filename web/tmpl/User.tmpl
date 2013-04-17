@@ -16,6 +16,7 @@ var ITEM_TYPE_MINE 			= <TMPL_VAR NAME="ITEM_TYPE_MINE">;
 var ITEM_TYPE_SHARED 		= <TMPL_VAR NAME="ITEM_TYPE_SHARED">;
 var ITEM_TYPE_TRASH 		= <TMPL_VAR NAME="ITEM_TYPE_TRASH">;
 var ITEM_TYPE_ACTIVITY 		= <TMPL_VAR NAME="ITEM_TYPE_ACTIVITY">;
+var ITEM_TYPE_ACTIVITY_VIZ	= <TMPL_VAR NAME="ITEM_TYPE_ACTIVITY_VIZ">;
 var ITEM_TYPE_USER 			= <TMPL_VAR NAME="ITEM_TYPE_USER">;
 var ITEM_TYPE_GROUP 		= <TMPL_VAR NAME="ITEM_TYPE_GROUP">;
 var ITEM_TYPE_NOTEBOOK 		= <TMPL_VAR NAME="ITEM_TYPE_NOTEBOOK">;
@@ -269,12 +270,14 @@ function filter_contents() {
 			if (pageObj.content_type == ITEM_TYPE_MINE) {
 				show = !$(this).hasClass('deleted') 
 						&& !$(this).hasClass('shared') 
-						&& item_type != ITEM_TYPE_ACTIVITY;
+						&& item_type != ITEM_TYPE_ACTIVITY
+						&& item_type != ITEM_TYPE_ACTIVITY_VIZ;
 			}
 			else if (pageObj.content_type == ITEM_TYPE_SHARED) {
 				show = $(this).hasClass('shared') 
 						&& !$(this).hasClass('deleted') 
-						&& item_type != ITEM_TYPE_ACTIVITY;
+						&& item_type != ITEM_TYPE_ACTIVITY
+						&& item_type != ITEM_TYPE_ACTIVITY_VIZ;
 			}
 			else if (pageObj.content_type == ITEM_TYPE_TRASH) {
 				show = $(this).hasClass('deleted');
@@ -302,10 +305,10 @@ function toc_select(toc_id) {
 		$('#stuff_buttons').hide();
 		$('#trash_buttons').show();
 	}
-	else if (toc_id == ITEM_TYPE_ACTIVITY) {
+	else if (toc_id == ITEM_TYPE_SHARED || toc_id == ITEM_TYPE_ACTIVITY || toc_id == ITEM_TYPE_ACTIVITY_VIZ) {
 		$('#stuff_buttons').hide();
 		$('#trash_buttons').hide();
-	}
+	}	
 	else {
 		$('#trash_buttons').hide();
 		$('#stuff_buttons').show();
@@ -822,7 +825,7 @@ function toggle_star(img) {
 	</div>
 
 	<div style="height:24px;">
-		<span id="contents_title" style="float:left;width:130px;font-weight:bold;"><TMPL_VAR NAME="CONTENTS_TITLE"></span>
+		<span id="contents_title" style="float:left;width:130px;font-weight:bold;"><!--<TMPL_VAR NAME="CONTENTS_TITLE">--></span>
 		<span id="stuff_buttons">
 			<span onClick="share_dialog();" class="item-button link ui-icon ui-icon-person ui-state-disabled" style="margin-left:20px;margin-right:5px;border:1px solid lightgray;"></span>
 			<span onClick="add_to_notebook_dialog();" class="item-button link ui-icon ui-icon-folder-collapsed ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
