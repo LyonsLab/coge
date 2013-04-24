@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Test dbind with a form</title>
+		<style type="text/css">
+			@import "../../dojo/resources/dojo.css";
+			.error-message {
+				color: red;
+			}
+		</style>
+		<script type="text/javascript" src="../../dojo/dojo.js" 
+			data-dojo-config="async: true"></script>
+		<script type="text/javascript">
+			require(["./testForm", "dojo/dom", "dojo/domReady!"], function(testForm, dom){
+				 testForm(dom.byId("my-form"));
+				});
+		</script>
+	</head>
+	<body>
+		<h2>Basic form bindings</h2>
+		<form id="my-form">
+		</form>
+	</body>
+</html>

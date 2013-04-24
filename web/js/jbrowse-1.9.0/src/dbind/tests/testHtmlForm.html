@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Test dbind with a simple HTML form</title>
+		<style type="text/css">
+			@import "../../dojo/resources/dojo.css";
+			.error-message {
+				color: red;
+			}
+		</style>
+		<script type="text/javascript" src="../../dojo/dojo.js" 
+			data-dojo-config="async: true"></script>
+		<script type="text/javascript">
+			require(["../bind", "dojo/dom", "dojo/domReady!"], function(bind, dom){
+				var data = {
+					name: "Widget",
+					price: 33.99
+				};
+				bind(dom.byId("my-form")).to(data);
+				dom.byId("show-data").onclick = function(){
+					delete data._binding;
+					alert(JSON.stringify(data));
+				};
+			});
+		</script>
+	</head>
+	<body>
+		<h2>Basic HTML form bindings</h2>
+		<form id="my-form">
+			<div>
+				<label for="name">Name</label>
+				<input name="name" id="name" type="text" />
+			</div> 
+			<div>
+				<label for="price">Price</label>
+				<input name="price" id="price" type="number" />
+			</div>
+		</form>
+		<button id="show-data">Show Data</button>
+	</body>
+</html>

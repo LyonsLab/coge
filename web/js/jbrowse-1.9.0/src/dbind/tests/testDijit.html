@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Test dbind with a simple HTML form</title>
+		<style type="text/css">
+			@import "../../dojo/resources/dojo.css";
+			@import "../../dijit/themes/claro/claro.css";
+			.error-message {
+				color: red;
+			}
+		</style>
+		<script type="text/javascript" src="../../dojo/dojo.js" 
+			data-dojo-config="async: true"></script>
+		<script type="text/javascript">
+			require(["../bind", "dijit/form/TextBox", "dijit/form/NumberSpinner", "dojo/dom", "dojo/domReady!"], function(bind, TextBox, NumberSpinner, dom){
+				var data = {
+					name: "Widget",
+					price: 33.99
+				};
+				bind(new TextBox({}, "name")).to(data, "name");
+				bind(new NumberSpinner({}, "price")).to(data, "price");
+				dom.byId("show-data").onclick = function(){
+					delete data._binding;
+					alert(JSON.stringify(data));
+				};
+			});
+		</script>
+	</head>
+	<body class="claro">
+		<h2>Basic Dijit form bindings</h2>
+		<form id="my-form">
+			<div>
+				<label for="name">Name</label>
+				<input name="name" id="name" type="text" />
+			</div> 
+			<div>
+				<label for="price">Price</label>
+				<input name="price" id="price"  />
+			</div>
+		</form>
+		<button id="show-data">Show Data</button>
+	</body>
+</html>
