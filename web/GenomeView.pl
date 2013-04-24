@@ -156,6 +156,8 @@ sub gen_body
 	$z = 0 if $z < 0;
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'GenomeView.tmpl' );
 
+	$template->param( JBROWSE => $P->{SERVER}."/js/jbrowse-1.9.0/index.html?gid=$dsgid&loc=1%3A0..105000");
+
 	#set tiler program
 	#$template->param(TILE_SERVER=>$P->{SERVER}."tiler.pl?");
 	my @servers = ($P->{SERVER}.'tiler.pl?');

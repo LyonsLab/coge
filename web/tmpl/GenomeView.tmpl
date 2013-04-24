@@ -488,7 +488,7 @@ $(function() {
 			var height = $(document).height() - 230;
 			var jbrowse = $('#jbrowse');
 			if (!jbrowse.html()) {
-				jbrowse.html('<iframe frameborder="0" width="100%" height="'+height+'" scrolling="no" style="border:1px solid black" src="http://geco.iplantcollaborative.org/mbomhoff/CoGe/js/jbrowse-1.9.0/index.html?gid=<TMPL_VAR NAME='DSG'>&data=sample_data%2Fjson%2Fcoge&loc=1%3A0..105000&highlight="></iframe>')
+				jbrowse.html('<iframe frameborder="0" width="100%" height="'+height+'" scrolling="no" style="border:1px solid black" src="<TMPL_VAR NAME='JBROWSE'>"></iframe>')
 			}
 			jbrowse.show();
 		}
