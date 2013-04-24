@@ -6,6 +6,7 @@ use CoGe::Accessory::Web;
 use JSON qq{encode_json};
 use Data::Dumper;
 use Cwd 'abs_path';
+use File::Basename 'fileparse';
 
 my $coge_conf;
 
