@@ -120,12 +120,6 @@ sub features_old {
 	print STDERR "Annotation::features $chr:$start:$end\n";
 
 	# Load config file
-#	unless ($coge_conf) {
-#		$coge_conf = abs_path($0);
-#		$coge_conf =~ s/services\/features.pl//;
-#		$coge_conf .= 'coge.conf';
-#	}
-	my $coge_conf = '/home/mbomhoff/public/CoGe/coge.conf';
 	my $P = CoGe::Accessory::Web::get_defaults($coge_conf);
 	my $DBNAME = $P->{DBNAME};
 	my $DBHOST = $P->{DBHOST};

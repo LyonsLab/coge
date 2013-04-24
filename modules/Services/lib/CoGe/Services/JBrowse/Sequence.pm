@@ -37,7 +37,6 @@ sub features {
 	my $len = $end-$start;
 	print STDERR "Sequence::features gid=$gid chr=$chr size=$size start=$start end=$end\n";
 	
-	my $coge_conf = '/home/mbomhoff/public/CoGe/coge.conf';
 	my $P = CoGe::Accessory::Web::get_defaults($coge_conf);
 	my $DBNAME = $P->{DBNAME};
 	my $DBHOST = $P->{DBHOST};

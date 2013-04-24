@@ -67,7 +67,6 @@ sub track_config {
 	my $gid = $self->query->param('gid');
 	print STDERR "Configuration::track_config gid=$gid\n";
 	
-	my $coge_conf = '/home/mbomhoff/public/CoGe/coge.conf';
 	my $P = CoGe::Accessory::Web::get_defaults($coge_conf);
 	my $DBNAME = $P->{DBNAME};
 	my $DBHOST = $P->{DBHOST};
