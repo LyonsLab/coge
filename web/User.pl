@@ -867,9 +867,10 @@ sub get_contents {
 	# print STDERR "get_contents: time5=" . ((time - $start_time)*1000) . "\n";
 	if ($html_only) { # only do this for initial page load, not polling
 		my $user_id = $USER->id;
+		my $jobs = 'cogeblast/synmap/gevo/synfind/';
 		push @rows, { CONTENTS_ITEM_ID => 0,
 					  CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_viz},
-					  CONTENTS_ITEM_INFO => qq{<iframe frameborder="0" width="100%" height="100%" scrolling="no" src="http://geco.iplantcollaborative.org/rchasman/standalone/$user_id/"></iframe>}
+					  CONTENTS_ITEM_INFO => qq{<iframe frameborder="0" width="100%" height="100%" scrolling="no" src="http://geco.iplantcollaborative.org/rchasman/standalone/$user_id/$jobs"></iframe>}
 		};
 	}		
 	
