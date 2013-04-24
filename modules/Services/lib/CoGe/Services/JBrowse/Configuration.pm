@@ -89,7 +89,7 @@ sub track_config {
 	push @tracks,
 	{
 		chunkSize => 20000,
-		baseUrl => "http://geco.iplantcollaborative.org/mbomhoff/CoGe/services/service.pl/sequence/$gid/",
+		baseUrl => "../../services/service.pl/sequence/$gid/",
 		type => "SequenceTrack",
 		storeClass => "JBrowse/Store/SeqFeature/REST",
 		label => "sequence",
@@ -104,7 +104,7 @@ sub track_config {
 		my $dsid = $ds->id;
 		push @tracks, 
 		{
-			baseUrl => "http://geco.iplantcollaborative.org/mbomhoff/CoGe/services/service.pl/annotation/$dsid/",
+			baseUrl => "../../services/service.pl/annotation/$dsid/",
             autocomplete => "all",
             track => "genes",
             label => "genes",
@@ -123,7 +123,7 @@ sub track_config {
 		my $eid = $e->id;
 		push @tracks, 
 		{ 
-			baseUrl => "http://geco.iplantcollaborative.org/mbomhoff/CoGe/services/service.pl/experiment/$eid/",
+			baseUrl => "../../services/service.pl/experiment/$eid/",
 		    autocomplete => "all",
 		    track => "exp$eid",
 		    label => "exp$eid",
