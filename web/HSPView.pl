@@ -3,6 +3,7 @@ use strict;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
+use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use HTML::Template;
