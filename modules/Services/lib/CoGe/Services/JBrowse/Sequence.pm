@@ -5,9 +5,15 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use JSON qq{encode_json};
 use Data::Dumper;
+use Cwd 'abs_path';
 
 sub setup {
 	my $self = shift;
+	
+	#FIXME - move this into service.pl
+	$coge_conf = abs_path($0);
+	$coge_conf =~ s/services\/service\.pl/coge\.conf/;	
+	
 	$self->run_modes(
 		'stats_global' 	=> 'stats_global',
 		'features'		=> 'features',
@@ -18,8 +24,7 @@ sub setup {
 
 sub stats_global {
 	print STDERR "Sequence::stats_global\n";
-	return qq{{
-	}};	
+	return qq{{}};	
 }
 
 sub features {

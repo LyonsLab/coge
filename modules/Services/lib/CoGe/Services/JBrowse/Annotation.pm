@@ -5,9 +5,15 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use JSON qq{encode_json};
 use Data::Dumper;
+use Cwd 'abs_path';
 
 sub setup {
 	my $self = shift;
+	
+	#FIXME - move this into service.pl
+	$coge_conf = abs_path($0);
+	$coge_conf =~ s/services\/service\.pl/coge\.conf/;	
+	
 	$self->run_modes(
 		'stats_global' 	=> 'stats_global',
 		'features' 		=> 'features',
@@ -18,8 +24,7 @@ sub setup {
 
 sub stats_global {
 	print STDERR "Annotation::stats_global\n";
-	return qq{{
-	}};
+	return qq{{}};
 }
 
 sub features {
@@ -31,12 +36,6 @@ sub features {
 	print STDERR "Annotation::features $chr:$start:$end\n";
 
 	# Load config file
-#	unless ($coge_conf) {
-#		$coge_conf = abs_path($0);
-#		$coge_conf =~ s/services\/features.pl//;
-#		$coge_conf .= 'coge.conf';
-#	}
-	my $coge_conf = '/home/mbomhoff/public/CoGe/coge.conf';
 	my $P = CoGe::Accessory::Web::get_defaults($coge_conf);
 	my $DBNAME = $P->{DBNAME};
 	my $DBHOST = $P->{DBHOST};

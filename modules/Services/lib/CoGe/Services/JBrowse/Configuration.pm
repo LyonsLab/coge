@@ -6,9 +6,17 @@ use CoGe::Accessory::Web;
 use JSON;
 use Data::Dumper;
 use Sort::Versions;
+use Cwd 'abs_path';
+
+my $coge_conf;
 
 sub setup {
 	my $self = shift;
+
+	#FIXME - move this into service.pl
+	$coge_conf = abs_path($0);
+	$coge_conf =~ s/services\/service\.pl/coge\.conf/;
+
 	$self->run_modes(
 		'refseq_config'	=> 'refseq_config',
 		'track_config' 	=> 'track_config',
@@ -22,9 +30,8 @@ sub refseq_config {
 	my $gid = $self->query->param('gid');
 	my $SEQ_CHUNK_SIZE = 20000;
 	print STDERR "Configuration::refseq_config gid=$gid\n";
-	#return qq{[{"length":4686137,"name":"1","seqChunkSize":20000,"end":4686137,"start":0}]};
-	
-	my $coge_conf = '/home/mbomhoff/public/CoGe/coge.conf';
+
+	# Load config file
 	my $P = CoGe::Accessory::Web::get_defaults($coge_conf);
 	my $DBNAME = $P->{DBNAME};
 	my $DBHOST = $P->{DBHOST};

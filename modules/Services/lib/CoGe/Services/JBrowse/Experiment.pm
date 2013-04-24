@@ -1,10 +1,17 @@
 package CoGe::Services::JBrowse::Experiment;
 use base 'CGI::Application';
 
+use Cwd 'abs_path';
+
 my $NUM_COL = 6;
 
 sub setup {
 	my $self = shift;
+	
+	#FIXME - move this into service.pl
+	$coge_conf = abs_path($0);
+	$coge_conf =~ s/services\/service\.pl/coge\.conf/;	
+	
 	$self->run_modes(
 		'stats_global' 	=> 'stats_global',
 		'features' 		=> 'features',
