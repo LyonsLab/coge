@@ -7,6 +7,8 @@ use JSON qq{encode_json};
 use Data::Dumper;
 use Cwd 'abs_path';
 
+my $coge_conf;
+
 sub setup {
 	my $self = shift;
 	

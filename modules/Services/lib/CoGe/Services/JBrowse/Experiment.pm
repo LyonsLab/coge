@@ -4,6 +4,7 @@ use base 'CGI::Application';
 use Cwd 'abs_path';
 
 my $NUM_COL = 6;
+my $coge_conf;
 
 sub setup {
 	my $self = shift;
