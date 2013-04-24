@@ -1,0 +1,6 @@
+MANIFEST
+Makefile.PL
+lib/CoGe/Services/JBrowse/Annotation.pm
+lib/CoGe/Services/JBrowse/Configuration.pm
+lib/CoGe/Services/JBrowse/Experiment.pm
+lib/CoGe/Services/JBrowse/Sequence.pm
