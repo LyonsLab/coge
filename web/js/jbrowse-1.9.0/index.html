@@ -27,9 +27,9 @@
                    var dataRoot = queryParams.data || 'data';
                    JBrowse = new Browser({
                                            containerID: "GenomeBrowser",
-                                           refSeqs: 'http://geco.iplantcollaborative.org/mbomhoff/CoGe/services/service.pl/config/refseq/?gid='+queryParams.gid,
+                                           refSeqs: '../../services/service.pl/config/refseq/?gid='+queryParams.gid,
                                            baseUrl: dataRoot+'/',
-                                           include: ['http://geco.iplantcollaborative.org/mbomhoff/CoGe/services/service.pl/config/tracks/?gid='+queryParams.gid],
+                                           include: ['../../services/service.pl/config/tracks/?gid='+queryParams.gid],
                                            //nameUrl: dataRoot + "/names/root.json",
                                            defaultTracks: "sequence,genes",
                                            queryParams: queryParams,
