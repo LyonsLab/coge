@@ -1,182 +1,177 @@
-	
-    <style type="text/css">
-        #map {
-            height: 400;
-            border: 1px solid black;
-        }
-        #zoomLevel {
-           bottom: 10px;
-           left: 0px;
-        }
-        #CNS {
-	background-color:white;
-	color:orange;
+<style type="text/css">
+	#map {
+		height: 400;
+		border: 1px solid black;
 	}
-
+	#zoomLevel {
+		bottom: 10px;
+		left: 0px;
+	}
+	#CNS {
+		background-color:white;
+		color:orange;
+	}
 	#gene_space {
-	background-color: yellow;
-	color:black;
+		background-color: yellow;
+		color:black;
 	}
-
 	#GEvo_links {
-	color:yellow;
+		color:yellow;
 	}
-
 	#gene {
-            background-color: white;
-            color:grey;
-        }
-        #local_dup {
-            color:cyan;
-        }
-        #gc {
-            background-color: white;
-             color:blue;
+		background-color: white;
+		color:grey;
 	}
-        #cg {
-            background-color: green;
-             color:white;
+	#local_dup {
+		color:cyan;
+	}
+	#gc {
+		background-color: white;
+		color:blue;
+	}
+	#cg {
+		background-color: green;
+		color:white;
 	}
 	#gaga {
 	    background-color: white;
 	    color: red;
-        }
+	}
 	#gbox {
 	    background-color: white;
 	    color: blue;
-        }
+	}
 	#wobble_GC_usage {
-	    background-color: white;
+		background-color: white;
 	    color: purple;
-        }
-        #func_dom {
-             color:orange;
-        }
-        #repeats {
-             color:orange;
-        }
-        #other {
-             color:orange;
-        }
-
-		#map_OpenLayers_ViewPort { /* mdb added 12/12/12 - tempfix for experiment layers out of view in control */
-			overflow-y: auto !important;
-		}
-    </style>
+	}
+	#func_dom {
+		color:orange;
+	}
+	#repeats {
+		color:orange;
+	}
+	#other {
+		color:orange;
+	}
+	#map_OpenLayers_ViewPort { /* mdb added 12/12/12 - tempfix for experiment layers out of view in control */
+		overflow-y: auto !important;
+	}
+</style>
     
-    <script src="js/OpenLayers.js"></script>
-    <script src="js/Genomic.js"></script>
-    <script src="js/opengenes.js"></script>
+<script src="js/OpenLayers.js"></script>
+<script src="js/Genomic.js"></script>
+<script src="js/opengenes.js"></script>
+    
+<script type="text/javascript">
+if(! window.console){ console={}; console.log = console.debug = function(){}}
 
-    <script type="text/javascript">
-        if(! window.console){ console={}; console.log = console.debug = function(){}}
+var map, layers;
+var chr = '<TMPL_VAR NAME=CHR>';
+var version = '<TMPL_VAR NAME=VER>';
+var bp;
+var size= 285;
+var server =
+  [<TMPL_VAR NAME=TILE_SERVER>];
 
-        var map, layers;
-        var chr = '<TMPL_VAR NAME=CHR>';
-        var version = '<TMPL_VAR NAME=VER>';
-        var bp;
-        var size= 285;
-        var server =
-          [<TMPL_VAR NAME=TILE_SERVER>];
-
-        var org = "<TMPL_VAR NAME=ORG>";
-        var ds = '<TMPL_VAR NAME=DS>';
-        var dsg = '<TMPL_VAR NAME=DSG>';
-        var loc = '<TMPL_VAR NAME=LOC>';
-        var zoom = '<TMPL_VAR NAME=ZOOM>';
-        var gstid = '<TMPL_VAR NAME=GSTID>';
-        function init(){
-	    OpenLayers.Layer.Genomic.prototype.buffer = 1;
-            map = new OpenLayers.GenomeBrowser( $('#map')[0] , 
-            {   
-                 maxExtent: new
-                 OpenLayers.Bounds(-500000,-10000,1000000000,10000),
-                 units     :'bp',
-                 tileSize: new OpenLayers.Size(768, size),
-                 resolutions:[4096, 2048, 1024,512,256,128,64,32,16,8,4,2,1, 0.5, 0.25, 0.125, 0.0625, 0.032125, 0.015625, 0.011711875],
-                  controls: [new OpenLayers.Control.MouseDefaults()]
-            });
-            layers = [
-            new OpenLayers.Layer.Genomic( "Ruler" , server
-                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid, 'chr':chr,layers:"background,ruler"}
-                 ,{isBaseLayer:true} 
-             ),
-            ]
+var org = "<TMPL_VAR NAME=ORG>";
+var ds = '<TMPL_VAR NAME=DS>';
+var dsg = '<TMPL_VAR NAME=DSG>';
+var loc = '<TMPL_VAR NAME=LOC>';
+var zoom = '<TMPL_VAR NAME=ZOOM>';
+var gstid = '<TMPL_VAR NAME=GSTID>';
+function init(){
+OpenLayers.Layer.Genomic.prototype.buffer = 1;
+    map = new OpenLayers.GenomeBrowser( $('#map')[0] , 
+    {   
+         maxExtent: new
+         OpenLayers.Bounds(-500000,-10000,1000000000,10000),
+         units     :'bp',
+         tileSize: new OpenLayers.Size(768, size),
+         resolutions:[4096, 2048, 1024,512,256,128,64,32,16,8,4,2,1, 0.5, 0.25, 0.125, 0.0625, 0.032125, 0.015625, 0.011711875],
+          controls: [new OpenLayers.Control.MouseDefaults()]
+    });
+    layers = [
+    new OpenLayers.Layer.Genomic( "Ruler" , server
+         ,{'ds':ds,'dsg':dsg,  'gstid':gstid, 'chr':chr,layers:"background,ruler"}
+         ,{isBaseLayer:true} 
+     ),
+    ]
 
 
-            map.addLayers(layers);
+    map.addLayers(layers);
 
-            gc = new OpenLayers.Layer.Genomic( "<span id='cg'>GC content</span>" , server
-                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"gc"}
-                 ,{isBaseLayer:false}
-             );
-            gaga = new OpenLayers.Layer.Genomic( "<span id='cg'>GAGA content</span>" , server
-                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"gaga"}
-                 ,{isBaseLayer:false}
-             );
-            gbox = new OpenLayers.Layer.Genomic( "<span id='cg'>G-Box CACGTG</span>" , server
-                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"gbox"}
-                 ,{isBaseLayer:false}
-             );
-            transposable = new OpenLayers.Layer.Genomic( "<span id='gc'>Transposable Elements</span>" , server
-                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"transposable",}
-                 ,{isBaseLayer:false}
-             );
+    gc = new OpenLayers.Layer.Genomic( "<span id='cg'>GC content</span>" , server
+         ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"gc"}
+         ,{isBaseLayer:false}
+     );
+    gaga = new OpenLayers.Layer.Genomic( "<span id='cg'>GAGA content</span>" , server
+         ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"gaga"}
+         ,{isBaseLayer:false}
+     );
+    gbox = new OpenLayers.Layer.Genomic( "<span id='cg'>G-Box CACGTG</span>" , server
+         ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"gbox"}
+         ,{isBaseLayer:false}
+     );
+    transposable = new OpenLayers.Layer.Genomic( "<span id='gc'>Transposable Elements</span>" , server
+         ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"transposable",}
+         ,{isBaseLayer:false}
+     );
 
-	     <TMPL_VAR NAME=DYNAMIC_LAYERS>
+ <TMPL_VAR NAME=DYNAMIC_LAYERS>
 
-            genes = new OpenLayers.Layer.Genomic( "<span id='gc'>Genes</span>" , server
-                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"pseudogene,gene,mRNA,CDS,rna,CNS",}
-                 ,{isBaseLayer:false}
-             );
-            GEvo_link = new OpenLayers.Layer.Genomic( "<span id='gc'>GEvo link for syntelogs</span>" , server
-                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"GEvo_link",}
-                 ,{isBaseLayer:false}
-             );
-	    gene_space = new OpenLayers.Layer.Genomic( "<span id='gc'>Gene space</span>" , server
-	                       ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"gene_space",}
-			                        ,{isBaseLayer:false}
-						             );
+    genes = new OpenLayers.Layer.Genomic( "<span id='gc'>Genes</span>" , server
+         ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"pseudogene,gene,mRNA,CDS,rna,CNS",}
+         ,{isBaseLayer:false}
+     );
+    GEvo_link = new OpenLayers.Layer.Genomic( "<span id='gc'>GEvo link for syntelogs</span>" , server
+         ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"GEvo_link",}
+         ,{isBaseLayer:false}
+     );
+gene_space = new OpenLayers.Layer.Genomic( "<span id='gc'>Gene space</span>" , server
+                   ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"gene_space",}
+	                        ,{isBaseLayer:false}
+				             );
 
-            wobble_GC_usage = new OpenLayers.Layer.Genomic( "<span id='gc'>Wobble GC Usage</span>" , server
-                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"CDS,cbc"}
-                 ,{isBaseLayer:false}
-             );
-            wobble_GC_usage_first_50 = new OpenLayers.Layer.Genomic( "<span id='gc'>Wobble GC Usage (first 50 codons)</span>" , server
-                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"CDS,cbc50"}
-                 ,{isBaseLayer:false}
-             );
-            local_dup = new OpenLayers.Layer.Genomic( "<span id='gc'>Tandem Duplicates</span>" , server
-                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"local_dup",}
-                 ,{isBaseLayer:false}
-             );
+    wobble_GC_usage = new OpenLayers.Layer.Genomic( "<span id='gc'>Wobble GC Usage</span>" , server
+         ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"CDS,cbc"}
+         ,{isBaseLayer:false}
+     );
+    wobble_GC_usage_first_50 = new OpenLayers.Layer.Genomic( "<span id='gc'>Wobble GC Usage (first 50 codons)</span>" , server
+         ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"CDS,cbc50"}
+         ,{isBaseLayer:false}
+     );
+    local_dup = new OpenLayers.Layer.Genomic( "<span id='gc'>Tandem Duplicates</span>" , server
+         ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"local_dup",}
+         ,{isBaseLayer:false}
+     );
 
-            prot = new OpenLayers.Layer.Genomic( "<span id='gc'>proteins</span>" , server
-                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"protein"}
-                 ,{isBaseLayer:false}
-             );
-            func_domain = new OpenLayers.Layer.Genomic( "<span id='gc'>Functional Domains</span>" , server
-                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"domain"}
-                 ,{isBaseLayer:false}
-             );
-            repeats = new OpenLayers.Layer.Genomic( "<span id='gc'>Repeat Regions</span>" , server
-                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"repeat"}
-                 ,{isBaseLayer:false}
-            );
-            other = new OpenLayers.Layer.Genomic( "<span id='gc'>Other Features</span>" , server
-                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"other"}
-                 ,{isBaseLayer:false}
-             );
-	    
-            map.addControl(new OpenLayers.Control.LayerSwitcher());
-            //$('#OpenLayers.Control.LayerSwitcher_68).css({'overflow':'scroll'});
+    prot = new OpenLayers.Layer.Genomic( "<span id='gc'>proteins</span>" , server
+         ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"protein"}
+         ,{isBaseLayer:false}
+     );
+    func_domain = new OpenLayers.Layer.Genomic( "<span id='gc'>Functional Domains</span>" , server
+         ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"domain"}
+         ,{isBaseLayer:false}
+     );
+    repeats = new OpenLayers.Layer.Genomic( "<span id='gc'>Repeat Regions</span>" , server
+         ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"repeat"}
+         ,{isBaseLayer:false}
+    );
+    other = new OpenLayers.Layer.Genomic( "<span id='gc'>Other Features</span>" , server
+         ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"other"}
+         ,{isBaseLayer:false}
+     );
 
-            gc.setVisibility(<TMPL_VAR NAME="GC">);
-            map.addLayer(gc);
-            gaga.setVisibility(<TMPL_VAR NAME="GAGA">);
-            map.addLayer(gaga);
-            gbox.setVisibility(<TMPL_VAR NAME="GBOX">);
-            map.addLayer(gbox);
+    map.addControl(new OpenLayers.Control.LayerSwitcher());
+    //$('#OpenLayers.Control.LayerSwitcher_68).css({'overflow':'scroll'});
+
+    gc.setVisibility(<TMPL_VAR NAME="GC">);
+    map.addLayer(gc);
+    gaga.setVisibility(<TMPL_VAR NAME="GAGA">);
+    map.addLayer(gaga);
+    gbox.setVisibility(<TMPL_VAR NAME="GBOX">);
+    map.addLayer(gbox);
 
         genes.setVisibility(<TMPL_VAR NAME="GENES">);
         map.addLayer(genes);
@@ -283,11 +278,11 @@
 
         }
 	
-	function updateSliderPosition() {
-		 var pos_obj = map.getCenter();
-		 var pos = pos_obj.lon;
-		 $('#slider').slider('value',pos);
-	}
+function updateSliderPosition() {
+	var pos_obj = map.getCenter();
+	var pos = pos_obj.lon;
+	$('#slider').slider('value',pos);
+}
 
         function mapMouseDown(e){
 //        	  $('#short_anno_popup').hide(0);
@@ -315,9 +310,9 @@
             }
         }
         
-     function mapMouseOut(e) {
-       if (pageObj.time) clearTimeout(pageObj.time);
-     }
+function mapMouseOut(e) {
+	if (pageObj.time) clearTimeout(pageObj.time);
+}
 
 	function mapMouseMove(e) {
 	  if ($('#popup_anno').is(':checked') == false) return;
@@ -449,7 +444,6 @@ $(document).ready(function(){
   $(".dialog_box").dialog({ autoOpen: false, width: 500  });
   <TMPL_IF NAME="SHOW_LEGEND">$('.legend').toggle();</TMPL_IF>
   <TMPL_IF NAME="MAIZEGDB">$('#maizegdb_popup').dialog('open');</TMPL_IF>
-
 });
 
 function moveMap(){
@@ -462,63 +456,123 @@ function panMap(){
 	 map.panTo(OpenLayers.BasePair(mypos));
 }
 
+function getURLParameter(name) {
+    return decodeURI(
+        (RegExp(name + '=' + '(.+?)(&|$)').exec(location.search)||[,null])[1]
+    );
+}
+
 //instantiates slider tool
 $(function() {
-	     $('#slider').slider({
+	$('#slider').slider({
 		orientation: 'horizontal',
 		max: <TMPL_VAR NAME="CHR_LENGTH">, 
 		value: <TMPL_VAR NAME="LOC">, 
 		slide: moveMap,
 		change: panMap,
 		stop: panMap,
+	});
+	
+	$.ajaxSetup({
+		type: "POST",
+		url: "<TMPL_VAR NAME=PAGE_NAME>",
+		dataType: "html",
+		cache: false,
+	});
+	
+	$('#select_view').change(function() {
+		var viewer = $(this).find("option:selected").val();
+		if (viewer == 'JBrowse') {
+			$('#main').hide();
+			$('#resize').hide();
+			var height = $(document).height() - 230;
+			var jbrowse = $('#jbrowse');
+			if (!jbrowse.html()) {
+				jbrowse.html('<iframe frameborder="0" width="100%" height="'+height+'" scrolling="no" style="border:1px solid black" src="http://geco.iplantcollaborative.org/mbomhoff/CoGe/js/jbrowse-1.9.0/index.html?gid=<TMPL_VAR NAME='DSG'>&data=sample_data%2Fjson%2Fcoge&loc=1%3A0..105000&highlight="></iframe>')
+			}
+			jbrowse.show();
+		}
+		else {
+			$('#jbrowse').hide();
+			$('#main').show();
+			$('#resize').show();
+		}
+	});
+	
+	var viewer = getURLParameter('viewer');
+	if (viewer) {
+		$('#select_view').val(viewer).change();
+	}
 });
-});
-
 </script>
 
 
-Window Width: <input type=textbox class=backbox size=4 id="width" onkeypress="onEnter(event);" value=<TMPL_VAR NAME="width"> />px
+<span>Viewer:
+	<select id='select_view'>
+		<option value="GenomeView" selected>GenomeView</option>
+		<option value="JBrowse">JBrowse</option>
+	</select>
+</span>
+<span id="resize">
+	<span>Window Width: <input type=textbox class=backbox size=4 id="width" onkeypress="onEnter(event);" value=<TMPL_VAR NAME="width"> /><span class="small">px</span></span>
+	<span class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#map').css('width',$('#width').val());updateZoom();"><span class="ui-icon ui-icon-arrow-2-e-w"></span>Resize</span>
+	<span class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#map').css('width',''+$('#main').width());updateZoom();"><span class="ui-icon ui-icon-arrow-4-diag"></span>Full-Window</span>
+</span>
 
-<span class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#map').css('width',$('#width').val());updateZoom();"><span class="ui-icon ui-icon-arrow-2-e-w"></span>Resize</span>
-<span class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#map').css('width',''+$('#main').width());updateZoom();"><span class="ui-icon ui-icon-arrow-4-diag"></span>Full-Window</span>
-
-    <div id="main"></div>
-
-    <div id="map"  style="background-color:#FFFFFF"></div>
-    <div id='resolution'></div>
-    <div id ='alert_grab'></div>
-<div id="slider" class='ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all'>
-   <a class="ui-slider-handle ui-state-default ui-corner-all" href="#"><span class="ui-icon ui-icon-transferthick-e-w"></span></a>
-</div>
-
-<br>
-<div style="float:left">
- <span class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#set_range').show(0);$('#grab_seq').show();$('#extract_feat').hide();$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;"><span class="ui-icon ui-icon-scissors"></span>Grab Sequence</span>
- <span class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#set_range').show(0);$('#extract_feat').show();$('#grab_seq').hide();$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;"><span class="ui-icon ui-icon-scissors"></span>Extract Features</span>
- <span class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_info_popup').html('Loading. . .');get_genome_info(['args__dsgid', 'args__<TMPL_VAR NAME=DSG>'],['genome_info_popup']);$('#genome_info_popup').dialog('open');"><span class="ui-icon ui-icon-newwin"></span>Genome Info</span>
- <br>
-<span id="set_range" style="display:none" > 
-  <input type=text id='grab_from' value=0> to <input type=text id="grab_to" value=0> 
- </span>
- <span id="grab_seq" style="display:none" class='ui-button ui-corner-all' onClick="launch_seqview('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>','<TMPL_VAR NAME=DSG>')"> View Sequence</span>
- <span id="extract_feat" style="display:none" class='ui-button ui-corner-all' onClick="launch_featlist('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>','<TMPL_VAR NAME=DSG>')">Get Features</span>
-</div>
-
-<div align="right">
-    <TMPL_IF NAME="SAVE_SETTINGS">
-    <span align="right" class='ui-button ui-corner-all ui-button-icon-left' id="SaveSettings" onclick="go_save_options();"><span class="ui-icon ui-icon-disk"></span>Save Settings</span>
-    </TMPL_IF>
-</div>
-
+<div id="main">
+	<div id="map" style="background-color:#FFFFFF"></div>
+	<div id='resolution'></div>
+	<div id ='alert_grab'></div>
+	<div id="slider" class='ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all'>
+		<a class="ui-slider-handle ui-state-default ui-corner-all" href="#"><span class="ui-icon ui-icon-transferthick-e-w"></span></a>
+	</div>
+	<br>
+	<div style="float:left">
+		<span class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#set_range').show(0);$('#grab_seq').show();$('#extract_feat').hide();$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;"><span class="ui-icon ui-icon-scissors"></span>Grab Sequence</span>
+		<span class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#set_range').show(0);$('#extract_feat').show();$('#grab_seq').hide();$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;"><span class="ui-icon ui-icon-scissors"></span>Extract Features</span>
+		<span class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_info_popup').html('Loading. . .');get_genome_info(['args__dsgid', 'args__<TMPL_VAR NAME=DSG>'],['genome_info_popup']);$('#genome_info_popup').dialog('open');"><span class="ui-icon ui-icon-newwin"></span>Genome Info</span>
+		<br>
+		<span id="set_range" style="display:none" > 
+			<input type=text id='grab_from' value='0'> to <input type='text' id="grab_to" value='0'> 
+		</span>
+		<span id="grab_seq" style="display:none" class='ui-button ui-corner-all' onClick="launch_seqview('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>','<TMPL_VAR NAME=DSG>')"> View Sequence</span>
+		<span id="extract_feat" style="display:none" class='ui-button ui-corner-all' onClick="launch_featlist('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>','<TMPL_VAR NAME=DSG>')">Get Features</span>
+	</div>
+	<div align="right">
+	    <TMPL_IF NAME="SAVE_SETTINGS">
+	    <span align="right" class='ui-button ui-corner-all ui-button-icon-left' id="SaveSettings" onclick="go_save_options();"><span class="ui-icon ui-icon-disk"></span>Save Settings</span>
+	    </TMPL_IF>
+	</div>
     <div align="right">Flat Gene Models<input type=checkbox name=flat_models id=flat_models onclick="change_gene_model_type();" <TMPL_VAR NAME=FLAT> /></div>
     <div align="right" >Expand Overlapping Gene Models<input type=checkbox name=overlap_models id=overlap_models onclick="change_gene_model_type();" <TMPL_VAR NAME=EXPAND> /></div>
     <div id='check' style="float:right">Pop-up Annotations<input type=checkbox name="popup_anno" id="popup_anno" <TMPL_VAR NAME=POPUPANNO> /></div>
+	<span class="legend ui-button ui-corner-all" onclick="$('.legend').toggle()">Show Legend</span>
+	<span class="legend ui-button ui-corner-all" style="display:none" onclick="$('.legend').toggle()">Hide Legend</span>
+	<div class="legend" style="display:none">
+		<TMPL_IF NAME="MAIZEGDB"> 
+			<span class="ui-button ui-corner-all" onclick="$('#maizegdb_popup').dialog('open')">Maize Researcher Information</span><br>
+		</TMPL_IF>
+		<img width="600" src="/CoGe/picts/GenomeView-legend.png">
+		<br>
+		<TMPL_IF NAME="GEVO_LINK_LAYER">
+			<img width="600" src="/CoGe/picts/GenomeView_GEvo-links.png">
+			<br>
+			<span class="small">GenomeView showing glyphs for links to GEvo. These glyphs are blue "links" and are displayed when a genomic feature has a link to GEvo for syntenic analysis of syntelogs.</span>
+			<br>
+		</TMPL_IF>
+	</div>
+	<span class="ui-button ui-corner-all" onclick="window.open('/wiki/index.php?title=GenomeView_examples')">More Legend Information</span>
+	<span class="ui-button ui-corner-all" onclick="window.open('/wiki/index.php?title=GenomeView')">More GenomeView Help</span>
+</div>
 
-<div id="short_anno_popup" class="dialog_box" title="Feature Quick Look:"</div>
-<div id='query_popup' class="dialog_box" title="Features:"></div></div>
-<div id="genome_info_popup" class="dialog_box" title="Genome Information"></div>
+<div id="jbrowse" style="display:none;"></div>
 
-<div id="maizegdb_popup" class="dialog_box" title="Welcome Maize Genome Researcher">
+
+<div id="short_anno_popup" class="dialog_box" title="Feature Quick Look:" style="display:none"></div>
+<div id='query_popup' class="dialog_box" title="Features:" style="display:none"></div></div>
+<div id="genome_info_popup" class="dialog_box" title="Genome Information" style="display:none"></div>
+
+<div id="maizegdb_popup" class="dialog_box" title="Welcome Maize Genome Researcher" style="display:none">
    You can identify maize genes with syntenic matches in sorghum by looking for GEvo link icons:<br>
 <div style="text-align:center"><img src="./picts/GEvo_link_icon.png" style="text-align:center"></div>  <br>If you don't see this above or below your gene, try zooming out and scanning left and right.  There is an example of what these look like in the legend below.<br><br>
 <span class="link" onclick=window.open("/wiki/index.php/Syntenic_gene_sets#Sorghum_and_Maize")>Page where you can download the entire maize-sorghum syntenic gene-set (plus other syntenic data-sets)</span>
@@ -528,23 +582,3 @@ If this is your first time visiting, you may find these documents helpful:<br>
    <li>For more information on how MaizeGDB and CoGe work together: <span class="link" onclick=window.open('http://genomevolution.org/wiki/index.php/MaizeGDB_and_CoGe')>MaizeGDB-CoGe</span>
    <li>For more information on how Maize-Sorhgum comparative genomics using CoGe: <span class="link" onclick=window.open('http://genomevolution.org/wiki/index.php/Maize_Sorghum_Syntenic_dotplot')>Maize-Sorghum and CoGe</span>
 </div>
-
-<span class="legend ui-button ui-corner-all" onclick="$('.legend').toggle()">Show Legend</span>
-<span class="legend ui-button ui-corner-all" style="display:none" onclick="$('.legend').toggle()">Hide Legend</span>
- <div class="legend" style="display:none">
- <TMPL_IF NAME="MAIZEGDB"> 
- <span class="ui-button ui-corner-all" onclick="$('#maizegdb_popup').dialog('open')">Maize Researcher Information</span><br>
- </TMPL_IF>
- <img width=600px src="/CoGe/picts/GenomeView-legend.png">
-  <br>
- <TMPL_IF NAME="GEVO_LINK_LAYER">
-  <img width=600px src="/CoGe/picts/GenomeView_GEvo-links.png">
-  <br>
-  <span class=small>GenomeView showing glyphs for links to GEvo. These glyphs are blue "links" and are displayed when a genomic feature has a link to GEvo for syntenic analysis of syntelogs.</span>
-  <br>
- </TMPL_IF>
-</div>
- <span class="ui-button ui-corner-all" onclick="window.open('/wiki/index.php?title=GenomeView_examples')">More Legend Information</span>
-
-<span class="ui-button ui-corner-all" onclick="window.open('/wiki/index.php?title=GenomeView')">More GenomeView Help</span>
-
