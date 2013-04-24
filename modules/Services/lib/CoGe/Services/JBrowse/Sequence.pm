@@ -55,8 +55,9 @@ sub features {
 	my $genome = $coge->resultset('Genome')->find($gid);
 	return unless $genome;
 
-	# Extract requested piece of sequence file	
-	my $seqfile = '/storage/coge/data/genomic_sequence/0/0/16/'.$gid.'/chr/'.$chr;
+	# Extract requested piece of sequence file
+	my (undef, $storagepath) = fileparse($genome->file_path);
+	my $seqfile = $storagepath.'/chr/'.$chr;
 	open(my $fh, $seqfile) or die;
 	seek($fh, $start, 0);
 	read($fh, my $seq, $len);
