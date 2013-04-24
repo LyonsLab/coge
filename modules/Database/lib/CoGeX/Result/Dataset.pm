@@ -544,6 +544,13 @@ sub chromosome_count
 	return $count;
 }
 
+sub has_gene_annotation
+{
+	my $self = shift;
+	#my %opts = @_;
+	return $self->features({'feature_type_id' => { -in => [1, 2, 3]}})->count;
+}
+
 ################################################ subroutine header begin ##
 
 sub sequence_type
