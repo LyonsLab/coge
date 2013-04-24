@@ -137,8 +137,7 @@ sub gen_html
     my $html;
     my ($body, $seq_names, $seqs) = gen_body();
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
-    #	$template->param(TITLE=>'Organism Overview');
-    $template->param(PAGE_TITLE=>'OrgView');
+    $template->param(PAGE_TITLE=>'OrganismView');
     $template->param(HEAD=>qq{});
     $template->param(HELP=>"/wiki/index.php?title=OrganismView");
     my $name = $USER->user_name;
