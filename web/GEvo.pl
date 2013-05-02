@@ -2537,6 +2537,7 @@ sub get_obj_from_genome_db {
 	my $gstid  = $opts{gstid};       #genomic sequence type database id
 	my $mask   = $opts{mask};        #need this to check for seq file
 	my $dsgid  = $opts{dsgid};       #dataset group id
+	#print STDERR Dumper \%opts;
 	my $gen_prot_sequence = $opts{gen_prot_sequence}
 	  || 0;    #are we generating a protein sequence file too?
 	my $message;
@@ -2548,7 +2549,9 @@ sub get_obj_from_genome_db {
 		return "", "Can't find entry for $dsgid" unless $dsg;
 		return "", "Permission denied"
 		  if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+		#($ds) = $dsid ? $coge->resultset('Dataset')->find($dsid) : $dsg->datasets( chr => $chr );
 		($ds) = $dsg->datasets( chr => $chr );
+		#print STDERR join ("\t", map {$_->id} $dsg->datasets(chromosome=>$chr) ),"::$chr\n";	
 		return ( "", "Chromosome '$chr' not found for this genome" ) unless $ds;
 		$dsid  = $ds->id;
 		$gstid = $dsg->type->id;
@@ -2661,13 +2664,14 @@ sub get_obj_from_genome_db {
 	$used_names{$accn} = 1;
 	my $t4 = new Benchmark;
 
-	#print STDERR "Region: $chr: $start-$stop\n" if $DEBUG;
+	#print STDERR "Region: $chr: $start-$stop\n";# if $DEBUG;
 	my %feats = map { $_->id, $_ } $coge->get_features_in_region(
 		start      => $start,
 		stop       => $stop,
 		chr        => $chr,
 		dataset_id => $dsid
 	);
+	#print STDERR join ("\t", $start, $stop, $chr, $dsid),"\n";
 	$feats{ $feat->id } = $feat if $feat;
 
 	my $t5 = new Benchmark;
@@ -2675,7 +2679,7 @@ sub get_obj_from_genome_db {
 	foreach my $f ( values %feats ) {
 		my $name;
 		my @names = $f->names;
-		next if $f->type->name =~ /misc_feat/;
+next if $f->type->name =~ /misc_feat/;
 		next if $f->type->name eq "chromosome";
 
 		#	next if $f->type->name eq "contig";
@@ -2746,7 +2750,6 @@ sub get_obj_from_genome_db {
 		$obj->other_stuff($prot_file);
 	}
 	if ($new_seq) {
-
 		# mask out cds if required
 		$seq = $obj->mask_cds($seq) if ( $mask && $mask eq "cds" );
 
