@@ -262,7 +262,7 @@ sub process_line
       }
     elsif ( $line =~ /^DEFINITION\s+(.*)/ ) {
       $self->definition($1);
-      if ($self->definition() =~ /(linkage group \w+),?/i || $self->definition =~ /chromosome ([^,]*),?/ || $self->definition =~ /(plasmid[^,]*),?/i || $self->definition =~ /(extrachromosomal[^,]*),?/i || $self->definition =~ /(scaffold[^,]*),?/i || $self->definition =~ /(segment[^,]*),?/i || $self->definition =~ /\s(part [^,]*),?/i|| $self->definition =~ /\s(clone [^,]*),?/i || $self->definition =~ /(mitochondrion)/i || $self->definition =~ /(chloroplast)/i || $self->definition =~ /(apicoplast)/i|| $self->definition =~ /(plastid)/i)
+      if ($self->definition() =~ /(linkage group .+),?/i || $self->definition =~ /chromosome ([^,]*),?/ || $self->definition =~ /(plasmid[^,]*),?/i || $self->definition =~ /(extrachromosomal[^,]*),?/i || $self->definition =~ /(scaffold[^,]*),?/i || $self->definition =~ /(segment[^,]*),?/i || $self->definition =~ /\s(part [^,]*),?/i|| $self->definition =~ /\s(clone [^,]*),?/i || $self->definition =~ /(mitochondrion)/i || $self->definition =~ /(chloroplast)/i || $self->definition =~ /(apicoplast)/i|| $self->definition =~ /(plastid)/i)
 	{
 	  my $tmp = $1;
 	  $tmp =~ s/clone/contig/;
@@ -683,6 +683,7 @@ sub mask_ncs
     foreach my $feat (@{$self->features})
       {
 	next unless $type{$feat->type};
+
 	foreach my $block (@{$feat->blocks})
 	  {
 	    next if $block->[0] > length($seq);
