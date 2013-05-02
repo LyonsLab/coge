@@ -209,12 +209,12 @@ sub datasets {
 		next if ($restricted and not $ds->restricted);
 		
 		if ( defined $chr ) {
-			#foreach my $ds_chr ($dsc->dataset->chromosomes) {
-			#	print STDERR $ds_chr,"\n";
-			#	return $dsc->dataset if $ds_chr eq $chr;
-			#return $ds if $ds->has_chromosome( chr => $chr );
-			$datasets{$ds->id} = $ds;
-			#}
+	#this was commented out and is an essential function to find the corret dataset for a given chromosome.  Why was this commented out?:  EL 5/3/13	
+		foreach my $ds_chr ($dsc->dataset->chromosomes) {
+				return $dsc->dataset if $ds_chr eq $chr;
+			return $ds if $ds->has_chromosome( chr => $chr );
+			#$datasets{$ds->id} = $ds;
+			}
 		}
 		else {
 			$datasets{$ds->id} = $ds;
