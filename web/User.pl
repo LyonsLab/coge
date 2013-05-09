@@ -870,7 +870,7 @@ sub get_contents {
 		my $jobs = 'cogeblast/synmap/gevo/synfind/';
 		push @rows, { CONTENTS_ITEM_ID => 0,
 					  CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_viz},
-					  CONTENTS_ITEM_INFO => qq{<iframe frameborder="0" width="100%" height="100%" scrolling="no" src="http://geco.iplantcollaborative.org/rchasman/standalone/$user_id/$jobs"></iframe>}
+					  CONTENTS_ITEM_INFO => qq{<iframe frameborder="0" width="100%" height="100%" scrolling="no" src="http://geco.iplantcollaborative.org/blacktea/standalone/$user_id/$jobs"></iframe>}
 		};
 	}		
 	
