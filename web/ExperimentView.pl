@@ -282,7 +282,7 @@ sub get_annotations {
 	}
 	return unless ($num_annot or $user_can_edit);
 	
-	my $html = '<table id="experiment_annotation_table" class="ui-widget-content ui-corner-all small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;border-collapse:collapse;"><thead style="display:none"></thead><tbody>';
+	my $html = '<table id="experiment_annotation_table" class="ui-widget-content ui-corner-all small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
 	foreach my $group (sort keys %groups) {
 		my $first = 1;
 		foreach my $a ( sort {$a->id <=> $b->id} @{$groups{$group}} ) {
