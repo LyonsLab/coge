@@ -270,11 +270,16 @@ def print_alignment(dir, diag_num, dag_score, group, out):
     for pair_dict in group:
         A = pair_dict['pair']['A']
         B = pair_dict['pair']['B']
-        print >>out, "%s\t%s\t%d\t%d\t%s\t%s\t%d\t%d\t%e\t%d" % (\
+	if opts.new_behavior:
+        	print >>out, "%s\t%s\t%d\t%d\t%s\t%s\t%d\t%d\t%e\t%d" % (\
+                     'a' + A['seqid'][1:], A['accn'], A['start'], A['end'],
+                     'b' + B['seqid'][1:], B['accn'], B['start'], B['end'],
+                     pair_dict['pair']['evalue'], pair_dict['dag_score'])
+	else:
+        	print >>out, "%s\t%s\t%d\t%d\t%s\t%s\t%d\t%d\t%e\t%d" % (\
                      A['seqid'], A['accn'], A['start'], A['end'],
                      B['seqid'], B['accn'], B['start'], B['end'],
                      pair_dict['pair']['evalue'], pair_dict['dag_score'])
-
 def run_and_print(all_matches, opts, out=sys.stdout): 
     filename = "-" # tells dagchainer to read from stdin.
     # if out is False, it means we dont want to print, and so we 
@@ -427,6 +432,8 @@ a_seqid<tab>a_accn<tab>a_start<tab>a_end<tab>b_seqid<tab>b_accn<tab>b_start<tab>
 
     p.add_option('-M', dest='max_match_score', type='float', default=50,
                 help="maximum score to be assigned to a match")
+    p.add_option('--new_behavior',action="store_true",
+		help="does not require the first listed gene to be an 'a' and the second a 'b'")
     p.add_option('--merge', dest='merge', default=None,
                  help=\
          """ path to a file to send the output. when this is specified, the the 
