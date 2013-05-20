@@ -281,6 +281,11 @@ sub process_fasta_file {
 		$seq =~ s/\n//g;
 		$lineNum++;
 
+		if ($seq =~ /\W/) {
+			print $log "log: error: sequence contains non-alphanumeric characters, perhaps this is not a FASTA file?\n";
+			exit(-1);
+		}
+
 		my $chr;
 		if ($keep_headers) {
 			$chr = $name;
