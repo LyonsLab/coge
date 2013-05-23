@@ -1,0 +1,57 @@
+<TMPL_IF NAME="MAIN">
+
+<TMPL_INCLUDE NAME="widgets/JBrowse.tmpl">
+
+<SCRIPT type="text/javascript">
+/*
+var ITEM_TYPE_ALL 			= <TMPL_VAR NAME="ITEM_TYPE_ALL">;
+var ITEM_TYPE_MINE 			= <TMPL_VAR NAME="ITEM_TYPE_MINE">;
+var ITEM_TYPE_SHARED 		= <TMPL_VAR NAME="ITEM_TYPE_SHARED">;
+var ITEM_TYPE_TRASH 		= <TMPL_VAR NAME="ITEM_TYPE_TRASH">;
+var ITEM_TYPE_ACTIVITY 		= <TMPL_VAR NAME="ITEM_TYPE_ACTIVITY">;
+var ITEM_TYPE_ACTIVITY_VIZ	= <TMPL_VAR NAME="ITEM_TYPE_ACTIVITY_VIZ">;
+var ITEM_TYPE_USER 			= <TMPL_VAR NAME="ITEM_TYPE_USER">;
+var ITEM_TYPE_GROUP 		= <TMPL_VAR NAME="ITEM_TYPE_GROUP">;
+var ITEM_TYPE_NOTEBOOK 		= <TMPL_VAR NAME="ITEM_TYPE_NOTEBOOK">;
+var ITEM_TYPE_GENOME 		= <TMPL_VAR NAME="ITEM_TYPE_GENOME">;
+var ITEM_TYPE_EXPERIMENT	= <TMPL_VAR NAME="ITEM_TYPE_EXPERIMENT">;
+*/
+
+$(function() {
+	// Initialize dialog boxes
+	$(".dialog_box").dialog({autoOpen: false, resizable: false});
+
+	// Initialize globals
+	timestamps = new Array();
+	
+	// Initialize AJAX
+	$.ajaxSetup({
+		type: "POST",
+		url: "<TMPL_VAR NAME='PAGE_NAME'>",
+		dataType: "html",
+		cache: false,
+	});
+	
+	// Initialize JBrowse widget
+	init_JBrowse('browser_panel',
+		function(browser) {
+			jbrowse = browser;
+		}
+	);
+});
+
+</SCRIPT>
+
+<div id="browser_panel" style="height:100%; width:100%; padding:0; border:0;"></div>
+
+</TMPL_IF> <!-- MAIN -->
+
+
+
+<TMPL_IF NAME='ADMIN_AREA'>
+<!--
+<br>
+<hr>
+Admin Functions:<br>
+-->
+</TMPL_IF>
