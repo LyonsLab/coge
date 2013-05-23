@@ -1,0 +1,15 @@
+div.coge-tracklist-label {
+    /*background-color: #ddd;
+    background-color: rgba( 220, 220, 220, 0.9 );*/
+}
+
+/* div.tracklist-test.selected {
+    background-color: yellow
+} */
+
+div.tracklist-container.collapsed {
+	display: none;
+}
+
+
+

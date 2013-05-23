@@ -1,0 +1,33 @@
+{
+   "abstract" : "unknown",
+   "author" : [
+      "unknown"
+   ],
+   "dynamic_config" : 0,
+   "generated_by" : "ExtUtils::MakeMaker version 6.30_01, CPAN::Meta::Converter version 2.112621",
+   "license" : [
+      "unknown"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "Heap-Simple-XS",
+   "prereqs" : {
+      "build" : {
+         "requires" : {
+            "ExtUtils::MakeMaker" : 0
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "Heap::Simple" : "0.09",
+            "Test::More" : "0.11"
+         }
+      }
+   },
+   "release_status" : "stable",
+   "version" : "0.10",
+   "x_installdirs" : "site",
+   "x_version_from" : "lib/Heap/Simple/XS/Package.pm"
+}

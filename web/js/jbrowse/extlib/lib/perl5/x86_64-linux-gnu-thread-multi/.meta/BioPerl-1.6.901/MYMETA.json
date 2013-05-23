@@ -1,0 +1,3618 @@
+{
+   "abstract" : "Bioinformatics Toolkit",
+   "author" : [
+      "BioPerl Team <bioperl-l@bioperl.org>"
+   ],
+   "dynamic_config" : 0,
+   "generated_by" : "Module::Build version 0.4003, CPAN::Meta::Converter version 2.112621",
+   "license" : [
+      "perl_5"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "BioPerl",
+   "no_index" : {
+      "directory" : [
+         "examples/root/lib"
+      ]
+   },
+   "prereqs" : {
+      "build" : {
+         "requires" : {
+            "CPAN" : "1.81",
+            "Module::Build" : "0.2805",
+            "Test::Harness" : "2.62",
+            "Test::More" : 0
+         }
+      },
+      "configure" : {
+         "requires" : {
+            "Module::Build" : "0.38"
+         }
+      },
+      "runtime" : {
+         "recommends" : {
+            "Algorithm::Munkres" : 0,
+            "Array::Compare" : 0,
+            "Clone" : 0,
+            "Convert::Binary::C" : 0,
+            "Error" : 0,
+            "GD" : 0,
+            "Graph" : 0,
+            "GraphViz" : 0,
+            "HTML::Entities" : 0,
+            "HTML::HeadParser" : "3",
+            "HTTP::Request::Common" : 0,
+            "LWP::UserAgent" : 0,
+            "List::MoreUtils" : 0,
+            "Math::Random" : 0,
+            "PostScript::TextBlock" : 0,
+            "SOAP::Lite" : 0,
+            "SVG" : "2.26",
+            "SVG::Graph" : "0.01",
+            "Set::Scalar" : 0,
+            "Sort::Naturally" : 0,
+            "Spreadsheet::ParseExcel" : 0,
+            "Storable" : "2.05",
+            "Text::ParseWords" : 0,
+            "URI::Escape" : 0,
+            "XML::DOM::XPath" : "0.13",
+            "XML::Parser" : 0,
+            "XML::Parser::PerlSAX" : 0,
+            "XML::SAX" : "0.15",
+            "XML::SAX::Writer" : 0,
+            "XML::Simple" : 0,
+            "XML::Twig" : 0,
+            "XML::Writer" : "0.4",
+            "YAML" : 0
+         },
+         "requires" : {
+            "DB_File" : 0,
+            "Data::Stag" : "0.11",
+            "ExtUtils::Manifest" : "1.52",
+            "IO::String" : 0,
+            "Scalar::Util" : 0,
+            "perl" : "v5.6.1"
+         }
+      }
+   },
+   "provides" : {
+      "Bio::Align::AlignI" : {
+         "file" : "Bio/Align/AlignI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Align::DNAStatistics" : {
+         "file" : "Bio/Align/DNAStatistics.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Align::Graphics" : {
+         "file" : "Bio/Align/Graphics.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Align::PairwiseStatistics" : {
+         "file" : "Bio/Align/PairwiseStatistics.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Align::ProteinStatistics" : {
+         "file" : "Bio/Align/ProteinStatistics.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Align::StatisticsI" : {
+         "file" : "Bio/Align/StatisticsI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Align::Utilities" : {
+         "file" : "Bio/Align/Utilities.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO" : {
+         "file" : "Bio/AlignIO.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::Handler::GenericAlignHandler" : {
+         "file" : "Bio/AlignIO/Handler/GenericAlignHandler.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::arp" : {
+         "file" : "Bio/AlignIO/arp.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::bl2seq" : {
+         "file" : "Bio/AlignIO/bl2seq.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::clustalw" : {
+         "file" : "Bio/AlignIO/clustalw.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::emboss" : {
+         "file" : "Bio/AlignIO/emboss.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::fasta" : {
+         "file" : "Bio/AlignIO/fasta.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::largemultifasta" : {
+         "file" : "Bio/AlignIO/largemultifasta.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::maf" : {
+         "file" : "Bio/AlignIO/maf.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::mase" : {
+         "file" : "Bio/AlignIO/mase.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::mega" : {
+         "file" : "Bio/AlignIO/mega.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::meme" : {
+         "file" : "Bio/AlignIO/meme.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::metafasta" : {
+         "file" : "Bio/AlignIO/metafasta.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::msf" : {
+         "file" : "Bio/AlignIO/msf.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::nexml" : {
+         "file" : "Bio/AlignIO/nexml.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::nexus" : {
+         "file" : "Bio/AlignIO/nexus.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::pfam" : {
+         "file" : "Bio/AlignIO/pfam.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::phylip" : {
+         "file" : "Bio/AlignIO/phylip.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::po" : {
+         "file" : "Bio/AlignIO/po.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::proda" : {
+         "file" : "Bio/AlignIO/proda.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::prodom" : {
+         "file" : "Bio/AlignIO/prodom.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::psi" : {
+         "file" : "Bio/AlignIO/psi.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::selex" : {
+         "file" : "Bio/AlignIO/selex.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::stockholm" : {
+         "file" : "Bio/AlignIO/stockholm.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AlignIO::xmfa" : {
+         "file" : "Bio/AlignIO/xmfa.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AnalysisI" : {
+         "file" : "Bio/AnalysisI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AnalysisI::JobI" : {
+         "file" : "Bio/AnalysisI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AnalysisParserI" : {
+         "file" : "Bio/AnalysisParserI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AnalysisResultI" : {
+         "file" : "Bio/AnalysisResultI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AnnotatableI" : {
+         "file" : "Bio/AnnotatableI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Annotation::AnnotationFactory" : {
+         "file" : "Bio/Annotation/AnnotationFactory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Annotation::Collection" : {
+         "file" : "Bio/Annotation/Collection.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Annotation::Comment" : {
+         "file" : "Bio/Annotation/Comment.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Annotation::DBLink" : {
+         "file" : "Bio/Annotation/DBLink.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Annotation::OntologyTerm" : {
+         "file" : "Bio/Annotation/OntologyTerm.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Annotation::Reference" : {
+         "file" : "Bio/Annotation/Reference.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Annotation::Relation" : {
+         "file" : "Bio/Annotation/Relation.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Annotation::SimpleValue" : {
+         "file" : "Bio/Annotation/SimpleValue.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Annotation::StructuredValue" : {
+         "file" : "Bio/Annotation/StructuredValue.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Annotation::TagTree" : {
+         "file" : "Bio/Annotation/TagTree.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Annotation::Target" : {
+         "file" : "Bio/Annotation/Target.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Annotation::Tree" : {
+         "file" : "Bio/Annotation/Tree.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Annotation::TypeManager" : {
+         "file" : "Bio/Annotation/TypeManager.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AnnotationCollectionI" : {
+         "file" : "Bio/AnnotationCollectionI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::AnnotationI" : {
+         "file" : "Bio/AnnotationI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Assembly::Contig" : {
+         "file" : "Bio/Assembly/Contig.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Assembly::ContigAnalysis" : {
+         "file" : "Bio/Assembly/ContigAnalysis.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Assembly::IO" : {
+         "file" : "Bio/Assembly/IO.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Assembly::IO::ace" : {
+         "file" : "Bio/Assembly/IO/ace.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Assembly::IO::bowtie" : {
+         "file" : "Bio/Assembly/IO/bowtie.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Assembly::IO::maq" : {
+         "file" : "Bio/Assembly/IO/maq.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Assembly::IO::phrap" : {
+         "file" : "Bio/Assembly/IO/phrap.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Assembly::IO::sam" : {
+         "file" : "Bio/Assembly/IO/sam.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Assembly::IO::tigr" : {
+         "file" : "Bio/Assembly/IO/tigr.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Assembly::Scaffold" : {
+         "file" : "Bio/Assembly/Scaffold.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Assembly::ScaffoldI" : {
+         "file" : "Bio/Assembly/ScaffoldI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Assembly::Singlet" : {
+         "file" : "Bio/Assembly/Singlet.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Assembly::Tools::ContigSpectrum" : {
+         "file" : "Bio/Assembly/Tools/ContigSpectrum.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio" : {
+         "file" : "Bio/Biblio.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::Article" : {
+         "file" : "Bio/Biblio/Article.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::BiblioBase" : {
+         "file" : "Bio/Biblio/BiblioBase.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::Book" : {
+         "file" : "Bio/Biblio/Book.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::BookArticle" : {
+         "file" : "Bio/Biblio/BookArticle.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::IO" : {
+         "file" : "Bio/Biblio/IO.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::IO::medline2ref" : {
+         "file" : "Bio/Biblio/IO/medline2ref.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::IO::medlinexml" : {
+         "file" : "Bio/Biblio/IO/medlinexml.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::IO::pubmed2ref" : {
+         "file" : "Bio/Biblio/IO/pubmed2ref.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::IO::pubmedxml" : {
+         "file" : "Bio/Biblio/IO/pubmedxml.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::Journal" : {
+         "file" : "Bio/Biblio/Journal.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::JournalArticle" : {
+         "file" : "Bio/Biblio/JournalArticle.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::MedlineArticle" : {
+         "file" : "Bio/Biblio/MedlineArticle.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::MedlineBook" : {
+         "file" : "Bio/Biblio/MedlineBook.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::MedlineBookArticle" : {
+         "file" : "Bio/Biblio/MedlineBookArticle.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::MedlineJournal" : {
+         "file" : "Bio/Biblio/MedlineJournal.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::MedlineJournalArticle" : {
+         "file" : "Bio/Biblio/MedlineJournalArticle.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::Organisation" : {
+         "file" : "Bio/Biblio/Organisation.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::Patent" : {
+         "file" : "Bio/Biblio/Patent.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::Person" : {
+         "file" : "Bio/Biblio/Person.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::Proceeding" : {
+         "file" : "Bio/Biblio/Proceeding.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::Provider" : {
+         "file" : "Bio/Biblio/Provider.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::PubmedArticle" : {
+         "file" : "Bio/Biblio/PubmedArticle.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::PubmedBookArticle" : {
+         "file" : "Bio/Biblio/PubmedBookArticle.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::PubmedJournalArticle" : {
+         "file" : "Bio/Biblio/PubmedJournalArticle.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::Ref" : {
+         "file" : "Bio/Biblio/Ref.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::Service" : {
+         "file" : "Bio/Biblio/Service.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::TechReport" : {
+         "file" : "Bio/Biblio/TechReport.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::Thesis" : {
+         "file" : "Bio/Biblio/Thesis.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Biblio::WebResource" : {
+         "file" : "Bio/Biblio/WebResource.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Cluster::ClusterFactory" : {
+         "file" : "Bio/Cluster/ClusterFactory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Cluster::FamilyI" : {
+         "file" : "Bio/Cluster/FamilyI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Cluster::SequenceFamily" : {
+         "file" : "Bio/Cluster/SequenceFamily.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Cluster::UniGene" : {
+         "file" : "Bio/Cluster/UniGene.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Cluster::UniGeneI" : {
+         "file" : "Bio/Cluster/UniGeneI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::ClusterI" : {
+         "file" : "Bio/ClusterI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::ClusterIO" : {
+         "file" : "Bio/ClusterIO.pm",
+         "version" : "1.006901"
+      },
+      "Bio::ClusterIO::dbsnp" : {
+         "file" : "Bio/ClusterIO/dbsnp.pm",
+         "version" : "1.006901"
+      },
+      "Bio::ClusterIO::unigene" : {
+         "file" : "Bio/ClusterIO/unigene.pm",
+         "version" : "1.006901"
+      },
+      "Bio::CodonUsage::IO" : {
+         "file" : "Bio/CodonUsage/IO.pm",
+         "version" : "1.006901"
+      },
+      "Bio::CodonUsage::Table" : {
+         "file" : "Bio/CodonUsage/Table.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Coordinate::Chain" : {
+         "file" : "Bio/Coordinate/Chain.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Coordinate::Collection" : {
+         "file" : "Bio/Coordinate/Collection.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Coordinate::ExtrapolatingPair" : {
+         "file" : "Bio/Coordinate/ExtrapolatingPair.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Coordinate::GeneMapper" : {
+         "file" : "Bio/Coordinate/GeneMapper.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Coordinate::Graph" : {
+         "file" : "Bio/Coordinate/Graph.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Coordinate::MapperI" : {
+         "file" : "Bio/Coordinate/MapperI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Coordinate::Pair" : {
+         "file" : "Bio/Coordinate/Pair.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Coordinate::Result" : {
+         "file" : "Bio/Coordinate/Result.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Coordinate::Result::Gap" : {
+         "file" : "Bio/Coordinate/Result/Gap.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Coordinate::Result::Match" : {
+         "file" : "Bio/Coordinate/Result/Match.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Coordinate::ResultI" : {
+         "file" : "Bio/Coordinate/ResultI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Coordinate::Utils" : {
+         "file" : "Bio/Coordinate/Utils.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Ace" : {
+         "file" : "Bio/DB/Ace.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Biblio::biofetch" : {
+         "file" : "Bio/DB/Biblio/biofetch.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Biblio::eutils" : {
+         "file" : "Bio/DB/Biblio/eutils.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Biblio::soap" : {
+         "file" : "Bio/DB/Biblio/soap.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::BiblioI" : {
+         "file" : "Bio/DB/BiblioI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::BioFetch" : {
+         "file" : "Bio/DB/BioFetch.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::CUTG" : {
+         "file" : "Bio/DB/CUTG.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::DBFetch" : {
+         "file" : "Bio/DB/DBFetch.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::EMBL" : {
+         "file" : "Bio/DB/EMBL.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::EUtilities" : {
+         "file" : "Bio/DB/EUtilities.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::EntrezGene" : {
+         "file" : "Bio/DB/EntrezGene.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Expression" : {
+         "file" : "Bio/DB/Expression.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Expression::geo" : {
+         "file" : "Bio/DB/Expression/geo.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Failover" : {
+         "file" : "Bio/DB/Failover.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Fasta" : {
+         "file" : "Bio/DB/Fasta.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Fasta::Stream" : {
+         "file" : "Bio/DB/Fasta.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Fasta::Subdir" : {
+         "file" : "Bio/DB/SeqFeature/Store/berkeleydb.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::FileCache" : {
+         "file" : "Bio/DB/FileCache.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Flat" : {
+         "file" : "Bio/DB/Flat.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Flat::BDB" : {
+         "file" : "Bio/DB/Flat/BDB.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Flat::BDB::embl" : {
+         "file" : "Bio/DB/Flat/BDB/embl.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Flat::BDB::fasta" : {
+         "file" : "Bio/DB/Flat/BDB/fasta.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Flat::BDB::genbank" : {
+         "file" : "Bio/DB/Flat/BDB/genbank.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Flat::BDB::swiss" : {
+         "file" : "Bio/DB/Flat/BDB/swiss.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Flat::BinarySearch" : {
+         "file" : "Bio/DB/Flat/BinarySearch.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF" : {
+         "file" : "Bio/DB/GFF.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Adaptor::ace" : {
+         "file" : "Bio/DB/GFF/Adaptor/ace.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Adaptor::berkeleydb" : {
+         "file" : "Bio/DB/GFF/Adaptor/berkeleydb.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Adaptor::berkeleydb::iterator" : {
+         "file" : "Bio/DB/GFF/Adaptor/berkeleydb/iterator.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Adaptor::biofetch" : {
+         "file" : "Bio/DB/GFF/Adaptor/biofetch.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Adaptor::biofetch_oracle" : {
+         "file" : "Bio/DB/GFF/Adaptor/biofetch_oracle.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Adaptor::dbi" : {
+         "file" : "Bio/DB/GFF/Adaptor/dbi.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Adaptor::dbi::caching_handle" : {
+         "file" : "Bio/DB/GFF/Adaptor/dbi/caching_handle.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Adaptor::dbi::faux_dbh" : {
+         "file" : "Bio/DB/GFF/Adaptor/dbi/caching_handle.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Adaptor::dbi::iterator" : {
+         "file" : "Bio/DB/GFF/Adaptor/dbi/iterator.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Adaptor::dbi::mysql" : {
+         "file" : "Bio/DB/GFF/Adaptor/dbi/mysql.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Adaptor::dbi::mysqlace" : {
+         "file" : "Bio/DB/GFF/Adaptor/dbi/mysqlace.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Adaptor::dbi::mysqlcmap" : {
+         "file" : "Bio/DB/GFF/Adaptor/dbi/mysqlcmap.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Adaptor::dbi::mysqlopt" : {
+         "file" : "Bio/DB/GFF/Adaptor/dbi/mysqlopt.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Adaptor::dbi::oracle" : {
+         "file" : "Bio/DB/GFF/Adaptor/dbi/oracle.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Adaptor::dbi::oracleace" : {
+         "file" : "Bio/DB/GFF/Adaptor/dbi/oracleace.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Adaptor::dbi::pg" : {
+         "file" : "Bio/DB/GFF/Adaptor/dbi/pg.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Adaptor::dbi::pg_fts" : {
+         "file" : "Bio/DB/GFF/Adaptor/dbi/pg_fts.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Adaptor::memory" : {
+         "file" : "Bio/DB/GFF/Adaptor/memory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Adaptor::memory::feature_serializer" : {
+         "file" : "Bio/DB/GFF/Adaptor/memory/feature_serializer.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Adaptor::memory::iterator" : {
+         "file" : "Bio/DB/GFF/Adaptor/memory/iterator.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Aggregator" : {
+         "file" : "Bio/DB/GFF/Aggregator.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Aggregator::alignment" : {
+         "file" : "Bio/DB/GFF/Aggregator/alignment.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Aggregator::clone" : {
+         "file" : "Bio/DB/GFF/Aggregator/clone.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Aggregator::coding" : {
+         "file" : "Bio/DB/GFF/Aggregator/coding.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Aggregator::gene" : {
+         "file" : "Bio/DB/GFF/Aggregator/gene.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Aggregator::match" : {
+         "file" : "Bio/DB/GFF/Aggregator/match.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Aggregator::none" : {
+         "file" : "Bio/DB/GFF/Aggregator/none.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Aggregator::orf" : {
+         "file" : "Bio/DB/GFF/Aggregator/orf.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Aggregator::processed_transcript" : {
+         "file" : "Bio/DB/GFF/Aggregator/processed_transcript.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Aggregator::so_transcript" : {
+         "file" : "Bio/DB/GFF/Aggregator/so_transcript.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Aggregator::transcript" : {
+         "file" : "Bio/DB/GFF/Aggregator/transcript.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Aggregator::ucsc_acembly" : {
+         "file" : "Bio/DB/GFF/Aggregator/ucsc_acembly.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Aggregator::ucsc_ensgene" : {
+         "file" : "Bio/DB/GFF/Aggregator/ucsc_ensgene.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Aggregator::ucsc_genscan" : {
+         "file" : "Bio/DB/GFF/Aggregator/ucsc_genscan.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Aggregator::ucsc_refgene" : {
+         "file" : "Bio/DB/GFF/Aggregator/ucsc_refgene.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Aggregator::ucsc_sanger22" : {
+         "file" : "Bio/DB/GFF/Aggregator/ucsc_sanger22.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Aggregator::ucsc_sanger22pseudo" : {
+         "file" : "Bio/DB/GFF/Aggregator/ucsc_sanger22pseudo.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Aggregator::ucsc_softberry" : {
+         "file" : "Bio/DB/GFF/Aggregator/ucsc_softberry.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Aggregator::ucsc_twinscan" : {
+         "file" : "Bio/DB/GFF/Aggregator/ucsc_twinscan.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Aggregator::ucsc_unigene" : {
+         "file" : "Bio/DB/GFF/Aggregator/ucsc_unigene.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Featname" : {
+         "file" : "Bio/DB/GFF/Featname.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Feature" : {
+         "file" : "Bio/DB/GFF/Feature.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::FeatureIterator" : {
+         "file" : "Bio/DB/GFF.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Homol" : {
+         "file" : "Bio/DB/GFF/Homol.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::ID_Iterator" : {
+         "file" : "Bio/DB/GFF.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::RelSegment" : {
+         "file" : "Bio/DB/GFF/RelSegment.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Segment" : {
+         "file" : "Bio/DB/GFF/Segment.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Typename" : {
+         "file" : "Bio/DB/GFF/Typename.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Util::Binning" : {
+         "file" : "Bio/DB/GFF/Util/Binning.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GFF::Util::Rearrange" : {
+         "file" : "Bio/DB/GFF/Util/Rearrange.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GenBank" : {
+         "file" : "Bio/DB/GenBank.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GenPept" : {
+         "file" : "Bio/DB/GenPept.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::GenericWebAgent" : {
+         "file" : "Bio/DB/GenericWebAgent.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::HIV" : {
+         "file" : "Bio/DB/HIV.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::HIV::HIVAnnotProcessor" : {
+         "file" : "Bio/DB/HIV/HIVAnnotProcessor.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::HIV::HIVQueryHelper" : {
+         "file" : "Bio/DB/HIV/HIVQueryHelper.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::InMemoryCache" : {
+         "file" : "Bio/DB/InMemoryCache.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::LocationI" : {
+         "file" : "Bio/DB/LocationI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::MeSH" : {
+         "file" : "Bio/DB/MeSH.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::NCBIHelper" : {
+         "file" : "Bio/DB/NCBIHelper.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Qual" : {
+         "file" : "Bio/DB/Qual.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Qual::Stream" : {
+         "file" : "Bio/DB/Qual.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Query::GenBank" : {
+         "file" : "Bio/DB/Query/GenBank.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Query::HIVQuery" : {
+         "file" : "Bio/DB/Query/HIVQuery.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Query::WebQuery" : {
+         "file" : "Bio/DB/Query/WebQuery.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::QueryI" : {
+         "file" : "Bio/DB/QueryI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::RandomAccessI" : {
+         "file" : "Bio/DB/RandomAccessI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::RefSeq" : {
+         "file" : "Bio/DB/RefSeq.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::ReferenceI" : {
+         "file" : "Bio/DB/ReferenceI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Registry" : {
+         "file" : "Bio/DB/Registry.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature" : {
+         "file" : "Bio/DB/SeqFeature.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::NormalizedFeature" : {
+         "file" : "Bio/DB/SeqFeature/NormalizedFeature.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::NormalizedFeatureI" : {
+         "file" : "Bio/DB/SeqFeature/NormalizedFeatureI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::NormalizedTableFeatureI" : {
+         "file" : "Bio/DB/SeqFeature/NormalizedTableFeatureI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::Segment" : {
+         "file" : "Bio/DB/SeqFeature/Segment.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::Store" : {
+         "file" : "Bio/DB/SeqFeature/Store.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::Store::DBI::Iterator" : {
+         "file" : "Bio/DB/SeqFeature/Store/DBI/Iterator.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::Store::DBI::Pg" : {
+         "file" : "Bio/DB/SeqFeature/Store/DBI/Pg.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::Store::DBI::SQLite" : {
+         "file" : "Bio/DB/SeqFeature/Store/DBI/SQLite.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::Store::DBI::mysql" : {
+         "file" : "Bio/DB/SeqFeature/Store/DBI/mysql.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::Store::FeatureFileLoader" : {
+         "file" : "Bio/DB/SeqFeature/Store/FeatureFileLoader.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::Store::FeatureIterator" : {
+         "file" : "Bio/DB/SeqFeature/Store.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::Store::GFF2Loader" : {
+         "file" : "Bio/DB/SeqFeature/Store/GFF2Loader.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::Store::GFF3Loader" : {
+         "file" : "Bio/DB/SeqFeature/Store/GFF3Loader.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::Store::LoadHelper" : {
+         "file" : "Bio/DB/SeqFeature/Store/LoadHelper.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::Store::Loader" : {
+         "file" : "Bio/DB/SeqFeature/Store/Loader.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::Store::bdb" : {
+         "file" : "Bio/DB/SeqFeature/Store/bdb.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::Store::berkeleydb" : {
+         "file" : "Bio/DB/SeqFeature/Store/berkeleydb.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::Store::berkeleydb3" : {
+         "file" : "Bio/DB/SeqFeature/Store/berkeleydb3.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::Store::berkeleydb::Iterator" : {
+         "file" : "Bio/DB/SeqFeature/Store/berkeleydb.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::Store::memory" : {
+         "file" : "Bio/DB/SeqFeature/Store/memory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqFeature::Store::memory::Iterator" : {
+         "file" : "Bio/DB/SeqFeature/Store/memory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqHound" : {
+         "file" : "Bio/DB/SeqHound.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqI" : {
+         "file" : "Bio/DB/SeqI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqVersion" : {
+         "file" : "Bio/DB/SeqVersion.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SeqVersion::gi" : {
+         "file" : "Bio/DB/SeqVersion/gi.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::SwissProt" : {
+         "file" : "Bio/DB/SwissProt.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::TFBS" : {
+         "file" : "Bio/DB/TFBS.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::TFBS::transfac_pro" : {
+         "file" : "Bio/DB/TFBS/transfac_pro.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Taxonomy" : {
+         "file" : "Bio/DB/Taxonomy.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Taxonomy::entrez" : {
+         "file" : "Bio/DB/Taxonomy/entrez.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Taxonomy::flatfile" : {
+         "file" : "Bio/DB/Taxonomy/flatfile.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Taxonomy::list" : {
+         "file" : "Bio/DB/Taxonomy/list.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::Universal" : {
+         "file" : "Bio/DB/Universal.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::UpdateableSeqI" : {
+         "file" : "Bio/DB/UpdateableSeqI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DB::WebDBSeqI" : {
+         "file" : "Bio/DB/WebDBSeqI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DBLinkContainerI" : {
+         "file" : "Bio/DBLinkContainerI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Das::FeatureTypeI" : {
+         "file" : "Bio/Das/FeatureTypeI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Das::SegmentI" : {
+         "file" : "Bio/Das/SegmentI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DasI" : {
+         "file" : "Bio/DasI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::DescribableI" : {
+         "file" : "Bio/DescribableI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Draw::Pictogram" : {
+         "file" : "Bio/Draw/Pictogram.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Event::EventGeneratorI" : {
+         "file" : "Bio/Event/EventGeneratorI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Event::EventHandlerI" : {
+         "file" : "Bio/Event/EventHandlerI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Factory::AnalysisI" : {
+         "file" : "Bio/Factory/AnalysisI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Factory::ApplicationFactoryI" : {
+         "file" : "Bio/Factory/ApplicationFactoryI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Factory::DriverFactory" : {
+         "file" : "Bio/Factory/DriverFactory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Factory::FTLocationFactory" : {
+         "file" : "Bio/Factory/FTLocationFactory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Factory::LocationFactoryI" : {
+         "file" : "Bio/Factory/LocationFactoryI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Factory::MapFactoryI" : {
+         "file" : "Bio/Factory/MapFactoryI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Factory::ObjectBuilderI" : {
+         "file" : "Bio/Factory/ObjectBuilderI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Factory::ObjectFactory" : {
+         "file" : "Bio/Factory/ObjectFactory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Factory::ObjectFactoryI" : {
+         "file" : "Bio/Factory/ObjectFactoryI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Factory::SeqAnalysisParserFactory" : {
+         "file" : "Bio/Factory/SeqAnalysisParserFactory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Factory::SeqAnalysisParserFactoryI" : {
+         "file" : "Bio/Factory/SeqAnalysisParserFactoryI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Factory::SequenceFactoryI" : {
+         "file" : "Bio/Factory/SequenceFactoryI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Factory::SequenceProcessorI" : {
+         "file" : "Bio/Factory/SequenceProcessorI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Factory::SequenceStreamI" : {
+         "file" : "Bio/Factory/SequenceStreamI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Factory::TreeFactoryI" : {
+         "file" : "Bio/Factory/TreeFactoryI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::FeatureHolderI" : {
+         "file" : "Bio/FeatureHolderI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::FeatureIO" : {
+         "file" : "Bio/FeatureIO.pm",
+         "version" : "1.006901"
+      },
+      "Bio::FeatureIO::bed" : {
+         "file" : "Bio/FeatureIO/bed.pm",
+         "version" : "1.006901"
+      },
+      "Bio::FeatureIO::gff" : {
+         "file" : "Bio/FeatureIO/gff.pm",
+         "version" : "1.006901"
+      },
+      "Bio::FeatureIO::gtf" : {
+         "file" : "Bio/FeatureIO/gtf.pm",
+         "version" : "1.006901"
+      },
+      "Bio::FeatureIO::interpro" : {
+         "file" : "Bio/FeatureIO/interpro.pm",
+         "version" : "1.006901"
+      },
+      "Bio::FeatureIO::ptt" : {
+         "file" : "Bio/FeatureIO/ptt.pm",
+         "version" : "1.006901"
+      },
+      "Bio::FeatureIO::vecscreen_simple" : {
+         "file" : "Bio/FeatureIO/vecscreen_simple.pm",
+         "version" : "1.006901"
+      },
+      "Bio::HandlerBaseI" : {
+         "file" : "Bio/HandlerBaseI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::IdCollectionI" : {
+         "file" : "Bio/IdCollectionI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::IdentifiableI" : {
+         "file" : "Bio/IdentifiableI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Index::Abstract" : {
+         "file" : "Bio/Index/Abstract.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Index::AbstractSeq" : {
+         "file" : "Bio/Index/AbstractSeq.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Index::Blast" : {
+         "file" : "Bio/Index/Blast.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Index::BlastTable" : {
+         "file" : "Bio/Index/BlastTable.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Index::EMBL" : {
+         "file" : "Bio/Index/EMBL.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Index::Fasta" : {
+         "file" : "Bio/Index/Fasta.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Index::Fastq" : {
+         "file" : "Bio/Index/Fastq.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Index::GenBank" : {
+         "file" : "Bio/Index/GenBank.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Index::Hmmer" : {
+         "file" : "Bio/Index/Hmmer.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Index::Qual" : {
+         "file" : "Bio/Index/Qual.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Index::Stockholm" : {
+         "file" : "Bio/Index/Stockholm.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Index::SwissPfam" : {
+         "file" : "Bio/Index/SwissPfam.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Index::Swissprot" : {
+         "file" : "Bio/Index/Swissprot.pm",
+         "version" : "1.006901"
+      },
+      "Bio::LiveSeq::AARange" : {
+         "file" : "Bio/LiveSeq/AARange.pm",
+         "version" : "1.006901"
+      },
+      "Bio::LiveSeq::Chain" : {
+         "file" : "Bio/LiveSeq/Chain.pm",
+         "version" : "1.006901"
+      },
+      "Bio::LiveSeq::ChainI" : {
+         "file" : "Bio/LiveSeq/ChainI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::LiveSeq::DNA" : {
+         "file" : "Bio/LiveSeq/DNA.pm",
+         "version" : "1.006901"
+      },
+      "Bio::LiveSeq::Exon" : {
+         "file" : "Bio/LiveSeq/Exon.pm",
+         "version" : "1.006901"
+      },
+      "Bio::LiveSeq::Gene" : {
+         "file" : "Bio/LiveSeq/Gene.pm",
+         "version" : "1.006901"
+      },
+      "Bio::LiveSeq::IO::BioPerl" : {
+         "file" : "Bio/LiveSeq/IO/BioPerl.pm",
+         "version" : "1.006901"
+      },
+      "Bio::LiveSeq::IO::Loader" : {
+         "file" : "Bio/LiveSeq/IO/Loader.pm",
+         "version" : "1.006901"
+      },
+      "Bio::LiveSeq::Intron" : {
+         "file" : "Bio/LiveSeq/Intron.pm",
+         "version" : "1.006901"
+      },
+      "Bio::LiveSeq::Mutation" : {
+         "file" : "Bio/LiveSeq/Mutation.pm",
+         "version" : "1.006901"
+      },
+      "Bio::LiveSeq::Mutator" : {
+         "file" : "Bio/LiveSeq/Mutator.pm",
+         "version" : "1.006901"
+      },
+      "Bio::LiveSeq::Prim_Transcript" : {
+         "file" : "Bio/LiveSeq/Prim_Transcript.pm",
+         "version" : "1.006901"
+      },
+      "Bio::LiveSeq::Range" : {
+         "file" : "Bio/LiveSeq/Range.pm",
+         "version" : "1.006901"
+      },
+      "Bio::LiveSeq::Repeat_Region" : {
+         "file" : "Bio/LiveSeq/Repeat_Region.pm",
+         "version" : "1.006901"
+      },
+      "Bio::LiveSeq::Repeat_Unit" : {
+         "file" : "Bio/LiveSeq/Repeat_Unit.pm",
+         "version" : "1.006901"
+      },
+      "Bio::LiveSeq::SeqI" : {
+         "file" : "Bio/LiveSeq/SeqI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::LiveSeq::Transcript" : {
+         "file" : "Bio/LiveSeq/Transcript.pm",
+         "version" : "1.006901"
+      },
+      "Bio::LiveSeq::Translation" : {
+         "file" : "Bio/LiveSeq/Translation.pm",
+         "version" : "1.006901"
+      },
+      "Bio::LocatableSeq" : {
+         "file" : "Bio/Search/Tiling/MapTileUtils.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Location::Atomic" : {
+         "file" : "Bio/Location/Atomic.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Location::AvWithinCoordPolicy" : {
+         "file" : "Bio/Location/AvWithinCoordPolicy.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Location::CoordinatePolicyI" : {
+         "file" : "Bio/Location/CoordinatePolicyI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Location::Fuzzy" : {
+         "file" : "Bio/Location/Fuzzy.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Location::FuzzyLocationI" : {
+         "file" : "Bio/Location/FuzzyLocationI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Location::NarrowestCoordPolicy" : {
+         "file" : "Bio/Location/NarrowestCoordPolicy.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Location::Simple" : {
+         "file" : "Bio/Location/Simple.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Location::Split" : {
+         "file" : "Bio/Location/Split.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Location::SplitLocationI" : {
+         "file" : "Bio/Location/SplitLocationI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Location::WidestCoordPolicy" : {
+         "file" : "Bio/Location/WidestCoordPolicy.pm",
+         "version" : "1.006901"
+      },
+      "Bio::LocationI" : {
+         "file" : "Bio/LocationI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::Clone" : {
+         "file" : "Bio/Map/Clone.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::Contig" : {
+         "file" : "Bio/Map/Contig.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::CytoMap" : {
+         "file" : "Bio/Map/CytoMap.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::CytoMarker" : {
+         "file" : "Bio/Map/CytoMarker.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::CytoPosition" : {
+         "file" : "Bio/Map/CytoPosition.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::EntityI" : {
+         "file" : "Bio/Map/EntityI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::FPCMarker" : {
+         "file" : "Bio/Map/FPCMarker.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::Gene" : {
+         "file" : "Bio/Map/Gene.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::GeneMap" : {
+         "file" : "Bio/Map/GeneMap.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::GenePosition" : {
+         "file" : "Bio/Map/GenePosition.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::GeneRelative" : {
+         "file" : "Bio/Map/GeneRelative.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::LinkageMap" : {
+         "file" : "Bio/Map/LinkageMap.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::LinkagePosition" : {
+         "file" : "Bio/Map/LinkagePosition.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::MapI" : {
+         "file" : "Bio/Map/MapI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::Mappable" : {
+         "file" : "Bio/Map/Mappable.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::MappableI" : {
+         "file" : "Bio/Map/MappableI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::Marker" : {
+         "file" : "Bio/Map/Marker.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::MarkerI" : {
+         "file" : "Bio/Map/MarkerI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::Microsatellite" : {
+         "file" : "Bio/Map/Microsatellite.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::OrderedPosition" : {
+         "file" : "Bio/Map/OrderedPosition.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::OrderedPositionWithDistance" : {
+         "file" : "Bio/Map/OrderedPositionWithDistance.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::Physical" : {
+         "file" : "Bio/Map/Physical.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::Position" : {
+         "file" : "Bio/Map/Position.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::PositionHandler" : {
+         "file" : "Bio/Map/PositionHandler.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::PositionHandlerI" : {
+         "file" : "Bio/Map/PositionHandlerI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::PositionI" : {
+         "file" : "Bio/Map/PositionI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::PositionWithSequence" : {
+         "file" : "Bio/Map/PositionWithSequence.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::Prediction" : {
+         "file" : "Bio/Map/Prediction.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::Relative" : {
+         "file" : "Bio/Map/Relative.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::RelativeI" : {
+         "file" : "Bio/Map/RelativeI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::SimpleMap" : {
+         "file" : "Bio/Map/SimpleMap.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Map::TranscriptionFactor" : {
+         "file" : "Bio/Map/TranscriptionFactor.pm",
+         "version" : "1.006901"
+      },
+      "Bio::MapIO" : {
+         "file" : "Bio/MapIO.pm",
+         "version" : "1.006901"
+      },
+      "Bio::MapIO::fpc" : {
+         "file" : "Bio/MapIO/fpc.pm",
+         "version" : "1.006901"
+      },
+      "Bio::MapIO::mapmaker" : {
+         "file" : "Bio/MapIO/mapmaker.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::Generic" : {
+         "file" : "Bio/Matrix/Generic.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::IO" : {
+         "file" : "Bio/Matrix/IO.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::IO::mlagan" : {
+         "file" : "Bio/Matrix/IO/mlagan.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::IO::phylip" : {
+         "file" : "Bio/Matrix/IO/phylip.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::IO::scoring" : {
+         "file" : "Bio/Matrix/IO/scoring.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::MatrixI" : {
+         "file" : "Bio/Matrix/MatrixI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::Mlagan" : {
+         "file" : "Bio/Matrix/Mlagan.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::PSM::IO" : {
+         "file" : "Bio/Matrix/PSM/IO.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::PSM::IO::mast" : {
+         "file" : "Bio/Matrix/PSM/IO/mast.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::PSM::IO::masta" : {
+         "file" : "Bio/Matrix/PSM/IO/masta.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::PSM::IO::meme" : {
+         "file" : "Bio/Matrix/PSM/IO/meme.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::PSM::IO::psiblast" : {
+         "file" : "Bio/Matrix/PSM/IO/psiblast.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::PSM::IO::transfac" : {
+         "file" : "Bio/Matrix/PSM/IO/transfac.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::PSM::InstanceSite" : {
+         "file" : "Bio/Matrix/PSM/InstanceSite.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::PSM::InstanceSiteI" : {
+         "file" : "Bio/Matrix/PSM/InstanceSiteI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::PSM::ProtMatrix" : {
+         "file" : "Bio/Matrix/PSM/ProtMatrix.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::PSM::ProtPsm" : {
+         "file" : "Bio/Matrix/PSM/ProtPsm.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::PSM::Psm" : {
+         "file" : "Bio/Matrix/PSM/Psm.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::PSM::PsmHeader" : {
+         "file" : "Bio/Matrix/PSM/PsmHeader.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::PSM::PsmHeaderI" : {
+         "file" : "Bio/Matrix/PSM/PsmHeaderI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::PSM::PsmI" : {
+         "file" : "Bio/Matrix/PSM/PsmI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::PSM::SiteMatrix" : {
+         "file" : "Bio/Matrix/PSM/SiteMatrix.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::PSM::SiteMatrixI" : {
+         "file" : "Bio/Matrix/PSM/SiteMatrixI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::PhylipDist" : {
+         "file" : "Bio/Matrix/PhylipDist.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Matrix::Scoring" : {
+         "file" : "Bio/Matrix/Scoring.pm",
+         "version" : "1.006901"
+      },
+      "Bio::MolEvol::CodonModel" : {
+         "file" : "Bio/MolEvol/CodonModel.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Nexml::Factory" : {
+         "file" : "Bio/Nexml/Factory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::NexmlIO" : {
+         "file" : "Bio/NexmlIO.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::DocumentRegistry" : {
+         "file" : "Bio/Ontology/DocumentRegistry.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::GOterm" : {
+         "file" : "Bio/Ontology/GOterm.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::InterProTerm" : {
+         "file" : "Bio/Ontology/InterProTerm.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::OBOEngine" : {
+         "file" : "Bio/Ontology/OBOEngine.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::OBOterm" : {
+         "file" : "Bio/Ontology/OBOterm.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::Ontology" : {
+         "file" : "Bio/Ontology/Ontology.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::OntologyEngineI" : {
+         "file" : "Bio/Ontology/OntologyEngineI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::OntologyI" : {
+         "file" : "Bio/Ontology/OntologyI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::OntologyStore" : {
+         "file" : "Bio/Ontology/OntologyStore.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::Path" : {
+         "file" : "Bio/Ontology/Path.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::PathI" : {
+         "file" : "Bio/Ontology/PathI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::Relationship" : {
+         "file" : "Bio/Ontology/Relationship.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::RelationshipFactory" : {
+         "file" : "Bio/Ontology/RelationshipFactory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::RelationshipI" : {
+         "file" : "Bio/Ontology/RelationshipI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::RelationshipType" : {
+         "file" : "Bio/Ontology/RelationshipType.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::SimpleGOEngine::GraphAdaptor" : {
+         "file" : "Bio/Ontology/SimpleGOEngine/GraphAdaptor.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::SimpleGOEngine::GraphAdaptor02" : {
+         "file" : "Bio/Ontology/SimpleGOEngine/GraphAdaptor02.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::SimpleOntologyEngine" : {
+         "file" : "Bio/Ontology/SimpleOntologyEngine.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::Term" : {
+         "file" : "Bio/Ontology/Term.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::TermFactory" : {
+         "file" : "Bio/Ontology/TermFactory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Ontology::TermI" : {
+         "file" : "Bio/Ontology/TermI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::OntologyIO" : {
+         "file" : "Bio/OntologyIO.pm",
+         "version" : "1.006901"
+      },
+      "Bio::OntologyIO::Handlers::BaseSAXHandler" : {
+         "file" : "Bio/OntologyIO/Handlers/BaseSAXHandler.pm",
+         "version" : "1.006901"
+      },
+      "Bio::OntologyIO::Handlers::InterProHandler" : {
+         "file" : "Bio/OntologyIO/Handlers/InterProHandler.pm",
+         "version" : "1.006901"
+      },
+      "Bio::OntologyIO::Handlers::InterPro_BioSQL_Handler" : {
+         "file" : "Bio/OntologyIO/Handlers/InterPro_BioSQL_Handler.pm",
+         "version" : "1.006901"
+      },
+      "Bio::OntologyIO::InterProParser" : {
+         "file" : "Bio/OntologyIO/InterProParser.pm",
+         "version" : "1.006901"
+      },
+      "Bio::OntologyIO::dagflat" : {
+         "file" : "Bio/OntologyIO/dagflat.pm",
+         "version" : "1.006901"
+      },
+      "Bio::OntologyIO::goflat" : {
+         "file" : "Bio/OntologyIO/goflat.pm",
+         "version" : "1.006901"
+      },
+      "Bio::OntologyIO::obo" : {
+         "file" : "Bio/OntologyIO/obo.pm",
+         "version" : "1.006901"
+      },
+      "Bio::OntologyIO::simplehierarchy" : {
+         "file" : "Bio/OntologyIO/simplehierarchy.pm",
+         "version" : "1.006901"
+      },
+      "Bio::OntologyIO::soflat" : {
+         "file" : "Bio/OntologyIO/soflat.pm",
+         "version" : "1.006901"
+      },
+      "Bio::ParameterBaseI" : {
+         "file" : "Bio/ParameterBaseI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Perl" : {
+         "file" : "Bio/Perl.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Phenotype::Correlate" : {
+         "file" : "Bio/Phenotype/Correlate.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Phenotype::MeSH::Term" : {
+         "file" : "Bio/Phenotype/MeSH/Term.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Phenotype::MeSH::Twig" : {
+         "file" : "Bio/Phenotype/MeSH/Twig.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Phenotype::Measure" : {
+         "file" : "Bio/Phenotype/Measure.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Phenotype::OMIM::MiniMIMentry" : {
+         "file" : "Bio/Phenotype/OMIM/MiniMIMentry.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Phenotype::OMIM::OMIMentry" : {
+         "file" : "Bio/Phenotype/OMIM/OMIMentry.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Phenotype::OMIM::OMIMentryAllelicVariant" : {
+         "file" : "Bio/Phenotype/OMIM/OMIMentryAllelicVariant.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Phenotype::OMIM::OMIMparser" : {
+         "file" : "Bio/Phenotype/OMIM/OMIMparser.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Phenotype::Phenotype" : {
+         "file" : "Bio/Phenotype/Phenotype.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Phenotype::PhenotypeI" : {
+         "file" : "Bio/Phenotype/PhenotypeI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PhyloNetwork" : {
+         "file" : "Bio/PhyloNetwork.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PhyloNetwork::Factory" : {
+         "file" : "Bio/PhyloNetwork/Factory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PhyloNetwork::FactoryX" : {
+         "file" : "Bio/PhyloNetwork/FactoryX.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PhyloNetwork::GraphViz" : {
+         "file" : "Bio/PhyloNetwork/GraphViz.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PhyloNetwork::RandomFactory" : {
+         "file" : "Bio/PhyloNetwork/RandomFactory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PhyloNetwork::TreeFactory" : {
+         "file" : "Bio/PhyloNetwork/TreeFactory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PhyloNetwork::TreeFactoryMulti" : {
+         "file" : "Bio/PhyloNetwork/TreeFactoryMulti.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PhyloNetwork::TreeFactoryX" : {
+         "file" : "Bio/PhyloNetwork/TreeFactoryX.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PhyloNetwork::muVector" : {
+         "file" : "Bio/PhyloNetwork/muVector.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PopGen::Genotype" : {
+         "file" : "Bio/PopGen/Genotype.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PopGen::GenotypeI" : {
+         "file" : "Bio/PopGen/GenotypeI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PopGen::HtSNP" : {
+         "file" : "Bio/PopGen/HtSNP.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PopGen::IO" : {
+         "file" : "Bio/PopGen/IO.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PopGen::IO::csv" : {
+         "file" : "Bio/PopGen/IO/csv.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PopGen::IO::hapmap" : {
+         "file" : "Bio/PopGen/IO/hapmap.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PopGen::IO::phase" : {
+         "file" : "Bio/PopGen/IO/phase.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PopGen::IO::prettybase" : {
+         "file" : "Bio/PopGen/IO/prettybase.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PopGen::Individual" : {
+         "file" : "Bio/PopGen/Individual.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PopGen::IndividualI" : {
+         "file" : "Bio/PopGen/IndividualI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PopGen::Marker" : {
+         "file" : "Bio/PopGen/Marker.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PopGen::MarkerI" : {
+         "file" : "Bio/PopGen/MarkerI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PopGen::PopStats" : {
+         "file" : "Bio/PopGen/PopStats.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PopGen::Population" : {
+         "file" : "Bio/PopGen/Population.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PopGen::PopulationI" : {
+         "file" : "Bio/PopGen/PopulationI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PopGen::Simulation::Coalescent" : {
+         "file" : "Bio/PopGen/Simulation/Coalescent.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PopGen::Simulation::GeneticDrift" : {
+         "file" : "Bio/PopGen/Simulation/GeneticDrift.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PopGen::Statistics" : {
+         "file" : "Bio/PopGen/Statistics.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PopGen::TagHaplotype" : {
+         "file" : "Bio/PopGen/TagHaplotype.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PopGen::Utilities" : {
+         "file" : "Bio/PopGen/Utilities.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PrimarySeq" : {
+         "file" : "Bio/PrimarySeq.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PrimarySeq::Fasta" : {
+         "file" : "Bio/DB/Fasta.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PrimarySeqI" : {
+         "file" : "Bio/PrimarySeqI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::PullParserI" : {
+         "file" : "Bio/PullParserI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Range" : {
+         "file" : "Bio/Range.pm",
+         "version" : "1.006901"
+      },
+      "Bio::RangeI" : {
+         "file" : "Bio/RangeI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Restriction::Analysis" : {
+         "file" : "Bio/Restriction/Analysis.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Restriction::Enzyme" : {
+         "file" : "Bio/Restriction/Enzyme.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Restriction::Enzyme::MultiCut" : {
+         "file" : "Bio/Restriction/Enzyme/MultiCut.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Restriction::Enzyme::MultiSite" : {
+         "file" : "Bio/Restriction/Enzyme/MultiSite.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Restriction::EnzymeCollection" : {
+         "file" : "Bio/Restriction/EnzymeCollection.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Restriction::EnzymeI" : {
+         "file" : "Bio/Restriction/EnzymeI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Restriction::IO" : {
+         "file" : "Bio/Restriction/IO.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Restriction::IO::bairoch" : {
+         "file" : "Bio/Restriction/IO/bairoch.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Restriction::IO::base" : {
+         "file" : "Bio/Restriction/IO/base.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Restriction::IO::itype2" : {
+         "file" : "Bio/Restriction/IO/itype2.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Restriction::IO::prototype" : {
+         "file" : "Bio/Restriction/IO/prototype.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Restriction::IO::withrefm" : {
+         "file" : "Bio/Restriction/IO/withrefm.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Root::Build" : {
+         "file" : "Bio/Root/Build.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Root::Exception" : {
+         "file" : "Bio/Root/Exception.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Root::HTTPget" : {
+         "file" : "Bio/Root/HTTPget.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Root::IO" : {
+         "file" : "Bio/Root/IO.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Root::Root" : {
+         "file" : "Bio/Root/Root.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Root::RootI" : {
+         "file" : "Bio/Root/RootI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Root::Storable" : {
+         "file" : "Bio/Root/Storable.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Root::Test" : {
+         "file" : "Bio/Root/Test.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Root::Test::Warn" : {
+         "file" : "Bio/Root/Test/Warn.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Root::Utilities" : {
+         "file" : "Bio/Root/Utilities.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Root::Version" : {
+         "file" : "Bio/Root/Version.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::BlastStatistics" : {
+         "file" : "Bio/Search/BlastStatistics.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::BlastUtils" : {
+         "file" : "Bio/Search/BlastUtils.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::DatabaseI" : {
+         "file" : "Bio/Search/DatabaseI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::GenericDatabase" : {
+         "file" : "Bio/Search/GenericDatabase.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::GenericStatistics" : {
+         "file" : "Bio/Search/GenericStatistics.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::HSP::BlastHSP" : {
+         "file" : "Bio/Search/HSP/BlastHSP.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::HSP::BlastPullHSP" : {
+         "file" : "Bio/Search/HSP/BlastPullHSP.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::HSP::FastaHSP" : {
+         "file" : "Bio/Search/HSP/FastaHSP.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::HSP::GenericHSP" : {
+         "file" : "Bio/Search/HSP/GenericHSP.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::HSP::HMMERHSP" : {
+         "file" : "Bio/Search/HSP/HMMERHSP.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::HSP::HSPFactory" : {
+         "file" : "Bio/Search/HSP/HSPFactory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::HSP::HSPI" : {
+         "file" : "Bio/Search/Tiling/MapTileUtils.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::HSP::HmmpfamHSP" : {
+         "file" : "Bio/Search/HSP/HmmpfamHSP.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::HSP::ModelHSP" : {
+         "file" : "Bio/Search/HSP/ModelHSP.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::HSP::PSLHSP" : {
+         "file" : "Bio/Search/HSP/PSLHSP.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::HSP::PsiBlastHSP" : {
+         "file" : "Bio/Search/HSP/PsiBlastHSP.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::HSP::PullHSPI" : {
+         "file" : "Bio/Search/HSP/PullHSPI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::HSP::WABAHSP" : {
+         "file" : "Bio/Search/HSP/WABAHSP.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::HSP::hmmer3HSP" : {
+         "file" : "Bio/Search/HSP/hmmer3HSP.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Hit::BlastHit" : {
+         "file" : "Bio/Search/Hit/BlastHit.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Hit::BlastPullHit" : {
+         "file" : "Bio/Search/Hit/BlastPullHit.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Hit::Fasta" : {
+         "file" : "Bio/Search/Hit/Fasta.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Hit::GenericHit" : {
+         "file" : "Bio/Search/Hit/GenericHit.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Hit::HMMERHit" : {
+         "file" : "Bio/Search/Hit/HMMERHit.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Hit::HitFactory" : {
+         "file" : "Bio/Search/Hit/HitFactory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Hit::HitI" : {
+         "file" : "Bio/Search/Hit/HitI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Hit::HmmpfamHit" : {
+         "file" : "Bio/Search/Hit/HmmpfamHit.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Hit::ModelHit" : {
+         "file" : "Bio/Search/Hit/ModelHit.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Hit::PsiBlastHit" : {
+         "file" : "Bio/Search/Hit/PsiBlastHit.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Hit::PullHitI" : {
+         "file" : "Bio/Search/Hit/PullHitI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Hit::hmmer3Hit" : {
+         "file" : "Bio/Search/Hit/hmmer3Hit.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Iteration::GenericIteration" : {
+         "file" : "Bio/Search/Iteration/GenericIteration.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Iteration::IterationI" : {
+         "file" : "Bio/Search/Iteration/IterationI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Processor" : {
+         "file" : "Bio/Search/Processor.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Result::BlastPullResult" : {
+         "file" : "Bio/Search/Result/BlastPullResult.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Result::BlastResult" : {
+         "file" : "Bio/Search/Result/BlastResult.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Result::CrossMatchResult" : {
+         "file" : "Bio/Search/Result/CrossMatchResult.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Result::GenericResult" : {
+         "file" : "Bio/Search/Result/GenericResult.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Result::HMMERResult" : {
+         "file" : "Bio/Search/Result/HMMERResult.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Result::HmmpfamResult" : {
+         "file" : "Bio/Search/Result/HmmpfamResult.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Result::PullResultI" : {
+         "file" : "Bio/Search/Result/PullResultI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Result::ResultFactory" : {
+         "file" : "Bio/Search/Result/ResultFactory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Result::ResultI" : {
+         "file" : "Bio/Search/Result/ResultI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Result::WABAResult" : {
+         "file" : "Bio/Search/Result/WABAResult.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Result::hmmer3Result" : {
+         "file" : "Bio/Search/Result/hmmer3Result.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::SearchUtils" : {
+         "file" : "Bio/Search/SearchUtils.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::StatisticsI" : {
+         "file" : "Bio/Search/StatisticsI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Tiling::MapTileUtils" : {
+         "file" : "Bio/Search/Tiling/MapTileUtils.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Tiling::MapTiling" : {
+         "file" : "Bio/Search/Tiling/MapTiling.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Search::Tiling::TilingI" : {
+         "file" : "Bio/Search/Tiling/TilingI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchDist" : {
+         "file" : "Bio/SearchDist.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO" : {
+         "file" : "Bio/SearchIO.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::EventHandlerI" : {
+         "file" : "Bio/SearchIO/EventHandlerI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::FastHitEventBuilder" : {
+         "file" : "Bio/SearchIO/FastHitEventBuilder.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::IteratedSearchResultEventBuilder" : {
+         "file" : "Bio/SearchIO/IteratedSearchResultEventBuilder.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::SearchResultEventBuilder" : {
+         "file" : "Bio/SearchIO/SearchResultEventBuilder.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::SearchWriterI" : {
+         "file" : "Bio/SearchIO/SearchWriterI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::Writer::BSMLResultWriter" : {
+         "file" : "Bio/SearchIO/Writer/BSMLResultWriter.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::Writer::GbrowseGFF" : {
+         "file" : "Bio/SearchIO/Writer/GbrowseGFF.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::Writer::HSPTableWriter" : {
+         "file" : "Bio/SearchIO/Writer/HSPTableWriter.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::Writer::HTMLResultWriter" : {
+         "file" : "Bio/SearchIO/Writer/HTMLResultWriter.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::Writer::HitTableWriter" : {
+         "file" : "Bio/SearchIO/Writer/HitTableWriter.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::Writer::ResultTableWriter" : {
+         "file" : "Bio/SearchIO/Writer/ResultTableWriter.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::Writer::TextResultWriter" : {
+         "file" : "Bio/SearchIO/Writer/TextResultWriter.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::XML::BlastHandler" : {
+         "file" : "Bio/SearchIO/XML/BlastHandler.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::XML::PsiBlastHandler" : {
+         "file" : "Bio/SearchIO/XML/PsiBlastHandler.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::axt" : {
+         "file" : "Bio/SearchIO/axt.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::blast" : {
+         "file" : "Bio/SearchIO/blast.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::blast_pull" : {
+         "file" : "Bio/SearchIO/blast_pull.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::blasttable" : {
+         "file" : "Bio/SearchIO/blasttable.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::blastxml" : {
+         "file" : "Bio/SearchIO/blastxml.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::cross_match" : {
+         "file" : "Bio/SearchIO/cross_match.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::erpin" : {
+         "file" : "Bio/SearchIO/erpin.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::exonerate" : {
+         "file" : "Bio/SearchIO/exonerate.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::fasta" : {
+         "file" : "Bio/SearchIO/fasta.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::gmap_f9" : {
+         "file" : "Bio/SearchIO/gmap_f9.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::hmmer" : {
+         "file" : "Bio/SearchIO/hmmer.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::hmmer2" : {
+         "file" : "Bio/SearchIO/hmmer2.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::hmmer3" : {
+         "file" : "Bio/SearchIO/hmmer3.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::hmmer_pull" : {
+         "file" : "Bio/SearchIO/hmmer_pull.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::infernal" : {
+         "file" : "Bio/SearchIO/infernal.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::megablast" : {
+         "file" : "Bio/SearchIO/megablast.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::psl" : {
+         "file" : "Bio/SearchIO/psl.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::rnamotif" : {
+         "file" : "Bio/SearchIO/rnamotif.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::sim4" : {
+         "file" : "Bio/SearchIO/sim4.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::waba" : {
+         "file" : "Bio/SearchIO/waba.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SearchIO::wise" : {
+         "file" : "Bio/SearchIO/wise.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq" : {
+         "file" : "Bio/Seq.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::BaseSeqProcessor" : {
+         "file" : "Bio/Seq/BaseSeqProcessor.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::EncodedSeq" : {
+         "file" : "Bio/Seq/EncodedSeq.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::LargeLocatableSeq" : {
+         "file" : "Bio/Seq/LargeLocatableSeq.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::LargePrimarySeq" : {
+         "file" : "Bio/Seq/LargePrimarySeq.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::LargeSeq" : {
+         "file" : "Bio/Seq/LargeSeq.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::LargeSeqI" : {
+         "file" : "Bio/Seq/LargeSeqI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::Meta" : {
+         "file" : "Bio/Seq/Meta.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::Meta::Array" : {
+         "file" : "Bio/Seq/Meta/Array.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::MetaI" : {
+         "file" : "Bio/Seq/MetaI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::PrimaryQual" : {
+         "file" : "Bio/Seq/PrimaryQual.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::PrimaryQual::Qual" : {
+         "file" : "Bio/DB/Qual.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::PrimedSeq" : {
+         "file" : "Bio/Seq/PrimedSeq.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::QualI" : {
+         "file" : "Bio/Seq/QualI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::Quality" : {
+         "file" : "Bio/Seq/Quality.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::RichSeq" : {
+         "file" : "Bio/Seq/RichSeq.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::RichSeqI" : {
+         "file" : "Bio/Seq/RichSeqI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::SeqBuilder" : {
+         "file" : "Bio/Seq/SeqBuilder.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::SeqFactory" : {
+         "file" : "Bio/Seq/SeqFactory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::SeqFastaSpeedFactory" : {
+         "file" : "Bio/Seq/SeqFastaSpeedFactory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::SeqWithQuality" : {
+         "file" : "Bio/Seq/SeqWithQuality.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::SequenceTrace" : {
+         "file" : "Bio/Seq/SequenceTrace.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Seq::TraceI" : {
+         "file" : "Bio/Seq/TraceI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqAnalysisParserI" : {
+         "file" : "Bio/SeqAnalysisParserI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqEvolution::DNAPoint" : {
+         "file" : "Bio/SeqEvolution/DNAPoint.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqEvolution::EvolutionI" : {
+         "file" : "Bio/SeqEvolution/EvolutionI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqEvolution::Factory" : {
+         "file" : "Bio/SeqEvolution/Factory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Annotated" : {
+         "file" : "Bio/SeqFeature/Annotated.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::AnnotationAdaptor" : {
+         "file" : "Bio/SeqFeature/AnnotationAdaptor.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Collection" : {
+         "file" : "Bio/SeqFeature/Collection.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::CollectionI" : {
+         "file" : "Bio/SeqFeature/CollectionI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Computation" : {
+         "file" : "Bio/SeqFeature/Computation.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::FeaturePair" : {
+         "file" : "Bio/SeqFeature/FeaturePair.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Gene::Exon" : {
+         "file" : "Bio/SeqFeature/Gene/Exon.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Gene::ExonI" : {
+         "file" : "Bio/SeqFeature/Gene/ExonI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Gene::GeneStructure" : {
+         "file" : "Bio/SeqFeature/Gene/GeneStructure.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Gene::GeneStructureI" : {
+         "file" : "Bio/SeqFeature/Gene/GeneStructureI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Gene::Intron" : {
+         "file" : "Bio/SeqFeature/Gene/Intron.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Gene::NC_Feature" : {
+         "file" : "Bio/SeqFeature/Gene/NC_Feature.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Gene::Poly_A_site" : {
+         "file" : "Bio/SeqFeature/Gene/Poly_A_site.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Gene::Promoter" : {
+         "file" : "Bio/SeqFeature/Gene/Promoter.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Gene::Transcript" : {
+         "file" : "Bio/SeqFeature/Gene/Transcript.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Gene::TranscriptI" : {
+         "file" : "Bio/SeqFeature/Gene/TranscriptI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Gene::UTR" : {
+         "file" : "Bio/SeqFeature/Gene/UTR.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Generic" : {
+         "file" : "Bio/SeqFeature/Generic.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Lite" : {
+         "file" : "Bio/SeqFeature/Lite.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::PositionProxy" : {
+         "file" : "Bio/SeqFeature/PositionProxy.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Primer" : {
+         "file" : "Bio/SeqFeature/Primer.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::SiRNA::Oligo" : {
+         "file" : "Bio/SeqFeature/SiRNA/Oligo.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::SiRNA::Pair" : {
+         "file" : "Bio/SeqFeature/SiRNA/Pair.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Similarity" : {
+         "file" : "Bio/SeqFeature/Similarity.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::SimilarityPair" : {
+         "file" : "Bio/SeqFeature/SimilarityPair.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Tools::FeatureNamer" : {
+         "file" : "Bio/SeqFeature/Tools/FeatureNamer.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Tools::IDHandler" : {
+         "file" : "Bio/SeqFeature/Tools/IDHandler.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Tools::TypeMapper" : {
+         "file" : "Bio/SeqFeature/Tools/TypeMapper.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::Tools::Unflattener" : {
+         "file" : "Bio/SeqFeature/Tools/Unflattener.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeature::TypedSeqFeatureI" : {
+         "file" : "Bio/SeqFeature/TypedSeqFeatureI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqFeatureI" : {
+         "file" : "Bio/SeqFeatureI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqI" : {
+         "file" : "Bio/SeqI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO" : {
+         "file" : "Bio/SeqIO.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::FTHelper" : {
+         "file" : "Bio/SeqIO/FTHelper.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::Handler::GenericRichSeqHandler" : {
+         "file" : "Bio/SeqIO/Handler/GenericRichSeqHandler.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::MultiFile" : {
+         "file" : "Bio/SeqIO/MultiFile.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::abi" : {
+         "file" : "Bio/SeqIO/abi.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::ace" : {
+         "file" : "Bio/SeqIO/ace.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::agave" : {
+         "file" : "Bio/SeqIO/agave.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::alf" : {
+         "file" : "Bio/SeqIO/alf.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::asciitree" : {
+         "file" : "Bio/SeqIO/asciitree.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::bsml" : {
+         "file" : "Bio/SeqIO/bsml.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::bsml_sax" : {
+         "file" : "Bio/SeqIO/bsml_sax.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::chadoxml" : {
+         "file" : "Bio/SeqIO/chadoxml.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::chaos" : {
+         "file" : "Bio/SeqIO/chaos.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::chaosxml" : {
+         "file" : "Bio/SeqIO/chaosxml.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::ctf" : {
+         "file" : "Bio/SeqIO/ctf.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::embl" : {
+         "file" : "Bio/SeqIO/embl.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::embldriver" : {
+         "file" : "Bio/SeqIO/embldriver.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::entrezgene" : {
+         "file" : "Bio/SeqIO/entrezgene.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::excel" : {
+         "file" : "Bio/SeqIO/excel.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::exp" : {
+         "file" : "Bio/SeqIO/exp.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::fasta" : {
+         "file" : "Bio/SeqIO/fasta.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::fastq" : {
+         "file" : "Bio/SeqIO/fastq.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::flybase_chadoxml" : {
+         "file" : "Bio/SeqIO/flybase_chadoxml.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::game" : {
+         "file" : "Bio/SeqIO/game.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::game::featHandler" : {
+         "file" : "Bio/SeqIO/game/featHandler.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::game::gameHandler" : {
+         "file" : "Bio/SeqIO/game/gameHandler.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::game::gameSubs" : {
+         "file" : "Bio/SeqIO/game/gameSubs.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::game::gameWriter" : {
+         "file" : "Bio/SeqIO/game/gameWriter.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::game::seqHandler" : {
+         "file" : "Bio/SeqIO/game/seqHandler.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::gbdriver" : {
+         "file" : "Bio/SeqIO/gbdriver.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::gbxml" : {
+         "file" : "Bio/SeqIO/gbxml.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::gcg" : {
+         "file" : "Bio/SeqIO/gcg.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::genbank" : {
+         "file" : "Bio/SeqIO/genbank.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::interpro" : {
+         "file" : "Bio/SeqIO/interpro.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::kegg" : {
+         "file" : "Bio/SeqIO/kegg.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::largefasta" : {
+         "file" : "Bio/SeqIO/largefasta.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::lasergene" : {
+         "file" : "Bio/SeqIO/lasergene.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::locuslink" : {
+         "file" : "Bio/SeqIO/locuslink.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::mbsout" : {
+         "file" : "Bio/SeqIO/mbsout.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::metafasta" : {
+         "file" : "Bio/SeqIO/metafasta.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::msout" : {
+         "file" : "Bio/SeqIO/msout.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::nexml" : {
+         "file" : "Bio/SeqIO/nexml.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::phd" : {
+         "file" : "Bio/SeqIO/phd.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::pir" : {
+         "file" : "Bio/SeqIO/pir.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::pln" : {
+         "file" : "Bio/SeqIO/pln.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::qual" : {
+         "file" : "Bio/SeqIO/qual.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::raw" : {
+         "file" : "Bio/SeqIO/raw.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::scf" : {
+         "file" : "Bio/SeqIO/scf.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::seqxml" : {
+         "file" : "Bio/SeqIO/seqxml.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::strider" : {
+         "file" : "Bio/SeqIO/strider.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::swiss" : {
+         "file" : "Bio/SeqIO/swiss.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::swissdriver" : {
+         "file" : "Bio/SeqIO/swissdriver.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::tab" : {
+         "file" : "Bio/SeqIO/tab.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::table" : {
+         "file" : "Bio/SeqIO/table.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::tigr" : {
+         "file" : "Bio/SeqIO/tigr.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::tigrxml" : {
+         "file" : "Bio/SeqIO/tigrxml.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::tinyseq" : {
+         "file" : "Bio/SeqIO/tinyseq.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::tinyseq::tinyseqHandler" : {
+         "file" : "Bio/SeqIO/tinyseq/tinyseqHandler.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqIO::ztr" : {
+         "file" : "Bio/SeqIO/ztr.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SeqUtils" : {
+         "file" : "Bio/SeqUtils.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SimpleAlign" : {
+         "file" : "Bio/SimpleAlign.pm",
+         "version" : "1.006901"
+      },
+      "Bio::SimpleAnalysisI" : {
+         "file" : "Bio/SimpleAnalysisI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Species" : {
+         "file" : "Bio/Species.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Structure::Atom" : {
+         "file" : "Bio/Structure/Atom.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Structure::Chain" : {
+         "file" : "Bio/Structure/Chain.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Structure::Entry" : {
+         "file" : "Bio/Structure/Entry.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Structure::IO" : {
+         "file" : "Bio/Structure/IO.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Structure::IO::pdb" : {
+         "file" : "Bio/Structure/IO/pdb.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Structure::Model" : {
+         "file" : "Bio/Structure/Model.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Structure::Residue" : {
+         "file" : "Bio/Structure/Residue.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Structure::SecStr::DSSP::Res" : {
+         "file" : "Bio/Structure/SecStr/DSSP/Res.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Structure::SecStr::STRIDE::Res" : {
+         "file" : "Bio/Structure/SecStr/STRIDE/Res.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Structure::StructureI" : {
+         "file" : "Bio/Structure/StructureI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Symbol::Alphabet" : {
+         "file" : "Bio/Symbol/Alphabet.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Symbol::AlphabetI" : {
+         "file" : "Bio/Symbol/AlphabetI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Symbol::DNAAlphabet" : {
+         "file" : "Bio/Symbol/DNAAlphabet.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Symbol::ProteinAlphabet" : {
+         "file" : "Bio/Symbol/ProteinAlphabet.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Symbol::Symbol" : {
+         "file" : "Bio/Symbol/Symbol.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Symbol::SymbolI" : {
+         "file" : "Bio/Symbol/SymbolI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Taxon" : {
+         "file" : "Bio/Taxon.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Taxonomy" : {
+         "file" : "Bio/Taxonomy.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Taxonomy::FactoryI" : {
+         "file" : "Bio/Taxonomy/FactoryI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Taxonomy::Node" : {
+         "file" : "Bio/Taxonomy/Node.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Taxonomy::Taxon" : {
+         "file" : "Bio/Taxonomy/Taxon.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Taxonomy::Tree" : {
+         "file" : "Bio/Taxonomy/Tree.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::AlignFactory" : {
+         "file" : "Bio/Tools/AlignFactory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Alignment::Consed" : {
+         "file" : "Bio/Tools/Alignment/Consed.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Alignment::Trim" : {
+         "file" : "Bio/Tools/Alignment/Trim.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Analysis::DNA::ESEfinder" : {
+         "file" : "Bio/Tools/Analysis/DNA/ESEfinder.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Analysis::Protein::Domcut" : {
+         "file" : "Bio/Tools/Analysis/Protein/Domcut.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Analysis::Protein::ELM" : {
+         "file" : "Bio/Tools/Analysis/Protein/ELM.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Analysis::Protein::GOR4" : {
+         "file" : "Bio/Tools/Analysis/Protein/GOR4.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Analysis::Protein::HNN" : {
+         "file" : "Bio/Tools/Analysis/Protein/HNN.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Analysis::Protein::Mitoprot" : {
+         "file" : "Bio/Tools/Analysis/Protein/Mitoprot.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Analysis::Protein::NetPhos" : {
+         "file" : "Bio/Tools/Analysis/Protein/NetPhos.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Analysis::Protein::Scansite" : {
+         "file" : "Bio/Tools/Analysis/Protein/Scansite.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Analysis::Protein::Sopma" : {
+         "file" : "Bio/Tools/Analysis/Protein/Sopma.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Analysis::SimpleAnalysisBase" : {
+         "file" : "Bio/Tools/Analysis/SimpleAnalysisBase.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::AnalysisResult" : {
+         "file" : "Bio/Tools/AnalysisResult.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Blat" : {
+         "file" : "Bio/Tools/Blat.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::CodonTable" : {
+         "file" : "Bio/Tools/CodonTable.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Coil" : {
+         "file" : "Bio/Tools/Coil.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::ECnumber" : {
+         "file" : "Bio/Tools/ECnumber.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::EMBOSS::Palindrome" : {
+         "file" : "Bio/Tools/EMBOSS/Palindrome.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::EPCR" : {
+         "file" : "Bio/Tools/EPCR.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::ERPIN" : {
+         "file" : "Bio/Tools/ERPIN.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::ESTScan" : {
+         "file" : "Bio/Tools/ESTScan.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::EUtilities" : {
+         "file" : "Bio/Tools/EUtilities.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::EUtilities::EUtilDataI" : {
+         "file" : "Bio/Tools/EUtilities/EUtilDataI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::EUtilities::EUtilParameters" : {
+         "file" : "Bio/Tools/EUtilities/EUtilParameters.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::EUtilities::History" : {
+         "file" : "Bio/Tools/EUtilities/History.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::EUtilities::HistoryI" : {
+         "file" : "Bio/Tools/EUtilities/HistoryI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::EUtilities::Info" : {
+         "file" : "Bio/Tools/EUtilities/Info.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::EUtilities::Info::FieldInfo" : {
+         "file" : "Bio/Tools/EUtilities/Info/FieldInfo.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::EUtilities::Info::LinkInfo" : {
+         "file" : "Bio/Tools/EUtilities/Info/LinkInfo.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::EUtilities::Link" : {
+         "file" : "Bio/Tools/EUtilities/Link.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::EUtilities::Link::LinkSet" : {
+         "file" : "Bio/Tools/EUtilities/Link/LinkSet.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::EUtilities::Link::UrlLink" : {
+         "file" : "Bio/Tools/EUtilities/Link/UrlLink.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::EUtilities::Query" : {
+         "file" : "Bio/Tools/EUtilities/Query.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::EUtilities::Query::GlobalQuery" : {
+         "file" : "Bio/Tools/EUtilities/Query/GlobalQuery.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::EUtilities::Summary" : {
+         "file" : "Bio/Tools/EUtilities/Summary.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::EUtilities::Summary::DocSum" : {
+         "file" : "Bio/Tools/EUtilities/Summary/DocSum.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::EUtilities::Summary::Item" : {
+         "file" : "Bio/Tools/EUtilities/Summary/Item.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::EUtilities::Summary::ItemContainerI" : {
+         "file" : "Bio/Tools/EUtilities/Summary/ItemContainerI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Eponine" : {
+         "file" : "Bio/Tools/Eponine.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Est2Genome" : {
+         "file" : "Bio/Tools/Est2Genome.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Fgenesh" : {
+         "file" : "Bio/Tools/Fgenesh.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::FootPrinter" : {
+         "file" : "Bio/Tools/FootPrinter.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::GFF" : {
+         "file" : "Bio/Tools/GFF.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Gel" : {
+         "file" : "Bio/Tools/Gel.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Geneid" : {
+         "file" : "Bio/Tools/Geneid.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Genemark" : {
+         "file" : "Bio/Tools/Genemark.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Genewise" : {
+         "file" : "Bio/Tools/Genewise.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Genomewise" : {
+         "file" : "Bio/Tools/Genomewise.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Genscan" : {
+         "file" : "Bio/Tools/Genscan.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Glimmer" : {
+         "file" : "Bio/Tools/Glimmer.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Grail" : {
+         "file" : "Bio/Tools/Grail.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::GuessSeqFormat" : {
+         "file" : "Bio/Tools/GuessSeqFormat.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::HMMER::Domain" : {
+         "file" : "Bio/Tools/HMMER/Domain.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::HMMER::Results" : {
+         "file" : "Bio/Tools/HMMER/Results.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::HMMER::Set" : {
+         "file" : "Bio/Tools/HMMER/Set.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Hmmpfam" : {
+         "file" : "Bio/Tools/Hmmpfam.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::IUPAC" : {
+         "file" : "Bio/Tools/IUPAC.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Infernal" : {
+         "file" : "Bio/Tools/Infernal.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Lucy" : {
+         "file" : "Bio/Tools/Lucy.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::MZEF" : {
+         "file" : "Bio/Tools/MZEF.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Match" : {
+         "file" : "Bio/Tools/Match.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::OddCodes" : {
+         "file" : "Bio/Tools/OddCodes.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Phylo::Gerp" : {
+         "file" : "Bio/Tools/Phylo/Gerp.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Phylo::Gumby" : {
+         "file" : "Bio/Tools/Phylo/Gumby.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Phylo::Molphy" : {
+         "file" : "Bio/Tools/Phylo/Molphy.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Phylo::Molphy::Result" : {
+         "file" : "Bio/Tools/Phylo/Molphy/Result.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Phylo::PAML" : {
+         "file" : "Bio/Tools/Phylo/PAML.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Phylo::PAML::Codeml" : {
+         "file" : "Bio/Tools/Phylo/PAML/Codeml.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Phylo::PAML::ModelResult" : {
+         "file" : "Bio/Tools/Phylo/PAML/ModelResult.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Phylo::PAML::Result" : {
+         "file" : "Bio/Tools/Phylo/PAML/Result.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Phylo::Phylip::ProtDist" : {
+         "file" : "Bio/Tools/Phylo/Phylip/ProtDist.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Prediction::Exon" : {
+         "file" : "Bio/Tools/Prediction/Exon.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Prediction::Gene" : {
+         "file" : "Bio/Tools/Prediction/Gene.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Primer3" : {
+         "file" : "Bio/Tools/Primer3.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Primer::Assessor::Base" : {
+         "file" : "Bio/Tools/Primer/Assessor/Base.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Primer::AssessorI" : {
+         "file" : "Bio/Tools/Primer/AssessorI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Primer::Feature" : {
+         "file" : "Bio/Tools/Primer/Feature.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Primer::Pair" : {
+         "file" : "Bio/Tools/Primer/Pair.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Prints" : {
+         "file" : "Bio/Tools/Prints.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Profile" : {
+         "file" : "Bio/Tools/Profile.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Promoterwise" : {
+         "file" : "Bio/Tools/Promoterwise.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::PrositeScan" : {
+         "file" : "Bio/Tools/PrositeScan.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Protparam" : {
+         "file" : "Bio/Tools/Protparam.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Pseudowise" : {
+         "file" : "Bio/Tools/Pseudowise.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::QRNA" : {
+         "file" : "Bio/Tools/QRNA.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::RNAMotif" : {
+         "file" : "Bio/Tools/RNAMotif.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::RandomDistFunctions" : {
+         "file" : "Bio/Tools/RandomDistFunctions.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::RepeatMasker" : {
+         "file" : "Bio/Tools/RepeatMasker.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Run::GenericParameters" : {
+         "file" : "Bio/Tools/Run/GenericParameters.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Run::ParametersI" : {
+         "file" : "Bio/Tools/Run/ParametersI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Run::RemoteBlast" : {
+         "file" : "Bio/Tools/Run/RemoteBlast.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Run::StandAloneBlast" : {
+         "file" : "Bio/Tools/Run/StandAloneBlast.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Run::StandAloneNCBIBlast" : {
+         "file" : "Bio/Tools/Run/StandAloneNCBIBlast.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Run::StandAloneWUBlast" : {
+         "file" : "Bio/Tools/Run/StandAloneWUBlast.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Run::WrapperBase" : {
+         "file" : "Bio/Tools/Run/WrapperBase.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Seg" : {
+         "file" : "Bio/Tools/Seg.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::SeqPattern" : {
+         "file" : "Bio/Tools/SeqPattern.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::SeqPattern::Backtranslate" : {
+         "file" : "Bio/Tools/SeqPattern/Backtranslate.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::SeqStats" : {
+         "file" : "Bio/Tools/SeqStats.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::SeqWords" : {
+         "file" : "Bio/Tools/SeqWords.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::SiRNA" : {
+         "file" : "Bio/Tools/SiRNA.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::SiRNA::Ruleset::saigo" : {
+         "file" : "Bio/Tools/SiRNA/Ruleset/saigo.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::SiRNA::Ruleset::tuschl" : {
+         "file" : "Bio/Tools/SiRNA/Ruleset/tuschl.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Sigcleave" : {
+         "file" : "Bio/Tools/Sigcleave.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Signalp" : {
+         "file" : "Bio/Tools/Signalp.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Signalp::ExtendedSignalp" : {
+         "file" : "Bio/Tools/Signalp/ExtendedSignalp.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Sim4::Exon" : {
+         "file" : "Bio/Tools/Sim4/Exon.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Sim4::Results" : {
+         "file" : "Bio/Tools/Sim4/Results.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Spidey::Exon" : {
+         "file" : "Bio/Tools/Spidey/Exon.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Spidey::Results" : {
+         "file" : "Bio/Tools/Spidey/Results.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::TandemRepeatsFinder" : {
+         "file" : "Bio/Tools/TandemRepeatsFinder.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::TargetP" : {
+         "file" : "Bio/Tools/TargetP.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::Tmhmm" : {
+         "file" : "Bio/Tools/Tmhmm.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::dpAlign" : {
+         "file" : "Bio/Tools/dpAlign.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::ipcress" : {
+         "file" : "Bio/Tools/ipcress.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::isPcr" : {
+         "file" : "Bio/Tools/isPcr.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::pICalculator" : {
+         "file" : "Bio/Tools/pICalculator.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::pSW" : {
+         "file" : "Bio/Tools/pSW.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tools::tRNAscanSE" : {
+         "file" : "Bio/Tools/tRNAscanSE.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tree::AlleleNode" : {
+         "file" : "Bio/Tree/AlleleNode.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tree::AnnotatableNode" : {
+         "file" : "Bio/Tree/AnnotatableNode.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tree::Compatible" : {
+         "file" : "Bio/Tree/Compatible.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tree::DistanceFactory" : {
+         "file" : "Bio/Tree/DistanceFactory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tree::Draw::Cladogram" : {
+         "file" : "Bio/Tree/Draw/Cladogram.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tree::Node" : {
+         "file" : "Bio/Tree/Node.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tree::NodeI" : {
+         "file" : "Bio/Tree/NodeI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tree::NodeNHX" : {
+         "file" : "Bio/Tree/NodeNHX.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tree::RandomFactory" : {
+         "file" : "Bio/Tree/RandomFactory.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tree::Statistics" : {
+         "file" : "Bio/Tree/Statistics.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tree::Tree" : {
+         "file" : "Bio/Tree/Tree.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tree::TreeFunctionsI" : {
+         "file" : "Bio/Tree/TreeFunctionsI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Tree::TreeI" : {
+         "file" : "Bio/Tree/TreeI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::TreeIO" : {
+         "file" : "Bio/TreeIO.pm",
+         "version" : "1.006901"
+      },
+      "Bio::TreeIO::NewickParser" : {
+         "file" : "Bio/TreeIO/NewickParser.pm",
+         "version" : "1.006901"
+      },
+      "Bio::TreeIO::TreeEventBuilder" : {
+         "file" : "Bio/TreeIO/TreeEventBuilder.pm",
+         "version" : "1.006901"
+      },
+      "Bio::TreeIO::cluster" : {
+         "file" : "Bio/TreeIO/cluster.pm",
+         "version" : "1.006901"
+      },
+      "Bio::TreeIO::lintree" : {
+         "file" : "Bio/TreeIO/lintree.pm",
+         "version" : "1.006901"
+      },
+      "Bio::TreeIO::newick" : {
+         "file" : "Bio/TreeIO/newick.pm",
+         "version" : "1.006901"
+      },
+      "Bio::TreeIO::nexml" : {
+         "file" : "Bio/TreeIO/nexml.pm",
+         "version" : "1.006901"
+      },
+      "Bio::TreeIO::nexus" : {
+         "file" : "Bio/TreeIO/nexus.pm",
+         "version" : "1.006901"
+      },
+      "Bio::TreeIO::nhx" : {
+         "file" : "Bio/TreeIO/nhx.pm",
+         "version" : "1.006901"
+      },
+      "Bio::TreeIO::pag" : {
+         "file" : "Bio/TreeIO/pag.pm",
+         "version" : "1.006901"
+      },
+      "Bio::TreeIO::phyloxml" : {
+         "file" : "Bio/TreeIO/phyloxml.pm",
+         "version" : "1.006901"
+      },
+      "Bio::TreeIO::svggraph" : {
+         "file" : "Bio/TreeIO/svggraph.pm",
+         "version" : "1.006901"
+      },
+      "Bio::TreeIO::tabtree" : {
+         "file" : "Bio/TreeIO/tabtree.pm",
+         "version" : "1.006901"
+      },
+      "Bio::UpdateableSeqI" : {
+         "file" : "Bio/UpdateableSeqI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Variation::AAChange" : {
+         "file" : "Bio/Variation/AAChange.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Variation::AAReverseMutate" : {
+         "file" : "Bio/Variation/AAReverseMutate.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Variation::Allele" : {
+         "file" : "Bio/Variation/Allele.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Variation::DNAMutation" : {
+         "file" : "Bio/Variation/DNAMutation.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Variation::IO" : {
+         "file" : "Bio/Variation/IO.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Variation::IO::flat" : {
+         "file" : "Bio/Variation/IO/flat.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Variation::IO::xml" : {
+         "file" : "Bio/Variation/IO/xml.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Variation::RNAChange" : {
+         "file" : "Bio/Variation/RNAChange.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Variation::SNP" : {
+         "file" : "Bio/Variation/SNP.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Variation::SeqDiff" : {
+         "file" : "Bio/Variation/SeqDiff.pm",
+         "version" : "1.006901"
+      },
+      "Bio::Variation::VariantI" : {
+         "file" : "Bio/Variation/VariantI.pm",
+         "version" : "1.006901"
+      },
+      "Bio::WebAgent" : {
+         "file" : "Bio/WebAgent.pm",
+         "version" : "1.006901"
+      },
+      "FeatureStore" : {
+         "file" : "Bio/DB/GFF/Adaptor/berkeleydb.pm",
+         "version" : "1.006901"
+      }
+   },
+   "release_status" : "stable",
+   "resources" : {
+      "license" : [
+         "http://dev.perl.org/licenses/"
+      ]
+   },
+   "version" : "1.006901"
+}

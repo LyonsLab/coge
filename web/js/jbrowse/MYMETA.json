@@ -1,0 +1,86 @@
+{
+   "abstract" : "A modern web-based genome browser.",
+   "author" : [
+      "Robert Buels <rbuels@cpan.org>"
+   ],
+   "dynamic_config" : 0,
+   "generated_by" : "ExtUtils::MakeMaker version 6.64, CPAN::Meta::Converter version 2.112621",
+   "license" : [
+      "perl_5"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "JBrowse",
+   "no_index" : {
+      "directory" : [
+         "t",
+         "inc"
+      ]
+   },
+   "prereqs" : {
+      "build" : {
+         "requires" : {
+            "Capture::Tiny" : 0,
+            "DBD::SQLite" : 0,
+            "Test::More" : 0,
+            "Test::Warn" : 0
+         }
+      },
+      "configure" : {
+         "requires" : {
+            "ExtUtils::MakeMaker" : "6.30"
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "Bio::Annotation::SimpleValue" : 0,
+            "Bio::FeatureIO" : 0,
+            "Bio::GFF3::LowLevel::Parser" : "1.4",
+            "Bio::Index::Fasta" : 0,
+            "Bio::OntologyIO" : 0,
+            "Bio::Root::Version" : "1.006000",
+            "Bio::SeqFeature::Annotated" : 0,
+            "Bio::SeqFeature::Lite" : 0,
+            "Cache::Ref::FIFO" : 0,
+            "Carp" : 0,
+            "Cwd" : 0,
+            "DBI" : 0,
+            "Data::Dumper" : 0,
+            "Devel::Size" : 0,
+            "Digest::Crc32" : 0,
+            "Exporter" : 0,
+            "Fcntl" : 0,
+            "File::Basename" : 0,
+            "File::Path" : "2",
+            "File::Spec" : 0,
+            "File::Spec::Functions" : 0,
+            "File::Temp" : 0,
+            "FindBin" : 0,
+            "GD::Image" : 0,
+            "Getopt::Long" : 0,
+            "Hash::Merge" : 0,
+            "Heap::Simple" : 0,
+            "Heap::Simple::XS" : 0,
+            "IO::File" : 0,
+            "JSON" : "2",
+            "JSON::XS" : 0,
+            "List::Util" : 0,
+            "POSIX" : 0,
+            "PerlIO::gzip" : 0,
+            "Pod::Usage" : 0,
+            "Scalar::Util" : 0,
+            "Storable" : 0,
+            "base" : 0,
+            "constant" : 0,
+            "local::lib" : 0,
+            "strict" : 0,
+            "vars" : 0,
+            "warnings" : 0
+         }
+      }
+   },
+   "release_status" : "stable",
+   "version" : ""
+}
