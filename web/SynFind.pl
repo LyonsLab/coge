@@ -39,7 +39,7 @@ $DIAGSDIR = $P->{DIAGSDIR};
 $FASTADIR = $P->{FASTADIR};
 $BLASTDBDIR = $P->{BLASTDB};
 $BEDDIR = $P->{BEDDIR};
-
+mkpath ($BEDDIR,0,0777) unless -d $BEDDIR;
 
 $MAX_PROC=$P->{MAX_PROC};
 $LASTZ = $P->{PYTHON} ." ". $P->{MULTI_LASTZ} ." -A $MAX_PROC --path=".$P->{LASTZ};
