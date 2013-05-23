@@ -17,6 +17,7 @@ BEGIN {
 }
 
 
+
 #this sub is used to try to get a build order of contigs for WGS data against a reference genome
 #given a set of scaffolds, it will order them such that make an ordered syntenic path along the reference genome
 sub parse_syn_blocks
@@ -51,7 +52,7 @@ sub parse_syn_blocks
     my $dsgid1;
     my $dsgid2;
     #need to assign a block to the highest scoring matching chromosomes
-#    print Dumper $blocks1, $blocks2;
+#    print  Dumper $blocks1, $blocks2;
     foreach my $item (@$blocks1)
 #      foreach my $item (@$blocks1)
       {
@@ -163,11 +164,12 @@ sub process_syn_block
       {
 	chomp $item;
 	next unless $item;
+	next if $item =~ /^#/;
 	my @item = split /\t/, $item;
-	push @start1, $item[2];
-	push @stop1, $item[3];
-	push @start2, $item[6];
-	push @stop2, $item[7];
+	push @start1, $item[2] if $item[2] =~ /^\d+$/;
+	push @stop1, $item[3] if $item[3] =~ /^\d+$/;
+	push @start2, $item[6] if $item[6] =~ /^\d+$/;
+	push @stop2, $item[7] if $item[7] =~ /^\d+$/;
 	my @match = split /\|\|/,$item[1];
 	$identity+=$match[8] if $match[8];
 	unless ($dsgid1)
