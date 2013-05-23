@@ -46,7 +46,8 @@ $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 
-print "Content-Type: text/html\n\n";
+print "Content-Type: text/html\n\n",
+	  '<link rel="stylesheet" type="text/css" href="css/styled.css" />'; # mdb added 5/9/13 for JBrowse
 my $rhtml = gen_html(featid=>$FID, start=>$START, stop=>$STOP, chr=>$CHR, ds=>$DS, dsg=>$DSG, org=>$ORG, version=>$VERSION, name_only=>$NAME_ONLY, gstid=>$GSTID) if $START > 0 || $FID;
 if ($START && $STOP)
   {
