@@ -62,6 +62,8 @@
 <script src="js/OpenLayers.js"></script>
 <script src="js/Genomic.js"></script>
 <script src="js/opengenes.js"></script>
+
+<TMPL_INCLUDE NAME="widgets/JBrowse.tmpl">
     
 <script type="text/javascript">
 if(! window.console){ console={}; console.log = console.debug = function(){}}
@@ -462,7 +464,7 @@ function getURLParameter(name) {
     );
 }
 
-//instantiates slider tool
+var jbrowse;
 $(function() {
 	$('#slider').slider({
 		orientation: 'horizontal',
@@ -485,12 +487,19 @@ $(function() {
 		if (viewer == 'JBrowse') {
 			$('#main').hide();
 			$('#resize').hide();
-			var height = $(document).height() - 230;
-			var jbrowse = $('#jbrowse');
-			if (!jbrowse.html()) {
-				jbrowse.html('<iframe frameborder="0" width="100%" height="'+height+'" scrolling="no" style="border:1px solid black" src="<TMPL_VAR NAME='JBROWSE'>"></iframe>')
+			$('#jbrowse').show();
+			if (!jbrowse) {
+				//var height = $(document).height() - 230; // not working
+				//$('#jbrowse').height(height)
+				$('#jbrowse').html('<img src="picts/ajax-loader.gif"> Loading ...');
+				
+				// Initialize JBrowse widget
+				init_JBrowse('jbrowse',
+					function(browser) {
+						jbrowse = browser;
+					}
+				);
 			}
-			jbrowse.show();
 		}
 		else {
 			$('#jbrowse').hide();
@@ -565,8 +574,7 @@ $(function() {
 	<span class="ui-button ui-corner-all" onclick="window.open('/wiki/index.php?title=GenomeView')">More GenomeView Help</span>
 </div>
 
-<div id="jbrowse" style="display:none;"></div>
-
+<div id="jbrowse" style="display:none; height:80%; width:100%; padding:0; border:1px solid gray"></div>
 
 <div id="short_anno_popup" class="dialog_box" title="Feature Quick Look:" style="display:none"></div>
 <div id='query_popup' class="dialog_box" title="Features:" style="display:none"></div></div>
