@@ -16,5 +16,7 @@ CGI::Application::Dispatch->dispatch(
 		'annotation/:ds/features/:chr'	=> { app => 'Annotation', 	 rm => 'features' },
 		'experiment/:exp/stats/global'	=> { app => 'Experiment', 	 rm => 'stats_global' },
 		'experiment/:exp/features/:chr'	=> { app => 'Experiment', 	 rm => 'features' },
+		'experiment/notebook/:nb/stats/global'	=> { app => 'Experiment', 	 rm => 'stats_global' },
+		'experiment/notebook/:nb/features/:chr'	=> { app => 'Experiment', 	 rm => 'features' },
 	],
 );
