@@ -137,15 +137,19 @@ See Also   :
 
 sub lists {    
 	my $self = shift;
-	my @lists = ();
-
+	
+	my %lists;
 	foreach	my $conn ( $self->list_connectors )
 	{
 		my $list = $conn->parent_list;
-		push @lists, $list if ($list);
+		$lists{$list->id} = $list if ($list);
 	}
 
-	return wantarray ? @lists : \@lists;
+	return wantarray ? values %lists : [ values %lists ];
+}
+
+sub notebooks {
+	shift->lists(@_);	
 }
 
 #sub groups {
