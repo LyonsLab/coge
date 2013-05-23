@@ -250,11 +250,11 @@ sub login_cas {
 	#print STDERR "request uri: " . $request_ua->uri . "\n";
 	#$request_ua->content($request);
 	$request_ua->content_type("text/xml; charset=utf-8");
-	my $response = $ua->request($request_ua);
+	$response = $ua->request($request_ua);
 	#if ($response->is_success()) {
 		#print STDERR "status_line: " . $response->status_line() . "\n";
 		#my $header = $response->header;
-		my $result = $response->content;
+		$result = $response->content;
 		#print STDERR "content: <begin>$result<end>\n";
 	#}
 	#else {
