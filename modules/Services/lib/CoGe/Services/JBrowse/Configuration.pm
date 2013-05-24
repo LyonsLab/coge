@@ -44,13 +44,13 @@ sub refseq_config {
 	my $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS);
 	#$coge->storage->debugobj(new DBIxProfiler());
 	#$coge->storage->debug(1);
-	
+
 	my $genome = $coge->resultset('Genome')->find($gid);
-	return unless $genome;	
+	return unless $genome;
 
 	my @chromosomes;
 	foreach my $chr ($genome->genomic_sequences) {
-		push @chromosomes, { 
+		push @chromosomes, {
 			name => $chr->chromosome,
 			length => $chr->sequence_length,
 			seqChunkSize => $SEQ_CHUNK_SIZE,
@@ -58,7 +58,7 @@ sub refseq_config {
 			end => $chr->sequence_length - 1
 		};
 	}
-	
+
 	return encode_json(\@chromosomes);
 }
 
@@ -67,7 +67,7 @@ sub track_config {
 	my $gid = $self->query->param('gid');
 	my $cas_ticket = $self->query->param('ticket');
 	print STDERR "Configuration::track_config gid=$gid\n";
-	
+
 	my $P = CoGe::Accessory::Web::get_defaults($coge_conf);
 	my $DBNAME = $P->{DBNAME};
 	my $DBHOST = $P->{DBHOST};
@@ -88,9 +88,9 @@ sub track_config {
 
 	my $genome = $coge->resultset('Genome')->find($gid);
 	return unless $genome;
-	
+
 	my @tracks;
-	
+
 	# Add reference sequence track
 	push @tracks,
 	{
@@ -107,7 +107,7 @@ sub track_config {
 			type => 'sequence'
 		}
 	};
-	
+
 	# Add GC content track
 	push @tracks,
 	{
@@ -126,7 +126,7 @@ sub track_config {
 		coge => {
 			id => $gid,
 			type => ''
-		}		
+		}
 	};
 
 	# Add gene annotation tracks
@@ -134,7 +134,7 @@ sub track_config {
 	foreach $ds ($genome->datasets) {
 		next if (not $ds->has_gene_annotation);
 		my $dsid = $ds->id;
-		push @tracks, 
+		push @tracks,
 		{
 			#baseUrl => "services/service.pl/annotation/$dsid/",
 			baseUrl => "http://geco.iplantcollaborative.org/rchasman/annotation/$dsid/",
@@ -142,11 +142,15 @@ sub track_config {
             track => "genes",
             label => "genes",
             key => "Genes" . ($num++ ? " $num" : ''),
-         	type => "FeatureTrack",
+            #type => "FeatureTrack",
+            type => "CoGe/View/Track/CoGeFeatures",
             storeClass => "JBrowse/Store/SeqFeature/REST",
             onClick => "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
+            maxFeatureScreenDensity => 2,
          	style => {
             	className => "cds",
+            	featureScale => 0,
+            	histScale => 0,
          	},
          	# CoGe-specific stuff
          	coge => {
@@ -162,11 +166,11 @@ sub track_config {
 		#FIXME need permission check here
 		next if ($e->deleted);
 		my $eid = $e->id;
-		
+
 		# Make a list of notebook id's
 		my @notebooks = map {$_->id} $e->notebooks;
 		map { $all_notebooks{$_->id} = $_ } $e->notebooks;
-		
+
 		# Make a list of annotations
 		my @annotations;
 		foreach my $a ($e->annotations) {
@@ -178,9 +182,9 @@ sub track_config {
 				link  => $a->link
 			}
 		}
-		
-		push @tracks, 
-		{ 
+
+		push @tracks,
+		{
 			baseUrl => "services/service.pl/experiment/$eid/",
 		    autocomplete => "all",
 		    track => "exp$eid",
@@ -209,30 +213,30 @@ sub track_config {
 		    }
 		};
 	}
-	
+
 	# Add notebook tracks
 	foreach my $n (sort {$a->name cmp $b->name} values %all_notebooks) {
 		next if ($n->restricted and not $USER->has_access_to_list($n));
-		
+
 		my $nid = $n->id;
-		
+
 		# Make a list of experiments
 		my @experiments;
 		foreach my $e ($n->experiments) {
 			push @experiments,
 			{
 				id => $e->id,
-				name => $e->name 
+				name => $e->name
 			}
 		}
-		
-		push @tracks, 
+
+		push @tracks,
 		{
 			key => $n->name,
 			baseUrl => "services/service.pl/experiment/notebook/$nid/",
 		    autocomplete => "all",
 		    track => "notebook$nid",
-		    label => "notebook$nid", 
+		    label => "notebook$nid",
 		    type => "CoGe/View/Track/Wiggle/MultiXYPlot",
 		    storeClass => "JBrowse/Store/SeqFeature/REST",
 			# CoGe-specific stuff
@@ -251,8 +255,8 @@ sub track_config {
 				]
 			}
 		};
-	}	
-	
+	}
+
 	return encode_json({
 		formatVersion => 1,
 		dataset_id => 'coge',
