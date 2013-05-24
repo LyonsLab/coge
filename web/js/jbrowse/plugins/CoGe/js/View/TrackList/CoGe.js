@@ -29,33 +29,31 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
             "/dnd/drop",
             dojo.hitch( this,
                         function( source, nodes, copy, target ) {
-            				console.log('/dnd/drop');
-                            if( this.trackListWidgets.indexOf(source) != -1 ) {
+			            	if ( source == target) { // both source and target
+			            		console.log('source = target');
+			            		return;
+			            	}
+			            	
+			            	var isSource = this.trackListWidgets.indexOf(source) != -1;
+			            	var isTarget = this.trackListWidgets.indexOf(target) != -1;
+			            	
+			            	if( isSource && !isTarget ) { // source
                             	console.log('/dnd/drop/source');
+                            	// get the configs from the tracks being dragged in
+	                            var confs = dojo.filter(
+	                                dojo.map( nodes, function(n) {
+	                                              return source.map[n.id].data;
+	                                        }),
+	                                function(c) {return c;}
+	                            );
                             	
-                            	// We are both source and target, so track was
-                            	// moved.  Check if it was moved in/out of a
-                            	// notebook.
-                            	if ( this.trackListWidgets.indexOf(target) != -1 ) {
-                            		//FIXME
-                            		return;
-                            	}
-                            	
-                            	// Highlight track to show it is enabled
-                                nodes.forEach( function( node ) {
-                                	var labelNode = dojo.query('.coge-tracklist-label', node)[0];
-            	    				dojo.addClass(labelNode, 'selected');
-            	        			if (dojo.hasClass(labelNode, 'coge-experiment')) {
-            	        				var id = labelNode.id.match(/\d+/)[0];
-            	        				var color = getFeatureColor(id);
-            	        				dojo.style(labelNode, 'background', color);
-            	        			}
-            	        			else {
-            	        				dojo.style(labelNode, 'background', 'lightgray');
-            	        			}
-                    	        });
+	                            // highlight track to show it is enabled
+	                            this.dndDrop = true;
+	                            this.browser.publish( '/jbrowse/v1/v/tracks/show', confs ); // mdb: why not just call setTrackActive directly?
+	                            this.dndDrop = false;
                             }
-                            else if( this.trackListWidgets.indexOf(target) != -1 ) {
+			            	
+                            if( this.trackListWidgets.indexOf(target) != -1 ) { // target
                             	console.log('/dnd/drop/target');
                             	
 	                            // get the configs from the tracks being dragged in
@@ -69,9 +67,11 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	                            // return if no confs; whatever was dragged here probably wasn't a track
 	                            if( ! confs.length )
 	                                return;
+
 	                            
+	                            // un-highlight track to show it is disabled
 	                            this.dndDrop = true;
-	                            this.browser.publish( '/jbrowse/v1/v/tracks/hide', confs );
+	                            this.browser.publish( '/jbrowse/v1/v/tracks/hide', confs ); // mdb: why not just call setTrackInactive directly?
 	                            this.dndDrop = false;
             				}
                         }
@@ -203,11 +203,32 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 accept: ["track"], // accepts only tracks
                 withHandles: false,
                 copyOnly: true,
-                checkAcceptance: dojo.hitch( this, function( source, nodes ) {
+                checkAcceptance: function( source, nodes ) {
                 	console.log('checkAcceptance');
-                	
-                }),
+                	var accept = true;
+                	var target = this;
+                	nodes.forEach( function (n) {
+                		var type = source.map[n.id].data.coge.type;
+	                	if (!type || type != 'experiment' || n.id in target.map) {
+	                		accept = false;
+	                	}
+                	});
+                	return accept;
+                },
+//	            onDrop: function( source, nodes, copy ) {
+//	                console.log('onDrop');
+//	                return true;
+//	            },
+//                onDropExternal: dojo.hitch( this, function( source, nodes, copy ) {
+//                	console.log('onDropExternal');
+//                	return this.inherited(arguments);
+//                }),
+//                onDropInternal: dojo.hitch( this, function( source, nodes, copy ) {
+//	            	console.log('onDropInternal');
+//	            	return this.inherited(arguments);
+//                }),
                 creator: dojo.hitch( this, function( trackConfig, hint ) {
+                	console.log('creator');
                 	var id = trackConfig.coge.type + '_' + trackConfig.coge.id;
                 	var name = ('name' in trackConfig.coge ? trackConfig.coge.name : trackConfig.key);
                 	var node = this._createLabelNode( trackConfig );
@@ -272,7 +293,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                     
                     container.appendChild(node);
                     container.id = dojo.dnd.getUniqueId();
-                    return {node: container, data: trackConfig, type: ["track"]};
+                    return {node: container, data: trackConfig, type: ["track", trackConfig.coge.type]};
                 })
             }
         ); 
@@ -402,7 +423,6 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
      */
     setTracksActive: function( /**Array[Object]*/ trackConfigs ) {
     	console.log('setTracksActive ');
-    	console.log(trackConfigs);
         dojo.query( '.coge-tracklist-label', this.div )
 	        .forEach( function( labelNode, i ) {
 	        	trackConfigs.forEach( function (trackConfig) {
