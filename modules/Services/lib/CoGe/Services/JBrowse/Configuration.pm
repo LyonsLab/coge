@@ -15,7 +15,7 @@ sub setup {
 
 	#FIXME - move this into service.pl
 	$coge_conf = abs_path($0);
-	$coge_conf =~ s/services\/service\.pl/coge\.conf/;
+	$coge_conf =~ s/services\/JBrowse\/service\.pl/coge\.conf/;
 
 	$self->run_modes(
 		'refseq_config'	=> 'refseq_config',
@@ -95,7 +95,7 @@ sub track_config {
 	push @tracks,
 	{
 		chunkSize => 20000,
-		baseUrl => "services/service.pl/sequence/$gid/",
+		baseUrl => "services/JBrowse/service.pl/sequence/$gid/",
 		type => "SequenceTrack",
 		storeClass => "JBrowse/Store/SeqFeature/REST",
 		label => "sequence",
@@ -111,7 +111,8 @@ sub track_config {
 	# Add GC content track
 	push @tracks,
 	{
-		baseUrl => "http://geco.iplantcollaborative.org/rchasman/gc/$gid/",
+		#baseUrl => "http://geco.iplantcollaborative.org/rchasman/gc/$gid/",
+		baseUrl => "services/JBrowse/track/gc/$gid/",
 		type => "JBrowse/View/Track/Wiggle/Density",
 		storeClass => "JBrowse/Store/SeqFeature/REST",
 		label => "gc_content",
@@ -136,7 +137,7 @@ sub track_config {
 		my $dsid = $ds->id;
 		push @tracks,
 		{
-			#baseUrl => "services/service.pl/annotation/$dsid/",
+			#baseUrl => "services/JBrowse/service.pl/annotation/$dsid/",
 			baseUrl => "http://geco.iplantcollaborative.org/rchasman/annotation/$dsid/",
             autocomplete => "all",
             track => "genes",
@@ -185,7 +186,7 @@ sub track_config {
 
 		push @tracks,
 		{
-			baseUrl => "services/service.pl/experiment/$eid/",
+			baseUrl => "services/JBrowse/service.pl/experiment/$eid/",
 		    autocomplete => "all",
 		    track => "exp$eid",
 		    label => "exp$eid",
@@ -233,7 +234,7 @@ sub track_config {
 		push @tracks,
 		{
 			key => $n->name,
-			baseUrl => "services/service.pl/experiment/notebook/$nid/",
+			baseUrl => "services/JBrowse/service.pl/experiment/notebook/$nid/",
 		    autocomplete => "all",
 		    track => "notebook$nid",
 		    label => "notebook$nid",

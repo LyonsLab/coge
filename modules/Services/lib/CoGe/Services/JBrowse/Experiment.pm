@@ -13,7 +13,7 @@ sub setup {
 	
 	#FIXME - move this into service.pl
 	$coge_conf = abs_path($0);
-	$coge_conf =~ s/services\/service\.pl/coge\.conf/;	
+	$coge_conf =~ s/services\/JBrowse\/service\.pl/coge\.conf/;	
 	
 	$self->run_modes(
 		'stats_global' 	=> 'stats_global',
