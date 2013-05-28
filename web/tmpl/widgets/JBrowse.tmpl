@@ -24,9 +24,9 @@
 	            JBrowse = new Browser({
 					containerID: id,
 					browserRoot: 'js/jbrowse/',
-					refSeqs: 'services/service.pl/config/refseq/?gid='+queryParams.gid,
+					refSeqs: 'services/JBrowse/service.pl/config/refseq/?gid='+queryParams.gid,
 					baseUrl: 'js/jbrowse/',//dataRoot+'/',
-					include: ['services/service.pl/config/tracks/?gid='+queryParams.gid],
+					include: ['services/JBrowse/service.pl/config/tracks/?gid='+queryParams.gid],
 					//nameUrl: dataRoot + "/names/root.json",
 					defaultTracks: "sequence,genes",
 					queryParams: queryParams,
