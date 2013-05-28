@@ -139,7 +139,7 @@ sub track_config {
 		{
 			#baseUrl => "services/JBrowse/service.pl/annotation/$dsid/",
 			#baseUrl => "http://geco.iplantcollaborative.org/rchasman/annotation/$dsid/",
-			baseUrl => "services/JBrowse/track/annotation/$gid/",
+			baseUrl => "services/JBrowse/track/annotation/$dsid/",
             autocomplete => "all",
             track => "genes",
             label => "genes",
