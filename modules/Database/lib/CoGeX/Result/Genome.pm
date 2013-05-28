@@ -211,21 +211,15 @@ sub datasets {
 	foreach my $dsc ( $self->dataset_connectors() ) {
 		my $ds = $dsc->dataset;
 		next if ($restricted and not $ds->restricted);
-		
 		if ( defined $chr ) {
-	#this was commented out and is an essential function to find the corret dataset for a given chromosome.  Why was this commented out?:  EL 5/3/13	
-		foreach my $ds_chr ($dsc->dataset->chromosomes) {
-				return $dsc->dataset if $ds_chr eq $chr;
-			return $ds if $ds->has_chromosome( chr => $chr );
-			#$datasets{$ds->id} = $ds;
-			}
-		}
+				$datasets{$ds->id} = $ds if $ds->has_chromosome( chr => $chr );#$ds_chr eq $chr;
+	      }
 		else {
-			$datasets{$ds->id} = $ds;
+		  $datasets{$ds->id} = $ds;
 		}
-	}
+	      }
 	return wantarray ? values %datasets : [ values %datasets];
-}
+      }
 
 ################################################ subroutine header begin ##
 
