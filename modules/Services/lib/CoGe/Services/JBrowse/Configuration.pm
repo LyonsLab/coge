@@ -138,7 +138,8 @@ sub track_config {
 		push @tracks,
 		{
 			#baseUrl => "services/JBrowse/service.pl/annotation/$dsid/",
-			baseUrl => "http://geco.iplantcollaborative.org/rchasman/annotation/$dsid/",
+			#baseUrl => "http://geco.iplantcollaborative.org/rchasman/annotation/$dsid/",
+			baseUrl => "services/JBrowse/track/annotation/$gid/",
             autocomplete => "all",
             track => "genes",
             label => "genes",
