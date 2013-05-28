@@ -1,0 +1,52 @@
+<link rel="stylesheet" type="text/css" href="js/jbrowse/genome.css">
+<script type="text/javascript" src="js/jbrowse/src/dojo/dojo.js" data-dojo-config="async: 1"></script>
+
+<script type="text/javascript">
+    window.onerror=function(msg){
+        if( document.body )
+            document.body.setAttribute("JSError",msg);
+    }
+
+	function init_JBrowse(id, callback) {
+		var JBrowse;
+	    require( { baseUrl: 'js/jbrowse/src',
+	               packages: [ 'dojo', 'dijit', 'dojox', 'jszlib',
+	                           { name: 'lazyload', main: 'lazyload' },
+	                           'dgrid', 'xstyle', 'put-selector',
+	                           { name: 'jDataView', location: 'jDataView/src', main: 'jdataview' },
+	                           'JBrowse'
+	                         ]
+	             },
+	        [ 'JBrowse/Browser', 'dojo/io-query' ],
+	    	function (Browser,ioQuery) {
+	        	var queryParams = ioQuery.queryToObject( window.location.search.slice(1) );
+	            //var dataRoot = queryParams.data || 'data';
+	            JBrowse = new Browser({
+					containerID: id,
+					browserRoot: 'js/jbrowse/',
+					refSeqs: 'services/service.pl/config/refseq/?gid='+queryParams.gid,
+					baseUrl: 'js/jbrowse/',//dataRoot+'/',
+					include: ['services/service.pl/config/tracks/?gid='+queryParams.gid],
+					//nameUrl: dataRoot + "/names/root.json",
+					defaultTracks: "sequence,genes",
+					queryParams: queryParams,
+					location: queryParams.loc || '1:1..150000',//queryParams.loc,
+					forceTracks: queryParams.tracks,
+					initialHighlight: queryParams.highlight,
+					show_nav: 1,
+					show_tracklist: 1,
+					show_overview: 1,
+					makeFullViewURL: function( browser ) {
+						// the URL for the 'Full view' link
+					    // in embedded mode should be the current
+					    // view URL, except with 'nav', 'tracklist',
+					    // and 'overview' parameters forced to 1.
+					    return browser.makeCurrentViewURL({ nav: 1, tracklist: 1, overview: 1 });
+					},
+					updateBrowserURL: true,
+				});
+				
+				callback(JBrowse);
+			});
+    }
+</script>
