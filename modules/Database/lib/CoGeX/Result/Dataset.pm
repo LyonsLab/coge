@@ -698,16 +698,35 @@ sub has_chromosome
 	my $self = shift;
 	my %opts = @_;
 	my $chr  = $opts{chr};
-	my ($res) = $self->features(
-															 {
-																 "feature_type.name" => "chromosome",
-																 "chromosome"        => "$chr",
-															 },
-															 { join => ["feature_type"] }
-	);
-	return 1 if $res;
-	return 0;
-}
+	my ($res) = $self->features->count(
+			  {
+			   "feature_type.name" => "chromosome",
+			  },
+			  { join => ["feature_type"] }
+			 );
+	if ($res)
+	  {
+	    my ($res) = $self->features(
+					{
+					 "feature_type.name" => "chromosome",
+					 "chromosome"        => "$chr",
+					},
+					{ join => ["feature_type"] }
+				       );
+	    return 1 if $res;
+	    return 0;
+	  }
+	else
+	  {
+	    my ($res) = $self->features->count(
+					       {
+						"chromosome"        => "$chr",
+					       },
+					      );
+	    return 1 if $res;
+	    return 0;
+	  }
+      }
 
 ################################################ subroutine header begin ##
 
