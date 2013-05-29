@@ -766,18 +766,18 @@ sub gen_results_page {
 	my @check;
 	my @hsp;
 
-	my $t1 = new Benchmark;
+	my $t0 = new Benchmark;
 	my ( $chromosome_data, $chromosome_data_large, $genomelist_link ) =
 	  generate_chromosome_images( results => $results, resultslimit => $resultslimit, color_hsps => $color_hsps );
-	my $t2 = new Benchmark;
+	my $t1 = new Benchmark;
 
-	my $t0 = new Benchmark;
 	my %query_hit_count;
 	foreach my $set (@$results) {
 		$hsp_count{ $set->{organism} } = 0 unless $hsp_count{ $set->{organism} };
 		if ( @{ $set->{report}->hsps() } ) {
 			foreach my $hsp ( sort { $a->number <=> $b->number } @{ $set->{report}->hsps() } )
 			{
+			  my $ttt1 = new Benchmark;
 				my $dsg = $set->{dsg};
 				my ($chr) = $hsp->subject_name =~ /\|(\S*)/;
 				$chr = $hsp->subject_name unless $chr;
@@ -787,8 +787,11 @@ sub gen_results_page {
 				next unless $dsg && defined $chr;
 				$hsp_count{$org}++;
 				last if ( $hsp_count{$org} > $resultslimit );
-
+				my $tt1 = new Benchmark;
 				populate_sqlite( $hsp, $dsg->id, $org, $chr );
+				my $tt2 = new Benchmark;
+				my $sqlite_time = timestr( timediff( $tt2, $tt1 ) );
+				#print STDERR "sqlite transaction time: $sqlite_time\n";
 				my $id = $hsp->number . '_' . $dsg->id;
 				$click_all_links .= $id . ',';
 				#my $feat_link = qq{<span class="link" onclick="fill_nearby_feats('$id','true')">Click for Closest Feature</span>};
@@ -925,10 +928,11 @@ sub gen_results_page {
 	$box_template->param( BOX_NAME => 'CoGeBlast Results ' . $temp );
 	$box_template->param( BODY     => $html );
 	my $outhtml     = $box_template->output;
-	my $t3          = new Benchmark;
-	my $table_time  = timestr( timediff( $t1, $t0 ) );
-	my $figure_time = timestr( timediff( $t2, $t1 ) );
-	my $render_time = timestr( timediff( $t3, $t2 ) );
+	my $t2          = new Benchmark;
+
+	my $figure_time = timestr( timediff( $t1, $t0 ) );
+	my $table_time  = timestr( timediff( $t2, $t1 ) );
+	my $render_time = timestr( timediff( $t2, $t0 ) );
 	my $benchmark   = qq{
 Time to gen tables:              $table_time
 Time to gen images:              $figure_time
@@ -1846,7 +1850,6 @@ select * from (
    UNION (SELECT * FROM feature where stop>=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY stop LIMIT 10)) as v)
    ) as w
 order by abs((start + stop)/2 - $mid) LIMIT 10};
-
 	my $handle = $cogedb->prepare($query);
 	$handle->execute();
 	my $new_checkbox_info;
