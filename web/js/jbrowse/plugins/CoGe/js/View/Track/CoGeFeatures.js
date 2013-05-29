@@ -85,7 +85,7 @@ define( [
                             maxFeatureScreenDensity: 0.5,
 
                             // maximum height of the track, in pixels
-                            maxHeight: 1500,
+                            maxHeight: 15000,
 
                             style: {
                                 arrowheadClass: 'arrowhead',
