@@ -148,7 +148,7 @@ sub track_config {
             type => "CoGe/View/Track/CoGeFeatures",
             storeClass => "JBrowse/Store/SeqFeature/REST",
             onClick => "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
-            maxFeatureScreenDensity => 2,
+            maxFeatureScreenDensity => 8,
          	style => {
             	className => "cds",
             	featureScale => 0,
