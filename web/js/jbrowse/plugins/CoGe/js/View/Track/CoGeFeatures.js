@@ -85,7 +85,7 @@ define( [
                             maxFeatureScreenDensity: 0.5,
 
                             // maximum height of the track, in pixels
-                            maxHeight: 1000,
+                            maxHeight: 1500,
 
                             style: {
                                 arrowheadClass: 'arrowhead',
@@ -246,8 +246,7 @@ define( [
                         // number of bins in the server-supplied histogram for each current bin
                         var binCount = dims.bpPerBin / histogramMeta.basesPerBin;
                         // if the server-supplied histogram fits neatly into our current histogram,
-                        if ((binCount > .9)
-                                &&
+                        if ((binCount > .9) &&
                                 (Math.abs(binCount - Math.round(binCount)) < .0001)) {
                                     // we can use the server-supplied counts
                                     var firstServerBin = Math.floor(leftBase / histogramMeta.basesPerBin);
@@ -612,9 +611,9 @@ define( [
                         },
                         featCallback,
                         function () {
-//                            curTrack.heightUpdate(curTrack._getLayout(scale).getTotalHeight(),
-//                                blockIndex);
-                            curTrack.heightUpdate(50, blockIndex); // mdb test 5/29/13
+                            //                            curTrack.heightUpdate(curTrack._getLayout(scale).getTotalHeight(),
+                            //                                blockIndex);
+                            curTrack.heightUpdate(150, blockIndex); // mdb test 5/29/13
                             finishCallback();
                         },
                         function( error ) {
@@ -868,24 +867,24 @@ define( [
                                                    var blockWidth = block.endBase - block.startBase;
                                                    var featwidth = Math.max( this.minFeatWidth, (100 * ((displayEnd - displayStart) / blockWidth)));
 
-                                                    if (feature.get('strand') >= 0) {
-                                                            top = 11;
-                                                    } else {
-                                                            top = 97;
-                                                    }
+                                                   if (feature.get('strand') >= 0) {
+                                                       top = 11;
+                                                   } else {
+                                                       top = 81;
+                                                   }
 
-                                                    labelPadding = 0;
+                                                   labelPadding = 0;
 
-                                                    if (feature.get('type') == 'gene') {
-                                                        top += 8;
-                                                        labelPadding = 6;
-                                                    }
+                                                   if (feature.get('type') == 'gene') {
+                                                       top += 8;
+                                                       labelPadding = 6;
+                                                   }
 
-                                                    types = ["mRNA","CDS","gene"]
+                                                   types = ["mRNA","CDS","gene"]
 
-                                                    if(types.indexOf(feature.get('type')) == -1) {
-                                                        top = 5;
-                                                    }
+                                                       if(types.indexOf(feature.get('type')) == -1) {
+                                                           top = 5;
+                                                       }
 
                                                    featDiv.style.cssText =
                                                        "left:" + (100 * (displayStart - block.startBase) / blockWidth) + "%;"
