@@ -58,9 +58,9 @@ define( [
                         this.defaultPadding = 5;
                         this.padding = this.defaultPadding;
 
-                        this.glyphHeightPad = 1;
-                        this.levelHeightPad = 2;
-                        this.labelPad = 1;
+                        this.glyphHeightPad = 4;
+                        this.levelHeightPad = 4;
+                        this.labelPad = 4;
 
                         // if calculated feature % width would be less than minFeatWidth, then set width to minFeatWidth instead
                         this.minFeatWidth = 1;
@@ -785,13 +785,6 @@ define( [
 
                                                    layoutEnd += Math.max(1, this.padding / scale);
 
-                                                   var featType = feature.get('type');
-                                                   if (featType == "gene"){
-                                                       levelHeight = -1;
-                                                   }else{
-                                                       levelHeight = 0;
-                                                   }
-
                                                    var top = this._getLayout( scale )
                                                        .addRect( uniqueId,
                                                                layoutStart,
@@ -835,11 +828,11 @@ define( [
                                                        block.rightOverlaps.push( uniqueId );
                                                    }
 
+                                                   var className = feature.get('type');
+                                                   var strand = feature.get('strand');
                                                    dojo.addClass(featDiv, "feature");
                                                    //var className = this.config.style.className;
                                                    //if (className == "{type}") { className = feature.get('type'); }
-                                                   var className = feature.get('type');
-                                                   var strand = feature.get('strand');
                                                    switch (strand) {
                                                        case 1:
                                                        case '+':
@@ -874,6 +867,26 @@ define( [
                                                    var displayEnd = Math.min( featureEnd, containerEnd );
                                                    var blockWidth = block.endBase - block.startBase;
                                                    var featwidth = Math.max( this.minFeatWidth, (100 * ((displayEnd - displayStart) / blockWidth)));
+
+                                                    if (feature.get('strand') >= 0) {
+                                                            top = 11;
+                                                    } else {
+                                                            top = 97;
+                                                    }
+
+                                                    labelPadding = 0;
+
+                                                    if (feature.get('type') == 'gene') {
+                                                        top += 8;
+                                                        labelPadding = 6;
+                                                    }
+
+                                                    types = ["mRNA","CDS","gene"]
+
+                                                    if(types.indexOf(feature.get('type')) == -1) {
+                                                        top = 5;
+                                                    }
+
                                                    featDiv.style.cssText =
                                                        "left:" + (100 * (displayStart - block.startBase) / blockWidth) + "%;"
                                                        + "top:" + top + "px;"
@@ -885,21 +898,21 @@ define( [
                                                        var featwidth_px = featwidth/100*blockWidth*scale;
 
                                                        if (feature.get('type') == "gene") {
-                                                            switch (strand) {
-                                                                case 1:
-                                                                case '+':
-                                                                    ah.className = "plus-" + this.config.style.arrowheadClass;
-                                                                    ah.style.cssText =  "right: "+(-this.plusArrowWidth) + "px";
-                                                                    featDiv.appendChild(ah);
-                                                                    break;
-                                                                case -1:
-                                                                case '-':
-                                                                    ah.className = "minus-" + this.config.style.arrowheadClass;
-                                                                    ah.style.cssText = "left: " + (-this.minusArrowWidth) + "px";
-                                                                    featDiv.appendChild(ah);
-                                                                    break;
-                                                            }
-                                                        }
+                                                           switch (strand) {
+                                                               case 1:
+                                                               case '+':
+                                                                   ah.className = "plus-" + this.config.style.arrowheadClass;
+                                                                   ah.style.cssText =  "right: "+(-this.plusArrowWidth) + "px";
+                                                                   featDiv.appendChild(ah);
+                                                                   break;
+                                                               case -1:
+                                                               case '-':
+                                                                   ah.className = "minus-" + this.config.style.arrowheadClass;
+                                                                   ah.style.cssText = "left: " + (-this.minusArrowWidth) + "px";
+                                                                   featDiv.appendChild(ah);
+                                                                   break;
+                                                           }
+                                                       }
                                                    }
 
                                                    if (name && this.showLabels && scale >= labelScale || description ) {
@@ -908,7 +921,7 @@ define( [
                                                            innerHTML:  ( name ? '<div class="feature-name">'+name+'</div>' : '' )
                                                            +( description ? ' <div class="feature-description">'+description+'</div>' : '' ),
                                                            style: {
-                                                               top: (top + this.glyphHeight + 2) + "px",
+                                                               top: (top + labelPadding + this.glyphHeight + 2) + "px",
                                                            left: (100 * (layoutStart - block.startBase) / blockWidth)+'%'
                                                            }
                                                        }, block.domNode );
