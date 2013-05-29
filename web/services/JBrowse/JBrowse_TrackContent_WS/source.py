@@ -132,14 +132,15 @@ def an_features(environ, start_response):
     cur = con.cursor()
 
     try:
-        cur.execute("SELECT l.start, l.stop, f.strand, ft.name, fn.name, \
-                l.location_id FROM feature f JOIN feature_name fn ON \
-                f.feature_id = fn.feature_id JOIN feature_type ft ON \
-                f.feature_type_id = ft.feature_type_id JOIN location l ON \
-                f.feature_id = l.feature_id WHERE f.dataset_id = %d AND \
-                f.chromosome = %d AND f.start >= %d AND f.stop <= %d AND \
-                fn.primary_name = 1;"
-                % (dataset_id, chr_id, start, end))
+        cur.execute("SELECT l.start, l.stop, l.strand, ft.name, fn.name, \
+                l.location_id FROM location l \
+                JOIN feature f ON f.feature_id = l.feature_id \
+                JOIN feature_name fn ON f.feature_id = fn.feature_id \
+                JOIN feature_type ft ON f.feature_type_id = ft.feature_type_id \
+                WHERE f.dataset_id = {0} AND f.chromosome = {1} \
+                AND f.stop > {2} AND f.start <= {3} \
+                AND fn.primary_name = 1;"
+                    .format(dataset_id, chr_id, start, end))
 
         results = cur.fetchall()
 
