@@ -126,7 +126,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
         var trackPane = this.pane = dojo.create(
             'div',
             { id: 'trackPane',
-              style: { width: '12em' }
+              style: { width: '200px' } // 'min-width': '200px' -- mdb: messes up resize
             },
             renderTo
         );
