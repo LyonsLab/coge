@@ -265,11 +265,11 @@ function get_sources () {
 <table class="small ui-widget-content ui-corner-all">
   <tr>
     <td>Name:</td>
-    <td><input id="edit_name" type="textbox" size="58" value="<TMPL_VAR NAME='NAME'>" /></td>
+    <td><input id="edit_name" type="textbox" size="80" value="<TMPL_VAR NAME='NAME'>" /></td>
   </tr>
   <tr>
     <td>Description:</td>
-    <td><textarea id="edit_description" rows=5 cols=50 ><TMPL_VAR NAME='DESC'></textarea></td>
+    <td><textarea id="edit_description" rows=5 cols=57 ><TMPL_VAR NAME='DESC'></textarea></td>
   </tr>
   <tr>
     <td>Version:</td>
@@ -278,7 +278,7 @@ function get_sources () {
   <tr>
     <td>Source:</td>
     <td>
-      <input id="edit_source" size="45" />
+      <input id="edit_source" size="80" />
       <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
     </td>
   </tr> 
@@ -289,7 +289,7 @@ function get_sources () {
   <tr>
     <td>Genome:</td>
     <td>
-      <input id="edit_genome" onkeypress="wait_to_search(search_genomes, this.value);" size="58" value="<TMPL_VAR NAME='GENOME_NAME'>" />
+      <input id="edit_genome" onkeypress="wait_to_search(search_genomes, this.value);" size="80" value="<TMPL_VAR NAME='GENOME_NAME'>" />
       <input id="gid" type="hidden" value="<TMPL_VAR NAME='GENOME_ID'>" />
     </td>
   </tr>
