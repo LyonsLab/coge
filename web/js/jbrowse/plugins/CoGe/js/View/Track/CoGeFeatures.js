@@ -612,8 +612,9 @@ define( [
                         },
                         featCallback,
                         function () {
-                            curTrack.heightUpdate(curTrack._getLayout(scale).getTotalHeight(),
-                                blockIndex);
+//                            curTrack.heightUpdate(curTrack._getLayout(scale).getTotalHeight(),
+//                                blockIndex);
+                            curTrack.heightUpdate(50, blockIndex); // mdb test 5/29/13
                             finishCallback();
                         },
                         function( error ) {
