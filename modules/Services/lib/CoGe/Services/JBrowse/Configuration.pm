@@ -242,7 +242,7 @@ sub track_config {
 		    type => "CoGe/View/Track/Wiggle/MultiXYPlot",
 		    storeClass => "JBrowse/Store/SeqFeature/REST",
 			# CoGe-specific stuff
-			show_average => 0,
+			showAverage => 0,
 			coge => {
 				id => $nid,
 				type => 'notebook',
