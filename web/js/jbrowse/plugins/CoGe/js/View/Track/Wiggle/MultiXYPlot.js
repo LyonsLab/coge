@@ -108,7 +108,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         	width[l] = l in width ? Math.max(width[l], w) : w;
         });
         
-        if (this.config.show_average) {
+        if (this.config.showAverage) {
         	sum.forEach( function(x,l) {
         		var avg = sum[l]/count[l];
         		var height = toY( avg );
@@ -229,7 +229,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         }
         
         //Êdraw average line - mdb added 5/15/13 ... not working
-//        if (this.config.coge.show_average) {
+//        if (this.config.coge.showAverage) {
 //        	var originY = toY( dataScale.origin );
 //    		var sum = [];
 //    		var count = [];
@@ -272,7 +272,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         
         
         // compute average scores - FIXME dup'ed in _drawFeatures
-        if (this.config.show_average) {
+        if (this.config.showAverage) {
 	        var sum = [];
 	        var count = [];
 	        var width = [];
@@ -306,23 +306,25 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     		});
     	}
     	
-    	var track = this;
-        options.push.apply(
-                options,
-                [
-                    { type: 'dijit/MenuSeparator' },
-                    { label: 'Show average',
-                      type: 'dijit/CheckedMenuItem',
-                      checked: this.config.show_average,
-                      onClick: function(event) {
-                          track.config.show_average = this.checked;
-                          track.changed();
-                      }
-                    }
-                ]
-            );
+    	if (config.coge.type == 'notebook') {
+	    	var track = this;
+	        options.push.apply(
+	                options,
+	                [
+	                    { type: 'dijit/MenuSeparator' },
+	                    { label: 'Show average',
+	                      type: 'dijit/CheckedMenuItem',
+	                      checked: this.config.showAverage,
+	                      onClick: function(event) {
+	                          track.config.showAverage = this.checked;
+	                          track.changed();
+	                      }
+	                    }
+	                ]
+	            );
+    	}
     	
-    	return options; 
+    	return options;
     },
 
     _getFeatureName: function(id) {
