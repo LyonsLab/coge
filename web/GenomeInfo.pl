@@ -104,7 +104,7 @@ sub get_genome_info {
 		$genome = $coge->resultset('Genome')->find($gid);
 		return unless ($genome);
 	}
-
+	
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
 	$template->param(
 		DO_GENOME_INFO => 1,
@@ -460,7 +460,8 @@ sub generate_body {
 		GENOME_INFO 	=> get_genome_info(genome => $genome),
 	 	GENOME_DATA 	=> get_genome_data(genome => $genome),
 		EXPERIMENTS 	=> get_experiments(genome => $genome),
-		ANNOTATION 		=> get_datasets(genome => $genome, exclude_seq => 1)
+		ANNOTATION 		=> get_datasets(genome => $genome, exclude_seq => 1),
+		USER_CAN_EDIT 	=> (!$USER->is_public and $USER->is_owner_editor(dsg => $genome))
 	);
 
 	if ($USER->is_admin) {

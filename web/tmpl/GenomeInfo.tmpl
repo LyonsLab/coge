@@ -218,7 +218,9 @@ function export_bed (gid) {
 		<td>
 			<span style="color:dimgray;font-weight:bold;">Genome Info</span>
 			<div id='genome_info' class="small ui-widget-content ui-corner-all" style="width:400px;"><TMPL_VAR NAME="GENOME_INFO"></div>
-			<span class='ui-button ui-corner-all' onClick="edit_genome_info();">Edit Info</span>
+			<TMPL_IF NAME='USER_CAN_EDIT'>
+				<span class='ui-button ui-corner-all' onClick="edit_genome_info();">Edit Info</span>
+			</TMPL_IF>
 		</td>
 		<td style="padding-left:10px;">
 			<span id='genome_data' style="color:dimgray;font-weight:bold;"><!--Genome Data-->&nbsp;</span>
@@ -239,7 +241,9 @@ function export_bed (gid) {
 		</tr>
 	</table>
 </TMPL_IF>
-<span class='ui-button ui-corner-all ui-button-icon-right' onclick="window.open('LoadAnnotation.pl?gid=<TMPL_VAR NAME=GID>')"><span class="ui-icon ui-icon-extlink"></span>Load Annotation</span>
+<TMPL_IF NAME='USER_CAN_EDIT'>
+	<span class='ui-button ui-corner-all ui-button-icon-right' onclick="window.open('LoadAnnotation.pl?gid=<TMPL_VAR NAME=GID>')"><span class="ui-icon ui-icon-extlink"></span>Load Annotation</span>
+</TMPL_IF>
 <br><br>
 
 <span style="color:dimgray;font-weight:bold;">Experiments</span><br>
@@ -252,7 +256,9 @@ function export_bed (gid) {
 		</tr>
 	</table>
 </TMPL_IF>
-<span class='ui-button ui-corner-all ui-button-icon-right' onclick="window.open('LoadExperiment.pl?gid=<TMPL_VAR NAME=GID>')"><span class="ui-icon ui-icon-extlink"></span>Load Experiment</span>
+<TMPL_IF NAME='USER_CAN_EDIT'>
+	<span class='ui-button ui-corner-all ui-button-icon-right' onclick="window.open('LoadExperiment.pl?gid=<TMPL_VAR NAME=GID>')"><span class="ui-icon ui-icon-extlink"></span>Load Experiment</span>
+</TMPL_IF>
 <br><br>
 
 <div id="genome_info_edit_box" class="dialog_box" title="Edit Genome Info" style="display:none;"></div>
