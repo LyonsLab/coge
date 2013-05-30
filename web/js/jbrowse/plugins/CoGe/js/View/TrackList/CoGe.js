@@ -22,7 +22,10 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
         this.createTrackList( args.browser.container, args.trackConfigs );
 
         // maintain a list of the HTML nodes of filtered tracks
-        this.filteredNodes = {};        
+        this.filteredNodes = {};
+        
+        // maximum tracks that can be added via "+" button
+        this.maxTracksToAdd = 20;
         
         // subscribe to drop events for tracks being DND'ed
         this.browser.subscribe(
@@ -90,7 +93,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                                 dojo.hitch( this, 'deleteTracks' ));
     },
 
-    addTracks: function( trackConfigs ) {
+    addTracks: function( trackConfigs ) { // mdb: unused now
     	console.log('addTracks');
 //        // note that new tracks are, by default, hidden, so we just put them in the list
 //        this.trackListWidget.insertNodes(
@@ -101,8 +104,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 //        this._blinkTracks( trackConfigs );
     },
 
-    // mdb: unused now
-    replaceTracks: function( trackConfigs ) {
+    replaceTracks: function( trackConfigs ) { // mdb: unused now
     	console.log('replaceTracks');
 //        // for each one
 //        array.forEach( trackConfigs, function( conf ) {
@@ -126,7 +128,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
         var trackPane = this.pane = dojo.create(
             'div',
             { id: 'trackPane',
-              style: { width: '200px' } // 'min-width': '200px' -- mdb: messes up resize
+              style: { width: '215px' } // 'min-width': '200px' -- mdb: messes up resize
             },
             renderTo
         );
@@ -146,7 +148,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
         );
 
         // create text filter input
-        this._createTextFilter();
+        this._createTextFilter(trackConfigs);
         this._updateTextFilterControl();
 
         // create a DnD source for sequence, annotation, etc.
@@ -299,7 +301,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
         ); 
     },
     
-    _createTextFilter: function( ) {
+    _createTextFilter: function( trackConfigs ) {
         this.textFilterDiv = dom.create( 'div', {
             className: 'textfilter',
             style: {
@@ -315,7 +317,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 				style: {
 					paddingLeft: '18px',
 					height: '16px',
-					width: '80%'
+					width: '75%'
 				},
 				placeholder: 'filter by text',
 				onkeypress: dojo.hitch( this, function( evt ) {
@@ -345,6 +347,48 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 			style: {
 				position: 'absolute',
 				left: '4px',
+				top: '2px'
+			}
+		}, this.textFilterDiv );
+		
+		this.textFilterAddAllButton = dom.create('div', {
+			//className: 'cogeIconPlus', // FIXME: why not work?
+			innerHTML: '<img src="js/jbrowse/plugins/CoGe/img/plus.png">',
+			onclick: dojo.hitch( this, function() {
+				var configs = getVisibleConfigs(this.div, trackConfigs);
+				if (configs.length) {
+					if (configs.length > this.maxTracksToAdd) {
+					    var myDialog = new dijit.Dialog({
+					        title: "Warning",
+					        content: "There are too many tracks to add (>" + this.maxTracksToAdd + "), please filter them further.",
+					        style: "width: 300px"
+					    });
+					    myDialog.show();
+					}
+					else {
+						this.browser.publish( '/jbrowse/v1/v/tracks/show', configs );
+					}
+				}
+			}),
+			style: {
+				position: 'absolute',
+				right: '36px',
+				top: '2px'
+			}
+		}, this.textFilterDiv );
+		
+		this.textFilterClearAllButton = dom.create('div', {
+			//className: 'cogeIconTest', // FIXME: why not work?
+			innerHTML: '<img src="js/jbrowse/plugins/CoGe/img/clear.png">',
+			onclick: dojo.hitch( this, function() {
+				var configs = getVisibleConfigs(this.div, trackConfigs);
+				if (configs.length) {
+					this.browser.publish( '/jbrowse/v1/v/tracks/hide', configs );
+				}
+			}),
+			style: {
+				position: 'absolute',
+				right: '16px',
 				top: '2px'
 			}
 		}, this.textFilterDiv );
@@ -536,6 +580,24 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 
 });
 });
+
+function getVisibleConfigs(div, trackConfigs) {
+	var visibleConfigs = [];
+	dojo.query( '.coge-experiment, .coge-notebook', div ) // TODO: optimize this
+	    .forEach( function( labelNode ) {
+	    	if (!dojo.hasClass(labelNode.parentNode, 'collapsed')) {
+	        	for (var i = 0;  i < trackConfigs.length;  i++) {
+	        		var conf = trackConfigs[i];
+	        		var trackId = conf.coge.type + '_' + conf.coge.id;
+	        		if (labelNode.id == trackId) {
+	        			visibleConfigs.push(conf);
+	    				return;
+	        		}
+	        	}
+	    	}
+	    });
+	return visibleConfigs;
+}
 
 function getFeatureColor(id) { //FIXME: dup'ed in MultiXYPlot.js
 	return '#' + ((((id * 1234321) % 0x1000000) | 0x444444) & 0xe7e7e7 ).toString(16); 
