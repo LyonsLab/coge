@@ -50,6 +50,17 @@ my $dbh = $coge->storage->dbh;
 # Audit 
 #-------------------------------------------------------------------------------
 
+# Verify users
+print STDERR "Verifying users ---------------------------------------------\n";
+foreach my $user ($coge->resultset('User')->all) {
+	my %children;
+	foreach my $conn ($user->child_connectors) {
+		if (++$children{$conn->child_type}{$conn->child_id} == 2) {
+			print STDERR "User " . $user->id . " has redundant user_connector for child " . $conn->child_id . "\n";
+		}
+	}
+}
+
 # Verify groups
 print STDERR "Verifying groups ---------------------------------------------\n";
 foreach my $group ($coge->resultset('UserGroup')->all) {
