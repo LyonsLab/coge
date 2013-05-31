@@ -220,7 +220,7 @@ $(document).ready(function(){
    <th>Group Description</th>
    <th>Role</th>
    <th>Current Members</th>
-   <th>Lists</th>
+   <th>Data</th>
    <TMPL_IF BUTTONS>
    <th>Edit</th>
    <th>Delete</th>
@@ -253,7 +253,7 @@ $(document).ready(function(){
    <td><TMPL_VAR NAME=DESC></td>
    <td><TMPL_VAR NAME=ROLE></td>
    <td><TMPL_VAR NAME=MEMBERS></td>
-   <td><TMPL_VAR NAME=LISTS></td>
+   <td><TMPL_VAR NAME=DATA></td>
    <TMPL_IF BUTTONS>
    <td align='center'><TMPL_VAR NAME=EDIT_BUTTON></td>
    <td align='center'><TMPL_VAR NAME=DELETE_BUTTON></td>
@@ -270,3 +270,4 @@ $(document).ready(function(){
 <hr>
 Admin Functions:<br>
 </TMPL_IF> <!-- ADMIN_AREA -->
+
