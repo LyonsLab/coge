@@ -461,16 +461,45 @@ sub annotation_pretty_print_html
 	}
 	$anno_obj->add_Annot($anno_type);
 
-	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . "Notebooks" . "</span>" );
-	$anno_type->Type_delimit(": <td class=\"data5\">");
-	$anno_type->Val_delimit("<br>");
-	foreach my $list ($self->lists) {
-		my $a = $list->info_html . ($allow_delete ? "<span class='link ui-icon ui-icon-trash' onclick=\"remove_list_from_group({ugid: '" . $self->id . "', lid: '" . $list->id . "'});\"></span>" : '');
-		$anno_type->add_Annot($a);
-	}
-	$anno_obj->add_Annot($anno_type);
+	my @lists = $self->lists;
+	if (@lists)
+	  {
+	    $anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . "Notebooks" . "</span>" );
+	    $anno_type->Type_delimit(": <td class=\"data5\">");
+	    $anno_type->Val_delimit("<br>");
+	    foreach my $list (@lists) {
+	      my $a = $list->info_html . ($allow_delete ? "<span class='link ui-icon ui-icon-trash' onclick=\"remove_list_from_group({ugid: '" . $self->id . "', lid: '" . $list->id . "'});\"></span>" : '');
+	      $anno_type->add_Annot($a);
+	    }
+	    $anno_obj->add_Annot($anno_type);
+	  }
+	
+	my @genomes = $self->genomes;
+	if (@genomes)
+	  {
+	    $anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . "Genomes" . "</span>" );
+	    $anno_type->Type_delimit(": <td class=\"data5\">");
+	    $anno_type->Val_delimit("<br>");
+	    foreach my $item (@genomes) {
+	      my $a = $item->info_html;
+	      $anno_type->add_Annot($a);
+	    }
+	    $anno_obj->add_Annot($anno_type);
+	  }
 
-  return "<table cellpadding=0 class='small'>".$anno_obj->to_String."</table>";
+	my @exps = $self->experiments;
+	if (@exps)
+	  {
+	    $anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . "Experiments" . "</span>" );
+	    $anno_type->Type_delimit(": <td class=\"data5\">");
+	    $anno_type->Val_delimit("<br>");
+	    foreach my $item ($self->experiments) {
+	      my $a = $item->info_html;
+	      $anno_type->add_Annot($a);
+	    }
+	    $anno_obj->add_Annot($anno_type);
+	  }
+	return "<table cellpadding=0 class='small'>".$anno_obj->to_String."</table>";
 }
 
 =head1 BUGS
