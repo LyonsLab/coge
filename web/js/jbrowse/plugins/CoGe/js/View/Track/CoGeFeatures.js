@@ -430,6 +430,13 @@ define( [
                                     this._removeYScale();
                                     this.fillFeatures( dojo.mixin( {stats: stats}, args ) );
                                 }
+
+                                seperatorDiv = '<div class="geneSeperator"></div>'
+                                block.domNode.insertAdjacentHTML("AfterBegin", seperatorDiv);
+
+                                console.log( block.domNode );
+                                console.log( this.div );
+
                                 }),
                             dojo.hitch( this, 'fillBlockError', blockIndex, block )
                                 );
@@ -878,6 +885,8 @@ define( [
                                                    if (feature.get('type') == 'gene') {
                                                        top += 8;
                                                        labelPadding = 6;
+                                                   } else if (feature.get('type') == 'mRNA') {
+                                                       top += 5;
                                                    }
 
                                                    types = ["mRNA","CDS","gene"]
