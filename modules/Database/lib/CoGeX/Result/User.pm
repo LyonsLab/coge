@@ -718,7 +718,8 @@ sub users_with_access {
 	return wantarray ? values %users : [ values %users ];	
 }
 
-sub child_connector { # only call for type genome/experiment, not group/list
+# Only call for children of type genome/experiment, not group/list. 
+sub child_connector { 
 	my $self = shift;
 	return unless $self->id; # ignore public user
 	my %opts = @_;
@@ -726,7 +727,7 @@ sub child_connector { # only call for type genome/experiment, not group/list
 	my $type = $opts{type};
 	my $type_num = $node_types->{$type};
 
-	# Scan user's items
+	# Scan user's items - assumes there is only one user connector at this level
 	foreach ($self->child_connectors({child_id=>$id, child_type=>$type_num})) {
 		return $_;
 	}
@@ -752,7 +753,7 @@ sub child_connector { # only call for type genome/experiment, not group/list
 			foreach my $conn ($group->list_connectors) {
 				my $list = $conn->child;
 				foreach ($list->child_connectors({child_id=>$id, child_type=>$type_num})) {
-					return $conn;	
+					return $conn;
 				}
 			}
 		}
