@@ -806,7 +806,7 @@ sub search_experiments {
 	my %exists;
 	map { $exists{$_->id}++ } $list->experiments;
 	
-	my @experiments;
+	my %unique;
 	my $num_results;
 	
 	# Try to get all items if blank search term
@@ -814,23 +814,23 @@ sub search_experiments {
 		# Get all experiments
 		$num_results = $coge->resultset("Experiment")->count;
 		if ($num_results < $MAX_SEARCH_RESULTS) {
-			@experiments = $coge->resultset("Experiment")->search({deleted => 0});
+			map { $unique{$_->id} = $_ } $coge->resultset("Experiment")->search({deleted => 0});
 		}
 	}
 	# Perform search
 	else {
 		# Get user's private experiments
 		foreach ($USER->experiments(restricted => 1)) {
-			push @experiments, $_ if ($_->name =~ /$search_term/i or $_->description =~ /$search_term/i);
+			$unique{$_->id} = $_ if ($_->name =~ /$search_term/i or $_->description =~ /$search_term/i);
 		}
 		
 		# Get all public experiments
 		$search_term = '%'.$search_term.'%';
-		push @experiments, $coge->resultset("Experiment")->search(
+		map { $unique{$_->id} = $_ } $coge->resultset("Experiment")->search(
 			\[ 'restricted=? AND deleted=? AND (name LIKE ? OR description LIKE ?)', 
 			['restricted', 0], ['deleted', 0], ['name', $search_term ], ['description', $search_term] ]);
 			
-		$num_results = @experiments;
+		$num_results = keys %unique;
 	}
 	
 	# Limit number of results displayed
@@ -843,7 +843,7 @@ sub search_experiments {
 	
 	# Build select items out of results
 	my $html;
-	foreach my $exp (sort experimentcmp @experiments) {
+	foreach my $exp (sort experimentcmp values %unique) {
 		my $disable = $exists{$exp->id} ? "disabled='disabled'" : '';
 		my $item_spec = $node_types->{experiment} . ':' . $exp->id; 
 		$html .= "<option $disable value='$item_spec'>" . $exp->info . "</option><br>\n";	
