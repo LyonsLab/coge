@@ -247,19 +247,20 @@ sub get_groups_for_user
 
 #		push @users, "Self only" unless @users;
 		$row{MEMBERS} = join( ",<br>", sort @users );
-		my %lists;
-		foreach my $list (sort { $a->type->name cmp $b->type->name || $a->name cmp $b->name } $group->lists ) {
-			my $name;
-			$name .= "&reg; " if $list->restricted;
-			$name .= $list->name;
-			$name = qq{<span class="link" onclick="window.open('NotebookView.pl?lid=} . $list->id . qq{');">} . $name . "</span>";
-			push @{ $lists{ $list->type->name } }, $name;
+		my @data;
+		foreach my $item (sort { $a->type->name cmp $b->type->name || $a->name cmp $b->name } $group->lists ) {
+			my $name = qq{<img src="picts/notebook-icon.png" width="15" height="15"/>} . $item->info_html;
+			push @data, $name;
 		}
-		my $lists;
-		foreach my $type ( sort keys %lists ) {
-			$lists .= $type . ': ' . join(', ', @{ $lists{$type} }) . '<br>';
+		foreach my $item (sort { $a->name cmp $b->name } $group->experiments ) {
+			my $name = qq{<img src="picts/testtube-icon.png" width="15" height="15"/>} . $item->info_html;
+			push @data, $name;
 		}
-		$row{LISTS} = $lists;
+		foreach my $item (sort { $a->name cmp $b->name } $group->genomes ) {
+			my $name = qq{<img src="picts/dna-icon.png" width="15" height="15"/>} . $item->info_html;
+			push @data, $name;
+		}
+		$row{DATA} = join ("<br>",@data);
 
 		$row{BUTTONS} = 1;
 		if ($is_editable) {
