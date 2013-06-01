@@ -23,5 +23,6 @@ div.tracklist-container.collapsed {
     height: 16px;
 } */
 
-
-
+div.notebook-indent {
+	padding-left: 25px;
+}

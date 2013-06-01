@@ -67,15 +67,44 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	                                function(c) {return c;}
 	                            );
 	                            
-	                            // return if no confs; whatever was dragged here probably wasn't a track
-	                            if( ! confs.length )
-	                                return;
-
-	                            
-	                            // un-highlight track to show it is disabled
-	                            this.dndDrop = true;
-	                            this.browser.publish( '/jbrowse/v1/v/tracks/hide', confs ); // mdb: why not just call setTrackInactive directly?
-	                            this.dndDrop = false;
+	                            // return if no confs; whatever was dragged here probably wasn't a track from browser
+	                            if( confs.length ) {
+		                            // un-highlight track to show it is disabled
+		                            this.dndDrop = true;
+		                            this.browser.publish( '/jbrowse/v1/v/tracks/hide', confs ); // mdb: why not just call setTrackInactive directly?
+		                            this.dndDrop = false;
+	                            }
+	                            else { // dragged-in from track selector
+	                            	var notebookId;
+	                            	target.getAllNodes().forEach( function(node) { // FIXME: kludge
+	                            		dojo.query('.coge-notebook', node).forEach( function(n) {
+	                            			notebookId = new String(n.id).match(/\d+/);
+	                            		});
+	                            	});
+	                            	
+	                            	if (notebookId) {
+		                            	nodes.forEach( function(node) { // TODO: move searches like this into subroutine or hash
+		                            		args.trackConfigs.forEach( function(conf) {
+		                            			var id = conf.coge.type + '_' + conf.coge.id;
+		                            			if (id == node.firstChild.id) {
+			                            			var deferred = dojo.xhrPut({
+			                      					    url: "NotebookView.pl",
+			                    					    putData: {
+			                    					    	fname: 'add_item_to_list',
+			                    					    	lid: notebookId,
+			                    					    	item_spec: '3:'+conf.coge.id, // FIXME: hardcoded type to experiment
+			                    					    },
+			                    					    handleAs: "json"
+		                    					    });
+		                            			}
+		                            		});
+		                            	});
+		                            	target.getAllNodes().forEach( function(node) { // FIXME: kludge
+		                            		dojo.query('.coge-tracklist-label.coge-experiment', node).addClass('notebook-indent');
+		                            	});
+		                            	
+	                            	}
+	                            }
             				}
                         }
                       ));
@@ -231,26 +260,30 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 //                }),
                 creator: dojo.hitch( this, function( trackConfig, hint ) {
                 	console.log('creator');
+                	
                 	var id = trackConfig.coge.type + '_' + trackConfig.coge.id;
                 	var name = ('name' in trackConfig.coge ? trackConfig.coge.name : trackConfig.key);
                 	var node = this._createLabelNode( trackConfig );
+                	
                 	if (trackConfig.coge.type == 'notebook') {
                 		node.innerHTML = '<img style="padding-right:3px" src="picts/notebook-icon-small.png">' + 
                 			'<span class="tracklist-text">' + name + '</span>';
                 	}
                 	else if (trackConfig.coge.type == 'experiment') {
-                		node.innerHTML = (trackConfig.coge.notebooks ? '<span style="padding-left:25px;"></span>' : '') 
-                              	+ '<img src="picts/testtube-icon-small.png" />' + ' ' + 
+                		node.innerHTML = '<img src="picts/testtube-icon-small.png" />' + ' ' + 
                               	'<span class="tracklist-text">' + name + '</span>';
+                		if (trackConfig.coge.notebooks) {
+                			dojo.addClass(node, 'notebook-indent');
+                		}
                 	}
                 	else {
                 		node.innerHTML = '<span class="tracklist-text">' + name + '</span>';
                 	}
+                	
                 	node.id = id;
                 	
-                    // in the list, wrap the list item in a container for border drag-insertion-point monkeying
-                    dojo.connect( node, "click", dojo.hitch(this, function() {
-                    	//console.log('click ' + node.id);
+                    dojo.connect( node, "click", dojo.hitch(this, function(e) {
+                    	//console.log('click ' + node.id + ' ' + e.shiftKey);
                     	if (dojo.hasClass(node, 'selected')) {
                     		this.browser.publish( '/jbrowse/v1/v/tracks/hide', [trackConfig] );
                     	}
@@ -259,6 +292,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                     	}
                     }));
                     
+                    // in the list, wrap the list item in a container for border drag-insertion-point monkeying
                     var container = dojo.create( 'div', { className: 'tracklist-container' });
                     
                     if (trackConfig.coge.type == 'experiment') { 
@@ -352,7 +386,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 		}, this.textFilterDiv );
 		
 		this.textFilterAddAllButton = dom.create('div', {
-			//className: 'cogeIconPlus', // FIXME: why not work?
+			//className: 'cogeIconPlus', // FIXME: why no work?
 			innerHTML: '<img src="js/jbrowse/plugins/CoGe/img/plus.png">',
 			onclick: dojo.hitch( this, function() {
 				var configs = getVisibleConfigs(this.div, trackConfigs);
@@ -378,7 +412,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 		}, this.textFilterDiv );
 		
 		this.textFilterClearAllButton = dom.create('div', {
-			//className: 'cogeIconTest', // FIXME: why not work?
+			//className: 'cogeIconTest', // FIXME: why no work?
 			innerHTML: '<img src="js/jbrowse/plugins/CoGe/img/clear.png">',
 			onclick: dojo.hitch( this, function() {
 				var configs = getVisibleConfigs(this.div, trackConfigs);
