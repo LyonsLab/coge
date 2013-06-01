@@ -316,7 +316,6 @@ sub get_sequence {
 	my $rc         = $opts{rc};
 	my $fasta;
 	my $prot = $blast_type =~ /blast_type_p/ ? 1 : 0;
-
 	if ($fids) {
 		foreach my $fid ( split(/,/, $fids) ) {
 			my $gstidt;
