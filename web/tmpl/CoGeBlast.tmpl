@@ -836,6 +836,7 @@ function get_seq(which_type) {
 	dsgid = seqObj.dsgid;
 	featid = seqObj.featid;
 	chr = seqObj.chr;
+        var program = get_radio(which_type,"coge");
 	if (featid) {
 		$('#seq_box').val('Loading ...');
 		$.ajax({
@@ -843,7 +844,7 @@ function get_seq(which_type) {
 				jquery_ajax: 1,
 				fname: 'get_sequence',
 				fid: featid,
-				blast_type: which_type,
+				blast_type: program,
 				upstream: seqObj.upstream,
 				downstream: seqObj.downstream,
 				rc: seqObj.rc,
@@ -874,7 +875,7 @@ function get_seq(which_type) {
 				fname: 'get_sequence',
 				dsid: dsid,
 				dsgid: dsgid,
-				blast_type: which_type,
+				blast_type: program,
 				start: seqObj.upstream,
 				stop: seqObj.downstream,
 				gstid: seqObj.gstid
