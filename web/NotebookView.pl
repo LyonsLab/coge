@@ -616,9 +616,10 @@ sub add_item_to_list {
 	return 0 unless $item_spec;
 	
 	my ($item_type, $item_id) = split(/:/, $item_spec);
-#	print STDERR "add_item_to_list: $item_type $item_id\n";
+	#print STDERR "add_item_to_list: lid=$lid item_type=$item_type item_id=$item_id\n";
 	
 	my $lc = $coge->resultset('ListConnector')->create( { parent_id => $lid, child_id => $item_id, child_type => $item_type } );	
+	return 0 unless $lc;
 
 	return 1;
 }
