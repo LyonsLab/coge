@@ -880,11 +880,8 @@ define( [
                                                        top = 81;
                                                    }
 
-                                                   labelPadding = 0;
-
                                                    if (feature.get('type') == 'gene') {
                                                        top += 8;
-                                                       labelPadding = 6;
                                                    } else if (feature.get('type') == 'mRNA') {
                                                        top += 5;
                                                    }
@@ -923,13 +920,13 @@ define( [
                                                        }
                                                    }
 
-                                                   if (name && this.showLabels && scale >= labelScale || description ) {
+                                                   if (name && this.showLabels && feature.get('type') == 'gene' && scale >= labelScale || description ) {
                                                        var labelDiv = dojo.create( 'div', {
                                                            className: "feature-label" + ( highlighted ? ' highlighted' : '' ),
                                                            innerHTML:  ( name ? '<div class="feature-name">'+name+'</div>' : '' )
                                                            +( description ? ' <div class="feature-description">'+description+'</div>' : '' ),
                                                            style: {
-                                                               top: (top + labelPadding + this.glyphHeight + 2) + "px",
+                                                               top: (top + this.glyphHeight - 7) + "px",
                                                            left: (100 * (layoutStart - block.startBase) / blockWidth)+'%'
                                                            }
                                                        }, block.domNode );
