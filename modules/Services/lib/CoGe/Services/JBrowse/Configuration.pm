@@ -151,8 +151,9 @@ sub track_config {
             maxFeatureScreenDensity => 10,
          	style => {
             	className => "cds",
-            	featureScale => 0,
-            	histScale => 0
+              labelScale => 0.01,
+            	histScale => 0,
+              labelScale => 0.02,
          	},
          	# CoGe-specific stuff
          	coge => {
