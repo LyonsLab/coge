@@ -124,7 +124,7 @@ def an_features(environ, start_response):
 
     # set parsed argument variables
     dataset_id = int(args['dataset_id'])
-    chr_id = int(args['chr_id'])
+    chr_id = args['chr_id']
     start = int(start)
     end = int(end)
 
