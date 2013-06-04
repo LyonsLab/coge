@@ -304,7 +304,7 @@ sub process_fasta_file {
 			exit(-1);
 		}
 		if (length $seq == 0) {
-			print $log "log: warning: skipping zero-length section '$chr'";
+			print $log "log: warning: skipping zero-length section '$chr'\n";
 			next;
 		}		
 		if (length($chr) > $MAX_CHR_NAME_LENGTH) {
