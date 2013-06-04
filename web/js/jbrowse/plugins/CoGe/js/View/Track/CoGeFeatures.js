@@ -434,8 +434,8 @@ define( [
                                 seperatorDiv = '<div class="geneSeperator"></div>'
                                 block.domNode.insertAdjacentHTML("AfterBegin", seperatorDiv);
 
-                                console.log( block.domNode );
-                                console.log( this.div );
+                                //console.log( block.domNode );
+                                //console.log( this.div );
 
                                 }),
                             dojo.hitch( this, 'fillBlockError', blockIndex, block )
