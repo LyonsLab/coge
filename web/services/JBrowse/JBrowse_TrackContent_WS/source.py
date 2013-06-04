@@ -3,6 +3,7 @@ import json
 import math
 import re
 import random
+import os
 from cgi import parse_qs, escape
 
 def not_found(environ, start_response):
@@ -10,10 +11,12 @@ def not_found(environ, start_response):
     start_response('404 NOT FOUND', [('Content-Type', 'text/plain')])
     return [environ.get('PATH_INFO', '').lstrip('/')]
 
-def db_connect(config_file_path):
+def db_connect():
+    dir = os.path.dirname(__file__)
+    path = os.path.join(dir, '../../../coge.conf')
     config = {}
     # Open config settings from config file
-    f = open(config_file_path)
+    f = open(path)
 
     # Parse config settings from opened file
     for line in f:
@@ -50,7 +53,7 @@ def gc_features(environ, start_response):
     genome_id = int(args['genome_id'])
     chr_id = args['chr_id']
 
-    con = db_connect('/opt/apache2/CoGe/coge.conf')
+    con = db_connect()
     cur = con.cursor()
 
     try:
@@ -123,12 +126,12 @@ def an_features(environ, start_response):
     args = environ['url_args']
 
     # set parsed argument variables
-    dataset_id = int(args['dataset_id'])
+    dataset_id = args['dataset_id']
     chr_id = args['chr_id']
-    start = int(start)
-    end = int(end)
+    start = start
+    end = end
 
-    con = db_connect('/opt/apache2/CoGe/coge.conf')
+    con = db_connect()
     cur = con.cursor()
 
     try:
@@ -137,7 +140,7 @@ def an_features(environ, start_response):
                 JOIN feature f ON f.feature_id = l.feature_id \
                 JOIN feature_name fn ON f.feature_id = fn.feature_id \
                 JOIN feature_type ft ON f.feature_type_id = ft.feature_type_id \
-                WHERE f.dataset_id = {0} AND f.chromosome = {1} \
+                WHERE f.dataset_id = {0} AND f.chromosome = '{1}' \
                 AND f.stop > {2} AND f.start <= {3} \
                 AND fn.primary_name = 1;"
                     .format(dataset_id, chr_id, start, end))
