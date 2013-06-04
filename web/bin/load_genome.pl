@@ -281,11 +281,6 @@ sub process_fasta_file {
 		$seq =~ s/\n//g;
 		$lineNum++;
 
-		if ($seq =~ /\W/) {
-			print $log "log: error: sequence contains non-alphanumeric characters, perhaps this is not a FASTA file?\n";
-			exit(-1);
-		}
-
 		my $chr;
 		if ($keep_headers) {
 			$chr = $name;
@@ -303,17 +298,25 @@ sub process_fasta_file {
 			$chr =~ s/\s$//;
 		}
 
-		#TODO add more checks on chr name and sequence here
+		# Check validity of chr name and sequence
 		if (not $chr) {
 			print $log "log: error parsing section header, line $lineNum, name='$name'\n";
 			exit(-1);
 		}
+		if (length $seq == 0) {
+			print $log "log: warning: skipping zero-length section '$chr'";
+			next;
+		}		
 		if (length($chr) > $MAX_CHR_NAME_LENGTH) {
 			print $log "log: error: section header name '$chr' is too long (>$MAX_CHR_NAME_LENGTH characters)\n";
 			exit(-1);
 		}
 		if (defined $pSeq->{$chr}) {
 			print $log "log: error: Duplicate section name '$chr'";
+			exit(-1);
+		}
+		if ($seq =~ /\W/) {
+			print $log "log: error: sequence contains non-alphanumeric characters, perhaps this is not a FASTA file?\n";
 			exit(-1);
 		}
 
