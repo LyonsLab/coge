@@ -380,7 +380,7 @@ function undelete_items() {
 function add_to_notebook_dialog() {
 	var selected = get_selected_items();
 	if (selected.length) {
-		$('#add_to_notebook_dialog').dialog({width:500,height:270}).dialog('open');
+		$('#add_to_notebook_dialog').dialog({width:500,height:250}).dialog('open');
 	}
 }
 
@@ -869,7 +869,7 @@ function toggle_star(img) {
 		</tr>
 	</table>
 	<br>
-	<span href="javascript:void(0)" onClick="add_items_to_notebook();" class='ui-button ui-button-go ui-corner-all'>Add Items</span>
+	<span href="javascript:void(0)" onClick="add_items_to_notebook();" class='ui-button ui-corner-all'>Add Items</span>
 </div>
 
 <div id="create_group_dialog" class="dialog_box" title="Create New Group" style="display:none;">
