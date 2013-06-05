@@ -369,7 +369,7 @@ sub add_annotation {
 	my $image_filename = $opts{edit_annotation_image};
 	my $fh = $FORM->upload('edit_annotation_image');
 	#return "Image file is too large (>10MB)" if (-s $fh > 10*1024*1024); # FIXME
-	print STDERR "add_annotation: $lid\n";
+	#print STDERR "add_annotation: $lid\n";
 	
 	if ($link) {
 		$link =~ s/^\s+//;
@@ -423,7 +423,6 @@ sub add_annotation {
 		} );
 	return 0 unless $la;
 	
-	print STDERR "add_annotation: done\n";
 	return 1;
 }
 
@@ -618,7 +617,7 @@ sub add_item_to_list {
 	my ($item_type, $item_id) = split(/:/, $item_spec);
 	#print STDERR "add_item_to_list: lid=$lid item_type=$item_type item_id=$item_id\n";
 	
-	my $lc = $coge->resultset('ListConnector')->create( { parent_id => $lid, child_id => $item_id, child_type => $item_type } );	
+	my $lc = $coge->resultset('ListConnector')->find_or_create( { parent_id => $lid, child_id => $item_id, child_type => $item_type } );	
 	return 0 unless $lc;
 
 	return 1;
