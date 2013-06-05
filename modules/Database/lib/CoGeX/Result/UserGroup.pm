@@ -461,39 +461,65 @@ sub annotation_pretty_print_html
 	}
 	$anno_obj->add_Annot($anno_type);
 
+	my %genomes;
+	my %experiments;
+	my %lists;
 	my @lists = $self->lists;
-	if (@lists)
+	foreach my $list (@lists)
+	  {
+	    $lists{$list->id}=$list;
+	    my $items = $self->_process_list(list=>$list, anno_type=>$anno_type, anno_obj=>$anno_obj);
+	    foreach my $exp (@{$item->experiements})
+	      {
+		$experiments{$exp->id}=$exp;
+	      }
+	    foreach my $genome (@{$item->genomes})
+	      {
+		$genomes{$genome->id}=$genome;
+	      }
+	    foreach my $item (@{$item->lists})
+	      {
+		$lists{$list->id} = $list;
+		my $data = $self->process_list(list=>$list);
+		map {$genomes{$_->id}=$_} ${$data->{genomes}};
+		map {$experiments{$_->id}=$_} ${$data->{experiments}};
+		map {$lists{$_->id}=$_} ${$data->{lists}};
+	      }
+	  }
+
+	if (values %lists)
 	  {
 	    $anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . "Notebooks" . "</span>" );
 	    $anno_type->Type_delimit(": <td class=\"data5\">");
 	    $anno_type->Val_delimit("<br>");
-	    foreach my $list (@lists) {
+	    foreach my $list (values %lists) {
 	      my $a = $list->info_html . ($allow_delete ? "<span class='link ui-icon ui-icon-trash' onclick=\"remove_list_from_group({ugid: '" . $self->id . "', lid: '" . $list->id . "'});\"></span>" : '');
 	      $anno_type->add_Annot($a);
 	    }
 	    $anno_obj->add_Annot($anno_type);
 	  }
 	
-	my @genomes = $self->genomes;
-	if (@genomes)
+#	my @genomes = $self->genomes;
+	if (values %genomes))
 	  {
 	    $anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . "Genomes" . "</span>" );
 	    $anno_type->Type_delimit(": <td class=\"data5\">");
 	    $anno_type->Val_delimit("<br>");
-	    foreach my $item (@genomes) {
+	    foreach my $item (values %genomes) {
 	      my $a = $item->info_html;
 	      $anno_type->add_Annot($a);
 	    }
 	    $anno_obj->add_Annot($anno_type);
 	  }
 
-	my @exps = $self->experiments;
-	if (@exps)
+#	my $exps = $self->experiments;
+
+	if (values %exps)
 	  {
 	    $anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . "Experiments" . "</span>" );
 	    $anno_type->Type_delimit(": <td class=\"data5\">");
 	    $anno_type->Val_delimit("<br>");
-	    foreach my $item ($self->experiments) {
+	    foreach my $item (values %exps) {
 	      my $a = $item->info_html;
 	      $anno_type->add_Annot($a);
 	    }
@@ -501,6 +527,18 @@ sub annotation_pretty_print_html
 	  }
 	return "<table cellpadding=0 class='small'>".$anno_obj->to_String."</table>";
 }
+
+sub _process_list
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $list = $opts{list};
+
+    my %experiments = map{$_->id, $_} $list->experiments;
+    my %genomes = map{$_->id, $_} $list->genomes;
+    my %lists = map{$_->id, $_} $list->lists;
+    return {experiments=>[$list->experiments], genomes=>[$list->genomes], lists=>[$list->lists]}
+  }
 
 =head1 BUGS
 
