@@ -318,18 +318,22 @@ sub remove_user_from_group {
 	if ( $uid == $USER->id && !$USER->is_admin ) { # only allow this for admins
 		return "Can't remove yourself from a group!";
 	}
-	if ( $uid == $group->owner->id && !$USER->is_admin ) { # only allow this for admins
+	if ( $group->owner && $uid == $group->owner->id && !$USER->is_admin ) { # only allow this for admins
 		return "Can't remove the group owner!";
-	}	
+	}
+	if ( $uid == $group->creator_user_id && !$USER->is_admin ) { # only allow this for admins
+		return "Can't remove the group creator!";
+	}
 
 	# Remove all user connections to group
-	my @conns = $coge->resultset('UserConnector')->search({ 
-    	parent_id => $uid,
-    	parent_type => 5, #FIXME hardcoded to "user"
-    	child_id => $ugid,
-    	child_type => 6, #FIXME hardcoded to "group"
-	});
-	foreach (@conns) {
+	foreach (
+		$coge->resultset('UserConnector')->search({ 
+	    	parent_id => $uid,
+	    	parent_type => 5, #FIXME hardcoded to "user"
+	    	child_id => $ugid,
+	    	child_type => 6, #FIXME hardcoded to "group"
+		})) 
+	{
 		$_->delete;
 	}
 	
