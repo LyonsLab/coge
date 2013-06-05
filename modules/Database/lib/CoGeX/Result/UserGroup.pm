@@ -2,6 +2,7 @@ package CoGeX::Result::UserGroup;
 
 use strict;
 use warnings;
+use Data::Dumper;
 
 use base 'DBIx::Class::Core';
 
@@ -461,38 +462,37 @@ sub annotation_pretty_print_html
 	}
 	$anno_obj->add_Annot($anno_type);
 
-	my %genomes;
-	my %experiments;
+	my %genomes = map {$_->id, $_} $self->genomes;
+	my %experiments = map {$_->id, $_} $self->experiments;
 	my %lists;
 	my @lists = $self->lists;
 	foreach my $list (@lists)
 	  {
 	    $lists{$list->id}=$list;
 	    my $items = $self->_process_list(list=>$list, anno_type=>$anno_type, anno_obj=>$anno_obj);
-	    foreach my $exp (@{$item->experiements})
+	    foreach my $exp (@{$items->{experiments}})
 	      {
 		$experiments{$exp->id}=$exp;
 	      }
-	    foreach my $genome (@{$item->genomes})
+	    foreach my $genome (@{$items->{genomes}})
 	      {
 		$genomes{$genome->id}=$genome;
 	      }
-	    foreach my $item (@{$item->lists})
+	    foreach my $item (@{$items->{lists}})
 	      {
-		$lists{$list->id} = $list;
-		my $data = $self->process_list(list=>$list);
-		map {$genomes{$_->id}=$_} ${$data->{genomes}};
-		map {$experiments{$_->id}=$_} ${$data->{experiments}};
-		map {$lists{$_->id}=$_} ${$data->{lists}};
+		$lists{$item->id} = $item;
+		my $data = $self->_process_list(list=>$item);
+		map {$genomes{$_->id}=$_} @{$data->{genomes}};
+		map {$experiments{$_->id}=$_} @{$data->{experiments}};
+		map {$lists{$_->id}=$_} @{$data->{lists}};
 	      }
 	  }
-
 	if (values %lists)
 	  {
 	    $anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . "Notebooks" . "</span>" );
 	    $anno_type->Type_delimit(": <td class=\"data5\">");
 	    $anno_type->Val_delimit("<br>");
-	    foreach my $list (values %lists) {
+	    foreach my $list (sort {$b->id <=> $a->id} values %lists) {
 	      my $a = $list->info_html . ($allow_delete ? "<span class='link ui-icon ui-icon-trash' onclick=\"remove_list_from_group({ugid: '" . $self->id . "', lid: '" . $list->id . "'});\"></span>" : '');
 	      $anno_type->add_Annot($a);
 	    }
@@ -500,12 +500,12 @@ sub annotation_pretty_print_html
 	  }
 	
 #	my @genomes = $self->genomes;
-	if (values %genomes))
+	if (values %genomes)
 	  {
 	    $anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . "Genomes" . "</span>" );
 	    $anno_type->Type_delimit(": <td class=\"data5\">");
 	    $anno_type->Val_delimit("<br>");
-	    foreach my $item (values %genomes) {
+	    foreach my $item (sort {$b->id <=> $a->id} values %genomes) {
 	      my $a = $item->info_html;
 	      $anno_type->add_Annot($a);
 	    }
@@ -514,12 +514,12 @@ sub annotation_pretty_print_html
 
 #	my $exps = $self->experiments;
 
-	if (values %exps)
+	if (values %experiments)
 	  {
 	    $anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . "Experiments" . "</span>" );
 	    $anno_type->Type_delimit(": <td class=\"data5\">");
 	    $anno_type->Val_delimit("<br>");
-	    foreach my $item (values %exps) {
+	    foreach my $item (sort {$b->id <=> $a->id} values %experiments) {
 	      my $a = $item->info_html;
 	      $anno_type->add_Annot($a);
 	    }
