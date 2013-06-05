@@ -90,7 +90,7 @@ define( [
                             style: {
                                 arrowheadClass: 'arrowhead',
 
-                                className: "feature2",
+                                className: "cogefeature",
 
                                 // not configured by users
                                 _defaultHistScale: 4,
@@ -122,7 +122,7 @@ define( [
                             { label: function() {
                                                     return 'Highlight this '
                                                         +( this.feature && this.feature.get('type') ? this.feature.get('type')
-                                                                : 'feature'
+                                                                : 'cogefeature'
                                                          );
                                                 },
                             action: function() {
@@ -357,7 +357,7 @@ define( [
 
                         var blockWidth = block.endBase - block.startBase;
 
-                        dojo.query( '.feature', block.domNode )
+                        dojo.query( '.cogefeature', block.domNode )
                             .forEach( function(featDiv) {
                                 if( ! featDiv.label ) return;
                                 var labelDiv = featDiv.label;
@@ -685,7 +685,7 @@ define( [
                                                    heightTest = document.createElement("div");
                                                    //cover all the bases: stranded or not, phase or not
                                                    heightTest.className =
-                                                       "feature " + this.config.style.className
+                                                       "cogefeature " + this.config.style.className
                                                        + " plus-" + this.config.style.className
                                                        + " plus-" + this.config.style.className + "1";
                                                    if (this.config.style.featureCss)
@@ -836,16 +836,16 @@ define( [
 
                                                    var className = feature.get('type');
                                                    var strand = feature.get('strand');
-                                                   dojo.addClass(featDiv, "feature");
+                                                   dojo.addClass(featDiv, "cogefeature");
                                                    //var className = this.config.style.className;
                                                    //if (className == "{type}") { className = feature.get('type'); }
                                                    switch (strand) {
                                                        case 1:
                                                        case '+':
-                                                           dojo.addClass(featDiv, "plus-" + className); break;
+                                                           dojo.addClass(featDiv, "cogeplus-" + className); break;
                                                        case -1:
                                                        case '-':
-                                                           dojo.addClass(featDiv, "minus-" + className); break;
+                                                           dojo.addClass(featDiv, "cogeminus-" + className); break;
                                                        default:
                                                            dojo.addClass(featDiv, className);
                                                    }
@@ -886,7 +886,7 @@ define( [
                                                        top += 5;
                                                    }
 
-                                                   types = ["mRNA","CDS","gene"]
+                                                   types = ["mRNA","CDS","gene","rRNA","tRNA"]
 
                                                        if(types.indexOf(feature.get('type')) == -1) {
                                                            top = 5;
@@ -906,13 +906,13 @@ define( [
                                                            switch (strand) {
                                                                case 1:
                                                                case '+':
-                                                                   ah.className = "plus-" + this.config.style.arrowheadClass;
+                                                                   ah.className = "cogeplus-" + this.config.style.arrowheadClass;
                                                                    ah.style.cssText =  "right: "+(-this.plusArrowWidth) + "px";
                                                                    featDiv.appendChild(ah);
                                                                    break;
                                                                case -1:
                                                                case '-':
-                                                                   ah.className = "minus-" + this.config.style.arrowheadClass;
+                                                                   ah.className = "cogeminus-" + this.config.style.arrowheadClass;
                                                                    ah.style.cssText = "left: " + (-this.minusArrowWidth) + "px";
                                                                    featDiv.appendChild(ah);
                                                                    break;
@@ -1077,63 +1077,6 @@ define( [
                                                                                   menu.bindDomNode( featDiv.labelDiv );
 
                                                                               return menu;
-                                                                          },
-
-                                                                          renderSubfeature: function( feature, featDiv, subfeature, displayStart, displayEnd, block ) {
-                                                                              var subStart = subfeature.get('start');
-                                                                              var subEnd = subfeature.get('end');
-                                                                              var featLength = displayEnd - displayStart;
-                                                                              var type = subfeature.get('type');
-                                                                              var className;
-                                                                              if( this.config.style.subfeatureClasses ) {
-                                                                                  className = this.config.style.subfeatureClasses[type];
-                                                                                  // if no class mapping specified for type, default to subfeature.get('type')
-                                                                                  if (className === undefined) { className = type; }
-                                                                                  // if subfeatureClasses specifies that subfeature type explicitly maps to null className
-                                                                                  //     then don't render the feature
-                                                                                  else if (className === null)  {
-                                                                                      return null;
-                                                                                  }
-                                                                              }
-                                                                              else {
-                                                                                  // if no config.style.subfeatureClasses to specify subfeature class mapping, default to subfeature.get('type')
-                                                                                  className = type;
-                                                                              }
-
-                                                                              // a className of 'hidden' causes things to not even be rendered
-                                                                              if( className == 'hidden' )
-                                                                                  return null;
-
-                                                                              var subDiv = document.createElement("div");
-                                                                              dojo.addClass(subDiv, "subfeature");
-                                                                              // check for className to avoid adding "null", "plus-null", "minus-null"
-                                                                              if (className) {
-                                                                                  switch ( subfeature.get('strand') ) {
-                                                                                      case 1:
-                                                                                      case '+':
-                                                                                          dojo.addClass(subDiv, "plus-" + className); break;
-                                                                                      case -1:
-                                                                                      case '-':
-                                                                                          dojo.addClass(subDiv, "minus-" + className); break;
-                                                                                      default:
-                                                                                          dojo.addClass(subDiv, className);
-                                                                                  }
-                                                                              }
-
-                                                                              // if the feature has been truncated to where it doesn't cover
-                                                                              // this subfeature anymore, just skip this subfeature
-                                                                              if ( subEnd <= displayStart || subStart >= displayEnd )
-                                                                                  return null;
-
-                                                                              if (Util.is_ie6) subDiv.appendChild(document.createComment());
-
-                                                                              subDiv.style.cssText = "left: " + (100 * ((subStart - displayStart) / featLength)) + "%;"
-                                                                                  + "width: " + (100 * ((subEnd - subStart) / featLength)) + "%;";
-                                                                              featDiv.appendChild(subDiv);
-
-                                                                              block.featureNodes[ subfeature.id() ] = subDiv;
-
-                                                                              return subDiv;
                                                                           },
 
                                                                           _getLayout: function( scale ) {
