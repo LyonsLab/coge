@@ -635,6 +635,7 @@ sub remove_list_item {
 	
 	my $item_type = $opts{item_type};
 	my $item_id = $opts{item_id};
+	#print STDERR "remove_list_item: lid=$lid item_type=$item_type item_id=$item_id\n";
 	
 	my $lc = $coge->resultset('ListConnector')->find( { parent_id => $lid, child_id => $item_id, child_type =>$item_type } );
 	$lc->delete() if $lc;
