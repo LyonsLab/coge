@@ -229,6 +229,7 @@ sub track_config {
 #		    	neg_color => $color
 #		    },
 		    # CoGe-specific stuff
+		    onClick => "ExperimentView.pl?embed=1&eid=$eid",
 		    coge => {
 		    	id => $eid,
 		    	type => 'experiment',
