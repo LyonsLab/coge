@@ -319,7 +319,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 		// Add delete button
                 		var deleteButton = dom.create( // FIXME: how to put image in div using css?
                     			'img',
-                        	    {	src: 'js/jbrowse/plugins/CoGe/img/remove.png',
+                        	    {	src: 'js/jbrowse/plugins/CoGe/img/remove-icon.png',
                     				style: {
                     					visibility: 'hidden',
                     					float: 'right', padding: '3px', width: '14px', height: '14px' }
@@ -359,7 +359,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 		// Add info button
                 		var infoButton = dom.create( // FIXME: how to put image in div using css?
                     			'img',
-                        	    {	src: 'js/jbrowse/plugins/CoGe/img/info.png',
+                        	    {	src: 'js/jbrowse/plugins/CoGe/img/info-icon.png',
                     				style: {
                     					visibility: 'hidden',
                     					float: 'right', padding: '3px', width: '14px', height: '14px' }
@@ -385,7 +385,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                     	var button = dom.create( // FIXME: how to put image in div using css?
                     			'img',
                         	    {	className: 'notebookExpandIcon',
-                    				src: 'js/jbrowse/plugins/CoGe/img/arrow-right.png',
+                    				src: 'js/jbrowse/plugins/CoGe/img/arrow-right-icon.png',
                     				style: { float: 'right', padding: '3px' }
                         	    }, 
                         	    container
@@ -393,7 +393,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                     	dojo.connect( button, "click", dojo.hitch(this, function() {
                     		dojo.toggleClass(button, 'notebookExpandIcon notebookCollapseIcon');
                             if (dojo.hasClass(button, 'notebookExpandIcon')) {
-                            	button.src = 'js/jbrowse/plugins/CoGe/img/arrow-right.png';
+                            	button.src = 'js/jbrowse/plugins/CoGe/img/arrow-right-icon.png';
                             	// Hide child nodes
                             	var children = div.children;
                             	for (var i = 1;  i < children.length;  i++) {
@@ -401,7 +401,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                             	}
                             }
                             else {
-                            	button.src = 'js/jbrowse/plugins/CoGe/img/arrow-down.png';
+                            	button.src = 'js/jbrowse/plugins/CoGe/img/arrow-down-icon.png';
                             	// Show child nodes
                             	var children = div.children;
                             	for (var i = 1;  i < children.length;  i++) {
@@ -460,7 +460,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 		}, this.textFilterDiv );
 		
 		this.textFilterAddAllButton = dom.create('img', { // FIXME: style with css icon instead of img
-			src: 'js/jbrowse/plugins/CoGe/img/plus.png',
+			src: 'js/jbrowse/plugins/CoGe/img/plus-icon.png',
 			style: { position: 'absolute', right: '36px', top: '2px', width: '14px', height: '14px' },
 			onclick: dojo.hitch( this, function() {
 				var configs = getVisibleConfigs(this.div, trackConfigs);
@@ -481,7 +481,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 		}, this.textFilterDiv );
 		
 		this.textFilterClearAllButton = dom.create('img', { // FIXME: style with css icon instead of img
-			src: 'js/jbrowse/plugins/CoGe/img/clear.png',
+			src: 'js/jbrowse/plugins/CoGe/img/clear-icon.png',
 			onclick: dojo.hitch( this, function() {
 				var configs = getVisibleConfigs(this.div, trackConfigs);
 				if (configs.length) {
