@@ -669,7 +669,7 @@ define( [
                                            measureStyles: function() {
                                                //determine dimensions of labels (height, per-character width)
                                                var heightTest = document.createElement("div");
-                                               heightTest.className = "feature-label";
+                                               heightTest.className = "coge-feature-label";
                                                heightTest.style.height = "auto";
                                                heightTest.style.visibility = "hidden";
                                                heightTest.appendChild(document.createTextNode("1234567890"));
@@ -929,7 +929,7 @@ define( [
                                                        innerHTML:  ( name ? '<div class="feature-name">'+name+'</div>' : '' )
                                                        +( description ? ' <div class="feature-description">'+description+'</div>' : '' ),
                                                        style: {
-                                                           top: (top + this.glyphHeight - 7) + "px",
+                                                           top: (top + this.glyphHeight + 34) + "px",
                                                        left: (100 * (layoutStart - block.startBase) / blockWidth)+'%'
                                                        }
                                                    }, block.domNode );
