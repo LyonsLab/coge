@@ -4,6 +4,7 @@ import math
 import re
 import random
 import os
+from collections import Counter
 from cgi import parse_qs, escape
 
 def not_found(environ, start_response):
@@ -79,9 +80,10 @@ def gc_features(environ, start_response):
             bucketSize = int(1 / math.pow(2, math.log10(float(scale))) * 50)
 
         for i in xrange(0, len(string), bucketSize):
-            # Score becomes the length of the string subtracting all 'atn'
+            # Score becomes the length of the string subtracting all 'atnx'
             chunk = string[i:i+bucketSize]
-            score = len(re.sub('[atn]', '', chunk))
+            nucleotide = Counter(chunk).most_common(1)[0][0].lower()
+            score = len(re.sub('[atnx]', '', chunk))
             score = str(round(score / float(len(chunk)), 3))
             if (start + i + bucketSize < start):
                 k = start
@@ -95,6 +97,7 @@ def gc_features(environ, start_response):
                 "start": k,
                 "score": score,
                 "end": j,
+                "nucleotide": nucleotide,
             })
 
         response_body = json.dumps(response_body)
