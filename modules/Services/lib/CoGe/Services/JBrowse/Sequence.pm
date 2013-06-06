@@ -32,7 +32,7 @@ sub stats_global {
 
 sub features {
 	my $self = shift;
-	my $gid = $self->param('genome');
+	my $gid = $self->param('gid');
 	my $chr = $self->param('chr');
 	my $size = $self->query->param('seqChunkSize');
 	my $start = $self->query->param('start');

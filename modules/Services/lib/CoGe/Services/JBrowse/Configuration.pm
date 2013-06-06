@@ -162,6 +162,34 @@ sub track_config {
          	}
         };
 	}
+	
+	# Create a fake "all experiments" notebook for all genome's experiments
+#	my @all_experiments = map {$_->id} $genome->experiments;
+#	push @tracks,
+#		{
+#			key => 'All Experiments',
+#			baseUrl => "services/JBrowse/service.pl/experiment/genome/$gid/",
+#		    autocomplete => "all",
+#		    track => "notebook0",
+#		    label => "notebook0",
+#		    type => "CoGe/View/Track/Wiggle/MultiXYPlot",
+#		    storeClass => "JBrowse/Store/SeqFeature/REST",
+#			# CoGe-specific stuff
+#			showAverage => 0,
+#			coge => {
+#				id => 0, # use id of 0 to represent all experiments
+#				type => 'notebook',
+#				name => 'All Experiments',
+#				description => '',
+#				experiments => ,
+##				menuOptions => [
+##					{ label => 'NotebookView',
+##					  action => "function() { window.open( 'NotebookView.pl?nid=$nid' ); }"
+##					  # url => ... will open link in a dialog window
+##					}
+##				]
+#			}
+#		};
 
 	# Add experiment tracks
 	my %all_notebooks;
@@ -173,6 +201,7 @@ sub track_config {
 		# Make a list of notebook id's
 		my @notebooks = map {$_->id} $e->notebooks;
 		map { $all_notebooks{$_->id} = $_ } $e->notebooks;
+#		push @notebooks, 0; # add fake "all experiments" notebook
 
 		# Make a list of annotations
 		my @annotations;
@@ -190,8 +219,8 @@ sub track_config {
 		{
 			baseUrl => "services/JBrowse/service.pl/experiment/$eid/",
 		    autocomplete => "all",
-		    track => "exp$eid",
-		    label => "exp$eid",
+		    track => "experiment$eid",
+		    label => "experiment$eid",
 		    key => $e->name,
 		    type => "CoGe/View/Track/Wiggle/MultiXYPlot",#"JBrowse/View/Track/Wiggle/XYPlot",
 		    storeClass => "JBrowse/Store/SeqFeature/REST",
@@ -216,7 +245,7 @@ sub track_config {
 		    }
 		};
 	}
-
+	
 	# Add notebook tracks
 	foreach my $n (sort {$a->name cmp $b->name} values %all_notebooks) {
 		next if ($n->restricted and not $USER->has_access_to_list($n));

@@ -33,13 +33,14 @@ sub stats_global {
 
 sub features {
 	my $self = shift;
-	my $eid = $self->param('exp');
-	my $nid = $self->param('nb');
+	my $eid = $self->param('eid');
+	my $nid = $self->param('nid');
+	my $gid = $self->param('gid');
 	my $chr = $self->param('chr');
 	my $start = $self->query->param('start');
 	my $end = $self->query->param('end');
-	print STDERR "experiment features eid=" . ($eid ? $eid : '') . " nid=" . ($nid ? $nid : '') . " $chr:$start:$end\n";
-	return unless (($eid or $nid) and $chr and $start and $end);
+	print STDERR "experiment features eid=" . ($eid ? $eid : '') . " nid=" . ($nid ? $nid : '') . " gid=" . ($gid ? $gid : '') . " $chr:$start:$end\n";
+	return unless (($eid or $nid or $gid) and $chr and $start and $end);
 	
 	# Load config file
 	#print STDERR "conf = $coge_conf\n";
@@ -67,6 +68,11 @@ sub features {
 		my $notebook = $coge->resultset('List')->find($nid);
 		return unless $notebook;
 		push @experiments, $notebook->experiments;
+	}
+	elsif ($gid) {
+		my $genome = $coge->resultset('Genome')->find($gid);
+		return unless $genome;
+		push @experiments, $genome->experiments;
 	}
 	
 	my $results = '';

@@ -31,7 +31,7 @@ sub stats_global {
 
 sub features {
 	my $self = shift;
-	my $dsid = $self->param('ds');
+	my $dsid = $self->param('dsid');
 	my $chr = $self->param('chr');
 	my $start = $self->query->param('start');
 	my $end = $self->query->param('end');
