@@ -1,12 +1,15 @@
 define(['dojo/_base/declare',
         'dojo/_base/array',
         'dojo/dom-construct',
+        'dojo/dom-geometry',
+        'dojo/aspect',
         'dijit/layout/ContentPane',
         'dojo/dnd/Source',
         'dojo/fx/easing',
-        'dijit/form/TextBox'
+        'dijit/form/TextBox',
+        'dojo/mouse'
        ],
-       function( declare, array, dom, ContentPane, dndSource, animationEasing, dijitTextBox ) {
+       function( declare, array, dom, domGeom, aspect, ContentPane, dndSource, animationEasing, dijitTextBox, mouse ) {
 return declare( 'JBrowse.View.TrackList.CoGe', null,
 
     /** @lends JBrowse.View.TrackList.CoGe.prototype */
@@ -261,18 +264,6 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 	});
                 	return accept;
                 },
-//	            onDrop: function( source, nodes, copy ) {
-//	                console.log('onDrop');
-//	                return true;
-//	            },
-//                onDropExternal: dojo.hitch( this, function( source, nodes, copy ) {
-//                	console.log('onDropExternal');
-//                	return this.inherited(arguments);
-//                }),
-//                onDropInternal: dojo.hitch( this, function( source, nodes, copy ) {
-//	            	console.log('onDropInternal');
-//	            	return this.inherited(arguments);
-//                }),
                 creator: dojo.hitch( this, function( trackConfig, hint ) {
                 	console.log('creator');
                 	
@@ -319,14 +310,15 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 		// Add delete button
                 		var deleteButton = dom.create( // FIXME: how to put image in div using css?
                     			'img',
-                        	    {	src: 'js/jbrowse/plugins/CoGe/img/remove-icon.png',
-                    				style: {
+                        	    {	title: 'Remove experiment',
+                    				src: 'js/jbrowse/plugins/CoGe/img/remove-icon.png',
+                    				style: { // FIXME: move into css
                     					visibility: 'hidden',
                     					float: 'right', padding: '3px', width: '14px', height: '14px' }
                         	    }, 
                         	    container
                         	);
-                		dojo.connect( deleteButton, "click", dojo.hitch(this, function() {
+                		dojo.connect( deleteButton, "click", dojo.hitch(this, function(e) {
                 			var notebookName;
                         	var notebookId;
                     		dojo.query('.coge-notebook', div).forEach( function(n) {
@@ -359,7 +351,8 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 		// Add info button
                 		var infoButton = dom.create( // FIXME: how to put image in div using css?
                     			'img',
-                        	    {	src: 'js/jbrowse/plugins/CoGe/img/info-icon.png',
+                        	    {	title: 'Open info page',
+                    				src: 'js/jbrowse/plugins/CoGe/img/info-icon.png',
                     				style: {
                     					visibility: 'hidden',
                     					float: 'right', padding: '3px', width: '14px', height: '14px' }
@@ -368,15 +361,51 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                         	);
                 		
                 		dojo.connect( infoButton, "click", dojo.hitch(this, function() {
-                			window.open( 'ExperimentView.pl?eid=' + coge.id );
+                			//window.open( 'ExperimentView.pl?eid=' + coge.id );
+                			
+                			// Open dialog (copied from BlockBased.js)
+                			var iframeDims = function() {
+                                var d = domGeom.position( this.browser.container );
+                                return { h: Math.round(d.h * 0.8), w: Math.round( d.w * 0.8 ) };
+                            }.call(this);
+                			
+                            var dialog = new dijit.Dialog( { title: 'test' } );
+
+                            var iframe = dojo.create(
+                                'iframe', {
+                                    tabindex: "0",
+                                    width: iframeDims.w,
+                                    height: iframeDims.h,
+                                    style: { border: 'none' },
+                                    src: trackConfig.onClick
+                                });
+
+                            dialog.set( 'content', iframe );
+                            
+                            var updateIframeSize = function() {
+                                // hitch a ride on the dialog box's
+                                // layout function, which is called on
+                                // initial display, and when the window
+                                // is resized, to keep the iframe
+                                // sized to fit exactly in it.
+                                var cDims = domGeom.position( dialog.containerNode );
+                                var width  = cDims.w;
+                                var height = cDims.h - domGeom.position(dialog.titleBar).h;
+                                iframe.width = width;
+                                iframe.height = height;
+                            };
+                            aspect.after( dialog, 'layout', updateIframeSize );
+                            aspect.after( dialog, 'show', updateIframeSize );
+                            
+                            dialog.show();
                         }));
                 		
                 		// Show/hide buttons based on hover
-                		dojo.connect( container, "onmouseenter", function() {
+                		dojo.connect( container, "onmouseenter", function(e) {
                 			dojo.style(infoButton, 'visibility', 'visible');
                 			dojo.style(deleteButton, 'visibility', 'visible');
                         });
-                		dojo.connect( container, "onmouseleave", function() {
+                		dojo.connect( container, "onmouseleave", function(e) {
                 			dojo.style(infoButton, 'visibility', 'hidden');
                 			dojo.style(deleteButton, 'visibility', 'hidden');
                         });
@@ -386,7 +415,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                     			'img',
                         	    {	className: 'notebookExpandIcon',
                     				src: 'js/jbrowse/plugins/CoGe/img/arrow-right-icon.png',
-                    				style: { float: 'right', padding: '3px' }
+                    				style: { float: 'right', padding: '5px' }
                         	    }, 
                         	    container
                         	);
@@ -429,7 +458,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 		this.textFilterInput = dom.create(
 			'input',
 			{	type: 'text',
-				style: { paddingLeft: '18px', height: '16px', width: '75%' },
+				style: { cursor: 'text', paddingLeft: '18px', height: '16px', width: '75%' },
 				placeholder: 'filter by text',
 				onkeypress: dojo.hitch( this, function( evt ) {
 					if( this.textFilterTimeout )
@@ -455,13 +484,14 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 				this._clearTextFilterControl();
 				this._textFilter( this.textFilterInput.value, this.filteredNodes );
 			}),
-			style: {
-				position: 'absolute', left: '4px', top: '2px' }
+			style: { // FIXME move into css
+				cursor: 'pointer', position: 'absolute', left: '4px', top: '2px' }
 		}, this.textFilterDiv );
 		
 		this.textFilterAddAllButton = dom.create('img', { // FIXME: style with css icon instead of img
+			title: 'Add all experiments',
 			src: 'js/jbrowse/plugins/CoGe/img/plus-icon.png',
-			style: { position: 'absolute', right: '36px', top: '2px', width: '14px', height: '14px' },
+			style: { cursor: 'pointer', position: 'absolute', right: '36px', top: '2px', width: '14px', height: '14px' },
 			onclick: dojo.hitch( this, function() {
 				var configs = getVisibleConfigs(this.div, trackConfigs);
 				if (configs.length) {
@@ -481,6 +511,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 		}, this.textFilterDiv );
 		
 		this.textFilterClearAllButton = dom.create('img', { // FIXME: style with css icon instead of img
+			title: 'Clear all experiments',
 			src: 'js/jbrowse/plugins/CoGe/img/clear-icon.png',
 			onclick: dojo.hitch( this, function() {
 				var configs = getVisibleConfigs(this.div, trackConfigs);
@@ -488,27 +519,25 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 					this.browser.publish( '/jbrowse/v1/v/tracks/hide', configs );
 				}
 			}),
-			style: { position: 'absolute', right: '16px', top: '2px', width: '14px', height: '14px' }
+			style: { cursor: 'pointer', position: 'absolute', right: '16px', top: '2px', width: '14px', height: '14px' }
 		}, this.textFilterDiv );
     },
     
     _createLabelNode: function( trackConfig ) {
+    	var coge = trackConfig.coge;
     	return dojo.create(
     				'div',
-	                { className: 'coge-tracklist-label coge-' + trackConfig.coge.type,
-	                  title: capitalize(trackConfig.coge.type) + " id" + trackConfig.coge.id + "\n" +
-	                  		 "Name: " + trackConfig.coge.name + "\n" +
-	                  		 "Description: " + trackConfig.coge.description + "\n" +
-	                  		 (trackConfig.coge.annotations ?
-	                  				trackConfig.coge.annotations.
-	                  				map(
-                  						function(a) {
-                  							return a.type + ': ' + a.text
-                  						}
-	                  				)
-	                  				.join("\n")
+	                { className: 'coge-tracklist-label coge-' + coge.type,
+	                  title: capitalize(coge.type) + " id" + coge.id + "\n" +
+	                  		 "Name: " + coge.name + "\n" +
+	                  		 "Description: " + coge.description + "\n" +
+	                  		 (coge.annotations ?
+	                  				coge.annotations
+		                  				.map(function(a) {
+	                  						return a.type + ': ' + a.text
+	                  					})
+	                  					.join("\n")
 	                  				: '')
-	                  		 //+ "\n\nDrag or click to activate"
 	                }
 	        	);
     },
