@@ -447,28 +447,33 @@ sub remove_annotation {
 }
 
 sub generate_html {
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-	$template->param( PAGE_TITLE => $PAGE_TITLE );
-	$template->param( HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
-	my $name = $USER->user_name;
-	$name = $USER->first_name if $USER->first_name;
-	$name .= ' ' . $USER->last_name if ( $USER->first_name && $USER->last_name );
-	$template->param( USER     => $name );
-	$template->param( LOGO_PNG => "$PAGE_TITLE-logo.png" );
-	$template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-	$template->param( DATE     => $DATE );
-	my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-	$link = CoGe::Accessory::Web::get_tiny_link( url => $link );
-#	my $box_name = "Experiment List: ";
-#	my $list_name = $FORM->param('list_name') || $FORM->param('ln');
-#	$box_name .= " $list_name" if $list_name;
-#	$box_name .= "<span class=link onclick=window.open('$link');>$link</span>";
-#	$template->param( BOX_NAME   => $box_name );
-
-	my ($body) = generate_body();
-	$template->param( BODY => $body );
-
-	$template->param( ADJUST_BOX => 1 );
+	my $template;
+	
+	my $embed = $FORM->param('embed');
+	if ($embed) {
+		$template = HTML::Template->new( filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
+	}
+	else {
+		$template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+		my $name = $USER->user_name;
+		$name = $USER->first_name if $USER->first_name;
+		$name .= ' ' . $USER->last_name if ( $USER->first_name && $USER->last_name );
+		$template->param( PAGE_TITLE 	=> $PAGE_TITLE,
+						  HELP       	=> '/wiki/index.php?title=' . $PAGE_TITLE,
+						  USER     		=> $name,
+						  LOGO_PNG 		=> "$PAGE_TITLE-logo.png",
+						  DATE     		=> $DATE,
+						  ADJUST_BOX 	=> 1 );
+		$template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
+		my $link = CoGe::Accessory::Web::get_tiny_link( url => "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI} );
+		#my $box_name = "Experiment List: ";
+		#my $list_name = $FORM->param('list_name') || $FORM->param('ln');
+		#$box_name .= " $list_name" if $list_name;
+		#$box_name .= "<span class=link onclick=window.open('$link');>$link</span>";
+		#$template->param( BOX_NAME   => $box_name );
+	}
+	
+	$template->param( BODY => generate_body() );
 	return $template->output;
 }
 
@@ -519,7 +524,7 @@ sub get_experiment_info {
 	my %opts = @_;
 	my $eid = $opts{eid};
 	my ($exp) = $coge->resultset('Experiment')->find($eid);
-	return "Access denied\n" unless ($USER->has_access_to_experiment($eid) || !$exp->restricted);
+	return "Access denied\n" unless (!$exp->restricted || $USER->has_access_to_experiment($exp));
 
 	return "Unable to find an entry for $eid" unless $exp;
 

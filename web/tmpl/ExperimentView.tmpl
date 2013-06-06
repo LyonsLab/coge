@@ -5,6 +5,7 @@
 <SCRIPT language="JavaScript">
 
 $(document).ready(function() {
+	pageObj = new Object();
 	pageObj.timers = new Array();
 	
 	$.ajaxSetup({
@@ -308,7 +309,7 @@ function image_preview(obj, preview) {
 
 <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'> <!-- Add/Edit Annotation Dialog -->
 
-</TMPL_IF> <!-- MAIN -->
+</TMPL_IF>
 
 
 
