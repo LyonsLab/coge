@@ -4,7 +4,7 @@ import math
 import re
 import random
 import os
-from collections import Counter
+from collections import defaultdict #Counter
 from cgi import parse_qs, escape
 
 def not_found(environ, start_response):
@@ -82,7 +82,12 @@ def gc_features(environ, start_response):
         for i in xrange(0, len(string), bucketSize):
             # Score becomes the length of the string subtracting all 'atnx'
             chunk = string[i:i+bucketSize]
-            nucleotide = Counter(chunk).most_common(1)[0][0].lower()
+            # FIX FOR NON PYTHON 2.7
+            matches = defaultdict(int)
+            for char in chunk:
+                matches[char] += 1
+            nucleotide = max(matches.iteritems(), key=lambda x: x[1])[0].lower()
+            #Counter(chunk).most_common(1)[0][0].lower()
             score = len(re.sub('[atnx]', '', chunk))
             score = str(round(score / float(len(chunk)), 3))
             if (start + i + bucketSize < start):
