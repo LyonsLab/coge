@@ -230,6 +230,7 @@ sub track_config {
 #		    },
 		    # CoGe-specific stuff
 		    onClick => "ExperimentView.pl?embed=1&eid=$eid",
+		    showHoverScores => 1,
 		    coge => {
 		    	id => $eid,
 		    	type => 'experiment',
@@ -274,6 +275,7 @@ sub track_config {
 		    storeClass => "JBrowse/Store/SeqFeature/REST",
 			# CoGe-specific stuff
 			showAverage => 0,
+			showHoverScores => 1,
 			coge => {
 				id => $nid,
 				type => 'notebook',
