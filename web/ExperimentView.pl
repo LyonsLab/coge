@@ -448,9 +448,7 @@ sub remove_annotation {
 
 sub generate_html {
 	my $template;
-	
-	my $embed = $FORM->param('embed');
-	if ($embed) {
+	if ($FORM->param('embed')) {
 		$template = HTML::Template->new( filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
 	}
 	else {
@@ -510,12 +508,12 @@ sub generate_body {
 	return "Need a valid experiment id\n" unless $eid;
 	
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
-	$template->param( MAIN => 1 );
-	$template->param( PAGE_NAME => $PAGE_TITLE . '.pl');
-	$template->param( EXPERIMENT_INFO => get_experiment_info(eid=>$eid) );
-	$template->param( EXPERIMENT_ANNOTATIONS => get_annotations(eid => $eid) );
-	$template->param( EID => $eid );
-	$template->param( DEFAULT_TYPE => 'note' );
+	$template->param( MAIN => 1,
+					  PAGE_NAME => $PAGE_TITLE . '.pl',
+					  EXPERIMENT_INFO => get_experiment_info(eid=>$eid),
+					  EXPERIMENT_ANNOTATIONS => get_annotations(eid => $eid),
+					  EID => $eid,
+					  DEFAULT_TYPE => 'note' );
 	
 	return $template->output;
 }

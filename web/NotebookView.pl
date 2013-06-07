@@ -128,21 +128,27 @@ sub dispatch {
 }
 
 sub gen_html {
-	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-	$template->param( HELP       => "/wiki/index.php?title=$PAGE_TITLE" );
-	my $name = $USER->user_name;
-	$name = $USER->first_name if $USER->first_name;
-	$name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-	$template->param( USER       => $name );	
-	#$template->param( TITLE      => 'Managing Data' );
-	$template->param( PAGE_TITLE => $PAGE_TITLE );
-	$template->param( LOGO_PNG   => "$PAGE_TITLE-logo.png" );
-	$template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
-	$template->param( DATE       => $DATE );
-	$template->param( BODY       => gen_body() );
-	$template->param( ADJUST_BOX => 1 );
-	#$template->param( BOX_NAME	 => $name . " list" );
-
+	my $template;
+	if ($FORM->param('embed')) {
+		$template = HTML::Template->new( filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
+	}
+	else {	
+		my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+		my $name = $USER->user_name;
+		$name = $USER->first_name if $USER->first_name;
+		$name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
+		$template->param( USER       => $name,
+						  HELP       => "/wiki/index.php?title=$PAGE_TITLE",
+						  PAGE_TITLE => $PAGE_TITLE,
+						  LOGO_PNG   => "$PAGE_TITLE-logo.png",
+		 				  DATE       => $DATE,
+						  ADJUST_BOX => 1 );
+		$template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
+		#$template->param( BOX_NAME	 => $name . " list" );
+		#$template->param( TITLE     => 'Managing Data' );
+	}
+	
+	$template->param( BODY => gen_body() );
 	return $template->output;
 }
 
@@ -155,14 +161,14 @@ sub gen_body {
 			"Click <a href='Notebooks.pl'>here</a> to view a table of all notebooks.<br><br>" unless ($list);
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-	$template->param( PAGE_NAME        => $FORM->url );
-	$template->param( MAIN             => 1 );
-	$template->param( LIST_INFO        => get_list_info( lid => $lid ) );
-	$template->param( LIST_ANNOTATIONS => get_annotations( lid => $lid ) );
-	$template->param( LIST_CONTENTS    => get_list_contents( lid => $lid ) );
-	$template->param( LID              => $lid );
+	$template->param( PAGE_NAME        => $FORM->url,
+				  	  MAIN             => 1,
+					  LIST_INFO        => get_list_info( lid => $lid ),
+					  LIST_ANNOTATIONS => get_annotations( lid => $lid ),
+					  LIST_CONTENTS    => get_list_contents( lid => $lid ),
+					  LID              => $lid,
+					  DEFAULT_TYPE => 'note' );
 	$template->param( ADMIN_AREA       => 1 ) if $USER->is_admin;
-	$template->param( DEFAULT_TYPE => 'note' );
 
 	return $template->output;
 }
