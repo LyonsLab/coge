@@ -191,18 +191,16 @@ function continue_to_view() {
 	window.location.href = "GenomeView.pl?dsid=" + dsid;
 }
 
-function wait_to_search (search_func, search_term) {
-	if (!search_term || search_term.length > 2) {
-		pageObj.search_term = search_term;
-			
+function wait_to_search (search_func, search_obj) {
+	var search_term = search_obj.value;
+	if (!search_term || search_term.length >= 2) {
 		if (pageObj.time) {
 			clearTimeout(pageObj.time);
 		}
 		
-		// FIXME: could generalize by passing select id instead of separate search_* functions
 		pageObj.time = setTimeout(
 			function() { 
-				search_func(pageObj.search_term); 
+				search_func(search_obj.value); 
 			},
 			500
 		);
@@ -210,26 +208,24 @@ function wait_to_search (search_func, search_term) {
 }
 
 function search_genomes (search_term) {
-	if (search_term.length > 2) {
-		$.ajax({
-			data: {
-				jquery_ajax: 1,
-				fname: 'search_genomes',
-				search_term: search_term,
-				timestamp: new Date().getTime()
-			},
-			success : function(data) {
-				var obj = jQuery.parseJSON(data);
-				if (obj.items) {
-					obj.items.forEach(function(element) {
-						element.label = element.label.replace(/&reg;/g, "\u00ae"); // (R)
-					});
-					$("#edit_genome").autocomplete({source: obj.items});
-					$("#edit_genome").autocomplete("search");
-				}
-			},
-		});
-	}
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'search_genomes',
+			search_term: search_term,
+			timestamp: new Date().getTime()
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj.items) {
+				obj.items.forEach(function(element) {
+					element.label = element.label.replace(/&reg;/g, "\u00ae"); // (R)
+				});
+				$("#edit_genome").autocomplete({source: obj.items});
+				$("#edit_genome").autocomplete("search");
+			}
+		},
+	});
 }
 
 function search_users (search_term) {
@@ -292,7 +288,7 @@ function more() {
   <tr>
     <td>Genome:</td>
     <td>
-      <input id="edit_genome" onkeypress="wait_to_search(search_genomes, this.value);" size="58" value="<TMPL_VAR NAME='GENOME_NAME'>" />
+      <input id="edit_genome" spellcheck="false" onkeypress="wait_to_search(search_genomes, this);" size="58" value="<TMPL_VAR NAME='GENOME_NAME'>" />
       <input id="gid" type="hidden" value="<TMPL_VAR NAME='GENOME_ID'>" />
     </td>
   </tr>

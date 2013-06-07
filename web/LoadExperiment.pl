@@ -431,14 +431,15 @@ sub get_load_experiment_log {
 	return encode_json({ status => $status, experiment_id => $eid, log => join("<BR>\n", @lines) });
 }
 
-sub search_genomes {
+sub search_genomes { # FIXME: common with LoadAnnotation et al., move into web service
 	my %opts = @_;
 	my $search_term = $opts{search_term};
 	my $timestamp = $opts{timestamp};
-#	print STDERR "$search_term $timestamp\n";
+	print STDERR "$search_term $timestamp\n";
 	return unless $search_term;
 
 	# Perform search
+	my $id = $search_term;
 	$search_term = '%'.$search_term.'%';
 
 	# Get all matching organisms
@@ -448,8 +449,8 @@ sub search_genomes {
 
 	# Get all matching genomes
 	my @genomes = $coge->resultset("Genome")->search(
-		\[ 'name LIKE ? OR description LIKE ?', 
-		['name', $search_term], ['description', $search_term] ]);
+		\[ 'genome_id = ? OR name LIKE ? OR description LIKE ?', 
+		['genome_id', $id], ['name', $search_term], ['description', $search_term] ]);
 
 	# Combine matching genomes with matching organism genomes, preventing duplicates
 	my %unique;
