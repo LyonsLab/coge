@@ -248,50 +248,53 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     },
     
     _calculatePixelScores: function( canvasWidth, features, featureRects ) {
-        // sort features by score
-        var sorted = [];
-        dojo.forEach( features, function(f,i) {
-        	sorted.push({ feature: f, featureRect: featureRects[i] });
-        });
-        sorted.sort( sortByScore );
+    	var pixelValues = new Array( canvasWidth );
     	
-        // make an array of the max score at each pixel on the canvas
-        var pixelValues = new Array( canvasWidth );
-        dojo.forEach( sorted, function( f, i ) {
-            var fRect = f.featureRect;
-            var jEnd = fRect.r;
-            var score = f.feature.get('score');
-            var id = f.feature.get('id');
-            var name = this._getFeatureName(id);
-            var color = this._getFeatureColor(id);
-            for( var j = Math.round(fRect.l); j < jEnd; j++ ) {
-            	var label = '<div style="background-color:'+color+';">' + nbspPad(score.toString(), 11) + name + '</div>';
-                pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
-            }
-        },this);
-        
-        
-        // compute average scores - FIXME dup'ed in _drawFeatures
-        if (this.config.showAverage) {
-	        var sum = [];
-	        var count = [];
-	        var width = [];
+    	if (this.config.showHoverScores) {
+	        // sort features by score
+	        var sorted = [];
 	        dojo.forEach( features, function(f,i) {
-	        	var score = f.get('score');
-	        	var l = featureRects[i].l;
-	        	var w = featureRects[i].w;
-	        	sum[l] = l in sum ? sum[l] + score : score;
-	        	count[l] = l in count ? count[l] + 1 : 1;
-	        	width[l] = l in width ? Math.max(width[l], w) : w;
+	        	sorted.push({ feature: f, featureRect: featureRects[i] });
 	        });
-        
-	        sum.forEach( function(x,l) {
-        		var avg = sum[l]/count[l];
-        		for( var j = Math.round(l); j < l+width[l]; j++ ) {
-                	var label = '<div style="background-color:gray;">' + nbspPad(avg.toPrecision(6).toString(), 11) + 'Average' + '</div>';
-                    pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
-                }
-        	});
+	        sorted.sort( sortByScore );
+	        
+	        // make an array of the max score at each pixel on the canvas
+	        dojo.forEach( sorted, function( f, i ) {
+	            var fRect = f.featureRect;
+	            var jEnd = fRect.r;
+	            var score = f.feature.get('score');
+	            var id = f.feature.get('id');
+	            var name = this._getFeatureName(id);
+	            var color = this._getFeatureColor(id);
+	            for( var j = Math.round(fRect.l); j < jEnd; j++ ) {
+	            	var label = '<div style="background-color:'+color+';">' + nbspPad(score.toString(), 11) + name + '</div>';
+	                pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
+	            }
+	        },this);
+	        
+	        
+	        // compute average scores - FIXME dup'ed in _drawFeatures
+	        if (this.config.showAverage) {
+		        var sum = [];
+		        var count = [];
+		        var width = [];
+		        dojo.forEach( features, function(f,i) {
+		        	var score = f.get('score');
+		        	var l = featureRects[i].l;
+		        	var w = featureRects[i].w;
+		        	sum[l] = l in sum ? sum[l] + score : score;
+		        	count[l] = l in count ? count[l] + 1 : 1;
+		        	width[l] = l in width ? Math.max(width[l], w) : w;
+		        });
+	        
+		        sum.forEach( function(x,l) {
+	        		var avg = sum[l]/count[l];
+	        		for( var j = Math.round(l); j < l+width[l]; j++ ) {
+	                	var label = '<div style="background-color:gray;">' + nbspPad(avg.toPrecision(6).toString(), 11) + 'Average' + '</div>';
+	                    pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
+	                }
+	        	});
+	        }
         }
         
         return pixelValues;
@@ -306,12 +309,26 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     		});
     	}
     	
+        options.push.apply(
+                options,
+                [
+                    { type: 'dijit/MenuSeparator' },
+                    { label: 'Show scores on hover',
+                      type: 'dijit/CheckedMenuItem',
+                      checked: this.config.showHoverScores,
+                      onClick: function(event) {
+                          track.config.showHoverScores = this.checked;
+                          track.changed();
+                      }
+                    }
+                ]
+            );
+    	
     	if (config.coge.type == 'notebook') {
 	    	var track = this;
 	        options.push.apply(
 	                options,
 	                [
-	                    { type: 'dijit/MenuSeparator' },
 	                    { label: 'Show average',
 	                      type: 'dijit/CheckedMenuItem',
 	                      checked: this.config.showAverage,
