@@ -34,7 +34,6 @@ function set_annotation_table() {
 function get_experiment_info() {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'get_experiment_info',
 			eid: "<TMPL_VAR NAME='EID'>",
 		},
@@ -47,7 +46,6 @@ function get_experiment_info() {
 function edit_experiment_info() {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'edit_experiment_info',
 			eid: "<TMPL_VAR NAME='EID'>",
 		},
@@ -81,7 +79,6 @@ function update_experiment_info (){
 	
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'update_experiment_info',
 			eid: "<TMPL_VAR NAME='EID'>",
 			name: name,
@@ -99,7 +96,6 @@ function update_experiment_info (){
 function get_sources () {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'get_sources'
 		},
 		success : function(data) {
@@ -112,7 +108,6 @@ function get_sources () {
 function make_experiment_public () {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'make_experiment_public',
 			eid: "<TMPL_VAR NAME='EID'>"
 		},
@@ -125,7 +120,6 @@ function make_experiment_public () {
 function make_experiment_private () {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'make_experiment_private',
 			eid: "<TMPL_VAR NAME='EID'>"
 		},
@@ -138,7 +132,6 @@ function make_experiment_private () {
 function add_experiment_type () {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'add_experiment_type',
 			eid: "<TMPL_VAR NAME='EID'>"
 		},
@@ -161,7 +154,6 @@ function add_type_to_experiment () {
 	if (name) {
 		$.ajax({
 			data: {
-				jquery_ajax: 1,
 				fname: 'add_type_to_experiment',
 				eid: "<TMPL_VAR NAME='EID'>",
 				name: name,
@@ -180,7 +172,6 @@ function remove_experiment_type (opts) {
 	etid = opts.etid;
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'remove_experiment_type',
 			eid: "<TMPL_VAR NAME='EID'>",
 			etid: etid,
@@ -194,7 +185,6 @@ function remove_experiment_type (opts) {
 function get_annotations() {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'get_annotations',
 			eid: "<TMPL_VAR NAME='EID'>",
 		},
@@ -208,7 +198,6 @@ function get_annotations() {
 function remove_annotation (eaid) {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'remove_annotation',
 			eid: "<TMPL_VAR NAME='EID'>",
 			eaid: eaid,
@@ -222,7 +211,6 @@ function remove_annotation (eaid) {
 function get_experiment_types () {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'get_experiment_types'
 		},
 		success : function(val) {
@@ -235,7 +223,6 @@ function get_experiment_types () {
 function get_type_description (name) {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'get_type_description',
 			name: name
 		},

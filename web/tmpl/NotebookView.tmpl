@@ -1,17 +1,18 @@
 <TMPL_IF NAME="MAIN">
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/filterlist.js"></SCRIPT>
+<!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/filterlist.js"></SCRIPT>-->
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
 
 <SCRIPT language="JavaScript">
 $(document).ready(function(){
+	pageObj = new Object();
 	pageObj.timestamp = new Array();
 	pageObj.timers = new Array();
 	
 	$.ajaxSetup({
-		type: "POST",
-		//url: "<TMPL_VAR NAME='PAGE_NAME'>",
+		type: "GET",
+		url: "<TMPL_VAR NAME='PAGE_NAME'>",
 		dataType: "html",
 		cache: false,
 	});
@@ -49,7 +50,6 @@ function show_dialog(id, title, html, width, height) {
 function edit_list_info () {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'edit_list_info',
 			lid: "<TMPL_VAR NAME='LID'>",
 		},
@@ -72,7 +72,6 @@ function update_list_info (){
 
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'update_list_info',
 			lid: "<TMPL_VAR NAME='LID'>",
 			name: name,
@@ -89,7 +88,6 @@ function update_list_info (){
 function get_list_info() {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'get_list_info',
 			lid: "<TMPL_VAR NAME='LID'>"
 		},
@@ -102,7 +100,6 @@ function get_list_info() {
 function make_list_public () {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'make_list_public',
 			lid: "<TMPL_VAR NAME='LID'>",
 		},
@@ -115,7 +112,6 @@ function make_list_public () {
 function make_list_private () {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'make_list_private',
 			lid: "<TMPL_VAR NAME='LID'>",
 		},
@@ -128,7 +124,6 @@ function make_list_private () {
 function add_list_items (opts) {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'add_list_items',
 			lid: "<TMPL_VAR NAME='LID'>",
 		},
@@ -146,7 +141,6 @@ function add_selected_items (select_id){
 			var item_spec = $(this).attr("value");
 			$.ajax({
 				data: {
-					jquery_ajax: 1,
 					fname: 'add_item_to_list',
 					lid: "<TMPL_VAR NAME='LID'>",
 					item_spec : item_spec,
@@ -174,7 +168,6 @@ function remove_list_item (obj, opts) {
 	
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'remove_list_item',
 			lid: "<TMPL_VAR NAME='LID'>",
 			item_id: item_id,
@@ -189,7 +182,6 @@ function remove_list_item (obj, opts) {
 function get_list_contents() {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'get_list_contents',
 			lid: "<TMPL_VAR NAME='LID'>",
 		},
@@ -203,7 +195,6 @@ function get_list_contents() {
 function get_annotations() {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'get_annotations',
 			lid: "<TMPL_VAR NAME='LID'>",
 		},
@@ -217,7 +208,6 @@ function get_annotations() {
 function remove_annotation (laid) {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'remove_annotation',
 			lid: "<TMPL_VAR NAME='LID'>",
 			laid: laid,
@@ -256,7 +246,6 @@ function search_mystuff () {
 	
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'search_mystuff',
 			lid: '<TMPL_VAR NAME="LID">',
 			search_term: search_term,
@@ -281,7 +270,6 @@ function search_genomes () {
 	
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'search_genomes',
 			lid: '<TMPL_VAR NAME="LID">',
 			search_term: search_term,
@@ -306,7 +294,6 @@ function search_experiments (search_term) {
 	
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'search_experiments',
 			lid: '<TMPL_VAR NAME="LID">',
 			search_term: search_term,
@@ -331,7 +318,6 @@ function search_features () {
 	
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'search_features',
 			lid: '<TMPL_VAR NAME="LID">',
 			search_term: search_term,
@@ -356,7 +342,6 @@ function search_lists () {
 	
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'search_lists',
 			lid: '<TMPL_VAR NAME="LID">',
 			search_term: search_term,
@@ -379,7 +364,6 @@ function dialog_delete_list () {
 function delete_list () {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'delete_list',
 			lid: '<TMPL_VAR NAME="LID">',
 		},
@@ -394,7 +378,6 @@ function send_list_to() {
 	
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: action,
 			lid: '<TMPL_VAR NAME="LID">'
 		},
@@ -499,7 +482,7 @@ Are you sure you want to permanently delete this notebook?<p>
  </div>
 </div>
 
-</TMPL_IF> <!-- MAIN -->
+</TMPL_IF>
 
 
 
@@ -525,7 +508,7 @@ Are you sure you want to permanently delete this notebook?<p>
 </table>
 <br>
 <span onClick="update_list_info();" class='ui-button ui-corner-all'>Update</span>
-</TMPL_IF> <!-- EDIT_LIST_INFO -->
+</TMPL_IF>
 
 
 

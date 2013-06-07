@@ -115,13 +115,13 @@ sub edit_experiment_info {
 	my $desc = ( $exp->description ? $exp->description : '' );
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
-	$template->param( EDIT_EXPERIMENT_INFO => 1 );
-	$template->param( EID            => $eid );
-	$template->param( NAME           => $exp->name );
-	$template->param( DESC           => $desc );
-	$template->param( SOURCE         => $exp->source->name );
-	$template->param( SOURCE_ID      => $exp->source->id );
-	$template->param( VERSION        => $exp->version );
+	$template->param( EDIT_EXPERIMENT_INFO => 1,
+		  			  EID            => $eid,
+					  NAME           => $exp->name,
+					  DESC           => $desc,
+					  SOURCE         => $exp->source->name,
+					  SOURCE_ID      => $exp->source->id,
+					  VERSION        => $exp->version );
 
 	my %data;
 	$data{name}   = $exp->name;

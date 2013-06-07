@@ -161,8 +161,8 @@ sub gen_body {
 			"Click <a href='Notebooks.pl'>here</a> to view a table of all notebooks.<br><br>" unless ($list);
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-	$template->param( PAGE_NAME        => $FORM->url,
-				  	  MAIN             => 1,
+	$template->param( MAIN             => 1,
+					  PAGE_NAME => $PAGE_TITLE . '.pl',
 					  LIST_INFO        => get_list_info( lid => $lid ),
 					  LIST_ANNOTATIONS => get_annotations( lid => $lid ),
 					  LIST_CONTENTS    => get_list_contents( lid => $lid ),
@@ -176,7 +176,7 @@ sub gen_body {
 sub get_list_info {
 	my %opts = @_;
 	my $lid  = $opts{lid};
-	return unless ($lid);
+	return unless $lid;
 	my ($list) = $coge->resultset('List')->find($lid);
 	return unless ($list && ($USER->has_access_to_list($lid) || !$list->restricted));
 	
@@ -224,10 +224,10 @@ sub edit_list_info {
 	my $desc = ( $list->description ? $list->description : '' );
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-	$template->param( EDIT_LIST_INFO => 1 );
-	$template->param( NAME           => $list->name );
-	$template->param( DESC           => $desc );
-	$template->param( TYPE_LOOP      => get_list_types($list->type->id) );
+	$template->param( EDIT_LIST_INFO => 1,
+					  NAME           => $list->name,
+					  DESC           => $desc,
+					  TYPE_LOOP      => get_list_types($list->type->id) );
 
 	my %data;
 	$data{name}   = $list->name;
