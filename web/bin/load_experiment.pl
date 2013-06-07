@@ -241,9 +241,16 @@ sub validate_data_file {
 		
 		# Validate values
 		my ($chr, $start, $stop, $strand, $val1, $val2) = @tok;
-		if ($val1 < 0 or $val1 > 1) {
+		if (not defined $chr or not defined $start or not defined $stop or not defined $strand) {
+			print $log "log: error at line $line_num: missing value in a column\n";
+			return;
+		}
+		if (not defined $val1 or $val1 < 0 or $val1 > 1) {
 			print $log "log: error at line $line_num: value 1 not between 0 and 1\n";
 			return;
+		}
+		if (not defined $val2) {
+			$val2 = 0;
 		}
 		
 		# Fix chromosome identifier
