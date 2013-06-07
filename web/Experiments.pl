@@ -58,15 +58,18 @@ $USER = undef;
 #$SIG{'__WARN__'} = sub { };    # silence warnings
 
 %FUNCTION = (
-	generate_html				=> \&generate_html,
 	delete_experiment			=> \&delete_experiment,
 	get_experiments_for_user	=> \&get_experiments_for_user,
 );
 
-if ( $FORM->param('jquery_ajax') ) {
+dispatch();
+
+sub dispatch {
 	my %args  = $FORM->Vars;
 	my $fname = $args{'fname'};
 	if ($fname) {
+		die if not defined $FUNCTION{$fname};
+		#print STDERR Dumper \%args;
 		if ( $args{args} ) {
 			my @args_list = split( /,/, $args{args} );
 			print $FORM->header, $FUNCTION{$fname}->(@args_list);
@@ -75,14 +78,15 @@ if ( $FORM->param('jquery_ajax') ) {
 			print $FORM->header, $FUNCTION{$fname}->(%args);
 		}
 	}
-}
-else {
-	print $FORM->header, "\n", generate_html();
+	else {
+		print $FORM->header, generate_html();
+	}
 }
 
 sub delete_experiment {
 	my %opts = @_;
 	my $eid = $opts{eid};
+	#print STDERR "delete_experiment: eid=$eid\n";
 	return "Must have valid experiment id\n" unless ($eid);
 	
 	# Check permissions
