@@ -7,9 +7,10 @@ define(['dojo/_base/declare',
         'dojo/dnd/Source',
         'dojo/fx/easing',
         'dijit/form/TextBox',
-        'dojo/mouse'
+        'dojo/mouse',
+        'JBrowse/View/ConfirmDialog'
        ],
-       function( declare, array, dom, domGeom, aspect, ContentPane, dndSource, animationEasing, dijitTextBox, mouse ) {
+       function( declare, array, dom, domGeom, aspect, ContentPane, dndSource, animationEasing, dijitTextBox, mouse, ConfirmDialog ) {
 return declare( 'JBrowse.View.TrackList.CoGe', null,
 
     /** @lends JBrowse.View.TrackList.CoGe.prototype */
@@ -325,7 +326,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                     			notebookName = n.id;
                     			notebookId = notebookName.match(/\d+/);
                     		});
-                    		if (notebookId) {
+                    		if (notebookId) { // it's a notebook
 	                			dojo.xhrPut({ // FIXME: make webservice for this
 		      					    url: "NotebookView.pl",
 		    					    putData: {
@@ -347,20 +348,28 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 		    					    })
 							    });
                     		}
-                    		else {
-                    			// Remove node from tracklist
-                    			div.removeChild(container);
-    					    	// Remove track in browser
-    					    	this.browser.publish( '/jbrowse/v1/v/tracks/hide', [trackConfig] );
-                    			// Update database
-                    			dojo.xhrPut({ // FIXME: make webservice for this
-		      					    url: "Experiments.pl",
-		    					    putData: {
-		    					    	fname: 'delete_experiment',
-		    					    	eid: coge.id
-		    					    },
-		    					    handleAs: "text",
-							    });
+                    		else { // it's an experiment
+                    			new ConfirmDialog({ 
+	                    				title: 'Delete track?', 
+	                    				message: 'Really delete this track?  Deleting it will move it to the trash.'
+                    				})
+	                                .show( dojo.hitch(this, function( confirmed ) {
+	                                     if( confirmed ) {
+	                                    	// Remove node from tracklist
+	                             			div.removeChild(container);
+	             					    	// Remove track in browser
+	             					    	this.browser.publish( '/jbrowse/v1/v/tracks/hide', [trackConfig] );
+	                             			// Update database
+	                             			dojo.xhrPut({ // FIXME: make webservice for this
+	         		      					    url: "Experiments.pl",
+	         		    					    putData: {
+	         		    					    	fname: 'delete_experiment',
+	         		    					    	eid: coge.id
+	         		    					    },
+	         		    					    handleAs: "text"
+	         							    });
+	                                     }
+	                                 }));
                     		}
                         }));
                 		
