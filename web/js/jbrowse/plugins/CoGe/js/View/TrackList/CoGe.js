@@ -445,7 +445,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	                            return { h: Math.round(d.h * 0.8), w: Math.round( d.w * 0.8 ) };
 	                        }.call(this);
 	            			
-	                        var dialog = new dijit.Dialog( { title: 'Experiment View' } );
+	                        var dialog = new dijit.Dialog( { title: capitalize(coge.type) + ' View' } );
 	
 	                        var iframe = dojo.create(
 	                            'iframe', {
