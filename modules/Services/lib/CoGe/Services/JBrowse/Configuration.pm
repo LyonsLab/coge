@@ -276,6 +276,7 @@ sub track_config {
 		    type => "CoGe/View/Track/Wiggle/MultiXYPlot",
 		    storeClass => "JBrowse/Store/SeqFeature/REST",
 			# CoGe-specific stuff
+			onClick => "NotebookView.pl?embed=1&nid=$nid",
 			showAverage => 0,
 			showHoverScores => 1,
 			coge => {
