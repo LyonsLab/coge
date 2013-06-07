@@ -307,133 +307,6 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                     	if (coge.notebooks) {
                     		dojo.addClass(container, 'collapsed');
                     	}
-                    	
-                		// Add delete button
-                		var deleteButton = dom.create( // FIXME: how to put image in div using css?
-                    			'img',
-                        	    {	title: 'Remove experiment',
-                    				src: 'js/jbrowse/plugins/CoGe/img/remove-icon.png',
-                    				style: { // FIXME: move into css
-                    					visibility: 'hidden',
-                    					float: 'right', padding: '3px', width: '14px', height: '14px' }
-                        	    }, 
-                        	    container
-                        	);
-                		dojo.connect( deleteButton, "click", dojo.hitch(this, function(e) {
-                			var notebookName;
-                        	var notebookId;
-                    		dojo.query('.coge-notebook', div).forEach( function(n) {
-                    			notebookName = n.id;
-                    			notebookId = notebookName.match(/\d+/);
-                    		});
-                    		if (notebookId) { // it's a notebook
-	                			dojo.xhrPut({ // FIXME: make webservice for this
-		      					    url: "NotebookView.pl",
-		    					    putData: {
-		    					    	fname: 'remove_list_item',
-		    					    	lid: notebookId,
-		    					    	item_type: '3', // FIXME: hardcoded type to experiment
-		    					    	item_id: coge.id
-		    					    },
-		    					    handleAs: "json",
-		    					    load: dojo.hitch(this, function(data) {
-		    					    	// Remove node from tracklist
-		    					    	div.removeChild(container);
-		    					    	// Reload track in browser
-		    		                	this.browser.view.tracks.forEach( function(track) {
-		    		                		if (track.config.label == notebookName) {
-		    		                			track.changed();
-		    		                		}
-		    		                	});
-		    					    })
-							    });
-                    		}
-                    		else { // it's an experiment
-                    			new ConfirmDialog({ 
-	                    				title: 'Delete track?', 
-	                    				message: 'Really delete this track?  Deleting it will move it to the trash.'
-                    				})
-	                                .show( dojo.hitch(this, function( confirmed ) {
-	                                     if( confirmed ) {
-	                                    	// Remove node from tracklist
-	                             			div.removeChild(container);
-	             					    	// Remove track in browser
-	             					    	this.browser.publish( '/jbrowse/v1/v/tracks/hide', [trackConfig] );
-	                             			// Update database
-	                             			dojo.xhrPut({ // FIXME: make webservice for this
-	         		      					    url: "Experiments.pl",
-	         		    					    putData: {
-	         		    					    	fname: 'delete_experiment',
-	         		    					    	eid: coge.id
-	         		    					    },
-	         		    					    handleAs: "text"
-	         							    });
-	                                     }
-	                                 }));
-                    		}
-                        }));
-                		
-                		// Add info button
-                		var infoButton = dom.create( // FIXME: how to put image in div using css?
-                    			'img',
-                        	    {	title: 'Open info page',
-                    				src: 'js/jbrowse/plugins/CoGe/img/info-icon.png',
-                    				style: {
-                    					visibility: 'hidden',
-                    					float: 'right', padding: '3px', width: '14px', height: '14px' }
-                        	    }, 
-                        	    container
-                        	);
-                		
-                		dojo.connect( infoButton, "click", dojo.hitch(this, function() {
-                			//window.open( 'ExperimentView.pl?eid=' + coge.id );
-                			
-                			// Open dialog (copied from BlockBased.js)
-                			var iframeDims = function() {
-                                var d = domGeom.position( this.browser.container );
-                                return { h: Math.round(d.h * 0.8), w: Math.round( d.w * 0.8 ) };
-                            }.call(this);
-                			
-                            var dialog = new dijit.Dialog( { title: 'Experiment View' } );
-
-                            var iframe = dojo.create(
-                                'iframe', {
-                                    tabindex: "0",
-                                    width: iframeDims.w,
-                                    height: iframeDims.h,
-                                    style: { border: 'none' },
-                                    src: trackConfig.onClick
-                                });
-
-                            dialog.set( 'content', iframe );
-                            
-                            var updateIframeSize = function() {
-                                // hitch a ride on the dialog box's
-                                // layout function, which is called on
-                                // initial display, and when the window
-                                // is resized, to keep the iframe
-                                // sized to fit exactly in it.
-                                var cDims = domGeom.position( dialog.containerNode );
-                                var width  = cDims.w;
-                                var height = cDims.h - domGeom.position(dialog.titleBar).h;
-                                iframe.width = width;
-                                iframe.height = height;
-                            };
-                            aspect.after( dialog, 'layout', updateIframeSize );
-                            aspect.after( dialog, 'show', updateIframeSize );
-                            
-                            dialog.show();
-                        }));
-                		
-                		// Show/hide buttons based on hover
-                		dojo.connect( container, "onmouseenter", function(e) {
-                			dojo.style(infoButton, 'visibility', 'visible');
-                			dojo.style(deleteButton, 'visibility', 'visible');
-                        });
-                		dojo.connect( container, "onmouseleave", function(e) {
-                			dojo.style(infoButton, 'visibility', 'hidden');
-                			dojo.style(deleteButton, 'visibility', 'hidden');
-                        });
                     }
                     else if (coge.type == 'notebook') {
                     	var button = dom.create( // FIXME: how to put image in div using css?
@@ -463,6 +336,155 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                             	}
                             }
                         }));
+                    }
+                    
+                    if (coge.type == 'experiment' || coge.type == 'notebook') {
+	                    // Add delete button
+	            		var deleteButton = dom.create( // FIXME: how to put image in div using css?
+	                			'img',
+	                    	    {	title: 'Remove experiment',
+	                				src: 'js/jbrowse/plugins/CoGe/img/remove-icon.png',
+	                				style: { // FIXME: move into css
+	                					visibility: 'hidden',
+	                					float: 'right', padding: '3px', width: '14px', height: '14px' }
+	                    	    }, 
+	                    	    container
+	                    	);
+	            		dojo.connect( deleteButton, "click", dojo.hitch(this, function(e) {
+	            			// Determine if node is inside a notebook
+	            			if (coge.type == 'experiment') {
+		            			var notebookName;
+		                    	var notebookId;
+		                		dojo.query('.coge-notebook', div).forEach( function(n) {
+		                			notebookName = n.id;
+		                			notebookId = notebookName.match(/\d+/);
+		                		});
+		                		if (notebookId) { // it's inside a notebook
+		                			dojo.xhrPut({ // FIXME: make webservice for this
+			      					    url: "NotebookView.pl",
+			    					    putData: {
+			    					    	fname: 'remove_list_item',
+			    					    	lid: notebookId,
+			    					    	item_type: '3', // FIXME: hardcoded type to experiment
+			    					    	item_id: coge.id
+			    					    },
+			    					    handleAs: "json",
+			    					    load: dojo.hitch(this, function(data) {
+			    					    	// Remove node from tracklist
+			    					    	div.removeChild(container);
+			    					    	// Reload track in browser
+			    		                	this.browser.view.tracks.forEach( function(track) {
+			    		                		if (track.config.label == notebookName) {
+			    		                			track.changed();
+			    		                		}
+			    		                	});
+			    					    })
+								    });
+		                			return;
+		                		}
+	            			}
+	                		
+                			// Else, it's not inside a notebook
+                			new ConfirmDialog({
+                    				title: 'Delete ' + coge.type + '?', 
+                    				message: 'Really delete this ' + coge.type + '?  '
+                    					+ (coge.type == 'experiment' ? 'Deleting it will move it to the trash.' : 'Deleting it is permanent.')
+                				})
+                                .show( dojo.hitch(this, function( confirmed ) {
+                                     if( confirmed ) {
+             					    	// Remove track in browser
+             					    	this.browser.publish( '/jbrowse/v1/v/tracks/hide', [trackConfig] );
+             					    	if (coge.type == 'experiment') {
+             					    		// Remove node from tracklist
+                                 			div.removeChild(container);
+                                 			// Update database
+	                             			dojo.xhrPut({ // FIXME: make webservice for this
+	         		      					    url: "Experiments.pl",
+	         		    					    putData: {
+	         		    					    	fname: 'delete_experiment',
+	         		    					    	eid: coge.id
+	         		    					    },
+	         		    					    handleAs: "text"
+	         							    });
+             					    	}
+             					    	else if (coge.type == 'notebook') {
+             					    		// Remove all notebook nodes from tracklist
+                                 			div.parentNode.removeChild(div);
+             					    		// Update database
+             					    		dojo.xhrPut({ // FIXME: make webservice for this
+	         		      					    url: "NotebookView.pl",
+	         		    					    putData: {
+	         		    					    	fname: 'delete_list',
+	         		    					    	lid: coge.id
+	         		    					    },
+	         		    					    handleAs: "text"
+	         							    });
+             					    	}
+                                     }
+                                 }));
+	                    }));
+	            		
+	               		// Add info button
+	            		var infoButton = dom.create( // FIXME: how to put image in div using css?
+	                			'img',
+	                    	    {	title: 'Open info page',
+	                				src: 'js/jbrowse/plugins/CoGe/img/info-icon.png',
+	                				style: {
+	                					visibility: 'hidden',
+	                					float: 'right', padding: '3px', width: '14px', height: '14px' }
+	                    	    }, 
+	                    	    container
+	                    	);
+	            		
+	            		dojo.connect( infoButton, "click", dojo.hitch(this, function() {
+	            			//window.open( 'ExperimentView.pl?eid=' + coge.id );
+	            			
+	            			// Open dialog (copied from BlockBased.js)
+	            			var iframeDims = function() {
+	                            var d = domGeom.position( this.browser.container );
+	                            return { h: Math.round(d.h * 0.8), w: Math.round( d.w * 0.8 ) };
+	                        }.call(this);
+	            			
+	                        var dialog = new dijit.Dialog( { title: 'Experiment View' } );
+	
+	                        var iframe = dojo.create(
+	                            'iframe', {
+	                                tabindex: "0",
+	                                width: iframeDims.w,
+	                                height: iframeDims.h,
+	                                style: { border: 'none' },
+	                                src: trackConfig.onClick
+	                            });
+	
+	                        dialog.set( 'content', iframe );
+	                        
+	                        var updateIframeSize = function() {
+	                            // hitch a ride on the dialog box's
+	                            // layout function, which is called on
+	                            // initial display, and when the window
+	                            // is resized, to keep the iframe
+	                            // sized to fit exactly in it.
+	                            var cDims = domGeom.position( dialog.containerNode );
+	                            var width  = cDims.w;
+	                            var height = cDims.h - domGeom.position(dialog.titleBar).h;
+	                            iframe.width = width;
+	                            iframe.height = height;
+	                        };
+	                        aspect.after( dialog, 'layout', updateIframeSize );
+	                        aspect.after( dialog, 'show', updateIframeSize );
+	                        
+	                        dialog.show();
+	                    }));
+	            		
+	            		// Show/hide buttons based on hover
+	            		dojo.connect( container, "onmouseenter", function(e) {
+	            			dojo.style(infoButton, 'visibility', 'visible');
+	            			dojo.style(deleteButton, 'visibility', 'visible');
+	                    });
+	            		dojo.connect( container, "onmouseleave", function(e) {
+	            			dojo.style(infoButton, 'visibility', 'hidden');
+	            			dojo.style(deleteButton, 'visibility', 'hidden');
+	                    });
                     }
                     
                     container.appendChild(node);
