@@ -246,6 +246,7 @@ sub get_item_info {
 		return unless $genome;
 		return unless ($USER->is_admin or $USER->has_access_to_genome($genome));
 	
+		my $date = ($genome->datasets ? $genome->datasets()->[0]->date : 'unknown');
 		my $group_str = join('<br>', sort map { $_->name } $USER->groups_with_access($genome));
 		$html .= '<b>Genome id' . $genome->id . '</b><br>' . 
 				 '<b>Organism: </b>' . $genome->organism->name . '<br>' .
@@ -254,6 +255,7 @@ sub get_item_info {
 				 '<b>Version:</b> ' . $genome->version . '<br>' .
 				 '<b>Type:</b> ' . ($genome->type ? $genome->type->name : '') . '<br>' .
 				 '<b>Source:</b> ' . ($genome->source ? $genome->source->[0]->name : '') . '<br>' .
+				 '<b>Created:</b> ' . $date . '<br>' .
 				 '<b>Groups with access:</b><br>' .
 				 '<div style="padding-left:20px;">' .
 				 ($group_str ? $group_str : 'None') . '<br>' .
@@ -279,6 +281,7 @@ sub get_item_info {
 				 '<b>Description:</b> ' . $experiment->description . '<br>' .
 				 '<b>Version:</b> ' . $experiment->version . '<br>' .
 				 '<b>Source:</b> ' . ($experiment->source ? $experiment->source->name : '') . '<br>' .
+				 '<b>Created:</b> ' . $experiment->date . '<br>' .
 				 '<b>Groups with access:</b><br>' .
 				 '<div style="padding-left:20px;">' .
 				 ($group_str ? $group_str : 'None') . '<br>' .
