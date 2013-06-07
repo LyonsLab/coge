@@ -299,7 +299,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                     }));
                     
                     // in the list, wrap the list item in a container for border drag-insertion-point monkeying
-                    var container = dojo.create( 'div', { className: 'tracklist-container', style: { 'white-space': 'nowrap' } });
+                    var container = dojo.create( 'div', { className: 'coge-tracklist-container', style: { 'white-space': 'nowrap' } });
                     
                     if (coge.type == 'experiment') {
                     	// Start out hidden if inside notebook
@@ -326,7 +326,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                     			notebookId = notebookName.match(/\d+/);
                     		});
                     		if (notebookId) {
-	                			dojo.xhrPut({
+	                			dojo.xhrPut({ // FIXME: make webservice for this
 		      					    url: "NotebookView.pl",
 		    					    putData: {
 		    					    	fname: 'remove_list_item',
@@ -336,6 +336,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 		    					    },
 		    					    handleAs: "json",
 		    					    load: dojo.hitch(this, function(data) {
+		    					    	// Remove node from tracklist
 		    					    	div.removeChild(container);
 		    					    	// Reload track in browser
 		    		                	this.browser.view.tracks.forEach( function(track) {
@@ -344,6 +345,21 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 		    		                		}
 		    		                	});
 		    					    })
+							    });
+                    		}
+                    		else {
+                    			// Remove node from tracklist
+                    			div.removeChild(container);
+    					    	// Remove track in browser
+    					    	this.browser.publish( '/jbrowse/v1/v/tracks/hide', [trackConfig] );
+                    			// Update database
+                    			dojo.xhrPut({ // FIXME: make webservice for this
+		      					    url: "Experiments.pl",
+		    					    putData: {
+		    					    	fname: 'delete_experiment',
+		    					    	eid: coge.id
+		    					    },
+		    					    handleAs: "text",
 							    });
                     		}
                         }));
@@ -369,7 +385,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                                 return { h: Math.round(d.h * 0.8), w: Math.round( d.w * 0.8 ) };
                             }.call(this);
                 			
-                            var dialog = new dijit.Dialog( { title: 'test' } );
+                            var dialog = new dijit.Dialog( { title: 'Experiment View' } );
 
                             var iframe = dojo.create(
                                 'iframe', {

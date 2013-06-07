@@ -1,27 +1,23 @@
-div.coge-tracklist-label {
-    /*background-color: #ddd;
-    background-color: rgba( 220, 220, 220, 0.9 );*/
+.dojoDndItemAnchor { /* override Dojo's definition in dndDefault.css */
+	background-color: transparent !important;
 }
 
-/* div.tracklist-test.selected {
-    background-color: yellow
-} */
+.dojoDndItem { /* override Dojo's definition in dndDefault.css */
+	padding: 1px !important;
+}
 
-div.tracklist-container.collapsed {
+.coge-tracklist-container {
+	border: 1px solid transparent;
+}
+
+.coge-tracklist-container.collapsed {
 	display: none;
 }
 
-/* .cogeIconPlus {
-    background-image: url('js/jbrowse/plugins/CoGe/img/plus.png');
-    width: 16px;
-    height: 16px;
+.coge-tracklist-container:hover {
+	border: 1px solid gray;
 }
 
-.cogeIconTest {
-    background-image: url('img/spinner.gif');
-    width: 16px;
-    height: 16px;
-} */
 
 div.notebook-indent {
 	padding-left: 25px;
@@ -35,6 +31,18 @@ div.notebook-indent {
 
 .notebookCollapseIcon {
 	background-image: url('/../../../picts/arrow-down-icon.png');
+    width: 16px;
+    height: 16px;
+} 
+
+.cogeIconPlus {
+    background-image: url('js/jbrowse/plugins/CoGe/img/plus.png');
+    width: 16px;
+    height: 16px;
+}
+
+.cogeIconTest {
+    background-image: url('img/spinner.gif');
     width: 16px;
     height: 16px;
 } */
