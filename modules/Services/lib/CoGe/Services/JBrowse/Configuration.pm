@@ -113,8 +113,9 @@ sub track_config {
 	{
 		#baseUrl => "http://geco.iplantcollaborative.org/rchasman/gc/$gid/",
 		baseUrl => "services/JBrowse/track/gc/$gid/",
-		type => "JBrowse/View/Track/Wiggle/Density",
+		type => "CoGe/View/Track/GC_Content",
 		storeClass => "JBrowse/Store/SeqFeature/REST",
+    track => "gc_content",
 		label => "gc_content",
 		key => "GC Content",
 		style => {
@@ -149,6 +150,7 @@ sub track_config {
             storeClass => "JBrowse/Store/SeqFeature/REST",
             onClick => "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
             maxFeatureScreenDensity => 10,
+            maxHeight => 30000,
          	style => {
             	className => "cds",
               labelScale => 0.01,
