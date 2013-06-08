@@ -623,6 +623,11 @@ sub add_item_to_list {
 	my ($item_type, $item_id) = split(/:/, $item_spec);
 	#print STDERR "add_item_to_list: lid=$lid item_type=$item_type item_id=$item_id\n";
 	
+	my $list = $coge->resultset('List')->find($lid);
+	return 0 unless $list;
+	return 0 if ($list->locked && !$USER->is_admin);
+	return 0 if (!$USER->is_admin || !$USER->is_owner_editor(list => $lid));
+	
 	my $lc = $coge->resultset('ListConnector')->find_or_create( { parent_id => $lid, child_id => $item_id, child_type => $item_type } );	
 	return 0 unless $lc;
 
