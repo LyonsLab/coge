@@ -149,13 +149,13 @@ sub track_config {
             type => "CoGe/View/Track/CoGeFeatures",
             storeClass => "JBrowse/Store/SeqFeature/REST",
             onClick => "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
-            maxFeatureScreenDensity => 10,
-            maxHeight => 30000,
+            maxFeatureScreenDensity => 100,
+            maxHeight => 100000,
          	style => {
             	className => "cds",
-              labelScale => 0.01,
             	histScale => 0,
               labelScale => 0.02,
+              featureScale => 0.00000005,
          	},
          	# CoGe-specific stuff
          	coge => {
@@ -164,7 +164,7 @@ sub track_config {
          	}
         };
 	}
-	
+
 	# Create a fake "all experiments" notebook for all genome's experiments
 #	my @all_experiments = map {$_->id} $genome->experiments;
 #	push @tracks,
@@ -249,7 +249,7 @@ sub track_config {
 		    }
 		};
 	}
-	
+
 	# Add notebook tracks
 	foreach my $n (sort {$a->name cmp $b->name} values %all_notebooks) {
 		next if ($n->restricted and not $USER->has_access_to_list($n));
