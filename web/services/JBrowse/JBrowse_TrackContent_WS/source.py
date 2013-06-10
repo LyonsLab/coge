@@ -149,7 +149,8 @@ def an_features(environ, start_response):
                 JOIN feature_name fn ON f.feature_id = fn.feature_id \
                 JOIN feature_type ft ON f.feature_type_id = ft.feature_type_id \
                 WHERE f.dataset_id = {0} AND f.chromosome = '{1}' \
-                AND f.stop > {2} AND f.start <= {3};"
+                AND f.stop > {2} AND f.start <= {3} \
+                AND ft.feature_type_id != 4;"
                     .format(dataset_id, chr_id, start, end))
 
         results = cur.fetchall()
