@@ -577,9 +577,10 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	                { className: 'coge-tracklist-label coge-' + coge.type,
 	                  title: capitalize(coge.type) + " id" + coge.id + "\n" +
 	                  		 "Name: " + coge.name + "\n" +
-	                  		 "Description: " + coge.description + "\n" +
+	                  		 "Description: " + coge.description +
 	                  		 (coge.annotations ?
-	                  				coge.annotations
+	                  				"\n" + 
+	                  				 coge.annotations
 		                  				.map(function(a) {
 	                  						return a.type + ': ' + a.text
 	                  					})
