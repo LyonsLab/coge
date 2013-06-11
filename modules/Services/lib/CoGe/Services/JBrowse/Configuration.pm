@@ -7,6 +7,7 @@ use JSON;
 use Data::Dumper;
 use Sort::Versions;
 use Cwd 'abs_path';
+use Time::HiRes qw ( time );
 
 my $coge_conf;
 
@@ -49,7 +50,7 @@ sub refseq_config {
 	return unless $genome;
 
 	my @chromosomes;
-	foreach my $chr ($genome->genomic_sequences) {
+	foreach my $chr (sort {$b->sequence_length <=> $a->sequence_length} $genome->genomic_sequences) {
 		push @chromosomes, {
 			name => $chr->chromosome,
 			length => $chr->sequence_length,
@@ -86,6 +87,8 @@ sub track_config {
 	($USER) = CoGe::Accessory::Web->login_cas( ticket => $cas_ticket, coge => $coge, this_url => $FORM->url() ) if ($cas_ticket);
 	($USER) = CoGe::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
 
+	my $start_time = time;
+
 	my $genome = $coge->resultset('Genome')->find($gid);
 	return unless $genome;
 
@@ -115,7 +118,7 @@ sub track_config {
 		baseUrl => "services/JBrowse/track/gc/$gid/",
 		type => "CoGe/View/Track/GC_Content",
 		storeClass => "JBrowse/Store/SeqFeature/REST",
-    track => "gc_content",
+    	track => "gc_content",
 		label => "gc_content",
 		key => "GC Content",
 		style => {
@@ -130,6 +133,8 @@ sub track_config {
 			type => ''
 		}
 	};
+	
+	print STDERR 'time1: ' . (time - $start_time) . "\n";
 
 	# Add gene annotation tracks
 	my $num;
@@ -165,8 +170,9 @@ sub track_config {
         };
 	}
 
+	print STDERR 'time2: ' . (time - $start_time) . "\n";
+	
 	# Create a fake "all experiments" notebook for all genome's experiments
-#	my @all_experiments = map {$_->id} $genome->experiments;
 #	push @tracks,
 #		{
 #			key => 'All Experiments',
@@ -195,27 +201,32 @@ sub track_config {
 
 	# Add experiment tracks
 	my %all_notebooks;
-	foreach $e (sort experimentcmp $genome->experiments) {
+	my %expByNotebook;
+	foreach $e (sort experimentcmp $genome->experiments) { #{}, {prefetch => { 'experiment_annotations' => 'annotation_type' }})) {
 		#FIXME need permission check here
 		next if ($e->deleted);
 		my $eid = $e->id;
 
 		# Make a list of notebook id's
-		my @notebooks = map {$_->id} $e->notebooks;
-		map { $all_notebooks{$_->id} = $_ } $e->notebooks;
+		my @notebooks;
+		foreach my $n ($e->notebooks) {
+			push @notebooks, $n->id;
+			$all_notebooks{$n->id} = $n;
+			push @{ $expByNotebook{$n->id} }, { id => $n->id, name => $n->name };
+		}
 #		push @notebooks, 0; # add fake "all experiments" notebook
 
 		# Make a list of annotations
-		my @annotations;
-		foreach my $a ($e->annotations) {
-			push @annotations,
-			{
-				type  => $a->type->name,
-				text  => $a->annotation,
-				image => ($a->image_id ? 'image.pl?id='.$a->image_id : undef),
-				link  => $a->link
-			}
-		}
+#		my @annotations;
+#		foreach my $a ($e->experiment_annotations) {
+#			push @annotations,
+#			{
+#				type  => $a->annotation_type->name,
+#				text  => $a->annotation,
+#				image => ($a->image_id ? 'image.pl?id='.$a->image_id : undef),
+#				link  => $a->link
+#			}
+#		}
 
 		push @tracks,
 		{
@@ -250,22 +261,12 @@ sub track_config {
 		};
 	}
 
+	print STDERR 'time3: ' . (time - $start_time) . "\n";
+	
 	# Add notebook tracks
 	foreach my $n (sort {$a->name cmp $b->name} values %all_notebooks) {
 		next if ($n->restricted and not $USER->has_access_to_list($n));
-
 		my $nid = $n->id;
-
-		# Make a list of experiments
-		my @experiments;
-		foreach my $e ($n->experiments) {
-			push @experiments,
-			{
-				id => $e->id,
-				name => $e->name
-			}
-		}
-
 		push @tracks,
 		{
 			key => $n->name,
@@ -276,7 +277,7 @@ sub track_config {
 		    type => "CoGe/View/Track/Wiggle/MultiXYPlot",
 		    storeClass => "JBrowse/Store/SeqFeature/REST",
 			# CoGe-specific stuff
-			onClick => "NotebookView.pl?embed=1&nid=$nid",
+			onClick => "NotebookView.pl?embed=1&lid=$nid",
 			showAverage => 0,
 			showHoverScores => 1,
 			coge => {
@@ -284,16 +285,18 @@ sub track_config {
 				type => 'notebook',
 				name => $n->name,
 				description => $n->description,
-				experiments => (@experiments ? \@experiments : undef),
+				experiments => (@{$expByNotebook{$nid}} ? $expByNotebook{$nid} : undef),
 				menuOptions => [
 					{ label => 'NotebookView',
-					  action => "function() { window.open( 'NotebookView.pl?nid=$nid' ); }"
+					  action => "function() { window.open( 'NotebookView.pl?lid=$nid' ); }"
 					  # url => ... will open link in a dialog window
 					}
 				]
 			}
 		};
 	}
+
+	print STDERR 'time4: ' . (time - $start_time) . "\n";print STDERR 'time1: ' . (time - $start_time) . "\n";
 
 	return encode_json({
 		formatVersion => 1,
