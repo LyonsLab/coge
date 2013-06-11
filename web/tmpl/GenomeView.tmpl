@@ -120,7 +120,7 @@ OpenLayers.Layer.Genomic.prototype.buffer = 1;
          ,{isBaseLayer:false}
      );
 
- <TMPL_VAR NAME=DYNAMIC_LAYERS>
+	<TMPL_VAR NAME=DYNAMIC_LAYERS>
 
     genes = new OpenLayers.Layer.Genomic( "<span id='gc'>Genes</span>" , server
          ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"pseudogene,gene,mRNA,CDS,rna,CNS",}
@@ -130,7 +130,7 @@ OpenLayers.Layer.Genomic.prototype.buffer = 1;
          ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"GEvo_link",}
          ,{isBaseLayer:false}
      );
-gene_space = new OpenLayers.Layer.Genomic( "<span id='gc'>Gene space</span>" , server
+	gene_space = new OpenLayers.Layer.Genomic( "<span id='gc'>Gene space</span>" , server
                    ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"gene_space",}
 	                        ,{isBaseLayer:false}
 				             );
@@ -175,18 +175,18 @@ gene_space = new OpenLayers.Layer.Genomic( "<span id='gc'>Gene space</span>" , s
     gbox.setVisibility(<TMPL_VAR NAME="GBOX">);
     map.addLayer(gbox);
 
-        genes.setVisibility(<TMPL_VAR NAME="GENES">);
-        map.addLayer(genes);
+    genes.setVisibility(<TMPL_VAR NAME="GENES">);
+    map.addLayer(genes);
 
-	    <TMPL_VAR NAME="DYNAMIC_LAYERS_ADD">
+	<TMPL_VAR NAME="DYNAMIC_LAYERS_ADD">
 	    
- 	    <TMPL_IF NAME="QUANT_LAYER">
-        </TMPL_IF>
+	<TMPL_IF NAME="QUANT_LAYER">
+    </TMPL_IF>
 
  	    <TMPL_IF NAME="TE_LAYER">
             transposable.setVisibility(<TMPL_VAR NAME="TE">);
             map.addLayer(transposable);
-            </TMPL_IF>
+        </TMPL_IF>
 
 
  	    <TMPL_IF NAME="GEVO_LINK_LAYER">
@@ -278,7 +278,7 @@ gene_space = new OpenLayers.Layer.Genomic( "<span id='gc'>Gene space</span>" , s
             }
 
 
-        }
+}
 	
 function updateSliderPosition() {
 	var pos_obj = map.getCenter();
@@ -370,26 +370,26 @@ function mapMouseOut(e) {
  }
 
 function launch_seqview(dsid, chr, gstid, dsgid)
- {
+{
    start = $('#grab_from').val();
    stop = $('#grab_to').val();
    if (stop > 0) {window.open("SeqView.pl?dsid="+dsid+"&dsgid="+dsg+"&chr="+chr+"&start="+start+"&stop="+stop+"&gstid="+gstid);}
    else {alert("stop position is: "+stop)};
- }
+}
 
 function launch_featlist(dsid, chr, gstid, dsgid)
- {
+{
    start = $('#grab_from').val();
    stop = $('#grab_to').val();
    if (stop > 0) {window.open("FeatList.pl?dsid="+dsid+"&dsgid="+dsg+"&chr="+chr+"&start="+start+"&stop="+stop+"&gstid="+gstid);}
    else {alert("stop position is: "+stop)};
- }
+}
 
 function change_gene_model_type()
- {
+{
    var goods = [genes, wobble_GC_usage];
    for (var i in goods)
-    {
+   {
       if ($('#flat_models').is(':checked') == true)
        {
          goods[i].params.layers +=',flat';
@@ -406,47 +406,35 @@ function change_gene_model_type()
        {
          goods[i].params.layers = goods[i].params.layers.replace(',olc','');
        }
-	 goods[i].redraw();
+	   goods[i].redraw();
     }
- }
-
-function go_save_options() {
-
-var show_gc =gc.visibility;
-var show_gaga =gaga.visibility;
-var show_gbox =gbox.visibility;
-var show_genes =genes.visibility;
-var show_wobblegc =wobble_GC_usage.visibility;
-//var show_wobble50gc =wobble_GC_usage_first_50.visibility;
-var show_localdup =local_dup.visibility;
-var show_funcdomain =func_domain.visibility;
-var show_prot =prot.visibility;
-save_options([
-'args__flat','args__'+$('#flat_models').is(':checked'), 
-'args__expand','args__'+$('#overlap_models').is(':checked'), 
-'args__popupanno','args__'+$('#popup_anno').is(':checked'), 
-'args__gc','args__'+show_gc,
-'args__gaga','args__'+show_gaga,
-'args__gbox','args__'+show_gbox,
-'args__genes','args__'+show_genes,
-'args__wobblegc','args__'+show_wobblegc,
-//'args__wobble50gc','args__'+show_wobble50gc,
-'args__localdup','args__'+show_localdup,
-'args__funcdomain','args__'+show_funcdomain,
-'args__prot','args__'+show_prot,
-],[]);
 }
 
-$(document).ready(function(){
-  pageObj.getseq = 3;
-  $('#width').val($('#main').width());
-  $('#map').css('width',$('#width').val());
-  init();
-  change_gene_model_type();
-  $(".dialog_box").dialog({ autoOpen: false, width: 500  });
-  <TMPL_IF NAME="SHOW_LEGEND">$('.legend').toggle();</TMPL_IF>
-  <TMPL_IF NAME="MAIZEGDB">$('#maizegdb_popup').dialog('open');</TMPL_IF>
-});
+function go_save_options() {
+	var show_gc =gc.visibility;
+	var show_gaga =gaga.visibility;
+	var show_gbox =gbox.visibility;
+	var show_genes =genes.visibility;
+	var show_wobblegc =wobble_GC_usage.visibility;
+	//var show_wobble50gc =wobble_GC_usage_first_50.visibility;
+	var show_localdup =local_dup.visibility;
+	var show_funcdomain =func_domain.visibility;
+	var show_prot =prot.visibility;
+	save_options([
+	'args__flat','args__'+$('#flat_models').is(':checked'), 
+	'args__expand','args__'+$('#overlap_models').is(':checked'), 
+	'args__popupanno','args__'+$('#popup_anno').is(':checked'), 
+	'args__gc','args__'+show_gc,
+	'args__gaga','args__'+show_gaga,
+	'args__gbox','args__'+show_gbox,
+	'args__genes','args__'+show_genes,
+	'args__wobblegc','args__'+show_wobblegc,
+	//'args__wobble50gc','args__'+show_wobble50gc,
+	'args__localdup','args__'+show_localdup,
+	'args__funcdomain','args__'+show_funcdomain,
+	'args__prot','args__'+show_prot,
+	],[]);
+}
 
 function moveMap(){
 	 var mypos= $('#slider').slider("value");
@@ -466,15 +454,6 @@ function getURLParameter(name) {
 
 var jbrowse;
 $(function() {
-	$('#slider').slider({
-		orientation: 'horizontal',
-		max: <TMPL_VAR NAME="CHR_LENGTH">, 
-		value: <TMPL_VAR NAME="LOC">, 
-		slide: moveMap,
-		change: panMap,
-		stop: panMap,
-	});
-	
 	$.ajaxSetup({
 		type: "POST",
 		url: "<TMPL_VAR NAME=PAGE_NAME>",
@@ -507,11 +486,29 @@ $(function() {
 			$('#resize').show();
 		}
 	});
-	
+
 	var viewer = getURLParameter('viewer');
 	if (viewer) {
 		$('#select_view').val(viewer).change();
 	}
+
+	pageObj.getseq = 3;
+	$('#width').val($('#main').width());
+	$('#map').css('width',$('#width').val());
+	init();
+	change_gene_model_type();
+	$(".dialog_box").dialog({ autoOpen: false, width: 500  });
+	<TMPL_IF NAME="SHOW_LEGEND">$('.legend').toggle();</TMPL_IF>
+	<TMPL_IF NAME="MAIZEGDB">$('#maizegdb_popup').dialog('open');</TMPL_IF>
+
+	$('#slider').slider({
+		orientation: 'horizontal',
+		max: <TMPL_VAR NAME="CHR_LENGTH">, 
+		value: <TMPL_VAR NAME="LOC">, 
+		slide: moveMap,
+		change: panMap,
+		stop: panMap,
+	});
 });
 </script>
 
@@ -522,13 +519,14 @@ $(function() {
 		<option value="JBrowse">JBrowse</option>
 	</select>
 </span>
-<span id="resize">
+
+<span id="resize" style="display:none">
 	<span>Window Width: <input type=textbox class=backbox size=4 id="width" onkeypress="onEnter(event);" value=<TMPL_VAR NAME="width"> /><span class="small">px</span></span>
 	<span class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#map').css('width',$('#width').val());updateZoom();"><span class="ui-icon ui-icon-arrow-2-e-w"></span>Resize</span>
 	<span class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#map').css('width',''+$('#main').width());updateZoom();"><span class="ui-icon ui-icon-arrow-4-diag"></span>Full-Window</span>
 </span>
 
-<div id="main">
+<div id="main" style="display:none">
 	<div id="map" style="background-color:#FFFFFF"></div>
 	<div id='resolution'></div>
 	<div id ='alert_grab'></div>
