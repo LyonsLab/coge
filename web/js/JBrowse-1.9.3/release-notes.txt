@@ -1,0 +1,1111 @@
+1.9.3     2013-05-09 12:42:39 EST5EDT
+
+ * Fixed a bug in VCF backend that prevented display of VCF features
+   containing lines in which the ALT column was '.' or not provided.
+   Thanks to Ignazio Carbone for pointing this out.
+
+ * Fixed a display bug in faceted track selector in which selected
+   facets that have no available matches were squashed to the left
+   side.
+
+ * Fixed issue with HTMLVariants track type not being available for
+   selection from the File->Open dialog.
+
+1.9.2     2013-05-02 13:30:12 EST5EDT
+
+ * Fixed bug in which JBrowse could not properly display all data in
+   BAM files with reference sequence name sections bigger than 64KB.
+   Thanks to GitHub user lfgu for pointing this out (issue #245).
+
+ * Made REST feature store backend less sensitive more tolerant of
+   stringification of `start`, `end`, `strand`, and `score` in feature
+   JSON.  Thanks to Matt Bomhoff for pointing this out.
+
+ * Fixed bug in which URLs for plugin resources were not assembled
+   relative to the `browserRoot` config variable.  Thanks to Matt
+   Bomhoff for pointing this out.
+
+ * Fixed bug in which missing fields in a VCF variant's genotype
+   prevented display of a variant's details.  Thanks to Jillian Rowe
+   for pointing this out.
+
+ * Fixed some minor issues related to the handling of empty BigWig
+   files.  Thanks to Nathan Boley for pointing this out (issue #252).
+
+ * The `trackSelector.type` global config variable can now contain
+   fully-qualified class names, so plugins can contain their own
+   tracklist classes.  Thanks to Matt Bomhoff for pointing this out.
+
+ * Moved the "Select tracks" tab used to open the faceted track
+   selector downward, so that it does not block access to the left
+   side of the reference sequence overview.
+
+1.9.1     2013-04-25 12:02:25 EST5EDT
+
+ * Significant speed and memory optimizations in BAM data backend
+   (issue #242).
+
+ * Significant speed and memory optimizations in VCF data backend.
+
+ * JBrowse now attempts to smooth over mismatches in the naming of
+   reference sequences between various datasets.  For instance, if a
+   BAM file contains reference sequences named like "chrom1", and the
+   canonical reference sequences used in a JBrowse installation are
+   named like "chr1", JBrowse will recognize these two names as
+   equivalent for the purposes of displaying the BAM data.  This
+   behavior can be disabled by setting the global configuration
+   variable `exactReferenceSequenceNames` to `true`. (issue #239).
+
+ * Removed support for track `blockDisplayTimeout` configuration
+   variable.  It never worked very well, and the problem it was meant
+   to address (delays caused by large data) are better mitigated by
+   `maxHeight` and the faster rendering offered by canvas-based track
+   types.
+
+ * Fixed a bug that prevented displaying some VCF files.  Thanks to
+   Steffi Geisen for pointing this out.
+
+ * Reduced the default value of `maxHeight` for canvas-based feature
+   tracks (like Alignments2) from 1000 to 600.
+
+ * Fixed a bug in the `Alignments` track type where BAM features with
+   missing mate pairs that are not drawn due to their position above
+   the track's `maxHeight` caused the track rendering to crash.
+   Thanks to Tristan Lubinski for reporting this.
+
+ * If no global `refSeqOrder` is specified in the configuration, the
+   reference sequences are now not sorted.  Currently, this means that
+   they will appear in the same order as loaded by
+   `prepare-refseqs.pl`.  Users with a very large number of (more than
+   10,000) reference sequences may wish to avoid specifying a
+   `refSeqOrder`, since sorting the reference sequences is done at
+   JBrowse startup time.  Thanks to Tristan Lubinski for reporting
+   this.
+
+ * Fixed bug preventing display of quantitative data from files loaded
+   with flatfile-to-json.pl.  Thanks to Gwendoline Andres for pointing
+   this out.
+
+ * Instead of quantitative (wiggle) tracks throwing an error when they
+   cannot choose a min and max for the display scale, they now just
+   make a guess.  While probably wrong, this at least has the track
+   displaying something, and users can then look up how to fix the
+   display scale.
+
+ * Added support for a `chunkSizeLimit` configuration variable for BAM
+   and VCF-based tracks, which defaults to 5MB for BAM and 15MB for
+   VCF.  When fetching data, if a given region requires fetching a
+   file chunk that is larger than this limit, a 'Too much data'
+   message is displayed.  This helps prevent speed and memory problems
+   when displaying deep-coverage BAM tracks and large VCF tracks
+   (issue #242).  Thanks to Gustavo Cerquiera (GitHub user cerca11)
+   for pushing for progress on this.
+
+ * Fixed a regression in which callbacks and interpolations were not
+   evaluated in left-click and right-click menu configurations.
+
+ * Fixed incorrect display of negative values in log-scale wiggle
+   tracks.  Thanks to GitHub user drusch for pointing this out
+   (issue #244).
+
+ * Fixed more minor errors when running under IE 7.
+
+ * Fixed "Max height reached" message sometimes being drawn under
+   instead of over HTML-based features.
+
+1.9.0     2013-04-16 18:59:19 EST5EDT
+
+ * Added a direct-access data backend for reading variation data
+   directly from VCF files that have been compressed with `bgzip` and
+   indexed with `tabix`.  See the JBrowse Configuration Guide on the
+   GMOD wiki for details about how to add directly-displayed VCF files
+   (issue #211).
+
+ * Added a new `HTMLVariants` track type based on HTMLFeatures with a
+   feature-details popup optimized for displaying variant details.
+
+ * Added a text box at the top of the simple (i.e. the default) track
+   selector that finds tracks in the track list matching the typed
+   text (issue #210).
+
+ * Added support for `autoscale: "local"` in Wiggle, FeatureCoverage,
+   and SNPCoverage tracks, which automatically sets the scale of the
+   y-axis based on the range of the data being displayed in the
+   current view.  Thanks to Gregor Rot and Raymond Wan for championing
+   the need for this (issue #203).
+
+ * Added an optional dropdown selector in the menu bar that allows
+   switching between multiple datasets.  To enable it, add a
+   `datasets` array in your JBrowse configuration, and set a
+   `dataset_id` in each of the `trackList.json` (or other) files that
+   are optionally loaded by the dataset selector.  See the JBrowse
+   Configuration Guide on the GMOD wiki for details (issue #134).
+
+ * Added a new datastore class, `JBrowse/Store/SeqFeature/REST` that
+   fetches data from any back end system that implements the simple
+   REST API it uses.  See the JBrowse Configuration Guide for details
+   on how to implement its REST API.  Thanks to Brett Thomas, Daniel
+   Troesser, and Brad Chapman for pointing out the need for this
+   (issue #227).
+
+ * By default, JBrowse now continuously updates the browser's URL bar
+   to contain a URL that will show the current JBrowse view directly.
+   This is enabled by default only if JBrowse is running from the
+   default index.html included in the JBrowse distribution.
+
+ * HTMLFeatures, Alignments, and Alignments2 tracks now accept a
+   `maxHeight` configuration variable specifying the maximum displayed
+   height of a track in pixels.  Features that would cause the track
+   to grow beyond its maximum height will not be drawn (issue #222).
+
+ * Removed the `refSeqDropdown` configuration variable; the reference
+   sequence selector is now shown for any number of reference
+   sequences, with its length limited by the `refSeqSelectorMaxSize`
+   variable (see next item).
+
+ * Added support for optional `refSeqSelectorMaxSize` and
+   `refSeqOrder` global configuration variables that set the maximum
+   length of the reference sequence dropdown selector, and specify the
+   sort order of the reference sequences in that selector,
+   respectively.  One instance in which this is particularly useful is
+   in displaying annotations on early-stage, incomplete genomic
+   assemblies: to display the N biggest contigs in the assembly in the
+   reference sequence selector dropdown, one can set `refSeqOrder` to
+   `length descending`, and set `refSeqSelectorMaxSize` to N.  Thanks
+   to Ignazio Carbone for pointing out the need for this. (issues #234
+   and #235).
+
+ * Fixed some bugs causing memory leaks when scrolling and zooming,
+   especially on tracks with a lot of data like BAM tracks.  Thanks to
+   Gustavo Cerquiera for pointing this out (issue #220).
+
+ * HTMLFeatures tracks now accept `style->label` and
+   `style->description` configuration variables variable that can be
+   set to a function callback that returns a string with the feature's
+   label or long description, respectively (issue #9).
+
+ * Wiggle/XYPlot, Wiggle/Density, and FeatureCoverage tracks now
+   accept function callbacks in their `style->pos_color`,
+   `style->neg_color`, `style->bg_color`, and
+   `style->clip_marker_color` configuration variables.  Function
+   callbacks are passed two arguments: the feature object (with start
+   bp, end bp, and score of the quanititative region being shown, and
+   the track object (which can be used to access track configuration
+   data, along with many other things).  (issue #133).
+
+ * Wiggle/XYPlot tracks now accept an array for their `variance_band`
+   argument, allowing users to set the position of the variance bands
+   to show (issue #133).
+
+ * Wiggle/XYPlot tracks now accept a `style->variance_band_color`
+   configuration variable, allowing users to set the colors of the
+   variance bands. The variance band color should usually be specified
+   with a partial opacity.  Default is 'rgba(0,0,0,0.3)', which is
+   black with 30% opacity (issue #133).
+
+ * Added an "About JBrowse" popup dialog, which supports an
+   `aboutThisBrowser` configuration stanza containing a title for the
+   main browser window, and a description to be shown in a pop-up
+   dialog when the title is clicked (issue #206).
+
+ * Where possible (i.e. supported by the data store), JBrowse will now
+   pop up a warning if a local data file is opened that contains no
+   data for the current reference sequence (issue #178).
+
+ * Fixed bug in which hard- and soft-clipped regions were erroneously
+   counted toward the overall length of a BAM alignment (issue #229).
+
+ * Fixed bug in which dragging the vertical scroll bar marker on the
+   right side of the track pane did not behave correctly. (Julien
+   Smith-Roberge, issue #223).
+
+ * Fixed bug in which the navigation location for some reference
+   sequences can get messed up when ref.start != 0, or ref.end !=
+   ref.length (issue #215).
+
+ * Fixed bug in which, when using the dynamic zooming tool
+   (rubber-band zooming), some browsers (particularly Safari) would
+   inaccurately display the locations of HTML-based features and
+   per-basepair colored bars in sequence tracks.
+
+ * Fixed bug in which navigating via sequence dropdown selection
+   ignores previous location on selected sequence, whereas with
+   navigation text box entering just a sequence name navigates to
+   previous location on that sequence (if visited previously).  Thanks
+   to Gregg Helt for implementing this fix (issue #216).
+
+ * Fixed bug in which the initial default view of a previously
+   unviewed reference sequencestarts at 80% centered view, but any use
+   of reference sequence selection pulldown takes it to 100%.  Big
+   thanks to Gregg Helt for implementing this fix (issue #217).
+
+ * Fixed bug in which iframe popups did not display correctly in
+   Internet Explorer 9.  Thanks to Steffi Geisen for pointing this out
+   (issue #233).
+
+ * Fixed a number of bugs that prevented JBrowse from running in
+   Internet Explorer 7 and 8 (issue #236).
+
+ * Improved JSON syntax error messages in server-side scripts
+   (issue #214).
+
+ * Increased the default display timeout (`blockDisplayTimeout`) on
+   HTML-based features tracks from 5 seconds to 20 seconds.
+
+ * Added a `new-plugin.pl` helper script that makes the skeleton of a
+   new JBrowse plugin.
+
+ * Added an `add-json.pl` helper script that advanced users can use to
+   set arbitrary value in JSON files from the command line.
+
+ * Fixed a bug in which the `--conf` option to `prepare-refseqs.pl`
+   did not support comments in JSON conf files (issue #213).  Thanks
+   to Keiran Raine for pointing this out.
+
+ * Fixed some missing dojo/dijit nls directories in the non-dev
+   release zipfile.
+
+ * Fixed a bug with handling of timeout events in HTMLFeatures tracks.
+   Thanks to Matt Henderson of KBase for pointing this out.
+
+1.8.1     2013-02-12 12:56:24 EST5EDT
+
+ * Added support for `cigarAttribute` and `mdAttributes` configuration
+   variables to Alignments and Alignments2 tracks, allowing users to
+   change which feature attribute is used for showing mismatches
+   (issue #200).
+
+ * Fixed some bugs preventing `Alignments` and `Alignments2` tracks
+   from working with non-BAM data backends.
+
+ * Added `--trackLabel` and `--key` options to `prepare-refseqs.pl`,
+   allowing users to specify the sequence track's label and title.
+
+ * Added `--seqType` option to `prepare-refseqs.pl`, allowing users to
+   specify the type of sequences being formatted, usually either
+   'dna', 'rna', or 'protein'.  Additionally, if --seqType is
+   something over than DNA (case insensitive), "showReverseStrand" is
+   set to false on the reference sequence track.
+
+ * `prepare-refseqs.pl` now calls the track showing the reference
+   sequence "Reference sequence" instead of "DNA".
+
+ * Added a `shareURL` configuration option that accepts a JS function
+   to assemble the URL that users will get when clicking the "Share"
+   button or the "Full view" link in embedded mode (issue #198).
+
+ * Fixed annoying bug in which popup feature detail boxes are
+   initially scrolled all the way to the bottom.
+
+1.8.0     2013-01-31 14:05:27 America/New_York
+
+ * Added new "File -> Open" function that can display BAM, BigWig, and
+   GFF3 files located on the user's machine, at remote URLs, or a
+   mixture of both.  When opening local files, everything is done
+   locally, no data is transferred to the server.
+
+ * Added a new "SNPCoverage" track type, designed for use with BAM
+   files (but which works with any features that have MD fields), that
+   shows a coverage plot with a graphical representation of SNP
+   distribution, and tables showing frequencies for each SNP.
+
+ * Added a new "Alignments2" track type, which is a much faster
+   implementation of the "Alignments" track type.  It is more suitable
+   for very deep BAM alignments, but has a slightly different
+   configuration scheme.
+
+ * Added a flexible plugin system whereby external code can be loaded
+   as part of JBrowse.  Plugin JavaScript has full access to customize
+   nearly everything in JBrowse.  The plugin system is quite new, but
+   many hooks are available that plugins can use to safely modify
+   JBrowse's behavior, and more are on the way.  See the JBrowse wiki
+   for details on how to write your own plugins.  Thanks to Gregg Helt
+   and the other members of the WebApollo project for helping to drive
+   development of the new plugin system.
+
+ * JBrowse feature name indexing (`generate-names.pl`) now uses an
+   all-new hash-based filesystem backend.  Although
+   `generate-names.pl` now takes longer to run, it can handle much
+   larger numbers of names to index, and uses much less RAM to do it.
+   As a side benefit, the JBrowse location box's autocompletion
+   feature is now faster and more reliable.  Thanks to Steffi Geisen
+   and Volodymyr Zavidovych for pointing out the issues with name
+   indexing scalability and reliability.
+
+ * Added support in "HTMLFeatures", "Alignments", and "Alignments2"
+   tracks for a `style.featureScale` configuration variable, which, if
+   set, specifies a minimum zoom scale (pixels per basepair) for
+   displaying features.  If zoomed out more than this (i.e. fewer
+   pixels per bp), either histograms or a "too many features" message
+   will be displayed.
+
+ * Changed binning algorithm of "FeatureCoverage" tracks when zoomed
+   out.  Now calculates the average base coverage in each bin, rather
+   than the absolute number of features that overlap each bin.
+
+ * "HTMLFeatures" tracks now accept a comma-separated list of field
+   names in their `description` configuration variable, allowing users
+   to customize which attribute(s) of a feature hold the description.
+
+ * Added a timeout to HTMLFeatures and Alignments tracks to prevent
+   data-heavy tracks (like BAM tracks with very deep coverage) from
+   freezing or crashing a user's browser.
+
+ * Improved graphical look of canvas-based tracks during zoom
+   operations.  Thanks to Mitch Skinner for implementing this!
+
+ * Fixed a bug in which the Y-axis scale for feature density
+   histograms in HTMLFeatures tracks was sometimes drawn incorrectly.
+
+ * Greatly improved speed and responsiveness of BAM data backend.
+
+ * Fixed yet another bug that prevented display of some types of BAM files.
+
+1.7.6     2013-01-10 01:25:58 America/New_York
+
+ * Fixed a bug in the BAM direct-access backend that prevented some
+   BAM files from being displayed.
+
+1.7.5     2012-12-12 13:40:12 America/New_York
+
+ * Fixed a bug in which typing a key that is bound to a global
+   keyboard shortcut (currently only 't' or '?') in the location box
+   would erroneously execute the action for that global shortcut.
+   Thanks to Gregor Rot for pointing this out.
+
+ * Fixed a bug in which toggling 'Show labels' in the track menu did
+   not re-layout the track on the first toggling.
+
+ * Make columns in the faceted track selector initially each be an
+   equal percentage of the total width of the grid.  Thanks to Steffi
+   Geisen for pointing this out.
+
+1.7.4     2012-12-06 23:08:22 America/New_York
+
+ * Fixed a bug preventing loading of JBrowse in some browsers.  Thanks
+   to Steffi Geisen for pointing this out.
+
+ * Fixed a bug in the BigWig data backend that prevented some BigWig
+   files with large numbers of reference sequences from displaying.
+   Thanks to Gregg Helt for providing sample data to help isolate
+   this.
+
+ * Fixed a bug in the BigWig data backend that prevented BigWig files
+   rendering in Safari.  Thanks to Gregor Rot for his help in isolating this.
+
+ * Worked around a bug in Safari 6 (and probably earlier) in which
+   HTTP byte-range requests are erroneously cached.  Thanks to Gregor
+   Rot for pointing out the Safari problems.
+
+ * Fixed some minor styling bugs in the facet menus of the faceted
+   track selector.
+
+ * Fixed blurry edges of location trapezoid in Firefox (Eric Derohanian).
+
+1.7.3     2012-11-28 23:29:48 America/New_York
+
+ * Fixed several more bugs in the BAM data backend that prevented
+   display of some BAM files.  Thanks to Gleb Kuznetzov for help in
+   isolating these.
+
+ * Fixed bug in display of faceted track selector in which the facet
+   titles were taking up too much vertical height.  Thanks to Steffi
+   Geisen for pointing this out.
+
+ * "Alignments" tracks now parse an alignment's CIGAR string if it
+   does not have an MD field, and display mismatches and skipped
+   sequence regions (particularly important for RNA-seq alignments).
+   Thanks to Gregg Helt for providing the sample dataset used to test
+   this.
+
+ * Added support for a `showReverseStrand` config variable to Sequence
+   track that, if set to false, turns off display of the reverse
+   sequence strand.
+
+ * "Alignments" tracks now show reads with missing mate pairs with a
+   red crosshatched pattern instead of with a red border.
+
+ * Added an Apache .htaccess file to the JBrowse root directory that
+   enabled CORS by default for all files under it, if AllowOverride is
+   on.
+
+ * Fixed bug in which the vertical scroll position can sometimes be
+   set too far down when zooming in and out.
+
+ * Fixed some bugs in server-side formatting code for feature tracks:
+   data was recorded multiple times in JSON files in some
+   circumstances.  Thanks to Volodymyr Zavidovych and Steffi Geisen
+   for pointing this out.
+
+1.7.2     2012-11-09 15:40:06 America/New_York
+
+ * Fixed more bugs in BAM backends that failed to load some types of
+   BAM files, including BAM files containing no alignments.  Thanks to
+   John St. John for his assistance in isolating the problem.
+
+1.7.1     2012-11-07 11:25:39 America/New_York
+
+ * Fixed bug in which bars below the origin of `Wiggle/XYPlot` were
+   drawn incorrectly (issue #161).  Thanks to GitHub user @makela for
+   pointing this out.
+
+ * `Wiggle/XYPlot` tracks now by default draw a horizontal line at the
+   origin, and support a `style.origin_color` configuration variable
+   to set its color or turn it off.
+
+ * Fixed bug in BAM backend that caused an infinite loop and/or
+   browser crash with some BAM files.  Thanks to Gleb Kuznetzov for
+   pointing this out.
+
+1.7.0     2012-11-05 19:22:17 America/New_York
+
+ * Added a new direct-access storage driver for BAM files, removing
+   the need for `bam-to-json.pl`.  This new method of BAM access is
+   far superior to the old `bam-to-json.pl` in nearly every way,
+   except in browser compatibility.  Like the BigWig direct access
+   backend added in JBrowse 1.5.0, it is based on code from Thomas
+   Down's Dalliance Genome Explorer, and works in all major browsers
+   *except* Internet Explorer, because IE lacks support for the
+   necessary web standards.  It may work with Internet Explorer 10,
+   but this has not been tested yet.
+
+ * Added a new `Alignments` track type designed to work seamlessly
+   with BAM files.  This track type shows basepair differences and
+   insertions between aligned reads and the reference, and highlights
+   reads with missing mate-pairs in red.
+
+ * Added the ability to export track data in FASTA, GFF3, bed,
+   bedGraph, and Wiggle formats (issue #104).  To export data, turn on
+   the track of interest, then click on its track label to bring up
+   the track menu, and select "Save track data".
+
+ * Added a new `Wiggle/Density` track type, analagous to the GBrowse
+   `wiggle_density` glyph type.  Shows the Wiggle information using
+   varying intensity of color (issue #66).  Renamed the `Wiggle` track
+   to `Wiggle/XYPlot`, and made the old `Wiggle` track type an alias
+   to `Wiggle/XYPlot`.
+
+ * Both `Wiggle/XYPlot` and `Wiggle/Density` now support a `style ->
+   bg_color` option.  Color-density plots blend the `pos_color` or
+   `neg_color` into the `bg_color` in amounts that vary with the
+   wiggle data, and xyplots fill the background color behind all
+   points that have data present, regardless of value.  `bg_color`
+   defaults to off for xy xplots, and semi-transparent gray for
+   density plots.  Setting this makes it easier for users to
+   distinguish at a glance between regions with no data, and regions
+   with a value of 0.
+
+ * Added a new `FeatureCoverage` track type, which shows a
+   dynamically-computed XY-plot of the depth of coverage of features
+   across a genome.  One good use of this track type is to provide a
+   quick coverage plot directly from a BAM file.  However, since this
+   track calculates coverage on the fly, it can be slow when used with
+   large regions or very deep coverage.  In this case, it is
+   recommended to generate a BigWig file containing the coverage data,
+   and display it with a `Wiggle/XYPlot` or `Wiggle/Density` track.
+
+ * DNA bases are now displayed with color-coded backgrounds, allowing
+   basepair information to be discerned when zoomed somewhat further
+   out, when base letter cannot be drawn.  Colors are also designed to
+   match the base-mismatch colors used in `Alignment` tracks, enabling
+   clearer SNP visualization.
+
+ * Added a vertical line cursor and labels showing the current
+   basepair position of the mouse when hovering over the scale bar, or
+   when doing a rubber-band zoom (Erik Derohanian) (issue #32).
+
+ * Added an animation to make it easier to see where in the track
+   selection list a closed track has gone, when using the simple track
+   selector (issue #151).
+
+ * Information dialog boxes are now easier to dismiss: clicking
+   anywhere outside of them, or pressing any key, will make them go
+   away.
+
+ * Improvements to feature track configuration:
+   * Feature tracks no longer use the `style.subfeatureScale`
+     configuration variable to determine whether to show subfeatures.
+     Instead, subfeatures are shown if the parent feature, when shown on
+     the screen, is wider than `style.minSubfeatureWidth`, which
+     defaults to 6 pixels.
+   * Make explicitly-configured track `labelScale`, `histScale`, and
+     `descriptionScale` not be modulated by the feature density: only
+     use the feature density to pick the scale defaults
+
+ * The default feature-detail dialog box now shows more information, adding:
+   * the feature's exact length
+   * full details of its subfeatures
+
+ * Added a `locationBoxLength` configuration variable that controls
+   the width of the location box.  In addition, the default width of
+   the location box is now also smarter.  Instead of a fixed 25
+   characters, it is calculated to fit the largest location string
+   that is likely to be produced, based on the length of the reference
+   sequences and the length of their names.
+
+ * Pressing SHIFT+-up/down arrow keys now cause the genome view to
+   zoom in and out.  If ALT is added, it zooms further.  Thanks to
+   Karsten Hokamp for the excellent suggestion.
+
+ * Holding SHIFT while scrolling left and right with the arrow keys
+   causes the view to scroll further.
+
+ * Added a `theme` configuration variable to allow changing the
+   graphical theme to something different from the default "tundra".
+   However, no other themes are implemented yet.
+
+ * Greatly sped up rendering of HTML subfeatures by caching the
+   heights of subfeature HTML elements.
+
+ * Fixed bug in which the genome view executed a double-click zoom when
+   users rapidly clicked on multiple track 'close' buttons.
+
+ * Fixed bug with the genome view scrolling in response to arrow keys
+   being pressed when typing in the location box.
+
+ * Fixed bug in which the score display in Wiggle tracks would
+   sometimes flicker when moving the mouse.
+
+1.6.5     2012-10-26 12:10:08 America/New_York
+
+ * The location box now shows the length of the currently visible
+   region in parentheses.  For example: `ctgB:1244..3566 (2.32 Kb)`.
+   Thanks to Karsten Hokamp for the suggestion!
+
+ * The arrow keys on the keyboard can now be used to pan and scroll
+   around the genome view.
+
+ * Wiggle track mouseover cursors now display the score with only 6
+   significant digits, avoiding confusion over approximations
+   introduced by scores being converted to IEEE floating-point numbers
+   (as for BigWig files) and back to text.
+
+ * The faceted track selector now renders any HTML that may be present
+   in the track metadata by default.  To turn this off, it now accepts
+   an `escapeHTMLInData` option that, if set to `true` or `1`, will
+   not render the HTML, but will instead display the raw code
+   (issue #145).
+
+ * Upgraded to a more recent version of jszlib, which contains some
+   important bugfixes (issue #157).
+
+ * Fixed bug dealing with very large regions with the same value in
+   canvas-based Wiggle tracks (also issue #157).
+
+ * `prepare-refseqs.pl` now by default uses a more scalable directory
+   structure for storing sequences.  This fixes problems some users
+   were experiencing with large numbers of reference sequences
+   (issue #139).
+
+ * `ucsc-to-json.pl` now supports a `--primaryName` option allowing
+   the users to alter which UCSC data field is displayed by JBrowse as
+   the primary name of the features in a track.  Also,
+   `ucsc-to-json.pl` now treats as indexable names all UCSC data
+   columns called "name", "alias", or "id" followed by zero or more
+   digits.  Thanks to Steffi Geisen for this suggestion.
+
+ * Fixed "Duplicate specification" warnings coming from
+   `flatfile-to-json.pl` and `remove-track.pl`.
+
+ * Fixed bugs in which both the first few and the last few bases of a
+   reference sequence were not displaying correctly in a DNA track.
+
+1.6.4     2012-10-16 11:50:44 America/New_York
+
+ * Improvements to the scalability of `generate-names.pl`.  Many
+   thanks to Steffi Geisen for her ongoing help with this.
+    * Users can now manually specify which tracks will be indexed to
+      enable autocompletion and searching for their feature names in
+      the JBrowse location box.
+    * The lazy-trie name indexing structure now correctly handles the
+      case of large numbers of features that may share the same
+      name. Before, it was generating files that were too large for
+      the client to handle.
+
+ * Fixed off-by-one error in Wiggle track display code: wiggle data
+   was incorrectly displayed shifted one base to the left of its
+   proper position.  Thanks to Steffi Geisen for noticing this.
+
+ * Fixed bug in which the reference-sequence selection box did not
+   automatically update in all situations to reflect the current
+   reference sequence.
+
+1.6.3     2012-09-28 11:33:36 America/New_York
+
+ * Fixed bug with shift-rubberband-zooming not working on Windows
+   (issue #150) (Erik Derohanian).
+
+ * Fixed "Can't locate JSON.pm" errors with add-track-json.pl.
+
+ * Added a reference-sequence-selection dropdown box, similar to the
+   old one, that is on by default if fewer than 30 reference
+   sequences, otherwise it's off unless `refSeqDropdown: true` is set
+   in the configuration (issue #138).
+
+ * Fixed bug in which popup dialog boxes showing other websites showed
+   the website in only the top portion of the dialog box.  Only
+   present in some browsers (issue #149).
+
+ * Fix coordinate display bug in feature detail popups.  The feature's
+   position was being displayed in interbase coordinates, but should
+   be displayed in 1-based coordinates.  Thanks to Steffi Geisen for
+   pointing this out.
+
+ * Added a `style.height` option to Wiggle tracks to control the
+   track's height in pixels (issue #131) (Erik Derohanian).
+
+ * Added support for a `style.trackLabelCss` configuration variable to
+   allow customizing the appearance of the label for a particular
+   track (issue #4) (Erik Derohanian).
+
+1.6.2     2012-09-10 17:47:43 America/New_York
+
+ * Fixed feature-layout performance problem when zoomed very far in
+   on features that are much larger than the viewing window.
+
+ * Added a default `menuTemplate` to all HTML-based features, so that
+   all HTML features now have a right-click menu by default.
+
+ * Add `css` configuration variable that allows users to specify
+   either strings or URLs containing CSS to add.
+
+ * improved `bin/ucsc-to-json.pl` error messages
+
+ * `bin/add-track-json.pl` now replaces tracks in the target
+   configuration if they have the same label.
+
+1.6.1     2012-08-28 16:50:41 America/New_York
+
+ * JBrowse now attempts to prevent feature labels being obscured by
+   track labels by keeping the feature labels a bit further away from
+   the left side of the view, if possible.
+
+ * Fixed bug in which welcome page was not shown when JBrowse has not
+   been configured yet (issue #130).
+
+ * Fixed bug in which passing `tracklist=0` (as when running the
+   browser in embedded mode) caused JBrowse to crash (issue #132).
+
+ * Added dependency on Bio::GFF3::LowLevel::Parser 1.4, which has an
+   important bugfix related to multi-location features (issue #109).
+   Thanks to Victor Poten for help in isolating this problem.
+
+1.6.0     2012-08-25 18:04:44 America/New_York
+
+ * Added `description` capabilities to HTML-based features, similar to
+   GBrowse's descriptions.  If zoomed in far enough (as defined by
+   `style.descriptionScale`), adds a second line of text below the
+   feature's label that shows the content's of the featur's `Note` or
+   `description` attribute (issue #67).
+
+ * Give prepare-refseqs.pl the capability to load reference sequences
+   from embedded FASTA sections in GFF3 files (issue #128).
+
+ * Configuration files can now recursively `include` eachother, and
+   `tracks` sections are merged intelligently.
+
+ * Made sequence tracks not disappear when zoomed out too far to see
+   base pairs.  Instead, sequence tracks simply display lines
+   suggesting that DNA would be visible at higher
+   magnification. (issue #124).
+
+ * Double-clicking track labels in the simple track selector now turns
+   the track on (issue #123).
+
+ * Fixed bug in BigWig tracks that use the "scale": "log" option: did
+   not render properly when the wiggle data included 0's. This was due
+   to the fact that the origin was being mapped to Infinity. Thanks to
+   the [Mockler Lab](http://www.mocklerlab.org/) for the fix! (issue
+   #127).
+
+ * Fixed bug in NCList binary search code in which zero-length
+   features at node boundaries would not be found (fix by Ed Lee).
+
+ * Fixed bug in which dragging the scroll bar on the simple track
+   selector can sometimes cause a drag-and-drop to erroneously begin
+   (issue #89).
+
+ * Fixed some bugs in the layout of HTML-based features in which
+   features in different blocks would overlap in some circumstances.
+   Under the hood, replaced the contour-based layout engine with a
+   simpler, not-much-slower implementation that is more correct in the
+   general case (issue #122).
+
+ * Fixed a bug with vertical centering of strand arrows and other
+   sub-elements of HTML-based features.
+
+1.5.0     2012-08-13 15:37:27 America/New_York
+
+ * Added a direct-access storage driver for BigWig data files, based
+   on code from the Dalliance Genome Explorer by Thomas Down.  BigWig
+   file access is supported now by the current versions of all major
+   browsers except Internet Explorer (which is expected to work when
+   version 10 is released along with Windows 8).
+
+ * Added a `canvas`-based wiggle track implementation for quantitative
+   data that, when used with the new BigWig storage backend, removes
+   the need to pre-generate rendered images of wiggle data.  Its
+   display is also highly configurable, with configuration options
+   modeled on the GBrowse `wiggle_xyplot` glyph type
+   (i.e. `Bio::Graphics::Glyph::wiggle_xyplot`).
+
+ * Added highly configurable behavior for left-clicking and
+   right-clicking features in HTML-based feature tracks.  If a
+   `menuTemplate` option is specified in the track configuration,
+   right-clicking a feature brings up a context menu, the items in
+   which can be configured to do nearly anything, but that are easy to
+   configure for the very common use case of wanting to display
+   content from a certain URL.  Feature left-clicks are also
+   configurable using the same mechanism.  Thanks to Alexie
+   Papanicolaou and Temi Varghese for the initial implementation of
+   context menus.
+
+ * Improved the default HTML feature left-click dialog box.  It is now
+   both prettier, and more comprehensive, displaying all available
+   data for the feature.
+
+ * Added the long-missing ability to render a second line of label
+   text for features containing their description, which is taken from
+   the feature's 'Note' or 'description' attribute, if present.  The
+   description is only displayed if the track's `description`
+   configuration variable is set to a true value, which is the
+   default.  There is also a style.maxDescriptionLength value, that
+   can be set to control how long a description can be before it is
+   truncated with ellipses.  It defaults to 70 characters.
+
+ * Added a small helper script, `add-track-json.pl` that developers
+   and advanced users can use to programmatically add a block of track
+   configuration JSON to an existing JBrowse configuration file.
+
+ * Improved / fixed vertical alignment of sub-elements of HTML
+   features, including subfeatures and the arrowheads that show
+   strand.  All elements in a feature are now vertically centered by
+   default.
+
+1.4.2     2012-07-12 15:38:55 America/New_York
+
+ * Restore support for histScale, subfeatureScale, and labelScale in
+   --clientConfig and track configuration JSON.  Thanks to Hernán
+   Bondino for pointing this out.
+
+1.4.1     2012-07-10 14:58:34 America/New_York
+
+ * Made displayColumns option for the faceted track selector
+   case-insensitive, and interpret a column name of "Name" as meaning
+   the track's key.
+
+ * `bam-to-json.pl` now filters out alignments that are not at least
+   two nucleotides in length.  Thanks to Tristan Lubinski for
+   assistance.
+
+ * Introduced limits on the sizes of cookies that can be set,
+   preventing '400 bad request' errors (issue #113).
+
+1.4.0     2012-06-14 17:43:50 America/New_York
+
+ * Added a full-featured faceted track selector for users that have
+   many (hundreds or thousands) of tracks.  This can be turned on by
+   setting the `trackSelectorType` config variable to "Faceted".  See
+   the JBrowse wiki for more documentation on how to use faceted track
+   selection. (issue #95)
+
+ * Removed the dropdown selector for reference sequences in favor of
+   making the location box auto-complete reference sequence and
+   feature names.  This makes JBrowse much more scalable to large
+   numbers of reference sequences. (fixes issues #3, #60, and #101)
+
+ * Added a vertical-scrolling marker on the right side of the track
+   pane, making it much easier to discern the vertical position of the
+   track display. (issue #93).
+
+ * biodb-to-json.pl and flatfile-to-json.pl now load all available
+   feature data: all attributes of features are now encoded in the
+   JSON and are available for use by feature callbacks. (issue #72)
+
+ * Feature labels now do not scroll off screen if any part of the
+   feature is still visible (fixes issue #62).
+
+ * Added jbrowse_conf.json, a default JSON-format configuration file,
+   to the JBrowse root directory.  Makes it easier to get started
+   with more advanced JBrowse configuration.
+
+ * JBrowse instances now report usage statistics to the JBrowse
+   developers.  This data is very important to the JBrowse project,
+   since it is used to make the case to grant agencies for continuing
+   to fund JBrowse development.  No research data is transmitted, the
+   data collected is limited to standard Google Analytics, along with
+   a count of how many tracks the JBrowse instance has, how many
+   reference sequences are present, their average length, and what
+   types of tracks (wiggle, feature, etc) are present.  Users can
+   disable usage statistics by setting "suppressUsageStatistics: true"
+   in the JBrowse configuration.
+
+1.3.1     2012-04-19 17:55:44 America/New_York
+
+ * Fixed memory-management bug that caused way too much RAM to be used
+   by FeatureTrack loading (flatfile, bam, and biodb-to-json.pl) when
+   loading with very large numbers of reference sequences.  Big thanks
+   to Tristan Lubinski for help in isolating this.
+
+ * Fixed some bugs in BAM support section of setup.sh autosetup
+   script, thanks to Tristan Lubinski for help in isolating this as
+   well.
+
+ * Added an example document with an iframe running JBrowse in
+   embedded mode in docs/examples/embedded_mode.html
+
+ * flatfile-to-json.pl now loads the 'score' attribute of features in the
+   JSON.
+
+1.3.0     2012-04-13 17:04:30 America/New_York
+
+ * Added support for "rubberband" dynamic zooming, in which users can
+   click and drag to select a region to zoom to.  Dragging on any
+   scale bar, or shift-dragging on the main track pane, triggers a
+   dynamic zoom.
+
+ * Correcting a long-standing oversight, wiggle data tracks and
+   feature histograms now have numerical y-axis scales that show the
+   numerical values of the data.
+
+ * Server-side data-formatting scripts now support a --compress option
+   to compress (gzip) feature and sequence data to conserve server
+   disk space.  Using this option requires some web server
+   configuration.  Under Apache, AllowOverride FileInfo (or
+   AllowOverride All) must be set for the JBrowse data directories in
+   order to use the included .htaccess files, and mod_headers and
+   mod_setenvif must be installed and enabled.  Under nginx a
+   configuration snippet like the following should be included in the
+   configuration:
+
+      location ~* "\.(json|txt)z$" {
+               add_header Content-Encoding  gzip;
+               gzip off;
+               types { application/json jsonz; }
+      }
+
+ * flatfile-to-json.pl: now much faster and more memory-efficient,
+   especially for GFF3 files.  Remember that '###' directives are very
+   important to have in large GFF3 files!  Also removed nonfunctional
+   --extraData switch.
+
+ * Added ability to turn off some JBrowse UI panels via URL arguments
+   to the default index.html, or via arguments to the Browser
+   constructor itself.  Can dynamically turn off the navigation box,
+   the overview panel, and the track list, respectively.  When all of
+   these are off, and if run in an iframe, JBrowse is running in an
+   "embedded mode" that looks similar to the output of GBrowse's
+   gbrowse_img script, with the exception that the view in this case
+   is a fully functioning, scrollable and zoomable JBrowse.  See the
+   GMOD wiki (http://gmod.org/wiki/JBrowse) for more on how to set up
+   embedded mode.  Thanks to Julie Moon, a co-op student working at
+   OICR, for this work!
+
+ * Improved graphical look and feel.
+
+ * Browser support for this release:
+      * Google Chrome 18                perfect
+      * Google Chrome 17                perfect
+      * Mozilla Firefox 11.0            perfect
+      * Mozilla Firefox 10.1            perfect
+      * Mozilla Firefox 10.0.2          perfect
+      * Mozilla Firefox 3.6.28          nonfunctional
+      * Apple Safari 5.1.5 (Lion)       perfect
+      * Microsoft Internet Explorer 9   perfect
+      * Microsoft Internet Explorer 8   good
+      * Microsoft Internet Explorer 7   minor problems
+      * Microsoft Internet Explorer 6   not tested
+      * KDE Konqueror 4.7.4             nonfunctional
+      * KDE Konqueror 4.5.5             nonfunctional
+      * Opera (all versions)            not tested
+
+   NOTE: Internet Explorer 6 is no longer supported by JBrowse.
+
+ * Added an automated-setup script, setup.sh, that tries to install
+   Perl prerequisites, format Volvox example data, and install Wiggle
+   and BAM support (fetching samtools from SVN if necessary)
+   automatically.
+
+ * Navigating to JBrowse with missing or malformed configuration or
+   data will now bring up an error page with useful messages and links
+   to help documentation, instead of a blank white page.
+
+ * JBrowse data directories now include an Apache .htaccess in their
+   root directory that, if mod_headers is installed and AllowOverride
+   FileInfo or AllowOverride All is enabled, will emit the proper HTTP
+   headers to allow cross-origin XHR requests for the data.
+
+ * A new "Help" link in the upper right, or pressing "?" on the
+   keyboard, brings up a "JBrowse Help" dialog box with basic usage
+   information and links to more help information.
+
+ * Arrowheads indicating strandedness are now drawn inside feature
+   boundaries.
+
+ * Clicking on the overview bar or the main scale bar now centers the
+   view at the clicked position.  In addition, while holding down
+   shift, clicking in the main track panel will also center the view
+   at that position.
+
+ * Added bin/remove-track.pl, a script to remove a track from a
+   JBrowse data directory.  Run bin/remove-track.pl -? to see its
+   documentation.
+
+ * Added build instrumentation to support a JSDoc-based system of
+   developer API documentation.  This documentation is still far from
+   complete.
+
+ * Ian Davis contributed code to add a view of the reverse strand of
+   the sequence in the DNA track.  Thanks Ian!
+
+ * Fixed bug in which, for some sequence chunk sizes, the DNA bases
+   would display incorrectly.
+
+ * Added minor gridlines to the main track view.
+
+ * Fixed a long-standing off-by-one bug where the window could not be
+   scrolled to view the last base in the reference sequence.
+
+ * Coordinates displayed in the user interface are now 1-based closed
+   coordinates, which are more familiar to most users.  Previously,
+   the labels displayed interbase (i.e. 0-based half-open)
+   coordinates.
+
+ * NON-BACKWARDS-COMPATIBLE improvements to the JSON format used for
+   track configuration, feature data, and image data
+     - initial support for a new hook system for greater
+       administrator-configurability of feature display
+     - support for more than one level of subfeatures
+
+ * Miscellaneous improvements and refactoring of data-formatting Perl
+   code.
+
+ * More detailed POD-based help documentation on all scripts
+
+ * --tracklabel options to all scripts replaced with --trackLabel.
+
+ * New suite of integration tests, and some unit tests, for
+   server-side Perl code.
+
+ * Beginnings of a suite of Selenium-based integration tests for the
+   front-end JavaScript code.
+
+ * Support for Apple touch-based devices merged into normal
+   index.html, so that the same link can be used regardless of the
+   browsing platform.
+
+ * Bug fixed in which non-stranded features do not display properly
+   (a problem with the CSS styles).
+
+========================================================
+
+version 1.2.1, March 2011
+
+Fixed bugs in release 1.2:
+
+- problems with BED handling reported by Gregg Helt and Brenton Graveley
+
+- performance regression reported by Chris Childers
+
+- incorrect handling of names in ucsc-to-json.pl
+
+- wig2png slowdown reported by Brenton Graveley
+
+========================================================
+
+version 1.2, Febrary 2011
+
+These notes document changes since release 1.1 in September 2010.
+
+Most of the work in this release went into making JBrowse handle large
+amounts of feature data better.  Before, the amount of memory used
+when processing BAM files was more than 10 times the size of the file;
+now, the amount of memory required is fixed.
+
+Other new features in this release:
+
+- Import of UCSC database dumps.  A ucsc-to-json.pl script is now
+  provided for taking database dumps from UCSC and creating a JBrowse
+  instance using them.  The "genePred" and "bed" track types are
+  currently supported; "psl" tracks are not yet supported.
+
+- Touch.  Juan Aguilar's code for using JBrowse on an iOS device
+  (iPhone, iPod touch, iPad) is now integrated.  As of the current
+  release, users wanting to use JBrowse on those devices have to
+  navigate to a separate HTML page (touch.html) rather than the
+  default index.html; i.e. the code does not currently detect
+  touchscreen devices automatically.
+
+- Bug fixes. A number of bugs have also been fixed, including one that
+  restricted the placement of the "data" directory, and a bug in
+  wiggle rendering that caused spurious peaks or troughs at tile
+  boundaries.
+
+Known issues/limitations with this release:
+
+- Some additional CPAN modules are now required:
+
+    PerlIO::gzip
+    Heap::Simple
+    Devel::Size
+
+- No JSON-level backward compatibility. If you are upgrading from an
+  older version of JBrowse, you will have to regenerate all the JSON
+  files on your server. This means wiping your jbrowse/data directory
+  and re-running all server scripts (flatfile-to-json, biodb-to-json,
+  wig-to-json, etc.) to regenerate your data from the original
+  FASTA/GFF/BED/WIG files. We apologize for the inconvenience of this,
+  but it is inevitable sometimes; we do aim to minimize the number of
+  releases which are backwardly-incompatible in this way.
+
+========================================================
+
+version 1.1, September 2010.
+
+These notes document JBrowse developments in the period from July 2009
+(online publication of the first JBrowse paper in Genome Research, the
+de facto "version 1.0") up to September 2010 (the first in a planned
+series of quarterly releases).
+
+New features in this release:
+
+- Scalability. JBrowse can now handle very large data tracks,
+including human EST/SNP tracks, or tracks of next-gen sequence
+reads. Large datasets are broken into smaller chunks, so there is no
+loading delay for big tracks.
+
+- Extensibility. A Perl module (ImageTrackRenderer.pm) for creating
+user-drawn image tracks is now available, based on the CPAN GD.pm
+module. An example program is provided, draw-basepair-track.pl, that
+uses this module to draw arcs over a sequence representing the
+base-pairing interactions of RNA secondary structure.
+
+- Bug fixes. Numerous display glitches have been fixed, including
+issues with wide-screen monitors and long mostly-offscreen features.
+
+Known issues/limitations with this release:
+
+- No JSON-level backward compatibility. If you are upgrading from an
+older version of JBrowse, you will have to regenerate all the JSON
+files on your server. This means wiping your jbrowse/data directory
+and re-running all server scripts (flatfile-to-json, biodb-to-json,
+wig-to-json, etc.) to regenerate your data from the original
+FASTA/GFF/BED/WIG files.
+
+- Next-gen sequence display is currently restricted to the
+co-ordinates of the outermost region to which a single read is
+mapped. There is no support (yet) for displaying pairing between
+reads, sequences of reads, alignment of read to reference sequence
+(e.g. splicing), or mismatches between read and reference.
+
+- Processing SAM/BAM next-gen sequence files takes a lot of memory
+(about 500 megabytes per million features).
+
+- Numerical (as opposed to comparative) readout of the data in Wiggle
+tracks, e.g. via a y-axis label or mouseover popup, is still
+unsupported.
+
+Please visit the website for contact info
+
+http://jbrowse.org/
+

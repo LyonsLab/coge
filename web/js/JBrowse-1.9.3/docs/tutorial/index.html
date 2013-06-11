@@ -1,0 +1,298 @@
+<html>
+  <head><title>JBrowse Quick-Start Tutorial</title></head>
+  <link rel="stylesheet" type="text/css" href="../docs.css"></link>
+  <body>
+    <div class="container" style="padding-bottom: 3em">
+
+      <h1>JBrowse Quick-Start Tutorial</h1>
+
+      <p>
+        This short guide should hopefully be enough to get you started
+        using JBrowse.  If you run into trouble, please visit
+        the <a href="http://gmod.org/wiki/JBrowse">GMOD wiki</a> for
+        extended documentation and troubleshooting information,
+        or <a href="https://lists.sourceforge.net/lists/listinfo/gmod-ajax">join
+        the gmod-ajax mailing list</a> and ask a question about
+        it.
+      </p>
+
+      <p>
+        <h3>Contents</h3>
+        <ul>
+          <li><a href="#Download_install">Download and Uncompress JBrowse</a></li>
+          <li><a href="#setup_sh">Run <code>setup.sh</code></a></li>
+          <li><a href="#Reference_Sequences">Reference Sequences</a></li>
+          <li><a href="#Features">Features</a></li>
+          <li><a href="#Next-gen">Next-gen Reads (BAM support)</a></li>
+          <li><a href="#Names">Index Names</a></li>
+          <li><a href="#Quantitative_tracks">Quantitative Tracks (Wiggle support)</a></li>
+          <li><a href="#Troubleshooting">Troubleshooting</a></li>
+        </ul>
+      </p>
+
+      <a name="Download_install" id="Download_install">
+        <h2>Download and Uncompress JBrowse</h2>
+      </a>
+
+      <p>
+        <b>Skip this step</b> if you are reading this page on your own
+        server, since you have already downloaded and uncompressed
+        JBrowse.
+      </p>
+      <p>
+        <a href="http://jbrowse.org/install/">Get JBrowse from jbrowse.org</a>.
+      </p>
+
+      <p>
+        You will want to put JBrowse under a directory that's served
+        by your web server (e.g. <span class="code">/var/www/</span>
+        on Debian or Ubuntu
+        systems, <span class="code">/var/www/html</span> on Red Hat,
+        Fedora, or SUSE).
+      </p>
+      <p>
+        For example, you could make a web-accessible directory to hold
+        your work called <span class="code">/var/www/jbrowse</span>,
+        give your user access to it, and then fetch and uncompress a
+        copy of JBrowse (about 3MB) there:
+
+        <div class="code"><pre>
+# make a directory that this user can write to
+sudo mkdir /var/www/jbrowse;
+sudo chown `whoami` /var/www/jbrowse;
+# cd into it
+cd /var/www/jbrowse;
+
+# fetch a JBrowse release zip file
+curl -O http://jbrowse.org/releases/JBrowse-1.8.0.zip
+
+# unzip it and cd into it
+unzip JBrowse-1.8.0.zip
+cd JBrowse-1.8.0
+</pre></div>
+
+        Once you finish running that, you should try to read this
+        tutorial (which is included in the JBrowse zip file) on your
+        own web server by navigating to something like
+        http://your.machine.address/jbrowse/JBrowse-1.8.0/docs/tutorial/index.html.
+      </p>
+      <p>
+        Also, please note that JBrowse generates files with links that
+        are relative to the main JBrowse-1.x.x directory (where
+        index.html is located), so you should run all scripts from
+        this directory.
+      </p>
+
+      <a name="setup_sh">
+        <h2>Run <code>setup.sh</code></h2>
+      </a>
+
+      <p>
+        To get started with a working JBrowse running on
+        example <a style="font-style: italic"
+        href="http://en.wikipedia.org/wiki/Volvox">Volvox</a> data, on
+        machines running Linux or Mac OS X one can simply run:
+
+        <div class="code">
+          ./setup.sh
+        </div>
+
+        which tries to automatically install the Perl prerequisites,
+        format the Volvox example data, and install JBrowse WIG and
+        BAM support (which require additional dependencies and
+        compilation that can be a bit tricky).
+      </p>
+      <p>
+        If it says the Volvox example data was successfully formatted
+        (even if the WIG or BAM support setup failed) you can
+        navigate to the example <a target="_blank"
+        href="../../index.html?data=sample_data/json/volvox">Volvox
+        JBrowse</a>.  If you see a genome browser with Volvox data in
+        it, congratulations!  You have a working JBrowse installation.
+        Read on to <a href="#Reference_Sequences">Reference
+        Sequences</a> for how to format your own data for use with
+        JBrowse.
+      </p>
+      <p>
+        If one or more of the setup steps failed, try reading through
+        the <span class="code">setup.log</span> file for details of
+        what went wrong, and consulting
+        the <a href="http://gmod.org/wiki/JBrowse_Troubleshooting">JBrowse
+        Troubleshooting</a> page on the GMOD wiki for what to do.  It
+        is always safe to run <span class="code">./setup.sh</span>
+        again after correcting a problem.
+      </p>
+
+      <a name="Reference_Sequences" id="Reference_Sequences"></a>
+      <h2>Reference Sequences</h2>
+      <p>
+        Before loading other data, format your reference sequences for
+        JBrowse using <span class="code">bin/prepare-refseqs.pl</span>.
+      </p>
+      <dl>
+        <dt>For FASTA format sequence files</dt>
+        <dd><div class="code"><pre>bin/prepare-refseqs.pl --fasta docs/tutorial/data_files/volvox.fa</pre></div></dd>
+        <dt>For sequences already stored in a <span class="code">Bio::DB::*</span> database</dt>
+        <dd>
+          <div class="code"><pre>bin/prepare-refseqs.pl --conf docs/tutorial/conf_files/volvox.json</pre></div>
+
+          See the <a href="../config.html">configuration file
+          reference</a> for more details on how these configuration
+          files work.
+
+        </dd>
+      </dl>
+
+      <a name="Features" id="Features"></a>
+      <h2>General-Purpose Features</h2>
+      <p>
+        JBrowse can import feature data from flat files, or from databases that have Bio::DB::* Perl interfaces.
+      </p>
+      <dl>
+
+        <dt class="code"><a name="biodb-to-json.pl" id="biodb-to-json.pl" class="code">bin/biodb-to-json.pl</a></dt>
+        <dd>If you have a genomic annotation database such as <a href="http://gmod.org/wiki/Chado">Chado</a>, <a href="http://www.bioperl.org/wiki/Module:Bio::DB::SeqFeature::Store">Bio::DB::SeqFeature::Store</a>, or <a href="http://www.bioperl.org/wiki/Module:Bio::DB::GFF">Bio::DB::GFF</a>, then you can use JBrowse's <span class="code"><a href="#biodb-to-json.pl">biodb-to-json.pl</a></span>.
+
+          You use <span class="code">bin/biodb-to-json.pl</span> with a configuration file <a href="../config.html">(documented here)</a>.
+
+          <div class="code">bin/biodb-to-json.pl --conf docs/tutorial/conf_files/volvox.json</div>
+
+        </dd>
+
+        <dt class="code"><a class="anchor" name="flatfile-to-json.pl" id="flatfile-to-json.pl">bin/flatfile-to-json.pl</a></dt>
+        <dd>
+          If you have flat files like GFF3 or BED, it is usually best
+          to use
+          JBrowse's <span class="code"><a href="#flatfile-to-json.pl">flatfile-to-json.pl</a></span>.
+          <span class="code">bin/flatfile-to-json.pl</span> doesn't
+          use a configuration file; instead, per-track settings are
+          given as command-line arguments.
+          Run <span class="code">bin/flatfile-to-json.pl --help</span>
+          to see a description of the available settings.  Most of
+          them correspond to track settings in the config file used
+          by <span class="code">biodb-to-json.pl</span>, so
+          see <a href="../config-desc.html#track_settings">the track
+          settings section in the config file documentation</a> for
+          more details.
+        </dd>
+      </dl>
+
+      <a name="Next-gen reads" id="Next-gen"></a>
+      <h2>Next-gen reads (BAM)</h2>
+      <p>
+        JBrowse can display alignments directly from BAM files, with
+        no pre-processing necessary.  Simply add a stanza with the
+        relative URL of the file to
+        your <span class="code">trackList.json</span> file, of the form:
+
+        <div class="code"><pre>
+{
+   "storeClass" : "JBrowse/Store/SeqFeature/BAM",
+   "urlTemplate" : "../../raw/volvox/volvox-sorted.bam",
+   "baiUrlTemplate" : "../../raw/volvox/volvox-sorted.bam.bai",
+
+   "type" : "JBrowse/View/Track/Alignments2",
+   "label" : "volvox-sorted.bam",
+   "key" : "BAM alignments from volvox-sorted.bam"
+}
+        </pre></div>
+
+        <strong>Note:</strong> BAM files are required to be sorted and
+        indexed (i.e. have a corresponding <span class="code">.bai</span> file).
+      </p>
+      <p>
+        JBrowse has two main track types that are designed especially for use with BAM data:
+        <dl>
+          <dt class="code">Alignments2</dt><dd>Shows individual alignments from the BAM file, as well as insertions, deletions, skipped regions, and SNPs encoded in the BAM's <span class="code">MD</span> or <span class="code">CIGAR</span> fields.</dd>
+          <dt class="code">SNPCoverage</dt><dd>Shows a coverage
+          histogram plot, with colored bars showing the locations of
+          base-level mismatches and possible SNPs in the reads.</dd>
+        </dl>
+
+        To use them, set <span class="code">"type":
+        "Alignments2"</span> or <span class="code">"type":
+        "SNPCoverage"</span> in the track configuration.
+      </p>
+
+      <a name="Names" id="Names"></a>
+      <h2>Index Names</h2>
+      <p>
+        After loading feature data, to let users find features by typing feature names or IDs in the autocompleting search box, a special index of feature names must be generated using <span class="code">bin/generate-names.pl</span>.
+        </ol>
+      </p>
+      <div class="code">bin/generate-names.pl -v</div>
+      <p>
+        <b>Note:</b> You need to
+        re-run <span class="code">bin/generate-names.pl</span> to add
+        new feature names to the index every time you add new
+        annotations to JBrowse using any of
+        the <span class="code">*-to-json.pl</span> scripts.
+      </p>
+
+      <p class="done"><span style="font-size: 130%"><b>And that's all</b>, for basic usage.</span> Visit <a href="../../index.html">the main page</a> to view the results.</p>
+
+
+
+
+
+
+      <a name="Quantitative_tracks" id="Quantitative_tracks"></a>
+      <h2>Quantitative tracks (BigWig and Wiggle)</h2>
+        JBrowse can display alignments directly from BigWig files, with
+        no pre-processing necessary.  Simply add a stanza with the
+        relative URL of the file to
+        your <span class="code">trackList.json</span> file, of the form:
+
+        <div class="code"><pre>
+{
+   "storeClass" : "JBrowse/Store/SeqFeature/BigWig",
+   "urlTemplate" : "../../raw/volvox/volvox.bigwig",
+
+   "type" : "JBrowse/View/Track/Wiggle/XYPlot",
+   "label" : "volvox_bigwig",
+   "key" : "Example Volvox BigWig data"
+}
+        </pre></div>
+
+      <p>
+        JBrowse has two track types that are designed especially for use with quantitative data:
+        <dl>
+          <dt class="code">JBrowse/View/Track/Wiggle/XYPlot</dt>
+          <dd>Shows quantitative data as a bar graph.  See the <a href="http://gmod.org/wiki/JBrowse_Configuration_Guide#Wiggle_track_configuration_options">JBrowse wiki</a> for configuration options.</dd>
+          <dt class="code">JBrowse/View/Track/Wiggle/Density</dt>
+          <dd>Shows quantitative data as a "heatmap" plot, which by default draws regions with positive scores as progressively more intense blue, and negative scores as progressively more intense red.  See the <a href="http://gmod.org/wiki/JBrowse_Configuration_Guide#Wiggle_track_configuration_options">JBrowse wiki</a> for configuration options, including how to change the color-change point (<span class="code">bicolor_pivot</span>), and the colors.</dd>
+        </dl>
+
+        To use them, set <span class="code">"type":
+        "JBrowse/View/Track/Wiggle/XYPlot"</span> or <span class="code">"type":
+        "JBrowse/View/Track/Wiggle/Density"</span> in the track configuration.
+      </p>
+
+      <h3>Wiggle files</h3>
+      <p>
+      For most users, the best way to display a Wiggle
+      (<span class="code">.wig</span>) file is to convert it to BigWig
+      using the tool of their choice, then use the JBrowse BigWig
+      functionality described above to configure JBrowse to display
+      it.
+      </p>
+      <p>
+      Older versions of JBrowse used a script called <span class="code">wig-to-json.pl</span> to convert Wiggle files into PNG images for display by JBrowse.  This older method is still supported for backward-compatibility, and is described on the <a href="http://gmod.org/wiki/JBrowse_Configuration_Guide#wig-to-json.pl">JBrowse wiki</a>.
+      </p>
+
+      <a name="Troubleshooting"><h2>Troubleshooting</h2></a>
+      <p>
+        Sometimes things just don't go well.  It seems like nothing's
+        ever as easy as it should be.  Here are several resources you
+        can use if it turns out that this guide is not enough to get
+        JBrowse working for you.
+      </p>
+      <dl>
+        <dt><a href="http://gmod.org/wiki/JBrowse">JBrowse on the GMOD wiki</a></dt>
+        <dd>Contains extended documentation on many aspects JBrowse, including troubleshooting tips.</dd>
+        <dt><a href="https://lists.sourceforge.net/lists/listinfo/gmod-ajax">gmod-ajax@lists.sourceforge.net mailing list</a></dt>
+        <dd>Primary mailing list for JBrowse questions and discussion.  If asking questions about a problem running <span class="code">./setup.sh</span>, please attach your <span class="code">setup.log</span> file.</dd>
+      </dl>
+    </div>
+  </body>
+</html>

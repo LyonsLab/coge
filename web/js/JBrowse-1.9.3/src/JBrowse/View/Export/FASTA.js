@@ -1,0 +1,42 @@
+define("JBrowse/View/Export/FASTA", [ 'dojo/_base/declare',
+         'dojo/_base/array',
+         'JBrowse/View/Export',
+         'JBrowse/Util'
+       ],
+       function( declare, array, ExportBase, Util ) {
+
+return declare( ExportBase,
+
+ /**
+  * @lends JBrowse.View.Export.FASTA.prototype
+  */
+{
+
+    /**
+     * Data export driver for FASTA format.
+     * @constructs
+     */
+    constructor: function( args ) {
+    },
+
+    // will need to override this if you're not exporting regular features
+    exportRegion: function( region, callback ) {
+        this.store.getFeatures( region,
+            dojo.hitch( this,function ( f ) {
+                callback( this._formatFASTA( region, f ) );
+            }));
+    },
+
+    _formatFASTA: function( region, f ) {
+        return '>' + this.refSeq.name
+            +' '+Util.assembleLocString(region) + "\n"
+            + this._wrap( f.get('seq'), 78 );
+    },
+
+    _wrap: function( string, length ) {
+        length = length || 78;
+        return string.replace( new RegExp('(.{'+length+'})','g'), "$1\n" );
+    }
+});
+});
+

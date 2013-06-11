@@ -1,0 +1,190 @@
+         {
+   "tracks" : [
+      {
+         "feature" : [
+            "remark"
+         ],
+         "autocomplete" : "all",
+         "track" : "ExampleFeatures",
+         "class" : "feature2",
+         "key" : "Example Features"
+      },
+      {
+         "feature" : [
+            "protein_coding_primary_transcript",
+            "polypeptide"
+         ],
+         "track" : "NameTest",
+         "class" : "feature2",
+         "key" : "Name test track has a really long track label"
+      },
+      {
+         "feature" : [
+            "SNP"
+         ],
+         "track" : "snps",
+         "class" : "triangle hgred",
+         "key" : "Test SNPs"
+      },
+      {
+         "feature" : [
+            "polypeptide_domain"
+         ],
+         "track" : "Motifs",
+         "class" : "feature3",
+         "description" : 1,
+         "key" : "Example motifs",
+         "style": {
+           "label": "function(feature) { return feature.get('Name')+' (via JS callback)' }",
+           "description": "function(feature) { return feature.get('Name')+': '+feature.get('Note'); }"
+         }
+      },
+      {
+         "feature" : [
+            "match"
+         ],
+         "track" : "malformed_alignments",
+         "class" : "feature4",
+         "key" : "Example Features with Menus",
+         "metadata": { "Description": "Features with extensively customized right-click menus, and with their colors set at random by a JavaScript callback." },
+         "hooks": {
+             "modify": "function( track, feature, div ) { div.style.backgroundColor = ['green','blue','red','orange','purple'][Math.round(Math.random()*5)];}"
+         },
+         "menuTemplate" : [
+             {
+               "label" : "Item with submenu",
+               # hello this is a comment
+               "children" : [
+               {
+                 "label" : "Check gene on databases",
+                 "children" : [
+                 {
+                   "label" : "Query trin for {name}",
+                   "iconClass" : "dijitIconBookmark",
+                   "action": "newWindow",
+                   "url" : "http://wiki.trin.org.au/{name}-{start}-{end}"
+                 },
+                 {
+                 "label" : "Query example.com for {name}",
+                 "iconClass" : "dijitIconSearch",
+                 "url" : "http://example.com/{name}-{start}-{end}"
+                 }
+                 ]
+               },
+               { "label" : "2nd child of demo" },
+               { "label" : "3rd child: this is a track" }
+             ]
+             },
+             {
+               "label" : "Open example.com in an iframe popup",
+               "title" : "The magnificent example.com (feature {name})",
+               "iconClass" : "dijitIconDatabase",
+               "action": "iframeDialog",
+               "url" : "http://www.example.com?featurename={name}"
+             },
+             {
+               "label" : "Open popup with XHR HTML snippet (btw this is feature {name})",
+               "title": "function(track,feature,div) { return 'Random XHR HTML '+Math.random()+' title!'; }",
+               "iconClass" : "dijitIconDatabase",
+               "action": "xhrDialog",
+               "url" : "sample_data/test_snippet.html?featurename={name}:{start}-{end}"
+             },
+             {
+               "label" : "Popup with content snippet from a function (feature {name})",
+               "title": "function(track,feature,div) { return 'Random content snippet '+Math.random()+' title!'; }",
+               "iconClass" : "dijitIconDatabase",
+               "action": "contentDialog",
+               "content" : "function(track,feature,div) { return '<h2>'+feature.get('name')+'</h2><p>This is some test content!</p><p>This message brought to you by the number <span style=\"font-size: 300%\">'+Math.round(Math.random()*100)+'</span>.</p>';} "
+             },
+             {
+               "label" : "Popup with content snippet from string (feature {name})",
+               "title": "function(track,feature,div) { return 'Random content snippet '+Math.random()+' title!'; }",
+               "iconClass" : "dijitIconDatabase",
+               "action": "contentDialog",
+               "content" : "<h2>{name}</h2><p>This is some test content about {name}, which goes from {start} to {end} on the {strand} strand.</p>"
+             },
+             {
+               "label" : "function(track,feature,div) { return 'Run a JS callback '+Math.random()+' title!'; }",
+               "iconClass" : "dijitIconDatabase",
+               "action": "function( evt ){ alert('Hi there! Ran the callback on feature '+this.feature.get('name')); }"
+             }
+         ]
+      },
+      {
+         "feature" : [
+            "gene"
+         ],
+         "track" : "Genes",
+         "class" : "feature5",
+         "key" : "Protein-coding genes",
+         "onClick": "http://www.ncbi.nlm.nih.gov/gquery/?term={name}"
+      },
+      {
+         "feature" : [
+            "mRNA"
+         ],
+         "track" : "ReadingFrame",
+         "category" : "Genes",
+         "class" : "dblhelix",
+         "key" : "Frame usage",
+         "onClick": { "label": "search at NCBI", "url": "http://www.ncbi.nlm.nih.gov/gquery/?term={name}" }
+      },
+      {
+         "feature" : [
+            "CDS:predicted",
+            "mRNA:exonerate",
+            "mRNA:predicted"
+         ],
+         "urlTemplate" : "http://www.ncbi.nlm.nih.gov/gquery/?term={name}-{start}-{end}",
+         "phase" : 1,
+         "track" : "CDS",
+         "category" : "Genes",
+         "class" : "cds",
+         "key" : "Predicted genes"
+      },
+      {
+         "track" : "Transcript",
+         "description" : 1,
+         "key" : "Exonerate predictions",
+         "feature" : [
+            "mRNA:exonerate"
+         ],
+         "arrowheadClass" : "transcript-arrowhead",
+         "category" : "Genes",
+         "class" : "transcript",
+         "subfeature_classes" : {
+            "CDS" : "transcript-CDS",
+            "UTR" : "transcript-UTR"
+         },
+         "subfeatures" : true,
+         "onClick": "function() { alert('This is a user-configurable JavaScript action!'); };"
+      },
+      {
+         "feature" : [
+            "BAC"
+         ],
+         "track" : "Clones",
+         "class" : "exon",
+         "description" : 1,
+         "key" : "Fingerprinted BACs"
+      },
+      {
+         "feature" : [
+            "EST_match:est"
+         ],
+         "track" : "EST",
+         "class" : "est",
+         "key" : "ESTs"
+      }
+   ],
+   "TRACK DEFAULTS" : {
+      "autocomplete" : "all",
+      "class" : "feature"
+   },
+   "db_args" : {
+      "-adaptor" : "memory",
+      "-dir" : "docs/tutorial/data_files"
+   },
+   "description" : "Volvox Example Database",
+   "db_adaptor" : "Bio::DB::SeqFeature::Store"
+}
