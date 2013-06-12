@@ -122,7 +122,10 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	    					    handleAs: "json",
 	    					    load: dojo.hitch(this, function(data) {
 	    					    	if (!data) {
-	    					    		console.log('matt!');
+	    					    		new InfoDialog({
+	    				                            title: 'Permission denied',
+	    				                            content: "You don't have permission to do that."
+	    				                        }).show();
 	    					    		return;
 	    					    	}
 	    					    	// Reload track in browser
@@ -352,7 +355,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	                				style: { // FIXME: move into css
 	                					visibility: 'hidden',
 	                					float: 'right', padding: '3px', width: '14px', height: '14px' }
-	                    	    }, 
+	                    	    },
 	                    	    container
 	                    	);
 	            		dojo.connect( deleteButton, "click", dojo.hitch(this, function(e) {
