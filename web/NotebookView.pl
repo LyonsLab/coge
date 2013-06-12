@@ -1046,7 +1046,6 @@ sub delete_list {
 	
 	my $list = $coge->resultset('List')->find($lid);
 	return 0 unless $list; #return "Cannot find list $lid\n" unless $list;
-	
 	return 0 unless ($USER->is_admin or $USER->is_owner(list => $lid));
 	
 	if ( $list->locked && !$USER->is_admin ) {
