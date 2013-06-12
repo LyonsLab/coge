@@ -378,7 +378,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 			    					    	if (!data) {
 			    					    		new InfoDialog({
 			    				                            title: 'Permission denied',
-			    				                            content: 'You need to login in order to do that.'
+			    				                            content: "You don't have permission to do that."
 			    				                        }).show();
 			    					    		return;
 			    					    	}
@@ -418,7 +418,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	         		    					    	if (!data) {
 	         		    					    		new InfoDialog({
 					    				                            title: 'Permission denied',
-					    				                            content: 'You need to login in order to do that.'
+					    				                            content: "You don't have permission to do that."
 					    				                        }).show();
 					    					    		return;
 					    					    	}
@@ -439,11 +439,10 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	         		    					    },
 	         		    					    handleAs: "json",
 	         		    					    load: dojo.hitch(this, function(data) {
-	         		    					    	console.log(data);
 	         		    					    	if (!data) {
 	         		    					    		new InfoDialog({
 					    				                            title: 'Permission denied',
-					    				                            content: 'You need to login in order to do that.'
+					    				                            content: "You don't have permission to do that."
 					    				                        }).show();
 					    					    		return;
 					    					    	}
