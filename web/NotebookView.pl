@@ -161,13 +161,13 @@ sub gen_body {
 			"Click <a href='Notebooks.pl'>here</a> to view a table of all notebooks.<br><br>" unless ($list);
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-	$template->param( MAIN             => 1,
-					  PAGE_NAME => $PAGE_TITLE . '.pl',
-					  LIST_INFO        => get_list_info( lid => $lid ),
-					  LIST_ANNOTATIONS => get_annotations( lid => $lid ),
-					  LIST_CONTENTS    => get_list_contents( lid => $lid ),
-					  LID              => $lid,
-					  DEFAULT_TYPE => 'note' );
+	$template->param( MAIN				=> 1,
+					  PAGE_NAME			=> $PAGE_TITLE . '.pl',
+					  LIST_INFO			=> get_list_info( lid => $lid ) );
+	$template->param( LIST_ANNOTATIONS	=> get_annotations( lid => $lid ) );
+	$template->param( LIST_CONTENTS		=> get_list_contents( lid => $lid ),
+					  LID				=> $lid,
+					  DEFAULT_TYPE		=> 'note' );
 	$template->param( ADMIN_AREA       => 1 ) if $USER->is_admin;
 
 	return $template->output;
