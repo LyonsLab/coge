@@ -10,6 +10,7 @@ use Getopt::Long;
 use File::Path;
 use URI::Escape::JavaScript qw(escape unescape);
 use POSIX qw(ceil);
+use Benchmark;
 
 use vars qw($staging_dir $install_dir $fasta_files 
 			$name $description $link $version $type_id $restricted 
@@ -229,6 +230,7 @@ foreach my $chr (sort keys %sequences) {
 print $log "log: Added genome id" . $genome->id . "\n"; # don't change, gets parsed by calling code
 
 # Copy files from staging directory to installation directory
+my $t1    = new Benchmark;
 print $log "log: Copying files ...\n";
 print $log "install_dir: $install_dir\n";
 unless (mkpath($install_dir)) {
@@ -252,7 +254,12 @@ print $log "$cmd\n";
 # Yay, log success!
 CoGe::Accessory::Web::log_history( db => $coge, user_id => $user->id, page => "LoadGenome", description => 'load genome id' . $genome->id, link => 'GenomeInfo.pl?gid=' . $genome->id );
 print $log "log: " . commify($numSequences) . " sequences loaded totaling " . commify($seqLength) . " nt\n";
-print $log "log: All done!";
+
+my $t2    = new Benchmark;
+my $time = timestr( timediff( $t2, $t1 ) );
+print $log "log: Took $time to copy\n";
+print $log "log: All done!\n";
+
 close($log);
 
 # Copy log file from staging directory to installation directory
