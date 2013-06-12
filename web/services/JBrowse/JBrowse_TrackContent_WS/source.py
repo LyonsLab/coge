@@ -134,7 +134,7 @@ def an_features(environ, start_response):
     args = environ['url_args']
 
     # set parsed argument variables
-    dataset_id = args['dataset_id']
+    genome_id = args['genome_id']
     chr_id = args['chr_id']
     start = start
     end = end
@@ -144,14 +144,19 @@ def an_features(environ, start_response):
 
     try:
         cur.execute("SELECT l.start, l.stop, l.strand, ft.name, fn.name, \
-                l.location_id FROM location l \
-                JOIN feature f ON f.feature_id = l.feature_id \
-                JOIN feature_name fn ON f.feature_id = fn.feature_id \
-                JOIN feature_type ft ON f.feature_type_id = ft.feature_type_id \
-                WHERE f.dataset_id = {0} AND f.chromosome = '{1}' \
-                AND f.stop > {2} AND f.start <= {3} \
-                AND ft.feature_type_id != 4;"
-                    .format(dataset_id, chr_id, start, end))
+            l.location_id \
+            FROM genome g \
+            JOIN dataset_connector dc ON dc.genome_id = g.genome_id \
+            JOIN dataset d on dc.dataset_id = d.dataset_id \
+            JOIN feature f ON d.dataset_id = f.dataset_id \
+            JOIN location l ON f.feature_id = l.feature_id \
+            JOIN feature_name fn ON f.feature_id = fn.feature_id \
+            JOIN feature_type ft ON f.feature_type_id = ft.feature_type_id \
+            WHERE g.genome_id = {0} \
+            AND f.chromosome = '{1}' \
+            AND f.stop > {2} AND f.start <= {3} \
+            AND ft.feature_type_id != 4;"
+                .format(genome_id, chr_id, start, end))
 
         results = cur.fetchall()
 
@@ -193,7 +198,7 @@ def region(environ, start_response):
     return ['{}']
 
 urls = [
-    (r'annotation/(?P<dataset_id>\d+)/features/(?P<chr_id>\w+)?(.+)?$',
+    (r'annotation/(?P<genome_id>\d+)/features/(?P<chr_id>\w+)?(.+)?$',
         an_features),
     (r'gc/(?P<genome_id>\d+)/features/(?P<chr_id>\w+)?(.+)?$',
         gc_features),
