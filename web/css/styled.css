@@ -3,12 +3,10 @@ BODY {
   background: #FFFFFF;
 }
 
-a
-{
+a {
   outline: none;
   text-decoration: none;
 }
-
 
 a:hover {
   color: #009900;
