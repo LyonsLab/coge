@@ -626,7 +626,7 @@ sub add_item_to_list {
 	my $list = $coge->resultset('List')->find($lid);
 	return 0 unless $list;
 	return 0 if ($list->locked && !$USER->is_admin);
-	return 0 if (!$USER->is_admin || !$USER->is_owner_editor(list => $lid));
+	return 0 unless ($USER->is_admin || $USER->is_owner_editor(list => $lid));
 	
 	my $lc = $coge->resultset('ListConnector')->find_or_create( { parent_id => $lid, child_id => $item_id, child_type => $item_type } );	
 	return 0 unless $lc;
@@ -637,12 +637,12 @@ sub add_item_to_list {
 sub remove_list_item {
 	my %opts  = @_;
 	my $lid = $opts{lid};
-	return "No LID specified" unless $lid;
-	#return "Permission denied" unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
+	return 0 unless $lid;
 	
 	my $list = $coge->resultset('List')->find($lid);
 	return 0 unless $list;
 	return 0 if ($list->locked && !$USER->is_admin);
+	return 0 unless ($USER->is_admin || $USER->is_owner_editor(list => $lid));
 	
 	my $item_type = $opts{item_type};
 	my $item_id = $opts{item_id};
@@ -1042,15 +1042,15 @@ sub listcmp {
 sub delete_list {
 	my %opts  = @_;
 	my $lid = $opts{lid};
-	return "No LID specified" unless $lid;
+	return 0 unless $lid; #return "No LID specified" unless $lid;
 	
 	my $list = $coge->resultset('List')->find($lid);
-	return "Cannot find list $lid\n" unless $list;
+	return 0 unless $list; #return "Cannot find list $lid\n" unless $list;
 	
 	return 0 unless ($USER->is_admin or $USER->is_owner(list => $lid));
 	
 	if ( $list->locked && !$USER->is_admin ) {
-		return "This is a locked list.  Admin permission is needed to modify.";
+		return 0;#"This is a locked list.  Admin permission is needed to modify.";
 	}
 	
 	$list->delete();
