@@ -405,11 +405,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 				})
                                 .show( dojo.hitch(this, function( confirmed ) {
                                      if( confirmed ) {
-             					    	// Remove track in browser
-             					    	this.browser.publish( '/jbrowse/v1/v/tracks/hide', [trackConfig] );
              					    	if (coge.type == 'experiment') {
-             					    		// Remove node from tracklist
-                                 			div.removeChild(container);
                                  			// Update database
 	                             			dojo.xhrPut({ // FIXME: make webservice for this
 	         		      					    url: "Experiments.pl",
@@ -417,9 +413,8 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	         		    					    	fname: 'delete_experiment',
 	         		    					    	eid: coge.id
 	         		    					    },
-	         		    					    handleAs: "text",
+	         		    					    handleAs: "json",
 	         		    					    load: dojo.hitch(this, function(data) {
-	         		    					     	console.log(data);
 	         		    					    	if (!data) {
 	         		    					    		new InfoDialog({
 					    				                            title: 'Permission denied',
@@ -427,12 +422,14 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 					    				                        }).show();
 					    					    		return;
 					    					    	}
+	         		    					    	// Remove node from tracklist
+	                                     			div.removeChild(container);
+	         		    					    	// Remove track in browser
+	         		    					    	this.browser.publish( '/jbrowse/v1/v/tracks/hide', [trackConfig] );
 	         		    					   })
 	         							    });
              					    	}
              					    	else if (coge.type == 'notebook') {
-             					    		// Remove all notebook nodes from tracklist
-                                 			div.parentNode.removeChild(div);
              					    		// Update database
              					    		dojo.xhrPut({ // FIXME: make webservice for this
 	         		      					    url: "NotebookView.pl",
@@ -440,7 +437,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	         		    					    	fname: 'delete_list',
 	         		    					    	lid: coge.id
 	         		    					    },
-	         		    					    handleAs: "text",
+	         		    					    handleAs: "json",
 	         		    					    load: dojo.hitch(this, function(data) {
 	         		    					    	console.log(data);
 	         		    					    	if (!data) {
@@ -450,6 +447,10 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 					    				                        }).show();
 					    					    		return;
 					    					    	}
+	         		    					    	// Remove all notebook nodes from tracklist
+	                                     			div.parentNode.removeChild(div);
+	         		    					    	// Remove track in browser
+	         		    					    	this.browser.publish( '/jbrowse/v1/v/tracks/hide', [trackConfig] );
 	         		    					   })
 	         							    });
              					    	}
