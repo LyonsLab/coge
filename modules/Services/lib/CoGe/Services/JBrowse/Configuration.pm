@@ -159,8 +159,8 @@ sub track_config {
          	style => {
             	className => "cds",
             	histScale => 0,
-              labelScale => 0.02,
-              featureScale => 0.00000005,
+            	labelScale => 0.02,
+            	featureScale => 0.00000005,
          	},
          	# CoGe-specific stuff
          	coge => {
