@@ -87,7 +87,7 @@ sub track_config {
 	($USER) = CoGe::Accessory::Web->login_cas( ticket => $cas_ticket, coge => $coge, this_url => $FORM->url() ) if ($cas_ticket);
 	($USER) = CoGe::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
 
-	my $start_time = time;
+#	my $start_time = time;
 
 	my $genome = $coge->resultset('Genome')->find($gid);
 	return unless $genome;
@@ -134,7 +134,7 @@ sub track_config {
 		}
 	};
 	
-	print STDERR 'time1: ' . (time - $start_time) . "\n";
+#	print STDERR 'time1: ' . (time - $start_time) . "\n";
 
 	# Add gene annotation tracks
 	my $num;
@@ -170,7 +170,7 @@ sub track_config {
         };
 	}
 
-	print STDERR 'time2: ' . (time - $start_time) . "\n";
+#	print STDERR 'time2: ' . (time - $start_time) . "\n";
 	
 	# Create a fake "all experiments" notebook for all genome's experiments
 #	push @tracks,
@@ -261,7 +261,7 @@ sub track_config {
 		};
 	}
 
-	print STDERR 'time3: ' . (time - $start_time) . "\n";
+#	print STDERR 'time3: ' . (time - $start_time) . "\n";
 	
 	# Add notebook tracks
 	foreach my $n (sort {$a->name cmp $b->name} values %all_notebooks) {
@@ -296,7 +296,7 @@ sub track_config {
 		};
 	}
 
-	print STDERR 'time4: ' . (time - $start_time) . "\n";print STDERR 'time1: ' . (time - $start_time) . "\n";
+#	print STDERR 'time4: ' . (time - $start_time) . "\n";print STDERR 'time1: ' . (time - $start_time) . "\n";
 
 	return encode_json({
 		formatVersion => 1,
