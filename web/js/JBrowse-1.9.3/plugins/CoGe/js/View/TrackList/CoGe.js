@@ -8,9 +8,10 @@ define(['dojo/_base/declare',
         'dojo/fx/easing',
         'dijit/form/TextBox',
         'dojo/mouse',
-        'JBrowse/View/ConfirmDialog'
+        'JBrowse/View/ConfirmDialog',
+        'JBrowse/View/InfoDialog'
        ],
-       function( declare, array, dom, domGeom, aspect, ContentPane, dndSource, animationEasing, dijitTextBox, mouse, ConfirmDialog ) {
+       function( declare, array, dom, domGeom, aspect, ContentPane, dndSource, animationEasing, dijitTextBox, mouse, ConfirmDialog, InfoDialog ) {
 return declare( 'JBrowse.View.TrackList.CoGe', null,
 
     /** @lends JBrowse.View.TrackList.CoGe.prototype */
@@ -120,6 +121,10 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	    					    },
 	    					    handleAs: "json",
 	    					    load: dojo.hitch(this, function(data) {
+	    					    	if (!data) {
+	    					    		console.log('matt!');
+	    					    		return;
+	    					    	}
 	    					    	// Reload track in browser
 	    		                	this.browser.view.tracks.forEach( function(track) {
 	    		                		if (track.config.label == notebookName) {
@@ -370,6 +375,14 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 			    					    },
 			    					    handleAs: "json",
 			    					    load: dojo.hitch(this, function(data) {
+			    					    	if (!data) {
+			    					    		new InfoDialog({
+			    				                            title: 'Permission denied',
+			    				                            content: 'You need to login in order to do that.'
+			    				                        }).show();
+			    					    		return;
+			    					    	}
+			    					    	
 			    					    	// Remove node from tracklist
 			    					    	div.removeChild(container);
 			    					    	// Reload track in browser
@@ -404,7 +417,17 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	         		    					    	fname: 'delete_experiment',
 	         		    					    	eid: coge.id
 	         		    					    },
-	         		    					    handleAs: "text"
+	         		    					    handleAs: "text",
+	         		    					    load: dojo.hitch(this, function(data) {
+	         		    					     	console.log(data);
+	         		    					    	if (!data) {
+	         		    					    		new InfoDialog({
+					    				                            title: 'Permission denied',
+					    				                            content: 'You need to login in order to do that.'
+					    				                        }).show();
+					    					    		return;
+					    					    	}
+	         		    					   })
 	         							    });
              					    	}
              					    	else if (coge.type == 'notebook') {
@@ -417,7 +440,17 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	         		    					    	fname: 'delete_list',
 	         		    					    	lid: coge.id
 	         		    					    },
-	         		    					    handleAs: "text"
+	         		    					    handleAs: "text",
+	         		    					    load: dojo.hitch(this, function(data) {
+	         		    					    	console.log(data);
+	         		    					    	if (!data) {
+	         		    					    		new InfoDialog({
+					    				                            title: 'Permission denied',
+					    				                            content: 'You need to login in order to do that.'
+					    				                        }).show();
+					    					    		return;
+					    					    	}
+	         		    					   })
 	         							    });
              					    	}
                                      }
