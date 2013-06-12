@@ -137,38 +137,32 @@ sub track_config {
 #	print STDERR 'time1: ' . (time - $start_time) . "\n";
 
 	# Add gene annotation tracks
-	my $num;
-	foreach $ds ($genome->datasets) {
-		next if (not $ds->has_gene_annotation);
-		my $dsid = $ds->id;
-		push @tracks,
-		{
-			#baseUrl => "services/JBrowse/service.pl/annotation/$dsid/",
-			#baseUrl => "http://geco.iplantcollaborative.org/rchasman/annotation/$dsid/",
-			baseUrl => "services/JBrowse/track/annotation/$dsid/",
-            autocomplete => "all",
-            track => "genes",
-            label => "genes",
-            key => "Genes" . ($num++ ? " $num" : ''),
-            #type => "FeatureTrack",
-            type => "CoGe/View/Track/CoGeFeatures",
-            storeClass => "JBrowse/Store/SeqFeature/REST",
-            onClick => "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
-            maxFeatureScreenDensity => 100,
-            maxHeight => 100000,
-         	style => {
-            	className => "cds",
-            	histScale => 0,
-            	labelScale => 0.02,
-            	featureScale => 0.00000005,
-         	},
-         	# CoGe-specific stuff
-         	coge => {
-         		id => $dsid,
-         		type => 'annotation'
-         	}
-        };
-	}
+	push @tracks,
+	{
+		#baseUrl => "services/JBrowse/service.pl/annotation/$dsid/",
+		baseUrl => "services/JBrowse/track/annotation/$gid/",
+		autocomplete => "all",
+		track => "genes",
+		label => "genes",
+		key => "Genes",
+		#type => "FeatureTrack",
+        type => "CoGe/View/Track/CoGeFeatures",
+        storeClass => "JBrowse/Store/SeqFeature/REST",
+        onClick => "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
+        maxFeatureScreenDensity => 100,
+        maxHeight => 100000,
+      	style => {
+           	className => "cds",
+          	histScale => 0,
+           	labelScale => 0.02,
+           	featureScale => 0.00000005,
+       	},
+       	# CoGe-specific stuff
+       	coge => {
+       		id => $gid,
+       		type => 'annotation'
+       	}
+    };
 
 #	print STDERR 'time2: ' . (time - $start_time) . "\n";
 	
