@@ -500,6 +500,7 @@ sub draw_dots
 	      }
 	  }
 	next unless $org1->{$chr1} && $org2->{$chr2}; #sometimes there will be data that is skipped, e.g. where chromosome="random";
+
 	my ($xmin, $ymin);
 	my ($midx, $midy);
 
