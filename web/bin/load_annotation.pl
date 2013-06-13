@@ -209,12 +209,13 @@ unless ($seen_types{gene}) {
 print $log "log: Annotation types:\n", join( "\n", map { "log: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$_."\t".commify($seen_types{$_}) } sort keys %seen_types ), "\n";
 print $log "log: Data types:\n", join( "\n", map { "log: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$_."\t".commify($seen_attr{$_}) } sort keys %seen_attr ), "\n";
 print $log "log: " . commify($total_annot) . " total annotations to load\n";
-#print STDERR Dumper \%data;
 
 my $t2 = new Benchmark;
 
+################################################################################
 # If we've made it this far without error then we can feel confident about
 # the input data.  Now we can go ahead and create the db entities.
+################################################################################
 
 # Create datasource
 my $datasource = $coge->resultset('DataSource')->find_or_create( { name => $source_name, description => "" } );#, description => "Loaded into CoGe via LoadExperiment" } );

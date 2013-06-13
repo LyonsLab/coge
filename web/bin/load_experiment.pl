@@ -147,9 +147,11 @@ if ($rc != 0) {
 	exit(-1);
 }
 
+################################################################################
 # If we've made it this far without error then we can feel confident about
 # the input data.  Now we can go ahead and create the db entities and 
 # install the files.
+################################################################################
 
 # Create datasource
 my $datasource = $coge->resultset('DataSource')->find_or_create( { name => $source_name, description => "" } );#, description => "Loaded into CoGe via LoadExperiment" } );

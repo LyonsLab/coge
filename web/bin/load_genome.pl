@@ -103,9 +103,11 @@ if ($numSequences == 0 or $seqLength == 0) {
 
 print $log "log: Processed " . commify($numSequences) . " sequences total\n";
 
+################################################################################
 # If we've made it this far without error then we can feel confident about our
 # ability to parse all of the input files.  Now we can go ahead and 
 # create the db entities and install the files.
+################################################################################
 
 # Connect to database
 my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
