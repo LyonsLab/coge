@@ -69,6 +69,7 @@ sub track_config {
 	my $cas_ticket = $self->query->param('ticket');
 	print STDERR "Configuration::track_config gid=$gid\n";
 
+	# Get config
 	my $P = CoGe::Accessory::Web::get_defaults($coge_conf);
 	my $DBNAME = $P->{DBNAME};
 	my $DBHOST = $P->{DBHOST};
@@ -82,6 +83,7 @@ sub track_config {
 	#$coge->storage->debugobj(new DBIxProfiler());
 	#$coge->storage->debug(1);
 
+	# Get user
 	my $COOKIE_NAME = $P->{COOKIE_NAME};
 	my $USER = undef;
 	($USER) = CoGe::Accessory::Web->login_cas( ticket => $cas_ticket, coge => $coge, this_url => $FORM->url() ) if ($cas_ticket);
@@ -89,6 +91,7 @@ sub track_config {
 
 #	my $start_time = time;
 
+	# Get genome
 	my $genome = $coge->resultset('Genome')->find($gid);
 	return unless $genome;
 
@@ -130,21 +133,20 @@ sub track_config {
 		# CoGe-specific stuff
 		coge => {
 			id => $gid,
-			type => ''
+			type => 'gc_content'
 		}
 	};
 	
 #	print STDERR 'time1: ' . (time - $start_time) . "\n";
 
-	# Add gene annotation tracks
+	# Add feature tracks
 	push @tracks,
 	{
-		#baseUrl => "services/JBrowse/service.pl/annotation/$dsid/",
 		baseUrl => "services/JBrowse/track/annotation/$gid/",
 		autocomplete => "all",
-		track => "genes",
-		label => "genes",
-		key => "Genes",
+		track => "features",
+		label => "features",
+		key => "Features",
 		#type => "FeatureTrack",
         type => "CoGe/View/Track/CoGeFeatures",
         storeClass => "JBrowse/Store/SeqFeature/REST",
@@ -160,46 +162,63 @@ sub track_config {
        	# CoGe-specific stuff
        	coge => {
        		id => $gid,
-       		type => 'annotation'
+       		type => 'features'
        	}
     };
+    
+    foreach my $type_name ($genome->distinct_feature_type_names) {
+		push @tracks,
+		{
+			baseUrl => "services/JBrowse/track/annotation/$gid/types/$type_name/",
+			autocomplete => "all",
+			track => "features$type_name",
+			label => "features$type_name",
+			key => $type_name,
+			type => "JBrowse/View/Track/HTMLFeatures",
+	        storeClass => "JBrowse/Store/SeqFeature/REST",
+	        #onClick => "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
+	        maxFeatureScreenDensity => 0.5,
+	        maxHeight => 1000,
+			style => {
+			    "arrowheadClass" => "arrowhead",
+			    "className" => "generic_parent",
+			    "_defaultHistScale" => 4,
+			    "_defaultLabelScale" => 30,
+			    "_defaultDescriptionScale" => 120,
+			    "minSubfeatureWidth" => 6,
+			    "maxDescriptionLength" => 70,
+			    "showLabels" => 'true',
+			    "description" => "note, description",
+			    "centerChildrenVertically" => 'true',
+			    "subfeatureClasses" => {
+			    	"match_part" => "match_part7"
+			    }
+			},
+#	      	style => {
+#	           	className => "cds",
+#	          	histScale => 0,
+#	           	labelScale => 0.02,
+#	           	featureScale => 0.00000005,
+#	       	},
+	       	# CoGe-specific stuff
+	       	coge => {
+	       		id => "features$type_name",
+	       		type => 'features'
+	       	}
+	    };    	
+    }
 
 #	print STDERR 'time2: ' . (time - $start_time) . "\n";
 	
-	# Create a fake "all experiments" notebook for all genome's experiments
-#	push @tracks,
-#		{
-#			key => 'All Experiments',
-#			baseUrl => "services/JBrowse/service.pl/experiment/genome/$gid/",
-#		    autocomplete => "all",
-#		    track => "notebook0",
-#		    label => "notebook0",
-#		    type => "CoGe/View/Track/Wiggle/MultiXYPlot",
-#		    storeClass => "JBrowse/Store/SeqFeature/REST",
-#			# CoGe-specific stuff
-#			showAverage => 0,
-#			coge => {
-#				id => 0, # use id of 0 to represent all experiments
-#				type => 'notebook',
-#				name => 'All Experiments',
-#				description => '',
-#				experiments => ,
-##				menuOptions => [
-##					{ label => 'NotebookView',
-##					  action => "function() { window.open( 'NotebookView.pl?nid=$nid' ); }"
-##					  # url => ... will open link in a dialog window
-##					}
-##				]
-#			}
-#		};
-
 	# Add experiment tracks
 	my %all_notebooks;
+	my %all_experiments;
 	my %expByNotebook;
 	foreach $e (sort experimentcmp $genome->experiments) { #{}, {prefetch => { 'experiment_annotations' => 'annotation_type' }})) {
-		#FIXME need permission check here
 		next if ($e->deleted);
+		next if ($e->restricted and not $USER->has_access_to_experiment($e));
 		my $eid = $e->id;
+		$all_experiments{$eid} = $e;
 
 		# Make a list of notebook id's
 		my @notebooks;
@@ -208,7 +227,7 @@ sub track_config {
 			$all_notebooks{$n->id} = $n;
 			push @{ $expByNotebook{$n->id} }, { id => $n->id, name => $n->name };
 		}
-#		push @notebooks, 0; # add fake "all experiments" notebook
+		push @notebooks, 0; # add fake "all experiments" notebook
 
 		# Make a list of annotations
 #		my @annotations;
@@ -257,6 +276,29 @@ sub track_config {
 
 #	print STDERR 'time3: ' . (time - $start_time) . "\n";
 	
+	# Create a fake "All Experiments" notebook track
+	if (keys %all_experiments) {
+		push @tracks,
+		{
+			key => 'All Experiments',
+			baseUrl => "services/JBrowse/service.pl/experiment/genome/$gid/",
+		    autocomplete => "all",
+		    track => "notebook0",
+		    label => "notebook0",
+		    type => "CoGe/View/Track/Wiggle/MultiXYPlot",
+		    storeClass => "JBrowse/Store/SeqFeature/REST",
+			# CoGe-specific stuff
+			showAverage => 0,
+			coge => {
+				id => 0, # use id of 0 to represent all experiments
+				type => 'notebook',
+				name => 'All Experiments',
+				description => '',
+				#experiments => [ values %all_experiments ],
+			}
+		};
+	}
+	
 	# Add notebook tracks
 	foreach my $n (sort {$a->name cmp $b->name} values %all_notebooks) {
 		next if ($n->restricted and not $USER->has_access_to_list($n));
@@ -279,6 +321,7 @@ sub track_config {
 				type => 'notebook',
 				name => $n->name,
 				description => $n->description,
+				editable => $USER->is_admin || $USER->is_owner_editor(list => $n),
 				experiments => (@{$expByNotebook{$nid}} ? $expByNotebook{$nid} : undef),
 				menuOptions => [
 					{ label => 'NotebookView',
