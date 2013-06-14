@@ -102,14 +102,13 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
             		});
             	});
             	
-            	if (notebookId) { // target is notebook
+            	if (notebookId && notebookId > 0) { // target is notebook
             		// Add experiment to notebook
             		nodes.forEach( dojo.hitch(this, function(node) {
             			var nodeId;
             			dojo.query('.coge-experiment', node).forEach( function(n) {
                 			nodeId = n.id;
                 		});
-            			console.log('nodeId='+nodeId);
             			var conf = this.browser.trackConfigsByName[nodeId];
             			if (conf) {
             				dojo.xhrPut({
@@ -136,14 +135,13 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	    		                	});
 	    					    })
 						    });
+            				// Indent node in track list
+		                	target.getAllNodes().forEach( function(node) { // FIXME: kludge
+		                		dojo.query('.coge-tracklist-label.coge-experiment', node)
+		                			.addClass('notebook-indent');
+		                	});
             			}
             		}));
-
-            		// Indent node in track list
-                	target.getAllNodes().forEach( function(node) { // FIXME: kludge
-                		dojo.query('.coge-tracklist-label.coge-experiment', node)
-                			.addClass('notebook-indent');
-                	});
             	}
             }
 		}
@@ -210,12 +208,15 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
         // create a DnD source for sequence, annotation, etc.
         this.trackListWidgets = [];
         
-        var temp = this._createDnDSource();
+        var temp = this._createDnDSource(1);
         temp.insertNodes(
             	false,
             	trackConfigs.filter( function(e) {
-            		return ( !e.coge.type ||
-            				 (e.coge.type == 'sequence' || e.coge.type == 'annotation') );
+            		var type = e.coge.type;
+            		return ( !type ||
+            				  type == 'sequence' || 
+            				  type == 'gc_content' || 
+            				  type == 'features' );
             	})
             );
         this.trackListWidgets.push( temp );
@@ -239,20 +240,21 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
     		that.trackListWidgets.push( temp );
     	});
         
-        // create a DnD source for remaining experiments
-        temp = this._createDnDSource();
-        temp.insertNodes(
-            	false,
-            	experiments.filter( function(e) {
-            		return !e.coge.notebooks;
-            	})
-            );
-        this.trackListWidgets.push( temp );
+        // create a DnD source for all experiments
+//        temp = this._createDnDSource();
+//        temp.insertNodes(
+//            	false,
+//            	experiments
+////            	experiments.filter( function(e) {
+////            		return !e.coge.notebooks;
+////            	})
+//            );
+//        this.trackListWidgets.push( temp );
         
         return this.div;
     },
     
-    _createDnDSource: function() {
+    _createDnDSource: function(isStatic) {
         var div = dojo.create( 'div', {}, this.div );
     	
     	return new dndSource( // modifies div to be DnD-able
@@ -263,18 +265,21 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 copyOnly: true,
                 checkAcceptance: function( source, nodes ) {
                 	console.log('checkAcceptance');
+                	if (isStatic) 
+                		return false;
                 	var accept = true;
                 	var target = this;
                 	nodes.forEach( function (n) {
                 		var type = source.map[n.id].data.coge.type;
-	                	if (!type || type != 'experiment' || n.id in target.map) {
+                		var editable = source.map[n.id].data.coge.editable;
+	                	if (!editable || !type || type != 'experiment' || hasLabelNode(div, n.id)) {//n.id in target.map) {
 	                		accept = false;
 	                	}
                 	});
                 	return accept;
                 },
                 creator: dojo.hitch( this, function( trackConfig, hint ) {
-                	console.log('creator');
+                	//console.log('creator ' + trackConfig.coge.id);
                 	
                 	var node = this._createLabelNode( trackConfig );
                 	var coge = trackConfig.coge;
@@ -283,8 +288,8 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 	node.id = coge.type + coge.id;
                 	
                 	if (coge.type == 'notebook') {
-                		node.innerHTML = '<img src="picts/notebook-icon-small.png"/>' + 
-                			'<span style="padding-left:3px" class="tracklist-text">' + name + '</span>';
+	                	node.innerHTML = (coge.id > 0 ? '<img src="picts/notebook-icon-small.png"/>' : '<img height=16/>') + // Prevent icon for "All Experiments" notebook
+	                		'<span style="padding-left:3px;" class="tracklist-text">' + name + '</span>';
                 	}
                 	else if (coge.type == 'experiment') {
                 		node.innerHTML = '<img src="picts/testtube-icon-small.png"/>' + ' ' + 
@@ -294,7 +299,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 		}
                 	}
                 	else {
-                		node.innerHTML = '<span class="tracklist-text">' + name + '</span>';
+                		node.innerHTML = '<img height="16"/><span class="tracklist-text">' + name + '</span>';
                 	}
                 	
                     dojo.connect( node, "click", dojo.hitch(this, function(e) {
@@ -312,15 +317,15 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                     
                     if (coge.type == 'experiment') {
                     	// Start out hidden if inside notebook
-                    	if (coge.notebooks) {
-                    		dojo.addClass(container, 'collapsed');
-                    	}
+//                    	if (coge.notebooks) {
+//                    		dojo.addClass(container, 'collapsed');
+//                    	}
                     }
                     else if (coge.type == 'notebook') {
                     	var button = dom.create( // FIXME: how to put image in div using css?
                     			'img',
-                        	    {	className: 'notebookExpandIcon',
-                    				src: 'js/jbrowse/plugins/CoGe/img/arrow-right-icon.png',
+                        	    {	className: 'notebookCollapseIcon',
+                    				src: 'js/jbrowse/plugins/CoGe/img/arrow-down-icon.png',
                     				style: { float: 'right', padding: '5px' }
                         	    }, 
                         	    container
@@ -346,7 +351,9 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                         }));
                     }
                     
-                    if (coge.type == 'experiment' || coge.type == 'notebook') {
+                    if ((coge.type == 'experiment' || coge.type == 'notebook') &&
+                    		coge.id > 0) // exclude "All Experiments" notebook 
+                    {
 	                    // Add delete button
 	            		var deleteButton = dom.create( // FIXME: how to put image in div using css?
 	                			'img',
@@ -367,7 +374,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 		                			notebookName = n.id;
 		                			notebookId = notebookName.match(/\d+/);
 		                		});
-		                		if (notebookId) { // it's inside a notebook
+		                		if (notebookId && notebookId > 0) { // it's inside a notebook
 		                			dojo.xhrPut({ // FIXME: make webservice for this
 			      					    url: "NotebookView.pl",
 			    					    putData: {
@@ -426,7 +433,12 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 					    					    		return;
 					    					    	}
 	         		    					    	// Remove node from tracklist
-	                                     			div.removeChild(container);
+	         		    					    	dojo.query( '.coge-tracklist-label', this.div )
+	         		    					        	.forEach( function( labelNode ) {
+	         		    					        		if (labelNode.id == node.id) {
+	         		    					        			labelNode.parentNode.parentNode.removeChild(labelNode.parentNode);
+	         		    					        		}
+	         		    					        	});
 	         		    					    	// Remove track in browser
 	         		    					    	this.browser.publish( '/jbrowse/v1/v/tracks/hide', [trackConfig] );
 	         		    					   })
@@ -524,8 +536,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                     }
                     
                     container.appendChild(node);
-                    container.id = dojo.dnd.getUniqueId();
-                    
+                    container.id = node.id;//dojo.dnd.getUniqueId();
                     return {node: container, data: trackConfig, type: ["track", coge.type]};
                 })
             }
@@ -611,9 +622,9 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
     	return dojo.create(
     				'div',
 	                { className: 'coge-tracklist-label coge-' + coge.type,
-	                  title: capitalize(coge.type) + " id" + coge.id + "\n" +
-	                  		 "Name: " + coge.name + "\n" +
-	                  		 "Description: " + coge.description +
+	                  title: capitalize(coge.type) + " id" + coge.id + 
+	                  		 (coge.name ? "\nName: " + coge.name : '') +
+	                  		 (coge.description ? "\nDescription: " + coge.description : '') +
 	                  		 (coge.annotations ?
 	                  				"\n" + 
 	                  				 coge.annotations
@@ -791,6 +802,19 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 
 });
 });
+
+function hasLabelNode(div, id) {
+	var container;
+	
+	dojo.query( '.coge-tracklist-label', div )
+	 	.forEach( function( labelNode ) {
+	 		if (labelNode.id == id) {
+	 			container = labelNode.parentNode;
+	 		}
+	 	});
+	
+	return container;
+}
 
 function getVisibleConfigs(div, trackConfigs) {
 	var visibleConfigs = [];
