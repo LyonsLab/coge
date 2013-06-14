@@ -131,12 +131,15 @@ def an_features(environ, start_response):
     d = parse_qs(environ['QUERY_STRING'])
     start = d.get('start', [''])[0]
     end = d.get('end', [''])[0]
-    feat_type = d.get('type', [''])[0]
     args = environ['url_args']
 
     # set parsed argument variables
     genome_id = args['genome_id']
     chr_id = args['chr_id']
+    try:
+        feat_type = args['feat_type']
+    except KeyError:
+        feat_type = ""
     start = start
     end = end
 
@@ -187,6 +190,7 @@ def an_features(environ, start_response):
     response_headers = [('Content-Type', 'application/json')]
     start_response(status, response_headers)
 
+    #response_body = feat_type
     response_body = json.dumps(response_body)
     return response_body
 
@@ -203,14 +207,16 @@ def region(environ, start_response):
     return ['{}']
 
 urls = [
-    (r'features/(?P<genome_id>\d+)/(?P<chr_id>\w+)?(.+)?$',
-        an_features),
-    (r'gc/(?P<genome_id>\d+)/features/(?P<chr_id>\w+)?(.+)?$',
-        gc_features),
     (r'stats/global$',
         stats),
     (r'stats/region/?$',
         region),
+    (r'features/(?P<genome_id>\d+)/types/(?P<feat_type>\w+)/(?P<chr_id>\w+)?(.+)?$',
+        an_features),
+    (r'features/(?P<genome_id>\d+)/(?P<chr_id>\w+)?(.+)?$',
+        an_features),
+    (r'gc/(?P<genome_id>\d+)/features/(?P<chr_id>\w+)?(.+)?$',
+        gc_features),
 ]
 
 def application(environ, start_response):
