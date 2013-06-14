@@ -6,6 +6,7 @@ use CoGe::Accessory::Web;
 use Cwd 'abs_path';
 
 my $NUM_COL = 6;
+my $MAX_EXPERIMENTS = 20;
 my $coge_conf;
 
 sub setup {
@@ -58,23 +59,40 @@ sub features {
 	#$coge->storage->debugobj(new DBIxProfiler());
 	#$coge->storage->debug(1);
 	
-	my @experiments;
+	# Get user
+	my $COOKIE_NAME = $P->{COOKIE_NAME};
+	my $USER = undef;
+	($USER) = CoGe::Accessory::Web->login_cas( ticket => $cas_ticket, coge => $coge, this_url => $FORM->url() ) if ($cas_ticket);
+	($USER) = CoGe::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;	
+	
+	# Retrieve experiments
+	my @all_experiments;
 	if ($eid) {
 		my $experiment = $coge->resultset('Experiment')->find($eid);
 		return unless $experiment;
-		push @experiments, $experiment;
+		push @all_experiments, $experiment;
 	}
 	elsif ($nid) {
 		my $notebook = $coge->resultset('List')->find($nid);
 		return unless $notebook;
-		push @experiments, $notebook->experiments;
+		push @all_experiments, $notebook->experiments;
 	}
 	elsif ($gid) {
 		my $genome = $coge->resultset('Genome')->find($gid);
 		return unless $genome;
-		push @experiments, $genome->experiments;
+		push @all_experiments, $genome->experiments;
 	}
 	
+	# Filter experiments based on permissions
+	my @experiments;
+	foreach my $e (@all_experiments) {
+		next unless (!$e->restricted || $USER->has_access_to_experiment($e));
+		push @experiments, $e;
+	}
+	
+	splice(@experiments, $MAX_EXPERIMENTS, @experiments);
+	
+	# Query range for each experiment and build up json response - #TODO could parallelize this for multiple experiments
 	my $results = '';
 	foreach my $exp (@experiments) { #TODO need to move this code along with replicate in bin/fastbit_query.pl into CoGe::Web sub-module
 		my $storage_path = $exp->storage_path;
