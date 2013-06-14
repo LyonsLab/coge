@@ -165,11 +165,29 @@ calc_abs_start_pos(order=>$org2_order, info=>$org2info);
 #print "IN DOTPLOT\n";
 #my $org1info = get_dsg_info(dsgid=>$dsgid1, chr=>$CHR1, minsize=>$min_chr_size, order=>$org1_order, metric=>$axis_metric, chr_sort_order=>$chr_sort_order, skip_random=>$skip_random);
 
+
 my $org1length =0;
 map {$org1length+=$_->{length}} values %$org1info;
 #my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size, order=>$org2_order, metric=>$axis_metric, chr_sort_order=>$chr_sort_order, skip_random=>$skip_random);
 my $org2length =0;
 map {$org2length+=$_->{length}} values %$org2info;
+
+unless ($org1length && $org2length)
+  {
+    print STDERR qq{
+Error:  one or both of the genomes has no effective length:
+ Org1:  $org1length
+ Org2:  $org2length
+  };
+
+if ($axis_metric && $axis_metric =~ /gene/) 
+{
+print STDERR qq{
+Possible source of error is using genes as axis metric when one or both genomes has no CDSs.
+};
+}
+      exit;
+  }
 
 ($org1info, $org1length, $dsgid1, $org2info, $org2length, $dsgid2) = ($org2info, $org2length, $dsgid2, $org1info, $org1length, $dsgid1) if $flip;
 ($CHR1, $CHR2) = ($CHR2, $CHR1) if $flip && ($CHR1 || $CHR2);
