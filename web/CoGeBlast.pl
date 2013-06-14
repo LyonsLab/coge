@@ -591,7 +591,12 @@ sub blast_search {
 
 	my $link = $P->{SERVER}.$PAGE_NAME."?dsgid=$blastable";
 	$link .= ";fid=$fid" if ($fid);
-	$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_TITLE, url => $link, log_msg => 'Blast ' . length($seq) . ' characters against ' . split(/,/, $blastable) . ' genomes' );
+	$link = CoGe::Accessory::Web::get_tiny_link( 
+		db => $coge, user_id => $USER->id, page => $PAGE_TITLE, 
+		url => $link, 
+		log_msg => 'Blast ' . length($seq) . ' characters against <a href="GenomeList.pl?dsgid=' . $blastable . '">' . split(/,/, $blastable) . ' genomes</a>' 
+	);
+
 #1/10/2013 this section was  removed by EL as it was causing CoGeBlast to fail.  At the time, there was no jobs table in the database which would cause this function to not get a valid job object, which would then cause the function to return and CoGeBlast to fail
     #my $job = CoGe::Accessory::Web::get_job(
      #   tiny_link => $link, title => $PAGE_TITLE, user_id => $USER->id,
