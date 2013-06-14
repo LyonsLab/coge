@@ -1278,7 +1278,7 @@ sub generate_blast_db {
 	$command .= " -i '$fasta'";
 	$command .= " -t '$org'";
 	$command .= " -n '$blastdb'";
-	CoGe::Accessory::Web::write_log( "creating blastdb for $org ($blastdb)", $cogeweb->logfile );
+	CoGe::Accessory::Web::write_log( "creating blastdb for $org ($blastdb)\n$command", $cogeweb->logfile );
 	`$command`;
 	return 1 if -r "$blastdb.nsq";
 	CoGe::Accessory::Web::write_log( "error creating blastdb for $org ($blastdb)", $cogeweb->logfile );
