@@ -606,6 +606,7 @@ sub generate_table {
 	my $count = 1;
 	foreach my $dsgid (@$dsgids) {
 		my $dsg = $coge->resultset('Genome')->find($dsgid);
+		next unless $dsg;
 		next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 		my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
 		my $desc = join(
