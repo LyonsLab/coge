@@ -122,7 +122,7 @@ def gc_features(environ, start_response):
     return response_body
 
 def an_features(environ, start_response):
-    """Main feature endpoint for Annotation content"""
+    """Main feature endpoint for Annotation Feature content"""
     status = '200 OK'
     response_body = { "features" : [] }
     bucketSize = 100
@@ -131,6 +131,7 @@ def an_features(environ, start_response):
     d = parse_qs(environ['QUERY_STRING'])
     start = d.get('start', [''])[0]
     end = d.get('end', [''])[0]
+    feat_type = d.get('type', [''])[0]
     args = environ['url_args']
 
     # set parsed argument variables
@@ -142,9 +143,7 @@ def an_features(environ, start_response):
     con = db_connect()
     cur = con.cursor()
 
-    try:
-        cur.execute("SELECT l.start, l.stop, l.strand, ft.name, fn.name, \
-            l.location_id \
+    query = "SELECT l.start, l.stop, l.strand, ft.name, fn.name, l.location_id \
             FROM genome g \
             JOIN dataset_connector dc ON dc.genome_id = g.genome_id \
             JOIN dataset d on dc.dataset_id = d.dataset_id \
@@ -155,8 +154,15 @@ def an_features(environ, start_response):
             WHERE g.genome_id = {0} \
             AND f.chromosome = '{1}' \
             AND f.stop > {2} AND f.start <= {3} \
-            AND ft.feature_type_id != 4;"
-                .format(genome_id, chr_id, start, end))
+            AND ft.feature_type_id != 4" \
+            .format(genome_id, chr_id, start, end)
+    if feat_type:
+        query +=  " AND ft.name = '{0}'".format(feat_type)
+
+    query += ";"
+
+    try:
+        cur.execute(query)
 
         results = cur.fetchall()
 
@@ -182,7 +188,6 @@ def an_features(environ, start_response):
     start_response(status, response_headers)
 
     response_body = json.dumps(response_body)
-
     return response_body
 
 def stats(environ, start_response):
@@ -198,7 +203,7 @@ def region(environ, start_response):
     return ['{}']
 
 urls = [
-    (r'annotation/(?P<genome_id>\d+)/features/(?P<chr_id>\w+)?(.+)?$',
+    (r'features/(?P<genome_id>\d+)/(?P<chr_id>\w+)?(.+)?$',
         an_features),
     (r'gc/(?P<genome_id>\d+)/features/(?P<chr_id>\w+)?(.+)?$',
         gc_features),
