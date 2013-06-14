@@ -1420,18 +1420,24 @@ sub reverse_complement
 sub distinct_feature_type_ids
 {
 	my $self = shift;
-	my %ids = map { $_->feature_type_id => 1 } $self->distinct_feature_types;
+	my %ids = map { $_->feature_type_id => 1 } 
+		$self->features({}, {
+			columns => [ 'feature_type_id' ],
+			distinct => 1
+		});
 	return wantarray ? keys %ids : [ keys %ids ];
 }
 
-sub distinct_feature_types
+sub distinct_feature_type_names
 {
 	my $self = shift;
-	my @types = $self->features({}, {
-					columns => [ 'feature_type_id' ],
-					distinct => 1
-				});
-	return wantarray ? @types : \@types;
+	my %names = map { $_->feature_type->name => 1 } 
+		$self->features({}, {
+			join => { 'feature_type' },
+			columns => [ 'feature_type.name' ],
+			distinct => 1
+		});
+	return wantarray ? keys %names : [ keys %names ];
 }
 
 sub translation_type

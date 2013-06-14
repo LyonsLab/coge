@@ -1045,8 +1045,16 @@ sub distinct_feature_type_ids {
 	my $self = shift;
 	my %opts = @_;
 	my %ids  =
-	  map { $_ => 1 } map { $_->distinct_feature_type_ids } $self->datasets;
+		map { $_ => 1 } map { $_->distinct_feature_type_ids } $self->datasets;
 	return wantarray ? keys %ids : [ keys %ids ];
+}
+
+sub distinct_feature_type_names {
+	my $self = shift;
+	my %opts = @_;
+	my %names =
+		map { $_ => 1 } map { $_->distinct_feature_type_names } $self->datasets;
+	return wantarray ? keys %names : [ keys %names ];
 }
 
 sub source {
