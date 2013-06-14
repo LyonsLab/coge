@@ -2669,7 +2669,8 @@ sub get_obj_from_genome_db {
 		start      => $start,
 		stop       => $stop,
 		chr        => $chr,
-		dataset_id => $dsid
+		dataset_id => $dsid,
+		gid => $dsgid
 	);
 	#print STDERR join ("\t", $start, $stop, $chr, $dsid),"\n";
 	$feats{ $feat->id } = $feat if $feat;
