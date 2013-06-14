@@ -109,7 +109,7 @@ sub gen_html {
 }
 
 sub gen_body {
-	# return "Top Secret!  Admin login required." unless $USER->is_admin;
+	return "Permission denied" unless $USER->is_admin;
 	
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 	$template->param( PAGE_NAME  => "$PAGE_TITLE.pl",
