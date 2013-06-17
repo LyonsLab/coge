@@ -177,8 +177,8 @@ sub track_config {
 			type => "JBrowse/View/Track/HTMLFeatures",
 	        storeClass => "JBrowse/Store/SeqFeature/REST",
 	        #onClick => "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
-	        maxFeatureScreenDensity => 0.5,
-	        maxHeight => 1000,
+          maxFeatureScreenDensity => 100,
+          maxHeight => 100000,
 			style => {
 			    "arrowheadClass" => "arrowhead",
 			    "className" => "generic_parent",
