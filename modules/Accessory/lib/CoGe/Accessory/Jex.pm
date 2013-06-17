@@ -71,8 +71,8 @@ sub submit_workflow {
 sub wait_for_completion {
     my ($self, $id) = @_;
     my ($status, $wait);
-    $wait = 1;
-    
+    $wait = 0;
+
     while (1) {
         $status = get_status($self, $id);
 
@@ -85,7 +85,7 @@ sub wait_for_completion {
 
             default {
                 sleep $wait;
-                $wait = $wait * 1.2;
+                $wait = $wait + 0.25;
             }
         }
     }
@@ -118,7 +118,7 @@ sub get_status {
         request => 'get_status',
         data => $id,
     });
-    
+
     $msg = zmq_send($socket, $request);
     $msg = zmq_recv($socket);
 
