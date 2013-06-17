@@ -597,12 +597,9 @@ sub blast_search {
 		log_msg => 'Blast ' . length($seq) . ' characters against <a href="GenomeList.pl?dsgid=' . $blastable . '">' . split(/,/, $blastable) . ' genomes</a>' 
 	);
 
-#1/10/2013 this section was  removed by EL as it was causing CoGeBlast to fail.  At the time, there was no jobs table in the database which would cause this function to not get a valid job object, which would then cause the function to return and CoGeBlast to fail
-    #my $job = CoGe::Accessory::Web::get_job(
-     #   tiny_link => $link, title => $PAGE_TITLE, user_id => $USER->id,
-      #  db_object => $coge);
-    
-    #return unless defined($job);
+    my $job = CoGe::Accessory::Web::get_job(
+        tiny_link => $link, title => $PAGE_TITLE, user_id => $USER->id,
+        db_object => $coge);
 
 	CoGe::Accessory::Web::write_log( "process $$", $cogeweb->logfile );
 	
