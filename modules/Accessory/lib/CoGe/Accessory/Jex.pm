@@ -41,7 +41,7 @@ sub create_workflow {
     my ($self, %opts) = @_;
 
     my $workflow = CoGe::Accessory::Workflow->new(name => $opts{name},
-        filepath => $opts{filepath});
+        filepath => $opts{filepath}, logfile => $opts{logfile});
 
     return $workflow;
 }
@@ -56,6 +56,7 @@ sub submit_workflow {
         data => {
                     'name' => $workflow->name,
                     'filepath' => $workflow->filepath,
+                    'logfile' => $workflow->logfile,
                     'jobs' => $jobs,
                 },
     });
