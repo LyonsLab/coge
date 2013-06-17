@@ -177,18 +177,33 @@ def an_features(environ, start_response):
                     response_body["features"][i]["start"] = lastStart
                     response_body["features"][i]["end"] = lastEnd
                     response_body["features"][i]["uniqueID"] = lastID
+                    response_body["features"][i]["name"] = lastName
+                    response_body["features"][i]["strand"] = lastStrand
+                    response_body["features"][i]["type"] = feat_type
                     response_body["features"].append({"subfeatures" : []})
                     i += 1
+
+                elif lastID == 0:
+                    response_body["features"][i]["start"] = row[6]
+                    response_body["features"][i]["end"] = row[7]
+                    response_body["features"][i]["uniqueID"] = row[8]
+                    response_body["features"][i]["name"] = row[4]
+                    response_body["features"][i]["strand"] = row[2]
+                    response_body["features"][i]["type"] = feat_type
+
                 response_body["features"][i]["subfeatures"].append({
-                    "start": row[0],
-                    "end": row[1],
-                    "strand": row[2],
-                    "type": row[3],
-                    "name": row[4],
+                    "start" : row[0],
+                    "end" : row[1],
+                    "strand" : row[2],
+                    "type" : row[3],
+                    "name" : row[4],
                 })
+
                 lastStart = row[6]
                 lastEnd = row[7]
                 lastID = row[8]
+                lastName = row[4]
+                lastStrand = row[2]
 
         else:
             for row in results:
