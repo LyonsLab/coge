@@ -17,6 +17,13 @@ has 'host' => (
     required => 1,
 );
 
+has 'port' => (
+    is => 'ro',
+    isa => 'Int',
+    default => 5151,
+    required => 0,
+);
+
 has 'local' => (
     is => 'ro',
     isa  => 'Bool',
@@ -51,9 +58,9 @@ sub submit_workflow {
                 },
     });
 
-    say $request;
+
     $socket = zmq_socket($self->_context, ZMQ_REQ);
-    zmq_connect($socket, $self->host);
+    zmq_connect($socket, _connection_string($self));
     zmq_send($socket, $request);
     $msg = zmq_recv($socket);
 
@@ -97,7 +104,7 @@ sub terminate {
     $cmd = encode_json { cmd => 'TERM', id => $id};
     $socket = zmq_socket($self->_context, ZMQ_REQ);
 
-    zmq_connect($socket, $self->host);
+    zmq_connect($socket, _connection_string($self));
     zmq_send($socket, $cmd);
 
     $resp = zmq_recv($socket);
@@ -111,7 +118,7 @@ sub get_status {
     my ($socket, $reply, $msg);
 
     $socket = zmq_socket($self->_context, ZMQ_REQ);
-    zmq_connect($socket, $self->host);
+    zmq_connect($socket, _connection_string($self));
 
 
     my $request = encode_json({
@@ -133,6 +140,10 @@ sub _build_zmq_context {
     return zmq_init();
 }
 
+sub _connection_string {
+    my $self = @_;
+    return "tcp://" . $self->host . ":" . $self->port;
+}
 sub _send_local {
 }
 
