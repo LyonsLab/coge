@@ -140,8 +140,7 @@ def an_features(environ, start_response):
         feat_type = args['feat_type']
     except KeyError:
         feat_type = ""
-    start = start
-    end = end
+
 
     con = db_connect()
     cur = con.cursor()
@@ -162,22 +161,40 @@ def an_features(environ, start_response):
     if feat_type:
         query +=  " AND ft.name = '{0}'".format(feat_type)
 
-    query += ";"
-
     try:
-        cur.execute(query)
-
+        cur.execute(query + ";")
         results = cur.fetchall()
 
-        for row in results:
-            response_body["features"].append({
-                "start": row[0],
-                "end": row[1],
-                "strand": row[2],
-                "type": row[3],
-                "name": row[4],
-                "uniqueID": row[5],
-            })
+        if feat_type:
+            response_body["features"].append({"subfeatures" : []})
+            start = 999999999999
+            end = 0
+
+            for row in results:
+                response_body["features"][0]["subfeatures"].append({
+                    "start": row[0],
+                    "end": row[1],
+                    "strand": row[2],
+                    "type": row[3],
+                    "name": row[4],
+                    "uniqueID": row[5],
+                })
+                if row[0] < start: start = row[0]
+                if row[1] > end: end = row[1]
+
+            response_body["features"][0]["start"] = start
+            response_body["features"][0]["end"] = end
+
+        else:
+            for row in results:
+                response_body["features"].append({
+                    "start": row[0],
+                    "end": row[1],
+                    "strand": row[2],
+                    "type": row[3],
+                    "name": row[4],
+                    "uniqueID": row[5],
+                })
 
     except mdb.Error, e:
         response_body = "Error %d: %s" % (e.args[0], e.args[1])
