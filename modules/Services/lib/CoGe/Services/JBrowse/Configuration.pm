@@ -175,23 +175,21 @@ sub track_config {
 			label => "features$type_name",
 			key => $type_name,
 			type => "JBrowse/View/Track/HTMLFeatures",
-	        storeClass => "JBrowse/Store/SeqFeature/REST",
-	        #onClick => "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
-          maxFeatureScreenDensity => 100,
-          maxHeight => 100000,
+      description => "note, description",
+      storeClass => "JBrowse/Store/SeqFeature/REST",
+      #onClick => "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
+      maxFeatureScreenDensity => 100,
+      maxHeight => 100000,
+      minSubfeatureWidth => 4,
 			style => {
-			    "arrowheadClass" => "arrowhead",
-			    "className" => "generic_parent",
-			    "_defaultHistScale" => 4,
-			    "_defaultLabelScale" => 30,
-			    "_defaultDescriptionScale" => 120,
-			    "minSubfeatureWidth" => 6,
-			    "maxDescriptionLength" => 70,
-			    "showLabels" => 'true',
-			    "description" => "note, description",
-			    "centerChildrenVertically" => 'true',
-			    "subfeatureClasses" => {
-			    	"match_part" => "match_part7"
+         	labelScale => 0.02,
+			    arrowheadClass => "arrowhead",
+			    className => "generic_parent",
+			    maxDescriptionLength => 70,
+			    showLabels => 'true',
+			    centerChildrenVertically => 'true',
+			    subfeatureClasses => {
+			    	match_part => "match_part7"
 			    }
 			},
 #	      	style => {
