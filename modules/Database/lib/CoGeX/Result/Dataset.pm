@@ -1433,7 +1433,7 @@ sub distinct_feature_type_names
 	my $self = shift;
 	my %names = map { $_->feature_type->name => 1 } 
 		$self->features({}, {
-			join => { 'feature_type' },
+			join => 'feature_type',
 			columns => [ 'feature_type.name' ],
 			distinct => 1
 		});
