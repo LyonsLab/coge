@@ -73,25 +73,18 @@ sub wait_for_completion {
     while (1) {
         $status = get_status($self, $id);
 
-        say $status;
-        if ($status eq "TERMINATED") {
-            return -1;
-        }
+        given($status) {
+            when ("COMPLETED") { return 1; }
+            when ("TERMINATED") { return -1; }
+            when ("CANCELLED") { return -1; }
+            when ("NOT_FOUND") { return -1; }
+            when ("FAILED") { return -1; }
 
-        if ($status eq "COMPLETED") {
-            return 1;
+            default {
+                sleep $wait;
+                $wait = $wait * 1.2;
+            }
         }
-        
-        if ($status eq "CANCELLED") {
-            return -1;
-        }
-        
-        if ($status eq "NOT_FOUND") {
-            return -1;
-        }
-
-        sleep $wait;
-        $wait = $wait * 2;
     }
 }
 
