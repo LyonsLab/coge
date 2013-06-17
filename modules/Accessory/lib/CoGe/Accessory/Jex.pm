@@ -44,7 +44,6 @@ sub create_workflow {
     return $workflow;
 }
 
-
 sub submit_workflow {
     my ($self, $workflow) = @_;
     my ($socket, $msg, $jobs);
@@ -58,9 +57,8 @@ sub submit_workflow {
                 },
     });
 
-
     $socket = zmq_socket($self->_context, ZMQ_REQ);
-    zmq_connect($socket, _connection_string($self));
+    zmq_connect($socket, _connection_string($self->host, $self->port));
     zmq_send($socket, $request);
     $msg = zmq_recv($socket);
 
@@ -104,7 +102,7 @@ sub terminate {
     $cmd = encode_json { cmd => 'TERM', id => $id};
     $socket = zmq_socket($self->_context, ZMQ_REQ);
 
-    zmq_connect($socket, _connection_string($self));
+    zmq_connect($socket, _connection_string($self->host, $self->port));
     zmq_send($socket, $cmd);
 
     $resp = zmq_recv($socket);
@@ -118,8 +116,7 @@ sub get_status {
     my ($socket, $reply, $msg);
 
     $socket = zmq_socket($self->_context, ZMQ_REQ);
-    zmq_connect($socket, _connection_string($self));
-
+    zmq_connect($socket, _connection_string($self->host, $self->port));
 
     my $request = encode_json({
         request => 'get_status',
@@ -141,9 +138,10 @@ sub _build_zmq_context {
 }
 
 sub _connection_string {
-    my $self = @_;
-    return "tcp://" . $self->host . ":" . $self->port;
+    my ($host, $port) = @_;
+    return "tcp://$host:$port";
 }
+
 sub _send_local {
 }
 
