@@ -145,7 +145,8 @@ def an_features(environ, start_response):
     con = db_connect()
     cur = con.cursor()
 
-    query = "SELECT l.start, l.stop, l.strand, ft.name, fn.name, l.location_id \
+    query = "SELECT l.start, l.stop, l.strand, ft.name, fn.name, \
+            l.location_id, f.start, f.stop, f.feature_id \
             FROM genome g \
             JOIN dataset_connector dc ON dc.genome_id = g.genome_id \
             JOIN dataset d on dc.dataset_id = d.dataset_id \
@@ -167,11 +168,17 @@ def an_features(environ, start_response):
 
         if feat_type:
             response_body["features"].append({"subfeatures" : []})
-            start = 999999999999
-            end = 0
-
+            i = 0
+            lastID = 0
+            lastEnd = 0
+            lastStart = 0
             for row in results:
-                response_body["features"][0]["subfeatures"].append({
+                if row[8] != lastID and lastID != 0:
+                    response_body["features"].append({"subfeatures" : []})
+                    response_body["features"][i]["start"] = lastStart
+                    response_body["features"][i]["end"] = lastEnd
+                    i += 1
+                response_body["features"][i]["subfeatures"].append({
                     "start": row[0],
                     "end": row[1],
                     "strand": row[2],
@@ -179,11 +186,9 @@ def an_features(environ, start_response):
                     "name": row[4],
                     "uniqueID": row[5],
                 })
-                if row[0] < start: start = row[0]
-                if row[1] > end: end = row[1]
-
-            response_body["features"][0]["start"] = start
-            response_body["features"][0]["end"] = end
+                lastStart = row[6]
+                lastEnd = row[7]
+                lastID = row[8]
 
         else:
             for row in results:
