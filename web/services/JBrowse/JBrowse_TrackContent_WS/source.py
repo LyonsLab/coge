@@ -174,9 +174,10 @@ def an_features(environ, start_response):
             lastStart = 0
             for row in results:
                 if row[8] != lastID and lastID != 0:
-                    response_body["features"].append({"subfeatures" : []})
                     response_body["features"][i]["start"] = lastStart
                     response_body["features"][i]["end"] = lastEnd
+                    response_body["features"][i]["uniqueID"] = lastID
+                    response_body["features"].append({"subfeatures" : []})
                     i += 1
                 response_body["features"][i]["subfeatures"].append({
                     "start": row[0],
@@ -184,7 +185,6 @@ def an_features(environ, start_response):
                     "strand": row[2],
                     "type": row[3],
                     "name": row[4],
-                    "uniqueID": row[5],
                 })
                 lastStart = row[6]
                 lastEnd = row[7]
