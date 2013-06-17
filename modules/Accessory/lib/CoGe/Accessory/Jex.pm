@@ -38,8 +38,10 @@ has '_context' => (
 
 # Public functions
 sub create_workflow {
-    my ($self, $name) = @_;
-    my $workflow = CoGe::Accessory::Workflow->new(name => $name);
+    my ($self, %opts) = @_;
+
+    my $workflow = CoGe::Accessory::Workflow->new(name => $opts{name},
+        filepath => $opts{filepath});
 
     return $workflow;
 }
@@ -53,6 +55,7 @@ sub submit_workflow {
         request => 'schedule',
         data => {
                     'name' => $workflow->name,
+                    'filepath' => $workflow->filepath,
                     'jobs' => $jobs,
                 },
     });
