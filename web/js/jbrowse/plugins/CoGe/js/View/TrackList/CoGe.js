@@ -135,11 +135,6 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	    		                	});
 	    					    })
 						    });
-            				// Indent node in track list
-		                	target.getAllNodes().forEach( function(node) { // FIXME: kludge
-		                		dojo.query('.coge-tracklist-label.coge-experiment', node)
-		                			.addClass('notebook-indent');
-		                	});
             			}
             		}));
             	}
@@ -205,7 +200,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
         this._createTextFilter(trackConfigs);
         this._updateTextFilterControl();
 
-        // create a DnD source for sequence, annotation, etc.
+        // create a DnD source for sequence
         this.trackListWidgets = [];
         
         var temp = this._createDnDSource(1);
@@ -215,11 +210,23 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
             		var type = e.coge.type;
             		return ( !type ||
             				  type == 'sequence' || 
-            				  type == 'gc_content' || 
-            				  type == 'features' );
+            				  type == 'gc_content' );
             	})
             );
         this.trackListWidgets.push( temp );
+        
+        // create a DnD source for features
+        this.trackListWidgets = [];
+        
+        var temp = this._createDnDSource(1);
+        temp.insertNodes(
+            	false,
+            	trackConfigs.filter( function(e) {
+            		var type = e.coge.type;
+            		return ( type && type == 'features' );
+            	})
+            );
+        this.trackListWidgets.push( temp );        
         
         // create a DnD source for each notebook
         var notebooks = trackConfigs.filter( function(e) {
@@ -239,17 +246,6 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 );
     		that.trackListWidgets.push( temp );
     	});
-        
-        // create a DnD source for all experiments
-//        temp = this._createDnDSource();
-//        temp.insertNodes(
-//            	false,
-//            	experiments
-////            	experiments.filter( function(e) {
-////            		return !e.coge.notebooks;
-////            	})
-//            );
-//        this.trackListWidgets.push( temp );
         
         return this.div;
     },
@@ -272,7 +268,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 	nodes.forEach( function (n) {
                 		var type = source.map[n.id].data.coge.type;
                 		var editable = source.map[n.id].data.coge.editable;
-	                	if (!editable || !type || type != 'experiment' || hasLabelNode(div, n.id)) {//n.id in target.map) {
+	                	if (!editable || !type || type != 'experiment' || hasLabelNode(div, n.id)) {
 	                		accept = false;
 	                	}
                 	});
@@ -287,20 +283,17 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 	
                 	node.id = coge.type + coge.id;
                 	
+                    if (coge.classes) {
+                    	dojo.addClass( node, coge.classes.join(' ') );
+                    }
+                	
                 	if (coge.type == 'notebook') {
-	                	node.innerHTML = (coge.id > 0 ? '<img src="picts/notebook-icon-small.png"/>' : '<img height=16/>') + // Prevent icon for "All Experiments" notebook
-	                		'<span style="padding-left:3px;" class="tracklist-text">' + name + '</span>';
+	                	node.innerHTML = '<img src="picts/notebook-icon-small.png"/>' + ' ';
                 	}
                 	else if (coge.type == 'experiment') {
-                		node.innerHTML = '<img src="picts/testtube-icon-small.png"/>' + ' ' + 
-                        	'<span class="tracklist-text">' + name + '</span>';
-                		if (coge.notebooks) {
-                			dojo.addClass(node, 'notebook-indent');
-                		}
+                		node.innerHTML = '<img src="picts/testtube-icon-small.png"/>' + ' ';
                 	}
-                	else {
-                		node.innerHTML = '<img height="16"/><span class="tracklist-text">' + name + '</span>';
-                	}
+                	node.innerHTML += '<img height="16"/><span class="tracklist-text">' + name + '</span>';
                 	
                     dojo.connect( node, "click", dojo.hitch(this, function(e) {
                     	//console.log('click ' + node.id + ' ' + e.shiftKey);
@@ -313,48 +306,47 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                     }));
                     
                     // in the list, wrap the list item in a container for border drag-insertion-point monkeying
-                    var container = dojo.create( 'div', { className: 'coge-tracklist-container', style: { 'white-space': 'nowrap' } });
+                    var container = dojo.create( 'div', 
+	                    {  	className: 'coge-tracklist-container', 
+	                    	style: { 'white-space': 'nowrap' } 
+	                    });
                     
-                    if (coge.type == 'experiment') {
-                    	// Start out hidden if inside notebook
-//                    	if (coge.notebooks) {
-//                    		dojo.addClass(container, 'collapsed');
-//                    	}
-                    }
-                    else if (coge.type == 'notebook') {
-                    	var button = dom.create( // FIXME: how to put image in div using css?
-                    			'img',
-                        	    {	className: 'notebookCollapseIcon',
-                    				src: 'js/jbrowse/plugins/CoGe/img/arrow-down-icon.png',
-                    				style: { float: 'right', padding: '5px' }
-                        	    }, 
-                        	    container
-                        	);
-                    	dojo.connect( button, "click", dojo.hitch(this, function() {
-                    		dojo.toggleClass(button, 'notebookExpandIcon notebookCollapseIcon');
-                            if (dojo.hasClass(button, 'notebookExpandIcon')) {
-                            	button.src = 'js/jbrowse/plugins/CoGe/img/arrow-right-icon.png';
-                            	// Hide child nodes
-                            	var children = div.children;
-                            	for (var i = 1;  i < children.length;  i++) {
+                    // Add expand/collapse button
+                    if ( dojo.hasClass( node, 'coge-tracklist-collapsible') ) { // parent
+	                	var button = dom.create( // FIXME: how to put image in div using css?
+	                			'img',
+	                    	    {	className: (coge.collapsed ? 'coge-tracklist-expandIcon' : 'coge-tracklist-collapseIcon'),
+	                				src: (coge.collapsed ? 'js/jbrowse/plugins/CoGe/img/arrow-right-icon.png' : 'js/jbrowse/plugins/CoGe/img/arrow-down-icon.png'),
+	                				style: { float: 'right', padding: '5px' }
+	                    	    }, 
+	                    	    container
+	                    	);
+	                	dojo.connect( button, "click", dojo.hitch(this, function() {
+	                		dojo.toggleClass(button, 'coge-tracklist-expandIcon coge-tracklist-collapseIcon');
+	                        if (dojo.hasClass(button, 'coge-tracklist-expandIcon')) {
+	                        	button.src = 'js/jbrowse/plugins/CoGe/img/arrow-right-icon.png';
+	                        	// Hide child nodes
+	                        	var children = div.children;
+	                        	for (var i = 1;  i < children.length;  i++) {
 		                            dojo.addClass(children[i], 'collapsed');
-                            	}
-                            }
-                            else {
-                            	button.src = 'js/jbrowse/plugins/CoGe/img/arrow-down-icon.png';
-                            	// Show child nodes
-                            	var children = div.children;
-                            	for (var i = 1;  i < children.length;  i++) {
+	                        	}
+	                        }
+	                        else {
+	                        	button.src = 'js/jbrowse/plugins/CoGe/img/arrow-down-icon.png';
+	                        	// Show child nodes
+	                        	var children = div.children;
+	                        	for (var i = 1;  i < children.length;  i++) {
 		                            dojo.removeClass(children[i], 'collapsed');
-                            	}
-                            }
-                        }));
+	                        	}
+	                        }
+	                    }));
+                    }
+                    else if (coge.collapsed) { // child
+                    	dojo.addClass(container, 'collapsed');
                     }
                     
-                    if ((coge.type == 'experiment' || coge.type == 'notebook') &&
-                    		coge.id > 0) // exclude "All Experiments" notebook 
-                    {
-	                    // Add delete button
+                    // Add delete button
+                    if ( dojo.hasClass( node, 'coge-tracklist-deletable' ) ) {
 	            		var deleteButton = dom.create( // FIXME: how to put image in div using css?
 	                			'img',
 	                    	    {	title: 'Remove experiment',
@@ -472,7 +464,17 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                                  }));
 	                    }));
 	            		
-	               		// Add info button
+	            		// Show/hide button based on hover
+	            		dojo.connect( container, "onmouseenter", function(e) {
+	            			dojo.style(deleteButton, 'visibility', 'visible');
+	                    });
+	            		dojo.connect( container, "onmouseleave", function(e) {
+	            			dojo.style(deleteButton, 'visibility', 'hidden');
+	                    });
+                    }
+                    
+                    // Add info button
+                    if ( dojo.hasClass( node, 'coge-tracklist-info' ) ) {
 	            		var infoButton = dom.create( // FIXME: how to put image in div using css?
 	                			'img',
 	                    	    {	title: 'Open info page',
@@ -485,8 +487,6 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	                    	);
 	            		
 	            		dojo.connect( infoButton, "click", dojo.hitch(this, function() {
-	            			//window.open( 'ExperimentView.pl?eid=' + coge.id );
-	            			
 	            			// Open dialog (copied from BlockBased.js)
 	            			var iframeDims = function() {
 	                            var d = domGeom.position( this.browser.container );
@@ -524,14 +524,12 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	                        dialog.show();
 	                    }));
 	            		
-	            		// Show/hide buttons based on hover
+	            		// Show/hide button based on hover
 	            		dojo.connect( container, "onmouseenter", function(e) {
 	            			dojo.style(infoButton, 'visibility', 'visible');
-	            			dojo.style(deleteButton, 'visibility', 'visible');
 	                    });
 	            		dojo.connect( container, "onmouseleave", function(e) {
 	            			dojo.style(infoButton, 'visibility', 'hidden');
-	            			dojo.style(deleteButton, 'visibility', 'hidden');
 	                    });
                     }
                     
