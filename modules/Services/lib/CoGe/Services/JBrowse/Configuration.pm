@@ -113,7 +113,7 @@ sub track_config {
 			type => 'sequence'
 		}
 	};
-
+	
 	# Add GC content track
 	push @tracks,
 	{
@@ -140,47 +140,23 @@ sub track_config {
 #	print STDERR 'time1: ' . (time - $start_time) . "\n";
 
 	# Add feature tracks
-	push @tracks,
-	{
-		baseUrl => "services/JBrowse/track/annotation/$gid/",
-		autocomplete => "all",
-		track => "features",
-		label => "features",
-		key => "Features",
-		#type => "FeatureTrack",
-        type => "CoGe/View/Track/CoGeFeatures",
-        storeClass => "JBrowse/Store/SeqFeature/REST",
-        onClick => "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
-        maxFeatureScreenDensity => 100,
-        maxHeight => 100000,
-      	style => {
-           	className => "cds",
-          	histScale => 0,
-           	labelScale => 0.02,
-           	featureScale => 0.00000005,
-       	},
-       	# CoGe-specific stuff
-       	coge => {
-       		id => $gid,
-       		type => 'features'
-       	}
-    };
-    
-    foreach my $type_name ($genome->distinct_feature_type_names) {
+	my @feat_type_names = grep(!/chromosome/, $genome->distinct_feature_type_names);
+	if (@feat_type_names) {
+		# Add main "Features" track
 		push @tracks,
 		{
-			baseUrl => "services/JBrowse/track/annotation/$gid/types/$type_name/",
+			baseUrl => "services/JBrowse/track/annotation/$gid/",
 			autocomplete => "all",
-			track => "features$type_name",
-			label => "features$type_name",
-			key => $type_name,
-			type => "JBrowse/View/Track/HTMLFeatures",
-      description => "note, description",
-      storeClass => "JBrowse/Store/SeqFeature/REST",
-      #onClick => "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
-      maxFeatureScreenDensity => 100,
-      maxHeight => 100000,
-      minSubfeatureWidth => 4,
+			track => "features",
+			label => "features",
+			key => "Features",
+	        type => "CoGe/View/Track/CoGeFeatures",
+		    description => "note, description",
+		    storeClass => "JBrowse/Store/SeqFeature/REST",
+		    onClick => "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
+		    maxFeatureScreenDensity => 100,
+		    maxHeight => 100000,
+		    minSubfeatureWidth => 4,
 			style => {
          	labelScale => 0.02,
 			    arrowheadClass => "arrowhead",
@@ -192,19 +168,52 @@ sub track_config {
 			    	match_part => "match_part7"
 			    }
 			},
-#	      	style => {
-#	           	className => "cds",
-#	          	histScale => 0,
-#	           	labelScale => 0.02,
-#	           	featureScale => 0.00000005,
-#	       	},
 	       	# CoGe-specific stuff
 	       	coge => {
-	       		id => "features$type_name",
-	       		type => 'features'
+	       		id => 0,
+	       		type => 'features',
+		       	classes => [ 'coge-tracklist-collapsible' ]
 	       	}
-	    };    	
-    }
+	    };
+	    
+	    # Add a track for each feature type
+	    foreach my $type_name (sort @feat_type_names) {
+			push @tracks,
+			{
+				baseUrl => "services/JBrowse/track/annotation/$gid/types/$type_name/",
+				autocomplete => "all",
+				track => "features$type_name",
+				label => "features$type_name",
+				key => $type_name,
+				type => "JBrowse/View/Track/HTMLFeatures",
+		        storeClass => "JBrowse/Store/SeqFeature/REST",
+		        onClick => "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end};type=$type_name",
+	          	maxFeatureScreenDensity => 100,
+	          	maxHeight => 100000,
+				style => {
+				    "arrowheadClass" => "arrowhead",
+				    "className" => "generic_parent",
+				    "_defaultHistScale" => 4,
+				    "_defaultLabelScale" => 30,
+				    "_defaultDescriptionScale" => 120,
+				    "minSubfeatureWidth" => 6,
+				    "maxDescriptionLength" => 70,
+				    "showLabels" => 'true',
+				    "description" => "note, description",
+				    "centerChildrenVertically" => 'true',
+				    "subfeatureClasses" => {
+				    	"match_part" => "match_part7"
+				    }
+				},
+		       	# CoGe-specific stuff
+		       	coge => {
+		       		id => "features_$type_name",
+		       		type => 'features',
+		       		classes => [ 'coge-tracklist-indented' ]
+		       	}
+		    };
+	    }
+	}
 
 #	print STDERR 'time2: ' . (time - $start_time) . "\n";
 	
@@ -258,6 +267,7 @@ sub track_config {
 		    coge => {
 		    	id => $eid,
 		    	type => 'experiment',
+		    	classes => [ 'coge-tracklist-indented', 'coge-tracklist-deletable', 'coge-tracklist-info' ],
 		    	name => $e->name,
 		    	description => $e->description,
 		    	notebooks => (@notebooks ? \@notebooks : undef),
@@ -290,6 +300,7 @@ sub track_config {
 			coge => {
 				id => 0, # use id of 0 to represent all experiments
 				type => 'notebook',
+				classes => [ 'coge-tracklist-collapsible' ],
 				name => 'All Experiments',
 				description => '',
 				#experiments => [ values %all_experiments ],
@@ -317,6 +328,7 @@ sub track_config {
 			coge => {
 				id => $nid,
 				type => 'notebook',
+				classes => [ 'coge-tracklist-collapsible', 'coge-tracklist-deletable', 'coge-tracklist-info' ],
 				name => $n->name,
 				description => $n->description,
 				editable => $USER->is_admin || $USER->is_owner_editor(list => $n),
