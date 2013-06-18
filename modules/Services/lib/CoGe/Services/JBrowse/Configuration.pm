@@ -172,7 +172,8 @@ sub track_config {
 	       	coge => {
 	       		id => 0,
 	       		type => 'features',
-		       	classes => [ 'coge-tracklist-collapsible' ]
+		       	classes => [ 'coge-tracklist-collapsible' ],
+		       	collapsed => 1 #FIXME move into CSS
 	       	}
 	    };
 	    
@@ -209,7 +210,8 @@ sub track_config {
 		       	coge => {
 		       		id => "features_$type_name",
 		       		type => 'features',
-		       		classes => [ 'coge-tracklist-indented' ]
+		       		classes => [ 'coge-tracklist-indented' ],
+		       		collapsed => 1 #FIXME move into CSS
 		       	}
 		    };
 	    }
