@@ -234,7 +234,7 @@ sub track_config {
 		foreach my $n ($e->notebooks) {
 			push @notebooks, $n->id;
 			$all_notebooks{$n->id} = $n;
-			push @{ $expByNotebook{$n->id} }, { id => $n->id, name => $n->name };
+			push @{ $expByNotebook{$n->id} }, { id => $e->id, name => $e->name };
 		}
 		push @notebooks, 0; # add fake "all experiments" notebook
 
