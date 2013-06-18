@@ -267,7 +267,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	            var name = this._getFeatureName(id);
 	            var color = this._getFeatureColor(id);
 	            for( var j = Math.round(fRect.l); j < jEnd; j++ ) {
-	            	var label = '<div style="background-color:'+color+';">' + nbspPad(score.toString(), 11) + name + '</div>';
+	            	var label = '<div style="background-color:'+color+';">' + nbspPad(score.toPrecision(6).toString(), 11) + name + '</div>';
 	                pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
 	            }
 	        },this);
@@ -345,14 +345,14 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     },
 
     _getFeatureName: function(id) {
-    	var cogeConfig = this.config.coge;
+    	var coge = this.config.coge;
     	
-    	if (cogeConfig.type == 'experiment') {
-    		return cogeConfig.name;
+    	if (coge.type == 'experiment') {
+    		return coge.name;
     	}
-    	else if (cogeConfig.type == 'notebook') {
-	    	var experiments = cogeConfig.experiments || [];
-	    	var name;
+    	else if (coge.type == 'notebook') {
+	    	var experiments = coge.experiments || [];
+	    	var name = '';
 	    	experiments.forEach( function(e) {
 	    		if (e.id == id) {
 	    			name = e.name;
