@@ -123,7 +123,7 @@ sub features {
 				
 				my ($chr, $start, $end, $strand, $value1, $value2) = @items;
 				$end = $start+1 if ($end == $start); #FIXME revisit this
-				$value1 = $strand*$value1;
+				$value1 = $strand*$value1 unless $value1 < 0;
 				my $eid = $exp->id;
 				$results .= ($results ? ',' : '') . qq{{ "id": $eid, "start": $start, "end": $end, "score": $value1 }};
 			}
