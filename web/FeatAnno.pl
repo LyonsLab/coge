@@ -13,7 +13,9 @@ use CoGe::Accessory::LogUser;
 no warnings 'redefine';
 
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $FID $DS $DSG $CHR $LOC $ORG $VERSION $START $STOP $NAME_ONLY $coge $GSTID $COOKIE_NAME);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG 
+			$TEMPDIR $TEMPURL $USER $FORM $FID $DS $DSG $CHR $LOC $ORG $TYPE 
+			$VERSION $START $STOP $NAME_ONLY $coge $GSTID $COOKIE_NAME);
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $TEMPDIR = $P->{TEMPDIR};
@@ -38,6 +40,7 @@ $ORG = $FORM->param('org') || $FORM->param('organism');
 $VERSION = $FORM->param('version') || $FORM->param('ver');
 $NAME_ONLY = $FORM->param('name_only') || 0;
 $GSTID = $FORM->param('gstid'); #genomic_sequence_type_id
+$TYPE = $FORM->param('type'); # mdb added 6/18/13
 $DBNAME = $P->{DBNAME};
 $DBHOST = $P->{DBHOST};
 $DBPORT = $P->{DBPORT};
@@ -92,17 +95,27 @@ sub gen_html
 	 $version = $dsg->version unless $version;
 	($chr) = $dsg->get_chromosomes() unless ($chr);
 	}	
-    my @feats;
+    my @all_feats;
     foreach my $item (@ds)
       {
-        push @feats, $coge->get_features_in_region(dataset_id => $item->id, 
+        push @all_feats, $coge->get_features_in_region(dataset_id => $item->id, 
 					       chr => $chr,
 					       start => $start,
 					       stop => $stop,
 					      ) if ($chr && $start && $stop);
       }
-    push @feats, $coge->resultset('Feature')->find($featid) if $featid;
-    return " " unless @feats;
+    push @all_feats, $coge->resultset('Feature')->find($featid) if $featid;
+    return " " unless @all_feats;
+    
+    my @feats;
+	foreach my $feat (@all_feats) {
+		my $type_name = $feat->type->name;
+	    next if $type_name =~ /^source$/;
+	    next if $type_name =~ /^chromosome$/;
+	    next if (defined $TYPE and $type_name ne $TYPE); # mdb added 6/18/13
+	    push @feats, $feat;
+	}    
+    
     my $html;
     if($name_only)
       {
@@ -110,8 +123,6 @@ sub gen_html
 	my $class = "even";
 	foreach my $feat (sort {$a->type->name cmp $b->type->name} @feats)
 	  {
-	    next if $feat->type->name =~ /^source$/;
-	    next if $feat->type->name =~ /^chromosome$/;
 	    $html .= "<tr class='small $class'><td class='title5'>".$feat->type->name.": </td><td >".(join (", ",map {"<span onclick=\"window.open('FeatView.pl?accn=$_;fid=".$feat->id."');\" class='link'>$_</span>"} $feat->names))."</td></tr>";
 	    $class = $class eq "even" ? "odd" : "even";
 	  }
@@ -120,8 +131,6 @@ sub gen_html
       }
     foreach my $feat (sort {$a->type->name cmp $b->type->name} @feats)
       {
-	next if $feat->type->name eq "chromosome";
-	next if $feat->type->name =~ /^source$/;
 	my $color;
 	if ($feat->type->name eq "CDS")
 	  {
