@@ -24,7 +24,6 @@ use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE
   $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION
   $COOKIE_NAME $FORM $URL $COGEDIR $TEMPDIR $TEMPURL %ITEM_TYPE
   $MAX_SEARCH_RESULTS);
-print STDERR "$ENV{HOME}\n";
 $P = CoGe::Accessory::Web::get_defaults("$ENV{HOME}/coge.conf");
 
 $DATE = sprintf(
