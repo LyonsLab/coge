@@ -256,7 +256,7 @@ sub track_config {
 		    autocomplete => "all",
 		    track => "experiment$eid",
 		    label => "experiment$eid",
-		    key => $e->name,
+		    key => ($e->restricted ? '&reg; ' : '') . $e->name,
 		    type => "CoGe/View/Track/Wiggle/MultiXYPlot",#"JBrowse/View/Track/Wiggle/XYPlot",
 		    storeClass => "JBrowse/Store/SeqFeature/REST",
 #		    style => {
@@ -316,7 +316,7 @@ sub track_config {
 		my $nid = $n->id;
 		push @tracks,
 		{
-			key => $n->name,
+			key => ($n->restricted ? '&reg; ' : '') . $n->name,
 			baseUrl => "services/JBrowse/service.pl/experiment/notebook/$nid/",
 		    autocomplete => "all",
 		    track => "notebook$nid",
