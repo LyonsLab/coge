@@ -293,7 +293,8 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 	else if (coge.type == 'experiment') {
                 		node.innerHTML = '<img src="picts/testtube-icon-small.png"/>' + ' ';
                 	}
-                	node.innerHTML += '<img height="16" width="0" style="visibility:hidden;"/><span class="tracklist-text">' + name + '</span>';
+                	node.innerHTML += '<img height="16" width="0" style="visibility:hidden;"/>'; // force min height
+                	node.innerHTML += '<span class="tracklist-text" style="white-space:nowrap">' + name + '</span>';
                 	
                     dojo.connect( node, "click", dojo.hitch(this, function(e) {
                     	//console.log('click ' + node.id + ' ' + e.shiftKey);
@@ -308,7 +309,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                     // in the list, wrap the list item in a container for border drag-insertion-point monkeying
                     var container = dojo.create( 'div', 
 	                    {  	className: 'coge-tracklist-container', 
-	                    	style: { 'white-space': 'nowrap' } 
+	                    	style: { 'white-space': 'nowrap', 'overflow-x': 'hidden' } 
 	                    });
                     
                     // Add expand/collapse button
