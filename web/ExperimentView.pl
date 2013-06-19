@@ -18,7 +18,7 @@ use Sort::Versions;
 #no warnings 'redefine';
 
 use vars qw( $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE 
-	$TEMPDIR $USER $DATE $COGEDIR $coge $FORM $URL
+	$TEMPDIR $USER $DATE $COGEDIR $coge $FORM $URL $EMBED
 	$TEMPURL $COOKIE_NAME %FUNCTION);
 
 $P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
@@ -448,7 +448,9 @@ sub remove_annotation {
 
 sub generate_html {
 	my $template;
-	if ($FORM->param('embed')) {
+	
+	$EMBED = $FORM->param('embed');
+	if ($EMBED) {
 		$template = HTML::Template->new( filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
 	}
 	else {
@@ -543,7 +545,13 @@ sub get_experiment_info {
 		else {
 			$html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_experiment_private();">Make Private</span>};
 		}
-	}	
+	}
+	
+	if (!$EMBED) {
+		my $gid = $exp->genome_id;
+		my $link = qq{window.open('GenomeView.pl?gid=$gid&viewer=JBrowse&tracks=experiment$eid');};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="$link">View</span>};
+	}
 	
 	return $html;
 }
