@@ -1118,7 +1118,7 @@ sub info_html
 {
 	my $self = shift;
 	my $info = $self->info;
-	return qq{<span class=link onclick='window.open("OrganismView.pl?gid=} .$self->id. qq{")'>} . $info . "</span>";
+	return qq{<span class=link onclick='window.open("GenomeInfo.pl?gid=} .$self->id. qq{")'>} . $info . "</span>";
 }
 
 ############################################### subroutine header begin ##
