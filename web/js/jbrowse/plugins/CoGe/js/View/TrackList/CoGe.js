@@ -266,11 +266,11 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 	var accept = true;
                 	var target = this;
                 	nodes.forEach( function (n) {
-                		var type = source.map[n.id].data.coge.type;
-                		var editable = source.map[n.id].data.coge.editable;
-	                	if (!editable || !type || type != 'experiment' || hasLabelNode(div, n.id)) {
-	                		accept = false;
-	                	}
+//                		var type = target.map[n.id].data.coge.type;
+//                		var editable = target.map[n.id].data.coge.editable;
+//	                	if (!editable || !type || type != 'experiment' || hasLabelNode(div, n.id)) {
+//	                		accept = false;
+//	                	}
                 	});
                 	return accept;
                 },
