@@ -162,8 +162,11 @@ sub gen_body {
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 	$template->param( MAIN				=> 1,
-					  PAGE_NAME			=> $PAGE_TITLE . '.pl',
-					  LIST_INFO			=> get_list_info( lid => $lid ) );
+					  PAGE_NAME			=> $PAGE_TITLE . '.pl' );
+					  
+	return "Access denied\n" unless ( !$list->restricted || $USER->has_access_to_list($lid) );				  
+					  
+	$template->param( LIST_INFO			=> get_list_info( lid => $lid ) );
 	$template->param( LIST_ANNOTATIONS	=> get_annotations( lid => $lid ) );
 	$template->param( LIST_CONTENTS		=> get_list_contents( lid => $lid ),
 					  LID				=> $lid,
