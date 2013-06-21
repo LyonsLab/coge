@@ -78,9 +78,9 @@ sub lists # return child lists within this list
 	my $restricted = $opts{restricted}; # limit result to restricted lists
 	my $count = $opts{count}; #return count;
 
-	if ($count) {
-	    return $self->list_connectors->count();
-	}
+#	if ($count) {
+#	    return $self->list_connectors->count();
+#	}
 	
 	my @lists;
 	foreach my $conn ( $self->list_connectors )
@@ -88,6 +88,11 @@ sub lists # return child lists within this list
 	    next if ($restricted and not $conn->child->restricted);
 	    push @lists, $conn->child;
 	  }
+	  
+	if ($count) {
+    	return scalar @lists;	
+    }  
+	  
 	return wantarray ? @lists : \@lists;		
 }
 
@@ -98,10 +103,10 @@ sub features
     my $restricted = $opts{restricted}; # limit result to restricted features
     my $count = $opts{count}; #return count;
     
-    if ($count)
-      {
-	return $self->feature_connectors->count();
-      }
+#    if ($count)
+#      {
+#	return $self->feature_connectors->count();
+#      }
     
     my @features;
     foreach my $conn ( $self->feature_connectors )
@@ -109,6 +114,11 @@ sub features
 	next if ($restricted and not $conn->child->restricted);
 	push @features, $conn->child;
       }
+      
+    if ($count) {
+    	return scalar @features;	
+    }
+      
     return wantarray ? @features : \@features;	
 }
 
@@ -120,10 +130,10 @@ sub genomes
 	my $restricted = $opts{restricted}; # option to limit result to restricted genomes
 	my $include_deleted = $opts{include_deleted}; # optional flag to include deleted genomes
 	my $count = $opts{count}; #optional flag to return count only
-	
-	if ($count) {
-		return $self->genome_connectors->count();
-	}
+
+#	if ($count) {
+#	    return $self->genome_connectors->count();
+#	}
 	
 	my @genomes;
 	foreach my $conn ($self->genome_connectors) {
@@ -132,6 +142,11 @@ sub genomes
 	    next if ($restricted and not $genome->restricted);
 	    push @genomes, $genome;
 	}
+	
+    if ($count) {
+    	return scalar @genomes;	
+    }	
+	
 	return wantarray ? @genomes : \@genomes;	
 }
 
@@ -143,9 +158,9 @@ sub experiments
 	my $include_deleted = $opts{include_deleted};
 	my $count = $opts{count}; #return count;
 
-	if ($count) {
-	    return $self->experiment_connectors->count();
-	}
+#	if ($count) {
+#	    return $self->experiment_connectors->count();
+#	}
 
 	my @experiments;
 	foreach my $conn ( $self->experiment_connectors ) {
@@ -154,6 +169,11 @@ sub experiments
 		next if ($restricted and not $experiment->restricted);
 		push @experiments, $experiment;
 	}
+	
+	if ($count) {
+    	return scalar @experiments;	
+    }
+	
 	return wantarray ? @experiments : \@experiments;
 }
 
