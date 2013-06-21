@@ -413,8 +413,8 @@ sub get_share_dialog { #FIXME this routine needs to be optimized
 			my $genome = $coge->resultset('Genome')->find($item_id);
 			return unless $genome;
 			next unless ($USER->is_admin or $USER->has_access_to_genome($genome));
-			map { $userconn{$_->parent_id}  = $_ } ($genome->user_connectors, $genome->group_connectors);
-			map { $notebooks{$_->id}  = $_ } $genome->lists;
+			map { $userconn{$_->parent_id} = $_ } ($genome->user_connectors, $genome->group_connectors);
+			map { $notebooks{$_->id} = $_ } $genome->lists;
 			$isPublic = 1 if (not $genome->restricted);
 			$isEditable = 0 if (not $USER->is_owner_editor(dsg => $genome));
 		}
@@ -422,8 +422,8 @@ sub get_share_dialog { #FIXME this routine needs to be optimized
 			my $experiment = $coge->resultset('Experiment')->find($item_id);
 			return unless $experiment;
 			next unless ($USER->is_admin or $USER->has_access_to_experiment($experiment));
-			map { $userconn{$_->id}  = $_ } ($experiment->user_connectors, $experiment->group_connectors);
-			map { $notebooks{$_->id}  = $_ } $experiment->lists;
+			map { $userconn{$_->id} = $_ } ($experiment->user_connectors, $experiment->group_connectors);
+			map { $notebooks{$_->id} = $_ } $experiment->lists;
 			$isPublic = 1 if (not $experiment->restricted);
 			$isEditable = 0 if (not $USER->is_owner_editor(experiment => $experiment));
 		}
@@ -431,7 +431,7 @@ sub get_share_dialog { #FIXME this routine needs to be optimized
 			my $notebook = $coge->resultset('List')->find($item_id);
 			return unless $notebook;
 			next unless ($USER->is_admin or $USER->has_access_to_list($notebook));
-			map { $userconn{$_->id}  = $_ } ($notebook->user_connectors, $notebook->group_connectors);
+			map { $userconn{$_->id} = $_ } ($notebook->user_connectors, $notebook->group_connectors);
 			$isPublic = 1 if (not $notebook->restricted);
 			$isEditable = 0 if (not $USER->is_owner_editor(list => $notebook));
 		}
@@ -591,7 +591,20 @@ sub add_items_to_user_or_group {
 		foreach (@verified) {
 			my ($item_id, $item_type) = $_ =~ /content_(\d+)_(\d+)/;
 			# print STDERR "   user: $item_id $item_type\n";
-			my $conn = $coge->resultset('UserConnector')->find_or_create(
+			
+			# Remove previous connection
+			foreach ( $coge->resultset('UserConnector')->search(
+				{ parent_id => $target_id,
+				  parent_type => 5, # FIXME hardcoded 
+				  child_id => $item_id, 
+				  child_type => $item_type
+				}) )
+			{
+				$_->delete;
+			}
+			
+			# Add new connection
+			my $conn = $coge->resultset('UserConnector')->create(
 				{ parent_id => $target_id,
 				  parent_type => 5, # FIXME hardcoded 
 				  child_id => $item_id, 
