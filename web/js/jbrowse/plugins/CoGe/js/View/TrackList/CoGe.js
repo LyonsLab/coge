@@ -247,6 +247,9 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
     		that.trackListWidgets.push( temp );
     	});
         
+        // Initialize text filter label
+        this._textFilter();
+        
         return this.div;
     },
     
@@ -545,7 +548,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 		this.textFilterInput = dom.create(
 			'input',
 			{	type: 'text',
-				style: { cursor: 'text', paddingLeft: '18px', height: '16px', width: '75%' },
+				style: { cursor: 'text', paddingLeft: '18px', height: '20px', width: '75%' },
 				placeholder: 'filter by text',
 				onkeypress: dojo.hitch( this, function( evt ) {
 					if( this.textFilterTimeout )
@@ -565,17 +568,17 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 			dom.create('div',{ style: 'overflow: show;' }, this.textFilterDiv )
 		);
 		
-		this.textFilterClearButton = dom.create('div', {
+		dom.create('div', {
 			className: 'jbrowseIconCancel',
 			onclick: dojo.hitch( this, function() {
 				this._clearTextFilterControl();
 				this._textFilter( this.textFilterInput.value, this.filteredNodes );
 			}),
 			style: { // FIXME move into css
-				cursor: 'pointer', position: 'absolute', left: '4px', top: '2px' }
+				cursor: 'pointer', position: 'absolute', left: '4px', top: '4px' }
 		}, this.textFilterDiv );
 		
-		this.textFilterAddAllButton = dom.create('img', { // FIXME: style with css icon instead of img
+		dom.create('img', { // FIXME: style with css icon instead of img
 			title: 'Add all experiments',
 			src: 'js/jbrowse/plugins/CoGe/img/plus-icon.png',
 			style: { cursor: 'pointer', position: 'absolute', right: '36px', top: '2px', width: '14px', height: '14px' },
@@ -597,7 +600,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 			})
 		}, this.textFilterDiv );
 		
-		this.textFilterClearAllButton = dom.create('img', { // FIXME: style with css icon instead of img
+		dom.create('img', { // FIXME: style with css icon instead of img
 			title: 'Clear all experiments',
 			src: 'js/jbrowse/plugins/CoGe/img/clear-icon.png',
 			onclick: dojo.hitch( this, function() {
@@ -607,6 +610,15 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 				}
 			}),
 			style: { cursor: 'pointer', position: 'absolute', right: '16px', top: '2px', width: '14px', height: '14px' }
+		}, this.textFilterDiv );
+		
+		dom.create('div', {
+			style: { clear: 'both' }
+		}, this.textFilterDiv );
+		
+		this.textFilterLabel = dom.create('div', {
+			innerHTML: '? tracks shown',
+			style: { color: 'gray', 'text-shadow': '1px 1px white', 'padding-left' : '20px' }
 		}, this.textFilterDiv );
     },
     
@@ -631,29 +643,34 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
     },
 
     _textFilter: function( text, filteredNodes ) {
-        if( text && /\S/.test(text) ) {
+    	// Filter tracks
+        if( text && /\S/.test(text) ) { // filter on text
             text = text.toLowerCase();
             dojo.query( '.tracklist-text', this.div )
                 .forEach( function( labelNode, i ) {
                 	var container = labelNode.parentNode.parentNode;
                     if( labelNode.innerHTML.toLowerCase().indexOf( text ) != -1 ) {
-                        dojo.removeClass( container, 'collapsed');
-                        delete filteredNodes[container.id];
-                    } 
-                    else if (!dojo.hasClass(container, 'collapsed')) { // check if already hidden in collapsed notebook
+                    	if (dojo.query('.coge-tracklist-expandIcon', labelNode.parentNode.parentNode)) {
+	                        dojo.removeClass( container, 'collapsed');
+	                        delete filteredNodes[container.id];
+                    	}
+                    }
+                    else if( !dojo.hasClass( container, 'collapsed' ) ) { // check if already hidden in collapsed notebook
                         dojo.addClass( container, 'collapsed');
                         filteredNodes[container.id] = container;
                     }
                  });
-        } 
+        }
         else { // empty string, show all
-//            dojo.query( '.tracklist-container.collapsed', this.div )
-//                .removeClass('collapsed');
-        	for (var id in filteredNodes) {
+        	for( var id in filteredNodes ) {
         		dojo.removeClass(filteredNodes[id], 'collapsed');
         	}
         	filteredNodes = {};
         }
+        
+        // Update filter label
+        var count = dojo.query( '.coge-tracklist-container:not(.collapsed)', this.div ).length;
+        this.textFilterLabel.innerHTML = count + ' track' + (count > 1 ? 's' : '') + ' shown';
     },
 
    /**
