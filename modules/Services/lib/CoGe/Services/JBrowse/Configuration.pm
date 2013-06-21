@@ -290,7 +290,7 @@ sub track_config {
 	if (keys %all_experiments) {
 		push @tracks,
 		{
-			key => 'All Experiments',
+			key => 'All Experiments (' . (keys %all_experiments) . ')',
 			baseUrl => "services/JBrowse/service.pl/experiment/genome/$gid/",
 		    autocomplete => "all",
 		    track => "notebook0",
@@ -316,7 +316,7 @@ sub track_config {
 		my $nid = $n->id;
 		push @tracks,
 		{
-			key => ($n->restricted ? '&reg; ' : '') . $n->name,
+			key => ($n->restricted ? '&reg; ' : '') . $n->name . ' (' . @{$expByNotebook{$nid}} . ')',
 			baseUrl => "services/JBrowse/service.pl/experiment/notebook/$nid/",
 		    autocomplete => "all",
 		    track => "notebook$nid",
