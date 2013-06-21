@@ -159,19 +159,17 @@ sub gen_body {
 	my ($list) = $coge->resultset('List')->find($lid);
 	return "<br>Notebook id$lid does not exist.<br>" .
 			"Click <a href='Notebooks.pl'>here</a> to view a table of all notebooks.<br><br>" unless ($list);
+	return "Access denied\n" unless ( !$list->restricted || $USER->has_access_to_list($lid) );	
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 	$template->param( MAIN				=> 1,
-					  PAGE_NAME			=> $PAGE_TITLE . '.pl' );
-					  
-	return "Access denied\n" unless ( !$list->restricted || $USER->has_access_to_list($lid) );				  
-					  
-	$template->param( LIST_INFO			=> get_list_info( lid => $lid ) );
-	$template->param( LIST_ANNOTATIONS	=> get_annotations( lid => $lid ) );
-	$template->param( LIST_CONTENTS		=> get_list_contents( lid => $lid ),
+					  PAGE_NAME			=> $PAGE_TITLE . '.pl',
 					  LID				=> $lid,
 					  DEFAULT_TYPE		=> 'note' );
-	$template->param( ADMIN_AREA       => 1 ) if $USER->is_admin;
+	$template->param( LIST_INFO			=> get_list_info( lid => $lid ) );
+	$template->param( LIST_ANNOTATIONS	=> get_annotations( lid => $lid ) );
+	$template->param( LIST_CONTENTS		=> get_list_contents( lid => $lid ) );
+	$template->param( ADMIN_AREA       	=> 1 ) if $USER->is_admin;
 
 	return $template->output;
 }
@@ -555,10 +553,10 @@ sub get_list_contents {
 		$html .= '</tr>';
 		$num_items++;
 	}
+	
 	$first = 1;
 	my $feat_count = $list->features(count=>1); #EL: moved outside of loop; massive speed improvement
 	foreach my $feature (sort featurecmp $list->features ) {
-
 		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' rowspan='$feat_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Features ($feat_count):</th>" : '');
 		my $fid = $feature->id;
 		$html .= qq{<td class='data5'><span id='feature$fid' class='link' onclick="window.open('FeatView.pl?fid=$fid')">} . $feature->info . "</span></td>";
@@ -568,6 +566,7 @@ sub get_list_contents {
 		$html .= '</tr>';
 		$num_items++;
 	}
+	
 	$first = 1;
 	my $list_count = $list->lists(count=>1);
 	foreach my $list (sort listcmp $list->lists ) {
@@ -579,7 +578,7 @@ sub get_list_contents {
 		}
 		$html .= '</tr>';
 		$num_items++;
-	}		
+	}
 
 	$html .= '</tbody></table>';
 	
