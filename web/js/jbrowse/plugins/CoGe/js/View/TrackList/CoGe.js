@@ -263,16 +263,10 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 	console.log('checkAcceptance');
                 	if (isStatic) 
                 		return false;
-                	var accept = true;
                 	var target = this;
-                	nodes.forEach( function (n) {
-//                		var type = target.map[n.id].data.coge.type;
-//                		var editable = target.map[n.id].data.coge.editable;
-//	                	if (!editable || !type || type != 'experiment' || hasLabelNode(div, n.id)) {
-//	                		accept = false;
-//	                	}
-                	});
-                	return accept;
+                	var nbNode = target.getAllNodes().shift();
+                	var nbConfig = target.map[nbNode.id].data.coge;
+                	return ( nbConfig.editable && !hasLabelNode(div, nodes) );
                 },
                 creator: dojo.hitch( this, function( trackConfig, hint ) {
                 	//console.log('creator ' + trackConfig.coge.id);
@@ -802,15 +796,18 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 });
 });
 
-function hasLabelNode(div, id) {
+function hasLabelNode(div, nodes) {
 	var container;
 	
-	dojo.query( '.coge-tracklist-label', div )
-	 	.forEach( function( labelNode ) {
-	 		if (labelNode.id == id) {
-	 			container = labelNode.parentNode;
-	 		}
-	 	});
+	nodes.forEach( function(node) {
+		dojo.query( '#'+node.id+' > .coge-tracklist-label', div )
+		 	.forEach( function( labelNode ) {
+		 		if (labelNode.id == node.id) {
+		 			container = labelNode.parentNode;
+		 			return;
+		 		}
+		 	});
+	});
 	
 	return container;
 }
