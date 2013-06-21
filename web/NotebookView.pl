@@ -515,10 +515,10 @@ sub get_list_contents {
 	my $html;
 	my $num_items = 0;
 	my $first = 1;
-	$html = '<table id="list_contents_table" class="small ui-widget-content ui-corner-all" style="border-spacing:0;border-collapse:collapse;"><thead style="display:none;"></thead><tbody>';
+	$html = '<table id="list_contents_table" class="small ui-widget-content ui-corner-all" style="border-spacing:0;border-collapse:collapse;">';#<thead style="display:none;"></thead><tbody>';
 
 	my $genome_count = $list->genomes(count=>1); #EL: moved outside of loop; massive speed improvement due to cost of this call
-	my $delete_count=0;
+#	my $delete_count=0;
 	foreach my $genome ( sort genomecmp $list->genomes ) {
 		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' rowspan='$genome_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Genomes ($genome_count):</th>" : '');
 		
@@ -580,7 +580,7 @@ sub get_list_contents {
 		$num_items++;
 	}
 
-	$html .= '</tbody></table>';
+	$html .= '</table>';#'</tbody></table>';
 	
 	if ($user_can_edit) {
 		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-icon-left ui-corner-all' onClick="add_list_items();"><span class="ui-icon ui-icon-plus"></span>Add Items</span>};
