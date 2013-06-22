@@ -290,7 +290,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 	else if (coge.type == 'experiment') {
                 		node.innerHTML = '<img src="picts/testtube-icon-small.png"/>' + ' ';
                 	}
-                	node.innerHTML += '<img height="16" width="0" style="visibility:hidden;"/>'; // force min height
+                	node.innerHTML += '<img height="19" width="0" style="visibility:hidden;"/>'; // force min height
                 	node.innerHTML += '<span class="tracklist-text" style="white-space:nowrap">' + name + '</span>';
                 	
                     dojo.connect( node, "click", dojo.hitch(this, function(e) {
