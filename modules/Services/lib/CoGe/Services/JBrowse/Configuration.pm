@@ -290,7 +290,7 @@ sub track_config {
 	if (keys %all_experiments) {
 		push @tracks,
 		{
-			key => 'All Experiments (' . (keys %all_experiments) . ')',
+			key => 'All Experiments',
 			baseUrl => "services/JBrowse/service.pl/experiment/genome/$gid/",
 		    autocomplete => "all",
 		    track => "notebook0",
@@ -305,6 +305,7 @@ sub track_config {
 				classes => [ 'coge-tracklist-collapsible' ],
 				name => 'All Experiments',
 				description => '',
+				count => keys %all_experiments,
 				#experiments => [ values %all_experiments ],
 			}
 		};
@@ -316,7 +317,7 @@ sub track_config {
 		my $nid = $n->id;
 		push @tracks,
 		{
-			key => ($n->restricted ? '&reg; ' : '') . $n->name . ' (' . @{$expByNotebook{$nid}} . ')',
+			key => ($n->restricted ? '&reg; ' : '') . $n->name,
 			baseUrl => "services/JBrowse/service.pl/experiment/notebook/$nid/",
 		    autocomplete => "all",
 		    track => "notebook$nid",
@@ -335,6 +336,7 @@ sub track_config {
 				description => $n->description,
 				editable => $USER->is_admin || $USER->is_owner_editor(list => $n),
 				experiments => (@{$expByNotebook{$nid}} ? $expByNotebook{$nid} : undef),
+				count => scalar @{$expByNotebook{$nid}},
 				menuOptions => [
 					{ label => 'NotebookView',
 					  action => "function() { window.open( 'NotebookView.pl?lid=$nid' ); }"
