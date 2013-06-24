@@ -7,6 +7,7 @@ use Cwd 'abs_path';
 
 my $NUM_COL = 6;
 my $MAX_EXPERIMENTS = 20;
+my $MAX_RESULTS = 20000;
 my $coge_conf;
 
 sub setup {
@@ -128,13 +129,14 @@ sub features {
 				$value1 = $strand*$value1;
 				my $eid = $exp->id;
 				$results .= ($results ? ',' : '') . qq{{ "id": $eid, "start": $start, "end": $end, "score": $value1 }};
-				$numFeatures++;
+				if ($numFeatures++ > $MAX_RESULTS) {
+					print STDERR "numFeatures: $numFeatures\n";
+					return qq{{ "features" : [ ] }}
+				}
 			}
 		}
 	}
 	
-	print STDERR "numFeatures: $numFeatures\n";
-	return qq{{ "features" : [ ] }} if ($numFeatures > 20000);
 #	print STDERR "{ 'features' : [ $results ] }\n";
 	return qq{{ "features" : [ $results ] }};
 }
