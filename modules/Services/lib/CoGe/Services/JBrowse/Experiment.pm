@@ -40,7 +40,7 @@ sub features {
 	my $chr = $self->param('chr');
 	my $start = $self->query->param('start');
 	my $end = $self->query->param('end');
-	print STDERR "experiment features eid=" . ($eid ? $eid : '') . " nid=" . ($nid ? $nid : '') . " gid=" . ($gid ? $gid : '') . " $chr:$start:$end\n";
+	print STDERR "experiment features eid=" . ($eid ? $eid : '') . " nid=" . ($nid ? $nid : '') . " gid=" . ($gid ? $gid : '') . " $chr:$start:$end (" . ($end-$start+1) . "\n";
 	return unless (($eid or $nid or $gid) and $chr and $start and $end);
 	
 	# Load config file
