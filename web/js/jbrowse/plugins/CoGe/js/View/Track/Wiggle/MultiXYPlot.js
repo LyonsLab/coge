@@ -72,6 +72,39 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         this.inherited( arguments );
         this.updateYScaleFromViewDimensions( coords );
     },
+    
+    fillTooManyFeaturesMessage: function( blockIndex, block, scale ) {
+        this.fillMessage(
+            blockIndex,
+            block,
+            'Too much data to show'
+                + (scale >= this.browser.view.maxPxPerBp ? '': '; zoom in to see detail')
+                + '.'
+        );
+    },    
+    
+    fillMessage: function( blockIndex, block, message, class_ ) {
+        //domConstruct.empty( block.domNode );
+        var msgDiv = dojo.create(
+            'div', {
+                className: class_ || 'message',
+                innerHTML: message
+            }, block.domNode );
+        this.heightUpdate( dojo.position(msgDiv).h, blockIndex );
+    },    
+    
+    renderBlock: function( args ) {
+    	console.log(args);
+    	var featureScale = this.config.style.featureScale;
+    	var scale = args.block.scale;
+    	console.log(scale + ' ' + featureScale);
+    	if (scale <= featureScale) { // don't draw, too zoomed-out, modeled after HTMLFeatures
+    		this.fillTooManyFeaturesMessage(args.blockIndex, args.block, scale);
+    	}
+    	else { // render features
+    		this.inherited( arguments );
+    	}
+    },
 
     /**
      * Draw a set of features on the canvas.
@@ -79,7 +112,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
      */
     _drawFeatures: function( scale, leftBase, rightBase, block, canvas, features, featureRects, dataScale ) {
 //    	console.log('_drawFeatures');
-        var context = canvas.getContext('2d');
+    	var context = canvas.getContext('2d');
         var canvasHeight = canvas.height;
         var toY = dojo.hitch( this, function( val ) {
            return canvasHeight * ( 1-dataScale.normalize.call(this, val) );
