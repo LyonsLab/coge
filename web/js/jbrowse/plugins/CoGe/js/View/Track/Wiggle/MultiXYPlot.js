@@ -2,13 +2,14 @@ define( [
             'dojo/_base/declare',
             'dojo/_base/array',
             'dojo/_base/Color',
+            'dojo/dom-construct',
             'dojo/on',
             'JBrowse/View/Track/WiggleBase',
             'JBrowse/View/Track/YScaleMixin',
             'JBrowse/Util',
             './_Scale'
         ],
-        function( declare, array, Color, on, WiggleBase, YScaleMixin, Util, Scale ) {
+        function( declare, array, Color, domConstruct, on, WiggleBase, YScaleMixin, Util, Scale ) {
 
 var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of XYPlot, extend that class instead?
 
@@ -84,7 +85,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     },    
     
     fillMessage: function( blockIndex, block, message, class_ ) {
-        //domConstruct.empty( block.domNode );
+        domConstruct.empty( block.domNode );
         var msgDiv = dojo.create(
             'div', {
                 className: class_ || 'message',
