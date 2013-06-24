@@ -8,10 +8,13 @@ define(['dojo/_base/declare',
         'dojo/fx/easing',
         'dijit/form/TextBox',
         'dojo/mouse',
+        "dijit/form/DropDownButton", 
+        "dijit/DropDownMenu", 
+        "dijit/MenuItem",
         'JBrowse/View/ConfirmDialog',
         'JBrowse/View/InfoDialog'
        ],
-       function( declare, array, dom, domGeom, aspect, ContentPane, dndSource, animationEasing, dijitTextBox, mouse, ConfirmDialog, InfoDialog ) {
+       function( declare, array, dom, domGeom, aspect, ContentPane, dndSource, animationEasing, dijitTextBox, mouse, DropDownButton, DropDownMenu, MenuItem, ConfirmDialog, InfoDialog ) {
 return declare( 'JBrowse.View.TrackList.CoGe', null,
 
     /** @lends JBrowse.View.TrackList.CoGe.prototype */
@@ -195,11 +198,11 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
             },
             trackPane
         );
-
+        
         // create text filter input
         this._createTextFilter(trackConfigs);
         this._updateTextFilterControl();
-
+        
         // create a DnD source for sequence
         this.trackListWidgets = [];
         
@@ -276,7 +279,6 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 	
                 	var node = this._createLabelNode( trackConfig );
                 	var coge = trackConfig.coge;
-                	var name = trackConfig.key;
                 	
                 	node.id = coge.type + coge.id;
                 	
@@ -284,14 +286,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                     	dojo.addClass( node, coge.classes.join(' ') );
                     }
                 	
-                	if (coge.type == 'notebook') {
-	                	node.innerHTML = '<img src="picts/notebook-icon-small.png"/>' + ' ';
-                	}
-                	else if (coge.type == 'experiment') {
-                		node.innerHTML = '<img src="picts/testtube-icon-small.png"/>' + ' ';
-                	}
-                	node.innerHTML += '<img height="19" width="0" style="visibility:hidden;"/>'; // force min height
-                	node.innerHTML += '<span class="tracklist-text" style="white-space:nowrap">' + name + '</span>';
+                    this._setTrackTitle(trackConfig, node);
                 	
                     dojo.connect( node, "click", dojo.hitch(this, function(e) {
                     	//console.log('click ' + node.id + ' ' + e.shiftKey);
@@ -364,7 +359,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 		                			notebookName = n.id;
 		                			notebookId = notebookName.match(/\d+/);
 		                		});
-		                		if (notebookId && notebookId > 0) { // it's inside a notebook
+		                		if (notebookId) { // it's inside a notebook
 		                			dojo.xhrPut({ // FIXME: make webservice for this
 			      					    url: "NotebookView.pl",
 			    					    putData: {
@@ -389,6 +384,8 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 			    		                	this.browser.view.tracks.forEach( function(track) {
 			    		                		if (track.config.label == notebookName) {
 			    		                			track.changed();
+//			    		                			track.config.coge.count--;
+//			    		                			this._setTrackTitle(track.config,);
 			    		                		}
 			    		                	});
 			    					    })
@@ -539,6 +536,20 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
         ); 
     },
     
+    _setTrackTitle: function( config, node) {
+    	var coge = config.coge;
+    	var name = config.key;
+    	if (coge.type == 'notebook') {
+        	node.innerHTML = '<img src="picts/notebook-icon-small.png"/>' + ' ';
+//        	name += ' (' + coge.count + ')';
+    	}
+    	else if (coge.type == 'experiment') {
+    		node.innerHTML = '<img src="picts/testtube-icon-small.png"/>' + ' ';
+    	}
+    	node.innerHTML += '<img height="19" width="0" style="visibility:hidden;"/>'; // force min height
+    	node.innerHTML += '<span class="tracklist-text" style="white-space:nowrap">' + name + '</span>';
+    },
+    
     _createTextFilter: function( trackConfigs ) {
         this.textFilterDiv = dom.create( 'div', {
             className: 'textfilter',
@@ -577,6 +588,8 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 			style: { // FIXME move into css
 				cursor: 'pointer', position: 'absolute', left: '4px', top: '4px' }
 		}, this.textFilterDiv );
+		
+//		this._createDropDownMenu();
 		
 		dom.create('img', { // FIXME: style with css icon instead of img
 			title: 'Add all experiments',
@@ -621,6 +634,31 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 			style: { color: 'gray', 'text-shadow': '1px 1px white', 'padding-left' : '20px' }
 		}, this.textFilterDiv );
     },
+    
+//    _createDropDownMenu: function() {
+//    	var menu = new DropDownMenu({ style: "display: none;"});
+//	    var menuItem1 = new MenuItem({
+//	        label: "Save",
+//	        iconClass:"dijitEditorIcon dijitEditorIconSave",
+//	        onClick: function(){ alert('save'); }
+//	    });
+//	    menu.addChild(menuItem1);
+//
+//	    var menuItem2 = new MenuItem({
+//	        label: "Cut",
+//	        iconClass:"dijitEditorIcon dijitEditorIconCut",
+//	        onClick: function(){ alert('cut'); }
+//	    });
+//	    menu.addChild(menuItem2);
+//
+//	    var button = new DropDownButton({
+//	        label: "hello!",
+//	        name: "programmatic2",
+//	        dropDown: menu,
+//	        id: "progButton"
+//	    });
+//	    this.div.appendChild(button.domNode);
+//    },
     
     _createLabelNode: function( trackConfig ) {
     	var coge = trackConfig.coge;
