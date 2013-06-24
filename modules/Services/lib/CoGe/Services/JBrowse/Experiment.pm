@@ -40,7 +40,7 @@ sub features {
 	my $chr = $self->param('chr');
 	my $start = $self->query->param('start');
 	my $end = $self->query->param('end');
-	print STDERR "experiment features eid=" . ($eid ? $eid : '') . " nid=" . ($nid ? $nid : '') . " gid=" . ($gid ? $gid : '') . " $chr:$start:$end (" . ($end-$start+1) . "\n";
+	print STDERR "experiment features eid=" . ($eid ? $eid : '') . " nid=" . ($nid ? $nid : '') . " gid=" . ($gid ? $gid : '') . " $chr:$start:$end (" . ($end-$start+1) . ")\n";
 	return unless (($eid or $nid or $gid) and $chr and $start and $end);
 	
 	# Load config file
@@ -94,6 +94,7 @@ sub features {
 	
 	# Query range for each experiment and build up json response - #TODO could parallelize this for multiple experiments
 	my $results = '';
+	my $numFeatures = 0;
 	foreach my $exp (@experiments) { #TODO need to move this code along with replicate in bin/fastbit_query.pl into CoGe::Web sub-module
 		my $storage_path = $exp->storage_path;
 		
@@ -127,10 +128,13 @@ sub features {
 				$value1 = $strand*$value1;
 				my $eid = $exp->id;
 				$results .= ($results ? ',' : '') . qq{{ "id": $eid, "start": $start, "end": $end, "score": $value1 }};
+				$numFeatures++;
 			}
 		}
 	}
 	
+	print STDERR "numFeatures: $numFeatures\n";
+	return qq{{ "features" : [ ] }} if ($numFeatures > 20000);
 #	print STDERR "{ 'features' : [ $results ] }\n";
 	return qq{{ "features" : [ $results ] }};
 }
