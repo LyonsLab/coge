@@ -257,12 +257,11 @@ sub track_config {
 		    track => "experiment$eid",
 		    label => "experiment$eid",
 		    key => ($e->restricted ? '&reg; ' : '') . $e->name,
-		    type => "CoGe/View/Track/Wiggle/MultiXYPlot",#"JBrowse/View/Track/Wiggle/XYPlot",
+		    type => "CoGe/View/Track/Wiggle/MultiXYPlot",
 		    storeClass => "JBrowse/Store/SeqFeature/REST",
-#		    style => {
-#		    	pos_color => $color,
-#		    	neg_color => $color
-#		    },
+		    style => {
+		    	featureScale => 0.0001
+		    },
 		    # CoGe-specific stuff
 		    onClick => "ExperimentView.pl?embed=1&eid=$eid",
 		    showHoverScores => 1,
@@ -297,6 +296,9 @@ sub track_config {
 		    label => "notebook0",
 		    type => "CoGe/View/Track/Wiggle/MultiXYPlot",
 		    storeClass => "JBrowse/Store/SeqFeature/REST",
+		    style => {
+		    	featureScale => 0.0001
+		    },
 			# CoGe-specific stuff
 			showAverage => 0,
 			coge => {
@@ -324,6 +326,9 @@ sub track_config {
 		    label => "notebook$nid",
 		    type => "CoGe/View/Track/Wiggle/MultiXYPlot",
 		    storeClass => "JBrowse/Store/SeqFeature/REST",
+		    style => {
+		    	featureScale => 0.0001
+		    },		    
 			# CoGe-specific stuff
 			onClick => "NotebookView.pl?embed=1&lid=$nid",
 			showAverage => 0,
