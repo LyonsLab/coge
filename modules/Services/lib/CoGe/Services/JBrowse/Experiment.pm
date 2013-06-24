@@ -7,7 +7,8 @@ use Cwd 'abs_path';
 
 my $NUM_COL = 6;
 my $MAX_EXPERIMENTS = 20;
-my $MAX_RESULTS = 20000;
+#my $MAX_RESULTS = 150000;
+my $MAX_WINDOW_SIZE = 500000;
 my $coge_conf;
 
 sub setup {
@@ -43,6 +44,11 @@ sub features {
 	my $end = $self->query->param('end');
 	print STDERR "experiment features eid=" . ($eid ? $eid : '') . " nid=" . ($nid ? $nid : '') . " gid=" . ($gid ? $gid : '') . " $chr:$start:$end (" . ($end-$start+1) . ")\n";
 	return unless (($eid or $nid or $gid) and $chr and $start and $end);
+	
+	if ($end-$start+1 > $MAX_WINDOW_SIZE) {
+		print STDERR "experiment features maxed\n";
+		return qq{{ "features" : [ ] }};
+	}
 	
 	# Load config file
 	#print STDERR "conf = $coge_conf\n";
@@ -95,7 +101,7 @@ sub features {
 	
 	# Query range for each experiment and build up json response - #TODO could parallelize this for multiple experiments
 	my $results = '';
-	my $numFeatures = 0;
+#	my $numFeatures = 0;
 	foreach my $exp (@experiments) { #TODO need to move this code along with replicate in bin/fastbit_query.pl into CoGe::Web sub-module
 		my $storage_path = $exp->storage_path;
 		
@@ -129,10 +135,7 @@ sub features {
 				$value1 = $strand*$value1;
 				my $eid = $exp->id;
 				$results .= ($results ? ',' : '') . qq{{ "id": $eid, "start": $start, "end": $end, "score": $value1 }};
-				if ($numFeatures++ > $MAX_RESULTS) {
-					print STDERR "numFeatures: $numFeatures\n";
-					return qq{{ "features" : [ ] }}
-				}
+#				$numFeatures++;
 			}
 		}
 	}

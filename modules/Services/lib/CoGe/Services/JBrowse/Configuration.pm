@@ -260,7 +260,7 @@ sub track_config {
 		    type => "CoGe/View/Track/Wiggle/MultiXYPlot",
 		    storeClass => "JBrowse/Store/SeqFeature/REST",
 		    style => {
-		    	featureScale => 0.0001
+		    	featureScale => 0.001
 		    },
 		    # CoGe-specific stuff
 		    onClick => "ExperimentView.pl?embed=1&eid=$eid",
@@ -297,7 +297,7 @@ sub track_config {
 		    type => "CoGe/View/Track/Wiggle/MultiXYPlot",
 		    storeClass => "JBrowse/Store/SeqFeature/REST",
 		    style => {
-		    	featureScale => 0.0001
+		    	featureScale => 0.001
 		    },
 			# CoGe-specific stuff
 			showAverage => 0,
@@ -327,7 +327,7 @@ sub track_config {
 		    type => "CoGe/View/Track/Wiggle/MultiXYPlot",
 		    storeClass => "JBrowse/Store/SeqFeature/REST",
 		    style => {
-		    	featureScale => 0.0001
+		    	featureScale => 0.001
 		    },		    
 			# CoGe-specific stuff
 			onClick => "NotebookView.pl?embed=1&lid=$nid",
