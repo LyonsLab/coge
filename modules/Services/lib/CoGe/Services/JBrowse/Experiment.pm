@@ -110,7 +110,7 @@ sub features {
 		# format (see jira thread for explanation) so "0.0=0.0" was added along with
 		# -v option.  Output parsing was modified accordingly for new output format.
 		#my $cmd = "$CMDPATH -d $exp_storage_path -q \"select chr,start,stop,strand,value1,value2 where chr='$chr' and start > $start and stop < $stop\" 2>&1"; # mdb removed 3/27/13 issue 61
-		my $cmd = "$CMDPATH -v 1 -d $storage_path -q \"select chr,start,stop,strand,value1,value2 where 0.0=0.0 and chr='$chr' and start > $start and stop < $end order by start limit 999999999\" 2>&1"; # mdb added 3/27/13 issue 61
+		my $cmd = "$CMDPATH -v 1 -d $storage_path -q \"select chr,start,stop,strand,value1,value2 where 0.0=0.0 and chr='$chr' and start <= $end and stop >= $start order by start limit 999999999\" 2>&1"; # mdb added 3/27/13 issue 61
 		#print STDERR "$cmd\n";
 		my @cmdOut = qx{$cmd};
 		#print STDERR @cmdOut;
