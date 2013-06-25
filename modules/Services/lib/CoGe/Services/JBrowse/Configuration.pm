@@ -154,7 +154,7 @@ sub track_config {
 		    description => "note, description",
 		    storeClass => "JBrowse/Store/SeqFeature/REST",
 		    onClick => "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
-		    maxFeatureScreenDensity => 100,
+		    maxFeatureScreenDensity => 50,
 		    maxHeight => 100000,
 		    minSubfeatureWidth => 4,
 			style => {
@@ -189,7 +189,7 @@ sub track_config {
 				type => "JBrowse/View/Track/HTMLFeatures",
 		        storeClass => "JBrowse/Store/SeqFeature/REST",
 		        onClick => "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end};type=$type_name",
-	          	maxFeatureScreenDensity => 100,
+	          	maxFeatureScreenDensity => 50,
 	          	maxHeight => 100000,
 				style => {
 				    "arrowheadClass" => "arrowhead",
