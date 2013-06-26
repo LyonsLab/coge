@@ -166,46 +166,55 @@ def an_features(environ, start_response):
         cur.execute(query + ";")
         results = cur.fetchall()
 
-        if results:
-            response_body["features"].append({"subfeatures" : []})
-
-        i = 0
-        lastID = 0
-        lastEnd = 0
-        lastStart = 0
-        for row in results:
-            if row[8] != lastID and lastID != 0:
-                response_body["features"][i]["start"] = lastStart
-                response_body["features"][i]["end"] = lastEnd
-                response_body["features"][i]["uniqueID"] = lastID
-                response_body["features"][i]["name"] = lastName
-                response_body["features"][i]["strand"] = lastStrand
-                response_body["features"][i]["type"] = lastType
+        if feat_type:
+            if results:
                 response_body["features"].append({"subfeatures" : []})
-                i += 1
+            i = 0
+            lastID = 0
+            lastEnd = 0
+            lastStart = 0
+            for row in results:
+                if row[8] != lastID and lastID != 0:
+                    response_body["features"][i]["start"] = lastStart
+                    response_body["features"][i]["end"] = lastEnd
+                    response_body["features"][i]["uniqueID"] = lastID
+                    response_body["features"][i]["name"] = lastName
+                    response_body["features"][i]["strand"] = lastStrand
+                    response_body["features"][i]["type"] = lastType
+                    response_body["features"].append({"subfeatures" : []})
+                    i += 1
 
-            elif lastID == 0:
-                response_body["features"][i]["start"] = row[6]
-                response_body["features"][i]["end"] = row[7]
-                response_body["features"][i]["uniqueID"] = row[8]
-                response_body["features"][i]["name"] = row[4]
-                response_body["features"][i]["strand"] = row[2]
-                response_body["features"][i]["type"] = row[3]
+                elif lastID == 0:
+                    response_body["features"][i]["start"] = row[6]
+                    response_body["features"][i]["end"] = row[7]
+                    response_body["features"][i]["uniqueID"] = row[8]
+                    response_body["features"][i]["name"] = row[4]
+                    response_body["features"][i]["strand"] = row[2]
+                    response_body["features"][i]["type"] = row[3]
 
-            response_body["features"][i]["subfeatures"].append({
-                "start" : row[0],
-                "end" : row[1],
-                "strand" : row[2],
-                "type" : row[3],
-                "name" : row[4],
-            })
+                response_body["features"][i]["subfeatures"].append({
+                    "start" : row[0],
+                    "end" : row[1],
+                    "strand" : row[2],
+                    "type" : row[3],
+                    "name" : row[4],
+                })
 
-            lastStrand = row[2]
-            lastType = row[3]
-            lastName = row[4]
-            lastStart = row[6]
-            lastEnd = row[7]
-            lastID = row[8]
+                lastStrand = row[2]
+                lastType = row[3]
+                lastName = row[4]
+                lastStart = row[6]
+                lastEnd = row[7]
+                lastID = row[8]
+        else:
+            for row in results:
+                response_body["features"].append({
+                    "start" : row[0],
+                    "end" : row[1],
+                    "strand" : row[2],
+                    "type" : row[3],
+                    "name" : row[4],
+                })
 
     except mdb.Error, e:
         response_body = "Error %d: %s" % (e.args[0], e.args[1])
@@ -227,6 +236,7 @@ def stats(environ, start_response):
     response_body = { "featureDensity": 0.02,
                       "scoreMin": 0,
                       "scoreMax": 1,
+                      "featureDensityByRegion" : 50000,
                     }
     return json.dumps(response_body)
 
