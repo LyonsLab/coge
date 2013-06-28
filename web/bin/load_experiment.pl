@@ -1,10 +1,9 @@
 #!/usr/bin/perl -w
 
-use DBI;
+
 use strict;
-use CoGeX;
-use Roman;
 use Data::Dumper;
+use CoGeX;
 use Getopt::Long;
 use File::Path;
 use URI::Escape::JavaScript qw(escape unescape);
@@ -15,8 +14,14 @@ use vars qw($staging_dir $install_dir $data_file
 			$gid $source_name $user_name $config
 			$host $port $db $user $pass $P);
 
-my $MIN_COLUMNS = 5;
-my $MAX_COLUMNS = 6;
+my $DATA_TYPE_QUANT = 1;
+my $DATA_TYPE_VCF	= 2;
+
+my $MIN_QUANT_COLUMNS = 5;
+my $MAX_QUANT_COLUMNS = 6;
+
+my $MIN_VCF_COLUMNS = 8;
+#my $MAX_VCF_COLUMNS = 10;
 
 GetOptions(
 	"staging_dir=s"	=> \$staging_dir,
@@ -73,14 +78,34 @@ if (not $FASTBIT_LOAD or not $FASTBIT_QUERY or not -e $FASTBIT_LOAD or not -e $F
 	exit(-1);
 }
 
+# Determine file type (.csv quant values or .vcf variant values)
+print $log "log: Detecting file type\n";
+my $data_type = detect_data_type($data_file);
+if (!$data_type) {
+	print $log "log: error: unable to detect data type from file\n";
+	exit(-1);
+}
+elsif ($data_type == $DATA_TYPE_QUANT) {
+	print $log "log: Detected a CSV quantitative file\n";
+}
+elsif ($data_type == $DATA_TYPE_VCF) {
+	print $log "log: Detected a VCF variant file\n";
+}
+
 # Validate the data file
 print $log "log: Validating data file\n";
-
 my $count = 0;
 my $pChromosomes;
- ($data_file, $count, $pChromosomes) = validate_data_file($data_file);
+my $data_spec;
+if ($data_type == $DATA_TYPE_QUANT) {
+	($data_file, $data_spec, $count, $pChromosomes) = validate_quant_data_file($data_file);
+}
+elsif ($data_type == $DATA_TYPE_VCF) {
+	($data_file, $data_spec, $count, $pChromosomes) = validate_vcf_data_file($data_file);
+}
 if (not $count) {
-	exit(-1);	
+	print $log "log: error: file contains no data\n";
+	exit(-1);
 }
 
 my ($filename) = $data_file =~ /^.+\/([^\/]+)$/;
@@ -118,7 +143,7 @@ foreach (sort keys %$pChromosomes) {
 }
 if ($error) {
 	print $log "log: error: input chromosome names don't match genome\n";
-	exit(-1);	
+	exit(-1);
 }
 
 # Copy input file to staging area and generate fastbit database/index
@@ -130,7 +155,7 @@ my $staged_data_file = $staging_dir . '/' . $filename;
 #TODO redirect fastbit output to log file instead of stderr
 
 print $log "log: Generating database\n";
-$cmd = "$FASTBIT_LOAD -d $staging_dir -m \"chr:key, start:unsigned long, stop:unsigned long, strand:byte, value1:double, value2:double\" -t $staged_data_file";
+$cmd = "$FASTBIT_LOAD -d $staging_dir -m \"$data_spec\" -t $staged_data_file";
 print $log $cmd, "\n";
 my $rc = system($cmd);
 if ($rc != 0) {
@@ -153,9 +178,9 @@ if ($rc != 0) {
 # install the files.
 ################################################################################
 
-# Create datasource
-my $datasource = $coge->resultset('DataSource')->find_or_create( { name => $source_name, description => "" } );#, description => "Loaded into CoGe via LoadExperiment" } );
-unless ($datasource) {
+# Create data source
+my $data_source = $coge->resultset('DataSource')->find_or_create( { name => $source_name, description => "" } );#, description => "Loaded into CoGe via LoadExperiment" } );
+unless ($data_source) {
 	print $log "log: error creating data source\n";
 	exit(-1);
 }
@@ -166,7 +191,8 @@ my $experiment = $coge->resultset('Experiment')->create(
 	  description		=> $description,
 	  version			=> $version,
 	  #link				=> $link, #FIXME 
-	  data_source_id	=> $datasource->id,
+	  data_source_id	=> $data_source->id,
+	  data_type			=> $data_type,
 	  genome_id			=> $gid,
 	  restricted		=> $restricted
 	});
@@ -212,13 +238,55 @@ close($log);
 exit;
 
 #-------------------------------------------------------------------------------
-sub validate_data_file {
+sub detect_data_type {
+	my $filepath = shift;
+
+	print $log "detect_data_type: $filepath\n";
+	
+	my $type;
+	
+	my ($fileext) = $filepath =~ /\.([^\.]+)$/;
+	if ($fileext eq 'csv') {
+		return $DATA_TYPE_QUANT;
+	}
+	elsif ($fileext eq 'vcf') {
+		return $DATA_TYPE_VCF;
+	}
+	else {
+		print $log "detect_data_type: unknown file ext '$fileext'\n";
+	}
+	
+	open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
+	my $line_num = 1;
+	while (my $line = <$in>) {
+		last if ($line_num++ > 100); # only check the beginning of the file
+		chomp $line;
+		next if $line =~ /^\s*#/;
+		
+		if ($line =~ /fileformat\=VCF/) {
+			return $DATA_TYPE_VCF;
+		}
+		
+		my @tok = split(/\s+/, $line);
+		if (@tok >= $MIN_QUANT_COLUMNS && @tok <= $MAX_QUANT_COLUMNS) {
+			return $DATA_TYPE_QUANT;
+		}
+		elsif (@tok >= $MIN_VCF_COLUMNS) {
+			return $DATA_TYPE_VCF;
+		}
+	}
+	close($in);
+	
+	return;
+}
+
+sub validate_quant_data_file {
 	my $filepath = shift;
 	
 	my %chromosomes;
 	my $line_num = 1;
 	
-	print $log "validate_data_file: $filepath\n";
+	print $log "validate_quant_data_file: $filepath\n";
 	open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
 	my $outfile = $filepath.".csv";
 	open (my $out, ">$outfile");
@@ -227,17 +295,18 @@ sub validate_data_file {
 		next if ($line =~ /^\s*#/);
 		chomp $line;
 		my @tok = split(/,/, $line);
+		
 		# If comma-delimited parsing didn't work try white-space delimited
-		unless (@tok >= $MIN_COLUMNS && @tok <= $MAX_COLUMNS) {
+		unless (@tok >= $MIN_QUANT_COLUMNS && @tok <= $MAX_QUANT_COLUMNS) {
 			@tok = split (/\s+/,$line);
 		}
 		# Validate format
-		if (@tok < $MIN_COLUMNS) {
-			print $log "log: error at line $line_num: more columns expected (" . @tok . "< $MIN_COLUMNS\n";
+		if (@tok < $MIN_QUANT_COLUMNS) {
+			print $log "log: error at line $line_num: more columns expected (" . @tok . " < $MIN_QUANT_COLUMNS)\n";
 			return;
 		}
-		elsif (@tok > $MAX_COLUMNS) {
-			print $log "log: error at line $line_num: fewer columns expected (" . @tok . "> $MAX_COLUMNS\n";
+		elsif (@tok > $MAX_QUANT_COLUMNS) {
+			print $log "log: error at line $line_num: fewer columns expected (" . @tok . " > $MAX_QUANT_COLUMNS)\n";
 			return;
 		}
 		
@@ -275,7 +344,88 @@ sub validate_data_file {
 	}
 	close($in);
 	close($out);
-	return ($outfile, $line_num, \%chromosomes);
+	my $format = "chr:key, start:unsigned long, stop:unsigned long, strand:byte, value1:double, value2:double";
+	return ($outfile, $format, $line_num, \%chromosomes);
+}
+
+# For VCF format specification v4.1, see http://www.1000genomes.org/node/101
+sub validate_vcf_data_file {
+	my $filepath = shift;
+	
+	my %chromosomes;
+	my $line_num = 1;
+	
+	print $log "validate_vcf_data_file: $filepath\n";
+	open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
+	my $outfile = $filepath.".vcf";
+	open (my $out, ">$outfile");
+	while (my $line = <$in>) {
+		$line_num++;
+		#TODO load VCF metadata for storage as experiment annotations in DB (lines that begin with '##')
+		next if ($line =~ /^#/);
+		chomp $line;
+		next unless $line;
+		my @tok = split(/\s+/, $line);
+		
+		# Validate format
+		if (@tok < $MIN_VCF_COLUMNS) {
+			print $log "log: error at line $line_num: more columns expected (" . @tok . " < $MIN_VCF_COLUMNS)\n";
+			return;
+		}
+		
+		# Validate values and set defaults
+		my ($chr, $pos, $id, $ref, $alt, $qual, undef, $info) = @tok;
+		if (not defined $chr ||
+			not defined $pos ||
+			not defined $ref || 
+			not defined $alt) 
+		{
+			print $log "log: error at line $line_num: missing required value in a column\n";
+			return;
+		}
+		next if ($alt eq '.'); # skip monomorphic sites
+		$id = '' if (not defined $id or $id eq '.');
+		$qual = 0 if (not defined $qual);
+		$info = '' if (not defined $info);
+
+		# Fix chromosome identifier
+		$chr =~ s/^lcl\|//;
+		$chr =~ s/chromosome//i;
+		$chr =~ s/^chr//i;
+		$chr =~ s/^0+//;
+		$chr =~ s/^_+//;
+		$chr =~ s/\s+/ /;
+		$chr =~ s/^\s//;
+		$chr =~ s/\s$//;
+		if (not $chr) {
+			print $log "log: error at line $line_num: trouble parsing chromosome\n";
+			return;
+		}
+		$chromosomes{$chr}++;
+		
+		# Each line could encode multiple alleles
+		my @alleles = split(',', $alt);
+		foreach my $a (@alleles) {
+			# Determine site type
+			my $type = detect_type($ref, $a);
+			# Save to file
+			print $out join (",", $chr, $pos, $pos+length($ref)-1, $type, $id, $ref, $a, $qual, $info),"\n";
+		}
+	}
+	close($in);
+	close($out);
+	my $format = "chr:key, start:unsigned long, stop:unsigned long, type:key, id:text, ref:key, alt:key, qual:double, info:text";
+	return ($outfile, $format, $line_num, \%chromosomes);
+}
+
+sub detect_type {
+	my $ref = shift;
+	my $alt = shift;
+	
+	return 'snp' if (length $ref == 1 and length($alt) == 1);
+	return 'deletion' if (length $ref > length $alt);
+	return 'insertion' if (length $ref < length $alt);
+	return 'unknown';
 }
 
 sub commify {
