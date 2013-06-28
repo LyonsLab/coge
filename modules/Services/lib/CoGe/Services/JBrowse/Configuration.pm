@@ -46,6 +46,7 @@ sub refseq_config {
 	#$coge->storage->debugobj(new DBIxProfiler());
 	#$coge->storage->debug(1);
 
+	# Get genome
 	my $genome = $coge->resultset('Genome')->find($gid);
 	return unless $genome;
 
@@ -218,12 +219,11 @@ sub track_config {
 	}
 
 #	print STDERR 'time2: ' . (time - $start_time) . "\n";
-	
 	# Add experiment tracks
 	my %all_notebooks;
 	my %all_experiments;
 	my %expByNotebook;
-	foreach $e (sort experimentcmp $genome->experiments) { #{}, {prefetch => { 'experiment_annotations' => 'annotation_type' }})) {
+	foreach $e (sort experimentcmp $genome->experiments) { 
 		next if ($e->deleted);
 		next if ($e->restricted and not $USER->has_access_to_experiment($e));
 		my $eid = $e->id;
@@ -257,10 +257,12 @@ sub track_config {
 		    track => "experiment$eid",
 		    label => "experiment$eid",
 		    key => ($e->restricted ? '&reg; ' : '') . $e->name,
-		    type => "CoGe/View/Track/Wiggle/MultiXYPlot",
+		    type => ($e->data_type == 2 ? "JBrowse/View/Track/HTMLVariants" : "CoGe/View/Track/Wiggle/MultiXYPlot" ), #FIXME hardcoded data_type
 		    storeClass => "JBrowse/Store/SeqFeature/REST",
-		    style => {
-		    	featureScale => 0.001
+		    style => { 
+		    	featureScale => 0.001,
+		    	_defaultLabelScale => 30,
+		    	showLabels => 'true',
 		    },
 		    # CoGe-specific stuff
 		    onClick => "ExperimentView.pl?embed=1&eid=$eid",
@@ -281,7 +283,7 @@ sub track_config {
 				]
 		    }
 		};
-	}
+	}	
 
 #	print STDERR 'time3: ' . (time - $start_time) . "\n";
 	
