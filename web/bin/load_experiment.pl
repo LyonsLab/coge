@@ -193,6 +193,7 @@ my $experiment = $coge->resultset('Experiment')->create(
 	  #link				=> $link, #FIXME 
 	  data_source_id	=> $data_source->id,
 	  data_type			=> $data_type,
+	  row_count			=> $count,
 	  genome_id			=> $gid,
 	  restricted		=> $restricted
 	});
@@ -285,6 +286,7 @@ sub validate_quant_data_file {
 	
 	my %chromosomes;
 	my $line_num = 1;
+	my $count = 0;
 	
 	print $log "validate_quant_data_file: $filepath\n";
 	open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
@@ -341,11 +343,12 @@ sub validate_quant_data_file {
 		$strand = $strand =~ /-/ ? -1 : 1;
 		print $out join (",", $chr, $start, $stop, $strand, $val1, $val2),"\n";
 		$chromosomes{$chr}++;
+		$count++;
 	}
 	close($in);
 	close($out);
 	my $format = "chr:key, start:unsigned long, stop:unsigned long, strand:byte, value1:double, value2:double";
-	return ($outfile, $format, $line_num, \%chromosomes);
+	return ($outfile, $format, $count, \%chromosomes);
 }
 
 # For VCF format specification v4.1, see http://www.1000genomes.org/node/101
@@ -354,6 +357,7 @@ sub validate_vcf_data_file {
 	
 	my %chromosomes;
 	my $line_num = 1;
+	my $count = 0;
 	
 	print $log "validate_vcf_data_file: $filepath\n";
 	open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
@@ -410,12 +414,13 @@ sub validate_vcf_data_file {
 			my $type = detect_type($ref, $a);
 			# Save to file
 			print $out join (",", $chr, $pos, $pos+length($ref)-1, $type, $id, $ref, $a, $qual, $info),"\n";
+			$count++;
 		}
 	}
 	close($in);
 	close($out);
 	my $format = "chr:key, start:unsigned long, stop:unsigned long, type:key, id:text, ref:key, alt:key, qual:double, info:text";
-	return ($outfile, $format, $line_num, \%chromosomes);
+	return ($outfile, $format, $count, \%chromosomes);
 }
 
 sub detect_type {
