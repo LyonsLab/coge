@@ -6,6 +6,10 @@
 		<img src="./picts/iplant_power.png"/>
 	</a>
 </div>
+<div class="small" style="padding:5px;color:gray;">
+	<img style="vertical-align:middle;" src="./picts/CoGe_logo_small.png"/>
+	<span>Questions, problems, suggestions? <a href="mailto:coge.genome@gmail.com?subject=CoGe's <TMPL_VAR NAME=PAGE_TITLE>">Contact us</a></span>
+</div>
 <!--
 <div><br><span class="xsmall">Date: <TMPL_VAR NAME=DATE> </span></div>
 <font class="small"><span style="color:red;">Warning:</span> This site uses <a href="http://en.wikipedia.org/wiki/Ajax_(programming)">AJAX</a>.  Don't press your browser's back button!</font>
@@ -23,10 +27,8 @@ document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.
 
 <script type="text/javascript">
 $(document).ready(function(){
-	var user = "<TMPL_VAR NAME=USER>";
-	if(user.match(/public/i)) {return;}
-	else {$('#logout').show(0);
-	}
+	if ("<TMPL_VAR NAME=USER>".match(/public/i)) { return; }
+	else { $('#logout').show(0); }
 });
 
 //var pageTracker = _gat._getTracker("UA-3802985-2");
