@@ -116,9 +116,10 @@ sub generate_body {
 	$tmpl->param( 'INTRO' => 1,
 				  ORG_COUNT   => commify( $coge->resultset('Organism')->count() ),
 				  GEN_COUNT   => commify( $coge->resultset('Genome')->count() ),
-				  NUCL_COUNT  => commify( $coge->resultset('GenomicSequence')->get_column('sequence_length')->sum ),
+				  #NUCL_COUNT  => commify( $coge->resultset('GenomicSequence')->get_column('sequence_length')->sum ),
 				  FEAT_COUNT  => commify( $coge->resultset('Feature')->count() ),
 				  ANNOT_COUNT => commify( $coge->resultset('FeatureAnnotation')->count() ),
+				  EXP_COUNT => commify( $coge->resultset('Experiment')->count() )
 	);	
 
 	#      }
