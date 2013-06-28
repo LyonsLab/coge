@@ -297,11 +297,15 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	            var fRect = f.featureRect;
 	            var jEnd = fRect.r;
 	            var score = f.feature.get('score');
+	            var score2 = f.feature.get('score2');
 	            var id = f.feature.get('id');
 	            var name = this._getFeatureName(id);
 	            var color = this._getFeatureColor(id);
 	            for( var j = Math.round(fRect.l); j < jEnd; j++ ) {
-	            	var label = '<div style="background-color:'+color+';">' + nbspPad(score.toPrecision(6).toString(), 11) + name + '</div>';
+	            	var label = '<div style="background-color:'+color+';">' +
+	            		nbspPad(score.toPrecision(6).toString(), 11) +
+	            		(score2 ? nbspPad(score2.toPrecision(6).toString(), 11) : '') +
+	            		name + '</div>';
 	                pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
 	            }
 	        },this);
@@ -324,7 +328,9 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 		        sum.forEach( function(x,l) {
 	        		var avg = sum[l]/count[l];
 	        		for( var j = Math.round(l); j < l+width[l]; j++ ) {
-	                	var label = '<div style="background-color:gray;">' + nbspPad(avg.toPrecision(6).toString(), 11) + 'Average' + '</div>';
+	                	var label = '<div style="background-color:gray;">' + 
+	                		nbspPad(avg.toPrecision(6).toString(), 11) 
+	                		+ 'Average' + '</div>';
 	                    pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
 	                }
 	        	});
