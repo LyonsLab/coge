@@ -365,7 +365,7 @@ sub get_load_log {
 	my %opts = @_;
 	my $load_id = $opts{load_id};
 	my $timestamp = $opts{timestamp};
-#	print STDERR "get_load_log: $load_id\n";
+#	print STDERR "get_load_log: $load_id " . $USER->name . "\n";
 	
 	my $logfile = $TEMPDIR . "staging/$load_id/log.txt";
 	open(my $fh, $logfile) 
