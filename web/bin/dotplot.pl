@@ -443,6 +443,7 @@ sub draw_dots
 
 	next if /^#/;
 	next unless $_;
+	
 	my @line = split /\t/;
 	my $val;
 	my @item1 = split/\|\|/, $line[1];
