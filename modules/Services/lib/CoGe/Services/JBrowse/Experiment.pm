@@ -110,9 +110,9 @@ sub features {
 		if (!$data_type or $data_type < 2) { #FIXME hardcoded data_type to "quant"
 			# Call FastBit to do query (see issue 61: query string must contain a "." for fastbit to use consistent output)
 			my $cmd = "$CMDPATH -v 1 -d $storage_path -q \"select chr,start,stop,strand,value1,value2 where 0.0=0.0 and chr='$chr' and start <= $end and stop >= $start order by start limit 999999999\" 2>&1";
-			print STDERR "$cmd\n";
+			#print STDERR "$cmd\n";
 			my @cmdOut = qx{$cmd};
-			print STDERR @cmdOut;
+			#print STDERR @cmdOut;
 			my $cmdStatus = $?;
 			die "Error executing command $CMDPATH ($cmdStatus)" if ($cmdStatus != 0);
 			
