@@ -360,3 +360,35 @@ sub xy_from_tilez {
 
 1;
 
+
+=head1 NAME
+
+Cache
+
+=head1 SYNOPSIS
+
+use Cache
+
+=head1 DESCRIPTION
+
+=head1 USAGE
+
+=head1 BUGS
+
+=head1 SUPPORT
+
+=head1 AUTHOR
+
+Eric Lyons
+
+=head1 COPYRIGHT
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl itself.
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+=head1 SEE ALSO
+
+=cut
