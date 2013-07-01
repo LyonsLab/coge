@@ -188,9 +188,10 @@ function add_to_list(stuff){
 
 //var motif = stuff.split('\|\|\|');
 var motif = stuff.split('\|');
+console.log('motif',motif);
 id=motif[0];
-seq=motif[3];
-
+seq=motif[1];
+console.log('seq',seq);
 var joinedvals=motif.join(":");
 
 var html='<option';
@@ -245,8 +246,6 @@ function add_selected_motifs() {
  //ids+="\|\|\|"+$(this).val();
  ids=$(this).val();
 });
-
-
   get_motif_vals(['args__motifs','args__'+ids],[add_to_list]);	
   sort_motif_choice();
 }
@@ -1117,8 +1116,8 @@ s</tr>
 
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.chemical_oxidative_pathogen_stress :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.chemical_oxidative_pathogen_stress :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#chemical_oxidative_pathogen_stress :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#chemical_oxidative_pathogen_stress :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -1228,8 +1227,8 @@ s</tr>
 
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.cold_stress :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.cold_stress :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#cold_stress :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#cold_stress :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -1379,8 +1378,8 @@ s</tr>
 
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.drought_heat_stress :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.drought_heat_stress :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#drought_heat_stress :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#drought_heat_stress :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -1674,8 +1673,8 @@ s</tr>
 
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.hypoxia_stress :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.hypoxia_stress :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#hypoxia_stress :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#hypoxia_stress :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -1729,8 +1728,8 @@ s</tr>
 
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.light_stress :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.light_stress :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#light_stress :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#light_stress :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -1848,8 +1847,8 @@ s</tr>
 
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.nutrient_stress :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.nutrient_stress :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#nutrient_stress :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#nutrient_stress :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -1879,8 +1878,8 @@ s</tr>
 
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.salt_stress :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.salt_stress :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#salt_stress :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#salt_stress :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -2006,8 +2005,8 @@ s</tr>
 
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.unspecified_stress :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.unspecified_stress :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#unspecified_stress :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#unspecified_stress :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -2149,8 +2148,8 @@ s</tr>
 
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.water_stress :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.water_stress :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#water_stress :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#water_stress :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -2196,8 +2195,8 @@ s</tr>
 <Table class="small ABFs_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.ABFs_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.ABFs_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#ABFs_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#ABFs_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -2266,8 +2265,8 @@ s</tr>
 <Table class="small ABI3VP1_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.ABI3VP1_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.ABI3VP1_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#ABI3VP1_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#ABI3VP1_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -2312,8 +2311,8 @@ s</tr>
 <Table class="small ABRE_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.ABRE_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.ABRE_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#ABRE_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#ABRE_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -2342,8 +2341,8 @@ s</tr>
 <Table class="small AGP1_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.AGP1_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.AGP1_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#AGP1_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#AGP1_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -2372,8 +2371,8 @@ s</tr>
 <Table class="small AP2_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.AP2_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.AP2_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#AP2_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#AP2_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -2498,8 +2497,8 @@ s</tr>
 <Table class="small ARF_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.ARF_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.ARF_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#ARF_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#ARF_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -2560,8 +2559,8 @@ s</tr>
 <Table class="small ARID_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.ARID_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.ARID_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#ARID_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#ARID_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -2590,8 +2589,8 @@ s</tr>
 <Table class="small C2C2_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.C2C2_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.C2C2_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#C2C2_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#C2C2_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -2636,8 +2635,8 @@ s</tr>
 <Table class="small C2H2_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.C2H2_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.C2H2_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#C2H2_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#C2H2_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -2682,8 +2681,8 @@ s</tr>
 <Table class="small CAMTA_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.CAMTA_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.CAMTA_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#CAMTA_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#CAMTA_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -2712,8 +2711,8 @@ s</tr>
 <Table class="small CCAAT_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.CCAAT_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.CCAAT_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#CCAAT_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#CCAAT_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -2742,8 +2741,8 @@ s</tr>
 <Table class="small DRE_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.DRE_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.DRE_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#DRE_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#DRE_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -2780,8 +2779,8 @@ s</tr>
 <Table class="small E2F_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.E2F_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.E2F_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#E2F_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#E2F_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -2858,8 +2857,8 @@ s</tr>
 <Table class="small EIL_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.EIL_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.EIL_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#EIL_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#EIL_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -2896,8 +2895,8 @@ s</tr>
 <Table class="small EREB_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.EREB_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.EREB_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#EREB_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#EREB_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -2998,8 +2997,8 @@ s</tr>
 <Table class="small ERF_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.ERF_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.ERF_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#ERF_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#ERF_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -3028,8 +3027,8 @@ s</tr>
 <Table class="small GARP_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.GARP_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.GARP_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#GARP_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#GARP_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -3082,8 +3081,8 @@ s</tr>
 <Table class="small HB_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.HB_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.HB_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#HB_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#HB_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -3136,8 +3135,8 @@ s</tr>
 <Table class="small HD_ZIP_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.HD-ZIP_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.HD-ZIP_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#HD-ZIP_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#HD-ZIP_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -3230,8 +3229,8 @@ s</tr>
 <Table class="small HSF_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.HSF_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.HSF_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#HSF_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#HSF_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -3260,8 +3259,8 @@ s</tr>
 <Table class="small LFY_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.LFY_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.LFY_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#LFY_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#LFY_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -3322,8 +3321,8 @@ s</tr>
 <Table class="small MADS_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.MADS_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.MADS_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#MADS_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#MADS_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -3894,8 +3893,8 @@ s</tr>
 <Table class="small MYC_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.MYC_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.MYC_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#MYC_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#MYC_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -3948,8 +3947,8 @@ s</tr>
 <Table class="small O2_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.O2_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.O2_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#O2_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#O2_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -3978,8 +3977,8 @@ s</tr>
 <Table class="small SBP_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.SBP_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.SBP_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#SBP_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#SBP_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -4016,8 +4015,8 @@ s</tr>
 <Table class="small T_BOX_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.T-BOX_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.T-BOX_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#T-BOX_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#T-BOX_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -4046,8 +4045,8 @@ s</tr>
 <Table class="small TCP_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.TCP_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.TCP_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#TCP_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#TCP_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -4108,8 +4107,8 @@ s</tr>
 <Table class="small TEF_Box_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.TEF-Box_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.TEF-Box_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#TEF-Box_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#TEF-Box_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -4146,8 +4145,8 @@ s</tr>
 <Table class="small TGA_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.TGA_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.TGA_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#TGA_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#TGA_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -4200,8 +4199,8 @@ s</tr>
 <Table class="small TGGCCGAC_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.TGGCCGAC_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.TGGCCGAC_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#TGGCCGAC_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#TGGCCGAC_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -4230,8 +4229,8 @@ s</tr>
 <Table class="small Trihelix_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.Trihelix_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.Trihelix_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#Trihelix_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#Trihelix_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -4268,8 +4267,8 @@ s</tr>
 <Table class="small VOZ_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.VOZ_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.VOZ_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#VOZ_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#VOZ_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -4298,8 +4297,8 @@ s</tr>
 <Table class="small WRKY_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.WRKY_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.WRKY_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#WRKY_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#WRKY_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -4376,8 +4375,8 @@ s</tr>
 <Table class="small bHLH_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.bHLH_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.bHLH_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#bHLH_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#bHLH_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -4558,8 +4557,8 @@ s</tr>
 <Table class="small bZIP_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.bZIP_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.bZIP_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#bZIP_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#bZIP_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -4732,8 +4731,8 @@ s</tr>
 <Table class="small phyA_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.phyA_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.phyA_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#phyA_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#phyA_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
@@ -4827,22 +4826,22 @@ s</tr>
 <table>
 <tr>
 <td>
-<div id="phytocrome_family" class=portlet style='padding: 0.3em'>
+<div id="phytochrome_family" class=portlet style='padding: 0.3em'>
 <div class=partlet-content>
-<span id="phytocrome Family" class="small ui-button ui-corner-all ui-button-toggle" onClick='$(".phytocrome_family").slideToggle();'>phytocrome Family</span>
+<span id="phytochrome Family" class="small ui-button ui-corner-all ui-button-toggle" onClick='$(".phytochrome_family").slideToggle();'>phytocrome Family</span>
 
-<Table class="small phytocrome_family" style="display: none;">
+<Table class="small phytochrome_family" style="display: none;">
 <TR valign=top>
 <TD align=left>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.phytocrome_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
-<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#.phytocrome_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#phytochrome_family :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+<span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#phytochrome_family :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
 </td>
 </tr>
 
 <TR align=left>
 <TD>
 
-<label><input class="backbox" type="checkbox" name="tfbs_motif" id="tfbs_motif" tabindex="22" value="149:phytocrome(phy) :phyA; phytochrome; light;:GCCAC:GCCAC:Hudson ME,  Quail PH.:Identification of promoter motifs involved in the network of phytochrome A-regulated gene expression by combined analysis of genomic sequence and microarray data.:1) Plant Physiol. 133; 1605-1616 (2003)  2) (http;//www.plantcell.org/cgi/content/abstract/16/11/3033):NA:NA:NA:magenta1:255, 0, 255:FF00FF:DATF:NA:Shabari" />phytocrome(phy) /<font color=blue>GCCAC</font color=blue>/magenta1</label>
+<label><input class="backbox" type="checkbox" name="tfbs_motif" id="tfbs_motif" tabindex="22" value="149:phytochrome(phy) :phyA; phytochrome; light;:GCCAC:GCCAC:Hudson ME,  Quail PH.:Identification of promoter motifs involved in the network of phytochrome A-regulated gene expression by combined analysis of genomic sequence and microarray data.:1) Plant Physiol. 133; 1605-1616 (2003)  2) (http;//www.plantcell.org/cgi/content/abstract/16/11/3033):NA:NA:NA:magenta1:255, 0, 255:FF00FF:DATF:NA:Shabari" />phytocrome(phy) /<font color=blue>GCCAC</font color=blue>/magenta1</label>
 
 </td>
 </tr>
