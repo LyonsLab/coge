@@ -350,12 +350,7 @@ sub DESTROY {
   return ;
 }
 
-1; #this line is important and will help the module return a true value
-
-
-
-########################################### Main pod documentation begin ##
-# Below is the stub of documentation for your module. You better edit it!
+1;
 
 
 =head1 NAME
@@ -365,37 +360,18 @@ Annotation - Annotation
 =head1 SYNOPSIS
 
   use Annotation
-  blah blah blah
-
 
 =head1 DESCRIPTION
 
-Stub documentation for this module was created by ExtUtils::ModuleMaker.
-It looks like the author of the extension was negligent enough
-to leave the stub unedited.
-
-Blah blah blah.
-
-
 =head1 USAGE
-
-
 
 =head1 BUGS
 
-
-
 =head1 SUPPORT
-
-
 
 =head1 AUTHOR
 
-  rapaka
-  CPAN ID: AUTHOR
-  XYZ Corp.
-  rapaka@nature.berkeley.edu
-  http://biocon.berkeley.edu
+	Eric Lyons
 
 =head1 COPYRIGHT
 
@@ -405,10 +381,7 @@ it and/or modify it under the same terms as Perl itself.
 The full text of the license can be found in the
 LICENSE file included with this module.
 
-
 =head1 SEE ALSO
-
-perl(1).
 
 =cut
 
