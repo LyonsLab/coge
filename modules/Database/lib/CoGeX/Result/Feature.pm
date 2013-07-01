@@ -17,7 +17,6 @@ CoGeX::Feature
 
 This object uses the DBIx::Class to define an interface to the C<feature> table in the CoGe database.
 
-
 =head1 DESCRIPTION
 
 Has columns:
@@ -41,7 +40,6 @@ Type: TINYINT, Default: 0, Nullable: yes, Size: 4
 
 C<chromosome>
 Type: VARCHAR, Default: 0, Nullable: yes, Size: 255
-
 
 Belongs to CCoGeX::Result::FeatureType> via C<feature_type_id>
 Belongs to CCoGeX::Result::Dataset> via C<dataset_id>
@@ -1931,11 +1929,6 @@ sub commify {
 
 1;
 
-=head1 BUGS
-
-
-=head1 SUPPORT
-
 
 =head1 AUTHORS
 
@@ -1950,8 +1943,6 @@ it and/or modify it under the same terms as Perl itself.
 The full text of the license can be found in the
 LICENSE file included with this module.
 
-
 =head1 SEE ALSO
 
 =cut
-

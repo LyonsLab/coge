@@ -1,7 +1,5 @@
 package CoGeX::Result::ExperimentTypeConnector;
 
-# Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
-
 use strict;
 use warnings;
 
@@ -16,7 +14,6 @@ CoGeX::
 This object uses the DBIx::Class to define an interface to the C<experiment_type_connector> table in the CoGe database.
 The C<experiment_type_connector> table is used to associate C<experiment> records with C<experiment_type> records.
 
-
 =head1 DESCRIPTION
 
 Has columns:
@@ -28,14 +25,12 @@ C<experiment_id>
 Type: INT, Default: "", Nullable: no, Size: 11
 Key for identifying the record in the C<experiment> table.
 
-
 C<experiment_type_id>
 Type: INT, Default: "", Nullable: no, Size: 11
 Key for identifying the record in the C<experiment_type> table.
 
 Belongs to CCoGeX::Result::Experiment> via C<experiment_id>
 Belongs to CCoGeX::Result::ExperimentType> via C<experiment_type_id>
-
 
 =head1 USAGE
 
@@ -60,12 +55,6 @@ __PACKAGE__->belongs_to("experiment" => "CoGeX::Result::Experiment", "experiment
 __PACKAGE__->belongs_to("experiment_type" => "CoGeX::Result::ExperimentType", "experiment_type_id");
 
 1;
-
-
-=head1 BUGS
-
-
-=head1 SUPPORT
 
 
 =head1 AUTHORS

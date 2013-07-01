@@ -19,7 +19,6 @@ This includes the name and description of the source, as well as URL to the orig
 
 =head1 DESCRIPTION
 
-
 Has columns:
 C<data_source_id> (Primary Key)
 Type: INT, Default: undef, Nullable: no, Size: 11
@@ -136,11 +135,8 @@ sub info_html
 
 1;
 
-=head1 BUGS
-
 
 =head1 SUPPORT
-
 
 =head1 AUTHORS
 
@@ -154,7 +150,6 @@ it and/or modify it under the same terms as Perl itself.
 
 The full text of the license can be found in the
 LICENSE file included with this module.
-
 
 =head1 SEE ALSO
 

@@ -1,7 +1,5 @@
 package CoGeX::Result::FeatureType;
 
-# Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
-
 use strict;
 use warnings;
 
@@ -56,21 +54,14 @@ __PACKAGE__->add_columns(
   },
 );
 __PACKAGE__->set_primary_key("feature_type_id");
-
-
 __PACKAGE__->has_many("features"=>"CoGeX::Result::Feature","feature_type_id");
-
-1;
 
 sub desc
 {
   return shift->description(@_);
 }
 
-=head1 BUGS
-
-
-=head1 SUPPORT
+1;
 
 
 =head1 AUTHORS
@@ -85,7 +76,6 @@ it and/or modify it under the same terms as Perl itself.
 
 The full text of the license can be found in the
 LICENSE file included with this module.
-
 
 =head1 SEE ALSO
 

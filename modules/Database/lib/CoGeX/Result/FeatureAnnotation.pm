@@ -31,7 +31,6 @@ Type: INT, Default: 0, Nullable: no, Size: 11
 C<annotation_type_id>
 Type: INT, Default: 0, Nullable: no, Size: 11
 
-
 Belongs to CCoGeX::Result::AnnotationType> via C<annotation_type_id>
 
 Belongs to CCoGeX::Result::Feature> via C<feature_id>
@@ -64,8 +63,6 @@ __PACKAGE__->belongs_to( feature => 'CoGeX::Result::Feature', 'feature_id');
 __PACKAGE__->has_one("feature_name" => "CoGeX::Result::FeatureName", {'foreign.feature_id'=>'self.feature_id'});
 
 
-
-
 ################################################ subroutine header begin ##
 
 =head2 type
@@ -91,12 +88,6 @@ sub type
 1;
 
 
-=head1 BUGS
-
-
-=head1 SUPPORT
-
-
 =head1 AUTHORS
 
  Eric Lyons
@@ -110,5 +101,6 @@ it and/or modify it under the same terms as Perl itself.
 The full text of the license can be found in the
 LICENSE file included with this module.
 
-
 =head1 SEE ALSO
+
+=cut

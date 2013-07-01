@@ -226,10 +226,6 @@ sub child
 
 1;
 
-=head1 BUGS
-
-=head1 SUPPORT
-
 =head1 AUTHORS
 
  Matt Bomhoff

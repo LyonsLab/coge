@@ -1,13 +1,9 @@
 package CoGeX::Result::Permission;
 
-# Created by DBIx::Class::Schema::Loader
-# DO NOT MODIFY THE FIRST PART OF THIS FILE
-
 use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
-
 
 =head1 NAME
 
@@ -50,9 +46,21 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("permission_id");
 __PACKAGE__->has_many('role_permission_connectors'=>"CoGeX::Result::RolePermissionConnector","permission_id");
 
-# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-08-29 09:28:12
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:+8kuH2wjE9fLJGNhIGz/Ww
-
-
-# You can replace this text with custom content, and it will be preserved on regeneration
 1;
+
+
+=head1 AUTHORS
+
+ Eric Lyons
+
+=head1 COPYRIGHT
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl itself.
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+=head1 SEE ALSO
+
+=cut

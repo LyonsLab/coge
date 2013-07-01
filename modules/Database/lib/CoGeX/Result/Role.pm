@@ -1,13 +1,9 @@
 package CoGeX::Result::Role;
 
-# Created by DBIx::Class::Schema::Loader
-# DO NOT MODIFY THE FIRST PART OF THIS FILE
-
 use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
-
 
 =head1 NAME
 
@@ -54,13 +50,6 @@ __PACKAGE__->has_many('role_permission_connectors'=>"CoGeX::Result::RolePermissi
 __PACKAGE__->has_many('user_connectors'=>'CoGeX::Result::UserConnector', 'role_id');
 
 
-# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-08-29 09:28:12
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:xlyHeSUJRzYisE2OZEwHTQ
-
-
-# You can replace this text with custom content, and it will be preserved on regeneration
-
-
 ################################################ subroutine header begin ##
 
 =head2 is_<ROLE>
@@ -75,7 +64,6 @@ __PACKAGE__->has_many('user_connectors'=>'CoGeX::Result::UserConnector', 'role_i
 =cut
 
 ################################################## subroutine header end ##
-
 sub is_owner
  {
    return shift->name =~ /owner/i;
@@ -105,7 +93,6 @@ sub is_reader
 =cut
 
 ################################################## subroutine header end ##
-
 sub groups
  {
    return shift->user_groups(@_);
@@ -125,7 +112,6 @@ sub groups
 =cut
 
 ################################################## subroutine header end ##
-
 sub permissions {
 
     my $self = shift;
@@ -139,6 +125,21 @@ sub permissions {
     return wantarray ? @permissions : \@permissions;
 }
 
-
-
 1;
+
+
+=head1 AUTHORS
+
+ Eric Lyons
+
+=head1 COPYRIGHT
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl itself.
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+=head1 SEE ALSO
+
+=cut

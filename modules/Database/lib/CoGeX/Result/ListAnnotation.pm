@@ -33,8 +33,6 @@ Type: TEXT, Default: undef, Nullable: no
 C<link>
 Type: VARCHAR, Default: "", Nullable: yes, size: 1024
 
-
-
 Belongs to CCoGeX::Result::AnnotationType> via C<annotation_type_id>
 
 Belongs to CCoGeX::Result::List> via C<list_id>
@@ -123,12 +121,6 @@ sub info
 }
 
 
-=head1 BUGS
-
-
-=head1 SUPPORT
-
-
 =head1 AUTHORS
 
  Matt Bomhoff
@@ -142,5 +134,6 @@ it and/or modify it under the same terms as Perl itself.
 The full text of the license can be found in the
 LICENSE file included with this module.
 
-
 =head1 SEE ALSO
+
+=cut

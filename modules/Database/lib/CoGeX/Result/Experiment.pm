@@ -359,10 +359,7 @@ sub info_html
 	return qq{<span class=link onclick='window.open("ExperimentView.pl?eid=} .$self->id. qq{")'>} . $info . "</span>";
 }
 
-=head1 BUGS
-
-
-=head1 SUPPORT
+1;
 
 
 =head1 AUTHORS
@@ -381,5 +378,3 @@ LICENSE file included with this module.
 =head1 SEE ALSO
 
 =cut
-
-1;

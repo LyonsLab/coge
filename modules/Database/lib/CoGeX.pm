@@ -35,7 +35,6 @@ CoGeX - CoGeX
   relationships and access to the database.  Various other "high-level" functions are
   provided to make getting genomic data easier.
 
-
 =head1 DESCRIPTION
 
 Primary object for interacting with CoGe database system.
@@ -53,12 +52,6 @@ Primary object for interacting with CoGe database system.
                 { join => [ 'dataset', 'organism' ] }
   );
 
-=head1 BUGS
-
-
-=head1 SUPPORT
-
-
 =head1 AUTHORS
 
  Eric Lyons
@@ -72,10 +65,7 @@ it and/or modify it under the same terms as Perl itself.
 The full text of the license can be found in the
 LICENSE file included with this module.
 
-
 =head1 SEE ALSO
-
-perl(1).
 
 =cut
 

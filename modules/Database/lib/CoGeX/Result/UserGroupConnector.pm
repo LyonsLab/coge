@@ -1,8 +1,5 @@
 package CoGeX::Result::UserGroupConnector;
 
-# Created by DBIx::Class::Schema::Loader
-# DO NOT MODIFY THE FIRST PART OF THIS FILE
-
 use strict;
 use warnings;
 
@@ -49,9 +46,22 @@ __PACKAGE__->set_primary_key("user_group_connector_id");
 __PACKAGE__->belongs_to("user"=>"CoGeX::Result::User",'user_id');
 __PACKAGE__->belongs_to("user_group"=>"CoGeX::Result::UserGroup",'user_group_id');
 
-# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-08-29 09:28:12
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:jJtMi2o83OBM+TjWpDuQsw
-
-
-# You can replace this text with custom content, and it will be preserved on regeneration
 1;
+
+
+=head1 AUTHORS
+
+ Eric Lyons
+ Brent Pedersen
+
+=head1 COPYRIGHT
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl itself.
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+=head1 SEE ALSO
+
+=cut

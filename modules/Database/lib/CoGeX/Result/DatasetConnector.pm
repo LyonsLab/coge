@@ -15,7 +15,6 @@ CoGeX::
 This object uses the DBIx::Class to define an interface to the C<dataset_connector> table in the CoGe database.
 The C<dataset_connector> table is used to associate C<genome> records with C<dataset> records.
 
-
 =head1 DESCRIPTION
 
 Has columns:
@@ -33,7 +32,6 @@ Key for identifying the record in the C<genome> table.
 
 Belongs to CCoGeX::Result::Genome> via C<genome_id>
 Belongs to CCoGeX::Result::Dataset> via C<dataset_id>
-
 
 =head1 USAGE
 
@@ -59,11 +57,7 @@ __PACKAGE__->belongs_to("dataset" => "CoGeX::Result::Dataset", "dataset_id");
 1;
 
 
-=head1 BUGS
-
-
 =head1 SUPPORT
-
 
 =head1 AUTHORS
 
@@ -77,7 +71,6 @@ it and/or modify it under the same terms as Perl itself.
 
 The full text of the license can be found in the
 LICENSE file included with this module.
-
 
 =head1 SEE ALSO
 

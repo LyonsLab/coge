@@ -52,16 +52,14 @@ __PACKAGE__->has_many('lists'=>"CoGeX::Result::List",'list_type_id');
 
 ################################################ subroutine header begin ##
 
-=head2 
+=head2 is_*
 
  Usage     : 
- Purpose   : 
- Returns   : 
+ Purpose   : Test for particular list type
+ Returns   : boolean
  Argument  : None
  Throws    : None
  Comments  : 
-
-
 
 =cut
 
@@ -98,3 +96,20 @@ sub is_other
 }
 
 1;
+
+
+=head1 AUTHORS
+
+ Eric Lyons
+
+=head1 COPYRIGHT 2012
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl itself.
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+=head1 SEE ALSO
+
+=cut

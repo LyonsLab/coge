@@ -1,7 +1,5 @@
 package CoGeX::Result::Work;
 
-# Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
-
 use strict;
 use warnings;
 use base 'DBIx::Class';
@@ -28,9 +26,6 @@ Type: VARCHAR, Default: "", Nullable: no, Size: 100
 
 C<parameter>
 Type: TEXT, Default: "", Nullable: yes, Size: N/A
-
-#fill in the rest!
-
 
 =head1 USAGE
 
@@ -62,13 +57,6 @@ __PACKAGE__->has_many('work_orders'=>"CoGeX::Result::WorkOrder","work_id");
 1;
 
 
-
-=head1 BUGS
-
-
-=head1 SUPPORT
-
-
 =head1 AUTHORS
 
  Josh Kane
@@ -81,7 +69,6 @@ it and/or modify it under the same terms as Perl itself.
 
 The full text of the license can be found in the
 LICENSE file included with this module.
-
 
 =head1 SEE ALSO
 

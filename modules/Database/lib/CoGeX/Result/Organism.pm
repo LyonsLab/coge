@@ -1,11 +1,8 @@
 package CoGeX::Result::Organism;
 
-# Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
-
 use strict;
 use warnings;
 use base 'DBIx::Class::Core';
-##use CoGeX::ResultSet::Organism;
 
 =head1 NAME
 
@@ -34,7 +31,6 @@ Organism description.
 C<normalized_name>
 Type:VARCHAR, Default: "", Nullable: no, Size: 200
 File-system 'safe' (only alphanumeric characters and underscores) version of 'name' field above.
-
 
 Relates to CCoGeX::Result::Genome> via C<organism_id>, in a one-to-many relationship.
 
@@ -83,14 +79,11 @@ See Also   :
 =cut
 
 ################################################## subroutine header end ##
-
-
 sub dataset_groups
   {
   	print STDERR "Organism::dataset_groups is deprecated, use genomes\n";
     return shift->genomes;
   }
-
 
 ################################################ subroutine header begin ##
 
@@ -109,17 +102,10 @@ See Also   :
 =cut
 
 ################################################## subroutine header end ##
-
-
 sub public_genomes
 {
-	
 	return shift->genomes({restricted=>0});
-	
 }
-
-
-
 
 ################################################ subroutine header begin ##
 
@@ -138,7 +124,6 @@ See Also   :
 =cut
 
 ################################################## subroutine header end ##
-
 sub current_genome
   {
     my $self = shift;
@@ -154,7 +139,6 @@ sub current_genome
 				     );
     return $dsg;
   }
-
 
 ################################################ subroutine header begin ##
 
@@ -173,7 +157,6 @@ See Also   :
 =cut
 
 ################################################## subroutine header end ##
-
 sub current_datasets
   {
     my $self = shift;
@@ -181,7 +164,6 @@ sub current_datasets
     my $dgs = $self->current_genome(%opts);
     return $dgs->datasets();
   }
-
 
 ################################################ subroutine header begin ##
 
@@ -200,7 +182,6 @@ See Also   :
 =cut
 
 ################################################## subroutine header end ##
-
 sub current_datasets_old
   {
     my $self = shift;
@@ -237,7 +218,6 @@ sub current_datasets_old
     return wantarray ? values %data : [values %data];
   }
 
-
 ################################################ subroutine header begin ##
 
 =head2 genomic_sequence_types
@@ -254,7 +234,6 @@ See Also   :
 =cut
 
 ################################################## subroutine header end ##
-
 sub genomic_sequence_types
   {
     my $self = shift;
@@ -266,7 +245,6 @@ sub genomic_sequence_types
       }
     return wantarray ? values %data : [values %data];
   }
-
 
 ################################################ subroutine header begin ##
 
@@ -284,12 +262,10 @@ See Also   : genomic_sequence_types()
 =cut
 
 ################################################## subroutine header end ##
-
 sub types
   {
     return shift->genomic_sequence_types(@_);
   }
-
 
 ################################################ subroutine header begin ##
 
@@ -307,7 +283,6 @@ See Also   :
 =cut
 
 ################################################## subroutine header end ##
-
 sub datasets
   {
     my $self = shift;
@@ -318,13 +293,6 @@ sub datasets
   }
 
 1;
-
-
-
-=head1 BUGS
-
-
-=head1 SUPPORT
 
 
 =head1 AUTHORS
@@ -339,7 +307,6 @@ it and/or modify it under the same terms as Perl itself.
 
 The full text of the license can be found in the
 LICENSE file included with this module.
-
 
 =head1 SEE ALSO
 

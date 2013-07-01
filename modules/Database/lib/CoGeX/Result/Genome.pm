@@ -1,7 +1,5 @@
 package CoGeX::Result::Genome;
 
-# Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
-
 use strict;
 use warnings;
 use base 'DBIx::Class::Core';
@@ -1145,11 +1143,6 @@ sub date
 	return $ds ? $ds->date : '';
 }
 
-=head1 BUGS
-
-
-=head1 SUPPORT
-
 
 =head1 AUTHORS
 
@@ -1164,7 +1157,6 @@ it and/or modify it under the same terms as Perl itself.
 
 The full text of the license can be found in the
 LICENSE file included with this module.
-
 
 =head1 SEE ALSO
 
