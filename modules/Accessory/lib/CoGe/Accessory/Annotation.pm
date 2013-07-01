@@ -384,5 +384,3 @@ LICENSE file included with this module.
 =head1 SEE ALSO
 
 =cut
-
-############################################# main pod documentation end ##
