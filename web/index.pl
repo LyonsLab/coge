@@ -12,6 +12,7 @@ use CGI::Log;
 use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use POSIX 'ceil';
 
 no warnings 'redefine';
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr 
@@ -116,10 +117,11 @@ sub generate_body {
 	$tmpl->param( 'INTRO' => 1,
 				  ORG_COUNT   => commify( $coge->resultset('Organism')->count() ),
 				  GEN_COUNT   => commify( $coge->resultset('Genome')->search({ deleted => 0 })->count() ),
-				  #NUCL_COUNT  => commify( $coge->resultset('GenomicSequence')->get_column('sequence_length')->sum ),
+				  NUCL_COUNT  => commify( units($coge->resultset('GenomicSequence')->get_column('sequence_length')->sum).'bp' ),
 				  FEAT_COUNT  => commify( $coge->resultset('Feature')->count() ),
 				  ANNOT_COUNT => commify( $coge->resultset('FeatureAnnotation')->count() ),
-				  EXP_COUNT => commify( $coge->resultset('Experiment')->search({ deleted => 0 })->count() )
+				  EXP_COUNT   => commify( $coge->resultset('Experiment')->search({ deleted => 0 })->count() ),
+				  QUANT_COUNT => commify( units($coge->resultset('Experiment')->search({ deleted => 0 })->get_column('row_count')->sum) )
 	);	
 
 	#      }
@@ -277,6 +279,23 @@ sub get_latest_genomes {
 	$html .= join "\n", @opts;
 	$html .= "</table>";
 	return $html;
+}
+
+sub units {
+	my $val = shift;
+	
+	if ($val < 1024) {
+		return $val;
+	}
+	elsif ($val < 1024*1024) {
+		return ceil($val/1024) . 'K';
+	}
+	elsif ($val < 1024*1024*1024) {
+		return ceil($val/(1024*1024)) . 'M';
+	}
+	else {
+		return ceil($val/(1024*1024*1024)) . 'G';
+	}
 }
 
 sub commify {
