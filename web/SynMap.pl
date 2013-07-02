@@ -1388,8 +1388,6 @@ sub go
     $feat_type1 = "protein" if $blast == 5 && $feat_type1 eq "CDS"; #blastp time
     $feat_type2 = "protein" if $blast == 5 && $feat_type2 eq "CDS"; #blastp time
 
-    my $result_dir = "$DIAGSDIR/$dir1/$dir2";
-
     ##########################################################################
     # Generate Fasta files
     ##########################################################################
@@ -1547,7 +1545,7 @@ sub go
               . $dsgid2
               . ".$feat_type1-$feat_type2."
               . $ALGO_LOOKUP->{$blast}{filename},
-            dir => "$DIAGSDIR/$dir1/$dir2/data",},);
+            dir => "$DIAGSDIR/$dir1/$dir2",},);
 
     foreach my $org_dir (keys %org_dirs) {
         my $outfile = $org_dirs{$org_dir}{dir};
