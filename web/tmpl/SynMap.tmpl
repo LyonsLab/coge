@@ -586,6 +586,10 @@ function reset_basename(){
   	results = "Generating images . . . ";
   	pageObj.finished = 1;
   }
+
+  if(log.match(/Completed workflow/i)) {
+    pageObj.finished = 1;
+  }
  }
   
 
