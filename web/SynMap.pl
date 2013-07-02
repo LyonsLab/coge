@@ -1625,9 +1625,14 @@ sub go
                                         filepath => $makeflow_dir,
                                         logfile => $logfile);
 
+    my @bed_outputs = ();
+    push @bed_outputs, $filtered_blastfile;
+    push @bed_outputs, "$raw_blastfile.q.localdups";
+    push @bed_outputs, "$raw_blastfile.s.localdups";
+
     $workflow->add_job(cmd => $cmd, script=> undef, args => \@args,
                        inputs => [$raw_blastfile, $query_bed, $subject_bed],
-                       outputs => [$filtered_blastfile]);
+                       outputs => \@bed_outputs);
 
     $status = $YERBA->submit_workflow($workflow);
     $YERBA->wait_for_completion($workflow->name);
