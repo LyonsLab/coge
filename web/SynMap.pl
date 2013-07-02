@@ -42,7 +42,7 @@ our (
     $CLUSTER_UTILS, $BLAST2RAW,      $BASE_URL,    $BLAST2BED,
     $SYNTENY_SCORE, $TEMPDIR,        $TEMPURL,     $ALGO_LOOKUP,
     $GZIP,          $GUNZIP,         $COOKIE_NAME, %FUNCTIONS,
-    $YERBA,         $GENE_ORDER,     $PAGE_TITLE,  $KSCALC);
+    $YERBA,         $GENE_ORDER,     $PAGE_TITLE,  $KSCALC, $GEN_FASTA);
 
 $DEBUG     = 1;
 $YERBA     = CoGe::Accessory::Jex->new(host => "localhost", port => 5151);
@@ -82,6 +82,7 @@ $LAST =
 $GZIP   = $P->{GZIP};
 $GUNZIP = $P->{GUNZIP};
 $KSCALC = $P->{KSCALC};
+$GEN_FASTA = $P->{GEN_FASTA};
 
 #in the web form, each sequence search algorithm has a unique number.  This table identifies those and adds appropriate options
 $ALGO_LOOKUP = {
@@ -740,7 +741,7 @@ sub get_genome_info
     $html_dsg_info .= "<tr><td>Description: <td>" . $dsg->description
       if $dsg->description;
     $html_dsg_info .=
-        "<tr><td>Source:  <td><a href=" 
+        "<tr><td>Source:  <td><a href="
       . $link
       . " target=_new>"
       . $ds->data_source->name . "</a>";
@@ -1214,7 +1215,7 @@ sub get_query_link
     my ($org_name2, $titleB) =
       gen_org_name(dsgid => $dsgid2, feat_type => $feat_type2, write_log => 0);
     my $log_msg =
-        "<span class=link onclick=window.open('OrganismView.pl?dsgid=" 
+        "<span class=link onclick=window.open('OrganismView.pl?dsgid="
       . $dsgid1
       . "')>$org_name1</span> v. <span class=link"
       . "onclick=window.open('OrganismView.pl?dsgid=$dsgid2')>$org_name2</span>";
@@ -1391,44 +1392,112 @@ sub go
     $feat_type1 = "protein" if $blast == 5 && $feat_type1 eq "CDS"; #blastp time
     $feat_type2 = "protein" if $blast == 5 && $feat_type2 eq "CDS"; #blastp time
 
+
+    ############################################################################
+    # Fetch organism name and title
+    ############################################################################
+    my ($org_name1, $title1) = gen_org_name(
+        dsgid     => $dsgid1,
+        feat_type => $feat_type1,
+        write_log => 1);
+
+    my ($org_name2, $title2) = gen_org_name(
+        dsgid     => $dsgid2,
+        feat_type => $feat_type2,
+        write_log => 1);
+
     ##########################################################################
     # Generate Fasta files
     ##########################################################################
     my $t0   = new Benchmark;
-    my $pm   = new Parallel::ForkManager($MAX_PROC);
-    my @dsgs = ([$dsgid1, $feat_type1]);
-    push @dsgs, [$dsgid2, $feat_type2]
-      unless $dsgid1 == $dsgid2 && $feat_type1 eq $feat_type2;
-    foreach my $item (@dsgs) {
-        $pm->start and next;
-        my $dsgid = $item->[0];
+    #my $pm   = new Parallel::ForkManager($MAX_PROC);
+    #my @dsgs = ([$dsgid1, $feat_type1]);
+    #push @dsgs, [$dsgid2, $feat_type2]
+    #  unless $dsgid1 == $dsgid2 && $feat_type1 eq $feat_type2;
+    #
+    #    foreach my $item (@dsgs) {
+    #        my $dsgid = $item->[0];
+    #
+    #        my $feat_type = $item->[1];
+    #
+    #        #TODO: Schedule fasta generation only if feat_type not genomic
+    #        #if ($feat_type eq "genomic") {
+    #        #    my $genome = $coge->resultset('Genome')->find($gid);
+    #        #    $file = $genome->file_path;
+    #        #} else {
+    #        #    $file = $FASTADIR . "/$gid-$feat_type.fasta";
+    #        #}
+    #
+    #
+    #        my ($fasta, $org_name) =
+    #          gen_fasta(dsgid => $dsgid, feat_type => $feat_type, write_log => 1);
+    #    }
 
-        my $feat_type = $item->[1];
+    my ($fasta1, $fasta2);
+    my $workflow = undef;
+    my $status = undef;
 
-        my ($fasta, $org_name) =
-          gen_fasta(dsgid => $dsgid, feat_type => $feat_type, write_log => 1);
+    my @args = ();
+    my $config = $ENV{HOME} . "coge.conf";
 
-#gen_blastdb(dbname=>"$dsgid-$feat_type",fasta=>$fasta,org_name=>$org_name, CoGe::Accessory::Web::write_log=>1) unless $ALGO_LOOKUP->{$blast}{filename}=~/lastz/; #don't need to do this for lastz
-        $pm->finish;
+    if ($feat_type1 eq "genomic") {
+        my $genome = $coge->resultset('Genome')->find($dsgid1);
+        $fasta1 = $genome->file_path;
+    } else {
+        $fasta1 = $FASTADIR . "/$dsgid1-$feat_type1.fasta";
+        push @args, ["--config", $config, 0];
+        push @args, ["--genome_id", $dsgid1, 1];
+        push @args, ["--feature_type", $feat_type1, 1];
+        $workflow = $YERBA->create_workflow(
+            name    => "fasta1-$workflow_id",
+            logfile => $cogeweb->logfile);
+
+        $workflow->add_job(
+            cmd     => $GEN_FASTA,
+            script  => undef,
+            args    => \@args,
+            inputs  => undef,
+            outputs => [$fasta1]);
+        $status = $YERBA->submit_workflow($workflow);
+        $YERBA->wait_for_completion($workflow->name);
     }
 
-    $pm->wait_all_children();
+    if ($feat_type2 eq "genomic") {
+        my $genome = $coge->resultset('Genome')->find($dsgid2);
+        $fasta2 = $genome->file_path;
+    } else {
+        $fasta2 = $FASTADIR . "/$dsgid2-$feat_type2.fasta";
+        @args = ();
+        push @args, ["--config", $config, 0];
+        push @args, ["--genome_id", $dsgid2, 1];
+        push @args, ["--feature_type", $feat_type2, 1];
 
-    my ($fasta1, $org_name1, $title1);
-    my ($fasta2, $org_name2, $title2);
-    ($fasta1, $org_name1, $title1) =
-      gen_fasta(dsgid => $dsgid1, feat_type => $feat_type1);
-    ($fasta2, $org_name2, $title2) =
-      gen_fasta(dsgid => $dsgid2, feat_type => $feat_type2);
-    (
-        $dsgid1,     $dsg1,              $org_name1,  $fasta1,
-        $feat_type1, $depth_org_1_ratio, $dsgid2,     $dsg2,
-        $org_name2,  $fasta2,            $feat_type2, $depth_org_2_ratio)
-      = (
-        $dsgid2,     $dsg2,              $org_name2,  $fasta2,
-        $feat_type2, $depth_org_2_ratio, $dsgid1,     $dsg1,
-        $org_name1,  $fasta1,            $feat_type1, $depth_org_1_ratio
-      ) if ($org_name2 lt $org_name1);
+        $workflow = $YERBA->create_workflow(
+            name    => "fasta2-$workflow_id",
+            logfile => $cogeweb->logfile);
+
+        $workflow->add_job(
+            cmd     => $GEN_FASTA,
+            script  => undef,
+            args    => \@args,
+            inputs  => undef,
+            outputs => [$fasta2]);
+        $status = $YERBA->submit_workflow($workflow);
+        $YERBA->wait_for_completion($workflow->name);
+    }
+
+
+    # FIXME: Items are already sorted by genome id
+    #    (
+    #        $dsgid1,     $dsg1,              $org_name1,  $fasta1,
+    #        $feat_type1, $depth_org_1_ratio, $dsgid2,     $dsg2,
+    #        $org_name2,  $fasta2,            $feat_type2, $depth_org_2_ratio)
+    #      = (
+    #        $dsgid2,     $dsg2,              $org_name2,  $fasta2,
+    #        $feat_type2, $depth_org_2_ratio, $dsgid1,     $dsg1,
+    #        $org_name1,  $fasta1,            $feat_type1, $depth_org_1_ratio
+    #      ) if ($org_name2 lt $org_name1);
+
     unless ($fasta1 && $fasta2) {
         my $log = $cogeweb->logfile;
         $log =~ s/$DIR/$URL/;
@@ -1448,16 +1517,12 @@ sub go
     ##########################################################################
     # Generate blastdb files
     ##########################################################################
-    my ($cmd, @args, $workflow, $status);
-
     my ($blastdb, @blastdb_files);
     if ($ALGO_LOOKUP->{$blast}{formatdb}) {
         $workflow = $YERBA->create_workflow(
             name    => "blastdb-$workflow_id",
             logfile => $cogeweb->logfile);
         my $write_log = 0;
-        $cmd = $FORMATDB;
-
         my $basename = "$BLASTDBDIR/$dsgid2-$feat_type2";
 
         push @args, ['-p', $feat_type2 eq "protein" ? "T" : "F", 1];
@@ -1473,7 +1538,7 @@ sub go
         push @blastdb_files, "$basename" . "hr";
 
         $workflow->add_job(
-            cmd     => $cmd,
+            cmd     => $FORMATDB,
             script  => undef,
             args    => \@args,
             inputs  => [$fasta2],
@@ -1489,7 +1554,7 @@ sub go
         CoGe::Accessory::Web::write_log("#" x (20) . "\n", $cogeweb->logfile)
           if $write_log;
         CoGe::Accessory::Web::write_log(
-            "creating blastdb for *" . $org_name2 . "* ($blastdb): $cmd",
+            "creating blastdb for *" . $org_name2 . "* ($blastdb): $FORMATDB",
             $cogeweb->logfile)
           if $write_log;
 
@@ -1528,7 +1593,7 @@ sub go
           . $orgkey2 => {
             fasta    => $fasta1,
             db       => $blastdb,
-            basename => $dsgid1 . "_" 
+            basename => $dsgid1 . "_"
               . $dsgid2
               . ".$feat_type1-$feat_type2."
               . $ALGO_LOOKUP->{$blast}{filename},
@@ -1616,8 +1681,6 @@ sub go
     # filter it and creating a new rawblast and moving the old to
     # rawblast.orig
     #
-    ($cmd, @args) = (undef, ());
-
     my $t2          = new Benchmark;
     my $query_bed   = $raw_blastfile . ".q.bed";
     my $subject_bed = $raw_blastfile . ".s.bed";
@@ -1626,14 +1689,14 @@ sub go
         name    => "blast2bed-$workflow_id",
         logfile => $cogeweb->logfile);
 
-    $cmd = $BLAST2BED;
+    @args = ();
     push @args, ['-infile',   $raw_blastfile, 1];
     push @args, ['-outfile1', $query_bed,     1];
     push @args, ['-outfile2', $subject_bed,   1];
 
     if ($raw_blastfile =~ /genomic/) {
         $workflow->add_job(
-            cmd    => $cmd,
+            cmd    => $BLAST2BED,
             script => undef,
             args   => \@args,
             inputs => [$raw_blastfile],
@@ -1642,7 +1705,7 @@ sub go
         );
     } else {
         $workflow->add_job(
-            cmd     => $cmd,
+            cmd     => $BLAST2BED,
             script  => undef,
             args    => \@args,
             inputs  => [$raw_blastfile],
@@ -1650,7 +1713,7 @@ sub go
     }
     CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("Creating .bed files", $cogeweb->logfile);
-    CoGe::Accessory::Web::write_log("running: $cmd",       $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("running: $BLAST2BED",       $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
 
@@ -1660,8 +1723,6 @@ sub go
     ###########################################################################
     # Converting blast to raw and finding local duplications
     ###########################################################################
-    ($cmd, @args) = (undef, ());
-
     my $filtered_blastfile = $raw_blastfile;
     $filtered_blastfile .= ".tdd$dupdist";
     $filtered_blastfile .= ".cs$cscore" if $cscore;
@@ -1670,6 +1731,7 @@ sub go
     # FIXME: Rename dupdist and cscore to a name that makes more sense.
     # @by Evan Briones
     # @on 2/27/2013
+    @args = ();
     push @args, ["", $raw_blastfile, 1];
     push @args, ["--localdups", "", 1];
     push @args, ["--qbed",        $query_bed,          1];
@@ -1720,8 +1782,6 @@ sub go
     ######################################################################
     # Run dag tools
     ######################################################################
-    ($cmd, @args) = (undef, ());
-
 #prepare dag for synteny analysis
 #   my $dag_file12      = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{dir} . "/" . $org_dirs{ $orgkey1 . "_" . $orgkey2 }{basename} . ".dag";
     my $dag_file12     = $filtered_blastfile . ".dag";
@@ -1740,6 +1800,7 @@ sub go
     my $query            = "a" . $dsgid1;
     my $subject          = "b" . $dsgid2;
 
+    @args = ();
     push @args, ['-q', $query,              1];
     push @args, ['-s', $subject,            1];
     push @args, ['-b', $filtered_blastfile, 1];
@@ -1776,9 +1837,8 @@ sub go
     #######################################################################
     # Convert to gene order
     #######################################################################
-    ($cmd, @args) = (undef, ());
-
     my $dag_file12_all_geneorder = "$dag_file12_all.go";
+
     if ($dagchainer_type eq "geneorder") {
         CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
         CoGe::Accessory::Web::write_log(
@@ -1789,7 +1849,7 @@ sub go
             name    => "geneorder-$workflow_id",
             logfile => $cogeweb->logfile);
 
-        $cmd = $GENE_ORDER;
+        @args = ();
         push @args, ["",           $dag_file12_all,           1];
         push @args, ["",           $dag_file12_all_geneorder, 1];
         push @args, ["--gid1",     $dsgid1,                   1];
@@ -1852,7 +1912,6 @@ sub go
     #######################################################################
     # Run dagchainer
     #######################################################################
-    ($cmd, @args) = (undef, ());
     my ($dagchainer_file, $merged_dagchainer_file);
 
     CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
@@ -1888,6 +1947,7 @@ sub go
         name    => "dagchainer-$workflow_id",
         logfile => $cogeweb->logfile);
 
+    @args = ();
     push @args, ["-E", "0.05", 1];
     push @args, ["-i",   $dag_file12,   1];
     push @args, ["-D",   $dagchainer_D, 1] if $dagchainer_D;
@@ -1948,8 +2008,7 @@ sub go
     #######################################################################
     # Run quota align merge
     #######################################################################
-    ($cmd, @args) = (undef, ());
-
+    @args = ();
     my ($find_nearby_time, $gen_ks_db_time, $dotplot_time,
         $add_gevo_links_time);
     my $final_results_files;
@@ -1967,28 +2026,25 @@ sub go
         $merged_dagchainer_file .= ".Dm" . $Dm . ".ma1";
 
         #convert to quota-align format
-        $cmd = $CLUSTER_UTILS;
         push @args, ['--format', 'dag', 1];
         push @args, ['--log_evalue', $dagchainer_file, 1];
         push @args, ['', "$dagchainer_file.Dm$Dm.qa", 1];
 
         $workflow->add_job(
-            cmd     => $cmd,
+            cmd     => $CLUSTER_UTILS,
             script  => undef,
             args    => \@args,
             inputs  => [$dagchainer_file],
             outputs => ["$dagchainer_file.Dm$Dm.qa"]);
 
-        $cmd = $QUOTA_ALIGN;
-        my @args2 = ();
-
-        push @args2, ['--Dm', $Dm, 1];
-        push @args2, ['--merge', "$dagchainer_file.Dm$Dm.qa", 1];
+        @args = ();
+        push @args, ['--Dm', $Dm, 1];
+        push @args, ['--merge', "$dagchainer_file.Dm$Dm.qa", 1];
 
         $workflow->add_job(
-            cmd     => $cmd,
+            cmd     => $QUOTA_ALIGN,
             script  => undef,
-            args    => \@args2,
+            args    => \@args,
             inputs  => ["$dagchainer_file.Dm$Dm.qa"],
             outputs => ["$dagchainer_file.Dm$Dm.qa.merged"]);
 
@@ -1996,10 +2052,10 @@ sub go
         CoGe::Accessory::Web::write_log("Merging Syntenic Blocks",
             $cogeweb->logfile);
         CoGe::Accessory::Web::write_log(
-            "Converting dag output to quota_align format: $cmd",
+            "Converting dag output to quota_align format: $CLUSTER_UTILS",
             $cogeweb->logfile);
         CoGe::Accessory::Web::write_log(
-            "Running quota_align to merge diagonals:\n\t$cmd",
+            "Running quota_align to merge diagonals:\n\t$QUOTA_ALIGN",
             $cogeweb->logfile);
         CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
         CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
@@ -2056,6 +2112,7 @@ sub go
     #######################################################################
     # Run quota align coverage
     #######################################################################
+    @args = ();
     my $quota_align_coverage;
     my $grimm_stuff;
     my $final_dagchainer_file;
@@ -2079,30 +2136,27 @@ sub go
         print_debug(msg => "$post_dagchainer_file_w_nearby", enabled => $DEBUG);
 
         #convert to quota-align format
-        $cmd  = $CLUSTER_UTILS;
-        @args = ();
         push @args, ['--format=dag', '', 1];
         push @args, ['--log_evalue', $post_dagchainer_file_w_nearby, 1];
         push @args, ['', "$post_dagchainer_file_w_nearby.qa", 1];
 
         $workflow->add_job(
-            cmd     => $cmd,
+            cmd     => $CLUSTER_UTILS,
             script  => undef,
             args    => \@args,
             inputs  => [$post_dagchainer_file_w_nearby],
             outputs => ["$post_dagchainer_file_w_nearby.qa"]);
 
-        $cmd = $QUOTA_ALIGN;
-        my @args2 = ();
-        push @args2, ["--Nm=$depth_overlap", '', 1];
-        push @args2, ["--quota=$depth_org_1_ratio:$depth_org_2_ratio", '', 1];
-        push @args2, ['',  "$post_dagchainer_file_w_nearby.qa", 1];
-        push @args2, ['>', "$quota_align_coverage.tmp",         1];
+        @args = ();
+        push @args, ["--Nm=$depth_overlap", '', 1];
+        push @args, ["--quota=$depth_org_1_ratio:$depth_org_2_ratio", '', 1];
+        push @args, ['',  "$post_dagchainer_file_w_nearby.qa", 1];
+        push @args, ['>', "$quota_align_coverage.tmp",         1];
 
         $workflow->add_job(
-            cmd     => $cmd,
+            cmd     => $QUOTA_ALIGN,
             script  => undef,
-            args    => \@args2,
+            args    => \@args,
             inputs  => ["$post_dagchainer_file_w_nearby.qa"],
             outputs => ["$quota_align_coverage.tmp"]);
 
@@ -2141,7 +2195,6 @@ sub go
 
      #        $workflow = $YERBA->create_workflow(name => "grimm-$workflow_id",
      #                                            logfile => $cogeweb->logfile);
-     #        $cmd = $CLUSTER_UTILS;
      #        @args = ();
      #        push @args, ['--format=dag', '', 1];
      #        push @args, ['--log_evalue', $quota_align_coverage, 1];
@@ -2277,7 +2330,7 @@ sub go
         $ks_blocks_file = "$final_dagchainer_file.ks";
 
         @args = ();
-        push @args, ['--config', $ENV{HOME} . "coge.conf", 0];
+        push @args, ['--config', $config, 0];
         push @args, ['--infile',    $final_dagchainer_file, 1];
         push @args, ['--dbfile',    $ks_db,                 1];
         push @args, ['--blockfile', $ks_blocks_file,        1];
@@ -2314,7 +2367,7 @@ sub go
             inputs  => [$ks_blocks_file],
             outputs => [$svg_file]);
 
-        CoGe::Accessory::Web::write_log("generate svg dotplot: $cmd",
+        CoGe::Accessory::Web::write_log("generate svg dotplot: $SVG_DOTPLOT",
             $cogeweb->logfile);
         CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
         CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
@@ -2329,7 +2382,7 @@ sub go
     #######################################################################
     # Generate dot plot
     #######################################################################
-    ($cmd, @args) = (undef, ());
+    @args = ();
 
     my @inputs = ();
     $workflow = $YERBA->create_workflow(
@@ -2376,7 +2429,6 @@ sub go
         $dotfile .= ".nsd";    #no syntenic dots, yes, nomicalture is confusing.
     }
 
-    $cmd = $DOTPLOT;
     push @args, ['-a', $final_dagchainer_file, 1];
     push @args, ['-b', $dotfile, 1];
 
@@ -2424,14 +2476,14 @@ sub go
     push @outputs, $spa_file if $assemble;
 
     $workflow->add_job(
-        cmd       => $cmd,
+        cmd       => $DOTPLOT,
         script    => undef,
         args      => \@args,
         inputs    => \@inputs,
         outputs   => \@outputs,
         overwrite => $regen_images);
 
-    CoGe::Accessory::Web::write_log("generate dotplot: running\n\t$cmd",
+    CoGe::Accessory::Web::write_log("generate dotplot: running\n\t$DOTPLOT",
         $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
@@ -2588,6 +2640,8 @@ Zoomed SynMap:
             \$merged_dagchainer_file, \$qa_file,
             \$qa_merged_file,         \$ks_blocks_file,
             \$quota_align_coverage,   \$qa_coverage_qa];    #, \$spa_file];
+        my $pm =new Parallel::ForkManager($MAX_PROC);
+
         foreach my $item (@$file_list) {
             $pm->start and next;
 
