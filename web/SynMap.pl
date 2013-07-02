@@ -1154,8 +1154,8 @@ sub get_query_link
     $synmap_link .= ";ar=s" if $axis_relationship && $axis_relationship =~ /s/i;
     $synmap_link .= ";ct=$color_type" if $color_type;
 
-    my($org_name1, $titleA) = gen_org_name(dsgid => $dsgid1, feat_type => $feat_type1, CoGe::Accessory::Web::write_log => 0);
-    my($org_name2, $titleB) = gen_org_name(dsgid => $dsgid2, feat_type => $feat_type2, CoGe::Accessory::Web::write_log => 0);
+    my($org_name1, $titleA) = gen_org_name(dsgid => $dsgid1, feat_type => $feat_type1, write_log => 0);
+    my($org_name2, $titleB) = gen_org_name(dsgid => $dsgid2, feat_type => $feat_type2, write_log => 0);
     my $log_msg = "<span class=link onclick=window.open('OrganismView.pl?dsgid=" .
         $dsgid1 . "')>$org_name1</span> v. <span class=link".
     "onclick=window.open('OrganismView.pl?dsgid=$dsgid2')>$org_name2</span>";
