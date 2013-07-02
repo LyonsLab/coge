@@ -2287,35 +2287,36 @@ sub go
         ####################################################################
         # Generate svg dotplot
         ####################################################################
-        ($cmd, @args) = (undef, ());
+        if ($ks_blocks_file) {
+            ($cmd, @args) = (undef, ());
 
-        $cmd      = $SVG_DOTPLOT;
-        $workflow = $YERBA->create_workflow(
-            name    => "gen-svg-$workflow_id",
-            logfile => $cogeweb->logfile);
+            $cmd      = $SVG_DOTPLOT;
+            $workflow = $YERBA->create_workflow(
+                name    => "gen-svg-$workflow_id",
+                logfile => $cogeweb->logfile);
 
-        push @args, ['--dag_file', $ks_blocks_file, 1];
-        push @args, ['--flip', "", 1] if $flip;
-        push @args, ['--xhead', '"' . $org_name1 . '"', 1] if $org_name1;
-        push @args, ['--yhead', '"' . $org_name2 . '"', 1] if $org_name2;
-        push @args, ['--output', $ks_blocks_file, 1];
+            push @args, ['--dag_file', $ks_blocks_file, 1];
+            push @args, ['--flip', "", 1] if $flip;
+            push @args, ['--xhead', '"' . $org_name1 . '"', 1] if $org_name1;
+            push @args, ['--yhead', '"' . $org_name2 . '"', 1] if $org_name2;
+            push @args, ['--output', $ks_blocks_file, 1];
 
-        $svg_file = $ks_blocks_file . ".svg";
-        $workflow->add_job(
-            cmd     => $cmd,
-            script  => undef,
-            args    => \@args,
-            inputs  => [$ks_blocks_file],
-            outputs => [$svg_file]);
+            $svg_file = $ks_blocks_file . ".svg";
+            $workflow->add_job(
+                cmd     => $cmd,
+                script  => undef,
+                args    => \@args,
+                inputs  => [$ks_blocks_file],
+                outputs => [$svg_file]);
 
-        CoGe::Accessory::Web::write_log("generate svg dotplot: $cmd",
-            $cogeweb->logfile);
-        CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
-        CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
+            CoGe::Accessory::Web::write_log("generate svg dotplot: $cmd",
+                $cogeweb->logfile);
+            CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
+            CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
 
-        $status = $YERBA->submit_workflow($workflow);
-        $YERBA->wait_for_completion($workflow->name);
-
+            $status = $YERBA->submit_workflow($workflow);
+            $YERBA->wait_for_completion($workflow->name);
+        }
     }
 
     my $t6 = new Benchmark;
