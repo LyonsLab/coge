@@ -1,4 +1,4 @@
-! /usr/bin/perl -w
+#!/usr/bin/perl -w
 use v5.10;
 use strict;
 no warnings 'redefine';
