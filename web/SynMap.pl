@@ -744,7 +744,7 @@ sub get_genome_info
     $html_dsg_info .= "<tr><td>Description: <td>" . $dsg->description
       if $dsg->description;
     $html_dsg_info .=
-        "<tr><td>Source:  <td><a href=" 
+        "<tr><td>Source:  <td><a href="
       . $link
       . " target=_new>"
       . $ds->data_source->name . "</a>";
@@ -1218,7 +1218,7 @@ sub get_query_link
     my ($org_name2, $titleB) =
       gen_org_name(dsgid => $dsgid2, feat_type => $feat_type2, write_log => 0);
     my $log_msg =
-        "<span class=link onclick=window.open('OrganismView.pl?dsgid=" 
+        "<span class=link onclick=window.open('OrganismView.pl?dsgid="
       . $dsgid1
       . "')>$org_name1</span> v. <span class=link"
       . "onclick=window.open('OrganismView.pl?dsgid=$dsgid2')>$org_name2</span>";
@@ -1409,9 +1409,9 @@ sub go
         feat_type => $feat_type2,
         write_log => 1);
 
-    ##########################################################################
+    ############################################################################
     # Generate Fasta files
-    ##########################################################################
+    ############################################################################
     my $t0 = new Benchmark;
     my ($fasta1, $fasta2);
     my $workflow = undef;
@@ -1477,7 +1477,6 @@ sub go
             outputs => [$fasta2]);
     }
 
-    #TODO: Scale to man genomes
     # Sort by genome id
     (
         $dsgid1,     $dsg1,              $org_name1,  $fasta1,
@@ -1518,45 +1517,23 @@ sub go
             inputs  => [$fasta2],
             outputs => \@blastdb_files);
 
-        if ($write_log) {
-            CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
-            CoGe::Accessory::Web::write_log("Generating BlastDB file",
-                $cogeweb->logfile);
-            CoGe::Accessory::Web::write_log("blastdb file: $blastdb",
-                $cogeweb->logfile);
-            CoGe::Accessory::Web::write_log("#" x (20) . "\n",
-                $cogeweb->logfile);
-            CoGe::Accessory::Web::write_log(
-                "creating blastdb for *"
-                  . $org_name2
-                  . "* ($blastdb): $FORMATDB",
-                $cogeweb->logfile);
-        }
+        CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
+        CoGe::Accessory::Web::write_log("Generating BlastDB file",
+            $cogeweb->logfile);
+        CoGe::Accessory::Web::write_log("blastdb file: $blastdb",
+            $cogeweb->logfile);
+        CoGe::Accessory::Web::write_log("#" x (20) . "\n",
+            $cogeweb->logfile);
+        CoGe::Accessory::Web::write_log(
+            "creating blastdb for *"
+                . $org_name2
+                . "* ($blastdb): $FORMATDB",
+            $cogeweb->logfile);
     } else {
         $blastdb = $fasta2;
         push @blastdb_files, $blastdb;
     }
 
-    # TODO: This code can probably be removed
-    #need to convert the blastdb to a fasta file if the algo used is blastz
-    #unless (1)
-
-    #  #unless (-r "$blastdb." && -s $blastdb)
-    #{
-    #    my $log = $cogeweb->logfile;
-    #    $log =~ s/$DIR/$URL/;
-
-    #    # Update status to terminated.
-    #    $job->update({status => 4}) if defined($job);
-
-#    return
-#      "<span class=alert>Something went wrong generating the blastdb files: <a href=$log>log file</a></span>";
-#} else {
-#    CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
-#    CoGe::Accessory::Web::write_log("BlastDB creation passed final check.",
-#        $cogeweb->logfile);
-#    CoGe::Accessory::Web::write_log("#" x (20) . "\n", $cogeweb->logfile);
-#}
     my $html;
 
     my ($orgkey1, $orgkey2) = ($title1, $title2);
@@ -1565,7 +1542,7 @@ sub go
           . $orgkey2 => {
             fasta    => $fasta1,
             db       => $blastdb,
-            basename => $dsgid1 . "_" 
+            basename => $dsgid1 . "_"
               . $dsgid2
               . ".$feat_type1-$feat_type2."
               . $ALGO_LOOKUP->{$blast}{filename},
@@ -1579,9 +1556,9 @@ sub go
         $org_dirs{$org_dir}{blastfile} = $outfile;    #.".blast";
     }
 
-    ###########################################################################
+    ############################################################################
     # Run Blast
-    ###########################################################################
+    ############################################################################
 
     #check blast runs for problems;  Not forked in order to keep variables
     my $problem       = 0;
@@ -1680,9 +1657,6 @@ sub go
     $filtered_blastfile .= ".cs$cscore" if $cscore;
     $filtered_blastfile .= ".filtered";
 
-    # FIXME: Rename dupdist and cscore to a name that makes more sense.
-    # @by Evan Briones
-    # @on 2/27/2013
     my @rawargs = ();
     push @rawargs, ["", $raw_blastfile, 1];
     push @rawargs, ["--localdups", "", 1];
@@ -1713,12 +1687,6 @@ sub go
     CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
 
-    #FIXME: Check needs to be removed
-
-    #$filtered_blastfile = $raw_blastfile
-    #  unless (-r $filtered_blastfile && -s $filtered_blastfile)
-    #  || (-r "$filtered_blastfile.gz" && -s "$filtered_blastfile.gz");
-
  #TODO: This feature is currently disabled
  #needed to comment out as the bed files and blast files have changed in SynFind
  #   my $synteny_score_db = run_synteny_score(
@@ -1747,7 +1715,6 @@ sub go
     push @dagtoolargs, ['-b', $filtered_blastfile, 1];
     push @dagtoolargs, ['-c', "", 1];
 
-    # if $feat_type1 eq "genomic" && $feat_type2 eq "genomic";
     push @dagtoolargs, ['--query_dups', $query_dup_file, 1] if $query_dup_file;
     push @dagtoolargs, ['--subject_dups', $subject_dup_file, 1]
       if $subject_dup_file;
@@ -1772,9 +1739,9 @@ sub go
     my $t2_5 = new Benchmark;
     my $dag_tool_time = timestr(timediff($t2_5, $t2));
 
-    #######################################################################
+    ############################################################################
     # Convert to gene order
-    #######################################################################
+    ############################################################################
     my $dag_file12_all_geneorder = "$dag_file12_all.go";
     my $all_file;
 
@@ -1819,11 +1786,14 @@ sub go
     my $t3 = new Benchmark;
     my $convert_to_gene_order_time = timestr(timediff($t3, $t2_5));
 
-#B Pedersen's program for automatically adjusting the evals in the dag file to remove bias from local gene duplicates and transposons
+#B Pedersen's program for automatically adjusting the evals in the dag file to
+# remove bias from local gene duplicates and transposons
 #   $dag_file12 .= "_c" . $repeat_filter_cvalue;
 #   CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
-#   CoGe::Accessory::Web::write_log( "Adjusting evalue of blast hits to correct for repeat sequences", $cogeweb->logfile );
-#   run_adjust_dagchainer_evals( infile => $all_file, outfile => $dag_file12, cvalue => $repeat_filter_cvalue );
+#   CoGe::Accessory::Web::write_log( "Adjusting evalue of blast hits to correct
+#   for repeat sequences", $cogeweb->logfile );
+#   run_adjust_dagchainer_evals( infile => $all_file, outfile => $dag_file12,
+#   cvalue => $repeat_filter_cvalue );
 #   CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
 #   CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
@@ -1845,9 +1815,9 @@ sub go
     }
     my $run_adjust_eval_time = timestr(timediff($t3_5, $t3));
 
-    #######################################################################
+    ############################################################################
     # Run dagchainer
-    #######################################################################
+    ############################################################################
     my ($dagchainer_file, $merged_dagchainer_file);
 
     CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
@@ -1859,16 +1829,6 @@ sub go
 
     #length of a gap (average distance expected between two syntenic genes)
     my $gap = defined($opts{g}) ? $opts{g} : floor($dagchainer_D / 2);
-
-#my $D     = $opts{D};        #maximum distance allowed between two matches
-#my $A     = $opts{A};         #Minium number of Aligned Pairs
-#my $Dm    = $opts{Dm};        #maximum distance between sytnenic blocks for merging syntenic blocks
-#my $gm    = $opts{gm};        #average distance between sytnenic blocks for merging syntenic blocks
-#my $merge = $opts{merge};     #flag to use the merge function of this algo;
-#my $self_comparision = $opts{self_comparision}; #flag that it is a self-self run
-
-    # perhaps rename dag_merge
-    #turn off merging options unless $merge is set to true
 
     $dagchainer_file = $dag_file12;
     $dagchainer_file .= "_D$dagchainer_D" if $dagchainer_D;
@@ -1890,10 +1850,12 @@ sub go
     push @dagargs, ["--new_behavior", "", 1] if $self_comparision;
 
     ###MERGING OF DIAGONALS FUNCTION
-# --merge $outfile     #this will automatically cause the merging of diagonals to happen.
-# $outfile will be created and $outfile.merge (which is the inappropriately named merge of diagonals file.
-# --gm  average distance between diagonals
-# --Dm  max distance between diagonals
+    # --merge $outfile
+    # this will automatically cause the merging of diagonals to happen.
+    # $outfile will be created and $outfile.merge (which is the inappropriately
+    # named merge of diagonals file.
+    # --gm  average distance between diagonals
+    # --Dm  max distance between diagonals
     ##Both of these parameters' default values is 4x -g and -D respectively.
     my $post_dagchainer_file;
 
@@ -1934,9 +1896,9 @@ sub go
     my $t4 = new Benchmark;
     my $run_dagchainer_time = timestr(timediff($t4, $t3_5));
 
-    #######################################################################
+    ############################################################################
     # Run quota align merge
-    #######################################################################
+    ############################################################################
     my (
         $find_nearby_time,    $gen_ks_db_time, $dotplot_time,
         $add_gevo_links_time, $final_results_files);
@@ -1980,9 +1942,9 @@ sub go
     my $t5 = new Benchmark;
     $find_nearby_time = timestr(timediff($t5, $t4));
 
-    #######################################################################
+    ############################################################################
     # Run quota align coverage
-    #######################################################################
+    ############################################################################
     my ($quota_align_coverage, $grimm_stuff, $final_dagchainer_file);
 
     if ($depth_algo == 1)    #id 1 is to specify quota align
@@ -2021,8 +1983,6 @@ sub go
     print_debug("Final dag chainer file: $final_dagchainer_file",
         enabled => $DEBUG);
 
-#my $final_dagchainer_file = $quota_align_coverage && ( -r $quota_align_coverage || -r $quota_align_coverage . ".gz" ) ? $quota_align_coverage : $post_dagchainer_file_w_nearby;
-#convert to genomic coordinates if gene order was used
     if ($dagchainer_type eq "geneorder") {
         CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
         CoGe::Accessory::Web::write_log(
@@ -2068,9 +2028,9 @@ sub go
         $width   = 500 if $width < 500;
     }
 
-    #######################################################################
+    ############################################################################
     # Create html output directory
-    #######################################################################
+    ############################################################################
     my ($qlead, $slead) = ("a", "b");
     my $out = $org_dirs{$orgkey1 . "_" . $orgkey2}{dir} . "/html/";
     mkpath($out, 0, 0777) unless -d $out;
@@ -2080,9 +2040,9 @@ sub go
     $out .= "_ct$color_type" if defined $color_type;
     $out .= ".w$width";
 
-    #######################################################################
+    ############################################################################
     # KS Calculations (Slow and needs to be optimized)
-    #######################################################################
+    ############################################################################
     my ($ks_db, $ks_blocks_file, $svg_file, $warn);
 
     if ($ks_type) {
@@ -2227,7 +2187,8 @@ sub go
 
     my $hist = $dotfile . ".hist.png";
 
-#this would be generated by the DOTPLOT program is Syntenic path assembly was requested
+    # this would be generated by the DOTPLOT program is Syntenic path assembly
+    # was requested
     my $spa_file = $dotfile . ".spa_info.txt";
     my @plotoutputs =
       ("$dotfile.html", "$dotfile.png", "$dotfile.x.png", "$dotfile.y.png");
@@ -2254,9 +2215,9 @@ sub go
     my $t7 = new Benchmark;
     $dotplot_time = timestr(timediff($t7, $t6));
 
-    #######################################################################
+    ############################################################################
     # Generate html
-    #######################################################################
+    ############################################################################
 
     CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("Adding GEvo links to final output files",
@@ -2385,9 +2346,9 @@ Zoomed SynMap:
         my $qa_coverage_qa = $quota_align_coverage . ".qa"
           if $quota_align_coverage;
 
-        #######################################################################
+        ########################################################################
         # Compress Results
-        #######################################################################
+        ########################################################################
 
         my $file_list = [
             \$raw_blastfile,          \$filtered_blastfile,
@@ -2471,7 +2432,6 @@ Zoomed SynMap:
 
         if ($final_dagchainer_file =~ /gcoords/) {
 
-            #say STDERR $final_dagchainer_file;
             #my $tmp= $final_dagchainer_file;
             $final_dagchainer_file =~ s/$DIR/$URL/;
 
@@ -2520,9 +2480,9 @@ Zoomed SynMap:
           if $assemble;
         $html .= qq{</table>};
 
-        #######################################################################
+        ########################################################################
         # Regenerate Analysis Link - HTML
-        #######################################################################
+        ########################################################################
 
         $html .= "<a href='$tiny_link' class='ui-button ui-corner-all'";
         $html .=
@@ -2557,9 +2517,10 @@ Zoomed SynMap:
         $html .=
           qq{<span class=alert>Warning: $warn</span><br>};
     }
-    #######################################################################
+
+    ############################################################################
     # Email results, output benchmark and return results
-    #######################################################################
+    ############################################################################
 
     email_results(
         email    => $email,
