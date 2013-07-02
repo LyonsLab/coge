@@ -9,71 +9,71 @@ use Getopt::Long;
 
 #~/src/mauve_2.3.1/linux-x64/progressiveMauve --substitution-matrix=~/projects/genome/data/K12_Kustu/syntenic-path-assembled/Mauve_MultiGenome_Alignments/nt-matrix.txt --output=alignment.aln master.faa
 
-use vars qw($dsgids $out_file $GO $coge $mauve_bin $matrix $muscle_args $logfile);
+use vars
+  qw($dsgids $out_file $GO $coge $mauve_bin $matrix $muscle_args $logfile);
 
-GetOptions ( 
-            "dsgid=s@" => \$dsgids,
-	    "go=s"    => \$GO,
-	    "out_file|aln_file=s" =>\$out_file,
-	    "mauve_bin=s" => \$mauve_bin,
-	    "muscle_args=s"=>\$muscle_args,
-	    "matrix=s" => \$matrix,
-	    "logfile=s" => \$logfile,
-           );
-$mauve_bin = "/opt/apache/CoGe/bin/GenomeAlign/progressiveMauve-muscleMatrix" unless $mauve_bin;
-unless (-r $mauve_bin)
-  {
+GetOptions(
+    "dsgid=s@"            => \$dsgids,
+    "go=s"                => \$GO,
+    "out_file|aln_file=s" => \$out_file,
+    "mauve_bin=s"         => \$mauve_bin,
+    "muscle_args=s"       => \$muscle_args,
+    "matrix=s"            => \$matrix,
+    "logfile=s"           => \$logfile,
+);
+$mauve_bin = "/opt/apache/CoGe/bin/GenomeAlign/progressiveMauve-muscleMatrix"
+  unless $mauve_bin;
+unless ( -r $mauve_bin ) {
     print "Can't read either the mauve_bin\n";
     help();
-  }
+}
 
 help() unless ($dsgids);
 
-
-
 my $connstr = 'dbi:mysql:dbname=coge;host=genomevolution.org;port=3306';
-$coge = CoGeX->connect($connstr, 'coge', '123coge321' );
+$coge = CoGeX->connect( $connstr, 'coge', '' );
 $out_file = "alignment.aln" unless $out_file;
 
-run_mauve(out=>$out_file, bin=>$mauve_bin, matrix=>$matrix, dsgids=>$dsgids, coge=>$coge, muscle_args=>$muscle_args);
+run_mauve(
+    out         => $out_file,
+    bin         => $mauve_bin,
+    matrix      => $matrix,
+    dsgids      => $dsgids,
+    coge        => $coge,
+    muscle_args => $muscle_args
+);
 
-
-sub run_mauve
-  {
-    my %opts = @_;
-    my $out = $opts{out};
-    my $bin = $opts{bin};
-    my $matrix = $opts{matrix};
-    my $dsgids = $opts{dsgids};
-    my $coge = $opts{coge};
+sub run_mauve {
+    my %opts        = @_;
+    my $out         = $opts{out};
+    my $bin         = $opts{bin};
+    my $matrix      = $opts{matrix};
+    my $dsgids      = $opts{dsgids};
+    my $coge        = $opts{coge};
     my $muscle_args = $opts{muscle_args};
 
     my $cmd = "$bin --output=$out";
     $cmd .= " --muscleMatrix='$matrix'" if $matrix && -r $matrix;
     $cmd .= " --muscle-args=\"$muscle_args\"" if $muscle_args;
-    foreach my $item (@$dsgids)
-      {
-	foreach my $dsgid (split/,/, $item)
-	  {
-	    next unless $dsgid;
-	    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
-	    unless ($dsg)
-	      {
-		print "Unable to find a genome for dsgid: $dsgid.\n";
-		next;
-	      }
-	    $cmd .= " ".$dsg->file_path;
-	  }
-      }
-    if ($logfile) {$cmd .= " >> $logfile";}
-      
+    foreach my $item (@$dsgids) {
+        foreach my $dsgid ( split /,/, $item ) {
+            next unless $dsgid;
+            my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+            unless ($dsg) {
+                print "Unable to find a genome for dsgid: $dsgid.\n";
+                next;
+            }
+            $cmd .= " " . $dsg->file_path;
+        }
+    }
+    if ($logfile) { $cmd .= " >> $logfile"; }
+
     print "Running $cmd. . . .\n";
     system "$cmd";
-  }
+}
 
-sub help
-    {
-      print qq{Welcome to $0!
+sub help {
+    print qq{Welcome to $0!
 
 Usage:  $0 -dsgid 12345 -dsgid 23456 -dsgid 34567
 
@@ -106,5 +106,5 @@ static const score_t hoxd_matrix[4][4] =
 #From libMems-1.6.0/libMems/SubstitutionMatrix.h
 
     };
-      exit;
-    }
+    exit;
+}

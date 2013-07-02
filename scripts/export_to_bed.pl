@@ -30,7 +30,7 @@ Options:
 
 my $connstr = 'dbi:mysql:coge:localhost:3306';
 
-$coge = CoGeX->connect( $connstr, 'coge', '123coge321' );
+$coge = CoGeX->connect( $connstr, 'coge', '' );
 my $DSG = $coge->resultset('DatasetGroup')->resolve($dataset_group);
 print STDERR $DSG . "\n";
 @datasets = map { $_->dataset_id } $DSG->datasets;

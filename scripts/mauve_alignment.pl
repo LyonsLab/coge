@@ -9,60 +9,62 @@ use Getopt::Long;
 
 #~/src/mauve_2.3.1/linux-x64/progressiveMauve --substitution-matrix=~/projects/genome/data/K12_Kustu/syntenic-path-assembled/Mauve_MultiGenome_Alignments/nt-matrix.txt --output=alignment.aln master.faa
 
-use vars qw($dsgids $out_file $GO $coge $mauve_bin $mauve_sub_matrix $muscle_args);
+use vars
+  qw($dsgids $out_file $GO $coge $mauve_bin $mauve_sub_matrix $muscle_args);
 
-GetOptions ( 
-            "dsgid=i@" => \$dsgids,
-	    "go=s"    => \$GO,
-	    "out_file|aln_file=s" =>\$out_file,
-	    "mauve_bin=s" => \$mauve_bin,
-	    "muscle_args=s"=>\$muscle_args,
-	    "mauve_sub_matrix=s" => \$mauve_sub_matrix,
-           );
-$mauve_bin = "/home/elyons/src/mauve_2.3.1/linux-x64/progressiveMauve" unless $mauve_bin;
-unless (-r $mauve_bin)
-  {
+GetOptions(
+    "dsgid=i@"            => \$dsgids,
+    "go=s"                => \$GO,
+    "out_file|aln_file=s" => \$out_file,
+    "mauve_bin=s"         => \$mauve_bin,
+    "muscle_args=s"       => \$muscle_args,
+    "mauve_sub_matrix=s"  => \$mauve_sub_matrix,
+);
+$mauve_bin = "/home/elyons/src/mauve_2.3.1/linux-x64/progressiveMauve"
+  unless $mauve_bin;
+unless ( -r $mauve_bin ) {
     print "Can't read either the mauve_bin\n";
     help();
-  }
+}
 
-help() unless ($dsgids && @$dsgids >= 2);
-
-
+help() unless ( $dsgids && @$dsgids >= 2 );
 
 my $connstr = 'dbi:mysql:dbname=coge;host=genomevolution.org;port=3306';
-$coge = CoGeX->connect($connstr, 'coge', '123coge321' );
+$coge = CoGeX->connect( $connstr, 'coge', '' );
 $out_file = "alignment.aln" unless $out_file;
 
 #get_and_build_faa(dsgids=>$dsgids, file=>$faa_file, coge=>$coge);
-run_mauve(out=>$out_file, bin=>$mauve_bin, matrix=>$mauve_sub_matrix, dsgids=>$dsgids, coge=>$coge, muscle_args=>$muscle_args);
+run_mauve(
+    out         => $out_file,
+    bin         => $mauve_bin,
+    matrix      => $mauve_sub_matrix,
+    dsgids      => $dsgids,
+    coge        => $coge,
+    muscle_args => $muscle_args
+);
 
-
-sub run_mauve
-  {
-    my %opts = @_;
-    my $out = $opts{out};
-    my $bin = $opts{bin};
-    my $matrix = $opts{matrix};
-    my $dsgids = $opts{dsgids};
-    my $coge = $opts{coge};
+sub run_mauve {
+    my %opts        = @_;
+    my $out         = $opts{out};
+    my $bin         = $opts{bin};
+    my $matrix      = $opts{matrix};
+    my $dsgids      = $opts{dsgids};
+    my $coge        = $opts{coge};
     my $muscle_args = $opts{muscle_args};
 
     my $cmd = "$bin --output=$out";
     $cmd .= " --substitution-matrix=$matrix" if $matrix && -r $matrix;
     $cmd .= " --muscle-args=\"$muscle_args\"" if $muscle_args;
-    foreach my $dsgid (@$dsgids)
-      {
-	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
-	$cmd .= " ".$dsg->file_path;
-      }
+    foreach my $dsgid (@$dsgids) {
+        my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+        $cmd .= " " . $dsg->file_path;
+    }
     print "Running $cmd. . . .\n";
     print system "$cmd";
-  }
+}
 
-sub help
-    {
-      print qq{Welcome to $0!
+sub help {
+    print qq{Welcome to $0!
 
 Usage:  $0 -dsgid 12345 -dsgid 23456 -dsgid 34567
 
@@ -97,5 +99,5 @@ static const score_t hoxd_matrix[4][4] =
 #From libMems-1.6.0/libMems/SubstitutionMatrix.h
 
     };
-      exit;
-    }
+    exit;
+}
