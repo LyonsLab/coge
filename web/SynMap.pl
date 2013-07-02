@@ -2134,29 +2134,39 @@ sub go
         }
 
         #FIXME: print_grimm needs to be piped to a file.
-        $grimm_stuff = generate_grimm_input(infile => $quota_align_coverage);
+        #$grimm_stuff = generate_grimm_input(infile => $quota_align_coverage);
 
-#
-#        $workflow = $YERBA->create_workflow(name => "grimm_input-$workflow_id",
+#        $workflow = $YERBA->create_workflow(name => "grimm-$workflow_id",
 #                                            logfile => $cogeweb->logfile);
 #        $cmd = $CLUSTER_UTILS;
 #        @args = ();
-#        push @args, ['--format', 'dag', 1];
+#        push @args, ['--format=dag', '', 1];
 #        push @args, ['--log_evalue', $quota_align_coverage, 1];
 #        push @args, ['', "$quota_align_coverage.qa", 1];
-#        $cmd = $CLUSTER_UTILS;
+#
+#        $workflow->add_job(
+#            cmd => $CLUSTER_UTILS,
+#            script => undef,
+#            args => \@args,
+#            inputs => [$quota_align_coverage],
+#            outputs => ["$quota_align_coverage.qa"]);
+#
 #        @args = ();
 #        push @args, ['--print_grimm', "$quota_align_coverage.qa", 1];
-#        $workflow->add_job(cmd => $cmd, script => undef, args => \@args,
-#                   inputs => ["$quota_align_coverage.qa"],
+#        push @args, ['>', "$quota_align_coverage.qa.grimm", 1];
+#
+#        $workflow->add_job(
+#            cmd => $CLUSTER_UTILS,
+#            script => undef,
+#            args => \@args,
+#            inputs => ["$quota_align_coverage.qa"],
+#            outputs => ["$quota_align_coverage.qa.grimm"]);
 #
 #        $status = $YERBA->submit_workflow($workflow);
 #        $YERBA->wait_for_completion($workflow->name);
 #
-#        $cmd = $CLUSTER_UTILS . " --print_grimm $quota_align_coverage";
-#        `$cmd`;
 #        my $output;
-#        open( IN, "$cmd |" );
+#        open( IN, "$quota_align_coverage.qa.grimm");
 #
 #        while (<IN>)
 #        {
