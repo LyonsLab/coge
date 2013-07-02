@@ -165,7 +165,7 @@ def convert_to_genomic_position(genomic_file, output):
     with open(genomic_file, 'r') as fp:
         for line in fp:
             if line.startswith('#'):
-                output = line
+                data = line
             else:
                 items = line.rstrip("\n\r").split("\t")
                 pos1 = re.split('\|\|', items[1])
@@ -185,11 +185,10 @@ def convert_to_genomic_position(genomic_file, output):
 
                 items[6] = start
                 items[7] = stop
-                output = "\t".join(items) + "\n"
+                data = "\t".join(items) + "\n"
 
             with open(output, 'a') as out:
-                out.write(output)
-
+                out.write(data)
     return 0
 
 if __name__ == "__main__":
