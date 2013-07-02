@@ -99,20 +99,9 @@ sub gen_body
     my $org_name1 = $dsg1->organism->name;
     my $org_name2 = $dsg2->organism->name;
     ($dsgid1, $dsg1, $org_name1, $dsgid2, $dsg2, $org_name2) = ($dsgid2, $dsg2, $org_name2, $dsgid1, $dsg1, $org_name1) if ($org_name2 lt $org_name1);
-    #generate directory tree
-    my $tmp1 = $org_name1;
-    my $tmp2 = $org_name2;
-    foreach my $tmp ($tmp1, $tmp2)
-      {
-	$tmp =~ s/\///g;
-	$tmp =~ s/\s+/_/g;
-	$tmp =~ s/\(//g;
-	$tmp =~ s/\)//g;
-	$tmp =~ s/://g;
-	$tmp =~ s/;//g;
-	$tmp =~ s/#/_/g;
-      }
-    my $basedir = $DIAGSDIR."/".$tmp1."/".$tmp2;
+    my ($dir1, $dir2) = sort ($dsgid1, $dsgid2);
+
+    my $basedir = "$DIAGSDIR/$dir1/$dir2";
     my $basename = $dsgid1."_".$dsgid2.".CDS-CDS";
     my $sqlite = $basedir."/".$basename.".sqlite";
     my ($freq_dna, $org1_dna_counts, $org2_dna_counts, $total_dna_counts, $freq_prot, $org1_prot_counts, $org2_prot_counts, $total_prot_counts, $org1_percent_gc_cds, $org2_percent_gc_cds, $org1_percent_gc_wobble, $org2_percent_gc_wobble) = get_counts(sqlite=>$sqlite);
