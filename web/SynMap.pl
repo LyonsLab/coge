@@ -2664,79 +2664,79 @@ sub process_local_dups_file
     return $outfile;
 }
 
-# FIXME: Currently this feature is not called.
+# FIXME: Currently this feature is disabled.
 # @by Evan Briones
 # @on 3/1/2013
-#sub run_tandem_finder
-#{
-#   my %opts    = @_;
-#   my $infile  = $opts{infile};    #dag file produced by dat_tools.py
-#   my $outfile = $opts{outfile};
-#   while ( -e "$outfile.running" )
-#   {
-#       print STDERR "detecting $outfile.running.  Waiting. . .\n";
-#       sleep 60;
-#   }
-#   unless ( -r $infile && -s $infile )
-#   {
-#       CoGe::Accessory::Web::write_log( "WARNING:   Cannot run tandem finder! DAGChainer input file ($infile) contains no data!", $cogeweb->logfile );
-#       return 0;
-#   }
-#   if ( -r $outfile )
-#   {
-#       CoGe::Accessory::Web::write_log( "run_tandem_filter: file $outfile already exists", $cogeweb->logfile );
-#       return 1;
-#   }
-#   my $cmd = "$PYTHON $TANDEM_FINDER -i $infile > $outfile";
-#   system "/usr/bin/touch $outfile.running";    #track that a blast anlaysis is running for this
-#   CoGe::Accessory::Web::write_log( "run_tandem_filter: running\n\t$cmd", $cogeweb->logfile );
-#   `$cmd`;
-#   system "/bin/rm $outfile.running" if -r "$outfile.running";    #remove track file
-#   return 1                          if -r $outfile;
-#}
+sub run_tandem_finder
+{
+   my %opts    = @_;
+   my $infile  = $opts{infile};    #dag file produced by dat_tools.py
+   my $outfile = $opts{outfile};
+   while ( -e "$outfile.running" )
+   {
+       print STDERR "detecting $outfile.running.  Waiting. . .\n";
+       sleep 60;
+   }
+   unless ( -r $infile && -s $infile )
+   {
+       CoGe::Accessory::Web::write_log( "WARNING:   Cannot run tandem finder! DAGChainer input file ($infile) contains no data!", $cogeweb->logfile );
+       return 0;
+   }
+   if ( -r $outfile )
+   {
+       CoGe::Accessory::Web::write_log( "run_tandem_filter: file $outfile already exists", $cogeweb->logfile );
+       return 1;
+   }
+   my $cmd = "$PYTHON $TANDEM_FINDER -i $infile > $outfile";
+   system "/usr/bin/touch $outfile.running";    #track that a blast anlaysis is running for this
+   CoGe::Accessory::Web::write_log( "run_tandem_filter: running\n\t$cmd", $cogeweb->logfile );
+   `$cmd`;
+   system "/bin/rm $outfile.running" if -r "$outfile.running";    #remove track file
+   return 1                          if -r $outfile;
+}
 
 #FIXME: Currently this feature is disabled
 # @by Evan Briones
 # @on 3/1/2013
-#sub run_adjust_dagchainer_evals
-#{
-#   my %opts    = @_;
-#   my $infile  = $opts{infile};
-#   my $outfile = $opts{outfile};
-#   my $cvalue  = $opts{cvalue};
-#   $cvalue = 4 unless defined $cvalue;
-#   while ( -e "$outfile.running" )
-#   {
-#       print STDERR "detecting $outfile.running.  Waiting. . .\n";
-#       sleep 60;
-#   }
-#   if ( -r $outfile || -r $outfile . ".gz" )
-#   {
-#       CoGe::Accessory::Web::write_log( "run_adjust_dagchainer_evals: file $outfile already exists", $cogeweb->logfile );
-#       return 1;
-#   }
-#   CoGe::Accessory::Web::gunzip( $infile . ".gz" ) if -r $infile . ".gz";
-#   unless ( -r $infile && -s $infile )
-#   {
-#       CoGe::Accessory::Web::write_log( "WARNING:   Cannot adjust dagchainer evals! DAGChainer input file ($infile) contains no data!", $cogeweb->logfile );
-#       return 0;
-#   }
-#   my $cmd = "$PYTHON $EVAL_ADJUST -c $cvalue $infile > $outfile";
-#
-#   #There is a parameter that can be passed into this to filter repetitive sequences more or less stringently:
-#   # -c   2 gets rid of more stuff; 10 gets rid of less stuff; default is 4
-#   #consider making this a parameter than can be adjusted from SynMap -- will need to actually play with this value to see how it works
-#   #if implemented, this will require re-naming all the files to account for this parameter
-#   #and updating the auto-SynMap link generator for redoing an analysis
-#
-#   system "/usr/bin/touch $outfile.running";    #track that a blast anlaysis is running for this
-#   CoGe::Accessory::Web::write_log( "run_adjust_dagchainer_evals: running\n\t$cmd", $cogeweb->logfile );
-#   `$cmd`;
-#   system "/bin/rm $outfile.running" if -r "$outfile.running";
-#   ;                                            #remove track file
-#   return 1 if -r $outfile;
-#
-#}
+sub run_adjust_dagchainer_evals
+{
+   my %opts    = @_;
+   my $infile  = $opts{infile};
+   my $outfile = $opts{outfile};
+   my $cvalue  = $opts{cvalue};
+   $cvalue = 4 unless defined $cvalue;
+   while ( -e "$outfile.running" )
+   {
+       print STDERR "detecting $outfile.running.  Waiting. . .\n";
+       sleep 60;
+   }
+   if ( -r $outfile || -r $outfile . ".gz" )
+   {
+       CoGe::Accessory::Web::write_log( "run_adjust_dagchainer_evals: file $outfile already exists", $cogeweb->logfile );
+       return 1;
+   }
+   CoGe::Accessory::Web::gunzip( $infile . ".gz" ) if -r $infile . ".gz";
+   unless ( -r $infile && -s $infile )
+   {
+       CoGe::Accessory::Web::write_log( "WARNING:   Cannot adjust dagchainer evals! DAGChainer input file ($infile) contains no data!", $cogeweb->logfile );
+       return 0;
+   }
+   my $cmd = "$PYTHON $EVAL_ADJUST -c $cvalue $infile > $outfile";
+
+   #There is a parameter that can be passed into this to filter repetitive sequences more or less stringently:
+   # -c   2 gets rid of more stuff; 10 gets rid of less stuff; default is 4
+   #consider making this a parameter than can be adjusted from SynMap -- will need to actually play with this value to see how it works
+   #if implemented, this will require re-naming all the files to account for this parameter
+   #and updating the auto-SynMap link generator for redoing an analysis
+
+   system "/usr/bin/touch $outfile.running";    #track that a blast anlaysis is running for this
+   CoGe::Accessory::Web::write_log( "run_adjust_dagchainer_evals: running\n\t$cmd", $cogeweb->logfile );
+   `$cmd`;
+   system "/bin/rm $outfile.running" if -r "$outfile.running";
+   ;                                            #remove track file
+   return 1 if -r $outfile;
+
+}
 
 #FIXME: Currently this feature is disabled
 # @by Evan Briones
