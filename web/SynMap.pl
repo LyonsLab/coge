@@ -1,4 +1,4 @@
-#! /usr/bin/perl -w
+! /usr/bin/perl -w
 use v5.10;
 use strict;
 no warnings 'redefine';
@@ -1430,8 +1430,6 @@ sub go
  #        #}
  #
  #
- #        my ($fasta, $org_name) =
- #          gen_fasta(dsgid => $dsgid, feat_type => $feat_type, write_log => 1);
  #    }
 
     my ($fasta1, $fasta2);
@@ -2846,59 +2844,6 @@ Zoomed SynMap:
 # SynMap workflow
 ################################################################################
 
-sub gen_fasta
-{
-    my %opts      = @_;
-    my $dsgid     = $opts{dsgid};
-    my $feat_type = $opts{feat_type};
-    my $write_log = $opts{write_log} || 0;
-    my ($org_name, $title);
-    ($org_name, $title) = gen_org_name(
-        dsgid     => $dsgid,
-        feat_type => $feat_type,
-        write_log => $write_log);
-
-    #we already have genomic sequences
-    my $file;
-    if ($feat_type eq "genomic") {
-        my $dsg = $coge->resultset('Genome')->find($dsgid);
-        $file = $dsg->file_path;
-    } else {
-        $file = $FASTADIR . "/$dsgid-$feat_type.fasta";
-    }
-    my $res;
-    if ($write_log) {
-        CoGe::Accessory::Web::write_log("#" x 20, $cogeweb->logfile);
-        CoGe::Accessory::Web::write_log("Generating fasta file:",
-            $cogeweb->logfile);
-        CoGe::Accessory::Web::write_log(
-            "Generating $feat_type fasta sequence for " . $org_name,
-            $cogeweb->logfile);
-    }
-    while (-e "$file.running") {
-        print STDERR "detecting $file.running.  Waiting. . .\n";
-        sleep 60;
-    }
-    if (-r $file) {
-        CoGe::Accessory::Web::write_log(
-            "Fasta file for *" . $org_name . "* ($file) exists",
-            $cogeweb->logfile)
-          if $write_log;
-        $res = 1;
-    } else {
-        system "touch $file.running"
-          ;    #track that a blast anlaysis is running for this
-        $res =
-          generate_fasta(dsgid => $dsgid, file => $file, type => $feat_type)
-          unless -r $file;
-        system "/bin/rm $file.running" if -r "$file.running"; #remove track file
-    }
-    CoGe::Accessory::Web::write_log("#" x (20) . "\n", $cogeweb->logfile)
-      if $write_log;
-    return $file, $org_name, $title if $res;
-    return 0;
-}
-
 sub gen_org_name
 {
     my %opts      = @_;
@@ -2934,97 +2879,6 @@ sub print_debug
     if (defined($args{enabled}) && defined($args{msg}) && $args{enabled}) {
         say STDERR "DEBUG: $args{msg}";
     }
-}
-
-sub generate_fasta
-{
-    my %opts  = @_;
-    my $dsgid = $opts{dsgid};
-    my $file  = $opts{file};
-    my $type  = $opts{type};
-    my ($dsg) = $coge->resultset('Genome')->search({"me.genome_id" => $dsgid},
-        {join => 'genomic_sequences', prefetch => 'genomic_sequences'});
-
-    $file = $FASTADIR . "/$file" unless $file =~ /$FASTADIR/;
-    CoGe::Accessory::Web::write_log("Creating fasta file:", $cogeweb->logfile);
-    CoGe::Accessory::Web::write_log($file,                  $cogeweb->logfile);
-
-    open(OUT, ">$file") || die "Can't open $file for writing: $!";
-    if ($type eq "CDS" || $type eq "protein") {
-        my $count = 1;
-        my @res   = $coge->resultset('Feature')->search({
-                feature_type_id => [3, 5, 8],
-                genome_id       => $dsgid},
-            {
-                join     => [{dataset => 'dataset_connectors'}],
-                prefetch => ['feature_names']});
-
-        my @feats =
-          sort {$a->chromosome cmp $b->chromosome || $a->start <=> $b->start}
-          @res;
-
-        CoGe::Accessory::Web::write_log(
-            "Getting sequence for "
-              . scalar(@feats)
-              . " features of types CDS, tRNA, and rRNA.",
-            $cogeweb->logfile);
-        foreach my $feat (@feats) {
-            my ($chr) = $feat->chromosome;    #=~/(\d+)/;
-            my $name;
-            foreach my $n ($feat->names) {
-                $name = $n;
-                last unless $name =~ /\s/;
-            }
-            $name =~ s/\s+/_/g;
-            my $title = join("||",
-                $chr, $feat->start, $feat->stop, $name, $feat->strand,
-                $feat->type->name, $feat->id, $count);
-            if ($type eq "CDS") {
-                my $seq = $feat->genomic_sequence(dsgid => $dsg->id);
-                next unless $seq;
-
-                #skip sequences that are only 'x' | 'n';
-                next unless $seq =~ /[^x|n]/i;
-                print OUT ">" . $title . "\n";
-                print OUT $seq, "\n";
-                $count++;
-            } elsif ($type eq "protein") {
-                next unless $feat->feature_type_id == 3;
-                my (@seqs) = $feat->protein_sequence(dsgid => $dsg->id);
-                next unless scalar @seqs;
-                next
-                  if scalar @seqs > 1;   #didn't find the correct reading frame;
-                next unless $seqs[0] =~ /[^x]/i;
-                $title = ">" . $title . "\n";
-
-                #       print OUT $title, join ($title, @seqs),"\n";
-                print OUT $title, $seqs[0], "\n";
-                $count++;
-            }
-        }
-    } else {
-
-        my @chr = sort $dsg->get_chromosomes;
-        CoGe::Accessory::Web::write_log(
-            "Getting sequence for "
-              . scalar(@chr)
-              . " chromosomes (genome sequence)",
-            $cogeweb->logfile);
-        $file = $dsg->file_path;
-
-        #   foreach my $chr (@chr)
-        #     {
-        #       my $seq = $dsg->get_genomic_sequence(chr=>$chr);
-        #       next unless $seq;
-        #       print OUT ">".$chr."\n";
-        #       print OUT $seq,"\n";
-        #     }
-    }
-    close OUT;
-    return 1 if -r $file;
-    CoGe::Accessory::Web::write_log("Error with fasta file creation",
-        $cogeweb->logfile);
-    return 0;
 }
 
 sub process_local_dups_file
