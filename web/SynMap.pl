@@ -42,7 +42,8 @@ our (
     $CLUSTER_UTILS, $BLAST2RAW,      $BASE_URL,    $BLAST2BED,
     $SYNTENY_SCORE, $TEMPDIR,        $TEMPURL,     $ALGO_LOOKUP,
     $GZIP,          $GUNZIP,         $COOKIE_NAME, %FUNCTIONS,
-    $YERBA,         $GENE_ORDER,     $PAGE_TITLE,  $KSCALC, $GEN_FASTA);
+    $YERBA,         $GENE_ORDER,     $PAGE_TITLE,  $KSCALC,
+    $GEN_FASTA);
 
 $DEBUG     = 1;
 $YERBA     = CoGe::Accessory::Jex->new(host => "localhost", port => 5151);
@@ -79,9 +80,9 @@ $LAST =
   . $P->{LAST_PATH}
   . " --dbpath="
   . $P->{LASTDB};
-$GZIP   = $P->{GZIP};
-$GUNZIP = $P->{GUNZIP};
-$KSCALC = $P->{KSCALC};
+$GZIP      = $P->{GZIP};
+$GUNZIP    = $P->{GUNZIP};
+$KSCALC    = $P->{KSCALC};
 $GEN_FASTA = $P->{GEN_FASTA};
 
 #in the web form, each sequence search algorithm has a unique number.  This table identifies those and adds appropriate options
@@ -741,7 +742,7 @@ sub get_genome_info
     $html_dsg_info .= "<tr><td>Description: <td>" . $dsg->description
       if $dsg->description;
     $html_dsg_info .=
-        "<tr><td>Source:  <td><a href="
+        "<tr><td>Source:  <td><a href=" 
       . $link
       . " target=_new>"
       . $ds->data_source->name . "</a>";
@@ -1215,7 +1216,7 @@ sub get_query_link
     my ($org_name2, $titleB) =
       gen_org_name(dsgid => $dsgid2, feat_type => $feat_type2, write_log => 0);
     my $log_msg =
-        "<span class=link onclick=window.open('OrganismView.pl?dsgid="
+        "<span class=link onclick=window.open('OrganismView.pl?dsgid=" 
       . $dsgid1
       . "')>$org_name1</span> v. <span class=link"
       . "onclick=window.open('OrganismView.pl?dsgid=$dsgid2')>$org_name2</span>";
@@ -1392,7 +1393,6 @@ sub go
     $feat_type1 = "protein" if $blast == 5 && $feat_type1 eq "CDS"; #blastp time
     $feat_type2 = "protein" if $blast == 5 && $feat_type2 eq "CDS"; #blastp time
 
-
     ############################################################################
     # Fetch organism name and title
     ############################################################################
@@ -1409,35 +1409,36 @@ sub go
     ##########################################################################
     # Generate Fasta files
     ##########################################################################
-    my $t0   = new Benchmark;
-    #my $pm   = new Parallel::ForkManager($MAX_PROC);
-    #my @dsgs = ([$dsgid1, $feat_type1]);
-    #push @dsgs, [$dsgid2, $feat_type2]
-    #  unless $dsgid1 == $dsgid2 && $feat_type1 eq $feat_type2;
-    #
-    #    foreach my $item (@dsgs) {
-    #        my $dsgid = $item->[0];
-    #
-    #        my $feat_type = $item->[1];
-    #
-    #        #TODO: Schedule fasta generation only if feat_type not genomic
-    #        #if ($feat_type eq "genomic") {
-    #        #    my $genome = $coge->resultset('Genome')->find($gid);
-    #        #    $file = $genome->file_path;
-    #        #} else {
-    #        #    $file = $FASTADIR . "/$gid-$feat_type.fasta";
-    #        #}
-    #
-    #
-    #        my ($fasta, $org_name) =
-    #          gen_fasta(dsgid => $dsgid, feat_type => $feat_type, write_log => 1);
-    #    }
+    my $t0 = new Benchmark;
+
+ #my $pm   = new Parallel::ForkManager($MAX_PROC);
+ #my @dsgs = ([$dsgid1, $feat_type1]);
+ #push @dsgs, [$dsgid2, $feat_type2]
+ #  unless $dsgid1 == $dsgid2 && $feat_type1 eq $feat_type2;
+ #
+ #    foreach my $item (@dsgs) {
+ #        my $dsgid = $item->[0];
+ #
+ #        my $feat_type = $item->[1];
+ #
+ #        #TODO: Schedule fasta generation only if feat_type not genomic
+ #        #if ($feat_type eq "genomic") {
+ #        #    my $genome = $coge->resultset('Genome')->find($gid);
+ #        #    $file = $genome->file_path;
+ #        #} else {
+ #        #    $file = $FASTADIR . "/$gid-$feat_type.fasta";
+ #        #}
+ #
+ #
+ #        my ($fasta, $org_name) =
+ #          gen_fasta(dsgid => $dsgid, feat_type => $feat_type, write_log => 1);
+ #    }
 
     my ($fasta1, $fasta2);
     my $workflow = undef;
-    my $status = undef;
+    my $status   = undef;
 
-    my @args = ();
+    my @args   = ();
     my $config = $ENV{HOME} . "coge.conf";
 
     if ($feat_type1 eq "genomic") {
@@ -1445,9 +1446,11 @@ sub go
         $fasta1 = $genome->file_path;
     } else {
         $fasta1 = $FASTADIR . "/$dsgid1-$feat_type1.fasta";
-        push @args, ["--config", $config, 0];
-        push @args, ["--genome_id", $dsgid1, 1];
+        push @args, ["--config",       $config,     0];
+        push @args, ["--genome_id",    $dsgid1,     1];
         push @args, ["--feature_type", $feat_type1, 1];
+        push @args, ["--fasta",        $fasta1,     1];
+
         $workflow = $YERBA->create_workflow(
             name    => "fasta1-$workflow_id",
             logfile => $cogeweb->logfile);
@@ -1467,10 +1470,11 @@ sub go
         $fasta2 = $genome->file_path;
     } else {
         $fasta2 = $FASTADIR . "/$dsgid2-$feat_type2.fasta";
-        @args = ();
-        push @args, ["--config", $config, 0];
-        push @args, ["--genome_id", $dsgid2, 1];
+        @args   = ();
+        push @args, ["--config",       $config,     0];
+        push @args, ["--genome_id",    $dsgid2,     1];
         push @args, ["--feature_type", $feat_type2, 1];
+        push @args, ["--fasta",        $fasta2,     1];
 
         $workflow = $YERBA->create_workflow(
             name    => "fasta2-$workflow_id",
@@ -1485,7 +1489,6 @@ sub go
         $status = $YERBA->submit_workflow($workflow);
         $YERBA->wait_for_completion($workflow->name);
     }
-
 
     # FIXME: Items are already sorted by genome id
     #    (
@@ -1523,7 +1526,7 @@ sub go
             name    => "blastdb-$workflow_id",
             logfile => $cogeweb->logfile);
         my $write_log = 0;
-        my $basename = "$BLASTDBDIR/$dsgid2-$feat_type2";
+        my $basename  = "$BLASTDBDIR/$dsgid2-$feat_type2";
 
         push @args, ['-p', $feat_type2 eq "protein" ? "T" : "F", 1];
         push @args, ['-i', $fasta2, 1];
@@ -1593,7 +1596,7 @@ sub go
           . $orgkey2 => {
             fasta    => $fasta1,
             db       => $blastdb,
-            basename => $dsgid1 . "_"
+            basename => $dsgid1 . "_" 
               . $dsgid2
               . ".$feat_type1-$feat_type2."
               . $ALGO_LOOKUP->{$blast}{filename},
@@ -1713,7 +1716,7 @@ sub go
     }
     CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("Creating .bed files", $cogeweb->logfile);
-    CoGe::Accessory::Web::write_log("running: $BLAST2BED",       $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("running: $BLAST2BED", $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
 
@@ -2330,7 +2333,7 @@ sub go
         $ks_blocks_file = "$final_dagchainer_file.ks";
 
         @args = ();
-        push @args, ['--config', $config, 0];
+        push @args, ['--config',    $config,                0];
         push @args, ['--infile',    $final_dagchainer_file, 1];
         push @args, ['--dbfile',    $ks_db,                 1];
         push @args, ['--blockfile', $ks_blocks_file,        1];
@@ -2640,7 +2643,7 @@ Zoomed SynMap:
             \$merged_dagchainer_file, \$qa_file,
             \$qa_merged_file,         \$ks_blocks_file,
             \$quota_align_coverage,   \$qa_coverage_qa];    #, \$spa_file];
-        my $pm =new Parallel::ForkManager($MAX_PROC);
+        my $pm = new Parallel::ForkManager($MAX_PROC);
 
         foreach my $item (@$file_list) {
             $pm->start and next;
