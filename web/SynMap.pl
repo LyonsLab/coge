@@ -1669,16 +1669,11 @@ sub go
     # FIXME: Rename dupdist and cscore to a name that makes more sense.
     # @by Evan Briones
     # @on 2/27/2013
-    my $tandem_distance = $dupdist;
-
-    # Setup command
-    $tandem_distance = 10 unless defined $tandem_distance;
-
     push @args, ["", $raw_blastfile, 1];
     push @args, ["--localdups", "", 1];
     push @args, ["--qbed",        $query_bed,          1];
     push @args, ["--sbed",        $subject_bed,        1];
-    push @args, ["--tandem_Nmax", $tandem_distance,    1];
+    push @args, ["--tandem_Nmax", $dupdist,    1];
     push @args, ["--cscore",      $cscore,             1] if $cscore;
     push @args, [">",             $filtered_blastfile, 1];
 
