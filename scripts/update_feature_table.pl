@@ -6,7 +6,7 @@ use Data::Dumper;
 $| = 1;
 
 my $connstr = 'dbi:mysql:genomes:biocon:3306';
-my $s = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+my $s = CoGeX->connect( $connstr, 'cnssys', 'CnS' );
 
 $s->storage->debug(0);
 
@@ -14,25 +14,30 @@ my $FCOUNT = $s->resultset('Feature')->count();
 
 my $count = 1;
 while ( $count > 0 ) {
-  my $rs = $s->resultset('Feature')->search( undef,
-                                             {
-                                               page => $count,
-                                               rows => 1
-                                             }
-                                           );
-  my $f = $rs->next();
+    my $rs = $s->resultset('Feature')->search(
+        undef,
+        {
+            page => $count,
+            rows => 1
+        }
+    );
+    my $f = $rs->next();
 
-#  print "id = ", $f->id(), "\n";
-#  print "start = ", $f->start(), "\n";
-#  print "stop = ", $f->stop(), "\n";
-#  print "strand = ", $f->strand(), "\n";
-#  print "chromosome = ", $f->chromosome(), "\n";
+    #  print "id = ", $f->id(), "\n";
+    #  print "start = ", $f->start(), "\n";
+    #  print "stop = ", $f->stop(), "\n";
+    #  print "strand = ", $f->strand(), "\n";
+    #  print "chromosome = ", $f->chromosome(), "\n";
 
-  $f->update( { fstart      => $f->start(),
-                fstop       => $f->stop(),
-                fchromosome => $f->chromosome(),
-                fstrand     => $f->strand() } );
-  $count += 1;
+    $f->update(
+        {
+            fstart      => $f->start(),
+            fstop       => $f->stop(),
+            fchromosome => $f->chromosome(),
+            fstrand     => $f->strand()
+        }
+    );
+    $count += 1;
 }
 
 #my $feature = $rc->next();
@@ -45,17 +50,16 @@ while ( $count > 0 ) {
 #                  );
 #}
 
-
 #sub esearch {
-#    
+#
 #    my @results;
-#    my $rs = $s->resultset('Feature')->esearch( { 
+#    my $rs = $s->resultset('Feature')->esearch( {
 #                        'feature_type.name' =>   'gene' ,
-#                        'feature_names.name' => ['-and' , 
+#                        'feature_names.name' => ['-and' ,
 #                                { '-like' => 'At2g2%'} ,
 #                                { '-not_like' => ['%.%'] }
 #                            ]
-#                        } 
+#                        }
 #                        );
 #
 #    #print "got resultset\n";

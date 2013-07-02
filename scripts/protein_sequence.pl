@@ -8,9 +8,8 @@ use CoGeX;
 #mysql after  update: real    0m44.592s
 #postgresql         : real    0m30.214s
 
-
 my $connstr = 'dbi:mysql:genomes:biocon:3306';
-my $s = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+my $s = CoGeX->connect( $connstr, 'cnssys', 'CnS' );
 
 #my $connstr = 'dbi:Pg:dbname=genomes;host=biocon;port=5432';
 #my $s = CoGeX->connect($connstr, 'bpederse', 'wsa47r' );
@@ -18,32 +17,30 @@ my $s = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #$s->storage->debug(1);
 
 my $rs = $s->resultset('Feature')->search(
-        { 
-            'feature_type.name' =>   'CDS' 
-            ,'feature_names.name' => {like => 'At%g%', '-not_like' => "%.%"}
-            ,'me.dataset_id'        => {'IN' => [6, 7, 8, 9, 10]}
-        },
-        {
-            join => ['feature_names','feature_type'],
-            prefetch => ['feature_names','feature_type'],
-            order_by => ['feature_names.name']
-        }
+    {
+        'feature_type.name'  => 'CDS',
+        'feature_names.name' => { like => 'At%g%', '-not_like' => "%.%" },
+        'me.dataset_id'      => { 'IN' => [ 6, 7, 8, 9, 10 ] }
+    },
+    {
+        join     => [ 'feature_names', 'feature_type' ],
+        prefetch => [ 'feature_names', 'feature_type' ],
+        order_by => ['feature_names.name']
+    }
 
 );
 
-
-while (my $feat =$rs->next()){
-    my $fn = $feat->feature_names;
+while ( my $feat = $rs->next() ) {
+    my $fn   = $feat->feature_names;
     my $type = $feat->feature_type->name;
     print ">";
-    map { print $_->name . ":". $type . "\t" } $fn->next();
+    map { print $_->name . ":" . $type . "\t" } $fn->next();
     print "\n";
 
     # this prefetch avoids n calls where n is number of sequences #
-    foreach my $seq ($feat->sequences){
-        print $seq->sequence_data ;
+    foreach my $seq ( $feat->sequences ) {
+        print $seq->sequence_data;
     }
     print "\n\n";
 }
-
 
