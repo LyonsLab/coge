@@ -62,25 +62,27 @@ my($dsg1) = $coge->resultset('Genome')->resolve($dsgid1);
 my($dsg2) = $coge->resultset('Genome')->resolve($dsgid2);
 exit unless $dsg1 && $dsg2;
 
-my $name1 = $dsg1->organism->name;
-$name1  =~ s/\///g;
-$name1 =~ s/\s+/_/g;
-$name1 =~ s/\(//g;
-$name1 =~ s/\)//g;
-$name1 =~ s/://g;
-$name1 =~ s/;//g;
-$name1 =~ s/'//g;
-$name1 =~ s/"//g;
-my $name2 = $dsg2->organism->name;
-$name2  =~ s/\///g;
-$name2 =~ s/\s+/_/g;
-$name2 =~ s/\(//g;
-$name2 =~ s/\)//g;
-$name2 =~ s/://g;
-$name2 =~ s/;//g;
-$name2 =~ s/'//g;
-$name2 =~ s/"//g;
-my $dir = "$DIAGSDIR/$name1"."/".$name2;
+# my $name1 = $dsg1->organism->name;
+# $name1  =~ s/\///g;
+# $name1 =~ s/\s+/_/g;
+# $name1 =~ s/\(//g;
+# $name1 =~ s/\)//g;
+# $name1 =~ s/://g;
+# $name1 =~ s/;//g;
+# $name1 =~ s/'//g;
+# $name1 =~ s/"//g;
+# my $name2 = $dsg2->organism->name;
+# $name2  =~ s/\///g;
+# $name2 =~ s/\s+/_/g;
+# $name2 =~ s/\(//g;
+# $name2 =~ s/\)//g;
+# $name2 =~ s/://g;
+# $name2 =~ s/;//g;
+# $name2 =~ s/'//g;
+# $name2 =~ s/"//g;
+
+my ($dir1, $dir2) = sort ($dsgid1, $dsgid2);
+my $dir = "$DIAGSDIR/$dir1/$dir2";
 my $dag_file = $dir."/".$basename;
 #if ($ksdb)
 #  {
@@ -196,5 +198,7 @@ sub generate_dotplot
     ($x, $cmd) = CoGe::Accessory::Web::check_taint($cmd);
     #($cmd) = $cmd =~ /(.*)/;
     `$cmd` if $cmd;
+    print STDERR $cmd,"\n";
+    print STDERR $outfile,"\n";
     return $outfile if -r $outfile.".html";
   }
