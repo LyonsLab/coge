@@ -597,10 +597,6 @@ sub blast_search {
       tiny_link => $link, title => $PAGE_TITLE, user_id => $USER->id,
       db_object => $coge);
 
-    my $job = CoGe::Accessory::Web::get_job(
-        tiny_link => $link, title => $PAGE_TITLE, user_id => $USER->id,
-        db_object => $coge);
-
 	CoGe::Accessory::Web::write_log( "process $$", $cogeweb->logfile );
 	
 	$width = 400 unless $width =~ /^\d+$/; #something wrong with how width is calculated in tmpl file
