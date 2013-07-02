@@ -14,9 +14,9 @@ use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 
 our (
-    $cogeweb, $basename, $gid,     $feature,  $fasta,  $coge,
-    $P,       $TEMPDIR,  $NWALIGN, $MAX_PROC, $DBNAME, $DBHOST,
-    $DBPORT,  $DBUSER,   $DBPASS,  $CONFIG);
+    $cogeweb, $basename, $gid,     $feature, $fasta,
+    $coge,    $P,        $TEMPDIR, $NWALIGN, $DBNAME,
+    $DBHOST,  $DBPORT,   $DBUSER,  $DBPASS,  $CONFIG);
 
 GetOptions(
     "genome_id|gid=s"   => \$gid,
@@ -29,9 +29,8 @@ $ENV{PATH} = join ":",
   (
     $P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR} . "SynMap",
     "/usr/bin", "/usr/local/bin");
-$TEMPDIR  = $P->{TEMPDIR} . "SynMap";
-$MAX_PROC = $P->{MAX_PROC};
-$NWALIGN  = $P->{NWALIGN};
+$TEMPDIR = $P->{TEMPDIR} . "SynMap";
+$NWALIGN = $P->{NWALIGN};
 
 $DBNAME = $P->{DBNAME};
 $DBHOST = $P->{DBHOST};
