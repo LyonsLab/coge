@@ -1227,7 +1227,6 @@ sub go
     my $feat_type1 = $opts{feat_type1};
     my $feat_type2 = $opts{feat_type2};
 
-
     my $ks_type  = $opts{ks_type};
     my $assemble = $opts{assemble} =~ /true/i ? 1 : 0;
     $assemble = 2 if $assemble && $opts{show_non_syn} =~ /true/i;
@@ -1363,7 +1362,7 @@ sub go
     ##########################################################################
     # Generate blastdb files
     ##########################################################################
-    my ($cmd, @args, $workflow, $id);
+    my ($cmd, @args, $workflow, $status);
 
 
     my ($blastdb, @blastdb_files);
@@ -1395,8 +1394,8 @@ sub go
             $workflow->add_job(cmd => $cmd, script => undef, args => \@args,
                                inputs => [$fasta2],
                                outputs => \@blastdb_files);
-            $id = $YERBA->submit_workflow($workflow);
-            $YERBA->wait_for_completion($id);
+            $status = $YERBA->submit_workflow($workflow);
+            $YERBA->wait_for_completion($workflow->name);
 
             CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile ) if $write_log;
             CoGe::Accessory::Web::write_log( "Generating BlastDB file", $cogeweb->logfile );
@@ -1523,8 +1522,8 @@ sub go
                            outputs => [$outfile]);
     }
 
-    $id = $YERBA->submit_workflow($workflow);
-    $YERBA->wait_for_completion($id);
+    $status = $YERBA->submit_workflow($workflow);
+    $YERBA->wait_for_completion($workflow->name);
 
     unless ( -s $raw_blastfile || -s "$raw_blastfile.gz" )
     {
@@ -1581,8 +1580,8 @@ sub go
                            inputs => [$raw_blastfile],
                            outputs => [$query_bed, $subject_bed]);
     }
-    $id = $YERBA->submit_workflow($workflow);
-    $YERBA->wait_for_completion($id);
+    $status = $YERBA->submit_workflow($workflow);
+    $YERBA->wait_for_completion($workflow->name);
 
     CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Creating .bed files", $cogeweb->logfile );
@@ -1630,8 +1629,8 @@ sub go
                        inputs => [$raw_blastfile, $query_bed, $subject_bed],
                        outputs => [$filtered_blastfile]);
 
-    $id = $YERBA->submit_workflow($workflow);
-    $YERBA->wait_for_completion($id);
+    $status = $YERBA->submit_workflow($workflow);
+    $YERBA->wait_for_completion($workflow->name);
 
     CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Filtering results of tandem duplicates", $cogeweb->logfile );
@@ -1691,8 +1690,8 @@ sub go
                                inputs => [$filtered_blastfile],
                                outputs=> [$dag_file12_all]);
 
-            $id = $YERBA->submit_workflow($workflow);
-            $YERBA->wait_for_completion($id);
+            $status = $YERBA->submit_workflow($workflow);
+            $YERBA->wait_for_completion($workflow->name);
 
             unless (-s $dag_file12_all) {
         CoGe::Accessory::Web::write_log( "WARNING: DAGChainer input
@@ -1750,8 +1749,8 @@ sub go
         CoGe::Accessory::Web::write_log("run dagchainer: $cmd",
                                             $cogeweb->logfile);
             CoGe::Accessory::Web::write_log($msg, $cogeweb->logfile);
-            $id = $YERBA->submit_workflow($workflow);
-            $YERBA->wait_for_completion($id);
+            $status = $YERBA->submit_workflow($workflow);
+            $YERBA->wait_for_completion($workflow->name);
 
             $msg = "Completed conversion of gene order to file";
             $msg .= " $dag_file12_all_geneorder";
@@ -1878,8 +1877,8 @@ sub go
                           outputs => [$dagchainer_file]);
     }
 
-    $id = $YERBA->submit_workflow($workflow);
-    $YERBA->wait_for_completion($id);
+    $status = $YERBA->submit_workflow($workflow);
+    $YERBA->wait_for_completion($workflow->name);
 
     CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
@@ -1942,8 +1941,8 @@ sub go
                                inputs => ["$dagchainer_file.Dm$Dm.qa"],
                                outputs => ["$dagchainer_file.Dm$Dm.qa.merged"]);
 
-            $id = $YERBA->submit_workflow($workflow);
-            $YERBA->wait_for_completion($id);
+            $status = $YERBA->submit_workflow($workflow);
+            $YERBA->wait_for_completion($workflow->name);
 
             #FIXME: This should be a script and run as a job
             if ( -r "$dagchainer_file.Dm$Dm.qa.merged" )
@@ -2047,8 +2046,8 @@ sub go
                                inputs => ["$post_dagchainer_file_w_nearby.qa"],
                                outputs => ["$quota_align_coverage.tmp"]);
 
-            $id = $YERBA->submit_workflow($workflow);
-            $YERBA->wait_for_completion($id);
+            $status = $YERBA->submit_workflow($workflow);
+            $YERBA->wait_for_completion($workflow->name);
 
             #FIXME: This should be a script and run as a job
             if ( -r "$quota_align_coverage.tmp" )
@@ -2100,8 +2099,8 @@ sub go
             #$workflow->add_job(cmd => $cmd, script => undef, args => \@args,
             #           inputs => ["$quota_align_coverage.qa"],
 
-            #$id = $YERBA->submit_workflow($id);
-            #$YERBA->wait_for_completion($id);
+            #$status = $YERBA->submit_workflow($workflow);
+            #$YERBA->wait_for_completion($workflow->name);
 
             $cmd = $CLUSTER_UTILS . " --print_grimm $quota_align_coverage.qa";
             `$cmd`;
@@ -2228,8 +2227,8 @@ sub go
                                inputs => [$ks_blocks_file],
                                outputs => [$svg_file]);
 
-            $id = $YERBA->submit_workflow($workflow);
-            $YERBA->wait_for_completion($id);
+            $status = $YERBA->submit_workflow($workflow);
+            $YERBA->wait_for_completion($workflow->name);
 
             CoGe::Accessory::Web::write_log( "generate svg dotplot: $cmd", $cogeweb->logfile );
             CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
@@ -2331,10 +2330,11 @@ sub go
         $workflow->add_job(cmd =>$cmd, script => undef, args => \@args,
                            inputs => [$final_dagchainer_file],
                            outputs => ["$dotfile.html", "$dotfile.png",
-                           "$dotfile.x.png", "$dotfile.y.png"]);
+                           "$dotfile.x.png", "$dotfile.y.png"],
+                           overwrite => $regen_images);
 
-        $id = $YERBA->submit_workflow($workflow);
-        $YERBA->wait_for_completion($id);
+        $status = $YERBA->submit_workflow($workflow);
+        $YERBA->wait_for_completion($workflow->name);
         $out = $dotfile;
 
 #        $out = generate_dotplot(
