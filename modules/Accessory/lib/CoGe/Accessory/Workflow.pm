@@ -24,6 +24,13 @@ has 'filepath' => (
     default => "",
 );
 
+has 'logfile' => (
+    is => 'ro',
+    isa  => 'Str',
+    required => 1,
+    default => "",
+);
+
 has 'jobs' => (
     is => 'rw',
     isa  => 'ArrayRef',
