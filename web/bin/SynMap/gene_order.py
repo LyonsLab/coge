@@ -12,11 +12,13 @@ logger = logging.getLogger("synmap.gene_order")
 logger.setLevel(logging.INFO)
 
 def main(input, output, gid1, gid2, feature1, feature2):
-    ''' Returns a dag file
+    '''
+    Returns a dag file
 
     If feature1 or feature2 are genomic then the genomic hits need to be
     reordered differently. Otherwise the positions will be set from the
-    data within the file.'''
+    data within the file.
+    '''
     genomic = False
 
     if not(os.path.exists(input)):
@@ -91,6 +93,7 @@ def main(input, output, gid1, gid2, feature1, feature2):
     return 0
 
 # TODO: Some of the work should be able to be done in parallel
+# Additionally this shouldn't all be stored in memory
 # @by Evan Briones
 # @on 3/01/2013
 def order_genes(input_file, feature1, feature2):
@@ -152,6 +155,41 @@ def order_genes(input_file, feature1, feature2):
 
     return genomic_order
 
+def convert_to_genomic_position(genomic_file, output):
+    '''
+    Return output file with genomic positions
+
+    Convert the input file from genomic order to genomic
+    position.
+    '''
+    with open(genomic_file, 'r') as fp:
+        for line in fp:
+            if line.startswith('#'):
+                continue
+
+            items = line.rstrip("\n\r").split("\t")
+            pos1 = re.split('\|\|', items[1])
+            pos2 = re.split('\|\|', items[5])
+
+            (start, stop) = (pos1[1], pos1[2])
+            if pos1[4] and re.match('-', pos1[4]):
+                (start, stop) = (stop, start)
+
+            items[2] = start
+            items[3] = stop
+
+            (start, stop) = (pos2[2], pos2[2])
+
+            if pos2[4] and re.match('-', pos2[4]):
+                (start, stop) = (stop, start)
+
+            items[6] = start
+            items[7] = stop
+
+            with open(output, 'a') as out:
+                out.write("\t".join(items) + "\n")
+    return 0
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='''
@@ -162,17 +200,19 @@ if __name__ == "__main__":
                         help="dag file to be ordered")
     parser.add_argument("output",
                         help="dag file that is produced.")
-    parser.add_argument("gid1",
+    parser.add_argument("--gid1",
                         help="The first genome id.")
-    parser.add_argument("gid2",
+    parser.add_argument("--gid2",
                         help="The second genome id.")
-    parser.add_argument("feature1",
+    parser.add_argument("--feature1",
                         help="The feature of the first genome")
-    parser.add_argument("feature2",
+    parser.add_argument("--feature2",
                         help="The feature of the second genome")
+    parser.add_argument("--positional", action="store_true",
+                        help="Convert from genomic order to genomic position")
 
     parser.add_argument("--loglevel",
-                        help="This sets the log level")
+                        help="Sets the log level verboseness")
     args = parser.parse_args()
 
     if args.loglevel:
@@ -182,8 +222,10 @@ if __name__ == "__main__":
             raise ValueError('Invalid log level: %s' % log_level)
         logger.setLevel(log_level)
 
-    ret = main(args.input, args.output, args.gid1, args.gid2, args.feature1,
-         args.feature2)
-
+    if args.positional:
+        ret = convert_to_genomic_position(args.input, args.output)
+    else:
+        ret = main(args.input, args.output, args.gid1, args.gid2, args.feature1,
+             args.feature2)
 
     sys.exit(ret)

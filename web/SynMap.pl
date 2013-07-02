@@ -1809,12 +1809,12 @@ sub go
             logfile => $cogeweb->logfile);
 
         $cmd = $GENE_ORDER;
-        push @args, ["", $dag_file12_all,           1];
-        push @args, ["", $dag_file12_all_geneorder, 1];
-        push @args, ["", $dsgid1,                   1];
-        push @args, ["", $dsgid2,                   1];
-        push @args, ["", $feat_type1,               1];
-        push @args, ["", $feat_type2,               1];
+        push @args, ["",           $dag_file12_all,           1];
+        push @args, ["",           $dag_file12_all_geneorder, 1];
+        push @args, ["--gid1",     $dsgid1,                   1];
+        push @args, ["--gid2",     $dsgid2,                   1];
+        push @args, ["--feature1", $feat_type1,               1];
+        push @args, ["--feature2", $feat_type2,               1];
 
         $workflow->add_job(
             cmd     => $cmd,
@@ -2215,12 +2215,25 @@ sub go
             "Converting gene order coordinates back to genomic coordinates",
             $cogeweb->logfile);
 
-        # TODO: Move to Job execution
-        # @by Evan Briones
-        # @on 3/1/2013
-        replace_gene_order_with_genomic_positions(
-            file    => $final_dagchainer_file,
-            outfile => $final_dagchainer_file . ".gcoords");
+        $workflow = $YERBA->create_workflow(
+            name    => "geneposition-$workflow_id",
+            logfile => $cogeweb->logfile);
+
+        my @args = ();
+        push @args, ['', $final_dagchainer_file, 1];
+        push @args, ['', "$final_dagchainer_file.gcoords", 1];
+        push @args, ["--positional", '', 1];
+
+        $workflow->add_job(
+            cmd     => $GENE_ORDER,
+            script  => undef,
+            args    => \@args,
+            inputs  => [$final_dagchainer_file],
+            outputs => ["$final_dagchainer_file.gcoords"]);
+
+        $status = $YERBA->submit_workflow($workflow);
+        $YERBA->wait_for_completion($workflow->name);
+
         CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
         CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
 
@@ -3128,54 +3141,6 @@ sub process_local_dups_file
 #
 #}
 
-sub replace_gene_order_with_genomic_positions
-{
-    my %opts    = @_;
-    my $file    = $opts{file};
-    my $outfile = $opts{outfile};
-
-    #must convert file's coordinates back to genomic
-    while (-e "$outfile.running") {
-        print STDERR "detecting $outfile.running.  Waiting. . .\n";
-        sleep 60;
-    }
-    if (   (-r "$outfile" && -s "$outfile")
-        || (-r "$outfile.gz" && -s "$outfile.gz")) {
-        CoGe::Accessory::Web::write_log(
-            "  no conversion for $file back to genomic coordinates needed, convered file, $outfile,  exists",
-            $cogeweb->logfile);
-        return;
-    }
-    system "/usr/bin/touch $outfile.running"
-      ;    #track that a blast anlaysis is running for this
-    CoGe::Accessory::Web::write_log(
-        "  converting $file back to genomic coordinates, $outfile",
-        $cogeweb->logfile);
-
-    #    `mv $file $file.orig`;
-    $/ = "\n";    #just in case
-    CoGe::Accessory::Web::gunzip($file . ".gz") if -r $file . ".gz";
-    open(IN,  "$file");
-    open(OUT, ">$outfile");
-    while (<IN>) {
-        if (/^#/) {print OUT $_; next;}
-        my @line  = split /\t/;
-        my @item1 = split /\|\|/, $line[1];
-        my @item2 = split /\|\|/, $line[5];
-        my ($start, $stop) = ($item1[1], $item1[2]);
-        ($start, $stop) = ($stop, $start) if $item1[4] && $item1[4] =~ /-/;
-        $line[2] = $start;
-        $line[3] = $stop;
-        ($start, $stop) = ($item2[1], $item2[2]);
-        ($start, $stop) = ($stop, $start) if $item2[4] && $item2[4] =~ /-/;
-        $line[6] = $start;
-        $line[7] = $stop;
-        print OUT join("\t", @line);
-    }
-    close IN;
-    close OUT;
-    system "/bin/rm $outfile.running" if -r "$outfile.running";
-}
 
 # TODO: This feature is in process of removal kept here as reference.
 # @by Evan Briones
