@@ -1191,8 +1191,17 @@ sub go
     my ($dir1, $dir2) = sort ($dsgid1, $dsgid2);
     my $workflow_id = "$dir1-$dir2";
 
+    ############################################################################
+    # Initialize Jobs
+    ############################################################################
+
     my $tiny_link = $opts{tiny_link};
     say STDERR "tiny_link is required for logging." unless defined($tiny_link);
+
+    my $job = CoGe::Accessory::Web::get_job(tiny_link => $tiny_link,
+                                            title => $PAGE_TITLE,
+                                            user_id => $USER->id,
+                                            db_object => $coge);
 
     my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
     $workflow_id .= "-$tiny_id";
@@ -1338,6 +1347,10 @@ sub go
     {
             my $log = $cogeweb->logfile;
             $log =~ s/$DIR/$URL/;
+
+            # Update status to terminated.
+            $job->update({ status => 4 }) if defined($job);
+
             return "<span class=alert>Something went wrong generating the fasta files: <a href=$log>log file</a></span>";
     }
     else
@@ -1406,6 +1419,10 @@ sub go
     {
             my $log = $cogeweb->logfile;
             $log =~ s/$DIR/$URL/;
+
+            # Update status to terminated.
+            $job->update({ status => 4 }) if defined($job);
+
             return "<span class=alert>Something went wrong generating the blastdb files: <a href=$log>log file</a></span>";
     }
     else
@@ -2629,6 +2646,9 @@ sub go
         # Need to remove this from the output from dotplot
         # -- otherwise it over-loads the stuff in the web-page already.
         # -- This can mess up other loaded js such as tablesoter
+
+    # Update status to completed.
+    $job->update({ status => 2 }) if defined($job);
 
     $html =~ s/<script src="\/CoGe\/js\/jquery-1.3.2.js"><\/script>//g;
         return $html;
