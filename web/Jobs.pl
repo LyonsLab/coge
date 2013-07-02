@@ -17,12 +17,10 @@ use CoGe::Accessory::Web;
 
 no warnings 'redefine';
 
-our (
-    $P,       $DBNAME,     $DBHOST,   $DBPORT,      $DBUSER, $DBPASS,
-    $connstr, $PAGE_TITLE, $USER,        $DATE,   $BASEFILE,
-    $coge,    $cogeweb,    %FUNCTION, $COOKIE_NAME, $FORM,   $URL,
-    $COGEDIR, $TEMPDIR,    $TEMPURL
-);
+our ($P, $DBNAME, $DBHOST, $DBPORT, $DBUSER, $DBPASS,
+     $connstr, $PAGE_TITLE, $USER, $DATE, $BASEFILE,
+     $coge, $cogeweb, %FUNCTION, $COOKIE_NAME, $FORM, $URL,
+     $COGEDIR, $TEMPDIR, $TEMPURL, $YERBA);
 
 $P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 
@@ -104,32 +102,21 @@ sub dispatch {
 sub get_jobs_for_user {
 
     #my %opts = @_;
-    my ( @jobs, @admin_jobs );
+    my @jobs;
+
     if ( $USER->is_admin ) {
-        @admin_jobs = $coge->resultset('Job')->all();
+        @jobs = $coge->resultset('Job')->all();
+    } elsif ($USER->is_public) {
+        @jobs = $coge->resultset('Job')->search({
+            user_id => 0,
+        });
+    } else {
+        @jobs = $USER->jobs;
     }
 
-    @jobs = $USER->jobs;
-    my %user_job_ids =
-      map { $_->id, 1 } @jobs;    #for admins -- marks lists that they don't own
-    my %seen_job_ids; #for admins -- their jobs are jobted first, then all lists
     my @job_items;
 
-    # Sort jobs by start time
-    #	push @jobs, sort cmp_by_start_time @admin_jobs;
-    #	@jobs = sort cmp_by_start_time @jobs;
-
     foreach my $job (@jobs) {
-##//		next if ($job->is_owner && !$USER->is_admin); # skip owner lists
-
-        # Skip if already added
-        next if $seen_job_ids{ $job->job_id };
-        $seen_job_ids{ $job->job_id } = 1;
-
-#		my $name = qq{<span class=link onclick='window.open("NotebookView.pl?lid=} . $list->id . qq{")'>} . $list->name . "</span>";
-#		$name = '&reg; '.$name if $list->restricted;
-#		$name = '&alpha; '.$name if !$user_list_ids{$list->id};
-
         push @job_items, {
             ID     => $job->job_id,
             LINK   => $job->link,
@@ -188,7 +175,7 @@ sub cancel_job {
     my $job_id = _check_job_args(@_);
     my $job = _get_validated_job($job_id);
     my $signal = 'TERM';
-    
+
     return "fail" unless defined($job);
 
     if(kill($signal, $job->process_id)) {
@@ -196,14 +183,14 @@ sub cancel_job {
         say STDERR "Job.pl: $job->process_id was successfully terminated.";
         return "success";
     }
-    
+
     return "fail";
 }
 
-sub schedule_job { 
+sub schedule_job {
     my $job_id = _check_job_args(@_);
     my $job = _get_validated_job($job_id);
-    
+
     return "fail" unless defined($job);
     return "true";
 }
@@ -211,7 +198,7 @@ sub schedule_job {
 sub get_status_message {
     my $job = shift;
     my $alive = kill(0, $job->process_id);
-    
+
     given ($job->status) {
         when (1) {
             return 'Running' unless not $alive;
@@ -254,10 +241,10 @@ sub _get_validated_job {
 sub _check_job_args {
     my %args = @_;
     my $job_id = $args{job};
-    
+
     if(not defined($job_id)) {
         say STDERR "Job.pl: a job id was not given to cancel_job.";
     }
-    
+
     return $job_id;
 }
