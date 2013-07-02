@@ -26,11 +26,17 @@ has 'jobs' => (
 
 # Public functions
 sub add_job {
-    my ($self, $cmd, $inputs, $outputs) = @_;
+    my ($self, %opts) = @_;
+    my $cmd = $opts{cmd};
+    my $script = "" unless defined($opts{script});
+    my $args = $opts{args};
+    my $inputs = $opts{inputs};
+    my $outputs = $opts{outputs};
+
     my $size = $self->jobs;
-    
+
     push(@{$self->jobs}, {
-        cmd => $cmd,
+        cmdstring => {cmd => $cmd, script => $script, args => $args,},
         inputs => $inputs,
         outputs => $outputs,
     });
