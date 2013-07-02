@@ -6,54 +6,51 @@ use 5.10.0;
 use Moose;
 
 # Attributes
-has 'workflow_id' => (
-    is => 'ro',
-);
+has 'workflow_id' => (is => 'ro',);
 
 has 'name' => (
-    is => 'ro',
-    isa  => 'Str',
+    is       => 'ro',
+    isa      => 'Str',
     required => 1,
-    default => "",
-);
-
-has 'filepath' => (
-    is => 'ro',
-    isa  => 'Str',
-    required => 1,
-    default => "",
-);
+    default  => "",);
 
 has 'logfile' => (
-    is => 'ro',
-    isa  => 'Str',
+    is       => 'ro',
+    isa      => 'Str',
     required => 1,
-    default => "",
-);
+    default  => "",);
 
 has 'jobs' => (
-    is => 'rw',
-    isa  => 'ArrayRef',
-    default => sub { [] },
-    required => 0,
-);
+    is       => 'rw',
+    isa      => 'ArrayRef',
+    default  => sub {[]},
+    required => 0,);
 
 # Public functions
-sub add_job {
+sub add_job
+{
     my ($self, %opts) = @_;
-    my $cmd = $opts{cmd};
-    my $script = "" unless defined($opts{script});
-    my $args = $opts{args};
-    my $inputs = $opts{inputs};
+    my $cmd     = $opts{cmd};
+    my $script  = "" unless defined($opts{script});
+    my $args    = $opts{args};
+    my $inputs  = $opts{inputs};
     my $outputs = $opts{outputs};
+    my $size    = $self->jobs;
+    my $overwrite;
 
-    my $size = $self->jobs;
+    if (defined($opts{overwrite}) && $opts{overwrite} > 0) {
+        $overwrite = 1;
+    } else {
+        $overwrite = 0;
+    }
 
-    push(@{$self->jobs}, {
-        cmdstring => {cmd => $cmd, script => $script, args => $args,},
-        inputs => $inputs,
-        outputs => $outputs,
-    });
+    push(
+        @{$self->jobs},
+        {
+            cmdstring => {cmd => $cmd, script => $script, args => $args,},
+            overwrite => $overwrite,
+            inputs    => $inputs,
+            outputs   => $outputs,});
 
     return scalar($self->jobs()) > $size;
 }
