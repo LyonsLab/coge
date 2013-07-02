@@ -230,7 +230,7 @@ if ($ks_db)
 #    $cmd .= ".$MIN" if defined $MIN;
 #    $cmd .= ".$MAX" if defined $MAX;
     $cmd .= ".hist.png";
-    print STDERR "HIST: ",$cmd,"\n";
+    #print STDERR "HIST: ",$cmd,"\n";
     `$cmd &`;
   }
 
