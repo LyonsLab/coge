@@ -17,10 +17,13 @@ use CoGe::Accessory::Web;
 
 no warnings 'redefine';
 
-our ($P, $DBNAME, $DBHOST, $DBPORT, $DBUSER, $DBPASS,
-     $connstr, $PAGE_TITLE, $USER, $DATE, $BASEFILE,
-     $coge, $cogeweb, %FUNCTION, $COOKIE_NAME, $FORM, $URL,
-     $COGEDIR, $TEMPDIR, $TEMPURL, $YERBA);
+our (
+    $P,        $DBNAME,  $DBHOST,     $DBPORT,   $DBUSER,
+    $DBPASS,   $connstr, $PAGE_TITLE, $USER,     $DATE,
+    $BASEFILE, $coge,    $cogeweb,    %FUNCTION, $COOKIE_NAME,
+    $FORM,     $URL,     $COGEDIR,    $TEMPDIR,  $TEMPURL,
+    $YERBA
+);
 
 $P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 
@@ -72,8 +75,8 @@ $link = CoGe::Accessory::Web::get_tiny_link(
 );
 
 %FUNCTION = (
-    gen_html => \&gen_html,
-    cancel_job => \&cancel_job,
+    gen_html     => \&gen_html,
+    cancel_job   => \&cancel_job,
     schedule_job => \&schedule_job,
 );
 
@@ -106,11 +109,11 @@ sub get_jobs_for_user {
 
     if ( $USER->is_admin ) {
         @jobs = $coge->resultset('Job')->all();
-    } elsif ($USER->is_public) {
-        @jobs = $coge->resultset('Job')->search({
-            user_id => 0,
-        });
-    } else {
+    }
+    elsif ( $USER->is_public ) {
+        @jobs = $coge->resultset('Job')->search( { user_id => 0, } );
+    }
+    else {
         @jobs = $USER->jobs;
     }
 
@@ -121,7 +124,7 @@ sub get_jobs_for_user {
             ID     => $job->job_id,
             LINK   => $job->link,
             PAGE   => $job->page,
-            STATUS => get_status_message( $job ),
+            STATUS => get_status_message($job),
 
             #TODO: Should return the job duration
             RUNTIME => $job->start_time,
@@ -173,13 +176,13 @@ sub gen_body {
 
 sub cancel_job {
     my $job_id = _check_job_args(@_);
-    my $job = _get_validated_job($job_id);
+    my $job    = _get_validated_job($job_id);
     my $signal = 'TERM';
 
     return "fail" unless defined($job);
 
-    if(kill($signal, $job->process_id)) {
-        $job->update({ status => 3 });
+    if ( kill( $signal, $job->process_id ) ) {
+        $job->update( { status => 3 } );
         say STDERR "Job.pl: $job->process_id was successfully terminated.";
         return "success";
     }
@@ -189,7 +192,7 @@ sub cancel_job {
 
 sub schedule_job {
     my $job_id = _check_job_args(@_);
-    my $job = _get_validated_job($job_id);
+    my $job    = _get_validated_job($job_id);
 
     return "fail" unless defined($job);
     return "true";
@@ -197,15 +200,13 @@ sub schedule_job {
 
 sub get_status_message {
     my $job = shift;
-    my $alive = kill(0, $job->process_id);
+    my $alive = kill( 0, $job->process_id );
 
-    given ($job->status) {
+    given ( $job->status ) {
         when (1) {
             return 'Running' unless not $alive;
 
-            $job->update({
-                status => 4
-            });
+            $job->update( { status => 4 } );
             return 'Terminated';
         }
         when (2) { return 'Complete'; }
@@ -226,12 +227,13 @@ sub cmp_by_start_time {
 
 sub _get_validated_job {
     my $job_id = shift;
-    my $job = $coge->resultset('Job')->find($job_id);
+    my $job    = $coge->resultset('Job')->find($job_id);
 
-    if((not defined($job) || $job->user_id == $USER->id) &&
-        not $USER->is_admin) {
-        say STDERR "Job.pl: job $job->id expected user id ".
-        "$job->user_id but received $USER->id";
+    if ( ( not defined($job) || $job->user_id == $USER->id )
+        && not $USER->is_admin )
+    {
+        say STDERR "Job.pl: job $job->id expected user id "
+          . "$job->user_id but received $USER->id";
         return;
     }
 
@@ -239,10 +241,10 @@ sub _get_validated_job {
 }
 
 sub _check_job_args {
-    my %args = @_;
+    my %args   = @_;
     my $job_id = $args{job};
 
-    if(not defined($job_id)) {
+    if ( not defined($job_id) ) {
         say STDERR "Job.pl: a job id was not given to cancel_job.";
     }
 
