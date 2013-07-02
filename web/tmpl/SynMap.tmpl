@@ -4,7 +4,7 @@
 <script language="javascript">
 
 function init_table() {
- $("#prev_table").tablesorter({		
+ $("#prev_table").tablesorter({
 		sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
 		headerClass: 'header',		// Class name for headers (th's)
@@ -19,7 +19,7 @@ function has_organisms () {
 }
 
 $(function() {$("#pair_info").draggable();});
-$(function() {$("#tabs").tabs({selected:0});});	     
+$(function() {$("#tabs").tabs({selected:0});});
 $(function() {$(".resizable").resizable();});
 
 function get_gc (dsgid, divid)
@@ -35,19 +35,19 @@ function get_organism_chain(type,val,i)
  else if (type == 'desc') {get_orgs(['args__desc','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
  $('#dsg_info'+i).html('<div class="loading dna_small small">loading. . .</div>');
  ajax_wait("gen_dsg_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['dsg_menu"+i+"', 'genome_message"+i+"']);");
- ajax_wait("check_previous_analyses();");   
+ ajax_wait("check_previous_analyses();");
  ajax_wait("get_genome_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],[handle_dsg_info]);");
 }
 
 function get_genome_info_chain(i)
 {
- $('#dsg_info'+i).html('<div class=dna_small class=loading class=small>loading. . .</div>'); 
+ $('#dsg_info'+i).html('<div class=dna_small class=loading class=small>loading. . .</div>');
  // ajax_wait("gen_dsg_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['dsg_menu"+i+"','genome_message"+i+"']);");
  gen_dsg_menu(['args__oid','org_id'+i, 'args__num','args__'+i],['dsg_menu'+i, 'genome_message'+i]);
  $('#depth_org_1').html($('#org_id1 option:selected').html());
  $('#depth_org_2').html($('#org_id2 option:selected').html());
 
- ajax_wait("check_previous_analyses();");   
+ ajax_wait("check_previous_analyses();");
  ajax_wait("get_genome_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],[handle_dsg_info]);");
 
 }
@@ -66,8 +66,8 @@ function populate_page_obj(basefile)
  }
 
 function run_synmap(scheduled){
-//  generate_basefile([],[update_basename]);   
- populate_page_obj(); 
+//  generate_basefile([],[update_basename]);
+ populate_page_obj();
  var org_name1 = pageObj.org_name1;
  var org_name2 = pageObj.org_name2;
  //feat_type 1 == CDS, 2 == genomic
@@ -91,10 +91,10 @@ function run_synmap(scheduled){
 	 		$('#results').show(0).html("<span class=alert>Analysis Blocked:</span>"+message);
 	 		return;
      }
- if(!pageObj.basename) 
+ if(!pageObj.basename)
   {
     var run_callback = function() {
-        run_synmap(scheduled);        
+        run_synmap(scheduled);
     };
 
   	setTimeout(run_callback, 100);
@@ -103,12 +103,12 @@ function run_synmap(scheduled){
 
     if (!has_organisms())
         return;
- 
+
     if ($('#blast').val() == 5 && (feat_type1 != 1 || feat_type2 != 1) ) {
         alert('BlastP only works if both genomes have protein coding sequences (CDS) AND CDS is selected for both!');
         return;
     }
-	
+
     var dagchainer = $('#dagchainer_type').filter(':checked');
     var argument_list = {
         tdd: $('#tdd').val(),
@@ -154,9 +154,7 @@ function run_synmap(scheduled){
         logks: $('#logks')[0].checked,
         csco: $('#csco').val(),
         jquery_ajax: 1,
-        regen_images: 1
     };
-//    console.log(argument_list);
     // TODO: Scale polling time linearly with long running jobs
     var duration = pageObj.waittime;
 
@@ -186,29 +184,29 @@ function run_synmap(scheduled){
             var link = "Regenerate this analysis: <a href=" + data + " onclick=window.open('tiny')"
             + "target = _new>" + data + "</a>";
 
-            jQuery('html, body').animate({scrollTop: 0}, 1000); 
-            $('#results').hide(0);  	
+            jQuery('html, body').animate({scrollTop: 0}, 1000);
+            $('#results').hide(0);
             $('#short_url').html(link);
             $('#short_url').fadeIn(1000);
-            
+
             $('#log_text').show(0);
             $('#log_text').html('Beginning run...');
             start_callback (data);
         }
-    }); 
+    });
 }
 
 function read_log(name, dir) {
-    $.ajax({ 
+    $.ajax({
         data: {
             jquery_ajax: 1,
             fname: 'read_log',
             logfile: name,
-            tempdir: dir, 
+            tempdir: dir,
         },
         success : function(data) {
             monitor_log(data);
-        }, 
+        },
     });
 }
 
@@ -223,7 +221,7 @@ function handle_results(val){
 function check_previous_analyses(){
     var gid1 = $('#org_id1').val();
     var gid2 = $('#org_id2').val();
-    
+
     if (gid1 && gid2) {
         $.ajax({
             data: {
@@ -273,12 +271,12 @@ function update_params(val) {
  ajax_wait(cmd);
  var type;
  $('#blast').attr('value',params[9]);
- if (params[10] == 'Distance') 
+ if (params[10] == 'Distance')
   {
    $("input[name='dagchainer_type']:nth(1)").attr("checked","checked");
    type=" bp";
   }
- else 
+ else
   {
    $("input[name='dagchainer_type']:nth(0)").attr("checked","checked");
    type= " genes";
@@ -296,14 +294,14 @@ function handle_dsg_info(dsg_html, feat_menu, genome_message, length, org_num, o
   if (org_num == 1)
    {
 		pageObj.org_length1 = length;
-		pageObj.org_name1 = org_name;	
-		pageObj.seq_type1 = seq_id;	
+		pageObj.org_name1 = org_name;
+		pageObj.seq_type1 = seq_id;
    }
 	else
    {
 		pageObj.org_length2 = length;
-		pageObj.org_name2 = org_name;	
-		pageObj.seq_type2 = seq_id;	
+		pageObj.org_name2 = org_name;
+		pageObj.seq_type2 = seq_id;
    }
 }
 
@@ -315,10 +313,10 @@ function set_dagchainer_defaults(params, type) {
     if ($('#dagchainer_type')[0].checked)
      {
        params = [20,5,0,0];
-       type = " genes";  
-     } 
+       type = " genes";
+     }
     else
-     { 
+     {
       if (settings == 1) // for plant genomes
        { params = [120000, 5, 96000,480000];}
       else if (settings == 2) // for microbe genomes
@@ -348,11 +346,11 @@ function ajax_wait (val){
 function timing(val, val2){
   namere = /name/;
   descre = /desc/;
-  if (namere.exec(val)) 
+  if (namere.exec(val))
    {
     searchterm = $('#'+val).val();
    }
-  else if (descre.exec(val)) 
+  else if (descre.exec(val))
    {
     searchterm = $('#'+val).val();
    }
@@ -375,7 +373,7 @@ function timing(val, val2){
   re = /(\d+)/;
   i = re.exec(val);
 
-  if (namere.exec(val)) 
+  if (namere.exec(val))
    {
      if (val2)
      {
@@ -387,7 +385,7 @@ function timing(val, val2){
      }
 
    }
-  else if (descre.exec(val)) 
+  else if (descre.exec(val))
    {
      if (val2)
      {
@@ -397,7 +395,7 @@ function timing(val, val2){
      {
        pageObj.pageobjtime = setTimeout("get_organism_chain('desc',$('#"+val+"').val(),i[0])",200);
      }
-   }  
+   }
 }
 
 $(document).ready(function(){
@@ -411,20 +409,20 @@ $(document).ready(function(){
   if($('#org_name1').val() != "Search") {
     $('#org_name1').css({fontStyle: "normal"});
     timing('org_name1',1);
-  }  
+  }
   if($('#org_desc1').val() != "Search") {
     $('#org_desc1').css({fontStyle: "normal"});
     timing('org_desc1',1);
-  }  
+  }
   if($('#org_name2').val() != "Search") {
     $('#org_name2').css({fontStyle: "normal"});
     timing('org_name2',1);
-  }  
+  }
   if($('#org_desc2').val() != "Search") {
     $('#org_desc2').css({fontStyle: "normal"});
     timing('org_desc2',1);
   }
-  ajax_wait("check_previous_analyses();"); 
+  ajax_wait("check_previous_analyses();");
     <TMPL_VAR NAME=DISPLAY_DAGCHAINER_SETTINGS>
  if ($('#assemble')[0].checked)
   {
@@ -432,7 +430,7 @@ $(document).ready(function(){
   }
   $(".options tr:even").addClass("even");
   merge_select_check();
-  depth_algo_check();	
+  depth_algo_check();
  $('#depth_org_1').html($('#org_id1 option:selected').html());
  $('#depth_org_2').html($('#org_id2 option:selected').html());
  pageObj.fid1=<TMPL_VAR NAME=FID1>;
@@ -446,7 +444,7 @@ $(document).ready(function(){
  });
 
 function display_dagchainer_settings(params,type) {
- 
+
  if ($('#dagchainer_type')[0].checked)
   {
    $('#dagchainer_distance').hide(0);
@@ -500,17 +498,17 @@ function address_validity_check(validity){
 function fill_jobtitle(){
 	var org1 = $('#org_id1 option:selected').html() || 0;
 	var org2 = $('#org_id2 option:selected').html() || 0;
-	
+
 	if (org1 != 0) {org1 = org1.replace(/\s+\(id\d+\)$/,"");}
 	if (org2 != 0) {org2 = org2.replace(/\s+\(id\d+\)$/,"");}
-	
+
 	var title;
-	
+
 	if (org1 != 0 && org2 != 0) title = org1+" v. "+org2;
 	else if (org1 != 0) title = org1;
 	else if (org2 != 0) title = org2;
 	else return;
-	
+
 	$('#jobtitle').val(title);
 }
 
@@ -554,20 +552,20 @@ function reset_basename(){
 	bed = "Creating .bed files . . .";
   }
    if(log.match(/Filtering results of tandem/i)) {
-  	bed += "done!<br/>";  
+  	bed += "done!<br/>";
   	tandem = "Filtering tandem dups . . . ";
   }
    if(log.match(/Converting blast file to dagchainer input/i)) {
-  	tandem += "done!<br/>";  
+  	tandem += "done!<br/>";
   	converting1 = "Formatting for DagChainer . . . ";
   }
    if(log.match(/Adjusting evalue/i)) {
-  	converting1 += "done!<br/>";  
+  	converting1 += "done!<br/>";
   	evalue = "Adjusting e-values . . . ";
   }
 
    if(log.match(/Running DagChainer/i)) {
-  	evalue += "done!<br/>";  
+  	evalue += "done!<br/>";
   	dag = "Running DAGChainer . . . ";
   }
 
@@ -591,11 +589,11 @@ function reset_basename(){
     pageObj.finished = 1;
   }
  }
-  
+
 
   else {pageObj.nolog += 1;}
   var message = "Initializing search . . . ";
-  
+
   if (fasta) message += "done!<br/>"+fasta;
   if (blastdb) message += blastdb;
   if (blast) message += blast;
@@ -606,20 +604,20 @@ function reset_basename(){
   if (dag) message += dag;
   if (ks) message += ks;
   if (results) message += results;
-  
+
   if (!pageObj.finished && pageObj.nolog<8) {
     var waittime = pageObj.waittime;
     message+="<br/><br/>Next progress check in "+Math.floor(waittime/1000)+" seconds.";
-   
+
    // TODO: Scale polling time linearly with long running jobs
    var duration = pageObj.waittime;
     var readlog_callback = function() {
         read_log(pageObj.basename, pageObj.tempdir);
-    };  
+    };
 
     setTimeout(readlog_callback, duration);
   }
-  
+
   if (message) $('#log_text').html(message);
 }
 
@@ -655,7 +653,7 @@ function open_window (url, loc, width, height)
     my_window.resizeTo(width,height);
  }
 
-function merge_select_check () 
+function merge_select_check ()
  {
    var merge_algo = $('#merge_algo').val();
    if (merge_algo == 0)
@@ -717,13 +715,13 @@ function post_to_grimm(seq1, seq2)
 <DIV id=log_text class="small dna" style="display:none"></DIV>
 <DIV id=results><TMPL_IF NAME=RESULTS><TMPL_VAR NAME=RESULTS><TMPL_ELSE>
 <div style="clear: both;"> </div>
-<span class="alert" style="float:left; margin-right: 5px; ">Please Note:</span>  
+<span class="alert" style="float:left; margin-right: 5px; ">Please Note:</span>
 <div style="float: left">SynMap is a very computationally intense, multi-step program which may take hours to complete for large genomes.<br>If available, select previously run parameter-sets for your organisms to see results instantly.</div>
 
 
 <div style="clear: both;"> </div>
 <hr>
-<span class="alert" style="float: left; margin-right: 5px;">Get Started:</span> 
+<span class="alert" style="float: left; margin-right: 5px;">Get Started:</span>
 <div style="float: left"><div class="link" onclick=window.open("http://genomevolution.org/r/6mou")>Click here for an example analysis between <i>Arabidopsis thaliana</i> and <i>Arabidopsis lyrata</i>.</div><span class=small>(Note that syntenic gene pairs are colored by synonymous mutations (Ks))</span><div class="link" onclick=window.open("http://genomevolution.org/wiki/index.php/SynMap#Example_Results")>Click here for an explaination of the results.</div ></div>
 
 
@@ -789,10 +787,10 @@ function post_to_grimm(seq1, seq2)
    <TD>Average distance expected between syntenic genes (-g):
    <TD><input type=text size=8 id="g" value=""><span class=distance_type></span>-->
  <TR>
-   <TD>Maximum distance between two matches (-D): 
+   <TD>Maximum distance between two matches (-D):
    <TD><input type=text size=8 id="D" value=""><span class=distance_type></span>
  <TR>
-   <TD>Minimum number of aligned pairs (-A): 
+   <TD>Minimum number of aligned pairs (-A):
    <TD><input type=text size=8 id="A" value=""> genes
 </TABLE>
 
@@ -800,7 +798,7 @@ function post_to_grimm(seq1, seq2)
 <tr valign=top>
   <td style="color:#009900">Merge Syntenic Blocks:
   <td>
-   Algorithm: 
+   Algorithm:
        <select id="merge_algo" name="merge_algo" onchange="merge_select_check()">
         <OPTION VALUE="0"> --None--
         <OPTION VALUE="1" <TMPL_VAR NAME="QUOTA_MERGE_SELECT">>Quota Align Merge
@@ -812,19 +810,19 @@ function post_to_grimm(seq1, seq2)
      <TD>Average distance expected between syntenic blocks (-gm):
      <TD><input type=text size=8 id="gm" value=""><span class=distance_type></span>
    <TR>
-     <TD>Maximum distance between two blocks (-Dm): 
+     <TD>Maximum distance between two blocks (-Dm):
      <TD><input type=text size=8 id="Dm" value=""><span class=distance_type></span>
  </TABLE>
 
 <tr valign=top>
   <td style="color:#009900">Syntenic Depth
-  <td>Algorithm: 
+  <td>Algorithm:
        <select id="depth_algo" name="depth_algo" onchange="depth_algo_check()">
         <OPTION VALUE="0"> --None--
         <OPTION VALUE="1" <TMPL_VAR NAME="QUOTA_ALIGN_SELECT">>Quota Align
        </select> <br>
        <div id=depth_options style="display:none">
-        Ratio of coverage depth: 
+        Ratio of coverage depth:
         <span style="color:#009900" id=depth_org_1></span>
         <input type=text size=2 id="depth_org_1_ratio" value="<TMPL_VAR NAME="DEPTH_ORG_1_RATIO">">
          -to-
@@ -836,7 +834,7 @@ function post_to_grimm(seq1, seq2)
 
 <tr valign=top>
 <td style="color:#009900">CodeML
-<td>Calculate syntenic CDS pairs and color dots: 
+<td>Calculate syntenic CDS pairs and color dots:
   <select name="ks_type" id = "ks_type">
      <option value = 0 <TMPL_VAR NAME=KS0> >--None--</option>
      <option value = ks <TMPL_VAR NAME=KS1> >Synonymous (Ks)</option>
@@ -864,14 +862,14 @@ function post_to_grimm(seq1, seq2)
    Log10 Transform: <input type=checkbox name="logks" id="logks" <TMPL_VAR NAME=LOGKS> >
 
    <br>
-   <span class=small style="color:red">&nbsp;&nbsp;&nbsp;&nbsp; Only applicable to protein coding sequences (CDS vs. CDS)</span> 
+   <span class=small style="color:red">&nbsp;&nbsp;&nbsp;&nbsp; Only applicable to protein coding sequences (CDS vs. CDS)</span>
 
  <tr>
    <td style="color:#009900">Advanced Options (see docs):
    <td>
      Tandem duplication distance <input type=text size=2 id="tdd" name="tdd" value="<TMPL_VAR NAME="DUPDIST">"><br>
      C-score (filters low quality hits: value [0-1])<input type=text size=2 id="csco" name="csco" value="<TMPL_VAR NAME="CSCORE">"><br>
-   
+
 
 </table>
 </div> <!-- close tab-2 -->
@@ -903,7 +901,7 @@ function post_to_grimm(seq1, seq2)
    <TD>Flip axes?
    <td><input type=checkbox name="flip" id="flip" <TMPL_VAR NAME=FLIP> >
  <tr>
-   <td>Color diagonals by: 
+   <td>Color diagonals by:
    <td>
    <select name=color_type id=color_type>
      <option value = 0 <TMPL_VAR NAME=COLOR_TYPE_NONE> > Single color </option>
@@ -911,7 +909,7 @@ function post_to_grimm(seq1, seq2)
      <option value = diag <TMPL_VAR NAME=COLOR_TYPE_DIAG> > Syntenic Block </option>
    </select>
    <br>
-   <span class=small style="color:red">&nbsp;&nbsp;&nbsp;&nbsp;Synonymous rates will supercede this option.</span> 
+   <span class=small style="color:red">&nbsp;&nbsp;&nbsp;&nbsp;Synonymous rates will supercede this option.</span>
  <tr>
   <td>Dotplot axis metric:
   <td>
@@ -921,24 +919,24 @@ function post_to_grimm(seq1, seq2)
   </select>
  <tr>
   <td>Dotplot axes relationship:</td>
-  <td>  
+  <td>
   <select name="axis_relationship" id = "axis_relationship">
    <option value = "s" <TMPL_VAR NAME=AXIS_RELATIONSHIP_S>>Square</option>
    <option value = "r" <TMPL_VAR NAME=AXIS_RELATIONSHIP_R>>Relative/Dynamic</option>
   </select>
 
  <tr>
-   <td>Master image width (0 == dynamic)  
+   <td>Master image width (0 == dynamic)
    <td><input type=text name=master_width id=master_width size=6 value="<TMPL_VAR NAME="MWIDTH">">
  <tr>
-   <td>Minimum chromosome size:   
+   <td>Minimum chromosome size:
    <Td><input type=text name=min_chr_size id=min_chr_size size=6 value="<TMPL_VAR NAME="MIN_CHR_SIZE">">
   <TR>
     <TD><a href=http://genomevolution.org/wiki/index.php/Syntenic_path_assembly target=_CoGepedia>Syntenic Path Assembly (SPA)</a>?
     <td>
     <input type=checkbox name="assemble" id="assemble" onclick="$('#assemble_info').toggle();" <TMPL_VAR NAME=SYNTENIC_PATH>><br>
    <span class=small id='assemble_info' style="display: none; color: red;">Options:
-    <li>Reference genome (to which the other genome is assembled) has 
+    <li>Reference genome (to which the other genome is assembled) has
        <select id=spa_ref_genome>
         <option value="1" <TMPL_VAR NAME="SPA_FEW_SELECT"> > fewer
         <option value="-1" <TMPL_VAR NAME="SPA_MORE_SELECT"> > more
@@ -946,10 +944,10 @@ function post_to_grimm(seq1, seq2)
        pieces (contigs, scaffolds, etc)
     <li>Don't show contigs without synteny?<input type=checkbox name="show_non_syn" id="show_non_syn" <TMPL_VAR NAME=SHOW_NON_SYN>><span><br>
   <TR>
-   <td>E-mail results? 
+   <td>E-mail results?
    <td><input type=checkbox id=check_email onclick="toggle_email_field()">
 		<div class="email_box small" style="display:none;"><table class="backbox"><tr><td>Your E-mail Address: <td><input type=text id=email onBlur='address_validity_check()' value='<TMPL_VAR NAME="EMAIL">'>
-		
+
 		<font id=email_error class="small" style="display: none; color: red;">You have supplied an invalid e-mail address.</font></div>
 		<tr><td><div class=email_box style="display:none;">Job Title:
 		<td><input type=text id=jobtitle> <span class='ui-button ui-corner-all' onClick="fill_jobtitle()">Use Org Names</span></div>
@@ -958,7 +956,7 @@ function post_to_grimm(seq1, seq2)
 </TABLE>
 </div> <!-- close tab-3 -->
 </div> <!--close tabs div-->
-Previously run parameters: 
+Previously run parameters:
 <span id="hide_previous" class='show_prev_button ui-button ui-corner-all' onClick="$('.previous_analyses').toggle(); $('.show_prev_button').toggle();">Hide</span>
 <span id="show_previous" style="display:none" class='show_prev_button ui-button ui-corner-all' onClick="$('.previous_analyses').toggle(); $('.show_prev_button').toggle();">Show</span>
 <div class="small previous_analyses">(Clicking on row automatically selects and sets SynMap genomes and parameters.)</div>
