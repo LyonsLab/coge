@@ -1707,6 +1707,9 @@ sub go
 
     $YERBA->wait_for_completion($workflow->name);
 
+
+    #FIXME: Check needs to be removed
+
     $filtered_blastfile = $raw_blastfile
       unless (-r $filtered_blastfile && -s $filtered_blastfile)
       || (-r "$filtered_blastfile.gz" && -s "$filtered_blastfile.gz");
@@ -3017,9 +3020,9 @@ sub process_local_dups_file
     }
     close OUT;
     close IN;
-    `/bin/rm $infile`;
-    $infile =~ s/localdups/nolocaldups.bed/;
-    `/bin/rm $infile`;
+    #`/bin/rm $infile`;
+    #$infile =~ s/localdups/nolocaldups.bed/;
+    #`/bin/rm $infile`;
     return $outfile;
 }
 
