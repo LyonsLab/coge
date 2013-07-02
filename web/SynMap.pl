@@ -1,13 +1,16 @@
 #! /usr/bin/perl -w
 use v5.10;
-
 use strict;
+no warnings 'redefine';
+umask(0);
+
 use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Web;
 use CoGe::Algos::KsCalc;
+
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
@@ -25,9 +28,6 @@ use DBI;
 use POSIX;
 use Sort::Versions;
 
-no warnings 'redefine';
-
-umask(0);
 our($P, $DBNAME, $DBHOST, $DBPORT, $DBUSER, $DBPASS, $connstr, $DATE, $DEBUG,
     $DIR, $URL, $SERVER, $USER, $FORM, $coge, $cogeweb, $PAGE_NAME,
     $FORMATDB, $BLAST, $TBLASTX, $BLASTN, $BLASTP, $LASTZ, $LAST, $DATADIR,
@@ -1175,6 +1175,7 @@ sub generate_basefile
     $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
     return $cogeweb->basefilename;
 }
+
 sub go
 {
     my %opts = @_;
@@ -1346,7 +1347,7 @@ sub go
             $workflow = $YERBA->create_workflow("blastdb");
             my $write_log = 0;
             $cmd = $FORMATDB;
-            
+
             my $basename = "$BLASTDBDIR/$dsgid2-$feat_type2";
 
             push @args, ['-p', $feat_type2 eq "protein" ? "T" : "F", 1];
@@ -1360,7 +1361,7 @@ sub go
             push @blastdb_files, "$basename" . "sq";
             push @blastdb_files, "$basename" . "in";
             push @blastdb_files, "$basename" . "hr";
-            
+
             $workflow->add_job($cmd, undef, \@args, [$fasta2], \@blastdb_files);
             $id = $YERBA->submit_workflow($workflow);
             $YERBA->wait_for_completion($id);
@@ -1399,7 +1400,7 @@ sub go
     #need to blast each org against itself for finding local dups, then to one another
         my ($tmp1, $tmp2) = ($org_name1, $org_name2);
 
-        # Get organism name for directory names. 
+        # Get organism name for directory names.
     foreach my $tmp ( $tmp1, $tmp2 )
     {
             $tmp =~ s/\///g;
@@ -1446,7 +1447,7 @@ sub go
     foreach my $key ( keys %org_dirs )
     {
         my $cmd = $ALGO_LOOKUP->{$blast}{algo};    #$prog =~ /tblastx/i ? $TBLASTX : $BLASTN;
-        
+
         my $fasta   = $org_dirs{$key}{fasta};
         my $db      = $org_dirs{$key}{db};
         my $outfile = $org_dirs{$key}{blastfile};
@@ -1511,16 +1512,16 @@ sub go
     my $t2            = new Benchmark;
     my $query_bed = $raw_blastfile . ".q.bed";
     my $subject_bed = $raw_blastfile . ".s.bed";
-    
+
 
     $workflow = $YERBA->create_workflow("blast2bed");
 #    $workflow->add_job("gunzip", ["$raw_blastfile.gz"], [$raw_blastfile]);
 
     $cmd = $BLAST2BED;
-    push @args, ['-infile', $raw_blastfile, 1]; 
-    push @args, ['-outfile1', $query_bed, 1]; 
-    push @args, ['-outfile2', $subject_bed, 1]; 
-    
+    push @args, ['-infile', $raw_blastfile, 1];
+    push @args, ['-outfile1', $query_bed, 1];
+    push @args, ['-outfile2', $subject_bed, 1];
+
     if( $raw_blastfile =~ /genomic/) {
         $workflow->add_job($cmd, undef, \@args, [$raw_blastfile],
                         [$query_bed, $subject_bed, $raw_blastfile,
@@ -1542,7 +1543,7 @@ sub go
     # Converting blast to raw and finding local duplications
     ###########################################################################
     ($cmd, @args) = (undef, ());
-    
+
     my $filtered_blastfile = $raw_blastfile;
     $filtered_blastfile .= ".tdd$dupdist";
     $filtered_blastfile .= ".cs$cscore" if $cscore;
@@ -1552,7 +1553,7 @@ sub go
     # @by Evan Briones
     # @on 2/27/2013
     my $tandem_distance = $dupdist;
-    
+
     # Setup command
     $tandem_distance = 10 unless defined $tandem_distance;
 
@@ -1619,13 +1620,13 @@ sub go
             push @args, ['-s', $subject, 1];
             push @args, ['-b', $filtered_blastfile, 1];
             push @args, ['-c', "", 1];
-            
+
             # if $feat_type1 eq "genomic" && $feat_type2 eq "genomic";
             if ($query_dup_file) {
                 push @args, ['--query_dups', $query_dup_file, 1];
             }
             if ($subject_dup_file) {
-                push @args, ['--subject_dups', $subject_dup_file, 1]; 
+                push @args, ['--subject_dups', $subject_dup_file, 1];
             }
 
             push @args, ['>', $dag_file12_all, 1];
@@ -1662,7 +1663,7 @@ sub go
         # Convert to gene order
         #######################################################################
         ($cmd, @args) = (undef, ());
-    
+
         my $dag_file12_all_geneorder = "$dag_file12_all.go";
     if ( $dagchainer_type eq "geneorder" )
     {
@@ -1723,6 +1724,7 @@ sub go
         #######################################################################
     # Run dagchainer
         #######################################################################
+        ($cmd, @args) = (undef, ());
 
     my $dag_merge = 1 if $merge_algo == 2;    #this is for using dagchainer's merge function;
     CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
@@ -1775,14 +1777,14 @@ sub go
 
     $cmd = $RUN_DAGCHAINER;
 
-        push @args, ["-E", "0.05", 1];
-        push @args, ["-i", $dag_file12, 1];
-        push @args, ["-D", $dagchainer_D, 1] if $dagchainer_D;
-        push @args, ["-g", $gap, 1] if $gap;
-        push @args, ["-A", $dagchainer_A, 1] if $dagchainer_A;
-        push @args, ["--Dm", $Dm, 1] if $Dm;
-        push @args, ["--m", $gm, 1] if $gm;
-        push @args, ["--new_behavior", "", 1] if $self_comparision;
+    push @args, ["-E", "0.05", 1];
+    push @args, ["-i", $dag_file12, 1];
+    push @args, ["-D", $dagchainer_D, 1] if $dagchainer_D;
+    push @args, ["-g", $gap, 1] if $gap;
+    push @args, ["-A", $dagchainer_A, 1] if $dagchainer_A;
+    push @args, ["--Dm", $Dm, 1] if $Dm;
+    push @args, ["--m", $gm, 1] if $gm;
+    push @args, ["--new_behavior", "", 1] if $self_comparision;
 
     ###MERGING OF DIAGONALS FUNCTION
     # --merge $outfile     #this will automatically cause the merging of diagonals to happen.
@@ -1791,18 +1793,18 @@ sub go
     # --Dm  max distance between diagonals
     ##Both of these parameters' default values is 4x -g and -D respectively.
     if ( $Dm && $gm ) {
-            $merged_dagchainer_file = "$dagchainer_file.merged";
-            push @args, ["--merge", $dagchainer_file, 1];
-            $workflow->add_job($cmd, undef, \@args, [$dag_file12],
-            [$dagchainer_file, $merged_dagchainer_file]);
+        $merged_dagchainer_file = "$dagchainer_file.merged";
+        push @args, ["--merge", $dagchainer_file, 1];
+        $workflow->add_job($cmd, undef, \@args, [$dag_file12],
+        [$dagchainer_file, $merged_dagchainer_file]);
     } else {
-            push @args, [">", $dagchainer_file, 1];
-            $workflow->add_job($cmd, undef, \@args, [$dag_file12],
-                               [$dagchainer_file]);
+        push @args, [">", $dagchainer_file, 1];
+        $workflow->add_job($cmd, undef, \@args, [$dag_file12],
+                           [$dagchainer_file]);
     }
 
-        $id = $YERBA->submit_workflow($workflow);
-        $YERBA->wait_for_completion($id);
+    $id = $YERBA->submit_workflow($workflow);
+    $YERBA->wait_for_completion($id);
 
     CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
@@ -1813,50 +1815,216 @@ sub go
     my $t4 = new Benchmark;
     my $run_dagchainer_time = timestr( timediff( $t4, $t3_5 ) );
 
-        #######################################################################
+    #######################################################################
     # Run quota align merge
-        #######################################################################
+    #######################################################################
+    ($cmd, @args) = (undef, ());
 
     my ( $find_nearby_time, $gen_ks_db_time, $dotplot_time, $add_gevo_links_time );
     my $final_results_files;
 
     if ( -r $dagchainer_file || -r $dagchainer_file . ".gz" )
     {
-            if ( $merge_algo == 1 )    #id 1 is to specify quota align as a merge algo
+        #id 1 is to specify quota align as a merge algo
+        if ( $merge_algo == 1 )
+        {
+
+            #$merged_dagchainer_file = run_quota_align_merge( infile => $dagchainer_file, max_dist => $Dm );
+            $workflow = $YERBA->create_workflow('quota_align_merge');
+
+            #ma stands for merge algo
+            $merged_dagchainer_file = $dagchainer_file;
+            $merged_dagchainer_file .= ".Dm" . $Dm . ".ma1";
+
+            #convert to quota-align format
+            $cmd = $CLUSTER_UTILS;
+            push @args, ['--format', 'dag', 1];
+            push @args, ['--log_evalue', $dagchainer_file, 1];
+            push @args, ['', "$dagchainer_file.Dm$Dm.qa", 1];
+
+            $workflow->add_job($cmd, \@args, [$dagchainer_file],
+                               ["$dagchainer_file.Dm$Dm.qa"]);
+
+            $cmd = $QUOTA_ALIGN;
+            @args = ();
+
+            push @args, ['--Dm', $Dm, 1];
+            push @args, ['--merge', "$dagchainer_file.Dm$Dm.qa", 1];
+
+            $workflow->add_job($cmd, \@args, ["$dagchainer_file.Dm$Dm.qa"],
+                               ["$dagchainer_file.Dm$Dm.qa.merged"]);
+
+            $id = $YERBA->submit_workflow($workflow);
+            $YERBA->wait_for_completion($id);
+
+            #FIXME: This should be a script and run as a job
+            if ( -r "$dagchainer_file.Dm$Dm.qa.merged" )
             {
-                    CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
-                    CoGe::Accessory::Web::write_log( "Merging Syntenic Blocks", $cogeweb->logfile );
-                    $merged_dagchainer_file = run_quota_align_merge( infile => $dagchainer_file, max_dist => $Dm );
-                    CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
-                    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+                my %data;
+                $/ = "\n";
+                open( IN, $dagchainer_file );
+                while (<IN>)
+                {
+                    next if /^#/;
+                    my @line = split /\t/;
+                    $data{ join( "_", $line[0], $line[2], $line[4], $line[6] ) } = $_;
+                }
+                close IN;
+                open( OUT, ">", $merged_dagchainer_file);
+                open( IN,  "$dagchainer_file.Dm$Dm.qa.merged" );
+                while (<IN>)
+                {
+                    if (/^#/)
+                    {
+                        print OUT $_;
+                    }
+                    else
+                    {
+                        chomp;
+                        my @line = split /\t/;
+                        print OUT $data{ join( "_", $line[0], $line[1], $line[2], $line[3] ) };
+                    }
+                }
+                close IN;
+                close OUT;
             }
-            my $post_dagchainer_file = -r $merged_dagchainer_file || -r $merged_dagchainer_file . ".gz" ? $merged_dagchainer_file : $dagchainer_file;    #temp file name for the final post-processed data
-            my $post_dagchainer_file_w_nearby = $post_dagchainer_file;
-            $post_dagchainer_file_w_nearby =~ s/aligncoords/all\.aligncoords/;
 
-            #add pairs that were skipped by dagchainer
-            $post_dagchainer_file_w_nearby = $post_dagchainer_file;
+            CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
+            CoGe::Accessory::Web::write_log( "Merging Syntenic Blocks", $cogeweb->logfile );
+            CoGe::Accessory::Web::write_log( "Converting dag output to quota_align format: $cmd", $cogeweb->logfile );
+            CoGe::Accessory::Web::write_log( "Running quota_align to merge diagonals:\n\t$cmd", $cogeweb->logfile );
+            CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
+            CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+        }
+        my $post_dagchainer_file = -r $merged_dagchainer_file || -r $merged_dagchainer_file . ".gz" ? $merged_dagchainer_file : $dagchainer_file;    #temp file name for the final post-processed data
+        my $post_dagchainer_file_w_nearby = $post_dagchainer_file;
+        $post_dagchainer_file_w_nearby =~ s/aligncoords/all\.aligncoords/;
 
-            #   run_find_nearby(infile=>$post_dagchainer_file, dag_all_file=>$all_file, outfile=>$post_dagchainer_file_w_nearby); #program is not working correctly.
+        #add pairs that were skipped by dagchainer
+        $post_dagchainer_file_w_nearby = $post_dagchainer_file;
 
-    my $t5 = new Benchmark;
-    $find_nearby_time = timestr( timediff( $t5, $t4 ) );
+        #   run_find_nearby(infile=>$post_dagchainer_file, dag_all_file=>$all_file, outfile=>$post_dagchainer_file_w_nearby); #program is not working correctly.
+
+        my $t5 = new Benchmark;
+        $find_nearby_time = timestr( timediff( $t5, $t4 ) );
 
         #######################################################################
         # Run quota align coverage
         #######################################################################
-
         my $quota_align_coverage;
         my $grimm_stuff;
+
         if ( $depth_algo == 1 )    #id 1 is to specify quota align
         {
-                CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
-                CoGe::Accessory::Web::write_log( "Running Quota Align", $cogeweb->logfile );
-                $quota_align_coverage = run_quota_align_coverage( infile => $post_dagchainer_file_w_nearby, org1 => $depth_org_1_ratio, org2 => $depth_org_2_ratio, overlap_dist => $depth_overlap );
-                $grimm_stuff = generate_grimm_input( infile => $quota_align_coverage );
-                CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
-                CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+            $workflow = $YERBA->create_workflow('quota_align_merge');
+            CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
+            CoGe::Accessory::Web::write_log( "Running Quota Align", $cogeweb->logfile );
+
+            #$quota_align_coverage = run_quota_align_coverage( infile => $post_dagchainer_file_w_nearby, org1 => $depth_org_1_ratio, org2 => $depth_org_2_ratio, overlap_dist => $depth_overlap );
+
+            $quota_align_coverage  = $post_dagchainer_file_w_nearby;
+            $quota_align_coverage .= ".qac" . $depth_org_1_ratio . ".";
+            $quota_align_coverage .= $depth_org_2_ratio . "." . $depth_overlap; 
+
+            #convert to quota-align format
+            $cmd = $CLUSTER_UTILS;
+            @args = ();
+            push @args, ['--format', 'dag', 1];
+            push @args, ['--log_evalue', $post_dagchainer_file_w_nearby, 1];
+            push @args, ['', "$post_dagchainer_file_w_nearby.qa", 1];
+
+            $workflow->add_job($cmd, \@args, [$post_dagchainer_file_w_nearby],
+                               ["$post_dagchainer_file_w_nearby.qa"]);
+
+            $cmd  = $QUOTA_ALIGN;
+            @args = ();
+            push @args, ['--Nm', $depth_overlap, 1];
+            push @args, ['--quota', "$depth_org_1_ratio:$depth_org_2_ratio", 1];
+            push @args, ['', "$post_dagchainer_file_w_nearby.qa", 1];
+            push @args, ['>', "$quota_align_coverage.tmp", 1];
+            $workflow->add_job($cmd, \@args,
+                               ["$post_dagchainer_file_w_nearby.qa"],
+                               ["$quota_align_coverage.tmp"]);
+
+            $id = $YERBA->submit_workflow($workflow);
+            $YERBA->wait_for_completion($id);
+
+            #FIXME: This should be a script and run as a job
+            if ( -r "$quota_align_coverage.tmp" )
+            {
+                my %data;
+                $/ = "\n";
+                open(IN, $post_dagchainer_file_w_nearby);
+                while (<IN>)
+                {
+                    next if /^#/;
+                    my @line = split /\t/;
+                    $data{ join( "_", $line[0], $line[2], $line[4], $line[6] ) } = $_;
+                }
+                close IN;
+                open( OUT, '>', $quota_align_coverage);
+                open( IN,  "$quota_align_coverage.tmp" );
+                while (<IN>)
+                {
+                    if (/^#/)
+                    {
+                        print OUT $_;
+                    }
+                    else
+                    {
+                        chomp;
+                        my @line = split /\t/;
+                        print OUT $data{ join( "_", $line[0], $line[1], $line[2], $line[3] ) };
+                    }
+                }
+                close IN;
+                close OUT;
+            }
+
+            #$grimm_stuff = generate_grimm_input( infile => $quota_align_coverage );
+
+            $workflow = $YERBA->create_workflow("grimm_input");
+            $cmd = $CLUSTER_UTILS;
+            @args = ();
+            push @args, ['--format', 'dag', 1];
+            push @args, ['--log_evalue', $quota_align_coverage, 1];
+            push @args, ['', "$quota_align_coverage.qa", 1];
+
+            # FIXME: print_grimm does not have output filename specified
+            #$cmd = $CLUSTER_UTILS;
+            #@args = ();
+            #push @args, ['--print_grimm', "$quota_align_coverage.qa", 1];
+            #$workflow->add_job($cmd, \@args, ["$quota_align_coverage.qa"], 
+
+            $id = $YERBA->submit_workflow($id);
+            $YERBA->wait_for_completion($id);
+
+            $cmd = $CLUSTER_UTILS . " --print_grimm $quota_align_coverage.qa";
+            `$cmd`;
+
+            my $output;
+            open( IN, "$cmd |" );
+
+            while (<IN>)
+            {
+                $output .= $_;
+            }
+            close IN;
+            my @seqs;
+            foreach my $item ( split /\n>/, $output )
+            {
+                $item =~ s/>//g;
+                my ( $name, $seq ) = split /\n/, $item, 2;
+                $seq =~ s/\n$//;
+                push @seqs, $seq;
+            }
+
+            $grimm_stuff = \@seqs;
+
+            CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
+            CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
         }
+
         my $final_dagchainer_file = $quota_align_coverage && ( -r $quota_align_coverage || -r $quota_align_coverage . ".gz" ) ? $quota_align_coverage : $post_dagchainer_file_w_nearby;
         #convert to genomic coordinates if gene order was used
         if ( $dagchainer_type eq "geneorder" )
@@ -1878,24 +2046,28 @@ sub go
 
         foreach my $gs ( $dsg1->genomic_sequences )
         {
-                $chr1_count++;
-                $org1_length += $gs->sequence_length;
+            $chr1_count++;
+            $org1_length += $gs->sequence_length;
         }
+
         foreach my $gs ( $dsg2->genomic_sequences )
         {
-                $chr2_count++;
-                $org2_length += $gs->sequence_length;
+            $chr2_count++;
+            $org2_length += $gs->sequence_length;
         }
 
         unless ($width)
         {
-                my $max_chr = $chr1_count;
-                $max_chr = $chr2_count if $chr2_count > $chr1_count;
-                $width   = int( $max_chr * 100 );
-                $width   = 1000 if $width > 1000;
-                $width   = 500 if $width < 500;
+            my $max_chr = $chr1_count;
+            $max_chr = $chr2_count if $chr2_count > $chr1_count;
+            $width   = int( $max_chr * 100 );
+            $width   = 1000 if $width > 1000;
+            $width   = 500 if $width < 500;
         }
 
+        #######################################################################
+        # Create html output directory
+        #######################################################################
         my ($qlead, $slead) = ("a", "b");
         my $out   = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{dir} . "/html/";
         mkpath( $out, 0, 0777 ) unless -d $out;
@@ -1905,12 +2077,9 @@ sub go
         $out .= "_ct$color_type" if defined $color_type;
         $out .= ".w$width";
 
-
         #######################################################################
-        # KS Calculations
+        # KS Calculations (Slow and needs to be optimized)
         #######################################################################
-
-        #deactivation ks calculations due to how slow it is
         my ($ks_db, $ks_blocks_file, $svg_file);
 
         if ($ks_type)
@@ -1930,19 +2099,19 @@ sub go
             CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
             CoGe::Accessory::Web::write_log( "Generate SVG File", $cogeweb->logfile );
 
-        #######################################################################
-          # Generate svg dotplot
-        #######################################################################
+            ####################################################################
+            # Generate svg dotplot
+            ####################################################################
             ($cmd, @args) = (undef, ());
 
             $cmd = $SVG_DOTPLOT;
             $workflow = $YERBA->create_workflow("gen-svg");
-            
+
             push @args, ['--dag_file', $ks_blocks_file, 1];
-            push @args, ['--flip', "", 1] if $flip; 
-            push @args, ['--xhead', '"'. $org_name1 . '"', 1] if $org_name1; 
-            push @args, ['--yhead', '"'. $org_name2 . '"', 1] if $org_name2; 
-            push @args, ['--output', $ks_blocks_file, 1]; 
+            push @args, ['--flip', "", 1] if $flip;
+            push @args, ['--xhead', '"'. $org_name1 . '"', 1] if $org_name1;
+            push @args, ['--yhead', '"'. $org_name2 . '"', 1] if $org_name2;
+            push @args, ['--output', $ks_blocks_file, 1];
 
             $svg_file = $ks_blocks_file . ".svg";
             $workflow->add_job($cmd, undef, \@args, [$ks_blocks_file],
@@ -1960,41 +2129,124 @@ sub go
         $gen_ks_db_time = timestr( timediff( $t6, $t5 ) );
 
         #######################################################################
-          # Generate dot plot
+        # Generate dot plot
         #######################################################################
+        ($cmd, @args) = (undef, ());
+
+        $workflow = $YERBA->create_workflow('dotplot');
 
         CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
         CoGe::Accessory::Web::write_log( "Generating dotplot", $cogeweb->logfile );
-        $out = generate_dotplot(
-            dag          => $dag_file12_all,
-            coords       => $final_dagchainer_file,
-            outfile      => "$out",
-            regen_images => $regen_images,
-            dsgid1       => $dsgid1,
-            dsgid2       => $dsgid2,
-            width        => $width,
-            dagtype      => $dagchainer_type,
-            ks_db        => $ks_db,
-            ks_type      => $ks_type,
-            assemble     => $assemble,
-            metric       => $axis_metric,
-            ,
-            relationship   => $axis_relationship,
-            min_chr_size   => $min_chr_size,
-            color_type     => $color_type,
-            box_diags      => $box_diags,
-            fid1           => $fid1,
-            fid2           => $fid2,
-            snsd           => $snsd,
-            flip           => $flip,
-            clabel         => $clabel,
-            skip_rand      => $skip_rand,
-            color_scheme   => $color_scheme,
-            chr_sort_order => $chr_sort_order,
-            codeml_min     => $codeml_min,
-            codeml_max     => $codeml_max,
-            log            => $logks
-        );
+
+        my ($basename) = $final_dagchainer_file =~ /([^\/]*aligncoords.*)/;    #.all.aligncoords/;
+        my $regen_images = $regen_images =~ /true/i ? 1 : 0;
+        my $width          = $opts{width} || 1000;
+
+        #add ks_db to dotplot command if requested
+        my $dotfile = "$out";
+        $dotfile .= ".spa$assemble"     if $assemble;
+        $dotfile .= ".gene"             if $axis_metric =~ /gene/i;
+        $dotfile .= ".s"                if $axis_relationship =~ /s/i;
+        $dotfile .= ".mcs$min_chr_size" if $min_chr_size;
+        $dotfile .= ".$fid1"            if $fid1;
+        $dotfile .= ".$fid2"            if $fid2;
+        if ( $ks_db && -r $ks_db )
+        {
+            push @args, ['-ksdb', $ks_db, 1];
+            push @args, ['-kst', $ks_type, 1];
+            push @args, ['-log', $logks, 1];
+            $dotfile .= ".$ks_type";
+        }
+        $dotfile .= ".box"                if $box_diags;
+        $dotfile .= ".flip"               if $flip;
+        $dotfile .= ".c0"                 if $clabel eq 0;
+        $dotfile .= ".sr"                 if $skip_rand;
+        $dotfile .= ".cs$color_scheme"    if defined $color_scheme;
+        $dotfile .= ".cso$chr_sort_order" if defined $chr_sort_order;
+        $dotfile .= ".min$codeml_min"     if defined $codeml_min;
+        $dotfile .= ".max$codeml_max"     if defined $codeml_max;
+        $dotfile .= ".log"                if $logks;
+
+        #are non-syntenic dots being displayed
+        if ($snsd)
+        {
+            push @args, ['-d', $dag_file12_all, 1];
+        }
+        else
+        {
+            $dotfile .= ".nsd";    #no syntenic dots, yes, nomicalture is confusing.
+        }
+
+        $cmd = $DOTPLOT;
+        push @args, ['-a', $final_dagchainer_file, 1];
+        push @args, ['-b', $dotfile, 1];
+
+        my $jsoption = "'javascript:synteny_zoom(\"$dsgid1\", \"$dsgid2\",";
+        $jsoption .= "\"$basename\",";
+        $jsoption .= $flip ? qq{"YCHR","XCHR"} : qq{"XCHR","YCHR"};
+        $jsoption .= qq{,"$ks_db"} if $ks_db;
+        $jsoption .= qq{)'};
+
+        push @args, ['-l', $jsoption, 1];
+        push @args, ['-dsg1', $dsgid1, 1];
+        push @args, ['-dsg2', $dsgid2, 1];
+        push @args, ['-w', $width, 1];
+        push @args, ['-lt', 2, 1];
+        push @args, ['-assemble', $assemble, 1] if $assemble;
+        push @args, ['-am', $axis_metric,1 ] if $axis_metric;
+        push @args, ['-fb', '', 1] if $axis_relationship && $axis_relationship =~ /s/;
+        push @args, ['-mcs', $min_chr_size, 1] if $min_chr_size;
+        push @args, ['-cdt', $color_type] if $color_type;
+        push @args, ['-bd', 1, 1] if $box_diags;
+        push @args, ['-fid1', $fid1, 1] if $fid1;
+        push @args, ['-fid2', $fid2, 1] if $fid2;
+        push @args, ['-f', 1, 1] if $flip;
+        push @args, ['-labels', 0, 1] if $clabel eq 0;
+        push @args, ['-sr', 1, 1] if $skip_rand;
+        push @args, ['-color_scheme', $color_scheme, 1] if defined $color_scheme;
+        push @args, ['-chr_sort_order', $chr_sort_order, 1] if defined $chr_sort_order;
+        push @args  ['-min', $codeml_min, 1] if defined $codeml_min;
+        push @args, ['-max', $codeml_max, 1] if defined $codeml_max;
+
+
+        $workflow->add_job($cmd, \@args, [$final_dagchainer_file], [$dotfile]);
+
+        $id = $YERBA->submit_workflow($workflow);
+        $YERBA->wait_for_completion($id);
+        $out = $dotfile;
+
+#        $out = generate_dotplot(
+#            dag          => $dag_file12_all,
+#            coords       => $final_dagchainer_file,
+#            outfile      => "$out",
+#            regen_images => $regen_images,
+#            dsgid1       => $dsgid1,
+#            dsgid2       => $dsgid2,
+#            width        => $width,
+#            dagtype      => $dagchainer_type,
+#            ks_db        => $ks_db,
+#            ks_type      => $ks_type,
+#            assemble     => $assemble,
+#            metric       => $axis_metric,
+#            ,
+#            relationship   => $axis_relationship,
+#            min_chr_size   => $min_chr_size,
+#            color_type     => $color_type,
+#            box_diags      => $box_diags,
+#            fid1           => $fid1,
+#            fid2           => $fid2,
+#            snsd           => $snsd,
+#            flip           => $flip,
+#            clabel         => $clabel,
+#            skip_rand      => $skip_rand,
+#            color_scheme   => $color_scheme,
+#            chr_sort_order => $chr_sort_order,
+#            codeml_min     => $codeml_min,
+#            codeml_max     => $codeml_max,
+#            log            => $logks
+#        );
+
+        CoGe::Accessory::Web::write_log( "generate dotplot: running\n\t$cmd", $cogeweb->logfile );
         CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
         CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
@@ -2112,7 +2364,7 @@ sub go
 
 
         #######################################################################
-    # Compress Results 
+        # Compress Results
         #######################################################################
 
         my $file_list = [ \$raw_blastfile, \$filtered_blastfile, \$query_bed,
@@ -2129,7 +2381,7 @@ sub go
         {
         #$$item = CoGe::Accessory::Web::gzip($$item);
         }
-        
+
         $raw_blastfile =~ s/$DIR/$URL/;
         $filtered_blastfile =~ s/$DIR/$URL/;
         $org1_localdups =~ s/$DIR/$URL/;
@@ -2927,175 +3179,184 @@ sub replace_gene_order_with_genomic_positions
     system "/bin/rm $outfile.running" if -r "$outfile.running";
 }
 
-sub run_quota_align_merge
-{
-    my %opts       = @_;
-    my $infile     = $opts{infile};
-    my $max_dist   = $opts{max_dist};
-    my $returnfile = $infile . ".Dm" . $max_dist . ".ma1";    #ma stands for merge algo
-    return $returnfile if -r $returnfile || -f $returnfile . ".gz";
+# TODO: This feature is in process of removal kept here as reference.
+# @by Evan Briones
+# @on 3/21/2013
+#sub run_quota_align_merge
+#{
+#    my %opts       = @_;
+#    my $infile     = $opts{infile};
+#    my $max_dist   = $opts{max_dist};
+#    my $returnfile = $infile . ".Dm" . $max_dist . ".ma1";    #ma stands for merge algo
+#    return $returnfile if -r $returnfile || -f $returnfile . ".gz";
+#
+#    #convert to quota-align format
+#    CoGe::Accessory::Web::gunzip( $infile . ".gz" ) if -r $infile . ".gz";
+#    my $cmd = $CLUSTER_UTILS . " --format=dag --log_evalue $infile $infile.Dm$max_dist.qa";
+#    `$cmd`;
+#    CoGe::Accessory::Web::write_log( "Converting dag output to quota_align format: $cmd", $cogeweb->logfile );
+#    $cmd = $QUOTA_ALIGN . " --Dm=$max_dist --merge $infile.Dm$max_dist.qa";
+#    CoGe::Accessory::Web::write_log( "Running quota_align to merge diagonals:\n\t$cmd", $cogeweb->logfile );
+#    CoGe::Accessory::Web::gunzip("$infile.Dm$max_dist.qa.gz") if -r "$infile.Dm$max_dist.qa.gz";
+#    `$cmd`;
+#    CoGe::Accessory::Web::gunzip("$infile.Dm$max_dist.qa.merged.gz") if -r "$infile.Dm$max_dist.qa.merged.gz";
+#
+#    if ( -r "$infile.Dm$max_dist.qa.merged" )
+#    {
+#        my %data;
+#        $/ = "\n";
+#        open( IN, $infile );
+#        while (<IN>)
+#        {
+#            next if /^#/;
+#            my @line = split /\t/;
+#            $data{ join( "_", $line[0], $line[2], $line[4], $line[6] ) } = $_;
+#        }
+#        close IN;
+#        open( OUT, ">$returnfile" );
+#        open( IN,  "$infile.Dm$max_dist.qa.merged" );
+#        while (<IN>)
+#        {
+#            if (/^#/)
+#            {
+#                print OUT $_;
+#            }
+#            else
+#            {
+#                chomp;
+#                my @line = split /\t/;
+#                print OUT $data{ join( "_", $line[0], $line[1], $line[2], $line[3] ) };
+#            }
+#        }
+#        close IN;
+#        close OUT;
+#    }
+#    return "$returnfile";
+#}
 
-    #convert to quota-align format
-    CoGe::Accessory::Web::gunzip( $infile . ".gz" ) if -r $infile . ".gz";
-    my $cmd = $CLUSTER_UTILS . " --format=dag --log_evalue $infile $infile.Dm$max_dist.qa";
-    `$cmd`;
-    CoGe::Accessory::Web::write_log( "Converting dag output to quota_align format: $cmd", $cogeweb->logfile );
-    $cmd = $QUOTA_ALIGN . " --Dm=$max_dist --merge $infile.Dm$max_dist.qa";
-    CoGe::Accessory::Web::write_log( "Running quota_align to merge diagonals:\n\t$cmd", $cogeweb->logfile );
-    CoGe::Accessory::Web::gunzip("$infile.Dm$max_dist.qa.gz") if -r "$infile.Dm$max_dist.qa.gz";
-    `$cmd`;
-    CoGe::Accessory::Web::gunzip("$infile.Dm$max_dist.qa.merged.gz") if -r "$infile.Dm$max_dist.qa.merged.gz";
+# TODO: This feature is in process of removal kept here as reference.
+# @by Evan Briones
+# @on 3/21/2013
+#sub run_quota_align_coverage
+#{
+#    my %opts         = @_;
+#    my $infile       = $opts{infile};
+#    my $org1         = $opts{org1};                                                     #ratio of org1
+#    my $org2         = $opts{org2};                                                     #ratio of org2
+#    my $overlap_dist = $opts{overlap_dist};
+#    my $returnfile   = $infile . ".qac" . $org1 . "." . $org2 . "." . $overlap_dist;    #ma stands for merge algo
+#    return $returnfile if -r $returnfile || -r $returnfile . ".gz";
+#    CoGe::Accessory::Web::gunzip( $infile . ".gz" )    if -r $infile . ".gz";
+#    CoGe::Accessory::Web::gunzip( $infile . ".qa.gz" ) if -r $infile . ".qa.gz";
+#
+#    #convert to quota-align format
+#    my $cov_cmd = $CLUSTER_UTILS . " --format=dag --log_evalue $infile $infile.qa";
+#    my $qa_cmd  = $QUOTA_ALIGN . " --Nm=$overlap_dist --quota=$org1:$org2 $infile.qa > $returnfile.tmp";
+#
+#    CoGe::Accessory::Web::write_log( "Convert command: $cov_cmd",    $cogeweb->logfile );
+#    CoGe::Accessory::Web::write_log( "Quota Align command: $qa_cmd", $cogeweb->logfile );
+#    while ( -e "$infile.qa.running" )
+#    {
+#        print STDERR "detecting $infile.qa.running.  Waiting. . .\n";
+#        sleep 60;
+#    }
+#    if ( -r "$infile.qa" )
+#    {
+#        CoGe::Accessory::Web::write_log( "Dag output file already converted to quota_align input: $infile.qa", $cogeweb->logfile );
+#    }
+#    else
+#    {
+#        system "/usr/bin/touch $infile.qa.running";    #track that this is running
+#        CoGe::Accessory::Web::write_log( "Converting dag output to quota_align format.", $cogeweb->logfile );
+#        `$cov_cmd`;
+#        system "/bin/rm $infile.qa.running" if -r "$infile.qa.running";    #remove track file
+#    }
+#    while ( -e "$returnfile.running" )
+#    {
+#        print STDERR "detecting $returnfile.running.  Waiting. . .\n";
+#        sleep 60;
+#    }
+#
+#    if ( -r "$returnfile.tmp" || -r "$returnfile.tmp.gz" )
+#    {
+#        CoGe::Accessory::Web::write_log("Quota_align syntenic coverage parameters already run: $returnfile.tmp");
+#        CoGe::Accessory::Web::gunzip("$returnfile.tmp.gz") if -r "$returnfile.tmp.gz";
+#
+#    }
+#    else
+#    {
+#        system "/usr/bin/touch $returnfile.running";    #track that this is running
+#        CoGe::Accessory::Web::write_log( "Running quota_align to find syntenic coverage.", $cogeweb->logfile );
+#        my $qa_output = `$qa_cmd`;
+#        system "/bin/rm $returnfile.running" if -r "$returnfile.running";    #remove track file
+#    }
+#    if ( -r "$returnfile.tmp" )
+#    {
+#        my %data;
+#        $/ = "\n";
+#        open( IN, $infile );
+#        while (<IN>)
+#        {
+#            next if /^#/;
+#            my @line = split /\t/;
+#            $data{ join( "_", $line[0], $line[2], $line[4], $line[6] ) } = $_;
+#        }
+#        close IN;
+#        open( OUT, ">$returnfile" );
+#        open( IN,  "$returnfile.tmp" );
+#        while (<IN>)
+#        {
+#            if (/^#/)
+#            {
+#                print OUT $_;
+#            }
+#            else
+#            {
+#                chomp;
+#                my @line = split /\t/;
+#                print OUT $data{ join( "_", $line[0], $line[1], $line[2], $line[3] ) };
+#            }
+#        }
+#        close IN;
+#        close OUT;
+#    }
+#    return "$returnfile";
+#}
 
-    if ( -r "$infile.Dm$max_dist.qa.merged" )
-    {
-        my %data;
-        $/ = "\n";
-        open( IN, $infile );
-        while (<IN>)
-        {
-            next if /^#/;
-            my @line = split /\t/;
-            $data{ join( "_", $line[0], $line[2], $line[4], $line[6] ) } = $_;
-        }
-        close IN;
-        open( OUT, ">$returnfile" );
-        open( IN,  "$infile.Dm$max_dist.qa.merged" );
-        while (<IN>)
-        {
-            if (/^#/)
-            {
-                print OUT $_;
-            }
-            else
-            {
-                chomp;
-                my @line = split /\t/;
-                print OUT $data{ join( "_", $line[0], $line[1], $line[2], $line[3] ) };
-            }
-        }
-        close IN;
-        close OUT;
-    }
-    return "$returnfile";
-}
-
-sub run_quota_align_coverage
-{
-    my %opts         = @_;
-    my $infile       = $opts{infile};
-    my $org1         = $opts{org1};                                                     #ratio of org1
-    my $org2         = $opts{org2};                                                     #ratio of org2
-    my $overlap_dist = $opts{overlap_dist};
-    my $returnfile   = $infile . ".qac" . $org1 . "." . $org2 . "." . $overlap_dist;    #ma stands for merge algo
-    return $returnfile if -r $returnfile || -r $returnfile . ".gz";
-    CoGe::Accessory::Web::gunzip( $infile . ".gz" )    if -r $infile . ".gz";
-    CoGe::Accessory::Web::gunzip( $infile . ".qa.gz" ) if -r $infile . ".qa.gz";
-
-    #convert to quota-align format
-    my $cov_cmd = $CLUSTER_UTILS . " --format=dag --log_evalue $infile $infile.qa";
-    my $qa_cmd  = $QUOTA_ALIGN . " --Nm=$overlap_dist --quota=$org1:$org2 $infile.qa > $returnfile.tmp";
-
-    CoGe::Accessory::Web::write_log( "Convert command: $cov_cmd",    $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "Quota Align command: $qa_cmd", $cogeweb->logfile );
-    while ( -e "$infile.qa.running" )
-    {
-        print STDERR "detecting $infile.qa.running.  Waiting. . .\n";
-        sleep 60;
-    }
-    if ( -r "$infile.qa" )
-    {
-        CoGe::Accessory::Web::write_log( "Dag output file already converted to quota_align input: $infile.qa", $cogeweb->logfile );
-    }
-    else
-    {
-        system "/usr/bin/touch $infile.qa.running";    #track that this is running
-        CoGe::Accessory::Web::write_log( "Converting dag output to quota_align format.", $cogeweb->logfile );
-        `$cov_cmd`;
-        system "/bin/rm $infile.qa.running" if -r "$infile.qa.running";    #remove track file
-    }
-    while ( -e "$returnfile.running" )
-    {
-        print STDERR "detecting $returnfile.running.  Waiting. . .\n";
-        sleep 60;
-    }
-
-    if ( -r "$returnfile.tmp" || -r "$returnfile.tmp.gz" )
-    {
-        CoGe::Accessory::Web::write_log("Quota_align syntenic coverage parameters already run: $returnfile.tmp");
-        CoGe::Accessory::Web::gunzip("$returnfile.tmp.gz") if -r "$returnfile.tmp.gz";
-
-    }
-    else
-    {
-        system "/usr/bin/touch $returnfile.running";    #track that this is running
-        CoGe::Accessory::Web::write_log( "Running quota_align to find syntenic coverage.", $cogeweb->logfile );
-        my $qa_output = `$qa_cmd`;
-        system "/bin/rm $returnfile.running" if -r "$returnfile.running";    #remove track file
-    }
-    if ( -r "$returnfile.tmp" )
-    {
-        my %data;
-        $/ = "\n";
-        open( IN, $infile );
-        while (<IN>)
-        {
-            next if /^#/;
-            my @line = split /\t/;
-            $data{ join( "_", $line[0], $line[2], $line[4], $line[6] ) } = $_;
-        }
-        close IN;
-        open( OUT, ">$returnfile" );
-        open( IN,  "$returnfile.tmp" );
-        while (<IN>)
-        {
-            if (/^#/)
-            {
-                print OUT $_;
-            }
-            else
-            {
-                chomp;
-                my @line = split /\t/;
-                print OUT $data{ join( "_", $line[0], $line[1], $line[2], $line[3] ) };
-            }
-        }
-        close IN;
-        close OUT;
-    }
-    return "$returnfile";
-}
-
-sub generate_grimm_input
-{
-    my %opts   = @_;
-    my $infile = $opts{infile};
-    CoGe::Accessory::Web::gunzip( $infile . ".gz" )    if -r $infile . ".gz";
-    CoGe::Accessory::Web::gunzip( $infile . ".qa.gz" ) if -r $infile . ".qa.gz";
-    my $cmd = $CLUSTER_UTILS . " --format=dag --log_evalue $infile $infile.qa";
-    CoGe::Accessory::Web::write_log( "\nGenerating input data for GRIMM",                 $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "Converting dag output to quota_align format: $cmd", $cogeweb->logfile );
-    `$cmd`;
-    $cmd = $CLUSTER_UTILS . " --print_grimm $infile.qa";
-    CoGe::Accessory::Web::write_log( "running  cluster_utils to generating grimm input:\n\t$cmd", $cogeweb->logfile );
-    my $output;
-    open( IN, "$cmd |" );
-
-    while (<IN>)
-    {
-        $output .= $_;
-    }
-    close IN;
-    my @seqs;
-    foreach my $item ( split /\n>/, $output )
-    {
-        $item =~ s/>//g;
-        my ( $name, $seq ) = split /\n/, $item, 2;
-        $seq =~ s/\n$//;
-        push @seqs, $seq;
-    }
-
-    return \@seqs;
-}
+# TODO: This feature is in process of removal kept here as reference.
+# @by Evan Briones
+# @on 3/21/2013
+#sub generate_grimm_input
+#{
+#    my %opts   = @_;
+#    my $infile = $opts{infile};
+#    CoGe::Accessory::Web::gunzip( $infile . ".gz" )    if -r $infile . ".gz";
+#    CoGe::Accessory::Web::gunzip( $infile . ".qa.gz" ) if -r $infile . ".qa.gz";
+#    my $cmd = $CLUSTER_UTILS . " --format=dag --log_evalue $infile $infile.qa";
+#    CoGe::Accessory::Web::write_log( "\nGenerating input data for GRIMM",                 $cogeweb->logfile );
+#    CoGe::Accessory::Web::write_log( "Converting dag output to quota_align format: $cmd", $cogeweb->logfile );
+#    `$cmd`;
+#    $cmd = $CLUSTER_UTILS . " --print_grimm $infile.qa";
+#    CoGe::Accessory::Web::write_log( "running  cluster_utils to generating grimm input:\n\t$cmd", $cogeweb->logfile );
+#    my $output;
+#    open( IN, "$cmd |" );
+#
+#    while (<IN>)
+#    {
+#        $output .= $_;
+#    }
+#    close IN;
+#    my @seqs;
+#    foreach my $item ( split /\n>/, $output )
+#    {
+#        $item =~ s/>//g;
+#        my ( $name, $seq ) = split /\n/, $item, 2;
+#        $seq =~ s/\n$//;
+#        push @seqs, $seq;
+#    }
+#
+#    return \@seqs;
+#}
 
 sub run_find_nearby
 {
@@ -3656,116 +3917,118 @@ sub add_reverse_match
 
 }
 
-
-sub generate_dotplot
-{
-    my %opts    = @_;
-    my $dag     = $opts{dag};
-    my $coords  = $opts{coords};
-    my $outfile = $opts{outfile};
-    my $dsgid1  = $opts{dsgid1};
-    my $dsgid2  = $opts{dsgid2};
-    my $dagtype = $opts{dagtype};
-    my $ks_db   = $opts{ks_db};
-    my $ks_type = $opts{ks_type};
-    my ($basename) = $coords =~ /([^\/]*aligncoords.*)/;    #.all.aligncoords/;
-    my $regen_images = $opts{regen_images} =~ /true/i ? 1 : 0;
-    my $width          = $opts{width} || 1000;
-    my $assemble       = $opts{assemble};
-    my $metric         = $opts{metric};
-    my $relationship   = $opts{relationship};
-    my $min_chr_size   = $opts{min_chr_size};
-    my $color_type     = $opts{color_type};
-    my $just_check     = $opts{just_check};                 #option to just check if the outfile already exists
-    my $box_diags      = $opts{box_diags};
-    my $fid1           = $opts{fid1};                       #fids for highlighting gene pair in dotplot
-    my $fid2           = $opts{fid2};
-    my $snsd           = $opts{snsd};                       #option for showing non syntenic (grey) dots in dotplot
-    my $flip           = $opts{flip};                       #flip axis
-    my $clabel         = $opts{clabel};                     #label chromosomes
-    my $skip_rand      = $opts{skip_rand};
-    my $color_scheme   = $opts{color_scheme};               #color_scheme for dotplot
-    my $chr_sort_order = $opts{chr_sort_order};             #sort order of chromosomes in dotplot
-    my $codeml_min     = $opts{codeml_min};
-    my $codeml_max     = $opts{codeml_max};
-    my $log            = $opts{log};
-    my $cmd            = $DOTPLOT;
-
-    #add ks_db to dotplot command if requested
-    $outfile .= ".spa$assemble"     if $assemble;
-    $outfile .= ".gene"             if $metric =~ /gene/i;
-    $outfile .= ".s"                if $relationship =~ /s/i;
-    $outfile .= ".mcs$min_chr_size" if $min_chr_size;
-    $outfile .= ".$fid1"            if $fid1;
-    $outfile .= ".$fid2"            if $fid2;
-    if ( $ks_db && -r $ks_db )
-    {
-        $cmd     .= qq{ -ksdb $ks_db -kst $ks_type -log $log};
-        $outfile .= ".$ks_type";
-    }
-    $outfile .= ".box"                if $box_diags;
-    $outfile .= ".flip"               if $flip;
-    $outfile .= ".c0"                 if $clabel eq 0;
-    $outfile .= ".sr"                 if $skip_rand;
-    $outfile .= ".cs$color_scheme"    if defined $color_scheme;
-    $outfile .= ".cso$chr_sort_order" if defined $chr_sort_order;
-    $outfile .= ".min$codeml_min"     if defined $codeml_min;
-    $outfile .= ".max$codeml_max"     if defined $codeml_max;
-    $outfile .= ".log"                if $log;
-
-    #are non-syntenic dots being displayed
-    if ($snsd)
-    {
-        $cmd .= qq{ -d $dag};
-    }
-    else
-    {
-        $outfile .= ".nsd";    #no syntenic dots, yes, nomicalture is confusing.
-    }
-
-    return $outfile if $just_check && -r "$outfile.html";
-
-    CoGe::Accessory::Web::gunzip( $coords . ".gz" ) if -r "$coords.gz";
-    CoGe::Accessory::Web::gunzip( $dag . ".gz" )    if -r "$dag.gz";
-    $cmd .= qq{ -a $coords};
-    $cmd .= qq{ -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename",};
-    $cmd .= $flip ? qq{"YCHR","XCHR"} : qq{"XCHR","YCHR"};
-    $cmd .= qq{,"$ks_db"} if $ks_db;
-    $cmd .= qq{)' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 2};
-    $cmd .= qq{ -assemble $assemble} if $assemble;
-    $cmd .= qq{ -am $metric} if $metric;
-    $cmd .= qq{ -fb} if $relationship && $relationship =~ /s/;
-    $cmd .= qq{ -mcs $min_chr_size}              if $min_chr_size;
-    $cmd .= qq{ -cdt $color_type}                if $color_type;
-    $cmd .= qq{ -bd 1}                           if $box_diags;
-    $cmd .= qq{ -fid1 $fid1}                     if $fid1;
-    $cmd .= qq{ -fid2 $fid2}                     if $fid2;
-    $cmd .= qq{ -f 1}                            if $flip;
-    $cmd .= qq{ -labels 0}                       if $clabel eq 0;
-    $cmd .= qq{ -sr 1}                           if $skip_rand;
-    $cmd .= qq{ -color_scheme $color_scheme}     if defined $color_scheme;
-    $cmd .= qq{ -chr_sort_order $chr_sort_order} if defined $chr_sort_order;
-    $cmd .= qq{ -min $codeml_min}                if defined $codeml_min;
-    $cmd .= qq{ -max $codeml_max}                if defined $codeml_max;
-
-    #    $cmd .= qq{ -cf }.$ENV{HOME}. 'coge.conf'; #config file for getting defaults for coge server installation
-    while ( -e "$outfile.running" )
-    {
-            print STDERR "detecting $outfile.running.  Waiting. . .\n";
-            sleep 60;
-    }
-    if ( -r "$outfile.png" && !$regen_images )
-    {
-            CoGe::Accessory::Web::write_log( "generate dotplot: file $outfile already exists", $cogeweb->logfile );
-            return $outfile;
-    }
-    system "/usr/bin/touch $outfile.running";    #track that a blast anlaysis is running for this
-    CoGe::Accessory::Web::write_log( "generate dotplot: running\n\t$cmd", $cogeweb->logfile );
-    system "/bin/rm $outfile.running" if -r "$outfile.running";
-    ;                                            #remove track file
-    `$cmd`;
-    return ($outfile) if -r "$outfile.html";
-}
+# TODO: This feature is in process of removal kept here as reference.
+# @by Evan Briones
+# @on 3/21/2013
+#sub generate_dotplot
+#{
+#    my %opts    = @_;
+#    my $dag     = $opts{dag};
+#    my $coords  = $opts{coords};
+#    my $outfile = $opts{outfile};
+#    my $dsgid1  = $opts{dsgid1};
+#    my $dsgid2  = $opts{dsgid2};
+#    my $dagtype = $opts{dagtype};
+#    my $ks_db   = $opts{ks_db};
+#    my $ks_type = $opts{ks_type};
+#    my ($basename) = $coords =~ /([^\/]*aligncoords.*)/;    #.all.aligncoords/;
+#    my $regen_images = $opts{regen_images} =~ /true/i ? 1 : 0;
+#    my $width          = $opts{width} || 1000;
+#    my $assemble       = $opts{assemble};
+#    my $metric         = $opts{metric};
+#    my $relationship   = $opts{relationship};
+#    my $min_chr_size   = $opts{min_chr_size};
+#    my $color_type     = $opts{color_type};
+#    my $just_check     = $opts{just_check};                 #option to just check if the outfile already exists
+#    my $box_diags      = $opts{box_diags};
+#    my $fid1           = $opts{fid1};                       #fids for highlighting gene pair in dotplot
+#    my $fid2           = $opts{fid2};
+#    my $snsd           = $opts{snsd};                       #option for showing non syntenic (grey) dots in dotplot
+#    my $flip           = $opts{flip};                       #flip axis
+#    my $clabel         = $opts{clabel};                     #label chromosomes
+#    my $skip_rand      = $opts{skip_rand};
+#    my $color_scheme   = $opts{color_scheme};               #color_scheme for dotplot
+#    my $chr_sort_order = $opts{chr_sort_order};             #sort order of chromosomes in dotplot
+#    my $codeml_min     = $opts{codeml_min};
+#    my $codeml_max     = $opts{codeml_max};
+#    my $log            = $opts{log};
+#    my $cmd            = $DOTPLOT;
+#
+#    #add ks_db to dotplot command if requested
+#    $outfile .= ".spa$assemble"     if $assemble;
+#    $outfile .= ".gene"             if $metric =~ /gene/i;
+#    $outfile .= ".s"                if $relationship =~ /s/i;
+#    $outfile .= ".mcs$min_chr_size" if $min_chr_size;
+#    $outfile .= ".$fid1"            if $fid1;
+#    $outfile .= ".$fid2"            if $fid2;
+#    if ( $ks_db && -r $ks_db )
+#    {
+#        $cmd     .= qq{ -ksdb $ks_db -kst $ks_type -log $log};
+#        $outfile .= ".$ks_type";
+#    }
+#    $outfile .= ".box"                if $box_diags;
+#    $outfile .= ".flip"               if $flip;
+#    $outfile .= ".c0"                 if $clabel eq 0;
+#    $outfile .= ".sr"                 if $skip_rand;
+#    $outfile .= ".cs$color_scheme"    if defined $color_scheme;
+#    $outfile .= ".cso$chr_sort_order" if defined $chr_sort_order;
+#    $outfile .= ".min$codeml_min"     if defined $codeml_min;
+#    $outfile .= ".max$codeml_max"     if defined $codeml_max;
+#    $outfile .= ".log"                if $log;
+#
+#    #are non-syntenic dots being displayed
+#    if ($snsd)
+#    {
+#        $cmd .= qq{ -d $dag};
+#    }
+#    else
+#    {
+#        $outfile .= ".nsd";    #no syntenic dots, yes, nomicalture is confusing.
+#    }
+#
+#    return $outfile if $just_check && -r "$outfile.html";
+#
+#    CoGe::Accessory::Web::gunzip( $coords . ".gz" ) if -r "$coords.gz";
+#    CoGe::Accessory::Web::gunzip( $dag . ".gz" )    if -r "$dag.gz";
+#    $cmd .= qq{ -a $coords};
+#    $cmd .= qq{ -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename",};
+#    $cmd .= $flip ? qq{"YCHR","XCHR"} : qq{"XCHR","YCHR"};
+#    $cmd .= qq{,"$ks_db"} if $ks_db;
+#    $cmd .= qq{)' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 2};
+#    $cmd .= qq{ -assemble $assemble} if $assemble;
+#    $cmd .= qq{ -am $metric} if $metric;
+#    $cmd .= qq{ -fb} if $relationship && $relationship =~ /s/;
+#    $cmd .= qq{ -mcs $min_chr_size}              if $min_chr_size;
+#    $cmd .= qq{ -cdt $color_type}                if $color_type;
+#    $cmd .= qq{ -bd 1}                           if $box_diags;
+#    $cmd .= qq{ -fid1 $fid1}                     if $fid1;
+#    $cmd .= qq{ -fid2 $fid2}                     if $fid2;
+#    $cmd .= qq{ -f 1}                            if $flip;
+#    $cmd .= qq{ -labels 0}                       if $clabel eq 0;
+#    $cmd .= qq{ -sr 1}                           if $skip_rand;
+#    $cmd .= qq{ -color_scheme $color_scheme}     if defined $color_scheme;
+#    $cmd .= qq{ -chr_sort_order $chr_sort_order} if defined $chr_sort_order;
+#    $cmd .= qq{ -min $codeml_min}                if defined $codeml_min;
+#    $cmd .= qq{ -max $codeml_max}                if defined $codeml_max;
+#
+#    #    $cmd .= qq{ -cf }.$ENV{HOME}. 'coge.conf'; #config file for getting defaults for coge server installation
+#    while ( -e "$outfile.running" )
+#    {
+#            print STDERR "detecting $outfile.running.  Waiting. . .\n";
+#            sleep 60;
+#    }
+#    if ( -r "$outfile.png" && !$regen_images )
+#    {
+#            CoGe::Accessory::Web::write_log( "generate dotplot: file $outfile already exists", $cogeweb->logfile );
+#            return $outfile;
+#    }
+#    system "/usr/bin/touch $outfile.running";    #track that a blast anlaysis is running for this
+#    CoGe::Accessory::Web::write_log( "generate dotplot: running\n\t$cmd", $cogeweb->logfile );
+#    system "/bin/rm $outfile.running" if -r "$outfile.running";
+#    ;                                            #remove track file
+#    `$cmd`;
+#    return ($outfile) if -r "$outfile.html";
+#}
 
 sub check_address_validity
 {
@@ -3773,114 +4036,5 @@ sub check_address_validity
     return 'valid' unless $address;
     my $validity = $address =~ /^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.(([0-9]{1,3})|([a-zA-Z]{2,3})|(aero|coop|info|museum|name))$/ ? 'valid' : 'invalid';
     return $validity;
-}
-
-sub email_results
-{
-    my %opts          = @_;
-    my $email_address = $opts{email};
-
-    #   my $html = $opts{html};
-    my $org_name1 = $opts{org1};
-    my $org_name2 = $opts{org2};
-    my $job_title = $opts{jobtitle};
-    my $link      = $opts{link};
-    my $file      = $cogeweb->basefile . "_results.data";
-
-    #    open(NEW,"> $file") || die "Cannot Save $!\n";
-    #    print NEW $html;
-    #    close NEW;
-
-    my $subject = "CoGe's SynMap Results are ready";
-    $subject .= ": $job_title" if $job_title;
-
-    #    ($file) = $file =~/SynMap\/(.+\.data)/;
-
-    my $server = $P . $ENV{SCRIPT_NAME};
-
-    my $url = "http://" . $server . "?file=" . $file;
-
-    my $mailer = Mail::Mailer->new("sendmail");
-    $mailer->open(
-                                 {
-                                     From    => 'CoGe <coge_results@genomevolution.org>',
-                                     To      => $email_address,
-                                     Subject => $subject,
-                                 }
-        )
-        or die "Can't open: $!\n";
-    my $username = $USER->user_name;
-    $username = $USER->first_name if $USER->first_name;
-    $username .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    my $body = qq{Dear $username,
-
-Thank you for using SynMap! The results from your latest analysis between $org_name1 and $org_name2 are ready.  To view your results, follow this link and press "Generate SynMap":
-
-$link
-
-Thank you for using the CoGe Software Package.
-
-- The CoGe Team
-};
-
-    print $mailer $body;
-    $mailer->close();
-}
-
-sub get_dotplot
-{
-    my %opts         = @_;
-    my $url          = $opts{url};
-    my $loc          = $opts{loc};
-    my $flip         = $opts{flip} eq "true" ? 1 : 0;
-    my $regen        = $opts{regen_images} eq "true" ? 1 : 0;
-    my $width        = $opts{width};
-    my $ksdb         = $opts{ksdb};
-    my $kstype       = $opts{kstype};
-    my $metric       = $opts{am};                               #axis metrix
-    my $relationship = $opts{ar};                               #axis relationship
-    my $max          = $opts{max};
-    my $min          = $opts{min};
-    my $color_type   = $opts{ct};
-    my $box_diags    = $opts{bd};
-    my $color_scheme = $opts{color_scheme};
-    $box_diags = $box_diags eq "true" ? 1 : 0;
-
-    # base=8_8.CDS-CDS.blastn.dag_geneorder_D60_g30_A5;
-
-    $url = $P->{SERVER} . "run_dotplot.pl?" . $url;
-    $url .= ";flip=$flip"       if $flip;
-    $url .= ";regen=$regen"     if $regen;
-    $url .= ";width=$width"     if $width;
-    $url .= ";ksdb=$ksdb"       if $ksdb;
-    $url .= ";kstype=$kstype"   if $kstype;
-    $url .= ";log=1"            if $kstype;
-    $url .= ";min=$min"         if defined $min;
-    $url .= ";max=$max"         if defined $max;
-    $url .= ";am=$metric"       if defined $metric;
-    $url .= ";ar=$relationship" if defined $relationship;
-    $url .= ";ct=$color_type"   if $color_type;
-    $url .= ";bd=$box_diags"    if $box_diags;
-    $url .= ";cs=$color_scheme" if defined $color_scheme;
-    my $content = LWP::Simple::get($url);
-    unless ($content)
-      {
-        return "Unable to get image for dotplot: $url";
-      }
-    ($url) = $content =~ /url=(.*?)"/is;
-    my $png = $url;
-    $png =~ s/html$/png/;
-    $png =~ s/$URL/$DIR/;
-    my $img = GD::Image->new($png);
-    my ( $w, $h ) = $img->getBounds();
-    $w += 600;
-    $h += 250;
-
-    if ($loc)
-    {
-        return ( $url, $loc, $w, $h );
-    }
-    my $html = qq{<iframe src=$url frameborder=0 width=$w height=$h scrolling=no></iframe>};
-    return $html;
 }
 
