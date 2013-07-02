@@ -2311,7 +2311,7 @@ sub go
         push @args, ['-am', $axis_metric, 1 ] if $axis_metric;
         push @args, ['-fb', '', 1] if $axis_relationship && $axis_relationship =~ /s/;
         push @args, ['-mcs', $min_chr_size, 1] if $min_chr_size;
-        push @args, ['-cdt', $color_type] if $color_type;
+        push @args, ['-cdt', $color_type, 1] if $color_type;
         push @args, ['-bd', 1, 1] if $box_diags;
         push @args, ['-fid1', $fid1, 1] if $fid1;
         push @args, ['-fid2', $fid2, 1] if $fid2;
