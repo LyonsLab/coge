@@ -1674,8 +1674,6 @@ sub go
     # Setup command
     $tandem_distance = 10 unless defined $tandem_distance;
 
-    $cmd = $BLAST2RAW;
-
     push @args, ["", $raw_blastfile, 1];
     push @args, ["--localdups", "", 1];
     push @args, ["--qbed",        $query_bed,          1];
@@ -1695,7 +1693,7 @@ sub go
     push @bed_outputs, "$raw_blastfile.s.localdups";
 
     $workflow->add_job(
-        cmd     => $cmd,
+        cmd     => $BLAST2RAW,
         script  => undef,
         args    => \@args,
         inputs  => [$raw_blastfile, $query_bed, $subject_bed],
@@ -1708,7 +1706,7 @@ sub go
         $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("finding and removing local duplications",
         $cogeweb->logfile);
-    CoGe::Accessory::Web::write_log("running: $cmd", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("running: $BLAST2RAW", $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
 
@@ -1744,7 +1742,6 @@ sub go
     my $query            = "a" . $dsgid1;
     my $subject          = "b" . $dsgid2;
 
-    $cmd = $DAG_TOOL;
     push @args, ['-q', $query,              1];
     push @args, ['-s', $subject,            1];
     push @args, ['-b', $filtered_blastfile, 1];
@@ -1760,10 +1757,10 @@ sub go
 
     push @args, ['>', $dag_file12_all, 1];
 
-    CoGe::Accessory::Web::write_log("run dag_tools:\nrunning: $cmd",
+    CoGe::Accessory::Web::write_log("run dag_tools:\nrunning: $DAG_TOOL",
         $cogeweb->logfile);
     $workflow->add_job(
-        cmd     => $cmd,
+        cmd     => $DAG_TOOL,
         script  => undef,
         args    => \@args,
         inputs  => [$filtered_blastfile],
@@ -1803,14 +1800,14 @@ sub go
         push @args, ["--feature2", $feat_type2,               1];
 
         $workflow->add_job(
-            cmd     => $cmd,
+            cmd     => $GENE_ORDER,
             script  => undef,
             args    => \@args,
             inputs  => [$dag_file12_all],
             outputs => [$dag_file12_all_geneorder]);
 
         my $msg = "running coversion to gene order for $dag_file12_all";
-        CoGe::Accessory::Web::write_log("run dagchainer: $cmd",
+        CoGe::Accessory::Web::write_log("run dagchainer: $GENE_ORDER",
             $cogeweb->logfile);
         CoGe::Accessory::Web::write_log($msg, $cogeweb->logfile);
         $msg = "Completed conversion of gene order to file";
@@ -1892,7 +1889,6 @@ sub go
     $workflow = $YERBA->create_workflow(
         name    => "dagchainer-$workflow_id",
         logfile => $cogeweb->logfile);
-    $cmd = $RUN_DAGCHAINER;
 
     push @args, ["-E", "0.05", 1];
     push @args, ["-i",   $dag_file12,   1];
@@ -1917,7 +1913,7 @@ sub go
         push @args, ["--merge", $merged_dagchainer_file, 1];
 
         $workflow->add_job(
-            cmd     => $cmd,
+            cmd     => $RUN_DAGCHAINER,
             script  => undef,
             args    => \@args,
             inputs  => [$dag_file12],
@@ -1928,7 +1924,7 @@ sub go
         push @args, [">", $dagchainer_file, 1];
 
         $workflow->add_job(
-            cmd     => $cmd,
+            cmd     => $RUN_DAGCHAINER,
             script  => undef,
             args    => \@args,
             inputs  => [$dag_file12],
@@ -1941,7 +1937,7 @@ sub go
     CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("Completed dagchainer run",
         $cogeweb->logfile);
-    CoGe::Accessory::Web::write_log("run dagchainer\nrunning: $cmd",
+    CoGe::Accessory::Web::write_log("run dagchainer\nrunning: $RUN_DAGCHAINER",
         $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
 
