@@ -807,6 +807,7 @@ sub get_genome_info
 
 sub get_previous_analyses
 {
+  #FIXME:  THis whole sub needs updating or removal!  Lyons 6/12/13
     my %opts = @_;
     my $oid1 = $opts{oid1};
     my $oid2 = $opts{oid2};
@@ -1519,23 +1520,8 @@ sub go
     }
     my $html;
 
-#need to blast each org against itself for finding local dups, then to one another
-    my ($tmp1, $tmp2) = ($org_name1, $org_name2);
 
-    # Get organism name for directory names.
-    foreach my $tmp ($tmp1, $tmp2) {
-        $tmp =~ s/\///g;
-        $tmp =~ s/\s+/_/g;
-        $tmp =~ s/\(//g;
-        $tmp =~ s/\)//g;
-        $tmp =~ s/://g;
-        $tmp =~ s/;//g;
-        $tmp =~ s/#/_/g;
-        $tmp =~ s/'//g;
-        $tmp =~ s/"//g;
-    }
-
-    my ($orgkey1, $orgkey2) = ($title1, $title2);
+   my ($orgkey1, $orgkey2) = ($title1, $title2);
     my %org_dirs = (
         $orgkey1 . "_"
           . $orgkey2 => {
