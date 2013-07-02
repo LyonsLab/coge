@@ -2248,6 +2248,7 @@ sub go
         #######################################################################
         ($cmd, @args) = (undef, ());
 
+        my @inputs = ();
         $workflow = $YERBA->create_workflow(name => "dotplot-$workflow_id",
                                             filepath => $makeflow_dir, 
                                             logfile => $logfile);
@@ -2286,7 +2287,8 @@ sub go
         #are non-syntenic dots being displayed
         if ($snsd)
         {
-            push @args, ['-d', $dag_file12_all, 1];
+            push @args, ['-d', $dag_file12_all, 0];
+            push @inputs, $dag_file12_all;
         }
         else
         {
@@ -2331,6 +2333,7 @@ sub go
         push @args, [">>", $logfile, 0];
         push @args, ["", "2>&1", 0];
 
+        push @inputs, $final_dagchainer_file;
 
         my @outputs = ("$dotfile.html", "$dotfile.png",
                        "$dotfile.x.png", "$dotfile.y.png");
@@ -2338,7 +2341,7 @@ sub go
         push @outputs, "$dotfile.spa_info.txt" if $assemble;
 
         $workflow->add_job(cmd =>$cmd, script => undef, args => \@args,
-                           inputs => [$final_dagchainer_file],
+                           inputs => \@inputs,
                            outputs => \@outputs,
                            overwrite => $regen_images);
 
