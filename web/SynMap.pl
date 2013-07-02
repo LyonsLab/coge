@@ -1487,7 +1487,7 @@ sub go
         $dsgid2,     $dsg2,              $org_name2,  $fasta2,
         $feat_type2, $depth_org_2_ratio, $dsgid1,     $dsg1,
         $org_name1,  $fasta1,            $feat_type1, $depth_org_1_ratio
-      ) if ($dsgid2 lt $dsgid1);
+      ) if ($org_name2 lt $org_name1);
 
     ############################################################################
     # Generate blastdb files
