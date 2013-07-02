@@ -42,7 +42,7 @@ our (
     $CLUSTER_UTILS, $BLAST2RAW,      $BASE_URL,    $BLAST2BED,
     $SYNTENY_SCORE, $TEMPDIR,        $TEMPURL,     $ALGO_LOOKUP,
     $GZIP,          $GUNZIP,         $COOKIE_NAME, %FUNCTIONS,
-    $YERBA,         $GENE_ORDER,     $PAGE_TITLE);
+    $YERBA,         $GENE_ORDER,     $PAGE_TITLE,  $KSCALC);
 
 $DEBUG     = 1;
 $YERBA     = CoGe::Accessory::Jex->new(host => "localhost", port => 5151);
@@ -81,6 +81,7 @@ $LAST =
   . $P->{LASTDB};
 $GZIP   = $P->{GZIP};
 $GUNZIP = $P->{GUNZIP};
+$KSCALC = $P->{KSCALC};
 
 #in the web form, each sequence search algorithm has a unique number.  This table identifies those and adds appropriate options
 $ALGO_LOOKUP = {
@@ -807,7 +808,8 @@ sub get_genome_info
 
 sub get_previous_analyses
 {
-  #FIXME:  THis whole sub needs updating or removal!  Lyons 6/12/13
+
+    #FIXME:  THis whole sub needs updating or removal!  Lyons 6/12/13
     my %opts = @_;
     my $oid1 = $opts{oid1};
     my $oid2 = $opts{oid2};
@@ -1520,8 +1522,7 @@ sub go
     }
     my $html;
 
-
-   my ($orgkey1, $orgkey2) = ($title1, $title2);
+    my ($orgkey1, $orgkey2) = ($title1, $title2);
     my %org_dirs = (
         $orgkey1 . "_"
           . $orgkey2 => {
@@ -1673,7 +1674,7 @@ sub go
     push @args, ["--localdups", "", 1];
     push @args, ["--qbed",        $query_bed,          1];
     push @args, ["--sbed",        $subject_bed,        1];
-    push @args, ["--tandem_Nmax", $dupdist,    1];
+    push @args, ["--tandem_Nmax", $dupdist,            1];
     push @args, ["--cscore",      $cscore,             1] if $cscore;
     push @args, [">",             $filtered_blastfile, 1];
 
@@ -1706,7 +1707,6 @@ sub go
     CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
 
     $YERBA->wait_for_completion($workflow->name);
-
 
     #FIXME: Check needs to be removed
 
@@ -2139,53 +2139,53 @@ sub go
         #FIXME: print_grimm needs to be piped to a file.
         #$grimm_stuff = generate_grimm_input(infile => $quota_align_coverage);
 
-#        $workflow = $YERBA->create_workflow(name => "grimm-$workflow_id",
-#                                            logfile => $cogeweb->logfile);
-#        $cmd = $CLUSTER_UTILS;
-#        @args = ();
-#        push @args, ['--format=dag', '', 1];
-#        push @args, ['--log_evalue', $quota_align_coverage, 1];
-#        push @args, ['', "$quota_align_coverage.qa", 1];
-#
-#        $workflow->add_job(
-#            cmd => $CLUSTER_UTILS,
-#            script => undef,
-#            args => \@args,
-#            inputs => [$quota_align_coverage],
-#            outputs => ["$quota_align_coverage.qa"]);
-#
-#        @args = ();
-#        push @args, ['--print_grimm', "$quota_align_coverage.qa", 1];
-#        push @args, ['>', "$quota_align_coverage.qa.grimm", 1];
-#
-#        $workflow->add_job(
-#            cmd => $CLUSTER_UTILS,
-#            script => undef,
-#            args => \@args,
-#            inputs => ["$quota_align_coverage.qa"],
-#            outputs => ["$quota_align_coverage.qa.grimm"]);
-#
-#        $status = $YERBA->submit_workflow($workflow);
-#        $YERBA->wait_for_completion($workflow->name);
-#
-#        my $output;
-#        open( IN, "$quota_align_coverage.qa.grimm");
-#
-#        while (<IN>)
-#        {
-#            $output .= $_;
-#        }
-#        close IN;
-#        my @seqs;
-#        foreach my $item ( split /\n>/, $output )
-#        {
-#            $item =~ s/>//g;
-#            my ( $name, $seq ) = split /\n/, $item, 2;
-#            $seq =~ s/\n$//;
-#            push @seqs, $seq;
-#        }
-#
-#        $grimm_stuff = \@seqs;
+     #        $workflow = $YERBA->create_workflow(name => "grimm-$workflow_id",
+     #                                            logfile => $cogeweb->logfile);
+     #        $cmd = $CLUSTER_UTILS;
+     #        @args = ();
+     #        push @args, ['--format=dag', '', 1];
+     #        push @args, ['--log_evalue', $quota_align_coverage, 1];
+     #        push @args, ['', "$quota_align_coverage.qa", 1];
+     #
+     #        $workflow->add_job(
+     #            cmd => $CLUSTER_UTILS,
+     #            script => undef,
+     #            args => \@args,
+     #            inputs => [$quota_align_coverage],
+     #            outputs => ["$quota_align_coverage.qa"]);
+     #
+     #        @args = ();
+     #        push @args, ['--print_grimm', "$quota_align_coverage.qa", 1];
+     #        push @args, ['>', "$quota_align_coverage.qa.grimm", 1];
+     #
+     #        $workflow->add_job(
+     #            cmd => $CLUSTER_UTILS,
+     #            script => undef,
+     #            args => \@args,
+     #            inputs => ["$quota_align_coverage.qa"],
+     #            outputs => ["$quota_align_coverage.qa.grimm"]);
+     #
+     #        $status = $YERBA->submit_workflow($workflow);
+     #        $YERBA->wait_for_completion($workflow->name);
+     #
+     #        my $output;
+     #        open( IN, "$quota_align_coverage.qa.grimm");
+     #
+     #        while (<IN>)
+     #        {
+     #            $output .= $_;
+     #        }
+     #        close IN;
+     #        my @seqs;
+     #        foreach my $item ( split /\n>/, $output )
+     #        {
+     #            $item =~ s/>//g;
+     #            my ( $name, $seq ) = split /\n/, $item, 2;
+     #            $seq =~ s/\n$//;
+     #            push @seqs, $seq;
+     #        }
+     #
+     #        $grimm_stuff = \@seqs;
 
         CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
         CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
@@ -2269,57 +2269,58 @@ sub go
     my ($ks_db, $ks_blocks_file, $svg_file);
 
     if ($ks_type) {
-        CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
-        CoGe::Accessory::Web::write_log(
-            "Running CodeML for synonymous/nonsynonmous rate calculations",
-            $cogeweb->logfile);
-        $ks_db = gen_ks_db(infile => $final_dagchainer_file);
-        CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
-        CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
+        $workflow = $YERBA->create_workflow(
+            name    => "kscalc-$workflow_id",
+            logfile => $cogeweb->logfile);
 
-        CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
-        CoGe::Accessory::Web::write_log("Generate Ks Blocks File",
-            $cogeweb->logfile);
-        $ks_blocks_file = gen_ks_blocks_file(infile => $final_dagchainer_file);
-        CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
-        CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
+        $ks_db          = "$final_dagchainer_file.sqlite";
+        $ks_blocks_file = "$final_dagchainer_file.ks";
 
-        CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
-        CoGe::Accessory::Web::write_log("Generate SVG File", $cogeweb->logfile);
+        @args = ();
+        push @args, ['--config', $ENV{HOME} . "coge.conf", 0];
+        push @args, ['--infile',    $final_dagchainer_file, 1];
+        push @args, ['--dbfile',    $ks_db,                 1];
+        push @args, ['--blockfile', $ks_blocks_file,        1];
+
+        $workflow->add_job(
+            cmd     => $KSCALC,
+            script  => undef,
+            args    => \@args,
+            inputs  => [$final_dagchainer_file],
+            outputs => [$ks_blocks_file, $ks_db]);
+
+        $status = $YERBA->submit_workflow($workflow);
+        $YERBA->wait_for_completion($workflow->name);
 
         ####################################################################
         # Generate svg dotplot
         ####################################################################
-        if ($ks_blocks_file) {
-            ($cmd, @args) = (undef, ());
+        $workflow = $YERBA->create_workflow(
+            name    => "gen-svg-$workflow_id",
+            logfile => $cogeweb->logfile);
 
-            $cmd      = $SVG_DOTPLOT;
-            $workflow = $YERBA->create_workflow(
-                name    => "gen-svg-$workflow_id",
-                logfile => $cogeweb->logfile);
+        @args = ();
+        push @args, ['--dag_file', $ks_blocks_file, 1];
+        push @args, ['--flip', "", 1] if $flip;
+        push @args, ['--xhead', '"' . $org_name1 . '"', 1] if $org_name1;
+        push @args, ['--yhead', '"' . $org_name2 . '"', 1] if $org_name2;
+        push @args, ['--output', $ks_blocks_file, 1];
 
-            push @args, ['--dag_file', $ks_blocks_file, 1];
-            push @args, ['--flip', "", 1] if $flip;
-            push @args, ['--xhead', '"' . $org_name1 . '"', 1] if $org_name1;
-            push @args, ['--yhead', '"' . $org_name2 . '"', 1] if $org_name2;
-            push @args, ['--output', $ks_blocks_file, 1];
+        $svg_file = $ks_blocks_file . ".svg";
+        $workflow->add_job(
+            cmd     => $SVG_DOTPLOT,
+            script  => undef,
+            args    => \@args,
+            inputs  => [$ks_blocks_file],
+            outputs => [$svg_file]);
 
-            $svg_file = $ks_blocks_file . ".svg";
-            $workflow->add_job(
-                cmd     => $cmd,
-                script  => undef,
-                args    => \@args,
-                inputs  => [$ks_blocks_file],
-                outputs => [$svg_file]);
+        CoGe::Accessory::Web::write_log("generate svg dotplot: $cmd",
+            $cogeweb->logfile);
+        CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
+        CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
 
-            CoGe::Accessory::Web::write_log("generate svg dotplot: $cmd",
-                $cogeweb->logfile);
-            CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
-            CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
-
-            $status = $YERBA->submit_workflow($workflow);
-            $YERBA->wait_for_completion($workflow->name);
-        }
+        $status = $YERBA->submit_workflow($workflow);
+        $YERBA->wait_for_completion($workflow->name);
     }
 
     my $t6 = new Benchmark;
@@ -2349,6 +2350,7 @@ sub go
     $dotfile .= ".mcs$min_chr_size" if $min_chr_size;
     $dotfile .= ".$fid1"            if $fid1;
     $dotfile .= ".$fid2"            if $fid2;
+
     #add ks_db to dotplot command if requested
     if ($ks_type) {
         push @args, ['-ksdb', $ks_db,   0];
@@ -2412,8 +2414,9 @@ sub go
 
     push @inputs, $final_dagchainer_file;
 
-    my $hist     = $dotfile . ".hist.png";
-    #this would be generated by the DOTPLOT program is Syntenic path assembly was requested
+    my $hist = $dotfile . ".hist.png";
+
+#this would be generated by the DOTPLOT program is Syntenic path assembly was requested
     my $spa_file = $dotfile . ".spa_info.txt";
     my @outputs =
       ("$dotfile.html", "$dotfile.png", "$dotfile.x.png", "$dotfile.y.png");
@@ -3020,6 +3023,7 @@ sub process_local_dups_file
     }
     close OUT;
     close IN;
+
     #`/bin/rm $infile`;
     #$infile =~ s/localdups/nolocaldups.bed/;
     #`/bin/rm $infile`;
@@ -3100,45 +3104,9 @@ sub process_local_dups_file
 #
 #}
 
-
-# TODO: This feature is in process of removal kept here as reference.
+#FIXME: Currently this feature is disabled
 # @by Evan Briones
-# @on 3/21/2013
-sub generate_grimm_input
-{
-    my %opts   = @_;
-    my $infile = $opts{infile};
-    CoGe::Accessory::Web::gunzip($infile . ".gz")    if -r $infile . ".gz";
-    CoGe::Accessory::Web::gunzip($infile . ".qa.gz") if -r $infile . ".qa.gz";
-    my $cmd = $CLUSTER_UTILS . " --format=dag --log_evalue $infile $infile.qa";
-    CoGe::Accessory::Web::write_log("\nGenerating input data for GRIMM",
-        $cogeweb->logfile);
-    CoGe::Accessory::Web::write_log(
-        "Converting dag output to quota_align format: $cmd",
-        $cogeweb->logfile);
-    `$cmd`;
-    $cmd = $CLUSTER_UTILS . " --print_grimm $infile.qa";
-    CoGe::Accessory::Web::write_log(
-        "running  cluster_utils to generating grimm input:\n\t$cmd",
-        $cogeweb->logfile);
-    my $output;
-    open(IN, "$cmd |");
-
-    while (<IN>) {
-        $output .= $_;
-    }
-    close IN;
-    my @seqs;
-    foreach my $item (split /\n>/, $output) {
-        $item =~ s/>//g;
-        my ($name, $seq) = split /\n/, $item, 2;
-        $seq =~ s/\n$//;
-        push @seqs, $seq;
-    }
-
-    return \@seqs;
-}
-
+# @on 6/18/2013
 sub run_find_nearby
 {
     my %opts         = @_;
@@ -3165,218 +3133,6 @@ sub run_find_nearby
     system "/bin/rm $outfile.running" if -r "$outfile.running";
     ;      #remove track file
     return 1 if -r $outfile;
-}
-
-sub gen_ks_db
-{
-    my %opts   = @_;
-    my $infile = $opts{infile};
-    my ($outfile) = $infile =~ /^(.*?CDS-CDS)/;
-    ($outfile) = $infile =~ /^(.*?protein-protein)/ unless $outfile;
-    return unless $outfile;
-    $outfile .= ".sqlite";
-    CoGe::Accessory::Web::write_log("Generating ks data.", $cogeweb->logfile);
-    while (-e "$outfile.running") {
-        print STDERR "detecting $outfile.running.  Waiting. . .\n";
-        sleep 60;
-    }
-
-    unless (-r $outfile) {
-        system "/usr/bin/touch $outfile.running";    #track that this is running
-        CoGe::Accessory::Web::write_log("initializing ks database $outfile",
-            $cogeweb->logfile);
-        my $create = qq{
-CREATE TABLE ks_data
-(
-id INTEGER PRIMARY KEY,
-fid1 integer,
-fid2 integer,
-dS varchar,
-dN varchar,
-dN_dS varchar,
-protein_align_1,
-protein_align_2,
-DNA_align_1,
-DNA_align_2
-)
-};
-
-        my $dbh = DBI->connect("dbi:SQLite:dbname=$outfile", "", "");
-        $dbh->do($create) if $create;
-        $dbh->do('create INDEX fid1 ON ks_data (fid1)');
-        $dbh->do('create INDEX fid2 ON ks_data (fid2)');
-        $dbh->disconnect;
-    }
-    my $ksdata = get_ks_data(db_file => $outfile);
-    $/ = "\n";
-    CoGe::Accessory::Web::gunzip($infile . ".gz") if -r $infile . ".gz";
-    open(IN, $infile);
-    my @data;
-    while (<IN>) {
-
-        next if /^#/;
-        chomp;
-        my @line  = split /\t/;
-        my @item1 = split /\|\|/, $line[1];
-        my @item2 = split /\|\|/, $line[5];
-        unless ($item1[6] && $item2[6]) {
-            warn "Line does not appear to contain coge feature ids:  $_\n";
-            next;
-        }
-        next unless $item1[5] eq "CDS" && $item2[5] eq "CDS";
-        next if $ksdata->{$item1[6]}{$item2[6]};
-        push @data, [$line[1], $line[5], $item1[6], $item2[6]];
-    }
-    close IN;
-    my $MAX_RUNS = $MAX_PROC;
-    my $ports =
-      initialize_nwalign_servers(start_port => 3000, procs => $MAX_RUNS);
-    my $pm = new Parallel::ForkManager($MAX_RUNS * 4);
-    my $i  = 0;
-
-    my $start_time = new Benchmark;
-    my $dbh = DBI->connect("dbi:SQLite:dbname=$outfile", "", "");
-
-    $dbh->do("PRAGMA synchronous=OFF");
-    $dbh->do("PRAGMA cache_size = 25000");
-    $dbh->do("PRAGMA count_changes=OFF");
-    $dbh->do("PRAGMA journal_mode=MEMORY");
-    $dbh->do("PRAGMA temp_store=MEMORY");
-
-    foreach my $item (@data) {
-        $i++;
-        $i = 0 if $i == $MAX_RUNS * 4;
-        $pm->start and next;
-        my ($fid1) = $item->[2] =~ /(^\d+$)/;
-        my ($fid2) = $item->[3] =~ /(^\d+$)/;
-        my ($feat1) = $coge->resultset('Feature')->find($fid1);
-        my ($feat2) = $coge->resultset('Feature')->find($fid2);
-        my $max_res;
-        my $ks = new CoGe::Algos::KsCalc();
-        $ks->nwalign_server_port($ports->[$i]);
-        $ks->feat1($feat1);
-        $ks->feat2($feat2);
-
-        #   for (1..5)
-        #     {
-        my $res = $ks->KsCalc();    #send in port number?
-        $max_res = $res unless $max_res;
-        $max_res = $res
-          if $res->{dS} && $max_res->{dS} && $res->{dS} < $max_res->{dS};
-
-        #     }
-        unless ($max_res) {
-            $max_res = {};
-        }
-        my ($dS, $dN, $dNS) = ("NA", "NA", "NA");
-        if (keys %$max_res) {
-            $dS  = $max_res->{dS}      if defined $max_res->{dS};
-            $dN  = $max_res->{dN}      if defined $max_res->{dN};
-            $dNS = $max_res->{'dN/dS'} if defined $max_res->{'dN/dS'};
-        }
-
-        #alignments
-        my $dalign1 = $ks->dalign1;    #DNA sequence 1
-        my $dalign2 = $ks->dalign2;    #DNA sequence 2
-        my $palign1 = $ks->palign1;    #PROTEIN sequence 1
-        my $palign2 = $ks->palign2;    #PROTEIN sequence 2
-
-        my $insert = qq{
-INSERT INTO ks_data (fid1, fid2, dS, dN, dN_dS, protein_align_1, protein_align_2, DNA_align_1, DNA_align_2) values ($fid1, $fid2, "$dS", "$dN", "$dNS", "$palign1", "$palign2", "$dalign1", "$dalign2")
-};
-
-        my $insert_success = 0;
-        while (!$insert_success) {
-            $insert_success = $dbh->do($insert);
-            unless ($insert_success) {
-
-                #               print STDERR $insert;
-                sleep .1;
-            }
-        }
-
-        $pm->finish;
-    }
-    $pm->wait_all_children();
-    $dbh->disconnect();
-    my $finished_time = new Benchmark;
-    my $completion_time = timestr(timediff($finished_time, $start_time));
-    say STDERR "Completed in: $completion_time";
-
-    system "/bin/rm $outfile.running" if -r "$outfile.running";
-    CoGe::Accessory::Web::write_log("Completed generating ks data.",
-        $cogeweb->logfile);
-    return $outfile;
-}
-
-sub initialize_nwalign_servers
-{
-    my %opts       = @_;
-    my $start_port = $opts{start_port};
-    my $procs      = $opts{procs};
-    my @ports;
-    use IO::Socket;
-
-    for (1 .. $procs) {
-        unless (
-            IO::Socket::INET->new(
-                PeerAddr => 'localhost',
-                PeerPort => $start_port)
-          ) {
-            system("$NWALIGN --server $start_port &");
-        }
-
-        push @ports, $start_port;
-        $start_port++;
-    }
-    sleep 1;    #let them get started;
-    return \@ports;
-}
-
-sub get_ks_data
-{
-    my %opts    = @_;
-    my $db_file = $opts{db_file};
-    my %ksdata;
-    unless (-r $db_file) {
-        return \%ksdata;
-    }
-    CoGe::Accessory::Web::write_log("\tconnecting to ks database $db_file",
-        $cogeweb->logfile);
-    my $select = "select * from ks_data";
-    my $dbh    = DBI->connect("dbi:SQLite:dbname=$db_file", "", "");
-    my $sth    = $dbh->prepare($select);
-    $sth->execute();
-    CoGe::Accessory::Web::write_log(
-        "\texecuting select all from ks database $db_file",
-        $cogeweb->logfile);
-    my $total   = 0;
-    my $no_data = 0;
-
-    while (my $data = $sth->fetchrow_arrayref) {
-        $total++;
-        if ($data->[3] eq "") {
-            $no_data++;
-
-            #       next; #uncomment to force recalculation of missing data
-        }
-
-        $ksdata{$data->[1]}{$data->[2]} =
-          $data->[3]
-          ? {
-            dS      => $data->[3],
-            dN      => $data->[4],
-            'dN/dS' => $data->[5]}
-          : {};    # unless $data->[3] eq "";
-    }
-    CoGe::Accessory::Web::write_log("\tgathered data from ks database $db_file",
-        $cogeweb->logfile);
-    $sth->finish;
-    undef $sth;
-    $dbh->disconnect();
-    CoGe::Accessory::Web::write_log("\tdisconnecting from ks database $db_file",
-        $cogeweb->logfile);
-    return \%ksdata;
 }
 
 sub add_GEvo_links
@@ -3512,100 +3268,6 @@ sub add_GEvo_links
     }
 }
 
-sub gen_ks_blocks_file
-{
-    my %opts   = @_;
-    my $infile = $opts{infile};
-    CoGe::Accessory::Web::gunzip($infile . ".gz") if -r $infile . ".gz";
-    my ($dbfile) = $infile =~ /^(.*?CDS-CDS)/;
-    return unless $dbfile;
-    my $outfile = $infile . ".ks";
-    return $outfile if -r $outfile;
-    my $ksdata = get_ks_data(db_file => $dbfile . '.sqlite');
-    $/ = "\n";
-    open(IN,  $infile);
-    open(OUT, ">" . $outfile);
-    print OUT
-      "#This file contains synonymous rate values in the first two columns:\n";
-    my @block;
-    my $block_title;
-
-    while (<IN>) {
-        if (/^#/) {
-            my $output = process_block(
-                ksdata => $ksdata,
-                block  => \@block,
-                header => $block_title) if $block_title;
-            print OUT $output if $output;
-            @block       = ();
-            $block_title = $_;
-
-            #beginning of a block;
-        } else {
-            push @block, $_;
-        }
-    }
-    close IN;
-    my $output = process_block(
-        ksdata => $ksdata,
-        block  => \@block,
-        header => $block_title) if $block_title;
-    print OUT $output;
-    close OUT;
-    return $outfile;
-}
-
-sub process_block
-{
-    my %opts   = @_;
-    my $ksdata = $opts{ksdata};
-    my $block  = $opts{block};
-    my $header = $opts{header};
-    my $output;
-    my @ks;
-    my @kn;
-    foreach my $item (@$block) {
-        my @line = split /\t/,   $item;
-        my @seq1 = split /\|\|/, $line[1];
-        my @seq2 = split /\|\|/, $line[5];
-        my $ks   = $ksdata->{$seq1[6]}{$seq2[6]};
-        if (defined $ks->{dS}) {
-            unshift @line, $ks->{dN};
-            unshift @line, $ks->{dS};
-            push @ks, $ks->{dS} unless $ks->{dS} eq "NA";
-            push @kn, $ks->{dN} unless $ks->{dN} eq "NA";
-        } else {
-            unshift @line, "undef";
-            unshift @line, "undef";
-        }
-        $output .= join "\t", @line;
-    }
-    my $mean_ks = 0;
-    if (scalar @ks) {
-        map {$mean_ks += $_} @ks;
-        $mean_ks = sprintf("%.4f", $mean_ks / scalar @ks);
-    } else {
-        $mean_ks = "NA";
-    }
-    my $mean_kn = 0;
-    if (scalar @kn) {
-        map {$mean_kn += $_} @kn;
-        $mean_kn = sprintf("%.4f", $mean_kn / scalar @kn);
-    } else {
-        $mean_kn = "NA";
-    }
-    chomp $header;
-    $header .= "  Mean Ks:  $mean_ks\tMean Kn: $mean_kn\n";
-    $header .= join("\t",
-        "#Ks",
-        qw(Kn a<db_genome_id>_<chr> chr1||start1||stop1||name1||strand1||type1||db_feature_id1||percent_id1 start1 stop1 b<db_genome_id>_<chr> chr2||start2||stop2||name2||strand2||type2||db_feature_id2||percent_id2 start2 stop2 eval block_score GEVO_link)
-    ) . "\n";
-    return $header . $output;
-}
-
-# this is for when there is a self-self comparison.
-# DAGchainer, for some reason, is only adding one diag.
-# For example, if chr_14 vs chr_10 have a diag, chr_10 vs chr_14 does not.
 sub add_reverse_match
 {
     my %opts   = @_;
