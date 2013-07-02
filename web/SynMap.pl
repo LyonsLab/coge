@@ -2294,13 +2294,16 @@ sub go
         push @args, ['-a', $final_dagchainer_file, 1];
         push @args, ['-b', $dotfile, 1];
 
-        my $jsoption = "'javascript:synteny_zoom(\"$dsgid1\", \"$dsgid2\",";
-        $jsoption .= "\"$basename\",";
+        my $jsoption = "";
+        $jsoption .= qq{'javascript:synteny_zoom(};
+        $jsoption .= qq{"$dsgid1",};
+        $jsoption .= qq{"$dsgid2",};
+        $jsoption .= qq{"$basename",};
         $jsoption .= $flip ? qq{"YCHR","XCHR"} : qq{"XCHR","YCHR"};
         $jsoption .= qq{,"$ks_db"} if $ks_db;
         $jsoption .= qq{)'};
 
-        push @args, ['-l', $jsoption, 1];
+        push @args, ['-l', $jsoption, 0];
         push @args, ['-dsg1', $dsgid1, 1];
         push @args, ['-dsg2', $dsgid2, 1];
         push @args, ['-w', $width, 1];
