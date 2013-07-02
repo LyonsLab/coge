@@ -1388,10 +1388,7 @@ sub go
     $feat_type1 = "protein" if $blast == 5 && $feat_type1 eq "CDS"; #blastp time
     $feat_type2 = "protein" if $blast == 5 && $feat_type2 eq "CDS"; #blastp time
 
-    my $result_dir   = "$DATADIR/$PAGE_TITLE/$dir1/$dir2";
-    my $makeflow_dir = "$result_dir/makeflow";
-
-    mkpath($makeflow_dir, 0, 0777) unless -d $makeflow_dir;
+    my $result_dir = "$DIAGSDIR/$dir1/$dir2";
 
     ##########################################################################
     # Generate Fasta files
@@ -1455,9 +1452,8 @@ sub go
     my ($blastdb, @blastdb_files);
     if ($ALGO_LOOKUP->{$blast}{formatdb}) {
         $workflow = $YERBA->create_workflow(
-            name     => "blastdb-$workflow_id",
-            filepath => $makeflow_dir,
-            logfile  => $cogeweb->logfile);
+            name    => "blastdb-$workflow_id",
+            logfile => $cogeweb->logfile);
         my $write_log = 0;
         $cmd = $FORMATDB;
 
@@ -1551,10 +1547,7 @@ sub go
               . $dsgid2
               . ".$feat_type1-$feat_type2."
               . $ALGO_LOOKUP->{$blast}{filename},
-            dir => $DATADIR . "/"
-              . $PAGE_TITLE . "/"
-              . $dir1 . "/"
-              . $dir2 . "/data",},);
+            dir => "$DIAGSDIR/$dir1/$dir2/data",},);
 
     foreach my $org_dir (keys %org_dirs) {
         my $outfile = $org_dirs{$org_dir}{dir};
@@ -1573,9 +1566,8 @@ sub go
     my $raw_blastfile = $org_dirs{$orgkey1 . "_" . $orgkey2}{blastfile};
 
     $workflow = $YERBA->create_workflow(
-        name     => "blast-$workflow_id",
-        filepath => $makeflow_dir,
-        logfile  => $cogeweb->logfile);
+        name    => "blast-$workflow_id",
+        logfile => $cogeweb->logfile);
 
     #blast! use Parallel::ForkManager
     foreach my $key (keys %org_dirs) {
@@ -1646,9 +1638,8 @@ sub go
     my $subject_bed = $raw_blastfile . ".s.bed";
 
     $workflow = $YERBA->create_workflow(
-        name     => "blast2bed-$workflow_id",
-        filepath => $makeflow_dir,
-        logfile  => $cogeweb->logfile);
+        name    => "blast2bed-$workflow_id",
+        logfile => $cogeweb->logfile);
 
     $cmd = $BLAST2BED;
     push @args, ['-infile',   $raw_blastfile, 1];
@@ -1711,9 +1702,8 @@ sub go
 
     # Create and run workflow
     $workflow = $YERBA->create_workflow(
-        name     => "blast2raw-$workflow_id",
-        filepath => $makeflow_dir,
-        logfile  => $cogeweb->logfile);
+        name    => "blast2raw-$workflow_id",
+        logfile => $cogeweb->logfile);
 
     my @bed_outputs = ();
     push @bed_outputs, $filtered_blastfile;
@@ -1762,9 +1752,8 @@ sub go
         $cogeweb->logfile);
 
     $workflow = $YERBA->create_workflow(
-        name     => "dagtools-$workflow_id",
-        filepath => $makeflow_dir,
-        logfile  => $cogeweb->logfile);
+        name    => "dagtools-$workflow_id",
+        logfile => $cogeweb->logfile);
 
     my $query_dup_file   = $opts{query_dup_files};
     my $subject_dup_file = $opts{subject_dup_files};
@@ -1818,9 +1807,8 @@ sub go
             $cogeweb->logfile);
 
         $workflow = $YERBA->create_workflow(
-            name     => "geneorder-$workflow_id",
-            filepath => $makeflow_dir,
-            logfile  => $cogeweb->logfile);
+            name    => "geneorder-$workflow_id",
+            logfile => $cogeweb->logfile);
 
         $cmd = $GENE_ORDER;
         push @args, ["", $dag_file12_all,           1];
@@ -1918,9 +1906,8 @@ sub go
     $dagchainer_file .= ".ma2.dag"        if $dag_merge_enabled;
 
     $workflow = $YERBA->create_workflow(
-        name     => "dagchainer-$workflow_id",
-        filepath => $makeflow_dir,
-        logfile  => $cogeweb->logfile);
+        name    => "dagchainer-$workflow_id",
+        logfile => $cogeweb->logfile);
     $cmd = $RUN_DAGCHAINER;
 
     push @args, ["-E", "0.05", 1];
@@ -1994,9 +1981,8 @@ sub go
 
 #$merged_dagchainer_file = run_quota_align_merge( infile => $dagchainer_file, max_dist => $Dm );
         $workflow = $YERBA->create_workflow(
-            name     => "quota_align_merge-$workflow_id",
-            filepath => $makeflow_dir,
-            logfile  => $cogeweb->logfile);
+            name    => "quota_align_merge-$workflow_id",
+            logfile => $cogeweb->logfile);
 
         #ma stands for merge algo
         $merged_dagchainer_file = $dagchainer_file;
@@ -2099,9 +2085,8 @@ sub go
     if ($depth_algo == 1)    #id 1 is to specify quota align
     {
         $workflow = $YERBA->create_workflow(
-            name     => "quota_align_coverage-$workflow_id",
-            filepath => $makeflow_dir,
-            logfile  => $cogeweb->logfile);
+            name    => "quota_align_coverage-$workflow_id",
+            logfile => $cogeweb->logfile);
 
         CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
         CoGe::Accessory::Web::write_log("Running Quota Align",
@@ -2178,7 +2163,6 @@ sub go
 
 #
 #        $workflow = $YERBA->create_workflow(name => "grimm_input-$workflow_id",
-#                                            filepath => $makeflow_dir,
 #                                            logfile => $cogeweb->logfile);
 #        $cmd = $CLUSTER_UTILS;
 #        @args = ();
@@ -2309,9 +2293,8 @@ sub go
 
         $cmd      = $SVG_DOTPLOT;
         $workflow = $YERBA->create_workflow(
-            name     => "gen-svg-$workflow_id",
-            filepath => $makeflow_dir,
-            logfile  => $cogeweb->logfile);
+            name    => "gen-svg-$workflow_id",
+            logfile => $cogeweb->logfile);
 
         push @args, ['--dag_file', $ks_blocks_file, 1];
         push @args, ['--flip', "", 1] if $flip;
@@ -2347,9 +2330,8 @@ sub go
 
     my @inputs = ();
     $workflow = $YERBA->create_workflow(
-        name     => "dotplot-$workflow_id",
-        filepath => $makeflow_dir,
-        logfile  => $cogeweb->logfile);
+        name    => "dotplot-$workflow_id",
+        logfile => $cogeweb->logfile);
 
     CoGe::Accessory::Web::write_log("#" x (20), $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("Generating dotplot", $cogeweb->logfile);
@@ -3014,6 +2996,7 @@ sub generate_fasta
         $cogeweb->logfile);
     return 0;
 }
+
 sub process_local_dups_file
 {
     my %opts    = @_;
