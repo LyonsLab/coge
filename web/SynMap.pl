@@ -2321,7 +2321,7 @@ sub go
         push @args, ['-sr', 1, 1] if $skip_rand;
         push @args, ['-color_scheme', $color_scheme, 1] if defined $color_scheme;
         push @args, ['-chr_sort_order', $chr_sort_order, 1] if defined $chr_sort_order;
-        push @args  ['-min', $codeml_min, 1] if defined $codeml_min;
+        push @args, ['-min', $codeml_min, 1] if defined $codeml_min;
         push @args, ['-max', $codeml_max, 1] if defined $codeml_max;
 
         # Add logging
