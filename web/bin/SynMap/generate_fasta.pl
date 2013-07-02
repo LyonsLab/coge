@@ -84,6 +84,11 @@ sub gen_fasta
                 $name = $n;
                 last unless $name =~ /\s/;
             }
+            unless ($name) {
+                #    print STDERR "Error:  missing valid name for feature_id ".$feat->id."\n";
+                $name = $feat->id;
+            }
+
             $name =~ s/\s+/_/g;
             my $title = join("||",
                 $chr, $feat->start, $feat->stop, $name, $feat->strand,
