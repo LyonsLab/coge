@@ -2263,7 +2263,7 @@ sub go
         $dotfile .= ".$fid2"            if $fid2;
         if ( $ks_db && -r $ks_db )
         {
-            push @args, ['-ksdb', $ks_db, 1];
+            push @args, ['-ksdb', $ks_db, 0];
             push @args, ['-kst', $ks_type, 1];
             push @args, ['-log', $logks, 1];
             $dotfile .= ".$ks_type";
@@ -2326,10 +2326,15 @@ sub go
         push @args, [">>", $logfile, 0];
         push @args, ["", "2>&1", 0];
 
+
+        my @outputs = ("$dotfile.html", "$dotfile.png",
+                       "$dotfile.x.png", "$dotfile.y.png");
+        push @outputs, "$dotfile.hist.png" if $ks_db;
+        push @outputs, "$dotfile.spa_info.txt" if $assemble;
+
         $workflow->add_job(cmd =>$cmd, script => undef, args => \@args,
                            inputs => [$final_dagchainer_file],
-                           outputs => ["$dotfile.html", "$dotfile.png",
-                           "$dotfile.x.png", "$dotfile.y.png"],
+                           outputs => \@outputs,
                            overwrite => $regen_images);
 
         $status = $YERBA->submit_workflow($workflow);
