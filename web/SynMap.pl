@@ -36,7 +36,7 @@ our($P, $DBNAME, $DBHOST, $DBPORT, $DBUSER, $DBPASS, $connstr, $DATE, $DEBUG,
     $DOTPLOT,  $SVG_DOTPLOT, $NWALIGN, $QUOTA_ALIGN, $CLUSTER_UTILS,
     $BLAST2RAW, $BASE_URL, $BLAST2BED, $SYNTENY_SCORE, $TEMPDIR, $TEMPURL,
     $ALGO_LOOKUP, $GZIP, $GUNZIP, $COOKIE_NAME, %FUNCTIONS, $YERBA,
-    $GENE_ORDER, $OUTPUTDIR, $PAGE_TITLE);
+    $GENE_ORDER, $PAGE_TITLE);
 
 $YERBA = CoGe::Accessory::Jex->new(host => "localhost", port => 5151);
 $P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
@@ -120,7 +120,6 @@ $ALGO_LOOKUP = {
 $DATADIR  = $P->{DATADIR};
 $DIAGSDIR = $P->{DIAGSDIR};
 $FASTADIR = $P->{FASTADIR};
-$OUTPUTDIR = $P->{OUTPUTDIR};
 
 mkpath( $TEMPDIR,    1, 0777 );
 mkpath( $FASTADIR,    1, 0777 );
@@ -1187,9 +1186,16 @@ sub go
             $opts{$k} =~ s/\s+$//;
     }
     my $dagchainer_D = $opts{D};
-    my $tiny_link = $opts{tiny_link};
+    my $dsgid1   = $opts{dsgid1};
+    my $dsgid2   = $opts{dsgid2};
+    my ($dir1, $dir2) = sort ($dsgid1, $dsgid2);
+    my $workflow_id = "$dir1-$dir2";
 
+    my $tiny_link = $opts{tiny_link};
     say STDERR "tiny_link is required for logging." unless defined($tiny_link);
+
+    my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
+    $workflow_id .= "-$tiny_id";
 
     #    my $dagchainer_g = $opts{g}; #depreciated -- will be a factor of -D
     my $dagchainer_A = $opts{A};
@@ -1212,8 +1218,7 @@ sub go
     my $feat_type1 = $opts{feat_type1};
     my $feat_type2 = $opts{feat_type2};
 
-    my $dsgid1   = $opts{dsgid1};
-    my $dsgid2   = $opts{dsgid2};
+
     my $ks_type  = $opts{ks_type};
     my $assemble = $opts{assemble} =~ /true/i ? 1 : 0;
     $assemble = 2 if $assemble && $opts{show_non_syn} =~ /true/i;
@@ -1297,9 +1302,11 @@ sub go
     $feat_type1 = "protein" if $blast == 5 && $feat_type1 eq "CDS";      #blastp time
     $feat_type2 = "protein" if $blast == 5 && $feat_type2 eq "CDS";      #blastp time
 
-    my ($dir1, $dir2) = sort ($dsgid1, $dsgid2);
-    my $makeflow_dir = "$OUTPUTDIR/$PAGE_TITLE/$dir1/$dir2/makeflow";
-    mkpath( $makeflow_dir, 0, 0755 ) unless -d $makeflow_dir;
+    my $result_dir = "$DATADIR/$PAGE_TITLE/$dir1/$dir2";
+    my $makeflow_dir = "$result_dir/makeflow";
+    my $logfile = "$makeflow_dir/synmap-$workflow_id.log";
+
+    mkpath( $makeflow_dir, 0, 0777 ) unless -d $makeflow_dir;
 
     ##########################################################################
     # Generate Fasta files
@@ -1349,7 +1356,7 @@ sub go
     my ($blastdb, @blastdb_files);
     if ( $ALGO_LOOKUP->{$blast}{formatdb} )
     {
-            $workflow = $YERBA->create_workflow(name => "blastdb",
+            $workflow = $YERBA->create_workflow(name => "blastdb-$workflow_id",
                                                 filepath => $makeflow_dir);
             my $write_log = 0;
             $cmd = $FORMATDB;
@@ -1360,6 +1367,10 @@ sub go
             push @args, ['-i', $fasta2, 1];
             push @args, ['-t', '"' . $org_name2 . '"', 1];
             push @args, ['-n', $basename, 1];
+
+            # Add logging
+            #push @args, ["", "2>&1", 0];
+            #push @args, [">>", $logfile, 0];
 
             $blastdb = $basename;
             $basename .= $feat_type2 eq "protein" ? ".p" : ".n";
@@ -1428,7 +1439,7 @@ sub go
                 fasta    => $fasta1,
                 db       => $blastdb,
                 basename => $dsgid1 . "_" . $dsgid2 . ".$feat_type1-$feat_type2." . $ALGO_LOOKUP->{$blast}{filename},
-                dir      => $OUTPUTDIR ."/" . $PAGE_TITLE . "/" . $dir1 . "/" . $dir2 . "/data",
+                dir      => $DATADIR ."/" . $PAGE_TITLE . "/" . $dir1 . "/" . $dir2 . "/data",
             },
     );
 
@@ -1449,7 +1460,7 @@ sub go
     my $problem = 0;
     my $raw_blastfile = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{blastfile};
 
-    $workflow = $YERBA->create_workflow(name => "blast",
+    $workflow = $YERBA->create_workflow(name => "blast-$workflow_id",
         filepath => $makeflow_dir);
 
     #blast! use Parallel::ForkManager
@@ -1480,6 +1491,10 @@ sub go
             push @args, ["-query", $fasta, 1];
             push @args, ["-db", $db, 1];
         }
+
+        # Add logging
+        #push @args, ["", "2>&1", 0];
+        #push @args, [">>", $logfile, 0];
 
         (undef, $cmd) = CoGe::Accessory::Web::check_taint($cmd);
         my @input = @blastdb_files;
@@ -1525,13 +1540,17 @@ sub go
     my $subject_bed = $raw_blastfile . ".s.bed";
 
 
-    $workflow = $YERBA->create_workflow(name => "blast2bed",
+    $workflow = $YERBA->create_workflow(name => "blast2bed-$workflow_id",
                                         filepath => $makeflow_dir);
 
     $cmd = $BLAST2BED;
     push @args, ['-infile', $raw_blastfile, 1];
     push @args, ['-outfile1', $query_bed, 1];
     push @args, ['-outfile2', $subject_bed, 1];
+
+    # Add logging
+    push @args, ["", "2>&1", 0];
+    push @args, [">>", $logfile, 0];
 
     if( $raw_blastfile =~ /genomic/) {
         $workflow->add_job(cmd => $cmd, script => undef, args => \@args,
@@ -1581,7 +1600,7 @@ sub go
     push @args, [">", $filtered_blastfile, 1];
 
     # Create and run workflow
-    $workflow = $YERBA->create_workflow(name => "blast2raw",
+    $workflow = $YERBA->create_workflow(name => "blast2raw-$workflow_id",
                                         filepath => $makeflow_dir);
 
     $workflow->add_job(cmd => $cmd, script=> undef, args => \@args,
@@ -1614,7 +1633,7 @@ sub go
     CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Converting blast file to dagchainer input file", $cogeweb->logfile );
 
-        $workflow = $YERBA->create_workflow(name => "dagtools",
+        $workflow = $YERBA->create_workflow(name => "dagtools-$workflow_id",
                                             filepath => $makeflow_dir);
 
     if( -r $filtered_blastfile && -s $filtered_blastfile )
@@ -1680,7 +1699,7 @@ sub go
             CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
             CoGe::Accessory::Web::write_log( "Converting dagchainer input into gene order coordinates", $cogeweb->logfile );
 
-            $workflow = $YERBA->create_workflow(name => "geneorder",
+            $workflow = $YERBA->create_workflow(name => "geneorder-$workflow_id",
                                                 filepath => $makeflow_dir);
 
             $cmd = $GENE_ORDER;
@@ -1690,6 +1709,10 @@ sub go
             push @args, ["", $dsgid2, 1];
             push @args, ["", $feat_type1, 1];
             push @args, ["", $feat_type2, 1];
+
+            # Add logging
+            #push @args, ["", "2>&1", 0];
+            #push @args, [">>", $logfile, 0];
 
             $workflow->add_job(cmd => $cmd, script=> undef, args => \@args,
                                inputs => [$dag_file12_all],
@@ -1772,7 +1795,7 @@ sub go
     $dagchainer_file .= ".aligncoords";
     $dagchainer_file .= ".ma2.dag" if $Dm && $gm;
 
-        $workflow = $YERBA->create_workflow(name => "dag_chainer",
+        $workflow = $YERBA->create_workflow(name => "dag_chainer-$workflow_id",
                                             filepath => $makeflow_dir);
 
         # These checks should be removed and added to job execution.
@@ -1806,6 +1829,11 @@ sub go
     if ( $Dm && $gm ) {
         $merged_dagchainer_file = "$dagchainer_file.merged";
         push @args, ["--merge", $dagchainer_file, 1];
+
+        # Add logging
+        #push @args, ["", "2>&1", 0];
+        #push @args, [">>", $logfile, 0];
+
         $workflow->add_job(cmd => $cmd, script => undef, args => \@args,
             inputs => [$dag_file12],
             outputs => [$dagchainer_file, $merged_dagchainer_file]);
@@ -1844,7 +1872,7 @@ sub go
         {
 
             #$merged_dagchainer_file = run_quota_align_merge( infile => $dagchainer_file, max_dist => $Dm );
-            $workflow = $YERBA->create_workflow(name => 'quota_align_merge',
+            $workflow = $YERBA->create_workflow(name => "quota_align_merge-$workflow_id",
                                                 filepath => $makeflow_dir);
 
             #ma stands for merge algo
@@ -1857,6 +1885,10 @@ sub go
             push @args, ['--log_evalue', $dagchainer_file, 1];
             push @args, ['', "$dagchainer_file.Dm$Dm.qa", 1];
 
+            # Add logging
+            #push @args, ["", "2>&1", 0];
+            #push @args, [">>", $logfile, 0];
+
             $workflow->add_job(cmd => $cmd, script => undef, args => \@args,
                                inputs => [$dagchainer_file],
                                outputs =>["$dagchainer_file.Dm$Dm.qa"]);
@@ -1866,6 +1898,10 @@ sub go
 
             push @args2, ['--Dm', $Dm, 1];
             push @args2, ['--merge', "$dagchainer_file.Dm$Dm.qa", 1];
+
+            # Add logging
+            #push @args, ["", "2>&1", 0];
+            #push @args, [">>", $logfile, 0];
 
             $workflow->add_job(cmd => $cmd, script => undef, args => \@args2,
                                inputs => ["$dagchainer_file.Dm$Dm.qa"],
@@ -1933,7 +1969,7 @@ sub go
 
         if ( $depth_algo == 1 )    #id 1 is to specify quota align
         {
-            $workflow = $YERBA->create_workflow(name =>'quota_align_coverage',
+            $workflow = $YERBA->create_workflow(name => "quota_align_coverage-$workflow_id",
                                                 filepath => $makeflow_dir);
             CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
             CoGe::Accessory::Web::write_log( "Running Quota Align", $cogeweb->logfile );
@@ -1950,6 +1986,10 @@ sub go
             push @args, ['--format', 'dag', 1];
             push @args, ['--log_evalue', $post_dagchainer_file_w_nearby, 1];
             push @args, ['', "$post_dagchainer_file_w_nearby.qa", 1];
+
+            # Add logging
+            #push @args, ["", "2>&1", 0];
+            #push @args, [">>", $logfile, 0];
 
             $workflow->add_job(cmd => $cmd, script => undef, args => \@args,
                             inputs => [$post_dagchainer_file_w_nearby],
@@ -2002,7 +2042,7 @@ sub go
 
             #$grimm_stuff = generate_grimm_input( infile => $quota_align_coverage );
 
-            $workflow = $YERBA->create_workflow(name => "grimm_input",
+            $workflow = $YERBA->create_workflow(name => "grimm_input-$workflow_id",
                                                 filepath => $makeflow_dir);
             $cmd = $CLUSTER_UTILS;
             @args = ();
@@ -2126,7 +2166,7 @@ sub go
             ($cmd, @args) = (undef, ());
 
             $cmd = $SVG_DOTPLOT;
-            $workflow = $YERBA->create_workflow(name => "gen-svg",
+            $workflow = $YERBA->create_workflow(name => "gen-svg-$workflow_id",
                                                 filepath => $makeflow_dir);
 
             push @args, ['--dag_file', $ks_blocks_file, 1];
@@ -2134,6 +2174,10 @@ sub go
             push @args, ['--xhead', '"'. $org_name1 . '"', 1] if $org_name1;
             push @args, ['--yhead', '"'. $org_name2 . '"', 1] if $org_name2;
             push @args, ['--output', $ks_blocks_file, 1];
+
+            # Add logging
+            #push @args, ["", "2>&1", 0];
+            #push @args, [">>", $logfile, 0];
 
             $svg_file = $ks_blocks_file . ".svg";
             $workflow->add_job(cmd => $cmd, script => undef, args => \@args,
@@ -2156,7 +2200,7 @@ sub go
         #######################################################################
         ($cmd, @args) = (undef, ());
 
-        $workflow = $YERBA->create_workflow(name => 'dotplot',
+        $workflow = $YERBA->create_workflow(name => "dotplot-$workflow_id",
                                             filepath => $makeflow_dir);
 
         CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
@@ -2231,6 +2275,10 @@ sub go
         push @args, ['-chr_sort_order', $chr_sort_order, 1] if defined $chr_sort_order;
         push @args  ['-min', $codeml_min, 1] if defined $codeml_min;
         push @args, ['-max', $codeml_max, 1] if defined $codeml_max;
+
+        # Add logging
+        #push @args, ["", "2>&1", 0];
+        #push @args, [">>", $logfile, 0];
 
         $workflow->add_job(cmd =>$cmd, script => undef, args => \@args,
                            inputs => [$final_dagchainer_file],
