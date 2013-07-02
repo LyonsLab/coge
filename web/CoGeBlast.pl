@@ -591,11 +591,11 @@ sub blast_search {
 
 	my $link = $P->{SERVER}.$PAGE_NAME."?dsgid=$blastable";
 	$link .= ";fid=$fid" if ($fid);
-	$link = CoGe::Accessory::Web::get_tiny_link( 
-		db => $coge, user_id => $USER->id, page => $PAGE_TITLE, 
-		url => $link, 
-		log_msg => 'Blast ' . length($seq) . ' characters against <a href="GenomeList.pl?dsgid=' . $blastable . '">' . split(/,/, $blastable) . ' genomes</a>' 
-	);
+	$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );
+
+    my $job = CoGe::Accessory::Web::get_job(
+      tiny_link => $link, title => $PAGE_TITLE, user_id => $USER->id,
+      db_object => $coge);
 
     my $job = CoGe::Accessory::Web::get_job(
         tiny_link => $link, title => $PAGE_TITLE, user_id => $USER->id,
@@ -747,7 +747,9 @@ Time to generate results page:   $resultpage_time
 };
 	CoGe::Accessory::Web::write_log( "$benchmark", $cogeweb->logfile );
 	CoGe::Accessory::Web::write_log( "Finished!", $cogeweb->logfile );
-	
+
+    $job->update({ status => 2 }) if defined($job);
+
 	return encode_json({html => $html, click_all_links => $click_all_links});
 }
 
