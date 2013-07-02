@@ -586,7 +586,7 @@ sub gen_dsg_menu
 };
     foreach (
         sort {
-            versioncmp($b->[2]->version, $a->[2]->version)
+                 versioncmp($b->[2]->version, $a->[2]->version)
               || $a->[2]->type->id <=> $b->[2]->type->id
               || $b->[3] cmp $a->[3]
         } @dsg_menu
@@ -714,7 +714,7 @@ sub get_genome_info
         $org_desc = join(
             "; ",
             map {
-                qq{<span class=link onclick="\$('#org_desc}
+                    qq{<span class=link onclick="\$('#org_desc}
                   . qq{$org_num').val('$_').focus();search_bar('org_desc$org_num'); timing('org_desc$org_num')">$_</span>}
               } split /\s*;\s*/,
             $org->description);
@@ -4347,62 +4347,63 @@ sub commify
 
 sub get_dotplot
 {
-	my %opts         = @_;
-	my $url          = $opts{url};
-	my $loc          = $opts{loc};
-	my $flip         = $opts{flip} eq "true" ? 1 : 0;
-	my $regen        = $opts{regen_images} eq "true" ? 1 : 0;
-	my $width        = $opts{width};
-	my $ksdb         = $opts{ksdb};
-	my $kstype       = $opts{kstype};
-	my $metric       = $opts{am};                               #axis metrix
-	my $relationship = $opts{ar};                               #axis relationship
-	my $max          = $opts{max};
-	my $min          = $opts{min};
-	my $color_type   = $opts{ct};
-	my $box_diags    = $opts{bd};
-	my $color_scheme = $opts{color_scheme};
-	my $fid1 = $opts{fid1};
-	my $fid2 = $opts{fid2};
-	#print STDERR Dumper \%opts;
-	$box_diags = $box_diags eq "true" ? 1 : 0;
+    my %opts         = @_;
+    my $url          = $opts{url};
+    my $loc          = $opts{loc};
+    my $flip         = $opts{flip} eq "true" ? 1 : 0;
+    my $regen        = $opts{regen_images} eq "true" ? 1 : 0;
+    my $width        = $opts{width};
+    my $ksdb         = $opts{ksdb};
+    my $kstype       = $opts{kstype};
+    my $metric       = $opts{am};                             #axis metrix
+    my $relationship = $opts{ar};                             #axis relationship
+    my $max          = $opts{max};
+    my $min          = $opts{min};
+    my $color_type   = $opts{ct};
+    my $box_diags    = $opts{bd};
+    my $color_scheme = $opts{color_scheme};
+    my $fid1         = $opts{fid1};
+    my $fid2         = $opts{fid2};
 
-	# base=8_8.CDS-CDS.blastn.dag_geneorder_D60_g30_A5;
+    #print STDERR Dumper \%opts;
+    $box_diags = $box_diags eq "true" ? 1 : 0;
 
-	$url = $P->{SERVER} . "run_dotplot.pl?" . $url;
-	$url .= ";flip=$flip"       if $flip;
-	$url .= ";regen=$regen"     if $regen;
-	$url .= ";width=$width"     if $width;
-	$url .= ";ksdb=$ksdb"       if $ksdb;
-	$url .= ";kstype=$kstype"   if $kstype;
-	$url .= ";log=1"            if $kstype;
-	$url .= ";min=$min"         if defined $min;
-	$url .= ";max=$max"         if defined $max;
-	$url .= ";am=$metric"       if defined $metric;
-	$url .= ";ar=$relationship" if defined $relationship;
-	$url .= ";ct=$color_type"   if $color_type;
-	$url .= ";bd=$box_diags"    if $box_diags;
-	$url .= ";cs=$color_scheme" if defined $color_scheme;
-	$url .= ";fid1=$fid1" if defined $fid1 && $fid1 =~ /^\d+$/;
-	$url .= ";fid2=$fid2" if defined $fid2 && $fid2 =~ /^\d+$/;
-	my $content = LWP::Simple::get($url);
-	unless ($content)
-	  {
-	    return "Unable to get image for dotplot: $url";
-	  }
-	($url) = $content =~ /url=(.*?)"/is;
-	my $png = $url;
-	$png =~ s/html$/png/;
-	$png =~ s/$URL/$DIR/;
-	my $img = GD::Image->new($png);
-	my ( $w, $h ) = $img->getBounds();
-	$w += 600;
-	$h += 250;
+    # base=8_8.CDS-CDS.blastn.dag_geneorder_D60_g30_A5;
 
-	if ($loc)
-	{
-		return ( $url, $loc, $w, $h );
-	}
-	my $html = qq{<iframe src=$url frameborder=0 width=$w height=$h scrolling=no></iframe>};
-	return $html;
+    $url = $P->{SERVER} . "run_dotplot.pl?" . $url;
+    $url .= ";flip=$flip"       if $flip;
+    $url .= ";regen=$regen"     if $regen;
+    $url .= ";width=$width"     if $width;
+    $url .= ";ksdb=$ksdb"       if $ksdb;
+    $url .= ";kstype=$kstype"   if $kstype;
+    $url .= ";log=1"            if $kstype;
+    $url .= ";min=$min"         if defined $min;
+    $url .= ";max=$max"         if defined $max;
+    $url .= ";am=$metric"       if defined $metric;
+    $url .= ";ar=$relationship" if defined $relationship;
+    $url .= ";ct=$color_type"   if $color_type;
+    $url .= ";bd=$box_diags"    if $box_diags;
+    $url .= ";cs=$color_scheme" if defined $color_scheme;
+    $url .= ";fid1=$fid1"       if defined $fid1 && $fid1 =~ /^\d+$/;
+    $url .= ";fid2=$fid2"       if defined $fid2 && $fid2 =~ /^\d+$/;
+
+    my $content = LWP::Simple::get($url);
+    unless ($content) {
+        return "Unable to get image for dotplot: $url";
+    }
+    ($url) = $content =~ /url=(.*?)"/is;
+    my $png = $url;
+    $png =~ s/html$/png/;
+    $png =~ s/$URL/$DIR/;
+    my $img = GD::Image->new($png);
+    my ($w, $h) = $img->getBounds();
+    $w += 600;
+    $h += 250;
+
+    if ($loc) {
+        return ($url, $loc, $w, $h);
+    }
+    my $html =
+      qq{<iframe src=$url frameborder=0 width=$w height=$h scrolling=no></iframe>};
+    return $html;
 }
