@@ -2251,7 +2251,6 @@ sub go
         CoGe::Accessory::Web::write_log( "Generating dotplot", $cogeweb->logfile );
 
         my ($basename) = $final_dagchainer_file =~ /([^\/]*aligncoords.*)/;    #.all.aligncoords/;
-        my $regen_images = $regen_images =~ /true/i ? 1 : 0;
         $width = 1000 unless defined($width);
 
         #add ks_db to dotplot command if requested
