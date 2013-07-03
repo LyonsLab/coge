@@ -388,7 +388,7 @@ sub validate_vcf_data_file {
 			return;
 		}
 		next if ($alt eq '.'); # skip monomorphic sites
-		$id = '' if (not defined $id or $id eq '.');
+		$id = '.' if (not defined $id);
 		$qual = 0 if (not defined $qual);
 		$info = '' if (not defined $info);
 
