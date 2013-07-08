@@ -167,7 +167,7 @@ $TANDEM_FINDER = $P->{TANDEM_FINDER}
   ; #-d option is the distance (in genes) between dups -- not sure if the -s and -r options are needed -- they create dups files based on the input file name
 
 #$RUN_DAGHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05 -s";
-$RUN_DAGCHAINER = $P->{DAGCHAINER};
+$RUN_DAGCHAINER = $PYTHON26 . " " . $P->{DAGCHAINER};
 $EVAL_ADJUST    = $P->{EVALUE_ADJUST};
 
 $FIND_NEARBY = $P->{FIND_NEARBY}
