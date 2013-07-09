@@ -256,6 +256,7 @@ sub get_item_info {
 				 '<b>Type:</b> ' . ($genome->type ? $genome->type->name : '') . '<br>' .
 				 '<b>Source:</b> ' . ($genome->source ? $genome->source->[0]->name : '') . '<br>' .
 				 '<b>Created:</b> ' . $date . '<br>' .
+				 '<b>Experiments:</b> ' . $genome->experiments . '<br>' .
 				 '<b>Groups with access:</b><br>' .
 				 '<div style="padding-left:20px;">' .
 				 ($group_str ? $group_str : 'None') . '<br>' .
@@ -282,6 +283,7 @@ sub get_item_info {
 				 '<b>Version:</b> ' . $experiment->version . '<br>' .
 				 '<b>Source:</b> ' . ($experiment->source ? $experiment->source->name : '') . '<br>' .
 				 '<b>Created:</b> ' . $experiment->date . '<br>' .
+				 '<b>Genome:</b> ' . $experiment->genome->info . '<br>' . 
 				 '<b>Groups with access:</b><br>' .
 				 '<div style="padding-left:20px;">' .
 				 ($group_str ? $group_str : 'None') . '<br>' .
