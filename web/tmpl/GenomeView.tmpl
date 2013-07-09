@@ -464,6 +464,7 @@ $(function() {
 	$('#select_view').change(function() {
 		var viewer = $(this).find("option:selected").val();
 		if (viewer == 'JBrowse') {
+			$(".dialog_box").dialog('close');
 			$('#main').hide();
 			$('#resize').hide();
 			$('#jbrowse').show();
