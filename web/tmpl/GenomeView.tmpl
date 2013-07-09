@@ -453,6 +453,7 @@ function getURLParameter(name) {
 }
 
 var jbrowse;
+var jbrowseIniting = false;
 $(function() {
 	$.ajaxSetup({
 		type: "POST",
@@ -468,7 +469,9 @@ $(function() {
 			$('#main').hide();
 			$('#resize').hide();
 			$('#jbrowse').show();
-			if (!jbrowse) {
+			if (!jbrowse && !jbrowseIniting) {
+				jbrowseIniting = true;
+				
 				//var height = $(document).height() - 230; // not working
 				//$('#jbrowse').height(height)
 				$('#jbrowse').html('<img src="picts/ajax-loader.gif"> Loading ...');
@@ -477,6 +480,7 @@ $(function() {
 				init_JBrowse('jbrowse',
 					function(browser) {
 						jbrowse = browser;
+						jbrowseIniting = false;
 					}
 				);
 			}
