@@ -326,11 +326,24 @@ See Also   :
 sub info
 {
 	my $self = shift;
+	my %opts = @_;
+	
+	my $source;
+	if ($opts{source}) { # added for performance
+		$source = $opts{source};
+	}
+	elsif ($self->source) {
+		$source = $self->source->name;
+	}
+	else {
+		$source = '<no source>';
+	}
+	
 	my $info;
 	$info .= "&reg; " if $self->restricted;
 	$info .= $self->name;
 	$info .= ": " . $self->description if $self->description;
-	$info .= " (v" . $self->version . ", eid" . $self->id . "): " . ($self->source ? $self->source->name : '<no source>');
+	$info .= " (v" . $self->version . ", eid" . $self->id . "): " . $source;
 	return $info;
 }
 

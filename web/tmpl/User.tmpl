@@ -200,15 +200,16 @@ function select_item() {
 }
 
 function sync_items(html) {
+var start_time = new Date().getTime();
+
 	var content1 = $('#contents_table div');
 	var content2 = $(html).filter('div');
 
 	var insertIndex = 0;
 	content2.each(
 		function() {
-			var match = content1.filter('#'+this.id).get(0);
+			var match = document.getElementById('#'+this.id);//content1.filter('#'+this.id).get(0);
 			if (!match) { // item doesn't exist
-				//console.log(this.id);
 				$(this).insertBefore( content1.get(insertIndex) );
 			}
 			else { // item exists
@@ -219,11 +220,16 @@ function sync_items(html) {
 			}
 		}
 	);
+	
+var end_time = new Date().getTime();
+console.log('sync_items: '+(end_time-start_time));
 }
 
-function get_contents(poll) {
+function get_contents(sync) {
 	var myName = arguments.callee.toString();
 	pageObj.timestamp[myName] = new Date().getTime();
+	
+	var lastUpdate = (sync ? pageObj.timestamp['lastUpdate'] : 0);
 
 	// Clear pending refresh
 	cancel_poll();
@@ -232,6 +238,7 @@ function get_contents(poll) {
 		data: {
 			jquery_ajax: 1,
 			fname: 'get_contents',
+			last_update: lastUpdate,
 			timestamp: pageObj.timestamp[myName]
 		},
 		success : function(data) {
@@ -240,12 +247,13 @@ function get_contents(poll) {
 				if (!pageObj.timestamp[myName] || obj.timestamp >= pageObj.timestamp[myName]) {
 					pageObj.timestamp[myName] = obj.timestamp;
 					
-					if (poll) {
+					if (sync) { // merge with existing contents
 						sync_items(obj.html);
 					}
-					else {
+					else { // replace existing contents
 						$('#contents_table').html(obj.html);
 					}
+					pageObj.timestamp['lastUpdate'] = obj.lastUpdate;
 					filter_contents();
 				}
 			}
