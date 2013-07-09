@@ -7,6 +7,6 @@ CoGe is a web-based platform that provides tools and databases to assist biologi
 Installation
 ------------
 
-Please visit for installation instructions:
+For detailed installation instructions please visit:
 *http://genomevolution.org/wiki/index.php/Install_coge*
 
