@@ -200,8 +200,6 @@ function select_item() {
 }
 
 function sync_items(html) {
-var start_time = new Date().getTime();
-
 	var content1 = $('#contents_table div');
 	var content2 = $(html).filter('div');
 
@@ -220,9 +218,6 @@ var start_time = new Date().getTime();
 			}
 		}
 	);
-	
-var end_time = new Date().getTime();
-console.log('sync_items: '+(end_time-start_time));
 }
 
 function get_contents(sync) {
