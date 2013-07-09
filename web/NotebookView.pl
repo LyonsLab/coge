@@ -245,7 +245,7 @@ qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' o
 	    my $link =
 qq{window.open('GenomeView.pl?gid=$gid&viewer=JBrowse&tracks=notebook$lid');};
         $html .=
-qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="$link">View</span>};
+qq{<span style="font-size: .75em" class='ui-button ui-corner-all ui-button-icon-right' onClick="$link"><span class="ui-icon ui-icon-extlink"></span>View</span>};
     }
 
     return $html;
