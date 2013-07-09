@@ -26,7 +26,7 @@ no warnings 'redefine';
 
 use vars
   qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE $PAGE_NAME
-  $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION
+  $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION $EMBED
   $COOKIE_NAME $FORM $URL $COGEDIR $TEMPDIR $TEMPURL $MAX_SEARCH_RESULTS);
 $P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 
@@ -148,7 +148,9 @@ sub dispatch {
 
 sub gen_html {
     my $template;
-    if ( $FORM->param('embed') ) {
+    
+    $EMBED = $FORM->param('embed');
+    if ($EMBED) {
         $template =
           HTML::Template->new(
             filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
@@ -236,6 +238,14 @@ qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_
         }
         $html .=
 qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_list();">Delete</span>};
+    }
+    
+    if ( !$EMBED and $list->experiments(count => 1) ) {
+    	my $gid = shift [ map { $_->genome_id } $list->experiments ]; # pick a genome, any genome
+	    my $link =
+qq{window.open('GenomeView.pl?gid=$gid&viewer=JBrowse&tracks=notebook$lid');};
+        $html .=
+qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="$link">View</span>};
     }
 
     return $html;
