@@ -1745,6 +1745,8 @@ sub get_master_syn_sets {
             $tmp =~ s/://g;
             $tmp =~ s/;//g;
             $tmp =~ s/#/_/g;
+            $tmp =~ s/'//g;
+            $tmp =~ s/"//g;
         }
         my $dsgid1 = $qdsg->id;
         my $dsgid2 = $dsg->id;
@@ -1950,6 +1952,8 @@ sub get_unique_genes {
         $tmp =~ s/://g;
         $tmp =~ s/;//g;
         $tmp =~ s/#/_/g;
+        $tmp =~ s/'//g;
+        $tmp =~ s/"//g;
     }
     my $dsgid1 = $qdsg->id;
     my $dsgid2 = $sdsg->id;
