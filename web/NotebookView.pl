@@ -148,7 +148,7 @@ sub dispatch {
 
 sub gen_html {
     my $template;
-    
+
     $EMBED = $FORM->param('embed');
     if ($EMBED) {
         $template =
@@ -239,13 +239,19 @@ qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_
         $html .=
 qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_list();">Delete</span>};
     }
-    
-    if ( !$EMBED and $list->experiments(count => 1) ) {
-    	my $gid = shift [ map { $_->genome_id } $list->experiments ]; # pick a genome, any genome
-	    my $link =
+
+    if ( !$EMBED and $list->experiments( count => 1 ) ) {
+        foreach my $gid (
+            sort { $a <=> $b }
+            map  { $_->genome_id } $list->experiments
+          )
+        {    # pick a genome, any genome
+            my $link =
 qq{window.open('GenomeView.pl?gid=$gid&viewer=JBrowse&tracks=notebook$lid');};
-        $html .=
+            $html .=
 qq{<span style="font-size: .75em" class='ui-button ui-corner-all ui-button-icon-right' onClick="$link"><span class="ui-icon ui-icon-extlink"></span>View</span>};
+            last;
+        }
     }
 
     return $html;
@@ -372,7 +378,8 @@ sub get_annotations {
         my $group = (
             defined $a->type->group
             ? $a->type->group->name . ':' . $a->type->name
-            : $a->type->name );
+            : $a->type->name
+        );
         push @{ $groups{$group} }, $a;
         $num_annot++;
     }
@@ -383,21 +390,23 @@ sub get_annotations {
     foreach my $group ( sort keys %groups ) {
         my $first = 1;
         foreach my $a ( sort { $a->id <=> $b->id } @{ $groups{$group} } ) {
-            $html .=
-              "<tr style='vertical-align:top;'>"
-              . ( $first-- > 0
+            $html .= "<tr style='vertical-align:top;'>"
+              . (
+                $first-- > 0
                 ? "<th align='right' class='title5' rowspan='"
                   . @{ $groups{$group} }
                   . "' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;'>$group:</th>"
-                : '' );
+                : ''
+              );
 
             $html .= "<td>";
             my $image_link =
               ( $a->image ? 'image.pl?id=' . $a->image->id : '' );
-            my $image_info =
-              ( $a->image
+            my $image_info = (
+                $a->image
                 ? "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='padding:1px;border:1px solid lightgray;vertical-align:text-top;'></a>"
-                : '' );
+                : ''
+            );
             $html .= $image_info if $image_info;
             $html .= "</td>";
 
@@ -638,11 +647,12 @@ sub get_list_contents {
 
     #	my $delete_count=0;
     foreach my $genome ( sort genomecmp $list->genomes ) {
-        $html .=
-          "<tr valign='top'>"
-          . ( $first-- > 0
+        $html .= "<tr valign='top'>"
+          . (
+            $first-- > 0
             ? "<th align='right' class='title5' rowspan='$genome_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Genomes ($genome_count):</th>"
-            : '' );
+            : ''
+          );
 
         #		if ($genome->deleted) {
         #		    $delete_count++;
@@ -674,11 +684,12 @@ qq{<td class='data5'><span id='genome$gid' class='link' onclick="window.open('Ge
     my $exp_count = $list->experiments( count => 1 )
       ;    #EL: moved outside of loop; massive speed improvement
     foreach my $experiment ( sort experimentcmp $list->experiments ) {
-        $html .=
-          "<tr valign='top'>"
-          . ( $first-- > 0
+        $html .= "<tr valign='top'>"
+          . (
+            $first-- > 0
             ? "<th align='right' class='title5' rowspan='$exp_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Experiments ($exp_count):</th>"
-            : '' );
+            : ''
+          );
         my $eid = $experiment->id;
         $html .=
 qq{<td class='data5'><span id='experiment$eid' class='link' onclick="window.open('ExperimentView.pl?eid=$eid')">}
@@ -698,11 +709,12 @@ qq{<td class='data5'><span id='experiment$eid' class='link' onclick="window.open
     my $feat_count = $list->features( count => 1 )
       ;    #EL: moved outside of loop; massive speed improvement
     foreach my $feature ( sort featurecmp $list->features ) {
-        $html .=
-          "<tr valign='top'>"
-          . ( $first-- > 0
+        $html .= "<tr valign='top'>"
+          . (
+            $first-- > 0
             ? "<th align='right' class='title5' rowspan='$feat_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Features ($feat_count):</th>"
-            : '' );
+            : ''
+          );
         my $fid = $feature->id;
         $html .=
 qq{<td class='data5'><span id='feature$fid' class='link' onclick="window.open('FeatView.pl?fid=$fid')">}
@@ -721,11 +733,12 @@ qq{<td class='data5'><span id='feature$fid' class='link' onclick="window.open('F
     $first = 1;
     my $list_count = $list->lists( count => 1 );
     foreach my $list ( sort listcmp $list->lists ) {
-        $html .=
-          "<tr valign='top'>"
-          . ( $first-- > 0
+        $html .= "<tr valign='top'>"
+          . (
+            $first-- > 0
             ? "<th align='right' class='title5' rowspan='$list_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Notebooks ($list_count):</th>"
-            : '' );
+            : ''
+          );
         my $child_id = $list->id;
         $html .=
 qq{<td class='data5'><span id='list$child_id' class='link' onclick="window.open('$PAGE_TITLE.pl?lid=$child_id')">}
