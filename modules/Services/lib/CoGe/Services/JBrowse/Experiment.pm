@@ -258,6 +258,7 @@ sub features {
     my $results = '';
     foreach my $exp (@experiments)
     { #TODO need to move this code along with replicate in bin/fastbit_query.pl into CoGe::Web sub-module
+        my $eid          = $exp->id;
         my $storage_path = $exp->storage_path;
         my $data_type    = $exp->data_type;
 
@@ -295,7 +296,6 @@ sub features {
                     $end = $start + 1 if ( $end == $start ); #FIXME revisit this
                     $strand = -1 if ( $strand == 0 );
                     $value1 = $strand * $value1;
-                    my $eid = $exp->id;
                     $results .= ( $results ? ',' : '' )
                       . qq{{ "id": $eid, "start": $start, "end": $end, "score": $value1, "score2": $value2 }};
                 }
@@ -329,12 +329,13 @@ sub features {
                         $ref, $alt,   $qual, $info
                     ) = @items;
                     $end = $start + 1 if ( $end == $start ); #FIXME revisit this
-                    $id = "$type $ref > $alt" if ( $id eq '.' );
-                    my $label = "$type $ref > $alt";
+                    my $name =
+                      ( ( $id && $id ne '.' ) ? "$id " : '' )
+                      . "$type $ref > $alt";
                     $type = $type . $ref . 'to' . $alt
                       if ( lc($type) eq 'snp' );
                     $results .= ( $results ? ',' : '' )
-                      . qq{{ "id": "$id", "name": "$label", "type": "$type", "start": $start, "end": $end, "score": $qual, "info": "$info" }};
+                      . qq{{ "id": $eid, "name": "$name", "type": "$type", "start": $start, "end": $end, "score": $qual, "info": "$info" }};
                 }
             }
         }

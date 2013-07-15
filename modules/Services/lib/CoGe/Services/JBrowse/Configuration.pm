@@ -10,6 +10,10 @@ use Cwd 'abs_path';
 use Time::HiRes qw ( time );
 
 my $coge_conf;
+my %expTypeToName = (
+    1 => 'quant',
+    2 => 'snp'
+);
 
 sub setup {
     my $self = shift;
@@ -252,7 +256,11 @@ sub track_config {
             push @notebooks, $n->id;
             $all_notebooks{ $n->id } = $n;
             push @{ $expByNotebook{ $n->id } },
-              { id => $e->id, name => $e->name };
+              {
+                id   => $e->id,
+                name => $e->name,
+                type => $expTypeToName{ $e->data_type }
+              };
         }
         push @notebooks, 0;    # add fake "all experiments" notebook
 
