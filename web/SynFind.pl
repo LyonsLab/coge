@@ -4,6 +4,7 @@ use CoGeX;
 use DBIxProfiler;
 
 use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web;
 use CGI;
 use CGI::Ajax;
@@ -22,8 +23,9 @@ no warnings 'redefine';
 #example URL: http://toxic.berkeley.edu/CoGe/SynFind.pl?fid=34519245;qdsgid=3;dsgid=4241,6872,7084,7094,7111
 
 use vars
-  qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $DIR $URL $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $BEDDIR $LASTZ $LAST $CONVERT_BLAST $BLAST2BED $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $SERVER $connstr $COOKIE_NAME);
+  qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $DIR $URL $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $BEDDIR $LASTZ $LAST $CONVERT_BLAST $BLAST2BED $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $SERVER $connstr $COOKIE_NAME $YERBA $GEN_FASTA);
 
+$YERBA     = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
 #refresh again?
 $P             = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 $ENV{PATH}     = $P->{COGEDIR};
@@ -57,6 +59,7 @@ $LAST =
   . " --dbpath="
   . $P->{LASTDB};
 
+$GEN_FASTA     = $P->{GEN_FASTA};
 $CONVERT_BLAST    = $P->{CONVERT_BLAST};
 $BLAST2BED        = $P->{BlAST2BED};
 $BLAST2RAW        = $P->{BLAST2RAW};
@@ -694,7 +697,7 @@ sub get_orgs_feat {
     }
     my $html;
     $html .=
-        qq{<FONT CLASS ="small" id="org_count">Organism count: } 
+        qq{<FONT CLASS ="small" id="org_count">Organism count: }
       . $count
       . qq{</FONT>\n<BR>\n};
     if ( $search && !@opts ) {
@@ -808,7 +811,7 @@ sub get_data_source_info_for_accn {
         $count++;
     }
     $html .= qq{</SELECT>\n};
-    return ("<font class=small>Dataset count: " 
+    return ("<font class=small>Dataset count: "
           . $count
           . "</font>\n<BR>\n"
           . $html );
@@ -889,6 +892,16 @@ sub go_synfind {
     my $source_type = has_cds($source_dsgid);
     $source_type = $source_type ? "CDS" : "genomic";
     my @dsgids;
+
+    ###########################################################################
+    # Setup workflow
+    ###########################################################################
+    my $config = $ENV{HOME} . "coge.conf";
+    my $workflow = $YERBA->create_workflow(
+        name    => "synfind-$dsgids",
+        logfile => $cogeweb->logfile
+    );
+
     foreach my $dsgid ( split( /,/, $dsgids ) ) {
         ($dsgid) = $dsgid =~ /(\d+)/;
         my $has_cds = has_cds($dsgid);
@@ -905,25 +918,48 @@ sub go_synfind {
         }
     }
 
-    my $pm = new Parallel::ForkManager($MAX_PROC);
-
     #Generate fasta files and blastdbs
     my @to_process;
     push @to_process, [ $source_dsgid, $source_type ] if $source_dsgid;
     push @to_process, @dsgids;
+
     foreach my $item (@to_process) {
-        $pm->start and next;
         my ( $dsgid, $feat_type ) = @$item;
+        my $fasta = $FASTADIR . "/$dsgid-$feat_type.fasta";
 
-        my ( $fasta, $org_name ) =
-          gen_fasta( dsgid => $dsgid, feat_type => $feat_type, write_log => 1 );
+        my @fasta_args = (
+            [ "--config",       $config,     0 ],
+            [ "--genome_id",    $dsgid,     1 ],
+            [ "--feature_type", $feat_type, 1 ],
+            [ "--fasta",        $fasta,     1 ]
+        );
 
-#	my $blastdb = gen_blastdb(dbname=>"$dsgid-$feat_type-new",fasta=>$fasta,org_name=>$org_name);
-        make_bed( dsgid => $dsgid, outfile => $BEDDIR . $dsgid . ".bed" );
-        $pm->finish;
+        $workflow->add_job(
+            cmd     => $GEN_FASTA,
+            script  => undef,
+            args    => \@fasta_args,
+            inputs  => undef,
+            outputs => [$fasta]
+        );
+
+        my @bed_args = (
+            ['-dsgid', $dsgid, 1],
+            ['>', $BEDDIR . $dsgid . ".bed", 1]
+        );
+
+        $workflow->add_job(
+            cmd     => $DATASETGROUP2BED,
+            script  => undef,
+            args    => \@bed_args,
+            inputs  => undef,
+            outputs => [$BEDDIR . $dsgid . ".bed"]
+        );
     }
-    $pm->wait_all_children();
 
+    my $status = $YERBA->submit_workflow($workflow);
+    $YERBA->wait_for_completion( $workflow->name );
+
+    my $pm = new Parallel::ForkManager($MAX_PROC);
     #Generate fasta files and blastdbs
     my @target_info;    #store all the stuff about a genome
     foreach my $item (@to_process) {
