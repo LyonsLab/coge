@@ -165,7 +165,8 @@ sub stats_region {    #FIXME lots of code in common with features()
         $max = $x if ( not defined $max or $x > $max );
         $count++;
     }
-    my $mean = $sum / $count;
+    my $mean = 0;
+    $mean = $sum / $count if ($count);
 
     return encode_json(
         {
@@ -328,12 +329,12 @@ sub features {
                         $ref, $alt,   $qual, $info
                     ) = @items;
                     $end = $start + 1 if ( $end == $start ); #FIXME revisit this
-                    $id = '' if ( $id eq '.' );
+                    $id = "$type $ref > $alt" if ( $id eq '.' );
                     my $label = "$type $ref > $alt";
                     $type = $type . $ref . 'to' . $alt
                       if ( lc($type) eq 'snp' );
                     $results .= ( $results ? ',' : '' )
-                      . qq{{ "id": "$id", "name": "$label", "type": "$type", "start": $start, "end": $end, "score": $qual }};
+                      . qq{{ "id": "$id", "name": "$label", "type": "$type", "start": $start, "end": $end, "score": $qual, "info": "$info" }};
                 }
             }
         }

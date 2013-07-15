@@ -287,11 +287,12 @@ sub track_config {
                 histScale    => 0.005,
                 labelScale   => 0.05,
                 showLabels   => 'true',
-                className    => '{type}'
+                className    => '{type}',
+                histCss      => 'background-color:' . getFeatureColor($eid)
             },
 
             # CoGe-specific stuff
-            onClick         => "ExperimentView.pl?embed=1&eid=$eid",
+            #onClick         => "ExperimentView.pl?embed=1&eid=$eid",
             showHoverScores => 1,
             coge            => {
                 id      => $eid,
@@ -407,6 +408,14 @@ sub track_config {
             tracks => \@tracks,
         }
     );
+}
+
+# FIXME this is duplicated in JBrowse MultiXYPlot.js, need to either make totally client side or totally server side
+sub getFeatureColor {
+    my $id = shift;
+    return '#'
+      . sprintf( "%06X",
+        ( ( ( ( $id * 1234321 ) % 0x1000000 ) | 0x444444 ) & 0xe7e7e7 ) );
 }
 
 # FIXME this comparison routine is duplicated elsewhere
