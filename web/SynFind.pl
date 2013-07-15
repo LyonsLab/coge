@@ -65,7 +65,7 @@ $BLAST2BED        = $P->{BlAST2BED};
 $BLAST2RAW        = $P->{BLAST2RAW};
 $SYNTENY_SCORE    = $P->{SYNTENY_SCORE};
 $PYTHON26         = $P->{PYTHON};
-$DATASETGROUP2BED = $P->{DATASETGROUP2BED} . " -cf " . $ENV{HOME} . 'coge.conf';
+$DATASETGROUP2BED = $P->{DATASETGROUP2BED};
 
 $DATE = sprintf(
     "%04d-%02d-%02d %02d:%02d:%02d",
@@ -887,12 +887,6 @@ sub go_synfind {
     my @blast_results;
     my $html;
 
-    #check for taint
-    ($source_dsgid) = $source_dsgid =~ /(\d+)/;
-    my $source_type = has_cds($source_dsgid);
-    $source_type = $source_type ? "CDS" : "genomic";
-    my @dsgids;
-
     ###########################################################################
     # Setup workflow
     ###########################################################################
@@ -902,12 +896,35 @@ sub go_synfind {
         logfile => $cogeweb->logfile
     );
 
-    foreach my $dsgid ( split( /,/, $dsgids ) ) {
+    my ( $query_info, @target_info );
+
+    foreach my $dsgid ( $source_dsgid, split( /,/, $dsgids ) ) {
+
+        #check for taint
         ($dsgid) = $dsgid =~ /(\d+)/;
-        my $has_cds = has_cds($dsgid);
+
+        my $has_cds   = has_cds($dsgid);
         my $feat_type = $has_cds ? "CDS" : "genomic";
-        push @dsgids, [ $dsgid, $feat_type ] if $dsgid && $has_cds;
-        if ( !$has_cds ) {
+        my $fasta     = $FASTADIR . "/$dsgid-$feat_type.fasta";
+
+        say STDERR "ID: $dsgid FeatType: $feat_type";
+
+        if ( $dsgid && $has_cds ) {
+            my ( $org_name, $title ) = gen_org_name(
+                dsgid     => $dsgid,
+                feat_type => $feat_type,
+                write_log => 1
+            );
+
+            push @target_info,
+              {
+                dsgid     => $dsgid,
+                feat_type => $feat_type,
+                fasta     => $fasta,
+                org_name  => $org_name,
+              };
+        }
+        else {
             my $dsg = $coge->resultset('Genome')->find($dsgid);
             CoGe::Accessory::Web::write_log( "#WARNING:#", $cogeweb->logfile );
             CoGe::Accessory::Web::write_log(
@@ -915,71 +932,50 @@ sub go_synfind {
                   . " does not have CDS sequences.  Can't process in SynFind.\n",
                 $cogeweb->logfile
             );
+            next;
         }
-    }
 
-    #Generate fasta files and blastdbs
-    my @to_process;
-    push @to_process, [ $source_dsgid, $source_type ] if $source_dsgid;
-    push @to_process, @dsgids;
-
-    foreach my $item (@to_process) {
-        my ( $dsgid, $feat_type ) = @$item;
-        my $fasta = $FASTADIR . "/$dsgid-$feat_type.fasta";
-
-        my @fasta_args = (
+        my $fasta_args = [
             [ "--config",       $config,    0 ],
             [ "--genome_id",    $dsgid,     1 ],
             [ "--feature_type", $feat_type, 1 ],
             [ "--fasta",        $fasta,     1 ]
-        );
+        ];
 
         $workflow->add_job(
             cmd     => $GEN_FASTA,
             script  => undef,
-            args    => \@fasta_args,
+            args    => $fasta_args,
             inputs  => undef,
             outputs => [$fasta]
         );
 
-        my @bed_args =
-          ( [ '-dsgid', $dsgid, 1 ], [ '>', $BEDDIR . $dsgid . ".bed", 1 ] );
+        my $bed_args = [
+            [ " -cf ",  $config,                   0 ],
+            [ '-dsgid', $dsgid,                    1 ],
+            [ '>',      $BEDDIR . $dsgid . ".bed", 1 ]
+        ];
 
         $workflow->add_job(
             cmd     => $DATASETGROUP2BED,
             script  => undef,
-            args    => \@bed_args,
+            args    => $bed_args,
             inputs  => undef,
             outputs => [ $BEDDIR . $dsgid . ".bed" ]
         );
     }
+
+    #query is the first item on this list.
+    $query_info = shift @target_info;
+    say STDERR "QUERY ID: $query_info->{dsgid}";
 
     my $status = $YERBA->submit_workflow($workflow);
     $YERBA->wait_for_completion( $workflow->name );
 
     my $pm = new Parallel::ForkManager($MAX_PROC);
 
-    #Generate fasta files and blastdbs
-    my @target_info;    #store all the stuff about a genome
-    foreach my $item (@to_process) {
-        my ( $dsgid, $feat_type ) = @$item;
-        my ( $fasta, $org_name ) =
-          gen_fasta( dsgid => $dsgid, feat_type => $feat_type, write_log => 0 );
-
-#	my $blastdb = gen_blastdb(dbname=>"$dsgid-$feat_type-new",fasta=>$fasta,org_name=>$org_name, write_log=>0);
-        push @target_info, {
-            dsgid     => $dsgid,
-            feat_type => $feat_type,
-            fasta     => $fasta,
-            org_name  => $org_name,
-
-            #			    blastdb=>$blastdb,
-        };
-    }
-    my $query_info = shift @target_info
-      if $source_dsgid;    #query is the first item on this list.
-     #need to create blastfile name.  Must be alphabetized on query and target names.
     foreach my $target (@target_info) {
+        say STDERR "TARGET: $target->{dsgid}";
         my ( $org1, $org2 ) = ( $query_info->{org_name}, $target->{org_name} );
         my ( $dsgid1, $dsgid2 ) = ( $query_info->{dsgid}, $target->{dsgid} );
         my ( $feat_type1, $feat_type2 ) =
@@ -1102,7 +1098,8 @@ sub go_synfind {
     $pm->wait_all_children();
 
     #make table of results
-    my %dsgids = map { $_->[0], => 1 } @dsgids;    #table to look them up later;
+    #table to look them up later;
+    my %dsgids = map { $_->{dsgid}, => 1 } @target_info;
     $dsgids{$source_dsgid} = 1;
 
     $html .=
