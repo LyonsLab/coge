@@ -1,4 +1,5 @@
 #! /usr/bin/perl -w
+use v5.10;
 use strict;
 use CoGeX;
 use DBIxProfiler;
