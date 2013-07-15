@@ -95,10 +95,8 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     },    
     
     renderBlock: function( args ) {
-    	console.log(args);
     	var featureScale = this.config.style.featureScale;
     	var scale = args.block.scale;
-    	console.log(scale + ' ' + featureScale);
     	if (scale <= featureScale) { // don't draw, too zoomed-out, modeled after HTMLFeatures
     		this.fillTooManyFeaturesMessage(args.blockIndex, args.block, scale);
     	}
