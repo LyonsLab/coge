@@ -995,7 +995,7 @@ sub go_synfind {
           = (
             $org2, $org1, $dsgid2, $dsgid1, $feat_type2, $feat_type1, $fasta2,
             $fasta1
-          ) if ( $org2 lt $org1 );
+          ) if ( $dsgid2 lt $dsgid1 );
 
         my $basedir = $DIAGSDIR . "/" . $dsgid1 . "/" . $dsgid2;
         mkpath( $basedir, 0, 0777 ) unless -d $basedir;
