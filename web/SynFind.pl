@@ -25,8 +25,7 @@ no warnings 'redefine';
 use vars
   qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $DIR $URL $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $BEDDIR $LASTZ $LAST $CONVERT_BLAST $BLAST2BED $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $SERVER $connstr $COOKIE_NAME $YERBA $GEN_FASTA);
 
-$YERBA     = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
-#refresh again?
+$YERBA         = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
 $P             = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 $ENV{PATH}     = $P->{COGEDIR};
 $TEMPDIR       = $P->{TEMPDIR} . "SynFind";
@@ -59,7 +58,7 @@ $LAST =
   . " --dbpath="
   . $P->{LASTDB};
 
-$GEN_FASTA     = $P->{GEN_FASTA};
+$GEN_FASTA        = $P->{GEN_FASTA};
 $CONVERT_BLAST    = $P->{CONVERT_BLAST};
 $BLAST2BED        = $P->{BlAST2BED};
 $BLAST2RAW        = $P->{BLAST2RAW};
@@ -697,7 +696,7 @@ sub get_orgs_feat {
     }
     my $html;
     $html .=
-        qq{<FONT CLASS ="small" id="org_count">Organism count: }
+        qq{<FONT CLASS ="small" id="org_count">Organism count: } 
       . $count
       . qq{</FONT>\n<BR>\n};
     if ( $search && !@opts ) {
@@ -811,7 +810,7 @@ sub get_data_source_info_for_accn {
         $count++;
     }
     $html .= qq{</SELECT>\n};
-    return ("<font class=small>Dataset count: "
+    return ("<font class=small>Dataset count: " 
           . $count
           . "</font>\n<BR>\n"
           . $html );
@@ -896,7 +895,7 @@ sub go_synfind {
     ###########################################################################
     # Setup workflow
     ###########################################################################
-    my $config = $ENV{HOME} . "coge.conf";
+    my $config   = $ENV{HOME} . "coge.conf";
     my $workflow = $YERBA->create_workflow(
         name    => "synfind-$dsgids",
         logfile => $cogeweb->logfile
@@ -928,7 +927,7 @@ sub go_synfind {
         my $fasta = $FASTADIR . "/$dsgid-$feat_type.fasta";
 
         my @fasta_args = (
-            [ "--config",       $config,     0 ],
+            [ "--config",       $config,    0 ],
             [ "--genome_id",    $dsgid,     1 ],
             [ "--feature_type", $feat_type, 1 ],
             [ "--fasta",        $fasta,     1 ]
@@ -942,17 +941,15 @@ sub go_synfind {
             outputs => [$fasta]
         );
 
-        my @bed_args = (
-            ['-dsgid', $dsgid, 1],
-            ['>', $BEDDIR . $dsgid . ".bed", 1]
-        );
+        my @bed_args =
+          ( [ '-dsgid', $dsgid, 1 ], [ '>', $BEDDIR . $dsgid . ".bed", 1 ] );
 
         $workflow->add_job(
             cmd     => $DATASETGROUP2BED,
             script  => undef,
             args    => \@bed_args,
             inputs  => undef,
-            outputs => [$BEDDIR . $dsgid . ".bed"]
+            outputs => [ $BEDDIR . $dsgid . ".bed" ]
         );
     }
 
@@ -960,6 +957,7 @@ sub go_synfind {
     $YERBA->wait_for_completion( $workflow->name );
 
     my $pm = new Parallel::ForkManager($MAX_PROC);
+
     #Generate fasta files and blastdbs
     my @target_info;    #store all the stuff about a genome
     foreach my $item (@to_process) {
@@ -1855,6 +1853,7 @@ sub get_master_syn_sets {
                 my $max;
                 my @syntelog_count;
               SET:
+
                 foreach my $set (
                     @data) #iterate through each genome -- first is query genome
                 {
@@ -1905,7 +1904,7 @@ sub get_master_syn_sets {
 
 #		    my ($name_hash) = sort {$b->{primary_name} <=> $a->{primary_name} || $a->{name} cmp $b->{name}} $rs->search({feature_id=>$fid});
                             my ($name_hash) = sort {
-                                $b->primary_name <=> $a->primary_name
+                                     $b->primary_name <=> $a->primary_name
                                   || $a->name cmp $b->name
                               } $coge->resultset('FeatureName')
                               ->search( { feature_id => $fid } );
