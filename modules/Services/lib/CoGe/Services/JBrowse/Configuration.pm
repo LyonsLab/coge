@@ -205,14 +205,16 @@ sub track_config {
                 storeClass   => "JBrowse/Store/SeqFeature/REST",
                 onClick =>
 "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end};type=$type_name",
-                maxFeatureScreenDensity => 50,
+                maxFeatureScreenDensity => 1000,     #50,
                 maxHeight               => 100000,
                 style                   => {
-                    arrowheadClass           => "arrowhead",
-                    className                => "generic_parent",
-                    _defaultHistScale        => 4,
-                    _defaultLabelScale       => 30,
-                    _defaultDescriptionScale => 120,
+                    arrowheadClass => "arrowhead",
+                    className      => "generic_parent",
+                    histScale      => 0.05,
+
+#_defaultHistScale        => 4,   #FIXME: not supposed to be set by user?  HTMLFeatures.js
+#_defaultLabelScale       => 30,  #FIXME: not supposed to be set by user?  HTMLFeatures.js
+#_defaultDescriptionScale => 120, #FIXME: not supposed to be set by user?  HTMLFeatures.js
                     minSubfeatureWidth       => 6,
                     maxDescriptionLength     => 70,
                     showLabels               => 'true',
@@ -266,6 +268,7 @@ sub track_config {
         #			}
         #		}
 
+        my $isSNP = ( $e->data_type == 2 );    #FIXME hardcoded data_type
         push @tracks, {
             baseUrl      => "services/JBrowse/service.pl/experiment/$eid/",
             autocomplete => "all",
@@ -273,13 +276,15 @@ sub track_config {
             label        => "experiment$eid",
             key          => ( $e->restricted ? '&reg; ' : '' ) . $e->name,
             type         => (
-                $e->data_type == 2
+                $isSNP
                 ? "JBrowse/View/Track/HTMLVariants"
                 : "CoGe/View/Track/Wiggle/MultiXYPlot"
-            ),    #FIXME hardcoded data_type
+            ),
             storeClass => "JBrowse/Store/SeqFeature/REST",
-            style      => {
-                featureScale => 0.001,
+            region_stats => 1,    # see HTMLFeatures.js
+            style        => {
+                featureScale => 0.0001,
+                histScale    => 0.005,
                 labelScale   => 0.05,
                 showLabels   => 'true',
                 className    => '{type}'
