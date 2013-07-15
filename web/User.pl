@@ -256,6 +256,7 @@ sub get_item_info {
 				 '<b>Type:</b> ' . ($genome->type ? $genome->type->name : '') . '<br>' .
 				 '<b>Source:</b> ' . ($genome->source ? $genome->source->[0]->name : '') . '<br>' .
 				 '<b>Created:</b> ' . $date . '<br>' .
+				 '<b>Experiments:</b> ' . $genome->experiments . '<br>' .
 				 '<b>Groups with access:</b><br>' .
 				 '<div style="padding-left:20px;">' .
 				 ($group_str ? $group_str : 'None') . '<br>' .
@@ -282,6 +283,7 @@ sub get_item_info {
 				 '<b>Version:</b> ' . $experiment->version . '<br>' .
 				 '<b>Source:</b> ' . ($experiment->source ? $experiment->source->name : '') . '<br>' .
 				 '<b>Created:</b> ' . $experiment->date . '<br>' .
+				 '<b>Genome:</b> ' . $experiment->genome->info . '<br>' . 
 				 '<b>Groups with access:</b><br>' .
 				 '<div style="padding-left:20px;">' .
 				 ($group_str ? $group_str : 'None') . '<br>' .
@@ -794,23 +796,34 @@ sub get_contents {
 	my %opts = @_;
 	my $type = $opts{type};
 	$type = $ITEM_TYPE{all} unless $type;
+	my $last_update = $opts{last_update};
+	$last_update = 0 if (not defined $last_update);
 	my $timestamp = $opts{timestamp};
 	my $html_only = $opts{html_only};
-	#print STDERR "get_contents $type $html_only\n";
+	print STDERR "get_contents $type $html_only $last_update\n";
 
 	use Time::HiRes qw ( time );
 	my $start_time = time;
 
-	my $title;
 	my @rows;
 
-	#my $children = $USER->children_by_type_and_id;
+	# Get current time (according to database)
+	my $update_time = $coge->storage->dbh_do(
+		sub {
+	      my ($storage, $dbh, @args) = @_;
+	      $dbh->selectrow_array('SELECT NOW()+0');
+	    });
+
+	# Preload stuff speed (needed for genome/experiment sorting and info routines)
+	#FIXME which would be faster, children_by_type_role_id or joins?
+	my %sourceIdToName = map { $_->id => $_->name } $coge->resultset('DataSource')->all();
+
+	# Get all items for this user (genomes, experiments, notebooks)
 	my ($children, $roles) = $USER->children_by_type_role_id;
 
-	# print STDERR "get_contents: time1=" . ((time - $start_time)*1000) . "\n";
+	#print STDERR "get_contents: time1=" . ((time - $start_time)*1000) . "\n";
 
 	# if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{group}) {
-	# 	$title = 'Groups';
 	# 	#foreach my $group (sort {$a->name cmp $b->name} $USER->groups) {
 	# 	foreach my $group (sort {$a->name cmp $b->name} values %{$children->{6}}) { #FIXME hardcoded type
 	# 		push @rows, { CONTENTS_ITEM_ID => $group->id, 
@@ -822,7 +835,6 @@ sub get_contents {
 	# }
 	
 	if ($type == $ITEM_TYPE{notebook} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine}) {
-		#$title = 'Notebooks';
 		#foreach my $list (sort listcmp $USER->lists) {
 		foreach my $list (sort listcmp values %{$children->{1}}) { #FIXME hardcoded type
 			push @rows, { CONTENTS_ITEM_ID => $list->id, 
@@ -830,13 +842,13 @@ sub get_contents {
 						  CONTENTS_ITEM_SHARED => !$roles->{2}{$list->id}, #FIXME hardcoded role id
 						  CONTENTS_ITEM_INFO => $list->info, 
 					  	  CONTENTS_ITEM_ICON => '<img src="picts/notebook-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
-					  	  CONTENTS_ITEM_LINK =>  'NotebookView.pl?nid=' . $list->id,
+					  	  CONTENTS_ITEM_LINK => 'NotebookView.pl?nid=' . $list->id,
 					  	  CONTENTS_ITEM_SELECTABLE => 1 };
 		}
 	}
-	# print STDERR "get_contents: time2=" . ((time - $start_time)*1000) . "\n";
+	
+	#print STDERR "get_contents: time2=" . ((time - $start_time)*1000) . "\n";
 	if ($type == $ITEM_TYPE{genome} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine}) {
-		#$title = 'Genomes';
 		#foreach my $genome (sort genomecmp $USER->genomes(include_deleted => 1)) {
 		foreach my $genome (sort genomecmp values %{$children->{2}}) { #FIXME hardcoded type
 			push @rows, { CONTENTS_ITEM_ID => $genome->id, 
@@ -845,29 +857,33 @@ sub get_contents {
 						  CONTENTS_ITEM_SHARED => !$roles->{2}{$genome->id}, #FIXME hardcoded role id
 						  CONTENTS_ITEM_INFO => $genome->info, 
 					  	  CONTENTS_ITEM_ICON => '<img src="picts/dna-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
-					  	  CONTENTS_ITEM_LINK =>  'GenomeInfo.pl?gid=' . $genome->id,
+					  	  CONTENTS_ITEM_LINK => 'GenomeInfo.pl?gid=' . $genome->id,
 					  	  CONTENTS_ITEM_SELECTABLE => 1 };
 		}
 	}
-	# print STDERR "get_contents: time3=" . ((time - $start_time)*1000) . "\n";
+	
+	#print STDERR "get_contents: time3=" . ((time - $start_time)*1000) . "\n";
 	if ($type == $ITEM_TYPE{experiment} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine}) {
-		#$title = 'Experiments';
 		#foreach my $experiment (sort experimentcmp $USER->experiments(include_deleted => 1)) {
 		foreach my $experiment (sort experimentcmp values %{$children->{3}}) { #FIXME hardcoded type
 			push @rows, { CONTENTS_ITEM_ID => $experiment->id, 
 						  CONTENTS_ITEM_TYPE => $ITEM_TYPE{experiment}, 
 						  CONTENTS_ITEM_DELETED => $experiment->deleted,
 						  CONTENTS_ITEM_SHARED => !$roles->{2}{$experiment->id}, #FIXME hardcoded role id
-						  CONTENTS_ITEM_INFO => $experiment->info, 
+						  CONTENTS_ITEM_INFO => $experiment->info(source => $sourceIdToName{$experiment->data_source_id}), 
 					  	  CONTENTS_ITEM_ICON => '<img src="picts/testtube-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
-					  	  CONTENTS_ITEM_LINK =>  'ExperimentView.pl?eid=' . $experiment->id,
+					  	  CONTENTS_ITEM_LINK => 'ExperimentView.pl?eid=' . $experiment->id,
 					  	  CONTENTS_ITEM_SELECTABLE => 1 };
 		}
 	}
-	# print STDERR "get_contents: time4=" . ((time - $start_time)*1000) . "\n";
+	
+	#print STDERR "get_contents: time4=" . ((time - $start_time)*1000) . "\n";
 	if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity}) {
-		#$title = 'Activity';
-		foreach my $entry ($USER->logs({description => { '!=' => 'page access' }}, { order_by => { -desc => 'time' } })) { 
+		foreach my $entry (
+			$USER->logs({ time => { '>=' => $last_update },
+						  type => { '!=' => 0 }}, #FIXME hardcoded type
+						  { order_by => { -desc => 'time' } }))
+		{
 			my $icon = '<img id="' . $entry->id . '" ' 
 				. ($entry->is_important ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"') . ' '
 				. 'width="15" height="15" style="vertical-align:middle;" '
@@ -880,7 +896,8 @@ sub get_contents {
 					  	  CONTENTS_ITEM_LINK => $entry->link };
 		}
 	}
-	# print STDERR "get_contents: time5=" . ((time - $start_time)*1000) . "\n";
+	
+	#print STDERR "get_contents: time5=" . ((time - $start_time)*1000) . "\n";
 	if ($html_only) { # only do this for initial page load, not polling
 		my $user_id = $USER->id;
 		my $jobs = 'cogeblast/synmap/gevo/synfind/loadgenome/loadexperiment/organismview/user';
@@ -890,19 +907,15 @@ sub get_contents {
 		};
 	}		
 	
-
-	$title = 'My Stuff' if ($type == $ITEM_TYPE{mine});
-
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 	$template->param( DO_CONTENTS => 1 );
-	#$template->param( CONTENTS_TITLE => $title );
 	$template->param( CONTENTS_ITEM_LOOP => \@rows );
 	my $html = $template->output;
 
-	# print STDERR "get_contents: time=" . ((time - $start_time)*1000) . "\n";
+	#print STDERR "get_contents: time=" . ((time - $start_time)*1000) . "\n";
 
 	return $html if ($html_only);
-	return encode_json({ timestamp => $timestamp, html => $html });
+	return encode_json({ timestamp => $timestamp, lastUpdate => $update_time, html => $html });
 }
 
 # sub get_logs {

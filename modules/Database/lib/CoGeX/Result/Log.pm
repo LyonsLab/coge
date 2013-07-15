@@ -66,7 +66,6 @@ sub info {
 
 sub short_info {
 	my $self = shift;
-	my $user_name = ($self->user ? $self->user->user_name : '');
 	return $self->time.' | '.$self->page.' | '.$self->description.($self->comment ? ' | '.$self->comment : ''); 
 }
 
