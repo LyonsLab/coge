@@ -996,19 +996,7 @@ sub go_synfind {
             $fasta1
           ) if ( $org2 lt $org1 );
 
-        #prep names for file system
-        foreach my $tmp ( $org1, $org2 ) {
-            $tmp =~ s/\///g;
-            $tmp =~ s/\s+/_/g;
-            $tmp =~ s/\(//g;
-            $tmp =~ s/\)//g;
-            $tmp =~ s/://g;
-            $tmp =~ s/;//g;
-            $tmp =~ s/#/_/g;
-            $tmp =~ s/'//g;
-            $tmp =~ s/"//g;
-        }
-        my $basedir = $DIAGSDIR . "/" . $org1 . "/" . $org2;
+        my $basedir = $DIAGSDIR . "/" . $dsgid1 . "/" . $dsgid2;
         mkpath( $basedir, 0, 0777 ) unless -d $basedir;
         my $basename =
           $dsgid1 . "_" . $dsgid2 . "." . $feat_type1 . "-" . $feat_type2;
@@ -1769,22 +1757,13 @@ sub get_master_syn_sets {
     my %data;
     my %lookup;
     foreach my $dsg (@dsgs) {
-        my $org1 = $qdsg->organism->name;
-        my $org2 = $dsg->organism->name;
-        foreach my $tmp ( $org1, $org2 ) {
-            $tmp =~ s/\///g;
-            $tmp =~ s/\s+/_/g;
-            $tmp =~ s/\(//g;
-            $tmp =~ s/\)//g;
-            $tmp =~ s/://g;
-            $tmp =~ s/;//g;
-            $tmp =~ s/#/_/g;
-        }
+        my $org1   = $qdsg->organism->name;
+        my $org2   = $dsg->organism->name;
         my $dsgid1 = $qdsg->id;
         my $dsgid2 = $dsg->id;
         ( $org1, $org2, $dsgid1, $dsgid2 ) = ( $org2, $org1, $dsgid2, $dsgid1 )
           if ( $org2 lt $org1 );
-        my $basedir  = $DIAGSDIR . "/" . $org1 . "/" . $org2;
+        my $basedir  = $DIAGSDIR . "/" . $dsgid1 . "/" . $dsgid2;
         my $basename = $dsgid1 . "_" . $dsgid2 . "." . "CDS-CDS";
         my $db =
             $basedir . "/"
@@ -1975,22 +1954,13 @@ sub get_unique_genes {
     my ($qdsg) = $coge->resultset('Genome')->find($qdsgid);
     my ($sdsg) = $coge->resultset('Genome')->find($sdsgid);
     print "Error" unless $qdsg && $sdsg;
-    my $org1 = $qdsg->organism->name;
-    my $org2 = $sdsg->organism->name;
-    foreach my $tmp ( $org1, $org2 ) {
-        $tmp =~ s/\///g;
-        $tmp =~ s/\s+/_/g;
-        $tmp =~ s/\(//g;
-        $tmp =~ s/\)//g;
-        $tmp =~ s/://g;
-        $tmp =~ s/;//g;
-        $tmp =~ s/#/_/g;
-    }
+    my $org1   = $qdsg->organism->name;
+    my $org2   = $sdsg->organism->name;
     my $dsgid1 = $qdsg->id;
     my $dsgid2 = $sdsg->id;
     ( $org1, $org2, $dsgid1, $dsgid2 ) = ( $org2, $org1, $dsgid2, $dsgid1 )
       if ( $org2 lt $org1 );
-    my $basedir  = $DIAGSDIR . "/" . $org1 . "/" . $org2;
+    my $basedir  = $DIAGSDIR . "/" . $dsgid1 . "/" . $dsgid2;
     my $basename = $dsgid1 . "_" . $dsgid2 . "." . "CDS-CDS";
     my $db =
         $basedir . "/"
