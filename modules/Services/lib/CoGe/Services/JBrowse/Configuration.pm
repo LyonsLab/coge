@@ -212,13 +212,9 @@ sub track_config {
                 maxFeatureScreenDensity => 1000,     #50,
                 maxHeight               => 100000,
                 style                   => {
-                    arrowheadClass => "arrowhead",
-                    className      => "generic_parent",
-                    histScale      => 0.05,
-
-#_defaultHistScale        => 4,   #FIXME: not supposed to be set by user?  HTMLFeatures.js
-#_defaultLabelScale       => 30,  #FIXME: not supposed to be set by user?  HTMLFeatures.js
-#_defaultDescriptionScale => 120, #FIXME: not supposed to be set by user?  HTMLFeatures.js
+                    arrowheadClass           => "arrowhead",
+                    className                => "generic_parent",
+                    histScale                => 0.05,
                     minSubfeatureWidth       => 6,
                     maxDescriptionLength     => 70,
                     showLabels               => 'true',
@@ -292,8 +288,8 @@ sub track_config {
             region_stats => 1,    # see HTMLFeatures.js
             style        => {
                 featureScale => 0.0001,
-                histScale    => 0.005,
-                labelScale   => 0.05,
+                histScale    => 0.05,
+                labelScale   => 0.1,
                 showLabels   => 'true',
                 className    => '{type}',
                 histCss      => 'background-color:' . getFeatureColor($eid)
