@@ -1,9 +1,11 @@
 #! /usr/bin/perl -w
+use v5.10;
 use strict;
 use CoGeX;
 use DBIxProfiler;
 
 use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web;
 use CGI;
 use CGI::Ajax;
@@ -22,9 +24,9 @@ no warnings 'redefine';
 #example URL: http://toxic.berkeley.edu/CoGe/SynFind.pl?fid=34519245;qdsgid=3;dsgid=4241,6872,7084,7094,7111
 
 use vars
-  qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $DIR $URL $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $BEDDIR $LASTZ $LAST $CONVERT_BLAST $BLAST2BED $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $SERVER $connstr $COOKIE_NAME);
+  qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE $PAGE_NAME $DIR $URL $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $BEDDIR $LASTZ $LAST $CONVERT_BLAST $BLAST2BED $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $SERVER $connstr $COOKIE_NAME $YERBA $GEN_FASTA);
 
-#refresh again?
+$YERBA         = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
 $P             = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 $ENV{PATH}     = $P->{COGEDIR};
 $TEMPDIR       = $P->{TEMPDIR} . "SynFind";
@@ -32,7 +34,8 @@ $TEMPURL       = $P->{TEMPURL} . "SynFind";
 $SERVER        = $P->{SERVER};
 $ENV{BLASTDB}  = $P->{BLASTDB};
 $ENV{BLASTMAT} = $P->{BLASTMATRIX};
-$PAGE_NAME     = "SynFind.pl";
+$PAGE_TITLE    = "SynFind";
+$PAGE_NAME     = $PAGE_TITLE . ".pl";
 $DIR           = $P->{COGEDIR};
 $URL           = $P->{URL};
 $DATADIR       = $P->{DATADIR};
@@ -57,12 +60,13 @@ $LAST =
   . " --dbpath="
   . $P->{LASTDB};
 
+$GEN_FASTA        = $P->{GEN_FASTA};
 $CONVERT_BLAST    = $P->{CONVERT_BLAST};
 $BLAST2BED        = $P->{BlAST2BED};
 $BLAST2RAW        = $P->{BLAST2RAW};
 $SYNTENY_SCORE    = $P->{SYNTENY_SCORE};
 $PYTHON26         = $P->{PYTHON};
-$DATASETGROUP2BED = $P->{DATASETGROUP2BED} . " -cf " . $ENV{HOME} . 'coge.conf';
+$DATASETGROUP2BED = $P->{DATASETGROUP2BED};
 
 $DATE = sprintf(
     "%04d-%02d-%02d %02d:%02d:%02d",
@@ -870,6 +874,20 @@ sub go_synfind {
     $synfind_link .= ";dsgid=$dsgids;qdsgid=$source_dsgid";
     $synfind_link .= ";sd=$depth" if $depth;
 
+    my $tiny_synfind_link = CoGe::Accessory::Web::get_tiny_link(
+        db      => $coge,
+        user_id => $USER->id,
+        page    => $PAGE_NAME,
+        url     => $synfind_link
+    );
+
+    my $job = CoGe::Accessory::Web::get_job(
+        tiny_link => $tiny_synfind_link,
+        title     => $PAGE_TITLE,
+        user_id   => $USER->id,
+        db_object => $coge
+    );
+
    #convert numerical codes for different scoring functions to appropriate types
     if ( $scoring_function == 2 ) {
         $scoring_function = "density";
@@ -884,17 +902,42 @@ sub go_synfind {
     my @blast_results;
     my $html;
 
-    #check for taint
-    ($source_dsgid) = $source_dsgid =~ /(\d+)/;
-    my $source_type = has_cds($source_dsgid);
-    $source_type = $source_type ? "CDS" : "genomic";
-    my @dsgids;
-    foreach my $dsgid ( split( /,/, $dsgids ) ) {
+    ###########################################################################
+    # Setup workflow
+    ###########################################################################
+    my $config   = $ENV{HOME} . "coge.conf";
+    my $workflow = $YERBA->create_workflow(
+        name    => "synfind-$dsgids",
+        logfile => $cogeweb->logfile
+    );
+
+    my ( $query_info, @target_info );
+
+    foreach my $dsgid ( $source_dsgid, split( /,/, $dsgids ) ) {
+
+        #check for taint
         ($dsgid) = $dsgid =~ /(\d+)/;
-        my $has_cds = has_cds($dsgid);
+
+        my $has_cds   = has_cds($dsgid);
         my $feat_type = $has_cds ? "CDS" : "genomic";
-        push @dsgids, [ $dsgid, $feat_type ] if $dsgid && $has_cds;
-        if ( !$has_cds ) {
+        my $fasta     = $FASTADIR . "/$dsgid-$feat_type.fasta";
+
+        if ( $dsgid && $has_cds ) {
+            my ( $org_name, $title ) = gen_org_name(
+                dsgid     => $dsgid,
+                feat_type => $feat_type,
+                write_log => 1
+            );
+
+            push @target_info,
+              {
+                dsgid     => $dsgid,
+                feat_type => $feat_type,
+                fasta     => $fasta,
+                org_name  => $org_name,
+              };
+        }
+        else {
             my $dsg = $coge->resultset('Genome')->find($dsgid);
             CoGe::Accessory::Web::write_log( "#WARNING:#", $cogeweb->logfile );
             CoGe::Accessory::Web::write_log(
@@ -902,48 +945,42 @@ sub go_synfind {
                   . " does not have CDS sequences.  Can't process in SynFind.\n",
                 $cogeweb->logfile
             );
+            next;
         }
+
+        my $fasta_args = [
+            [ "--config",       $config,    0 ],
+            [ "--genome_id",    $dsgid,     1 ],
+            [ "--feature_type", $feat_type, 1 ],
+            [ "--fasta",        $fasta,     1 ]
+        ];
+
+        $workflow->add_job(
+            cmd     => $GEN_FASTA,
+            script  => undef,
+            args    => $fasta_args,
+            inputs  => undef,
+            outputs => [$fasta]
+        );
+
+        my $bed_args = [
+            [ " -cf ",  $config,                   0 ],
+            [ '-dsgid', $dsgid,                    1 ],
+            [ '>',      $BEDDIR . $dsgid . ".bed", 1 ]
+        ];
+
+        $workflow->add_job(
+            cmd     => $DATASETGROUP2BED,
+            script  => undef,
+            args    => $bed_args,
+            inputs  => undef,
+            outputs => [ $BEDDIR . $dsgid . ".bed" ]
+        );
     }
 
-    my $pm = new Parallel::ForkManager($MAX_PROC);
+    #query is the first item on this list.
+    $query_info = shift @target_info;
 
-    #Generate fasta files and blastdbs
-    my @to_process;
-    push @to_process, [ $source_dsgid, $source_type ] if $source_dsgid;
-    push @to_process, @dsgids;
-    foreach my $item (@to_process) {
-        $pm->start and next;
-        my ( $dsgid, $feat_type ) = @$item;
-
-        my ( $fasta, $org_name ) =
-          gen_fasta( dsgid => $dsgid, feat_type => $feat_type, write_log => 1 );
-
-#	my $blastdb = gen_blastdb(dbname=>"$dsgid-$feat_type-new",fasta=>$fasta,org_name=>$org_name);
-        make_bed( dsgid => $dsgid, outfile => $BEDDIR . $dsgid . ".bed" );
-        $pm->finish;
-    }
-    $pm->wait_all_children();
-
-    #Generate fasta files and blastdbs
-    my @target_info;    #store all the stuff about a genome
-    foreach my $item (@to_process) {
-        my ( $dsgid, $feat_type ) = @$item;
-        my ( $fasta, $org_name ) =
-          gen_fasta( dsgid => $dsgid, feat_type => $feat_type, write_log => 0 );
-
-#	my $blastdb = gen_blastdb(dbname=>"$dsgid-$feat_type-new",fasta=>$fasta,org_name=>$org_name, write_log=>0);
-        push @target_info, {
-            dsgid     => $dsgid,
-            feat_type => $feat_type,
-            fasta     => $fasta,
-            org_name  => $org_name,
-
-            #			    blastdb=>$blastdb,
-        };
-    }
-    my $query_info = shift @target_info
-      if $source_dsgid;    #query is the first item on this list.
-     #need to create blastfile name.  Must be alphabetized on query and target names.
     foreach my $target (@target_info) {
         my ( $org1, $org2 ) = ( $query_info->{org_name}, $target->{org_name} );
         my ( $dsgid1, $dsgid2 ) = ( $query_info->{dsgid}, $target->{dsgid} );
@@ -960,21 +997,9 @@ sub go_synfind {
           = (
             $org2, $org1, $dsgid2, $dsgid1, $feat_type2, $feat_type1, $fasta2,
             $fasta1
-          ) if ( $org2 lt $org1 );
+          ) if ( $dsgid2 lt $dsgid1 );
 
-        #prep names for file system
-        foreach my $tmp ( $org1, $org2 ) {
-            $tmp =~ s/\///g;
-            $tmp =~ s/\s+/_/g;
-            $tmp =~ s/\(//g;
-            $tmp =~ s/\)//g;
-            $tmp =~ s/://g;
-            $tmp =~ s/;//g;
-            $tmp =~ s/#/_/g;
-            $tmp =~ s/'//g;
-            $tmp =~ s/"//g;
-        }
-        my $basedir = $DIAGSDIR . "/" . $org1 . "/" . $org2;
+        my $basedir = $DIAGSDIR . "/" . $dsgid1 . "/" . $dsgid2;
         mkpath( $basedir, 0, 0777 ) unless -d $basedir;
         my $basename =
           $dsgid1 . "_" . $dsgid2 . "." . $feat_type1 . "-" . $feat_type2;
@@ -1007,49 +1032,127 @@ sub go_synfind {
 
     #blast and conquer
     foreach my $target (@target_info) {
-        $pm->start and next;
-        my $blastfile = $target->{blastfile};
-        my $success   = run_blast(
-            fasta1  => $target->{query_fasta},
-            fasta2  => $target->{target_fasta},
-            outfile => $blastfile,
-            prog    => $algo
-        );    #for last/lastz with sequence databases
-        CoGe::Accessory::Web::write_log( "failed blast run for " . $blastfile,
-            $cogeweb->logfile )
-          unless $success;
+        #######################################################################
+        # Blast
+        #######################################################################
+        my ( $blast_args, $blast_cmd );
 
-        $blastfile = run_convert_blast(
-            infile  => $blastfile,
-            outfile => $target->{converted_blastfile}
-        );
+        if ( $algo =~ /lastz/i ) {
+            $blast_args = [
+                [ "-i", $target->{query_fasta},  1 ],
+                [ "-d", $target->{target_fasta}, 1 ],
+                [ "-o", $target->{blastfile},    1 ]
+            ];
 
-#	blast2bed(infile=>$blastfile, outfile1=>$target->{bedfile1}, outfile2=>$target->{bedfile2});
-        run_blast2raw(
-            blastfile => $blastfile,
-            bedfile1  => $target->{bedfile1},
-            bedfile2  => $target->{bedfile2},
-            outfile   => $target->{filtered_blastfile}
-        );
-        unless ( -r $target->{filtered_blastfile}
-            || -r $target->{filtered_blastfile} . ".gz" )
-        {
-            return "error creating " . $target->{filtered_blastfile}, "\n";
+            $blast_cmd = $LASTZ;
         }
-        run_synteny_score(
-            blastfile        => $target->{filtered_blastfile},
-            bedfile1         => $target->{bedfile1},
-            bedfile2         => $target->{bedfile2},
-            outfile          => $target->{synteny_score_db},
-            window_size      => $window_size,
-            cutoff           => $cutoff,
-            scoring_function => $scoring_function,
-            dsgid1           => $target->{dsgid1},
-            dsgid2           => $target->{dsgid2}
+        else {
+            $blast_args = [
+                [ "",   $target->{target_fasta}, 1 ],
+                [ "",   $target->{query_fasta},  1 ],
+                [ "-o", $target->{blastfile},    1 ]
+            ];
+
+            $blast_cmd = $LAST;
+        }
+
+        $workflow->add_job(
+            cmd     => $blast_cmd,
+            script  => undef,
+            args    => $blast_args,
+            inputs  => [ $target->{query_fasta}, $target->{target_fasta} ],
+            outputs => [ $target->{blastfile} ]
         );
-        $pm->finish;
+
+        #######################################################################
+        # Convert Blast
+        #######################################################################
+
+        my $convert_args = [
+            [ '<', $target->{blastfile},           1 ],
+            [ '>', $target->{converted_blastfile}, 1 ]
+        ];
+
+        my $convert_inputs = [ $target->{blastfile} ];
+
+        my $convert_outputs = [ $target->{converted_blastfile}, ];
+
+        $workflow->add_job(
+            cmd     => $CONVERT_BLAST,
+            script  => undef,
+            args    => $convert_args,
+            inputs  => $convert_inputs,
+            outputs => $convert_outputs
+        );
+
+        #######################################################################
+        # Blast 2 Raw
+        #######################################################################
+        my $raw_args = [
+            [ "",              $target->{converted_blastfile}, 1 ],
+            [ "--qbed",        $target->{bedfile1},            1 ],
+            [ "--sbed",        $target->{bedfile2},            1 ],
+            [ "--tandem_Nmax", 10,                             1 ],
+            [ ">",             $target->{filtered_blastfile},  1 ],
+        ];
+
+        my $raw_inputs = [
+            $target->{bedfile1}, $target->{bedfile2},
+            $target->{converted_blastfile}
+        ];
+
+        my $raw_outputs = [
+            $target->{filtered_blastfile},
+
+            #$target->{filtered_blastfile} . ".q.localdups",
+            #$target->{filtered_blastfile} . ".s.localdups",
+        ];
+
+        $workflow->add_job(
+            cmd     => $BLAST2RAW,
+            script  => undef,
+            args    => $raw_args,
+            inputs  => $raw_inputs,
+            outputs => $raw_outputs
+        );
+
+        #######################################################################
+        # Synteny Score
+        #######################################################################
+
+        $cutoff = sprintf( "%.2f", $cutoff / $window_size ) if $cutoff >= 1;
+
+        my $synteny_score_args = [
+            [ '',          $target->{filtered_blastfile}, 1 ],
+            [ '--qbed',    $target->{bedfile1},           1 ],
+            [ '--sbed',    $target->{bedfile2},           1 ],
+            [ '--window',  $window_size,                  1 ],
+            [ '--cutoff',  $cutoff,                       1 ],
+            [ '--scoring', $scoring_function,             1 ],
+            [ '--qnote',   $target->{dsgid1},             1 ],
+            [ '--snote',   $target->{dsgid2},             1 ],
+            [ '--sqlite',  $target->{synteny_score_db},   1 ]
+        ];
+
+        my $synteny_score_inputs = [
+            $target->{bedfile1}, $target->{bedfile2},
+            $target->{filtered_blastfile}
+        ];
+
+        my $synteny_score_outputs = [ $target->{synteny_score_db}, ];
+
+        $workflow->add_job(
+            cmd     => $SYNTENY_SCORE,
+            script  => undef,
+            args    => $synteny_score_args,
+            inputs  => $synteny_score_inputs,
+            outputs => $synteny_score_outputs,
+        );
     }
-    $pm->wait_all_children;
+
+    my $status = $YERBA->submit_workflow($workflow);
+    $YERBA->wait_for_completion( $workflow->name );
+
     my ( $gevo_link, $matches ) = gen_gevo_link(
         fid         => $fid,
         dbs         => [ map { $_->{synteny_score_db} } @target_info ],
@@ -1063,24 +1166,10 @@ sub go_synfind {
         $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Finished!", $cogeweb->logfile );
 
-    foreach my $item (@target_info) {
-        foreach my $file (
-            $item->{blastfile},
-            $item->{converted_blastfile},
-            $item->{filtered_blastfile},
-          )
-        {
-            $pm->start and next;
-
-            #	    $file = CoGe::Accessory::Web::gzip($file);
-            $pm->finish;
-        }
-    }
-    $pm->wait_all_children();
-
     #make table of results
-    my %dsgids = map { $_->[0], => 1 } @dsgids;    #table to look them up later;
-    $dsgids{$source_dsgid} = 1;
+    #table to look them up later;
+    my %dsgids = map { $_->{dsgid}, => 1 } @target_info;
+    $dsgids{ $query_info->{dsgid} } = 1;
 
     $html .=
       qq{<table id=syntelog_table class="ui-widget-content ui-corner-all">};
@@ -1176,12 +1265,6 @@ sub go_synfind {
 
     my $featlist_link =
       gen_featlist_link( fids => [ $fid, map { $_->[0] } @$matches ] );
-    my $tiny_synfind_link = CoGe::Accessory::Web::get_tiny_link(
-        db      => $coge,
-        user_id => $USER->id,
-        page    => $PAGE_NAME,
-        url     => $synfind_link
-    );
     $html .=
 "<a href='$tiny_synfind_link' class='ui-button ui-corner-all' target=_new_synfind>Regenerate this analysis: $tiny_synfind_link</a>";
     my $open_all_synmap = join( "\n", keys %open_all_synmap );
@@ -1240,6 +1323,9 @@ qq{<br><br><a href="/wiki/index.php/SynFind#Syntenic_Depth" target=_new>Syntenic
           . qq{ target=_new>Filtered Blast File</a>};
     }
     $html .= qq{</table>};
+
+    $job->update( { status => 2 } ) if defined($job);
+
     return $html;
 }
 
@@ -1737,22 +1823,12 @@ sub get_master_syn_sets {
     foreach my $dsg (@dsgs) {
         my $org1 = $qdsg->organism->name;
         my $org2 = $dsg->organism->name;
-        foreach my $tmp ( $org1, $org2 ) {
-            $tmp =~ s/\///g;
-            $tmp =~ s/\s+/_/g;
-            $tmp =~ s/\(//g;
-            $tmp =~ s/\)//g;
-            $tmp =~ s/://g;
-            $tmp =~ s/;//g;
-            $tmp =~ s/#/_/g;
-            $tmp =~ s/'//g;
-            $tmp =~ s/"//g;
-        }
+
         my $dsgid1 = $qdsg->id;
         my $dsgid2 = $dsg->id;
         ( $org1, $org2, $dsgid1, $dsgid2 ) = ( $org2, $org1, $dsgid2, $dsgid1 )
           if ( $org2 lt $org1 );
-        my $basedir  = $DIAGSDIR . "/" . $org1 . "/" . $org2;
+        my $basedir  = $DIAGSDIR . "/" . $dsgid1 . "/" . $dsgid2;
         my $basename = $dsgid1 . "_" . $dsgid2 . "." . "CDS-CDS";
         my $db =
             $basedir . "/"
@@ -1821,6 +1897,7 @@ sub get_master_syn_sets {
                 my $max;
                 my @syntelog_count;
               SET:
+
                 foreach my $set (
                     @data) #iterate through each genome -- first is query genome
                 {
@@ -1871,7 +1948,7 @@ sub get_master_syn_sets {
 
 #		    my ($name_hash) = sort {$b->{primary_name} <=> $a->{primary_name} || $a->{name} cmp $b->{name}} $rs->search({feature_id=>$fid});
                             my ($name_hash) = sort {
-                                $b->primary_name <=> $a->primary_name
+                                     $b->primary_name <=> $a->primary_name
                                   || $a->name cmp $b->name
                               } $coge->resultset('FeatureName')
                               ->search( { feature_id => $fid } );
@@ -1944,22 +2021,12 @@ sub get_unique_genes {
     print "Error" unless $qdsg && $sdsg;
     my $org1 = $qdsg->organism->name;
     my $org2 = $sdsg->organism->name;
-    foreach my $tmp ( $org1, $org2 ) {
-        $tmp =~ s/\///g;
-        $tmp =~ s/\s+/_/g;
-        $tmp =~ s/\(//g;
-        $tmp =~ s/\)//g;
-        $tmp =~ s/://g;
-        $tmp =~ s/;//g;
-        $tmp =~ s/#/_/g;
-        $tmp =~ s/'//g;
-        $tmp =~ s/"//g;
-    }
+
     my $dsgid1 = $qdsg->id;
     my $dsgid2 = $sdsg->id;
     ( $org1, $org2, $dsgid1, $dsgid2 ) = ( $org2, $org1, $dsgid2, $dsgid1 )
       if ( $org2 lt $org1 );
-    my $basedir  = $DIAGSDIR . "/" . $org1 . "/" . $org2;
+    my $basedir  = $DIAGSDIR . "/" . $dsgid1 . "/" . $dsgid2;
     my $basename = $dsgid1 . "_" . $dsgid2 . "." . "CDS-CDS";
     my $db =
         $basedir . "/"
