@@ -24,7 +24,7 @@ no warnings 'redefine';
 #example URL: http://toxic.berkeley.edu/CoGe/SynFind.pl?fid=34519245;qdsgid=3;dsgid=4241,6872,7084,7094,7111
 
 use vars
-  qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $DIR $URL $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $BEDDIR $LASTZ $LAST $CONVERT_BLAST $BLAST2BED $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $SERVER $connstr $COOKIE_NAME $YERBA $GEN_FASTA);
+  qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE $PAGE_NAME $DIR $URL $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $BEDDIR $LASTZ $LAST $CONVERT_BLAST $BLAST2BED $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $SERVER $connstr $COOKIE_NAME $YERBA $GEN_FASTA);
 
 $YERBA         = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
 $P             = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
@@ -34,7 +34,8 @@ $TEMPURL       = $P->{TEMPURL} . "SynFind";
 $SERVER        = $P->{SERVER};
 $ENV{BLASTDB}  = $P->{BLASTDB};
 $ENV{BLASTMAT} = $P->{BLASTMATRIX};
-$PAGE_NAME     = "SynFind.pl";
+$PAGE_TITLE    = "SynFind";
+$PAGE_NAME     = $PAGE_TITLE . ".pl";
 $DIR           = $P->{COGEDIR};
 $URL           = $P->{URL};
 $DATADIR       = $P->{DATADIR};
@@ -873,6 +874,20 @@ sub go_synfind {
     $synfind_link .= ";dsgid=$dsgids;qdsgid=$source_dsgid";
     $synfind_link .= ";sd=$depth" if $depth;
 
+    my $tiny_synfind_link = CoGe::Accessory::Web::get_tiny_link(
+        db      => $coge,
+        user_id => $USER->id,
+        page    => $PAGE_NAME,
+        url     => $synfind_link
+    );
+
+    my $job = CoGe::Accessory::Web::get_job(
+        tiny_link => $tiny_synfind_link,
+        title     => $PAGE_TITLE,
+        user_id   => $USER->id,
+        db_object => $coge
+    );
+
    #convert numerical codes for different scoring functions to appropriate types
     if ( $scoring_function == 2 ) {
         $scoring_function = "density";
@@ -1250,12 +1265,6 @@ sub go_synfind {
 
     my $featlist_link =
       gen_featlist_link( fids => [ $fid, map { $_->[0] } @$matches ] );
-    my $tiny_synfind_link = CoGe::Accessory::Web::get_tiny_link(
-        db      => $coge,
-        user_id => $USER->id,
-        page    => $PAGE_NAME,
-        url     => $synfind_link
-    );
     $html .=
 "<a href='$tiny_synfind_link' class='ui-button ui-corner-all' target=_new_synfind>Regenerate this analysis: $tiny_synfind_link</a>";
     my $open_all_synmap = join( "\n", keys %open_all_synmap );
@@ -1314,6 +1323,9 @@ qq{<br><br><a href="/wiki/index.php/SynFind#Syntenic_Depth" target=_new>Syntenic
           . qq{ target=_new>Filtered Blast File</a>};
     }
     $html .= qq{</table>};
+
+    $job->update( { status => 2 } ) if defined($job);
+
     return $html;
 }
 
