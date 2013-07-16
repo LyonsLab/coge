@@ -95,10 +95,8 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     },    
     
     renderBlock: function( args ) {
-    	console.log(args);
     	var featureScale = this.config.style.featureScale;
     	var scale = args.block.scale;
-    	console.log(scale + ' ' + featureScale);
     	if (scale <= featureScale) { // don't draw, too zoomed-out, modeled after HTMLFeatures
     		this.fillTooManyFeaturesMessage(args.blockIndex, args.block, scale);
     	}
@@ -299,7 +297,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	            var score = f.feature.get('score');
 	            var score2 = f.feature.get('score2');
 	            var id = f.feature.get('id');
-	            var name = this._getFeatureName(id);
+	            var name = this._getFeatureName(f.feature);
 	            var color = this._getFeatureColor(id);
 	            for( var j = Math.round(fRect.l); j < jEnd; j++ ) {
 	            	var label = '<div style="background-color:'+color+';">' +
@@ -384,7 +382,8 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     	return options;
     },
 
-    _getFeatureName: function(id) {
+    _getFeatureName: function(f) {
+    	var id = f.get('id');
     	var coge = this.config.coge;
     	
     	if (coge.type == 'experiment') {
@@ -393,10 +392,14 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     	else if (coge.type == 'notebook') {
 	    	var experiments = coge.experiments || [];
 	    	var name = '';
-	    	experiments.forEach( function(e) {
+	    	experiments.every( function(e) {
 	    		if (e.id == id) {
 	    			name = e.name;
+	    			if (e.type == 'snp')
+	    				name += ' ' + f.get('name');
+	    			return false;
 	    		}
+	    		return true;
 	    	});
 	    	return name;
     	}

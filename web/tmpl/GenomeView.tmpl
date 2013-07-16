@@ -82,8 +82,9 @@ var dsg = '<TMPL_VAR NAME=DSG>';
 var loc = '<TMPL_VAR NAME=LOC>';
 var zoom = '<TMPL_VAR NAME=ZOOM>';
 var gstid = '<TMPL_VAR NAME=GSTID>';
-function init(){
-OpenLayers.Layer.Genomic.prototype.buffer = 1;
+
+function init_GenomeView(){
+	OpenLayers.Layer.Genomic.prototype.buffer = 1;
     map = new OpenLayers.GenomeBrowser( $('#map')[0] , 
     {   
          maxExtent: new
@@ -454,6 +455,7 @@ function getURLParameter(name) {
 
 var jbrowse;
 var jbrowseIniting = false;
+var genomeViewIniting = false;
 $(function() {
 	$.ajaxSetup({
 		type: "POST",
@@ -464,7 +466,36 @@ $(function() {
 	
 	$('#select_view').change(function() {
 		var viewer = $(this).find("option:selected").val();
-		if (viewer == 'JBrowse') {
+		if (viewer != 'JBrowse') {
+			$('#jbrowse').hide();
+			$('#main').show();
+			$('#resize').show();
+			
+			if (!map && !genomeViewIniting) {
+				genomeViewIniting = true;
+				
+				pageObj.getseq = 3;
+				$('#width').val($('#main').width());
+				$('#map').css('width',$('#width').val());
+				init_GenomeView();
+				change_gene_model_type();
+				$(".dialog_box").dialog({ autoOpen: false, width: 500  });
+				<TMPL_IF NAME="SHOW_LEGEND">$('.legend').toggle();</TMPL_IF>
+				<TMPL_IF NAME="MAIZEGDB">$('#maizegdb_popup').dialog('open');</TMPL_IF>
+	
+				$('#slider').slider({
+					orientation: 'horizontal',
+					max: <TMPL_VAR NAME="CHR_LENGTH">, 
+					value: <TMPL_VAR NAME="LOC">, 
+					slide: moveMap,
+					change: panMap,
+					stop: panMap,
+				});
+				
+				genomeViewIniting = false;
+			}
+		}
+		else {
 			$(".dialog_box").dialog('close');
 			$('#main').hide();
 			$('#resize').hide();
@@ -485,43 +516,18 @@ $(function() {
 				);
 			}
 		}
-		else {
-			$('#jbrowse').hide();
-			$('#main').show();
-			$('#resize').show();
-		}
 	});
 
 	var viewer = getURLParameter('viewer');
-	if (viewer) {
-		$('#select_view').val(viewer).change();
-	}
-
-	pageObj.getseq = 3;
-	$('#width').val($('#main').width());
-	$('#map').css('width',$('#width').val());
-	init();
-	change_gene_model_type();
-	$(".dialog_box").dialog({ autoOpen: false, width: 500  });
-	<TMPL_IF NAME="SHOW_LEGEND">$('.legend').toggle();</TMPL_IF>
-	<TMPL_IF NAME="MAIZEGDB">$('#maizegdb_popup').dialog('open');</TMPL_IF>
-
-	$('#slider').slider({
-		orientation: 'horizontal',
-		max: <TMPL_VAR NAME="CHR_LENGTH">, 
-		value: <TMPL_VAR NAME="LOC">, 
-		slide: moveMap,
-		change: panMap,
-		stop: panMap,
-	});
+	$('#select_view').val(viewer).change();
 });
 </script>
 
 
 <span>Viewer:
 	<select id='select_view'>
-		<option value="GenomeView" selected>GenomeView</option>
-		<option value="JBrowse">JBrowse</option>
+		<option value="JBrowse" selected>JBrowse</option>
+		<option value="GenomeView">GenomeView</option>
 	</select>
 </span>
 

@@ -1809,8 +1809,9 @@ sub get_master_syn_sets {
     my %data;
     my %lookup;
     foreach my $dsg (@dsgs) {
-        my $org1   = $qdsg->organism->name;
-        my $org2   = $dsg->organism->name;
+        my $org1 = $qdsg->organism->name;
+        my $org2 = $dsg->organism->name;
+
         my $dsgid1 = $qdsg->id;
         my $dsgid2 = $dsg->id;
         ( $org1, $org2, $dsgid1, $dsgid2 ) = ( $org2, $org1, $dsgid2, $dsgid1 )
@@ -2006,8 +2007,9 @@ sub get_unique_genes {
     my ($qdsg) = $coge->resultset('Genome')->find($qdsgid);
     my ($sdsg) = $coge->resultset('Genome')->find($sdsgid);
     print "Error" unless $qdsg && $sdsg;
-    my $org1   = $qdsg->organism->name;
-    my $org2   = $sdsg->organism->name;
+    my $org1 = $qdsg->organism->name;
+    my $org2 = $sdsg->organism->name;
+
     my $dsgid1 = $qdsg->id;
     my $dsgid2 = $sdsg->id;
     ( $org1, $org2, $dsgid1, $dsgid2 ) = ( $org2, $org1, $dsgid2, $dsgid1 )

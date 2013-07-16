@@ -10,6 +10,10 @@ use Cwd 'abs_path';
 use Time::HiRes qw ( time );
 
 my $coge_conf;
+my %expTypeToName = (
+    1 => 'quant',
+    2 => 'snp'
+);
 
 sub setup {
     my $self = shift;
@@ -205,14 +209,12 @@ sub track_config {
                 storeClass   => "JBrowse/Store/SeqFeature/REST",
                 onClick =>
 "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end};type=$type_name",
-                maxFeatureScreenDensity => 50,
+                maxFeatureScreenDensity => 1000,     #50,
                 maxHeight               => 100000,
                 style                   => {
                     arrowheadClass           => "arrowhead",
                     className                => "generic_parent",
-                    _defaultHistScale        => 4,
-                    _defaultLabelScale       => 30,
-                    _defaultDescriptionScale => 120,
+                    histScale                => 0.05,
                     minSubfeatureWidth       => 6,
                     maxDescriptionLength     => 70,
                     showLabels               => 'true',
@@ -250,7 +252,11 @@ sub track_config {
             push @notebooks, $n->id;
             $all_notebooks{ $n->id } = $n;
             push @{ $expByNotebook{ $n->id } },
-              { id => $e->id, name => $e->name };
+              {
+                id   => $e->id,
+                name => $e->name,
+                type => $expTypeToName{ $e->data_type }
+              };
         }
         push @notebooks, 0;    # add fake "all experiments" notebook
 
@@ -266,6 +272,7 @@ sub track_config {
         #			}
         #		}
 
+        my $isSNP = ( $e->data_type == 2 );    #FIXME hardcoded data_type
         push @tracks, {
             baseUrl      => "services/JBrowse/service.pl/experiment/$eid/",
             autocomplete => "all",
@@ -273,20 +280,23 @@ sub track_config {
             label        => "experiment$eid",
             key          => ( $e->restricted ? '&reg; ' : '' ) . $e->name,
             type         => (
-                $e->data_type == 2
+                $isSNP
                 ? "JBrowse/View/Track/HTMLVariants"
                 : "CoGe/View/Track/Wiggle/MultiXYPlot"
-            ),    #FIXME hardcoded data_type
+            ),
             storeClass => "JBrowse/Store/SeqFeature/REST",
-            style      => {
-                featureScale => 0.001,
-                labelScale   => 0.05,
+            region_stats => 1,    # see HTMLFeatures.js
+            style        => {
+                featureScale => 0.0001,
+                histScale    => 0.05,
+                labelScale   => 0.5,
                 showLabels   => 'true',
-                className    => '{type}'
+                className    => '{type}',
+                histCss      => 'background-color:' . getFeatureColor($eid)
             },
 
             # CoGe-specific stuff
-            onClick         => "ExperimentView.pl?embed=1&eid=$eid",
+            #onClick         => "ExperimentView.pl?embed=1&eid=$eid",
             showHoverScores => 1,
             coge            => {
                 id      => $eid,
@@ -402,6 +412,14 @@ sub track_config {
             tracks => \@tracks,
         }
     );
+}
+
+# FIXME this is duplicated in JBrowse MultiXYPlot.js, need to either make totally client side or totally server side
+sub getFeatureColor {
+    my $id = shift;
+    return '#'
+      . sprintf( "%06X",
+        ( ( ( ( $id * 1234321 ) % 0x1000000 ) | 0x444444 ) & 0xe7e7e7 ) );
 }
 
 # FIXME this comparison routine is duplicated elsewhere

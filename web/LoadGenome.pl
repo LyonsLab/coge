@@ -438,6 +438,10 @@ sub load_genome {
     my $user_name    = $opts{user_name};
     my $keep_headers = $opts{keep_headers};
     my $items        = $opts{items};
+
+#Added EL: 7/8/2013.  Solves the problem when restricted is unchecked.  Otherwise, command-line call fails with '-organism_id' being passed to restricted as option
+    $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
+
     return unless $items;
     print STDERR
 "load_genome: organism_id=$organism_id name=$name description=$description version=$version type_id=$type_id restricted=$restricted\n";
@@ -485,30 +489,25 @@ sub load_genome {
 
     print $log "Calling bin/load_genome.pl ...\n";
     my $datadir = $P->{DATADIR} . '/genomic_sequence/';
+
+#EL: 7/8/2013  Modified how $cmd was created so that empty options were not passed on the command line.  Perl has a bad habit of grabbing the next option name when it is expecting a value for a previous option and no value was passed along the command line.
     my $cmd =
         "$BINDIR/load_genome.pl "
       . "-user_name $user_name "
       . '-keep_headers '
-      . ( $keep_headers eq 'true' ? '1' : '0' ) . ' '
-      . '-name "'
-      . escape($name) . '" '
-      . '-desc "'
-      . escape($description) . '" '
-      . '-link "'
-      . escape($link) . '" '
-      . '-version "'
-      . escape($version) . '" '
-      . "-type_id $type_id "
-      . "-restricted "
-      . ( $restricted eq 'true' ) . ' '
-      . "-organism_id $organism_id "
-      . '-source_name "'
-      . escape($source_name) . '" '
-      . "-staging_dir $stagepath "
-      . "-install_dir $datadir "
-      . '-fasta_files "'
-      . escape( join( ',', @files ) ) . '" '
-      . "-config $CONFIGFILE";
+      . ( $keep_headers && $keep_headers eq 'true' ? '1' : '0' ) . ' ';
+    $cmd .= '-name "' . escape($name) . '" '        if $name;
+    $cmd .= '-desc "' . escape($description) . '" ' if $description;
+    $cmd .= '-link "' . escape($link) . '" '        if $link;
+    $cmd .= '-version "' . escape($version) . '" '  if $version;
+    $cmd .= "-type_id $type_id ";
+    $cmd .= "-restricted " . $restricted . ' '      if $restricted;
+    $cmd .= "-organism_id $organism_id ";
+    $cmd .= '-source_name "' . escape($source_name) . '" ';
+    $cmd .= "-staging_dir $stagepath ";
+    $cmd .= "-install_dir $datadir ";
+    $cmd .= '-fasta_files "' . escape( join( ',', @files ) ) . '" ';
+    $cmd .= "-config $CONFIGFILE";
 
 #"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
     print STDERR "$cmd\n";

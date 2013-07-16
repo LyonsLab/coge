@@ -6,7 +6,6 @@
 --backup-and-modify-in-place
 --backup-file-extension="bak"
 --blanks-before-blocks
---blanks-before-comments
 --blanks-before-subs
 --block-brace-tightness=0
 --block-brace-vertical-tightness=0
