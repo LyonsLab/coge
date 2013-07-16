@@ -907,8 +907,6 @@ sub go_synfind {
         my $feat_type = $has_cds ? "CDS" : "genomic";
         my $fasta     = $FASTADIR . "/$dsgid-$feat_type.fasta";
 
-        say STDERR "ID: $dsgid FeatType: $feat_type";
-
         if ( $dsgid && $has_cds ) {
             my ( $org_name, $title ) = gen_org_name(
                 dsgid     => $dsgid,
@@ -967,15 +965,8 @@ sub go_synfind {
 
     #query is the first item on this list.
     $query_info = shift @target_info;
-    say STDERR "QUERY ID: $query_info->{dsgid}";
-
-    my $status = $YERBA->submit_workflow($workflow);
-    $YERBA->wait_for_completion( $workflow->name );
-
-    my $pm = new Parallel::ForkManager($MAX_PROC);
 
     foreach my $target (@target_info) {
-        say STDERR "TARGET: $target->{dsgid}";
         my ( $org1, $org2 ) = ( $query_info->{org_name}, $target->{org_name} );
         my ( $dsgid1, $dsgid2 ) = ( $query_info->{dsgid}, $target->{dsgid} );
         my ( $feat_type1, $feat_type2 ) =
@@ -1026,49 +1017,127 @@ sub go_synfind {
 
     #blast and conquer
     foreach my $target (@target_info) {
-        $pm->start and next;
-        my $blastfile = $target->{blastfile};
-        my $success   = run_blast(
-            fasta1  => $target->{query_fasta},
-            fasta2  => $target->{target_fasta},
-            outfile => $blastfile,
-            prog    => $algo
-        );    #for last/lastz with sequence databases
-        CoGe::Accessory::Web::write_log( "failed blast run for " . $blastfile,
-            $cogeweb->logfile )
-          unless $success;
+        #######################################################################
+        # Blast
+        #######################################################################
+        my ( $blast_args, $blast_cmd );
 
-        $blastfile = run_convert_blast(
-            infile  => $blastfile,
-            outfile => $target->{converted_blastfile}
-        );
+        if ( $algo =~ /lastz/i ) {
+            $blast_args = [
+                [ "-i", $target->{query_fasta},  1 ],
+                [ "-d", $target->{target_fasta}, 1 ],
+                [ "-o", $target->{blastfile},    1 ]
+            ];
 
-#	blast2bed(infile=>$blastfile, outfile1=>$target->{bedfile1}, outfile2=>$target->{bedfile2});
-        run_blast2raw(
-            blastfile => $blastfile,
-            bedfile1  => $target->{bedfile1},
-            bedfile2  => $target->{bedfile2},
-            outfile   => $target->{filtered_blastfile}
-        );
-        unless ( -r $target->{filtered_blastfile}
-            || -r $target->{filtered_blastfile} . ".gz" )
-        {
-            return "error creating " . $target->{filtered_blastfile}, "\n";
+            $blast_cmd = $LASTZ;
         }
-        run_synteny_score(
-            blastfile        => $target->{filtered_blastfile},
-            bedfile1         => $target->{bedfile1},
-            bedfile2         => $target->{bedfile2},
-            outfile          => $target->{synteny_score_db},
-            window_size      => $window_size,
-            cutoff           => $cutoff,
-            scoring_function => $scoring_function,
-            dsgid1           => $target->{dsgid1},
-            dsgid2           => $target->{dsgid2}
+        else {
+            $blast_args = [
+                [ "",   $target->{target_fasta}, 1 ],
+                [ "",   $target->{query_fasta},  1 ],
+                [ "-o", $target->{blastfile},    1 ]
+            ];
+
+            $blast_cmd = $LAST;
+        }
+
+        $workflow->add_job(
+            cmd     => $blast_cmd,
+            script  => undef,
+            args    => $blast_args,
+            inputs  => [ $target->{query_fasta}, $target->{target_fasta} ],
+            outputs => [ $target->{blastfile} ]
         );
-        $pm->finish;
+
+        #######################################################################
+        # Convert Blast
+        #######################################################################
+
+        my $convert_args = [
+            [ '<', $target->{blastfile},           1 ],
+            [ '>', $target->{converted_blastfile}, 1 ]
+        ];
+
+        my $convert_inputs = [ $target->{blastfile} ];
+
+        my $convert_outputs = [ $target->{converted_blastfile}, ];
+
+        $workflow->add_job(
+            cmd     => $CONVERT_BLAST,
+            script  => undef,
+            args    => $convert_args,
+            inputs  => $convert_inputs,
+            outputs => $convert_outputs
+        );
+
+        #######################################################################
+        # Blast 2 Raw
+        #######################################################################
+        my $raw_args = [
+            [ "",              $target->{converted_blastfile}, 1 ],
+            [ "--qbed",        $target->{bedfile1},            1 ],
+            [ "--sbed",        $target->{bedfile2},            1 ],
+            [ "--tandem_Nmax", 10,                             1 ],
+            [ ">",             $target->{filtered_blastfile},  1 ],
+        ];
+
+        my $raw_inputs = [
+            $target->{bedfile1}, $target->{bedfile2},
+            $target->{converted_blastfile}
+        ];
+
+        my $raw_outputs = [
+            $target->{filtered_blastfile},
+
+            #$target->{filtered_blastfile} . ".q.localdups",
+            #$target->{filtered_blastfile} . ".s.localdups",
+        ];
+
+        $workflow->add_job(
+            cmd     => $BLAST2RAW,
+            script  => undef,
+            args    => $raw_args,
+            inputs  => $raw_inputs,
+            outputs => $raw_outputs
+        );
+
+        #######################################################################
+        # Synteny Score
+        #######################################################################
+
+        $cutoff = sprintf( "%.2f", $cutoff / $window_size ) if $cutoff >= 1;
+
+        my $synteny_score_args = [
+            [ '',          $target->{filtered_blastfile}, 1 ],
+            [ '--qbed',    $target->{bedfile1},           1 ],
+            [ '--sbed',    $target->{bedfile2},           1 ],
+            [ '--window',  $window_size,                  1 ],
+            [ '--cutoff',  $cutoff,                       1 ],
+            [ '--scoring', $scoring_function,             1 ],
+            [ '--qnote',   $target->{dsgid1},             1 ],
+            [ '--snote',   $target->{dsgid2},             1 ],
+            [ '--sqlite',  $target->{synteny_score_db},   1 ]
+        ];
+
+        my $synteny_score_inputs = [
+            $target->{bedfile1}, $target->{bedfile2},
+            $target->{filtered_blastfile}
+        ];
+
+        my $synteny_score_outputs = [ $target->{synteny_score_db}, ];
+
+        $workflow->add_job(
+            cmd     => $SYNTENY_SCORE,
+            script  => undef,
+            args    => $synteny_score_args,
+            inputs  => $synteny_score_inputs,
+            outputs => $synteny_score_outputs,
+        );
     }
-    $pm->wait_all_children;
+
+    my $status = $YERBA->submit_workflow($workflow);
+    $YERBA->wait_for_completion( $workflow->name );
+
     my ( $gevo_link, $matches ) = gen_gevo_link(
         fid         => $fid,
         dbs         => [ map { $_->{synteny_score_db} } @target_info ],
@@ -1082,25 +1151,10 @@ sub go_synfind {
         $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Finished!", $cogeweb->logfile );
 
-    foreach my $item (@target_info) {
-        foreach my $file (
-            $item->{blastfile},
-            $item->{converted_blastfile},
-            $item->{filtered_blastfile},
-          )
-        {
-            $pm->start and next;
-
-            #	    $file = CoGe::Accessory::Web::gzip($file);
-            $pm->finish;
-        }
-    }
-    $pm->wait_all_children();
-
     #make table of results
     #table to look them up later;
     my %dsgids = map { $_->{dsgid}, => 1 } @target_info;
-    $dsgids{$source_dsgid} = 1;
+    $dsgids{ $query_info->{dsgid} } = 1;
 
     $html .=
       qq{<table id=syntelog_table class="ui-widget-content ui-corner-all">};
