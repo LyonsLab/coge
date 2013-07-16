@@ -289,7 +289,7 @@ sub track_config {
             style        => {
                 featureScale => 0.0001,
                 histScale    => 0.05,
-                labelScale   => 0.1,
+                labelScale   => 0.5,
                 showLabels   => 'true',
                 className    => '{type}',
                 histCss      => 'background-color:' . getFeatureColor($eid)
