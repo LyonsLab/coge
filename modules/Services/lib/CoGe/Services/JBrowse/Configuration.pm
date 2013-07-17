@@ -207,6 +207,8 @@ sub track_config {
                 key          => $type_name,
                 type         => "JBrowse/View/Track/HTMLFeatures",
                 storeClass   => "JBrowse/Store/SeqFeature/REST",
+                region_stats => 1
+                , # see HTMLFeatures.js, force calls to stats/region instead of stats/global
                 onClick =>
 "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end};type=$type_name",
                 maxFeatureScreenDensity => 1000,     #50,
@@ -214,7 +216,7 @@ sub track_config {
                 style                   => {
                     arrowheadClass           => "arrowhead",
                     className                => "generic_parent",
-                    histScale                => 0.05,
+                    histScale                => 0.002,
                     minSubfeatureWidth       => 6,
                     maxDescriptionLength     => 70,
                     showLabels               => 'true',
@@ -284,9 +286,10 @@ sub track_config {
                 ? "JBrowse/View/Track/HTMLVariants"
                 : "CoGe/View/Track/Wiggle/MultiXYPlot"
             ),
-            storeClass => "JBrowse/Store/SeqFeature/REST",
-            region_stats => 1,    # see HTMLFeatures.js
-            style        => {
+            storeClass   => "JBrowse/Store/SeqFeature/REST",
+            region_stats => 1
+            , # see HTMLFeatures.js, force calls to stats/region instead of stats/global
+            style => {
                 featureScale => 0.0001,
                 histScale    => 0.05,
                 labelScale   => 0.5,

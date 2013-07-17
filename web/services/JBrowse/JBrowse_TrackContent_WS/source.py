@@ -4,6 +4,7 @@ import math
 import re
 import random
 import os
+import sys
 from collections import defaultdict #Counter
 from cgi import parse_qs, escape
 
@@ -123,6 +124,7 @@ def gc_features(environ, start_response):
 
 def an_features(environ, start_response):
     """Main feature endpoint for Annotation Feature content"""
+    sys.stderr.write('an_features\n')
     status = '200 OK'
     response_body = { "features" : [] }
     bucketSize = 100
@@ -232,6 +234,7 @@ def an_features(environ, start_response):
     return response_body
 
 def stats(environ, start_response):
+    sys.stderr.write('global stats\n')
     start_response('200 OK', [('Content-Type', 'text/plain')])
     response_body = { "featureDensity": 0.02,
                       "scoreMin": 0,
@@ -241,13 +244,82 @@ def stats(environ, start_response):
     return json.dumps(response_body)
 
 def region(environ, start_response):
-    start_response('200 OK', [('Content-Type', 'text/plain')])
-    return ['{}']
+    sys.stderr.write('region stats\n')
+    
+    # Get the passed params of the AJAX request
+    d = parse_qs(environ['QUERY_STRING'])
+    start = int( d.get('start', [''])[0] )
+    end = int( d.get('end', [''])[0] )
+    bpPerBin = int( d.get('bpPerBin', [''])[0] )
+    args = environ['url_args']
+
+    response_body = { "bins" : [], "stats" : [ { "basesPerBin": bpPerBin, "max": 0, "mean": 0 } ] }
+    status = '200 OK'
+
+    # set parsed argument variables
+    genome_id = args['genome_id']
+    chr_id = args['chr_id']
+    feat_type = args['feat_type']
+
+    con = db_connect()
+    cur = con.cursor()
+
+    query = "SELECT l.start, l.stop \
+            FROM genome g \
+            JOIN dataset_connector dc ON dc.genome_id = g.genome_id \
+            JOIN dataset d on dc.dataset_id = d.dataset_id \
+            JOIN feature f ON d.dataset_id = f.dataset_id \
+            JOIN location l ON f.feature_id = l.feature_id \
+            JOIN feature_name fn ON f.feature_id = fn.feature_id \
+            JOIN feature_type ft ON f.feature_type_id = ft.feature_type_id \
+            WHERE g.genome_id = {0} \
+            AND f.chromosome = '{1}' \
+            AND f.stop > {2} AND f.start <= {3} \
+            AND ft.feature_type_id != 4 \
+            AND ft.name = '{4}'" \
+            .format(genome_id, chr_id, start, end, feat_type)
+
+    try:
+        cur.execute(query + ";")
+        results = cur.fetchall()
+
+        if results:
+            maxStop = max([int(row[1]) for row in results]) - start
+            numBins = bin(maxStop, maxStop, bpPerBin) + 1
+            sys.stderr.write("maxStop="+str(maxStop)+" numBins="+str(numBins)+'\n')
+            bins = [0] * numBins
+    
+            for row in results:
+                s = int(row[0]) - start
+                e = int(row[1]) - start
+                b = bin(s, e, bpPerBin)
+                bins[b] += 1
+                
+            maxVal = max(bins)
+            meanVal = sum(bins) / len(bins)
+            response_body = { "bins" : bins, "stats" : [ { "basesPerBin": bpPerBin, "max": maxVal, "mean": 0 } ] }
+            status = '200 OK'
+
+    except mdb.Error, e:
+        response_body = "Error %d: %s" % (e.args[0], e.args[1])
+        status = '500 Internal Server Error'
+
+    finally:
+        if con:
+            con.close()
+
+    response_headers = [('Content-Type', 'application/json')]
+    start_response(status, response_headers)
+    response_body = json.dumps(response_body)
+    return response_body
+
+def bin(start, end, bpPerBin):
+    return max(0, int((start + end) / 2 / bpPerBin))
 
 urls = [
     (r'stats/global$',
         stats),
-    (r'stats/region/?$',
+    (r'annotation/(?P<genome_id>\d+)/types/(?P<feat_type>\w+)/stats/region/(?P<chr_id>\w+)?(.+)?$',
         region),
     (r'annotation/(?P<genome_id>\d+)/types/(?P<feat_type>\w+)/features/(?P<chr_id>\w+)?(.+)?$',
         an_features),
