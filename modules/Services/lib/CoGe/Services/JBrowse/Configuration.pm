@@ -290,12 +290,12 @@ sub track_config {
             region_stats => 1
             , # see HTMLFeatures.js, force calls to stats/region instead of stats/global
             style => {
-                featureScale => 0.0001,
+                featureScale => ( $isSNP ? 0.0001 : 0.001 ),
                 histScale    => 0.05,
                 labelScale   => 0.5,
                 showLabels   => 'true',
                 className    => '{type}',
-                histCss      => 'background-color:' . getFeatureColor($eid)
+                histCss => 'background-color:' . getFeatureColor($eid)
             },
 
             # CoGe-specific stuff
