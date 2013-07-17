@@ -5,6 +5,7 @@ no warnings('redefine');
 
 use CoGeX;
 use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
@@ -39,8 +40,9 @@ use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME
   $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB
   $BLAST_PROGS $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT
   $MAX_PROC $connstr $COOKIE_NAME $MAX_SEARCH_RESULTS %FUNCTION
-  $PAGE_TITLE);
+  $PAGE_TITLE $YERBA);
 
+$YERBA         = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
 $P             = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 $ENV{PATH}     = $P->{COGEDIR};
 $ENV{BLASTDB}  = $P->{BLASTDB};
