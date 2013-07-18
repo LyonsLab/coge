@@ -759,9 +759,10 @@ sub blast_search {
             push @$args, [ '', "O=" . $zgap_start, 1 ] if defined $zgap_start;
             push @$args, [ '', "E=" . $zgap_extension, 1 ]
               if defined $zgap_extension;
-            push @$args, [ '', $fasta_file, 1 ];
-            push @$args, [ '', $db,         1 ];
-            push @$args, [ '', $opts,       1 ];
+            push @$args, [ '',  $fasta_file, 1 ];
+            push @$args, [ '',  $db,         1 ];
+            push @$args, [ '',  $opts,       1 ];
+            push @$args, [ '>', $outfile,    1 ];
         }
         else {
             my ( $nuc_penalty, $nuc_reward, $exist, $extent );
@@ -792,6 +793,7 @@ sub blast_search {
             push @$args, [ '-word_size', $wordsize,   1 ];
             push @$args, [ '-evalue',    $expect,     1 ];
             push @$args, [ '-db',        $db,         1 ];
+            push @$args, [ '>',          $outfile,    1 ];
         }
 
         push @results,
@@ -2146,10 +2148,10 @@ sub get_nearby_feats {
     my $cogedb = DBI->connect( $connstr, $DBUSER, $DBPASS );
     my $query  = qq{
 select * from (
-  (SELECT * FROM ((SELECT * FROM feature where start<=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY start DESC  LIMIT 10) 
+  (SELECT * FROM ((SELECT * FROM feature where start<=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY start DESC  LIMIT 10)
    UNION (SELECT * FROM feature where start>=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY start LIMIT 10)) as u)
   UNION
-  (SELECT * FROM ((SELECT * FROM feature where stop<=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY stop DESC  LIMIT 10) 
+  (SELECT * FROM ((SELECT * FROM feature where stop<=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY stop DESC  LIMIT 10)
    UNION (SELECT * FROM feature where stop>=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY stop LIMIT 10)) as v)
    ) as w
 order by abs((start + stop)/2 - $mid) LIMIT 10};
