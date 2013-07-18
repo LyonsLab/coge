@@ -712,6 +712,12 @@ sub blast_search {
         db_object => $coge
     );
 
+    my ($tiny_id) = $link =~ /\/(\w+)$/;
+    my $workflow = $YERBA->create_workflow(
+        name    => "cogeblast-$tiny_id",
+        logfile => $cogeweb->logfile
+    );
+
     CoGe::Accessory::Web::write_log( "process $$", $cogeweb->logfile );
 
     $width = 400
@@ -723,88 +729,71 @@ sub blast_search {
     my ( $fasta_file, $query_seqs_info ) = create_fasta_file($seq);
     my $opts;
     my $pre_command;
-    if ( $program eq "lastz" ) {
-        $pre_command =
-          "/usr/bin/nice --adjustment=10 " . $BLAST_PROGS->{$program};
-        $pre_command .= " $fasta_file";
-
-        $opts .= " W=" . $zwordsize      if defined $zwordsize;
-        $opts .= " C=" . $zchaining      if defined $zchaining;
-        $opts .= " K=" . $zthreshold     if defined $zthreshold;
-        $opts .= " M=" . $zmask          if defined $zmask;
-        $opts .= " O=" . $zgap_start     if defined $zgap_start;
-        $opts .= " E=" . $zgap_extension if defined $zgap_extension;
-        my $tmp;
-        ( $tmp, $opts ) = CoGe::Accessory::Web::check_taint($opts);
-    }
-    else {
-        my ( $nuc_penalty, $nuc_reward, $exist, $extent );
-        if ( $gapcost =~ /^(\d+)\s+(\d+)/ ) {
-            ( $exist, $extent ) = ( $1, $2 );
-        }
-
-        if ( $match_score =~ /^(\d+)\,(-\d+)/ ) {
-            ( $nuc_penalty, $nuc_reward ) = ( $2, $1 );
-        }
-        $pre_command =
-          "/usr/bin/nice --adjustment=10 " . $BLAST_PROGS->{$program};
-
-        $pre_command .= " -comp_based_stats 1" if $program eq "tblastn";
-        $pre_command .=
-          $program =~ /tblast/i
-          ? " -matrix $matrix"
-          : " -penalty $nuc_penalty -reward $nuc_reward  -gapopen $exist -gapextend $extent -dust no";
-
-        $pre_command .= " -query $fasta_file";
-
-   #	$pre_command .= " -gapopen $exist -gapextend $extent" if $exist && $extent;
-        $pre_command .= " -word_size $wordsize";
-        $pre_command .= " -evalue $expect";
-
-        #	if ($program eq "blastn")
-        #	  {
-        #	    $pre_command = "$BLAST -p $program -i $fasta_file";
-        # if ($program =~ /^blastn$/i)
-        #   {
-        #		$pre_command .= ;
-        #  }
-        #else
-        #  {
-        #		$pre_command .= " -M $matrix";
-        #  }
-
-#	    $pre_command .= " -G $exist -E $extent" if $exist && $extent;
-#	    $pre_command .= " -e $expect";
-#	    $pre_command .= " -C $comp" if $program =~ /tblastn/i;
-#	    $pre_command .= " -F F " unless $filter_query;
-#	  }
-#	elsif ($program eq "tblastn")
-#	  {
-#	    $pre_command = "$TBLASTN -query $fasta_file -word_size $wordsize -comp_based_stats 1";
-#
-#	  }
-    }
     my $x;
     ( $x, $pre_command ) = CoGe::Accessory::Web::check_taint($pre_command);
     my @results;
     my $count = 1;
     my $t2    = new Benchmark;
+
     foreach my $dsgid (@dsg_ids) {
         my ( $org, $db, $dsg ) = get_blast_db($dsgid);
         next unless $db;
+
         my $command;
-        my $outfile;
-        my $report;
+        my $outfile = $cogeweb->basefile . "-$count.$program";
+        my ( $args, $cmd );
+
+        $cmd = $BLAST_PROGS->{$program};
+        $args =
+          [ [ '', '--adjustment=10', 1 ], [ '', $BLAST_PROGS->{$program}, 1 ],
+          ];
+
         if ( $program eq "lastz" ) {
-            $command = $pre_command . " $db $opts";
+            my $tmp;
+            ( $tmp, $opts ) = CoGe::Accessory::Web::check_taint($opts);
+
+            push @$args, [ '', "W=" . $zwordsize,  1 ] if defined $zwordsize;
+            push @$args, [ '', "C=" . $zchaining,  1 ] if defined $zchaining;
+            push @$args, [ '', "K=" . $zthreshold, 1 ] if defined $zthreshold;
+            push @$args, [ '', "M=" . $zmask,      1 ] if defined $zmask;
+            push @$args, [ '', "O=" . $zgap_start, 1 ] if defined $zgap_start;
+            push @$args, [ '', "E=" . $zgap_extension, 1 ]
+              if defined $zgap_extension;
+            push @$args, [ '', $fasta_file, 1 ];
+            push @$args, [ '', $db,         1 ];
+            push @$args, [ '', $opts,       1 ];
         }
         else {
-            $command = $pre_command;
-            $command .= " -db $db";
+            my ( $nuc_penalty, $nuc_reward, $exist, $extent );
+            if ( $gapcost =~ /^(\d+)\s+(\d+)/ ) {
+                ( $exist, $extent ) = ( $1, $2 );
+            }
 
-            #$outfile = $cogeweb->basefile."-$count.blast";
+            if ( $match_score =~ /^(\d+)\,(-\d+)/ ) {
+                ( $nuc_penalty, $nuc_reward ) = ( $2, $1 );
+            }
+
+            $args = [
+                [ '', '--adjustment=10',        1 ],
+                [ '', $BLAST_PROGS->{$program}, 1 ],
+            ];
+
+            push @$args, [ "-comp_based_stats", 1, 1 ] if $program eq "tblastn";
+            push @$args, [ '-matrix', $matrix, 1 ] if $program =~ /tblast/i;
+            push @$args, [ '-penalty', $nuc_penalty, 1 ]
+              unless $program =~ /tblast/i;
+            push @$args, [ '-reward', $nuc_reward, 1 ]
+              unless $program =~ /tblast/i;
+            push @$args, [ '-gapopen', $exist, 1 ] unless $program =~ /tblast/i;
+            push @$args, [ '-gapextend', $extent, 1 ]
+              unless $program =~ /tblast/i;
+            push @$args, [ '-dust', 'no', 1 ] unless $program =~ /tblast/i;
+            push @$args, [ '-query',     $fasta_file, 1 ];
+            push @$args, [ '-word_size', $wordsize,   1 ];
+            push @$args, [ '-evalue',    $expect,     1 ];
+            push @$args, [ '-db',        $db,         1 ];
         }
-        $outfile = $cogeweb->basefile . "-$count.$program";
+
         push @results,
           {
             command  => $command,
@@ -812,23 +801,21 @@ sub blast_search {
             organism => $org,
             dsg      => $dsg
           };
+
+        $workflow->add_job(
+            cmd     => "/usr/bin/nice",
+            script  => undef,
+            args    => $args,
+            inputs  => [ $db, $fasta_file ],
+            outputs => [$outfile]
+        );
+
         $count++;
     }
-    my $pm = new Parallel::ForkManager($MAX_PROC);
-    foreach my $item (@results) {
-        $pm->start and next;
-        my $command       = $item->{command};
-        my $organism_name = $item->{organism};
-        my $outfile       = $item->{file};
-        CoGe::Accessory::Web::write_log( "*$organism_name* running $command",
-            $cogeweb->logfile );
-        `$command > $outfile`;
-        CoGe::Accessory::Web::write_log(
-            "*$organism_name* blast analysis complete",
-            $cogeweb->logfile );
-        $pm->finish;
-    }
-    $pm->wait_all_children;
+
+    my $status = $YERBA->submit_workflow($workflow);
+    $YERBA->wait_for_completion( $workflow->name );
+
     foreach my $item (@results) {
         my $command = $item->{command};
         my $outfile = $item->{file};
