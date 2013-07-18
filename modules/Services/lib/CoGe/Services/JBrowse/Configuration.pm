@@ -174,7 +174,7 @@ sub track_config {
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             onClick =>
               "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
-            maxFeatureScreenDensity => 10,
+            maxFeatureScreenDensity => 5,
             maxHeight               => 100000,
             minSubfeatureWidth      => 4,
             style                   => {
