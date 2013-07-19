@@ -128,6 +128,7 @@ sub gen_body {
     my $pro        = $form->param('pro');
     my $upstream   = $form->param('upstream') || 0;
     my $downstream = $form->param('downstream') || 0;
+    my $locations  = $form->param('locations');
     my $rel        = $form->param('rel')
       || 0
       ; #relative position of the feature -- don't adjust based on which strand the feature is located.  important when linking to seqview from places such as GEvo's Get Sequence
@@ -156,41 +157,48 @@ sub gen_body {
         $dsid = $feat->dataset_id;
         $chr  = $feat->chromosome;
 
-        $template->param( FEAT_START => $feat->start );
-        $template->param( FEAT_STOP  => $feat->stop );
-        $template->param( FEATID     => $featid );
-        $template->param( FEATNAME   => $feat_name );
-
-#      $template->param(FEAT_INFO=>qq{<span class='ui-button ui-corner-all' onClick="generate_feat_info(['args__$featid'],[display_feat_info]); ">Get Feature Info</span>});
-        $template->param( FEAT_INFO =>
-qq{<span class='ui-button ui-corner-all' onClick="generate_feat_info(['args__$featid'],['feature_info']); \$('#feature_info').dialog('open');">Get Feature Info</span>}
+        $template->param(
+            FEAT_START => $feat->start,
+            FEAT_STOP  => $feat->stop,
+            FEATID     => $featid,
+            FEATNAME   => $feat_name,
+            PROTEIN    => 'Protein Sequence',
+            SIXFRAME   => 0,
+            UPSTREAM   => "Add 5': ",
+            UPVALUE    => $upstream,
+            DOWNSTREAM => "Add 3': ",
+            DOWNVALUE  => $downstream,
+            FEATURE    => 1
         );
-        $template->param( PROTEIN    => 'Protein Sequence' );
-        $template->param( SIXFRAME   => 0 );
-        $template->param( UPSTREAM   => "Add 5': " );
-        $template->param( UPVALUE    => $upstream );
-        $template->param( DOWNSTREAM => "Add 3': " );
-        $template->param( DOWNVALUE  => $downstream );
-        $template->param( FEATURE    => 1 );
         $start = $feat->start;
         $stop  = $feat->stop;
     }
+    elsif ($locations) {
+        $template->param(
+            PROTEIN    => 'Six Frame Translation',
+            SIXFRAME   => 0,
+            UPSTREAM   => "Add 5': ",
+            UPVALUE    => $upstream,
+            DOWNSTREAM => "Add 3': ",
+            DOWNVALUE  => $downstream,
+            LOCATIONS  => $locations
+        );
+    }
     else {
-        $template->param( FEATID   => 0 );         #to make JS happy
-        $template->param( FEATNAME => 'null' );    #to make JS happy
-             #generate_gc_info(chr=>$chr,stop=>$stop,start=>$start,dsid=>$dsid);
-
-        $template->param( PROTEIN    => 'Six Frame Translation' );
-        $template->param( SIXFRAME   => 1 );
-        $template->param( UPSTREAM   => "Start: " );
-        $template->param( UPVALUE    => $start );
-        $template->param( DOWNSTREAM => "Stop: " );
-        $template->param( DOWNVALUE  => $stop );
-        $template->param( ADD_EXTRA  => 1 );
-        $template->param( ADDUP      => $upstream );
-        $template->param( ADDDOWN    => $downstream );
+        $template->param(
+            PROTEIN    => 'Six Frame Translation',
+            SIXFRAME   => 1,
+            UPSTREAM   => "Start: ",
+            UPVALUE    => $start,
+            DOWNSTREAM => "Stop: ",
+            DOWNVALUE  => $stop,
+            ADD_EXTRA  => 1,
+            ADDUP      => $upstream,
+            ADDDOWN    => $downstream
+        );
 
     }
+
     if ($rc) {
         $start -= $downstream;
         $stop += $upstream;
@@ -199,6 +207,7 @@ qq{<span class='ui-button ui-corner-all' onClick="generate_feat_info(['args__$fe
         $start -= $upstream;
         $stop += $downstream;
     }
+
     my ( $link, $types ) = find_feats(
         dsid  => $dsid,
         start => $start,
@@ -208,15 +217,10 @@ qq{<span class='ui-button ui-corner-all' onClick="generate_feat_info(['args__$fe
         dsgid => $dsgid
     );
 
-    #    print STDERR $link,"\n\n";;
-
     $template->param( FEATLISTLINK   => $link );
     $template->param( FEAT_TYPE_LIST => $types );
-    $template->param( GC_INFO =>
-qq{<td valign=top><span class='ui-button ui-corner-all'  onClick="generate_gc_info(['seq_text','args__'+myObj.pro],[display_gc_info],'POST')">Calculate GC Content</span>}
-    );
-    my $html = $template->output;
-    return $html;
+
+    return $template->output;
 }
 
 sub check_strand {
@@ -255,12 +259,15 @@ sub get_seq {
     my $feat_name  = $opts{'featname'};
     my $upstream   = $opts{'upstream'};
     my $downstream = $opts{'downstream'};
+    my $locations  = $opts{'locations'};
     my $start      = $opts{'start'};
     my $stop       = $opts{'stop'};
     my $wrap       = $opts{'wrap'} || 0;
     my $gstid      = $opts{gstid};
     my $rel        = $opts{rel} || 0;
     $wrap = 0 if $wrap =~ /undefined/;
+
+    print STDERR "get_seq: $locations $add_to_seq\n";
 
     if ($add_to_seq) {
         $start = $upstream   if $upstream;
@@ -333,6 +340,28 @@ sub get_seq {
             col   => $col,
           )
           : ">Unable to retrieve dataset group object for id: $dsgid";
+    }
+    elsif ($locations) {
+        foreach ( split( ',', $locations ) ) {
+            my ( $gid, $chr, $start, $stop ) = split( ':', $_ );
+            $start -= $upstream;
+            $stop += $downstream;
+            my $genome = $coge->resultset('Genome')->find($gid);
+            return "Unable to find genome for $gid" unless $genome;
+            return "Restricted Access"
+              if $genome->restricted && !$USER->has_access_to_genome($genome);
+            $fasta .=
+              ref($genome) =~ /genome/i
+              ? $genome->fasta(
+                start => $start,
+                stop  => $stop,
+                chr   => $chr,
+                prot  => $pro,
+                rc    => $rc,
+                col   => $col,
+              )
+              : ">Unable to retrieve dataset group object for id: $gid";
+        }
     }
     else {
         $fasta = qq{
@@ -419,7 +448,7 @@ qq{<span class='ui-button ui-corner-all' " onClick="featlist('FeatList.pl?};
     my %type;
     $link .=
         "start=$start;stop=$stop;chr=$chr;dsid=$dsid;dsgid=$dsgid;gstid=$gstid"
-      . qq{')">Extract Features: <span>};
+      . qq{')">Extract Features:};
     foreach my $ft (
         $coge->resultset('FeatureType')->search(
             {

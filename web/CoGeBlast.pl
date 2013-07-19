@@ -121,6 +121,7 @@ $USER = undef;
     overlap_feats_parse      => \&overlap_feats_parse,
     get_nearby_feats         => \&get_nearby_feats,
     export_fasta_file        => \&export_fasta_file,
+    export_seqview           => \&export_seqview,
     export_CodeOn            => \&export_CodeOn,
     export_to_excel          => \&export_to_excel,
     generate_tab_deliminated => \&generate_tab_deliminated,
@@ -934,6 +935,8 @@ sub gen_results_page {
                 my $feat_link = qq{<span>Loading...</span>};
 
                 my $qname = $hsp->query_name;
+                my $start = $hsp->subject_start;
+                my $stop  = $hsp->subject_stop;
 
                 #can we extract a CoGe name for the sequence
                 if ( $hsp->query_name =~ /Name: (.*), Type:/ ) {
@@ -972,13 +975,17 @@ qq{<span class="link" title="Click for HSP information" onclick="update_hsp_info
                     HSP_LENGTH => $hsp->length,
                     COVERAGE   => sprintf( "%.1f", $hsp->query_coverage * 100 )
                       . "%",
-                    HSP_PID     => $hsp->percent_id . "%",
-                    HSP_SCORE   => $hsp->score,
-                    HSP_POS     => ( $hsp->subject_start ),
-                    HSP_CHR     => $chr,
-                    HSP_LINK    => $feat_link,
-                    HSP_QUALITY => sprintf( "%.1f", $hsp->quality ) . "%",
-                    SEQVIEW     => $seqview_link,
+                    HSP_PID       => $hsp->percent_id . "%",
+                    HSP_SCORE     => $hsp->score,
+                    HSP_POS_START => ( $hsp->subject_start ),
+                    HSP_CHR       => $chr,
+                    HSP_LINK      => $feat_link,
+                    HSP_QUALITY   => sprintf( "%.1f", $hsp->quality ) . "%",
+                    SEQVIEW       => $seqview_link,
+                    LOC_VAL       => $dsg->id . ':' 
+                      . $chr . ':' 
+                      . $start . ':'
+                      . $stop
                   };
             }
         }
@@ -2274,6 +2281,13 @@ sub export_fasta_file {
     @list = grep { !$seen{$_}++ } @list;
     $url .= join ",", @list;
     return $url;
+}
+
+sub export_seqview {
+    my %opts      = @_;
+    my $locations = $opts{locations};
+    print STDERR "export_seqview: $locations\n";
+    return "SeqView.pl?locations=$locations";
 }
 
 sub export_to_excel {
