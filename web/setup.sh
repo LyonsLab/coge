@@ -1,0 +1,14 @@
+mkdir tmp;
+chmod 777 tmp/;
+mkdir data/image_cache;
+chmod 777 data/image_cache/;
+mkdir data/genomic_sequence;
+chmod 777 data/genomic_sequence/;
+mkdir data/diags;
+chmod 777 data/diags/;
+mkdir data/bed;
+chmod 777 data/bed/;
+mkdir data/fasta;
+chmod 777 data/fasta/;
+mkdir data/blast/db;
+chmod 777 data/blast/db/;
