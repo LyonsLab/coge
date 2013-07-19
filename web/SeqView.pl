@@ -439,6 +439,8 @@ sub find_feats {
     my @dsids;
     push @dsids, $dsid if $dsid;
 
+    return unless ($chr);
+
     if ($dsgid) {
         my $dsg = $coge->resultset('Genome')->find($dsgid);
         return unless $dsg;

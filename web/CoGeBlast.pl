@@ -121,7 +121,6 @@ $USER = undef;
     overlap_feats_parse      => \&overlap_feats_parse,
     get_nearby_feats         => \&get_nearby_feats,
     export_fasta_file        => \&export_fasta_file,
-    export_seqview           => \&export_seqview,
     export_CodeOn            => \&export_CodeOn,
     export_to_excel          => \&export_to_excel,
     generate_tab_deliminated => \&generate_tab_deliminated,
@@ -2281,13 +2280,6 @@ sub export_fasta_file {
     @list = grep { !$seen{$_}++ } @list;
     $url .= join ",", @list;
     return $url;
-}
-
-sub export_seqview {
-    my %opts      = @_;
-    my $locations = $opts{locations};
-    print STDERR "export_seqview: $locations\n";
-    return "SeqView.pl?locations=$locations";
 }
 
 sub export_to_excel {

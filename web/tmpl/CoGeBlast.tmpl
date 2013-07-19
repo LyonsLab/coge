@@ -221,7 +221,7 @@ function overlap_checkboxes() {
 				locations.push(loc);
 			}
 		});
-		export_seqview(locations.join(','));
+		window.open("SeqView.pl?locations=" + locations.join(','));
 	}	
 	else if (action == "phylo"){
 		export_fasta_file(accn);
@@ -311,19 +311,6 @@ function export_fasta_file(accn) {
 			jquery_ajax: 1,
 			fname: 'export_fasta_file',
 			accn: accn
-		},
-		success : function(data) {
-			window.open(data);
-		},
-	});
-}
-
-function export_seqview(locations) {
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'export_seqview',
-			locations: locations
 		},
 		success : function(data) {
 			window.open(data);
