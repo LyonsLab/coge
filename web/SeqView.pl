@@ -267,8 +267,6 @@ sub get_seq {
     my $rel        = $opts{rel} || 0;
     $wrap = 0 if $wrap =~ /undefined/;
 
-    print STDERR "get_seq: $locations $add_to_seq\n";
-
     if ($add_to_seq) {
         $start = $upstream   if $upstream;
         $stop  = $downstream if $downstream;
@@ -342,11 +340,15 @@ sub get_seq {
           : ">Unable to retrieve dataset group object for id: $dsgid";
     }
     elsif ($locations) {
+        my %genomes;
         foreach ( split( ',', $locations ) ) {
             my ( $gid, $chr, $start, $stop ) = split( ':', $_ );
             $start -= $upstream;
             $stop += $downstream;
-            my $genome = $coge->resultset('Genome')->find($gid);
+            if ( not defined $genomes{$gid} ) {
+                $genomes{$gid} = $coge->resultset('Genome')->find($gid);
+            }
+            my $genome = $genomes{$gid};
             return "Unable to find genome for $gid" unless $genome;
             return "Restricted Access"
               if $genome->restricted && !$USER->has_access_to_genome($genome);
