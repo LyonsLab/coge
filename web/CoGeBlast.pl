@@ -231,6 +231,8 @@ sub gen_body {
     my $rc    = $form->param('rc')    || 0;
     my $seq   = $form->param('seq');
     my $gstid = $form->param('gstid') || 1;
+    my $locations = $form->param('locations');
+
     my $prefs = CoGe::Accessory::Web::load_settings(
         user => $USER,
         page => $PAGE_NAME,
@@ -238,18 +240,20 @@ sub gen_body {
     );
     $prefs = {} unless $prefs;
 
-    #	$template->param( PAGE_NAME  	=> $PAGE_NAME );
-    $template->param( MAIN       => 1 );
-    $template->param( UPSTREAM   => $upstream );
-    $template->param( DOWNSTREAM => $downstream );
-    $template->param( DSID       => $dsid );
-    $template->param( DSGID      => $dsgid );
+    $template->param(
+        MAIN       => 1,
+        UPSTREAM   => $upstream,
+        DOWNSTREAM => $downstream,
+        DSID       => $dsid,
+        DSGID      => $dsgid,
 
-    #$template->param( ORG_LIST		=> get_orgs(html_only => 1) );
-    $template->param( RC     => $rc );
-    $template->param( FEATID => $featid );
-    $template->param( CHR    => $chr );
-    $template->param( GSTID  => $gstid );
+        #ORG_LIST		=> get_orgs(html_only => 1),
+        RC        => $rc,
+        FEATID    => $featid,
+        CHR       => $chr,
+        GSTID     => $gstid,
+        LOCATIONS => $locations
+    );
 
     if ($featid) {
         $template->param( SEQVIEW => 1 );
@@ -262,16 +266,26 @@ sub gen_body {
             $columns = 80;
             $seq = wrap( "", "", $seq );
         }
-        $template->param( SEQVIEW  => 0 );
-        $template->param( SEQUENCE => $seq );
+        $template->param(
+            SEQVIEW  => 0,
+            SEQUENCE => $seq
+        );
+    }
+    elsif ($locations) {
+        $template->param(
+            SEQVIEW  => 0,
+            SEQUENCE => ""
+        );
     }
     else {
-        $template->param( SEQVIEW  => 0 );
-        $template->param( SEQUENCE => 'Enter FASTA sequence(s) here' );
+        $template->param(
+            SEQVIEW  => 0,
+            SEQUENCE => 'Enter FASTA sequence(s) here'
+        );
     }
     $template->param( USER_NAME => $USER->user_name );
 
-    #	$template->param( REST      => 1 );
+    #$template->param( REST      => 1 );
 
     #populate user specified default values
     my $db_list;
@@ -343,6 +357,7 @@ sub get_sequence {
     my $blast_type = $opts{blast_type};
     my $upstream   = $opts{upstream};
     my $downstream = $opts{downstream};
+    my $locations  = $opts{locations};
     my $gstid      = $opts{gstid};
     my $rc         = $opts{rc};
     my $fasta;
@@ -367,7 +382,7 @@ sub get_sequence {
                 downstream => $downstream,
                 gstid      => $gstidt
               )
-              : ">Unable to retrieve Feature object for id: $fid\n";
+              : ">Unable to find feature id $fid\n";
         }
     }
     elsif ($dsid) {
@@ -382,7 +397,7 @@ sub get_sequence {
             rc    => $rc,
             gstid => $gstid
           )
-          : ">Unable to retrieve dataset object for id: $dsid";
+          : ">Unable to find dataset id $dsid";
     }
     elsif ($dsgid) {
         my $dsg = $coge->resultset('Genome')->find($dsgid);
@@ -395,7 +410,33 @@ sub get_sequence {
             prot  => $prot,
             rc    => $rc
           )
-          : ">Unable to retrieve dataset group object for id: $dsgid";
+          : ">Unable to find genome id $dsgid";
+    }
+    elsif ($locations) {
+        my %genomes;
+        foreach ( split( ',', $locations ) ) {
+            my ( $gid, $chr, $start, $stop ) = split( ':', $_ );
+            ( $start, $stop ) = ( $stop, $start ) if ( $stop < $start );
+            $start -= $upstream;
+            $stop += $downstream;
+            if ( not defined $genomes{$gid} ) {
+                $genomes{$gid} = $coge->resultset('Genome')->find($gid);
+            }
+            my $genome = $genomes{$gid};
+            return "Unable to find genome for $gid" unless $genome;
+            return "Restricted Access"
+              if $genome->restricted && !$USER->has_access_to_genome($genome);
+            $fasta .=
+              ref($genome) =~ /genome/i
+              ? $genome->fasta(
+                start => $start,
+                stop  => $stop,
+                chr   => $chr,
+                prot  => $prot,
+                rc    => $rc
+              )
+              : ">Unable to find genome id $gid";
+        }
     }
     return $fasta;
 }
@@ -936,6 +977,7 @@ sub gen_results_page {
                 my $qname = $hsp->query_name;
                 my $start = $hsp->subject_start;
                 my $stop  = $hsp->subject_stop;
+                ( $start, $stop ) = ( $stop, $start ) if ( $stop < $start );
 
                 #can we extract a CoGe name for the sequence
                 if ( $hsp->query_name =~ /Name: (.*), Type:/ ) {

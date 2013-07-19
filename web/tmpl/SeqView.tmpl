@@ -84,25 +84,30 @@ function get_blast_info(){
 }
 
 function blastSeq() {
- dsid = myObj.dsid || 0;
- dsgid = myObj.dsgid || 0;
- chr=myObj.chr || 0;
- featid=myObj.featid || 0;
- gstid = myObj.gstid || 1;
- up = $('#upstream').val() || 0;
- down = $('#downstream').val() || 0;
- rc = 0;
- if ($('.rc_button').is(':hidden')==true){
-   rc = 1;}
- if (featid) {
- window.open('CoGeBlast.pl?featid='+featid+'&upstream='+up+'&downstream='+down+'&rc='+rc+'&gstid='+gstid);}
- else if (dsid) {
- window.open('CoGeBlast.pl?chr='+chr+'&upstream='+up+'&downstream='+down+'&dsid='+dsid+'&rc='+rc+'&gstid='+gstid);
- }
- else if (dsgid) {
- window.open('CoGeBlast.pl?chr='+chr+'&upstream='+up+'&downstream='+down+'&dsgid='+dsgid+'&rc='+rc+'&gstid='+gstid);
- }
- 
+  dsid = myObj.dsid || 0;
+  dsgid = myObj.dsgid || 0;
+  chr=myObj.chr || 0;
+  featid=myObj.featid || 0;
+  gstid = myObj.gstid || 1;
+  up = $('#upstream').val() || 0;
+  down = $('#downstream').val() || 0;
+  var locations = '<TMPL_VAR NAME="LOCATIONS">';
+  rc = 0;
+
+  if ($('.rc_button').is(':hidden')==true) {
+    rc = 1;
+  }
+  if (featid) {
+    window.open('CoGeBlast.pl?featid='+featid+'&upstream='+up+'&downstream='+down+'&rc='+rc+'&gstid='+gstid);}
+  else if (dsid) {
+    window.open('CoGeBlast.pl?chr='+chr+'&upstream='+up+'&downstream='+down+'&dsid='+dsid+'&rc='+rc+'&gstid='+gstid);
+  }
+  else if (dsgid) {
+    window.open('CoGeBlast.pl?chr='+chr+'&upstream='+up+'&downstream='+down+'&dsgid='+dsgid+'&rc='+rc+'&gstid='+gstid);
+  }
+  else if (locations) {
+    window.open('CoGeBlast.pl?upstream='+up+'&downstream='+down+'&locations='+locations);
+  }
 }
 
 function RNAFold() {
@@ -352,7 +357,7 @@ $(function(){
 <table>
      <TR>
      <TD align=right valign="top">
-     <span class='ui-button ui-corner-all' id="blast_button" style="float: left" onClick="blastSeq()">CoGe Blast</span>
+     <span class='ui-button ui-corner-all' id="blast_button" style="float: left" onClick="blastSeq()">CoGeBlast</span>
      <span class='ui-button ui-corner-all' id="trna_button" style="float: left" onClick="AragornSeq()">Scan for tRNAs</span>
      <span class='ui-button ui-corner-all' id="rnafold_button" style="float: left" onClick="RNAFold()">RNA Fold</span>
     </TD>

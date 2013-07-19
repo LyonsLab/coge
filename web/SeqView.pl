@@ -343,6 +343,7 @@ sub get_seq {
         my %genomes;
         foreach ( split( ',', $locations ) ) {
             my ( $gid, $chr, $start, $stop ) = split( ':', $_ );
+            ( $start, $stop ) = ( $stop, $start ) if ( $stop < $start );
             $start -= $upstream;
             $stop += $downstream;
             if ( not defined $genomes{$gid} ) {

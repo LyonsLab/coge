@@ -864,18 +864,6 @@ function get_seq(which_type) {
 				$('#seq_box').val(html);
 			},
 		});
-		/*
-		get_sequence(
-			[	'args__fid','args__'+featid,
-				'args__blast_type', which_type, 
-				'args__upstream', 'args__'+seqObj.upstream,
-				'args__downstream', 'args__'+seqObj.downstream,
-				'args__rc','args__'+seqObj.rc,
-				'args__gstid','args__'+seqObj.gstid
-			],
-			['seq_box']
-		);
-		*/
 	}
 	else if (chr) {
 		$('#seq_box').val('Loading ...');
@@ -894,19 +882,20 @@ function get_seq(which_type) {
 				$('#seq_box').val(html);
 			},
 		});
-		/*
-		get_sequence(		
-			[	'args__chr','args__'+chr,
-				'args__dsid','args__'+dsid,
-				'args__dsgid','args__'+dsgid,
-				'args__blast_type', which_type, 
-				'args__start', 'args__'+seqObj.upstream,
-				'args__stop', 'args__'+seqObj.downstream,
-				'args__gstid','args__'+seqObj.gstid
-			],
-			['seq_box']
-		);
-		*/
+	}
+	else if ('<TMPL_VAR NAME=LOCATIONS>') {
+		$('#seq_box').val('Loading ...');
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'get_sequence',
+				blast_type: program,
+				locations: '<TMPL_VAR NAME=LOCATIONS>'
+			},
+			success : function(html) {
+				$('#seq_box').val(html);
+			},
+		});
 	}
 	else {
 		//$('#seq_box').val('');
