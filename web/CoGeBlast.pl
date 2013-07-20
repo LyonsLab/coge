@@ -416,6 +416,9 @@ sub get_sequence {
         my %genomes;
         foreach ( split( ',', $locations ) ) {
             my ( $gid, $chr, $start, $stop ) = split( ':', $_ );
+            next if ( $gid   =~ /\D/ );
+            next if ( $start =~ /\D/ );
+            next if ( $stop  =~ /\D/ );
             ( $start, $stop ) = ( $stop, $start ) if ( $stop < $start );
             $start -= $upstream;
             $stop += $downstream;
