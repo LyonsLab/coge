@@ -549,10 +549,10 @@ sub gen_org_menu {
     $desc = "Search" unless $desc;
     my $menu_template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'SynMap.tmpl' );
-    $menu_template->param( ORG_MENU   => 1 );
-    $menu_template->param( NUM        => $num );
-    $menu_template->param( 'ORG_NAME' => $name );
-    $menu_template->param( 'ORG_DESC' => $desc );
+    $menu_template->param( ORG_MENU => 1 );
+    $menu_template->param( NUM      => $num );
+    $menu_template->param( ORG_NAME => $name );
+    $menu_template->param( ORG_DESC => $desc );
     $menu_template->param(
         'ORG_LIST' => get_orgs( name => $name, i => $num, oid => $oid ) );
     my ($dsg_menu) = gen_dsg_menu( oid => $oid, dsgid => $dsgid, num => $num );
@@ -2404,9 +2404,12 @@ Zoomed SynMap:
         $html .=
 "<span class='small link' onclick=window.open('$log')>Analysis Log (id: $basename)</span><br>";
 
-        $html .= "Links and Downloads:";
-        $html .= qq{<table class="small ui-widget-content ui-corner-all">};
-        $html .= qq{<TR valign=top><td>Homolog search<td>Diagonals<td>Results};
+        $html .=
+qq{Links and Downloads: <span class="link small" onClick="\$(this).hide(); \$('#files').fadeIn();">};
+        $html .= qq{click to see more.</span><br>};
+        $html .=
+qq{<table id="files" class="hidden small ui-widget-content ui-corner-all padded">};
+        $html .= qq{<tr valign=top><td>Homolog search<td>Diagonals<td>Results};
         $html .= qq{<tr valign=top><td>};
 
   #       $html .= qq{<span class='small link' onclick=window.open('')></span>};
@@ -2579,7 +2582,8 @@ qq{<br><span class='small link' onclick=window.open('$final_dagchainer_file')>DA
         # Regenerate Analysis Link - HTML
         ########################################################################
 
-        $html .= "<a href='$tiny_link' class='ui-button ui-corner-all'";
+        $html .=
+qq{<div class="padded"><a href="$tiny_link" class="ui-button ui-corner-all"};
         $html .=
 " style='color: #000000' target=_new_synmap>Regenerate this analysis: $tiny_link</a>";
 
@@ -2602,6 +2606,12 @@ qq{<span  class='ui-button ui-corner-all' onclick="window.open('SynSub.pl?dsgid1
     }
     ##print out all the datafiles created
     $html .= "<br>";
+
+    $html .=
+qq{<span id="clear" style="font-size: 0.8em" class="ui-button ui-corner-all"
+        onClick="\$('#results').hide(); \$(this).hide(); \$('#intro').fadeIn();" >Clear Results</span>};
+
+    $html .= qq{</div>};
 
     if ($problem) {
         $html .=

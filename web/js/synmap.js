@@ -210,9 +210,16 @@ function read_log(name, dir, callback) {
 }
 
 function handle_results(val){
-    $('#synmap_dialog').dialog('close');
+    $('#intro').hide();
+    $('#synmap_dialog').fadeTo('slow', 0, function() {
+        $('#synmap_dialog').dialog('close');
+    });
+
     $('#log_text').hide(0);
-    $('#results').show(0).html(val);
+    $('#results').html(val);
+
+    $('#results').fadeIn();
+
     $(function() {$("#synmap_zoom_box").draggable();});
     setup_button_states();
     ajax_wait("check_previous_analyses();");
