@@ -2647,6 +2647,8 @@ qq{<span class=alert>There was a problem running your analysis.  Please check th
     CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
+    CoGe::Accessory::Web::write_log( "#finished", $cogeweb->logfile );
+
     # Need to remove this from the output from dotplot
     # -- otherwise it over-loads the stuff in the web-page already.
     # -- This can mess up other loaded js such as tablesoter
