@@ -900,3 +900,8 @@ li {
 .hidden {
     display: none;
 }
+
+.padded {
+    padding: 5px;
+}
+

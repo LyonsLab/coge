@@ -2324,7 +2324,7 @@ sub go {
 
     if ( -r "$out.html" ) {
         $html .= qq{
-<div class="ui-widget-content ui-corner-all" id="synmap_zoom_box" style="float:left">
+<div class="ui-widget-content ui-corner-all padded" id="synmap_zoom_box" style="float:left">
 Zoomed SynMap:
 <table class=small>
 <tr>
@@ -2396,7 +2396,7 @@ Zoomed SynMap:
         $html .=
 "<br><span class='small link' onclick=window.open('$out.png')>Image File</span><br>";
         $html .=
-"<div class='small link ui-widget-content ui-corner-all' style='float:left' onclick=window.open('$out.hist.png')>Histogram of $ks_type values.<br><img src='$out.hist.png'></div><div style='clear: both;'> </div>"
+"<div class='small link ui-widget-content ui-corner-all padded' style='float:left' onclick=window.open('$out.hist.png')>Histogram of $ks_type values.<br><img src='$out.hist.png'></div><div style='clear: both;'> </div>"
           if -r $hist;
 
         my $log = $cogeweb->logfile;
