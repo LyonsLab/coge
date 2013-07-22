@@ -738,12 +738,23 @@ sub blast_search {
     my $width = $opts{width};
     my $fid   = $opts{fid};
 
+    my @dsg_ids = split( /,/, $blastable );
+
+    my $list_link =
+        "<a href='GenomeList.pl?dsgid=$blastable' target='_blank'>" 
+      . @dsg_ids
+      . ' genome'
+      . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
+    my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
+    print STDERR $log_msg . "\n";
+
     my $link = $P->{SERVER} . $PAGE_NAME . "?dsgid=$blastable";
     $link .= ";fid=$fid" if ($fid);
     $link = CoGe::Accessory::Web::get_tiny_link(
         db      => $coge,
         user_id => $USER->id,
         page    => $PAGE_NAME,
+        log_msg => $log_msg,
         url     => $link
     );
 
@@ -761,7 +772,6 @@ sub blast_search {
           /^\d+$/;    #something wrong with how width is calculated in tmpl file
 
     my $t1 = new Benchmark;
-    my @dsg_ids = split( /,/, $blastable );
     my ( $fasta_file, $query_seqs_info ) = create_fasta_file($seq);
     my $opts;
     my $pre_command;
