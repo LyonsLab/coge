@@ -1,19 +1,19 @@
 <tmpl_if name=MAIN>
-<section id="results" style="margin: 10px;" class="ui-widget-content ui-corner-all">
+<section id="results" class="ui-widget-content ui-corner-all">
     <tmpl_if name=results>
             <tmpl_var name=results>
     <tmpl_else>
-        <ul style="list-style-type: none; marigin: 0; padding: 0;">
-            <li style="display:inline;">
+        <ul class="horizontal">
+            <li>
                 <span class="alert">Please Note:</span>
             </li>
 
-            <li style="display:inline;">SynMap is a very computationally intense, multi-step program which may take hours to complete for large genomes.<br>If available, select previously run parameter-sets for your organisms to see results instantly.
+            <li>SynMap is a very computationally intense, multi-step program which may take hours to complete for large genomes.<br>If available, select previously run parameter-sets for your organisms to see results instantly.
             </li>
         </ul>
 
-        <ul style="list-style-type: none; display:inline; marigin: 0; padding: 0;">
-            <li style="display:inline-block; vertical-align:top; margin-right: 5px;" class="alert">
+        <ul class="horizontal">
+            <li style="vertical-align:top; margin-right: 5px;" class="alert">
                 Get Started:
             </li>
             <li style="display:inline-block;">
@@ -39,7 +39,7 @@
         <li class="small"><a href="#tab-3">Display Options</a></li>
     </ul>
 
-    <ul id="tab-1" style="margin: 0; padding: 0;">
+    <ul id="tab-1">
         <li style="display:inline-block; padding: 5px 0 5px 0; vertical-align:top;">
                 <tmpl_var name=org_menu1>
         </li>
@@ -97,7 +97,7 @@
 
     <fieldset class="options ui-widget-content ui-corner-all">
         <legend style="color:#009900">Merge Syntenic Blocks</legend>
-        <ul style="list-style-type: none; padding: 0; margin: 0;">
+        <ul style="padding: 0; margin: 0;">
             <li>
                 <label>Algorithm:</label>
                 <select id="merge_algo" name="merge_algo" onchange="merge_select_check()">
@@ -151,7 +151,7 @@
 
     <fieldset class="options ui-widget-content ui-corner-all">
         <legend style="color:#009900;">CodeML</legend>
-        <ul style="list-style-type: none; padding: 0; margin: 0;">
+        <ul style="padding: 0; margin: 0;">
             <li>
                 <label>Calculate syntenic CDS pairs and color dots:</label>
                 <select name="ks_type" id="ks_type">
@@ -214,7 +214,7 @@
     <div id="tab-3">
         <fieldset class="options ui-widget-content ui-corner-all">
             <legend style="color:#009900">Dotplot options</legend>
-            <ul style="list-style-type: none; padding: 0; margin: 0;">
+            <ul>
                 <li>
                     <label>Regenerate dotplot images?</label>
                     <input type="checkbox" name="regen_images" id="regen_images">
@@ -331,17 +331,19 @@
     <span style="font-size: 0.8em" class="ui-button ui-corner-all" onClick="$('#results').html('');" >Clear Results</span>
 </div>
 
-<section>
+<section id="prev_container" class="hidden">
     Previously run parameters:
     <span id="hide_previous" class="show_prev_button ui-button ui-corner-all"
         onClick="$('.previous_analyses').toggle(); $('.show_prev_button').toggle();">
         Hide
     </span>
+
     <span id="show_previous" style="display:none"
         class="show_prev_button ui-button ui-corner-all"
         onClick="$('.previous_analyses').toggle(); $('.show_prev_button').toggle();">
         Show
     </span>
+
     <div class="small previous_analyses">
         (Clicking on row automatically selects and sets SynMap genomes and parameters.)
     </div>
@@ -421,7 +423,7 @@
 </section>
 
 <div id="synmap_dialog" class="dialog_box" title="Running SynMap ..." style="display:none;">
-    <ul style="text-align:left;display:inline;list-style-type:none;">
+    <ul>
         <li id="synmap_log" class="small ui-widget-content ui-corner-all inline" style="overflow-y:auto;width:450px;height:200px;color:dimgray;padding: 5px;">
         </li>
 

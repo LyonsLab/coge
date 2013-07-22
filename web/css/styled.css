@@ -1,4 +1,4 @@
-BODY { 
+BODY {
   font-family: Arial, Helvetica, fixed;
   background: #FFFFFF;
 }
@@ -89,7 +89,7 @@ div.panel {
 }
 
 .title6 {
-  font-size:x-small;	
+  font-size:x-small;
   color: #000099;
   font-style: oblique;
 }
@@ -99,17 +99,17 @@ div.panel {
 }
 
 .data1 {
-  font-size:xx-large;		
+  font-size:xx-large;
   color: #009900;
 }
 
 .data2 {
-  font-size:x-large;		
+  font-size:x-large;
   color: #009900;
 }
 
 .data3 {
-  font-size:large;		
+  font-size:large;
   color: #009900;
 }
 
@@ -118,11 +118,11 @@ div.panel {
 }
 
 .data5 {
-  font-size:small;		
+  font-size:small;
   color: #009900;
 }
 .data6 {
-  font-size:x-small;		
+  font-size:x-small;
   color: #009900;
 }
 
@@ -145,23 +145,23 @@ div.panel {
   color: #cc6600;
 }
 
-.xsmall { 
+.xsmall {
   font-size: x-small;
 }
 
-.small { 
+.small {
   font-size: small;
 }
 
-.medium { 
+.medium {
   font-size: medium;
 }
 
-.large { 
+.large {
   font-size: large;
 }
 
-.error { 
+.error {
   font-size: large;
   color: #FF0000;
   text-decoration: blink;
@@ -171,21 +171,21 @@ div.panel {
   color:#FF0000;
   }
 
-.ital { 
+.ital {
   font-style: italic;
 }
 
-.oblique { 
+.oblique {
   font-style: oblique;
 }
 
-.oblique_bold { 
+.oblique_bold {
   font-style: oblique;
   font-weight: bold;
   font-size: large;
 }
 
-.annotation { 
+.annotation {
   font-style: oblique;
   font-weight: bold;
   font-size: large;
@@ -194,16 +194,16 @@ div.panel {
 
 .backbox {
  color: #000099;
- background: #F7FFF7; 
+ background: #F7FFF7;
 }
 
 .seqbackbox
 {
  width: 100%;
- background: #cbfecb; 
+ background: #cbfecb;
  border:1px solid #00FF36;
 }
-.species { 
+.species {
   font-style: oblique;
   color: #009900;
 }
@@ -220,7 +220,7 @@ div.panel {
  border-right-width: 0px;
  border-bottom-width: 0px;
  border-left-width: 0px;
- border-style: hidden; 
+ border-style: hidden;
  border-collapse: collapse;
  border: 0;
  width: 100%;
@@ -420,7 +420,7 @@ div.panel {
   }
 
 #info {
-  width:800px; 
+  width:800px;
   height:200px;
   border:1px solid black;
   overflow:scroll;
@@ -435,7 +435,7 @@ table.basic {
 	border-right-width: 0px;
 	border-bottom-width: 0px;
 	border-left-width: 0px;
-	border-style: none; 
+	border-style: none;
 	border-color: #000000; /* black */
 	border-collapse: collapse;
 	background-color: #FFFFFF; /* darker gray */
@@ -536,7 +536,7 @@ tr.ltblue {
   height:22px;
   cursor:pointer;
   text-decoration: none;
-  color: #009900; 
+  color: #009900;
   border: 1px solid #00FF36;
   font-size: small;
 }
@@ -579,7 +579,7 @@ tr.ltblue {
   padding-left:20px;
   cursor:pointer;
   text-decoration: none;
-  color: #009900; 
+  color: #009900;
   font-size: small;
   border-bottom: 1px solid #00FF35;
 }
@@ -602,7 +602,7 @@ tr.ltblue {
 .resultborder
 {
   border: 2px solid #CCFFCC;
-  background: #F7FFF7; 
+  background: #F7FFF7;
 }
 
 .blue {
@@ -798,42 +798,42 @@ td.link:hover {
 }
 
 /***Portlet css for user profile**/
-.portlet { 
-  margin: 0 1em 1em 0; 
+.portlet {
+  margin: 0 1em 1em 0;
   max-width: 452;
 }
 
-.portlet-header { 
-  margin: 0.3em; 
-  padding-bottom: 4px; 
-  padding-left: 0.2em; 
-  cursor: move; 
+.portlet-header {
+  margin: 0.3em;
+  padding-bottom: 4px;
+  padding-left: 0.2em;
+  cursor: move;
   max-width: 452;
 }
 
-.portlet-footer { 
-  padding-bottom: 4px; 
+.portlet-footer {
+  padding-bottom: 4px;
   padding-left: 0.2em;
 }
 
-.portlet-header .ui-icon { 
-  float: right; 
+.portlet-header .ui-icon {
+  float: right;
   cursor: pointer;
 }
 
-.portlet-content { 
-  padding: 0.4em; 
+.portlet-content {
+  padding: 0.4em;
   display:none;
 }
 
-.ui-sortable-placeholder { 
-  border: 1px dotted black; 
-  visibility: visible !important; 
-  height: 50px !important; 
+.ui-sortable-placeholder {
+  border: 1px dotted black;
+  visibility: visible !important;
+  height: 50px !important;
 }
 
-.ui-sortable-placeholder * { 
-  visibility: hidden; 
+.ui-sortable-placeholder * {
+  visibility: hidden;
 }
 
 /***End user profile portlet ui***/
@@ -847,7 +847,7 @@ dt {
    font-weight: bold;*/
    padding-left: 20px;
    padding-bottom: 5px;
-   
+
 }
 
 dd {
@@ -867,4 +867,36 @@ dd {
 	border:none;
 	margin:0px !important;
 	background:greenyellow;
+}
+
+section#tabs .ui-tabs-panel {
+    padding: 1em;
+}
+
+section#results {
+    margin: 0;
+    padding: 1em;
+}
+
+fieldset {
+    margin: 0.5em 0;
+    padding: 5px;
+}
+
+ul {
+    padding: 0;
+    margin: 0;
+    list-style-type: none;
+}
+
+li {
+    vertical-align: top;
+}
+
+.horizontal li {
+    display: inline-block;
+}
+
+.hidden {
+    display: none;
 }
