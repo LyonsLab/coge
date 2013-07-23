@@ -52,12 +52,9 @@ function animate_section(name, style, speedy, show) {
   return speedy;
  }
 
-
 function set_up_tabs() {
  $(function(){
-   $('#tabs').tabs({
-    selected: 0,
-   });
+   $('#tabs').tabs({selected: 0}).show();
  });
 }
 
@@ -781,43 +778,32 @@ function rand ()
 </SCRIPT>
 
 <div id="go_run"><TMPL_VAR NAME="GO_RUN"></div>
-
 <div id="message"><TMPL_VAR NAME="MESSAGE"></div>
-<div id="color_dialog" title="Choose HSP Color">
-<table>
-<tr>
-<td>
-<div id="red"></div>
-<div id="green"></div>
-<div id="blue"></div>
-
-<div id="swatch" class="ui-widget-content ui-corner-all"></div>
-</tr>
-<tr>
-<td align="center">
-<div id="hsp_buttons"></div>
-</tr>
-</table>
+<div id="color_dialog" class="hidden" title="Choose HSP Color">
+  <table>
+    <tr>
+      <td>
+        <div id="red"></div>
+        <div id="green"></div>
+        <div id="blue"></div>
+        <div id="swatch" class="ui-widget-content ui-corner-all"></div>
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <div id="hsp_buttons"></div>
+      </td>
+    </tr>
+  </table>
 </div>
-<span id=go style="font-size: 1em" class='ui-button ui-button-go ui-corner-all go_run' onClick="populate_page_obj(); set_display_order(); loading([],['results']); go_run();">Run GEvo Analysis!</span>
-<table>
 
-<tr align left>
-<td>
-
-</TD>
- <td nowrap>
-
-
-
-
-
-</table>
+<div style="margin-bottom:10px">
+  <span id="go" style="font-size: 1em;" class='ui-button ui-button-go ui-corner-all go_run' onClick="populate_page_obj(); set_display_order(); loading([],['results']); go_run();">Run GEvo Analysis!</span>
+</div>
 
 <form method="post" enctype="multipart/form-data" name="main_form" onSubmit="">
 
-<div id="tabs">
-<!-- set up tabs -->
+<div id="tabs" class="hidden">
 <ul>
   <li class="small"><a href="#tabs-1">Sequence Submission</a></li>
   <li class="small"><a href="#tabs-2">Algorithm</a></li>
@@ -825,7 +811,7 @@ function rand ()
 </ul>
 
 <div id="tabs-1">
-<input name="num_seqs" id="num_seqs" type="hidden"readonly value=<TMPL_VAR NAME ="NUM_SEQS">>
+<input name="num_seqs" id="num_seqs" type="hidden" readonly value=<TMPL_VAR NAME ="NUM_SEQS">>
   <span class='ui-button ui-corner-all ui-button-icon-left ' 
   onClick="add_seq(['num_seqs'],[process_add_seq]);  $('#new_drseq').remove;"><span class="ui-icon ui-icon-plus"></span>Add Sequence</span>
 
@@ -864,7 +850,7 @@ function rand ()
 </TMPL_IF>
 
 <TMPL_IF NAME=OPTIONS>
-<div id="tabs-2">
+<div id="tabs-2" class="hidden">
   <TABLE>
   <TR>
   <Td>Alignment Algorithm: </TD>
@@ -1071,7 +1057,7 @@ function rand ()
  </TR>
  <TR>
   <TD>Aligment Method: </TD>
-  <TD><select  id="dialign_method" size="1" onchange="$('#dialign_params').val($('#dialign_method').val())">
+  <TD><select id="dialign_method" size="1" onchange="$('#dialign_params').val($('#dialign_method').val())">
        <option value="-n ">Short Sequence Alignment, No Translation</option>
        <option value="-nt -cs -ma ">Short Sequence Alignment with Translation</option>
        <option value="-ds -n -thr 2 -lmax 30 ">Long Sequence Alignment</option>
@@ -1080,23 +1066,23 @@ function rand ()
   </TR>
   <TR>
   <TD>Use Motif in Alignment: </TD>
-  <TD><input  type="radio" name="dialign_motif" id="dialign_motif" tabindex="1" value="1" onClick="$('#dialign_motif_options').show();" />Yes</label><label><input  type="radio" name="dialign_motif" id="dialign_motif" tabindex="1" value="0" onClick="$('#dialign_motif_options').hide()" checked />No</label></TD>
+  <TD><input type="radio" name="dialign_motif" id="dialign_motif" tabindex="1" value="1" onClick="$('#dialign_motif_options').show();" />Yes</label><label><input  type="radio" name="dialign_motif" id="dialign_motif" tabindex="1" value="0" onClick="$('#dialign_motif_options').hide()" checked />No</label></TD>
  </TR>
  </TABLE>
   </DIV>
- <DIV id="dialign_motif_options" class="small  algo_options" style="display: none">
+ <DIV id="dialign_motif_options" class="small algo_options hidden">
  <Table class=small>  
  <TR>
  <TD align=right> Motif:  </TD>
-  <TD><input  type="text" name="dialign_motif_motif" id="dialign_motif_motif" tabindex="1" size="5" /></TD>
+  <TD><input type="text" name="dialign_motif_motif" id="dialign_motif_motif" tabindex="1" size="5" /></TD>
  </TR>
  <TR>
  <TD align=right> Weighting Factor: </TD>
-  <TD><input  type="text" name="dialign_motif_weight" id="dialign_motif_weight" tabindex="1" size="5" /></TD>
+  <TD><input type="text" name="dialign_motif_weight" id="dialign_motif_weight" tabindex="1" size="5" /></TD>
  </TR>
  <TR>
  <TD align=right> Distance Penalty:  </TD>
-  <TD><input  type="text" name="dialign_motif_penalty" id="dialign_motif_penalty" tabindex="1" size="5" /></TD>
+  <TD><input type="text" name="dialign_motif_penalty" id="dialign_motif_penalty" tabindex="1" size="5" /></TD>
  </TR>
  </TABLE>
  </DIV>
@@ -1117,7 +1103,7 @@ function rand ()
 </div>
 
 
-<TABLE class="small anchor algo_options" style="display: none">
+<TABLE class="small anchor algo_options" style="display: none;">
  <TR align=left>
   <TH>Select Anchor Program: 
   <select  id="dialign_anchor_program" size="1" onchange='check_dialign_anchor_program()'>
@@ -1131,9 +1117,9 @@ function rand ()
   <td colspan=2>
    <DIV id="anchor_options" class="anchor small algo_options"></DIV>
  </TABLE>
-
- <span>Other options:</span>
- <Table>
+<br>
+ <div>Other options:</div>
+ <table>
  <tr class="small">
   <td>Minimum HSP length for finding overlapped features:
   <td><input  type="text" name="hsp_overlap_length" id="hsp_overlap_length" tabindex="1" size="5" value="50"/></TD>
@@ -1142,12 +1128,12 @@ function rand ()
 </div> <!-- end tabs-2 div -->
 
 
-<div id="tabs-3">
+<div id="tabs-3" class="hidden">
 <table>
 <tr><td>
-<div style="float: left; border-right-style: dotted; border-right-width: 1px">
-<TABLE class=small>
- <TR valign=top>
+<div style="float: left; border-right-style: dotted; border-right-width: 1px;">
+<TABLE class="small" style="margin: 5px;">
+ <TR valign="top">
   <TD>
     <DIV>
       Image Width (Pixels):
@@ -1155,7 +1141,7 @@ function rand ()
   </TD>
   <TD>
     <DIV>
-	<input  type="text" name="iw" id="iw" tabindex="1"  size="10" value="<TMPL_VAR NAME="IMAGE_WIDTH">" />
+	<input type="text" name="iw" id="iw" tabindex="1"  size="10" value="<TMPL_VAR NAME="IMAGE_WIDTH">" />
     </DIV>
   </TD>
  </TR>
@@ -1167,7 +1153,7 @@ function rand ()
   </Td>
   <TD>
     <DIV>
-	<input  type="text" name="feat_h" id="feat_h" tabindex="1"  size="10" value="<TMPL_VAR NAME="FEAT_HEIGHT">" />
+	<input type="text" name="feat_h" id="feat_h" tabindex="1"  size="10" value="<TMPL_VAR NAME="FEAT_HEIGHT">" />
     </DIV>
   </TD>
 
@@ -1180,7 +1166,7 @@ function rand ()
   </Td>
   <TD>
     <DIV>
-	<input  type="text" name="padding" id="padding" tabindex="1"  size="10" value="<TMPL_VAR NAME="PADDING">" />
+	<input type="text" name="padding" id="padding" tabindex="1"  size="10" value="<TMPL_VAR NAME="PADDING">" />
     </DIV>
   </TD>
 
@@ -1242,9 +1228,9 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
  </TR>
 </TABLE>
 </div>
-<div style="float: left; border-right-style: dotted; border-right-width: 1px">
+<div style="float: left; border-right-style: dotted; border-right-width: 1px;">
  <table>
- <table class="small">
+ <table class="small" style="margin: 5px;">
  <TR>
   <td>Draw all HSPs on top?
   <td>
@@ -1329,7 +1315,7 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
 
   </table>
 </div>
-<div class="small" style="float: left;">
+<div class="small" style="float: left; margin: 5px;">
    Change HSP colors <span>(Click Color to Adjust)</span><br>
    Use First Color for all:   
   <label><input  type="radio" name="hsp_single_color" id="hsp_single_color" tabindex="1" value="1" <TMPL_VAR NAME="HSP_SINGLE_COLOR_YES">/>Yes</label>
@@ -1351,12 +1337,16 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
 </TMPL_IF>
 
 <TMPL_IF NAME="RESULTS_DIV">
-<table><tr><td>
-<DIV id="results" name="results"></DIV><br>
-<DIV id="results_info" class="dialog_box" title="GEvo Results Info"></DIV>
+<table>
+  <tr>
+    <td>
+      <div id="results" name="results"></div>
+      <div id="results_info" class="dialog_box hidden" title="GEvo Results Info"></div>
+    </td>
+  </tr>
 </table>
 
-<div id="save_form" title="Save GEvo Results" style="display:none">
+<div id="save_form" title="Save GEvo Results" class="hidden">
 <table>
 <tr>
 <td>Work Name:</td>
