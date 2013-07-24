@@ -151,6 +151,7 @@ function run_synmap(scheduled){
 
     // TODO: Scale polling time linearly with long running jobs
     var duration = pageObj.waittime;
+    var request = window.location.href.split('?')[0];
 
     var readlog_callback = function () {
         read_log(pageObj.basename, pageObj.tempdir);
@@ -163,6 +164,7 @@ function run_synmap(scheduled){
             argument_list.fname = 'go';
             argument_list.tiny_link = tiny_link;
             $.ajax({
+            url: request,
             data: argument_list,
             success: function(data) {
                 handle_results(data);
@@ -173,6 +175,7 @@ function run_synmap(scheduled){
 
     argument_list.fname = 'get_query_link';
     $.ajax({
+        url: request,
         dataType: 'text',
         data: argument_list,
         success: function(data) {
@@ -211,9 +214,7 @@ function read_log(name, dir, callback) {
 
 function handle_results(val){
     $('#intro').hide();
-    $('#synmap_dialog').fadeTo('slow', 0, function() {
-        $('#synmap_dialog').dialog('close');
-    });
+    $('#synmap_dialog').dialog('close');
 
     $('#log_text').hide(0);
     $('#results').html(val);
