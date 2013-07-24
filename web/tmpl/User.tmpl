@@ -206,7 +206,7 @@ function sync_items(html) {
 	var insertIndex = 0;
 	content2.each(
 		function() {
-			var match = document.getElementById('#'+this.id);//content1.filter('#'+this.id).get(0);
+			var match = document.getElementById(this.id);//content1.filter('#'+this.id).get(0);
 			if (!match) { // item doesn't exist
 				$(this).insertBefore( content1.get(insertIndex) );
 			}

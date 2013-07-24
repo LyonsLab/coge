@@ -148,11 +148,11 @@ $(document).ready( function() {
 <div id="dev" class='small alert' style="display:none;">*** Development ***</div>
 </TMPL_UNLESS>
 
-<div>
+<div style="white-space: nowrap;">
 	<TMPL_IF NAME="LOGO_PNG">
 		<img style="vertical-align:bottom;" onclick="window.open('<TMPL_VAR NAME=HELP>')" src='picts/<TMPL_VAR NAME="LOGO_PNG">'>
 	</TMPL_IF>
-	<span style="vertical-align: 50%; font-size: 1.5em")><TMPL_VAR NAME="TITLE"></span>
+	<span style="vertical-align: 50%; white-space: nowrap; font-size: 1.5em; color: #c0c0c0; text-shadow: #555555 1px 1px;")><TMPL_VAR NAME="TITLE"></span>
 </div>
       <TMPL_IF NAME="DEV"><br><span class="alert">WARNING: THIS IS A DEVELOPMENT SERVER</span><br>Software may not work, system may be down, etc.<br>Please use <a href="http://genomevolution.org/CoGe"> our production server: genomevolution.org/CoGe</a></TMPL_IF>
 <div class="alert"></div>
