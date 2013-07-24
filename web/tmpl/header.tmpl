@@ -25,11 +25,8 @@ jQuery(document).ready(function(){
 	setup_button_states();
 	
 	// Show indicator if not on main site
-	if (!document.URL.indexOf('genomevolution.org') == -1) {
+	if (document.URL.indexOf('genomevolution.org') == -1) {
 		$('#dev').html('*** Development ***');
-	}
-	else {
-		$('#dev').html('&nbsp;'); // maintain spacing
 	}
 });
 
@@ -150,7 +147,7 @@ $(document).ready( function() {
 <div id="dev" class='small alert'></div>
 </TMPL_UNLESS>
 
-<div style="white-space: nowrap;">
+<div>
 	<TMPL_IF NAME="LOGO_PNG">
 		<img style="vertical-align:bottom;" onclick="window.open('<TMPL_VAR NAME=HELP>')" src='picts/<TMPL_VAR NAME="LOGO_PNG">'>
 	</TMPL_IF>
