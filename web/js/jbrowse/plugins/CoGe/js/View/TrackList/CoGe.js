@@ -185,6 +185,10 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
             renderTo
         );
 
+        // create text filter input
+        this._createTextFilter(trackConfigs, trackPane);
+        this._updateTextFilterControl();
+        
         // splitter on right side
         var trackWidget = new ContentPane({region: "right", splitter: true}, trackPane);
 
@@ -198,10 +202,6 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
             },
             trackPane
         );
-        
-        // create text filter input
-        this._createTextFilter(trackConfigs);
-        this._updateTextFilterControl();
         
         // create a DnD source for sequence
         this.trackListWidgets = [];
@@ -550,11 +550,16 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
     	node.innerHTML += '<span class="tracklist-text" style="white-space:nowrap">' + name + '</span>';
     },
     
-    _createTextFilter: function( trackConfigs ) {
+    _createTextFilter: function( trackConfigs, parent ) {
         this.textFilterDiv = dom.create( 'div', {
-            className: 'textfilter',
-            style: { width: '100%', position: 'relative', overflow: 'hidden' }
-        }, this.div );
+            className: 'coge-textfilter', //className: 'textfilter', // replace jbrowse styling
+            style: 
+	            { width: '95%', 
+	              position: 'relative',
+	              overflow: 'hidden',
+	              'border-bottom': '1px solid lightgray' 
+	            }
+        }, parent); //this.div );
         
 		this.textFilterInput = dom.create(
 			'input',
@@ -594,7 +599,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 		dom.create('img', { // FIXME: style with css icon instead of img
 			title: 'Add all experiments',
 			src: 'js/jbrowse/plugins/CoGe/img/plus-icon.png',
-			style: { cursor: 'pointer', position: 'absolute', right: '36px', top: '2px', width: '14px', height: '14px' },
+			style: { cursor: 'pointer', position: 'absolute', right: '28px', top: '4px', width: '14px', height: '14px' },
 			onclick: dojo.hitch( this, function() {
 				var configs = getVisibleConfigs(this.div, trackConfigs);
 				if (configs.length) {
@@ -622,7 +627,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 					this.browser.publish( '/jbrowse/v1/v/tracks/hide', configs );
 				}
 			}),
-			style: { cursor: 'pointer', position: 'absolute', right: '16px', top: '2px', width: '14px', height: '14px' }
+			style: { cursor: 'pointer', position: 'absolute', right: '8px', top: '4px', width: '14px', height: '14px' }
 		}, this.textFilterDiv );
 		
 		dom.create('div', {
@@ -708,7 +713,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
         
         // Update filter label
         var count = dojo.query( '.coge-tracklist-container:not(.collapsed)', this.div ).length;
-        this.textFilterLabel.innerHTML = count + ' track' + (count > 1 ? 's' : '') + ' shown';
+        this.textFilterLabel.innerHTML = count + ' track' + (count == 1 ? '' : 's') + ' shown';
     },
 
    /**

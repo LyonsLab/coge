@@ -22,6 +22,15 @@
 	padding-left: 25px;
 }
 
+#trackPane div.coge-textfilter {
+    margin: 0.5em 0 0 0.3em;
+    padding-bottom: 5px;
+}
+#trackPane div.coge-textfilter input {
+    line-height: 16px;
+    padding: 2px 0;
+}
+
 /* .notebookExpandIcon {
 	background-image: url('/../../../picts/arrow-right-icon.png');
     width: 16px;

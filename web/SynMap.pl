@@ -1268,10 +1268,7 @@ sub get_query_link {
         write_log => 0
     );
     my $log_msg =
-        "<span class=link onclick=window.open('OrganismView.pl?dsgid=" 
-      . $dsgid1
-      . "')>$org_name1</span> v. <span class=link"
-      . "onclick=window.open('OrganismView.pl?dsgid=$dsgid2')>$org_name2</span>";
+"<a href='OrganismView.pl?dsgid=$dsgid1' target='_blank'>$org_name1</a> v. <a href='OrganismView.pl?dsgid=$dsgid2' target='_blank'>$org_name2</a>";
 
     $log_msg .= " Ks" if $ks_type;
     my $cogeweb = CoGe::Accessory::Web::initialize_basefile(

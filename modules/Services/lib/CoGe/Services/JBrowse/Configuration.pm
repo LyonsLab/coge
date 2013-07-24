@@ -174,7 +174,7 @@ sub track_config {
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             onClick =>
               "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
-            maxFeatureScreenDensity => 50,
+            maxFeatureScreenDensity => 5,
             maxHeight               => 100000,
             minSubfeatureWidth      => 4,
             style                   => {
@@ -207,6 +207,8 @@ sub track_config {
                 key          => $type_name,
                 type         => "JBrowse/View/Track/HTMLFeatures",
                 storeClass   => "JBrowse/Store/SeqFeature/REST",
+                region_stats => 1
+                , # see HTMLFeatures.js, force calls to stats/region instead of stats/global
                 onClick =>
 "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end};type=$type_name",
                 maxFeatureScreenDensity => 1000,     #50,
@@ -214,7 +216,7 @@ sub track_config {
                 style                   => {
                     arrowheadClass           => "arrowhead",
                     className                => "generic_parent",
-                    histScale                => 0.05,
+                    histScale                => 0.002,
                     minSubfeatureWidth       => 6,
                     maxDescriptionLength     => 70,
                     showLabels               => 'true',
@@ -284,15 +286,16 @@ sub track_config {
                 ? "JBrowse/View/Track/HTMLVariants"
                 : "CoGe/View/Track/Wiggle/MultiXYPlot"
             ),
-            storeClass => "JBrowse/Store/SeqFeature/REST",
-            region_stats => 1,    # see HTMLFeatures.js
-            style        => {
-                featureScale => 0.0001,
+            storeClass   => "JBrowse/Store/SeqFeature/REST",
+            region_stats => 1
+            , # see HTMLFeatures.js, force calls to stats/region instead of stats/global
+            style => {
+                featureScale => ( $isSNP ? 0.0001 : 0.001 ),
                 histScale    => 0.05,
                 labelScale   => 0.5,
                 showLabels   => 'true',
                 className    => '{type}',
-                histCss      => 'background-color:' . getFeatureColor($eid)
+                histCss => 'background-color:' . getFeatureColor($eid)
             },
 
             # CoGe-specific stuff

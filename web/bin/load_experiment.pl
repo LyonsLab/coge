@@ -60,6 +60,7 @@ $name        = unescape($name);
 $description = unescape($description);
 $version     = unescape($version);
 $source_name = unescape($source_name);
+$restricted  = '0' if ( not defined $restricted );
 
 # Open log file
 $| = 1;
