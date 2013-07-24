@@ -893,6 +893,10 @@ li {
     vertical-align: top;
 }
 
+.left {
+    text-align: left;
+}
+
 .horizontal li {
     display: inline-block;
 }
@@ -903,5 +907,15 @@ li {
 
 .padded {
     padding: 5px;
+}
+
+.padded li {
+    margin: 5px 0 5px 0;
+}
+
+th {
+    font-size: 1.25em;
+    font-weight: normal;
+    text-align: center;
 }
 
