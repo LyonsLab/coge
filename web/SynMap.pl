@@ -2719,10 +2719,11 @@ qq{<span id="clear" style="font-size: 0.8em" class="ui-button ui-corner-all"
     # Update status to completed.
     $job->update( { status => 2 } ) if defined($job);
 
-    $html =~ s/<script src="\/CoGe\/js\/jquery-1.3.2.js"><\/script>//g;
+    my $output = $results->output;
+    $output =~ s/<script src="\/CoGe\/js\/jquery-1.3.2.js"><\/script>//g;
 
     #return $html;
-    return $results->output;
+    return $output;
 }
 
 sub _filename_to_link {
