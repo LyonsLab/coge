@@ -158,12 +158,13 @@ function run_synmap(scheduled){
     };
 
     var start_callback = function(tiny_link) {
-            pageObj.nolog=1;
+        pageObj.nolog=1;
 
-            setTimeout(readlog_callback, duration);
-            argument_list.fname = 'go';
-            argument_list.tiny_link = tiny_link;
-            $.ajax({
+        setTimeout(readlog_callback, duration);
+        argument_list.fname = 'go';
+        argument_list.tiny_link = tiny_link;
+        $('#synmap_dialog').dialog('open');
+        $.ajax({
             url: request,
             data: argument_list,
             success: function(data) {
@@ -184,7 +185,6 @@ function run_synmap(scheduled){
             var logfile = '<a href="tmp/SynMap/'
             + pageObj.basename + '.log">Logfile</a>';
 
-            jQuery('html, body').animate({scrollTop: 0}, 1000);
             $('#results').hide(0);
             $('#synmap_file').html(logfile);
             $('#synmap_link').html(link);
@@ -213,17 +213,19 @@ function read_log(name, dir, callback) {
 }
 
 function handle_results(val){
-    $('#intro').hide();
-    $('#synmap_dialog').dialog('close');
 
-    $('#log_text').hide(0);
-    $('#results').html(val);
+    if($('#synmap_dialog').dialog('isOpen')) {
+        $('#intro').hide();
+        $('#synmap_dialog').dialog('close');
+        $('#log_text').hide(0);
+        $('#results').html(val);
 
-    $('#results').fadeIn();
+        $('#results').fadeIn();
 
-    $(function() {$("#synmap_zoom_box").draggable();});
-    setup_button_states();
-    ajax_wait("check_previous_analyses();");
+        $(function() {$("#synmap_zoom_box").draggable();});
+        setup_button_states();
+        ajax_wait("check_previous_analyses();");
+    }
 }
 
 function check_previous_analyses(){
@@ -588,11 +590,12 @@ function monitor_log(log)
             read_log(pageObj.basename, pageObj.tempdir);
         };
 
-        setTimeout(readlog_callback, duration);
+        if ($('#synmap_dialog').dialog('isOpen')) {
+            setTimeout(readlog_callback, duration);
+        }
     }
 
     if (pageObj.finished == 0 && pageObj.waittime > 3) {
-        $('#synmap_dialog').dialog('open');
     }
 
     if (message) $('#synmap_log').html(message);
