@@ -206,7 +206,7 @@
 
     <fieldset class="options ui-widget-content ui-corner-all">
         <legend style="color:#009900">Advanced Options (
-        <a href="wiki/index.php/SynMap#Advanced_Options">see page docs</a>)</legend>
+        <a href="../wiki/index.php/SynMap#Advanced_Options">see page docs</a>)</legend>
         <ul style="list-style-type: none; padding: 0; margin: 0;">
             <li>
                 <label>Tandem duplication distance</label>
@@ -502,11 +502,11 @@ $(document).ready(function(){
     $('#depth_org_1').html($('#org_id1 option:selected').html());
     $('#depth_org_2').html($('#org_id2 option:selected').html());
 
-    pageObj.fid1 = <tmpl_var name=fid1>;
-    pageObj.fid2 = <tmpl_var name=fid2>;
+    pageObj.fid1 = "<tmpl_var name=fid1>";
+    pageObj.fid2 = "<tmpl_var name=fid2>";
     pageObj.tempdir="<tmpl_var name=tempdir>";
 
-    var autogo = <tmpl_var name=autogo>;
+    var autogo = "<tmpl_var name=autogo>";
     if (autogo) {
         run_synmap(autogo);
     }
