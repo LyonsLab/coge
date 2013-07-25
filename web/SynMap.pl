@@ -9,7 +9,6 @@ use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Web;
-use CoGe::Algos::KsCalc;
 
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
@@ -549,10 +548,10 @@ sub gen_org_menu {
     $desc = "Search" unless $desc;
     my $menu_template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'SynMap.tmpl' );
-    $menu_template->param( ORG_MENU   => 1 );
-    $menu_template->param( NUM        => $num );
-    $menu_template->param( 'ORG_NAME' => $name );
-    $menu_template->param( 'ORG_DESC' => $desc );
+    $menu_template->param( ORG_MENU => 1 );
+    $menu_template->param( NUM      => $num );
+    $menu_template->param( ORG_NAME => $name );
+    $menu_template->param( ORG_DESC => $desc );
     $menu_template->param(
         'ORG_LIST' => get_orgs( name => $name, i => $num, oid => $oid ) );
     my ($dsg_menu) = gen_dsg_menu( oid => $oid, dsgid => $dsgid, num => $num );
@@ -2303,43 +2302,57 @@ sub go {
     $dotplot_time = timestr( timediff( $t7, $t6 ) );
 
     ############################################################################
-    # Generate html
+    # Post Processing
     ############################################################################
+
+    CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "Processing Tandem Duplicate File",
+        $cogeweb->logfile );
+
+    my $org1_localdups = process_local_dups_file(
+        infile  => $raw_blastfile . ".q.localdups",
+        outfile => $raw_blastfile . ".q.tandems"
+    );
+
+    my $org2_localdups = process_local_dups_file(
+        infile  => $raw_blastfile . ".s.localdups",
+        outfile => $raw_blastfile . ".s.tandems"
+    );
+
+    CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
     CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Adding GEvo links to final output files",
         $cogeweb->logfile );
+
     add_GEvo_links(
         infile => $final_dagchainer_file,
         dsgid1 => $dsgid1,
         dsgid2 => $dsgid2
     );
+
     CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+    ############################################################################
+    # Generate html
+    ############################################################################
+    my $results =
+      HTML::Template->new(
+        filename => $P->{TMPLDIR} . 'partials/synmap_results.tmpl' );
+
+    my $y_label = "$out.y.png";
+    my $x_label = "$out.x.png";
+
+    $warn .= qq{Unable to display the y-axis.} unless -r $y_label;
+    $warn .= qq{Unable to display the x-axis.} unless -r $x_label;
+
     my $t8 = new Benchmark;
     $add_gevo_links_time = timestr( timediff( $t8, $t7 ) );
 
     if ( -r "$out.html" ) {
-        $html .= qq{
-<div class="ui-widget-content ui-corner-all" id="synmap_zoom_box" style="float:left">
-Zoomed SynMap:
-<table class=small>
-<tr>
-<td>Image Width
-<td><input class="backbox" type=text name=zoom_width id=zoom_width size=6 value="400">
-<tr>
-<td>Ks, Kn, Kn/Ks cutoffs:
-<td>Min: <input class="backbox" type=text name=zoom_min id=zoom_min size=6 value="};
-        $html .= $codeml_min if defined $codeml_min;
-        $html .= qq{">
-<td>Max: <input class="backbox" type=text name=zoom_max id=zoom_max size=6 value="};
-        $html .= $codeml_max if defined $codeml_max;
-        $html .= qq{">
-</table>
-</div>
-<div style="clear: both;"> </div>
-};
 
+        #Dotplot
         $/ = "\n";
         open( IN, "$out.html" )
           || warn "problem opening $out.html for reading\n";
@@ -2350,19 +2363,11 @@ Zoomed SynMap:
         #add version of genome to organism names
         $org_name1 .= " (v" . $dsg1->version . ")";
         $org_name2 .= " (v" . $dsg2->version . ")";
-        $html .=
-          $flip
-          ? "<span class='species small'>y-axis organism: $org_name1</span><br>"
-          : "<span class='species small'>y-axis organism: $org_name2</span><br>";
-        $html .= qq{<table><tr><td valign=top>};
-        my $y_lab = "$out.y.png";
-        my $x_lab = "$out.x.png";
-        $out =~ s/$DIR/$URL/;
 
-        if ( -r $y_lab ) {
-            $y_lab =~ s/$DIR/$URL/;
-            $html .= qq{ <div><img src="$y_lab"></div><td> };
-        }
+        my $out_url = $out;
+        $out_url =~ s/$DIR/$URL/;
+        $y_label =~ s/$DIR/$URL/;
+        $x_label =~ s/$DIR/$URL/;
 
         $/ = "\n";
         my $tmp;
@@ -2371,61 +2376,34 @@ Zoomed SynMap:
             $tmp .= $_;
         }
         close IN;
-        $tmp =~ s/master.*\.png/$out.png/;
-        warn "$out.html did not parse correctly\n" unless $tmp =~ /map/i;
+        $tmp =~ s/master.*\.png/$out_url.png/;
+        warn "$out_url.html did not parse correctly\n" unless $tmp =~ /map/i;
         $html .= $tmp;
 
-        #check for x-axis label
-        if ( -r $x_lab ) {
-            $x_lab =~ s/$DIR/$URL/;
-            $html .= qq{ <br><img src="$x_lab"> };
+        #Synteny Zoom
+        $results->param( codeml_min => $codeml_min );
+        $results->param( codeml_max => $codeml_max );
+
+        $results->param( axis_metric => $axis_metric );
+        $results->param( ylabel      => $y_label );
+        $results->param( xlabel      => $x_label );
+
+        if ($flip) {
+            $results->param( yorg_name => $org_name2 );
+            $results->param( xorg_name => $org_name1 );
+        }
+        else {
+            $results->param( yorg_name => $org_name1 );
+            $results->param( xorg_name => $org_name2 );
         }
 
-        $html .=
-          $flip
-          ? qq{<br><span class="species small">x-axis: $org_name2</span></table>}
-          : qq{<br><span class="species small">x-axis: $org_name1</span></table>};
-        $html .=
-          "<span class='small'>Axis metrics are in $axis_metric</span><br>";
-        $html .=
-          "<span class='small'>Algorithm:  " . $algo_name . "</span><br>";
+        $results->param( dotplot   => $tmp );
+        $results->param( algorithm => $algo_name );
 
-        $html .=
-"<br><span class='small link' onclick=window.open('$out.png')>Image File</span><br>";
-        $html .=
-"<div class='small link ui-widget-content ui-corner-all' style='float:left' onclick=window.open('$out.hist.png')>Histogram of $ks_type values.<br><img src='$out.hist.png'></div><div style='clear: both;'> </div>"
-          if -r $hist;
-
-        my $log = $cogeweb->logfile;
-        $log =~ s/$DIR/$URL/;
-        $html .=
-"<span class='small link' onclick=window.open('$log')>Analysis Log (id: $basename)</span><br>";
-
-        $html .= "Links and Downloads:";
-        $html .= qq{<table class="small ui-widget-content ui-corner-all">};
-        $html .= qq{<TR valign=top><td>Homolog search<td>Diagonals<td>Results};
-        $html .= qq{<tr valign=top><td>};
-
-  #       $html .= qq{<span class='small link' onclick=window.open('')></span>};
-        $fasta1 =~ s/$DIR/$URL/;
-        $html .=
-qq{<span class='small link' onclick=window.open('$fasta1')>Fasta file for $org_name1: $feat_type1</span><br>};
-        $fasta2 =~ s/$DIR/$URL/;
-        $html .=
-qq{<span class='small link' onclick=window.open('$fasta2')>Fasta file for $org_name2: $feat_type2</span><br>};
-        CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
-        CoGe::Accessory::Web::write_log( "Processing Tandem Duplicate File",
-            $cogeweb->logfile );
-        my $org1_localdups = process_local_dups_file(
-            infile  => $raw_blastfile . ".q.localdups",
-            outfile => $raw_blastfile . ".q.tandems"
-        );
-        my $org2_localdups = process_local_dups_file(
-            infile  => $raw_blastfile . ".s.localdups",
-            outfile => $raw_blastfile . ".s.tandems"
-        );
-        CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
-        CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+        if ($hist) {
+            $results->param( histogram => $out_url . 'hist.png' ) if -r $hist;
+            $results->param( ks_type => $ks_type );
+        }
 
         my $final_dagchainer_file_condensed =
           $final_dagchainer_file . ".condensed";
@@ -2441,148 +2419,218 @@ qq{<span class='small link' onclick=window.open('$fasta2')>Fasta file for $org_n
         # Compress Results
         ########################################################################
 
-        my $file_list = [
-            \$raw_blastfile,          \$filtered_blastfile,
-            \$query_bed,              \$subject_bed,
-            \$org1_localdups,         \$org2_localdups,
-            \$dag_file12_all,         \$dag_file12_all_geneorder,
-            \$dag_file12,             \$dagchainer_file,
-            \$final_dagchainer_file,  \$final_dagchainer_file_condensed,
-            \$merged_dagchainer_file, \$qa_file,
-            \$qa_merged_file,         \$ks_blocks_file,
-            \$quota_align_coverage,   \$qa_coverage_qa
-        ];    #, \$spa_file];
-        my $pm = new Parallel::ForkManager($MAX_PROC);
+        #my $file_list = [
+        #    \$raw_blastfile,          \$filtered_blastfile,
+        #    \$query_bed,              \$subject_bed,
+        #    \$org1_localdups,         \$org2_localdups,
+        #    \$dag_file12_all,         \$dag_file12_all_geneorder,
+        #    \$dag_file12,             \$dagchainer_file,
+        #    \$final_dagchainer_file,  \$final_dagchainer_file_condensed,
+        #    \$merged_dagchainer_file, \$qa_file,
+        #    \$qa_merged_file,         \$ks_blocks_file,
+        #    \$quota_align_coverage,   \$qa_coverage_qa
+        #];    #, \$spa_file];
+        #my $pm = new Parallel::ForkManager($MAX_PROC);
 
-        foreach my $item (@$file_list) {
-            $pm->start and next;
+        #foreach my $item (@$file_list) {
+        #    $pm->start and next;
 
-            #$$item = CoGe::Accessory::Web::gzip($$item);
-            $pm->finish;
-        }
-        $pm->wait_all_children();
+        #    #$$item = CoGe::Accessory::Web::gzip($$item);
+        #    $pm->finish;
+        #}
+        #$pm->wait_all_children();
 
-        foreach my $item (@$file_list) {
+        #foreach my $item (@$file_list) {
 
-            #$$item = CoGe::Accessory::Web::gzip($$item);
-        }
+        #    #$$item = CoGe::Accessory::Web::gzip($$item);
+        #}
 
-        $raw_blastfile      =~ s/$DIR/$URL/;
-        $filtered_blastfile =~ s/$DIR/$URL/;
-        $org1_localdups     =~ s/$DIR/$URL/;
-        $org2_localdups     =~ s/$DIR/$URL/;
-        $dag_file12_all     =~ s/$DIR/$URL/;
-        $dag_file12         =~ s/$DIR/$URL/;
-        $dagchainer_file    =~ s/$DIR/$URL/;
+        #######################################################################
+        # General
+        #######################################################################
 
-        $html .=
-"<span class='link small' onclick=window.open('$raw_blastfile')>Unfiltered $algo_name results</span><br>";
-        $html .=
-"<span class='link small' onclick=window.open('$filtered_blastfile')>Filtered $algo_name results (no tandem duplicates)</span><br>";
-        $html .=
-"<span class='link small' onclick=window.open('$org1_localdups')>Tandem Duplicates for $org_name1</span><br>";
-        $html .=
-"<span class='link small' onclick=window.open('$org2_localdups')>Tandem Duplicates for $org_name2</span><br>";
-        $html .= "<td>";
-        $html .=
-qq{<span class='small link' onclick=window.open('$dag_file12_all')>DAGChainer Initial Input file</span><br>};
+        my $log_url = _filename_to_link(
+            file     => $cogeweb->logfile,
+            msg      => qq{Analysis Log},
+            required => 1,
+        );
 
-        if ( $dag_file12_all_geneorder && -r $dag_file12_all_geneorder ) {
-            $dag_file12_all_geneorder =~ s/$DIR/$URL/;
-            $html .=
-qq{<span class='small link' onclick=window.open('$dag_file12_all_geneorder')>DAGChainer Input file converted to gene order</span><br>};
-        }
-        $html .=
-qq{<span class='small link' onclick=window.open('$dag_file12')>DAGChainer Input file post repetivive matches filter</span><br>};
-        $html .= "<td>";
-        $html .=
-qq{<span class='small link' onclick=window.open('$dagchainer_file')>DAGChainer output</span>};
+        my $image_url = _filename_to_link(
+            file     => "$out.png",
+            msg      => qq{Image File},
+            required => 1,
+        );
 
-        if ( -r $merged_dagchainer_file ) {
-            $merged_dagchainer_file =~ s/$DIR/$URL/;
-            $html .=
-qq{<br><span class='small link' onclick=window.open('$merged_dagchainer_file')>Merged DAGChainer output</span>};
-        }
+        #######################################################################
+        # Homologs
+        #######################################################################
+        my $fasta1_url = _filename_to_link(
+            file => $fasta1,
+            msg  => qq{Fasta file for $org_name1: $feat_type1}
+        );
 
-#       $final_dagchainer_file =~ s/$DIR/$URL/;
-#       if ($final_dagchainer_file=~/gcoords/)
-#         {
-#       $post_dagchainer_file_w_nearby =~ s/$DIR/$URL/;
-#       $html .= qq{<span class='small link' onclick=window.open('$post_dagchainer_file_w_nearby')>Results with nearby genes added</span><br>};
-#       $html .= qq{<span class='small link' onclick=window.open('$post_dagchainer_file_w_nearby')>Results converted back to genomic coordinates</span>};
-#         }
-#       else
-#         {
-#       $post_dagchainer_file_w_nearby =~ s/$DIR/$URL/;
-#       $html .= qq{<span class='small link' onclick=window.open('$post_dagchainer_file_w_nearby')>Results with nearby genes added</span>};
-#         }
-        if ( $quota_align_coverage && -r $quota_align_coverage ) {
-            $quota_align_coverage =~ s/$DIR/$URL/;
-            $html .=
-qq{<br><span class='small link' onclick=window.open('$quota_align_coverage')>Quota Alignment Results</span>};
-        }
+        my $fasta2_url = _filename_to_link(
+            file => $fasta2,
+            msg  => qq{Fasta file for $org_name2: $feat_type2}
+        );
 
-        if ( $final_dagchainer_file =~ /gcoords/ ) {
+        my $raw_blast_url = _filename_to_link(
+            file => $raw_blastfile,
+            msg  => qq{Unfiltered $algo_name results}
+        );
 
-            #my $tmp= $final_dagchainer_file;
-            $final_dagchainer_file =~ s/$DIR/$URL/;
+        my $filtered_blast_url = _filename_to_link(
+            file => $filtered_blastfile,
+            msg  => qq{Filtered $algo_name results (no tandem duplicates)}
+          ),
 
-            #$tmp =~ s/\.gcoords//;
+          my $tandem_dups1_url = _filename_to_link(
+            file => $org1_localdups,
+            msg  => qq{Tandem Duplicates for $org_name1},
+          );
 
-#$html .= qq{<br><span class='small link' onclick=window.open('$tmp')>DAGChainer output in gene coordinates</span>};
-            $html .=
-qq{<br><span class='small link' onclick=window.open('$final_dagchainer_file')>DAGChainer output in genomic coordinates</span>};
+        my $tandem_dups2_url = _filename_to_link(
+            file => $org2_localdups,
+            msg  => qq{Tandem Duplicates for $org_name2},
+        );
 
-#$html .= qq{<span class='small link' onclick=window.open('$post_dagchainer_file_w_nearby')>Results converted back to genomic coordinates</span>};
-        }
+        #######################################################################
+        # Diagonals
+        #######################################################################
+        my $dagchainer_input_url = _filename_to_link(
+            file => $dag_file12_all,
+            msg  => qq{DAGChainer Initial Input file}
+        );
 
-        if ($ks_blocks_file) {
-            $ks_blocks_file =~ s/$DIR/$URL/;
-            $html .=
-"<br><span class='small link' onclick=window.open('$ks_blocks_file') target=_new>Results with synonymous/nonsynonymous rate values</span>";
-        }
+        my $geneorder_url = _filename_to_link(
+            file => $dag_file12_all_geneorder,
+            msg  => qq{DAGChainer Input file converted to gene order}
+        );
 
-        my $final_file = $final_dagchainer_file;
-        $final_file =~ s/$DIR/$URL/;
-        $html .=
-"<br><span class='small link' onclick=window.open('$final_file')>Final syntenic gene-set output with GEvo links</span>";
-        if ( -r $final_dagchainer_file_condensed ) {
-            $final_dagchainer_file_condensed =~ s/$DIR/$URL/;
-            $html .=
-"<br><span class='small link' onclick=window.open('$final_dagchainer_file_condensed')>Condensed syntelog file with GEvo links</span>";
-        }
+        my $dagchainer12_url = _filename_to_link(
+            file => $dag_file12,
+            msg  => qq{DAGChainer Input file post repetitve matches filtered}
+        );
 
-        if ( $svg_file && -r $svg_file ) {
-            $svg_file =~ s/$DIR/$URL/;
-            $html .=
-"<br><span class='small link' onclick=window.open('$svg_file')>SVG Version of Syntenic Dotplot</span>";
-        }
+        #######################################################################
+        # Results
+        #######################################################################
+        my $dagchainer_url = _filename_to_link(
+            file => $dagchainer_file,
+            msg  => qq{DAGChainer Output}
+        );
 
-        if ( $spa_file && -r $spa_file ) {
-            $spa_file =~ s/$DIR/$URL/;
-            $html .=
-"<br><span class='small link' onclick=window.open('$spa_file')>Syntenic Path Assembly mapping</span>";
-        }
+        my $merged_dag_url = _filename_to_link(
+            file => $merged_dagchainer_file,
+            msg  => qq{Merged DAGChainer output}
+        );
 
-        $html .= "<tr><td>";
+        my $quota_align_coverage_url = _filename_to_link(
+            file => $quota_align_coverage,
+            msg  => qq{Quota Alignment Results}
+        );
+
+        my $final_result_url = _filename_to_link(
+            file => $final_dagchainer_file,
+            msg  => qq{DAGChainer output in genomic coordinates}
+        );
+
+        my $ks_blocks_url = _filename_to_link(
+            file     => $ks_blocks_file,
+            msg      => qq{Results with synonymous/non-synonymous rate values},
+            required => $ks_type
+        );
+
+        my $final_url = _filename_to_link(
+            file => $final_dagchainer_file,
+            msg  => qq{Final syntenic gene-set output with GEvo links}
+        );
+
+        my $final_condensed_url = _filename_to_link(
+            file => $final_dagchainer_file_condensed,
+            msg  => qq{Condensed syntelog file with GEvo links}
+        );
+
+        my $svg_url = _filename_to_link(
+            file => $svg_file,
+            msg  => qq{SVG Version of Syntenic Dotplot},
+        );
+
+        my $spa_url = _filename_to_link(
+            file => $spa_file,
+            msg  => qq{Syntenic Path Assembly mapping},
+        );
+
         my $conffile = $ENV{HOME} . 'coge.conf';
+
         $dagchainer_file =~ s/^$URL/$DIR/;
+
         $html .= "<br>"
           . qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=$conffile;l=$tiny_link');" >Generate Pseudo-Assembled Genomic Sequence</span>}
           if $assemble;
-        $html .= qq{</table>};
+
+        my $rows = [
+            {
+                general  => 'General',
+                homolog  => 'Homolog search',
+                diagonal => 'Diagonals',
+                result   => 'Results',
+            },
+            {
+                general  => $log_url,
+                homolog  => $fasta1_url,
+                diagonal => $dagchainer_input_url,
+                result   => $dagchainer_url,
+            },
+            {
+                general  => $image_url,
+                homolog  => $fasta2_url,
+                diagonal => $geneorder_url,
+                result   => $final_result_url,
+            },
+            {
+                general  => undef,
+                homolog  => $raw_blast_url,
+                diagonal => $dagchainer12_url,
+                result   => $final_url,
+            },
+            {
+                general  => undef,
+                homolog  => $filtered_blast_url,
+                diagonal => undef,
+                result   => $final_condensed_url,
+            },
+            {
+                general  => undef,
+                homolog  => $tandem_dups1_url,
+                diagonal => undef,
+                result   => $quota_align_coverage_url,
+            },
+            {
+                general  => undef,
+                homolog  => $tandem_dups2_url,
+                diagonal => undef,
+                result   => $ks_blocks_url,
+            },
+            {
+                general  => undef,
+                homolog  => undef,
+                diagonal => undef,
+                result   => $spa_url,
+            },
+        ];
+
+        $results->param( files => $rows );
 
         ########################################################################
         # Regenerate Analysis Link - HTML
         ########################################################################
 
-        $html .= "<a href='$tiny_link' class='ui-button ui-corner-all'";
-        $html .=
-" style='color: #000000' target=_new_synmap>Regenerate this analysis: $tiny_link</a>";
+        $results->param( link => $tiny_link );
 
         if ($ks_type) {
-            $html .=
-qq{<span  class='ui-button ui-corner-all' onclick="window.open('SynSub.pl?dsgid1=$dsgid1;dsgid2=$dsgid2')">Generate Substitution Matrix of Syntelogs</span>};
+            my $link = "SynSub.pl?dsgid1=$dsgid1;dsgid2=$dsgid2";
+            $results->param( synsub => $link );
         }
 
         if ($grimm_stuff) {
@@ -2594,20 +2642,38 @@ qq{<span  class='ui-button ui-corner-all' onclick="window.open('SynSub.pl?dsgid1
             <br>
             <span class="ui-button ui-corner-all" id = "grimm_link" onclick="post_to_grimm('$seq1','$seq2')" > Rearrangement Analysis</span> <a class="small" href=http://grimm.ucsd.edu/GRIMM/index.html target=_new>(Powered by GRIMM!)</a>
             };
+
+            my $grimm_data = {
+                seq1       => $seq1,
+                seq2       => $seq2,
+                grimm_link => qq{http://grimm.ucsd.edu/GRIMM/index.html},
+            };
+
+            $results->param( grimm => $grimm_data );
         }
         $html .= "<br>";
     }
+    else {
+        $problem = qq{The output $out.html could not be found.};
+    }
+
+    my $log = $cogeweb->logfile;
+    $log =~ s/$DIR/$URL/;
+    $results->param( error   => $problem ) if $problem;
+    $results->param( warning => $warn )    if $warn;
+    $results->param( log     => $log );
+
     ##print out all the datafiles created
     $html .= "<br>";
 
-    if ($problem) {
-        $html .=
-qq{<span class=alert>There was a problem running your analysis.  Please check the log file for details.</span><br>};
-    }
+    $html .=
+qq{<span id="clear" style="font-size: 0.8em" class="ui-button ui-corner-all"
+        onClick="\$('#results').hide(); \$(this).hide(); \$('#intro').fadeIn();" >Clear Results</span>};
 
-    if ($warn) {
-        $html .= qq{<span class=alert>Warning: $warn</span><br>};
-    }
+    $html .= qq{</div>};
+
+    $warn = qq{There was a problem running your analysis.}
+      . qq{ Please check the log file for details};
 
     ############################################################################
     # Email results, output benchmark and return results
@@ -2644,6 +2710,8 @@ qq{<span class=alert>There was a problem running your analysis.  Please check th
     CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
+    CoGe::Accessory::Web::write_log( "#finished", $cogeweb->logfile );
+
     # Need to remove this from the output from dotplot
     # -- otherwise it over-loads the stuff in the web-page already.
     # -- This can mess up other loaded js such as tablesoter
@@ -2651,8 +2719,46 @@ qq{<span class=alert>There was a problem running your analysis.  Please check th
     # Update status to completed.
     $job->update( { status => 2 } ) if defined($job);
 
-    $html =~ s/<script src="\/CoGe\/js\/jquery-1.3.2.js"><\/script>//g;
-    return $html;
+    my $output = $results->output;
+    $output =~ s/<script src="\/CoGe\/js\/jquery-1.3.2.js"><\/script>//g;
+
+    #return $html;
+    return $output;
+}
+
+sub _filename_to_link {
+    my %opts = (
+        styles   => "link small",
+        warn     => 1,
+        required => 0,
+        @_,
+    );
+
+    return unless exists $opts{file};
+
+    my $link;
+
+    if ( -r $opts{file} ) {
+        my $url = $opts{file};
+        $url =~ s/$DIR/$URL/;
+
+        $link =
+            q{<span class="}
+          . $opts{styles} . q{"}
+          . q{onclick="window.open('}
+          . $url . q{')">}
+          . $opts{msg}
+          . "</span><br>";
+
+    }
+    elsif ( $opts{required} ) {
+        $link =
+          q{<span class="alert">} . $opts{msg} . q{ (missing)} . q{</span};
+    }
+    else {
+        $link = q{<span style="color:dimgray;">} . $opts{msg} . q{</span};
+    }
+    return $link;
 }
 
 ################################################################################
