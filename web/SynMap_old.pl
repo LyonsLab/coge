@@ -143,7 +143,7 @@ $DATADIR  = $P->{DATADIR};
 $DIAGSDIR = $P->{DIAGSDIR};
 $FASTADIR = $P->{FASTADIR};
 
-ukpath( $TEMPDIR, 1, 0777 );
+mkpath( $TEMPDIR,     1, 0777 );
 mkpath( $FASTADIR,    1, 0777 );
 mkpath( $DIAGSDIR,    1, 0777 );    # mdb added 7/9/12
 mkpath( $P->{LASTDB}, 1, 0777 );    # mdb added 7/9/12
@@ -614,7 +614,7 @@ sub gen_dsg_menu {
 };
     foreach (
         sort {
-            versioncmp( $b->[2]->version, $a->[2]->version )
+                 versioncmp( $b->[2]->version, $a->[2]->version )
               || $a->[2]->type->id <=> $b->[2]->type->id
               || $b->[3] cmp $a->[3]
         } @dsg_menu
@@ -743,7 +743,7 @@ sub get_genome_info {
         $org_desc = join(
             "; ",
             map {
-                qq{<span class=link onclick="\$('#org_desc}
+                    qq{<span class=link onclick="\$('#org_desc}
                   . qq{$org_num').val('$_').focus();search_bar('org_desc$org_num'); timing('org_desc$org_num')">$_</span>}
               } split /\s*;\s*/,
             $org->description
@@ -3093,12 +3093,12 @@ sub go {
         $cogeweb->logfile );
     $problem = 1
       unless run_dag_tools(
-              query      => "a" . $dsgid1,
-              subject    => "b" . $dsgid2,
-              blast      => $filtered_blastfile,
-              outfile    => $dag_file12_all,
-              feat_type1 => $feat_type1,
-              feat_type2 => $feat_type2
+        query      => "a" . $dsgid1,
+        subject    => "b" . $dsgid2,
+        blast      => $filtered_blastfile,
+        outfile    => $dag_file12_all,
+        feat_type1 => $feat_type1,
+        feat_type2 => $feat_type2
       );
     CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
@@ -3195,8 +3195,8 @@ sub go {
             CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
             CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
         }
-        my $post_dagchainer_file = -r $merged_dagchainer_file
-          || -r $merged_dagchainer_file . ".gz"
+        my $post_dagchainer_file =
+          -r $merged_dagchainer_file || -r $merged_dagchainer_file . ".gz"
           ? $merged_dagchainer_file
           : $dagchainer_file;  #temp file name for the final post-processed data
         my $post_dagchainer_file_w_nearby = $post_dagchainer_file;
