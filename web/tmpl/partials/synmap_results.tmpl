@@ -19,7 +19,7 @@
             <tr>
                 <td>Image Width</td>
                 <td>
-                    <input class="backbox" type=text name=zoom_width id=zoom_width size=6 value="400">
+                    <input class="backbox" type="text" name="zoom_width" id="zoom_width" size="6" value="400">
                 </td>
             </tr>
 
@@ -29,18 +29,17 @@
 
                     <tmpl_if name="codeml_min">
                         <input class="backbox" type="text" name="zoom_min" id="zoom_min" size="6"
-                            value="<tmpl_var name=codeml_min>">
+                            value="<tmpl_var name=codeml_min>" >
                     <tmpl_else>
                         <input class="backbox" type="text" name="zoom_min" id="zoom_min" size="6">
                     </tmpl_if>
                 </td>
                 <td>Max:
                     <tmpl_if name="codeml_max">
-                        <input class="backbox" type=text name=zoom_max id=zoom_max
-                            size=6 value="<tmpl_var name=codeml_max">
+                        <input class="backbox" type="text" name="zoom_max" id=zoom_max
+                            size=6 value="<tmpl_var name=codeml_max>" >
                     <tmpl_else>
-                        <input class="backbox" type=text name=zoom_max id=zoom_max
-                            size=6>
+                        <input class="backbox" type=text name=zoom_max id=zoom_max size=6>
                     </tmpl_if>
                 </td>
                 </tr>
@@ -53,7 +52,7 @@
             Histogram of <tmpl_var name=ks_type> values.<br>
         <img src="<tmpl_var name=histogram>">
         </div>
-        <div style='clear: both;'> </div>"
+        <div style='clear: both;'> </div>
     </tmpl_if>
 
     <ul class="padded">
