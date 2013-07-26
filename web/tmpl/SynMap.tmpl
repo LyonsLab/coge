@@ -1,10 +1,27 @@
 <tmpl_if name=MAIN>
+    <div class="alert small" style="padding-bottom: 5px;">
+        Welcome to the new beta version of SynMap. <br>If you experience any difficulties
+        or prefer to use the old version, please <a id="beta_link" href="SynMap_old.pl">click here</a>.
+        <br>
+    </div>
 <section id="intro">
     <span class="link small" onClick="$(this).hide(); $('#getting_started').fadeIn();">
         Click here to see how to get started.
     </span>
 
     <div id="getting_started" class="hidden padded ui-widget-content ui-corner-all">
+        <ul class="horizontal">
+            <li>
+                <span class="alert">What is new:</span>
+            </li>
+
+            <li>
+                SynMap is now using a job execution engine to run your analysis
+                and a new user experience.<br>
+                <strong>Known Issues:</strong> Status reporting is not reported
+                correctly.
+            </li>
+        </ul>
         <ul class="horizontal">
             <li>
                 <span class="alert">Please Note:</span>
@@ -463,6 +480,15 @@ $(document).ready(function(){
         dataType: "html",
         cache: false
     });
+
+    var items = location.href.split('?');
+    var link = $('#beta_link').attr('href').split('?');
+
+    if (items.length > 1  && link.length < 2) {
+        $('#beta_link').each(function() {
+            this.href += "?" + items[1];
+        });
+    }
 
     $(".dialog_box").dialog({
         autoOpen: false,
