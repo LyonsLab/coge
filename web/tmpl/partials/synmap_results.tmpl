@@ -46,14 +46,6 @@
         </table>
     </div>
 
-    <tmpl_if name="histogram">
-        <div class='small link ui-widget-content ui-corner-all padded' style='float:left'
-            onclick="window.open('$out.hist.png')">
-            Histogram of <tmpl_var name=ks_type> values.<br>
-        <img src="<tmpl_var name=histogram>">
-        </div>
-        <div style='clear: both;'> </div>
-    </tmpl_if>
 
     <ul class="padded">
         <li>
@@ -84,6 +76,16 @@
             <br>
 
             <span class='small'>Algorithm: <tmpl_var name="algorithm"></span>
+        </li>
+        <li>
+        <tmpl_if name="histogram">
+            <div class='small link ui-widget-content ui-corner-all padded' style='float:left'
+                onclick="window.open('<tmpl_var name=histogram>')">
+                Histogram of <tmpl_var name=ks_type> values.<br>
+            <img src="<tmpl_var name=histogram>">
+            </div>
+            <div style='clear: both;'> </div>
+        </tmpl_if>
         </li>
         <li>
             <div class="ui-widget-content ui-corner-all padded">
