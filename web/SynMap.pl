@@ -45,7 +45,7 @@ our (
     $GEN_FASTA,     $RUN_ALIGNMENT,  $RUN_COVERAGE
 );
 
-$DEBUG     = 1;
+$DEBUG     = 0;
 $YERBA     = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
 $P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 $ENV{PATH} = join ":",
@@ -2056,7 +2056,7 @@ sub go {
         $final_dagchainer_file = $post_dagchainer_file_w_nearby;
     }
 
-    print_debug( "Final dag chainer file: $final_dagchainer_file",
+    print_debug( msg => "Final dag chainer file: $final_dagchainer_file",
         enabled => $DEBUG );
 
     if ( $dagchainer_type eq "geneorder" ) {
@@ -2401,15 +2401,15 @@ sub go {
         $results->param( algorithm => $algo_name );
 
         if ($hist) {
-            $results->param( histogram => $out_url . 'hist.png' ) if -r $hist;
+            $results->param( histogram => $out_url . '.hist.png' ) if -r $hist;
             $results->param( ks_type => $ks_type );
         }
 
         my $final_dagchainer_file_condensed =
           $final_dagchainer_file . ".condensed";
         my $qa_file = $merged_dagchainer_file;
-        $qa_file =~ s/\.ma\d$/\.qa/;
-        my $qa_merged_file  = $qa_file . ".merged";
+        $qa_file =~ s/\.ma\d$/\.qa/ if $qa_file;
+        my $qa_merged_file  = $qa_file . ".merged" if $qa_file;
         my $qa_coverage_tmp = $quota_align_coverage . ".tmp"
           if $quota_align_coverage;
         my $qa_coverage_qa = $quota_align_coverage . ".qa"
@@ -2733,8 +2733,8 @@ sub _filename_to_link {
         required => 0,
         @_,
     );
-
-    return unless exists $opts{file};
+    my $file = $opts{file};
+    return unless $file;
 
     my $link;
 
@@ -2756,7 +2756,7 @@ sub _filename_to_link {
           q{<span class="alert">} . $opts{msg} . q{ (missing)} . q{</span};
     }
     else {
-        $link = q{<span style="color:dimgray;">} . $opts{msg} . q{</span};
+#        $link = q{<span style="color:dimgray;">} . $opts{msg} . q{</span};
     }
     return $link;
 }
