@@ -10,7 +10,7 @@ BEGIN {
     use Exporter ();
     use vars qw($P $VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $NWALIGN $MATRIX_FILE);
     $VERSION     = '0.1';
-  $P = CoGe::Accessory::Web::get_defaults();
+  $P = CoGe::Accessory::Web::get_defaults($ENV{HOME} . 'coge.conf' );
     @ISA         = (@ISA, qw(Exporter));
     #Give a hoot don't pollute, do not export more than needed by default
     @EXPORT      = qw();
