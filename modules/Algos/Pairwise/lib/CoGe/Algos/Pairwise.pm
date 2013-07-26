@@ -10,20 +10,19 @@ BEGIN {
     use Exporter ();
     use vars qw($P $VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $NWALIGN $MATRIX_FILE);
     $VERSION     = '0.1';
-  $P = CoGe::Accessory::Web::get_defaults($ENV{HOME} . 'coge.conf' );
     @ISA         = (@ISA, qw(Exporter));
     #Give a hoot don't pollute, do not export more than needed by default
     @EXPORT      = qw();
     @EXPORT_OK   = qw();
     %EXPORT_TAGS = ();
     __PACKAGE__->mk_accessors(qw(seqA seqB matrix gap gap_ext dpm alignA alignB nwalign nwalign_server_port));
-    $NWALIGN = $P->{NWALIGN};
-
-    $MATRIX_FILE = $P->{BLASTMATRIX}."aa/BLOSUM62";
+#    $P = CoGe::Accessory::Web::get_defaults($ENV{HOME} . 'coge.conf' );
+#    $NWALIGN = $P->{NWALIGN};
+#    $MATRIX_FILE = $P->{BLASTMATRIX}."aa/BLOSUM62";
 }
 
 #################### main pod documentation begin ###################
-## Below is the stub of documentation for your module. 
+## Below is the stub of documentation for your module.
 ## You better edit it!
 
 
@@ -39,10 +38,10 @@ CoGe::Algos::Pairwise - Pairwise
   my $pairwise = new CoGe::Algos::Pairwise
   $pairwise->seqA($seq1);
   $pairwise->seqB($seq2);
-  
+
   #align the sequence
   my ($align1, $align2) = $pairwise->global_align();
-  
+
   #pretty print the dynamic programming matrix
   $pairwise->print_dpm();
 
@@ -104,9 +103,9 @@ perl(1).
  Argument  : string
  Throws    : none
  Comment   : this is how you set one of the two sequences to be aligned
-           : 
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -124,9 +123,9 @@ See Also   :
  Argument  : string
  Throws    : none
  Comment   : this is how you set one of the two sequences to be aligned
-           : 
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -142,9 +141,9 @@ See Also   :
  Returns   : a ref to a hash of hash refs
  Argument  : a ref to a hash of hash refs
  Throws    : none
- Comment   : example matrix:  $matrix = {{A}=>{A=>1, T=>-1, C=>-1}, G=>-1}, 
-           :                             {T}=>{A=>-1, T=>1, C=>-1}, G=>-1}, 
-           :                             {C}=>{A=>-1, T=>-1, C=>1}, G=>-1}, 
+ Comment   : example matrix:  $matrix = {{A}=>{A=>1, T=>-1, C=>-1}, G=>-1},
+           :                             {T}=>{A=>-1, T=>1, C=>-1}, G=>-1},
+           :                             {C}=>{A=>-1, T=>-1, C=>1}, G=>-1},
            :                             {G}=>{A=>-1, T=>-1, C=>-1}, G=>1},};
 
            : if no matrix is supplied, this will use the BLOSUM62 by default
@@ -164,9 +163,9 @@ See Also   :
  Argument  : string/int
  Throws    : 0
  Comment   : If no gap is specified, -10 is used by default
-           : 
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -184,9 +183,9 @@ See Also   :
  Argument  : string/int
  Throws    : none
  Comment   : If no gap extension is specified, -2 is used by default
-           : 
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -198,11 +197,11 @@ See Also   :
 =head2 dpm
 
  Usage     : my $dpm = $pairwise->dpm();
- Purpose   : storage place for the dynamic programming matrix used for the last alignment 
+ Purpose   : storage place for the dynamic programming matrix used for the last alignment
  Returns   : a reference to a 2D matrix of hash refs
  Argument  : this is set by the global_align subroutine
  Throws    : none
- Comment   : If you want to get a hold the the DPM used to generate the alignment, this 
+ Comment   : If you want to get a hold the the DPM used to generate the alignment, this
            : is the puppy.  However, if you want to see it printed pretty, see the
            : print_dpm sub.
 See Also   : sub print_dpm
@@ -224,7 +223,7 @@ See Also   : sub print_dpm
  Comment   : Allows you to retrieve the alignment for one of the sequence
            : after the alignment has been run.
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -243,7 +242,7 @@ See Also   :
  Comment   : Allows you to retrieve the alignment for one of the sequence
            : after the alignment has been run.
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -251,17 +250,17 @@ See Also   :
 
 #################### subroutine header begin ####################
 
-=head2 
+=head2
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comment   : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comment   :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -274,7 +273,7 @@ See Also   :
 =head2 global_align
 
  Usage     : $pairwise->global_align()
- Purpose   : aligns two sequences stored in the pairwise object.  The sequences must have been previously 
+ Purpose   : aligns two sequences stored in the pairwise object.  The sequences must have been previously
              set with $pairwise->seqA($seq) and $pairwise->seqB($seq2)
  Returns   : an array of two strings where each string is the global sequence alignment
  Argument  : None
@@ -282,7 +281,7 @@ See Also   :
  Comment   : This does a global sequence alignment between two sequences using gap and gap extension
            : penalties.
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -294,7 +293,7 @@ sub global_align
   {
     my $self = shift;
     my %opts = @_;
-    
+
     my $seq1 = $opts{seqA};
     $seq1 = $self->seqA unless defined $seq1;;
     my $seq2 = $opts{seqB};
@@ -307,7 +306,14 @@ sub global_align
     $gap = -10 unless defined $gap;
     $gap_ext = -2 unless $gap_ext;
     my $matrix = $opts{matrix};  #path to blast formated alignment matrix;
+
+    my $config = $opts{config};
+    $config = $ENV{HOME}.'coge.conf' unless defined $config and -r $config;
+    $P = CoGe::Accessory::Web::get_defaults($config);
+    $NWALIGN = $P->{NWALIGN};
+    $MATRIX_FILE = $P->{BLASTMATRIX}."aa/BLOSUM62";
     $matrix = $MATRIX_FILE unless $matrix && -r $matrix;
+
 
     my ($align1, $align2);
     if ($self->nwalign_server_port)
@@ -451,7 +457,7 @@ sub global_align_perl
         $align1 .= "-";
         $align2 .= substr($seq2, $i-1, 1);
         $i--;			#decrement operator
-      }    
+      }
     }
     $self->dpm(\@matrix);
     $align1 = reverse($align1);
@@ -476,7 +482,7 @@ sub global_align_perl
            : up = trace is from above cell
            : gd = trace is from above diagonal cell
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -507,13 +513,13 @@ sub print_dpm
  Usage     : $pw->print_align();
  Purpose   : prints a pretty alignment
  Returns   : none
- Argument  : string (int) for the number of characters before wrapping the 
+ Argument  : string (int) for the number of characters before wrapping the
            : alignment to the next string
  Throws    : none
  Comment   : a simple way to get a pretty and easy to read alignment
-           : 
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -540,8 +546,8 @@ sub print_align
 	  {
 	    $s3 .= ":";
 	  }
-	elsif ($self->matrix->{$c1} && 
-	       defined $self->matrix->{$c1}{$c2}  && 
+	elsif ($self->matrix->{$c1} &&
+	       defined $self->matrix->{$c1}{$c2}  &&
 	       $self->matrix->{$c1}{$c2} >= 0)
 	  {
 	    $s3 .= ".";
@@ -572,14 +578,14 @@ sub print_align
 =head2 _initialize_default_scoring_matrix
 
  Usage     : $pairwise->_initialize_default_scoring_matrix
- Purpose   : set the scoring matrix to BLOSOM62 
+ Purpose   : set the scoring matrix to BLOSOM62
  Returns   : $self->matrix()
  Argument  : none
  Throws    : none
  Comment   : if no scoring matrix has been specified, this matrix is used
-           : 
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
