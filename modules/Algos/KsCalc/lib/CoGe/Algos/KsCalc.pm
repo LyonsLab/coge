@@ -16,12 +16,12 @@ BEGIN {
     @EXPORT      = qw();
     @EXPORT_OK   = qw();
     %EXPORT_TAGS = ();
-    __PACKAGE__->mk_accessors(qw(version name1 name2 prot1 prot2 palign1 palign2 dna1 dna2 dalign1 dalign2 gaplessP1 gaplessP2 gaplessD1 gaplessD2 results gapless_prot_pid gapless_DNA_pid prot_pid DNA_pid feat1 feat2 benchmark tmpdir debug));
+    __PACKAGE__->mk_accessors(qw(version name1 name2 prot1 prot2 palign1 palign2 dna1 dna2 dalign1 dalign2 gaplessP1 gaplessP2 gaplessD1 gaplessD2 results gapless_prot_pid gapless_DNA_pid prot_pid DNA_pid feat1 feat2 benchmark tmpdir debug config));
 }
 
 
 #################### main pod documentation begin ###################
-## Below is the stub of documentation for your module. 
+## Below is the stub of documentation for your module.
 ## You better edit it!
 
 
@@ -38,7 +38,7 @@ CoGe::Algos::KsCalc - CoGe::Algos::KsCalc
 
   $ks->feat1($coge_feat1);  #a CoGeX::Feature object of type CDS
   $ks->feat2($coge_feat2);  #a CoGeX::Feature object of type CDS
-  
+
   my $res = $ks->KsCalc("seq.align");
   print "Ka = ", $res->{'dN'},"\n";
   print "Ks = ", $res->{'dS'},"\n";
@@ -47,14 +47,14 @@ CoGe::Algos::KsCalc - CoGe::Algos::KsCalc
 
 =head1 DESCRIPTION
 
-Inherets from CoGe::Algos::Pairwise and provides extended funcitonality 
-to calculate Ks Kd (synonymous and nonsynonymous substitution rates) from sequences 
-in the CoGeX database.  Calculations are performed by Codeml of PAML 
+Inherets from CoGe::Algos::Pairwise and provides extended funcitonality
+to calculate Ks Kd (synonymous and nonsynonymous substitution rates) from sequences
+in the CoGeX database.  Calculations are performed by Codeml of PAML
 (Phylogenetic Analysis by Maximum Likelihood) package of Ziheng Yang.  See
 http://abacus.gene.ucl.ac.uk/software/paml.html for more information.
 
 This object is to make it easy to calculate Ks and Ka values from the genomes database
-for any feature that has a protein sequence and a name.  
+for any feature that has a protein sequence and a name.
 
 It procedure is:
 1. for each sequence name, find the longest protein sequence assoicate with that name
@@ -65,7 +65,7 @@ It procedure is:
 5. run Codeml using Comp_Geomics::Algos::Codeml
 6. store results in $self->results as a hash returned from CoGe::Algos::Codeml
    (see example above)
-   
+
 
 
 
@@ -117,10 +117,10 @@ perl(1).
  Returns   : KsCalc object
  Argument  : none
  Throws    : none
- Comment   : 
-           : 
+ Comment   :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -143,9 +143,9 @@ This is a list of the Class::Accessor functions and the information they hold:
 version          Version of the data source to limit search when finding sequences
                  for sequence names.  This is in the data_information table of
                  the genomes database
-name1            The name of one of the sequences in the genomes database for which 
+name1            The name of one of the sequences in the genomes database for which
                  a sequence is to be searched
-name2            The name of one of the sequences in the genomes database for which 
+name2            The name of one of the sequences in the genomes database for which
                  a sequence is to be searched
 prot1            Storage for the protein sequence for name1
 prot2            Storage for the protein sequence for name2
@@ -176,10 +176,10 @@ feat2            Storage for CoGeX feature object for feature 2
  Returns   : none
  Argument  : none
  Throws    : none
- Comment   : 
-           : 
+ Comment   :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -197,16 +197,16 @@ sub init
 =head2 palign
 
  Usage     : $ks->palign
- Purpose   : after the names have been set, generates the global alignment 
+ Purpose   : after the names have been set, generates the global alignment
              ($self->global_align inhereted from Pairwise) and saves the aligned
              sequences in $self->palign1 and $self->palign2
  Returns   : 1 if successful, 0 if not
  Argument  : none
  Throws    : 0
- Comment   : 
-           : 
+ Comment   :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -218,8 +218,8 @@ sub palign
     return 0 unless $self->_check_seqs();
     $self->seqA($self->prot1);
     $self->seqB($self->prot2);
-    
-    my ($align1, $align2) = $self->global_align();
+#    print STDERR "KsCalc:  ".$self->config,"\n";
+    my ($align1, $align2) = $self->global_align(config=>$self->config);
     $self->palign1($align1);
     $self->palign2($align2);
     $self->_generate_DNA_alignment();
@@ -242,7 +242,7 @@ sub palign
  Argument  : none
  Throws    : undef + errors to STDOUT if either sequence is not defined
  Comment   : calls $self->calc_pid
-           : 
+           :
 See Also   : calc_pid
 
 =cut
@@ -273,7 +273,7 @@ sub gapless_DNA_calc_pid
  Argument  : none
  Throws    : undef + errors to STDOUT if either sequence is not defined
  Comment   : calls $self->calc_pid
-           : 
+           :
 See Also   : calc_pid
 
 =cut
@@ -305,7 +305,7 @@ sub gapless_prot_calc_pid
  Argument  : none
  Throws    : undef + errors to STDOUT if either sequence is not defined
  Comment   : calls $self->calc_pid
-           : 
+           :
 See Also   : calc_pid
 
 =cut
@@ -336,7 +336,7 @@ sub DNA_calc_pid
  Argument  : none
  Throws    : undef + errors to STDOUT if either sequence is not defined
  Comment   : calls $self->calc_pid
-           : 
+           :
 See Also   : calc_pid
 
 =cut
@@ -369,7 +369,7 @@ sub prot_calc_pid
              if the sequences are not of equal length
  Comment   : The calculation of Num_identical_charaters / total_Num_characters
            : uses all non-gap characters from the $seq1 to calculate total_Num_characters
-See Also   : 
+See Also   :
 
 =cut
 
@@ -411,8 +411,8 @@ sub calc_pid
 =head2 KsCalc
 
  Usage     : $self->KsCalc
- Purpose   : runs $self->palign and runs Codeml from 
-             CoGe::Algos::Codeml and saves the results in 
+ Purpose   : runs $self->palign and runs Codeml from
+             CoGe::Algos::Codeml and saves the results in
              $self->results
  Returns   : hash ref of results:
              'dN/dS' => non-synonymous over sysnonymous substitution
@@ -422,9 +422,9 @@ sub calc_pid
  Argument  : none
  Throws    : 0 if there was a problem running alignment
  Comment   : This is the mama-jama of this module
-           : 
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -433,6 +433,10 @@ See Also   :
 sub KsCalc
   {
     my $self = shift;
+    my %opts = @_;
+    my $config = $opts{config};
+    $config = $self->config unless $config;
+    $self->config($config) if $config; #set the self environmental var if set;
     my $t1 = new Benchmark if $self->benchmark;
     my $tmp = $self->palign(); #returns 0 if fails
     my $t2 = new Benchmark if $self->benchmark;
@@ -441,7 +445,7 @@ sub KsCalc
 	carp ("Problem running alignment");
 	return 0;
       }
-    my $cml = new CoGe::Algos::Codeml(alignment=>$self->phylip_align);
+    my $cml = new CoGe::Algos::Codeml(alignment=>$self->phylip_align, config=>$config);
     $cml->run();
     my $t3 = new Benchmark  if $self->benchmark;
     $self->results($cml->results);
@@ -474,7 +478,7 @@ Time to codeml:    $codeml_time
  Comment   : this is used to generate the alignment file that Codeml uses
            : for its Ks calculation
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -511,9 +515,9 @@ sub phylip_align
  Argument  : none
  Throws    : 0
  Comment   : used internally
-           : 
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -522,7 +526,7 @@ See Also   :
 sub _check_seqs
   {
     my $self = shift;
-    
+
     #check to make sure that feat objects exist and are of type CDS
     unless ($self->feat1 && ref($self->feat1()) =~ /Feature/ && $self->feat1->type->name eq "CDS")
       {
@@ -544,7 +548,7 @@ sub _check_seqs
       {
 	$p1 =~ s/\*$//;#remove stop character
 	$d1 =~ s/...$//; #remove stop codon
-	
+
       }
     if ($p2 =~ /\*$/)
       {
@@ -578,10 +582,10 @@ sub _check_seqs
  Returns   : none
  Argument  : none
  Throws    : none
- Comment   : 
-           : 
+ Comment   :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
