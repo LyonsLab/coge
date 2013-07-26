@@ -72,10 +72,12 @@ $GUNZIP = $P->{GUNZIP};
 $URL    = $P->{URL};
 
 usage() if $help;
-usage()
-  unless ( defined $dagfile && -r $dagfile )
+unless ( ( defined $dagfile && -r $dagfile )
   || -r $alignfile
-  || -r "$alignfile.gz";
+  || -r "$alignfile.gz")
+  {
+    usage()
+  }
 
 if ( defined $dagfile and !( -r $dagfile || -r $dagfile . ".gz" ) ) {
     warn "dagfile specified but not present or readable: $!";
@@ -270,7 +272,7 @@ if ($ks_db) {
     #    $cmd .= ".$MAX" if defined $MAX;
     $cmd .= ".hist.png";
 
-    #print STDERR "HIST: ",$cmd,"\n";
+    print STDERR "HIST: ",$cmd,"\n";
     `$cmd &`;
 }
 
