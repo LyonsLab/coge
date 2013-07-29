@@ -18,60 +18,27 @@ use Sort::Versions;
 
 no warnings 'redefine';
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME
-  $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM
-  %FUNCTION $P $COOKIE_NAME $SERVER);
-$P                 = CoGe::Accessory::Web::get_defaults("$ENV{HOME}/coge.conf");
-$ENV{PATH}         = $P->{COGEDIR};
-$ENV{irodsEnvFile} = "/var/www/.irods/.irodsEnv";
+use vars qw($P $PAGE_NAME $PAGE_TITLE
+  $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM
+  %FUNCTION $P $SERVER);
 
-# set this to 1 to print verbose messages to logs
-$DEBUG   = 0;
-$TEMPDIR = $P->{TEMPDIR} . "OrgView";
-$TEMPURL = $P->{TEMPURL} . "OrgView";
-$SERVER  = $P->{SERVER};
-
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-
-$HISTOGRAM = $P->{HISTOGRAM};
-
-$|    = 1;         # turn off buffering
-$DATE = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
+$| = 1;    # turn off buffering
 
 $FORM = new CGI;
 
-$PAGE_NAME = 'OrganismView.pl';
+$PAGE_TITLE = 'OrganismView';
+$PAGE_NAME  = "$PAGE_TITLE.pl";
 
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket'),
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
+);
 
-#$coge->storage->debugobj(new DBIxProfiler());
-#$coge->storage->debug(1);
-
-$COOKIE_NAME = $P->{COOKIE_NAME};
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
+$TEMPDIR   = $P->{TEMPDIR} . "OrgView";
+$TEMPURL   = $P->{TEMPURL} . "OrgView";
+$SERVER    = $P->{SERVER};
+$HISTOGRAM = $P->{HISTOGRAM};
 
 %FUNCTION = (
     get_genomes             => \&get_genomes,
@@ -157,7 +124,6 @@ sub gen_html {
     $template->param( USER     => $name );
     $template->param( BOX_NAME => "Search for organisms and genomes" );
     $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE     => $DATE );
     $template->param( LOGO_PNG => "OrganismView-logo.png" );
     $template->param( BODY     => $body );
 
@@ -511,7 +477,7 @@ sub get_genome_list_for_org {
             push @dsg, $dsg;
         }
         @opts = map {
-            $_->id . "%%"
+                $_->id . "%%"
               . $_->name . " (v"
               . $_->version
               . ", dsgid"
@@ -548,7 +514,7 @@ sub get_genomes {
         }
         foreach my $item (
             sort {
-                versioncmp( $b->version, $a->version )
+                     versioncmp( $b->version, $a->version )
                   || $a->type->id <=> $b->type->id
                   || $a->name cmp $b->name
                   || $b->id cmp $a->id
@@ -766,7 +732,7 @@ sub get_dataset {
     if ($dsgid) {
         my $dsg = $coge->resultset("Genome")->find($dsgid);
         @opts = map {
-            "<OPTION value=\""
+                "<OPTION value=\""
               . $_->id . "\">"
               . $_->name . " (v"
               . $_->version
@@ -889,7 +855,7 @@ qq{<SELECT class="ui-widget-content ui-corner-all" id="chr" size =$size onChange
         $select .= join(
             "\n",
             map {
-                "<OPTION value=\"$_\">" 
+                    "<OPTION value=\"$_\">" 
                   . $_ . " ("
                   . commify( $chr{$_}{length} )
                   . " bp)</OPTION>"
@@ -1048,7 +1014,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
 };
     }
 
-    my $dbh = DBI->connect( $connstr, $DBUSER, $DBPASS );
+    my $dbh = $coge->storage->dbh;  #DBI->connect( $connstr, $DBUSER, $DBPASS );
     my $sth = $dbh->prepare($query);
     $sth->execute;
     my $feats = {};

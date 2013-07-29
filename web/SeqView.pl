@@ -5,65 +5,22 @@ use CGI;
 use CGI::Ajax;
 use HTML::Template;
 use Text::Wrap qw($columns &wrap);
-use Data::Dumper;
 use POSIX;
-use DBIxProfiler;
-use Digest::MD5 qw(md5_base64);
-
-no warnings 'redefine';
-
+use Data::Dumper;
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr
-  $TEMPDIR $TEMPURL $FORM $USER $DATE $coge $COOKIE_NAME $PAGE_NAME);
-
-$P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
-$ENV{PATH} = $P->{COGEDIR};
-
-$TEMPDIR = $P->{TEMPDIR};
-$TEMPURL = $P->{TEMPURL};
-$DATE    = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
+use vars qw($P $PAGE_NAME $PAGE_TITLE $FORM $USER $coge);
 
 $FORM = new CGI;
 
-$PAGE_NAME = 'SeqView.pl';
+$PAGE_TITLE = 'SeqView';
+$PAGE_NAME  = "$PAGE_TITLE.pl";
 
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-
-$COOKIE_NAME = $P->{COOKIE_NAME};
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
-
-my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-$link = CoGe::Accessory::Web::get_tiny_link(
-    db      => $coge,
-    user_id => $USER->id,
-    page    => $PAGE_NAME,
-    url     => $link
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket'),
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
 );
 
 my $pj = new CGI::Ajax(
@@ -103,7 +60,6 @@ sub gen_html {
           if $USER->first_name && $USER->last_name;
         $template->param( USER => $name );
 
-        $template->param( DATE       => $DATE );
         $template->param( LOGO_PNG   => "SeqView-logo.png" );
         $template->param( BOX_NAME   => qq{<DIV id="box_name">$title</DIV>} );
         $template->param( BODY       => gen_body() );

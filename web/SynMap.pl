@@ -29,26 +29,35 @@ use POSIX;
 use Sort::Versions;
 
 our (
-    $P,             $DBNAME,         $DBHOST,      $DBPORT,
-    $DBUSER,        $DBPASS,         $connstr,     $DATE,
-    $DEBUG,         $DIR,            $URL,         $SERVER,
-    $USER,          $FORM,           $coge,        $cogeweb,
-    $PAGE_NAME,     $FORMATDB,       $BLAST,       $TBLASTX,
-    $BLASTN,        $BLASTP,         $LASTZ,       $LAST,
-    $DATADIR,       $FASTADIR,       $BLASTDBDIR,  $DIAGSDIR,
-    $MAX_PROC,      $DAG_TOOL,       $PYTHON,      $PYTHON26,
-    $TANDEM_FINDER, $RUN_DAGCHAINER, $EVAL_ADJUST, $FIND_NEARBY,
-    $DOTPLOT,       $SVG_DOTPLOT,    $NWALIGN,     $QUOTA_ALIGN,
-    $CLUSTER_UTILS, $BLAST2RAW,      $BASE_URL,    $BLAST2BED,
-    $SYNTENY_SCORE, $TEMPDIR,        $TEMPURL,     $ALGO_LOOKUP,
-    $GZIP,          $GUNZIP,         $COOKIE_NAME, %FUNCTIONS,
-    $YERBA,         $GENE_ORDER,     $PAGE_TITLE,  $KSCALC,
-    $GEN_FASTA,     $RUN_ALIGNMENT,  $RUN_COVERAGE
+    $P,           $DEBUG,         $DIR,            $URL,
+    $SERVER,      $USER,          $FORM,           $coge,
+    $cogeweb,     $PAGE_NAME,     $FORMATDB,       $BLAST,
+    $TBLASTX,     $BLASTN,        $BLASTP,         $LASTZ,
+    $LAST,        $DATADIR,       $FASTADIR,       $BLASTDBDIR,
+    $DIAGSDIR,    $MAX_PROC,      $DAG_TOOL,       $PYTHON,
+    $PYTHON26,    $TANDEM_FINDER, $RUN_DAGCHAINER, $EVAL_ADJUST,
+    $FIND_NEARBY, $DOTPLOT,       $SVG_DOTPLOT,    $NWALIGN,
+    $QUOTA_ALIGN, $CLUSTER_UTILS, $BLAST2RAW,      $BASE_URL,
+    $BLAST2BED,   $SYNTENY_SCORE, $TEMPDIR,        $TEMPURL,
+    $ALGO_LOOKUP, $GZIP,          $GUNZIP,         %FUNCTIONS,
+    $YERBA,       $GENE_ORDER,    $PAGE_TITLE,     $KSCALC,
+    $GEN_FASTA,   $RUN_ALIGNMENT, $RUN_COVERAGE
 );
 
-$DEBUG     = 1;
-$YERBA     = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$DEBUG = 1;
+$|     = 1;    # turn off buffering
+
+$FORM       = new CGI;
+$PAGE_TITLE = "SynMap";
+$PAGE_NAME  = "$PAGE_TITLE.pl";
+
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket'),
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
+);
+
+$YERBA = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
 $ENV{PATH} = join ":",
   (
     $P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR} . "SynMap",
@@ -151,7 +160,6 @@ $DATADIR  = $P->{DATADIR};
 $DIAGSDIR = $P->{DIAGSDIR};
 $FASTADIR = $P->{FASTADIR};
 
-mkpath( $TEMPDIR,     1, 0777 );
 mkpath( $FASTADIR,    1, 0777 );
 mkpath( $DIAGSDIR,    1, 0777 );    # mdb added 7/9/12
 mkpath( $P->{LASTDB}, 1, 0777 );    # mdb added 7/9/12
@@ -186,45 +194,11 @@ $SVG_DOTPLOT = $P->{SVG_DOTPLOT};
 #$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
 #$NWALIGN = $DIR."/bin/nwalign-0.3.0/bin/nwalign";
 $NWALIGN = $P->{NWALIGN};
-$|       = 1;                           # turn off buffering
-$DATE    = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
-$FORM       = new CGI;
-$PAGE_TITLE = "SynMap";
-$PAGE_NAME  = "$PAGE_TITLE.pl";
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
 
 #$ajax{read_log}=\&read_log_test;
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-
-$COOKIE_NAME = $P->{COOKIE_NAME};
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
-
 #print $pj->build_html( $FORM, \&gen_html );
-
 #print "Content-Type: text/html\n\n";print gen_html($FORM);
 
 %FUNCTIONS = (
@@ -302,7 +276,6 @@ sub gen_html {
     $template->param( USER => $name );
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE => $DATE );
 
     #$template->param(ADJUST_BOX=>1);
     $template->param( LOGO_PNG => "SynMap-logo.png" );

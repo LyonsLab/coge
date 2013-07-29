@@ -582,17 +582,17 @@ function export_bed () {
 
 
 
-<div class="dialog_box" id="gc_histogram" title="Histogram of GC Content"><input type=hidden id=feat_gc_min></div>
-<div class="dialog_box" id="wobble_gc_histogram" title="Histogram of Wobble GC Content for CDS"></div>
-<div class="dialog_box" id="wobble_gc_diff_histogram" title="(CDS GC - wobble GC) Content Histogram"></div>
-<div class="dialog_box" id="codon_usage_table" title="Codon Usage Table"></div>
-<div class="dialog_box" id="aa_usage_table" title="Amino Acid Usage Table"></div>
-<div class="dialog_box" id="edit_genome_info" title="Edit Genome Information"></div>
-<div class="dialog_box" id="chromosome_hist" title="Chromosome Size"></div>
+<div class="dialog_box hidden" id="gc_histogram" title="Histogram of GC Content"><input type=hidden id=feat_gc_min></div>
+<div class="dialog_box hidden" id="wobble_gc_histogram" title="Histogram of Wobble GC Content for CDS"></div>
+<div class="dialog_box hidden" id="wobble_gc_diff_histogram" title="(CDS GC - wobble GC) Content Histogram"></div>
+<div class="dialog_box hidden" id="codon_usage_table" title="Codon Usage Table"></div>
+<div class="dialog_box hidden" id="aa_usage_table" title="Amino Acid Usage Table"></div>
+<div class="dialog_box hidden" id="edit_genome_info" title="Edit Genome Information"></div>
+<div class="dialog_box hidden" id="chromosome_hist" title="Chromosome Size"></div>
 
 
 
-<div class="dialog" title="Genome List" id="geno_list">
+<div class="dialog hidden" title="Genome List" id="geno_list">
     <span id=count class="small count">Genome Count: 0</span><br>
              <select id="genomelist_choice" SIZE="10" MULTIPLE >
               <option id=blank value=null>No Genome Selected</option>
@@ -606,7 +606,7 @@ function export_bed () {
     <div id=add_all_search></div>
 </div>
 
-<DIV class="dialog" title="GFF Exporter" id="gff_export">
+<DIV class="dialog hidden" title="GFF Exporter" id="gff_export">
 <table class=small>
  <tr>
    <td>Do not generate features for ncRNA genes (CDS genes only)</td>

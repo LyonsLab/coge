@@ -20,11 +20,13 @@ use POSIX;
 use IPC::System::Simple qw(capture system $EXITVAL EXIT_ANY);
 use Mail::Mailer;
 
+my $conf;    # configuration file default params
+
 BEGIN {
-    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK $Q $cogex $TEMPDIR $BASEDIR);
+    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK $Q $TEMPDIR $BASEDIR);
     require Exporter;
 
-    $BASEDIR = "/opt/apache/CoGe/";
+    $BASEDIR = ( $ENV{HOME} ? $ENV{HOME} : "/opt/apache/CoGe/" );
     $VERSION = 0.1;
     $TEMPDIR = $BASEDIR . "tmp";
     @ISA     = ( @ISA, qw (Exporter) );
@@ -32,14 +34,54 @@ BEGIN {
     #Give a hoot don't pollute, do not export more than needed by default
     @EXPORT = qw ()
       ; #qw (login write_log read_log check_taint check_filename_taint save_settings load_settings reset_settings initialize_basefile);
-
-    #    $cogex = CoGeX->dbconnect();
-    #    $cogex->storage->debugobj(new DBIxProfiler());
-    #    $cogex->storage->debug(1);
     __PACKAGE__->mk_accessors(
         'restricted_orgs', 'basefilename', 'basefile', 'logfile',
         'sqlitefile'
     );
+}
+
+sub init {
+    my ( $self, %opts ) = @_;
+    my $ticket = $opts{ticket};    # optional cas ticket for retrieving user
+    my $url    = $opts{url};       # optional url for cas authentication
+    my $page_title = $opts{page_title};    # optional page title
+
+    # Get config
+    $conf = get_defaults() unless $conf;
+
+    # Connec to DB
+    my $db = CoGeX->dbconnect($conf);
+
+    # Get user
+    my $user;
+    ($user) = CoGe::Accessory::Web->login_cas(
+        ticket   => $ticket,
+        coge     => $db,
+        this_url => $url
+    ) if ($ticket);
+    ($user) = CoGe::Accessory::LogUser->get_user(
+        cookie_name => $conf->{COOKIE_NAME},
+        coge        => $db
+    ) unless $user;
+
+    my $link;
+    if ($page_title) {
+
+        # Make tmp directory
+        my $tempdir = $conf->{TEMPDIR} . $page_title . '/';
+        mkpath( $TEMPDIR, 0, 0777 ) unless -d $tempdir;
+
+        # Get tiny link
+        $link = get_tiny_link(
+            db      => $db,
+            user_id => $user->id,
+            page    => $page_title,
+            url     => 'http://' . $ENV{SERVER_NAME} . $ENV{REQUEST_URI},
+            disable_logging => ( $page_title ? 0 : 1 )
+        );
+    }
+
+    return ( $db, $user, $conf, $link );
 }
 
 sub get_defaults {
@@ -62,6 +104,27 @@ A valid parameter file must be specified or very little will work!};
     }
     close IN;
     return \%items;
+}
+
+sub dispatch {
+    my ( $self, $form, $functions, $default_sub ) = @_;
+    my %args  = $form->Vars;
+    my $fname = $args{'fname'};
+    if ($fname) {
+
+        #my %args = $FORM->Vars;
+        #print STDERR Dumper \%args;
+        if ( $args{args} ) {
+            my @args_list = split( /,/, $args{args} );
+            print $form->header, $functions->{$fname}->(@args_list);
+        }
+        else {
+            print $form->header, $functions->{$fname}->(%args);
+        }
+    }
+    else {
+        print $form->header, $default_sub->();
+    }
 }
 
 sub dataset_search_for_feat_name {

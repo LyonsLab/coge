@@ -3,76 +3,27 @@
 use strict;
 use CGI;
 use CoGeX;
-use DBI;
-use Data::Dumper;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use HTML::Template;
-use JSON::XS;
-use URI::Escape::JavaScript qw(escape unescape);
-use Spreadsheet::WriteExcel;
-use Digest::MD5 qw(md5_base64);
-use DBIxProfiler;
-use File::Path;
-use Sort::Versions;
-use LWP::UserAgent;
-use LWP::Simple;
-use HTTP::Status qw(:constants);
-use File::Listing;
-use File::Copy;
-use XML::Simple;
 no warnings 'redefine';
 
 use vars qw(
-  $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE
-  $TEMPDIR $BINDIR $USER $DATE $COGEDIR $coge $FORM $URL $TEMPURL $COOKIE_NAME
-  %FUNCTION $MAX_SEARCH_RESULTS
-);
-
-my $node_types = CoGeX::node_types();
-
-$P         = CoGe::Accessory::Web::get_defaults("$ENV{HOME}/coge.conf");
-$ENV{PATH} = $P->{COGEDIR};
-$COGEDIR   = $P->{COGEDIR};
-$URL       = $P->{URL};
-$DATE      = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
+  $P $PAGE_TITLE $USER $coge $FORM %FUNCTION $MAX_SEARCH_RESULTS
 );
 
 $PAGE_TITLE = 'GenomeInfo';
 
 $FORM = new CGI;
 
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-$COOKIE_NAME = $P->{COOKIE_NAME};
+my $node_types = CoGeX::node_types();
 
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    ticket   => $cas_ticket,
-    coge     => $coge,
-    this_url => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
-
-$TEMPDIR = $P->{TEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/';
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket'),
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
+);
 
 $MAX_SEARCH_RESULTS = 100;
-
-#$SIG{'__WARN__'} = sub { };    # silence warnings
 
 %FUNCTION = (
     generate_html      => \&generate_html,
@@ -85,23 +36,7 @@ $MAX_SEARCH_RESULTS = 100;
     search_users       => \&search_users,
 );
 
-if ( $FORM->param('jquery_ajax') ) {
-    my %args  = $FORM->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-        die if ( not defined $FUNCTION{$fname} );
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $FORM->header, $FUNCTION{$fname}->(@args_list);
-        }
-        else {
-            print $FORM->header, $FUNCTION{$fname}->(%args);
-        }
-    }
-}
-else {
-    print $FORM->header, "\n", generate_html();
-}
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 
 sub get_genome_info {
     my %opts   = @_;
@@ -494,7 +429,6 @@ sub generate_html {
         HELP       => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl',
         USER       => $name,
         LOGO_PNG   => $PAGE_TITLE . "-logo.png",
-        DATE       => $DATE,
         BODY       => generate_body(),
         ADJUST_BOX => 1
     );

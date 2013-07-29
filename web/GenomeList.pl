@@ -3,67 +3,42 @@
 use strict;
 
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
-
 use CGI;
-use DBI;
-use Data::Dumper;
 use HTML::Template;
-use URI::Escape;
 use Spreadsheet::WriteExcel;
-use Benchmark;
-use Digest::MD5 qw(md5_base64);
-use DBIxProfiler;
-use File::Path;
 no warnings 'redefine';
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME
+use vars qw($P $PAGE_TITLE $PAGE_NAME
   $TEMPDIR $USER $DATE $BASEFILE $COGEDIR $coge $cogeweb
-  $FORM $URL $HISTOGRAM $TEMPURL $COOKIE_NAME %FUNCTION $LIST_TYPE);
+  $FORM $URL $HISTOGRAM $TEMPURL %FUNCTION $LIST_TYPE);
 
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
-$ENV{PATH} = $P->{COGEDIR};
-$COGEDIR   = $P->{COGEDIR};
-$URL       = $P->{URL};
-$DATE      = sprintf(
+$DATE = sprintf(
     "%04d-%02d-%02d %02d:%02d:%02d",
     sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
       ->(localtime)
 );
-$PAGE_NAME = "GenomeList.pl";
+
+$PAGE_TITLE = 'GenomeList';
+$PAGE_NAME  = "$PAGE_TITLE.pl";
+
+$FORM = new CGI;
+
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket'),
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
+);
+
+$TEMPDIR   = $P->{TEMPDIR} . "GenomeList/";
+$TEMPURL   = $P->{TEMPURL} . "GenomeList/";
+$ENV{PATH} = $P->{COGEDIR};
+$COGEDIR   = $P->{COGEDIR};
+$URL       = $P->{URL};
 $HISTOGRAM = $P->{HISTOGRAM};
 
-$TEMPDIR = $P->{TEMPDIR} . "GenomeList/";
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-$TEMPURL = $P->{TEMPURL} . "GenomeList/";
-$FORM    = new CGI;
-$DBNAME  = $P->{DBNAME};
-$DBHOST  = $P->{DBHOST};
-$DBPORT  = $P->{DBPORT};
-$DBUSER  = $P->{DBUSER};
-$DBPASS  = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-$COOKIE_NAME = $P->{COOKIE_NAME};
 $LIST_TYPE =
   $coge->resultset('ListType')->find_or_create( { name => 'genome' } );
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
-
-$SIG{'__WARN__'} = sub { };    #silence warnings
 
 %FUNCTION = (
     gen_html                 => \&gen_html,
@@ -88,29 +63,7 @@ $SIG{'__WARN__'} = sub { };    #silence warnings
     get_gc_for_feature_type  => \&get_gc_for_feature_type,
 );
 
-if ( $FORM->param('jquery_ajax') ) {
-    dispatch();
-}
-else {
-    print $FORM->header, "\n", gen_html();
-}
-
-sub dispatch {
-    my %args  = $FORM->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-
-        #my %args = $cgi->Vars;
-        #print STDERR Dumper \%args;
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $FORM->header, $FUNCTION{$fname}->(@args_list);
-        }
-        else {
-            print $FORM->header, $FUNCTION{$fname}->(%args);
-        }
-    }
-}
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
     my $html;
@@ -717,7 +670,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
   GROUP BY ft.name
 
 };
-    my $dbh = DBI->connect( $connstr, $DBUSER, $DBPASS );
+    my $dbh = $coge->stroage->dbh;  #DBI->connect( $connstr, $DBUSER, $DBPASS );
     my $sth = $dbh->prepare($query);
     $sth->execute;
     my $feats = {};
