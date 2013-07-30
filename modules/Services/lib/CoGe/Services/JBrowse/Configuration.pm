@@ -299,7 +299,7 @@ sub track_config {
             },
 
             # CoGe-specific stuff
-            #onClick         => "ExperimentView.pl?embed=1&eid=$eid",
+            onClick         => "ExperimentView.pl?embed=1&eid=$eid", 
             showHoverScores => 1,
             coge            => {
                 id      => $eid,
@@ -308,6 +308,7 @@ sub track_config {
                     'coge-tracklist-indented', 'coge-tracklist-deletable',
                     'coge-tracklist-info'
                 ],
+		collapsed => 1, #FIXME move into CSS
                 name        => $e->name,
                 description => $e->description,
                 notebooks   => ( @notebooks ? \@notebooks : undef ),
@@ -345,6 +346,7 @@ sub track_config {
                 id   => 0,            # use id of 0 to represent all experiments
                 type => 'notebook',
                 classes     => ['coge-tracklist-collapsible'],
+		collapsed => 1, #FIXME move into CSS
                 name        => 'All Experiments',
                 description => '',
                 count       => keys %all_experiments,
@@ -379,6 +381,7 @@ sub track_config {
                     'coge-tracklist-collapsible', 'coge-tracklist-deletable',
                     'coge-tracklist-info'
                 ],
+		collapsed => 1, #FIXME move into CSS
                 name        => $n->name,
                 description => $n->description,
                 editable    => $USER->is_admin
