@@ -1286,15 +1286,12 @@ sub get_query_link {
         log_msg => $log_msg
     );
 
-    my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
-    my $workflow_id = "synmap-$dir1-$dir2";
     my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
-    $workflow_id .= "-$tiny_id";
 
     return encode_json(
         {
             link    => $tiny_link,
-            request => "/jex/synmap/status/$workflow_id",
+            request => "/jex/synmap/status/synmap-$tiny_id",
         }
     );
 }
@@ -1346,7 +1343,7 @@ sub go {
     );
 
     my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
-    my $workflow_id .= "-$tiny_id";
+    my $workflow_id = "synmap-$tiny_id";
 
     my $basename = $opts{basename};
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(
@@ -1500,7 +1497,7 @@ sub go {
     #        #}
     #    }
     $workflow = $YERBA->create_workflow(
-        name    => "synmap-$workflow_id",
+        name    => $workflow_id,
         logfile => $cogeweb->logfile
     );
 
