@@ -2522,6 +2522,12 @@ sub get_results {
           },
     );
 
+    foreach my $org_dir ( keys %org_dirs ) {
+        my $outfile = $org_dirs{$org_dir}{dir};
+        $outfile .= "/" . $org_dirs{$org_dir}{basename};
+        $org_dirs{$org_dir}{blastfile} = $outfile;    #.".blast";
+    }
+
     ############################################################################
     # Run Blast
     ############################################################################
