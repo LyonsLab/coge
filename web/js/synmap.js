@@ -157,13 +157,21 @@ function run_synmap(scheduled){
         read_log(pageObj.basename, pageObj.tempdir);
     };
 
-    var start_callback = function(tiny_link) {
+    var start_callback = function(tiny_link, status_request) {
         pageObj.nolog=1;
 
-        setTimeout(readlog_callback, duration);
+        close_dialog();
+        $('#synmap_dialog').dialog('open');
+
+        update_dialog_callback = function() {
+            update_dialog(status_request, "#synmap_dialog", synmap_formatter);
+        }
+
+        setTimeout(update_dialog_callback, duration);
+
         argument_list.fname = 'go';
         argument_list.tiny_link = tiny_link;
-        $('#synmap_dialog').dialog('open');
+
         $.ajax({
             url: request,
             data: argument_list,
@@ -171,31 +179,28 @@ function run_synmap(scheduled){
                 handle_results(data);
             }
         });
-    }
 
+    };
 
     argument_list.fname = 'get_query_link';
+
     $.ajax({
         url: request,
-        dataType: 'text',
+        dataType: 'json',
         data: argument_list,
         success: function(data) {
-            var link = "Return to this analysis: <a href=" + data + " onclick=window.open('tiny')"
-            + "target = _new>" + data + "</a>";
+            var link = "Return to this analysis: <a href=" + data.link + " onclick=window.open('tiny')"
+            + "target = _new>" + data.link + "</a>";
             var logfile = '<a href="tmp/SynMap/'
             + pageObj.basename + '.log">Logfile</a>';
 
             $('#results').hide(0);
-            $('#synmap_file').html(logfile);
+            $('#dialog_log').html(logfile);
             $('#synmap_link').html(link);
 
-            start_callback (data);
+            start_callback(data.link, data.request);
         }
     });
-}
-
-function cancel_synmap() {
-    $('#synmap_dialog').dialog('close');
 }
 
 function read_log(name, dir, callback) {

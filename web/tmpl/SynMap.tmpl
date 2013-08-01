@@ -27,7 +27,7 @@
                 <span class="alert">Please Note:</span>
             </li>
 
-            <li>SynMap is a very computationally intense, multi-step program which may take hours to complete for large genomes.<br>If available, select previously run parameter-sets for your organisms to see results instantly.
+            <li>SynMap is a very computationally intense, multi-step program which may take hours to complete for large genomes.<br>If available, select previously run parameter-sets for your organisms to see esults instantly.
             </li>
         </ul>
 
@@ -450,21 +450,35 @@
 </section>
 
 <div id="synmap_dialog" class="dialog_box" title="Running SynMap ..." style="display:none;">
-    <ul>
-        <li id="synmap_log" class="small ui-widget-content ui-corner-all inline" style="overflow-y:auto;width:450px;height:200px;color:dimgray;padding: 5px;">
-        </li>
+    <div id="text" class="small ui-widget-content ui-corner-all inline" style="overflow-y:auto;width:450px;height:200px;color:dimgray;padding: 5px;">
+    </div>
 
-        <li id="synmap_link" class="small inline" style="display:inline-block;">
-        </li>
-
-        <li style="display:inline-block; margin-top: 10px; text-align:right;">
-            <span class="ui-button ui-button-stop ui-corner-all small" id="synmap_cancel" onClick="cancel_synmap();" >
+    <ul id="dialog_error" class="horizontal padded hidden">
+        <li id="error_msg">An error occurred <img src="picts/thumbs_down.png"></li>
+        <li id="dialog_log" class="small"></li>
+        <li id="cancel_button" class="ui-button ui-corner-all ui-button-go r">
+            <span onClick="close_dialog(); load_results();" >
                 Cancel
             </span>
         </li>
+    </ul>
 
-        <li id="synmap_file" class="small" style="clear:both;width:450px;color:dimgray;">
+    <ul id="dialog_success" class="horizontal padded hidden">
+        <li id="finished_msg">
+            Finished! <img src="picts/thumbs_up.png">
         </li>
+        <li id="ok_button" class="ui-button ui-corner-all r">
+            <span onClick="close_dialog(); load_results();" >
+                OK
+            </span>
+        </li>
+    </ul>
+
+    <ul id="progress" class="padded">
+        <li>
+            <span id="loading_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
+        </li>
+        <li id="synmap_link" class="small" style="color:dimgray;"></li>
     </ul>
 </div>
 </tmpl_if>
@@ -537,5 +551,4 @@ $(document).ready(function(){
         run_synmap(autogo);
     }
  });
-
 </script>
