@@ -923,6 +923,10 @@ th {
     text-align: center;
 }
 
+.completed {
+    color: #009933;
+}
+
 .top {
     vertical-align: top;
 }

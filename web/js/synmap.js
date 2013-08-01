@@ -517,7 +517,7 @@ function synmap_formatter(item) {
         job_status.addClass('bold');
     } else if (item.status == 'completed') {
         job_status.append(item.status);
-        job_status.addClass('down');
+        job_status.addClass('completed');
         job_status.addClass('bold');
     } else if (item.status == 'running') {
         job_status.append(item.status);
@@ -580,8 +580,8 @@ function update_dialog(request, identifier, formatter) {
         }
 
         if (json.status) {
-            workflow_status.html("The workflow is " + json.status);
             current_status = json.status.toLowerCase();
+            workflow_status.html("Workflow status: " + json.status);
         }
 
         if (current_status == "completed") {
