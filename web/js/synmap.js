@@ -56,6 +56,7 @@ function populate_page_obj(basefile) {
     pageObj.basename = basefile;
     pageObj.nolog = 0;
     pageObj.waittime = 1000;
+    pageObj.runtime = 0;
 }
 
 function run_synmap(scheduled){
@@ -547,8 +548,6 @@ function synmap_formatter(item) {
 }
 
 function update_dialog(request, identifier, formatter) {
-    var timeout = pageObj.waittime;
-
     var get_status = function () {
         $.ajax({
             type: 'GET',
@@ -560,12 +559,32 @@ function update_dialog(request, identifier, formatter) {
         });
     };
 
+
+    var get_poll_rate = function() {
+        pageObj.runtime += 1;
+
+        if (pageObj.runtime <= 5) {
+            return 1000;
+        } else if (pageObj.runtime <= 60) {
+            return 2000;
+        } else if (pageObj.runtime <= 300) {
+            return 5000;
+        } else if (pageObj.runtime <= 1800) {
+            return 30000;
+        } else if (pageObj.runtime <= 10800) {
+            return 60000;
+        } else {
+            return 300000;
+        }
+    };
+
     var update_callback = function(json) {
         var dialog = $(identifier);
         var workflow_status = $("<p></p>");
         var data = $("<ul></ul>");
         var results = [];
         var current_status;
+        var timeout = get_poll_rate();
 
         var callback = function() {
             update_dialog(request, identifier, formatter);
