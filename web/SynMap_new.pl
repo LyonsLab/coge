@@ -1330,7 +1330,6 @@ sub go {
 "<span class=alert>Problem generating one of the genome objects for id1: $dsgid1 or id2: $dsgid2</span>";
     }
     my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
-    my $workflow_id = "$dir1-$dir2";
 
     ############################################################################
     # Initialize Jobs
@@ -1347,7 +1346,7 @@ sub go {
     );
 
     my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
-    $workflow_id .= "-$tiny_id";
+    my $workflow_id .= "-$tiny_id";
 
     my $basename = $opts{basename};
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(
@@ -1383,7 +1382,8 @@ sub go {
 
     #$dagchainer_type = $dagchainer_type eq "true" ? "geneorder" : "distance";
 
-#   my $repeat_filter_cvalue = $opts{c};              #parameter to be passed to run_adjust_dagchainer_evals
+    #my $repeat_filter_cvalue = $opts{c};
+    ##parameter to be passed to run_adjust_dagchainer_evals
 
     #c-score for filtering low quality blast hits, fed to blast to raw
     my $cscore = $opts{csco};
@@ -1477,7 +1477,6 @@ sub go {
     ############################################################################
     # Generate Fasta files
     ############################################################################
-    my $t0 = new Benchmark;
     my ( $fasta1, $fasta2 );
     my $workflow = undef;
     my $status   = undef;
@@ -1622,8 +1621,6 @@ sub go {
         push @blastdb_files, $blastdb;
     }
 
-    my ($html, $warn);
-
     my ( $orgkey1, $orgkey2 ) = ( $title1, $title2 );
     my %org_dirs = (
         $orgkey1 . "_"
@@ -1699,9 +1696,6 @@ sub go {
         $cogeweb->logfile
     );
 
-    my $t1 = new Benchmark;
-    my $blast_time = timestr( timediff( $t1, $t0 ) );
-
     ###########################################################################
     # Converting blast to bed and finding local duplications
     ###########################################################################
@@ -1710,7 +1704,6 @@ sub go {
     # filter it and creating a new rawblast and moving the old to
     # rawblast.orig
     #
-    my $t2          = new Benchmark;
     my $query_bed   = $raw_blastfile . ".q.bed";
     my $subject_bed = $raw_blastfile . ".s.bed";
 
@@ -1745,10 +1738,6 @@ sub go {
     $filtered_blastfile .= ".tdd$dupdist";
     $filtered_blastfile .= ".cs$cscore" if $cscore < 1;
     $filtered_blastfile .= ".filtered";
-
-    if ($cscore == 1) {
-        $warn = 'Please choose a cscore less than 1 (cscore defaulted to 0).';
-    }
 
     my @rawargs = ();
     push @rawargs, [ "", $raw_blastfile, 1 ];
@@ -1791,7 +1780,6 @@ sub go {
  #         . $dsgid1 . "_"
  #         . $dsgid2
  #         . ".$feat_type1-$feat_type2");
-    my $local_dup_time = timestr( timediff( $t2, $t1 ) );
 
     ############################################################################
     # Run dag tools - Prepares DAG for syntenic analysis.
@@ -1828,9 +1816,6 @@ sub go {
     CoGe::Accessory::Web::write_log(
         "Added convertion of blast file to dagchainer input file",
         $cogeweb->logfile );
-
-    my $t2_5 = new Benchmark;
-    my $dag_tool_time = timestr( timediff( $t2_5, $t2 ) );
 
     ############################################################################
     # Convert to gene order
@@ -1870,9 +1855,6 @@ sub go {
         $all_file = $dag_file12_all;
     }
 
-    my $t3 = new Benchmark;
-    my $convert_to_gene_order_time = timestr( timediff( $t3, $t2_5 ) );
-
  #B Pedersen's program for automatically adjusting the evals in the dag file to
  # remove bias from local gene duplicates and transposons
  #   $dag_file12 .= "_c" . $repeat_filter_cvalue;
@@ -1883,8 +1865,6 @@ sub go {
  #   cvalue => $repeat_filter_cvalue );
  #   CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
  #   CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-
-    my $t3_5 = new Benchmark;
 
     # This step will fail if the dag_file_all is larger than the system memory
     # limit. If this file does not exist, let's send a warning to the log file
@@ -1901,7 +1881,6 @@ sub go {
             $cogeweb->logfile
         );
     }
-    my $run_adjust_eval_time = timestr( timediff( $t3_5, $t3 ) );
 
     ############################################################################
     # Run dagchainer
@@ -1984,16 +1963,10 @@ sub go {
             $cogeweb->logfile );
     }
 
-    my $t4 = new Benchmark;
-    my $run_dagchainer_time = timestr( timediff( $t4, $t3_5 ) );
-
     ############################################################################
     # Run quota align merge
     ############################################################################
-    my (
-        $find_nearby_time,    $gen_ks_db_time, $dotplot_time,
-        $add_gevo_links_time, $final_results_files
-    );
+    my $final_results_files;
 
     #id 1 is to specify quota align as a merge algo
     if ( $merge_algo == 1 ) {
@@ -2039,9 +2012,6 @@ sub go {
     #    dag_all_file => $all_file,
     #    outfile      => $post_dagchainer_file_w_nearby
     #);    #program is not working correctly.
-
-    my $t5 = new Benchmark;
-    $find_nearby_time = timestr( timediff( $t5, $t4 ) );
 
     ############################################################################
     # Run quota align coverage
@@ -2213,14 +2183,9 @@ sub go {
                 $cogeweb->logfile );
         }
         else {
-            $warn = "Unable to calculate Ks or Kn values due to at least"
-              . " one genome lacking CDS features.";
             $ks_type = undef;
         }
     }
-
-    my $t6 = new Benchmark;
-    $gen_ks_db_time = timestr( timediff( $t6, $t5 ) );
 
     ############################################################################
     # Generate dot plot
@@ -2361,24 +2326,15 @@ sub get_results {
 "<span class=alert>Problem generating one of the genome objects for id1: $dsgid1 or id2: $dsgid2</span>";
     }
     my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
-    my $workflow_id = "$dir1-$dir2";
 
     ############################################################################
-    # Initialize Jobs
+    # Initialize Job info
     ############################################################################
-
     my $tiny_link = $opts{tiny_link};
     say STDERR "tiny_link is required for logging." unless defined($tiny_link);
 
-    my $job = CoGe::Accessory::Web::get_job(
-        tiny_link => $tiny_link,
-        title     => $PAGE_TITLE,
-        user_id   => $USER->id,
-        db_object => $coge
-    );
-
     my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
-    $workflow_id .= "-$tiny_id";
+    my $workflow_id .= "-$tiny_id";
 
     my $basename = $opts{basename};
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(
@@ -2500,7 +2456,6 @@ sub get_results {
     ############################################################################
     # Generate Fasta files
     ############################################################################
-    my $t0 = new Benchmark;
     my ( $fasta1, $fasta2 );
     my $workflow = undef;
     my $status   = undef;
@@ -2566,14 +2521,6 @@ sub get_results {
             dir => "$DIAGSDIR/$dir1/$dir2",
           },
     );
-
-    foreach my $org_dir ( keys %org_dirs ) {
-        my $outfile = $org_dirs{$org_dir}{dir};
-        mkpath( $outfile, 0, 0777 ) unless -d $outfile;
-        warn "didn't create path $outfile: $!" unless -d $outfile;
-        $outfile .= "/" . $org_dirs{$org_dir}{basename};
-        $org_dirs{$org_dir}{blastfile} = $outfile;    #.".blast";
-    }
 
     ############################################################################
     # Run Blast
@@ -2854,7 +2801,6 @@ sub get_results {
     $warn .= qq{Unable to display the y-axis.} unless -r $y_label;
     $warn .= qq{Unable to display the x-axis.} unless -r $x_label;
 
-    my $t8 = new Benchmark;
     my $problem;
 
     if ( -r "$out.html" ) {
