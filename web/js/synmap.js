@@ -554,7 +554,9 @@ function update_dialog(request, identifier, formatter) {
             type: 'GET',
             url: request,
             dataType: 'json',
-            success: update_callback
+            success: update_callback,
+            error: update_callback,
+            fail: update_callback
         });
     };
 
@@ -569,6 +571,13 @@ function update_dialog(request, identifier, formatter) {
             update_dialog(request, identifier, formatter);
         }
 
+        if (json.status) {
+            current_status = json.status.toLowerCase();
+            workflow_status.html("Workflow status: " + json.status);
+        } else {
+            setTimeout(callback, timeout);
+        }
+
         if (json.jobs) {
             var jobs = json.jobs;
             for (var index = 0; index < jobs.length; index++) {
@@ -579,10 +588,6 @@ function update_dialog(request, identifier, formatter) {
             }
         }
 
-        if (json.status) {
-            current_status = json.status.toLowerCase();
-            workflow_status.html("Workflow status: " + json.status);
-        }
 
         if (current_status == "completed") {
             dialog.find('#progress').hide();
