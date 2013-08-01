@@ -157,7 +157,7 @@ sub get_history_for_user {
                     user_id => $USER->id,
 
                     #{ description => { 'not like' => 'page access' } }
-                    { type => { '!=' => 0 } }
+                    type => { '!=' => 0 }
                 },
                 { order_by => { -desc => 'time' } }
             );
