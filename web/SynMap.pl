@@ -332,13 +332,14 @@ sub gen_body {
         $template->param( $ALGO_LOOKUP->{6}{opt} => "selected" );
     }
     my ( $D, $A, $Dm, $gm, $dt, $dupdist, $cscore );
-    $D       = $FORM->param('D');
-    $A       = $FORM->param('A');
-    $Dm      = $FORM->param('Dm');
-    $gm      = $FORM->param('gm');
-    $gm      = 40 unless defined $gm;
-    $dt      = $FORM->param('dt');
-    $cscore  = $FORM->param('csco');
+    $D  = $FORM->param('D');
+    $A  = $FORM->param('A');
+    $Dm = $FORM->param('Dm');
+    $gm = $FORM->param('gm');
+    $gm //= 40;
+    $dt     = $FORM->param('dt');
+    $cscore = $FORM->param('csco');
+    $cscore //= 0;
     $dupdist = $FORM->param('tdd');
 
 #   $cvalue = $FORM->param('c');       #different c value than the one for cytology.  But if you get that, you probably shouldn't be reading this code
@@ -366,7 +367,7 @@ sub gen_body {
     #   $template->param( 'CVALUE'                      => $cvalue );
     $dupdist = 10 unless defined $dupdist;
     $template->param( 'DUPDIST' => $dupdist );
-    $template->param( 'CSCORE' => $cscore ) if defined $cscore;
+    $template->param( 'CSCORE'  => $cscore );
     $template->param(
         'DISPLAY_DAGCHAINER_SETTINGS' => $display_dagchainer_settings );
     $template->param( 'MIN_CHR_SIZE' => $FORM->param('mcs') )
