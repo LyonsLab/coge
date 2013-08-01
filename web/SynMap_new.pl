@@ -1621,7 +1621,7 @@ sub go {
         push @blastdb_files, $blastdb;
     }
 
-    my $html;
+    my ($html, $warn);
 
     my ( $orgkey1, $orgkey2 ) = ( $title1, $title2 );
     my %org_dirs = (
@@ -1743,8 +1743,12 @@ sub go {
     ###########################################################################
     my $filtered_blastfile = $raw_blastfile;
     $filtered_blastfile .= ".tdd$dupdist";
-    $filtered_blastfile .= ".cs$cscore" if $cscore;
+    $filtered_blastfile .= ".cs$cscore" if $cscore < 1;
     $filtered_blastfile .= ".filtered";
+
+    if ($cscore == 1) {
+        $warn = 'Please choose a cscore less than 1 (cscore defaulted to 0).';
+    }
 
     my @rawargs = ();
     push @rawargs, [ "", $raw_blastfile, 1 ];
@@ -1752,7 +1756,7 @@ sub go {
     push @rawargs, [ "--qbed",        $query_bed,          1 ];
     push @rawargs, [ "--sbed",        $subject_bed,        1 ];
     push @rawargs, [ "--tandem_Nmax", $dupdist,            1 ];
-    push @rawargs, [ "--cscore",      $cscore,             1 ] if $cscore;
+    push @rawargs, [ "--cscore",      $cscore,             1 ] if $cscore < 1;
     push @rawargs, [ ">",             $filtered_blastfile, 1 ];
 
     my @rawoutputs = ();
@@ -2149,7 +2153,7 @@ sub go {
     ############################################################################
     # KS Calculations (Slow and needs to be optimized)
     ############################################################################
-    my ( $ks_db, $ks_blocks_file, $svg_file, $warn );
+    my ( $ks_db, $ks_blocks_file, $svg_file );
 
     if ($ks_type) {
         my $check_ks = $final_dagchainer_file =~ /^(.*?CDS-CDS)/;
