@@ -893,6 +893,10 @@ li {
     vertical-align: top;
 }
 
+.right {
+    text-align: right;
+}
+
 .left {
     text-align: left;
 }
@@ -917,5 +921,9 @@ th {
     font-size: 1.25em;
     font-weight: normal;
     text-align: center;
+}
+
+.top {
+    vertical-align: top;
 }
 
