@@ -490,6 +490,108 @@ function reset_basename(){
 	if(pageObj.basename) pageObj.basename=0;
 }
 
+function synmap_formatter(item) {
+    var msg;
+    var row = $('<li>'+ item.description + '</li>');
+    row.addClass('small');
+
+    var job_status = $('<span></span>');
+
+    if (item.status == 'scheduled') {
+        job_status.append(item.status);
+        job_status.addClass('down');
+        job_status.addClass('bold');
+    } else if (item.status == 'completed') {
+        job_status.append(item.status);
+        job_status.addClass('down');
+        job_status.addClass('bold');
+    } else if (item.status == 'running') {
+        job_status.append(item.status);
+        job_status.addClass('down');
+        job_status.addClass('bold');
+    } else if (item.status == 'skipped') {
+        job_status.append(item.status);
+        job_status.addClass('down');
+        job_status.addClass('bold');
+    } else if (item.status == 'failed') {
+        job_status.append(item.status);
+        job_status.addClass('alert');
+        job_status.addClass('bold');
+    } else {
+        return;
+    }
+
+    row.append(job_status);
+
+    /*
+    if (item.status == "skipped") {
+        row.append("<p>The analyses previously was generated</p>");
+    }
+    */
+
+    return row;
+}
+
+function update_dialog(request, identifier, formatter) {
+    var timeout = pageObj.waittime;
+
+    var get_status = function () {
+        $.ajax({
+            type: 'GET',
+            url: request,
+            dataType: 'json',
+            success: update_callback
+        });
+    };
+
+    var update_callback = function(json) {
+        var dialog = $(identifier);
+        var workflow_status = $("<p></p>");
+        var data = $("<ul></ul>");
+        var results = [];
+        var current_status;
+
+        var callback = function() {
+            update_dialog(request, identifier, formatter);
+        }
+
+        if (json.jobs) {
+            var jobs = json.jobs;
+            for (var index = 0; index < jobs.length; index++) {
+                var item = formatter(jobs[index]);
+                if (item) {
+                    results.push(item);
+                }
+            }
+        }
+
+        if (json.status) {
+            workflow_status.html("The workflow is " + json.status);
+            current_status = json.status.toLowerCase();
+        }
+
+        if (current_status == "completed") {
+            dialog.find('#progress').hide();
+            dialog.find('#dialog_success').slideDown();
+        } else if (current_status == "failed" || current_status == "error"
+                || current_status == "terminated") {
+            dialog.find('#progress').hide();
+            dialog.find('#dialog_error').slideDown();
+        } else if (current_status == "notfound") {
+            setTimeout(callback, timeout);
+            return;
+        } else {
+            setTimeout(callback, timeout);
+        }
+
+        results.push(workflow_status);
+        data.append(results);
+        dialog.find('#text').html(data);
+    };
+
+    get_status();
+}
+
 function monitor_log(log)
 {
     var waittime = pageObj.waittime;
