@@ -212,20 +212,29 @@ function read_log(name, dir, callback) {
     });
 }
 
-function handle_results(val){
-
-    if($('#synmap_dialog').dialog('isOpen')) {
-        $('#intro').hide();
-        $('#synmap_dialog').dialog('close');
-        $('#log_text').hide(0);
-        $('#results').html(val);
-
-        $('#results').fadeIn();
-
-        $(function() {$("#synmap_zoom_box").draggable();});
-        setup_button_states();
-        ajax_wait("check_previous_analyses();");
+function close_dialog() {
+    var dialog_window = $('#synmap_dialog');
+    if(dialog_window.dialog('isOpen')) {
+        dialog_window.dialog('close');
     }
+
+    dialog_window.find('#text').html('');
+    dialog_window.find('#progress').show();
+    dialog_window.find('#dialog_error').hide();
+    dialog_window.find('#dialog_success').hide();
+}
+
+function load_results() {
+    $('#intro').hide();
+    $('#log_text').hide();
+    $('#results').fadeIn();
+}
+
+function handle_results(val){
+    $('#results').html(val);
+    $(function() {$("#synmap_zoom_box").draggable();});
+    setup_button_states();
+    ajax_wait("check_previous_analyses();");
 }
 
 function check_previous_analyses(){
@@ -700,7 +709,7 @@ function monitor_log(log)
     if (pageObj.finished == 0 && pageObj.waittime > 3) {
     }
 
-    if (message) $('#synmap_log').html(message);
+    if (message) $('#text').html(message);
 }
 
 function synteny_zoom(dsgid1, dsgid2, basename, chr1, chr2, ksdb) {
