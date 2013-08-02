@@ -97,27 +97,6 @@ elsif ( $data_type == $DATA_TYPE_VCF ) {
     print $log "log: Detected a VCF variant file\n";
 }
 
-# Validate the data file
-print $log "log: Validating data file\n";
-my $count = 0;
-my $pChromosomes;
-my $data_spec;
-if ( $data_type == $DATA_TYPE_QUANT ) {
-    ( $data_file, $data_spec, $count, $pChromosomes ) =
-      validate_quant_data_file($data_file);
-}
-elsif ( $data_type == $DATA_TYPE_VCF ) {
-    ( $data_file, $data_spec, $count, $pChromosomes ) =
-      validate_vcf_data_file($data_file);
-}
-if ( not $count ) {
-    print $log "log: error: file contains no data\n";
-    exit(-1);
-}
-
-my ($filename) = $data_file =~ /^.+\/([^\/]+)$/;
-print $log "log: Successfully read " . commify($count) . " lines\n";
-
 # Connect to database
 my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
 my $coge = CoGeX->connect( $connstr, $user, $pass );
@@ -133,8 +112,31 @@ unless ($genome) {
     exit(-1);
 }
 
-# Verify that chromosome names in input file match those for genome
 my %genome_chr = map { $_ => 1 } $genome->chromosomes;
+
+# Validate the data file
+print $log "log: Validating data file\n";
+my $count = 0;
+my $pChromosomes;
+my $data_spec;
+if ($data_type == $DATA_TYPE_QUANT) {
+	($data_file, $data_spec, $count, $pChromosomes) = validate_quant_data_file(file=>$data_file, genome_chr=>\%genome_chr);
+}
+elsif ($data_type == $DATA_TYPE_VCF) {
+	($data_file, $data_spec, $count, $pChromosomes) = validate_vcf_data_file(file=>$data_file, genome_chr=>\%genome_chr);
+}
+if (not $count) {
+	print $log "log: error: file contains no data\n";
+	exit(-1);
+}
+
+my ($filename) = $data_file =~ /^.+\/([^\/]+)$/;
+print $log "log: Successfully read " . commify($count) . " lines\n";
+
+
+
+# Verify that chromosome names in input file match those for genome
+
 foreach ( sort keys %genome_chr ) {
     print $log "genome chromosome $_\n";
 }
@@ -309,7 +311,10 @@ sub detect_data_type {
 }
 
 sub validate_quant_data_file {
-    my $filepath = shift;
+    my %opts = @_;
+    my $filepath = $opts{file};
+    my $genome_chr = $opts{genome_chr};
+
 
     my %chromosomes;
     my $line_num = 1;
@@ -373,6 +378,17 @@ sub validate_quant_data_file {
         $chr =~ s/\s+/ /;
         $chr =~ s/^\s//;
         $chr =~ s/\s$//;
+	#hack to deal with converting chloroplast and mitochondia to C and M if needed
+		if ($chr =~/^chloroplast$/i && !$genome_chr->{$chr} && $genome_chr->{"C"})
+		  {
+		    $chr = "C";
+		  }
+		if ($chr =~/^mitochondria$/i && !$genome_chr->{$chr} && $genome_chr->{"M"})
+		  {
+		    $chr = "M";
+		  }
+		##end hack
+
 
         if ( not $chr ) {
             print $log
@@ -394,7 +410,9 @@ sub validate_quant_data_file {
 
 # For VCF format specification v4.1, see http://www.1000genomes.org/node/101
 sub validate_vcf_data_file {
-    my $filepath = shift;
+    my %opts = @_;
+  my $filepath = $opts{file};
+  my $genome_chr = $opts{genome_chr};
 
     my %chromosomes;
     my $line_num = 1;
@@ -446,11 +464,23 @@ sub validate_vcf_data_file {
         $chr =~ s/\s+/ /;
         $chr =~ s/^\s//;
         $chr =~ s/\s$//;
-        if ( not $chr ) {
-            print $log
-              "log: error at line $line_num: trouble parsing chromosome\n";
-            return;
-        }
+        #hack to deal with converting chloroplast and mitochondia to C and M if needed
+		if ($chr =~/^chloroplast$/i && !$genome_chr->{$chr} && $genome_chr->{"C"})
+		  {
+		    $chr = "C";
+		  }
+		if ($chr =~/^mitochondria$/i && !$genome_chr->{$chr} && $genome_chr->{"M"})
+		  {
+		    $chr = "M";
+		  }
+		#end hack
+
+		if (not $chr) {
+			print $log "log: error at line $line_num: trouble parsing chromosome\n";
+			return;
+		}
+
+
         $chromosomes{$chr}++;
 
         # Each line could encode multiple alleles

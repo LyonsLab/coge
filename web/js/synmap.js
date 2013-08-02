@@ -56,6 +56,8 @@ function populate_page_obj(basefile) {
     pageObj.basename = basefile;
     pageObj.nolog = 0;
     pageObj.waittime = 1000;
+    pageObj.runtime = 0;
+    pageObj.error = 0;
 }
 
 function run_synmap(scheduled){
@@ -157,45 +159,99 @@ function run_synmap(scheduled){
         read_log(pageObj.basename, pageObj.tempdir);
     };
 
-    var start_callback = function(tiny_link) {
+    var start_callback = function(tiny_link, status_request) {
         pageObj.nolog=1;
-
-        setTimeout(readlog_callback, duration);
         argument_list.fname = 'go';
         argument_list.tiny_link = tiny_link;
-        $('#synmap_dialog').dialog('open');
+
+        update_dialog_callback = function(data) {
+            if (data.status == 'Attached' || data.status == 'Scheduled') {
+                close_dialog();
+                $('#synmap_dialog').dialog('open');
+                update_dialog(status_request, "#synmap_dialog", synmap_formatter,
+                        argument_list);
+            }
+        }
+
         $.ajax({
             url: request,
             data: argument_list,
-            success: function(data) {
-                handle_results(data);
-            }
+            dataType: 'json',
+            success: update_dialog_callback,
         });
-    }
-
+    };
 
     argument_list.fname = 'get_query_link';
+
     $.ajax({
         url: request,
-        dataType: 'text',
+        dataType: 'json',
         data: argument_list,
         success: function(data) {
-            var link = "Return to this analysis: <a href=" + data + " onclick=window.open('tiny')"
-            + "target = _new>" + data + "</a>";
+            var link = "Return to this analysis: <a href=" + data.link + " onclick=window.open('tiny')"
+            + "target = _new>" + data.link + "</a>";
             var logfile = '<a href="tmp/SynMap/'
             + pageObj.basename + '.log">Logfile</a>';
 
-            $('#results').hide(0);
-            $('#synmap_file').html(logfile);
+            jQuery('html, body').animate({scrollTop: 0}, 1000);
+            $('#results').hide();
+            $('#dialog_log').html(logfile);
             $('#synmap_link').html(link);
 
-            start_callback (data);
+            start_callback(data.link, data.request);
         }
     });
 }
 
-function cancel_synmap() {
-    $('#synmap_dialog').dialog('close');
+function fetch_arguments() {
+    var dagchainer = $('#dagchainer_type').filter(':checked');
+    var argument_list = {
+        tdd: $('#tdd').val(),
+        D: $('#D').val(),
+        A: $('#A').val(),
+        gm: $('#gm').val(),
+        Dm: $('#Dm').val(),
+        blast: $('#blast').val(),
+        feat_type1: $('#feat_type1').val(),
+        feat_type2: $('#feat_type2').val(),
+        dsgid1: $('#dsgid1').val(),
+        dsgid2: $('#dsgid2').val(),
+        jobtitle: $('#jobtitle').val(),
+        basename: pageObj.basename,
+        email: $('#email').val(),
+        regen_images: $('#regen_images')[0].checked,
+        width: $('#master_width').val(),
+        dagchainer_type: dagchainer.val(),
+        ks_type: $('#ks_type').val(),
+        assemble: $('#assemble')[0].checked,
+        axis_metric: $('#axis_metric').val(),
+        axis_relationship: $('#axis_relationship').val(),
+        min_chr_size: $('#min_chr_size').val(),
+        spa_ref_genome: $('#spa_ref_genome').val(),
+        show_non_syn: $('#show_non_syn')[0].checked,
+        color_type: $('#color_type').val(),
+        box_diags: $('#box_diags')[0].checked,
+        merge_algo: $('#merge_algo').val(),
+        depth_algo: $('#depth_algo').val(),
+        depth_org_1_ratio: $('#depth_org_1_ratio').val(),
+        depth_org_2_ratio: $('#depth_org_2_ratio').val(),
+        depth_overlap: $('#depth_overlap').val(),
+        fid1: pageObj.fid1,
+        fid2: pageObj.fid2,
+        show_non_syn_dots: $('#show_non_syn_dots')[0].checked,
+        flip: $('#flip')[0].checked,
+        clabel: $('#clabel')[0].checked,
+        skip_rand: $('#skiprand')[0].checked,
+        color_scheme: $('#color_scheme').val(),
+        chr_sort_order: $('#chr_sort_order').val(),
+        codeml_min: $('#codeml_min').val(),
+        codeml_max: $('#codeml_max').val(),
+        logks: $('#logks')[0].checked,
+        csco: $('#csco').val(),
+        jquery_ajax: 1,
+    };
+
+    return argument_list;
 }
 
 function read_log(name, dir, callback) {
@@ -212,20 +268,29 @@ function read_log(name, dir, callback) {
     });
 }
 
-function handle_results(val){
-
-    if($('#synmap_dialog').dialog('isOpen')) {
-        $('#intro').hide();
-        $('#synmap_dialog').dialog('close');
-        $('#log_text').hide(0);
-        $('#results').html(val);
-
-        $('#results').fadeIn();
-
-        $(function() {$("#synmap_zoom_box").draggable();});
-        setup_button_states();
-        ajax_wait("check_previous_analyses();");
+function close_dialog() {
+    var dialog_window = $('#synmap_dialog');
+    if(dialog_window.dialog('isOpen')) {
+        dialog_window.dialog('close');
     }
+
+    dialog_window.find('#text').html('');
+    dialog_window.find('#progress').show();
+    dialog_window.find('#dialog_error').hide();
+    dialog_window.find('#dialog_success').hide();
+}
+
+function load_results() {
+    $('#intro').hide();
+    $('#log_text').hide();
+    $('#results').fadeIn();
+}
+
+function handle_results(val){
+    $('#results').html(val);
+    $(function() {$("#synmap_zoom_box").draggable();});
+    setup_button_states();
+    ajax_wait("check_previous_analyses();");
 }
 
 function check_previous_analyses(){
@@ -490,6 +555,156 @@ function reset_basename(){
 	if(pageObj.basename) pageObj.basename=0;
 }
 
+function synmap_formatter(item) {
+    var msg;
+    var row = $('<li>'+ item.description + ' </li>');
+    row.addClass('small');
+
+    var job_status = $('<span></span>');
+
+    if (item.status == 'scheduled') {
+        job_status.append(item.status);
+        job_status.addClass('down');
+        job_status.addClass('bold');
+    } else if (item.status == 'completed') {
+        job_status.append(item.status);
+        job_status.addClass('completed');
+        job_status.addClass('bold');
+    } else if (item.status == 'running') {
+        job_status.append(item.status);
+        job_status.addClass('down');
+        job_status.addClass('bold');
+    } else if (item.status == 'skipped') {
+        job_status.append(item.status);
+        job_status.addClass('skipped');
+        job_status.addClass('bold');
+    } else if (item.status == 'failed') {
+        job_status.append(item.status);
+        job_status.addClass('alert');
+        job_status.addClass('bold');
+    } else {
+        return;
+    }
+
+    row.append(job_status);
+
+    /*
+    if (item.status == "skipped") {
+        row.append("<p>The analyses previously was generated</p>");
+    }
+    */
+
+    return row;
+}
+
+function update_dialog(request, identifier, formatter, args) {
+    var get_status = function () {
+        $.ajax({
+            type: 'GET',
+            url: request,
+            dataType: 'json',
+            success: update_callback,
+            error: update_callback,
+        });
+    };
+
+
+    var get_poll_rate = function() {
+        pageObj.runtime += 1;
+
+        if (pageObj.runtime <= 5) {
+            return 1000;
+        } else if (pageObj.runtime <= 60) {
+            return 2000;
+        } else if (pageObj.runtime <= 300) {
+            return 5000;
+        } else if (pageObj.runtime <= 1800) {
+            return 30000;
+        } else if (pageObj.runtime <= 10800) {
+            return 60000;
+        } else {
+            return 300000;
+        }
+    };
+
+    var fetch_results = function() {
+        var request = window.location.href.split('?')[0];
+        args.fname = 'get_results';
+        dialog = $(identifier);
+
+        $.ajax({
+            type: 'GET',
+            url: request,
+            data: args,
+            success: function(data) {
+                $('#results').html(data);
+                $(function() {$("#synmap_zoom_box").draggable();});
+                dialog.find('#progress').hide();
+                dialog.find('#dialog_success').slideDown();
+            },
+            error: function(data) {
+                if (pageObj.error > 5) {
+                    dialog.find('#progress').hide();
+                    dialog.find('#dialog_error').slideDown();
+                } else {
+                    fetch_results();
+                    pageObj.error += 1;
+                }
+            }
+        });
+    }
+
+    var update_callback = function(json) {
+        var dialog = $(identifier);
+        var workflow_status = $("<p></p>");
+        var data = $("<ul></ul>");
+        var results = [];
+        var current_status;
+        var timeout = get_poll_rate();
+
+        var callback = function() {
+            update_dialog(request, identifier, formatter, args);
+        }
+
+        if (json.status) {
+            current_status = json.status.toLowerCase();
+            workflow_status.html("Workflow status: " + json.status);
+        } else {
+            setTimeout(callback, timeout);
+            return;
+        }
+
+        if (json.jobs) {
+            var jobs = json.jobs;
+            for (var index = 0; index < jobs.length; index++) {
+                var item = formatter(jobs[index]);
+                if (item) {
+                    results.push(item);
+                }
+            }
+        }
+
+        if (current_status == "completed") {
+            fetch_results();
+        } else if (current_status == "failed" || current_status == "error"
+                || current_status == "terminated") {
+            dialog.find('#progress').hide();
+            dialog.find('#dialog_error').slideDown();
+        } else if (current_status == "notfound") {
+            setTimeout(callback, timeout);
+            return;
+        } else {
+            setTimeout(callback, timeout);
+        }
+
+        results.push(workflow_status);
+        data.append(results);
+        dialog.find('#text').html(data);
+    };
+
+    get_status();
+}
+
 function monitor_log(log)
 {
     var waittime = pageObj.waittime;
@@ -598,7 +813,7 @@ function monitor_log(log)
     if (pageObj.finished == 0 && pageObj.waittime > 3) {
     }
 
-    if (message) $('#synmap_log').html(message);
+    if (message) $('#text').html(message);
 }
 
 function synteny_zoom(dsgid1, dsgid2, basename, chr1, chr2, ksdb) {

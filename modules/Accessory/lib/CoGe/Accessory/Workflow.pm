@@ -6,53 +6,62 @@ use 5.10.0;
 use Moose;
 
 # Attributes
-has 'workflow_id' => (is => 'ro',);
+has 'workflow_id' => ( is => 'ro', );
 
 has 'name' => (
     is       => 'ro',
     isa      => 'Str',
     required => 1,
-    default  => "",);
+    default  => "",
+);
 
 has 'logfile' => (
     is       => 'ro',
     isa      => 'Str',
     required => 1,
-    default  => "",);
+    default  => "",
+);
 
 has 'jobs' => (
     is       => 'rw',
     isa      => 'ArrayRef',
-    default  => sub {[]},
-    required => 0,);
+    default  => sub { [] },
+    required => 0,
+);
 
 # Public functions
-sub add_job
-{
-    my ($self, %opts) = @_;
-    my $cmd     = $opts{cmd};
-    my $script  = "" unless defined($opts{script});
-    my $args    = $opts{args};
-    my $inputs  = $opts{inputs};
-    my $outputs = $opts{outputs};
-    my $size    = $self->jobs;
+sub add_job {
+    my ( $self, %opts ) = @_;
+    my $cmd         = $opts{cmd};
+    my $script      = "" unless defined( $opts{script} );
+    my $args        = $opts{args};
+    my $inputs      = $opts{inputs};
+    my $outputs     = $opts{outputs};
+    my $description = $opts{description};
+    my $size        = $self->jobs;
     my $overwrite;
 
-    if (defined($opts{overwrite}) && $opts{overwrite} > 0) {
+    if ( defined( $opts{overwrite} ) && $opts{overwrite} > 0 ) {
         $overwrite = 1;
-    } else {
+    }
+    else {
         $overwrite = 0;
     }
 
     push(
-        @{$self->jobs},
+        @{ $self->jobs },
         {
-            cmdstring => {cmd => $cmd, script => $script, args => $args,},
-            overwrite => $overwrite,
-            inputs    => $inputs,
-            outputs   => $outputs,});
+            cmd         => $cmd,
+            script      => $script,
+            args        => $args,
+            description => $description,
+            overwrite   => $overwrite,
+            inputs      => $inputs,
+            outputs     => $outputs,
+        }
+    );
 
-    return scalar($self->jobs()) > $size;
+    return scalar( $self->jobs() ) > $size;
 }
 
 __PACKAGE__->meta->make_immutable;
