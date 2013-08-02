@@ -671,6 +671,7 @@ function update_dialog(request, identifier, formatter, args) {
             workflow_status.html("Workflow status: " + json.status);
         } else {
             setTimeout(callback, timeout);
+            return;
         }
 
         if (json.jobs) {
