@@ -9,10 +9,20 @@ CGI::Application::Dispatch->dispatch(
     table => [
 
         # Data Services
+        'sequence/:gid/:chr?' => {
+            prefix => 'CoGe::Services::Data',
+            app    => 'Sequence',
+            rm     => 'get'
+        },
         'notebook/create' => {
             prefix => 'CoGe::Services::Data',
             app    => 'Notebook',
             rm     => 'create'
+        },
+        'notebook/delete/:nid' => {
+            prefix => 'CoGe::Services::Data',
+            app    => 'Notebook',
+            rm     => 'delete'
         },
 
         # JBrowse Services

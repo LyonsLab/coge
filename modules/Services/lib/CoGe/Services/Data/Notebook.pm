@@ -39,9 +39,7 @@ sub create {
     #    });
     #    return unless $conn;
 
-    return qq{
-		"blah"
-	};
+    return qq{};
 }
 
 1;

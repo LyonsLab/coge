@@ -355,8 +355,8 @@ $(document).ready(function(){
   //set up jquery ajax
   $.ajaxSetup({
                 type: "GET",
-                url: "/CoGe/OrganismView.pl",
-                //dataType: "html",
+                url: "<TMPL_VAR NAME='PAGE_NAME'>",
+                dataType: "html",
                 cache: false,
         });
 

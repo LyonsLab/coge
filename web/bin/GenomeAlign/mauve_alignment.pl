@@ -2,6 +2,7 @@
 
 use strict;
 use CoGeX;
+use CoGe::Accessory::Storage qw( get_genome_file );
 use Getopt::Long;
 
 #$coge->storage->debugobj(new DBIxProfiler());
@@ -56,14 +57,16 @@ sub run_mauve {
     $cmd .= " --muscleMatrix='$matrix'" if $matrix && -r $matrix;
     $cmd .= " --muscle-args=\"$muscle_args\"" if $muscle_args;
     foreach my $item (@$dsgids) {
-        foreach my $dsgid ( split /,/, $item ) {
+        foreach my $dsgid ( split( /,/, $item ) ) {
             next unless $dsgid;
             my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
             unless ($dsg) {
                 print "Unable to find a genome for dsgid: $dsgid.\n";
                 next;
             }
-            $cmd .= " " . $dsg->file_path;
+            $cmd .= " "
+              . get_genome_file($dsgid)
+              ;    #$dsg->file_path; # mdb changed 8/1/13 issue 77
         }
     }
     if ($logfile) { $cmd .= " >> $logfile"; }

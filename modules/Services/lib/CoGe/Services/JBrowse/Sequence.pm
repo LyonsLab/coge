@@ -1,12 +1,10 @@
 package CoGe::Services::JBrowse::Sequence;
 use base 'CGI::Application';
 
-use CoGeX;
 use CoGe::Accessory::Web;
-use JSON qq{encode_json};
-use Data::Dumper;
-use Cwd 'abs_path';
-use File::Basename 'fileparse';
+use CoGe::Accessory::Storage qw( get_genome_seq );
+
+#use File::Basename 'fileparse';
 
 sub setup {
     my $self = shift;
@@ -40,17 +38,27 @@ sub features {
     my $genome = $db->resultset('Genome')->find($gid);
     return unless $genome;
 
-    #FIXME need permissions check here
+    # Check permissions
+    if (    $user
+        and $genome->restricted
+        and !$user->has_access_to_genome($genome) )
+    {
+        return qq{{ "features" : [] }};
+    }
 
     # Extract requested piece of sequence file
-    my ( undef, $storagepath ) = fileparse( $genome->file_path );
-    my $seqfile = $storagepath . '/chr/' . $chr;
-    open( my $fh, $seqfile ) or die;
-    seek( $fh, $start, 0 );
-    read( $fh, my $seq, $len );
-    close($fh);
-
-    #print STDERR "$seqfile $len $seq\n";
+    #    my ( undef, $storagepath ) = fileparse( $genome->file_path );
+    #    my $seqfile = $storagepath . '/chr/' . $chr;
+    #    open( my $fh, $seqfile ) or die;
+    #    seek( $fh, $start, 0 );
+    #    read( $fh, my $seq, $len );
+    #    close($fh);
+    my $seq = get_genome_seq(
+        gid   => $gid,
+        chr   => $chr,
+        start => $start,
+        stop  => $end - 1
+    );
 
     return qq{
 		{ "features" : [

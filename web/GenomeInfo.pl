@@ -256,16 +256,16 @@ sub get_genome_data {
         return unless ($genome);
     }
 
-    #ERIC added these 1/31/2013
-    #TODO: this should happen in the genome object
-    my $seq_file = $genome->file_path;
-    my $cogedir  = $P->{COGEDIR};
-    my $cogeurl  = $P->{URL};
-    $seq_file =~ s/$cogedir/$cogeurl/i;
+    # mdb removed 7/31/13, issue 77
+    #    my $seq_file = $genome->file_path;
+    #    my $cogedir  = $P->{COGEDIR};
+    #    my $cogeurl  = $P->{URL};
+    #    $seq_file =~ s/$cogedir/$cogeurl/i;
+    my $seq_url =
+      "services/JBrowse/service.pl/sequence/$gid";  # mdb added 7/31/13 issue 77
 
-    #TODO: this should happen in the genome object
     my $download .=
-      qq{<a class=link href='$seq_file' target="_new">Fasta Sequences</a>};
+      qq{<a class=link href='$seq_url' target="_new">Fasta Sequences</a>};
     $download .= qq{&nbsp|&nbsp};
     $download .=
 qq{<span class=link onclick="\$('#gff_export').dialog('option', 'width', 400).dialog('open')">Export GFF</span>};
@@ -276,7 +276,6 @@ qq{<span class=link onclick="\$('#gff_export').dialog('option', 'width', 400).di
     $download .=
       qq{<span class=link onclick="export_bed('$gid')"">Export bed</span>};
 
-    #TODO: this should happen in the genome object
     my $links =
       "<a href='OrganismView.pl?dsgid=$gid' target=_new>OrganismView</a>";
     $links .= qq{&nbsp|&nbsp};

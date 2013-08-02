@@ -10,6 +10,7 @@ use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Web;
 use CoGe::Algos::KsCalc;
+use CoGe::Accessory::Storage qw( get_genome_file );
 
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
@@ -1466,7 +1467,8 @@ sub go {
 
     if ( $feat_type1 eq "genomic" ) {
         my $genome = $coge->resultset('Genome')->find($dsgid1);
-        $fasta1 = $genome->file_path;
+        $fasta1 = get_genome_file($dsgid1)
+          ;    #$genome->file_path; # mdb changed 8/1/13 issue 77
     }
     else {
         my @fasta1args = ();
@@ -1487,7 +1489,8 @@ sub go {
 
     if ( $feat_type2 eq "genomic" ) {
         my $genome = $coge->resultset('Genome')->find($dsgid2);
-        $fasta2 = $genome->file_path;
+        $fasta2 = get_genome_file($dsgid2)
+          ;    #$genome->file_path; # mdb changed 8/1/13 issue 77
     }
     else {
         $fasta2 = $FASTADIR . "/$dsgid2-$feat_type2.fasta";

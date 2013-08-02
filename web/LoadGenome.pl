@@ -9,6 +9,9 @@ use CoGe::Accessory::Web;
 use HTML::Template;
 use JSON::XS;
 use Sort::Versions;
+use File::Path qw(mkpath);
+use File::Copy qw(copy);
+use URI::Escape::JavaScript qw(escape unescape);
 no warnings 'redefine';
 
 use vars qw(
@@ -428,7 +431,6 @@ sub load_genome {
     }
 
     print $log "Calling bin/load_genome.pl ...\n";
-    my $datadir = $P->{DATADIR} . '/genomic_sequence/';
 
 #EL: 7/8/2013  Modified how $cmd was created so that empty options were not passed on the command line.  Perl has a bad habit of grabbing the next option name when it is expecting a value for a previous option and no value was passed along the command line.
     my $cmd =
@@ -445,7 +447,6 @@ sub load_genome {
     $cmd .= "-organism_id $organism_id ";
     $cmd .= '-source_name "' . escape($source_name) . '" ';
     $cmd .= "-staging_dir $stagepath ";
-    $cmd .= "-install_dir $datadir ";
     $cmd .= '-fasta_files "' . escape( join( ',', @files ) ) . '" ';
     $cmd .= "-config $CONFIGFILE";
 

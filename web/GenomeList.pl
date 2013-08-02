@@ -289,19 +289,22 @@ sub get_gc_for_feature_type {
             warn "no dataset object found for id $dsidt\n";
             next;
         }
-        my $t1 = new Benchmark;
+
+        #        my $t1 = new Benchmark;
         my %seqs
           ; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
         if ( defined $chr ) {
             $seqs{$chr} =
-              $ds->genomic_sequence( chr => $chr, seq_type => $gstid );
+              $ds->get_genomic_sequence( chr => $chr, seq_type => $gstid );
         }
         else {
             %seqs =
-              map { $_, $ds->genomic_sequence( chr => $_, seq_type => $gstid ) }
-              $ds->chromosomes;
+              map {
+                $_, $ds->get_genomic_sequence( chr => $_, seq_type => $gstid )
+              } $ds->chromosomes;
         }
-        my $t2    = new Benchmark;
+
+        #        my $t2    = new Benchmark;
         my @feats = $ds->features(
             $search,
             {
@@ -345,9 +348,10 @@ sub get_gc_for_feature_type {
             push @data, sprintf( "%.2f", $perc_gc );
             push @fids, $feat->id . "_" . $gstid;
         }
-        my $t3               = new Benchmark;
-        my $get_seq_time     = timestr( timediff( $t2, $t1 ) );
-        my $process_seq_time = timestr( timediff( $t3, $t2 ) );
+
+        #        my $t3               = new Benchmark;
+        #        my $get_seq_time     = timestr( timediff( $t2, $t1 ) );
+        #        my $process_seq_time = timestr( timediff( $t3, $t2 ) );
     }
     my $total = $gc + $at + $n;
     return "error" unless $total;
@@ -488,7 +492,7 @@ sub gen_body {
     $dsgids = read_file() if $BASEFILE;    #: $opts{feature_list};
     foreach my $item ( $form->param('dsgid') ) {
         foreach my $item2 ( split /(::)|(,)/, $item ) {
-            push @$dsgids, $item2 if $item2 =~ /^\d+_?\d*$/;
+            push @$dsgids, $item2 if ( $item2 and $item2 =~ /^\d+_?\d*$/ );
         }
     }
 
@@ -523,7 +527,7 @@ sub get_lists {
     my $public = $opts{public};
     my @lists;
     if ($public) {
-        foreach my $list ( sort { $a->name <=> $b->name }
+        foreach my $list ( sort { $a->name cmp $b->name }
             $coge->resultset('List')->public_lists )
         {
             my $name = $list->name;
@@ -608,10 +612,14 @@ qq{<span class=link onclick=window.open('OrganismView.pl?org_desc=$_')>$_</span>
         my $chr_count = $dsg->chromosome_count;
         my $length    = $dsg->length;
         my $type      = $dsg->type->name . " [id:&nbsp" . $dsg->type->id . "]";
-        my $file      = $dsg->file_path;
-        $file =~ s/$COGEDIR/$URL/;
+
+        # mdb removed 7/31/13 issue 77
+        #        my $file      = $dsg->file_path;
+        #        $file =~ s/$COGEDIR/$URL/;
+        my $seq_url = "services/JBrowse/service.pl/sequence/$dsgid"
+          ;    # mdb added 7/31/13 issue 77
         $type = $type
-          . "<br><a href=$file target=_seq>Fasta</a><br><a href=coge_gff.pl?dsgid=$dsgid;annos=1 target=_anno>GFF File</a>";
+          . "<br><a href='$seq_url'>Fasta</a><br><a href='bin/export/coge_gff.pl?dsgid=$dsgid;annos=1'>GFF File</a>";
         my ($ds_source) = $dsg->source;
         my $source      = $ds_source->name;
         my $source_link = $ds_source->link;
@@ -670,7 +678,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
   GROUP BY ft.name
 
 };
-    my $dbh = $coge->stroage->dbh;  #DBI->connect( $connstr, $DBUSER, $DBPASS );
+    my $dbh = $coge->storage->dbh;  #DBI->connect( $connstr, $DBUSER, $DBPASS );
     my $sth = $dbh->prepare($query);
     $sth->execute;
     my $feats = {};
@@ -1032,12 +1040,13 @@ sub get_codon_usage {
           ; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
         if ( defined $chr ) {
             $seqs{$chr} =
-              $ds->genomic_sequence( chr => $chr, seq_type => $gstid );
+              $ds->get_genomic_sequence( chr => $chr, seq_type => $gstid );
         }
         else {
             %seqs =
-              map { $_, $ds->genomic_sequence( chr => $_, seq_type => $gstid ) }
-              $ds->chromosomes;
+              map {
+                $_, $ds->get_genomic_sequence( chr => $_, seq_type => $gstid )
+              } $ds->chromosomes;
         }
         foreach my $feat (
             $ds->features(

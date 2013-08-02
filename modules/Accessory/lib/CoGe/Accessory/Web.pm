@@ -1,13 +1,13 @@
 package CoGe::Accessory::Web;
 
 use strict;
-use CoGeX;
-use Data::Dumper;
 use base 'Class::Accessor';
+use Data::Dumper;
+use CoGeX;
 use CGI::Carp('fatalsToBrowser');
 use CGI;
 use CGI::Cookie;
-use DBIxProfiler;
+use File::Path;
 use File::Basename;
 use File::Temp;
 use LWP::Simple qw(!get !head !getprint !getstore !mirror);
@@ -20,20 +20,15 @@ use POSIX;
 use IPC::System::Simple qw(capture system $EXITVAL EXIT_ANY);
 use Mail::Mailer;
 
-my $conf;    # configuration file default params
-
 BEGIN {
-    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK $Q $TEMPDIR $BASEDIR);
+    use vars qw ($CONF $VERSION @ISA @EXPORT @EXPORT_OK $Q $TEMPDIR $BASEDIR);
     require Exporter;
 
-    $BASEDIR = ( $ENV{HOME} ? $ENV{HOME} : "/opt/apache/CoGe/" );
+    $BASEDIR = ( $ENV{HOME} ? $ENV{HOME} : "/opt/apache/coge/web/" );
     $VERSION = 0.1;
     $TEMPDIR = $BASEDIR . "tmp";
     @ISA     = ( @ISA, qw (Exporter) );
-
-    #Give a hoot don't pollute, do not export more than needed by default
-    @EXPORT = qw ()
-      ; #qw (login write_log read_log check_taint check_filename_taint save_settings load_settings reset_settings initialize_basefile);
+    @EXPORT  = qw();
     __PACKAGE__->mk_accessors(
         'restricted_orgs', 'basefilename', 'basefile', 'logfile',
         'sqlitefile'
@@ -41,16 +36,16 @@ BEGIN {
 }
 
 sub init {
-    my ( $self, %opts ) = @_;
+    my %opts   = @_;
     my $ticket = $opts{ticket};    # optional cas ticket for retrieving user
     my $url    = $opts{url};       # optional url for cas authentication
     my $page_title = $opts{page_title};    # optional page title
 
     # Get config
-    $conf = get_defaults() unless $conf;
+    $CONF = get_defaults() unless $CONF;
 
     # Connec to DB
-    my $db = CoGeX->dbconnect($conf);
+    my $db = CoGeX->dbconnect($CONF);
 
     # Get user
     my $user;
@@ -60,7 +55,7 @@ sub init {
         this_url => $url
     ) if ($ticket);
     ($user) = CoGe::Accessory::LogUser->get_user(
-        cookie_name => $conf->{COOKIE_NAME},
+        cookie_name => $CONF->{COOKIE_NAME},
         coge        => $db
     ) unless $user;
 
@@ -68,8 +63,8 @@ sub init {
     if ($page_title) {
 
         # Make tmp directory
-        my $tempdir = $conf->{TEMPDIR} . $page_title . '/';
-        mkpath( $TEMPDIR, 0, 0777 ) unless -d $tempdir;
+        my $tempdir = $CONF->{TEMPDIR} . '/' . $page_title . '/';
+        mkpath( $tempdir, 0, 0777 ) unless -d $tempdir;
 
         # Get tiny link
         $link = get_tiny_link(
@@ -81,11 +76,11 @@ sub init {
         );
     }
 
-    return ( $db, $user, $conf, $link );
+    return ( $db, $user, $CONF, $link );
 }
 
 sub get_defaults {
-    my ( $self, $param_file ) = self_or_default(@_);
+    my ( $self, $param_file ) = shift;
     $param_file = $BASEDIR . "coge.conf" unless defined $param_file;
     unless ( -r $param_file ) {
         print STDERR
@@ -112,7 +107,7 @@ sub dispatch {
     my $fname = $args{'fname'};
     if ($fname) {
 
-        #my %args = $FORM->Vars;
+        #my %args = $form->Vars;
         #print STDERR Dumper \%args;
         if ( $args{args} ) {
             my @args_list = split( /,/, $args{args} );
@@ -893,9 +888,6 @@ use Web
 Eric Lyons
 
 =head1 COPYRIGHT
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl itself.
 
 The full text of the license can be found in the
 LICENSE file included with this module.

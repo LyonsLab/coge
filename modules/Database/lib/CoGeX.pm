@@ -6,16 +6,13 @@ use warnings;
 use Data::Dumper;
 use Cwd 'abs_path';
 
-use vars qw( $VERSION );
-
-$VERSION = 0.01;
-
 use base 'DBIx::Class::Schema';
 use base qw(Class::Accessor);
 
 #__PACKAGE__->load_classes();
 __PACKAGE__->load_namespaces();
-__PACKAGE__->mk_accessors(qw(db_connection_string db_name db_passwd));
+
+#__PACKAGE__->mk_accessors();
 
 =head1 NAME
 
@@ -63,7 +60,7 @@ LICENSE file included with this module.
 =cut
 
 use strict;
-use vars qw( %pool );    # persistent globals
+use vars qw( %pool $CONF );    # persistent globals
 
 ################################################ subroutine header begin ##
 
@@ -89,8 +86,13 @@ sub dbconnect {
     my $conn_name = shift;    # optional connection name
     $conn_name = 'default' unless $conn_name;
 
+    # Save a copy of the config for get_conf()
+    $CONF = $conf if ($conf);
+
     # Connect to the database
-    unless ( defined $pool{$conn_name} ) {
+    unless ( defined $pool{$conn_name}
+        and $pool{$conn_name}->storage->dbh->ping() )
+    {
         my $dbname  = $conf->{DBNAME};
         my $dbhost  = $conf->{DBHOST};
         my $dbport  = $conf->{DBPORT};
@@ -105,6 +107,17 @@ sub dbconnect {
     }
 
     return $pool{$conn_name};
+}
+
+sub get_conf {
+    my $self = shift;
+    my $key  = shift;
+
+    if ($key) {
+        return $CONF->{$key};
+    }
+
+    return $CONF;
 }
 
 ################################################ subroutine header begin ##

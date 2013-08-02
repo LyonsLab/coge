@@ -4,10 +4,10 @@ no warnings('redefine');
 
 use strict;
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
+use CoGe::Accessory::Storage qw( get_genome_file );
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
@@ -21,10 +21,6 @@ use LWP::Simple;
 use LWP::Simple::Post qw(post post_xml);
 use URI::Escape;
 use POSIX;
-use Digest::MD5 qw(md5_hex);
-use Digest::MD5 qw(md5_base64);
-use DBI;
-use DBIxProfiler;
 use File::Temp;
 use File::Basename;
 use File::Path;
@@ -1470,7 +1466,8 @@ sub get_blast_db {
 
     #$org_name .= " (".$gst->name.")" if $gst;
 
-    my $db      = $dsg->file_path;
+    my $db =
+      get_genome_file($dsgid); #$dsg->file_path; # mdb changed 7/31/13, issue 77
     my $success = generate_blast_db(
         fasta   => $db,
         blastdb => $db,
