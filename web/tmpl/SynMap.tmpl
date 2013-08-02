@@ -465,7 +465,8 @@
 
     <ul id="dialog_success" class="horizontal padded hidden">
         <li id="finished_msg">
-            Finished! <img src="picts/thumbs_up.png">
+            <span>Finished!</span>
+            <img src="picts/thumbs_up.png">
         </li>
         <li id="ok_button" class="ui-button ui-corner-all r">
             <span onClick="close_dialog(); load_results();" >
@@ -475,8 +476,9 @@
     </ul>
 
     <ul id="progress" class="padded">
-        <li>
-            <span id="loading_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
+        <li class="bottom">
+            <span id="loading_msg">Please wait ...</span>
+            <img src="picts/ajax-loader.gif"/>
         </li>
     </ul>
     <div id="synmap_link" class="small" style="color:dimgray; padding-left: 5px;"></div>
