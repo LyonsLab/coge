@@ -18,6 +18,10 @@ a:hover {
   cursor: pointer;
 }*/
 
+.hidden {
+	display: none;
+}
+
 .note {
   color:gray;
   font-style:italic;
