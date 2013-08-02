@@ -80,7 +80,7 @@ sub wait_for_completion {
         $status = get_status( $self, $id );
 
         given ($status) {
-            when ("Complete")   { return 0; }
+            when ("Completed")  { return 1; }
             when ("NotFound")   { return 1; }
             when ("Failed")     { return 1; }
             when ("Terminated") { return 2; }
