@@ -927,7 +927,15 @@ th {
     color: #009933;
 }
 
+.skipped {
+    color: dim-gray;
+}
+
 .top {
     vertical-align: top;
+}
+
+.bottom {
+    vertical-align: bottom;
 }
 

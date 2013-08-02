@@ -557,7 +557,7 @@ function reset_basename(){
 
 function synmap_formatter(item) {
     var msg;
-    var row = $('<li>'+ item.description + '</li>');
+    var row = $('<li>'+ item.description + ' </li>');
     row.addClass('small');
 
     var job_status = $('<span></span>');
@@ -576,7 +576,7 @@ function synmap_formatter(item) {
         job_status.addClass('bold');
     } else if (item.status == 'skipped') {
         job_status.append(item.status);
-        job_status.addClass('down');
+        job_status.addClass('skipped');
         job_status.addClass('bold');
     } else if (item.status == 'failed') {
         job_status.append(item.status);
