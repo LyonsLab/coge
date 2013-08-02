@@ -10,7 +10,7 @@ from cgi import parse_qs, escape
 import zmq
 
 _defaults = {
-    'connection' : 'tcp://*:5151'
+    'connection' : 'tcp://localhost:5151'
 }
 
 def not_found(environ, start_response):
