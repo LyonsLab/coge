@@ -1,8 +1,8 @@
 #! /usr/bin/perl -w
-
+use v5.10;
+use strict;
 no warnings('redefine');
 
-use strict;
 use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
