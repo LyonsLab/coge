@@ -233,6 +233,8 @@ sub gen_body {
     my $rc    = $form->param('rc')    || 0;
     my $seq   = $form->param('seq');
     my $gstid = $form->param('gstid') || 1;
+    my $locations = $form->param('locations');
+
     my $prefs = CoGe::Accessory::Web::load_settings(
         user => $USER,
         page => $PAGE_NAME,
@@ -240,18 +242,20 @@ sub gen_body {
     );
     $prefs = {} unless $prefs;
 
-    #	$template->param( PAGE_NAME  	=> $PAGE_NAME );
-    $template->param( MAIN       => 1 );
-    $template->param( UPSTREAM   => $upstream );
-    $template->param( DOWNSTREAM => $downstream );
-    $template->param( DSID       => $dsid );
-    $template->param( DSGID      => $dsgid );
+    $template->param(
+        MAIN       => 1,
+        UPSTREAM   => $upstream,
+        DOWNSTREAM => $downstream,
+        DSID       => $dsid,
+        DSGID      => $dsgid,
 
-    #$template->param( ORG_LIST		=> get_orgs(html_only => 1) );
-    $template->param( RC     => $rc );
-    $template->param( FEATID => $featid );
-    $template->param( CHR    => $chr );
-    $template->param( GSTID  => $gstid );
+        #ORG_LIST		=> get_orgs(html_only => 1),
+        RC        => $rc,
+        FEATID    => $featid,
+        CHR       => $chr,
+        GSTID     => $gstid,
+        LOCATIONS => $locations
+    );
 
     if ($featid) {
         $template->param( SEQVIEW => 1 );
@@ -264,16 +268,26 @@ sub gen_body {
             $columns = 80;
             $seq = wrap( "", "", $seq );
         }
-        $template->param( SEQVIEW  => 0 );
-        $template->param( SEQUENCE => $seq );
+        $template->param(
+            SEQVIEW  => 0,
+            SEQUENCE => $seq
+        );
+    }
+    elsif ($locations) {
+        $template->param(
+            SEQVIEW  => 0,
+            SEQUENCE => ""
+        );
     }
     else {
-        $template->param( SEQVIEW  => 0 );
-        $template->param( SEQUENCE => 'Enter FASTA sequence(s) here' );
+        $template->param(
+            SEQVIEW  => 0,
+            SEQUENCE => 'Enter FASTA sequence(s) here'
+        );
     }
     $template->param( USER_NAME => $USER->user_name );
 
-    #	$template->param( REST      => 1 );
+    #$template->param( REST      => 1 );
 
     #populate user specified default values
     my $db_list;
@@ -345,6 +359,7 @@ sub get_sequence {
     my $blast_type = $opts{blast_type};
     my $upstream   = $opts{upstream};
     my $downstream = $opts{downstream};
+    my $locations  = $opts{locations};
     my $gstid      = $opts{gstid};
     my $rc         = $opts{rc};
     my $fasta;
@@ -369,7 +384,7 @@ sub get_sequence {
                 downstream => $downstream,
                 gstid      => $gstidt
               )
-              : ">Unable to retrieve Feature object for id: $fid\n";
+              : ">Unable to find feature id $fid\n";
         }
     }
     elsif ($dsid) {
@@ -384,7 +399,7 @@ sub get_sequence {
             rc    => $rc,
             gstid => $gstid
           )
-          : ">Unable to retrieve dataset object for id: $dsid";
+          : ">Unable to find dataset id $dsid";
     }
     elsif ($dsgid) {
         my $dsg = $coge->resultset('Genome')->find($dsgid);
@@ -397,7 +412,36 @@ sub get_sequence {
             prot  => $prot,
             rc    => $rc
           )
-          : ">Unable to retrieve dataset group object for id: $dsgid";
+          : ">Unable to find genome id $dsgid";
+    }
+    elsif ($locations) {
+        my %genomes;
+        foreach ( split( ',', $locations ) ) {
+            my ( $gid, $chr, $start, $stop ) = split( ':', $_ );
+            next if ( $gid   =~ /\D/ );
+            next if ( $start =~ /\D/ );
+            next if ( $stop  =~ /\D/ );
+            ( $start, $stop ) = ( $stop, $start ) if ( $stop < $start );
+            $start -= $upstream;
+            $stop += $downstream;
+            if ( not defined $genomes{$gid} ) {
+                $genomes{$gid} = $coge->resultset('Genome')->find($gid);
+            }
+            my $genome = $genomes{$gid};
+            return "Unable to find genome for $gid" unless $genome;
+            return "Restricted Access"
+              if $genome->restricted && !$USER->has_access_to_genome($genome);
+            $fasta .=
+              ref($genome) =~ /genome/i
+              ? $genome->fasta(
+                start => $start,
+                stop  => $stop,
+                chr   => $chr,
+                prot  => $prot,
+                rc    => $rc
+              )
+              : ">Unable to find genome id $gid";
+        }
     }
     return $fasta;
 }
@@ -696,12 +740,23 @@ sub blast_search {
     my $width = $opts{width};
     my $fid   = $opts{fid};
 
+    my @dsg_ids = split( /,/, $blastable );
+
+    my $list_link =
+        "<a href='GenomeList.pl?dsgid=$blastable' target='_blank'>" 
+      . @dsg_ids
+      . ' genome'
+      . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
+    my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
+    print STDERR $log_msg . "\n";
+
     my $link = $P->{SERVER} . $PAGE_NAME . "?dsgid=$blastable";
     $link .= ";fid=$fid" if ($fid);
     $link = CoGe::Accessory::Web::get_tiny_link(
         db      => $coge,
         user_id => $USER->id,
         page    => $PAGE_NAME,
+        log_msg => $log_msg,
         url     => $link
     );
 
@@ -725,7 +780,6 @@ sub blast_search {
           /^\d+$/;    #something wrong with how width is calculated in tmpl file
 
     my $t1 = new Benchmark;
-    my @dsg_ids = split( /,/, $blastable );
     my ( $fasta_file, $query_seqs_info ) = create_fasta_file($seq);
     my $opts;
     my $pre_command;
@@ -925,6 +979,9 @@ sub gen_results_page {
                 my $feat_link = qq{<span>Loading...</span>};
 
                 my $qname = $hsp->query_name;
+                my $start = $hsp->subject_start;
+                my $stop  = $hsp->subject_stop;
+                ( $start, $stop ) = ( $stop, $start ) if ( $stop < $start );
 
                 #can we extract a CoGe name for the sequence
                 if ( $hsp->query_name =~ /Name: (.*), Type:/ ) {
@@ -963,13 +1020,17 @@ qq{<span class="link" title="Click for HSP information" onclick="update_hsp_info
                     HSP_LENGTH => $hsp->length,
                     COVERAGE   => sprintf( "%.1f", $hsp->query_coverage * 100 )
                       . "%",
-                    HSP_PID     => $hsp->percent_id . "%",
-                    HSP_SCORE   => $hsp->score,
-                    HSP_POS     => ( $hsp->subject_start ),
-                    HSP_CHR     => $chr,
-                    HSP_LINK    => $feat_link,
-                    HSP_QUALITY => sprintf( "%.1f", $hsp->quality ) . "%",
-                    SEQVIEW     => $seqview_link,
+                    HSP_PID       => $hsp->percent_id . "%",
+                    HSP_SCORE     => $hsp->score,
+                    HSP_POS_START => ( $hsp->subject_start ),
+                    HSP_CHR       => $chr,
+                    HSP_LINK      => $feat_link,
+                    HSP_QUALITY   => sprintf( "%.1f", $hsp->quality ) . "%",
+                    SEQVIEW       => $seqview_link,
+                    LOC_VAL       => $dsg->id . ':' 
+                      . $chr . ':' 
+                      . $start . ':'
+                      . $stop
                   };
             }
         }

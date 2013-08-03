@@ -199,43 +199,53 @@ function overlap_checkboxes() {
 	var action = $('#overlap_action').val();
 	var accn="";
 	$('#hsp_result_table :checkbox').each(function(){
-		if (this.checked == true) {
+		if (this.checked) {
 			accn = accn + this.id+",";
 		}
 	});
-	if (accn == ",") {
-		alert("You have not checked any features.");
+	if (!accn || accn == ",") {
+		alert("Please select one or more features.");
 		return;
 	}
 	if (action == "gevo") {
-		overlap_feats_parse(accn); //overlap_feats_parse(['args__'+accn],[send_to_gevo]);
+		overlap_feats_parse(accn);
 	}
 	else if (action == "fasta"){
-		export_fasta_file(accn); //export_fasta_file(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+		export_fasta_file(accn);
 	}
+	else if (action == "seqview"){
+		var locations = new Array();
+		$('#hsp_result_table :checkbox').each(function(){
+			if (this.checked) {
+				var loc = $(this).parents('tr').find('.location').html();
+				locations.push(loc);
+			}
+		});
+		window.open("SeqView.pl?locations=" + locations.join(','));
+	}	
 	else if (action == "phylo"){
-		export_fasta_file(accn); //export_fasta_file(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+		export_fasta_file(accn);
 	}
 	else if (action == "xls"){
-		export_to_excel(accn, pageObj.basename); //export_to_excel(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+		export_to_excel(accn, pageObj.basename);
 	}
 	else if(action == "tab"){
-		generate_tab_deliminated(accn, pageObj.basename); //generate_tab_deliminated(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+		generate_tab_deliminated(accn, pageObj.basename);
 	}
 	else if(action == "list"){
-		generate_feat_list(accn, pageObj.basename); //generate_feat_list(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+		generate_feat_list(accn, pageObj.basename);
 	}
 	else if(action == "blast"){
-		generate_blast(accn, pageObj.basename); //generate_blast(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+		generate_blast(accn, pageObj.basename);
 	}
 	else if(action == "hsp"){
-		export_hsp_info(); //export_hsp_info(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+		export_hsp_info();
 	}
 	else if (action == "CodeOn") {
-		export_CodeOn(accn); //export_CodeOn(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+		export_CodeOn(accn);
 	}
 	else {
-		alert("We will get this working ... soon.");
+		alert("Error: function missing '"+action+"'");
 	}
 }
 
@@ -677,7 +687,7 @@ function init_table () {
 //Need to instantiate this seperately from other dialog boxes, need to do this AFTER results are generated
 function init_table_opts() {
 	//substaniate dialog box	     
-	$("#table_opts_dialog").dialog({ height: 163,
+	$("#table_opts_dialog").dialog({ height: 240,
 							width: 746,
 							autoOpen: false,
 	});
@@ -854,18 +864,6 @@ function get_seq(which_type) {
 				$('#seq_box').val(html);
 			},
 		});
-		/*
-		get_sequence(
-			[	'args__fid','args__'+featid,
-				'args__blast_type', which_type, 
-				'args__upstream', 'args__'+seqObj.upstream,
-				'args__downstream', 'args__'+seqObj.downstream,
-				'args__rc','args__'+seqObj.rc,
-				'args__gstid','args__'+seqObj.gstid
-			],
-			['seq_box']
-		);
-		*/
 	}
 	else if (chr) {
 		$('#seq_box').val('Loading ...');
@@ -884,19 +882,20 @@ function get_seq(which_type) {
 				$('#seq_box').val(html);
 			},
 		});
-		/*
-		get_sequence(		
-			[	'args__chr','args__'+chr,
-				'args__dsid','args__'+dsid,
-				'args__dsgid','args__'+dsgid,
-				'args__blast_type', which_type, 
-				'args__start', 'args__'+seqObj.upstream,
-				'args__stop', 'args__'+seqObj.downstream,
-				'args__gstid','args__'+seqObj.gstid
-			],
-			['seq_box']
-		);
-		*/
+	}
+	else if ('<TMPL_VAR NAME=LOCATIONS>') {
+		$('#seq_box').val('Loading ...');
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'get_sequence',
+				blast_type: program,
+				locations: '<TMPL_VAR NAME=LOCATIONS>'
+			},
+			success : function(html) {
+				$('#seq_box').val(html);
+			},
+		});
 	}
 	else {
 		//$('#seq_box').val('');
@@ -1097,18 +1096,16 @@ function monitor_log(log)
   	}
   }
   
-  if(log.match(/Results/i))
-  {
+  if(log.match(/Results/i)) {
   	blast += "Analysis complete!<br/>";
   	results = "Collating results. . . ";
   }
-     if (log.match(/Finished/i))
-    {
-     results += "done!<br/>";
-     done = "Displaying results.  This may take your browser some time to process the HSP table.  Please be patient."
+  if (log.match(/Finished/i)) {
+    results += "done!<br/>";
+    done = "Displaying results.  This may take your browser some time to process the HSP table.  Please be patient."
      
-     pageObj.finished = 1;
-    }
+    pageObj.finished = 1;
+   }
     
   }
   
@@ -1237,9 +1234,8 @@ function toggle_title(id, full, partial) {
 
 </SCRIPT>
 
-
   <div id="table_opts_dialog" class="dialog_box" title="Table Information Options">
-    <table id="show_columns" class="small ui-widget-content ui-corner-all">
+    <table id="show_columns" class="small ui-widget-content ui-corner-all" style="padding:5px;">
       <tr>
         <td><input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(1);" <TMPL_VAR NAME="QND">>Query Sequence Name</td>
         <td><input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(2);" <TMPL_VAR NAME="OrgD">>Organism Name</td>
@@ -1263,11 +1259,10 @@ function toggle_title(id, full, partial) {
         <td><input class="hsp_display" type=checkbox onclick="toggle_hsp_column(14);"<TMPL_VAR NAME="SeqViewD">>Link to SeqView for HSP Sequence</td>
       </tr>
       <TMPL_IF NAME="SAVE_DISPLAY">
-      <tr>
-        <td><span class='ui-button ui-corner-all' onclick="save_display_settings()">Save Display Settings</span></td>
-      </tr>
       </TMPL_IF> <!-- SAVE_DISPLAY -->
     </table> <!-- show_columns -->
+    <br>
+    <span class='ui-button ui-corner-all' onclick="save_display_settings()">Save Display Settings</span>
   </div> <!-- table_opts_dialog -->
   
   <div id="big_picture" title="Enlarged Image of HSP Hits" class="dialog_box"></div>
@@ -1517,6 +1512,7 @@ function toggle_title(id, full, partial) {
             <TH class="header">Closest Genomic Feature </TH>
             <TH class="header">Distance to Genomic Feature (bp) </TH>
             <TH nowrap class="header">HSP Sequence </TH>
+            <TH style="display:none;">Location</TH>
           </TR>
         </THEAD>
         <TBODY id="hsp_result_table_body" style="overflow-y: auto;overflow-x: hidden;">
@@ -1528,7 +1524,7 @@ function toggle_title(id, full, partial) {
               <td><TMPL_VAR NAME=QUERY_SEQ></td>
               <td style="white-space:nowrap;"><TMPL_VAR NAME=HSP_ORG></td>
               <td><TMPL_VAR NAME=HSP_CHR></td>
-              <td><TMPL_VAR NAME=HSP_POS></td>
+              <td><TMPL_VAR NAME=HSP_POS_START></td>
               <td><TMPL_VAR NAME=HSP></td>
               <td><TMPL_VAR NAME=HSP_LENGTH></td>
               <td><TMPL_VAR NAME=COVERAGE></td>
@@ -1545,6 +1541,7 @@ function toggle_title(id, full, partial) {
                 <div id="dist<TMPL_VAR NAME=ID>">-</div>
               </td>
               <td><TMPL_VAR NAME=SEQVIEW></td>
+              <td class="location" style="display:none"><TMPL_VAR NAME=LOC_VAL></td>
             </tr>
           </TMPL_LOOP>
         </tbody>
@@ -1680,7 +1677,7 @@ function toggle_title(id, full, partial) {
     </tr>
   </table>
   <TMPL VAR NAME="HSP_EXCEL_LINK">
-</TMPL_IF> <!-- HSP_IF -->
+</TMPL_IF>
 
 
 
@@ -1708,21 +1705,20 @@ function toggle_title(id, full, partial) {
             <div id="chromosomes" class="ui-widget-content ui-corner-all" style="width: 405px;overflow: auto;max-height: 700px;">
             <TMPL_VAR NAME=CHROMOSOMES>
             <TMPL_VAR NAME=CHR_LARGE>
-          </div> <!-- left_column -->
+          </div>
           <TMPL_VAR NAME="DATA_FILES">
         </TD>
         <TD valign="top" align="left" >
        	  <div id="result_features" align="left" valign="top">
-            <!--<form id="feature_list">-->
-              <TMPL_VAR NAME="HSP_RESULTS">
-            <!--</form>--->
+            <TMPL_VAR NAME="HSP_RESULTS">
             <div>
               <span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#hsp_result_table :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
               <span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#hsp_result_table :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
-              <span class='small'>Send selected Features to:</span>
+              <span class='small'>Send selected to:</span>
               <select name="overlap_action" id="overlap_action">
                 <option value="gevo">GEvo</option>
                 <option value="fasta">Fasta View</option>
+                <option value="seqview">Sequence View</option>
                 <option value="xls">Excel File</option>
                 <option value="tab">Tab Delimited FIle</option>
                 <option value="list">Feature List</option>
@@ -1739,26 +1735,18 @@ function toggle_title(id, full, partial) {
                 <TMPL_VAR NAME="HSP_COUNT">
               </div>
             </div>
-          </div> <!-- result_features -->
+          </div>
         </TD>
       </tr>
     </tbody>
   </TABLE>
-</TMPL_IF> <!-- BLAST_RESULTS -->
+</TMPL_IF>
 
 
 
 <TMPL_IF NAME="RESULTS_div">
-<!--
-  <table align="center">
-    <tr>
-      <td>
-        <div id="log_text" class='dna' style="display:none"></div>
-        <div id="blast_results"></div>
-  </table>
--->
 <div align='left'>
   <div id="log_text" class='dna small' style="display:none;height:175px;overflow:auto;"></div>
   <div id="blast_results" style="display:none;"></div>
 </div>
-</TMPL_IF> <!-- RESULTS_div -->
+</TMPL_IF>
