@@ -142,18 +142,22 @@ sub get_history_for_user {
     my @entries;
     if ( $USER->is_admin ) {
         if ( $time_range == 0 ) {
-            @entries =
-              $coge->resultset('Log')
-              ->search( { description => { 'not like' => 'page access' } },
-                { order_by => { -desc => 'time' } } );
+            @entries = $coge->resultset('Log')->search(
+
+                #{ description => { 'not like' => 'page access' } },
+                { type     => { '!='  => 0 } },
+                { order_by => { -desc => 'time' } }
+            );
         }
     }
     else {
         if ( $time_range == 0 or $time_range == -3 ) {
             @entries = $coge->resultset('Log')->search(
                 {
-                    user_id     => $USER->id,
-                    description => { 'not like' => 'page access' }
+                    user_id => $USER->id,
+
+                    #{ description => { 'not like' => 'page access' } }
+                    type => { '!=' => 0 }
                 },
                 { order_by => { -desc => 'time' } }
             );

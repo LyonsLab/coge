@@ -1,993 +1,554 @@
-<TMPL_IF NAME=MAIN>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+<tmpl_if name=MAIN>
+    <div class="small" style="padding-bottom: 5px; color: dimgray;">
+        Welcome to the new beta version of SynMap. <br>If you experience any difficulties
+        or prefer to use the old version, please <a id="beta_link" href="SynMap_old.pl">click here</a>.
+        <br>
+    </div>
+<section id="intro">
+    <span class="link small" onClick="$(this).hide(); $('#getting_started').fadeIn();">
+        Click here to see how to get started.
+    </span>
 
+    <div id="getting_started" class="hidden padded ui-widget-content ui-corner-all">
+        <ul class="horizontal">
+            <li>
+                <span class="alert">What is new:</span>
+            </li>
+
+            <li>
+                SynMap is now using a job execution engine to run your analysis
+                and a new user experience.
+            </li>
+        </ul>
+        <ul class="horizontal">
+            <li>
+                <span class="alert">Please Note:</span>
+            </li>
+
+            <li>SynMap is a very computationally intense, multi-step program which may take hours to complete for large genomes.<br>If available, select previously run parameter-sets for your organisms to see esults instantly.
+            </li>
+        </ul>
+
+        <ul class="horizontal">
+            <li style="vertical-align:top; margin-right: 5px;" class="alert">
+                Get Started:
+            </li>
+            <li style="display:inline-block;">
+                <span class="link" onclick=window.open("http://genomevolution.org/r/6mou") >
+                    Click here for an example analysis between 
+                    <em>Arabidopsis thaliana</em> and <em>Arabidopsis lyrata</em>.
+                </span> <br>
+                <span class="small">
+                    (Note that syntenic gene pairs are colored by synonymous mutations (Ks))
+                </span> <br>
+                <span class="link" onclick="window.open('http://genomevolution.org/wiki/index.php/SynMap#Example_Results')">
+                    Click here for an explaination of the results.
+                </span>
+            </li>
+        </ul>
+    </div>
+</section>
+
+<tmpl_if name=results>
+    <section id="results" class="ui-widget-content ui-corner-all">
+        <tmpl_var name=results>
+    </section>
+<tmpl_else>
+    <section id="results" class="hidden ui-widget-content ui-corner-all">
+    </section>
+</tmpl_if>
+
+<section id="tabs" style="margin-top: 0.5em; min-width: 645px;">
+    <ul>
+        <li class="small"><a href="#tab-1">Select Organisms</a></li>
+        <li class="small"><a href="#tab-2">Analysis Options</a></li>
+        <li class="small"><a href="#tab-3">Display Options</a></li>
+    </ul>
+
+    <ul id="tab-1">
+        <li style="display:inline-block; padding: 5px 0 5px 0; vertical-align:top;">
+                <tmpl_var name=org_menu1>
+        </li>
+        <li style="display:inline-block; padding: 5px 0 5px 0; vertical-align:top;">
+                <tmpl_var name=org_menu2>
+        </li>
+    </ul>
+    <!--close tab-1 -->
+
+    <div id="tab-2">
+    <fieldset class="options ui-widget-content ui-corner-all">
+        <legend style="color:#009900">Blast Algorithm</legend>
+        <select id="blast" name="blast">
+            <option value="6" <tmpl_var name="LAST_SELECT">>Last (fastest)
+            <option value="4" <tmpl_var name="LASTZ_SELECT">>(B)lastZ (fast)
+            <option value="0" <tmpl_var name="MEGA_SELECT">>MegaBlast
+            <option value="1" <tmpl_var name="DCMEGA_SELECT">>Discontinuous MegaBlast
+            <option value="2" <tmpl_var name="BLASTN_SELECT">>BlastN (slow)
+            <option value="3" <tmpl_var name="TBLASTX_SELECT">>TBlastX (very slow)
+            <option value="5" <tmpl_var name="BLASTP_SELECT">>BlastP (slow)
+        </select>
+    </fieldset>
+
+    <fieldset class="options ui-widget-content ui-corner-all">
+        <legend style="color:#009900;">DAGChainer Options</legend>
+        <ul style="list-style-type: none; padding: 0; margin: 0;">
+            <li>
+                <label>Relative Gene Order</label>
+                <input id="dagchainer_type" name="dagchainer_type" checked="true" type="radio" value="geneorder" <tmpl_var dag_gene_select>  onClick="display_dagchainer_settings()">
+                <label>Nucleotide Distance</label>
+                <input id="dagchainer_type" name="dagchainer_type" type="radio" value="distance"
+                onClick="display_dagchainer_settings();" <TMPL_VAR DAG_DISTANCE_SELECT> >
+                <span class="small">We recommend using "Relative Gene Order"</span>
+            </li>
+
+            <li>
+                <span id="dagchainer_distance">Default distance settings for:
+                    <select id="dagchainer_default" onChange="set_dagchainer_defaults();">
+                        <option value="1">Plant
+                        <option value="2">Microbe
+                    </select>
+                </span>
+            </li>
+            <li>
+                <label>Maximum distance between two matches (-D):</label>
+                <input type="number" size="8" id="D" value="">
+                <span class=distance_type></span>
+            </li>
+            <li>
+                <label>Minimum number of aligned pairs (-A):</label>
+                <input type="number" size="8" id="A" value=""> genes
+            </li>
+        </ul>
+    </fieldset>
+
+    <fieldset class="options ui-widget-content ui-corner-all">
+        <legend style="color:#009900">Merge Syntenic Blocks</legend>
+        <ul style="padding: 0; margin: 0;">
+            <li>
+                <label>Algorithm:</label>
+                <select id="merge_algo" name="merge_algo" onchange="merge_select_check()">
+                    <option VALUE="0"> --None--
+                    <option VALUE="1" <tmpl_var name="quota_merge_select">>Quota Align Merge
+                    <option VALUE="2" <tmpl_var name="dag_merge_select">>Interative DAGChainer
+                </select>
+            </li>
+            <li>
+            <span class="small">These settings will merge neighboring syntenic blocks.  We recommend "Quota Align".</span>
+        </li>
+
+        <ul style="list-style-type:none;padding:0; margin: 0" id="merge_algo_options">
+            <li id="max_dist_merge">
+                <label>Average distance expected between syntenic blocks (-gm):</td>
+                <input type="text" size="8" id="gm" value="">
+                <span class="distance_type"></span>
+            </li>
+            <li id="merge_algo_options">
+                <label>Maximum distance between two blocks (-Dm):</label>
+                <input type="text" size="8" id="Dm" value="">
+                <span class="distance_type"></span>
+            </li>
+        </ul>
+    </fieldset>
+
+    <fieldset class="options ui-widget-content ui-corner-all">
+        <legend style="color:#009900">Syntenic Depth</legend>
+        <ul style="list-style-type: none; padding: 0; margin: 0;">
+            <li>
+                <label>Algorithm:</label>
+                <select id="depth_algo" name="depth_algo" onchange="depth_algo_check()">
+                    <option value="0"> --None--
+                    <option value="1" <TMPL_VAR NAME="QUOTA_ALIGN_SELECT">>Quota Align
+                </select>
+            </li>
+            <li id="depth_options" style="display:none;">
+                <label>Ratio of coverage depth:</label>
+
+                <span style="color:#009900" id="depth_org_1"></span>
+                <input type="text" size="2" id="depth_org_1_ratio" value="<tmpl_var name=depth_org_1_ratio>">
+                -to-
+                <input type="text" size="2" id="depth_org_2_ratio" value="<tmpl_var name=depth_org_2_ratio>">
+                <span style="color:#009900" id=depth_org_2></span><br>
+
+                <label>Overlap distance:</label>
+                <input type="text" size="8" id="depth_overlap" value="<tmpl_var name=depth_overlap>">
+            </li>
+        </ul>
+    </fieldset>
+
+    <fieldset class="options ui-widget-content ui-corner-all">
+        <legend style="color:#009900;">CodeML</legend>
+        <ul style="padding: 0; margin: 0;">
+            <li>
+                <label>Calculate syntenic CDS pairs and color dots:</label>
+                <select name="ks_type" id="ks_type">
+                    <option value="0" <tmpl_var name=ks0>>--None--</option>
+                    <option value="ks" <tmpl_var name=ks1> >Synonymous (Ks)</option>
+                    <option value="kn" <tmpl_var name=ks2> >Non-synonymous (Kn)</option>
+                    <option value="kn_ks" <tmpl_var name=ks3>>Kn/Ks</option>
+                </select> substitution rates <span style="color:red">(SLOW)</span>
+            </li>
+            <li>
+                <label>Color scheme:</label>
+                <select name="color_scheme" id="color_scheme">
+                    <option value ="0" <tmpl_var name="CS0"> >Rainbow 1</option>
+                    <option value ="1" <tmpl_var name="CS1"> >Rainbow 2</option>
+                    <option value ="5" <tmpl_var name="CS5"> >2.1xRainbow</option>
+                    <option value ="7" <tmpl_var name="CS7"> >2.2xRainbow</option>
+                    <option value ="6" <tmpl_var name="CS6"> >3.1xRainbow</option>
+                    <option value ="8" <tmpl_var name="CS8"> >3.2xRainbow</option>
+                    <option value ="2" <tmpl_var name="CS2"> >RYB</option>
+                    <option value ="3" <tmpl_var name="CS3"> >RYBG</option>
+                    <option value ="4" <tmpl_var name="CS4"> >Black-Red</option>
+                    <option value ="9" <tmpl_var name="CS9"> >3xRed-Blue</option>
+                    <option value ="10" <tmpl_var name="CS10"> >3xBlue-Orange</option>
+                </select>
+            </li>
+            <li>
+                <label>Min Val:</label>
+                <input type="text" size="4" id="codeml_min" value="<tmpl_var name=codeml_min>">
+
+                <label>Max Val:</label>
+                <input type="text" size="4" id="codeml_max" value="<tmpl_var name=codeml_max>">
+
+                <label>Log10 Transform:</label>
+                <input type="checkbox" name="logks" id="logks" <tmpl_var name=logks> >
+            </li>
+            <li>
+                <span class="small" style="color:red">&nbsp;&nbsp;&nbsp;&nbsp; Only applicable to protein coding sequences (CDS vs. CDS)</span>
+            </li>
+        </ul>
+    </fieldset>
+
+    <fieldset class="options ui-widget-content ui-corner-all">
+        <legend style="color:#009900">Advanced Options (
+        <a href="../wiki/index.php/SynMap#Advanced_Options">see page docs</a>)</legend>
+        <ul style="list-style-type: none; padding: 0; margin: 0;">
+            <li>
+                <label>Tandem duplication distance</label>
+                <input type="number" size="2" id="tdd" name="tdd" value="<tmpl_var name=dupdist>">
+            </li>
+            <li>
+                <label>C-score (filters low quality hits: value [0-1])</label>
+                <input type="range" size="2" id="csco" name="csco" value="<tmpl_var name=cscore>"
+                    min="0" max="1" step="0.01" onchange="cs_display.value=value">
+                <output id="cs_display" for="csco"><tmpl_var name="cscore"></output>
+            </li>
+        </ul>
+    </fieldset>
+</div> <!-- close tab-2 -->
+
+    <div id="tab-3">
+        <fieldset class="options ui-widget-content ui-corner-all">
+            <legend style="color:#009900">Dotplot options</legend>
+            <ul>
+                <li>
+                    <label>Regenerate dotplot images?</label>
+                    <input type="checkbox" name="regen_images" id="regen_images">
+                </li>
+                <li>
+                    <label>Show non-syntenic matches (grey dots)?</label>
+                    <input type="checkbox" name="show_non_syn_dots" id="show_non_syn_dots" <tmpl_var name=show_non_syn_dots> >
+                </li>
+                <li>
+                    <label>Draw boxes around syntenic regions?</label>
+                    <input type="checkbox" name="box_diags" id="box_diags" <tmpl_var name=box_diags> >
+                </li>
+                <li>
+                    <label>Label Chromosomes?</label>
+                    <input type="checkbox" name="clabel" id="clabel" <tmpl_var name=chr_label> >
+                </li>
+                <li>
+                    <label>Skip Random/Unknown Chromosomes?</label>
+                    <input type="checkbox" name="skiprand" id="skiprand" <tmpl_var name=skip_rand> >
+                </li>
+                <li>
+                    <label>Sort Chromosomes by:</label>
+                    <select name="chr_sort_order" id="chr_sort_order">
+                        <option value="N" <tmpl_var name=chr_sort_name> > Name </option>
+                        <option value="S" <tmpl_var name=chr_sort_size> > Size </option>
+                    </select>
+                </li>
+                <li>
+                    <label>Flip axes?</label>
+                    <input type="checkbox" name="flip" id="flip" <tmpl_var name=flip> >
+                </li>
+                <li>
+                <label>Color diagonals by:</label>
+                    <select name="color_type" id="color_type">
+                        <option value="0" <tmpl_var name=color_type_none> > Single color </option>
+                        <option value="inv" <tmpl_var name=color_type_inv> > Inversions </option>
+                        <option value="diag" <tmpl_var name=color_type_diag> > Syntenic Block </option>
+                    </select>
+                    <br>
+                    <span class="small" style="color:red">&nbsp;&nbsp;&nbsp;&nbsp;Synonymous rates will supercede this option.</span>
+                </li>
+                <li>
+                    <label>Dotplot axis metric:</label>
+                    <select name="axis_metric" id="axis_metric">
+                        <option value="nt" <tmpl_var name=axis_metric_nt>>Nucleotides</option>
+                        <option value="gene" <tmpl_var name=axis_metric_gene>>Genes</option>
+                    </select>
+                </li>
+                <li>
+                <label>Dotplot axes relationship:</label>
+                    <select name="axis_relationship" id="axis_relationship">
+                        <option value="s" <tmpl_var name=axis_relationship_s>>Square</option>
+                        <option value="r" <tmpl_var name=axis_relationship_r>>Relative/Dynamic</option>
+                    </select>
+                </li>
+                <li>
+                    <label>Master image width (0 == dynamic)</label>
+                    <input type="text" name="master_width" id="master_width"
+                        size="6" value="<tmpl_var name=mwidth>">
+                </li>
+                <li>
+                    <label>Minimum chromosome size:</label>
+                    <input type="text" name="min_chr_size" id="min_chr_size"
+                        size="6" value="<tmpl_var name=min_chr_size>">
+                </li>
+                <li>
+                    <label>
+                        <a href="http://genomevolution.org/wiki/index.php/Syntenic_path_assembly" target="_CoGepedia">Syntenic Path Assembly (SPA)</a>?
+                    </label>
+                    <input type="checkbox" name="assemble" id="assemble" onclick="$('#assemble_info').toggle();" <tmpl_var name=syntenic_path>>
+                    <br>
+                    <span class="small" id="assemble_info" style="display: none; color: red;">Options:
+
+                    <label>Reference genome (to which the other genome is assembled) has</label>
+                    <select id="spa_ref_genome">
+                        <option value="1" <tmpl_var name="spa_few_select"> > fewer
+                        <option value="-1" <tmpl_var name="spa_more_select"> > more
+                    </select>
+                          pieces (contigs, scaffolds, etc)
+                <li>
+                    <label>Don't show contigs without synteny?</label>
+                    <input type="checkbox" name="show_non_syn" id="show_non_syn" <tmpl_var name="show_non_syn">><span><br>
+                </li>
+                <li>
+                    <label>E-mail results?</label>
+                    <input type="checkbox" id="check_email" onclick="toggle_email_field()">
+                    <div class="email_box small" style="display:none;">
+                        <table class="backbox">
+                        <tr>
+                            <td>Your E-mail Address: </td>
+                            <td>
+                                <input type="email" id="email" onBlur="address_validity_check()"
+                                    value="<tmpl_var name=email>"></input>
+                            </td>
+                            <td>
+                                <font id="email_error" class="small" style="display: none; color: red;">You have supplied an invalid e-mail address.</font>
+                            </td>
+                        </tr><tr>
+                            <td>Job Title: </td>
+                            <td>
+                                <input type="text" id="jobtitle"></input>
+                                <span class="ui-button ui-corner-all" onClick="fill_jobtitle()">Use Org Names</span>
+                            </td>
+                        </tr>
+                        </table>
+                    </div>
+                </li>
+            </ul>
+        </fieldset>
+    </div> <!-- close tab-3 -->
+</section> <!--close tabs section-->
+<div style="padding: 15px 0 5px 0;">
+    <span style="font-size: 1em" class="ui-button ui-button-go ui-corner-all" id="synmap_go" onClick="run_synmap(false);" >Generate SynMap</span>
+</div>
+
+<section id="prev_container" class="hidden">
+    Previously run parameters:
+    <span id="hide_previous" class="show_prev_button ui-button ui-corner-all"
+        onClick="$('.previous_analyses').toggle(); $('.show_prev_button').toggle();">
+        Hide
+    </span>
+
+    <span id="show_previous" style="display:none"
+        class="show_prev_button ui-button ui-corner-all"
+        onClick="$('.previous_analyses').toggle(); $('.show_prev_button').toggle();">
+        Show
+    </span>
+
+    <div class="small previous_analyses">
+        (Clicking on row automatically selects and sets SynMap genomes and parameters.)
+    </div>
+
+    <div id="previous_analyses" class="previous_analyses">
+    </div>
+</section>
+</tmpl_if>
+
+
+<!-- partials -->
+<tmpl_if name="org_menu">
+<section class="ui-widget-content ui-corner-all resizable" style="float: left; padding: 0.3em; height: auto; width:625px;">
+    <h4 style="font-weight: normal; margin: 0;">Organism <tmpl_var name="num"> Search: </h4>
+
+    <div class="small">
+        <label>Name:</label>
+        <input type="search" size="10"
+            name = "org_name<tmpl_var name=num>"
+            id="org_name<tmpl_var name=num>"
+            style="font-style:italic"
+            onKeyUp="timing('org_name<tmpl_var name=num>');"
+            placeholder="<tmpl_var name=org_name>">
+        <span class="ui-button ui-corner-all" onClick="timing('org_name<tmpl_var name=num>');">
+            <span class="ui-icon ui-icon-arrowrefresh-1-w"></span>
+        </span>
+
+        <label>Description:</label>
+        <input type="search" size="10"
+            name="org_desc<tmpl_var name=num>"
+            id="org_desc<tmpl_var name=num>"
+            style="font-style:italic"
+            onKeyUp="timing('org_desc<tmpl_var name=num>');"
+            placeholder="<tmpl_var name=org_desc>">
+        <span class="ui-button ui-corner-all" onClick="timing('org_desc<tmpl_var name=num>');">
+            <span class="ui-icon ui-icon-arrowrefresh-1-w"></span>
+        </span>
+    </div>
+
+    <div id="org_list<tmpl_var name=num>">
+        <tmpl_var name="org_list">
+    </div>
+
+    <table>
+        <tr>
+            <td>Genome:</td>
+
+            <td>
+                <div id="dsg_menu<tmpl_var name=num>">
+                    <tmpl_var name="dsg_menu">
+                </div>
+            </td>
+
+            <td>
+                <div id="feattype_menu<tmpl_var name=num>">
+                    <tmpl_if name="feattype_menu">
+                        <tmpl_var name="feattype_menu">
+                    <tmpl_else>
+                        <input type="hidden" id="feat_type<tmpl_var name=num>">
+                    </tmpl_if>
+                </div>
+            </td>
+        </tr>
+
+        <tr>
+            <td colspan="3">
+                <div id="genome_message<tmpl_var name=num>">
+                    <tmpl_var name="genome_message">
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <div style="vertical-align:top;" id="dsg_info<tmpl_var name=num>">
+        <tmpl_var name="dsg_info">
+    </div>
+</section>
+
+<div id="synmap_dialog" class="dialog_box" title="Running SynMap ..." style="display:none;">
+    <div id="text" class="small ui-widget-content ui-corner-all inline" style="overflow-y:auto;width:450px;height:200px;color:dimgray;padding: 5px;">
+    </div>
+
+    <ul id="dialog_error" class="horizontal padded hidden">
+        <li id="error_msg">An error occurred <img src="picts/thumbs_down.png"></li>
+        <li id="dialog_log" class="small"></li>
+        <li id="cancel_button" class="ui-button ui-corner-all ui-button-go r">
+            <span onClick="close_dialog(); load_results();" >
+                Cancel
+            </span>
+        </li>
+    </ul>
+
+    <ul id="dialog_success" class="horizontal padded hidden">
+        <li id="finished_msg">
+            <span>Finished!</span>
+            <img src="picts/thumbs_up.png">
+        </li>
+        <li id="ok_button" class="ui-button ui-corner-all r">
+            <span onClick="close_dialog(); load_results();" >
+                OK
+            </span>
+        </li>
+    </ul>
+
+    <ul id="progress" class="padded">
+        <li class="bottom">
+            <span id="loading_msg">Please wait ...</span>
+            <img src="picts/ajax-loader.gif"/>
+        </li>
+    </ul>
+    <div id="synmap_link" class="small" style="color:dimgray; padding-left: 5px;"></div>
+</div>
+</tmpl_if>
+
+<!-- Load scripts last for loading -->
+<script language="javascript" type="text/javascript" src="js/jquery.tablesorter.2.0.3.js"></script>
+<script language="javascript" type="text/javascript" src="js/synmap.js"></script>
 <script language="javascript">
-
-function init_table() {
- $("#prev_table").tablesorter({
-		sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
-		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
-		headerClass: 'header',		// Class name for headers (th's)
-		widgets: ['zebra'],
-		textExtraction: 'complex'
-		});
- }
-
-function has_organisms () {
-    return ($('#org_id1').val() != "") &&
-        ($('#org_id2').val() != "");
-}
-
-$(function() {$("#pair_info").draggable();});
-$(function() {$("#tabs").tabs({selected:0});});
-$(function() {$(".resizable").resizable();});
-
-function get_gc (dsgid, divid)
-{
-  $('#'+divid).removeClass('link').html('loading...');
-  get_dsg_gc(['args__dsgid','args__'+dsgid,'args__text','args__1'],[divid]);
-}
-
-function get_organism_chain(type,val,i)
-{
- $('#org_list').html('<input type=hidden id = "org_id"+i><font class="loading"></font>');
- if (type == 'name') {get_orgs(['args__name','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
- else if (type == 'desc') {get_orgs(['args__desc','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
- $('#dsg_info'+i).html('<div class="loading dna_small small">loading. . .</div>');
- ajax_wait("gen_dsg_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['dsg_menu"+i+"', 'genome_message"+i+"']);");
- ajax_wait("check_previous_analyses();");
- ajax_wait("get_genome_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],[handle_dsg_info]);");
-}
-
-function get_genome_info_chain(i)
-{
- $('#dsg_info'+i).html('<div class=dna_small class=loading class=small>loading. . .</div>');
- // ajax_wait("gen_dsg_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['dsg_menu"+i+"','genome_message"+i+"']);");
- gen_dsg_menu(['args__oid','org_id'+i, 'args__num','args__'+i],['dsg_menu'+i, 'genome_message'+i]);
- $('#depth_org_1').html($('#org_id1 option:selected').html());
- $('#depth_org_2').html($('#org_id2 option:selected').html());
-
- ajax_wait("check_previous_analyses();");
- ajax_wait("get_genome_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],[handle_dsg_info]);");
-
-}
-
-function rand ()
-{
-  return ( Math.floor ( Math.random ( ) * 99999999 + 1 ) );
-}
-
-function populate_page_obj(basefile)
- {
-  if (!basefile) {basefile = "SynMap_"+rand(); }
-  pageObj.basename = basefile;
-  pageObj.nolog = 0;
-  pageObj.waittime = 1000;
- }
-
-function run_synmap(scheduled){
-//  generate_basefile([],[update_basename]);
- populate_page_obj();
- var org_name1 = pageObj.org_name1;
- var org_name2 = pageObj.org_name2;
- //feat_type 1 == CDS, 2 == genomic
- var feat_type1 = $('#feat_type1').val();
- var feat_type2 = $('#feat_type2').val();
- var org_length1 = pageObj.org_length1;
- var org_length2 = pageObj.org_length2;
-//seq_type == 1 is unmasked
- var seq_type1 = pageObj.seq_type1;
- var seq_type2 = pageObj.seq_type2;
- //check to see if we will allow this run
- var max_size = 100000000;
-// console.log (org_name1, org_length1, seq_type1);
-// console.log (org_name2, org_length2, seq_type2);
- if (( org_length1 > max_size && feat_type1 == 2 && seq_type1 == 1) &&
-     ( org_length2 > max_size && feat_type2 == 2 && seq_type2 == 1) )
-     {
-     var message = "You are trying to compare unmasked genomic sequences that are large!  This is a bad idea.  Chances are there will be many repeat sequences that will cause the entire pipeline to take a long time to complete.  This usually means that the analyses will use a lot of RAM and other resources.  As such, these jobs are usually killed before they can complete.  Please contact coge.genome@gmail.com for assistance with your analysis.";
-   		alert(message);
-   	 	$('#log_text').hide(0);
-	 		$('#results').show(0).html("<span class=alert>Analysis Blocked:</span>"+message);
-	 		return;
-     }
- if(!pageObj.basename)
-  {
-    var run_callback = function() {
-        run_synmap(scheduled);
-    };
-
-  	setTimeout(run_callback, 100);
-  	return;
-  }
-
-    if (!has_organisms())
-        return;
-
-    if ($('#blast').val() == 5 && (feat_type1 != 1 || feat_type2 != 1) ) {
-        alert('BlastP only works if both genomes have protein coding sequences (CDS) AND CDS is selected for both!');
-        return;
-    }
-
-    var dagchainer = $('#dagchainer_type').filter(':checked');
-    var argument_list = {
-        tdd: $('#tdd').val(),
-        D: $('#D').val(),
-        A: $('#A').val(),
-        gm: $('#gm').val(),
-        Dm: $('#Dm').val(),
-        blast: $('#blast').val(),
-        feat_type1: $('#feat_type1').val(),
-        feat_type2: $('#feat_type2').val(),
-        dsgid1: $('#dsgid1').val(),
-        dsgid2: $('#dsgid2').val(),
-        jobtitle: $('#jobtitle').val(),
-        basename: pageObj.basename,
-        email: $('#email').val(),
-        regen_images: $('#regen_images')[0].checked,
-        width: $('#master_width').val(),
-        dagchainer_type: dagchainer.val(),
-        ks_type: $('#ks_type').val(),
-        assemble: $('#assemble')[0].checked,
-        axis_metric: $('#axis_metric').val(),
-        axis_relationship: $('#axis_relationship').val(),
-        min_chr_size: $('#min_chr_size').val(),
-        spa_ref_genome: $('#spa_ref_genome').val(),
-        show_non_syn: $('#show_non_syn')[0].checked,
-        color_type: $('#color_type').val(),
-        box_diags: $('#box_diags')[0].checked,
-        merge_algo: $('#merge_algo').val(),
-        depth_algo: $('#depth_algo').val(),
-        depth_org_1_ratio: $('#depth_org_1_ratio').val(),
-        depth_org_2_ratio: $('#depth_org_2_ratio').val(),
-        depth_overlap: $('#depth_overlap').val(),
-        fid1: pageObj.fid1,
-        fid2: pageObj.fid2,
-        show_non_syn_dots: $('#show_non_syn_dots')[0].checked,
-        flip: $('#flip')[0].checked,
-        clabel: $('#clabel')[0].checked,
-        skip_rand: $('#skiprand')[0].checked,
-        color_scheme: $('#color_scheme').val(),
-        chr_sort_order: $('#chr_sort_order').val(),
-        codeml_min: $('#codeml_min').val(),
-        codeml_max: $('#codeml_max').val(),
-        logks: $('#logks')[0].checked,
-        csco: $('#csco').val(),
-        jquery_ajax: 1,
-    };
-    // TODO: Scale polling time linearly with long running jobs
-    var duration = pageObj.waittime;
-
-    var readlog_callback = function () {
-        read_log(pageObj.basename, pageObj.tempdir);
-    };
-
-    var start_callback = function(tiny_link) {
-            pageObj.nolog=1;
-
-            setTimeout(readlog_callback, duration);
-            argument_list.fname = 'go';
-            argument_list.tiny_link = tiny_link;
-            $.ajax({
-            data: argument_list,
-            success: function(data) {
-                handle_results(data);
-            }
-        });
-    }
-
-    argument_list.fname = 'get_query_link';
-    $.ajax({
-        dataType: 'text',
-        data: argument_list,
-        success: function(data) {
-            var link = "Regenerate this analysis: <a href=" + data + " onclick=window.open('tiny')"
-            + "target = _new>" + data + "</a>";
-
-            jQuery('html, body').animate({scrollTop: 0}, 1000);
-            $('#results').hide(0);
-            $('#short_url').html(link);
-            $('#short_url').fadeIn(1000);
-
-            $('#log_text').show(0);
-            $('#log_text').html('Beginning run...');
-            start_callback (data);
-        }
-    });
-}
-
-function read_log(name, dir) {
-    $.ajax({
-        data: {
-            jquery_ajax: 1,
-            fname: 'read_log',
-            logfile: name,
-            tempdir: dir,
-        },
-        success : function(data) {
-            monitor_log(data);
-        },
-    });
-}
-
-function handle_results(val){
-    $('#log_text').hide(0);
-    $('#results').show(0).html(val);
-    $(function() {$("#synmap_zoom_box").draggable();});
-    setup_button_states();
-    ajax_wait("check_previous_analyses();");
-}
-
-function check_previous_analyses(){
-    var gid1 = $('#org_id1').val();
-    var gid2 = $('#org_id2').val();
-
-    if (gid1 && gid2) {
-        $.ajax({
-            data: {
-                jquery_ajax: 1,
-                oid1: gid1,
-                oid2: gid2,
-            },
-            success: function(data)  {
-                load_previous_analyses(data);
-            }
-        });
-    }
-//get_previous_analyses(['args__oid1','org_id1', 'args__oid2','org_id2'],[load_previous_analyses]);
-}
-
-function load_previous_analyses (stuff) {
-    $('#previous_analyses').html(stuff);
-    init_table();
-}
-
-function update_params(val) {
- var params;
- if (val)
-   {
-     params = val.split('_');
-   }
- else
-   {
-     params = $('#prev_params').val()[0].split('_');;
-   }
-
- var cmd;
- if ($('#org_id1').val() == params[3])
-  {
-    cmd = "$('#feat_type1').attr('value', '"+params[5]+"');$('#feat_type2').attr('value', '"+params[8]+"');";
-    $('#dsgid1').attr('value',params[4]);
-    $('#dsgid2').attr('value',params[7]);
-  }
- else
-  {
-    cmd = "$('#feat_type2').attr('value', '"+params[5]+"');$('#feat_type1').attr('value', '"+params[8]+"');";
-    $('#dsgid2').attr('value',params[4]);
-    $('#dsgid1').attr('value',params[7]);
-  }
- get_genome_info(['args__dsgid','dsgid1','args__org_num','args__1'],[handle_dsg_info]);
- get_genome_info(['args__dsgid','dsgid2','args__org_num','args__2'],[handle_dsg_info]);
- ajax_wait(cmd);
- var type;
- $('#blast').attr('value',params[9]);
- if (params[10] == 'Distance')
-  {
-   $("input[name='dagchainer_type']:nth(1)").attr("checked","checked");
-   type=" bp";
-  }
- else
-  {
-   $("input[name='dagchainer_type']:nth(0)").attr("checked","checked");
-   type= " genes";
-  }
- display_dagchainer_settings([params[1],params[2]],type);
- $('#c').val(params[11]);
- merge_select_check();
- depth_algo_check();
-}
-
-function handle_dsg_info(dsg_html, feat_menu, genome_message, length, org_num, org_name, seq_id) {
-	$('#dsg_info'+org_num).html(dsg_html);
-	$('#feattype_menu'+org_num).html(feat_menu);
-	$('#genome_message'+org_num).html(genome_message);
-  if (org_num == 1)
-   {
-		pageObj.org_length1 = length;
-		pageObj.org_name1 = org_name;
-		pageObj.seq_type1 = seq_id;
-   }
-	else
-   {
-		pageObj.org_length2 = length;
-		pageObj.org_name2 = org_name;
-		pageObj.seq_type2 = seq_id;
-   }
-}
-
-
-function set_dagchainer_defaults(params, type) {
-  var settings = $('#dagchainer_default').val();
-  if (!(params && type))
-   {
-    if ($('#dagchainer_type')[0].checked)
-     {
-       params = [20,5,0,0];
-       type = " genes";
-     }
-    else
-     {
-      if (settings == 1) // for plant genomes
-       { params = [120000, 5, 96000,480000];}
-      else if (settings == 2) // for microbe genomes
-       { params = [2000, 5, 4000, 8000];}
-       type=" bp";
-     }
-  }
-  if (!params) {return;}
-  $('#D').val(params[0]);
-  $('#A').val(params[1]);
-  if (typeof(params[2]) == 'undefined') { params[2] = 4*params[0];}
-  if (typeof(params[3]) == 'undefined') { params[3] = 4*params[1];}
-  $('#gm').val(params[2]);
-  $('#Dm').val(params[3]);
-  $('.distance_type').html(type);
- }
-
-function ajax_wait (val){
- if (ajax.length)
-   {
-    setTimeout("ajax_wait("+'"'+val+'"'+")",100);
-    return;
-   }
- eval(val);
-}
-
-function timing(val, val2){
-  namere = /name/;
-  descre = /desc/;
-  if (namere.exec(val))
-   {
-    searchterm = $('#'+val).val();
-   }
-  else if (descre.exec(val))
-   {
-    searchterm = $('#'+val).val();
-   }
-  var searchterm;
-  if (!searchterm) {val=0;}
-  if(searchterm == "Search")
-  {
-    searchterm = "";
-  }
-  pageobjsearch = "search"+val;
-  pageobjtime = "time"+val;
-  if (pageObj.pageobjsearch && pageObj.pageobjsearch == searchterm+val)
-   {
-//    return;
-   }
-  pageObj.pageobjsearch=searchterm+val;
-  if (pageObj.pageobjtime){
-   clearTimeout(pageObj.pageobjtime);
-  }
-  re = /(\d+)/;
-  i = re.exec(val);
-
-  if (namere.exec(val))
-   {
-     if (val2)
-     {
-      get_organism_chain('name',$('#'+val).val(),i[0])
-     }
-     else
-     {
-       pageObj.pageobjtime = setTimeout("get_organism_chain('name',$('#"+val+"').val(),i[0])",500);
-     }
-
-   }
-  else if (descre.exec(val))
-   {
-     if (val2)
-     {
-      get_organism_chain('desc',$('#'+val).val(),i[0])
-     }
-     else
-     {
-       pageObj.pageobjtime = setTimeout("get_organism_chain('desc',$('#"+val+"').val(),i[0])",200);
-     }
-   }
-}
-
 $(document).ready(function(){
     $.ajaxSetup({
         type: "GET",
-        url: "<TMPL_VAR NAME='PAGE_NAME'>",
+        url: "<tmpl_var name=page_name>",
         dataType: "html",
         cache: false
     });
 
-  if($('#org_name1').val() != "Search") {
-    $('#org_name1').css({fontStyle: "normal"});
-    timing('org_name1',1);
-  }
-  if($('#org_desc1').val() != "Search") {
-    $('#org_desc1').css({fontStyle: "normal"});
-    timing('org_desc1',1);
-  }
-  if($('#org_name2').val() != "Search") {
-    $('#org_name2').css({fontStyle: "normal"});
-    timing('org_name2',1);
-  }
-  if($('#org_desc2').val() != "Search") {
-    $('#org_desc2').css({fontStyle: "normal"});
-    timing('org_desc2',1);
-  }
-  ajax_wait("check_previous_analyses();");
-    <TMPL_VAR NAME=DISPLAY_DAGCHAINER_SETTINGS>
- if ($('#assemble')[0].checked)
-  {
-   $('#assemble_info').toggle();
-  }
-  $(".options tr:even").addClass("even");
-  merge_select_check();
-  depth_algo_check();
- $('#depth_org_1').html($('#org_id1 option:selected').html());
- $('#depth_org_2').html($('#org_id2 option:selected').html());
- pageObj.fid1=<TMPL_VAR NAME=FID1>;
- pageObj.fid2=<TMPL_VAR NAME=FID2>;
- pageObj.tempdir="<TMPL_VAR NAME=TEMPDIR>";
+    var items = location.href.split('?');
+    var link = $('#beta_link').attr('href').split('?');
 
-    var autogo = <TMPL_VAR NAME=AUTOGO>;
+    if (items.length > 1  && link.length < 2) {
+        $('#beta_link').each(function() {
+            this.href += "?" + items[1];
+        });
+    }
+
+    $(".dialog_box").dialog({
+        autoOpen: false,
+        width: 500,
+    });
+
+    $("#synmap_dialog").dialog({modal: true});
+
+    if($('#org_name1').val() != "Search") {
+        $('#org_name1').css({fontStyle: "normal"});
+        timing('org_name1',1);
+    }
+    if($('#org_desc1').val() != "Search") {
+        $('#org_desc1').css({fontStyle: "normal"});
+        timing('org_desc1',1);
+    }
+    if($('#org_name2').val() != "Search") {
+        $('#org_name2').css({fontStyle: "normal"});
+        timing('org_name2',1);
+    }
+    if($('#org_desc2').val() != "Search") {
+        $('#org_desc2').css({fontStyle: "normal"});
+        timing('org_desc2',1);
+    }
+
+    ajax_wait("check_previous_analyses();");
+    <tmpl_var name=display_dagchainer_settings>
+
+    if ($('#assemble')[0].checked) {
+        $('#assemble_info').toggle();
+    }
+
+    $(".options tr:even").addClass("even");
+    merge_select_check();
+    depth_algo_check();
+
+    $('#depth_org_1').html($('#org_id1 option:selected').html());
+    $('#depth_org_2').html($('#org_id2 option:selected').html());
+
+    pageObj.fid1 = "<tmpl_var name=fid1>";
+    pageObj.fid2 = "<tmpl_var name=fid2>";
+    pageObj.tempdir="<tmpl_var name=tempdir>";
+
+    var autogo = "<tmpl_var name=autogo>";
     if (autogo) {
         run_synmap(autogo);
     }
  });
-
-function display_dagchainer_settings(params,type) {
-
- if ($('#dagchainer_type')[0].checked)
-  {
-   $('#dagchainer_distance').hide(0);
-  }
- else
-  {
-   $('#dagchainer_distance').show(0);
-  }
-  set_dagchainer_defaults(params, type);
-}
-
-function search_bar(div_id){
-  if ($('#'+div_id).val() == "Search") $('#'+div_id).val("");
-  if ($('#'+div_id).val() != "Search") $('#'+div_id).css({fontStyle: "normal"});
-}
-
-function restore_search_bar(div_id){
-  if(! $('#'+div_id).val()) {
-    $('#'+div_id).val("Search").css({fontStyle: "italic"});
-  }
-}
-
-//These two functions are involved with emailing results
-function toggle_email_field(){
-	if ($('#check_email')[0].checked)
-	{
-		$('.email_box').show(0);
-	}
-	else{
-		$('.email_box').hide(0);
-		$('#email').val('');
-		$('#email_error').hide(0);
-	}
-}
-
-function address_validity_check(validity){
-	if (validity)
-	{
-		if(validity == 'invalid'){
-		$('#email_error').show(0);
-		}
-		else{
-		$('#email_error').hide(0);
-		}
-	}
-	else{
-	check_address_validity(['email'],[address_validity_check]);
-	}
-}
-
-function fill_jobtitle(){
-	var org1 = $('#org_id1 option:selected').html() || 0;
-	var org2 = $('#org_id2 option:selected').html() || 0;
-
-	if (org1 != 0) {org1 = org1.replace(/\s+\(id\d+\)$/,"");}
-	if (org2 != 0) {org2 = org2.replace(/\s+\(id\d+\)$/,"");}
-
-	var title;
-
-	if (org1 != 0 && org2 != 0) title = org1+" v. "+org2;
-	else if (org1 != 0) title = org1;
-	else if (org2 != 0) title = org2;
-	else return;
-
-	$('#jobtitle').val(title);
-}
-
-function update_basename(basename){
-	pageObj.basename=basename;
-}
-
-function reset_basename(){
-	if(pageObj.basename) pageObj.basename=0;
-}
- function monitor_log(log)
-{
-//  console.log(log);
-  var waittime = pageObj.waittime;
-  if (waittime < 60000) {pageObj.waittime=pageObj.waittime*1.25;}
-  var fasta = 0;
-  var blast = 0;
-  var blastdb = 0;
-  var bed = 0;
-  var tandem = 0;
-  var converting1 =0;
-  var evalue = 0;
-  var dag = 0;
-  var converting2=0;
-  var ks = 0;
-  var results = 0;
-  var match;
-  pageObj.finished = 0;
-  if (log) {
-  if(log.match(/fasta sequence/i)) fasta="Generating fasta files . . . ";
-  if(log.match(/Fasta creation passed/i)) {
-  	fasta += "done!<br/>";
-  	blastdb = "Generating blastable databases . . . ";
-  }
-  if(log.match(/BlastDB creation passed/i)) {
-  	blastdb += "done!<br/>";
-  	blast = "Running genome comparison . . . ";
-  }
-   if(log.match(/Completed blast run/i)) {
-  	blast += "done!<br/>";
-	bed = "Creating .bed files . . .";
-  }
-   if(log.match(/Filtering results of tandem/i)) {
-  	bed += "done!<br/>";
-  	tandem = "Filtering tandem dups . . . ";
-  }
-   if(log.match(/Converting blast file to dagchainer input/i)) {
-  	tandem += "done!<br/>";
-  	converting1 = "Formatting for DagChainer . . . ";
-  }
-   if(log.match(/Adjusting evalue/i)) {
-  	converting1 += "done!<br/>";
-  	evalue = "Adjusting e-values . . . ";
-  }
-
-   if(log.match(/Running DagChainer/i)) {
-  	evalue += "done!<br/>";
-  	dag = "Running DAGChainer . . . ";
-  }
-
-  if(log.match(/Completed dagchainer run/i)) {
-  	dag += "done!<br/>";
-  	results = "Generating images . . . ";
-  	pageObj.finished = 1;
-  }
-  if(log.match(/Generating ks data/i)) {
-  	ks = "Calculating synonymous changes (slow) . . . ";
-        results = 0;
-  	pageObj.finished = 0;
-  }
-  if(ks && log.match(/Completed generating ks data/i)) {
-  	ks += "done!<br/>";
-  	results = "Generating images . . . ";
-  	pageObj.finished = 1;
-  }
-
-  if(log.match(/Completed workflow/i)) {
-    pageObj.finished = 1;
-  }
- }
-
-
-  else {pageObj.nolog += 1;}
-  var message = "Initializing search . . . ";
-
-  if (fasta) message += "done!<br/>"+fasta;
-  if (blastdb) message += blastdb;
-  if (blast) message += blast;
-  if (bed) message += bed;
-  if (tandem) message += tandem;
-  if (converting1) message += converting1;
-  if (evalue) message += evalue;
-  if (dag) message += dag;
-  if (ks) message += ks;
-  if (results) message += results;
-
-  if (!pageObj.finished && pageObj.nolog<8) {
-    var waittime = pageObj.waittime;
-    message+="<br/><br/>Next progress check in "+Math.floor(waittime/1000)+" seconds.";
-
-   // TODO: Scale polling time linearly with long running jobs
-   var duration = pageObj.waittime;
-    var readlog_callback = function() {
-        read_log(pageObj.basename, pageObj.tempdir);
-    };
-
-    setTimeout(readlog_callback, duration);
-  }
-
-  if (message) $('#log_text').html(message);
-}
-
-function synteny_zoom(dsgid1, dsgid2, basename, chr1, chr2, ksdb)
-{
-
- var url = 'dsg1='+dsgid1+';dsg2='+dsgid2+';chr1='+chr1+';chr2='+chr2+';base='+basename;
- var loc = $('#map_loc').val();
- var width = $('#zoom_width').val();
- var min = $('#zoom_min').val();
- var max = $('#zoom_max').val();
- var am = $('#axis_metric').val();
- var fid1=0;
- if (pageObj.fid1) {fid1 = pageObj.fid1;}
- var fid2=0;
- if (pageObj.fid2) {fid2 = pageObj.fid2;}
- var ct = $('#color_type').val();
-    var loc = pageObj.loc;
-    if (!loc) {loc=1;}
-    loc++;
-    pageObj.loc=loc;
-    win = window.open ('DisplayMessage.pl', 'win'+loc,'width=400,height=200,scrollbars=1');
-    win.focus();
-    get_dotplot(['args__url','args__'+url, 'args__loc','args__'+loc, 'args__flip','args__'+$('#flip')[0].checked,'args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+width, 'args__ksdb','args__'+ksdb,'args__kstype','ks_type','args__min', 'args__'+min,'args__max', 'args__'+max, 'args__am', 'args__'+am, 'args__ct','args__'+ct, 'args__bd', 'args__'+$('#box_diags')[0].checked, 'args__color_scheme','color_scheme', 'args__am','axis_metric', 'args__ar','axis_relationship', 'args__fid1','args__'+fid1, 'args__fid2', 'args__'+fid2],[open_window]);
-
-}
-
-function open_window (url, loc, width, height)
- {
-    if (!loc) {loc = pageObj.loc;}
-    if (!loc) {loc=1;}
-    my_window = window.open(url,"win"+loc,'"width='+width+',height='+height+', scrollbars=1"');
-    my_window.resizeTo(width,height);
- }
-
-function merge_select_check ()
- {
-   var merge_algo = $('#merge_algo').val();
-   if (merge_algo == 0)
-    {
-      $('#merge_algo_options').hide();
-    }
-   else if (merge_algo == 1)
-    {
-      $('#merge_algo_options').show();
-      $('#max_dist_merge').hide();
-    }
-   else
-    {
-      $('#merge_algo_options').show();
-      $('#max_dist_merge').show();
-    }
- }
-
-function depth_algo_check()
- {
-   var depth_algo = $('#depth_algo').val();
-   if (depth_algo == 0)
-    {
-      $('#depth_options').hide();
-    }
-   else if (depth_algo == 1)
-    {
-      $('#depth_options').show();
-    }
- }
-
-function post_to_grimm(seq1, seq2)
- {
-   seq1 = seq1.replace(/\|\|/g,"\n");
-   seq2 = seq2.replace(/\|\|/g,"\n");
-   var url = "http://nbcr.sdsc.edu/GRIMM/grimm.cgi#report";
-   var myForm = document.createElement("FORM");
-   myForm.method="post" ;
-   myForm.action=url;
-   myForm.setAttribute("target", "_blank");
-   myForm.setAttribute("name", "genomeForm");
-   var myInput = document.createElement("textarea");
-   myInput.name="genome1";
-   myInput.value=seq1;
-   myForm.appendChild(myInput);
-   document.body.appendChild(myForm);
-   var myInput = document.createElement("textarea");
-   myInput.name="genome2";
-   myInput.value=seq2;
-   myForm.appendChild(myInput);
-   document.body.appendChild(myForm);
-   myForm.submit("action");
-   document.body.removeChild(myForm);
- }
-
 </script>
-<table class="ui-widget-content ui-corner-all"><tr><td>
-<div id=short_url style="padding: 5px; text-align: center; display:none;"></div>
-<DIV id=log_text class="small dna" style="display:none"></DIV>
-<DIV id=results><TMPL_IF NAME=RESULTS><TMPL_VAR NAME=RESULTS><TMPL_ELSE>
-<div style="clear: both;"> </div>
-<span class="alert" style="float:left; margin-right: 5px; ">Please Note:</span>
-<div style="float: left">SynMap is a very computationally intense, multi-step program which may take hours to complete for large genomes.<br>If available, select previously run parameter-sets for your organisms to see results instantly.</div>
-
-
-<div style="clear: both;"> </div>
-<hr>
-<span class="alert" style="float: left; margin-right: 5px;">Get Started:</span>
-<div style="float: left"><div class="link" onclick=window.open("http://genomevolution.org/r/6mou")>Click here for an example analysis between <i>Arabidopsis thaliana</i> and <i>Arabidopsis lyrata</i>.</div><span class=small>(Note that syntenic gene pairs are colored by synonymous mutations (Ks))</span><div class="link" onclick=window.open("http://genomevolution.org/wiki/index.php/SynMap#Example_Results")>Click here for an explaination of the results.</div ></div>
-
-
-</TMPL_IF>
-</div>
-</table>
-
-
-<span style="font-size: 1em" class="ui-button ui-button-go ui-corner-all" id="synmap_go" onClick="run_synmap(false);" >Generate SynMap</span>
-
-<span style="font-size: 0.8em" class='ui-button ui-corner-all' onClick="$('#results').html('');" >Clear Results</span>
-
-<div id=tabs style='margin-top: 0.5em'>
-
-<ul>
- <li class=small><a href="#tab-1">Select Organisms</a></li>
- <li class=small><a href="#tab-2">Analysis Options</a></li>
- <li class=small><a href="#tab-3">Display Options</a></li>
-</ul>
-
-
-<div id="tab-1">
- <table><tr valign=top>
-  <TMPL_VAR NAME=ORG_MENU1>
-  <TMPL_VAR NAME=ORG_MENU2>
- </table>
-
-</div> <!--close tab-1 -->
-
-<div id="tab-2">
-
-<table id=algo_table  class="options ui-corner-all ui-widget-content">
- <tr>
-   <td style="color:#009900">Blast Algorithm:
-   <td><select id="blast" name="blast">
-	<OPTION VALUE="6" <TMPL_VAR NAME="LAST_SELECT">>Last (fastest)
-	<OPTION VALUE="4" <TMPL_VAR NAME="LASTZ_SELECT">>(B)lastZ (fast)
-        <OPTION VALUE="0" <TMPL_VAR NAME="MEGA_SELECT">>MegaBlast
-        <OPTION VALUE="1" <TMPL_VAR NAME="DCMEGA_SELECT">>Discontinuous MegaBlast
-        <OPTION VALUE="2" <TMPL_VAR NAME="BLASTN_SELECT">>BlastN (slow)
-        <OPTION VALUE="3" <TMPL_VAR NAME="TBLASTX_SELECT">>TBlastX (very slow)
-	<OPTION VALUE="5" <TMPL_VAR NAME="BLASTP_SELECT">>BlastP (slow)
-       </select>
-  <tr valign=top class="odd">
-  <td style="color:#009900">DAGChainer Options:
-  <td>
-    <label>Relative Gene Order<input id="dagchainer_type" name="dagchainer_type" checked="true" type=radio value="geneorder" <TMPL_VAR DAG_GENE_SELECT>  onCLick="display_dagchainer_settings()"></label>
-    <label>Nucleotide Distance<input id="dagchainer_type" name="dagchainer_type" type=radio value="distance" <TMPL_VAR DAG_DISTANCE_SELECT>  onCLick="display_dagchainer_settings()"></label><span class=small>We recommend using "Relative Gene Order"</span>
-
-
-   <span id=dagchainer_distance>Default distance settings for:
-      <select id="dagchainer_default" onChange="set_dagchainer_defaults();">
-       <option value="1">Plant
-       <option value="2">Microbe
-      </select>
-    </span>
-
- <table>
- <TR>
-   <TD>
-   <TD>
-<!-- <TR>
-   <TD>Average distance expected between syntenic genes (-g):
-   <TD><input type=text size=8 id="g" value=""><span class=distance_type></span>-->
- <TR>
-   <TD>Maximum distance between two matches (-D):
-   <TD><input type=text size=8 id="D" value=""><span class=distance_type></span>
- <TR>
-   <TD>Minimum number of aligned pairs (-A):
-   <TD><input type=text size=8 id="A" value=""> genes
-</TABLE>
-
-
-<tr valign=top>
-  <td style="color:#009900">Merge Syntenic Blocks:
-  <td>
-   Algorithm:
-       <select id="merge_algo" name="merge_algo" onchange="merge_select_check()">
-        <OPTION VALUE="0"> --None--
-        <OPTION VALUE="1" <TMPL_VAR NAME="QUOTA_MERGE_SELECT">>Quota Align Merge
-        <OPTION VALUE="2" <TMPL_VAR NAME="DAG_MERGE_SELECT">>Interative DAGChainer
-       </select> <br>
- <span class=small>These settings will merge neighboring syntenic blocks.  We recommend "Quota Align".</span>
- <table id="merge_algo_options">
-   <TR id="max_dist_merge">
-     <TD>Average distance expected between syntenic blocks (-gm):
-     <TD><input type=text size=8 id="gm" value=""><span class=distance_type></span>
-   <TR>
-     <TD>Maximum distance between two blocks (-Dm):
-     <TD><input type=text size=8 id="Dm" value=""><span class=distance_type></span>
- </TABLE>
-
-<tr valign=top>
-  <td style="color:#009900">Syntenic Depth
-  <td>Algorithm:
-       <select id="depth_algo" name="depth_algo" onchange="depth_algo_check()">
-        <OPTION VALUE="0"> --None--
-        <OPTION VALUE="1" <TMPL_VAR NAME="QUOTA_ALIGN_SELECT">>Quota Align
-       </select> <br>
-       <div id=depth_options style="display:none">
-        Ratio of coverage depth:
-        <span style="color:#009900" id=depth_org_1></span>
-        <input type=text size=2 id="depth_org_1_ratio" value="<TMPL_VAR NAME="DEPTH_ORG_1_RATIO">">
-         -to-
-        <input type=text size=2 id="depth_org_2_ratio" value="<TMPL_VAR NAME="DEPTH_ORG_2_RATIO">">
-        <span style="color:#009900" id=depth_org_2></span><br>
-        Overlap distance: <input type=text size=8 id="depth_overlap" value="<TMPL_VAR NAME="DEPTH_OVERLAP">">
-       </div>
-
-
-<tr valign=top>
-<td style="color:#009900">CodeML
-<td>Calculate syntenic CDS pairs and color dots:
-  <select name="ks_type" id = "ks_type">
-     <option value = 0 <TMPL_VAR NAME=KS0> >--None--</option>
-     <option value = ks <TMPL_VAR NAME=KS1> >Synonymous (Ks)</option>
-     <option value = kn <TMPL_VAR NAME=KS2> >Non-synonymous (Kn)</option>
-     <option value = kn_ks <TMPL_VAR NAME=KS3> >Kn/Ks</option>
-   </select> substitution rates <span style="color:red">(SLOW)</span>
-   <br>
-    Color scheme:
-     <select name="color_scheme" id = "color_scheme">
-      <option value = 0 <TMPL_VAR NAME=CS0> >Rainbow 1</option>
-      <option value = 1 <TMPL_VAR NAME=CS1> >Rainbow 2</option>
-      <option value = 5 <TMPL_VAR NAME=CS5> >2.1xRainbow</option>
-      <option value = 7 <TMPL_VAR NAME=CS7> >2.2xRainbow</option>
-      <option value = 6 <TMPL_VAR NAME=CS6> >3.1xRainbow</option>
-      <option value = 8 <TMPL_VAR NAME=CS8> >3.2xRainbow</option>
-      <option value = 2 <TMPL_VAR NAME=CS2> >RYB</option>
-      <option value = 3 <TMPL_VAR NAME=CS3> >RYBG</option>
-      <option value = 4 <TMPL_VAR NAME=CS4> >Black-Red</option>
-      <option value = 9 <TMPL_VAR NAME=CS9> >3xRed-Blue</option>
-      <option value = 10 <TMPL_VAR NAME=CS10> >3xBlue-Orange</option>
-    </select>
-   <br>
-   Min Val: <input type=text size=4 id="codeml_min" value="<TMPL_VAR NAME="CODEML_MIN">">
-   Max Val: <input type=text size=4 id="codeml_max" value="<TMPL_VAR NAME="CODEML_MAX">">
-   Log10 Transform: <input type=checkbox name="logks" id="logks" <TMPL_VAR NAME=LOGKS> >
-
-   <br>
-   <span class=small style="color:red">&nbsp;&nbsp;&nbsp;&nbsp; Only applicable to protein coding sequences (CDS vs. CDS)</span>
-
- <tr>
-   <td style="color:#009900">Advanced Options (see docs):
-   <td>
-     Tandem duplication distance <input type=text size=2 id="tdd" name="tdd" value="<TMPL_VAR NAME="DUPDIST">"><br>
-     C-score (filters low quality hits: value [0-1])<input type=text size=2 id="csco" name="csco" value="<TMPL_VAR NAME="CSCORE">"><br>
-
-
-</table>
-</div> <!-- close tab-2 -->
-
-<div id="tab-3">
-<table class="options ui-widget-content ui-corner-all">
- <TR>
-   <TD>Regenerate dotplot images?
-   <td><input type=checkbox name="regen_images" id="regen_images">
- <TR>
-   <TD>Show non-syntenic matches (grey dots)?
-   <td><input type=checkbox name="show_non_syn_dots" id="show_non_syn_dots" <TMPL_VAR NAME=SHOW_NON_SYN_DOTS> >
- <tr>
-   <td>Draw boxes around syntenic regions?
-   <td><input type=checkbox name="box_diags" id="box_diags" <TMPL_VAR NAME=BOX_DIAGS> >
- <tr>
-   <td>Label Chromosomes?
-   <td><input type=checkbox name="clabel" id="clabel" <TMPL_VAR NAME=CHR_LABEL> >
- <tr>
-   <td>Skip Random/Unknown Chromosomes?
-   <td><input type=checkbox name="skiprand" id="skiprand" <TMPL_VAR NAME=SKIP_RAND> >
- <tr>
-  <td>Sort Chromosomes by:
-  <td><select name="chr_sort_order" id="chr_sort_order">
-       <option value = N <TMPL_VAR NAME=CHR_SORT_NAME> > Name </option>
-       <option value = S <TMPL_VAR NAME=CHR_SORT_SIZE> > Size </option>
-      </select>
- <TR>
-   <TD>Flip axes?
-   <td><input type=checkbox name="flip" id="flip" <TMPL_VAR NAME=FLIP> >
- <tr>
-   <td>Color diagonals by:
-   <td>
-   <select name=color_type id=color_type>
-     <option value = 0 <TMPL_VAR NAME=COLOR_TYPE_NONE> > Single color </option>
-     <option value = inv <TMPL_VAR NAME=COLOR_TYPE_INV> > Inversions </option>
-     <option value = diag <TMPL_VAR NAME=COLOR_TYPE_DIAG> > Syntenic Block </option>
-   </select>
-   <br>
-   <span class=small style="color:red">&nbsp;&nbsp;&nbsp;&nbsp;Synonymous rates will supercede this option.</span>
- <tr>
-  <td>Dotplot axis metric:
-  <td>
-  <select name="axis_metric" id = "axis_metric">
-   <option value = "nt" <TMPL_VAR NAME=AXIS_METRIC_NT>>Nucleotides</option>
-   <option value = "gene" <TMPL_VAR NAME=AXIS_METRIC_GENE>>Genes</option>
-  </select>
- <tr>
-  <td>Dotplot axes relationship:</td>
-  <td>
-  <select name="axis_relationship" id = "axis_relationship">
-   <option value = "s" <TMPL_VAR NAME=AXIS_RELATIONSHIP_S>>Square</option>
-   <option value = "r" <TMPL_VAR NAME=AXIS_RELATIONSHIP_R>>Relative/Dynamic</option>
-  </select>
-
- <tr>
-   <td>Master image width (0 == dynamic)
-   <td><input type=text name=master_width id=master_width size=6 value="<TMPL_VAR NAME="MWIDTH">">
- <tr>
-   <td>Minimum chromosome size:
-   <Td><input type=text name=min_chr_size id=min_chr_size size=6 value="<TMPL_VAR NAME="MIN_CHR_SIZE">">
-  <TR>
-    <TD><a href=http://genomevolution.org/wiki/index.php/Syntenic_path_assembly target=_CoGepedia>Syntenic Path Assembly (SPA)</a>?
-    <td>
-    <input type=checkbox name="assemble" id="assemble" onclick="$('#assemble_info').toggle();" <TMPL_VAR NAME=SYNTENIC_PATH>><br>
-   <span class=small id='assemble_info' style="display: none; color: red;">Options:
-    <li>Reference genome (to which the other genome is assembled) has
-       <select id=spa_ref_genome>
-        <option value="1" <TMPL_VAR NAME="SPA_FEW_SELECT"> > fewer
-        <option value="-1" <TMPL_VAR NAME="SPA_MORE_SELECT"> > more
-       </select>
-       pieces (contigs, scaffolds, etc)
-    <li>Don't show contigs without synteny?<input type=checkbox name="show_non_syn" id="show_non_syn" <TMPL_VAR NAME=SHOW_NON_SYN>><span><br>
-  <TR>
-   <td>E-mail results?
-   <td><input type=checkbox id=check_email onclick="toggle_email_field()">
-		<div class="email_box small" style="display:none;"><table class="backbox"><tr><td>Your E-mail Address: <td><input type=text id=email onBlur='address_validity_check()' value='<TMPL_VAR NAME="EMAIL">'>
-
-		<font id=email_error class="small" style="display: none; color: red;">You have supplied an invalid e-mail address.</font></div>
-		<tr><td><div class=email_box style="display:none;">Job Title:
-		<td><input type=text id=jobtitle> <span class='ui-button ui-corner-all' onClick="fill_jobtitle()">Use Org Names</span></div>
-		</table>
-
-</TABLE>
-</div> <!-- close tab-3 -->
-</div> <!--close tabs div-->
-Previously run parameters:
-<span id="hide_previous" class='show_prev_button ui-button ui-corner-all' onClick="$('.previous_analyses').toggle(); $('.show_prev_button').toggle();">Hide</span>
-<span id="show_previous" style="display:none" class='show_prev_button ui-button ui-corner-all' onClick="$('.previous_analyses').toggle(); $('.show_prev_button').toggle();">Show</span>
-<div class="small previous_analyses">(Clicking on row automatically selects and sets SynMap genomes and parameters.)</div>
-<div id=previous_analyses class="previous_analyses"></div>
-
-</TMPL_IF>
-
-<TMPL_IF NAME=ORG_MENU>
-<td>
-<div class="ui-widget-content ui-corner-all resizable" style="float: left; padding: 0.3em">
-<DIV>Organism <TMPL_VAR NAME="NUM"> Search: </DIV>
-   <DIV><span class=small>Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "org_name<TMPL_VAR NAME="NUM">" id="org_name<TMPL_VAR NAME="NUM">" style="font-style:italic" onFocus="search_bar('org_name<TMPL_VAR NAME="NUM">')" onKeyUp='timing("org_name<TMPL_VAR NAME="NUM">");'><span><span class='ui-button ui-corner-all' onClick="timing('org_name<TMPL_VAR NAME="NUM">');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
-   Description: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_DESC">" name = "org_desc<TMPL_VAR NAME="NUM">" id="org_desc<TMPL_VAR NAME="NUM">" style="font-style:italic" onFocus="search_bar('org_desc<TMPL_VAR NAME="NUM">')" onKeyUp='timing("org_desc<TMPL_VAR NAME="NUM">");'><span class='ui-button ui-corner-all' onClick="timing('org_desc<TMPL_VAR NAME="NUM">');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
-</DIV>
-   <DIV id="org_list<TMPL_VAR NAME="NUM">"><TMPL_VAR NAME="ORG_LIST"></DIV>
-   <Table><Tr>
-     <td>Genome:
-     <td><DIV id="dsg_menu<TMPL_VAR NAME="NUM">">
-         <TMPL_VAR NAME="DSG_MENU">
-         </div>
-
-     <td>
-     <DIV id="feattype_menu<TMPL_VAR NAME="NUM">">
-     <TMPL_IF NAME="FEATTYPE_MENU">
-       <TMPL_VAR NAME="FEATTYPE_MENU">
-     <TMPL_ELSE>
-      <input type=hidden id=feat_type<TMPL_VAR NAME="NUM">>
-     </TMPL_IF>
-         </div>
-    <TR><Td colspan=3><div id="genome_message<TMPL_VAR NAME="NUM">"><TMPL_VAR NAME="GENOME_MESSAGE"></div>
-     </table>
-<DIV style="vertical-align: top;" id="dsg_info<TMPL_VAR NAME="NUM">"><TMPL_VAR NAME="DSG_INFO"></DIV>
-</div>
-</TMPL_IF>
