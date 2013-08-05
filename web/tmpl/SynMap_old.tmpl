@@ -406,12 +406,12 @@ $(document).ready(function(){
         cache: false
     });
 
-    var items = location.href.split('?');
-    var link = $('#beta_link').attr('href').split('?');
+    var query = location.href.indexOf('?');
+    var link = $('#beta_link').attr('href').indexOf('?');
 
-    if (items.length > 1  && link.length < 2) {
+    if (query != -1 && link == -1) {
         $('#beta_link').each(function() {
-            this.href += "?" + items[1];
+            this.href += location.href.slice(query);
         });
     }
 
