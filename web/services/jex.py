@@ -48,7 +48,9 @@ def status(environ, start_response):
         socket.connect(_defaults['connection'])
         request = {
             'request' : 'get_status',
-            'data' : args['id'],
+            'data' : {
+                'id' : args['id']
+            },
         }
 
         socket.send_json(request)
