@@ -2,14 +2,14 @@ package CoGe::Services::Data::Sequence;
 use base 'CGI::Application';
 
 use CoGeX;
-use CoGe::Accessory::Web;
+use CoGe::Accessory::Web qw( init );
 use CoGe::Accessory::Storage qw( get_genome_seq );
 use JSON qq{encode_json};
 use Data::Dumper;
 
 sub setup {
     my $self = shift;
-    $self->run_modes( 'get' => 'get', );
+    $self->run_modes( 'get' => 'get' );
     $self->mode_param('rm');
 }
 
@@ -25,7 +25,8 @@ sub get {
     print STDERR "Sequence::get gid=$gid chr=$chr start=$start stop=$stop\n";
 
     # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
+    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init();
+    print STDERR "matt: " . $user->name . "\n";
 
     # Retrieve genome
     my $genome = $db->resultset('Genome')->find($gid);
@@ -35,7 +36,7 @@ sub get {
     if ( $genome->restricted
         and ( not defined $user or not $user->has_access_to_genome($genome) ) )
     {
-        print STDERR "Sequence::get access denied\n";
+        print STDERR "Sequence::get access denied to genome $gid\n";
         return;
     }
 

@@ -5,7 +5,7 @@ use warnings;
 use base 'DBIx::Class::Core';
 
 #use CoGeX::ResultSet::Genome;
-use CoGe::Accessory::Storage qw( get_genome_seq );
+use CoGe::Accessory::Storage qw( get_genome_seq get_genome_file );
 use Data::Dumper;
 use Text::Wrap;
 use Carp;
@@ -466,6 +466,12 @@ sub get_genomic_sequence {
 #sub genomic_sequence {
 #    return shift->get_genomic_sequence(@_);
 #}
+
+# mdb added 7/29/13, issue #77
+sub file_path {
+    my $self = shift;
+    return CoGe::Accessory::Storage::get_genome_file( $self->id );
+}
 
 ################################################## subroutine header start ##
 

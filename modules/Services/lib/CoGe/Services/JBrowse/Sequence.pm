@@ -31,6 +31,10 @@ sub features {
     print STDERR
       "Sequence::features gid=$gid chr=$chr size=$size start=$start end=$end\n";
 
+    # Check params
+    return qq{{"features" : []}} if ( $end < 1 );
+    $start = 1 if ( $start < 1 );
+
     # Connect to the database
     my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
 
@@ -39,11 +43,10 @@ sub features {
     return unless $genome;
 
     # Check permissions
-    if (    $user
-        and $genome->restricted
-        and !$user->has_access_to_genome($genome) )
+    if ( $genome->restricted
+        and ( not defined $user or not $user->has_access_to_genome($genome) ) )
     {
-        return qq{{ "features" : [] }};
+        return qq{{"features" : []}};
     }
 
     # Extract requested piece of sequence file
@@ -60,12 +63,7 @@ sub features {
         stop  => $end - 1
     );
 
-    return qq{
-		{ "features" : [
-			{ "start": $start, "end": $end, "seq": "$seq" }
-			]
-		}
-	};
+    return qq{{"features" : [{"start": $start, "end": $end, "seq": "$seq"}]}};
 }
 
 1;

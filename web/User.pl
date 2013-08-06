@@ -80,6 +80,8 @@ my $node_types = CoGeX::node_types();
     toggle_star                     => \&toggle_star,
 );
 
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
+
 dispatch();
 
 sub dispatch {
@@ -1062,11 +1064,13 @@ sub get_contents {
           )
         {
             my $icon =
-                '<img id="'
+                '<img id="' 
               . $entry->id . '" '
-              . ( $entry->is_important
+              . (
+                $entry->is_important
                 ? 'src="picts/star-full.png"'
-                : 'src="picts/star-hollow.png"' )
+                : 'src="picts/star-hollow.png"'
+              )
               . ' '
               . 'width="15" height="15" style="vertical-align:middle;" '
               . 'onclick="toggle_star(this);"' . '/>';

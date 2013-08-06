@@ -4,6 +4,7 @@ use DBI;
 use strict;
 use CoGeX;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Storage qw( index_genome_file get_genome_path );
 use Roman;
 use Data::Dumper;
 use Getopt::Long;
@@ -111,18 +112,13 @@ if ( $numSequences == 0 or $seqLength == 0 ) {
 
 print $log "log: Processed " . commify($numSequences) . " sequences total\n";
 
-# Index fasta file
-execute( $P->{SAMTOOLS} . " faidx $staging_dir/genome.faa" );
-
-# Optionally generate compressed version of fasta/index files
-if ($compress) {
-
-    # Compress fasta file into RAZF using razip
-    execute( $P->{RAZIP}
-          . " -c $staging_dir/genome.faa > $staging_dir/genome.faa.razf" );
-
-    # Index compressed fasta file
-    execute( $P->{SAMTOOLS} . " faidx $staging_dir/genome.faa.razf" );
+print $log "Indexing genome file\n";
+my $rc = CoGe::Accessory::Storage::index_genome_file(
+    file_path => "$staging_dir/genome.faa",
+    compress  => $compress
+);
+if ( $rc != 0 ) {
+    print $log "log: warning: couldn't index fasta file\n";
 }
 
 ################################################################################
@@ -180,7 +176,8 @@ unless ($install_dir) {
     }
     $install_dir = $P->{SEQDIR};
 }
-$install_dir = "$install_dir/" . $genome->get_path . "/";
+$install_dir = "$install_dir/"
+  . CoGe::Accessory::Storage::get_genome_path( $genome->id ) . "/";
 print $log "install path: $install_dir\n";
 
 # mdb removed 7/29/13, issue 77
@@ -290,7 +287,6 @@ print $log "log: Added genome id"
 # Copy files from staging directory to installation directory
 my $t1 = new Benchmark;
 print $log "log: Copying files ...\n";
-print $log "install_dir: $install_dir\n";
 unless ( mkpath($install_dir) ) {
     print $log "log: error in mkpath\n";
     exit(-1);

@@ -28,7 +28,7 @@ LICENSE file included with this module.
 use strict;
 use warnings;
 
-use CoGeX;
+use CoGe::Accessory::Web qw(get_defaults);
 use File::Basename qw(fileparse);
 use POSIX qw(floor);
 use File::Spec::Functions;
@@ -41,14 +41,15 @@ BEGIN {
 
     $VERSION = 0.1;
     @ISA     = qw (Exporter);
-    @EXPORT  = qw( get_genome_file get_genome_seq reverse_complement);
+    @EXPORT =
+      qw( get_genome_path get_genome_file index_genome_file get_genome_seq reverse_complement);
 
     #__PACKAGE__->mk_accessors();
 }
 
 ################################################ subroutine header begin ##
 
-=head2 _get_genome_path
+=head2 get_genome_path
 
  Usage     : 
  Purpose   : This method determines the correct directory structure for storing
@@ -73,7 +74,7 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-sub _get_genome_path {    # private function, not exported
+sub get_genome_path {
     my $gid = shift;
     return unless $gid;
 
@@ -88,9 +89,17 @@ sub _get_genome_path {    # private function, not exported
 sub get_genome_file {
     my $gid = shift;
     return unless $gid;
+    my $base_path = shift;    # optional
 
-    my $base_path =
-      CoGeX->get_conf('SEQDIR') . '/' . _get_genome_path($gid) . '/';
+    my $seqdir = CoGe::Accessory::Web::get_defaults()->{'SEQDIR'};
+    unless ($seqdir) {
+        print STDERR
+"Storage::get_genome_file: WARNING, conf file parameter SEQDIR is blank!\n";
+    }
+
+    unless ($base_path) {
+        $base_path = $seqdir . '/' . get_genome_path($gid) . '/';
+    }
 
     my $file_path = $base_path . 'genome.faa';
     return $file_path if ( -r $file_path );
@@ -99,6 +108,56 @@ sub get_genome_file {
     return $file_path if ( -r $file_path );
 
     return;
+}
+
+sub index_genome_file {
+    my %opts      = @_;
+    my $file_path = $opts{file_path};
+    return unless $file_path;
+    my $compress = $opts{compress};
+
+    # Index fasta file
+    my $samtools = CoGe::Accessory::Web::get_defaults()->{'SAMTOOLS'};
+    unless ($samtools) {
+        print STDERR
+"Storage::index_genome_file: WARNING, conf file parameter SAMTOOLS is blank!\n";
+    }
+    my $cmd = "$samtools faidx $file_path";
+    qx{ $cmd };
+    if ( $? != 0 ) {
+        print STDERR
+          "Storage::index_genome_file: command failed with rc=$?: $cmd\n";
+        return $?;
+    }
+
+    # Optionally generate compressed version of fasta/index files
+    if ($compress) {
+        my $razip = CoGe::Accessory::Web::get_defaults()->{'RAZIP'};
+        unless ($razip) {
+            print STDERR
+"Storage::index_genome_file: WARNING, conf file parameter RAZIP is blank!\n";
+        }
+
+        # Compress fasta file into RAZF using razip
+        $cmd = "$razip -c $file_path > $file_path.razf";
+        qx{ $cmd };
+        if ( $? != 0 ) {
+            print STDERR
+              "Storage::index_genome_file: command failed with rc=$?: $cmd\n";
+            return $?;
+        }
+
+        # Index compressed fasta file
+        $cmd = "$samtools faidx $file_path.razf";
+        qx{ $cmd };
+        if ( $? != 0 ) {
+            print STDERR
+              "Storage::index_genome_file: command failed with rc=$?: $cmd\n";
+            return $?;
+        }
+    }
+
+    return 0;
 }
 
 sub get_genome_seq {
@@ -110,7 +169,7 @@ sub get_genome_seq {
     }
     my $chr   = $opts{chr};
     my $start = $opts{start};
-    $start = 1 unless $start;
+    $start = 1 unless ( $start and $start > 0 );
     my $stop = $opts{stop};
     $stop = $opts{end} if ( not defined $stop );
     $stop = $start unless $stop;
@@ -152,14 +211,21 @@ sub get_genome_seq {
         # Extract requested piece of sequence file
         my $region =
           $chr . ( defined $start && defined $stop ? ":$start-$stop" : '' );
-        my $cmd = CoGeX->get_conf('SAMTOOLS') . " faidx $file_path '$region'";
+        my $samtools = CoGe::Accessory::Web::get_defaults()->{'SAMTOOLS'};
+        unless ($samtools) {
+            print STDERR
+"Storage::get_genome_seq: WARNING, conf file parameter SAMTOOLS is blank!\n";
+        }
+        my $cmd = "$samtools faidx $file_path '$region'";
 
         #print STDERR "$cmd\n";
-        $seq = qx{$cmd};            #my @cmdOut = qx{$cmd};
+        $seq = qx{$cmd};    #my @cmdOut = qx{$cmd};
         unless ($fasta) {
 
             # remove header line
             $seq =~ s/^(?:.*\n)//;
+            # remove end-of-lines
+            $seq =~ s/\n//;
         }
 
         #print STDERR "$seq\n";
@@ -171,8 +237,8 @@ sub get_genome_seq {
     }
     else {    # old method
         $file_path =
-            CoGeX->get_conf('SEQDIR') . '/'
-          . _get_genome_path($gid)
+            CoGe::Accessory::Web::get_defaults()->{'SEQDIR'} . '/'
+          . get_genome_path($gid)
           . "/chr/$chr";
 
         # Extract requested piece of sequence file

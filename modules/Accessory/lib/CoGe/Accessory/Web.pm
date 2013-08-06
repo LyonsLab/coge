@@ -21,14 +21,15 @@ use IPC::System::Simple qw(capture system $EXITVAL EXIT_ANY);
 use Mail::Mailer;
 
 BEGIN {
-    use vars qw ($CONF $VERSION @ISA @EXPORT @EXPORT_OK $Q $TEMPDIR $BASEDIR);
+    use vars
+      qw ($CONF $VERSION @ISA @EXPORT @EXPORT_OK $Q $TEMPDIR $BASEDIR $CONF);
     require Exporter;
 
-    $BASEDIR = ( $ENV{HOME} ? $ENV{HOME} : "/opt/apache/coge/web/" );
+    $BASEDIR = ( $ENV{HOME} ? $ENV{HOME} : '/opt/apache/coge/web/' );
     $VERSION = 0.1;
     $TEMPDIR = $BASEDIR . "tmp";
     @ISA     = ( @ISA, qw (Exporter) );
-    @EXPORT  = qw();
+    @EXPORT  = qw( init get_defaults dispatch );
     __PACKAGE__->mk_accessors(
         'restricted_orgs', 'basefilename', 'basefile', 'logfile',
         'sqlitefile'
@@ -36,13 +37,14 @@ BEGIN {
 }
 
 sub init {
+    my $self   = shift;
     my %opts   = @_;
     my $ticket = $opts{ticket};    # optional cas ticket for retrieving user
     my $url    = $opts{url};       # optional url for cas authentication
     my $page_title = $opts{page_title};    # optional page title
 
     # Get config
-    $CONF = get_defaults() unless $CONF;
+    $CONF = get_defaults();
 
     # Connec to DB
     my $db = CoGeX->dbconnect($CONF);
@@ -80,8 +82,11 @@ sub init {
 }
 
 sub get_defaults {
+    return $CONF if ($CONF);
+
     my ( $self, $param_file ) = shift;
     $param_file = $BASEDIR . "coge.conf" unless defined $param_file;
+    #print STDERR "Web::get_defaults: $param_file\n";
     unless ( -r $param_file ) {
         print STDERR
 qq{Either no parameter file specified or unable to read paramer file ($param_file).
@@ -98,7 +103,9 @@ A valid parameter file must be specified or very little will work!};
         $items{$name} = $path;
     }
     close IN;
-    return \%items;
+
+    $CONF = \%items;
+    return $CONF;
 }
 
 sub dispatch {

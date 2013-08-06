@@ -60,7 +60,7 @@ LICENSE file included with this module.
 =cut
 
 use strict;
-use vars qw( %pool $CONF );    # persistent globals
+use vars qw( %pool );    # persistent globals
 
 ################################################ subroutine header begin ##
 
@@ -86,9 +86,6 @@ sub dbconnect {
     my $conn_name = shift;    # optional connection name
     $conn_name = 'default' unless $conn_name;
 
-    # Save a copy of the config for get_conf()
-    $CONF = $conf if ($conf);
-
     # Connect to the database
     unless ( defined $pool{$conn_name}
         and $pool{$conn_name}->storage->dbh->ping() )
@@ -101,23 +98,12 @@ sub dbconnect {
         my $connstr = "dbi:mysql:dbname=$dbname;host=$dbhost;port=$dbport";
         $pool{$conn_name} = $self->connect( $connstr, $dbuser, $dbpass );
 
-        #print STDERR "CoGeX: new connection '$conn_name'\n";
+        print STDERR "CoGeX: new connection '$conn_name'\n";
         #$coge->storage->debugobj(new DBIxProfiler());
         #$coge->storage->debug(1);
     }
 
     return $pool{$conn_name};
-}
-
-sub get_conf {
-    my $self = shift;
-    my $key  = shift;
-
-    if ($key) {
-        return $CONF->{$key};
-    }
-
-    return $CONF;
 }
 
 ################################################ subroutine header begin ##
