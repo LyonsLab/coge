@@ -337,7 +337,7 @@ sub process_fasta_file {
             $chr =~ s/^gi\|//;
             $chr =~ s/chromosome//i;
             $chr =~ s/^chr//i;
-            $chr =~ s/^0+//;
+            $chr =~ s/^0+// unless $chr == 0;
             $chr =~ s/^_+//;
             $chr =~ s/\s+/ /;
             $chr =~ s/^\s//;
@@ -345,7 +345,7 @@ sub process_fasta_file {
         }
 
         # Check validity of chr name and sequence
-        if ( not $chr ) {
+        if ( not defined $chr ) {
             print $log
 "log: error parsing section header, line $lineNum, name='$name'\n";
             exit(-1);
