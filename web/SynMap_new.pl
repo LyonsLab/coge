@@ -1286,12 +1286,19 @@ sub get_query_link {
         log_msg => $log_msg
     );
 
+    my $job = CoGe::Accessory::Web::get_job(
+        tiny_link => $tiny_link,
+        title     => $PAGE_TITLE,
+        user_id   => $USER->id,
+        db_object => $coge
+    );
+
     my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
 
     return encode_json(
         {
             link    => $tiny_link,
-            request => "jex/synmap/status/synmap-$tiny_id",
+            request => "jex/synmap/status/" . $job->id,
         }
     );
 }
@@ -1497,6 +1504,7 @@ sub go {
     #        #}
     #    }
     $workflow = $YERBA->create_workflow(
+        id      => $job->id,
         name    => $workflow_id,
         logfile => $cogeweb->logfile
     );
