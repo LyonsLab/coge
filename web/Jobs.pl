@@ -1,17 +1,19 @@
 #! /usr/bin/perl -w
-
 use v5.10;
 use strict;
-use CGI;
 
-#use JSON::XS;
-use HTML::Template;
+use CGI;
 use Digest::MD5 qw(md5_base64);
 
 #use URI::Escape;
 use Data::Dumper;
 use File::Path;
+use HTML::Template;
+use JSON::XS;
+
+# CoGe packages
 use CoGeX;
+use CoGe::Accessory::Jex;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 
@@ -26,6 +28,7 @@ our (
 );
 
 $P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$YERBA = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
 
 $DATE = sprintf(
     "%04d-%02d-%02d %02d:%02d:%02d",
@@ -108,13 +111,17 @@ sub get_jobs_for_user {
     my @jobs;
 
     if ( $USER->is_admin ) {
-        @jobs = $coge->resultset('Job')->all();
+        @jobs =
+          $coge->resultset('Job')
+          ->search( undef, { order_by => 'job_id DESC' } );
     }
     elsif ( $USER->is_public ) {
-        @jobs = $coge->resultset('Job')->search( { user_id => 0, } );
+        @jobs =
+          $coge->resultset('Job')
+          ->search( { user_id => 0 }, { order_by => 'job_id ASC', } );
     }
     else {
-        @jobs = $USER->jobs;
+        @jobs = $USER->jobs->search( undef, { order_by => 'job_id DESC' } );
     }
 
     my @job_items;
@@ -177,17 +184,20 @@ sub gen_body {
 sub cancel_job {
     my $job_id = _check_job_args(@_);
     my $job    = _get_validated_job($job_id);
-    my $signal = 'TERM';
 
-    return "fail" unless defined($job);
+    return return encode_json( {} ) unless defined($job);
 
-    if ( kill( $signal, $job->process_id ) ) {
+    my $status = $YERBA->get_status( $job->id );
+    say STDERR $status;
+
+    if ( lc($status) eq 'running' ) {
         $job->update( { status => 3 } );
-        say STDERR "Job.pl: $job->process_id was successfully terminated.";
-        return "success";
+        return encode_json( $YERBA->terminate( $job->id ) );
+    }
+    else {
+        return encode_json( {} );
     }
 
-    return "fail";
 }
 
 sub schedule_job {
@@ -200,15 +210,9 @@ sub schedule_job {
 
 sub get_status_message {
     my $job = shift;
-    my $alive = kill( 0, $job->process_id );
 
     given ( $job->status ) {
-        when (1) {
-            return 'Running' unless not $alive;
-
-            $job->update( { status => 4 } );
-            return 'Terminated';
-        }
+        when (1) { return 'Running'; }
         when (2) { return 'Complete'; }
         when (3) { return 'Cancelled'; }
         when (4) { return 'Terminated'; }
