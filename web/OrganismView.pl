@@ -9,7 +9,6 @@ use Data::Dumper;
 use CGI::Ajax;
 use Benchmark;
 use File::Path;
-use Digest::MD5 qw(md5_base64);
 use Benchmark qw(:all);
 use Statistics::Basic::Mean;
 use POSIX;
