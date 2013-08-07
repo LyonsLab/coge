@@ -19,7 +19,6 @@ use JSON::XS;
 use LWP::Simple;
 use Parallel::ForkManager;
 use GD;
-use Digest::MD5 qw(md5_base64);
 use File::Path;
 use Mail::Mailer;
 use Benchmark;

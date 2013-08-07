@@ -60,7 +60,6 @@ my $node_types = CoGeX::node_types();
 );
 
 %FUNCTION = (
-    gen_html => \&gen_html,
     # get_logs				=> \&get_logs,
     upload_image_file               => \&upload_image_file,
     get_item_info                   => \&get_item_info,
