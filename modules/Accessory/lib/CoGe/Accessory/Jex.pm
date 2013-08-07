@@ -5,7 +5,7 @@ use 5.10.0;
 
 use Moose;
 use JSON::XS;
-use ZMQ::LibZMQ2;
+use ZMQ::LibZMQ3;
 use ZMQ::Constants qw(ZMQ_REQ);
 use CoGe::Accessory::Workflow;
 
@@ -66,7 +66,7 @@ sub submit_workflow {
     $socket = zmq_socket( $self->_context, ZMQ_REQ );
     zmq_connect( $socket, _connection_string( $self->host, $self->port ) );
     zmq_send( $socket, $request );
-    $msg = zmq_recv($socket);
+    $msg = zmq_recvmsg($socket);
 
     return zmq_msg_data($msg);
 }
@@ -103,7 +103,7 @@ sub terminate {
     zmq_connect( $socket, _connection_string( $self->host, $self->port ) );
     zmq_send( $socket, $cmd );
 
-    $resp = zmq_recv($socket);
+    $resp = zmq_recvmsg($socket);
     $msg  = decode_json( zmq_msg_data($resp) );
 
     return $msg;
@@ -124,7 +124,7 @@ sub get_status {
     );
 
     $msg = zmq_send( $socket, $request );
-    $msg = zmq_recv($socket);
+    $msg = zmq_recvmsg($socket);
 
     my $data = zmq_msg_data($msg);
     my $res  = decode_json($data);
