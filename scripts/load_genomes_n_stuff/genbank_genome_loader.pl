@@ -8,19 +8,19 @@ use Data::Dumper;
 use Getopt::Long;
 use CoGeX;
 use File::Path;
+use CoGeX;
+use CoGe::Accessory::Web;
+use POSIX qw(ceil);
+
 
 # variables
 my (
     $DEBUG,              $GO,            $ERASE,           $autoupdate,
     $autoskip,           @accns,         $tmpdir,          $help,
     $user_chr,           $ds_link,       $delete_src_file, $test,
-    $auto_increment_chr, $base_chr_name, $accn_file,       $max_entries
+    $auto_increment_chr, $base_chr_name, $accn_file,       $max_entries, $user_id, 
+    $config, $host, $port, $db, $user, $pass
 );
-my $connstr = 'dbi:mysql:dbname=coge;host=localhost;port=3306';
-my $coge = CoGeX->connect( $connstr, 'coge', '' );
-
-#$coge->storage->debugobj(new DBIxProfiler());
-#$coge->storage->debug(1);
 
 $| = 1;
 
@@ -44,11 +44,21 @@ GetOptions(
     "auto_increment_chr" => \$auto_increment_chr,
     "accn_file|af=s"     => \$accn_file,
     "max_entries=i"      => \$max_entries,
-);
-$user_chr = 1         unless $user_chr;
-$tmpdir   = "/tmp/gb" unless $tmpdir;     # set default directory to /tmp
+	   "user_id|uid=i"=>\$user_id, #CoGe user id to which genome is associated
+    # Database params
+    "host|h=s"      => \$host,
+    "port|p=s"      => \$port,
+    "database|db=s" => \$db,
+    "user|u=s"      => \$user,
+    "password|pw=s" => \$pass,
 
-mkpath($tmpdir) unless -d $tmpdir;
+    # Or use config file
+    "config=s" => \$config
+
+);
+
+$user_chr = 1         unless $user_chr;
+
 $DEBUG = 0 unless defined $DEBUG;         # set to 1 to enable debug printing
 $GO = 0
   unless defined $GO;  # set to 1 to actually make db calls (instead of testing)
@@ -56,8 +66,48 @@ $ERASE      = 0 unless defined $ERASE;
 $autoupdate = 0 unless $autoupdate;
 $autoskip   = 0 unless $autoskip;
 
-my $formatdb = "/usr/bin/formatdb -p F -o T";  #path to blast's formatdb program
-my %dsg;
+if ($config) {
+    my $P = CoGe::Accessory::Web::get_defaults($config);
+    #database
+    $db   = $P->{DBNAME};
+    $host = $P->{DBHOST};
+    $port = $P->{DBPORT};
+    $user = $P->{DBUSER};
+    $pass = $P->{DBPASS};
+    #other stuff
+    $tmpdir = $P->{TMPDIR}."/"."genbank";
+}
+
+$tmpdir   = "/tmp/gb/".ceil(rand(9999999999)) unless $tmpdir;     # set default directory to /tmp
+mkpath($tmpdir) unless -d $tmpdir;
+
+unless (-e $tmpdir)
+  {
+    print "error: couldn't' create temporary directory ($tmpdir) for writing files\n";
+    exit (-1);
+  }
+
+# Open log file
+$| = 1;
+my $logfile = "$tmpdir/log.txt";
+open( my $log, ">>$logfile" ) or die "Error opening log file";
+$log->autoflush(1);
+
+
+my $connstr = 'dbi:mysql:dbname=$db;host=$host;port=$port';
+my $coge = CoGeX->connect( $connstr, $user, $pass );
+#$coge->storage->debugobj(new DBIxProfiler());
+#$coge->storage->debug(1);
+
+
+unless ($coge) {
+    print $log "log: error: couldn't connect to database\n";
+    exit(-1);
+}
+
+
+
+my %genome;
 
 #my $ERASE = 0; 					# set to 1 to clear the database of entries created for $dataset
 help() if $help;
@@ -68,8 +118,8 @@ my $data_source = get_data_source();           #for NCBI
 
 # loop through all the accessions
 my %previous_datasets;    #storage for previously loaded accessions
-my $dsg;                  #storage for coge dataset_group_obj
-my %dsg_update
+my $genome;                  #storage for coge genome_obj
+my %genome_update
   ; #storage for previous dataset groups that had a dataset deleted and needs to be reloaded
 if ( $accn_file && -r $accn_file ) {
     open( IN, $accn_file );
@@ -113,11 +163,11 @@ accn: foreach my $accn (@accns) {
             if ( $ans && $ans =~ /y/i ) {
 
                 my $ds = $item->{ds};
-                foreach my $item ( $ds->dataset_groups ) {
-                    $dsg_update{ $item->id }{dsg} = $item;
-                    push @{ $dsg_update{ $item->id }{accn} }, $accn;
+                foreach my $item ( $ds->genomes ) {
+                    $genome_update{ $item->id }{genome} = $item;
+                    push @{ $genome_update{ $item->id }{accn} }, $accn;
 
-                    #		    delete_dataset_group($item);
+                    #		    delete_genome($item);
                 }
                 $ds->delete;
             }
@@ -253,11 +303,11 @@ accn: foreach my $accn (@accns) {
                       if $autoskip;
                     if ( $ans && $ans =~ /y/i ) {
                         my $ds = $item->{ds};
-                        my $dsg_flag;
-                        foreach my $item ( $ds->dataset_groups ) {
-                            delete_dataset_group($item);
+                        my $genome_flag;
+                        foreach my $item ( $ds->genomes ) {
+                            delete_genome($item);
                         }
-                        $ds->delete unless $dsg_flag;
+                        $ds->delete unless $genome_flag;
                     }
                     else {
                         $previous_datasets{ $item->{ds}->id } = $item->{ds};
@@ -554,34 +604,40 @@ accn: foreach my $accn (@accns) {
                 ) if $GO;
             }
         }
-        $dsg = generate_dsg(
+	#initialize genome object if needed
+        $genome = generate_genome(
             version => $version,
             org_id  => $organism->id,
             gst_id  => 1
-        ) if $organism && !$dsg;    #gst_id 1 is for unmasked sequence data
+        ) if $organism && !$genome;    #gst_id 1 is for unmasked sequence data
+	#load in sequence for the chromosome
         load_genomic_sequence(
-            dsg => $dsg,
+            genome => $genome,
             seq => $entry->sequence,
             chr => $chromosome
         );
         if ($GO) {
             my $load = 1;
-            foreach my $dsc ( $dsg->dataset_connectors
+            foreach my $dsc ( $genome->dataset_connectors
               ) #check to see if there is a prior link to the dataset -- this will happen when loading whole genome shotgun sequence
             {
                 $load = 0 if $dsc->dataset_id == $dataset->id;
             }
-            $dsg->add_to_dataset_connectors( { dataset_id => $dataset->id } )
+            $genome->add_to_dataset_connectors( { dataset_id => $dataset->id } )
               if $load;
-            if ( $dataset->version > $dsg->version ) {
-                $dsg->version( $dataset->version );
-                $dsg->update;
+            if ( $dataset->version > $genome->version ) {
+                $genome->version( $dataset->version );
+                $genome->update;
             }
         }
-
-        #format blastable db
     }
-    print "completed parsing $accn!\n";    # if $DEBUG;
+    print "completed parsing and loading $accn!\n";    # if $DEBUG;
+    #create index for fasta file
+    if ($GO)
+      {
+	
+      }
+
     if ($delete_src_file) {
         print "Deleting genbank src file: " . $genbank->srcfile . "\n";
         my $cmd = "rm " . $genbank->srcfile;
@@ -593,46 +649,46 @@ accn: foreach my $accn (@accns) {
 
 #need to add previous datasets if new dataset was added with a new dataset group
 if ($GO) {
-    if ( $dsg && keys %previous_datasets ) {
+    if ( $genome && keys %previous_datasets ) {
         my $ver;    #need a higher version number than previous
         foreach my $ds ( values %previous_datasets ) {
-            my ($test) = $dsg->dataset_connectors( { dataset_id => $ds->id } );
+            my ($test) = $genome->dataset_connectors( { dataset_id => $ds->id } );
             if ($test) {
                 my $name = $ds->name;
                 print
 "$name has been previously added to this dataset group.  Skipping\n";
                 next;
             }
-            foreach my $item ( $ds->dataset_groups ) {
+            foreach my $item ( $ds->genomes ) {
                 $ver = $item->version unless $ver;
                 $ver = $item->version if $item->version > $ver;
             }
             foreach my $chr ( $ds->chromosomes ) {
                 load_genomic_sequence(
-                    dsg => $dsg,
+                    genome => $genome,
                     seq => $ds->genomic_sequence( chr => $chr ),
                     chr => $chr
                 );
             }
-            $dsg->add_to_dataset_connectors( { dataset_id => $ds->id } );
+            $genome->add_to_dataset_connectors( { dataset_id => $ds->id } );
         }
 
-        #incement and update dsg version if new version number is higher
+        #incement and update genome version if new version number is higher
         $ver++;
-        if ( $ver > $dsg->version ) {
-            $dsg->version($ver);
-            $dsg->update();
+        if ( $ver > $genome->version ) {
+            $genome->version($ver);
+            $genome->update();
         }
     }
 }
 
-if ( keys %dsg_update ) {
-    foreach my $item ( values %dsg_update ) {
-        my $dsg = $item->{dsg};
+if ( keys %genome_update ) {
+    foreach my $item ( values %genome_update ) {
+        my $genome = $item->{genome};
         print "#" x 20, "\n";
         print "Dataset Group "
-          . $dsg->name . " ("
-          . $dsg->id
+          . $genome->name . " ("
+          . $genome->id
           . ") had a dataset deleted.  You will need to remove or update this dataset group.\n";
         print "accessions that were deleted and reloaded:\n";
         foreach my $accn ( @{ $item->{accn} } ) {
@@ -640,41 +696,41 @@ if ( keys %dsg_update ) {
 
             #	    my $previous = check_accn($accn);
             #	    my ($ds) = sort {$b->version<=>$a->version} @$previous;
-            #	    $dsg->add_to_dataset_connectors({dataset_id=>$ds->id});
+            #	    $genome->add_to_dataset_connectors({dataset_id=>$ds->id});
         }
         if ($autoupdate) {
             print
-"Autoupdate flag has been set to true.  This Dataset_group is being deleted from the database.\n";
-            delete_dataset_group($dsg);
+"Autoupdate flag has been set to true.  This genome is being deleted from the database.\n";
+            delete_genome($genome);
         }
         print "#" x 20, "\n";
     }
 }
 
-if ( $GO && $dsg ) {
-    print "Creating blastable database\n";
-    my $cmd = $formatdb . " -i " . $dsg->file_path;
-    print "\tFormatdb running $cmd\n";
-    `$cmd`;
-}
+#if ( $GO && $genome ) {
+#    print "Creating blastable database\n";
+#    my $cmd = $formatdb . " -i " . $genome->file_path;
+#    print "\tFormatdb running $cmd\n";
+#    `$cmd`;
+#}
 
 if ($ERASE) {
     print
 "You are going to erase data!  Press any key to continue.  Control-c to abort!\n";
     <STDIN>;
 
-    my %dsgs;
-    $dsgs{ $dsg->id } = $dsg if $dsg;
+    my %genomes;
+    $genomes{ $genome->id } = $genome if $genome;
     foreach my $ds ( values %previous_datasets ) {
-        my $dsg_flag;
-        foreach my $item ( $ds->dataset_groups ) {
-            $dsg_flag = 1;
-            $dsgs{ $item->id } = $item;
+        my $genome_flag;
+        foreach my $item ( $ds->genomes ) {
+            $genome_flag = 1;
+            $genomes{ $item->id } = $item;
         }
-        $ds->delete unless $dsg_flag;
+        $ds->delete unless $genome_flag;
     }
-    foreach my $item ( values %dsgs ) {
-        delete_dataset_group($item);
+    foreach my $item ( values %genomes ) {
+        delete_genome($item);
     }
 }
 
@@ -684,40 +740,39 @@ sub load_genomic_sequence {
     my $chr  = $opts{chr};
 
     #    my $ds = $opts{ds};
-    my $dsg = $opts{dsg};
-    return unless $dsg;
+    my $genome = $opts{genome};
+    return unless $genome;
     my $seqlen = length $seq;
-    if ( my ($item) = $dsg->genomic_sequences( { chromosome => $chr } ) ) {
+    if ( my ($item) = $genome->genomic_sequences( { chromosome => $chr } ) ) {
         my $prev_length = $item->sequence_length;
         print
-"$chr has previously been added to this dataset_group.  Previous length: $prev_length.  Currently length: $seqlen.  Skipping.\n";
+"$chr has previously been added to this genome.  Previous length: $prev_length.  Currently length: $seqlen.  Skipping.\n";
         return;
     }
     print "Loading genomic sequence ($seqlen nt)\n";    # if $DEBUG;
     $seq =~ s/\s//g;
     $seq =~ s/\n//g;
-    $dsg->add_to_genomic_sequences(
+    $genome->add_to_genomic_sequences(
         {
             sequence_length => $seqlen,
             chromosome      => $chr,
         }
     ) if $GO;
-    my $path = $dsg->file_path;
+    
+    
+    #New stuff for new genome storage system
+    #put sequences in the proper spot
+    my $path = $genome->file_path;
     $path =~ s/\/[^\/]*$/\//;
     mkpath($path);
-    mkpath( $path . "/chr" );
 
     #append sequence ot master file for dataset group
-    open( OUT, ">>" . $path . "/" . $dsg->id . ".faa" );
+    open( OUT, ">>" . $path . "/" . $genome->id . ".faa" );
     my $head = $chr =~ /^\d+$/ ? ">gi" : ">lcl";
     $head .= "|" . $chr;
     print OUT "$head\n$seq\n";
     close OUT;
 
-    #create individual file for chromosome
-    open( OUT, ">" . $path . "/chr/$chr" );
-    print OUT $seq;
-    close OUT;
 
 #must add a feature of type chromosome to the dataset so the dataset "knows" its chromosomes
 #    my $feat = get_feature(type=>"chromosome", name=>"chromosome $chr", ds=>$ds, chr=>$chr, start=>1, stop=>length($seq));
@@ -849,18 +904,18 @@ sub get_data_source {
     );
 }
 
-sub generate_dsg {
+sub generate_genome {
     my %opts    = @_;
     my $name    = $opts{name};
     my $desc    = $opts{desc};
     my $version = $opts{version};
     my $org_id  = $opts{org_id};
     my $gst_id  = $opts{gst_id};
-    my $dsg_id  = $opts{dsg_id};
-    my $dsg =
-        $dsg_id
-      ? $coge->resultset('DatasetGroup')->find($dsg_id)
-      : $coge->resultset('DatasetGroup')->create(
+    my $genome_id  = $opts{genome_id};
+    my $genome =
+        $genome_id
+      ? $coge->resultset('Genome')->find($genome_id)
+      : $coge->resultset('Genome')->create(
         {
             name                     => $name,
             description              => $desc,
@@ -869,18 +924,9 @@ sub generate_dsg {
             genomic_sequence_type_id => $gst_id,
         }
       ) if $GO;
-    return unless $dsg;
+    return unless $genome;
 
-    unless ( $dsg->file_path ) {
-        my $path =
-            "/opt/apache/CoGe/data/genomic_sequence/"
-          . $dsg->get_path . "/"
-          . $dsg->id . ".faa";
-        print "Path to sequence: ", $path, "\n";
-        $dsg->file_path($path);
-        $dsg->update;
-    }
-    return $dsg;
+    return $genome;
 }
 
 sub check_accn {
@@ -929,15 +975,15 @@ sub check_accn {
     return \@results;
 }
 
-sub delete_dataset_group {
-    my $dsg  = shift;
-    my $path = $dsg->file_path;
+sub delete_genome {
+    my $genome  = shift;
+    my $path = $genome->file_path;
     $path =~ s/[^\/]*$//;
     my $cmd = "rm -rf $path";
     print "Removing genomic sequence:  running: $cmd";
     `$cmd`;
-    print "Deleting dataset group: " . $dsg->name, "\n";
-    $dsg->delete();
+    print "Deleting dataset group: " . $genome->name, "\n";
+    $genome->delete();
 }
 
 ###NCBI eutils stuff
