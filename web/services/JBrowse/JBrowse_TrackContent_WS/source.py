@@ -5,8 +5,12 @@ import re
 import random
 import os
 import sys
+import urllib2
 from collections import defaultdict #Counter
 from cgi import parse_qs, escape
+
+
+config_path = os.path.join(os.path.dirname(__file__), '../../../coge.conf')
 
 def not_found(environ, start_response):
     """Called if no URL matches."""
@@ -37,6 +41,44 @@ def db_connect():
 
     return con
 
+def get_config():
+    config = {}
+
+    with open(config_path) as fp:
+        for line in fp:
+            line = line.strip()
+
+            if line.startswith('\n') or line.startswith('#'):
+                continue
+            else:
+                try:
+                    (key, value) = line.split('\t')[0:2]
+                    config[key] = value
+                except ValueError:
+                    pass
+
+    return config
+
+def fetch_sequence(genome_id, chr_id, start, stop):
+    service = '{base}/{service}/sequence/{id}/{chr}?start={start};stop={stop};'
+
+    config = get_config()
+
+    if not config:
+        return
+
+    url = service.format(base=config['SERVER'],
+        service='services/JBrowse/service.pl',
+        id=genome_id, chr=chr_id, start=start, stop=stop)
+
+    try:
+        response = urllib2.urlopen(url)
+        sequence = response.read()
+    except urllib2.URLError as e:
+        return
+
+    return sequence.lower()
+
 def gc_features(environ, start_response):
     """Main feature endpoint for GC content"""
     status = '200 OK'
@@ -63,15 +105,7 @@ def gc_features(environ, start_response):
                 % genome_id)
 
         # Open the right chromosome file derived from the pathname
-        file = cur.fetchone()[0]
-        file = '/'.join(file.split('/')[:-1]) + '/chr/' + chr_id
-        f = open(file)
-        if (start < 0):
-            string = f.read(end).lower()
-        else:
-            f.seek(start)
-            string = f.read(end - start).lower()
-        f.close()
+        string = fetch_sequence(genome_id, chr_id, start, end)
 
         # Set bucketSize
         sizes = {'20': 1, '10': 1, '5': 2, '2': 5, '1': 25, '0.5': 75}
