@@ -631,7 +631,7 @@ function update_dialog(request, identifier, formatter, args) {
         }
     };
 
-    var fetch_results = function() {
+    var fetch_results = function(completed) {
         var request = window.location.href.split('?')[0];
         args.fname = 'get_results';
         dialog = $(identifier);
@@ -643,8 +643,13 @@ function update_dialog(request, identifier, formatter, args) {
             success: function(data) {
                 $('#results').html(data);
                 $(function() {$("#synmap_zoom_box").draggable();});
-                dialog.find('#progress').hide();
-                dialog.find('#dialog_success').slideDown();
+                if (completed) {
+                    dialog.find('#progress').hide();
+                    dialog.find('#dialog_success').slideDown();
+                } else {
+                    dialog.find('#progress').hide();
+                    dialog.find('#dialog_error').slideDown();
+                }
             },
             error: function(data) {
                 if (pageObj.error > 5) {
@@ -689,11 +694,11 @@ function update_dialog(request, identifier, formatter, args) {
         }
 
         if (current_status == "completed") {
-            fetch_results();
+            fetch_results(true);
         } else if (current_status == "failed" || current_status == "error"
-                || current_status == "terminated") {
-            dialog.find('#progress').hide();
-            dialog.find('#dialog_error').slideDown();
+                || current_status == "terminated"
+                || current_status == "cancelled") {
+            fetch_results(false);
         } else if (current_status == "notfound") {
             setTimeout(callback, timeout);
             return;
