@@ -57,6 +57,7 @@ $PAGE_NAME  = "$PAGE_TITLE.pl";
 );
 
 $YERBA = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
+
 $ENV{PATH} = join ":",
   (
     $P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR} . "SynMap",
@@ -1475,7 +1476,7 @@ sub go {
 
     if ( $feat_type1 eq "genomic" ) {
         my $genome = $coge->resultset('Genome')->find($dsgid1);
-       $fasta1 = $genome->file_path;
+        $fasta1 = $genome->file_path;
         CoGe::Accessory::Web::write_log( "Fetched fasta file for:",
             $cogeweb->logfile );
         CoGe::Accessory::Web::write_log( " " x (2) . $org_name1,
@@ -2811,7 +2812,6 @@ sub get_results {
         #Synteny Zoom
         $results->param( codeml_min => $codeml_min );
         $results->param( codeml_max => $codeml_max );
-
         $results->param( axis_metric => $axis_metric );
         $results->param( ylabel      => $y_label );
         $results->param( xlabel      => $x_label );
@@ -2990,6 +2990,7 @@ sub get_results {
         );
 
         my $conffile = $ENV{HOME} . 'coge.conf';
+
         $dagchainer_file =~ s/^$URL/$DIR/;
 
         $html .= "<br>"

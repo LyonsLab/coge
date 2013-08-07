@@ -7,20 +7,17 @@ use CoGe::Accessory::Web;
 
 BEGIN {
     use Exporter ();
-    use vars
-      qw($P $VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $NWALIGN $MATRIX_FILE);
-    $VERSION = '0.1';
-    @ISA = ( @ISA, qw(Exporter) );
+    use vars qw($P $VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $NWALIGN $MATRIX_FILE);
+    $VERSION     = '0.1';
+    @ISA         = (@ISA, qw(Exporter));
     #Give a hoot don't pollute, do not export more than needed by default
     @EXPORT      = qw();
     @EXPORT_OK   = qw();
     %EXPORT_TAGS = ();
-    __PACKAGE__->mk_accessors(
-        qw(seqA seqB matrix gap gap_ext dpm alignA alignB nwalign nwalign_server_port)
-    );
-    #    $P = CoGe::Accessory::Web::get_defaults($ENV{HOME} . 'coge.conf' );
-    #    $NWALIGN = $P->{NWALIGN};
-    #    $MATRIX_FILE = $P->{BLASTMATRIX}."aa/BLOSUM62";
+    __PACKAGE__->mk_accessors(qw(seqA seqB matrix gap gap_ext dpm alignA alignB nwalign nwalign_server_port));
+#    $P = CoGe::Accessory::Web::get_defaults($ENV{HOME} . 'coge.conf' );
+#    $NWALIGN = $P->{NWALIGN};
+#    $MATRIX_FILE = $P->{BLASTMATRIX}."aa/BLOSUM62";
 }
 
 #################### main pod documentation begin ###################
@@ -289,39 +286,40 @@ sub global_align {
     $gap = $self->gap unless defined $gap;
     my $gap_ext = $opts{gap_ext};
     $gap_ext = $self->gap_ext unless defined $gap_ext;
-    $gap     = -10            unless defined $gap;
-    $gap_ext = -2             unless $gap_ext;
-    my $matrix = $opts{matrix};    #path to blast formated alignment matrix;
+
+    $gap = -10 unless defined $gap;
+    $gap_ext = -2 unless $gap_ext;
+    my $matrix = $opts{matrix};  #path to blast formated alignment matrix;
 
     my $config = $opts{config};
-    $config  = $ENV{HOME} . 'coge.conf' unless defined $config and -r $config;
-    $P       = CoGe::Accessory::Web::get_defaults($config);
+    $config = $ENV{HOME}.'coge.conf' unless defined $config and -r $config;
+    $P = CoGe::Accessory::Web::get_defaults($config);
     $NWALIGN = $P->{NWALIGN};
-    $MATRIX_FILE = $P->{BLASTMATRIX} . "aa/BLOSUM62";
+    $MATRIX_FILE = $P->{BLASTMATRIX}."aa/BLOSUM62";
     $matrix = $MATRIX_FILE unless $matrix && -r $matrix;
 
-    my ( $align1, $align2 );
-    if ( $self->nwalign_server_port ) {
-        my $sock =
-          IO::Socket::INET->new(
-            PeerAddr => 'localhost:' . $self->nwalign_server_port, )
-          or die "Can't bind: $@\n";
-        my $cmd =
-          " --matrix $matrix --gap_extend $gap_ext --gap_open $gap $seq1 $seq2";
-        print $sock $cmd;
-        my $res;
-        $sock->recv( $res, 128000 );
-        ( $align1, $align2 ) = split /\s+/, $res, 2;
-    }
-    else {
-        my $prog = $self->nwalign;
-        $prog = $NWALIGN unless $prog;
-        my $cmd =
-"$prog --matrix=$matrix --gap_extend=$gap_ext --gap_open=$gap $seq1 $seq2";
-        open( RUN, "$cmd |" );
-        ( $align1, $align2 ) = <RUN>;
-        close RUN;
-    }
+
+    my ($align1, $align2);
+    if ($self->nwalign_server_port)
+      {
+	my $sock = IO::Socket::INET->new(
+					 PeerAddr => 'localhost:'.$self->nwalign_server_port,
+					) or die "Can't bind: $@\n";
+	my $cmd = " --matrix $matrix --gap_extend $gap_ext --gap_open $gap $seq1 $seq2";
+	print $sock $cmd;
+	my $res;
+	$sock->recv($res, 128000);
+	($align1, $align2) = split/\s+/, $res, 2;
+      }
+    else
+      {
+	my $prog = $self->nwalign;
+	$prog = $NWALIGN unless $prog;
+	my $cmd = "$prog --matrix=$matrix --gap_extend=$gap_ext --gap_open=$gap $seq1 $seq2";
+	open (RUN, "$cmd |");
+	($align1, $align2) = <RUN>;
+	close RUN;
+      }
     $align1 =~ s/\n//;
     $align2 =~ s/\n//;
     return ( $align1, $align2 );
@@ -430,25 +428,23 @@ sub global_align_perl {
 
     ## while loop condition is always true
     while (1) {
-        last if $matrix[$i][$j]{pointer} eq "none";    # exits while loop
-                                                       # at first cell of matrix
+      last if $matrix[$i][$j]{pointer} eq "none"; # exits while loop
+      # at first cell of matrix
 
-        if ( $matrix[$i][$j]{pointer} eq "dg" ) {
-            $align1 .= substr( $seq1, $j - 1, 1 );
-            $align2 .= substr( $seq2, $i - 1, 1 );
-            $i--;                                      #decrement operator
-            $j--;                                      #decrement operator
-        }
-        elsif ( $matrix[$i][$j]{pointer} eq "lt" ) {
-            $align1 .= substr( $seq1, $j - 1, 1 );
-            $align2 .= "-";
-            $j--;                                      #decrement operator
-        }
-        elsif ( $matrix[$i][$j]{pointer} eq "up" ) {
-            $align1 .= "-";
-            $align2 .= substr( $seq2, $i - 1, 1 );
-            $i--;                                      #decrement operator
-        }
+      if ($matrix[$i][$j]{pointer} eq "dg") {
+        $align1 .= substr($seq1, $j-1, 1);
+        $align2 .= substr($seq2, $i-1, 1);
+        $i--;			#decrement operator
+        $j--;			#decrement operator
+      } elsif ($matrix[$i][$j]{pointer} eq "lt") {
+        $align1 .= substr($seq1, $j-1, 1);
+        $align2 .= "-";
+        $j--;			#decrement operator
+      } elsif ($matrix[$i][$j]{pointer} eq "up") {
+        $align1 .= "-";
+        $align2 .= substr($seq2, $i-1, 1);
+        $i--;			#decrement operator
+      }
     }
     $self->dpm( \@matrix );
     $align1 = reverse($align1);

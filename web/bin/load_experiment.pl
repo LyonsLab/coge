@@ -331,10 +331,9 @@ sub detect_data_type {
 }
 
 sub validate_quant_data_file {
-    my %opts       = @_;
-    my $filepath   = $opts{file};
+    my %opts = @_;
+    my $filepath = $opts{file};
     my $genome_chr = $opts{genome_chr};
-
     my %chromosomes;
     my $line_num = 1;
     my $count    = 0;
@@ -397,6 +396,7 @@ sub validate_quant_data_file {
         $chr =~ s/\s+/ /;
         $chr =~ s/^\s//;
         $chr =~ s/\s$//;
+
   #hack to deal with converting chloroplast and mitochondia to C and M if needed
         if (   $chr =~ /^chloroplast$/i
             && !$genome_chr->{$chr}
@@ -486,7 +486,8 @@ sub validate_vcf_data_file {
         $chr =~ s/\s+/ /;
         $chr =~ s/^\s//;
         $chr =~ s/\s$//;
-  #hack to deal with converting chloroplast and mitochondia to C and M if needed
+
+		#hack to deal with converting chloroplast and mitochondia to C and M if needed
         if (   $chr =~ /^chloroplast$/i
             && !$genome_chr->{$chr}
             && $genome_chr->{"C"} )
@@ -506,7 +507,6 @@ sub validate_vcf_data_file {
               "log: error at line $line_num: trouble parsing chromosome\n";
             return;
         }
-
         $chromosomes{$chr}++;
 
         # Each line could encode multiple alleles

@@ -15,6 +15,7 @@ use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Algos::KsCalc;
 
+
 our (
     $cogeweb, $basename, $infile,  $dbfile,   $blockfile, $coge,
     $P,       $TEMPDIR,  $NWALIGN, $MAX_PROC, $DBNAME,    $DBHOST,
@@ -33,10 +34,9 @@ $P = CoGe::Accessory::Web::get_defaults($CONFIG);
 $ENV{PATH} = join ":",
   (
     $P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR} . "SynMap",
-    "/usr/bin", "/usr/local/bin"
-  );
+    "/usr/bin", "/usr/local/bin");
 $ENV{HOME} = $P->{COGEDIR};
-my $config = File::Spec->catdir( $ENV{HOME}, "coge.conf" );
+my $config = File::Spec->catdir($ENV{HOME},"coge.conf");
 #print STDERR Dumper \%ENV;
 
 $TEMPDIR  = $P->{TEMPDIR} . "SynMap";
@@ -163,14 +163,14 @@ DNA_align_2
         my ($feat1) = $coge->resultset('Feature')->find($fid1);
         my ($feat2) = $coge->resultset('Feature')->find($fid2);
         my $max_res;
-        my $ks = new CoGe::Algos::KsCalc( config => $config );
-        $ks->nwalign_server_port( $ports->[$i] );
+        my $ks = new CoGe::Algos::KsCalc(config=>$config);
+        $ks->nwalign_server_port($ports->[$i]);
         $ks->feat1($feat1);
         $ks->feat2($feat2);
 
         #   for (1..5)
         #     {
-        my $res = $ks->KsCalc( config => $config );    #send in port number?
+        my $res = $ks->KsCalc(config=>$config);    #send in port number?
         $max_res = $res unless $max_res;
         $max_res = $res
           if $res->{dS} && $max_res->{dS} && $res->{dS} < $max_res->{dS};
