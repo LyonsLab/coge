@@ -266,9 +266,10 @@ sub track_config {
                     'coge-tracklist-indented', 'coge-tracklist-deletable',
                     'coge-tracklist-info'
                 ],
+                collapsed   => 1,                 #FIXME move into CSS
                 name        => $e->name,
                 description => $e->description,
-                notebooks   => ( @notebooks ? \@notebooks : undef ),
+                notebooks => ( @notebooks ? \@notebooks : undef ),
                 annotations => ( @annotations ? \@annotations : undef ),
                 menuOptions => [
                     {
@@ -302,8 +303,9 @@ sub track_config {
             coge        => {
                 id   => 0,            # use id of 0 to represent all experiments
                 type => 'notebook',
-                classes     => ['coge-tracklist-collapsible'],
-                name        => 'All Experiments',
+                classes   => ['coge-tracklist-collapsible'],
+                collapsed => 1,                             #FIXME move into CSS
+                name      => 'All Experiments',
                 description => '',
                 count       => keys %all_experiments,
 
@@ -337,6 +339,7 @@ sub track_config {
                     'coge-tracklist-collapsible', 'coge-tracklist-deletable',
                     'coge-tracklist-info'
                 ],
+                collapsed   => 1,                 #FIXME move into CSS
                 name        => $n->name,
                 description => $n->description,
                 editable    => $user->is_admin

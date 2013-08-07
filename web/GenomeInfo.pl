@@ -454,14 +454,15 @@ sub generate_body {
 
     my ($first_chr) = $genome->chromosomes;
 
+    my $is_owner_editor = $USER->is_owner_editor( dsg => $genome );
     $template->param(
-        GID         => $gid,
-        GENOME_INFO => get_genome_info( genome => $genome ),
-        GENOME_DATA => get_genome_data( genome => $genome ),
-        EXPERIMENTS => get_experiments( genome => $genome ),
-        ANNOTATION  => get_datasets( genome => $genome, exclude_seq => 1 ),
-        USER_CAN_EDIT =>
-          ( !$USER->is_public and $USER->is_owner_editor( dsg => $genome ) )
+        GID           => $gid,
+        GENOME_INFO   => get_genome_info( genome => $genome ),
+        GENOME_DATA   => get_genome_data( genome => $genome ),
+        EXPERIMENTS   => get_experiments( genome => $genome ),
+        ANNOTATION    => get_datasets( genome => $genome, exclude_seq => 1 ),
+        USER_CAN_EDIT => $is_owner_editor,
+        USER_CAN_ADD => ( !$genome->restricted or $is_owner_editor )
     );
 
     if ( $USER->is_admin ) {

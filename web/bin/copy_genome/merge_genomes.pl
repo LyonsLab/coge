@@ -3,7 +3,6 @@
 use strict;
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Storage qw( get_genome_file );
 use Data::Dumper;
 use Getopt::Long;
 use File::Path;
@@ -264,7 +263,7 @@ sub load_genome {
     $message .= join(
         ", ",
         map {
-            "<a href=OrganismView.pl?gid="
+                "<a href=OrganismView.pl?gid="
               . $_->id
               . " target=_new>"
               . $_->organism->name . "</a>"
@@ -280,8 +279,7 @@ sub load_genome {
     $cmd .= " -db " . $DBNAME;
     $cmd .= " -restricted " . $restricted if $restricted;
     my ($dsg) = $genomes->[0];
-    my $seq_dir = get_genome_file( $dsg->id )
-      ;    #$dsg->file_path; # mdb changed 8/1/13 issue 77
+    my $seq_dir = $dsg->file_path;
     $seq_dir =~ s/[^\/]*$//;
     $seq_dir =~ s/\d+\///g;
     $cmd .= " -sd " . $seq_dir;
@@ -318,8 +316,7 @@ sub get_and_clean_sequence {
               . ".  Skipping\n";
             next;
         }
-        open( IN, get_genome_file( $dsg->id ) )
-          ;    #$genome->file_path); # mdb changed 8/1/13 issue 77
+        open( IN, $genome->file_path );
         while (<IN>) {
             if (/^>/) {
                 s/>//g;

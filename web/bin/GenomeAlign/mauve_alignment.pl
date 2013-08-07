@@ -2,7 +2,6 @@
 
 use strict;
 use CoGeX;
-use CoGe::Accessory::Storage qw( get_genome_file );
 use Getopt::Long;
 
 #$coge->storage->debugobj(new DBIxProfiler());
@@ -64,9 +63,7 @@ sub run_mauve {
                 print "Unable to find a genome for dsgid: $dsgid.\n";
                 next;
             }
-            $cmd .= " "
-              . get_genome_file($dsgid)
-              ;    #$dsg->file_path; # mdb changed 8/1/13 issue 77
+            $cmd .= " " . $dsg->file_path;
         }
     }
     if ($logfile) { $cmd .= " >> $logfile"; }

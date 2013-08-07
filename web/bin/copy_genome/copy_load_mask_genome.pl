@@ -3,7 +3,6 @@
 use strict;
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Storage qw( get_genome_file );
 use Data::Dumper;
 use Getopt::Long;
 use File::Path;
@@ -78,8 +77,7 @@ if ($mask) {
     $stid = get_sequence_type_id_for_windowmasker();
 }
 else {
-    my $faa = get_genome_file( $dsg->id );    # mdb added 8/1/13 issue 77
-    $new_faa = get_and_clean_sequence($faa);  #$dsg->file_path);
+    $new_faa = $dsg->file_path;
     $stid    = $dsg->genomic_sequence_type_id;
 }
 
@@ -161,8 +159,7 @@ sub load_genome {
     $cmd .= " -pw " . $DBPASS;
     $cmd .= " -db " . $DBNAME;
     $cmd .= " -restricted " . $restricted if $restricted;
-    my $seq_dir = get_genome_file( $dsg->id )
-      ;    #$dsg->file_path; # mdb changed 8/1/13 issue 77
+    my $seq_dir = $dsg->file_path;
     $seq_dir =~ s/[^\/]*$//;
     $seq_dir =~ s/\d+\///g;
     $cmd .= " -sd " . $seq_dir;
@@ -212,8 +209,8 @@ sub mask_genome {
     my $counts = $TEMPDIR . "/" . $rnd . ".counts";
     my $masked = $TEMPDIR . "/" . $rnd . ".masked";
     my $hard   = $masked . ".hard";
-    my $faa    = get_genome_file( $dsg->id );        # mdb added 8/1/13 issue 77
-    my $cmd = $windowmasker . " -in " . $faa . " -mk_counts -out " . $counts;
+    my $faa    = $dsg->file_path;
+    my $cmd    = $windowmasker . " -in " . $faa . " -mk_counts -out " . $counts;
     print STDERR "running $cmd\n";
     `$cmd` if $GO;
     $cmd =

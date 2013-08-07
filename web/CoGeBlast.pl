@@ -1,13 +1,12 @@
 #! /usr/bin/perl -w
-
+use v5.10;
+use strict;
 no warnings('redefine');
 
-use strict;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
-use CoGe::Accessory::Storage qw( get_genome_file );
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
@@ -1466,8 +1465,7 @@ sub get_blast_db {
 
     #$org_name .= " (".$gst->name.")" if $gst;
 
-    my $db =
-      get_genome_file($dsgid); #$dsg->file_path; # mdb changed 7/31/13, issue 77
+    my $db      = $dsg->file_path;
     my $success = generate_blast_db(
         fasta   => $db,
         blastdb => $db,

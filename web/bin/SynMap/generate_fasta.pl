@@ -12,7 +12,6 @@ use Parallel::ForkManager;
 use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Storage qw( get_genome_file );
 
 our (
     $cogeweb, $basename, $gid,     $feature, $fasta,
@@ -138,8 +137,7 @@ sub gen_fasta {
             $cogeweb->logfile
         );
 
-        $file = get_genome_file($gid)
-          ;    #$genome->file_path; # mdb changed 7/31/13, issue 77
+        $file = $genome->file_path;
 
         #   foreach my $chr (@chr)
         #     {

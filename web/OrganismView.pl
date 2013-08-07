@@ -3,9 +3,7 @@ use strict;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Storage qw( get_genome_file );
 use HTML::Template;
 use Data::Dumper;
 use CGI::Ajax;
@@ -554,12 +552,8 @@ sub add_to_irods {
     my $dsgid            = $opts{dsgid};
     my $dsg              = $coge->resultset('Genome')->find($dsgid);
     my $add_to_irods_bin = $P->{BINDIR} . "/irods/add_to_irods.pl";
-    my $cmd =
-        $add_to_irods_bin
-      . " -file "
-      . get_genome_file($dsgid)
-      ;    #$dsg->file_path; # mdb changed 7/31/13 issue 77
-    my $new_name = $dsg->organism->name . " " . $dsg->id . ".faa";
+    my $cmd              = $add_to_irods_bin . " -file " . $dsg->file_path;
+    my $new_name         = $dsg->organism->name . " " . $dsg->id . ".faa";
     $cmd .= " -new_name '$new_name'";
     $cmd .= " -dir collections";
     $cmd .= " -tag 'organism=" . $dsg->organism->name . "'";
@@ -1187,7 +1181,8 @@ sub get_gc_for_feature_type {
         else {
             %seqs =
               map {
-                $_, $ds->get_genomic_sequence( chr => $_, seq_type => $gstid )
+                $_,
+                  $ds->get_genomic_sequence( chr => $_, seq_type => $gstid )
               } $ds->chromosomes;
         }
         my $t2    = new Benchmark;
@@ -1535,7 +1530,8 @@ sub get_codon_usage {
         else {
             %seqs =
               map {
-                $_, $ds->get_genomic_sequence( chr => $_, seq_type => $gstid )
+                $_,
+                  $ds->get_genomic_sequence( chr => $_, seq_type => $gstid )
               } $ds->chromosomes;
         }
         foreach my $feat (
@@ -1622,7 +1618,8 @@ sub get_aa_usage {
         else {
             %seqs =
               map {
-                $_, $ds->get_genomic_sequence( chr => $_, seq_type => $gstid )
+                $_,
+                  $ds->get_genomic_sequence( chr => $_, seq_type => $gstid )
               } $ds->chromosomes;
         }
         foreach my $feat (

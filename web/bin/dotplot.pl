@@ -15,7 +15,6 @@ use Sort::Versions;
 
 use vars
   qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order $font $GZIP $GUNZIP $URL $conffile $skip_random $force_box $chr_order $dotsize $linesize);
-#17:1:14:5:7:18:3:4:11:9:13:6:8:12:10:19:2:15:16
 
 GetOptions(
     "dagfile|d=s"            => \$dagfile,        #all dots
@@ -71,10 +70,12 @@ $GUNZIP = $P->{GUNZIP};
 $URL    = $P->{URL};
 
 usage() if $help;
-usage()
-  unless ( defined $dagfile && -r $dagfile )
-  || -r $alignfile
-  || -r "$alignfile.gz";
+unless ( ( defined $dagfile && -r $dagfile )
+    || -r $alignfile
+    || -r "$alignfile.gz" )
+{
+    usage();
+}
 
 if ( defined $dagfile and !( -r $dagfile || -r $dagfile . ".gz" ) ) {
     warn "dagfile specified but not present or readable: $!";
@@ -234,6 +235,7 @@ my $x_bp_per_pix = $org1length / $width;   #sprintf("%.0f", $org1length/$width);
 #$x_bp_per_pix = 1 if $x_bp_per_pix < 1;
 my $x_pix_per_bp = 1 / $x_bp_per_pix;
 my $y_bp_per_pix = $org2length / $height; #sprintf("%.0f", $org2length/$height);
+
 #$y_bp_per_pix = 1 if $y_bp_per_pix < 1;
 my $y_pix_per_bp = 1 / $y_bp_per_pix;
 
@@ -309,6 +311,7 @@ $size = int($y_pix_per_bp) if $y_pix_per_bp > 1;
 $size = 4                  if $x_pix_per_bp > 4;
 $size = 4                  if $y_pix_per_bp > 4;
 $size = $dotsize           if $dotsize;
+
 #draw dots for all matches
 draw_dots(
     gd           => $graphics_context,
@@ -412,6 +415,7 @@ my $box_coords = draw_dots(
 
 draw_boxes( gd => $graphics_context, boxes => $box_coords )
   if $box_diags && $box_coords && @$box_coords;
+
 #draw self-self line?
 my $draw_selfself = 0;
 
@@ -479,6 +483,7 @@ sub draw_dots {
     $fids{$fid1} = 1 if $fid1;
     $fids{$fid2} = 1 if $fid2;
     my $has_ksdata = keys %$ksdata ? 1 : 0;
+
     #min and max will be log normalized if log flag is set
     my ( $max, $min ) =
       get_range( data => $ksdata, min => $MIN, max => $MAX, log => $log )
@@ -590,7 +595,7 @@ sub draw_dots {
         }
         next
           unless $org1->{$chr1}
-              && $org2->{$chr2
+              && $org2->{ $chr2
               }; #sometimes there will be data that is skipped, e.g. where chromosome="random";
 
         my ( $xmin, $ymin );
@@ -603,11 +608,13 @@ sub draw_dots {
             $xmin = $org1->{$chr1}{gene}{$fid1};
             $ymin = $org2->{$chr2}{gene}{$fid2};
             next unless $xmin && $ymin;
-            $midx = $org1->{$chr1}{rev}
+            $midx =
+              $org1->{$chr1}{rev}
               ? sprintf( "%.0f",
                 $org1->{$chr1}{start} + $org1->{$chr1}{length} - ($xmin) )
               : sprintf( "%.0f", $org1->{$chr1}{start} + $xmin );
-            $midy = $org2->{$chr2}{rev}
+            $midy =
+              $org2->{$chr2}{rev}
               ? sprintf( "%.0f",
                 $org2->{$chr2}{start} + $org2->{$chr2}{length} - ($ymin) )
               : sprintf( "%.0f", $org2->{$chr2}{start} + $ymin );
@@ -617,7 +624,8 @@ sub draw_dots {
         {
             ($xmin) = sort ( $line[2], $line[3] );
             ($ymin) = sort ( $line[6], $line[7] );
-            $midx = $org1->{$chr1}{rev}
+            $midx =
+              $org1->{$chr1}{rev}
               ? sprintf( "%.0f",
                 $org1->{$chr1}{start} +
                   $org1->{$chr1}{length} -
@@ -626,7 +634,8 @@ sub draw_dots {
                 $org1->{$chr1}{start} +
                   $xmin +
                   abs( $line[3] - $line[2] ) / 2 );
-            $midy = $org2->{$chr2}{rev}
+            $midy =
+              $org2->{$chr2}{rev}
               ? sprintf( "%.0f",
                 $org2->{$chr2}{start} +
                   $org2->{$chr2}{length} -
@@ -1010,6 +1019,8 @@ sub draw_x_labels {
             $y = $ty if $ty > $y;
         }
         $gd = new GD::Image( $x, $y + 5 );
+        return unless $gd;
+
         my $white       = $gd->colorResolve( 255, 255, 255 );
         my $black       = $gd->colorResolve( 0,   0,   0 );
         my $red         = $gd->colorResolve( 255, 0,   0 );
@@ -1053,6 +1064,8 @@ sub draw_y_labels {
             $x = $tx if $tx > $x;
         }
         $gd = new GD::Image( $x, $y + 5 );
+        return unless $gd;
+
         my $white       = $gd->colorResolve( 255, 255, 255 );
         my $black       = $gd->colorResolve( 0,   0,   0 );
         my $red         = $gd->colorResolve( 255, 0,   0 );

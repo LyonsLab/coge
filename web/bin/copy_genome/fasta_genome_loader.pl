@@ -3,7 +3,6 @@
 use DBI;
 use strict;
 use CoGeX;
-use CoGe::Accessory::Storage qw( get_genome_file );
 use Roman;
 use Data::Dumper;
 use Getopt::Long;
@@ -259,9 +258,7 @@ sub process_nt {
             genome => $genome
         );
     }
-    my $cmd = $formatdb . " -i "
-      . get_genome_file( $genome->id )
-      ;    #$genome->file_path; # mdb changed 8/1/13 issue 77
+    my $cmd = $formatdb . " -i " . $genome->file_path;
     print "\tFormatdb running $cmd\n";
     `$cmd`;
 }
@@ -332,8 +329,7 @@ sub load_genomic_sequence {
             chromosome      => $chr,
         }
     ) if $GO;
-    my $path = get_genome_file( $genome->id )
-      ;    #genome->file_path; # mdb added 8/1/13 issue 77
+    my $path = genome->file_path;
     $path =~ s/\/[^\/]*$/\//;
     mkpath($path);
     mkpath( $path . "/chr" );
