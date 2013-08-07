@@ -104,18 +104,8 @@ my $ks_hist = $P->{KS_HISTOGRAM};
 
 $basename = "test" unless $basename;
 $width    = 1024   unless $width;
-my $DBNAME = $P->{DBNAME};
-my $DBHOST = $P->{DBHOST};
-my $DBPORT = $P->{DBPORT};
-my $DBUSER = $P->{DBUSER};
-my $DBPASS = $P->{DBPASS};
-my $connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->dbconnect(
-    db_connection_string => $connstr,
-    db_name              => $DBUSER,
-    db_passwd            => $DBPASS
-);
+$coge = CoGeX->dbconnect($P);
+
 my $synmap_report = new CoGe::Accessory::SynMap_report;
 
 my ($dsg1) = $coge->resultset('Genome')->find($dsgid1);
@@ -1408,7 +1398,7 @@ sub get_gene_info {
     my %opts  = @_;
     my $dsgid = $opts{dsgid};
     my $info  = $opts{info};
-    my $dbh   = DBI->connect( $connstr, $DBUSER, $DBPASS );
+    my $dbh   = $coge->storage->dbh;
     foreach my $tmp_chr ( keys %$info ) {
         my $query = qq{
 SELECT count(distinct(feature_id))
