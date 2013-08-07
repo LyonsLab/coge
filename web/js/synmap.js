@@ -254,20 +254,6 @@ function fetch_arguments() {
     return argument_list;
 }
 
-function read_log(name, dir, callback) {
-    $.ajax({
-        data: {
-            jquery_ajax: 1,
-            fname: 'read_log',
-            logfile: name,
-            tempdir: dir,
-        },
-        success : function(data) {
-            monitor_log(data);
-        },
-    });
-}
-
 function close_dialog() {
     var dialog_window = $('#synmap_dialog');
     if(dialog_window.dialog('isOpen')) {
@@ -712,117 +698,6 @@ function update_dialog(request, identifier, formatter, args) {
     };
 
     get_status();
-}
-
-function monitor_log(log)
-{
-    var waittime = pageObj.waittime;
-    var fasta = 0;
-    var blast = 0;
-    var blastdb = 0;
-    var bed = 0;
-    var tandem = 0;
-    var converting1 =0;
-    var evalue = 0;
-    var dag = 0;
-    var converting2=0;
-    var ks = 0;
-    var results = 0;
-    var match;
-    pageObj.finished = 0;
-
-    if (waittime < 60000) {
-        pageObj.waittime = pageObj.waittime * 1.25;
-    }
-
-    if (log) {
-        if(log.match(/fasta sequence/i))
-            fasta="Generating fasta files . . . ";
-        if(log.match(/Fasta creation passed/i)) {
-            fasta += "done!<br/>";
-            blastdb = "Generating blastable databases . . . ";
-        }
-        if(log.match(/BlastDB creation passed/i)) {
-            blastdb += "done!<br/>";
-            blast = "Running genome comparison . . . ";
-        }
-        if(log.match(/Completed blast run/i)) {
-            blast += "done!<br/>";
-            bed = "Creating .bed files . . .";
-        }
-        if(log.match(/Filtering results of tandem/i)) {
-            bed += "done!<br/>";
-            tandem = "Filtering tandem dups . . . ";
-        }
-        if(log.match(/Converting blast file to dagchainer input/i)) {
-            tandem += "done!<br/>";
-            converting1 = "Formatting for DagChainer . . . ";
-        }
-        if(log.match(/Adjusting evalue/i)) {
-            converting1 += "done!<br/>";
-            evalue = "Adjusting e-values . . . ";
-        }
-
-        if(log.match(/Running DagChainer/i)) {
-            evalue += "done!<br/>";
-            dag = "Running DAGChainer . . . ";
-        }
-
-        if(log.match(/Completed dagchainer run/i)) {
-            dag += "done!<br/>";
-            results = "Generating images . . . ";
-            pageObj.finished = 0;
-        }
-        if(log.match(/Generating ks data/i)) {
-            ks = "Calculating synonymous changes (slow) . . . ";
-                results = 0;
-            pageObj.finished = 0;
-        }
-        if(ks && log.match(/Completed generating ks data/i)) {
-            ks += "done!<br/>";
-            results = "Generating images . . . ";
-            pageObj.finished = 0;
-        }
-
-        if(log.match(/#finished/i)) {
-            pageObj.finished = 1;
-        }
-    } else {
-        pageObj.nolog += 1;
-    }
-
-    var message = "Initializing search . . . ";
-
-    if (fasta) message += "done!<br/>"+fasta;
-    if (blastdb) message += blastdb;
-    if (blast) message += blast;
-    if (bed) message += bed;
-    if (tandem) message += tandem;
-    if (converting1) message += converting1;
-    if (evalue) message += evalue;
-    if (dag) message += dag;
-    if (ks) message += ks;
-    if (results) message += results;
-
-    if (!pageObj.finished && pageObj.nolog<8) {
-        var waittime = pageObj.waittime;
-        message+="<br/><br/>Next progress check in "+Math.floor(waittime/1000)+" seconds.";
-
-        // TODO: Scale polling time linearly with long running jobs
-        var duration = pageObj.waittime;
-        var readlog_callback = function() {
-            read_log(pageObj.basename, pageObj.tempdir);
-        };
-
-        if ($('#synmap_dialog').dialog('isOpen')) {
-            setTimeout(readlog_callback, duration);
-        }
-    }
-
-    if (pageObj.finished == 0 && pageObj.waittime > 3) {
-    }
-
-    if (message) $('#text').html(message);
 }
 
 function synteny_zoom(dsgid1, dsgid2, basename, chr1, chr2, ksdb) {
