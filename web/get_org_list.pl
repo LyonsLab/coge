@@ -7,7 +7,7 @@ use CGI::Carp 'fatalsToBrowser';
 use CoGe::Accessory::Web;
 no warnings 'redefine';
 
-my $P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+my $P = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
 
 my $DBNAME = $P->{DBNAME};

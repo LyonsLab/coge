@@ -5,7 +5,6 @@ no warnings 'redefine';
 umask(0);
 
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Web;
@@ -20,7 +19,6 @@ use JSON::XS;
 use LWP::Simple;
 use Parallel::ForkManager;
 use GD;
-use Digest::MD5 qw(md5_base64);
 use File::Path;
 use Mail::Mailer;
 use Benchmark;
@@ -29,26 +27,36 @@ use POSIX;
 use Sort::Versions;
 
 our (
-    $P,             $DBNAME,         $DBHOST,      $DBPORT,
-    $DBUSER,        $DBPASS,         $connstr,     $DATE,
-    $DEBUG,         $DIR,            $URL,         $SERVER,
-    $USER,          $FORM,           $coge,        $cogeweb,
-    $PAGE_NAME,     $FORMATDB,       $BLAST,       $TBLASTX,
-    $BLASTN,        $BLASTP,         $LASTZ,       $LAST,
-    $DATADIR,       $FASTADIR,       $BLASTDBDIR,  $DIAGSDIR,
-    $MAX_PROC,      $DAG_TOOL,       $PYTHON,      $PYTHON26,
-    $TANDEM_FINDER, $RUN_DAGCHAINER, $EVAL_ADJUST, $FIND_NEARBY,
-    $DOTPLOT,       $SVG_DOTPLOT,    $NWALIGN,     $QUOTA_ALIGN,
-    $CLUSTER_UTILS, $BLAST2RAW,      $BASE_URL,    $BLAST2BED,
-    $SYNTENY_SCORE, $TEMPDIR,        $TEMPURL,     $ALGO_LOOKUP,
-    $GZIP,          $GUNZIP,         $COOKIE_NAME, %FUNCTIONS,
-    $YERBA,         $GENE_ORDER,     $PAGE_TITLE,  $KSCALC,
-    $GEN_FASTA,     $RUN_ALIGNMENT,  $RUN_COVERAGE
+    $P,           $DEBUG,         $DIR,            $URL,
+    $SERVER,      $USER,          $FORM,           $coge,
+    $cogeweb,     $PAGE_NAME,     $FORMATDB,       $BLAST,
+    $TBLASTX,     $BLASTN,        $BLASTP,         $LASTZ,
+    $LAST,        $DATADIR,       $FASTADIR,       $BLASTDBDIR,
+    $DIAGSDIR,    $MAX_PROC,      $DAG_TOOL,       $PYTHON,
+    $PYTHON26,    $TANDEM_FINDER, $RUN_DAGCHAINER, $EVAL_ADJUST,
+    $FIND_NEARBY, $DOTPLOT,       $SVG_DOTPLOT,    $NWALIGN,
+    $QUOTA_ALIGN, $CLUSTER_UTILS, $BLAST2RAW,      $BASE_URL,
+    $BLAST2BED,   $SYNTENY_SCORE, $TEMPDIR,        $TEMPURL,
+    $ALGO_LOOKUP, $GZIP,          $GUNZIP,         %FUNCTIONS,
+    $YERBA,       $GENE_ORDER,    $PAGE_TITLE,     $KSCALC,
+    $GEN_FASTA,   $RUN_ALIGNMENT, $RUN_COVERAGE
 );
 
-$DEBUG     = 0;
-$YERBA     = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$DEBUG = 0;
+$|     = 1;    # turn off buffering
+
+$FORM       = new CGI;
+$PAGE_TITLE = "SynMap";
+$PAGE_NAME  = "$PAGE_TITLE.pl";
+
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket'),
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
+);
+
+$YERBA = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
+
 $ENV{PATH} = join ":",
   (
     $P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR} . "SynMap",
@@ -151,7 +159,6 @@ $DATADIR  = $P->{DATADIR};
 $DIAGSDIR = $P->{DIAGSDIR};
 $FASTADIR = $P->{FASTADIR};
 
-mkpath( $TEMPDIR,     1, 0777 );
 mkpath( $FASTADIR,    1, 0777 );
 mkpath( $DIAGSDIR,    1, 0777 );    # mdb added 7/9/12
 mkpath( $P->{LASTDB}, 1, 0777 );    # mdb added 7/9/12
@@ -180,51 +187,17 @@ $CLUSTER_UTILS = $P->{CLUSTER_UTILS};   #convert dag output to quota_align input
 $BLAST2RAW     = $P->{BLAST2RAW};       #find local duplicates
 $SYNTENY_SCORE = $P->{SYNTENY_SCORE};
 
-$DOTPLOT     = $P->{DOTPLOT} . " -cf " . $ENV{HOME} . 'coge.conf';
+$DOTPLOT     = $P->{DOTPLOT} . " -cf " . $ENV{COGE_HOME} . 'coge.conf';
 $SVG_DOTPLOT = $P->{SVG_DOTPLOT};
 
 #$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
 #$NWALIGN = $DIR."/bin/nwalign-0.3.0/bin/nwalign";
 $NWALIGN = $P->{NWALIGN};
-$|       = 1;                           # turn off buffering
-$DATE    = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
-$FORM       = new CGI;
-$PAGE_TITLE = "SynMap";
-$PAGE_NAME  = "$PAGE_TITLE.pl";
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
 
 #$ajax{read_log}=\&read_log_test;
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-
-$COOKIE_NAME = $P->{COOKIE_NAME};
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
-
 #print $pj->build_html( $FORM, \&gen_html );
-
 #print "Content-Type: text/html\n\n";print gen_html($FORM);
 
 %FUNCTIONS = (
@@ -303,7 +276,6 @@ sub gen_html {
     $template->param( USER => $name );
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE => $DATE );
 
     #$template->param(ADJUST_BOX=>1);
     $template->param( LOGO_PNG => "SynMap-logo.png" );
@@ -1485,7 +1457,7 @@ sub go {
     my $workflow = undef;
     my $status   = undef;
 
-    my $config = $ENV{HOME} . "coge.conf";
+    my $config = $ENV{COGE_HOME} . "coge.conf";
 
     #my @dsgs = ([$dsgid1, $feat_type1]);
     #push @dsgs, [$dsgid2, $feat_type2]
@@ -2516,7 +2488,7 @@ sub get_results {
     my $workflow = undef;
     my $status   = undef;
 
-    my $config = $ENV{HOME} . "coge.conf";
+    my $config = $ENV{COGE_HOME} . "coge.conf";
 
     if ( $feat_type1 eq "genomic" ) {
         my $genome = $coge->resultset('Genome')->find($dsgid1);
@@ -2896,9 +2868,8 @@ sub get_results {
         $html .= $tmp;
 
         #Synteny Zoom
-        $results->param( codeml_min => $codeml_min );
-        $results->param( codeml_max => $codeml_max );
-
+        $results->param( codeml_min  => $codeml_min );
+        $results->param( codeml_max  => $codeml_max );
         $results->param( axis_metric => $axis_metric );
         $results->param( ylabel      => $y_label );
         $results->param( xlabel      => $x_label );
@@ -3076,7 +3047,7 @@ sub get_results {
             msg  => qq{Syntenic Path Assembly mapping},
         );
 
-        my $conffile = $ENV{HOME} . 'coge.conf';
+        my $conffile = $ENV{COGE_HOME} . 'coge.conf';
 
         $dagchainer_file =~ s/^$URL/$DIR/;
 

@@ -150,11 +150,13 @@ function enter_item(obj) {
 					timestamp: new Date().getTime()
 				},
 				success : function(data) {
-					var obj = jQuery.parseJSON(data);
-					var myName = arguments.callee.toString();
-					if (!pageObj.timestamp[myName] || obj.timestamp >= pageObj.timestamp[myName]) {
-						pageObj.timestamp[myName] = obj.timestamp;
-						$('#info_panel').html(obj.html);
+					if (data) {
+						var obj = jQuery.parseJSON(data);
+						var myName = arguments.callee.toString();
+						if (!pageObj.timestamp[myName] || obj.timestamp >= pageObj.timestamp[myName]) {
+							pageObj.timestamp[myName] = obj.timestamp;
+							$('#info_panel').html(obj.html);
+						}
 					}
 				}
 			});
@@ -418,10 +420,12 @@ function search_notebooks () {
 			timestamp: pageObj.timestamp['notebooks']
 		},
 		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			if (obj.timestamp >= pageObj.timestamp['notebooks']) {
-				$("#notebook_select").html(obj.html);
-				$("#wait_notebook").animate({opacity:0});
+			if (data) {
+				var obj = jQuery.parseJSON(data);
+				if (obj.timestamp >= pageObj.timestamp['notebooks']) {
+					$("#notebook_select").html(obj.html);
+					$("#wait_notebook").animate({opacity:0});
+				}
 			}
 		},
 	});

@@ -22,25 +22,35 @@ no warnings 'redefine';
 #example URL: http://toxic.berkeley.edu/CoGe/SynFind.pl?fid=34519245;qdsgid=3;dsgid=4241,6872,7084,7094,7111
 
 use vars
-  qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $DIR $URL $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $BEDDIR $LASTZ $LAST $CONVERT_BLAST $BLAST2BED $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $SERVER $connstr $COOKIE_NAME);
+  qw($P $PAGE_TITLE $PAGE_NAME $DIR $URL $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR
+  $DIAGSDIR $BEDDIR $LASTZ $LAST $CONVERT_BLAST $BLAST2BED $BLAST2RAW
+  $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $coge
+  $cogeweb $RESULTSLIMIT $MAX_PROC $SERVER);
 
-#refresh again?
-$P             = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$PAGE_TITLE = 'SynFind';
+$PAGE_NAME  = "$PAGE_TITLE.pl";
+
+$FORM = new CGI;
+
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket'),
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
+);
+
 $ENV{PATH}     = $P->{COGEDIR};
 $TEMPDIR       = $P->{TEMPDIR} . "SynFind";
 $TEMPURL       = $P->{TEMPURL} . "SynFind";
 $SERVER        = $P->{SERVER};
 $ENV{BLASTDB}  = $P->{BLASTDB};
 $ENV{BLASTMAT} = $P->{BLASTMATRIX};
-$PAGE_NAME     = "SynFind.pl";
 $DIR           = $P->{COGEDIR};
 $URL           = $P->{URL};
 $DATADIR       = $P->{DATADIR};
 $DIAGSDIR      = $P->{DIAGSDIR};
-
-$FASTADIR   = $P->{FASTADIR};
-$BLASTDBDIR = $P->{BLASTDB};
-$BEDDIR     = $P->{BEDDIR};
+$FASTADIR      = $P->{FASTADIR};
+$BLASTDBDIR    = $P->{BLASTDB};
+$BEDDIR        = $P->{BEDDIR};
 mkpath( $BEDDIR, 0, 0777 ) unless -d $BEDDIR;
 
 $MAX_PROC = $P->{MAX_PROC};
@@ -57,47 +67,15 @@ $LAST =
   . " --dbpath="
   . $P->{LASTDB};
 
-$CONVERT_BLAST    = $P->{CONVERT_BLAST};
-$BLAST2BED        = $P->{BlAST2BED};
-$BLAST2RAW        = $P->{BLAST2RAW};
-$SYNTENY_SCORE    = $P->{SYNTENY_SCORE};
-$PYTHON26         = $P->{PYTHON};
-$DATASETGROUP2BED = $P->{DATASETGROUP2BED} . " -cf " . $ENV{HOME} . 'coge.conf';
+$CONVERT_BLAST = $P->{CONVERT_BLAST};
+$BLAST2BED     = $P->{BlAST2BED};
+$BLAST2RAW     = $P->{BLAST2RAW};
+$SYNTENY_SCORE = $P->{SYNTENY_SCORE};
+$PYTHON26      = $P->{PYTHON};
+$DATASETGROUP2BED =
+  $P->{DATASETGROUP2BED} . " -cf " . $ENV{COGE_HOME} . 'coge.conf';
 
-$DATE = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
-
-$FORM = new CGI;
 my %ajax = CoGe::Accessory::Web::ajax_func();
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-
-#$coge->storage->debugobj(new DBIxProfiler());
-#$coge->storage->debug(1);
-
-$COOKIE_NAME = $P->{COOKIE_NAME};
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
 
 if ( $FORM->param('get_master') ) {
     get_master_syn_sets();
@@ -115,17 +93,13 @@ my $pj = new CGI::Ajax(
     get_dsg_for_search_menu => \&get_dsg_for_search_menu,
     generate_basefile       => \&generate_basefile,
     save_orglist_synfind    => \&save_orglist_synfind,
-
-    go => \&go_synfind,
-
-    get_types      => \&get_types,
-    cogefeatsearch => \&cogefeatsearch,
-    get_anno       => \&get_anno,
-    get_orgs_feat  => \&get_orgs_feat,
-    source_search  => \&get_data_source_info_for_accn,
-
-    generate_feat_info => \&generate_feat_info,
-
+    get_types               => \&get_types,
+    cogefeatsearch          => \&cogefeatsearch,
+    get_anno                => \&get_anno,
+    get_orgs_feat           => \&get_orgs_feat,
+    source_search           => \&get_data_source_info_for_accn,
+    generate_feat_info      => \&generate_feat_info,
+    go                      => \&go_synfind,
 );
 $pj->js_encode_function('escape');
 print $pj->build_html( $FORM, \&gen_html );
@@ -145,7 +119,6 @@ sub gen_html {
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER     => $name );
     $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE     => $DATE );
     $template->param( LOGO_PNG => "SynFind-logo.png" );
 
     #    $template->param(BOX_NAME=>'SynFind Settings');
@@ -1500,7 +1473,7 @@ sub run_convert_blast {
         return $outfile;
     }
     print STDERR "In sub run_convert_blast\n";
-    CoGe::Accessory::Web::gunzip( "$infile", $ENV{HOME} . 'coge.conf', 1 );
+    CoGe::Accessory::Web::gunzip($infile);
     CoGe::Accessory::Web::write_log(
         "convering blast file to short names: $cmd",
         $cogeweb->logfile );
@@ -1526,9 +1499,9 @@ sub run_blast2raw {
         return $outfile;
     }
     print STDERR "IN SUB run_blast2raw\n";
-    CoGe::Accessory::Web::gunzip( "$blastfile", $ENV{HOME} . 'coge.conf', 1 );
-    CoGe::Accessory::Web::gunzip( "$bedfile1",  $ENV{HOME} . 'coge.conf', 1 );
-    CoGe::Accessory::Web::gunzip( "$bedfile2",  $ENV{HOME} . 'coge.conf', 1 );
+    CoGe::Accessory::Web::gunzip($blastfile);
+    CoGe::Accessory::Web::gunzip($bedfile1);
+    CoGe::Accessory::Web::gunzip($bedfile2);
     unless ( -r $blastfile ) {
         warn "can't read $blastfile\n";
         return;
@@ -1579,11 +1552,10 @@ sub run_synteny_score {
         system "/usr/bin/touch $outfile.running"
           ;    #track that a blast anlaysis is running for this
     }
-    print STDERR "Path: " . $ENV{HOME}, "\n";
-    CoGe::Accessory::Web::gunzip( "$blastfile", $ENV{HOME} . 'coge.conf', 1 )
-      ;        #turned on debugging
-    CoGe::Accessory::Web::gunzip( "$bedfile1", $ENV{HOME} . 'coge.conf', 1 );
-    CoGe::Accessory::Web::gunzip( "$bedfile2", $ENV{HOME} . 'coge.conf', 1 );
+    print STDERR "Path: " . $ENV{COGE_HOME}, "\n";
+    CoGe::Accessory::Web::gunzip($blastfile);    #turned on debugging
+    CoGe::Accessory::Web::gunzip($bedfile1);
+    CoGe::Accessory::Web::gunzip($bedfile2);
     unless ( -r $blastfile ) {
         warn "can't read $blastfile\n";
         return;
@@ -1821,6 +1793,7 @@ sub get_master_syn_sets {
                 my $max;
                 my @syntelog_count;
               SET:
+
                 foreach my $set (
                     @data) #iterate through each genome -- first is query genome
                 {
@@ -1871,7 +1844,7 @@ sub get_master_syn_sets {
 
 #		    my ($name_hash) = sort {$b->{primary_name} <=> $a->{primary_name} || $a->{name} cmp $b->{name}} $rs->search({feature_id=>$fid});
                             my ($name_hash) = sort {
-                                $b->primary_name <=> $a->primary_name
+                                     $b->primary_name <=> $a->primary_name
                                   || $a->name cmp $b->name
                               } $coge->resultset('FeatureName')
                               ->search( { feature_id => $fid } );

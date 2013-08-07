@@ -3,14 +3,12 @@ use strict;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use HTML::Template;
 use Data::Dumper;
 use CGI::Ajax;
 use Benchmark;
 use File::Path;
-use Digest::MD5 qw(md5_base64);
 use Benchmark qw(:all);
 use Statistics::Basic::Mean;
 use POSIX;
@@ -18,60 +16,27 @@ use Sort::Versions;
 
 no warnings 'redefine';
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME
-  $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM
-  %FUNCTION $P $COOKIE_NAME $SERVER);
-$P                 = CoGe::Accessory::Web::get_defaults("$ENV{HOME}/coge.conf");
-$ENV{PATH}         = $P->{COGEDIR};
-$ENV{irodsEnvFile} = "/var/www/.irods/.irodsEnv";
+use vars qw($P $PAGE_NAME $PAGE_TITLE
+  $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM
+  %FUNCTION $P $SERVER);
 
-# set this to 1 to print verbose messages to logs
-$DEBUG   = 0;
-$TEMPDIR = $P->{TEMPDIR} . "OrgView";
-$TEMPURL = $P->{TEMPURL} . "OrgView";
-$SERVER  = $P->{SERVER};
-
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-
-$HISTOGRAM = $P->{HISTOGRAM};
-
-$|    = 1;         # turn off buffering
-$DATE = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
+$| = 1;    # turn off buffering
 
 $FORM = new CGI;
 
-$PAGE_NAME = 'OrganismView.pl';
+$PAGE_TITLE = 'OrganismView';
+$PAGE_NAME  = "$PAGE_TITLE.pl";
 
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket'),
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
+);
 
-#$coge->storage->debugobj(new DBIxProfiler());
-#$coge->storage->debug(1);
-
-$COOKIE_NAME = $P->{COOKIE_NAME};
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
+$TEMPDIR   = $P->{TEMPDIR} . "/$PAGE_TITLE";
+$TEMPURL   = $P->{TEMPURL} . "/$PAGE_TITLE";
+$SERVER    = $P->{SERVER};
+$HISTOGRAM = $P->{HISTOGRAM};
 
 %FUNCTION = (
     get_genomes             => \&get_genomes,
@@ -157,7 +122,6 @@ sub gen_html {
     $template->param( USER     => $name );
     $template->param( BOX_NAME => "Search for organisms and genomes" );
     $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE     => $DATE );
     $template->param( LOGO_PNG => "OrganismView-logo.png" );
     $template->param( BODY     => $body );
 
@@ -511,7 +475,7 @@ sub get_genome_list_for_org {
             push @dsg, $dsg;
         }
         @opts = map {
-            $_->id . "%%"
+                $_->id . "%%"
               . $_->name . " (v"
               . $_->version
               . ", dsgid"
@@ -546,9 +510,10 @@ sub get_genomes {
         foreach my $dsg (@dsg) {
             $selected{ $dsg->id } = " " unless $selected{ $dsg->id };
         }
+        no warnings 'uninitialized'; # disable warnings for undef values in sort
         foreach my $item (
             sort {
-                versioncmp( $b->version, $a->version )
+                     versioncmp( $b->version, $a->version )
                   || $a->type->id <=> $b->type->id
                   || $a->name cmp $b->name
                   || $b->id cmp $a->id
@@ -671,16 +636,20 @@ qq{<tr><td><span class="link" onclick="window.open('SeqType.pl')">Sequence type:
     $html .= qq{
 <tr><td>Noncoding sequence:<td><div id=dsg_noncoding_gc class="link" onclick = "gen_data(['args__loading...'],['dsg_noncoding_gc']);\$('#dsg_noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsgid','dsg_id','args__gstid', 'gstid'],['dsg_noncoding_gc']);">Click for percent GC content</div></td></tr> 
 } if $total_length;
-    my $seq_file = $dsg->file_path;
-    my $cogedir  = $P->{COGEDIR};
-    my $cogeurl  = $P->{URL};
-    $seq_file =~ s/$cogedir/$cogeurl/i;
+
+    # mdb removed 7/31/13 issue 77
+    #    my $seq_file = $dsg->file_path;
+    #    my $cogedir  = $P->{COGEDIR};
+    #    my $cogeurl  = $P->{URL};
+    #    $seq_file =~ s/$cogedir/$cogeurl/i;
+    my $seq_url = "services/JBrowse/service.pl/sequence/$dsgid"
+      ;    # mdb added 7/31/13 issue 77
 
     #print STDERR Dumper $seq_file;
     $html .= qq{<TR><TD>Download:</td>};
     $html .= qq{<td>};
     $html .=
-      qq{<a class=link href='$seq_file' target="_new">Fasta Sequences</a>};
+      qq{<a class=link href='$seq_url' target="_new">Fasta Sequences</a>};
     $html .= qq{&nbsp|&nbsp};
     $html .=
 qq{<span class=link onclick="\$('#gff_export').dialog('option', 'width', 400).dialog('open')">Export GFF</span>};
@@ -766,7 +735,7 @@ sub get_dataset {
     if ($dsgid) {
         my $dsg = $coge->resultset("Genome")->find($dsgid);
         @opts = map {
-            "<OPTION value=\""
+                "<OPTION value=\""
               . $_->id . "\">"
               . $_->name . " (v"
               . $_->version
@@ -889,7 +858,7 @@ qq{<SELECT class="ui-widget-content ui-corner-all" id="chr" size =$size onChange
         $select .= join(
             "\n",
             map {
-                "<OPTION value=\"$_\">" 
+                    "<OPTION value=\"$_\">" 
                   . $_ . " ("
                   . commify( $chr{$_}{length} )
                   . " bp)</OPTION>"
@@ -1048,7 +1017,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
 };
     }
 
-    my $dbh = DBI->connect( $connstr, $DBUSER, $DBPASS );
+    my $dbh = $coge->storage->dbh;  #DBI->connect( $connstr, $DBUSER, $DBPASS );
     my $sth = $dbh->prepare($query);
     $sth->execute;
     my $feats = {};
@@ -1206,12 +1175,14 @@ sub get_gc_for_feature_type {
           ; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
         if ( defined $chr ) {
             $seqs{$chr} =
-              $ds->genomic_sequence( chr => $chr, seq_type => $gstid );
+              $ds->get_genomic_sequence( chr => $chr, seq_type => $gstid );
         }
         else {
             %seqs =
-              map { $_, $ds->genomic_sequence( chr => $_, seq_type => $gstid ) }
-              $ds->chromosomes;
+              map {
+                $_,
+                  $ds->get_genomic_sequence( chr => $_, seq_type => $gstid )
+              } $ds->chromosomes;
         }
         my $t2    = new Benchmark;
         my @feats = $ds->features(
@@ -1428,12 +1399,12 @@ sub get_gc_for_noncoding {
 
         if ( defined $chr ) {
             $seqs{$chr} =
-              $ds->genomic_sequence( chr => $chr, seq_type => $gstid );
+              $ds->get_genomic_sequence( chr => $chr, seq_type => $gstid );
         }
         else {
             map {
                 $seqs{$_} =
-                  $ds->genomic_sequence( chr => $_, seq_type => $gstid )
+                  $ds->get_genomic_sequence( chr => $_, seq_type => $gstid )
             } $ds->chromosomes;
         }
         foreach my $feat (
@@ -1553,12 +1524,14 @@ sub get_codon_usage {
           ; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
         if ( defined $chr ) {
             $seqs{$chr} =
-              $ds->genomic_sequence( chr => $chr, seq_type => $gstid );
+              $ds->get_genomic_sequence( chr => $chr, seq_type => $gstid );
         }
         else {
             %seqs =
-              map { $_, $ds->genomic_sequence( chr => $_, seq_type => $gstid ) }
-              $ds->chromosomes;
+              map {
+                $_,
+                  $ds->get_genomic_sequence( chr => $_, seq_type => $gstid )
+              } $ds->chromosomes;
         }
         foreach my $feat (
             $ds->features(
@@ -1639,12 +1612,14 @@ sub get_aa_usage {
           ; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
         if ( defined $chr ) {
             $seqs{$chr} =
-              $ds->genomic_sequence( chr => $chr, seq_type => $gstid );
+              $ds->get_genomic_sequence( chr => $chr, seq_type => $gstid );
         }
         else {
             %seqs =
-              map { $_, $ds->genomic_sequence( chr => $_, seq_type => $gstid ) }
-              $ds->chromosomes;
+              map {
+                $_,
+                  $ds->get_genomic_sequence( chr => $_, seq_type => $gstid )
+              } $ds->chromosomes;
         }
         foreach my $feat (
             $ds->features(

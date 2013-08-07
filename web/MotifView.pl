@@ -60,7 +60,7 @@ delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
 use vars
   qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $GENOMETHREADER $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $MAX_PROC %FUNCTION $COOKIE_NAME $DIR $MOTIFFILE $TMPLDIR);
-$P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
 
 $ENV{PATH} = $P->{COGEDIR};
@@ -2704,7 +2704,7 @@ sub process_hsps {
     my $label_location = "top";
     my $order;
     @feats = sort {
-        $a->strand cmp $b->strand
+             $a->strand cmp $b->strand
           || $a->track <=> $b->track
           || $a->start <=> $b->start
     } @feats;
@@ -4276,8 +4276,10 @@ sub motif_list {
 
 #$html.="<select class=\"backbox\" id=\"tfbs_motif\" name=\"tfbs_motif\" multiple=\"multiple\"";
 #for my $mot (sort { $motifhash->{$a}{'consensus'} cmp $motifhash->{$b}{'consensus'}} keys %$motifhash)
-    for my $mot ( sort { $motifhash->{$a}{'name'} cmp $motifhash->{$b}{'name'} }
-        keys %$motifhash )
+    for my $mot (
+        sort { $motifhash->{$a}{'name'} cmp $motifhash->{$b}{'name'} }
+        keys %$motifhash
+      )
     {
         my $seq            = $motifhash->{$mot}{'consensus'};
         my $motifrealcolor = $motifhash->{$mot}{'color'};
@@ -5063,7 +5065,7 @@ sub dataset_search {
  };
         foreach my $id (
             sort {
-                $sources{$b}{version} <=> $sources{$a}{version}
+                     $sources{$b}{version} <=> $sources{$a}{version}
                   || $sources{$a}{typeid} <=> $sources{$b}{typeid}
             } keys %sources
           )

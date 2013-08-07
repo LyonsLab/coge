@@ -15,7 +15,7 @@ no warnings 'redefine';
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG
   $TEMPDIR $TEMPURL $USER $FORM $FID $DS $DSG $CHR $LOC $ORG $TYPE
   $VERSION $START $STOP $NAME_ONLY $coge $GSTID $COOKIE_NAME);
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P         = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
 $TEMPDIR   = $P->{TEMPDIR};
 $TEMPURL   = $P->{TEMPURL};
@@ -101,7 +101,7 @@ sub gen_html {
     push @ds, $ds            if $ds;
     push @ds, $dsg->datasets if $dsg;
 
-    if ($ds
+    if ( $ds
       ) #there can be additional information about a chromosome for a particular version of the organism that is not in the same data_information.  Let's go find the organism_id and version for the specified data information item.
     {
         $version = $ds->version unless $version;

@@ -14,7 +14,7 @@ no warnings 'redefine';
 
 use vars
   qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $FID $coge $COOKIE_NAME);
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P         = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
 $TEMPDIR   = $P->{TEMPDIR};
 $TEMPURL   = $P->{TEMPURL};
