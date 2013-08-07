@@ -17,7 +17,7 @@ delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
 use vars
   qw ($P $FORM $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $USER $DATE $TEMPDIR $TEMPURL $COOKIE_NAME $coge);
-$P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
 
 $FORM    = new CGI;

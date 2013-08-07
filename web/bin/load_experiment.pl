@@ -25,7 +25,7 @@ my $MIN_VCF_COLUMNS = 8;
 
 GetOptions(
     "staging_dir=s" => \$staging_dir,
-    "install_dir=s" => \$install_dir,
+    "install_dir=s" => \$install_dir,    # optional
     "data_file=s"   => \$data_file,      # data file (JS escape)
     "name=s"        => \$name,           # experiment name (JS escaped)
     "desc=s"        => \$description,    # experiment description (JS escaped)
@@ -119,21 +119,24 @@ print $log "log: Validating data file\n";
 my $count = 0;
 my $pChromosomes;
 my $data_spec;
-if ($data_type == $DATA_TYPE_QUANT) {
-	($data_file, $data_spec, $count, $pChromosomes) = validate_quant_data_file(file=>$data_file, genome_chr=>\%genome_chr);
+if ( $data_type == $DATA_TYPE_QUANT ) {
+    ( $data_file, $data_spec, $count, $pChromosomes ) =
+      validate_quant_data_file(
+        file       => $data_file,
+        genome_chr => \%genome_chr
+      );
 }
-elsif ($data_type == $DATA_TYPE_VCF) {
-	($data_file, $data_spec, $count, $pChromosomes) = validate_vcf_data_file(file=>$data_file, genome_chr=>\%genome_chr);
+elsif ( $data_type == $DATA_TYPE_VCF ) {
+    ( $data_file, $data_spec, $count, $pChromosomes ) =
+      validate_vcf_data_file( file => $data_file, genome_chr => \%genome_chr );
 }
-if (not $count) {
-	print $log "log: error: file contains no data\n";
-	exit(-1);
+if ( not $count ) {
+    print $log "log: error: file contains no data\n";
+    exit(-1);
 }
 
 my ($filename) = $data_file =~ /^.+\/([^\/]+)$/;
 print $log "log: Successfully read " . commify($count) . " lines\n";
-
-
 
 # Verify that chromosome names in input file match those for genome
 
@@ -213,10 +216,27 @@ my $experiment = $coge->resultset('Experiment')->create(
         restricted     => $restricted
     }
 );
+
+# Determine installation path
+unless ($install_dir) {
+    unless ($P) {
+        print $log
+"log: error: can't determine install directory, set 'install_dir' or 'config' params\n";
+        exit(-1);
+    }
+    $install_dir = $P->{EXPDIR};
+}
 my $storage_path = "$install_dir/" . $experiment->get_path;
 print $log 'Storage path: ', $storage_path, "\n";
-$experiment->storage_path($storage_path);
-$experiment->update;
+# mdb removed 8/7/13, issue 77
+#$experiment->storage_path($storage_path);
+#$experiment->update;
+
+# This is a check for dev server which may be out-of-sync with prod
+if ( -e $storage_path ) {
+    print $log "log: error: install path already exists\n";
+    exit(-1);
+}
 
 print $log "experiment id: "
   . $experiment->id
@@ -245,7 +265,7 @@ unless ($conn) {
     exit(-1);
 }
 
-## Copy files from staging directory to installation directory
+# Copy files from staging directory to installation directory
 mkpath($storage_path);
 $cmd = "cp -r $staging_dir/* $storage_path";
 print $log "$cmd\n";
@@ -314,8 +334,6 @@ sub validate_quant_data_file {
     my %opts = @_;
     my $filepath = $opts{file};
     my $genome_chr = $opts{genome_chr};
-
-
     my %chromosomes;
     my $line_num = 1;
     my $count    = 0;
@@ -378,17 +396,21 @@ sub validate_quant_data_file {
         $chr =~ s/\s+/ /;
         $chr =~ s/^\s//;
         $chr =~ s/\s$//;
-	#hack to deal with converting chloroplast and mitochondia to C and M if needed
-		if ($chr =~/^chloroplast$/i && !$genome_chr->{$chr} && $genome_chr->{"C"})
-		  {
-		    $chr = "C";
-		  }
-		if ($chr =~/^mitochondria$/i && !$genome_chr->{$chr} && $genome_chr->{"M"})
-		  {
-		    $chr = "M";
-		  }
-		##end hack
 
+  #hack to deal with converting chloroplast and mitochondia to C and M if needed
+        if (   $chr =~ /^chloroplast$/i
+            && !$genome_chr->{$chr}
+            && $genome_chr->{"C"} )
+        {
+            $chr = "C";
+        }
+        if (   $chr =~ /^mitochondria$/i
+            && !$genome_chr->{$chr}
+            && $genome_chr->{"M"} )
+        {
+            $chr = "M";
+        }
+        ##end hack
 
         if ( not defined $chr ) {
             print $log
@@ -410,9 +432,9 @@ sub validate_quant_data_file {
 
 # For VCF format specification v4.1, see http://www.1000genomes.org/node/101
 sub validate_vcf_data_file {
-    my %opts = @_;
-  my $filepath = $opts{file};
-  my $genome_chr = $opts{genome_chr};
+    my %opts       = @_;
+    my $filepath   = $opts{file};
+    my $genome_chr = $opts{genome_chr};
 
     my %chromosomes;
     my $line_num = 1;
@@ -464,23 +486,27 @@ sub validate_vcf_data_file {
         $chr =~ s/\s+/ /;
         $chr =~ s/^\s//;
         $chr =~ s/\s$//;
-        #hack to deal with converting chloroplast and mitochondia to C and M if needed
-		if ($chr =~/^chloroplast$/i && !$genome_chr->{$chr} && $genome_chr->{"C"})
-		  {
-		    $chr = "C";
-		  }
-		if ($chr =~/^mitochondria$/i && !$genome_chr->{$chr} && $genome_chr->{"M"})
-		  {
-		    $chr = "M";
-		  }
-		#end hack
 
-		if (not $chr) {
-			print $log "log: error at line $line_num: trouble parsing chromosome\n";
-			return;
-		}
+		#hack to deal with converting chloroplast and mitochondia to C and M if needed
+        if (   $chr =~ /^chloroplast$/i
+            && !$genome_chr->{$chr}
+            && $genome_chr->{"C"} )
+        {
+            $chr = "C";
+        }
+        if (   $chr =~ /^mitochondria$/i
+            && !$genome_chr->{$chr}
+            && $genome_chr->{"M"} )
+        {
+            $chr = "M";
+        }
+        #end hack
 
-
+        if ( not $chr ) {
+            print $log
+              "log: error at line $line_num: trouble parsing chromosome\n";
+            return;
+        }
         $chromosomes{$chr}++;
 
         # Each line could encode multiple alleles

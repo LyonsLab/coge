@@ -3,75 +3,29 @@
 use strict;
 use CGI;
 
-#use CGI::Ajax;
-use JSON::XS;
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use HTML::Template;
-use Digest::MD5 qw(md5_base64);
-use URI::Escape;
-use Data::Dumper;
-use File::Path;
 
 no warnings 'redefine';
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME
-  $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION
-  $COOKIE_NAME $FORM $URL $COGEDIR $TEMPDIR $TEMPURL
-  $MAX_SEARCH_RESULTS);
-$P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+use vars
+  qw($P $PAGE_TITLE $PAGE_NAME $USER $coge %FUNCTION $FORM $MAX_SEARCH_RESULTS);
 
-$DATE = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
-$PAGE_NAME = 'GroupView.pl';
+$PAGE_TITLE = 'GroupView';
+$PAGE_NAME  = "$PAGE_TITLE.pl";
 
 $FORM = new CGI;
 
 $MAX_SEARCH_RESULTS = 1000;
 
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-
-$COOKIE_NAME = $P->{COOKIE_NAME};
-$URL         = $P->{URL};
-$COGEDIR     = $P->{COGEDIR};
-$TEMPDIR     = $P->{TEMPDIR} . "GroupView/";
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-$TEMPURL = $P->{TEMPURL} . "GroupView/";
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
-
-my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-$link = CoGe::Accessory::Web::get_tiny_link(
-    db      => $coge,
-    user_id => $USER->id,
-    page    => $PAGE_NAME,
-    url     => $link
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket'),
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
 );
 
 %FUNCTION = (
-    gen_html                 => \&gen_html,
     get_group_info           => \&get_group_info,
     edit_group_info          => \&edit_group_info,
     update_group_info        => \&update_group_info,
@@ -83,27 +37,7 @@ $link = CoGe::Accessory::Web::get_tiny_link(
     set_group_creator        => \&set_group_creator,
 );
 
-dispatch();
-
-sub dispatch {
-    my %args  = $FORM->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-        die "Uknown AJAX function '$fname'" if not defined $FUNCTION{$fname};
-
-        #print STDERR Dumper \%args;
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $FORM->header, $FUNCTION{$fname}->(@args_list);
-        }
-        else {
-            print $FORM->header, $FUNCTION{$fname}->(%args);
-        }
-    }
-    else {
-        print $FORM->header, gen_html();
-    }
-}
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
     my $html;
@@ -118,7 +52,6 @@ sub gen_html {
     $template->param( PAGE_TITLE => qq{GroupView} );
     $template->param( LOGO_PNG   => "GroupView-logo.png" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE       => $DATE );
     $template->param( BODY       => gen_body() );
     $template->param( ADJUST_BOX => 1 );
     $html .= $template->output;
@@ -282,7 +215,8 @@ sub modify_users {
 
     foreach my $user (
         sort {
-            $a->last_name cmp $b->last_name || $a->user_name cmp $b->user_name
+                 $a->last_name cmp $b->last_name
+              || $a->user_name cmp $b->user_name
         } $group->users
       )
     {
@@ -297,7 +231,8 @@ sub modify_users {
     my $first = 1;
     foreach my $user (
         sort {
-            $a->last_name cmp $b->last_name || $a->user_name cmp $b->user_name
+                 $a->last_name cmp $b->last_name
+              || $a->user_name cmp $b->user_name
         } $coge->resultset('User')->all
       )
     {
@@ -455,7 +390,8 @@ sub dialog_set_group_creator {
     my @all_users;
     foreach my $user (
         sort {
-            $a->last_name cmp $b->last_name || $a->user_name cmp $b->user_name
+                 $a->last_name cmp $b->last_name
+              || $a->user_name cmp $b->user_name
         } $coge->resultset('User')->all
       )
     {

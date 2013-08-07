@@ -36,19 +36,31 @@ __PACKAGE__->table("role");
 =cut
 
 __PACKAGE__->add_columns(
-  "role_id",
-  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
-  "name",
-  { data_type => "varchar", is_nullable => 0, size => 255 },
-  "description",
-  { data_type => "varchar", is_nullable => 1, size => 255 },
+    "role_id",
+    {
+        data_type     => "INT",
+        default_value => undef,
+        is_nullable   => 0,
+        size          => 11
+    },
+    "name",
+    { data_type => "varchar", is_nullable => 0, size => 255 },
+    "description",
+    { data_type => "varchar", is_nullable => 1, size => 255 },
 );
 __PACKAGE__->set_primary_key("role_id");
-# Role has many permissions
-__PACKAGE__->has_many('role_permission_connectors'=>"CoGeX::Result::RolePermissionConnector",'role_id');
-#__PACKAGE__->has_many('user_groups'=>'CoGeX::Result::UserGroup', 'role_id');
-__PACKAGE__->has_many('user_connectors'=>'CoGeX::Result::UserConnector', 'role_id');
 
+# Role has many permissions
+__PACKAGE__->has_many(
+    'role_permission_connectors' => "CoGeX::Result::RolePermissionConnector",
+    'role_id'
+);
+
+#__PACKAGE__->has_many('user_groups'=>'CoGeX::Result::UserGroup', 'role_id');
+__PACKAGE__->has_many(
+    'user_connectors' => 'CoGeX::Result::UserConnector',
+    'role_id'
+);
 
 ################################################ subroutine header begin ##
 
@@ -64,21 +76,18 @@ __PACKAGE__->has_many('user_connectors'=>'CoGeX::Result::UserConnector', 'role_i
 =cut
 
 ################################################## subroutine header end ##
-sub is_owner
- {
-   return shift->name =~ /owner/i;
- }
- 
-sub is_editor
- {
-   return shift->name =~ /editor/i;
- } 
- 
-sub is_reader
- {
-   return shift->name =~ /reader/i;
- }
- 
+sub is_owner {
+    return shift->name =~ /owner/i;
+}
+
+sub is_editor {
+    return shift->name =~ /editor/i;
+}
+
+sub is_reader {
+    return shift->name =~ /reader/i;
+}
+
 ################################################ subroutine header begin ##
 
 =head2 groups
@@ -93,10 +102,9 @@ sub is_reader
 =cut
 
 ################################################## subroutine header end ##
-sub groups
- {
-   return shift->user_groups(@_);
- }
+sub groups {
+    return shift->user_groups(@_);
+}
 
 ################################################ subroutine header begin ##
 
@@ -114,19 +122,17 @@ sub groups
 ################################################## subroutine header end ##
 sub permissions {
 
-    my $self = shift;
-    my @permissions=();
+    my $self        = shift;
+    my @permissions = ();
 
-    foreach my $pc ($self->role_permission_connectors())
-      {
-        push@permissions, $pc->permission;
+    foreach my $pc ( $self->role_permission_connectors() ) {
+        push @permissions, $pc->permission;
     }
 
     return wantarray ? @permissions : \@permissions;
 }
 
 1;
-
 
 =head1 AUTHORS
 

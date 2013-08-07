@@ -2,78 +2,22 @@
 
 use strict;
 use CGI;
-
-use JSON::XS;
 use HTML::Template;
-use Sort::Versions;
-use List::Util qw(first);
-use DBIxProfiler;
-use URI::Escape::JavaScript qw(escape unescape);
-use Data::Dumper;
-use File::Path;
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
-use CoGeX::ResultSet::Experiment;
-use CoGeX::ResultSet::Genome;
-use CoGeX::ResultSet::Feature;
-use Benchmark;
 no warnings 'redefine';
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE
-  $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION
-  $COOKIE_NAME $FORM $URL $COGEDIR $TEMPDIR $TEMPURL %ITEM_TYPE
-  $MAX_SEARCH_RESULTS);
-$P = CoGe::Accessory::Web::get_defaults("$ENV{HOME}/coge.conf");
-
-$DATE = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
+use vars
+  qw($P $PAGE_TITLE $USER $coge %FUNCTION $FORM %ITEM_TYPE $MAX_SEARCH_RESULTS);
 
 $PAGE_TITLE = 'GenomeView2';
 
 $FORM = new CGI;
 
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-
-#$coge->storage->debugobj(new DBIxProfiler());
-#$coge->storage->debug(1);
-
-$COOKIE_NAME = $P->{COOKIE_NAME};
-$URL         = $P->{URL};
-$COGEDIR     = $P->{COGEDIR};
-$TEMPDIR     = $P->{TEMPDIR} . "$PAGE_TITLE/";
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-$TEMPURL = $P->{TEMPURL} . "PAGE_TITLE/";
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
-my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-$link = CoGe::Accessory::Web::get_tiny_link(
-    db              => $coge,
-    user_id         => $USER->id,
-    page            => "$PAGE_TITLE",
-    url             => $link,
-    disable_logging => 1
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket'),
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
 );
 
 %FUNCTION = ();
@@ -94,27 +38,7 @@ my $node_types = CoGeX::node_types();
     experiment   => $node_types->{experiment}
 );
 
-dispatch();
-
-sub dispatch {
-    my %args  = $FORM->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-        die if not defined $FUNCTION{$fname};
-
-        #print STDERR Dumper \%args;
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $FORM->header, $FUNCTION{$fname}->(@args_list);
-        }
-        else {
-            print $FORM->header, $FUNCTION{$fname}->(%args);
-        }
-    }
-    else {
-        print $FORM->header, gen_html();
-    }
-}
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
     my $template =
@@ -124,7 +48,6 @@ sub gen_html {
         USER => ( $USER->user_name eq "public" ? '' : $USER->display_name ),
         PAGE_TITLE => 'Genome Viewer',
         LOGO_PNG   => "$PAGE_TITLE-logo.png",
-        DATE       => $DATE,
         ADJUST_BOX => 1,
         BODY       => gen_body()
     );

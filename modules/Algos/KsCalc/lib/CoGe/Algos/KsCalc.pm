@@ -10,8 +10,8 @@ use Benchmark qw(:all);
 BEGIN {
     use Exporter ();
     use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
-    $VERSION     = '0.1';
-    @ISA         = (@ISA, qw(Exporter));
+    $VERSION = '0.1';
+    @ISA = ( @ISA, qw(Exporter) );
     #Give a hoot don't pollute, do not export more than needed by default
     @EXPORT      = qw();
     @EXPORT_OK   = qw();
@@ -19,11 +19,9 @@ BEGIN {
     __PACKAGE__->mk_accessors(qw(version name1 name2 prot1 prot2 palign1 palign2 dna1 dna2 dalign1 dalign2 gaplessP1 gaplessP2 gaplessD1 gaplessD2 results gapless_prot_pid gapless_DNA_pid prot_pid DNA_pid feat1 feat2 benchmark tmpdir debug config));
 }
 
-
 #################### main pod documentation begin ###################
 ## Below is the stub of documentation for your module.
 ## You better edit it!
-
 
 =head1 NAME
 
@@ -107,7 +105,6 @@ perl(1).
 
 #################### main pod documentation end ###################
 
-
 #################### subroutine header begin ####################
 
 =head2 new
@@ -126,16 +123,13 @@ See Also   :
 
 #################### subroutine header end ####################
 
+sub new {
+    my ( $class, %parameters ) = @_;
 
-sub new
-{
-    my ($class, %parameters) = @_;
-
-    my $self = bless ({}, ref ($class) || $class);
+    my $self = bless( {}, ref($class) || $class );
     $self->init();
     return $self;
 }
-
 
 =head2 Class::Accessor functions
 
@@ -163,9 +157,6 @@ feat1            Storage for CoGeX feature object for feature 1
 feat2            Storage for CoGeX feature object for feature 2
 =cut
 
-
-
-
 #################### subroutine header begin ####################
 
 =head2 init
@@ -185,12 +176,10 @@ See Also   :
 
 #################### subroutine header end ####################
 
-
-sub init
-  {
+sub init {
     my $self = shift;
     $self->tmpdir("/tmp/");
-  }
+}
 
 #################### subroutine header begin ####################
 
@@ -212,10 +201,10 @@ See Also   :
 
 #################### subroutine header end ####################
 
-sub palign
-  {
+sub palign {
     my $self = shift;
     return 0 unless $self->_check_seqs();
+
     $self->seqA($self->prot1);
     $self->seqB($self->prot2);
 #    print STDERR "KsCalc:  ".$self->config,"\n";
@@ -228,9 +217,9 @@ sub palign
     $self->gapless_prot_calc_pid();
     $self->DNA_calc_pid();
     $self->prot_calc_pid();
-    return 1 if ($self->palign1() && $self->palign2());
+    return 1 if ( $self->palign1() && $self->palign2() );
     return 0;
-  }
+}
 
 #################### subroutine header begin ####################
 
@@ -249,19 +238,17 @@ See Also   : calc_pid
 
 #################### subroutine header end ####################
 
-
-sub gapless_DNA_calc_pid
-  {
+sub gapless_DNA_calc_pid {
     my $self = shift;
-    my ($seq1, $seq2) = ($self->gaplessD1, $self->gaplessD2);
-    unless ($seq1 && $seq2)
-      {
-	print STDERR 'Missing at least one of the gapless DNA sequences.  Perhaps $self->palign was not run?';
-	return;
-      }
-    $self->gapless_DNA_pid($self->calc_pid($seq1, $seq2));
-    return ($self->gapless_DNA_pid);
-  }
+    my ( $seq1, $seq2 ) = ( $self->gaplessD1, $self->gaplessD2 );
+    unless ( $seq1 && $seq2 ) {
+        print STDERR
+'Missing at least one of the gapless DNA sequences.  Perhaps $self->palign was not run?';
+        return;
+    }
+    $self->gapless_DNA_pid( $self->calc_pid( $seq1, $seq2 ) );
+    return ( $self->gapless_DNA_pid );
+}
 
 #################### subroutine header begin ####################
 
@@ -280,20 +267,17 @@ See Also   : calc_pid
 
 #################### subroutine header end ####################
 
-
-sub gapless_prot_calc_pid
-  {
+sub gapless_prot_calc_pid {
     my $self = shift;
-    my ($seq1, $seq2) = ($self->gaplessP1, $self->gaplessP2);
-    unless ($seq1 && $seq2)
-      {
-	print STDERR 'Missing at least one of the gapless protein sequences.  Perhaps $self->palign was not run?';
-	return;
-      }
-    $self->gapless_prot_pid($self->calc_pid($seq1, $seq2));
-    return ($self->gapless_prot_pid);
-  }
-
+    my ( $seq1, $seq2 ) = ( $self->gaplessP1, $self->gaplessP2 );
+    unless ( $seq1 && $seq2 ) {
+        print STDERR
+'Missing at least one of the gapless protein sequences.  Perhaps $self->palign was not run?';
+        return;
+    }
+    $self->gapless_prot_pid( $self->calc_pid( $seq1, $seq2 ) );
+    return ( $self->gapless_prot_pid );
+}
 
 #################### subroutine header begin ####################
 
@@ -312,19 +296,17 @@ See Also   : calc_pid
 
 #################### subroutine header end ####################
 
-
-sub DNA_calc_pid
-  {
+sub DNA_calc_pid {
     my $self = shift;
-    my ($seq1, $seq2) = ($self->dalign1, $self->dalign2);
-    unless ($seq1 && $seq2)
-      {
-	print STDERR 'Missing at least one of the DNA sequences.  Perhaps $self->palign was not run?';
-	return;
-      }
-    $self->DNA_pid($self->calc_pid($seq1, $seq2));
-    return ($self->DNA_pid);
-  }
+    my ( $seq1, $seq2 ) = ( $self->dalign1, $self->dalign2 );
+    unless ( $seq1 && $seq2 ) {
+        print STDERR
+'Missing at least one of the DNA sequences.  Perhaps $self->palign was not run?';
+        return;
+    }
+    $self->DNA_pid( $self->calc_pid( $seq1, $seq2 ) );
+    return ( $self->DNA_pid );
+}
 
 #################### subroutine header begin ####################
 
@@ -343,19 +325,17 @@ See Also   : calc_pid
 
 #################### subroutine header end ####################
 
-
-sub prot_calc_pid
-  {
+sub prot_calc_pid {
     my $self = shift;
-    my ($seq1, $seq2) = ($self->palign1, $self->palign2);
-    unless ($seq1 && $seq2)
-      {
-	print STDERR 'Missing at least one of the protein sequences.  Perhaps $self->palign was not run?';
-	return;
-      }
-    $self->prot_pid($self->calc_pid($seq1, $seq2));
-    return ($self->prot_pid);
-  }
+    my ( $seq1, $seq2 ) = ( $self->palign1, $self->palign2 );
+    unless ( $seq1 && $seq2 ) {
+        print STDERR
+'Missing at least one of the protein sequences.  Perhaps $self->palign was not run?';
+        return;
+    }
+    $self->prot_pid( $self->calc_pid( $seq1, $seq2 ) );
+    return ( $self->prot_pid );
+}
 
 #################### subroutine header begin ####################
 
@@ -375,36 +355,33 @@ See Also   :
 
 #################### subroutine header end ####################
 
-
-sub calc_pid
-  {
+sub calc_pid {
     my $self = shift;
-    my ($seq1, $seq2) = @_;
-    unless ($seq1 && $seq2)
-      {
-	carp "Sequences not valid in calc_pid";
-	return;
-      }
-    unless (length ($seq1) == length ($seq2))
-      {
-	print STDERR "sequences are of different lengths.  Percent identity calculation may be incorrect.\n" if $self->debug;
-#	print STDERR join ("\t", $self->feat1->names),"\n" if $self->feat1->names;
-#	print STDERR $seq1,"\n\n";
-#	print STDERR join ("\t", $self->feat2->names),"\n" if $self->feat2->names;
-#	print STDERR $seq2,"\n\n"
-      }
+    my ( $seq1, $seq2 ) = @_;
+    unless ( $seq1 && $seq2 ) {
+        carp "Sequences not valid in calc_pid";
+        return;
+    }
+    unless ( length($seq1) == length($seq2) ) {
+        print STDERR
+"sequences are of different lengths.  Percent identity calculation may be incorrect.\n"
+          if $self->debug;
+    #	print STDERR join ("\t", $self->feat1->names),"\n" if $self->feat1->names;
+    #	print STDERR $seq1,"\n\n";
+    #	print STDERR join ("\t", $self->feat2->names),"\n" if $self->feat2->names;
+    #	print STDERR $seq2,"\n\n"
+    }
     my @seq1 = split //, $seq1;
     my @seq2 = split //, $seq2;
     my $total = 0;
-    my $id = 0;
-    for (my $i = 0; $i < scalar @seq1; $i++)
-      {
-	$total++ unless $seq1[$i] eq "-";
-	next unless $seq2[$i];
-	$id++ if $seq1[$i] eq $seq2[$i];
-      }
-    return $id/$total*100;
-  }
+    my $id    = 0;
+    for ( my $i = 0 ; $i < scalar @seq1 ; $i++ ) {
+        $total++ unless $seq1[$i] eq "-";
+        next unless $seq2[$i];
+        $id++ if $seq1[$i] eq $seq2[$i];
+    }
+    return $id / $total * 100;
+}
 
 #################### subroutine header begin ####################
 
@@ -447,21 +424,20 @@ sub KsCalc
       }
     my $cml = new CoGe::Algos::Codeml(alignment=>$self->phylip_align, config=>$config);
     $cml->run();
-    my $t3 = new Benchmark  if $self->benchmark;
-    $self->results($cml->results);
-    if ($self->benchmark)
-      {
-	my $align_time = timestr(timediff($t2,$t1));
-	my $codeml_time = timestr(timediff($t3,$t2));
-	print qq{
+    my $t3 = new Benchmark if $self->benchmark;
+    $self->results( $cml->results );
+    if ( $self->benchmark ) {
+        my $align_time  = timestr( timediff( $t2, $t1 ) );
+        my $codeml_time = timestr( timediff( $t3, $t2 ) );
+        print qq{
 Time to align:     $align_time
 Time to codeml:    $codeml_time
 };
-      }
+    }
 
     return $self->results;
 
-  }
+}
 
 #################### subroutine header begin ####################
 
@@ -484,26 +460,21 @@ See Also   :
 
 #################### subroutine header end ####################
 
-sub phylip_align
-  {
+sub phylip_align {
     my $self = shift;
     my $type = shift || "dna";
-    my ($seq1, $seq2);
-    if ($type =~ /p/i)
-      {
-	$seq1 = $self->gaplessP1;
-	$seq2 = $self->gaplessP2;
-      }
-    else
-      {
-	$seq1 = $self->gaplessD1;
-	$seq2 = $self->gaplessD2;
-      }
-    my $str =  "   2 ".length($seq1)."\n";
-    $str .=  join ("\n", $self->name1,$seq1,$self->name2, $seq2)."\n";
-  }
-
-
+    my ( $seq1, $seq2 );
+    if ( $type =~ /p/i ) {
+        $seq1 = $self->gaplessP1;
+        $seq2 = $self->gaplessP2;
+    }
+    else {
+        $seq1 = $self->gaplessD1;
+        $seq2 = $self->gaplessD2;
+    }
+    my $str = "   2 " . length($seq1) . "\n";
+    $str .= join( "\n", $self->name1, $seq1, $self->name2, $seq2 ) . "\n";
+}
 
 #################### subroutine header begin ####################
 
@@ -523,53 +494,59 @@ See Also   :
 
 #################### subroutine header end ####################
 
-sub _check_seqs
-  {
+sub _check_seqs {
     my $self = shift;
 
     #check to make sure that feat objects exist and are of type CDS
-    unless ($self->feat1 && ref($self->feat1()) =~ /Feature/ && $self->feat1->type->name eq "CDS")
-      {
-	warn "problem with feat1:  not defined or not a CoGeX::Feature object or Feature object is not of feature_type->name 'CDS'\n";
-	return 0;
-      }
-    unless ($self->feat2 && ref($self->feat2()) =~ /Feature/&& $self->feat1->type->name eq "CDS")
-      {
-	warn "problem with feat2:  not defined or not a CoGeX::Feature object or Feature object is not of feature_type->name 'CDS'\n";
-	return 0;
-      }
+    unless ( $self->feat1
+        && ref( $self->feat1() ) =~ /Feature/
+        && $self->feat1->type->name eq "CDS" )
+    {
+        warn
+"problem with feat1:  not defined or not a CoGeX::Feature object or Feature object is not of feature_type->name 'CDS'\n";
+        return 0;
+    }
+    unless ( $self->feat2
+        && ref( $self->feat2() ) =~ /Feature/
+        && $self->feat1->type->name eq "CDS" )
+    {
+        warn
+"problem with feat2:  not defined or not a CoGeX::Feature object or Feature object is not of feature_type->name 'CDS'\n";
+        return 0;
+    }
     my ($p1) = $self->feat1->protein_sequence;
     my ($p2) = $self->feat2->protein_sequence;
-    my $d1 = $self->feat1->genomic_sequence;
-    my $d2 = $self->feat2->genomic_sequence;
+    my $d1   = $self->feat1->genomic_sequence;
+    my $d2   = $self->feat2->genomic_sequence;
     $p1 =~ s/\s+//g;
     $p2 =~ s/\s+//g;
-    if ($p1 =~ /\*$/)
-      {
-	$p1 =~ s/\*$//;#remove stop character
-	$d1 =~ s/...$//; #remove stop codon
+    if ( $p1 =~ /\*$/ ) {
+        $p1 =~ s/\*$//;     #remove stop character
+        $d1 =~ s/...$//;    #remove stop codon
 
-      }
-    if ($p2 =~ /\*$/)
-      {
-	$p2 =~ s/\*$//;#remove stop character
-	$d2 =~ s/...$//; #remove stop codon
-      }
+    }
+    if ( $p2 =~ /\*$/ ) {
+        $p2 =~ s/\*$//;     #remove stop character
+        $d2 =~ s/...$//;    #remove stop codon
+    }
+
     #somtimes the stop aa "*" is not present while the stop codon is
-    $d1 =~ s/...$// if (length ($d1) == (3*length($p1))+3);
-    $d2 =~ s/...$// if (length ($d2) == (3*length($p2))+3);
+    $d1 =~ s/...$// if ( length($d1) == ( 3 * length($p1) ) + 3 );
+    $d2 =~ s/...$// if ( length($d2) == ( 3 * length($p2) ) + 3 );
 
-    $self->prot1($p1) if $p1;
-    $self->prot2($p2) if $p2;
-    $self->dna1(uc($d1)) if $d1;
-    $self->dna2(uc($d2)) if $d2;
+    $self->prot1($p1)      if $p1;
+    $self->prot2($p2)      if $p2;
+    $self->dna1( uc($d1) ) if $d1;
+    $self->dna2( uc($d2) ) if $d2;
     my ($name) = $self->feat1->names();
     $self->name1($name);
     ($name) = $self->feat2->names();
     $self->name2($name);
 
-    return ($self->prot1 && $self->prot2 && $self->dna1 && $self->dna2) ? 1 : 0;
-  }
+    return ( $self->prot1 && $self->prot2 && $self->dna1 && $self->dna2 )
+      ? 1
+      : 0;
+}
 
 #################### subroutine header begin ####################
 
@@ -591,88 +568,74 @@ See Also   :
 
 #################### subroutine header end ####################
 
-sub _generate_gapless
-  {
-    my $self = shift;
+sub _generate_gapless {
+    my $self  = shift;
     my @prot1 = split //, $self->palign1;
     my @prot2 = split //, $self->palign2;
-    my ($d1p, $d2p) = (0,0);
-    foreach my $ppos (0..$#prot1)
-      {
-	my $p1 = $prot1[$ppos];
-	my $p2 = $prot2[$ppos];
-	unless ($p1 eq "-" || $p2 eq "-")
-	  {
-	    my $d1 = substr($self->dna1, $d1p, 3);
-	    my $d2 = substr($self->dna2, $d2p, 3);
-	    if ($self->gaplessP1)
-	      {
-		$self->gaplessP1($self->gaplessP1.$p1);
-		$self->gaplessP2($self->gaplessP2.$p2);
-		$self->gaplessD1($self->gaplessD1.$d1);
-		$self->gaplessD2($self->gaplessD2.$d2);
-	      }
-	    else
-	      {
-		$self->gaplessP1($p1);
-		$self->gaplessP2($p2);
-		$self->gaplessD1($d1);
-		$self->gaplessD2($d2);
-	      }
-	  }
-	#increment dna position unless in a gap
-	$d1p +=3 if $p1 ne "-";
-	$d2p +=3 if $p2 ne "-";
-      }
-  }
+    my ( $d1p, $d2p ) = ( 0, 0 );
+    foreach my $ppos ( 0 .. $#prot1 ) {
+        my $p1 = $prot1[$ppos];
+        my $p2 = $prot2[$ppos];
+        unless ( $p1 eq "-" || $p2 eq "-" ) {
+            my $d1 = substr( $self->dna1, $d1p, 3 );
+            my $d2 = substr( $self->dna2, $d2p, 3 );
+            if ( $self->gaplessP1 ) {
+                $self->gaplessP1( $self->gaplessP1 . $p1 );
+                $self->gaplessP2( $self->gaplessP2 . $p2 );
+                $self->gaplessD1( $self->gaplessD1 . $d1 );
+                $self->gaplessD2( $self->gaplessD2 . $d2 );
+            }
+            else {
+                $self->gaplessP1($p1);
+                $self->gaplessP2($p2);
+                $self->gaplessD1($d1);
+                $self->gaplessD2($d2);
+            }
+        }
+        #increment dna position unless in a gap
+        $d1p += 3 if $p1 ne "-";
+        $d2p += 3 if $p2 ne "-";
+    }
+}
 
-
-sub _generate_DNA_alignment
-  {
-    my $self = shift;
+sub _generate_DNA_alignment {
+    my $self  = shift;
     my @prot1 = split //, $self->palign1;
     my @prot2 = split //, $self->palign2;
-    if(length($self->palign1) ne length($self->palign2))
-      {
-	warn "in sub _generate_DNA_alignment.  protein sequence alignments are not of equal length!\n";
-      }
-    my ($d1p, $d2p) = (0,0);
-    foreach my $ppos (0..$#prot1)
-      {
-	my $p1 = $prot1[$ppos];
-	my $p2 = $prot2[$ppos];
-	my ($d1, $d2);
-	if ($p1 eq "-")
-	  {
-	    $d1 = "---";
-	  }
-	else
-	  {
-	    $d1 = substr($self->dna1, $d1p, 3);
-	    $d1p +=3;
-	  }
-	if ($p2 eq "-")
-	  {
-	    $d2 = "---";
-	  }
-	else
-	  {
-	    $d2 = substr($self->dna2, $d2p, 3);
-	    $d2p +=3;
-	  }
-	if ($self->dalign1)
-	  {
-	    $self->dalign1($self->dalign1.$d1);
-	    $self->dalign2($self->dalign2.$d2);
-	  }
-	else
-	  {
-	    $self->dalign1($d1);
-	    $self->dalign2($d2);
-	  }
-      }
-    return ($self->dalign1(), $self->dalign2());
-  }
+    if ( length( $self->palign1 ) ne length( $self->palign2 ) ) {
+        warn
+"in sub _generate_DNA_alignment.  protein sequence alignments are not of equal length!\n";
+    }
+    my ( $d1p, $d2p ) = ( 0, 0 );
+    foreach my $ppos ( 0 .. $#prot1 ) {
+        my $p1 = $prot1[$ppos];
+        my $p2 = $prot2[$ppos];
+        my ( $d1, $d2 );
+        if ( $p1 eq "-" ) {
+            $d1 = "---";
+        }
+        else {
+            $d1 = substr( $self->dna1, $d1p, 3 );
+            $d1p += 3;
+        }
+        if ( $p2 eq "-" ) {
+            $d2 = "---";
+        }
+        else {
+            $d2 = substr( $self->dna2, $d2p, 3 );
+            $d2p += 3;
+        }
+        if ( $self->dalign1 ) {
+            $self->dalign1( $self->dalign1 . $d1 );
+            $self->dalign2( $self->dalign2 . $d2 );
+        }
+        else {
+            $self->dalign1($d1);
+            $self->dalign2($d2);
+        }
+    }
+    return ( $self->dalign1(), $self->dalign2() );
+}
 
 1;
 
