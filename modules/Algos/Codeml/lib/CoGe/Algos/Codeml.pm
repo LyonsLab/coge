@@ -412,6 +412,7 @@ sub parse_output {
     my $results = shift;
     return unless $results;
     my %data;
+
     foreach ( split /\n/, $results ) {
         chomp;
         next unless $_;
@@ -447,7 +448,6 @@ sub parse_output {
  Returns : string
  Args    : string (alignment file path and name)
  Comment :
-
  See also:
 
 =cut
@@ -460,7 +460,6 @@ sub parse_output {
  Returns : string: filename and path to tree file
  Args    : string: filename and path to tree file
  Comment :
-
  See also:
 
 =cut
@@ -510,29 +509,24 @@ sub get_parameters {
 
 =cut
 
-sub set_parameter {
-    my ( $self, $param, $value ) = @_;
-    unless ( $self->no_param_checks ) {
-        if ( !defined $VALIDVALUES{$param} ) {
-            warn(
-"unknown parameter $param will not be set unless you force by setting no_param_checks to true"
-            );
-            return 0;
-        }
-        if ( ref( $VALIDVALUES{$param} ) =~ /ARRAY/i
-            && scalar @{ $VALIDVALUES{$param} } > 0 )
-        {
+sub set_parameter{
+   my ($self,$param,$value) = @_;
+   unless ($self->no_param_checks ) {
+       if ( ! defined $VALIDVALUES{$param} ) {
+           warn("unknown parameter $param will not be set unless you force by setting no_param_checks to true");
+           return 0;
+       }
+       if ( ref( $VALIDVALUES{$param}) =~ /ARRAY/i &&
+            scalar @{$VALIDVALUES{$param}} > 0 ) {
 
-            unless ( grep { $value eq $_ } @{ $VALIDVALUES{$param} } ) {
-                warn(
-"parameter $param specified value $value is not recognized, please see the documentation and the code for this module or set the no_param_checks to a true value"
-                );
-                return 0;
-            }
-        }
-    }
-    $self->{'_codemlparams'}->{$param} = $value;
-    return 1;
+           unless ( grep { $value eq $_ } @{ $VALIDVALUES{$param} } ) {
+               warn("parameter $param specified value $value is not recognized, please see the documentation and the code for this module or set the no_param_checks to a true value");
+               return 0;
+           }
+       }
+   }
+   $self->{'_codemlparams'}->{$param} = $value;
+   return 1;
 }
 
 =head2 set_default_parameters
@@ -548,20 +542,19 @@ sub set_parameter {
 
 =cut
 
-sub set_default_parameters {
-    my ( $self, $keepold ) = @_;
-    $keepold = 0 unless defined $keepold;
+sub set_default_parameters{
+   my ($self,$keepold) = @_;
+   $keepold = 0 unless defined $keepold;
 
-    while ( my ( $param, $val ) = each %VALIDVALUES ) {
-        # skip if we want to keep old values and it is already set
-        next if ( defined $self->{'_codemlparams'}->{$param} && $keepold );
-        if ( ref($val) =~ /ARRAY/i ) {
-            $self->{'_codemlparams'}->{$param} = $val->[0];
-        }
-        else {
-            $self->{'_codemlparams'}->{$param} = $val;
-        }
-    }
+   while( my ($param,$val) = each %VALIDVALUES ) {
+       # skip if we want to keep old values and it is already set
+       next if( defined $self->{'_codemlparams'}->{$param} && $keepold);
+       if(ref($val)=~/ARRAY/i ) {
+	   $self->{'_codemlparams'}->{$param} = $val->[0];
+       }  else {
+	   $self->{'_codemlparams'}->{$param} = $val;
+       }
+   }
 }
 
 =head1 Bio::Tools::Run::WrapperBase methods

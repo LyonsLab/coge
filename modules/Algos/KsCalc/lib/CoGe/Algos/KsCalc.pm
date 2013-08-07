@@ -16,9 +16,7 @@ BEGIN {
     @EXPORT      = qw();
     @EXPORT_OK   = qw();
     %EXPORT_TAGS = ();
-    __PACKAGE__->mk_accessors(
-        qw(version name1 name2 prot1 prot2 palign1 palign2 dna1 dna2 dalign1 dalign2 gaplessP1 gaplessP2 gaplessD1 gaplessD2 results gapless_prot_pid gapless_DNA_pid prot_pid DNA_pid feat1 feat2 benchmark tmpdir debug config)
-    );
+    __PACKAGE__->mk_accessors(qw(version name1 name2 prot1 prot2 palign1 palign2 dna1 dna2 dalign1 dalign2 gaplessP1 gaplessP2 gaplessD1 gaplessD2 results gapless_prot_pid gapless_DNA_pid prot_pid DNA_pid feat1 feat2 benchmark tmpdir debug config));
 }
 
 #################### main pod documentation begin ###################
@@ -206,10 +204,11 @@ See Also   :
 sub palign {
     my $self = shift;
     return 0 unless $self->_check_seqs();
-    $self->seqA( $self->prot1 );
-    $self->seqB( $self->prot2 );
-    #    print STDERR "KsCalc:  ".$self->config,"\n";
-    my ( $align1, $align2 ) = $self->global_align( config => $self->config );
+
+    $self->seqA($self->prot1);
+    $self->seqB($self->prot2);
+#    print STDERR "KsCalc:  ".$self->config,"\n";
+    my ($align1, $align2) = $self->global_align(config=>$self->config);
     $self->palign1($align1);
     $self->palign2($align2);
     $self->_generate_DNA_alignment();
@@ -408,23 +407,22 @@ See Also   :
 
 #################### subroutine header end ####################
 
-sub KsCalc {
-    my $self   = shift;
-    my %opts   = @_;
+sub KsCalc
+  {
+    my $self = shift;
+    my %opts = @_;
     my $config = $opts{config};
     $config = $self->config unless $config;
-    $self->config($config) if $config;   #set the self environmental var if set;
-    my $t1  = new Benchmark if $self->benchmark;
-    my $tmp = $self->palign();                     #returns 0 if fails
-    my $t2  = new Benchmark if $self->benchmark;
-    unless ($tmp) {
-        carp("Problem running alignment");
-        return 0;
-    }
-    my $cml = new CoGe::Algos::Codeml(
-        alignment => $self->phylip_align,
-        config    => $config
-    );
+    $self->config($config) if $config; #set the self environmental var if set;
+    my $t1 = new Benchmark if $self->benchmark;
+    my $tmp = $self->palign(); #returns 0 if fails
+    my $t2 = new Benchmark if $self->benchmark;
+    unless ($tmp)
+      {
+	carp ("Problem running alignment");
+	return 0;
+      }
+    my $cml = new CoGe::Algos::Codeml(alignment=>$self->phylip_align, config=>$config);
     $cml->run();
     my $t3 = new Benchmark if $self->benchmark;
     $self->results( $cml->results );
@@ -531,6 +529,7 @@ sub _check_seqs {
         $p2 =~ s/\*$//;     #remove stop character
         $d2 =~ s/...$//;    #remove stop codon
     }
+
     #somtimes the stop aa "*" is not present while the stop codon is
     $d1 =~ s/...$// if ( length($d1) == ( 3 * length($p1) ) + 3 );
     $d2 =~ s/...$// if ( length($d2) == ( 3 * length($p2) ) + 3 );
