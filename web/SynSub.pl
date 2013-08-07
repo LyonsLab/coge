@@ -20,7 +20,7 @@ use CoGeX;
 
 use vars
   qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $DIAGSDIR $coge $COOKIE_NAME);
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P         = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
 $DIAGSDIR  = $P->{DIAGSDIR};
 

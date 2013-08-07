@@ -1,4 +1,10 @@
 #!/usr/bin/perl -w
+
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#!!!! AS OF AUGUST 2013 THIS FILE IS DEPRECATED, USE THESE MODULES INSTEAD:
+#!!!! Accessory::Storage or Services::Sequence (Web Service)
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 use strict;
 use warnings;
 use CGI;
@@ -9,7 +15,7 @@ no warnings 'redefine';
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
-my $P    = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+my $P    = CoGe::Accessory::Web::get_defaults();
 my $FORM = new CGI;
 
 my $DBNAME = $P->{DBNAME};
@@ -26,6 +32,7 @@ my $start  = $FORM->param('start');
 my $stop   = $FORM->param('stop');
 my $strand = $FORM->param('strand');
 my $dsgid  = $FORM->param('dsgid');
+$dsgid = $FORM->param('gid') unless $dsgid;
 
 my $usage = qq{
 USAGE:
@@ -38,8 +45,10 @@ stop:    stop position of sequence (DEFAULT = end of chromosome)
 strand:  strand '1' or '-1' (DEFAULT = 1)
 
 };
-$dsgid =~ s/\s+//g if $dsgid;
+
 print $FORM->header, "\n";
+
+$dsgid =~ s/\s+//g if $dsgid;
 unless ( $dsgid && $dsgid =~ /^\d+$/ ) {
     print
 "No Dataset Group Database ID specified.  Can't retrieve sequence without this!\n";
@@ -54,6 +63,7 @@ Can't retrieve a sequence without a chromosome!  Please specify a chromosome!
     print $usage;
     exit;
 }
+
 my ($dsg) = $coge->resultset('Genome')->find($dsgid);
 unless ($dsg) {
     print "Unable to retrieve a valid dataset group object for id $dsgid\n";
@@ -73,10 +83,11 @@ $strand = 1 unless $strand;
 $stop = $dsg->last_chromosome_position($chr) unless $stop && $stop =~ /^\d+$/;
 
 my $seq = $dsg->get_seq(
-    chr    => $chr,
-    start  => $start,
-    stop   => $stop,
-    strand => $strand
+    chr          => $chr,
+    start        => $start,
+    stop         => $stop,
+    strand       => $strand,
+    storage_path => $P->{SEQDIR}
 );
 if ($seq) {
     print $seq;

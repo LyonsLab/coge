@@ -9,18 +9,19 @@ use CoGe::Accessory::Web;
 use CGI;
 no warnings 'redefine';
 
+use vars qw($P $IMGURL $BASEDIR);
+
 $ENV{'PATH'} = '';
-use vars
-  qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $IMGURL $BASEDIR);
-$P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+
 my $cgi = CGI->new;
 
+$P = CoGe::Accessory::Web::get_defaults();
+
 $IMGURL = $P->{SERVER} . 'GenomePNG.pl?';
-my $x;
 
 # where to start the caching
 $BASEDIR = $P->{IMAGE_CACHE};
-( $x, $BASEDIR ) = CoGe::Accessory::Web::check_taint($BASEDIR);
+( my $x, $BASEDIR ) = CoGe::Accessory::Web::check_taint($BASEDIR);
 if ( !-e $BASEDIR ) { mkdir($BASEDIR); }
 if ( !-e $BASEDIR ) { warn "unable to find and create $BASEDIR"; exit; }
 print "Content-type: image/png; mode=24bit\n\n";

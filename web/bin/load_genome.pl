@@ -4,6 +4,7 @@ use DBI;
 use strict;
 use CoGeX;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Storage qw( index_genome_file get_tiered_path );
 use Roman;
 use Data::Dumper;
 use Getopt::Long;
@@ -14,13 +15,13 @@ use Benchmark;
 
 use vars qw($staging_dir $install_dir $fasta_files
   $name $description $link $version $type_id $restricted
-  $organism_id $source_name $user_name $keep_headers
+  $organism_id $source_name $user_name $keep_headers $split $compress
   $host $port $db $user $pass $config
-  $MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE $MAX_CHR_NAME_LENGTH);
+  $P $MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE $MAX_CHR_NAME_LENGTH );
 
 GetOptions(
     "staging_dir=s" => \$staging_dir,
-    "install_dir=s" => \$install_dir,
+    "install_dir=s" => \$install_dir,    # optional
     "fasta_files=s" => \$fasta_files,    # comma-separated list (JS escaped)
     "name=s"        => \$name,           # genome name (JS escaped)
     "desc=s"        => \$description,    # genome description (JS escaped)
@@ -33,6 +34,8 @@ GetOptions(
     "user_name=s"   => \$user_name,      # user name
     "keep_headers=i" =>
       \$keep_headers,    # flag to keep original headers (no parsing)
+    "split=i"    => \$split,       # split fasta into chr directory
+    "compress=i" => \$compress,    # compress fasta into RAZF before indexing
 
     # Database params
     "host|h=s"      => \$host,
@@ -46,7 +49,7 @@ GetOptions(
 );
 
 if ($config) {
-    my $P = CoGe::Accessory::Web::get_defaults($config);
+    $P    = CoGe::Accessory::Web::get_defaults($config);
     $db   = $P->{DBNAME};
     $host = $P->{DBHOST};
     $port = $P->{DBPORT};
@@ -61,6 +64,8 @@ $link        = unescape($link);
 $version     = unescape($version);
 $source_name = unescape($source_name);
 $restricted  = '0' if ( not defined $restricted );
+$split       = 1 if ( not defined $split );
+$compress    = 0 if ( not defined $compress );
 
 $MAX_CHROMOSOMES = 100000;    # max number of chromosomes or contigs
 $MAX_PRINT       = 5;
@@ -106,6 +111,16 @@ if ( $numSequences == 0 or $seqLength == 0 ) {
 }
 
 print $log "log: Processed " . commify($numSequences) . " sequences total\n";
+
+# Index the overall fasta file
+print $log "Indexing genome file\n";
+my $rc = CoGe::Accessory::Storage::index_genome_file(
+    file_path => "$staging_dir/genome.faa",
+    compress  => $compress
+);
+if ( $rc != 0 ) {
+    print $log "log: warning: couldn't index fasta file\n";
+}
 
 ################################################################################
 # If we've made it this far without error then we can feel confident about our
@@ -154,13 +169,25 @@ unless ($genome) {
 }
 print $log "genome id: " . $genome->id . "\n";
 
-$install_dir = "$install_dir/" . $genome->get_path . "/";
-$genome->file_path( $install_dir . $genome->id . ".faa" );
-$genome->update;
+# Determine installation path
+unless ($install_dir) {
+    unless ($P) {
+        print $log
+"log: error: can't determine install directory, set 'install_dir' or 'config' params\n";
+        exit(-1);
+    }
+    $install_dir = $P->{SEQDIR};
+}
+$install_dir = "$install_dir/"
+  . CoGe::Accessory::Storage::get_tiered_path( $genome->id ) . "/";
+print $log "install path: $install_dir\n";
+
+# mdb removed 7/29/13, issue 77
+#$genome->file_path( $install_dir . $genome->id . ".faa" );
+#$genome->update;
 
 # This is a check for dev server which may be out-of-sync with prod
 if ( -e $install_dir ) {
-    print $log "install path $install_dir\n";
     print $log "log: error: install path already exists\n";
     exit(-1);
 }
@@ -225,7 +252,7 @@ foreach my $chr ( sort keys %sequences ) {
     $genome->add_to_genomic_sequences(
         { sequence_length => $seqlen, chromosome => $chr } );
 
-#must add a feature of type chromosome to the dataset so the dataset "knows" its chromosomes
+# Must add a feature of type chromosome to the dataset so the dataset "knows" its chromosomes
     my $feat_type =
       $coge->resultset('FeatureType')
       ->find_or_create( { name => 'chromosome' } );
@@ -257,29 +284,32 @@ foreach my $chr ( sort keys %sequences ) {
 
 print $log "log: Added genome id"
   . $genome->id
-  . "\n";    # don't change, gets parsed by calling code
+  . "\n";    # !!!! don't change, gets parsed by calling code
 
 # Copy files from staging directory to installation directory
 my $t1 = new Benchmark;
 print $log "log: Copying files ...\n";
-print $log "install_dir: $install_dir\n";
 unless ( mkpath($install_dir) ) {
     print $log "log: error in mkpath\n";
     exit(-1);
 }
-unless ( mkpath( $install_dir . "/chr" ) ) {
-    print $log "log: error in mkpath\n";
-    exit(-1);
+if ($split) {
+    unless ( mkpath( $install_dir . "/chr" ) ) {
+        print $log "log: error in mkpath\n";
+        exit(-1);
+    }
+    execute("cp -r $staging_dir/chr $install_dir");
 }
 
-my $cmd = "cp -r $staging_dir/chr $install_dir";
-print $log "$cmd\n";
-`$cmd`;
-
-my $genome_filename = $genome->id . ".faa";
-$cmd = "cp $staging_dir/genome.faa $install_dir/$genome_filename";
-print $log "$cmd\n";
-`$cmd`;
+# mdb changed 7/31/13, issue 77 - keep filename as "genome.faa" instead of "<gid>.faa"
+#my $genome_filename = $genome->id . ".faa";
+#execute( "cp $staging_dir/genome.faa $install_dir/$genome_filename" );
+execute("cp $staging_dir/genome.faa $install_dir/");
+execute("cp $staging_dir/genome.faa.fai $install_dir/");
+if ($compress) {
+    execute("cp $staging_dir/genome.faa.razf $install_dir/");
+    execute("cp $staging_dir/genome.faa.razf.fai $install_dir/");
+}
 
 # Yay, log success!
 CoGe::Accessory::Web::log_history(
@@ -296,14 +326,13 @@ print $log "log: "
 
 my $t2 = new Benchmark;
 my $time = timestr( timediff( $t2, $t1 ) );
-print $log "log: Took $time to copy\n";
+print $log "Took $time to copy\n";
 print $log "log: All done!\n";
 
 close($log);
 
 # Copy log file from staging directory to installation directory
-$cmd = "cp $staging_dir/log.txt $install_dir/";
-`$cmd`;
+`cp $staging_dir/log.txt $install_dir/`;
 
 exit;
 
@@ -379,10 +408,12 @@ sub process_fasta_file {
         close($out);
 
         # Create individual file for chromosome
-        mkpath("$target_dir/chr");
-        open( $out, ">$target_dir/chr/$chr" );
-        print $out $seq;
-        close($out);
+        if ($split) {
+            mkpath("$target_dir/chr");
+            open( $out, ">$target_dir/chr/$chr" );
+            print $out $seq;
+            close($out);
+        }
 
         $pSeq->{$chr} = { size => length $seq, file => $filepath };
 
@@ -432,4 +463,15 @@ sub commify {
     my $text = reverse $_[0];
     $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
     return scalar reverse $text;
+}
+
+sub execute {
+    my $cmd = shift;
+    print $log "$cmd\n";
+    my @cmdOut    = qx{$cmd};
+    my $cmdStatus = $?;
+    if ( $cmdStatus != 0 ) {
+        print $log "log: error: command failed with rc=$cmdStatus: $cmd\n";
+        exit(-1);
+    }
 }

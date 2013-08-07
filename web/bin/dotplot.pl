@@ -16,8 +16,6 @@ use Sort::Versions;
 use vars
   qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order $font $GZIP $GUNZIP $URL $conffile $skip_random $force_box $chr_order $dotsize $linesize);
 
-#17:1:14:5:7:18:3:4:11:9:13:6:8:12:10:19:2:15:16
-
 GetOptions(
     "dagfile|d=s"            => \$dagfile,        #all dots
     "alignfile|a=s"          => \$alignfile,      #syntenic dots
@@ -73,19 +71,19 @@ $URL    = $P->{URL};
 
 usage() if $help;
 unless ( ( defined $dagfile && -r $dagfile )
-  || -r $alignfile
-  || -r "$alignfile.gz")
-  {
-    usage()
-  }
+    || -r $alignfile
+    || -r "$alignfile.gz" )
+{
+    usage();
+}
 
 if ( defined $dagfile and !( -r $dagfile || -r $dagfile . ".gz" ) ) {
     warn "dagfile specified but not present or readable: $!";
 }
 
-$dagfile = CoGe::Accessory::Web::gunzip( $dagfile, $conffile )
+$dagfile = CoGe::Accessory::Web::gunzip($dagfile)
   if $dagfile;    # && $dagfile =~ /\.gz$/;
-$alignfile = CoGe::Accessory::Web::gunzip( $alignfile, $conffile )
+$alignfile = CoGe::Accessory::Web::gunzip($alignfile)
   if $alignfile;    # && $alignfile =~ /\.gz$/;
 
 if ( $alignfile && -r $alignfile && $alignfile =~ /\.gz$/ ) {
@@ -206,7 +204,6 @@ calc_abs_start_pos( order => $org2_order, info => $org2info );
 
 my $org1length = 0;
 map { $org1length += $_->{length} } values %$org1info;
-
 #my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size, order=>$org2_order, metric=>$axis_metric, chr_sort_order=>$chr_sort_order, skip_random=>$skip_random);
 my $org2length = 0;
 map { $org2length += $_->{length} } values %$org2info;
@@ -235,7 +232,6 @@ my $height = sprintf( "%.0f", $width * $org2length / $org1length );
 $height = $width
   if ( $height > 20 * $width ) || ( $height < $width / 20 ) || $force_box;
 my $x_bp_per_pix = $org1length / $width;   #sprintf("%.0f", $org1length/$width);
-
 #$x_bp_per_pix = 1 if $x_bp_per_pix < 1;
 my $x_pix_per_bp = 1 / $x_bp_per_pix;
 my $y_bp_per_pix = $org2length / $height; #sprintf("%.0f", $org2length/$height);
@@ -266,13 +262,11 @@ if ($ks_db) {
     $cmd .= " -max $MAX" if defined $MAX;
     $cmd .= " -color_scheme $color_scheme" if defined $color_scheme;
     $cmd .= " -o $basename";
-
     #    $cmd .= ".log" if $log;
     #    $cmd .= ".$MIN" if defined $MIN;
     #    $cmd .= ".$MAX" if defined $MAX;
     $cmd .= ".hist.png";
-
-    print STDERR "HIST: ",$cmd,"\n";
+    #print STDERR "HIST: ",$cmd,"\n";
     `$cmd &`;
 }
 
@@ -453,8 +447,8 @@ binmode OUT;
 print OUT $y_labels_gd->png;
 close OUT;
 
-#CoGe::Accessory::Web::gzip($dagfile, $conffile) if $dagfile && -r $dagfile;
-#CoGe::Accessory::Web::gzip($alignfile, $conffile) if $alignfile && -r $alignfile;
+#CoGe::Accessory::Web::gzip($dagfile) if $dagfile && -r $dagfile;
+#CoGe::Accessory::Web::gzip($alignfile) if $alignfile && -r $alignfile;
 #generate_historgram of ks values if necessary
 
 #This function appears to parse dagchainer output, generated in SynMap.pl, and draw the results to the GD graphics context.
@@ -572,11 +566,9 @@ sub draw_dots {
                 $tuse_color = $graphics_context->colorResolve(@$tuse_color);
             }
             else {
-
             #		print STDERR "Skipping due to no ks data for dot: $fid1 $fid2\n";
             #don't have ks data -- skip drawing this dot!
                 next;
-
                 #		print Dumper $ksdata->{$item1[6]}{$item2[6]};
                 #		$tuse_color = $graphics_context->colorResolve(0,0,0);
             }
@@ -680,7 +672,6 @@ sub draw_dots {
           if ( $add_inverse && $chr1 eq $chr2 && $x ne $y );
 
         if ( $link_type == 1 ) {
-
 #working here.  Need to build a GEvo link using datasets/chr/position if dealing with genomic data.
             my $link =
 qq{$URL/GEvo.pl?drup1=50000&drdown1=50000&drup2=50000&drdown2=50000};
@@ -688,7 +679,6 @@ qq{$URL/GEvo.pl?drup1=50000&drdown1=50000&drup2=50000&drdown2=50000};
                 $link .= qq{;fid1=$fid1};
             }
             else {
-
                 #just added the coge->ds object to $org
                 $item1[6] = "Chr: "
                   . $item1[0] . " "
@@ -701,7 +691,6 @@ qq{$URL/GEvo.pl?drup1=50000&drdown1=50000&drup2=50000&drdown2=50000};
                 $link .= qq{;fid2=$fid2};
             }
             else {
-
                 #just added the coge->ds object to $org
                 $item2[6] = "Chr: "
                   . $item2[0] . " "
@@ -725,7 +714,6 @@ qq{$URL/GEvo.pl?drup1=50000&drdown1=50000&drup2=50000&drdown2=50000};
     close IN;
     push @boxes, [ $min_x - 1, $min_y - 1, $max_x + 1, $max_y + 1 ]
       if defined $min_x && defined $min_y && defined $max_x && defined $max_y;
-
 #@data = $ks_type && $ks_type eq "KN" ? sort {$b<=>$a} @data : sort {$a<=>$b} @data;
     if ($has_ksdata) {
         if ( $ks_type && $ks_type eq "KN" ) {
@@ -746,7 +734,6 @@ qq{$URL/GEvo.pl?drup1=50000&drdown1=50000&drup2=50000&drdown2=50000};
         }
     }
     if ( $link_type == 1 ) {
-
  #Okay, now generate the HTML document that contains the click map for the image
         open( OUT, ">" . $basename . ".html" ) || die "$basename.html\n$!";
         my ( $org1name, $org2name );
@@ -793,7 +780,6 @@ Coords will be in [x,y,radius] for cricles and [x1,y1,x2,y2] (diagonal points) f
         my $temp_arrayindex_counter = 0;
         foreach my $item (@feats) {
             my ( $x, $y, $f1, $f2, $link ) = @$item;
-
 #<area shape='circle' coords='$x, $y, 2' href='$link' onMouseOver="get_pair_info(['args__$f1','args__$f2'],['pair_info']);" target='_blank' >
             print OUT qq{
 location_list[$temp_arrayindex_counter] = ['circle', [$x, $y, 2], '$link', 'get_pair_info(["args__$f1","args__$f2"],["pair_info"])'];};
@@ -827,7 +813,6 @@ Ergo, we rely on jQuery to detect when the DOM is fully loaded, and then run the
         my $hist_width = $width + $y_labels_gd->width;
         $hist_width .= "px";
         if ( -r $basename . ".hist.png" ) {
-
             #<span style='position: absolute;left: $hist_width; top: 45px'>
             my $top = $graphics_context->height + 90;
             $top .= "px";
@@ -881,7 +866,6 @@ sub draw_chromosome_grid {
         0, $graphics_context->width - 1,
         $graphics_context->height, $black
     );
-
     #make x-axis chromosome deliniators
     my %data;
     my $pchr;
@@ -915,7 +899,6 @@ sub draw_chromosome_grid {
                 $color );                                     #Draw black line
         }
         $str_color = $org1->{$chr}{rev} ? $red : $black;
-
 #	if ($labels)
 # {#Draws name of chromosome
 #   if (-r $font)
@@ -958,7 +941,6 @@ sub draw_chromosome_grid {
                 $color );
         }
         $str_color = $org2->{$chr}{rev} ? $red : $black;
-
 #	$graphics_context->string(gdSmallFont, 2, $y-15, $chr, $str_color) if $labels;
         $data{y}{$pchr} = [ $y, $pv, $str_color ] if defined $pchr;
         $pchr           = $chr;
@@ -1023,7 +1005,6 @@ sub draw_x_labels {
     my $axis   = $opts{axis};
     my $gd     = $opts{gd};
     unless ($gd) {
-
         #calculate size of figure by legends sizes
         my ( $x, $y ) = ( 0, 0 );
         foreach my $chr ( keys %{ $coords->{$axis} } ) {
@@ -1038,7 +1019,6 @@ sub draw_x_labels {
             $y = $ty if $ty > $y;
         }
         $gd = new GD::Image( $x, $y + 5 );
-
         return unless $gd;
 
         my $white       = $gd->colorResolve( 255, 255, 255 );
@@ -1070,7 +1050,6 @@ sub draw_y_labels {
     my $axis   = $opts{axis};
     my $gd     = $opts{gd};
     unless ($gd) {
-
         #calculate size of figure by legends sizes
         my ( $x, $y ) = ( 0, 0 );
         foreach my $chr ( keys %{ $coords->{$axis} } ) {
@@ -1085,7 +1064,6 @@ sub draw_y_labels {
             $x = $tx if $tx > $x;
         }
         $gd = new GD::Image( $x, $y + 5 );
-
         return unless $gd;
 
         my $white       = $gd->colorResolve( 255, 255, 255 );
@@ -1143,7 +1121,6 @@ sub reord {
     my $order       = $opts{order};
     my $reorder     = $opts{reorder};
     my $association = $opts{assoc};
-
     #    print STDERR Dumper $reorder, $association;
     my $skip        = $opts{skip};
     my $skip_random = $opts{skip_random};
@@ -1199,7 +1176,6 @@ sub calc_abs_start_pos {
         $info->{$chr}{start} = $pos - 1;
         $pos += $info->{$chr}{length};
     }
-
     #delete items from info that are not in the ordered list
     foreach my $chr ( keys %$info ) {
         delete $info->{$chr} unless $seen{$chr};
@@ -1230,16 +1206,13 @@ sub get_dsg_info {
     {
         my %seen;
         foreach my $chr (@$order) {
-
             #	    my $chr = $item->{chr};
             next unless $data{$chr};
             push @ordered, $chr;
-
             #	    $rev{$chr}=1 if $item->{rev};
             $seen{$chr} = 1;
         }
         my @chr;
-
         #get any that were not in @$order
         #how to sort chromosomes for diplay?
         if ( $chr_sort_order =~ /^n/i )    #sorting by name
@@ -1264,7 +1237,6 @@ sub get_dsg_info {
     }
     else    #no predefined order
     {
-
         #how to sort chromosomes for diplay?
         if ( $chr_sort_order =~ /^n/i )    #sorting by name
         {
@@ -1325,7 +1297,6 @@ sub get_ksdata {
     while ( my $data = $sth->fetchrow_arrayref ) {
         if ($pairs) {
             unless ( $pairs->{ $data->[1] }{ $data->[2] } ) {
-
                 #		print STDERR "ks pair is not in pairs list\n";
                 next;
             }
@@ -1337,7 +1308,6 @@ sub get_ksdata {
         );
         my $val = $item{$type};
         next unless defined $val && $val =~ /\d/;
-
         #	if (defined $min || defined $max)
         #	  {
         #	  }
@@ -1399,13 +1369,11 @@ sub get_dsg_order {
         $data{ $gs->chromosome }{chr_length} = $len;
         $data{ $gs->chromosome }{length}     = $len;
     }
-
     #how to sort chromosomes for diplay?
     my @ordered;
     if ( $chr_sort_order =~ /^n/i )    #sorting by name
     {
         @ordered = sort { versioncmp( $a, $b ) } keys %data;
-
 #old below
 #	my @numbered;
 #	my @lettered;
@@ -1456,7 +1424,6 @@ SELECT count(distinct(feature_id))
         $info->{$tmp_chr}{gene_length} = $res;
         next unless defined $res;
         $info->{$tmp_chr}{length} = $res;
-
         #get gene order
         $query = qq{
 SELECT feature_id
@@ -1510,7 +1477,6 @@ sub get_range {
                   && $data->{$k1}{$k2} > 0;
         }
     }
-
     #let's minimize the data, if needed
     if ( defined $min || defined $max ) {
         foreach my $k1 ( keys %$data ) {
@@ -1684,7 +1650,6 @@ sub get_color {
     my $step  = 1 / ( scalar(@colors) - 1 );
     my $scale = $index1 * $step;
     my $dist  = ( $val - $scale ) / ($step);
-
     #    print join ("\t", $val, $step, $scale, $dist),"\n\t";
     for ( my $i = 0 ; $i <= 2 ; $i++ ) {
         my $diff = ( $colors[$index1][$i] - $colors[$index2][$i] ) * $dist;
@@ -1697,7 +1662,6 @@ sub draw_boxes {
     my %opts  = @_;
     my $gd    = $opts{gd};
     my $boxes = $opts{boxes};
-
     #    my $color = $gd->colorAllocate(0,0,0);
     foreach my $box (@$boxes) {
         $gd->rectangle( @$box, $black );
