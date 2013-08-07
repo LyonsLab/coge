@@ -172,6 +172,14 @@ sub gen_html {
 }
 
 sub gen_body {
+    if ( $USER->is_public ) {
+        my $template =
+          HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+        $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
+        $template->param( LOGIN     => 1 );
+        return $template->output;
+    }
+
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param( PAGE_NAME  => "$PAGE_TITLE.pl" );
