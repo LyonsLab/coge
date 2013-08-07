@@ -15,7 +15,7 @@ $ENV{'PATH'} = '';
 
 my $cgi = CGI->new;
 
-$P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P = CoGe::Accessory::Web::get_defaults();
 
 $IMGURL = $P->{SERVER} . 'GenomePNG.pl?';
 

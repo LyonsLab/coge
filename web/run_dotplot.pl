@@ -10,14 +10,14 @@ no warnings 'redefine';
 umask(0);
 use vars
   qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $DATADIR $DIAGSDIR $DOTPLOT);
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P         = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
 $DEBUG     = 0;
 $DIR       = $P->{COGEDIR};
 $URL       = $P->{URL};
 $DATADIR   = $P->{DATADIR};
 $DIAGSDIR  = $P->{DIAGSDIR};
-$DOTPLOT   = $P->{DOTPLOT} . " -cf " . $ENV{HOME} . 'coge.conf';
+$DOTPLOT   = $P->{DOTPLOT} . " -cf " . $ENV{COGE_HOME} . 'coge.conf';
 
 $FORM   = new CGI;
 $DBNAME = $P->{DBNAME};

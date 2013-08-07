@@ -189,7 +189,7 @@ $CLUSTER_UTILS = $P->{CLUSTER_UTILS};   #convert dag output to quota_align input
 $BLAST2RAW     = $P->{BLAST2RAW};       #find local duplicates
 $SYNTENY_SCORE = $P->{SYNTENY_SCORE};
 
-$DOTPLOT     = $P->{DOTPLOT} . " -cf " . $ENV{HOME} . 'coge.conf';
+$DOTPLOT     = $P->{DOTPLOT} . " -cf " . $ENV{COGE_HOME} . 'coge.conf';
 $SVG_DOTPLOT = $P->{SVG_DOTPLOT};
 
 #$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
@@ -1442,7 +1442,7 @@ sub go {
     my $workflow = undef;
     my $status   = undef;
 
-    my $config = $ENV{HOME} . "coge.conf";
+    my $config = $ENV{COGE_HOME} . "coge.conf";
 
     #my @dsgs = ([$dsgid1, $feat_type1]);
     #push @dsgs, [$dsgid2, $feat_type2]
@@ -2541,7 +2541,7 @@ qq{<br><span class='small link' onclick=window.open('$final_dagchainer_file')>DA
         }
 
         $html .= "<tr><td>";
-        my $conffile = $ENV{HOME} . 'coge.conf';
+        my $conffile = $ENV{COGE_HOME} . 'coge.conf';
         $dagchainer_file =~ s/^$URL/$DIR/;
         $html .= "<br>"
           . qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=$conffile;l=$tiny_link');" >Generate Pseudo-Assembled Genomic Sequence</span>}

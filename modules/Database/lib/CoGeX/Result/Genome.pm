@@ -473,6 +473,17 @@ sub file_path {
     return CoGe::Accessory::Storage::get_genome_file( $self->id );
 }
 
+# mdb added 8/6/13, issue #157
+sub create_index {
+    my $self = shift;
+    return CoGe::Accessory::Storage::index_genome_file( gid => $self->id );
+}
+
+sub is_indexed {
+    my $self = shift;
+    return ( -e $self->file_path . '.fai' );
+}
+
 ################################################## subroutine header start ##
 
 =head2 sequence_length
@@ -626,15 +637,17 @@ sub percent_gc {
     my %opts     = @_;
     my $count    = $opts{count};
     my $sent_chr = $opts{chr};
+
     my @chr;
     push @chr, $sent_chr if $sent_chr;
+
     my $gc     = 0;
     my $at     = 0;
     my $n      = 0;
     my $x      = 0;
     my $length = 0;
-    unless ($sent_chr) {
 
+    unless ($sent_chr) {
         foreach my $chr ( $self->get_chromosomes ) {
             push @chr, $chr;
         }
@@ -851,7 +864,7 @@ sub trans_type {
     return 1;    #universal genetic code type;
 }
 
-# mdb removed 7/30/13, moved into Accessory::Storage
+# mdb removed 7/30/13 issue 77, moved into Accessory::Storage
 #sub get_path {
 #    my $self      = shift;
 #    my $gid = $self->id;

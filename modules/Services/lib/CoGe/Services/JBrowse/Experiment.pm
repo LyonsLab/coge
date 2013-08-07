@@ -3,12 +3,12 @@ use base 'CGI::Application';
 
 use CoGeX;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Storage qw( get_experiment_data );
 use JSON::XS;
 
 my $NUM_QUANT_COL   = 6;
 my $NUM_VCF_COL     = 9;
 my $MAX_EXPERIMENTS = 20;
-
 #my $MAX_RESULTS = 150000;
 my $MAX_WINDOW_SIZE = 500000;
 
@@ -50,7 +50,6 @@ sub stats_region {    #FIXME lots of code in common with features()
 
     # Connect to the database
     my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
-    my $cmdpath = $conf->{FASTBIT_QUERY};
 
     # Retrieve experiments
     my @all_experiments;
@@ -81,30 +80,23 @@ sub stats_region {    #FIXME lots of code in common with features()
 # Query range for each experiment and build up json response - #TODO could parallelize this for multiple experiments
     my $results = '';
     my @bins;
-    foreach my $exp (@experiments)
-    { #TODO need to move this code along with replicate in bin/fastbit_query.pl into CoGe::Web sub-module
-        my $storage_path = $exp->storage_path;
-        my $data_type    = $exp->data_type;
+    foreach my $exp (@experiments) {
+        my $data_type = $exp->data_type;
 
         if ( !$data_type or $data_type < 2 )
         {    #FIXME hardcoded data_type to "quant"
             next;    # skip this experiment -- is this right?
         }
         elsif ( $data_type == 2 ) {    #FIXME hardcoded data_type to "snp"
-             # Call FastBit to do query (see issue 61: query string must contain a "." for fastbit to use consistent output)
-            my $cmd =
-"$cmdpath -v 1 -d $storage_path -q \"select chr,start,stop,type,id,ref,alt,qual,info where 0.0=0.0 and chr='$chr' and start <= $end and stop >= $start order by start limit 999999999\" 2>&1";
-
-            #print STDERR "$cmd\n";
-            my @cmdOut = qx{$cmd};
-
-            #print STDERR @cmdOut;
-            my $cmdStatus = $?;
-            die "Error executing command $CMDPATH ($cmdStatus)"
-              if ( $cmdStatus != 0 );
+            my $cmdOut = CoGe::Accessory::Storage::get_experiment_data(
+                eid   => $eid,
+                chr   => $chr,
+                start => $start,
+                end   => $end
+            );
 
             # Convert FastBit output into JSON
-            foreach (@cmdOut) {
+            foreach (@$cmdOut) {
                 chomp;
                 if (/^\"/) {    #if (/^\"$chr\"/) { # potential result line
                     s/"//g;
@@ -166,7 +158,6 @@ sub features {
 
     # Connect to the database
     my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
-    my $cmdpath = $conf->{FASTBIT_QUERY};
 
     # Retrieve experiments
     my @all_experiments;
@@ -196,28 +187,21 @@ sub features {
 
 # Query range for each experiment and build up json response - #TODO could parallelize this for multiple experiments
     my $results = '';
-    foreach my $exp (@experiments)
-    { #TODO need to move this code along with replicate in bin/fastbit_query.pl into CoGe::Web sub-module
-        my $eid          = $exp->id;
-        my $storage_path = $exp->storage_path;
-        my $data_type    = $exp->data_type;
+    foreach my $exp (@experiments) {
+        my $eid       = $exp->id;
+        my $data_type = $exp->data_type;
 
         if ( !$data_type or $data_type < 2 )
         {    #FIXME hardcoded data_type to "quant"
-             # Call FastBit to do query (see issue 61: query string must contain a "." for fastbit to use consistent output)
-            my $cmd =
-"$cmdpath -v 1 -d $storage_path -q \"select chr,start,stop,strand,value1,value2 where 0.0=0.0 and chr='$chr' and start <= $end and stop >= $start order by start limit 999999999\" 2>&1";
-
-            print STDERR "$cmd\n";
-            my @cmdOut = qx{$cmd};
-
-            print STDERR @cmdOut;
-            my $cmdStatus = $?;
-            die "Error executing command $CMDPATH ($cmdStatus)"
-              if ( $cmdStatus != 0 );
+            my $cmdOut = CoGe::Accessory::Storage::get_experiment_data(
+                eid   => $eid,
+                chr   => $chr,
+                start => $start,
+                end   => $end
+            );
 
             # Convert FastBit output into JSON
-            foreach (@cmdOut) {
+            foreach (@$cmdOut) {
                 chomp;
                 if (/^\"/) {    #if (/^\"$chr\"/) { # potential result line
                     s/"//g;
@@ -242,20 +226,15 @@ sub features {
             }
         }
         elsif ( $data_type == 2 ) {    #FIXME hardcoded data_type to "snp"
-             # Call FastBit to do query (see issue 61: query string must contain a "." for fastbit to use consistent output)
-            my $cmd =
-"$CMDPATH -v 1 -d $storage_path -q \"select chr,start,stop,type,id,ref,alt,qual,info where 0.0=0.0 and chr='$chr' and start <= $end and stop >= $start order by start limit 999999999\" 2>&1";
-
-            #print STDERR "$cmd\n";
-            my @cmdOut = qx{$cmd};
-
-            #print STDERR @cmdOut;
-            my $cmdStatus = $?;
-            die "Error executing command $CMDPATH ($cmdStatus)"
-              if ( $cmdStatus != 0 );
+            my $cmdOut = CoGe::Accessory::Storage::get_experiment_data(
+                eid   => $eid,
+                chr   => $chr,
+                start => $start,
+                end   => $end
+            );
 
             # Convert FastBit output into JSON
-            foreach (@cmdOut) {
+            foreach (@$cmdOut) {
                 chomp;
                 if (/^\"/) {    #if (/^\"$chr\"/) { # potential result line
                     s/"//g;

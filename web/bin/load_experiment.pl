@@ -25,7 +25,7 @@ my $MIN_VCF_COLUMNS = 8;
 
 GetOptions(
     "staging_dir=s" => \$staging_dir,
-    "install_dir=s" => \$install_dir,
+    "install_dir=s" => \$install_dir,    # optional
     "data_file=s"   => \$data_file,      # data file (JS escape)
     "name=s"        => \$name,           # experiment name (JS escaped)
     "desc=s"        => \$description,    # experiment description (JS escaped)
@@ -211,10 +211,27 @@ my $experiment = $coge->resultset('Experiment')->create(
         restricted     => $restricted
     }
 );
+
+# Determine installation path
+unless ($install_dir) {
+    unless ($P) {
+        print $log
+"log: error: can't determine install directory, set 'install_dir' or 'config' params\n";
+        exit(-1);
+    }
+    $install_dir = $P->{EXPDIR};
+}
 my $storage_path = "$install_dir/" . $experiment->get_path;
 print $log 'Storage path: ', $storage_path, "\n";
-$experiment->storage_path($storage_path);
-$experiment->update;
+# mdb removed 8/7/13, issue 77
+#$experiment->storage_path($storage_path);
+#$experiment->update;
+
+# This is a check for dev server which may be out-of-sync with prod
+if ( -e $storage_path ) {
+    print $log "log: error: install path already exists\n";
+    exit(-1);
+}
 
 print $log "experiment id: "
   . $experiment->id
@@ -243,7 +260,7 @@ unless ($conn) {
     exit(-1);
 }
 
-## Copy files from staging directory to installation directory
+# Copy files from staging directory to installation directory
 mkpath($storage_path);
 $cmd = "cp -r $staging_dir/* $storage_path";
 print $log "$cmd\n";

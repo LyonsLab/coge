@@ -61,7 +61,6 @@ my $node_types = CoGeX::node_types();
 
 %FUNCTION = (
     gen_html => \&gen_html,
-
     # get_logs				=> \&get_logs,
     upload_image_file               => \&upload_image_file,
     get_item_info                   => \&get_item_info,
@@ -81,28 +80,6 @@ my $node_types = CoGeX::node_types();
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
-
-dispatch();
-
-sub dispatch {
-    my %args  = $FORM->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-        die if not defined $FUNCTION{$fname};
-
-        #print STDERR Dumper \%args;
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $FORM->header, $FUNCTION{$fname}->(@args_list);
-        }
-        else {
-            print $FORM->header, $FUNCTION{$fname}->(%args);
-        }
-    }
-    else {
-        print $FORM->header, gen_html();
-    }
-}
 
 sub gen_html {
     my $template =

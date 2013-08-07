@@ -42,18 +42,20 @@ BEGIN {
     $VERSION = 0.1;
     @ISA     = qw (Exporter);
     @EXPORT =
-      qw( get_genome_path get_genome_file index_genome_file get_genome_seq reverse_complement);
+      qw( get_tiered_path get_genome_file index_genome_file get_genome_seq
+      get_experiment_path get_experiment_data
+      reverse_complement);
 
     #__PACKAGE__->mk_accessors();
 }
 
 ################################################ subroutine header begin ##
 
-=head2 get_genome_path
+=head2 get_tiered_path
 
  Usage     : 
  Purpose   : This method determines the correct directory structure for storing
- 			 the sequence files for a dataset group.
+ 			 the files for a genome/experiment.
  Returns   : 
  Argument  : 
  Throws    : none
@@ -74,14 +76,14 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-sub get_genome_path {
-    my $gid = shift;
-    return unless $gid;
+sub get_tiered_path {
+    my $id = shift;
+    return unless $id;
 
-    my $level0 = floor( $gid / 1000000000 ) % 1000;
-    my $level1 = floor( $gid / 1000000 ) % 1000;
-    my $level2 = floor( $gid / 1000 ) % 1000;
-    my $path   = catdir( $level0, $level1, $level2, $gid );
+    my $level0 = floor( $id / 1000000000 ) % 1000;
+    my $level1 = floor( $id / 1000000 ) % 1000;
+    my $level2 = floor( $id / 1000 ) % 1000;
+    my $path   = catdir( $level0, $level1, $level2, $id );
 
     return $path;
 }
@@ -98,7 +100,7 @@ sub get_genome_file {
     }
 
     unless ($base_path) {
-        $base_path = $seqdir . '/' . get_genome_path($gid) . '/';
+        $base_path = $seqdir . '/' . get_tiered_path($gid) . '/';
     }
 
     my $file_path = $base_path . 'genome.faa';
@@ -107,14 +109,22 @@ sub get_genome_file {
     $file_path = $base_path . "$gid.faa";
     return $file_path if ( -r $file_path );
 
+    print STDERR
+      "Storage::get_genome_file: genome file '$file_path' doesn't exist!\n";
     return;
 }
 
 sub index_genome_file {
     my %opts      = @_;
+    my $gid       = $opts{gid};
     my $file_path = $opts{file_path};
-    return unless $file_path;
-    my $compress = $opts{compress};
+    return unless ( $file_path or $gid );
+    my $compress = $opts{compress};    # optional flag
+
+    unless ($file_path) {
+        $file_path = get_genome_file($gid);
+        return unless $file_path;
+    }
 
     # Index fasta file
     my $samtools = CoGe::Accessory::Web::get_defaults()->{'SAMTOOLS'};
@@ -178,7 +188,6 @@ sub get_genome_seq {
     my $fasta             = ( defined $format and $format eq 'fasta' );
     my $FASTA_LINE_LENGTH = 60;
     my $seq;
-
 #print STDERR "Storage::get_genome_seq gid=$gid chr=" . ($chr ? $chr : '') . " start=" . (defined $start ? $start : '') . " stop=" . (defined $stop ? $stop : '') . "\n";
 
     # Validate params
@@ -200,11 +209,10 @@ sub get_genome_seq {
     # Determine file path - first try new indexed method, otherwise
     # revert to old method
     my $file_path = get_genome_file($gid);
-
     #print STDERR "file_path=$file_path\n";
 
-    if ( -r "$file_path.fai" ) {    # new indexed method
-                                    # Kluge chr/contig name
+    if ( -s "$file_path.fai" ) {    # new indexed method
+                                    # Kludge chr/contig name
         if   ( $chr =~ /\D+/ ) { $chr = 'lcl|' . $chr; }
         else                   { $chr = 'gi|' . $chr; }
 
@@ -218,14 +226,13 @@ sub get_genome_seq {
         }
         my $cmd = "$samtools faidx $file_path '$region'";
 
-        #print STDERR "$cmd\n";
-        $seq = qx{$cmd};    #my @cmdOut = qx{$cmd};
+        print STDERR "$cmd\n";
+        $seq = qx{$cmd};
         unless ($fasta) {
-
             # remove header line
             $seq =~ s/^(?:.*\n)//;
             # remove end-of-lines
-            $seq =~ s/\n//;
+            $seq =~ s/\n//g;
         }
 
         #print STDERR "$seq\n";
@@ -238,7 +245,7 @@ sub get_genome_seq {
     else {    # old method
         $file_path =
             CoGe::Accessory::Web::get_defaults()->{'SEQDIR'} . '/'
-          . get_genome_path($gid)
+          . get_tiered_path($gid)
           . "/chr/$chr";
 
         # Extract requested piece of sequence file
@@ -265,6 +272,59 @@ sub get_genome_seq {
       if ( defined $strand and $strand =~ /-/ );  #FIXME broken for fasta format
 
     return $seq;
+}
+
+sub get_experiment_path {
+    my $eid = shift;
+    return unless $eid;
+
+    my $expdir = CoGe::Accessory::Web::get_defaults()->{'EXPDIR'};
+    unless ($expdir) {
+        print STDERR
+"Storage::get_experiment_path: WARNING, conf file parameter EXPDIR is blank!\n";
+    }
+
+    my $path = $expdir . '/' . get_tiered_path($eid) . '/';
+    unless ( -r $path ) {
+        print STDERR
+"Storage::get_experiment_path: experiment path '$path' doesn't exist!\n";
+        return;
+    }
+
+    return $path;
+}
+
+sub get_experiment_data {
+    my %opts = @_;
+    my $eid  = $opts{eid};    # required
+    unless ($eid) {
+        print STDERR
+          "Storage::get_experiment_data: experiment id not specified!\n";
+        return;
+    }
+    my $chr   = $opts{chr};
+    my $start = $opts{start};
+    my $stop  = $opts{stop};
+    $stop = $opts{end} if ( not defined $stop );
+
+    my $cmdpath      = CoGe::Accessory::Web::get_defaults()->{FASTBIT_QUERY};
+    my $storage_path = get_experiment_path($eid);
+    my $cmd =
+"$cmdpath -v 1 -d $storage_path -q \"select chr,start,stop,strand,value1,value2 where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
+
+    #print STDERR "$cmd\n";
+    my @cmdOut = qx{$cmd};
+    #print STDERR @cmdOut;
+    my $cmdStatus = $?;
+    if ( $? != 0 ) {
+        print STDERR
+          "Storage::get_experiment_data: error $? executing command: $cmd\n";
+        return;
+    }
+
+    # Just return raw FastBit output for now, someday would be nice to
+    # parse into array.
+    return \@cmdOut;
 }
 
 ################################################ subroutine header begin ##

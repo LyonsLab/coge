@@ -4,7 +4,7 @@ use DBI;
 use strict;
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Storage qw( index_genome_file get_genome_path );
+use CoGe::Accessory::Storage qw( index_genome_file get_tiered_path );
 use Roman;
 use Data::Dumper;
 use Getopt::Long;
@@ -21,7 +21,7 @@ use vars qw($staging_dir $install_dir $fasta_files
 
 GetOptions(
     "staging_dir=s" => \$staging_dir,
-    "install_dir=s" => \$install_dir,
+    "install_dir=s" => \$install_dir,    # optional
     "fasta_files=s" => \$fasta_files,    # comma-separated list (JS escaped)
     "name=s"        => \$name,           # genome name (JS escaped)
     "desc=s"        => \$description,    # genome description (JS escaped)
@@ -112,6 +112,7 @@ if ( $numSequences == 0 or $seqLength == 0 ) {
 
 print $log "log: Processed " . commify($numSequences) . " sequences total\n";
 
+# Index the overall fasta file
 print $log "Indexing genome file\n";
 my $rc = CoGe::Accessory::Storage::index_genome_file(
     file_path => "$staging_dir/genome.faa",
@@ -168,6 +169,7 @@ unless ($genome) {
 }
 print $log "genome id: " . $genome->id . "\n";
 
+# Determine installation path
 unless ($install_dir) {
     unless ($P) {
         print $log
@@ -177,7 +179,7 @@ unless ($install_dir) {
     $install_dir = $P->{SEQDIR};
 }
 $install_dir = "$install_dir/"
-  . CoGe::Accessory::Storage::get_genome_path( $genome->id ) . "/";
+  . CoGe::Accessory::Storage::get_tiered_path( $genome->id ) . "/";
 print $log "install path: $install_dir\n";
 
 # mdb removed 7/29/13, issue 77

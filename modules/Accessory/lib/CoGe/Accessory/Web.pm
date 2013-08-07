@@ -25,7 +25,7 @@ BEGIN {
       qw ($CONF $VERSION @ISA @EXPORT @EXPORT_OK $Q $TEMPDIR $BASEDIR $CONF);
     require Exporter;
 
-    $BASEDIR = ( $ENV{HOME} ? $ENV{HOME} : '/opt/apache/coge/web/' );
+    $BASEDIR = ( $ENV{COGE_HOME} ? $ENV{COGE_HOME} : '/opt/apache/coge/web/' );
     $VERSION = 0.1;
     $TEMPDIR = $BASEDIR . "tmp";
     @ISA     = ( @ISA, qw (Exporter) );
@@ -85,7 +85,7 @@ sub get_defaults {
     return $CONF if ($CONF);
 
     my ( $self, $param_file ) = shift;
-    $param_file = $BASEDIR . "coge.conf" unless defined $param_file;
+    $param_file = $BASEDIR . "/coge.conf" unless defined $param_file;
     #print STDERR "Web::get_defaults: $param_file\n";
     unless ( -r $param_file ) {
         print STDERR
@@ -705,10 +705,8 @@ sub initialize_basefile {
 }
 
 sub gzip {
-    my ( $self, $file, $conf_file ) = self_or_default(@_);
-    $conf_file = $ENV{HOME} . 'coge.conf' unless $conf_file;
-    my $P    = $self->get_defaults($conf_file);
-    my $GZIP = $P->{GZIP};
+    my ( $self, $file ) = self_or_default(@_);
+    my $GZIP = get_defaults()->{GZIP};
     return $file unless $file;
     return $file . ".gz" if -r "$file.gz";
     return $file unless -r $file;
@@ -719,10 +717,8 @@ sub gzip {
 }
 
 sub gunzip {
-    my ( $self, $file, $conf_file, $debug ) = self_or_default(@_);
-    $conf_file = $ENV{HOME} . 'coge.conf' unless $conf_file;
-    my $P      = $self->get_defaults($conf_file);
-    my $GUNZIP = $P->{GUNZIP};
+    my ( $self, $file, $debug ) = self_or_default(@_);
+    my $GUNZIP = get_defaults()->{GUNZIP};
     unless ($GUNZIP) {
         print STDERR "ERROR: in gunzip!  gunzip binary is not specified!\n"
           if $debug;
@@ -747,9 +743,7 @@ sub irods_ils {
     $path = '' unless $path;
 
     #	print STDERR "irods_ils: path=$path\n";
-
-    my $P        = get_defaults( $ENV{HOME} . 'coge.conf' );
-    my $env_file = $P->{IRODSENV};
+    my $env_file = get_defaults()->{IRODSENV};
     if ( not defined $env_file or not -e $env_file ) {
         print STDERR "fatal error: iRODS env file missing!\n";
         return { error => "Error: iRODS env file missing" };
@@ -810,31 +804,26 @@ sub irods_chksum {
     my $path = shift;
     return 0 unless ($path);
 
-    my $P        = get_defaults( $ENV{HOME} . 'coge.conf' );
-    my $env_file = $P->{IRODSENV};
+    my $env_file = get_defaults()->{IRODSENV};
     if ( not defined $env_file or not -e $env_file ) {
         print STDERR "fatal error: iRODS env file missing!\n";
         return;
     }
 
     my $cmd = "export irodsEnvFile='$env_file'; ichksum $path";
-
-    #	print STDERR "cmd: $cmd\n";
+    #print STDERR "cmd: $cmd\n";
     my @output = `$cmd`;
     my ($chksum) = $output[0] =~ /\s*\S+\s+(\S+)/;
 
-    #	print STDERR "chksum: $chksum\n";
-
+    #print STDERR "chksum: $chksum\n";
     return $chksum;
 }
 
 sub irods_iget {
     my ( $src, $dest ) = @_;
 
-    #	print STDERR "irods_iget $src $dest\n";
-
-    my $P        = get_defaults( $ENV{HOME} . 'coge.conf' );
-    my $env_file = $P->{IRODSENV};
+    #print STDERR "irods_iget $src $dest\n";
+    my $env_file = get_defaults()->{IRODSENV};
     if ( not defined $env_file or not -e $env_file ) {
         print STDERR "fatal error: iRODS env file missing!\n";
         return;
@@ -842,10 +831,9 @@ sub irods_iget {
 
     my $cmd = "export irodsEnvFile='$env_file'; iget -fT $src $dest";
 
-    #	print STDERR "cmd: $cmd\n";
+    #print STDERR "cmd: $cmd\n";
     my @ils = `$cmd`;
-
-    #	print STDERR "@ils";
+    #print STDERR "@ils";
 
     return;
 }

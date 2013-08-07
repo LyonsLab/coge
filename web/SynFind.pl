@@ -67,12 +67,13 @@ $LAST =
   . " --dbpath="
   . $P->{LASTDB};
 
-$CONVERT_BLAST    = $P->{CONVERT_BLAST};
-$BLAST2BED        = $P->{BlAST2BED};
-$BLAST2RAW        = $P->{BLAST2RAW};
-$SYNTENY_SCORE    = $P->{SYNTENY_SCORE};
-$PYTHON26         = $P->{PYTHON};
-$DATASETGROUP2BED = $P->{DATASETGROUP2BED} . " -cf " . $ENV{HOME} . 'coge.conf';
+$CONVERT_BLAST = $P->{CONVERT_BLAST};
+$BLAST2BED     = $P->{BlAST2BED};
+$BLAST2RAW     = $P->{BLAST2RAW};
+$SYNTENY_SCORE = $P->{SYNTENY_SCORE};
+$PYTHON26      = $P->{PYTHON};
+$DATASETGROUP2BED =
+  $P->{DATASETGROUP2BED} . " -cf " . $ENV{COGE_HOME} . 'coge.conf';
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
 
@@ -1472,7 +1473,7 @@ sub run_convert_blast {
         return $outfile;
     }
     print STDERR "In sub run_convert_blast\n";
-    CoGe::Accessory::Web::gunzip( "$infile", $ENV{HOME} . 'coge.conf', 1 );
+    CoGe::Accessory::Web::gunzip($infile);
     CoGe::Accessory::Web::write_log(
         "convering blast file to short names: $cmd",
         $cogeweb->logfile );
@@ -1498,9 +1499,9 @@ sub run_blast2raw {
         return $outfile;
     }
     print STDERR "IN SUB run_blast2raw\n";
-    CoGe::Accessory::Web::gunzip( "$blastfile", $ENV{HOME} . 'coge.conf', 1 );
-    CoGe::Accessory::Web::gunzip( "$bedfile1",  $ENV{HOME} . 'coge.conf', 1 );
-    CoGe::Accessory::Web::gunzip( "$bedfile2",  $ENV{HOME} . 'coge.conf', 1 );
+    CoGe::Accessory::Web::gunzip($blastfile);
+    CoGe::Accessory::Web::gunzip($bedfile1);
+    CoGe::Accessory::Web::gunzip($bedfile2);
     unless ( -r $blastfile ) {
         warn "can't read $blastfile\n";
         return;
@@ -1551,11 +1552,10 @@ sub run_synteny_score {
         system "/usr/bin/touch $outfile.running"
           ;    #track that a blast anlaysis is running for this
     }
-    print STDERR "Path: " . $ENV{HOME}, "\n";
-    CoGe::Accessory::Web::gunzip( "$blastfile", $ENV{HOME} . 'coge.conf', 1 )
-      ;        #turned on debugging
-    CoGe::Accessory::Web::gunzip( "$bedfile1", $ENV{HOME} . 'coge.conf', 1 );
-    CoGe::Accessory::Web::gunzip( "$bedfile2", $ENV{HOME} . 'coge.conf', 1 );
+    print STDERR "Path: " . $ENV{COGE_HOME}, "\n";
+    CoGe::Accessory::Web::gunzip($blastfile);    #turned on debugging
+    CoGe::Accessory::Web::gunzip($bedfile1);
+    CoGe::Accessory::Web::gunzip($bedfile2);
     unless ( -r $blastfile ) {
         warn "can't read $blastfile\n";
         return;

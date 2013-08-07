@@ -1,8 +1,8 @@
 #!/usr/bin/perl -w
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#!!!! THIS FILE IS DEPRECATED, USE THESE MODULES INSTEAD:
-#!!!! Services::Sequence or Accessory::Storage
+#!!!! AS OF AUGUST 2013 THIS FILE IS DEPRECATED, USE THESE MODULES INSTEAD:
+#!!!! Accessory::Storage or Services::Sequence (Web Service)
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 use strict;
@@ -15,7 +15,7 @@ no warnings 'redefine';
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
-my $P    = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+my $P    = CoGe::Accessory::Web::get_defaults();
 my $FORM = new CGI;
 
 my $DBNAME = $P->{DBNAME};

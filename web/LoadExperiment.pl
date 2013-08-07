@@ -27,7 +27,7 @@ $FORM = new CGI;
     page_title => $PAGE_TITLE
 );
 
-$CONFIGFILE = $ENV{HOME} . 'coge.conf';
+$CONFIGFILE = $ENV{COGE_HOME} . 'coge.conf';
 $ENV{PATH}  = $P->{COGEDIR};
 $TEMPDIR    = $P->{TEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/';
 $BINDIR     = $P->{BINDIR};
@@ -388,9 +388,6 @@ sub load_experiment {
       . '-source_name "'
       . escape($source_name) . '" '
       . "-staging_dir $stagepath "
-      . "-install_dir "
-      . $P->{DATADIR}
-      . '/experiments '
       . '-data_file "'
       . escape( join( ',', @files ) ) . '" '
       . "-config $CONFIGFILE";

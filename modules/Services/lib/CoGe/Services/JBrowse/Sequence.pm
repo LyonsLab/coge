@@ -3,6 +3,7 @@ use base 'CGI::Application';
 
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Storage qw( get_genome_seq );
+use List::Util qw( min );
 
 #use File::Basename 'fileparse';
 
@@ -32,8 +33,8 @@ sub features {
       "Sequence::features gid=$gid chr=$chr size=$size start=$start end=$end\n";
 
     # Check params
-    return qq{{"features" : []}} if ( $end < 1 );
-    $start = 1 if ( $start < 1 );
+    my $empty = qq{{"features" : []}};
+    return $empty if ( $end < 0 );
 
     # Connect to the database
     my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
@@ -42,11 +43,18 @@ sub features {
     my $genome = $db->resultset('Genome')->find($gid);
     return unless $genome;
 
+    # Adjust location - note: incoming coordinates are interbase!
+    $start = 0 if ( $start < 0 );
+    my $chrLen = $genome->sequence_length($chr);
+    $start = min( $start, $chrLen );
+    $end   = min( $end,   $chrLen );
+    return $empty if ( $start == $end );
+
     # Check permissions
     if ( $genome->restricted
         and ( not defined $user or not $user->has_access_to_genome($genome) ) )
     {
-        return qq{{"features" : []}};
+        return $empty;
     }
 
     # Extract requested piece of sequence file
@@ -59,8 +67,8 @@ sub features {
     my $seq = get_genome_seq(
         gid   => $gid,
         chr   => $chr,
-        start => $start,
-        stop  => $end - 1
+        start => $start + 1,    # convert from interbase to base
+        stop  => $end
     );
 
     return qq{{"features" : [{"start": $start, "end": $end, "seq": "$seq"}]}};

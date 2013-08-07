@@ -29,7 +29,7 @@ $FORM = new CGI;
     page_title => $PAGE_TITLE
 );
 
-$CONFIGFILE = $ENV{HOME} . 'coge.conf';
+$CONFIGFILE = $ENV{COGE_HOME} . 'coge.conf';
 $ENV{PATH}  = $P->{COGEDIR};
 $TEMPDIR    = $P->{TEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/';
 $BINDIR     = $P->{BINDIR};
