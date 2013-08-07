@@ -578,6 +578,10 @@ function synmap_formatter(item) {
         job_status.append(item.status);
         job_status.addClass('skipped');
         job_status.addClass('bold');
+    } else if (item.status == 'cancelled') {
+        job_status.append(item.status);
+        job_status.addClass('alert');
+        job_status.addClass('bold');
     } else if (item.status == 'failed') {
         job_status.append(item.status);
         job_status.addClass('alert');
