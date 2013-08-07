@@ -785,7 +785,7 @@ qq{<div><span class="link" onclick=window.open('OrganismView.pl?dsgid=$dsgid')>G
     $html_dsg_info .= "<tr><td>Description: <td>" . $dsg->description
       if $dsg->description;
     $html_dsg_info .=
-        "<tr><td>Source:  <td><a href="
+        "<tr><td>Source:  <td><a href=" 
       . $link
       . " target=_new>"
       . $ds->data_source->name . "</a>";
@@ -1632,7 +1632,7 @@ sub go {
           . $orgkey2 => {
             fasta    => $fasta1,
             db       => $blastdb,
-            basename => $dsgid1 . "_"
+            basename => $dsgid1 . "_" 
               . $dsgid2
               . ".$feat_type1-$feat_type2."
               . $ALGO_LOOKUP->{$blast}{filename},
@@ -2341,11 +2341,62 @@ sub get_results {
     my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
     my $workflow_id .= "-$tiny_id";
 
+    my $job = CoGe::Accessory::Web::get_job(
+        tiny_link => $tiny_link,
+        title     => $PAGE_TITLE,
+        user_id   => $USER->id,
+        db_object => $coge
+    );
+
     my $basename = $opts{basename};
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(
         basename => $basename,
         tempdir  => $TEMPDIR
     );
+
+    given ( lc( $YERBA->get_status( $job->id ) ) ) {
+        when ('completed') {
+            if ( $job->status != 2 ) {
+                $job->update(
+                    {
+                        status => 2
+                    }
+                );
+            }
+        }
+        when ('failed') {
+            if ( $job->status != 5 ) {
+                $job->update(
+                    {
+                        status => 5
+                    }
+                );
+            }
+        }
+        when ('terminated') {
+            if ( $job->status != 4 ) {
+                $job->update(
+                    {
+                        status => 4
+                    }
+                );
+            }
+        }
+    }
+
+    if ( $job->status == 1 ) {
+        return qq{<span class="alert">The analysis is still running.</span>};
+    }
+    elsif ( $job->status == 3 ) {
+        return qq{<span class="alert">The analysis was cancelled.</span>};
+    }
+    elsif ( $job->status == 4 ) {
+        return qq{<span class="alert">The analysis was terminated.</span>};
+    }
+    elsif ( $job->status == 5 ) {
+        return '<span class="alert">A problem was encountered the analysis'
+          . ' failed to be generated.</span>';
+    }
 
     ############################################################################
     # Parameters
@@ -2511,7 +2562,7 @@ sub get_results {
         $blastdb = $fasta2;
     }
 
-    my ($html, $warn);
+    my ( $html, $warn );
 
     my ( $orgkey1, $orgkey2 ) = ( $title1, $title2 );
     my %org_dirs = (
@@ -2519,7 +2570,7 @@ sub get_results {
           . $orgkey2 => {
             fasta    => $fasta1,
             db       => $blastdb,
-            basename => $dsgid1 . "_"
+            basename => $dsgid1 . "_" 
               . $dsgid2
               . ".$feat_type1-$feat_type2."
               . $ALGO_LOOKUP->{$blast}{filename},
@@ -2557,7 +2608,7 @@ sub get_results {
     $filtered_blastfile .= ".cs$cscore" if $cscore < 1;
     $filtered_blastfile .= ".filtered";
 
-    if ($cscore == 1) {
+    if ( $cscore == 1 ) {
         $warn = 'Please choose a cscore less than 1 (cscore defaulted to 0).';
     }
 
@@ -2626,7 +2677,7 @@ sub get_results {
 
     if ($dag_merge_enabled) {
         $merged_dagchainer_file = "$dagchainer_file.merged";
-        $post_dagchainer_file = $merged_dagchainer_file;
+        $post_dagchainer_file   = $merged_dagchainer_file;
     }
     else {
         $post_dagchainer_file = $dagchainer_file;
@@ -2643,7 +2694,7 @@ sub get_results {
     #id 1 is to specify quota align as a merge algo
     if ( $merge_algo == 1 ) {
         $merged_dagchainer_file = "$dagchainer_file.Dm$Dm.ma1";
-        $post_dagchainer_file = $merged_dagchainer_file;
+        $post_dagchainer_file   = $merged_dagchainer_file;
     }
 
     my $post_dagchainer_file_w_nearby = $post_dagchainer_file;
@@ -2756,7 +2807,7 @@ sub get_results {
     $dotfile .= ".log"                if $logks;
 
     #no syntenic dots, yes, nomicalture is confusing.
-    $dotfile .= ".nsd"                unless $snsd;
+    $dotfile .= ".nsd" unless $snsd;
 
     my $hist = $dotfile . ".hist.png";
 
