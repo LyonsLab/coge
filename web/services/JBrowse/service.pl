@@ -6,35 +6,100 @@ use strict;
 use CGI::Application::Dispatch;
 
 CGI::Application::Dispatch->dispatch(
-    prefix => 'CoGe::Services::JBrowse',
-    table  => [
-        'config/refseq' => { app => 'Configuration', rm => 'refseq_config' },
-        'config/tracks' => { app => 'Configuration', rm => 'track_config' },
-        'sequence/:gid/stats/global' =>
-          { app => 'Sequence', rm => 'stats_global' },
-        'sequence/:gid/features/:chr' =>
-          { app => 'Sequence', rm => 'features' },
-        'annotation/:dsid/stats/global' =>
-          { app => 'Annotation', rm => 'stats_global' },
-        'annotation/:dsid/features/:chr' =>
-          { app => 'Annotation', rm => 'features' },
-        'experiment/:eid/stats/global' =>
-          { app => 'Experiment', rm => 'stats_global' },
-        'experiment/:eid/stats/region/:chr' =>
-          { app => 'Experiment', rm => 'stats_region' },
-        'experiment/:eid/features/:chr' =>
-          { app => 'Experiment', rm => 'features' },
-        'experiment/notebook/:nid/stats/global' =>
-          { app => 'Experiment', rm => 'stats_global' },
-        'experiment/notebook/:nid/stats/region/:chr' =>
-          { app => 'Experiment', rm => 'stats_region' },
-        'experiment/notebook/:nid/features/:chr' =>
-          { app => 'Experiment', rm => 'features' },
-        'experiment/genome/:gid/stats/global' =>
-          { app => 'Experiment', rm => 'stats_global' },
-        'experiment/genome/:gid/stats/region/:chr' =>
-          { app => 'Experiment', rm => 'stats_region' },
-        'experiment/genome/:gid/features/:chr' =>
-          { app => 'Experiment', rm => 'features' },
+    table => [
+
+        # Data Services
+        'sequence/:gid/:chr?' => {
+            prefix => 'CoGe::Services::Data',
+            app    => 'Sequence',
+            rm     => 'get'
+        },
+        'notebook/create' => {
+            prefix => 'CoGe::Services::Data',
+            app    => 'Notebook',
+            rm     => 'create'
+        },
+        'notebook/delete/:nid' => {
+            prefix => 'CoGe::Services::Data',
+            app    => 'Notebook',
+            rm     => 'delete'
+        },
+
+        # JBrowse Services
+        'config/refseq' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Configuration',
+            rm     => 'refseq_config'
+        },
+        'config/tracks' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Configuration',
+            rm     => 'track_config'
+        },
+        'sequence/:gid/stats/global' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Sequence',
+            rm     => 'stats_global'
+        },
+        'sequence/:gid/features/:chr' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Sequence',
+            rm     => 'features'
+        },
+        'annotation/:dsid/stats/global' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Annotation',
+            rm     => 'stats_global'
+        },
+        'annotation/:dsid/features/:chr' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Annotation',
+            rm     => 'features'
+        },
+        'experiment/:eid/stats/global' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Experiment',
+            rm     => 'stats_global'
+        },
+        'experiment/:eid/stats/region/:chr' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Experiment',
+            rm     => 'stats_region'
+        },
+        'experiment/:eid/features/:chr' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Experiment',
+            rm     => 'features'
+        },
+        'experiment/notebook/:nid/stats/global' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Experiment',
+            rm     => 'stats_global'
+        },
+        'experiment/notebook/:nid/stats/region/:chr' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Experiment',
+            rm     => 'stats_region'
+        },
+        'experiment/notebook/:nid/features/:chr' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Experiment',
+            rm     => 'features'
+        },
+        'experiment/genome/:gid/stats/global' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Experiment',
+            rm     => 'stats_global'
+        },
+        'experiment/genome/:gid/stats/region/:chr' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Experiment',
+            rm     => 'stats_region'
+        },
+        'experiment/genome/:gid/features/:chr' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Experiment',
+            rm     => 'features'
+        },
     ],
 );

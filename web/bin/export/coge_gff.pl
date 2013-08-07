@@ -3,74 +3,63 @@
 use strict;
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::LogUser;
 use CGI;
 
 no warnings 'redefine';
-my $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
-my $DBNAME = $P->{DBNAME};
-my $DBHOST = $P->{DBHOST};
-my $DBPORT = $P->{DBPORT};
-my $DBUSER = $P->{DBUSER};
-my $DBPASS = $P->{DBPASS};
-my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-my $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
-my $FORM = new CGI;
 
-my $COOKIE_NAME = $P->{COOKIE_NAME};
+my $form = new CGI;
 
-my ($cas_ticket) =$FORM->param('ticket');
-my $USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+my ( $coge, $user ) = CoGe::Accessory::Web->init(
+    ticket => $form->param('ticket'),
+    url    => $form->url
+);
 
-
-my $dsgid = $FORM->param('dsgid');
-my $dsid = $FORM->param('dsid');
-my $id_type = $FORM->param('id_type');
-my $annos = 0; #flag for printing annotations
-$annos = $FORM->param('annos') if $FORM->param('annos');
-my $cds = 0; #flag for printing only genes, mRNA, and CDSs
-$cds = $FORM->param('cds') if $FORM->param('cds');
+my $dsgid   = $form->param('dsgid');
+my $dsid    = $form->param('dsid');
+my $id_type = $form->param('id_type');
+my $annos   = 0;                         #flag for printing annotations
+$annos = $form->param('annos') if $form->param('annos');
+my $cds = 0;    #flag for printing only genes, mRNA, and CDSs
+$cds = $form->param('cds') if $form->param('cds');
 my $name_unique = 0;
-$name_unique = $FORM->param('nu') if $FORM->param('nu');
-my $upa = $FORM->param('upa') if $FORM->param('upa'); #unqiue_parent_annotations
+$name_unique = $form->param('nu') if $form->param('nu');
+my $upa = $form->param('upa') if $form->param('upa'); #unqiue_parent_annotations
 
 my $item;
 my $id;
 my $org;
-if ($dsgid)
-  {
+if ($dsgid) {
     $item = $coge->resultset('Genome')->find($dsgid);
-    if($item && $item->restricted){
-      if(!$USER->has_access_to_genome($item)){
-	print $FORM->header;
-	print "Error: permission denied\n";
-	exit;
-      }
+    if ( $item && $item->restricted ) {
+        if ( !$user->has_access_to_genome($item) ) {
+            print $form->header;
+            print "Error: permission denied\n";
+            exit;
+        }
     }
-    $id = $dsgid;
-    $org = $item->organism->name."_dsgid";
-  }
-elsif ($dsid)
-  {
+    $id  = $dsgid;
+    $org = $item->organism->name . "_dsgid";
+}
+elsif ($dsid) {
     $item = $coge->resultset('Dataset')->find($dsid);
-    $id = $dsid;
-    $org = $item->organism->name."_dsid";
-  }
-unless ($item)
-  {
-    print $FORM->header('text');
+    $id   = $dsid;
+    $org  = $item->organism->name . "_dsid";
+}
+unless ($item) {
+    print $form->header('text');
     print "Unable to complete database transaction.\n";
-    print "Please contact coge administrator with a description of your problem for additional help.\n";
+    print
+"Please contact coge administrator with a description of your problem for additional help.\n";
     exit();
-  }
-
+}
 
 $org =~ s/\s+/_/g;
-my $header = "Content-disposition: attachement; filename=";#test.gff\n\n";
-$header .= $org;
-$header .= $id;
-$header .=".gff\n\n";
-print $header;
-$item->gff(print=>1, annos=>$annos, cds=>$cds, name_unique=>$name_unique, id_type=>$id_type, unique_parent_annotations=>$upa);
+print "Content-disposition: attachement; filename=", $org, $id, ".gff\n\n";
+$item->gff(
+    print                     => 1,
+    annos                     => $annos,
+    cds                       => $cds,
+    name_unique               => $name_unique,
+    id_type                   => $id_type,
+    unique_parent_annotations => $upa
+);

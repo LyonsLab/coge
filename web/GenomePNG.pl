@@ -12,7 +12,7 @@ no warnings 'redefine';
 $ENV{PATH} = "";
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr);
 
-$P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P = CoGe::Accessory::Web::get_defaults();
 
 my $form = new CGI;
 

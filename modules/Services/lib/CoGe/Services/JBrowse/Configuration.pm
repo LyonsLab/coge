@@ -9,7 +9,6 @@ use Sort::Versions;
 use Cwd 'abs_path';
 use Time::HiRes qw ( time );
 
-my $coge_conf;
 my %expTypeToName = (
     1 => 'quant',
     2 => 'snp'
@@ -17,16 +16,10 @@ my %expTypeToName = (
 
 sub setup {
     my $self = shift;
-
-    #FIXME - move this into service.pl
-    $coge_conf = abs_path($0);
-    $coge_conf =~ s/services\/JBrowse\/service\.pl/coge\.conf/;
-
     $self->run_modes(
         'refseq_config' => 'refseq_config',
         'track_config'  => 'track_config',
     );
-    $self->start_mode('track_config');
     $self->mode_param('rm');
 }
 
@@ -36,24 +29,14 @@ sub refseq_config {
     my $SEQ_CHUNK_SIZE = 20000;
     print STDERR "Configuration::refseq_config gid=$gid\n";
 
-    # Load config file
-    my $P      = CoGe::Accessory::Web::get_defaults($coge_conf);
-    my $DBNAME = $P->{DBNAME};
-    my $DBHOST = $P->{DBHOST};
-    my $DBPORT = $P->{DBPORT};
-    my $DBUSER = $P->{DBUSER};
-    my $DBPASS = $P->{DBPASS};
-
     # Connect to the database
-    my $connstr = "dbi:mysql:dbname=$DBNAME;host=$DBHOST;port=$DBPORT";
-    my $coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-
-    #$coge->storage->debugobj(new DBIxProfiler());
-    #$coge->storage->debug(1);
+    my ( $db, $user ) = CoGe::Accessory::Web->init;
 
     # Get genome
-    my $genome = $coge->resultset('Genome')->find($gid);
+    my $genome = $db->resultset('Genome')->find($gid);
     return unless $genome;
+
+    #TODO add permissions check
 
     my @chromosomes;
     foreach my $chr ( sort { $b->sequence_length <=> $a->sequence_length }
@@ -73,43 +56,17 @@ sub refseq_config {
 }
 
 sub track_config {
-    my $self       = shift;
-    my $gid        = $self->query->param('gid');
-    my $cas_ticket = $self->query->param('ticket');
+    my $self = shift;
+    my $gid  = $self->query->param('gid');
     print STDERR "Configuration::track_config gid=$gid\n";
 
-    # Get config
-    my $P      = CoGe::Accessory::Web::get_defaults($coge_conf);
-    my $DBNAME = $P->{DBNAME};
-    my $DBHOST = $P->{DBHOST};
-    my $DBPORT = $P->{DBPORT};
-    my $DBUSER = $P->{DBUSER};
-    my $DBPASS = $P->{DBPASS};
-
     # Connect to the database
-    my $connstr = "dbi:mysql:dbname=$DBNAME;host=$DBHOST;port=$DBPORT";
-    my $coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-
-    #$coge->storage->debugobj(new DBIxProfiler());
-    #$coge->storage->debug(1);
-
-    # Get user
-    my $COOKIE_NAME = $P->{COOKIE_NAME};
-    my $USER        = undef;
-    ($USER) = CoGe::Accessory::Web->login_cas(
-        ticket   => $cas_ticket,
-        coge     => $coge,
-        this_url => $FORM->url()
-    ) if ($cas_ticket);
-    ($USER) = CoGe::Accessory::LogUser->get_user(
-        cookie_name => $COOKIE_NAME,
-        coge        => $coge
-    ) unless $USER;
+    my ( $db, $user ) = CoGe::Accessory::Web->init;
 
     #	my $start_time = time;
 
     # Get genome
-    my $genome = $coge->resultset('Genome')->find($gid);
+    my $genome = $db->resultset('Genome')->find($gid);
     return unless $genome;
 
     my @tracks;
@@ -244,7 +201,7 @@ sub track_config {
     my %expByNotebook;
     foreach $e ( sort experimentcmp $genome->experiments ) {
         next if ( $e->deleted );
-        next if ( $e->restricted and not $USER->has_access_to_experiment($e) );
+        next if ( $e->restricted and not $user->has_access_to_experiment($e) );
         my $eid = $e->id;
         $all_experiments{$eid} = $e;
 
@@ -299,7 +256,8 @@ sub track_config {
             },
 
             # CoGe-specific stuff
-            onClick         => "ExperimentView.pl?embed=1&eid=$eid", 
+            onClick =>
+              ( $isSNP ? undef : "ExperimentView.pl?embed=1&eid=$eid" ),
             showHoverScores => 1,
             coge            => {
                 id      => $eid,
@@ -308,10 +266,10 @@ sub track_config {
                     'coge-tracklist-indented', 'coge-tracklist-deletable',
                     'coge-tracklist-info'
                 ],
-		collapsed => 1, #FIXME move into CSS
+                collapsed   => 1,                 #FIXME move into CSS
                 name        => $e->name,
                 description => $e->description,
-                notebooks   => ( @notebooks ? \@notebooks : undef ),
+                notebooks => ( @notebooks ? \@notebooks : undef ),
                 annotations => ( @annotations ? \@annotations : undef ),
                 menuOptions => [
                     {
@@ -345,9 +303,9 @@ sub track_config {
             coge        => {
                 id   => 0,            # use id of 0 to represent all experiments
                 type => 'notebook',
-                classes     => ['coge-tracklist-collapsible'],
-		collapsed => 1, #FIXME move into CSS
-                name        => 'All Experiments',
+                classes   => ['coge-tracklist-collapsible'],
+                collapsed => 1,                             #FIXME move into CSS
+                name      => 'All Experiments',
                 description => '',
                 count       => keys %all_experiments,
 
@@ -358,7 +316,7 @@ sub track_config {
 
     # Add notebook tracks
     foreach my $n ( sort { $a->name cmp $b->name } values %all_notebooks ) {
-        next if ( $n->restricted and not $USER->has_access_to_list($n) );
+        next if ( $n->restricted and not $user->has_access_to_list($n) );
         my $nid = $n->id;
         push @tracks, {
             key => ( $n->restricted ? '&reg; ' : '' ) . $n->name,
@@ -381,11 +339,11 @@ sub track_config {
                     'coge-tracklist-collapsible', 'coge-tracklist-deletable',
                     'coge-tracklist-info'
                 ],
-		collapsed => 1, #FIXME move into CSS
+                collapsed   => 1,                 #FIXME move into CSS
                 name        => $n->name,
                 description => $n->description,
-                editable    => $USER->is_admin
-                  || $USER->is_owner_editor( list => $n ),
+                editable    => $user->is_admin
+                  || $user->is_owner_editor( list => $n ),
                 experiments =>
                   ( @{ $expByNotebook{$nid} } ? $expByNotebook{$nid} : undef ),
                 count       => scalar @{ $expByNotebook{$nid} },

@@ -16,19 +16,22 @@ use CoGe::Accessory::Web;
 our (
     $cogeweb, $basename, $gid,     $feature, $fasta,
     $coge,    $P,        $TEMPDIR, $NWALIGN, $DBNAME,
-    $DBHOST,  $DBPORT,   $DBUSER,  $DBPASS,  $CONFIG);
+    $DBHOST,  $DBPORT,   $DBUSER,  $DBPASS,  $CONFIG
+);
 
 GetOptions(
     "genome_id|gid=s"   => \$gid,
     "feature_type|ft=s" => \$feature,
     "fasta|f=s"         => \$fasta,
-    "config|cfg=s"      => \$CONFIG,);
+    "config|cfg=s"      => \$CONFIG,
+);
 
 $P = CoGe::Accessory::Web::get_defaults($CONFIG);
 $ENV{PATH} = join ":",
   (
     $P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR} . "SynMap",
-    "/usr/bin", "/usr/local/bin");
+    "/usr/bin", "/usr/local/bin"
+  );
 $TEMPDIR = $P->{TEMPDIR} . "SynMap";
 $NWALIGN = $P->{NWALIGN};
 
@@ -40,61 +43,68 @@ $DBPASS = $P->{DBPASS};
 
 my $connstr =
   "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS);
+$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
 
 $cogeweb = CoGe::Accessory::Web::initialize_basefile(
     basename => $basename,
-    tempdir  => $TEMPDIR);
+    tempdir  => $TEMPDIR
+);
 $| = 1;    # Disable buffering
 
-gen_fasta(gid => $gid, feature_type => $feature, fasta => $fasta);
+gen_fasta( gid => $gid, feature_type => $feature, fasta => $fasta );
 
-sub gen_fasta
-{
+sub gen_fasta {
     my %opts         = @_;
     my $gid          = $opts{gid};
     my $feature_type = $opts{feature_type};
     my $file         = $opts{fasta};
-    my ($genome) = $coge->resultset('Genome')->search({"me.genome_id" => $gid},
-        {join => 'genomic_sequences', prefetch => 'genomic_sequences'});
+    my ($genome) =
+      $coge->resultset('Genome')->search( { "me.genome_id" => $gid },
+        { join => 'genomic_sequences', prefetch => 'genomic_sequences' } );
 
-    open(OUT, ">$file") || die "Can't open $file for writing: $!";
-    if ($feature_type eq "CDS" || $feature_type eq "protein") {
+    open( OUT, ">$file" ) || die "Can't open $file for writing: $!";
+    if ( $feature_type eq "CDS" || $feature_type eq "protein" ) {
         my $count = 1;
-        my @res   = $coge->resultset('Feature')->search({
-                feature_type_id => [3, 5, 8],
-                genome_id       => $gid},
+        my @res   = $coge->resultset('Feature')->search(
             {
-                join     => [{dataset => 'dataset_connectors'}],
-                prefetch => ['feature_names']});
+                feature_type_id => [ 3, 5, 8 ],
+                genome_id       => $gid
+            },
+            {
+                join => [ { dataset => 'dataset_connectors' } ],
+                prefetch => ['feature_names']
+            }
+        );
 
         my @feats =
-          sort {$a->chromosome cmp $b->chromosome || $a->start <=> $b->start}
+          sort { $a->chromosome cmp $b->chromosome || $a->start <=> $b->start }
           @res;
 
         CoGe::Accessory::Web::write_log(
             "Getting sequence for "
               . scalar(@feats)
               . " features of types CDS, tRNA, and rRNA.",
-            $cogeweb->logfile);
+            $cogeweb->logfile
+        );
         foreach my $feat (@feats) {
             my ($chr) = $feat->chromosome;    #=~/(\d+)/;
             my $name;
-            foreach my $n ($feat->names) {
+            foreach my $n ( $feat->names ) {
                 $name = $n;
                 last unless $name =~ /\s/;
             }
             unless ($name) {
-                #    print STDERR "Error:  missing valid name for feature_id ".$feat->id."\n";
+
+  #    print STDERR "Error:  missing valid name for feature_id ".$feat->id."\n";
                 $name = $feat->id;
             }
 
             $name =~ s/\s+/_/g;
-            my $title = join("||",
+            my $title = join( "||",
                 $chr, $feat->start, $feat->stop, $name, $feat->strand,
-                $feat->type->name, $feat->id, $count);
-            if ($feature_type eq "CDS") {
-                my $seq = $feat->genomic_sequence(dsgid => $genome->id);
+                $feat->type->name, $feat->id, $count );
+            if ( $feature_type eq "CDS" ) {
+                my $seq = $feat->genomic_sequence( dsgid => $genome->id );
                 next unless $seq;
 
                 #skip sequences that are only 'x' | 'n';
@@ -102,9 +112,10 @@ sub gen_fasta
                 print OUT ">" . $title . "\n";
                 print OUT $seq, "\n";
                 $count++;
-            } elsif ($feature_type eq "protein") {
+            }
+            elsif ( $feature_type eq "protein" ) {
                 next unless $feat->feature_type_id == 3;
-                my (@seqs) = $feat->protein_sequence(dsgid => $genome->id);
+                my (@seqs) = $feat->protein_sequence( dsgid => $genome->id );
                 next unless scalar @seqs;
                 next
                   if scalar @seqs > 1;   #didn't find the correct reading frame;
@@ -116,13 +127,16 @@ sub gen_fasta
                 $count++;
             }
         }
-    } else {
+    }
+    else {
         my @chr = sort $genome->get_chromosomes;
         CoGe::Accessory::Web::write_log(
             "Getting sequence for "
               . scalar(@chr)
               . " chromosomes (genome sequence)",
-            $cogeweb->logfile);
+            $cogeweb->logfile
+        );
+
         $file = $genome->file_path;
 
         #   foreach my $chr (@chr)
@@ -135,8 +149,8 @@ sub gen_fasta
     }
     close OUT;
     return 1 if -r $file;
-    CoGe::Accessory::Web::write_log("Error with fasta file creation",
-        $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log( "Error with fasta file creation",
+        $cogeweb->logfile );
 
     return 0;
 }

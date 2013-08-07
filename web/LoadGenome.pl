@@ -5,80 +5,39 @@
 use strict;
 use CGI;
 use CoGeX;
-use DBI;
-use Data::Dumper;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use HTML::Template;
 use JSON::XS;
-use URI::Escape::JavaScript qw(escape unescape);
-use Spreadsheet::WriteExcel;
-use Digest::MD5 qw(md5_base64);
-use DBIxProfiler;
-use File::Path;
 use Sort::Versions;
-use LWP::UserAgent;
-use LWP::Simple;
-use HTTP::Status qw(:constants);
-use File::Listing;
-use File::Copy;
-use XML::Simple;
+use File::Path qw(mkpath);
+use File::Copy qw(copy);
+use URI::Escape::JavaScript qw(escape unescape);
 no warnings 'redefine';
 
 use vars qw(
-  $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE
-  $TEMPDIR $BINDIR $USER $DATE $COGEDIR $coge $FORM $URL $TEMPURL $COOKIE_NAME
+  $P $PAGE_TITLE
+  $TEMPDIR $BINDIR $USER $coge $FORM
   %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE
-);
-
-$CONFIGFILE = $ENV{HOME} . 'coge.conf';
-$P          = CoGe::Accessory::Web::get_defaults($CONFIGFILE);
-$ENV{PATH}  = $P->{COGEDIR};
-$COGEDIR    = $P->{COGEDIR};
-$URL        = $P->{URL};
-$DATE       = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
 );
 
 $PAGE_TITLE = 'LoadGenome';
 
 $FORM = new CGI;
 
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-$COOKIE_NAME = $P->{COOKIE_NAME};
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket'),
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
+);
 
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    ticket   => $cas_ticket,
-    coge     => $coge,
-    this_url => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
-
-$TEMPDIR = $P->{TEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/';
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-
-$BINDIR = $P->{BINDIR};
+$CONFIGFILE = $ENV{COGE_HOME} . 'coge.conf';
+$ENV{PATH}  = $P->{COGEDIR};
+$TEMPDIR    = $P->{TEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/';
+$BINDIR     = $P->{BINDIR};
 
 $MAX_SEARCH_RESULTS = 100;
 
-#$SIG{'__WARN__'} = sub { };    # silence warnings
-
 %FUNCTION = (
-    generate_html  => \&generate_html,
     irods_get_path => \&irods_get_path,
     irods_get_file => \&irods_get_file,
     load_from_ftp  => \&load_from_ftp,
@@ -98,23 +57,7 @@ $MAX_SEARCH_RESULTS = 100;
     get_load_genome_log  => \&get_load_genome_log,
 );
 
-if ( $FORM->param('jquery_ajax') ) {
-    my %args  = $FORM->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-        die if ( not defined $FUNCTION{$fname} );
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $FORM->header, $FUNCTION{$fname}->(@args_list);
-        }
-        else {
-            print $FORM->header, $FUNCTION{$fname}->(%args);
-        }
-    }
-}
-else {
-    print $FORM->header, "\n", generate_html();
-}
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 
 sub irods_get_path {
     my %opts      = @_;
@@ -488,7 +431,6 @@ sub load_genome {
     }
 
     print $log "Calling bin/load_genome.pl ...\n";
-    my $datadir = $P->{DATADIR} . '/genomic_sequence/';
 
 #EL: 7/8/2013  Modified how $cmd was created so that empty options were not passed on the command line.  Perl has a bad habit of grabbing the next option name when it is expecting a value for a previous option and no value was passed along the command line.
     my $cmd =
@@ -505,7 +447,6 @@ sub load_genome {
     $cmd .= "-organism_id $organism_id ";
     $cmd .= '-source_name "' . escape($source_name) . '" ';
     $cmd .= "-staging_dir $stagepath ";
-    $cmd .= "-install_dir $datadir ";
     $cmd .= '-fasta_files "' . escape( join( ',', @files ) ) . '" ';
     $cmd .= "-config $CONFIGFILE";
 
@@ -715,7 +656,6 @@ sub generate_html {
     $template->param(
         USER     => $name,
         LOGO_PNG => $PAGE_TITLE . "-logo.png",
-        DATE     => $DATE
     );
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};

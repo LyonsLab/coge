@@ -20,7 +20,7 @@ no warnings 'redefine';
 
 use vars
   qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $TEMPDIR $TEMPURL $USER $DATE $CLUSTAL $BASEFILE $coge $cogeweb $FORM $NEWICKTOPS $CONVERT $MAX_PROC $COOKIE_NAME);
-$P            = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P            = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH}    = $P->{COGEDIR};
 $MAX_PROC     = $P->{MAX_PROC};
 $ENV{THREADS} = $MAX_PROC;
@@ -666,9 +666,10 @@ sub gen_matrix_output {
               keys %$aa_sort );
         $html .= "<th>Total:";
         $html .= "<tr>";
-        foreach
-          my $aa1 ( sort { $aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b }
-            keys %$aa_sort )
+        foreach my $aa1 (
+            sort { $aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b }
+            keys %$aa_sort
+          )
         {
             $html .= "<th>$aa1";
             my %vals;
@@ -677,9 +678,10 @@ sub gen_matrix_output {
             my ( $min1, $min2 ) = sort { $a <=> $b } keys %vals;
             $min2 = $min1 unless $min2;
             my $total = 0;
-            foreach
-              my $aa2 ( sort { $aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b }
-                keys %$aa_sort )
+            foreach my $aa2 (
+                sort { $aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b }
+                keys %$aa_sort
+              )
             {
                 my $val = $data->{$aa1}{$aa2};
                 $total += $val if $val =~ /^\d+$/;
