@@ -135,9 +135,6 @@ sub get_jobs_for_user {
 
             #TODO: Should return the job duration
             RUNTIME => $job->start_time,
-            TYPE    => $job->type,
-            PID     => $job->process_id,
-            LOG     => $job->log_id
         };
     }
 
