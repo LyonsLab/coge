@@ -5,105 +5,35 @@ use strict;
 use CGI;
 use Digest::MD5 qw(md5_base64);
 
-#use URI::Escape;
-use Data::Dumper;
-use File::Path;
 use HTML::Template;
 use JSON::XS;
 
 # CoGe packages
 use CoGeX;
 use CoGe::Accessory::Jex;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 
 no warnings 'redefine';
 
-our (
-    $P,        $DBNAME,  $DBHOST,     $DBPORT,   $DBUSER,
-    $DBPASS,   $connstr, $PAGE_TITLE, $USER,     $DATE,
-    $BASEFILE, $coge,    $cogeweb,    %FUNCTION, $COOKIE_NAME,
-    $FORM,     $URL,     $COGEDIR,    $TEMPDIR,  $TEMPURL,
-    $YERBA
-);
-
-$P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
-$YERBA = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
-
-$DATE = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
+our ( $P, $PAGE_TITLE, $USER, $BASEFILE, $coge, %FUNCTION, $FORM, $YERBA );
 
 $PAGE_TITLE = 'Jobs';
+$FORM       = new CGI;
 
-$FORM = new CGI;
-
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-
-$COOKIE_NAME = $P->{COOKIE_NAME};
-$URL         = $P->{URL};
-$COGEDIR     = $P->{COGEDIR};
-$TEMPDIR     = $P->{TEMPDIR} . "$PAGE_TITLE/";
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-$TEMPURL = $P->{TEMPURL} . "$PAGE_TITLE/";
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
-
-my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-$link = CoGe::Accessory::Web::get_tiny_link(
-    db      => $coge,
-    user_id => $USER->id,
-    page    => "$PAGE_TITLE.pl",
-    url     => $link
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket'),
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
 );
 
+$YERBA = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
+
 %FUNCTION = (
-    gen_html     => \&gen_html,
     cancel_job   => \&cancel_job,
     schedule_job => \&schedule_job,
 );
 
-dispatch();
-
-sub dispatch {
-    my %args  = $FORM->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-        die if not defined $FUNCTION{$fname};
-
-        #print STDERR Dumper \%args;
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $FORM->header, $FUNCTION{$fname}->(@args_list);
-        }
-        else {
-            print $FORM->header, $FUNCTION{$fname}->(%args);
-        }
-    }
-    else {
-        print $FORM->header, gen_html();
-    }
-}
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub get_jobs_for_user {
 
@@ -159,7 +89,6 @@ sub gen_html {
     $template->param( PAGE_TITLE => $PAGE_TITLE );
     $template->param( LOGO_PNG   => "$PAGE_TITLE-logo.png" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE       => $DATE );
     $template->param( BODY       => gen_body() );
 
     #	$name .= $name =~ /s$/ ? "'" : "'s";

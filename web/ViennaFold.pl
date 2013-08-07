@@ -10,7 +10,7 @@ use LWP::Simple;
 use Digest::MD5 qw(md5_base64);
 no warnings 'redefine';
 
-my $P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+my $P = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
 my $DBNAME = $P->{DBNAME};
 my $DBHOST = $P->{DBHOST};

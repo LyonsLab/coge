@@ -1,13 +1,13 @@
 package CoGe::Accessory::Web;
 
 use strict;
-use CoGeX;
-use Data::Dumper;
 use base 'Class::Accessor';
+use Data::Dumper;
+use CoGeX;
 use CGI::Carp('fatalsToBrowser');
 use CGI;
 use CGI::Cookie;
-use DBIxProfiler;
+use File::Path;
 use File::Basename;
 use File::Temp;
 use LWP::Simple qw(!get !head !getprint !getstore !mirror);
@@ -21,30 +21,72 @@ use IPC::System::Simple qw(capture system $EXITVAL EXIT_ANY);
 use Mail::Mailer;
 
 BEGIN {
-    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK $Q $cogex $TEMPDIR $BASEDIR);
+    use vars
+      qw ($CONF $VERSION @ISA @EXPORT @EXPORT_OK $Q $TEMPDIR $BASEDIR $CONF);
     require Exporter;
 
-    $BASEDIR = "/opt/apache/CoGe/";
+    $BASEDIR = ( $ENV{COGE_HOME} ? $ENV{COGE_HOME} : '/opt/apache/coge/web/' );
     $VERSION = 0.1;
     $TEMPDIR = $BASEDIR . "tmp";
     @ISA     = ( @ISA, qw (Exporter) );
-
-    #Give a hoot don't pollute, do not export more than needed by default
-    @EXPORT = qw ()
-      ; #qw (login write_log read_log check_taint check_filename_taint save_settings load_settings reset_settings initialize_basefile);
-
-    #    $cogex = CoGeX->dbconnect();
-    #    $cogex->storage->debugobj(new DBIxProfiler());
-    #    $cogex->storage->debug(1);
+    @EXPORT  = qw( init get_defaults dispatch );
     __PACKAGE__->mk_accessors(
         'restricted_orgs', 'basefilename', 'basefile', 'logfile',
         'sqlitefile'
     );
 }
 
+sub init {
+    my $self   = shift;
+    my %opts   = @_;
+    my $ticket = $opts{ticket};    # optional cas ticket for retrieving user
+    my $url    = $opts{url};       # optional url for cas authentication
+    my $page_title = $opts{page_title};    # optional page title
+
+    # Get config
+    $CONF = get_defaults();
+
+    # Connec to DB
+    my $db = CoGeX->dbconnect($CONF);
+
+    # Get user
+    my $user;
+    ($user) = CoGe::Accessory::Web->login_cas(
+        ticket   => $ticket,
+        coge     => $db,
+        this_url => $url
+    ) if ($ticket);
+    ($user) = CoGe::Accessory::LogUser->get_user(
+        cookie_name => $CONF->{COOKIE_NAME},
+        coge        => $db
+    ) unless $user;
+
+    my $link;
+    if ($page_title) {
+
+        # Make tmp directory
+        my $tempdir = $CONF->{TEMPDIR} . '/' . $page_title . '/';
+        mkpath( $tempdir, 0, 0777 ) unless -d $tempdir;
+
+        # Get tiny link
+        $link = get_tiny_link(
+            db      => $db,
+            user_id => $user->id,
+            page    => $page_title,
+            url     => 'http://' . $ENV{SERVER_NAME} . $ENV{REQUEST_URI},
+            disable_logging => ( $page_title ? 0 : 1 )
+        );
+    }
+
+    return ( $db, $user, $CONF, $link );
+}
+
 sub get_defaults {
-    my ( $self, $param_file ) = self_or_default(@_);
-    $param_file = $BASEDIR . "coge.conf" unless defined $param_file;
+    return $CONF if ($CONF);
+
+    my ( $self, $param_file ) = shift;
+    $param_file = $BASEDIR . "/coge.conf" unless defined $param_file;
+    #print STDERR "Web::get_defaults: $param_file\n";
     unless ( -r $param_file ) {
         print STDERR
 qq{Either no parameter file specified or unable to read paramer file ($param_file).
@@ -61,7 +103,30 @@ A valid parameter file must be specified or very little will work!};
         $items{$name} = $path;
     }
     close IN;
-    return \%items;
+
+    $CONF = \%items;
+    return $CONF;
+}
+
+sub dispatch {
+    my ( $self, $form, $functions, $default_sub ) = @_;
+    my %args  = $form->Vars;
+    my $fname = $args{'fname'};
+    if ($fname) {
+
+        #my %args = $form->Vars;
+        #print STDERR Dumper \%args;
+        if ( $args{args} ) {
+            my @args_list = split( /,/, $args{args} );
+            print $form->header, $functions->{$fname}->(@args_list);
+        }
+        else {
+            print $form->header, $functions->{$fname}->(%args);
+        }
+    }
+    else {
+        print $form->header, $default_sub->();
+    }
 }
 
 sub dataset_search_for_feat_name {
@@ -640,10 +705,8 @@ sub initialize_basefile {
 }
 
 sub gzip {
-    my ( $self, $file, $conf_file ) = self_or_default(@_);
-    $conf_file = $ENV{HOME} . 'coge.conf' unless $conf_file;
-    my $P    = $self->get_defaults($conf_file);
-    my $GZIP = $P->{GZIP};
+    my ( $self, $file ) = self_or_default(@_);
+    my $GZIP = get_defaults()->{GZIP};
     return $file unless $file;
     return $file . ".gz" if -r "$file.gz";
     return $file unless -r $file;
@@ -654,10 +717,8 @@ sub gzip {
 }
 
 sub gunzip {
-    my ( $self, $file, $conf_file, $debug ) = self_or_default(@_);
-    $conf_file = $ENV{HOME} . 'coge.conf' unless $conf_file;
-    my $P      = $self->get_defaults($conf_file);
-    my $GUNZIP = $P->{GUNZIP};
+    my ( $self, $file, $debug ) = self_or_default(@_);
+    my $GUNZIP = get_defaults()->{GUNZIP};
     unless ($GUNZIP) {
         print STDERR "ERROR: in gunzip!  gunzip binary is not specified!\n"
           if $debug;
@@ -682,9 +743,7 @@ sub irods_ils {
     $path = '' unless $path;
 
     #	print STDERR "irods_ils: path=$path\n";
-
-    my $P        = get_defaults( $ENV{HOME} . 'coge.conf' );
-    my $env_file = $P->{IRODSENV};
+    my $env_file = get_defaults()->{IRODSENV};
     if ( not defined $env_file or not -e $env_file ) {
         print STDERR "fatal error: iRODS env file missing!\n";
         return { error => "Error: iRODS env file missing" };
@@ -745,31 +804,26 @@ sub irods_chksum {
     my $path = shift;
     return 0 unless ($path);
 
-    my $P        = get_defaults( $ENV{HOME} . 'coge.conf' );
-    my $env_file = $P->{IRODSENV};
+    my $env_file = get_defaults()->{IRODSENV};
     if ( not defined $env_file or not -e $env_file ) {
         print STDERR "fatal error: iRODS env file missing!\n";
         return;
     }
 
     my $cmd = "export irodsEnvFile='$env_file'; ichksum $path";
-
-    #	print STDERR "cmd: $cmd\n";
+    #print STDERR "cmd: $cmd\n";
     my @output = `$cmd`;
     my ($chksum) = $output[0] =~ /\s*\S+\s+(\S+)/;
 
-    #	print STDERR "chksum: $chksum\n";
-
+    #print STDERR "chksum: $chksum\n";
     return $chksum;
 }
 
 sub irods_iget {
     my ( $src, $dest ) = @_;
 
-    #	print STDERR "irods_iget $src $dest\n";
-
-    my $P        = get_defaults( $ENV{HOME} . 'coge.conf' );
-    my $env_file = $P->{IRODSENV};
+    #print STDERR "irods_iget $src $dest\n";
+    my $env_file = get_defaults()->{IRODSENV};
     if ( not defined $env_file or not -e $env_file ) {
         print STDERR "fatal error: iRODS env file missing!\n";
         return;
@@ -777,10 +831,9 @@ sub irods_iget {
 
     my $cmd = "export irodsEnvFile='$env_file'; iget -fT $src $dest";
 
-    #	print STDERR "cmd: $cmd\n";
+    #print STDERR "cmd: $cmd\n";
     my @ils = `$cmd`;
-
-    #	print STDERR "@ils";
+    #print STDERR "@ils";
 
     return;
 }
@@ -830,9 +883,6 @@ use Web
 Eric Lyons
 
 =head1 COPYRIGHT
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl itself.
 
 The full text of the license can be found in the
 LICENSE file included with this module.
