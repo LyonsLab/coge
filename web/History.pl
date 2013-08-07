@@ -125,6 +125,7 @@ sub gen_body {
     $template->param( PAGE_NAME  => $PAGE_TITLE . '.pl' );
     $template->param( MAIN       => 1 );
     $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
+    $template->param( OPTION_ALL => 1 ) if $USER->is_admin;
     $template->param( USER_NAME  => $USER->name );
 
    #	$template->param( HISTORY_CONTENTS => get_history_for_user(html_only=>1) );
