@@ -545,6 +545,8 @@ sub annotation_pretty_print_html {
 	my $strand     = $self->strand;
 	my $dataset_id = $self->dataset->id;
 	my $fid        = $self->id;
+	my ($genome) = $self->genomes;
+	my $gid = $genome->id;
 	my $anno_type  =
 	  new CoGe::Accessory::Annotation(
 		    Type => "<tr><td nowrap='true'><span class=\"title5\">"
@@ -580,7 +582,8 @@ sub annotation_pretty_print_html {
 		my @links = (
 "<span class='data5 link' onclick =\"window.open('CoGeBlast.pl?fid=$fid')\">CoGeBlast</span>",
 "<span class='data5 link' onclick =\"window.open('FastaView.pl?fid=$fid')\">Fasta</span>",
-"<span class='data5 link' onclick =\"window.open('GenomeView.pl?chr=$chr&ds=$dataset_id&x=$start&z=5&gstid=$gstid')\">GenomeView</span>",
+#"<span class='data5 link' onclick =\"window.open('GenomeView.pl?chr=$chr&ds=$dataset_id&x=$start&z=5&gstid=$gstid')\">GenomeView</span>",
+"<span class='data5 link' onclick =\"window.open('GenomeView.pl?chr=$chr&gid=$gid&start=$start&z=6')\">GenomeView</span>",
 "<span class='data5 link' onclick =\"window.open('SynFind.pl?fid=$fid')\">SynFind</span>",
 		);
 		foreach my $item (@links) {
@@ -680,7 +683,7 @@ qq{<span class="data5 link" onclick="window.open('$loc_link?featid=$featid&gstid
 		$anno_obj->add_Annot(
 			new CoGe::Accessory::Annotation(
 				Type =>
-"<tr><td nowrap='true'><span class=\"title5 link\"><span onclick=\"window.open('GenomeView.pl?chr=$chr&ds=$dataset_id&x=$start&z=5&gstid=$gstid')\" >Location</span></span>",
+"<tr><td nowrap='true'><span class=\"title5 link\"><span onclick=\"window.open('GenomeView.pl?chr=$chr&gid=$gid&start=$start&z=6')\" >Location</span></span>",
 				Values       => [$location],
 				Type_delimit => ":<td>",
 				Val_delimit  => " "

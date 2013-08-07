@@ -1291,7 +1291,7 @@ sub get_query_link {
     return encode_json(
         {
             link    => $tiny_link,
-            request => "/jex/synmap/status/synmap-$tiny_id",
+            request => "jex/synmap/status/synmap-$tiny_id",
         }
     );
 }
