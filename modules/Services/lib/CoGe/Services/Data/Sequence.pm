@@ -35,7 +35,7 @@ sub get {
     if ( $genome->restricted
         and ( not defined $user or not $user->has_access_to_genome($genome) ) )
     {
-        print STDERR "Sequence::get access denied to genome $gid\n";
+        print STDERR "Data::Sequence::get access denied to genome $gid\n";
         return;
     }
 
