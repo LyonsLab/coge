@@ -495,8 +495,7 @@ sub process_gff_file {
         $chr =~ s/chromosome//i;
         $chr =~ s/^chr//i;
         $chr =~ s/^_//i;
-
-        #$chr =~ s/^0//g;
+        $chr =~ s/^0//g unless $chr == 0;
         ($chr) = split( /\s+/, $chr );
         unless ( $valid_chrs{$chr} ) {
             print $log

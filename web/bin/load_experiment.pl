@@ -391,7 +391,7 @@ sub validate_quant_data_file {
         $chr =~ s/^lcl\|//;
         $chr =~ s/chromosome//i;
         $chr =~ s/^chr//i;
-        $chr =~ s/^0+//;
+        $chr =~ s/^0+// unless $chr == 0;
         $chr =~ s/^_+//;
         $chr =~ s/\s+/ /;
         $chr =~ s/^\s//;
@@ -412,7 +412,7 @@ sub validate_quant_data_file {
         }
         ##end hack
 
-        if ( not $chr ) {
+        if ( not defined $chr ) {
             print $log
               "log: error at line $line_num: trouble parsing chromosome\n";
             return;

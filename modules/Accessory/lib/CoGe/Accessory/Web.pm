@@ -29,7 +29,7 @@ BEGIN {
     $VERSION = 0.1;
     $TEMPDIR = $BASEDIR . "tmp";
     @ISA     = ( @ISA, qw (Exporter) );
-    @EXPORT  = qw( init get_defaults dispatch );
+    @EXPORT  = qw( );
     __PACKAGE__->mk_accessors(
         'restricted_orgs', 'basefilename', 'basefile', 'logfile',
         'sqlitefile'
@@ -37,11 +37,11 @@ BEGIN {
 }
 
 sub init {
-    my $self   = shift;
-    my %opts   = @_;
+    my ( $self, %opts ) = self_or_default(@_);
     my $ticket = $opts{ticket};    # optional cas ticket for retrieving user
     my $url    = $opts{url};       # optional url for cas authentication
     my $page_title = $opts{page_title};    # optional page title
+    #print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . "\n";
 
     # Get config
     $CONF = get_defaults();
@@ -51,7 +51,8 @@ sub init {
 
     # Get user
     my $user;
-    ($user) = CoGe::Accessory::Web->login_cas(
+    ($user) = login_cas(
+    	cookie_name => $CONF->{COOKIE_NAME},
         ticket   => $ticket,
         coge     => $db,
         this_url => $url
@@ -84,9 +85,9 @@ sub init {
 sub get_defaults {
     return $CONF if ($CONF);
 
-    my ( $self, $param_file ) = shift;
+    my ( $self, $param_file ) = self_or_default(@_);
     $param_file = $BASEDIR . "/coge.conf" unless defined $param_file;
-    #print STDERR "Web::get_defaults: $param_file\n";
+#    print STDERR "Web::get_defaults $param_file\n";
     unless ( -r $param_file ) {
         print STDERR
 qq{Either no parameter file specified or unable to read paramer file ($param_file).
@@ -109,7 +110,7 @@ A valid parameter file must be specified or very little will work!};
 }
 
 sub dispatch {
-    my ( $self, $form, $functions, $default_sub ) = @_;
+    my ( $self, $form, $functions, $default_sub ) = self_or_default(@_);
     my %args  = $form->Vars;
     my $fname = $args{'fname'};
     if ($fname) {
@@ -273,13 +274,13 @@ sub logout_cas {
 }
 
 sub login_cas {
-    my $self        = shift;
-    my %opts        = @_;
+    my ( $self, %opts ) = self_or_default(@_);
     my $cookie_name = $opts{cookie_name};
     my $ticket      = $opts{ticket};        #cas ticket from iPlant
     my $this_url    = $opts{this_url};      #not sure what this does
     my $coge        = $opts{coge};          #coge object
 
+#	print STDERR "Web::login_cas cookie_name=$cookie_name\n";
     #print STDERR Dumper \%opts;
     my $ua = new LWP::UserAgent;
 
@@ -368,7 +369,7 @@ sub login_cas {
         cookie_name => $cookie_name,
     );
 
-    #	print STDERR "login_cas:  gen_cookie " . (Dumper $c) . "\n";
+#    print STDERR "login_cas:  gen_cookie " . (Dumper $c) . "\n";
     print CGI::header( -cookie => [$c] );
     return $coge_user;
 }

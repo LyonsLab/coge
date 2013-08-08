@@ -35,8 +35,8 @@ $ENV{PATH} = join ":",
   (
     $P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR} . "SynMap",
     "/usr/bin", "/usr/local/bin");
-$ENV{HOME} = $P->{COGEDIR};
-my $config = File::Spec->catdir($ENV{HOME},"coge.conf");
+$ENV{COGE_HOME} = $P->{COGEDIR};
+my $config = File::Spec->catdir($ENV{COGE_HOME},"coge.conf");
 #print STDERR Dumper \%ENV;
 
 $TEMPDIR  = $P->{TEMPDIR} . "SynMap";

@@ -5,16 +5,13 @@ use CGI;
 
 use JSON::XS;
 use HTML::Template;
-use Digest::MD5 qw(md5_base64);
 use Sort::Versions;
 use List::Util qw(first);
-use DBIxProfiler;
 use URI::Escape::JavaScript qw(escape unescape);
 use Data::Dumper;
 use File::Path;
 use File::stat;
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
@@ -22,10 +19,7 @@ use CoGeX::ResultSet::Feature;
 use Benchmark;
 no warnings 'redefine';
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE
-  $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION
-  $FORM %ITEM_TYPE
-  $MAX_SEARCH_RESULTS);
+use vars qw($P $PAGE_TITLE $USER $coge %FUNCTION $FORM %ITEM_TYPE $MAX_SEARCH_RESULTS);
 
 $PAGE_TITLE = 'User';
 
