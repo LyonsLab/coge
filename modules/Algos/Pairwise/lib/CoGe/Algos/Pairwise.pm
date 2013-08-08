@@ -15,7 +15,7 @@ BEGIN {
     @EXPORT_OK   = qw();
     %EXPORT_TAGS = ();
     __PACKAGE__->mk_accessors(qw(seqA seqB matrix gap gap_ext dpm alignA alignB nwalign nwalign_server_port));
-#    $P = CoGe::Accessory::Web::get_defaults($ENV{HOME} . 'coge.conf' );
+#    $P = CoGe::Accessory::Web::get_defaults();
 #    $NWALIGN = $P->{NWALIGN};
 #    $MATRIX_FILE = $P->{BLASTMATRIX}."aa/BLOSUM62";
 }
@@ -291,9 +291,7 @@ sub global_align {
     $gap_ext = -2 unless $gap_ext;
     my $matrix = $opts{matrix};  #path to blast formated alignment matrix;
 
-    my $config = $opts{config};
-    $config = $ENV{HOME}.'coge.conf' unless defined $config and -r $config;
-    $P = CoGe::Accessory::Web::get_defaults($config);
+    $P = CoGe::Accessory::Web::get_defaults($opts{config});
     $NWALIGN = $P->{NWALIGN};
     $MATRIX_FILE = $P->{BLASTMATRIX}."aa/BLOSUM62";
     $matrix = $MATRIX_FILE unless $matrix && -r $matrix;

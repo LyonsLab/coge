@@ -15,7 +15,6 @@ use HTML::Template;
 use LWP::Simple;
 use Parallel::ForkManager;
 use GD;
-use Digest::MD5 qw(md5_base64);
 use File::Path;
 use File::Spec;
 use Benchmark;
@@ -42,7 +41,7 @@ our (
     $GZIP,          $GUNZIP,         $COOKIE_NAME, %FUNCTIONS
 );
 
-$P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = join ":",
   (
     $P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR} . "SynMap",
@@ -171,7 +170,7 @@ $CLUSTER_UTILS = $P->{CLUSTER_UTILS};   #convert dag output to quota_align input
 $BLAST2RAW     = $P->{BLAST2RAW};       #find local duplicates
 $SYNTENY_SCORE = $P->{SYNTENY_SCORE};
 
-$DOTPLOT     = $P->{DOTPLOT} . " -cf " . $ENV{HOME} . 'coge.conf';
+$DOTPLOT     = $P->{DOTPLOT} . " -cf " . $ENV{COGE_HOME} . 'coge.conf';
 $SVG_DOTPLOT = $P->{SVG_DOTPLOT};
 
 #$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
@@ -2569,7 +2568,7 @@ qq{ -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename",};
     $cmd .= qq{ -min $codeml_min}                if defined $codeml_min;
     $cmd .= qq{ -max $codeml_max}                if defined $codeml_max;
 
-#    $cmd .= qq{ -cf }.$ENV{HOME}. 'coge.conf'; #config file for getting defaults for coge server installation
+#    $cmd .= qq{ -cf }.$ENV{COGE_HOME}. 'coge.conf'; #config file for getting defaults for coge server installation
     while ( -e "$outfile.running" ) {
         print STDERR "detecting $outfile.running.  Waiting. . .\n";
         sleep 60;
@@ -3623,7 +3622,7 @@ qq{<br><span class='small link' onclick=window.open('$final_dagchainer_file')>DA
             }
 
             $html .= "<tr><td>";
-            my $conffile = $ENV{HOME} . 'coge.conf';
+            my $conffile = $ENV{COGE_HOME} . 'coge.conf';
             $dagchainer_file =~ s/^$URL/$DIR/;
             $html .= "<br>"
               . qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=$conffile;l=$tiny_link');" >Generate Pseudo-Assembled Genomic Sequence</span>}

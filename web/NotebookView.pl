@@ -149,14 +149,13 @@ sub get_list_info {
     my $html          = $list->annotation_pretty_print_html();
     my $user_can_edit = $USER->is_admin
       || ( !$list->locked && $USER->is_owner_editor( list => $lid ) );
+    my $user_can_delete = $USER->is_admin
+      || ( !$list->locked && $USER->is_owner( list => $lid ) );
 
     if ($user_can_edit) {
         $html .=
 qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="edit_list_info();">Edit Info</span>};
-    }
-    if ( $USER->is_admin
-        || ( !$list->locked && $USER->is_owner( list => $lid ) ) )
-    {
+        
         if ( $list->restricted ) {
             $html .=
 qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_list_public();">Make Public</span>};
@@ -165,6 +164,9 @@ qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_
             $html .=
 qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_list_private();">Make Private</span>};
         }
+    }
+
+    if ( $user_can_delete ) {
         $html .=
 qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_list();">Delete</span>};
     }

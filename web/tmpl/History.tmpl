@@ -253,7 +253,7 @@ function toggle_star(img) {
   Show: 
   <select id="show_select">
    <option value="0">All</option>
-   <option selected='selected' value="-3">Mine</option>
+   <TMPL_IF NAME="OPTION_ALL"><option selected='selected' value="-3">Mine</option></TMPL_IF>
    <option value="-1">Starred</option>
    <option value="-2">Comments</option>
    <option value="1">Last hour</option>
@@ -276,7 +276,7 @@ function toggle_star(img) {
 
 <div id="myGrid" style="max-width:95%;height:80%;display:none;"></div>
 
-</TMPL_IF> <!-- MAIN -->
+</TMPL_IF>
 
 
 
@@ -292,4 +292,4 @@ function toggle_star(img) {
 Admin Functions:<br>
 none at the moment
 -->
-</TMPL_IF> <!-- ADMIN_AREA -->
+</TMPL_IF>
