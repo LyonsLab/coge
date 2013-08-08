@@ -8,7 +8,9 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use HTML::Template;
 use JSON::XS;
+use URI::Escape::JavaScript qw(escape);
 use File::Path;
+use File::Copy;
 use Sort::Versions;
 no warnings 'redefine';
 
