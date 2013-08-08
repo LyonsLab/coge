@@ -146,6 +146,7 @@ sub get_status_message {
         when (2) { return 'Complete'; }
         when (3) { return 'Cancelled'; }
         when (4) { return 'Terminated'; }
+        when (5) { return 'Failed'; }
         default  { return 'Running'; }
     }
 }
