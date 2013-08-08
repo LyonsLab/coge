@@ -13,10 +13,10 @@ BEGIN {
     @EXPORT      = qw ();
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
-    __PACKAGE__->mk_accessors(qw(file org1_ordered org2_ordered chrs1_scores chrs2_scores blocks1 blocks2 chrs1 chrs2 dsgid1 dsgid2)) ;
+    __PACKAGE__->mk_accessors('file', 'org1_ordered', 'org2_ordered', 
+    	'chrs1_scores', 'chrs2_scores', 'blocks1', 'blocks2', 'chrs1', 'chrs2', 
+    	'dsgid1', 'dsgid2');
 }
-
-
 
 #this sub is used to try to get a build order of contigs for WGS data against a reference genome
 #given a set of scaffolds, it will order them such that make an ordered syntenic path along the reference genome

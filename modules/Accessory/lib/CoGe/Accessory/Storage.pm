@@ -110,7 +110,7 @@ sub get_genome_file {
     return $file_path if ( -r $file_path );
 
     print STDERR
-      "Storage::get_genome_file: genome file '$file_path' doesn't exist!\n";
+      "Storage::get_genome_file: genome file '$file_path' not readable!\n";
     return;
 }
 
@@ -226,7 +226,7 @@ sub get_genome_seq {
         }
         my $cmd = "$samtools faidx $file_path '$region'";
 
-        print STDERR "$cmd\n";
+        #print STDERR "$cmd\n";
         $seq = qx{$cmd};
         unless ($fasta) {
             # remove header line
