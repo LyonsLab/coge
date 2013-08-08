@@ -13,7 +13,7 @@ BEGIN
   {
     use vars qw($VERSION);
     $VERSION = "0.01";
-    __PACKAGE__->mk_accessors qw(query_start query_stop subject_start subject_stop length strand query_alignment subject_alignment alignment number identity);
+    __PACKAGE__->mk_accessors(qw(query_start query_stop subject_start subject_stop length strand query_alignment subject_alignment alignment number identity));
   }
 
 #ripped from class::Accessor

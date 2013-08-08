@@ -13,7 +13,8 @@ BEGIN
     use vars qw($VERSION);
     $VERSION = "0.01";
   }
-__PACKAGE__->mk_accessors qw(file hsps hsp_count query subject qlength slength gotname DEBUG);
+__PACKAGE__->mk_accessors('file', 'hsps', 'hsp_count', 'query', 'subject', 
+	'qlength', 'slength', 'gotname', 'DEBUG');
 
 ###############################################################################
 # chaos_report -- Josh Kane  UC Berkeley

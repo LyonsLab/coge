@@ -12,7 +12,8 @@ BEGIN {
     @EXPORT      = qw ();
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
-    __PACKAGE__->mk_accessors(qw(Type Values Search_term Val_delimit Type_delimit _index Add_type String_end)) ;
+    __PACKAGE__->mk_accessors('Type', 'Values', 'Search_term', 
+    	'Val_delimit', 'Type_delimit', '_index', 'Add_type', 'String_end');
 }
 
 =head2 new

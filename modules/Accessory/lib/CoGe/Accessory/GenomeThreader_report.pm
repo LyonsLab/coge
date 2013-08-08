@@ -9,7 +9,7 @@ use Data::Dumper;
 
 #this only works when using protein sequences:
 #./bin/gth -genomic eric_example/at_genomic.faa -protein eric_example/at_protein.faa -scorematrix /opt/apache/CoGe/data/blast/matrix/aa/BLOSUM62
-__PACKAGE__->mk_accessors qw(file genes hsps query subject);
+__PACKAGE__->mk_accessors('file', 'genes', 'hsps', 'query', 'subject');
 
 
 sub new {
