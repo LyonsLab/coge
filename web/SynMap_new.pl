@@ -2429,7 +2429,7 @@ sub get_results {
     my $workflow = undef;
     my $status   = undef;
 
-    my $config = $ENV{HOME} . "coge.conf";
+    my $config = $ENV{COGE_HOME} . "coge.conf";
 
     if ( $feat_type1 eq "genomic" ) {
         my $genome = $coge->resultset('Genome')->find($dsgid1);
@@ -2988,7 +2988,7 @@ sub get_results {
             msg  => qq{Syntenic Path Assembly mapping},
         );
 
-        my $conffile = $ENV{HOME} . 'coge.conf';
+        my $conffile = $ENV{COGE_HOME} . 'coge.conf';
 
         $dagchainer_file =~ s/^$URL/$DIR/;
 

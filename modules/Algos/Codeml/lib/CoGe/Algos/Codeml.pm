@@ -205,7 +205,7 @@ INCOMPLETE DOCUMENTATION OF ALL METHODS
 
 BEGIN {
     use vars qw($P $VERSION @ISA %VALIDVALUES $MINNAMELEN $CODEML);
-#    $P = CoGe::Accessory::Web::get_defaults($ENV{HOME} . 'coge.conf' );
+#    $P = CoGe::Accessory::Web::get_defaults();
 #    $CODEML = $P->{CODEML}." ". $P->{CODEMLCTL} . ($^O =~ /mswin/i ?'.exe':'');
     $VERSION = '0.1';
     __PACKAGE__->mk_accessors(qw(codeml results debug tree alignment));
@@ -337,7 +337,6 @@ sub new {
     my $align  = $opts{alin} || $opts{alignment};
     my $tree   = $opts{tree};
     my $config = $opts{config};
-    $config = $ENV{HOME} . 'coge.conf' unless defined $config and -r $config;
 
     $P = CoGe::Accessory::Web::get_defaults($config);
     $CODEML =
