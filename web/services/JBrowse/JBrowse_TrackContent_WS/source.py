@@ -52,7 +52,7 @@ def get_config():
                 continue
             else:
                 try:
-                    (key, value) = line.split('\t')[0:2]
+                    (key, value) = line.replace('\t', ' ').split()[0:2]
                     config[key] = value
                 except ValueError:
                     pass
@@ -72,7 +72,10 @@ def fetch_sequence(genome_id, chr_id, start, stop):
         id=genome_id, chr=chr_id, start=start, stop=stop)
 
     try:
-        response = urllib2.urlopen(url)
+        opener = urllib2.build_opener()
+        opener.addheaders.append(('Cookie',
+            'cookiename={0}'.format(config['COOKIE_NAME'])))
+        response = opener.open(url)
         sequence = response.read()
     except urllib2.URLError as e:
         return
