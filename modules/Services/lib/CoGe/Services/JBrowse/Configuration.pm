@@ -27,7 +27,7 @@ sub refseq_config {
     my $self           = shift;
     my $gid            = $self->query->param('gid');
     my $SEQ_CHUNK_SIZE = 20000;
-    print STDERR "Configuration::refseq_config gid=$gid\n";
+    print STDERR "JBrowse::Configuration::refseq_config gid=$gid\n";
 
     # Connect to the database
     my ( $db, $user ) = CoGe::Accessory::Web->init;
@@ -58,7 +58,7 @@ sub refseq_config {
 sub track_config {
     my $self = shift;
     my $gid  = $self->query->param('gid');
-    print STDERR "Configuration::track_config gid=$gid\n";
+    print STDERR "JBrowse::Configuration::track_config gid=$gid\n";
 
     # Connect to the database
     my ( $db, $user ) = CoGe::Accessory::Web->init;

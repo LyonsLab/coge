@@ -22,7 +22,7 @@ sub get {
     my $stop  = $self->query->param('stop');
     $stop = $self->query->param('end') if ( not defined $stop );
     my $strand = $self->query->param('strand');
-    print STDERR "Sequence::get gid=$gid chr=$chr start=$start stop=$stop\n";
+    print STDERR "Data::Sequence::get gid=$gid chr=$chr start=$start stop=$stop\n";
 
     # Connect to the database
     my ( $db, $user, $conf ) = CoGe::Accessory::Web->init();
