@@ -67,7 +67,6 @@ $BLAST_PROGS   = {
 };
 
 %FUNCTION = (
-    gen_html                 => \&gen_html,
     source_search            => \&get_data_source_info_for_accn,
     get_types                => \&get_types,
     get_sequence             => \&get_sequence,

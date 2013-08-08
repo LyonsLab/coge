@@ -13,7 +13,7 @@ BEGIN
   {
     use vars qw($VERSION);
     $VERSION = "0.01";
-    __PACKAGE__->mk_accessors qw(file start stop length strand contig header);
+    __PACKAGE__->mk_accessors(qw(file start stop length strand contig header));
   }
 
 #ripped from class::Accessor
