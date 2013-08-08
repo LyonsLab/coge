@@ -17,7 +17,7 @@ sub setup {
 }
 
 sub stats_global {
-    print STDERR "Sequence::stats_global\n";
+    print STDERR "JBrowse::Sequence::stats_global\n";
     return qq{{}};
 }
 
@@ -30,7 +30,7 @@ sub features {
     my $end   = $self->query->param('end');
     my $len   = $end - $start;
     print STDERR
-      "Sequence::features gid=$gid chr=$chr size=$size start=$start end=$end\n";
+      "JBrowse::Sequence::features gid=$gid chr=$chr size=$size start=$start end=$end\n";
 
     # Check params
     my $empty = qq{{"features" : []}};

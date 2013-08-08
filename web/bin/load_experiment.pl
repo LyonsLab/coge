@@ -226,7 +226,7 @@ unless ($install_dir) {
     }
     $install_dir = $P->{EXPDIR};
 }
-my $storage_path = "$install_dir/" . $experiment->get_path;
+my $storage_path = "$install_dir/" . CoGe::Accessory::Storage::get_tiered_path( $experiment->id ) . '/';
 print $log 'Storage path: ', $storage_path, "\n";
 # mdb removed 8/7/13, issue 77
 #$experiment->storage_path($storage_path);
