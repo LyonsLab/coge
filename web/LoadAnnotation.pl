@@ -10,6 +10,7 @@ use HTML::Template;
 use JSON::XS;
 use URI::Escape::JavaScript qw(escape unescape);
 use File::Path;
+use File::Copy;
 use Sort::Versions;
 no warnings 'redefine';
 

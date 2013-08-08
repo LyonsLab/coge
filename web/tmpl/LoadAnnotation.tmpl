@@ -187,8 +187,10 @@ function get_load_log(load_id) {
 }
 
 function continue_to_view() {
-	var dsid = $('#dataset_id').val();
-	window.location.href = "GenomeView.pl?dsid=" + dsid;
+	//var dsid = $('#dataset_id').val();
+	//window.location.href = "GenomeView.pl?dsid=" + dsid;
+	var gid = $('#gid').val();
+	window.location.href = "GenomeView.pl?gid=" + gid + ";tracks=features";
 }
 
 function wait_to_search (search_func, search_obj) {
