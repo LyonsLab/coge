@@ -38,14 +38,14 @@ sub gen_html {
     my $html;
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( HELP => '/wiki/index.php?title=Groups' );
+    $template->param( HELP => "/wiki/index.php?title=$PAGE_TITLE" );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER       => $name );
     $template->param( TITLE      => qq{Manage User Groups} );
-    $template->param( PAGE_TITLE => qq{Groups} );
-    $template->param( LOGO_PNG   => "Groups-logo.png" );
+    $template->param( PAGE_TITLE => $PAGE_TITLE );
+    $template->param( LOGO_PNG   => "$PAGE_TITLE-logo.png" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => gen_body() );
     $template->param( ADJUST_BOX => 1 );
@@ -57,7 +57,7 @@ sub gen_html {
 
 sub gen_body {
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'Groups.tmpl' );
+      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param( PAGE_NAME => $FORM->url );
     $template->param( MAIN      => 1 );
     my $groups = get_groups_for_user();
@@ -233,20 +233,20 @@ sub get_groups_for_user {
             $group->lists )
         {
             my $name =
-              qq{<img src="picts/notebook-icon.png" width="15" height="15"/>}
+              qq{<img src="picts/notebook-icon.png" width="15" height="15"/> }
               . $item->info_html;
             push @data, $name;
         }
         foreach my $item ( sort { $a->name cmp $b->name } $group->experiments )
         {
             my $name =
-              qq{<img src="picts/testtube-icon.png" width="15" height="15"/>}
+              qq{<img src="picts/testtube-icon.png" width="15" height="15"/> }
               . $item->info_html;
             push @data, $name;
         }
         foreach my $item ( sort { $a->name cmp $b->name } $group->genomes ) {
             my $name =
-              qq{<img src="picts/dna-icon.png" width="15" height="15"/>}
+              qq{<img src="picts/dna-icon.png" width="15" height="15"/> }
               . $item->info_html;
             push @data, $name;
         }
