@@ -1,4 +1,4 @@
-import MySQLdb as mdb
+import Cookie
 import json
 import math
 import re
@@ -9,6 +9,7 @@ import urllib2
 from collections import defaultdict #Counter
 from cgi import parse_qs, escape
 
+import MySQLdb as mdb
 
 config_path = os.path.join(os.path.dirname(__file__), '../../../coge.conf')
 
@@ -59,7 +60,7 @@ def get_config():
 
     return config
 
-def fetch_sequence(genome_id, chr_id, start, stop):
+def fetch_sequence(genome_id, chr_id, start, stop, cookie_string):
     service = '{base}/{service}/sequence/{id}/{chr}?start={start};stop={stop};'
 
     config = get_config()
@@ -67,15 +68,22 @@ def fetch_sequence(genome_id, chr_id, start, stop):
     if not config:
         return
 
+
     url = service.format(base=config['SERVER'],
         service='services/JBrowse/service.pl',
         id=genome_id, chr=chr_id, start=start, stop=stop)
 
+
     try:
-        opener = urllib2.build_opener()
-        opener.addheaders.append(('Cookie',
-            'cookiename={0}'.format(config['COOKIE_NAME'])))
-        response = opener.open(url)
+        name = config['COOKIE_NAME']
+
+        if cookie_string:
+            opener = urllib2.build_opener()
+            opener.addheaders.append(('Cookie', cookie_string))
+            response = opener.open(url)
+        else:
+            response = urllib2.urlopen(url)
+
         sequence = response.read()
     except urllib2.URLError as e:
         return
@@ -108,7 +116,8 @@ def gc_features(environ, start_response):
                 % genome_id)
 
         # Open the right chromosome file derived from the pathname
-        string = fetch_sequence(genome_id, chr_id, start, end)
+        string = fetch_sequence(genome_id, chr_id, start, end,
+                environ['HTTP_COOKIE'])
 
         # Set bucketSize
         sizes = {'20': 1, '10': 1, '5': 2, '2': 5, '1': 25, '0.5': 75}
