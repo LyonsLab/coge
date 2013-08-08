@@ -912,7 +912,7 @@ sub get_contents {
     $last_update = 0 if ( not defined $last_update );
     my $timestamp = $opts{timestamp};
     my $html_only = $opts{html_only};
-    print STDERR "get_contents $type $html_only $last_update\n";
+    #print STDERR "get_contents $type $html_only $last_update\n";
 
     use Time::HiRes qw ( time );
     my $start_time = time;
