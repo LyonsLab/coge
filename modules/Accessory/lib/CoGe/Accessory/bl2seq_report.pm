@@ -12,7 +12,8 @@ BEGIN
     use vars qw($VERSION);
     $VERSION = "0.01";
   }
-__PACKAGE__->mk_accessors qw(file lastline report_done hsps hsp_count eval_cutoff query subject qlength slength);
+__PACKAGE__->mk_accessors('file', 'lastline', 'report_done', 'hsps', 
+	'hsp_count', 'eval_cutoff', 'query', 'subject', 'qlength', 'slength');
 
 sub qname    {shift->query(@_)}
 sub sbjct    {shift->subject(@_)}

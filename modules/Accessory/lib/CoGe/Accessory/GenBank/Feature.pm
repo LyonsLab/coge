@@ -4,7 +4,8 @@ use strict;
 use Data::Dumper;
 use base qw(Class::Accessor);
 
-__PACKAGE__->mk_accessors qw(number type location qualifiers annotation blocks strand _start _stop);
+__PACKAGE__->mk_accessors('number', 'type', 'location', 'qualifiers', 
+	'annotation', 'blocks', 'strand', '_start', '_stop');
 
 sub has_qualifier {
 	my $self = shift;
