@@ -90,9 +90,6 @@ sub gen_html {
     $template->param( LOGO_PNG   => "$PAGE_TITLE-logo.png" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => gen_body() );
-
-    #	$name .= $name =~ /s$/ ? "'" : "'s";
-    #	$template->param( BOX_NAME   => $name . " Data Lists:" );
     $template->param( ADJUST_BOX => 1 );
     $html .= $template->output;
 }
@@ -122,7 +119,6 @@ sub cancel_job {
     return return encode_json( {} ) unless defined($job);
 
     my $status = $YERBA->get_status( $job->id );
-    say STDERR $status;
 
     if ( lc($status) eq 'running' ) {
         $job->update( { status => 3 } );
