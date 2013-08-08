@@ -2,7 +2,7 @@ package CoGe::Services::Data::Sequence;
 use base 'CGI::Application';
 
 use CoGeX;
-use CoGe::Accessory::Web qw( init );
+use CoGe::Accessory::Web;
 use CoGe::Accessory::Storage qw( get_genome_seq );
 use JSON qq{encode_json};
 use Data::Dumper;
@@ -26,7 +26,6 @@ sub get {
 
     # Connect to the database
     my ( $db, $user, $conf ) = CoGe::Accessory::Web->init();
-    print STDERR "matt: " . $user->name . "\n";
 
     # Retrieve genome
     my $genome = $db->resultset('Genome')->find($gid);
