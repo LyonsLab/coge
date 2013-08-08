@@ -11,7 +11,6 @@ use base qw(Class::Accessor);
 
 #__PACKAGE__->load_classes();
 __PACKAGE__->load_namespaces();
-
 #__PACKAGE__->mk_accessors();
 
 =head1 NAME
@@ -29,28 +28,12 @@ CoGeX - CoGeX
 
 Primary object for interacting with CoGe database system.
 
-=head1 USAGE
-
-  use CoGeX;
-
-  my $s = CoGeX->connectdb(); # Biocon's ro user
-
-  my $rs = $s->resultset('Feature')->search(
-                {
-                  'organism.name' => "Arabidopsis thaliana"
-                },
-                { join => [ 'dataset', 'organism' ] }
-  );
-
 =head1 AUTHORS
 
  Eric Lyons
  Brent Pedersen
 
 =head1 COPYRIGHT
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl itself.
 
 The full text of the license can be found in the
 LICENSE file included with this module.
@@ -59,8 +42,9 @@ LICENSE file included with this module.
 
 =cut
 
-use strict;
-use vars qw( %pool );    # persistent globals
+BEGIN {
+    use vars qw( %pool ); # persistent db connection pool
+}
 
 ################################################ subroutine header begin ##
 
@@ -87,8 +71,8 @@ sub dbconnect {
     $conn_name = 'default' unless $conn_name;
 
     # Connect to the database
-    unless ( defined $pool{$conn_name}
-        and $pool{$conn_name}->storage->dbh->ping() )
+    unless ( defined $pool{$conn_name} )
+        #and $pool{$conn_name}->storage->dbh->ping() )
     {
         my $dbname  = $conf->{DBNAME};
         my $dbhost  = $conf->{DBHOST};

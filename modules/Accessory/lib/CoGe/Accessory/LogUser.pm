@@ -12,7 +12,8 @@ sub get_user {
 	my $coge        = $opts{coge};
 	my %cookies     = fetch CGI::Cookie;
 	my ( $user, $uid, $session );    # = "Public";
-	#print STDERR Dumper \%cookies;
+	
+	#print STDERR "LogUser::get_user cookie=$cookie_name " . (defined $cookies{$cookie_name} ? 'exists' : '!exists') . "\n";
 	if ( $cookie_name && ref $cookies{$cookie_name} ) {
 		my %session = $cookies{$cookie_name}->value;
 		$session = $session{session};
