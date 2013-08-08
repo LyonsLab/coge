@@ -23,7 +23,7 @@ sub setup {
 }
 
 sub stats_global {
-    print STDERR "experiment stats_global\n";
+    print STDERR "JBrowse::Experiment::stats_global\n";
     return qq{{
 		"scoreMin" : -1,
 		"scoreMax" : 1
@@ -40,7 +40,7 @@ sub stats_region {    #FIXME lots of code in common with features()
     my $end      = $self->query->param('end');
     my $bpPerBin = $self->query->param('bpPerBin');
 
-    print STDERR "experiment stats_region eid="
+    print STDERR "JBrowse::Experiment::stats_region eid="
       . ( $eid ? $eid : '' ) . " nid="
       . ( $nid ? $nid : '' ) . " gid="
       . ( $gid ? $gid : '' )
@@ -143,7 +143,7 @@ sub features {
     my $chr   = $self->param('chr');
     my $start = $self->query->param('start');
     my $end   = $self->query->param('end');
-    print STDERR "experiment features eid="
+    print STDERR "JBrowse::Experiment::features eid="
       . ( $eid ? $eid : '' ) . " nid="
       . ( $nid ? $nid : '' ) . " gid="
       . ( $gid ? $gid : '' )
