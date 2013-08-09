@@ -15,6 +15,7 @@ use CoGeX::Result::Feature;
 use CoGe::Accessory::GenBank;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw( commify );
 use CoGe::Accessory::bl2seq_report;
 use CoGe::Accessory::blastz_report;
 use CoGe::Accessory::lagan_report;
@@ -5284,13 +5285,6 @@ sub feat_search {
         $html .= qq{<input type="hidden" id="featid$num">\n};
     }
     return $html;
-}
-
-sub commify {
-    my $input = shift;
-    $input = reverse $input;
-    $input =~ s<(\d\d\d)(?=\d)(?!\d*\.)><$1,>g;
-    return scalar reverse $input;
 }
 
 sub email_results {

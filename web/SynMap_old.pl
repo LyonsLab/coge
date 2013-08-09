@@ -6,6 +6,7 @@ use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Algos::KsCalc;
+use CoGe::Accessory::Utils qw( commify );
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
@@ -4075,11 +4076,5 @@ sub get_dotplot {
     my $html =
 qq{<iframe src=$url frameborder=0 width=$w height=$h scrolling=no></iframe>};
     return $html;
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }
 

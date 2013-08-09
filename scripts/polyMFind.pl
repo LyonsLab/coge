@@ -6,6 +6,7 @@ use Getopt::Long;
 use CoGeX;
 use POSIX;
 use LWP::Simple;
+use CoGe::Accessory::Utils qw( commify );
 
 use vars qw($DEBUG $file $coge $INSTRAIN $homo_threshold);
 
@@ -789,14 +790,6 @@ sub get_tiny_url
 
     return $tiny;
   }
-
-
-sub commify 
-    {
-      my $text = reverse $_[0];
-      $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-      return scalar reverse $text;
-    }
 
 sub process_synmorphs
   {

@@ -8,6 +8,7 @@ use DBI;
 use Data::Dumper;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw( commify );
 use HTML::Template;
 use URI::Escape;
 use Spreadsheet::WriteExcel;
@@ -546,10 +547,4 @@ sub save_FeatList_settings {
         page => $PAGE_NAME,
         coge => $coge
     );
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }

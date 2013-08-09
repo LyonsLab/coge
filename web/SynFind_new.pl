@@ -3,7 +3,7 @@ use v5.10;
 use strict;
 use CoGeX;
 use DBIxProfiler;
-
+use CoGe::Accessory::Utils qw( commify );
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web;
@@ -1752,14 +1752,6 @@ sub generate_feat_info {
     }
     my $html = $feat->annotation_pretty_print_html( gstid => $dsg->type->id );
     return $html;
-}
-
-sub commify {
-    my $input = shift;
-    $input = reverse $input;
-    $input =~ s<(\d\d\d)(?=\d)(?!\d*\.)><$1,>g;
-    return scalar reverse $input;
-
 }
 
 sub has_cds {

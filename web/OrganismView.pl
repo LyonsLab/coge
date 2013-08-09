@@ -4,6 +4,7 @@ use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CoGeX;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw( commify );
 use HTML::Template;
 use Data::Dumper;
 use CGI::Ajax;
@@ -1974,12 +1975,6 @@ sub get_total_length_for_ds {
     my $length = 0;
     map { $length += $ds->last_chromosome_position($_) } $ds->get_chromosomes();
     return commify($length);
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }
 
 1;

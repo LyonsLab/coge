@@ -10,6 +10,7 @@ use Data::Dumper;
 use CGI::Log;
 use CoGeX;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw( units commify );
 use POSIX 'ceil';
 
 no warnings 'redefine';
@@ -260,7 +261,7 @@ sub get_latest_genomes {
         #$entry .= ": ".$dsg->name if $dsg->name;
         $entry .= "<td>(v" . $dsg->version . ")&nbsp";
         $entry .= "<td align=right>" . commify( $dsg->length ) . "<td>";
-        my @desc = split /;/, $dsg->organism->description;
+        my @desc = split( /;/, $dsg->organism->description );
         while ( $desc[0] && !$desc[-1] ) { pop @desc; }
         $desc[-1] =~ s/^\s+// if $desc[-1];
         $desc[-1] =~ s/\s+$// if $desc[-1];
@@ -269,16 +270,16 @@ sub get_latest_genomes {
 qq{<td><span class="link" onclick="window.open('$orgview_search')">Search</span>};
         $entry .= qq{<td>};
         $entry .=
-qq{<img onClick="window.open('$orgview_link')" src = "picts/other/CoGe-icon.png" title="CoGe" class=link>};
+qq{<img onClick="window.open('$orgview_link')" src="picts/other/CoGe-icon.png" title="CoGe" class="link">};
 
         my $search_term = $dsg->organism->name;
         $entry .=
-qq{<img onclick="window.open('http://www.ncbi.nlm.nih.gov/taxonomy?term=$search_term')" src = "picts/other/NCBI-icon.png" title="NCBI" class=link>};
+qq{<img onclick="window.open('http://www.ncbi.nlm.nih.gov/taxonomy?term=$search_term')" src="picts/other/NCBI-icon.png" title="NCBI" class="link">};
         $entry .=
-qq{<img onclick="window.open('http://en.wikipedia.org/w/index.php?title=Special%3ASearch&search=$search_term')" src = "picts/other/wikipedia-icon.png" title="Wikipedia" class=link>};
+qq{<img onclick="window.open('http://en.wikipedia.org/w/index.php?title=Special%3ASearch&search=$search_term')" src="picts/other/wikipedia-icon.png" title="Wikipedia" class="link">};
         $search_term =~ s/\s+/\+/g;
         $entry .=
-qq{<img onclick="window.open('http://www.google.com/search?q=$search_term')" src="picts/other/google-icon.png" title="Google" class=link>};
+qq{<img onclick="window.open('http://www.google.com/search?q=$search_term')" src="picts/other/google-icon.png" title="Google" class="link">};
         $entry .= qq{</tr>};
         push @opts, $entry
           ; #, "<OPTION value=\"".$item->organism->id."\">".$date." ".$item->organism->name." (id".$item->organism->id.") "."</OPTION>";
@@ -287,27 +288,4 @@ qq{<img onclick="window.open('http://www.google.com/search?q=$search_term')" src
     $html .= join "\n", @opts;
     $html .= "</table>";
     return $html;
-}
-
-sub units {
-    my $val = shift;
-
-    if ( $val < 1024 ) {
-        return $val;
-    }
-    elsif ( $val < 1024 * 1024 ) {
-        return ceil( $val / 1024 ) . 'K';
-    }
-    elsif ( $val < 1024 * 1024 * 1024 ) {
-        return ceil( $val / ( 1024 * 1024 ) ) . 'M';
-    }
-    else {
-        return ceil( $val / ( 1024 * 1024 * 1024 ) ) . 'G';
-    }
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }

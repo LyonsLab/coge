@@ -5,6 +5,7 @@ use DBIxProfiler;
 
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw( commify );
 use CGI;
 use CGI::Ajax;
 use HTML::Template;
@@ -1639,14 +1640,6 @@ sub generate_feat_info {
     }
     my $html = $feat->annotation_pretty_print_html( gstid => $dsg->type->id );
     return $html;
-}
-
-sub commify {
-    my $input = shift;
-    $input = reverse $input;
-    $input =~ s<(\d\d\d)(?=\d)(?!\d*\.)><$1,>g;
-    return scalar reverse $input;
-
 }
 
 sub has_cds {

@@ -7,6 +7,7 @@ use Getopt::Long;
 use File::Path;
 use URI::Escape::JavaScript qw(escape unescape);
 use CoGe::Accessory::Web qw(get_defaults);
+use CoGe::Accessory::Utils qw( commify );
 
 use vars qw($staging_dir $install_dir $data_file
   $name $description $version $restricted
@@ -539,10 +540,4 @@ sub detect_type {
     return 'deletion'  if ( length $ref > length $alt );
     return 'insertion' if ( length $ref < length $alt );
     return 'unknown';
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }

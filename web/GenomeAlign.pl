@@ -4,7 +4,7 @@ use strict;
 use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
-
+use CoGe::Accessory::Utils qw( commify );
 use CGI;
 use DBI;
 use Data::Dumper;
@@ -238,8 +238,3 @@ sub gen_data {
     return qq{<font class="loading">$message. . .</font>};
 }
 
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
-}

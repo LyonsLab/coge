@@ -8,6 +8,7 @@ use Data::Dumper;
 use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw( commify );
 use DBI;
 use Data::Dumper;
 no warnings 'redefine';
@@ -353,11 +354,4 @@ sub get_genome_info {
     }
     $html .= "</table>";
     return $html;
-}
-
-sub commify {
-    my $input = shift;
-    $input = reverse $input;
-    $input =~ s<(\d\d\d)(?=\d)(?!\d*\.)><$1,>g;
-    return scalar reverse $input;
 }

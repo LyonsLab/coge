@@ -4,6 +4,7 @@ use strict;
 use CGI;
 use CoGeX;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw( commify );
 use HTML::Template;
 use JSON::XS;
 use Sort::Versions;
@@ -483,11 +484,4 @@ sub experimentcmp {
     versioncmp( $b->version, $a->version )
       || $a->name cmp $b->name
       || $b->id cmp $a->id;
-}
-
-# FIXME this routine is duplicated elsewhere
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }

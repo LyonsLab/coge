@@ -9,6 +9,7 @@ use File::Basename;
 use URI::Escape;
 use URI::Escape::JavaScript qw(escape unescape);
 use CoGe::Accessory::Web qw(get_defaults);
+use CoGe::Accessory::Utils qw( commify units );
 use List::Util qw( min max );
 use Benchmark;
 
@@ -602,27 +603,4 @@ sub process_gff_file {
     close($in);
     print $log "log: Processed " . commify($line_num) . " total lines\n";
     return $total_annot;
-}
-
-sub units {
-    my $val = shift;
-
-    if ( $val < 1024 ) {
-        return $val;
-    }
-    elsif ( $val < 1024 * 1024 ) {
-        return ceil( $val / 1024 ) . 'Kb';
-    }
-    elsif ( $val < 1024 * 1024 * 1024 ) {
-        return ceil( $val / ( 1024 * 1024 ) ) . 'Mb';
-    }
-    else {
-        return ceil( $val / ( 1024 * 1024 * 1024 ) ) . 'Gb';
-    }
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }

@@ -6,6 +6,7 @@ use base 'DBIx::Class::Core';
 
 #use CoGeX::ResultSet::Genome;
 use CoGe::Accessory::Storage qw( get_genome_seq get_genome_file );
+use CoGe::Accessory::Web qw( commify );
 use Data::Dumper;
 use Text::Wrap;
 use Carp;
@@ -993,13 +994,6 @@ sub translation_type {
         my $trans_type = $ds->translation_type;
         return $trans_type if $trans_type;
     }
-}
-
-sub commify {
-    my $self = shift;
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }
 
 sub distinct_feature_type_ids {

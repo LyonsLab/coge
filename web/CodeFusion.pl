@@ -6,10 +6,10 @@ use CoGe::Accessory::LogUser;
 use HTML::Template;
 use Data::Dumper;
 use CGI::Ajax;
-
 #use CoGeX;
 use Benchmark;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw( commify );
 use CoGe::Accessory::genetic_code;
 use Statistics::Basic::Mean;
 use File::Path;
@@ -401,12 +401,6 @@ sub sort_nt3 {
         $val = 3;
     }
     return $val;
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }
 
 sub color_by_usage {
