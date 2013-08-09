@@ -6,7 +6,7 @@ use base 'DBIx::Class::Core';
 
 #use CoGeX::ResultSet::Genome;
 use CoGe::Accessory::Storage qw( get_genome_seq get_genome_file );
-use CoGe::Accessory::Web qw( commify );
+use CoGe::Accessory::Utils qw( commify );
 use Data::Dumper;
 use Text::Wrap;
 use Carp;
@@ -897,14 +897,14 @@ sub chr_info {
         my $chr    = $gs->chromosome;
         my $length = $gs->sequence_length;
         $total_length += $length;
-        $length = $self->commify($length);
+        $length = commify($length);
         $chr_list .= qq{$chr:  $length bp<br>};
         $count++;
     }
     $html .=
         qq{Chromosome count: $chr_num<br>}
       . qq{Total length: }
-      . $self->commify($total_length) . " bp";
+      . commify($total_length) . " bp";
     $html .= "<br>" . qq{-----------<br>Chr:   (length)<br>} . $chr_list
       unless $summary;
     return $html;

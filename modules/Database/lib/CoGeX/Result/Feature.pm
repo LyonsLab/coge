@@ -669,7 +669,7 @@ sub annotation_pretty_print_html {
 
 #    $location .= join (", ", map {$_->start."-".$_->stop} sort {$a->start <=> $b->start} $self->locs);
 		$location .=
-		  $self->commify( $self->start ) . "-" . $self->commify( $self->stop );
+		  commify( $self->start ) . "-" . commify( $self->stop );
 		$location .= " (" . $strand . ")";
 		my $featid = $self->id;
 		$anno_obj->add_Annot(
