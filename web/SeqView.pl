@@ -9,6 +9,7 @@ use POSIX;
 use Data::Dumper;
 use CoGeX;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw( commify );
 
 use vars qw($P $PAGE_NAME $PAGE_TITLE $FORM $USER $coge);
 
@@ -491,11 +492,3 @@ sub generate_gc_info {
     $total_content .= qq{</table>\n};
     return $total_content;
 }
-
-sub commify {
-    my $input = shift;
-    $input = reverse $input;
-    $input =~ s<(\d\d\d)(?=\d)(?!\d*\.)><$1,>g;
-    return scalar reverse $input;
-}
-

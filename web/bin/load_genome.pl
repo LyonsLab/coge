@@ -5,6 +5,7 @@ use strict;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Storage qw( index_genome_file get_tiered_path );
+use CoGe::Accessory::Utils qw( commify units );
 use Roman;
 use Data::Dumper;
 use Getopt::Long;
@@ -440,29 +441,6 @@ sub process_fasta_file {
     close($in);
 
     return $totalLength;
-}
-
-sub units {
-    my $val = shift;
-
-    if ( $val < 1024 ) {
-        return $val;
-    }
-    elsif ( $val < 1024 * 1024 ) {
-        return ceil( $val / 1024 ) . 'Kb';
-    }
-    elsif ( $val < 1024 * 1024 * 1024 ) {
-        return ceil( $val / ( 1024 * 1024 ) ) . 'Mb';
-    }
-    else {
-        return ceil( $val / ( 1024 * 1024 * 1024 ) ) . 'Gb';
-    }
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }
 
 sub execute {

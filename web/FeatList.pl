@@ -9,6 +9,7 @@ use Spreadsheet::WriteExcel;
 use CoGeX;
 use CoGeX::Result::Feature;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw( commify );
 
 use vars qw($P $PAGE_TITLE $PAGE_NAME
   $TEMPDIR $TEMPURL $USER $DATE $BASEFILE $coge $cogeweb $FORM %FUNCTION);
@@ -845,10 +846,4 @@ sub save_FeatList_settings {
         page => $PAGE_NAME,
         coge => $coge
     );
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }

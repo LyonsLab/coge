@@ -8,7 +8,7 @@ use CoGeX;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Web;
-
+use CoGe::Accessory::Utils qw( commify );
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
@@ -3569,12 +3569,6 @@ sub check_address_validity {
       ? 'valid'
       : 'invalid';
     return $validity;
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }
 
 sub get_dotplot {

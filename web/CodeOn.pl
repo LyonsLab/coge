@@ -5,6 +5,7 @@ use CoGeX;
 use CoGeX::Result::Feature;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw( commify );
 use CGI;
 use CGI::Ajax;
 use Data::Dumper;
@@ -459,12 +460,6 @@ sub get_features {
     }
 
     return \%return_data, \%feats, \%dsgs;
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }
 
 sub get_color {

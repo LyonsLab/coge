@@ -16,6 +16,7 @@ no warnings 'redefine';
 use CoGe::Accessory::Web;
 use CoGe::Accessory::genetic_code;
 use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Utils qw( commify );
 use CoGeX;
 
 use vars
@@ -655,12 +656,6 @@ sub get_wobble_gc_seq {
         $wobbles .= $chr;
     }
     return ( get_gc_seq( seq => $wobbles ) );
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }
 
 1;

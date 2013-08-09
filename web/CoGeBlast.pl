@@ -5,6 +5,7 @@ no warnings('redefine');
 
 use CoGeX;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw( commify );
 use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
 use CoGe::Graphics::GenomeView;
@@ -2515,13 +2516,6 @@ qq{<span class=link onclick="\$('#org_desc').val('$_').focus();">$_</span>}
     #     }
     #    $html .= "</table>";
     return $html;
-}
-
-sub commify {
-    my $input = shift;
-    $input = reverse $input;
-    $input =~ s<(\d\d\d)(?=\d)(?!\d*\.)><$1,>g;
-    return scalar reverse $input;
 }
 
 sub export_hsp_info {

@@ -7,6 +7,7 @@ use Getopt::Long;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::SynMap_report;
+use CoGe::Accessory::Utils qw( commify );
 use DBI;
 use Data::Dumper;
 use DBI;
@@ -1657,12 +1658,6 @@ sub draw_boxes {
         $gd->rectangle( @$box, $black );
     }
 
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }
 
 #Print out info on script usage
