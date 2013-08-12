@@ -160,6 +160,10 @@ function cancel_job() {
         .filter(":contains('Running')")
         .parent();
 
+    var checked = rows.children()
+        .filter("td:nth-child(1)")
+        .find("input");
+
     var status = rows.children()
         .filter("td:nth-child(5)");
 
@@ -181,6 +185,8 @@ function cancel_job() {
                         var item = $(status.get(index));
                         item.text(data.status)
                             .fadeIn(2000);
+
+                        checked.attr("checked", false);
                     }
                 }
             });
