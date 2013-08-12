@@ -2816,12 +2816,12 @@ sub get_results {
         $results->param( xlabel      => $x_label );
 
         if ($flip) {
-            $results->param( yorg_name => $org_name2 );
-            $results->param( xorg_name => $org_name1 );
-        }
-        else {
             $results->param( yorg_name => $org_name1 );
             $results->param( xorg_name => $org_name2 );
+        }
+        else {
+            $results->param( yorg_name => $org_name2 );
+            $results->param( xorg_name => $org_name1 );
         }
 
         $results->param( dotplot   => $tmp );
