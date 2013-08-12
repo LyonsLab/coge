@@ -679,7 +679,7 @@ function update_dialog(request, identifier, formatter, args) {
             }
         }
 
-        if (!dialog.dialog('isOpen') {
+        if (!dialog.dialog('isOpen')) {
             return;
         }
 
