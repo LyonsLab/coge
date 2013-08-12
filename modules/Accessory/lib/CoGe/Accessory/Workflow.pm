@@ -8,6 +8,12 @@ use Moose;
 # Attributes
 has 'workflow_id' => ( is => 'ro', );
 
+has 'id' => (
+    is       => 'ro',
+    isa      => 'Int',
+    required => 1,
+);
+
 has 'name' => (
     is       => 'ro',
     isa      => 'Str',
