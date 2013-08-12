@@ -558,7 +558,7 @@ function synmap_formatter(item) {
         job_status.addClass('bold');
     } else if (item.status == 'running') {
         job_status.append(item.status);
-        job_status.addClass('down');
+        job_status.addClass('running');
         job_status.addClass('bold');
     } else if (item.status == 'skipped') {
         job_status.append(item.status);
