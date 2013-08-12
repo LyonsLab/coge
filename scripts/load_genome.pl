@@ -1,6 +1,5 @@
 #!/usr/bin/perl -w
 
-use DBI;
 use strict;
 use CoGeX;
 use CoGe::Accessory::Web;
@@ -10,7 +9,7 @@ use Roman;
 use Data::Dumper;
 use Getopt::Long;
 use File::Path;
-use URI::Escape::JavaScript qw(escape unescape);
+use URI::Escape::JavaScript qw(unescape);
 use POSIX qw(ceil);
 use Benchmark;
 
