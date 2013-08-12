@@ -679,6 +679,10 @@ function update_dialog(request, identifier, formatter, args) {
             }
         }
 
+        if (!dialog.dialog('isOpen') {
+            return;
+        }
+
         if (current_status == "completed") {
             fetch_results(true);
         } else if (current_status == "failed" || current_status == "error"
