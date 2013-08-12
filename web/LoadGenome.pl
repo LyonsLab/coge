@@ -1,6 +1,6 @@
 #! /usr/bin/perl -w
 
-# NOTE: this file shares a lot of code with LoadExperiment.pl, replicate changes when applicable.
+# NOTE: this file shares a lot of code with LoadExperiment.pl & LoadAnnotation.pl, replicate changes when applicable.
 
 use strict;
 use CGI;
@@ -11,13 +11,14 @@ use JSON::XS;
 use Sort::Versions;
 use File::Path qw(mkpath);
 use File::Copy qw(copy);
-use URI::Escape::JavaScript qw(escape unescape);
+use URI::Escape::JavaScript qw(escape);
+use LWP::Simple;
+use Data::GUID;
 no warnings 'redefine';
 
 use vars qw(
-  $P $PAGE_TITLE
-  $TEMPDIR $BINDIR $USER $coge $FORM
-  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE
+  $P $PAGE_TITLE $TEMPDIR $BINDIR $USER $coge $FORM
+  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $OPEN_STATUS
 );
 
 $PAGE_TITLE = 'LoadGenome';
@@ -30,10 +31,17 @@ $FORM = new CGI;
     page_title => $PAGE_TITLE
 );
 
-$CONFIGFILE = $ENV{COGE_HOME} . 'coge.conf';
-$ENV{PATH}  = $P->{COGEDIR};
-$TEMPDIR    = $P->{TEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/';
-$BINDIR     = $P->{BINDIR};
+$CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
+$BINDIR     = $P->{COGEDIR} . '/scripts/'; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
+
+# Generate a unique session ID for this load (issue 177).
+# Use existing ID if being passed in with AJAX request.  Otherwise generate
+# a new one.  If passed-in as url parameter then open status window
+# automatically.
+$OPEN_STATUS = (defined $FORM->param('load_id'));
+$LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : Data::GUID->new->as_hex );
+$LOAD_ID =~ s/^0x//;
+$TEMPDIR    = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 
 $MAX_SEARCH_RESULTS = 100;
 
@@ -43,9 +51,8 @@ $MAX_SEARCH_RESULTS = 100;
     load_from_ftp  => \&load_from_ftp,
     ftp_get_file   => \&ftp_get_file,
     upload_file    => \&upload_file,
-
-    #	search_ncbi_nucleotide	=> \&search_ncbi_nucleotide,
-    # search_ncbi_taxonomy	=> \&search_ncbi_taxonomy,
+    #search_ncbi_nucleotide	=> \&search_ncbi_nucleotide,
+    #search_ncbi_taxonomy	=> \&search_ncbi_taxonomy,
     load_genome          => \&load_genome,
     get_sequence_types   => \&get_sequence_types,
     create_sequence_type => \&create_sequence_type,
@@ -54,10 +61,71 @@ $MAX_SEARCH_RESULTS = 100;
     search_organisms     => \&search_organisms,
     search_users         => \&search_users,
     get_sources          => \&get_sources,
-    get_load_genome_log  => \&get_load_genome_log,
+    get_load_log         => \&get_load_log,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
+
+sub generate_html {
+    my $html;
+    my $template =
+      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+    $template->param( PAGE_TITLE => $PAGE_TITLE );
+    $template->param( HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+    my $name = $USER->user_name;
+    $name = $USER->first_name if $USER->first_name;
+    $name .= ' ' . $USER->last_name
+      if ( $USER->first_name && $USER->last_name );
+    $template->param(
+        USER     => $name,
+        LOGO_PNG => $PAGE_TITLE . "-logo.png",
+    );
+    $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
+    my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+    $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
+
+    $template->param( BODY       => generate_body() );
+    $template->param( ADJUST_BOX => 1 );
+
+    $html .= $template->output;
+    return $html;
+}
+
+sub generate_body {
+    if ( $USER->user_name eq 'public' ) {
+        my $template =
+          HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+        $template->param(
+            PAGE_NAME => "$PAGE_TITLE.pl",
+            LOGIN     => 1
+        );
+        return $template->output;
+    }
+
+    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
+        url => $P->{SERVER} . "$PAGE_TITLE.pl?load_id=$LOAD_ID"
+    );
+
+    my $template =
+      HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+    $template->param(
+        MAIN          => 1,
+        PAGE_NAME     => $PAGE_TITLE . '.pl',
+        LOAD_ID       => $LOAD_ID,
+        OPEN_STATUS   => $OPEN_STATUS,
+        LINK          => $tiny_link,
+        SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
+        ENABLE_NCBI              => 1,
+        DEFAULT_TAB              => 0,
+        MAX_IRODS_LIST_FILES     => 100,
+        MAX_IRODS_TRANSFER_FILES => 30,
+        MAX_FTP_FILES            => 30
+    );
+
+    $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
+
+    return $template->output;
+}
 
 sub irods_get_path {
     my %opts      = @_;
@@ -382,7 +450,9 @@ sub load_genome {
     my $keep_headers = $opts{keep_headers};
     my $items        = $opts{items};
 
-#Added EL: 7/8/2013.  Solves the problem when restricted is unchecked.  Otherwise, command-line call fails with '-organism_id' being passed to restricted as option
+	# Added EL: 7/8/2013.  Solves the problem when restricted is unchecked.  
+	# Otherwise, command-line call fails with '-organism_id' being passed to 
+	# restricted as option
     $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
 
     return unless $items;
@@ -398,10 +468,11 @@ sub load_genome {
     }
 
     # Setup staging area and log file
-    my $stagepath = $TEMPDIR . 'staging/';
-    my $i;
-    for ( $i = 1 ; -e "$stagepath$i" ; $i++ ) { }
-    $stagepath .= $i;
+    my $stagepath = $TEMPDIR . '/staging/';
+# mdb removed 8/9/13 issue 177
+#    my $i;
+#    for ( $i = 1 ; -e "$stagepath$i" ; $i++ ) { }
+#    $stagepath .= $i;
     mkpath $stagepath;
 
     my $logfile = $stagepath . '/log.txt';
@@ -464,16 +535,14 @@ sub load_genome {
         exit;
     }
 
-    return $i;
+    return 1;#$i; mdb changed 8/9/13 issue 77
 }
 
-sub get_load_genome_log {
-    my %opts    = @_;
-    my $load_id = $opts{load_id};
+sub get_load_log {
+    #my %opts    = @_;
+    #print STDERR "get_load_log $LOAD_ID\n";
 
-    #	print STDERR "get_load_genome_log $load_id\n";
-
-    my $logfile = $TEMPDIR . "staging/$load_id/log.txt";
+    my $logfile = $TEMPDIR . "staging/log.txt";
     open( my $fh, $logfile )
       or
       return encode_json( { status => -1, log => ["Error opening log file"] } );
@@ -641,61 +710,4 @@ sub create_source {
     return unless ($source);
 
     return $name;
-}
-
-sub generate_html {
-    my $html;
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( PAGE_TITLE => $PAGE_TITLE );
-    $template->param( HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= ' ' . $USER->last_name
-      if ( $USER->first_name && $USER->last_name );
-    $template->param(
-        USER     => $name,
-        LOGO_PNG => $PAGE_TITLE . "-logo.png",
-    );
-    $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-    my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-    $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
-
-    $template->param( BODY       => generate_body() );
-    $template->param( ADJUST_BOX => 1 );
-
-    $html .= $template->output;
-    return $html;
-}
-
-sub generate_body {
-    if ( $USER->user_name eq 'public' ) {
-        my $template =
-          HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-        $template->param(
-            PAGE_NAME => "$PAGE_TITLE.pl",
-            LOGIN     => 1
-        );
-        return $template->output;
-    }
-
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
-    $template->param(
-        MAIN          => 1,
-        PAGE_NAME     => $PAGE_TITLE . '.pl',
-        SUPPORT_EMAIL => $P->{SUPPORT_EMAIL}
-    );
-
-    $template->param(
-        ENABLE_NCBI              => 1,
-        DEFAULT_TAB              => 0,
-        MAX_IRODS_LIST_FILES     => 100,
-        MAX_IRODS_TRANSFER_FILES => 30,
-        MAX_FTP_FILES            => 30
-    );
-
-    $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
-
-    return $template->output;
 }
