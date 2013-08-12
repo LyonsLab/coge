@@ -35,6 +35,10 @@ $(document).ready(function() {
 	}
 	alreadyDone = 1;
 	
+	if (!'<TMPL_VAR NAME="LOAD_ID">') {
+		console.error('FileSelect widget error: LOAD_ID not defined!')
+	}
+	
 	$("#tabs").tabs({selected:<TMPL_VAR NAME='DEFAULT_TAB'>});
 	
 	irods_get_path();
@@ -45,8 +49,8 @@ $(document).ready(function() {
 	$('#input_upload_file').fileupload({
     	dataType: 'json',
     	formData: {
-    		jquery_ajax: 1,
     		fname: 'upload_file',
+    		load_id: '<TMPL_VAR NAME="LOAD_ID">'
     	},
     	add:
     		function(e, data) {
@@ -171,7 +175,6 @@ function irods_get_path (path) {
 
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'irods_get_path',
 			path: path,
 			timestamp: new Date().getTime()
@@ -258,9 +261,9 @@ function irods_get_path (path) {
 function irods_get_file(path) {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'irods_get_file',
 			path: path,
+			load_id: '<TMPL_VAR NAME="LOAD_ID">'
 		},
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
@@ -274,9 +277,9 @@ function irods_get_all_files (path) {
 
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'irods_get_path',
 			path: path,
+			load_id: '<TMPL_VAR NAME="LOAD_ID">',
 			timestamp: new Date().getTime()
 		},
 		success : function(data) {
@@ -329,8 +332,8 @@ function units(val) {
 function ftp_get_file(url, username, password) {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'ftp_get_file',
+			load_id: '<TMPL_VAR NAME="LOAD_ID">',
 			url: url,
 			username: username,
 			password: password,
@@ -358,7 +361,6 @@ function load_from_ftp() {
 
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'load_from_ftp',
 			url: url,
 			timestamp: timestamp,
@@ -402,7 +404,6 @@ function load_from_ncbi() {
 	var accn = $('#input_accn').val();
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'ncbi_search',
 			accn: accn,
 			timestamp: new Date().getTime()

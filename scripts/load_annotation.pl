@@ -7,7 +7,7 @@ use Getopt::Long;
 use File::Path;
 use File::Basename;
 use URI::Escape;
-use URI::Escape::JavaScript qw(escape unescape);
+use URI::Escape::JavaScript qw(unescape);
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Utils qw( commify units );
 use List::Util qw( min max );
@@ -18,14 +18,13 @@ my $t1 = new Benchmark;
 my $GO          = 1;
 my $DEBUG       = 1;
 my $DB_BATCH_SZ = 10 * 1000;
-use vars qw($staging_dir $install_dir $data_file
+use vars qw($staging_dir $data_file
   $name $description $version $restricted
   $gid $source_name $user_name $config
   $host $port $db $user $pass);
 
 GetOptions(
     "staging_dir=s" => \$staging_dir,
-    "install_dir=s" => \$install_dir,
     "data_file=s"   => \$data_file,      # data file (JS escape)
     "name=s"        => \$name,           # experiment name (JS escaped)
     "desc=s"        => \$description,    # experiment description (JS escaped)

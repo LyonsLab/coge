@@ -13,10 +13,10 @@ $(document).ready(function(){
 	timestamps = new Array();
 
 	$.ajaxSetup({
-		type: "POST",
+		type: "GET",
 		url: '<TMPL_VAR NAME='PAGE_NAME'>',
 		dataType: "html",
-		cache: false,
+		cache: false
 	});
 	
 	$(".dialog_box").dialog({
@@ -28,7 +28,7 @@ $(document).ready(function(){
 		// position: [$(window).width()/2-250, 200]
   	});
 
-  	$("#load_genome_dialog").dialog({modal: true});
+  	$("#load_dialog").dialog({modal: true});
 	
 	set_input('edit_organism');
 	set_input('edit_source');
@@ -53,6 +53,12 @@ $(document).ready(function(){
 	//$('#tax_tree')
 		//.jstree({ plugins: ["themes"] })
 		//.jstree("set_theme", "classic");
+	
+	// Open status dialog
+	if ('<TMPL_VAR NAME="OPEN_STATUS">') {
+		$('#load_dialog').dialog('open'); 
+		setTimeout(function() { get_load_log(); }, 0);
+	}
 });
 
 function file_selected(filename, url) {
@@ -70,7 +76,6 @@ function clear_list() {
 function get_sequence_types(id) {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'get_sequence_types'
 		},
 		success : function(html) {
@@ -87,7 +92,6 @@ function create_sequence_type() {
 	var desc = $('#edit_type_desc').val();
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'create_sequence_type',
 			name: name,
 			desc: desc,
@@ -107,7 +111,6 @@ function create_source() {
 	var link = $('#edit_source_link').val();
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'create_source',
 			name: name,
 			desc: desc,
@@ -146,7 +149,6 @@ function create_organism() {
 
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'create_organism',
 			name: name,
 			desc: desc,
@@ -220,11 +222,11 @@ function load_genome() {
 	var json = JSON.stringify(items);
 	
 	reset_log();
-
+	
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'load_genome',
+			load_id: '<TMPL_VAR NAME="LOAD_ID">',
 			name: name,
 			description: description,
 			link: link,
@@ -238,24 +240,27 @@ function load_genome() {
 			items: json,
 			timestamp: new Date().getTime()
 		},
-		success : function(load_id) {
-			$('#load_genome_dialog').dialog('open'); 
-			setTimeout(function() { get_load_genome_log(load_id); }, 1000);
+		success : function() {
+			// Add load_id to browser URL
+			window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?load_id=<TMPL_VAR NAME='LOAD_ID'>");
+			
+			// Open status dialog
+			$('#load_dialog').dialog('open'); 
+			setTimeout(function() { get_load_log(); }, 1000);
 		}
 	});
 }
 
-function get_load_genome_log(load_id) {
+function get_load_log() {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			dataType: 'text',
-			fname: 'get_load_genome_log',
-			load_id: load_id
+			fname: 'get_load_log',
+			load_id: '<TMPL_VAR NAME="LOAD_ID">'
 		},
 		success : function(data) {
 			if (!data) { // workaround for issue #45, jquery intermittently dropping payload
-				setTimeout(function() { get_load_genome_log(load_id); }, 1000);
+				setTimeout(function() { get_load_log(); }, 1000);
 				return;
 			}
 
@@ -279,7 +284,7 @@ function get_load_genome_log(load_id) {
 				$('#cancel_load_genome_button').fadeIn();
 			}
 			else {
-				setTimeout(function() { get_load_genome_log(load_id); }, 1000);
+				setTimeout(function() { get_load_log(); }, 1000);
 			}
 		}
 	});	
@@ -311,7 +316,6 @@ function search_organisms (search_term) {
 		timestamps['search_organisms'] = new Date().getTime();
 		$.ajax({
 			data: {
-				jquery_ajax: 1,
 				fname: 'search_organisms',
 				search_term: search_term,
 				timestamp: timestamps['search_organisms']
@@ -330,7 +334,6 @@ function search_users (search_term) {
 	timestamps['search_users'] = new Date().getTime();
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'search_users',
 			search_term: search_term,
 			timestamp: timestamps['search_users']
@@ -348,7 +351,6 @@ function search_users (search_term) {
 function get_sources () {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'get_sources',
 		},
 		success : function(data) {
@@ -482,7 +484,6 @@ function search_ncbi_taxonomy (search_term) {
 	
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'search_ncbi_taxonomy',
 			search_term: search_term,
 			timestamp: timestamps['search_ncbi_taxonomy']
@@ -794,16 +795,19 @@ function sort_name (a,b) {
 
 
 
-<div id="load_genome_dialog" class="dialog_box" title="Loading Genome ..." style="display:none;">
+<div id="load_dialog" class="dialog_box" title="Loading Genome ..." style="display:none;">
   <div id="load_genome_log" class="small ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
   </div>
   <br>
-  <span id="loading_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
+  <div id="loading_msg" class="small">
+    Please wait ... <img src="picts/ajax-loader.gif"/><br>
+    Link: <a href='<TMPL_VAR NAME="LINK">'><TMPL_VAR NAME="LINK"></a>
+  </div>
   <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
   <input id="genome_id" type="hidden" /> 
-  <span id="ok_button" onClick="$('#load_genome_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all">OK</span>
+  <span id="ok_button" onClick="$('#load_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all">OK</span>
   <span id="finish_load_genome_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all">Continue to GenomeInfo</span>
-  <span id="cancel_load_genome_button" onClick="$('#load_genome_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
+  <span id="cancel_load_genome_button" onClick="$('#load_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
 </div>
 
 

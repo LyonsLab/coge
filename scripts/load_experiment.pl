@@ -5,7 +5,7 @@ use Data::Dumper;
 use CoGeX;
 use Getopt::Long;
 use File::Path;
-use URI::Escape::JavaScript qw(escape unescape);
+use URI::Escape::JavaScript qw(unescape);
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Utils qw( commify );
 
