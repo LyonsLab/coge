@@ -40,8 +40,9 @@ sub create_workflow {
     my ( $self, %opts ) = @_;
 
     my $workflow = CoGe::Accessory::Workflow->new(
-        name    => $opts{name},
-        logfile => $opts{logfile}
+        id    => $opts{id},
+        name  => $opts{name},
+        logfile => $opts{logfile},
     );
 
     return $workflow;
@@ -56,9 +57,10 @@ sub submit_workflow {
         {
             request => 'schedule',
             data    => {
-                'name'    => $workflow->name,
-                'logfile' => $workflow->logfile,
-                'jobs'    => $jobs,
+                id      => $workflow->id,
+                name    => $workflow->name,
+                logfile => $workflow->logfile,
+                jobs    => $jobs,
             },
         }
     );
@@ -97,7 +99,13 @@ sub terminate {
     my ( $self, $id ) = @_;
     my ( $socket, $resp, $cmd, $msg );
 
-    $cmd = encode_json { cmd => 'TERM', id => $id };
+    $cmd = encode_json(
+        {   request => 'cancel',
+            data => {
+                id => $id
+            },
+        }
+    );
     $socket = zmq_socket( $self->_context, ZMQ_REQ );
 
     zmq_connect( $socket, _connection_string( $self->host, $self->port ) );
@@ -110,7 +118,7 @@ sub terminate {
 }
 
 sub get_status {
-    my ( $self, $id ) = @_;
+    my ($self, $id ) = @_;
     my ( $socket, $reply, $msg );
 
     $socket = zmq_socket( $self->_context, ZMQ_REQ );
@@ -119,7 +127,9 @@ sub get_status {
     my $request = encode_json(
         {
             request => 'get_status',
-            data    => $id,
+            data    => {
+                id => $id
+            },
         }
     );
 
