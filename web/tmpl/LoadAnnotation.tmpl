@@ -38,6 +38,7 @@ $(document).ready(function(){
 	
 	// Open status dialog
 	if ('<TMPL_VAR NAME="OPEN_STATUS">') {
+		$('#loading_msg').hide();
 		$('#load_dialog').dialog('open'); 
 		setTimeout(function() { get_load_log(); }, 0);
 	}
@@ -339,8 +340,8 @@ function more() {
   </div>
   <br>
   <div id="loading_msg" class="small">
-    Please wait ... <img src="picts/ajax-loader.gif"/><br>
-    Link: <a href='<TMPL_VAR NAME="LINK">'><TMPL_VAR NAME="LINK"></a>
+    <span class="small" style="float:right;">Link: <a href='<TMPL_VAR NAME="LINK">'><TMPL_VAR NAME="LINK"></a></span>
+    Please wait ... <img src="picts/ajax-loader.gif"/>
   </div>
   <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
   <span id="error_msg" style="display:none;">An error occurred <img src="picts/thumbs_down.png"></span>
