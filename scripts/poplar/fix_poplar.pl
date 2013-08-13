@@ -10,8 +10,8 @@ my %cmap;
 my $i = 1;
 map { $cmap{ $chrs[ $_ - 1 ] } = ( $_ < 10 ) ? '0' . $_ : $_ } 1 .. 19;
 
-my $connstr = 'dbi:mysql:genomes:biocon:3306';
-my $s = CoGeX->connect( $connstr, 'cnssys', 'CnS' );
+my $connstr = 'dbi:mysql:DB:HOST:PORT';
+my $s = CoGeX->connect( $connstr, 'USER', 'PASSWORD' );
 
 $s->storage->debug(0);
 

@@ -14,8 +14,8 @@ GetOptions(
 	   "source=i"=>\$source,
 	   "skip_name=s"=>\@skip_names,
 	   );
-my $connstr = 'dbi:mysql:dbname=coge;host=biocon.berkeley.edu;port=3306';
-$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+my $connstr = 'dbi:mysql:dbname=coge;host=HOST;port=PORT';
+$coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 
 unless (-r $file)
   {

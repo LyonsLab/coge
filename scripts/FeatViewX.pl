@@ -29,8 +29,8 @@ if (!$USER || $USER =~ /public/i)
     $restricted_orgs{papaya} = 1;
   }
 
-my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
-my $DB = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
+my $DB = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 #$DB->storage->debug(1);
 
 my $pj = new CGI::Ajax(
