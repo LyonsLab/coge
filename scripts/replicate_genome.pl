@@ -24,8 +24,8 @@ Options:
     exit;
 }
 
-my $connstr = 'dbi:mysql:dbname=coge;host=localhost;port=3306';
-my $coge = CoGeX->connect( $connstr, 'coge', '' );
+my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
+my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);

@@ -26,8 +26,8 @@ unless ( -r $mauve_bin ) {
 
 help() unless ( $dsgids && @$dsgids >= 2 );
 
-my $connstr = 'dbi:mysql:dbname=coge;host=genomevolution.org;port=3306';
-$coge = CoGeX->connect( $connstr, 'coge', '' );
+my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
+my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 $out_file = "alignment.aln" unless $out_file;
 
 #get_and_build_faa(dsgids=>$dsgids, file=>$faa_file, coge=>$coge);

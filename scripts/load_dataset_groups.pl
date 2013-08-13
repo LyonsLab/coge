@@ -5,7 +5,7 @@ use Data::Dumper;
 use DBI;
 
 my $file = '/home/elyons/projects/CoGeX/tmp/dataset_groups.txt';
-my $connstr = 'dbi:mysql:dbname=coge;host=biocon.berkeley.edu;port=PORT';
+my $connstr = 'dbi:mysql:dbname=DB;host=localhost;port=PORT';
 my $dbi = DBI->connect($connstr, 'USER', 'PASSWORD' );
 my $group_insert = $dbi->prepare(qq{
 INSERT INTO dataset_group (version, organism_id, genomic_sequence_type_id) VALUES (?,?,?)

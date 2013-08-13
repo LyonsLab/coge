@@ -4,10 +4,10 @@ use MyDB;
 
 # set up our database
 my $dbo = new MyDB(
-    dbhost => 'biocon',
-    dbuser => 'bcthomas',
-    dbpw   => 'in2gfdb',
-    dbname => 'genomes'
+    dbhost => '',
+    dbuser => '',
+    dbpw   => '',
+    dbname => ''
 );
 
 open( OUT, ">x.txt" ) or die;
