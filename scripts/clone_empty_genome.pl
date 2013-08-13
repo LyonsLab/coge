@@ -3,8 +3,8 @@
 use CoGeX;
 use strict;
 
-my $connstr = 'dbi:mysql:dbname=coge;host=genomevolution.org;port=3306';
-my $coge = CoGeX->connect($connstr, 'elyons', 'eagle7' );
+my $connstr = 'dbi:mysql:dbname=coge;host=genomevolution.org;port=PORT';
+my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 my $GO =1;
 
 my $dsgid = shift;

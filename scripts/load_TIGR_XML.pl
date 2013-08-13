@@ -70,8 +70,8 @@ unless ($dataset_version)
 
 show_help() if $help; 
 
-my $connstr = 'dbi:mysql:dbname=coge;host=localhost;port=3306';
-$coge = CoGeX->connect($connstr, 'elyons', 'eagle7' );
+my $connstr = 'dbi:mysql:dbname=coge;host=localhost;port=PORT';
+$coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 
 my $data_source = get_data_source(name=>$data_source_name, desc=>$data_source_desc, link=>$data_source_link, id=>$data_source_id);
 
