@@ -36,7 +36,13 @@ sub refseq_config {
     my $genome = $db->resultset('Genome')->find($gid);
     return unless $genome;
 
-    #TODO add permissions check
+    # Check permissions
+    if ( $genome->restricted
+        and ( not defined $user or not $user->has_access_to_genome($genome) ) )
+    {
+      	print STDERR "JBrowse::Configuration::refseq_config access denied to genome $gid\n";
+       	return '{}';
+    }
 
     my @chromosomes;
     foreach my $chr ( sort { $b->sequence_length <=> $a->sequence_length }
@@ -68,6 +74,14 @@ sub track_config {
     # Get genome
     my $genome = $db->resultset('Genome')->find($gid);
     return unless $genome;
+
+    # Check permissions
+    if ( $genome->restricted
+        and ( not defined $user or not $user->has_access_to_genome($genome) ) )
+    {
+      	print STDERR "JBrowse::Configuration::track_config access denied to genome $gid\n";
+       	return '{}';
+    }
 
     my @tracks;
 
@@ -257,7 +271,7 @@ sub track_config {
 
             # CoGe-specific stuff
             onClick =>
-              ( $isSNP ? undef : "ExperimentView.pl?embed=1&eid=$eid" ),
+              ( $isSNP ? '' : "ExperimentView.pl?embed=1&eid=$eid" ),
             showHoverScores => 1,
             coge            => {
                 id      => $eid,
