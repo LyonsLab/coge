@@ -35,8 +35,8 @@ $ENV{PATH} = join ":",
   (
     $P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR} . "SynMap",
     "/usr/bin", "/usr/local/bin");
-$ENV{COGE_HOME} = $P->{COGEDIR};
-my $config = File::Spec->catdir($ENV{COGE_HOME},"coge.conf");
+#$ENV{COGE_HOME} = $P->{COGEDIR};
+#my $config = File::Spec->catdir($ENV{COGE_HOME},"coge.conf");
 #print STDERR Dumper \%ENV;
 
 $TEMPDIR  = $P->{TEMPDIR} . "SynMap";
@@ -163,14 +163,14 @@ DNA_align_2
         my ($feat1) = $coge->resultset('Feature')->find($fid1);
         my ($feat2) = $coge->resultset('Feature')->find($fid2);
         my $max_res;
-        my $ks = new CoGe::Algos::KsCalc(config=>$config);
+        my $ks = new CoGe::Algos::KsCalc(config=>$CONFIG);
         $ks->nwalign_server_port($ports->[$i]);
         $ks->feat1($feat1);
         $ks->feat2($feat2);
 
         #   for (1..5)
         #     {
-        my $res = $ks->KsCalc(config=>$config);    #send in port number?
+        my $res = $ks->KsCalc(config=>$CONFIG);    #send in port number?
         $max_res = $res unless $max_res;
         $max_res = $res
           if $res->{dS} && $max_res->{dS} && $res->{dS} < $max_res->{dS};

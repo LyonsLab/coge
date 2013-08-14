@@ -39,7 +39,8 @@ our (
     $DOTPLOT,       $SVG_DOTPLOT,    $NWALIGN,     $QUOTA_ALIGN,
     $CLUSTER_UTILS, $BLAST2RAW,      $BASE_URL,    $BLAST2BED,
     $SYNTENY_SCORE, $TEMPDIR,        $TEMPURL,     $ALGO_LOOKUP,
-    $GZIP,          $GUNZIP,         $COOKIE_NAME, %FUNCTIONS
+    $GZIP,          $GUNZIP,         $COOKIE_NAME, %FUNCTIONS,
+    $CONFIG
 );
 
 $P = CoGe::Accessory::Web::get_defaults();
@@ -170,8 +171,8 @@ $QUOTA_ALIGN   = $P->{QUOTA_ALIGN};     #the program
 $CLUSTER_UTILS = $P->{CLUSTER_UTILS};   #convert dag output to quota_align input
 $BLAST2RAW     = $P->{BLAST2RAW};       #find local duplicates
 $SYNTENY_SCORE = $P->{SYNTENY_SCORE};
-
-$DOTPLOT     = $P->{DOTPLOT} . " -cf " . $ENV{COGE_HOME} . 'coge.conf';
+$CONFIG = $ENV{COGE_HOME} . 'coge.conf';
+$DOTPLOT     = $P->{DOTPLOT} . " -cf " . $CONFIG;
 $SVG_DOTPLOT = $P->{SVG_DOTPLOT};
 
 #$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
@@ -2032,17 +2033,17 @@ DNA_align_2
         my ($feat1) = $coge->resultset('Feature')->find($fid1);
         my ($feat2) = $coge->resultset('Feature')->find($fid2);
         my $max_res;
-        my $ks = new CoGe::Algos::KsCalc();
+        my $ks = new CoGe::Algos::KsCalc(config=>$CONFIG);
         $ks->nwalign_server_port( $ports->[$i] );
         $ks->feat1($feat1);
         $ks->feat2($feat2);
 
         #	for (1..5)
         #	  {
-        my $res = $ks->KsCalc();    #send in port number?
+        my $res = $ks->KsCalc(config=>$CONFIG);    #send in port number?
         $max_res = $res unless $max_res;
         $max_res = $res
-          if $res->{dS} && $max_res->{dS} && $res->{dS} < $max_res->{dS};
+          if $res && $max_res && $res->{dS} && $max_res->{dS} && $res->{dS} < $max_res->{dS};
 
         #	  }
         unless ($max_res) {
