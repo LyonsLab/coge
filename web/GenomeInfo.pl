@@ -37,6 +37,7 @@ $MAX_SEARCH_RESULTS = 100;
     update_owner       => \&update_owner,
     search_organisms   => \&search_organisms,
     search_users       => \&search_users,
+    delete_genome      => \&delete_genome
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
@@ -61,6 +62,8 @@ sub get_genome_info {
         TYPE           => $genome->type->info,
         SOURCE         => join( ',', map { $_->name } $genome->source ),
         RESTRICTED     => ( $genome->restricted ? 'Yes' : 'No' ),
+        USERS_WITH_ACCESS => ( $genome->restricted ? join(', ', map { $_->display_name } $USER->users_with_access($genome))
+                                                   : 'Everyone' ),
         NAME           => $genome->name,
         DESCRIPTION    => $genome->description,
         DELETED        => $genome->deleted
@@ -418,6 +421,20 @@ sub get_datasets {
     return $template->output;
 }
 
+sub delete_genome {
+    my %opts = @_;
+    my $gid  = $opts{gid};
+    return 0 unless $gid;
+
+    my $genome = $coge->resultset('Genome')->find($gid);
+    return 0 unless $genome;
+    return 0 unless ( $USER->is_admin or $USER->is_owner( dsg => $gid ) );
+    $genome->deleted(!$genome->deleted); # do undelete if already deleted
+    $genome->update;
+
+    return 1;
+}
+
 sub generate_html {
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
@@ -457,15 +474,19 @@ sub generate_body {
 
     my ($first_chr) = $genome->chromosomes;
 
-    my $is_owner_editor = $USER->is_owner_editor( dsg => $genome );
+    my $user_can_edit = $USER->is_admin || $USER->is_owner_editor( dsg => $gid );
+    my $user_can_delete = $USER->is_admin || $USER->is_owner( dsg => $gid );
+
     $template->param(
         GID           => $gid,
         GENOME_INFO   => get_genome_info( genome => $genome ),
         GENOME_DATA   => get_genome_data( genome => $genome ),
         EXPERIMENTS   => get_experiments( genome => $genome ),
         ANNOTATION    => get_datasets( genome => $genome, exclude_seq => 1 ),
-        USER_CAN_EDIT => $is_owner_editor,
-        USER_CAN_ADD => ( !$genome->restricted or $is_owner_editor )
+        USER_CAN_EDIT => $user_can_edit,
+        USER_CAN_ADD  => ( !$genome->restricted or $user_can_edit ),
+        USER_CAN_DELETE => $user_can_delete,
+        DELETED         => $genome->deleted
     );
 
     if ( $USER->is_admin ) {

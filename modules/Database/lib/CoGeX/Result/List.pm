@@ -253,7 +253,7 @@ sub children_by_type {
 }
 
 sub groups
-{ # FIXME: mdb re-added 8/6/13, but will eventually remove with User Profile v2.0
+{ # FIXME: mdb re-added 8/6/13, but need to incorporate into User.pm groups_with_access.
     my $self = shift;
 
     my @groups = ();
@@ -265,7 +265,7 @@ sub groups
 }
 
 sub users
-{ # FIXME: mdb re-added 8/6/13, but will eventually remove with User Profile v2.0
+{ # FIXME: mdb re-added 8/6/13, but need to incorporate into User.pm groups_with_access.
     my $self = shift;
     my %opts = @_;
 
