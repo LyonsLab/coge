@@ -91,6 +91,51 @@ sub run {
     die if $ret;
 }
 
+
+sub batch_add {
+    my %opts = @_;
+    my $buffer = $opts{buffer};
+    my $handle = $opts{handle};
+    my $size = $opts{size};
+    $size //= 500;
+    my $row = $opts{row};
+    my $result;
+
+    if (!$handle) {
+        say STDERR "The database handle is null.";
+        return;
+    }
+
+    push @$buffer, $row if $row;
+
+    #INSERT INTO ks_data (fid1, fid2, dS, dN, dN_dS, protein_align_1, protein_align_2, DNA_align_1, DNA_align_2) values ($fid1, $fid2, "$dS", "$dN", "$dNS", "$palign1", "$palign2", "$dalign1", "$dalign2")
+    if (@$buffer > $size or !$row) {
+        my $cols = shift @$buffer;
+
+        my $query = "INSERT INTO 'ks_data' (fid1, fid2, dS, dN, dN_dS,"
+            . " protein_align_1, protein_align_2, DNA_align_1, DNA_align_2)"
+            . " SELECT "
+            . $cols->[0] . " AS 'fid1', "
+            . $cols->[1] . " AS 'fid2', "
+            . $cols->[2] . " AS 'dS', "
+            . $cols->[3] . " AS 'dN', "
+            . $cols->[4] . " AS 'dN_dS', "
+            . $cols->[5] . " AS 'protein_align_1', "
+            . $cols->[6] . " AS 'protein_align_2', "
+            . $cols->[7] . " AS 'DNA_align_1', "
+            . $cols->[8] . " AS 'DNA_align_2'" if $cols;
+
+        foreach my $row (@$buffer) {
+            $query .= ' UNION SELECT ' . join(', ', @$row);
+        }
+
+        my $result = $handle->do($query) if $query;
+        $buffer = [] if $result;
+    }
+
+    return $buffer;
+}
+
 sub gen_ks_db {
     my %opts    = @_;
     my $infile  = $opts{infile};
@@ -124,6 +169,7 @@ DNA_align_2
     $/ = "\n";
     open( IN, $infile );
     my @data;
+    my $i  = 0;
     while (<IN>) {
 
         next if /^#/;
@@ -137,75 +183,90 @@ DNA_align_2
         }
         next unless $item1[5] eq "CDS" && $item2[5] eq "CDS";
         next if $ksdata->{ $item1[6] }{ $item2[6] };
-        push @data, [ $line[1], $line[5], $item1[6], $item2[6] ];
+        push @{$data[$i]}, [ $line[1], $line[5], $item1[6], $item2[6] ];
+        $i++;
+        $i = 0 if $i == $MAX_PROC;
     }
     close IN;
     my $ports =
-      initialize_nwalign_servers( start_port => 3000, procs => $MAX_PROC );
-    my $pm = new Parallel::ForkManager( $MAX_PROC * 4 );
-    my $i  = 0;
+      initialize_nwalign_servers( start_port => 3000, procs => $MAX_PROC);
+    my $pm = new Parallel::ForkManager( $MAX_PROC);
 
     my $start_time = new Benchmark;
     $dbh = DBI->connect( "dbi:SQLite:dbname=$outfile", "", "" );
-
     $dbh->do("PRAGMA synchronous=OFF");
-    $dbh->do("PRAGMA cache_size = 25000");
+    $dbh->do("PRAGMA cache_size = 250000");
     $dbh->do("PRAGMA count_changes=OFF");
     $dbh->do("PRAGMA journal_mode=MEMORY");
     $dbh->do("PRAGMA temp_store=MEMORY");
 
-    foreach my $item (@data) {
+    foreach my $items (@data) {
         $i++;
-        $i = 0 if $i == $MAX_PROC * 4;
+        $i = 0 if $i == $MAX_PROC;
         $pm->start and next;
-        my ($fid1) = $item->[2] =~ /(^\d+$)/;
-        my ($fid2) = $item->[3] =~ /(^\d+$)/;
-        my ($feat1) = $coge->resultset('Feature')->find($fid1);
-        my ($feat2) = $coge->resultset('Feature')->find($fid2);
-        my $max_res;
-        my $ks = new CoGe::Algos::KsCalc(config=>$config);
-        $ks->nwalign_server_port($ports->[$i]);
-        $ks->feat1($feat1);
-        $ks->feat2($feat2);
 
-        #   for (1..5)
-        #     {
-        my $res = $ks->KsCalc(config=>$config);    #send in port number?
-        $max_res = $res unless $max_res;
-        $max_res = $res
-          if $res->{dS} && $max_res->{dS} && $res->{dS} < $max_res->{dS};
+        my $buffer = [];
 
-        #     }
-        unless ($max_res) {
-            $max_res = {};
-        }
-        my ( $dS, $dN, $dNS ) = ( "NA", "NA", "NA" );
-        if ( keys %$max_res ) {
-            $dS  = $max_res->{dS}      if defined $max_res->{dS};
-            $dN  = $max_res->{dN}      if defined $max_res->{dN};
-            $dNS = $max_res->{'dN/dS'} if defined $max_res->{'dN/dS'};
-        }
+        foreach my $item (@$items) {
+            my $count++;
+            my ($fid1) = $item->[2] =~ /(^\d+$)/;
+            my ($fid2) = $item->[3] =~ /(^\d+$)/;
+            my ($feat1) = $coge->resultset('Feature')->find($fid1);
+            my ($feat2) = $coge->resultset('Feature')->find($fid2);
+            my $max_res;
+            my $ks = new CoGe::Algos::KsCalc(config=>$config);
+            $ks->nwalign_server_port($ports->[$i]);
+            $ks->feat1($feat1);
+            $ks->feat2($feat2);
 
-        #alignments
-        my $dalign1 = $ks->dalign1;    #DNA sequence 1
-        my $dalign2 = $ks->dalign2;    #DNA sequence 2
-        my $palign1 = $ks->palign1;    #PROTEIN sequence 1
-        my $palign2 = $ks->palign2;    #PROTEIN sequence 2
+            #   for (1..5)
+            #     {
+            my $res = $ks->KsCalc(config=>$config);    #send in port number?
+            $max_res = $res unless $max_res;
+            $max_res = $res
+            if $res->{dS} && $max_res->{dS} && $res->{dS} < $max_res->{dS};
 
-        my $insert = qq{
-INSERT INTO ks_data (fid1, fid2, dS, dN, dN_dS, protein_align_1, protein_align_2, DNA_align_1, DNA_align_2) values ($fid1, $fid2, "$dS", "$dN", "$dNS", "$palign1", "$palign2", "$dalign1", "$dalign2")
-};
-
-        my $insert_success = 0;
-        while ( !$insert_success ) {
-            $insert_success = $dbh->do($insert);
-            unless ($insert_success) {
-
-                #               print STDERR $insert;
-                sleep .1;
+            #     }
+            unless ($max_res) {
+                $max_res = {};
             }
+            my ( $dS, $dN, $dNS ) = ( "NA", "NA", "NA" );
+            if ( keys %$max_res ) {
+                $dS  = $max_res->{dS}      if defined $max_res->{dS};
+                $dN  = $max_res->{dN}      if defined $max_res->{dN};
+                $dNS = $max_res->{'dN/dS'} if defined $max_res->{'dN/dS'};
+            }
+
+            #alignments
+            my $dalign1 = $ks->dalign1;    #DNA sequence 1
+            my $dalign2 = $ks->dalign2;    #DNA sequence 2
+            my $palign1 = $ks->palign1;    #PROTEIN sequence 1
+            my $palign2 = $ks->palign2;    #PROTEIN sequence 2
+
+            my $row = [
+                $fid1,
+                $fid2,
+                qq{'$dS'},
+                qq{'$dN'},
+                qq{'$dNS'},
+                qq{'$palign1'},
+                qq{'$palign2'},
+                qq{'$dalign1'},
+                qq{'$dalign2'}
+            ];
+
+            $buffer = batch_add(
+                buffer => $buffer,
+                handle => $dbh,
+                row => $row,
+            );
         }
 
+        # Flush the buffer
+        while (scalar @{$buffer}) {
+            $buffer = batch_add(buffer => $buffer, handle => $dbh);
+            sleep .1;
+        }
         $pm->finish;
     }
     $pm->wait_all_children();
