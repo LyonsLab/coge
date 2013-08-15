@@ -40,7 +40,7 @@ $ENV{PATH} = join ":",
 #print STDERR Dumper \%ENV;
 
 $TEMPDIR  = $P->{TEMPDIR} . "SynMap";
-$MAX_PROC = $P->{MAX_PROC};
+$MAX_PROC = $P->{MAX_PROC} / 2;
 $NWALIGN  = $P->{NWALIGN};
 
 $DBNAME = $P->{DBNAME};
@@ -97,7 +97,7 @@ sub batch_add {
     my $buffer = $opts{buffer};
     my $handle = $opts{handle};
     my $size = $opts{size};
-    $size //= 500;
+    $size //= 1500;
     my $row = $opts{row};
     my $result;
 
@@ -110,27 +110,27 @@ sub batch_add {
 
     #INSERT INTO ks_data (fid1, fid2, dS, dN, dN_dS, protein_align_1, protein_align_2, DNA_align_1, DNA_align_2) values ($fid1, $fid2, "$dS", "$dN", "$dNS", "$palign1", "$palign2", "$dalign1", "$dalign2")
     if (@$buffer > $size or !$row) {
-        my $cols = shift @$buffer;
+        $handle->begin_work;
+        eval {
+            local $handle->{RaiseError} = 1;
 
-        my $query = "INSERT INTO 'ks_data' (fid1, fid2, dS, dN, dN_dS,"
-            . " protein_align_1, protein_align_2, DNA_align_1, DNA_align_2)"
-            . " SELECT "
-            . $cols->[0] . " AS 'fid1', "
-            . $cols->[1] . " AS 'fid2', "
-            . $cols->[2] . " AS 'dS', "
-            . $cols->[3] . " AS 'dN', "
-            . $cols->[4] . " AS 'dN_dS', "
-            . $cols->[5] . " AS 'protein_align_1', "
-            . $cols->[6] . " AS 'protein_align_2', "
-            . $cols->[7] . " AS 'DNA_align_1', "
-            . $cols->[8] . " AS 'DNA_align_2'" if $cols;
+            foreach my $row (@$buffer) {
+                my $query = "INSERT INTO 'ks_data' (fid1, fid2, dS, dN, dN_dS,"
+                    . " protein_align_1, protein_align_2, DNA_align_1, DNA_align_2)"
+                    . " VALUES (" . join(', ', @$row) . ")";
 
-        foreach my $row (@$buffer) {
-            $query .= ' UNION SELECT ' . join(', ', @$row);
+                $handle->do($query);
+            }
+
+            $handle->commit;
+        };
+
+        if ($@) {
+            warn "Transaction aborted: $@";
+            eval { $handle->rollback };
+        } else {
+            $buffer = [];
         }
-
-        my $result = $handle->do($query) if $query;
-        $buffer = [] if $result;
     }
 
     return $buffer;
