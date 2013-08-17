@@ -66,6 +66,10 @@ my $node_types = CoGeX::node_types();
     search_share                    => \&search_share,
     add_items_to_user_or_group      => \&add_items_to_user_or_group,
     remove_items_from_user_or_group => \&remove_items_from_user_or_group,
+	add_users_to_group				=> \&add_users_to_group,
+	remove_user_from_group			=> \&remove_user_from_group,
+    get_group_dialog                => \&get_group_dialog,
+    change_group_role				=> \&change_group_role,
     send_items_to                   => \&send_items_to,
     create_new_group                => \&create_new_group,
     create_new_notebook             => \&create_new_notebook,
@@ -326,17 +330,14 @@ sub delete_items {
         my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
         next unless ( $item_id and $item_type );
 
-        # print STDERR "delete $item_id $item_type\n";
+        #print STDERR "delete $item_id $item_type\n";
         if ( $item_type == $ITEM_TYPE{group} ) {
             my $group = $coge->resultset('UserGroup')->find($item_id);
-            return unless $group;
+		    return unless ( $group and $group->is_editable($USER) );
+		    return if ( $group->locked and !$USER->is_admin );
 
-            if ( !$group->locked
-                and ( $USER->is_admin or $group->creator_user_id == $USER->id )
-              )
-            {
-                $group->delete;
-            }
+			$group->deleted(1);
+            $group->update;
         }
         elsif ( $item_type == $ITEM_TYPE{notebook} ) {
             my $notebook = $coge->resultset('List')->find($item_id);
@@ -346,7 +347,8 @@ sub delete_items {
                 and ( $USER->is_admin or $USER->is_owner( list => $notebook ) )
               )
             {
-                $notebook->delete;
+                $notebook->deleted(1);
+                $notebook->update;
             }
         }
         elsif ( $item_type == $ITEM_TYPE{genome} ) {
@@ -383,7 +385,25 @@ sub undelete_items {
         next unless ( $item_id and $item_type );
 
         # print STDERR "undelete $item_id $item_type\n";
-        if ( $item_type == $ITEM_TYPE{genome} ) {
+        if ( $item_type == $ITEM_TYPE{group} ) {
+            my $group = $coge->resultset('UserGroup')->find($item_id);
+            return unless $group;
+
+            if ( $group->is_editable($USER) ) {
+                $group->deleted(0);
+                $group->update;
+            }
+        }
+        elsif ( $item_type == $ITEM_TYPE{notebook} ) {
+            my $notebook = $coge->resultset('List')->find($item_id);
+            return unless $notebook;
+
+            if ( $USER->is_admin or $USER->is_owner( list => $notebook ) ) {
+                $notebook->deleted(0);
+                $notebook->update;
+            }
+        }                
+        elsif ( $item_type == $ITEM_TYPE{genome} ) {
             my $genome = $coge->resultset('Genome')->find($item_id);
             return unless $genome;
 
@@ -567,6 +587,85 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
     return $template->output;
 }
 
+sub get_group_dialog {
+    my %opts      = @_;
+    my $item_list = $opts{item_list};
+    my @items     = split( ',', $item_list );
+    return unless @items;
+
+    my ( %users, %roles, %creators, %owners, $lowest_role );
+    foreach (@items) {
+        my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
+        next unless ( $item_id and $item_type );
+        next unless ( $item_type == $ITEM_TYPE{group} ); # sanity check
+
+        #print STDERR "get_group_dialog $item_id $item_type\n";
+        my $group = $coge->resultset('UserGroup')->find($item_id);
+        next unless ( $group and $group->is_editable($USER) );
+		next if ( $group->locked and !$USER->is_admin );
+		
+		my $role = $group->role;
+		$lowest_role = $role if (!$lowest_role or $role->is_lower($lowest_role));
+		my $creator_id = $group->creator_user_id;
+		my $owner_id = $group->owner->id;
+		foreach my $user ($group->users) {
+			my $uid = $user->id;
+	        $users{$uid} = $user;
+	        if ( not defined $roles{$uid}
+	        	 or $role->is_lower($roles{$uid}) ) 
+	        {
+	        	$roles{$uid} = $role;
+	        }
+	        if ($uid == $creator_id) {
+	        	$creators{$uid} = 1;
+	        }
+	        if ($uid == $owner_id) {
+	        	$owners{$uid} = 1;
+	        }
+		}
+    }
+
+    my @rows;
+    foreach my $user ( sort usercmp values %users ) {
+    	my $uid = $user->id;
+    	my $role_name;
+    	if ($creators{$uid}) {
+    		$role_name = 'Creator';
+    	}
+    	if ($owners{$uid}) {
+    		$role_name = ($role_name ? $role_name . ', ' : '') . 'Owner';
+    	}
+        push @rows, {
+            USER_ITEM      => $uid,
+            USER_FULL_NAME => $user->display_name,
+            USER_NAME      => $user->name,
+            USER_ROLE      => ($role_name ? $role_name : $roles{$uid}->name),
+            USER_DELETE    => !$owners{$uid} # owner can't be removed
+        };
+    }
+    
+    my $template =
+      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+
+	# If no editable groups then show error dialog
+    if (!$lowest_role) {
+    	$template->param(
+	        ERROR_DIALOG => 1,
+	        ERROR_MESSAGE => "You don't have permission to modify the selected group(s).",
+	    );
+    }
+	else {
+	    $template->param(
+	        GROUP_DIALOG => 1,
+	        IS_EDITABLE  => 1,
+	        USER_LOOP => \@rows,
+	        ROLES => get_roles($lowest_role->name),
+	    );
+	}
+
+    return $template->output;
+}
+
 sub search_share {
     my %opts = @_;
     return if ( $USER->user_name eq 'public' );
@@ -610,6 +709,9 @@ sub add_items_to_user_or_group {
     my $item_list = $opts{item_list};
     my @items = split( ',', $item_list );
     return unless @items;
+    
+    my ( $target_id, $target_type ) = $target_item =~ /(\d+)\:(\d+)/;
+    return unless ( $target_id and $target_type );
 
     # Verify that user has access to each item
     my @verified;
@@ -645,8 +747,6 @@ sub add_items_to_user_or_group {
     }
 
     # Assign each item to user/group
-    my ( $target_id, $target_type ) = $target_item =~ /(\d+)\:(\d+)/;
-    next unless ( $target_id and $target_type );
 
     # print STDERR "add_items_to_user_or_group $target_id $target_type\n";
 
@@ -791,6 +891,163 @@ sub remove_items_from_user_or_group {
     return get_share_dialog( item_list => $item_list );
 }
 
+sub add_users_to_group {
+    my %opts = @_;
+    my @target_items = split( ',', $opts{target_items} );
+    return unless @target_items;
+    my $new_item = $opts{new_item};
+    return unless $new_item;
+    #print STDERR "add_users_to_group: $new_item @target_items\n";
+
+	# Build a list of users to add to the target group
+	my %users;
+    my ( $item_id, $item_type ) = $new_item =~ /(\d+)\:(\d+)/;
+    return unless ( $item_id and $item_type );
+
+    if ( $item_type == $ITEM_TYPE{user} ) {
+     	my $user = $coge->resultset('User')->find($item_id);
+      	return unless $user;
+       	$users{$user->id} = $user;
+    }
+    elsif ( $item_type == $ITEM_TYPE{group} ) {
+      	my $group = $coge->resultset('UserGroup')->find($item_id);
+        return unless $group;
+        # TODO check that user has visibility of this group (one that they own or belong to)
+		map { $users{$_->id} = $_ } $group->users;
+     }
+    
+    # Add users to the target groups
+    foreach (@target_items) {
+        # Find target group and check permission to modify
+		my ( $target_id, $target_type ) = $_ =~ /content_(\d+)_(\d+)/;
+		#print STDERR "add_users_to_group $target_id\n";
+	    next unless ( $target_id and $target_type );
+	    next unless ( $target_type == $ITEM_TYPE{group} ); # sanity check
+	    my $target_group = $coge->resultset('UserGroup')->find($target_id);
+	    next unless ( $target_group and $target_group->is_editable($USER) );
+	    next if ( $target_group->locked && !$USER->is_admin );
+
+		# Add users to this target group
+    	foreach my $user (values %users) {
+    		# Check for existing user connection to target group
+    		my $conn = $coge->resultset('UserConnector')->find(
+		        {
+		            parent_id   => $user->id,
+		            parent_type => 5,                #FIXME hardcoded to "user"
+		            child_id    => $target_id,
+		            child_type  => 6                 #FIXME hardcoded to "group"
+		        }
+		    );
+		    
+		    # Create new user connection if one wasn't found
+		    if (!$conn) {
+			    $conn = $coge->resultset('UserConnector')->create(
+			        {
+			            parent_id   => $user->id,
+			            parent_type => 5,                #FIXME hardcoded to "user"
+			            child_id    => $target_id,
+			            child_type  => 6,                #FIXME hardcoded to "group"
+			            role_id     => $target_group->role_id
+			        }
+			    );
+		    }
+		    next unless $conn;
+		
+		    # Record in log
+		    $coge->resultset('Log')->create(
+		        {
+		            user_id     => $USER->id,
+		            page        => $PAGE_TITLE,
+		            description => 'add user id' . $user->id . ' to group id' . $target_id
+		        }
+		    );
+	    }
+	}
+    
+    return get_group_dialog( item_list => $opts{target_items} );
+}
+
+sub remove_user_from_group {
+    my %opts = @_;
+    my @target_items = split( ',', $opts{target_items} );
+    return unless @target_items;
+    my $user_id = $opts{user_id};
+    return unless $user_id;
+    #print STDERR "remove_user_from_group: $user_id @target_items\n";
+
+	# Verify user
+	my $user = $coge->resultset('User')->find($user_id);
+    return unless $user;
+
+    # Remove users from the target groups
+    foreach (@target_items) {
+        # Find target group and check permission to modify
+		my ( $target_id, $target_type ) = $_ =~ /content_(\d+)_(\d+)/;
+		#print STDERR "remove_user_from_group $target_id\n";
+	    next unless ( $target_id and $target_type );
+	    next unless ( $target_type == $ITEM_TYPE{group} ); # sanity check
+	    my $target_group = $coge->resultset('UserGroup')->find($target_id);
+	    next unless ( $target_group and $target_group->is_editable($USER) );
+	    next if ( $target_group->locked && !$USER->is_admin );
+	    
+    	# Get user connection to target group
+    	my $conn = $coge->resultset('UserConnector')->find(
+		    {
+		        parent_id   => $user_id,
+		        parent_type => 5,                #FIXME hardcoded to "user"
+		        child_id    => $target_id,
+		        child_type  => 6                 #FIXME hardcoded to "group"
+		    }
+		);
+	    next unless $conn;
+	    
+	    # Delete user connection if not owner
+	    next if ($conn->role->is_owner);
+	    $conn->delete;
+		
+	    # Record in log
+	    $coge->resultset('Log')->create(
+	        {
+	            user_id     => $USER->id,
+	            page        => $PAGE_TITLE,
+	            description => 'remove user id' . $user_id . ' from group id' . $target_id
+	        }
+	    );	    
+    }
+
+	return get_group_dialog( item_list => $opts{target_items} );
+}
+
+sub change_group_role {
+    my %opts = @_;
+    my @target_items = split( ',', $opts{target_items} );
+    return unless @target_items;
+    my $role_id = $opts{role_id};
+    return unless $role_id;
+    #print STDERR "change_group_role: $role_id @target_items\n";
+
+	# Verify role
+	my $role = $coge->resultset('Role')->find($role_id);
+    return unless $role;
+    
+    # Change role for the target groups
+    foreach (@target_items) {
+        # Find target group and check permission to modify
+		my ( $target_id, $target_type ) = $_ =~ /content_(\d+)_(\d+)/;
+		#print STDERR "change_group_role $target_id\n";
+	    next unless ( $target_id and $target_type );
+	    next unless ( $target_type == $ITEM_TYPE{group} ); # sanity check
+	    my $target_group = $coge->resultset('UserGroup')->find($target_id);
+	    next unless ( $target_group and $target_group->is_editable($USER) );
+	    next if ( $target_group->locked && !$USER->is_admin );
+
+		$target_group->role_id($role_id);
+		$target_group->update;
+    }
+    
+	return get_group_dialog( item_list => $opts{target_items} );
+}
+
 sub send_items_to {
     my %opts      = @_;
     my $page_name = $opts{page_name};
@@ -839,63 +1096,48 @@ sub send_items_to {
 }
 
 sub get_toc {    # table of contents
-    my @rows;
-    push @rows,
-      {
-        TOC_ITEM_ID       => $ITEM_TYPE{mine},
-        TOC_ITEM_INFO     => 'My Stuff',
-        TOC_ITEM_CHILDREN => 3
-      };
-    push @rows,
-      {
-        TOC_ITEM_ID   => $ITEM_TYPE{notebook},
-        TOC_ITEM_INFO => 'Notebooks',
-        TOC_ITEM_ICON =>
-          '<img src="picts/notebook-icon.png" width="15" height="15"/>',
-        TOC_ITEM_INDENT => 20
-      };
-    push @rows,
-      {
-        TOC_ITEM_ID   => $ITEM_TYPE{genome},
-        TOC_ITEM_INFO => 'Genomes',
-        TOC_ITEM_ICON =>
-          '<img src="picts/dna-icon.png" width="15" height="15"/>',
-        TOC_ITEM_INDENT => 20
-      };
-    push @rows,
-      {
-        TOC_ITEM_ID   => $ITEM_TYPE{experiment},
-        TOC_ITEM_INFO => 'Experiments',
-        TOC_ITEM_ICON =>
-          '<img src="picts/testtube-icon.png" width="15" height="15"/>',
-        TOC_ITEM_INDENT => 20
-      };
-
-# push @rows, { TOC_ITEM_ID => $ITEM_TYPE{group},
-# 			  TOC_ITEM_INFO => 'Groups',
-# 			  TOC_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15"/>' };
-    push @rows,
-      {
-        TOC_ITEM_ID   => $ITEM_TYPE{shared},
-        TOC_ITEM_INFO => 'Shared with me'
-      };
-    push @rows,
-      {
-        TOC_ITEM_ID       => $ITEM_TYPE{activity},
-        TOC_ITEM_INFO     => 'Activity',
-        TOC_ITEM_CHILDREN => 1
-      };
-    push @rows,
-      {
-        TOC_ITEM_ID     => $ITEM_TYPE{activity_viz},
-        TOC_ITEM_INFO   => 'Graph',
-        TOC_ITEM_INDENT => 20
-      };
-    push @rows,
-      {
-        TOC_ITEM_ID   => $ITEM_TYPE{trash},
-        TOC_ITEM_INFO => 'Trash'
-      };
+    my @rows = (
+    	{  	TOC_ITEM_ID       => $ITEM_TYPE{mine},
+        	TOC_ITEM_INFO     => 'My Stuff',
+        	TOC_ITEM_CHILDREN => 3
+      	},
+		{   TOC_ITEM_ID   => $ITEM_TYPE{notebook},
+	        TOC_ITEM_INFO => 'Notebooks',
+	        TOC_ITEM_ICON =>
+	          '<img src="picts/notebook-icon.png" width="15" height="15"/>',
+	        TOC_ITEM_INDENT => 20
+      	},
+      	{   TOC_ITEM_ID   => $ITEM_TYPE{genome},
+	        TOC_ITEM_INFO => 'Genomes',
+	        TOC_ITEM_ICON =>
+	          '<img src="picts/dna-icon.png" width="15" height="15"/>',
+	        TOC_ITEM_INDENT => 20
+	    },
+	    {   TOC_ITEM_ID   => $ITEM_TYPE{experiment},
+	        TOC_ITEM_INFO => 'Experiments',
+	        TOC_ITEM_ICON =>
+	          '<img src="picts/testtube-icon.png" width="15" height="15"/>',
+	        TOC_ITEM_INDENT => 20
+	    },
+    	{   TOC_ITEM_ID   => $ITEM_TYPE{shared},
+	        TOC_ITEM_INFO => 'Shared with me'
+	    },
+		{ 	TOC_ITEM_ID => $ITEM_TYPE{group},
+ 	 		TOC_ITEM_INFO => 'Groups',
+ 			#TOC_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15"/>' 
+		},
+    	{   TOC_ITEM_ID       => $ITEM_TYPE{activity},
+	        TOC_ITEM_INFO     => 'Activity',
+	        TOC_ITEM_CHILDREN => 1
+	    },
+    	{   TOC_ITEM_ID     => $ITEM_TYPE{activity_viz},
+	        TOC_ITEM_INFO   => 'Graph',
+	        TOC_ITEM_INDENT => 20
+	    },
+    	{	TOC_ITEM_ID   => $ITEM_TYPE{trash},
+        	TOC_ITEM_INFO => 'Trash'
+      	}
+    );
 
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
@@ -916,7 +1158,6 @@ sub get_contents {
 
     use Time::HiRes qw ( time );
     my $start_time = time;
-
     my @rows;
 
     # Get current time (according to database)
@@ -937,28 +1178,31 @@ sub get_contents {
 
     #print STDERR "get_contents: time1=" . ((time - $start_time)*1000) . "\n";
 
-# if ($type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{group}) {
-# 	#foreach my $group (sort {$a->name cmp $b->name} $USER->groups) {
-# 	foreach my $group (sort {$a->name cmp $b->name} values %{$children->{6}}) { #FIXME hardcoded type
-# 		push @rows, { CONTENTS_ITEM_ID => $group->id,
-# 					  CONTENTS_ITEM_TYPE => $ITEM_TYPE{group},
-# 					  CONTENTS_ITEM_INFO => $group->info,
-# 				  	  CONTENTS_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
-# 				  	  CONTENTS_ITEM_LINK =>  'GroupView.pl?ugid=' . $group->id };
-# 	}
-# }
+	if (   $type == $ITEM_TYPE{all} 
+		or $type == $ITEM_TYPE{group} ) 
+	{
+	 	foreach my $group ( sort {$a->name cmp $b->name} values %{ $children->{6} } ) { #FIXME hardcoded type
+	 		push @rows, { CONTENTS_ITEM_ID => $group->id,
+	 					  CONTENTS_ITEM_TYPE => $ITEM_TYPE{group},
+	 					  CONTENTS_ITEM_DELETED => $group->deleted,
+	 					  CONTENTS_ITEM_INFO => $group->info,
+	 				  	  CONTENTS_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
+	 				  	  CONTENTS_ITEM_LINK =>  'GroupView.pl?ugid=' . $group->id,
+	 				  	  CONTENTS_ITEM_SELECTABLE => 1
+	 		};
+	 	}
+	}
 
     if (   $type == $ITEM_TYPE{notebook}
         or $type == $ITEM_TYPE{all}
         or $type == $ITEM_TYPE{mine} )
     {
-
-        #foreach my $list (sort listcmp $USER->lists) {
         foreach my $list ( sort listcmp values %{ $children->{1} } )
         {    #FIXME hardcoded type
             push @rows, {
                 CONTENTS_ITEM_ID   => $list->id,
                 CONTENTS_ITEM_TYPE => $ITEM_TYPE{notebook},
+                CONTENTS_ITEM_DELETED => $list->deleted,
                 CONTENTS_ITEM_SHARED =>
                   !$roles->{2}{ $list->id },    #FIXME hardcoded role id
                 CONTENTS_ITEM_INFO => $list->info,
@@ -975,8 +1219,6 @@ sub get_contents {
         or $type == $ITEM_TYPE{all}
         or $type == $ITEM_TYPE{mine} )
     {
-
-     #foreach my $genome (sort genomecmp $USER->genomes(include_deleted => 1)) {
         foreach my $genome ( sort genomecmp values %{ $children->{2} } )
         {    #FIXME hardcoded type
             push @rows, {
@@ -999,8 +1241,6 @@ sub get_contents {
         or $type == $ITEM_TYPE{all}
         or $type == $ITEM_TYPE{mine} )
     {
-
-#foreach my $experiment (sort experimentcmp $USER->experiments(include_deleted => 1)) {
         foreach my $experiment ( sort experimentcmp values %{ $children->{3} } )
         {    #FIXME hardcoded type
             push @rows, {

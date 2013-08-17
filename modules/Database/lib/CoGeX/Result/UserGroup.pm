@@ -16,11 +16,17 @@ This object uses the DBIx::Class to define an interface to the C<user_group> tab
 
 =head1 DESCRIPTION
 
-=head1 USAGE
+=head1 AUTHORS
 
-  use CoGeX;
+ Eric Lyons
+ Brent Pedersen
 
-=head1 METHODS
+=head1 COPYRIGHT
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+=head1 SEE ALSO
 
 =cut
 
@@ -39,7 +45,9 @@ __PACKAGE__->add_columns(
 	"role_id",
 	{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
 	"locked",
-	{ data_type => "INT", default_value => "0", is_nullable => 0, size => 1 }
+	{ data_type => "BOOLEAN", default_value => 0, is_nullable => 0, size => 1 },
+	"deleted",
+    { data_type => "BOOLEAN", default_value => 0, is_nullable => 0, size => 1 }
 );
 __PACKAGE__->set_primary_key("user_group_id");
 __PACKAGE__->belongs_to( 'role' => "CoGeX::Result::Role", 'role_id' );
@@ -541,21 +549,3 @@ sub _process_list
   }
 
 1;
-
-
-=head1 AUTHORS
-
- Eric Lyons
- Brent Pedersen
-
-=head1 COPYRIGHT
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl itself.
-
-The full text of the license can be found in the
-LICENSE file included with this module.
-
-=head1 SEE ALSO
-
-=cut

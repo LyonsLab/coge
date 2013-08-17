@@ -63,7 +63,9 @@ __PACKAGE__->add_columns(
     "restricted",
     { data_type => "BOOLEAN", default_value => 0, is_nullable => 0, size => 1 },
     "locked",
-    { data_type => "INT", default_value => "0", is_nullable => 0, size => 1 }
+    { data_type => "BOOLEAN", default_value => 0, is_nullable => 0, size => 1 },
+    "deleted",
+    { data_type => "BOOLEAN", default_value => 0, is_nullable => 0, size => 1 }
 );
 __PACKAGE__->set_primary_key("list_id");
 __PACKAGE__->belongs_to(
