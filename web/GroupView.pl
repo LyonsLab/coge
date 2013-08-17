@@ -6,6 +6,7 @@ use CGI;
 use CoGeX;
 use CoGe::Accessory::Web;
 use HTML::Template;
+use JSON::XS;
 
 no warnings 'redefine';
 

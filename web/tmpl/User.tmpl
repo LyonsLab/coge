@@ -33,7 +33,7 @@ $(function() {
 	
 	// Initialize AJAX
 	$.ajaxSetup({
-		type: "POST",
+		type: "GET",
 		url: "<TMPL_VAR NAME='PAGE_NAME'>",
 		dataType: "html",
 		cache: false,
@@ -43,7 +43,6 @@ $(function() {
 	$('#input_upload_file').fileupload({
     	dataType: 'json',
     	formData: {
-    		jquery_ajax: 1,
     		fname: 'upload_image_file',
     	},
        	add:
@@ -126,9 +125,14 @@ function cancel_poll() {
 
 function toc_toggle_children(toc_id, num_children) {
 	//class="link ui-icon ui-icon-triangle-1-s"
+//	$('#toc_'+toc_id)
+//		.next()
+//		.toggleClass('ui-icon-triangle-1-s ui-icon-triangle-1-e');
 	$('#toc_'+toc_id)
-		.next()
-		.toggleClass('ui-icon-triangle-1-s ui-icon-triangle-1-e');
+	.next()
+	.attr('src', function(idx, oldSrc) {
+        return (oldSrc == 'picts/arrow-down-icon.png' ? 'picts/arrow-right-icon.png' : 'picts/arrow-down-icon.png');
+    });
 	$('#toc_'+toc_id)
 		.parent()
 		.nextAll().slice(0, num_children)
@@ -144,7 +148,6 @@ function enter_item(obj) {
 		function() {
 			$.ajax({
 				data: {
-					jquery_ajax: 1,
 					fname: 'get_item_info',
 					item_spec: obj.id,
 					timestamp: new Date().getTime()
@@ -233,7 +236,6 @@ function get_contents(sync) {
 
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'get_contents',
 			last_update: lastUpdate,
 			timestamp: pageObj.timestamp[myName]
@@ -270,11 +272,16 @@ function filter_contents() {
 			var item_type = get_item_type(this);
 			var show;
 
-			if (pageObj.content_type == ITEM_TYPE_MINE) {
+			if (pageObj.content_type == ITEM_TYPE_GROUP) {
+				show = item_type == ITEM_TYPE_GROUP
+						&& !$(this).hasClass('deleted');
+			}
+			else if (pageObj.content_type == ITEM_TYPE_MINE) {
 				show = !$(this).hasClass('deleted') 
 						&& !$(this).hasClass('shared') 
 						&& item_type != ITEM_TYPE_ACTIVITY
-						&& item_type != ITEM_TYPE_ACTIVITY_VIZ;
+						&& item_type != ITEM_TYPE_ACTIVITY_VIZ
+						&& item_type != ITEM_TYPE_GROUP;
 			}
 			else if (pageObj.content_type == ITEM_TYPE_SHARED) {
 				show = $(this).hasClass('shared') 
@@ -305,16 +312,19 @@ function toc_select(toc_id) {
 	pageObj.content_type = toc_id;
 
 	if (toc_id == ITEM_TYPE_TRASH) {
-		$('#stuff_buttons').hide();
-		$('#trash_buttons').show();
+		$('#share_button,#notebook_button,#group_button,#delete_button,#send_button').hide();
+		$('#undelete_button').show();
+	}
+	else if (toc_id == ITEM_TYPE_GROUP) {
+		$('#notebook_button,#send_button,#share_button,#undelete_button').hide();
+		$('#group_button,#delete_button').show();
 	}
 	else if (toc_id == ITEM_TYPE_SHARED || toc_id == ITEM_TYPE_ACTIVITY || toc_id == ITEM_TYPE_ACTIVITY_VIZ) {
-		$('#stuff_buttons').hide();
-		$('#trash_buttons').hide();
-	}	
+		$('#share_button,#notebook_button,#group_button,#delete_button,#send_button,#undelete_button').hide();
+	}
 	else {
-		$('#trash_buttons').hide();
-		$('#stuff_buttons').show();
+		$('#undelete_button,#group_button').hide();
+		$('#share_button,#notebook_button,#delete_button,#send_button').show();
 	}
 
 	$('#search_input').val('');
@@ -348,13 +358,12 @@ function delete_items() {
 		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
 		$.ajax({
 			data: {
-				jquery_ajax: 1,
 				fname: 'delete_items',
 				item_list: item_list
 			},
 			success : function(data) {
 			}
-		});		
+		});
 	}
 }
 
@@ -372,7 +381,6 @@ function undelete_items() {
 		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
 		$.ajax({
 			data: {
-				jquery_ajax: 1,
 				fname: 'undelete_items',
 				item_list: item_list
 			},
@@ -400,7 +408,7 @@ function wait_to_search (search_func, search_term) {
 			function() { 
 				search_func(pageObj.search_term); 
 			},
-			1000
+			500
 		);
 	}
 }
@@ -414,7 +422,6 @@ function search_notebooks () {
 	
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'search_notebooks',
 			search_term: search_term,
 			timestamp: pageObj.timestamp['notebooks']
@@ -438,7 +445,6 @@ function add_items_to_notebook() {
 		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
 		$.ajax({
 			data: {
-				jquery_ajax: 1,
 				fname: 'add_items_to_notebook',
 				nid: nid,
 				item_list: item_list,
@@ -459,7 +465,6 @@ function share_dialog() {
 		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
 		$.ajax({
 			data: {
-				jquery_ajax: 1,
 				fname: 'get_share_dialog',
 				item_list: item_list,
 			},
@@ -476,7 +481,6 @@ function remove_items_from_user_or_group(target_item) {
 		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
 		$.ajax({
 			data: {
-				jquery_ajax: 1,
 				fname: 'remove_items_from_user_or_group',
 				target_item: target_item,
 				item_list: item_list,
@@ -493,12 +497,11 @@ function remove_items_from_user_or_group(target_item) {
 function add_items_to_user_or_group() {
 	var selected = get_selected_items();
 	var target_item = $('#share_input').data('select_id');
-	var role_id = $('#role_select').val();
+	var role_id = $('#share_role_select').val();
 	if (target_item && selected.length) {
 		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
 		$.ajax({
 			data: {
-				jquery_ajax: 1,
 				fname: 'add_items_to_user_or_group',
 				target_item: target_item,
 				role_id: role_id,
@@ -521,7 +524,6 @@ function search_share () {
 	
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'search_share',
 			search_term: search_term,
 			timestamp: pageObj.timestamp['share']
@@ -534,6 +536,101 @@ function search_share () {
 			}
 		},
 	});
+}
+
+function search_group () { // FIXME dup of above routine but for group dialog
+	var search_term = $('#group_input').attr('value');
+	
+	pageObj.timestamp['search_group'] = new Date().getTime();
+	
+	$.ajax({
+		data: {
+			fname: 'search_share',
+			search_term: search_term,
+			timestamp: pageObj.timestamp['search_group']
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj && obj.items) {
+				$("#group_input").autocomplete({source: obj.items}).autocomplete("search");
+			}
+		},
+	});
+}
+
+function group_dialog() {
+	var selected = get_selected_items();
+	if (selected.length) {
+		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				fname: 'get_group_dialog',
+				item_list: item_list,
+			},
+			success : function(data) {
+				$('#group_dialog').html(data).dialog({width:500}).dialog('open');
+			}
+		});	
+	}
+}
+
+function change_group_role() {
+	var selected = get_selected_items();
+	var role_id = $('#group_role_select').val();
+	if (role_id && selected.length) {
+		var target_items = selected.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				fname: 'change_group_role',
+				target_items: target_items,
+				role_id: role_id,
+			},
+			success : function(data) {
+				if (data) {
+					$('#group_dialog').html(data);
+				}
+			}
+		});
+	}
+}
+
+function add_users_to_group() {
+	var selected = get_selected_items();
+	var new_item = $('#group_input').data('select_id');
+	if (new_item && selected.length) {
+		var target_items = selected.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				fname: 'add_users_to_group',
+				target_items: target_items,
+				new_item: new_item,
+			},
+			success : function(data) {
+				if (data) {
+					$('#group_dialog').html(data);
+				}
+			}
+		});
+	}
+}
+
+function remove_user_from_group(user_id) {
+	var selected = get_selected_items();
+	if (user_id && selected.length) {
+		var target_items = selected.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				fname: 'remove_user_from_group',
+				target_items: target_items,
+				user_id: user_id,
+			},
+			success : function(data) {
+				if (data) {
+					$('#group_dialog').html(data);
+				}
+			}
+		});
+	}
 }
 
 function hide_top_panel() {
@@ -557,7 +654,6 @@ function show_top_panel() {
 function show_recent_activity() {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'get_logs',
 			type: 'recent'
 		},
@@ -572,7 +668,6 @@ function show_recent_activity() {
 function show_important_activity() {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'get_logs',
 			type: 'important'
 		},
@@ -645,7 +740,6 @@ function create_new_group() {
 
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'create_new_group',
             name: name,
             desc: desc,
@@ -676,7 +770,6 @@ function create_new_notebook() {
 
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'create_new_notebook',
             name: name,
             desc: desc,
@@ -720,7 +813,6 @@ function send_items_to(page_name, format) {
 		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
 		$.ajax({
 			data: {
-				jquery_ajax: 1,
 				fname: 'send_items_to',
 				page_name: page_name,
 				format: format,
@@ -738,7 +830,6 @@ function send_items_to(page_name, format) {
 function toggle_star(img) {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'toggle_star',
 			log_id: img.id,
 		},
@@ -772,7 +863,7 @@ function toggle_star(img) {
 				<img id='user_image' src="<TMPL_VAR NAME='USER_IMAGE'>" width='55' height='55' class="link" style="padding:1px;border:1px solid lightgray;" onclick="select_image_file();" />
 			</td></tr>
 			<tr><td>
-				<input id="input_upload_file" name="input_upload_file" type="file" data-url='<TMPL_VAR NAME="PAGE_NAME">' style="display:none;" />
+				<input id="input_upload_file" name="input_upload_file" type="file" data-url='<TMPL_VAR NAME="PAGE_NAME">' class="hidden" />
 			</td></tr>
 		</table>
 
@@ -809,7 +900,7 @@ function toggle_star(img) {
 
 <div id="bottom-panel" style="width:100%;">
 	<div style="float:right;width:200px;">
-		<span id="show_panel_button" onClick="show_top_panel();" class="link ui-icon ui-icon-plus" style="display:none;float:right;margin-right:5px;border:1px solid lightgray;"></span>
+		<span id="show_panel_button" onClick="show_top_panel();" class="link ui-icon ui-icon-plus hidden" style="float:right;margin-right:5px;border:1px solid lightgray;"></span>
 
 		<div id="info_panel" class="small panel" style="overflow:auto;margin-left:10px;margin-top:29px;border-top:1px solid lightgray;color:gray;">
 		</div>
@@ -820,7 +911,7 @@ function toggle_star(img) {
 			<TMPL_VAR NAME='TOC'>
 		</div>
 		<span id="create_button" class='ui-button ui-corner-all ui-button-icon-right' style="font-size:0.85em;" onclick="create_menu();">CREATE<span class="ui-icon ui-icon-triangle-1-s"></span></span>
-		<ul id="create_menu" class="small" style="display:none;">
+		<ul id="create_menu" class="small hidden">
 			<li><a onclick="create_group_dialog();">New Group</a></li>
 			<li><a onclick="create_notebook_dialog();">New Notebook</a></li>
 			<li><a onclick="window.open('LoadGenome.pl');">Load Genome</a></li>
@@ -830,22 +921,19 @@ function toggle_star(img) {
 	</div>
 
 	<div style="height:24px;">
-		<span id="contents_title" style="float:left;width:130px;font-weight:bold;"><!--<TMPL_VAR NAME="CONTENTS_TITLE">--></span>
-		<span id="stuff_buttons">
-			<span onClick="share_dialog();" class="item-button link ui-icon ui-icon-person ui-state-disabled" style="margin-left:20px;margin-right:5px;border:1px solid lightgray;"></span>
-			<span onClick="add_to_notebook_dialog();" class="item-button link ui-icon ui-icon-folder-collapsed ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
-			<span onClick="delete_items();" class="item-button link ui-icon ui-icon-trash ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
-			<span id="send_button" onClick="send_menu();" class="item-button link ui-icon ui-icon-arrowthick-1-e ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
-			<ul id="send_menu" class="small" style="display:none;">
-				<li><a onclick="send_items_to('CoGeBlast', 2);">CoGeBlast</a></li>
-				<li><a onclick="send_items_to('SynFind');">SynFind</a></li>
-				<li><a onclick="send_items_to('SynMap', 1);">SynMap</a></li>
-				<li><a onclick="send_items_to('GEvo', 1);">GEvo</a></li>
-			</ul>
-		</span>
-		<span id="trash_buttons">
-			<span onClick="undelete_items();" class="item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
-		</span>
+		<span id="contents_title" style="float:left;width:130px;font-weight:bold;"></span>
+		<span id="share_button" onClick="share_dialog();" class="item-button link ui-icon ui-icon-person ui-state-disabled" style="margin-left:20px;margin-right:5px;border:1px solid lightgray;"></span>
+		<span id="notebook_button" onClick="add_to_notebook_dialog();" class="item-button link ui-icon ui-icon-folder-collapsed ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+		<span id="group_button" onClick="group_dialog();" class="item-button link ui-icon ui-icon-gear ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+		<span id="delete_button" onClick="delete_items();" class="item-button link ui-icon ui-icon-trash ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+		<span id="send_button" onClick="send_menu();" class="item-button link ui-icon ui-icon-arrowthick-1-e ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+		<ul id="send_menu" class="small hidden">
+			<li><a onclick="send_items_to('CoGeBlast', 2);">CoGeBlast</a></li>
+			<li><a onclick="send_items_to('SynFind');">SynFind</a></li>
+			<li><a onclick="send_items_to('SynMap', 1);">SynMap</a></li>
+			<li><a onclick="send_items_to('GEvo', 1);">GEvo</a></li>
+		</ul>
+		<span id="undelete_button" onClick="undelete_items();" class="item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
 		<input id="search_input" type="search" maxlength="20" style="float:right;margin-right:15px;vertical-align:top;border:1px solid lightgray;" onkeyup="filter_contents();" />
 	</div>
 
@@ -856,7 +944,7 @@ function toggle_star(img) {
 	</div>
 </div>
 
-<div id="add_to_notebook_dialog" class="dialog_box" title="Add Items to Notebook" style="display:none;">
+<div id="add_to_notebook_dialog" class="dialog_box hidden" title="Add Items to Notebook">
 	<table class="small">
 		<tr align='left'>
 			<td>
@@ -879,7 +967,7 @@ function toggle_star(img) {
 	<span href="javascript:void(0)" onClick="add_items_to_notebook();" class='ui-button ui-corner-all'>Add Items</span>
 </div>
 
-<div id="create_group_dialog" class="dialog_box" title="Create New Group" style="display:none;">
+<div id="create_group_dialog" class="dialog_box hidden" title="Create New Group">
 	<table class="small">
 		<tr>
 			<td>Name:</td>
@@ -902,7 +990,7 @@ function toggle_star(img) {
 	<span onClick="create_new_group();" class="ui-button ui-corner-all ui-button-go">Create Group</span>
 </div>
 
-<div id="create_notebook_dialog" class="dialog_box" title="Create New Notebook" style="display:none;">
+<div id="create_notebook_dialog" class="dialog_box hidden" title="Create New Notebook">
 	<table class="small">
 		<tr>
 			<td>Name:</td>
@@ -925,7 +1013,9 @@ function toggle_star(img) {
 	<span onClick="create_new_notebook();" class="ui-button ui-corner-all ui-button-go">Create Notebook</span>
 </div>
 
-<div id="share_dialog" class="dialog_box" title="Share Items" style="display:none;"></div>
+<div id="share_dialog" class="dialog_box hidden" title="Share Items"></div>
+
+<div id="group_dialog" class="dialog_box hidden" title="Edit Group"></div>
 
 </TMPL_IF> <!-- MAIN -->
 
@@ -941,7 +1031,8 @@ function toggle_star(img) {
 				</span>
 			</span>
 			<TMPL_IF NAME="TOC_ITEM_CHILDREN">
-				<span onClick="toc_toggle_children(<TMPL_VAR NAME='TOC_ITEM_ID'>, <TMPL_VAR NAME='TOC_ITEM_CHILDREN'>);" class="link ui-icon ui-icon-triangle-1-s"></span>
+				<!--<span onClick="toc_toggle_children(<TMPL_VAR NAME='TOC_ITEM_ID'>, <TMPL_VAR NAME='TOC_ITEM_CHILDREN'>);" class="link ui-icon ui-icon-triangle-1-s"></span>-->
+				<img src="picts/arrow-down-icon.png" class="link" style="width:10px;height:10px;" onClick="toc_toggle_children(<TMPL_VAR NAME='TOC_ITEM_ID'>, <TMPL_VAR NAME='TOC_ITEM_CHILDREN'>);"/>
 			</TMPL_IF>
 		</div>
 	</TMPL_LOOP>
@@ -951,7 +1042,7 @@ function toggle_star(img) {
 
 <TMPL_IF NAME="DO_CONTENTS">
 	<TMPL_LOOP NAME="CONTENTS_ITEM_LOOP">
-		<div id="content_<TMPL_VAR NAME='CONTENTS_ITEM_ID'>_<TMPL_VAR NAME='CONTENTS_ITEM_TYPE'>" style="display:none;border-bottom:1px solid lightgray;padding:3px;padding-left:<TMPL_VAR NAME='CONTENTS_ITEM_INDENT'>px;" class="<TMPL_IF NAME='CONTENTS_ITEM_DELETED'>deleted</TMPL_IF> <TMPL_IF NAME='CONTENTS_ITEM_SHARED'>shared</TMPL_IF>">
+		<div id="content_<TMPL_VAR NAME='CONTENTS_ITEM_ID'>_<TMPL_VAR NAME='CONTENTS_ITEM_TYPE'>" class="hidden" style="border-bottom:1px solid lightgray;padding:3px;padding-left:<TMPL_VAR NAME='CONTENTS_ITEM_INDENT'>px;" class="<TMPL_IF NAME='CONTENTS_ITEM_DELETED'>deleted</TMPL_IF> <TMPL_IF NAME='CONTENTS_ITEM_SHARED'>shared</TMPL_IF>">
 			<TMPL_IF NAME="CONTENTS_ITEM_SELECTABLE">
 				<input type="checkbox" style="margin-right:8px;" onclick="select_item();" />
 			</TMPL_IF>
@@ -991,10 +1082,10 @@ function toggle_star(img) {
 		    			.val( ui.item.label )
 		    			.data('select_id', ui.item.value);
 		    		if (ui.item.value.split(':')[1] == ITEM_TYPE_USER) {
-		    			$('#role_select').show();
+		    			$('#share_role_select').show();
 		    		}
 		    		else {
-		    			$('#role_select').hide();
+		    			$('#share_role_select').hide();
 		    		}
 		    		return false;
 		    	},
@@ -1054,8 +1145,8 @@ function toggle_star(img) {
 		<div class="small" style="padding:20px;padding-left:30px;border-top:1px solid lightgray;">
 			<TMPL_IF NAME="IS_EDITABLE">
 				<span style="color:dimgray">Enter names or groups:</span><br>
-				<input id="share_input" type="search" maxlength="40" style="width:270px;border:1px solid lightgray;" onkeyup="wait_to_search(search_share, this.value);" />
-				<select id="role_select" style="display:none;"><TMPL_VAR NAME="ROLES"></select>
+				<input id="share_input" type="search" maxlength="40" spellcheck="false" style="width:270px;border:1px solid lightgray;" onkeyup="wait_to_search(search_share, this.value);" />
+				<select id="share_role_select" class="hidden"><TMPL_VAR NAME="ROLES"></select>
 				<span href="javascript:void(0)" onClick="add_items_to_user_or_group();" class='ui-button ui-corner-all'>Add</span>
 			<TMPL_ELSE>
 				<span style="color:dimgray">
@@ -1066,6 +1157,82 @@ function toggle_star(img) {
 		<!--<br>
 		<span href="javascript:void(0)" onClick="$('#share_dialog').dialog('close')" class='ui-button ui-corner-all'>Done</span>-->
 	</div>
+</TMPL_IF>
+
+
+
+<TMPL_IF NAME='GROUP_DIALOG'>
+<script>
+$(function(){
+	$("#group_input")
+		.autocomplete({
+			source: [],
+			focus: function() { return false; },
+			select:
+		    	function(event, ui) {
+		    		$("#group_input")
+		    			.val( ui.item.label )
+		    			.data('select_id', ui.item.value);
+		    		return false;
+		    	},
+		});
+	$("#group_input").focus(); // why no work!?
+});
+</script>
+<div style="margin:20px;margin-left:5px;">
+	<div style="padding-bottom:10px;">
+		<span class="small" style="font-weight:bold;color:dimgray;">Group Role:</span>
+		<select id="group_role_select" onchange="change_group_role();"><TMPL_VAR NAME="ROLES"></select>
+	</div>
+	<br>
+	<span class="small" style="font-weight:bold;color:dimgray;">Group Members</span>
+	<div class="small" style="overflow:auto;max-height:120px;padding-left:30px;padding-bottom:10px;border-top:1px solid lightgray;">
+		<div style="padding-top:10px;">
+			<TMPL_LOOP NAME="USER_LOOP">
+				<div>
+					<img src="picts/user-icon.png" width="11" height="11"/>
+					<span style="color:dimgray;"><TMPL_VAR NAME="USER_FULL_NAME"> (<TMPL_VAR NAME="USER_NAME">) - <TMPL_VAR NAME="USER_ROLE"><span>
+					<TMPL_IF NAME="USER_DELETE">
+						<span onClick="$(this.parentNode).fadeOut('slow'); remove_user_from_group('<TMPL_VAR NAME=USER_ITEM>');" class="link ui-icon ui-icon-close"></span>
+					</TMPL_IF>
+					<br>
+				</div>
+			</TMPL_LOOP>
+			<TMPL_IF NAME="ACCESS_MSG">
+				<div style="color:dimgray;font-style:italic;">
+					<TMPL_VAR NAME="ACCESS_MSG">
+				</div>
+			</TMPL_IF>
+		</div>
+	</div>
+	<br>
+	<span class="small" style="font-weight:bold;color:dimgray;">Add Member</span>
+	<div class="small" style="padding:20px;padding-left:30px;border-top:1px solid lightgray;">
+		<TMPL_IF NAME="IS_EDITABLE">
+			<span style="color:dimgray">Enter names or groups:</span><br>
+			<input id="group_input" type="search" maxlength="40" spellcheck="false" style="width:270px;border:1px solid lightgray;" onkeyup="wait_to_search(search_group, this.value);" />
+			<span href="javascript:void(0)" onClick="add_users_to_group();" class='ui-button ui-corner-all'>Add</span>
+		<TMPL_ELSE>
+			<span style="color:dimgray">
+				You don't have permission to modify this group.
+			</span>
+		</TMPL_IF>
+	</div>
+	<!--<br>
+	<span href="javascript:void(0)" onClick="$('#group_dialog').dialog('close');" class='ui-button ui-corner-all'>Done</span>-->
+</div>
+</TMPL_IF>
+
+
+
+<TMPL_IF NAME='ERROR_DIALOG'>
+<div class="small" align='center'>
+	<br>
+	<TMPL_VAR NAME='ERROR_MESSAGE'>
+	<br>
+	<br>
+	<span style="font-size:.75em;" class='ui-button ui-corner-all' onClick="$(this.parentNode.parentNode).dialog('close');">&nbsp&nbsp;OK&nbsp&nbsp;</span>
+</div>
 </TMPL_IF>
 
 
