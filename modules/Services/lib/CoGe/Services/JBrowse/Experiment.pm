@@ -93,6 +93,7 @@ sub stats_region {    #FIXME lots of code in common with features()
         elsif ( $data_type == 2 ) {    #FIXME hardcoded data_type to "snp"
             my $cmdOut = CoGe::Accessory::Storage::get_experiment_data(
                 eid   => $eid,
+                data_type  => $exp->data_type,
                 chr   => $chr,
                 start => $start,
                 end   => $end
@@ -201,6 +202,7 @@ sub features {
         {    #FIXME hardcoded data_type to "quant"
             my $cmdOut = CoGe::Accessory::Storage::get_experiment_data(
                 eid   => $eid,
+                data_type  => $exp->data_type,
                 chr   => $chr,
                 start => $start,
                 end   => $end
@@ -234,6 +236,7 @@ sub features {
         elsif ( $data_type == 2 ) {    #FIXME hardcoded data_type to "snp"
             my $cmdOut = CoGe::Accessory::Storage::get_experiment_data(
                 eid   => $eid,
+                data_type  => $exp->data_type,
                 chr   => $chr,
                 start => $start,
                 end   => $end
@@ -260,7 +263,7 @@ sub features {
                     $type = $type . $ref . 'to' . $alt
                       if ( lc($type) eq 'snp' );
                     $results .= ( $results ? ',' : '' )
-                      . qq{{ "id": $eid, "name": "$name", "type": "$type", "start": $start, "end": $end, "score": $qual, "info": "$info" }};
+                      . qq{{ "id": $eid, "name": "$name", "type": "$type", "start": $start, "end": $end, "ref": "$ref", "alt": "$alt", "score": $qual, "info": "$info" }};
                 }
             }
         }

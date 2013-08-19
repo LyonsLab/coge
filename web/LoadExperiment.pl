@@ -31,7 +31,7 @@ $FORM = new CGI;
 );
 
 $CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
-$BINDIR     = $P->{COGEDIR} . '/scripts/'; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
+$BINDIR     = $P->{SCRIPTDIR}; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
 
 # Generate a unique session ID for this load (issue 177).
 # Use existing ID if being passed in with AJAX request.  Otherwise generate

@@ -56,6 +56,7 @@ $(document).ready(function(){
 	
 	// Open status dialog
 	if ('<TMPL_VAR NAME="OPEN_STATUS">') {
+		$('#loading_msg').hide();
 		$('#load_dialog').dialog('open'); 
 		setTimeout(function() { get_load_log(); }, 0);
 	}
@@ -799,9 +800,9 @@ function sort_name (a,b) {
   <div id="load_genome_log" class="small ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
   </div>
   <br>
-  <div id="loading_msg" class="small">
-    Please wait ... <img src="picts/ajax-loader.gif"/><br>
-    Link: <a href='<TMPL_VAR NAME="LINK">'><TMPL_VAR NAME="LINK"></a>
+  <div id="loading_msg">
+    <span class="small" style="float:right;">Link: <a href='<TMPL_VAR NAME="LINK">'><TMPL_VAR NAME="LINK"></a></span>
+    Please wait ... <img src="picts/ajax-loader.gif"/>
   </div>
   <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
   <input id="genome_id" type="hidden" /> 

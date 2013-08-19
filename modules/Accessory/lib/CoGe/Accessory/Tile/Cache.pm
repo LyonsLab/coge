@@ -140,26 +140,6 @@ sub initialize {
      $config->{SPATIAL_PARS_NAME} = eval($config->{SPATIAL_PARS_NAME});
      $this->config($config); 
 
-=begin
-
-$VAR1 = {
-          'IMG_GENERATOR_URL' => 'http://biocon.berkeley.edu/CoGe/GenomePNG.pl?',
-          'MAX_ZOOM' => '13',
-          'INITIAL_ZOOM' => '10',
-          'PATH_TO_CACHE_FILE' => '/opt/apache2/htdocs/cache/test.cache',
-          'IMG_TYPE' => 'image/png',
-          'UNITS' => 'basepairs',
-          'ONE_DIM' => 'true',
-          'SPATIAL_PARS_NAME' => [
-                                   'x',
-                                   'y'
-                                 ],
-          'INITIAL_LEFT' => '1',
-          'BASE_UNITS_PER_PIXEL' => '10/256'
-      };
-
-=cut
-
     $this->{zoom_power} = $this->config()->{ZOOM_POWER} || 2;
     $this->{upp_x_base}= $this->config()->{BASE_UNITS_PER_PIXEL_X};
 
