@@ -6,8 +6,8 @@ use Data::Dumper;
 use Benchmark qw/timethese/;
 $| = 1;
 
-my $connstr = 'dbi:mysql:genomes:biocon:3306';
-my $s = CoGeX->connect( $connstr, 'cnssys', 'CnS' );
+my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
+my $s = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 
 $s->storage->debug(0);
 

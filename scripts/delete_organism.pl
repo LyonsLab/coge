@@ -14,8 +14,8 @@ This program will remove the specified organism and all related data from the Co
     exit;
   }
 
-my $connstr = 'dbi:mysql:dbname=coge;host=genomevolution.org;port=3306';
-my $coge = CoGeX->connect($connstr, 'elyons', 'eagle7' );
+my $connstr = 'dbi:mysql:dbname=coge;host=genomevolution.org;port=PORT';
+my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 my $org = $coge->resultset('Organism')->resolve($orgid);
 
 print "Do you want to delete:  \n\t".$org->name.": ".$org->description."?\n";

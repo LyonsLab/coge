@@ -27,7 +27,7 @@ To delete the genomic sequences associted with the genome, add flag -delete_seqs
 	exit;
 }
 
-my $connstr = "dbi:mysql:dbname=$db;host=localhost;port=3306";
+my $connstr = "dbi:mysql:dbname=$db;host=localhost;port=PORT";
 my $coge    = CoGeX->connect( $connstr, $user, $pass );
 
 my $dsg = $coge->resultset('Genome')->find($dsgid);

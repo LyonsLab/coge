@@ -17,8 +17,8 @@ foreach my $chr ( values %cmap ) {
 }
 
 # 9min 9 sec
-my $connstr = 'dbi:mysql:genomes:biocon:3306';
-my $s = CoGeX->connect( $connstr, 'cnssys', 'CnS' );
+my $connstr = 'dbi:mysql:DB:HOST:PORT';
+my $s = CoGeX->connect( $connstr, 'USER', 'PASSWORD' );
 
 $s->storage->debug(0);
 

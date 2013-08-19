@@ -30,8 +30,8 @@ $STOP = $START unless defined $STOP;
 $ORG = $FORM->param('org') || $FORM->param('organism');
 $VERSION = $FORM->param('version') || $FORM->param('ver');
 
-my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
-my $DB = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
+my $DB = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 
 print "Content-Type: text/html\n\n";
 my $rhtml = gen_html(featid=>$FID, start=>$START, stop=>$STOP, chr=>$CHR, ds=>$DS, org=>$ORG, version=>$VERSION) if $START > 0;

@@ -15,8 +15,8 @@ my @names;
 my @skip_anno_types;
 my @skip_feat_types;
 my @anno_names;
-my $connstr = 'dbi:mysql:dbname=coge;host=biocon.berkeley.edu;port=3306';
-my$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+my $connstr = 'dbi:mysql:dbname=coge;host=HOST;port=PORT';
+my$coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
