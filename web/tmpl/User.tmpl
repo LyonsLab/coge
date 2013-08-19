@@ -344,9 +344,6 @@ function toc_select(toc_id) {
 function delete_items() {
 	var selected = get_selected_items();
 	if (selected.length) {
-		//FIXME: notebooks/groups are permanently deleted, don't move them to trash
-		//var item_type = get_item_type(this);
-
 		selected.parent().fadeOut('fast', 
 			function() {
 				selected.parent().addClass('deleted');

@@ -166,16 +166,10 @@ sub delete_group {
     }
 
     # OK, now delete the group
-    $group->delete();
+    $group->deleted(1);
+    $group->update;
 
-    # Record in the log
-    $coge->resultset('Log')->create(
-        {
-            user_id     => $USER->id,
-            page        => $PAGE_NAME,
-            description => 'delete user group id' . $group->id
-        }
-    );
+	return;
 }
 
 sub get_groups_for_user {
