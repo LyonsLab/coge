@@ -543,6 +543,16 @@ sub annotation_pretty_print_html {
     my $users = join( ', ', map { $_->display_name } $self->users );
     $anno_type->add_Annot( $users . "</td>" );
     $anno_obj->add_Annot($anno_type);
+    
+    if ( $self->deleted ) {
+        $anno_type =
+          new CoGe::Accessory::Annotation(
+            Type => "<tr><td nowrap='true'><span class=\"alert\">" . "Note"
+              . "</span>" );
+        $anno_type->Type_delimit(": <td class=\"alert\">");
+        $anno_type->add_Annot( "This notebook is deleted" . "</td>" );
+        $anno_obj->add_Annot($anno_type);
+    }    
 
     return
         "<table cellpadding=0 class='ui-widget-content ui-corner-all small'>"

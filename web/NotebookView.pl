@@ -168,7 +168,8 @@ qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_
 
     if ( $user_can_delete ) {
         $html .=
-qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_list();">Delete</span>};
+			qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_list();">} .
+			($list->deleted ? 'Undelete' : 'Delete') . qq{</span>};
     }
 
     if ( !$EMBED and $list->experiments( count => 1 ) ) {
@@ -1284,7 +1285,8 @@ sub delete_list {
           0;   #"This is a locked list.  Admin permission is needed to modify.";
     }
 
-    $list->delete();
+    $list->deleted(!$list->deleted); # do undelete if already deleted
+    $list->update;
 
     return 1;
 }
