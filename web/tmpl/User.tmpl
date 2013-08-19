@@ -716,16 +716,14 @@ function create_menu() {
 }
 
 function create_group_dialog() {
-	$('#edit_group_name').val('');
-	$('#edit_group_desc').val('');
-	$('#create_group_dialog').dialog({width:400,height:240}).dialog('open');
+	$('#edit_group_name,#edit_group_desc').val('');
+	$('#create_group_dialog').dialog({width:400,height:220}).dialog('open');
 	$('#create_menu').hide();
 }
 
 function create_notebook_dialog() {
-	$('#edit_notebook_name').val('');
-	$('#edit_notebook_desc').val('');	
-	$('#create_notebook_dialog').dialog({width:400,height:240}).dialog('open');
+	$('#edit_notebook_name,#edit_notebook_desc').val('');
+	$('#create_notebook_dialog').dialog({width:400,height:220}).dialog('open');
 	$('#create_menu').hide();
 }
 
@@ -745,10 +743,13 @@ function create_new_group() {
             desc: desc,
             role_id: role_id
         },
-        success : function(data) {
-            if (data) {
-            	location.reload();
+        success: function(rc) {
+            if (rc) {
+            	poll();
             }
+        },
+        complete: function() {
+        	$('#create_group_dialog').dialog('close');
         }
     });
 }
@@ -776,10 +777,13 @@ function create_new_notebook() {
             type_id: type_id,
             item_list: item_list,
         },
-        success : function(data) {
-            if (data) {
-            	location.reload();
+        success: function(rc) {
+            if (rc) {
+            	poll();
             }
+        },
+        complete: function() {
+        	$('#create_notebook_dialog').dialog('close');
         }
     });
 }
@@ -986,7 +990,7 @@ function toggle_star(img) {
 			</td>
 		</tr> 
 	</table>
-	<br>
+	<br><br>
 	<span onClick="create_new_group();" class="ui-button ui-corner-all ui-button-go">Create Group</span>
 </div>
 
@@ -1009,7 +1013,7 @@ function toggle_star(img) {
 			</td>
 		</tr> 
 	</table>
-	<br>
+	<br><br>
 	<span onClick="create_new_notebook();" class="ui-button ui-corner-all ui-button-go">Create Notebook</span>
 </div>
 
@@ -1042,7 +1046,7 @@ function toggle_star(img) {
 
 <TMPL_IF NAME="DO_CONTENTS">
 	<TMPL_LOOP NAME="CONTENTS_ITEM_LOOP">
-		<div id="content_<TMPL_VAR NAME='CONTENTS_ITEM_ID'>_<TMPL_VAR NAME='CONTENTS_ITEM_TYPE'>" class="hidden" style="border-bottom:1px solid lightgray;padding:3px;padding-left:<TMPL_VAR NAME='CONTENTS_ITEM_INDENT'>px;" class="<TMPL_IF NAME='CONTENTS_ITEM_DELETED'>deleted</TMPL_IF> <TMPL_IF NAME='CONTENTS_ITEM_SHARED'>shared</TMPL_IF>">
+		<div id="content_<TMPL_VAR NAME='CONTENTS_ITEM_ID'>_<TMPL_VAR NAME='CONTENTS_ITEM_TYPE'>" style="border-bottom:1px solid lightgray;padding:3px;padding-left:<TMPL_VAR NAME='CONTENTS_ITEM_INDENT'>px;" class="hidden <TMPL_IF NAME='CONTENTS_ITEM_DELETED'>deleted</TMPL_IF> <TMPL_IF NAME='CONTENTS_ITEM_SHARED'>shared</TMPL_IF>">
 			<TMPL_IF NAME="CONTENTS_ITEM_SELECTABLE">
 				<input type="checkbox" style="margin-right:8px;" onclick="select_item();" />
 			</TMPL_IF>
