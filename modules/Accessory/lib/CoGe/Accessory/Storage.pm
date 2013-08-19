@@ -314,7 +314,7 @@ sub get_experiment_data {
     my $storage_path = get_experiment_path($eid);
     my $cmd;
     
-    if ($data_type == $DATA_TYPE_VCF) {
+    if ($data_type && $data_type == $DATA_TYPE_VCF) {
     	$cmd = "$cmdpath -v 1 -d $storage_path -q \"select chr,start,stop,type,id,ref,alt,qual,info where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
     }
     else { # default is $DATA_TYPE_QUANT
