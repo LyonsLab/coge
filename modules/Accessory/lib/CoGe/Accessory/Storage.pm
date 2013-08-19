@@ -300,9 +300,9 @@ sub get_experiment_data {
     my %opts = @_;
     my $eid  = $opts{eid};    # required
     my $data_type = $opts{data_type};   # required
-    unless ($eid and $data_type) {
+    unless $eid {
         print STDERR
-          "Storage::get_experiment_data: experiment id/type not specified!\n";
+          "Storage::get_experiment_data: experiment id not specified!\n";
         return;
     }
     my $chr   = $opts{chr};
