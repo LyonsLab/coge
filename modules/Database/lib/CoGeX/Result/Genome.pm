@@ -184,6 +184,8 @@ sub notebooks {
     shift->lists(@_);
 }
 
+# mdb: These functions were consolidated for all item types (genome, experiment,
+# notebook, etc) into User.pm functions users_with_access() and groups_with_access().
 #sub groups {
 #	my $self = shift;
 #	my %opts = @_;
