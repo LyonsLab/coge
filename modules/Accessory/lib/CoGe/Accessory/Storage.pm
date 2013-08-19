@@ -36,7 +36,7 @@ use List::Util qw[min max];
 use Data::Dumper;
 
 BEGIN {
-    use vars qw ($VERSION @ISA @EXPORT);
+    use vars qw ($VERSION @ISA @EXPORT $DATA_TYPE_QUANT $DATA_TYPE_VCF);
     require Exporter;
 
     $VERSION = 0.1;
@@ -46,7 +46,9 @@ BEGIN {
       get_experiment_path get_experiment_data
       reverse_complement);
 
-    #__PACKAGE__->mk_accessors();
+	# FIXME: these are dup'ed in scripts/load_experiment.pl
+	$DATA_TYPE_QUANT = 1;
+	$DATA_TYPE_VCF   = 2;
 }
 
 ################################################ subroutine header begin ##
@@ -297,9 +299,10 @@ sub get_experiment_path {
 sub get_experiment_data {
     my %opts = @_;
     my $eid  = $opts{eid};    # required
-    unless ($eid) {
+    my $data_type = $opts{data_type};   # required
+    unless ($eid and $data_type) {
         print STDERR
-          "Storage::get_experiment_data: experiment id not specified!\n";
+          "Storage::get_experiment_data: experiment id/type not specified!\n";
         return;
     }
     my $chr   = $opts{chr};
@@ -309,9 +312,20 @@ sub get_experiment_data {
 
     my $cmdpath      = CoGe::Accessory::Web::get_defaults()->{FASTBIT_QUERY};
     my $storage_path = get_experiment_path($eid);
-    my $cmd =
-"$cmdpath -v 1 -d $storage_path -q \"select chr,start,stop,strand,value1,value2 where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
-
+    my $cmd;
+    
+    if ($data_type == $DATA_TYPE_QUANT) {
+    	$cmd = "$cmdpath -v 1 -d $storage_path -q \"select chr,start,stop,strand,value1,value2 where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
+    }
+    elsif ($data_type == $DATA_TYPE_VCF) {
+    	$cmd = "$cmdpath -v 1 -d $storage_path -q \"select chr,start,stop,type,id,ref,alt,qual,info where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
+    }
+    else {
+    	print STDERR
+          "Storage::get_experiment_data: invalid type!\n";
+        return;
+    }
+    
     #print STDERR "$cmd\n";
     my @cmdOut = qx{$cmd};
     #print STDERR @cmdOut;

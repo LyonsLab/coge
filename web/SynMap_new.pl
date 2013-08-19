@@ -2346,12 +2346,21 @@ sub get_results {
             }
         }
 
-        #FIXME: Cancellation and termination are currrently the same
-        when ('terminated') {
+        when ('cancelled') {
             if ( $job->status != 3 ) {
                 $job->update(
                     {
                         status => 3
+                    }
+                );
+            }
+        }
+
+        when ('terminated') {
+            if ( $job->status != 4 ) {
+                $job->update(
+                    {
+                        status => 4
                     }
                 );
             }

@@ -114,7 +114,7 @@ sub dispatch {
     my %args  = $form->Vars;
     my $fname = $args{'fname'};
     if ($fname) {
-
+    	die "Web::dispatch: function '$fname' not found!" if (not defined $functions->{$fname});
         #my %args = $form->Vars;
         #print STDERR Dumper \%args;
         if ( $args{args} ) {

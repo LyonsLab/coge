@@ -892,8 +892,7 @@ sub version {
  Purpose   : gets the genomic seqence for a feature
  Returns   : a string
  Argument  : none
- Comments  : This method simply creates a CoGe object and calls:
-             get_genomic_sequence_for_feature($self)
+ Comments  : 
 See Also   : CoGe
 
 =cut
@@ -942,14 +941,14 @@ sub genomic_sequence {
 	my $start    = $locs[0][0];
 	my $stop     = $locs[-1][1];
 	my $full_seq = $seq ? $seq : $dataset->get_genomic_sequence(
-		chromosome => $chr,
-		start      => $start,
-		stop       => $stop,
-		debug      => $debug,
-		gstid      => $gstid,
-		dsgid      => $dsgid,
-		server     => $server,
-	);
+			chr => $chr,
+			start      => $start,
+			stop       => $stop,
+			debug      => $debug,
+			gstid      => $gstid,
+			dsgid      => $dsgid,
+			server     => $server,
+		);
 	if ($full_seq) {
 		foreach my $loc (@locs) {
 			if ( $loc->[0] - $start + $loc->[1] - $loc->[0] + 1 >
@@ -1013,9 +1012,10 @@ See Also   : genomic_sequence()
 
 ################################################## subroutine header end ##
 
-sub genome_sequence {
-	shift->genomic_sequence(@_);
-}
+# mdb removed 8/14/13 - aliases are bad for readability
+#sub genome_sequence {
+#	shift->genomic_sequence(@_);
+#}
 
 ################################################ subroutine header begin ##
 
