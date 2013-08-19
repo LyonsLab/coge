@@ -27,8 +27,8 @@ Options:
 #;
 }
 
-my $connstr = 'dbi:mysql:coge:homer:3306';
-$coge = CoGeX->connect( $connstr, 'cnssys', 'CnS' );
+my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
+my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 
 my $DSG = $coge->resultset('DatasetGroup')->resolve($dataset_group);
 @datasets = map { $_->dataset_id } $DSG->datasets;

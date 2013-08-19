@@ -53,8 +53,8 @@ $use_contigs_as_features =0 unless defined $use_contigs_as_features;
 
 
 my $GENOMIC_SEQ_LEN = 10000; #length to break up genomic sequence
-my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
-$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+my $connstr = 'dbi:mysql:dbname=genomes;host=HOST;port=PORT';
+$coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 

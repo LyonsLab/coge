@@ -47,8 +47,8 @@ Options:
     exit;
   }
 
-my $connstr = 'dbi:mysql:dbname=coge;host=genomevolution.org;port=3306';
-my $coge = CoGeX->connect($connstr, 'elyons', 'eagle7' );
+my $connstr = 'dbi:mysql:dbname=coge;host=genomevolution.org;port=PORT';
+my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 my ($at) = $coge->resultset('AnnotationType')->search({name=>'note'});
 my $header_printed = 0;
 $master = 1 unless $master;

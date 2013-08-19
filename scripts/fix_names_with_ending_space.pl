@@ -4,8 +4,8 @@ use strict;
 use Data::Dumper;
 #use CoGeX;
 use DBI;
-my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
-my $coge = DBI->connect($connstr, 'cnssys', 'CnS' );
+my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
+my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 
 my $query = qq{select feature_name_id,name from feature_name where name like "% "};
 my $sth = $coge->prepare($query);
