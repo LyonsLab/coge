@@ -6,6 +6,7 @@ use CGI;
 use CoGeX;
 use CoGe::Accessory::Web;
 use HTML::Template;
+use JSON::XS;
 
 no warnings 'redefine';
 
@@ -136,7 +137,8 @@ qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="modif
 
 #$html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="add_lists({ugid: '$ugid'});">Add Notebook</span>};
         $html .=
-qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_group();">Delete Group</span>};
+			qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_group();">} .
+			($group->deleted ? 'Undelete' : 'Delete') . qq{</span>};
     }
 
     return $html;
@@ -360,15 +362,8 @@ sub delete_group {
     }
 
     # OK, now delete the group
-    $group->delete();
-
-    $coge->resultset('Log')->create(
-        {
-            user_id     => $USER->id,
-            page        => $PAGE_NAME,
-            description => 'delete user group id' . $group->id
-        }
-    );
+    $group->deleted(!$group->deleted); # do undelete if already deleted
+    $group->update;
 
     return 1;
 }

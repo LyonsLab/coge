@@ -357,10 +357,6 @@ function search_lists () {
 	});
 }
 
-function dialog_delete_list () {
-	show_dialog('list_delete_box', 'Delete Notebook?', '', 450);
-}
-
 function delete_list () {
 	$.ajax({
 		data: {
@@ -473,14 +469,6 @@ function image_preview(obj, preview) {
 <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'> <!-- Add/Edit Annotation Dialog -->
 
 <div id="list_contents_edit_box" class="dialog_box" title="Add Items to Notebook" style="display:none;"></div>
-
-<div id="list_delete_box" class="dialog_box" style='display:none;' align='center'>
-Are you sure you want to permanently delete this notebook?<p>
- <div>
-  <span style="font-size:.75em" class='ui-button ui-corner-all' onClick="delete_list();">Yes</span>
-  <span style="font-size:.75em" class='ui-button ui-corner-all' onClick="$('#list_delete_box').dialog('close');">No</span>
- </div>
-</div>
 
 </TMPL_IF>
 

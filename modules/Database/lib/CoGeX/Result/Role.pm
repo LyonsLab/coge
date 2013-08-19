@@ -11,30 +11,20 @@ My::Schema::Result::Role
 
 =cut
 
-__PACKAGE__->table("role");
+=head1 AUTHORS
 
-=head1 ACCESSORS
+ Eric Lyons
 
-=head2 role_id
+=head1 COPYRIGHT
 
-  data_type: 'bigint'
-  is_auto_increment: 1
-  is_nullable: 0
+The full text of the license can be found in the
+LICENSE file included with this module.
 
-=head2 name
-
-  data_type: 'varchar'
-  is_nullable: 1
-  size: 255
-
-=head2 description
-
-  data_type: 'varchar'
-  is_nullable: 1
-  size: 255
+=head1 SEE ALSO
 
 =cut
 
+__PACKAGE__->table("role");
 __PACKAGE__->add_columns(
     "role_id",
     {
@@ -90,6 +80,32 @@ sub is_reader {
 
 ################################################ subroutine header begin ##
 
+=head2 is_higher
+
+ Usage     : $self->is_higher( role )
+ Purpose   : Test whether this role is more privileged than given role.
+ Returns   : true or false
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+sub is_higher {
+	my ( $self, $role ) = @_;
+	return 1 unless $role;
+    return ( $self->id < $role->id );
+}
+
+sub is_lower {
+	my ( $self, $role ) = @_;
+	return 0 unless $role;
+    return ( $self->id > $role->id );
+}
+
+################################################ subroutine header begin ##
+
 =head2 groups
 
  Usage     : $self->groups
@@ -133,19 +149,3 @@ sub permissions {
 }
 
 1;
-
-=head1 AUTHORS
-
- Eric Lyons
-
-=head1 COPYRIGHT
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl itself.
-
-The full text of the license can be found in the
-LICENSE file included with this module.
-
-=head1 SEE ALSO
-
-=cut
