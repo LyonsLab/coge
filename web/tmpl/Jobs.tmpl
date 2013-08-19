@@ -82,74 +82,6 @@ function filter_rows (search_text) { // fast filter search
 	$('#filter_count').html('Showing ' + visible + ' of ' + total + ' rows');
 }
 
-function run_get_lists_for_user(opts){
-	if (!opts) { opts={}; }
-	divid = opts.divid; // ID for DIV where results will be displayed in page
-
-	// create a new closure who's scope does *not*
-	// include the `divid` value so that callback will
-	// not clobber the `divid` variable
-	var create_callback = function(divid) {
-		var local_divid = divid;
-		return function (data) {
-			$('#'+local_divid).html(data);
-			set_table();
-		};
-	};
-
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'get_lists_for_user',
-		},
-		success : create_callback(divid)
-	});
-}
-
-function create_list (opts){
-	name = $('#name').val();
-	desc = $('#desc').val();
-	typeid = $('#type option:selected').attr('value');
-	if (name) {
-		$.ajax({
-			data: {
-				jquery_ajax: 1,
-				fname: 'create_list',
-				name: name,
-				desc: desc,
-				typeid: typeid,
-			},
-			success : function(val) {
-				if (val != 1) {alert(val);}
-				run_get_lists_for_user({divid: 'lists'});
-			},
-		});
-	}
-	else { alert ('Error!  Must have a name!');}
-}
-
-function delete_list () {
-	lid = $('#list_delete_lid').val();
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'delete_list',
-			lid: lid,
-		},
-		success : function() {
-			run_get_lists_for_user({divid: 'lists'});
-		},
-	});
-	$("#list_delete_box").dialog('close');
-}
-
-function dialog_delete_list (opts) {
-	$("#list_delete_box").dialog("option", "title", "Delete Notebook?");
-	$("#list_delete_box").dialog("option", "width", "450");
-	$("#list_delete_box").dialog('open');
-	$('#list_delete_lid').val(opts.lid);
-}
-
 function cancel_job() {
     var rows = $("#list_table_body input[type=checkbox]")
         .filter(":checked")
@@ -198,15 +130,6 @@ function cancel_job() {
 <div id="lists"><TMPL_VAR NAME="LIST_INFO"></div>
 
 <div id="edit_box" class="dialog_box" style="display:none;"></div>
-
-<div id="list_delete_box" class="dialog_box" style='display:none;' align='center'>
-Are you sure you want to permanently delete this notebook?<p>
- <div>
-  <input type='hidden' id='list_delete_lid'>
-  <span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_list();">Yes</span>
-  <span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="$('#list_delete_box').dialog('close');">No</span>
- </div>
-</div>
 
 <div id="admin_stuff"></div>
 </TMPL_IF> <!-- MAIN -->
