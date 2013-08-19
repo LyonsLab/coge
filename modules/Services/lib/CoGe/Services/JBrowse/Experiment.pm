@@ -263,7 +263,7 @@ sub features {
                     $type = $type . $ref . 'to' . $alt
                       if ( lc($type) eq 'snp' );
                     $results .= ( $results ? ',' : '' )
-                      . qq{{ "id": $eid, "name": "$name", "type": "$type", "start": $start, "end": $end, "score": $qual, "info": "$info" }};
+                      . qq{{ "id": $eid, "name": "$name", "type": "$type", "start": $start, "end": $end, "ref": "$ref", "alt": "$alt", "score": $qual, "info": "$info" }};
                 }
             }
         }
