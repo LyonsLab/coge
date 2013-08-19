@@ -1168,8 +1168,8 @@ sub get_contents {
         }
     );
 
-  # Preload stuff speed (needed for genome/experiment sorting and info routines)
-  #FIXME which would be faster, children_by_type_role_id or joins?
+    # Preload stuff speed (needed for genome/experiment sorting and info routines)
+    #FIXME which would be faster, children_by_type_role_id or joins?
     my %sourceIdToName =
       map { $_->id => $_->name } $coge->resultset('DataSource')->all();
 
