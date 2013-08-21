@@ -1497,43 +1497,45 @@ sub get_codon_usage {
     my $gstid = $opts{gstid};
     return unless $dsid || $dsgid;
 
-    my $search;
-    $search = { "feature_type.name" => "CDS" };
+    my $search = { "feature_type.name" => "CDS" };
     $search->{"me.chromosome"} = $chr if defined $chr;
 
-    my @dsids;
-    push @dsids, $dsid if $dsid;
+	my (@items, @datasets);
+	if ($dsid) {
+		my $ds = $coge->resultset('Dataset')->find($dsid);
+		return "unable to find dataset id$dsid\n" unless $ds;
+		push @items, $ds;
+		push @datasets, $ds;
+	}
     if ($dsgid) {
         my $dsg = $coge->resultset('Genome')->find($dsgid);
-        unless ($dsg) {
-            my $error = "unable to create genome object using id $dsgid\n";
-            return $error;
-        }
+        return "unable to find genome id$dsgid\n" unless $dsgid;
         $gstid = $dsg->type->id;
-        foreach my $ds ( $dsg->datasets() ) {
-            push @dsids, $ds->id;
-        }
+        push @items, $dsg;
+        push @datasets, $dsg->datasets;
     }
+    
     my %codons;
     my $codon_total = 0;
     my $feat_count  = 0;
     my ( $code, $code_type );
-
-    foreach my $dsidt (@dsids) {
-        my $ds = $coge->resultset('Dataset')->find($dsidt);
-        my %seqs
-          ; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
+	my %seqs; # prefetch the sequences with one call to genomic_sequence (slow for many seqs)
+	
+    foreach my $item (@items) { # genome or dataset objects
         if ( defined $chr ) {
             $seqs{$chr} =
-              $ds->get_genomic_sequence( chr => $chr, seq_type => $gstid );
+              $item->get_genomic_sequence( chr => $chr, seq_type => $gstid );
         }
         else {
             %seqs =
               map {
                 $_,
-                  $ds->get_genomic_sequence( chr => $_, seq_type => $gstid )
-              } $ds->chromosomes;
+                  $item->get_genomic_sequence( chr => $_, seq_type => $gstid )
+              } $item->chromosomes;
         }
+    }
+    
+    foreach my $ds (@datasets) {
         foreach my $feat (
             $ds->features(
                 $search,
@@ -1566,12 +1568,11 @@ sub get_codon_usage {
     }
     %codons = map { $_, $codons{$_} / $codon_total } keys %codons;
 
-#Josh put some stuff in here so he could get raw numbers instead of percentages for aa usage. He should either make this an option or delete this code when he is done. REMIND HIM ABOUT THIS IF YOU ARE EDITING ORGVIEW!
-    my $html = "Codon Usage: $code_type";
-    $html .= CoGe::Accessory::genetic_code->html_code_table(
-        data => \%codons,
-        code => $code
-    );
+    my $html = "Codon Usage: $code_type" .
+     	CoGe::Accessory::genetic_code->html_code_table(
+        	data => \%codons,
+        	code => $code
+    	);
     return $html;
 }
 
