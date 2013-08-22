@@ -76,13 +76,14 @@ open( my $log, ">>$logfile" ) or die "Error opening log file";
 $log->autoflush(1);
 
 # Process and verify parameters
-$fasta_files = unescape($fasta_files);
-$name        = unescape($name);
-$description = unescape($description);
-$link        = unescape($link);
-$version     = unescape($version);
-$source_name = unescape($source_name);
-$source_desc = unescape($source_desc);
+$fasta_files = unescape($fasta_files) if ($fasta_files);
+$name        = unescape($name) if ($name);
+$description = unescape($description) if ($description);
+$link        = unescape($link) if ($link);
+$version     = unescape($version) if ($version);
+$message     = unescape($message) if ($message);
+$source_name = unescape($source_name) if ($source_name);
+$source_desc = unescape($source_desc) if ($source_desc);
 $restricted  = '0' if ( not defined $restricted );
 $split       = 1 if ( not defined $split );
 $compress    = 0 if ( not defined $compress );
@@ -179,6 +180,7 @@ my $genome = $coge->resultset('Genome')->create(
     {
         name                     => $name,
         description              => $description,
+        message					 => $message,
         link                     => $link,
         version                  => $version,
         organism_id              => $organism->id,
