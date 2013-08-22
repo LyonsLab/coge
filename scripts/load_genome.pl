@@ -433,7 +433,7 @@ sub process_fasta_file {
 
         # Append sequence to master file
         open( my $out, ">>$target_dir/genome.faa" );
-        my $head = $chr =~ /^\d+$/ ? ">gi" : ">lcl";
+        my $head = $chr =~ /^\d+$/ ? "gi" : "lcl";
         $head .= "|" . $chr;
         print_fasta($out, $head, \$seq); #print $out "$head\n$seq\n";
         close($out);
