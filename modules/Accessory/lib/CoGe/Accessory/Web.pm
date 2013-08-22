@@ -16,7 +16,7 @@ use HTTP::Request;
 use XML::Simple;
 use CoGe::Accessory::LogUser;
 use Digest::MD5 qw(md5_base64);
-use POSIX;
+use POSIX qw(!tmpnam !tmpfile);
 use IPC::System::Simple qw(capture system $EXITVAL EXIT_ANY);
 use Mail::Mailer;
 
