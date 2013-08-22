@@ -4,7 +4,7 @@ use strict;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Storage qw( index_genome_file get_tiered_path );
-use CoGe::Accessory::Utils qw( commify units );
+use CoGe::Accessory::Utils qw( commify units print_fasta );
 use Roman;
 use Data::Dumper;
 use Getopt::Long;
@@ -14,10 +14,16 @@ use POSIX qw(ceil);
 use Benchmark;
 
 use vars qw($staging_dir $install_dir $fasta_files
-  $name $description $link $version $type_id $restricted
-  $organism_id $source_name $user_name $keep_headers $split $compress
+  $name $description $link $version $type_id $restricted $message
+  $organism_id $source_id $source_name $source_desc $user_id $user_name 
+  $keep_headers $split $compress
   $host $port $db $user $pass $config
   $P $MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE $MAX_CHR_NAME_LENGTH );
+
+$MAX_CHROMOSOMES = 100000;    # max number of chromosomes or contigs
+$MAX_PRINT       = 5;
+$MAX_SEQUENCE_SIZE   = 5 * 1024 * 1024 * 1024;    # 5 gig
+$MAX_CHR_NAME_LENGTH = 255;
 
 GetOptions(
     "staging_dir=s" => \$staging_dir,
@@ -25,12 +31,16 @@ GetOptions(
     "fasta_files=s" => \$fasta_files,    # comma-separated list (JS escaped)
     "name=s"        => \$name,           # genome name (JS escaped)
     "desc=s"        => \$description,    # genome description (JS escaped)
+    "message=s"		=> \$message,		 # message (JS escaped)
     "link=s"        => \$link,           # link (JS escaped)
     "version=s"     => \$version,        # genome version (JS escaped)
     "type_id=i"     => \$type_id,        # genomic_sequence_type_id
     "restricted=i"  => \$restricted,     # genome restricted flag
     "organism_id=i" => \$organism_id,    # organism ID
-    "source_name=s" => \$source_name,    # data source name
+    "source_id=i"	=> \$source_id,		 # data source id
+    "source_name=s" => \$source_name,    # data source name (JS escaped)
+    "source_desc=s" => \$source_desc,    # data source description (JS escaped)
+    "user_id=i"		=> \$user_id,		 # user ID
     "user_name=s"   => \$user_name,      # user name
     "keep_headers=i" =>
       \$keep_headers,    # flag to keep original headers (no parsing)
@@ -57,26 +67,35 @@ if ($config) {
     $pass = $P->{DBPASS};
 }
 
+# Open log file
+$| = 1;
+die unless ($staging_dir);
+mkpath($staging_dir); # make sure this exists
+my $logfile = "$staging_dir/log.txt";
+open( my $log, ">>$logfile" ) or die "Error opening log file";
+$log->autoflush(1);
+
+# Process and verify parameters
 $fasta_files = unescape($fasta_files);
 $name        = unescape($name);
 $description = unescape($description);
 $link        = unescape($link);
 $version     = unescape($version);
 $source_name = unescape($source_name);
+$source_desc = unescape($source_desc);
 $restricted  = '0' if ( not defined $restricted );
 $split       = 1 if ( not defined $split );
 $compress    = 0 if ( not defined $compress );
 
-$MAX_CHROMOSOMES = 100000;    # max number of chromosomes or contigs
-$MAX_PRINT       = 5;
-$MAX_SEQUENCE_SIZE   = 5 * 1024 * 1024 * 1024;    # 5 gig
-$MAX_CHR_NAME_LENGTH = 255;
-
-# Open log file
-$| = 1;
-my $logfile = "$staging_dir/log.txt";
-open( my $log, ">>$logfile" ) or die "Error opening log file";
-$log->autoflush(1);
+if (not $source_id and not $source_name) {
+	print $log "log: error: source not specified, use source_id or source_name\n";
+	exit(-1);
+}
+if (not $user_id and not $user_name) {
+	print $log "log: error: user not specified, use user_id or user_name\n";
+	exit(-1);
+}
+# TODO finish checking rest of params
 
 # Process each file into staging area
 my @files = split( ',', $fasta_files );
@@ -145,9 +164,13 @@ unless ($organism) {
 
 # Create datasource
 print $log "log: Updating database ...\n";
-my $datasource =
-  $coge->resultset('DataSource')
-  ->find_or_create( { name => $source_name, description => "" } );
+my $datasource;
+if ($source_id) {
+	$datasource = $coge->resultset('DataSource')->find($source_id);
+}
+else {
+	$datasource = $coge->resultset('DataSource')->find_or_create({ name => $source_name, description => $source_desc });
+}
 die "Error creating/finding data source" unless $datasource;
 print $log "datasource id: " . $datasource->id . "\n";
 
@@ -193,7 +216,13 @@ if ( -e $install_dir ) {
 }
 
 # Make user owner of new genome
-my $user = $coge->resultset('User')->find( { user_name => $user_name } );
+my $user;
+if ($user_id) {
+	$user = $coge->resultset('User')->find($user_id);
+}
+else {
+	$user = $coge->resultset('User')->find( { user_name => $user_name } );
+}
 unless ($user) {
     print $log "log: error finding user '$user_name'\n";
     exit(-1);
@@ -404,7 +433,7 @@ sub process_fasta_file {
         open( my $out, ">>$target_dir/genome.faa" );
         my $head = $chr =~ /^\d+$/ ? ">gi" : ">lcl";
         $head .= "|" . $chr;
-        print $out "$head\n$seq\n";
+        print_fasta($out, $head, \$seq); #print $out "$head\n$seq\n";
         close($out);
 
         # Create individual file for chromosome
