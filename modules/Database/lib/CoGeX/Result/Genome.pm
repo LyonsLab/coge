@@ -508,18 +508,18 @@ See Also   :
 sub sequence_length {
     my $self = shift;
     my $chr  = shift;
-    return unless defined $chr;
-    my ($item) = $self->genomic_sequences( { chromosome => "$chr", }, );
+    return 0 unless defined $chr;
+    my ($item) = $self->genomic_sequences( { chromosome => "$chr" } );
     unless ($item) {
-        print STDERR
-"Genome::sequence_length: unable to get genomic_sequence object for chr '$chr' genome_id '"
-          . $self->id . "'\n";
-        return;
+        warn
+"Genome::sequence_length: unable to get genomic_sequence object for chr '$chr' genome id"
+          . $self->id . "\n";
+        return 0;
     }
     my $stop = $item->sequence_length;
     unless ($stop) {
         warn "No genomic sequence for ", $self->name, " for chr $chr\n";
-        return;
+        return 0;
     }
     return $stop;
 }
