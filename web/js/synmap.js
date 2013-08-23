@@ -188,8 +188,13 @@ function run_synmap(scheduled){
         dataType: 'json',
         data: argument_list,
         success: function(data) {
-            var link = "Return to this analysis: <a href=" + data.link + " onclick=window.open('tiny')"
-            + "target = _new>" + data.link + "</a>";
+            var link = "Return to this analysis: <a href="
+            + data.link + " onclick=window.open('tiny')"
+            + "target = _new>" + data.link + "</a><br>"
+            + "To run this analysis on the previous version of SynMap <a href="
+            + data.old_link + " onclick=window.open('tiny')"
+            + "target = _new>click here</a>";
+
             var logfile = '<a href="tmp/SynMap/'
             + pageObj.basename + '.log">Logfile</a>';
 
@@ -201,6 +206,8 @@ function run_synmap(scheduled){
             start_callback(data.link, data.request);
         }
     });
+
+    return false;
 }
 
 function fetch_arguments() {
