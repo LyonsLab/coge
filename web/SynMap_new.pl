@@ -351,10 +351,11 @@ sub gen_body {
     my $autogo = $FORM->param('autogo');
     $autogo = 0 unless defined $autogo;
     $template->param( AUTOGO => $autogo );
-
     #populate organism menus
     for ( my $i = 1 ; $i <= 2 ; $i++ ) {
-        my $dsgid = $form->param( 'dsgid' . $i ) || 0;
+        my $dsgid = 0;
+	$dsgid = $form->param( 'dsgid' . $i ) if $form->param( 'dsgid' . $i );
+	$dsgid = $form->param( 'gid' . $i ) if $form->param( 'gid' .$i);
         my $feattype_param = $FORM->param( 'ft' . $i )
           if $FORM->param( 'ft' . $i );
         my $name = $FORM->param( 'name' . $i ) if $FORM->param( 'name' . $i );
