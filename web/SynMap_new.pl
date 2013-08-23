@@ -51,7 +51,7 @@ $PAGE_TITLE = "SynMap";
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
 ( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket'),
+    ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
 );
