@@ -4,6 +4,7 @@ use strict;
 use base 'Class::Accessor';
 use Data::Dumper;
 use CoGeX;
+use DBIxProfiler;
 use CGI::Carp('fatalsToBrowser');
 use CGI;
 use CGI::Cookie;
@@ -40,6 +41,7 @@ sub init {
     my ( $self, %opts ) = self_or_default(@_);
     my $ticket = $opts{ticket};    # optional cas ticket for retrieving user
     my $url    = $opts{url};       # optional url for cas authentication
+    my $debug = $opts{debug}; #flag for debugging messages
     my $page_title = $opts{page_title};    # optional page title
     #print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . "\n";
 
@@ -48,6 +50,11 @@ sub init {
 
     # Connec to DB
     my $db = CoGeX->dbconnect($CONF);
+    if ($debug) #turn on ORM debugging if requested
+      {
+	$db->storage->debugobj(new DBIxProfiler());
+	$db->storage->debug(1);
+      }
 
     # Get user
     my $user;
