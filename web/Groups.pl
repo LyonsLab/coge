@@ -144,7 +144,7 @@ sub create_group {
     return unless $conn;
 
     # Record in log
-    log_history(
+    CoGe::Accessory::Web::log_history(
         db          => $coge,
         user_id     => $USER->id,
         page        => $PAGE_TITLE,
