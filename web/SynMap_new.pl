@@ -50,10 +50,8 @@ $FORM       = new CGI;
 $PAGE_TITLE = "SynMap";
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
-my $ticket = 0;
-$ticket = $FORM->param('ticket') if $FORM->param('ticket');
 ( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
-    ticket     => $ticket,
+    ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE,
     debug      => 0,

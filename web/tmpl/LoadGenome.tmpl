@@ -243,7 +243,7 @@ function load_genome() {
 		},
 		success : function() {
 			// Add load_id to browser URL
-			window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?load_id=<TMPL_VAR NAME='LOAD_ID'>");
+			//window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?load_id=<TMPL_VAR NAME='LOAD_ID'>");
 			
 			// Open status dialog
 			$('#load_dialog').dialog('open'); 

@@ -21,7 +21,7 @@ $FORM = new CGI;
 $MAX_SEARCH_RESULTS = 1000;
 
 ( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket'),
+    ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
 );

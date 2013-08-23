@@ -112,7 +112,7 @@ sub get_genome_file {
     return $file_path if ( -r $file_path );
 
     print STDERR
-      "Storage::get_genome_file: genome file '$file_path' not readable!\n";
+      "Storage::get_genome_file: genome file '$file_path' not found or not readable!\n";
     return;
 }
 
