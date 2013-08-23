@@ -841,7 +841,7 @@ sub send_to_list          #send to list
     }
 
     # Record in the log
-    log_history(
+    CoGe::Accessory::Web::log_history(
         db          => $coge,
         user_id     => $USER->id,
         page        => $PAGE_NAME,

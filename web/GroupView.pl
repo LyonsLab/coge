@@ -288,7 +288,7 @@ sub add_user_to_group {
     return 0 unless $conn;
 
     # Record in log
-    log_history(
+    CoGe::Accessory::Web::log_history(
         db          => $coge,
         user_id     => $USER->id,
         page        => $PAGE_TITLE,
@@ -337,7 +337,7 @@ sub remove_user_from_group {
     }
 
     # Record in log
-    log_history(
+    CoGe::Accessory::Web::log_history(
         db          => $coge,
         user_id     => $USER->id,
         page        => $PAGE_TITLE,
