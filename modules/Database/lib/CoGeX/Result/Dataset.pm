@@ -408,18 +408,18 @@ See Also   :
 sub last_chromosome_position {
     my $self = shift;
     my $chr  = shift;
-    return unless defined $chr;
+    return 0 unless defined $chr;
     my ($dsg) = $self->genomes;
-    my ($item) = $dsg->genomic_sequences( { chromosome => "$chr", }, );
+    my ($item) = $dsg->genomic_sequences( { chromosome => "$chr" } );
     unless ($item) {
         warn
 "Dataset::last_chromosome_position: unable to find genomic_sequence object for '$chr'";
-        return;
+        return 0;
     }
     my $stop = $item->sequence_length();
     unless ($stop) {
         warn "No genomic sequence for ", $self->name, " for chr $chr\n";
-        return;
+        return 0;
     }
     return $stop;
 }
@@ -491,7 +491,7 @@ sub total_length {
 
     my $rs = $self->features( $search, $join );
     my $total_length = $rs->first->get_column('total_length');
-    return $total_length;
+    return ( defined $total_length ? $total_length : 0);
 }
 
 ############################################### subroutine header begin ##
