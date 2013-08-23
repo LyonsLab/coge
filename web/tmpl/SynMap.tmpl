@@ -547,8 +547,8 @@ $(document).ready(function(){
     pageObj.tempdir="<tmpl_var name=tempdir>";
 
     var autogo = "<tmpl_var name=autogo>";
-    if (autogo) {
-        run_synmap(autogo);
+    if (autogo==1) {
+      run_synmap(autogo);
     }
  });
 </script>
