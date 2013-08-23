@@ -574,12 +574,11 @@ sub send_to_list    #send to list
     }
 
     # Record in the log
-    $coge->resultset('Log')->create(
-        {
-            user_id     => $USER->id,
-            page        => $PAGE_NAME,
-            description => 'create list from features id' . $list->id
-        }
+    log_history(
+        db          => $coge,
+        user_id     => $USER->id,
+        page        => $PAGE_NAME,
+        description => 'create list from features id' . $list->id
     );
 
     my $url = "NotebookView.pl?lid=" . $list->id;
