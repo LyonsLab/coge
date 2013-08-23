@@ -954,12 +954,11 @@ sub add_users_to_group {
 		    next unless $conn;
 		
 		    # Record in log
-		    $coge->resultset('Log')->create(
-		        {
-		            user_id     => $USER->id,
-		            page        => $PAGE_TITLE,
-		            description => 'add user id' . $user->id . ' to group id' . $target_id
-		        }
+		    CoGe::Accessory::Web::log_history(
+		        db          => $coge,
+		        user_id     => $USER->id,
+		        page        => $PAGE_TITLE,
+		        description => 'add user id' . $user->id . ' to group id' . $target_id
 		    );
 	    }
 	}
@@ -1006,13 +1005,12 @@ sub remove_user_from_group {
 	    $conn->delete;
 		
 	    # Record in log
-	    $coge->resultset('Log')->create(
-	        {
-	            user_id     => $USER->id,
-	            page        => $PAGE_TITLE,
-	            description => 'remove user id' . $user_id . ' from group id' . $target_id
-	        }
-	    );	    
+	    CoGe::Accessory::Web::log_history(
+		    db          => $coge,
+		    user_id     => $USER->id,
+		    page        => $PAGE_TITLE,
+		    description => 'remove user id' . $user_id . ' from group id' . $target_id
+		);
     }
 
 	return get_group_dialog( item_list => $opts{target_items} );
@@ -1536,13 +1534,12 @@ sub create_new_group {
     #TODO
 
     # Record in log
-    $coge->resultset('Log')->create(
-        {
-            user_id     => $USER->id,
-            page        => "$PAGE_TITLE",
-            description => 'create user group id' . $group->id
-        }
-    );
+    CoGe::Accessory::Web::log_history(
+		db          => $coge,
+		user_id     => $USER->id,
+		page        => $PAGE_TITLE,
+		description => 'create user group id' . $group->id
+	);
 
     return 1;
 }
