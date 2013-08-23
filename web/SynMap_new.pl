@@ -17,6 +17,7 @@ use Data::Dumper;
 use HTML::Template;
 use JSON::XS;
 use LWP::Simple;
+use LWP::UserAgent;
 use Parallel::ForkManager;
 use GD;
 use File::Path;
@@ -1276,9 +1277,15 @@ sub get_query_link {
 
     my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
 
+    my $ua = LWP::UserAgent->new;
+    my $resp = $ua->get($tiny_link);
+    my $old = $resp->request->uri;
+    $old =~ s/SynMap/SynMap_old/;
+
     return encode_json(
         {
             link    => $tiny_link,
+            old_link => $old,
             request => "jex/synmap/status/" . $job->id,
         }
     );
