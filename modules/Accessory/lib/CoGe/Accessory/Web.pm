@@ -21,6 +21,29 @@ use POSIX qw(!tmpnam !tmpfile);
 use IPC::System::Simple qw(capture system $EXITVAL EXIT_ANY);
 use Mail::Mailer;
 
+=head1 NAME
+
+Web
+
+=head1 SYNOPSIS
+
+use Web
+
+=head1 DESCRIPTION
+
+=head1 AUTHOR
+
+Eric Lyons
+
+=head1 COPYRIGHT
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+=head1 SEE ALSO
+
+=cut
+
 BEGIN {
     use vars
       qw ($CONF $VERSION @ISA @EXPORT @EXPORT_OK $Q $TEMPDIR $BASEDIR $CONF);
@@ -43,18 +66,17 @@ sub init {
     my $url    = $opts{url};       # optional url for cas authentication
     my $debug = $opts{debug}; #flag for debugging messages
     my $page_title = $opts{page_title};    # optional page title
-    #print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . "\n";
+    #print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . " page_title=" . ($page_title ? $page_title : '') . "\n";
 
     # Get config
     $CONF = get_defaults();
 
     # Connec to DB
     my $db = CoGeX->dbconnect($CONF);
-    if ($debug) #turn on ORM debugging if requested
-      {
-	$db->storage->debugobj(new DBIxProfiler());
-	$db->storage->debug(1);
-      }
+    if ($debug) { #turn on ORM debugging if requested
+		$db->storage->debugobj(new DBIxProfiler());
+		$db->storage->debug(1);
+    }
 
     # Get user
     my $user;
@@ -868,32 +890,3 @@ sub send_email {
 }
 
 1;
-
-=head1 NAME
-
-Web
-
-=head1 SYNOPSIS
-
-use Web
-
-=head1 DESCRIPTION
-
-=head1 USAGE
-
-=head1 BUGS
-
-=head1 SUPPORT
-
-=head1 AUTHOR
-
-Eric Lyons
-
-=head1 COPYRIGHT
-
-The full text of the license can be found in the
-LICENSE file included with this module.
-
-=head1 SEE ALSO
-
-=cut
