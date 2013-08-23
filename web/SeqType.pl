@@ -14,7 +14,7 @@ $FORM = new CGI;
 $PAGE_TITLE = 'SeqType';
 
 ( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket'),
+    ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
 );
