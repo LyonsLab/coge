@@ -50,10 +50,13 @@ $FORM       = new CGI;
 $PAGE_TITLE = "SynMap";
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
+my $ticket = 0;
+$ticket = $FORM->param('ticket') if $FORM->param('ticket');
 ( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket'),
+    ticket     => $ticket,
     url        => $FORM->url,
-    page_title => $PAGE_TITLE
+    page_title => $PAGE_TITLE,
+    debug      => 0,
 );
 
 $YERBA = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
@@ -353,9 +356,12 @@ sub gen_body {
     $autogo = 0 unless defined $autogo;
     $template->param( AUTOGO => $autogo );
 
+    #if the page is loading with genomes, there will be a check for whether the genome is rest
     #populate organism menus
     for ( my $i = 1 ; $i <= 2 ; $i++ ) {
-        my $dsgid = $form->param( 'dsgid' . $i ) || 0;
+        my $dsgid = 0;
+	$dsgid = $form->param( 'dsgid' . $i ) if $form->param( 'dsgid' . $i ); #old method for specifying genome
+	$dsgid = $form->param( 'gid' . $i ) if $form->param( 'gid' .$i); #new method for specifying genome
         my $feattype_param = $FORM->param( 'ft' . $i )
           if $FORM->param( 'ft' . $i );
         my $name = $FORM->param( 'name' . $i ) if $FORM->param( 'name' . $i );
@@ -514,12 +520,11 @@ sub gen_org_menu {
     my $dsgid          = $opts{dsgid};
     my $feattype_param = $opts{feattype_param};
     $feattype_param = 1 unless $feattype_param;
-    my $org;
-
     if ($dsgid) {
-        $org = $coge->resultset('Genome')->find($dsgid)->organism;
+        my $org = $coge->resultset('Genome')->find($dsgid)->organism;
         $oid = $org->id;
     }
+
     $name = "Search" unless $name;
     $desc = "Search" unless $desc;
     my $menu_template =
@@ -530,6 +535,8 @@ sub gen_org_menu {
     $menu_template->param( ORG_DESC => $desc );
     $menu_template->param(
         'ORG_LIST' => get_orgs( name => $name, i => $num, oid => $oid ) );
+#    $oid = 0;
+#    $dsgid =0;
     my ($dsg_menu) = gen_dsg_menu( oid => $oid, dsgid => $dsgid, num => $num );
     $menu_template->param( DSG_MENU => $dsg_menu );
 
@@ -556,18 +563,19 @@ sub gen_dsg_menu {
     my $message;
     my $org_name;
 
-    #   print STDERR"here!\n";
-
+#    print STDERR join ("\n", map {$_->id} $USER->genomes),"\n";
     foreach my $dsg (
         $coge->resultset('Genome')->search(
             { organism_id => $oid },
-            { prefetch    => ['genomic_sequence_type'] }
+            { prefetch    => ['genomic_sequence_type'],
+	    join =>['genomic_sequence_type']}
         )
       )
     {
         my $name;
         my $has_cds = 0;
-        if ( $dsg->restricted && !$USER->has_access_to_genome($dsg) ) {
+	
+        if ($dsg->restricted && !$USER->has_access_to_genome($dsg) ) {
             next unless $dsgid && $dsg->id == $dsgid;
             $name = "Restricted";
         }
@@ -593,6 +601,7 @@ sub gen_dsg_menu {
                 $has_cds = 1;
             }
         }
+
         push @dsg_menu, [ $dsg->id, $name, $dsg, $has_cds ];
 
     }
