@@ -41,7 +41,7 @@ sub init {
     my $ticket = $opts{ticket};    # optional cas ticket for retrieving user
     my $url    = $opts{url};       # optional url for cas authentication
     my $page_title = $opts{page_title};    # optional page title
-    #print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . "\n";
+    print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . " page_title=" . ($page_title ? $page_title : '') . "\n";
 
     # Get config
     $CONF = get_defaults();
