@@ -324,12 +324,11 @@ sub login_cas {
         );    #do we have a valid user in the database, if not create
         $coge_user->insert;
 
-        $coge->resultset('Log')->create(
-            {
-                user_id     => $coge_user->id,
-                page        => 'Web.pm',
-                description => 'create user'
-            }
+        log_history(
+            db          => $coge,
+            user_id     => $coge_user->id,
+            page        => 'Web.pm',
+            description => 'create user',
         );
     }
 

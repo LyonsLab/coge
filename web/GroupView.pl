@@ -288,12 +288,11 @@ sub add_user_to_group {
     return 0 unless $conn;
 
     # Record in log
-    $coge->resultset('Log')->create(
-        {
-            user_id     => $USER->id,
-            page        => $PAGE_NAME,
-            description => 'add user id' . $uid . ' to group id' . $ugid
-        }
+    CoGe::Accessory::Web::log_history(
+        db          => $coge,
+        user_id     => $USER->id,
+        page        => $PAGE_TITLE,
+        description => 'add user id' . $uid . ' to group id' . $ugid
     );
 
     return 1;
@@ -338,12 +337,11 @@ sub remove_user_from_group {
     }
 
     # Record in log
-    $coge->resultset('Log')->create(
-        {
-            user_id     => $USER->id,
-            page        => $PAGE_NAME,
-            description => 'remove user id' . $uid . ' from group id' . $ugid
-        }
+    CoGe::Accessory::Web::log_history(
+        db          => $coge,
+        user_id     => $USER->id,
+        page        => $PAGE_TITLE,
+        description => 'remove user id' . $uid . ' from group id' . $ugid
     );
 
     return 1;

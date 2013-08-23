@@ -144,12 +144,11 @@ sub create_group {
     return unless $conn;
 
     # Record in log
-    $coge->resultset('Log')->create(
-        {
-            user_id     => $USER->id,
-            page        => $PAGE_NAME,
-            description => 'create user group id' . $group->id
-        }
+    CoGe::Accessory::Web::log_history(
+        db          => $coge,
+        user_id     => $USER->id,
+        page        => $PAGE_TITLE,
+        description => 'create user group id' . $group->id
     );
 
     return 1;
