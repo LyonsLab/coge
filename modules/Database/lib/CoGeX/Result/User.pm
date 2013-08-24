@@ -76,7 +76,7 @@ __PACKAGE__->has_many( # child lists
 	{ "foreign.parent_id" => "self.user_id" }, 
 	{ where => [ -and => [ parent_type => $node_types->{user}, child_type => $node_types->{list} ] ] } );	
 
-__PACKAGE__->mk_accessors(qw(_genome_ids));
+__PACKAGE__->mk_accessors(qw(_genome_ids _experiment_ids));
 #_genome_ids is a hash_ref of the genome_ids that a user has access to
 
 
@@ -311,7 +311,22 @@ sub has_access_to_genome_old {
 	return $self->is_admin || $self->child_connector(id => $gid, type => 'genome');
 }
 
+
 sub has_access_to_experiment {
+	my $self = shift;
+	return unless $self->id; # ignore public user
+	my $experiment = shift;
+	my $eid = $experiment =~ /^\d+$/ ? $experiment : $experiment->id;
+	return 1 if $self->is_admin;
+	unless ( $self->_experiment_ids)
+	  {
+	    $self->_experiment_ids({map{$_->id=>1} $self->experiments});
+	  }
+	my $ids = $self->_experiment_ids();
+	return $ids->{$eid};
+      }
+
+sub has_access_to_experiment_old {
 	my $self = shift;
 	return unless $self->id; # ignore public user
 	my $experiment  = shift;
