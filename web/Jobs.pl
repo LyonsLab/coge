@@ -51,7 +51,7 @@ sub get_jobs_for_user {
           ->search( { user_id => 0 }, { order_by => 'job_id ASC', } );
     }
     else {
-        @jobs = $USER->jobs->search( undef, { order_by => 'job_id DESC' } );
+        @jobs = $USER->jobs->search( {user_id=>$USER->id}, { order_by => 'job_id DESC' } );
     }
 
     my @job_items;
