@@ -48,9 +48,16 @@ __PACKAGE__->belongs_to("user"			=> "CoGeX::Result::User", 		{ "foreign.user_id"
 __PACKAGE__->belongs_to("parent_group" 	=> "CoGeX::Result::UserGroup",  { "foreign.user_group_id" => "self.parent_id" } );
 __PACKAGE__->belongs_to("child_group" 	=> "CoGeX::Result::UserGroup",  { "foreign.user_group_id" => "self.child_id" } );
 __PACKAGE__->belongs_to("experiment" 	=> "CoGeX::Result::Experiment",	{ "foreign.experiment_id" => "self.child_id" } );
-__PACKAGE__->belongs_to("genome"     	=> "CoGeX::Result::Genome",     { "foreign.genome_id" => "self.child_id" } );
+__PACKAGE__->belongs_to("genome"     	=> "CoGeX::Result::Genome",     { "foreign.genome_id" => "self.child_id" },{
+					 join=>['genomic_sequence_type', 'organism'],
+					 prefetch=>['genomic_sequence_type', 'organism'],
+					} );
 __PACKAGE__->belongs_to("feature"    	=> "CoGeX::Result::Feature",    { "foreign.feature_id" => "self.child_id" } );
-__PACKAGE__->belongs_to("list" 		 	=> "CoGeX::Result::List", 		{ "foreign.list_id" => "self.child_id" } );
+__PACKAGE__->belongs_to("list" 		 	=> "CoGeX::Result::List", 		{ "foreign.list_id" => "self.child_id" },
+			{
+			 join =>['child_connectors', 'list_type'],
+			 prefetch => ['child_connectors','list_type'],
+			});
 __PACKAGE__->belongs_to("role" 		 	=> "CoGeX::Result::Role", "role_id" );
 
 
@@ -202,19 +209,19 @@ sub child
 	my $self = shift;
 	
 	if ($self->is_child_experiment) {
-		return $self->experiment;
+		return $self->experiment();
 	}
 	elsif ($self->is_child_genome) {
-		return $self->genome;
+		return $self->genome();
 	}
 	elsif ($self->is_child_feature) {
-		return $self->feature;
+		return $self->feature();
 	}
 	elsif ($self->is_child_list) {
-		return $self->list;	
+		return $self->list();	
 	}
 	elsif ($self->is_child_group) {
-		return $self->child_group;
+		return $self->child_group();
 	}
 	else {
 		warn "Unknown type ".$self->child_type."\n";
