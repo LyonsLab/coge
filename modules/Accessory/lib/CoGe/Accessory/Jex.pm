@@ -6,7 +6,7 @@ use 5.10.0;
 use Moose;
 use JSON::XS;
 use ZMQ::LibZMQ3;
-use ZMQ::Constants qw(ZMQ_REQ);
+use ZMQ::Constants qw/:all/;
 use CoGe::Accessory::Workflow;
 
 # Attributes
@@ -66,11 +66,26 @@ sub submit_workflow {
     );
 
     $socket = zmq_socket( $self->_context, ZMQ_REQ );
+    zmq_setsockopt($socket, ZMQ_LINGER, 0);
     zmq_connect( $socket, _connection_string( $self->host, $self->port ) );
-    zmq_send( $socket, $request );
-    $msg = zmq_recvmsg($socket);
 
-    return zmq_msg_data($msg);
+    zmq_sendmsg( $socket, $request, ZMQ_NOBLOCK);
+
+    my $count = 0;
+
+    while (5 > $count && not defined($msg)) {
+        $msg = zmq_recvmsg($socket, ZMQ_NOBLOCK);
+        $count++;
+        sleep 1;
+    }
+
+    zmq_close($socket);
+    zmq_term($self->_context);
+
+    my $result = zmq_msg_data($msg) if $msg;
+    $result //= '{"error" : "ERROR"}';
+
+    return $result;
 }
 
 sub wait_for_completion {
