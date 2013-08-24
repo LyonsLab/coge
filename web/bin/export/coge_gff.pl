@@ -10,7 +10,7 @@ no warnings 'redefine';
 my $form = new CGI;
 
 my ( $coge, $user ) = CoGe::Accessory::Web->init(
-    ticket => $form->param('ticket'),
+    ticket => $form->param('ticket') || undef,
     url    => $form->url
 );
 
