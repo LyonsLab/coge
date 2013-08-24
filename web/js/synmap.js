@@ -58,6 +58,7 @@ function populate_page_obj(basefile) {
     pageObj.waittime = 1000;
     pageObj.runtime = 0;
     pageObj.error = 0;
+    pageObj.engine = "<span class=\"alert\">The job engine has failed.</span><br>Please use the previous version of SynMap.";
 }
 
 function run_synmap(scheduled){
@@ -166,10 +167,12 @@ function run_synmap(scheduled){
 
         update_dialog_callback = function(data) {
             if (data.status == 'Attached' || data.status == 'Scheduled') {
-                close_dialog();
-                $('#synmap_dialog').dialog('open');
                 update_dialog(status_request, "#synmap_dialog", synmap_formatter,
                         argument_list);
+            } else {
+                $('#synmap_dialog').find('#text').html(pageObj.engine);
+                $('#synmap_dialog').find('#progress').hide();
+                $('#synmap_dialog').find('#dialog_error').slideDown();
             }
         }
 
@@ -178,10 +181,16 @@ function run_synmap(scheduled){
             data: argument_list,
             dataType: 'json',
             success: update_dialog_callback,
+            error: function(err) {
+                $('#synmap_dialog').find('#progress').hide();
+                $('#synmap_dialog').find('#dialog_error').slideDown();
+            }
         });
     };
 
     argument_list.fname = 'get_query_link';
+    $('#synmap_dialog').dialog('open');
+    $('#synmap_dialog').find('#text').html("<p>Initializing SynMap...</p>");
 
     $.ajax({
         url: request,
@@ -605,7 +614,6 @@ function update_dialog(request, identifier, formatter, args) {
         });
     };
 
-
     var get_poll_rate = function() {
         pageObj.runtime += 1;
 
@@ -645,7 +653,7 @@ function update_dialog(request, identifier, formatter, args) {
                 }
             },
             error: function(data) {
-                if (pageObj.error > 5) {
+                if (pageObj.error > 3) {
                     dialog.find('#progress').hide();
                     dialog.find('#dialog_error').slideDown();
                 } else {
@@ -666,6 +674,19 @@ function update_dialog(request, identifier, formatter, args) {
 
         var callback = function() {
             update_dialog(request, identifier, formatter, args);
+        }
+
+        if (json.error) {
+            pageObj.error++;
+            if (pageObj.error > 3) {
+                workflow_status.html(pageObj.engine);
+                dialog.find('#text').html(workflow_status);
+                dialog.find('#progress').hide();
+                dialog.find('#dialog_error').slideDown();
+                return;
+            }
+        } else {
+            pageObj.error = 0;
         }
 
         if (json.status) {
