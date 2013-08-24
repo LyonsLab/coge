@@ -1,4 +1,5 @@
 import json
+import itertools
 import math
 import re
 import random
@@ -10,7 +11,9 @@ from cgi import parse_qs, escape
 import zmq
 
 _defaults = {
-    'connection' : 'tcp://localhost:5151'
+    'connection' : 'tcp://localhost:5151',
+    'max_attempts' : 5,
+    'timeout' : 1000
 }
 
 def not_found(environ, start_response):
@@ -31,32 +34,44 @@ def stats(environ, start_response):
 def status(environ, start_response):
     start_response('200 OK', [('Content-Type', 'application/json')])
 
-    result = {}
+    result = None
 
     try:
         args = environ['url_args']
         identity = args['id']
     except KeyError:
-        return json.dumps(result)
+        return json.dumps({})
 
     if not identity:
-        return json.dumps(result)
+        return json.dumps({})
 
-    try:
-        context = zmq.Context()
-        socket = context.socket(zmq.REQ)
-        socket.connect(_defaults['connection'])
-        request = {
-            'request' : 'get_status',
-            'data' : {
-                'id' : args['id']
-            },
-        }
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.setsockopt(zmq.LINGER, 0)
+    socket.connect(_defaults['connection'])
+    request = {
+        'request' : 'get_status',
+        'data' : {
+            'id' : args['id']
+        },
+    }
 
-        socket.send_json(request)
-        result = socket.recv_json()
-    except:
-        result = {}
+    poller = zmq.Poller()
+    poller.register(socket, zmq.POLLIN)
+    counter = itertools.count()
+
+    socket.send_json(request, zmq.NOBLOCK)
+
+    while _defaults['max_attempts'] > counter.next() and not result:
+        sys.stderr.write('waiting...\n');
+        if socket in dict(poller.poll(timeout=_defaults['timeout'])):
+            result = socket.recv_json(flags=zmq.NOBLOCK)
+
+    socket.close()
+    context.term()
+
+    if not result:
+        result = {"error" : 1}
 
     return json.dumps(result)
 
