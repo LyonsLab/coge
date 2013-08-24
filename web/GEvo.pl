@@ -67,7 +67,7 @@ $CGI::POST_MAX        = 60 * 1024 * 1024;    # 24MB
 $CGI::DISABLE_UPLOADS = 0;
 
 ( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket'),
+    ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
 );

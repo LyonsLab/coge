@@ -26,9 +26,10 @@ $PAGE_TITLE = 'User';
 $FORM = new CGI;
 
 ( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket'),
+	page_title => $PAGE_TITLE,
+    ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
-    page_title => $PAGE_TITLE
+    debug=>0,
 );
 
 # debug for fileupload:
@@ -1172,8 +1173,17 @@ sub get_contents {
       map { $_->id => $_->name } $coge->resultset('DataSource')->all();
 
     # Get all items for this user (genomes, experiments, notebooks)
+    my $t1    = new Benchmark;
     my ( $children, $roles ) = $USER->children_by_type_role_id;
-
+    my $t2    = new Benchmark;
+    my $time = timestr( timediff( $t2, $t1 ) );
+    print STDERR "User.pl: Number of children\n";
+    foreach my $k (sort keys %$children)
+      {
+	print STDERR $k,"\t", scalar values $children->{$k},"\n";
+      }
+#    $children={};
+    print STDERR "Time to run user->children_by_type_role_id: $time\n";
     #print STDERR "get_contents: time1=" . ((time - $start_time)*1000) . "\n";
 
 	if (   $type == $ITEM_TYPE{all} 
@@ -1292,7 +1302,9 @@ sub get_contents {
               };
         }
     }
-
+    my $t3    = new Benchmark;
+    $time = timestr( timediff( $t3, $t2 ) );
+    print STDERR "Time to populate html::tmpl: $time\n";
     #print STDERR "get_contents: time5=" . ((time - $start_time)*1000) . "\n";
     if ($html_only) {    # only do this for initial page load, not polling
         my $user_id = $USER->id;

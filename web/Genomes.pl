@@ -15,7 +15,7 @@ $PAGE_TITLE = 'Genomes';
 $FORM = new CGI;
 
 ( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
-    ticket => $FORM->param('ticket'),
+    ticket => $FORM->param('ticket') || undef,
     url    => $FORM->url,
 );
 

@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
+use base 'Class::Accessor';
 use Data::Dumper;
 
 =head1 NAME
@@ -74,6 +75,9 @@ __PACKAGE__->has_many( # child lists
 	'list_connectors' => "CoGeX::Result::UserConnector", 
 	{ "foreign.parent_id" => "self.user_id" }, 
 	{ where => [ -and => [ parent_type => $node_types->{user}, child_type => $node_types->{list} ] ] } );	
+
+__PACKAGE__->mk_accessors(qw(_genome_ids _experiment_ids));
+#_genome_ids is a hash_ref of the genome_ids that a user has access to
 
 
 ################################################ subroutine header begin ##
@@ -284,7 +288,22 @@ sub has_access_to_list {
 	return 0;
 }
 
+#new version has benefit of crawling database once if used multiple times
 sub has_access_to_genome {
+	my $self = shift;
+	return unless $self->id; # ignore public user
+	my $genome = shift;
+	my $gid = $genome =~ /^\d+$/ ? $genome : $genome->id;
+	return 1 if $self->is_admin;
+	unless ( $self->_genome_ids)
+	  {
+	    $self->_genome_ids({map{$_->id=>1} $self->genomes});
+	  }
+	my $ids = $self->_genome_ids();
+	return $ids->{$gid};
+      }
+#old version has benefit of returning matches as soon as they are found
+sub has_access_to_genome_old {
 	my $self = shift;
 	return unless $self->id; # ignore public user
 	my $genome  = shift;
@@ -292,7 +311,22 @@ sub has_access_to_genome {
 	return $self->is_admin || $self->child_connector(id => $gid, type => 'genome');
 }
 
+
 sub has_access_to_experiment {
+	my $self = shift;
+	return unless $self->id; # ignore public user
+	my $experiment = shift;
+	my $eid = $experiment =~ /^\d+$/ ? $experiment : $experiment->id;
+	return 1 if $self->is_admin;
+	unless ( $self->_experiment_ids)
+	  {
+	    $self->_experiment_ids({map{$_->id=>1} $self->experiments});
+	  }
+	my $ids = $self->_experiment_ids();
+	return $ids->{$eid};
+      }
+
+sub has_access_to_experiment_old {
 	my $self = shift;
 	return unless $self->id; # ignore public user
 	my $experiment  = shift;
