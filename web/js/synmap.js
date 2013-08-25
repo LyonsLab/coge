@@ -58,7 +58,7 @@ function populate_page_obj(basefile) {
     pageObj.waittime = 1000;
     pageObj.runtime = 0;
     pageObj.error = 0;
-    pageObj.engine = "<span class=\"alert\">The job engine has failed.</span><br>Please use the previous version of SynMap.";
+    pageObj.engine = "<span class=\"alert\">The job engine has failed.</span><br>Please use the link below to use the previous version of SynMap.";
 }
 
 function run_synmap(scheduled){
@@ -155,11 +155,6 @@ function run_synmap(scheduled){
     // TODO: Scale polling time linearly with long running jobs
     var duration = pageObj.waittime;
     var request = window.location.href.split('?')[0];
-
-    var readlog_callback = function () {
-        read_log(pageObj.basename, pageObj.tempdir);
-    };
-
     var start_callback = function(tiny_link, status_request) {
         pageObj.nolog=1;
         argument_list.fname = 'go';
@@ -189,6 +184,7 @@ function run_synmap(scheduled){
     };
 
     argument_list.fname = 'get_query_link';
+    $('#results').hide();
     $('#synmap_dialog').dialog('open');
     $('#synmap_dialog').find('#text').html("<p>Initializing SynMap...</p>");
 
@@ -207,8 +203,6 @@ function run_synmap(scheduled){
             var logfile = '<a href="tmp/SynMap/'
             + pageObj.basename + '.log">Logfile</a>';
 
-            jQuery('html, body').animate({scrollTop: 0}, 1000);
-            $('#results').hide();
             $('#dialog_log').html(logfile);
             $('#synmap_link').html(link);
 
@@ -305,6 +299,7 @@ function check_previous_analyses(){
                 jquery_ajax: 1,
                 oid1: gid1,
                 oid2: gid2,
+                fname: 'get_previous_analyses',
             },
             success: function(data)  {
                 load_previous_analyses(data);
