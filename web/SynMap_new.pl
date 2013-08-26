@@ -2635,6 +2635,9 @@ sub get_results {
         $all_file = $dag_file12_all;
     }
 
+    #FIXME: This is currently the output produced from the go function.
+    $dag_file12 = $all_file;
+
     ############################################################################
     # Run dagchainer
     ############################################################################
