@@ -63,7 +63,7 @@ sub get_jobs_for_user {
 
     foreach (@jobs) {
         push @job_items, {
-            id     => $_->id,
+            id     => int($_->id),
             link   => $_->link,
             tool   => $_->page,
             status => get_status_message($_),
