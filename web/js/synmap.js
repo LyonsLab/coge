@@ -62,7 +62,6 @@ function populate_page_obj(basefile) {
 }
 
 function run_synmap(scheduled){
-    //  generate_basefile([],[update_basename]);
     populate_page_obj();
 
     var org_name1 = pageObj.org_name1;
@@ -686,7 +685,9 @@ function update_dialog(request, identifier, formatter, args) {
 
         if (json.status) {
             current_status = json.status.toLowerCase();
-            workflow_status.html("Workflow status: " + json.status);
+            workflow_status.html("Workflow status: ");
+            workflow_status.append($('<span></span>').html(json.status));
+            workflow_status.addClass('bold');
         } else {
             setTimeout(callback, timeout);
             return;
@@ -707,15 +708,18 @@ function update_dialog(request, identifier, formatter, args) {
         }
 
         if (current_status == "completed") {
+            workflow_status.find('span').addClass('completed');
             fetch_results(true);
         } else if (current_status == "failed" || current_status == "error"
                 || current_status == "terminated"
                 || current_status == "cancelled") {
+            workflow_status.find('span').addClass('alert');
             fetch_results(false);
         } else if (current_status == "notfound") {
             setTimeout(callback, timeout);
             return;
         } else {
+            workflow_status.find('span') .addClass('running');
             setTimeout(callback, timeout);
         }
 
