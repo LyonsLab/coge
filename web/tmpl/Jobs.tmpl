@@ -117,25 +117,24 @@ $(document).ready(function(){
 });
 
 function cancel_job() {
-    var rows = $("#list_table_body input[type=checkbox]")
+    var rows = $(".grid-canvas input[type=checkbox]")
         .filter(":checked")
         .parent()
         .parent()
         .children()
-        .filter("td:nth-child(5)")
+        .filter("div:nth-child(5)")
         .filter(":contains('Running')")
         .parent();
 
     var checked = rows.children()
-        .filter("td:nth-child(1)")
+        .filter("div:nth-child(1)")
         .find("input");
 
     var status = rows.children()
-        .filter("td:nth-child(5)");
-
+        .filter("div:nth-child(5)");
 
     var jobs = rows.children()
-        .filter("td:nth-child(2)")
+        .filter("div:nth-child(2)")
         .each(function(index) {
             var argument_list =  {
                 fname: 'cancel_job',
