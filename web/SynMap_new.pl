@@ -51,8 +51,8 @@ $PAGE_TITLE = "SynMap";
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
 ( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
+    ticket => $FORM->param('ticket') || undef,
+    url => $FORM->url,
     page_title => $PAGE_TITLE,
     debug      => 0,
 );
@@ -354,12 +354,14 @@ sub gen_body {
     $autogo = 0 unless defined $autogo;
     $template->param( AUTOGO => $autogo );
 
-    #if the page is loading with genomes, there will be a check for whether the genome is rest
-    #populate organism menus
+#if the page is loading with genomes, there will be a check for whether the genome is rest
+#populate organism menus
     for ( my $i = 1 ; $i <= 2 ; $i++ ) {
         my $dsgid = 0;
-	$dsgid = $form->param( 'dsgid' . $i ) if $form->param( 'dsgid' . $i ); #old method for specifying genome
-	$dsgid = $form->param( 'gid' . $i ) if $form->param( 'gid' .$i); #new method for specifying genome
+        $dsgid = $form->param( 'dsgid' . $i )
+          if $form->param( 'dsgid' . $i );    #old method for specifying genome
+        $dsgid = $form->param( 'gid' . $i )
+          if $form->param( 'gid' . $i );      #new method for specifying genome
         my $feattype_param = $FORM->param( 'ft' . $i )
           if $FORM->param( 'ft' . $i );
         my $name = $FORM->param( 'name' . $i ) if $FORM->param( 'name' . $i );
@@ -518,6 +520,7 @@ sub gen_org_menu {
     my $dsgid          = $opts{dsgid};
     my $feattype_param = $opts{feattype_param};
     $feattype_param = 1 unless $feattype_param;
+
     if ($dsgid) {
         my $org = $coge->resultset('Genome')->find($dsgid)->organism;
         $oid = $org->id;
@@ -533,8 +536,9 @@ sub gen_org_menu {
     $menu_template->param( ORG_DESC => $desc );
     $menu_template->param(
         'ORG_LIST' => get_orgs( name => $name, i => $num, oid => $oid ) );
-#    $oid = 0;
-#    $dsgid =0;
+
+    #    $oid = 0;
+    #    $dsgid =0;
     my ($dsg_menu) = gen_dsg_menu( oid => $oid, dsgid => $dsgid, num => $num );
     $menu_template->param( DSG_MENU => $dsg_menu );
 
@@ -561,19 +565,21 @@ sub gen_dsg_menu {
     my $message;
     my $org_name;
 
-#    print STDERR join ("\n", map {$_->id} $USER->genomes),"\n";
+    #    print STDERR join ("\n", map {$_->id} $USER->genomes),"\n";
     foreach my $dsg (
         $coge->resultset('Genome')->search(
             { organism_id => $oid },
-            { prefetch    => ['genomic_sequence_type'],
-	    join =>['genomic_sequence_type']}
+            {
+                prefetch => ['genomic_sequence_type'],
+                join     => ['genomic_sequence_type']
+            }
         )
       )
     {
         my $name;
         my $has_cds = 0;
-	
-        if ($dsg->restricted && !$USER->has_access_to_genome($dsg) ) {
+
+        if ( $dsg->restricted && !$USER->has_access_to_genome($dsg) ) {
             next unless $dsgid && $dsg->id == $dsgid;
             $name = "Restricted";
         }
@@ -765,7 +771,7 @@ qq{<div><span class="link" onclick=window.open('OrganismView.pl?dsgid=$dsgid')>G
     $html_dsg_info .= "<tr><td>Description: <td>" . $dsg->description
       if $dsg->description;
     $html_dsg_info .=
-        "<tr><td>Source:  <td><a href=" 
+        "<tr><td>Source:  <td><a href="
       . $link
       . " target=_new>"
       . $ds->data_source->name . "</a>";
@@ -1253,10 +1259,6 @@ sub get_query_link {
 "<a href='OrganismView.pl?dsgid=$dsgid1' target='_blank'>$org_name1</a> v. <a href='OrganismView.pl?dsgid=$dsgid2' target='_blank'>$org_name2</a>";
 
     $log_msg .= " Ks" if $ks_type;
-    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(
-        basename => $basename,
-        tempdir  => $TEMPDIR
-    );
 
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
         db      => $coge,
@@ -1275,16 +1277,16 @@ sub get_query_link {
 
     my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
 
-    my $ua = LWP::UserAgent->new;
+    my $ua   = LWP::UserAgent->new;
     my $resp = $ua->get($tiny_link);
-    my $old = $resp->request->uri;
+    my $old  = $resp->request->uri;
     $old =~ s/SynMap/SynMap_old/;
 
     return encode_json(
         {
-            link    => $tiny_link,
+            link     => $tiny_link,
             old_link => $old,
-            request => "jex/synmap/status/" . $job->id,
+            request  => "jex/synmap/status/" . $job->id,
         }
     );
 }
@@ -1618,7 +1620,7 @@ sub go {
           . $orgkey2 => {
             fasta    => $fasta1,
             db       => $blastdb,
-            basename => $dsgid1 . "_" 
+            basename => $dsgid1 . "_"
               . $dsgid2
               . ".$feat_type1-$feat_type2."
               . $ALGO_LOOKUP->{$blast}{filename},
@@ -2567,7 +2569,7 @@ sub get_results {
           . $orgkey2 => {
             fasta    => $fasta1,
             db       => $blastdb,
-            basename => $dsgid1 . "_" 
+            basename => $dsgid1 . "_"
               . $dsgid2
               . ".$feat_type1-$feat_type2."
               . $ALGO_LOOKUP->{$blast}{filename},
