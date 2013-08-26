@@ -31,19 +31,19 @@ $YERBA = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
 %FUNCTION = (
     cancel_job   => \&cancel_job,
     schedule_job => \&schedule_job,
+    get_jobs => \&get_jobs_for_user,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub get_jobs_for_user {
-
     #my %opts = @_;
     my @jobs;
 
     if ( $USER->is_admin ) {
         @jobs =
           $coge->resultset('Job')
-          ->search( undef, { order_by => 'job_id DESC' } );
+          ->search( undef, { order_by => { -desc => 'job_id'} } );
     }
     elsif ( $USER->is_public ) {
         @jobs =
@@ -51,29 +51,29 @@ sub get_jobs_for_user {
           ->search( { user_id => 0 }, { order_by => 'job_id ASC', } );
     }
     else {
-        @jobs = $USER->jobs->search( {user_id=>$USER->id}, { order_by => 'job_id DESC' } );
+        @jobs = $USER->jobs->search(
+            {
+                user_id => $USER->id
+            },
+            { order_by => { -desc => 'job_id' } } );
     }
 
+    my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
     my @job_items;
 
-    foreach my $job (@jobs) {
+    foreach (@jobs) {
         push @job_items, {
-            ID     => $job->job_id,
-            LINK   => $job->link,
-            PAGE   => $job->page,
-            STATUS => get_status_message($job),
-
-            #TODO: Should return the job duration
-            RUNTIME => $job->start_time,
+            id     => int($_->id),
+            link   => $_->link,
+            tool   => $_->page,
+            status => get_status_message($_),
+            started => $_->start_time,
+            completed => $_->start_time,
+            user => $_->user_id ? $users{ $_->user_id} : 'public',
         };
     }
 
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-    $template->param( LIST_STUFF => 1 );
-    $template->param( JOB_LOOP   => \@job_items );
-
-    return $template->output;
+    return encode_json(\@job_items);
 }
 
 sub gen_html {
@@ -107,8 +107,8 @@ sub gen_body {
       HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param( PAGE_NAME  => "$PAGE_TITLE.pl" );
     $template->param( MAIN       => 1 );
-    $template->param( LIST_INFO  => get_jobs_for_user() );
     $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
+    get_jobs_for_user();
     return $template->output;
 }
 
