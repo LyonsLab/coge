@@ -2,70 +2,27 @@
 
 use strict;
 use CGI;
-use CoGeX;
-use DBI;
-use Data::Dumper;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use HTML::Template;
 use JSON::XS;
-use URI::Escape;
 use Spreadsheet::WriteExcel;
-use Digest::MD5 qw(md5_base64);
-use DBIxProfiler;
 use File::Path;
 use Sort::Versions;
 
-#no warnings 'redefine';
-
-use vars qw( $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE
-  $TEMPDIR $USER $DATE $COGEDIR $coge $FORM $URL $EMBED
-  $TEMPURL $COOKIE_NAME %FUNCTION);
-
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
-$ENV{PATH} = $P->{COGEDIR};
-$COGEDIR   = $P->{COGEDIR};
-$URL       = $P->{URL};
-$DATE      = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
+use vars qw( $P $PAGE_TITLE $USER $coge $FORM $EMBED %FUNCTION);
 
 $PAGE_TITLE = "ExperimentView";
 
-$TEMPDIR = $P->{TEMPDIR} . "$PAGE_TITLE/";
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-$TEMPURL = $P->{TEMPURL} . "$PAGE_TITLE/";
-
 $FORM = new CGI;
 
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-$COOKIE_NAME = $P->{COOKIE_NAME};
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    ticket   => $cas_ticket,
-    coge     => $coge,
-    this_url => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
-
-#$SIG{'__WARN__'} = sub { };    # silence warnings
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket') || undef,
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
+);
 
 %FUNCTION = (
-    generate_html => \&generate_html,
+    gen_html => \&gen_html,
 
     # remove_group            => \&remove_group,
     get_groups                 => \&get_groups,
@@ -88,27 +45,7 @@ $USER = undef;
     get_annotation_type_groups => \&get_annotation_type_groups,
 );
 
-dispatch();
-
-sub dispatch {
-    my %args  = $FORM->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-        die if not defined $FUNCTION{$fname};
-
-        #print STDERR Dumper \%args;
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $FORM->header, $FUNCTION{$fname}->(@args_list);
-        }
-        else {
-            print $FORM->header, $FUNCTION{$fname}->(%args);
-        }
-    }
-    else {
-        print $FORM->header, generate_html();
-    }
-}
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 # sub remove_group {
 # 	my %opts  = @_;
@@ -314,7 +251,8 @@ sub get_annotations {
         my $group = (
             defined $a->type->group
             ? $a->type->group->name . ':' . $a->type->name
-            : $a->type->name );
+            : $a->type->name
+        );
         push @{ $groups{$group} }, $a;
         $num_annot++;
     }
@@ -335,10 +273,11 @@ sub get_annotations {
             #$html .= '<td>';
             my $image_link =
               ( $a->image ? 'image.pl?id=' . $a->image->id : '' );
-            my $image_info =
-              ( $a->image
+            my $image_info = (
+                $a->image
                 ? "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='float:left;padding:1px;border:1px solid lightgray;margin-right:5px;'></a>"
-                : '' );
+                : ''
+            );
 
             #$html .= $image_info if $image_info;
             #$html .= "</td>";
@@ -521,7 +460,7 @@ sub remove_annotation {
     return 1;
 }
 
-sub generate_html {
+sub gen_html {
     my $template;
 
     $EMBED = $FORM->param('embed');
@@ -543,7 +482,6 @@ sub generate_html {
             HELP       => '/wiki/index.php?title=' . $PAGE_TITLE,
             USER       => $name,
             LOGO_PNG   => "$PAGE_TITLE-logo.png",
-            DATE       => $DATE,
             ADJUST_BOX => 1
         );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
@@ -557,7 +495,7 @@ sub generate_html {
     #$template->param( BOX_NAME   => $box_name );
     }
 
-    $template->param( BODY => generate_body() );
+    $template->param( BODY => gen_body() );
     return $template->output;
 }
 
@@ -590,7 +528,7 @@ sub get_groups {
     return $groups;
 }
 
-sub generate_body {
+sub gen_body {
     my $eid = $FORM->param('eid');
     return "Need a valid experiment id\n" unless $eid;
 

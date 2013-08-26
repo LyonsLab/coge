@@ -3,13 +3,15 @@ package CoGeX::Result::Genome;
 use strict;
 use warnings;
 use base 'DBIx::Class::Core';
-use CoGeX::ResultSet::Genome;
-use File::Spec::Functions;
+
+#use CoGeX::ResultSet::Genome;
+use CoGe::Accessory::Storage qw( get_genome_seq get_genome_file );
+use CoGe::Accessory::Utils qw( commify );
 use Data::Dumper;
 use Text::Wrap;
-use POSIX;
 use Carp;
-use LWP::Simple;
+
+#use LWP::Simple;
 
 =head1 NAME
 
@@ -65,13 +67,15 @@ __PACKAGE__->add_columns(
     { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
     "genomic_sequence_type_id",
     { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
-    "file_path",
-    {
-        data_type     => "VARCHAR",
-        default_value => undef,
-        is_nullable   => 0,
-        size          => 255,
-    },
+
+    # mdb removed 7/29/13, issue #77
+    #    "file_path",
+    #    {
+    #        data_type     => "VARCHAR",
+    #        default_value => undef,
+    #        is_nullable   => 0,
+    #        size          => 255,
+    #    },
     "restricted",
     { data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
     "access_count",
@@ -180,6 +184,8 @@ sub notebooks {
     shift->lists(@_);
 }
 
+# mdb: These functions were consolidated for all item types (genome, experiment,
+# notebook, etc) into User.pm functions users_with_access() and groups_with_access().
 #sub groups {
 #	my $self = shift;
 #	my %opts = @_;
@@ -268,19 +274,14 @@ See Also   :
 ################################################## subroutine header end ##
 
 sub get_genomic_sequence {
-    my $self = shift;
-    my %opts = @_;
-
-    #  print STDERR "Genome: sub get_genomic_sequence\n";
-    #  print STDERR Dumper \%opts;
+    my $self  = shift;
+    my %opts  = @_;
     my $start = $opts{start} || $opts{begin};
-    my $stop  = $opts{stop}  || $opts{end};
+    my $stop  = $opts{stop} || $opts{end};
     my $chr   = $opts{chr};
     $chr = $opts{chromosome} unless defined $chr;
     $chr = "1" unless defined $chr;
     my $strand = $opts{strand};
-    my $debug  = $opts{debug};
-    my $str    = "";
     return
       if ( defined $start && defined $stop && $start < 1 && $stop < 1 )
       ;    #asking for sequence beyond the start
@@ -301,218 +302,189 @@ sub get_genomic_sequence {
         return undef unless ( $start =~ /^\d+$/ and $stop =~ /^\d+$/ );
         ( $start, $stop ) = ( $stop, $start ) if $stop < $start;
     }
-    else {
-        warn "missing parameters in sub get_genomic_sequence\n";
-        warn Dumper \%opts;
-        return;
-    }
 
-    #  my ($seq) = $self->genomic_sequences({chromosome=>$chr});
-    my $file = $self->file_path();
-    unless ( -r $file ) {
-        warn "Dataset group id: "
-          . $self->id
-          . " does not have a valid sequence file: $file!\n";
-    }
-    return $self->get_seq(
+    # mdb removed 7/31/13 issue 77
+    #    else {
+    #        warn "missing parameters in sub get_genomic_sequence\n";
+    #        warn Dumper \%opts;
+    #        return;
+    #    }
+
+    # mdb removed 7/31/13 issue 77
+    #    my $file = $self->file_path();
+    #    unless ( -r $file ) {
+    #        warn "Dataset group id: "
+    #          . $self->id
+    #          . " does not have a valid sequence file: $file!\n";
+    #    }
+
+    return get_genome_seq(    #$self->get_seq( # mdb changed 7/31/13 issue 77
+        gid    => $self->id,
         chr    => $chr,
         start  => $start,
         stop   => $stop,
-        strand => $strand,
-        debug  => $debug
+        strand => $strand
     );
 }
 
-################################################ subroutine header begin ##
-
-=head2 get_seq
-
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
-sub get_seq {
-    my $self = shift;
-    my %opts = @_;
-    my $chr  = $opts{chr};
-    $chr = $opts{chromosome} unless defined $chr;
-    $chr =~ s/gi\|//;
-    $chr =~ s/lcl\|//;
-    my $debug  = $opts{debug};
-    my $start  = $opts{start};
-    my $stop   = $opts{stop} || $opts{end};
-    my $strand = $opts{strand};
-    my $IN     = $opts{file_handle};
-    my $server =
-      $opts{server}; #option for specifying a server for retrieving sequences if local sequences do not exist.
-                     #$server = "http://genomevolution.org" unless $server;
-                     #$server .= "/CoGe/GetSequence.pl" unless $server =~ /coge\/GetSequence\.pl/i;
-    $server =
-      "http://geco.iplantcollaborative.org/mbomhoff/CoGe/GetSequence.pl";
-    $strand = 1 unless defined $strand;
-    ( $start, $stop ) = ( $stop, $start ) if $start && $stop && $start > $stop;
-    my $file = $self->file_path;
-    $file =~ s/\/[^\/]*\.faa$//;
-    $file .= "/chr/$chr";
-    my $seq;
-    my $close = 1
-      ; #flag for determining of the filehandle is to be closed.  Set to 0 if a file_handle was passed in
-
-    if ($IN) {
-        $close = 0;
-    }
-    else {
-        unless ( -r $file ) {
-            warn
-qq{!!!!!!!!!!!!!! $file does not exist for get_seq to extract sequence};
-            return;
-
-# mdb removed 2/19/13, get() causes deep recursion from call to this routine in GetSequence.pl
-#			#make this call a script at synteny/CoGe to retrieve the sequence.
-#			my $url = $server;
-#			$url .= "?" unless $server =~ /\?$/;
-#			$url .= "dsgid=" . $self->id;
-#			$url .= ";chr=" . $chr if defined $chr;
-#			$url .= ";start=" . $start if $start;
-#			$url .= ";stop=" . $stop if $stop;
-#			$url .= ";strand=" . $strand if $strand;
-
-            #			if (
-            #				$ENV{SERVER_NAME}
-            #				&& (   $ENV{SERVER_NAME} eq "synteny.cnr.berkeley.edu"
-            #					|| $ENV{SERVER_NAME} eq "genomevolution.org" )
-            #			  )
-            #			{
-            #				warn qq{
-###############
-#MAJOR ERROR:  $file does not exist!
-#This sequence file does not exist on the sequence server.  Please check the source of the sequence!
-###############
-            #	      };
-            #				return (0);
-            #			}
-            #			else {
-            #				warn qq{!!!! retrieving sequence from $url};
-            #				return get($url);
-            #			}
-        }
-        open( $IN, $file );
-    }
-    if ( $start && $stop ) {
-        seek( $IN, $start - 1, 0 );
-        read( $IN, $seq, $stop - $start + 1 );
-    }
-    else {
-        $seq = <$IN>;
-    }
-    close($IN) if $close;    #close filehand
-    $seq = $self->reverse_complement($seq) if $strand =~ /-/;
-
-#    if (length ($seq) ne abs($stop-$start+1))
-#      {
-#	print STDERR "Warning from Genome sub get_seq!  Sequence retrieved is not the same than sequence requested!\n";
-#	print STDERR "Length of sequence: ", length($seq),"\n";
-#	print STDERR "Requested: $start - $stop (", ($stop-$start+1),")\n";
+# mdb removed 7/30/13, issues #77 and #157
+#sub get_seq {
+#    my $self = shift;
+#    my %opts = @_;
+#    my $chr  = $opts{chr};
+#    $chr = $opts{chromosome} unless defined $chr;
+#    $chr =~ s/gi\|//;
+#    $chr =~ s/lcl\|//;
+#    my $debug  = $opts{debug};
+#    my $start  = $opts{start};
+#    my $stop   = $opts{stop} || $opts{end};
+#    my $strand = $opts{strand};
+#    my $IN     = $opts{file_handle};
+#    my $server =
+#      $opts{server}; #option for specifying a server for retrieving sequences if local sequences do not exist.
+#                     #$server = "http://genomevolution.org" unless $server;
+#                     #$server .= "/CoGe/GetSequence.pl" unless $server =~ /coge\/GetSequence\.pl/i;
+#    $server =
+#      "http://geco.iplantcollaborative.org/mbomhoff/CoGe/GetSequence.pl";
+#    $strand = 1 unless defined $strand;
+#    ( $start, $stop ) = ( $stop, $start ) if $start && $stop && $start > $stop;
+#    my $file = $self->file_path;
+#    $file =~ s/\/[^\/]*\.faa$//;
+#    $file .= "/chr/$chr";
+#    my $seq;
+#    my $close = 1
+#      ; #flag for determining of the filehandle is to be closed.  Set to 0 if a file_handle was passed in
 #
-#      }
-    return $seq;
-}
+#    if ($IN) {
+#        $close = 0;
+#    }
+#    else {
+#        unless ( -r $file ) {
+#            warn
+#qq{!!!!!!!!!!!!!! $file does not exist for get_seq to extract sequence};
+#            return;
+#
+## mdb removed 2/19/13, get() causes deep recursion from call to this routine in GetSequence.pl
+##			#make this call a script at synteny/CoGe to retrieve the sequence.
+##			my $url = $server;
+##			$url .= "?" unless $server =~ /\?$/;
+##			$url .= "dsgid=" . $self->id;
+##			$url .= ";chr=" . $chr if defined $chr;
+##			$url .= ";start=" . $start if $start;
+##			$url .= ";stop=" . $stop if $stop;
+##			$url .= ";strand=" . $strand if $strand;
+#
+#            #			if (
+#            #				$ENV{SERVER_NAME}
+#            #				&& (   $ENV{SERVER_NAME} eq "synteny.cnr.berkeley.edu"
+#            #					|| $ENV{SERVER_NAME} eq "genomevolution.org" )
+#            #			  )
+#            #			{
+#            #				warn qq{
+################
+##MAJOR ERROR:  $file does not exist!
+##This sequence file does not exist on the sequence server.  Please check the source of the sequence!
+################
+#            #	      };
+#            #				return (0);
+#            #			}
+#            #			else {
+#            #				warn qq{!!!! retrieving sequence from $url};
+#            #				return get($url);
+#            #			}
+#        }
+#        open( $IN, $file );
+#    }
+#    if ( $start && $stop ) {
+#        seek( $IN, $start - 1, 0 );
+#        read( $IN, $seq, $stop - $start + 1 );
+#    }
+#    else {
+#        $seq = <$IN>;
+#    }
+#    close($IN) if $close;    #close filehand
+#    $seq = $self->reverse_complement($seq) if $strand =~ /-/;
+#
+##    if (length ($seq) ne abs($stop-$start+1))
+##      {
+##	print STDERR "Warning from Genome sub get_seq!  Sequence retrieved is not the same than sequence requested!\n";
+##	print STDERR "Length of sequence: ", length($seq),"\n";
+##	print STDERR "Requested: $start - $stop (", ($stop-$start+1),")\n";
+##
+##      }
+#    return $seq;
+#}
 
-sub get_seq_fastacmd    #using fastacmd to get the sequence
-{
+# mdb removed 7/30/13, issues #77 and #157
+#sub get_seq_fastacmd    #using fastacmd to get the sequence
+#{
+#    my $self = shift;
+#    my %opts = @_;
+#
+#    #    use Data::Dumper;
+#    #    print STDERR Dumper \%opts;
+#    my $fastacmd = $opts{fastacmd} || '/usr/bin/fastacmd';
+#    my $blastdb  = $opts{blastdb}  || $opts{db};
+#    my $seqid    = $opts{seqid};
+#    $seqid = $opts{chr}        unless defined $seqid;
+#    $seqid = $opts{chromosome} unless defined $seqid;    # chr
+#    ($seqid) = $seqid =~ /^(.*)$/;                       #make taint happy
+#    my $debug = $opts{debug};
+#    my $start = $opts{start};
+#    ($start) = $start =~ /(\d+)/ if $start;
+#    my $stop = $opts{stop} || $opts{end};
+#    ($stop) = $stop =~ /(\d+)/ if $stop;
+#    my $cmd = "$fastacmd -d $blastdb -s \"$seqid\" ";
+#
+#    if ( $start && $stop ) {
+#        $cmd .= "-L " . $start . "," . $stop . " ";
+#    }
+#    if (   $opts{reverse_complement}
+#        || $opts{rc}
+#        || ( $opts{strand} && $opts{strand} =~ /-/ ) )
+#    {
+#        $cmd .= "-S 2";
+#    }
+#    print STDERR $cmd, "\n" if $debug;
+#
+#    #    open(FASTA, $cmd . "|") || die "can't run $cmd";
+#    # get rid of the header line...
+#    #    <FASTA>;
+#    #    my $seq = join ("",<FASTA>);
+#    #    close FASTA;
+#    my $seq;
+#    foreach my $line ( split /\n/, `$cmd` ) {
+#        next if $line =~ /^>/;
+#        $seq .= $line;
+#    }
+#    $seq =~ s/\n//g;
+#    print STDERR "No sequence returned: ", $cmd, "\n" unless $seq;
+#    return $seq;
+#}
+
+# mdb removed 7/30/13, issues #77 and #157
+#sub get_genome_sequence {
+#    return shift->get_genomic_sequence(@_);
+#}
+#sub genomic_sequence {
+#    return shift->get_genomic_sequence(@_);
+#}
+
+# mdb added 7/29/13, issue #77
+sub file_path {
     my $self = shift;
-    my %opts = @_;
-
-    #    use Data::Dumper;
-    #    print STDERR Dumper \%opts;
-    my $fastacmd = $opts{fastacmd} || '/usr/bin/fastacmd';
-    my $blastdb  = $opts{blastdb}  || $opts{db};
-    my $seqid    = $opts{seqid};
-    $seqid = $opts{chr}        unless defined $seqid;
-    $seqid = $opts{chromosome} unless defined $seqid;    # chr
-    ($seqid) = $seqid =~ /^(.*)$/;                       #make taint happy
-    my $debug = $opts{debug};
-    my $start = $opts{start};
-    ($start) = $start =~ /(\d+)/ if $start;
-    my $stop = $opts{stop} || $opts{end};
-    ($stop) = $stop =~ /(\d+)/ if $stop;
-    my $cmd = "$fastacmd -d $blastdb -s \"$seqid\" ";
-
-    if ( $start && $stop ) {
-        $cmd .= "-L " . $start . "," . $stop . " ";
-    }
-    if (   $opts{reverse_complement}
-        || $opts{rc}
-        || ( $opts{strand} && $opts{strand} =~ /-/ ) )
-    {
-        $cmd .= "-S 2";
-    }
-    print STDERR $cmd, "\n" if $debug;
-
-    #    open(FASTA, $cmd . "|") || die "can't run $cmd";
-    # get rid of the header line...
-    #    <FASTA>;
-    #    my $seq = join ("",<FASTA>);
-    #    close FASTA;
-    my $seq;
-    foreach my $line ( split /\n/, `$cmd` ) {
-        next if $line =~ /^>/;
-        $seq .= $line;
-    }
-    $seq =~ s/\n//g;
-    print STDERR "No sequence returned: ", $cmd, "\n" unless $seq;
-    return $seq;
+    return CoGe::Accessory::Storage::get_genome_file( $self->id );
 }
 
-################################################ subroutine header begin ##
-
-=head2 get_genome_sequence
-
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
-sub get_genome_sequence {
-    return shift->get_genomic_sequence(@_);
+# mdb added 8/6/13, issue #157
+sub create_index {
+    my $self = shift;
+    return CoGe::Accessory::Storage::index_genome_file( gid => $self->id );
 }
 
-################################################ subroutine header begin ##
-
-=head2 genomic_sequence
-
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
-sub genomic_sequence {
-    return shift->get_genomic_sequence(@_);
+sub is_indexed {
+    my $self = shift;
+    return ( -e $self->file_path . '.fai' );
 }
 
 ################################################## subroutine header start ##
@@ -536,18 +508,18 @@ See Also   :
 sub sequence_length {
     my $self = shift;
     my $chr  = shift;
-    return unless defined $chr;
-    my ($item) = $self->genomic_sequences( { chromosome => "$chr", }, );
+    return 0 unless defined $chr;
+    my ($item) = $self->genomic_sequences( { chromosome => "$chr" } );
     unless ($item) {
-        print STDERR
-"Genome::sequence_length: unable to get genomic_sequence object for chr '$chr' genome_id '"
-          . $self->id . "'\n";
-        return;
+        warn
+"Genome::sequence_length: unable to get genomic_sequence object for chr '$chr' genome id"
+          . $self->id . "\n";
+        return 0;
     }
     my $stop = $item->sequence_length;
     unless ($stop) {
         warn "No genomic sequence for ", $self->name, " for chr $chr\n";
-        return;
+        return 0;
     }
     return $stop;
 }
@@ -668,21 +640,23 @@ sub percent_gc {
     my %opts     = @_;
     my $count    = $opts{count};
     my $sent_chr = $opts{chr};
+
     my @chr;
     push @chr, $sent_chr if $sent_chr;
+
     my $gc     = 0;
     my $at     = 0;
     my $n      = 0;
     my $x      = 0;
     my $length = 0;
-    unless ($sent_chr) {
 
+    unless ($sent_chr) {
         foreach my $chr ( $self->get_chromosomes ) {
             push @chr, $chr;
         }
     }
     foreach my $chr (@chr) {
-        my $seq = $self->genomic_sequence( chr => $chr );
+        my $seq = $self->get_genomic_sequence( chr => $chr );
         $length += length $seq;
         $gc     += $seq =~ tr/GCgc/GCgc/;
         $at     += $seq =~ tr/ATat/ATat/;
@@ -739,8 +713,12 @@ sub fasta {
     my $prot = $opts{prot};
     my $rc   = $opts{rc};
     $strand = -1 if $rc;
-    my $seq =
-      $self->genomic_sequence( start => $start, stop => $stop, chr => $chr );
+
+    my $seq = $self->get_genomic_sequence(
+        start => $start,
+        stop  => $stop,
+        chr   => $chr
+    );
     $stop = $start + length($seq) - 1 if $stop > $start + length($seq) - 1;
     my $head;
 
@@ -889,70 +867,17 @@ sub trans_type {
     return 1;    #universal genetic code type;
 }
 
-################################################ subroutine header begin ##
-
-=head2 reverse_complement
-
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
-sub reverse_complement {
-    my $self  = shift;
-    my $seq   = shift;           # || $self->genomic_sequence;
-    my $rcseq = reverse($seq);
-    $rcseq =~ tr/ATCGatcg/TAGCtagc/;
-    return $rcseq;
-}
-
-################################################ subroutine header begin ##
-
-################################################ subroutine header begin ##
-
-=head2 get_path
-
- Usage     : 
- Purpose   : This method determines the correct directory structure for storing
- 			the sequence files for a dataset group.
- Returns   : 
- Argument  : 
- Throws    : none
- Comments  : The idea is to build a dir structure that holds large amounts of
- 			files, and is easy to lookup based on genome ID number.
-			The strucuture is three levels of directorys, and each dir holds
-			1000 files and/or directorys.
-			Thus:
-			./0/0/0/ will hold files 0-999
-			./0/0/1/ will hold files 1000-1999
-			./0/0/2/ will hold files 2000-2999
-			./0/1/0 will hold files 1000000-1000999
-			./level0/level1/level2/
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
-sub get_path {
-    my $self      = shift;
-    my $genome_id = $self->id;
-    my $level0    = floor( $genome_id / 1000000000 ) % 1000;
-    my $level1    = floor( $genome_id / 1000000 ) % 1000;
-    my $level2    = floor( $genome_id / 1000 ) % 1000;
-    my $path      = catdir( $level0, $level1, $level2, $genome_id )
-      ; #adding genome_id for final directory.  blast's formatdb will be run on the faa file and this will help keep that stuff organized
-    return $path;
-}
+# mdb removed 7/30/13 issue 77, moved into Accessory::Storage
+#sub get_path {
+#    my $self      = shift;
+#    my $gid = $self->id;
+#    my $level0    = floor( $gid / 1000000000 ) % 1000;
+#    my $level1    = floor( $gid / 1000000 ) % 1000;
+#    my $level2    = floor( $gid / 1000 ) % 1000;
+#    my $path      = catdir( $level0, $level1, $level2, $gid )
+#      ; #adding $gid for final directory.  blast's formatdb will be run on the faa file and this will help keep that stuff organized
+#    return $path;
+#}
 
 sub chr_info {
     my $self    = shift;
@@ -974,14 +899,14 @@ sub chr_info {
         my $chr    = $gs->chromosome;
         my $length = $gs->sequence_length;
         $total_length += $length;
-        $length = $self->commify($length);
+        $length = commify($length);
         $chr_list .= qq{$chr:  $length bp<br>};
         $count++;
     }
     $html .=
         qq{Chromosome count: $chr_num<br>}
       . qq{Total length: }
-      . $self->commify($total_length) . " bp";
+      . commify($total_length) . " bp";
     $html .= "<br>" . qq{-----------<br>Chr:   (length)<br>} . $chr_list
       unless $summary;
     return $html;
@@ -1071,13 +996,6 @@ sub translation_type {
         my $trans_type = $ds->translation_type;
         return $trans_type if $trans_type;
     }
-}
-
-sub commify {
-    my $self = shift;
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }
 
 sub distinct_feature_type_ids {

@@ -11,7 +11,7 @@ BEGIN {
     @EXPORT      = qw();
     @EXPORT_OK   = qw();
     %EXPORT_TAGS = ();
-    __PACKAGE__->connection('dbi:mysql:database=ECNCS;host=biocon.berkeley.edu;port=3306','cnssys','CnS');
+    __PACKAGE__->connection('dbi:mysql:database=ECNCS;host=HOST;port=PORT','USER','PASSWORD');
 }
 
 

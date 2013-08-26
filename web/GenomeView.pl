@@ -8,46 +8,24 @@ use Data::Dumper;
 use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw( commify );
 use DBI;
 use Data::Dumper;
 no warnings 'redefine';
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
-use vars
-  qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $DATE $DEBUG $USER $FORM $coge $COOKIE_NAME);
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
-$ENV{PATH} = $P->{COGEDIR};
-$PAGE_NAME = "GenomeView.pl";
-$DEBUG     = 0;
-$FORM      = new CGI;
-$DATE      = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
+use vars qw($P $PAGE_TITLE $PAGE_NAME $DEBUG $USER $FORM $coge);
+
+$PAGE_TITLE = 'GenomeView';
+$PAGE_NAME  = "$PAGE_TITLE.pl";
+$DEBUG      = 0;
+$FORM       = new CGI;
+
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket') || undef,
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
 );
-
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-
-$COOKIE_NAME = $P->{COOKIE_NAME};
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    ticket   => $cas_ticket,
-    coge     => $coge,
-    this_url => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
 
 my $pj = new CGI::Ajax(
     gen_html        => \&gen_html,
@@ -77,7 +55,6 @@ sub gen_html {
 
     #$template->param(BOX_WIDTH=>"100%");
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE => $DATE );
     my ( $body, $org_name ) = gen_body();
     $template->param( BODY     => $body );
     $template->param( BOX_NAME => $org_name );
@@ -156,7 +133,7 @@ sub gen_body {
 #my $query = qq{select distinct(feature_type_id) from feature where dataset_id = $dsid};
     my $query =
 qq{select distinct(feature_type_id) from feature where dataset_id $in_clause};
-    my $dbh = DBI->connect( $connstr, $DBUSER, $DBPASS );
+    my $dbh = $coge->storage->dbh;  #DBI->connect( $connstr, $DBUSER, $DBPASS );
     my $sth = $dbh->prepare($query);
     $sth->execute;
     while ( my $row = $sth->fetchrow_arrayref ) {
@@ -377,11 +354,4 @@ sub get_genome_info {
     }
     $html .= "</table>";
     return $html;
-}
-
-sub commify {
-    my $input = shift;
-    $input = reverse $input;
-    $input =~ s<(\d\d\d)(?=\d)(?!\d*\.)><$1,>g;
-    return scalar reverse $input;
 }

@@ -58,10 +58,10 @@ function populate_page_obj(basefile) {
     pageObj.waittime = 1000;
     pageObj.runtime = 0;
     pageObj.error = 0;
+    pageObj.engine = "<span class=\"alert\">The job engine has failed.</span><br>Please use the link below to use the previous version of SynMap.";
 }
 
 function run_synmap(scheduled){
-    //  generate_basefile([],[update_basename]);
     populate_page_obj();
 
     var org_name1 = pageObj.org_name1;
@@ -154,11 +154,6 @@ function run_synmap(scheduled){
     // TODO: Scale polling time linearly with long running jobs
     var duration = pageObj.waittime;
     var request = window.location.href.split('?')[0];
-
-    var readlog_callback = function () {
-        read_log(pageObj.basename, pageObj.tempdir);
-    };
-
     var start_callback = function(tiny_link, status_request) {
         pageObj.nolog=1;
         argument_list.fname = 'go';
@@ -166,10 +161,12 @@ function run_synmap(scheduled){
 
         update_dialog_callback = function(data) {
             if (data.status == 'Attached' || data.status == 'Scheduled') {
-                close_dialog();
-                $('#synmap_dialog').dialog('open');
                 update_dialog(status_request, "#synmap_dialog", synmap_formatter,
                         argument_list);
+            } else {
+                $('#synmap_dialog').find('#text').html(pageObj.engine);
+                $('#synmap_dialog').find('#progress').hide();
+                $('#synmap_dialog').find('#dialog_error').slideDown();
             }
         }
 
@@ -178,29 +175,41 @@ function run_synmap(scheduled){
             data: argument_list,
             dataType: 'json',
             success: update_dialog_callback,
+            error: function(err) {
+                $('#synmap_dialog').find('#progress').hide();
+                $('#synmap_dialog').find('#dialog_error').slideDown();
+            }
         });
     };
 
     argument_list.fname = 'get_query_link';
+    $('#results').hide();
+    $('#synmap_dialog').dialog('open');
+    $('#synmap_dialog').find('#text').html("<p>Initializing SynMap...</p>");
 
     $.ajax({
         url: request,
         dataType: 'json',
         data: argument_list,
         success: function(data) {
-            var link = "Return to this analysis: <a href=" + data.link + " onclick=window.open('tiny')"
-            + "target = _new>" + data.link + "</a>";
+            var link = "Return to this analysis: <a href="
+            + data.link + " onclick=window.open('tiny')"
+            + "target = _new>" + data.link + "</a><br>"
+            + "To run this analysis on the previous version of SynMap <a href="
+            + data.old_link + " onclick=window.open('tiny')"
+            + "target = _new>click here</a>";
+
             var logfile = '<a href="tmp/SynMap/'
             + pageObj.basename + '.log">Logfile</a>';
 
-            jQuery('html, body').animate({scrollTop: 0}, 1000);
-            $('#results').hide();
             $('#dialog_log').html(logfile);
             $('#synmap_link').html(link);
 
             start_callback(data.link, data.request);
         }
     });
+
+    return false;
 }
 
 function fetch_arguments() {
@@ -254,20 +263,6 @@ function fetch_arguments() {
     return argument_list;
 }
 
-function read_log(name, dir, callback) {
-    $.ajax({
-        data: {
-            jquery_ajax: 1,
-            fname: 'read_log',
-            logfile: name,
-            tempdir: dir,
-        },
-        success : function(data) {
-            monitor_log(data);
-        },
-    });
-}
-
 function close_dialog() {
     var dialog_window = $('#synmap_dialog');
     if(dialog_window.dialog('isOpen')) {
@@ -303,6 +298,7 @@ function check_previous_analyses(){
                 jquery_ajax: 1,
                 oid1: gid1,
                 oid2: gid2,
+                fname: 'get_previous_analyses',
             },
             success: function(data)  {
                 load_previous_analyses(data);
@@ -572,11 +568,15 @@ function synmap_formatter(item) {
         job_status.addClass('bold');
     } else if (item.status == 'running') {
         job_status.append(item.status);
-        job_status.addClass('down');
+        job_status.addClass('running');
         job_status.addClass('bold');
     } else if (item.status == 'skipped') {
         job_status.append(item.status);
         job_status.addClass('skipped');
+        job_status.addClass('bold');
+    } else if (item.status == 'cancelled') {
+        job_status.append(item.status);
+        job_status.addClass('alert');
         job_status.addClass('bold');
     } else if (item.status == 'failed') {
         job_status.append(item.status);
@@ -608,7 +608,6 @@ function update_dialog(request, identifier, formatter, args) {
         });
     };
 
-
     var get_poll_rate = function() {
         pageObj.runtime += 1;
 
@@ -627,7 +626,7 @@ function update_dialog(request, identifier, formatter, args) {
         }
     };
 
-    var fetch_results = function() {
+    var fetch_results = function(completed) {
         var request = window.location.href.split('?')[0];
         args.fname = 'get_results';
         dialog = $(identifier);
@@ -639,11 +638,16 @@ function update_dialog(request, identifier, formatter, args) {
             success: function(data) {
                 $('#results').html(data);
                 $(function() {$("#synmap_zoom_box").draggable();});
-                dialog.find('#progress').hide();
-                dialog.find('#dialog_success').slideDown();
+                if (completed) {
+                    dialog.find('#progress').hide();
+                    dialog.find('#dialog_success').slideDown();
+                } else {
+                    dialog.find('#progress').hide();
+                    dialog.find('#dialog_error').slideDown();
+                }
             },
             error: function(data) {
-                if (pageObj.error > 5) {
+                if (pageObj.error > 3) {
                     dialog.find('#progress').hide();
                     dialog.find('#dialog_error').slideDown();
                 } else {
@@ -666,9 +670,24 @@ function update_dialog(request, identifier, formatter, args) {
             update_dialog(request, identifier, formatter, args);
         }
 
+        if (json.error) {
+            pageObj.error++;
+            if (pageObj.error > 3) {
+                workflow_status.html(pageObj.engine);
+                dialog.find('#text').html(workflow_status);
+                dialog.find('#progress').hide();
+                dialog.find('#dialog_error').slideDown();
+                return;
+            }
+        } else {
+            pageObj.error = 0;
+        }
+
         if (json.status) {
             current_status = json.status.toLowerCase();
-            workflow_status.html("Workflow status: " + json.status);
+            workflow_status.html("Workflow status: ");
+            workflow_status.append($('<span></span>').html(json.status));
+            workflow_status.addClass('bold');
         } else {
             setTimeout(callback, timeout);
             return;
@@ -684,16 +703,23 @@ function update_dialog(request, identifier, formatter, args) {
             }
         }
 
+        if (!dialog.dialog('isOpen')) {
+            return;
+        }
+
         if (current_status == "completed") {
-            fetch_results();
+            workflow_status.find('span').addClass('completed');
+            fetch_results(true);
         } else if (current_status == "failed" || current_status == "error"
-                || current_status == "terminated") {
-            dialog.find('#progress').hide();
-            dialog.find('#dialog_error').slideDown();
+                || current_status == "terminated"
+                || current_status == "cancelled") {
+            workflow_status.find('span').addClass('alert');
+            fetch_results(false);
         } else if (current_status == "notfound") {
             setTimeout(callback, timeout);
             return;
         } else {
+            workflow_status.find('span') .addClass('running');
             setTimeout(callback, timeout);
         }
 
@@ -703,117 +729,6 @@ function update_dialog(request, identifier, formatter, args) {
     };
 
     get_status();
-}
-
-function monitor_log(log)
-{
-    var waittime = pageObj.waittime;
-    var fasta = 0;
-    var blast = 0;
-    var blastdb = 0;
-    var bed = 0;
-    var tandem = 0;
-    var converting1 =0;
-    var evalue = 0;
-    var dag = 0;
-    var converting2=0;
-    var ks = 0;
-    var results = 0;
-    var match;
-    pageObj.finished = 0;
-
-    if (waittime < 60000) {
-        pageObj.waittime = pageObj.waittime * 1.25;
-    }
-
-    if (log) {
-        if(log.match(/fasta sequence/i))
-            fasta="Generating fasta files . . . ";
-        if(log.match(/Fasta creation passed/i)) {
-            fasta += "done!<br/>";
-            blastdb = "Generating blastable databases . . . ";
-        }
-        if(log.match(/BlastDB creation passed/i)) {
-            blastdb += "done!<br/>";
-            blast = "Running genome comparison . . . ";
-        }
-        if(log.match(/Completed blast run/i)) {
-            blast += "done!<br/>";
-            bed = "Creating .bed files . . .";
-        }
-        if(log.match(/Filtering results of tandem/i)) {
-            bed += "done!<br/>";
-            tandem = "Filtering tandem dups . . . ";
-        }
-        if(log.match(/Converting blast file to dagchainer input/i)) {
-            tandem += "done!<br/>";
-            converting1 = "Formatting for DagChainer . . . ";
-        }
-        if(log.match(/Adjusting evalue/i)) {
-            converting1 += "done!<br/>";
-            evalue = "Adjusting e-values . . . ";
-        }
-
-        if(log.match(/Running DagChainer/i)) {
-            evalue += "done!<br/>";
-            dag = "Running DAGChainer . . . ";
-        }
-
-        if(log.match(/Completed dagchainer run/i)) {
-            dag += "done!<br/>";
-            results = "Generating images . . . ";
-            pageObj.finished = 0;
-        }
-        if(log.match(/Generating ks data/i)) {
-            ks = "Calculating synonymous changes (slow) . . . ";
-                results = 0;
-            pageObj.finished = 0;
-        }
-        if(ks && log.match(/Completed generating ks data/i)) {
-            ks += "done!<br/>";
-            results = "Generating images . . . ";
-            pageObj.finished = 0;
-        }
-
-        if(log.match(/#finished/i)) {
-            pageObj.finished = 1;
-        }
-    } else {
-        pageObj.nolog += 1;
-    }
-
-    var message = "Initializing search . . . ";
-
-    if (fasta) message += "done!<br/>"+fasta;
-    if (blastdb) message += blastdb;
-    if (blast) message += blast;
-    if (bed) message += bed;
-    if (tandem) message += tandem;
-    if (converting1) message += converting1;
-    if (evalue) message += evalue;
-    if (dag) message += dag;
-    if (ks) message += ks;
-    if (results) message += results;
-
-    if (!pageObj.finished && pageObj.nolog<8) {
-        var waittime = pageObj.waittime;
-        message+="<br/><br/>Next progress check in "+Math.floor(waittime/1000)+" seconds.";
-
-        // TODO: Scale polling time linearly with long running jobs
-        var duration = pageObj.waittime;
-        var readlog_callback = function() {
-            read_log(pageObj.basename, pageObj.tempdir);
-        };
-
-        if ($('#synmap_dialog').dialog('isOpen')) {
-            setTimeout(readlog_callback, duration);
-        }
-    }
-
-    if (pageObj.finished == 0 && pageObj.waittime > 3) {
-    }
-
-    if (message) $('#text').html(message);
 }
 
 function synteny_zoom(dsgid1, dsgid2, basename, chr1, chr2, ksdb) {

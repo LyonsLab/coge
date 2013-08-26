@@ -16,7 +16,7 @@ BEGIN
 		use vars qw($VERSION $DEBUG);
 		$VERSION = "0.01";
 	}
-__PACKAGE__->mk_accessors qw(file1 file2 run_anchor run_dialign base_name extension output_dir anchor_output anchor_file fasta_file dialign_file run_anchor_opts run_dialign_opts anchor_report_opts dialign_report_opts anchor_report dialign_report log_file DEBUG);
+__PACKAGE__->mk_accessors(qw(file1 file2 run_anchor run_dialign base_name extension output_dir anchor_output anchor_file fasta_file dialign_file run_anchor_opts run_dialign_opts anchor_report_opts dialign_report_opts anchor_report dialign_report log_file DEBUG));
 
 ###############################################################################
 # anchors -- Josh Kane  UC Berkeley

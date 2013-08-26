@@ -2,101 +2,58 @@
 
 use strict;
 use CGI;
-
-#use JSON::XS;
 use HTML::Template;
-use Digest::MD5 qw(md5_base64);
-
-#use URI::Escape;
-use Data::Dumper;
-use File::Path;
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 
-no warnings 'redefine';
-
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS
-  $connstr $PAGE_TITLE $TEMPDIR $USER $DATE $BASEFILE
-  $coge $cogeweb %FUNCTION $COOKIE_NAME $FORM $URL
-  $COGEDIR $TEMPDIR $TEMPURL);
-
-$P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
-
-$DATE = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
+use vars qw( $P $PAGE_TITLE $USER $coge %FUNCTION $FORM );
 
 $PAGE_TITLE = 'Notebooks';
 
 $FORM = new CGI;
 
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-
-$COOKIE_NAME = $P->{COOKIE_NAME};
-$URL         = $P->{URL};
-$COGEDIR     = $P->{COGEDIR};
-$TEMPDIR     = $P->{TEMPDIR} . "$PAGE_TITLE/";
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-$TEMPURL = $P->{TEMPURL} . "$PAGE_TITLE/";
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
-
-my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-$link = CoGe::Accessory::Web::get_tiny_link(
-    db      => $coge,
-    user_id => $USER->id,
-    page    => "$PAGE_TITLE",
-    url     => $link
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket') || undef,
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
 );
 
 %FUNCTION = (
-    gen_html           => \&gen_html,
     create_list        => \&create_list,
     delete_list        => \&delete_list,
     get_lists_for_user => \&get_lists_for_user,
 );
 
-dispatch();
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
-sub dispatch {
-    my %args  = $FORM->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-        die if not defined $FUNCTION{$fname};
+sub gen_html {
+    my $template =
+      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+    $template->param( HELP => "/wiki/index.php?title=$PAGE_TITLE" );
+    my $name = $USER->user_name;
+    $name = $USER->first_name if $USER->first_name;
+    $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
+    $template->param( USER       => $name );
+    $template->param( TITLE      => qq{} );
+    $template->param( PAGE_TITLE => $PAGE_TITLE );
+    $template->param( LOGO_PNG   => "$PAGE_TITLE-logo.png" );
+    $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
+    $template->param( BODY       => gen_body() );
 
-        #print STDERR Dumper \%args;
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $FORM->header, $FUNCTION{$fname}->(@args_list);
-        }
-        else {
-            print $FORM->header, $FUNCTION{$fname}->(%args);
-        }
-    }
-    else {
-        print $FORM->header, gen_html();
-    }
+    #	$name .= $name =~ /s$/ ? "'" : "'s";
+    #	$template->param( BOX_NAME   => $name . " Data Lists:" );
+    $template->param( ADJUST_BOX => 1 );
+    return $template->output;
+}
+
+sub gen_body {
+    my $template =
+      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    $template->param( PAGE_NAME  => "$PAGE_TITLE.pl" );
+    $template->param( MAIN       => 1 );
+    $template->param( LIST_INFO  => get_lists_for_user() );
+    $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
+    return $template->output;
 }
 
 sub create_list {
@@ -197,7 +154,7 @@ sub get_lists_for_user {
             ANNO => join(
                 "<br>",
                 map {
-                    $_->type->name . ": "
+                        $_->type->name . ": "
                       . $_->annotation
                       . ( $_->image ? ' (image)' : '' )
                   } sort sortAnno $list->annotations
@@ -243,38 +200,6 @@ sub get_list_types {
         push @types, { TID => $type->id, NAME => $name };
     }
     return \@types;
-}
-
-sub gen_html {
-    my $html;
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( HELP => "/wiki/index.php?title=$PAGE_TITLE" );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param( USER       => $name );
-    $template->param( TITLE      => qq{} );
-    $template->param( PAGE_TITLE => $PAGE_TITLE );
-    $template->param( LOGO_PNG   => "$PAGE_TITLE-logo.png" );
-    $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE       => $DATE );
-    $template->param( BODY       => gen_body() );
-
-    #	$name .= $name =~ /s$/ ? "'" : "'s";
-    #	$template->param( BOX_NAME   => $name . " Data Lists:" );
-    $template->param( ADJUST_BOX => 1 );
-    $html .= $template->output;
-}
-
-sub gen_body {
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-    $template->param( PAGE_NAME  => "$PAGE_TITLE.pl" );
-    $template->param( MAIN       => 1 );
-    $template->param( LIST_INFO  => get_lists_for_user() );
-    $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
-    return $template->output;
 }
 
 #FIXME this routine duplicated elsewhere

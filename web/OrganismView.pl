@@ -3,14 +3,13 @@ use strict;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw( commify );
 use HTML::Template;
 use Data::Dumper;
 use CGI::Ajax;
 use Benchmark;
 use File::Path;
-use Digest::MD5 qw(md5_base64);
 use Benchmark qw(:all);
 use Statistics::Basic::Mean;
 use POSIX;
@@ -18,60 +17,27 @@ use Sort::Versions;
 
 no warnings 'redefine';
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME
-  $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM
-  %FUNCTION $P $COOKIE_NAME $SERVER);
-$P                 = CoGe::Accessory::Web::get_defaults("$ENV{HOME}/coge.conf");
-$ENV{PATH}         = $P->{COGEDIR};
-$ENV{irodsEnvFile} = "/var/www/.irods/.irodsEnv";
+use vars qw($P $PAGE_NAME $PAGE_TITLE
+  $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM
+  %FUNCTION $P $SERVER);
 
-# set this to 1 to print verbose messages to logs
-$DEBUG   = 0;
-$TEMPDIR = $P->{TEMPDIR} . "OrgView";
-$TEMPURL = $P->{TEMPURL} . "OrgView";
-$SERVER  = $P->{SERVER};
-
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-
-$HISTOGRAM = $P->{HISTOGRAM};
-
-$|    = 1;         # turn off buffering
-$DATE = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
+$| = 1;    # turn off buffering
 
 $FORM = new CGI;
 
-$PAGE_NAME = 'OrganismView.pl';
+$PAGE_TITLE = 'OrganismView';
+$PAGE_NAME  = "$PAGE_TITLE.pl";
 
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket') || undef,
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
+);
 
-#$coge->storage->debugobj(new DBIxProfiler());
-#$coge->storage->debug(1);
-
-$COOKIE_NAME = $P->{COOKIE_NAME};
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
+$TEMPDIR   = $P->{TEMPDIR} . "/$PAGE_TITLE";
+$TEMPURL   = $P->{TEMPURL} . "/$PAGE_TITLE";
+$SERVER    = $P->{SERVER};
+$HISTOGRAM = $P->{HISTOGRAM};
 
 %FUNCTION = (
     get_genomes             => \&get_genomes,
@@ -157,7 +123,6 @@ sub gen_html {
     $template->param( USER     => $name );
     $template->param( BOX_NAME => "Search for organisms and genomes" );
     $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE     => $DATE );
     $template->param( LOGO_PNG => "OrganismView-logo.png" );
     $template->param( BODY     => $body );
 
@@ -511,7 +476,7 @@ sub get_genome_list_for_org {
             push @dsg, $dsg;
         }
         @opts = map {
-            $_->id . "%%"
+                $_->id . "%%"
               . $_->name . " (v"
               . $_->version
               . ", dsgid"
@@ -546,9 +511,10 @@ sub get_genomes {
         foreach my $dsg (@dsg) {
             $selected{ $dsg->id } = " " unless $selected{ $dsg->id };
         }
+        no warnings 'uninitialized'; # disable warnings for undef values in sort
         foreach my $item (
             sort {
-                versioncmp( $b->version, $a->version )
+                     versioncmp( $b->version, $a->version )
                   || $a->type->id <=> $b->type->id
                   || $a->name cmp $b->name
                   || $b->id cmp $a->id
@@ -671,16 +637,20 @@ qq{<tr><td><span class="link" onclick="window.open('SeqType.pl')">Sequence type:
     $html .= qq{
 <tr><td>Noncoding sequence:<td><div id=dsg_noncoding_gc class="link" onclick = "gen_data(['args__loading...'],['dsg_noncoding_gc']);\$('#dsg_noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsgid','dsg_id','args__gstid', 'gstid'],['dsg_noncoding_gc']);">Click for percent GC content</div></td></tr> 
 } if $total_length;
-    my $seq_file = $dsg->file_path;
-    my $cogedir  = $P->{COGEDIR};
-    my $cogeurl  = $P->{URL};
-    $seq_file =~ s/$cogedir/$cogeurl/i;
+
+    # mdb removed 7/31/13 issue 77
+    #    my $seq_file = $dsg->file_path;
+    #    my $cogedir  = $P->{COGEDIR};
+    #    my $cogeurl  = $P->{URL};
+    #    $seq_file =~ s/$cogedir/$cogeurl/i;
+    my $seq_url = "services/JBrowse/service.pl/sequence/$dsgid"
+      ;    # mdb added 7/31/13 issue 77
 
     #print STDERR Dumper $seq_file;
     $html .= qq{<TR><TD>Download:</td>};
     $html .= qq{<td>};
     $html .=
-      qq{<a class=link href='$seq_file' target="_new">Fasta Sequences</a>};
+      qq{<a class=link href='$seq_url' target="_new">Fasta Sequences</a>};
     $html .= qq{&nbsp|&nbsp};
     $html .=
 qq{<span class=link onclick="\$('#gff_export').dialog('option', 'width', 400).dialog('open')">Export GFF</span>};
@@ -766,7 +736,7 @@ sub get_dataset {
     if ($dsgid) {
         my $dsg = $coge->resultset("Genome")->find($dsgid);
         @opts = map {
-            "<OPTION value=\""
+                "<OPTION value=\""
               . $_->id . "\">"
               . $_->name . " (v"
               . $_->version
@@ -820,14 +790,15 @@ qq{<SELECT class="ui-widget-content ui-corner-all" id="ds_id" SIZE="5" MULTIPLE 
 }
 
 sub get_dataset_info {
-    my $dsd           = shift;
-    my $chr_num_limit = 20;
+    my $dsid           = shift;
     return qq{<input type="hidden" id="chr" value="">}, " ", 0
-      unless ($dsd);    # error flag for empty dataset
+      unless ($dsid); # error flag for empty dataset
 
-    my $ds   = $coge->resultset("Dataset")->find($dsd);
+    my $ds = $coge->resultset("Dataset")->find($dsid);
+    return "unable to find dataset object for id: $dsid" unless $ds;
+
+	my $chr_num_limit = 20;    
     my $html = "";
-    return "unable to find dataset object for id: $dsd" unless $ds;
     $html .=
 "<span class='alert large'>Private Dataset!  Authorized Use Only!</span><br>"
       if $ds->restricted;
@@ -889,7 +860,7 @@ qq{<SELECT class="ui-widget-content ui-corner-all" id="chr" size =$size onChange
         $select .= join(
             "\n",
             map {
-                "<OPTION value=\"$_\">" 
+                    "<OPTION value=\"$_\">" 
                   . $_ . " ("
                   . commify( $chr{$_}{length} )
                   . " bp)</OPTION>"
@@ -920,7 +891,7 @@ qq{<SELECT class="ui-widget-content ui-corner-all" id="chr" size =$size onChange
     $html .= $gc if $gc;
     $html .= qq{<tr><td>Links:</td>};
     $html .= "<td>";
-    $html .= "<a href='OrganismView.pl?dsid=$dsd' target=_new>OrganismView</a>";
+    $html .= "<a href='OrganismView.pl?dsid=$dsid' target=_new>OrganismView</a>";
     $html .= qq{</td></tr>};
     my $feat_string = qq{
 <tr><td><div id=ds_feature_count class="small link" onclick="gen_data(['args__loading...'],['ds_features']);get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['ds_features']);" >Click for Features</div></td></tr>};
@@ -1048,7 +1019,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
 };
     }
 
-    my $dbh = DBI->connect( $connstr, $DBUSER, $DBPASS );
+    my $dbh = $coge->storage->dbh;  #DBI->connect( $connstr, $DBUSER, $DBPASS );
     my $sth = $dbh->prepare($query);
     $sth->execute;
     my $feats = {};
@@ -1176,44 +1147,33 @@ sub get_gc_for_feature_type {
     my $type = $coge->resultset('FeatureType')->find($typeid);
     my @data;
     my @fids;    #storage for fids that passed.  To be sent to FeatList
-    my @dsids;
-    push @dsids, $1 if $dsid && $dsid =~ /(\d+)/;
 
+	my (@items, @datasets);
+	if ($dsid) {
+		my $ds = $coge->resultset('Dataset')->find($dsid);
+		return "unable to find dataset id$dsid\n" unless $ds;
+		push @items, $ds;
+		push @datasets, $ds;
+	}
     if ($dsgid) {
-        my ($dsg) = $coge->resultset('Genome')->find($dsgid);
-        unless ($dsg) {
-            my $error = "unable to create genome object using id $dsgid\n";
-            return $error;
-        }
+        my $dsg = $coge->resultset('Genome')->find($dsgid);
+        return "unable to find genome id$dsgid\n" unless $dsgid;
         $gstid = $dsg->type->id;
-        if ( !$dsid ) {
-            foreach my $ds ( $dsg->datasets() ) {
-                push @dsids, $ds->id;
-            }
-        }
+        push @items, $dsg;
+        push @datasets, $dsg->datasets;
     }
-    my $search;
-    $search = { "feature_type_id" => $typeid };
+
+    my %seqs; # prefetch the sequences with one call to genomic_sequence (slow for many seqs)
+    foreach my $item (@items) {
+        map {
+        	$seqs{$_} = $item->get_genomic_sequence( chr => $_, seq_type => $gstid )
+        } (defined $chr ? ($chr) : $item->chromosomes);
+    }
+
+    my $search = { "feature_type_id" => $typeid };
     $search->{"me.chromosome"} = $chr if defined $chr;
-    foreach my $dsidt (@dsids) {
-        my $ds = $coge->resultset('Dataset')->find($dsidt);
-        unless ($ds) {
-            warn "no dataset object found for id $dsidt\n";
-            next;
-        }
-        my $t1 = new Benchmark;
-        my %seqs
-          ; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
-        if ( defined $chr ) {
-            $seqs{$chr} =
-              $ds->genomic_sequence( chr => $chr, seq_type => $gstid );
-        }
-        else {
-            %seqs =
-              map { $_, $ds->genomic_sequence( chr => $_, seq_type => $gstid ) }
-              $ds->chromosomes;
-        }
-        my $t2    = new Benchmark;
+    
+    foreach my $ds (@datasets) {
         my @feats = $ds->features(
             $search,
             {
@@ -1257,13 +1217,11 @@ sub get_gc_for_feature_type {
             push @data, sprintf( "%.2f", $perc_gc );
             push @fids, $feat->id . "_" . $gstid;
         }
-        my $t3               = new Benchmark;
-        my $get_seq_time     = timestr( timediff( $t2, $t1 ) );
-        my $process_seq_time = timestr( timediff( $t3, $t2 ) );
     }
     my $total = $gc + $at + $n;
     return "error" unless $total;
 
+	my @dsids = map { $_->id } @datasets;
     my $file = $TEMPDIR . "/" . join( "_", @dsids );
 
     #perl -T flag
@@ -1399,43 +1357,33 @@ sub get_gc_for_noncoding {
     my $at = 0;
     my $n  = 0;
     my $x  = 0;
-    my $search;
-    $search = { "feature_type_id" => 3 };
+    my $search = { "feature_type_id" => 3 };
     $search->{"me.chromosome"} = $chr if defined $chr;
     my @data;
-    my @dsids;
-    push @dsids, $dsid if $dsid;
 
+	my (@items, @datasets);
+	if ($dsid) {
+		my $ds = $coge->resultset('Dataset')->find($dsid);
+		return "unable to find dataset id$dsid\n" unless $ds;
+		push @items, $ds;
+		push @datasets, $ds;
+	}
     if ($dsgid) {
         my $dsg = $coge->resultset('Genome')->find($dsgid);
-        unless ($dsg) {
-            my $error = "unable to create genome object using id $dsgid\n";
-            return $error;
-        }
+        return "unable to find genome id$dsgid\n" unless $dsgid;
         $gstid = $dsg->type->id;
-        foreach my $ds ( $dsg->datasets() ) {
-            push @dsids, $ds->id;
-        }
+        push @items, $dsg;
+        push @datasets, $dsg->datasets;
     }
-    my %seqs
-      ; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
-    foreach my $dsidt (@dsids) {
-        my $ds = $coge->resultset('Dataset')->find($dsidt);
-        unless ($ds) {
-            warn "no dataset object found for id $dsidt\n";
-            next;
-        }
 
-        if ( defined $chr ) {
-            $seqs{$chr} =
-              $ds->genomic_sequence( chr => $chr, seq_type => $gstid );
-        }
-        else {
-            map {
-                $seqs{$_} =
-                  $ds->genomic_sequence( chr => $_, seq_type => $gstid )
-            } $ds->chromosomes;
-        }
+    my %seqs; # prefetch the sequences with one call to genomic_sequence (slow for many seqs)
+    foreach my $item (@items) {
+        map {
+        	$seqs{$_} = $item->get_genomic_sequence( chr => $_, seq_type => $gstid )
+        } (defined $chr ? ($chr) : $item->chromosomes);
+    }
+    
+    foreach my $ds (@datasets) {
         foreach my $feat (
             $ds->features(
                 $search,
@@ -1467,7 +1415,7 @@ sub get_gc_for_noncoding {
                 ) = "-" x ( $loc->stop - $loc->start + 1 );
             }
 
-            #	    push @data, sprintf("%.2f",100*$gc[0]/$total) if $total;
+            #push @data, sprintf("%.2f",100*$gc[0]/$total) if $total;
         }
     }
     foreach my $seq ( values %seqs ) {
@@ -1487,6 +1435,7 @@ sub get_gc_for_noncoding {
       . sprintf( "%.2f", 100 * $n /  ($total) ) . "% X: "
       . sprintf( "%.2f", 100 * $x /  ($total) ) . "%)";
 
+	my @dsids = map { $_->id } @datasets;
     my $file = $TEMPDIR . "/" . join( "_", @dsids ) . "_wobble_gc.txt";
     open( OUT, ">" . $file );
     print OUT "#wobble gc for dataset ids: " . join( " ", @dsids ), "\n";
@@ -1525,41 +1474,37 @@ sub get_codon_usage {
     my $gstid = $opts{gstid};
     return unless $dsid || $dsgid;
 
-    my $search;
-    $search = { "feature_type.name" => "CDS" };
+    my $search = { "feature_type.name" => "CDS" };
     $search->{"me.chromosome"} = $chr if defined $chr;
 
-    my @dsids;
-    push @dsids, $dsid if $dsid;
+	my (@items, @datasets);
+	if ($dsid) {
+		my $ds = $coge->resultset('Dataset')->find($dsid);
+		return "unable to find dataset id$dsid\n" unless $ds;
+		push @items, $ds;
+		push @datasets, $ds;
+	}
     if ($dsgid) {
         my $dsg = $coge->resultset('Genome')->find($dsgid);
-        unless ($dsg) {
-            my $error = "unable to create genome object using id $dsgid\n";
-            return $error;
-        }
+        return "unable to find genome id$dsgid\n" unless $dsgid;
         $gstid = $dsg->type->id;
-        foreach my $ds ( $dsg->datasets() ) {
-            push @dsids, $ds->id;
-        }
+        push @items, $dsg;
+        push @datasets, $dsg->datasets;
     }
+    
+    my %seqs; # prefetch the sequences with one call to genomic_sequence (slow for many seqs)
+    foreach my $item (@items) {
+        map {
+        	$seqs{$_} = $item->get_genomic_sequence( chr => $_, seq_type => $gstid )
+        } (defined $chr ? ($chr) : $item->chromosomes);
+    }
+
     my %codons;
     my $codon_total = 0;
     my $feat_count  = 0;
     my ( $code, $code_type );
-
-    foreach my $dsidt (@dsids) {
-        my $ds = $coge->resultset('Dataset')->find($dsidt);
-        my %seqs
-          ; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
-        if ( defined $chr ) {
-            $seqs{$chr} =
-              $ds->genomic_sequence( chr => $chr, seq_type => $gstid );
-        }
-        else {
-            %seqs =
-              map { $_, $ds->genomic_sequence( chr => $_, seq_type => $gstid ) }
-              $ds->chromosomes;
-        }
+    
+    foreach my $ds (@datasets) {
         foreach my $feat (
             $ds->features(
                 $search,
@@ -1592,12 +1537,11 @@ sub get_codon_usage {
     }
     %codons = map { $_, $codons{$_} / $codon_total } keys %codons;
 
-#Josh put some stuff in here so he could get raw numbers instead of percentages for aa usage. He should either make this an option or delete this code when he is done. REMIND HIM ABOUT THIS IF YOU ARE EDITING ORGVIEW!
-    my $html = "Codon Usage: $code_type";
-    $html .= CoGe::Accessory::genetic_code->html_code_table(
-        data => \%codons,
-        code => $code
-    );
+    my $html = "Codon Usage: $code_type" .
+     	CoGe::Accessory::genetic_code->html_code_table(
+        	data => \%codons,
+        	code => $code
+    	);
     return $html;
 }
 
@@ -1613,39 +1557,36 @@ sub get_aa_usage {
     $search = { "feature_type.name" => "CDS" };
     $search->{"me.chromosome"} = $chr if defined $chr;
 
-    my @dsids;
-    push @dsids, $dsid if $dsid;
+	my (@items, @datasets);
+	if ($dsid) {
+		my $ds = $coge->resultset('Dataset')->find($dsid);
+		return "unable to find dataset id$dsid\n" unless $ds;
+		push @items, $ds;
+		push @datasets, $ds;
+	}
     if ($dsgid) {
         my $dsg = $coge->resultset('Genome')->find($dsgid);
-        unless ($dsg) {
-            my $error = "unable to create genome object using id $dsgid\n";
-            return $error;
-        }
+        return "unable to find genome id$dsgid\n" unless $dsgid;
         $gstid = $dsg->type->id;
-        foreach my $ds ( $dsg->datasets() ) {
-            push @dsids, $ds->id;
-        }
+        push @items, $dsg;
+        push @datasets, $dsg->datasets;
     }
+
+    my %seqs; # prefetch the sequences with one call to genomic_sequence (slow for many seqs)
+    foreach my $item (@items) {
+        map {
+        	$seqs{$_} = $item->get_genomic_sequence( chr => $_, seq_type => $gstid )
+        } (defined $chr ? ($chr) : $item->chromosomes);
+    }
+
     my %codons;
     my $codon_total = 0;
     my %aa;
     my $aa_total   = 0;
     my $feat_count = 0;
     my ( $code, $code_type );
-
-    foreach my $dsidt (@dsids) {
-        my $ds = $coge->resultset('Dataset')->find($dsidt);
-        my %seqs
-          ; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
-        if ( defined $chr ) {
-            $seqs{$chr} =
-              $ds->genomic_sequence( chr => $chr, seq_type => $gstid );
-        }
-        else {
-            %seqs =
-              map { $_, $ds->genomic_sequence( chr => $_, seq_type => $gstid ) }
-              $ds->chromosomes;
-        }
+        
+    foreach my $ds (@datasets) {
         foreach my $feat (
             $ds->features(
                 $search,
@@ -1682,23 +1623,13 @@ sub get_aa_usage {
     }
     %codons = map { $_, $codons{$_} / $codon_total } keys %codons;
 
-#Josh put some stuff in here so he could get raw numbers instead of percentages for aa usage. He should either make this an option or delete this code when he is done. REMIND HIM ABOUT THIS IF YOU ARE EDITING ORGVIEW!
-    %aa =
-      $USER->user_name =~ /jkane/i
-      ? map { $_, $aa{$_} } keys %aa
-      : map { $_, $aa{$_} / $aa_total } keys %aa;
+    %aa = map { $_, $aa{$_} / $aa_total } keys %aa;
 
 #    my $html1 = "Codon Usage: $code_type";
 #    $html1 .= CoGe::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
-
     my $html2 .= "Predicted amino acid usage using $code_type";
-    $html2 .= "<br/>Total Amino Acids: $aa_total"
-      if $USER->user_name =~ /jkane/i;
     $html2 .= CoGe::Accessory::genetic_code->html_aa_new( data => \%aa );
-    $html2 =~ s/00.00%//g if $USER->user_name =~ /jkane/i;
-    return $html2;
-
-    #    return $html1, $html2;
+    return $html2; #return $html1, $html2;
 }
 
 sub get_wobble_gc {
@@ -1999,12 +1930,6 @@ sub get_total_length_for_ds {
     my $length = 0;
     map { $length += $ds->last_chromosome_position($_) } $ds->get_chromosomes();
     return commify($length);
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }
 
 1;

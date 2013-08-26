@@ -4,7 +4,7 @@ use strict;
 use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
-
+use CoGe::Accessory::Utils qw( commify );
 use CGI;
 use DBI;
 use Data::Dumper;
@@ -19,7 +19,7 @@ no warnings 'redefine';
 
 use vars
   qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM $URL $TEMPURL $MAUVE $COGE_MAUVE $MAUVE_MATRIX $COOKIE_NAME);
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P         = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
 $URL       = $P->{URL};
 $DATE      = sprintf(
@@ -238,8 +238,3 @@ sub gen_data {
     return qq{<font class="loading">$message. . .</font>};
 }
 
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
-}

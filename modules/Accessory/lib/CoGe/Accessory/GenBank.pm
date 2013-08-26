@@ -9,9 +9,12 @@ use CoGe::Accessory::GenBank::Feature;
 use CoGeX::Result::Feature;
 use Roman;
 
-__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version gi keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models _has_genes wgs wgs_scafld wgs_data strain substrain genomic_sequence_type_id debug no_wgs requested_id other_stuff ncbi_link max_entries entries_count);
-
-
+__PACKAGE__->mk_accessors('id', 'locus', 'accn', 'seq_length', 'moltype', 'division', 'date', 
+	'definition', 'version', 'gi', 'keywords', 'data_source', 'dataset', 'organism', 'sequence',
+	'srcfile', 'dir', 'anntoation', 'features', 'start', 'stop', 'chromosome', 'add_gene_models', 
+	'_has_genes', 'wgs', 'wgs_scafld', 'wgs_data', 'strain', 'substrain', 
+	'genomic_sequence_type_id', 'debug', 'no_wgs', 'requested_id', 'other_stuff', 
+	'ncbi_link', 'max_entries', 'entries_count');
 
 sub new
   {

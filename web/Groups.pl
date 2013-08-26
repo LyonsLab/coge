@@ -4,67 +4,23 @@ use strict;
 use CGI;
 
 #use CGI::Ajax;
-use JSON::XS;
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use HTML::Template;
-use Digest::MD5 qw(md5_base64);
-use URI::Escape;
-use Data::Dumper;
-use File::Path;
 
 no warnings 'redefine';
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME
-  $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION $COOKIE_NAME
-  $FORM $URL $COGEDIR $TEMPDIR $TEMPURL);
-$P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+use vars qw($P $PAGE_TITLE $PAGE_NAME $USER $coge %FUNCTION $FORM);
 
-$DATE = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
-$PAGE_NAME = 'Groups.pl';
+$PAGE_TITLE = 'Groups';
+$PAGE_NAME  = "$PAGE_TITLE.pl";
 
 $FORM = new CGI;
 
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-
-$COOKIE_NAME = $P->{COOKIE_NAME};
-$URL         = $P->{URL};
-$COGEDIR     = $P->{COGEDIR};
-$TEMPDIR     = $P->{TEMPDIR} . "Groups/";
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-$TEMPURL = $P->{TEMPURL} . "Groups/";
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
-
-my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-$link = CoGe::Accessory::Web::get_tiny_link(
-    db      => $coge,
-    user_id => $USER->id,
-    page    => $PAGE_NAME,
-    url     => $link
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket') || undef,
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
 );
 
 %FUNCTION = (
@@ -76,42 +32,21 @@ $link = CoGe::Accessory::Web::get_tiny_link(
     remove_genome_from_group => \&remove_genome_from_group,
 );
 
-dispatch();
-
-sub dispatch {
-    my %args  = $FORM->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-
-        #my %args = $FORM->Vars;
-        #print STDERR Dumper \%args;
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $FORM->header, $FUNCTION{$fname}->(@args_list);
-        }
-        else {
-            print $FORM->header, $FUNCTION{$fname}->(%args);
-        }
-    }
-    else {
-        print $FORM->header, gen_html();
-    }
-}
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
     my $html;
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( HELP => '/wiki/index.php?title=Groups' );
+    $template->param( HELP => "/wiki/index.php?title=$PAGE_TITLE" );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER       => $name );
     $template->param( TITLE      => qq{Manage User Groups} );
-    $template->param( PAGE_TITLE => qq{Groups} );
-    $template->param( LOGO_PNG   => "Groups-logo.png" );
+    $template->param( PAGE_TITLE => $PAGE_TITLE );
+    $template->param( LOGO_PNG   => "$PAGE_TITLE-logo.png" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE       => $DATE );
     $template->param( BODY       => gen_body() );
     $template->param( ADJUST_BOX => 1 );
 
@@ -122,7 +57,7 @@ sub gen_html {
 
 sub gen_body {
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'Groups.tmpl' );
+      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param( PAGE_NAME => $FORM->url );
     $template->param( MAIN      => 1 );
     my $groups = get_groups_for_user();
@@ -209,12 +144,11 @@ sub create_group {
     return unless $conn;
 
     # Record in log
-    $coge->resultset('Log')->create(
-        {
-            user_id     => $USER->id,
-            page        => $PAGE_NAME,
-            description => 'create user group id' . $group->id
-        }
+    CoGe::Accessory::Web::log_history(
+        db          => $coge,
+        user_id     => $USER->id,
+        page        => $PAGE_TITLE,
+        description => 'create user group id' . $group->id
     );
 
     return 1;
@@ -231,16 +165,10 @@ sub delete_group {
     }
 
     # OK, now delete the group
-    $group->delete();
+    $group->deleted(1);
+    $group->update;
 
-    # Record in the log
-    $coge->resultset('Log')->create(
-        {
-            user_id     => $USER->id,
-            page        => $PAGE_NAME,
-            description => 'delete user group id' . $group->id
-        }
-    );
+	return;
 }
 
 sub get_groups_for_user {
@@ -298,20 +226,20 @@ sub get_groups_for_user {
             $group->lists )
         {
             my $name =
-              qq{<img src="picts/notebook-icon.png" width="15" height="15"/>}
+              qq{<img src="picts/notebook-icon.png" width="15" height="15"/> }
               . $item->info_html;
             push @data, $name;
         }
         foreach my $item ( sort { $a->name cmp $b->name } $group->experiments )
         {
             my $name =
-              qq{<img src="picts/testtube-icon.png" width="15" height="15"/>}
+              qq{<img src="picts/testtube-icon.png" width="15" height="15"/> }
               . $item->info_html;
             push @data, $name;
         }
         foreach my $item ( sort { $a->name cmp $b->name } $group->genomes ) {
             my $name =
-              qq{<img src="picts/dna-icon.png" width="15" height="15"/>}
+              qq{<img src="picts/dna-icon.png" width="15" height="15"/> }
               . $item->info_html;
             push @data, $name;
         }

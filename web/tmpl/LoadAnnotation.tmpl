@@ -35,6 +35,13 @@ $(document).ready(function(){
 			return false; // Prevent the widget from inserting the value.
 		}
 	});
+	
+	// Open status dialog
+	if ('<TMPL_VAR NAME="OPEN_STATUS">') {
+		$('#loading_msg').hide();
+		$('#load_dialog').dialog('open'); 
+		setTimeout(function() { get_load_log(); }, 0);
+	}
 });
 
 function file_selected(filename, url) {
@@ -55,7 +62,6 @@ function create_source() {
 	var link = $('#edit_source_link').val();
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'create_source',
 			name: name,
 			desc: desc,
@@ -122,8 +128,8 @@ function load_annotation() {
 	
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'load_annotation',
+			load_id: '<TMPL_VAR NAME="LOAD_ID">',
 			name: name,
 			description: description,
 			version: version,
@@ -134,26 +140,28 @@ function load_annotation() {
 			items: json,
 			timestamp: new Date().getTime()
 		},
-		success : function(load_id) {
+		success : function() {
+			// Add load_id to browser URL
+			window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?load_id=<TMPL_VAR NAME='LOAD_ID'>");
+			
 			$('#load_dialog').dialog('open');
-			setTimeout(function() { get_load_log(load_id); }, LOG_POLL_TIME/2);
+			setTimeout(function() { get_load_log(); }, LOG_POLL_TIME/2);
 		}
 	});
 }
 
-function get_load_log(load_id) {
+function get_load_log() {
 	timestamps['get_load_log'] = new Date().getTime();
 	
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'get_load_log',
-			load_id: load_id,
+			load_id: '<TMPL_VAR NAME="LOAD_ID">',
 			timestamp: timestamps['get_load_log']
 		},
 		success : function(data) {
 			if (!data) { // workaround for issue #45, jquery intermittently dropping payload
-				setTimeout(function() { get_load_log(load_id); }, LOG_POLL_TIME);
+				setTimeout(function() { get_load_log(); }, LOG_POLL_TIME);
 				return;
 			}
 			
@@ -180,15 +188,16 @@ function get_load_log(load_id) {
 				$('#cancel_load_button').fadeIn();
 			}
 			else {
-				setTimeout(function() { get_load_log(load_id); }, LOG_POLL_TIME);
+				setTimeout(function() { get_load_log(); }, LOG_POLL_TIME);
 			}
 		}
 	});	
 }
 
 function continue_to_view() {
-	var dsid = $('#dataset_id').val();
-	window.location.href = "GenomeView.pl?dsid=" + dsid;
+	//var dsid = $('#dataset_id').val();
+	//window.location.href = "GenomeView.pl?dsid=" + dsid;
+	window.location.href = "GenomeView.pl?gid=<TMPL_VAR NAME='GENOME_ID'>;tracks=features";
 }
 
 function wait_to_search (search_func, search_obj) {
@@ -210,7 +219,6 @@ function wait_to_search (search_func, search_obj) {
 function search_genomes (search_term) {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'search_genomes',
 			search_term: search_term,
 			timestamp: new Date().getTime()
@@ -231,7 +239,6 @@ function search_genomes (search_term) {
 function search_users (search_term) {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'search_users',
 			search_term: search_term,
 			timestamp: new Date().getTime()
@@ -249,7 +256,6 @@ function search_users (search_term) {
 function get_sources () {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'get_sources',
 		},
 		success : function(data) {
@@ -333,7 +339,10 @@ function more() {
   <div id="load_log" class="small ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
   </div>
   <br>
-  <span id="loading_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
+  <div id="loading_msg" class="small">
+    <span class="small" style="float:right;">Link: <a href='<TMPL_VAR NAME="LINK">'><TMPL_VAR NAME="LINK"></a></span>
+    Please wait ... <img src="picts/ajax-loader.gif"/>
+  </div>
   <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
   <span id="error_msg" style="display:none;">An error occurred <img src="picts/thumbs_down.png"></span>
   <input id="dataset_id" type="hidden" /> 

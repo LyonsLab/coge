@@ -26,7 +26,7 @@ $(document).ready(function(){
 	pageObj.tempdir="<TMPL_VAR NAME=TEMPDIR>";
 	<TMPL_VAR NAME="document_ready">
 
-	$("#tabs").tabs({selected:0});
+	$("#tabs").tabs({selected:0}).show();
 
 	$('#run_cogeblast_button').click(
 		function() {
@@ -1234,7 +1234,7 @@ function toggle_title(id, full, partial) {
 
 </SCRIPT>
 
-  <div id="table_opts_dialog" class="dialog_box" title="Table Information Options">
+  <div id="table_opts_dialog" class="dialog_box hidden" title="Table Information Options">
     <table id="show_columns" class="small ui-widget-content ui-corner-all" style="padding:5px;">
       <tr>
         <td><input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(1);" <TMPL_VAR NAME="QND">>Query Sequence Name</td>
@@ -1265,16 +1265,16 @@ function toggle_title(id, full, partial) {
     <span class='ui-button ui-corner-all' onclick="save_display_settings()">Save Display Settings</span>
   </div> <!-- table_opts_dialog -->
   
-  <div id="big_picture" title="Enlarged Image of HSP Hits" class="dialog_box"></div>
+  <div id="big_picture" title="Enlarged Image of HSP Hits" class="dialog_box hidden"></div>
   
-  <div id="sequence_popup" class="dialog_box" title="Sequence Information"></div>
+  <div id="sequence_popup" class="dialog_box hidden" title="Sequence Information"></div>
   
   
-  <div id="feature_info_popup" class="dialog_box" title="Feature Information">
+  <div id="feature_info_popup" class="dialog_box hidden" title="Feature Information">
     <span class="loading">Loading...</span>
   </div>
   
-  <div id='result_visual_popup' class="dialog_box" title="HSP Information">
+  <div id='result_visual_popup' class="dialog_box hidden" title="HSP Information">
     <div id="query_image" class="hsp_image"></div>
     <div id="subject_image" class="hsp_image"></div>
     <div id="image_info">
@@ -1282,7 +1282,7 @@ function toggle_title(id, full, partial) {
     </div>
   </div>
   
-  <div id='tabs' style='margin-top: 0.5em'>
+  <div id='tabs' class="hidden" style='margin-top: 0.5em'>
     <ul>
       <li class='small'><a href="#tab-1" onclick="adjust_blast_types()">CoGe Blast</a></li>
       <li class='small'><a href="#tab-2" onclick="adjust_blast_types(1)">NCBI Blast</a></li>
@@ -1297,7 +1297,7 @@ function toggle_title(id, full, partial) {
   
   <table class="ui-corner-all ui-widget-content">
     <thead align="left">
-      <th>Query Sequence(s)</th>
+      <th style="text-align:left;font-size:1em;"><b>Query Sequence(s)</b></th>
     </thead>
     <tbody>
       <tr align="left" valign="top">

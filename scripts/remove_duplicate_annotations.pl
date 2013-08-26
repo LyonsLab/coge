@@ -6,8 +6,8 @@ use CoGeX;
 use Getopt::Long;
 
 my $anno_type = shift;
-my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
-my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
+my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 
 my %data;
 foreach my $anno ($coge->resultset('Annotation')->search({annotation_type_id=>$anno_type}))

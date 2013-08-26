@@ -3,76 +3,30 @@
 use strict;
 use CGI;
 use CoGeX;
-use DBI;
-use Data::Dumper;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw( commify );
 use HTML::Template;
 use JSON::XS;
-use URI::Escape::JavaScript qw(escape unescape);
-use Spreadsheet::WriteExcel;
-use Digest::MD5 qw(md5_base64);
-use DBIxProfiler;
-use File::Path;
 use Sort::Versions;
-use LWP::UserAgent;
-use LWP::Simple;
-use HTTP::Status qw(:constants);
-use File::Listing;
-use File::Copy;
-use XML::Simple;
 no warnings 'redefine';
 
 use vars qw(
-  $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE
-  $TEMPDIR $BINDIR $USER $DATE $COGEDIR $coge $FORM $URL $TEMPURL $COOKIE_NAME
-  %FUNCTION $MAX_SEARCH_RESULTS
-);
-
-my $node_types = CoGeX::node_types();
-
-$P         = CoGe::Accessory::Web::get_defaults("$ENV{HOME}/coge.conf");
-$ENV{PATH} = $P->{COGEDIR};
-$COGEDIR   = $P->{COGEDIR};
-$URL       = $P->{URL};
-$DATE      = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
+  $P $PAGE_TITLE $USER $coge $FORM %FUNCTION $MAX_SEARCH_RESULTS
 );
 
 $PAGE_TITLE = 'GenomeInfo';
 
 $FORM = new CGI;
 
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-$COOKIE_NAME = $P->{COOKIE_NAME};
+my $node_types = CoGeX::node_types();
 
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    ticket   => $cas_ticket,
-    coge     => $coge,
-    this_url => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
-
-$TEMPDIR = $P->{TEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/';
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket') || undef,
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
+);
 
 $MAX_SEARCH_RESULTS = 100;
-
-#$SIG{'__WARN__'} = sub { };    # silence warnings
 
 %FUNCTION = (
     generate_html      => \&generate_html,
@@ -83,25 +37,10 @@ $MAX_SEARCH_RESULTS = 100;
     update_owner       => \&update_owner,
     search_organisms   => \&search_organisms,
     search_users       => \&search_users,
+    delete_genome      => \&delete_genome
 );
 
-if ( $FORM->param('jquery_ajax') ) {
-    my %args  = $FORM->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-        die if ( not defined $FUNCTION{$fname} );
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $FORM->header, $FUNCTION{$fname}->(@args_list);
-        }
-        else {
-            print $FORM->header, $FUNCTION{$fname}->(%args);
-        }
-    }
-}
-else {
-    print $FORM->header, "\n", generate_html();
-}
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 
 sub get_genome_info {
     my %opts   = @_;
@@ -123,6 +62,8 @@ sub get_genome_info {
         TYPE           => $genome->type->info,
         SOURCE         => join( ',', map { $_->name } $genome->source ),
         RESTRICTED     => ( $genome->restricted ? 'Yes' : 'No' ),
+        USERS_WITH_ACCESS => ( $genome->restricted ? join(', ', map { $_->display_name } $USER->users_with_access($genome))
+                                                   : 'Everyone' ),
         NAME           => $genome->name,
         DESCRIPTION    => $genome->description,
         DELETED        => $genome->deleted
@@ -321,16 +262,16 @@ sub get_genome_data {
         return unless ($genome);
     }
 
-    #ERIC added these 1/31/2013
-    #TODO: this should happen in the genome object
-    my $seq_file = $genome->file_path;
-    my $cogedir  = $P->{COGEDIR};
-    my $cogeurl  = $P->{URL};
-    $seq_file =~ s/$cogedir/$cogeurl/i;
+    # mdb removed 7/31/13, issue 77
+    #    my $seq_file = $genome->file_path;
+    #    my $cogedir  = $P->{COGEDIR};
+    #    my $cogeurl  = $P->{URL};
+    #    $seq_file =~ s/$cogedir/$cogeurl/i;
+    my $seq_url =
+      "services/JBrowse/service.pl/sequence/$gid";  # mdb added 7/31/13 issue 77
 
-    #TODO: this should happen in the genome object
     my $download .=
-      qq{<a class=link href='$seq_file' target="_new">Fasta Sequences</a>};
+      qq{<a class=link href='$seq_url' target="_new">Fasta Sequences</a>};
     $download .= qq{&nbsp|&nbsp};
     $download .=
 qq{<span class=link onclick="\$('#gff_export').dialog('option', 'width', 400).dialog('open')">Export GFF</span>};
@@ -341,7 +282,6 @@ qq{<span class=link onclick="\$('#gff_export').dialog('option', 'width', 400).di
     $download .=
       qq{<span class=link onclick="export_bed('$gid')"">Export bed</span>};
 
-    #TODO: this should happen in the genome object
     my $links =
       "<a href='OrganismView.pl?dsgid=$gid' target=_new>OrganismView</a>";
     $links .= qq{&nbsp|&nbsp};
@@ -481,6 +421,20 @@ sub get_datasets {
     return $template->output;
 }
 
+sub delete_genome {
+    my %opts = @_;
+    my $gid  = $opts{gid};
+    return 0 unless $gid;
+
+    my $genome = $coge->resultset('Genome')->find($gid);
+    return 0 unless $genome;
+    return 0 unless ( $USER->is_admin or $USER->is_owner( dsg => $gid ) );
+    $genome->deleted(!$genome->deleted); # do undelete if already deleted
+    $genome->update;
+
+    return 1;
+}
+
 sub generate_html {
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
@@ -494,7 +448,6 @@ sub generate_html {
         HELP       => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl',
         USER       => $name,
         LOGO_PNG   => $PAGE_TITLE . "-logo.png",
-        DATE       => $DATE,
         BODY       => generate_body(),
         ADJUST_BOX => 1
     );
@@ -521,16 +474,19 @@ sub generate_body {
 
     my ($first_chr) = $genome->chromosomes;
 
-    my $is_owner_editor = $USER->is_owner_editor( dsg => $genome );
+    my $user_can_edit = $USER->is_admin || $USER->is_owner_editor( dsg => $gid );
+    my $user_can_delete = $USER->is_admin || $USER->is_owner( dsg => $gid );
+
     $template->param(
-        GID         => $gid,
-        GENOME_INFO => get_genome_info( genome => $genome ),
-        GENOME_DATA => get_genome_data( genome => $genome ),
-        EXPERIMENTS => get_experiments( genome => $genome ),
-        ANNOTATION  => get_datasets( genome => $genome, exclude_seq => 1 ),
-	USER_CAN_EDIT => $is_owner_editor,
-        USER_CAN_ADD =>
-          ( !$genome->restricted or $is_owner_editor )
+        GID           => $gid,
+        GENOME_INFO   => get_genome_info( genome => $genome ),
+        GENOME_DATA   => get_genome_data( genome => $genome ),
+        EXPERIMENTS   => get_experiments( genome => $genome ),
+        ANNOTATION    => get_datasets( genome => $genome, exclude_seq => 1 ),
+        USER_CAN_EDIT => $user_can_edit,
+        USER_CAN_ADD  => ( !$genome->restricted or $user_can_edit ),
+        USER_CAN_DELETE => $user_can_delete,
+        DELETED         => $genome->deleted
     );
 
     if ( $USER->is_admin ) {
@@ -549,11 +505,4 @@ sub experimentcmp {
     versioncmp( $b->version, $a->version )
       || $a->name cmp $b->name
       || $b->id cmp $a->id;
-}
-
-# FIXME this routine is duplicated elsewhere
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }

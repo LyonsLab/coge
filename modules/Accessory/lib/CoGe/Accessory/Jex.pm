@@ -6,7 +6,7 @@ use 5.10.0;
 use Moose;
 use JSON::XS;
 use ZMQ::LibZMQ3;
-use ZMQ::Constants qw(ZMQ_REQ);
+use ZMQ::Constants qw/:all/;
 use CoGe::Accessory::Workflow;
 
 # Attributes
@@ -40,8 +40,9 @@ sub create_workflow {
     my ( $self, %opts ) = @_;
 
     my $workflow = CoGe::Accessory::Workflow->new(
-        name    => $opts{name},
-        logfile => $opts{logfile}
+        id    => $opts{id},
+        name  => $opts{name},
+        logfile => $opts{logfile},
     );
 
     return $workflow;
@@ -56,19 +57,35 @@ sub submit_workflow {
         {
             request => 'schedule',
             data    => {
-                'name'    => $workflow->name,
-                'logfile' => $workflow->logfile,
-                'jobs'    => $jobs,
+                id      => $workflow->id,
+                name    => $workflow->name,
+                logfile => $workflow->logfile,
+                jobs    => $jobs,
             },
         }
     );
 
     $socket = zmq_socket( $self->_context, ZMQ_REQ );
+    zmq_setsockopt($socket, ZMQ_LINGER, 0);
     zmq_connect( $socket, _connection_string( $self->host, $self->port ) );
-    zmq_send( $socket, $request );
-    $msg = zmq_recvmsg($socket);
 
-    return zmq_msg_data($msg);
+    zmq_sendmsg( $socket, $request, ZMQ_NOBLOCK);
+
+    my $count = 0;
+
+    while (5 > $count && not defined($msg)) {
+        $msg = zmq_recvmsg($socket, ZMQ_NOBLOCK);
+        $count++;
+        sleep 1;
+    }
+
+    zmq_close($socket);
+    zmq_term($self->_context);
+
+    my $result = zmq_msg_data($msg) if $msg;
+    $result //= '{"error" : "ERROR"}';
+
+    return $result;
 }
 
 sub wait_for_completion {
@@ -97,7 +114,13 @@ sub terminate {
     my ( $self, $id ) = @_;
     my ( $socket, $resp, $cmd, $msg );
 
-    $cmd = encode_json { cmd => 'TERM', id => $id };
+    $cmd = encode_json(
+        {   request => 'cancel',
+            data => {
+                id => $id
+            },
+        }
+    );
     $socket = zmq_socket( $self->_context, ZMQ_REQ );
 
     zmq_connect( $socket, _connection_string( $self->host, $self->port ) );
@@ -110,7 +133,7 @@ sub terminate {
 }
 
 sub get_status {
-    my ( $self, $id ) = @_;
+    my ($self, $id ) = @_;
     my ( $socket, $reply, $msg );
 
     $socket = zmq_socket( $self->_context, ZMQ_REQ );
@@ -119,7 +142,9 @@ sub get_status {
     my $request = encode_json(
         {
             request => 'get_status',
-            data    => $id,
+            data    => {
+                id => $id
+            },
         }
     );
 

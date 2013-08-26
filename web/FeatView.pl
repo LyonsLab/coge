@@ -1,7 +1,6 @@
 #! /usr/bin/perl -w
 use strict;
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::genetic_code;
 use CGI;
@@ -9,67 +8,25 @@ use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
 use HTML::Template;
 use Data::Dumper;
-use Digest::MD5 qw(md5_base64);
 use POSIX;
-use DBIxProfiler;
-use Benchmark;
 use Storable qw(dclone);
 no warnings 'redefine';
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr
-  $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $ACCN $FID $coge
-  $COOKIE_NAME $PAGE_NAME);
+use vars qw($P $USER $FORM $ACCN $FID $coge $PAGE_NAME $PAGE_TITLE);
 
-$P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
-$ENV{PATH} = $P->{COGEDIR};
+$PAGE_TITLE = 'FeatView';
+$PAGE_NAME  = "$PAGE_TITLE.pl";
 
-$PAGE_NAME = 'FeatView.pl';
-
-# set this to 1 to print verbose messages to logs
-$DEBUG   = 0;
-$TEMPDIR = $P->{TEMPDIR};
-$TEMPURL = $P->{TEMPURL};
-$|       = 1;               # turn off buffering
-$DATE    = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
+$| = 1;    # turn off buffering
 
 $FORM = new CGI;
 $ACCN = $FORM->param('accn');
 $FID  = $FORM->param('fid');
 
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-
-$COOKIE_NAME = $P->{COOKIE_NAME};
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
-
-my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-$link = CoGe::Accessory::Web::get_tiny_link(
-    db      => $coge,
-    user_id => $USER->id,
-    page    => $PAGE_NAME,
-    url     => $link
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket') || undef,
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
 );
 
 my %FUNCTION = (
@@ -518,7 +475,6 @@ sub gen_html {
     $template->param( USER => $name );
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE => $DATE );
     $template->param( BOX_NAME => "Feature Selection" );
     my $body = gen_body();
     $template->param( BODY => $body );
@@ -660,9 +616,10 @@ sub get_data_source_info_for_accn {
 <SELECT name = "dsid" id="dsid" MULTIPLE SIZE="10" onChange="get_types_chain();">
 };
     my $count = 0;
-    foreach
-      my $title ( sort { $sources{$b}{v} <=> $sources{$a}{v} || $a cmp $b }
-        keys %sources )
+    foreach my $title (
+        sort { $sources{$b}{v} <=> $sources{$a}{v} || $a cmp $b }
+        keys %sources
+      )
     {
         my $id    = $sources{$title}{id};
         my $gstid = $sources{$title}{gstid};

@@ -6,10 +6,10 @@ use CoGe::Accessory::LogUser;
 use HTML::Template;
 use Data::Dumper;
 use CGI::Ajax;
-
 #use CoGeX;
 use Benchmark;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw( commify );
 use CoGe::Accessory::genetic_code;
 use Statistics::Basic::Mean;
 use File::Path;
@@ -17,7 +17,7 @@ no warnings 'redefine';
 
 use vars
   qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge $connstr);
-$P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
 
 # set this to 1 to print verbose messages to logs
@@ -270,8 +270,10 @@ sub gen_data {
       . join( "<th>",
         "GC% (org count)",
         map { $_ . " (" . $data->{$_}{bin_count} . ")" } sort keys %$data );
-    foreach my $aa ( sort { $aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b }
-        keys %$aa_sort )
+    foreach my $aa (
+        sort { $aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b }
+        keys %$aa_sort
+      )
     {
         $html .=
           "<tr><td>$aa (GC:" . sprintf( "%.0f", 100 * $aa_sort->{$aa} ) . "%)";
@@ -301,8 +303,10 @@ sub gen_data {
           . join( "<th>",
             "GC% (org count)",
             map { $_ . " (" . $data->{$_}{bin_count} . ")" } sort keys %$data );
-        foreach my $aa ( sort { $aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b }
-            keys %$aa_sort )
+        foreach my $aa (
+            sort { $aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b }
+            keys %$aa_sort
+          )
         {
             $html .= "<tr><td>$aa (GC:"
               . sprintf( "%.0f", 100 * $aa_sort->{$aa} ) . "%)";
@@ -397,12 +401,6 @@ sub sort_nt3 {
         $val = 3;
     }
     return $val;
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }
 
 sub color_by_usage {

@@ -56,17 +56,23 @@
             </span>
         </li>
         <li>
-            <img src="<tmpl_var name=ylabel>">
-
-            <tmpl_if name=dotplot>
-                <tmpl_var name=dotplot>
-            </tmpl_if>
+            <div style="float: left; margin: auto; white-space: nowrap;">
+                <img src="<tmpl_var name=ylabel>" style="vertical-align: top;">
+                <ul style="display: inline-block">
+                    <li>
+                        <tmpl_if name=dotplot>
+                            <tmpl_var name=dotplot>
+                        </tmpl_if>
+                    </li>
+                    <li>
+                        <img src="<tmpl_var name=xlabel>">
+                    </li>
+                </ul>
+            </div>
+            <div style="clear: both;"></div>
         </li>
 
         <li>
-            <img src="<tmpl_var name=xlabel>">
-            <br>
-
             <span class='species small'>
                 x-axis organism: <tmpl_var name=xorg_name>
             </span>

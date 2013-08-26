@@ -1,8 +1,8 @@
 # -*- perl -*-
 
 use CoGeX;
-my $connstr = 'dbi:mysql:genomes:biocon:3306';
-my $s = CoGeX->connect( $connstr, 'bpederse', 'brent_cnr' );
+my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
+my $s = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 use strict;
 use DBIxProfiler;
 

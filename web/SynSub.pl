@@ -16,11 +16,12 @@ no warnings 'redefine';
 use CoGe::Accessory::Web;
 use CoGe::Accessory::genetic_code;
 use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Utils qw( commify );
 use CoGeX;
 
 use vars
   qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $DIAGSDIR $coge $COOKIE_NAME);
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P         = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
 $DIAGSDIR  = $P->{DIAGSDIR};
 
@@ -655,12 +656,6 @@ sub get_wobble_gc_seq {
         $wobbles .= $chr;
     }
     return ( get_gc_seq( seq => $wobbles ) );
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }
 
 1;

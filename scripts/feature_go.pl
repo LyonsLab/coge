@@ -5,11 +5,8 @@ use strict;
 use Data::Dumper;
 $| = 1;
 
-my $connstr = 'dbi:Pg:dbname=genomes;host=biocon;port=5432';
-my $s = CoGeX->connect( $connstr, 'bpederse', 'wsa47r' );
-
-#$connstr = 'dbi:mysql:genomes:biocon:3306';
-#$s = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
+my $s= CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 
 $s->storage->debug(1);
 
