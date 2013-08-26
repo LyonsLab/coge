@@ -20,14 +20,14 @@ use vars
   qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $MATRIXDIR $USER $FORM $coge $connstr $COOKIE_NAME);
 
 # set this to 1 to print verbose messages to logs
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P         = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
 $DEBUG     = 0;
 $TEMPDIR   = $P->{TEMPDIR};
 $TEMPURL   = $P->{TEMPURL};
 $MATRIXDIR = $P->{BLASTMATRIX} . "aa/";
-$|    = 1;         # turn off buffering
-$DATE = sprintf(
+$|         = 1;                                      # turn off buffering
+$DATE      = sprintf(
     "%04d-%02d-%02d %02d:%02d:%02d",
     sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
       ->(localtime)
@@ -132,15 +132,17 @@ sub gen_data {
               keys %$aa_sort );
         $html .= "<th>Total:";
         $html .= "<tr>";
-        foreach
-          my $aa1 ( sort { $aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b }
-            keys %$aa_sort )
+        foreach my $aa1 (
+            sort { $aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b }
+            keys %$aa_sort
+          )
         {
             $html .= "<th>$aa1";
             my $total = 0;
-            foreach
-              my $aa2 ( sort { $aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b }
-                keys %$aa_sort )
+            foreach my $aa2 (
+                sort { $aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b }
+                keys %$aa_sort
+              )
             {
                 my $val = $data->{$aa1}{$aa2};
                 $total += $val;

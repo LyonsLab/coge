@@ -8,6 +8,7 @@ use DBI;
 use Data::Dumper;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw( commify );
 use HTML::Template;
 use URI::Escape;
 use Spreadsheet::WriteExcel;
@@ -16,48 +17,30 @@ use DBIxProfiler;
 use File::Path;
 no warnings 'redefine';
 
-use vars qw( $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME
-  $TEMPDIR $USER $DATE $BASEFILE $COGEDIR $coge $cogeweb $FORM $URL
-  $TEMPURL $COOKIE_NAME %FUNCTION );
+use vars qw( $P $PAGE_TITLE $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE
+  $coge $cogeweb $FORM $URL $TEMPURL %FUNCTION );
 
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
-$ENV{PATH} = $P->{COGEDIR};
-$COGEDIR   = $P->{COGEDIR};
-$URL       = $P->{URL};
-$DATE      = sprintf(
+$DATE = sprintf(
     "%04d-%02d-%02d %02d:%02d:%02d",
     sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
       ->(localtime)
 );
-$PAGE_NAME = "ExperimentList.pl";
 
-$TEMPDIR = $P->{TEMPDIR} . "ExperimentList/";
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-$TEMPURL = $P->{TEMPURL} . "ExperimentList/";
-$FORM    = new CGI;
-$DBNAME  = $P->{DBNAME};
-$DBHOST  = $P->{DBHOST};
-$DBPORT  = $P->{DBPORT};
-$DBUSER  = $P->{DBUSER};
-$DBPASS  = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-$COOKIE_NAME = $P->{COOKIE_NAME};
+$PAGE_TITLE = 'ExperimentList';
+$PAGE_NAME  = "$PAGE_TITLE.pl";
 
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    ticket   => $cas_ticket,
-    coge     => $coge,
-    this_url => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
+$FORM = new CGI;
 
-#$SIG{'__WARN__'} = sub { };    #silence warnings
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket') || undef,
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
+);
+
+$TEMPDIR   = $P->{TEMPDIR} . "$PAGE_TITLE/";
+$TEMPURL   = $P->{TEMPURL} . "$PAGE_TITLE/";
+$ENV{PATH} = $P->{COGEDIR};
+$URL       = $P->{URL};
 
 %FUNCTION = (
     gen_html               => \&gen_html,
@@ -71,29 +54,7 @@ $USER = undef;
     add_to_user_history    => \&add_to_user_history,
 );
 
-if ( $FORM->param('jquery_ajax') ) {
-    dispatch();
-}
-else {
-    print $FORM->header, "\n", gen_html();
-}
-
-sub dispatch {
-    my %args  = $FORM->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-
-        #my %args = $cgi->Vars;
-        #print STDERR Dumper \%args;
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $FORM->header, $FUNCTION{$fname}->(@args_list);
-        }
-        else {
-            print $FORM->header, $FUNCTION{$fname}->(%args);
-        }
-    }
-}
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
     my $html;
@@ -316,7 +277,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
   GROUP BY ft.name
 
 };
-    my $dbh = DBI->connect( $connstr, $DBUSER, $DBPASS );
+    my $dbh = $coge->storage->dbh;  #DBI->connect( $connstr, $DBUSER, $DBPASS );
     my $sth = $dbh->prepare($query);
     $sth->execute;
     my $feats = {};
@@ -423,12 +384,11 @@ sub send_to_list              #send to list
     }
 
     # Record in the log
-    $coge->resultset('Log')->create(
-        {
+    CoGe::Accessory::Web::log_history(
+            db          => $coge,
             user_id     => $USER->id,
             page        => $PAGE_NAME,
             description => 'create list from experiments id' . $list->id
-        }
     );
 
     my $url = "NotebookView.pl?lid=" . $list->id;
@@ -586,10 +546,4 @@ sub save_FeatList_settings {
         page => $PAGE_NAME,
         coge => $coge
     );
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }

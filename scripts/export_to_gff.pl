@@ -35,8 +35,8 @@ Options:
 }
 
 #$coge = CoGeX->dbconnect();
-my $connstr = 'dbi:mysql:coge:homer:3306';
-$coge = CoGeX->connect( $connstr, 'cnssys', 'CnS' );
+my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
+my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 
 # gt sketch -seqid 1 -addintrons yes -start 1000 -style default.style -force -end 70000  out.png grape.gff3
 

@@ -1,77 +1,77 @@
 package CoGe::Services::JBrowse::Sequence;
 use base 'CGI::Application';
 
-use CoGeX;
 use CoGe::Accessory::Web;
-use JSON qq{encode_json};
-use Data::Dumper;
-use Cwd 'abs_path';
-use File::Basename 'fileparse';
+use CoGe::Accessory::Storage qw( get_genome_seq );
+use List::Util qw( min );
 
-my $coge_conf;
+#use File::Basename 'fileparse';
 
 sub setup {
-	my $self = shift;
-	
-	#FIXME - move this into service.pl
-	$coge_conf = abs_path($0);
-	$coge_conf =~ s/services\/JBrowse\/service\.pl/coge\.conf/;	
-	
-	$self->run_modes(
-		'stats_global' 	=> 'stats_global',
-		'features'		=> 'features',
-	);
-	#$self->start_mode('stats_global');
-	$self->mode_param('rm');
+    my $self = shift;
+    $self->run_modes(
+        'stats_global' => 'stats_global',
+        'features'     => 'features',
+    );
+    $self->mode_param('rm');
 }
 
 sub stats_global {
-	print STDERR "Sequence::stats_global\n";
-	return qq{{}};	
+    print STDERR "JBrowse::Sequence::stats_global\n";
+    return qq{{}};
 }
 
 sub features {
-	my $self = shift;
-	my $gid = $self->param('gid');
-	my $chr = $self->param('chr');
-	my $size = $self->query->param('seqChunkSize');
-	my $start = $self->query->param('start');
-	my $end = $self->query->param('end');
-	my $len = $end-$start;
-	print STDERR "Sequence::features gid=$gid chr=$chr size=$size start=$start end=$end\n";
-	
-	# Load config file
-	my $P = CoGe::Accessory::Web::get_defaults($coge_conf);
-	my $DBNAME = $P->{DBNAME};
-	my $DBHOST = $P->{DBHOST};
-	my $DBPORT = $P->{DBPORT};
-	my $DBUSER = $P->{DBUSER};
-	my $DBPASS = $P->{DBPASS};
+    my $self  = shift;
+    my $gid   = $self->param('gid');
+    my $chr   = $self->param('chr');
+    my $size  = $self->query->param('seqChunkSize');
+    my $start = $self->query->param('start');
+    my $end   = $self->query->param('end');
+    my $len   = $end - $start;
+    print STDERR
+      "JBrowse::Sequence::features gid=$gid chr=$chr size=$size start=$start end=$end\n";
 
-	# Connect to the database
-	my $connstr = "dbi:mysql:dbname=$DBNAME;host=$DBHOST;port=$DBPORT";
-	my $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS);
-	#$coge->storage->debugobj(new DBIxProfiler());
-	#$coge->storage->debug(1);
-	
-	my $genome = $coge->resultset('Genome')->find($gid);
-	return unless $genome;
+    # Check params
+    my $empty = qq{{"features" : []}};
+    return $empty if ( $end < 0 );
 
-	# Extract requested piece of sequence file
-	my (undef, $storagepath) = fileparse($genome->file_path);
-	my $seqfile = $storagepath.'/chr/'.$chr;
-	open(my $fh, $seqfile) or die;
-	seek($fh, $start, 0);
-	read($fh, my $seq, $len);
-	close($fh);
-	#print STDERR "$seqfile $len $seq\n";
-	
-	return qq{
-		{ "features" : [
-			{ "start": $start, "end": $end, "seq": "$seq" }
-			]
-		}
-	};
+    # Connect to the database
+    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
+
+    # Retrieve genome
+    my $genome = $db->resultset('Genome')->find($gid);
+    return unless $genome;
+
+    # Adjust location - note: incoming coordinates are interbase!
+    $start = 0 if ( $start < 0 );
+    my $chrLen = $genome->sequence_length($chr);
+    $start = min( $start, $chrLen );
+    $end   = min( $end,   $chrLen );
+    return $empty if ( $start == $end );
+
+    # Check permissions
+    if ( $genome->restricted
+        and ( not defined $user or not $user->has_access_to_genome($genome) ) )
+    {
+        return $empty;
+    }
+
+    # Extract requested piece of sequence file
+    #    my ( undef, $storagepath ) = fileparse( $genome->file_path );
+    #    my $seqfile = $storagepath . '/chr/' . $chr;
+    #    open( my $fh, $seqfile ) or die;
+    #    seek( $fh, $start, 0 );
+    #    read( $fh, my $seq, $len );
+    #    close($fh);
+    my $seq = get_genome_seq(
+        gid   => $gid,
+        chr   => $chr,
+        start => $start + 1,    # convert from interbase to base
+        stop  => $end
+    );
+
+    return qq{{"features" : [{"start": $start, "end": $end, "seq": "$seq"}]}};
 }
 
 1;

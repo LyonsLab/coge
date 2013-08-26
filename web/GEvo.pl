@@ -18,6 +18,7 @@ use CoGeX::Result::Feature;
 use CoGe::Accessory::GenBank;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw( commify );
 use CoGe::Accessory::bl2seq_report;
 use CoGe::Accessory::blastz_report;
 use CoGe::Accessory::lagan_report;
@@ -56,17 +57,28 @@ no warnings 'redefine';
 # for security purposes
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME
+use vars qw($P $PAGE_TITLE $PAGE_NAME
   $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $GENOMETHREADER
   $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge
-  $NUM_SEQS $MAX_SEQS $MAX_PROC %FUNCTION $COOKIE_NAME);
-$P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+  $NUM_SEQS $MAX_SEQS $MAX_PROC %FUNCTION);
+
+$FORM                 = new CGI;
+$CGI::POST_MAX        = 60 * 1024 * 1024;    # 24MB
+$CGI::DISABLE_UPLOADS = 0;
+
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket') || undef,
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
+);
+
 $ENV{PATH} = $P->{COGEDIR};
 
 #print Dumper $P;
-$PAGE_NAME = "GEvo.pl";
-$BL2SEQ    = $P->{BL2SEQ};
-$BLASTZ    = $P->{LASTZ};
+$PAGE_TITLE = 'GEvo';
+$PAGE_NAME  = "$PAGE_TITLE.pl";
+$BL2SEQ     = $P->{BL2SEQ};
+$BLASTZ     = $P->{LASTZ};
 $BLASTZ .= " --ambiguous=iupac";
 $LAGAN          = $P->{LAGAN};
 $CHAOS          = $P->{CHAOS};
@@ -74,16 +86,13 @@ $GENOMETHREADER = $P->{GENOMETHREADER};
 $DIALIGN        = $P->{DIALIGN};
 $TEMPDIR        = $P->{TEMPDIR} . "GEvo";
 $TEMPURL        = $P->{TEMPURL} . "GEvo";
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-$MAX_PROC = $P->{MAX_PROC};
+$MAX_PROC       = $P->{MAX_PROC};
 
 #for chaos
 $ENV{'LAGAN_DIR'} = $P->{LAGANDIR};
 
 #for dialign
 $ENV{'DIALIGN2_DIR'} = $P->{DIALIGN2_DIR};
-
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
 
 # set this to 1 to print verbose messages to logs
 $DEBUG     = 0;
@@ -97,32 +106,6 @@ $DATE      = sprintf(
       ->(localtime)
 );
 
-$FORM                 = new CGI;
-$CGI::POST_MAX        = 60 * 1024 * 1024;    # 24MB
-$CGI::DISABLE_UPLOADS = 0;
-
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-$COOKIE_NAME = $P->{COOKIE_NAME};
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
 my %ajax = CoGe::Accessory::Web::ajax_func();
 
 #$ajax{dataset_search} = \&dataset_search; #override this method from Accessory::Web for restricted organisms
@@ -4651,13 +4634,6 @@ sub feat_search {
         $html .= qq{<input type="hidden" id="featid$num">\n};
     }
     return $html;
-}
-
-sub commify {
-    my $input = shift;
-    $input = reverse $input;
-    $input =~ s<(\d\d\d)(?=\d)(?!\d*\.)><$1,>g;
-    return scalar reverse $input;
 }
 
 sub email_results {

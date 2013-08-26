@@ -3,67 +3,43 @@
 use strict;
 
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
-
+use CoGe::Accessory::Utils qw( commify );
 use CGI;
-use DBI;
-use Data::Dumper;
 use HTML::Template;
-use URI::Escape;
 use Spreadsheet::WriteExcel;
-use Benchmark;
-use Digest::MD5 qw(md5_base64);
-use DBIxProfiler;
-use File::Path;
 no warnings 'redefine';
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME
+use vars qw($P $PAGE_TITLE $PAGE_NAME
   $TEMPDIR $USER $DATE $BASEFILE $COGEDIR $coge $cogeweb
-  $FORM $URL $HISTOGRAM $TEMPURL $COOKIE_NAME %FUNCTION $LIST_TYPE);
+  $FORM $URL $HISTOGRAM $TEMPURL %FUNCTION $LIST_TYPE);
 
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
-$ENV{PATH} = $P->{COGEDIR};
-$COGEDIR   = $P->{COGEDIR};
-$URL       = $P->{URL};
-$DATE      = sprintf(
+$DATE = sprintf(
     "%04d-%02d-%02d %02d:%02d:%02d",
     sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
       ->(localtime)
 );
-$PAGE_NAME = "GenomeList.pl";
+
+$PAGE_TITLE = 'GenomeList';
+$PAGE_NAME  = "$PAGE_TITLE.pl";
+
+$FORM = new CGI;
+
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket') || undef,
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
+);
+
+$TEMPDIR   = $P->{TEMPDIR} . "GenomeList/";
+$TEMPURL   = $P->{TEMPURL} . "GenomeList/";
+$ENV{PATH} = $P->{COGEDIR};
+$COGEDIR   = $P->{COGEDIR};
+$URL       = $P->{URL};
 $HISTOGRAM = $P->{HISTOGRAM};
 
-$TEMPDIR = $P->{TEMPDIR} . "GenomeList/";
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-$TEMPURL = $P->{TEMPURL} . "GenomeList/";
-$FORM    = new CGI;
-$DBNAME  = $P->{DBNAME};
-$DBHOST  = $P->{DBHOST};
-$DBPORT  = $P->{DBPORT};
-$DBUSER  = $P->{DBUSER};
-$DBPASS  = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-$COOKIE_NAME = $P->{COOKIE_NAME};
 $LIST_TYPE =
   $coge->resultset('ListType')->find_or_create( { name => 'genome' } );
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
-
-$SIG{'__WARN__'} = sub { };    #silence warnings
 
 %FUNCTION = (
     gen_html                 => \&gen_html,
@@ -88,29 +64,7 @@ $SIG{'__WARN__'} = sub { };    #silence warnings
     get_gc_for_feature_type  => \&get_gc_for_feature_type,
 );
 
-if ( $FORM->param('jquery_ajax') ) {
-    dispatch();
-}
-else {
-    print $FORM->header, "\n", gen_html();
-}
-
-sub dispatch {
-    my %args  = $FORM->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-
-        #my %args = $cgi->Vars;
-        #print STDERR Dumper \%args;
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $FORM->header, $FUNCTION{$fname}->(@args_list);
-        }
-        else {
-            print $FORM->header, $FUNCTION{$fname}->(%args);
-        }
-    }
-}
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
     my $html;
@@ -336,19 +290,22 @@ sub get_gc_for_feature_type {
             warn "no dataset object found for id $dsidt\n";
             next;
         }
-        my $t1 = new Benchmark;
+
+        #        my $t1 = new Benchmark;
         my %seqs
           ; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
         if ( defined $chr ) {
             $seqs{$chr} =
-              $ds->genomic_sequence( chr => $chr, seq_type => $gstid );
+              $ds->get_genomic_sequence( chr => $chr, seq_type => $gstid );
         }
         else {
             %seqs =
-              map { $_, $ds->genomic_sequence( chr => $_, seq_type => $gstid ) }
-              $ds->chromosomes;
+              map {
+                $_, $ds->get_genomic_sequence( chr => $_, seq_type => $gstid )
+              } $ds->chromosomes;
         }
-        my $t2    = new Benchmark;
+
+        #        my $t2    = new Benchmark;
         my @feats = $ds->features(
             $search,
             {
@@ -392,9 +349,10 @@ sub get_gc_for_feature_type {
             push @data, sprintf( "%.2f", $perc_gc );
             push @fids, $feat->id . "_" . $gstid;
         }
-        my $t3               = new Benchmark;
-        my $get_seq_time     = timestr( timediff( $t2, $t1 ) );
-        my $process_seq_time = timestr( timediff( $t3, $t2 ) );
+
+        #        my $t3               = new Benchmark;
+        #        my $get_seq_time     = timestr( timediff( $t2, $t1 ) );
+        #        my $process_seq_time = timestr( timediff( $t3, $t2 ) );
     }
     my $total = $gc + $at + $n;
     return "error" unless $total;
@@ -535,7 +493,7 @@ sub gen_body {
     $dsgids = read_file() if $BASEFILE;    #: $opts{feature_list};
     foreach my $item ( $form->param('dsgid') ) {
         foreach my $item2 ( split /(::)|(,)/, $item ) {
-            push @$dsgids, $item2 if $item2 =~ /^\d+_?\d*$/;
+            push @$dsgids, $item2 if ( $item2 and $item2 =~ /^\d+_?\d*$/ );
         }
     }
 
@@ -570,7 +528,7 @@ sub get_lists {
     my $public = $opts{public};
     my @lists;
     if ($public) {
-        foreach my $list ( sort { $a->name <=> $b->name }
+        foreach my $list ( sort { $a->name cmp $b->name }
             $coge->resultset('List')->public_lists )
         {
             my $name = $list->name;
@@ -655,10 +613,14 @@ qq{<span class=link onclick=window.open('OrganismView.pl?org_desc=$_')>$_</span>
         my $chr_count = $dsg->chromosome_count;
         my $length    = $dsg->length;
         my $type      = $dsg->type->name . " [id:&nbsp" . $dsg->type->id . "]";
-        my $file      = $dsg->file_path;
-        $file =~ s/$COGEDIR/$URL/;
+
+        # mdb removed 7/31/13 issue 77
+        #        my $file      = $dsg->file_path;
+        #        $file =~ s/$COGEDIR/$URL/;
+        my $seq_url = "services/JBrowse/service.pl/sequence/$dsgid"
+          ;    # mdb added 7/31/13 issue 77
         $type = $type
-          . "<br><a href=$file target=_seq>Fasta</a><br><a href=coge_gff.pl?dsgid=$dsgid;annos=1 target=_anno>GFF File</a>";
+          . "<br><a href='$seq_url'>Fasta</a><br><a href='bin/export/coge_gff.pl?dsgid=$dsgid;annos=1'>GFF File</a>";
         my ($ds_source) = $dsg->source;
         my $source      = $ds_source->name;
         my $source_link = $ds_source->link;
@@ -717,7 +679,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
   GROUP BY ft.name
 
 };
-    my $dbh = DBI->connect( $connstr, $DBUSER, $DBPASS );
+    my $dbh = $coge->storage->dbh;  #DBI->connect( $connstr, $DBUSER, $DBPASS );
     my $sth = $dbh->prepare($query);
     $sth->execute;
     my $feats = {};
@@ -879,12 +841,11 @@ sub send_to_list          #send to list
     }
 
     # Record in the log
-    $coge->resultset('Log')->create(
-        {
-            user_id     => $USER->id,
-            page        => $PAGE_NAME,
-            description => 'create list from genomes id' . $list->id
-        }
+    CoGe::Accessory::Web::log_history(
+        db          => $coge,
+        user_id     => $USER->id,
+        page        => $PAGE_NAME,
+        description => 'create list from genomes id' . $list->id
     );
 
     my $url = "NotebookView.pl?lid=" . $list->id;
@@ -1079,12 +1040,13 @@ sub get_codon_usage {
           ; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
         if ( defined $chr ) {
             $seqs{$chr} =
-              $ds->genomic_sequence( chr => $chr, seq_type => $gstid );
+              $ds->get_genomic_sequence( chr => $chr, seq_type => $gstid );
         }
         else {
             %seqs =
-              map { $_, $ds->genomic_sequence( chr => $_, seq_type => $gstid ) }
-              $ds->chromosomes;
+              map {
+                $_, $ds->get_genomic_sequence( chr => $_, seq_type => $gstid )
+              } $ds->chromosomes;
         }
         foreach my $feat (
             $ds->features(
@@ -1278,10 +1240,4 @@ sub save_GenomeList_settings {
         page => $PAGE_NAME,
         coge => $coge
     );
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }

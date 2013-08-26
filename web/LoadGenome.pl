@@ -1,92 +1,57 @@
 #! /usr/bin/perl -w
 
-# NOTE: this file shares a lot of code with LoadExperiment.pl, replicate changes when applicable.
+# NOTE: this file shares a lot of code with LoadExperiment.pl & LoadAnnotation.pl, replicate changes when applicable.
 
 use strict;
 use CGI;
 use CoGeX;
-use DBI;
-use Data::Dumper;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils;
 use HTML::Template;
 use JSON::XS;
-use URI::Escape::JavaScript qw(escape unescape);
-use Spreadsheet::WriteExcel;
-use Digest::MD5 qw(md5_base64);
-use DBIxProfiler;
-use File::Path;
 use Sort::Versions;
-use LWP::UserAgent;
+use File::Path qw(mkpath);
+use File::Copy qw(copy);
+use URI::Escape::JavaScript qw(escape);
 use LWP::Simple;
-use HTTP::Status qw(:constants);
-use File::Listing;
-use File::Copy;
-use XML::Simple;
 no warnings 'redefine';
 
 use vars qw(
-  $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE
-  $TEMPDIR $BINDIR $USER $DATE $COGEDIR $coge $FORM $URL $TEMPURL $COOKIE_NAME
-  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE
-);
-
-$CONFIGFILE = $ENV{HOME} . 'coge.conf';
-$P          = CoGe::Accessory::Web::get_defaults($CONFIGFILE);
-$ENV{PATH}  = $P->{COGEDIR};
-$COGEDIR    = $P->{COGEDIR};
-$URL        = $P->{URL};
-$DATE       = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
+  $P $PAGE_TITLE $TEMPDIR $BINDIR $USER $coge $FORM
+  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $OPEN_STATUS
 );
 
 $PAGE_TITLE = 'LoadGenome';
 
 $FORM = new CGI;
 
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-$COOKIE_NAME = $P->{COOKIE_NAME};
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket') || undef,
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
+);
 
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    ticket   => $cas_ticket,
-    coge     => $coge,
-    this_url => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
+$CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
+$BINDIR     = $P->{SCRIPTDIR}; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
 
-$TEMPDIR = $P->{TEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/';
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-
-$BINDIR = $P->{BINDIR};
+# Generate a unique session ID for this load (issue 177).
+# Use existing ID if being passed in with AJAX request.  Otherwise generate
+# a new one.  If passed-in as url parameter then open status window
+# automatically.
+$OPEN_STATUS = (defined $FORM->param('load_id'));
+$LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
+$TEMPDIR    = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 
 $MAX_SEARCH_RESULTS = 100;
 
-#$SIG{'__WARN__'} = sub { };    # silence warnings
-
 %FUNCTION = (
-    generate_html  => \&generate_html,
     irods_get_path => \&irods_get_path,
     irods_get_file => \&irods_get_file,
     load_from_ftp  => \&load_from_ftp,
     ftp_get_file   => \&ftp_get_file,
     upload_file    => \&upload_file,
-
-    #	search_ncbi_nucleotide	=> \&search_ncbi_nucleotide,
-    # search_ncbi_taxonomy	=> \&search_ncbi_taxonomy,
+    #search_ncbi_nucleotide	=> \&search_ncbi_nucleotide,
+    #search_ncbi_taxonomy	=> \&search_ncbi_taxonomy,
     load_genome          => \&load_genome,
     get_sequence_types   => \&get_sequence_types,
     create_sequence_type => \&create_sequence_type,
@@ -95,25 +60,70 @@ $MAX_SEARCH_RESULTS = 100;
     search_organisms     => \&search_organisms,
     search_users         => \&search_users,
     get_sources          => \&get_sources,
-    get_load_genome_log  => \&get_load_genome_log,
+    get_load_log         => \&get_load_log,
 );
 
-if ( $FORM->param('jquery_ajax') ) {
-    my %args  = $FORM->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-        die if ( not defined $FUNCTION{$fname} );
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $FORM->header, $FUNCTION{$fname}->(@args_list);
-        }
-        else {
-            print $FORM->header, $FUNCTION{$fname}->(%args);
-        }
-    }
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
+
+sub generate_html {
+    my $html;
+    my $template =
+      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+    $template->param( PAGE_TITLE => $PAGE_TITLE );
+    $template->param( HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+    my $name = $USER->user_name;
+    $name = $USER->first_name if $USER->first_name;
+    $name .= ' ' . $USER->last_name
+      if ( $USER->first_name && $USER->last_name );
+    $template->param(
+        USER     => $name,
+        LOGO_PNG => $PAGE_TITLE . "-logo.png",
+    );
+    $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
+    my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+    $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
+
+    $template->param( BODY       => generate_body() );
+    $template->param( ADJUST_BOX => 1 );
+
+    $html .= $template->output;
+    return $html;
 }
-else {
-    print $FORM->header, "\n", generate_html();
+
+sub generate_body {
+    if ( $USER->user_name eq 'public' ) {
+        my $template =
+          HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+        $template->param(
+            PAGE_NAME => "$PAGE_TITLE.pl",
+            LOGIN     => 1
+        );
+        return $template->output;
+    }
+
+    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
+        url => $P->{SERVER} . "$PAGE_TITLE.pl?load_id=$LOAD_ID"
+    );
+
+    my $template =
+      HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+    $template->param(
+        MAIN          => 1,
+        PAGE_NAME     => $PAGE_TITLE . '.pl',
+        LOAD_ID       => $LOAD_ID,
+        OPEN_STATUS   => $OPEN_STATUS,
+        LINK          => $tiny_link,
+        SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
+        ENABLE_NCBI              => 1,
+        DEFAULT_TAB              => 0,
+        MAX_IRODS_LIST_FILES     => 100,
+        MAX_IRODS_TRANSFER_FILES => 30,
+        MAX_FTP_FILES            => 30
+    );
+
+    $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
+
+    return $template->output;
 }
 
 sub irods_get_path {
@@ -439,7 +449,9 @@ sub load_genome {
     my $keep_headers = $opts{keep_headers};
     my $items        = $opts{items};
 
-#Added EL: 7/8/2013.  Solves the problem when restricted is unchecked.  Otherwise, command-line call fails with '-organism_id' being passed to restricted as option
+	# Added EL: 7/8/2013.  Solves the problem when restricted is unchecked.  
+	# Otherwise, command-line call fails with '-organism_id' being passed to 
+	# restricted as option
     $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
 
     return unless $items;
@@ -455,10 +467,11 @@ sub load_genome {
     }
 
     # Setup staging area and log file
-    my $stagepath = $TEMPDIR . 'staging/';
-    my $i;
-    for ( $i = 1 ; -e "$stagepath$i" ; $i++ ) { }
-    $stagepath .= $i;
+    my $stagepath = $TEMPDIR . '/staging/';
+# mdb removed 8/9/13 issue 177
+#    my $i;
+#    for ( $i = 1 ; -e "$stagepath$i" ; $i++ ) { }
+#    $stagepath .= $i;
     mkpath $stagepath;
 
     my $logfile = $stagepath . '/log.txt';
@@ -488,7 +501,6 @@ sub load_genome {
     }
 
     print $log "Calling bin/load_genome.pl ...\n";
-    my $datadir = $P->{DATADIR} . '/genomic_sequence/';
 
 #EL: 7/8/2013  Modified how $cmd was created so that empty options were not passed on the command line.  Perl has a bad habit of grabbing the next option name when it is expecting a value for a previous option and no value was passed along the command line.
     my $cmd =
@@ -505,7 +517,6 @@ sub load_genome {
     $cmd .= "-organism_id $organism_id ";
     $cmd .= '-source_name "' . escape($source_name) . '" ';
     $cmd .= "-staging_dir $stagepath ";
-    $cmd .= "-install_dir $datadir ";
     $cmd .= '-fasta_files "' . escape( join( ',', @files ) ) . '" ';
     $cmd .= "-config $CONFIGFILE";
 
@@ -523,16 +534,14 @@ sub load_genome {
         exit;
     }
 
-    return $i;
+    return 1;#$i; mdb changed 8/9/13 issue 77
 }
 
-sub get_load_genome_log {
-    my %opts    = @_;
-    my $load_id = $opts{load_id};
+sub get_load_log {
+    #my %opts    = @_;
+    #print STDERR "get_load_log $LOAD_ID\n";
 
-    #	print STDERR "get_load_genome_log $load_id\n";
-
-    my $logfile = $TEMPDIR . "staging/$load_id/log.txt";
+    my $logfile = $TEMPDIR . "staging/log.txt";
     open( my $fh, $logfile )
       or
       return encode_json( { status => -1, log => ["Error opening log file"] } );
@@ -700,62 +709,4 @@ sub create_source {
     return unless ($source);
 
     return $name;
-}
-
-sub generate_html {
-    my $html;
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( PAGE_TITLE => $PAGE_TITLE );
-    $template->param( HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= ' ' . $USER->last_name
-      if ( $USER->first_name && $USER->last_name );
-    $template->param(
-        USER     => $name,
-        LOGO_PNG => $PAGE_TITLE . "-logo.png",
-        DATE     => $DATE
-    );
-    $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-    my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-    $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
-
-    $template->param( BODY       => generate_body() );
-    $template->param( ADJUST_BOX => 1 );
-
-    $html .= $template->output;
-    return $html;
-}
-
-sub generate_body {
-    if ( $USER->user_name eq 'public' ) {
-        my $template =
-          HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-        $template->param(
-            PAGE_NAME => "$PAGE_TITLE.pl",
-            LOGIN     => 1
-        );
-        return $template->output;
-    }
-
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
-    $template->param(
-        MAIN          => 1,
-        PAGE_NAME     => $PAGE_TITLE . '.pl',
-        SUPPORT_EMAIL => $P->{SUPPORT_EMAIL}
-    );
-
-    $template->param(
-        ENABLE_NCBI              => 1,
-        DEFAULT_TAB              => 0,
-        MAX_IRODS_LIST_FILES     => 100,
-        MAX_IRODS_TRANSFER_FILES => 30,
-        MAX_FTP_FILES            => 30
-    );
-
-    $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
-
-    return $template->output;
 }

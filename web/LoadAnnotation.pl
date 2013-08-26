@@ -5,79 +5,46 @@
 use strict;
 use CGI;
 use CoGeX;
-use DBI;
-use Data::Dumper;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils;
 use HTML::Template;
 use JSON::XS;
-use URI::Escape::JavaScript qw(escape unescape);
-use Spreadsheet::WriteExcel;
-use Digest::MD5 qw(md5_base64);
-use DBIxProfiler;
+use URI::Escape::JavaScript qw(escape);
 use File::Path;
-use Sort::Versions;
-use LWP::UserAgent;
-use LWP::Simple;
-use File::Listing;
 use File::Copy;
-use XML::Simple;
+use Sort::Versions;
 no warnings 'redefine';
 
 use vars qw(
-  $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE
-  $TEMPDIR $BINDIR $USER $DATE $COGEDIR $coge $FORM $URL $TEMPURL $COOKIE_NAME
-  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE
-);
-
-$CONFIGFILE = $ENV{HOME} . 'coge.conf';
-$P          = CoGe::Accessory::Web::get_defaults($CONFIGFILE);
-$ENV{PATH}  = $P->{COGEDIR};
-$COGEDIR    = $P->{COGEDIR};
-$URL        = $P->{URL};
-$DATE       = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
+  $P $PAGE_TITLE
+  $TEMPDIR $BINDIR $USER $coge $FORM $TEMPURL
+  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $OPEN_STATUS
 );
 
 $PAGE_TITLE = 'LoadAnnotation';
 
 $FORM = new CGI;
 
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-$COOKIE_NAME = $P->{COOKIE_NAME};
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket') || undef,
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
+);
 
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    ticket   => $cas_ticket,
-    coge     => $coge,
-    this_url => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
+$CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
+$BINDIR     = $P->{SCRIPTDIR}; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
 
-$TEMPDIR = $P->{TEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/';
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-
-$BINDIR = $P->{BINDIR};
+# Generate a unique session ID for this load (issue 177).
+# Use existing ID if being passed in with AJAX request.  Otherwise generate
+# a new one.  If passed-in as url parameter then open status window
+# automatically.
+$OPEN_STATUS = (defined $FORM->param('load_id'));
+$LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
+$TEMPDIR    = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 
 $MAX_SEARCH_RESULTS = 100;
 
-#$SIG{'__WARN__'} = sub { };    # silence warnings
-
 %FUNCTION = (
-    generate_html   => \&generate_html,
     irods_get_path  => \&irods_get_path,
     irods_get_file  => \&irods_get_file,
     load_from_ftp   => \&load_from_ftp,
@@ -90,22 +57,77 @@ $MAX_SEARCH_RESULTS = 100;
     get_load_log    => \&get_load_log,
 );
 
-if ( $FORM->param('jquery_ajax') ) {
-    my %args  = $FORM->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-        die if ( not defined $FUNCTION{$fname} );
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $FORM->header, $FUNCTION{$fname}->(@args_list);
-        }
-        else {
-            print $FORM->header, $FUNCTION{$fname}->(%args);
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
+
+sub generate_html {
+    my $html;
+    my $template =
+      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+    $template->param( PAGE_TITLE => $PAGE_TITLE );
+    $template->param( HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+    my $name = $USER->user_name;
+    $name = $USER->first_name if $USER->first_name;
+    $name .= ' ' . $USER->last_name
+      if ( $USER->first_name && $USER->last_name );
+    $template->param( USER     => $name );
+    $template->param( LOGO_PNG => $PAGE_TITLE . "-logo.png" );
+    $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
+    
+    my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+    $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
+
+    $template->param( BODY       => generate_body() );
+    $template->param( ADJUST_BOX => 1 );
+
+    $html .= $template->output;
+    return $html;
+}
+
+sub generate_body {
+    if ( $USER->user_name eq 'public' ) {
+        my $template =
+          HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+        $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
+        $template->param( LOGIN     => 1 );
+        return $template->output;
+    }
+
+    my $template =
+      HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+    $template->param( MAIN      => 1 );
+    $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
+
+    my $gid = $FORM->param('gid');
+    if ($gid) {
+        my $genome = $coge->resultset('Genome')->find($gid);
+
+        #TODO check permissions
+        if ($genome) {
+            $template->param(
+                GENOME_NAME => $genome->info,
+                GENOME_ID   => $genome->id
+            );
         }
     }
-}
-else {
-    print $FORM->header, "\n", generate_html();
+    
+    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
+        url => $P->{SERVER} . "$PAGE_TITLE.pl?load_id=$LOAD_ID"
+    );
+
+    $template->param(
+    	LOAD_ID       => $LOAD_ID,
+        OPEN_STATUS   => $OPEN_STATUS,
+        LINK          => $tiny_link,
+        FILE_SELECT_SINGLE       => 1,
+        DEFAULT_TAB              => 2,
+        DISABLE_IRODS_GET_ALL    => 1,
+        MAX_IRODS_LIST_FILES     => 100,
+        MAX_IRODS_TRANSFER_FILES => 30,
+        MAX_FTP_FILES            => 30
+    );
+    $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
+
+    return $template->output;
 }
 
 sub irods_get_path {
@@ -348,9 +370,10 @@ sub load_annotation {
 
     # Setup staging area and log file
     my $stagepath = $TEMPDIR . 'staging/';
-    my $i;
-    for ( $i = 1 ; -e "$stagepath$i" ; $i++ ) { }
-    $stagepath .= $i;
+# mdb removed 8/9/13 issue 177
+#    my $i;
+#    for ( $i = 1 ; -e "$stagepath$i" ; $i++ ) { }
+#    $stagepath .= $i;
     mkpath $stagepath;
 
     my $logfile = $stagepath . '/log.txt';
@@ -395,9 +418,6 @@ sub load_annotation {
       . '-source_name "'
       . escape($source_name) . '" '
       . "-staging_dir $stagepath "
-      . "-install_dir "
-      . $P->{DATADIR}
-      . '/annotation '
       . '-data_file "'
       . escape( join( ',', @files ) ) . '" '
       . "-config $CONFIGFILE";
@@ -414,17 +434,16 @@ sub load_annotation {
         exit;
     }
 
-    return $i;
+    return 1;#$i; #mdb changed 8/9/13 issue 77
 }
 
 sub get_load_log {
     my %opts      = @_;
-    my $load_id   = $opts{load_id};
     my $timestamp = $opts{timestamp};
 
     #	print STDERR "get_load_log: $load_id " . $USER->name . "\n";
 
-    my $logfile = $TEMPDIR . "staging/$load_id/log.txt";
+    my $logfile = $TEMPDIR . "staging/log.txt";
     open( my $fh, $logfile )
       or return encode_json(
         {
@@ -559,68 +578,4 @@ sub create_source {
     return unless ($source);
 
     return $name;
-}
-
-sub generate_html {
-    my $html;
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( PAGE_TITLE => $PAGE_TITLE );
-    $template->param( HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= ' ' . $USER->last_name
-      if ( $USER->first_name && $USER->last_name );
-    $template->param( USER     => $name );
-    $template->param( LOGO_PNG => $PAGE_TITLE . "-logo.png" );
-    $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE     => $DATE );
-    my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-    $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
-
-    $template->param( BODY       => generate_body() );
-    $template->param( ADJUST_BOX => 1 );
-
-    $html .= $template->output;
-    return $html;
-}
-
-sub generate_body {
-    if ( $USER->user_name eq 'public' ) {
-        my $template =
-          HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-        $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
-        $template->param( LOGIN     => 1 );
-        return $template->output;
-    }
-
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
-    $template->param( MAIN      => 1 );
-    $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
-
-    my $gid = $FORM->param('gid');
-    if ($gid) {
-        my $genome = $coge->resultset('Genome')->find($gid);
-
-        #TODO check permissions
-        if ($genome) {
-            $template->param(
-                GENOME_NAME => $genome->info,
-                GENOME_ID   => $genome->id
-            );
-        }
-    }
-
-    $template->param(
-        FILE_SELECT_SINGLE       => 1,
-        DEFAULT_TAB              => 2,
-        DISABLE_IRODS_GET_ALL    => 1,
-        MAX_IRODS_LIST_FILES     => 100,
-        MAX_IRODS_TRANSFER_FILES => 30,
-        MAX_FTP_FILES            => 30
-    );
-    $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
-
-    return $template->output;
 }

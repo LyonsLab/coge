@@ -18,6 +18,10 @@ a:hover {
   cursor: pointer;
 }*/
 
+.hidden {
+	display: none;
+}
+
 .note {
   color:gray;
   font-style:italic;
@@ -923,14 +927,8 @@ th {
     text-align: center;
 }
 
-.completed {
-    color: #009933;
-}
 
-.skipped {
-    color: dimgray;
-}
-
+/* Alignment */
 .top {
     vertical-align: top;
 }
@@ -939,3 +937,15 @@ th {
     vertical-align: bottom;
 }
 
+/* Dialog box */
+.completed {
+    color: #009933;
+}
+
+.skipped {
+    color: dimgray;
+}
+
+.running {
+    color: 3366FF;
+}

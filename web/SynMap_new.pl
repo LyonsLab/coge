@@ -5,11 +5,10 @@ no warnings 'redefine';
 umask(0);
 
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Web;
-
+use CoGe::Accessory::Utils qw( commify );
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
@@ -18,9 +17,9 @@ use Data::Dumper;
 use HTML::Template;
 use JSON::XS;
 use LWP::Simple;
+use LWP::UserAgent;
 use Parallel::ForkManager;
 use GD;
-use Digest::MD5 qw(md5_base64);
 use File::Path;
 use Mail::Mailer;
 use Benchmark;
@@ -29,26 +28,37 @@ use POSIX;
 use Sort::Versions;
 
 our (
-    $P,             $DBNAME,         $DBHOST,      $DBPORT,
-    $DBUSER,        $DBPASS,         $connstr,     $DATE,
-    $DEBUG,         $DIR,            $URL,         $SERVER,
-    $USER,          $FORM,           $coge,        $cogeweb,
-    $PAGE_NAME,     $FORMATDB,       $BLAST,       $TBLASTX,
-    $BLASTN,        $BLASTP,         $LASTZ,       $LAST,
-    $DATADIR,       $FASTADIR,       $BLASTDBDIR,  $DIAGSDIR,
-    $MAX_PROC,      $DAG_TOOL,       $PYTHON,      $PYTHON26,
-    $TANDEM_FINDER, $RUN_DAGCHAINER, $EVAL_ADJUST, $FIND_NEARBY,
-    $DOTPLOT,       $SVG_DOTPLOT,    $NWALIGN,     $QUOTA_ALIGN,
-    $CLUSTER_UTILS, $BLAST2RAW,      $BASE_URL,    $BLAST2BED,
-    $SYNTENY_SCORE, $TEMPDIR,        $TEMPURL,     $ALGO_LOOKUP,
-    $GZIP,          $GUNZIP,         $COOKIE_NAME, %FUNCTIONS,
-    $YERBA,         $GENE_ORDER,     $PAGE_TITLE,  $KSCALC,
-    $GEN_FASTA,     $RUN_ALIGNMENT,  $RUN_COVERAGE
+    $P,           $DEBUG,         $DIR,            $URL,
+    $SERVER,      $USER,          $FORM,           $coge,
+    $cogeweb,     $PAGE_NAME,     $FORMATDB,       $BLAST,
+    $TBLASTX,     $BLASTN,        $BLASTP,         $LASTZ,
+    $LAST,        $DATADIR,       $FASTADIR,       $BLASTDBDIR,
+    $DIAGSDIR,    $MAX_PROC,      $DAG_TOOL,       $PYTHON,
+    $PYTHON26,    $TANDEM_FINDER, $RUN_DAGCHAINER, $EVAL_ADJUST,
+    $FIND_NEARBY, $DOTPLOT,       $SVG_DOTPLOT,    $NWALIGN,
+    $QUOTA_ALIGN, $CLUSTER_UTILS, $BLAST2RAW,      $BASE_URL,
+    $BLAST2BED,   $SYNTENY_SCORE, $TEMPDIR,        $TEMPURL,
+    $ALGO_LOOKUP, $GZIP,          $GUNZIP,         %FUNCTIONS,
+    $YERBA,       $GENE_ORDER,    $PAGE_TITLE,     $KSCALC,
+    $GEN_FASTA,   $RUN_ALIGNMENT, $RUN_COVERAGE
 );
 
-$DEBUG     = 0;
-$YERBA     = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$DEBUG = 0;
+$|     = 1;    # turn off buffering
+
+$FORM       = new CGI;
+$PAGE_TITLE = "SynMap";
+$PAGE_NAME  = "$PAGE_TITLE.pl";
+
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket => $FORM->param('ticket') || undef,
+    url => $FORM->url,
+    page_title => $PAGE_TITLE,
+    debug      => 0,
+);
+
+$YERBA = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
+
 $ENV{PATH} = join ":",
   (
     $P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR} . "SynMap",
@@ -151,7 +161,6 @@ $DATADIR  = $P->{DATADIR};
 $DIAGSDIR = $P->{DIAGSDIR};
 $FASTADIR = $P->{FASTADIR};
 
-mkpath( $TEMPDIR,     1, 0777 );
 mkpath( $FASTADIR,    1, 0777 );
 mkpath( $DIAGSDIR,    1, 0777 );    # mdb added 7/9/12
 mkpath( $P->{LASTDB}, 1, 0777 );    # mdb added 7/9/12
@@ -180,51 +189,17 @@ $CLUSTER_UTILS = $P->{CLUSTER_UTILS};   #convert dag output to quota_align input
 $BLAST2RAW     = $P->{BLAST2RAW};       #find local duplicates
 $SYNTENY_SCORE = $P->{SYNTENY_SCORE};
 
-$DOTPLOT     = $P->{DOTPLOT} . " -cf " . $ENV{HOME} . 'coge.conf';
+$DOTPLOT     = $P->{DOTPLOT} . " -cf " . $ENV{COGE_HOME} . 'coge.conf';
 $SVG_DOTPLOT = $P->{SVG_DOTPLOT};
 
 #$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
 #$NWALIGN = $DIR."/bin/nwalign-0.3.0/bin/nwalign";
 $NWALIGN = $P->{NWALIGN};
-$|       = 1;                           # turn off buffering
-$DATE    = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
-$FORM       = new CGI;
-$PAGE_TITLE = "SynMap";
-$PAGE_NAME  = "$PAGE_TITLE.pl";
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
 
 #$ajax{read_log}=\&read_log_test;
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-
-$COOKIE_NAME = $P->{COOKIE_NAME};
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
-
 #print $pj->build_html( $FORM, \&gen_html );
-
 #print "Content-Type: text/html\n\n";print gen_html($FORM);
 
 %FUNCTIONS = (
@@ -303,7 +278,6 @@ sub gen_html {
     $template->param( USER => $name );
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE => $DATE );
 
     #$template->param(ADJUST_BOX=>1);
     $template->param( LOGO_PNG => "SynMap-logo.png" );
@@ -380,9 +354,14 @@ sub gen_body {
     $autogo = 0 unless defined $autogo;
     $template->param( AUTOGO => $autogo );
 
-    #populate organism menus
+#if the page is loading with genomes, there will be a check for whether the genome is rest
+#populate organism menus
     for ( my $i = 1 ; $i <= 2 ; $i++ ) {
-        my $dsgid = $form->param( 'dsgid' . $i ) || 0;
+        my $dsgid = 0;
+        $dsgid = $form->param( 'dsgid' . $i )
+          if $form->param( 'dsgid' . $i );    #old method for specifying genome
+        $dsgid = $form->param( 'gid' . $i )
+          if $form->param( 'gid' . $i );      #new method for specifying genome
         my $feattype_param = $FORM->param( 'ft' . $i )
           if $FORM->param( 'ft' . $i );
         my $name = $FORM->param( 'name' . $i ) if $FORM->param( 'name' . $i );
@@ -541,12 +520,12 @@ sub gen_org_menu {
     my $dsgid          = $opts{dsgid};
     my $feattype_param = $opts{feattype_param};
     $feattype_param = 1 unless $feattype_param;
-    my $org;
 
     if ($dsgid) {
-        $org = $coge->resultset('Genome')->find($dsgid)->organism;
+        my $org = $coge->resultset('Genome')->find($dsgid)->organism;
         $oid = $org->id;
     }
+
     $name = "Search" unless $name;
     $desc = "Search" unless $desc;
     my $menu_template =
@@ -557,6 +536,9 @@ sub gen_org_menu {
     $menu_template->param( ORG_DESC => $desc );
     $menu_template->param(
         'ORG_LIST' => get_orgs( name => $name, i => $num, oid => $oid ) );
+
+    #    $oid = 0;
+    #    $dsgid =0;
     my ($dsg_menu) = gen_dsg_menu( oid => $oid, dsgid => $dsgid, num => $num );
     $menu_template->param( DSG_MENU => $dsg_menu );
 
@@ -583,17 +565,20 @@ sub gen_dsg_menu {
     my $message;
     my $org_name;
 
-    #   print STDERR"here!\n";
-
+    #    print STDERR join ("\n", map {$_->id} $USER->genomes),"\n";
     foreach my $dsg (
         $coge->resultset('Genome')->search(
             { organism_id => $oid },
-            { prefetch    => ['genomic_sequence_type'] }
+            {
+                prefetch => ['genomic_sequence_type'],
+                join     => ['genomic_sequence_type']
+            }
         )
       )
     {
         my $name;
         my $has_cds = 0;
+
         if ( $dsg->restricted && !$USER->has_access_to_genome($dsg) ) {
             next unless $dsgid && $dsg->id == $dsgid;
             $name = "Restricted";
@@ -620,6 +605,7 @@ sub gen_dsg_menu {
                 $has_cds = 1;
             }
         }
+
         push @dsg_menu, [ $dsg->id, $name, $dsg, $has_cds ];
 
     }
@@ -1273,10 +1259,6 @@ sub get_query_link {
 "<a href='OrganismView.pl?dsgid=$dsgid1' target='_blank'>$org_name1</a> v. <a href='OrganismView.pl?dsgid=$dsgid2' target='_blank'>$org_name2</a>";
 
     $log_msg .= " Ks" if $ks_type;
-    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(
-        basename => $basename,
-        tempdir  => $TEMPDIR
-    );
 
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
         db      => $coge,
@@ -1286,12 +1268,25 @@ sub get_query_link {
         log_msg => $log_msg
     );
 
+    my $job = CoGe::Accessory::Web::get_job(
+        tiny_link => $tiny_link,
+        title     => $PAGE_TITLE,
+        user_id   => $USER->id,
+        db_object => $coge
+    );
+
     my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
+
+    my $ua   = LWP::UserAgent->new;
+    my $resp = $ua->get($tiny_link);
+    my $old  = $resp->request->uri;
+    $old =~ s/SynMap/SynMap_old/;
 
     return encode_json(
         {
-            link    => $tiny_link,
-            request => "jex/synmap/status/synmap-$tiny_id",
+            link     => $tiny_link,
+            old_link => $old,
+            request  => "jex/synmap/status/" . $job->id,
         }
     );
 }
@@ -1478,7 +1473,7 @@ sub go {
     my $workflow = undef;
     my $status   = undef;
 
-    my $config = $ENV{HOME} . "coge.conf";
+    my $config = $ENV{COGE_HOME} . "coge.conf";
 
     #my @dsgs = ([$dsgid1, $feat_type1]);
     #push @dsgs, [$dsgid2, $feat_type2]
@@ -1497,6 +1492,7 @@ sub go {
     #        #}
     #    }
     $workflow = $YERBA->create_workflow(
+        id      => $job->id,
         name    => $workflow_id,
         logfile => $cogeweb->logfile
     );
@@ -2333,11 +2329,73 @@ sub get_results {
     my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
     my $workflow_id .= "-$tiny_id";
 
+    my $job = CoGe::Accessory::Web::get_job(
+        tiny_link => $tiny_link,
+        title     => $PAGE_TITLE,
+        user_id   => $USER->id,
+        db_object => $coge
+    );
+
     my $basename = $opts{basename};
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(
         basename => $basename,
         tempdir  => $TEMPDIR
     );
+
+    given ( lc( $YERBA->get_status( $job->id ) ) ) {
+        when ('completed') {
+            if ( $job->status != 2 ) {
+                $job->update(
+                    {
+                        status => 2
+                    }
+                );
+            }
+        }
+        when ('failed') {
+            if ( $job->status != 5 ) {
+                $job->update(
+                    {
+                        status => 5
+                    }
+                );
+            }
+        }
+
+        when ('cancelled') {
+            if ( $job->status != 3 ) {
+                $job->update(
+                    {
+                        status => 3
+                    }
+                );
+            }
+        }
+
+        when ('terminated') {
+            if ( $job->status != 4 ) {
+                $job->update(
+                    {
+                        status => 4
+                    }
+                );
+            }
+        }
+    }
+
+    if ( $job->status == 1 ) {
+        return qq{<span class="alert">The analysis is still running.</span>};
+    }
+    elsif ( $job->status == 3 ) {
+        return qq{<span class="alert">The analysis was cancelled.</span>};
+    }
+    elsif ( $job->status == 4 ) {
+        return qq{<span class="alert">The analysis was terminated.</span>};
+    }
+    elsif ( $job->status == 5 ) {
+        return '<span class="alert">A problem was encountered the analysis'
+          . ' failed to be generated.</span>';
+    }
 
     ############################################################################
     # Parameters
@@ -2457,7 +2515,7 @@ sub get_results {
     my $workflow = undef;
     my $status   = undef;
 
-    my $config = $ENV{HOME} . "coge.conf";
+    my $config = $ENV{COGE_HOME} . "coge.conf";
 
     if ( $feat_type1 eq "genomic" ) {
         my $genome = $coge->resultset('Genome')->find($dsgid1);
@@ -2503,7 +2561,7 @@ sub get_results {
         $blastdb = $fasta2;
     }
 
-    my ($html, $warn);
+    my ( $html, $warn );
 
     my ( $orgkey1, $orgkey2 ) = ( $title1, $title2 );
     my %org_dirs = (
@@ -2549,7 +2607,7 @@ sub get_results {
     $filtered_blastfile .= ".cs$cscore" if $cscore < 1;
     $filtered_blastfile .= ".filtered";
 
-    if ($cscore == 1) {
+    if ( $cscore == 1 ) {
         $warn = 'Please choose a cscore less than 1 (cscore defaulted to 0).';
     }
 
@@ -2577,21 +2635,8 @@ sub get_results {
         $all_file = $dag_file12_all;
     }
 
-    # This step will fail if the dag_file_all is larger than the system memory
-    # limit. If this file does not exist, let's send a warning to the log file
-    # and continue with the analysis using the dag_all file
-    unless ( ( -r $dag_file12 && -s $dag_file12 )
-        || ( -r $dag_file12 . ".gz" && -s $dag_file12 . ".gz" ) )
-    {
-        $dag_file12 = $all_file;
-        CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-        CoGe::Accessory::Web::write_log(
-            "WARNING: sub run_adjust_dagchainer_evals failed. "
-              . "Perhaps due to Out of Memory error. "
-              . "Proceeding without this step!",
-            $cogeweb->logfile
-        );
-    }
+    #FIXME: This is currently the output produced from the go function.
+    $dag_file12 = $all_file;
 
     ############################################################################
     # Run dagchainer
@@ -2618,7 +2663,7 @@ sub get_results {
 
     if ($dag_merge_enabled) {
         $merged_dagchainer_file = "$dagchainer_file.merged";
-        $post_dagchainer_file = $merged_dagchainer_file;
+        $post_dagchainer_file   = $merged_dagchainer_file;
     }
     else {
         $post_dagchainer_file = $dagchainer_file;
@@ -2635,7 +2680,7 @@ sub get_results {
     #id 1 is to specify quota align as a merge algo
     if ( $merge_algo == 1 ) {
         $merged_dagchainer_file = "$dagchainer_file.Dm$Dm.ma1";
-        $post_dagchainer_file = $merged_dagchainer_file;
+        $post_dagchainer_file   = $merged_dagchainer_file;
     }
 
     my $post_dagchainer_file_w_nearby = $post_dagchainer_file;
@@ -2748,7 +2793,7 @@ sub get_results {
     $dotfile .= ".log"                if $logks;
 
     #no syntenic dots, yes, nomicalture is confusing.
-    $dotfile .= ".nsd"                unless $snsd;
+    $dotfile .= ".nsd" unless $snsd;
 
     my $hist = $dotfile . ".hist.png";
 
@@ -2837,20 +2882,19 @@ sub get_results {
         $html .= $tmp;
 
         #Synteny Zoom
-        $results->param( codeml_min => $codeml_min );
-        $results->param( codeml_max => $codeml_max );
-
+        $results->param( codeml_min  => $codeml_min );
+        $results->param( codeml_max  => $codeml_max );
         $results->param( axis_metric => $axis_metric );
         $results->param( ylabel      => $y_label );
         $results->param( xlabel      => $x_label );
 
         if ($flip) {
-            $results->param( yorg_name => $org_name2 );
-            $results->param( xorg_name => $org_name1 );
-        }
-        else {
             $results->param( yorg_name => $org_name1 );
             $results->param( xorg_name => $org_name2 );
+        }
+        else {
+            $results->param( yorg_name => $org_name2 );
+            $results->param( xorg_name => $org_name1 );
         }
 
         $results->param( dotplot   => $tmp );
@@ -3017,7 +3061,7 @@ sub get_results {
             msg  => qq{Syntenic Path Assembly mapping},
         );
 
-        my $conffile = $ENV{HOME} . 'coge.conf';
+        my $conffile = $ENV{COGE_HOME} . 'coge.conf';
 
         $dagchainer_file =~ s/^$URL/$DIR/;
 
@@ -3598,12 +3642,6 @@ sub check_address_validity {
       ? 'valid'
       : 'invalid';
     return $validity;
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }
 
 sub get_dotplot {

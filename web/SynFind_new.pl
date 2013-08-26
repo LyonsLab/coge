@@ -3,7 +3,7 @@ use v5.10;
 use strict;
 use CoGeX;
 use DBIxProfiler;
-
+use CoGe::Accessory::Utils qw( commify );
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web;
@@ -27,7 +27,7 @@ use vars
   qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE $PAGE_NAME $DIR $URL $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $BEDDIR $LASTZ $LAST $CONVERT_BLAST $BLAST2BED $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $SERVER $connstr $COOKIE_NAME $YERBA $GEN_FASTA);
 
 $YERBA         = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
-$P             = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P             = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH}     = $P->{COGEDIR};
 $TEMPDIR       = $P->{TEMPDIR} . "SynFind";
 $TEMPURL       = $P->{TEMPURL} . "SynFind";
@@ -905,7 +905,7 @@ sub go_synfind {
     ###########################################################################
     # Setup workflow
     ###########################################################################
-    my $config   = $ENV{HOME} . "coge.conf";
+    my $config   = $ENV{COGE_HOME} . "coge.conf";
     my $workflow = $YERBA->create_workflow(
         name    => "synfind-$dsgids",
         logfile => $cogeweb->logfile
@@ -1586,7 +1586,7 @@ sub run_convert_blast {
         return $outfile;
     }
     print STDERR "In sub run_convert_blast\n";
-    CoGe::Accessory::Web::gunzip( "$infile", $ENV{HOME} . 'coge.conf', 1 );
+    CoGe::Accessory::Web::gunzip( "$infile" );
     CoGe::Accessory::Web::write_log(
         "convering blast file to short names: $cmd",
         $cogeweb->logfile );
@@ -1612,9 +1612,9 @@ sub run_blast2raw {
         return $outfile;
     }
     print STDERR "IN SUB run_blast2raw\n";
-    CoGe::Accessory::Web::gunzip( "$blastfile", $ENV{HOME} . 'coge.conf', 1 );
-    CoGe::Accessory::Web::gunzip( "$bedfile1",  $ENV{HOME} . 'coge.conf', 1 );
-    CoGe::Accessory::Web::gunzip( "$bedfile2",  $ENV{HOME} . 'coge.conf', 1 );
+    CoGe::Accessory::Web::gunzip( "$blastfile" );
+    CoGe::Accessory::Web::gunzip( "$bedfile1" );
+    CoGe::Accessory::Web::gunzip( "$bedfile2" );
     unless ( -r $blastfile ) {
         warn "can't read $blastfile\n";
         return;
@@ -1665,11 +1665,10 @@ sub run_synteny_score {
         system "/usr/bin/touch $outfile.running"
           ;    #track that a blast anlaysis is running for this
     }
-    print STDERR "Path: " . $ENV{HOME}, "\n";
-    CoGe::Accessory::Web::gunzip( "$blastfile", $ENV{HOME} . 'coge.conf', 1 )
+    CoGe::Accessory::Web::gunzip( "$blastfile" )
       ;        #turned on debugging
-    CoGe::Accessory::Web::gunzip( "$bedfile1", $ENV{HOME} . 'coge.conf', 1 );
-    CoGe::Accessory::Web::gunzip( "$bedfile2", $ENV{HOME} . 'coge.conf', 1 );
+    CoGe::Accessory::Web::gunzip( "$bedfile1" );
+    CoGe::Accessory::Web::gunzip( "$bedfile2" );
     unless ( -r $blastfile ) {
         warn "can't read $blastfile\n";
         return;
@@ -1753,14 +1752,6 @@ sub generate_feat_info {
     }
     my $html = $feat->annotation_pretty_print_html( gstid => $dsg->type->id );
     return $html;
-}
-
-sub commify {
-    my $input = shift;
-    $input = reverse $input;
-    $input =~ s<(\d\d\d)(?=\d)(?!\d*\.)><$1,>g;
-    return scalar reverse $input;
-
 }
 
 sub has_cds {

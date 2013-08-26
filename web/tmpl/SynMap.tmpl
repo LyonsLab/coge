@@ -1,6 +1,6 @@
 <tmpl_if name=MAIN>
     <div class="small" style="padding-bottom: 5px; color: dimgray;">
-        Welcome to the new beta version of SynMap. <br>If you experience any difficulties
+        <span class="large">Welcome to the <span class="alert">new beta version</span> of SynMap.</span><br>If you experience any difficulties
         or prefer to use the old version, please <a id="beta_link" href="SynMap_old.pl">click here</a>.
         <br>
     </div>
@@ -35,7 +35,7 @@
             </li>
             <li style="display:inline-block;">
                 <span class="link" onclick=window.open("http://genomevolution.org/r/6mou") >
-                    Click here for an example analysis between 
+                    Click here for an example analysis between
                     <em>Arabidopsis thaliana</em> and <em>Arabidopsis lyrata</em>.
                 </span> <br>
                 <span class="small">
@@ -456,7 +456,7 @@
         <li id="dialog_log" class="small"></li>
         <li id="cancel_button" class="ui-button ui-corner-all ui-button-go r">
             <span onClick="close_dialog(); load_results();" >
-                Cancel
+                Close
             </span>
         </li>
     </ul>
@@ -547,8 +547,8 @@ $(document).ready(function(){
     pageObj.tempdir="<tmpl_var name=tempdir>";
 
     var autogo = "<tmpl_var name=autogo>";
-    if (autogo) {
-        run_synmap(autogo);
+    if (autogo==1) {
+      run_synmap(autogo);
     }
  });
 </script>

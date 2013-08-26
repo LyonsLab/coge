@@ -7,6 +7,7 @@
 --backup-file-extension="bak"
 --blanks-before-blocks
 --blanks-before-subs
+--noblanks-before-comments
 --block-brace-tightness=0
 --block-brace-vertical-tightness=0
 --nobrace-left-and-indent

@@ -5,7 +5,6 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
-
 =head1 NAME
 
 My::Schema::Result::RolePermissionConnector
@@ -35,19 +34,36 @@ __PACKAGE__->table("role_permission_connector");
 =cut
 
 __PACKAGE__->add_columns(
-			 "role_permission_connector_id",
-			 { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
-			 "role_id",
-			 { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
-			 "permission_id",
-			 { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
-			);
+    "role_permission_connector_id",
+    {
+        data_type     => "INT",
+        default_value => undef,
+        is_nullable   => 0,
+        size          => 11
+    },
+    "role_id",
+    {
+        data_type     => "INT",
+        default_value => undef,
+        is_nullable   => 0,
+        size          => 11
+    },
+    "permission_id",
+    {
+        data_type     => "INT",
+        default_value => undef,
+        is_nullable   => 0,
+        size          => 11
+    },
+);
 __PACKAGE__->set_primary_key("role_permission_connector_id");
-__PACKAGE__->belongs_to("role"=>"CoGeX::Result::Role","role_id");
-__PACKAGE__->belongs_to("permission"=>"CoGeX::Result::Permission","permission_id");
+__PACKAGE__->belongs_to( "role" => "CoGeX::Result::Role", "role_id" );
+__PACKAGE__->belongs_to(
+    "permission" => "CoGeX::Result::Permission",
+    "permission_id"
+);
 
 1;
-
 
 =head1 AUTHORS
 

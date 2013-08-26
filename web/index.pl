@@ -7,86 +7,35 @@ use CGI::Cookie;
 use CGI::Carp 'fatalsToBrowser';
 use HTML::Template;
 use Data::Dumper;
-use Digest::MD5 qw(md5_base64);
 use CGI::Log;
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw( units commify );
 use POSIX 'ceil';
 
 no warnings 'redefine';
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr
-  $USER $FORM $DATE $URL $update $coge $COOKIE_NAME);
+use vars qw($P $USER $FORM $coge);
 
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
-$ENV{PATH} = $P->{COGEDIR};
-$URL       = $P->{URL};
-$FORM      = new CGI;
+$FORM = new CGI;
 
-$DATE = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket => $FORM->param('ticket') || undef,
+    url    => $FORM->url
 );
 
-$update = 0;
-
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-
-$COOKIE_NAME = $P->{COOKIE_NAME};
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
+#$ENV{PATH} = $P->{COGEDIR}; # mdb removed 7/25/13 -- what is it for!?
 
 #logout is only called through this program!  All logouts from other pages are redirected to this page
 CoGe::Accessory::Web->logout_cas(
-    cookie_name => $COOKIE_NAME,
+    cookie_name => $P->{COOKIE_NAME},
     coge        => $coge,
     user        => $USER,
     form        => $FORM
 ) if $FORM->param('logout');
 
-my %FUNCTION = (
-    generate_html      => \&generate_html,
-    get_latest_genomes => \&get_latest_genomes
-);
+my %FUNCTION = ( get_latest_genomes => \&get_latest_genomes );
 
-if ( $FORM->param('jquery_ajax') ) {
-    my %args  = $FORM->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-        die if ( not defined $FUNCTION{$fname} );
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $FORM->header, $FUNCTION{$fname}->(@args_list);
-        }
-        else {
-            print $FORM->header, $FUNCTION{$fname}->(%args);
-        }
-    }
-}
-else {
-    print $FORM->header, "\n", generate_html();
-}
-
-#print $FORM->header, gen_html();
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 
 sub generate_html {
     my $template =
@@ -101,7 +50,6 @@ sub generate_html {
         PAGE_TITLE => 'Comparative Genomics',
         HELP       => '/wiki/index.php',
         USER       => $name,
-        DATE       => $DATE,
         ADJUST_BOX => 1,
         LOGO_PNG   => "CoGe-logo.png",
         BODY       => generate_body(),
@@ -115,9 +63,6 @@ sub generate_html {
 sub generate_body {
     my $tmpl = HTML::Template->new( filename => $P->{TMPLDIR} . 'index.tmpl' );
     my $html;
-    if ($update) {
-        $tmpl->param( update => 1 );
-    }
 
     #    elsif ($USER && !$FORM->param('logout') && !$FORM->param('login'))
     #      {
@@ -316,7 +261,7 @@ sub get_latest_genomes {
         #$entry .= ": ".$dsg->name if $dsg->name;
         $entry .= "<td>(v" . $dsg->version . ")&nbsp";
         $entry .= "<td align=right>" . commify( $dsg->length ) . "<td>";
-        my @desc = split /;/, $dsg->organism->description;
+        my @desc = split( /;/, $dsg->organism->description );
         while ( $desc[0] && !$desc[-1] ) { pop @desc; }
         $desc[-1] =~ s/^\s+// if $desc[-1];
         $desc[-1] =~ s/\s+$// if $desc[-1];
@@ -325,16 +270,16 @@ sub get_latest_genomes {
 qq{<td><span class="link" onclick="window.open('$orgview_search')">Search</span>};
         $entry .= qq{<td>};
         $entry .=
-qq{<img onClick="window.open('$orgview_link')" src = "picts/other/CoGe-icon.png" title="CoGe" class=link>};
+qq{<img onClick="window.open('$orgview_link')" src="picts/other/CoGe-icon.png" title="CoGe" class="link">};
 
         my $search_term = $dsg->organism->name;
         $entry .=
-qq{<img onclick="window.open('http://www.ncbi.nlm.nih.gov/taxonomy?term=$search_term')" src = "picts/other/NCBI-icon.png" title="NCBI" class=link>};
+qq{<img onclick="window.open('http://www.ncbi.nlm.nih.gov/taxonomy?term=$search_term')" src="picts/other/NCBI-icon.png" title="NCBI" class="link">};
         $entry .=
-qq{<img onclick="window.open('http://en.wikipedia.org/w/index.php?title=Special%3ASearch&search=$search_term')" src = "picts/other/wikipedia-icon.png" title="Wikipedia" class=link>};
+qq{<img onclick="window.open('http://en.wikipedia.org/w/index.php?title=Special%3ASearch&search=$search_term')" src="picts/other/wikipedia-icon.png" title="Wikipedia" class="link">};
         $search_term =~ s/\s+/\+/g;
         $entry .=
-qq{<img onclick="window.open('http://www.google.com/search?q=$search_term')" src="picts/other/google-icon.png" title="Google" class=link>};
+qq{<img onclick="window.open('http://www.google.com/search?q=$search_term')" src="picts/other/google-icon.png" title="Google" class="link">};
         $entry .= qq{</tr>};
         push @opts, $entry
           ; #, "<OPTION value=\"".$item->organism->id."\">".$date." ".$item->organism->name." (id".$item->organism->id.") "."</OPTION>";
@@ -343,27 +288,4 @@ qq{<img onclick="window.open('http://www.google.com/search?q=$search_term')" src
     $html .= join "\n", @opts;
     $html .= "</table>";
     return $html;
-}
-
-sub units {
-    my $val = shift;
-
-    if ( $val < 1024 ) {
-        return $val;
-    }
-    elsif ( $val < 1024 * 1024 ) {
-        return ceil( $val / 1024 ) . 'K';
-    }
-    elsif ( $val < 1024 * 1024 * 1024 ) {
-        return ceil( $val / ( 1024 * 1024 ) ) . 'M';
-    }
-    else {
-        return ceil( $val / ( 1024 * 1024 * 1024 ) ) . 'G';
-    }
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }

@@ -7,8 +7,8 @@ use CoGeX::Feature;
 use CoGe::Genome::Accessory::Annotation;
 use Data::Dumper;
 
-my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
-my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
+my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(0);
 foreach my $feat ($coge->resultset('Feature')->search(

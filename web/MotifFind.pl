@@ -16,7 +16,7 @@ no warnings 'redefine';
 
 use vars
   qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION $COOKIE_NAME $FORM $URL $COGEDIR $TEMPDIR $TEMPURL);
-$P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P = CoGe::Accessory::Web::get_defaults();
 
 $DATE = sprintf(
     "%04d-%02d-%02d %02d:%02d:%02d",

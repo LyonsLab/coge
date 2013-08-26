@@ -5,6 +5,7 @@ use warnings;
 use base 'DBIx::Class::Core';
 use CoGe::Accessory::genetic_code;
 use CoGe::Accessory::Annotation;
+use CoGe::Accessory::Utils qw( commify );
 use Text::Wrap;
 use Data::Dumper;
 use base 'Class::Accessor';
@@ -52,7 +53,17 @@ Has many CCoGeX::Result::Location> via C<feature_id>
 
   use CoGeX;
 
-=head1 METHODS
+=head1 AUTHORS
+
+ Eric Lyons
+ Brent Pedersen
+
+=head1 COPYRIGHT
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+=head1 SEE ALSO
 
 =cut
 
@@ -545,6 +556,8 @@ sub annotation_pretty_print_html {
 	my $strand     = $self->strand;
 	my $dataset_id = $self->dataset->id;
 	my $fid        = $self->id;
+	my ($genome) = $self->genomes;
+	my $gid = $genome->id;
 	my $anno_type  =
 	  new CoGe::Accessory::Annotation(
 		    Type => "<tr><td nowrap='true'><span class=\"title5\">"
@@ -580,7 +593,8 @@ sub annotation_pretty_print_html {
 		my @links = (
 "<span class='data5 link' onclick =\"window.open('CoGeBlast.pl?fid=$fid')\">CoGeBlast</span>",
 "<span class='data5 link' onclick =\"window.open('FastaView.pl?fid=$fid')\">Fasta</span>",
-"<span class='data5 link' onclick =\"window.open('GenomeView.pl?chr=$chr&ds=$dataset_id&x=$start&z=5&gstid=$gstid')\">GenomeView</span>",
+#"<span class='data5 link' onclick =\"window.open('GenomeView.pl?chr=$chr&ds=$dataset_id&x=$start&z=5&gstid=$gstid')\">GenomeView</span>",
+"<span class='data5 link' onclick =\"window.open('GenomeView.pl?chr=$chr&gid=$gid&start=$start&z=6')\">GenomeView</span>",
 "<span class='data5 link' onclick =\"window.open('SynFind.pl?fid=$fid')\">SynFind</span>",
 		);
 		foreach my $item (@links) {
@@ -655,7 +669,7 @@ sub annotation_pretty_print_html {
 
 #    $location .= join (", ", map {$_->start."-".$_->stop} sort {$a->start <=> $b->start} $self->locs);
 		$location .=
-		  $self->commify( $self->start ) . "-" . $self->commify( $self->stop );
+		  commify( $self->start ) . "-" . commify( $self->stop );
 		$location .= " (" . $strand . ")";
 		my $featid = $self->id;
 		$anno_obj->add_Annot(
@@ -680,7 +694,7 @@ qq{<span class="data5 link" onclick="window.open('$loc_link?featid=$featid&gstid
 		$anno_obj->add_Annot(
 			new CoGe::Accessory::Annotation(
 				Type =>
-"<tr><td nowrap='true'><span class=\"title5 link\"><span onclick=\"window.open('GenomeView.pl?chr=$chr&ds=$dataset_id&x=$start&z=5&gstid=$gstid')\" >Location</span></span>",
+"<tr><td nowrap='true'><span class=\"title5 link\"><span onclick=\"window.open('GenomeView.pl?chr=$chr&gid=$gid&start=$start&z=6')\" >Location</span></span>",
 				Values       => [$location],
 				Type_delimit => ":<td>",
 				Val_delimit  => " "
@@ -878,8 +892,7 @@ sub version {
  Purpose   : gets the genomic seqence for a feature
  Returns   : a string
  Argument  : none
- Comments  : This method simply creates a CoGe object and calls:
-             get_genomic_sequence_for_feature($self)
+ Comments  : 
 See Also   : CoGe
 
 =cut
@@ -928,14 +941,14 @@ sub genomic_sequence {
 	my $start    = $locs[0][0];
 	my $stop     = $locs[-1][1];
 	my $full_seq = $seq ? $seq : $dataset->get_genomic_sequence(
-		chromosome => $chr,
-		start      => $start,
-		stop       => $stop,
-		debug      => $debug,
-		gstid      => $gstid,
-		dsgid      => $dsgid,
-		server     => $server,
-	);
+			chr => $chr,
+			start      => $start,
+			stop       => $stop,
+			debug      => $debug,
+			gstid      => $gstid,
+			dsgid      => $dsgid,
+			server     => $server,
+		);
 	if ($full_seq) {
 		foreach my $loc (@locs) {
 			if ( $loc->[0] - $start + $loc->[1] - $loc->[0] + 1 >
@@ -999,9 +1012,10 @@ See Also   : genomic_sequence()
 
 ################################################## subroutine header end ##
 
-sub genome_sequence {
-	shift->genomic_sequence(@_);
-}
+# mdb removed 8/14/13 - aliases are bad for readability
+#sub genome_sequence {
+#	shift->genomic_sequence(@_);
+#}
 
 ################################################ subroutine header begin ##
 
@@ -1901,48 +1915,4 @@ sub info {
 	return $info;
 }
 
-################################################ subroutine header begin ##
-
-=head2 commify
-
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
-sub commify {
-	my $self  = shift;
-	my $input = shift;
-	$input = reverse $input;
-	$input =~ s<(\d\d\d)(?=\d)(?!\d*\.)><$1,>g;
-	return scalar reverse $input;
-}
-
 1;
-
-
-=head1 AUTHORS
-
- Eric Lyons
- Brent Pedersen
-
-=head1 COPYRIGHT
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl itself.
-
-The full text of the license can be found in the
-LICENSE file included with this module.
-
-=head1 SEE ALSO
-
-=cut

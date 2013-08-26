@@ -5,8 +5,8 @@ use CoGeX;
 # THOUGH this is called feature_merge, it just gets all features, and
 # all chromosomal sequences for a given organism.
 
-my $connstr = 'dbi:mysql:genomes:biocon:3306';
-my $s = CoGeX->connect( $connstr, 'bpederse', 'brent_cnr' );
+my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
+my $s = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 
 my $organism = shift;
 my $datasets = \@ARGV;

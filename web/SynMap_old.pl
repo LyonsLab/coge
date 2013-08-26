@@ -6,6 +6,7 @@ use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Algos::KsCalc;
+use CoGe::Accessory::Utils qw( commify );
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
@@ -15,7 +16,6 @@ use HTML::Template;
 use LWP::Simple;
 use Parallel::ForkManager;
 use GD;
-use Digest::MD5 qw(md5_base64);
 use File::Path;
 use File::Spec;
 use Benchmark;
@@ -39,10 +39,11 @@ our (
     $DOTPLOT,       $SVG_DOTPLOT,    $NWALIGN,     $QUOTA_ALIGN,
     $CLUSTER_UTILS, $BLAST2RAW,      $BASE_URL,    $BLAST2BED,
     $SYNTENY_SCORE, $TEMPDIR,        $TEMPURL,     $ALGO_LOOKUP,
-    $GZIP,          $GUNZIP,         $COOKIE_NAME, %FUNCTIONS
+    $GZIP,          $GUNZIP,         $COOKIE_NAME, %FUNCTIONS,
+    $CONFIG
 );
 
-$P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = join ":",
   (
     $P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR} . "SynMap",
@@ -170,8 +171,8 @@ $QUOTA_ALIGN   = $P->{QUOTA_ALIGN};     #the program
 $CLUSTER_UTILS = $P->{CLUSTER_UTILS};   #convert dag output to quota_align input
 $BLAST2RAW     = $P->{BLAST2RAW};       #find local duplicates
 $SYNTENY_SCORE = $P->{SYNTENY_SCORE};
-
-$DOTPLOT     = $P->{DOTPLOT} . " -cf " . $ENV{HOME} . 'coge.conf';
+$CONFIG = $ENV{COGE_HOME} . 'coge.conf';
+$DOTPLOT     = $P->{DOTPLOT} . " -cf " . $CONFIG;
 $SVG_DOTPLOT = $P->{SVG_DOTPLOT};
 
 #$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
@@ -2032,17 +2033,17 @@ DNA_align_2
         my ($feat1) = $coge->resultset('Feature')->find($fid1);
         my ($feat2) = $coge->resultset('Feature')->find($fid2);
         my $max_res;
-        my $ks = new CoGe::Algos::KsCalc();
+        my $ks = new CoGe::Algos::KsCalc(config=>$CONFIG);
         $ks->nwalign_server_port( $ports->[$i] );
         $ks->feat1($feat1);
         $ks->feat2($feat2);
 
         #	for (1..5)
         #	  {
-        my $res = $ks->KsCalc();    #send in port number?
+        my $res = $ks->KsCalc(config=>$CONFIG);    #send in port number?
         $max_res = $res unless $max_res;
         $max_res = $res
-          if $res->{dS} && $max_res->{dS} && $res->{dS} < $max_res->{dS};
+          if $res && $max_res && $res->{dS} && $max_res->{dS} && $res->{dS} < $max_res->{dS};
 
         #	  }
         unless ($max_res) {
@@ -2569,7 +2570,7 @@ qq{ -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename",};
     $cmd .= qq{ -min $codeml_min}                if defined $codeml_min;
     $cmd .= qq{ -max $codeml_max}                if defined $codeml_max;
 
-#    $cmd .= qq{ -cf }.$ENV{HOME}. 'coge.conf'; #config file for getting defaults for coge server installation
+#    $cmd .= qq{ -cf }.$ENV{COGE_HOME}. 'coge.conf'; #config file for getting defaults for coge server installation
     while ( -e "$outfile.running" ) {
         print STDERR "detecting $outfile.running.  Waiting. . .\n";
         sleep 60;
@@ -3623,7 +3624,7 @@ qq{<br><span class='small link' onclick=window.open('$final_dagchainer_file')>DA
             }
 
             $html .= "<tr><td>";
-            my $conffile = $ENV{HOME} . 'coge.conf';
+            my $conffile = $ENV{COGE_HOME} . 'coge.conf';
             $dagchainer_file =~ s/^$URL/$DIR/;
             $html .= "<br>"
               . qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=$conffile;l=$tiny_link');" >Generate Pseudo-Assembled Genomic Sequence</span>}
@@ -4076,11 +4077,5 @@ sub get_dotplot {
     my $html =
 qq{<iframe src=$url frameborder=0 width=$w height=$h scrolling=no></iframe>};
     return $html;
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }
 

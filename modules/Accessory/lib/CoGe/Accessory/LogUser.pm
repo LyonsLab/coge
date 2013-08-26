@@ -12,6 +12,8 @@ sub get_user {
 	my $coge        = $opts{coge};
 	my %cookies     = fetch CGI::Cookie;
 	my ( $user, $uid, $session );    # = "Public";
+	
+	#print STDERR "LogUser::get_user cookie=$cookie_name " . (defined $cookies{$cookie_name} ? 'exists' : '!exists') . "\n";
 	if ( $cookie_name && ref $cookies{$cookie_name} ) {
 		my %session = $cookies{$cookie_name}->value;
 		$session = $session{session};
@@ -33,6 +35,7 @@ sub gen_cookie {
 	my $exp         = $opts{exp} || '+7d'; # issue 48, this field must have lowercase-only
 	my $cookie_name = $opts{cookie_name};
 	my %params      = ( -name => $cookie_name, -path => "/" );
+#	print STDERR "LogUser::gen_cookie session=$session cookie_name=$cookie_name\n";
 
 	$params{-expires} = $exp if $exp;
 	$params{ -values } = { session => $session } if $session;

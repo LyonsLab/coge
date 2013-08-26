@@ -6,7 +6,7 @@ use CoGe::Accessory::Web;
 no warnings 'redefine';
 
 my $FORM   = new CGI;
-my $P      = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+my $P      = CoGe::Accessory::Web::get_defaults();
 my $server = $P->{SERVER};
 
 my $text = $FORM->param('text');

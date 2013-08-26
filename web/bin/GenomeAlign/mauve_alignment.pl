@@ -30,8 +30,8 @@ unless ( -r $mauve_bin ) {
 
 help() unless ($dsgids);
 
-my $connstr = 'dbi:mysql:dbname=coge;host=genomevolution.org;port=3306';
-$coge = CoGeX->connect( $connstr, 'coge', '' );
+my $connstr = 'dbi:mysql:dbname=coge;host=localhost;port=PORT';
+$coge = CoGeX->connect( $connstr, 'USER', 'PASSWORD' );
 $out_file = "alignment.aln" unless $out_file;
 
 run_mauve(
@@ -56,7 +56,7 @@ sub run_mauve {
     $cmd .= " --muscleMatrix='$matrix'" if $matrix && -r $matrix;
     $cmd .= " --muscle-args=\"$muscle_args\"" if $muscle_args;
     foreach my $item (@$dsgids) {
-        foreach my $dsgid ( split /,/, $item ) {
+        foreach my $dsgid ( split( /,/, $item ) ) {
             next unless $dsgid;
             my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
             unless ($dsg) {

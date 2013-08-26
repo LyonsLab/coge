@@ -2,90 +2,40 @@
 
 use strict;
 use CGI;
-
-#use CGI::Ajax;
 use JSON::XS;
 use HTML::Template;
-use Digest::MD5 qw(md5_base64);
 use Sort::Versions;
 use List::Util qw(first);
-use DBIxProfiler;
-
-#use URI::Escape;
-use Data::Dumper;
-use File::Path;
-use File::stat;
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
-use Benchmark;
 no warnings 'redefine';
 
 use vars
-  qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE $PAGE_NAME
-  $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION $EMBED
-  $COOKIE_NAME $FORM $URL $COGEDIR $TEMPDIR $TEMPURL $MAX_SEARCH_RESULTS);
-$P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
-
-$DATE = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
+  qw($P $PAGE_TITLE $PAGE_NAME $TEMPDIR $USER $BASEFILE $coge %FUNCTION $EMBED
+  $FORM $TEMPDIR $TEMPURL $MAX_SEARCH_RESULTS);
 
 $PAGE_TITLE = 'NotebookView';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
 $FORM = new CGI;
 
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket') || undef,
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
+);
 
-#$coge->storage->debugobj(new DBIxProfiler());
-#$coge->storage->debug(1);
-
-$COOKIE_NAME = $P->{COOKIE_NAME};
-$URL         = $P->{URL};
-$COGEDIR     = $P->{COGEDIR};
-$TEMPDIR     = $P->{TEMPDIR} . "$PAGE_TITLE/";
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
+$TEMPDIR = $P->{TEMPDIR} . "$PAGE_TITLE/";
 $TEMPURL = $P->{TEMPURL} . "$PAGE_TITLE/";
 
 $MAX_SEARCH_RESULTS = 1000;
 
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
-my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-$link = CoGe::Accessory::Web::get_tiny_link(
-    db      => $coge,
-    user_id => $USER->id,
-    page    => $PAGE_NAME,
-    url     => $link
-);
-
 my $node_types = CoGeX::node_types();
 
 %FUNCTION = (
-    gen_html                   => \&gen_html,
     get_list_info              => \&get_list_info,
     get_list_contents          => \&get_list_contents,
     edit_list_info             => \&edit_list_info,
@@ -124,27 +74,7 @@ my $node_types = CoGeX::node_types();
 #print STDERR $ENV{'REQUEST_METHOD'} . "\n" . $FORM->url . "\n" . Dumper($FORM->Vars) . "\n";	# debug
 #print "data begin\n" . $FORM->param('POSTDATA') . "\ndata end\n" if ($FORM->param('POSTDATA'));
 
-dispatch();
-
-sub dispatch {
-    my %args  = $FORM->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-        die if not defined $FUNCTION{$fname};
-
-        #print STDERR Dumper \%args;
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $FORM->header, $FUNCTION{$fname}->(@args_list);
-        }
-        else {
-            print $FORM->header, $FUNCTION{$fname}->(%args);
-        }
-    }
-    else {
-        print $FORM->header, gen_html();
-    }
-}
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
     my $template;
@@ -168,7 +98,6 @@ sub gen_html {
             HELP       => "/wiki/index.php?title=$PAGE_TITLE",
             PAGE_TITLE => $PAGE_TITLE,
             LOGO_PNG   => "$PAGE_TITLE-logo.png",
-            DATE       => $DATE,
             ADJUST_BOX => 1
         );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
@@ -220,14 +149,13 @@ sub get_list_info {
     my $html          = $list->annotation_pretty_print_html();
     my $user_can_edit = $USER->is_admin
       || ( !$list->locked && $USER->is_owner_editor( list => $lid ) );
+    my $user_can_delete = $USER->is_admin
+      || ( !$list->locked && $USER->is_owner( list => $lid ) );
 
     if ($user_can_edit) {
         $html .=
 qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="edit_list_info();">Edit Info</span>};
-    }
-    if ( $USER->is_admin
-        || ( !$list->locked && $USER->is_owner( list => $lid ) ) )
-    {
+        
         if ( $list->restricted ) {
             $html .=
 qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_list_public();">Make Public</span>};
@@ -236,8 +164,12 @@ qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_
             $html .=
 qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_list_private();">Make Private</span>};
         }
+    }
+
+    if ( $user_can_delete ) {
         $html .=
-qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_list();">Delete</span>};
+			qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_list();">} .
+			($list->deleted ? 'Undelete' : 'Delete') . qq{</span>};
     }
 
     if ( !$EMBED and $list->experiments( count => 1 ) ) {
@@ -1353,7 +1285,8 @@ sub delete_list {
           0;   #"This is a locked list.  Admin permission is needed to modify.";
     }
 
-    $list->delete();
+    $list->deleted(!$list->deleted); # do undelete if already deleted
+    $list->update;
 
     return 1;
 }
@@ -1466,7 +1399,8 @@ sub send_to_fasta {
     my $list = $coge->resultset('List')->find($lid);
     return unless $list;
 
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
+    my $cogeweb =
+      CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
     my $basename = $cogeweb->basefilename;
     my $file     = $TEMPDIR . "$basename.faa";
     open( OUT, ">$file" );
@@ -1486,7 +1420,8 @@ sub send_to_csv {
     my $list = $coge->resultset('List')->find($lid);
     return unless $list;
 
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
+    my $cogeweb =
+      CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
     my $basename = $cogeweb->basefilename;
     my $file     = "$TEMPDIR/$basename.csv";
 
@@ -1540,7 +1475,8 @@ sub send_to_xls {
     my $accn_list = $args{accn};
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
+    my $cogeweb =
+      CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
     my $basename = $cogeweb->basefilename;
     my $file     = "$TEMPDIR/Excel_$basename.xls";
     my $workbook = Spreadsheet::WriteExcel->new($file);

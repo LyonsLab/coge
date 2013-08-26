@@ -2,96 +2,34 @@
 
 use strict;
 use CGI;
-use CoGeX;
-use DBI;
-
-use Data::Dumper;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use HTML::Template;
 use JSON::XS;
 use URI::Escape;
 use Spreadsheet::WriteExcel;
 use Digest::MD5 qw(md5_base64);
-use DBIxProfiler;
 use File::Path;
 use Sort::Versions;
 no warnings 'redefine';
 
-use vars qw(
-  $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE
-  $TEMPDIR $USER $DATE $COGEDIR $coge $FORM $URL $TEMPURL $COOKIE_NAME
-  %FUNCTION
-);
-
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
-$ENV{PATH} = $P->{COGEDIR};
-$COGEDIR   = $P->{COGEDIR};
-$URL       = $P->{URL};
-$DATE      = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
+use vars qw( $P $PAGE_TITLE $USER $coge $FORM %FUNCTION );
 
 $PAGE_TITLE = 'Experiments';
 
-$TEMPDIR = $P->{TEMPDIR} . $PAGE_TITLE . '/';
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-$TEMPURL = $P->{TEMPURL} . $PAGE_TITLE . '/';
-
 $FORM = new CGI;
 
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-$COOKIE_NAME = $P->{COOKIE_NAME};
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    ticket   => $cas_ticket,
-    coge     => $coge,
-    this_url => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
-
-#$SIG{'__WARN__'} = sub { };    # silence warnings
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket') || undef,
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
+);
 
 %FUNCTION = (
     delete_experiment        => \&delete_experiment,
     get_experiments_for_user => \&get_experiments_for_user,
 );
 
-dispatch();
-
-sub dispatch {
-    my %args  = $FORM->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-        die if not defined $FUNCTION{$fname};
-
-        #print STDERR Dumper \%args;
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $FORM->header, $FUNCTION{$fname}->(@args_list);
-        }
-        else {
-            print $FORM->header, $FUNCTION{$fname}->(%args);
-        }
-    }
-    else {
-        print $FORM->header, generate_html();
-    }
-}
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub delete_experiment {
     my %opts = @_;
@@ -173,7 +111,7 @@ qq{<span class="link" onclick='window.open("ExperimentView.pl?eid=}
     return $template->output;
 }
 
-sub generate_html {
+sub gen_html {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( PAGE_TITLE => $PAGE_TITLE );
@@ -185,17 +123,16 @@ sub generate_html {
     $template->param( USER     => $name );
     $template->param( LOGO_PNG => $PAGE_TITLE . "-logo.png" );
     $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE     => $DATE );
     my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
     $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
 
-    $template->param( BODY       => generate_body() );
+    $template->param( BODY       => gen_body() );
     $template->param( ADJUST_BOX => 1 );
 
     return $template->output;
 }
 
-sub generate_body {
+sub gen_body {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param( MAIN             => 1 );

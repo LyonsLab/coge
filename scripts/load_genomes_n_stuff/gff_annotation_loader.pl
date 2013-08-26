@@ -51,7 +51,7 @@ GetOptions(
 $DEBUG = 1 unless defined $DEBUG;                #turn on by default
 warn "-go flag is not true, nothing will be added to the database.\n" unless $GO;
 
-my $connstr = "dbi:mysql:dbname=$dbname;host=localhost;port=3306";
+my $connstr = "dbi:mysql:dbname=$dbname;host=localhost;port=PORT";
 my $coge    = CoGeX->connect( $connstr, $dbuser, $dbpassword );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);

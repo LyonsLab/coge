@@ -3,91 +3,34 @@
 use strict;
 use CGI;
 
-use JSON::XS;
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use HTML::Template;
-use Digest::MD5 qw(md5_base64);
-use URI::Escape;
-use Data::Dumper;
-use File::Path;
-use DBIx::Class::ResultClass::HashRefInflator;
+use JSON::XS;
 
-no warnings 'redefine';
+#use DBIx::Class::ResultClass::HashRefInflator;
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE
-  $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION $COOKIE_NAME
-  $FORM $URL $COGEDIR $TEMPDIR $TEMPURL $MAX_RESULTS);
-$P    = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
-$DATE = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
+use vars qw($P $PAGE_TITLE $USER $coge %FUNCTION $FORM $MAX_RESULTS);
+
 $PAGE_TITLE = 'History';
 
 $MAX_RESULTS = 100;
 
 $FORM = new CGI;
 
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-
-$COOKIE_NAME = $P->{COOKIE_NAME};
-$URL         = $P->{URL};
-$COGEDIR     = $P->{COGEDIR};
-$TEMPDIR     = $P->{TEMPDIR} . "$PAGE_TITLE/";
-mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
-$TEMPURL = $P->{TEMPURL} . "$PAGE_TITLE/";
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    ticket     => $FORM->param('ticket') || undef,
+    url        => $FORM->url,
+    page_title => $PAGE_TITLE
+);
 
 %FUNCTION = (
-    gen_html             => \&gen_html,
     get_history_for_user => \&get_history_for_user,
     toggle_star          => \&toggle_star,
     update_comment       => \&update_comment,
 );
 
-dispatch();
-
-sub dispatch {
-    my %args  = $FORM->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-
-        #my %args = $FORM->Vars;
-        #print STDERR Dumper \%args;
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $FORM->header, $FUNCTION{$fname}->(@args_list);
-        }
-        else {
-            print $FORM->header, $FUNCTION{$fname}->(%args);
-        }
-    }
-    else {
-        print $FORM->header, gen_html();
-    }
-}
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
     my $html;
@@ -103,7 +46,6 @@ sub gen_html {
     $template->param( PAGE_TITLE => $PAGE_TITLE );
     $template->param( LOGO_PNG   => "$PAGE_TITLE-logo.png" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE       => $DATE );
     $template->param( BODY       => gen_body() );
 
     #	$name .= $name =~ /s$/ ? "'" : "'s";
@@ -125,6 +67,7 @@ sub gen_body {
     $template->param( PAGE_NAME  => $PAGE_TITLE . '.pl' );
     $template->param( MAIN       => 1 );
     $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
+    $template->param( OPTION_ALL => 1 ) if $USER->is_admin;
     $template->param( USER_NAME  => $USER->name );
 
    #	$template->param( HISTORY_CONTENTS => get_history_for_user(html_only=>1) );

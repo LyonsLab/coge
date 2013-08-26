@@ -5,6 +5,7 @@ use CoGeX;
 use CoGeX::Result::Feature;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw( commify );
 use CGI;
 use CGI::Ajax;
 use Data::Dumper;
@@ -22,7 +23,7 @@ no warnings 'redefine';
 use vars
   qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM $COOKIE_NAME);
 
-$P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
 
 $DATE = sprintf(
@@ -231,8 +232,10 @@ sub go {
         $min_aa = $tmp[-1] if $tmp[-1] < $min_aa;
     }
     my @rows;
-    foreach my $aa ( sort { $aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b }
-        keys %$aa_sort )
+    foreach my $aa (
+        sort { $aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b }
+        keys %$aa_sort
+      )
     {
         my @row;
         next if $aa eq "*";
@@ -457,12 +460,6 @@ sub get_features {
     }
 
     return \%return_data, \%feats, \%dsgs;
-}
-
-sub commify {
-    my $text = reverse $_[0];
-    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-    return scalar reverse $text;
 }
 
 sub get_color {
