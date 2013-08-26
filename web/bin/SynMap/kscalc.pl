@@ -40,7 +40,7 @@ $ENV{PATH} = join ":",
 #print STDERR Dumper \%ENV;
 
 $TEMPDIR  = $P->{TEMPDIR} . "SynMap";
-$MAX_PROC = $P->{MAX_PROC} / 2;
+$MAX_PROC = $P->{MAX_PROC} * 2;
 $NWALIGN  = $P->{NWALIGN};
 
 $DBNAME = $P->{DBNAME};
@@ -97,7 +97,7 @@ sub batch_add {
     my $buffer = $opts{buffer};
     my $handle = $opts{handle};
     my $size = $opts{size};
-    $size //= 1500;
+    $size //= 10000;
     my $row = $opts{row};
     my $result;
 
