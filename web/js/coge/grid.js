@@ -28,6 +28,8 @@ var coge = (function (namespace) {
         });
 
         this.grid.onSort.subscribe(function(e, args) {
+            //if (e) return console.warn(e);
+            //
             var comparator = function(a, b) {
                 var index = args.sortCol.field;
                 return self.options.comparator(a[index], b[index]);
@@ -55,7 +57,10 @@ var coge = (function (namespace) {
         this.columnPicker = new Slick.Controls.ColumnPicker(this.columns,
                 this.grid, this.options);
 
-        if (this.options.filter) this.dataView.setFilter(this.options.filter);
+        if (this.options.filter) {
+            this.dataView.setFilter(this.options.filter);
+            this.dataView.setFilterArgs(this.options.filterArgs);
+        }
 
         this.dataView.refresh();
     };
@@ -65,7 +70,10 @@ var coge = (function (namespace) {
         this.dataView.setItems(data);
         this.dataView.setFilterArgs(this.filterArgs);
 
-        if (this.options.filter) this.dataView.setFilter(this.options.filter);
+        if (this.options.filter) {
+            this.dataView.setFilter(this.options.filter);
+            this.dataView.setFilterArgs(this.options.filterArgs);
+        }
 
         this.dataView.endUpdate();
         this.dataView.refresh();
