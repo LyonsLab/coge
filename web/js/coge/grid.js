@@ -28,14 +28,12 @@ var coge = (function (namespace) {
         });
 
         this.grid.onSort.subscribe(function(e, args) {
-            if (e) return console.warn(e);
-
             var comparator = function(a, b) {
                 var index = args.sortCol.field;
-                return self.options.comparator(a[i], b[i]);
+                return self.options.comparator(a[index], b[index]);
             }
 
-            self.dataView.sort(comparator);
+            self.dataView.sort(comparator, args.sortAsc);
         });
 
         /// Dataview callbacks
