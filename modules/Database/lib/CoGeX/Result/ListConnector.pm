@@ -64,7 +64,10 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("list_connector_id");
 
 __PACKAGE__->belongs_to("experiment" => "CoGeX::Result::Experiment", "child_id");
-__PACKAGE__->belongs_to("genome"     => "CoGeX::Result::Genome",     "child_id");
+__PACKAGE__->belongs_to("genome"     => "CoGeX::Result::Genome",     "child_id", {
+					 join=>['genomic_sequence_type', 'organism'],
+					 prefetch=>['genomic_sequence_type', 'organism'],
+					});
 __PACKAGE__->belongs_to("feature"    => "CoGeX::Result::Feature",    "child_id");
 
 __PACKAGE__->belongs_to("child_list"   => "CoGeX::Result::List",  {'foreign.list_id' => 'self.child_id'}); # a list of lists
