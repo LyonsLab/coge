@@ -79,11 +79,16 @@ $(document).ready(function(){
             cssClass: 'slick-cell-checkboxsel'
     });
 
+    var linkformatter = function(row, cell, value, columnDef, dataContext) {
+        return '<a href="' + dataContext['link'] + '" >'
+        + dataContext['link'] + '</a>'
+    }
+
     var columns = [
         checkbox.getColumnDefinition(),
         {id: 'id', name: 'Id', field: 'id', maxWidth: 50, sortable: true},
         {id: 'link', name: 'Link to Analysis', field: 'link', minWidth: 160,
-            sortable: true},
+            sortable: true, formatter: linkformatter },
         {id: 'tool', name: 'Tool', field: 'tool', minWidth: 30,
             sortable: true},
         {id: 'status', name: 'Status', field: 'status', minWidth: 30,
