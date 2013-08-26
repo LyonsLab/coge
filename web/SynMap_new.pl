@@ -2635,22 +2635,6 @@ sub get_results {
         $all_file = $dag_file12_all;
     }
 
-    # This step will fail if the dag_file_all is larger than the system memory
-    # limit. If this file does not exist, let's send a warning to the log file
-    # and continue with the analysis using the dag_all file
-    unless ( ( -r $dag_file12 && -s $dag_file12 )
-        || ( -r $dag_file12 . ".gz" && -s $dag_file12 . ".gz" ) )
-    {
-        $dag_file12 = $all_file;
-        CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-        CoGe::Accessory::Web::write_log(
-            "WARNING: sub run_adjust_dagchainer_evals failed. "
-              . "Perhaps due to Out of Memory error. "
-              . "Proceeding without this step!",
-            $cogeweb->logfile
-        );
-    }
-
     ############################################################################
     # Run dagchainer
     ############################################################################
