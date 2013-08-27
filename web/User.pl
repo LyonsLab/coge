@@ -640,7 +640,7 @@ sub get_group_dialog {
             USER_ITEM      => $uid,
             USER_FULL_NAME => $user->display_name,
             USER_NAME      => $user->name,
-            USER_ROLE      => ($role_name ? $role_name : $roles{$uid}->name),
+            USER_ROLE      => ($role_name ? ' - ' . $role_name : ''),#$roles{$uid}->name),
             USER_DELETE    => !$owners{$uid} # owner can't be removed
         };
     }
