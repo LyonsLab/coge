@@ -1192,7 +1192,7 @@ $(function(){
 			<TMPL_LOOP NAME="USER_LOOP">
 				<div>
 					<img src="picts/user-icon.png" width="11" height="11"/>
-					<span style="color:dimgray;"><TMPL_VAR NAME="USER_FULL_NAME"> (<TMPL_VAR NAME="USER_NAME">) - <TMPL_VAR NAME="USER_ROLE"><span>
+					<span style="color:dimgray;"><TMPL_VAR NAME="USER_FULL_NAME"> (<TMPL_VAR NAME="USER_NAME">) <TMPL_VAR NAME="USER_ROLE"><span>
 					<TMPL_IF NAME="USER_DELETE">
 						<span onClick="$(this.parentNode).fadeOut('slow'); remove_user_from_group('<TMPL_VAR NAME=USER_ITEM>');" class="link ui-icon ui-icon-close"></span>
 					</TMPL_IF>
