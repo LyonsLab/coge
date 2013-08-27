@@ -80,7 +80,6 @@ sub submit_workflow {
     }
 
     zmq_close($socket);
-    zmq_term($self->_context);
 
     my $result = zmq_msg_data($msg) if $msg;
     $result //= '{"error" : "ERROR"}';
