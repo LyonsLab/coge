@@ -99,7 +99,8 @@ sub process_fasta_file {
         s/\n*\>//g;
         next unless $_;
         my ( $name, $seq ) = split /\n/, $_, 2;
-        $seq =~ s/\n//g;
+        #$seq =~ s/\n//g;
+        $seq =~ s/\s//g; # because of Windows end-of-line
         $lineNum++;
 
         my ($chr) = split( /\s+/, $name );
