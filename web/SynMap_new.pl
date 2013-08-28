@@ -2333,7 +2333,7 @@ sub get_results {
         tiny_link => $tiny_link,
         title     => $PAGE_TITLE,
         user_id   => $USER->id,
-        db_object => $coge
+        db_object => $coge,
     );
 
     my $basename = $opts{basename};
@@ -2347,7 +2347,8 @@ sub get_results {
             if ( $job->status != 2 ) {
                 $job->update(
                     {
-                        status => 2
+                        status => 2,
+                        end_time => \"current_timestamp",
                     }
                 );
             }
@@ -2356,7 +2357,8 @@ sub get_results {
             if ( $job->status != 5 ) {
                 $job->update(
                     {
-                        status => 5
+                        status => 5,
+                        end_time => \"current_timestamp",
                     }
                 );
             }
@@ -2366,7 +2368,8 @@ sub get_results {
             if ( $job->status != 3 ) {
                 $job->update(
                     {
-                        status => 3
+                        status => 3,
+                        end_time => \"current_timestamp",
                     }
                 );
             }
@@ -2376,7 +2379,8 @@ sub get_results {
             if ( $job->status != 4 ) {
                 $job->update(
                     {
-                        status => 4
+                        status => 4,
+                        end_time => \"current_timestamp",
                     }
                 );
             }
