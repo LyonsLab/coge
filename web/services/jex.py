@@ -63,7 +63,6 @@ def status(environ, start_response):
     socket.send_json(request, zmq.NOBLOCK)
 
     while _defaults['max_attempts'] > counter.next() and not result:
-        sys.stderr.write('waiting...\n');
         if socket in dict(poller.poll(timeout=_defaults['timeout'])):
             result = socket.recv_json(flags=zmq.NOBLOCK)
 
