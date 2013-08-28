@@ -36,6 +36,8 @@ __PACKAGE__->add_columns(
     },
     "start_time",
     { data_type => "TIMESTAMP", default_value => undef, is_nullable => 0 },
+    "end_time",
+    { data_type => "TIMESTAMP", default_value => undef, is_nullable => 0 },
     "link",
     {
         data_type     => "VARCHAR",
