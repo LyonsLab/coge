@@ -32,7 +32,7 @@ use Sort::Versions;
 
 use vars qw($P $PAGE_NAME $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR
   $FORMATDB $BLAST_PROGS $FORM $USER $coge $cogeweb $RESULTSLIMIT
-  $MAX_PROC $MAX_SEARCH_RESULTS %FUNCTION $PAGE_TITLE);
+  $MAX_PROC $MAX_SEARCH_RESULTS %FUNCTION $PAGE_TITLE $YERBA);
 
 $PAGE_TITLE = "CoGeBlast";
 $PAGE_NAME  = $PAGE_TITLE . ".pl";
@@ -661,7 +661,7 @@ sub blast_search {
     my @dsg_ids = split( /,/, $blastable );
 
     my $list_link =
-        "<a href='GenomeList.pl?dsgid=$blastable' target='_blank'>" 
+        "<a href='GenomeList.pl?dsgid=$blastable' target='_blank'>"
       . @dsg_ids
       . ' genome'
       . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
@@ -688,6 +688,7 @@ sub blast_search {
     my ($tiny_id) = $link =~ /\/(\w+)$/;
     my $workflow = $YERBA->create_workflow(
         name    => "cogeblast-$tiny_id",
+        id      => $job->id,
         logfile => $cogeweb->logfile
     );
 
@@ -707,17 +708,44 @@ sub blast_search {
     my $count = 1;
     my $t2    = new Benchmark;
 
+
     foreach my $dsgid (@dsg_ids) {
-        my ( $org, $db, $dsg ) = get_blast_db($dsgid);
-        next unless $db;
+        my ( $org, $dbfasta, $dsg ) = get_blast_db($dsgid);
+        next unless $dbfasta;
 
-        my $command;
+        my $name = $dsg->organism->name;
+        my $args = [
+            ['-i', $dbfasta, 1],
+            ['-t', "'$name'", 1],
+            ['-n', $dsgid, 1],
+        ];
+
+        push @$args, ['-p', 'F', 1] unless $program eq "tblastn";
+
+        my $dbpath = "$DATADIR/db/blast/$dsgid";
+        mkpath($dbpath, 1, 0775);
+        my $db = "$dbpath/$dsgid";
+        my $outputs;
+
+        if ($program eq "tblastn") {
+            $outputs = ["$db.phr", "$db.pin", "$db.psq"];
+        } else {
+            $outputs = ["$db.nhr", "$db.nin", "$db.nsq"];
+        }
+
+        $workflow->add_job(
+            cmd     => $FORMATDB,
+            script  => undef,
+            args    => $args,
+            inputs  => [ $dbfasta ],
+            outputs => $outputs
+        );
+
         my $outfile = $cogeweb->basefile . "-$count.$program";
-        my ( $args, $cmd );
 
-        $cmd = $BLAST_PROGS->{$program};
+        my $cmd = $BLAST_PROGS->{$program};
         $args =
-          [ [ '', '--adjustment=10', 1 ], [ '', $BLAST_PROGS->{$program}, 1 ],
+          [ [ '', '--adjustment=10', 1 ], [ '', $BLAST_PROGS->{$program}, 0 ],
           ];
 
         if ( $program eq "lastz" ) {
@@ -732,7 +760,7 @@ sub blast_search {
             push @$args, [ '', "E=" . $zgap_extension, 1 ]
               if defined $zgap_extension;
             push @$args, [ '',  $fasta_file, 1 ];
-            push @$args, [ '',  $db,         1 ];
+            push @$args, [ '',  $dsgid,      1 ];
             push @$args, [ '',  $opts,       1 ];
             push @$args, [ '>', $outfile,    1 ];
         }
@@ -748,7 +776,7 @@ sub blast_search {
 
             $args = [
                 [ '', '--adjustment=10',        1 ],
-                [ '', $BLAST_PROGS->{$program}, 1 ],
+                [ '', $BLAST_PROGS->{$program}, 0 ],
             ];
 
             push @$args, [ "-comp_based_stats", 1, 1 ] if $program eq "tblastn";
@@ -764,23 +792,33 @@ sub blast_search {
             push @$args, [ '-query',     $fasta_file, 1 ];
             push @$args, [ '-word_size', $wordsize,   1 ];
             push @$args, [ '-evalue',    $expect,     1 ];
-            push @$args, [ '-db',        $db,         1 ];
+            push @$args, [ '-db',        $dsgid,      1 ];
             push @$args, [ '>',          $outfile,    1 ];
         }
 
         push @results,
           {
-            command  => $command,
+            command  => $cmd,
             file     => $outfile,
             organism => $org,
             dsg      => $dsg
           };
 
+        my $inputs = [
+            $fasta_file
+        ];
+
+        if ($program eq "tblastn") {
+            push @$inputs, ("$db.nhr", "$db.nin", "$db.nsq");
+        } else {
+            push @$inputs, ("$db.phr", "$db.pin", "$db.psq");
+        }
+
         $workflow->add_job(
             cmd     => "/usr/bin/nice",
             script  => undef,
             args    => $args,
-            inputs  => [ $db, $fasta_file ],
+            inputs  => $inputs,
             outputs => [$outfile]
         );
 
@@ -788,9 +826,12 @@ sub blast_search {
     }
 
     my $status = $YERBA->submit_workflow($workflow);
-    $YERBA->wait_for_completion( $workflow->name );
+    $YERBA->wait_for_completion( $workflow->id );
+
+    my @completed;
 
     foreach my $item (@results) {
+        next unless -r $item->{file};
         my $command = $item->{command};
         my $outfile = $item->{file};
         my $ta      = new Benchmark;
@@ -805,6 +846,7 @@ sub blast_search {
         $file =~ s/$TEMPDIR//;
         $file = $TEMPURL . "/" . $file;
         $item->{link} = $file;
+        push @completed, $item;
     }
     my $t3 = new Benchmark;
     CoGe::Accessory::Web::write_log( "Initializing sqlite database",
@@ -813,7 +855,7 @@ sub blast_search {
     my $t4 = new Benchmark;
     CoGe::Accessory::Web::write_log( "Generating Results", $cogeweb->logfile );
     my ( $html, $click_all_links ) = gen_results_page(
-        results         => \@results,
+        results         => \@completed,
         width           => $width,
         resultslimit    => $resultslimit,
         prog            => $program,
@@ -924,7 +966,7 @@ qq{<span class="small link" onclick="window.open('SeqView.pl?dsid=}
                   . qq{;rc=$rc')" target=_new>SeqView</span>};
                 push @hsp,
                   {
-                    CHECKBOX => $id . "_" 
+                    CHECKBOX => $id . "_"
                       . $chr . "_"
                       . $hsp->subject_start . "no",
                     ID        => $id,
@@ -945,8 +987,8 @@ qq{<span class="link" title="Click for HSP information" onclick="update_hsp_info
                     HSP_LINK      => $feat_link,
                     HSP_QUALITY   => sprintf( "%.1f", $hsp->quality ) . "%",
                     SEQVIEW       => $seqview_link,
-                    LOC_VAL       => $dsg->id . ':' 
-                      . $chr . ':' 
+                    LOC_VAL       => $dsg->id . ':'
+                      . $chr . ':'
                       . $start . ':'
                       . $stop
                   };
@@ -1320,7 +1362,7 @@ qq{<span class=small>Hits colored by Identity.  <span style="color:#AA0000">Min:
                   ->generate_png( filename => $large_image_file );
                 $image_map_large =
                   $data{$org}{image}
-                  ->generate_imagemap( mapname => $cogeweb->basefilename . "_" 
+                  ->generate_imagemap( mapname => $cogeweb->basefilename . "_"
                       . $count
                       . "_large" );
                 $map_file = $cogeweb->basefile . "_$count.$hsp_type.large.map";
@@ -1457,12 +1499,7 @@ sub get_blast_db {
     #$org_name .= " (".$gst->name.")" if $gst;
 
     my $db      = $dsg->file_path;
-    my $success = generate_blast_db(
-        fasta   => $db,
-        blastdb => $db,
-        org     => $dsg->organism->name
-    );
-    return unless -r $db;
+    return unless $db && -r $db;
     return $org_name, $db, $dsg;
 }
 
@@ -2185,8 +2222,8 @@ qq{<span class="link" title="Click for Feature Information" onclick=update_info_
           . $dsgid
           . "')>$name</span>";
         $new_checkbox_info =
-            $hsp_id . "_" 
-          . $chr . "_" 
+            $hsp_id . "_"
+          . $chr . "_"
           . $sstart . "no,"
           . $feat->id . "_"
           . $hsp_id;
@@ -2486,7 +2523,7 @@ qq{<span class=link onclick="\$('#org_desc').val('$_').focus();">$_</span>}
     my $link = $ds->data_source->link;
     $link = "http://" . $link unless $link =~ /^http/;
     $html .=
-        "<tr valign='top'><td>Source:<td><a class = 'link' href=" 
+        "<tr valign='top'><td>Source:<td><a class = 'link' href="
       . $link
       . " target=_new>"
       . $ds->data_source->name . "</a>"
@@ -2603,8 +2640,8 @@ sub export_hsp_query_fasta {
         $hsp_num = $row->{hsp_num};
         $query_seq =~ s/-//g;
         $fasta .=
-            ">HSP" 
-          . $hsp_num . "_" 
+            ">HSP"
+          . $hsp_num . "_"
           . $name
           . ", Subsequence: "
           . $qstart . "-"
@@ -2646,8 +2683,8 @@ sub export_hsp_subject_fasta {
         $subject_seq = $row->{salign};
         $subject_seq =~ s/-//g;
         $fasta .=
-            ">HSP " 
-          . $hsp_num . " " 
+            ">HSP "
+          . $hsp_num . " "
           . $org
           . ", Chromsome: "
           . $chr
@@ -2698,7 +2735,7 @@ sub export_alignment_file {
         $chr    = $row->{schr};
         $org    = $row->{org};
         $str .=
-            "HSP: " 
+            "HSP: "
           . $hsp_num
           . "\n>Query: "
           . $qname
