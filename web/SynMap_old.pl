@@ -2067,13 +2067,19 @@ INSERT INTO ks_data (fid1, fid2, dS, dN, dN_dS, protein_align_1, protein_align_2
 };
 
         my $insert_success = 0;
+	my $tries = 0;
         while ( !$insert_success ) {
             $insert_success = $dbh->do($insert);
             unless ($insert_success) {
-
+	      $tries++;
                 #				print STDERR $insert;
                 sleep .1;
             }
+	    if ($tries > 10)
+	      {
+		print STDERR "Tried sqlite insert $tries times without success.  Failing and existing.";
+		last;
+	      }
         }
 
         $pm->finish;
