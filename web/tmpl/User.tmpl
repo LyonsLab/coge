@@ -403,7 +403,10 @@ function cancel_jobs() {
 				fname: 'cancel_jobs',
 				item_list: item_list
 			},
-			success : function(data) {
+			success : function(rc) {
+				if (rc) {
+	            	poll();
+	            }
 			}
 		});		
 	}
