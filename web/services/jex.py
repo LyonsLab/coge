@@ -12,8 +12,8 @@ import zmq
 
 _defaults = {
     'connection' : 'tcp://localhost:5151',
-    'max_attempts' : 6,
-    'timeout' : 5000
+    'max_attempts' : 30,
+    'timeout' : 1000
 }
 
 def not_found(environ, start_response):
