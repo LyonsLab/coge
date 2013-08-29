@@ -888,7 +888,7 @@ sub go_synfind {
         db_object => $coge
     );
 
-    CoGe::Accessory::Web::schedule_job($job);
+    CoGe::Accessory::Web::schedule_job(job => $job);
 
    #convert numerical codes for different scoring functions to appropriate types
     if ( $scoring_function == 2 ) {
