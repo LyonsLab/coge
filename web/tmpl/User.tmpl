@@ -14,6 +14,7 @@ var ITEM_TYPE_MINE 			= <TMPL_VAR NAME="ITEM_TYPE_MINE">;
 var ITEM_TYPE_SHARED 		= <TMPL_VAR NAME="ITEM_TYPE_SHARED">;
 var ITEM_TYPE_TRASH 		= <TMPL_VAR NAME="ITEM_TYPE_TRASH">;
 var ITEM_TYPE_ACTIVITY 		= <TMPL_VAR NAME="ITEM_TYPE_ACTIVITY">;
+var ITEM_TYPE_ACTIVITY_ANALYSES	= <TMPL_VAR NAME="ITEM_TYPE_ACTIVITY_ANALYSES">;
 var ITEM_TYPE_ACTIVITY_VIZ	= <TMPL_VAR NAME="ITEM_TYPE_ACTIVITY_VIZ">;
 var ITEM_TYPE_USER 			= <TMPL_VAR NAME="ITEM_TYPE_USER">;
 var ITEM_TYPE_GROUP 		= <TMPL_VAR NAME="ITEM_TYPE_GROUP">;
@@ -280,6 +281,7 @@ function filter_contents() {
 				show = !$(this).hasClass('deleted') 
 						&& !$(this).hasClass('shared') 
 						&& item_type != ITEM_TYPE_ACTIVITY
+						&& item_type != ITEM_TYPE_ACTIVITY_ANALYSES
 						&& item_type != ITEM_TYPE_ACTIVITY_VIZ
 						&& item_type != ITEM_TYPE_GROUP;
 			}
@@ -287,6 +289,7 @@ function filter_contents() {
 				show = $(this).hasClass('shared') 
 						&& !$(this).hasClass('deleted') 
 						&& item_type != ITEM_TYPE_ACTIVITY
+						&& item_type != ITEM_TYPE_ACTIVITY_ANALYSES
 						&& item_type != ITEM_TYPE_ACTIVITY_VIZ;
 			}
 			else if (pageObj.content_type == ITEM_TYPE_TRASH) {
@@ -312,18 +315,22 @@ function toc_select(toc_id) {
 	pageObj.content_type = toc_id;
 
 	if (toc_id == ITEM_TYPE_TRASH) {
-		$('#share_button,#notebook_button,#group_button,#delete_button,#send_button').hide();
+		$('#share_button,#notebook_button,#group_button,#delete_button,#send_button,#cancel_button').hide();
 		$('#undelete_button').show();
 	}
 	else if (toc_id == ITEM_TYPE_GROUP) {
-		$('#notebook_button,#send_button,#share_button,#undelete_button').hide();
+		$('#notebook_button,#send_button,#share_button,#undelete_button,#cancel_button').hide();
 		$('#group_button,#delete_button').show();
 	}
 	else if (toc_id == ITEM_TYPE_SHARED || toc_id == ITEM_TYPE_ACTIVITY || toc_id == ITEM_TYPE_ACTIVITY_VIZ) {
+		$('#share_button,#notebook_button,#group_button,#delete_button,#send_button,#undelete_button,#cancel_button').hide();
+	}
+	else if (toc_id == ITEM_TYPE_ACTIVITY_ANALYSES) {
 		$('#share_button,#notebook_button,#group_button,#delete_button,#send_button,#undelete_button').hide();
+		$('#cancel_button').show();
 	}
 	else {
-		$('#undelete_button,#group_button').hide();
+		$('#undelete_button,#group_button,#cancel_button').hide();
 		$('#share_button,#notebook_button,#delete_button,#send_button').show();
 	}
 
@@ -379,6 +386,21 @@ function undelete_items() {
 		$.ajax({
 			data: {
 				fname: 'undelete_items',
+				item_list: item_list
+			},
+			success : function(data) {
+			}
+		});		
+	}
+}
+
+function cancel_jobs() {
+	var selected = get_selected_items();
+	if (selected.length) {
+		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				fname: 'cancel_jobs',
 				item_list: item_list
 			},
 			success : function(data) {
@@ -935,6 +957,7 @@ function toggle_star(img) {
 			<li><a onclick="send_items_to('GEvo', 1);">GEvo</a></li>
 		</ul>
 		<span id="undelete_button" onClick="undelete_items();" class="item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+		<span id="cancel_button" onClick="cancel_jobs();" class="item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
 		<input id="search_input" type="search" maxlength="20" style="float:right;margin-right:15px;vertical-align:top;border:1px solid lightgray;" onkeyup="filter_contents();" />
 	</div>
 
