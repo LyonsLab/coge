@@ -501,6 +501,16 @@ sub get_tiny_link {
     return $tiny;
 }
 
+sub schedule_job {
+    my %args = @_;
+    my $job = $args{job};
+
+    $job->update({
+        start_time => \'current_time',
+        status     => 1,
+    }) if $job;
+}
+
 sub get_job {
     my %args = @_;
     my $job;
@@ -534,21 +544,7 @@ sub get_job {
         $job = $prev_submission->next;
     }
 
-    my %fields;
-
-    given ( lc($job->status_description) ) {
-        # Reset the job to scheduled
-        when ("failed") { $fields{status} = 0; }
-
-        # Set the timestamp for the job and set the job as running
-        when ("scheduled") {
-            $fields{start_time} = \'current_timestamp';
-            $fields{status} = 1;
-        }
-    }
-
-    $fields{log_id} = $log_id if !$job->log_id && $log_id;
-    $job->update(\%fields) if %fields;
+    $job->update({ log_id => $log_id}) if $log_id && !$job->log_id;
 
     return $job;
 }
