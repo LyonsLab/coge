@@ -72,11 +72,12 @@ sub submit_workflow {
     zmq_sendmsg( $socket, $request, ZMQ_NOBLOCK);
 
     my $count = 0;
+    my $TIMEOUT = 5;
 
-    while (5 > $count && not defined($msg)) {
+    while (6 > $count && not defined($msg)) {
         $msg = zmq_recvmsg($socket, ZMQ_NOBLOCK);
         $count++;
-        sleep 1;
+        sleep $TIMEOUT;
     }
 
     zmq_close($socket);
