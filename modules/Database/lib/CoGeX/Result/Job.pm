@@ -81,6 +81,7 @@ sub info {
     my $self = shift;
     return
         $self->start_time . ' | '
+      . $self->elapsed_time . ' | '
       . $self->page . ' | '
       . ( $self->log ? $self->log->description . ' | ' : '')
       . $self->status_description;
@@ -93,6 +94,7 @@ sub info_html {
     
     return
         $self->start_time . ' | '
+      . $self->elapsed_time . ' | '
       . $self->page . ' | '
       . ( $self->log ? $self->log->description . ' | ' : '')
       . ($color ? '<span style="padding-bottom:1px;padding-right:5px;padding-left:5px;border-radius:15px;color:white;background-color:'.$color.';">' . $self->status_description . '</span>' : $self->status_description);
@@ -138,10 +140,10 @@ sub elapsed_time {
     my $hours = $diff->hours();
 
     my $elapsed = '';
-    $elapsed .= "$days days " if $days;
-    $elapsed .= "$hours hrs " if $hours;
-    $elapsed .= $diff->minutes() . " mins " if $diff->minutes() && not $days;
-    $elapsed .= $diff->seconds() . " secs" if $diff->seconds() && not $days;
+    $elapsed .= "${days}d " if $days;
+    $elapsed .= "${hours}h " if $hours;
+    $elapsed .= $diff->minutes() . "m " if $diff->minutes() && not $days;
+    $elapsed .= $diff->seconds() . "s" if $diff->seconds() && not $days;
 
     return $elapsed
 }
