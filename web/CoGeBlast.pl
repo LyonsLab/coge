@@ -682,6 +682,7 @@ sub blast_search {
         user_id   => $USER->id,
         db_object => $coge
     );
+    CoGe::Accessory::Web::schedule_job($job);
 
     CoGe::Accessory::Web::write_log( "process $$", $cogeweb->logfile );
 
