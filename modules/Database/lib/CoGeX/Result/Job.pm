@@ -1,5 +1,6 @@
 package CoGeX::Result::Job;
 
+use v5.10;
 use strict;
 use warnings;
 
@@ -71,5 +72,26 @@ __PACKAGE__->belongs_to( 'log'  => "CoGeX::Result::Log",  'log_id' );
 =cut
 
 ################################################## subroutine header end ##
+
+sub info {
+    my $self = shift;
+    return
+        $self->start_time . ' | '
+      . $self->page . ' | '
+      . $self->status_description;
+    
+}
+
+sub status_description {
+    my $self = shift;
+    given ( $self->status ) {
+        when (1) { return 'Running';	}
+        when (2) { return 'Complete';	}
+        when (3) { return 'Cancelled';	}
+        when (4) { return 'Terminated';	}
+        when (5) { return 'Failed';		}
+        default  { return 'Unknown';	}
+    }
+}
 
 1;
