@@ -1260,19 +1260,22 @@ sub get_query_link {
 
     $log_msg .= " Ks" if $ks_type;
 
-    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
+    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(url => $synmap_link);
+
+    my $log = CoGe::Accessory::Web::log_history(
         db      => $coge,
         user_id => $USER->id,
-        page    => $PAGE_NAME,
-        url     => $synmap_link,
-        log_msg => $log_msg
+        description => $log_msg,
+        page    => $PAGE_TITLE,
+        link => $tiny_link,
     );
 
     my $job = CoGe::Accessory::Web::get_job(
         tiny_link => $tiny_link,
         title     => $PAGE_TITLE,
         user_id   => $USER->id,
-        db_object => $coge
+        log_id    => $log->id,
+        db_object => $coge,
     );
 
     my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
