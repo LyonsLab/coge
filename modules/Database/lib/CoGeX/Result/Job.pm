@@ -82,7 +82,18 @@ sub info {
       . $self->page . ' | '
       . ( $self->log ? $self->log->description . ' | ' : '')
       . $self->status_description;
+}
+
+sub info_html {
+    my $self = shift;
     
+    my $color = $self->status_color;
+    
+    return
+        $self->start_time . ' | '
+      . $self->page . ' | '
+      . ( $self->log ? $self->log->description . ' | ' : '')
+      . ($color ? '<span style="padding-bottom:1px;padding-right:5px;padding-left:5px;border-radius:15px;color:white;background-color:'.$color.';">' . $self->status_description . '</span>' : $self->status_description);
 }
 
 sub status_description {
@@ -95,6 +106,17 @@ sub status_description {
         when (4) { return 'Terminated';	}
         when (5) { return 'Failed';		}
         default  { return 'Unknown';	}
+    }
+}
+
+sub status_color {
+    my $self = shift;
+    given ( $self->status ) {
+        when (1) { return 'yellowgreen'; }
+        when (3) { return 'salmon';	}
+        when (4) { return 'salmon';	}
+        when (5) { return 'salmon';	}
+        default  { return; }
     }
 }
 
