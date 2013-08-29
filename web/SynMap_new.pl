@@ -1340,7 +1340,7 @@ sub go {
         db_object => $coge
     );
 
-    CoGe::Accessory::Web::schedule_job($job);
+    CoGe::Accessory::Web::schedule_job(job => $job);
 
     my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
     my $workflow_id = "synmap-$tiny_id";
