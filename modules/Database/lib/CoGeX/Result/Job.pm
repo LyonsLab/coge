@@ -4,6 +4,8 @@ use v5.10;
 use strict;
 use warnings;
 
+use DateTime;
+use DateTime::Format::HTTP;
 use base 'DBIx::Class::Core';
 
 =head1 NAME
@@ -69,7 +71,7 @@ __PACKAGE__->belongs_to( 'log'  => "CoGeX::Result::Log",  'log_id' );
  Returns   : a string
  Argument  : None
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -118,6 +120,30 @@ sub status_color {
         when (5) { return 'salmon';	}
         default  { return; }
     }
+}
+
+sub elapsed_time {
+    my $self = shift;
+    my $diff;
+
+    my $start_time = DateTime::Format::HTTP->parse_datetime($self->start_time);
+    if ($self->end_time) {
+        my $end_time = DateTime::Format::HTTP->parse_datetime($self->end_time);
+        $diff = $end_time->subtract_datetime($start_time);
+    } else {
+        $diff = DateTime->now()->subtract_datetime($start_time);
+    }
+
+    my $days = $diff->in_units('days');
+    my $hours = $diff->hours();
+
+    my $elapsed = '';
+    $elapsed .= "$days days " if $days;
+    $elapsed .= "$hours hrs " if $hours;
+    $elapsed .= $diff->minutes() . " mins " if $diff->minutes() && not $days;
+    $elapsed .= $diff->seconds() . " secs" if $diff->seconds() && not $days;
+
+    return $elapsed
 }
 
 1;
