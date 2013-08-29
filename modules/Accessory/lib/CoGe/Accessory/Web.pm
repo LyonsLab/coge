@@ -1,4 +1,5 @@
 package CoGe::Accessory::Web;
+use v5.10;
 
 use strict;
 use base 'Class::Accessor';
@@ -525,23 +526,29 @@ sub get_job {
                 page       => $title,
                 process_id => getpid(),
                 user_id    => $user_id,
-                log_id     => $log_id,
                 status     => 0,
             }
         );
     }
     else {
         $job = $prev_submission->next;
-
-        $job->update(
-            {
-                status     => 0,
-                process_id => getpid(),
-            }
-        );
-
-        $job->update({ log_id => $log_id}) unless $job->log_id;
     }
+
+    my %fields;
+
+    given ( lc($job->status_description) ) {
+        # Reset the job to scheduled
+        when ("failed") { $fields{status} = 0; }
+
+        # Set the timestamp for the job and set the job as running
+        when ("scheduled") {
+            $fields{start_time} = \'current_timestamp';
+            $fields{status} = 1;
+        }
+    }
+
+    $fields{log_id} = $log_id if !$job->log_id && $log_id;
+    $job->update(\%fields) if %fields;
 
     return $job;
 }
