@@ -506,9 +506,9 @@ sub schedule_job {
     my $job = $args{job};
 
     $job->update({
-        start_time => \'current_time',
+        start_time => \'current_timestamp',
         status     => 1,
-    }) if $job;
+    });
 }
 
 sub get_job {
