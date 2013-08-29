@@ -87,6 +87,7 @@ sub info {
 sub status_description {
     my $self = shift;
     given ( $self->status ) {
+        when (0) { return 'Scheduled';  }
         when (1) { return 'Running';	}
         when (2) { return 'Complete';	}
         when (3) { return 'Cancelled';	}
