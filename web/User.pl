@@ -1342,7 +1342,9 @@ sub get_contents {
         foreach my $entry (
             $USER->jobs(
                 {},
-                { 
+                {
+                	join => 'log',
+                	prefetch => 'log',
                 	order_by => { -desc => 'start_time' } 
                 }
             )
@@ -1352,7 +1354,7 @@ sub get_contents {
               {
                 CONTENTS_ITEM_ID   => $entry->id,
                 CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_analyses},
-                CONTENTS_ITEM_INFO => $entry->info,
+                CONTENTS_ITEM_INFO => $entry->info_html,
                 CONTENTS_ITEM_LINK => $entry->link,
                 CONTENTS_ITEM_SELECTABLE => 1
               };
