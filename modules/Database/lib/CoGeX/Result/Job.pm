@@ -90,7 +90,7 @@ sub status_description {
     given ( $self->status ) {
         when (0) { return 'Scheduled';  }
         when (1) { return 'Running';	}
-        when (2) { return 'Complete';	}
+        when (2) { return 'Completed';	}
         when (3) { return 'Cancelled';	}
         when (4) { return 'Terminated';	}
         when (5) { return 'Failed';		}
