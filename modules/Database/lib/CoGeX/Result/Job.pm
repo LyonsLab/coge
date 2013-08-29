@@ -80,6 +80,7 @@ sub info {
     return
         $self->start_time . ' | '
       . $self->page . ' | '
+      . $self->log->description . ' | '
       . $self->status_description;
     
 }
