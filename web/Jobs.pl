@@ -116,7 +116,7 @@ sub cancel_job {
     my $job_id = _check_job_args(@_);
     my $job    = _get_validated_job($job_id);
 
-    return return encode_json( {} ) unless defined($job);
+    return encode_json( {} ) unless defined($job);
 
     my $status = $YERBA->get_status( $job->id );
 
