@@ -457,7 +457,7 @@ sub log_history {
 
     $type = 1 if ( $description and $description ne 'page access' );
     $user_id = 0 unless ( defined $user_id );
-    $db->resultset('Log')->create(
+    return $db->resultset('Log')->create(
         {
             user_id     => $user_id,
             page        => $page,
