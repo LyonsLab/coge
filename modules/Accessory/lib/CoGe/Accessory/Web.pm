@@ -1,4 +1,5 @@
 package CoGe::Accessory::Web;
+use v5.10;
 
 use strict;
 use base 'Class::Accessor';
@@ -506,6 +507,7 @@ sub get_job {
     my $tiny_link = $args{tiny_link};
     my $user_id   = $args{user_id};
     my $title     = $args{title};
+    my $log_id    = $args{log_id};
     my $coge      = $args{db_object};
 
     $user_id = 0 unless defined($user_id);
@@ -520,23 +522,33 @@ sub get_job {
     if ( $prev_submission->count < 1 ) {
         $job = $coge->resultset('Job')->create(
             {
-                "link"       => $tiny_link,
-                "page"       => $title,
-                "process_id" => getpid(),
-                "user_id"    => $user_id,
-                "status"     => 1
+                link       => $tiny_link,
+                page       => $title,
+                process_id => getpid(),
+                user_id    => $user_id,
+                status     => 0,
             }
         );
     }
     else {
         $job = $prev_submission->next;
-        $job->update(
-            {
-                status     => 1,
-                process_id => getpid()
-            }
-        );
     }
+
+    my %fields;
+
+    given ( lc($job->status_description) ) {
+        # Reset the job to scheduled
+        when ("failed") { $fields{status} = 0; }
+
+        # Set the timestamp for the job and set the job as running
+        when ("scheduled") {
+            $fields{start_time} = \'current_timestamp';
+            $fields{status} = 1;
+        }
+    }
+
+    $fields{log_id} = $log_id if !$job->log_id && $log_id;
+    $job->update(\%fields) if %fields;
 
     return $job;
 }
