@@ -709,11 +709,13 @@ function update_dialog(request, identifier, formatter, args) {
 
         if (current_status == "completed") {
             workflow_status.find('span').addClass('completed');
+            pageObj.error = 0;
             fetch_results(true);
         } else if (current_status == "failed" || current_status == "error"
                 || current_status == "terminated"
                 || current_status == "cancelled") {
             workflow_status.find('span').addClass('alert');
+            pageObj.error = 0;
             fetch_results(false);
         } else if (current_status == "notfound") {
             setTimeout(callback, timeout);
