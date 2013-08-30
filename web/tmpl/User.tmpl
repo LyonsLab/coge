@@ -71,9 +71,15 @@ $(function() {
 		.css({ position: 'absolute', width: '130px' });
 	$("#send_menu").menu().css({ position: 'absolute', width: '90px' });
 
+	// Get starting page from URL if set
+	var toc_id = getURLParameter('p');
+	if (!toc_id) {
+		toc_id = ITEM_TYPE_MINE;
+	}
+	
 	// Initialize main panels
 	exit_item(); // initialize info panel
-	toc_select(ITEM_TYPE_MINE); // initialize toc panel
+	toc_select(toc_id); // initialize toc panel
 	select_item(); // initialize content icon buttons
 
 	// Setup idle timer
@@ -93,7 +99,14 @@ $(function() {
 
 	// Initialize add-to-notebok dialog
 	setTimeout(search_notebooks, 1000);
+	
 });
+
+function getURLParameter(name) {
+    return decodeURI(
+        (RegExp(name + '=' + '(.+?)(&|$)').exec(location.search)||[,null])[1]
+    );
+}
 
 function poll() {
 	get_contents(1);
@@ -346,6 +359,9 @@ function toc_select(toc_id) {
 
 	var title = $('#toc_label_'+toc_id).html();
 	$('#contents_title').html(title);
+	
+	// Update browser url
+	window.history.pushState({}, "", "<TMPL_VAR NAME='PAGE_NAME'>?p="+toc_id);
 }
 
 function delete_items() {
