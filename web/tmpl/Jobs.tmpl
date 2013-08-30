@@ -123,18 +123,20 @@ $(document).ready(function(){
     var columns = [
         checkbox.getColumnDefinition(),
         {id: 'id', name: 'Id', field: 'id', maxWidth: 50, sortable: true},
-        {id: 'started', name: 'Started', field: 'started',
+        {id: 'started', name: 'Started', field: 'started', minWidth: 75,
             sortable: true},
-        {id: 'completed', name: 'Completed', field: 'completed',
+        {id: 'completed', name: 'Completed', field: 'completed', minWidth: 75,
+            sortable: true},
+        {id: 'elapsed', name: 'Elapsed', field: 'elapsed', minWidth: 55,
             sortable: true},
 <tmpl_if name="admin_area">
-        {id: 'user', name: 'User', field: 'user', sortable: true},
+        {id: 'user', name: 'User', field: 'user', sortable: true, minWidth: 75},
 </tmpl_if>
-        {id: 'tool', name: 'Tool', field: 'tool', minWidth: 30,
+        {id: 'tool', name: 'Tool', field: 'tool', minWidth: 75,
             sortable: true},
-        {id: 'link', name: 'Link to Analysis', field: 'link', minWidth: 160,
+        {id: 'link', name: 'Link to Analysis', field: 'link', minWidth: 250,
             sortable: true, formatter: linkformatter },
-        {id: 'status', name: 'Status', field: 'status', minWidth: 30,
+        {id: 'status', name: 'Status', field: 'status', minWidth: 75,
             sortable: true}
     ];
 

@@ -68,7 +68,8 @@ sub get_jobs_for_user {
             tool   => $_->page,
             status => $_->status_description,
             started => $_->start_time,
-            completed => $_->start_time,
+            completed => $_->end_time ? $_->end_time : '',
+            elapsed => $_->elapsed_time(),
             user => $_->user_id ? $users{ $_->user_id} : 'public',
         };
     }
