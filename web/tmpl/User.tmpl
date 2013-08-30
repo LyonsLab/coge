@@ -73,7 +73,7 @@ $(function() {
 
 	// Get starting page from URL if set
 	var toc_id = getURLParameter('p');
-	if (!toc_id) {
+	if (!toc_id || toc_id == 'null') {
 		toc_id = ITEM_TYPE_MINE;
 	}
 	
