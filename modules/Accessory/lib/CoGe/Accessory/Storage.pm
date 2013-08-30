@@ -97,23 +97,23 @@ sub get_genome_file {
 
     my $seqdir = CoGe::Accessory::Web::get_defaults()->{'SEQDIR'};
     unless ($seqdir) {
-        print STDERR
-"Storage::get_genome_file: WARNING, conf file parameter SEQDIR is blank!\n";
+        print STDERR "Storage::get_genome_file: WARNING, conf file parameter SEQDIR is blank!\n";
     }
-
     unless ($base_path) {
         $base_path = $seqdir . '/' . get_tiered_path($gid) . '/';
     }
-
-    my $file_path = $base_path . 'genome.faa';
+    
+    # First check for legacy filename
+    my $file_path = $base_path . "$gid.faa";
     return $file_path if ( -r $file_path );
 
-    $file_path = $base_path . "$gid.faa";
-    return $file_path if ( -r $file_path );
+	# Not there, so check for new filename
+    $file_path = $base_path . 'genome.faa';
+	if ( not -r $file_path ) {
+    	print STDERR "Storage::get_genome_file: genome file '$file_path' not found or not readable!\n";
+	}
 
-    print STDERR
-      "Storage::get_genome_file: genome file '$file_path' not found or not readable!\n";
-    return;
+    return $file_path;
 }
 
 sub index_genome_file {
