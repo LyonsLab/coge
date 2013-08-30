@@ -133,7 +133,10 @@ sub elapsed_time {
         my $end_time = DateTime::Format::HTTP->parse_datetime($self->end_time);
         $diff = $end_time->subtract_datetime($start_time);
     } else {
-        $diff = DateTime->now()->subtract_datetime($start_time);
+        my $timezone = DateTime::TimeZone->new( name => 'local' );
+        my $dt = DateTime->now(time_zone => $timezone);
+
+        $diff = $dt->subtract_datetime($start_time);
     }
 
     my $days = $diff->in_units('days');
