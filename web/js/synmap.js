@@ -647,12 +647,13 @@ function update_dialog(request, identifier, formatter, args) {
                 }
             },
             error: function(data) {
-                if (pageObj.error > 3) {
+                if (pageObj.error >= 3) {
                     dialog.find('#progress').hide();
                     dialog.find('#dialog_error').slideDown();
                 } else {
-                    fetch_results();
                     pageObj.error += 1;
+                    var callback = function() {fetch_results(completed)};
+                    setTimeout(100, callback);
                 }
             }
         });
