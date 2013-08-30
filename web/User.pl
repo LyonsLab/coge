@@ -450,9 +450,15 @@ sub cancel_jobs {
 	    
 	    my $status = $jex->get_status( $job->id );
 	    print STDERR "job " . $job->id . " status=$status\n";
-	    if ( lc($status) eq 'running' ) {
-	        $job->update( { status => 3 } );
-	        return encode_json( $jex->terminate( $job->id ) );
+	    if ( $status =~ /running/i ) {
+	    	my $res = $jex->terminate( $job->id );
+	    	if ( $res->status =~ /notfound/i ) {
+	        	print STDERR "job " . $job->id . " termination error\n";
+	    	}
+	    	else {
+	    		$job->update( { status => 3 } );
+	    	}
+	        return encode_json( $res );
 	    }
     }
 
