@@ -239,9 +239,9 @@ if ( -e $storage_path ) {
     exit(-1);
 }
 
-print $log "experiment id: "
-  . $experiment->id
-  . "\n";    # don't change, gets parsed by calling code
+# Don't change, gets parsed by calling code
+print $log "experiment id: " . $experiment->id . "\n";
+print "experiment id: " . $experiment->id . "\n";
 
 #TODO create experiment type & connector
 
@@ -392,7 +392,7 @@ sub validate_quant_data_file {
         $chr =~ s/^lcl\|//;
         $chr =~ s/chromosome//i;
         $chr =~ s/^chr//i;
-        $chr =~ s/^0+// unless $chr == 0;
+        $chr =~ s/^0+// unless $chr eq '0';
         $chr =~ s/^_+//;
         $chr =~ s/\s+/ /;
         $chr =~ s/^\s//;
