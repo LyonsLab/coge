@@ -486,7 +486,7 @@ sub process_gff_file {
         next if $type eq "chromosome";
         next if $type eq "start_codon";
         next if $type eq "stop_codon";
-        next if $type eq "transcript";
+#        next if $type eq "transcript";
         next if $type eq "protein";
 
         # Process and check chromosomes
@@ -503,7 +503,7 @@ sub process_gff_file {
             return 0;
         }
 
-        #$type = "mRNA" if $type eq "transcript";
+        $type = "mRNA" if $type eq "transcript";
         # In many GFF files, the mRNA is what CoGe calls a Gene (the full extent
         # of the transcribed sequence including introns and exons.  Instead,
         # what the GFF calls an exon is really the transcribed mRNA.  In this

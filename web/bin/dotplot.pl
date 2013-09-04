@@ -236,7 +236,7 @@ my $white       = $graphics_context->colorResolve( 255, 255, 255 );
 my $black       = $graphics_context->colorResolve( 0,   0,   0 );
 my $grey        = $graphics_context->colorResolve( 200, 200, 200 );
 my $red         = $graphics_context->colorResolve( 255, 0,   0 );
-my $green       = $graphics_context->colorResolve( 0,   150, 0 );
+my $green       = $graphics_context->colorResolve( 0,   100, 0 );
 my $alert_color = $graphics_context->colorResolve( 255, 0,   0 );
 
 $graphics_context->fill( 1, 1, $white );
@@ -418,7 +418,19 @@ if ( $selfself && ( $dsgid1 == $dsgid2 ) ) {
         $draw_selfself = 1;
     }
 }
-$graphics_context->line( 0, $height, $width, 0, $green ) if $draw_selfself;
+if ($draw_selfself)
+  {
+    $graphics_context->line( 0, $height, $width, 0, $green );
+    if ($linesize)
+      {
+	my $size = ceil($linesize/2);
+	for (my $i=1; $i< $size; $i++)
+	  {
+	        $graphics_context->line( 0+$i, $height+$i, $width+$i, 0+$i, $green );
+	        $graphics_context->line( 0-$i, $height-$i, $width-$i, 0-$i, $green );
+	  }
+      }
+  }
 
 #Write out graphics context - the generated dot plot - to a .png file
 open( OUT, ">" . $basename . ".png" ) || die "$!";
