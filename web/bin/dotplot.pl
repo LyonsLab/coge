@@ -236,7 +236,7 @@ my $white       = $graphics_context->colorResolve( 255, 255, 255 );
 my $black       = $graphics_context->colorResolve( 0,   0,   0 );
 my $grey        = $graphics_context->colorResolve( 200, 200, 200 );
 my $red         = $graphics_context->colorResolve( 255, 0,   0 );
-my $green       = $graphics_context->colorResolve( 0,   150, 0 );
+my $green       = $graphics_context->colorResolve( 0,   100, 0 );
 my $alert_color = $graphics_context->colorResolve( 255, 0,   0 );
 
 $graphics_context->fill( 1, 1, $white );
