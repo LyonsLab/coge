@@ -13,7 +13,8 @@
  <span id='filter_count' style="margin-left:20px;"></span>
  <img id='filter_busy' src="picts/ajax-loader.gif" />
 </div>
-<div style="display: inline;" class="ui-button ui-corner-all" onclick="cancel_job()">Cancel selected jobs</div>
+
+<span id="test" class="ui-button ui-corner-all" onclick="cancel_job()">Cancel selected jobs</span>
 
 <div id="jobs" style="max-width:95%; height: 900px; display:true; font-size: 0.8em; margin-top: 5px;">
 </div>
@@ -21,7 +22,7 @@
 
 <link rel="stylesheet" href="js/slickgrid/slick.grid.css" type="text/css"/>
 <link rel="stylesheet" href="js/slickgrid/controls/slick.pager.css" type="text/css"/>
-<link rel="stylesheet" href="js/slickgrid/css/smoothness/jquery-ui-1.8.16.custom.css" type="text/css"/>
+<!--<link rel="stylesheet" href="js/slickgrid/css/smoothness/jquery-ui-1.8.16.custom.css" type="text/css"/> -->
 <link rel="stylesheet" href="js/slickgrid/controls/slick.columnpicker.css" type="text/css"/>
   <style>
     .cell-centered {
@@ -141,7 +142,7 @@ $(document).ready(function(){
     ];
 
 
-    jobs = new coge.Grid('#jobs', options, columns);
+    window.jobs = new coge.Grid('#jobs', options, columns);
     jobs.grid.registerPlugin(checkbox);
     $.ajax({
         dataType: 'json',
@@ -184,28 +185,15 @@ function update_filter() {
 }
 
 function cancel_job() {
-    var rows = $(".grid-canvas input[type=checkbox]")
-        .filter(":checked")
-        .parent()
-        .parent()
-        .children()
-        .filter("div:nth-child(5)")
-        .filter(":contains('Running')")
-        .parent();
+    var selectedIndexes = window.jobs.grid.getSelectedRows();
 
-    var checked = rows.children()
-        .filter("div:nth-child(1)")
-        .find("input");
+    jQuery.each(selectedIndexes, function(index, value) {
+        var row = window.jobs.dataView.getItem(value);
 
-    var status = rows.children()
-        .filter("div:nth-child(5)");
-
-    var jobs = rows.children()
-        .filter("div:nth-child(2)")
-        .each(function(index) {
+        if (row.status.toLowerCase() == 'running') {
             var argument_list =  {
                 fname: 'cancel_job',
-                job: $(this).text(),
+                job: row.id,
             };
 
             $.ajax({
@@ -214,15 +202,13 @@ function cancel_job() {
                 data: argument_list,
                 success: function(data) {
                     if (data.status) {
-                        var item = $(status.get(index));
-                        item.text(data.status)
-                            .fadeIn(2000);
-
-                        checked.attr("checked", false);
+                        row.status = data.status;
+                        window.jobs.dataView.updateItem(row.id, row);
                     }
                 }
             });
-        });
+        }
+    });
 }
 </script>
 </tmpl_if>
