@@ -10,7 +10,7 @@ use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Utils qw( commify );
 
 use vars qw($staging_dir $install_dir $data_file
-  $name $description $version $restricted
+  $name $description $version $restricted $ignore_missing_chr
   $gid $source_name $user_name $config
   $host $port $db $user $pass $P);
 
@@ -35,6 +35,9 @@ GetOptions(
     "gid=s"         => \$gid,            # genome id
     "source_name=s" => \$source_name,    # data source name (JS escaped)
     "user_name=s"   => \$user_name,      # user name
+    
+    # Flags
+    "ignore-missing-chr=i" => \$ignore_missing_chr,
 
     # Database params
     "host|h=s"      => \$host,
@@ -140,23 +143,24 @@ my ($filename) = $data_file =~ /^.+\/([^\/]+)$/;
 print $log "log: Successfully read " . commify($count) . " lines\n";
 
 # Verify that chromosome names in input file match those for genome
-
 foreach ( sort keys %genome_chr ) {
     print $log "genome chromosome $_\n";
 }
 foreach ( sort keys %$pChromosomes ) {
     print $log "input chromosome $_\n";
 }
-my $error = 0;
-foreach ( sort keys %$pChromosomes ) {
-    if ( not defined $genome_chr{$_} ) {
-        print $log "log: chromosome '$_' not found in genome\n";
-        $error++;
-    }
-}
-if ($error) {
-    print $log "log: error: input chromosome names don't match genome\n";
-    exit(-1);
+if (not $ignore_missing_chr) {
+	my $error = 0;
+	foreach ( sort keys %$pChromosomes ) {
+	    if ( not defined $genome_chr{$_} ) {
+	        print $log "log: chromosome '$_' not found in genome\n";
+	        $error++;
+	    }
+	}
+	if ($error) {
+	    print $log "log: error: input chromosome names don't match genome\n";
+	    exit(-1);
+	}
 }
 
 # Copy input file to staging area and generate fastbit database/index
