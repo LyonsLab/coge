@@ -511,7 +511,7 @@ sub process_gff_file {
         # whatever annotation it contains, but don't want to actually add the
         # location.  We will change the feature type to something weird that
         # can be handled downstream correctly -- specifically the locations
-        if ( $type =~ /(.*RNA.*)/ ) {
+        if ( $type =~ /([mt]RNA)/ ) { # mdb changed from /(.*RNA.*)/, 9/3/13 issue 198
             $last_RNA = $type;
             $type     = "$1_no_locs";
         }
