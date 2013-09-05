@@ -25,6 +25,7 @@ use POSIX;
 use File::Temp;
 use File::Basename;
 use File::Path;
+use File::Spec;
 use Spreadsheet::WriteExcel;
 use Benchmark qw(:all);
 use Parallel::ForkManager;
@@ -722,9 +723,9 @@ sub blast_search {
 
         push @$args, ['-p', 'F', 1] unless $program eq "tblastn";
 
-        my $dbpath = "$DATADIR/db/blast/$dsgid";
+        my $dbpath = File::Spec->catdir(($BLASTDBDIR, $dsgid));
         mkpath($dbpath, 1, 0775);
-        my $db = "$dbpath/$dsgid";
+        my $db = File::Spec->catdir(($dbpath, $dsgid));
         my $outputs;
 
         if ($program eq "tblastn") {
@@ -809,9 +810,9 @@ sub blast_search {
         ];
 
         if ($program eq "tblastn") {
-            push @$inputs, ("$db.nhr", "$db.nin", "$db.nsq");
-        } else {
             push @$inputs, ("$db.phr", "$db.pin", "$db.psq");
+        } else {
+            push @$inputs, ("$db.nhr", "$db.nin", "$db.nsq");
         }
 
         $workflow->add_job(
