@@ -125,7 +125,14 @@ function load_experiment() {
 	var user_name = $('#edit_user').val(); // only exists if admin
 	if (user_name == 'Search') { user_name = ''; }	
 	
-	reset_log();	
+	// Prevent concurrent executions - issue 101
+	if ( $("#load_dialog").dialog( "isOpen" ) )
+		return;
+	$('#load_dialog').dialog('open');
+	
+	// Open status dialog right away - issue 101
+	reset_log();
+	$('#load_experiment_log').html('Initializing ...');	
 	
 	$.ajax({
 		data: {
@@ -145,9 +152,10 @@ function load_experiment() {
 			// Add load_id to browser URL
 			window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?load_id=<TMPL_VAR NAME='LOAD_ID'>");
 			
-			$('#load_dialog').dialog('open');
+			// Start status update
 			setTimeout(function() { get_load_log(); }, 1000);
 		}
+		// TODO: handle error, show in status dialog
 	});
 }
 

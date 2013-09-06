@@ -12,7 +12,7 @@ import zmq
 
 _defaults = {
     'connection' : 'tcp://localhost:5151',
-    'max_attempts' : 5,
+    'max_attempts' : 30,
     'timeout' : 1000
 }
 
@@ -63,7 +63,6 @@ def status(environ, start_response):
     socket.send_json(request, zmq.NOBLOCK)
 
     while _defaults['max_attempts'] > counter.next() and not result:
-        sys.stderr.write('waiting...\n');
         if socket in dict(poller.poll(timeout=_defaults['timeout'])):
             result = socket.recv_json(flags=zmq.NOBLOCK)
 

@@ -1,4 +1,5 @@
 package CoGe::Accessory::Web;
+use v5.10;
 
 use strict;
 use base 'Class::Accessor';
@@ -457,7 +458,7 @@ sub log_history {
 
     $type = 1 if ( $description and $description ne 'page access' );
     $user_id = 0 unless ( defined $user_id );
-    $db->resultset('Log')->create(
+    return $db->resultset('Log')->create(
         {
             user_id     => $user_id,
             page        => $page,
@@ -500,12 +501,23 @@ sub get_tiny_link {
     return $tiny;
 }
 
+sub schedule_job {
+    my %args = @_;
+    my $job = $args{job};
+
+    $job->update({
+        start_time => \'current_timestamp',
+        status     => 1,
+    });
+}
+
 sub get_job {
     my %args = @_;
     my $job;
     my $tiny_link = $args{tiny_link};
     my $user_id   = $args{user_id};
     my $title     = $args{title};
+    my $log_id    = $args{log_id};
     my $coge      = $args{db_object};
 
     $user_id = 0 unless defined($user_id);
@@ -520,23 +532,19 @@ sub get_job {
     if ( $prev_submission->count < 1 ) {
         $job = $coge->resultset('Job')->create(
             {
-                "link"       => $tiny_link,
-                "page"       => $title,
-                "process_id" => getpid(),
-                "user_id"    => $user_id,
-                "status"     => 1
+                link       => $tiny_link,
+                page       => $title,
+                process_id => getpid(),
+                user_id    => $user_id,
+                status     => 0,
             }
         );
     }
     else {
         $job = $prev_submission->next;
-        $job->update(
-            {
-                status     => 1,
-                process_id => getpid()
-            }
-        );
     }
+
+    $job->update({ log_id => $log_id}) if $log_id && !$job->log_id;
 
     return $job;
 }

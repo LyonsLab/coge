@@ -66,9 +66,10 @@ sub get_jobs_for_user {
             id     => int($_->id),
             link   => $_->link,
             tool   => $_->page,
-            status => get_status_message($_),
+            status => $_->status_description,
             started => $_->start_time,
-            completed => $_->start_time,
+            completed => $_->end_time ? $_->end_time : '',
+            elapsed => $_->elapsed_time(),
             user => $_->user_id ? $users{ $_->user_id} : 'public',
         };
     }
@@ -116,7 +117,7 @@ sub cancel_job {
     my $job_id = _check_job_args(@_);
     my $job    = _get_validated_job($job_id);
 
-    return return encode_json( {} ) unless defined($job);
+    return encode_json( {} ) unless defined($job);
 
     my $status = $YERBA->get_status( $job->id );
 
@@ -136,19 +137,6 @@ sub schedule_job {
 
     return "fail" unless defined($job);
     return "true";
-}
-
-sub get_status_message {
-    my $job = shift;
-
-    given ( $job->status ) {
-        when (1) { return 'Running'; }
-        when (2) { return 'Complete'; }
-        when (3) { return 'Cancelled'; }
-        when (4) { return 'Terminated'; }
-        when (5) { return 'Failed'; }
-        default  { return 'Running'; }
-    }
 }
 
 sub cmp_by_start_time {

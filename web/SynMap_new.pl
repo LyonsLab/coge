@@ -1260,19 +1260,22 @@ sub get_query_link {
 
     $log_msg .= " Ks" if $ks_type;
 
-    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
+    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(url => $synmap_link);
+
+    my $log = CoGe::Accessory::Web::log_history(
         db      => $coge,
         user_id => $USER->id,
-        page    => $PAGE_NAME,
-        url     => $synmap_link,
-        log_msg => $log_msg
+        description => $log_msg,
+        page    => $PAGE_TITLE,
+        link => $tiny_link,
     );
 
     my $job = CoGe::Accessory::Web::get_job(
         tiny_link => $tiny_link,
         title     => $PAGE_TITLE,
         user_id   => $USER->id,
-        db_object => $coge
+        log_id    => $log->id,
+        db_object => $coge,
     );
 
     my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
@@ -1336,6 +1339,8 @@ sub go {
         user_id   => $USER->id,
         db_object => $coge
     );
+
+    CoGe::Accessory::Web::schedule_job(job => $job);
 
     my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
     my $workflow_id = "synmap-$tiny_id";
@@ -2333,7 +2338,7 @@ sub get_results {
         tiny_link => $tiny_link,
         title     => $PAGE_TITLE,
         user_id   => $USER->id,
-        db_object => $coge
+        db_object => $coge,
     );
 
     my $basename = $opts{basename};
@@ -2347,7 +2352,8 @@ sub get_results {
             if ( $job->status != 2 ) {
                 $job->update(
                     {
-                        status => 2
+                        status => 2,
+                        end_time => \"current_timestamp",
                     }
                 );
             }
@@ -2356,7 +2362,8 @@ sub get_results {
             if ( $job->status != 5 ) {
                 $job->update(
                     {
-                        status => 5
+                        status => 5,
+                        end_time => \"current_timestamp",
                     }
                 );
             }
@@ -2366,7 +2373,8 @@ sub get_results {
             if ( $job->status != 3 ) {
                 $job->update(
                     {
-                        status => 3
+                        status => 3,
+                        end_time => \"current_timestamp",
                     }
                 );
             }
@@ -2376,7 +2384,8 @@ sub get_results {
             if ( $job->status != 4 ) {
                 $job->update(
                     {
-                        status => 4
+                        status => 4,
+                        end_time => \"current_timestamp",
                     }
                 );
             }

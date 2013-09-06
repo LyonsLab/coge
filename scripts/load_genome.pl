@@ -85,8 +85,8 @@ $message     = unescape($message) if ($message);
 $source_name = unescape($source_name) if ($source_name);
 $source_desc = unescape($source_desc) if ($source_desc);
 $restricted  = '0' if ( not defined $restricted );
-$split       = 1 if ( not defined $split );
-$compress    = 0 if ( not defined $compress );
+$split       = 0 if ( not defined $split ); 	# split fasta into chr/ files (legacy method)
+$compress    = 0 if ( not defined $compress ); 	# RAZF compress the fasta file
 
 if (not $source_id and not $source_name) {
 	print $log "log: error: source not specified, use source_id or source_name\n";
@@ -139,7 +139,8 @@ my $rc = CoGe::Accessory::Storage::index_genome_file(
     compress  => $compress
 );
 if ( $rc != 0 ) {
-    print $log "log: warning: couldn't index fasta file\n";
+    print $log "log: error: couldn't index fasta file\n";
+    exit(-1) if (!$split); # need to abort if not doing legacy method
 }
 
 ################################################################################
@@ -397,7 +398,7 @@ sub process_fasta_file {
             $chr =~ s/^gi\|//;
             $chr =~ s/chromosome//i;
             $chr =~ s/^chr//i;
-            $chr =~ s/^0+// unless $chr == 0;
+            $chr =~ s/^0+// unless $chr eq '0';
             $chr =~ s/^_+//;
             $chr =~ s/\s+/ /;
             $chr =~ s/^\s//;

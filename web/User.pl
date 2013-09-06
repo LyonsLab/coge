@@ -13,6 +13,7 @@ use File::Path;
 use File::stat;
 use CoGeX;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Jex;
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
@@ -41,17 +42,18 @@ $MAX_SEARCH_RESULTS = 100;
 my $node_types = CoGeX::node_types();
 
 %ITEM_TYPE = (    # content/toc types
-    all          => 100,
-    mine         => 101,
-    shared       => 102,
-    activity     => 103,
-    trash        => 104,
-    activity_viz => 105,
-    user         => $node_types->{user},
-    group        => $node_types->{group},
-    notebook     => $node_types->{list},
-    genome       => $node_types->{genome},
-    experiment   => $node_types->{experiment}
+    all           		=> 100,
+    mine          		=> 101,
+    shared        		=> 102,
+    activity      		=> 103,
+    trash         		=> 104,
+    activity_viz  		=> 105,
+    activity_analyses	=> 106,
+    user          		=> $node_types->{user},
+    group         		=> $node_types->{group},
+    notebook      		=> $node_types->{list},
+    genome        		=> $node_types->{genome},
+    experiment    		=> $node_types->{experiment}
 );
 
 %FUNCTION = (
@@ -75,6 +77,7 @@ my $node_types = CoGeX::node_types();
     create_new_group                => \&create_new_group,
     create_new_notebook             => \&create_new_notebook,
     toggle_star                     => \&toggle_star,
+    cancel_jobs						=> \&cancel_jobs
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -427,6 +430,41 @@ sub undelete_items {
     }
 }
 
+sub cancel_jobs {
+    my %opts      = @_;
+    my $item_list = $opts{item_list};
+    my @items     = split( ',', $item_list );
+    return unless @items;
+
+	my $jex = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
+
+    foreach (@items) {
+        my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
+        next unless ( $item_id and $item_type );
+        print STDERR "cancel $item_id $item_type\n";
+        
+        my $job = $coge->resultset('Job')->find($item_id);
+	    if ( ( !$job || $job->user_id != $USER->id ) && !$USER->is_admin ) {
+	        return;
+	    }
+	    
+	    my $status = $jex->get_status( $job->id );
+	    print STDERR "job " . $job->id . " status=$status\n";
+	    if ( $status =~ /running/i ) {
+	    	my $res = $jex->terminate( $job->id );
+	    	if ( $res->status =~ /notfound/i ) {
+	        	print STDERR "job " . $job->id . " termination error\n";
+	    	}
+	    	else {
+	    		$job->update( { status => 3 } );
+	    	}
+	        return encode_json( $res );
+	    }
+    }
+
+	return 1;
+}
+
 sub get_roles {
     my $selected = shift;
 
@@ -640,7 +678,7 @@ sub get_group_dialog {
             USER_ITEM      => $uid,
             USER_FULL_NAME => $user->display_name,
             USER_NAME      => $user->name,
-            USER_ROLE      => ($role_name ? $role_name : $roles{$uid}->name),
+            USER_ROLE      => ($role_name ? ' - ' . $role_name : ''),#$roles{$uid}->name),
             USER_DELETE    => !$owners{$uid} # owner can't be removed
         };
     }
@@ -1129,6 +1167,10 @@ sub get_toc {    # table of contents
 	        TOC_ITEM_INFO     => 'Activity',
 	        TOC_ITEM_CHILDREN => 1
 	    },
+	    {   TOC_ITEM_ID     => $ITEM_TYPE{activity_analyses},
+	        TOC_ITEM_INFO   => 'Analyses',
+	        TOC_ITEM_INDENT => 20
+	    },
     	{   TOC_ITEM_ID     => $ITEM_TYPE{activity_viz},
 	        TOC_ITEM_INFO   => 'Graph',
 	        TOC_ITEM_INDENT => 20
@@ -1173,17 +1215,16 @@ sub get_contents {
       map { $_->id => $_->name } $coge->resultset('DataSource')->all();
 
     # Get all items for this user (genomes, experiments, notebooks)
-    my $t1    = new Benchmark;
+    #my $t1    = new Benchmark;
     my ( $children, $roles ) = $USER->children_by_type_role_id;
-    my $t2    = new Benchmark;
-    my $time = timestr( timediff( $t2, $t1 ) );
-    print STDERR "User.pl: Number of children\n";
-    foreach my $k (sort keys %$children)
-      {
-	print STDERR $k,"\t", scalar values $children->{$k},"\n";
-      }
-#    $children={};
-    print STDERR "Time to run user->children_by_type_role_id: $time\n";
+    #my $t2    = new Benchmark;
+    #my $time = timestr( timediff( $t2, $t1 ) );
+    #print STDERR "User.pl: Number of children\n";
+    #foreach my $k (sort keys %$children) {
+	#	print STDERR $k,"\t", scalar values $children->{$k},"\n";
+    #}
+    #$children={};
+    #print STDERR "Time to run user->children_by_type_role_id: $time\n";
     #print STDERR "get_contents: time1=" . ((time - $start_time)*1000) . "\n";
 
 	if (   $type == $ITEM_TYPE{all} 
@@ -1302,20 +1343,43 @@ sub get_contents {
               };
         }
     }
-    my $t3    = new Benchmark;
-    $time = timestr( timediff( $t3, $t2 ) );
-    print STDERR "Time to populate html::tmpl: $time\n";
+    
+    if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity_analyses} ) {
+        foreach my $entry (
+            $USER->jobs(
+                {},
+                {
+                	join => 'log',
+                	prefetch => 'log',
+                	order_by => { -desc => 'start_time' } 
+                }
+            )
+          )
+        {
+            push @rows,
+              {
+                CONTENTS_ITEM_ID   => $entry->id,
+                CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_analyses},
+                CONTENTS_ITEM_INFO => $entry->info_html,
+                CONTENTS_ITEM_LINK => $entry->link,
+                CONTENTS_ITEM_SELECTABLE => 1
+              };
+        }
+    }
+    
+    #my $t3    = new Benchmark;
+    #$time = timestr( timediff( $t3, $t2 ) );
+    #print STDERR "Time to populate html::tmpl: $time\n";
     #print STDERR "get_contents: time5=" . ((time - $start_time)*1000) . "\n";
+    
     if ($html_only) {    # only do this for initial page load, not polling
         my $user_id = $USER->id;
-        my $jobs =
-'cogeblast/synmap/gevo/synfind/loadgenome/loadexperiment/organismview/user';
+        my $job_list = 'cogeblast/synmap/gevo/synfind/loadgenome/loadexperiment/organismview/user';
         push @rows,
           {
             CONTENTS_ITEM_ID   => 0,
             CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_viz},
-            CONTENTS_ITEM_INFO =>
-qq{<iframe frameborder="0" width="100%" height="100%" scrolling="no" src="http://geco.iplantcollaborative.org/blacktea/standalone/$user_id/$jobs"></iframe>}
+            CONTENTS_ITEM_INFO => qq{<iframe frameborder="0" width="100%" height="100%" scrolling="no" src="http://geco.iplantcollaborative.org/blacktea/standalone/$user_id/$job_list"></iframe>}
           };
     }
 
