@@ -129,6 +129,8 @@ foreach my $image ($coge->resultset('Image')->all) {
 
 print STDERR "Verifying genomes --------------------------------------------\n";
 foreach my $genome ($coge->resultset('Genome')->all) {
+	next if ($genome->deleted);
+	
 	unless ($genome->list_connectors or $genome->user_connectors or $genome->group_connectors) {
 		print STDERR "Genome ".$genome->id." is orphaned\n";
 		next;
