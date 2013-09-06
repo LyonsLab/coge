@@ -749,10 +749,10 @@ sub blast_search {
           [ [ '', '--adjustment=10', 1 ], [ '', $BLAST_PROGS->{$program}, 0 ],
           ];
 
-        if ( $program eq "lastz" ) {
-            my $tmp;
-            ( $tmp, $opts ) = CoGe::Accessory::Web::check_taint($opts);
+        my $inputs = [ $fasta_file ];
 
+        if ( $program eq "lastz" ) {
+            push @$args, [ '',  $fasta_file, 1 ];
             push @$args, [ '', "W=" . $zwordsize,  1 ] if defined $zwordsize;
             push @$args, [ '', "C=" . $zchaining,  1 ] if defined $zchaining;
             push @$args, [ '', "K=" . $zthreshold, 1 ] if defined $zthreshold;
@@ -760,18 +760,18 @@ sub blast_search {
             push @$args, [ '', "O=" . $zgap_start, 1 ] if defined $zgap_start;
             push @$args, [ '', "E=" . $zgap_extension, 1 ]
               if defined $zgap_extension;
-            push @$args, [ '',  $fasta_file, 1 ];
-            push @$args, [ '',  $dsgid,      1 ];
-            push @$args, [ '',  $opts,       1 ];
+            push @$args, [ '',  $dbfasta,    1 ];
             push @$args, [ '>', $outfile,    1 ];
+
+            push @$inputs, $dbfasta;
         }
         else {
             my ( $nuc_penalty, $nuc_reward, $exist, $extent );
-            if ( $gapcost =~ /^(\d+)\s+(\d+)/ ) {
+            if ( $gapcost && $gapcost =~ /^(\d+)\s+(\d+)/ ) {
                 ( $exist, $extent ) = ( $1, $2 );
             }
 
-            if ( $match_score =~ /^(\d+)\,(-\d+)/ ) {
+            if ($match_score && $match_score =~ /^(\d+)\,(-\d+)/ ) {
                 ( $nuc_penalty, $nuc_reward ) = ( $2, $1 );
             }
 
@@ -795,6 +795,12 @@ sub blast_search {
             push @$args, [ '-evalue',    $expect,     1 ];
             push @$args, [ '-db',        $dsgid,      1 ];
             push @$args, [ '>',          $outfile,    1 ];
+
+            if ($program eq "tblastn") {
+                push @$inputs, ("$db.phr", "$db.pin", "$db.psq");
+            } else {
+                push @$inputs, ("$db.nhr", "$db.nin", "$db.nsq");
+            }
         }
 
         push @results,
@@ -805,15 +811,6 @@ sub blast_search {
             dsg      => $dsg
           };
 
-        my $inputs = [
-            $fasta_file
-        ];
-
-        if ($program eq "tblastn") {
-            push @$inputs, ("$db.phr", "$db.pin", "$db.psq");
-        } else {
-            push @$inputs, ("$db.nhr", "$db.nin", "$db.nsq");
-        }
 
         $workflow->add_job(
             cmd     => "/usr/bin/nice",
