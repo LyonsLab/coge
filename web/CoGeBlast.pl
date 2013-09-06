@@ -921,7 +921,7 @@ sub gen_results_page {
                 $chr =~ s/\s+$//;
                 my ($ds) = $dsg->datasets( chr => $chr );
                 my ($org) = $set->{organism};
-                next unless $dsg && defined $chr;
+                next unless $dsg && defined $chr && $ds;
                 $hsp_count{$org}++;
                 last if ( $hsp_count{$org} > $resultslimit );
                 my $tt1 = new Benchmark;
