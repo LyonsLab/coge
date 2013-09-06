@@ -10,7 +10,7 @@ use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Utils qw( commify );
 
 use vars qw($staging_dir $install_dir $data_file
-  $name $description $version $restricted
+  $name $description $version $restricted $ignore_missing_chr
   $gid $source_name $user_name $config
   $host $port $db $user $pass $P);
 
@@ -35,6 +35,9 @@ GetOptions(
     "gid=s"         => \$gid,            # genome id
     "source_name=s" => \$source_name,    # data source name (JS escaped)
     "user_name=s"   => \$user_name,      # user name
+    
+    # Flags
+    "ignore-missing-chr=i" => \$ignore_missing_chr,
 
     # Database params
     "host|h=s"      => \$host,
@@ -140,23 +143,24 @@ my ($filename) = $data_file =~ /^.+\/([^\/]+)$/;
 print $log "log: Successfully read " . commify($count) . " lines\n";
 
 # Verify that chromosome names in input file match those for genome
-
 foreach ( sort keys %genome_chr ) {
     print $log "genome chromosome $_\n";
 }
 foreach ( sort keys %$pChromosomes ) {
     print $log "input chromosome $_\n";
 }
-my $error = 0;
-foreach ( sort keys %$pChromosomes ) {
-    if ( not defined $genome_chr{$_} ) {
-        print $log "log: chromosome '$_' not found in genome\n";
-        $error++;
-    }
-}
-if ($error) {
-    print $log "log: error: input chromosome names don't match genome\n";
-    exit(-1);
+if (not $ignore_missing_chr) {
+	my $error = 0;
+	foreach ( sort keys %$pChromosomes ) {
+	    if ( not defined $genome_chr{$_} ) {
+	        print $log "log: chromosome '$_' not found in genome\n";
+	        $error++;
+	    }
+	}
+	if ($error) {
+	    print $log "log: error: input chromosome names don't match genome\n";
+	    exit(-1);
+	}
 }
 
 # Copy input file to staging area and generate fastbit database/index
@@ -239,9 +243,9 @@ if ( -e $storage_path ) {
     exit(-1);
 }
 
-print $log "experiment id: "
-  . $experiment->id
-  . "\n";    # don't change, gets parsed by calling code
+# Don't change, gets parsed by calling code
+print $log "experiment id: " . $experiment->id . "\n";
+print "experiment id: " . $experiment->id . "\n";
 
 #TODO create experiment type & connector
 
@@ -392,7 +396,7 @@ sub validate_quant_data_file {
         $chr =~ s/^lcl\|//;
         $chr =~ s/chromosome//i;
         $chr =~ s/^chr//i;
-        $chr =~ s/^0+// unless $chr == 0;
+        $chr =~ s/^0+// unless $chr eq '0';
         $chr =~ s/^_+//;
         $chr =~ s/\s+/ /;
         $chr =~ s/^\s//;

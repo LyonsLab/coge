@@ -9,9 +9,9 @@
 </style>
 
 <SCRIPT type="text/javascript">
-$(document).ready(function(){
-	timestamps = new Array();
+var timestamps = new Array();
 
+$(document).ready(function(){
 	$.ajaxSetup({
 		type: "GET",
 		url: '<TMPL_VAR NAME='PAGE_NAME'>',
@@ -222,7 +222,14 @@ function load_genome() {
 	var restricted = $('#restricted').is(':checked');
 	var json = JSON.stringify(items);
 	
+	// Prevent concurrent executions - issue 101
+	if ( $("#load_dialog").dialog( "isOpen" ) )
+		return;
+	$('#load_dialog').dialog('open');
+	
+	// Open status dialog right away - issue 101
 	reset_log();
+	$('#load_genome_log').html('Initializing ...');
 	
 	$.ajax({
 		data: {
@@ -245,10 +252,10 @@ function load_genome() {
 			// Add load_id to browser URL
 			//window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?load_id=<TMPL_VAR NAME='LOAD_ID'>");
 			
-			// Open status dialog
-			$('#load_dialog').dialog('open'); 
+			// Start status update
 			setTimeout(function() { get_load_log(); }, 1000);
 		}
+		// TODO: handle error, show in status dialog
 	});
 }
 

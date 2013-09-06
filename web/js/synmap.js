@@ -57,6 +57,7 @@ function populate_page_obj(basefile) {
     pageObj.nolog = 0;
     pageObj.waittime = 1000;
     pageObj.runtime = 0;
+    pageObj.fetch_error = 0;
     pageObj.error = 0;
     pageObj.engine = "<span class=\"alert\">The job engine has failed.</span><br>Please use the link below to use the previous version of SynMap.";
 }
@@ -647,12 +648,14 @@ function update_dialog(request, identifier, formatter, args) {
                 }
             },
             error: function(data) {
-                if (pageObj.error > 3) {
+                if (pageObj.fetch_error >= 3) {
                     dialog.find('#progress').hide();
                     dialog.find('#dialog_error').slideDown();
                 } else {
-                    fetch_results();
-                    pageObj.error += 1;
+                    pageObj.fetch_error += 1;
+                    console.log("error");
+                    var callback = function() {fetch_results(completed)};
+                    setTimeout(callback, 100);
                 }
             }
         });
