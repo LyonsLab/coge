@@ -133,6 +133,10 @@ foreach my $genome ($coge->resultset('Genome')->all) {
 		print STDERR "Genome ".$genome->id." is orphaned\n";
 		next;
 	}
+	unless ($genome->file_path) {
+		print STDERR "Genome ".$genome->id." is missing sequence file\n";
+		next;
+	}
 	my @datasets;
 	foreach ($genome->dataset_connectors) {
 		unless ($_->dataset) {
