@@ -222,15 +222,13 @@ function load_genome() {
 	var restricted = $('#restricted').is(':checked');
 	var json = JSON.stringify(items);
 	
-	// Prevent concurrent executions
-	if ( $("#load_dialog").dialog( "isOpen" ) ) {
-		console.log('load_genome');
+	// Prevent concurrent executions - issue 101
+	if ( $("#load_dialog").dialog( "isOpen" ) )
 		return;
-	}
-	
-	// Reset and open status dialog right away - issue 101
-	reset_log();
 	$('#load_dialog').dialog('open');
+	
+	// Open status dialog right away - issue 101
+	reset_log();
 	$('#load_genome_log').html('Initializing ...');
 	
 	$.ajax({
