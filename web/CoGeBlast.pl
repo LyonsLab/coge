@@ -714,6 +714,7 @@ sub blast_search {
     foreach my $dsgid (@dsg_ids) {
         my ( $org, $dbfasta, $dsg ) = get_blast_db($dsgid);
         next unless $dbfasta;
+        next unless -s $fasta_file;
 
         my $name = $dsg->organism->name;
         my $args = [
