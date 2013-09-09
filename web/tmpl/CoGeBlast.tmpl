@@ -20,7 +20,7 @@ $(document).ready(function(){
 	else{
 		seqObj = new Object();
 	}
-  
+
 	get_seq('coge_radio');
 	pageObj.waittime=1000;
 	pageObj.tempdir="<TMPL_VAR NAME=TEMPDIR>";
@@ -35,7 +35,7 @@ $(document).ready(function(){
 			blastOff();
 		}
 	);
-	
+
 	blast_param_on_select('coge_radio','coge');
 	blast_param(); //blast_param([],[animate_params]);
 	database_param(); //database_param([],['database']);
@@ -106,7 +106,7 @@ function update_info_box(featid) {
 			$('#feature_info_popup').html(data);
 			$('#feature_info_popup').dialog('open');
 		},
-	});	
+	});
 }
 
 function update_hsp_info (featid) {
@@ -156,7 +156,7 @@ function fill_nearby_feats(id_array) { // mdb rewritten 3/8/13 issue 47
 				setTimeout(
 					function() {
 						fill_nearby_feats(id_array);
-					}, 
+					},
 					0
 				);
 			}
@@ -167,7 +167,7 @@ function fill_nearby_feats(id_array) { // mdb rewritten 3/8/13 issue 47
 		init_table_opts();
 		//$("#hsp_result_table").trigger("update");
 	}
-} 
+}
 
 function click_all_feat_links() { // mdb rewritten 3/8/13 issue 47
 	var link_array = pageObj.featlinks.split(',');
@@ -183,7 +183,7 @@ function click_all_feat_links() { // mdb rewritten 3/8/13 issue 47
 
 	fill_nearby_feats(id_array);
 }
- 
+
 function update_checkbox(name, dist, hspid, id){
 	$('#feat'+hspid).html(name);
 	$('#dist'+hspid).html(dist);
@@ -222,7 +222,7 @@ function overlap_checkboxes() {
 			}
 		});
 		window.open("SeqView.pl?locations=" + locations.join(','));
-	}	
+	}
 	else if (action == "phylo"){
 		export_fasta_file(accn);
 	}
@@ -441,18 +441,18 @@ function show_seq(seq,name,num,dsid,chr,start,stop, rc) {
 	if (seqObj){
 		if (dsid == "seqObj") dsid = seqObj.dsid;
 		if (chr == "seqObj") chr = seqObj.chr;
-	} 
-	 
+	}
+
 	var html ="";
 	hmtl =  html + "<TABLE width=100%><TR><TD valign='top' align='right'>"+which_seq+" Name: </TD><TD align=justify>"+name+"</TD></TR>";
-	  
+
 	//*1 to make sure js sees integer
-	if (stop*1 > start*1) { 
+	if (stop*1 > start*1) {
 		html = html + "<TR><TD valign='top' align='right'>"+which_seq+" Position: </TD><TD align=justify><pre>"+start+"-"+stop+"</pre></TD></TR>";
 	}
-	  
+
 	html = html + "<TR><TD valign='top' align='right'>"+which_seq+" Sequence: </TD><TD align=justify>"+seq+"</TD></TR></TABLE>";
-	  
+
 	//check to see if SeqView is an option, then display link
 	var regex = /^\d+$/;
 	if (regex.test(dsid) && dsid != 0 && which_seq == "Subject") {
@@ -469,10 +469,10 @@ function get_params(){
 	var match_mismatch = $('#match_score').val();
 	var matrix = $('#matrix').val();
 	var program = $('#'+radio).val();
-	 
+
 	var gapcost;
 	if (program == "blastn" || program == 'mega' || program == 'dcmega')
-	{ 
+	{
 		var num1 = match_mismatch.substr(0,1);
 		var num2 = match_mismatch.substr(2);
 		gapcost = $('#gapcosts_'+num1+num2).val();
@@ -481,7 +481,7 @@ function get_params(){
 	{
 		gapcost = $('#gapcosts_'+matrix).val();
 	}
-	
+
 	var filter_query = 0;
 	if ($('#filter_query')[0].checked) {filter_query=1;}
 	var reslimit = $('#resultslimit').val();
@@ -492,7 +492,7 @@ function get_params(){
 	var zchaining = $('#blastz_chaining').val();
 	var zthreshold = $('#blastz_threshold').val();
 	var zmask = $('#blastz_mask').val();
-	 
+
 	var comp = $('#comp_adj').val();
 	var seq = $('#seq_box').val();
 	return {w : word_size, e : expect,g : gapcost,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq, zw : zwordsize, zgs : zgap_start, zge : zgap_extension, zc : zchaining, zt : zthreshold, zm : zmask, fq : filter_query, rl : reslimit};
@@ -512,11 +512,11 @@ function get_ncbi_params(){
 	var gapcost = $('#ncbi_gapcosts_'+num1+num2).val();
 	var job_title = $('#job_title').val();
 	var program = $('#'+radio).val();
-	
+
 	var matrix = $('#ncbi_matrix').val();
 	var comp = $('#ncbi_comp_adj').val();
 	var seq = $('#seq_box').val();
-	 
+
 	return {w : word_size, e : expect, db : db,g : gapcost,j : job_title,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq};
 }
 
@@ -542,14 +542,14 @@ function blastOff() {
 		$('#coge_blast').toggle();
 		return;
 	}
-	
+
 	var params = get_params();
-	  
+
 	$('#blast_results').slideUp();
 	$('#log_text').html('').slideDown();
 	pageObj.nolog=1;
 	setTimeout("monitor_log()", 1000);
-	
+
 	program = params.p;
 	expect = params.e;
 	job_title = params.j;
@@ -558,11 +558,12 @@ function blastOff() {
 	matrix = params.m
 	match_score = params.mm;
 	gapcost = params.g;
-	seq = params.s;
-	seq = seq.replace(/__/g,/_/);
+    seq = params.s;
+    seq = seq.replace(/__/g,/_/);
+
 	filter_query = params.fq;
 	resultslimit = params.rl;
-	
+
 	//blastz params
 	var zwordsize = params.zw;
 	var zgap_start = params.zgs;
@@ -570,7 +571,7 @@ function blastOff() {
 	var zchaining = params.zc;
 	var zthreshold = params.zt;
 	var zmask = params.zm;
-	
+
 	var page_width = ($('#co').width())*(95/100);
 	pageObj.image_width = page_width;
 	var blastable_db = $('#genome_choice').getLength(1);
@@ -630,7 +631,7 @@ function blastOff() {
 			blastable:		blastable_db,
 			fid:			'<TMPL_VAR NAME='FEATID'>',
 			width:			page_width,
-			color_hsps:		$('#color_by').val(),			
+			color_hsps:		$('#color_by').val(),
 		},
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
@@ -638,7 +639,7 @@ function blastOff() {
 		},
 	});
 }
- 
+
 function blastresults(html, click_all_links){
 	$('#log_text').slideUp();
 	pageObj.featlinks = click_all_links;
@@ -667,7 +668,7 @@ function init_table () {
 	});
 
 	$(function(){
-		$("#hsp_result_table").tablesorter({		
+		$("#hsp_result_table").tablesorter({
 			//sortColumn: 'HSP#',				// Integer or String of the name of the column to sort by.
 			sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 			sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
@@ -678,7 +679,7 @@ function init_table () {
 			          7: {sorter: 'percent'},
 			          9: {sorter: 'percent'},
 			          11: {sorter: 'percent'}
-			},					
+			},
 			//sortList: [[2,0],[5,0]], // mdb removed 3/8/13 - misleading if column 2 or 5 is hidden
 		});
 	});
@@ -686,12 +687,12 @@ function init_table () {
 
 //Need to instantiate this seperately from other dialog boxes, need to do this AFTER results are generated
 function init_table_opts() {
-	//substaniate dialog box	     
+	//substaniate dialog box
 	$("#table_opts_dialog").dialog({ height: 240,
 							width: 746,
 							autoOpen: false,
 	});
-	
+
 	//button effects on events
 	$('#table_opts').click(function() {
 		$('#table_opts_dialog').dialog('open');
@@ -713,7 +714,7 @@ function ncbi_blast(url) {
 		comp = params.c;
 		matrix = params.m
 		match_score = params.mm;
-		 
+
 		url = url+'&DATABASE='+db+'&EXPECT='+expect+'&QUERY='+seq+'&JOB_TITLE='+job_title+'&WORD_SIZE='+word_size;
 
 		if (program == 'blastn') {
@@ -833,7 +834,7 @@ function select_blast() {
 		success : function(data) {
 			ncbi_blast(data);
 		},
-	});	
+	});
 }
 
 function get_radio(which_type,val){
@@ -907,10 +908,10 @@ function blast_param_on_select(which_type, val) {
 	radio = get_radio(which_type, val);
 	program = $('#'+radio).val();
 	database_param(program); //database_param([radio], ['database']);
-	 
+
 	$('#blast_parameters').hide();
 	$('#blastz_parameters').hide();
-	
+
 	if (program == 'lastz') {
 		$('#blastz_parameters').toggle();
 	}
@@ -947,20 +948,14 @@ function animate_params (html,version,pro){
 	}
 }
 
-function clear_if_no_seq(){
-	if($('#seq_box').val() == "Enter FASTA sequence(s) here") {
-		$('#seq_box').html('');
-	}
-}
-
 function org_search(desc_search){
 	if (pageObj.time) {
 		clearTimeout(pageObj.time);
 	}
-	
+
 	name_desc = $('#org_name_desc').val();
 	if (name_desc.length < 3) { return; } //>
-	
+
 	pageObj.time = setTimeout(
 		function() {
 			$("#wait_indicator").css({opacity:1});
@@ -983,7 +978,7 @@ function org_search(desc_search){
 					}
 				}
 			});
-		}, 
+		},
 		500
 	);
 }
@@ -1022,17 +1017,17 @@ function monitor_log(log)
   pageObj.finished = 0;
   if (log) {
   /*
- 
+
    if (log.match(/Finished!/))
     {
      database = database+"done!\n";
      pageObj.finished = 1;
     }
-   
+
    match=log.match(/fasta/i);
   if (match && match[0])
-   { 
-     match.reverse();  
+   {
+     match.reverse();
      sequence = "Generating "+match[0]+". . .";
    }
    match=log.match(/running\s+(\(.*?\))/g);
@@ -1043,7 +1038,7 @@ function monitor_log(log)
      if (!val) val = "";
      algo = "Alignment algorithm "+val+". . .";
    }
-  
+
    match=log.match(/image\s+(\(.*?\))/g);
    if (match && match[0]) {
      algo = algo+"done!<br/>";
@@ -1056,7 +1051,7 @@ function monitor_log(log)
      image = image+"done!<br/>";
      database = "Generating annotation database. . .";
    }
-  } 
+  }
   */
   //match=log.match(/\*\s+fasta\sfile/);
   if(log.match(/\*\s+fasta\sfile/i))
@@ -1073,7 +1068,7 @@ function monitor_log(log)
   		}
   	}
   }
-  
+
     if(log.match(/running/i))
   {
   	fasta += "Blastable databases generation done!<br/>";
@@ -1083,7 +1078,7 @@ function monitor_log(log)
 	    blast_program = log.match(/(lastz)/);
 	  }
   	blast="Running blast algorithm . . . <br/>";
-  	
+
   	match=log.match(/\*(.+)\*\sblast\sanalysis\scomplete/g);
   	if(match)
   	{
@@ -1095,7 +1090,7 @@ function monitor_log(log)
   		}
   	}
   }
-  
+
   if(log.match(/Results/i)) {
   	blast += "Analysis complete!<br/>";
   	results = "Collating results. . . ";
@@ -1103,20 +1098,20 @@ function monitor_log(log)
   if (log.match(/Finished/i)) {
     results += "done!<br/>";
     done = "Displaying results.  This may take your browser some time to process the HSP table.  Please be patient."
-     
+
     pageObj.finished = 1;
    }
-    
+
   }
-  
+
   else {pageObj.nolog += 1;}
   var message = "Initializing search . . . ";
-  
+
   if (fasta) message += "done!<br/>"+fasta;
   if (blast) message += blast;
   if (results) message = results;
   if (done) message += done;
-  
+
   if (!pageObj.finished && pageObj.nolog<8) //>
   {
     var waittime = pageObj.waittime;
@@ -1187,21 +1182,21 @@ function save_display_settings() {
 		success: function() {
 			$('#table_opts_dialog').dialog('close');
 		}
-	});	
+	});
 }
 
 function wait_to_search (search_func, search_term) {
 	if (!search_term || search_term.length > 2) {
 		pageObj.search_term = search_term;
-			
+
 		if (pageObj.time) {
 			clearTimeout(pageObj.time);
 		}
-		
+
 		pageObj.time = setTimeout(
-			function() { 
+			function() {
 				search_func(pageObj.search_term);
-			}, 
+			},
 			500
 		);
 	}
@@ -1209,7 +1204,7 @@ function wait_to_search (search_func, search_term) {
 
 function toggle_display(button_obj, target_id) {
 	var label = $(button_obj).html();
-	
+
 	if (label == 'hide') {
 		$(button_obj).html('show');
 		$('#'+target_id).slideUp('fast');
@@ -1223,7 +1218,7 @@ function toggle_display(button_obj, target_id) {
 function toggle_title(id, full, partial) {
 	var obj = $('#'+id);
 	var label = $(obj).html();
-	
+
 	if (label == full) {
 		$(obj).html(partial);
 	}
@@ -1264,16 +1259,16 @@ function toggle_title(id, full, partial) {
     <br>
     <span class='ui-button ui-corner-all' onclick="save_display_settings()">Save Display Settings</span>
   </div> <!-- table_opts_dialog -->
-  
+
   <div id="big_picture" title="Enlarged Image of HSP Hits" class="dialog_box hidden"></div>
-  
+
   <div id="sequence_popup" class="dialog_box hidden" title="Sequence Information"></div>
-  
-  
+
+
   <div id="feature_info_popup" class="dialog_box hidden" title="Feature Information">
     <span class="loading">Loading...</span>
   </div>
-  
+
   <div id='result_visual_popup' class="dialog_box hidden" title="HSP Information">
     <div id="query_image" class="hsp_image"></div>
     <div id="subject_image" class="hsp_image"></div>
@@ -1281,20 +1276,20 @@ function toggle_title(id, full, partial) {
       <TMPL_VAR NAME="HSP">
     </div>
   </div>
-  
+
   <div id='tabs' class="hidden" style='margin-top: 0.5em'>
     <ul>
       <li class='small'><a href="#tab-1" onclick="adjust_blast_types()">CoGe Blast</a></li>
       <li class='small'><a href="#tab-2" onclick="adjust_blast_types(1)">NCBI Blast</a></li>
     </ul>
     <div id="tab-1">
-      <TMPL_INCLUDE NAME='CoGeBlast_coge.tmpl'> 
+      <TMPL_INCLUDE NAME='CoGeBlast_coge.tmpl'>
     </div>
     <div id="tab-2">
       <TMPL_INCLUDE NAME='CoGeBlast_ncbi.tmpl'>
     </div>
   </div> <!-- tabs -->
-  
+
   <table class="ui-corner-all ui-widget-content">
     <thead align="left">
       <th style="text-align:left;font-size:1em;"><b>Query Sequence(s)</b></th>
@@ -1302,7 +1297,8 @@ function toggle_title(id, full, partial) {
     <tbody>
       <tr align="left" valign="top">
         <td>
-          <textarea id="seq_box" name="seq_box" onfocus="clear_if_no_seq();" style='color:gray;' class="ui-corner-all ui-widget-content" spellcheck='false' wrap="off" cols="80" rows="15"><TMPL_VAR NAME="SEQUENCE"></textarea>
+          <textarea id="seq_box" name="seq_box" style='color:gray;' class="ui-corner-all ui-widget-content" spellcheck='false' wrap="off" cols="80"
+          placeholder="<TMPL_VAR NAME="SEQUENCE">" rows="15"></textarea>
         </td>
       </tr>
     </tbody>
@@ -1536,7 +1532,7 @@ function toggle_title(id, full, partial) {
                 <div id="feat<TMPL_VAR NAME=ID>">
                   <TMPL_VAR NAME=HSP_LINK>
                 </div>
-              </td>  
+              </td>
               <td>
                 <div id="dist<TMPL_VAR NAME=ID>">-</div>
               </td>
@@ -1581,7 +1577,7 @@ function toggle_title(id, full, partial) {
 
 
 
-<TMPL_IF NAME="HSP_IF"> 
+<TMPL_IF NAME="HSP_IF">
   <span class="species">HSP Number <TMPL_VAR NAME="HSP_NUM"> Information:</span>
   <br>
   <TABLE id="hsp_table" class="ui-widget-content ui-corner-all" style="width: 400px; overflow: auto;" cellspacing="2">
