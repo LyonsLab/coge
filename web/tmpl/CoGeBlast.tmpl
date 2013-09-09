@@ -545,11 +545,6 @@ function blastOff() {
 
 	var params = get_params();
 
-	$('#blast_results').slideUp();
-	$('#log_text').html('').slideDown();
-	pageObj.nolog=1;
-	setTimeout("monitor_log()", 1000);
-
 	program = params.p;
 	expect = params.e;
 	job_title = params.j;
@@ -560,6 +555,16 @@ function blastOff() {
 	gapcost = params.g;
     seq = params.s;
     seq = seq.replace(/__/g,/_/);
+
+    if (!seq.length) {
+        alert('You have not specified a query sequence to blast.');
+        return;
+    }
+
+	$('#blast_results').slideUp();
+	$('#log_text').html('').slideDown();
+	pageObj.nolog=1;
+	setTimeout("monitor_log()", 1000);
 
 	filter_query = params.fq;
 	resultslimit = params.rl;
