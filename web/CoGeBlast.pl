@@ -722,18 +722,12 @@ sub blast_search {
             ['-n', $dsgid, 1],
         ];
 
-        push @$args, ['-p', 'F', 1] unless $program eq "tblastn";
+        push @$args, ['-p', 'F', 1];
 
         my $dbpath = File::Spec->catdir(($BLASTDBDIR, $dsgid));
         mkpath($dbpath, 1, 0775);
         my $db = File::Spec->catdir(($dbpath, $dsgid));
-        my $outputs;
-
-        if ($program eq "tblastn") {
-            $outputs = ["$db.phr", "$db.pin", "$db.psq"];
-        } else {
-            $outputs = ["$db.nhr", "$db.nin", "$db.nsq"];
-        }
+        my $outputs = ["$db.nhr", "$db.nin", "$db.nsq"];
 
         $workflow->add_job(
             cmd     => $FORMATDB,
@@ -746,9 +740,10 @@ sub blast_search {
         my $outfile = $cogeweb->basefile . "-$count.$program";
 
         my $cmd = $BLAST_PROGS->{$program};
-        $args =
-          [ [ '', '--adjustment=10', 1 ], [ '', $BLAST_PROGS->{$program}, 0 ],
-          ];
+        $args = [
+            [ '', '--adjustment=10', 1 ],
+            [ '', $BLAST_PROGS->{$program}, 0 ],
+        ];
 
         my $inputs = [ $fasta_file ];
 
@@ -776,11 +771,6 @@ sub blast_search {
                 ( $nuc_penalty, $nuc_reward ) = ( $2, $1 );
             }
 
-            $args = [
-                [ '', '--adjustment=10',        1 ],
-                [ '', $BLAST_PROGS->{$program}, 0 ],
-            ];
-
             push @$args, [ "-comp_based_stats", 1, 1 ] if $program eq "tblastn";
             push @$args, [ '-matrix', $matrix, 1 ] if $program =~ /tblast/i;
             push @$args, [ '-penalty', $nuc_penalty, 1 ]
@@ -797,11 +787,7 @@ sub blast_search {
             push @$args, [ '-db',        $dsgid,      1 ];
             push @$args, [ '>',          $outfile,    1 ];
 
-            if ($program eq "tblastn") {
-                push @$inputs, ("$db.phr", "$db.pin", "$db.psq");
-            } else {
-                push @$inputs, ("$db.nhr", "$db.nin", "$db.nsq");
-            }
+            push @$inputs, ("$db.nhr", "$db.nin", "$db.nsq");
         }
 
         push @results,
