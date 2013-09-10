@@ -659,7 +659,7 @@ sub blast_search {
     my @dsg_ids = split( /,/, $blastable );
 
     my $list_link =
-        "<a href='GenomeList.pl?dsgid=$blastable' target='_blank'>" 
+        "<a href='GenomeList.pl?dsgid=$blastable' target='_blank'>"
       . @dsg_ids
       . ' genome'
       . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
@@ -934,7 +934,7 @@ qq{<span class="small link" onclick="window.open('SeqView.pl?dsid=}
                   . qq{;rc=$rc')" target=_new>SeqView</span>};
                 push @hsp,
                   {
-                    CHECKBOX => $id . "_" 
+                    CHECKBOX => $id . "_"
                       . $chr . "_"
                       . $hsp->subject_start . "no",
                     ID        => $id,
@@ -955,8 +955,8 @@ qq{<span class="link" title="Click for HSP information" onclick="update_hsp_info
                     HSP_LINK      => $feat_link,
                     HSP_QUALITY   => sprintf( "%.1f", $hsp->quality ) . "%",
                     SEQVIEW       => $seqview_link,
-                    LOC_VAL       => $dsg->id . ':' 
-                      . $chr . ':' 
+                    LOC_VAL       => $dsg->id . ':'
+                      . $chr . ':'
                       . $start . ':'
                       . $stop
                   };
@@ -1330,7 +1330,7 @@ qq{<span class=small>Hits colored by Identity.  <span style="color:#AA0000">Min:
                   ->generate_png( filename => $large_image_file );
                 $image_map_large =
                   $data{$org}{image}
-                  ->generate_imagemap( mapname => $cogeweb->basefilename . "_" 
+                  ->generate_imagemap( mapname => $cogeweb->basefilename . "_"
                       . $count
                       . "_large" );
                 $map_file = $cogeweb->basefile . "_$count.$hsp_type.large.map";
@@ -2138,10 +2138,10 @@ sub get_nearby_feats {
       $coge->storage->dbh;    #DBI->connect( $connstr, $DBUSER, $DBPASS );
     my $query = qq{
 select * from (
-  (SELECT * FROM ((SELECT * FROM feature where start<=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY start DESC  LIMIT 10) 
+  (SELECT * FROM ((SELECT * FROM feature where start<=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY start DESC  LIMIT 10)
    UNION (SELECT * FROM feature where start>=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY start LIMIT 10)) as u)
   UNION
-  (SELECT * FROM ((SELECT * FROM feature where stop<=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY stop DESC  LIMIT 10) 
+  (SELECT * FROM ((SELECT * FROM feature where stop<=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY stop DESC  LIMIT 10)
    UNION (SELECT * FROM feature where stop>=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY stop LIMIT 10)) as v)
    ) as w
 order by abs((start + stop)/2 - $mid) LIMIT 10};
@@ -2195,8 +2195,8 @@ qq{<span class="link" title="Click for Feature Information" onclick=update_info_
           . $dsgid
           . "')>$name</span>";
         $new_checkbox_info =
-            $hsp_id . "_" 
-          . $chr . "_" 
+            $hsp_id . "_"
+          . $chr . "_"
           . $sstart . "no,"
           . $feat->id . "_"
           . $hsp_id;
@@ -2496,7 +2496,7 @@ qq{<span class=link onclick="\$('#org_desc').val('$_').focus();">$_</span>}
     my $link = $ds->data_source->link;
     $link = "http://" . $link unless $link =~ /^http/;
     $html .=
-        "<tr valign='top'><td>Source:<td><a class = 'link' href=" 
+        "<tr valign='top'><td>Source:<td><a class = 'link' href="
       . $link
       . " target=_new>"
       . $ds->data_source->name . "</a>"
@@ -2613,8 +2613,8 @@ sub export_hsp_query_fasta {
         $hsp_num = $row->{hsp_num};
         $query_seq =~ s/-//g;
         $fasta .=
-            ">HSP" 
-          . $hsp_num . "_" 
+            ">HSP"
+          . $hsp_num . "_"
           . $name
           . ", Subsequence: "
           . $qstart . "-"
@@ -2656,8 +2656,8 @@ sub export_hsp_subject_fasta {
         $subject_seq = $row->{salign};
         $subject_seq =~ s/-//g;
         $fasta .=
-            ">HSP " 
-          . $hsp_num . " " 
+            ">HSP "
+          . $hsp_num . " "
           . $org
           . ", Chromsome: "
           . $chr
@@ -2708,7 +2708,7 @@ sub export_alignment_file {
         $chr    = $row->{schr};
         $org    = $row->{org};
         $str .=
-            "HSP: " 
+            "HSP: "
           . $hsp_num
           . "\n>Query: "
           . $qname
