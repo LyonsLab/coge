@@ -1188,9 +1188,9 @@ sub run {
  <span class='ui-button ui-corner-all' id="" onclick="update_line_width(-1)">-</span>
 </div>
 };
-    $gobe_buttons .=
-qq{<td><a href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-corner-all ui-button-icon-left' onClick="save_GEvo_results()"><span class="ui-icon ui-icon-newwin"></span>Save Results</a>}
-      unless $USER->user_name eq 'public';
+    #$gobe_buttons .=
+#qq{<td><a href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-corner-all ui-button-icon-left' onClick="save_GEvo_results()"><span class="ui-icon ui-icon-newwin"></span>Save Results</a>}
+      #unless $USER->user_name eq 'public';
     $gobe_buttons .= "</table>";
     $html         .= $gobe_buttons;
     $html         .= qq{<DIV id=flashcontent></DIV>};
