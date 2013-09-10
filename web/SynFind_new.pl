@@ -168,6 +168,8 @@ sub gen_body {
       HTML::Template->new( filename => $P->{TMPLDIR} . 'SynFind.tmpl' );
     my $form = $FORM;
 
+    $template->param( BETA => 1 );
+
     #comparison algorithm
     my $algo = $FORM->param('algo') if $FORM->param('algo');
     $algo = "last" unless $algo;
@@ -909,6 +911,7 @@ sub go_synfind {
     ###########################################################################
     my $config   = $ENV{COGE_HOME} . "coge.conf";
     my $workflow = $YERBA->create_workflow(
+        id      => $job->id,
         name    => "synfind-$dsgids",
         logfile => $cogeweb->logfile
     );
@@ -1153,7 +1156,7 @@ sub go_synfind {
     }
 
     my $status = $YERBA->submit_workflow($workflow);
-    $YERBA->wait_for_completion( $workflow->name );
+    $YERBA->wait_for_completion( $workflow->id );
 
     my ( $gevo_link, $matches ) = gen_gevo_link(
         fid         => $fid,
@@ -1710,6 +1713,7 @@ sub gen_gevo_link {
         my $dbh   = DBI->connect( "dbi:SQLite:dbname=$db", "", "" );
         my $query = "SELECT * FROM  synteny where query = $fid";
         my $sth   = $dbh->prepare($query);
+        next unless $sth;
         $sth->execute();
         my $depth_count = 0;
         while ( my $data = $sth->fetchrow_arrayref ) {
