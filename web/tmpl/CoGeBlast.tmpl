@@ -1233,7 +1233,13 @@ function toggle_title(id, full, partial) {
 }
 
 </SCRIPT>
-
+<tmpl_if name="BETA">
+    <div class="small" style="padding-bottom: 5px; color: dimgray;">
+        <span class="large">Welcome to the <span class="alert">new beta version</span> of CoGeBlast.</span><br>If you experience any difficulties
+        or prefer to use the old version, please <a id="beta_link" href="CoGeBlast_old.pl">click here</a>.
+        <br>
+    </div>
+</tmpl_if>
   <div id="table_opts_dialog" class="dialog_box hidden" title="Table Information Options">
     <table id="show_columns" class="small ui-widget-content ui-corner-all" style="padding:5px;">
       <tr>
