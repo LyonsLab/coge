@@ -176,6 +176,8 @@ sub gen_body {
         LOCATIONS => $locations
     );
 
+    $template->param( BETA => 1);
+
     if ($featid) {
         $template->param( SEQVIEW => 1 );
     }
