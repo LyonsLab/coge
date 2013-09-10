@@ -636,7 +636,13 @@ function get_master(link)
 </TMPL_IF>
 
 <TMPL_IF NAME="FRONT_PAGE">
-
+<tmpl_if name="beta">
+    <div class="small" style="padding-bottom: 5px; color: dimgray;">
+        <span class="large">Welcome to the <span class="alert">new beta version</span> of SynFind.</span><br>If you experience any difficulties
+        or prefer to use the old version, please <a id="beta_link" href="SynFind_old.pl">click here</a>.
+        <br>
+    </div>
+</tmpl_if>
 
 <br>
   <span id="run_synfind_button" style="font-size: 1em" class='ui-button ui-button-go ui-corner-all'>Run SynFind</span><BR><br>

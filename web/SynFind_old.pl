@@ -28,7 +28,7 @@ use vars
   $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $coge
   $cogeweb $RESULTSLIMIT $MAX_PROC $SERVER);
 
-$PAGE_TITLE = 'SynFind';
+$PAGE_TITLE = 'SynFind_old';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
 $FORM = new CGI;
