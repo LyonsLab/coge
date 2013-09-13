@@ -36,7 +36,7 @@ use List::Util qw[min max];
 use Data::Dumper;
 
 BEGIN {
-    use vars qw ($VERSION @ISA @EXPORT $DATA_TYPE_QUANT $DATA_TYPE_VCF);
+    use vars qw ($VERSION @ISA @EXPORT $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN);
     require Exporter;
 
     $VERSION = 0.1;
@@ -46,9 +46,10 @@ BEGIN {
       get_experiment_path get_experiment_data
       reverse_complement);
 
-	# FIXME: these are dup'ed in scripts/load_experiment.pl
-	$DATA_TYPE_QUANT = 1;
-	$DATA_TYPE_VCF   = 2;
+	# Experiment Data Types
+	$DATA_TYPE_QUANT = 1;	# Quantitative data
+	$DATA_TYPE_POLY	 = 2;	# Polymorphism data
+	$DATA_TYPE_ALIGN = 3;	# Alignments
 }
 
 ################################################ subroutine header begin ##
@@ -309,16 +310,26 @@ sub get_experiment_data {
     my $start = $opts{start};
     my $stop  = $opts{stop};
     $stop = $opts{end} if ( not defined $stop );
-
-    my $cmdpath      = CoGe::Accessory::Web::get_defaults()->{FASTBIT_QUERY};
+    
     my $storage_path = get_experiment_path($eid);
     my $cmd;
     
-    if ($data_type && $data_type == $DATA_TYPE_VCF) {
-    	$cmd = "$cmdpath -v 1 -d $storage_path -q \"select chr,start,stop,type,id,ref,alt,qual,info where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
+    if (!$data_type || $data_type == $DATA_TYPE_QUANT || $data_type == $DATA_TYPE_POLY ) {
+    	my $cmdpath = CoGe::Accessory::Web::get_defaults()->{FASTBIT_QUERY};
+    	if ($data_type == $DATA_TYPE_POLY) {
+    		$cmd = "$cmdpath -v 1 -d $storage_path -q \"select chr,start,stop,type,id,ref,alt,qual,info where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
+    	}
+    	else { #DATA_TYPE_QUANT
+    		$cmd = "$cmdpath -v 1 -d $storage_path -q \"select chr,start,stop,strand,value1,value2 where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
+    	}
     }
-    else { # default is $DATA_TYPE_QUANT
-        $cmd = "$cmdpath -v 1 -d $storage_path -q \"select chr,start,stop,strand,value1,value2 where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
+    elsif ( $data_type == $DATA_TYPE_ALIGN ) {
+    	my $cmdpath = CoGe::Accessory::Web::get_defaults()->{SAMTOOLS};
+    	$cmd = "$cmdpath view $storage_path/alignment.bam $chr:$start-$stop 2>&1";
+    }
+    else {
+    	print STDERR "Storage::get_experiment_data: unknown data type\n";	
+    	return;
     }
     
     #print STDERR "$cmd\n";
@@ -326,8 +337,7 @@ sub get_experiment_data {
     #print STDERR @cmdOut;
     my $cmdStatus = $?;
     if ( $? != 0 ) {
-        print STDERR
-          "Storage::get_experiment_data: error $? executing command: $cmd\n";
+        print STDERR "Storage::get_experiment_data: error $? executing command: $cmd\n";
         return;
     }
 
