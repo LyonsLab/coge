@@ -434,6 +434,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 								        track.changed();
 								    }
 								},
+								/*
 	                    	    { 	label: 'Difference',
 		                    	    type: 'dijit/CheckedMenuItem',
 		      	                    checked: config.transformDifference || false,
@@ -458,6 +459,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 		                    			track.changed();
 		                    		}
 	                    	    }
+	                    	    */
 	                    	]
 	                    }
 	                ]
