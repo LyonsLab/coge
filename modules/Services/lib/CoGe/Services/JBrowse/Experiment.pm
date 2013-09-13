@@ -6,11 +6,18 @@ use CoGe::Accessory::Web;
 use CoGe::Accessory::Storage qw( get_experiment_data );
 use JSON::XS;
 
+#TODO: use these from Storage.pm instead of redeclaring them
+my $DATA_TYPE_QUANT = 1;	# Quantitative data
+my $DATA_TYPE_POLY	= 2;	# Polymorphism data
+my $DATA_TYPE_ALIGN = 3;	# Alignments
+
 my $NUM_QUANT_COL   = 6;
 my $NUM_VCF_COL     = 9;
 my $MAX_EXPERIMENTS = 20;
 #my $MAX_RESULTS = 150000;
 my $MAX_WINDOW_SIZE = 500000;
+
+my $QUAL_ENCODING_OFFSET = 33;
 
 sub setup {
     my $self = shift;
@@ -80,17 +87,16 @@ sub stats_region {    #FIXME lots of code in common with features()
     }
     splice( @experiments, $MAX_EXPERIMENTS, @experiments );
 
-# Query range for each experiment and build up json response - #TODO could parallelize this for multiple experiments
+	# Query range for each experiment and build up json response - #TODO could parallelize this for multiple experiments
     my $results = '';
     my @bins;
     foreach my $exp (@experiments) {
         my $data_type = $exp->data_type;
 
-        if ( !$data_type or $data_type < 2 )
-        {    #FIXME hardcoded data_type to "quant"
-            next;    # skip this experiment -- is this right?
-        }
-        elsif ( $data_type == 2 ) {    #FIXME hardcoded data_type to "snp"
+		if ( !$data_type or $data_type == $DATA_TYPE_QUANT ) {
+			next;
+		}
+        elsif ( $data_type == $DATA_TYPE_POLY ) {
             my $cmdOut = CoGe::Accessory::Storage::get_experiment_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
@@ -118,6 +124,13 @@ sub stats_region {    #FIXME lots of code in common with features()
                     $bins[$b]++;
                 }
             }
+        }
+        elsif ( $data_type == $DATA_TYPE_ALIGN ) {
+        	next;
+        }
+        else {
+        	print STDERR "JBrowse::Experiment::stats_region unknown data type for experiment $eid\n";
+        	next;
         }
     }
 
@@ -192,14 +205,13 @@ sub features {
     }
     splice( @experiments, $MAX_EXPERIMENTS, @experiments );
 
-# Query range for each experiment and build up json response - #TODO could parallelize this for multiple experiments
+	# Query range for each experiment and build up json response - #TODO could parallelize this for multiple experiments
     my $results = '';
     foreach my $exp (@experiments) {
         my $eid       = $exp->id;
         my $data_type = $exp->data_type;
 
-        if ( !$data_type or $data_type < 2 )
-        {    #FIXME hardcoded data_type to "quant"
+        if ( !$data_type || $data_type == $DATA_TYPE_QUANT ) {
             my $cmdOut = CoGe::Accessory::Storage::get_experiment_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
@@ -233,7 +245,7 @@ sub features {
                 }
             }
         }
-        elsif ( $data_type == 2 ) {    #FIXME hardcoded data_type to "snp"
+        elsif ( $data_type == $DATA_TYPE_POLY ) {
             my $cmdOut = CoGe::Accessory::Storage::get_experiment_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
@@ -266,6 +278,35 @@ sub features {
                       . qq{{ "id": $eid, "name": "$name", "type": "$type", "start": $start, "end": $end, "ref": "$ref", "alt": "$alt", "score": $qual, "info": "$info" }};
                 }
             }
+        }
+        elsif ( $data_type == $DATA_TYPE_ALIGN ) {
+	        my $cmdOut = CoGe::Accessory::Storage::get_experiment_data(
+	            eid   => $eid,
+	            data_type  => $exp->data_type,
+	            chr   => $chr,
+	            start => $start,
+	            end   => $end
+	        );
+	        
+	        # Convert SAMTools output into JSON
+	        foreach (@$cmdOut) {
+	        	chomp;
+	        	my ($qname, $flag, $rname, $pos, $mapq, $cigar, undef, undef, undef, $seq, $qual, $tags) = split(/\t/);
+	        	
+	        	my $len = length($seq);
+	        	my $start = $pos;
+	        	my $end = $pos + $len;
+	        	my $strand = ($flag & 0x10 ? '-1' : '1');
+	        	#TODO reverse complement sequence if neg strand?
+	        	my $qual = join(' ', map { $_ - $QUAL_ENCODING_OFFSET } unpack("C*", $qual));
+	        	
+	        	$results .= ( $results ? ',' : '' )
+                  . qq{{ "uniqueID": "$qname", "name": "$qname", "start": $start, "end": $end, "strand": $strand, "score": $mapq, "seq": "$seq", "qual": "$qual", "Seq length": $len, "CIGAR": "$cigar" }};
+	        }
+        }
+        else {
+        	print STDERR "JBrowse::Experiment::features unknown data type $data_type for experiment $eid\n";
+        	next;
         }
     }
 
