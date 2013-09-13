@@ -247,22 +247,20 @@ sub track_config {
 
         #my $isSNP = ( $e->data_type == 2 );    #FIXME hardcoded data_type
         my ($type, $featureScale, $histScale);
-        switch( $e->data_type ) {
-			case 1 { 
-				$type = "CoGe/View/Track/Wiggle/MultiXYPlot";
-				$featureScale = 0.001;
-				$histScale = 0.05;
-			}
-			case 2 { 
-				$type = "JBrowse/View/Track/HTMLVariants"; 
-				$featureScale = 0.0001;
-				$histScale = 0.05;
-			}
-			case 3 { 
-				$type = "JBrowse/View/Track/Alignments2"; 
-				$featureScale = 0.0001;
-				$histScale = 0.05;
-			}
+        if (!$e->data_type or $e->data_type == 1) { #FIXME hardcoded data_type
+			$type = "CoGe/View/Track/Wiggle/MultiXYPlot";
+			$featureScale = 0.001;
+			$histScale = 0.05;
+		}
+		elsif ($e->data_type == 2) { #FIXME hardcoded data_type 
+			$type = "JBrowse/View/Track/HTMLVariants"; 
+			$featureScale = 0.0001;
+			$histScale = 0.05;
+		}
+		elsif ($e->data_type == 3) { { #FIXME hardcoded data_type
+			$type = "JBrowse/View/Track/Alignments2"; 
+			$featureScale = 0.0001;
+			$histScale = 0.05;
 		}
         
         push @tracks, {
