@@ -7,9 +7,10 @@ define( [
             'JBrowse/View/Track/WiggleBase',
             'JBrowse/View/Track/YScaleMixin',
             'JBrowse/Util',
-            './_Scale'
+            './_Scale',
+            'CoGe/View/ColorDialog'
         ],
-        function( declare, array, Color, domConstruct, on, WiggleBase, YScaleMixin, Util, Scale ) {
+        function( declare, array, Color, domConstruct, on, WiggleBase, YScaleMixin, Util, Scale, ColorDialog ) {
 
 var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of XYPlot, extend that class instead?
 
@@ -26,11 +27,12 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
             dojo.clone( this.inherited(arguments) ),
             {
                 style: {
-                    pos_color: 'blue',
-                    neg_color: 'red',
+                    //pos_color: 'blue',
+                    //neg_color: 'red',
                     origin_color: '#888',
-                    variance_band_color: 'rgba(0,0,0,0.3)'
-                }
+                    variance_band_color: 'rgba(0,0,0,0.3)',
+                    featureColor: {}
+                },
             }
         );
     },
@@ -111,6 +113,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
      */
     _drawFeatures: function( scale, leftBase, rightBase, block, canvas, features, featureRects, dataScale ) {
 //    	console.log('_drawFeatures');
+    	var config = this.config;
     	var context = canvas.getContext('2d');
         var canvasHeight = canvas.height;
         var toY = dojo.hitch( this, function( val ) {
@@ -127,20 +130,29 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         });
         sorted.sort( sortByScore );
         
-        // compute average scores
+        // compute transforms
         var sum = [];
         var count = [];
         var width = [];
+        var diff = [];
+        var max;
+        var min;
         dojo.forEach( features, function(f,i) {
         	var score = f.get('score');
+        	if (!max || score > max)
+        		max = score;
+        	if (!min || score < min)
+        		min = score;
         	var l = featureRects[i].l;
         	var w = featureRects[i].w;
         	sum[l] = l in sum ? sum[l] + score : score;
         	count[l] = l in count ? count[l] + 1 : 1;
         	width[l] = l in width ? Math.max(width[l], w) : w;
+        	diff[l] = l in diff ? diff[l] - score : score;
         });
+        console.log('max='+max+' min='+min);
         
-        if (this.config.showAverage) {
+        if (config.transformAverage) {
         	sum.forEach( function(x,l) {
         		var avg = sum[l]/count[l];
         		var height = toY( avg );
@@ -156,6 +168,23 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         		}
         	});
         }
+        else if (config.transformDifference) {
+        	sum.forEach( function(x,l) {
+        		if (count[l] > 1) {
+	        		var height = toY( diff[l] );
+	        		if( height <= canvasHeight ) { // if the rectangle is visible at all
+	        			if( height <= originY ) { // bar goes upward
+	        				context.fillStyle = 'blue';
+	        				context.fillRect( l, height, width[l], originY-height+1);
+	        			}
+	        			else { // bar goes downward
+	        				context.fillStyle = 'red'
+	        				context.fillRect( l, originY, width[l], height-originY+1 );
+	        			}
+	        		}
+        		}
+        	});
+        }
         else {
             dojo.forEach( sorted, function(pair,i) {
             	var f = pair.feature;
@@ -163,6 +192,11 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 var score = f.get('score');
                 fRect.t = toY( score );
 
+            	if (config.transformPresenceAbsence) {
+            		if (count[fRect.l] > 1)
+            			return;
+            	}
+                
                 // draw the background color if we are configured to do so
 //                if( fRect.t >= 0 ) {
 //                    var bgColor = this.getConfForFeature('style.bg_color', f );
@@ -310,7 +344,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	        
 	        
 	        // compute average scores - FIXME dup'ed in _drawFeatures
-	        if (this.config.showAverage) {
+	        if (this.config.transformAverage) {
 		        var sum = [];
 		        var count = [];
 		        var width = [];
@@ -339,7 +373,8 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     }, 
     
     _trackMenuOptions: function() {
-    	var options = this.inherited(arguments); 
+    	var options = this.inherited(arguments);
+    	var track = this;
     	var config = this.config;
     	if (config.coge.menuOptions) {
     		config.coge.menuOptions.forEach( function(e) {
@@ -363,17 +398,67 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
             );
     	
     	if (config.coge.type == 'notebook') {
-	    	var track = this;
 	        options.push.apply(
 	                options,
 	                [
-	                    { label: 'Show average',
-	                      type: 'dijit/CheckedMenuItem',
-	                      checked: this.config.showAverage,
+	                    { label: 'Change colors',
 	                      onClick: function(event) {
-	                          track.config.showAverage = this.checked;
-	                          track.changed();
-	                      }
+	                    	  if (!track.colorDialog) {
+	                    		  track.colorDialog = new ColorDialog({
+		                      	        title: "Change colors",
+		                      	        style: {
+		                      	        	width: '230px',
+		                      	        },
+		                      	        items: track.config.coge.experiments,
+		                      	        featureColor: track.config.style.featureColor,
+		                      	        callback: function(id, color) {
+		                      	        	var curColor = track.config.style.featureColor[id];
+		                      	        	if (!curColor || curColor != color) {
+		                      	        		track.config.style.featureColor[id] = color;
+		                      	        		track.changed();
+		                      	        	}
+				                        }
+		                      	  });
+	                    	  }
+	                    	  track.colorDialog.show();
+	                       }
+	                    },
+	                    {	label: 'Transforms',
+	                    	type: 'dijit/DropDownMenu',
+	                    	children: [
+								{ 	label: 'Average',
+								    type: 'dijit/CheckedMenuItem',
+								    checked: config.transformAverage || false,
+								    onClick: function(event) {
+								        track.config.transformAverage = this.checked;
+								        track.changed();
+								    }
+								},
+	                    	    { 	label: 'Difference',
+		                    	    type: 'dijit/CheckedMenuItem',
+		      	                    checked: config.transformDifference || false,
+			                    	onClick: function() {
+			                    		track.config.transformDifference = this.checked;
+			                    		track.changed();
+			                    	}
+			                    },
+		                    	{	label: 'Presence/Absence',
+			                    	type: 'dijit/CheckedMenuItem',
+			      	                checked: config.transformPresenceAbsence || false,
+				                    onClick: function() {
+				                    	track.config.transformPresenceAbsence = this.checked;
+				                    	track.changed();
+				                    }
+		                    	},
+	                    	    {	label: 'Zoom max',
+		                    		type: 'dijit/CheckedMenuItem',
+		                    		checked: config.transformZoomMax || false,
+		                    		onClick: function() {
+		                    			track.config.transformZoomMax = this.checked;
+		                    			track.changed();
+		                    		}
+	                    	    }
+	                    	]
 	                    }
 	                ]
 	            );
@@ -406,6 +491,9 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     },
     
     _getFeatureColor: function(id) {
+    	if (this.config.style.featureColor && this.config.style.featureColor[id]) {
+    		return this.config.style.featureColor[id];
+    	}
     	return '#' + ((((id * 1234321) % 0x1000000) | 0x444444) & 0xe7e7e7 ).toString(16); //FIXME: dup'ed in CoGe.js
     }
 

@@ -44,12 +44,14 @@ $(document).ready(function(){
 function file_selected(filename, url) {
 	$('#file_select_dialog').dialog('close');
 	$('#select_file_button').hide();
+	$('#select_file_type').show();
 }
 
 function file_finished(size, url) {
 }
 
 function file_canceled() {
+	$('#select_file_type').hide();
 	$('#select_file_button').fadeIn();
 }
 
@@ -91,6 +93,7 @@ function load_experiment() {
 	var restricted = $('#restricted').is(':checked');
 	var genome = $('#edit_genome').val();
 	var gid = $('#gid').val();
+	var file_type = $("#select_file_type option:selected").val();
 	
 	if (!name) {
 		alert('Please specify an experiment name.');
@@ -146,6 +149,7 @@ function load_experiment() {
 			source_name: source,
 			user_name: user_name,
 			items: json,
+			file_type: file_type,
 			timestamp: new Date().getTime()
 		},
 		success : function() {
@@ -304,10 +308,27 @@ function get_sources () {
     </td>
   </tr>
   <tr>
-    <td>Data file:</td>
+    <td style="vertical-align:middle;">Data file:</td>
     <td>
-      <table id='file_table' class="small"></table>
+      <table id='file_table' class="small" style="display:inline;"></table>
       <span id="select_file_button" onClick="$('#file_select_dialog').dialog('open');" class='ui-button ui-corner-all'> Select Data File</span>
+      <span id="select_file_type" class="hidden" style="padding-left:15px;vertical-align:5px;">
+          File type: 
+	      <select>
+            <option value="autodetect">Detect from filename</option>
+            <optgroup label="Quantitative">
+	          <option value="csv">Comma-separated value (CSV)</option>
+	          <option value="tsv">Tab-separated value (TSV)</option>
+	          <option value="bed">BED</option>
+	        </optgroup>
+	        <optgroup label="Polymorphism">
+	          <option value="vcf">VCF</option>
+	        </optgroup> 
+	        <optgroup label="Alignment">
+	          <option value="bam">BAM</option>
+	        </optgroup>
+	      </select>
+      </span>
     </td>
   </tr>
 </table>
