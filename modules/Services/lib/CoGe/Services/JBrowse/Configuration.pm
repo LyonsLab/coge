@@ -257,7 +257,7 @@ sub track_config {
 			$featureScale = 0.0001;
 			$histScale = 0.05;
 		}
-		elsif ($e->data_type == 3) { { #FIXME hardcoded data_type
+		elsif ($e->data_type == 3) { #FIXME hardcoded data_type
 			$type = "JBrowse/View/Track/Alignments2"; 
 			$featureScale = 0.0001;
 			$histScale = 0.05;
