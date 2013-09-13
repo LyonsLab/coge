@@ -394,6 +394,8 @@ sub get_anno {
         my ($dsg) = $feat->dataset->genomes;
         return "Restricted Access"
           if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+        return "Deleted"
+          if $dsg->deleted;
 
 #next if ($feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset));
         $i++;
@@ -577,7 +579,7 @@ sub get_data_source_info_for_accn {
 
         #	next if $val->restricted && !$USER->has_access_to_dataset($val);
         my ($dsg) = $feat->dataset->genomes;
-
+	next if $dsg->deleted;
         #        return "<hidden id=dsid value=0></hidden>Restricted Access"
         if ( $dsg->restricted && !$USER->has_access_to_genome($dsg) ) {
             $sources{"Restricted Access"} = {
