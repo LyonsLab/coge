@@ -64,7 +64,7 @@ BEGIN {
 sub init {
     my ( $self, %opts ) = self_or_default(@_);
     my $ticket = $opts{ticket};    # optional cas ticket for retrieving user
-    my $url    = $opts{url};       # optional url for cas authentication
+    my $url    = $opts{url};       # optional redirect url to pass to cas authentication
     my $debug = $opts{debug}; #flag for debugging messages
     my $page_title = $opts{page_title};    # optional page title
     #print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . " page_title=" . ($page_title ? $page_title : '') . "\n";
