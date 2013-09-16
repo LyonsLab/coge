@@ -178,7 +178,7 @@ def convert_to_genomic_position(genomic_file, output):
                 items[2] = start
                 items[3] = stop
 
-                (start, stop) = (pos2[2], pos2[2])
+                (start, stop) = (pos2[1], pos2[2])
 
                 if pos2[4] and re.match('-', pos2[4]):
                     (start, stop) = (stop, start)
