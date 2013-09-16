@@ -4,7 +4,6 @@ use base 'CGI::Application';
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Storage qw( get_genome_seq );
-use JSON qq{encode_json};
 use Data::Dumper;
 
 sub setup {
