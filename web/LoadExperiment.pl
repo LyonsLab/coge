@@ -406,6 +406,7 @@ sub load_experiment {
     my $user_name   = $opts{user_name};
     my $gid         = $opts{gid};
     my $items       = $opts{items};
+    my $file_type	= $opts{file_type};
 
 # print STDERR "load_experiment: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
     return unless $items;
@@ -466,6 +467,7 @@ sub load_experiment {
       . '-source_name "'
       . escape($source_name) . '" '
       . "-staging_dir $stagepath "
+      . "-file_type '$file_type' "
       . '-data_file "'
       . escape( join( ',', @files ) ) . '" '
       . "-config $CONFIGFILE";
@@ -529,7 +531,7 @@ sub search_genomes
     my %opts        = @_;
     my $search_term = $opts{search_term};
     my $timestamp   = $opts{timestamp};
-    print STDERR "$search_term $timestamp\n";
+    #print STDERR "$search_term $timestamp\n";
     return unless $search_term;
 
     # Perform search

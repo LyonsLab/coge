@@ -116,7 +116,7 @@ function finish_file_in_list(url, path, size) {
 	);
 	$(tr).data('path', path);
 	$(tr).children().last().remove();
-	$(tr).append( $('<td align="right">'+units(size)+' <span onClick="$(this).closest(\'tr\').fadeOut(function() { $(this).remove(); cancel_callback(); });" class="link ui-icon ui-icon-closethick"></span></td>').fadeIn() );
+	$(tr).append( $('<td align="right"><span style="vertical-align:2px">'+units(size)+'</span> <span onClick="$(this).closest(\'tr\').hide(); $(this).remove(); cancel_callback();" class="link ui-icon ui-icon-closethick"></span></td>').fadeIn() );
 	$(tr).css('font-style', 'normal');
 	$(tr).css('color', 'black');
 	

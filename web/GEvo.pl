@@ -4337,10 +4337,12 @@ sub dataset_search {
     return unless $rs;
     while ( my $ds = $rs->next() ) {
         my $skip = 0;
+#	next if $ds->deleted;  #This function hasn't been pushed out yet
         foreach my $item ( $ds->genomes ) {
             next if $USER->is_admin;
             $skip = 1
               if $item->restricted && !$USER->has_access_to_genome($item);
+	    $skip = 1 if $item->deleted;
         }
         next if $skip;
         my $ver     = $ds->version;
@@ -4430,6 +4432,7 @@ qq{<SELECT name="dsgid$num" id="dsgid$num" onChange="feat_search(['args__accn','
         } $ds->genomes
       )
     {
+      next if $dsg->deleted;
         my $dsgid_tmp = $dsg->id;
         my $title     = $dsg->name;
         $title = $dsg->organism->name unless $title;

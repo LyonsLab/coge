@@ -1,6 +1,6 @@
 package CoGe::Services::JBrowse::Configuration;
 use base 'CGI::Application';
-
+use Switch;
 use CoGeX;
 use CoGe::Accessory::Web;
 use JSON;
@@ -245,24 +245,39 @@ sub track_config {
         #			}
         #		}
 
-        my $isSNP = ( $e->data_type == 2 );    #FIXME hardcoded data_type
+        #my $isSNP = ( $e->data_type == 2 );    #FIXME hardcoded data_type
+        my ($type, $featureScale, $histScale);
+        if (!$e->data_type or $e->data_type == 1) { #FIXME hardcoded data_type
+			$type = "CoGe/View/Track/Wiggle/MultiXYPlot";
+			$featureScale = 0.001;
+			$histScale = 0.05;
+		}
+		elsif ($e->data_type == 2) { #FIXME hardcoded data_type 
+			$type = "JBrowse/View/Track/HTMLVariants"; 
+			$featureScale = 0.0001;
+			$histScale = 0.05;
+		}
+		elsif ($e->data_type == 3) { #FIXME hardcoded data_type
+			$type = "JBrowse/View/Track/Alignments2"; 
+			$featureScale = 0.0001;
+			$histScale = 0.05;
+		}
+        
         push @tracks, {
             baseUrl      => "services/JBrowse/service.pl/experiment/$eid/",
             autocomplete => "all",
             track        => "experiment$eid",
             label        => "experiment$eid",
             key          => ( $e->restricted ? '&reg; ' : '' ) . $e->name,
-            type         => (
-                $isSNP
-                ? "JBrowse/View/Track/HTMLVariants"
-                : "CoGe/View/Track/Wiggle/MultiXYPlot"
-            ),
+            type         => $type,
+#                $isSNP
+#                ? "JBrowse/View/Track/HTMLVariants"
+#                : "CoGe/View/Track/Wiggle/MultiXYPlot",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
-            region_stats => 1
-            , # see HTMLFeatures.js, force calls to stats/region instead of stats/global
+            region_stats => 1, # see HTMLFeatures.js, force calls to stats/region instead of stats/global
             style => {
-                featureScale => ( $isSNP ? 0.0001 : 0.001 ),
-                histScale    => 0.05,
+                featureScale => $featureScale, #( $isSNP ? 0.0001 : 0.001 ),
+                histScale    => $histScale,
                 labelScale   => 0.5,
                 showLabels   => 'true',
                 className    => '{type}',
@@ -270,8 +285,6 @@ sub track_config {
             },
 
             # CoGe-specific stuff
-            onClick =>
-              ( $isSNP ? '' : "ExperimentView.pl?embed=1&eid=$eid" ),
             showHoverScores => 1,
             coge            => {
                 id      => $eid,
@@ -285,13 +298,12 @@ sub track_config {
                 description => $e->description,
                 notebooks => ( @notebooks ? \@notebooks : undef ),
                 annotations => ( @annotations ? \@annotations : undef ),
+                onClick => "ExperimentView.pl?embed=1&eid=$eid",
                 menuOptions => [
                     {
                         label => 'ExperimentView',
-                        action =>
-"function() { window.open( 'ExperimentView.pl?eid=$eid' ); }"
-
-                          # url => ... will open link in a dialog window
+                        action => "function() { window.open( 'ExperimentView.pl?eid=$eid' ); }"
+						# url => ... will open link in a dialog window
                     }
                 ]
             }
@@ -313,7 +325,6 @@ sub track_config {
             style        => { featureScale => 0.001 },
 
             # CoGe-specific stuff
-            showAverage => 0,
             coge        => {
                 id   => 0,            # use id of 0 to represent all experiments
                 type => 'notebook',
@@ -343,8 +354,6 @@ sub track_config {
             style        => { featureScale => 0.001 },
 
             # CoGe-specific stuff
-            onClick         => "NotebookView.pl?embed=1&lid=$nid",
-            showAverage     => 0,
             showHoverScores => 1,
             coge            => {
                 id      => $nid,
@@ -361,6 +370,7 @@ sub track_config {
                 experiments =>
                   ( @{ $expByNotebook{$nid} } ? $expByNotebook{$nid} : undef ),
                 count       => scalar @{ $expByNotebook{$nid} },
+                onClick         => "NotebookView.pl?embed=1&lid=$nid",
                 menuOptions => [
                     {
                         label => 'NotebookView',
