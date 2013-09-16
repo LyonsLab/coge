@@ -52,15 +52,13 @@ GetOptions(
     "config=s" => \$config
 );
 
-if ($config) {
-    my $P = CoGe::Accessory::Web::get_defaults($config);
-    $db   = $P->{DBNAME};
-    $host = $P->{DBHOST};
-    $port = $P->{DBPORT};
-    $user = $P->{DBUSER};
-    $pass = $P->{DBPASS};
-}
+# Open log file
+$| = 1;
+my $logfile = "$staging_dir/log.txt";
+open( my $log, ">>$logfile" ) or die "Error opening log file $logfile";
+$log->autoflush(1);
 
+# Process and verify parameters
 $data_file   = unescape($data_file);
 $name        = unescape($name);
 $description = unescape($description);
@@ -68,14 +66,23 @@ $version     = unescape($version);
 $source_name = unescape($source_name);
 $restricted  = '0' if ( not defined $restricted );
 
-# Open log file
-$| = 1;
-my $logfile = "$staging_dir/log.txt";
-open( my $log, ">>$logfile" ) or die "Error opening log file $logfile";
-$log->autoflush(1);
+if ($user_name eq 'public') {
+	print $log "log: error: not logged in\n";
+    exit(-1);
+}
 
-# Open system config file
-$P = CoGe::Accessory::Web::get_defaults();
+# Load config file
+if ($config) {
+    $P = CoGe::Accessory::Web::get_defaults($config);
+    $db   = $P->{DBNAME};
+    $host = $P->{DBHOST};
+    $port = $P->{DBPORT};
+    $user = $P->{DBUSER};
+    $pass = $P->{DBPASS};
+}
+else {
+	$P = CoGe::Accessory::Web::get_defaults();
+}
 my $FASTBIT_LOAD  = $P->{FASTBIT_LOAD};
 my $FASTBIT_QUERY = $P->{FASTBIT_QUERY};
 my $SAMTOOLS = $P->{SAMTOOLS};

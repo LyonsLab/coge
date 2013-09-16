@@ -55,6 +55,7 @@ $MAX_SEARCH_RESULTS = 100;
     search_genomes          => \&search_genomes,
     search_users            => \&search_users,
     get_load_log            => \&get_load_log,
+    check_login			    => \&check_login,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
@@ -394,6 +395,11 @@ sub upload_file {
             size      => $size
         }
     );
+}
+
+sub check_login {
+	print STDERR $USER->user_name . ' ' . int($USER->is_public) . "\n";
+	return ($USER && !$USER->is_public);
 }
 
 sub load_experiment {

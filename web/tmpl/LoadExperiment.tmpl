@@ -86,6 +86,22 @@ function reset_log() {
 	$('#cancel_load_experiment_button').hide();
 }
 
+function check_login() {
+	var logged_in = false;
+	
+	$.ajax({
+		async: false,
+		data: {
+			fname: 'check_login',
+		},
+		success : function(rc) {
+			logged_in = rc;
+		}
+	});
+	
+	return logged_in;
+}
+
 function load_experiment() {
 	var name = $('#edit_name').val();
 	var description = $('#edit_description').val();
@@ -131,10 +147,17 @@ function load_experiment() {
 	// Prevent concurrent executions - issue 101
 	if ( $("#load_dialog").dialog( "isOpen" ) )
 		return;
-	$('#load_dialog').dialog('open');
+
+	// Make sure user is still logged-in - issue 206
+	if (!check_login()) {
+		alert('Your session has expired, please log in again.');
+		location.reload(true)
+		return;
+	}
 	
 	// Open status dialog right away - issue 101
 	reset_log();
+	$('#load_dialog').dialog('open');
 	$('#load_experiment_log').html('Initializing ...');	
 	
 	$.ajax({

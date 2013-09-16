@@ -58,15 +58,6 @@ GetOptions(
     "config=s" => \$config
 );
 
-if ($config) {
-    $P    = CoGe::Accessory::Web::get_defaults($config);
-    $db   = $P->{DBNAME};
-    $host = $P->{DBHOST};
-    $port = $P->{DBPORT};
-    $user = $P->{DBUSER};
-    $pass = $P->{DBPASS};
-}
-
 # Open log file
 $| = 1;
 die unless ($staging_dir);
@@ -96,7 +87,21 @@ if (not $user_id and not $user_name) {
 	print $log "log: error: user not specified, use user_id or user_name\n";
 	exit(-1);
 }
-# TODO finish checking rest of params
+if ($user_name eq 'public') {
+	print $log "log: error: not logged in\n";
+    exit(-1);
+}
+
+# Load config file ... only needed to get the DB params if user specified
+# a config file instead of specifying them on command-line.
+if ($config) {
+    $P    = CoGe::Accessory::Web::get_defaults($config);
+    $db   = $P->{DBNAME};
+    $host = $P->{DBHOST};
+    $port = $P->{DBPORT};
+    $user = $P->{DBUSER};
+    $pass = $P->{DBPASS};
+}
 
 # Process each file into staging area
 my @files = split( ',', $fasta_files );

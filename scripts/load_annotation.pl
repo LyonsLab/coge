@@ -45,6 +45,27 @@ GetOptions(
     "config=s" => \$config
 );
 
+# Open log file
+$| = 1;
+my $logfile = "$staging_dir/log.txt";
+open( my $log, ">>$logfile" ) or die "Error opening log file $logfile";
+$log->autoflush(1);
+
+# Process and verify parameters
+$data_file   = unescape($data_file);
+$name        = unescape($name);
+$description = unescape($description);
+$version     = unescape($version);
+$source_name = unescape($source_name);
+$restricted  = '0' if ( not defined $restricted );
+
+if ($user_name eq 'public') {
+	print $log "log: error: not logged in\n";
+    exit(-1);
+}
+
+# Load config file ... only needed to get the DB params if user specified
+# a config file instead of specifying them on command-line.
 if ($config) {
     my $P = CoGe::Accessory::Web::get_defaults($config);
     $db   = $P->{DBNAME};
@@ -53,19 +74,6 @@ if ($config) {
     $user = $P->{DBUSER};
     $pass = $P->{DBPASS};
 }
-
-$data_file   = unescape($data_file);
-$name        = unescape($name);
-$description = unescape($description);
-$version     = unescape($version);
-$source_name = unescape($source_name);
-$restricted  = '0' if ( not defined $restricted );
-
-# Open log file
-$| = 1;
-my $logfile = "$staging_dir/log.txt";
-open( my $log, ">>$logfile" ) or die "Error opening log file $logfile";
-$log->autoflush(1);
 
 # Validate the data file
 print $log "log: Validating data file ...\n";
