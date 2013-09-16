@@ -87,6 +87,22 @@ function reset_log() {
 	$('#cancel_load_button').hide();
 }
 
+function check_login() {
+	var logged_in = false;
+	
+	$.ajax({
+		async: false,
+		data: {
+			fname: 'check_login',
+		},
+		success : function(rc) {
+			logged_in = rc;
+		}
+	});
+	
+	return logged_in;
+}
+
 function load_annotation() {
 	var name = $('#edit_name').val();
 	var description = $('#edit_description').val();
@@ -127,10 +143,17 @@ function load_annotation() {
 	// Prevent concurrent executions - issue 101
 	if ( $("#load_dialog").dialog( "isOpen" ) )
 		return;
-	$('#load_dialog').dialog('open');
+	
+	// Make sure user is still logged-in - issue 206
+	if (!check_login()) {
+		alert('Your session has expired, please log in again.');
+		location.reload(true)
+		return;
+	}
 	
 	// Open status dialog right away - issue 101
 	reset_log();
+	$('#load_dialog').dialog('open');
 	$('#load_log').html('Initializing ...');	
 	
 	$.ajax({
@@ -339,7 +362,7 @@ function more() {
 <div id="file_select_dialog" class="dialog_box" title="Select Data File ..." style="display:none;">
   <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
   <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all">Done</span>
-</div> <!-- file_select_dialog -->
+</div>
 
 
 
@@ -357,7 +380,7 @@ function more() {
   <span id="ok_button" onClick="$('#load_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all">OK</span>
   <span id="finish_load_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all">GenomeView</span>
   <span id="cancel_load_button" onClick="$('#load_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all">Cancel</span>
-</div> <!-- load_dialog -->
+</div>
 
 
 
@@ -380,13 +403,18 @@ function more() {
   <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all ui-button-go">Create</span>
 </div>
 
+</TMPL_IF> <!-- MAIN -->
+
+
+
+<TMPL_IF NAME='LOGIN'>
+<TMPL_INCLUDE NAME="widgets/Login.tmpl">
+</TMPL_IF>
+
 
 
 <TMPL_IF NAME='ADMIN_AREA'>
 <br><br><hr>
 <span style="color:dimgray;font-weight:bold;">Admin Functions</span><br>
 <br>
-</TMPL_IF> <!-- ADMIN_AREA -->
-
-</TMPL_IF> <!-- MAIN -->
-
+</TMPL_IF>

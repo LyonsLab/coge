@@ -55,6 +55,7 @@ $MAX_SEARCH_RESULTS = 100;
     create_source   => \&create_source,
     search_genomes  => \&search_genomes,
     get_load_log    => \&get_load_log,
+	check_login     => \&check_login,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
@@ -93,7 +94,7 @@ sub generate_body {
     }
 
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param( MAIN      => 1 );
     $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
 
@@ -346,6 +347,11 @@ sub upload_file {
     );
 }
 
+sub check_login {
+	print STDERR $USER->user_name . ' ' . int($USER->is_public) . "\n";
+	return ($USER && !$USER->is_public);
+}
+
 sub load_annotation {
     my %opts        = @_;
     my $name        = $opts{name};
@@ -514,7 +520,7 @@ sub search_genomes {
         ]
     );
 
-# Combine matching genomes with matching organism genomes, preventing duplicates
+	# Combine matching genomes with matching organism genomes, preventing duplicates
     my %unique;
     map {
         $unique{ $_->id } = $_

@@ -61,6 +61,7 @@ $MAX_SEARCH_RESULTS = 100;
     search_users         => \&search_users,
     get_sources          => \&get_sources,
     get_load_log         => \&get_load_log,
+	check_login			 => \&check_login,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
@@ -435,6 +436,11 @@ sub upload_file {
     );
 }
 
+sub check_login {
+	print STDERR $USER->user_name . ' ' . int($USER->is_public) . "\n";
+	return ($USER && !$USER->is_public);
+}
+
 sub load_genome {
     my %opts         = @_;
     my $name         = $opts{name};
@@ -454,7 +460,7 @@ sub load_genome {
 	# restricted as option
     $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
 
-    return unless $items;
+    return 'No files specified' unless $items;
     print STDERR
 "load_genome: organism_id=$organism_id name=$name description=$description version=$version type_id=$type_id restricted=$restricted\n";
 
@@ -464,6 +470,9 @@ sub load_genome {
 
     if ( !$user_name || !$USER->is_admin ) {
         $user_name = $USER->user_name;
+    }
+    if ($user_name eq 'public') {
+    	return 'Not logged in';
     }
 
     # Setup staging area and log file
@@ -483,15 +492,14 @@ sub load_genome {
     my @files;
     foreach my $item (@$items) {
         my $fullpath = $TEMPDIR . $item;
-        die "File doesn't exist! $fullpath" if ( not -e $fullpath );
+        return "File doesn't exist: $fullpath" if ( not -e $fullpath );
         my ( $path, $filename ) = $item =~ /^(.+)\/([^\/]+)$/;
         my ($fileext) = $filename =~ /\.([^\.]+)$/;
 
-        #		print STDERR "$path $filename $fileext\n";
+        #print STDERR "$path $filename $fileext\n";
         if ( $fileext eq 'gz' ) {
             my $cmd = $P->{GUNZIP} . ' ' . $fullpath;
-
-            #			print STDERR "$cmd\n";
+            #print STDERR "$cmd\n";
             `$cmd`;
             $fullpath =~ s/\.$fileext$//;
         }
@@ -501,8 +509,6 @@ sub load_genome {
     }
 
     print $log "Calling bin/load_genome.pl ...\n";
-
-#EL: 7/8/2013  Modified how $cmd was created so that empty options were not passed on the command line.  Perl has a bad habit of grabbing the next option name when it is expecting a value for a previous option and no value was passed along the command line.
     my $cmd =
         "$BINDIR/load_genome.pl "
       . "-user_name $user_name "
@@ -518,15 +524,13 @@ sub load_genome {
     $cmd .= '-source_name "' . escape($source_name) . '" ';
     $cmd .= "-staging_dir $stagepath ";
     $cmd .= '-fasta_files "' . escape( join( ',', @files ) ) . '" ';
-    $cmd .= "-config $CONFIGFILE";
-
-#"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
+    $cmd .= "-config $CONFIGFILE"; #"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
     print STDERR "$cmd\n";
     print $log "$cmd\n";
     close($log);
 
     if ( !defined( my $child_pid = fork() ) ) {
-        die "cannot fork: $!";
+        return "Cannot fork: $!";
     }
     elsif ( $child_pid == 0 ) {
         print STDERR "child running: $cmd\n";
@@ -534,7 +538,7 @@ sub load_genome {
         exit;
     }
 
-    return 1;#$i; mdb changed 8/9/13 issue 77
+    return;
 }
 
 sub get_load_log {
