@@ -496,7 +496,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	                                width: iframeDims.w,
 	                                height: iframeDims.h,
 	                                style: { border: 'none' },
-	                                src: trackConfig.onClick
+	                                src: trackConfig.coge.onClick
 	                            });
 	
 	                        dialog.set( 'content', iframe );
