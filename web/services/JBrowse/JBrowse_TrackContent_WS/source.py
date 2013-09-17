@@ -365,13 +365,13 @@ def bin(start, end, bpPerBin):
 urls = [
     (r'stats/global$',
         stats),
-    (r'annotation/(?P<genome_id>\d+)/types/(?P<feat_type>[\w\:\-]+)/stats/region/(?P<chr_id>\w+)?(.+)?$',
+    (r'annotation/(?P<genome_id>\d+)/types/(?P<feat_type>[\w\:\-]+)/stats/region/(?P<chr_id>\S+)?$',
         region),
-    (r'annotation/(?P<genome_id>\d+)/types/(?P<feat_type>[\w\:\-]+)/features/(?P<chr_id>\w+)?(.+)?$',
+    (r'annotation/(?P<genome_id>\d+)/types/(?P<feat_type>[\w\:\-]+)/features/(?P<chr_id>\S+)?$',
         an_features),
-    (r'annotation/(?P<genome_id>\d+)/features/(?P<chr_id>[\w\:\-]+)?(.+)?$',
+    (r'annotation/(?P<genome_id>\d+)/features/(?P<chr_id>\S+)?$',
         an_features),
-    (r'gc/(?P<genome_id>\d+)/features/(?P<chr_id>[\w\:\-]+)?(.+)?$',
+    (r'gc/(?P<genome_id>\d+)/features/(?P<chr_id>\S+)?$',
         gc_features),
 ]
 
