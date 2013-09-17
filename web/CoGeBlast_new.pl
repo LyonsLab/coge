@@ -720,7 +720,7 @@ sub blast_search {
 
         my $name = $dsg->organism->name;
         my $args = [
-            ['-i', $dbfasta, 1],
+            ['-i', $dbfasta, 0],
             ['-t', "'$name'", 1],
             ['-n', $dsgid, 1],
         ];
@@ -736,7 +736,7 @@ sub blast_search {
             cmd     => $FORMATDB,
             script  => undef,
             args    => $args,
-            inputs  => [ $dbfasta ],
+            inputs  => undef,
             outputs => $outputs
         );
 
@@ -748,8 +748,6 @@ sub blast_search {
             [ '', $BLAST_PROGS->{$program}, 0 ],
         ];
 
-        my $inputs = [ $fasta_file ];
-
         if ( $program eq "lastz" ) {
             push @$args, [ '',  $fasta_file, 1 ];
             push @$args, [ '', "W=" . $zwordsize,  1 ] if defined $zwordsize;
@@ -759,10 +757,8 @@ sub blast_search {
             push @$args, [ '', "O=" . $zgap_start, 1 ] if defined $zgap_start;
             push @$args, [ '', "E=" . $zgap_extension, 1 ]
               if defined $zgap_extension;
-            push @$args, [ '',  $dbfasta,    1 ];
+            push @$args, [ '',  $dbfasta,    0 ];
             push @$args, [ '>', $outfile,    1 ];
-
-            push @$inputs, $dbfasta;
         }
         else {
             my ( $nuc_penalty, $nuc_reward, $exist, $extent );
@@ -787,10 +783,9 @@ sub blast_search {
             push @$args, [ '-query',     $fasta_file, 1 ];
             push @$args, [ '-word_size', $wordsize,   1 ];
             push @$args, [ '-evalue',    $expect,     1 ];
-            push @$args, [ '-db',        $dsgid,      1 ];
+            push @$args, [ '-db',        $db,         0 ];
             push @$args, [ '>',          $outfile,    1 ];
-
-            push @$inputs, ("$db.nhr", "$db.nin", "$db.nsq");
+            say STDERR $db;
         }
 
         push @results,
@@ -806,7 +801,7 @@ sub blast_search {
             cmd     => "/usr/bin/nice",
             script  => undef,
             args    => $args,
-            inputs  => $inputs,
+            inputs  => [$fasta_file],
             outputs => [$outfile]
         );
 
