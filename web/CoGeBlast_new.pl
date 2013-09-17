@@ -785,7 +785,6 @@ sub blast_search {
             push @$args, [ '-evalue',    $expect,     1 ];
             push @$args, [ '-db',        $db,         0 ];
             push @$args, [ '>',          $outfile,    1 ];
-            say STDERR $db;
         }
 
         push @results,
