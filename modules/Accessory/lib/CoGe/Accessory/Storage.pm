@@ -310,6 +310,8 @@ sub get_experiment_data {
     my $start = $opts{start};
     my $stop  = $opts{stop};
     $stop = $opts{end} if ( not defined $stop );
+    $start = 0 if ($start < 0);
+    $stop = 0 if ($stop < 0);
     
     my $storage_path = get_experiment_path($eid);
     my $cmd;

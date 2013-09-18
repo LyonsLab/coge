@@ -166,7 +166,7 @@ sub features {
       . ( $gid ? $gid : '' )
       . " $chr:$start:$end ("
       . ( $end - $start + 1 ) . ")\n";
-    return unless ( ( $eid or $nid or $gid ) and $chr and $start and $end );
+    return unless ( ( $eid or $nid or $gid ) and defined $chr and defined $start and defined $end );
 
     if ( $end - $start + 1 > $MAX_WINDOW_SIZE ) {
         print STDERR "experiment features maxed\n";
