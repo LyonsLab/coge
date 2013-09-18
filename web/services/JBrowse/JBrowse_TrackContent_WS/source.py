@@ -64,10 +64,8 @@ def fetch_sequence(genome_id, chr_id, start, stop, cookie_string):
     service = '{base}/{service}/sequence/{id}/{chr}?start={start};stop={stop};'
 
     config = get_config()
-
     if not config:
         return
-
 
     url = service.format(base=config['SERVER'],
         service='services/JBrowse/service.pl',
@@ -92,7 +90,9 @@ def fetch_sequence(genome_id, chr_id, start, stop, cookie_string):
 
 def gc_features(environ, start_response):
     """Main feature endpoint for GC content"""
+    sys.stderr.write('gc_features\n')
     status = '200 OK'
+    response_headers = [('Content-Type', 'application/json')]
     response_body = { "features" : [] }
     bucketSize = 100
 
@@ -107,16 +107,20 @@ def gc_features(environ, start_response):
     # set parsed argument variables
     genome_id = int(args['genome_id'])
     chr_id = args['chr_id']
-
-    con = db_connect()
-    cur = con.cursor()
-
+    
+    if (start < 0):
+        start = 0;
+    if (end <= 0):
+        end = 0
+        
+    if (start == end):
+        start_response(status, response_headers)
+        return ''
+        
     try:
-        cur.execute("SELECT file_path FROM genome where genome_id = %d;"
-                % genome_id)
-
         # Open the right chromosome file derived from the pathname
-        string = fetch_sequence(genome_id, chr_id, start, end,
+        # Convert coordinates from interbase
+        string = fetch_sequence(genome_id, chr_id, start+1, end+1,
                 environ['HTTP_COOKIE'])
 
         # Set bucketSize
@@ -137,14 +141,10 @@ def gc_features(environ, start_response):
             #Counter(chunk).most_common(1)[0][0].lower()
             score = len(re.sub('[atnx]', '', chunk))
             score = str(round(score / float(len(chunk)), 3))
-            if (start + i + bucketSize < start):
-                k = start
-            else:
-                k = start + i
-            if (start + i + bucketSize >= end):
+            k = start + i
+            j = start + i + bucketSize
+            if (j > end):
                 j = end
-            else:
-                j = start + i + bucketSize
             response_body['features'].append({
                 "start": k,
                 "score": score,
@@ -154,18 +154,11 @@ def gc_features(environ, start_response):
 
         response_body = json.dumps(response_body)
 
-
     except mdb.Error, e:
         response_body = "Error %d: %s" % (e.args[0], e.args[1])
         status = '500 Internal Server Error'
 
-    finally:
-        if con:
-            con.close()
-
-    response_headers = [('Content-Type', 'application/json')]
     start_response(status, response_headers)
-
     return response_body
 
 def an_features(environ, start_response):
