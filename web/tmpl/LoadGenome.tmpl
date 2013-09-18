@@ -671,13 +671,13 @@ function sort_name (a,b) {
   <tr>
     <td>Organism:</td>
     <td>
-      <input id="edit_organism" onkeyup="wait_to_search(search_organisms, this.value);" size="45" />
+      <input id="edit_organism" onkeyup="wait_to_search(search_organisms, this.value);" size="45" spellcheck="false" />
       <span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all'>New</span>
     </td>
   </tr>	
   <tr>
     <td>Version:</td>
-    <td><input id="edit_version" type="textbox" size="10" /></td>
+    <td><input id="edit_version" type="textbox" size="10" spellcheck="false" /></td>
   </tr>
   <tr>
     <td>Type:</td>
@@ -689,7 +689,7 @@ function sort_name (a,b) {
   <tr>
     <td>Source:</td>
     <td>
-      <input id="edit_source" size="45" />
+      <input id="edit_source" size="45" spellcheck="false" />
       <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
     </td>
   </tr>
@@ -702,7 +702,7 @@ function sort_name (a,b) {
   </tr>  
   <tr style='display:none;'>
     <td>Name:</td>
-    <td><input id="edit_name" type="textbox" size="58" /></td>
+    <td><input id="edit_name" type="textbox" size="58" spellcheck="false" /></td>
   </tr>
   <tr style='display:none;'>
     <td>Description:</td>
