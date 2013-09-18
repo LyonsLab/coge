@@ -302,7 +302,7 @@ function get_sources () {
 <table class="small ui-widget-content ui-corner-all">
   <tr>
     <td>Name:</td>
-    <td><input id="edit_name" type="textbox" size="80" value="<TMPL_VAR NAME='NAME'>" /></td>
+    <td><input id="edit_name" type="textbox" size="80" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" /></td>
   </tr>
   <tr>
     <td>Description:</td>
@@ -310,12 +310,12 @@ function get_sources () {
   </tr>
   <tr>
     <td>Version:</td>
-    <td><input id="edit_version" type="textbox" size="10" value="<TMPL_VAR NAME='NAME'>" /></td>
+    <td><input id="edit_version" type="textbox" size="10" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" /></td>
   </tr>
   <tr>
     <td>Source:</td>
     <td>
-      <input id="edit_source" size="80" />
+      <input id="edit_source" size="80" spellcheck="false" />
       <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
     </td>
   </tr> 
