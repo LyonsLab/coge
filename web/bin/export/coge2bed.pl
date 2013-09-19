@@ -84,6 +84,15 @@ if ( $genome && $genome->restricted ) {
 my @datasets = map { $_->dataset_id } $genome->datasets;
 
 my $org    = $genome->organism->name;
+$org =~ s/\///g;
+$org =~ s/\s+/_/g;
+$org =~ s/\(//g;
+$org =~ s/\)//g;
+$org =~ s/://g;
+$org =~ s/;//g;
+$org =~ s/#/_/g;
+$org =~ s/'//g;
+$org =~ s/"//g;
 my $header = "Content-disposition: attachement; filename=";    #test.gff\n\n";
 $header .= $org;
 $header .= "_gid$gid";
