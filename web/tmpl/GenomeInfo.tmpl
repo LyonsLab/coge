@@ -18,33 +18,6 @@ $(document).ready(function(){
   	});
 });
 
-function set_input(id, text) {
-	var obj = $('#'+id);
-	var val = obj.val();
-	if (!text) {
-		text = 'Search';
-	}	
-	
-	if ( val && val != text ) {
-		obj.css({"font-style": "normal", "color": "black"});
-	}
-	else {
-		if (obj.is(":focus")) {
-			obj.val('');
-			obj.css({"font-style": "normal", "color": "black"});
-		}
-		else {
-			obj.val(text);
-			obj.css({"font-style": "italic", "color": "gray"});
-		}
-	}
-
-	// Init event handlers
-	$('#'+id).unbind('blur').bind('keypress', 	function() { set_input(id, text); })
-			 .unbind('blur').bind('blur', 		function() { set_input(id, text); })
-			 .unbind('focus').bind('focus', 	function() { set_input(id, text); });
-}
-
 function wait_to_search (search_func, search_term) {
 	pageObj.search_term = search_term;
 		
@@ -131,7 +104,7 @@ function edit_genome_info () {
 
 function update_genome_info (){
 	var org_name = $('#edit_organism').val();
-	if (!org_name || org_name == 'Search') {
+	if (!org_name) {
 		alert('Please select an organism.');
 		return;
 	}
@@ -143,17 +116,14 @@ function update_genome_info (){
 	}
 
 	var source_name = $('#edit_source').val();
-	if (!source_name || source_name == 'Search') {
+	if (!source_name) {
 		alert('Please specify a data source.');
 		return;
 	}
-
+	
+	var link = $('#edit_link').val();
 	var name = $('#edit_name').val();
-	if (name == 'Optional') { name = ''; }
-
 	var description = $('#edit_description').val();
-	if (description == 'Optional') { description = ''; }
-
 	var type_id = $('#select_type').val();
 	var restricted = $('#restricted').is(':checked');
 
@@ -169,6 +139,7 @@ function update_genome_info (){
 			restricted: restricted,
 			org_name: org_name,
 			source_name: source_name,
+			link: link,
 			timestamp: new Date().getTime()
 		},
 		success : function(val) {
@@ -290,7 +261,6 @@ function export_bed (gid) {
 <div id="genome_users_edit_box" class="dialog_box hidden" title="Add Users"></div>
 <div id="genome_groups_edit_box" class="dialog_box hidden" title="Add Groups"></div>
 
-<!--Added by Eric: 1/31/2013: dialog box for GFF exporter-->
 <div id="gff_export" class="dialog_box hidden" title="GFF Exporter">
 <table class=small>
  <tr>
@@ -357,6 +327,10 @@ Are you sure you want to move this genome into your trash?<p>
 			<td class='data5'><TMPL_VAR NAME="SOURCE"></td>
 		</tr>
 		<tr>
+			<td class='title5' style='white-space:nowrap;'>Link:</td>
+			<td class='data5'><TMPL_VAR NAME="LINK"></td>
+		</tr>
+		<tr>
 			<td class='title5' style='white-space:nowrap;'>Name:</td>
 			<td class='data5'><TMPL_VAR NAME="NAME"></td>
 		</tr>
@@ -388,17 +362,13 @@ Are you sure you want to move this genome into your trash?<p>
 	$(function() {
 		$("#edit_source").autocomplete({source: <TMPL_VAR NAME='SOURCES'>});
 	});
-	set_input('edit_organism');
-	set_input('edit_source');
-	set_input('edit_name', 'Optional');
-	set_input('edit_description', 'Optional');
 	</script>
 	
 	<table class="small">
 	  <tr>
 	    <td>Organism:</td>
 	    <td>
-	      <input id="edit_organism" onkeyup="wait_to_search(search_organisms, this.value);" size="80" value="<TMPL_VAR NAME='ORGANISM'>"/>
+	      <input id="edit_organism" type="search" onkeyup="wait_to_search(search_organisms, this.value);" size="80" value="<TMPL_VAR NAME='ORGANISM'>"/>
 	      <!--<span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all'>New</span>-->
 	    </td>
 	  </tr>	
@@ -416,9 +386,13 @@ Are you sure you want to move this genome into your trash?<p>
 	  <tr>
 	    <td>Source:</td>
 	    <td>
-	      <input id="edit_source" size="45" value="<TMPL_VAR NAME='SOURCE'>"/>
+	      <input id="edit_source" type="search" size="45" value="<TMPL_VAR NAME='SOURCE'>"/>
 	      <!-- <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span> -->
 	    </td>
+	  </tr>
+	  <tr>
+	    <td>Link</td>
+	    <td><input id="edit_link" size="45" value="<TMPL_VAR NAME='LINK'>" /></td>
 	  </tr>
 	  <tr>
 	    <td>Restricted?</td>
@@ -426,11 +400,11 @@ Are you sure you want to move this genome into your trash?<p>
 	  </tr>
 	  <tr>
 	    <td>Name:</td>
-	    <td><input id="edit_name" type="textbox" size="58" value="<TMPL_VAR NAME='NAME'>" /></td>
+	    <td><input id="edit_name" type="textbox" placeholder="Optional" size="58" value="<TMPL_VAR NAME='NAME'>" /></td>
 	  </tr>
 	  <tr>
 	    <td>Description:</td>
-	    <td><textarea id="edit_description" rows="5" cols="50" ><TMPL_VAR NAME='DESCRIPTION'></textarea></td>
+	    <td><textarea id="edit_description" placeholder="Optional" rows="5" cols="50" ><TMPL_VAR NAME='DESCRIPTION'></textarea></td>
 	  </tr>
 	</table>
 	<br>
@@ -481,7 +455,6 @@ Are you sure you want to move this genome into your trash?<p>
 <TMPL_IF NAME='ADMIN_AREA'>
 	<script>
 	$(document).ready(function() {
-		set_input('edit_user');
 		$("#edit_user").autocomplete({
 			source:[], 
 			focus: function() { return false; },
@@ -489,7 +462,7 @@ Are you sure you want to move this genome into your trash?<p>
 	});
 	function update_owner () {
 		var user_name = $('#edit_user').val();
-		if (!user_name || user_name == 'Search') {
+		if (!user_name) {
 			alert('Please specify a user.');
 			return;
 		}
@@ -514,7 +487,7 @@ Are you sure you want to move this genome into your trash?<p>
 	<span style="color:dimgray;font-weight:bold;">Admin Functions</span><br>
 	<div class="small">
 		Assign to user:
-	    <input id="edit_user" onkeyup="wait_to_search(search_users, this.value);" size="10" />
+	    <input id="edit_user" type="search" placeholder="Search" onkeyup="wait_to_search(search_users, this.value);" size="10" />
 	    <span onClick="update_owner();" class='ui-button ui-corner-all ui-button-go'>Go</span>
 	  	<div>
 	  	  Datasets:

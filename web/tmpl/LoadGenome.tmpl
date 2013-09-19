@@ -30,12 +30,6 @@ $(document).ready(function(){
 
   	$("#load_dialog").dialog({modal: true});
 	
-	set_input('edit_organism');
-	set_input('edit_source');
-	set_input('edit_name', 'Optional');
-	set_input('edit_description', 'Optional');
-	set_input('edit_link', 'Optional');
-
 	get_sequence_types();
 	get_sources();
 	$("#edit_organism").autocomplete({
@@ -121,7 +115,6 @@ function create_source() {
 			$('#create_new_source_dialog').dialog('close');
 			if (name) {
 				$('#edit_source').val(name);
-				set_input('edit_source');
 			}
 		}
 	});
@@ -158,7 +151,6 @@ function create_organism() {
 			if (organism_id) {
 				$('#create_new_organism_dialog').dialog('close');
 				$('#edit_organism').val(name).data("organism_id", organism_id);
-				set_input('edit_organism');
 			}
 		}
 	});
@@ -167,11 +159,8 @@ function create_organism() {
 function reset_log() {
 	$('#load_genome_log').html('');
 	$('#loading_msg').show();
-	$('#finished_msg').hide();
-	$('#error_msg').hide();
-	$('#ok_button').hide();
-	$('#finish_load_genome_button').hide();
-	$('#cancel_load_genome_button').hide();
+	$('#finished_msg,#error_msg,#ok_button').hide();
+	$('#finish_load_genome_button,#cancel_load_genome_button').hide();
 }
 
 function check_login() {
@@ -203,7 +192,7 @@ function load_genome() {
 
 	var organism_name = $('#edit_organism').val();
 	var organism_id = $('#edit_organism').data("organism_id");
-	if (!organism_id || !organism_name || organism_name == 'Search') {
+	if (!organism_id || !organism_name) {
 		alert('Organism not found.');
 		return;
 	}
@@ -215,25 +204,16 @@ function load_genome() {
 	}
 
 	var source = $('#edit_source').val();
-	if (!source || source == 'Search') {
+	if (!source) {
 		alert('Please specify a data source.');
 		return;
 	}
 
 	var user_name = $('#edit_user').val(); // only exists if admin
-	if (user_name == 'Search') { user_name = ''; }
-	
 	var keep_headers = $('#keep_headers').is(':checked'); // only exists if admin
-
 	var name = $('#edit_name').val();
-	if (name == 'Optional') { name = ''; }
-
 	var description = $('#edit_description').val();
-	if (description == 'Optional') { description = ''; }
-
 	var link = $('#edit_link').val();
-	if (link == 'Optional') { link = ''; }
-
 	var type_id = $('#select_type').val();
 	var restricted = $('#restricted').is(':checked');
 	var json = JSON.stringify(items);
@@ -400,8 +380,7 @@ function get_sources () {
 
 function more() {
 	$('#more').hide();
-	$('#edit_name').closest('tr').fadeIn();
-	$('#edit_description').closest('tr').fadeIn();
+	$('#edit_name,#edit_description,#edit_link').closest('tr').fadeIn();
 }
 
 function build_taxonomy_tree(items) {
@@ -671,7 +650,7 @@ function sort_name (a,b) {
   <tr>
     <td>Organism:</td>
     <td>
-      <input id="edit_organism" onkeyup="wait_to_search(search_organisms, this.value);" size="45" spellcheck="false" />
+      <input id="edit_organism" type="search" placeholder="Search" onkeyup="wait_to_search(search_organisms, this.value);" size="45" spellcheck="false" />
       <span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all'>New</span>
     </td>
   </tr>	
@@ -689,7 +668,7 @@ function sort_name (a,b) {
   <tr>
     <td>Source:</td>
     <td>
-      <input id="edit_source" size="45" spellcheck="false" />
+      <input id="edit_source" type="search" placeholder="Search" size="45" spellcheck="false" />
       <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
     </td>
   </tr>
@@ -700,17 +679,17 @@ function sort_name (a,b) {
   <tr id='more'>
     <td colspan="2"><span class="link" onclick="more();">more...</span></td>
   </tr>  
-  <tr style='display:none;'>
+  <tr class="hidden">
     <td>Name:</td>
-    <td><input id="edit_name" type="textbox" size="58" spellcheck="false" /></td>
+    <td><input id="edit_name" type="textbox" placeholder="Optional" size="58" spellcheck="false" /></td>
   </tr>
-  <tr style='display:none;'>
+  <tr class="hidden">
     <td>Description:</td>
-    <td><textarea id="edit_description" rows="5" cols="50" ></textarea></td>
+    <td><textarea id="edit_description" placeholder="Optional" rows="5" cols="50" ></textarea></td>
   </tr>
-  <tr style='display:none;'>
+  <tr class="hidden">
     <td>Link:</td>
-    <td><input id="edit_link" type="textbox" size="58" /></td>
+    <td><input id="edit_link" type="textbox" placeholder="Optional" size="58" /></td>
   </tr> 
 </table>
 
@@ -722,7 +701,7 @@ function sort_name (a,b) {
 </div>
 <table id='file_table' class="small ui-widget-content ui-corner-all"></table>
 <span onClick="$('#file_select_dialog').dialog('open')" class='ui-button ui-corner-all'>Add Sequence Files</span>
-<span id="files_clear" onClick="clear_list();" class='ui-button ui-corner-all' style="display:none;">Clear List</span>
+<span id="files_clear" onClick="clear_list();" class='hidden ui-button ui-corner-all'>Clear List</span>
 <br>
 <br>
 <br>
@@ -735,7 +714,7 @@ function sort_name (a,b) {
 <TMPL_INCLUDE NAME='widgets/Beta.tmpl'>
 
 
-<div id="create_new_type_dialog" class="dialog_box" title="Create New Sequence Type" style="display:none;">
+<div id="create_new_type_dialog" class="hidden dialog_box" title="Create New Sequence Type">
   <table class="small">
     <tr>
       <td>Name:</td>
@@ -750,16 +729,16 @@ function sort_name (a,b) {
   <span id="create_type_button" onClick="create_sequence_type();" class="ui-state-disabled ui-button ui-corner-all">Create new type</span>
 </div>
 
-<div id="create_new_organism_dialog" class="dialog_box" title="Create New Organism" style="display:none;">
+<div id="create_new_organism_dialog" class="hidden dialog_box" title="Create New Organism">
 	<div style="padding-top:10px;">
     	<span class="small">Search NCBI:</span>
     	<input type="textbox" size="45" spellcheck="false" onkeyup="wait_to_search(search_ncbi_taxonomy, this.value);" />
 	    <img id="wait_ncbi" src="picts/ajax-loader.gif" style="opacity: 0;" />
 	</div>
-	<div id="tax_empty" class="small" style="display:none;font-style:italic;color:gray;margin-top:15px;margin-left:20px;">No matches</div>
-	<div id="tax_tree" class="small" style="display:none;border:1px solid lightgray;margin-top:5px;max-height:200px;max-width:415px;overflow-y:auto">
+	<div id="tax_empty" class="hidden small" style="font-style:italic;color:gray;margin-top:15px;margin-left:20px;">No matches</div>
+	<div id="tax_tree" class="hidden small" style="border:1px solid lightgray;margin-top:5px;max-height:200px;max-width:415px;overflow-y:auto">
 	</div>
-	<div id="edit_organism_info" style="display:none;padding-top:15px;">
+	<div id="edit_organism_info" class="hidden" style="padding-top:15px;">
 		<span class="small">You have selected:</span><br>
 		<table style="color:gray;">
 			<tr>
@@ -794,7 +773,7 @@ function sort_name (a,b) {
     		<span style="color:dimgray;">
 		    	Please specify a full <a target="_blank" href="http://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Root">NCBI taxonomy</a> for the organism description.<br>
 		    	<span class="link" onclick="$(this).hide().next().show();">Example</span>
-		    	<span style="display:none;">
+		    	<span class="hidden">
 			    	Example for <i>Oryza sativa japonica</i>:<br>
 			    	<div style="padding-left:15px;font-family:Courier New, Courier, monospace;">
 			    	Eukaryota; Viridiplantae; Streptophyta; Streptophytina; Embryophyta; Tracheophyta; Euphyllophyta; Spermatophyta; Magnoliophyta; Liliopsida; commelinids; Poales; Poaceae; BEP clade; Ehrhartoideae; Oryzeae; Oryza
@@ -810,7 +789,7 @@ function sort_name (a,b) {
 
 
 
-<div id="create_new_source_dialog" class="dialog_box" title="Create New Source" style="display:none;">
+<div id="create_new_source_dialog" class="hidden dialog_box" title="Create New Source">
   <table class="small">
     <tr>
       <td>Name:</td>
@@ -831,7 +810,7 @@ function sort_name (a,b) {
 
 
 
-<div id="load_dialog" class="dialog_box" title="Loading Genome ..." style="display:none;">
+<div id="load_dialog" class="hidden dialog_box" title="Loading Genome ...">
   <div id="load_genome_log" class="small ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
   </div>
   <br>
@@ -839,16 +818,16 @@ function sort_name (a,b) {
     <span class="small" style="float:right;">Link: <a href='<TMPL_VAR NAME="LINK">'><TMPL_VAR NAME="LINK"></a></span>
     Please wait ... <img src="picts/ajax-loader.gif"/>
   </div>
-  <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
+  <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
   <input id="genome_id" type="hidden" /> 
-  <span id="ok_button" onClick="$('#load_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all">OK</span>
-  <span id="finish_load_genome_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all">Continue to GenomeInfo</span>
-  <span id="cancel_load_genome_button" onClick="$('#load_dialog').dialog('close');" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
+  <span id="ok_button" onClick="$('#load_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all">OK</span>
+  <span id="finish_load_genome_button" onClick="continue_to_view();" style="float:right;" class="hidden ui-button ui-corner-all">Continue to GenomeInfo</span>
+  <span id="cancel_load_genome_button" onClick="$('#load_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go">Cancel</span>
 </div>
 
 
 
-<div id="file_select_dialog" class="dialog_box" title="Select Data File ..." style="display:none;">
+<div id="file_select_dialog" class="hidden dialog_box" title="Select Data File ...">
   <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
   <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all">Done</span>
 </div>
@@ -858,7 +837,6 @@ function sort_name (a,b) {
 <TMPL_IF NAME='ADMIN_AREA'>
 <script>
 $(document).ready(function() {
-	set_input('edit_user');
 	$("#edit_user").autocomplete({
 		source:[], 
 		focus: function() { return false; },
@@ -871,7 +849,7 @@ $(document).ready(function() {
   <tr>
     <td>Assign to user</td>
     <td>
-      <input id="edit_user" onkeyup="wait_to_search(search_users, this.value);" size="10" />
+      <input id="edit_user" type="search" placeholder="search" onkeyup="wait_to_search(search_users, this.value);" size="10" />
     </td>
   </tr>
   <tr>
