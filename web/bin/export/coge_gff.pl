@@ -53,7 +53,17 @@ unless ($item) {
     exit();
 }
 
+
+$org =~ s/\///g;
 $org =~ s/\s+/_/g;
+$org =~ s/\(//g;
+$org =~ s/\)//g;
+$org =~ s/://g;
+$org =~ s/;//g;
+$org =~ s/#/_/g;
+$org =~ s/'//g;
+$org =~ s/"//g;
+
 print "Content-disposition: attachement; filename=", $org, $id, ".gff\n\n";
 $item->gff(
     print                     => 1,
