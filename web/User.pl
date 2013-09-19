@@ -20,17 +20,16 @@ use CoGeX::ResultSet::Feature;
 use Benchmark;
 no warnings 'redefine';
 
-use vars qw($P $PAGE_TITLE $USER $coge %FUNCTION $FORM %ITEM_TYPE $MAX_SEARCH_RESULTS);
+use vars qw($P $PAGE_TITLE $USER $LINK $coge %FUNCTION $FORM %ITEM_TYPE $MAX_SEARCH_RESULTS);
 
 $PAGE_TITLE = 'User';
 
 $FORM = new CGI;
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
 	page_title => $PAGE_TITLE,
     ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
-    debug=>0,
+    url        => $FORM->url
 );
 
 # debug for fileupload:
@@ -92,8 +91,9 @@ sub gen_html {
     $template->param( USER => $name );
 
     #$template->param( TITLE      => 'User Profile' );
-    $template->param( PAGE_TITLE => 'User Profile' );
-    $template->param( LOGO_PNG   => "$PAGE_TITLE-logo.png" );
+    $template->param( PAGE_TITLE => 'User Profile',
+    				  PAGE_LINK       => $LINK,
+    				  LOGO_PNG   => "$PAGE_TITLE-logo.png" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => gen_body() );
     $template->param( ADJUST_BOX => 1 );
