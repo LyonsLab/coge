@@ -8,13 +8,13 @@ use CoGe::Accessory::Web;
 no warnings 'redefine';
 
 use vars
-  qw($P $PAGE_TITLE $USER $coge %FUNCTION $FORM %ITEM_TYPE $MAX_SEARCH_RESULTS);
+  qw($P $PAGE_TITLE $USER $coge %FUNCTION $FORM %ITEM_TYPE $MAX_SEARCH_RESULTS $LINK);
 
 $PAGE_TITLE = 'GenomeView2';
 
 $FORM = new CGI;
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
@@ -47,6 +47,7 @@ sub gen_html {
         HELP => "/wiki/index.php?title=$PAGE_TITLE",
         USER => ( $USER->user_name eq "public" ? '' : $USER->display_name ),
         PAGE_TITLE => 'Genome Viewer',
+        PAGE_LINK  => $LINK,
         LOGO_PNG   => "$PAGE_TITLE-logo.png",
         ADJUST_BOX => 1,
         BODY       => gen_body()

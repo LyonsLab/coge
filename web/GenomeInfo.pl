@@ -11,7 +11,7 @@ use Sort::Versions;
 no warnings 'redefine';
 
 use vars qw(
-  $P $PAGE_TITLE $USER $coge $FORM %FUNCTION $MAX_SEARCH_RESULTS
+  $P $PAGE_TITLE $USER $coge $FORM %FUNCTION $MAX_SEARCH_RESULTS $LINK
 );
 
 $PAGE_TITLE = 'GenomeInfo';
@@ -20,7 +20,7 @@ $FORM = new CGI;
 
 my $node_types = CoGeX::node_types();
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
@@ -449,6 +449,7 @@ sub generate_html {
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param(
         PAGE_TITLE => $PAGE_TITLE,
+        PAGE_LINK  => $LINK,
         HELP       => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl',
         USER       => $name,
         LOGO_PNG   => $PAGE_TITLE . "-logo.png",

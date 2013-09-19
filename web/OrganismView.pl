@@ -17,7 +17,7 @@ use Sort::Versions;
 
 no warnings 'redefine';
 
-use vars qw($P $PAGE_NAME $PAGE_TITLE
+use vars qw($P $PAGE_NAME $PAGE_TITLE $LINK
   $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM
   %FUNCTION $P $SERVER);
 
@@ -28,7 +28,7 @@ $FORM = new CGI;
 $PAGE_TITLE = 'OrganismView';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
@@ -114,9 +114,10 @@ sub gen_html {
     my ( $body, $seq_names, $seqs ) = gen_body();
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( PAGE_TITLE => 'OrganismView' );
-    $template->param( HEAD       => qq{} );
-    $template->param( HELP       => "/wiki/index.php?title=OrganismView" );
+    $template->param( PAGE_TITLE => 'OrganismView',
+    				  PAGE_LINK  => $LINK,
+    				  HEAD       => qq{},
+    				  HELP       => "/wiki/index.php?title=OrganismView" );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;

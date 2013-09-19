@@ -57,7 +57,7 @@ no warnings 'redefine';
 # for security purposes
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
-use vars qw($P $PAGE_TITLE $PAGE_NAME
+use vars qw($P $PAGE_TITLE $PAGE_NAME $LINK
   $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $GENOMETHREADER
   $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge
   $NUM_SEQS $MAX_SEQS $MAX_PROC %FUNCTION);
@@ -66,7 +66,7 @@ $FORM                 = new CGI;
 $CGI::POST_MAX        = 60 * 1024 * 1024;    # 24MB
 $CGI::DISABLE_UPLOADS = 0;
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
@@ -174,9 +174,10 @@ sub gen_html {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( LOGO_PNG   => "GEvo-logo.png" );
-    $template->param( TITLE      => 'Genome Evolution Analysis' );
-    $template->param( PAGE_TITLE => 'GEvo' );
-    $template->param( HELP       => '/wiki/index.php?title=GEvo' );
+    $template->param( TITLE      => 'Genome Evolution Analysis',
+    				  PAGE_TITLE => 'GEvo',
+    				  PAGE_LINK  => $LINK,
+    				  HELP       => '/wiki/index.php?title=GEvo' );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;

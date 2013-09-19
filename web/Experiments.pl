@@ -12,13 +12,13 @@ use File::Path;
 use Sort::Versions;
 no warnings 'redefine';
 
-use vars qw( $P $PAGE_TITLE $USER $coge $FORM %FUNCTION );
+use vars qw( $P $PAGE_TITLE $USER $LINK $coge $FORM %FUNCTION );
 
 $PAGE_TITLE = 'Experiments';
 
 $FORM = new CGI;
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
@@ -114,8 +114,9 @@ qq{<span class="link" onclick='window.open("ExperimentView.pl?eid=}
 sub gen_html {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( PAGE_TITLE => $PAGE_TITLE );
-    $template->param( HELP => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl' );
+    $template->param( PAGE_TITLE => $PAGE_TITLE,
+    				  PAGE_LINK  => $LINK,
+    				  HELP => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl' );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= ' ' . $USER->last_name

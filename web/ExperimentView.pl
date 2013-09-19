@@ -9,21 +9,19 @@ use Spreadsheet::WriteExcel;
 use File::Path;
 use Sort::Versions;
 
-use vars qw( $P $PAGE_TITLE $USER $coge $FORM $EMBED %FUNCTION);
+use vars qw( $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION);
 
 $PAGE_TITLE = "ExperimentView";
 
 $FORM = new CGI;
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
 );
 
 %FUNCTION = (
-    gen_html => \&gen_html,
-
     # remove_group            => \&remove_group,
     get_groups                 => \&get_groups,
     get_experiment_info        => \&get_experiment_info,
@@ -479,6 +477,7 @@ sub gen_html {
           if ( $USER->first_name && $USER->last_name );
         $template->param(
             PAGE_TITLE => $PAGE_TITLE,
+            PAGE_LINK  => $LINK,
             HELP       => '/wiki/index.php?title=' . $PAGE_TITLE,
             USER       => $name,
             LOGO_PNG   => "$PAGE_TITLE-logo.png",

@@ -6,13 +6,13 @@ use HTML::Template;
 use CoGeX;
 use CoGe::Accessory::Web;
 
-use vars qw( $P $PAGE_TITLE $USER $coge %FUNCTION $FORM );
+use vars qw( $P $PAGE_TITLE $USER $coge %FUNCTION $FORM $LINK );
 
 $PAGE_TITLE = 'Notebooks';
 
 $FORM = new CGI;
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
@@ -34,9 +34,10 @@ sub gen_html {
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER       => $name );
-    $template->param( TITLE      => qq{} );
-    $template->param( PAGE_TITLE => $PAGE_TITLE );
-    $template->param( LOGO_PNG   => "$PAGE_TITLE-logo.png" );
+    $template->param( TITLE      => qq{},
+    				  PAGE_TITLE => $PAGE_TITLE,
+    				  PAGE_LINK  => $LINK,
+    				  LOGO_PNG   => "$PAGE_TITLE-logo.png" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => gen_body() );
 

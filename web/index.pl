@@ -14,11 +14,11 @@ use CoGe::Accessory::Utils qw( units commify );
 use POSIX 'ceil';
 
 no warnings 'redefine';
-use vars qw($P $USER $FORM $coge);
+use vars qw($P $USER $FORM $coge $LINK);
 
 $FORM = new CGI;
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket => $FORM->param('ticket') || undef,
     url    => $FORM->url
 );
@@ -48,6 +48,7 @@ sub generate_html {
         TITLE =>
 'Accelerating <span style="color: #119911">Co</span>mparative <span style="color: #119911">Ge</span>nomics',
         PAGE_TITLE => 'Comparative Genomics',
+        PAGE_LINK  => $LINK,
         HELP       => '/wiki/index.php',
         USER       => $name,
         ADJUST_BOX => 1,

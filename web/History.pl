@@ -10,7 +10,7 @@ use JSON::XS;
 
 #use DBIx::Class::ResultClass::HashRefInflator;
 
-use vars qw($P $PAGE_TITLE $USER $coge %FUNCTION $FORM $MAX_RESULTS);
+use vars qw($P $PAGE_TITLE $USER $coge %FUNCTION $FORM $MAX_RESULTS $LINK);
 
 $PAGE_TITLE = 'History';
 
@@ -18,7 +18,7 @@ $MAX_RESULTS = 100;
 
 $FORM = new CGI;
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
@@ -43,8 +43,9 @@ sub gen_html {
     $template->param( USER => $name );
 
     #$template->param( TITLE      => qq{User History} );
-    $template->param( PAGE_TITLE => $PAGE_TITLE );
-    $template->param( LOGO_PNG   => "$PAGE_TITLE-logo.png" );
+    $template->param( PAGE_TITLE => $PAGE_TITLE,
+    				  PAGE_LINK  => $LINK,
+    				  LOGO_PNG   => "$PAGE_TITLE-logo.png" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => gen_body() );
 

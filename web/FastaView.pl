@@ -10,7 +10,7 @@ use Text::Wrap qw($columns &wrap);
 
 no warnings 'redefine';
 
-use vars qw($P $TEMPDIR $TEMPURL $FORM $USER $coge $PAGE_TITLE $PAGE_NAME);
+use vars qw($P $TEMPDIR $TEMPURL $FORM $USER $LINK $coge $PAGE_TITLE $PAGE_NAME);
 
 $PAGE_TITLE = 'FastaView';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
@@ -20,7 +20,7 @@ $TEMPURL    = $P->{TEMPURL} . "$PAGE_TITLE/";
 
 $FORM = new CGI;
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
@@ -61,8 +61,9 @@ sub gen_html {
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
 
     #       $template->param(TITLE=>'Fasta Viewer');
-    $template->param( PAGE_TITLE => 'FastaView' );
-    $template->param( HELP       => '/wiki/index.php?title=FastaView' );
+    $template->param( PAGE_TITLE => 'FastaView',
+    				  PAGE_LINK  => $LINK,
+    				  HELP       => '/wiki/index.php?title=FastaView' );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;

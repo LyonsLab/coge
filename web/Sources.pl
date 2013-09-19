@@ -11,14 +11,14 @@ use CoGeX;
 
 no warnings 'redefine';
 
-use vars qw($P $PAGE_NAME $PAGE_TITLE $USER $coge %FUNCTION $FORM);
+use vars qw($P $PAGE_NAME $PAGE_TITLE $USER $coge %FUNCTION $FORM $LINK);
 
 $PAGE_TITLE = 'Sources';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
 $FORM = new CGI;
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
@@ -169,9 +169,10 @@ sub gen_html {
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER       => $name );
-    $template->param( TITLE      => qq{} );
-    $template->param( PAGE_TITLE => qq{Sources} );
-    $template->param( LOGO_PNG   => "SourceView-logo.png" );
+    $template->param( TITLE      => qq{},
+    				  PAGE_TITLE => qq{Sources},
+    				  PAGE_LINK  => $LINK,
+    				  LOGO_PNG   => "SourceView-logo.png" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => gen_body() );
 
