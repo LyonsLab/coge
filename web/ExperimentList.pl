@@ -17,7 +17,7 @@ use DBIxProfiler;
 use File::Path;
 no warnings 'redefine';
 
-use vars qw( $P $PAGE_TITLE $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE
+use vars qw( $P $PAGE_TITLE $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $LINK
   $coge $cogeweb $FORM $URL $TEMPURL %FUNCTION );
 
 $DATE = sprintf(
@@ -31,7 +31,7 @@ $PAGE_NAME  = "$PAGE_TITLE.pl";
 
 $FORM = new CGI;
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
@@ -61,8 +61,9 @@ sub gen_html {
     my ($body) = gen_body();
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( PAGE_TITLE => 'ExperimentList' );
-    $template->param( HELP       => '/wiki/index.php?title=ExperimentList' );
+    $template->param( PAGE_TITLE => 'ExperimentList',
+    				  PAGE_LINK  => $LINK,
+    				  HELP       => '/wiki/index.php?title=ExperimentList' );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;

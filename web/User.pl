@@ -92,7 +92,7 @@ sub gen_html {
 
     #$template->param( TITLE      => 'User Profile' );
     $template->param( PAGE_TITLE => 'User Profile',
-    				  PAGE_LINK       => $LINK,
+    				  PAGE_LINK  => $LINK,
     				  LOGO_PNG   => "$PAGE_TITLE-logo.png" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => gen_body() );

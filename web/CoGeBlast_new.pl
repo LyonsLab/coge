@@ -32,7 +32,7 @@ use Parallel::ForkManager;
 use Sort::Versions;
 
 use vars qw($P $PAGE_NAME $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR
-  $FORMATDB $BLAST_PROGS $FORM $USER $coge $cogeweb $RESULTSLIMIT
+  $FORMATDB $BLAST_PROGS $FORM $USER $LINK $coge $cogeweb $RESULTSLIMIT
   $MAX_PROC $MAX_SEARCH_RESULTS %FUNCTION $PAGE_TITLE $YERBA);
 
 $PAGE_TITLE = "CoGeBlast";
@@ -43,7 +43,7 @@ $MAX_SEARCH_RESULTS = 1000;
 
 $FORM = new CGI;
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
@@ -116,8 +116,9 @@ sub gen_html {
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
 
     #$template->param(TITLE=>'CoGe BLAST Analysis');
-    $template->param( PAGE_TITLE => 'BLAST' );
-    $template->param( HELP       => '/wiki/index.php?title=CoGeBlast' );
+    $template->param( PAGE_TITLE => 'BLAST',
+    				  PAGE_LINK  => $LINK, 
+    				  HELP       => '/wiki/index.php?title=CoGeBlast' );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= ' ' . $USER->last_name if $USER->first_name && $USER->last_name;

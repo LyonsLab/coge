@@ -16,7 +16,7 @@ use Sort::Versions;
 no warnings 'redefine';
 
 use vars qw(
-  $P $PAGE_TITLE
+  $P $PAGE_TITLE $LINK
   $TEMPDIR $BINDIR $USER $coge $FORM $TEMPURL
   %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $OPEN_STATUS
 );
@@ -25,7 +25,7 @@ $PAGE_TITLE = 'LoadAnnotation';
 
 $FORM = new CGI;
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
@@ -64,8 +64,9 @@ sub generate_html {
     my $html;
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( PAGE_TITLE => $PAGE_TITLE );
-    $template->param( HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+    $template->param( PAGE_TITLE => $PAGE_TITLE,
+    				  PAGE_LINK  => $LINK,
+    				  HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= ' ' . $USER->last_name

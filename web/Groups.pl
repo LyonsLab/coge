@@ -10,21 +10,20 @@ use HTML::Template;
 
 no warnings 'redefine';
 
-use vars qw($P $PAGE_TITLE $PAGE_NAME $USER $coge %FUNCTION $FORM);
+use vars qw($P $PAGE_TITLE $PAGE_NAME $USER $coge %FUNCTION $FORM $LINK);
 
 $PAGE_TITLE = 'Groups';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
 $FORM = new CGI;
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
 );
 
 %FUNCTION = (
-    gen_html                 => \&gen_html,
     get_groups_for_user      => \&get_groups_for_user,
     create_group             => \&create_group,
     delete_group             => \&delete_group,
@@ -43,9 +42,10 @@ sub gen_html {
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER       => $name );
-    $template->param( TITLE      => qq{Manage User Groups} );
-    $template->param( PAGE_TITLE => $PAGE_TITLE );
-    $template->param( LOGO_PNG   => "$PAGE_TITLE-logo.png" );
+    $template->param( TITLE      => qq{Manage User Groups},
+    				  PAGE_TITLE => $PAGE_TITLE,
+    				  PAGE_LINK  => $LINK,
+    				  LOGO_PNG   => "$PAGE_TITLE-logo.png" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => gen_body() );
     $template->param( ADJUST_BOX => 1 );

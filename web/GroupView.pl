@@ -11,7 +11,7 @@ use JSON::XS;
 no warnings 'redefine';
 
 use vars
-  qw($P $PAGE_TITLE $PAGE_NAME $USER $coge %FUNCTION $FORM $MAX_SEARCH_RESULTS);
+  qw($P $PAGE_TITLE $PAGE_NAME $USER $coge %FUNCTION $FORM $MAX_SEARCH_RESULTS $LINK);
 
 $PAGE_TITLE = 'GroupView';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
@@ -20,7 +20,7 @@ $FORM = new CGI;
 
 $MAX_SEARCH_RESULTS = 1000;
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
@@ -49,9 +49,10 @@ sub gen_html {
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER       => $name );
-    $template->param( TITLE      => qq{} );
-    $template->param( PAGE_TITLE => qq{GroupView} );
-    $template->param( LOGO_PNG   => "GroupView-logo.png" );
+    $template->param( TITLE      => qq{},
+    			 	  PAGE_TITLE => qq{GroupView},
+    				  PAGE_LINK  => $LINK,
+    				  LOGO_PNG   => "GroupView-logo.png" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => gen_body() );
     $template->param( ADJUST_BOX => 1 );

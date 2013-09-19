@@ -10,7 +10,7 @@ use HTML::Template;
 use Spreadsheet::WriteExcel;
 no warnings 'redefine';
 
-use vars qw($P $PAGE_TITLE $PAGE_NAME
+use vars qw($P $PAGE_TITLE $PAGE_NAME $LINK
   $TEMPDIR $USER $DATE $BASEFILE $COGEDIR $coge $cogeweb
   $FORM $URL $HISTOGRAM $TEMPURL %FUNCTION $LIST_TYPE);
 
@@ -25,7 +25,7 @@ $PAGE_NAME  = "$PAGE_TITLE.pl";
 
 $FORM = new CGI;
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
@@ -71,8 +71,9 @@ sub gen_html {
     my ($body) = gen_body();
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( PAGE_TITLE => 'GenomeList' );
-    $template->param( HELP       => '/wiki/index.php?title=GenomeList' );
+    $template->param( PAGE_TITLE => 'GenomeList',
+    				  PAGE_LINK  => $LINK,
+    				  HELP       => '/wiki/index.php?title=GenomeList' );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;

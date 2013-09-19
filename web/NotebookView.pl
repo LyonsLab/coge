@@ -15,14 +15,14 @@ no warnings 'redefine';
 
 use vars
   qw($P $PAGE_TITLE $PAGE_NAME $TEMPDIR $USER $BASEFILE $coge %FUNCTION $EMBED
-  $FORM $TEMPDIR $TEMPURL $MAX_SEARCH_RESULTS);
+  $FORM $TEMPDIR $TEMPURL $MAX_SEARCH_RESULTS $LINK);
 
 $PAGE_TITLE = 'NotebookView';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
 $FORM = new CGI;
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
@@ -97,6 +97,7 @@ sub gen_html {
             USER       => $name,
             HELP       => "/wiki/index.php?title=$PAGE_TITLE",
             PAGE_TITLE => $PAGE_TITLE,
+            PAGE_LINK  => $LINK,
             LOGO_PNG   => "$PAGE_TITLE-logo.png",
             ADJUST_BOX => 1
         );

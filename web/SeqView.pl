@@ -11,14 +11,14 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw( commify );
 
-use vars qw($P $PAGE_NAME $PAGE_TITLE $FORM $USER $coge);
+use vars qw($P $PAGE_NAME $PAGE_TITLE $FORM $USER $coge $LINK);
 
 $FORM = new CGI;
 
 $PAGE_TITLE = 'SeqView';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
@@ -52,9 +52,9 @@ sub gen_html {
           HTML::Template->new(
             filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
 
-        #    $template->param(TITLE=>'Sequence Viewer');
-        $template->param( PAGE_TITLE => 'SeqView' );
-        $template->param( HELP       => '/wiki/index.php?title=SeqView' );
+        $template->param( PAGE_TITLE => 'SeqView',
+        				  PAGE_LINK  => $LINK,
+        				  HELP       => '/wiki/index.php?title=SeqView' );
         my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
         $name .= " " . $USER->last_name

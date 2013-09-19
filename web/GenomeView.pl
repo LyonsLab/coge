@@ -14,14 +14,14 @@ use Data::Dumper;
 no warnings 'redefine';
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
-use vars qw($P $PAGE_TITLE $PAGE_NAME $DEBUG $USER $FORM $coge);
+use vars qw($P $PAGE_TITLE $PAGE_NAME $DEBUG $USER $FORM $coge $LINK);
 
 $PAGE_TITLE = 'GenomeView';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 $DEBUG      = 0;
 $FORM       = new CGI;
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
@@ -46,8 +46,9 @@ sub gen_html {
     $template->param( LOGO_PNG => "GenomeView-logo.png" );
 
     #$template->param(TITLE=>'Genome Viewer');
-    $template->param( PAGE_TITLE => 'Genome Viewer' );
-    $template->param( HELP       => '/wiki/index.php?title=GenomeView' );
+    $template->param( PAGE_TITLE => 'Genome Viewer',
+    				  PAGE_LINK  => $LINK,
+    				  HELP       => '/wiki/index.php?title=GenomeView' );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;

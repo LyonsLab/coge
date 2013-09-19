@@ -12,7 +12,7 @@ use POSIX;
 use Storable qw(dclone);
 no warnings 'redefine';
 
-use vars qw($P $USER $FORM $ACCN $FID $coge $PAGE_NAME $PAGE_TITLE);
+use vars qw($P $USER $FORM $ACCN $FID $coge $PAGE_NAME $PAGE_TITLE $LINK);
 
 $PAGE_TITLE = 'FeatView';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
@@ -23,7 +23,7 @@ $FORM = new CGI;
 $ACCN = $FORM->param('accn');
 $FID  = $FORM->param('fid');
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
@@ -469,8 +469,9 @@ sub gen_html {
     $template->param( LOGO_PNG => "FeatView-logo.png" );
 
     #$template->param(TITLE=>'Feature Viewer');
-    $template->param( PAGE_TITLE => 'FeatView' );
-    $template->param( HELP       => "/wiki/index.php?title=FeatView" );
+    $template->param( PAGE_TITLE => 'FeatView',
+    				  PAGE_LINK  => $LINK,
+    				  HELP       => "/wiki/index.php?title=FeatView" );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
