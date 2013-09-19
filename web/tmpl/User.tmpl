@@ -97,9 +97,8 @@ $(function() {
 	// Initiate refresh loop
 	schedule_poll();
 
-	// Initialize add-to-notebok dialog
+	// Initialize add-to-notebo0k dialog
 	setTimeout(search_notebooks, 1000);
-	
 });
 
 function getURLParameter(name) {
@@ -977,7 +976,7 @@ function toggle_star(img) {
 		</ul>
 		<span id="undelete_button" onClick="undelete_items();" class="item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
 		<span id="cancel_button" onClick="cancel_jobs();" class="item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
-		<input id="search_input" type="search" maxlength="20" style="float:right;margin-right:15px;vertical-align:top;border:1px solid lightgray;" onkeyup="filter_contents();" />
+		<input id="search_input" type="search" placeholder="Search" size="25" style="float:right;margin-right:15px;vertical-align:top;border:1px solid lightgray;" onkeyup="filter_contents();" />
 	</div>
 
 	<div id="contents_panel" class="small panel">
