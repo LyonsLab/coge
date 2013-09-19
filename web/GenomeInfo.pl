@@ -61,6 +61,7 @@ sub get_genome_info {
         VERSION        => $genome->version,
         TYPE           => $genome->type->info,
         SOURCE         => join( ',', map { $_->name } $genome->source ),
+        LINK           => $genome->link,
         RESTRICTED     => ( $genome->restricted ? 'Yes' : 'No' ),
         USERS_WITH_ACCESS => ( $genome->restricted ? join(', ', map { $_->display_name } $USER->users_with_access($genome))
                                                    : 'Everyone' ),
@@ -90,6 +91,7 @@ sub edit_genome_info {
         VERSION          => $genome->version,
         TYPE             => $genome->type->name,
         SOURCE           => join( ',', map { $_->name } $genome->source ),
+        LINK             => $genome->link,
         RESTRICTED       => $genome->restricted,
         NAME             => $genome->name,
         DESCRIPTION      => $genome->description
@@ -113,6 +115,7 @@ sub update_genome_info {
     my $restricted  = $opts{restricted};
     my $org_name    = $opts{org_name};
     my $source_name = $opts{source_name};
+    my $link        = $opts{link};
     my $timestamp   = $opts{timestamp};
 
 # print STDERR "gid=$gid organism=$org_name version=$version source=$source_name\n";
@@ -133,6 +136,7 @@ sub update_genome_info {
     $genome->name($name);
     $genome->description($description);
     $genome->version($version);
+    $genome->link($link);
     $genome->genomic_sequence_type_id($type_id);
     $genome->restricted( $restricted eq 'true' );
 
