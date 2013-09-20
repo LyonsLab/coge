@@ -75,6 +75,9 @@ unless ( ( defined $dagfile && -r $dagfile )
     || -r $alignfile
     || -r "$alignfile.gz" )
 {
+  print qq{
+Need to define an input file for dots.  Either the syntenic pairs file or the alignment file.
+};
     usage();
 }
 
@@ -586,6 +589,7 @@ sub draw_dots {
         my ( $b, $chr2 ) = split /_/, $line[4], 2;
         my $special = 0
           ; #stupid variable name so that if we are viewing a single chr to single chr comparison within the same organism, this will make collinear matches appear on the inverse section
+
         if ( $CHR1 && $CHR2 ) {
             if ( $add_inverse && $CHR1 eq $chr2 && $CHR2 eq $chr1 ) {
                 $special = 1;
@@ -652,6 +656,8 @@ sub draw_dots {
 
         my $x = sprintf( "%.0f", $midx * $x_pix_per_bp );
         my $y = sprintf( "%.0f", $midy * $y_pix_per_bp );
+
+
         ( $x, $y ) = ( $y, $x ) if $special;
         $val = 0 unless $val;    #give it some value for later sorting
         $x = $width - ceil( $tsize / 2 ) if $x >= $width;
