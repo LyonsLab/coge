@@ -50,17 +50,17 @@ a:hover {
 
 div.box {
   padding:10px;
-  padding-bottom:50px;
+  padding-bottom:70px;
   margin-top:3px;
   border-top: 1px solid lightgray;
-  overflow-y: auto;
+  overflow-y:auto;
 }
 
 div.footer {
-	position:absolute;
-	bottom:15px;
-	left:0;
-	width:100%;
+	position:relative;
+	margin-top: -55px;
+	height: 55px;
+	clear: both;
 	border-top:1px solid lightgray;
 }
 
