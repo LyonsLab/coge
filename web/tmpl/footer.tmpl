@@ -1,20 +1,18 @@
-<div style="float:right;" >
-	<a target="_blank" href="http://www.moore.org" style="float:left;padding-top:7px;">
-		<img style="padding-right:15px;" src="./picts/Moore_Foundation.png"/>
-	</a>
-	<a target="_blank" href="http://www.iplantcollaborative.org" style="float:right">
-		<img src="./picts/iplant_power.png"/>
-	</a>
+<div class="footer">
+	<div style="float:right;" >
+		<a target="_blank" href="http://www.moore.org" style="float:left;padding-top:7px;">
+			<img style="padding-right:15px;" src="./picts/Moore_Foundation.png"/>
+		</a>
+		<a target="_blank" href="http://www.iplantcollaborative.org" style="float:right">
+			<img src="./picts/iplant_power.png"/>
+		</a>
+	</div>
+	<div class="small" style="padding:5px;color:gray;">
+		<img style="vertical-align:middle;" src="./picts/CoGe_logo_small.png"/>
+		<span>Questions, problems, suggestions? 
+		<a href="mailto:coge.genome@gmail.com?subject=CoGe's <TMPL_VAR NAME=PAGE_TITLE>&body=Link%20to%20page:%20%20<TMPL_VAR NAME=PAGE_LINK>">Contact us</a></span>
+	</div>
 </div>
-<div class="small" style="padding:5px;color:gray;">
-	<img style="vertical-align:middle;" src="./picts/CoGe_logo_small.png"/>
-	<span>Questions, problems, suggestions? 
-	<a href="mailto:coge.genome@gmail.com?subject=CoGe's <TMPL_VAR NAME=PAGE_TITLE>&body=Link%20to%20page:%20%20<TMPL_VAR NAME=PAGE_LINK>">Contact us</a></span>
-</div>
-<!--
-<div><br><span class="xsmall">Date: <TMPL_VAR NAME=DATE> </span></div>
-<font class="small"><span style="color:red;">Warning:</span> This site uses <a href="http://en.wikipedia.org/wiki/Ajax_(programming)">AJAX</a>.  Don't press your browser's back button!</font>
--->
 
 <script type="text/javascript">
 function login_cas(){
@@ -24,9 +22,7 @@ function login_cas(){
 
 var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
 document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
-</script>
 
-<script type="text/javascript">
 $(document).ready(function(){
 	if ("<TMPL_VAR NAME=USER>".match(/public/i)) { return; }
 	else { $('#logout').show(0); }

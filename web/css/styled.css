@@ -50,11 +50,18 @@ a:hover {
 
 div.box {
   padding:10px;
+  padding-bottom:50px;
   margin-top:3px;
   border-top: 1px solid lightgray;
-  border-bottom: 1px solid lightgray;
-  height: 85%;
   overflow-y: auto;
+}
+
+div.footer {
+	position:absolute;
+	bottom:15px;
+	left:0;
+	width:100%;
+	border-top:1px solid lightgray;
 }
 
 div.panel {
