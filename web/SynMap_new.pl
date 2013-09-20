@@ -2979,13 +2979,23 @@ sub get_results {
         #######################################################################
         # Homologs
         #######################################################################
+# mdb removed 9/20/13 issue 77
+#        my $fasta1_url = _filename_to_link(
+#            file => $fasta1,
+#            msg  => qq{Fasta file for $org_name1: $feat_type1}
+#        );
+#        my $fasta2_url = _filename_to_link(
+#            file => $fasta2,
+#            msg  => qq{Fasta file for $org_name2: $feat_type2}
+#        );
+
+		# mdb added 9/20/13 issue 77
         my $fasta1_url = _filename_to_link(
-            file => $fasta1,
+            url => "services/JBrowse/service.pl/sequence/$dsgid1",
             msg  => qq{Fasta file for $org_name1: $feat_type1}
         );
-
         my $fasta2_url = _filename_to_link(
-            file => $fasta2,
+            url => "services/JBrowse/service.pl/sequence/$dsgid2",
             msg  => qq{Fasta file for $org_name2: $feat_type2}
         );
 
@@ -3220,13 +3230,15 @@ sub _filename_to_link {
         @_,
     );
     my $file = $opts{file};
-    return unless $file;
+    my $url = $opts{url};
+    return unless ($file or $url);
 
     my $link;
-
-    if ( -r $opts{file} ) {
-        my $url = $opts{file};
-        $url =~ s/$DIR/$URL/;
+    if ( -r $file or $url) {
+    	if (!$url) {
+        	$url = $opts{file};
+        	$url =~ s/$DIR/$URL/;
+    	}
 
         $link =
             q{<span class="}
