@@ -50,6 +50,10 @@ a:hover {
 
 div.box {
   padding:10px;
+  margin-top:3px;
+  border-top: 1px solid lightgray;
+  border-bottom: 1px solid lightgray;
+  height: 85%;
 }
 
 div.panel {
@@ -58,6 +62,10 @@ div.panel {
 
 .prep {
   white-space:pre;
+}
+
+.header {
+	font-weight: bold;
 }
 
 .title {
