@@ -122,12 +122,10 @@ sub gen_html {
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER     => $name );
-    $template->param( BOX_NAME => "Search for organisms and genomes" );
     $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
     $template->param( LOGO_PNG => "OrganismView-logo.png" );
     $template->param( BODY     => $body );
 
-    #	$template->param(ADJUST_BOX=>1);
     $html .= $template->output;
     return $html;
 }
@@ -260,8 +258,8 @@ sub edit_genome_info {
     my $ver     = $dsg->version;
     my $message = $dsg->message;
     my $link    = $dsg->link;
-
     my $html = qq{
+
 <table class=small>
  <tr>
   <td>Name:</td>

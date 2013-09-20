@@ -183,13 +183,11 @@ sub gen_html {
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER   => $name );
     $template->param( LOGON  => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE   => $DATE );
     $template->param( NO_BOX => 1 );
     $template->param( BODY   => gen_body() );
     my $prebox = HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo.tmpl' );
     $prebox->param( RESULTS_DIV => 1 );
     $template->param( PREBOX     => $prebox->output );
-    $template->param( ADJUST_BOX => 1 );
     $html .= $template->output;
     return $html;
 }
@@ -609,7 +607,6 @@ qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>
     $gobe_version =~ s/\n//g;
     $template->param( GOBE_VERSION => $gobe_version );
 
-    #$box->param( BOX_NAME                => "GEvo Configuration:" );
     $template->param( OPTIONS            => 1 );
     $template->param( ALIGNMENT_PROGRAMS => algorithm_list($prog) );
     $template->param( SAVE_SETTINGS      => gen_save_settings($num_seqs) )
