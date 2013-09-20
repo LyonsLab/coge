@@ -1619,7 +1619,6 @@ sub go {
         $blastdb = $fasta2;
         push @blastdb_files, $blastdb;
     }
-
     my ( $orgkey1, $orgkey2 ) = ( $title1, $title2 );
     my %org_dirs = (
         $orgkey1 . "_"
@@ -1682,7 +1681,6 @@ sub go {
 
         ( undef, $cmd ) = CoGe::Accessory::Web::check_taint($cmd);
         push @blastdb_files, $fasta;
-
         $workflow->add_job(
             cmd         => $cmd,
             script      => undef,
@@ -2399,7 +2397,8 @@ sub get_results {
     }
 
     if ( $job->status == 1 ) {
-        return qq{<span class="alert">The analysis is still running.</span>};
+        ;
+        #return qq{<span class="alert">The analysis is still running.</span>};
     }
     elsif ( $job->status == 3 ) {
         return qq{<span class="alert">The analysis was cancelled.</span>};
