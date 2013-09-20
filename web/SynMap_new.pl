@@ -89,9 +89,10 @@ $LASTZ =
 $LAST =
     $P->{MULTI_LAST}
   . " -a $MAX_PROC --path="
-  . $P->{LAST_PATH}
-  . " --dbpath="
-  . $P->{LASTDB};
+  . $P->{LAST_PATH};
+# mdb removed 9/20/13 issue 213
+#  . " --dbpath="
+#  . $P->{LASTDB};
 $GZIP          = $P->{GZIP};
 $GUNZIP        = $P->{GUNZIP};
 $KSCALC        = $P->{KSCALC};
@@ -1664,6 +1665,11 @@ sub go {
             push @blastargs, [ "-o", $outfile, 1 ];
         }
         elsif ( $cmd =~ /last_wrapper/i ) {
+        	# mdb added 9/20/13 issue 213
+        	my $dbpath = $P->{LASTDB} . '/' . $dsgid2;		
+        	mkpath($dbpath);
+			push @blastargs, [ "--dbpath", $dbpath, 0 ];
+			
             push @blastargs, [ "",   $db,      1 ];
             push @blastargs, [ "",   $fasta,   1 ];
             push @blastargs, [ "-o", $outfile, 1 ];
