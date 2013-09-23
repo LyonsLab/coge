@@ -148,13 +148,24 @@ sub get_status {
         }
     );
 
-    $msg = zmq_sendmsg( $socket, $request );
-    $msg = zmq_recvmsg($socket);
+    zmq_send( $socket, $request, ZMQ_NOBLOCK );
+    my $wait = 0;
+    my $THRESHOLD = 5;
 
-    my $data = zmq_msg_data($msg);
+    while ($THRESHOLD > $wait && not defined($msg)) {
+        $msg = zmq_recvmsg($socket, ZMQ_NOBLOCK);
+        sleep $wait;
+        $wait = $wait + 0.25;
+    }
+
+    zmq_close($socket);
+
+    my $data = zmq_msg_data($msg) if $msg;
+    $data //= '{"status" : "ERROR"}';
+
     my $res  = decode_json($data);
 
-    return ${$res}{'status'};
+    return ${$res}{status};
 }
 
 # Private functions
