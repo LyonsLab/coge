@@ -148,6 +148,7 @@ div.panel {
 
 .error-box {
   border:1px solid lightgray;
+  text-align:center;
   padding:5px;
   margin:5px;
   margin-bottom:10px;
