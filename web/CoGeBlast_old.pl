@@ -24,6 +24,7 @@ use POSIX;
 use File::Temp;
 use File::Basename;
 use File::Path;
+use File::Spec;
 use Spreadsheet::WriteExcel;
 use Benchmark qw(:all);
 use Parallel::ForkManager;
@@ -762,15 +763,27 @@ sub blast_search {
     my $count = 1;
     my $t2    = new Benchmark;
     foreach my $dsgid (@dsg_ids) {
-        my ( $org, $db, $dsg ) = get_blast_db($dsgid);
-        next unless $db;
+        my ( $org, $dbfasta, $dsg ) = get_blast_db($dsgid);
+        next unless $dbfasta;
         my $command;
         my $outfile;
         my $report;
         if ( $program eq "lastz" ) {
-            $command = $pre_command . " $db $opts";
+            $command = $pre_command . " $dbfasta $opts";
         }
         else {
+            my $dbpath = File::Spec->catdir(($BLASTDBDIR, $dsgid));
+            mkpath($dbpath, 1, 0775);
+            my $db = File::Spec->catdir(($dbpath, $dsgid));
+
+            my $success = generate_blast_db(
+                fasta   => $dbfasta,
+                blastdb => $db,
+                org     => $dsg->organism->name
+            );
+
+            next unless $success;
+
             $command = $pre_command;
             $command .= " -db $db";
 
@@ -1468,11 +1481,6 @@ sub get_blast_db {
     #$org_name .= " (".$gst->name.")" if $gst;
 
     my $db      = $dsg->file_path;
-    my $success = generate_blast_db(
-        fasta   => $db,
-        blastdb => $db,
-        org     => $dsg->organism->name
-    );
     return unless -r $db;
     return $org_name, $db, $dsg;
 }
