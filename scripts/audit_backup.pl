@@ -5,7 +5,7 @@
 #
 # Usage:
 #    ./audit_backup.pl <source_dir> <backup_dir>
-#	 e.g., ./audit_backup.pl /storage/coge/data/genomic_sequence i:/iplant/home/coge/backup/genomic_sequence
+#	 e.g., ./audit_backup.pl /storage/coge/data/genomic_sequence /iplant/home/coge/backup/genomic_sequence
 #
 # Created 9/27/13 by mdb
 #-------------------------------------------------------------------------------
