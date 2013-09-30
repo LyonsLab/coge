@@ -990,6 +990,7 @@ sub go_synfind {
 
         $workflow->add_job(
             cmd     => $GEN_FASTA,
+            description => "Generating fasta file...",
             script  => undef,
             args    => $fasta_args,
             inputs  => undef,
@@ -1004,6 +1005,7 @@ sub go_synfind {
 
         $workflow->add_job(
             cmd     => $DATASETGROUP2BED,
+            description => "Creating bed files...",
             script  => undef,
             args    => $bed_args,
             inputs  => undef,
@@ -1091,6 +1093,7 @@ sub go_synfind {
 
         $workflow->add_job(
             cmd     => $blast_cmd,
+            description => "Running blast ($algo) algorithm...",
             script  => undef,
             args    => $blast_args,
             inputs  => [ $target->{query_fasta}, $target->{target_fasta} ],
@@ -1112,6 +1115,7 @@ sub go_synfind {
 
         $workflow->add_job(
             cmd     => $CONVERT_BLAST,
+            description => "Converting blast file to short names...",
             script  => undef,
             args    => $convert_args,
             inputs  => $convert_inputs,
@@ -1143,6 +1147,7 @@ sub go_synfind {
 
         $workflow->add_job(
             cmd     => $BLAST2RAW,
+            description => "Finding and removing local duplications...",
             script  => undef,
             args    => $raw_args,
             inputs  => $raw_inputs,
@@ -1176,6 +1181,7 @@ sub go_synfind {
 
         $workflow->add_job(
             cmd     => $SYNTENY_SCORE,
+            description => "Running Synteny Score...",
             script  => undef,
             args    => $synteny_score_args,
             inputs  => $synteny_score_inputs,
