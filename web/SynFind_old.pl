@@ -844,6 +844,44 @@ sub go_synfind {
     $synfind_link .= ";dsgid=$dsgids;qdsgid=$source_dsgid";
     $synfind_link .= ";sd=$depth" if $depth;
 
+
+    my @ids = split( /,/, $dsgids );
+
+    my $list_link =
+        "<a href='GenomeList.pl?dsgid=$dsgids' target='_blank'>"
+      . @ids
+      . ' genome'
+      . ( @ids > 1 ? 's' : '' ) . '</a>';
+
+    my $feat = $coge->resultset('Feature')->find($fid);
+    my $feat_url = "<a href='FeatView.pl?fid=$fid' target='_blank'>" . $feat->name . "</a>";
+
+    my ( $source_name, $titleA ) = gen_org_name(
+        dsgid     => $source_dsgid,
+        write_log => 0
+    );
+
+    #my $name = "<a href='OrganismView.pl?dsgid=$source_dsgid' target='_blank'>$source_name</a>";
+
+
+    my $log_msg = 'Searched ' . $list_link . '  for feature ' . $feat_url;
+
+    my $tiny_synfind_link = CoGe::Accessory::Web::get_tiny_link(
+        db      => $coge,
+        user_id => $USER->id,
+        page    => $PAGE_NAME,
+        url     => $synfind_link
+    );
+
+    my $log = CoGe::Accessory::Web::log_history(
+        db      => $coge,
+        user_id => $USER->id,
+        description => $log_msg,
+        page    => $PAGE_TITLE,
+        link => $tiny_synfind_link,
+    );
+
+
    #convert numerical codes for different scoring functions to appropriate types
     if ( $scoring_function == 2 ) {
         $scoring_function = "density";
