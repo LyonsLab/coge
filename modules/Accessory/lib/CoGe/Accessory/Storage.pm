@@ -212,10 +212,11 @@ sub get_genome_seq {
     # Determine file path - first try new indexed method, otherwise
     # revert to old method
     my $file_path = get_genome_file($gid);
-    print STDERR "file_path=$file_path " . (-s "$file_path.fai") . "\n";
+    my $file_index_sz = -s "$file_path.fai";
+    #print STDERR "file_path=$file_path file_index_sz=$file_index_sz\n";
 
-    if ( -s "$file_path.fai" ) {    # new indexed method
-                                    # Kludge chr/contig name
+    if ($file_index_sz) {    # new indexed method
+                             # Kludge chr/contig name
         if   ( $chr =~ /\D+/ ) { $chr = 'lcl|' . $chr; }
         else                   { $chr = 'gi|' . $chr; }
 
