@@ -212,7 +212,7 @@ sub get_genome_seq {
     # Determine file path - first try new indexed method, otherwise
     # revert to old method
     my $file_path = get_genome_file($gid);
-    #print STDERR "file_path=$file_path\n";
+    print STDERR "file_path=$file_path " . (-s "$file_path.fai") . "\n";
 
     if ( -s "$file_path.fai" ) {    # new indexed method
                                     # Kludge chr/contig name
@@ -224,8 +224,7 @@ sub get_genome_seq {
           $chr . ( defined $start && defined $stop ? ":$start-$stop" : '' );
         my $samtools = CoGe::Accessory::Web::get_defaults()->{'SAMTOOLS'};
         unless ($samtools) {
-            print STDERR
-"Storage::get_genome_seq: WARNING, conf file parameter SAMTOOLS is blank!\n";
+            print STDERR "Storage::get_genome_seq: WARNING, conf file parameter SAMTOOLS is blank!\n";
         }
         my $cmd = "$samtools faidx $file_path '$region'";
 
@@ -241,35 +240,39 @@ sub get_genome_seq {
         #print STDERR "$seq\n";
         my $cmdStatus = $?;
         if ( $cmdStatus != 0 ) {
-            print STDERR "Error: command failed with rc=$cmdStatus: $cmd\n";
+            print STDERR "Storage::get_genome_seq: command failed with rc=$cmdStatus: $cmd\n";
             return;
         }
     }
-    else {    # old method
-        $file_path =
-            CoGe::Accessory::Web::get_defaults()->{'SEQDIR'} . '/'
-          . get_tiered_path($gid)
-          . "/chr/$chr";
-
-        # Extract requested piece of sequence file
-        open( my $fh, $file_path ) or die "File not found: '$file_path'";
-        seek( $fh, $start - 1, 0 ) if ( $start > 1 );
-
-        $len = -s $file_path unless ( defined $len );
-        if ($fasta) {
-            $seq = ">$chr\n";
-            while ( $len > 0 ) {
-                my $count = read( $fh, my $s, min( $len, $FASTA_LINE_LENGTH ) );
-                $seq .= $s . "\n";
-                $len -= $count;
-            }
-        }
-        else {
-            read( $fh, $seq, $len );
-        }
-
-        close($fh);
+    else {
+    	print STDERR "Storage::get_genome_seq: ERROR, file not found or zero length: $file_path\n";
+    	return;
     }
+#    else {    # old method
+#        $file_path =
+#            CoGe::Accessory::Web::get_defaults()->{'SEQDIR'} . '/'
+#          . get_tiered_path($gid)
+#          . "/chr/$chr";
+#
+#        # Extract requested piece of sequence file
+#        open( my $fh, $file_path ) or die "File not found: '$file_path'";
+#        seek( $fh, $start - 1, 0 ) if ( $start > 1 );
+#
+#        $len = -s $file_path unless ( defined $len );
+#        if ($fasta) {
+#            $seq = ">$chr\n";
+#            while ( $len > 0 ) {
+#                my $count = read( $fh, my $s, min( $len, $FASTA_LINE_LENGTH ) );
+#                $seq .= $s . "\n";
+#                $len -= $count;
+#            }
+#        }
+#        else {
+#            read( $fh, $seq, $len );
+#        }
+#
+#        close($fh);
+#    }
 
     $seq = reverse_complement($seq)
       if ( defined $strand and $strand =~ /-/ );  #FIXME broken for fasta format
