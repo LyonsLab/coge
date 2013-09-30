@@ -124,7 +124,7 @@ sub terminate {
     $socket = zmq_socket( $self->_context, ZMQ_REQ );
 
     zmq_connect( $socket, _connection_string( $self->host, $self->port ) );
-    zmq_send( $socket, $cmd );
+    zmq_sendmsg( $socket, $cmd );
 
     $resp = zmq_recvmsg($socket);
     $msg  = decode_json( zmq_msg_data($resp) );
@@ -148,7 +148,7 @@ sub get_status {
         }
     );
 
-    $msg = zmq_send( $socket, $request );
+    $msg = zmq_sendmsg( $socket, $request );
     $msg = zmq_recvmsg($socket);
 
     my $data = zmq_msg_data($msg);
