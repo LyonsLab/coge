@@ -149,7 +149,6 @@ sub gen_html {
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER     => $name );
     $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE     => $DATE );
     $template->param( LOGO_PNG => "SynFind-logo.png" );
 
     #    $template->param(BOX_NAME=>'SynFind Settings');
