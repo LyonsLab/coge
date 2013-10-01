@@ -90,7 +90,7 @@ def fetch_sequence(genome_id, chr_id, start, stop, cookie_string):
 
 def gc_features(environ, start_response):
     """Main feature endpoint for GC content"""
-    sys.stderr.write('gc_features\n')
+    #sys.stderr.write('gc_features\n')
     status = '200 OK'
     response_headers = [('Content-Type', 'application/json')]
     response_body = { "features" : [] }
@@ -163,7 +163,7 @@ def gc_features(environ, start_response):
 
 def an_features(environ, start_response):
     """Main feature endpoint for Annotation Feature content"""
-    sys.stderr.write('an_features\n')
+    #sys.stderr.write('an_features\n')
     status = '200 OK'
     response_body = { "features" : [] }
     bucketSize = 100
@@ -273,7 +273,7 @@ def an_features(environ, start_response):
     return response_body
 
 def stats(environ, start_response):
-    sys.stderr.write('global stats\n')
+    #sys.stderr.write('global stats\n')
     start_response('200 OK', [('Content-Type', 'text/plain')])
     response_body = { "featureDensity": 0.02,
                       "scoreMin": 0,
@@ -283,7 +283,7 @@ def stats(environ, start_response):
     return json.dumps(response_body)
 
 def region(environ, start_response):
-    sys.stderr.write('region stats\n')
+    #sys.stderr.write('region stats\n')
     
     # Get the passed params of the AJAX request
     d = parse_qs(environ['QUERY_STRING'])
@@ -325,7 +325,7 @@ def region(environ, start_response):
         if results:
             maxStop = max([int(row[1]) for row in results]) - start
             numBins = bin(maxStop, maxStop, bpPerBin) + 1
-            sys.stderr.write("maxStop="+str(maxStop)+" numBins="+str(numBins)+'\n')
+            #sys.stderr.write("maxStop="+str(maxStop)+" numBins="+str(numBins)+'\n')
             bins = [0] * numBins
     
             for row in results:
