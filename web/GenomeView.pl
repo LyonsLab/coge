@@ -5,7 +5,6 @@ use CGI;
 use HTML::Template;
 use CoGeX;
 use CoGe::Accessory::Web;
-no warnings 'redefine';
 
 use vars
   qw($P $PAGE_TITLE $USER $coge %FUNCTION $FORM %ITEM_TYPE $MAX_SEARCH_RESULTS $LINK);
@@ -21,23 +20,6 @@ $FORM = new CGI;
 );
 
 %FUNCTION = ();
-
-my $node_types = CoGeX::node_types();
-
-%ITEM_TYPE = (    # content/toc types
-    all          => 100,
-    mine         => 101,
-    shared       => 102,
-    activity     => 103,
-    trash        => 104,
-    activity_viz => 105,
-    user         => $node_types->{user},
-    group        => $node_types->{group},
-    notebook     => $node_types->{list},
-    genome       => $node_types->{genome},
-    experiment   => $node_types->{experiment}
-);
-
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
@@ -61,9 +43,12 @@ sub gen_body {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 
-    $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
-    $template->param( MAIN => 1 );
-    $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
-
+	my $gid = $FORM->param('gid');
+	my $genome = $coge->resultset('Genome')->find($gid);
+    return unless $genome;
+	
+	$template->param( GENOME_ID => $gid );
+	$template->param( GENOME_INFO => $genome->info );
+	
     return $template->output;
 }
