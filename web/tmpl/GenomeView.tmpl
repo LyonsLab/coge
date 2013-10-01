@@ -1,44 +1,15 @@
-<TMPL_IF NAME="MAIN">
-
 <TMPL_INCLUDE NAME="widgets/JBrowse.tmpl">
 
 <SCRIPT type="text/javascript">
-
 $(function() {
-	// Initialize dialog boxes
-	$(".dialog_box").dialog({autoOpen: false, resizable: false});
-
-	// Initialize globals
-	timestamps = new Array();
-	
-	// Initialize AJAX
-	$.ajaxSetup({
-		type: "GET",
-		url: "<TMPL_VAR NAME='PAGE_NAME'>",
-		dataType: "html",
-		cache: false,
-	});
-	
 	// Initialize JBrowse widget
-	init_JBrowse('browser_panel',
-		function(browser) {
-			jbrowse = browser;
-		}
-	);
+	init_JBrowse('jbrowse');
 });
-
 </SCRIPT>
 
-<div id="browser_panel" style="height:100%; width:100%; padding:0; border:0;"></div>
-
-</TMPL_IF> <!-- MAIN -->
-
-
-
-<TMPL_IF NAME='ADMIN_AREA'>
-<!--
-<br>
-<hr>
-Admin Functions:<br>
--->
-</TMPL_IF>
+<div class="link" style="font-size:1.25em" onclick="window.open('OrganismView.pl?dsgid=<TMPL_VAR NAME=GENOME_ID>');">
+  <TMPL_VAR NAME="GENOME_INFO">
+</div>
+<div id="jbrowse" style="height:80%; width:100%; padding:0; border:1px solid gray;">
+  <img src="picts/ajax-loader.gif"> Loading ...
+</div>
