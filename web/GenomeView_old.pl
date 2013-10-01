@@ -16,7 +16,7 @@ no warnings 'redefine';
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 use vars qw($P $PAGE_TITLE $PAGE_NAME $DEBUG $USER $FORM $coge $LINK);
 
-$PAGE_TITLE = 'GenomeView';
+$PAGE_TITLE = 'GenomeView_old';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 $DEBUG      = 0;
 $FORM       = new CGI;
@@ -145,7 +145,7 @@ qq{select distinct(feature_type_id) from feature where dataset_id $in_clause};
     $z   = 5 unless defined $z;
     $z = 0 if $z < 0;
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'GenomeView.tmpl' );
+      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 
 #$template->param( JBROWSE => $P->{SERVER}."/js/jbrowse/index.html?gid=$dsgid&loc=1%3A0..105000");
 
