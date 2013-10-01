@@ -149,7 +149,6 @@ sub gen_html {
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER     => $name );
     $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE     => $DATE );
     $template->param( LOGO_PNG => "SynFind-logo.png" );
 
     #    $template->param(BOX_NAME=>'SynFind Settings');
@@ -876,11 +875,40 @@ sub go_synfind {
     $synfind_link .= ";dsgid=$dsgids;qdsgid=$source_dsgid";
     $synfind_link .= ";sd=$depth" if $depth;
 
+    my @ids = split( /,/, $dsgids );
+
+    my $list_link =
+        "<a href='GenomeList.pl?dsgid=$dsgids' target='_blank'>"
+      . @ids
+      . ' genome'
+      . ( @ids > 1 ? 's' : '' ) . '</a>';
+
+    my $feat = $coge->resultset('Feature')->find($fid);
+    my $feat_url = "<a href='FeatView.pl?fid=$fid' target='_blank'>" . $feat->name . "</a>";
+
+    my ( $source_name, $titleA ) = gen_org_name(
+        dsgid     => $source_dsgid,
+        write_log => 0
+    );
+
+    #my $name = "<a href='OrganismView.pl?dsgid=$source_dsgid' target='_blank'>$source_name</a>";
+
+
+    my $log_msg = 'Searched ' . $list_link . '  for feature ' . $feat_url;
+
     my $tiny_synfind_link = CoGe::Accessory::Web::get_tiny_link(
         db      => $coge,
         user_id => $USER->id,
         page    => $PAGE_NAME,
         url     => $synfind_link
+    );
+
+    my $log = CoGe::Accessory::Web::log_history(
+        db      => $coge,
+        user_id => $USER->id,
+        description => $log_msg,
+        page    => $PAGE_TITLE,
+        link => $tiny_synfind_link,
     );
 
     my $job = CoGe::Accessory::Web::get_job(
@@ -962,6 +990,7 @@ sub go_synfind {
 
         $workflow->add_job(
             cmd     => $GEN_FASTA,
+            description => "Generating fasta file...",
             script  => undef,
             args    => $fasta_args,
             inputs  => undef,
@@ -976,6 +1005,7 @@ sub go_synfind {
 
         $workflow->add_job(
             cmd     => $DATASETGROUP2BED,
+            description => "Creating bed files...",
             script  => undef,
             args    => $bed_args,
             inputs  => undef,
@@ -1063,6 +1093,7 @@ sub go_synfind {
 
         $workflow->add_job(
             cmd     => $blast_cmd,
+            description => "Running blast ($algo) algorithm...",
             script  => undef,
             args    => $blast_args,
             inputs  => [ $target->{query_fasta}, $target->{target_fasta} ],
@@ -1084,6 +1115,7 @@ sub go_synfind {
 
         $workflow->add_job(
             cmd     => $CONVERT_BLAST,
+            description => "Converting blast file to short names...",
             script  => undef,
             args    => $convert_args,
             inputs  => $convert_inputs,
@@ -1115,6 +1147,7 @@ sub go_synfind {
 
         $workflow->add_job(
             cmd     => $BLAST2RAW,
+            description => "Finding and removing local duplications...",
             script  => undef,
             args    => $raw_args,
             inputs  => $raw_inputs,
@@ -1148,6 +1181,7 @@ sub go_synfind {
 
         $workflow->add_job(
             cmd     => $SYNTENY_SCORE,
+            description => "Running Synteny Score...",
             script  => undef,
             args    => $synteny_score_args,
             inputs  => $synteny_score_inputs,
