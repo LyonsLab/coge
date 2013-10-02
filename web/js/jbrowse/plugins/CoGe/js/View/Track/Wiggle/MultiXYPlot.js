@@ -134,23 +134,22 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         var sum = [];
         var count = [];
         var width = [];
-        var diff = [];
-        var max;
-        var min;
+        //var diff = [];
+        //var max;
+        //var min;
         dojo.forEach( features, function(f,i) {
         	var score = f.get('score');
-        	if (!max || score > max)
-        		max = score;
-        	if (!min || score < min)
-        		min = score;
+        	//if (!max || score > max)
+        	//	max = score;
+        	//if (!min || score < min)
+        	//	min = score;
         	var l = featureRects[i].l;
         	var w = featureRects[i].w;
         	sum[l] = l in sum ? sum[l] + score : score;
         	count[l] = l in count ? count[l] + 1 : 1;
         	width[l] = l in width ? Math.max(width[l], w) : w;
-        	diff[l] = l in diff ? diff[l] - score : score;
+        	//diff[l] = l in diff ? diff[l] - score : score;
         });
-        console.log('max='+max+' min='+min);
         
         if (config.transformAverage) {
         	sum.forEach( function(x,l) {
@@ -168,23 +167,23 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         		}
         	});
         }
-        else if (config.transformDifference) {
-        	sum.forEach( function(x,l) {
-        		if (count[l] > 1) {
-	        		var height = toY( diff[l] );
-	        		if( height <= canvasHeight ) { // if the rectangle is visible at all
-	        			if( height <= originY ) { // bar goes upward
-	        				context.fillStyle = 'blue';
-	        				context.fillRect( l, height, width[l], originY-height+1);
-	        			}
-	        			else { // bar goes downward
-	        				context.fillStyle = 'red'
-	        				context.fillRect( l, originY, width[l], height-originY+1 );
-	        			}
-	        		}
-        		}
-        	});
-        }
+//        else if (config.transformDifference) {
+//        	sum.forEach( function(x,l) {
+//        		if (count[l] > 1) {
+//	        		var height = toY( diff[l] );
+//	        		if( height <= canvasHeight ) { // if the rectangle is visible at all
+//	        			if( height <= originY ) { // bar goes upward
+//	        				context.fillStyle = 'blue';
+//	        				context.fillRect( l, height, width[l], originY-height+1);
+//	        			}
+//	        			else { // bar goes downward
+//	        				context.fillStyle = 'red'
+//	        				context.fillRect( l, originY, width[l], height-originY+1 );
+//	        			}
+//	        		}
+//        		}
+//        	});
+//        }
         else {
             dojo.forEach( sorted, function(pair,i) {
             	var f = pair.feature;
