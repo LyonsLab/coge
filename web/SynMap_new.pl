@@ -1351,7 +1351,10 @@ sub go {
         basename => $basename,
         tempdir  => $TEMPDIR
     );
-
+    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "Creating Workflow", $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Link to Regenerate Analysis",
         $cogeweb->logfile );
@@ -2296,6 +2299,11 @@ sub go {
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Added dotplot generation",
         $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+
+    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "Running Workflow", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
