@@ -2513,13 +2513,11 @@ sub get_results {
     my ( $org_name1, $title1 ) = gen_org_name(
         dsgid     => $dsgid1,
         feat_type => $feat_type1,
-        write_log => 1
     );
 
     my ( $org_name2, $title2 ) = gen_org_name(
         dsgid     => $dsgid2,
         feat_type => $feat_type2,
-        write_log => 1
     );
 
     ############################################################################
@@ -2819,6 +2817,12 @@ sub get_results {
     ############################################################################
     # Post Processing
     ############################################################################
+
+    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "Final Post Processing",
+        $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
     CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Processing Tandem Duplicate File",
