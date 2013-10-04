@@ -1132,6 +1132,7 @@ sub go_synfind {
                 last;
             }
         }
+	#next unless $dsg;
         $last_tdsgid = $dsg->id unless $last_tdsgid;
         $count = 0 unless $dsg->id eq $last_tdsgid;
         $last_tdsgid = $dsg->id;
