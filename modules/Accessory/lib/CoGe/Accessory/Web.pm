@@ -806,7 +806,7 @@ sub irods_ils {
 
     my @result;
     foreach my $line (@ils) {
-        my ( $type, $size, $timestamp, $name );
+        my ( $type, $backup, $size, $timestamp, $name );
 
         chomp $line;
         if ( $line =~ /^\s*C\-/ ) {    # directory
@@ -818,9 +818,10 @@ sub irods_ils {
         }
         else {                         # file
             $type = 'file';
-            ( undef, undef, undef, undef, $size, $timestamp, undef, $name ) =
+            ( undef, undef, $backup, undef, $size, $timestamp, undef, $name ) =
               split( /\s+/, $line );
         }
+		next if $backup;
 
         push @result,
           {
