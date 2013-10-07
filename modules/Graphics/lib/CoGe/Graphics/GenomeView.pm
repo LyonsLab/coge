@@ -112,7 +112,7 @@ __PACKAGE__->mk_accessors(qw(organism chromosomes features image_width image_hei
 
 my $DEFAULT_COLOR = [255,100,100];
 my $FONT = GD::Font->MediumBold;
-my $FONTTT="/usr/lib/perl5/CoGe/fonts/arial.ttf";
+my $FONTTT="/usr/local/fonts/arial.ttf"; #needs to be fixed to get from conf file
 
 
 sub generate_imagemap
