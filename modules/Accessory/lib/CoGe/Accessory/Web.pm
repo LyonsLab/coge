@@ -67,6 +67,9 @@ sub init {
     my $url    = $opts{url};       # optional redirect url to pass to cas authentication
     my $debug = $opts{debug}; #flag for debugging messages
     my $page_title = $opts{page_title};    # optional page title
+
+    my $tinylink = $opts{tinylink}; # flag for generating a tiny URL for the page on initiation
+
     #print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . " page_title=" . ($page_title ? $page_title : '') . "\n";
 
     # Get config
@@ -98,7 +101,9 @@ sub init {
         # Make tmp directory
         my $tempdir = $CONF->{TEMPDIR} . '/' . $page_title . '/';
         mkpath( $tempdir, 0, 0777 ) unless -d $tempdir;
-
+      }
+    if ($tinylink)
+      {
         # Get tiny link
         $link = get_tiny_link(
             db      => $db,
