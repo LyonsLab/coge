@@ -12,12 +12,6 @@ no warnings 'redefine';
 
 use vars qw($P $TEMPDIR $TEMPURL $FORM $USER $LINK $coge $PAGE_TITLE $PAGE_NAME);
 
-$PAGE_TITLE = 'FastaView';
-$PAGE_NAME  = "$PAGE_TITLE.pl";
-$ENV{PATH}  = $P->{COGEDIR};
-$TEMPDIR    = $P->{TEMPDIR} . "$PAGE_TITLE/";
-$TEMPURL    = $P->{TEMPURL} . "$PAGE_TITLE/";
-
 $FORM = new CGI;
 
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
@@ -25,6 +19,12 @@ $FORM = new CGI;
     url        => $FORM->url,
     page_title => $PAGE_TITLE
 );
+
+$PAGE_TITLE = 'FastaView';
+$PAGE_NAME  = "$PAGE_TITLE.pl";
+$ENV{PATH}  = $P->{COGEDIR};
+$TEMPDIR    = $P->{TEMPDIR} . "$PAGE_TITLE/";
+$TEMPURL    = $P->{TEMPURL} . "$PAGE_TITLE/";
 
 my $pj = new CGI::Ajax(
     gen_html => \&gen_html,
