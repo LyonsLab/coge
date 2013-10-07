@@ -37,7 +37,6 @@ $YERBA = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub get_jobs_for_user {
-    #my %opts = @_;
     my @jobs;
 
     if ( $USER->is_admin ) {
