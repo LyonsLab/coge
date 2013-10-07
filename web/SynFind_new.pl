@@ -340,8 +340,6 @@ sub gen_dsg_menu {
     foreach my $dsg (
         sort {
                  versioncmp( $b->version, $a->version )
-              || $a->type->id <=> $b->type->id
-              || $a->name cmp $b->name
               || $b->id cmp $a->id
         } $coge->resultset('Genome')->search(
             { organism_id => $oid },
