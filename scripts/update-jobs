@@ -1,0 +1,127 @@
+#!/usr/bin/env python
+import argparse
+import itertools
+import os
+import sys
+
+import zmq
+import MySQLdb as mdb
+
+_defaults = {
+    'connection' : 'tcp://localhost:5151',
+    'max_attempts' : 30,
+    'timeout' : 10000,
+}
+
+def db_connect(config):
+    path = os.path.join(config)
+    config = {}
+    # Open config settings from config file
+    f = open(path)
+
+    # Parse config settings from opened file
+    for line in f:
+        if line.split('\t')[0].startswith('DB'):
+            line = line.split('\t')
+            config[line[0]] = line[-1].strip()
+    f.close()
+
+    # Connect to database passing config settings
+    con = mdb.connect(
+            host=config['DBHOST'],
+            user=config['DBUSER'],
+            passwd=config['DBPASS'],
+            db=config['DBNAME'],
+            port=int(config['DBPORT']))
+
+    return con
+
+def get_running_jobs(db):
+    cursor = db.cursor()
+
+    query = "select job_id from job where status=1;"
+
+    cursor.execute(query)
+    return cursor.fetchall()
+
+def update_jobs(db, jobs, update=False):
+    query = "update job set status={status_code} where job_id={id};"
+    cursor = db.cursor()
+
+    for job in jobs:
+        q1 = query.format(**job)
+        if update:
+            print("Executing: {0}".format(q1))
+            cursor.execute(query.format(**job))
+        else:
+            print("[DRY-RUN]: {0}".format(q1))
+
+def main(args={}):
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.setsockopt(zmq.LINGER, 0)
+    socket.connect(_defaults['connection'])
+
+    db = db_connect(args.config)
+    jobs = get_running_jobs(db)
+
+    poller = zmq.Poller()
+    poller.register(socket, zmq.POLLIN)
+
+    updated_jobs = []
+
+    print("Found {0} running jobs.".format(len(jobs)))
+
+    for job in jobs:
+        request = {
+            'request' : 'get_status',
+            'data' : { 'id' : str(job[0]) }
+        }
+
+        socket.send_json(request, zmq.NOBLOCK)
+        result = None
+        counter = itertools.count()
+        count = 0
+
+        while result is None and _defaults['max_attempts'] > count:
+            if socket in dict(poller.poll(timeout=_defaults['timeout'])):
+                result = socket.recv_json(flags=zmq.NOBLOCK)
+                count = counter.next()
+
+        if not result:
+            print("Unable to connect to the job engine.")
+            continue
+
+        job_status = result['status'].lower()
+
+        if job_status  == 'running':
+            print("The job {id} is still running.".format(id=job[0]))
+            continue
+        elif job_status == 'completed':
+            code = 2
+        elif job_status == 'cancelled':
+            code = 3
+        elif job_status == 'notfound':
+            code = 4
+            job_status = 'terminated'
+        elif job_status == 'failed':
+            code = 5
+        else:
+            continue
+
+        info= { 'id' : job[0], 'status_code' : code, 'status' : job_status}
+        print("Updating job {id} to status {status}.".format(**info))
+        updated_jobs.append(info)
+
+    update_jobs(db, updated_jobs, update=args.update)
+    socket.close()
+    context.term()
+    db.close()
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Update jobs in the job engine.')
+
+    parser.add_argument('config', help="Database configuration file")
+    parser.add_argument('--update', action='store_true')
+    main(parser.parse_args())
