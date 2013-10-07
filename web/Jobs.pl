@@ -110,7 +110,6 @@ sub gen_body {
     $template->param( PAGE_NAME  => "$PAGE_TITLE.pl" );
     $template->param( MAIN       => 1 );
     $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
-    get_jobs_for_user();
     return $template->output;
 }
 
