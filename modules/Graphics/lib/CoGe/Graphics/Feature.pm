@@ -178,7 +178,7 @@ BEGIN
     use vars qw($VERSION $DEFAULT_COLOR $FONTTT $FONT);
     $VERSION     = '0.1';
     $DEFAULT_COLOR = [0,0,0];
-    $FONTTT = "/usr/lib/perl5/CoGe/fonts/arial.ttf"; #path to true-type font
+    $FONTTT = "/usr/local/fonts/arial.ttf"; #path to true-type font.  Needs to be fixed to get from a conf file
     $FONT = GD::Font->MediumBold; #default GD font
     __PACKAGE__->mk_accessors(
 "DEBUG",
