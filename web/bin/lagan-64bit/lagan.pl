@@ -1,10 +1,10 @@
 #!/usr/bin/env perl
 
-$ENV{LAGAN_DIR}='/opt/apache/coge/bin/lagan-64bit';
+$ENV{LAGAN_DIR}='/opt/apache/coge/web/bin/lagan-64bit';
 $lagandir = $ENV{LAGAN_DIR};
 $consrate = 45;
 $consupperrate = 65;
-$tempdir = '/opt/apache/coge/tmp';
+$tempdir = '/opt/apache/coge/web/tmp';
 
 if (@ARGV < 2) {
     print ("usage:\n lagan seqfile1 seqfile2 [-chaos \"chaos flags\"] [-order \"order flags\"] [-recurse \"(wl1,nd1,co1,rsc1),(wl2,nd2,co2,rsc2),...\"] [-bin] [-mfa] [-out \"filename\"] [-lazy] [-maskedonly] [-debug] [-usebounds] [-rc] [-translate] [-draft] [-info] [-fastreject]\n");
