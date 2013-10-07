@@ -87,7 +87,7 @@ if (not $user_id and not $user_name) {
 	print $log "log: error: user not specified, use user_id or user_name\n";
 	exit(-1);
 }
-if ($user_name eq 'public') {
+if ($user_name and $user_name eq 'public') {
 	print $log "log: error: not logged in\n";
     exit(-1);
 }
