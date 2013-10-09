@@ -3,7 +3,7 @@
 
 """
 This python program does the following:
-1. merge 2D-overlapping blocks 
+1. merge 2D-overlapping blocks
 2. build constraints that represent 1D-overlap among blocks
 3. feed the data into the linear programming solver
 """
@@ -22,7 +22,7 @@ from lp_solvers import GLPKSolver, SCIPSolver
 def merge_clusters(chain, clusters, Dmax=0, min_size=0):
     """
     Due to the problem of chaining, some chains might overlap each other
-    these need to be merged 
+    these need to be merged
     """
     eclusters = make_range(clusters, extend=Dmax)
 
@@ -62,7 +62,7 @@ def get_constraints(clusters, quota=(1,1), Nmax=0):
     constraints_x = get_1D_overlap(eclusters_x, qa)
     constraints_y = get_1D_overlap(eclusters_y, qb)
 
-    return nodes, constraints_x, constraints_y 
+    return nodes, constraints_x, constraints_y
 
 
 def format_lp(nodes, constraints_x, qa, constraints_y, qb):
@@ -83,7 +83,7 @@ def format_lp(nodes, constraints_x, qa, constraints_y, qb):
         records += 1
         if records%10==0: lp_handle.write("\n")
     lp_handle.write("\n")
-    
+
     num_of_constraints = 0
     lp_handle.write("Subject To\n")
     for c in constraints_x:
@@ -104,7 +104,7 @@ def format_lp(nodes, constraints_x, qa, constraints_y, qb):
     lp_handle.write("Binary\n")
     for i, score in nodes:
         lp_handle.write(" x%d\n" %i )
-    
+
     lp_handle.write("End\n")
 
     lp_data = lp_handle.getvalue()
@@ -113,7 +113,7 @@ def format_lp(nodes, constraints_x, qa, constraints_y, qb):
     return lp_data
 
 
-def solve_lp(clusters, quota, work_dir="work", Nmax=0, 
+def solve_lp(clusters, quota, work_dir="work", Nmax=0,
         self_match=False, solver="SCIP", verbose=False):
     """
     Solve the formatted LP instance
@@ -131,13 +131,13 @@ def solve_lp(clusters, quota, work_dir="work", Nmax=0,
         if not filtered_list:
             print >>sys.stderr, "SCIP fails... trying GLPK"
             filtered_list = GLPKSolver(lp_data, work_dir, verbose=verbose).results
-            
+
     elif solver=="GLPK":
         filtered_list = GLPKSolver(lp_data, work_dir, verbose=verbose).results
         if not filtered_list:
             print >>sys.stderr, "GLPK fails... trying SCIP"
             filtered_list = SCIPSolver(lp_data, work_dir, verbose=verbose).results
-    
+
     # non-overlapping set on both axis
     filtered_clusters = [clusters[x] for x in filtered_list]
 
@@ -159,7 +159,7 @@ if __name__ == '__main__':
             help="`block merging` procedure -- merge blocks that are close to "\
                     "each other, merged clusters are stored in qa_file.merged "\
                     "[default: %default]")
-    merge_group.add_option("--Dm", dest="Dmax", 
+    merge_group.add_option("--Dm", dest="Dmax",
             type="int", default=0,
             help="merge blocks that are close to each other within distance cutoff "\
                     "(cutoff for `block merging`) "\
@@ -171,14 +171,14 @@ if __name__ == '__main__':
     parser.add_option_group(merge_group)
 
     quota_group = OptionGroup(parser, "Quota mapping function")
-    quota_group.add_option("--quota", dest="quota", 
+    quota_group.add_option("--quota", dest="quota",
             type="string", default=None,
             help="`quota mapping` procedure -- screen blocks to constrain mapping"\
                     " (useful for orthology), "\
                     "put in the format like (#subgenomes expected for genome X):"\
                     "(#subgenomes expected for genome Y) "\
                     "[default: %default]")
-    quota_group.add_option("--Nm", dest="Nmax", 
+    quota_group.add_option("--Nm", dest="Nmax",
             type="int", default=40,
             help="distance cutoff to tolerate two blocks that are "\
                     "slightly overlapping (cutoff for `quota mapping`) "\
@@ -198,7 +198,7 @@ if __name__ == '__main__':
             default="SCIP", choices=supported_solvers,
             help="use MIP solver, must be one of %s " % (supported_solvers,) +\
                  "[default: %default]")
-    other_group.add_option("--verbose", dest="verbose", action="store_true", 
+    other_group.add_option("--verbose", dest="verbose", action="store_true",
             default=False, help="show verbose solver output")
     parser.add_option_group(other_group)
 
@@ -224,18 +224,28 @@ if __name__ == '__main__':
                     "(like 1:1, 2:2) you have %s" % options.quota
         if qa > 12 or qb > 12:
             raise Exception, "quota %s too loose, make it <=12 each" % options.quota
-        quota = (qa, qb) 
+        quota = (qa, qb)
 
     self_match = options.self_match
 
     clusters = read_clusters(qa_file, fmt=options.format)
+    merged_qa_file = qa_file + ".merged"
+
+    if not clusters and options.merge:
+        print >>sys.stderr, "No clusters found."
+        with open(merged_qa_file, 'w') as fp:
+            fp.write("# No clusters found to merge.")
+        sys.exit(0)
+    elif not clusters:
+        sys.exit(0)
+
     for cluster in clusters:
         assert len(cluster) > 0
 
     total_len_x, total_len_y = calc_coverage(clusters, self_match=self_match)
 
     # below runs `block merging`
-    if options.merge: 
+    if options.merge:
         chain = range(len(clusters))
         chain = merge_clusters(chain, clusters, Dmax=options.Dmax, min_size=options.min_size)
 
