@@ -7,13 +7,13 @@ use CoGeX;
 use CoGe::Accessory::Web;
 
 use vars
-  qw($P $PAGE_TITLE $USER $coge %FUNCTION $FORM %ITEM_TYPE $MAX_SEARCH_RESULTS $LINK);
+  qw($P $PAGE_TITLE $USER $coge %FUNCTION $FORM %ITEM_TYPE $MAX_SEARCH_RESULTS);
 
 $PAGE_TITLE = 'GenomeView';
 
 $FORM = new CGI;
 
-( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
     ticket     => $FORM->param('ticket') || undef,
     url        => $FORM->url,
     page_title => $PAGE_TITLE
@@ -29,7 +29,6 @@ sub gen_html {
         HELP => "/wiki/index.php?title=$PAGE_TITLE",
         USER => ( $USER->user_name eq "public" ? '' : $USER->display_name ),
         PAGE_TITLE => 'Genome Viewer',
-        PAGE_LINK  => $LINK,
         LOGO_PNG   => "$PAGE_TITLE-logo.png",
         ADJUST_BOX => 1,
         BODY       => gen_body()
@@ -45,7 +44,7 @@ sub gen_body {
 
 	my $gid = $FORM->param('gid');
 	my $genome = $coge->resultset('Genome')->find($gid);
-    return unless $genome;
+    return '' unless $genome;
 	
 	$template->param( GENOME_ID => $gid );
 	$template->param( GENOME_INFO => $genome->info );
