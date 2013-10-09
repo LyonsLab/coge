@@ -657,29 +657,33 @@ sub blast_search {
     my $zmask          = $opts{zmask};
 
     my $seq = $opts{seq};
-    my $blastable =
-      $opts{blastable};    #this is where the dsgids are stored -- stupid name
-    my $width = $opts{width};
-    my $fid   = $opts{fid};
+    #this is where the dsgids are stored -- stupid name
+    my $blastable = $opts{blastable};
 
     my @dsg_ids = split( /,/, $blastable );
 
+    my $width = $opts{width};
+    my $fid   = $opts{fid};
+
     my $list_link =
-        "<a href='GenomeList.pl?dsgid=$blastable' target='_blank'>"
+        q{<a href="GenomeList.pl?dsgid=$blastable" target="_blank">}
       . @dsg_ids
       . ' genome'
-      . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
+      . ( @dsg_ids > 1 ? 's' : '' )
+      . '</a>';
+
     my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
     print STDERR $log_msg . "\n";
 
-    my $link = $P->{SERVER} . $PAGE_NAME . "?dsgid=$blastable";
-    $link .= ";fid=$fid" if ($fid);
-    $link = CoGe::Accessory::Web::get_tiny_link(
+    my $url = $P->{SERVER} . $PAGE_NAME . "?dsgid=$blastable";
+    $url .= ";fid=$fid" if ($fid);
+
+    my $link = CoGe::Accessory::Web::get_tiny_link(
         db      => $coge,
         user_id => $USER->id,
         page    => $PAGE_NAME,
         log_msg => $log_msg,
-        url     => $link
+        url     => $url
     );
 
     my $job = CoGe::Accessory::Web::get_job(
