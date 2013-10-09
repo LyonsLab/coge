@@ -1348,16 +1348,21 @@ qq{<br><br><a href="/wiki/index.php/SynFind#Syntenic_Depth" target=_new>Syntenic
       qq{<tr><td><a href=$log_file target=_new class="small">Log File</a>};
 
     foreach my $item (@target_info) {
+    	# mdb added 10/8/13
+    	my $blastfile_link = $item->{blastfile};
+    	$blastfile_link =~ s/$P->{COGEDIR}//;
+    	
         $html .= qq{<tr>};
         $html .= qq{<td>} . $item->{org_name};
         $html .=
-            qq{<td><a href=}
-          . $item->{blastfile}
-          . qq{ target=_new>Raw Blast File</a>};
+            qq{<td><a href="$blastfile_link" target=_new>Raw Blast File</a>};
+        
+        # mdb added 10/8/13
+        $blastfile_link = $item->{filtered_blastfile};
+    	$blastfile_link =~ s/$P->{COGEDIR}//;    
+            
         $html .=
-            qq{<td><a href=}
-          . $item->{filtered_blastfile}
-          . qq{ target=_new>Filtered Blast File</a>};
+            qq{<td><a href="$blastfile_link" target=_new>Filtered Blast File</a>};
     }
     $html .= qq{</table>};
 
