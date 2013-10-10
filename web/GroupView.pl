@@ -88,7 +88,7 @@ sub gen_body {
 sub get_admin_functions {
     my $ugid = $FORM->param('ugid');
     my $html =
-qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_set_group_creator({ugid: '$ugid'});">Set Group Creator</span>};
+qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_set_group_creator($ugid);">Set Group Creator</span>};
     return $html;
 }
 
@@ -132,9 +132,9 @@ sub get_group_info {
     if ($user_can_edit) {
         $html .= '<br>';
         $html .=
-qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="edit_group_info({ugid: '$ugid'});">Edit Info</span>};
+qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="edit_group_info($ugid);">Edit Info</span>};
         $html .=
-qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="modify_users({ugid: '$ugid'});">Modify Users</span>};
+qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="modify_users($ugid);">Modify Users</span>};
 
 #$html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="add_lists({ugid: '$ugid'});">Add Notebook</span>};
         $html .=
@@ -206,7 +206,6 @@ sub update_group_info {
 sub modify_users {
     my %opts = @_;
     my $ugid = $opts{ugid};
-    print STDERR "matt: $ugid\n";
     return 0 unless $ugid;
 
     my $group = $coge->resultset('UserGroup')->find($ugid);
@@ -265,7 +264,6 @@ sub add_user_to_group {
     my %opts = @_;
     my $ugid = $opts{ugid};
     my $uid  = $opts{uid};
-
     return "UGID and/or UID not specified" unless $ugid && $uid;
 
     #return 1 if $uid == $USER->id;
