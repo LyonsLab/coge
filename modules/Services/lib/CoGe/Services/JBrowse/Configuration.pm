@@ -222,6 +222,7 @@ sub track_config {
         # Make a list of notebook id's
         my @notebooks;
         foreach my $n ( $e->notebooks ) {
+        	next if ($n->deleted);
             push @notebooks, $n->id;
             $all_notebooks{ $n->id } = $n;
             push @{ $expByNotebook{ $n->id } },
