@@ -875,8 +875,14 @@ sub go_synfind {
 
     my @ids = split( /,/, $dsgids );
 
+    my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
+        user_id => $USER->id,
+        page    => "GenomeList",
+        url     => $P->{SERVER} . "/GenomeList.pl?dsgid=$dsgids"
+    );
+
     my $list_link =
-        "<a href='GenomeList.pl?dsgid=$dsgids' target='_blank'>"
+        qq{<a href="$genomes_url" target="_blank">}
       . @ids
       . ' genome'
       . ( @ids > 1 ? 's' : '' ) . '</a>';
