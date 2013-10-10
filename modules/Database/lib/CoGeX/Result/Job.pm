@@ -89,9 +89,9 @@ sub info {
 
 sub info_html {
     my $self = shift;
-    
+
     my $color = $self->status_color;
-    
+
     return
         $self->start_time . ' | '
       . $self->elapsed_time . ' | '
@@ -129,7 +129,7 @@ sub elapsed_time {
     my $diff;
 
     my $start_time = DateTime::Format::HTTP->parse_datetime($self->start_time);
-    if ($self->end_time) {
+    if ($self->end_time and $self->status > 2) {
         my $end_time = DateTime::Format::HTTP->parse_datetime($self->end_time);
         $diff = $end_time->subtract_datetime($start_time);
     } else {
