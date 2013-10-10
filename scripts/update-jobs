@@ -45,7 +45,7 @@ def get_running_jobs(db):
     return cursor.fetchall()
 
 def update_jobs(db, jobs, update=False):
-    query = "update job set status={status_code} where job_id={id};"
+    query = "update job set status={status_code}, end_time=NOW() where job_id={id};"
     cursor = db.cursor()
 
     for job in jobs:
