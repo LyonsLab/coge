@@ -530,6 +530,8 @@ function reset_basename(){
 }
 
 function blastOff() {
+    var validator = $('#validator').hide();
+
 	if (!pageObj.basename) {
 		setTimeout("blastOff()", 100);
 		return;
@@ -538,8 +540,10 @@ function blastOff() {
 
 	var check = $('#genome_choice').getLength();
 	if (($('#blank').val())||(check==0)) {
-		alert('You have not selected any genomes to blast.');
+        var msg = 'You have not selected any genomes to blast.';
+        validator.html(msg).fadeIn();
 		$('#coge_blast').toggle();
+
 		return;
 	}
 
@@ -557,7 +561,8 @@ function blastOff() {
     seq = seq.replace(/__/g,/_/);
 
     if (!seq.length) {
-        alert('You have not specified a query sequence to blast.');
+        var msg = 'You have not specified a query sequence to blast.';
+        validator.html(msg).fadeIn();
         return;
     }
 
@@ -612,6 +617,7 @@ function blastOff() {
 */
 	$.ajax({
 		type: "POST",
+        dataType: 'json',
 		data: {
 			jquery_ajax: 	1,
 			fname:			'blast_search',
@@ -639,8 +645,12 @@ function blastOff() {
 			color_hsps:		$('#color_by').val(),
 		},
 		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			blastresults(obj.html, obj.click_all_links);
+            if (data.error) {
+                validator.html(data.error).fadeIn();
+                $('#log_text').slideUp();
+            } else {
+			    blastresults(data.html, data.click_all_links);
+            }
 		},
 	});
 }
