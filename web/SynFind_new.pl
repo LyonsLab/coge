@@ -338,10 +338,8 @@ sub gen_dsg_menu {
     my $dsgid = $opts{dsgid};
     my @dsg_menu;
     foreach my $dsg (
-        sort {
-                 versioncmp( $b->version, $a->version )
-              || $b->id cmp $a->id
-        } $coge->resultset('Genome')->search(
+        sort { versioncmp( $b->version, $a->version ) || $b->id cmp $a->id }
+        $coge->resultset('Genome')->search(
             { organism_id => $oid },
             { prefetch    => ['genomic_sequence_type'] }
         )
@@ -882,21 +880,21 @@ sub go_synfind {
     );
 
     my $list_link =
-        qq{<a href="$genomes_url" target="_blank">}
+        qq{<a href="$genomes_url" target="_blank">} 
       . @ids
       . ' genome'
       . ( @ids > 1 ? 's' : '' ) . '</a>';
 
     my $feat = $coge->resultset('Feature')->find($fid);
-    my $feat_url = "<a href='FeatView.pl?fid=$fid' target='_blank'>" . $feat->name . "</a>";
+    my $feat_url =
+      "<a href='FeatView.pl?fid=$fid' target='_blank'>" . $feat->name . "</a>";
 
     my ( $source_name, $titleA ) = gen_org_name(
         dsgid     => $source_dsgid,
         write_log => 0
     );
 
-    #my $name = "<a href='OrganismView.pl?dsgid=$source_dsgid' target='_blank'>$source_name</a>";
-
+#my $name = "<a href='OrganismView.pl?dsgid=$source_dsgid' target='_blank'>$source_name</a>";
 
     my $log_msg = 'Searched ' . $list_link . '  for feature ' . $feat_url;
 
@@ -908,11 +906,11 @@ sub go_synfind {
     );
 
     my $log = CoGe::Accessory::Web::log_history(
-        db      => $coge,
-        user_id => $USER->id,
+        db          => $coge,
+        user_id     => $USER->id,
         description => $log_msg,
-        page    => $PAGE_TITLE,
-        link => $tiny_synfind_link,
+        page        => $PAGE_TITLE,
+        link        => $tiny_synfind_link,
     );
 
     my $job = CoGe::Accessory::Web::get_job(
@@ -922,7 +920,7 @@ sub go_synfind {
         db_object => $coge
     );
 
-    CoGe::Accessory::Web::schedule_job(job => $job);
+    CoGe::Accessory::Web::schedule_job( job => $job );
 
    #convert numerical codes for different scoring functions to appropriate types
     if ( $scoring_function == 2 ) {
@@ -993,12 +991,12 @@ sub go_synfind {
         ];
 
         $workflow->add_job(
-            cmd     => $GEN_FASTA,
+            cmd         => $GEN_FASTA,
             description => "Generating fasta file...",
-            script  => undef,
-            args    => $fasta_args,
-            inputs  => undef,
-            outputs => [$fasta]
+            script      => undef,
+            args        => $fasta_args,
+            inputs      => undef,
+            outputs     => [$fasta]
         );
 
         my $bed_args = [
@@ -1008,12 +1006,12 @@ sub go_synfind {
         ];
 
         $workflow->add_job(
-            cmd     => $DATASETGROUP2BED,
+            cmd         => $DATASETGROUP2BED,
             description => "Creating bed files...",
-            script  => undef,
-            args    => $bed_args,
-            inputs  => undef,
-            outputs => [ $BEDDIR . $dsgid . ".bed" ]
+            script      => undef,
+            args        => $bed_args,
+            inputs      => undef,
+            outputs     => [ $BEDDIR . $dsgid . ".bed" ]
         );
     }
 
@@ -1096,12 +1094,12 @@ sub go_synfind {
         }
 
         $workflow->add_job(
-            cmd     => $blast_cmd,
+            cmd         => $blast_cmd,
             description => "Running blast ($algo) algorithm...",
-            script  => undef,
-            args    => $blast_args,
-            inputs  => [ $target->{query_fasta}, $target->{target_fasta} ],
-            outputs => [ $target->{blastfile} ]
+            script      => undef,
+            args        => $blast_args,
+            inputs      => [ $target->{query_fasta}, $target->{target_fasta} ],
+            outputs     => [ $target->{blastfile} ]
         );
 
         #######################################################################
@@ -1118,12 +1116,12 @@ sub go_synfind {
         my $convert_outputs = [ $target->{converted_blastfile}, ];
 
         $workflow->add_job(
-            cmd     => $CONVERT_BLAST,
+            cmd         => $CONVERT_BLAST,
             description => "Converting blast file to short names...",
-            script  => undef,
-            args    => $convert_args,
-            inputs  => $convert_inputs,
-            outputs => $convert_outputs
+            script      => undef,
+            args        => $convert_args,
+            inputs      => $convert_inputs,
+            outputs     => $convert_outputs
         );
 
         #######################################################################
@@ -1150,12 +1148,12 @@ sub go_synfind {
         ];
 
         $workflow->add_job(
-            cmd     => $BLAST2RAW,
+            cmd         => $BLAST2RAW,
             description => "Finding and removing local duplications...",
-            script  => undef,
-            args    => $raw_args,
-            inputs  => $raw_inputs,
-            outputs => $raw_outputs
+            script      => undef,
+            args        => $raw_args,
+            inputs      => $raw_inputs,
+            outputs     => $raw_outputs
         );
 
         #######################################################################
@@ -1184,12 +1182,12 @@ sub go_synfind {
         my $synteny_score_outputs = [ $target->{synteny_score_db}, ];
 
         $workflow->add_job(
-            cmd     => $SYNTENY_SCORE,
+            cmd         => $SYNTENY_SCORE,
             description => "Running Synteny Score...",
-            script  => undef,
-            args    => $synteny_score_args,
-            inputs  => $synteny_score_inputs,
-            outputs => $synteny_score_outputs,
+            script      => undef,
+            args        => $synteny_score_args,
+            inputs      => $synteny_score_inputs,
+            outputs     => $synteny_score_outputs,
         );
     }
 
@@ -1354,25 +1352,30 @@ qq{<br><br><a href="/wiki/index.php/SynFind#Syntenic_Depth" target=_new>Syntenic
       qq{<tr><td><a href=$log_file target=_new class="small">Log File</a>};
 
     foreach my $item (@target_info) {
-    	# mdb added 10/8/13
-    	my $blastfile_link = $item->{blastfile};
-    	$blastfile_link =~ s/$P->{COGEDIR}//;
-    	
+        # mdb added 10/8/13
+        my $blastfile_link = $item->{blastfile};
+        $blastfile_link =~ s/$P->{COGEDIR}//;
+
         $html .= qq{<tr>};
         $html .= qq{<td>} . $item->{org_name};
         $html .=
-            qq{<td><a href="$blastfile_link" target=_new>Raw Blast File</a>};
-        
+          qq{<td><a href="$blastfile_link" target=_new>Raw Blast File</a>};
+
         # mdb added 10/8/13
         $blastfile_link = $item->{filtered_blastfile};
-    	$blastfile_link =~ s/$P->{COGEDIR}//;    
-            
+        $blastfile_link =~ s/$P->{COGEDIR}//;
+
         $html .=
-            qq{<td><a href="$blastfile_link" target=_new>Filtered Blast File</a>};
+          qq{<td><a href="$blastfile_link" target=_new>Filtered Blast File</a>};
     }
     $html .= qq{</table>};
 
-    $job->update( { status => 2 } ) if defined($job);
+    $job->update(
+        {
+            status   => 2,
+            end_time => \"current_timestamp"
+        }
+    ) if defined($job);
 
     return $html;
 }
@@ -1634,7 +1637,7 @@ sub run_convert_blast {
         return $outfile;
     }
     print STDERR "In sub run_convert_blast\n";
-    CoGe::Accessory::Web::gunzip( "$infile" );
+    CoGe::Accessory::Web::gunzip("$infile");
     CoGe::Accessory::Web::write_log(
         "convering blast file to short names: $cmd",
         $cogeweb->logfile );
@@ -1660,9 +1663,9 @@ sub run_blast2raw {
         return $outfile;
     }
     print STDERR "IN SUB run_blast2raw\n";
-    CoGe::Accessory::Web::gunzip( "$blastfile" );
-    CoGe::Accessory::Web::gunzip( "$bedfile1" );
-    CoGe::Accessory::Web::gunzip( "$bedfile2" );
+    CoGe::Accessory::Web::gunzip("$blastfile");
+    CoGe::Accessory::Web::gunzip("$bedfile1");
+    CoGe::Accessory::Web::gunzip("$bedfile2");
     unless ( -r $blastfile ) {
         warn "can't read $blastfile\n";
         return;
@@ -1713,10 +1716,9 @@ sub run_synteny_score {
         system "/usr/bin/touch $outfile.running"
           ;    #track that a blast anlaysis is running for this
     }
-    CoGe::Accessory::Web::gunzip( "$blastfile" )
-      ;        #turned on debugging
-    CoGe::Accessory::Web::gunzip( "$bedfile1" );
-    CoGe::Accessory::Web::gunzip( "$bedfile2" );
+    CoGe::Accessory::Web::gunzip("$blastfile");    #turned on debugging
+    CoGe::Accessory::Web::gunzip("$bedfile1");
+    CoGe::Accessory::Web::gunzip("$bedfile2");
     unless ( -r $blastfile ) {
         warn "can't read $blastfile\n";
         return;
