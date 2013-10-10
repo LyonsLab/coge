@@ -21,8 +21,7 @@ function format_box_info (data) {
 	return output;
 }
 
-function edit_group_info (opts) {
-	ugid = opts.ugid;
+function edit_group_info (ugid) {
 	$.ajax({
 		data: {
 			fname: 'edit_group_info',
@@ -39,11 +38,10 @@ function edit_group_info (opts) {
 	});
 }
 
-function update_group_info (opts){
+function update_group_info (ugid){
 	name = $('#edit_name').val();
 	desc = $('#edit_desc').val();
 	roleid = $('#edit_role').val();
-	ugid = opts.ugid;
 	if (name) {
 		$.ajax({
 			data: {
@@ -55,16 +53,14 @@ function update_group_info (opts){
 			},
 			success : function(val) {
 				$("#group_info_edit_box").dialog('close');
-				run_get_group_info({divid: 'group_info', ugid: ugid});
+				run_get_group_info('group_info', ugid);
 			},
 		});
 	}
 	else { alert ('Error!  Must have a name!');}
 }
 
-function run_get_group_info(opts){
-	if (!opts) { opts={}; }
-	divid = opts.divid; //were results will be displayed in page
+function run_get_group_info(divid, ugid){
 	// create a new closure who's scope does *not*
 	// include the `divid` value so that callback will 
 	// not clobber the `divid` variable 
@@ -85,8 +81,7 @@ function run_get_group_info(opts){
 	});
 }
 
-function modify_users (opts) {
-	ugid = opts.ugid;
+function modify_users (ugid) {
 	$.ajax({
 		data: {
 			fname: 'modify_users',
@@ -114,8 +109,7 @@ function show_add(val) {
 	}
 }
 
-function add_user(opts) {
-	ugid = opts.ugid;
+function add_user(ugid) {
 	$('#new_ugid > option:selected').each( function(){
 		var uid = $(this).attr("value");
 		var html = '<option value='+uid+ ' >'+$(this).text()+'</option>';
@@ -130,14 +124,14 @@ function add_user(opts) {
 			success : function(data) {
 				if (data != 1) { alert(data); }
 				else {
-					run_get_group_info({divid: 'group_info', ugid: ugid});
+					run_get_group_info('group_info', ugid);
 				}
 			},
 		});
 	});
 };
 
-function remove_user (opts) {
+function remove_user (ugid) {
 	$('#ugid > option:selected').each(function(){
 		var uid = $(this).attr("value");
 		var item = $(this);
@@ -153,7 +147,7 @@ function remove_user (opts) {
 				else {
 					$('#new_ugid').append(html);
 					item.remove();
-					run_get_group_info({divid: 'group_info', ugid: ugid});
+					run_get_group_info('group_info', ugid);
 				}
 			},
 		});
@@ -209,7 +203,7 @@ function delete_group () {
  </tr> 
 </table>
 <br>
-<span onClick="update_group_info({ugid: '<TMPL_VAR NAME=UGID>'});" class="ui-button ui-corner-all">Update Group Info</span>
+<span onClick="update_group_info(<TMPL_VAR NAME=UGID>);" class="ui-button ui-corner-all">Update Group Info</span>
 </TMPL_IF>
 
 
@@ -220,9 +214,9 @@ function delete_group () {
   <td>
    <b>Current Members</b><br>
    <form name="current_users">
-    <select multiple id="ugid" name="current_ugid" onclick="show_add()" ondblclick="remove_user({ugid: '<TMPL_VAR NAME="UGID">'})" size="10">
+    <select multiple id="ugid" name="current_ugid" onclick="show_add()" ondblclick="remove_user(<TMPL_VAR NAME=UGID>)" size="10">
      <TMPL_LOOP NAME="UGID_LOOP">
-      <OPTION value=<TMPL_VAR NAME="UID">><TMPL_VAR NAME="UID_NAME"></OPTION>
+      <OPTION value='<TMPL_VAR NAME="UID">'><TMPL_VAR NAME="UID_NAME"></OPTION>
      </TMPL_LOOP>
     </select>
    </form>
@@ -232,13 +226,13 @@ function delete_group () {
    Filter: <INPUT NAME="regexp" onKeyUp="current_user_filter.set(this.value)" size="10"/>
   </td> 
   <td>
-   <span id="remove_user" href="javascript:void(0)" onClick="remove_user({ugid: '<TMPL_VAR NAME=UGID>'});" style="display:none" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span>
-   <span id="add_user" href="javascript:void(0)" onClick="add_user({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>
+   <span id="remove_user" href="javascript:void(0)" onClick="remove_user(<TMPL_VAR NAME=UGID>);" style="display:none" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span>
+   <span id="add_user" href="javascript:void(0)" onClick="add_user(<TMPL_VAR NAME='UGID'>);" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>
   </td>
   <td>
    <b>Available Users</b><br>
    <form name="new_users">
-    <select multiple id="new_ugid" name="new_ugid" onclick="show_add(1)" ondblclick="add_user({ugid: '<TMPL_VAR NAME=UGID>'})" size="10">
+    <select multiple id="new_ugid" name="new_ugid" onclick="show_add(1)" ondblclick="add_user(<TMPL_VAR NAME='UGID'>)" size="10">
      <TMPL_LOOP NAME=ALL_UGID_LOOP>
       <OPTION <TMPL_VAR NAME=SELECTED> value=<TMPL_VAR NAME=UID>><TMPL_VAR NAME=UID_NAME></OPTION>
      </TMPL_LOOP>
@@ -253,7 +247,7 @@ function delete_group () {
  </tr>
 </table>
 <!--
-<span id="refresh_modify_users" href="javascript:void(0)" onClick="modify_users({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Refresh</span> <span class="small" style="font-style:italic;color:gray;">(Displayed lists can get out of sync when filtering for names)</span>
+<span id="refresh_modify_users" href="javascript:void(0)" onClick="modify_users(<TMPL_VAR NAME='UGID'>);" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Refresh</span> <span class="small" style="font-style:italic;color:gray;">(Displayed lists can get out of sync when filtering for names)</span>
 -->
 <span onClick="$(this).parent().dialog('close');" style="float:right;margin-top:15px;" class="ui-button ui-corner-all ui-button-go">Done</span>
 </TMPL_IF>
@@ -279,7 +273,7 @@ search_lists(<TMPL_VAR NAME=UGID>, '');
  </tr>
 </table>
 <span class='small' style='color:gray;float:right;font-style:italic;'>Hold down SHIFT or CTRL to select multiple items</span><br>
-<span href="javascript:void(0)" onClick="add_lists_to_group({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
+<span href="javascript:void(0)" onClick="add_lists_to_group(<TMPL_VAR NAME=UGID>);" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
 </TMPL_IF> -->
 
 
@@ -290,7 +284,7 @@ search_lists(<TMPL_VAR NAME=UGID>, '');
   <td>
    CoGe Users:<br>
    <form name="new_creator">
-    <select id="new_creator_uid" name="new_creator_uid" ondblclick="add_user({ugid: '<TMPL_VAR NAME=UGID>'})" size=10>
+    <select id="new_creator_uid" name="new_creator_uid" ondblclick="add_user(<TMPL_VAR NAME='UGID'>)" size=10>
      <TMPL_LOOP NAME=ALL_UGID_LOOP>
       <OPTION value=<TMPL_VAR NAME=UID>><TMPL_VAR NAME=UID_NAME></OPTION>
      </TMPL_LOOP>
@@ -303,15 +297,14 @@ search_lists(<TMPL_VAR NAME=UGID>, '');
   </td>
  </tr>
 </table>
-<span href="javascript:void(0)" onClick="set_group_creator({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-button-go ui-corner-all'>Set Creator</span>
+<span href="javascript:void(0)" onClick="set_group_creator(<TMPL_VAR NAME=UGID>);" class='ui-button ui-button-go ui-corner-all'>Set Creator</span>
 </TMPL_IF> <!-- SET_GROUP_CREATOR -->
 
 
 
 <TMPL_IF NAME="ADMIN_AREA">
 <SCRIPT language="JavaScript">
-function dialog_set_group_creator (opts) {
-	ugid = opts.ugid;
+function dialog_set_group_creator (ugid) {
 	$.ajax({
 		data: {
 			fname: 'dialog_set_group_creator',
@@ -328,8 +321,7 @@ function dialog_set_group_creator (opts) {
 	});
 }
 
-function set_group_creator(opts) {
-	ugid = opts.ugid;
+function set_group_creator(ugid) {
 	$('#new_creator_uid > option:selected').each( function(){
 		var uid = $(this).attr("value");
 		$.ajax({
@@ -342,7 +334,7 @@ function set_group_creator(opts) {
 				if (data != 1) { alert(data); }
 				else {
 					$("#group_creator_edit_box").dialog('close');
-					run_get_group_info({divid: 'group_info', ugid: ugid});
+					run_get_group_info('group_info', ugid);
 				}
 			},
 		});

@@ -206,6 +206,7 @@ sub update_group_info {
 sub modify_users {
     my %opts = @_;
     my $ugid = $opts{ugid};
+    print STDERR "matt: $ugid\n";
     return 0 unless $ugid;
 
     my $group = $coge->resultset('UserGroup')->find($ugid);
