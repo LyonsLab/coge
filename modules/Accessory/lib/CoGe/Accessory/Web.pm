@@ -61,14 +61,19 @@ BEGIN {
     );
 }
 
+# TODO: instead of returning a list, this routine should return a "page object"
 sub init {
     my ( $self, %opts ) = self_or_default(@_);
-    my $ticket = $opts{ticket};    # optional cas ticket for retrieving user
-    my $url    = $opts{url};       # optional redirect url to pass to cas authentication
-    my $debug = $opts{debug}; #flag for debugging messages
-    my $page_title = $opts{page_title};    # optional page title
-
-    my $tinylink = $opts{tinylink}; # flag for generating a tiny URL for the page on initiation
+    my $ticket = $opts{ticket}; # optional cas ticket for retrieving user
+    my $url    = $opts{url};    # optional redirect url to pass to cas authentication
+    my $cgi    = $opts{cgi};    # optional CGI object
+    my $debug  = $opts{debug};  # optional flag for enabling debugging messages
+    my $page_title = $opts{page_title}; # optional page title
+    
+    if ($cgi) {
+    	$ticket = $cgi->param('ticket') || undef;
+    	$url    = $cgi->url;
+    }
 
     #print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . " page_title=" . ($page_title ? $page_title : '') . "\n";
 
@@ -95,23 +100,28 @@ sub init {
         coge        => $db
     ) unless $user;
 
-    my $link;
-    if ($page_title) {
-
+	my $link;
+    if ($page_title) { # This is a page access and not a web service request
         # Make tmp directory
         my $tempdir = $CONF->{TEMPDIR} . '/' . $page_title . '/';
         mkpath( $tempdir, 0, 0777 ) unless -d $tempdir;
-      }
-    if ($tinylink)
-      {
-        # Get tiny link
-        $link = get_tiny_link(
-            db      => $db,
-            user_id => $user->id,
-            page    => $page_title,
-            url     => 'http://' . $ENV{SERVER_NAME} . $ENV{REQUEST_URI},
-            disable_logging => ( $page_title ? 0 : 1 )
-        );
+
+		# Skip tiny link generation and auto-logging if ajax request
+		if (not is_ajax($cgi)) {
+	        # Get tiny link
+	        $link = get_tiny_link(
+	            url => 'http://' . $ENV{SERVER_NAME} . $ENV{REQUEST_URI},
+	        );
+	        
+	        # Log this page access
+	        CoGe::Accessory::Web::log_history(
+		        db          => $db,
+		        user_id     => $user->id,
+		       	page        => $page_title,
+		      	description => 'page access',
+		        link        => $link
+		    );
+		}
     }
 
     return ( $db, $user, $CONF, $link );
@@ -142,6 +152,14 @@ A valid parameter file must be specified or very little will work!};
 
     $CONF = \%items;
     return $CONF;
+}
+
+sub is_ajax {
+	my ( $self, $form) = self_or_default(@_);
+	return 0 unless $form;
+    my %args  = $form->Vars;
+    my $fname = $args{'fname'};
+    return (defined $fname and $fname ne '');
 }
 
 sub dispatch {
@@ -314,13 +332,11 @@ sub login_cas {
     my $ticket      = $opts{ticket};        #cas ticket from iPlant
     my $this_url    = $opts{this_url};      #not sure what this does
     my $coge        = $opts{coge};          #coge object
+	#print STDERR "Web::login_cas\n", Dumper \%opts, "\n";
 
-#	print STDERR "Web::login_cas cookie_name=$cookie_name\n";
-    #print STDERR Dumper \%opts;
     my $ua = new LWP::UserAgent;
-
     my $request =
-'<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">'
+        '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">'
       . '<SOAP-ENV:Header/><SOAP-ENV:Body><samlp:Request xmlns:samlp="urn:oasis:names:tc:SAML:1.0:protocol"  MajorVersion="1" MinorVersion="1" RequestID="_192.168.167.84.1024506224022"  IssueInstant="2010-05-13T16:43:48.099Z"><samlp:AssertionArtifact>'
       . $ticket
       . '</samlp:AssertionArtifact></samlp:Request></SOAP-ENV:Body></SOAP-ENV:Envelope>';
@@ -411,7 +427,7 @@ sub login_cas {
 sub parse_saml_response {
     my $response = $_[0];
 
-# mdb modified 4/4/13 for iPlant CAS update - XML::Simple doesn't support namespaces
+	# mdb modified 4/4/13 for iPlant CAS update - XML::Simple doesn't support namespaces
     if ( $response =~ m/saml1p:Success/ ) {
         my $ref = XMLin($response);
         my ($user_id) =
@@ -429,7 +445,7 @@ sub parse_saml_response {
         my ($user_fname) = $attr{firstName}->{content};
         my ($user_email) = $attr{email}->{content};
 
-#print STDERR "parse_saml_response: ".$user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email."\n";
+		#print STDERR "parse_saml_response: ".$user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email."\n";
         return ( $user_id, $user_fname, $user_lname, $user_email );
     }
 }
@@ -463,6 +479,7 @@ sub log_history {
 
     $type = 1 if ( $description and $description ne 'page access' );
     $user_id = 0 unless ( defined $user_id );
+    $page =~ s/\.pl$//;    # remove trailing .pl extension
     return $db->resultset('Log')->create(
         {
             user_id     => $user_id,
@@ -477,11 +494,11 @@ sub log_history {
 sub get_tiny_link {
     my %opts            = @_;
     my $url             = $opts{url};
-    my $db              = $opts{db};
-    my $user_id         = $opts{user_id};
-    my $page            = $opts{page};
-    my $log_msg         = $opts{log_msg};
-    my $disable_logging = $opts{disable_logging};    # flag
+#    my $db              = $opts{db};
+#    my $user_id         = $opts{user_id};
+#    my $page            = $opts{page};
+#    my $log_msg         = $opts{log_msg};
+#    my $disable_logging = $opts{disable_logging};    # flag
 
     $url =~ s/:::/__/g;
     my $tiny = LWP::Simple::get(
@@ -492,16 +509,17 @@ sub get_tiny_link {
     }
 
     # Log the page
-    if ( $db and not $disable_logging ) {
-        $page =~ s/.pl$//;    # remove trailing .pl extension
-        log_history(
-            db          => $db,
-            user_id     => $user_id,
-            page        => $page,
-            description => ( $log_msg ? $log_msg : 'page access' ),
-            link        => $tiny
-        );
-    }
+# mdb removed 10/10/13 -- Move logging functionality out of this to fix issue 167
+#    if ( $db and not $disable_logging ) {
+#        $page =~ s/.pl$//;    # remove trailing .pl extension
+#        log_history(
+#            db          => $db,
+#            user_id     => $user_id,
+#            page        => $page,
+#            description => ( $log_msg ? $log_msg : 'page access' ),
+#            link        => $tiny
+#        );
+#    }
 
     return $tiny;
 }
