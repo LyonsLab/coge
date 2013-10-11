@@ -748,7 +748,7 @@ sub blast_search {
         push @$args, ['-p', 'F', 1];
 
         my $dbpath = File::Spec->catdir(($BLASTDBDIR, $dsgid));
-        mkpath($dbpath, 1, 0775);
+        mkpath($dbpath, 0, 0775);
         my $db = File::Spec->catdir(($dbpath, $dsgid));
         my $outputs = ["$db.nhr", "$db.nin", "$db.nsq"];
 
