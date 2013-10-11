@@ -522,8 +522,10 @@ sub gen_org_menu {
     my $feattype_param = $opts{feattype_param};
     $feattype_param = 1 unless $feattype_param;
 
-    if ($dsgid) {
-        my $org = $coge->resultset('Genome')->find($dsgid)->organism;
+    my ($dsg) = $coge->resultset('Genome')->find($dsgid);
+
+    if ($dsg) {
+        my $org = $dsg->organism;
         $oid = $org->id;
     }
 
