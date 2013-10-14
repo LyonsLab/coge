@@ -24,10 +24,8 @@ $PAGE_TITLE = 'GenomeList';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
 $FORM = new CGI;
-
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
+    cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 
@@ -600,8 +598,7 @@ sub generate_table {
     my $count = 1;
     foreach my $dsgid (@$dsgids) {
         my $dsg = $coge->resultset('Genome')->find($dsgid);
-        next unless $dsg;
-        next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+        next unless $USER->has_access_to_genome($dsg);
         my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
         my $desc = join(
             "; ",

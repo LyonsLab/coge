@@ -24,8 +24,7 @@ $ACCN = $FORM->param('accn');
 $FID  = $FORM->param('fid');
 
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
+    cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 
@@ -392,8 +391,7 @@ sub get_anno {
     my $i = 0;
     foreach my $feat (@feats) {
         my ($dsg) = $feat->dataset->genomes;
-        return "Restricted Access"
-          if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+        return "Restricted Access" unless $USER->has_access_to_genome($dsg);
         return "Deleted"
           if $dsg->deleted;
 
@@ -582,7 +580,7 @@ sub get_data_source_info_for_accn {
         my ($dsg) = $feat->dataset->genomes;
 	next if $dsg->deleted;
         #        return "<hidden id=dsid value=0></hidden>Restricted Access"
-        if ( $dsg->restricted && !$USER->has_access_to_genome($dsg) ) {
+        unless ( $USER->has_access_to_genome($dsg) ) {
             $sources{"Restricted Access"} = {
                 v     => 0,
                 gstid => 0,

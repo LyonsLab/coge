@@ -9,10 +9,7 @@ no warnings 'redefine';
 
 my $form = new CGI;
 
-my ( $coge, $user ) = CoGe::Accessory::Web->init(
-    ticket => $form->param('ticket') || undef,
-    url    => $form->url
-);
+my ( $coge, $user ) = CoGe::Accessory::Web->init( cgi => $form );
 
 my $dsgid   = $form->param('dsgid');
 my $dsid    = $form->param('dsid');

@@ -42,11 +42,9 @@ $RESULTSLIMIT       = 100;
 $MAX_SEARCH_RESULTS = 1000;
 
 $FORM = new CGI;
-
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
-    page_title => $PAGE_TITLE
+    page_title => $PAGE_TITLE,
+    cgi => $FORM
 );
 
 $YERBA         = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
@@ -352,7 +350,7 @@ sub get_sequence {
             my $genome = $genomes{$gid};
             return "Unable to find genome for $gid" unless $genome;
             return "Restricted Access"
-              if $genome->restricted && !$USER->has_access_to_genome($genome);
+              if !$USER->has_access_to_genome($genome);
             $fasta .=
               ref($genome) =~ /genome/i
               ? $genome->fasta(
@@ -537,7 +535,7 @@ sub gen_dsg_menu {
         )
       )
     {
-        next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+        next unless $USER->has_access_to_genome($dsg);
         $dsgid = $dsg->id unless $dsgid;
         my $name = join( ", ", map { $_->name } $dsg->source ) . ": ";
 
@@ -587,7 +585,7 @@ sub get_dsg_for_menu {
         foreach my $dsg (
             $coge->resultset('Genome')->search( { organism_id => [@orgids] } ) )
         {
-            next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+            next unless $USER->has_access_to_genome($dsg);
             $dsgs{ $dsg->id } = $dsg;
         }
     }
@@ -596,8 +594,7 @@ sub get_dsg_for_menu {
         %dsgs = () if ( $dsgs{$dsgids} );
         foreach my $dsgid ( split( /,/, $dsgids ) ) {
             my $dsg = $coge->resultset('Genome')->find($dsgid);
-            next unless $dsg;
-            next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+            next unless $USER->has_access_to_genome($dsg);
             $dsgs{ $dsg->id } = $dsg;
         }
     }
@@ -688,17 +685,19 @@ sub blast_search {
       . '</a>';
 
     my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
-    print STDERR $log_msg . "\n";
+    #print STDERR $log_msg . "\n";
 
     my $url = $P->{SERVER} . $PAGE_NAME . "?dsgid=$blastable";
     $url .= ";fid=$fid" if ($fid);
 
-    my $link = CoGe::Accessory::Web::get_tiny_link(
-        db      => $coge,
-        user_id => $USER->id,
-        page    => $PAGE_NAME,
-        log_msg => $log_msg,
-        url     => $url
+    my $link = CoGe::Accessory::Web::get_tiny_link(url => $url);
+    
+    CoGe::Accessory::Web::log_history(
+        db          => $coge,
+        user_id     => $USER->id,
+       	page        => $PAGE_TITLE,
+      	description => $log_msg,
+        link        => $link
     );
 
     my $job = CoGe::Accessory::Web::get_job(
@@ -2867,9 +2866,7 @@ sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
             foreach
               my $notebook ( $coge->resultset("List")->search_literal($sql) )
             {
-                next
-                  if ( $notebook->restricted
-                    and not $USER->has_access_to_list($notebook) );
+                next unless $USER->has_access_to_list($notebook);
                 push @notebooks, $notebook;
             }
         }
@@ -2886,9 +2883,7 @@ sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
             )
           )
         {
-            next
-              if ( $notebook->restricted
-                and not $USER->has_access_to_list($notebook) );
+            next unless $USER->has_access_to_list($notebook);
             push @notebooks, $notebook;
         }
         $num_results = @notebooks;

@@ -30,10 +30,8 @@ $PAGE_TITLE = 'ExperimentList';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
 $FORM = new CGI;
-
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
+    cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 
@@ -79,15 +77,6 @@ sub gen_html {
 sub gen_body {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'ExperimentList.tmpl' );
-
-    my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-    $link = CoGe::Accessory::Web::get_tiny_link(
-        db      => $coge,
-        user_id => $USER->id,
-        page    => $PAGE_NAME,
-        url     => $link
-    );
-    $template->param( LINK => $link );
 
     my $form = $FORM;
     my $no_values;

@@ -47,7 +47,7 @@ unless ($dsg) {
     exit();
 }
 
-if ( $dsg->restricted && !$USER->has_access_to_genome($dsg) ) {
+if ( !$USER->has_access_to_genome($dsg) ) {
     print $FORM->header('text');
     print
 "Unauthorized access to restricted data.  Please contact coge administrator for additional help.\n";
