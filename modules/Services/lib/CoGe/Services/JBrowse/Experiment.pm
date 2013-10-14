@@ -79,7 +79,7 @@ sub stats_region {    #FIXME lots of code in common with features()
     # Filter experiments based on permissions
     my @experiments;
     foreach my $e (@all_experiments) {
-        unless ( !$e->restricted || $user->has_access_to_experiment($e) ) {
+        unless ( $user->has_access_to_experiment($e) ) {
         	print STDERR "JBrowse::Experiment::stats_region access denied to experiment $eid\n";
         	next;
         }
@@ -197,8 +197,8 @@ sub features {
     # Filter experiments based on permissions
     my @experiments;
     foreach my $e (@all_experiments) {
-        unless ( !$e->restricted || $user->has_access_to_experiment($e) ) {
-        	print STDERR "JBrowse::Experiment::features access denied to experiment $eid\n";
+        unless ( $user->has_access_to_experiment($e) ) {
+        	print STDERR "JBrowse::Experiment::features access denied to experiment id$eid\n";
         	next
     	}
         push @experiments, $e;
