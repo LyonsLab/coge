@@ -147,11 +147,9 @@ sub get_sequence {
     my $fasta;
 
     if ($fids) {
-        foreach my $fid ( split /,/, $fids ) {
+        foreach my $fid ( split(/,/, $fids) ) {
             my $feat = $coge->resultset('Feature')->find($fid);
-            next
-              if $feat->dataset->restricted
-                  && !$USER->has_access_to_dataset( $feat->dataset );
+            next unless $USER->has_access_to_dataset( $feat->dataset );
             $fasta .=
               ref($feat) =~ /Feature/i
               ? $feat->fasta(
@@ -514,7 +512,7 @@ sub generate_fasta {
         $cogeweb->logfile );
     open( OUT, ">$file" ) || die "Can't open $file for writing: $!";
     foreach my $ds (@$dslist) {
-        next if $ds->restricted && !$USER->has_access_to_dataset($ds);
+        next unless $USER->has_access_to_dataset($ds);
         foreach my $chr ( sort $ds->get_chromosomes ) {
             my $title =
                 $ds->organism->name . " (v"

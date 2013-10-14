@@ -17,13 +17,7 @@ no warnings 'redefine';
 use vars qw($P $USER $FORM $coge $LINK);
 
 $FORM = new CGI;
-
-( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    ticket => $FORM->param('ticket') || undef,
-    url    => $FORM->url
-);
-
-#$ENV{PATH} = $P->{COGEDIR}; # mdb removed 7/25/13 -- what is it for!?
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init( cgi => $FORM );
 
 #logout is only called through this program!  All logouts from other pages are redirected to this page
 CoGe::Accessory::Web->logout_cas(
@@ -244,7 +238,7 @@ sub get_latest_genomes {
     my %org_names;
     my $genome_count = 0;
     foreach my $dsg (@db) {
-        next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+        next unless $USER->has_access_to_genome($dsg);
         next if $org_names{ $dsg->organism->name };
         last if $genome_count >= $limit;
         $org_names{ $dsg->organism->name } = 1;

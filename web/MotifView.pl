@@ -2875,8 +2875,7 @@ sub get_obj_from_genome_db {
     if ($dsgid) {
         $dsg = $coge->resultset('Genome')->find($dsgid);
         return "", "Can't find entry for $dsgid" unless $dsg;
-        return "", "Permission denied"
-          if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+        return "", "Permission denied" unless $USER->has_access_to_genome($dsg);
 
         ($ds) = $dsg->datasets( chr => $chr );
         return ( "", "Chromosome '$chr' not found for this genome" ) unless $ds;
@@ -4269,7 +4268,7 @@ sub motif_list3 {
 sub motif_list {
 
     #my $motiffile="/home/shabari/tmp/TFBS_new-1_dump";
-    my $MOTIFFILE = "/opt/apache/CoGe/bin/MotifView/newMotifHash";
+    #my $MOTIFFILE = "/opt/apache/CoGe/bin/MotifView/newMotifHash";
     my $motifhash = do $MOTIFFILE || print STDERR "Cannot open $MOTIFFILE";
     my @opts;
 

@@ -18,11 +18,10 @@ no warnings 'redefine';
 our ( $P, $PAGE_TITLE, $USER, $BASEFILE, $coge, %FUNCTION, $FORM, $YERBA, $LINK );
 
 $PAGE_TITLE = 'Jobs';
-$FORM       = new CGI;
 
+$FORM       = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
+    cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 

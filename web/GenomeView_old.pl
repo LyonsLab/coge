@@ -22,8 +22,7 @@ $DEBUG      = 0;
 $FORM       = new CGI;
 
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
+    cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 
@@ -117,7 +116,7 @@ sub gen_body {
             $dsg = $dsgt;
         }
     }
-    if ( $dsg->restricted && !$USER->has_access_to_genome($dsg) ) {
+    if ( !$USER->has_access_to_genome($dsg) ) {
         return "Permission denied";
     }
 
