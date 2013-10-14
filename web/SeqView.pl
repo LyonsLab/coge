@@ -13,14 +13,13 @@ use CoGe::Accessory::Utils qw( commify );
 
 use vars qw($P $PAGE_NAME $PAGE_TITLE $FORM $USER $coge $LINK);
 
-$FORM = new CGI;
 
 $PAGE_TITLE = 'SeqView';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
+$FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
+    cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 
@@ -240,8 +239,7 @@ sub get_seq {
     if ($featid) {
         my $feat = $coge->resultset('Feature')->find($featid);
         my ($dsg) = $feat->dataset->genomes;
-        return "Restricted Access"
-          if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+        return "Restricted Access" unless $USER->has_access_to_genome($dsg);
 
 #	return "Restricted Access" if $feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset);
         ( $fasta, $seq ) =
@@ -264,8 +262,7 @@ sub get_seq {
     elsif ($dsid) {
         my $ds = $coge->resultset('Dataset')->find($dsid);
         my ($dsg) = $ds->genomes;
-        return "Restricted Access"
-          if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+        return "Restricted Access" unless $USER->has_access_to_genome($dsg);
         $fasta =
           ref($ds) =~ /dataset/i
           ? $ds->fasta(
@@ -282,8 +279,7 @@ sub get_seq {
     elsif ($dsgid) {
         my $dsg = $coge->resultset('Genome')->find($dsgid);
         return "Unable to find genome for $dsgid" unless $dsg;
-        return "Restricted Access"
-          if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+        return "Restricted Access" unless $USER->has_access_to_genome($dsg);
         $fasta =
           ref($dsg) =~ /genome/i
           ? $dsg->fasta(
@@ -311,8 +307,7 @@ sub get_seq {
             }
             my $genome = $genomes{$gid};
             return "Unable to find genome for $gid" unless $genome;
-            return "Restricted Access"
-              if $genome->restricted && !$USER->has_access_to_genome($genome);
+            return "Restricted Access" unless $USER->has_access_to_genome($genome);
             $fasta .=
               ref($genome) =~ /genome/i
               ? $genome->fasta(

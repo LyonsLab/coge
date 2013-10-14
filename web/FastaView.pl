@@ -13,10 +13,8 @@ no warnings 'redefine';
 use vars qw($P $TEMPDIR $TEMPURL $FORM $USER $LINK $coge $PAGE_TITLE $PAGE_NAME);
 
 $FORM = new CGI;
-
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
+    cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 
@@ -141,7 +139,7 @@ sub get_seqs {
                 next;
             }
             my ($dsg) = $feat->dataset->genomes;
-            if ( $dsg->restricted && !$USER->has_access_to_genome($dsg) ) {
+            if ( !$USER->has_access_to_genome($dsg) ) {
                 $seqs .= ">Restricted: $featid\n";
                 next;
             }

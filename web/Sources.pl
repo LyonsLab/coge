@@ -17,10 +17,8 @@ $PAGE_TITLE = 'Sources';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
 $FORM = new CGI;
-
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
+    cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 

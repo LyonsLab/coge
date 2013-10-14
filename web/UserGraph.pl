@@ -14,10 +14,8 @@ use vars
 $PAGE_TITLE = 'UserGraph';
 
 $FORM = new CGI;
-
 ( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
+    cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 
