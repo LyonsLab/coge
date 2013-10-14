@@ -43,8 +43,7 @@ $MAX_SEARCH_RESULTS = 1000;
 $FORM = new CGI;
 
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
+    cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 
@@ -670,12 +669,14 @@ sub blast_search {
 
     my $link = $P->{SERVER} . $PAGE_NAME . "?dsgid=$blastable";
     $link .= ";fid=$fid" if ($fid);
-    $link = CoGe::Accessory::Web::get_tiny_link(
-        db      => $coge,
-        user_id => $USER->id,
-        page    => $PAGE_NAME,
-        log_msg => $log_msg,
-        url     => $link
+    $link = CoGe::Accessory::Web::get_tiny_link(url => $link);
+    
+    CoGe::Accessory::Web::log_history(
+        db          => $coge,
+        user_id     => $USER->id,
+       	page        => $PAGE_TITLE,
+      	description => $log_msg,
+        link        => $link
     );
 
     my $job = CoGe::Accessory::Web::get_job(
@@ -2847,9 +2848,7 @@ sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
             foreach
               my $notebook ( $coge->resultset("List")->search_literal($sql) )
             {
-                next
-                  if ( $notebook->restricted
-                    and not $USER->has_access_to_list($notebook) );
+                next unless $USER->has_access_to_list($notebook);
                 push @notebooks, $notebook;
             }
         }
@@ -2866,9 +2865,7 @@ sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
             )
           )
         {
-            next
-              if ( $notebook->restricted
-                and not $USER->has_access_to_list($notebook) );
+            next unless $USER->has_access_to_list($notebook);
             push @notebooks, $notebook;
         }
         $num_results = @notebooks;

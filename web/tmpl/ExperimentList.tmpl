@@ -216,13 +216,6 @@ function save_display_settings() {
 }
 </SCRIPT>
 
-<div style='padding-top:10px;'>
- <span id='link_hidden' class='ui-button ui-corner-all ui-button-icon-right' onclick="$('#link_hidden').hide(); $('#link_shown').fadeIn();"><span class="ui-icon ui-icon-arrowreturnthick-1-w"></span>Link to this</span>
- <span id='link_shown' style='display:none;' class='small infobox'>
- Use this link to return to this page at any time: <span class='link' onclick=window.open('<TMPL_VAR NAME="LINK">');><b><TMPL_VAR NAME="LINK"></b></span>
- </span>
-</div>
-	
 <input type='hidden' id='gstid' value=<TMPL_VAR NAME="GSTID">>
 <div id="table_opts_dialog" class="hidden" title="Table Information Options">
 <form id='experiment_list'>

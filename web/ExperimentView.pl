@@ -14,11 +14,9 @@ use vars qw( $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION);
 $PAGE_TITLE = "ExperimentView";
 
 $FORM = new CGI;
-
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
-    page_title => $PAGE_TITLE
+    cgi => $FORM,
+    page_title => $PAGE_TITLE,
 );
 
 %FUNCTION = (
@@ -236,9 +234,7 @@ sub get_annotations {
     my $eid  = $opts{eid};
     return "Must have valid experiment id\n" unless ($eid);
     my $exp = $coge->resultset('Experiment')->find($eid);
-    return unless $exp;
-    return "Access denied\n"
-      unless ( $USER->has_access_to_experiment($eid) || !$exp->restricted );
+    return "Access denied\n" unless $USER->has_access_to_experiment($exp);
 
     my $user_can_edit =
       ( $USER->is_admin || $USER->is_owner_editor( experiment => $eid ) );
@@ -484,14 +480,6 @@ sub gen_html {
             ADJUST_BOX => 1
         );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-        my $link = CoGe::Accessory::Web::get_tiny_link(
-            url => "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI} );
-
-    #my $box_name = "Experiment List: ";
-    #my $list_name = $FORM->param('list_name') || $FORM->param('ln');
-    #$box_name .= " $list_name" if $list_name;
-    #$box_name .= "<span class=link onclick=window.open('$link');>$link</span>";
-    #$template->param( BOX_NAME   => $box_name );
     }
 
     $template->param( BODY => gen_body() );
@@ -549,8 +537,7 @@ sub get_experiment_info {
     my %opts  = @_;
     my $eid   = $opts{eid};
     my ($exp) = $coge->resultset('Experiment')->find($eid);
-    return "Access denied\n"
-      unless ( !$exp->restricted || $USER->has_access_to_experiment($exp) );
+    return "Access denied\n" unless $USER->has_access_to_experiment($exp);
 
     return "Unable to find an entry for $eid" unless $exp;
 

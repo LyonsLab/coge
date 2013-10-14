@@ -16,13 +16,11 @@ use vars qw(
 
 $PAGE_TITLE = 'GenomeInfo';
 
-$FORM = new CGI;
-
 my $node_types = CoGeX::node_types();
 
+$FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
+    cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 
@@ -472,15 +470,13 @@ sub generate_body {
     my $genome = $coge->resultset('Genome')->find($gid);
     return "Genome id$gid not found" unless ($genome);
 
-    return "Access denied"
-      unless ( !$genome->restricted
-        or $USER->is_admin
-        or $USER->has_access_to_genome($genome) );
+    return "Access denied" unless $USER->has_access_to_genome($genome);
 
     my ($first_chr) = $genome->chromosomes;
 
     my $user_can_edit = $USER->is_admin || $USER->is_owner_editor( dsg => $gid );
     my $user_can_delete = $USER->is_admin || $USER->is_owner( dsg => $gid );
+print STDERR "matt: " . $USER->id . " admin=" . $USER->is_admin . " edit=$user_can_edit delete=$user_can_delete\n";
 
     $template->param(
         GID           => $gid,

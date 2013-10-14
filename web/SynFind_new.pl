@@ -346,7 +346,7 @@ sub gen_dsg_menu {
       )
     {
         next if $dsg->deleted;
-        next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+        next unless ( $USER->has_access_to_genome($dsg) );
         $dsgid = $dsg->id unless $dsgid;
         my $name    = $dsg->info;
         my $has_cds = has_cds( $dsg->id );
@@ -584,7 +584,7 @@ sub get_anno {
 
     my @feats;
     my $genome = $coge->resultset('Genome')->find($dsgid);
-    next if $genome->restricted && !$USER->has_access_to_genome($genome);
+    next unless ( $USER->has_access_to_genome($genome) );
 
     if ($accn) {
         foreach my $feat (
@@ -627,8 +627,7 @@ sub get_anno {
     my $gstid = $dsg->type->id;
     foreach my $feat (@feats) {
         my ($genome) = $feat->genomes;
-        return ( "restricted", 0 )
-          if $genome->restricted && !$USER->has_access_to_genome($genome);
+        return ( "restricted", 0 ) unless ($USER->has_access_to_genome($genome));
 
 #	next if $feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset);
         $i++;
@@ -759,11 +758,11 @@ sub get_data_source_info_for_accn {
     foreach my $feat (@feats) {
 
 #	my ($genome) = $feat->genomes;
-#	next if $genome->restricted && !$USER->has_access_to_genome($genome);
+#	next unless $USER->has_access_to_genome($genome);
 #	next if $feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset);
         foreach my $dsg ( $feat->dataset->genomes ) {
             next if $dsg->deleted;
-            next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+            next unless $USER->has_access_to_genome($dsg);
             my $org = $dsg->organism->name if $dsg->organism;
             if ( keys %org_ids ) { next unless $org_ids{ $dsg->organism->id }; }
             my $name  = $dsg->name;

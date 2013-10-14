@@ -24,10 +24,8 @@ use vars qw(
 $PAGE_TITLE = 'LoadAnnotation';
 
 $FORM = new CGI;
-
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
+    cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 
@@ -524,13 +522,11 @@ sub search_genomes {
 	# Combine matching genomes with matching organism genomes, preventing duplicates
     my %unique;
     map {
-        $unique{ $_->id } = $_
-          if ( not $_->restricted or $USER->has_access_to_genome($_) )
+        $unique{ $_->id } = $_ if ( $USER->has_access_to_genome($_) )
     } @genomes;
     foreach my $organism (@organisms) {
         map {
-            $unique{ $_->id } = $_
-              if ( not $_->restricted or $USER->has_access_to_genome($_) )
+            $unique{ $_->id } = $_ if ( $USER->has_access_to_genome($_) )
         } $organism->genomes;
     }
 
