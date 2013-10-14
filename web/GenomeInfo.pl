@@ -431,8 +431,18 @@ sub delete_genome {
     my $genome = $coge->resultset('Genome')->find($gid);
     return 0 unless $genome;
     return 0 unless ( $USER->is_admin or $USER->is_owner( dsg => $gid ) );
+    
+    my $delete_or_undelete = ($genome->deleted ? 'undelete' : 'delete');
     $genome->deleted(!$genome->deleted); # do undelete if already deleted
     $genome->update;
+    
+    # Record in log
+    CoGe::Accessory::Web::log_history(
+	    db          => $coge,
+	    user_id     => $USER->id,
+	    page        => $PAGE_TITLE,
+	    description => "$delete_or_undelete genome id$gid"
+	);
 
     return 1;
 }

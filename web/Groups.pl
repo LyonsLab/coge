@@ -165,6 +165,13 @@ sub delete_group {
     # OK, now delete the group
     $group->deleted(1);
     $group->update;
+    
+    CoGe::Accessory::Web::log_history(
+        db          => $coge,
+        user_id     => $USER->id,
+        page        => "$PAGE_TITLE",
+        description => 'delete user group id' . $group->id
+    );
 
 	return;
 }
