@@ -15,15 +15,12 @@ use vars
 
 $PAGE_TITLE = 'GroupView';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
-
-$FORM = new CGI;
-
 $MAX_SEARCH_RESULTS = 1000;
 
+$FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
-    page_title => $PAGE_TITLE
+    page_title => $PAGE_TITLE,
+    cgi => $FORM
 );
 
 %FUNCTION = (

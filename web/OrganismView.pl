@@ -23,14 +23,13 @@ use vars qw($P $PAGE_NAME $PAGE_TITLE $LINK
 
 $| = 1;    # turn off buffering
 
-$FORM = new CGI;
 
 $PAGE_TITLE = 'OrganismView';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
+$FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
+    cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 
@@ -343,11 +342,8 @@ sub get_orgs {
     my $oid   = $opts{oid};
     my $dsgid = $opts{dsgid};
     my $dsg   = $coge->resultset('Genome')->find($dsgid) if $dsgid;
-    if ( $dsg && $dsg->restricted ) {
-        if ( !$USER->has_access_to_genome($dsg) ) {
-            $dsg = undef;
-        }
-    }
+    $dsg = undef unless $USER->has_access_to_genome($dsg);
+
     my @db;
     my $count = 0;
     if ($name) {
@@ -470,7 +466,7 @@ sub get_genome_list_for_org {
         my @dsg;
         foreach my $dsg ( $org->genomes ) {
             next if $dsg->deleted;
-            next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+            next unless $USER->has_access_to_genome($dsg);
             $dsg->name( $org->name ) unless $dsg->name;
             push @dsg, $dsg;
         }
@@ -504,7 +500,7 @@ sub get_genomes {
         my @dsg;
         foreach my $dsg ( $org->genomes ) {
             next if $dsg->deleted;
-            next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+            next unless $USER->has_access_to_genome($dsg);
             push @dsg, $dsg;
         }
         foreach my $dsg (@dsg) {
@@ -760,7 +756,7 @@ sub get_dataset {
             } @ds
           )
         {
-            next if $item->restricted && !$USER->has_access_to_dataset($item);
+            next unless $USER->has_access_to_dataset($item);
             my $option =
                 "<OPTION value=\""
               . $item->id . "\">"

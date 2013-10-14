@@ -21,10 +21,8 @@ $PAGE_TITLE = 'NotebookView';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
 $FORM = new CGI;
-
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
+    cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 
@@ -119,8 +117,7 @@ sub gen_body {
     return "<br>Notebook id$lid does not exist.<br>"
       . "Click <a href='Notebooks.pl'>here</a> to view a table of all notebooks.<br><br>"
       unless ($list);
-    return "Access denied\n"
-      unless ( !$list->restricted || $USER->has_access_to_list($lid) );
+    return "Access denied\n" unless $USER->has_access_to_list($list);
 
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
@@ -143,9 +140,7 @@ sub get_list_info {
     my $lid  = $opts{lid};
     return unless $lid;
     my ($list) = $coge->resultset('List')->find($lid);
-    return
-      unless ( $list
-        && ( $USER->has_access_to_list($lid) || !$list->restricted ) );
+    return unless $USER->has_access_to_list($list);
 
     my $html          = $list->annotation_pretty_print_html();
     my $user_can_edit = $USER->is_admin
@@ -298,9 +293,7 @@ sub get_annotations {
     my $lid  = $opts{lid};
     return unless ($lid);
     my ($list) = $coge->resultset('List')->find($lid);
-    return
-      unless ( $list
-        && ( $USER->has_access_to_list($lid) || !$list->restricted ) );
+    return unless $USER->has_access_to_list($list);
 
     my $user_can_edit = $USER->is_admin
       || ( !$list->locked && $USER->is_owner_editor( list => $lid ) );
@@ -562,8 +555,7 @@ sub get_list_contents {
       . "Click <a href='Notebooks.pl'>here</a> to view all notebooks."
       unless $list;
 
-    return "Access denied\n"
-      unless ( $USER->has_access_to_list($lid) || !$list->restricted );
+    return "Access denied\n" unless $USER->has_access_to_list($list);
 
     my $user_can_edit = $USER->is_admin
       || ( !$list->locked && $USER->is_owner_editor( list => $lid ) );
@@ -896,8 +888,7 @@ sub search_genomes {
             my @genomes = $coge->resultset("Genome")->all;
             map {
                 $unique{ $_->id } = $_
-                  if ( !$_->deleted
-                    and ( !$_->restricted or $USER->has_access_to_genome($_) ) )
+                  if ( !$_->deleted and $USER->has_access_to_genome($_) )
             } @genomes;
         }
     }
@@ -927,14 +918,12 @@ sub search_genomes {
 # Combine matching genomes with matching organism genomes, preventing duplicates
         map {
             $unique{ $_->id } = $_
-              if ( !$_->deleted
-                and ( !$_->restricted or $USER->has_access_to_genome($_) ) )
+              if ( !$_->deleted and $USER->has_access_to_genome($_) )
         } @genomes;
         foreach my $organism (@organisms) {
             map {
                 $unique{ $_->id } = $_
-                  if ( !$_->deleted
-                    and ( !$_->restricted or $USER->has_access_to_genome($_) ) )
+                  if ( !$_->deleted and $USER->has_access_to_genome($_) )
             } $organism->genomes;
         }
 
@@ -1138,9 +1127,7 @@ sub search_lists
             foreach
               my $notebook ( $coge->resultset("List")->search_literal($sql) )
             {
-                next
-                  if ( $notebook->restricted
-                    and not $USER->has_access_to_list($notebook) );
+                next unless $USER->has_access_to_list($notebook);
                 push @notebooks, $notebook;
             }
         }
@@ -1157,9 +1144,7 @@ sub search_lists
             )
           )
         {
-            next
-              if ( $notebook->restricted
-                and not $USER->has_access_to_list($notebook) );
+            next unless $USER->has_access_to_list($notebook);
             push @notebooks, $notebook;
         }
         $num_results = @notebooks;

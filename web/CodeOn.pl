@@ -385,7 +385,7 @@ sub get_features {
         my $org = $coge->resultset('Organism')->find($oid);
         next unless $org;
         foreach my $dsg ( $org->genomes ) {
-            next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+            next unless $USER->has_access_to_genome($dsg);
             $dsgs{ $dsg->id } = $dsg;
         }
     }

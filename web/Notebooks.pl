@@ -11,10 +11,8 @@ use vars qw( $P $PAGE_TITLE $USER $coge %FUNCTION $FORM $LINK );
 $PAGE_TITLE = 'Notebooks';
 
 $FORM = new CGI;
-
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
+    cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 
