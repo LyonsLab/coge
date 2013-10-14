@@ -9,13 +9,12 @@ use vars qw($P $PAGE_TITLE
   $USER $BASEFILE $coge $cogeweb %FUNCTION
   $FORM    );
 
-$FORM = new CGI;
 
 $PAGE_TITLE = 'SeqType';
 
+$FORM = new CGI;
 ( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
+    cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 
