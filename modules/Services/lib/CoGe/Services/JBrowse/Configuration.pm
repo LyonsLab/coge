@@ -215,7 +215,7 @@ sub track_config {
     my %expByNotebook;
     foreach $e ( sort experimentcmp $genome->experiments ) {
         next if ( $e->deleted );
-        next if ( $e->restricted and not $user->has_access_to_experiment($e) );
+        next unless $user->has_access_to_experiment($e);
         my $eid = $e->id;
         $all_experiments{$eid} = $e;
 
@@ -342,7 +342,7 @@ sub track_config {
 
     # Add notebook tracks
     foreach my $n ( sort { $a->name cmp $b->name } values %all_notebooks ) {
-        next if ( $n->restricted and not $user->has_access_to_list($n) );
+        next unless $user->has_access_to_list($n);
         my $nid = $n->id;
         push @tracks, {
             key => ( $n->restricted ? '&reg; ' : '' ) . $n->name,
