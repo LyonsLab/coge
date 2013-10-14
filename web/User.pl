@@ -25,11 +25,9 @@ use vars qw($P $PAGE_TITLE $USER $LINK $coge %FUNCTION $FORM %ITEM_TYPE $MAX_SEA
 $PAGE_TITLE = 'User';
 
 $FORM = new CGI;
-
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
 	page_title => $PAGE_TITLE,
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url
+    cgi => $FORM
 );
 
 # debug for fileupload:
@@ -199,9 +197,7 @@ sub get_item_info {
     }
     elsif ( $item_type == $ITEM_TYPE{notebook} ) {
         my $notebook = $coge->resultset('List')->find($item_id);
-        return unless $notebook;
-        return
-          unless ( $USER->is_admin or $USER->has_access_to_list($notebook) );
+        return unless $USER->has_access_to_list($notebook);
 
         my $group_str = join( '<br>',
             sort map { $_->name } $USER->groups_with_access($notebook) );
@@ -235,9 +231,7 @@ sub get_item_info {
     }
     elsif ( $item_type == $ITEM_TYPE{genome} ) {
         my $genome = $coge->resultset('Genome')->find($item_id);
-        return unless $genome;
-        return
-          unless ( $USER->is_admin or $USER->has_access_to_genome($genome) );
+        return unless ( $USER->has_access_to_genome($genome) );
 
         my $date =
           ( $genome->datasets ? $genome->datasets()->[0]->date : 'unknown' );
@@ -281,10 +275,7 @@ sub get_item_info {
     }
     elsif ( $item_type == $ITEM_TYPE{experiment} ) {
         my $experiment = $coge->resultset('Experiment')->find($item_id);
-        return unless $experiment;
-        return
-          unless ( $USER->is_admin
-            or $USER->has_access_to_experiment($experiment) );
+        return unless $USER->has_access_to_experiment($experiment);
 
         my $group_str = join( '<br>',
             sort map { $_->name } $USER->groups_with_access($experiment) );
@@ -333,6 +324,7 @@ sub delete_items {
     foreach (@items) {
         my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
         next unless ( $item_id and $item_type );
+		my $type_name;
 
         #print STDERR "delete $item_id $item_type\n";
         if ( $item_type == $ITEM_TYPE{group} ) {
@@ -342,6 +334,7 @@ sub delete_items {
 
 			$group->deleted(1);
             $group->update;
+			$type_name = 'user group';
         }
         elsif ( $item_type == $ITEM_TYPE{notebook} ) {
             my $notebook = $coge->resultset('List')->find($item_id);
@@ -353,27 +346,39 @@ sub delete_items {
             {
                 $notebook->deleted(1);
                 $notebook->update;
+                $type_name = 'notebook';
             }
         }
         elsif ( $item_type == $ITEM_TYPE{genome} ) {
             my $genome = $coge->resultset('Genome')->find($item_id);
             return unless $genome;
 
-            if ( $USER->is_admin or $USER->has_access_to_genome($genome) ) {
+            if ( $USER->is_admin or $USER->is_owner( dsg => $genome ) ) {
                 $genome->deleted(1);
                 $genome->update;
+                $type_name = 'genome';
             }
         }
         elsif ( $item_type == $ITEM_TYPE{experiment} ) {
             my $experiment = $coge->resultset('Experiment')->find($item_id);
             return unless $experiment;
 
-            if (   $USER->is_admin
-                or $USER->has_access_to_experiment($experiment) )
+            if ( $USER->is_admin or $USER->is_owner( experiment => $experiment ) )
             {
                 $experiment->deleted(1);
                 $experiment->update;
+                $type_name = 'experiment';
             }
+        }
+        
+        # Record in log
+        if ($type_name) {
+			CoGe::Accessory::Web::log_history(
+			    db          => $coge,
+			    user_id     => $USER->id,
+			    page        => $PAGE_TITLE,
+			    description => "delete $type_name id$item_id"
+			);
         }
     }
 }
@@ -387,6 +392,7 @@ sub undelete_items {
     foreach (@items) {
         my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
         next unless ( $item_id and $item_type );
+        my $type_name;
 
         # print STDERR "undelete $item_id $item_type\n";
         if ( $item_type == $ITEM_TYPE{group} ) {
@@ -396,6 +402,7 @@ sub undelete_items {
             if ( $group->is_editable($USER) ) {
                 $group->deleted(0);
                 $group->update;
+                $type_name = 'user group';
             }
         }
         elsif ( $item_type == $ITEM_TYPE{notebook} ) {
@@ -405,27 +412,39 @@ sub undelete_items {
             if ( $USER->is_admin or $USER->is_owner( list => $notebook ) ) {
                 $notebook->deleted(0);
                 $notebook->update;
+                $type_name = 'notebook';
             }
         }                
         elsif ( $item_type == $ITEM_TYPE{genome} ) {
             my $genome = $coge->resultset('Genome')->find($item_id);
             return unless $genome;
 
-            if ( $USER->is_admin or $USER->has_access_to_genome($genome) ) {
+            if ( $USER->is_admin or $USER->is_owner( dsg => $genome ) ) {
                 $genome->deleted(0);
                 $genome->update;
+                $type_name = 'genome';
             }
         }
         elsif ( $item_type == $ITEM_TYPE{experiment} ) {
             my $experiment = $coge->resultset('Experiment')->find($item_id);
             return unless $experiment;
 
-            if (   $USER->is_admin
-                or $USER->has_access_to_experiment($experiment) )
+            if ( $USER->is_admin or $USER->is_owner( experiment => $experiment ) )
             {
                 $experiment->deleted(0);
                 $experiment->update;
+                $type_name = 'experiment';
             }
+        }
+        
+        # Record in log
+        if ($type_name) {
+			CoGe::Accessory::Web::log_history(
+			    db          => $coge,
+			    user_id     => $USER->id,
+			    page        => $PAGE_TITLE,
+			    description => "undelete $type_name id$item_id"
+			);
         }
     }
 }
@@ -452,8 +471,8 @@ sub cancel_jobs {
 	    print STDERR "job " . $job->id . " status=$status\n";
 	    if ( $status =~ /running/i ) {
 	    	my $res = $jex->terminate( $job->id );
-	    	if ( $res->status =~ /notfound/i ) {
-	        	print STDERR "job " . $job->id . " termination error\n";
+	    	if ( $res->{status} =~ /notfound/i ) {
+	        	print STDERR "job " . $job->id . " termination error: status=" . $res->status . "\n";
 	    	}
 	    	else {
 	    		$job->update( { status => 3 } );
@@ -504,10 +523,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
         # print STDERR "get_share $item_id $item_type\n";
         if ( $item_type == $ITEM_TYPE{genome} ) {
             my $genome = $coge->resultset('Genome')->find($item_id);
-            return unless $genome;
-            next
-              unless ( $USER->is_admin
-                or $USER->has_access_to_genome($genome) );
+            next unless ( $USER->has_access_to_genome($genome) );
             map { $userconn{ $_->parent_id } = $_ }
               ( $genome->user_connectors, $genome->group_connectors );
             map { $notebooks{ $_->id } = $_ } $genome->lists;
@@ -516,10 +532,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
         }
         elsif ( $item_type == $ITEM_TYPE{experiment} ) {
             my $experiment = $coge->resultset('Experiment')->find($item_id);
-            return unless $experiment;
-            next
-              unless ( $USER->is_admin
-                or $USER->has_access_to_experiment($experiment) );
+            next unless $USER->has_access_to_experiment($experiment);
             map { $userconn{ $_->id } = $_ }
               ( $experiment->user_connectors, $experiment->group_connectors );
             map { $notebooks{ $_->id } = $_ } $experiment->lists;
@@ -529,10 +542,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
         }
         elsif ( $item_type == $ITEM_TYPE{notebook} ) {
             my $notebook = $coge->resultset('List')->find($item_id);
-            return unless $notebook;
-            next
-              unless ( $USER->is_admin
-                or $USER->has_access_to_list($notebook) );
+            next unless $USER->has_access_to_list($notebook);
             map { $userconn{ $_->id } = $_ }
               ( $notebook->user_connectors, $notebook->group_connectors );
             $isPublic = 1 if ( not $notebook->restricted );
@@ -761,26 +771,17 @@ sub add_items_to_user_or_group {
         # print STDERR "add_items_to_user_or_group $item_id $item_type\n";
         if ( $item_type == $ITEM_TYPE{genome} ) {
             my $genome = $coge->resultset('Genome')->find($item_id);
-            return unless $genome;
-            next
-              unless ( $USER->is_admin
-                or $USER->has_access_to_genome($genome) );
+            next unless ( $USER->has_access_to_genome($genome) );
             push @verified, $item;
         }
         elsif ( $item_type == $ITEM_TYPE{experiment} ) {
             my $experiment = $coge->resultset('Experiment')->find($item_id);
-            return unless $experiment;
-            next
-              unless ( $USER->is_admin
-                or $USER->has_access_to_experiment($experiment) );
+            next unless $USER->has_access_to_experiment($experiment);
             push @verified, $item;
         }
         elsif ( $item_type == $ITEM_TYPE{notebook} ) {
             my $notebook = $coge->resultset('List')->find($item_id);
-            return unless $notebook;
-            next
-              unless ( $USER->is_admin
-                or $USER->has_access_to_list($notebook) );
+            next unless $USER->has_access_to_list($notebook);
             push @verified, $item;
         }
     }
@@ -870,10 +871,7 @@ sub remove_items_from_user_or_group {
         # print STDERR "remove_item_from_user $item_id $item_type\n";
         if ( $item_type == $ITEM_TYPE{genome} ) {
             my $genome = $coge->resultset('Genome')->find($item_id);
-            return unless $genome;
-            next
-              unless ( $USER->is_admin
-                or $USER->has_access_to_genome($genome) );
+            next unless ( $USER->has_access_to_genome($genome) );
 
             my $conn = $coge->resultset('UserConnector')->find(
                 {
@@ -889,10 +887,7 @@ sub remove_items_from_user_or_group {
         }
         elsif ( $item_type == $ITEM_TYPE{experiment} ) {
             my $experiment = $coge->resultset('Experiment')->find($item_id);
-            return unless $experiment;
-            next
-              unless ( $USER->is_admin
-                or $USER->has_access_to_experiment($experiment) );
+            next unless $USER->has_access_to_experiment($experiment);
 
             my $conn = $coge->resultset('UserConnector')->find(
                 {
@@ -908,10 +903,7 @@ sub remove_items_from_user_or_group {
         }
         elsif ( $item_type == $ITEM_TYPE{notebook} ) {
             my $notebook = $coge->resultset('List')->find($item_id);
-            return unless $notebook;
-            next
-              unless ( $USER->is_admin
-                or $USER->has_access_to_list($notebook) );
+            next unless $USER->has_access_to_list($notebook);
 
             my $conn = $coge->resultset('UserConnector')->find(
                 {
@@ -1483,9 +1475,7 @@ sub search_notebooks
             foreach
               my $notebook ( $coge->resultset("List")->search_literal($sql) )
             {
-                next
-                  if ( $notebook->restricted
-                    and not $USER->has_access_to_list($notebook) );
+                next unless $USER->has_access_to_list($notebook);
                 push @notebooks, $notebook;
             }
         }
@@ -1502,9 +1492,7 @@ sub search_notebooks
             )
           )
         {
-            next
-              if ( $notebook->restricted
-                and not $USER->has_access_to_list($notebook) );
+            next unless $USER->has_access_to_list($notebook);
             push @notebooks, $notebook;
         }
         $num_results = @notebooks;
@@ -1543,7 +1531,6 @@ sub add_items_to_notebook {
     # print STDERR "add_items_to_notebook $nid $item_list\n";
 
     my $notebook = $coge->resultset('List')->find($nid);
-    return unless $notebook;
     return unless $USER->has_access_to_list($notebook);
 
     foreach (@items) {
