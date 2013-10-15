@@ -256,7 +256,8 @@ sub is_admin {
 }
 
 sub is_public {
-	return (shift->id == 0);	
+	my $self = shift;
+	return !$self->id;
 }
 
 ################################################ subroutine header begin ##
@@ -275,12 +276,12 @@ sub is_public {
 ################################################## subroutine header end ##
 
 sub has_access_to_list {
-	my $self = shift;
-	return unless $self->id; # ignore public user
-	return 1 if $self->is_admin;
-	my $list = shift;
+	my ($self, $list) = @_;
+	return 0 unless $list;
+	return 1 if (not $list->restricted or $self->is_admin); # public list or superuser
+	return 0 if ($self->is_public); # deny public user for restricted list
 
-	my $lid = $list =~ /^\d+$/ ? $list : $list->id;
+	my $lid = $list->id;
 	foreach ($self->lists) {
 		return 1 if ($_->id == $lid);	
 	}
@@ -288,58 +289,60 @@ sub has_access_to_list {
 	return 0;
 }
 
-#new version has benefit of crawling database once if used multiple times
+#new version caches results
 sub has_access_to_genome {
-	my $self = shift;
-	return unless $self->id; # ignore public user
-	my $genome = shift;
-	my $gid = $genome =~ /^\d+$/ ? $genome : $genome->id;
-	return 1 if $self->is_admin;
-	unless ( $self->_genome_ids)
-	  {
-	    $self->_genome_ids({map{$_->id=>1} $self->genomes});
-	  }
+	my ($self, $genome) = @_;
+	return 0 unless $genome;
+	return 1 if (not $genome->restricted or $self->is_admin); # public genome or superuser
+	return 0 if ($self->is_public); # deny public user for restricted genome
+	
+	my $gid = $genome->id;
+	unless ( $self->_genome_ids)  {
+	    $self->_genome_ids({ map{$_->id=>1} $self->genomes });
+	}
 	my $ids = $self->_genome_ids();
 	return $ids->{$gid};
-      }
-#old version has benefit of returning matches as soon as they are found
-sub has_access_to_genome_old {
-	my $self = shift;
-	return unless $self->id; # ignore public user
-	my $genome  = shift;
-	my $gid = $genome =~ /^\d+$/ ? $genome : $genome->id;
-	return $self->is_admin || $self->child_connector(id => $gid, type => 'genome');
 }
 
+#old version
+#sub has_access_to_genome {
+#	my $self = shift;
+#	return unless $self->id; # ignore public user
+#	my $genome  = shift;
+#	my $gid = $genome =~ /^\d+$/ ? $genome : $genome->id;
+#	return $self->is_admin || $self->child_connector(id => $gid, type => 'genome');
+#}
 
+# new version caches results
 sub has_access_to_experiment {
-	my $self = shift;
-	return unless $self->id; # ignore public user
-	my $experiment = shift;
-	my $eid = $experiment =~ /^\d+$/ ? $experiment : $experiment->id;
-	return 1 if $self->is_admin;
-	unless ( $self->_experiment_ids)
-	  {
-	    $self->_experiment_ids({map{$_->id=>1} $self->experiments});
-	  }
+	my ($self, $experiment) = @_;
+	return 0 unless $experiment;
+	return 1 if (not $experiment->restricted or $self->is_admin); # public experiment or superuser
+	return 0 if ($self->is_public); # deny public user for restricted experiment
+	
+	unless ( $self->_experiment_ids) {
+	    $self->_experiment_ids({ map{$_->id=>1} $self->experiments });
+	}
 	my $ids = $self->_experiment_ids();
-	return $ids->{$eid};
-      }
-
-sub has_access_to_experiment_old {
-	my $self = shift;
-	return unless $self->id; # ignore public user
-	my $experiment  = shift;
-	my $eid = $experiment =~ /^\d+$/ ? $experiment : $experiment->id;
-	return $self->is_admin || $self->child_connector(id => $eid, type => 'experiment');
+	return $ids->{$experiment->id};
 }
+
+#old version
+#sub has_access_to_experiment {
+#	my $self = shift;
+#	return unless $self->id; # ignore public user
+#	my $experiment  = shift;
+#	my $eid = $experiment =~ /^\d+$/ ? $experiment : $experiment->id;
+#	return $self->is_admin || $self->child_connector(id => $eid, type => 'experiment');
+#}
 
 sub has_access_to_dataset {
-	my $self = shift;
-	return unless $self->id; # ignore public user
-	return 1 if $self->is_admin;
-	my $ds = shift;
-	my $dsid = $ds =~ /^\d+$/ ? $ds : $ds->id;
+	my ($self, $ds) = @_;
+	return 0 unless $ds;
+	return 1 if (not $ds->restricted or $self->is_admin); # public dataset or superuser
+	return 0 if ($self->is_public); # deny public user for restricted dataset	
+	
+	my $dsid = $ds->id;
 	foreach my $genome ($self->genomes(include_deleted => 1)) {
 		foreach my $dataset ($genome->datasets) {
 			return 1 if ($dataset->id == $dsid);	
@@ -473,7 +476,7 @@ sub is_reader {
 
 sub is_role {
 	my $self = shift;
-	return unless $self->id; # ignore public user
+	return 0 unless $self->id; # ignore public user
 	my %opts = @_;
 	my $role = $opts{role};
 	my $group = $opts{group};
@@ -765,10 +768,11 @@ sub child_connector {
 	}
 
 	# Scan user's lists
-	if ($type ne 'list') {
+	if ($type ne 'list') { # Don't traverse lists within a list
 		foreach my $conn ($self->list_connectors) {
 			my $list = $conn->child;
 			foreach ($list->child_connectors({child_id=>$id, child_type=>$type_num})) {
+				next if ($_->child_id != $id or $_->child_type != $type_num); # FIXME mdb tempfix 10/14/13 -- why necessary with line above?
 				return $conn;
 			}
 		}
@@ -781,10 +785,11 @@ sub child_connector {
 			return $_;
 		}
 		# Scan group's lists
-		if ($type ne 'list') {
+		if ($type ne 'list') { # Don't traverse lists within a list
 			foreach my $conn ($group->list_connectors) {
 				my $list = $conn->child;
 				foreach ($list->child_connectors({child_id=>$id, child_type=>$type_num})) {
+					next if ($_->child_id != $id or $_->child_type != $type_num); # FIXME mdb tempfix 10/14/13 -- why necessary with line above?
 					return $conn;
 				}
 			}
