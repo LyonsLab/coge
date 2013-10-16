@@ -152,12 +152,12 @@ sub elapsed_time {
 #    return $elapsed;
 
 	my ($y1, $mo1, $d1, $h1, $m1, $s1) = $self->start_time =~ /(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)/;
-	my $time1 = timelocal( $s1, $m1, $h1, $d1, $mo1, $y1 );
+	my $time1 = timelocal( $s1, $m1, $h1, $d1, $mo1-1, $y1 );
 	
 	my $time2;
 	if ($self->end_time and $self->status > 2) {
 		my ($y2, $mo2, $d2, $h2, $m2, $s2) = $self->end_time =~ /(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)/;
-		$time2 = timelocal( $s2, $m2, $h2, $d2, $mo2, $y2 );
+		$time2 = timelocal( $s2, $m2, $h2, $d2, $mo2-1, $y2 );
 	}
 	else {
 		$time2 = time;
