@@ -431,7 +431,7 @@ sub process_fasta_file {
         }
         if ( $seq =~ /\W/ ) {
             print $log
-"log: error: sequence contains non-alphanumeric characters, perhaps this is not a FASTA file?\n";
+"log: error: sequence on line $lineNum contains non-alphanumeric characters, perhaps this is not a FASTA file?\n";
             exit(-1);
         }
 
