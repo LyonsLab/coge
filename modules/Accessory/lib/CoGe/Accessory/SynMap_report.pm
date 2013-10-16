@@ -36,9 +36,13 @@ sub parse_syn_blocks
 	next unless $_;
 	#s/#//g; 		# mdb removed 3/20/13 issue 55
 	next if /^#/;	# mdb added 3/20/13 issue 55
-	my ($block1, $block2) = $self->process_syn_block($_);
-	push @$blocks1 , $block1;
-	push @$blocks2 , $block2;
+        eval {
+            my ($block1, $block2) = $self->process_syn_block($_);
+            push @$blocks1 , $block1;
+            push @$blocks2 , $block2;
+        };
+
+        warn "Unable to process syntenic block: $@" if $@;
       }
     close IN;
     $/="\n";
