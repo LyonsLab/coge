@@ -787,11 +787,8 @@ sub add_items_to_user_or_group {
     }
 
     # Assign each item to user/group
-
     # print STDERR "add_items_to_user_or_group $target_id $target_type\n";
-
     #TODO verify that user can use specified role (for admin/owner roles)
-
     if ( $target_type == $ITEM_TYPE{user} ) {
         my $user = $coge->resultset('User')->find($target_id);
         return unless $user;
@@ -1189,8 +1186,8 @@ sub get_contents {
     my $html_only = $opts{html_only};
     #print STDERR "get_contents $type $html_only $last_update\n";
 
-    use Time::HiRes qw ( time );
-    my $start_time = time;
+    #use Time::HiRes qw ( time );
+    #my $start_time = time;
     my @rows;
 
     # Get current time (according to database)
@@ -1314,17 +1311,7 @@ sub get_contents {
             )
           )
         {
-            my $icon =
-                '<img id="' 
-              . $entry->id . '" '
-              . (
-                $entry->is_important
-                ? 'src="picts/star-full.png"'
-                : 'src="picts/star-hollow.png"'
-              )
-              . ' '
-              . 'width="15" height="15" style="vertical-align:middle;" '
-              . 'onclick="toggle_star(this);"' . '/>';
+            my $icon = '<img id="' . $entry->id . '" ' . ( $entry->is_important ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"' ) . ' ' . 'width="15" height="15" style="vertical-align:middle;" ' . 'onclick="toggle_star(this);"' . '/>';
             push @rows,
               {
                 CONTENTS_ITEM_ID   => $entry->id,
@@ -1336,11 +1323,13 @@ sub get_contents {
         }
     }
     
+    #print STDERR "get_contents: time5=" . ((time - $start_time)*1000) . "\n";
     if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity_analyses} ) {
         foreach my $entry (
             $USER->jobs(
                 {},
                 {
+                	time => { '>=' => $last_update },
                 	join => 'log',
                 	prefetch => 'log',
                 	order_by => { -desc => 'start_time' } 
@@ -1358,11 +1347,7 @@ sub get_contents {
               };
         }
     }
-    
-    #my $t3    = new Benchmark;
-    #$time = timestr( timediff( $t3, $t2 ) );
-    #print STDERR "Time to populate html::tmpl: $time\n";
-    #print STDERR "get_contents: time5=" . ((time - $start_time)*1000) . "\n";
+    #print STDERR "get_contents: time6=" . ((time - $start_time)*1000) . "\n";
     
     if ($html_only) {    # only do this for initial page load, not polling
         my $user_id = $USER->id;
