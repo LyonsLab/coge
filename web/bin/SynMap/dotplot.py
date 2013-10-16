@@ -1,4 +1,7 @@
 #!/usr/bin/python
+
+import math
+
 def def_parse(astr,strip_text='LOC_'):
     astr = astr.replace('\n','')
     astr = astr.replace('\r','')
@@ -133,16 +136,23 @@ def draw_boxes(xchrs,ychrs,xend,yend,linewidth,xheader='Chr',yheader='Chr'):
     results.append(lines)
     results.append(names)
     return results
+
 def define_colors(ksvalue,max_ks=1.5,iterations=1):
     color_base = [[255,0,0],[255,255,0],[0,255,0],[0,255,255],[220,0,220],[0,0,255]]
     color_points = []
     for x in range(iterations):
         color_points.extend(color_base)
     color_points.reverse()
-    if ksvalue == 'undef': return 'gray'
-    if ksvalue == 'NA': return 'gray'
-    if float(ksvalue) >= max_ks: return 'gray'
-    scale = float(ksvalue)/max_ks
+
+    try:
+        ksvalue = float(ksvalue)
+    except ValueError:
+        return 'gray'
+
+    if math.isnan(ksvalue) or ksvalue >= max_ks:
+        return 'gray'
+
+    scale = ksvalue / max_ks
     step = 1/(len(color_points)-1)
     list_ind = scale * (len(color_points)-1)
     base_val = int(list_ind)
