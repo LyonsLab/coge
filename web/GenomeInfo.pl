@@ -486,7 +486,6 @@ sub generate_body {
 
     my $user_can_edit = $USER->is_admin || $USER->is_owner_editor( dsg => $gid );
     my $user_can_delete = $USER->is_admin || $USER->is_owner( dsg => $gid );
-print STDERR "matt: " . $USER->id . " admin=" . $USER->is_admin . " edit=$user_can_edit delete=$user_can_delete\n";
 
     $template->param(
         GID           => $gid,
