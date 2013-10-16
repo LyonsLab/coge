@@ -298,7 +298,7 @@ sub has_access_to_genome {
 	
 	my $gid = $genome->id;
 	unless ( $self->_genome_ids)  {
-	    $self->_genome_ids({ map{$_->id=>1} $self->genomes });
+	    $self->_genome_ids({ map{$_->id=>1} $self->genomes(include_deleted => 1) });
 	}
 	my $ids = $self->_genome_ids();
 	return $ids->{$gid};
@@ -321,7 +321,7 @@ sub has_access_to_experiment {
 	return 0 if ($self->is_public); # deny public user for restricted experiment
 	
 	unless ( $self->_experiment_ids) {
-	    $self->_experiment_ids({ map{$_->id=>1} $self->experiments });
+	    $self->_experiment_ids({ map{$_->id=>1} $self->experiments(include_deleted => 1) });
 	}
 	my $ids = $self->_experiment_ids();
 	return $ids->{$experiment->id};
