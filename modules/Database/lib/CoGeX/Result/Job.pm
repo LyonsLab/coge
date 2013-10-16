@@ -4,8 +4,10 @@ use v5.10;
 use strict;
 use warnings;
 
-use DateTime;
-use DateTime::Format::HTTP;
+#use DateTime;
+#use DateTime::Format::HTTP;
+use Time::Local;
+#use DateTime::Duration;
 use base 'DBIx::Class::Core';
 
 =head1 NAME
@@ -126,29 +128,56 @@ sub status_color {
 
 sub elapsed_time {
     my $self = shift;
-    my $diff;
 
-    my $start_time = DateTime::Format::HTTP->parse_datetime($self->start_time);
-    if ($self->end_time and $self->status > 2) {
-        my $end_time = DateTime::Format::HTTP->parse_datetime($self->end_time);
-        $diff = $end_time->subtract_datetime($start_time);
-    } else {
-        my $timezone = DateTime::TimeZone->new( name => 'local' );
-        my $dt = DateTime->now(time_zone => $timezone);
+# mdb removed 10/15/13 -- too slow
+#    my $start_time = DateTime::Format::HTTP->parse_datetime($self->start_time);
+#    my $diff;
+#    if ($self->end_time and $self->status > 2) {
+#        my $end_time = DateTime::Format::HTTP->parse_datetime($self->end_time);
+#        $diff = $end_time->subtract_datetime($start_time);
+#    } else {
+#        my $timezone = DateTime::TimeZone->new( name => 'local' );
+#        my $dt = DateTime->now(time_zone => $timezone);
+#
+#        $diff = $dt->subtract_datetime($start_time);
+#    }
+#
+#    my ($days, $hours, $minutes, $seconds) = $diff->in_units('days', 'hours', 'minutes', 'seconds');
+#
+#    my $elapsed = '';
+#    $elapsed .= "${days}d " if $days;
+#    $elapsed .= "${hours}h " if $hours;
+#    $elapsed .= "${minutes}m " if $minutes && not $days;
+#    $elapsed .= "${seconds}s" if $seconds && not $days;
+#    return $elapsed;
 
-        $diff = $dt->subtract_datetime($start_time);
-    }
-
-    my $days = $diff->in_units('days');
-    my $hours = $diff->hours();
-
+	my ($y1, $mo1, $d1, $h1, $m1, $s1) = $self->start_time =~ /(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)/;
+	my $time1 = timelocal( $s1, $m1, $h1, $d1, $mo1, $y1 );
+	
+	my $time2;
+	if ($self->end_time and $self->status > 2) {
+		my ($y2, $mo2, $d2, $h2, $m2, $s2) = $self->end_time =~ /(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)/;
+		$time2 = timelocal( $s2, $m2, $h2, $d2, $mo2, $y2 );
+	}
+	else {
+		$time2 = time;
+	}
+	
+	my $diff = $time2 - $time1;
+	my $d = int($diff / (60*60*24));
+	$diff -= $d * (60*60*24);
+	my $h = int($diff / (60*60));
+	$diff -= $h * (60*60);
+	my $m = int($diff / 60);
+	$diff -= $m * 60;
+	my $s = $diff % 60;
+	
     my $elapsed = '';
-    $elapsed .= "${days}d " if $days;
-    $elapsed .= "${hours}h " if $hours;
-    $elapsed .= $diff->minutes() . "m " if $diff->minutes() && not $days;
-    $elapsed .= $diff->seconds() . "s" if $diff->seconds() && not $days;
-
-    return $elapsed
+    $elapsed .= "${d}d " if $d > 0;
+    $elapsed .= "${h}h " if $h > 0;
+    $elapsed .= "${m}m " if $m > 0 && $d <= 0;
+    $elapsed .= "${s}s" if $s > 0 && $d <= 0;
+	return $elapsed;
 }
 
 1;
