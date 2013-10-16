@@ -772,7 +772,8 @@ sub child_connector {
 		foreach my $conn ($self->list_connectors) {
 			my $list = $conn->child;
 			foreach ($list->child_connectors({child_id=>$id, child_type=>$type_num})) {
-				next if ($_->child_id != $id or $_->child_type != $type_num); # FIXME mdb tempfix 10/14/13 -- why necessary with line above?
+				next if ($_->child_id != $id or $_->child_type != $type_num); # FIXME mdb tempfix 10/14/13 issue 232 -- why necessary with line above?
+				next unless ($conn->role_id == 4); # mdb tempfix 10/16/13 issue 232 -- list can only grant read access
 				return $conn;
 			}
 		}
@@ -789,7 +790,8 @@ sub child_connector {
 			foreach my $conn ($group->list_connectors) {
 				my $list = $conn->child;
 				foreach ($list->child_connectors({child_id=>$id, child_type=>$type_num})) {
-					next if ($_->child_id != $id or $_->child_type != $type_num); # FIXME mdb tempfix 10/14/13 -- why necessary with line above?
+					next if ($_->child_id != $id or $_->child_type != $type_num); # FIXME mdb tempfix 10/14/13 issue 232 -- why necessary with line above?
+					next unless ($conn->role_id == 4); # mdb tempfix 10/16/13 issue 232 -- list can only grant read access
 					return $conn;
 				}
 			}
