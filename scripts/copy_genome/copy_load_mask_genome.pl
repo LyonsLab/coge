@@ -8,270 +8,241 @@ use Data::Dumper;
 use Getopt::Long;
 use File::Path;
 
-use vars qw($DEBUG $GO $conf_file $coge $gid $restricted $P $mask $uid);
+use vars qw($conf_file $coge $gid $restricted $P $mask $uid $staging_dir);
 
 GetOptions(
-    "debug=s"        => \$DEBUG,
-    "go=s"           => \$GO,
-    "conf_file|cf=s" => \$conf_file,
-    "gid=i"          => \$gid,
-    "restricted|r=i" => \$restricted,
-    "mask|m"         => \$mask,
-    "uid=i" => \$uid,    #coge user id to whom the genome will be assigned
+	"conf_file|cf=s" => \$conf_file,
+	"staging_dir=s"  => \$staging_dir,
+	"gid=i"          => \$gid,
+	"restricted|r=i" => \$restricted,
+	"mask|m=i"       => \$mask,
+	"uid=i"          => \$uid, # user id to assign the new genome to
 );
 
+# Open log file
+$| = 1;
+unless ($staging_dir) {
+	die;
+	#$staging_dir = $P->{SECTEMPDIR} . "CopyMaskGenome/";
+	#$staging_dir .= $uid ? $uid."/" : "public/";
+	#my $uuid = CoGe::Accessory::Utils->get_unique_id;
+	#$staging_dir .= $uuid."/staging/";
+}
+mkpath( $staging_dir, 1, 0777 );    # make sure this exists
+my $logfile = "$staging_dir/log.txt";
+open( my $log, ">>$logfile" ) or die "Error opening log file";
+$log->autoflush(1);
+print $log "Starting $0 (pid $$)\n";
+
+# Process and verify parameters
+if (not $uid) {
+	print $log "log: error: uid not specified\n";
+	exit(-1);
+}
+
+# Load config file
+die "No config file specified\n" unless ($conf_file);
 $P = CoGe::Accessory::Web::get_defaults($conf_file);
-
-unless ( $P && $P->{DBNAME} ) { usage(); }
-
-my $SECTEMPDIR = $P->{TEMPDIR};
-$SECTEMPDIR .= "CopyMaskGenome/";
-$SECTEMPDIR .= $uid ? $uid."/" : "public/";
-my $uuid = CoGe::Accessory::Utils->get_unique_id;
-$SECTEMPDIR .= $uuid."/staging/";
-mkpath( $SECTEMPDIR, 1, 0777 );
-
 my $DBNAME = $P->{DBNAME};
 my $DBHOST = $P->{DBHOST};
 my $DBPORT = $P->{DBPORT};
 my $DBUSER = $P->{DBUSER};
 my $DBPASS = $P->{DBPASS};
 
+# Connect to the database
 my $connstr =
   "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS);
+$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
 
-#$coge->storage->debugobj(new DBIxProfiler());
-#$coge->storage->debug(1);
-
-#EL: update to use Matt's load_genome.pl
-my $fasta_genome_loader   = $P->{LOAD_GENOME};
-my $replicate_annotations = $P->{REPLICATE_ANNOTATIONS};
-my $windowmasker          = $P->{WINDOWMASKER};
-my $hard_mask             = $P->{HARD_MASK};
-
-unless ($gid) {
-    usage();
-}
+# Get paths to external scripts
+my $fasta_genome_loader   = $P->{SCRIPTDIR} . '/load_genome.pl';
+my $replicate_annotations =
+  $P->{SCRIPTDIR} . '/copy_genome/replicate_annotations.pl';
+my $windowmasker = $P->{SCRIPTDIR} . '/copy_genome/windowmasker';
+my $hard_mask    = $P->{SCRIPTDIR} . '/copy_genome/hard_mask.pl';
 
 unless ( -r $fasta_genome_loader ) {
-    print STDERR qq{
-Error:  unable to read fasta_genome_loader: $fasta_genome_loader
-};
-    exit;
+	print $log "log: error: Unable to find fasta_genome_loader\n";
+	exit(-1);
 }
 
+# Load genome from db
 my ($genome) = $coge->resultset('Genome')->find($gid);
 $restricted = $genome->restricted
-  unless defined $restricted
-; #use whatever is specified by the original genome unless user specifies otherwise
+  unless defined $restricted; #use whatever is specified by the original genome unless user specifies otherwise
 unless ($genome) {
-    print STDERR qq{
-Error: Unable to create a datasetgroup object for $gid
-};
-    exit;
+	print $log "log: error: Unable to find genome $gid\n";
+	exit(-1);
 }
 
+# Mask genome sequence
 my $new_faa;
 my $stid;
 if ($mask) {
-    $new_faa = mask_genome( genome => $genome );
-    $stid = get_sequence_type_id_for_windowmasker();
+	print $log "log: Masking genome sequence (may take a few mintes)\n";
+	$new_faa = mask_genome( genome => $genome );
+	$stid = get_sequence_type_id_for_windowmasker();
 }
 else {
-    $new_faa = $genome->file_path;
-    $stid    = $genome->genomic_sequence_type_id;
+	$new_faa = $genome->file_path;
+	$stid    = $genome->genomic_sequence_type_id;
 }
 
-print STDERR "Loading genome\n";
+# Load genome
+print $log "Calling load_genome.pl\n";
 my $new_gid = load_genome( faa => $new_faa, genome => $genome, stid => $stid );
-print STDERR "NEW GENOMEID: $new_gid\n" if $DEBUG;
 unless ($new_gid) {
-    print STDERR
-"Error: unable to capture a new genome id for the masked genome.  Exiting.\n";
-    exit;
+	print $log "log: error: Unable to load new gnome\n";
+	exit(-1);
 }
 
-#assign genome to user
-if ($uid) {
-    my $node_types = CoGeX::node_types();
-    my $uc         = $coge->resultset('UserConnector')->find_or_create(
-        {
-            parent_id   => $uid,
-            parent_type => $node_types->{user},
-            child_id    => $new_gid,
-            child_type  => $node_types->{genome},
-            role_id     => 2
-        }
-    );
-}
-
-#copy_permissions (gid1=>$gid, gid2=>$new_gid);
+# Copy annotations
+print $log "log: Copying annotations (may take a few mintes)\n";
 add_annotations( gid1 => $gid, gid2 => $new_gid );
 
-sub copy_permissions {
-    my %opts = @_;
-    my $gid1 = $opts{gid1};
-    my $gid2 = $opts{gid2};
+# Done
+print $log "log: Finished copying genome!\n";
+exit;
 
-    #permissions will be copied from g1 to g2;
-    my $g1 = $coge->resultset('Genome')->find($gid1);
-    my $g2 = $coge->resultset('Genome')->find($gid2);
-}
+#-------------------------------------------------------------------------------
 
 sub add_annotations {
-    my %opts   = @_;
-    my $dsgid1 = $opts{gid1};
-    my $dsgid2 = $opts{gid2};
-    my $cmd    = $replicate_annotations;
-    $cmd .= " -db " . $DBNAME;
-    $cmd .= " -u " . $DBUSER;
-    $cmd .= " -pw " . $DBPASS;
-    $cmd .= " -dsgid1 " . $dsgid1;
-    $cmd .= " -dsgid2 " . $dsgid2;
-    $cmd .= " -go " . $GO;
-    $cmd .= " -debug " . $DEBUG if $DEBUG;
-    print STDERR "Running: $cmd\n";
-    open( CMD, "$cmd |" );
-
-    while (<CMD>) {
-        print STDERR $_ if $DEBUG;
-    }
-    close CMD;
+	my %opts   = @_;
+	my $dsgid1 = $opts{gid1};
+	my $dsgid2 = $opts{gid2};
+	my $cmd    = $replicate_annotations;
+	$cmd .= " -db " . $DBNAME;
+	$cmd .= " -u " . $DBUSER;
+	$cmd .= " -pw " . $DBPASS;
+	$cmd .= " -dsgid1 " . $dsgid1;
+	$cmd .= " -dsgid2 " . $dsgid2;
+	execute($cmd);
 }
 
 sub load_genome {
-    my %opts = @_;
-    my $faa  = $opts{faa};
-    my $genome  = $opts{genome};
-    my $stid = $opts{stid};
-    my $cmd  = $fasta_genome_loader;
-    
-    $cmd .= " -staging_dir " . $SECTEMPDIR;
-    $cmd .= " -organism_id " . $genome->organism->id;
-    $cmd .= " -name '" . $genome->name . "'" if $genome->name;
-    #NOT AN OPTION IN MATT's SCRIPT YET
-    $cmd .= " -message 'Copy of genome gid:" . $genome->id . "'";
-    $cmd .= " -link 'OrganismView.pl?gid=" . $genome->id . "'";
+	my %opts   = @_;
+	my $faa    = $opts{faa};
+	my $genome = $opts{genome};
+	my $stid   = $opts{stid};
+	my $cmd    = $fasta_genome_loader;
+	$cmd .= " -staging_dir " . $staging_dir;
+	$cmd .= " -organism_id " . $genome->organism->id;
+	$cmd .= " -name '" . $genome->name . "'" if $genome->name;
+	$cmd .= " -message 'Copy of genome gid:" . $genome->id . "'";
+	$cmd .= " -link 'OrganismView.pl?gid=" . $genome->id . "'";
 
-    my ($ds) = $genome->datasets;
-    #NOT AN OPTION IN MATT's SCRIPT
-    $cmd .= " -source_id " . $ds->data_source->id;
-    #NOT AN OPTION IN MATT's SCRIPT
-    $cmd .= " -user_id " . $uid if $uid;
+	my ($ds) = $genome->datasets;
 
-    $cmd .= " -version '" . $genome->version . "'";
-#    $cmd .= " -ds_name '" . $ds->name . "'";
-#    $cmd .= " -ds_desc '" . $ds->description . "'" if $ds->description;
-    $cmd .= " -type_id " . $stid;
-    $cmd .= " -config " . $conf_file;
-    $cmd .= " -restricted " . $restricted if $restricted;
-    $cmd .= " -fasta_files " . $faa;
+	$cmd .= " -source_id " . $ds->data_source->id;
+	$cmd .= " -user_id " . $uid if $uid;
+	$cmd .= " -version '" . $genome->version . "'";
+	#$cmd .= " -ds_name '" . $ds->name . "'";
+	#$cmd .= " -ds_desc '" . $ds->description . "'" if $ds->description;
+	$cmd .= " -type_id " . $stid;
+	$cmd .= " -config " . $conf_file;
+	$cmd .= " -restricted " . $restricted if $restricted;
+	$cmd .= " -fasta_files " . $faa;
 
-#    my $seq_dir = $genome->file_path;
-#    $seq_dir =~ s/[^\/]*$//;
-#    $seq_dir =~ s/\d+\///g;
-#    $cmd .= " -sd " . $seq_dir;
+	#my $seq_dir = $genome->file_path;
+	#$seq_dir =~ s/[^\/]*$//;
+	#$seq_dir =~ s/\d+\///g;
+	#$cmd .= " -sd " . $seq_dir;
 
-    print STDERR "Running: ", $cmd, "\n";
-    my $genomeid;
+	execute($cmd);
 
-    if ($GO) {
-      `$cmd`;
-      open (IN , $SECTEMPDIR."log.txt") || die "can't find log file: ".$SECTEMPDIR."log.txt";
-      while (<IN>)
-	{
-	  if (/genome id:\s+(\d+)/) {
-	    $genomeid = $1;
-	    print STDERR "Captured genomeid: $genomeid\n" if $DEBUG;
-	    last;
-	  }
+	my $genomeid;
+	open( IN, $staging_dir . "/log.txt" )
+	  || die "can't find log file: " . $staging_dir . "/log.txt";
+	while (<IN>) {
+		if (/log: Added genome id(\d+)/) {
+			$genomeid = $1;
+			print $log "Captured gid: $genomeid\n";
+			last;
+		}
 	}
-      close IN;
-      die "Unable able to find genomeid in log file: ".$SECTEMPDIR."log.txt" unless $genomeid;
-    }
-    return $genomeid;
+	close IN;
+	
+	unless ($genomeid) {
+		print $log "Unable able to find gid in log file: " . $staging_dir . "/log.txt";
+		exit(-1);
+	}
+
+	return $genomeid;
 }
 
 sub get_and_clean_sequence {
-    my $faa     = shift;
-    my $rnd     = int( rand(1000000000000) );
-    my $new_faa = $SECTEMPDIR . "/" . $rnd . ".clean.faa";
-    open( OUT, ">$new_faa" );
-    open( IN,  $faa );
-    while (<IN>) {
-        if (/^>/) {
-            s/lcl\|//g;
-            s/gi\|//g;
-            print OUT $_;
-        }
-        else {
-            print OUT $_;
-        }
-    }
-    close OUT;
-    close IN;
-    return $new_faa;
+	my $faa     = shift;
+	my $rnd     = int( rand(1000000000000) );
+	my $new_faa = $staging_dir . "/" . $rnd . ".clean.faa";
+	open( OUT, ">$new_faa" );
+	open( IN,  $faa );
+	while (<IN>) {
+		if (/^>/) {
+			s/lcl\|//g;
+			s/gi\|//g;
+			print OUT $_;
+		}
+		else {
+			print OUT $_;
+		}
+	}
+	close OUT;
+	close IN;
+	return $new_faa;
 }
 
 sub mask_genome {
-    my %opts   = @_;
-    my $genome    = $opts{genome};
-    my $rnd    = int( rand(1000000000000) );
-    #EL: change this to use the SECURE TEMP DIR
-    my $counts = $SECTEMPDIR . "/" . $rnd . ".counts";
-    my $masked = $SECTEMPDIR . "/" . $rnd . ".masked";
-    my $hard   = $masked . ".hard";
-    my $faa    = $genome->file_path;
-    my $cmd    = $windowmasker . " -in " . $faa . " -mk_counts -out " . $counts;
-    print STDERR "running $cmd\n";
-    `$cmd` if $GO;
-    $cmd =
-        $windowmasker . " -in " 
-      . $faa
-      . " -ustat "
-      . $counts
-      . " -outfmt fasta -dust T -out "
-      . $masked;
-    print STDERR "running $cmd\n";
-    `$cmd` if $GO;
-    $cmd = $hard_mask . " < $masked > $hard";
-    print STDERR "running $cmd\n";
-    `$cmd` if $GO;
-    return $hard;
+	my %opts   = @_;
+	my $genome = $opts{genome};
+	my $rnd    = int( rand(1000000000000) );
+	my $counts = $staging_dir . "/" . $rnd . ".counts";
+	my $masked = $staging_dir . "/" . $rnd . ".masked";
+	my $hard   = $masked . ".hard";
+	my $faa    = $genome->file_path;
+	my $cmd    = $windowmasker . " -in " . $faa . " -mk_counts -out " . $counts;
+	execute($cmd);
+	$cmd =
+	    $windowmasker . " -in " . $faa
+	  . " -ustat "
+	  . $counts
+	  . " -outfmt fasta -dust T -out "
+	  . $masked;
+	execute($cmd);
+	$cmd = $hard_mask . " < $masked > $hard";
+	execute($cmd);
+	return $hard;
 }
 
 sub get_sequence_type_id_for_windowmasker {
-    my $st =
-      $coge->resultset('GenomicSequenceType')
-      ->find_or_create( { name => "NCBI WindowMasker (Hard)" } );
-    return $st->id;
+	my $st =
+	  $coge->resultset('GenomicSequenceType')
+	  ->find_or_create( { name => "NCBI WindowMasker (Hard)" } );
+	return $st->id;
 }
 
-sub usage {
-    print STDERR qq{
-Welcome to $0
-
-Purpose:  take a genome ID from coge, generate a masked version of the genome, load it into CoGe, and map over the annotations
-
-Usage:  $0  -conf_file <coge configuration file> -gid <coge database id for genome to be masked and copies> -uid <coge user id> -go 1
-
-Options:
-   -go 1                  |      Make the database calls.  Default 0
-
-   -conf_file | cf        |      CoGe conf file
-
-   -gid                   |      CoGe genome id
-
-   -mask                  |      Mask the genome with NCBI's windowmasker
-
-   -restricted            |      mark genome as restricted (Defaults to whatever is set for gid's genome)
-
-   -uid                   |      CoGe user id to whom the new genome will be assigned
-
-
-Copyright Eric Lyons 2013
-
-};
-    exit;
+sub execute {
+    my $cmd = shift;
+    print $log "$cmd\n";
+    my @cmdOut    = qx{$cmd};
+    my $cmdStatus = $?;
+    if ( $cmdStatus != 0 ) {
+        print $log "log: error: command failed with rc=$cmdStatus: $cmd\n";
+        exit(-1);
+    }
 }
+
+#sub usage {
+#    print STDERR qq{
+#Purpose:  take a genome ID from coge, generate a masked version of the genome, load it into CoGe, and map over the annotations
+#Usage:  $0  -conf_file <coge configuration file> -gid <coge database id for genome to be masked and copies> -uid <coge user id> -go 1
+#
+#Options:
+#   -go 1                  |      Make the database calls.  Default 0
+#   -conf_file | cf        |      CoGe conf file
+#   -gid                   |      CoGe genome id
+#   -mask                  |      Mask the genome with NCBI's windowmasker
+#   -restricted            |      mark genome as restricted (Defaults to whatever is set for gid's genome)
+#   -uid                   |      CoGe user id to whom the new genome will be assigned
+#};
+#    exit;
+#}

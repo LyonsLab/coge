@@ -45,8 +45,8 @@ $coge = CoGeX->dbconnect(
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
-my $fasta_genome_loader   = $P->{FASTA_GENOME_LOADER};
-my $replicate_annotations = $P->{REPLICATE_ANNOTATIONS};
+my $fasta_genome_loader   = $P->{SCRIPTDIR} . '/load_genome.pl';
+my $replicate_annotations = $P->{SCRIPTDIR} . '/copy_genome/replicate_annotations.pl';
 
 unless (@gids) {
     usage();

@@ -436,7 +436,7 @@ sub upload_file {
 }
 
 sub check_login {
-	print STDERR $USER->user_name . ' ' . int($USER->is_public) . "\n";
+	#print STDERR $USER->user_name . ' ' . int($USER->is_public) . "\n";
 	return ($USER && !$USER->is_public);
 }
 
@@ -507,7 +507,7 @@ sub load_genome {
         push @files, $fullpath;
     }
 
-    print $log "Calling bin/load_genome.pl ...\n";
+    print $log "Calling load_genome.pl ...\n";
     my $cmd =
         "$BINDIR/load_genome.pl "
       . "-user_name $user_name "
@@ -554,7 +554,7 @@ sub get_load_log {
     my $status = 0;
     while (<$fh>) {
         push @lines, $1 if ( $_ =~ /^log:\s+(.+)/i );
-        if ( $_ =~ /All done/i ) {
+        if ( $_ =~ /log: Finished loading/i ) {
             $status = 1;
             last;
         }
