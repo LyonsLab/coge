@@ -16,6 +16,8 @@ $(document).ready(function(){
 		autoOpen: false, 
 		width: 500, 
   	});
+	
+	$("#copy_dialog").dialog({modal: true});
 });
 
 function wait_to_search (search_func, search_term) {
@@ -198,6 +200,120 @@ function export_bed (gid) {
 	window.open(link);
 }
 
+function reset_log() {
+	$('#copy_log').html('');
+	$('#status_msg').show();
+	$('#finished_msg,#error_msg,#ok_button').hide();
+	$('#finish_button,#cancel_button').hide();
+}
+
+function check_login() {
+	var logged_in = false;
+	
+	$.ajax({
+		async: false,
+		data: {
+			fname: 'check_login',
+		},
+		success : function(rc) {
+			logged_in = rc;
+		}
+	});
+	
+	return logged_in;
+}
+
+function copy_genome(mask) {
+	// Prevent concurrent executions - issue 101
+	if ( $("#copy_dialog").dialog( "isOpen" ) )
+		return;
+
+	// Make sure user is still logged-in - issue 206
+	if (!check_login()) {
+		alert('Your session has expired, please log in again.');
+		location.reload(true)
+		return;
+	}
+	
+	// Open status dialog right away - issue 101
+	reset_log();
+	if (mask) {
+		$('#copy_dialog').dialog('option', 'title', 'Copying & Masking Genome');
+	}
+	else {
+		$('#copy_dialog').dialog('option', 'title', 'Copying Genome');
+	}
+	$('#copy_dialog').dialog('open');
+	$('#copy_log').html('Initializing ...');
+	
+	$.ajax({
+		data: {
+			fname: 'copy_genome',
+			load_id: '<TMPL_VAR NAME="LOAD_ID">',
+			gid: '<TMPL_VAR NAME="GID">',
+			mask: mask,
+			timestamp: new Date().getTime()
+		},
+		success : function(error) {
+			if (error) {
+				alert(error);
+				return;
+			}
+			
+			// Add load_id to browser URL
+			//window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?load_id=<TMPL_VAR NAME='LOAD_ID'>");
+			
+			// Start status update
+			setTimeout(function() { get_log(); }, 1000);
+		}
+		// TODO: handle error, show in status dialog
+	});
+}
+
+function get_log() {
+	$.ajax({
+		data: {
+			dataType: 'text',
+			fname: 'get_log',
+			load_id: '<TMPL_VAR NAME="LOAD_ID">'
+		},
+		success : function(data) {
+			if (!data) { // workaround for issue #45, jquery intermittently dropping payload
+				setTimeout(function() { get_log(); }, 1000);
+				return;
+			}
+
+			var obj = jQuery.parseJSON(data);
+			if (obj.log) {
+				$('#copy_log').html(obj.log.join('<BR>'));
+				var height = $('#copy_log')[0].scrollHeight;
+	    		$("#copy_log").animate({ scrollTop: height}, 500);
+    		}
+
+			if (obj.status == 1) {
+				$('#new_genome_id').val( obj.genome_id );
+				$('#status_msg').hide();
+				$('#finished_msg').fadeIn();
+				$('#ok_button').fadeIn();
+				$('#finish_button').fadeIn();
+			}
+			else if (obj.status == -1) {
+				$('#status_msg').hide();
+				$('#error_msg').fadeIn();
+				$('#cancel_button').fadeIn();
+			}
+			else {
+				setTimeout(function() { get_log(); }, 1000);
+			}
+		}
+	});	
+}
+
+function continue_to_view() {
+	var gid = $('#new_genome_id').val();
+	window.location.href = "GenomeInfo.pl?gid=" + gid;
+}
+
 </SCRIPT>
 
 
@@ -209,9 +325,11 @@ function export_bed (gid) {
 			<TMPL_IF NAME='USER_CAN_EDIT'>
 				<span class='ui-button ui-corner-all' onClick="edit_genome_info();">Edit Info</span>
 			</TMPL_IF>
+			<span id='copy_button' class='ui-button ui-corner-all' onDblClick="copy_genome(0);" onClick="copy_genome(0);">Copy</span>
+			<span id='copy_and_mask_button' class='ui-button ui-corner-all' onDblClick="copy_genome(1);" onClick="copy_genome(1);">Copy & Mask</span>
 			<TMPL_IF NAME='USER_CAN_DELETE'>
 				<TMPL_IF NAME='DELETED'>
-					<span class='ui-button ui-corner-all ui-button-go' onClick="delete_genome(); location.reload();">Undelete</span>
+					<span class='ui-button ui-corner-all ui-button-go' onClick="delete_genome();">Undelete</span>
 				<TMPL_ELSE>
 					<span class='ui-button ui-corner-all ui-button-go' onClick="$('#genome_delete_box').dialog('open');">Delete</span>
 				</TMPL_IF>
@@ -298,6 +416,21 @@ Are you sure you want to move this genome into your trash?<p>
   <span style="font-size:.75em" class='ui-button ui-corner-all' onClick="delete_genome();">Yes</span>
   <span style="font-size:.75em" class='ui-button ui-corner-all' onClick="$('#genome_delete_box').dialog('close');">No</span>
  </div>
+</div>
+
+<div id="copy_dialog" class="hidden dialog_box">
+<div id="copy_log" class="small ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
+</div>
+<br>
+<div id="status_msg">
+  <!--<span class="small" style="float:right;">Link: <a href='<TMPL_VAR NAME="LINK">'><TMPL_VAR NAME="LINK"></a></span>-->
+  Please wait ... <img src="picts/ajax-loader.gif"/>
+</div>
+<span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
+<input id="new_genome_id" type="hidden" /> 
+<span id="ok_button" onClick="$('#copy_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all">OK</span>
+<span id="finish_button" onClick="continue_to_view();" style="float:right;" class="hidden ui-button ui-corner-all">Go to new genome</span>
+<span id="cancel_button" onClick="$('#copy_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go">Cancel</span>
 </div>
 
 </TMPL_IF>
@@ -497,6 +630,4 @@ Are you sure you want to move this genome into your trash?<p>
 	  	</div>
 	</div>
 	<br>
-</TMPL_IF> <!-- ADMIN_AREA -->
-
-
+</TMPL_IF>

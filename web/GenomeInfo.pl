@@ -4,14 +4,15 @@ use strict;
 use CGI;
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Utils qw( commify );
+use CoGe::Accessory::Utils;
 use HTML::Template;
 use JSON::XS;
 use Sort::Versions;
+use File::Path qw(mkpath);
 no warnings 'redefine';
 
 use vars qw(
-  $P $PAGE_TITLE $USER $coge $FORM %FUNCTION $MAX_SEARCH_RESULTS $LINK
+  $P $PAGE_TITLE $TEMPDIR $LOAD_ID $USER $CONFIGFILE $coge $FORM %FUNCTION $MAX_SEARCH_RESULTS $LINK
 );
 
 $PAGE_TITLE = 'GenomeInfo';
@@ -24,10 +25,13 @@ $FORM = new CGI;
     page_title => $PAGE_TITLE
 );
 
+$LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
+$TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
+$CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
+
 $MAX_SEARCH_RESULTS = 100;
 
 %FUNCTION = (
-    generate_html      => \&generate_html,
     get_genome_info    => \&get_genome_info,
     get_genome_data    => \&get_genome_data,
     edit_genome_info   => \&edit_genome_info,
@@ -35,7 +39,10 @@ $MAX_SEARCH_RESULTS = 100;
     update_owner       => \&update_owner,
     search_organisms   => \&search_organisms,
     search_users       => \&search_users,
-    delete_genome      => \&delete_genome
+    delete_genome      => \&delete_genome,
+    check_login        => \&check_login,
+    copy_genome        => \&copy_genome,
+	get_log            => \&get_log
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
@@ -289,9 +296,9 @@ qq{<span class=link onclick="\$('#gff_export').dialog('option', 'width', 400).di
     $links .= qq{&nbsp|&nbsp};
     $links .= "<a href='CodeOn.pl?dsgid=$gid' target=_new>CodeOn</a>";
     $links .= qq{&nbsp|&nbsp};
-    $links .=
-qq{<span class='link' onclick="window.open('GenomeInfo.pl?gid=$gid');">GenomeInfo</span>};
-    $links .= qq{&nbsp|&nbsp};
+#    $links .=
+#qq{<span class='link' onclick="window.open('GenomeInfo.pl?gid=$gid');">GenomeInfo</span>};
+#    $links .= qq{&nbsp|&nbsp};
     $links .=
 qq{<span class='link' onclick="window.open('SynMap.pl?dsgid1=$gid;dsgid2=$gid');">SynMap</span>};
     $links .= qq{&nbsp|&nbsp};
@@ -426,14 +433,17 @@ sub get_datasets {
 sub delete_genome {
     my %opts = @_;
     my $gid  = $opts{gid};
+    print STDERR "delete_genome $gid\n";
     return 0 unless $gid;
 
     my $genome = $coge->resultset('Genome')->find($gid);
     return 0 unless $genome;
+    print STDERR "matt1\n";
     return 0 unless ( $USER->is_admin or $USER->is_owner( dsg => $gid ) );
-    
+    print STDERR "matt2\n";
     my $delete_or_undelete = ($genome->deleted ? 'undelete' : 'delete');
-    $genome->deleted(!$genome->deleted); # do undelete if already deleted
+    print STDERR "delete_genome " . $genome->deleted . "\n";
+    $genome->deleted( !$genome->deleted ); # do undelete if already deleted
     $genome->update;
     
     # Record in log
@@ -446,6 +456,85 @@ sub delete_genome {
 
     return 1;
 }
+
+sub check_login {
+	#print STDERR $USER->user_name . ' ' . int($USER->is_public) . "\n";
+	return ($USER && !$USER->is_public);
+}
+
+sub copy_genome {
+    my %opts = @_;
+    my $gid  = $opts{gid};
+    my $mask = $opts{mask};
+    $mask = 0 unless $mask;
+
+    print STDERR "copy_and_mask_genome: gid=$gid mask=$mask\n";
+
+    if ($USER->is_public) {
+    	return 'Not logged in';
+    }
+
+    # Setup staging area and log file
+    my $stagepath = $TEMPDIR . '/staging/';
+    mkpath $stagepath;
+
+    my $logfile = $stagepath . '/log.txt';
+    open( my $log, ">$logfile" ) or die "Error creating log file";
+    print $log "Calling copy_load_mask_genome.pl ...\n";
+    my $cmd =
+        $P->{SCRIPTDIR} . "/copy_genome/copy_load_mask_genome.pl "
+    	. "-gid $gid "
+    	. "-uid " . $USER->id . " "
+    	. "-mask $mask " 
+    	. "-staging_dir $stagepath "
+    	. "-conf_file $CONFIGFILE";
+    print STDERR "$cmd\n";
+    print $log "$cmd\n";
+    close($log);
+
+    if ( !defined( my $child_pid = fork() ) ) {
+        return "Cannot fork: $!";
+    }
+    elsif ( $child_pid == 0 ) {
+        print STDERR "child running: $cmd\n";
+        `$cmd`;
+        exit;
+    }
+
+    return;
+}
+
+sub get_log {
+    #my %opts    = @_;
+    #print STDERR "get_log $LOAD_ID\n";
+
+    my $logfile = $TEMPDIR . "staging/log.txt";
+    open( my $fh, $logfile ) or
+      return encode_json( { status => -1, log => ["Error opening log file"] } );
+
+    my @lines = ();
+    my $gid;
+    my $status = 0;
+    while (<$fh>) {
+        push @lines, $1 if ( $_ =~ /^log:\s+(.+)/i );
+        if ( $_ =~ /log: Finished copying/i ) {
+            $status = 1;
+            last;
+        }
+        elsif ( $_ =~ /log: Added genome id(\d+)/i ) {
+            $gid = $1;
+        }
+        elsif ( $_ =~ /log: error/i ) {
+            $status = -1;
+            last;
+        }
+    }
+    close($fh);
+
+    return encode_json(
+        { status => $status, genome_id => $gid, log => \@lines } );
+}
+
 
 sub generate_html {
     my $name = $USER->user_name;
@@ -479,22 +568,20 @@ sub generate_body {
 
     my $genome = $coge->resultset('Genome')->find($gid);
     return "Genome id$gid not found" unless ($genome);
-
     return "Access denied" unless $USER->has_access_to_genome($genome);
-
-    my ($first_chr) = $genome->chromosomes;
 
     my $user_can_edit = $USER->is_admin || $USER->is_owner_editor( dsg => $gid );
     my $user_can_delete = $USER->is_admin || $USER->is_owner( dsg => $gid );
 
     $template->param(
-        GID           => $gid,
-        GENOME_INFO   => get_genome_info( genome => $genome ),
-        GENOME_DATA   => get_genome_data( genome => $genome ),
-        EXPERIMENTS   => get_experiments( genome => $genome ),
-        ANNOTATION    => get_datasets( genome => $genome, exclude_seq => 1 ),
-        USER_CAN_EDIT => $user_can_edit,
-        USER_CAN_ADD  => ( !$genome->restricted or $user_can_edit ),
+    	LOAD_ID         => $LOAD_ID,
+        GID             => $gid,
+        GENOME_INFO     => get_genome_info( genome => $genome ),
+        GENOME_DATA     => get_genome_data( genome => $genome ),
+        EXPERIMENTS     => get_experiments( genome => $genome ),
+        ANNOTATION      => get_datasets( genome => $genome, exclude_seq => 1 ),
+        USER_CAN_EDIT   => $user_can_edit,
+        USER_CAN_ADD    => ( !$genome->restricted or $user_can_edit ),
         USER_CAN_DELETE => $user_can_delete,
         DELETED         => $genome->deleted
     );

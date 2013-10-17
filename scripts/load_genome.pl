@@ -65,6 +65,7 @@ mkpath($staging_dir); # make sure this exists
 my $logfile = "$staging_dir/log.txt";
 open( my $log, ">>$logfile" ) or die "Error opening log file";
 $log->autoflush(1);
+print $log "Starting $0 (pid $$)\n";
 
 # Process and verify parameters
 $fasta_files = unescape($fasta_files) if ($fasta_files);
@@ -364,7 +365,7 @@ print $log "log: "
 my $t2 = new Benchmark;
 my $time = timestr( timediff( $t2, $t1 ) );
 print $log "Took $time to copy\n";
-print $log "log: All done!\n";
+print $log "log: Finished loading genome!\n";
 
 close($log);
 
