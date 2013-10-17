@@ -211,7 +211,7 @@ function export_bed (gid) {
 			</TMPL_IF>
 			<TMPL_IF NAME='USER_CAN_DELETE'>
 				<TMPL_IF NAME='DELETED'>
-					<span class='ui-button ui-corner-all ui-button-go' onClick="delete_genome(); location.reload();">Undelete</span>
+					<span class='ui-button ui-corner-all ui-button-go' onClick="delete_genome();">Undelete</span>
 				<TMPL_ELSE>
 					<span class='ui-button ui-corner-all ui-button-go' onClick="$('#genome_delete_box').dialog('open');">Delete</span>
 				</TMPL_IF>
