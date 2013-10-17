@@ -163,9 +163,9 @@ def main(args={}):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Update jobs in the job engine.')
+        description='Update jobs in the job engine.  Run with no options for a dry-run with no database commits.')
 
     parser.add_argument('config', help="Database configuration file")
-    parser.add_argument('--update', action='store_true')
-    parser.add_argument('--fix', action='store_true')
+    parser.add_argument('--update', action='store_true', help="Commit the updates to the database.  Must be set to have commits happen.")
+    parser.add_argument('--fix', action='store_true', help="Fixes a problem with time-stamps.")
     main(parser.parse_args())
