@@ -2929,8 +2929,12 @@ sub get_results {
         $results->param( algorithm => $algo_name );
 
         if ($hist) {
-            $results->param( histogram => $out_url . '.hist.png' ) if -r $hist;
-            $results->param( ks_type => $ks_type );
+            if (-r $hist and -s $hist) {
+                $results->param( histogram => $out_url . '.hist.png' );
+                $results->param( ks_type => $ks_type );
+            } else {
+                $warn = qq{The histogram was not generated no ks or kn data found.};
+            }
         }
 
         my $final_dagchainer_file_condensed =
