@@ -1,6 +1,5 @@
 <TMPL_IF NAME='MAIN'>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/coge.ui.utils.js"></SCRIPT>
 
 <SCRIPT language="JavaScript">
 var LOG_POLL_TIME = 2000;
@@ -17,9 +16,6 @@ $(document).ready(function(){
 	$(".dialog_box").dialog({autoOpen: false, width: 500});
 	$('#load_dialog').dialog("widget").find('.ui-dialog-titlebar-close').hide();
 	$('#load_dialog').dialog({modal: true, closeOnEscape: false})
-	
-	set_input('edit_genome');
-	set_input('edit_source');
 	
 	get_sources();
 
@@ -71,7 +67,6 @@ function create_source() {
 			$('#create_new_source_dialog').dialog('close');
 			if (name) {
 				$('#edit_source').val(name);
-				set_input('edit_source');
 			}
 		}
 	});
@@ -314,7 +309,7 @@ function more() {
   <tr>
     <td>Source:</td>
     <td>
-      <input id="edit_source" size="45" spellcheck="false" />
+      <input id="edit_source" type="search" placeholder="Search" size="45" spellcheck="false" />
       <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
     </td>
   </tr> 
@@ -325,7 +320,7 @@ function more() {
   <tr>
     <td>Genome:</td>
     <td>
-      <input id="edit_genome" spellcheck="false" onkeypress="wait_to_search(search_genomes, this);" size="58" value="<TMPL_VAR NAME='GENOME_NAME'>" />
+      <input id="edit_genome" type="search" placeholder="Search" spellcheck="false" onkeypress="wait_to_search(search_genomes, this);" size="58" value="<TMPL_VAR NAME='GENOME_NAME'>" />
       <input id="gid" type="hidden" value="<TMPL_VAR NAME='GENOME_ID'>" />
     </td>
   </tr>
