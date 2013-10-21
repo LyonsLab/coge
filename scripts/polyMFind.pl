@@ -853,7 +853,7 @@ print qq{<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery.tablesorter.2.0.3.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery.tablesorter.pager.js"></SCRIPT>
 <link rel="stylesheet" type="text/css" href="/CoGe/css/jquery-ui-1.7.2.custom.css" />
-<link rel="stylesheet" type="text/css" href="/CoGe/css/styled.css" />
+<link rel="stylesheet" type="text/css" href="/CoGe/css/coge.css" />
 
 <Script language="JavaScript">
 \$(document).ready(function(){

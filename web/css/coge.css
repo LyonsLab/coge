@@ -934,6 +934,10 @@ li {
     display: none;
 }
 
+.invisible {
+    visibility: hidden;
+}
+
 .padded {
     padding: 5px;
 }

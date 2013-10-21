@@ -6,9 +6,9 @@ $(document).ready(function(){
 	cross_fade(1);
 
 	//$("#accordion").accordion({collapsible:true, active: false}).show();
-	$("#accordion2").accordion({collapsible:true, active: false, disabled:true}).css('visibility', 'visible');
-	$("#accordion3").accordion({collapsible:true, active: false, disabled:true}).css('visibility', 'visible');
-	$("#accordion4").accordion({collapsible:true, active: false}).css('visibility', 'visible');
+	$("#accordion2").accordion({collapsible:true, active: false, disabled:true}).removeClass('invisible');
+	$("#accordion3").accordion({collapsible:true, active: false, disabled:true}).removeClass('invisible');
+	$("#accordion4").accordion({collapsible:true, active: false}).removeClass('invisible');
 });
 
 function cross_fade(first_time) {
@@ -102,7 +102,7 @@ function get_latest_genomes() {
 	<div>
 	  <div style="float:left">
 	  	What is CoGe?<br>
-	  	<div id="accordion" style="visibility:hidden;font-size: 0.7em">
+	  	<div id="accordion" class="invisible" style="font-size: 0.7em">
 	      <h3><a href="#">CoGe is a comparative genomics platform for all genomes across all domains of life in any state of assembly</a></h3>
 	      <div><img class ="ui-corner-all ui-widget-content" style="width: 80%" src=./picts/home_page/OrganismView-search.png><br>Searching for organisms with "proteo" in their taxonomic description.<br><span class=link onclick="window.open('OrganismView.pl?org_desc=proteo')">Open this search in OrganismView</span></div>
 	      <h3><a href="#">CoGe allows you to easily find and analyze genomic data from any organism</a></h3>
@@ -123,7 +123,7 @@ function get_latest_genomes() {
 	<div style="padding-top:25px;">
 		New to CoGe?<br>
 		<div style="float:left;padding-right:50px;">
-			<div id="accordion2" style="visibility:hidden;font-size: 0.7em; width:150px;">
+			<div id="accordion2" class="invisible" style="font-size: 0.7em; width:150px;">
 				<h3 onclick='window.open("http://genomevolution.org/wiki/index.php/New_to_CoGe")'><a href="http://genomevolution.org/wiki/index.php/New_to_CoGe">How to get started</a></h3>
 				<div></div>
 				<h3 onclick='window.open("http://genomevolution.org/wiki/index.php/Tutorials")'><a href="http://genomevolution.org/wiki/index.php/Tutorials">Tutorials</a></h3>
@@ -153,13 +153,13 @@ function get_latest_genomes() {
 	<div>
 		CoGe's Tools<br>
 		<div style="font-size: 0.7em; width: 500px; float: left">
-			<div id="accordion3" style="visibility:hidden;">
+			<div id="accordion3" class="invisible">
 				<TMPL_LOOP NAME="ACTIONS">
 					<h3 onclick='window.open("<TMPL_VAR NAME=LINK>")'><a href="#"><TMPL_VAR NAME="ACTION"></a></h3>
 					<div><TMPL_VAR NAME="DESC"></div>
 				</TMPL_LOOP>
 			</div>
-			<div id="accordion4" style="visibility:hidden;">
+			<div id="accordion4" class="invisible">
 				<h3 onclick="get_latest_genomes();"><a href="#">Latest Genomes</a></h3>
 				<div style="min-height: 200px;">
 					Number returned: <input id="limit" class="backbox" type="textbox" size="3" value="20"><span class='ui-button ui-corner-all' onClick="get_latest_genomes();">Go</span><br><br>

@@ -53,7 +53,7 @@ $connstr =
 $coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
 
 print "Content-Type: text/html\n\n",
-  '<link rel="stylesheet" type="text/css" href="css/styled.css" />'
+  '<link rel="stylesheet" type="text/css" href="css/coge.css" />'
   ;                                 # mdb added 5/9/13 for JBrowse
 my $rhtml = gen_html(
     featid    => $FID,
