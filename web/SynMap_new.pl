@@ -532,7 +532,7 @@ sub gen_org_menu {
     $name = "Search" unless $name;
     $desc = "Search" unless $desc;
     my $menu_template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'SynMap.tmpl' );
+      HTML::Template->new( filename => $P->{TMPLDIR} . 'partials/organism_menu.tmpl' );
     $menu_template->param( ORG_MENU => 1 );
     $menu_template->param( NUM      => $num );
     $menu_template->param( ORG_NAME => $name );
