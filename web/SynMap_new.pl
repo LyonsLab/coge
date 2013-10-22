@@ -357,6 +357,8 @@ sub gen_body {
 
 #if the page is loading with genomes, there will be a check for whether the genome is rest
 #populate organism menus
+    my $error = 0;
+
     for ( my $i = 1 ; $i <= 2 ; $i++ ) {
         my $dsgid = 0;
         $dsgid = $form->param( 'dsgid' . $i )
@@ -373,6 +375,16 @@ sub gen_body {
             name           => $name
         );
         $template->param( "ORG_MENU" . $i => $org_menu );
+
+        my ($dsg) = $coge->resultset('Genome')->find($dsgid);
+
+        if($dsgid > 0 and !$USER->has_access_to_genome($dsg)) {
+            $error = 1;
+        }
+    }
+
+    if ($error) {
+        $template->param("error" => 'The genome was not found or is private.');
     }
 
     #set ks for coloring syntenic dots
@@ -522,39 +534,42 @@ sub gen_org_menu {
     my $feattype_param = $opts{feattype_param};
     $feattype_param = 1 unless $feattype_param;
 
-    my ($dsg) = $coge->resultset('Genome')->find($dsgid);
-
-    if ($dsg) {
-        my $org = $dsg->organism;
-        $oid = $org->id;
-    }
-
     $name = "Search" unless $name;
     $desc = "Search" unless $desc;
+
+    my ($dsg) = $coge->resultset('Genome')->find($dsgid);
     my $menu_template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'partials/organism_menu.tmpl' );
     $menu_template->param( ORG_MENU => 1 );
     $menu_template->param( NUM      => $num );
     $menu_template->param( ORG_NAME => $name );
     $menu_template->param( ORG_DESC => $desc );
-    $menu_template->param(
-        'ORG_LIST' => get_orgs( name => $name, i => $num, oid => $oid ) );
 
-    #    $oid = 0;
-    #    $dsgid =0;
-    my ($dsg_menu) = gen_dsg_menu( oid => $oid, dsgid => $dsgid, num => $num );
-    $menu_template->param( DSG_MENU => $dsg_menu );
+    if ($dsg and $USER->has_access_to_genome($dsg)) {
+        my $org = $dsg->organism;
+        $oid = $org->id;
 
-    if ($dsgid) {
+
         my ( $dsg_info, $feattype_menu, $message ) = get_genome_info(
             dsgid    => $dsgid,
             org_num  => $num,
             feattype => $feattype_param
         );
+
         $menu_template->param( DSG_INFO       => $dsg_info );
         $menu_template->param( FEATTYPE_MENU  => $feattype_menu );
         $menu_template->param( GENOME_MESSAGE => $message );
+    }  else {
+        $oid = 0;
+        $dsgid = 0;
     }
+
+    $menu_template->param(
+        'ORG_LIST' => get_orgs( name => $name, i => $num, oid => $oid ) );
+
+    my ($dsg_menu) = gen_dsg_menu( oid => $oid, dsgid => $dsgid, num => $num );
+    $menu_template->param( DSG_MENU => $dsg_menu );
+
     return $menu_template->output;
 }
 
