@@ -20,6 +20,8 @@ def main(input, output, gid1, gid2, feature1, feature2):
     data within the file.
     '''
     genomic = False
+    with open(output, "w") as fp:
+        fp.write("#\n")
 
     if not(os.path.exists(input)):
         logging.error("Input file: (%s) not found.", input)
@@ -50,7 +52,7 @@ def main(input, output, gid1, gid2, feature1, feature2):
 
     logging.info("Writing %s in gene order.", args.output)
 
-    with open(output, "w") as fp:
+    with open(output, "a") as fp:
         for line in input_file:
             if line.startswith("#"):
                 fp.write(line)
@@ -162,7 +164,8 @@ def convert_to_genomic_position(genomic_file, output):
     Convert the input file from genomic order to genomic
     position.
     '''
-    with open(genomic_file, 'r') as fp:
+    with open(genomic_file, 'r') as fp, open(output, 'a') as out:
+        out.write('#\n')
         for line in fp:
             if line.startswith('#'):
                 data = line
@@ -187,7 +190,6 @@ def convert_to_genomic_position(genomic_file, output):
                 items[7] = stop
                 data = "\t".join(items) + "\n"
 
-            with open(output, 'a') as out:
                 out.write(data)
     return 0
 

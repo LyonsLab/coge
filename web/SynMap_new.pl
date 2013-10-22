@@ -1664,8 +1664,8 @@ sub go {
         my @blastargs;
 
         if ( $cmd =~ /lastz/i ) {
-            push @blastargs, [ "-i", $fasta,   1 ];
-            push @blastargs, [ "-d", $db,      1 ];
+            push @blastargs, [ "-i", $fasta,   0 ];
+            push @blastargs, [ "-d", $db,      0 ];
             push @blastargs, [ "-o", $outfile, 1 ];
         }
         elsif ( $cmd =~ /last_wrapper/i ) {
@@ -1674,14 +1674,14 @@ sub go {
         	mkpath($dbpath);
 			push @blastargs, [ "--dbpath", $dbpath, 0 ];
 			
-            push @blastargs, [ "",   $db,      1 ];
-            push @blastargs, [ "",   $fasta,   1 ];
+            push @blastargs, [ "",   $db,      0 ];
+            push @blastargs, [ "",   $fasta,   0 ];
             push @blastargs, [ "-o", $outfile, 1 ];
         }
         else {
             push @blastargs, [ "-out",   $outfile, 1 ];
-            push @blastargs, [ "-query", $fasta,   1 ];
-            push @blastargs, [ "-db",    $db,      1 ];
+            push @blastargs, [ "-query", $fasta,   0 ];
+            push @blastargs, [ "-db",    $db,      0 ];
         }
 
         ( undef, $cmd ) = CoGe::Accessory::Web::check_taint($cmd);
