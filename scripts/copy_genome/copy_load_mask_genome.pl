@@ -79,7 +79,7 @@ unless ($genome) {
 my $new_faa;
 my $stid;
 if ($mask) {
-	print $log "log: Masking genome sequence (may take a few mintes)\n";
+	print $log "log: Masking genome sequence (may take a few minutes):\n";
 	$new_faa = mask_genome( genome => $genome );
 	$stid = get_sequence_type_id_for_windowmasker();
 }
@@ -89,6 +89,7 @@ else {
 }
 
 # Load genome
+print $log "log: Loading new genome:\n";
 print $log "Calling load_genome.pl\n";
 my $new_gid = load_genome( faa => $new_faa, genome => $genome, stid => $stid );
 unless ($new_gid) {
@@ -97,7 +98,7 @@ unless ($new_gid) {
 }
 
 # Copy annotations
-print $log "log: Copying annotations (may take a few mintes)\n";
+print $log "log: Copying annotations (may take a few minutes)\n";
 add_annotations( gid1 => $gid, gid2 => $new_gid );
 
 # Done
@@ -199,8 +200,12 @@ sub mask_genome {
 	my $masked = $staging_dir . "/" . $rnd . ".masked";
 	my $hard   = $masked . ".hard";
 	my $faa    = $genome->file_path;
+	
+	print $log "log: Running WindowMasker (stage 1)\n";
 	my $cmd    = $windowmasker . " -in " . $faa . " -mk_counts -out " . $counts;
 	execute($cmd);
+	
+	print $log "log: Running WindowMasker (stage 2)\n";
 	$cmd =
 	    $windowmasker . " -in " . $faa
 	  . " -ustat "
@@ -208,6 +213,8 @@ sub mask_genome {
 	  . " -outfmt fasta -dust T -out "
 	  . $masked;
 	execute($cmd);
+	
+	print $log "log: Running hard masking\n";
 	$cmd = $hard_mask . " < $masked > $hard";
 	execute($cmd);
 	return $hard;
