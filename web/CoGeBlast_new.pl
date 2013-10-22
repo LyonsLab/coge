@@ -670,22 +670,24 @@ sub blast_search {
         return alert("Please select genomes to be blasted.");
     }
 
-    my @dsg_ids = ();
-    push @dsg_ids, split( /,/, $blastable );
+    my @dsg_ids = split( /,/, $blastable );
 
     my $width = $opts{width};
     my $fid   = $opts{fid};
 
+    my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
+        user_id => $USER->id,
+        page    => "GenomeList",
+        url     => $P->{SERVER} . "GenomeList.pl?dsgid=$blastable"
+    );
 
     my $list_link =
-        q{<a href="GenomeList.pl?dsgid=$blastable" target="_blank">}
+        qq{<a href="$genomes_url" target_"blank">}
       . @dsg_ids
       . ' genome'
-      . ( @dsg_ids > 1 ? 's' : '' )
-      . '</a>';
+      . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
 
     my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
-    #print STDERR $log_msg . "\n";
 
     my $url = $P->{SERVER} . $PAGE_NAME . "?dsgid=$blastable";
     $url .= ";fid=$fid" if ($fid);
