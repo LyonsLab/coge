@@ -65,14 +65,17 @@
         <li class="small"><a href="#tab-3">Display Options</a></li>
     </ul>
 
-    <ul id="tab-1">
-        <li style="display:inline-block; padding: 5px 0 5px 0; vertical-align:top;">
-                <tmpl_var name=org_menu1>
-        </li>
-        <li style="display:inline-block; padding: 5px 0 5px 0; vertical-align:top;">
-                <tmpl_var name=org_menu2>
-        </li>
-    </ul>
+    <div id="tab-1">
+        <div class="alert small"><tmpl_var name=error></div>
+        <ul>
+            <li style="display:inline-block; padding: 5px 0 5px 0; vertical-align:top;">
+                    <tmpl_var name=org_menu1>
+            </li>
+            <li style="display:inline-block; padding: 5px 0 5px 0; vertical-align:top;">
+                    <tmpl_var name=org_menu2>
+            </li>
+        </ul>
+    </div>
     <!--close tab-1 -->
 
     <div id="tab-2">
