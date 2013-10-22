@@ -35,7 +35,8 @@ $BINDIR     = $P->{SCRIPTDIR}; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
 # Generate a unique session ID for this load (issue 177).
 # Use existing ID if being passed in with AJAX request.  Otherwise generate
 # a new one.  If passed-in as url parameter then open status window
-# automatically.
+# automatically.  This needs to be done right away rather than at load time 
+# so that uploaded/imported files have a place to go.
 $OPEN_STATUS = (defined $FORM->param('load_id'));
 $LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $TEMPDIR    = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
@@ -173,12 +174,11 @@ sub irods_get_file {
     my ($filename)   = $path =~ /([^\/]+)\s*$/;
     my ($remotepath) = $path =~ /(.*)$filename$/;
 
-    #	print STDERR "get_file $path $filename\n";
-
     my $localpath     = 'irods/' . $remotepath;
     my $localfullpath = $TEMPDIR . $localpath;
     $localpath .= '/' . $filename;
     my $localfilepath = $localfullpath . '/' . $filename;
+    #print STDERR "get_file $path $filename $localfilepath\n";
 
     my $do_get = 1;
 
@@ -297,7 +297,7 @@ sub ftp_get_file {
     }
     else {                  # error
         my $status = $response->status_line();
-        print STDERR "status_line: $status\n";
+        #print STDERR "status_line: $status\n";
         return encode_json(
             {
                 timestamp => $timestamp,
@@ -331,7 +331,7 @@ sub search_ncbi_nucleotide {
     #print STDERR Dumper $record;
 
     my $id = $record->{IdList}->{Id};
-    print STDERR "id = $id\n";
+    #print STDERR "id = $id\n";
 
     my $title;
     if ($id) {
@@ -349,7 +349,7 @@ sub search_ncbi_nucleotide {
         {    #FIXME use grep here instead
             if ( $_->{Name} eq 'Title' ) {
                 $title = $_->{content};
-                print STDERR "title=$title\n";
+                #print STDERR "title=$title\n";
                 last;
             }
         }
@@ -551,11 +551,17 @@ sub get_load_log {
 
     my @lines = ();
     my $gid;
+    my $new_load_id;
     my $status = 0;
     while (<$fh>) {
         push @lines, $1 if ( $_ =~ /^log:\s+(.+)/i );
         if ( $_ =~ /log: Finished loading/i ) {
-            $status = 1;
+        	$status = 1;
+        	
+        	# Generate a new load session ID in case the user chooses to 
+        	# reuse the form to start another load.
+        	$new_load_id = get_unique_id();
+            
             last;
         }
         elsif ( $_ =~ /log: Added genome id(\d+)/i ) {
@@ -570,7 +576,7 @@ sub get_load_log {
 
     #	print STDERR encode_json({ status => $status }) . "\n";
     return encode_json(
-        { status => $status, genome_id => $gid, log => \@lines } );
+        { status => $status, genome_id => $gid, new_load_id => $new_load_id, log => \@lines } );
 }
 
 sub get_sequence_types {
