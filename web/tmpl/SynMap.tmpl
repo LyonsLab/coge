@@ -378,74 +378,7 @@
 </section>
 </tmpl_if>
 
-
 <!-- partials -->
-<tmpl_if name="org_menu">
-<section class="ui-widget-content ui-corner-all resizable" style="float: left; padding: 0.3em; height: auto; width:625px;">
-    <h4 style="font-weight: normal; margin: 0;">Organism <tmpl_var name="num"> Search: </h4>
-
-    <div class="small">
-        <label>Name:</label>
-        <input type="search" size="10"
-            name = "org_name<tmpl_var name=num>"
-            id="org_name<tmpl_var name=num>"
-            style="font-style:italic"
-            onKeyUp="timing('org_name<tmpl_var name=num>');"
-            placeholder="<tmpl_var name=org_name>">
-        <span class="ui-button ui-corner-all" onClick="timing('org_name<tmpl_var name=num>');">
-            <span class="ui-icon ui-icon-arrowrefresh-1-w"></span>
-        </span>
-
-        <label>Description:</label>
-        <input type="search" size="10"
-            name="org_desc<tmpl_var name=num>"
-            id="org_desc<tmpl_var name=num>"
-            style="font-style:italic"
-            onKeyUp="timing('org_desc<tmpl_var name=num>');"
-            placeholder="<tmpl_var name=org_desc>">
-        <span class="ui-button ui-corner-all" onClick="timing('org_desc<tmpl_var name=num>');">
-            <span class="ui-icon ui-icon-arrowrefresh-1-w"></span>
-        </span>
-    </div>
-
-    <div id="org_list<tmpl_var name=num>">
-        <tmpl_var name="org_list">
-    </div>
-
-    <table>
-        <tr>
-            <td>Genome:</td>
-
-            <td>
-                <div id="dsg_menu<tmpl_var name=num>">
-                    <tmpl_var name="dsg_menu">
-                </div>
-            </td>
-
-            <td>
-                <div id="feattype_menu<tmpl_var name=num>">
-                    <tmpl_if name="feattype_menu">
-                        <tmpl_var name="feattype_menu">
-                    <tmpl_else>
-                        <input type="hidden" id="feat_type<tmpl_var name=num>">
-                    </tmpl_if>
-                </div>
-            </td>
-        </tr>
-
-        <tr>
-            <td colspan="3">
-                <div id="genome_message<tmpl_var name=num>">
-                    <tmpl_var name="genome_message">
-                </div>
-            </td>
-        </tr>
-    </table>
-
-    <div style="vertical-align:top;" id="dsg_info<tmpl_var name=num>">
-        <tmpl_var name="dsg_info">
-    </div>
-</section>
 
 <div id="synmap_dialog" class="dialog_box" title="Running SynMap ..." style="display:none;">
     <div id="text" class="small ui-widget-content ui-corner-all inline" style="overflow-y:auto;width:450px;height:200px;color:dimgray;padding: 5px;">
@@ -481,7 +414,6 @@
     </ul>
     <div id="synmap_link" class="small" style="color:dimgray; padding-left: 5px;"></div>
 </div>
-</tmpl_if>
 
 <!-- Load scripts last for loading -->
 <script language="javascript" type="text/javascript" src="js/jquery.tablesorter.2.0.3.js"></script>
