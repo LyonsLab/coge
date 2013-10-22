@@ -384,7 +384,7 @@ sub gen_body {
     }
 
     if ($error) {
-        $template->param("error" => 'The genome was not found or is private.');
+        $template->param("error" => 'The genome was not found or is restricted.');
     }
 
     #set ks for coloring syntenic dots
