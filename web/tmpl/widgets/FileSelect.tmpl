@@ -1,8 +1,14 @@
 <SCRIPT language="JavaScript">
 // Begin Widget API -----------------------------------------------------------
-// callback file_selected
-// callback file_finished
-// callback file_canceled
+
+// Required global vars
+//    load_id
+//
+// Required callbacks
+//    file_selected()
+//    file_finished()
+//    file_canceled()
+
 function get_selected_files() {
 	var items = new Array();
 	var transferring = 0;
@@ -26,6 +32,7 @@ function get_selected_files() {
 	
 	return items;
 }
+
 // End Widget API -------------------------------------------------------------
 
 $(document).ready(function() {
@@ -35,8 +42,8 @@ $(document).ready(function() {
 	}
 	alreadyDone = 1;
 	
-	if (!'<TMPL_VAR NAME="LOAD_ID">') {
-		console.error('FileSelect widget error: LOAD_ID not defined!')
+	if (!load_id) {
+		console.error('FileSelect widget error: load_id not defined!')
 	}
 	
 	$("#tabs").tabs({selected:<TMPL_VAR NAME='DEFAULT_TAB'>});
@@ -50,7 +57,7 @@ $(document).ready(function() {
     	dataType: 'json',
     	formData: {
     		fname: 'upload_file',
-    		load_id: '<TMPL_VAR NAME="LOAD_ID">'
+    		load_id: load_id
     	},
     	add:
     		function(e, data) {
@@ -177,6 +184,7 @@ function irods_get_path (path) {
 		data: {
 			fname: 'irods_get_path',
 			path: path,
+			load_id: load_id,
 			timestamp: new Date().getTime()
 		},
 		success : function(data) {
@@ -263,7 +271,7 @@ function irods_get_file(path) {
 		data: {
 			fname: 'irods_get_file',
 			path: path,
-			load_id: '<TMPL_VAR NAME="LOAD_ID">'
+			load_id: load_id
 		},
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
@@ -279,7 +287,7 @@ function irods_get_all_files (path) {
 		data: {
 			fname: 'irods_get_path',
 			path: path,
-			load_id: '<TMPL_VAR NAME="LOAD_ID">',
+			load_id: load_id,
 			timestamp: new Date().getTime()
 		},
 		success : function(data) {
@@ -333,7 +341,7 @@ function ftp_get_file(url, username, password) {
 	$.ajax({
 		data: {
 			fname: 'ftp_get_file',
-			load_id: '<TMPL_VAR NAME="LOAD_ID">',
+			load_id: load_id,
 			url: url,
 			username: username,
 			password: password,
@@ -363,6 +371,7 @@ function load_from_ftp() {
 		data: {
 			fname: 'load_from_ftp',
 			url: url,
+			load_id: load_id,
 			timestamp: timestamp,
 		},
 		success : function(data) {
@@ -406,6 +415,7 @@ function load_from_ncbi() {
 		data: {
 			fname: 'ncbi_search',
 			accn: accn,
+			load_id: load_id,
 			timestamp: new Date().getTime()
 		},
 		success : function(data) {
@@ -442,7 +452,7 @@ function load_from_ncbi() {
     <div style="overflow-y:auto;height:154px;">
     	<table id="ids_table" class="small" style="width:100%;"></table>
     </div>
-  </div> <!-- tab-1 -->
+  </div>
 
   <div id="tab-2" class="small" style="height:200px;">
   	Enter the location of the file or directory to retrieve.<br><br>
@@ -457,7 +467,7 @@ function load_from_ncbi() {
     <div id="ftp_status" class="note"></div>
     <br>
     <span class="note">Note: FTP/HTTP transfers, including login information, are not secure (encrypted).</span>
-  </div> <!-- tab-2 -->
+  </div>
 
   <TMPL_IF NAME='ENABLE_NCBI'>
   <div id="tab-3" class="small" style="height:200px;">
@@ -466,7 +476,7 @@ function load_from_ncbi() {
     Accession #: <input id="input_accn" size="15" />
     <span id="ncbi_get_button" onClick="load_from_ncbi();" class='ui-button ui-corner-all ui-button-go'> Get </span>
   	-->
-  </div> <!-- tab-3 -->
+  </div>
   </TMPL_IF>
 
   <div id="tab-4" class="small" style="height:200px;">
@@ -475,4 +485,4 @@ function load_from_ncbi() {
     File: <input id="input_upload_file" name="input_upload_file" type="file" size="30" data-url='<TMPL_VAR NAME="PAGE_NAME">' />
   </div> <!-- tab-4 -->
 
-</div> <!-- tabs -->
+</div>

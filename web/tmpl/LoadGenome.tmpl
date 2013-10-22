@@ -9,11 +9,12 @@
 
 <SCRIPT type="text/javascript">
 var timestamps = new Array();
+var load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
 
 $(document).ready(function(){
 	$.ajaxSetup({
 		type: "GET",
-		url: '<TMPL_VAR NAME='PAGE_NAME'>',
+		url: '<TMPL_VAR NAME="PAGE_NAME">',
 		dataType: "html",
 		cache: false
 	});
@@ -236,7 +237,7 @@ function load_genome() {
 	$.ajax({
 		data: {
 			fname: 'load_genome',
-			load_id: '<TMPL_VAR NAME="LOAD_ID">',
+			load_id: load_id,
 			name: name,
 			description: description,
 			link: link,
@@ -257,7 +258,7 @@ function load_genome() {
 			}
 			
 			// Add load_id to browser URL
-			//window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?load_id=<TMPL_VAR NAME='LOAD_ID'>");
+			//window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?load_id=" + load_id);
 			
 			// Start status update
 			setTimeout(function() { get_load_log(); }, 1000);
@@ -271,7 +272,7 @@ function get_load_log() {
 		data: {
 			dataType: 'text',
 			fname: 'get_load_log',
-			load_id: '<TMPL_VAR NAME="LOAD_ID">'
+			load_id: load_id
 		},
 		success : function(data) {
 			if (!data) { // workaround for issue #45, jquery intermittently dropping payload
@@ -286,19 +287,20 @@ function get_load_log() {
 	    		$("#load_genome_log").animate({ scrollTop: height}, 500);
     		}
 
-			if (obj.status == 1) {
+			if (obj.status == 1) {  // finished successfully
+				load_id = obj.new_load_id;
 				$('#genome_id').val( obj.genome_id );
 				$('#loading_msg').hide();
 				$('#finished_msg').fadeIn();
 				$('#ok_button').fadeIn();
 				$('#finish_load_genome_button').fadeIn();
 			}
-			else if (obj.status == -1) {
+			else if (obj.status == -1) { // error occurred
 				$('#loading_msg').hide();
 				$('#error_msg').fadeIn();
 				$('#cancel_load_genome_button').fadeIn();
 			}
-			else {
+			else { // not done yet, continue polling
 				setTimeout(function() { get_load_log(); }, 1000);
 			}
 		}
@@ -652,7 +654,7 @@ function sort_name (a,b) {
       <input id="edit_organism" type="search" placeholder="Search" onkeyup="wait_to_search(search_organisms, this.value);" size="45" spellcheck="false" />
       <span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all'>New</span>
     </td>
-  </tr>	
+  </tr>
   <tr>
     <td>Version:</td>
     <td><input id="edit_version" type="textbox" size="10" spellcheck="false" /></td>
@@ -819,7 +821,7 @@ function sort_name (a,b) {
   </div>
   <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
   <input id="genome_id" type="hidden" /> 
-  <span id="ok_button" onClick="$('#load_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all">OK</span>
+  <span id="ok_button" onClick="clear_list(); $('#load_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all">OK</span>
   <span id="finish_load_genome_button" onClick="continue_to_view();" style="float:right;" class="hidden ui-button ui-corner-all">Continue to GenomeInfo</span>
   <span id="cancel_load_genome_button" onClick="$('#load_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go">Cancel</span>
 </div>
@@ -859,7 +861,7 @@ $(document).ready(function() {
   </tr>
 </table>
 <br>
-</TMPL_IF> <!-- ADMIN_AREA -->
+</TMPL_IF>
 
 </TMPL_IF> <!-- MAIN -->
 
