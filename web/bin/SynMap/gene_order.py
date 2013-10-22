@@ -162,7 +162,8 @@ def convert_to_genomic_position(genomic_file, output):
     Convert the input file from genomic order to genomic
     position.
     '''
-    with open(genomic_file, 'r') as fp:
+    with open(genomic_file, 'r') as fp, open(output, 'a') as out:
+        out.write('#\n')
         for line in fp:
             if line.startswith('#'):
                 data = line
@@ -187,7 +188,6 @@ def convert_to_genomic_position(genomic_file, output):
                 items[7] = stop
                 data = "\t".join(items) + "\n"
 
-            with open(output, 'a') as out:
                 out.write(data)
     return 0
 
