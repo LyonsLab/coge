@@ -12,6 +12,7 @@ use JSON::XS;
 use Sort::Versions;
 use File::Path qw(mkpath);
 use File::Copy qw(copy);
+use URI;
 use URI::Escape::JavaScript qw(escape);
 use LWP::Simple;
 no warnings 'redefine';
@@ -231,13 +232,13 @@ sub load_from_ftp {
 sub ftp_get_file {
     my %opts      = @_;
     my $url       = $opts{url};
-    my $username  = $opts{username};
-    my $password  = $opts{password};
+    my $username  = $opts{username}; # optional
+    my $password  = $opts{password}; # optional
     my $timestamp = $opts{timestamp};
 
-    my ( $type, $filepath, $filename ) = $url =~ /^(ftp|http):\/\/(.+)\/(\S+)$/;
+    my ( $type, $filepath, $filename ) = $url =~ /^(ftp|http|https):\/\/(.+)\/(\S+)$/;
 
-    # print STDERR "$type $filepath $filename $username $password\n";
+    print STDERR "url=$url type=$type filepath=$filepath filename=$filename ", ($username and $password ? "$username $password" : ''), "\n";
     return unless ( $type and $filepath and $filename );
 
     my $path         = 'ftp/' . $filepath . '/' . $filename;
@@ -270,7 +271,7 @@ sub ftp_get_file {
     #			print STDERR "$bytes_received bytes received\n";
     #
     #			# XXX Should really do something with the chunk itself
-##			print STDERR $chunk;
+    #           #print STDERR $chunk;
     #		});
 
     # Current method (allows optional login)
@@ -290,12 +291,12 @@ sub ftp_get_file {
         #print STDERR "content: <begin>$result<end>\n";
         open( my $fh, ">$fullfilepath/$filename" );
         if ($fh) {
-            binmode $fh;    # could be binary data
+            binmode $fh; # could be binary data
             print $fh $result;
             close($fh);
         }
     }
-    else {                  # error
+    else { # error
         my $status = $response->status_line();
         #print STDERR "status_line: $status\n";
         return encode_json(
@@ -320,14 +321,11 @@ sub search_ncbi_nucleotide {
     my %opts      = @_;
     my $accn      = $opts{accn};
     my $timestamp = $opts{timestamp};
-    my $esearch =
-"http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=$accn";
+    my $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=$accn";
     my $result = get($esearch);
-
     #print STDERR $result;
 
     my $record = XMLin($result);
-
     #print STDERR Dumper $record;
 
     my $id = $record->{IdList}->{Id};
@@ -335,14 +333,11 @@ sub search_ncbi_nucleotide {
 
     my $title;
     if ($id) {
-        $esearch =
-"http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nucleotide&id=$id";
+        $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nucleotide&id=$id";
         my $result = get($esearch);
-
         #print STDERR $result;
 
         $record = XMLin($result);
-
         #print STDERR Dumper $record;
 
         foreach ( @{ $record->{DocSum}->{Item} } )
