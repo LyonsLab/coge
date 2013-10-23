@@ -324,10 +324,9 @@ sub get_genomic_sequence {
     my $gstid  = $opts{gstid};
     $gstid = 1 unless $gstid;    #FIXME hardcoded type value
     my $gid = $opts{gid};
-
-    my $genome;
+    my $genome = $opts{genome}; #genome object
     $genome = $gid if ( $gid && ref($gid) =~ /Genome/ );
-    unless ($genome) {
+    unless ($genome && ref($genome) =~ /Genome/) {
         foreach ( $self->genomes ) {
             if ( $_->genomic_sequence_type_id == $gstid ) {
                 $genome = $_;
