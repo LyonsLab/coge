@@ -14,6 +14,16 @@ CGI::Application::Dispatch->dispatch(
             app    => 'Sequence',
             rm     => 'get'
         },
+        'organism/search' => {
+            prefix => 'CoGe::Services::Data',
+            app    => 'Organism',
+            rm     => 'search'
+        },
+        'genome/search' => {
+            prefix => 'CoGe::Services::Data',
+            app    => 'Genome',
+            rm     => 'search'
+        },                
         'notebook/create' => {
             prefix => 'CoGe::Services::Data',
             app    => 'Notebook',
