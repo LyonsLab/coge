@@ -908,16 +908,18 @@ sub genomic_sequence {
 	my $gstid  = $opts{gstid};
 	my $seq    = $opts{seq};
 	my $dsgid  = $opts{dsgid};
+	my $genome = $opts{genome}; #genome object
+	my $dataset = $opts{dataset}; #dataset object
 	my $server =
 	  $opts{server}; #used for passing in server name from which to retrieve sequence from web-script CoGe/GetSequence.pl
 	my $rel = $opts{rel};
-
+#	print STDERR "Feature.pm:  in sub genomic_sequence\n";
 #have a full sequence? -- pass it in and the locations will be parsed out of it!
 	if ( !$up && !$down && $self->_genomic_sequence ) {
 		return $self->_genomic_sequence;
 	}
 
-	my $dataset = $self->dataset();
+	$dataset = $self->dataset() unless $dataset && ref($dataset) =~ /dataset/i;
 	my @sequences;
 	my %locs =
 	  map { ( $_->start, $_->stop ) }
@@ -946,9 +948,11 @@ sub genomic_sequence {
 			stop       => $stop,
 			debug      => $debug,
 			gstid      => $gstid,
-			dsgid      => $dsgid,
+			gid      => $dsgid,
+                        genome   => $genome,
 			server     => $server,
 		);
+#	print STDERR "Feature.pm:  Have full sequence\n";
 	if ($full_seq) {
 		foreach my $loc (@locs) {
 			if ( $loc->[0] - $start + $loc->[1] - $loc->[0] + 1 >
