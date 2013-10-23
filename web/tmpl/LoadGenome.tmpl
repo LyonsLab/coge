@@ -288,7 +288,9 @@ function get_load_log() {
     		}
 
 			if (obj.status == 1) {  // finished successfully
+				// Update load_id in case user reuses page to load again
 				load_id = obj.new_load_id;
+				
 				$('#genome_id').val( obj.genome_id );
 				$('#loading_msg').hide();
 				$('#finished_msg').fadeIn();
@@ -305,6 +307,12 @@ function get_load_log() {
 			}
 		}
 	});	
+}
+
+function reset_load() {
+	clear_list();
+	window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>");
+	$('#load_dialog').dialog('close');
 }
 
 function continue_to_view() {
@@ -821,7 +829,7 @@ function sort_name (a,b) {
   </div>
   <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
   <input id="genome_id" type="hidden" /> 
-  <span id="ok_button" onClick="clear_list(); $('#load_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all">OK</span>
+  <span id="ok_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all">Load Another</span>
   <span id="finish_load_genome_button" onClick="continue_to_view();" style="float:right;" class="hidden ui-button ui-corner-all">Continue to GenomeInfo</span>
   <span id="cancel_load_genome_button" onClick="$('#load_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go">Cancel</span>
 </div>
