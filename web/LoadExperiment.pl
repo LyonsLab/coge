@@ -504,11 +504,17 @@ sub get_load_log {
 
     my @lines = ();
     my $eid;
+    my $new_load_id;
     my $status = 0;
     while (<$fh>) {
         push @lines, $1 if ( $_ =~ /^log: (.+)/i );
         if ( $_ =~ /All done/i ) {
             $status = 1;
+            
+            # Generate a new load session ID in case the user chooses to 
+        	# reuse the form to start another load.
+        	$new_load_id = get_unique_id();
+            
             last;
         }
         elsif ( $_ =~ /experiment id: (\d+)/i ) {
@@ -526,6 +532,7 @@ sub get_load_log {
         {
             status        => $status,
             experiment_id => $eid,
+            new_load_id   => $new_load_id,
             log           => join( "<BR>\n", @lines )
         }
     );
