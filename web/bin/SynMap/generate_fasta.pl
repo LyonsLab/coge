@@ -12,6 +12,7 @@ use Parallel::ForkManager;
 use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use DBIxProfiler;
 
 our (
     $cogeweb, $basename, $gid,     $feature, $fasta,
@@ -44,6 +45,8 @@ $DBPASS = $P->{DBPASS};
 my $connstr =
   "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
 $coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
+#$coge->storage->debugobj(new DBIxProfiler());
+#$coge->storage->debug(1);
 
 $cogeweb = CoGe::Accessory::Web::initialize_basefile(
     basename => $basename,
@@ -62,7 +65,10 @@ sub gen_fasta {
       $coge->resultset('Genome')->search( { "me.genome_id" => $gid },
         { join => 'genomic_sequences', prefetch => 'genomic_sequences' } );
 
-    open( OUT, ">$file" ) || die "Can't open $file for writing: $!";
+    my $output;
+
+    my %datasets; #storage for dataset objects based on dataset id 
+    my %feat_types; #storage for feature type objects
     if ( $feature_type eq "CDS" || $feature_type eq "protein" ) {
         my $count = 1;
         my @res   = $coge->resultset('Feature')->search(
@@ -72,7 +78,7 @@ sub gen_fasta {
             },
             {
                 join => [ { dataset => 'dataset_connectors' } ],
-                prefetch => ['feature_names']
+                prefetch => ['feature_names', 'locations']
             }
         );
 
@@ -100,17 +106,41 @@ sub gen_fasta {
             }
 
             $name =~ s/\s+/_/g;
+	    my $feat_type_name;
+	    if ($feat_types{$feat->feature_type_id})
+	      {
+		$feat_type_name = $feat_types{$feat->feature_type_id}->name;
+	      }
+	    else
+	      {
+		my $feat_type = $feat->type;
+		$feat_types{$feat_type->id}=$feat_type;
+		$feat_type_name = $feat_type->name;
+	      }
             my $title = join( "||",
                 $chr, $feat->start, $feat->stop, $name, $feat->strand,
-                $feat->type->name, $feat->id, $count );
+                $feat_type_name, $feat->id, $count );
+#	    print STDERR "getting sequence\n";
             if ( $feature_type eq "CDS" ) {
-                my $seq = $feat->genomic_sequence( dsgid => $genome->id );
+	        my $dataset;
+		if ($datasets{$feat->dataset_id})
+		  {
+		    $dataset = $datasets{$feat->dataset_id};
+		  }
+		else
+		  {
+		    $dataset = $feat->dataset;
+		    $datasets{$dataset->id} = $dataset;
+		  }
+                my $seq = $feat->genomic_sequence(dsgid => $genome, dataset => $dataset);
                 next unless $seq;
 
                 #skip sequences that are only 'x' | 'n';
                 next unless $seq =~ /[^x|n]/i;
-                print OUT ">" . $title . "\n";
-                print OUT $seq, "\n";
+                #print OUT ">" . $title . "\n";
+		$output .= ">" . $title . "\n";
+                #print OUT $seq, "\n";
+                $output .= $seq. "\n";
                 $count++;
             }
             elsif ( $feature_type eq "protein" ) {
@@ -122,8 +152,8 @@ sub gen_fasta {
                 next unless $seqs[0] =~ /[^x]/i;
                 $title = ">" . $title . "\n";
 
-                #       print OUT $title, join ($title, @seqs),"\n";
-                print OUT $title, $seqs[0], "\n";
+                #print OUT $title, $seqs[0], "\n";
+                $output .= $title. $seqs[0]. "\n";
                 $count++;
             }
         }
@@ -147,6 +177,8 @@ sub gen_fasta {
         #       print OUT $seq,"\n";
         #     }
     }
+    open( OUT, ">$file" ) || die "Can't open $file for writing: $!";
+    print OUT $output;
     close OUT;
     return 1 if -r $file;
     CoGe::Accessory::Web::write_log( "Error with fasta file creation",
