@@ -413,6 +413,11 @@ sub load_experiment {
     my $items       = $opts{items};
     my $file_type	= $opts{file_type};
 
+	# Added EL: 10/24/2013.  Solves the problem when restricted is unchecked.  
+	# Otherwise, command-line call fails with next arg being passed to 
+	# restricted as option
+	$restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
+
 # print STDERR "load_experiment: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
     return unless $items;
 
