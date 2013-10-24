@@ -37,7 +37,10 @@ $BINDIR     = $P->{SCRIPTDIR}; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
 # a new one.  If passed-in as url parameter then open status window
 # automatically.
 $OPEN_STATUS = (defined $FORM->param('load_id'));
-$LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
+
+$LOAD_ID = $FORM->Vars->{'load_id'} if defined $FORM->Vars->{'load_id'};
+$LOAD_ID = get_unique_id() unless defined $LOAD_ID;
+
 $TEMPDIR    = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 
 $MAX_SEARCH_RESULTS = 100;
@@ -97,7 +100,8 @@ sub generate_body {
     $template->param( MAIN      => 1 );
     $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
 
-    my $gid = $FORM->param('gid');
+    my $gid;
+    $gid = $FORM->param('gid') if defined $FORM->param('gid');
     if ($gid) {
         my $genome = $coge->resultset('Genome')->find($gid);
 
@@ -316,7 +320,8 @@ sub ftp_get_file {
 sub upload_file {
     my %opts      = @_;
     my $timestamp = $opts{timestamp};
-    my $filename  = '' . $FORM->param('input_upload_file');
+    my $filename;
+    $filename = '' . $FORM->param('input_upload_file') if defined $FORM->param('input_upload_file');
     my $fh        = $FORM->upload('input_upload_file');
 
     #	print STDERR "upload_file: $filename\n";
@@ -362,6 +367,11 @@ sub load_annotation {
     my $gid         = $opts{gid};
     my $items       = $opts{items};
 
+	# Added EL: 10/24/2013.  Solves the problem when restricted is unchecked.  
+	# Otherwise, command-line call fails with next arg being passed to 
+	# restricted as option
+   $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
+ 
 # print STDERR "load_annotation: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
     return unless $items;
 
@@ -408,6 +418,7 @@ sub load_annotation {
     }
 
     print $log "Calling $BINDIR/load_annotation.pl ...\n";
+    
     my $cmd =
         "$BINDIR/load_annotation.pl "
       . "-user_name $user_name "
@@ -418,7 +429,7 @@ sub load_annotation {
       . '-version "'
       . escape($version) . '" '
       . "-restricted "
-      . ( $restricted eq 'true' ) . ' '
+      . $restricted . ' '
       . "-gid $gid "
       . '-source_name "'
       . escape($source_name) . '" '
