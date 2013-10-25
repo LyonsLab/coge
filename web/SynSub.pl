@@ -100,6 +100,8 @@ sub gen_body {
 
     my $dsgid1 = $form->param('dsgid1');
     my $dsgid2 = $form->param('dsgid2');
+    my $db = $form->param('file');
+
     return "Need two dsgids to run." unless $dsgid1 && $dsgid2;
     my ($dsg1) = $coge->resultset('Genome')->find($dsgid1);
     my ($dsg2) = $coge->resultset('Genome')->find($dsgid2);
@@ -120,8 +122,7 @@ sub gen_body {
     my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
 
     my $basedir  = "$DIAGSDIR/$dir1/$dir2";
-    my $basename = $dsgid1 . "_" . $dsgid2 . ".CDS-CDS";
-    my $sqlite   = $basedir . "/" . $basename . ".sqlite";
+    my $sqlite   = $basedir . "/" . $db;
     my (
         $freq_dna,               $org1_dna_counts,
         $org2_dna_counts,        $total_dna_counts,
