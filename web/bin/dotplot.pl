@@ -156,9 +156,11 @@ if ( $axis_metric && $axis_metric =~ /gene/ )    #add in gene information
 my $spa_info_file = $basename . ".spa_info.txt";
 if ($assemble) {
     my $skip_non_aligned_contigs = $assemble && $assemble =~ /2/ ? 1 : 0;
+#    print STDERR $alignfile;
     my ( $org1_association, $org2_association ) =
       $synmap_report->parse_syn_blocks( file => $alignfile )
       if $assemble;
+#    print STDERR Dumper $org1_association, $org2_association;
     my $output;
     if (   @$org1_association > @$org2_association && $assemble > 0
         || @$org1_association < @$org2_association && $assemble < 0 )
