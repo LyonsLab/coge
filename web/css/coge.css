@@ -27,6 +27,10 @@ a:hover {
   font-style:italic;
 }
 
+.info {
+  color:gray;
+}
+
 .coge_link {
   color:#660066;
   font-size:small;
