@@ -20,7 +20,7 @@ use vars qw($staging_dir $install_dir $fasta_files
   $host $port $db $user $pass $config
   $P $MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE $MAX_CHR_NAME_LENGTH );
 
-$MAX_CHROMOSOMES = 100000;    # max number of chromosomes or contigs
+$MAX_CHROMOSOMES = 200000;    # max number of chromosomes or contigs
 $MAX_PRINT       = 5;
 $MAX_SEQUENCE_SIZE   = 5 * 1024 * 1024 * 1024;    # 5 gig
 $MAX_CHR_NAME_LENGTH = 255;
