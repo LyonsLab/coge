@@ -40,7 +40,8 @@ our (
     $BLAST2BED,   $SYNTENY_SCORE, $TEMPDIR,        $TEMPURL,
     $ALGO_LOOKUP, $GZIP,          $GUNZIP,         %FUNCTIONS,
     $YERBA,       $GENE_ORDER,    $PAGE_TITLE,     $KSCALC,
-    $GEN_FASTA,   $RUN_ALIGNMENT, $RUN_COVERAGE
+    $GEN_FASTA,   $RUN_ALIGNMENT, $RUN_COVERAGE,   $GENERATE_GEVO_LINKS,
+    $PROCESS_DUPS,
 );
 
 $DEBUG = 0;
@@ -99,6 +100,8 @@ $KSCALC        = $P->{KSCALC};
 $GEN_FASTA     = $P->{GEN_FASTA};
 $RUN_ALIGNMENT = $P->{RUN_ALIGNMENT};
 $RUN_COVERAGE  = $P->{RUN_COVERAGE};
+$PROCESS_DUPS  = $P->{PROCESS_DUPS};
+$GENERATE_GEVO_LINKS =  $P->{GENERATE_GEVO_LINKS};
 
 #in the web form, each sequence search algorithm has a unique number.  This table identifies those and adds appropriate options
 $ALGO_LOOKUP = {
@@ -2324,6 +2327,63 @@ sub go {
     CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
+    ############################################################################
+    # Post Processing
+    ############################################################################
+
+    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "Final Post Processing",
+        $cogeweb->logfile);
+
+    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "Adding Processing Tandem Duplicate File",
+        $cogeweb->logfile );
+
+    my $subject_dup_args = [
+        ['--config', $config,                         0 ],
+        ['--infile', $raw_blastfile . ".s.localdups", 1 ],
+        ['--outfile', $raw_blastfile . ".s.tandems",  1 ],
+    ];
+
+    $workflow->add_job(
+        cmd         => $PROCESS_DUPS,
+        script      => undef,
+        args        => $subject_dup_args,
+        inputs      => [$raw_blastfile . ".s.localdups"],
+        outputs     => [$raw_blastfile . ".s.tandems"],
+        description => "Processing Subject Tandem Duplicate File...",
+    );
+
+    my $query_dup_args = [
+        ['--config',  $config,                         0 ],
+        ['--infile',  $raw_blastfile . ".q.localdups", 1 ],
+        ['--outfile', $raw_blastfile . ".q.tandems",  1 ],
+    ];
+
+    $workflow->add_job(
+        cmd         => $PROCESS_DUPS,
+        script      => undef,
+        args        => $query_dup_args,
+        inputs      => [$raw_blastfile . ".q.localdups"],
+        outputs     => [$raw_blastfile . ".q.tandems"],
+        description => "Processing Query Tandem Duplicate File...",
+    );
+
+    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+
+    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "Adding GEvo links to final output files",
+        $cogeweb->logfile );
+
+    #add_GEvo_links(
+    #    infile => $final_dagchainer_file,
+    #    dsgid1 => $dsgid1,
+    #    dsgid2 => $dsgid2
+    #);
+
+
+
     return $YERBA->submit_workflow($workflow);
 }
 
@@ -2844,29 +2904,6 @@ sub get_results {
     ############################################################################
 
     CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "Final Post Processing",
-        $cogeweb->logfile);
-    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-
-    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "Processing Tandem Duplicate File",
-        $cogeweb->logfile );
-
-    my $org1_localdups = process_local_dups_file(
-        infile  => $raw_blastfile . ".q.localdups",
-        outfile => $raw_blastfile . ".q.tandems"
-    );
-
-    my $org2_localdups = process_local_dups_file(
-        infile  => $raw_blastfile . ".s.localdups",
-        outfile => $raw_blastfile . ".s.tandems"
-    );
-
-    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-
-    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Adding GEvo links to final output files",
         $cogeweb->logfile );
 
@@ -3042,12 +3079,12 @@ sub get_results {
           ),
 
           my $tandem_dups1_url = _filename_to_link(
-            file => $org1_localdups,
+            file => $raw_blastfile . '.q.tandems',
             msg  => qq{Tandem Duplicates for $org_name1},
           );
 
         my $tandem_dups2_url = _filename_to_link(
-            file => $org2_localdups,
+            file => $raw_blastfile . '.s.tandems',
             msg  => qq{Tandem Duplicates for $org_name2},
         );
 
@@ -3330,67 +3367,6 @@ sub print_debug {
     {
         say STDERR "DEBUG: $args{msg}";
     }
-}
-
-sub process_local_dups_file {
-    my %opts    = @_;
-    my $infile  = $opts{infile};
-    my $outfile = $opts{outfile};
-    if (   ( -r $outfile && -s $outfile )
-        || ( -r $outfile . ".gz" && -s $outfile . ".gz" ) )
-    {
-        CoGe::Accessory::Web::write_log(
-            "Processed tandem duplicate file found: $outfile",
-            $cogeweb->logfile );
-        return $outfile;
-    }
-    CoGe::Accessory::Web::gunzip( $infile . ".gz" ) if -r $infile . ".gz";
-    return unless -r $infile;
-    CoGe::Accessory::Web::write_log(
-"Adding coge links to tandem duplication file.  Infile $infile : Outfile $outfile",
-        $cogeweb->logfile
-    );
-    $/ = "\n";
-    open( IN,  $infile );
-    open( OUT, ">$outfile" );
-    print OUT "#",
-      join( "\t",
-        "FeatList_link", "GEvo_link", "FastaView_link",
-        "chr||start||stop||name||strand||type||database_id||gene_order" ),
-      "\n";
-
-    while (<IN>) {
-        chomp;
-        next unless $_;
-        my @line = split /\t/;
-        my %fids;
-        foreach (@line) {
-            my @item = split /\|\|/;
-            next unless $item[6];
-            $fids{ $item[6] } = 1;
-        }
-        next unless keys %fids;
-        my $featlist = $BASE_URL . "FeatList.pl?";
-        map { $featlist .= "fid=$_;" } keys %fids;
-        my $fastaview = $BASE_URL . "FastaView.pl?";
-        map { $fastaview .= "fid=$_;" } keys %fids;
-        my $gevo  = $BASE_URL . "GEvo.pl?";
-        my $count = 1;
-
-        foreach my $id ( keys %fids ) {
-            $gevo .= "fid$count=$id;";
-            $count++;
-        }
-        $gevo .= "num_seqs=" . scalar keys %fids;
-        print OUT join( "\t", $featlist, $gevo, $fastaview, @line ), "\n";
-    }
-    close OUT;
-    close IN;
-
-    #`/bin/rm $infile`;
-    #$infile =~ s/localdups/nolocaldups.bed/;
-    #`/bin/rm $infile`;
-    return $outfile;
 }
 
 # FIXME: Currently this feature is disabled.
