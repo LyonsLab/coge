@@ -4,6 +4,7 @@ use strict;
 no warnings 'redefine';
 umask(0);
 
+
 use CoGeX;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
@@ -1741,8 +1742,8 @@ sub go {
     push @bedoutputs, $query_bed;
     push @bedoutputs, $subject_bed;
     push @bedoutputs, $raw_blastfile if ( $raw_blastfile =~ /genomic/ );
-    push @bedoutputs, "$raw_blastfile.orig" if ( $raw_blastfile =~ /genomic/ );
-
+#    push @bedoutputs, "$raw_blastfile.orig" if ( $raw_blastfile =~ /genomic/ );
+    push @bedoutputs, "$raw_blastfile.new" if ( $raw_blastfile =~ /genomic/ );
     $workflow->add_job(
         cmd         => $BLAST2BED,
         script      => undef,
@@ -1759,7 +1760,11 @@ sub go {
     ###########################################################################
     # Converting blast to raw and finding local duplications
     ###########################################################################
+    my $qlocaldups = $raw_blastfile.".q.localdups";
+    my $slocaldups = $raw_blastfile.".s.localdups";
+    $raw_blastfile .= ".new" if $raw_blastfile =~ /genomic/;
     my $filtered_blastfile = $raw_blastfile;
+#    $filtered_blastfile .=".new" if $raw_blastfile =~ /genomic/;
     $filtered_blastfile .= ".tdd$dupdist";
     $filtered_blastfile .= ".cs$cscore" if $cscore < 1;
     $filtered_blastfile .= ".filtered";
@@ -1775,8 +1780,8 @@ sub go {
 
     my @rawoutputs = ();
     push @rawoutputs, $filtered_blastfile;
-    push @rawoutputs, "$raw_blastfile.q.localdups";
-    push @rawoutputs, "$raw_blastfile.s.localdups";
+    push @rawoutputs, $qlocaldups;
+    push @rawoutputs, $slocaldups;
 
     $workflow->add_job(
         cmd         => $BLAST2RAW,
@@ -2341,7 +2346,7 @@ sub go {
 
     my $subject_dup_args = [
         ['--config', $config,                         0 ],
-        ['--infile', $raw_blastfile . ".s.localdups", 1 ],
+        ['--infile', $slocaldups, 1],#$raw_blastfile . ".s.localdups", 1 ],
         ['--outfile', $raw_blastfile . ".s.tandems",  1 ],
     ];
 
@@ -2349,14 +2354,14 @@ sub go {
         cmd         => $PROCESS_DUPS,
         script      => undef,
         args        => $subject_dup_args,
-        inputs      => [$raw_blastfile . ".s.localdups"],
+        inputs      => [$slocaldups], #[$raw_blastfile . ".s.localdups"],
         outputs     => [$raw_blastfile . ".s.tandems"],
         description => "Processing Subject Tandem Duplicate File...",
     );
 
     my $query_dup_args = [
         ['--config',  $config,                         0 ],
-        ['--infile',  $raw_blastfile . ".q.localdups", 1 ],
+        ['--infile',  $qlocaldups,1], #$raw_blastfile . ".q.localdups", 1 ],
         ['--outfile', $raw_blastfile . ".q.tandems",  1 ],
     ];
 
@@ -2364,7 +2369,7 @@ sub go {
         cmd         => $PROCESS_DUPS,
         script      => undef,
         args        => $query_dup_args,
-        inputs      => [$raw_blastfile . ".q.localdups"],
+        inputs      => [$qlocaldups], #[$raw_blastfile . ".q.localdups"],
         outputs     => [$raw_blastfile . ".q.tandems"],
         description => "Processing Query Tandem Duplicate File...",
     );
@@ -2684,6 +2689,7 @@ sub get_results {
     # Run Blast
     ############################################################################
     my $raw_blastfile = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{blastfile};
+    $raw_blastfile .=".new" if $raw_blastfile =~ /genomic/;
 
     ###########################################################################
     # Converting blast to bed and finding local duplications
@@ -3221,9 +3227,9 @@ sub get_results {
         ########################################################################
 
         $results->param( link => $tiny_link );
-
+	my ($ks_file) = $ks_db =~ /([^\/]*)$/;
         if ($ks_type) {
-            my $link = "SynSub.pl?dsgid1=$dsgid1;dsgid2=$dsgid2";
+            my $link = "SynSub.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;file=$ks_file";
             $results->param( synsub => $link );
         }
 
