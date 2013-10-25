@@ -190,7 +190,7 @@ def convert_to_genomic_position(genomic_file, output):
                 items[7] = stop
                 data = "\t".join(items) + "\n"
 
-                out.write(data)
+            out.write(data)
     return 0
 
 if __name__ == "__main__":
