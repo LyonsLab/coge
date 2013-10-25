@@ -15,6 +15,7 @@ GetOptions (
 
 
 convert_blast_genomic_names($infile) if ($infile =~ /genomic/);
+$infile .= ".new" if $infile =~ /genomic/;
 
 open (OUT1, ">$outfile1") || die "Can't open $outfile1 for writing: $!";
 open (OUT2, ">$outfile2") || die "Can't open $outfile2 for writing: $!";
@@ -28,6 +29,8 @@ while (<IN>)
     chomp;
     next unless $_;
     my @line = split/\t/;
+    next unless $line[0] && $line[1];
+    next unless $line[0]=~/\|\|/ && $line[1]=~/\|\|/;
     my @item1 = split/\|\|/, $line[0];
     my @item2 = split/\|\|/, $line[1];
     #genomic comparisons won't have starts and stops in the name file, replace those with the actual hits
@@ -52,7 +55,7 @@ close OUT2;
 sub convert_blast_genomic_names
   {
     my $infile = shift;
-    open (OUT, ">$infile.tmp") || die "Can't open $infile.tmp for writing: $!";
+    open (OUT, ">$infile.new") || die "Can't open $infile.new for writing: $!";
     open (IN, $infile)  || die "Can't open $infile for reading: $!";
     my $count=1;
     while (<IN>)
@@ -118,6 +121,6 @@ sub convert_blast_genomic_names
 	print OUT join "\t", @line,"\n";
 		$count++;
       }
-    `/bin/mv $infile $infile.orig`;
-    `/bin/mv $infile.tmp $infile`;
+#    `/bin/mv $infile $infile.orig`;
+#    `/bin/mv $infile.tmp $infile`;
   }
