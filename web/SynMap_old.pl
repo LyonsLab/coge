@@ -1116,6 +1116,7 @@ sub run_blast {
     my $blastdb = $opts{blastdb};
     my $outfile = $opts{outfile};
     my $prog    = $opts{prog};
+    my $gid1 = $opts{gid1};
     $prog = "1" unless $prog;
     while ( -e "$outfile.running" ) {
         print STDERR "detecting $outfile.running.  Waiting. . .\n";
@@ -1138,7 +1139,7 @@ sub run_blast {
         $pre_command .= " -i $fasta -d $blastdb -o $outfile";
     }
     elsif ( $pre_command =~ /last_wrapper/i ) {
-        $pre_command .= " $blastdb $fasta -o $outfile";
+        $pre_command .= "$gid1 $blastdb $fasta -o $outfile";
     }
     else {
         $pre_command .= " -out $outfile -query $fasta -db $blastdb";
@@ -3023,7 +3024,8 @@ sub go {
             fasta   => $fasta,
             blastdb => $db,
             outfile => $outfile,
-            prog    => $blast
+            prog    => $blast,
+		  gid1=>$dsgid1
         );    # unless -r $outfile;
         $pm->finish;
     }
@@ -3067,6 +3069,7 @@ sub go {
     CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
     my $filtered_blastfile = $raw_blastfile;
+    $filtered_blastfile .= ".new" if $raw_blastfile =~ /genomic/;
     $filtered_blastfile .= ".tdd$dupdist";
     $filtered_blastfile .= ".cs$cscore" if $cscore;
     $filtered_blastfile .= ".filtered";
