@@ -201,7 +201,7 @@ sub get_genome_seq {
     }
 
     # No chromosome specified, return whole genome fasta file
-    unless ($chr) {
+    unless (defined $chr) {
         my $file_path = get_genome_file($gid);
         open( my $fh, $file_path ) or die;
         read( $fh, $seq, -s $file_path );
