@@ -317,7 +317,7 @@ sub get_genomic_sequence {
     #          . $self->id
     #          . " does not have a valid sequence file: $file!\n";
     #    }
-
+    #print STDERR "Genome->get_genomic_sequence: start=>$start, stop=>$stop, chr=>$chr, strand=>$strand\n";
     return get_genome_seq(    #$self->get_seq( # mdb changed 7/31/13 issue 77
         gid    => $self->id,
         chr    => $chr,
