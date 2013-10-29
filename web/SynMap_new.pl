@@ -3065,12 +3065,15 @@ sub get_results {
 #        );
 
 		# mdb added 9/20/13 issue 77
+		print STDERR "$feat_type1 $feat_type2\n";
         my $fasta1_url = _filename_to_link(
-            url => "services/JBrowse/service.pl/sequence/$dsgid1",
+            url  => ( $feat_type1 eq "genomic" ? "services/JBrowse/service.pl/sequence/$dsgid1" : undef ),
+            file => ( $feat_type1 eq "genomic" ? undef : $FASTADIR . "/$dsgid1-$feat_type1.fasta" ),
             msg  => qq{Fasta file for $org_name1: $feat_type1}
         );
         my $fasta2_url = _filename_to_link(
-            url => "services/JBrowse/service.pl/sequence/$dsgid2",
+            url  => ( $feat_type2 eq "genomic" ? "services/JBrowse/service.pl/sequence/$dsgid2" : undef ),
+            file => ( $feat_type2 eq "genomic" ? undef : $FASTADIR . "/$dsgid2-$feat_type2.fasta" ),
             msg  => qq{Fasta file for $org_name2: $feat_type2}
         );
 
