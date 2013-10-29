@@ -7,7 +7,7 @@ use Getopt::Long;
 
 use vars qw($DEBUG $db $user $pass $coge $dsgid1 $dsgid2);
 
-$DEBUG = 0;
+$DEBUG = 1;
 
 GetOptions(
 	"database|db=s"   => \$db,
@@ -54,34 +54,39 @@ Chromosome count mismatch!  Continuing.  Check errors below.
 } if $DEBUG;
 }
 
-foreach my $chr1 ( sort keys %$ds1 ) {
+foreach my $chr1 ( sort $dsg1->chromosomes ) {
 	unless ( $ds2->{$chr1} ) {
 		print STDERR 
 "Chromosome $chr1 does not exist in dataset_group_2.  Please check the chromosome names if you think this is in error.  Skipping to next chromosome\n" if $DEBUG;
 		next;
 	}
-	foreach
-	  my $f1 ( $ds1->{$chr1}->features->search( { chromosome => $chr1 } ) )
-	{
+#	foreach my $ds_1 (@{$ds1->{$chr1}})
+	foreach my $ds_1 ($dsg1->datasets)
+	  {
+	    print STDERR $ds_1->id,"\t", $ds_1->name,"\n";
+	    foreach my $f1 ( $ds_1->features->search( { chromosome => $chr1 } ) )
+	      {
+	        print STDERR $f1->type->name,"\n";
 		my ($f2) = $ds2->{$chr1}->features->search(
-			{
-				chromosome      => $chr1,
-				feature_type_id => $f1->feature_type_id,
-				start           => $f1->start,
-				stop            => $f1->stop,
-				strand          => $f1->strand,
-			}
-		);
+							   {
+							    chromosome      => $chr1,
+							    feature_type_id => $f1->feature_type_id,
+							    start           => $f1->start,
+							    stop            => $f1->stop,
+							    strand          => $f1->strand,
+							   }
+							  );
 		if ($f2) {
-			print STDERR "Feature already exists.\n" if $DEBUG;
+		  print STDERR "Feature already exists.\n" if $DEBUG;
 		}
 		else {
-			($f2) = replicate_feature( f1 => $f1, ds2 => $ds2->{$chr1} );
+		  ($f2) = replicate_feature( f1 => $f1, ds2 => $ds2->{$chr1} );
 		}
 		next unless $f2;    #can't do much without the annotation
 		replicate_names( f1 => $f1, f2 => $f2 );
 		replicate_annotations( f1 => $f1, f2 => $f2 );
-	}
+	      }
+	  }
 }
 
 sub replicate_annotations {
@@ -167,7 +172,7 @@ sub map_chr_to_ds {
 	my %ds;
 	foreach my $ds ( $dsg->datasets ) {
 		foreach my $chr ( $ds->chromosomes ) {
-			$ds{$chr} = $ds;
+		  $ds{$chr}=$ds;
 		}
 	}
 	return \%ds;
