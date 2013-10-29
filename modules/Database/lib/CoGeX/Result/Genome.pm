@@ -509,14 +509,19 @@ sub sequence_length {
     my $self = shift;
     my $chr  = shift;
     return 0 unless defined $chr;
-    my ($item) = $self->genomic_sequences( { chromosome => "$chr" } );
-    unless ($item) {
+    my $gs;
+    foreach my $item ($self->genomic_sequences ({chromosome=>"$chr"}))
+     {
+	$gs = $item if $item->chromosome eq "$chr";  #if this object has multiple chromosomes pre-cached, all will be returned, even with a query.
+     }
+    #print STDERR "Genome->sequence_length CHR: $chr; genomic_sequence->chromosome: ", $gs->chromosome,"\n";
+    unless ($gs) {
         warn
 "Genome::sequence_length: unable to get genomic_sequence object for chr '$chr' genome id"
           . $self->id . "\n";
         return 0;
     }
-    my $stop = $item->sequence_length;
+    my $stop = $gs->sequence_length;
     unless ($stop) {
         warn "No genomic sequence for ", $self->name, " for chr $chr\n";
         return 0;
