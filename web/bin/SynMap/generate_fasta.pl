@@ -138,10 +138,13 @@ sub gen_fasta {
                 #skip sequences that are only 'x' | 'n';
                 next unless $seq =~ /[^x|n]/i;
                 #print OUT ">" . $title . "\n";
-		$output .= ">" . $title . "\n";
-                #print OUT $seq, "\n";
-                $output .= $seq. "\n";
-                $count++;
+		if ($seq)
+		  {
+		    $output .= ">" . $title . "\n";
+		    #print OUT $seq, "\n";
+		    $output .= $seq. "\n";
+		    $count++;
+		  }
             }
             elsif ( $feature_type eq "protein" ) {
                 next unless $feat->feature_type_id == 3;

@@ -29,8 +29,17 @@ while (<IN>)
     chomp;
     next unless $_;
     my @line = split/\t/;
-    next unless $line[0] && $line[1];
-    next unless $line[0]=~/\|\|/ && $line[1]=~/\|\|/;
+    unless ($line[0] && $line[1])
+      {
+       print STDERR "Skipping line because it is undefined: $_\n";
+       next;
+      }
+    unless ($line[0]=~/\|\|/ && $line[1]=~/\|\|/)
+      {
+	print STDERR "Skipping entry because it is not formatted correctly with '||':\nEntry 1: $line[0]\nEntry 2: $line[1]\n";
+	next;
+      }
+    
     my @item1 = split/\|\|/, $line[0];
     my @item2 = split/\|\|/, $line[1];
     #genomic comparisons won't have starts and stops in the name file, replace those with the actual hits
@@ -42,7 +51,18 @@ while (<IN>)
     #genomic comparisons need a different name as the default one won't distinguish between blast hits
     my $name1 = $item1[3] ? $line[0] : join ("_", @item1);
     my $name2 = $item2[3] ? $line[1] : join ("_", @item2);
-
+    unless (defined $item1[0] && defined $item1[1] && defined $item1[2])
+      {
+	print STDERR "Skipping printing output because of missing values:\n";
+	print STDERR join ("\n", $item1[0], $item1[1], $item1[2]),"\n";
+	next;
+      }
+    unless (defined $item2[0] && defined $item2[1] && defined $item2[2])
+      {
+	print STDERR "Skipping printing output because of missing values:\n";
+	print STDERR join ("\n", $item2[0], $item2[1], $item2[2]),"\n";
+	next;
+      }
     print OUT1 join ("\t", $item1[0], $item1[1], $item1[2], $line[0]),"\n" unless $seen1{$name1};
     print OUT2 join ("\t", $item2[0], $item2[1], $item2[2], $line[1]),"\n" unless $seen2{$name2};
     $seen1{$name1} =1;
