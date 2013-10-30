@@ -55,10 +55,11 @@ $(document).ready(function() {
 	
 	$('#input_upload_file').fileupload({
     	dataType: 'json',
-    	formData: {
-    		fname: 'upload_file',
-    		load_id: load_id
-    	},
+// mdb 10/29/13 - moved below
+//    	formData: {
+//    		fname: 'upload_file',
+//    		load_id: load_id
+//    	},
     	add:
     		function(e, data) {
     			var filename = data.files[0].name;
@@ -66,6 +67,12 @@ $(document).ready(function() {
 					alert('File already exists.');
 				}
 				else {
+					// mdb 10/29/13 - moved from above to prevent stale load_id value, issue 236
+					$('#input_upload_file').fileupload('option', { formData: {
+			    		fname: 'upload_file',
+			    		load_id: load_id
+			    	}});
+					
 					data.submit();
 				}
     		},

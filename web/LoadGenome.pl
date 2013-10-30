@@ -41,6 +41,7 @@ $BINDIR     = $P->{SCRIPTDIR}; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
 $OPEN_STATUS = (defined $FORM->param('load_id'));
 $LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $TEMPDIR    = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
+print STDERR $TEMPDIR, "\n";
 
 $MAX_SEARCH_RESULTS = 100;
 
@@ -103,10 +104,6 @@ sub generate_body {
         return $template->output;
     }
 
-    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
-        url => $P->{SERVER} . "$PAGE_TITLE.pl?load_id=$LOAD_ID"
-    );
-
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param(
@@ -114,7 +111,6 @@ sub generate_body {
         PAGE_NAME     => $PAGE_TITLE . '.pl',
         LOAD_ID       => $LOAD_ID,
         OPEN_STATUS   => $OPEN_STATUS,
-        LINK          => $tiny_link,
         SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
         ENABLE_NCBI              => 1,
         DEFAULT_TAB              => 0,
@@ -454,7 +450,7 @@ sub load_genome {
 	# restricted as option
     $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
 
-    return 'No files specified' unless $items;
+    return encode_json({ error => 'No files specified' }) unless $items;
     print STDERR
 "load_genome: organism_id=$organism_id name=$name description=$description version=$version type_id=$type_id restricted=$restricted\n";
 
@@ -466,7 +462,7 @@ sub load_genome {
         $user_name = $USER->user_name;
     }
     if ($user_name eq 'public') {
-    	return 'Not logged in';
+    	return encode_json({ error => 'Not logged in' });
     }
 
     # Setup staging area and log file
@@ -486,7 +482,7 @@ sub load_genome {
     my @files;
     foreach my $item (@$items) {
         my $fullpath = $TEMPDIR . $item;
-        return "File doesn't exist: $fullpath" if ( not -e $fullpath );
+        return encode_json({ error => "File doesn't exist: $fullpath" }) if ( not -e $fullpath );
         my ( $path, $filename ) = $item =~ /^(.+)\/([^\/]+)$/;
         my ($fileext) = $filename =~ /\.([^\.]+)$/;
 
@@ -524,15 +520,19 @@ sub load_genome {
     close($log);
 
     if ( !defined( my $child_pid = fork() ) ) {
-        return "Cannot fork: $!";
+        return encode_json({ error => "Cannot fork: $!" });
     }
     elsif ( $child_pid == 0 ) {
         print STDERR "child running: $cmd\n";
         `$cmd`;
         exit;
     }
+    
+    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
+        url => $P->{SERVER} . "$PAGE_TITLE.pl?load_id=$LOAD_ID"
+    );
 
-    return;
+    return encode_json({ link => $tiny_link });
 }
 
 sub get_load_log {
@@ -540,8 +540,7 @@ sub get_load_log {
     #print STDERR "get_load_log $LOAD_ID\n";
 
     my $logfile = $TEMPDIR . "staging/log.txt";
-    open( my $fh, $logfile )
-      or
+    open( my $fh, $logfile ) or
       return encode_json( { status => -1, log => ["Error opening log file"] } );
 
     my @lines = ();
