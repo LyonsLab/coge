@@ -41,7 +41,6 @@ $BINDIR     = $P->{SCRIPTDIR}; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
 $OPEN_STATUS = (defined $FORM->param('load_id'));
 $LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $TEMPDIR    = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
-print STDERR $TEMPDIR, "\n";
 
 $MAX_SEARCH_RESULTS = 100;
 
