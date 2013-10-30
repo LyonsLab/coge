@@ -373,7 +373,7 @@ sub load_annotation {
    $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
  
 # print STDERR "load_annotation: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
-    return unless $items;
+    return encode_json({ error => "No data items" }) unless $items;
 
     $items = decode_json($items);
 
@@ -400,7 +400,7 @@ sub load_annotation {
     my @files;
     foreach my $item (@$items) {
         my $fullpath = $TEMPDIR . $item;
-        die "File doesn't exist! $fullpath" if ( not -e $fullpath );
+        return encode_json({ error => "File doesn't exist! $fullpath" }) if ( not -e $fullpath );
         my ( $path, $filename ) = $item =~ /^(.+)\/([^\/]+)$/;
         my ($fileext) = $filename =~ /\.([^\.]+)$/;
 
@@ -442,7 +442,7 @@ sub load_annotation {
     close($log);
 
     if ( !defined( my $child_pid = fork() ) ) {
-        die "cannot fork: $!";
+        return encode_json({ error => "Cannot fork: $!" });
     }
     elsif ( $child_pid == 0 ) {
         print STDERR "child running: $cmd\n";
@@ -450,7 +450,11 @@ sub load_annotation {
         exit;
     }
 
-    return 1;#$i; #mdb changed 8/9/13 issue 77
+    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
+        url => $P->{SERVER} . "$PAGE_TITLE.pl?load_id=$LOAD_ID"
+    );
+
+    return encode_json({ link => $tiny_link });
 }
 
 sub get_load_log {
