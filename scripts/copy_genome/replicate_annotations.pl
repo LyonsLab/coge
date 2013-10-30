@@ -7,7 +7,7 @@ use Getopt::Long;
 
 use vars qw($DEBUG $db $user $pass $coge $dsgid1 $dsgid2);
 
-$DEBUG = 1;
+$DEBUG = 0;
 
 GetOptions(
 	"database|db=s"   => \$db,
