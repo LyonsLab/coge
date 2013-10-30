@@ -59,7 +59,7 @@ $PAGE_NAME  = "$PAGE_TITLE.pl";
     debug      => 0,
 );
 
-$YERBA = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
+$YERBA = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
 
 $ENV{PATH} = join ":",
   (
