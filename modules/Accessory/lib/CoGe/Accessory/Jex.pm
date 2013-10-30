@@ -148,7 +148,7 @@ sub get_status {
         }
     );
 
-    zmq_send( $socket, $request, ZMQ_NOBLOCK );
+    zmq_sendmsg( $socket, $request, ZMQ_NOBLOCK );
     my $wait = 0;
     my $THRESHOLD = 5;
 
