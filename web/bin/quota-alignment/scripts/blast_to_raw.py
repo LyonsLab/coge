@@ -179,7 +179,7 @@ def write_localdups(dups_fh, tandems, bed):
 
     if dups_fh:
         print >>sys.stderr, "write local dups to file", dups_fh.name
-
+	print >>dups_fh, "#Local duplications file"
     tandem_groups = []
     for group in tandems:
         rows = [bed[i] for i in group]
