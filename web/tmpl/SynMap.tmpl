@@ -58,7 +58,7 @@
     </section>
 </tmpl_if>
 
-<section id="tabs" style="margin-top: 0.5em; min-width: 645px;">
+<section id="tabs" class="invisible" style="margin-top: 0.5em; min-width: 645px;">
     <ul>
         <li class="small"><a href="#tab-1">Select Organisms</a></li>
         <li class="small"><a href="#tab-2">Analysis Options</a></li>
@@ -66,7 +66,7 @@
     </ul>
 
     <div id="tab-1">
-        <div class="alert small"><tmpl_var name=error></div>
+        <div class="alert"><tmpl_var name=error></div>
         <ul>
             <li style="display:inline-block; padding: 5px 0 5px 0; vertical-align:top;">
                     <tmpl_var name=org_menu1>
@@ -470,6 +470,7 @@ $(document).ready(function(){
         $('#assemble_info').toggle();
     }
 
+
     $(".options tr:even").addClass("even");
     merge_select_check();
     depth_algo_check();
@@ -485,5 +486,7 @@ $(document).ready(function(){
     if (autogo==1) {
       run_synmap(autogo);
     }
+
+    $("#tabs").removeClass("invisible");
  });
 </script>

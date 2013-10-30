@@ -12,6 +12,7 @@ use JSON::XS;
 use Sort::Versions;
 use File::Path qw(mkpath);
 use File::Copy qw(copy);
+use URI;
 use URI::Escape::JavaScript qw(escape);
 use LWP::Simple;
 no warnings 'redefine';
@@ -35,10 +36,12 @@ $BINDIR     = $P->{SCRIPTDIR}; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
 # Generate a unique session ID for this load (issue 177).
 # Use existing ID if being passed in with AJAX request.  Otherwise generate
 # a new one.  If passed-in as url parameter then open status window
-# automatically.
+# automatically.  This needs to be done right away rather than at load time 
+# so that uploaded/imported files have a place to go.
 $OPEN_STATUS = (defined $FORM->param('load_id'));
 $LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $TEMPDIR    = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
+print STDERR $TEMPDIR, "\n";
 
 $MAX_SEARCH_RESULTS = 100;
 
@@ -101,10 +104,6 @@ sub generate_body {
         return $template->output;
     }
 
-    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
-        url => $P->{SERVER} . "$PAGE_TITLE.pl?load_id=$LOAD_ID"
-    );
-
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param(
@@ -112,7 +111,6 @@ sub generate_body {
         PAGE_NAME     => $PAGE_TITLE . '.pl',
         LOAD_ID       => $LOAD_ID,
         OPEN_STATUS   => $OPEN_STATUS,
-        LINK          => $tiny_link,
         SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
         ENABLE_NCBI              => 1,
         DEFAULT_TAB              => 0,
@@ -173,12 +171,11 @@ sub irods_get_file {
     my ($filename)   = $path =~ /([^\/]+)\s*$/;
     my ($remotepath) = $path =~ /(.*)$filename$/;
 
-    #	print STDERR "get_file $path $filename\n";
-
     my $localpath     = 'irods/' . $remotepath;
     my $localfullpath = $TEMPDIR . $localpath;
     $localpath .= '/' . $filename;
     my $localfilepath = $localfullpath . '/' . $filename;
+    #print STDERR "get_file $path $filename $localfilepath\n";
 
     my $do_get = 1;
 
@@ -231,13 +228,13 @@ sub load_from_ftp {
 sub ftp_get_file {
     my %opts      = @_;
     my $url       = $opts{url};
-    my $username  = $opts{username};
-    my $password  = $opts{password};
+    my $username  = $opts{username}; # optional
+    my $password  = $opts{password}; # optional
     my $timestamp = $opts{timestamp};
 
-    my ( $type, $filepath, $filename ) = $url =~ /^(ftp|http):\/\/(.+)\/(\S+)$/;
+    my ( $type, $filepath, $filename ) = $url =~ /^(ftp|http|https):\/\/(.+)\/(\S+)$/;
 
-    # print STDERR "$type $filepath $filename $username $password\n";
+    print STDERR "url=$url type=$type filepath=$filepath filename=$filename ", ($username and $password ? "$username $password" : ''), "\n";
     return unless ( $type and $filepath and $filename );
 
     my $path         = 'ftp/' . $filepath . '/' . $filename;
@@ -270,7 +267,7 @@ sub ftp_get_file {
     #			print STDERR "$bytes_received bytes received\n";
     #
     #			# XXX Should really do something with the chunk itself
-##			print STDERR $chunk;
+    #           #print STDERR $chunk;
     #		});
 
     # Current method (allows optional login)
@@ -290,14 +287,14 @@ sub ftp_get_file {
         #print STDERR "content: <begin>$result<end>\n";
         open( my $fh, ">$fullfilepath/$filename" );
         if ($fh) {
-            binmode $fh;    # could be binary data
+            binmode $fh; # could be binary data
             print $fh $result;
             close($fh);
         }
     }
-    else {                  # error
+    else { # error
         my $status = $response->status_line();
-        print STDERR "status_line: $status\n";
+        #print STDERR "status_line: $status\n";
         return encode_json(
             {
                 timestamp => $timestamp,
@@ -320,36 +317,30 @@ sub search_ncbi_nucleotide {
     my %opts      = @_;
     my $accn      = $opts{accn};
     my $timestamp = $opts{timestamp};
-    my $esearch =
-"http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=$accn";
+    my $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=$accn";
     my $result = get($esearch);
-
     #print STDERR $result;
 
     my $record = XMLin($result);
-
     #print STDERR Dumper $record;
 
     my $id = $record->{IdList}->{Id};
-    print STDERR "id = $id\n";
+    #print STDERR "id = $id\n";
 
     my $title;
     if ($id) {
-        $esearch =
-"http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nucleotide&id=$id";
+        $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nucleotide&id=$id";
         my $result = get($esearch);
-
         #print STDERR $result;
 
         $record = XMLin($result);
-
         #print STDERR Dumper $record;
 
         foreach ( @{ $record->{DocSum}->{Item} } )
         {    #FIXME use grep here instead
             if ( $_->{Name} eq 'Title' ) {
                 $title = $_->{content};
-                print STDERR "title=$title\n";
+                #print STDERR "title=$title\n";
                 last;
             }
         }
@@ -459,7 +450,7 @@ sub load_genome {
 	# restricted as option
     $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
 
-    return 'No files specified' unless $items;
+    return encode_json({ error => 'No files specified' }) unless $items;
     print STDERR
 "load_genome: organism_id=$organism_id name=$name description=$description version=$version type_id=$type_id restricted=$restricted\n";
 
@@ -471,7 +462,7 @@ sub load_genome {
         $user_name = $USER->user_name;
     }
     if ($user_name eq 'public') {
-    	return 'Not logged in';
+    	return encode_json({ error => 'Not logged in' });
     }
 
     # Setup staging area and log file
@@ -491,7 +482,7 @@ sub load_genome {
     my @files;
     foreach my $item (@$items) {
         my $fullpath = $TEMPDIR . $item;
-        return "File doesn't exist: $fullpath" if ( not -e $fullpath );
+        return encode_json({ error => "File doesn't exist: $fullpath" }) if ( not -e $fullpath );
         my ( $path, $filename ) = $item =~ /^(.+)\/([^\/]+)$/;
         my ($fileext) = $filename =~ /\.([^\.]+)$/;
 
@@ -529,15 +520,19 @@ sub load_genome {
     close($log);
 
     if ( !defined( my $child_pid = fork() ) ) {
-        return "Cannot fork: $!";
+        return encode_json({ error => "Cannot fork: $!" });
     }
     elsif ( $child_pid == 0 ) {
         print STDERR "child running: $cmd\n";
         `$cmd`;
         exit;
     }
+    
+    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
+        url => $P->{SERVER} . "$PAGE_TITLE.pl?load_id=$LOAD_ID"
+    );
 
-    return;
+    return encode_json({ link => $tiny_link });
 }
 
 sub get_load_log {
@@ -545,17 +540,22 @@ sub get_load_log {
     #print STDERR "get_load_log $LOAD_ID\n";
 
     my $logfile = $TEMPDIR . "staging/log.txt";
-    open( my $fh, $logfile )
-      or
+    open( my $fh, $logfile ) or
       return encode_json( { status => -1, log => ["Error opening log file"] } );
 
     my @lines = ();
     my $gid;
+    my $new_load_id;
     my $status = 0;
     while (<$fh>) {
         push @lines, $1 if ( $_ =~ /^log:\s+(.+)/i );
         if ( $_ =~ /log: Finished loading/i ) {
-            $status = 1;
+        	$status = 1;
+        	
+        	# Generate a new load session ID in case the user chooses to 
+        	# reuse the form to start another load.
+        	$new_load_id = get_unique_id();
+            
             last;
         }
         elsif ( $_ =~ /log: Added genome id(\d+)/i ) {
@@ -570,7 +570,7 @@ sub get_load_log {
 
     #	print STDERR encode_json({ status => $status }) . "\n";
     return encode_json(
-        { status => $status, genome_id => $gid, log => \@lines } );
+        { status => $status, genome_id => $gid, new_load_id => $new_load_id, log => \@lines } );
 }
 
 sub get_sequence_types {
