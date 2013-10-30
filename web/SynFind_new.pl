@@ -26,8 +26,8 @@ no warnings 'redefine';
 use vars
   qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE $PAGE_NAME $DIR $URL $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $BEDDIR $LASTZ $LAST $CONVERT_BLAST $BLAST2BED $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $SERVER $connstr $COOKIE_NAME $YERBA $GEN_FASTA);
 
-$YERBA         = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
 $P             = CoGe::Accessory::Web::get_defaults();
+$YERBA         = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
 $ENV{PATH}     = $P->{COGEDIR};
 $TEMPDIR       = $P->{TEMPDIR} . "SynFind";
 $TEMPURL       = $P->{TEMPURL} . "SynFind";
