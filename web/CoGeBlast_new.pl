@@ -47,7 +47,7 @@ $FORM = new CGI;
     cgi => $FORM
 );
 
-$YERBA         = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
+$YERBA         = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
 $ENV{PATH}     = $P->{COGEDIR};
 $ENV{BLASTDB}  = $P->{BLASTDB};
 $ENV{BLASTMAT} = $P->{BLASTMATRIX};

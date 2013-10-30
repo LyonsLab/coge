@@ -11,15 +11,32 @@ from cgi import parse_qs, escape
 import zmq
 
 _defaults = {
-    'connection' : 'tcp://localhost:5151',
+    'connection' : 'tcp://{}:{}',
     'max_attempts' : 30,
     'timeout' : 1000
 }
+
 
 def not_found(environ, start_response):
     """Called if no URL matches."""
     start_response('404 NOT FOUND', [('Content-Type', 'text/plain')])
     return [environ.get('PATH_INFO', '').lstrip('/')]
+
+def load_config(filename):
+    config = {}
+    with open(filename, 'r') as fp:
+        for line in fp:
+            if line.startswith('#') or len(line) < 1:
+                continue
+            else:
+                cleaned = line.strip().replace('\t', '')
+                try:
+                    option, value = re.split(' ', cleaned)
+                    config[option] = value
+                except ValueError:
+                    pass
+
+    return config
 
 def stats(environ, start_response):
     sys.stderr.write('global stats\n')
@@ -48,7 +65,16 @@ def status(environ, start_response):
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.setsockopt(zmq.LINGER, 0)
-    socket.connect(_defaults['connection'])
+
+
+    root_dir = os.path.dirname(__file__)
+    filepath = os.path.abspath(os.path.join(root_dir, '../coge.conf'))
+
+    config = load_config(filepath)
+    host = _defaults['connection'].format(config['JOBSERVER'],
+            config['JOBPORT'])
+
+    socket.connect(host)
     request = {
         'request' : 'get_status',
         'data' : {
