@@ -320,8 +320,10 @@ sub get_genomic_sequence {
     my $start  = $opts{start};
     my $stop   = $opts{stop};
     my $chr    = $opts{chr};
+    $chr = $opts{chromosome} unless defined $opts{chr};
     my $strand = $opts{strand};
     my $gstid  = $opts{gstid};
+    #print STDERR "Dataset->get_genomic_sequence:  start $start stop $stop chr $chr strand $strand\n";
     $gstid = 1 unless $gstid;    #FIXME hardcoded type value
     my $gid = $opts{gid};
     my $genome = $opts{genome}; #genome object
