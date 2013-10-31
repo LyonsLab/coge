@@ -518,6 +518,7 @@ sub export_fasta_irods {
 	
 	# Send to iPlant Data Store using iput
 	CoGe::Accessory::IRODS::irods_iput($src, $dest);
+	#TODO need to check rc of iput and abort if failure occurred
 
 	# Set IRODS metadata for object
 	my %meta = (

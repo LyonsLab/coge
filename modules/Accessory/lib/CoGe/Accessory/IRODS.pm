@@ -158,9 +158,9 @@ sub irods_imeta {
 		}
 		
 	    my $cmd = "export irodsEnvFile='$env_file'; imeta add -d '" . $dest . "' '" . $k . "' '" . $v . "'";
-	    print STDERR "cmd: $cmd\n";
+	    #print STDERR "cmd: $cmd\n";
 	    my @result = `$cmd`;
-	    print STDERR "@result";
+	    #print STDERR "@result";
 	}
 
     return;
