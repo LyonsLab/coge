@@ -47,13 +47,13 @@ sub stats_region {    #FIXME lots of code in common with features()
     my $end      = $self->query->param('end');
     my $bpPerBin = $self->query->param('bpPerBin');
 
-    #print STDERR "JBrowse::Experiment::stats_region eid="
-      . ( $eid ? $eid : '' ) . " nid="
-      . ( $nid ? $nid : '' ) . " gid="
-      . ( $gid ? $gid : '' )
-      . " $chr:$start:$end ("
-      . ( $end - $start + 1 )
-      . ") bpPerBin=$bpPerBin\n";
+#	print STDERR "JBrowse::Experiment::stats_region eid="
+#      . ( $eid ? $eid : '' ) . " nid="
+#      . ( $nid ? $nid : '' ) . " gid="
+#      . ( $gid ? $gid : '' )
+#      . " $chr:$start:$end ("
+#      . ( $end - $start + 1 )
+#      . ") bpPerBin=$bpPerBin\n";
 
     # Connect to the database
     my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
