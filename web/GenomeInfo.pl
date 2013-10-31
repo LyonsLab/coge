@@ -13,12 +13,15 @@ use File::Path qw(mkpath);
 no warnings 'redefine';
 
 use vars qw(
-  $P $PAGE_TITLE $TEMPDIR $LOAD_ID $USER $CONFIGFILE $coge $FORM %FUNCTION $MAX_SEARCH_RESULTS $LINK
+  $P $PAGE_TITLE $TEMPDIR $LOAD_ID $USER $CONFIGFILE $coge $FORM %FUNCTION $MAX_SEARCH_RESULTS $LINK $node_types
 );
 
 $PAGE_TITLE = 'GenomeInfo';
 
-my $node_types = CoGeX::node_types();
+#EL: 10/31/13:  change to a global var
+#my $node_types = CoGeX::node_types();
+$node_types = CoGeX::node_types();
+
 
 $FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
@@ -231,6 +234,7 @@ sub update_owner {
     unless ($user) {
         return "error finding user '$user_name'\n";
     }
+
     my $conn = $coge->resultset('UserConnector')->find_or_create(
         {
             parent_id   => $user->id,
@@ -522,15 +526,33 @@ sub export_fasta_irods {
 
 	# Set IRODS metadata for object
 	my %meta = (
-		'Genome ID'   => $genome->id,
-		'Organism'    => $genome->organism->name,
-		'Version'     => $genome->version,
-		'Type'        => $genome->type->info,
-		'Source'      => join( ',', map { $_->name } $genome->source )
-	);
-	$meta{'Link'} = $genome->link if ($genome->link);
-	$meta{'Name'} = $genome->name if ($genome->name);
-	$meta{'Description'} = $genome->description if ($genome->description);
+		    'Imported From' => "CoGe: http://genomevolution.org",
+		    'CoGe OrganismView Link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
+		    'CoGe GenomeInfo Link'=> "http://genomevolution.org/CoGe/GenomeInfo.pl?gid=".$genome->id,
+		    'CoGe Genome ID'   => $genome->id,
+		    'Organism Name'    => $genome->organism->name,
+		    'Organism Taxonomy'    => $genome->organism->description,
+		    'Version'     => $genome->version,
+		    'Type'        => $genome->type->info,
+		   );
+    my $i = 1;
+    my @sources = $genome->source;
+    foreach my $item (@sources)
+      {
+	my $source = $item->name;
+	$source.= ": ".$item->description if $item->description;
+	my $met_name = "Source";
+	$met_name .= $i if scalar @sources > 1;
+	$meta{$met_name}= $source;
+	$meta{$met_name." Link"} = $item->link if $item->link;
+	$i++;
+      }
+
+
+	$meta{'Genome Link'} = $genome->link if ($genome->link);
+	$meta{'Addition Info'} = $genome->message if ($genome->message);
+	$meta{'Genome Name'} = $genome->name if ($genome->name);
+	$meta{'Genome Description'} = $genome->description if ($genome->description);
 
 	CoGe::Accessory::IRODS::irods_imeta($dest, \%meta);
 }
