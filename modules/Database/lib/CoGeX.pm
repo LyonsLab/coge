@@ -82,7 +82,7 @@ sub dbconnect {
         my $connstr = "dbi:mysql:dbname=$dbname;host=$dbhost;port=$dbport";
         $pool{$conn_name} = $self->connect( $connstr, $dbuser, $dbpass );
 
-        print STDERR "CoGeX: new connection '$conn_name'\n";
+        #print STDERR "CoGeX: new connection '$conn_name'\n";
         #$coge->storage->debugobj(new DBIxProfiler());
         #$coge->storage->debug(1);
     }
