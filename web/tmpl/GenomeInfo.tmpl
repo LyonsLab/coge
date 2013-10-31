@@ -201,8 +201,8 @@ function export_fasta_irods() {
 	
 	// Show status dialog
 	$('#export_irods_dialog')
-		.html('Copying this genome sequence FASTA file to<br><br>'+
-				'<b><TMPL_VAR NAME=IRODS_HOME></b><br><br>' +
+		.html("Copying this genome's FASTA sequence file to<br><br>"+
+				'<a href="http://data.iplantcollaborative.org/" target=_new style="font-weight:bold"><TMPL_VAR NAME=IRODS_HOME></a><br><br>' +
 				'Please wait ... <img src="picts/ajax-loader.gif">')
 		.dialog('open');
 	
