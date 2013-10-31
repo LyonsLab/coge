@@ -893,8 +893,27 @@ sub irods_iget {
     my $cmd = "export irodsEnvFile='$env_file'; iget -fT $src $dest";
 
     #print STDERR "cmd: $cmd\n";
-    my @ils = `$cmd`;
-    #print STDERR "@ils";
+    my @result = `$cmd`;
+    #print STDERR "@result";
+
+    return;
+}
+
+sub irods_iput {
+    my ( $src, $dest ) = @_;
+
+    #print STDERR "irods_iput $src $dest\n";
+    my $env_file = get_defaults()->{IRODSENV};
+    if ( not defined $env_file or not -e $env_file ) {
+        print STDERR "fatal error: iRODS env file missing!\n";
+        return;
+    }
+
+    my $cmd = "export irodsEnvFile='$env_file'; iput -fT $src $dest";
+
+    print STDERR "cmd: $cmd\n";
+    my @result = `$cmd`;
+    print STDERR "@result";
 
     return;
 }

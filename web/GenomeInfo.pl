@@ -42,7 +42,8 @@ $MAX_SEARCH_RESULTS = 100;
     delete_genome      => \&delete_genome,
     check_login        => \&check_login,
     copy_genome        => \&copy_genome,
-	get_log            => \&get_log
+	get_log            => \&get_log,
+	export_fasta_irods => \&export_fasta_irods,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
@@ -271,49 +272,13 @@ sub get_genome_data {
         return unless ($genome);
     }
 
-    # mdb removed 7/31/13, issue 77
-    #    my $seq_file = $genome->file_path;
-    #    my $cogedir  = $P->{COGEDIR};
-    #    my $cogeurl  = $P->{URL};
-    #    $seq_file =~ s/$cogedir/$cogeurl/i;
-    my $seq_url =
-      "services/JBrowse/service.pl/sequence/$gid";  # mdb added 7/31/13 issue 77
-
-    my $download .=
-      qq{<a class=link href='$seq_url' target="_new">Fasta Sequences</a>};
-    $download .= qq{&nbsp|&nbsp};
-    $download .=
-qq{<span class=link onclick="\$('#gff_export').dialog('option', 'width', 400).dialog('open')">Export GFF</span>};
-    $download .= qq{&nbsp|&nbsp};
-    $download .=
-      qq{<span class=link onclick="export_tbl('$gid')"">Export TBL</span>};
-    $download .= qq{&nbsp|&nbsp};
-    $download .=
-      qq{<span class=link onclick="export_bed('$gid')"">Export bed</span>};
-
-    my $links =
-      "<a href='OrganismView.pl?dsgid=$gid' target=_new>OrganismView</a>";
-    $links .= qq{&nbsp|&nbsp};
-    $links .= "<a href='CodeOn.pl?dsgid=$gid' target=_new>CodeOn</a>";
-    $links .= qq{&nbsp|&nbsp};
-#    $links .=
-#qq{<span class='link' onclick="window.open('GenomeInfo.pl?gid=$gid');">GenomeInfo</span>};
-#    $links .= qq{&nbsp|&nbsp};
-    $links .=
-qq{<span class='link' onclick="window.open('SynMap.pl?dsgid1=$gid;dsgid2=$gid');">SynMap</span>};
-    $links .= qq{&nbsp|&nbsp};
-    $links .=
-qq{<span class='link' onclick="window.open('CoGeBlast.pl?dsgid=$gid');">CoGeBlast</span>};
-
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param(
         DO_GENOME_DATA   => 1,
         CHROMOSOME_COUNT => commify( $genome->chromosome_count() ),
         LENGTH           => commify( $genome->length ),
-        GID              => $genome->id,
-        DOWNLOAD         => $download,
-        LINKS            => $links,
+        GID              => $genome->id
     );
 
     return $template->output;
@@ -438,11 +403,9 @@ sub delete_genome {
 
     my $genome = $coge->resultset('Genome')->find($gid);
     return 0 unless $genome;
-    print STDERR "matt1\n";
     return 0 unless ( $USER->is_admin or $USER->is_owner( dsg => $gid ) );
-    print STDERR "matt2\n";
     my $delete_or_undelete = ($genome->deleted ? 'undelete' : 'delete');
-    print STDERR "delete_genome " . $genome->deleted . "\n";
+    #print STDERR "delete_genome " . $genome->deleted . "\n";
     $genome->deleted( !$genome->deleted ); # do undelete if already deleted
     $genome->update;
     
@@ -535,6 +498,25 @@ sub get_log {
         { status => $status, genome_id => $gid, log => \@lines } );
 }
 
+sub export_fasta_irods {
+    my %opts    = @_;
+    my $gid = $opts{gid};
+    print STDERR "export_fasta_irods $gid\n";
+
+    my $genome = $coge->resultset('Genome')->find($gid);
+	return 0 unless ($USER->has_access_to_genome($genome));
+
+	my $src = $genome->file_path;
+	
+	my $username = $USER->user_name;
+	my $dest = $P->{IRODSDIR};
+    $dest =~ s/\<USER\>/$username/;
+    $dest .= "/genome_$gid.faa";
+
+	CoGe::Accessory::Web::irods_iput($src, $dest);
+
+    return $dest;
+}
 
 sub generate_html {
     my $name = $USER->user_name;
@@ -583,7 +565,8 @@ sub generate_body {
         USER_CAN_EDIT   => $user_can_edit,
         USER_CAN_ADD    => ( !$genome->restricted or $user_can_edit ),
         USER_CAN_DELETE => $user_can_delete,
-        DELETED         => $genome->deleted
+        DELETED         => $genome->deleted,
+        LOGGED_IN       => !$USER->is_public
     );
 
     if ( $USER->is_admin ) {
