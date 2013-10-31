@@ -503,7 +503,7 @@ sub get_log {
 sub export_fasta_irods {
     my %opts    = @_;
     my $gid = $opts{gid};
-    print STDERR "export_fasta_irods $gid\n";
+    #print STDERR "export_fasta_irods $gid\n";
 
     my $genome = $coge->resultset('Genome')->find($gid);
 	return 0 unless ($USER->has_access_to_genome($genome));
@@ -511,15 +511,27 @@ sub export_fasta_irods {
 	my $src = $genome->file_path;
 	my $dest = get_irods_path() . "/genome_$gid.faa";
 	
-	if ($src and $dest) {
-		CoGe::Accessory::IRODS::irods_iput($src, $dest);
-	}
-	else {
+	unless ($src and $dest) {
 		print STDERR "GenomeInfo:export_fasta_irods: error, undef src or dest\n";
 		return;
 	}
+	
+	# Send to iPlant Data Store using iput
+	CoGe::Accessory::IRODS::irods_iput($src, $dest);
 
-    return $dest;
+	# Set IRODS metadata for object
+	my %meta = (
+		'Genome ID'   => $genome->id,
+		'Organism'    => $genome->organism->name,
+		'Version'     => $genome->version,
+		'Type'        => $genome->type->info,
+		'Source'      => join( ',', map { $_->name } $genome->source )
+	);
+	$meta{'Link'} = $genome->link if ($genome->link);
+	$meta{'Name'} = $genome->name if ($genome->name);
+	$meta{'Description'} = $genome->description if ($genome->description);
+
+	CoGe::Accessory::IRODS::irods_imeta($dest, \%meta);
 }
 
 sub get_irods_path {
