@@ -65,7 +65,7 @@ sub local_md5sum {
 	return $md5sum;
 }
 
-sub irods_md5sum {
+sub irods_md5sum { #FIXME dup of CoGe::Accessory::IRODS::irods_checksum()
 	my $filepath = shift;
 	
 	my $cmd = "ichksum $filepath";
