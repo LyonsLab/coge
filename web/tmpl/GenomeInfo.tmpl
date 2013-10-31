@@ -209,14 +209,11 @@ function export_fasta_irods() {
 	var startTime = new Date().getTime();
 	
 	$.ajax({
-		async: false,
 		data: {
 			fname: 'export_fasta_irods',
 			gid: '<TMPL_VAR NAME=GID>'
 		},
-		success : function(rc) {
-			console.log(rc);
-			
+		success : function() {
 			// Make sure the dialog is visible for at least 5 seconds
 			var delayTime = Math.max(0, 5000-(new Date().getTime()-startTime));
 			setTimeout(function() {
