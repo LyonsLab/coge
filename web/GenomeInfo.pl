@@ -278,7 +278,8 @@ sub get_genome_data {
         DO_GENOME_DATA   => 1,
         CHROMOSOME_COUNT => commify( $genome->chromosome_count() ),
         LENGTH           => commify( $genome->length ),
-        GID              => $genome->id
+        GID              => $genome->id,
+        LOGON            => ( $USER->user_name ne "public" )
     );
 
     return $template->output;
@@ -533,9 +534,9 @@ sub generate_html {
         USER       => $name,
         LOGO_PNG   => $PAGE_TITLE . "-logo.png",
         BODY       => generate_body(),
-        ADJUST_BOX => 1
+        ADJUST_BOX => 1,
+        LOGON => ( $USER->user_name ne "public" )
     );
-    $template->param( LOGON => 1 ) unless ( $USER->user_name eq "public" );
 
     return $template->output;
 }
@@ -566,7 +567,6 @@ sub generate_body {
         USER_CAN_ADD    => ( !$genome->restricted or $user_can_edit ),
         USER_CAN_DELETE => $user_can_delete,
         DELETED         => $genome->deleted,
-        LOGGED_IN       => !$USER->is_public
     );
 
     if ( $USER->is_admin ) {
