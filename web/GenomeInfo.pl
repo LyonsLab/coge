@@ -5,6 +5,7 @@ use CGI;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils;
+use CoGe::Accessory::IRODS;
 use HTML::Template;
 use JSON::XS;
 use Sort::Versions;
@@ -508,14 +509,23 @@ sub export_fasta_irods {
 	return 0 unless ($USER->has_access_to_genome($genome));
 
 	my $src = $genome->file_path;
+	my $dest = get_irods_path() . "/genome_$gid.faa";
 	
+	if ($src and $dest) {
+		CoGe::Accessory::IRODS::irods_iput($src, $dest);
+	}
+	else {
+		print STDERR "GenomeInfo:export_fasta_irods: error, undef src or dest\n";
+		return;
+	}
+
+    return $dest;
+}
+
+sub get_irods_path {
 	my $username = $USER->user_name;
 	my $dest = $P->{IRODSDIR};
     $dest =~ s/\<USER\>/$username/;
-    $dest .= "/genome_$gid.faa";
-
-	CoGe::Accessory::Web::irods_iput($src, $dest);
-
     return $dest;
 }
 
@@ -535,7 +545,7 @@ sub generate_html {
         LOGO_PNG   => $PAGE_TITLE . "-logo.png",
         BODY       => generate_body(),
         ADJUST_BOX => 1,
-        LOGON => ( $USER->user_name ne "public" )
+        LOGON      => ( $USER->user_name ne "public" )
     );
 
     return $template->output;
@@ -567,6 +577,7 @@ sub generate_body {
         USER_CAN_ADD    => ( !$genome->restricted or $user_can_edit ),
         USER_CAN_DELETE => $user_can_delete,
         DELETED         => $genome->deleted,
+        IRODS_HOME      => get_irods_path()
     );
 
     if ( $USER->is_admin ) {

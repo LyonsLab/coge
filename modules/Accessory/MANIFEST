@@ -10,6 +10,7 @@ lib/CoGe/Accessory/GBlite.pm
 lib/CoGe/Accessory/Storage.pm
 lib/CoGe/Accessory/Utils.pm
 lib/CoGe/Accessory/Web.pm
+lib/CoGe/Accessory/IRODS.pm
 lib/CoGe/Accessory/Workflow.pm
 lib/CoGe/Accessory/Jex.pm
 lib/CoGe/Accessory/Annotation.pm

@@ -7,6 +7,7 @@ use CGI;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils;
+use CoGe::Accessory::IRODS;
 use HTML::Template;
 use JSON::XS;
 use URI::Escape::JavaScript qw(escape);
@@ -150,7 +151,7 @@ sub irods_get_path {
         return;
     }
 
-    my $result = CoGe::Accessory::Web::irods_ils($path);
+    my $result = CoGe::Accessory::IRODS::irods_ils($path);
     my $error  = $result->{error};
     if ($error) {
         my $body  = 'User: ' . $USER->name . ' ' . $USER->id . "\n\n" . $error;
@@ -192,7 +193,7 @@ sub irods_get_file {
 
     if ($do_get) {
         mkpath($localfullpath);
-        CoGe::Accessory::Web::irods_iget( $path, $localfullpath );
+        CoGe::Accessory::IRODS::irods_iget( $path, $localfullpath );
     }
 
     return encode_json( { path => $localpath, size => -s $localfilepath } );
