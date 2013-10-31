@@ -1,7 +1,4 @@
 <TMPL_IF NAME='MAIN'>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
-<SCRIPT TYPE="text/javascript" SRC="./js/filterlist.js"></SCRIPT>
 
 <SCRIPT language="JavaScript">
 $(document).ready(function(){
@@ -173,10 +170,9 @@ function delete_genome () {
 	});
 }
 
-function export_gff (gid) {
+function export_gff() {
 	var server = '<TMPL_VAR NAME="SERVER">';
-	var link = server+"bin/export/coge_gff.pl?dsgid=";
-	link += gid;
+	var link = server+"bin/export/coge_gff.pl?dsgid=<TMPL_VAR NAME=GID>";
 	if ($('#cds_only')[0].checked) {link += ";cds=1";}
 	if ($('#annos')[0].checked) {link += ";annos=1";}
 	if ($('#name_unique')[0].checked) {link += ";nu=1";}
@@ -184,20 +180,35 @@ function export_gff (gid) {
 	link += ";id_type="+$('#gff_id_type').val();
 	$('#export_gff_link').html("<a href="+link+" target=_new>Link: "+ link+"<\a>");
 	window.open(link);
+	$('#gff_export').dialog('close');
 }
 
-function export_tbl (gid) {
+function export_tbl() {
 	var server = '<TMPL_VAR NAME="SERVER">';
-	var link = server+"bin/export/export_NCBI_TBL.pl?dsgid=";
-	link += gid;
+	var link = server+"bin/export/export_NCBI_TBL.pl?dsgid=<TMPL_VAR NAME=GID>";
 	window.open(link);
 }
 
-function export_bed (gid) {
+function export_bed() {
 	var server = '<TMPL_VAR NAME="SERVER">';
-	var link = server+"bin/export/coge2bed.pl?gid=";
-	link += gid;
+	var link = server+"bin/export/coge2bed.pl?gid=<TMPL_VAR NAME=GID>";
 	window.open(link);
+}
+
+function export_fasta_irods() {
+	// Make sure user is still logged-in
+	check_and_report_login();
+	
+	$.ajax({
+		async: false,
+		data: {
+			fname: 'export_fasta_irods',
+			gid: '<TMPL_VAR NAME=GID>'
+		},
+		success : function(rc) {
+			console.log(rc);
+		}
+	});
 }
 
 function reset_log() {
@@ -213,7 +224,7 @@ function check_login() {
 	$.ajax({
 		async: false,
 		data: {
-			fname: 'check_login',
+			fname: 'check_login'
 		},
 		success : function(rc) {
 			logged_in = rc;
@@ -223,17 +234,21 @@ function check_login() {
 	return logged_in;
 }
 
+function check_and_report_login() {
+	if (!check_login()) {
+		alert('Your session has expired, please log in again.');
+		location.reload(true)
+		return;
+	}
+}
+
 function copy_genome(mask) {
 	// Prevent concurrent executions - issue 101
 	if ( $("#copy_dialog").dialog( "isOpen" ) )
 		return;
 
 	// Make sure user is still logged-in - issue 206
-	if (!check_login()) {
-		alert('Your session has expired, please log in again.');
-		location.reload(true)
-		return;
-	}
+	check_and_report_login();
 	
 	// Open status dialog right away - issue 101
 	reset_log();
@@ -325,8 +340,6 @@ function continue_to_view() {
 			<TMPL_IF NAME='USER_CAN_EDIT'>
 				<span class='ui-button ui-corner-all' onClick="edit_genome_info();">Edit Info</span>
 			</TMPL_IF>
-			<span id='copy_button' class='ui-button ui-corner-all' onDblClick="copy_genome(0);" onClick="copy_genome(0);">Copy</span>
-			<span id='copy_and_mask_button' class='ui-button ui-corner-all' onDblClick="copy_genome(1);" onClick="copy_genome(1);">Copy & Mask</span>
 			<TMPL_IF NAME='USER_CAN_DELETE'>
 				<TMPL_IF NAME='DELETED'>
 					<span class='ui-button ui-corner-all ui-button-go' onClick="delete_genome();">Undelete</span>
@@ -406,7 +419,7 @@ function continue_to_view() {
      </select>
  </tr>
 </table>
-<span class="ui-button ui-corner-all" onClick="export_gff(<TMPL_VAR NAME=GID>)">Export GFF File</span>
+<span class="ui-button ui-corner-all" onClick="export_gff();">Export GFF File</span>
 <br><br><span class="small" id="export_gff_link"></span>
 </div>
 
@@ -558,11 +571,42 @@ Are you sure you want to move this genome into your trash?<p>
 		</tr>
 		<tr>
 			<td class='title5'>Download:</td>
-			<td class='data5'><TMPL_VAR NAME="DOWNLOAD"></td>
+			<td class='data5'>
+		    	<a class='link' href='services/JBrowse/service.pl/sequence/<TMPL_VAR NAME=GID>'>Fasta Sequences</a>&nbsp|
+		    	<span class='link' onclick="$('#gff_export').dialog('option', 'width', 400).dialog('open')">Export GFF</span>&nbsp|
+		    	<span class='link' onclick="export_tbl()">Export TBL</span>&nbsp|
+		    	<span class='link' onclick="export_bed()">Export BED</span>
+			</td>
+		</tr>
+		<TMPL_IF NAME="LOGGED_IN">
+		<tr>
+			<td class='title5'>iPlant Data Store:</td>
+			<td class='data5'>
+				<span class='link' onclick="export_fasta_irods()">Fasta Sequences</span>
+				<!--
+				&nbsp|
+				<span class='link' onclick="export_fasta_irods()">Export GFF</span>&nbsp|
+				<span class='link' onclick="export_fasta_irods()">Export TBL</span>&nbsp|
+				<span class='link' onclick="export_fasta_irods()">Export BED</span>
+				-->
+			</td>
 		</tr>
 		<tr>
-			<td class='title5'>Links:</td>
-			<td class='data5'><TMPL_VAR NAME="LINKS"></td>
+			<td class='title5'>Functions:</td>
+			<td class='data5'>
+		    	<span class='link' onDblClick="copy_genome(0);" onClick="copy_genome(0);">Copy</span>&nbsp|
+		    	<span class='link' onDblClick="copy_genome(1);" onClick="copy_genome(1);">Copy & Mask</span>
+			</td>
+		</tr>
+		</TMPL_IF>
+		<tr>
+			<td class='title5'>Tools:</td>
+			<td class='data5'>
+		    	<a href='OrganismView.pl?dsgid=<TMPL_VAR NAME=GID>' target=_new>OrganismView</a>&nbsp|
+		    	<a href='CodeOn.pl?dsgid=<TMPL_VAR NAME=GID>' target=_new>CodeOn</a>&nbsp|
+		    	<span class='link' onclick="window.open('SynMap.pl?dsgid1=<TMPL_VAR NAME=GID>;dsgid2=<TMPL_VAR NAME=GID>');">SynMap</span>&nbsp|
+		    	<span class='link' onclick="window.open('CoGeBlast.pl?dsgid=<TMPL_VAR NAME=GID>');">CoGeBlast</span>
+			</td>
 		</tr>
 	</table>
 </TMPL_IF>

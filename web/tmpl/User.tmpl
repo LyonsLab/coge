@@ -326,6 +326,7 @@ function filter_contents() {
 function toc_select(toc_id) {
 	pageObj.content_type = toc_id;
 
+	// Show/hide action icons based on type of data
 	if (toc_id == ITEM_TYPE_TRASH) {
 		$('#share_button,#notebook_button,#group_button,#delete_button,#send_button,#cancel_button').hide();
 		$('#undelete_button').show();
@@ -345,6 +346,9 @@ function toc_select(toc_id) {
 		$('#undelete_button,#group_button,#cancel_button').hide();
 		$('#share_button,#notebook_button,#delete_button,#send_button').show();
 	}
+	
+	// Icons are set to invisible on load
+	$('.item-button').removeClass('invisible');
 
 	$('#search_input').val('');
 	filter_contents();
@@ -963,19 +967,19 @@ function toggle_star(img) {
 
 	<div style="height:24px;">
 		<span id="contents_title" style="float:left;width:130px;font-weight:bold;"></span>
-		<span id="share_button" onClick="share_dialog();" class="item-button link ui-icon ui-icon-person ui-state-disabled" style="margin-left:20px;margin-right:5px;border:1px solid lightgray;"></span>
-		<span id="notebook_button" onClick="add_to_notebook_dialog();" class="item-button link ui-icon ui-icon-folder-collapsed ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
-		<span id="group_button" onClick="group_dialog();" class="item-button link ui-icon ui-icon-gear ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
-		<span id="delete_button" onClick="delete_items();" class="item-button link ui-icon ui-icon-trash ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
-		<span id="send_button" onClick="send_menu();" class="item-button link ui-icon ui-icon-arrowthick-1-e ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+		<span id="share_button" onClick="share_dialog();" class="invisible item-button link ui-icon ui-icon-person ui-state-disabled" style="margin-left:20px;margin-right:5px;border:1px solid lightgray;"></span>
+		<span id="notebook_button" onClick="add_to_notebook_dialog();" class="invisible item-button link ui-icon ui-icon-folder-collapsed ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+		<span id="group_button" onClick="group_dialog();" class="invisible item-button link ui-icon ui-icon-gear ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+		<span id="delete_button" onClick="delete_items();" class="invisible item-button link ui-icon ui-icon-trash ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+		<span id="send_button" onClick="send_menu();" class="invisible item-button link ui-icon ui-icon-arrowthick-1-e ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
 		<ul id="send_menu" class="small hidden">
 			<li><a onclick="send_items_to('CoGeBlast', 2);">CoGeBlast</a></li>
 			<li><a onclick="send_items_to('SynFind');">SynFind</a></li>
 			<li><a onclick="send_items_to('SynMap', 1);">SynMap</a></li>
 			<li><a onclick="send_items_to('GEvo', 1);">GEvo</a></li>
 		</ul>
-		<span id="undelete_button" onClick="undelete_items();" class="item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
-		<span id="cancel_button" onClick="cancel_jobs();" class="item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+		<span id="undelete_button" onClick="undelete_items();" class="invisible item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+		<span id="cancel_button" onClick="cancel_jobs();" class="invisible item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
 		<input id="search_input" type="search" placeholder="Search" size="25" style="float:right;margin-right:15px;vertical-align:top;border:1px solid lightgray;" onkeyup="filter_contents();" />
 	</div>
 
