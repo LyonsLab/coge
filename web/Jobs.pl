@@ -25,7 +25,8 @@ $FORM       = new CGI;
     page_title => $PAGE_TITLE
 );
 
-$YERBA = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
+$YERBA =
+  CoGe::Accessory::Jex->new(host => $P->{JOBSERVER}, port => $P->{JOBPORT});
 
 %FUNCTION = (
     cancel_job   => \&cancel_job,
