@@ -424,14 +424,17 @@ accn: foreach my $accn (@accns) {
                         my @inner = split( /:/, $xref );
 
                         # first add the annot_type_obj
-                        my $anno_type =
-                          $coge->resultset('AnnotationType')->find_or_create(
-                            {
-                                name => $inner[0],
+                        my ($anno_type) =
+                                  $coge->resultset('AnnotationType')
+                                  ->search( { name => $inner[0],
                                 annotation_type_group_id =>
-                                  $anno_type_group->id(),
-                            }
-                          ) if $GO;
+                                  $anno_type_group->id() });
+				($anno_type) =
+                                  $coge->resultset('AnnotationType')
+                                  ->create( { name => $inner[0],
+                                annotation_type_group_id =>
+                                  $anno_type_group->id() })
+                                  if $GO && !$anno_type;
 
                         # now create the row for the data value of the xref
                         my $sub_anno = $db_feature->add_to_feature_annotations(
@@ -507,16 +510,21 @@ accn: foreach my $accn (@accns) {
                                       if $GO;
 
                                     # $1 should be "go_function"
-                                    my $anno_type =
-                                      $coge->resultset('AnnotationType')
-                                      ->find_or_create(
-                                        {
-                                            name =>
-                                              $3,    #this should be "0003676"
-                                            annotation_type_group_id =>
-                                              $anno_type_group->id(),
-                                        }
-                                      ) if $GO;
+                                    my ($anno_type) =
+				      $coge->resultset('AnnotationType')
+					->search( { 
+						   name => $3,
+						    annotation_type_group_id =>
+						    $anno_type_group->id() 
+						  });
+				    ($anno_type) =
+				      $coge->resultset('AnnotationType')
+					->create( { 
+						   name => $3,
+						    annotation_type_group_id =>
+						    $anno_type_group->id() 
+						  })
+					  if $GO && !$anno_type;
                                     my $sub_anno =
                                       $db_feature->add_to_feature_annotations(
                                         {
@@ -557,10 +565,13 @@ accn: foreach my $accn (@accns) {
                 else    ##everything else
                 {
                     foreach my $item ( @{$stuff} ) {
-                        my $anno_type =
-                          $coge->resultset('AnnotationType')
-                          ->find_or_create( { name => $anno } )
-                          if $GO;
+                        my ($anno_type) =
+			  $coge->resultset('AnnotationType')
+			    ->search( { name => $anno } );
+			($anno_type) =
+			  $coge->resultset('AnnotationType')
+			    ->create( { name => $anno } )
+			      if $GO && !$anno_type;
                         my $sub_anno = $db_feature->add_to_feature_annotations(
                             {
                                 annotation         => $item,
@@ -961,9 +972,48 @@ sub get_gi_summary {
 sub help {
     print qq
 	{
-		Welcome to $0!  This program loads genbank entries into the CoGe genomes database
+Welcome to $0!  This program loads genbank entries into the CoGe genomes database
 
-		Options:
+Example usage: genbank_genome_loader.pl -config /opt/apache/coge/web/coge.conf -go -accn <accn_1> -accn <accn_2>
+
+
+Options:
+ -help|h       :      Print this message
+
+ -go (flag)    :      Make database inserts happen.  Otherwise, it is a fake load.  No options.
+
+ -accn         :      Specify the genbank/refseq accession(s) to load.  It is recommended that a version 
+                      number is not used.  Multiple accessions for a single genome may be specified by:
+                      -accn <accn_1> -accn <accn_2> -accn <accn_3>
+
+ -accn_file    :      Specify a file of genbank/refseq accessions to use
+
+ -config       :      Optional:  CoGe conf file for determining database connection stuff, temp_dir, server
+                      for links, and sequence installation directory for fasta files.
+
+
+ -temp_dir|staging_dir|td:  Directory to which genbank files are downloaded for processing.  
+                            Default: /tmp/ncbi/".ceil(rand(9999999999)) 
+
+ -install_dir  :      Directory for installing sequences.  Includes indexing them.
+
+ -force (flag) :      For the loading of the specified genbank accessions.  Otherwise, program will
+                      check to see if they have been previously loaded for that version and not load
+                      that file.  Also does a check to make sure that the specified length of the sequence
+                      in the genbank file matches what has been previously loaded.  If they do not match,
+                      the genbank file is loaded as a new version. No options.
+
+ -base_chr_name|basechr : Specifies a string to add to the begining of a chromosome name
+
+ -test (flag)  :      Add the extension ".test" to the dataset name in CoGe.  Used for testing stuff.
+
+ Database connection stuff
+ -host         :      Host for database connections
+ -port         :      Port for database connections
+ -database     :      Database name for inserts
+ -user         :      User name to log into database
+ -password     :      Password to log into database
+
 	};
 }
 
