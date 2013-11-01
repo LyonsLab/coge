@@ -116,7 +116,7 @@ my %genome;
 help() if $help;
 
 print $log "Go = $GO.  Will be adding to the databaes. \n" if $DEBUG;
-print $log "Force is on: will not be checking if genome has been previously loaded.\n";
+print $log "Force is on: will not be checking if genome has been previously loaded.\n" if $force;
 my $data_source = get_data_source();           #for NCBI
 
 # loop through all the accessions
