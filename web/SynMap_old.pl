@@ -864,7 +864,7 @@ sub gen_fasta {
         $file = $dsg->file_path;
     }
     else {
-        $file = $FASTADIR . "/$dsgid-$feat_type.fasta";
+        $file = $FASTADIR . "/old_synmap/$dsgid-$feat_type.fasta";
     }
     my $res;
     if ($write_log) {
@@ -935,7 +935,7 @@ sub generate_fasta {
       $coge->resultset('Genome')->search( { "me.genome_id" => $dsgid },
         { join => 'genomic_sequences', prefetch => 'genomic_sequences' } );
 
-    $file = $FASTADIR . "/$file" unless $file =~ /$FASTADIR/;
+    $file = $FASTADIR . "/old_synmap/$file" unless $file =~ /$FASTADIR/;
     CoGe::Accessory::Web::write_log( "Creating fasta file:",
         $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( $file, $cogeweb->logfile );
