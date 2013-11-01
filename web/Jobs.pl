@@ -120,9 +120,9 @@ sub cancel_job {
 
     my $status = $YERBA->get_status( $job->id );
 
-    if ( lc($status) eq 'running' ) {
-        $job->update( { status => 3 } );
-        return encode_json( $YERBA->terminate( $job->id ) );
+    if ($status =~ /scheduled|running|notfound/i) {
+        $job->update({status => 3, end_time => \'current_timestamp'});
+        return encode_json($YERBA->terminate($job->id));
     }
     else {
         return encode_json( {} );
