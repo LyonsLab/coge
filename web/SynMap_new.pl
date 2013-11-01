@@ -41,7 +41,7 @@ our (
     $BLAST2BED,   $SYNTENY_SCORE, $TEMPDIR,        $TEMPURL,
     $ALGO_LOOKUP, $GZIP,          $GUNZIP,         %FUNCTIONS,
     $YERBA,       $GENE_ORDER,    $PAGE_TITLE,     $KSCALC,
-    $GEN_FASTA,   $RUN_ALIGNMENT, $RUN_COVERAGE,   $GENERATE_GEVO_LINKS,
+    $GEN_FASTA,   $RUN_ALIGNMENT, $RUN_COVERAGE,   $GEVO_LINKS,
     $PROCESS_DUPS,
 );
 
@@ -102,7 +102,7 @@ $GEN_FASTA     = $P->{GEN_FASTA};
 $RUN_ALIGNMENT = $P->{RUN_ALIGNMENT};
 $RUN_COVERAGE  = $P->{RUN_COVERAGE};
 $PROCESS_DUPS  = $P->{PROCESS_DUPS};
-$GENERATE_GEVO_LINKS =  $P->{GENERATE_GEVO_LINKS};
+$GEVO_LINKS =  $P->{GEVO_LINKS};
 
 #in the web form, each sequence search algorithm has a unique number.  This table identifies those and adds appropriate options
 $ALGO_LOOKUP = {
@@ -2324,13 +2324,6 @@ sub go {
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Added dotplot generation",
         $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-
-    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "Running Workflow", $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
     ############################################################################
     # Post Processing
@@ -2340,9 +2333,6 @@ sub go {
     CoGe::Accessory::Web::write_log( "Final Post Processing",
         $cogeweb->logfile);
 
-    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "Adding Processing Tandem Duplicate File",
-        $cogeweb->logfile );
 
     my $subject_dup_args = [
         ['--config', $config,                         0 ],
@@ -2373,21 +2363,39 @@ sub go {
         outputs     => [$raw_blastfile . ".q.tandems"],
         description => "Processing Query Tandem Duplicate File...",
     );
+    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "Added Processing of Tandem Duplicate Files",
+        $cogeweb->logfile );
+
+    my $condensed = "$final_dagchainer_file.condensed";
+
+    my $link_args = [
+        ['--config', $config, 0],
+        ['--infile', $final_dagchainer_file, 1],
+        ['--dsgid1', $dsgid1, 1],
+        ['--dsgid2', $dsgid2, 1],
+        ['--outfile', $condensed, 1],
+    ];
+
+    $workflow->add_job(
+        cmd         => $GEVO_LINKS,
+        script      => undef,
+        args        => $link_args,
+        inputs      => [$final_dagchainer_file],
+        outputs      => [$condensed],
+        description => "Generating GEvo links...",
+    );
+
+    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "Added GEvo links generation", $cogeweb->logfile);
 
     CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
     CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "Adding GEvo links to final output files",
-        $cogeweb->logfile );
-
-    #add_GEvo_links(
-    #    infile => $final_dagchainer_file,
-    #    dsgid1 => $dsgid1,
-    #    dsgid2 => $dsgid2
-    #);
-
-
+    CoGe::Accessory::Web::write_log( "Running Workflow", $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
     return $YERBA->submit_workflow($workflow);
 }
@@ -2906,23 +2914,6 @@ sub get_results {
     $out = $dotfile;
 
     ############################################################################
-    # Post Processing
-    ############################################################################
-
-    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "Adding GEvo links to final output files",
-        $cogeweb->logfile );
-
-    add_GEvo_links(
-        infile => $final_dagchainer_file,
-        dsgid1 => $dsgid1,
-        dsgid2 => $dsgid2
-    );
-
-    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-
-    ############################################################################
     # Generate html
     ############################################################################
     my $results =
@@ -2986,7 +2977,7 @@ sub get_results {
         $results->param( dotplot   => $tmp );
         $results->param( algorithm => $algo_name );
 
-        if ($hist) {
+        if ($hist and $ks_type) {
             if (-r $hist and -s $hist) {
                 $results->param( histogram => $out_url . '.hist.png' );
                 $results->param( ks_type => $ks_type );
@@ -3489,144 +3480,6 @@ sub run_find_nearby {
     system "/bin/rm $outfile.running" if -r "$outfile.running";
     ;      #remove track file
     return 1 if -r $outfile;
-}
-
-sub add_GEvo_links {
-    my %opts   = @_;
-    my $infile = $opts{infile};
-    my $dsgid1 = $opts{dsgid1};
-    my $dsgid2 = $opts{dsgid2};
-    $/ = "\n";
-    return
-      if ( -r "$infile.condensed" || -r "$infile.condensed.gz" );    #check this
-    CoGe::Accessory::Web::gunzip( $infile . ".gz" ) if -r $infile . ".gz";
-    open( IN,  $infile );
-    open( OUT, ">$infile.tmp" );
-    my %condensed;
-    my %names;
-    my $previously_generated = 0;
-
-    while (<IN>) {
-        chomp;
-        if (/^#/) {
-            print OUT $_, "\n";
-            next;
-        }
-        if (/GEvo/) {
-            $previously_generated = 1;
-        }
-        s/^\s+//;
-        next unless $_;
-        my @line  = split /\t/;
-        my @feat1 = split /\|\|/, $line[1];
-        my @feat2 = split /\|\|/, $line[5];
-        my $link  = $BASE_URL . "GEvo.pl?";
-        my ( $fid1, $fid2 );
-
-        if ( $feat1[6] ) {
-            $fid1 = $feat1[6];
-            $link .= "fid1=" . $fid1;
-        }
-        else {
-            my ($xmin) = sort ( $feat1[1], $feat1[2] );
-            my $x = sprintf( "%.0f", $xmin + abs( $feat1[1] - $feat1[2] ) / 2 );
-            $link .= "chr1=" . $feat1[0] . ";x1=" . $x;
-        }
-        if ( $feat2[6] ) {
-            $fid2 = $feat2[6];
-            $link .= ";fid2=" . $fid2;
-        }
-        else {
-            my ($xmin) = sort ( $feat2[1], $feat2[2] );
-            my $x = sprintf( "%.0f", $xmin + abs( $feat2[1] - $feat2[2] ) / 2 );
-            $link .= ";chr2=" . $feat2[0] . ";x2=" . $x;
-        }
-        $link .= ";dsgid1=" . $dsgid1;
-        $link .= ";dsgid2=" . $dsgid2;
-
-        if ( $fid1 && $fid2 ) {
-            $condensed{ $fid1 . "_" . $dsgid1 }{ $fid2 . "_" . $dsgid2 } = 1;
-            $condensed{ $fid2 . "_" . $dsgid2 }{ $fid1 . "_" . $dsgid1 } = 1;
-            $names{$fid1} = $feat1[3];
-            $names{$fid2} = $feat2[3];
-        }
-
-#   accn1=".$feat1[3]."&fid1=".$feat1[6]."&accn2=".$feat2[3]."&fid2=".$feat2[6] if $feat1[3] && $feat1[6] && $feat2[3] && $feat2[6];
-        print OUT $_;
-        print OUT "\t", $link;
-        print OUT "\n";
-    }
-    close IN;
-    close OUT;
-    if ($previously_generated) {
-        `/bin/rm $infile.tmp` if -r "$infile.tmp";
-    }
-    else {
-        my $cmd = "/bin/mv $infile.tmp $infile";
-        `$cmd`;
-    }
-    if ( keys %condensed
-        && !( -r "$infile.condensed" || -r "$infile.condensed.gz" ) )
-    {
-
-        #take into account transitivity
-        foreach my $id1 ( keys %condensed ) {
-            foreach my $id2 ( keys %{ $condensed{$id1} } ) {
-                foreach my $id3 ( keys %{ $condensed{$id2} } ) {
-                    next if $id1 eq $id2;
-                    $condensed{$id1}{$id3} = 1;
-                    $condensed{$id3}{$id1} = 1;
-                }
-            }
-        }
-
-        open( OUT, ">$infile.condensed" );
-        print OUT join( "\t",
-            qw(COUNT GEVO MASKED_GEVO FASTA_LINK GENE_LIST GENE_NAMES) ),
-          "\n";
-        my %seen;
-        foreach my $id1 (
-            sort {
-                scalar( keys %{ $condensed{$b} } ) <=>
-                  scalar( keys %{ $condensed{$a} } )
-            } keys %condensed
-          )
-        {
-            my ( $fid1, $dsgid1 ) = split /_/, $id1;
-            next if $seen{$fid1};
-            $seen{$fid1} = 1;
-            my @names     = $names{$fid1};
-            my $gevo_link = $BASE_URL . "GEvo.pl?fid1=$fid1;dsgid1=$dsgid1";
-            my $fids      = "fid=$fid1";
-            my $count     = 2;
-
-            foreach my $id2 ( sort keys %{ $condensed{$id1} } ) {
-                my ( $fid2, $dsgid2 ) = split /_/, $id2, 2;
-                next if $fid1 == $fid2;
-                $seen{$fid2} = 1;
-                $gevo_link .= ";fid$count=$fid2;dsgid$count=$dsgid2";
-                $fids      .= ",$fid2";
-                push @names, $names{$fid2};
-                $count++;
-            }
-            $count--;
-            $gevo_link .= ";num_seqs=$count";
-            my $gevo_link2 = $gevo_link;
-            $gevo_link .= ";pad_gs=20000";
-            for my $i ( 1 .. $count ) {
-                $gevo_link2 .= ";mask$i=non-cds";
-            }
-            $gevo_link2 .= ";pad_gs=200000";
-            $gevo_link2 .= ";autogo=1";
-            my $fasta_link    = $BASE_URL . "FastaView.pl?$fids";
-            my $featlist_link = $BASE_URL . "FeatList.pl?$fids";
-            print OUT join( "\t",
-                $count, $gevo_link, $gevo_link2, $fasta_link, $featlist_link,
-                @names ),
-              "\n";
-        }
-        close OUT;
-    }
 }
 
 sub add_reverse_match {
