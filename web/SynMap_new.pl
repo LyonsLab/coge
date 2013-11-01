@@ -2324,13 +2324,6 @@ sub go {
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Added dotplot generation",
         $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-
-    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "Running Workflow", $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
     ############################################################################
     # Post Processing
@@ -2340,9 +2333,6 @@ sub go {
     CoGe::Accessory::Web::write_log( "Final Post Processing",
         $cogeweb->logfile);
 
-    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "Adding Processing Tandem Duplicate File",
-        $cogeweb->logfile );
 
     my $subject_dup_args = [
         ['--config', $config,                         0 ],
@@ -2373,12 +2363,8 @@ sub go {
         outputs     => [$raw_blastfile . ".q.tandems"],
         description => "Processing Query Tandem Duplicate File...",
     );
-
-    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-
-    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "Adding GEvo links to final output files",
+    CoGe::Accessory::Web::write_log( "Added Processing of Tandem Duplicate Files",
         $cogeweb->logfile );
 
     my $condensed = "$final_dagchainer_file.condensed";
@@ -2399,6 +2385,17 @@ sub go {
         outputs      => [$condensed],
         description => "Generating GEvo links...",
     );
+
+    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "Added GEvo links generation", $cogeweb->logfile);
+
+    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+
+    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "Running Workflow", $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
     return $YERBA->submit_workflow($workflow);
 }
