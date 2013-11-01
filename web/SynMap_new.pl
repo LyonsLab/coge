@@ -2977,7 +2977,7 @@ sub get_results {
         $results->param( dotplot   => $tmp );
         $results->param( algorithm => $algo_name );
 
-        if ($hist) {
+        if ($hist and $ks_type) {
             if (-r $hist and -s $hist) {
                 $results->param( histogram => $out_url . '.hist.png' );
                 $results->param( ks_type => $ks_type );
