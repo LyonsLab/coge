@@ -15,22 +15,24 @@ use CoGe::Accessory::Web;
 
 no warnings 'redefine';
 
-our ( $P, $PAGE_TITLE, $USER, $BASEFILE, $coge, %FUNCTION, $FORM, $YERBA, $LINK );
+our ( $P, $PAGE_TITLE, $USER, $BASEFILE, $coge, %FUNCTION, $FORM, $YERBA,
+    $LINK );
 
 $PAGE_TITLE = 'Jobs';
 
-$FORM       = new CGI;
+$FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    cgi => $FORM,
+    cgi        => $FORM,
     page_title => $PAGE_TITLE
 );
 
-$YERBA = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
+$YERBA =
+  CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
 
 %FUNCTION = (
     cancel_job   => \&cancel_job,
     schedule_job => \&schedule_job,
-    get_jobs => \&get_jobs_for_user,
+    get_jobs     => \&get_jobs_for_user,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -41,7 +43,7 @@ sub get_jobs_for_user {
     if ( $USER->is_admin ) {
         @jobs =
           $coge->resultset('Job')
-          ->search( undef, { order_by => { -desc => 'job_id'} } );
+          ->search( undef, { order_by => { -desc => 'job_id' } } );
     }
     elsif ( $USER->is_public ) {
         @jobs =
@@ -49,10 +51,7 @@ sub get_jobs_for_user {
           ->search( { user_id => 0 }, { order_by => 'job_id ASC', } );
     }
     else {
-        @jobs = $USER->jobs->search(
-            {
-                user_id => $USER->id
-            },
+        @jobs = $USER->jobs->search( { user_id => $USER->id },
             { order_by => { -desc => 'job_id' } } );
     }
 
@@ -60,19 +59,20 @@ sub get_jobs_for_user {
     my @job_items;
 
     foreach (@jobs) {
-        push @job_items, {
-            id     => int($_->id),
-            link   => $_->link,
-            tool   => $_->page,
-            status => $_->status_description,
-            started => $_->start_time,
+        push @job_items,
+          {
+            id        => int( $_->id ),
+            link      => $_->link,
+            tool      => $_->page,
+            status    => $_->status_description,
+            started   => $_->start_time,
             completed => $_->end_time ? $_->end_time : '',
-            elapsed => $_->elapsed_time(),
-            user => $_->user_id ? $users{ $_->user_id} : 'public',
-        };
+            elapsed   => $_->elapsed_time(),
+            user      => $_->user_id ? $users{ $_->user_id } : 'public',
+          };
     }
 
-    return encode_json(\@job_items);
+    return encode_json( \@job_items );
 }
 
 sub gen_html {
@@ -83,13 +83,15 @@ sub gen_html {
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param( USER       => $name );
-    $template->param( TITLE      => qq{},
-    				  PAGE_TITLE => $PAGE_TITLE,
-    				  PAGE_LINK  => $LINK,
-    				  LOGO_PNG   => "$PAGE_TITLE-logo.png" );
-    $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
-    $template->param( BODY       => gen_body() );
+    $template->param( USER => $name );
+    $template->param(
+        TITLE      => qq{},
+        PAGE_TITLE => $PAGE_TITLE,
+        PAGE_LINK  => $LINK,
+        LOGO_PNG   => "$PAGE_TITLE-logo.png"
+    );
+    $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
+    $template->param( BODY => gen_body() );
     $template->param( ADJUST_BOX => 1 );
     $html .= $template->output;
 }
@@ -119,8 +121,8 @@ sub cancel_job {
 
     my $status = $YERBA->get_status( $job->id );
 
-    if ( lc($status) eq 'running' ) {
-        $job->update( { status => 3 } );
+    if ( $status =~ /scheduled|running|notfound/i ) {
+        $job->update( { status => 3, end_time => \'current_timestamp' } );
         return encode_json( $YERBA->terminate( $job->id ) );
     }
     else {

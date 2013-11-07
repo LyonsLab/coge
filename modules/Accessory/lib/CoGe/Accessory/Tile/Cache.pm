@@ -60,7 +60,7 @@ sub parse_js_config {
     $scriptdir =~ s/(.*)([\\|\/])\w+\.pl/$1$2/;
     my $file = $d . $scriptdir . "js/tilerConfig.js";
     $file =~ s/htdocs\/// unless (-r $file);
-    $file = "/opt/apache/CoGe/js/tilerConfig.js" unless -f $file; #last ditch
+    $file = "/opt/apache/coge/web/js/tilerConfig.js" unless -f $file; #last ditch
     my $open = open ($JS, "<" , $file );
     $open = open ($JS, "<" , $file ) or die "cant find tilerConfig.js: file tried $file";
   };

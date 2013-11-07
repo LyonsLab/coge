@@ -602,10 +602,10 @@ qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>
     $template->param( SEQ_SUB   => $seq_submission );
     $template->param( HSP_COLOR => $hsp_colors );
     $template->param( GO_RUN    => gen_go_run($num_seqs) );
-    my $cmd          = "/usr/bin/svnversion " . $P->{COGEDIR} . "gobe/flash";
-    my $gobe_version = `$cmd`;
-    $gobe_version =~ s/\n//g;
-    $template->param( GOBE_VERSION => $gobe_version );
+    #my $cmd          = "/usr/bin/svnversion " . $P->{COGEDIR} . "gobe/flash";
+    #my $gobe_version = `$cmd`;
+    #$gobe_version =~ s/\n//g;
+    #$template->param( GOBE_VERSION => $gobe_version );
 
     $template->param( OPTIONS            => 1 );
     $template->param( ALIGNMENT_PROGRAMS => algorithm_list($prog) );
