@@ -9,6 +9,7 @@ use CoGe::Accessory::Storage qw( get_genome_seq get_genome_file );
 use CoGe::Accessory::Utils qw( commify );
 use Data::Dumper;
 use Text::Wrap;
+use base 'Class::Accessor';
 use Carp;
 
 #use LWP::Simple;
@@ -146,6 +147,8 @@ __PACKAGE__->has_many(
     "experiments" => "CoGeX::Result::Experiment",
     "genome_id"
 );
+
+__PACKAGE__->mk_accessors('_genomic_sequences');
 
 sub desc {
     return shift->description(@_);
@@ -510,9 +513,12 @@ sub sequence_length {
     my $chr  = shift;
     return 0 unless defined $chr;
     my $gs;
+    $self->_genomic_sequences({}) unless $self->_genomic_sequences;
+    return $self->_genomic_sequences->{$chr} if ($self->_genomic_sequences->{$chr});
     foreach my $item ($self->genomic_sequences ({chromosome=>"$chr"}))
      {
-	$gs = $item if $item->chromosome eq "$chr";  #if this object has multiple chromosomes pre-cached, all will be returned, even with a query.
+       $self->_genomic_sequences->{$item->chromosome}=$item->sequence_length;
+       $gs = $item if $item->chromosome =~ /^$chr$/i;  #if this object has multiple chromosomes pre-cached, all will be returned, even with a query.
      }
     #print STDERR "Genome->sequence_length CHR: $chr; genomic_sequence->chromosome: ", $gs->chromosome,"\n";
     unless ($gs) {
