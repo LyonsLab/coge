@@ -738,7 +738,7 @@ sub get_dataset {
               . ", dsid"
               . $_->id
               . ")</OPTION>"
-          } sort { $b->version <=> $a->version || $a->name cmp $b->name }
+          } sort { versioncmp ($b->version, $a->version) || $a->name cmp $b->name }
           $dsg->datasets
           if $dsg;
 
