@@ -13,11 +13,11 @@ use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use DBIxProfiler;
-
+$| =1;
 our (
     $cogeweb, $basename, $gid,     $feature, $fasta,
     $coge,    $P,        $TEMPDIR, $NWALIGN, $DBNAME,
-    $DBHOST,  $DBPORT,   $DBUSER,  $DBPASS,  $CONFIG
+    $DBHOST,  $DBPORT,   $DBUSER,  $DBPASS,  $CONFIG, $debug
 );
 
 GetOptions(
@@ -25,6 +25,7 @@ GetOptions(
     "feature_type|ft=s" => \$feature,
     "fasta|f=s"         => \$fasta,
     "config|cfg=s"      => \$CONFIG,
+    "debug"             => \$debug,
 );
 
 $P = CoGe::Accessory::Web::get_defaults($CONFIG);
@@ -69,8 +70,14 @@ sub gen_fasta {
 
     my %datasets; #storage for dataset objects based on dataset id 
     my %feat_types; #storage for feature type objects
+
     if ( $feature_type eq "CDS" || $feature_type eq "protein" ) {
         my $count = 1;
+	my $t1 = new Benchmark;
+	my %chr_sequence;# = map{$_=>$genome->get_genomic_sequence(chr=>$_)} $genome->get_chromosomes;
+	my $t2 = new Benchmark;
+	my $d0 = timestr( timediff( $t2, $t1 ) );
+	say STDERR "Populate genomic sequence time: $d0" if $debug;
         my @res   = $coge->resultset('Feature')->search(
             {
                 feature_type_id => [ 3, 5, 8 ],
@@ -81,10 +88,15 @@ sub gen_fasta {
                 prefetch => ['feature_names', 'locations']
             }
         );
+	my $t3 = new Benchmark;
+	my $d1 = timestr( timediff( $t3, $t2 ) );
+	say STDERR "Query time: $d1" if $debug;
 
         my @feats =
           sort { $a->chromosome cmp $b->chromosome || $a->start <=> $b->start }
           @res;
+	
+
 
         CoGe::Accessory::Web::write_log(
             "Getting sequence for "
@@ -93,6 +105,7 @@ sub gen_fasta {
             $cogeweb->logfile
         );
         foreach my $feat (@feats) {
+	  my $t3 = new Benchmark;
             my ($chr) = $feat->chromosome;    #=~/(\d+)/;
             my $name;
             foreach my $n ( $feat->names ) {
@@ -132,7 +145,23 @@ sub gen_fasta {
 		    $dataset = $feat->dataset;
 		    $datasets{$dataset->id} = $dataset;
 		  }
-                my $seq = $feat->genomic_sequence(dsgid => $genome, dataset => $dataset);
+		$chr_sequence{$feat->chromosome} = $genome->get_genomic_sequence(chr=>$feat->chromosome) unless $chr_sequence{$feat->chromosome};
+		unless ($chr_sequence{$feat->chromosome})
+		  {
+		    $chr_sequence{$feat->chromosome} = $genome->get_genomic_sequence(chr=>uc($feat->chromosome))
+		  }
+		next unless $chr_sequence{$feat->chromosome};
+		my $subseq = substr($chr_sequence{$feat->chromosome}, $feat->start-1, $feat->stop-$feat->start+1);
+		unless ($subseq) {
+#		  print STDERR join ("\t", $feat->chromosome, $feat->start, $feat->stop),"\n";
+		}
+#		print STDERR $subseq,"\n",$genome->get_genomic_sequence(start=>$feat->start, stop=>$feat->stop, chr=>$feat->chromosome),"\n","#"x20,"\n";
+
+                my $seq = $feat->genomic_sequence(dsgid => $genome, dataset => $dataset, seq=>$subseq);
+		my $t4 = new Benchmark;
+		my $d2 = timestr( timediff( $t4, $t3 ) );
+		say STDERR "Seq $count time: $d2" if $debug;
+
                 next unless $seq;
 
                 #skip sequences that are only 'x' | 'n';
