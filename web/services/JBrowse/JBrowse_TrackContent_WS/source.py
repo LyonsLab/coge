@@ -190,7 +190,10 @@ def an_features(environ, start_response): # mdb rewritten 11/8/13 issue 246 - ad
     d = parse_qs(environ['QUERY_STRING'])
     start = d.get('start', [''])[0]
     end = d.get('end', [''])[0]
-    show_wobble = int(d.get('showWobble', [''])[0])
+    try:
+        show_wobble = int(d.get('showWobble', [''])[0])
+    except:
+        show_wobble = 0
 
     # set parsed argument variables
     args = environ['url_args']
