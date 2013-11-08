@@ -610,12 +610,12 @@ define( [
 
                     this.store.getFeatures( { ref: this.refSeq.name,
                         start: leftBase,
-                        end: rightBase
+                        end: rightBase,
+                        showWobble: this.showWobble ? 1 : 0 // mdb added 11/8/13 issue 246
                     },
                     featCallback,
                     function () {
-                        //                            curTrack.heightUpdate(curTrack._getLayout(scale).getTotalHeight(),
-                        //                                blockIndex);
+                        //curTrack.heightUpdate(curTrack._getLayout(scale).getTotalHeight(), blockIndex);
                         curTrack.heightUpdate(150, blockIndex); // mdb test 5/29/13
                         finishCallback();
                     },
@@ -846,9 +846,9 @@ define( [
                     }
                     var phase = feature.get('phase');
                     if ((phase !== null) && (phase !== undefined))
-                        //            featDiv.className = featDiv.className + " " + featDiv.className + "_phase" + phase;
+                        //featDiv.className = featDiv.className + " " + featDiv.className + "_phase" + phase;
                         dojo.addClass(featDiv, className + "_phase" + phase);
-
+                    
                     // check if this feature is highlighted
                     var highlighted = this.isFeatureHighlighted( feature, name );
 
@@ -955,6 +955,25 @@ define( [
 
                     if ( typeof this.config.hooks.modify == 'function' ) {
                         this.config.hooks.modify(this, feature, featDiv);
+                    }
+                    
+                    // mdb added 11/4/13 issue 246 - add wobble shading
+                    if (this.showWobble && className == 'CDS') {
+                    	var wobble = feature.get('wobble');
+                    	// This calculation copied from Graphics::Feature::Gene::gen_color_by_codon()
+                    	var r = 255;
+                    	var g = 255;
+                    	if (1-wobble < 0.5)
+                    		r = Math.round( 255 * (1-wobble) * 2 );
+                    	if (wobble < 0.5)
+                    		g = Math.round( 255 * wobble * 2 );
+                    	r = Math.min(r, 255);
+                    	g = Math.min(g, 255);
+                		featDiv.style.cssText +=
+                    		'background: linear-gradient(to bottom, ' +
+                    		'rgb('+Math.round(r/2)+','+Math.round(g/2)+',0) 0%, ' +
+                    		'rgb('+r+','+g+',0) 50%, ' +
+                    		'rgb('+Math.round(r/2)+','+Math.round(g/2)+',0) 100%);';
                     }
 
                     return featDiv;
@@ -1194,15 +1213,22 @@ define( [
                                     track.changed();
                                 }
                             },
-                           /* { label: 'Show CDS',
+                            { label: 'Color CDS by wobble GC',
+                              type: 'dijit/CheckedMenuItem',
+                              checked: !!( 'showWobble' in this ? this.showWobble : this.config.style.showWobble ),
+                              onClick: function(event) {
+                                  track.showWobble = this.checked;
+                                  track.changed();
+                              }
+                            },
+                            /* { label: 'Show CDS',
                               type: 'digit/CheckedMenuItem',
                               checked: !!( 'showCDS' in this ? this.showCDS : this.config.style.showCDS ),
                               onClick: function(event) {
                                   track.showCDS = this.checked;
                                   track.changed();
                               }
-                            },
-                            */
+                            },*/
                         ]
                 );
                 return o;
