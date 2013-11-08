@@ -5,9 +5,11 @@ import re
 import random
 import os
 import sys
+import string
 import urllib2
 from collections import defaultdict #Counter
 from cgi import parse_qs, escape
+from time import time
 
 import MySQLdb as mdb
 
@@ -88,6 +90,24 @@ def fetch_sequence(genome_id, chr_id, start, stop, cookie_string):
 
     return sequence.lower()
 
+# mdb added 11/4/13 issue 246 - add wobble shading
+def calc_wobble(seq, start_offset, stop_offset):
+    if (start_offset < 0):
+        start_offset = 0
+    if (stop_offset < 0 or start_offset == stop_offset):
+        return 0
+
+    # Calculate GC percent
+    count = 0
+    total = 0;
+    for i in xrange(start_offset+2, stop_offset, 3):
+        total += 1
+        c = seq[i].upper()
+        if (c == 'G' or c == 'C'):
+            count += 1
+
+    return (count, total)
+
 def gc_features(environ, start_response):
     """Main feature endpoint for GC content"""
     #sys.stderr.write('gc_features\n')
@@ -118,8 +138,7 @@ def gc_features(environ, start_response):
         return ''
         
     try:
-        # Open the right chromosome file derived from the pathname
-        # Convert coordinates from interbase
+        # Get chromosome subsequence using interbase coordinates
         string = fetch_sequence(genome_id, chr_id, start+1, end+1,
                 environ['HTTP_COOKIE'])
 
@@ -161,9 +180,8 @@ def gc_features(environ, start_response):
     start_response(status, response_headers)
     return response_body
 
-def an_features(environ, start_response):
+def an_features(environ, start_response): # mdb rewritten 11/8/13 issue 246 - add wobble calc
     """Main feature endpoint for Annotation Feature content"""
-    #sys.stderr.write('an_features\n')
     status = '200 OK'
     response_body = { "features" : [] }
     bucketSize = 100
@@ -172,9 +190,10 @@ def an_features(environ, start_response):
     d = parse_qs(environ['QUERY_STRING'])
     start = d.get('start', [''])[0]
     end = d.get('end', [''])[0]
-    args = environ['url_args']
+    show_wobble = int(d.get('showWobble', [''])[0])
 
     # set parsed argument variables
+    args = environ['url_args']
     genome_id = args['genome_id']
     chr_id = args['chr_id']
     try:
@@ -182,12 +201,12 @@ def an_features(environ, start_response):
     except KeyError:
         feat_type = ""
 
+    sys.stderr.write('an_features: '+str(genome_id)+' '+str(chr_id)+' '+str(start)+' '+str(end)+'\n')
 
     con = db_connect()
     cur = con.cursor()
-
     query = "SELECT l.start, l.stop, l.strand, ft.name, fn.name, \
-            l.location_id, f.start, f.stop, f.feature_id \
+            l.location_id, f.start, f.stop, f.feature_id, fn.primary_name \
             FROM genome g \
             JOIN dataset_connector dc ON dc.genome_id = g.genome_id \
             JOIN dataset d on dc.dataset_id = d.dataset_id \
@@ -204,10 +223,12 @@ def an_features(environ, start_response):
         query +=  " AND ft.name = '{0}'".format(feat_type)
 
     try:
+        # Query for features
+        #sys.stderr.write(str(query))
         cur.execute(query + ";")
         results = cur.fetchall()
 
-        if feat_type:
+        if feat_type: # feature type was specified
             if results:
                 response_body["features"].append({"subfeatures" : []})
             i = 0
@@ -247,14 +268,66 @@ def an_features(environ, start_response):
                 lastStart = row[6]
                 lastEnd = row[7]
                 lastID = row[8]
-        else:
+        else: # process all feature types
+            # Filter out redundant results due to multiple feature names
+            feats = {}
+            min_start = None
+            max_stop = None
             for row in results:
+                # Find bounds for sequence retrieval later (show_wobble == 1)
+                if min_start is None or min_start > row[0]:
+                    min_start = row[0]
+                if max_stop is None or max_stop < row[1]:
+                    max_stop = row[1]
+                
+                # Hash unique features
+                location_id = row[5]
+                try:
+                    feat = feats[location_id]
+                    if row[9] == 1: # is feature name the primary name?
+                        feats[location_id] = row
+                except KeyError:
+                    feats[location_id] = row
+
+            # Calculate wobble GC for CDS features
+            wcount = {}
+            wtotal = {}
+            if show_wobble:
+                seq = '';
+                rcseq = '';
+                for row in feats.values():
+                    if row[3] == 'CDS' and is_overlapping(int(row[0]), int(row[1]), int(start), int(end)):
+                        if not seq:
+                            # Get chromosome subsequence using interbase coordinates
+                            seq = fetch_sequence(genome_id, chr_id, int(min_start), int(max_stop), environ['HTTP_COOKIE'])
+                            
+                        if (int(row[2]) == 1): # plus strand
+                            count, total = calc_wobble(seq, int(row[0])-int(min_start), int(row[1])-int(min_start))
+                        else: # minus strand
+                            # Reverse complement the seq and coords
+                            if not rcseq:
+                                rcseq = reverse_complement(seq)
+                            rcstart = int(max_stop)-int(row[1])
+                            rcstop  = int(max_stop)-int(row[0])
+                            count, total = calc_wobble(rcseq, rcstart, rcstop)
+                            
+                        id = row[8]
+                        if id in wcount:
+                            wcount[id] += count
+                            wtotal[id] += total
+                        else:
+                            wcount[id] = count
+                            wtotal[id] = total
+            
+            # Build response
+            for row in feats.values():
                 response_body["features"].append({
-                    "start" : row[0],
-                    "end" : row[1],
+                    "start"  : row[0],
+                    "end"    : row[1],
                     "strand" : row[2],
-                    "type" : row[3],
-                    "name" : row[4],
+                    "type"   : row[3],
+                    "name"   : row[4] if row[3] == 'gene' else None,
+                    "wobble" : round(wcount[row[8]] / float(wtotal[row[8]]), 3) if (show_wobble and row[8] in wcount) else 0
                 })
 
     except mdb.Error, e:
@@ -267,8 +340,6 @@ def an_features(environ, start_response):
 
     response_headers = [('Content-Type', 'application/json')]
     start_response(status, response_headers)
-
-    #response_body = feat_type
     response_body = json.dumps(response_body)
     return response_body
 
@@ -325,7 +396,6 @@ def region(environ, start_response):
         if results:
             maxStop = max([int(row[1]) for row in results]) - start
             numBins = bin(maxStop, maxStop, bpPerBin) + 1
-            #sys.stderr.write("maxStop="+str(maxStop)+" numBins="+str(numBins)+'\n')
             bins = [0] * numBins
     
             for row in results:
@@ -351,6 +421,14 @@ def region(environ, start_response):
     start_response(status, response_headers)
     response_body = json.dumps(response_body)
     return response_body
+
+def is_overlapping(s1, e1, s2, e2):
+    return (s1 <= e2 and s2 <= e1)
+
+def reverse_complement(dna):
+    complements = string.maketrans('acgtACGT', 'tgcaTGCA')
+    rcseq = dna.translate(complements)[::-1]
+    return rcseq
 
 def bin(start, end, bpPerBin):
     return max(0, int((start + end) / 2 / bpPerBin))
