@@ -73,10 +73,10 @@ sub gen_fasta {
 
     if ( $feature_type eq "CDS" || $feature_type eq "protein" ) {
         my $count = 1;
-	my $t1 = new Benchmark;
+	my $t1 = new Benchmark if $debug;
 	my %chr_sequence;# = map{$_=>$genome->get_genomic_sequence(chr=>$_)} $genome->get_chromosomes;
-	my $t2 = new Benchmark;
-	my $d0 = timestr( timediff( $t2, $t1 ) );
+	my $t2 = new Benchmark if $debug;
+	my $d0 = timestr( timediff( $t2, $t1 ) ) if $debug;
 	say STDERR "Populate genomic sequence time: $d0" if $debug;
         my @res   = $coge->resultset('Feature')->search(
             {
@@ -88,8 +88,8 @@ sub gen_fasta {
                 prefetch => ['feature_names', 'locations']
             }
         );
-	my $t3 = new Benchmark;
-	my $d1 = timestr( timediff( $t3, $t2 ) );
+	my $t3 = new Benchmark if $debug;
+	my $d1 = timestr( timediff( $t3, $t2 ) ) if $debug;
 	say STDERR "Query time: $d1" if $debug;
 
         my @feats =
@@ -105,7 +105,7 @@ sub gen_fasta {
             $cogeweb->logfile
         );
         foreach my $feat (@feats) {
-	  my $t3 = new Benchmark;
+	  my $t3 = new Benchmark if $debug;
             my ($chr) = $feat->chromosome;    #=~/(\d+)/;
             my $name;
             foreach my $n ( $feat->names ) {
@@ -158,8 +158,8 @@ sub gen_fasta {
 #		print STDERR $subseq,"\n",$genome->get_genomic_sequence(start=>$feat->start, stop=>$feat->stop, chr=>$feat->chromosome),"\n","#"x20,"\n";
 
                 my $seq = $feat->genomic_sequence(dsgid => $genome, dataset => $dataset, seq=>$subseq);
-		my $t4 = new Benchmark;
-		my $d2 = timestr( timediff( $t4, $t3 ) );
+		my $t4 = new Benchmark if $debug;
+		my $d2 = timestr( timediff( $t4, $t3 ) ) if $debug;
 		say STDERR "Seq $count time: $d2" if $debug;
 
                 next unless $seq;
