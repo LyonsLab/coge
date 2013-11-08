@@ -162,7 +162,7 @@ my %seen_attr;
 #TODO copy gff file into staging directory to read from instead of upload directory
 my $total_annot = 0;
 unless ( $total_annot = process_gff_file() ) {
-    print $log "log: error parsing input file\n";
+    print $log "log: error: no annotations found, perhaps your file is missing required information, please check the <a href='http://genomevolution.org/wiki/index.php/GFF_ingestion'>documentation</a>\n";
     exit(-1);
 }
 
@@ -184,6 +184,7 @@ unless ( $seen_types{gene} ) {
                         $stop = $loc->{stop} unless $stop;
                         $stop   = $loc->{stop}   if $loc->{stop} > $stop;
                         $strand = $loc->{strand} if $loc->{strand};
+                        $strand = 1 unless (defined $strand); # mdb added 11/7/13 issue 248 - set default strand to '+'
                         $chr    = $loc->{chr};
                     }
                     foreach my $loc ( @{ $name->{$type}{loc} } ) {
@@ -503,7 +504,7 @@ sub process_gff_file {
         $chr =~ s/chromosome//i;
         $chr =~ s/^chr//i;
         $chr =~ s/^_//i;
-        $chr =~ s/^0//g unless $chr == 0;
+        $chr =~ s/^0//g unless $chr eq '0';
         ($chr) = split( /\s+/, $chr );
         unless ( $valid_chrs{$chr} ) {
             print $log
@@ -568,8 +569,8 @@ sub process_gff_file {
         next unless $name;                    # no name, don't know what to do!
 
         if    ( $strand =~ /-/ )  { $strand = -1; }
-        elsif ( $strand =~ /\+/ ) { $strand = 1; }
-        elsif ( $strand =~ /\./ ) { $strand = 0; }
+        elsif ( $strand =~ /\./ ) { $strand = 0;  }
+        else  { $strand = 1; } # mdb changed 11/7/13 issue 248 - made '+' strand the default
 
         my @types = ($type);
 
