@@ -67,8 +67,7 @@ $CGI::POST_MAX        = 60 * 1024 * 1024;    # 24MB
 $CGI::DISABLE_UPLOADS = 0;
 
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    ticket     => $FORM->param('ticket') || undef,
-    url        => $FORM->url,
+    cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 
@@ -721,6 +720,7 @@ sub run {
     $gevo_link .= ";hs=$show_hsps_with_stop_codon"
       if defined $show_hsps_with_stop_codon;
     $gevo_link .= $add_gevo_link;
+
     my @gevo_link_seqs;
     my @coge_seqs
       ; #place to store stuff for parallel creation of sequence file from genome database
@@ -1011,12 +1011,22 @@ sub run {
 "Problem retrieving information, please check submissions.  At least 2 sequences should be specified.\n";
         return '', '', '', '', 0, '', '', $message;
     }
+
+    # mdb added 11/12/13 - log it
+    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(url => $gevo_link);
+    my $log = CoGe::Accessory::Web::log_history(
+        db      => $coge,
+        user_id => $USER->id,
+        description => "Compared $num_seqs regions",
+        page    => $PAGE_TITLE,
+        link => $tiny_link,
+    );
+
     my $t2 = new Benchmark;
 
     # set up output page
 
     # run bl2seq
-
     my $analysis_reports;
 
     if ( $analysis_program eq "blastz" ) {
@@ -1229,7 +1239,7 @@ qq{<br><a href="http://genomevolution.org/wiki/index.php/Gobe" class="small" sty
         ( $x, $all_file ) = CoGe::Accessory::Web::check_taint($all_file);
         my $seq_file = $item->{file};
         ( $x, $seq_file ) = CoGe::Accessory::Web::check_taint($seq_file);
-        my $cmd = "/bin/cat " . $seq_file . " >> $all_file";
+        my $cmd = "/bin/cat '$seq_file' >> '$all_file'";
         `$cmd`;
     }
 
@@ -1631,7 +1641,7 @@ px_height integer
 #TODO: make sure to populate the bpmin and pbmax and image width!!!!!!!!!!!!!!!!!
     $dbh->do($create);
     $dbh->do('CREATE INDEX id ON image_info (id)');
-    system "/bin/chmod +rw $dbfile";
+    system "/bin/chmod +rw '$dbfile'";
     $dbh->disconnect();
     undef $dbh;
 }
@@ -2935,8 +2945,8 @@ sub run_bl2seq {
             my $command = $BL2SEQ;
 
             # format the bl2seq command
-            $command .= " -p $program -o $tempfile";
-            $command .= " -i $seqfile1 -j $seqfile2";
+            $command .= " -p $program -o '$tempfile'";
+            $command .= " -i '$seqfile1' -j '$seqfile2'";
             $command .= " " . $blast_params;
             my $x = "";
             ( $x, $command ) = CoGe::Accessory::Web::check_taint($command);
@@ -2952,7 +2962,7 @@ sub run_bl2seq {
                 "running ($count/$total_runs) " . $command,
                 $cogeweb->logfile );
             `$command`;
-            system "/bin/chmod +rw $tempfile";
+            system "/bin/chmod +rw '$tempfile'";
             $pm->finish;
         }
     }
@@ -3016,7 +3026,7 @@ sub run_blastz {
             push @reports, [ $tempfile, $accn1, $accn2 ];
             $pm->start and next;
             my $command = $BLASTZ;
-            $command .= " $seqfile1" . "[unmask] $seqfile2" . "[unmask]";
+            $command .= " '$seqfile1'" . "[unmask] '$seqfile2'" . "[unmask]";
             $command .= " " . $params if $params;
             my $x = "";
             ( $x, $command ) = CoGe::Accessory::Web::check_taint($command);
@@ -3027,14 +3037,14 @@ sub run_blastz {
             unless ($x) {
                 next;
             }
-            $command .= " > " . $tempfile;
+            $command .= " > '$tempfile'";
 
             # execute the command
             CoGe::Accessory::Web::write_log(
                 "running ($count/$total_runs) " . $command,
                 $cogeweb->logfile );
             `$command`;
-            system "/bin/chmod +rw $tempfile";
+            system "/bin/chmod +rw '$tempfile'";
             $pm->finish;
         }
     }
@@ -3095,7 +3105,7 @@ sub run_lagan {
             unless ($x) {
                 next;
             }
-            $command .= " > " . $tempfile;
+            $command .= " > '$tempfile'";
             CoGe::Accessory::Web::write_log(
                 "running ($count/$total_runs) " . $command,
                 $cogeweb->logfile );
@@ -3103,7 +3113,7 @@ sub run_lagan {
             #time for execution
             #	    print STDERR "running $command\n";
             `$command`;
-            system "/bin/chmod +rw $tempfile";
+            system "/bin/chmod +rw '$tempfile'";
             my $report = new CoGe::Accessory::lagan_report(
                 { file => $tempfile, %$parser_opts } )
               if -r $tempfile;
@@ -3161,14 +3171,14 @@ sub run_chaos {
             unless ($x) {
                 next;
             }
-            $command .= " > " . $tempfile;
+            $command .= " > '$tempfile'";
             CoGe::Accessory::Web::write_log(
                 "running ($count/$total_runs) " . $command,
                 $cogeweb->logfile );
 
             #time for execution
             `$command`;
-            system "/bin/chmod +rw $tempfile";
+            system "/bin/chmod +rw '$tempfile'";
             my $report = new CoGe::Accessory::chaos_report(
                 { file => $tempfile, %$parser_opts } )
               if -r $tempfile;
@@ -3307,8 +3317,8 @@ sub run_dialign {
                   CoGe::Accessory::Web::check_taint($seqfile1);
                 ( $tmp, $seqfile2 ) =
                   CoGe::Accessory::Web::check_taint($seqfile2);
-                `cat $seqfile1 > $seqfile`;
-                `cat $seqfile2 >> $seqfile`;
+                `cat '$seqfile1' > '$seqfile'`;
+                `cat '$seqfile2' >> '$seqfile'`;
                 next
                   unless $sets->[$i]{reference_seq}
                       || $sets->[$j]{reference_seq};
@@ -3319,8 +3329,8 @@ sub run_dialign {
                   . ".dialign";
                 my $command = $DIALIGN;
                 $command .= " " . $params if $params;
-                $command .= " -fn " . $tempfile;
-                $command .= " $seqfile";
+                $command .= " -fn '$tempfile'";
+                $command .= " '$seqfile'";
                 my $x = "";
                 ( $x, $command ) = CoGe::Accessory::Web::check_taint($command);
 
@@ -3336,7 +3346,7 @@ sub run_dialign {
                     "running ($count/$total_runs) " . $command,
                     $cogeweb->logfile );
                 `$command`;
-                system "/bin/chmod +rw $tempfile";
+                system "/bin/chmod +rw '$tempfile'";
                 $report = new CoGe::Accessory::dialign_report(
                     { file => $tempfile, %$parser_opts } )
                   if -r $tempfile;
@@ -3408,14 +3418,14 @@ sub run_genomethreader {
                 unless ($x) {
                     next;
                 }
-                $command .= " > " . $tempfile;
+                $command .= " > '$tempfile'";
                 CoGe::Accessory::Web::write_log(
                     "running ($count/$total_runs) " . $command,
                     $cogeweb->logfile );
 
                 #time for execution
                 `$command`;
-                system "/bin/chmod +rw $tempfile";
+                system "/bin/chmod +rw '$tempfile'";
                 my $report = new CoGe::Accessory::GenomeThreader_report(
                     { file => $tempfile, %$parser_opts } )
                   if -r $tempfile;
@@ -3507,7 +3517,7 @@ sub write_fasta {
     print OUT "$hdr\n";
     print OUT $seq, "\n";
     close(OUT);
-    system "/bin/chmod +rw $fullname";
+    system "/bin/chmod +rw '$fullname'";
     CoGe::Accessory::Web::write_log( "Created sequence file $fullname",
         $cogeweb->logfile );
     return ($fullname);
