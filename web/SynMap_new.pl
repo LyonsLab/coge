@@ -53,10 +53,8 @@ $PAGE_TITLE = "SynMap";
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
 ( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
-    ticket => $FORM->param('ticket') || undef,
-    url => $FORM->url,
+    cgi => $FORM,
     page_title => $PAGE_TITLE,
-    debug      => 0,
 );
 
 $YERBA = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
@@ -3394,13 +3392,13 @@ sub run_tandem_finder {
             $cogeweb->logfile );
         return 1;
     }
-    my $cmd = "$PYTHON $TANDEM_FINDER -i $infile > $outfile";
-    system "/usr/bin/touch $outfile.running"
+    my $cmd = "$PYTHON $TANDEM_FINDER -i '$infile' > '$outfile'";
+    system "/usr/bin/touch '$outfile.running'"
       ;    #track that a blast anlaysis is running for this
     CoGe::Accessory::Web::write_log( "run_tandem_filter: running\n\t$cmd",
         $cogeweb->logfile );
     `$cmd`;
-    system "/bin/rm $outfile.running"
+    system "/bin/rm '$outfile.running'"
       if -r "$outfile.running";    #remove track file
     return 1 if -r $outfile;
 }
@@ -3432,7 +3430,7 @@ sub run_adjust_dagchainer_evals {
         );
         return 0;
     }
-    my $cmd = "$PYTHON $EVAL_ADJUST -c $cvalue $infile > $outfile";
+    my $cmd = "$PYTHON $EVAL_ADJUST -c $cvalue '$infile' > '$outfile'";
 
 #There is a parameter that can be passed into this to filter repetitive sequences more or less stringently:
 # -c   2 gets rid of more stuff; 10 gets rid of less stuff; default is 4
@@ -3440,13 +3438,13 @@ sub run_adjust_dagchainer_evals {
 #if implemented, this will require re-naming all the files to account for this parameter
 #and updating the auto-SynMap link generator for redoing an analysis
 
-    system "/usr/bin/touch $outfile.running"
+    system "/usr/bin/touch '$outfile.running'"
       ;    #track that a blast anlaysis is running for this
     CoGe::Accessory::Web::write_log(
         "run_adjust_dagchainer_evals: running\n\t$cmd",
         $cogeweb->logfile );
     `$cmd`;
-    system "/bin/rm $outfile.running" if -r "$outfile.running";
+    system "/bin/rm '$outfile.running'" if -r "$outfile.running";
     ;      #remove track file
     return 1 if -r $outfile;
 
@@ -3471,13 +3469,13 @@ sub run_find_nearby {
         return 1;
     }
     my $cmd =
-      "$PYTHON $FIND_NEARBY --diags=$infile --all=$dag_all_file > $outfile";
-    system "/usr/bin/touch $outfile.running"
+      "$PYTHON $FIND_NEARBY --diags='$infile' --all='$dag_all_file' > '$outfile'";
+    system "/usr/bin/touch '$outfile.running'"
       ;    #track that a blast anlaysis is running for this
     CoGe::Accessory::Web::write_log( "run find_nearby: running\n\t$cmd",
         $cogeweb->logfile );
     `$cmd`;
-    system "/bin/rm $outfile.running" if -r "$outfile.running";
+    system "/bin/rm '$outfile.running'" if -r "$outfile.running";
     ;      #remove track file
     return 1 if -r $outfile;
 }
