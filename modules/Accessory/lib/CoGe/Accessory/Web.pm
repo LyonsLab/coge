@@ -608,7 +608,7 @@ sub read_log {
 sub check_filename_taint {
     my $v = shift;
     return 1 unless $v;
-    if ( $v =~ /^([A-Za-z0-9\-\.=\/_#]*)$/ ) {
+    if ( $v =~ /^([A-Za-z0-9\-\.=\/_#\|]*)$/ ) {
         my $v1 = $1;
         return ($v1);
     }
@@ -620,7 +620,7 @@ sub check_filename_taint {
 sub check_taint {
     my $v = shift;
     return 1 unless $v;
-    if ( $v =~ /^([-\w\._=\s+\/,#\]\['"%]+)$/ ) {
+    if ( $v =~ /^([-\w\._=\s+\/,#\]\['"%\|]+)$/ ) {
         $v = $1;
 
         # $v now untainted
