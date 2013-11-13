@@ -2123,7 +2123,7 @@ sub process_features {
             #	    next;
         }
         elsif ($show_ofeat) {    #show everything else
-            print STDERR $type, "\n";
+            #print STDERR $type, "\n";
             my $strand = 1;
             $strand = -1 if $feat->location =~ /complement/;
 
