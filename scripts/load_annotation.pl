@@ -560,6 +560,8 @@ sub process_gff_file {
                         $tmp =~ s/^LOC_//;
                         $names{$tmp} = 1;
                     }
+		    $name =~ s/_cds_\d+$//i;
+		    $name =~ s/_exon_\d+$//i;
                 }
             }
             next unless $name;    # no name, don't know what to do!
