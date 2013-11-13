@@ -63,10 +63,10 @@ foreach my $chr1 ( sort $dsg1->chromosomes ) {
 #	foreach my $ds_1 (@{$ds1->{$chr1}})
 	foreach my $ds_1 ($dsg1->datasets)
 	  {
-	    print STDERR $ds_1->id,"\t", $ds_1->name,"\n";
+	    #print STDERR $ds_1->id,"\t", $ds_1->name,"\n";
 	    foreach my $f1 ( $ds_1->features->search( { chromosome => $chr1 } ) )
 	      {
-	        print STDERR $f1->type->name,"\n";
+	        #print STDERR $f1->type->name,"\n";
 		my ($f2) = $ds2->{$chr1}->features->search(
 							   {
 							    chromosome      => $chr1,
