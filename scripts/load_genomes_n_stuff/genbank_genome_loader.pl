@@ -1,7 +1,6 @@
 #!/usr/bin/perl -w
 
 use strict;
-use lib "/home/elyons/projects/CoGe/Accessory/lib";
 use LWP::Simple;
 use Data::Dumper;
 use Getopt::Long;
@@ -12,965 +11,1022 @@ use CoGe::Accessory::Storage;
 use CoGe::Accessory::GenBank;
 use POSIX qw(ceil);
 
-
-# variables
 my (
-    $DEBUG,              $GO,                      $autoupdate,
-    $autoskip,           @accns,         $tmpdir,          $help,
-    $user_chr,           $ds_link,       $delete_src_file, $test,
-    $auto_increment_chr, $base_chr_name, $accn_file,       $max_entries, $user_id, 
-    $config, $host, $port, $db, $user, $pass, $install_dir, $server, $force
+	$DEBUG,         $GO,              $autoupdate,  $autoskip,
+	@accns,         $tmpdir,          $help,        $user_chr,
+	$ds_link,       $delete_src_file, $test,        $auto_increment_chr,
+	$base_chr_name, $accn_file,       $max_entries, $user_id,
+	$user_name,     $config,          $host,        $port,
+	$db,            $user,            $pass,        $install_dir,
+	$server,        $force
+);
+
+GetOptions(
+	"debug"                     => \$DEBUG,
+	"go"                        => \$GO,
+	"accn|a=s"                  => \@accns,
+	"temp_dir|staging_dir|td=s" => \$tmpdir,
+	"help|h"                    => \$help,
+	"user_chr|chr=s"            => \$user_chr,
+	"base_chr_name|basechr=s"   => \$base_chr_name,
+	"dataset_link=s"            => \$ds_link,
+	"test" => \$test, #to add the name test to dataset name for testing purposes
+	"autoupdate" =>
+	  \$autoupdate,    #automatically say 'yes' to any question about proceeding
+	"autoskip" =>
+	  \$autoskip,      #automatically say 'no' to any question about proceeding
+	"delete_src_file"    => \$delete_src_file,
+	"auto_increment_chr" => \$auto_increment_chr,
+	"accn_file|af=s"     => \$accn_file,
+	"max_entries=i"      => \$max_entries,
+	"user_id|uid=i" => \$user_id,    #CoGe user id to which genome is associated
+	"user_name=s"   =>
+	  \$user_name,    #or CoGe user name to which genome is associated
+	"install_dir=s" => \$install_dir,    #optional install path for sequences
+	"force|f"       => \$force,          #force the install of a the genome
+
+	# Database params
+	"host=s"        => \$host,
+	"port|p=s"      => \$port,
+	"database|db=s" => \$db,
+	"user|u=s"      => \$user,
+	"password|pw=s" => \$pass,
+
+	# Or use config file
+	"config=s" => \$config
+
 );
 
 $| = 1;
+help() if $help;
 
-# parse command line options
-GetOptions(
-    "debug"                   => \$DEBUG,
-    "go"                      => \$GO,
-    "accn|a=s"                => \@accns,
-    "temp_dir|staging_dir|td=s"           => \$tmpdir,
-    "help|h"                  => \$help,
-    "user_chr|chr=s"          => \$user_chr,
-    "base_chr_name|basechr=s" => \$base_chr_name,
-    "dataset_link=s"          => \$ds_link,
-    "test" => \$test, #to add the name test to dataset name for testing purposes
-    "autoupdate" =>
-      \$autoupdate,    #automatically say 'yes' to any question about proceeding
-    "autoskip" =>
-      \$autoskip,      #automatically say 'no' to any question about proceeding
-    "delete_src_file"    => \$delete_src_file,
-    "auto_increment_chr" => \$auto_increment_chr,
-    "accn_file|af=s"     => \$accn_file,
-    "max_entries=i"      => \$max_entries,
-    "user_id|uid=i"=>\$user_id, #CoGe user id to which genome is associated
-    "install_dir=s"=>\$install_dir, #install path for sequences
-	   "force|f"=>\$force, #force the install of a the genome
-	   
-    # Database params
-    "host=s"      => \$host,
-    "port|p=s"      => \$port,
-    "database|db=s" => \$db,
-    "user|u=s"      => \$user,
-    "password|pw=s" => \$pass,
-
-    # Or use config file
-    "config=s" => \$config
-
-);
-
-$user_chr = 1         unless $user_chr;
-
-$DEBUG = 0 unless defined $DEBUG;         # set to 1 to enable debug printing
-$GO = 0
-  unless defined $GO;  # set to 1 to actually make db calls (instead of testing)
+$user_chr = 1 unless $user_chr;
+$DEBUG    = 0 unless defined $DEBUG; # set to 1 to enable debug printing
+$GO       = 0 unless defined $GO;    # set to 1 to actually make db calls (instead of testing)
 $autoupdate = 0 unless $autoupdate;
 $autoskip   = 0 unless $autoskip;
 
 if ($config) {
-    my $P = CoGe::Accessory::Web::get_defaults($config);
-    #database
-    $db   = $P->{DBNAME};
-    $host = $P->{DBHOST};
-    $port = $P->{DBPORT};
-    $user = $P->{DBUSER};
-    $pass = $P->{DBPASS};
-    #other stuff
-    $tmpdir = $P->{TEMPDIR}."/ncbi/" unless defined $tmpdir;#
-    $install_dir = $P->{SEQDIR};
-    $server = $P->{SERVER};
+	my $P = CoGe::Accessory::Web::get_defaults($config);
+
+	#database
+	$db   = $P->{DBNAME};
+	$host = $P->{DBHOST};
+	$port = $P->{DBPORT};
+	$user = $P->{DBUSER};
+	$pass = $P->{DBPASS};
+
+	#other stuff
+	$tmpdir      = $P->{TEMPDIR} . "/ncbi/" unless defined $tmpdir;
+	$install_dir = $P->{SEQDIR};
+	$server      = $P->{SERVER};
 }
 
-$tmpdir   = "/tmp/ncbi/".ceil(rand(9999999999)) unless $tmpdir;     # set default directory to /tmp
-print STDERR "Initializing:  temp dir: ",$tmpdir,"\n";
+$tmpdir = "/tmp/ncbi/" . ceil( rand(9999999999) ) unless $tmpdir; # set default directory to /tmp
+print STDERR "Initializing:  temp dir: ", $tmpdir, "\n";
 mkpath($tmpdir) unless -d $tmpdir;
+unless ( -d $tmpdir ) {
+	print "error: couldn't' create temporary directory ($tmpdir) for writing files\n";
+	exit(-1);
+}
 
-unless (-d $tmpdir)
-  {
-    print "error: couldn't' create temporary directory ($tmpdir) for writing files\n";
-    exit (-1);
-  }
 # Open log file
 $| = 1;
 my $logfile = "$tmpdir/log.txt";
 print STDERR "Logfile: $logfile\n";
-open( my $log, ">>$logfile" ) or die "Error opening log file";
+open( my $log, ">>$logfile" ) or die "Error opening log file $logfile";
 $log->autoflush(1);
 print $log "Starting $0 (pid $$)\n";
 
+# Connect to database
 my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port";
-my $coge = CoGeX->connect( $connstr, $user, $pass );
+my $coge    = CoGeX->connect( $connstr, $user, $pass );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
-
-
 unless ($coge) {
-    print $log "log: error: couldn't connect to database\n";
-    exit(-1);
+	print $log "log: error: couldn't connect to database\n";
+	exit(-1);
 }
 
-
-
-my %genome;
-
-help() if $help;
-
 print $log "Go = $GO.  Will be adding to the databaes. \n" if $DEBUG;
-print $log "Force is on: will not be checking if genome has been previously loaded.\n" if $force;
-my $data_source = get_data_source();           #for NCBI
+print $log
+  "Force is on: will not be checking if genome has been previously loaded.\n"
+  if $force;
+my $data_source = get_data_source();    #for NCBI
 
 # loop through all the accessions
 my %previous_datasets;    #storage for previously loaded accessions
-my $genome;                  #storage for coge genome_obj
-my %chromosomes;  #storage for used chromosome names;
+my $genome;               #storage for coge genome_obj
+my %chromosomes;          #storage for used chromosome names;
 
+# Load optional accn file
 if ( $accn_file && -r $accn_file ) {
-    open( IN, $accn_file );
-    while (<IN>) {
-        next if /#^/;
-        s/'//g;
-        chomp;
-        foreach my $item ( split /\s|,/ ) {
-            next unless $item;
-            push @accns, $item;
-        }
-    }
+	open( IN, $accn_file );
+	while (<IN>) {
+		next if /#^/;
+		s/'//g;
+		chomp;
+		foreach my $item ( split(/\s|,/) ) {
+			next unless $item;
+			push @accns, $item;
+		}
+	}
 }
 
-my $fasta_output;  #storage of main fasta output
+my $fasta_output;    #storage of main fasta output
 
 accn: foreach my $accn (@accns) {
-    print $log "Working on $accn...\n";
-    unless ($force)
-      {
-	my $previous = check_accn($accn);
-	foreach my $item (@$previous) {
-	  if ( !$item->{version_diff} && !$item->{length_diff} ) {
-	    
-            #	    push @previous_datasets, $item->{ds};
-            $previous_datasets{ $item->{ds}->id } = $item->{ds};
-	    my $link = $server."OrganismView.pl?dsid=".$item->{ds}->id;
-            print $log "\tdataset previously loaded: $link. Skipping\n";
-            next accn;
-	  }
-	  elsif ( !$item->{version_diff} && $item->{length_diff} ) {
-            print $log "Detected a difference in total genomic length between CoGe ("
-              . $item->{coge_length}
-		. ") and NCBI("
-		  . $item->{ncbi_length}
-		    . ").  Including new dataset\n";
-	  }
-        }
-      }
-
-    my $genbank = new CoGe::Accessory::GenBank();
-    $genbank->debug(1);
-    $genbank->max_entries($max_entries) if $max_entries;
-    $genbank->get_genbank_from_ncbi(
-        file => "$tmpdir/$accn.gbk",
-        accn => $accn,
-    );
-    if ( !$genbank->sequence && !@{ $genbank->wgs_data } ) {
-        print $log "Skipping sequence.  No sequence or wgs data\n";
-        next;
-    }
-    my $EXIT = 0;
-    my $chromosome;
-    $chromosome = $user_chr if $user_chr;
-    $user_chr++ if $auto_increment_chr;
-    if ( $genbank->chromosome ) {
-        $chromosome = $genbank->chromosome;
-        print $log "#" x 20, "\n";
-        print $log $genbank->data_source();
-        print $log "GBChr:  $chromosome\n";
-        print $log "#" x 20, "\n";
-    }
-    $chromosome =~ s/chromosome//i;
-    $chromosome =~ s/chr//i;
-    $chromosome =~ s/^\s+//;
-    $chromosome =~ s/\s+$//;
-    $chromosome =~ s/\s+/_/g;
-    $chromosome =~ s/\.0$//;
-    $chromosome = $base_chr_name . $chromosome if $base_chr_name;
-    if ($chromosomes{$chromosome})
-      {
-	print $log "log: previously seen $chromosome.  Updating name.\n";
-	while ($chromosomes{$chromosome})
-	  {
-	    $chromosome.=".1";
-	  }
-      }
-    $chromosomes{$chromosome}=1;
-    print $log "\tchromosome: $chromosome", "\n";
-    my ( $organism, $dataset );
-
-    unless ($organism) {
-        ($organism) = get_organism($genbank);
-        if ($organism) {
-            print $log "Organism info:";
-            print $log "\t", $organism->id,          ": ";
-            print $log "\t", $organism->name,        "\n";
-            print $log "\t", $organism->description, "\n";
-        }
-        else {
-            print $log
-"WARNING:  Unable to retrieve an organism object for $accn.  Probably a problem with the genbank object file parsing\n"
-              unless !$GO;
-            next if $GO;
-        }
-    }
-    my $dataset_desc = "LOCUS: " . $genbank->locus();
-    $dataset_desc .= ", ACCESSION: " . $genbank->accession();
-    $dataset_desc .= ", VERSION: " . $genbank->version();
-
-    # testing to see if already in database
-    my $version = $genbank->version();
-    my $name    = $genbank->accession;
-    $name .= ".gbk" unless $name =~ /gbk$/;
-    $name .= ".test" if $test;
-
-    # actually create a dataset object if
-    $ds_link =
-"http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&dopt=gbwithparts&list_uids="
-      . $accn
-      unless $ds_link;
-    $dataset = $coge->resultset('Dataset')->create(
-        {
-            name           => $name,
-            description    => $dataset_desc,
-            link           => $ds_link,
-            data_source_id => $data_source->id(),
-            version        => $genbank->version,
-        }
-    ) if $GO;
-    ### Main Feature Processing Loop ###
-    my @gbs;
-    if ( @{ $genbank->wgs_data } ) {
-      entry: foreach my $entry ( @{ $genbank->wgs_data } ) {
-            my $accn = $entry->accession;
-            my $try  = 1;
-            while ( !$accn ) {
-
-                $entry->get_genbank_from_ncbi( reload => 1 );
-                print $log "#" x 20, "\n";
-                print $log
-"Warning.  Didn't not retrieve a valid accession for entry.\n";
-                print $log "Requested id: " . $entry->requested_id . "\n";
-                print $log "Trying to retrieve valid entry.\n";
-                print $log "#" x 20, "\n";
-                $accn = $entry->accession;
-                $try++;
-
-                if ( $try >= 10 ) {
-                    print $log "Giving up!  Skipping "
-                      . $entry->requested_id
-                      . " after $try trys.\n";
-                    next entry;
-                }
-            }
-            print $log "\tChecking WGS $accn...\n";
-	    unless ($force)
-	      {
+	print $log "log: Working on $accn...\n";
+	unless ($force) {
 		my $previous = check_accn($accn);
 		foreach my $item (@$previous) {
-		  if ( !$item->{version_diff} && !$item->{length_diff} ) {
-                    $previous_datasets{ $item->{ds}->id } = $item->{ds};
-		    my $link = $server."OrganismView.pl?dsid=".$item->{ds}->id;
-		    print $log "\tdataset previously loaded: $link\n";
-                    next entry;
-		  }
-		  elsif ( !$item->{version_diff} && $item->{length_diff} ) {
-                    print $log
-		      "Detected a difference in total genomic length between CoGe ("
-			. $item->{coge_length}
-			  . ") and NCBI("
-			    . $item->{ncbi_length}
-			      . ").  Including new dataset.\n";
-		  }
-		  else {
-                    print $log "not present.  Will be loaded.\n";
-		  }
+			if ( !$item->{version_diff} && !$item->{length_diff} ) {
+				#push @previous_datasets, $item->{ds};
+				$previous_datasets{ $item->{ds}->id } = $item->{ds};
+				my $link = $server . "OrganismView.pl?dsid=" . $item->{ds}->id;
+				print $log "log: Dataset previously loaded: <a href='$link'>$link</a>.  Skipping ...\n";
+				next accn;
+			}
+			elsif ( !$item->{version_diff} && $item->{length_diff} ) {
+				print $log
+				  "Detected a difference in total genomic length between CoGe ("
+				  . $item->{coge_length}
+				  . ") and NCBI("
+				  . $item->{ncbi_length}
+				  . ").  Including new dataset\n";
+			}
 		}
-		push @gbs, $entry;
-	      }
-	  }
+	}
 
-        #	@gbs = @{$genbank->wgs_data};
+	my $genbank = new CoGe::Accessory::GenBank();
+	$genbank->debug(1);
+	$genbank->logfile($log);
+	$genbank->max_entries($max_entries) if $max_entries;
+	$genbank->get_genbank_from_ncbi(
+		file => "$tmpdir/$accn.gbk",
+		accn => $accn
+	);
+	if ( !$genbank->sequence && !@{ $genbank->wgs_data } ) {
+		print $log "Skipping sequence.  No sequence or wgs data\n";
+		next;
+	}
+	my $EXIT = 0;
+	my $chromosome;
+	$chromosome = $user_chr if $user_chr;
+	$user_chr++ if $auto_increment_chr;
+	if ( $genbank->chromosome ) {
+		$chromosome = $genbank->chromosome;
+		print $log "#" x 20, "\n";
+		print $log $genbank->data_source();
+		print $log "GBChr:  $chromosome\n";
+		print $log "#" x 20, "\n";
+	}
+	$chromosome =~ s/chromosome//i;
+	$chromosome =~ s/chr//i;
+	$chromosome =~ s/^\s+//;
+	$chromosome =~ s/\s+$//;
+	$chromosome =~ s/\s+/_/g;
+	$chromosome =~ s/\.0$//;
+	$chromosome = $base_chr_name . $chromosome if $base_chr_name;
 
-      }
-    else {
-        push @gbs, $genbank;
-    }
-    foreach my $entry (@gbs) {
-        $chromosome = "contig_" . $entry->accession if @{ $genbank->wgs_data };
-        print $log "Processing features for " . $entry->accession . "...\n"
-          unless $EXIT;
-        foreach my $feature ( @{ $entry->features() } ) {
-            unless ( $feature->type() ) {
-                print $log "Feature has no feature type name \$feature->type():\n";
-                print $log Dumper $feature;
-                next;
-            }
-            if ( $feature->type() =~ /source/i ) {
+	if ( $chromosomes{$chromosome} ) {
+		print $log "log: previously seen $chromosome.  Updating name.\n";
+		while ( $chromosomes{$chromosome} ) {
+			$chromosome .= ".1";
+		}
+	}
+	$chromosomes{$chromosome} = 1;
+	print $log "\tchromosome: $chromosome", "\n";
+	my ( $organism, $dataset );
 
-                #change source to chromosome
-                $feature->type('chromosome');
+	unless ($organism) {
+		($organism) = get_organism($genbank);
+		if ($organism) {
+			print $log "Organism info:";
+			print $log "\t", $organism->id,          ": ";
+			print $log "\t", $organism->name,        "\n";
+			print $log "\t", $organism->description, "\n";
+		}
+		else {
+			print $log "WARNING:  Unable to retrieve an organism object for $accn.  Probably a problem with the genbank object file parsing\n"
+			  unless !$GO;
+			next if $GO;
+		}
+	}
+	my $dataset_desc = "LOCUS: " . $genbank->locus();
+	$dataset_desc .= ", ACCESSION: " . $genbank->accession();
+	$dataset_desc .= ", VERSION: " . $genbank->version();
 
-                #		next;
-            }
-            my $feat_type =
-              $coge->resultset('FeatureType')
-              ->find_or_create( { name => $feature->type() } )
-              if $GO;
+	# testing to see if already in database
+	my $version = $genbank->version();
+	my $name    = $genbank->accession;
+	$name .= ".gbk" unless $name =~ /gbk$/;
+	$name .= ".test" if $test;
 
-           # create a db_feature for to link this feature with the dataset table
-            my ( $start, $stop, $strand ) = get_feature_location($feature);
-            my $db_feature = $coge->resultset('Feature')->create(
-                {
-                    feature_type_id => $feat_type->id,
-                    dataset_id      => $dataset->id,
-                    chromosome      => $chromosome,
-                    strand          => $strand,
-                    start           => $start,
-                    stop            => $stop,
-                }
-            ) if $GO;
+	# actually create a dataset object
+	$ds_link = "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&dopt=gbwithparts&list_uids=" . $accn unless $ds_link;
+	$dataset = $coge->resultset('Dataset')->create(
+		{
+			name           => $name,
+			description    => $dataset_desc,
+			link           => $ds_link,
+			data_source_id => $data_source->id(),
+			version        => $genbank->version,
+		}
+	  )
+	  if $GO;
+	  
+	### Main Feature Processing Loop ###
+	my @gbs;
+	if ( @{ $genbank->wgs_data } ) {
+	  entry: foreach my $entry ( @{ $genbank->wgs_data } ) {
+			my $accn = $entry->accession;
+			my $try  = 1;
+			while ( !$accn ) {
 
-            # expect first feature to be the source feature!
-            if ( $feature->type() =~ /chromosome/i ) {
+				$entry->get_genbank_from_ncbi( reload => 1 );
+				print $log "#" x 20, "\n";
+				print $log "Warning.  Didn't not retrieve a valid accession for entry.\n";
+				print $log "Requested id: " . $entry->requested_id . "\n";
+				print $log "Trying to retrieve valid entry.\n";
+				print $log "#" x 20, "\n";
+				$accn = $entry->accession;
+				$try++;
 
-                # generate name based on chromosome
-                my $feat_name = $coge->resultset('FeatureName')->create(
-                    {
-                        name => $chromosome,
-
-                        #									 description => "Chromosome " . $chromosome,
-                        feature_id => $db_feature->id
-                    }
-                ) if $GO;
-
-                # generate name for accession
-                $feat_name = $coge->resultset('FeatureName')->create(
-                    {
-                        name       => $entry->accession,
-                        feature_id => $db_feature->id()
-                    }
-                ) if $GO;
-
-                # generate name for version
-                $feat_name = $coge->resultset('FeatureName')->create(
-                    {
-                        name       => $entry->accession . "." . $entry->version,
-                        feature_id => $db_feature->id
-                    }
-                ) if $GO;
-
-                # generate name for GI
-                $feat_name = $coge->resultset('FeatureName')->create(
-                    {
-                        name        => $entry->gi,
-                        description => "GI number",
-                        feature_id  => $db_feature->id
-                    }
-                ) if $GO;
-            }
-
-            # add a location entry
-            my $loc_string = $feature->location;
-            $loc_string =~ s/complement//g;
-            $loc_string =~ s/join//;
-            $loc_string =~ s/order//;
-            $loc_string =~ s/\(|\)//g;
-
-            # loop through the locatons
-            foreach my $loc ( split /,/, $loc_string ) {
-                $loc =~ s/<|>//g;
-                my ( $start, $stop ) = split /\.\./, $loc;
-                $stop = $start unless $stop;
-                $start =~ s/\^.*//;
-                $stop  =~ s/\^.*//;
-
-                die "problem with $accn start $start or stop $stop\n"
-                  unless $start =~ /^\d+$/ && $stop =~ /^\d+$/;
-                my $location = $db_feature->add_to_locations(
-                    {
-                        start      => $start,
-                        stop       => $stop,
-                        strand     => $feature->strand,
-                        chromosome => $chromosome
-                    }
-                ) if $GO;
-            }
-
-            # now work through the qualifiers for this feature
-            # start by getting the hashref of qualifiers
-            my $annot = $feature->qualifiers();
-
-            my %names;
-
-            #	      print $log Dumper $annot;
-            foreach my $anno ( keys %{$annot} ) {
-                my $stuff = $annot->{$anno};
-
-                # deal with db_xref: (taxon:3702) (GeneID:821318) (GI:18379324)
-                if ( $anno =~ /xref/i ) {
-                    my $anno_type_group =
-                      $coge->resultset('AnnotationTypeGroup')
-                      ->find_or_create( { name => $anno } )
-                      if $GO;
-
-# go through each of the entries in the db_xref qualifier values and split on ':', then add entries individually
-                    foreach my $xref ( @{$stuff} ) {
-                        my @inner = split( /:/, $xref );
-
-                        # first add the annot_type_obj
-                        my ($anno_type) =
-                                  $coge->resultset('AnnotationType')
-                                  ->search( { name => $inner[0],
-                                annotation_type_group_id =>
-                                  $anno_type_group->id() });
-				($anno_type) =
-                                  $coge->resultset('AnnotationType')
-                                  ->create( { name => $inner[0],
-                                annotation_type_group_id =>
-                                  $anno_type_group->id() })
-                                  if $GO && !$anno_type;
-
-                        # now create the row for the data value of the xref
-                        my $sub_anno = $db_feature->add_to_feature_annotations(
-                            {
-                                annotation         => $inner[1],
-                                annotation_type_id => $anno_type->id()
-                            }
-                        ) if $GO;
-                    }
-                }
-                elsif (
-                       $anno =~ /locus_tag/i
-                    || $anno =~ /transcript_id/i
-                    || $anno =~ /protein_id/i
-                    || $anno =~ /gene/i
-                    || $anno =~ /standard_name/i
-                    || $anno =~
-                    /synonym/i # synonyms are embedded in the /note= tag! these are names
-                    || $anno eq "names"
-                  )
-                {
-                    my $master = 1;    #make first one master
-                    foreach my $item ( @{$stuff} ) {
-                        foreach my $thing ( split /;/, $item ) {
-                            $thing =~ s/^\s+//;
-                            $thing =~ s/\s+$//;
-                            $names{$thing} = 0 unless defined $names{$thing};
-                            $names{$thing} = 1
-                              if $anno =~ /locus_tag/i;    #primary_name;
-                        }
-                    }
-                }
-                elsif ( $anno =~ /translation/i
-                  )    # this needs to be entered into the sequence table
-                {
-                    next
-                      ; #skip this.  Protein sequences are translated on the fly from DNA sequence
-                    my $seq_type =
-                      $coge->resultset('SequenceType')->find_or_create(
-                        {
-                            name        => "protein",
-                            description => "translation"
-                        }
-                      ) if $GO;
-                    foreach my $item ( @{$stuff} ) {
-                        $item =~ s/\s+//g;
-                        my $sequence = $db_feature->add_to_sequences(
-                            {
-                                sequence_type_id => $seq_type->id(),
-                                sequence_data    => $item,
-                            }
-                        ) if $GO;
-                    }
-                }
-                elsif ( $anno eq "note" ) {
-
-                    # if go annot are present, they'll be in the note qualifier,
-                    # so process is specifically
-                    foreach my $item ( @{$stuff} ) {
-                        my $leftover = "";
-                        my @temp = split( /;/, $item );
-                        foreach my $go_raw (@temp) {
-                            if ( $go_raw =~ /go_/ ) {
-                                while ( $go_raw =~
-                                    /(go_.*?):\s+(.*?)\[goid G?O?:?(.*?)\]/g )
-                                {
-
-                              # example:
-                              # go_function: nucleic acid binding [goid 0003676]
-                                    my $anno_type_group =
-                                      $coge->resultset('AnnoationTypeGroup')
-                                      ->find_or_create( { name => $1 } )
-                                      if $GO;
-
-                                    # $1 should be "go_function"
-                                    my ($anno_type) =
-				      $coge->resultset('AnnotationType')
-					->search( { 
-						   name => $3,
-						    annotation_type_group_id =>
-						    $anno_type_group->id() 
-						  });
-				    ($anno_type) =
-				      $coge->resultset('AnnotationType')
-					->create( { 
-						   name => $3,
-						    annotation_type_group_id =>
-						    $anno_type_group->id() 
-						  })
-					  if $GO && !$anno_type;
-                                    my $sub_anno =
-                                      $db_feature->add_to_feature_annotations(
-                                        {
-                                            annotation => $2
-                                            , #this should be "nucleic acid binding"
-                                            annotation_type_id => $anno_type->id
-                                        }
-                                      ) if $GO;
-                                }
-                            }
-                            else {
-                                $leftover .= " " . $go_raw if $go_raw;
-                            }
-
-                            # now just add the note remainder
-                            $leftover =~ s/^\s+//;
-                            $leftover =~ s/\s+$//;
-                            if ($leftover) {
-                                my ($anno_type) =
-                                  $coge->resultset('AnnotationType')
-                                  ->search( { name => $anno } );
-				($anno_type) =
-                                  $coge->resultset('AnnotationType')
-                                  ->create( { name => $anno } )
-                                  if $GO && !$anno_type;
-				
-                                my $sub_anno =
-                                  $db_feature->add_to_feature_annotations(
-                                    {
-                                        annotation         => $leftover,
-                                        annotation_type_id => $anno_type->id(),
-                                    }
-                                  ) if $GO;
-                            }
-                        }
-                    }
-                }
-                else    ##everything else
-                {
-                    foreach my $item ( @{$stuff} ) {
-                        my ($anno_type) =
-			  $coge->resultset('AnnotationType')
-			    ->search( { name => $anno } );
-			($anno_type) =
-			  $coge->resultset('AnnotationType')
-			    ->create( { name => $anno } )
-			      if $GO && !$anno_type;
-                        my $sub_anno = $db_feature->add_to_feature_annotations(
-                            {
-                                annotation         => $item,
-                                annotation_type_id => $anno_type->id(),
-                            }
-                        ) if $GO;
-                    }
-                }
-            }
-            foreach my $name ( keys %names ) {
-                my $master = $names{$name} ? 1 : 0;
-                $name =~ s/\s+$//g;
-                $name =~ s/^\s+//g;
-                my $feat_name = $db_feature->add_to_feature_names(
-                    {
-                        name         => $name,
-                        primary_name => $master,
-                    }
-                ) if $GO;
-            }
-        }
-	#initialize genome object if needed
-	if ($organism && !$genome)    #gst_id 1 is for unmasked sequence data
-	  {
-	    print $log "Creating Genome Object . . .";
-	    $genome = generate_genome(
-				      version => $version,
-				      org_id  => $organism->id,
-				      gst_id  => 1
-				     );
-	    print $log "Created:  genome_id: ".$genome->id,"\n";
-	    print $log "Creating install path for sequences. . .";
-	    $install_dir = "$install_dir/".CoGe::Accessory::Storage::get_tiered_path( $genome->id ) . "/";
-	    if ($GO) {
-	      mkpath($install_dir);
-	      unless (-d $install_dir){
-		print $log "log: error in mkpath $install_dir\n";
-		exit(-1);
-	      }
-	      print $log "completed: $install_dir\n";
-	    }
-	  }
+				if ( $try >= 10 ) {
+					print $log "Giving up!  Skipping "
+					  . $entry->requested_id
+					  . " after $try trys.\n";
+					next entry;
+				}
+			}
+			print $log "\tChecking WGS $accn...\n";
+			unless ($force) {
+				my $previous = check_accn($accn);
+				foreach my $item (@$previous) {
+					if ( !$item->{version_diff} && !$item->{length_diff} ) {
+						$previous_datasets{ $item->{ds}->id } = $item->{ds};
+						my $link = $server . "OrganismView.pl?dsid=" . $item->{ds}->id;
+						print $log "log: Dataset previously loaded: $link\n";
+						next entry;
+					}
+					elsif ( !$item->{version_diff} && $item->{length_diff} ) {
+						print $log "Detected a difference in total genomic length between CoGe ("
+						  . $item->{coge_length}
+						  . ") and NCBI("
+						  . $item->{ncbi_length}
+						  . ").  Including new dataset.\n";
+					}
+					else {
+						print $log "not present.  Will be loaded.\n";
+					}
+				}
+				push @gbs, $entry;
+			}
+		}
+		#@gbs = @{$genbank->wgs_data};
+	}
+	else {
+		push @gbs, $genbank;
+	}
 	
-	#fasta_format sequence for the chromosome
-        $fasta_output .= fasta_genomic_sequence(
-					       genome => $genome,
-					       seq => $entry->sequence,
-					       chr => $chromosome
-					      );
+	foreach my $entry (@gbs) {
+		$chromosome = "contig_" . $entry->accession if @{ $genbank->wgs_data };
+		print $log "Processing features for " . $entry->accession . "...\n"
+		  unless $EXIT;
+		foreach my $feature ( @{ $entry->features() } ) {
+			unless ( $feature->type() ) {
+				print $log
+				  "Feature has no feature type name \$feature->type():\n";
+				print $log Dumper $feature;
+				next;
+			}
+			if ( $feature->type() =~ /source/i ) {
+				#change source to chromosome
+				$feature->type('chromosome');
+				#next;
+			}
+			my $feat_type =
+			  $coge->resultset('FeatureType')
+			  ->find_or_create( { name => $feature->type() } )
+			  if $GO;
 
-        if ($GO) {
-            my $load = 1;
-            foreach my $dsc ( $genome->dataset_connectors
-              ) #check to see if there is a prior link to the dataset -- this will happen when loading whole genome shotgun sequence
-            {
-                $load = 0 if $dsc->dataset_id == $dataset->id;
-            }
-            $genome->add_to_dataset_connectors( { dataset_id => $dataset->id } )
-              if $load;
-            if ( $dataset->version > $genome->version ) {
-                $genome->version( $dataset->version );
-                $genome->update;
-            }
-        }
-    }
-    print $log "completed parsing for $accn!\n";    # if $DEBUG;
+		   # create a db_feature for to link this feature with the dataset table
+			my ( $start, $stop, $strand ) = get_feature_location($feature);
+			my $db_feature = $coge->resultset('Feature')->create(
+				{
+					feature_type_id => $feat_type->id,
+					dataset_id      => $dataset->id,
+					chromosome      => $chromosome,
+					strand          => $strand,
+					start           => $start,
+					stop            => $stop,
+				}
+			  )
+			  if $GO;
 
-    if ($delete_src_file) {
-        print $log "Deleting genbank src file: " . $genbank->srcfile . "\n";
-        my $cmd = "rm " . $genbank->srcfile;
-        `$cmd`;
+			# expect first feature to be the source feature!
+			if ( $feature->type() =~ /chromosome/i ) {
+				# generate name based on chromosome
+				my $feat_name = $coge->resultset('FeatureName')->create(
+					{
+						name => $chromosome,
 
-        #	`rm /tmp/gb/*`;
-    }
+						#									 description => "Chromosome " . $chromosome,
+						feature_id => $db_feature->id
+					}
+				  )
+				  if $GO;
+
+				# generate name for accession
+				$feat_name = $coge->resultset('FeatureName')->create(
+					{
+						name       => $entry->accession,
+						feature_id => $db_feature->id()
+					}
+				  )
+				  if $GO;
+
+				# generate name for version
+				$feat_name = $coge->resultset('FeatureName')->create(
+					{
+						name       => $entry->accession . "." . $entry->version,
+						feature_id => $db_feature->id
+					}
+				  )
+				  if $GO;
+
+				# generate name for GI
+				$feat_name = $coge->resultset('FeatureName')->create(
+					{
+						name        => $entry->gi,
+						description => "GI number",
+						feature_id  => $db_feature->id
+					}
+				  )
+				  if $GO;
+			}
+
+			# add a location entry
+			my $loc_string = $feature->location;
+			$loc_string =~ s/complement//g;
+			$loc_string =~ s/join//;
+			$loc_string =~ s/order//;
+			$loc_string =~ s/\(|\)//g;
+
+			# loop through the locatons
+			foreach my $loc ( split(/,/, $loc_string) ) {
+				$loc =~ s/<|>//g;
+				my ( $start, $stop ) = split /\.\./, $loc;
+				$stop = $start unless $stop;
+				$start =~ s/\^.*//;
+				$stop  =~ s/\^.*//;
+
+				die "problem with $accn start $start or stop $stop\n"
+				  unless $start =~ /^\d+$/ && $stop =~ /^\d+$/;
+				my $location = $db_feature->add_to_locations(
+					{
+						start      => $start,
+						stop       => $stop,
+						strand     => $feature->strand,
+						chromosome => $chromosome
+					}
+				  )
+				  if $GO;
+			}
+
+			# now work through the qualifiers for this feature
+			# start by getting the hashref of qualifiers
+			my $annot = $feature->qualifiers();
+			my %names;
+
+			#print $log Dumper $annot;
+			foreach my $anno ( keys %{$annot} ) {
+				my $stuff = $annot->{$anno};
+
+				# deal with db_xref: (taxon:3702) (GeneID:821318) (GI:18379324)
+				if ( $anno =~ /xref/i ) {
+					my $anno_type_group =
+					  $coge->resultset('AnnotationTypeGroup')
+					  ->find_or_create( { name => $anno } )
+					  if $GO;
+
+					# go through each of the entries in the db_xref qualifier values and split on ':', then add entries individually
+					foreach my $xref ( @{$stuff} ) {
+						my @inner = split( /:/, $xref );
+
+						# first add the annot_type_obj
+						my ($anno_type) =
+						  $coge->resultset('AnnotationType')->search(
+							{
+								name                     => $inner[0],
+								annotation_type_group_id =>
+								  $anno_type_group->id()
+							}
+						  );
+						($anno_type) =
+						  $coge->resultset('AnnotationType')->create(
+							{
+								name                     => $inner[0],
+								annotation_type_group_id =>
+								  $anno_type_group->id()
+							}
+						  )
+						  if $GO && !$anno_type;
+
+						# now create the row for the data value of the xref
+						my $sub_anno = $db_feature->add_to_feature_annotations(
+							{
+								annotation         => $inner[1],
+								annotation_type_id => $anno_type->id()
+							}
+						  )
+						  if $GO;
+					}
+				}
+				elsif (
+					   $anno =~ /locus_tag/i
+					|| $anno =~ /transcript_id/i
+					|| $anno =~ /protein_id/i
+					|| $anno =~ /gene/i
+					|| $anno =~ /standard_name/i
+					|| $anno =~
+					/synonym/i # synonyms are embedded in the /note= tag! these are names
+					|| $anno eq "names"
+				  )
+				{
+					my $master = 1;    #make first one master
+					foreach my $item ( @{$stuff} ) {
+						foreach my $thing ( split( /;/, $item ) ) {
+							$thing =~ s/^\s+//;
+							$thing =~ s/\s+$//;
+							$names{$thing} = 0 unless defined $names{$thing};
+							$names{$thing} = 1
+							  if $anno =~ /locus_tag/i;    #primary_name;
+						}
+					}
+				}
+				elsif ( $anno =~ /translation/i
+				  )    # this needs to be entered into the sequence table
+				{
+					next
+					  ; #skip this.  Protein sequences are translated on the fly from DNA sequence
+					my $seq_type =
+					  $coge->resultset('SequenceType')->find_or_create(
+						{
+							name        => "protein",
+							description => "translation"
+						}
+					  )
+					  if $GO;
+					foreach my $item ( @{$stuff} ) {
+						$item =~ s/\s+//g;
+						my $sequence = $db_feature->add_to_sequences(
+							{
+								sequence_type_id => $seq_type->id(),
+								sequence_data    => $item,
+							}
+						  )
+						  if $GO;
+					}
+				}
+				elsif ( $anno eq "note" ) {
+
+					# if go annot are present, they'll be in the note qualifier,
+					# so process is specifically
+					foreach my $item ( @{$stuff} ) {
+						my $leftover = "";
+						my @temp = split( /;/, $item );
+						foreach my $go_raw (@temp) {
+							if ( $go_raw =~ /go_/ ) {
+								while ( $go_raw =~
+									/(go_.*?):\s+(.*?)\[goid G?O?:?(.*?)\]/g )
+								{
+
+							  # example:
+							  # go_function: nucleic acid binding [goid 0003676]
+									my $anno_type_group =
+									  $coge->resultset('AnnoationTypeGroup')
+									  ->find_or_create( { name => $1 } )
+									  if $GO;
+
+									# $1 should be "go_function"
+									my ($anno_type) =
+									  $coge->resultset('AnnotationType')
+									  ->search(
+										{
+											name                     => $3,
+											annotation_type_group_id =>
+											  $anno_type_group->id()
+										}
+									  );
+									($anno_type) =
+									  $coge->resultset('AnnotationType')
+									  ->create(
+										{
+											name                     => $3,
+											annotation_type_group_id =>
+											  $anno_type_group->id()
+										}
+									  )
+									  if $GO && !$anno_type;
+									my $sub_anno =
+									  $db_feature->add_to_feature_annotations(
+										{
+											annotation => $2
+											, #this should be "nucleic acid binding"
+											annotation_type_id => $anno_type->id
+										}
+									  )
+									  if $GO;
+								}
+							}
+							else {
+								$leftover .= " " . $go_raw if $go_raw;
+							}
+
+							# now just add the note remainder
+							$leftover =~ s/^\s+//;
+							$leftover =~ s/\s+$//;
+							if ($leftover) {
+								my ($anno_type) =
+								  $coge->resultset('AnnotationType')
+								  ->search( { name => $anno } );
+								($anno_type) =
+								  $coge->resultset('AnnotationType')
+								  ->create( { name => $anno } )
+								  if $GO && !$anno_type;
+
+								my $sub_anno =
+								  $db_feature->add_to_feature_annotations(
+									{
+										annotation         => $leftover,
+										annotation_type_id => $anno_type->id(),
+									}
+								  )
+								  if $GO;
+							}
+						}
+					}
+				}
+				else    ##everything else
+				{
+					foreach my $item ( @{$stuff} ) {
+						my ($anno_type) =
+						  $coge->resultset('AnnotationType')
+						  ->search( { name => $anno } );
+						($anno_type) =
+						  $coge->resultset('AnnotationType')
+						  ->create( { name => $anno } )
+						  if $GO && !$anno_type;
+						my $sub_anno = $db_feature->add_to_feature_annotations(
+							{
+								annotation         => $item,
+								annotation_type_id => $anno_type->id(),
+							}
+						  )
+						  if $GO;
+					}
+				}
+			}
+			foreach my $name ( keys %names ) {
+				my $master = $names{$name} ? 1 : 0;
+				$name =~ s/\s+$//g;
+				$name =~ s/^\s+//g;
+				my $feat_name = $db_feature->add_to_feature_names(
+					{
+						name         => $name,
+						primary_name => $master,
+					}
+				  )
+				  if $GO;
+			}
+		}
+
+		#initialize genome object if needed
+		if ( $organism && !$genome )    #gst_id 1 is for unmasked sequence data
+		{
+			print $log "Creating Genome Object . . .";
+			$genome = generate_genome(
+				version => $version,
+				org_id  => $organism->id,
+				gst_id  => 1
+			);
+			unless ($genome) {
+				print $log "Error adding genome to database\n";
+				exit(-1);
+			}
+			
+			print $log "log: Added genome id", $genome->id, "\n"; # !!!! don't change, gets parsed by calling code
+			print $log "Creating install path for sequences. . .";
+			$install_dir =
+			  "$install_dir/"
+			  . CoGe::Accessory::Storage::get_tiered_path( $genome->id ) . "/";
+			if ($GO) {
+				mkpath($install_dir);
+				unless ( -d $install_dir ) {
+					print $log "log: error in mkpath $install_dir\n";
+					exit(-1);
+				}
+				print $log "completed: $install_dir\n";
+			}
+		}
+
+		#fasta_format sequence for the chromosome
+		$fasta_output .= fasta_genomic_sequence(
+			genome => $genome,
+			seq    => $entry->sequence,
+			chr    => $chromosome
+		);
+
+		if ($GO) {
+			my $load = 1;
+			foreach my $dsc ( $genome->dataset_connectors
+			  ) #check to see if there is a prior link to the dataset -- this will happen when loading whole genome shotgun sequence
+			{
+				$load = 0 if $dsc->dataset_id == $dataset->id;
+			}
+			$genome->add_to_dataset_connectors( { dataset_id => $dataset->id } )
+			  if $load;
+			if ( $dataset->version > $genome->version ) {
+				$genome->version( $dataset->version );
+				$genome->update;
+			}
+		}
+	}
+	print $log "completed parsing for $accn!\n";    # if $DEBUG;
+
+	if ($delete_src_file) {
+		print $log "Deleting genbank src file: " . $genbank->srcfile . "\n";
+		my $cmd = "rm " . $genbank->srcfile;
+		`$cmd`;
+
+		#	`rm /tmp/gb/*`;
+	}
+}
+
+unless ($genome) {
+	print $log "log: error: No new datasets to load, see links above to existing ones\n";
+	exit(-1);
 }
 
 #need to add previous datasets if new dataset was added to a genome
 if ($GO) {
-    if ( $genome && keys %previous_datasets ) {
-      my $ver;    #need a higher version number than previous
-        foreach my $ds ( values %previous_datasets ) {
-            my ($test) = $genome->dataset_connectors( { dataset_id => $ds->id } );
-            if ($test) {
-                my $name = $ds->name;
-                print $log
-"$name has been previously added to this dataset group.  Skipping\n";
-                next;
-            }
-            foreach my $item ( $ds->genomes ) {
-                $ver = $item->version unless $ver;
-                $ver = $item->version if $item->version > $ver;
-            }
-            foreach my $chr ( $ds->chromosomes ) {
-                $fasta_output .= fasta_genomic_sequence(
-                    genome => $genome,
-                    seq => $ds->genomic_sequence( chr => $chr ),
-                    chr => $chr
-                );
-            }
-            $genome->add_to_dataset_connectors( { dataset_id => $ds->id } );
-        }
+	if ( $genome && keys %previous_datasets ) {
+		my $ver;    #need a higher version number than previous
+		foreach my $ds ( values %previous_datasets ) {
+			my ($test) =
+			  $genome->dataset_connectors( { dataset_id => $ds->id } );
+			if ($test) {
+				my $name = $ds->name;
+				print $log "$name has been previously added to this dataset group.  Skipping\n";
+				next;
+			}
+			foreach my $item ( $ds->genomes ) {
+				$ver = $item->version unless $ver;
+				$ver = $item->version if $item->version > $ver;
+			}
+			foreach my $chr ( $ds->chromosomes ) {
+				$fasta_output .= fasta_genomic_sequence(
+					genome => $genome,
+					seq    => $ds->genomic_sequence( chr => $chr ),
+					chr    => $chr
+				);
+			}
+			$genome->add_to_dataset_connectors( { dataset_id => $ds->id } );
+		}
 
-        #incement and update genome version if new version number is higher
-        $ver++;
-        if ( $ver > $genome->version ) {
-            $genome->version($ver);
-            $genome->update();
-        }
-    }
+		#incement and update genome version if new version number is higher
+		$ver++;
+		if ( $ver > $genome->version ) {
+			$genome->version($ver);
+			$genome->update();
+		}
+	}
 }
-my $output_file = $install_dir."/genome.faa";
-print $log "log: creating output sequence ($output_file) and indexing\n";
-add_and_index_sequence (fasta=>$fasta_output, file=>$output_file) if $GO;
+my $output_file = $install_dir . "/genome.faa";
+print $log "log: Creating output sequence file and indexing\n";
+add_and_index_sequence( fasta => $fasta_output, file => $output_file ) if $GO;
 
+# Make user owner of new genome
+if ( $GO and ( $user_id or $user_name ) ) {
+	my $user;
+	if ($user_id) {
+		$user = $coge->resultset('User')->find($user_id);
+	}
+	else {
+		$user = $coge->resultset('User')->find( { user_name => $user_name } );
+	}
+	unless ($user) {
+		print $log "log: error finding user '$user_name'\n";
+		exit(-1);
+	}
+	my $node_types = CoGeX::node_types();
+	my $conn       = $coge->resultset('UserConnector')->create(
+		{
+			parent_id   => $user->id,
+			parent_type => $node_types->{user},
+			child_id    => $genome->id,
+			child_type  => $node_types->{genome},
+			role_id     => 4                       # FIXME hardcoded reader role
+		}
+	);
+	unless ($conn) {
+		print $log "log: error creating user connector\n";
+		exit(-1);
+	}
+}
 
+# This message required to end load on client
+print $log "log: Finished loading genome!\n";
 
-sub add_and_index_sequence
-  {
-    my %opts = @_;
-    my $fasta = $opts{fasta};
-    my $file = $opts{file};
-    my $compress = $opts{compress};
-    unless ($fasta)
-      {
-	print $log "log: No data to add to file $file.  Not creating fasta file\n";
-	exit;
-      }
-    if (-r $file)
-      {
-	print $log "log: error:  $file already exists.  Will not overwrite existing sequence.  Fatal error!\n";
-	exit(-1);
-      }
-    open (OUT, ">$file") || die "Died: can't open $file for writing: !$\n";
-    print OUT $fasta;
-    close OUT;
-    print $log "Indexing genome file\n";
-    my $rc = CoGe::Accessory::Storage::index_genome_file(
-							 file_path => $file,
-							 compress  => $compress
-							);
-    if ( $rc != 0 ) {
-      print $log "log: error: couldn't index fasta file\n";
-      exit(-1);
-    }
-  }
+exit;
+
+#-------------------------------------------------------------------------------
+
+sub add_and_index_sequence {
+	my %opts     = @_;
+	my $fasta    = $opts{fasta};
+	my $file     = $opts{file};
+	my $compress = $opts{compress};
+	unless ($fasta) {
+		print $log
+		  "log: No data to add to file $file.  Not creating fasta file\n";
+		exit;
+	}
+	if ( -r $file ) {
+		print $log
+"log: error:  $file already exists.  Will not overwrite existing sequence.  Fatal error!\n";
+		exit(-1);
+	}
+	open( OUT, ">$file" ) || die "Died: can't open $file for writing: !$\n";
+	print OUT $fasta;
+	close OUT;
+	print $log "Indexing genome file\n";
+	my $rc = CoGe::Accessory::Storage::index_genome_file(
+		file_path => $file,
+		compress  => $compress
+	);
+	if ( $rc != 0 ) {
+		print $log "log: error: couldn't index fasta file\n";
+		exit(-1);
+	}
+}
 
 sub fasta_genomic_sequence {
-    my %opts = @_;
-    my $seq  = $opts{seq};
-    my $chr  = $opts{chr};
-    my $genome = $opts{genome};
-#    my $file = $opts{file};
-    return unless $genome && $seq && $chr;
+	my %opts   = @_;
+	my $seq    = $opts{seq};
+	my $chr    = $opts{chr};
+	my $genome = $opts{genome};
 
-    $seq =~ s/\s//g;
-    $seq =~ s/\n//g;
+	#    my $file = $opts{file};
+	return unless $genome && $seq && $chr;
 
-    my $seqlen = length $seq;
-    if ( my ($item) = $genome->genomic_sequences( { chromosome => $chr } ) ) {
-        my $prev_length = $item->sequence_length;
-        print $log
-"$chr has previously been added to this genome.  Previous length: $prev_length.  Currently length: $seqlen.  Skipping.\n";
-        return;
-    }
-    print $log "Loading genomic sequence ($seqlen nt)\n";    # if $DEBUG;
+	$seq =~ s/\s//g;
+	$seq =~ s/\n//g;
 
-    $genome->add_to_genomic_sequences(
-        {
-            sequence_length => $seqlen,
-            chromosome      => $chr,
-        }
-    ) if $GO;
+	my $seqlen = length $seq;
+	if ( my ($item) = $genome->genomic_sequences( { chromosome => $chr } ) ) {
+		my $prev_length = $item->sequence_length;
+		print $log "$chr has previously been added to this genome.  Previous length: $prev_length.  Currently length: $seqlen.  Skipping.\n";
+		return;
+	}
+	print $log "Loading genomic sequence ($seqlen nt)\n";    # if $DEBUG;
 
-    my $head = $chr =~ /^\d+$/ ? ">gi" : ">lcl";
-    $head .= "|" . $chr;
-#    open( OUT, ">>" . $file );
-#    print OUT "$head\n$seq\n";
-#    close OUT;
-    return "$head\n$seq\n";
+	$genome->add_to_genomic_sequences(
+		{
+			sequence_length => $seqlen,
+			chromosome      => $chr,
+		}
+	  )
+	  if $GO;
+
+	my $head = $chr =~ /^\d+$/ ? ">gi" : ">lcl";
+	$head .= "|" . $chr;
+
+	#    open( OUT, ">>" . $file );
+	#    print OUT "$head\n$seq\n";
+	#    close OUT;
+	return "$head\n$seq\n";
 }
 
 sub get_feature_location {
-    my $feat       = shift;
-    my $loc_string = $feat->location;
-    my $strand     = $feat->location =~ /complement/ ? "-1" : 1;
-    $loc_string =~ s/complement//g;
-    $loc_string =~ s/join//;
-    $loc_string =~ s/order//;
-    $loc_string =~ s/\(|\)//g;
-    my ( $rstart, $rstop );
+	my $feat       = shift;
+	my $loc_string = $feat->location;
+	my $strand     = $feat->location =~ /complement/ ? "-1" : 1;
+	$loc_string =~ s/complement//g;
+	$loc_string =~ s/join//;
+	$loc_string =~ s/order//;
+	$loc_string =~ s/\(|\)//g;
+	my ( $rstart, $rstop );
 
-    foreach my $loc ( split /,/, $loc_string ) {
-        my ( $start, $stop ) = split /\.\./, $loc;
-        $stop = $start unless $stop;
-        ($start) = $start =~ /(\d+)/;
-        ($stop)  = $stop  =~ /(\d+)/;
-        $start =~ s/\^.*//;
-        $stop  =~ s/\^.*//;
-        $rstart = $start unless $rstart;
-        $rstop  = $stop  unless $rstop;
-        $rstart = $start if $start < $rstart;
-        $rstop  = $stop  if $stop > $rstop;
-    }
-    return ( $rstart, $rstop, $strand );
+	foreach my $loc ( split /,/, $loc_string ) {
+		my ( $start, $stop ) = split /\.\./, $loc;
+		$stop = $start unless $stop;
+		($start) = $start =~ /(\d+)/;
+		($stop)  = $stop  =~ /(\d+)/;
+		$start =~ s/\^.*//;
+		$stop  =~ s/\^.*//;
+		$rstart = $start unless $rstart;
+		$rstop  = $stop  unless $rstop;
+		$rstart = $start if $start < $rstart;
+		$rstop  = $stop  if $stop > $rstop;
+	}
+	return ( $rstart, $rstop, $strand );
 }
 
 sub get_organism {
-    my ($entry) = shift;
-    my $name = $entry->data_source();
-    if ( $entry->strain ) {
-        my $strain = $entry->strain;
-        $strain =~ s/\(/;/g;
-        $strain =~ s/\)//g;
-        $strain =~ s/strain://g;
-        $strain =~ s/\\//g;
-        $strain =~ s/=/;/g;
-        $name   =~ s/strain//;
-        $name   =~ s/\sstr\.?\s/ /;
-        my @strains = split /;/, $strain;
-        my @parse_strains;
+	my ($entry) = shift;
+	my $name = $entry->data_source();
+	if ( $entry->strain ) {
+		my $strain = $entry->strain;
+		$strain =~ s/\(/;/g;
+		$strain =~ s/\)//g;
+		$strain =~ s/strain://g;
+		$strain =~ s/\\//g;
+		$strain =~ s/=/;/g;
+		$name   =~ s/strain//;
+		$name   =~ s/\sstr\.?\s/ /;
+		my @strains = split /;/, $strain;
+		my @parse_strains;
 
-        foreach ( sort @strains ) {
-            s/str\.\s//;
-            s/^\s+//;
-            s/\s+$//;
-            next unless $_;
-            $name =~ s/$_//;
-            push @parse_strains, $_;
-        }
-        $name =~ s/\s\s+/ /g;
-        $name =~ s/\s+$//;
-        my $add = join( "; ", sort @parse_strains );
-        $name .= " strain" unless $add =~ /strain/;
-        $name .= " $add";
-    }
-    if ( $entry->substrain ) {
-        my $sstrain = $entry->substrain;
-        $sstrain =~ s/\(/\\\(/g;
-        $sstrain =~ s/\)/\\\)/g;
-        $sstrain =~ s/substrain://g;
-        $name    =~ s/\ssubstr\.?\s/ /;
-        $sstrain =~ s/\\//g;
-        $sstrain =~ s/=/;/g;
-        my @sstrains = split /;/, $sstrain;
-        my @parse_sstrains;
+		foreach ( sort @strains ) {
+			s/str\.\s//;
+			s/^\s+//;
+			s/\s+$//;
+			next unless $_;
+			$name =~ s/$_//;
+			push @parse_strains, $_;
+		}
+		$name =~ s/\s\s+/ /g;
+		$name =~ s/\s+$//;
+		my $add = join( "; ", sort @parse_strains );
+		$name .= " strain" unless $add =~ /strain/;
+		$name .= " $add";
+	}
+	if ( $entry->substrain ) {
+		my $sstrain = $entry->substrain;
+		$sstrain =~ s/\(/\\\(/g;
+		$sstrain =~ s/\)/\\\)/g;
+		$sstrain =~ s/substrain://g;
+		$name    =~ s/\ssubstr\.?\s/ /;
+		$sstrain =~ s/\\//g;
+		$sstrain =~ s/=/;/g;
+		my @sstrains = split( /;/, $sstrain );
+		my @parse_sstrains;
 
-        foreach ( sort @sstrains ) {
-            s/substr\.\s//;
-            s/^\s+//;
-            s/\s+$//;
-            next unless $_;
-            $name =~ s/$_//;
-            push @parse_sstrains, $_;
-        }
-        $name =~ s/\s\s+/ /g;
-        $name =~ s/\s+$//;
-        my $add = join( "; ", sort @parse_sstrains );
-        $name .= " substrain" unless $add =~ /substrain/;
-        $name .= " $add";
-    }
-    return unless $name;
-    $name =~ s/'//g;
-    $name =~ s/\(\s*\)//g;
-    $name =~ s/\s\s+/ /g;
-    $name =~ s/^\s+//;
-    $name =~ s/\s+$//;
+		foreach ( sort @sstrains ) {
+			s/substr\.\s//;
+			s/^\s+//;
+			s/\s+$//;
+			next unless $_;
+			$name =~ s/$_//;
+			push @parse_sstrains, $_;
+		}
+		$name =~ s/\s\s+/ /g;
+		$name =~ s/\s+$//;
+		my $add = join( "; ", sort @parse_sstrains );
+		$name .= " substrain" unless $add =~ /substrain/;
+		$name .= " $add";
+	}
+	return unless $name;
+	$name =~ s/'//g;
+	$name =~ s/\(\s*\)//g;
+	$name =~ s/\s\s+/ /g;
+	$name =~ s/^\s+//;
+	$name =~ s/\s+$//;
 
-    #  print $log $name,"\n";
-    #  print $log $entry->organism,"\n";
-    my $desc = $entry->organism();
-    $desc =~ s/^.*?::\s*//;
-    $desc =~ s/\.$//;
-    print $log qq{
+	#  print $log $name,"\n";
+	#  print $log $entry->organism,"\n";
+	my $desc = $entry->organism();
+	$desc =~ s/^.*?::\s*//;
+	$desc =~ s/\.$//;
+	print $log qq{
 Organism Information from Genbank Entry:
   $name
   $desc
 } if $DEBUG;
-    my $org =
-      $coge->resultset('Organism')
-      ->find( { name => $name, description => $desc } );
-    unless ($org) {
+	my $org =
+	  $coge->resultset('Organism')
+	  ->find( { name => $name, description => $desc } );
+	unless ($org) {
 
-        unless ($name) {
-            print $log "WARNING: ", $entry->accession, " has no organism name\n";
-            return;
-        }
-        $org = $coge->resultset('Organism')->find_or_create(
-            {
-                name        => $name,
-                description => $desc,
-            }
-        ) if $GO && $name;
-    }
-    return $org;
+		unless ($name) {
+			print $log "WARNING: ", $entry->accession,
+			  " has no organism name\n";
+			return;
+		}
+		$org = $coge->resultset('Organism')->find_or_create(
+			{
+				name        => $name,
+				description => $desc,
+			}
+		  )
+		  if $GO && $name;
+	}
+	return $org;
 }
 
 sub get_data_source {
-    return $coge->resultset('DataSource')->find_or_create(
-        {
-            name        => 'NCBI',
-            description => "National Center for Biotechnology Information",
-            link        => 'www.ncbi.nih.gov'
-        }
-    );
+	return $coge->resultset('DataSource')->find_or_create(
+		{
+			name        => 'NCBI',
+			description => "National Center for Biotechnology Information",
+			link        => 'www.ncbi.nih.gov'
+		}
+	);
 }
 
 sub generate_genome {
-    my %opts    = @_;
-    my $name    = $opts{name};
-    my $desc    = $opts{desc};
-    my $version = $opts{version};
-    my $org_id  = $opts{org_id};
-    my $gst_id  = $opts{gst_id};
-    my $genome_id  = $opts{genome_id};
-    my $genome =
-        $genome_id
-      ? $coge->resultset('Genome')->find($genome_id)
-      : $coge->resultset('Genome')->create(
-        {
-            name                     => $name,
-            description              => $desc,
-            version                  => $version,
-            organism_id              => $org_id,
-            genomic_sequence_type_id => $gst_id,
-        }
-      ) if $GO;
-    return unless $genome;
+	my %opts      = @_;
+	my $name      = $opts{name};
+	my $desc      = $opts{desc};
+	my $version   = $opts{version};
+	my $org_id    = $opts{org_id};
+	my $gst_id    = $opts{gst_id};
+	my $genome_id = $opts{genome_id};
+	my $genome    = $genome_id
+	  ? $coge->resultset('Genome')->find($genome_id)
+	  : $coge->resultset('Genome')->create(
+		{
+			name                     => $name,
+			description              => $desc,
+			version                  => $version,
+			organism_id              => $org_id,
+			genomic_sequence_type_id => $gst_id,
+		}
+	  )
+	  if $GO;
+	return unless $genome;
 
-    return $genome;
+	return $genome;
 }
 
 sub check_accn {
-    my $accn = shift;
-    my $gi   = get_gi($accn);
+	my $accn = shift;
+	my $gi   = get_gi($accn);
 
-    #    print $log "gi|".$gi."...";
-    my $summary = get_gi_summary($gi);
-    my ($version) = $summary =~ /ref\|.*?\.(\d+)\|/i;
+	#    print $log "gi|".$gi."...";
+	my $summary = get_gi_summary($gi);
+	my ($version) = $summary =~ /ref\|.*?\.(\d+)\|/i;
 
-    #    print $log "version: $version\n";
-    $version = 1 unless $version;
-    my ($length) =
-      $summary =~ /<Item Name="Length" Type="Integer">(\d+)<\/Item>/i;
-    my ($taxaid) =
-      $summary =~ /<Item Name="TaxId" Type="Integer">(\d+)<\/Item>/i;
+	#    print $log "version: $version\n";
+	$version = 1 unless $version;
+	my ($length) =
+	  $summary =~ /<Item Name="Length" Type="Integer">(\d+)<\/Item>/i;
+	my ($taxaid) =
+	  $summary =~ /<Item Name="TaxId" Type="Integer">(\d+)<\/Item>/i;
 
-    my @results;
-    my %tmp;
-    foreach my $ds ( $coge->resultset('Dataset')
-        ->search( { name => $accn . ".gbk", version => $version } ) )
-    {
-        my $version_diff = $ds->version eq $version ? 0 : 1;
-        my $length_diff;
-        my $cogelength;
+	my @results;
+	my %tmp;
+	foreach my $ds ( $coge->resultset('Dataset')
+		->search( { name => $accn . ".gbk", version => $version } ) )
+	{
+		my $version_diff = $ds->version eq $version ? 0 : 1;
+		my $length_diff;
+		my $cogelength;
 
-        foreach my $feat (
-            $ds->features(
-                { "feature_type.name" => "chromosome" },
-                { "join"              => "feature_type" },
-            )
-          )
-        {
-            $cogelength += $feat->length;
-        }
-        $length_diff = $cogelength eq $length ? 0 : 1;
-        push @results, {
-            ds           => $ds,
-            version_diff => $version_diff,
-            length_diff  => $length_diff,
-            coge_length  => $cogelength,
-            ncbi_length  => $length,
+		foreach my $feat (
+			$ds->features(
+				{ "feature_type.name" => "chromosome" },
+				{ "join"              => "feature_type" },
+			)
+		  )
+		{
+			$cogelength += $feat->length;
+		}
+		$length_diff = $cogelength eq $length ? 0 : 1;
+		push @results, {
+			ds           => $ds,
+			version_diff => $version_diff,
+			length_diff  => $length_diff,
+			coge_length  => $cogelength,
+			ncbi_length  => $length,
 
-        };
-    }
-    return \@results;
+		};
+	}
+	return \@results;
 }
-
 
 ###NCBI eutils stuff
 
 sub get_gi {
-    my $accn = shift;
-    my $esearch =
-"http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=";
-    my $result = get( $esearch . "$accn" );
-    my ($id) = $result =~ /<id>(.*?)<\/id>/i;
-    return $id;
+	my $accn    = shift;
+	my $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=";
+	my $result = get( $esearch . "$accn" );
+	my ($id) = $result =~ /<id>(.*?)<\/id>/i;
+	return $id;
 }
 
 sub get_gi_summary {
-    my $gi = shift;
-    my $esummary =
-"http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nucleotide&rettype=gb&retmode=text&complexity=0&id=";
-    my $result = get( $esummary . $gi );
-    return $result;
+	my $gi       = shift;
+	my $esummary = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nucleotide&rettype=gb&retmode=text&complexity=0&id=";
+	my $result = get( $esummary . $gi );
+	return $result;
 }
 
 sub help {
-    print qq
+	print qq
 	{
 Welcome to $0!  This program loads genbank entries into the CoGe genomes database
 

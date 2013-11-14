@@ -180,16 +180,26 @@ function check_login() {
 }
 
 function load_genome() {
+	// Validate data items
 	var items = get_selected_files();
 	if (items == null) {
 		alert('Files are still being transferred, please wait.');
 		return;
 	}
 	else if (items.length == 0) {
-		alert('Please select some sequence files or an FTP site.');
+		alert('Please select some sequence files by clicking "Add Sequence Files".');
+		return;
+	}
+	
+	// Prevent mix of NCBI and file data types
+	var types = {};
+	items.forEach(function(item) { types[item.type] = 1; });
+	if (Object.keys(types).length > 1 && 'ncbi' in types) {
+		alert('Cannot mix NCBI data with other types.');
 		return;
 	}
 
+	// Validate other input fields
 	var organism_name = $('#edit_organism').val();
 	var organism_id = $('#edit_organism').data("organism_id");
 	if (!organism_id || !organism_name) {
@@ -236,6 +246,8 @@ function load_genome() {
 	
 	$.ajax({
 		data: {
+			type: "POST",
+			dataType: "text",
 			fname: 'load_genome',
 			load_id: load_id,
 			name: name,
@@ -253,8 +265,7 @@ function load_genome() {
 		},
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
-			
-			if (!obj || obj.error) {
+			if (obj && obj.error) {
 				alert(obj.error);
 				return;
 			}

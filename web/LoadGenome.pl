@@ -16,6 +16,8 @@ use File::Copy qw(copy);
 use URI;
 use URI::Escape::JavaScript qw(escape);
 use LWP::Simple;
+use XML::Simple;
+use Data::Dumper;
 no warnings 'redefine';
 
 use vars qw(
@@ -51,8 +53,7 @@ $MAX_SEARCH_RESULTS = 100;
     load_from_ftp  => \&load_from_ftp,
     ftp_get_file   => \&ftp_get_file,
     upload_file    => \&upload_file,
-    #search_ncbi_nucleotide	=> \&search_ncbi_nucleotide,
-    #search_ncbi_taxonomy	=> \&search_ncbi_taxonomy,
+    search_ncbi_nucleotide => \&search_ncbi_nucleotide,
     load_genome          => \&load_genome,
     get_sequence_types   => \&get_sequence_types,
     create_sequence_type => \&create_sequence_type,
@@ -313,29 +314,26 @@ sub ftp_get_file {
     );
 }
 
-sub search_ncbi_nucleotide {
+sub search_ncbi_nucleotide { #TODO this can be done client-side instead
     my %opts      = @_;
     my $accn      = $opts{accn};
     my $timestamp = $opts{timestamp};
+    
     my $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=$accn";
     my $result = get($esearch);
     #print STDERR $result;
-
     my $record = XMLin($result);
     #print STDERR Dumper $record;
-
     my $id = $record->{IdList}->{Id};
     #print STDERR "id = $id\n";
 
     my $title;
-    if ($id) {
+    if ($id) { # GI number
         $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nucleotide&id=$id";
         my $result = get($esearch);
         #print STDERR $result;
-
         $record = XMLin($result);
         #print STDERR Dumper $record;
-
         foreach ( @{ $record->{DocSum}->{Item} } )
         {    #FIXME use grep here instead
             if ( $_->{Name} eq 'Title' ) {
@@ -346,52 +344,10 @@ sub search_ncbi_nucleotide {
         }
     }
 
-    return unless $id and $title;
+    return encode_json({ error => 'Error: item not found' }) unless $id and $title;
     return encode_json(
-        { timestamp => $timestamp, name => $title, id => $id } );
+        { timestamp => $timestamp, name => $title, id => $accn } );
 }
-
-# moved to clientside javascript
-# sub search_ncbi_taxonomy {
-# 	my %opts = @_;
-# 	my $search_term = $opts{search_term};
-# 	my $get_children = $opts{get_children};
-# 	my $timestamp = $opts{timestamp};
-# 	print STDERR "ncbi_taxonomy_search $search_term\n";
-
-# 	my @results = ();
-# 	my $esearch;
-
-# 	if ($get_children) {
-# 		$esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=taxonomy&term=$search_term&field=nxlv";
-# 	}
-# 	else {
-# 		$search_term .= '*';
-# 		$esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=taxonomy&term=$search_term";
-# 	}
-
-# 	my $result = get($esearch);
-# 	my $record = XMLin($result);
-# 	my $id = $record->{IdList}->{Id};
-
-# 	if ($id) {
-# 		my @ids = (ref($id) eq 'ARRAY' ? @$id : ($id));
-# 		$esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=" . join(',', @ids);
-# 		my $result = get($esearch);
-# 		$record = XMLin($result);
-# #		print STDERR Dumper $record;
-# 		my @taxons = (ref($record->{Taxon}) eq 'ARRAY' ? @{$record->{Taxon}} : ($record->{Taxon}));
-# 		foreach (@taxons) {
-# 			my $id = $_->{TaxId};
-# 			my $name = $_->{ScientificName};
-# 			my $lineage = $_->{Lineage};
-# 			push @results, { id => $id, name => $name, lineage => $lineage };
-# 		}
-# 	}
-
-# 	print STDERR encode_json( { timestamp => $timestamp, results => \@results } );
-# 	return encode_json( { timestamp => $timestamp, results => [sort {$a->{name} cmp $b->{name}} @results] } );
-# }
 
 sub upload_file {
     my %opts      = @_;
@@ -445,80 +401,98 @@ sub load_genome {
     my $keep_headers = $opts{keep_headers};
     my $items        = $opts{items};
 
+	print STDERR "load_genome: organism_id=$organism_id name=$name description=$description version=$version type_id=$type_id restricted=$restricted\n";
+
 	# Added EL: 7/8/2013.  Solves the problem when restricted is unchecked.  
 	# Otherwise, command-line call fails with '-organism_id' being passed to 
 	# restricted as option
     $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
 
-    return encode_json({ error => 'No files specified' }) unless $items;
-    print STDERR
-"load_genome: organism_id=$organism_id name=$name description=$description version=$version type_id=$type_id restricted=$restricted\n";
-
-    $items = decode_json($items);
-
-    #	print STDERR Dumper $items;
-
+	# Check login
     if ( !$user_name || !$USER->is_admin ) {
         $user_name = $USER->user_name;
     }
     if ($user_name eq 'public') {
     	return encode_json({ error => 'Not logged in' });
     }
+    
+    # Check data items
+    return encode_json({ error => 'No files specified' }) unless $items;
+    $items = decode_json($items);
 
-    # Setup staging area and log file
+    # Setup staging area
     my $stagepath = $TEMPDIR . '/staging/';
-# mdb removed 8/9/13 issue 177
-#    my $i;
-#    for ( $i = 1 ; -e "$stagepath$i" ; $i++ ) { }
-#    $stagepath .= $i;
     mkpath $stagepath;
 
+	# Open log file
     my $logfile = $stagepath . '/log.txt';
     open( my $log, ">$logfile" ) or die "Error creating log file";
     print $log "Starting load genome $stagepath\n"
       . "name=$name description=$description version=$version type_id=$type_id restricted=$restricted org_id=$organism_id\n";
 
-    # Verify and decompress files
-    my @files;
+	# If NCBI load call special script
+	my $cmd;
+	my @accn;
     foreach my $item (@$items) {
-        my $fullpath = $TEMPDIR . $item;
-        return encode_json({ error => "File doesn't exist: $fullpath" }) if ( not -e $fullpath );
-        my ( $path, $filename ) = $item =~ /^(.+)\/([^\/]+)$/;
-        my ($fileext) = $filename =~ /\.([^\.]+)$/;
-
-        #print STDERR "$path $filename $fileext\n";
-        if ( $fileext eq 'gz' ) {
-            my $cmd = $P->{GUNZIP} . ' ' . $fullpath;
-            #print STDERR "$cmd\n";
-            `$cmd`;
-            $fullpath =~ s/\.$fileext$//;
-        }
-
-        #TODO support detecting/untarring tar files also
-        push @files, $fullpath;
+    	if ($item->{type} eq 'ncbi') {
+    		my $path = $item->{path};
+    		$path =~ s/\.\d+$//; # strip off version number
+    		push @accn, $path;
+    	}
     }
-
-    print $log "Calling load_genome.pl ...\n";
-    my $cmd =
-        "$BINDIR/load_genome.pl "
-      . "-user_name $user_name "
-      . '-keep_headers '
-      . ( $keep_headers && $keep_headers eq 'true' ? '1' : '0' ) . ' ';
-    $cmd .= '-name "' . escape($name) . '" '        if $name;
-    $cmd .= '-desc "' . escape($description) . '" ' if $description;
-    $cmd .= '-link "' . escape($link) . '" '        if $link;
-    $cmd .= '-version "' . escape($version) . '" '  if $version;
-    $cmd .= "-type_id $type_id ";
-    $cmd .= "-restricted " . $restricted . ' '      if $restricted;
-    $cmd .= "-organism_id $organism_id ";
-    $cmd .= '-source_name "' . escape($source_name) . '" ';
-    $cmd .= "-staging_dir $stagepath ";
-    $cmd .= '-fasta_files "' . escape( join( ',', @files ) ) . '" ';
-    $cmd .= "-config $CONFIGFILE"; #"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
+    if (@accn) {
+	    $cmd =
+	        "$BINDIR/load_genomes_n_stuff/genbank_genome_loader.pl "
+	      . join(' ', map {'-accn '.$_} @accn) . ' '
+	      . "-user_name $user_name "
+	      . "-staging_dir $stagepath "
+	      . "-conf $CONFIGFILE "
+	      . '-GO 1';
+    }
+    # Setup file-based load script
+	else {
+	    # Verify and decompress files
+	    my @files;
+	    foreach my $item (@$items) {
+	        my $fullpath = $TEMPDIR . $item->{path};
+	        return encode_json({ error => "File doesn't exist: $fullpath" }) if ( not -e $fullpath );
+	        my ( $path, $filename ) = $item->{path} =~ /^(.+)\/([^\/]+)$/;
+	        my ($fileext) = $filename =~ /\.([^\.]+)$/;
+	
+	        #print STDERR "$path $filename $fileext\n";
+	        if ( $fileext eq 'gz' ) {
+	            my $cmd = $P->{GUNZIP} . ' ' . $fullpath;
+	            #print STDERR "$cmd\n";
+	            `$cmd`;
+	            $fullpath =~ s/\.$fileext$//;
+	        }
+	
+	        #TODO support detecting/untarring tar files also
+	        push @files, $fullpath;
+	    }
+	
+	    $cmd =
+	        "$BINDIR/load_genome.pl "
+	      . "-user_name $user_name "
+	      . '-keep_headers '
+	      . ( $keep_headers && $keep_headers eq 'true' ? '1' : '0' ) . ' ';
+	    $cmd .= '-name "' . escape($name) . '" '        if $name;
+	    $cmd .= '-desc "' . escape($description) . '" ' if $description;
+	    $cmd .= '-link "' . escape($link) . '" '        if $link;
+	    $cmd .= '-version "' . escape($version) . '" '  if $version;
+	    $cmd .= "-type_id $type_id ";
+	    $cmd .= "-restricted " . $restricted . ' '      if $restricted;
+	    $cmd .= "-organism_id $organism_id ";
+	    $cmd .= '-source_name "' . escape($source_name) . '" ';
+	    $cmd .= "-staging_dir $stagepath ";
+	    $cmd .= '-fasta_files "' . escape( join( ',', @files ) ) . '" ';
+	    $cmd .= "-config $CONFIGFILE"; #"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
+	}
+    
+    # Call load script
     print STDERR "$cmd\n";
     print $log "$cmd\n";
     close($log);
-
     if ( !defined( my $child_pid = fork() ) ) {
         return encode_json({ error => "Cannot fork: $!" });
     }
@@ -528,6 +502,7 @@ sub load_genome {
         exit;
     }
     
+    # Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
         url => $P->{SERVER} . "$PAGE_TITLE.pl?load_id=$LOAD_ID"
     );
@@ -536,7 +511,6 @@ sub load_genome {
 }
 
 sub get_load_log {
-    #my %opts    = @_;
     #print STDERR "get_load_log $LOAD_ID\n";
 
     my $logfile = $TEMPDIR . "staging/log.txt";
@@ -568,7 +542,6 @@ sub get_load_log {
     }
     close($fh);
 
-    #	print STDERR encode_json({ status => $status }) . "\n";
     return encode_json(
         { status => $status, genome_id => $gid, new_load_id => $new_load_id, log => \@lines } );
 }
@@ -611,7 +584,7 @@ sub create_organism {
     my $name = $opts{name};
     my $desc = $opts{desc};
     return unless $name and $desc;
-    print STDERR "create_organism $name $desc\n";
+    #print STDERR "create_organism $name $desc\n";
 
     my $organism =
       $coge->resultset('Organism')
