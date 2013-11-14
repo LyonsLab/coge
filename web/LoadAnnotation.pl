@@ -373,9 +373,8 @@ sub load_annotation {
 	# restricted as option
    $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
  
-# print STDERR "load_annotation: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
+	# print STDERR "load_annotation: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
     return encode_json({ error => "No data items" }) unless $items;
-
     $items = decode_json($items);
 
     #	print STDERR Dumper $items;
@@ -386,10 +385,6 @@ sub load_annotation {
 
     # Setup staging area and log file
     my $stagepath = $TEMPDIR . 'staging/';
-# mdb removed 8/9/13 issue 177
-#    my $i;
-#    for ( $i = 1 ; -e "$stagepath$i" ; $i++ ) { }
-#    $stagepath .= $i;
     mkpath $stagepath;
 
     my $logfile = $stagepath . '/log.txt';
@@ -400,16 +395,15 @@ sub load_annotation {
     # Verify and decompress files
     my @files;
     foreach my $item (@$items) {
-        my $fullpath = $TEMPDIR . $item;
+        my $fullpath = $TEMPDIR . $item->{path};
         return encode_json({ error => "File doesn't exist! $fullpath" }) if ( not -e $fullpath );
-        my ( $path, $filename ) = $item =~ /^(.+)\/([^\/]+)$/;
+        my ( $path, $filename ) = $item->{path} =~ /^(.+)\/([^\/]+)$/;
         my ($fileext) = $filename =~ /\.([^\.]+)$/;
 
-        #		print STDERR "$path $filename $fileext\n";
+        #print STDERR "$path $filename $fileext\n";
         if ( $fileext eq 'gz' ) {
             my $cmd = $P->{GUNZIP} . ' ' . $fullpath;
-
-            #			print STDERR "$cmd\n";
+            #print STDERR "$cmd\n";
             `$cmd`;
             $fullpath =~ s/\.$fileext$//;
         }
@@ -418,8 +412,6 @@ sub load_annotation {
         push @files, $fullpath;
     }
 
-    print $log "Calling $BINDIR/load_annotation.pl ...\n";
-    
     my $cmd =
         "$BINDIR/load_annotation.pl "
       . "-user_name $user_name "

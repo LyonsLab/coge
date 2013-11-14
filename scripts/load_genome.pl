@@ -320,9 +320,7 @@ foreach my $chr ( sort keys %sequences ) {
     );
 }
 
-print $log "log: Added genome id"
-  . $genome->id
-  . "\n";    # !!!! don't change, gets parsed by calling code
+print $log "log: Added genome id" . $genome->id . "\n";    # !!!! don't change, gets parsed by calling code
 
 # Copy files from staging directory to installation directory
 my $t1 = new Benchmark;
@@ -365,6 +363,7 @@ print $log "log: "
 my $t2 = new Benchmark;
 my $time = timestr( timediff( $t2, $t1 ) );
 print $log "Took $time to copy\n";
+# This message required to end load on client
 print $log "log: Finished loading genome!\n";
 
 close($log);

@@ -15,9 +15,13 @@ function get_selected_files() {
 	
 	$('#file_table tr').each(
 		function() {
+			//FIXME optimize this
 			var path = $(this).data('path');
 			if (path) {
-				items.push(path);
+				items.push({
+					'type': $(this).data('type'),
+					'path': path,
+				});
 			}
 			else { // file is still transferring
 				transferring++;
@@ -50,8 +54,23 @@ $(document).ready(function() {
 	
 	irods_get_path();
 
-	set_ftp_button();
-	$('#input_url').bind('keyup focus click', set_ftp_button);
+	$('#input_url').bind('keyup focus click', function() {
+		if ( $('#input_url').val() ) {
+			$('#ftp_get_button').removeClass('ui-state-disabled');
+		}
+		else {
+			$('#ftp_get_button').addClass('ui-state-disabled');
+		}
+	});
+	
+	$('#input_accn').bind('keyup focus click', function() {
+		if ( $('#input_accn').val() ) {
+			$('#ncbi_get_button').removeClass('ui-state-disabled');
+		}
+		else {
+			$('#ncbi_get_button').addClass('ui-state-disabled');
+		}
+	});
 	
 	$('#input_upload_file').fileupload({
     	dataType: 'json',
@@ -78,19 +97,10 @@ $(document).ready(function() {
     		},
 		done: 
 			function(e, data) {
-				finish_file_in_list('file://'+data.result.filename, data.result.path, data.result.size);
+				finish_file_in_list('file', 'file://'+data.result.filename, data.result.path, data.result.size);
 			}
 	});	
 });
-
-function set_ftp_button() {
-	if ( $('#input_url').val() ) {
-		$('#ftp_get_button').removeClass('ui-state-disabled');
-	}
-	else {
-		$('#ftp_get_button').addClass('ui-state-disabled');
-	}
-}
 
 function add_file_to_list(filename, url) {
 	var tr = $('#file_table tr').filter(
@@ -122,17 +132,30 @@ function add_file_to_list(filename, url) {
 	return 1;
 }
 
-function finish_file_in_list(url, path, size) {
+function finish_file_in_list(type, url, path, size) {
+	// Find item in list and update fields
 	var tr = $('#file_table tr').filter(
 		function() {
 			return (url == $(this).data('url'));
 		}
 	);
-	$(tr).data('path', path);
+	$(tr).data({
+		'path': path,
+		'type': type
+	});
+	
+	// Animate completion in list
 	$(tr).children().last().remove();
-	$(tr).append( $('<td align="right"><span style="vertical-align:2px">'+units(size)+'</span> <span onClick="$(this).closest(\'tr\').hide(); $(this).remove(); cancel_callback();" class="link ui-icon ui-icon-closethick"></span></td>').fadeIn() );
-	$(tr).css('font-style', 'normal');
-	$(tr).css('color', 'black');
+	$(tr).append( 
+		$('<td align="right">' + 
+			'<span style="vertical-align:2px">' + units(size) + '</span>' + 
+			'<span onClick="cancel_callback(this);" class="link ui-icon ui-icon-closethick"></span>' +
+		  '</td>'
+		).fadeIn()
+	).css({
+		'font-style': 'normal',
+		'color': 'black'
+	});
 	
 	// Call template user's generic hander if defined
 	if (typeof file_finished == 'function') {
@@ -140,7 +163,10 @@ function finish_file_in_list(url, path, size) {
 	}	
 }
 
-function cancel_callback() {
+function cancel_callback(that) {
+	// Remove from file list
+	$(that).closest('tr').hide('fast', function() { $(this).remove(); });
+			
 	// Call template user's generic hander if defined
 	if (typeof file_canceled == 'function') {
 		file_canceled();
@@ -282,7 +308,7 @@ function irods_get_file(path) {
 		},
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
-			finish_file_in_list('irods://'+path, obj.path, obj.size);
+			finish_file_in_list('irods', 'irods://'+path, obj.path, obj.size);
 		},
 	});	
 }
@@ -357,7 +383,7 @@ function ftp_get_file(url, username, password) {
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
 			if (!pageObj.timestamp || obj.timestamp >= pageObj.timestamp) {
-				finish_file_in_list(url, obj.path, obj.size);
+				finish_file_in_list('ftp', url, obj.path, obj.size);
 			}
 		},
 	});	
@@ -371,7 +397,6 @@ function load_from_ftp() {
 	pageObj.timestamp = timestamp;
 	
 	$('#ftp_get_button').addClass('ui-state-disabled');
-	
 	$('#ftp_status').html('<img src="picts/ajax-loader.gif"/> Contacting host...');
 
 	$.ajax({
@@ -418,18 +443,33 @@ function load_from_ftp() {
 
 function load_from_ncbi() {
 	var accn = $('#input_accn').val();
+	
+	$('#ncbi_get_button').addClass('ui-state-disabled');
+	$('#ncbi_status').html('<img src="picts/ajax-loader.gif"/> Contacting NCBI...');
+	
 	$.ajax({
 		data: {
-			fname: 'ncbi_search',
+			fname: 'search_ncbi_nucleotide',
 			accn: accn,
 			load_id: load_id,
 			timestamp: new Date().getTime()
 		},
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
-			if (add_file_to_list(obj.name, 'ncbi://'+obj.id)) {
-				finish_file_in_list('ncbi://'+obj.id, '', '');
+			if (obj) {
+				if (obj.error) {
+					$('#ncbi_status').html(obj.error);
+					return;
+				}
+				else if (typeof obj.id != 'undefined') {
+					if (add_file_to_list(obj.name, 'ncbi://'+obj.id)) {
+						finish_file_in_list('ncbi', 'ncbi://'+obj.id, obj.id, '');
+					}
+				}
 			}
+			
+			$('#ncbi_get_button').removeClass('ui-state-disabled');
+			$('#ncbi_status').html('');
 		},
 	});	
 }
@@ -478,11 +518,10 @@ function load_from_ncbi() {
 
   <TMPL_IF NAME='ENABLE_NCBI'>
   <div id="tab-3" class="small" style="height:200px;">
-  	Coming soon ...<br><br>
-  	<!--
-    Accession #: <input id="input_accn" size="15" />
-    <span id="ncbi_get_button" onClick="load_from_ncbi();" class='ui-button ui-corner-all ui-button-go'> Get </span>
-  	-->
+    Enter the NCBI accession number of the genome to load.<br><br>
+    Accession: <input id="input_accn" size="15" />
+    <span id="ncbi_get_button" onClick="load_from_ncbi();" class='ui-state-disabled ui-button ui-corner-all ui-button-go'> Get </span>
+    <div id="ncbi_status" class="note" style="padding-top:20px;"></div>
   </div>
   </TMPL_IF>
 
