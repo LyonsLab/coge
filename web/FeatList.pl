@@ -145,6 +145,8 @@ sub gen_body {
     }
     my $dsid  = $form->param('dsid')  if $form->param('dsid');
     my $dsgid = $form->param('dsgid') if $form->param('dsgid');
+    my $gid = $form->param('gid') if !$dsgid && $form->param('gid');
+    $dsgid = $gid if $gid;
     my $chr   = $form->param('chr')   if $form->param('chr');
     my $ftid  = $form->param('ftid')  if $form->param('ftid');
     my $start = $form->param('start') if defined $form->param('start');

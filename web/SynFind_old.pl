@@ -1265,7 +1265,7 @@ sub gen_fasta {
         feat_type => $feat_type,
         write_log => $write_log
     );
-    my $file = $FASTADIR . "/$dsgid-$feat_type.fasta";
+    my $file = $FASTADIR . "/old_synmap/$dsgid-$feat_type.fasta";
     my $res;
     CoGe::Accessory::Web::write_log( "#FASTA#", $cogeweb->logfile )
       if $write_log;
