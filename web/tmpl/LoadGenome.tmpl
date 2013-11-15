@@ -58,14 +58,7 @@ $(document).ready(function(){
 
 function file_selected(filename, url) {
 	$('#file_select_dialog').dialog('close');
-	$('#files_clear').show().removeClass('ui-state-disabled');
-}
-
-function clear_list() {
-	timestamps['ftp'] = new Date().getTime(); // Cancel ftp transfers
-	$('#file_table').html('');
-	$('#ftp_get_button').removeClass('ui-state-disabled');
-	$('#files_clear').addClass('ui-state-disabled');
+	$('#files_clear').removeClass('ui-state-disabled');
 }
 
 function get_sequence_types(id) {
@@ -194,7 +187,8 @@ function load_genome() {
 	// Prevent mix of NCBI and file data types
 	var types = {};
 	items.forEach(function(item) { types[item.type] = 1; });
-	if (Object.keys(types).length > 1 && 'ncbi' in types) {
+	var isNCBI = 'ncbi' in types;
+	if (Object.keys(types).length > 1 && isNCBI) {
 		alert('Cannot mix NCBI data with other types.');
 		return;
 	}
@@ -202,19 +196,19 @@ function load_genome() {
 	// Validate other input fields
 	var organism_name = $('#edit_organism').val();
 	var organism_id = $('#edit_organism').data("organism_id");
-	if (!organism_id || !organism_name) {
+	if (!isNCBI && (!organism_id || !organism_name)) {
 		alert('Organism not found.');
 		return;
 	}
 
 	var version = $('#edit_version').val();
-	if (!version) {
+	if (!isNCBI && !version) {
 		alert('Please specify a genome version.');
 		return;
 	}
 
 	var source = $('#edit_source').val();
-	if (!source) {
+	if (!isNCBI && !source) {
 		alert('Please specify a data source.');
 		return;
 	}
@@ -675,7 +669,7 @@ function sort_name (a,b) {
   <tr>
     <td>Organism:</td>
     <td>
-      <input id="edit_organism" type="search" placeholder="Search" onkeyup="wait_to_search(search_organisms, this.value);" size="45" spellcheck="false" />
+      <input id="edit_organism" type="search" placeholder="Search" onkeyup="wait_to_search(search_organisms, this.value);" size="50" spellcheck="false" />
       <span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all'>New</span>
     </td>
   </tr>
@@ -693,7 +687,7 @@ function sort_name (a,b) {
   <tr>
     <td>Source:</td>
     <td>
-      <input id="edit_source" type="search" placeholder="Search" size="45" spellcheck="false" />
+      <input id="edit_source" type="search" placeholder="Search" size="50" spellcheck="false" />
       <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
     </td>
   </tr>
@@ -720,13 +714,15 @@ function sort_name (a,b) {
 
 <br>
 <span id='genome_data' style="color:dimgray;font-weight:bold;">Genome Data</span><br>
-<div class="small note" style="width:450px;">
-	Only sequence FASTA files can be loaded at this stage.  
-	GFF annotation files can be loaded from the Genome Info menu after the sequence is loaded.<br>
-</div>
-<table id='file_table' class="small ui-widget-content ui-corner-all"></table>
-<span onClick="$('#file_select_dialog').dialog('open')" class='ui-button ui-corner-all'>Add Sequence Files</span>
-<span id="files_clear" onClick="clear_list();" class='hidden ui-button ui-corner-all'>Clear List</span>
+<div class="small info" style="width:550px;">
+  Click the <b>Add Data</b> button to select the data items to be loaded for the genome from: 
+  1) iPlant Data Store, 2) FTP/HTTP site, 3) browser upload, and 4) NCBI.
+  For 1-3, only sequence FASTA files can be loaded at this stage.  GFF annotation files can be loaded later on.
+  For 4, both sequence and annotation associated with the specified accession are loaded.
+  </div>
+<span onClick="$('#file_select_dialog').dialog('open')" class='ui-button ui-corner-all'>Add Data</span>
+<span id="files_clear" onClick="clear_list();" class='ui-state-disabled ui-button ui-corner-all'>Clear List</span>
+<table id='file_table' class="hidden small ui-widget-content ui-corner-all" style="margin-top:5px;margin-bottom:5px;"></table>
 <br>
 <br>
 <br>
