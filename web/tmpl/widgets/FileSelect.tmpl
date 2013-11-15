@@ -3,6 +3,7 @@
 
 // Required global vars
 //    load_id
+//    timestamps[]
 //
 // Required callbacks
 //    file_selected()
@@ -35,6 +36,13 @@ function get_selected_files() {
 	}
 	
 	return items;
+}
+
+function clear_list() {
+	timestamps['ftp'] = new Date().getTime(); // Cancel ftp transfers
+	$('#file_table').html('').hide();
+	$('#ftp_get_button').removeClass('ui-state-disabled');
+	$('#files_clear').addClass('ui-state-disabled');
 }
 
 // End Widget API -------------------------------------------------------------
@@ -122,7 +130,7 @@ function add_file_to_list(filename, url) {
 		$('#file_table').empty(); // remove all rows
 	</TMPL_IF>
 
-	$('#file_table').append(tr);
+	$('#file_table').append(tr).show();
 	
 	// Call template user's generic hander if defined
 	if (typeof file_selected == 'function') {
@@ -165,12 +173,21 @@ function finish_file_in_list(type, url, path, size) {
 
 function cancel_callback(that) {
 	// Remove from file list
-	$(that).closest('tr').hide('fast', function() { $(this).remove(); });
+	$(that).closest('tr').hide('fast', 
+		function() { 
+			$(this).remove(); 
 			
-	// Call template user's generic hander if defined
-	if (typeof file_canceled == 'function') {
-		file_canceled();
-	}
+			// Hide table if empty
+			if ($('#file_table tr').length == 0) {
+				$('#file_table').hide();
+			}
+
+			// Call template user's generic hander if defined
+			if (typeof file_canceled == 'function') {
+				file_canceled();
+			}
+		}
+	);
 }
 
 function activate_on_input(input_id, button_id) {
@@ -479,10 +496,10 @@ function load_from_ncbi() {
   <ul>
     <li class="small"><a href="#tab-1">iPlant Data Store</a></li>
     <li class="small"><a href="#tab-2">FTP/HTTP</a></li>
+    <li class="small"><a href="#tab-3">Upload</a></li>
     <TMPL_IF NAME='ENABLE_NCBI'>
-    <li class="small"><a href="#tab-3">NCBI</a></li>
+    <li class="small"><a href="#tab-4">NCBI</a></li>
     </TMPL_IF>
-    <li class="small"><a href="#tab-4">Upload</a></li>
   </ul>
 
   <div id="tab-1" class="small">
@@ -516,19 +533,25 @@ function load_from_ncbi() {
     <span class="note">Note: FTP/HTTP transfers, including login information, are not secure (encrypted).</span>
   </div>
 
-  <TMPL_IF NAME='ENABLE_NCBI'>
   <div id="tab-3" class="small" style="height:200px;">
-    Enter the NCBI accession number of the genome to load.<br><br>
-    Accession: <input id="input_accn" size="15" />
-    <span id="ncbi_get_button" onClick="load_from_ncbi();" class='ui-state-disabled ui-button ui-corner-all ui-button-go'> Get </span>
-    <div id="ncbi_status" class="note" style="padding-top:20px;"></div>
+	Select a file to upload from your computer.  This method is best for smaller files (less than 200MB, 2GB maximum). 
+	For larger files use the iPlant Data Store. <br><br><br>
+    File: <input id="input_upload_file" name="input_upload_file" type="file" size="30" data-url='<TMPL_VAR NAME="PAGE_NAME">' />
+  </div>
+  
+  <TMPL_IF NAME='ENABLE_NCBI'>
+  <div id="tab-4" class="small" style="height:200px;">
+    Enter the NCBI accession number of the item to add.<br><br>
+    <div>
+      <span>Accession: <input id="input_accn" size="15" /></span>
+      <span id="ncbi_get_button" onClick="load_from_ncbi();" class='ui-state-disabled ui-button ui-corner-all ui-button-go'> Get </span>
+      <span id="ncbi_status" class="note" style="padding-left:15px;min-height:50px;"></span>
+    </div>
+    <div class="note" style="padding-top:20px">
+    	Note: The organism, version, type, and source fields do not need to be specified.  The restricted option
+    	is ignored, all data from NCBI is made public.
+    </div>
   </div>
   </TMPL_IF>
-
-  <div id="tab-4" class="small" style="height:200px;">
-  	Select a file to upload from your computer.  This method is best for smaller files (less than 200MB, 2GB maximum). 
-  	For larger files use the iPlant Data Store. <br><br><br>
-    File: <input id="input_upload_file" name="input_upload_file" type="file" size="30" data-url='<TMPL_VAR NAME="PAGE_NAME">' />
-  </div> <!-- tab-4 -->
 
 </div>

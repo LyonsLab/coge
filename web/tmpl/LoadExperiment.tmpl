@@ -50,11 +50,7 @@ function file_finished(size, url) {
 
 function file_canceled() {
 	$('#select_file_type').hide();
-	$('#select_file_button').fadeIn();
-}
-
-function clear_list() {
-	$('#file_table').html('');
+	$('#select_file_button').show();
 }
 
 function create_source() {
@@ -312,11 +308,11 @@ function get_sources () {
 <table class="small ui-widget-content ui-corner-all">
   <tr>
     <td>Name:</td>
-    <td><input id="edit_name" type="textbox" size="80" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" /></td>
+    <td><input id="edit_name" type="textbox" size="50" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" /></td>
   </tr>
   <tr>
     <td>Description:</td>
-    <td><textarea id="edit_description" rows=5 cols=57 ><TMPL_VAR NAME='DESC'></textarea></td>
+    <td><textarea id="edit_description" rows="5" cols="50" ><TMPL_VAR NAME='DESC'></textarea></td>
   </tr>
   <tr>
     <td>Version:</td>
@@ -325,7 +321,7 @@ function get_sources () {
   <tr>
     <td>Source:</td>
     <td>
-      <input id="edit_source" type="search" placeholder="Search" size="80" spellcheck="false" />
+      <input id="edit_source" type="search" placeholder="Search" size="50" spellcheck="false" />
       <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
     </td>
   </tr> 
@@ -336,7 +332,7 @@ function get_sources () {
   <tr>
     <td>Genome:</td>
     <td>
-      <input id="edit_genome" type="search" placeholder="Search" spellcheck="false" onkeypress="wait_to_search(search_genomes, this);" size="80" value="<TMPL_VAR NAME='GENOME_NAME'>" />
+      <input id="edit_genome" type="search" placeholder="Search" spellcheck="false" onkeypress="wait_to_search(search_genomes, this);" size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
       <input id="gid" type="hidden" value="<TMPL_VAR NAME='GENOME_ID'>" />
     </td>
   </tr>
