@@ -258,6 +258,7 @@ def an_features(environ, start_response): # mdb rewritten 11/8/13 issue 246 - ad
                     response_body["features"][i]["type"] = row[3]
 
                 response_body["features"][i]["subfeatures"].append({
+                    "chr" : chr_id, # mdb added 11/18/13 issue 240 - add chr to FeatAnno.pl onclick url
                     "start" : row[0],
                     "end" : row[1],
                     "strand" : row[2],
@@ -325,6 +326,7 @@ def an_features(environ, start_response): # mdb rewritten 11/8/13 issue 246 - ad
             # Build response
             for row in feats.values():
                 response_body["features"].append({
+                    "chr"    : chr_id, # mdb added 11/18/13 issue 240 - add chr to FeatAnno.pl onclick url
                     "start"  : row[0],
                     "end"    : row[1],
                     "strand" : row[2],
