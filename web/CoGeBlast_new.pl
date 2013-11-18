@@ -694,7 +694,7 @@ sub blast_search {
 
     my $link = CoGe::Accessory::Web::get_tiny_link(url => $url);
     
-    CoGe::Accessory::Web::log_history(
+    my $log = CoGe::Accessory::Web::log_history(
         db          => $coge,
         user_id     => $USER->id,
        	page        => $PAGE_TITLE,
@@ -706,6 +706,7 @@ sub blast_search {
         tiny_link => $link,
         title     => $PAGE_TITLE,
         user_id   => $USER->id,
+        log_id    => $log->id,
         db_object => $coge
     );
     CoGe::Accessory::Web::schedule_job(job => $job);
