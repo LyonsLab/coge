@@ -284,6 +284,10 @@ unless ($conn) {
 
 # Copy files from staging directory to installation directory
 mkpath($storage_path);
+unless (-r $storage_path) {
+	print $log "log: error: could not create installation path\n";
+	exit(-1);
+}
 $cmd = "cp -r $staging_dir/* $storage_path";
 print $log "$cmd\n";
 `$cmd`;
