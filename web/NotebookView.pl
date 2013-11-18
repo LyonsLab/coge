@@ -175,7 +175,7 @@ qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_
           )
         {    # pick a genome, any genome
             my $link =
-qq{window.open('GenomeView.pl?gid=$gid&viewer=JBrowse&tracks=notebook$lid');};
+qq{window.open('GenomeView.pl?gid=$gid&tracks=notebook$lid');};
             $html .=
 qq{<span style="font-size: .75em" class='ui-button ui-corner-all ui-button-icon-right' onClick="$link"><span class="ui-icon ui-icon-extlink"></span>View</span>};
             last;

@@ -568,7 +568,7 @@ qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_
     if ( !$EMBED ) {
         my $gid = $exp->genome_id;
         my $link =
-qq{window.open('GenomeView.pl?gid=$gid&viewer=JBrowse&tracks=experiment$eid');};
+qq{window.open('GenomeView.pl?gid=$gid&tracks=experiment$eid');};
         $html .=
 qq{<span style="font-size: .75em" class='ui-button ui-corner-all ui-button-icon-right' onClick="$link"><span class="ui-icon ui-icon-extlink"></span>View</span>};
     }
