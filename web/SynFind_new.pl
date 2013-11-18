@@ -916,6 +916,7 @@ sub go_synfind {
         tiny_link => $tiny_synfind_link,
         title     => $PAGE_TITLE,
         user_id   => $USER->id,
+        log_id    => $log->id,
         db_object => $coge
     );
 
