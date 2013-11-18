@@ -735,10 +735,20 @@ if ( $GO and ( $user_id or $user_name ) ) {
 		print $log "log: error creating user connector\n";
 		exit(-1);
 	}
+
+	# Log in history
+	CoGe::Accessory::Web::log_history(
+	    db          => $coge,
+	    user_id     => $user->id,
+	    page        => "LoadGenome",
+	    description => 'load genome id' . $genome->id,
+	    link        => 'GenomeInfo.pl?gid=' . $genome->id
+	);
 }
 
 # This message required to end load on client
 print $log "log: Finished loading genome!\n";
+close($log);
 
 exit;
 
