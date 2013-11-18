@@ -742,7 +742,7 @@ sub blast_search {
         my $name = $dsg->organism->name;
         my $args = [
             ['-i', $dbfasta, 0],
-            ['-t', qq{"$name"}, 1],
+            ['-t', qq{"$name"}, 0],
             ['-n', $dsgid, 1],
         ];
 
