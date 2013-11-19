@@ -3,6 +3,7 @@ import argparse
 import itertools
 import os
 import sys
+import time
 
 import zmq
 import MySQLdb as mdb
@@ -10,7 +11,7 @@ import MySQLdb as mdb
 _defaults = {
     'connection' : 'tcp://localhost:5151',
     'max_attempts' : 30,
-    'timeout' : 10000,
+    'timeout' : 1000,
 }
 
 def db_connect(config):
@@ -120,16 +121,21 @@ def main(args={}):
         socket.send_json(request, zmq.NOBLOCK)
         result = None
         counter = itertools.count()
-        count = 0
 
-        while result is None and _defaults['max_attempts'] > count:
+        while _defaults['max_attempts'] > counter.next() and not result:
+
             if socket in dict(poller.poll(timeout=_defaults['timeout'])):
                 result = socket.recv_json(flags=zmq.NOBLOCK)
-                count = counter.next()
+            else:
+                time.sleep(1)
+                try:
+                    socket.send_json(request, zmq.NOBLOCK)
+                except zmq.ZMQError:
+                    pass
 
         if not result:
             print("Unable to connect to the job engine.")
-            continue
+            sys.exit(1)
 
         job_status = result['status'].lower()
 

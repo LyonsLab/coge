@@ -5,6 +5,7 @@ import re
 import random
 import os
 import sys
+import time
 from collections import defaultdict #Counter
 from cgi import parse_qs, escape
 
@@ -85,14 +86,20 @@ def status(environ, start_response):
     poller = zmq.Poller()
     poller.register(socket, zmq.POLLIN)
     counter = itertools.count()
-    count = counter.next()
 
     socket.send_json(request, zmq.NOBLOCK)
 
-    while _defaults['max_attempts'] > count and not result:
+    while _defaults['max_attempts'] > counter.next() and not result:
+
         if socket in dict(poller.poll(timeout=_defaults['timeout'])):
             result = socket.recv_json(flags=zmq.NOBLOCK)
-            count = counter.next()
+        else:
+            time.sleep(1)
+
+            try:
+                socket.send_json(request, zmq.NOBLOCK)
+            except zmq.ZMQError:
+                pass
 
     socket.close()
     context.term()
