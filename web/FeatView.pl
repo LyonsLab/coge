@@ -3,6 +3,7 @@ use strict;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::genetic_code;
+use CoGe::Accessory::Utils qw( get_link_coords );
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
@@ -404,12 +405,15 @@ sub get_anno {
         my $ds     = $feat->dataset->id;
         my $x      = $feat->start;
         my $z      = 4;
+        my $gid    = $dsg->id;
         $anno .=
 qq{<span class="ui-button ui-corner-all" onClick="window.open('FastaView.pl?featid=$featid&gstid=$gstid');">Get Sequence</span>};
         $anno .=
 qq{<span class="ui-button ui-corner-all" onClick="window.open('CoGeBlast.pl?featid=$featid;gstid=$gstid');">CoGeBlast</span>};
+		my ($a, $b) = get_link_coords($feat->start, $feat->stop);
         $anno .=
-qq{<span class="ui-button ui-corner-all" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z;gstid=$gstid');">Genome Browser</span>};
+#qq{<span class="ui-button ui-corner-all" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z;gstid=$gstid');">Genome Browser</span>}; # mdb removed 11/20/13 issue 254
+qq{<span class="ui-button ui-corner-all" onClick="window.open('GenomeView.pl?gid=$gid&loc=$chr:$a..$b');">Genome Browser</span>}; # mdb added 11/20/13 issue 254
         $anno .=
 qq{<span class="ui-button ui-corner-all" onClick="window.open('SynFind.pl?fid=$featid');">SynFind</span>};
 

@@ -5,7 +5,7 @@ use warnings;
 use base 'DBIx::Class::Core';
 use CoGe::Accessory::genetic_code;
 use CoGe::Accessory::Annotation;
-use CoGe::Accessory::Utils qw( commify );
+use CoGe::Accessory::Utils qw( commify get_link_coords );
 use Text::Wrap;
 use Data::Dumper;
 use base 'Class::Accessor';
@@ -590,13 +590,13 @@ sub annotation_pretty_print_html {
 		$anno_type->Type_delimit(": <td> ");
 		$anno_type->Val_delimit(" , ");
 
-		my $offset = int( abs($stop-$start+1) / 4 );
+		my ($temp_start, $temp_stop) = get_link_coords($start, $stop);
 		my @links = (
-"<span class='data5 link' onclick =\"window.open('CoGeBlast.pl?fid=$fid')\">CoGeBlast</span>",
-"<span class='data5 link' onclick =\"window.open('FastaView.pl?fid=$fid')\">Fasta</span>",
-#"<span class='data5 link' onclick =\"window.open('GenomeView.pl?chr=$chr&gid=$gid&start=$start&z=6')\">GenomeView</span>", # mdb removed 11/18/13 issue 220
-"<span class='data5 link' onclick =\"window.open('GenomeView.pl?gid=$gid&loc=$chr:".($start-$offset)."..".($stop+$offset)."')\">GenomeView</span>", # mdb added 11/18/13 issue 220 - fix for jbrowse
-"<span class='data5 link' onclick =\"window.open('SynFind.pl?fid=$fid')\">SynFind</span>",
+			"<span class='data5 link' onclick =\"window.open('CoGeBlast.pl?fid=$fid')\">CoGeBlast</span>",
+			"<span class='data5 link' onclick =\"window.open('FastaView.pl?fid=$fid')\">Fasta</span>",
+			#"<span class='data5 link' onclick =\"window.open('GenomeView.pl?chr=$chr&gid=$gid&start=$start&z=6')\">GenomeView</span>", # mdb removed 11/18/13 issue 220, 254
+			"<span class='data5 link' onclick =\"window.open('GenomeView.pl?gid=$gid&loc=$chr:$temp_start..$temp_stop')\">GenomeView</span>", # mdb added 11/18/13 issue 220, 254 - fix for jbrowse
+			"<span class='data5 link' onclick =\"window.open('SynFind.pl?fid=$fid')\">SynFind</span>",
 		);
 		foreach my $item (@links) {
 			$anno_type->add_Annot($item);

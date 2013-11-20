@@ -34,7 +34,7 @@
 function animate_section(name, style, speedy, show) {
   if (show) {alert (name+"::"+style)}
   if (speedy == undefined) speedy = pageObj.speed;
-  //alert('speedy is '+speedy);
+  // alert('speedy is '+speedy);
   if (!style) style = "toggle";
   if (!speedy) {
     if ((style == "show") || style == "slideDown" || style == "fadeIn") {jQuery(name).show();}
@@ -78,7 +78,7 @@ function set_up_sort() {
 	});
 }
 
-//set display order of sequence submission boxes
+// set display order of sequence submission boxes
 
 function set_display_order () {
  i=1;
@@ -88,7 +88,7 @@ function set_display_order () {
  });
 }
 
-//Color Chooser js
+// Color Chooser js
 	function refreshSwatch() {
 		var red = $("#red").slider("value")
 			,green = $("#green").slider("value")
@@ -109,14 +109,14 @@ function set_display_order () {
 		$("#blue").slider("value", 60);
 	});
 
-//set up the jquery ui
+// set up the jquery ui
 $(function() {
-	     //initialize dialog box	     
+	     // initialize dialog box
 	     $("#color_dialog").dialog({autoOpen: false,
 	     				height: 260,
 					width: 502,
 	});
-	     //button effects on events
+	     // button effects on events
 	     $('.color_chooser').click(function() {
 					color_dialog_setter(this);
 			});
@@ -150,12 +150,12 @@ function update_color_picker(color_id, all) {
 
 if(window.console == undefined){ console = {}; console.debug = function(){}}
 
-//function set_genespace(updown, idx, value, length, anchorlength){
+// function set_genespace(updown, idx, value, length, anchorlength){
 
 Gobe.set_genespace= function (updown, idx, value, length, anchorlength){
-//  console.log(updown, idx, value, length, anchorlength);
-/* e.g.  ('up', 1, 330) becomes: byId('drup1').value = 330; */
-/* so up is the 'left', down is the 'right' bar.   */
+// console.log(updown, idx, value, length, anchorlength);
+/* e.g. ('up', 1, 330) becomes: byId('drup1').value = 330; */
+/* so up is the 'left', down is the 'right' bar. */
     value = parseFloat(value);
     var eid = 'dr' + updown + idx;
     $('#'+eid).val(value);
@@ -167,7 +167,7 @@ Gobe.set_genespace= function (updown, idx, value, length, anchorlength){
       var orig_dirstart = parseFloat($('#dirstart'+idx).val());
       $('#gbstart'+idx).val(value);
       $('#dirstart'+idx).val(value);
-      //adjust length
+      // adjust length
 
        var gblength = $('#gblength'+idx).val();
        if (gblength == undefined || gblength == ""){gblength=length;}
@@ -192,7 +192,7 @@ Gobe.set_genespace= function (updown, idx, value, length, anchorlength){
 };
 
 function return_image_info (id) {
-  //this function is not used.  Here to test using jquery.ajax calls
+  // this function is not used. Here to test using jquery.ajax calls
   pos="test";
   $.ajax({
     data: {
@@ -203,7 +203,7 @@ function return_image_info (id) {
            basename: pageObj.basefile
 	  },
     success: function (pos) {
-//           console.log(pos);
+// console.log(pos);
        }
   });
  }
@@ -213,7 +213,7 @@ Gobe.handle_html= function (html) {
   $('#results_info').html(html);
   
   if ( !$('#results_info').dialog('isOpen') && html && !html.match(/multiple hits/) ) {
-   //$('#results_info').dialog('option', 'position', 'right');
+   // $('#results_info').dialog('option', 'position', 'right');
    var xpos = $(document).width - 500;
    $('#results_info').dialog('option', 'position', ['right', 100]);
    $('#results_info').dialog('open');
@@ -282,14 +282,16 @@ function autosearch_coge_names (seqs){
  if (!seqs) {seqs = 1;}
  for (var i =seqs; i <= num_seqs; i++)
   {
-    //dataset_search(['args__accn','accn'+i,'args__num', 'args__'+i, 'args__dsid', 'dsid'+i, 'args__dsgid', 'dsgid'+i, 'args__gstid', 'gstid'+i, 'args__featid', 'featid'+i],[genome_search_chain]);
+    // dataset_search(['args__accn','accn'+i,'args__num', 'args__'+i,
+	// 'args__dsid', 'dsid'+i, 'args__dsgid', 'dsgid'+i, 'args__gstid',
+	// 'gstid'+i, 'args__featid', 'featid'+i],[genome_search_chain]);
 	accn = encodeURIComponent(document.getElementById('accn'+i).value);
 	dataset_search(['args__accn','args__'+accn,'args__num', 'args__'+i, 'args__dsid', 'dsid'+i, 'args__dsgid', 'dsgid'+i, 'args__gstid', 'gstid'+i, 'args__featid', 'featid'+i],[genome_search_chain]);
   }
 }
 
 function walk (direction) {
- //direction 1 == left -1 == right
+ // direction 1 == left -1 == right
 
  var num_seqs = $('#num_seqs').val();
  for (var i =1; i <= num_seqs; i++)
@@ -311,7 +313,7 @@ function walk (direction) {
 }
 
 
-//Following 2 js functions take care of emailing GEvo results to user
+// Following 2 js functions take care of emailing GEvo results to user
 
 function toggle_email_field(){
 	if ($('#check_email')[0].checked)
@@ -351,7 +353,8 @@ function rset () {
     $('#drup'+i).val("10000");
     $('#drdown'+i).val("10000");
     
-    //dataset_search(['args__accn','accn'+i,'args__num', 'args__'+i],[genome_search_chain]);
+    // dataset_search(['args__accn','accn'+i,'args__num',
+	// 'args__'+i],[genome_search_chain]);
     accn = encodeURIComponent(document.getElementById('accn'+i).value);
     dataset_search(['args__accn','args__'+accn,'args__num', 'args__'+i],[genome_search_chain]);
     
@@ -394,13 +397,16 @@ function genome_search_chain(stuff, num, featid) {
 function feat_search_chain(stuff, num, featid) {
  if (stuff) {
   $("#genome"+num).html(stuff);
-   //feat_search(['args__accn', 'accn'+num,'args__dsid', 'dsid'+num, 'args__dsgid', 'dsgid'+num, 'args__num', 'args__'+num, 'args__featid','args__'+featid],['feat'+num]);
+   // feat_search(['args__accn', 'accn'+num,'args__dsid', 'dsid'+num,
+	// 'args__dsgid', 'dsgid'+num, 'args__num', 'args__'+num,
+	// 'args__featid','args__'+featid],['feat'+num]);
    accn = encodeURIComponent(document.getElementById('accn'+num).value);
    feat_search(['args__accn', 'args__'+accn,'args__dsid', 'dsid'+num, 'args__dsgid', 'dsgid'+num, 'args__num', 'args__'+num, 'args__featid','args__'+featid],['feat'+num]);
  }
 }
 
-//this func switching the "left" and "right" sequence values when reverse region display is selected
+// this func switching the "left" and "right" sequence values when reverse
+// region display is selected
 function rev_locs (val) {
   up = $('#'+'drup'+val).val();
   down = $('#'+'drdown'+val).val();
@@ -442,7 +448,7 @@ function check_alignment_program (){
   var help = '<a href='+help_path+' target="_new">Help File for '+alignment+'</a>';
   $('.help').html(help);
   var spike = $("#spike").val();
-//  $("#spike").val(0);
+// $("#spike").val(0);
   
 if (alignment == "blastz")
  {
@@ -457,8 +463,8 @@ else if (alignment == "CHAOS")
  {
   animate_section("#chaos_options", "slideToggle");	
   animate_section("#spike_sequence", "slideDown");
-  //if (spike == "undefined" || spike == 0) {spike = 15;} 	
-  //$("#spike").val(spike);
+  // if (spike == "undefined" || spike == 0) {spike = 15;}
+  // $("#spike").val(spike);
 	
  }
 else if (alignment == "DiAlign_2")
@@ -480,12 +486,12 @@ else if (alignment == "tblastx")
  }	
 else if (alignment == 'blastn')
  {
-//  $("#blast_wordsize").val(7);
-//  $("#blast_gapopen").val(5);
-//  $("#blast_gapextend").val(2);
-//  $("#blast_eval").val(30);
-  //if (spike == "undefined" || spike == 0) {spike = 15;} 	
-  //$("#spike").val(spike);
+// $("#blast_wordsize").val(7);
+// $("#blast_gapopen").val(5);
+// $("#blast_gapextend").val(2);
+// $("#blast_eval").val(30);
+  // if (spike == "undefined" || spike == 0) {spike = 15;}
+  // $("#spike").val(spike);
   check_spike();		
   animate_section("#blast_options", "slideDown");
   animate_section(".blastn_options", "slideDown");
@@ -540,7 +546,7 @@ function handle_results (html,w, h, img_base, n_images, gevo_link, basefilename,
      get_tiny_url(['args__url','args__'+gevo_link],['tiny_link']);
    }
    
-   //Take care of Save results button
+   // Take care of Save results button
    setup_button_states();
 }
 
@@ -662,7 +668,7 @@ function monitor_log(log)
      pageObj.finished = 1;
     }
    
-   match=log.match(/sequence file/g); //\s+(\d+)/g);
+   match=log.match(/sequence file/g); // \s+(\d+)/g);
   if (match && match[0])
    { 
      match.reverse();  
@@ -711,14 +717,12 @@ function monitor_log(log)
   if (message) $('#loading').html("<div class=small>"+message+'</div>');
 }
 
-/*Depreciated, no longer use rgb textboxes to adjust HSP Colors
-function update_colors(hsp_num) {
-  var r = $('#r'+hsp_num).val();
-  var g = $('#g'+hsp_num).val();
-  var b = $('#b'+hsp_num).val();
-  $('#sample_color'+hsp_num).css("backgroundColor","rgb("+r+","+g+","+b+")");
-}
-*/
+/*
+ * Depreciated, no longer use rgb textboxes to adjust HSP Colors function
+ * update_colors(hsp_num) { var r = $('#r'+hsp_num).val(); var g =
+ * $('#g'+hsp_num).val(); var b = $('#b'+hsp_num).val();
+ * $('#sample_color'+hsp_num).css("backgroundColor","rgb("+r+","+g+","+b+")"); }
+ */
 
 function get_seq(seq_num)
  {
@@ -731,20 +735,25 @@ function get_seq(seq_num)
   var pos = $('#pos'+seq_num).val();
   var chr = $('#chr'+seq_num).val();
   var dsgid = $('#dsgid'+seq_num).val();
-  //alert (fid+"::"+rc+"::"+left+"::"+right);
+  // alert (fid+"::"+rc+"::"+left+"::"+right);
  window.open("SeqView.pl?rel=1;featid="+fid+"&dsid="+dsid+"&chr="+chr+"&start="+pos+"&upstream="+left+"&downstream="+right+"&rc="+rc+"&dsgid="+dsgid);
  }
 
 function genome_view(seq_num)
- {
+{
   var fid = $('#featid'+seq_num).val();
   var dsid = $('#dsid'+seq_num).val();
   var pos = $('#pos'+seq_num).val();
   var chr = $('#chr'+seq_num).val();
   var dsgid = $('#dsgid'+seq_num).val();
-  //alert (fid+"::"+rc+"::"+left+"::"+right);
- window.open("GenomeView.pl?fid="+fid+"&dsid="+dsid+"&chr="+chr+"&x="+pos+"&gid="+dsgid+";z=5");
- }
+  // alert (fid+"::"+rc+"::"+left+"::"+right);
+  // window.open("GenomeView.pl?fid="+fid+"&dsid="+dsid+"&chr="+chr+"&x="+pos+"&gid="+dsgid+";z=5"); // mdb removed 11/20/13 issue 254
+  
+  // mdb added 11/20/13 issue 254
+  var start = $('#featid'+seq_num+'_start').val();
+  var stop = $('#featid'+seq_num+'_stop').val();
+  window.open("GenomeView.pl?gid="+dsgid+"&loc="+chr+":"+start+'..'+stop);
+}
 
 function show_skip(num){
   $('#skip_font'+num).show(0);
@@ -755,7 +764,7 @@ function hide_skip(num){
 }
 
 $(function() {
- //substaniate dialog boxes          
+ // substaniate dialog boxes
         $(".dialog_box").dialog({ autoOpen: false, width: 500 });
 });
 
@@ -1365,139 +1374,147 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
 
 
 <TMPL_IF NAME="SEQ_SELECT">
-<TMPL_LOOP NAME="SEQ_SELECT_LOOP">
- <div id="seq_set<TMPL_VAR NAME="SEQ_NUM">" class=portlet style='padding: 0.3em'>
- <div class="portlet-header">
-     Sequence <TMPL_VAR NAME="SEQ_NUM">:
-    <select id="seq_submit<TMPL_VAR NAME="SEQ_NUM">" size="1" onchange='seq_submit_change(<TMPL_VAR NAME="SEQ_NUM">)'>
+	<TMPL_LOOP NAME="SEQ_SELECT_LOOP">
+		<div id="seq_set<TMPL_VAR NAME="SEQ_NUM">" class="portlet" style='padding: 0.3em'>
+			<div class="portlet-header">
+				Sequence <TMPL_VAR NAME="SEQ_NUM">:
+				<select id="seq_submit<TMPL_VAR NAME="SEQ_NUM">" size="1" onchange='seq_submit_change(<TMPL_VAR NAME="SEQ_NUM">)'>
+					<TMPL_VAR NAME=COGEPOS>
+					<option value="db<TMPL_VAR NAME="SEQ_NUM">">CoGe Database Name</option>
+					<option value="gb<TMPL_VAR NAME="SEQ_NUM">">NCBI GenBank</option>
+					<option value="dir<TMPL_VAR NAME="SEQ_NUM">">Direct Submission</option>
+				</select>
+				Display Order <input name='display_order<TMPL_VAR NAME ="SEQ_NUM">' id='display_order<TMPL_VAR NAME ="SEQ_NUM">' type="textbox" size="2" readonly value='<TMPL_VAR NAME="SEQ_NUM">' />
+			</div>
 
-     <TMPL_VAR NAME=COGEPOS>
-     <option value="db<TMPL_VAR NAME="SEQ_NUM">">CoGe Database Name</option>
-     <option value="gb<TMPL_VAR NAME="SEQ_NUM">">NCBI GenBank</option>
-     <option value="dir<TMPL_VAR NAME="SEQ_NUM">">Direct Submission</option>
-
-    </select>
-    Display Order <input  name=display_order<TMPL_VAR NAME ="SEQ_NUM"> id=display_order<TMPL_VAR NAME ="SEQ_NUM"> type="textbox" size=2 readonly value=<TMPL_VAR NAME ="SEQ_NUM"> >
-</div>
-<div class=partlet-content>
-
-<DIV id="db<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
-<TABLE class="small">
-       <TR valign="top">
-        <TD>Name:
-        <TD align=left><input  type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['args__accn','args__'+encodeURIComponent(document.getElementById('accn<TMPL_VAR NAME="SEQ_NUM">').value),'args__num', 'args__<TMPL_VAR NAME="SEQ_NUM">', 'args__dsid', 'args__<TMPL_VAR NAME="DSID">', 'args__dsgid', 'args__<TMPL_VAR NAME="DSGID">', 'args__gstid', 'args__<TMPL_VAR NAME="GSTID">'],[genome_search_chain])" value="<TMPL_VAR NAME=DRACCN>" />
-</table>
-</DIV>      
-
-
-<DIV id="cogepos<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">	
-<TABLE class="small">
-      <TR>
-       <TD>Organism: <TMPL_VAR NAME=ORGINFO>
-      <TR valign="top">
-       <TD>Position: <input  type="text" id="pos<TMPL_VAR NAME="SEQ_NUM">" value="<TMPL_VAR NAME=POS>" size=10>
-           Chr: <input  type="text" id="chr<TMPL_VAR NAME="SEQ_NUM">" value="<TMPL_VAR NAME=CHR>" size=10>
-</table>
-</DIV>
-
-<div id="drcoge<TMPL_VAR NAME="SEQ_NUM">"  style="display: none;" class="seq_submisttion_type seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> drcoge<TMPL_VAR NAME="SEQ_NUM"> ">
-<table>
-      <tr>
-       <td colspan=2>     
-        <DIV id="dataset<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="DSID">"></DIV>
-
-        <DIV id="genome<TMPL_VAR NAME="SEQ_NUM">" nowrap><TMPL_VAR NAME="DSG_STUFF"></DIV>
-
-        <DIV id="genomic_sequence_type<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="gstid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="GSTID">"></DIV>
-        <DIV id="feat<TMPL_VAR NAME="SEQ_NUM">"><input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="FEATID">"></DIV>
-
-        <DIV id="chromosome<TMPL_VAR NAME="SEQ_NUM">"><TMPL_VAR NAME="CHR_STUFF"></DIV>
-
-      <TR>
-       <TD><DIV class="small">Left sequence:</DIV>
-       <TD><DIV  id="up<TMPL_VAR NAME="SEQ_NUM">" ><input class="location" type="text" name="drup<TMPL_VAR NAME="SEQ_NUM">" id="drup<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10" value="<TMPL_VAR NAME=DRUP>" /> </DIV>
-      <TR>
-       <TD><DIV class="small">Right sequence:</DIV>
-       <TD><DIV  id="down<TMPL_VAR NAME="SEQ_NUM">"><input class="location" type="text" name="drdown<TMPL_VAR NAME="SEQ_NUM">" id="drdown<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=DRDOWN>" /></DIV>
-   <tr>
-    <TD class=small><div class="link" id="get_seq<TMPL_VAR NAME=SEQ_NUM>" onclick="get_seq(<TMPL_VAR NAME=SEQ_NUM>)">Get Sequence</div>
-    <TD class=small><div class="link" id="get_seq<TMPL_VAR NAME=SEQ_NUM>" onclick="genome_view(<TMPL_VAR NAME=SEQ_NUM>)">Genome View</div>
-     
-</table>
-</DIV>
-
-
-<DIV id="gb<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
-<TABLE class="small">
-       <TR valign="top">
-        <TD>Accession:
-        <TD><input  type="text" name="gbaccn<TMPL_VAR NAME="SEQ_NUM">" id="gbaccn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="10" value="<TMPL_VAR NAME=GBACCN>" />
-      <TR>
-	<TD><DIV class="small">Start Position:</DIV>
-      	<TD><input  type="text" name="gbstart<TMPL_VAR NAME="SEQ_NUM">" id="gbstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10" value="<TMPL_VAR NAME=GBSTART>" /></TD>
-      <TR>
-       <TD><DIV class="small">Sequence Length:</DIV>
-       <TD><input  type="text" name="gblength<TMPL_VAR NAME="SEQ_NUM">" id="gblength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=GBLENGTH>"/>
-</TABLE>
-</DIV>
-
-<DIV id="dir<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">	
-<TABLE class="small">
-      <TR valign="top">
-      <TD>       
-     Paste fasta or genbank format sequence below:<BR> <textarea  name="dirseq<TMPL_VAR NAME="SEQ_NUM">" id="dirseq<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  rows="5" cols="90"></textarea><BR>
-     <font class="small">Start: <input  type="text" name="dirstart<TMPL_VAR NAME="SEQ_NUM">" id="dirstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value="1" /></font>
-     <font class="small">Length: <input  type="text" name="dirlength<TMPL_VAR NAME="SEQ_NUM">" id="dirlength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value=""  /></font><br>
-</table>
-</DIV>
-
-
-<table>
-<tr><td>
-<div id=skip_font<TMPL_VAR NAME="SEQ_NUM"> style="color: red;display:none"> Sequence Skipped</div>
-
-   <span id="seqopts<TMPL_VAR NAME="SEQ_NUM">" class="small ui-button ui-corner-all ui-button-toggle" onClick='$(".sequence_options<TMPL_VAR NAME="SEQ_NUM">").slideToggle();'>Sequence <TMPL_VAR NAME="SEQ_NUM"> Options</span>
-   <Table class="small sequence_options<TMPL_VAR NAME="SEQ_NUM">" style="display: none;">
- <TR align=left>
-  <Td>
-   Skip Sequence:
-</td>
-  <TD>
-	<label><input  onClick=show_skip(<TMPL_VAR NAME="SEQ_NUM">) type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" />Yes</label>
-	<label><input  onClick=hide_skip(<TMPL_VAR NAME="SEQ_NUM">) type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" checked/>No</label><br>
- </tr>
-<TR align=left>
-  <Td>
-   Reference Sequence:
-</td>
-  <TD>
-	<label><input  type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" <TMPL_VAR NAME=REF_YES> />Yes</label>
-	<label><input  type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" <TMPL_VAR NAME=REF_NO> />No</label><br>
-  </tr>
-  <TR nowrap>
-	<TD>Reverse complement: 
-	<td nowrap><label><input  type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />Yes</label>&nbsp<label><input  type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />No</label>
-</tr>
- <TR align=left>
-  <Td>
-   Mask Sequence:
-  </TD>
-  <TD>
-    <select name="mask<TMPL_VAR NAME="SEQ_NUM">" id="mask<TMPL_VAR NAME="SEQ_NUM">">
-      <option value=""   >--None--
-      <option value="cds" <TMPL_VAR NAME=MASK_CDS> >CDS
-      <option value="rna" <TMPL_VAR NAME=MASK_RNA> >All RNA
-      <option value="non-cds" <TMPL_VAR NAME=MASK_NCDS> >Non-CDS
-      <option value="non-genic" <TMPL_VAR NAME=MASK_NGENIC> >Non-genic
-    </select>
-</TD>
-</tr>
- </table>
-</table>
-</DIV>
-</DIV>
-
-</TMPL_LOOP>
+		<div class="partlet-content">
+			<DIV id="db<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
+			<table class="small">
+				<TR valign="top">
+					<TD>Name:</td>
+					<TD align="left"><input  type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['args__accn','args__'+encodeURIComponent(document.getElementById('accn<TMPL_VAR NAME="SEQ_NUM">').value),'args__num', 'args__<TMPL_VAR NAME="SEQ_NUM">', 'args__dsid', 'args__<TMPL_VAR NAME="DSID">', 'args__dsgid', 'args__<TMPL_VAR NAME="DSGID">', 'args__gstid', 'args__<TMPL_VAR NAME="GSTID">'],[genome_search_chain])" value="<TMPL_VAR NAME=DRACCN>" /></td>
+				</tr>
+			</table>
+		</div>      
+	
+		<DIV id="cogepos<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">	
+			<table class="small">
+				<tr>
+					<td>Organism: <TMPL_VAR NAME=ORGINFO></td>
+				</tr>
+				<tr valign="top">
+					<td>Position: <input  type="text" id="pos<TMPL_VAR NAME="SEQ_NUM">" value="<TMPL_VAR NAME=POS>" size="10">
+					Chr: <input  type="text" id="chr<TMPL_VAR NAME="SEQ_NUM">" value="<TMPL_VAR NAME=CHR>" size="10">
+				</tr>
+			</table>
+		</DIV>
+	
+	<div id="drcoge<TMPL_VAR NAME="SEQ_NUM">"  style="display: none;" class="seq_submisttion_type seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> drcoge<TMPL_VAR NAME="SEQ_NUM"> ">
+	<table>
+		<tr>
+	    	<td colspan=2>
+	        	<DIV id="dataset<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="DSID">"></DIV>
+	
+	        	<DIV id="genome<TMPL_VAR NAME="SEQ_NUM">" nowrap><TMPL_VAR NAME="DSG_STUFF"></DIV>
+	
+	        	<DIV id="genomic_sequence_type<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="gstid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="GSTID">"></DIV>
+	        	<DIV id="feat<TMPL_VAR NAME="SEQ_NUM">">
+	        		<input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="FEATID">">
+	        	</DIV>
+	
+	        	<DIV id="chromosome<TMPL_VAR NAME="SEQ_NUM">"><TMPL_VAR NAME="CHR_STUFF"></DIV>
+	        	
+	        	<input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">_start" value ="<TMPL_VAR NAME="START">">
+        		<input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">_stop" value ="<TMPL_VAR NAME="STOP">">
+	        </td>
+	    </tr>
+	    <tr>
+	    	<td><DIV class="small">Left sequence:</DIV></td>
+	    	<td><DIV id="up<TMPL_VAR NAME="SEQ_NUM">" ><input class="location" type="text" name="drup<TMPL_VAR NAME="SEQ_NUM">" id="drup<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10" value="<TMPL_VAR NAME=DRUP>" /> </DIV></td>
+	    </tr>
+	    <tr>
+	    	<td><DIV class="small">Right sequence:</DIV></td>
+	    	<td><DIV  id="down<TMPL_VAR NAME="SEQ_NUM">"><input class="location" type="text" name="drdown<TMPL_VAR NAME="SEQ_NUM">" id="drdown<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=DRDOWN>" /></DIV></td>
+	    </tr>
+	    <tr>
+	    	<td class=small><div class="link" id="get_seq<TMPL_VAR NAME=SEQ_NUM>" onclick="get_seq(<TMPL_VAR NAME=SEQ_NUM>)">Get Sequence</div></td>
+	    	<td class=small><div class="link" id="get_seq<TMPL_VAR NAME=SEQ_NUM>" onclick="genome_view(<TMPL_VAR NAME=SEQ_NUM>)">Genome View</div></td>
+	    </tr>
+	</table>
+	</DIV>
+	
+	
+	<DIV id="gb<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
+	<TABLE class="small">
+	       <TR valign="top">
+	        <TD>Accession:
+	        <TD><input  type="text" name="gbaccn<TMPL_VAR NAME="SEQ_NUM">" id="gbaccn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="10" value="<TMPL_VAR NAME=GBACCN>" />
+	      <TR>
+		<TD><DIV class="small">Start Position:</DIV>
+	      	<TD><input  type="text" name="gbstart<TMPL_VAR NAME="SEQ_NUM">" id="gbstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10" value="<TMPL_VAR NAME=GBSTART>" /></TD>
+	      <TR>
+	       <TD><DIV class="small">Sequence Length:</DIV>
+	       <TD><input  type="text" name="gblength<TMPL_VAR NAME="SEQ_NUM">" id="gblength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=GBLENGTH>"/>
+	</TABLE>
+	</DIV>
+	
+	<DIV id="dir<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">	
+	<TABLE class="small">
+	      <TR valign="top">
+	      <TD>       
+	     Paste fasta or genbank format sequence below:<BR> <textarea  name="dirseq<TMPL_VAR NAME="SEQ_NUM">" id="dirseq<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  rows="5" cols="90"></textarea><BR>
+	     <font class="small">Start: <input  type="text" name="dirstart<TMPL_VAR NAME="SEQ_NUM">" id="dirstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value="1" /></font>
+	     <font class="small">Length: <input  type="text" name="dirlength<TMPL_VAR NAME="SEQ_NUM">" id="dirlength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value=""  /></font><br>
+	</table>
+	</DIV>
+	
+	
+	<table>
+	<tr><td>
+	<div id=skip_font<TMPL_VAR NAME="SEQ_NUM"> style="color: red;display:none"> Sequence Skipped</div>
+	
+	   <span id="seqopts<TMPL_VAR NAME="SEQ_NUM">" class="small ui-button ui-corner-all ui-button-toggle" onClick='$(".sequence_options<TMPL_VAR NAME="SEQ_NUM">").slideToggle();'>Sequence <TMPL_VAR NAME="SEQ_NUM"> Options</span>
+	   <Table class="small sequence_options<TMPL_VAR NAME="SEQ_NUM">" style="display: none;">
+	 <TR align=left>
+	  <Td>
+	   Skip Sequence:
+	</td>
+	  <TD>
+		<label><input  onClick=show_skip(<TMPL_VAR NAME="SEQ_NUM">) type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" />Yes</label>
+		<label><input  onClick=hide_skip(<TMPL_VAR NAME="SEQ_NUM">) type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" checked/>No</label><br>
+	 </tr>
+	<TR align=left>
+	  <Td>
+	   Reference Sequence:
+	</td>
+	  <TD>
+		<label><input  type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" <TMPL_VAR NAME=REF_YES> />Yes</label>
+		<label><input  type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" <TMPL_VAR NAME=REF_NO> />No</label><br>
+	  </tr>
+	  <TR nowrap>
+		<TD>Reverse complement: 
+		<td nowrap><label><input  type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />Yes</label>&nbsp<label><input  type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />No</label>
+	</tr>
+	 <TR align=left>
+	  <Td>
+	   Mask Sequence:
+	  </TD>
+	  <TD>
+	    <select name="mask<TMPL_VAR NAME="SEQ_NUM">" id="mask<TMPL_VAR NAME="SEQ_NUM">">
+	      <option value=""   >--None--
+	      <option value="cds" <TMPL_VAR NAME=MASK_CDS> >CDS
+	      <option value="rna" <TMPL_VAR NAME=MASK_RNA> >All RNA
+	      <option value="non-cds" <TMPL_VAR NAME=MASK_NCDS> >Non-CDS
+	      <option value="non-genic" <TMPL_VAR NAME=MASK_NGENIC> >Non-genic
+	    </select>
+	</TD>
+	</tr>
+	 </table>
+	</table>
+	</DIV>
+	</DIV>
+	
+	</TMPL_LOOP>
 </TMPL_IF>
 
 
