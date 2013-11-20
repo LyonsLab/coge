@@ -1720,7 +1720,9 @@ qq{SELECT * FROM sequence_info WHERE type = "subject" AND name = "$sname"}
     $query_link =~ s/$TEMPDIR/$TEMPURL/;
 
     my $subject_link =
-qq{<div class=small>Subject: $org, Chromosome: $chr</div><a href = 'GenomeView.pl?chr=$chr&ds=$dsid&x=$sstart&z=5;gstid=$gstid' target=_new border=0><img src=$subject_image border=0></a>};
+qq{<div class=small>Subject: $org, Chromosome: $chr</div>} .
+#qq{<a href = 'GenomeView.pl?chr=$chr&ds=$dsid&x=$sstart&z=5;gstid=$gstid' target=_new border=0><img src=$subject_image border=0></a>}; # mdb removed 11/20/13 issue 254
+"<a href='GenomeView.pl?gid=$dsgid&loc=$chr:$a..$b' target=_new border='0'><img src='$subject_image' border='0'></a>"; # mdb added 11/20/13 issue 254
     $subject_link =~ s/$TEMPDIR/$TEMPURL/;
     return encode_json(
         {
