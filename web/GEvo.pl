@@ -297,6 +297,21 @@ sub gen_body {
             dsgid   => $dsgid,
             seq_num => $i
         ) if $pos;
+        
+        # mdb added 11/20/13 issue 254
+        my ($start, $stop);
+        if ($fid) {
+        	my ($feat) = $coge->resultset('Feature')->find($fid);
+        	if ($feat) {
+        		$start = $feat->start - $drup;
+        		$stop = $feat->stop + $drdown;
+        	}
+        }
+        elsif (defined $gbstart) {
+        	$start = $gbstart - $drup;
+        	$stop = $gbstart + $gblength-1 + $drdown;
+        }
+        
         push @seq_nums, { SEQ_NUM => $i, };
         my %opts = (
             SEQ_NUM   => $display_order,
@@ -318,6 +333,8 @@ sub gen_body {
             ORGINFO   => $org_title,
             CHR       => $chr,
             FEATID    => $fid,
+            START     => $start, # mdb added 11/20/13 issue 254
+            STOP      => $stop, # mdb added 11/20/13 issue 254
         );
 
         if ($mask) {
@@ -3972,7 +3989,9 @@ sub add_url_seq {
 
         if ( $fid && !$draccn ) {
             my $feat = $coge->resultset('Feature')->find($fid);
-            ($draccn) = $feat->primary_name if $feat;
+            if ($feat) {
+            	($draccn) = $feat->primary_name;
+            }
         }
 
         my $drup   = $element->{'drup'}   if $element->{'drup'};
@@ -4027,6 +4046,7 @@ sub add_url_seq {
             POS       => $pos,
             ORGINFO   => $org_title,
             CHR       => $chr,
+
         );
 
         if ($mask) {

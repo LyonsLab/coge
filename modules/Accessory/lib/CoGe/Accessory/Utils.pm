@@ -38,7 +38,7 @@ BEGIN {
     $FASTA_LINE_LEN = 80;
     @ISA     = qw (Exporter);
     @EXPORT =
-      qw( units commify print_fasta get_unique_id );
+      qw( units commify print_fasta get_unique_id get_link_coords );
 }
 
 sub units {
@@ -83,6 +83,17 @@ sub get_unique_id {
 	my $id = Data::GUID->new->as_hex;
 	$id =~ s/^0x//;
 	return $id;	
+}
+
+sub get_link_coords { # mdb added 11/20/13 issue 254
+	my ($start, $stop) = @_;
+	return ($start, $stop) unless (defined $start and defined $stop);
+	
+	my $offset = 500;#int( abs($stop-$start+1) / 4 );
+	($start, $stop) = ($stop, $start) if ($start > $stop);
+	$start -= $offset;
+	$stop  += $offset;
+	return ($start, $stop);
 }
 
 1;
