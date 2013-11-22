@@ -391,6 +391,7 @@ sub process_fasta_file {
         next unless $_;
         my ( $name, $seq ) = split /\n/, $_, 2;
         $seq =~ s/\n//g;
+        $seq =~ s/\r//g; # mdb added 11/22/13 issue 255 - remove Windows-style CRLF
         $lineNum++;
 
         my $chr;
