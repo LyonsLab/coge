@@ -361,6 +361,7 @@ sub load_annotation {
     my %opts        = @_;
     my $name        = $opts{name};
     my $description = $opts{description};
+    my $link        = $opts{link};
     my $version     = $opts{version};
     my $source_name = $opts{source_name};
     my $restricted  = $opts{restricted};
@@ -419,6 +420,8 @@ sub load_annotation {
       . escape($name) . '" '
       . '-desc "'
       . escape($description) . '" '
+      . '-link "'
+      . escape($link) . '" '
       . '-version "'
       . escape($version) . '" '
       . "-restricted "
