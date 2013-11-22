@@ -1001,6 +1001,20 @@ sub features {
     return wantarray ? @feats : \@feats;
 }
 
+sub feature_count { # mdb added 11/22/13
+	my $self = shift;
+	my %opts = @_;
+    my $chr = $opts{chr};
+    
+    my $total = 0;
+    foreach my $ds ( $self->datasets ) {
+    	my $n = $ds->features( chromosome => $chr )->count;
+    	$total += $n if ($n);
+    }
+    
+    return $total;
+}
+
 sub translation_type {
     my $self = shift;
     foreach my $ds ( $self->datasets ) {
