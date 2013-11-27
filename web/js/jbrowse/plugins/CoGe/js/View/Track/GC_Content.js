@@ -11,6 +11,7 @@ return declare( WiggleBase,
 
 /**
  * Wiggle track that shows data with variations in color.
+ * Customized for CoGe, based on JBrowse/View/Track/Wiggle/Density.js.
  *
  * @lends JBrowse.View.Track.Wiggle.Density
  * @extends JBrowse.View.Track.WiggleBase
@@ -37,19 +38,17 @@ return declare( WiggleBase,
         var thisB = this;
         var context = canvas.getContext('2d');
         var canvasHeight = canvas.height;
-        var normalize = dataScale.normalize;
 
         var featureColor = typeof this.config.style.color == 'function' ? this.config.style.color :
-
             (function() { // default color function uses conf variables
                 var white = new Color('white');
                 var black = new Color('black');
                 var disableClipMarkers = thisB.config.disable_clip_markers;
-                var normOrigin = normalize( dataScale.origin );
+                var normOrigin = dataScale.normalize( dataScale.origin );
                 return function( feature ) {
                     var score = feature.get('score');
                     var nucleotide = feature.get('nucleotide');
-                    var n = normalize( score );
+                    var n = dataScale.normalize( score );
                     if ( disableClipMarkers || n <= 1 && n >= 0 ) {
                         if (nucleotide != 'n' && nucleotide != 'x' ) {
                             return Color.blendColors(

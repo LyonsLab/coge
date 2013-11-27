@@ -14,8 +14,7 @@ my $DATA_TYPE_ALIGN = 3;	# Alignments
 my $NUM_QUANT_COL   = 6;
 my $NUM_VCF_COL     = 9;
 my $MAX_EXPERIMENTS = 20;
-#my $MAX_RESULTS = 150000;
-my $MAX_WINDOW_SIZE = 500000;
+my $MAX_WINDOW_SIZE = 1000000;#500000;
 
 my $QUAL_ENCODING_OFFSET = 33;
 
@@ -23,7 +22,7 @@ sub setup {
     my $self = shift;
     $self->run_modes(
         'stats_global' => 'stats_global',
-        'stats_region' => 'stats_region',
+        'stats_regionFeatureDensities' => 'stats_regionFeatureDensities',
         'features'     => 'features',
     );
     $self->mode_param('rm');
@@ -37,7 +36,7 @@ sub stats_global {
 	}};
 }
 
-sub stats_region {    #FIXME lots of code in common with features()
+sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
     my $self     = shift;
     my $eid      = $self->param('eid');
     my $nid      = $self->param('nid');
@@ -45,9 +44,9 @@ sub stats_region {    #FIXME lots of code in common with features()
     my $chr      = $self->param('chr');
     my $start    = $self->query->param('start');
     my $end      = $self->query->param('end');
-    my $bpPerBin = $self->query->param('bpPerBin');
+    my $bpPerBin = $self->query->param('basesPerBin');
 
-#	print STDERR "JBrowse::Experiment::stats_region eid="
+#	print STDERR "JBrowse::Experiment::stats_regionFeatureDensities eid="
 #      . ( $eid ? $eid : '' ) . " nid="
 #      . ( $nid ? $nid : '' ) . " gid="
 #      . ( $gid ? $gid : '' )
@@ -80,7 +79,7 @@ sub stats_region {    #FIXME lots of code in common with features()
     my @experiments;
     foreach my $e (@all_experiments) {
         unless ( $user->has_access_to_experiment($e) ) {
-        	print STDERR "JBrowse::Experiment::stats_region access denied to experiment $eid\n";
+        	print STDERR "JBrowse::Experiment::stats_regionFeatureDensities access denied to experiment $eid\n";
         	next;
         }
         push @experiments, $e;
@@ -129,7 +128,7 @@ sub stats_region {    #FIXME lots of code in common with features()
         	next;
         }
         else {
-        	print STDERR "JBrowse::Experiment::stats_region unknown data type for experiment $eid\n";
+        	print STDERR "JBrowse::Experiment::stats_regionFeatureDensities unknown data type for experiment $eid\n";
         	next;
         }
     }
@@ -146,8 +145,7 @@ sub stats_region {    #FIXME lots of code in common with features()
     return encode_json(
         {
             bins => \@bins,
-            stats =>
-              [ { basesPerBin => $bpPerBin, max => $max, mean => $mean } ]
+            stats => { basesPerBin => $bpPerBin, max => $max, mean => $mean }
         }
     );
 }

@@ -76,6 +76,11 @@ CGI::Application::Dispatch->dispatch(
             app    => 'Experiment',
             rm     => 'stats_region'
         },
+        'experiment/:eid/stats/regionFeatureDensities/:chr' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Experiment',
+            rm     => 'stats_regionFeatureDensities'
+        },        
         'experiment/:eid/features/:chr' => {
             prefix => 'CoGe::Services::JBrowse',
             app    => 'Experiment',
@@ -86,10 +91,10 @@ CGI::Application::Dispatch->dispatch(
             app    => 'Experiment',
             rm     => 'stats_global'
         },
-        'experiment/notebook/:nid/stats/region/:chr' => {
+        'experiment/notebook/:nid/stats/regionFeatureDensities/:chr' => {
             prefix => 'CoGe::Services::JBrowse',
             app    => 'Experiment',
-            rm     => 'stats_region'
+            rm     => 'stats_regionFeatureDensities'
         },
         'experiment/notebook/:nid/features/:chr' => {
             prefix => 'CoGe::Services::JBrowse',
@@ -101,10 +106,10 @@ CGI::Application::Dispatch->dispatch(
             app    => 'Experiment',
             rm     => 'stats_global'
         },
-        'experiment/genome/:gid/stats/region/:chr' => {
+        'experiment/genome/:gid/stats/regionFeatureDensities/:chr' => {
             prefix => 'CoGe::Services::JBrowse',
             app    => 'Experiment',
-            rm     => 'stats_region'
+            rm     => 'stats_regionFeatureDensities'
         },
         'experiment/genome/:gid/features/:chr' => {
             prefix => 'CoGe::Services::JBrowse',

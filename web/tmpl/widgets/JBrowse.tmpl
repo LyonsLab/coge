@@ -1,55 +1,56 @@
 <link rel="stylesheet" type="text/css" href="js/jbrowse/genome.css">
 <script type="text/javascript" src="js/jbrowse/src/dojo/dojo.js" data-dojo-config="async: 1"></script>
-
+<script type="text/javascript" src="js/jbrowse/src/JBrowse/init.js"></script>
 <script type="text/javascript">
     window.onerror=function(msg){
         if( document.body )
             document.body.setAttribute("JSError",msg);
     }
 
-	function init_JBrowse(id, callback) {
-		var JBrowse;
+    var JBrowse;
+    function init_JBrowse(id, callback) {
 	    require( { baseUrl: 'js/jbrowse/src',
-	               packages: [ 'dojo', 'dijit', 'dojox', 'jszlib',
-	                           { name: 'lazyload', main: 'lazyload' },
-	                           'dgrid', 'xstyle', 'put-selector',
-	                           { name: 'jDataView', location: 'jDataView/src', main: 'jdataview' },
-	                           'JBrowse'
-	                         ]
-	             },
-	        [ 'JBrowse/Browser', 'dojo/io-query' ],
-	    	function (Browser,ioQuery) {
-	            var queryParams = ioQuery.queryToObject( window.location.search.slice(1) );
-	        	var gid = queryParams.gid || queryParams.dsgid;
+	    		   packages: [ 'dojo', 'dijit', 'dojox', 'jszlib',
+	    		               { name: 'lazyload', main: 'lazyload' },
+	    		               'dgrid', 'xstyle', 'put-selector',
+	    		               { name: 'jDataView', location: 'jDataView/src', main: 'jdataview' },
+	    		               'JBrowse'
+	    		             ]
+	      		 }, 
+	      	['JBrowse/Browser', 'dojo/io-query', 'dojo/json' ],
+	        function (Browser,ioQuery,JSON) {
+	      		var queryParams = ioQuery.queryToObject( window.location.search.slice(1) );
+	            var gid = queryParams.gid || queryParams.dsgid;
 	            //var dataRoot = queryParams.data || 'data';
-	            JBrowse = new Browser({
-					containerID: id,
-					browserRoot: 'js/jbrowse/',
-					refSeqs: 'services/JBrowse/service.pl/config/refseq/?gid='+gid,
-					baseUrl: 'js/jbrowse/',//dataRoot+'/',
-					include: ['services/JBrowse/service.pl/config/tracks/?gid='+gid],
-					//nameUrl: dataRoot + "/names/root.json",
-					defaultTracks: "sequence,features",
-					queryParams: queryParams,
-					location: queryParams.loc || '1:1..150000',//queryParams.loc,
-					forceTracks: queryParams.tracks,
-					initialHighlight: queryParams.highlight,
-					show_nav: 1,
-					show_tracklist: 1,
-					show_overview: 1,
-					makeFullViewURL: function( browser ) {
-						// the URL for the 'Full view' link
-					    // in embedded mode should be the current
-					    // view URL, except with 'nav', 'tracklist',
-					    // and 'overview' parameters forced to 1.
-					    return browser.makeCurrentViewURL({ nav: 1, tracklist: 1, overview: 1 });
-					},
-					updateBrowserURL: true,
-				});
-				
-				if (callback) {
-					callback(JBrowse);
-				}
-			});
+	            var config = {
+	                containerID: id,
+	                browserRoot: 'js/jbrowse/',
+	                refSeqs: 'services/JBrowse/service.pl/config/refseq/?gid='+gid,//refSeqs: dataRoot + "/seq/refSeqs.json",
+	                baseUrl: 'js/jbrowse/',//dataRoot+'/',
+	                include: ['services/JBrowse/service.pl/config/tracks/?gid='+gid],//include: ['jbrowse_conf.json', dataRoot + "/trackList.json"],
+	                //nameUrl: dataRoot + "/names/root.json",
+	                defaultTracks: "sequence,features",
+	                queryParams: queryParams,
+	                location: queryParams.loc || '1:1..150000',//queryParams.loc,
+	                forceTracks: queryParams.tracks,
+	                initialHighlight: queryParams.highlight,
+	                show_nav: 1,//queryParams.nav,
+	                show_tracklist: 1,//queryParams.tracklist,
+	                show_overview: 1,//queryParams.overview,
+	                //stores: { url: { type: "JBrowse/Store/SeqFeature/FromConfig", features: [] } },
+	                makeFullViewURL: function( browser ) {
+	                    // the URL for the 'Full view' link
+	                    // in embedded mode should be the current
+	                    // view URL, except with 'nav', 'tracklist',
+	                    // and 'overview' parameters forced to 1.
+	                    return browser.makeCurrentViewURL({ nav: 1, tracklist: 1, overview: 1 });
+	                },
+	                updateBrowserURL: true
+	            };
+	
+	            JBrowse = new Browser( config );
+	            if (callback) callback(JBrowse);
+	      	}
+	    );
     }
 </script>
