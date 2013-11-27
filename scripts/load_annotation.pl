@@ -19,7 +19,7 @@ my $GO          = 1;
 my $DEBUG       = 1;
 my $DB_BATCH_SZ = 10 * 1000;
 use vars qw($staging_dir $data_file
-  $name $description $version $restricted
+  $name $description $link $version $restricted
   $gid $source_name $user_name $config
   $host $port $db $user $pass);
 
@@ -28,6 +28,7 @@ GetOptions(
     "data_file=s"   => \$data_file,      # data file (JS escape)
     "name=s"        => \$name,           # experiment name (JS escaped)
     "desc=s"        => \$description,    # experiment description (JS escaped)
+    "link=s"        => \$link,           # experiment description (JS escaped)
     "version=s"     => \$version,        # experiment version (JS escaped)
     "restricted=i"  => \$restricted,     # experiment restricted flag
     "gid=s"         => \$gid,            # genome id
@@ -55,6 +56,7 @@ $log->autoflush(1);
 $data_file   = unescape($data_file);
 $name        = unescape($name);
 $description = unescape($description);
+$link        = unescape($link);
 $version     = unescape($version);
 $source_name = unescape($source_name);
 $restricted  = '0' if ( not defined $restricted );
@@ -248,6 +250,7 @@ my $dataset = $coge->resultset('Dataset')->create(
         data_source_id => $datasource->id,
         name           => basename($data_file),
         description    => $description,
+        link           => $link,
         version        => $version,
         restricted     => $restricted,
     }

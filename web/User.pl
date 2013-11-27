@@ -1154,7 +1154,7 @@ sub get_toc {    # table of contents
 		},
     	{   TOC_ITEM_ID       => $ITEM_TYPE{activity},
 	        TOC_ITEM_INFO     => 'Activity',
-	        TOC_ITEM_CHILDREN => 1
+	        TOC_ITEM_CHILDREN => 2
 	    },
 	    {   TOC_ITEM_ID     => $ITEM_TYPE{activity_analyses},
 	        TOC_ITEM_INFO   => 'Analyses',
