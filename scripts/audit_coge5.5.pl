@@ -9,10 +9,9 @@
 #
 #-------------------------------------------------------------------------------
 
-use DBI;
 use strict;
+use DBI;
 use CoGeX;
-use Roman;
 use Data::Dumper;
 use Getopt::Long;
 use File::Path;
@@ -129,14 +128,14 @@ foreach my $image ($coge->resultset('Image')->all) {
 
 print STDERR "Verifying genomes --------------------------------------------\n";
 foreach my $genome ($coge->resultset('Genome')->all) {
-	next if ($genome->deleted);
+	#next if ($genome->deleted);
 	
 	unless ($genome->list_connectors or $genome->user_connectors or $genome->group_connectors) {
-		print STDERR "Genome ".$genome->id." is orphaned\n";
+		print STDERR "Genome ".$genome->id." is orphaned ".($genome->deleted ? '(deleted)' : '')."\n";
 		next;
 	}
 	unless ($genome->file_path) {
-		print STDERR "Genome ".$genome->id." is missing sequence file\n";
+		print STDERR "Genome ".$genome->id." is missing sequence file".($genome->deleted ? '(deleted)' : '')."\n";
 		next;
 	}
 	my @datasets;
