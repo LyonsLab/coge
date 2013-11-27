@@ -5,7 +5,7 @@ define( [
             'dojo/dom-construct',
             'dojo/on',
             'JBrowse/View/Track/WiggleBase',
-            'JBrowse/View/Track/YScaleMixin',
+            'JBrowse/View/Track/_YScaleMixin',
             'JBrowse/Util',
             './_Scale',
             'CoGe/View/ColorDialog'
@@ -37,10 +37,9 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         );
     },
 
-    _getScaling: function( successCallback, errorCallback ) {
-//    	console.log('_getScaling');
+    _getScaling: function( viewArgs, successCallback, errorCallback ) {
     	
-        this._getScalingStats( dojo.hitch(this, function( stats ) {
+        this._getScalingStats( viewArgs, dojo.hitch(this, function( stats ) {
 
             //calculate the scaling if necessary
             if( ! this.lastScaling || ! this.lastScaling.sameStats( stats ) ) {
@@ -112,7 +111,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
      * @private
      */
     _drawFeatures: function( scale, leftBase, rightBase, block, canvas, features, featureRects, dataScale ) {
-//    	console.log('_drawFeatures');
+    	//console.log('_drawFeatures');
     	var config = this.config;
     	var context = canvas.getContext('2d');
         var canvasHeight = canvas.height;
@@ -370,6 +369,27 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         
         return pixelValues;
     }, 
+    
+    _showPixelValue: function( scoreDisplay, score ) {
+        var scoreType = typeof score;
+        if( scoreType == 'number' ) {
+            // display the score with only 6
+            // significant digits, avoiding
+            // most confusion about the
+            // approximative properties of
+            // IEEE floating point numbers
+            // parsed out of BigWig files
+            scoreDisplay.innerHTML = parseFloat( score.toPrecision(6) );
+            return true;
+        }
+        else if( scoreType == 'string' ) {
+            scoreDisplay.innerHTML = score;
+            return true;
+        }
+        else {
+            return false;
+        }
+    },
     
     _trackMenuOptions: function() {
     	var options = this.inherited(arguments);

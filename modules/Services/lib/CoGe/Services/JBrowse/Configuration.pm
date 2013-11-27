@@ -104,8 +104,6 @@ sub track_config {
 
     # Add GC content track
     push @tracks, {
-
-        #baseUrl => "http://geco.iplantcollaborative.org/rchasman/gc/$gid/",
         baseUrl    => "services/JBrowse/track/gc/$gid/",
         type       => "CoGe/View/Track/GC_Content",
         storeClass => "JBrowse/Store/SeqFeature/REST",
@@ -126,13 +124,12 @@ sub track_config {
         }
     };
 
-    #	print STDERR 'time1: ' . (time - $start_time) . "\n";
+    #print STDERR 'time1: ' . (time - $start_time) . "\n";
 
     # Add feature tracks
     my @feat_type_names =
       grep( !/chromosome/, $genome->distinct_feature_type_names );
     if (@feat_type_names) {
-
         # Add main "Features" track
         push @tracks, {
             baseUrl      => "services/JBrowse/track/annotation/$gid/",
@@ -143,8 +140,7 @@ sub track_config {
             type         => "CoGe/View/Track/CoGeFeatures",
             description  => "note, description",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
-            onClick =>
-              "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
+            onClick      => "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
             maxFeatureScreenDensity => 20,
             maxHeight               => 100000,
             minSubfeatureWidth      => 4,
@@ -170,8 +166,7 @@ sub track_config {
         # Add a track for each feature type
         foreach my $type_name ( sort @feat_type_names ) {
             push @tracks, {
-                baseUrl =>
-                  "services/JBrowse/track/annotation/$gid/types/$type_name/",
+                baseUrl => "services/JBrowse/track/annotation/$gid/types/$type_name/",
                 autocomplete => "all",
                 track        => "features$type_name",
                 label        => "features$type_name",
@@ -207,7 +202,7 @@ sub track_config {
         }
     }
 
-    #	print STDERR 'time2: ' . (time - $start_time) . "\n";
+    #print STDERR 'time2: ' . (time - $start_time) . "\n";
 
     # Add experiment tracks
     my %all_notebooks;
@@ -246,19 +241,18 @@ sub track_config {
         #			}
         #		}
 
-        #my $isSNP = ( $e->data_type == 2 );    #FIXME hardcoded data_type
         my ($type, $featureScale, $histScale);
-        if (!$e->data_type or $e->data_type == 1) { #FIXME hardcoded data_type
+        if (!$e->data_type or $e->data_type == 1) { #FIXME hardcoded data_type 'quantitative'
 			$type = "CoGe/View/Track/Wiggle/MultiXYPlot";
 			$featureScale = 0.001;
 			$histScale = 0.05;
 		}
-		elsif ($e->data_type == 2) { #FIXME hardcoded data_type 
+		elsif ($e->data_type == 2) { #FIXME hardcoded data_type 'polymorphism'
 			$type = "JBrowse/View/Track/HTMLVariants"; 
 			$featureScale = 0.0001;
-			$histScale = 0.05;
+			$histScale = 0.01;
 		}
-		elsif ($e->data_type == 3) { #FIXME hardcoded data_type
+		elsif ($e->data_type == 3) { #FIXME hardcoded data_type 'alignment'
 			$type = "JBrowse/View/Track/Alignments2"; 
 			$featureScale = 0.0001;
 			$histScale = 0.05;
@@ -271,13 +265,10 @@ sub track_config {
             label        => "experiment$eid",
             key          => ( $e->restricted ? '&reg; ' : '' ) . $e->name,
             type         => $type,
-#                $isSNP
-#                ? "JBrowse/View/Track/HTMLVariants"
-#                : "CoGe/View/Track/Wiggle/MultiXYPlot",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
-            region_stats => 1, # see HTMLFeatures.js, force calls to stats/region instead of stats/global
+            region_feature_densities => 1, # enable histograms in store
             style => {
-                featureScale => $featureScale, #( $isSNP ? 0.0001 : 0.001 ),
+                featureScale => $featureScale,
                 histScale    => $histScale,
                 labelScale   => 0.5,
                 showLabels   => 'true',
@@ -287,24 +278,24 @@ sub track_config {
 
             # CoGe-specific stuff
             showHoverScores => 1,
-            coge            => {
+            coge => {
                 id      => $eid,
                 type    => 'experiment',
                 classes => [
-                    'coge-tracklist-indented', 'coge-tracklist-deletable',
+                    'coge-tracklist-indented', 
+                    'coge-tracklist-deletable',
                     'coge-tracklist-info'
                 ],
-                collapsed   => 1,                 #FIXME move into CSS
+                collapsed   => 1, #FIXME move into CSS
                 name        => $e->name,
                 description => $e->description,
-                notebooks => ( @notebooks ? \@notebooks : undef ),
+                notebooks   => ( @notebooks ? \@notebooks : undef ),
                 annotations => ( @annotations ? \@annotations : undef ),
-                onClick => "ExperimentView.pl?embed=1&eid=$eid",
+                onClick     => "ExperimentView.pl?embed=1&eid=$eid",
                 menuOptions => [
                     {
                         label => 'ExperimentView',
                         action => "function() { window.open( 'ExperimentView.pl?eid=$eid' ); }"
-						# url => ... will open link in a dialog window
                     }
                 ]
             }
@@ -326,15 +317,14 @@ sub track_config {
             style        => { featureScale => 0.001 },
 
             # CoGe-specific stuff
-            coge        => {
-                id   => 0,            # use id of 0 to represent all experiments
-                type => 'notebook',
-                classes   => ['coge-tracklist-collapsible'],
-                collapsed => 1,                             #FIXME move into CSS
-                name      => 'All Experiments',
+            coge => {
+                id          => 0, # use id of 0 to represent all experiments
+                type        => 'notebook',
+                classes     => ['coge-tracklist-collapsible'],
+                collapsed   => 1, #FIXME move into CSS
+                name        => 'All Experiments',
                 description => '',
                 count       => keys %all_experiments,
-
                 #experiments => [ values %all_experiments ],
             }
         };
@@ -345,7 +335,7 @@ sub track_config {
         next unless $user->has_access_to_list($n);
         my $nid = $n->id;
         push @tracks, {
-            key => ( $n->restricted ? '&reg; ' : '' ) . $n->name,
+            key     => ( $n->restricted ? '&reg; ' : '' ) . $n->name,
             baseUrl => "services/JBrowse/service.pl/experiment/notebook/$nid/",
             autocomplete => "all",
             track        => "notebook$nid",
@@ -360,25 +350,21 @@ sub track_config {
                 id      => $nid,
                 type    => 'notebook',
                 classes => [
-                    'coge-tracklist-collapsible', 'coge-tracklist-deletable',
+                    'coge-tracklist-collapsible', 
+                    'coge-tracklist-deletable',
                     'coge-tracklist-info'
                 ],
-                collapsed   => 1,                 #FIXME move into CSS
+                collapsed   => 1, #FIXME move into CSS
                 name        => $n->name,
                 description => $n->description,
-                editable    => $user->is_admin
-                  || $user->is_owner_editor( list => $n ),
-                experiments =>
-                  ( @{ $expByNotebook{$nid} } ? $expByNotebook{$nid} : undef ),
+                editable    => $user->is_admin || $user->is_owner_editor( list => $n ) || undef,
+                experiments => ( @{ $expByNotebook{$nid} } ? $expByNotebook{$nid} : undef ),
                 count       => scalar @{ $expByNotebook{$nid} },
-                onClick         => "NotebookView.pl?embed=1&lid=$nid",
+                onClick     => "NotebookView.pl?embed=1&lid=$nid",
                 menuOptions => [
                     {
                         label => 'NotebookView',
-                        action =>
-"function() { window.open( 'NotebookView.pl?lid=$nid' ); }"
-
-                          # url => ... will open link in a dialog window
+                        action => "function() { window.open( 'NotebookView.pl?lid=$nid' ); }"
                     }
                 ]
             }
