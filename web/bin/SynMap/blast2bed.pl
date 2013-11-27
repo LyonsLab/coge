@@ -2,7 +2,7 @@
 
 use strict;
 use Getopt::Long;
-
+use Data::Dumper;
 my $infile;
 my $outfile1;
 my $outfile2;
@@ -171,11 +171,13 @@ sub order_hits
 	unless ($items[0] =~ /\/\//) 
 	  {
 	    $items[0] =~ s/gi\|//;
+	    $items[0] =~ s/^lcl\|//;
 	    push @to_sort1, [$items[0],$items[6], $items[7]];
 	  }
 	unless ($items[2] =~ /\/\//) 
 	  {
 	    $items[1] =~ s/gi\|//;
+	    $items[1] =~ s/^lcl\|//;
 	    push @to_sort2, [$items[1],$items[8], $items[9]];
 	  }
       }

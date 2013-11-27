@@ -618,7 +618,6 @@ sub generate_body {
     if ( $USER->is_admin ) {
         $template->param(
             ADMIN_AREA => 1,
-            DATASETS   => get_datasets( genome => $genome )
         );
     }
 
