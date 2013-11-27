@@ -603,6 +603,17 @@ sub gen_dsg_menu {
             next unless $dsgid && $dsg->id == $dsgid;
             $name = "Restricted";
         }
+	elsif ($dsg->deleted)
+	  {
+	    if ($dsgid && $dsgid == $dsg->id)
+	      {
+		$name = "DELETED: ".$dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ")";
+	      }
+	    else 
+	      {
+		next;
+	      }
+	  }
         else {
             $name .= $dsg->name . ": " if $dsg->name;
             $name .=
@@ -816,6 +827,10 @@ qq{<tr><td>DNA content: <td id=gc_content$org_num class='link' onclick="get_gc($
     if ( $dsg->restricted && !$USER->has_access_to_genome($dsg) ) {
         $html_dsg_info = "Restricted";
     }
+    if ($dsg->deleted)
+      {
+	$html_dsg_info = "<span class=alert>This genome has been deleted and cannot be used in this analysis.</span>  <a href=GenomeInfo.pl?gid=$dsgid target=_new>More information</a>.";
+      }
     my $t2 = new Benchmark;
     my $time = timestr( timediff( $t2, $t1 ) );
 
