@@ -130,12 +130,14 @@ print STDERR "Verifying genomes --------------------------------------------\n";
 foreach my $genome ($coge->resultset('Genome')->all) {
 	#next if ($genome->deleted);
 	
+	my $deleted = ($genome->deleted ? '(deleted)' : '');
 	unless ($genome->list_connectors or $genome->user_connectors or $genome->group_connectors) {
-		print STDERR "Genome ".$genome->id." is orphaned ".($genome->deleted ? '(deleted)' : '')."\n";
+		print STDERR "Genome ".$genome->id." is orphaned $deleted\n";
 		next;
 	}
-	unless ($genome->file_path) {
-		print STDERR "Genome ".$genome->id." is missing sequence file".($genome->deleted ? '(deleted)' : '')."\n";
+	my $file_path = $genome->file_path;
+	unless ($file_path and -r $file_path) {
+		print STDERR "Genome ".$genome->id." is missing sequence file $deleted\n   ".$genome->info."\n";
 		next;
 	}
 	my @datasets;
