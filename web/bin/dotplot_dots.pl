@@ -159,6 +159,7 @@ my $box_coords = get_dots(
 $json_data{$genomeid1}{$genomeid2}{syntenic_blocks} = $box_coords;
 
 #write out JSON file of dots"
+#print Dumper \%json_data;
 open( OUT, ">" . $basename . ".json" ) || die "$!";
 print OUT encode_json( \%json_data );
 close OUT;
@@ -256,9 +257,9 @@ sub get_dots {
               }; #sometimes there will be data that is skipped, e.g. where chromosome="random";
 
         my ( $nt_min_1, $nt_max_1 ) =
-          sort ( $line[2], $line[3] );    #absolute positions
+          sort ( $item1[1], $item1[2] );    #absolute positions
         my ( $nt_min_2, $nt_max_2 ) =
-          sort ( $line[6], $line[7] );    #absolute positions
+          sort ( $item2[1], $item2[2] );    #absolute positions
         my ( $gene_order_1, $gene_order_2 ) =
           ( $item1[7], $item2[7] );       #relative position
         my $data_item = {
@@ -397,6 +398,8 @@ sub add_genome_to_json {
     my $org_data  = $opts{org_data};
     my $genomeid  = $opts{genomeid};
     my ($genome)  = $coge->resultset('Genome')->find($genomeid);
+    my $dbh   = $coge->storage->dbh; #database handle for direct queries
+
     my %data;
     $data{id}      = int($genomeid);
     $data{orgId}   = int( $genome->organism->id );
@@ -405,13 +408,29 @@ sub add_genome_to_json {
     my $order = 1;
 
     foreach my $chr ( keys %$org_data ) {
+
+      #get number of genes in chromosome
+      my $query = qq{
+SELECT count(distinct(feature_id))
+  FROM feature
+  JOIN dataset_connector dc using (dataset_id)
+ WHERE genome_id = $genomeid
+   AND feature_type_id IN (3, 5, 8)
+   AND feature.chromosome = '$chr'
+
+};
+        my ($gene_count) = $dbh->selectrow_array($query);
+
+
+
         $data{chromosomes}{$chr} = {
-            name   => $chr,
-            nucleotides => int( $org_data->{$chr}{length} ),
-            id     => int( $order++ )
-            , #eric changed from 'order' to 'id'.  Make sure that it isn't assumed to be an order.  See if this value can be dropped
-        };
-    }
+				    name   => $chr,
+				    nucleotides => int( $org_data->{$chr}{length} ),
+				    genes => $gene_count,
+				    id     => int( $order++ )
+				    , #eric changed from 'order' to 'id'.  Make sure that it isn't assumed to be an order.  See if this value can be dropped
+				   };
+      }
     $json_data{genomes}{$genomeid} = \%data;
 }
 
