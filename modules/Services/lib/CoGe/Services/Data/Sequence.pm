@@ -28,7 +28,10 @@ sub get {
 
     # Retrieve genome
     my $genome = $db->resultset('Genome')->find($gid);
-    return unless $genome;
+    unless ($genome) {
+    	print STDERR "Data::Sequence::get genome $gid not found in db\n";
+    	return;
+    }
 
     # Check permissions
     if ( $genome->restricted

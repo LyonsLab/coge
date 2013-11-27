@@ -189,9 +189,9 @@ sub get_genome_seq {
     my $strand            = $opts{strand};
     my $format            = $opts{format};
     my $fasta             = ( defined $format and $format eq 'fasta' );
-    my $FASTA_LINE_LENGTH = 60;
+    #my $FASTA_LINE_LENGTH = 60;
     my $seq;
-#print STDERR "Storage::get_genome_seq gid=$gid chr=" . ($chr ? $chr : '') . " start=" . (defined $start ? $start : '') . " stop=" . (defined $stop ? $stop : '') . "\n";
+	#print STDERR "Storage::get_genome_seq gid=$gid chr=" . ($chr ? $chr : '') . " start=" . (defined $start ? $start : '') . " stop=" . (defined $stop ? $stop : '') . "\n";
 
     # Validate params
     my $len;
@@ -201,7 +201,7 @@ sub get_genome_seq {
     }
 
     # No chromosome specified, return whole genome fasta file
-    unless (defined $chr) {
+    unless (defined $chr and $chr != '') {
         my $file_path = get_genome_file($gid);
         open( my $fh, $file_path ) or die;
         read( $fh, $seq, -s $file_path );
@@ -214,7 +214,6 @@ sub get_genome_seq {
     my $file_path = get_genome_file($gid);
     my $file_index_sz = -s "$file_path.fai";
     #print STDERR "file_path=$file_path file_index_sz=$file_index_sz\n";
-
     if ($file_index_sz) {    # new indexed method
                              # Kludge chr/contig name
         if   ( $chr =~ /\D+/ ) { $chr = 'lcl|' . $chr; }
