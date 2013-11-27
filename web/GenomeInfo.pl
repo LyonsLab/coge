@@ -386,9 +386,9 @@ sub get_datasets {
 
     my @rows;
     foreach my $ds ( sort { $a->id <=> $b->id } $genome->datasets ) {
-
-#next if ($exclude_seq && filter_dataset($ds)); #FIXME add dataset "type" field instead?
-        push @rows, { DATASET_INFO => '<span>' . $ds->info . '</span>' };
+		#next if ($exclude_seq && filter_dataset($ds)); #FIXME add dataset "type" field instead?
+        push @rows, { DATASET_INFO => '<span>' . $ds->info . '</span>' . 
+        	($ds->link ? '&nbsp;&nbsp;&nbsp;&nbsp;<a href="' . $ds->link . '" target=_new>Link</a>' : '') };
     }
     return '' unless @rows;
 
@@ -618,7 +618,6 @@ sub generate_body {
     if ( $USER->is_admin ) {
         $template->param(
             ADMIN_AREA => 1,
-            DATASETS   => get_datasets( genome => $genome )
         );
     }
 

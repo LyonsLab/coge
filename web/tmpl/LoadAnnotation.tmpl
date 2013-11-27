@@ -102,6 +102,7 @@ function check_login() {
 function load_annotation() {
 	var name = $('#edit_name').val();
 	var description = $('#edit_description').val();
+	var link = $('#edit_link').val();
 	var version = $('#edit_version').val();
 	var restricted = $('#restricted').is(':checked');
 	var genome = $('#edit_genome').val();
@@ -158,6 +159,7 @@ function load_annotation() {
 			load_id: load_id,
 			name: name,
 			description: description,
+			link: link,
 			version: version,
 			restricted: restricted,
 			gid: gid,
@@ -305,8 +307,7 @@ function get_sources () {
 
 function more() {
 	$('#more').hide();
-	$('#edit_name').closest('tr').fadeIn();
-	$('#edit_description').closest('tr').fadeIn();
+	$('#edit_name,#edit_description,#edit_link').closest('tr').fadeIn();
 }
 </SCRIPT>
 
@@ -346,12 +347,16 @@ function more() {
   </tr>
   <tr style='display:none;'>
     <td>Name:</td>
-    <td><input id="edit_name" type="textbox" size="58" value="<TMPL_VAR NAME='NAME'>" /></td>
+    <td><input id="edit_name" type="textbox" placeholder="Optional" size="58" value="<TMPL_VAR NAME='NAME'>" /></td>
   </tr>
   <tr style='display:none;'>
     <td>Description:</td>
-    <td><textarea id="edit_description" rows=5 cols=50 ><TMPL_VAR NAME='DESC'></textarea></td>
+    <td><textarea id="edit_description" placeholder="Optional" rows=5 cols=50 ><TMPL_VAR NAME='DESC'></textarea></td>
   </tr>
+  <tr class="hidden">
+    <td>Link:</td>
+    <td><input id="edit_link" type="textbox" placeholder="Optional" size="58" /></td>
+  </tr>  
 </table>
 
 <br>
