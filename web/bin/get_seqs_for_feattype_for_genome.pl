@@ -20,6 +20,11 @@ $FASTADIR = $P->{FASTADIR};
 $DIR      = $P->{COGEDIR};
 $URL      = $P->{URL};
 mkpath( $FASTADIR, 1, 0777 );
+unless (-r $FASTADIR) {
+	print $FORM->header;
+	print "Access denied to $FASTADIR\n";
+	exit;
+}
 
 $DBNAME = $P->{DBNAME};
 $DBHOST = $P->{DBHOST};
@@ -29,6 +34,11 @@ $DBPASS = $P->{DBPASS};
 $connstr =
   "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
 $coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
+unless ($coge) {
+	print $FORM->header;
+	print "Failed to connect to database\n";
+	exit;
+}
 
 $COOKIE_NAME = $P->{COOKIE_NAME};
 my ($cas_ticket) = $FORM->param('ticket');
@@ -69,6 +79,7 @@ $ds = $coge->resultset('Dataset')->find($dsid) if $dsid;
 if ( !$USER->has_access_to_genome($dsg) ) {
     print $FORM->header;
     print "Permission denied";
+    exit;
 }
 
 my $ft = $coge->resultset('FeatureType')->find($ftid);
