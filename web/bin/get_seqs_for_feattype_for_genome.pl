@@ -130,7 +130,6 @@ foreach my $feat (@feats) {
     else {
         $seq = $feat->genomic_sequence;
     }
-    print STDERR "matt!!!!!!!!!!!!!!!!!!!!!!! $title\n";
     print '>', $title, "\n", $seq, "\n";
     $count++;
 }
