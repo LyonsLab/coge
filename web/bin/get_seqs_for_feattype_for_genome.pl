@@ -10,6 +10,8 @@ use CGI;
 use IO::Compress::Gzip;
 use File::Path;
 
+$|++;
+
 use vars
   qw($FORM $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $coge $FASTADIR $URL $DIR $USER $COOKIE_NAME);
 
@@ -105,19 +107,29 @@ else {
     @feats = $dsg->features( { feature_type_id => $ftid },
         { prefetch => 'feature_names' } );
 }
+
+my %feat_type_names;
+my $org = $dsg->organism->name;
 foreach my $feat (@feats) {
     my ($chr) = $feat->chromosome;    #=~/(\d+)/;
-    my $org = $dsg->organism->name;
     my $name;
     foreach my $n ( $feat->names ) {
         $name = $n;
         last unless $name =~ /\s/;
     }
     $name =~ s/\s+/_/g;
+    
+    # Cache feature type names for speedup -- mdb added 12/4/13
+    if (not defined $feat_type_names{$feat->feature_type_id}) {
+    	$feat_type_names{$feat->feature_type_id} = $feat->type->name;
+    }
+    my $type_name = $feat_type_names{$feat->feature_type_id};
+    
     my $title = join( "||",
-        $org,              $chr,      $feat->start,
-        $feat->stop,       $name,     $feat->strand,
-        $feat->type->name, $feat->id, $count );
+        $org,        $chr,      $feat->start,
+        $feat->stop, $name,     $feat->strand,
+        $type_name,  $feat->id, $count );
+    
     my $seq;
     if ($prot) {
         my (@seqs) = $feat->protein_sequence( dsgid => $dsg->id );
@@ -129,8 +141,8 @@ foreach my $feat (@feats) {
     else {
         $seq = $feat->genomic_sequence;
     }
-    $title = ">" . $title . "\n";
-    print $title, $seq, "\n";
+    print STDERR "matt!!!!!!!!!!!!!!!!!!!!!!! $title\n";
+    print '>', $title, "\n", $seq, "\n";
     $count++;
 }
 
