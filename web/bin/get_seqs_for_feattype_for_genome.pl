@@ -71,6 +71,7 @@ $ds = $coge->resultset('Dataset')->find($dsid) if $dsid;
 if ( !$USER->has_access_to_genome($dsg) ) {
     print $FORM->header;
     print "Permission denied";
+    exit;
 }
 
 my $ft = $coge->resultset('FeatureType')->find($ftid);
