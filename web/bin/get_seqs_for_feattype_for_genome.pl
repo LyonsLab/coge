@@ -99,40 +99,41 @@ else {
         { prefetch => 'feature_names' } );
 }
 
-my %feat_type_names;
 my $org = $dsg->organism->name;
 foreach my $feat (@feats) {
     my ($chr) = $feat->chromosome;    #=~/(\d+)/;
     my $name;
-    foreach my $n ( $feat->names ) {
-        $name = $n;
-        last unless $name =~ /\s/;
-    }
-    $name =~ s/\s+/_/g;
-    
-    # Cache feature type names for speedup -- mdb added 12/4/13
-    if (not defined $feat_type_names{$feat->feature_type_id}) {
-    	$feat_type_names{$feat->feature_type_id} = $feat->type->name;
-    }
-    my $type_name = $feat_type_names{$feat->feature_type_id};
-    
-    my $title = join( "||",
-        $org,        $chr,      $feat->start,
-        $feat->stop, $name,     $feat->strand,
-        $type_name,  $feat->id, $count );
-    
-    my $seq;
-    if ($prot) {
-        my (@seqs) = $feat->protein_sequence( dsgid => $dsg->id );
-        next unless scalar @seqs;
-        next if scalar @seqs > 1;    #didn't find the correct reading frame;
-        next unless $seqs[0] =~ /[^x]/i;
-        $seq = $seqs[0];
-    }
-    else {
-        $seq = $feat->genomic_sequence;
-    }
-    print '>', $title, "\n", $seq, "\n";
-    $count++;
-}
 
+    eval {{
+        foreach my $n ( $feat->names ) {
+            $name = $n;
+            last unless $name =~ /\s/;
+        }
+        $name =~ s/\s+/_/g;
+        my $title = join( "||",
+            $org,              $chr,      $feat->start,
+            $feat->stop,       $name,     $feat->strand,
+            $feat->type->name, $feat->id, $count );
+        my $seq;
+        if ($prot) {
+            my (@seqs) = $feat->protein_sequence( dsgid => $dsg->id );
+            next unless scalar @seqs;
+            next if scalar @seqs > 1;    #didn't find the correct reading frame;
+            next unless $seqs[0] =~ /[^x]/i;
+            $seq = $seqs[0];
+        }
+        else {
+            $seq = $feat->genomic_sequence;
+        }
+        $title = ">" . $title . "\n";
+
+        print $title, $seq, "\n";
+
+        $count++;
+    }};
+
+    if ($@) {
+        say STDERR "DOWNLOAD ABORTED: $file_name";
+        last;
+    }
+}
