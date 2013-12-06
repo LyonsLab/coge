@@ -91,15 +91,14 @@ Content-Disposition: attachment; filename="$file_name"
 my $count = 1;
 my @feats;
 if ($ds) {
-    @feats = $ds->features( { feature_type_id => $ftid },
-        { prefetch => 'feature_names' } );
+    @feats = $ds->features( { feature_type_id => $ftid } );
 }
 else {
-    @feats = $dsg->features( { feature_type_id => $ftid },
-        { prefetch => 'feature_names' } );
+    @feats = $dsg->features( { feature_type_id => $ftid } );
 }
 
 my $org = $dsg->organism->name;
+
 foreach my $feat (@feats) {
     my ($chr) = $feat->chromosome;    #=~/(\d+)/;
     my $name;
