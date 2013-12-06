@@ -60,13 +60,14 @@ unless ($ftid) {
     exit;
 }
 
+
 my ( $dsg, $ds );
 ($dsg) = $coge->resultset('Genome')->search( { "me.genome_id" => $dsgid },
     { join => 'genomic_sequences', prefetch => 'genomic_sequences' } )
   if $dsgid;
 $ds = $coge->resultset('Dataset')->find($dsid) if $dsid;
 
-($dsg) = $ds->dataset_groups if $ds;
+($dsg) = $ds->genomes if $ds;
 
 if ( !$USER->has_access_to_genome($dsg) ) {
     print $FORM->header;
