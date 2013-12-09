@@ -1518,7 +1518,7 @@ sub _format_gff_line {
         my $tmp = $str . "\n";
         $output .= $tmp;
     }
-    print $output if $print;
+    print $output if ($print and $output);
     return $output;    #, \@feat_names;
 }
 
