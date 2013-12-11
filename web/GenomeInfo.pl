@@ -524,7 +524,7 @@ sub export_fasta_irods {
 	CoGe::Accessory::IRODS::irods_iput($src, $dest);
 	#TODO need to check rc of iput and abort if failure occurred
 
-	# Set IRODS metadata for object
+	# Set IRODS metadata for object #TODO need to change these to use Accessory::IRODS::IRODS_METADATA_PREFIX
 	my %meta = (
 		    'Imported From' => "CoGe: http://genomevolution.org",
 		    'CoGe OrganismView Link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
@@ -537,23 +537,19 @@ sub export_fasta_irods {
 		   );
     my $i = 1;
     my @sources = $genome->source;
-    foreach my $item (@sources)
-      {
-	my $source = $item->name;
-	$source.= ": ".$item->description if $item->description;
-	my $met_name = "Source";
-	$met_name .= $i if scalar @sources > 1;
-	$meta{$met_name}= $source;
-	$meta{$met_name." Link"} = $item->link if $item->link;
-	$i++;
-      }
-
-
+    foreach my $item (@sources) {
+		my $source = $item->name;
+		$source.= ": ".$item->description if $item->description;
+		my $met_name = "Source";
+		$met_name .= $i if scalar @sources > 1;
+		$meta{$met_name}= $source;
+		$meta{$met_name." Link"} = $item->link if $item->link;
+		$i++;
+	}
 	$meta{'Genome Link'} = $genome->link if ($genome->link);
 	$meta{'Addition Info'} = $genome->message if ($genome->message);
 	$meta{'Genome Name'} = $genome->name if ($genome->name);
 	$meta{'Genome Description'} = $genome->description if ($genome->description);
-
 	CoGe::Accessory::IRODS::irods_imeta($dest, \%meta);
 }
 

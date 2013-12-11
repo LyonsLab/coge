@@ -29,12 +29,14 @@ use warnings;
 use IPC::System::Simple qw(capture system $EXITVAL EXIT_ANY);
 
 BEGIN {
-    use vars qw ($VERSION @ISA @EXPORT);
+    use vars qw ($VERSION @ISA @EXPORT $IRODS_METADATA_PREFIX);
     require Exporter;
 
     $VERSION = 0.1;
     @ISA     = qw (Exporter);
     @EXPORT = qw( irods_ils );
+    
+    $IRODS_METADATA_PREFIX = 'IPC-CoGe-';
 }
 
 sub irods_ils {
@@ -121,7 +123,7 @@ sub irods_iget {
     return unless $env_file;
 
     my $cmd = "export irodsEnvFile='$env_file'; iget -fT $src $dest";
-    #print STDERR "cmd: $cmd\n";
+    print STDERR "cmd: $cmd\n";
     my @result = `$cmd`;
     #print STDERR "@result";
 
