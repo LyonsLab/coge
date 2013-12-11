@@ -23,7 +23,12 @@ CGI::Application::Dispatch->dispatch(
             prefix => 'CoGe::Services::Data',
             app    => 'Genome',
             rm     => 'search'
-        },                
+        },
+        'genome/load' => {
+            prefix => 'CoGe::Services::Data',
+            app    => 'Genome',
+            rm     => 'load'
+        },       
         'notebook/create' => {
             prefix => 'CoGe::Services::Data',
             app    => 'Notebook',
