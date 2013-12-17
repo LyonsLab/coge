@@ -5,7 +5,7 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Storage qw( index_genome_file get_tiered_path );
 use CoGe::Accessory::Utils qw( commify units print_fasta );
-#use CoGe::Accessory::IRODS qw( irods_imeta );
+use CoGe::Accessory::IRODS qw( irods_imeta $IRODS_METADATA_PREFIX );
 use Data::Dumper;
 use Getopt::Long;
 use File::Path;
@@ -368,7 +368,7 @@ print $log "log: "
 if ($irods_files) {
 	my @irods = split( ',', $irods_files );
 	my %metadata = (
-		$IRODS_METADATA_PREFIX.'_link' => $P->{SERVER} . 'GenomeInfo.pl?gid=' . $genome->id
+		$IRODS_METADATA_PREFIX.'link' => $P->{SERVER} . 'GenomeInfo.pl?gid=' . $genome->id
 		#TODO need to add fields that match GenomeInfo.pl
 	);
 	foreach my $file (@irods) {
