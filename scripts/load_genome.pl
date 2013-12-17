@@ -406,6 +406,10 @@ sub process_fasta_file {
         my ( $name, $seq ) = split /\n/, $_, 2;
         $seq =~ s/\n//g;
         $seq =~ s/\r//g; # mdb added 11/22/13 issue 255 - remove Windows-style CRLF
+        $seq =~ s/\s+$//; # mdb added 12/17/13 issue 267 - trim trailing whitespace
+        # Note: not removing spaces from within sequence because sometimes spaces are
+        # used ambiguously to indicate gaps.  We will be strict and force error 
+        # if spaces are present.
         $lineNum++;
 
         my $chr;
