@@ -6,6 +6,8 @@
 # Usage:
 #    ./audit_backup.pl <source_dir> <backup_dir>
 #	 e.g., ./audit_backup.pl /storage/coge/data/genomic_sequence /iplant/home/coge/backup/genomic_sequence
+#    source_dir is on local filesystem
+#    backup_dir is in IRODS
 #
 # Created 9/27/13 by mdb
 #-------------------------------------------------------------------------------
@@ -29,7 +31,7 @@ find(
 );
 
 # Compare md5sum for each file to backup copy
-foreach my $file (@files) {
+foreach my $file (sort @files) {
 	print STDERR "Comparing $file\n";
 	my $backup_file = $file;
 	$backup_file =~ s/$source_dir//;
