@@ -1,8 +1,26 @@
-User-agent: *
-Disallow: /CoGe/tmp/
-Disallow: /CoGe/diags/
-Disallow: /CoGe/diags_perl/
-Disallow: /CoGe/scripts/
-Disallow: /CoGe/data/
-Disallow: /CoGe/bin/
-Disallow: /CoGe/old/
+# Based on: http://danbirken.com/seo/2013/10/17/who-exactly-is-crawling-my-site.html
+
+User-Agent: Googlebot
+User-Agent: Googlebot-Mobile
+User-Agent: msnbot
+User-Agent: bingbot
+# Adsense
+User-Agent: Mediapartners-Google
+# Blekko
+User-Agent: ScoutJet
+User-Agent: Yandex
+User-agent: baiduspider
+User-agent: DuckDuckBot
+# CommonCrawl
+User-agent: ccbot
+Allow: /
+Disallow: /tmp/
+Disallow: /diags/
+Disallow: /diags_perl/
+Disallow: /scripts/
+Disallow: /data/
+Disallow: /bin/
+Disallow: /old/
+
+User-Agent: *
+Disallow: /
