@@ -34,9 +34,9 @@ BEGIN {
 
     $VERSION = 0.1;
     @ISA     = qw (Exporter);
-    @EXPORT = qw( irods_ils );
+    @EXPORT = qw( irods_ils irods_imeta irods_iget irods_chksum irods_iput $IRODS_METADATA_PREFIX );
     
-    $IRODS_METADATA_PREFIX = 'IPC-CoGe-';
+    $IRODS_METADATA_PREFIX = 'ipc-coge-';
 }
 
 sub irods_ils {
@@ -160,7 +160,7 @@ sub irods_imeta {
 		}
 		
 	    my $cmd = "export irodsEnvFile='$env_file'; imeta add -d '" . $dest . "' '" . $k . "' '" . $v . "'";
-	    #print STDERR "cmd: $cmd\n";
+	    print STDERR "cmd: $cmd\n";
 	    my @result = `$cmd`;
 	    #print STDERR "@result";
 	}

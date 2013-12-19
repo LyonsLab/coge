@@ -427,6 +427,7 @@ sub process_fasta_file {
             $chr =~ s/\s+/ /;
             $chr =~ s/^\s//;
             $chr =~ s/\s$//;
+            $chr =~ s/\//_/; # mdb added 12/17/13 issue 266 - replace '/' with '_'
         }
 
         # Check validity of chr name and sequence
