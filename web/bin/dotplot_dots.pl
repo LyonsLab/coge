@@ -407,6 +407,8 @@ sub add_genome_to_json {
     $data{name}    = $genome->organism->name . " (v" . $genome->version . ")";
     my $order = 1;
 
+    my $chrs = [];
+
     foreach my $chr ( keys %$org_data ) {
 
       #get number of genes in chromosome
@@ -423,15 +425,19 @@ SELECT count(distinct(feature_id))
 
 
 
-        $data{chromosomes}{$chr} = {
+        push $chrs, {
 				    name   => $chr,
 				    nucleotides => int( $org_data->{$chr}{length} ),
-				    genes => $gene_count,
+				    genes => int( $gene_count ),
 				    id     => int( $order++ )
 				    , #eric changed from 'order' to 'id'.  Make sure that it isn't assumed to be an order.  See if this value can be dropped
-				   };
+		};
       }
-    $json_data{genomes}{$genomeid} = \%data;
+    $data{chromosomes} = $chrs;
+
+    $json_data{genomes} = defined($json_data{genomes}) ? $json_data{genomes} : [];
+
+    push $json_data{genomes}, \%data;
 }
 
 #Print out info on script usage
