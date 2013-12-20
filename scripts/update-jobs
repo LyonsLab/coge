@@ -102,9 +102,16 @@ def main(args={}):
     pid = str(os.getpid())
     pidfile = "/tmp/update-jobs.pid"
 
-    if os.path.isfile(pidfile):
-        sys.exit()
-    else:
+    try:
+        current = file(pidfile, 'r').readline()
+
+        if os.path.exists("/proc/%s" % current):
+            sys.exit()
+        else:
+            os.unlink(pidfile)
+    except IOError:
+        pass
+    finally:
         file(pidfile, 'w').write(pid)
 
     print("#" * 25)
