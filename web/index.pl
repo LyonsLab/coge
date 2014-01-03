@@ -78,13 +78,13 @@ sub generate_body {
         GEN_COUNT => commify(
             $coge->resultset('Genome')->search( { deleted => 0 } )->count()
         ),
-        NUCL_COUNT => commify(
-            units(
-                $coge->resultset('GenomicSequence')
-                  ->get_column('sequence_length')->sum
-              )
-              . 'bp'
-        ),
+#        NUCL_COUNT => .'('.commify(
+#            units(
+#                $coge->resultset('GenomicSequence')
+#                  ->get_column('sequence_length')->sum
+#              )
+#              . 'bp)'
+#        ),
         FEAT_COUNT => commify( $coge->resultset('Feature')->count() ),
         ANNOT_COUNT =>
           commify( $coge->resultset('FeatureAnnotation')->count() ),
