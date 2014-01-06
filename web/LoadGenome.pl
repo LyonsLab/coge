@@ -13,6 +13,7 @@ use JSON::XS;
 use Sort::Versions;
 use File::Path qw(mkpath);
 use File::Copy qw(copy);
+use File::Basename;
 use URI;
 use URI::Escape::JavaScript qw(escape);
 use LWP::Simple;
@@ -233,13 +234,19 @@ sub ftp_get_file {
     my $password  = $opts{password}; # optional
     my $timestamp = $opts{timestamp};
 
-    my ( $type, $filepath, $filename ) = $url =~ /^(ftp|http|https):\/\/(.+)\/(\S+)$/;
-
-    print STDERR "url=$url type=$type filepath=$filepath filename=$filename ", ($username and $password ? "$username $password" : ''), "\n";
+    #my ( $type, $filepath, $filename ) = $url =~ /^(ftp|http|https):\/\/(.+)\/(\S+)$/; # mdb removed 1/6/14, issue 274
+	# mdb added 1/6/14, issue 274
+	my $uri = URI->new($url);
+	my $type = $uri->scheme;
+	my ($filename, $filepath) = fileparse($uri->path);
+	$filepath = $uri->host . $filepath;
+    
+    #print STDERR "url=$url type=$type filepath=$filepath filename=$filename ", ($username and $password ? "$username $password" : ''), "\n";
     return unless ( $type and $filepath and $filename );
 
-    my $path         = 'ftp/' . $filepath . '/' . $filename;
-    my $fullfilepath = $TEMPDIR . 'ftp/' . $filepath;
+    my $path         = $type . '/' . $filepath . '/' . $filename;
+    my $fullfilepath = $TEMPDIR . '/' . $type . '/' . $filepath;
+    #print STDERR "path=$path fullfilepath=$fullfilepath\n";
     mkpath($fullfilepath);
 
     # Simplest method (but doesn't allow login)

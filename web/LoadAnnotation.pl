@@ -13,6 +13,8 @@ use JSON::XS;
 use URI::Escape::JavaScript qw(escape);
 use File::Path;
 use File::Copy;
+use File::Basename;
+use URI;
 use Sort::Versions;
 no warnings 'redefine';
 
@@ -237,7 +239,12 @@ sub ftp_get_file {
     my $password  = $opts{password};
     my $timestamp = $opts{timestamp};
 
-    my ( $type, $filepath, $filename ) = $url =~ /^(ftp|http):\/\/(.+)\/(\S+)$/;
+    #my ( $type, $filepath, $filename ) = $url =~ /^(ftp|http):\/\/(.+)\/(\S+)$/; # mdb removed 1/6/14, issue 274
+	# mdb added 1/6/14, issue 274
+	my $uri = URI->new($url);
+	my $type = $uri->scheme;
+	my ($filename, $filepath) = fileparse($uri->path);
+	$filepath = $uri->host . $filepath;
 
     # print STDERR "$type $filepath $filename $username $password\n";
     return unless ( $type and $filepath and $filename );
