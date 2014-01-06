@@ -1,6 +1,7 @@
 BODY {
   font-family: Arial, Helvetica, fixed;
   background: #FFFFFF;
+  margin: 0;
 }
 
 a {
@@ -53,10 +54,8 @@ a:hover {
 }
 
 div.box {
-  padding:10px;
   padding-bottom:70px;
   margin-top:3px;
-  border-top: 1px solid lightgray;
   overflow-y:auto;
 }
 
@@ -895,7 +894,7 @@ dd {
 .ui-menu-item a.ui-state-active {
 	border:none;
 	margin:0px !important;
-	background:greenyellow;
+/*	background:greenyellow; */
 }
 
 section#tabs .ui-tabs-panel {
@@ -932,6 +931,7 @@ li {
 
 .horizontal li {
     display: inline-block;
+    padding: 0 15px;
 }
 
 .hidden {
@@ -956,6 +956,11 @@ th {
     text-align: center;
 }
 
+.inline {
+    display: inline-block;
+}
+
+
 
 /* Alignment */
 .top {
@@ -977,4 +982,185 @@ th {
 
 .running {
     color: 3366FF;
+}
+
+/* Main Page */
+.welcome {
+    color: #119911;
+    text-shadow: #555555 1px 1px;
+    font-size: 2.5em;
+    font-weight: bold;
+    display: block;
+}
+
+.shaded {
+    background-color: #beef9f;
+}
+
+.shadow {
+    border: solid #98BF7F 1px;
+    -webkit-box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.82);
+    -moz-box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.82);
+    box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.82);
+}
+
+h4 {
+    text-align: left;
+    margin: 0;
+    padding: 5px;
+}
+
+header {
+    padding: 10px;
+}
+
+/* CoGepedia Wiki Feed */
+
+#wikifeed {
+    padding: 10px 0;
+}
+
+#wikifeed > div h2 {
+    padding: 5px;
+    font-size: 0.75em;
+}
+
+#wikifeed .date {
+    display: block;
+    font-size: 0.35em;
+    font-weight: normal;
+}
+
+#wikifeed > div div {
+    padding: 5px 15px 10px 15px;
+}
+
+#wikifeed > div div a {
+    color: #1631BB;
+}
+
+#wikifeed > div div h3 {
+    font-size: 0.6em;
+}
+
+#wikifeed > div div p,
+#wikifeed > div div pre,
+#wikifeed > div div ul,
+#wikifeed > div div ol {
+    font-size: 0.6em;
+    word-wrap: break-word;
+}
+
+#wikifeed > div div img,
+#wikifeed > div div embed {
+    text-align: center;
+    max-width: 50%;
+}
+
+.sidebar_right {
+    width: 20%;
+    margin-right: 2%;
+    float: right;
+    padding: 10px 0;
+}
+
+.sidebar_left div {
+    max-width: 150px;
+}
+
+.sidebar_left {
+    width: 20%;
+    margin-left: 2%;
+    float: left;
+    padding: 10px 0;
+    text-align: center;
+}
+
+#content {
+    text-align: center;
+    padding: 10px 0;
+    min-width: 210px;
+    width: 50%;
+    float: left;
+}
+
+#wrapper {
+    padding-top: 10px;
+    margin: 0 auto;
+}
+
+#content p {
+    font-size: 1.5em;
+    padding: 0;
+    margin: 0;
+    font-variant: small-caps;
+}
+
+#stats {
+    padding: 10px 0px;
+    margin: 0;
+}
+
+#latest_genomes {
+    overflow-y: scroll;
+    max-height: 75%;
+}
+
+.box > div,
+.box > section,
+.box > span,
+.box > form,
+.box > table {
+    margin: 5px 10px;
+}
+
+@media (max-width: 850px) {
+    .small {
+        font-size: xx-small;
+    }
+    section {
+        font-size:
+        width: 70%;
+        margin-left: 2%;
+        margin-right: 2%;
+    }
+
+    .sidebar_right {
+        width: 90%;
+        clear: both;
+        margin-right: 2%;
+        float: left;
+        margin-left: 2%;
+    }
+}
+
+@media (max-width: 600px) {
+    .sidebar_left {
+        clear: both;
+        width: 90%;
+        text-align: center;
+    }
+
+    .sidebar_left > div {
+        display: inline-block;
+    }
+
+    #content {
+        font-size: .5em;
+        text-align: center;
+        clear: both;
+        width: 90%;
+        margin-left: 2%;
+        margin-right: 2%;
+    }
+
+    #wikifeed > div h2 {
+        padding: 5px;
+        font-size: 0.6em;
+    }
+
+    #horizontal li {
+        text-align: left;
+        display: block;
+    }
 }
