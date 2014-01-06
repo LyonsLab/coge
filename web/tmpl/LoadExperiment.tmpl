@@ -173,9 +173,18 @@ function load_experiment() {
 			file_type: file_type,
 			timestamp: new Date().getTime()
 		},
-		success : function() {
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj && obj.error) {
+				alert(obj.error);
+				return;
+			}
+			
 			// Add load_id to browser URL
 			window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?load_id=" + load_id);
+			
+			// Set link in status dialog
+			$('#loading_msg span a').attr('href', obj.link).html(obj.link);
 			
 			// Start status update
 			setTimeout(function() { get_load_log(); }, 1000);
@@ -384,8 +393,8 @@ function get_sources () {
   <div id="load_experiment_log" class="small ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
   </div>
   <br>
-  <div id="loading_msg" class="small">
-    <span class="small" style="float:right;">Link: <a href='<TMPL_VAR NAME="LINK">'><TMPL_VAR NAME="LINK"></a></span>
+  <div id="loading_msg">
+    <span class="small" style="float:right;">Link: <a></a></span>
     Please wait ... <img src="picts/ajax-loader.gif"/>
   </div>
   <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>

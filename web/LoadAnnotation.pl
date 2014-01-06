@@ -421,6 +421,7 @@ sub load_annotation {
         push @files, $fullpath;
     }
 
+	# Call load script
     my $cmd =
         "$BINDIR/load_annotation.pl "
       . "-user_name $user_name "
@@ -454,6 +455,7 @@ sub load_annotation {
         exit;
     }
 
+	# Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
         url => $P->{SERVER} . "$PAGE_TITLE.pl?load_id=$LOAD_ID"
     );
