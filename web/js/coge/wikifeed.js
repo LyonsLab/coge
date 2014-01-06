@@ -60,7 +60,6 @@ window.wikifeed = function(url, element, size) {
         var items = ranges.map(getData(children.toArray()));
 
         posts = items.map(formatPost).slice(0, -1);
-        console.log(posts);
         render();
     }
 
