@@ -14,6 +14,7 @@ use URI::Escape::JavaScript qw(escape);
 use File::Path;
 use File::Copy;
 use File::Basename;
+use LWP::Simple;
 use URI;
 use Sort::Versions;
 no warnings 'redefine';
