@@ -99,6 +99,8 @@ sub generate_body {
         )
     );
 
+    $tmpl->param(wikifeed => $P->{WIKI_URL});
+
     #      }
     #    my $url = $FORM->param('url') if $FORM->param('url');
     #    if ($url)
@@ -123,7 +125,7 @@ qq{Compare sequences and genomic regions to discover patterns of genome evolutio
             SCREENSHOT =>
 qq{<a href="./GEvo.pl"><img src="picts/preview/GEvo.png"border="0"></a>},
             NAME =>
-qq{<span style="display:inline-block;width:100px;">GEvo</span><span style="font-weight:normal;">High-resolution sequence analysis of genomic regions</span>},
+qq{<span style="display:inline-block;width:100px;">GEvo</span>},
         },
         {
             ID => 3,
@@ -136,7 +138,7 @@ qq{Find and display information about a genomic feature (e.g. gene). <a href = "
             SCREENSHOT =>
 qq{<a href="./FeatView.pl"><img src="picts/preview/FeatView.png" width="400" height="241" border="0"></a>},
             NAME =>
-qq{<span style="display:inline-block;width:100px;">FeatView</span><span style="font-weight:normal;">Search for genomic features by name</span>},
+qq{<span style="display:inline-block;width:100px;">FeatView</span>},
         },
 
 # 		   {
@@ -164,7 +166,7 @@ qq{Search for organisms, get an overview of their genomic make-up, and visualize
             SCREENSHOT =>
               qq{<img src="picts/preview/OrganismView.png" border="0"></a>},
             NAME =>
-qq{<span style="display:inline-block;width:100px;">OrganismView</span><span style="font-weight:normal;">Search for organisms and perform analyses on their genomes</span>},
+qq{<span style="display:inline-block;width:100px;">OrganismView</span>},
         },
         {
             ID => 2,
@@ -177,7 +179,7 @@ qq{<a href="./CoGeBlast.pl"><img src="picts/carousel/CoGeBlast-logo.png" width="
             SCREENSHOT =>
 qq{<a href="./CoGeBlast.pl"><img src="picts/preview/Blast.png" width="400" height="241" border="0"></a>},
             NAME =>
-qq{<span style="display:inline-block;width:100px;">CoGeBlast</span><span style="font-weight:normal;">Blast sequences against any number of genomes of your choosing</span>},
+qq{<span style="display:inline-block;width:100px;">CoGeBlast</span>},
         },
 
 # 		   {
@@ -198,7 +200,7 @@ qq{Compare any two genomes to identify regions of synteny.  <a href="SynMap.pl?d
             SCREENSHOT =>
 qq{<a href="./SynMap.pl"><img src="picts/preview/SynMap.png" border="0" width="400" height="320"></a>},
             NAME =>
-qq{<span style="display:inline-block;width:100px;">SynMap</span><span style="font-weight:normal;">Whole genome syntenic dotplot anlayses</span>},
+qq{<span style="display:inline-block;width:100px;">SynMap</span>},
         },
         {
             ID => 4,
@@ -209,7 +211,7 @@ qq{<a href="./SynFind.pl"><img src="picts/SynFind-logo.png"  border="0"></a>},
             SCREENSHOT =>
 qq{<a href="./SynFind.pl"><img src="picts/preview/SynMap.png" border="0" width="400" height="320"></a>},
             NAME =>
-qq{<span style="display:inline-block;width:100px;">SynFind</span><span style="font-weight:normal;">Identify syntenic regions across many genomes</span>},
+qq{<span style="display:inline-block;width:100px;">SynFind</span>},
         },
     );
     return \@actions;
