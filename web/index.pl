@@ -24,7 +24,8 @@ CoGe::Accessory::Web->logout_cas(
     cookie_name => $P->{COOKIE_NAME},
     coge        => $coge,
     user        => $USER,
-    form        => $FORM
+    form        => $FORM,
+    url			=> $P->{SERVER} . '/index.pl' # mdb added 12/10/13 -- was redirecting to wrong url
 ) if $FORM->param('logout');
 
 my %FUNCTION = ( get_latest_genomes => \&get_latest_genomes );

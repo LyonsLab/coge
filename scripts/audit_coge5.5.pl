@@ -163,7 +163,7 @@ foreach my $experiment ($coge->resultset('Experiment')->all) {
 # All done!
 #-------------------------------------------------------------------------------
 
-$coge->resultset('Log')->create( { user_id => 0, page => $0, description => 'database migrated to coge5.5' } );
+$coge->resultset('Log')->create( { user_id => 0, page => $0, description => 'database audited' } );
 print STDERR "All done!\n";
 exit;
 

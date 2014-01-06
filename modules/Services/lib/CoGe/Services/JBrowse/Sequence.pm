@@ -3,6 +3,7 @@ use base 'CGI::Application';
 
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Storage qw( get_genome_seq );
+use URI::Escape qw(uri_unescape);
 use List::Util qw( min );
 
 #use File::Basename 'fileparse';
@@ -25,6 +26,7 @@ sub features {
     my $self  = shift;
     my $gid   = $self->param('gid');
     my $chr   = $self->param('chr');
+    $chr = uri_unescape($chr) if (defined $chr);
     my $size  = $self->query->param('seqChunkSize');
     my $start = $self->query->param('start');
     my $end   = $self->query->param('end');
