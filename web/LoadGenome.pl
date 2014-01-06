@@ -30,7 +30,7 @@ $PAGE_TITLE = 'LoadGenome';
 $FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     #cgi => $FORM,
-    url => 'http://geco.iplantcollaborative.org/mbomhoff'.$ENV{REQUEST_URI},
+    url => 'http://coge.iplantcollaborative.org/mbomhoff'.$ENV{REQUEST_URI},
     ticket => $FORM->param('ticket') || undef,
     page_title => $PAGE_TITLE
 );
