@@ -459,6 +459,7 @@ sub load_experiment {
         push @files, $fullpath;
     }
 
+	# Call load script
     my $cmd =
         "$BINDIR/load_experiment.pl "
       . "-user_name $user_name "
@@ -477,8 +478,8 @@ sub load_experiment {
       . '-data_file "'
       . escape( join( ',', @files ) ) . '" '
       . "-config $CONFIGFILE";
+	  #"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
 
-#"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
     print STDERR "$cmd\n";
     print $log "$cmd\n";
     close($log);
@@ -492,6 +493,7 @@ sub load_experiment {
         exit;
     }
     
+    # Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
         url => $P->{SERVER} . "$PAGE_TITLE.pl?load_id=$LOAD_ID"
     );
