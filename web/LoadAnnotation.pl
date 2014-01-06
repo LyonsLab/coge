@@ -127,7 +127,7 @@ sub generate_body {
         OPEN_STATUS   => $OPEN_STATUS,
         LINK          => $tiny_link,
         FILE_SELECT_SINGLE       => 1,
-        DEFAULT_TAB              => 2,
+        DEFAULT_TAB              => 0,
         DISABLE_IRODS_GET_ALL    => 1,
         MAX_IRODS_LIST_FILES     => 100,
         MAX_IRODS_TRANSFER_FILES => 30,
