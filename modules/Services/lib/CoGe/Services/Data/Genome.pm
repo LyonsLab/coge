@@ -57,7 +57,7 @@ sub load {
 
  	# Connect to the database
  	my $ticket = $data->{ticket};
- 	my $url = 'http://geco.iplantcollaborative.org/mbomhoff'.$ENV{REQUEST_URI}; #FIXME hardcoded !!!!
+ 	my $url = 'http://coge.iplantcollaborative.org/mbomhoff'.$ENV{REQUEST_URI}; #FIXME hardcoded !!!!
  	$url =~ s/\/$//;
     my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $ticket, ticket_type => 'proxy', url => $url);
 	print STDERR "Data::Genome::load user=", $user->name, "\n";
