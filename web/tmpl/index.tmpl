@@ -60,7 +60,7 @@ function cross_fade(first_time) {
     );
     var index = pageObj.index;
     link = "http://genomevolution.org/wiki/index.php/"+image[index][2];
-    newStuff = "<div onclick=window.open('"+link+"') style='text-align: center; padding: 5px;'><img style='width: 90%;' src='./picts/home_page/"+image[index][0]+"'><div class='small'>"+image[index][1]+"</div></div>";
+    newStuff = "<div onclick=window.open('"+link+"') style='box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.15);text-align: center; border: solid 1px lightgray; margin-top: 50px; padding: 10px'><img style='width: 90%;' src='./picts/home_page/"+image[index][0]+"'><div style='width: 80%; margin: 0 auto; float: none;' class='padded'>"+image[index][1]+"</div></div>";
 
     if (first_time) {
         $('#crossfade').html(newStuff).show();
@@ -102,9 +102,8 @@ function get_latest_genomes() {
 }
 </SCRIPT>
 
-<div id="nav"></div>
 <TMPL_IF NAME="INTRO">
-    <div id="stats" class="shadow shaded">
+    <div id="stats" class="shaded">
         <ul class="horizontal small bold">
                 <li>Organisms: <span style="color:darkgreen"><TMPL_VAR NAME="ORG_COUNT"></span></li>
                 <li>Genomes: <span style="color:darkgreen"><TMPL_VAR NAME="GEN_COUNT"></span></li>
@@ -130,7 +129,7 @@ function get_latest_genomes() {
             </div>
         </div>
         <div>
-            <h4>CoGe's Tools</h4>
+            <h4 style="padding-top: 25px;">CoGe's Tools</h4>
             <div style="font-size: 0.7em;">
                 <div id="accordion3" class="invisible">
                     <TMPL_LOOP NAME="ACTIONS">
@@ -155,7 +154,7 @@ function get_latest_genomes() {
 
     <aside class="sidebar_right">
         <div id="wikifeed">
-            <div class="bold" style="text-align: center;">Latest News</div>
+            <h4 style="text-align: center;">Latest News</h4>
         </div>
 
     </aside>
