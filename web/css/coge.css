@@ -1108,7 +1108,7 @@ header {
 
 #stats {
     padding: 10px 0px;
-    margin: -10px;
+    margin: -10px -10px 0 -10px;
 }
 
 #latest_genomes {
