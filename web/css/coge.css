@@ -57,6 +57,7 @@ div.box {
   padding-bottom:70px;
   margin-top:3px;
   overflow-y:auto;
+  border-top: 1px solid lightgray;
 }
 
 div.footer {
@@ -1072,7 +1073,7 @@ header {
     width: 20%;
     margin-left: 2%;
     float: left;
-    padding: 10px 0;
+    padding-top: 20px;
     text-align: center;
 }
 
@@ -1111,7 +1112,7 @@ header {
 .box > span,
 .box > form,
 .box > table {
-    margin: 5px 10px;
+    margin: 10px 10px;
 }
 
 @media (max-width: 850px) {
