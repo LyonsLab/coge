@@ -125,7 +125,6 @@ sub generate_body {
     $template->param(
     	LOAD_ID       => $LOAD_ID,
         OPEN_STATUS   => $OPEN_STATUS,
-        LINK          => $tiny_link,
         FILE_SELECT_SINGLE       => 1,
         DEFAULT_TAB              => 0,
         DISABLE_IRODS_GET_ALL    => 1,
