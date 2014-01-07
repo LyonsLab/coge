@@ -60,7 +60,7 @@ function cross_fade(first_time) {
     );
     var index = pageObj.index;
     link = "http://genomevolution.org/wiki/index.php/"+image[index][2];
-    newStuff = "<div onclick=window.open('"+link+"') style='box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.15);text-align: center; border: solid 1px lightgray; margin-top: 50px; padding: 10px'><img style='width: 90%;' src='./picts/home_page/"+image[index][0]+"'><div style='width: 80%; margin: 0 auto; float: none;' class='padded'>"+image[index][1]+"</div></div>";
+    newStuff = "<div onclick=window.open('"+link+"') style='box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.15);text-align: center; border: solid 1px lightgray; margin-top: 50px; padding: 10px'><img style='width: 90%; max-height: 50%;' src='./picts/home_page/"+image[index][0]+"'><div style='width: 80%; margin: 0 auto; float: none;' class='padded'>"+image[index][1]+"</div></div>";
 
     if (first_time) {
         $('#crossfade').html(newStuff).show();
