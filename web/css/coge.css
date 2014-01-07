@@ -54,6 +54,7 @@ a:hover {
 }
 
 div.box {
+  padding:10px;
   padding-bottom:70px;
   margin-top:3px;
   overflow-y:auto;
@@ -1068,7 +1069,7 @@ header {
 
 .sidebar_right {
     width: 20%;
-    margin-right: 2%;
+    margin-right: 1%;
     float: right;
     padding: 10px 0;
 }
@@ -1079,7 +1080,7 @@ header {
 
 .sidebar_left {
     width: 20%;
-    margin-left: 2%;
+    margin-left: 1%;
     float: left;
     padding-top: 20px;
     text-align: center;
@@ -1107,7 +1108,7 @@ header {
 
 #stats {
     padding: 10px 0px;
-    margin: 0;
+    margin: -10px;
 }
 
 #latest_genomes {
@@ -1115,6 +1116,7 @@ header {
     max-height: 75%;
 }
 
+/*
 .box > div,
 .box > section,
 .box > span,
@@ -1122,6 +1124,7 @@ header {
 .box > table {
     margin: 10px 10px;
 }
+*/
 
 @media (max-width: 850px) {
     .small {
