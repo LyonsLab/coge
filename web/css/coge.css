@@ -1015,6 +1015,14 @@ header {
     padding: 10px;
 }
 
+.tagline {
+    vertical-align: 50%;
+    white-space: nowrap;
+    font-size: 1.5em;
+    color: #c0c0c0;
+    text-shadow: #555555 1px 1px;
+}
+
 /* CoGepedia Wiki Feed */
 
 #wikifeed {
@@ -1137,9 +1145,16 @@ header {
 
 @media (max-width: 600px) {
     .sidebar_left {
+        display: none;
         clear: both;
         width: 90%;
         text-align: center;
+    }
+
+    .tagline {
+        display: block;
+        white-space: normal;
+        font-size: 1em;
     }
 
     .sidebar_left > div {
