@@ -1127,8 +1127,8 @@ header {
     .small {
         font-size: xx-small;
     }
-    section {
-        font-size:
+
+    #content {
         width: 70%;
         margin-left: 2%;
         margin-right: 2%;
