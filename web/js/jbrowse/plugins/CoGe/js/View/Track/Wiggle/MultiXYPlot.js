@@ -119,117 +119,120 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
            return canvasHeight * ( 1-dataScale.normalize.call(this, val) );
         });
         var originY = toY( dataScale.origin );
-
         var disableClipMarkers = this.config.disable_clip_markers;
         
-        // sort features by score
-        var sorted = [];
-        dojo.forEach( features, function(f,i) {
-        	sorted.push({ feature: f, featureRect: featureRects[i] });
-        });
-        sorted.sort( sortByScore );
-        
-        // compute transforms
-        var sum = [];
-        var count = [];
-        var width = [];
-        //var diff = [];
-        //var max;
-        //var min;
-        dojo.forEach( features, function(f,i) {
-        	var score = f.get('score');
-        	//if (!max || score > max)
-        	//	max = score;
-        	//if (!min || score < min)
-        	//	min = score;
-        	var l = featureRects[i].l;
-        	var w = featureRects[i].w;
-        	sum[l] = l in sum ? sum[l] + score : score;
-        	count[l] = l in count ? count[l] + 1 : 1;
-        	width[l] = l in width ? Math.max(width[l], w) : w;
-        	//diff[l] = l in diff ? diff[l] - score : score;
-        });
-        
+        // Note: transform cases below can be consolidated/optimized
         if (config.transformAverage) {
+            var sum = [];
+            var count = [];
+            var width = [];
+            dojo.forEach( features, function(f,i) {
+            	var score = f.get('score');
+            	var l = featureRects[i].l;
+            	var w = featureRects[i].w;
+            	sum[l] = l in sum ? sum[l] + score : score;
+            	count[l] = l in count ? count[l] + 1 : 1;
+            	width[l] = l in width ? Math.max(width[l], w) : w;
+            });
         	sum.forEach( function(x,l) {
         		var avg = sum[l]/count[l];
         		var height = toY( avg );
         		context.fillStyle = 'gray';
-        		
         		if( height <= canvasHeight ) { // if the rectangle is visible at all
-        			if( height <= originY ) { // bar goes upward
+        			if( height <= originY ) // bar goes upward
         				context.fillRect( l, height, width[l], originY-height+1);
-        			}
-        			else { // bar goes downward
+        			else // bar goes downward
         				context.fillRect( l, originY, width[l], height-originY+1 );
-        			}
         		}
         	});
         }
-//        else if (config.transformDifference) {
-//        	sum.forEach( function(x,l) {
-//        		if (count[l] > 1) {
-//	        		var height = toY( diff[l] );
-//	        		if( height <= canvasHeight ) { // if the rectangle is visible at all
-//	        			if( height <= originY ) { // bar goes upward
-//	        				context.fillStyle = 'blue';
-//	        				context.fillRect( l, height, width[l], originY-height+1);
-//	        			}
-//	        			else { // bar goes downward
-//	        				context.fillStyle = 'red'
-//	        				context.fillRect( l, originY, width[l], height-originY+1 );
-//	        			}
-//	        		}
-//        		}
-//        	});
-//        }
+        else if (config.transformDifference) {
+            var width   = [];
+            var max_f   = []; // forward strand
+            var max_r   = []; // reverse strand
+            var min_f   = [];
+            var min_r   = [];            
+            var color_f = [];
+            var color_r = [];
+            var count_f = [];
+            var count_r = [];
+            dojo.forEach( features, dojo.hitch(this, function(f,i) {
+            	var score = f.get('score');
+            	var l = featureRects[i].l;
+            	var w = featureRects[i].w;
+            	width[l] = l in width ? Math.max(width[l], w) : w;
+            	
+            	var color = this._getFeatureColor( f.get('id') );
+            	
+            	if (score >= 0) {
+            		count_f[l] = l in count_f ? count_f[l] + 1 : 1;
+            		max_f[l] = l in max_f ? Math.max(max_f[l], score) : score;
+            		min_f[l] = l in min_f ? Math.min(min_f[l], score) : score;
+            		if (score >= max_f[l])
+            			color_f[l] = color;
+            	}
+            	else {
+            		count_r[l] = l in count_r ? count_r[l] + 1 : 1;
+            		score = Math.abs(score);
+            		max_r[l] = l in max_r ? Math.max(max_r[l], score) : score;
+            		min_r[l] = l in min_r ? Math.min(min_r[l], score) : score;
+            		if (score >= max_r[l])
+            			color_r[l] = color;
+            	}
+            }));
+        	max_f.forEach( function(x,l) { // bar goes upward
+        		var diff = max_f[l] - min_f[l];
+        		if (count_f[l] == 1)
+        			diff = max_f[l];
+        		var height = toY(diff);
+        		if( height <= canvasHeight ) { // if the rectangle is visible at all
+        			context.fillStyle = color_f[l];
+        			context.fillRect( l, height, width[l], originY-height+1);
+        		}
+        	});
+        	max_r.forEach( function(x,l) { // bar goes downward
+        		var diff = max_r[l] - min_r[l];
+        		if (count_r[l] == 1)
+        			diff = max_r[l];
+        		var height = toY(-1*diff);
+        		if( height <= canvasHeight ) { // if the rectangle is visible at all
+        			context.fillStyle = color_r[l];
+    				context.fillRect( l, originY, width[l], height-originY+1 );
+        		}
+        	});
+        }
         else {
+            // sort features by score
+            var sorted = [];
+            dojo.forEach( features, function(f,i) {
+            	sorted.push({ feature: f, featureRect: featureRects[i] });
+            });
+            sorted.sort( sortByScore );
+        	
             dojo.forEach( sorted, function(pair,i) {
             	var f = pair.feature;
-                var fRect = pair.featureRect;//featureRects[i];
+                var fRect = pair.featureRect;
                 var score = f.get('score');
+                
+                if (config.transformLog) {
+                	if (score >= 0)
+                		score = log10(Math.abs(score)+1);
+                	else
+                		score = -1*log10(Math.abs(score)+1);
+                }
+                
                 fRect.t = toY( score );
-
-            	if (config.transformPresenceAbsence) {
-            		if (count[fRect.l] > 1)
-            			return;
-            	}
-                
-                // draw the background color if we are configured to do so
-//                if( fRect.t >= 0 ) {
-//                    var bgColor = this.getConfForFeature('style.bg_color', f );
-//                    if( bgColor ) {
-//                        context.fillStyle = bgColor;
-//                        context.fillRect( fRect.l, 0, fRect.w, canvasHeight );
-//                    }
-//                }
-                
                 if( fRect.t <= canvasHeight ) { // if the rectangle is visible at all
                 	var id = f.get('id');
                 	context.fillStyle = this._getFeatureColor(id);
 
-                	if( fRect.t <= originY ) {
-                        // bar goes upward
-//                        context.fillStyle = this.getConfForFeature('style.pos_color',f);
+                	if( fRect.t <= originY ) // bar goes upward
                         context.fillRect( fRect.l, fRect.t, fRect.w, originY-fRect.t+1);
-//                        if( !disableClipMarkers && fRect.t < 0 ) { // draw clip marker if necessary
-//                            context.fillStyle = this.getConfForFeature('style.clip_marker_color',f) || this.getConfForFeature('style.neg_color',f);
-//                            context.fillRect( fRect.l, 0, fRect.w, 2 );
-//                        }
-                    }
-                    else {
-                        // bar goes downward
-//                        context.fillStyle = this.getConfForFeature('style.neg_color',f);
+                    else // bar goes downward
                         context.fillRect( fRect.l, originY, fRect.w, fRect.t-originY+1 );
-//                        if( !disableClipMarkers && fRect.t >= canvasHeight ) { // draw clip marker if necessary
-//                            context.fillStyle = this.getConfForFeature('style.clip_marker_color',f) || this.getConfForFeature('style.pos_color',f);
-//                            context.fillRect( fRect.l, canvasHeight-3, fRect.w, 2 );
-//                        }
-                    }
                 }
-            }, this );        	
+            }, this );
         }
-
     },
 
     /**
@@ -291,24 +294,6 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
             context.fillStyle = originColor;
             context.fillRect( 0, originY, canvas.width-1, 1 );
         }
-        
-        //Êdraw average line - mdb added 5/15/13 ... not working
-//        if (this.config.coge.showAverage) {
-//        	var originY = toY( dataScale.origin );
-//    		var sum = [];
-//    		var count = [];
-//    		featureRects.forEach( function (rect) {
-//				var height = originY-rect.t+1;
-//				sum[rect.l] = rect.l in sum ? sum[rect.l] + height : height;
-//				count[rect.l] = rect.l in count ? count[rect.l] + 1 : 1;
-//    		});
-//    		featureRects.forEach( function (rect) {
-//    			var avg = sum[rect.l]/count[rect.l];
-//	    		context.fillStyle = 'red';
-//	        	context.fillRect( rect.l-5, avg, rect.w+10, 1 );
-//    		});
-//        }
-
     },
     
     _calculatePixelScores: function( canvasWidth, features, featureRects ) {
@@ -326,7 +311,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	        dojo.forEach( sorted, function( f, i ) {
 	            var fRect = f.featureRect;
 	            var jEnd = fRect.r;
-	            var score = f.feature.get('score');
+	            var score = Math.abs(f.feature.get('score'));
 	            var score2 = f.feature.get('score2');
 	            var id = f.feature.get('id');
 	            var name = this._getFeatureName(f.feature);
@@ -341,7 +326,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	        },this);
 	        
 	        
-	        // compute average scores - FIXME dup'ed in _drawFeatures
+	        // compute transform scores - FIXME dup'ed in _drawFeatures
 	        if (this.config.transformAverage) {
 		        var sum = [];
 		        var count = [];
@@ -361,6 +346,55 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	                	var label = '<div style="background-color:gray;">' + 
 	                		nbspPad(avg.toPrecision(6).toString(), 11) 
 	                		+ 'Average' + '</div>';
+	                    pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
+	                }
+	        	});
+	        }
+	        else if (this.config.transformDifference) {
+	            var max_f = [];
+	            var max_r = [];
+	            var min_f = [];
+	            var min_r = [];
+	            var count_f = [];
+	            var count_r = []; 
+	            var width = [];
+	            dojo.forEach( features, function(f,i) {
+	            	var score = f.get('score');
+	            	var l = featureRects[i].l;
+	            	var w = featureRects[i].w;
+	            	width[l] = l in width ? Math.max(width[l], w) : w;
+	            	if (score >= 0) {
+	            		count_f[l] = l in count_f ? count_f[l] + 1 : 1;
+	            		max_f[l] = l in max_f ? Math.max(max_f[l], score) : score;
+	            		min_f[l] = l in min_f ? Math.min(min_f[l], score) : score;
+	            	}
+	            	else {
+	            		score = Math.abs(score);
+	            		count_r[l] = l in count_r ? count_r[l] + 1 : 1;
+	            		max_r[l] = l in max_r ? Math.max(max_r[l], score) : score;
+	            		min_r[l] = l in min_r ? Math.min(min_r[l], score) : score;
+	            	}
+	            });
+		        
+		        max_f.forEach( function(x,l) {
+		        	var diff = max_f[l] - min_f[l];
+		        	if (count_f[l] == 1)
+		        		diff = max_f[l];
+	        		for( var j = Math.round(l); j < l+width[l]; j++ ) {
+	                	var label = '<div style="background-color:gray;">' + 
+	                		nbspPad(diff.toPrecision(6).toString(), 11) 
+	                		+ 'Difference (+)' + '</div>';
+	                    pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
+	                }
+	        	});
+		        max_r.forEach( function(x,l) {
+		        	var diff = max_r[l] - min_r[l];
+		        	if (count_r[l] == 1)
+		        		diff = max_r[l];
+	        		for( var j = Math.round(l); j < l+width[l]; j++ ) {
+	                	var label = '<div style="background-color:gray;">' + 
+	                		nbspPad(diff.toPrecision(6).toString(), 11) 
+	                		+ 'Difference (-)' + '</div>';
 	                    pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
 	                }
 	        	});
@@ -442,43 +476,39 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	                    	  track.colorDialog.show();
 	                       }
 	                    },
-	                    {	label: 'Transforms',
+	                    // Note: would prefer a radio submenu but this is
+	                    // dojo 1.8 and RadioMenuItem doesn't exist until 
+	                    // dojo 1.9.
+	                    {	label: 'Transform',
 	                    	type: 'dijit/DropDownMenu',
 	                    	children: [
-								{ 	label: 'Average',
-								    type: 'dijit/CheckedMenuItem',
-								    checked: config.transformAverage || false,
+								{ 	label: 'None',
 								    onClick: function(event) {
-								        track.config.transformAverage = this.checked;
+								    	clearTransforms(config);
 								        track.changed();
 								    }
 								},
-								/*
-	                    	    { 	label: 'Difference',
-		                    	    type: 'dijit/CheckedMenuItem',
-		      	                    checked: config.transformDifference || false,
-			                    	onClick: function() {
-			                    		track.config.transformDifference = this.checked;
-			                    		track.changed();
-			                    	}
-			                    },
-		                    	{	label: 'Presence/Absence',
-			                    	type: 'dijit/CheckedMenuItem',
-			      	                checked: config.transformPresenceAbsence || false,
-				                    onClick: function() {
-				                    	track.config.transformPresenceAbsence = this.checked;
-				                    	track.changed();
-				                    }
-		                    	},
-	                    	    {	label: 'Zoom max',
-		                    		type: 'dijit/CheckedMenuItem',
-		                    		checked: config.transformZoomMax || false,
-		                    		onClick: function() {
-		                    			track.config.transformZoomMax = this.checked;
-		                    			track.changed();
-		                    		}
-	                    	    }
-	                    	    */
+								{ 	label: 'Average',
+								    onClick: function(event) {
+								    	clearTransforms(config);
+								        track.config.transformAverage = true;
+								        track.changed();
+								    }
+								},
+   								{ 	label: 'Difference',
+   								    onClick: function(event) {
+   								    	clearTransforms(config);
+   								        track.config.transformDifference = true;
+   								        track.changed();
+   								    }
+   								},
+   								{ 	label: 'Log10',
+   								    onClick: function(event) {
+   								    	clearTransforms(config);
+   								        track.config.transformLog = true;
+   								        track.changed();
+   								    }
+   								}
 	                    	]
 	                    }
 	                ]
@@ -523,6 +553,16 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 return XYPlot;
 });
 
+function log10(x) {
+    return Math.log(x) / Math.log(10);
+}
+
+function clearTransforms(config) {
+	config.transformAverage = false;
+	config.transformDifference = false;
+	config.transformLog = false;
+}
+
 function nbspPad(s, padLength) {
 	for (var i = s.length;  i < padLength;  i++) {
 		s += '&nbsp;';
@@ -530,6 +570,6 @@ function nbspPad(s, padLength) {
 	return s;
 }
 
-function sortByScore(a,b) {
+function sortByScore(a,b) { // sort features by score
 	return Math.abs( b.feature.get('score') ) - Math.abs( a.feature.get('score') );
 }
