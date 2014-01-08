@@ -311,14 +311,6 @@ sub annotation_pretty_print_html {
 
     $anno_type =
       new CoGe::Accessory::Annotation(
-        Type => "<tr><td nowrap='true'><span class=\"title5\">" . "Rows"
-          . "</span>" );
-    $anno_type->Type_delimit(": <td class=\"data5\">");
-    $anno_type->add_Annot( $self->row_count . "</td>" );
-    $anno_obj->add_Annot($anno_type);
-
-    $anno_type =
-      new CoGe::Accessory::Annotation(
             Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">"
           . "Types"
           . "</span>" );

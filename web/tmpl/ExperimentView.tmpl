@@ -1,274 +1,326 @@
 <TMPL_IF NAME="MAIN">
+<script src="./js/coge/exporter.js"></script>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
 <SCRIPT language="JavaScript">
 
 $(document).ready(function() {
-	pageObj = new Object();
-	pageObj.timers = new Array();
-	
-	$.ajaxSetup({
-		type: "GET",
-		url: "<TMPL_VAR NAME='PAGE_NAME'>",
-		dataType: "html",
-		cache: false,
-	});
-	
-	$(".dialog_box").dialog({autoOpen: 0, width: 450});
+    pageObj = new Object();
+    pageObj.timers = new Array();
 
-	$("#edit_type_name").autocomplete({
-		source: function() { get_experiment_types(); },
-		select: function(event, ui) { get_type_description( ui.item.label ); }
-	});
+    exporter = new coge.exporter(
+        "#export_irods_dialog", {
+        fname: "export_experiment_irods",
+        eid: "<tmpl_var name=eid>"
+    });
 
-	set_annotation_table();
-	
-	init_annotation_dialog(<TMPL_VAR NAME="EID">, '<TMPL_VAR NAME="DEFAULT_TYPE">');
+    $.ajaxSetup({
+        type: "GET",
+        url: "<TMPL_VAR NAME='PAGE_NAME'>",
+        dataType: "html",
+        cache: false,
+    });
+
+    $(".dialog_box").dialog({autoOpen: 0, width: 450});
+
+    $("#edit_type_name").autocomplete({
+        source: function() { get_experiment_types(); },
+        select: function(event, ui) { get_type_description( ui.item.label ); }
+    });
+
+    set_annotation_table();
+
+    init_annotation_dialog(<TMPL_VAR NAME="EID">, '<TMPL_VAR NAME="DEFAULT_TYPE">');
 });
 
 function set_annotation_table() {
-	$('#experiment_annotation_table').tablesorter({widgets: ['zebra']});
+    $('#experiment_annotation_table').tablesorter({widgets: ['zebra']});
 }
 
 function get_experiment_info() {
-	$.ajax({
-		data: {
-			fname: 'get_experiment_info',
-			eid: "<TMPL_VAR NAME='EID'>",
-		},
-		success : function (data) {
-			$('#experiment_info').html(data);
-		}
-	});
+    $.ajax({
+        data: {
+            fname: 'get_experiment_info',
+            eid: "<TMPL_VAR NAME='EID'>",
+        },
+        success : function (data) {
+            $('#experiment_info').html(data);
+        }
+    });
 }
 
 function edit_experiment_info() {
-	$.ajax({
-		data: {
-			fname: 'edit_experiment_info',
-			eid: "<TMPL_VAR NAME='EID'>",
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			$("#experiment_info_edit_box").html(obj.output).dialog('open');
-		},
-	});
+    $.ajax({
+        data: {
+            fname: 'edit_experiment_info',
+            eid: "<TMPL_VAR NAME='EID'>",
+        },
+        success : function(data) {
+            var obj = jQuery.parseJSON(data);
+            $("#experiment_info_edit_box").html(obj.output).dialog('open');
+        },
+    });
 }
 
 function update_experiment_info (){
-	var name = $('#edit_name').val();
-	if (!name) {
-		alert('Please specify a name.');
-		return;
-	}
-	
-	var version = $('#edit_version').val();
-	if (!version) {
-		alert('Please specify a version');
-		return;	
-	}	
-	
-	var source_id = parseInt( $('#edit_source_id').val() );
-	if (!source_id) {
-		alert('Please specify a source');
-		return;	
-	}	
-	
-	var desc = $('#edit_desc').val();
-	
-	$.ajax({
-		data: {
-			fname: 'update_experiment_info',
-			eid: "<TMPL_VAR NAME='EID'>",
-			name: name,
-			desc: desc,
-			source_id: source_id,
-			version: version
-		},
-		success : function(val) {
-			get_experiment_info();
-			$("#experiment_info_edit_box").dialog('close');
-		}
-	});
+    var name = $('#edit_name').val();
+    if (!name) {
+        alert('Please specify a name.');
+        return;
+    }
+
+    var version = $('#edit_version').val();
+    if (!version) {
+        alert('Please specify a version');
+        return;
+    }
+
+    var source_id = parseInt( $('#edit_source_id').val() );
+    if (!source_id) {
+        alert('Please specify a source');
+        return;
+    }
+
+    var desc = $('#edit_desc').val();
+
+    $.ajax({
+        data: {
+            fname: 'update_experiment_info',
+            eid: "<TMPL_VAR NAME='EID'>",
+            name: name,
+            desc: desc,
+            source_id: source_id,
+            version: version
+        },
+        success : function(val) {
+            get_experiment_info();
+            $("#experiment_info_edit_box").dialog('close');
+        }
+    });
 }
 
 function get_sources () {
-	$.ajax({
-		data: {
-			fname: 'get_sources'
-		},
-		success : function(data) {
-			var items = jQuery.parseJSON(data);
-			$("#edit_source").autocomplete("option", "source", items).autocomplete("search");
-		}
-	});
+    $.ajax({
+        data: {
+            fname: 'get_sources'
+        },
+        success : function(data) {
+            var items = jQuery.parseJSON(data);
+            $("#edit_source").autocomplete("option", "source", items).autocomplete("search");
+        }
+    });
 }
 
 function make_experiment_public () {
-	$.ajax({
-		data: {
-			fname: 'make_experiment_public',
-			eid: "<TMPL_VAR NAME='EID'>"
-		},
-		success : function(val) {
-			get_experiment_info();
-		}
-	});
+    $.ajax({
+        data: {
+            fname: 'make_experiment_public',
+            eid: "<TMPL_VAR NAME='EID'>"
+        },
+        success : function(val) {
+            get_experiment_info();
+        }
+    });
 }
 
 function make_experiment_private () {
-	$.ajax({
-		data: {
-			fname: 'make_experiment_private',
-			eid: "<TMPL_VAR NAME='EID'>"
-		},
-		success : function(val) {
-			get_experiment_info();
-		}
-	});
+    $.ajax({
+        data: {
+            fname: 'make_experiment_private',
+            eid: "<TMPL_VAR NAME='EID'>"
+        },
+        success : function(val) {
+            get_experiment_info();
+        }
+    });
 }
 
 function add_experiment_type () {
-	$.ajax({
-		data: {
-			fname: 'add_experiment_type',
-			eid: "<TMPL_VAR NAME='EID'>"
-		},
-		success : function(data) {
-			$("#experiment_type_edit_box").dialog({
-				beforeClose:
-					function() {
-						$("#edit_type_name").autocomplete('close');
-					}
-			});
-			$("#experiment_type_edit_box").html(data).dialog('open');
-		}
-	});
+    $.ajax({
+        data: {
+            fname: 'add_experiment_type',
+            eid: "<TMPL_VAR NAME='EID'>"
+        },
+        success : function(data) {
+            $("#experiment_type_edit_box").dialog({
+                beforeClose:
+                    function() {
+                        $("#edit_type_name").autocomplete('close');
+                    }
+            });
+            $("#experiment_type_edit_box").html(data).dialog('open');
+        }
+    });
 }
 
 function add_type_to_experiment () {
-	var name = $('#edit_type_name').val();
-	var description = $('#edit_type_description').val();
-	
-	if (name) {
-		$.ajax({
-			data: {
-				fname: 'add_type_to_experiment',
-				eid: "<TMPL_VAR NAME='EID'>",
-				name: name,
-				description: description
-			},
-			success : function(val) {
-				get_experiment_info();
-				$("#experiment_type_edit_box").dialog('close');
-			},
-		});
-	}
-	else { alert ('Error: Must have type name specified!');}
+    var name = $('#edit_type_name').val();
+    var description = $('#edit_type_description').val();
+
+    if (name) {
+        $.ajax({
+            data: {
+                fname: 'add_type_to_experiment',
+                eid: "<TMPL_VAR NAME='EID'>",
+                name: name,
+                description: description
+            },
+            success : function(val) {
+                get_experiment_info();
+                $("#experiment_type_edit_box").dialog('close');
+            },
+        });
+    }
+    else { alert ('Error: Must have type name specified!');}
+}
+
+function export_data() {
+    if (!check_and_report_login()) return;
+
+    exporter.export();
+}
+
+function check_login() {
+    var logged_in = false;
+
+    $.ajax({
+        async: false,
+        data: {
+            fname: 'check_login'
+        },
+        success : function(rc) {
+            logged_in = rc;
+        }
+    });
+
+    return logged_in;
+}
+
+function check_and_report_login() {
+    if (!check_login()) {
+        alert('Your session has expired, please log in again.');
+        location.reload(true);
+        return false;
+    }
+    return true;
 }
 
 function remove_experiment_type (opts) {
-	etid = opts.etid;
-	$.ajax({
-		data: {
-			fname: 'remove_experiment_type',
-			eid: "<TMPL_VAR NAME='EID'>",
-			etid: etid,
-		},
-		success : function(val) {
-			get_experiment_info();
-		},
-	});
+    etid = opts.etid;
+    $.ajax({
+        data: {
+            fname: 'remove_experiment_type',
+            eid: "<TMPL_VAR NAME='EID'>",
+            etid: etid,
+        },
+        success : function(val) {
+            get_experiment_info();
+        },
+    });
 }
 
 function get_annotations() {
-	$.ajax({
-		data: {
-			fname: 'get_annotations',
-			eid: "<TMPL_VAR NAME='EID'>",
-		},
-		success : function(data) {
-			$('#experiment_annotations').html(data);
-			set_annotation_table();
-		}
-	});
+    $.ajax({
+        data: {
+            fname: 'get_annotations',
+            eid: "<TMPL_VAR NAME='EID'>",
+        },
+        success : function(data) {
+            $('#experiment_annotations').html(data);
+            set_annotation_table();
+        }
+    });
 }
 
 function remove_annotation (eaid) {
-	$.ajax({
-		data: {
-			fname: 'remove_annotation',
-			eid: "<TMPL_VAR NAME='EID'>",
-			eaid: eaid,
-		},
-		success : function() {
-			get_annotations();
-		},
-	});
+    $.ajax({
+        data: {
+            fname: 'remove_annotation',
+            eid: "<TMPL_VAR NAME='EID'>",
+            eaid: eaid,
+        },
+        success : function() {
+            get_annotations();
+        },
+    });
 }
 
 function get_experiment_types () {
-	$.ajax({
-		data: {
-			fname: 'get_experiment_types'
-		},
-		success : function(val) {
-			var items = jQuery.parseJSON(val);
-			$("#edit_type_name").autocomplete("option", "source", items).autocomplete("search");
-		},
-	});
+    $.ajax({
+        data: {
+            fname: 'get_experiment_types'
+        },
+        success : function(val) {
+            var items = jQuery.parseJSON(val);
+            $("#edit_type_name").autocomplete("option", "source", items).autocomplete("search");
+        },
+    });
 }
 
 function get_type_description (name) {
-	$.ajax({
-		data: {
-			fname: 'get_type_description',
-			name: name
-		},
-		success : function(data) {
-			$("#edit_type_description").html(data);
-		},
-	});
+    $.ajax({
+        data: {
+            fname: 'get_type_description',
+            name: name
+        },
+        success : function(data) {
+            $("#edit_type_description").html(data);
+        },
+    });
 }
 
 function image_preview(obj, preview) {
-	var id = obj.src; // need a unique identifier for the obj
-	if (pageObj.timers[id]) {
-		clearInterval(pageObj.timers[id]);
-		pageObj.timers[id] = null;
-	}
-	
-	if (preview) {
-		pageObj.timers[id] = setTimeout( 
-			function() { 
-				$(obj).animate({width:200, height:200});
-				pageObj.timers[id] = null; 
-			}, 
-			500 
-		);
-	}
-	else {
-		pageObj.timers[id] = setTimeout( 
-			function() { 
-				$(obj).animate({width:40, height:40});
-				pageObj.timers[id] = null;  
-			}, 
-			500 
-		);
-	}
+    var id = obj.src; // need a unique identifier for the obj
+    if (pageObj.timers[id]) {
+        clearInterval(pageObj.timers[id]);
+        pageObj.timers[id] = null;
+    }
+
+    if (preview) {
+        pageObj.timers[id] = setTimeout(
+            function() {
+                $(obj).animate({width:200, height:200});
+                pageObj.timers[id] = null;
+            },
+            500
+        );
+    }
+    else {
+        pageObj.timers[id] = setTimeout(
+            function() {
+                $(obj).animate({width:40, height:40});
+                pageObj.timers[id] = null;
+            },
+            500
+        );
+    }
 }
 </SCRIPT>
 
-<div>
- <div style="color:dimgray;font-weight:bold;">Experiment Info</div>
- <div id='experiment_info'>
-  <TMPL_VAR NAME="EXPERIMENT_INFO">
- </div>
-</div>
-
+<section class="coge-margin-bottom">
+    <div style="color:dimgray;font-weight:bold;">Experiment Info</div>
+    <div id='experiment_info' class="inline">
+        <TMPL_VAR NAME="EXPERIMENT_INFO">
+    </div>
+    <div class="small inline top" style="padding-left: 10px;">
+        <ul class="ui-widget-content ui-corner-all" style="padding: 2px;">
+            <li>
+                <span class="title5">Rows:</span>
+                <span class="data5"><tmpl_var name=rows><span>
+            </li>
+            <li>
+                <span class="title5">iPlant Data Store:</span>
+                <span class="data5 link" ondblclick="export_data()" onclick="export_data()">Export data</span>
+            </li>
+        </ul>
+        <a style="font-size: .9em; color: black;" target="_blank" class='ui-button ui-corner-all ui-button-icon-right' href="<tmpl_var name=link>">
+            View
+            <span class="ui-icon ui-icon-extlink"></span>
+        </a>
+    </div>
+</section>
 <br>
-
 <TMPL_IF NAME="EXPERIMENT_ANNOTATIONS">
 <div>
  <div style="color:dimgray;font-weight:bold;">Experiment Annotations</div>
@@ -303,18 +355,18 @@ function image_preview(obj, preview) {
 <TMPL_IF NAME="EDIT_EXPERIMENT_INFO">
 <SCRIPT>
 $(function() {
-	$("#edit_source").autocomplete({
-	    source: 
-	    	function() {
-	    		get_sources();
-	    	},
-	    select:	
-	    	function(event, ui) {
-	    		$("#edit_source").val( ui.item.label );
-	    		$("#edit_source_id").val( ui.item.value );
-	    		return false;
-	    	}
-	});
+    $("#edit_source").autocomplete({
+        source:
+            function() {
+                get_sources();
+            },
+        select:
+            function(event, ui) {
+                $("#edit_source").val( ui.item.label );
+                $("#edit_source_id").val( ui.item.value );
+                return false;
+            }
+    });
 });
 </SCRIPT>
 <table class="small">
@@ -341,3 +393,14 @@ $(function() {
 <br>
 <span onClick="update_experiment_info();" class='ui-button ui-corner-all'>Update</span>
 </TMPL_IF> <!-- EDIT_EXPERIMENT_INFO -->
+
+<div id="export_irods_dialog" class="dialog_box hidden info" style="padding:20px;" title="Exporting to iPlant Data Store" align='center'>
+        <span>Copying this experiment's data files to</span>
+        <br><br>
+        <a href="http://data.iplantcollaborative.org/" target=_new style="font-weight:bold">
+            <tmpl_var name=irods_home>
+        </a>
+        <br><br>
+
+        <span>Please wait ... <img src="picts/ajax-loader.gif"></span>
+</div>

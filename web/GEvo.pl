@@ -1039,6 +1039,16 @@ sub run {
         link => $tiny_link,
     );
 
+    my $job = CoGe::Accessory::Web::get_job(
+        tiny_link => $tiny_link,
+        title     => $PAGE_TITLE,
+        user_id   => $USER->id,
+        log_id    => $log->id,
+        db_object => $coge
+    );
+    CoGe::Accessory::Web::schedule_job(job => $job);
+
+
     my $t2 = new Benchmark;
 
     # set up output page
@@ -1353,6 +1363,8 @@ Total time                                          : $total_time
     CoGe::Accessory::Web::write_log( "Finished!", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "GEvo link: $gevo_link",
         $cogeweb->logfile );
+
+    $job->update( { status => 2 } ) if defined($job);
 
     #    CoGe::Accessory::Web::write_log("Tiny url: $tiny", $cogeweb->logfile);
     email_results(
