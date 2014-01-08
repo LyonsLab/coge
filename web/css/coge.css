@@ -1007,7 +1007,6 @@ th {
 }
 
 h4 {
-    text-align: center;
     margin: 0;
     padding: 5px;
 }
@@ -1072,6 +1071,10 @@ header {
     margin-right: 1%;
     float: right;
     padding: 10px 0;
+}
+
+.sidebar_left h4 {
+    text-align: left;
 }
 
 .sidebar_left div {
