@@ -162,8 +162,7 @@ my %seen_attr;
 
 # Load GFF file into %data
 #TODO copy gff file into staging directory to read from instead of upload directory
-my $total_annot = 0;
-unless ( $total_annot = process_gff_file() ) {
+unless ( process_gff_file() ) {
     print $log "log: error: no annotations found, perhaps your file is missing required information, please check the <a href='http://genomevolution.org/wiki/index.php/GFF_ingestion'>documentation</a>\n";
     exit(-1);
 }
@@ -225,7 +224,6 @@ print $log "log: Data types:\n", join(
       } sort keys %seen_attr
   ),
   "\n";
-print $log "log: " . commify($total_annot) . " total annotations to load\n";
 
 my $t2 = new Benchmark;
 
@@ -274,6 +272,20 @@ unless ($dsconn) {
 my %anno_types;    # hash to store annotation type objects
 my %feat_types;    # store feature type objects
 
+# Count total annotations to load -- mdb added 1/8/14, issue 260
+my $total_annot = 0;
+foreach my $source ( keys %data ) {
+    foreach my $chr_loc ( keys %{ $data{$source} } ) {
+        foreach my $name ( keys %{ $data{$source}{$chr_loc} } ) {
+            foreach my $feat_type ( keys %{ $data{$source}{$chr_loc}{$name} } ) {
+            	foreach ( @{$data{$source}{$chr_loc}{$name}{$feat_type}{loc}} ) {
+            		$total_annot++;
+            	}
+            }
+        }
+    }
+}
+
 print $log "log: Loading database ...\n";
 my $loaded_annot = 0;
 my @loc_buffer;     # buffer for bulk inserts into Location table
@@ -281,21 +293,17 @@ my @anno_buffer;    # buffer for bulk inserts into FeatureAnnotation table
 my @name_buffer;    # buffer for bulk inserts into FeatureName table
 foreach my $source ( keys %data ) {
     foreach my $chr_loc ( sort { $a cmp $b } keys %{ $data{$source} } ) {
-        foreach
-          my $name ( sort { $a cmp $b } keys %{ $data{$source}{$chr_loc} } )
-        {
-            foreach my $feat_type ( sort { $a cmp $b }
-                keys %{ $data{$source}{$chr_loc}{$name} } )
-            {
-                print $log "\n" if $DEBUG;
-
-                my $pctLoaded = int( 100 * $loaded_annot / $total_annot );
+        foreach my $name ( sort { $a cmp $b } keys %{ $data{$source}{$chr_loc} } ) {
+        	my $pctLoaded = int( 100 * $loaded_annot / $total_annot );
                 print $log "log: Loaded "
                   . commify($loaded_annot)
                   . " annotations ("
                   . ( $pctLoaded ? $pctLoaded : '<1' )
                   . "%)\n\n"
                   if ( $loaded_annot and ( $loaded_annot % 1000 ) == 0 );
+                  
+            foreach my $feat_type ( sort { $a cmp $b } keys %{ $data{$source}{$chr_loc}{$name} } ) {
+                print $log "\n" if $DEBUG;
 
                 my $loc = $data{$source}{$chr_loc}{$name}{$feat_type}{loc};
                 my $start =
