@@ -3,12 +3,17 @@
 use strict;
 use CGI;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::IRODS;
+use CoGe::Accessory::Utils;
 use HTML::Template;
 use JSON::XS;
 use Spreadsheet::WriteExcel;
+use File::Basename;
 use File::Path;
+use File::Slurp;
+use File::Spec;
 use Sort::Versions;
-
+use Data::Dumper;
 use vars qw( $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION);
 
 $PAGE_TITLE = "ExperimentView";
@@ -39,16 +44,18 @@ $FORM = new CGI;
     get_annotation             => \&get_annotation,
     search_annotation_types    => \&search_annotation_types,
     get_annotation_type_groups => \&get_annotation_type_groups,
+    check_login                => \&check_login,
+    export_experiment_irods    => \&export_experiment_irods,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 # sub remove_group {
-# 	my %opts  = @_;
-# 	my $ugid  = $opts{ugid};
-# 	my $expid = $opts{expid};
-# 	my $ugec  = $coge->resultset('UserGroupExperimentConnector')->find( { user_group_id => $ugid, experiment_id => $expid } );
-# 	$ugec->delete();
+#   my %opts  = @_;
+#   my $ugid  = $opts{ugid};
+#   my $expid = $opts{expid};
+#   my $ugec  = $coge->resultset('UserGroupExperimentConnector')->find( { user_group_id => $ugid, experiment_id => $expid } );
+#   $ugec->delete();
 # }
 
 sub edit_experiment_info {
@@ -68,7 +75,7 @@ sub edit_experiment_info {
         DESC                 => $desc,
         SOURCE               => $exp->source->name,
         SOURCE_ID            => $exp->source->id,
-        VERSION              => $exp->version
+        VERSION              => $exp->version,
     );
 
     my %data;
@@ -339,7 +346,7 @@ sub add_annotation {
     my $image_filename = $opts{edit_annotation_image};
     my $fh             = $FORM->upload('edit_annotation_image');
 
-    #	print STDERR "add_annotation: $eid $type $annotation $link\n";
+    #   print STDERR "add_annotation: $eid $type $annotation $link\n";
 
     # Create the type and type group if not already present
     my $group_rs;
@@ -437,6 +444,77 @@ sub update_annotation {
     return;
 }
 
+#XXX: Move to a module
+sub check_login {
+    #print STDERR $USER->user_name . ' ' . int($USER->is_public) . "\n";
+    return ($USER && !$USER->is_public);
+}
+
+#XXX: Move to a module
+sub get_irods_path {
+    my $username = $USER->user_name;
+    my $dest = $P->{IRODSDIR};
+    $dest =~ s/\<USER\>/$username/;
+    return $dest;
+}
+
+sub export_experiment_irods {
+    my %opts = @_;
+    my $eid = $opts{eid};
+
+    my $experiment = $coge->resultset('Experiment')->find($eid);
+    return 0 unless $USER->has_access_to_experiment($experiment);
+
+    my $dir = get_irods_path();
+
+    my $genome = $experiment->genome;
+
+    my %meta = (
+        'Imported From'            => "CoGe: " . $P->{SERVER},
+        'CoGe ExperimentView Link' => $P->{SERVER} . "ExperimentView.pl?eid=$eid",
+        'CoGe GenomeInfo Link'     => $P->{SERVER} . "GenomeInfo.pl?gid=" . $genome->id,
+        'Source'                   => $experiment->source->info,
+        'Version'                  => $experiment->version,
+    );
+
+    $meta{'Source Link'} = $experiment->source->link if $experiment->source->link;
+	$meta{'Experiment Name'} = $experiment->name if ($experiment->name);
+	$meta{'Experiment Description'} = $experiment->description if ($experiment->description);
+
+    my $i = 1;
+    my @types = $experiment->types;
+    foreach my $type (@types) {
+        my $key = (scalar @types > 1) ? "Experiment Type $i" : "Experiment Type:";
+        $meta{$key} = $type->name;
+        $i++;
+    }
+
+    if($experiment->data_type == 3) {
+        my $srcdir = $experiment->storage_path;
+        my $base = "experiment_$eid";
+
+        my $src_bam = File::Spec->catdir(($srcdir, "alignment.bam"));
+        my $dest_bam = File::Spec->catdir(($dir, "$base.bam"));
+        CoGe::Accessory::IRODS::irods_iput($src_bam, $dest_bam);
+        CoGe::Accessory::IRODS::irods_imeta($dest_bam, \%meta);
+
+        my $src_index = File::Spec->catdir(($srcdir, "alignment.bam.bai"));
+        my $dest_index = File::Spec->catdir(($dir, "$base.bam.bai"));
+        CoGe::Accessory::IRODS::irods_iput($src_index, $dest_index);
+        CoGe::Accessory::IRODS::irods_imeta($dest_index, \%meta);
+    } else {
+        my $files = $experiment->storage_path;
+        my $archive = File::Spec->catdir(($P->{SECTEMPDIR}, "experiment_$eid.tar.gz"));
+        my $dest = File::Spec->catdir(($dir, basename($archive)));
+
+        my $cmd = "tar -czf $archive --exclude=log.txt --directory $files .";
+        my $result = system($cmd) unless -r $archive;
+
+        CoGe::Accessory::IRODS::irods_iput($archive, $dest);
+        CoGe::Accessory::IRODS::irods_imeta($dest, \%meta);
+    }
+}
+
 sub remove_annotation {
     my %opts = @_;
     my $eid  = $opts{eid};
@@ -477,7 +555,7 @@ sub gen_html {
             HELP       => '/wiki/index.php?title=' . $PAGE_TITLE,
             USER       => $name,
             LOGO_PNG   => "$PAGE_TITLE-logo.png",
-            ADJUST_BOX => 1
+            ADJUST_BOX => 1,
         );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     }
@@ -494,23 +572,23 @@ sub get_groups {
     my $exp = $coge->resultset('Experiment')->find($expid);
     if ($exp) {
 
-#		foreach my $ug ( $exp->user_groups ) {
-#			$groups .= "<tr>";
+#       foreach my $ug ( $exp->user_groups ) {
+#           $groups .= "<tr>";
 #
-#			$groups .= "<td>" . $ug->name . ( $ug->description ? ': ' . $ug->description : '' ) . "</td>";
-#			$groups .= "<td>" . $ug->role->name . "</td>";
-#			$groups .= "<td>" . join( ", ", map { $_->name } $ug->role->permissions ) . "</td>";
+#           $groups .= "<td>" . $ug->name . ( $ug->description ? ': ' . $ug->description : '' ) . "</td>";
+#           $groups .= "<td>" . $ug->role->name . "</td>";
+#           $groups .= "<td>" . join( ", ", map { $_->name } $ug->role->permissions ) . "</td>";
 #
-#			my @users;
-#			foreach my $user ( $ug->users ) {
-#				push @users, $user->name;
-#			}
-#			$groups .= "<td>" . join( ",<br>", @users ) . "</td>";
-#			my $ugid = $ug->id;
-#			$groups .= qq{<td><span class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-trash" onclick="} . "remove_group({ugid: $ugid, expid: $expid});" . qq{"</span></span></td>};
+#           my @users;
+#           foreach my $user ( $ug->users ) {
+#               push @users, $user->name;
+#           }
+#           $groups .= "<td>" . join( ",<br>", @users ) . "</td>";
+#           my $ugid = $ug->id;
+#           $groups .= qq{<td><span class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-trash" onclick="} . "remove_group({ugid: $ugid, expid: $expid});" . qq{"</span></span></td>};
 #
-#			$groups .= "</tr>";
-#		}
+#           $groups .= "</tr>";
+#       }
     }
     return $groups;
 }
@@ -518,6 +596,11 @@ sub get_groups {
 sub gen_body {
     my $eid = $FORM->param('eid');
     return "Need a valid experiment id\n" unless $eid;
+
+    my $exp = $coge->resultset('Experiment')->find($eid);
+    return "Access denied" unless $USER->has_access_to_experiment($exp);
+
+    my $gid = $exp->genome_id;
 
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
@@ -527,7 +610,10 @@ sub gen_body {
         EXPERIMENT_INFO        => get_experiment_info( eid => $eid ),
         EXPERIMENT_ANNOTATIONS => get_annotations( eid => $eid ),
         EID                    => $eid,
-        DEFAULT_TYPE           => 'note'
+        DEFAULT_TYPE           => 'note',
+        rows                   => commify($exp->row_count),
+        irods_home             => get_irods_path(),
+        link                   => "GenomeView.pl?gid=$gid&tracks=experiment$eid"
     );
 
     return $template->output;
@@ -565,14 +651,6 @@ qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_
         }
     }
 
-    if ( !$EMBED ) {
-        my $gid = $exp->genome_id;
-        my $link =
-qq{window.open('GenomeView.pl?gid=$gid&tracks=experiment$eid');};
-        $html .=
-qq{<span style="font-size: .75em" class='ui-button ui-corner-all ui-button-icon-right' onClick="$link"><span class="ui-icon ui-icon-extlink"></span>View</span>};
-    }
-
     return $html;
 }
 
@@ -581,7 +659,7 @@ sub search_annotation_types {
     my $type_group  = $opts{type_group};
     my $search_term = $opts{search_term};
 
-    #	print STDERR "search_annotation_types: $search_term $type_group\n";
+    #   print STDERR "search_annotation_types: $search_term $type_group\n";
     return '' unless $search_term;
 
     $search_term = '%' . $search_term . '%';
@@ -596,7 +674,7 @@ sub search_annotation_types {
     my @types;
     if ($group) {
 
-        #		print STDERR "type_group=$type_group " . $group->id . "\n";
+        #       print STDERR "type_group=$type_group " . $group->id . "\n";
         @types = $coge->resultset("AnnotationType")->search(
             \[
 'annotation_type_group_id = ? AND (name LIKE ? OR description LIKE ?)',
