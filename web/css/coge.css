@@ -1060,8 +1060,11 @@ header {
     word-wrap: break-word;
 }
 
-#wikifeed > div div img,
 #wikifeed > div div embed {
+    max-width: 95%;
+}
+
+#wikifeed > div div img {
     text-align: center;
     max-width: 50%;
 }
