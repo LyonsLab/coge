@@ -123,26 +123,39 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         
         // Note: transform cases below can be consolidated/optimized
         if (config.transformAverage) {
-            var sum = [];
-            var count = [];
+            var sum_f = [];
+            var sum_r = [];
+            var count_f = [];
+            var count_r = [];
             var width = [];
             dojo.forEach( features, function(f,i) {
             	var score = f.get('score');
             	var l = featureRects[i].l;
             	var w = featureRects[i].w;
-            	sum[l] = l in sum ? sum[l] + score : score;
-            	count[l] = l in count ? count[l] + 1 : 1;
+	        	if (score >= 0) {
+	        		sum_f[l] = l in sum_f ? sum_f[l] + score : score;
+	        		count_f[l] = l in count_f ? count_f[l] + 1 : 1;
+	        	}
+	        	else {
+	        		sum_r[l] = l in sum_r ? sum_r[l] + score : score;
+	        		count_r[l] = l in count_r ? count_r[l] + 1 : 1;
+	        	}
             	width[l] = l in width ? Math.max(width[l], w) : w;
             });
-        	sum.forEach( function(x,l) {
-        		var avg = sum[l]/count[l];
+        	sum_f.forEach( function(x,l) { // bar goes upward
+        		var avg = sum_f[l]/count_f[l];
         		var height = toY( avg );
         		context.fillStyle = 'gray';
         		if( height <= canvasHeight ) { // if the rectangle is visible at all
-        			if( height <= originY ) // bar goes upward
-        				context.fillRect( l, height, width[l], originY-height+1);
-        			else // bar goes downward
-        				context.fillRect( l, originY, width[l], height-originY+1 );
+        			context.fillRect( l, height, width[l], originY-height+1);
+        		}
+        	});
+        	sum_r.forEach( function(x,l) { // bar goes downward
+        		var avg = sum_r[l]/count_r[l];
+        		var height = toY( avg );
+        		context.fillStyle = 'gray';
+        		if( height <= canvasHeight ) { // if the rectangle is visible at all
+        			context.fillRect( l, originY, width[l], height-originY+1 );
         		}
         	});
         }
@@ -311,7 +324,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	        dojo.forEach( sorted, function( f, i ) {
 	            var fRect = f.featureRect;
 	            var jEnd = fRect.r;
-	            var score = Math.abs(f.feature.get('score'));
+	            var score = f.feature.get('score');
 	            var score2 = f.feature.get('score2');
 	            var id = f.feature.get('id');
 	            var name = this._getFeatureName(f.feature);
@@ -328,24 +341,41 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	        
 	        // compute transform scores - FIXME dup'ed in _drawFeatures
 	        if (this.config.transformAverage) {
-		        var sum = [];
-		        var count = [];
+		        var sum_f = [];
+		        var sum_r = [];
+		        var count_f = [];
+		        var count_r = [];
 		        var width = [];
 		        dojo.forEach( features, function(f,i) {
 		        	var score = f.get('score');
 		        	var l = featureRects[i].l;
 		        	var w = featureRects[i].w;
-		        	sum[l] = l in sum ? sum[l] + score : score;
-		        	count[l] = l in count ? count[l] + 1 : 1;
+		        	if (score >= 0) {
+		        		sum_f[l] = l in sum_f ? sum_f[l] + score : score;
+		        		count_f[l] = l in count_f ? count_f[l] + 1 : 1;
+		        	}
+		        	else {
+		        		sum_r[l] = l in sum_r ? sum_r[l] + score : score;
+		        		count_r[l] = l in count_r ? count_r[l] + 1 : 1;
+		        	}
 		        	width[l] = l in width ? Math.max(width[l], w) : w;
 		        });
 	        
-		        sum.forEach( function(x,l) {
-	        		var avg = sum[l]/count[l];
+		        sum_f.forEach( function(x,l) {
+	        		var avg = sum_f[l]/count_f[l];
 	        		for( var j = Math.round(l); j < l+width[l]; j++ ) {
 	                	var label = '<div style="background-color:gray;">' + 
 	                		nbspPad(avg.toPrecision(6).toString(), 11) 
-	                		+ 'Average' + '</div>';
+	                		+ 'Average (+)' + '</div>';
+	                    pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
+	                }
+	        	});
+		        sum_r.forEach( function(x,l) {
+	        		var avg = sum_r[l]/count_r[l];
+	        		for( var j = Math.round(l); j < l+width[l]; j++ ) {
+	                	var label = '<div style="background-color:gray;">' + 
+	                		nbspPad(avg.toPrecision(6).toString(), 11) 
+	                		+ 'Average (-)' + '</div>';
 	                    pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
 	                }
 	        	});
