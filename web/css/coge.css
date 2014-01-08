@@ -1007,7 +1007,6 @@ th {
 }
 
 h4 {
-    text-align: center;
     margin: 0;
     padding: 5px;
 }
@@ -1061,8 +1060,11 @@ header {
     word-wrap: break-word;
 }
 
-#wikifeed > div div img,
 #wikifeed > div div embed {
+    max-width: 95%;
+}
+
+#wikifeed > div div img {
     text-align: center;
     max-width: 50%;
 }
@@ -1072,6 +1074,10 @@ header {
     margin-right: 1%;
     float: right;
     padding: 10px 0;
+}
+
+.sidebar_left h4 {
+    text-align: center;
 }
 
 .sidebar_left div {
