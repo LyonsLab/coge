@@ -1364,7 +1364,10 @@ Total time                                          : $total_time
     CoGe::Accessory::Web::write_log( "GEvo link: $gevo_link",
         $cogeweb->logfile );
 
-    $job->update( { status => 2 } ) if defined($job);
+    $job->update( {
+        status => 2,
+        end_time => \"current_timestamp"
+    } ) if defined($job);
 
     #    CoGe::Accessory::Web::write_log("Tiny url: $tiny", $cogeweb->logfile);
     email_results(

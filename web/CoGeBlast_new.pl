@@ -881,7 +881,10 @@ Time to generate results page:   $resultpage_time
     CoGe::Accessory::Web::write_log( "$benchmark", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Finished!",  $cogeweb->logfile );
 
-    $job->update( { status => 2 } ) if defined($job);
+    $job->update( {
+        status => 2,
+        end_time => \"current_timestamp"
+    } ) if defined($job);
 
     return encode_json(
         { html => $html, click_all_links => $click_all_links } );
