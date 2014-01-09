@@ -45,9 +45,9 @@ $(document).ready(function(){
     cross_fade("#crossfade", images, 1);
 
     //$("#accordion").accordion({collapsible:true, active: false}).show();
-    $("#accordion2").accordion({collapsible:true, active: false, icons: false, disabled:true}).removeClass('invisible');
-    $("#accordion3").accordion({collapsible:true, active: false, icons: false, disabled:true}).removeClass('invisible');
-    $("#accordion4").accordion({collapsible:false, active: true, icons: false}).removeClass('invisible');
+    $("#accordion2").accordion({active: false, icons: false, disabled: true}).removeClass('invisible');
+    $("#accordion3").accordion({active: false, icons: false, disabled: true}).removeClass('invisible');
+    $("#accordion4").accordion({active: false, icons: false, disabled: true}).removeClass('invisible');
 
     $("#genome_dialog").dialog({
         title: "Latest Genomes",
@@ -225,13 +225,13 @@ function get_latest_genomes() {
         <div>
             <h4>New to CoGe?</h4>
             <div id="accordion2" class="invisible" style="font-size: 0.7em;">
-                <h3 onclick='window.open("http://genomevolution.org/wiki/index.php/New_to_CoGe")'><a href="http://genomevolution.org/wiki/index.php/New_to_CoGe">How to get started</a></h3>
+                <h3 onclick='window.open("http://genomevolution.org/wiki/index.php/New_to_CoGe")'>How to get started</h3>
                 <div></div>
-                <h3 onclick='window.open("http://genomevolution.org/wiki/index.php/Tutorials")'><a href="http://genomevolution.org/wiki/index.php/Tutorials">Tutorials</a></h3>
+                <h3 onclick='window.open("http://genomevolution.org/wiki/index.php/Tutorials")'>Tutorials</h3>
                 <div></div>
-                <h3 onclick='window.open("http://genomevolution.org/wiki")'><a href="http://genomevolution.org/wiki">CoGePedia docs</a></h3>
+                <h3 onclick='window.open("http://genomevolution.org/wiki")'>CoGePedia docs</h3>
                 <div></div>
-                <h3 onclick='window.open("http://genomevolution.org/wiki/index.php/FAQs")'><a href="http://genomevolution.org/wiki/index.php/FAQs">FAQs</a></h3>
+                <h3 onclick='window.open("http://genomevolution.org/wiki/index.php/FAQs")'>FAQs</h3>
                 <div></div>
             </div>
         </div>
@@ -240,10 +240,10 @@ function get_latest_genomes() {
             <div style="font-size: 0.7em;">
                 <div id="accordion3" class="invisible">
                     <TMPL_LOOP NAME="ACTIONS">
-                        <h3 onclick='window.open("<TMPL_VAR NAME=LINK>")'><a href="#"><TMPL_VAR NAME="ACTION"></a></h3>
+                        <h3 onclick='window.open("<TMPL_VAR NAME=LINK>")'><TMPL_VAR NAME="ACTION"></h3>
                         <div><TMPL_VAR NAME="DESC"></div>
                     </TMPL_LOOP>
-                    <h3 onClick="get_latest_genomes(); $('#genome_dialog').dialog('open');"><a href="#">Latest Genomes</a></h3>
+                    <h3 onClick="get_latest_genomes(); $('#genome_dialog').dialog('open');">Latest Genomes</h3>
                     <div style="min-height: 150px;">
                     </div>
                 </div>

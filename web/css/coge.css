@@ -1082,6 +1082,10 @@ header {
     text-align: center;
 }
 
+.sidebar_left h3 {
+    padding: .5em 0;
+}
+
 .sidebar_left div {
     max-width: 150px;
 }
