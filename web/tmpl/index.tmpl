@@ -96,7 +96,12 @@ function cross_fade(selector, image, delay) {
         .append(run_button)
         .append(next_button);
 
-    var viewer = $("<div></div>");
+    var viewer = $("<div></div>")
+        .addClass("link")
+        .css("box-shadow", "10px 10px 5px 0px rgba(0,0,0,0.15)")
+        .css("text-align", "center")
+        .css("border", "solid 1px lightgray")
+        .css("padding", "10px");
 
     element.append(controls)
         .append(viewer)
@@ -119,10 +124,6 @@ function cross_fade(selector, image, delay) {
 
             viewer.unbind()
                 .on("click", function() { window.open(link); })
-                .css("box-shadow", "10px 10px 5px 0px rgba(0,0,0,0.15)")
-                .css("text-align", "center")
-                .css("border", "solid 1px lightgray")
-                .css("padding", "10px")
                 .html("")
                 .append(pict)
                 .append(description)
@@ -254,7 +255,7 @@ function get_latest_genomes() {
     <section id="content" style="color:dimgray;" class="top">
         <span class="welcome">Welcome to CoGe</span>
         <p>The Place for Comparative Genomics</p>
-        <div id="crossfade" class="link"></div>
+        <div id="crossfade"></div>
     </section>
 
     <aside class="sidebar_right">
