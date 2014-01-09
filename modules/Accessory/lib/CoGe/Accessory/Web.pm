@@ -500,12 +500,25 @@ sub get_tiny_link {
 #    my $disable_logging = $opts{disable_logging};    # flag
 
     $url =~ s/:::/__/g;
-    my $tiny = LWP::Simple::get(
-"http://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url"
-    );
-    unless ($tiny) {
-        return "Unable to produce tiny url from server";
-    }
+    my $request_url = "http://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url";
+
+# mdb removed 1/8/14, issue 272
+#    my $tiny = LWP::Simple::get($request_url);
+#	 unless ($tiny) {
+#        return "Unable to produce tiny url from server";
+#    }
+#    return $tiny;
+    
+    # mdb added 1/8/14, issue 272
+    my $ua = new LWP::UserAgent;
+	$ua->timeout(5);
+	my $response = $ua->get($request_url);
+	if ($response->is_success) {
+		return $response->content;
+	}
+	else {
+		return "Unable to produce tiny url from server";
+	}
 
     # Log the page
 # mdb removed 10/10/13 -- Move logging functionality out of this to fix issue 167
@@ -519,8 +532,6 @@ sub get_tiny_link {
 #            link        => $tiny
 #        );
 #    }
-
-    return $tiny;
 }
 
 sub schedule_job {
