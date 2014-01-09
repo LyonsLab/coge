@@ -5,33 +5,8 @@ $(document).ready(function(){
     $('#uname').focus();
     pageObj = new Object();
     pageObj.index=0;//Math.floor(Math.random()*20);
-    cross_fade(1);
 
-    //$("#accordion").accordion({collapsible:true, active: false}).show();
-    $("#accordion2").accordion({collapsible:true, active: false, disabled:true}).removeClass('invisible');
-    $("#accordion3").accordion({collapsible:true, active: false, disabled:true}).removeClass('invisible');
-    $("#accordion4").accordion({collapsible:false, active: true}).removeClass('invisible');
-
-    $("#genome_dialog").dialog({
-        title: "Latest Genomes",
-        width: 450,
-        autoOpen: false,
-        position: {
-            my: "center",
-            at: "bottom",
-            of: $("#stats")
-        },
-        show: {
-            effect: "fade",
-            duration: 800
-        }
-    });
-});
-
-function cross_fade(first_time) {
-    var pause_time = 8000;
-    var fade_time = 3000;
-    var image = new Array(
+    var images = new Array(
         ["jbrowse-genome-view.png", "View your data in the new EPIC-CoGe browser built with JBrowse, including annotation, quantitative measurements, SNPs, and RNA-seq alignments!", "EPIC-CoGe"],
         ["500px-SynPlot-Chr1-At-v-Al.png","Syntenic dotplot of Arabidopsis thaliana versus Arabidopsis lyrata with synonymous mutations","Syntenic_comparison_of_Arabidopsis_thaliana_and_Arabidopsis_lyrata"],
         ["GenomeView-MG1655.png", "Visualizing a prophage insertion in E. coli K12 MG1655 by differences in genome structure", "Horizontal_Gene_Transfer"],
@@ -58,26 +33,158 @@ function cross_fade(first_time) {
         ["800px-GeLo-nucleotides.png", "Visualizing individual nucleotides with GenomeView", "GenomeView_examples#Chromosome_Background"],
         ["600px-Phylogeny_fr_PhyML.png","Linking to phylogeny.fr for one-click phylogenetics","Phylogenetics_in_CoGe#Send_sequences_to_phylogeny.fr"]
     );
-    var index = pageObj.index;
-    link = "http://genomevolution.org/wiki/index.php/"+image[index][2];
-    newStuff = "<div onclick=window.open('"+link+"') style='box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.15);text-align: center; border: solid 1px lightgray; margin-top: 50px; padding: 10px'><img style='width: 90%; max-height: 50%;' src='./picts/home_page/"+image[index][0]+"'><div style='width: 80%; margin: 0 auto; float: none;' class='padded'>"+image[index][1]+"</div></div>";
 
-    if (first_time) {
-        $('#crossfade').html(newStuff).show();
+
+    images.forEach(function(value, index, list) {
+        var im = new Image();
+        im.src = "./picts/home_page/" + value[0];
+        value[0] = im;
+       return value;
+    });
+
+    cross_fade("#crossfade", images, 1);
+
+    //$("#accordion").accordion({collapsible:true, active: false}).show();
+    $("#accordion2").accordion({collapsible:true, active: false, icons: false, disabled:true}).removeClass('invisible');
+    $("#accordion3").accordion({collapsible:true, active: false, icons: false, disabled:true}).removeClass('invisible');
+    $("#accordion4").accordion({collapsible:false, active: true, icons: false}).removeClass('invisible');
+
+    $("#genome_dialog").dialog({
+        title: "Latest Genomes",
+        width: 450,
+        autoOpen: false,
+        position: {
+            my: "center",
+            at: "bottom",
+            of: $("#stats")
+        },
+        show: {
+            effect: "fade",
+            duration: 800
+        }
+    });
+});
+
+function cross_fade(selector, image, delay) {
+    var element = $(selector),
+        loop_timeout,
+        index = 0,
+        pause_time = 8000,
+        fade_time = 1500
+        paused = true;
+
+    var run_button = $("<div></div>")
+            .addClass("coge-border-thin ui-icon")
+            .addClass("ui-icon ui-icon-pause")
+            .css("margin", "0 2%")
+            .on("click", $.proxy(pause, this));
+
+    var next_button = $("<div></div>")
+            .addClass("coge-border-thin ui-icon")
+            .addClass("ui-icon-arrowthick-1-e")
+            .on("click", $.proxy(next, this));
+
+    var prev_button = $("<div></div>")
+            .addClass("coge-border-thin ui-icon")
+            .addClass("ui-icon-arrowthick-1-w")
+            .on("click", $.proxy(previous, this));
+
+    var controls = $("<div></div>")
+        .css("margin", "50px 0 10px 0")
+        .css("text-align", "center")
+        .append(prev_button)
+        .append(run_button)
+        .append(next_button);
+
+    var viewer = $("<div></div>");
+
+    element.append(controls)
+        .append(viewer)
+        .show();
+
+    function animate(duration) {
+        var transition = function() {
+            link = "http://genomevolution.org/wiki/index.php/"+image[index][2];
+
+            var pict = $(image[index][0])
+                .css("width", "90%")
+                .css("max-height", "50%");
+
+            var description = $("<div></div>")
+                .addClass("padded")
+                .css("width", "80%")
+                .css("margin", "0 auto")
+                .css("float", "none")
+                .text(image[index][1]);
+
+            viewer.unbind()
+                .on("click", function() { window.open(link); })
+                .css("box-shadow", "10px 10px 5px 0px rgba(0,0,0,0.15)")
+                .css("text-align", "center")
+                .css("border", "solid 1px lightgray")
+                .css("padding", "10px")
+                .html("")
+                .append(pict)
+                .append(description)
+                .fadeIn(duration);
+        };
+
+        viewer.fadeOut(duration, transition);
     }
-    else {
-        $('#crossfade').fadeOut(fade_time,
-            function() {
-                $('#crossfade').html(newStuff).fadeIn(fade_time)
-            }
-        );
+
+    function loop() {
+        index = (++index < image.length) ? index : 0;
+        animate(fade_time);
+        loop_timeout = setTimeout(loop, pause_time);
     }
 
-    index = Math.floor(Math.random()*image.length);
-    if (index == image.length) { index=0; }
-    pageObj.index = index;
+    function next() {
+        index = (++index < image.length) ? index : 0;
 
-    setTimeout("cross_fade();", pause_time);
+        if (!paused) {
+            clearTimeout(loop_timeout);
+            loop_timeout = setTimeout(loop, pause_time);
+        }
+
+        animate(0);
+    }
+
+    function previous() {
+        index = (--index > 0) ? index : image.length - 1;
+
+        if (!paused) {
+            clearTimeout(loop_timeout);
+            loop_timeout = setTimeout(loop, pause_time);
+        }
+
+        animate(0);
+    }
+
+    function resume() {
+        run_button
+            .removeClass("ui-icon-play")
+            .addClass("ui-icon-pause")
+            .unbind()
+            .on("click", $.proxy(pause, this));
+
+        paused = false;
+        animate(0);
+        loop_timeout = setTimeout(loop, pause_time);
+    }
+
+    function pause() {
+        paused = true;
+        run_button
+            .removeClass("ui-icon-pause")
+            .addClass("ui-icon-play")
+            .unbind()
+            .on("click", $.proxy(resume, this));
+
+        clearTimeout(loop_timeout);
+        return this;
+    }
+
+    resume();
 }
 
 function get_latest_genomes() {
