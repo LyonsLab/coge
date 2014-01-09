@@ -151,7 +151,7 @@ function cross_fade(selector, image, delay) {
     }
 
     function previous() {
-        index = (--index > 0) ? index : image.length - 1;
+        index = (--index >= 0) ? index : image.length - 1;
 
         if (!paused) {
             clearTimeout(loop_timeout);
