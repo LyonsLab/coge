@@ -1,41 +1,42 @@
 <div class="footer">
-	<div style="float:right;" >
-		<a target="_blank" href="http://www.moore.org" style="float:left;padding-top:7px;">
-			<img style="padding-right:15px;" src="./picts/Moore_Foundation.png"/>
-		</a>
-		<a target="_blank" href="http://www.iplantcollaborative.org" style="float:right">
-			<img src="./picts/iplant_power.png"/>
-		</a>
-	</div>
-	<div style="float:right;padding-right:30px;padding-top:15px;">
-		<a href="https://twitter.com/CoGeUpdates" class="twitter-follow-button" data-show-count="false" data-show-screen-name="false">Follow @CoGeUpdates</a>
-		<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
-	</div>
-	<div class="small" style="padding:5px;color:gray;">
-		<img style="vertical-align:middle;" src="./picts/CoGe_logo_small.png"/>
-		<span>Questions, problems, suggestions? 
-		<a href="mailto:coge.genome@gmail.com?subject=CoGe's <TMPL_VAR NAME=PAGE_TITLE>&body=Link%20to%20page:%20%20<TMPL_VAR NAME=PAGE_LINK>">Contact us</a></span>
-	</div>
+    <div style="float:right;" >
+        <a target="_blank" href="http://www.moore.org" style="float:left;padding-top:7px;">
+            <img style="padding-right:15px;" src="./picts/Moore_Foundation.png"/>
+        </a>
+        <a target="_blank" href="http://www.iplantcollaborative.org" style="float:right">
+            <img src="./picts/iplant_power.png"/>
+        </a>
+    </div>
+    <div style="float:right;padding-right:30px;padding-top:15px;">
+        <a href="https://twitter.com/CoGeUpdates" class="twitter-follow-button" data-show-count="false" data-show-screen-name="false">Follow @CoGeUpdates</a>
+        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+    </div>
+    <div class="small" style="padding:5px;color:gray;">
+        <img style="vertical-align:middle;" src="./picts/CoGe_logo_small.png"/>
+        <span>Questions, problems, suggestions?
+        <a href="mailto:coge.genome@gmail.com?subject=CoGe's <TMPL_VAR NAME=PAGE_TITLE>&body=Link%20to%20page:%20%20<TMPL_VAR NAME=PAGE_LINK>">Contact us</a></span>
+    </div>
 </div>
 
 <script type="text/javascript">
-function login_cas(){
-	document.location.href='https://auth.iplantcollaborative.org/cas/loginPost?service='+document.location.href;
-	return true;
-}
+    function login_cas(){
+        document.location.href='https://auth.iplantcollaborative.org/cas/loginPost?service='+document.location.href;
+        return true;
+    }
 
-var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
-document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+    $(document).ready(function(){
+        if ("<TMPL_VAR NAME=USER>".match(/public/i)) { return; }
+        else { $('#logout').show(0); }
+    });
 
-$(document).ready(function(){
-	if ("<TMPL_VAR NAME=USER>".match(/public/i)) { return; }
-	else { $('#logout').show(0); }
-});
+    // analytics
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
-//var pageTracker = _gat._getTracker("UA-3802985-2");
-var pageTracker = _gat._getTracker("UA-3802985-1");
-pageTracker._initData();
-pageTracker._trackPageview();
+    ga('create', 'UA-3802985-1', 'genomevolution.org');
+    ga('send', 'pageview');
 </script>
 <!--<TMPL_VAR NAME=DATE> -->
 </BODY>
