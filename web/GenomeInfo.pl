@@ -77,7 +77,7 @@ sub get_genome_info {
         ORGANISM       => $genome->organism->name,
         VERSION        => $genome->version,
         TYPE           => $genome->type->info,
-        SOURCE         => join( ',', map { $_->name } $genome->source ),
+        SOURCE         => get_genome_sources($genome),
         LINK           => $genome->link,
         RESTRICTED     => ( $genome->restricted ? 'Yes' : 'No' ),
         USERS_WITH_ACCESS => ( $genome->restricted ? join(', ', map { $_->display_name } $USER->users_with_access($genome))
@@ -107,7 +107,7 @@ sub edit_genome_info {
         ORGANISM         => $genome->organism->name,
         VERSION          => $genome->version,
         TYPE             => $genome->type->name,
-        SOURCE           => join( ',', map { $_->name } $genome->source ),
+        SOURCE           => get_genome_sources($genome),
         LINK             => $genome->link,
         RESTRICTED       => $genome->restricted,
         NAME             => $genome->name,
@@ -270,6 +270,12 @@ sub update_owner {
     }
 
     return;
+}
+
+sub get_genome_sources {
+	my $genome = shift;
+	my %sources = map { $_->name => 1 } $genome->source;
+	return join( ',', sort keys %sources);
 }
 
 sub get_genome_data {
