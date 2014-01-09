@@ -48,6 +48,13 @@ $MAX_SEARCH_RESULTS = 100;
     copy_genome        => \&copy_genome,
 	get_log            => \&get_log,
 	export_fasta_irods => \&export_fasta_irods,
+    get_annotations            => \&get_annotations,
+    add_annotation             => \&add_annotation,
+    update_annotation          => \&update_annotation,
+    remove_annotation          => \&remove_annotation,
+    get_annotation             => \&get_annotation,
+    search_annotation_types    => \&search_annotation_types,
+    get_annotation_type_groups => \&get_annotation_type_groups,	
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
@@ -564,6 +571,261 @@ sub get_irods_path {
     return $dest;
 }
 
+sub get_annotations {
+    my %opts = @_;
+    my $gid  = $opts{gid};
+    return "Must have valid genome id\n" unless ($gid);
+    my $genome = $coge->resultset('Genome')->find($gid);
+    return "Access denied\n" unless $USER->has_access_to_genome($genome);
+
+    my $user_can_edit =
+      ( $USER->is_admin || $USER->is_owner_editor( genome => $gid ) );
+
+    my %groups;
+    my $num_annot = 0;
+    foreach my $a ( $genome->annotations ) {
+        my $group = (
+            defined $a->type->group
+            ? $a->type->group->name . ':' . $a->type->name
+            : $a->type->name
+        );
+        push @{ $groups{$group} }, $a;
+        $num_annot++;
+    }
+    return unless ( $num_annot or $user_can_edit );
+
+    my $html = '<table id="genome_annotation_table" class="ui-widget-content ui-corner-all small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
+    foreach my $group ( sort keys %groups ) {
+        my $first = 1;
+        foreach my $a ( sort { $a->id <=> $b->id } @{ $groups{$group} } ) {
+            $html .= "<tr style='vertical-align:top;'>";
+            $html .= "<th align='right' class='title5' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;' rowspan="
+              . @{ $groups{$group} }
+              . ">$group:</th>"
+              if ( $first-- > 0 );
+            #$html .= '<td>';
+            my $image_link =
+              ( $a->image ? 'image.pl?id=' . $a->image->id : '' );
+            my $image_info = (
+                $a->image
+                ? "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='float:left;padding:1px;border:1px solid lightgray;margin-right:5px;'></a>"
+                : ''
+            );
+            #$html .= $image_info if $image_info;
+            #$html .= "</td>";
+            $html .= "<td class='data5'>" . $image_info . $a->info . '</td>';
+            $html .= '<td style="padding-left:5px;">';
+            $html .= linkify( $a->link, 'Link' ) if $a->link;
+            $html .= '</td>';
+            if ($user_can_edit) {
+                my $aid = $a->id;
+                $html .=
+                    '<td style="padding-left:20px;white-space:nowrap;">'
+                  . "<span onClick=\"edit_annotation_dialog($aid);\" class='link ui-icon ui-icon-gear'></span>"
+                  . "<span onClick=\"\$(this).fadeOut(); remove_annotation($aid);\" class='link ui-icon ui-icon-trash'></span>"
+                  . '</td>';
+            }
+            $html .= '</tr>';
+        }
+    }
+    $html .= '</tbody></table>';
+
+    if ($user_can_edit) {
+        $html .= qq{<span onClick="add_annotation_dialog();" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add Annotation</span>};
+    }
+
+    return $html;
+}
+
+sub get_annotation {
+    my %opts = @_;
+    my $aid  = $opts{aid};
+    return unless $aid;
+
+    #TODO check user access here
+
+    my $ga = $coge->resultset('GenomeAnnotation')->find($aid);
+    return unless $ga;
+
+    my $type       = '';
+    my $type_group = '';
+    if ( $ga->type ) {
+        $type = $ga->type->name;
+        $type_group = $ga->type->group->name if ( $ga->type->group );
+    }
+    return encode_json(
+        {
+            annotation => $ga->annotation,
+            link       => $ga->link,
+            type       => $type,
+            type_group => $type_group
+        }
+    );
+}
+
+sub add_annotation {
+    my %opts = @_;
+    my $gid  = $opts{parent_id};
+    return 0 unless $gid;
+    my $type_group = $opts{type_group};
+    my $type       = $opts{type};
+    return 0 unless $type;
+    my $annotation     = $opts{annotation};
+    my $link           = $opts{link};
+    my $image_filename = $opts{edit_annotation_image};
+    my $fh             = $FORM->upload('edit_annotation_image');
+
+    #print STDERR "add_annotation: $gid $type $annotation $link\n";
+
+    # Create the type and type group if not already present
+    my $group_rs;
+    if ($type_group) {
+        $group_rs = $coge->resultset('AnnotationTypeGroup')->find_or_create( { name => $type_group } );
+    }
+    my $type_rs = $coge->resultset('AnnotationType')->find_or_create({
+    	name                     => $type,
+        annotation_type_group_id => ( $group_rs ? $group_rs->id : undef )
+    });
+
+    # Create the image
+    my $image;
+    if ($fh) {
+        read( $fh, my $contents, -s $fh );
+        $image = $coge->resultset('Image')->create({
+            filename => $image_filename,
+            image    => $contents
+        });
+        return 0 unless $image;
+    }
+
+    # Create the annotation
+    my $annot = $coge->resultset('GenomeAnnotation')->create({
+        genome_id          => $gid,
+        annotation         => $annotation,
+        link               => $link,
+        annotation_type_id => $type_rs->id,
+        image_id           => ( $image ? $image->id : undef )
+    });
+    return 0 unless $annot;
+
+    return 1;
+}
+
+sub update_annotation {
+    my %opts = @_;
+    my $aid  = $opts{aid};
+    return unless $aid;
+    my $type_group = $opts{type_group};
+    my $type       = $opts{type};
+    return 0 unless $type;
+    my $annotation     = $opts{annotation};
+    my $link           = $opts{link};
+    my $image_filename = $opts{edit_annotation_image};
+    my $fh             = $FORM->upload('edit_annotation_image');
+
+    #TODO check user access here
+
+    my $ga = $coge->resultset('GenomeAnnotation')->find($aid);
+    return unless $ga;
+
+    # Create the type and type group if not already present
+    my $group_rs;
+    if ($type_group) {
+        $group_rs = $coge->resultset('AnnotationTypeGroup')->find_or_create( { name => $type_group } );
+    }
+    my $type_rs = $coge->resultset('AnnotationType')->find_or_create({
+        name                     => $type,
+        annotation_type_group_id => ( $group_rs ? $group_rs->id : undef )
+    });
+
+    # Create the image
+    #TODO if image was changed delete previous image
+    my $image;
+    if ($fh) {
+        read( $fh, my $contents, -s $fh );
+        $image = $coge->resultset('Image')->create({
+            filename => $image_filename,
+            image    => $contents
+        });
+        return 0 unless $image;
+    }
+
+    $ga->annotation($annotation);
+    $ga->link($link);
+    $ga->annotation_type_id( $type_rs->id );
+    $ga->image_id( $image->id ) if ($image);
+    $ga->update;
+
+    return;
+}
+
+sub remove_annotation {
+    my %opts = @_;
+    my $gid  = $opts{gid};
+    return "No genome ID specified" unless $gid;
+    my $gaid = $opts{gaid};
+    return "No genome annotation ID specified" unless $gaid;
+	#return "Permission denied" unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
+
+    my $ga = $coge->resultset('GenomeAnnotation')->find( { genome_annotation_id => $gaid } );
+    $ga->delete();
+
+    return 1;
+}
+
+sub search_annotation_types {
+    my %opts        = @_;
+    my $type_group  = $opts{type_group};
+    my $search_term = $opts{search_term};
+
+    #print STDERR "search_annotation_types: $search_term $type_group\n";
+    return '' unless $search_term;
+
+    $search_term = '%' . $search_term . '%';
+
+    my $group;
+    if ($type_group) {
+        $group = $coge->resultset('AnnotationTypeGroup')->find( { name => $type_group } );
+    }
+
+    my @types;
+    if ($group) {
+        #print STDERR "type_group=$type_group " . $group->id . "\n";
+        @types = $coge->resultset("AnnotationType")->search(
+            \[ 'annotation_type_group_id = ? AND (name LIKE ? OR description LIKE ?)',
+                [ 'annotation_type_group_id', $group->id ],
+                [ 'name',                     $search_term ],
+                [ 'description',              $search_term ]
+            ]
+        );
+    }
+    else {
+        @types = $coge->resultset("AnnotationType")->search(
+            \[
+                'name LIKE ? OR description LIKE ?',
+                [ 'name',        $search_term ],
+                [ 'description', $search_term ]
+            ]
+        );
+    }
+
+    my %unique;
+    map { $unique{ $_->name }++ } @types;
+    return encode_json( [ sort keys %unique ] );
+}
+
+sub get_annotation_type_groups {
+    #my %opts = @_;
+    my %unique;
+
+    my $rs = $coge->resultset('AnnotationTypeGroup');
+    while ( my $atg = $rs->next ) {
+        $unique{ $atg->name }++;
+    }
+
+    return encode_json( [ sort keys %unique ] );
+}
+
 sub generate_html {
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
@@ -606,8 +868,10 @@ sub generate_body {
         GID             => $gid,
         GENOME_INFO     => get_genome_info( genome => $genome ),
         GENOME_DATA     => get_genome_data( genome => $genome ),
+        GENOME_ANNOTATIONS => get_annotations( gid => $gid ),
+        DEFAULT_TYPE    => 'note', # default annotation type
         EXPERIMENTS     => get_experiments( genome => $genome ),
-        ANNOTATION      => get_datasets( genome => $genome, exclude_seq => 1 ),
+        DATASETS        => get_datasets( genome => $genome, exclude_seq => 1 ),
         USER_CAN_EDIT   => $user_can_edit,
         USER_CAN_ADD    => ( !$genome->restricted or $user_can_edit ),
         USER_CAN_DELETE => $user_can_delete,
