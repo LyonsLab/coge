@@ -74,18 +74,18 @@ function cross_fade(selector, image, delay) {
         paused = true;
 
     var run_button = $("<div></div>")
-            .addClass("coge-border-thin ui-icon")
+            .addClass("coge-button-border ui-icon")
             .addClass("ui-icon ui-icon-pause")
             .css("margin", "0 2%")
             .on("click", $.proxy(pause, this));
 
     var next_button = $("<div></div>")
-            .addClass("coge-border-thin ui-icon")
+            .addClass("coge-button-border ui-icon")
             .addClass("ui-icon-arrowthick-1-e")
             .on("click", $.proxy(next, this));
 
     var prev_button = $("<div></div>")
-            .addClass("coge-border-thin ui-icon")
+            .addClass("coge-button-border ui-icon")
             .addClass("ui-icon-arrowthick-1-w")
             .on("click", $.proxy(previous, this));
 
