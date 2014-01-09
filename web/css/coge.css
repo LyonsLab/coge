@@ -962,7 +962,9 @@ th {
     display: inline-block;
 }
 
-
+.coge-button-border {
+    border: 1px solid lightgray;
+}
 
 /* Alignment */
 .top {
