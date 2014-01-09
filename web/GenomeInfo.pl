@@ -868,7 +868,7 @@ sub generate_body {
         GID             => $gid,
         GENOME_INFO     => get_genome_info( genome => $genome ),
         GENOME_DATA     => get_genome_data( genome => $genome ),
-        GENOME_ANNOTATIONS => get_annotations( gid => $gid ),
+        GENOME_ANNOTATIONS => get_annotations( gid => $gid ) || undef,
         DEFAULT_TYPE    => 'note', # default annotation type
         EXPERIMENTS     => get_experiments( genome => $genome ),
         DATASETS        => get_datasets( genome => $genome, exclude_seq => 1 ),
