@@ -5,6 +5,7 @@
 //		add_annotation
 //		update_annotation
 // Must call init_annotation_dialog() on page load
+// Need pageObj
 
 function init_annotation_dialog(parent_id, default_type) {
 	$('#annotation_edit_box').data({ parent_id: parent_id, default_type: default_type });
@@ -124,6 +125,34 @@ function update_annotation() {
 			}
 		});			
 	}
+}
+
+function image_preview(obj, preview) {
+	console.log(obj);
+    var id = obj.src; // need a unique identifier for the obj
+    if (pageObj.timers[id]) {
+        clearInterval(pageObj.timers[id]);
+        pageObj.timers[id] = null;
+    }
+
+    if (preview) {
+        pageObj.timers[id] = setTimeout(
+            function() {
+                $(obj).animate({width:200, height:200});
+                pageObj.timers[id] = null;
+            },
+            500
+        );
+    }
+    else {
+        pageObj.timers[id] = setTimeout(
+            function() {
+                $(obj).animate({width:40, height:40});
+                pageObj.timers[id] = null;
+            },
+            500
+        );
+    }
 }
 
 // End Widget API -------------------------------------------------------------

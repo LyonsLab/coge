@@ -114,6 +114,10 @@ __PACKAGE__->belongs_to(
     "genomic_sequence_type" => "CoGeX::Result::GenomicSequenceType",
     'genomic_sequence_type_id'
 );
+__PACKAGE__->has_many(
+    "genome_annotations" => "CoGeX::Result::GenomeAnnotation",
+    'genome_id'
+);
 __PACKAGE__->has_many(    # parent lists
     'list_connectors' => 'CoGeX::Result::ListConnector',
     { 'foreign.child_id' => 'self.genome_id' },
@@ -152,6 +156,10 @@ __PACKAGE__->mk_accessors('_genomic_sequences');
 
 sub desc {
     return shift->description(@_);
+}
+
+sub annotations {
+    shift->genome_annotations(@_);
 }
 
 ################################################ subroutine header begin ##
