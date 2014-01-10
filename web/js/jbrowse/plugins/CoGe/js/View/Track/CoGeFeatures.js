@@ -1221,16 +1221,21 @@ define( [
                                   track.changed();
                               }
                             },
-                            /* { label: 'Show CDS',
-                              type: 'digit/CheckedMenuItem',
-                              checked: !!( 'showCDS' in this ? this.showCDS : this.config.style.showCDS ),
-                              onClick: function(event) {
-                                  track.showCDS = this.checked;
-                                  track.changed();
-                              }
-                            },*/
+                            {	label: 'Send to FeatList',
+                            	onClick: function() { 
+                            		var url = decodeURIComponent(window.location.href);
+                            		var temp = url.match(/gid\=(\d+)/);
+                            		var temp2 = url.match(/loc\=(\S+)\:(\S+)\.\.(\S+)/);
+                            		if (!temp || !temp2) {
+                            			console.log('Error generating FeatList link from '+url);
+                            			return;
+                            		}
+                            		window.open( 'FeatList.pl?dsgid='+temp[1]+'&chr='+temp2[1]+'&start='+temp2[2]+'&stop='+temp2[3] ); 
+                            	}
+                            }
                         ]
                 );
+                    
                 return o;
             }
 
