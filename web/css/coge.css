@@ -1195,3 +1195,37 @@ header {
         display: block;
     }
 }
+
+/*
+ * Progress menu
+ */
+
+.coge-progress-menu .ui-dialog-content {
+    padding: 10px;
+}
+
+.coge-progress-status {
+    margin: 5px;
+    padding: 5px;
+}
+
+.coge-progress-status-error {
+    color: red;
+}
+
+.coge-progress-status-complete {
+    color: green;
+}
+
+.coge-progress-status span,
+.coge-progress-status a,
+.coge-progress-status div {
+    vertical-align: top;
+    margin: 0 10px;
+}
+
+.coge-progress-data {
+    height: 200px;
+    padding: 10px;
+    overflow-y: scroll;
+}
