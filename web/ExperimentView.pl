@@ -46,6 +46,7 @@ $FORM = new CGI;
     get_annotation_type_groups => \&get_annotation_type_groups,
     check_login                => \&check_login,
     export_experiment_irods    => \&export_experiment_irods,
+    get_file_urls              => \&get_file_urls,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -504,7 +505,7 @@ sub export_experiment_irods {
         CoGe::Accessory::IRODS::irods_imeta($dest_index, \%meta);
     } else {
         my $files = $experiment->storage_path;
-        my $archive = File::Spec->catdir(($P->{SECTEMPDIR}, "experiment_$eid.tar.gz"));
+        my $archive = File::Spec->catdir(($P->{TEMPDIR}, $PAGE_TITLE, "experiment_$eid.tar.gz"));
         my $dest = File::Spec->catdir(($dir, basename($archive)));
 
         my $cmd = "tar -czf $archive --exclude=log.txt --directory $files .";
@@ -513,6 +514,48 @@ sub export_experiment_irods {
         CoGe::Accessory::IRODS::irods_iput($archive, $dest);
         CoGe::Accessory::IRODS::irods_imeta($dest, \%meta);
     }
+}
+
+sub get_file_urls {
+    my %opts = @_;
+    my $eid = $opts{eid};
+    my @files;
+
+    my $experiment = $coge->resultset('Experiment')->find($eid);
+    return 0 unless $USER->has_access_to_experiment($experiment);
+    my $baseurl = $P->{SERVER} . "/tmp/$PAGE_TITLE";
+
+    if($experiment->data_type == 3) {
+        my $srcdir = $experiment->storage_path;
+        my $base = "experiment_$eid";
+        my $dir = File::Spec->catdir(($P->{TEMPDIR}, $PAGE_TITLE));
+
+        my $src_bam = File::Spec->catdir(($srcdir, "alignment.bam"));
+        my $dest_bam = File::Spec->catdir(($dir, "$base.bam"));
+        my $url_bam = "$baseurl/$base.bam";
+
+        my $src_index = File::Spec->catdir(($srcdir, "alignment.bam.bai"));
+        my $dest_index = File::Spec->catdir(($dir, "$base.bam.bai"));
+        my $url_index = "$baseurl/$base.bam.bai";
+
+        system("cp $src_bam $dest_bam") unless -r $dest_bam;
+        system("cp $src_index $dest_index") unless -r $dest_index;
+
+        push @files, $url_bam;
+        push @files, $url_index;
+    } else {
+        my $files = $experiment->storage_path;
+        my $archive = File::Spec->catdir(($P->{TEMPDIR}, $PAGE_TITLE, "experiment_$eid.tar.gz"));
+
+        my $cmd = "tar -czf $archive --exclude=log.txt --directory $files .";
+        my $result = system($cmd) unless -r $archive;
+
+        my $url_archive = $baseurl . "/experiment_$eid.tar.gz";
+
+        push @files, $url_archive;
+    }
+
+    return encode_json({ files => \@files });
 }
 
 sub remove_annotation {

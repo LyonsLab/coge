@@ -38,6 +38,21 @@ function set_annotation_table() {
     $('#experiment_annotation_table').tablesorter({widgets: ['zebra']});
 }
 
+function download_files() {
+    var success = $.ajax({
+        url: "<tmpl_var name=PAGE_NAME>",
+        dataType: "json",
+        data: {
+            fname: "get_file_urls",
+            eid: <tmpl_var name="eid">,
+        },
+        success: function(json) {
+            console.log(json.files);
+            json.files.forEach(window.open);
+        }
+    })
+}
+
 function get_experiment_info() {
     $.ajax({
         data: {
@@ -285,6 +300,10 @@ function get_type_description (name) {
             <li>
                 <span class="title5">iPlant Data Store:</span>
                 <span class="data5 link" ondblclick="export_data()" onclick="export_data()">Export data</span>
+            </li>
+            <li>
+                <span class="title5">Download:</span>
+                <span class="data5 link" onclick="download_files();">Experiment Data</span>
             </li>
         </ul>
         <a style="font-size: .9em; color: black;" target="_blank" class='ui-button ui-corner-all ui-button-icon-right' href="<tmpl_var name=link>">
