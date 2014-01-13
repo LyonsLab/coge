@@ -21,8 +21,19 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
  * @extends JBrowse.View.Track.WiggleBase
  */
 {
+	// Load cookie params - mdb added 1/13/14, issue 279
+	constructor: function() {
+		this.inherited(arguments); // call superclass constructor
+    	try {
+    		var cookieName = 'track-' + this.name;
+    		this.config.style.featureColor = dojo.fromJson(
+    			this.browser.cookie(cookieName)
+            );
+    	}
+    	catch (x) {}
+	},
+	
     _defaultConfig: function() {
-//    	console.log('_defaultConfig');
         return Util.deepUpdate(
             dojo.clone( this.inherited(arguments) ),
             {
@@ -497,7 +508,14 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 		                      	        callback: function(id, color) {
 		                      	        	var curColor = track.config.style.featureColor[id];
 		                      	        	if (!curColor || curColor != color) {
+		                      	        		// Save color choice
 		                      	        		track.config.style.featureColor[id] = color;
+		                      	        		
+		                      	        		// Use cookie to persist color choice - mdb added 1/13/14, issue 279
+		                      	        		var cookieName = 'track-' + track.name;
+		                      	        		track.browser.cookie(cookieName, track.config.style.featureColor);
+		                      	        		
+		                      	        		// Repaint track
 		                      	        		track.changed();
 		                      	        	}
 				                        }
