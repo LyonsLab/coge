@@ -40,7 +40,7 @@ def db_connect(config):
 def get_running_jobs(db):
     cursor = db.cursor()
 
-    query = "select job_id from job where status=1;"
+    query = 'select job_id from job where status=1 and not page="gevo";'
 
     cursor.execute(query)
     return cursor.fetchall()
