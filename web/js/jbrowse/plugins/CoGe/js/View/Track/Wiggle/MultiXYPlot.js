@@ -29,6 +29,8 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     		this.config.style.featureColor = dojo.fromJson(
     			this.browser.cookie(cookieName)
             );
+    		if (!this.config.style.featureColor)
+    			this.config.style.featureColor = {};
     	}
     	catch (x) {}
 	},
