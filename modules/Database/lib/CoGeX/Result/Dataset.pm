@@ -1172,10 +1172,13 @@ sub gff {
             }
         }
     }
-    print "#Orphaned RNAs\n";
-    foreach my $fid ( keys %orphaned_RNA ) {
-        next if $fids{$fid};
-        print "#", join( "\t", $fid, $orphaned_RNA{$fid}->names ), "\n";
+    if ($print) {
+        print "#Orphaned RNAs\n";
+
+        foreach my $fid ( keys %orphaned_RNA ) {
+            next if $fids{$fid};
+            print "#", join( "\t", $fid, $orphaned_RNA{$fid}->names ), "\n";
+        }
     }
     return $output, $count;
 }
