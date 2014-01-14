@@ -44,6 +44,8 @@ $MAX_SEARCH_RESULTS = 100;
     search_organisms   => \&search_organisms,
     search_users       => \&search_users,
     delete_genome      => \&delete_genome,
+    delete_dataset     => \&delete_dataset,
+    get_datasets       => \&get_datasets,
     check_login        => \&check_login,
     copy_genome        => \&copy_genome,
 	get_log            => \&get_log,
@@ -135,7 +137,7 @@ sub update_genome_info {
     my $link        = $opts{link};
     my $timestamp   = $opts{timestamp};
 
-# print STDERR "gid=$gid organism=$org_name version=$version source=$source_name\n";
+	#print STDERR "gid=$gid organism=$org_name version=$version source=$source_name\n";
     return "Error: missing params."
       unless ( $gid and $org_name and $version and $source_name );
 
@@ -172,7 +174,7 @@ sub search_organisms {
     my $search_term = $opts{search_term};
     my $timestamp   = $opts{timestamp};
 
-    #	print STDERR "$search_term $timestamp\n";
+    #print STDERR "$search_term $timestamp\n";
     return unless $search_term;
 
     # Perform search
@@ -399,9 +401,13 @@ sub get_datasets {
 
     my @rows;
     foreach my $ds ( sort { $a->id <=> $b->id } $genome->datasets ) {
+    	next if ($ds->deleted);
 		#next if ($exclude_seq && filter_dataset($ds)); #FIXME add dataset "type" field instead?
-        push @rows, { DATASET_INFO => '<span>' . $ds->info . '</span>' . 
-        	($ds->link ? '&nbsp;&nbsp;&nbsp;&nbsp;<a href="' . $ds->link . '" target=_new>Link</a>' : '') };
+        push @rows, { 
+        	DATASET_INFO => '<span>' . $ds->info . '</span>' . 
+        		($ds->link ? '&nbsp;&nbsp;&nbsp;&nbsp;<a href="' . $ds->link . '" target=_new>Link</a>' : ''),
+        	DATASET_ID => $ds->id
+        };
     }
     return '' unless @rows;
 
@@ -434,6 +440,37 @@ sub delete_genome {
 	    user_id     => $USER->id,
 	    page        => $PAGE_TITLE,
 	    description => "$delete_or_undelete genome id$gid"
+	);
+
+    return 1;
+}
+
+sub delete_dataset {
+    my %opts = @_;
+    my $gid  = $opts{gid};
+    my $dsid  = $opts{dsid};
+    print STDERR "delete_dataset $gid $dsid\n";
+    return 0 unless ($gid and $dsid);
+
+    my $genome = $coge->resultset('Genome')->find($gid);
+    return 0 unless $genome;
+    return 0 unless ( $USER->is_admin or $USER->is_owner( dsg => $gid ) );
+    
+    
+    my $dataset = $coge->resultset('Dataset')->find($dsid);
+    return 0 unless $dataset;
+    return unless ($genome->dataset_connectors({ dataset_id => $dsid })); # make sure genome has specified dataset
+    
+    print STDERR "delete_dataset: deleted dataset id$dsid\n";
+    $dataset->deleted(1);
+    $dataset->update;
+    
+    # Record in log
+    CoGe::Accessory::Web::log_history(
+	    db          => $coge,
+	    user_id     => $USER->id,
+	    page        => $PAGE_TITLE,
+	    description => "delete dataset id$dsid in genome id$gid"
 	);
 
     return 1;
