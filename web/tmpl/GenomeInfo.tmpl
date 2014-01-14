@@ -380,6 +380,31 @@ function remove_annotation (gaid) {
         },
     });
 }
+
+function get_datasets() {
+    $.ajax({
+        data: {
+            fname: 'get_datasets',
+            gid: "<TMPL_VAR NAME='GID'>",
+        },
+        success : function(data) {
+            $('#datasets').html(data);
+        }
+    });
+}
+
+function delete_dataset (dsid) {
+    $.ajax({
+        data: {
+            fname: 'delete_dataset',
+            gid: "<TMPL_VAR NAME='GID'>",
+            dsid: dsid,
+        },
+        success : function() {
+            get_datasets();
+        },
+    });
+}
 </SCRIPT>
 
 
@@ -420,12 +445,8 @@ function remove_annotation (gaid) {
 
 <span style="color:dimgray;font-weight:bold;">Sequence & Gene Annotation</span><br>
 <TMPL_IF NAME='DATASETS'>
-	<table class="small ui-widget-content ui-corner-all" style="color:gray;">
-		<tr>
-			<td>
-				<TMPL_VAR NAME='DATASETS'>
-			</td>
-		</tr>
+	<table id="datasets" class="small ui-widget-content ui-corner-all" style="color:gray;">
+		<TMPL_VAR NAME='DATASETS'>
 	</table>
 </TMPL_IF>
 <TMPL_IF NAME='USER_CAN_EDIT'>
@@ -689,7 +710,14 @@ Are you sure you want to move this genome into your trash?<p>
 
 <TMPL_IF NAME='DO_DATASETS'>
 	<TMPL_LOOP NAME="DATASET_LOOP">
-		<TMPL_VAR NAME="DATASET_INFO"><br>
+		<tr>
+			<td>
+				<TMPL_VAR NAME="DATASET_INFO">
+			</td>
+			<td>
+				<span onClick='$(this).parent("tr").fadeOut("fast"); delete_dataset("<TMPL_VAR NAME=DATASET_ID>");' class='link ui-icon ui-icon-trash'></span>
+			</td>
+		</tr>
 	</TMPL_LOOP>
 </TMPL_IF>
 
