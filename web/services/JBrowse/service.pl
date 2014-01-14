@@ -23,7 +23,7 @@ CGI::Application::Dispatch->dispatch(
             prefix => 'CoGe::Services::Data',
             app    => 'Genome',
             rm     => 'search'
-        },                
+        },
         'notebook/create' => {
             prefix => 'CoGe::Services::Data',
             app    => 'Notebook',
@@ -33,6 +33,11 @@ CGI::Application::Dispatch->dispatch(
             prefix => 'CoGe::Services::Data',
             app    => 'Notebook',
             rm     => 'delete'
+        },
+        'download/:page' => {
+            prefix => 'CoGe::Services::Data',
+            app    => 'Downloader',
+            rm     => 'get'
         },
 
         # JBrowse Services
@@ -80,7 +85,7 @@ CGI::Application::Dispatch->dispatch(
             prefix => 'CoGe::Services::JBrowse',
             app    => 'Experiment',
             rm     => 'stats_regionFeatureDensities'
-        },        
+        },
         'experiment/:eid/features/:chr' => {
             prefix => 'CoGe::Services::JBrowse',
             app    => 'Experiment',
