@@ -29,7 +29,7 @@ sub setup {
 }
 
 sub stats_global {
-    #print STDERR "JBrowse::Experiment::stats_global\n";
+	print STDERR "JBrowse::Experiment::stats_global\n";  
     return qq{{
 		"scoreMin" : -1,
 		"scoreMax" : 1
@@ -125,7 +125,29 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
             }
         }
         elsif ( $data_type == $DATA_TYPE_ALIGN ) {
-        	next;
+	        my $cmdOut = CoGe::Accessory::Storage::get_experiment_data(
+	            eid   => $eid,
+	            data_type  => $exp->data_type,
+	            chr   => $chr,
+	            start => $start,
+	            end   => $end
+	        );
+	        
+	        # Convert SAMTools output into JSON
+	        foreach (@$cmdOut) {
+	        	chomp;
+	        	my ($qname, $flag, $rname, $pos, $mapq, $cigar, undef, undef, undef, $seq, $qual, $tags) = split(/\t/);
+	        	
+	        	my $len = length($seq);
+	        	my $s = $pos;
+	        	my $e = $pos + $len;
+	        	
+				# Bin results
+                my $mid = int( ( $s + $e ) / 2 );
+                my $b   = int( ( $mid - $start ) / $bpPerBin );
+                $b = 0 if ( $b < 0 );
+                $bins[$b]++;
+	        }
         }
         else {
         	print STDERR "JBrowse::Experiment::stats_regionFeatureDensities unknown data type for experiment $eid\n";
@@ -133,14 +155,15 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
         }
     }
 
-    my ( $max, $sum, $count );
+    my ( $sum, $count );
     foreach my $x (@bins) {
         $sum += x;
-        $max = $x if ( not defined $max or $x > $max );
+         #$max = $x if ( not defined $max or $x > $max ); # mdb removed 1/14/14 for BAM histograms
         $count++;
     }
     my $mean = 0;
     $mean = $sum / $count if ($count);
+    my $max = $bpPerBin; # mdb added 1/14/14 for BAM histograms
 
     return encode_json(
         {
