@@ -248,14 +248,14 @@ sub track_config {
 			$histScale = 0.05;
 		}
 		elsif ($e->data_type == 2) { #FIXME hardcoded data_type 'polymorphism'
-			$type = "JBrowse/View/Track/HTMLVariants"; 
+			$type = "CoGe/View/Track/CoGeVariants"; 
 			$featureScale = 0.0001;
 			$histScale = 0.01;
 		}
 		elsif ($e->data_type == 3) { #FIXME hardcoded data_type 'alignment'
 			$type = "JBrowse/View/Track/Alignments2"; 
-			$featureScale = 0.0001;
-			$histScale = 0.05;
+			$featureScale = 0.005;
+			$histScale = 0.01;
 		}
         
         push @tracks, {
@@ -274,6 +274,10 @@ sub track_config {
                 showLabels   => 'true',
                 className    => '{type}',
                 histCss => 'background-color:' . getFeatureColor($eid)
+            },
+            
+            histograms => {
+            	store => "JBrowse/Store/SeqFeature/REST"
             },
 
             # CoGe-specific stuff
