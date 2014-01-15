@@ -26,7 +26,7 @@
 	                containerID: id,
 	                browserRoot: 'js/jbrowse/',
 	                refSeqs: 'services/JBrowse/service.pl/config/refseq/?gid='+gid,//refSeqs: dataRoot + "/seq/refSeqs.json",
-	                baseUrl: 'js/jbrowse/',//dataRoot+'/',
+	                baseUrl: '/',//'js/jbrowse/',//dataRoot+'/', # mdb changed 1/15/14 for JBrowse-1.11.1
 	                include: ['services/JBrowse/service.pl/config/tracks/?gid='+gid],//include: ['jbrowse_conf.json', dataRoot + "/trackList.json"],
 	                //nameUrl: dataRoot + "/names/root.json",
 	                defaultTracks: "sequence,features",
