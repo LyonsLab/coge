@@ -1054,6 +1054,13 @@ header {
     font-size: 0.6em;
 }
 
+#wikifeed ol {
+    list-style-type: decimal;
+}
+#wikifeed ul {
+    list-style-type: square;
+}
+
 #wikifeed > div div p,
 #wikifeed > div div pre,
 #wikifeed > div div ul,
