@@ -47,6 +47,7 @@ $ERROR = encode_json({ error => 1 });
     search_organisms           => \&search_organisms,
     search_users               => \&search_users,
     delete_genome              => \&delete_genome,
+#    delete_dataset             => \&delete_dataset,
     check_login                => \&check_login,
     copy_genome                => \&copy_genome,
     get_log                    => \&get_log,
@@ -316,6 +317,39 @@ sub get_genome_download_links {
     my $genome = shift;
 
 }
+
+# Leave this commented out until issue 212 resolved
+#sub delete_dataset {
+#    my %opts = @_;
+#    my $gid  = $opts{gid};
+#    my $dsid  = $opts{dsid};
+#    print STDERR "delete_dataset $gid $dsid\n";
+#    return 0 unless ($gid and $dsid);
+#
+#    my $genome = $coge->resultset('Genome')->find($gid);
+#    return 0 unless $genome;
+#    return 0 unless ( $USER->is_admin or $USER->is_owner( dsg => $gid ) );
+#
+#
+#    my $dataset = $coge->resultset('Dataset')->find($dsid);
+#    return 0 unless $dataset;
+#    return unless ($genome->dataset_connectors({ dataset_id => $dsid })); # make sure genome has specified dataset
+#
+#    print STDERR "delete_dataset: deleted dataset id$dsid\n";
+#    $dataset->deleted(1);
+#    $dataset->update;
+#
+#    # Record in log
+#    CoGe::Accessory::Web::log_history(
+#          db          => $coge,
+#          user_id     => $USER->id,
+#          page        => $PAGE_TITLE,
+#          description => "delete dataset id$dsid in genome id$gid"
+#      );
+#
+#    return 1;
+#}
+
 
 sub get_sequence_types {
     my $type_id = shift;
