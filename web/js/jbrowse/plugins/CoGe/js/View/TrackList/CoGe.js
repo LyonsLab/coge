@@ -180,7 +180,10 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
         var trackPane = this.pane = dojo.create(
             'div',
             { id: 'trackPane',
-              style: { width: '215px' } // 'min-width': '200px' -- mdb: messes up resize
+              style: { 
+            	  width: '215px', // 'min-width': '200px' -- mdb: messes up resize
+            	  'background-color': 'rgb(242, 242, 242)'
+              } 
             },
             renderTo
         );
