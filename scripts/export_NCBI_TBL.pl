@@ -2,70 +2,121 @@
 
 use strict;
 use CoGeX;
-use Data::Dumper;
 use Getopt::Long;
-use Sort::Versions;
+use File::Path;
+use File::Spec;
+use URI::Escape::JavaScript qw(unescape);
 
-use vars qw($DEBUG $GO $db $user $pass $coge $dsgid);
-
-# ./export_NCBI_TBL.pl -u coge -p  -db coge -dsgid 16884
+our ($DEBUG, $db, $user, $pass, $gid, $config, $host, $port, $P,
+     $filename, $download_dir);
 
 GetOptions(
-    "debug=s"         => \$DEBUG,
-    "go=s"            => \$GO,
-    "database|db=s"   => \$db,
-    "user|u=s"        => \$user,
-    "password|pw|p=s" => \$pass,
-    "dsgid=i"         => \$dsgid,
+    "debug=s"           => \$DEBUG,
+    "gid=i"             => \$gid,
+    "download_dir=s"    => \$download_dir,
+    "filename|f=s"      => \$filename,
+
+    # Database params
+    "host|h=s"          => \$host,
+    "port|p=s"          => \$port,
+    "database|db=s"     => \$db,
+    "user|u=s"          => \$user,
+    "password|pw=s"     => \$pass,
+
+    # Or use config file
+    "config=s"          => \$config,
 );
 
-my $connstr = "dbi:mysql:dbname=$db;host=localhost;port=3307";
-$coge = CoGeX->connect( $connstr, $user, $pass );
+$| = 1;
 
+mkpath($download_dir, 0, 0777) unless -r $download_dir;
+
+my $logfile = File::Spec->catdir($download_dir, "$filename.log");
+open (my $logh, ">", $logfile) or die "Error opening log file";
+
+if ($config) {
+    $P    = CoGe::Accessory::Web::get_defaults($config);
+    $db   = $P->{DBNAME};
+    $host = $P->{DBHOST};
+    $port = $P->{DBPORT};
+    $user = $P->{DBUSER};
+    $pass = $P->{DBPASS};
+}
+
+# Verify parameters
+$gid = unescape($gid) if $gid;
+$filename = unescape($filename) if $filename;
+
+if (not $gid) {
+    say $logh "log: error: genome not specified use gid";
+    exit(-1);
+}
+
+if (not $filename) {
+    say $logh "log: error: output file not specified use output";
+    exit(-1);
+}
+
+my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
+my $coge = CoGeX->connect( $connstr, $user, $pass );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
-my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
-
-my %chr2ds;
-foreach my $ds ( $dsg->datasets ) {
-    map { $chr2ds{$_} = $ds } $ds->chromosomes;
+unless ($coge) {
+    say $logh "log: error: couldn't connect to database";
+    exit(-1);
 }
-foreach my $chr ( sort { versioncmp( $a, $b ) } $dsg->chromosomes ) {
-    print ">Features $chr\n";
-    foreach my $feat (
-        sort {
-            $a->start <=> $b->start
-              || $a->feature_type_id <=> $b->feature_type_id
-        } $chr2ds{$chr}
-        ->features( { chromosome => $chr }, { "order_by" => "start ASC" } )
-      )
-    {
-        next if $feat->type->name eq "chromosome";
-        next if $feat->type->name =~ /utr/i;
 
-        my $locs = get_locs($feat);
-        my $item = pop @$locs;
-        print join( "\t", @$item, $feat->type->name ), "\n";
-        foreach my $loc (@$locs) {
-            print join( "\t", @$loc ), "\n";
-        }
-        my $name_tag = get_name_tag($feat);
-        my ( $pri_name, @names ) = $feat->names;
-        print "\t\t\t", $name_tag, "\t";
-        if ( $name_tag =~ /_id/ ) {
-            print "gnl|dbname|";
-        }
-        print $pri_name, "\n";
+my $file = File::Spec->catdir($download_dir, $filename);
 
-        foreach my $name (@names) {
-            print "\t\t\t", join( "\t", "alt_name", $name ), "\n";
-        }
-        foreach my $anno ( $feat->annotations ) {
-            print "\t\t\t", join( "\t", $anno->type->name, $anno->annotation ),
-              "\n";
+unless (-r $file and -r "$file.finished") {
+    my $dsg = $coge->resultset('Genome')->find($gid);
+
+    open(my $fh, ">", $file);
+
+    my %chr2ds;
+    foreach my $ds ( $dsg->datasets ) {
+        map { $chr2ds{$_} = $ds } $ds->chromosomes;
+    }
+    foreach my $chr ( sort { versioncmp( $a, $b ) } $dsg->chromosomes ) {
+        print $fh ">Features $chr\n";
+        foreach my $feat (
+            sort {
+                $a->start <=> $b->start
+                || $a->feature_type_id <=> $b->feature_type_id
+            } $chr2ds{$chr}
+            ->features( { chromosome => $chr }, { "order_by" => "start ASC" } )
+        )
+        {
+            next if $feat->type->name eq "chromosome";
+            next if $feat->type->name =~ /utr/i;
+
+            my $locs = get_locs($feat);
+
+            my $item = shift @$locs;
+            print $fh join( "\t", @$item, $feat->type->name ), "\n";
+            foreach my $loc (@$locs) {
+                print $fh join( "\t", @$loc ), "\n";
+            }
+            my $name_tag = get_name_tag($feat);
+            my ( $pri_name, @names ) = $feat->names;
+            print $fh "\t\t\t", $name_tag, "\t";
+            if ( $name_tag =~ /_id/ ) {
+                print $fh "gnl|dbname|";
+            }
+            print $fh $pri_name, "\n";
+
+            foreach my $name (@names) {
+                print $fh "\t\t\t", join( "\t", "alt_name", $name ), "\n";
+            }
+            foreach my $anno ( $feat->annotations ) {
+                print $fh "\t\t\t", join( "\t", $anno->type->name, $anno->annotation ),
+                "\n";
+            }
         }
     }
+    close($fh);
+    system("touch $file.finished");
 }
 
 sub get_name_tag {
