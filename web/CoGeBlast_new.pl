@@ -822,7 +822,7 @@ sub blast_search {
             cmd     => "/usr/bin/nice",
             script  => undef,
             args    => $args,
-            inputs  => [$fasta_file],
+            inputs  => [$fasta_file, "$db.nhr", "$db.nin", "$db.nsq"],
             outputs => [$outfile]
         );
 
