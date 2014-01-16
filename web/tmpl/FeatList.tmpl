@@ -9,7 +9,7 @@ $(document).ready(function(){
 //		cssHeader: 'header',		// Class name for headers (th's)
 		widgets: ['zebra'],
 		headers: {0: {sorter: false},},					
-	});
+	}).show();
 	check_display();
 /*	$('#feat_table').columnFilters({
 		alternateRowClassNames:['even','odd'],
@@ -335,7 +335,7 @@ Filter:
 <span href='#' id="table_opts" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</span>
 </div>
 
-<TABLE id='feat_table' class="small ui-widget-content ui-corner-all">
+<TABLE id='feat_table' class="hidden small ui-widget-content ui-corner-all">
  <THEAD align='left'>
   <tr>
    <TH> </TH>
