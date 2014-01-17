@@ -352,9 +352,9 @@ sub login_cas_proxy {
 	my $ua = new LWP::UserAgent;
     my $request_ua =
       HTTP::Request->new(
-      	#GET => 'https://gucumatz.iplantcollaborative.org/cas/proxyValidate?service=http://geco.iplantcollaborative.org/**&ticket=' . $ticket );
-      	GET => 'https://gucumatz.iplantcollaborative.org/cas/proxyValidate?service='.$this_url.'&ticket='.$ticket );
-        #POST => 'https://gucumatz.iplantcollaborative.org/cas/samlValidate?TARGET=' # mdb added 12/5/13 - Hackathon
+        GET => 'https://auth.iplantcollaborative.org/cas/proxyValidate?service='.$this_url.'&ticket='.$ticket
+      	#GET => 'https://gucumatz.iplantcollaborative.org/cas/proxyValidate?service='.$this_url.'&ticket='.$ticket # mdb added 12/5/13 for hackathon1 
+      );
     my $response = $ua->request($request_ua);
     my $result   = $response->content;
     print STDERR $result, "\n";
@@ -457,8 +457,8 @@ sub login_cas_saml {
 
     my $request_ua =
       HTTP::Request->new(
-        POST => 'https://gucumatz.iplantcollaborative.org/cas/samlValidate?TARGET=' # mdb added 12/5/13 - Hackathon
-        #POST => 'https://auth.iplantcollaborative.org/cas/samlValidate?TARGET=' # mdb removed 12/5/13 - Hackathon
+        #POST => 'https://gucumatz.iplantcollaborative.org/cas/samlValidate?TARGET=' # mdb added 12/5/13 - Hackathon1
+        POST => 'https://auth.iplantcollaborative.org/cas/samlValidate?TARGET='
           . $this_url );
     $request_ua->content($request);
     $request_ua->content_type("text/xml; charset=utf-8");
