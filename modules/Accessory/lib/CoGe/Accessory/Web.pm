@@ -629,7 +629,6 @@ sub get_tiny_link {
 #    my $disable_logging = $opts{disable_logging};    # flag
 
     $url =~ s/:::/__/g;
-<<<<<<< HEAD
     my $request_url = "http://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url";
 
 # mdb removed 1/8/14, issue 272
@@ -649,14 +648,6 @@ sub get_tiny_link {
 	else {
 		return "Unable to produce tiny url from server";
 	}
-=======
-    my $tiny = LWP::Simple::get(
-		"http://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url"
-    );
-    unless ($tiny) {
-        return "Unable to produce tiny url from server";
-    }
->>>>>>> hackathon1
 
     # Log the page
 # mdb removed 10/10/13 -- Move logging functionality out of this to fix issue 167
