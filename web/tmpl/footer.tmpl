@@ -19,10 +19,11 @@
 </div>
 
 <script type="text/javascript">
-    function login_cas(){
-        document.location.href='https://auth.iplantcollaborative.org/cas/loginPost?service='+document.location.href;
-        return true;
-    }
+	function login_cas(){
+		document.location.href='https://auth.iplantcollaborative.org/cas/loginPost?service='+document.location.href; // mdb removed 12/5/13 - Hackathon
+		//document.location.href='https://gucumatz.iplantcollaborative.org/cas/loginPost?service='+document.location.href; // mdb added 12/5/13 - for Hackathon1
+		return true;
+	}
 
     $(document).ready(function(){
         if ("<TMPL_VAR NAME=USER>".match(/public/i)) { return; }

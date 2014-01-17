@@ -4,6 +4,7 @@ use Switch;
 use CoGeX;
 use CoGe::Accessory::Web;
 use JSON;
+use URI::Escape qw(uri_escape);
 use Data::Dumper;
 use Sort::Versions;
 use Cwd 'abs_path';
@@ -50,7 +51,7 @@ sub refseq_config {
     {
         push @chromosomes,
           {
-            name         => $chr->chromosome,
+            name         => uri_escape($chr->chromosome), # mdb changed 12/17/13 issue 266
             length       => $chr->sequence_length,
             seqChunkSize => $SEQ_CHUNK_SIZE,
             start        => 0,

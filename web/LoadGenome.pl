@@ -30,7 +30,9 @@ $PAGE_TITLE = 'LoadGenome';
 
 $FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    cgi => $FORM,
+    #cgi => $FORM,
+    url => 'http://coge.iplantcollaborative.org/mbomhoff'.$ENV{REQUEST_URI},
+    ticket => $FORM->param('ticket') || undef,
     page_title => $PAGE_TITLE
 );
 
@@ -408,6 +410,7 @@ sub load_genome {
     my $keep_headers = $opts{keep_headers};
     my $items        = $opts{items};
 
+	print STDERR Dumper \%opts, "\n";
 	print STDERR "load_genome: organism_id=$organism_id name=$name description=$description version=$version type_id=$type_id restricted=$restricted\n";
 
 	# Added EL: 7/8/2013.  Solves the problem when restricted is unchecked.  
@@ -458,7 +461,7 @@ sub load_genome {
     }
     # Setup file-based load script
 	else {
-	    # Verify and decompress files
+	    # Verify and decompress files #TODO move this into scripts/load_genome.pl
 	    my @files;
 	    foreach my $item (@$items) {
 	        my $fullpath = $TEMPDIR . $item->{path};
