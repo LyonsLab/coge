@@ -7,6 +7,7 @@ $(document).ready(function(){
     pageObj.index=0;//Math.floor(Math.random()*20);
 
     var images = new Array(
+    	["Three_minute_load_video.png", "Load a genome into CoGe in 3 minutes", "Current_events#Load_genome.2C_annotation.2C_expression.2C_diversity.2C_and_read-mapping_data_in_3_minutes"],
         ["jbrowse-genome-view.png", "View your data in the new EPIC-CoGe browser built with JBrowse, including annotation, quantitative measurements, SNPs, and RNA-seq alignments!", "EPIC-CoGe"],
         ["500px-SynPlot-Chr1-At-v-Al.png","Syntenic dotplot of Arabidopsis thaliana versus Arabidopsis lyrata with synonymous mutations","Syntenic_comparison_of_Arabidopsis_thaliana_and_Arabidopsis_lyrata"],
         ["GenomeView-MG1655.png", "Visualizing a prophage insertion in E. coli K12 MG1655 by differences in genome structure", "Horizontal_Gene_Transfer"],
@@ -39,7 +40,7 @@ $(document).ready(function(){
         var im = new Image();
         im.src = "./picts/home_page/" + value[0];
         value[0] = im;
-       return value;
+    	return value;
     });
 
     cross_fade("#crossfade", images, 1);
