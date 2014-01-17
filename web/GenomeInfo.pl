@@ -566,51 +566,47 @@ sub export_fasta_irods {
     #print STDERR "export_fasta_irods $gid\n";
 
     my $genome = $coge->resultset('Genome')->find($gid);
-    return 0 unless ($USER->has_access_to_genome($genome));
+	return 0 unless ($USER->has_access_to_genome($genome));
 
-    my $src = $genome->file_path;
-    my $dest = get_irods_path() . "/genome_$gid.faa";
+	my $src = $genome->file_path;
+	my $dest = get_irods_path() . "/genome_$gid.faa";
+	
+	unless ($src and $dest) {
+		print STDERR "GenomeInfo:export_fasta_irods: error, undef src or dest\n";
+		return;
+	}
+	
+	# Send to iPlant Data Store using iput
+	CoGe::Accessory::IRODS::irods_iput($src, $dest);
+	#TODO need to check rc of iput and abort if failure occurred
 
-    unless ($src and $dest) {
-        print STDERR "GenomeInfo:export_fasta_irods: error, undef src or dest\n";
-        return;
-    }
-
-    # Send to iPlant Data Store using iput
-    CoGe::Accessory::IRODS::irods_iput($src, $dest);
-    #TODO need to check rc of iput and abort if failure occurred
-
-    # Set IRODS metadata for object
-    my %meta = (
-            'Imported From' => "CoGe: http://genomevolution.org",
-            'CoGe OrganismView Link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
-            'CoGe GenomeInfo Link'=> "http://genomevolution.org/CoGe/GenomeInfo.pl?gid=".$genome->id,
-            'CoGe Genome ID'   => $genome->id,
-            'Organism Name'    => $genome->organism->name,
-            'Organism Taxonomy'    => $genome->organism->description,
-            'Version'     => $genome->version,
-            'Type'        => $genome->type->info,
-           );
+	# Set IRODS metadata for object #TODO need to change these to use Accessory::IRODS::IRODS_METADATA_PREFIX
+	my %meta = (
+		    'Imported From' => "CoGe: http://genomevolution.org",
+		    'CoGe OrganismView Link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
+		    'CoGe GenomeInfo Link'=> "http://genomevolution.org/CoGe/GenomeInfo.pl?gid=".$genome->id,
+		    'CoGe Genome ID'   => $genome->id,
+		    'Organism Name'    => $genome->organism->name,
+		    'Organism Taxonomy'    => $genome->organism->description,
+		    'Version'     => $genome->version,
+		    'Type'        => $genome->type->info,
+		   );
     my $i = 1;
     my @sources = $genome->source;
-    foreach my $item (@sources)
-      {
-    my $source = $item->name;
-    $source.= ": ".$item->description if $item->description;
-    my $met_name = "Source";
-    $met_name .= $i if scalar @sources > 1;
-    $meta{$met_name}= $source;
-    $meta{$met_name." Link"} = $item->link if $item->link;
-    $i++;
-      }
-
-
-    $meta{'Genome Link'} = $genome->link if ($genome->link);
-    $meta{'Addition Info'} = $genome->message if ($genome->message);
-    $meta{'Genome Name'} = $genome->name if ($genome->name);
-    $meta{'Genome Description'} = $genome->description if ($genome->description);
-
-    CoGe::Accessory::IRODS::irods_imeta($dest, \%meta);
+    foreach my $item (@sources) {
+		my $source = $item->name;
+		$source.= ": ".$item->description if $item->description;
+		my $met_name = "Source";
+		$met_name .= $i if scalar @sources > 1;
+		$meta{$met_name}= $source;
+		$meta{$met_name." Link"} = $item->link if $item->link;
+		$i++;
+	}
+	$meta{'Genome Link'} = $genome->link if ($genome->link);
+	$meta{'Addition Info'} = $genome->message if ($genome->message);
+	$meta{'Genome Name'} = $genome->name if ($genome->name);
+	$meta{'Genome Description'} = $genome->description if ($genome->description);
+	CoGe::Accessory::IRODS::irods_imeta($dest, \%meta);
 }
 
 sub get_irods_path {

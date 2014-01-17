@@ -68,32 +68,45 @@ sub init {
     my $cgi    = $opts{cgi};    # optional CGI object
     my $debug  = $opts{debug};  # optional flag for enabling debugging messages
     my $page_title = $opts{page_title}; # optional page title
+    my $ticket_type = $opts{ticket_type}; #optional ticket type (saml or proxy)
     
     if ($cgi) {
     	$ticket = $cgi->param('ticket') || undef;
     	$url    = $cgi->url;
     }
 
-    #print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . " page_title=" . ($page_title ? $page_title : '') . "\n";
+    print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . " page_title=" . ($page_title ? $page_title : '') . "\n";
 
     # Get config
     $CONF = get_defaults();
 
     # Connec to DB
     my $db = CoGeX->dbconnect($CONF);
-    if ($debug) { #turn on ORM debugging if requested
+    if ($debug) { # enable ORM debugging if requested
 		$db->storage->debugobj(new DBIxProfiler());
 		$db->storage->debug(1);
     }
 
     # Get user
     my $user;
-    ($user) = login_cas(
-    	cookie_name => $CONF->{COOKIE_NAME},
-        ticket   => $ticket,
-        coge     => $db,
-        this_url => $url
-    ) if ($ticket);
+    if ($ticket) {
+    	if (defined $ticket_type and $ticket_type eq 'proxy') { # mdb added 12/10/13 hackathon1
+    		($user) = login_cas_proxy(
+		    	cookie_name => $CONF->{COOKIE_NAME},
+		        ticket   => $ticket,
+		        coge     => $db,
+		        this_url => $url
+		    );
+    	}
+    	else {
+		    ($user) = login_cas_saml(
+		    	cookie_name => $CONF->{COOKIE_NAME},
+		        ticket   => $ticket,
+		        coge     => $db,
+		        this_url => $url
+		    );
+    	}
+    }
     ($user) = CoGe::Accessory::LogUser->get_user(
         cookie_name => $CONF->{COOKIE_NAME},
         coge        => $db
@@ -305,63 +318,54 @@ sub self_or_default {    #from CGI.pm
 sub logout_cas {
     my $self        = shift;
     my %opts        = @_;
-    my $cookie_name = $opts{cookie_name};
+    #my $cookie_name = $opts{cookie_name}; # mdb removed 12/10/13 -- unused?
     my $coge        = $opts{coge};
     my $user        = $opts{user};
-    my $form        = $opts{form};          #CGI form for calling page
+    my $form        = $opts{form}; # CGI form for calling page
     my $url         = $opts{this_url};
-    my $cas_url = 'http://coge.iplantcollaborative.org/coge/';
-    my %cookies = fetch CGI::Cookie;
     $url = $form->url() unless $url;
+    #my $cas_url = 'http://coge.iplantcollaborative.org/coge/'; # mdb removed 12/10/13 -- unused?
+    #my %cookies = fetch CGI::Cookie; # mdb removed 12/10/13 -- unused?
+    print STDERR "Web::logout_cas url=", ($url ? $url : ''), "\n"; 
+    
+    # Delete user session from db
     my $session = md5_base64( $user->user_name . $ENV{REMOTE_ADDR} );
     $session =~ s/\+/1/g;
-    ($session) =
-      $coge->resultset('UserSession')->find( { session => $session } );
+    ($session) = $coge->resultset('UserSession')->find( { session => $session } );
     $session->delete if $session;
-    print "Location: "
-      . $form->redirect(
-            "https://auth.iplantcollaborative.org/cas/logout?service=" 
-          . $url
-          . "&gateway=1" );
+    
+    print "Location: " .
+    	$form->redirect("https://auth.iplantcollaborative.org/cas/logout?service=" . $url . "&gateway=1");
 }
 
-sub login_cas {
+sub login_cas_proxy {
     my ( $self, %opts ) = self_or_default(@_);
     my $cookie_name = $opts{cookie_name};
-    my $ticket      = $opts{ticket};        #cas ticket from iPlant
-    my $this_url    = $opts{this_url};      #not sure what this does
-    my $coge        = $opts{coge};          #coge object
-	#print STDERR "Web::login_cas\n", Dumper \%opts, "\n";
+    my $ticket      = $opts{ticket};        # CAS ticket from iPlant
+    my $this_url    = $opts{this_url};      # URL to tell CAS to redirect to
+    my $coge        = $opts{coge};          # db object
+	print STDERR "Web::login_cas_proxy ticket=$ticket this_url=$this_url\n";
 
-    my $ua = new LWP::UserAgent;
-    my $request =
-        '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">'
-      . '<SOAP-ENV:Header/><SOAP-ENV:Body><samlp:Request xmlns:samlp="urn:oasis:names:tc:SAML:1.0:protocol"  MajorVersion="1" MinorVersion="1" RequestID="_192.168.167.84.1024506224022"  IssueInstant="2010-05-13T16:43:48.099Z"><samlp:AssertionArtifact>'
-      . $ticket
-      . '</samlp:AssertionArtifact></samlp:Request></SOAP-ENV:Body></SOAP-ENV:Envelope>';
+	# https://wiki.jasig.org/display/CAS/Proxy+CAS+Walkthrough
+	#https://foo.bar.com/is/cas/proxyValidate?service=http://localhost/bongo&ticket=PT-957-ZuucXqTZ1YcJw81T3dxf
 
+	my $ua = new LWP::UserAgent;
     my $request_ua =
       HTTP::Request->new(
-        POST => 'https://auth.iplantcollaborative.org/cas/samlValidate?TARGET='
-          . $this_url );
-    $request_ua->content($request);
-    $request_ua->content_type("text/xml; charset=utf-8");
+      	#GET => 'https://gucumatz.iplantcollaborative.org/cas/proxyValidate?service=http://geco.iplantcollaborative.org/**&ticket=' . $ticket );
+      	GET => 'https://gucumatz.iplantcollaborative.org/cas/proxyValidate?service='.$this_url.'&ticket='.$ticket );
+        #POST => 'https://gucumatz.iplantcollaborative.org/cas/samlValidate?TARGET=' # mdb added 12/5/13 - Hackathon
     my $response = $ua->request($request_ua);
     my $result   = $response->content;
-    my $uname;
-    my $fname;
-    my $lname;
-    my $email;
-
+    print STDERR $result, "\n";
+    my ($uname, $fname, $lname, $email);
     if ($result) {
-        ( $uname, $fname, $lname, $email ) = parse_saml_response($result);
+    	( $uname, $fname, $lname, $email ) = parse_proxy_response($result);
     }
-    return unless $uname;    # Not logged in.  Return
+    return unless $uname; # Not logged in
 
-    my $coge_user;
-    ($coge_user) = $coge->resultset('User')->search( { user_name => $uname } );
+    my ($coge_user) = $coge->resultset('User')->search( { user_name => $uname } );
     unless ($coge_user) {
-
         # Create new user
         $coge_user = $coge->resultset('User')->create(
             {
@@ -374,6 +378,7 @@ sub login_cas {
         );    #do we have a valid user in the database, if not create
         $coge_user->insert;
 
+		# Log user creation
         log_history(
             db          => $coge,
             user_id     => $coge_user->id,
@@ -387,14 +392,12 @@ sub login_cas {
     $session =~ s/\+/1/g;
     my $sid = $coge->log_user( user => $coge_user, session => $session );
 
-# mdb added 10/19/12 - FIXME key/secret are hardcoded - wait: this will get replaced by openauth soon
-#$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0; # this doesn't work for bypassing cert check, need line in apache cfg
+	# mdb added 10/19/12 - FIXME key/secret are hardcoded - wait: this will get replaced by openauth soon
+	#$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0; # this doesn't work for bypassing cert check, need line in apache cfg
     $request_ua =
       HTTP::Request->new(
-        POST => 'https://user.iplantcollaborative.org/api/v1/service/coge/add/'
-          . $uname );
-    $request_ua->authorization_basic( '6mv9x9lyts8oje8uj3t6yo',
-        'f59ba33ee35d363ffefd8b27b375e587b0e5c7a1' );
+        POST => 'https://user.iplantcollaborative.org/api/v1/service/coge/add/' . $uname );
+    $request_ua->authorization_basic( '6mv9x9lyts8oje8uj3t6yo', 'f59ba33ee35d363ffefd8b27b375e587b0e5c7a1' );
 
     #print STDERR "request uri: " . $request_ua->uri . "\n";
     #$request_ua->content($request);
@@ -402,11 +405,10 @@ sub login_cas {
     $response = $ua->request($request_ua);
 
     #if ($response->is_success()) {
-    #print STDERR "status_line: " . $response->status_line() . "\n";
-    #my $header = $response->header;
-    $result = $response->content;
-
-    #print STDERR "content: <begin>$result<end>\n";
+	    #print STDERR "status_line: " . $response->status_line() . "\n";
+	    #my $header = $response->header;
+	    $result = $response->content;
+	    #print STDERR "content: <begin>$result<end>\n";
     #}
     #else {
     #	print STDERR "bad response\n";
@@ -423,41 +425,168 @@ sub login_cas {
     return $coge_user;
 }
 
+sub parse_proxy_response {
+	my $response = shift;
+	
+	if ($response =~ /authenticationSuccess/) {
+		my ($user_name) = $response =~ /\<cas\:user\>(\w+)\<\/cas\:user\>/;
+		my ($first_name) = $response =~ /\<cas\:firstName\>(\w+)\<\/cas\:firstName\>/;
+		my ($last_name) = $response =~ /\<cas\:lastName\>(\w+)\<\/cas\:lastName\>/;
+		my ($email) = $response =~ /\<cas\:email\>(\w+)\<\/cas\:email\>/;
+		print STDERR "parse_reset_response: $user_name $first_name $last_name $email\n";
+		return ($user_name, $first_name, $last_name, $email);
+	}
+	
+	return;
+}
+
+sub login_cas_saml {
+    my ( $self, %opts ) = self_or_default(@_);
+    my $cookie_name = $opts{cookie_name};
+    my $ticket      = $opts{ticket};        # CAS ticket from iPlant
+    my $this_url    = $opts{this_url};      # URL to tell CAS to redirect to
+    my $coge        = $opts{coge};          # db object
+	print STDERR "Web::login_cas_saml ticket=$ticket this_url=$this_url\n";
+
+    my $ua = new LWP::UserAgent;
+    my $request =
+        '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">'
+      . '<SOAP-ENV:Header/><SOAP-ENV:Body><samlp:Request xmlns:samlp="urn:oasis:names:tc:SAML:1.0:protocol"  MajorVersion="1" MinorVersion="1" RequestID="_192.168.167.84.1024506224022"  IssueInstant="2010-05-13T16:43:48.099Z"><samlp:AssertionArtifact>'
+      . $ticket
+      . '</samlp:AssertionArtifact></samlp:Request></SOAP-ENV:Body></SOAP-ENV:Envelope>';
+
+    my $request_ua =
+      HTTP::Request->new(
+        POST => 'https://gucumatz.iplantcollaborative.org/cas/samlValidate?TARGET=' # mdb added 12/5/13 - Hackathon
+        #POST => 'https://auth.iplantcollaborative.org/cas/samlValidate?TARGET=' # mdb removed 12/5/13 - Hackathon
+          . $this_url );
+    $request_ua->content($request);
+    $request_ua->content_type("text/xml; charset=utf-8");
+    my $response = $ua->request($request_ua);
+    my $result   = $response->content;
+    print STDERR $result, "\n";
+    my ($uname, $fname, $lname, $email);
+    if ($result) {
+        ( $uname, $fname, $lname, $email ) = parse_saml_response($result);
+    }
+    return unless $uname; # Not logged in
+
+    my ($coge_user) = $coge->resultset('User')->search( { user_name => $uname } );
+    unless ($coge_user) {
+        # Create new user
+        $coge_user = $coge->resultset('User')->create(
+            {
+                user_name   => $uname,
+                first_name  => $fname,
+                last_name   => $lname,
+                email       => $email,
+                description => "Validated by iPlant"
+            }
+        );    #do we have a valid user in the database, if not create
+        $coge_user->insert;
+
+		# Log user creation
+        log_history(
+            db          => $coge,
+            user_id     => $coge_user->id,
+            page        => 'Web.pm',
+            description => 'create user',
+        );
+    }
+
+    #create a session ID for the user and log
+    my $session = md5_base64( $uname . $ENV{REMOTE_ADDR} );
+    $session =~ s/\+/1/g;
+    my $sid = $coge->log_user( user => $coge_user, session => $session );
+
+	# mdb added 10/19/12 - FIXME key/secret are hardcoded - wait: this will get replaced by openauth soon
+	#$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0; # this doesn't work for bypassing cert check, need line in apache cfg
+    $request_ua =
+      HTTP::Request->new(
+        POST => 'https://user.iplantcollaborative.org/api/v1/service/coge/add/'
+          . $uname );
+    $request_ua->authorization_basic( '6mv9x9lyts8oje8uj3t6yo', 'f59ba33ee35d363ffefd8b27b375e587b0e5c7a1' );
+
+    #print STDERR "request uri: " . $request_ua->uri . "\n";
+    #$request_ua->content($request);
+    $request_ua->content_type("text/xml; charset=utf-8");
+    $response = $ua->request($request_ua);
+
+    #if ($response->is_success()) {
+	    #print STDERR "status_line: " . $response->status_line() . "\n";
+	    #my $header = $response->header;
+	    $result = $response->content;
+	    #print STDERR "content: <begin>$result<end>\n";
+    #}
+    #else {
+    #	print STDERR "bad response\n";
+    #}
+
+    #gen and set the web cookie, yum!
+    my $c = CoGe::Accessory::LogUser->gen_cookie(
+        session     => $session,
+        cookie_name => $cookie_name,
+    );
+
+#    print STDERR "login_cas:  gen_cookie " . (Dumper $c) . "\n";
+    print CGI::header( -cookie => [$c] );
+    return $coge_user;
+}
+
+# mdb removed 12/5/13 - Hackathon
+#sub parse_saml_response {
+#    my $response = $_[0];
+#
+#	# mdb modified 4/4/13 for iPlant CAS update - XML::Simple doesn't support namespaces
+#    if ( $response =~ m/saml1p:Success/ ) {
+#        my $ref = XMLin($response);
+#        print STDERR Dumper $ref, "\n";
+#        my ($user_id) =
+#          $ref->{'SOAP-ENV:Body'}->{'saml1p:Response'}->{'saml1:Assertion'}
+#          ->{'saml1:AttributeStatement'}->{'saml1:Subject'}
+#          ->{'saml1:NameIdentifier'};
+#        my @tmp =
+#          @{ $ref->{'SOAP-ENV:Body'}->{'saml1p:Response'}->{'saml1:Assertion'}
+#              ->{'saml1:AttributeStatement'}->{'saml1:Attribute'} };
+#        my %attr =
+#          map { $_->{'AttributeName'}, $_->{'saml1:AttributeValue'} }
+#          @{ $ref->{'SOAP-ENV:Body'}->{'saml1p:Response'}->{'saml1:Assertion'}
+#              ->{'saml1:AttributeStatement'}->{'saml1:Attribute'} };
+#        my ($user_lname) = $attr{lastName}->{content};
+#        my ($user_fname) = $attr{firstName}->{content};
+#        my ($user_email) = $attr{email}->{content};
+#
+#		print STDERR "parse_saml_response: ".$user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email."\n";
+#        return ( $user_id, $user_fname, $user_lname, $user_email );
+#    }
+#}
+
+# mdb added 12/5/13 - Hackathon
 sub parse_saml_response {
     my $response = $_[0];
 
 	# mdb modified 4/4/13 for iPlant CAS update - XML::Simple doesn't support namespaces
-    if ( $response =~ m/saml1p:Success/ ) {
+    if ( $response =~ m/saml1?p:Success/ ) {
         my $ref = XMLin($response);
+        print STDERR Dumper $ref, "\n";
         my ($user_id) =
-          $ref->{'SOAP-ENV:Body'}->{'saml1p:Response'}->{'saml1:Assertion'}
-          ->{'saml1:AttributeStatement'}->{'saml1:Subject'}
-          ->{'saml1:NameIdentifier'};
+          $ref->{'SOAP-ENV:Body'}->{'Response'}->{'Assertion'}
+          ->{'AttributeStatement'}->{'Subject'}
+          ->{'NameIdentifier'};
         my @tmp =
-          @{ $ref->{'SOAP-ENV:Body'}->{'saml1p:Response'}->{'saml1:Assertion'}
-              ->{'saml1:AttributeStatement'}->{'saml1:Attribute'} };
+          @{ $ref->{'SOAP-ENV:Body'}->{'Response'}->{'Assertion'}
+              ->{'AttributeStatement'}->{'Attribute'} };
         my %attr =
-          map { $_->{'AttributeName'}, $_->{'saml1:AttributeValue'} }
-          @{ $ref->{'SOAP-ENV:Body'}->{'saml1p:Response'}->{'saml1:Assertion'}
-              ->{'saml1:AttributeStatement'}->{'saml1:Attribute'} };
-        my ($user_lname) = $attr{lastName}->{content};
-        my ($user_fname) = $attr{firstName}->{content};
-        my ($user_email) = $attr{email}->{content};
+          map { $_->{'AttributeName'}, $_->{'AttributeValue'} }
+          @{ $ref->{'SOAP-ENV:Body'}->{'Response'}->{'Assertion'}
+              ->{'AttributeStatement'}->{'Attribute'} };
+        my ($user_lname) = $attr{lastName};
+        my ($user_fname) = $attr{firstName};
+        my ($user_email) = $attr{email};
 
-		#print STDERR "parse_saml_response: ".$user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email."\n";
+		print STDERR "parse_saml_response: ".$user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email."\n";
         return ( $user_id, $user_fname, $user_lname, $user_email );
     }
-}
-
-sub login {    # FIXME mdb 9/21/12 - what is this?
-    my %opts  = @_;
-    my $coge  = $opts{coge};
-    my $uname = $opts{uname};
-    my $fname = $opts{fname};
-    my $lname = $opts{lname};
-    my $email = $opts{email};
-    my $url   = $opts{url};
-
 }
 
 sub ajax_func {
@@ -500,6 +629,7 @@ sub get_tiny_link {
 #    my $disable_logging = $opts{disable_logging};    # flag
 
     $url =~ s/:::/__/g;
+<<<<<<< HEAD
     my $request_url = "http://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url";
 
 # mdb removed 1/8/14, issue 272
@@ -519,6 +649,14 @@ sub get_tiny_link {
 	else {
 		return "Unable to produce tiny url from server";
 	}
+=======
+    my $tiny = LWP::Simple::get(
+		"http://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url"
+    );
+    unless ($tiny) {
+        return "Unable to produce tiny url from server";
+    }
+>>>>>>> hackathon1
 
     # Log the page
 # mdb removed 10/10/13 -- Move logging functionality out of this to fix issue 167

@@ -123,7 +123,7 @@ sub irods_iget {
     return unless $env_file;
 
     my $cmd = "export irodsEnvFile='$env_file'; iget -fT $src $dest";
-    #print STDERR "cmd: $cmd\n";
+    print STDERR "cmd: $cmd\n";
     my @result = `$cmd`;
     #print STDERR "@result";
 
@@ -160,7 +160,7 @@ sub irods_imeta {
 		}
 		
 	    my $cmd = "export irodsEnvFile='$env_file'; imeta add -d '" . $dest . "' '" . $k . "' '" . $v . "'";
-	    #print STDERR "cmd: $cmd\n";
+	    print STDERR "cmd: $cmd\n";
 	    my @result = `$cmd`;
 	    #print STDERR "@result";
 	}

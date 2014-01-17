@@ -5,7 +5,7 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Storage qw( index_genome_file get_tiered_path );
 use CoGe::Accessory::Utils qw( commify units print_fasta );
-use Roman;
+use CoGe::Accessory::IRODS qw( irods_imeta $IRODS_METADATA_PREFIX );
 use Data::Dumper;
 use Getopt::Long;
 use File::Path;
@@ -13,22 +13,23 @@ use URI::Escape::JavaScript qw(unescape);
 use POSIX qw(ceil);
 use Benchmark;
 
-use vars qw($staging_dir $install_dir $fasta_files
+use vars qw($staging_dir $install_dir $fasta_files $irods_files
   $name $description $link $version $type_id $restricted $message
   $organism_id $source_id $source_name $source_desc $user_id $user_name 
   $keep_headers $split $compress
   $host $port $db $user $pass $config
   $P $MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE $MAX_CHR_NAME_LENGTH );
 
-$MAX_CHROMOSOMES = 200000;    # max number of chromosomes or contigs
-$MAX_PRINT       = 5;
+$MAX_CHROMOSOMES     = 200000;    # max number of chromosomes or contigs
+$MAX_PRINT           = 5;
 $MAX_SEQUENCE_SIZE   = 5 * 1024 * 1024 * 1024;    # 5 gig
 $MAX_CHR_NAME_LENGTH = 255;
 
 GetOptions(
     "staging_dir=s" => \$staging_dir,
-    "install_dir=s" => \$install_dir,    # optional
-    "fasta_files=s" => \$fasta_files,    # comma-separated list (JS escaped)
+    "install_dir=s" => \$install_dir,    # optional, for debug
+    "fasta_files=s" => \$fasta_files,    # comma-separated list (JS escaped) of files to load
+    "irods_files=s" => \$irods_files,    # optional comma-separated list (JS escaped) of files to set metadata
     "name=s"        => \$name,           # genome name (JS escaped)
     "desc=s"        => \$description,    # genome description (JS escaped)
     "message=s"		=> \$message,		 # message (JS escaped)
@@ -69,6 +70,7 @@ print $log "Starting $0 (pid $$)\n";
 
 # Process and verify parameters
 $fasta_files = unescape($fasta_files) if ($fasta_files);
+$irods_files = unescape($irods_files) if ($irods_files);
 $name        = unescape($name) if ($name);
 $description = unescape($description) if ($description);
 $link        = unescape($link) if ($link);
@@ -290,7 +292,8 @@ foreach my $chr ( sort keys %sequences ) {
     $genome->add_to_genomic_sequences(
         { sequence_length => $seqlen, chromosome => $chr } );
 
-# Must add a feature of type chromosome to the dataset so the dataset "knows" its chromosomes
+	# Must add a feature of type chromosome to the dataset so the dataset 
+	# "knows" its chromosomes
     my $feat_type =
       $coge->resultset('FeatureType')
       ->find_or_create( { name => 'chromosome' } );
@@ -320,7 +323,8 @@ foreach my $chr ( sort keys %sequences ) {
     );
 }
 
-print $log "log: Added genome id" . $genome->id . "\n";    # !!!! don't change, gets parsed by calling code
+# !!!! Don't change line below, gets parsed by calling code !!!!
+print $log "log: Added genome id" . $genome->id . "\n";
 
 # Copy files from staging directory to installation directory
 my $t1 = new Benchmark;
@@ -340,7 +344,7 @@ if ($split) {
 # mdb changed 7/31/13, issue 77 - keep filename as "genome.faa" instead of "<gid>.faa"
 #my $genome_filename = $genome->id . ".faa";
 #execute( "cp $staging_dir/genome.faa $install_dir/$genome_filename" );
-execute("cp $staging_dir/genome.faa $install_dir/");
+execute("cp $staging_dir/genome.faa $install_dir/"); #FIXME use perl copy and detect failure
 execute("cp $staging_dir/genome.faa.fai $install_dir/");
 if ($compress) {
     execute("cp $staging_dir/genome.faa.razf $install_dir/");
@@ -360,16 +364,26 @@ print $log "log: "
   . " sequences loaded totaling "
   . commify($seqLength) . " nt\n";
 
+# Update IRODS metadata
+if ($irods_files) {
+	my @irods = split( ',', $irods_files );
+	my %metadata = (
+		$IRODS_METADATA_PREFIX.'link' => $P->{SERVER} . 'GenomeInfo.pl?gid=' . $genome->id
+		#TODO need to add fields that match GenomeInfo.pl
+	);
+	foreach my $file (@irods) {
+		CoGe::Accessory::IRODS::irods_imeta($file, \%metadata);
+	}
+}
+
+# Finish logging and copy log file into installation directory
 my $t2 = new Benchmark;
 my $time = timestr( timediff( $t2, $t1 ) );
 print $log "Took $time to copy\n";
-# This message required to end load on client
+# !!!! Don't change line below, parsed by calling code to determine completion
 print $log "log: Finished loading genome!\n";
-
 close($log);
-
-# Copy log file from staging directory to installation directory
-`cp $staging_dir/log.txt $install_dir/`;
+`cp $staging_dir/log.txt $install_dir/`; #FIXME use perl copy and detect failure
 
 exit;
 
@@ -392,6 +406,10 @@ sub process_fasta_file {
         my ( $name, $seq ) = split /\n/, $_, 2;
         $seq =~ s/\n//g;
         $seq =~ s/\r//g; # mdb added 11/22/13 issue 255 - remove Windows-style CRLF
+        $seq =~ s/\s+$//; # mdb added 12/17/13 issue 267 - trim trailing whitespace
+        # Note: not removing spaces from within sequence because sometimes spaces are
+        # used ambiguously to indicate gaps.  We will be strict and force error 
+        # if spaces are present.
         $lineNum++;
 
         my $chr;
@@ -409,12 +427,12 @@ sub process_fasta_file {
             $chr =~ s/\s+/ /;
             $chr =~ s/^\s//;
             $chr =~ s/\s$//;
+            $chr =~ s/\//_/; # mdb added 12/17/13 issue 266 - replace '/' with '_'
         }
 
         # Check validity of chr name and sequence
         if ( not defined $chr ) {
-            print $log
-"log: error parsing section header, line $lineNum, name='$name'\n";
+            print $log "log: error parsing section header, line $lineNum, name='$name'\n";
             exit(-1);
         }
         if ( length $seq == 0 ) {
@@ -422,8 +440,7 @@ sub process_fasta_file {
             next;
         }
         if ( length($chr) > $MAX_CHR_NAME_LENGTH ) {
-            print $log
-"log: error: section header name '$chr' is too long (>$MAX_CHR_NAME_LENGTH characters)\n";
+            print $log "log: error: section header name '$chr' is too long (>$MAX_CHR_NAME_LENGTH characters)\n";
             exit(-1);
         }
         if ( defined $pSeq->{$chr} ) {
@@ -431,8 +448,7 @@ sub process_fasta_file {
             exit(-1);
         }
         if ( $seq =~ /\W/ ) {
-            print $log
-"log: error: sequence on line $lineNum contains non-alphanumeric characters, perhaps this is not a FASTA file?\n";
+            print $log "log: error: sequence on line $lineNum contains non-alphanumeric characters, perhaps this is not a FASTA file?\n";
             exit(-1);
         }
 
