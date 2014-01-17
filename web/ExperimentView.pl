@@ -108,9 +108,8 @@ sub update_experiment_info {
 }
 
 sub get_sources {
-
     #my %opts = @_;
-
+    
     my @sources;
     foreach ( $coge->resultset('DataSource')->all() ) {
         push @sources, { 'label' => $_->name, 'value' => $_->id };
@@ -123,8 +122,7 @@ sub make_experiment_public {
     my %opts = @_;
     my $eid  = $opts{eid};
     return "No EID specified" unless $eid;
-
-#return "Permission denied." unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
+	#return "Permission denied." unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
 
     my $exp = $coge->resultset('Experiment')->find($eid);
     $exp->restricted(0);
@@ -137,8 +135,8 @@ sub make_experiment_private {
     my %opts = @_;
     my $eid  = $opts{eid};
     return "No EID specified" unless $eid;
-
-#return "Permission denied." unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
+	#return "Permission denied." unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
+	
     my $exp = $coge->resultset('Experiment')->find($eid);
     $exp->restricted(1);
     $exp->update;
@@ -162,19 +160,15 @@ sub add_type_to_experiment {
     return 0 unless $name;
     my $description = $opts{description};
 
-    my $type =
-      $coge->resultset('ExperimentType')
-      ->find( { name => $name, description => $description } );
+    my $type = $coge->resultset('ExperimentType')->find( { name => $name, description => $description } );
 
     if ($type) {
-
         # If type exists, check if already assigned to this experiment
         foreach ( $type->experiment_type_connectors ) {
             return 1 if ( $_->experiment_id == $eid );
         }
     }
     else {
-
         # Create type if it doesn't already exist
         $type =
           $coge->resultset('ExperimentType')
@@ -193,7 +187,6 @@ sub add_type_to_experiment {
 }
 
 sub get_experiment_types {
-
     #my %opts = @_;
 
     my %unique;
@@ -226,8 +219,7 @@ sub remove_experiment_type {
     return "No experiment ID specified" unless $eid;
     my $etid = $opts{etid};
     return "No experiment type ID specified" unless $etid;
-
-#return "Permission denied" unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
+	#return "Permission denied" unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
 
     my $etc =
       $coge->resultset('ExperimentTypeConnector')
@@ -260,14 +252,12 @@ sub get_annotations {
     }
     return unless ( $num_annot or $user_can_edit );
 
-    my $html =
-'<table id="experiment_annotation_table" class="ui-widget-content ui-corner-all small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
+    my $html = '<table id="experiment_annotation_table" class="ui-widget-content ui-corner-all small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
     foreach my $group ( sort keys %groups ) {
         my $first = 1;
         foreach my $a ( sort { $a->id <=> $b->id } @{ $groups{$group} } ) {
             $html .= "<tr style='vertical-align:top;'>";
-            $html .=
-"<th align='right' class='title5' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;' rowspan="
+            $html .= "<th align='right' class='title5' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;' rowspan="
               . @{ $groups{$group} }
               . ">$group:</th>"
               if ( $first-- > 0 );
@@ -280,10 +270,8 @@ sub get_annotations {
                 ? "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='float:left;padding:1px;border:1px solid lightgray;margin-right:5px;'></a>"
                 : ''
             );
-
             #$html .= $image_info if $image_info;
             #$html .= "</td>";
-
             $html .= "<td class='data5'>" . $image_info . $a->info . '</td>';
             $html .= '<td style="padding-left:5px;">';
             $html .= linkify( $a->link, 'Link' ) if $a->link;
@@ -302,8 +290,7 @@ sub get_annotations {
     $html .= '</tbody></table>';
 
     if ($user_can_edit) {
-        $html .=
-qq{<span onClick="add_annotation_dialog();" style="font-size: .75em" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add Annotation</span>};
+        $html .= qq{<span onClick="add_annotation_dialog();" style="font-size: .75em" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add Annotation</span>};
     }
 
     return $html;
@@ -464,7 +451,7 @@ sub export_experiment_irods {
     my $eid = $opts{eid};
 
     my $experiment = $coge->resultset('Experiment')->find($eid);
-    return 0 unless $USER->has_access_to_experiment($experiment);
+    return unless $USER->has_access_to_experiment($experiment);
 
     my $dir = get_irods_path();
 
@@ -490,22 +477,27 @@ sub export_experiment_irods {
         $i++;
     }
 
+	my $dest_filename;
     if($experiment->data_type == 3) {
         my $srcdir = $experiment->storage_path;
-        my $base = "experiment_$eid";
+        $dest_filename = "experiment_$eid.bam";
 
         my $src_bam = File::Spec->catdir(($srcdir, "alignment.bam"));
-        my $dest_bam = File::Spec->catdir(($dir, "$base.bam"));
+        my $dest_bam = File::Spec->catdir(($dir, $dest_filename));
         CoGe::Accessory::IRODS::irods_iput($src_bam, $dest_bam);
         CoGe::Accessory::IRODS::irods_imeta($dest_bam, \%meta);
 
         my $src_index = File::Spec->catdir(($srcdir, "alignment.bam.bai"));
-        my $dest_index = File::Spec->catdir(($dir, "$base.bam.bai"));
+        my $dest_index = File::Spec->catdir(($dir, "$dest_filename.bai"));
         CoGe::Accessory::IRODS::irods_iput($src_index, $dest_index);
         CoGe::Accessory::IRODS::irods_imeta($dest_index, \%meta);
-    } else {
+        
+        return $dest_filename;
+    } 
+    else {
         my $files = $experiment->storage_path;
-        my $archive = File::Spec->catdir(($P->{TEMPDIR}, $PAGE_TITLE, "experiment_$eid.tar.gz"));
+        $dest_filename = "experiment_$eid.tar.gz";
+        my $archive = File::Spec->catdir(($P->{TEMPDIR}, $PAGE_TITLE, $dest_filename));
         my $dest = File::Spec->catdir(($dir, basename($archive)));
 
         my $cmd = "tar -czf $archive --exclude=log.txt --directory $files .";
@@ -513,7 +505,11 @@ sub export_experiment_irods {
 
         CoGe::Accessory::IRODS::irods_iput($archive, $dest);
         CoGe::Accessory::IRODS::irods_imeta($dest, \%meta);
+        
+        return $dest_filename;
     }
+    
+    return $dest_filename;
 }
 
 sub get_file_urls {
@@ -655,7 +651,7 @@ sub gen_body {
         EID                    => $eid,
         DEFAULT_TYPE           => 'note',
         rows                   => commify($exp->row_count),
-        irods_home             => get_irods_path(),
+        IRODS_HOME             => get_irods_path(),
         link                   => "GenomeView.pl?gid=$gid&tracks=experiment$eid"
     );
 
