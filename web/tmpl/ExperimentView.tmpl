@@ -1,5 +1,5 @@
 <TMPL_IF NAME="MAIN">
-<script src="./js/coge/exporter.js"></script>
+<script src="./js/coge/utils.js"></script>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
@@ -17,8 +17,8 @@ $(document).ready(function() {
     });
 
     $(".dialog_box").dialog({autoOpen: 0, width: 450});
-    
-    $("#export_dialog").dialog({modal: true});
+
+    $("#experiment_dialog").dialog({modal: true});
 
     $("#edit_type_name").autocomplete({
         source: function() { get_experiment_types(); },
@@ -32,21 +32,6 @@ $(document).ready(function() {
 
 function set_annotation_table() {
     $('#experiment_annotation_table').tablesorter({widgets: ['zebra']});
-}
-
-function download_files() {
-    var success = $.ajax({
-        url: "<tmpl_var name=PAGE_NAME>",
-        dataType: "json",
-        data: {
-            fname: "get_file_urls",
-            eid: <tmpl_var name="eid">,
-        },
-        success: function(json) {
-            console.log(json.files);
-            json.files.forEach(window.open);
-        }
-    })
 }
 
 function get_experiment_info() {
@@ -186,21 +171,95 @@ function add_type_to_experiment () {
     else { alert ('Error: Must have type name specified!');}
 }
 
+function download_files() {
+    /*
+    var menu = coge.progress()
+        .title("Preparing Download")
+        .data("The download is being generated")
+        .status({ message: "Please wait...", button: false})
+        .show();
+
+    $.ajax({
+        url: "<tmpl_var name=PAGE_NAME>",
+        dataType: "json",
+        data: {
+            fname: "get_file_urls",
+            eid: <tmpl_var name="eid">,
+        },
+        success: function(json) {
+            if (json.files) {
+                menu.button("Download").status({
+                    message: "Finished",
+                    state: "complete",
+                    button: true
+                });
+
+                menu.element().on("dialogclose", function(ui, event) {
+                    json.files.forEach(coge.utils.open);
+                });
+            }
+        }
+    });
+    */
+    $("#experiment_dialog").dialog("option", "title", "Preparing Download");
+
+    // Prevent concurrent executions
+    if ( $("#experiment_dialog").dialog( "isOpen" ) )
+        return;
+
+    // Make sure user is still logged-in
+    if (!check_and_report_login())
+        return;
+
+    // Open status dialog right away
+    $('#experiment_dialog').dialog('open');
+    $('#export_log').html(
+            "<br>The download is being generated<br><br>"
+    );
+
+    $.ajax({
+        data: {
+            fname: "get_file_urls",
+            eid: '<TMPL_VAR NAME=EID>'
+        },
+        dataType: "json",
+        success : function(json) {
+            if (json.files) {  // finished successfully
+                $('#loading_msg').hide();
+                $('#finished_msg').fadeIn();
+                $('#ok_button').html("Download").fadeIn();
+
+                $("#experiment_dialog").on("dialogclose", function(ui, event) {
+                    json.files.forEach(coge.utils.open);
+                });
+            }
+            else { // error occurred
+                $('#loading_msg').hide();
+                $('#finished_msg').hide();
+                $('#error_msg').fadeIn();
+                $('#ok_button').fadeIn();
+            }
+        }
+    });
+}
+
 function export_data() {
-	// Prevent concurrent executions
-	if ( $("#export_dialog").dialog( "isOpen" ) )
-		return;
-	
-	// Make sure user is still logged-in
-	if (!check_and_report_login())
-		return;
-	
-	// Open status dialog right away
-	$('#export_dialog').dialog('open');
-	$('#export_log').html(
-			"<br>Copying this experiment's data files to <br><br>" +
-			'<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
-	);
+    // Prevent concurrent executions
+    if ( $("#experiment_dialog").dialog( "isOpen" ) )
+        return;
+
+    // Make sure user is still logged-in
+    if (!check_and_report_login())
+        return;
+
+    // Open status dialog right away
+    $('#experiment_dialog').dialog('open');
+    $('#export_log').html(
+            "<br>Copying this experiment's data files to <br><br>" +
+            '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
+    );
+
+    $("#experiment_dialog").dialog("option", "title", "Exporting ...");
 
     $.ajax({
         data: {
@@ -208,20 +267,60 @@ function export_data() {
             eid: '<TMPL_VAR NAME=EID>'
         },
         success : function(filename) {
-			if (filename) {  // finished successfully
-				$('#loading_msg').hide();
-				$('#finished_msg').fadeIn();
-				$('#ok_button').fadeIn();
-				$('#export_log').append('<br><br>File: ' + filename);
-			}
-			else { // error occurred
-				$('#loading_msg').hide();
-				$('#finished_msg').hide();
-				$('#error_msg').fadeIn();
-				$('#ok_button').fadeIn();
-			}
+            if (filename) {  // finished successfully
+                $('#loading_msg').hide();
+                $('#finished_msg').fadeIn();
+                $('#ok_button').html("OK").fadeIn();
+                $('#export_log').append('<br><br>File: ' + filename);
+            }
+            else { // error occurred
+                $('#loading_msg').hide();
+                $('#finished_msg').hide();
+                $('#error_msg').fadeIn();
+                $('#ok_button').fadeIn();
+            }
         }
     });
+    /*
+    var menu = coge.progress()
+        .title("Exporting")
+        .button("Close")
+        .data($("#progress_info").html())
+        .status({
+            message: "Please wait..."
+        })
+        .show();
+
+    $.ajax({
+        data:  {
+            fname: "export_experiment_irods",
+            eid: "<tmpl_var name=eid>"
+        },
+        dataType: "json",
+        success: function(json) {
+            if (json.error) {
+                menu.status({
+                    message: "Failed",
+                    state: "error",
+                    delay: true,
+                    button: true
+                });
+            } else {
+                menu.status({
+                    message: "Finished",
+                    state: "complete",
+                    delay: true,
+                    link: {
+                        message: "Go to iPlant Data Store",
+                        href: "http://preview.iplantcollaborative.org/de/?type=data"
+                    },
+                    button: true
+                })
+            }
+        }
+    });
+
+    */
 }
 
 function check_login() {
@@ -366,14 +465,14 @@ function get_type_description (name) {
   <span onClick="add_type_to_experiment();" class='ui-button ui-corner-all'>Add</span>
 </div>
 
-<div id="export_dialog" class="hidden dialog_box" title="Exporting ...">
-	<div id="export_log" class="ui-widget-content ui-corner-all" style="text-align:center;overflow-y:auto;width:415px;height:200px;color:dimgray;">
-	</div>
-	<br>
-	<span id="loading_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
-	<span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
-	<span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
-	<span id="ok_button" onClick="$('#export_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all">OK</span>
+<div id="experiment_dialog" class="hidden dialog_box" title="Exporting ...">
+    <div id="export_log" class="ui-widget-content ui-corner-all" style="text-align:center;overflow-y:auto;width:415px;height:200px;color:dimgray;">
+    </div>
+    <br>
+    <span id="loading_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
+    <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
+    <span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
+    <span id="ok_button" onClick="$('#experiment_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all">OK</span>
 </div>
 
 <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'> <!-- Add/Edit Annotation Dialog -->
@@ -423,3 +522,13 @@ $(function() {
 <br>
 <span onClick="update_experiment_info();" class='ui-button ui-corner-all'>Update</span>
 </TMPL_IF>
+
+<!--
+<div id="progress_info" class="hidden info" style="padding:20px;" title="Exporting to iPlant Data Store" align='center'>
+    <span>Copying this experiment's data files to</span>
+    <br><br>
+    <a href="http://data.iplantcollaborative.org/" target=_new style="font-weight:bold">
+        <tmpl_var name=irods_home>
+    </a>
+</div>
+-->
