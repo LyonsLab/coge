@@ -16,33 +16,11 @@ $(document).ready(function() {
         cache: false,
     });
 
-    $(".dialog_box").dialog({
-        autoOpen: false,
-        width: 500,
-        position: {
-            my: "left",
-            at: "bottom",
-            of: $("#genome_data")
-        }
-    });
+    $(".dialog_box").dialog({ autoOpen: false, width: 500 });
 
     $("#copy_dialog").dialog({modal: true});
-
-    $("#export_irods_dialog").dialog({
-        show: {
-            effect: "fade",
-            duration: 2000,
-        },
-        hide: {
-            effect: "fade",
-            duration: 1000,
-        },
-        position: {
-            my: "center top",
-            at: "center bottom",
-            of: $("#genome_data")
-        }
-    });
+    
+    $("#export_dialog").dialog({modal: true});
 
     set_annotation_table();
 
@@ -329,11 +307,20 @@ function export_gff() {
             nu = +$('#name_unique')[0].checked,
             upa = +$('#upa')[0].checked;
 
-        var height = $('#copy_log')[0].scrollHeight;
-        $("#copy_log").animate({ scrollTop: height}, 500);
-
-        var title = $("<h4>Exporting gff file to iPlant Data Store</h4>");
-        var startTime = new Date().getTime();
+    	// Prevent concurrent executions
+    	if ( $("#export_dialog").dialog( "isOpen" ) )
+    		return;
+    	
+    	// Make sure user is still logged-in
+    	if (!check_and_report_login())
+    		return;
+    	
+    	// Open status dialog right away
+    	$('#export_dialog').dialog('open');
+    	$('#export_log').html(
+    			"<br>Copying this genomes's FASTA file to <br><br>" +
+    			'<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
+    	);
 
         $("#export_irods_dialog")
             .html(title)
@@ -369,16 +356,20 @@ function export_gff() {
 }
 
 function export_tbl() {
-    var title = $("<h4>Generating tbl file.</h4>");
-    var startTime = new Date().getTime();
-
-    $("#export_irods_dialog")
-        .html(title)
-        .append(irods_home)
-        .append(message)
-        .append(note)
-        .unbind()
-        .dialog({ title: "Exporting file", autoOpen: true});
+	// Prevent concurrent executions
+	if ( $("#export_dialog").dialog( "isOpen" ) )
+		return;
+	
+	// Make sure user is still logged-in
+	if (!check_and_report_login())
+		return;
+	
+	// Open status dialog right away
+	$('#export_dialog').dialog('open');
+	$('#export_log').html(
+			"<br>Copying this genomes's FASTA file to <br><br>" +
+			'<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
+	);
 
     $.ajax({
         dataType: "json",
@@ -400,17 +391,20 @@ function export_tbl() {
 }
 
 function export_bed() {
-    var title = $("<h4>Generating bed file.</h4>");
-
-    $("#export_irods_dialog")
-        .html(title)
-        .append(irods_home)
-        .append(message)
-        .append(note)
-        .unbind()
-        .dialog({ title: "Exporting file", autoOpen: true});
-
-    var startTime = new Date().getTime();
+	// Prevent concurrent executions
+	if ( $("#export_dialog").dialog( "isOpen" ) )
+		return;
+	
+	// Make sure user is still logged-in
+	if (!check_and_report_login())
+		return;
+	
+	// Open status dialog right away
+	$('#export_dialog').dialog('open');
+	$('#export_log').html(
+			"<br>Generating/copying this genomes's FASTA file to <br><br>" +
+			'<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
+	);
 
     $.ajax({
         dataType: "json",
@@ -432,29 +426,39 @@ function export_bed() {
 }
 
 function export_fasta_irods() {
-    // Make sure user is still logged-in
-    check_and_report_login();
-
-    // Show status dialog
-    $('#export_irods_dialog')
-        .html("Copying this genome's FASTA sequence file to<br><br>"+
-                '<a href="http://data.iplantcollaborative.org/" target=_new style="font-weight:bold"><TMPL_VAR NAME=IRODS_HOME></a><br><br>' +
-                'Please wait ... <img src="picts/ajax-loader.gif">')
-        .dialog('open');
-
-    var startTime = new Date().getTime();
+	// Prevent concurrent executions
+	if ( $("#export_dialog").dialog( "isOpen" ) )
+		return;
+	
+	// Make sure user is still logged-in
+	if (!check_and_report_login())
+		return;
+	
+	// Open status dialog right away
+	$('#export_dialog').dialog('open');
+	$('#export_log').html(
+			"<br>Copying this genomes's FASTA file to <br><br>" +
+			'<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
+	);
 
     $.ajax({
         data: {
             fname: 'export_fasta_irods',
             gid: '<TMPL_VAR NAME=GID>'
         },
-        success : function() {
-            // Make sure the dialog is visible for at least 5 seconds
-            var delayTime = Math.max(0, 5000-(new Date().getTime()-startTime));
-            setTimeout(function() {
-                $('#export_irods_dialog').html('').dialog('close');
-            }, delayTime);
+        success : function(filename) {
+			if (filename) {  // finished successfully
+				$('#export_loading_msg').hide();
+				$('#export_finished_msg').fadeIn();
+				$('#export_ok_button').fadeIn();
+				$('#export_log').append('<br><br>File: ' + filename);
+			}
+			else { // error occurred
+				$('#export_loading_msg').hide();
+				$('#export_finished_msg').hide();
+				$('#export_error_msg').fadeIn();
+				$('#export_ok_button').fadeIn();
+			}
         }
     });
 }
@@ -486,8 +490,9 @@ function check_and_report_login() {
     if (!check_login()) {
         alert('Your session has expired, please log in again.');
         location.reload(true)
-        return;
+        return false;
     }
+    return true;
 }
 
 function copy_genome(mask) {
@@ -754,7 +759,14 @@ Are you sure you want to move this genome into your trash?<p>
     <span id="cancel_button" onClick="$('#copy_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go">Cancel</span>
 </div>
 
-<div id="export_irods_dialog" class="dialog_box hidden info" style="padding:20px;" title="Exporting to iPlant Data Store" align='center'>
+<div id="export_dialog" class="hidden dialog_box" title="Exporting ...">
+	<div id="export_log" class="ui-widget-content ui-corner-all" style="text-align:center;overflow-y:auto;width:450px;height:200px;color:dimgray;">
+	</div>
+	<br>
+	<span id="export_loading_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
+	<span id="export_finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
+	<span id="export_error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
+	<span id="export_ok_button" onClick="$('#export_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all">OK</span>
 </div>
 
 <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'>

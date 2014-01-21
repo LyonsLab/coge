@@ -566,10 +566,11 @@ sub export_fasta_irods {
     #print STDERR "export_fasta_irods $gid\n";
 
     my $genome = $coge->resultset('Genome')->find($gid);
-	return 0 unless ($USER->has_access_to_genome($genome));
+	return unless ($USER->has_access_to_genome($genome));
 
 	my $src = $genome->file_path;
-	my $dest = get_irods_path() . "/genome_$gid.faa";
+	my $dest_filename = "genome_$gid.faa";
+	my $dest = get_irods_path() . '/' . $dest_filename;
 	
 	unless ($src and $dest) {
 		print STDERR "GenomeInfo:export_fasta_irods: error, undef src or dest\n";
@@ -607,6 +608,8 @@ sub export_fasta_irods {
 	$meta{'Genome Name'} = $genome->name if ($genome->name);
 	$meta{'Genome Description'} = $genome->description if ($genome->description);
 	CoGe::Accessory::IRODS::irods_imeta($dest, \%meta);
+	
+	return $dest_filename;
 }
 
 sub get_irods_path {
