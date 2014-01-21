@@ -1,9 +1,6 @@
-window.coge = window.coge || {};
-
-coge.progress = (function() {
-    function progress(selector) {
-        var selection = selector,
-            width = 500,
+var coge = window.coge = (function(ns) {
+    ns.progress = function() {
+        var width = 500,
             title = "Running Analysis...",
             status_message = $("<div></div>"),
             data = $("<div></div>"),
@@ -16,17 +13,22 @@ coge.progress = (function() {
             .addClass("padded")
             .addClass("coge-progress-data");
 
+        link.addClass("ui-button")
+            .addClass("ui-corner-all")
+            .addClass("ui-button-stop")
+            .addClass("r")
+
         button.addClass("ui-button")
             .addClass("ui-corner-all")
-            .addClass("ui-button-go")
+            .addClass("ui-button-stop")
             .addClass("r")
             .html("Close")
-            .on("click", my.close);
+            .on("click", function() { my.close(); });
 
         status_message.append()
             .addClass("coge-progress-status");
 
-        var dialog = $(selection).append(data)
+        var dialog = $("<div></div>").append(data)
             .append(status_message)
             .dialog({
                 autoOpen: false,
@@ -39,14 +41,19 @@ coge.progress = (function() {
         function my() {
         }
 
+        my.element = function() {
+            return dialog;
+        }
+
         my.close = function() {
-            console.log("TEST");
             dialog.dialog("close");
             return my;
         };
 
         my.status = function(response) {
-            var message = $("<span></span>");
+            var message = $("<span></span>")
+                .css("margin-right", "2%");
+
             status_message.hide()
                 .html("")
 
@@ -67,20 +74,44 @@ coge.progress = (function() {
                     .append(message)
                     .append(img);
             } else {
-                status_message.append(message.html(response.message));
+                img.attr("src", "./picts/ajax-loader.gif");
+                message.html(response.message);
+                status_message
+                    .append(message)
+                    .append(img);
             }
 
-            link.attr("href", response.link.href)
-                .css("margin", "2%")
-                .html(response.link.message);
+            if (response.button) {
+                status_message.append(button);
 
-            status_message
-                .append(link)
-                .append(button)
-                .slideDown();
+                //NOTE: event needs to bound after being inserted into the dom
+                button.unbind().on("click", my.close);
+            }
+
+            if (response.link !== undefined) {
+                link.attr("href", response.link.href)
+                    .attr("target", "_blank")
+                    .css("margin-right", "2%")
+                    .css("color", "black")
+                    .html(response.link.message);
+
+                status_message.append(link)
+            }
+
+            if (response.delay) {
+                status_message.fadeIn(1000);
+            } else {
+                status_message.show();
+            }
 
             return my;
         };
+
+        my.button = function(_) {
+            if (!arguments.length) return button;
+            button.text(_);
+            return my;
+        }
 
         my.show = function() {
             dialog.dialog("open");
@@ -91,6 +122,7 @@ coge.progress = (function() {
             if (!arguments.length) return title;
 
             title = _;
+            dialog.dialog("option", "title", title);
             return my;
         };
 
@@ -104,5 +136,5 @@ coge.progress = (function() {
         return my;
     }
 
-    return progress;
-})();
+    return ns;
+})(coge || {});
