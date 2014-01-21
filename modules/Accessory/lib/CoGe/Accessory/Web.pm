@@ -533,36 +533,35 @@ sub login_cas_saml {
     return $coge_user;
 }
 
-# mdb removed 12/5/13 - Hackathon
-#sub parse_saml_response {
-#    my $response = $_[0];
-#
-#	# mdb modified 4/4/13 for iPlant CAS update - XML::Simple doesn't support namespaces
-#    if ( $response =~ m/saml1p:Success/ ) {
-#        my $ref = XMLin($response);
-#        print STDERR Dumper $ref, "\n";
-#        my ($user_id) =
-#          $ref->{'SOAP-ENV:Body'}->{'saml1p:Response'}->{'saml1:Assertion'}
-#          ->{'saml1:AttributeStatement'}->{'saml1:Subject'}
-#          ->{'saml1:NameIdentifier'};
-#        my @tmp =
-#          @{ $ref->{'SOAP-ENV:Body'}->{'saml1p:Response'}->{'saml1:Assertion'}
-#              ->{'saml1:AttributeStatement'}->{'saml1:Attribute'} };
-#        my %attr =
-#          map { $_->{'AttributeName'}, $_->{'saml1:AttributeValue'} }
-#          @{ $ref->{'SOAP-ENV:Body'}->{'saml1p:Response'}->{'saml1:Assertion'}
-#              ->{'saml1:AttributeStatement'}->{'saml1:Attribute'} };
-#        my ($user_lname) = $attr{lastName}->{content};
-#        my ($user_fname) = $attr{firstName}->{content};
-#        my ($user_email) = $attr{email}->{content};
-#
-#		print STDERR "parse_saml_response: ".$user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email."\n";
-#        return ( $user_id, $user_fname, $user_lname, $user_email );
-#    }
-#}
+sub parse_saml_response {
+    my $response = $_[0];
+
+    # mdb modified 4/4/13 for iPlant CAS update - XML::Simple doesn't support namespaces
+    if( $response =~ m/saml1p:Success/ ) {
+        my $ref = XMLin($response);
+        print STDERR Dumper $ref, "\n";
+        my ($user_id) =
+          $ref->{'SOAP-ENV:Body'}->{'saml1p:Response'}->{'saml1:Assertion'}
+          ->{'saml1:AttributeStatement'}->{'saml1:Subject'}
+          ->{'saml1:NameIdentifier'};
+        my @tmp =
+          @{ $ref->{'SOAP-ENV:Body'}->{'saml1p:Response'}->{'saml1:Assertion'}
+              ->{'saml1:AttributeStatement'}->{'saml1:Attribute'} };
+        my %attr =
+          map { $_->{'AttributeName'}, $_->{'saml1:AttributeValue'} }
+          @{ $ref->{'SOAP-ENV:Body'}->{'saml1p:Response'}->{'saml1:Assertion'}
+              ->{'saml1:AttributeStatement'}->{'saml1:Attribute'} };
+        my ($user_lname) = $attr{lastName}->{content};
+        my ($user_fname) = $attr{firstName}->{content};
+        my ($user_email) = $attr{email}->{content};
+
+	print STDERR "parse_saml_response: ".$user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email."\n";
+        return ( $user_id, $user_fname, $user_lname, $user_email );
+    }
+}
 
 # mdb added 12/5/13 - Hackathon
-sub parse_saml_response {
+sub parse_saml_response2 {
     my $response = $_[0];
 
 	# mdb modified 4/4/13 for iPlant CAS update - XML::Simple doesn't support namespaces
