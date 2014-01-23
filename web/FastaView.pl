@@ -6,6 +6,8 @@ use CGI::Ajax;
 use CoGeX;
 use CoGe::Accessory::Web;
 use HTML::Template;
+use Data::Dumper;
+use File::Basename;
 use Text::Wrap qw($columns &wrap);
 
 no warnings 'redefine';
@@ -24,13 +26,37 @@ $ENV{PATH}  = $P->{COGEDIR};
 $TEMPDIR    = $P->{TEMPDIR} . "$PAGE_TITLE/";
 $TEMPURL    = $P->{TEMPURL} . "$PAGE_TITLE/";
 
-my $pj = new CGI::Ajax(
+my %ajax = CoGe::Accessory::Web::ajax_func();
+
+my %FUNCTIONS = (
     gen_html => \&gen_html,
     get_seqs => \&get_seqs,
     gen_file => \&gen_file,
+    test => \&test,
+    %ajax,
 );
+
+
+#CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
+my $pj = new CGI::Ajax(%FUNCTIONS);
 $pj->js_encode_function('escape');
-if ( $FORM->param('text') ) {
+
+if ( $FORM->param('jquery_ajax') ) {
+    my %args  = $FORM->Vars;
+    my $fname = $args{'fname'};
+
+    #print STDERR Dumper \%args;
+    if ( $fname and defined $FUNCTIONS{$fname} ) {
+        if ( $args{args} ) {
+            my @args_list = split( /,/, $args{args} );
+            print $FORM->header, $FUNCTIONS{$fname}->(@args_list);
+        }
+        else {
+            print $FORM->header, $FUNCTIONS{$fname}->(%args);
+        }
+    }
+}
+elsif ( $FORM->param('text') ) {
     my $header =
       "Content-disposition: attachement; filename=CoGe_";    #test.gff\n\n";
     $header .= int( rand(100000) );
@@ -41,8 +67,7 @@ if ( $FORM->param('text') ) {
 }
 else {
     print $pj->build_html( $FORM, \&gen_html );
-
-    #print $FORM->header,gen_html;
+    #print $FORM->header,\&gen_html;
 }
 
 sub gen_html {
@@ -99,9 +124,12 @@ sub gen_html {
             prot       => $prot,
             up         => $upstream,
             down       => $downstream,
-            message    => $warning
+            message    => $warning,
         )
     );
+
+
+
     $html .= $template->output;
     return $html;
 }
@@ -179,6 +207,7 @@ sub gen_file {
     my $upstream   = $opts{upstream};
     my $downstream = $opts{downstream};
     my @fids       = ref($fids) =~ /array/i ? @$fids : split /,/, $fids;
+
     my ($seqs)     = get_seqs(
         prot       => $prot,
         fids       => \@fids,
@@ -188,15 +217,15 @@ sub gen_file {
         upstream   => $upstream,
         downstream => $downstream
     );
+
     my $file = $TEMPDIR . "Seqs_" . int( rand(100000000) ) . ".faa";
-    open( OUT, ">" . $file );
-    print OUT $seqs;
-    close OUT;
-    my $url = $file;
-    $url =~ s/$TEMPDIR/$TEMPURL/;
-    $url =~ s/^\/[^\/]*//;
-    $url = $P->{SERVER} . $url;
-    return $url;
+    eval {
+        open( OUT, ">" . $file );
+        print OUT $seqs;
+        close OUT;
+    };
+
+    return $P->{SERVER} . "/tmp/$PAGE_TITLE/" . basename($file);
 }
 
 sub gen_body {
@@ -221,9 +250,10 @@ sub gen_body {
     $template->param( FIDS =>
 qq{<input type=hidden id=fids value=$fids><input type=hidden id=gstid value=$gstid>}
     );
-    $template->param( PROT => $prot );
-    $template->param( UP   => $up );
-    $template->param( DOWN => $down );
+    $template->param( PROT   => $prot );
+    $template->param( UP     => $up );
+    $template->param( DOWN   => $down );
+    $template->param( genfam => $P->{GENFAMURL});
     return $template->output;
 }
 

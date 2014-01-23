@@ -93,12 +93,55 @@ var url = "http://sswap.iplantcollaborative.org/ipc/create-pipeline-with-rrg";
  document.body.removeChild(myForm);
 }
 
+
+function get_url(options, callback) {
+    $.ajax({
+        data: options,
+        success: callback
+    });
+}
+
+function post_to_genfam() {
+    var name_only = 0;
+    if ($('#name_only')[0].checked) {name_only = 1};
+    var id_only = 0;
+    if ($('#id_only')[0].checked) {id_only = 1};
+
+    var data = {
+        jquery_ajax: 1,
+        fname: "gen_file",
+        fids: $("#fids").val(),
+        prot: pageObj.prot,
+        name_only: +name_only,
+        id_only: +id_only,
+        gstid: $("#gstid").val()
+    };
+
+    var send_response = function(url) {
+        $.ajax({
+            cache: false,
+            type: "POST",
+            url: "FastaView.pl",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: {
+                url: url
+            },
+            success: function() {
+                console.log("Analysis sent to GenFam");
+            }
+        });
+    };
+
+    get_url(data, send_response);
+}
+
 function post_to_target () {
  seq = $('#seq_text').val().replace(/\n/g,":::");
 // seq = escape(seq);
  var url;
  if (pageObj.prot) {url="http://target.iplantcollaborative.org/v3.3_TATE_protein_CoGe_start.php"}
- else {url = "http://target.iplantcollaborative.org/v3.3_TATE_dna_CoGe_start.php";} 
+ else {url = "http://target.iplantcollaborative.org/v3.3_TATE_dna_CoGe_start.php";}
  var myForm = document.createElement("form");
  myForm.method="post" ;
  myForm.action=url;
@@ -150,6 +193,7 @@ function post_to_phylogeny_fr () {
 
 $(document).ready(function()
   {
+    genfam = "<tmpl_var name=genfam>";
    prot = <TMPL_VAR NAME=PROT>;
     pageObj.prot=prot; 
     if (prot)
@@ -225,7 +269,9 @@ $(document).ready(function()
     <td><span class="link" onclick ="window.open('http://target.iplantcollaborative.org/');"> Tree Analysis of Related Genes and Transposons</span><br>
     <tr align=top>
     <td><span onClick="post_to_phylogeny_fr();" class='ui-button ui-corner-all'>Phylogeny.fr</span>
-    <td>One click phylogeny at <a href="http://www.phylogeny.fr" target=_new>Phylogeny.fr</a>
+    <td>One click phylogeny at <a href="http://www.phylogeny.fr" target=_new>Phylogeny.fr</a><br>
+    <tr>
+    <td><span onclick="post_to_genfam();" class='ui-button ui-corner-all'>Send to GenFam</span>
     </table>
 <!-- PROTEIN SEQUENCES ONLY -->
   <div class="prot_option">
