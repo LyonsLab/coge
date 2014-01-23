@@ -907,6 +907,7 @@ sub get_tbl {
 
     my %json;
     my ($statusCode, $tbl) = generate_tbl($dsg);
+    $json{file} = basename($tbl);
 
     if ($statusCode) {
         $json{error} = 1;
@@ -930,6 +931,7 @@ sub export_tbl {
 
     my (%json, %meta);
     my ($statusCode, $tbl) = generate_tbl($dsg);
+    $json{file} = basename($tbl);
 
     if($statusCode) {
         $json{error} = 1;
@@ -972,6 +974,7 @@ sub get_bed {
 
     my %json;
     my ($statusCode, $bed) = generate_bed($dsg);
+    $json{file} = basename($bed);
 
     if ($statusCode) {
         $json{error} = 1;
@@ -995,6 +998,7 @@ sub export_bed {
 
     my (%json, %meta);
     my ($statusCode, $bed) = generate_bed($dsg);
+    $json{file} = basename($bed);
 
     if($statusCode) {
         $json{error} = 1;
@@ -1070,6 +1074,7 @@ sub get_gff {
 
         ($statusCode, $gff) = generate_gff(ds => $dsg);
     }
+    $json{file} = basename($gff);
 
     if ($statusCode) {
         $json{error} = 1;
@@ -1105,6 +1110,7 @@ sub export_gff {
 
         ($statusCode, $gff) = generate_gff(ds => $dsg);
     }
+    $json{file} = basename($gff);
 
     if($statusCode) {
         $json{error} = 1;

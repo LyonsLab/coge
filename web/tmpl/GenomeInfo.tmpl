@@ -251,6 +251,7 @@ function get_gff() {
                     show_error();
                     $("#export_log").html(download_error);
                 } else {
+                    $('#export_log').append('<br><br>File: ' + json.file);
                     show_success();
                     $("#export_dialog").on("dialogclose", function(event, ui){
                         json.files.forEach(coge.utils.open);
@@ -285,6 +286,7 @@ function get_tbl() {
                 show_error();
                 $("#export_log").html(download_error);
             } else {
+                $('#export_log').append('<br><br>File: ' + json.file);
                 show_success();
                 $("#export_dialog").on("dialogclose", function(event, ui){
                     json.files.forEach(coge.utils.open);
@@ -318,6 +320,7 @@ function get_bed() {
                 $('#export_error_msg').fadeIn();
                 $("#export_log").html(download_error);
             } else {
+                $('#export_log').append('<br><br>File: ' + json.file);
                 $('#export_ok_button').fadeIn();
                 $('#export_loading_msg').hide();
                 $('#export_finished_msg').fadeIn();
@@ -365,8 +368,8 @@ function export_gff() {
         $('#export_log').html(
                 "<br>Copying this genomes's FASTA file to <br><br>" +
                 '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
+                + ''
         );
-
         $("#export_dialog")
             .unbind()
             .dialog({ title: "Exporting file", autoOpen: true});
@@ -383,6 +386,7 @@ function export_gff() {
                 upa: upa
             },
             success: function(json) {
+                $('#export_log').append('<br><br>File: ' + json.file);
                 if (json.error) {
                     show_error();
                 } else {
@@ -422,6 +426,8 @@ function export_tbl() {
             gid: genome_id
         },
         success: function(json) {
+            $('#export_log').append('<br><br>File: ' + json.file);
+
             if (json.error) {
                 show_error();
             } else {
@@ -460,6 +466,7 @@ function export_bed() {
             gid: genome_id
         },
         success: function(json) {
+            $('#export_log').append('<br><br>File: ' + json.file);
             if (json.error) {
                 show_error();
             } else {
