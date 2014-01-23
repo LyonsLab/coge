@@ -126,11 +126,12 @@ sub export_annotations {
     unless (-r $annotation_file) {
         open(my $fh, ">", $annotation_file);
 
+        say $fh "#Type Group, Type, Annotation, Link, Image filename";
         foreach my $a ( $experiment->annotations ) {
             my $group = (
                 defined $a->type->group
-                ? $a->type->group->name . ',' . $a->type->name
-                : $a->type->name
+                ? '"' . $a->type->group->name . '","' . $a->type->name . '"'
+                : '"' . $a->type->name . '",""'
             );
 
             my $info = $a->info;
@@ -152,9 +153,9 @@ sub export_annotations {
                 };
 
                 say $logh "log: error: $@" if ($@);
-                say $fh qq{"$group","$info","$url","$filename"};
+                say $fh qq{$group,"$info","$url","$filename"};
             } else {
-                say $fh qq{"$group","$info","$url"};
+                say $fh qq{$group,"$info","$url",""};
             }
         }
         close($fh);
