@@ -1,4 +1,5 @@
 <TMPL_IF NAME='MAIN'>
+<script src="./js/coge/utils.js"></script>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
@@ -19,7 +20,7 @@ $(document).ready(function() {
     $(".dialog_box").dialog({ autoOpen: false, width: 500 });
 
     $("#copy_dialog").dialog({modal: true});
-    
+
     $("#export_dialog").dialog({modal: true});
 
     set_annotation_table();
@@ -194,6 +195,19 @@ var message = $("<div></div>").text("Please wait...  ").append(spinner);
 var note = $("<p></p>").addClass("small")
         .text("(This may take several minutes)");
 
+function show_error() {
+    $('#export_loading_msg').hide();
+    $('#export_finished_msg').hide();
+    $('#export_error_msg').fadeIn();
+}
+
+function show_success() {
+    $('#export_ok_button').fadeIn();
+    $('#export_loading_msg').hide();
+    $('#export_finished_msg').fadeIn();
+    $('#export_ok_button').fadeIn();
+}
+
 function get_gff() {
     var id = genome_id;
     $('#gff_export').dialog('option', 'width', 400).dialog('open');
@@ -210,10 +224,14 @@ function get_gff() {
 
         var title = $("<h4>Generating gff file</h4>");
 
-        $("#export_irods_dialog")
+        // RESET DIALOG
+        reset_dialog();
+
+        $("#export_log")
             .html(title)
-            .append(message)
             .append(note)
+
+        $("#export_dialog")
             .unbind()
             .dialog({ title: "Preparing download", autoOpen: true});
 
@@ -230,10 +248,12 @@ function get_gff() {
             },
             success: function(json) {
                 if (json.error) {
-                    $("#export_irods_dialog").html(download_error);
+                    show_error();
+                    $("#export_log").html(download_error);
                 } else {
-                    $("#export_irods_dialog").dialog("close").on("dialogclose", function(event, ui){
-                        json.files.forEach(window.open);
+                    show_success();
+                    $("#export_dialog").on("dialogclose", function(event, ui){
+                        json.files.forEach(coge.utils.open);
                     });
                 }
             }
@@ -244,10 +264,13 @@ function get_gff() {
 function get_tbl() {
     var title = $("<h4>Generating tbl file.</h4>");
 
-    $("#export_irods_dialog")
+    reset_dialog();
+
+    $("#export_log")
         .html(title)
-        .append(message)
-        .append(note)
+        .append(note);
+
+    $("#export_dialog")
         .unbind()
         .dialog({ title: "Preparing download", autoOpen: true});
 
@@ -259,10 +282,12 @@ function get_tbl() {
         },
         success: function(json) {
             if (json.error) {
-                $("#export_irods_dialog").html(download_error);
+                show_error();
+                $("#export_log").html(download_error);
             } else {
-                $("#export_irods_dialog").dialog("close").on("dialogclose", function(event, ui){
-                    json.files.forEach(window.open);
+                show_success();
+                $("#export_dialog").on("dialogclose", function(event, ui){
+                    json.files.forEach(coge.utils.open);
                 });
             }
         }
@@ -272,10 +297,11 @@ function get_tbl() {
 function get_bed() {
     var title = $("<h4>Generating bed file.</h4>");
 
-    $("#export_irods_dialog")
+    $("#export_log")
         .html(title)
-        .append(message)
-        .append(note)
+        .append(note);
+
+    $('#export_dialog')
         .unbind()
         .dialog({ title: "Preparing download", autoOpen: true});
 
@@ -287,46 +313,61 @@ function get_bed() {
         },
         success: function(json) {
             if (json.error) {
-                $("#export_irods_dialog").html(download_error);
+                $('#export_loading_msg').hide();
+                $('#export_finished_msg').hide();
+                $('#export_error_msg').fadeIn();
+                $("#export_log").html(download_error);
             } else {
-                $("#export_irods_dialog").dialog("close").on("dialogclose", function(event, ui){
-                    json.files.forEach(window.open);
+                $('#export_ok_button').fadeIn();
+                $('#export_loading_msg').hide();
+                $('#export_finished_msg').fadeIn();
+                $('#export_ok_button').fadeIn();
+                $("#export_dialog").on("dialogclose", function(event, ui){
+                    json.files.forEach(coge.utils.open);
                 });
             }
         }
     });
 }
 
+function reset_dialog() {
+    $('#export_finished_msg').hide();
+    $('#export_ok_button').hide();
+    $('#export_error_msg').hide();
+    $('#export_loading_msg').show();
+}
+
 function export_gff() {
-    var id = genome_id;
     $('#gff_export').dialog('option', 'width', 400).dialog('open');
     $('#gff_export').unbind().on("dialogclose", function() {
+
+        // ANALYSIS OPTIONS
+        var id = genome_id;
         var id_type = $('#gff_id_type').val(),
             cds = +$('#cds_only')[0].checked,
             annos = +$('#annos')[0].checked,
             nu = +$('#name_unique')[0].checked,
             upa = +$('#upa')[0].checked;
 
-    	// Prevent concurrent executions
-    	if ( $("#export_dialog").dialog( "isOpen" ) )
-    		return;
-    	
-    	// Make sure user is still logged-in
-    	if (!check_and_report_login())
-    		return;
-    	
-    	// Open status dialog right away
-    	$('#export_dialog').dialog('open');
-    	$('#export_log').html(
-    			"<br>Copying this genomes's FASTA file to <br><br>" +
-    			'<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
-    	);
+        // Prevent concurrent executions
+        if ( $("#export_dialog").dialog( "isOpen" ) )
+            return;
 
-        $("#export_irods_dialog")
-            .html(title)
-            .append(irods_home)
-            .append(message)
-            .append(note)
+        // Make sure user is still logged-in
+        if (!check_and_report_login())
+            return;
+
+        // RESET DIALOG
+        reset_dialog();
+
+        // Open status dialog right away
+        $('#export_dialog').dialog('open');
+        $('#export_log').html(
+                "<br>Copying this genomes's FASTA file to <br><br>" +
+                '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
+        );
+
+        $("#export_dialog")
             .unbind()
             .dialog({ title: "Exporting file", autoOpen: true});
 
@@ -343,12 +384,9 @@ function export_gff() {
             },
             success: function(json) {
                 if (json.error) {
-                    $("#export_irods_dialog").html(download_error);
+                    show_error();
                 } else {
-                    var delayTime = Math.max(0, 5000-(new Date().getTime()-startTime));
-                    setTimeout(function() {
-                        $('#export_irods_dialog').html('').dialog('close');
-                    }, delayTime);
+                    show_success();
                 }
             }
         });
@@ -356,20 +394,26 @@ function export_gff() {
 }
 
 function export_tbl() {
-	// Prevent concurrent executions
-	if ( $("#export_dialog").dialog( "isOpen" ) )
-		return;
-	
-	// Make sure user is still logged-in
-	if (!check_and_report_login())
-		return;
-	
-	// Open status dialog right away
-	$('#export_dialog').dialog('open');
-	$('#export_log').html(
-			"<br>Copying this genomes's FASTA file to <br><br>" +
-			'<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
-	);
+    // Prevent concurrent executions
+    if ( $("#export_dialog").dialog( "isOpen" ) )
+        return;
+
+    // Make sure user is still logged-in
+    if (!check_and_report_login())
+        return;
+
+    // RESET DIALOG
+    reset_dialog();
+
+    // Open status dialog right away
+    $('#export_dialog')
+        .unbind()
+        .dialog('open');
+
+    $('#export_log').html(
+            "<br>Copying this genomes's TBL file to <br><br>" +
+            '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
+    );
 
     $.ajax({
         dataType: "json",
@@ -379,32 +423,35 @@ function export_tbl() {
         },
         success: function(json) {
             if (json.error) {
-                $("#export_irods_dialog").html('<p class="alert">Failed to export to irods.</p>');
+                show_error();
             } else {
-                var delayTime = Math.max(0, 5000-(new Date().getTime()-startTime));
-                setTimeout(function() {
-                    $('#export_irods_dialog').html('').dialog('close');
-                }, delayTime);
+                show_success();
             }
         }
     });
 }
 
 function export_bed() {
-	// Prevent concurrent executions
-	if ( $("#export_dialog").dialog( "isOpen" ) )
-		return;
-	
-	// Make sure user is still logged-in
-	if (!check_and_report_login())
-		return;
-	
-	// Open status dialog right away
-	$('#export_dialog').dialog('open');
-	$('#export_log').html(
-			"<br>Generating/copying this genomes's FASTA file to <br><br>" +
-			'<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
-	);
+    // Prevent concurrent executions
+    if ( $("#export_dialog").dialog( "isOpen" ) )
+        return;
+
+    // Make sure user is still logged-in
+    if (!check_and_report_login())
+        return;
+
+    // RESET DIALOG
+    reset_dialog();
+
+    // Open status dialog right away
+    $('#export_dialog')
+        .unbind()
+        .dialog('open');
+
+    $('#export_log').html(
+            "<br>Generating/copying this genomes's BED file to <br><br>" +
+            '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
+    );
 
     $.ajax({
         dataType: "json",
@@ -414,32 +461,35 @@ function export_bed() {
         },
         success: function(json) {
             if (json.error) {
-                $("#export_irods_dialog").html(export_error);
+                show_error();
             } else {
-                var delayTime = Math.max(0, 5000-(new Date().getTime()-startTime));
-                setTimeout(function() {
-                    $('#export_irods_dialog').html('').dialog('close');
-                }, delayTime);
+                show_success();
             }
         }
     });
 }
 
 function export_fasta_irods() {
-	// Prevent concurrent executions
-	if ( $("#export_dialog").dialog( "isOpen" ) )
-		return;
-	
-	// Make sure user is still logged-in
-	if (!check_and_report_login())
-		return;
-	
-	// Open status dialog right away
-	$('#export_dialog').dialog('open');
-	$('#export_log').html(
-			"<br>Copying this genomes's FASTA file to <br><br>" +
-			'<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
-	);
+    // Prevent concurrent executions
+    if ( $("#export_dialog").dialog( "isOpen" ) )
+        return;
+
+    // Make sure user is still logged-in
+    if (!check_and_report_login())
+        return;
+
+    // RESET DIALOG
+    reset_dialog();
+
+    // Open status dialog right away
+    $('#export_dialog')
+        .unbind()
+        .dialog('open');
+
+    $('#export_log').html(
+            "<br>Copying this genomes's FASTA file to <br><br>" +
+            '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
+    );
 
     $.ajax({
         data: {
@@ -447,18 +497,13 @@ function export_fasta_irods() {
             gid: '<TMPL_VAR NAME=GID>'
         },
         success : function(filename) {
-			if (filename) {  // finished successfully
-				$('#export_loading_msg').hide();
-				$('#export_finished_msg').fadeIn();
-				$('#export_ok_button').fadeIn();
-				$('#export_log').append('<br><br>File: ' + filename);
-			}
-			else { // error occurred
-				$('#export_loading_msg').hide();
-				$('#export_finished_msg').hide();
-				$('#export_error_msg').fadeIn();
-				$('#export_ok_button').fadeIn();
-			}
+            if (filename) {  // finished successfully
+                show_success();
+                $('#export_log').append('<br><br>File: ' + filename);
+            }
+            else { // error occurred
+                show_error();
+            }
         }
     });
 }
@@ -760,13 +805,13 @@ Are you sure you want to move this genome into your trash?<p>
 </div>
 
 <div id="export_dialog" class="hidden dialog_box" title="Exporting ...">
-	<div id="export_log" class="ui-widget-content ui-corner-all" style="text-align:center;overflow-y:auto;width:450px;height:200px;color:dimgray;">
-	</div>
-	<br>
-	<span id="export_loading_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
-	<span id="export_finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
-	<span id="export_error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
-	<span id="export_ok_button" onClick="$('#export_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all">OK</span>
+    <div id="export_log" class="ui-widget-content ui-corner-all" style="text-align:center;overflow-y:auto;width:450px;height:200px;color:dimgray;">
+    </div>
+    <br>
+    <span id="export_loading_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
+    <span id="export_finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
+    <span id="export_error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
+    <span id="export_ok_button" onClick="$('#export_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all">OK</span>
 </div>
 
 <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'>
