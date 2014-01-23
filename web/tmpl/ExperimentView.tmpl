@@ -208,7 +208,9 @@ function download_files() {
     });
     */
 
-    $("#experiment_dialog").dialog("option", "title", "Preparing Download");
+    $("#experiment_dialog")
+        .unbind()
+        .dialog("option", "title", "Preparing Download");
 
     // Prevent concurrent executions
     if ( $("#experiment_dialog").dialog( "isOpen" ) )
@@ -267,13 +269,14 @@ function export_data() {
     reset_dialog();
 
     // Open status dialog right away
-    $('#experiment_dialog').dialog('open');
+    $('#experiment_dialog')
+        .unbind()
+        .dialog({ autoOpen: true, title: "Exporting ..."});
+
     $('#export_log').html(
             "<br>Copying this experiment's data files to <br><br>" +
             '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
     );
-
-    $("#experiment_dialog").dialog("option", "title", "Exporting ...");
 
     $.ajax({
         data: {
