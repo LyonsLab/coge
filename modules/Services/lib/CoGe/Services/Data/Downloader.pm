@@ -20,6 +20,8 @@ sub get {
     my $file = $self->query->param('file');
     my $gid = $self->query->param('gid');
     my $eid = $self->query->param('eid');
+    my $dir = $self->query->param('dir');
+    $dir = "" unless $dir;
 
     # Connect to the database
     my ( $db, $user, $conf ) = CoGe::Accessory::Web->init();
@@ -34,7 +36,7 @@ sub get {
             return;
         }
 
-        @path = ($conf->{SECTEMPDIR}, $page, "downloads", $eid, $file);
+        @path = ($conf->{SECTEMPDIR}, $page, "downloads", $eid, $dir, $file);
     } elsif ($eid) {
         my $exp = $db->resultset('Experiment')->find($eid);
         if ($exp->restricted and
@@ -43,7 +45,7 @@ sub get {
             return;
         }
 
-        @path = ($conf->{SECTEMPDIR}, $page, "downloads", $eid, $file);
+        @path = ($conf->{SECTEMPDIR}, $page, "downloads", $eid, $dir, $file);
     }
 
     $self->header_add( -attachment => $file );

@@ -463,7 +463,7 @@ sub export_experiment_irods {
         my @notebooks = $experiment->notebooks;
         my $dir = get_irods_path();
         my $dest = File::Spec->catdir($dir, basename($file));
-        my $restricted = ($experiment->restricted) ? "true" : "false";
+        my $restricted = ($experiment->restricted) ? "yes" : "no";
 
         my %meta = (
             'Imported From'            => "CoGe: " . $P->{SERVER},
@@ -474,9 +474,12 @@ sub export_experiment_irods {
             'Restricted'               => $restricted
         );
 
+        my $genome_name = $genome->info;
+        $genome_name =~ s/&reg;\s*//;
+
         $meta{'Name'} = $experiment->name if ($experiment->name);
         $meta{'Description'} = $experiment->description if ($experiment->description);
-        $meta{'Genome'} = $genome->info;
+        $meta{'Genome'} = $genome_name;
         $meta{'Source Link'} = $experiment->source->link if $experiment->source->link;
         $meta{'Rows'} = commify($experiment->row_count);
 
@@ -526,18 +529,20 @@ sub generate_export {
 }
 
 sub get_download_path {
-    my @paths = ($P->{SECTEMPDIR}, "ExperimentView/downloads", shift);
+    my $unique_path = get_unique_id();
+    my @paths = ($P->{SECTEMPDIR}, "ExperimentView/downloads", shift, $unique_path);
     return File::Spec->catdir(@paths);
 }
 
 sub get_download_url {
     my %args = @_;
     my $id = $args{id};
+    my $dir = $args{dir};
     my $filename = basename($args{file});
 
     my @url = ($P->{SERVER}, "services/JBrowse",
         "service.pl/download/ExperimentView",
-        "?eid=$id&file=$filename");
+        "?eid=$id&dir=$dir&file=$filename");
 
     return join "/", @url;
 }
@@ -565,7 +570,8 @@ sub get_file_urls {
     my ($statusCode, $file) = generate_export($eid);
 
     unless($statusCode) {
-        my $url = get_download_url(id => $eid, file => $file);
+        my $dir = basename(dirname($file));
+        my $url = get_download_url(id => $eid, dir => $dir, file => $file);
         return encode_json({ files => [$url] });
     };
 

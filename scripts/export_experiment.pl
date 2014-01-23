@@ -76,8 +76,9 @@ unless (-r $archive and -r "$archive.finished") {
 
     my $files = $experiment->storage_path;
     my $cmd = "tar -czf $archive --exclude=log.txt --directory $files .";
-    $cmd .= " --directory $workdir";
-    $cmd .= " $info " . join " ", @file_list;
+    $cmd .= " --transform 's,^,/experiment_$eid/,'";
+    $cmd .= " --directory $workdir $info";
+    $cmd .= " " . join " ", @file_list if @file_list;
     $cmd .= " README.txt";
 
     system($cmd);
@@ -93,19 +94,22 @@ sub export_info {
     my $info_file = File::Spec->catdir($workdir, "info.csv");
 
     unless (-r $info_file) {
-        my $res = ($experiment->restricted) ? "true" : "false";
-        my $types = join ",", $experiment->types;
-        my $notebooks = join ",", $experiment->notebooks;
+        my $res = ($experiment->restricted) ? "yes" : "no";
+        my $types = join ",", map($_->name, $experiment->types);
+        my $notebooks = join ",", map {local $_ = $_->name; s/&reg;\s*//; $_ } $experiment->notebooks;
+
+        my $genome_name = $experiment->genome->info;
+        $genome_name =~ s/&reg;\s*//;
 
         open(my $fh, ">", $info_file);
         say $fh qq{"Name","} . $experiment->name . '"';
         say $fh qq{"Description","} . $experiment->description . '"';
-        say $fh qq{"Genome","} . $experiment->genome->info . '"';
+        say $fh qq{"Genome","$genome_name"};
         say $fh qq{"Source","} . $experiment->source->info . '"';
         say $fh qq{"Version","} . $experiment->version . '"';
-        say $fh qq{"Types","} . qq{$types"};
-        say $fh qq{"Notebooks","} . qq{$notebooks"};
-        say $fh qq{"Restricted","} . qq{$res"};
+        say $fh qq{"Types","$types"};
+        say $fh qq{"Notebooks","$notebooks"};
+        say $fh qq{"Restricted","$res"};
         close($fh);
     }
 
@@ -113,6 +117,8 @@ sub export_info {
 }
 
 sub export_annotations {
+    return () unless (defined($experiment->annotations) and $experiment->annotations->count);
+
     my @files = ();
     my $annotation_file = File::Spec->catdir($workdir, "annotations.csv");
     push @files, basename($annotation_file);
