@@ -14,9 +14,10 @@ use File::Slurp;
 use File::Spec;
 use Sort::Versions;
 use Data::Dumper;
-use vars qw( $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION);
+use vars qw( $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION $ERROR);
 
 $PAGE_TITLE = "ExperimentView";
+$ERROR = encode_json( { error => 1 });
 
 $FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
@@ -109,7 +110,7 @@ sub update_experiment_info {
 
 sub get_sources {
     #my %opts = @_;
-    
+
     my @sources;
     foreach ( $coge->resultset('DataSource')->all() ) {
         push @sources, { 'label' => $_->name, 'value' => $_->id };
@@ -122,7 +123,7 @@ sub make_experiment_public {
     my %opts = @_;
     my $eid  = $opts{eid};
     return "No EID specified" unless $eid;
-	#return "Permission denied." unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
+    #return "Permission denied." unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
 
     my $exp = $coge->resultset('Experiment')->find($eid);
     $exp->restricted(0);
@@ -135,8 +136,8 @@ sub make_experiment_private {
     my %opts = @_;
     my $eid  = $opts{eid};
     return "No EID specified" unless $eid;
-	#return "Permission denied." unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
-	
+    #return "Permission denied." unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
+
     my $exp = $coge->resultset('Experiment')->find($eid);
     $exp->restricted(1);
     $exp->update;
@@ -219,7 +220,7 @@ sub remove_experiment_type {
     return "No experiment ID specified" unless $eid;
     my $etid = $opts{etid};
     return "No experiment type ID specified" unless $etid;
-	#return "Permission denied" unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
+    #return "Permission denied" unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
 
     my $etc =
       $coge->resultset('ExperimentTypeConnector')
@@ -451,7 +452,7 @@ sub export_experiment_irods {
     my $eid = $opts{eid};
 
     my $experiment = $coge->resultset('Experiment')->find($eid);
-    return unless $USER->has_access_to_experiment($experiment);
+    return $ERROR unless $USER->has_access_to_experiment($experiment);
 
     my $dir = get_irods_path();
 
@@ -466,8 +467,8 @@ sub export_experiment_irods {
     );
 
     $meta{'Source Link'} = $experiment->source->link if $experiment->source->link;
-	$meta{'Experiment Name'} = $experiment->name if ($experiment->name);
-	$meta{'Experiment Description'} = $experiment->description if ($experiment->description);
+    $meta{'Experiment Name'} = $experiment->name if ($experiment->name);
+    $meta{'Experiment Description'} = $experiment->description if ($experiment->description);
 
     my $i = 1;
     my @types = $experiment->types;
@@ -477,7 +478,7 @@ sub export_experiment_irods {
         $i++;
     }
 
-	my $dest_filename;
+    my $dest_filename;
     if($experiment->data_type == 3) {
         my $srcdir = $experiment->storage_path;
         $dest_filename = "experiment_$eid.bam";
@@ -491,9 +492,9 @@ sub export_experiment_irods {
         my $dest_index = File::Spec->catdir(($dir, "$dest_filename.bai"));
         CoGe::Accessory::IRODS::irods_iput($src_index, $dest_index);
         CoGe::Accessory::IRODS::irods_imeta($dest_index, \%meta);
-        
+
         return $dest_filename;
-    } 
+    }
     else {
         my $files = $experiment->storage_path;
         $dest_filename = "experiment_$eid.tar.gz";
@@ -505,10 +506,10 @@ sub export_experiment_irods {
 
         CoGe::Accessory::IRODS::irods_iput($archive, $dest);
         CoGe::Accessory::IRODS::irods_imeta($dest, \%meta);
-        
+
         return $dest_filename;
     }
-    
+
     return $dest_filename;
 }
 

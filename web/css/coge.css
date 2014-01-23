@@ -1212,8 +1212,7 @@ header {
 }
 
 .coge-progress-status {
-    margin: 5px;
-    padding: 5px;
+    padding-top: 10px;
 }
 
 .coge-progress-status-error {
@@ -1228,7 +1227,6 @@ header {
 .coge-progress-status a,
 .coge-progress-status div {
     vertical-align: top;
-    margin: 0 10px;
 }
 
 .coge-progress-data {

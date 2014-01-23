@@ -131,7 +131,6 @@ sub generate_body {
 sub irods_get_path {
     my %opts      = @_;
     my $path      = $opts{path};
-    my $timestamp = $opts{timestamp};
 
     my $username = $USER->name;
     my $basepath = $P->{IRODSDIR};
@@ -162,10 +161,10 @@ sub irods_get_path {
             subject => "System error notification from $PAGE_TITLE",
             body    => $body
         );
-        return encode_json( { timestamp => $timestamp, error => $error } );
+        return encode_json( { error => $error } );
     }
     return encode_json(
-        { timestamp => $timestamp, path => $path, items => $result->{items} } );
+        { path => $path, items => $result->{items} } );
 }
 
 sub irods_get_file {
@@ -235,7 +234,6 @@ sub ftp_get_file {
     my $url       = $opts{url};
     my $username  = $opts{username};
     my $password  = $opts{password};
-    my $timestamp = $opts{timestamp};
 
     #my ( $type, $filepath, $filename ) = $url =~ /^(ftp|http):\/\/(.+)\/(\S+)$/; # mdb removed 1/6/14, issue 274
 	# mdb added 1/6/14, issue 274
@@ -307,7 +305,6 @@ sub ftp_get_file {
         print STDERR "status_line: $status\n";
         return encode_json(
             {
-                timestamp => $timestamp,
                 path      => $path,
                 size      => "Failed: $status"
             }
@@ -316,7 +313,6 @@ sub ftp_get_file {
 
     return encode_json(
         {
-            timestamp => $timestamp,
             path      => $path,
             size      => -s $fullfilepath . '/' . $filename
         }
@@ -326,9 +322,7 @@ sub ftp_get_file {
 sub ncbi_search {
     my %opts      = @_;
     my $accn      = $opts{accn};
-    my $timestamp = $opts{timestamp};
-    my $esearch =
-"http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=$accn";
+    my $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=$accn";
     my $result = get($esearch);
 
     #print STDERR $result;
@@ -342,14 +336,10 @@ sub ncbi_search {
 
     my $title;
     if ($id) {
-        $esearch =
-"http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nucleotide&id=$id";
+        $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nucleotide&id=$id";
         my $result = get($esearch);
-
         #print STDERR $result;
-
         $record = XMLin($result);
-
         #print STDERR Dumper $record;
 
         foreach ( @{ $record->{DocSum}->{Item} } )
@@ -364,12 +354,11 @@ sub ncbi_search {
 
     return unless $id and $title;
     return encode_json(
-        { timestamp => $timestamp, name => $title, id => $id } );
+        { name => $title, id => $id } );
 }
 
 sub upload_file {
     my %opts      = @_;
-    my $timestamp = $opts{timestamp};
     my $filename  = '' . $FORM->param('input_upload_file');
     my $fh        = $FORM->upload('input_upload_file');
 
@@ -392,7 +381,6 @@ sub upload_file {
 
     return encode_json(
         {
-            timestamp => $timestamp,
             filename  => $filename,
             path      => $path,
             size      => $size

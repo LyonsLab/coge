@@ -1,11 +1,17 @@
-var coge = (function(namespace) {
-    namespace.ascending = function(a, b) {
-        return a < b ? -1 : a > b ? 1 : 0;
+var coge = window.coge = (function(ns) {
+    ns.utils = {
+        ascending: function(a, b) {
+            return a < b ? -1 : a > b ? 1 : 0;
+        },
+
+        descending: function(a, b) {
+            return a > b ? -1 : a < b ? 1 : 0;
+        },
+
+        open: function(link) {
+            window.open(link, "_self");
+        }
     };
 
-    namespace.descending = function(a, b) {
-        return a > b ? -1 : a < b ? 1 : 0;
-    };
-
-    return namespace;
+    return ns;
 })(coge || {});
