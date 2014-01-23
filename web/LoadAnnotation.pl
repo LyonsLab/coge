@@ -140,7 +140,6 @@ sub generate_body {
 sub irods_get_path {
     my %opts      = @_;
     my $path      = $opts{path};
-    my $timestamp = $opts{timestamp};
 
     my $username = $USER->name;
     my $basepath = $P->{IRODSDIR};
@@ -164,10 +163,10 @@ sub irods_get_path {
             subject => "System error notification from $PAGE_TITLE",
             body    => $body
         );
-        return encode_json( { timestamp => $timestamp, error => $error } );
+        return encode_json( { error => $error } );
     }
     return encode_json(
-        { timestamp => $timestamp, path => $path, items => $result->{items} } );
+        { path => $path, items => $result->{items} } );
 }
 
 sub irods_get_file {
@@ -237,7 +236,6 @@ sub ftp_get_file {
     my $url       = $opts{url};
     my $username  = $opts{username};
     my $password  = $opts{password};
-    my $timestamp = $opts{timestamp};
 
     #my ( $type, $filepath, $filename ) = $url =~ /^(ftp|http):\/\/(.+)\/(\S+)$/; # mdb removed 1/6/14, issue 274
 	# mdb added 1/6/14, issue 274
@@ -309,7 +307,6 @@ sub ftp_get_file {
         print STDERR "status_line: $status\n";
         return encode_json(
             {
-                timestamp => $timestamp,
                 path      => $path,
                 size      => "Failed: $status"
             }
@@ -318,7 +315,6 @@ sub ftp_get_file {
 
     return encode_json(
         {
-            timestamp => $timestamp,
             path      => $path,
             size      => -s $fullfilepath . '/' . $filename
         }
@@ -327,7 +323,6 @@ sub ftp_get_file {
 
 sub upload_file {
     my %opts      = @_;
-    my $timestamp = $opts{timestamp};
     my $filename;
     $filename = '' . $FORM->param('input_upload_file') if defined $FORM->param('input_upload_file');
     my $fh        = $FORM->upload('input_upload_file');
@@ -351,7 +346,6 @@ sub upload_file {
 
     return encode_json(
         {
-            timestamp => $timestamp,
             filename  => $filename,
             path      => $path,
             size      => $size
