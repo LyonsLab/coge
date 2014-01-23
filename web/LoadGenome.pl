@@ -48,7 +48,7 @@ $OPEN_STATUS = (defined $FORM->param('load_id'));
 $LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $TEMPDIR    = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 
-$MAX_SEARCH_RESULTS = 100;
+$MAX_SEARCH_RESULTS = 400;
 
 %FUNCTION = (
     irods_get_path => \&irods_get_path,
