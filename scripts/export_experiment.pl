@@ -64,21 +64,25 @@ unless ($coge) {
     say $logh "log: error: couldn't connect to database";
     exit(-1);
 }
+
+my $experiment = $coge->resultset('Experiment')->find($eid);
 my $archive = File::Spec->catdir($workdir, $filename);
 my $resdir = $P->{RESOURCESDIR};
-my $experiment = $coge->resultset('Experiment')->find($eid);
 
-my @file_list = export_annotations();
-copy_readme();
-my $info = export_info();
+unless (-r $archive and -r "$archive.finished") {
+    my @file_list = export_annotations();
+    copy_readme();
+    my $info = export_info();
 
-my $files = $experiment->storage_path;
-my $cmd = "tar -czf $archive --exclude=log.txt --directory $files .";
-$cmd .= " --directory $workdir";
-$cmd .= " $info " . join " ", @file_list;
-$cmd .= " README.txt";
+    my $files = $experiment->storage_path;
+    my $cmd = "tar -czf $archive --exclude=log.txt --directory $files .";
+    $cmd .= " --directory $workdir";
+    $cmd .= " $info " . join " ", @file_list;
+    $cmd .= " README.txt";
 
-my $result = system($cmd) unless -r $archive;
+    system($cmd);
+    system("touch $archive.finished");
+}
 
 sub copy_readme {
     my $readme = File::Spec->catdir(($workdir, "README.txt"));
