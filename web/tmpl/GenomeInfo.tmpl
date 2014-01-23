@@ -65,6 +65,8 @@ function search_organisms (search_term) {
 }
 
 function get_features() {
+    $("#dsg_feature_count").hide().html(spinner).fadeIn();
+
     $.ajax({
         data: {
             fname: "get_features",
@@ -72,8 +74,9 @@ function get_features() {
             gstid: $("#gstid").val()
         },
         success: function(data) {
-            $("#dsg_feature_count").hide();
-            $("#genome_features").html(data).slideDown();
+            $("#dsg_feature_count").fadeOut(function() {;
+                $("#genome_features").html(data).slideDown();
+            });
         }
     })
 };
