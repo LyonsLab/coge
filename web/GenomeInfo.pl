@@ -593,8 +593,6 @@ sub get_genome_data {
     $template->param(
         #CHROMOSOME_COUNT => commify( $genome->chromosome_count() ),
         #LENGTH           => commify( $genome->length ),
-        GID              => $genome->id,
-        LOGON            => ( $USER->user_name ne "public" )
     );
 
     return $template->output;
@@ -1516,6 +1514,7 @@ sub generate_body {
         GID             => $gid,
         GENOME_INFO     => get_genome_info( genome => $genome ),
         GENOME_DATA     => get_genome_info_details( dsgid => $genome->id),
+        LOGON           => ( $USER->user_name ne "public" ),
         GENOME_ANNOTATIONS => get_annotations( gid => $gid ) || undef,
         DEFAULT_TYPE    => 'note', # default annotation type
         EXPERIMENTS     => get_experiments( genome => $genome ),
