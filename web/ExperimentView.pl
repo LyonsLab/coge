@@ -344,6 +344,7 @@ sub add_annotation {
           $coge->resultset('AnnotationTypeGroup')
           ->find_or_create( { name => $type_group } );
     }
+
     my $type_rs = $coge->resultset('AnnotationType')->find_or_create(
         {
             name                     => $type,
@@ -454,105 +455,121 @@ sub export_experiment_irods {
     my $experiment = $coge->resultset('Experiment')->find($eid);
     return $ERROR unless $USER->has_access_to_experiment($experiment);
 
-    my $dir = get_irods_path();
+    my ($statusCode, $file) = generate_export($eid);
 
-    my $genome = $experiment->genome;
+    unless($statusCode) {
+        my $genome = $experiment->genome;
+        my @types = $experiment->types;
+        my @notebooks = $experiment->notebooks;
+        my $dir = get_irods_path();
+        my $dest = File::Spec->catdir($dir, basename($file));
+        my $restricted = ($experiment->restricted) ? "true" : "false";
 
-    my %meta = (
-        'Imported From'            => "CoGe: " . $P->{SERVER},
-        'CoGe ExperimentView Link' => $P->{SERVER} . "ExperimentView.pl?eid=$eid",
-        'CoGe GenomeInfo Link'     => $P->{SERVER} . "GenomeInfo.pl?gid=" . $genome->id,
-        'Source'                   => $experiment->source->info,
-        'Version'                  => $experiment->version,
-    );
+        my %meta = (
+            'Imported From'            => "CoGe: " . $P->{SERVER},
+            'CoGe ExperimentView Link' => $P->{SERVER} . "ExperimentView.pl?eid=$eid",
+            'CoGe GenomeInfo Link'     => $P->{SERVER} . "GenomeInfo.pl?gid=" . $genome->id,
+            'Source'                   => $experiment->source->info,
+            'Version'                  => $experiment->version,
+            'Restricted'               => $restricted
+        );
 
-    $meta{'Source Link'} = $experiment->source->link if $experiment->source->link;
-    $meta{'Experiment Name'} = $experiment->name if ($experiment->name);
-    $meta{'Experiment Description'} = $experiment->description if ($experiment->description);
+        $meta{'Name'} = $experiment->name if ($experiment->name);
+        $meta{'Description'} = $experiment->description if ($experiment->description);
+        $meta{'Genome'} = $genome->info;
+        $meta{'Source Link'} = $experiment->source->link if $experiment->source->link;
+        $meta{'Rows'} = commify($experiment->row_count);
 
-    my $i = 1;
-    my @types = $experiment->types;
-    foreach my $type (@types) {
-        my $key = (scalar @types > 1) ? "Experiment Type $i" : "Experiment Type:";
-        $meta{$key} = $type->name;
-        $i++;
-    }
+        my $i = 1;
+        foreach my $type (@types) {
+            my $key = (scalar @types > 1) ? "Experiment Type $i" : "Experiment Type";
+            $meta{$key} = $type->name;
+            $i++;
+        }
 
-    my $dest_filename;
-    if($experiment->data_type == 3) {
-        my $srcdir = $experiment->storage_path;
-        $dest_filename = "experiment_$eid.bam";
+        $i = 1;
+        foreach my $type (@notebooks) {
+            my $key = (scalar @notebooks > 1) ? "Notebook $i" : "Notebook";
+            $meta{$key} = $type->name;
+            $i++;
+        }
 
-        my $src_bam = File::Spec->catdir(($srcdir, "alignment.bam"));
-        my $dest_bam = File::Spec->catdir(($dir, $dest_filename));
-        CoGe::Accessory::IRODS::irods_iput($src_bam, $dest_bam);
-        CoGe::Accessory::IRODS::irods_imeta($dest_bam, \%meta);
+        foreach my $a ( $experiment->annotations ) {
+            my $group = (
+                defined $a->type->group
+                ? $a->type->group->name . ',' . $a->type->name
+                : $a->type->name
+            );
 
-        my $src_index = File::Spec->catdir(($srcdir, "alignment.bam.bai"));
-        my $dest_index = File::Spec->catdir(($dir, "$dest_filename.bai"));
-        CoGe::Accessory::IRODS::irods_iput($src_index, $dest_index);
-        CoGe::Accessory::IRODS::irods_imeta($dest_index, \%meta);
+            $meta{$group} = $a->info;
+        }
 
-        return $dest_filename;
-    }
-    else {
-        my $files = $experiment->storage_path;
-        $dest_filename = "experiment_$eid.tar.gz";
-        my $archive = File::Spec->catdir(($P->{TEMPDIR}, $PAGE_TITLE, $dest_filename));
-        my $dest = File::Spec->catdir(($dir, basename($archive)));
-
-        my $cmd = "tar -czf $archive --exclude=log.txt --directory $files .";
-        my $result = system($cmd) unless -r $archive;
-
-        CoGe::Accessory::IRODS::irods_iput($archive, $dest);
+        CoGe::Accessory::IRODS::irods_iput($file, $dest);
         CoGe::Accessory::IRODS::irods_imeta($dest, \%meta);
-
-        return $dest_filename;
     }
 
-    return $dest_filename;
+    return basename($file);
+}
+
+sub generate_export {
+    my $eid = shift;
+    my $filename = "experiment_$eid.tar.gz";
+
+    my $conf = File::Spec->catdir($P->{COGEDIR}, "coge.conf");
+    my $script = File::Spec->catdir($P->{SCRIPTDIR}, "export_experiment.pl");
+    my $workdir = get_download_path($eid);
+    my $resdir = $P->{RESOURCESDIR};
+
+    my $cmd = "$script -eid $eid -config $conf -dir $workdir -output $filename -a 1";
+
+    return (execute($cmd),  File::Spec->catdir(($workdir, $filename)));
+}
+
+sub get_download_path {
+    my @paths = ($P->{SECTEMPDIR}, "ExperimentView/downloads", shift);
+    return File::Spec->catdir(@paths);
+}
+
+sub get_download_url {
+    my %args = @_;
+    my $id = $args{id};
+    my $filename = basename($args{file});
+
+    my @url = ($P->{SERVER}, "services/JBrowse",
+        "service.pl/download/ExperimentView",
+        "?eid=$id&file=$filename");
+
+    return join "/", @url;
+}
+
+sub execute {
+    my $cmd = shift;
+
+    my @cmdOut = qx{$cmd};
+    my $cmdStatus = $?;
+
+    if ($cmdStatus != 0) {
+        say STDERR "log: error: command failed with rc=$cmdStatus: $cmd";
+    }
+
+    return $cmdStatus;
 }
 
 sub get_file_urls {
     my %opts = @_;
     my $eid = $opts{eid};
-    my @files;
 
     my $experiment = $coge->resultset('Experiment')->find($eid);
     return 0 unless $USER->has_access_to_experiment($experiment);
-    my $baseurl = $P->{SERVER} . "/tmp/$PAGE_TITLE";
 
-    if($experiment->data_type == 3) {
-        my $srcdir = $experiment->storage_path;
-        my $base = "experiment_$eid";
-        my $dir = File::Spec->catdir(($P->{TEMPDIR}, $PAGE_TITLE));
+    my ($statusCode, $file) = generate_export($eid);
 
-        my $src_bam = File::Spec->catdir(($srcdir, "alignment.bam"));
-        my $dest_bam = File::Spec->catdir(($dir, "$base.bam"));
-        my $url_bam = "$baseurl/$base.bam";
+    unless($statusCode) {
+        my $url = get_download_url(id => $eid, file => $file);
+        return encode_json({ files => [$url] });
+    };
 
-        my $src_index = File::Spec->catdir(($srcdir, "alignment.bam.bai"));
-        my $dest_index = File::Spec->catdir(($dir, "$base.bam.bai"));
-        my $url_index = "$baseurl/$base.bam.bai";
-
-        system("cp $src_bam $dest_bam") unless -r $dest_bam;
-        system("cp $src_index $dest_index") unless -r $dest_index;
-
-        push @files, $url_bam;
-        push @files, $url_index;
-    } else {
-        my $files = $experiment->storage_path;
-        my $archive = File::Spec->catdir(($P->{TEMPDIR}, $PAGE_TITLE, "experiment_$eid.tar.gz"));
-
-        my $cmd = "tar -czf $archive --exclude=log.txt --directory $files .";
-        my $result = system($cmd) unless -r $archive;
-
-        my $url_archive = $baseurl . "/experiment_$eid.tar.gz";
-
-        push @files, $url_archive;
-    }
-
-    return encode_json({ files => \@files });
+    return encode_json({ error => 1 });
 }
 
 sub remove_annotation {
