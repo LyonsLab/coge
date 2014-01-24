@@ -779,9 +779,8 @@ function delete_dataset (dsid) {
                 <TMPL_ELSE>
                     <span class='ui-button ui-corner-all ui-button-go' onClick="$('#genome_delete_box').dialog('open');">Delete</span>
                 </TMPL_IF>
-
-            <span class='ui-button ui-corner-all ui-button-icon-right' onclick="window.open('GenomeView.pl?gid=<TMPL_VAR NAME=GID>')"><span class="ui-icon ui-icon-extlink"></span>View</span>
             </TMPL_IF>
+            <span class='ui-button ui-corner-all ui-button-icon-right' onclick="window.open('GenomeView.pl?gid=<TMPL_VAR NAME=GID>')"><span class="ui-icon ui-icon-extlink"></span>View</span>
         </td>
         <td style="padding-left:10px;">
             <span id='genome_data' style="color:dimgray;font-weight:bold;"><!--Genome Data-->&nbsp;</span>
