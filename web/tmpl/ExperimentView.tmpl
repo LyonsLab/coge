@@ -171,6 +171,12 @@ function add_type_to_experiment () {
     else { alert ('Error: Must have type name specified!');}
 }
 
+function reset_dialog() {
+    $('#loading_msg').show();
+    $('#finished_msg').hide();
+    $('#ok_button').html("Download").hide();
+}
+
 function download_files() {
     /*
     var menu = coge.progress()
@@ -201,7 +207,10 @@ function download_files() {
         }
     });
     */
-    $("#experiment_dialog").dialog("option", "title", "Preparing Download");
+
+    $("#experiment_dialog")
+        .unbind()
+        .dialog("option", "title", "Preparing Download");
 
     // Prevent concurrent executions
     if ( $("#experiment_dialog").dialog( "isOpen" ) )
@@ -211,10 +220,14 @@ function download_files() {
     if (!check_and_report_login())
         return;
 
+    //CLEAR DIALOG
+    reset_dialog();
+
     // Open status dialog right away
     $('#experiment_dialog').dialog('open');
     $('#export_log').html(
-            "<br>The download is being generated<br><br>"
+            "<br>The download is being generated<br><br>" +
+            "File: experiment_" + <tmpl_var name=eid> + ".tar.gz"
     );
 
     $.ajax({
@@ -252,14 +265,18 @@ function export_data() {
     if (!check_and_report_login())
         return;
 
+    //CLEAR DIALOG
+    reset_dialog();
+
     // Open status dialog right away
-    $('#experiment_dialog').dialog('open');
+    $('#experiment_dialog')
+        .unbind()
+        .dialog({ autoOpen: true, title: "Exporting ..."});
+
     $('#export_log').html(
             "<br>Copying this experiment's data files to <br><br>" +
             '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
     );
-
-    $("#experiment_dialog").dialog("option", "title", "Exporting ...");
 
     $.ajax({
         data: {
@@ -277,7 +294,7 @@ function export_data() {
                 $('#loading_msg').hide();
                 $('#finished_msg').hide();
                 $('#error_msg').fadeIn();
-                $('#ok_button').fadeIn();
+                $('#ok_button').html("Close").fadeIn();
             }
         }
     });

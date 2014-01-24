@@ -28,6 +28,62 @@ $(document).ready(function() {
     init_annotation_dialog(<TMPL_VAR NAME="GID">, '<TMPL_VAR NAME="DEFAULT_TYPE">');
 });
 
+function export_features_to_irods(id, feature, isGenome, type) {
+    // Prevent concurrent executions
+    if ( $("#export_dialog").dialog( "isOpen" ) )
+        return;
+
+    // Make sure user is still logged-in
+    if (!check_and_report_login())
+        return;
+
+    // RESET DIALOG
+    reset_dialog();
+
+    // Open status dialog right away
+    $('#export_dialog')
+        .unbind()
+        .dialog('open');
+
+    var data = {
+        fname: "export_features",
+        protein: type,
+        fid: feature
+    };
+
+    if (data.protein) {
+        $('#export_log').html(
+                "<br>Copying protein sequences to <br><br>" +
+                '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
+        );
+    } else {
+        $('#export_log').html(
+                    "<br>Copying nucleotide sequences to <br><br>" +
+                '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
+        );
+
+    }
+
+    if (isGenome) {
+        data.gid = id;
+    } else {
+        data.dsid = id;
+    }
+
+    $.ajax({
+        data: data,
+        dataType: "json",
+        success: function(json) {
+            if (json.error) {
+                show_error();
+            } else {
+                $('#export_log').append('<br><br>File: ' + json.file);
+                show_success();
+            }
+        }
+    });
+}
+
 function wait_to_search (search_func, search_term) {
     pageObj.search_term = search_term;
 
@@ -63,6 +119,23 @@ function search_organisms (search_term) {
         });
     }
 }
+
+function get_features() {
+    $("#dsg_feature_count").hide().html(spinner).fadeIn();
+
+    $.ajax({
+        data: {
+            fname: "get_features",
+            dsgid: <TMPL_VAR NAME='GID'>,
+            gstid: $("#gstid").val()
+        },
+        success: function(data) {
+            $("#dsg_feature_count").fadeOut(function() {;
+                $("#genome_features").html(data).slideDown();
+            });
+        }
+    })
+};
 
 function search_users (search_term) {
     $.ajax({
@@ -251,6 +324,7 @@ function get_gff() {
                     show_error();
                     $("#export_log").html(download_error);
                 } else {
+                    $('#export_log').append('<br><br>File: ' + json.file);
                     show_success();
                     $("#export_dialog").on("dialogclose", function(event, ui){
                         json.files.forEach(coge.utils.open);
@@ -285,6 +359,7 @@ function get_tbl() {
                 show_error();
                 $("#export_log").html(download_error);
             } else {
+                $('#export_log').append('<br><br>File: ' + json.file);
                 show_success();
                 $("#export_dialog").on("dialogclose", function(event, ui){
                     json.files.forEach(coge.utils.open);
@@ -318,6 +393,7 @@ function get_bed() {
                 $('#export_error_msg').fadeIn();
                 $("#export_log").html(download_error);
             } else {
+                $('#export_log').append('<br><br>File: ' + json.file);
                 $('#export_ok_button').fadeIn();
                 $('#export_loading_msg').hide();
                 $('#export_finished_msg').fadeIn();
@@ -365,8 +441,8 @@ function export_gff() {
         $('#export_log').html(
                 "<br>Copying this genomes's FASTA file to <br><br>" +
                 '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
+                + ''
         );
-
         $("#export_dialog")
             .unbind()
             .dialog({ title: "Exporting file", autoOpen: true});
@@ -383,6 +459,7 @@ function export_gff() {
                 upa: upa
             },
             success: function(json) {
+                $('#export_log').append('<br><br>File: ' + json.file);
                 if (json.error) {
                     show_error();
                 } else {
@@ -422,6 +499,8 @@ function export_tbl() {
             gid: genome_id
         },
         success: function(json) {
+            $('#export_log').append('<br><br>File: ' + json.file);
+
             if (json.error) {
                 show_error();
             } else {
@@ -460,6 +539,7 @@ function export_bed() {
             gid: genome_id
         },
         success: function(json) {
+            $('#export_log').append('<br><br>File: ' + json.file);
             if (json.error) {
                 show_error();
             } else {
@@ -684,6 +764,7 @@ function delete_dataset (dsid) {
 </SCRIPT>
 
 
+
 <table style="overflow:hidden;">
     <tr style="vertical-align:top;">
         <td>
@@ -698,16 +779,59 @@ function delete_dataset (dsid) {
                 <TMPL_ELSE>
                     <span class='ui-button ui-corner-all ui-button-go' onClick="$('#genome_delete_box').dialog('open');">Delete</span>
                 </TMPL_IF>
+
+            <span class='ui-button ui-corner-all ui-button-icon-right' onclick="window.open('GenomeView.pl?gid=<TMPL_VAR NAME=GID>')"><span class="ui-icon ui-icon-extlink"></span>View</span>
             </TMPL_IF>
         </td>
         <td style="padding-left:10px;">
             <span id='genome_data' style="color:dimgray;font-weight:bold;"><!--Genome Data-->&nbsp;</span>
             <div class="small ui-widget-content ui-corner-all"><TMPL_VAR NAME="GENOME_DATA"></div>
-            <span class='ui-button ui-corner-all ui-button-icon-right' onclick="window.open('GenomeView.pl?gid=<TMPL_VAR NAME=GID>')"><span class="ui-icon ui-icon-extlink"></span>View</span>
+
+            <br>
+            <table class="small ui-corner-all ui-widget-content">
+                <tr>
+                    <td class='title5'>Download:</td>
+                    <td class='data5'>
+                        <a class='link' href='services/JBrowse/service.pl/sequence/<TMPL_VAR NAME=GID>'>Fasta Sequences</a>&nbsp|
+                        <span class='link' onclick="get_gff()">Export GFF</span>&nbsp|
+                        <span class='link' onclick="get_tbl()">Export TBL</span>&nbsp|
+                        <span class='link' onclick="get_bed()">Export BED</span>
+                    </td>
+                </tr>
+                <TMPL_IF NAME="LOGON">
+                <tr>
+                    <td class='title5'>iPlant Data Store:</td>
+                    <td class='data5'>
+                        <span class='link' ondblclick="export_fasta_irods()" onclick="export_fasta_irods()">Fasta Sequences</span>
+                        &nbsp|
+                        <span class='link' ondblclick="export_gff()" onclick="export_gff()">Export GFF</span>&nbsp|
+                        <span class='link' ondblclick="export_tbl()" onclick="export_tbl()">Export TBL</span>&nbsp|
+                        <span class='link' ondblclick="export_bed()" onclick="export_bed()">Export BED</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class='title5'>Functions:</td>
+                    <td class='data5'>
+                        <span class='link' onDblClick="copy_genome(0);" onClick="copy_genome(0);">Copy</span>&nbsp|
+                        <span class='link' onDblClick="copy_genome(1);" onClick="copy_genome(1);">Copy & Mask</span>
+                    </td>
+                </tr>
+                </TMPL_IF>
+                <tr>
+                    <td class='title5'>Tools:</td>
+                    <td class='data5'>
+                        <a href='OrganismView.pl?dsgid=<TMPL_VAR NAME=GID>' target=_new>OrganismView</a>&nbsp|
+                        <a href='CodeOn.pl?dsgid=<TMPL_VAR NAME=GID>' target=_new>CodeOn</a>&nbsp|
+                        <span class='link' onclick="window.open('SynMap.pl?dsgid1=<TMPL_VAR NAME=GID>;dsgid2=<TMPL_VAR NAME=GID>');">SynMap</span>&nbsp|
+                        <span class='link' onclick="window.open('CoGeBlast.pl?dsgid=<TMPL_VAR NAME=GID>');">CoGeBlast</span>
+                    </td>
+                </tr>
+            </table>
         </td>
     </tr>
 </table>
 <br>
+
 
 <TMPL_IF NAME="GENOME_ANNOTATIONS">
 <div>
@@ -717,6 +841,7 @@ function delete_dataset (dsid) {
  </div>
 </div>
 <br>
+
 </TMPL_IF>
 
 <span style="color:dimgray;font-weight:bold;">Sequence & Gene Annotation</span><br>
@@ -925,58 +1050,6 @@ Are you sure you want to move this genome into your trash?<p>
     </table>
     <br>
     <span onClick="update_genome_info();" class='ui-button ui-corner-all ui-button-go'>Update</span>
-</TMPL_IF>
-
-
-
-<TMPL_IF NAME="DO_GENOME_DATA">
-    <table class="small">
-        <tr>
-            <td class='title5'>Chromosomes:</td>
-            <td class='data5'><TMPL_VAR NAME="CHROMOSOME_COUNT"></td>
-        </tr>
-        <tr>
-            <td class='title5'>Length:</td>
-            <td class='data5'><TMPL_VAR NAME="LENGTH"></td>
-        </tr>
-        <tr>
-            <td class='title5'>Download:</td>
-            <td class='data5'>
-                <a class='link' href='services/JBrowse/service.pl/sequence/<TMPL_VAR NAME=GID>'>Fasta Sequences</a>&nbsp|
-                <span class='link' onclick="get_gff()">Export GFF</span>&nbsp|
-                <span class='link' onclick="get_tbl()">Export TBL</span>&nbsp|
-                <span class='link' onclick="get_bed()">Export BED</span>
-            </td>
-        </tr>
-        <TMPL_IF NAME="LOGON">
-        <tr>
-            <td class='title5'>iPlant Data Store:</td>
-            <td class='data5'>
-                <span class='link' ondblclick="export_fasta_irods()" onclick="export_fasta_irods()">Fasta Sequences</span>
-                &nbsp|
-                <span class='link' ondblclick="export_gff()" onclick="export_gff()">Export GFF</span>&nbsp|
-                <span class='link' ondblclick="export_tbl()" onclick="export_tbl()">Export TBL</span>&nbsp|
-                <span class='link' ondblclick="export_bed()" onclick="export_bed()">Export BED</span>
-            </td>
-        </tr>
-        <tr>
-            <td class='title5'>Functions:</td>
-            <td class='data5'>
-                <span class='link' onDblClick="copy_genome(0);" onClick="copy_genome(0);">Copy</span>&nbsp|
-                <span class='link' onDblClick="copy_genome(1);" onClick="copy_genome(1);">Copy & Mask</span>
-            </td>
-        </tr>
-        </TMPL_IF>
-        <tr>
-            <td class='title5'>Tools:</td>
-            <td class='data5'>
-                <a href='OrganismView.pl?dsgid=<TMPL_VAR NAME=GID>' target=_new>OrganismView</a>&nbsp|
-                <a href='CodeOn.pl?dsgid=<TMPL_VAR NAME=GID>' target=_new>CodeOn</a>&nbsp|
-                <span class='link' onclick="window.open('SynMap.pl?dsgid1=<TMPL_VAR NAME=GID>;dsgid2=<TMPL_VAR NAME=GID>');">SynMap</span>&nbsp|
-                <span class='link' onclick="window.open('CoGeBlast.pl?dsgid=<TMPL_VAR NAME=GID>');">CoGeBlast</span>
-            </td>
-        </tr>
-    </table>
 </TMPL_IF>
 
 
