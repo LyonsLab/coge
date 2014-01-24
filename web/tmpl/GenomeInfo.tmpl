@@ -53,12 +53,12 @@ function export_features_to_irods(id, feature, isGenome, type) {
 
     if (data.protein) {
         $('#export_log').html(
-                "<br>Copying Protein Sequence file to <br><br>" +
+                "<br>Copying protein sequences to <br><br>" +
                 '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
         );
     } else {
         $('#export_log').html(
-                    "<br>Copying DNA Sequence file to <br><br>" +
+                    "<br>Copying nucleotide sequences to <br><br>" +
                 '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
         );
 
