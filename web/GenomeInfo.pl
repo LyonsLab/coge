@@ -65,6 +65,7 @@ $ERROR = encode_json({ error => 1 });
     export_bed                 => \&export_bed,
     export_gff                 => \&export_gff,
     export_tbl                 => \&export_tbl,
+    export_features             => \&export_features,
     get_genome_info_details    => \&get_genome_info_details,
     get_features               => \&get_feature_counts
 );
@@ -263,7 +264,22 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
           . $feats->{$type}{id} . ";";
         $feat_string .= "dsgid=$dsgid;" if $dsgid;
         $feat_string .= "dsid=$dsid;"   if $dsid;
-        $feat_string .= "')\">DNA Seqs";
+        $feat_string .= "')\">DNA Seqs</td>";
+
+        my $fid = $feats->{$type}{id};
+
+        if ($dsgid) {
+            $feat_string .= qq{<td>|</td>}
+            . qq{<td class="small link" onclick="export_features_to_irods($dsgid, $fid, true, 0);">}
+            . qq{Export DNA Seqs}
+            . qq{</td>};
+        }
+        else {
+            $feat_string .= qq{<td>|</td>}
+            . qq{<td class="small link" onclick="export_features_to_irods($dsid, $fid, false, 0);">}
+            . qq{Export DNA Seqs}
+            . qq{</td>};
+        }
 
         if ( $feats->{$type}{name} eq "CDS" ) {
             $feat_string .= "<td>|</td>";
@@ -273,7 +289,21 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
             $feat_string .= ";dsgid=$dsgid" if $dsgid;
             $feat_string .= ";dsid=$dsid"   if $dsid;
             $feat_string .= "')\">Prot Seqs";
+
+            if ($dsgid) {
+                $feat_string .= qq{<td>|</td>}
+                . qq{<td class="small link" onclick="export_features_to_irods($dsgid, $fid, true, 1);">}
+                . qq{Export Prot Seqs}
+                . qq{</td>};
+            }
+            else {
+                $feat_string .= qq{<td>|</td>}
+                . qq{<td class="small link" onclick="export_features_to_irods($dsid, $fid, false, 1);">}
+                . qq{Export Prot Seqs}
+                . qq{</td>};
+            }
         }
+
     }
     $feat_string .= "</table>";
 
@@ -305,6 +335,62 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
     $feat_string .= "</div>";
     $feat_string .= "None" unless keys %$feats;
     return $feat_string;
+}
+
+sub generate_features {
+    my %opts = @_;
+    my $gid = $opts{gid};
+    my $dsid = $opts{dsid};
+    my $fid = $opts{fid};
+    my $protein = $opts{protein};
+
+    if ($gid) {
+        my $genome = $coge->resultset('Genome')->find($gid);
+        return 1 unless ($USER->has_access_to_genome($genome));
+    } else {
+        my $ds = $coge->resultset('Dataset')->find($dsid) if $dsid;
+        my ($genomes) = $ds->genomes if $ds;
+        return 1 unless ($USER->has_access_to_genome($genomes));
+    }
+
+    my $conf = File::Spec->catdir($P->{COGEDIR}, "coge.conf");
+    my $cmd = File::Spec->catdir($P->{SCRIPTDIR}, "export_features_by_type.pl")
+        . " -ftid $fid -prot $protein -config $conf";
+
+    my $dir;
+    my $filename;
+
+    if($gid) {
+        $filename .= $gid;
+        $dir = get_download_path($gid);
+        $cmd .= " -gid $gid -dir $dir";
+    } else {
+        $filename .= $dsid   if $dsid;
+        $dir = get_download_path($dsid);
+        $cmd .= " -dsid $dsid -dir $dir";
+    }
+
+    my $ft = $coge->resultset('FeatureType')->find($fid);
+    $filename .= "-" . $ft->name;
+    $filename .= "-prot" if $protein;
+    $filename .= ".fasta";
+
+    return (execute($cmd), File::Spec->catdir($dir, $filename));
+}
+
+sub export_features {
+    my ($statusCode, $file) = generate_features(@_);
+    my (%json, %meta);
+
+    $json{file} = basename($file);
+
+    if ($statusCode) {
+        $json{error} = 1;
+    } else {
+        $json{error} = export_to_irods( file => $file, meta => \%meta );
+    }
+
+    return encode_json(\%json);
 }
 
 sub get_gc_for_chromosome {
@@ -354,8 +440,8 @@ sub get_gc_for_chromosome {
       . "%  X: "
       . sprintf( "%.2f", 100 * $x / $total ) . "%)"
       if $total;
-    return $results;
-}
+      return $results;
+  }
 
 sub get_genome_info {
     my %opts   = @_;
@@ -909,10 +995,11 @@ sub get_annotations {
     my $gid  = $opts{gid};
     return "Must have valid genome id\n" unless ($gid);
     my $genome = $coge->resultset('Genome')->find($gid);
+
     return "Access denied\n" unless $USER->has_access_to_genome($genome);
 
     my $user_can_edit =
-      ( $USER->is_admin || $USER->is_owner_editor( genome => $gid ) );
+      ( $USER->is_admin || $USER->is_owner_editor( dsg => $gid ) );
 
     my %groups;
     my $num_annot = 0;

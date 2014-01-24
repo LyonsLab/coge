@@ -28,6 +28,62 @@ $(document).ready(function() {
     init_annotation_dialog(<TMPL_VAR NAME="GID">, '<TMPL_VAR NAME="DEFAULT_TYPE">');
 });
 
+function export_features_to_irods(id, feature, isGenome, type) {
+    // Prevent concurrent executions
+    if ( $("#export_dialog").dialog( "isOpen" ) )
+        return;
+
+    // Make sure user is still logged-in
+    if (!check_and_report_login())
+        return;
+
+    // RESET DIALOG
+    reset_dialog();
+
+    // Open status dialog right away
+    $('#export_dialog')
+        .unbind()
+        .dialog('open');
+
+    var data = {
+        fname: "export_features",
+        protein: type,
+        fid: feature
+    };
+
+    if (data.protein) {
+        $('#export_log').html(
+                "<br>Copying Protein Sequence file to <br><br>" +
+                '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
+        );
+    } else {
+        $('#export_log').html(
+                    "<br>Copying DNA Sequence file to <br><br>" +
+                '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
+        );
+
+    }
+
+    if (isGenome) {
+        data.gid = id;
+    } else {
+        data.dsid = id;
+    }
+
+    $.ajax({
+        data: data,
+        dataType: "json",
+        success: function(json) {
+            if (json.error) {
+                show_error();
+            } else {
+                $('#export_log').append('<br><br>File: ' + json.file);
+                show_success();
+            }
+        }
+    });
+}
+
 function wait_to_search (search_func, search_term) {
     pageObj.search_term = search_term;
 
