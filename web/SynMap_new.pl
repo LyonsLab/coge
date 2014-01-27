@@ -3131,6 +3131,8 @@ sub get_results {
             file => $merged_dagchainer_file,
             msg  => qq{Merged DAGChainer output}
         );
+	#merged dagchainer output is not specified in results.  This hack gets it there.
+	$dagchainer_url.=$merged_dag_url if -r $merged_dagchainer_file;
 
         my $quota_align_coverage_url = _filename_to_link(
             file => $quota_align_coverage,
