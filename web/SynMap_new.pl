@@ -3227,6 +3227,12 @@ sub get_results {
                 diagonal => undef,
                 result   => $spa_url,
             },
+            {
+                general  => undef,
+                homolog  => undef,
+                diagonal => undef,
+                result   => $svg_url,
+            },
         ];
 
         $results->param( files => $rows );
