@@ -11,11 +11,13 @@ use JSON::XS;
 use Sort::Versions;
 use File::Basename qw(basename);
 use File::Path qw(mkpath);
+use POSIX qw(floor);
+
 no warnings 'redefine';
 
 use vars qw(
   $P $PAGE_TITLE $TEMPDIR $LOAD_ID $USER $CONFIGFILE $coge $FORM %FUNCTION
-  $MAX_SEARCH_RESULTS $LINK $node_types $ERROR
+  $MAX_SEARCH_RESULTS $LINK $node_types $ERROR $HISTOGRAM $TEMPURL $SERVER
 );
 
 $PAGE_TITLE = 'GenomeInfo';
@@ -32,8 +34,11 @@ $FORM = new CGI;
 );
 
 $LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
-$TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 $CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
+$TEMPDIR   = $P->{TEMPDIR} . "/$PAGE_TITLE";
+$TEMPURL   = $P->{TEMPURL} . "/$PAGE_TITLE";
+$HISTOGRAM = $P->{HISTOGRAM};
+$SERVER    = $P->{SERVER};
 
 $MAX_SEARCH_RESULTS = 100;
 $ERROR = encode_json({ error => 1 });
@@ -65,9 +70,14 @@ $ERROR = encode_json({ error => 1 });
     export_bed                 => \&export_bed,
     export_gff                 => \&export_gff,
     export_tbl                 => \&export_tbl,
-    export_features             => \&export_features,
+    export_features            => \&export_features,
     get_genome_info_details    => \&get_genome_info_details,
-    get_features               => \&get_feature_counts
+    get_features               => \&get_feature_counts,
+    gen_data                   => \&gen_data,
+    get_gc_for_chromosome      => \&get_gc_for_chromosome,
+    get_gc_for_noncoding       => \&get_gc_for_noncoding,
+    get_gc_for_feature_type => \&get_gc_for_feature_type,
+    get_chr_length_hist        => \&get_chr_length_hist,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
@@ -110,10 +120,9 @@ sub get_genome_info_details {
       if $dsg->description;
     $html .= qq{<tr><td class="title5">Chromosome count: <td class="data5">} . commify($chr_num);
 
-#XXX: Need to add histogram support
-#    $html .=
-#qq{ <span class="link" onclick="\$('#chromosome_hist').dialog('open');chr_hist($dsgid);">Histogram of sizes (Mean, Mode, N50)</span>};
-#    $html .= qq{</td></tr>};
+    $html .=
+qq{ <span class="link" onclick="chr_hist($dsgid);">Histogram of sizes (Mean, Mode, N50)</span>};
+    $html .= qq{</td></tr>};
 
     my $gstid    = $dsg->genomic_sequence_type->id;
     my $gst_name = $dsg->genomic_sequence_type->name;
@@ -133,16 +142,13 @@ qq{<tr><td class="title5">Sequence type:<td class="data5">}
       && $chr_num < 20 ? get_gc_for_chromosome( dsgid => $dsgid ) : 0;
     $gc =
         $gc
-      ? $gc : "";
-
-#XXX: add support
-#      : qq{  <div style="float: left; text-indent: 1em;" id=datasetgroup_gc class="link" onclick="gen_data(['args__loading...'],['datasetgroup_gc']);\$('#datasetgroup_gc').removeClass('link'); get_gc_for_chromosome(['args__dsgid','dsg_id','args__gstid', 'gstid'],['datasetgroup_gc']);">  Click for percent GC content</div><br/>};
+      ? $gc :
+      qq{  <div style="float: left; text-indent: 1em;" id="dsg_gc" class="link" onclick="get_gc_content('#dsg_gc', 'get_gc_for_chromosome');">  Click for percent GC content</div><br/>};
     $html .= "$gc</td></tr>";
 
-#XXX: add support
-#    $html .= qq{
-#<tr><td>Noncoding sequence:<td><div id=dsg_noncoding_gc class="link" onclick = "gen_data(['args__loading...'],['dsg_noncoding_gc']);\$('#dsg_noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsgid','dsg_id','args__gstid', 'gstid'],['dsg_noncoding_gc']);">Click for percent GC content</div></td></tr>
-#} if $total_length;
+    $html .= qq{
+<tr><td class="title5">Noncoding sequence:<td><div id=dsg_noncoding_gc class="link" onclick = "get_gc_content('#dsg_noncoding_gc', 'get_gc_for_noncoding');">Click for percent GC content</div></td></tr>
+} if $total_length;
 
 #temporarily removed until this is connected correctly for individual users
 #    $html .= qq{&nbsp|&nbsp};
@@ -166,6 +172,11 @@ qq{<tr><td class="title5">Sequence type:<td class="data5">}
     $html .= qq{<div class="hidden padded" id=genome_features></div>};
 
     return $html;
+}
+
+sub gen_data {
+    my $message = shift;
+    return qq{<font class="small alert">$message</font>};
 }
 
 sub get_feature_counts {
@@ -243,15 +254,14 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
         $feat_string .=
           qq{<td class="data5"valign=top align=right>} . commify( $feats->{$type}{count} );
 
-#XXX: Need to add histogram support
-#        $feat_string .= "<td><div id=" . $type . "_type class=\"link small\"
-#  onclick=\"
-#  \$('#gc_histogram').dialog('option','title', 'Histogram of GC content for "
-#          . $feats->{$type}{name} . "s');
-#  \$('#gc_histogram').dialog('open');"
-#          . "get_feat_gc({$gc_args"
-#          . $feats->{$type}{id} . "})\">"
-#          . '%GC Hist</div>';
+        $feat_string .= "<td><div id=" . $type . "_type class=\"link small\"
+  onclick=\"
+  \$('#gc_histogram').dialog('option','title', 'Histogram of GC content for "
+          . $feats->{$type}{name} . "s');"
+          . "get_feat_gc({$gc_args"
+          . $feats->{$type}{id} . "})\">"
+          . '%GC Hist</div>';
+
         $feat_string .= "<td>|</td>";
         $feat_string .=
 "<td class='small link' onclick=\"window.open('FeatList.pl?$feat_list_string"
@@ -382,6 +392,7 @@ sub export_features {
     my ($statusCode, $file) = generate_features(@_);
     my (%json, %meta);
 
+    say STDERR $file;
     $json{file} = basename($file);
 
     if ($statusCode) {
@@ -441,7 +452,359 @@ sub get_gc_for_chromosome {
       . sprintf( "%.2f", 100 * $x / $total ) . "%)"
       if $total;
       return $results;
-  }
+}
+
+sub get_gc_for_noncoding {
+    my %opts  = @_;
+    my $dsid  = $opts{dsid};
+    my $dsgid = $opts{dsgid};
+    my $chr   = $opts{chr};
+    my $gstid = $opts{gstid};    #genomic sequence type id
+    return "error" unless $dsid || $dsgid;
+    my $gc = 0;
+    my $at = 0;
+    my $n  = 0;
+    my $x  = 0;
+    my $search = { "feature_type_id" => 3 };
+    $search->{"me.chromosome"} = $chr if defined $chr;
+    my @data;
+
+    my (@items, @datasets);
+    if ($dsid) {
+        my $ds = $coge->resultset('Dataset')->find($dsid);
+        return "unable to find dataset id$dsid\n" unless $ds;
+        push @items, $ds;
+        push @datasets, $ds;
+    }
+    if ($dsgid) {
+        my $dsg = $coge->resultset('Genome')->find($dsgid);
+        return "unable to find genome id$dsgid\n" unless $dsgid;
+        $gstid = $dsg->type->id;
+        push @items, $dsg;
+        push @datasets, $dsg->datasets;
+    }
+
+    my %seqs; # prefetch the sequences with one call to genomic_sequence (slow for many seqs)
+    foreach my $item (@items) {
+        map {
+            $seqs{$_} = $item->get_genomic_sequence( chr => $_, seq_type => $gstid )
+        } (defined $chr ? ($chr) : $item->chromosomes);
+    }
+
+    foreach my $ds (@datasets) {
+        foreach my $feat (
+            $ds->features(
+                $search,
+                {
+                    join => [
+                        'locations',
+                        { 'dataset' => { 'dataset_connectors' => 'genome' } }
+                    ],
+                    prefetch => [
+                        'locations',
+                        { 'dataset' => { 'dataset_connectors' => 'genome' } }
+                    ]
+                }
+            )
+          )
+        {
+            foreach my $loc ( $feat->locations ) {
+                if ( $loc->stop > length( $seqs{ $feat->chromosome } ) ) {
+                    print STDERR "feature "
+                      . $feat->id
+                      . " stop exceeds sequence length: "
+                      . $loc->stop . " :: "
+                      . length( $seqs{ $feat->chromosome } ), "\n";
+                }
+                substr(
+                    $seqs{ $feat->chromosome },
+                    $loc->start - 1,
+                    ( $loc->stop - $loc->start + 1 )
+                ) = "-" x ( $loc->stop - $loc->start + 1 );
+            }
+
+            #push @data, sprintf("%.2f",100*$gc[0]/$total) if $total;
+        }
+    }
+    foreach my $seq ( values %seqs ) {
+        $gc += $seq =~ tr/GCgc/GCgc/;
+        $at += $seq =~ tr/ATat/ATat/;
+        $n  += $seq =~ tr/nN/nN/;
+        $x  += $seq =~ tr/xX/xX/;
+    }
+    my $total = $gc + $at + $n + $x;
+    return "error" unless $total;
+    return
+        commify($total) . " bp"
+      . "&nbsp(GC: "
+      . sprintf( "%.2f", 100 * $gc / ($total) )
+      . "%  AT: "
+      . sprintf( "%.2f", 100 * $at / ($total) ) . "% N: "
+      . sprintf( "%.2f", 100 * $n /  ($total) ) . "% X: "
+      . sprintf( "%.2f", 100 * $x /  ($total) ) . "%)";
+
+    my @dsids = map { $_->id } @datasets;
+    my $file = $TEMPDIR . "/" . join( "_", @dsids ) . "_wobble_gc.txt";
+    open( OUT, ">" . $file );
+    print OUT "#wobble gc for dataset ids: " . join( " ", @dsids ), "\n";
+    print OUT join( "\n", @data ), "\n";
+    close OUT;
+    my $cmd = $HISTOGRAM;
+    $cmd .= " -f $file";
+    my $out = $file;
+    $out =~ s/txt$/png/;
+    $cmd .= " -o $out";
+    $cmd .= " -t \"CDS wobble gc content\"";
+    $cmd .= " -min 0";
+    $cmd .= " -max 100";
+    `$cmd`;
+    my $info =
+        "<div class = small>Total: "
+      . commify($total)
+      . " codons.  Mean GC: "
+      . sprintf( "%.2f", 100 * $gc / ($total) )
+      . "%  AT: "
+      . sprintf( "%.2f", 100 * $at / ($total) )
+      . "%  N: "
+      . sprintf( "%.2f", 100 * ($n) / ($total) )
+      . "%</div>";
+    $out =~ s/$TEMPDIR/$TEMPURL/;
+    my $hist_img = "<img src=\"$out\">";
+
+    return $info, $hist_img;
+}
+
+sub get_gc_for_feature_type {
+    my %opts   = @_;
+    my $dsid   = $opts{dsid};
+    my $dsgid  = $opts{dsgid};
+    my $chr    = $opts{chr};
+    my $typeid = $opts{typeid};
+    my $gstid  = $opts{gstid};  #genomic sequence type id
+    my $min    = $opts{min};    #limit results with gc values greater than $min;
+    my $max    = $opts{max};    #limit results with gc values smaller than $max;
+    my $hist_type = $opts{hist_type};
+    $hist_type = "counts" unless $hist_type;
+    $min       = undef if $min       && $min       eq "undefined";
+    $max       = undef if $max       && $max       eq "undefined";
+    $chr       = undef if $chr       && $chr       eq "undefined";
+    $dsid      = undef if $dsid      && $dsid      eq "undefined";
+    $hist_type = undef if $hist_type && $hist_type eq "undefined";
+    $typeid = 1 if $typeid eq "undefined";
+    return unless $dsid || $dsgid;
+    my $gc   = 0;
+    my $at   = 0;
+    my $n    = 0;
+    my $type = $coge->resultset('FeatureType')->find($typeid);
+    my @data;
+    my @fids;    #storage for fids that passed.  To be sent to FeatList
+
+    my (@items, @datasets);
+    if ($dsid) {
+        my $ds = $coge->resultset('Dataset')->find($dsid);
+        return "unable to find dataset id$dsid\n" unless $ds;
+        push @items, $ds;
+        push @datasets, $ds;
+    }
+    if ($dsgid) {
+        my $dsg = $coge->resultset('Genome')->find($dsgid);
+        return "unable to find genome id$dsgid\n" unless $dsgid;
+        $gstid = $dsg->type->id;
+        push @items, $dsg;
+        push @datasets, $dsg->datasets;
+    }
+
+    my %seqs; # prefetch the sequences with one call to genomic_sequence (slow for many seqs)
+    foreach my $item (@items) {
+        map {
+            $seqs{$_} = $item->get_genomic_sequence( chr => $_, seq_type => $gstid )
+        } (defined $chr ? ($chr) : $item->chromosomes);
+    }
+
+    my $search = { "feature_type_id" => $typeid };
+    $search->{"me.chromosome"} = $chr if defined $chr;
+
+    foreach my $ds (@datasets) {
+        my @feats = $ds->features(
+            $search,
+            {
+                join => [
+                    'locations',
+                    { 'dataset' => { 'dataset_connectors' => 'genome' } }
+                ],
+                prefetch => [
+                    'locations',
+                    { 'dataset' => { 'dataset_connectors' => 'genome' } }
+                ],
+            }
+        );
+        foreach my $feat (@feats) {
+            my $seq = substr(
+                $seqs{ $feat->chromosome },
+                $feat->start - 1,
+                $feat->stop - $feat->start + 1
+            );
+
+            $feat->genomic_sequence( seq => $seq );
+            my @gc = $feat->gc_content( counts => 1 );
+
+            $gc += $gc[0] if $gc[0] =~ /^\d+$/;
+            $at += $gc[1] if $gc[1] =~ /^\d+$/;
+            $n  += $gc[2] if $gc[2] =~ /^\d+$/;
+            my $total = 0;
+            $total += $gc[0] if $gc[0];
+            $total += $gc[1] if $gc[1];
+            $total += $gc[2] if $gc[2];
+            my $perc_gc = 100 * $gc[0] / $total if $total;
+            next unless $perc_gc;    #skip if no values
+            next
+              if defined $min
+                  && $min =~ /\d+/
+                  && $perc_gc < $min;    #check for limits
+            next
+              if defined $max
+                  && $max =~ /\d+/
+                  && $perc_gc > $max;    #check for limits
+            push @data, sprintf( "%.2f", $perc_gc );
+            push @fids, $feat->id . "_" . $gstid;
+        }
+    }
+    my $total = $gc + $at + $n;
+    return "error" unless $total;
+
+    my @dsids = map { $_->id } @datasets;
+    my $file = $TEMPDIR . "/" . join( "_", @dsids );
+
+    #perl -T flag
+    ($min) = $min =~ /(.*)/ if defined $min;
+    ($max) = $max =~ /(.*)/ if defined $max;
+    ($chr) = $chr =~ /(.*)/ if defined $chr;
+    $file .= "_" . $chr . "_" if defined $chr;
+    $file .= "_min" . $min    if defined $min;
+    $file .= "_max" . $max    if defined $max;
+    $file .= "_$hist_type"    if $hist_type;
+    $file .= "_" . $type->name . "_gc.txt";
+    open( OUT, ">" . $file );
+    print OUT "#wobble gc for dataset ids: " . join( " ", @dsids ), "\n";
+    print OUT join( "\n", @data ), "\n";
+    close OUT;
+    my $cmd = $HISTOGRAM;
+    $cmd .= " -f $file";
+    my $out = $file;
+    $out =~ s/txt$/png/;
+    $cmd .= " -o $out";
+    $cmd .= " -t \"" . $type->name . " gc content\"";
+    $cmd .= " -min 0";
+    $cmd .= " -max 100";
+    $cmd .= " -ht $hist_type" if $hist_type;
+    `$cmd`;
+
+    $min = 0   unless defined $min && $min =~ /\d+/;
+    $max = 100 unless defined $max && $max =~ /\d+/;
+    my $info;
+    $info .= qq{<div class="small">
+Min: <input type="text" size="3" id="feat_gc_min" value="$min">
+Max: <input type=text size=3 id=feat_gc_max value=$max>
+Type: <select id=feat_hist_type>
+<option value ="counts">Counts</option>
+<option value = "percentage">Percentage</option>
+</select>
+};
+    $info =~ s/>Per/ selected>Per/ if $hist_type =~ /per/;
+    my $gc_args;
+    $gc_args = "chr: '$chr'," if defined $chr;
+    $gc_args .= "dsid: $dsid,"
+      if $dsid
+    ; #set a var so that histograms are only calculated for the dataset and not hte genome
+    $gc_args .= "typeid: '$typeid'";
+    $info .=
+qq{<span class="link" onclick="get_feat_gc({$gc_args})">Regenerate histogram</span>};
+    $info .= "</div>";
+    $info .=
+        "<div class = small>Total length: "
+      . commify($total)
+      . " bp, GC: "
+      . sprintf( "%.2f", 100 * $gc / ($total) )
+      . "%  AT: "
+      . sprintf( "%.2f", 100 * $at / ($total) )
+      . "%  N: "
+      . sprintf( "%.2f", 100 * ($n) / ($total) )
+      . "%</div>";
+
+    if ( $min || $max ) {
+        $min = 0   unless defined $min;
+        $max = 100 unless defined $max;
+        $info .=
+qq{<div class=small style="color: red;">Limits set:  MIN: $min  MAX: $max</div>
+};
+    }
+    my $stuff = join "::", @fids;
+    $info .=
+qq{<div class="link small" onclick="window.open('FeatList.pl?fid=$stuff')">Open FeatList of Features</div>};
+
+    $out =~ s/$TEMPDIR/$TEMPURL/;
+    $info .= "<br><img src=\"$out\">";
+    return $info;
+}
+
+sub get_chr_length_hist {
+    my %opts  = @_;
+    my $dsgid = $opts{dsgid};
+    return "error", " " unless $dsgid;
+    my @data;
+    my ($dsg) = $coge->resultset('Genome')->find($dsgid);
+    unless ($dsg) {
+        my $error = "unable to create genome object using id $dsgid\n";
+        return $error;
+    }
+    foreach my $gs ( $dsg->genomic_sequences ) {
+        push @data, $gs->sequence_length;
+    }
+    return "error", " " unless @data;
+    @data = sort { $a <=> $b } @data;
+    my $mid  = floor( scalar(@data) / 2 );
+    my $mode = $data[$mid];
+    my $file = $TEMPDIR . "/" . join( "_", $dsgid ) . "_chr_length.txt";
+    open( OUT, ">" . $file );
+    print OUT "#chromosome/contig lenghts for $dsgid\n";
+    print OUT join( "\n", @data ), "\n";
+    close OUT;
+    my $cmd = $HISTOGRAM;
+    $cmd .= " -f $file";
+    my $out = $file;
+    $out =~ s/txt$/png/;
+    $cmd .= " -o $out";
+    $cmd .=
+        " -t \"Chromosome length for "
+      . $dsg->organism->name . " (v"
+      . $dsg->version . ")\"";
+    `$cmd`;
+    my $sum = 0;
+    map { $sum += $_ } @data;
+    my $n50;
+
+    foreach my $val (@data) {
+        $n50 += $val;
+        if ( $n50 >= $sum / 2 ) {
+            $n50 = $val;
+            last;
+        }
+    }
+    my $mean = sprintf( "%.0f", $sum / scalar @data );
+    my $info =
+        "<table class=small><TR><td>Count:<TD>"
+      . commify( $dsg->genomic_sequences->count )
+      . " chromosomes (contigs, scaffolds, etc.)<tr><Td>Mean:<td>"
+      . commify($mean)
+      . " nt<tr><Td>Mode:<td>"
+      . commify($mode)
+      . " nt<tr><td>N50:<td>"
+      . commify($n50)
+      . " nt</table>";
+    $out =~ s/$TEMPDIR/$TEMPURL/;
+    my $hist_img = "<img src=\"$out\">";
+    return $info . "<br>" . $hist_img;
+}
 
 sub get_genome_info {
     my %opts   = @_;
@@ -937,50 +1300,50 @@ sub export_fasta_irods {
     #print STDERR "export_fasta_irods $gid\n";
 
     my $genome = $coge->resultset('Genome')->find($gid);
-	return unless ($USER->has_access_to_genome($genome));
+    return unless ($USER->has_access_to_genome($genome));
 
-	my $src = $genome->file_path;
-	my $dest_filename = "genome_$gid.faa";
-	my $dest = get_irods_path() . '/' . $dest_filename;
+    my $src = $genome->file_path;
+    my $dest_filename = "genome_$gid.faa";
+    my $dest = get_irods_path() . '/' . $dest_filename;
 
-	unless ($src and $dest) {
-		print STDERR "GenomeInfo:export_fasta_irods: error, undef src or dest\n";
-		return;
-	}
+    unless ($src and $dest) {
+        print STDERR "GenomeInfo:export_fasta_irods: error, undef src or dest\n";
+        return;
+    }
 
-	# Send to iPlant Data Store using iput
-	CoGe::Accessory::IRODS::irods_iput($src, $dest);
-	#TODO need to check rc of iput and abort if failure occurred
+    # Send to iPlant Data Store using iput
+    CoGe::Accessory::IRODS::irods_iput($src, $dest);
+    #TODO need to check rc of iput and abort if failure occurred
 
-	# Set IRODS metadata for object #TODO need to change these to use Accessory::IRODS::IRODS_METADATA_PREFIX
-	my %meta = (
-		    'Imported From' => "CoGe: http://genomevolution.org",
-		    'CoGe OrganismView Link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
-		    'CoGe GenomeInfo Link'=> "http://genomevolution.org/CoGe/GenomeInfo.pl?gid=".$genome->id,
-		    'CoGe Genome ID'   => $genome->id,
-		    'Organism Name'    => $genome->organism->name,
-		    'Organism Taxonomy'    => $genome->organism->description,
-		    'Version'     => $genome->version,
-		    'Type'        => $genome->type->info,
-		   );
+    # Set IRODS metadata for object #TODO need to change these to use Accessory::IRODS::IRODS_METADATA_PREFIX
+    my %meta = (
+            'Imported From' => "CoGe: http://genomevolution.org",
+            'CoGe OrganismView Link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
+            'CoGe GenomeInfo Link'=> "http://genomevolution.org/CoGe/GenomeInfo.pl?gid=".$genome->id,
+            'CoGe Genome ID'   => $genome->id,
+            'Organism Name'    => $genome->organism->name,
+            'Organism Taxonomy'    => $genome->organism->description,
+            'Version'     => $genome->version,
+            'Type'        => $genome->type->info,
+           );
     my $i = 1;
     my @sources = $genome->source;
     foreach my $item (@sources) {
-		my $source = $item->name;
-		$source.= ": ".$item->description if $item->description;
-		my $met_name = "Source";
-		$met_name .= $i if scalar @sources > 1;
-		$meta{$met_name}= $source;
-		$meta{$met_name." Link"} = $item->link if $item->link;
-		$i++;
-	}
-	$meta{'Genome Link'} = $genome->link if ($genome->link);
-	$meta{'Addition Info'} = $genome->message if ($genome->message);
-	$meta{'Genome Name'} = $genome->name if ($genome->name);
-	$meta{'Genome Description'} = $genome->description if ($genome->description);
-	CoGe::Accessory::IRODS::irods_imeta($dest, \%meta);
+        my $source = $item->name;
+        $source.= ": ".$item->description if $item->description;
+        my $met_name = "Source";
+        $met_name .= $i if scalar @sources > 1;
+        $meta{$met_name}= $source;
+        $meta{$met_name." Link"} = $item->link if $item->link;
+        $i++;
+    }
+    $meta{'Genome Link'} = $genome->link if ($genome->link);
+    $meta{'Addition Info'} = $genome->message if ($genome->message);
+    $meta{'Genome Name'} = $genome->name if ($genome->name);
+    $meta{'Genome Description'} = $genome->description if ($genome->description);
+    CoGe::Accessory::IRODS::irods_imeta($dest, \%meta);
 
-	return $dest_filename;
+    return $dest_filename;
 }
 
 sub get_irods_path {
