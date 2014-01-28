@@ -1080,8 +1080,7 @@ header {
 }
 
 #wikifeed > div div img {
-    text-align: center;
-    max-width: 50%;
+    max-width: 95%;
 }
 
 .sidebar_right {

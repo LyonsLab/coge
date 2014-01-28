@@ -21,6 +21,21 @@ window.wikifeed = function(url, element, size) {
         };
     }
 
+    function parseItem(value, index, list) {
+        var elem = $(value);
+
+        if(elem.is("div")) {
+            var inner = $(value).find("a");
+            var images = inner.find("img,embed,object");
+            images.removeAttr("width");
+            images.removeAttr("height");
+
+            return inner;
+        }
+
+        return value;
+    };
+
     function formatPost(value, index, list) {
         var id = $(value[0]).attr("id");
 
@@ -40,9 +55,11 @@ window.wikifeed = function(url, element, size) {
         var date = $("<span></span>").html($(value[2]).text())
             .addClass("date");
 
+        var parsed = items.map(parseItem);
+
         return {
             title: title.text(text).append(date),
-            content: content.html(items)
+            content: content.html(parsed)
         };
     }
 
