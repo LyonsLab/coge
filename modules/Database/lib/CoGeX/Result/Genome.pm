@@ -827,6 +827,8 @@ sub gff {
 
     my $name_unique =
       $opts{name_unique}; #flag for making Name tag of output unique by appending type and occurrence to feature name
+    my $base_url = $opts{base_url}; #server for coge to link back to GenomeInfo
+
     my $output;           #store the goodies
     $output .= "##gff-version\t3\n";
     $output .= "##Generate by CoGe\n";
@@ -834,7 +836,8 @@ sub gff {
     $output .= "##Organism desc: " . $self->organism->description . "\n"
       if $self->organism->description;
     $output .= "##Version: " . $self->version . "\n";
-    $output .= "##CoGe Genome ID (dsgid): " . $self->id . "\n";
+    $output .= "##CoGe Genome ID (gid): " . $self->id . "\n";
+    $output .= "##CoGe GenomeInfo Link: $base_url/GenomeInfo.pl?gid=" . $self->id . "\n" if $base_url;
     $output .= "##\n";
     $output .= "##\n";
     print $output if $print;
