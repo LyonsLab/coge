@@ -289,6 +289,12 @@ div.panel {
   background-image: url(/CoGe/picts/table/table_bg_head_t.png);
 }
 
+.coge-table-header {
+    color: dimgray;
+    font-size: 1em;
+    font-weight: bold;
+}
+
 .tht {
   float: left;
   width: 90%;
