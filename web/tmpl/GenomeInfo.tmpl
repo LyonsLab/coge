@@ -31,6 +31,10 @@ $(document).ready(function() {
 function get_gc_content(id, fname) {
     var elem = $(id);
     elem.hide().html(spinner.clone()).fadeIn();
+    elem.attr("onclick", '')
+        .unbind()
+        .removeClass("link")
+        .addClass("data5");
 
     $.ajax({
         dataType: "html",
@@ -198,8 +202,12 @@ function search_organisms (search_term) {
     }
 }
 
-function get_features() {
-    $("#dsg_feature_count").hide().html(spinner.clone()).fadeIn();
+function get_features(selector) {
+    var elem = $(selector);
+    elem.html(spinner.clone())
+        .attr("onclick", "")
+        .unbind()
+        .fadeIn();
 
     $.ajax({
         data: {
@@ -208,8 +216,8 @@ function get_features() {
             gstid: $("#gstid").val()
         },
         success: function(data) {
-            $("#dsg_feature_count").fadeOut(function() {;
-                $("#genome_features").html(data).slideDown();
+            elem.fadeOut(function() {;
+                elem.html(data).removeClass("small link padded").slideDown();
             });
         }
     })
@@ -841,11 +849,82 @@ function delete_dataset (dsid) {
         },
     });
 }
+
+function open_aa_usage_table(chromosome)
+{
+
+    $("#aa_usage_table")
+        .html("Please wait... ")
+        .append(spinner.clone())
+        .dialog({
+            autoOpen: true,
+            position: {
+                my: "center",
+                at: "top",
+                of: ".box"
+            }
+        });
+
+    $.ajax({
+        data: {
+            fname: "get_aa_usage",
+            dsgid: "<TMPL_VAR NAME='GID'>",
+            chr: chromosome
+        },
+        dataType: "html",
+        success: function(html) {
+            $('#aa_usage_table').html(html);
+            $('#aa_table').tablesorter();
+        }
+    });
+}
+
+
+function get_content_dialog(id, request, chromosome) {
+    var elem = $(id);
+
+    chromosome = (chromosome === "") ? undefined : chromosome;
+
+    elem.dialog('option', 'position', {
+        my: "center",
+        at: "top",
+        of: ".box"
+    });
+
+
+    elem.html("Please wait... ")
+        .append(spinner.clone())
+        .dialog('open')
+
+    $.ajax({
+        data: {
+            fname: request,
+            dsgid: "<TMPL_VAR NAME='GID'>",
+            chr: chromosome,
+        },
+        dataType: "html",
+        success: function(html) {
+            elem.html(html).slideDown();
+        }
+    })
+}
+
+
 </SCRIPT>
 
 
 <div class="dialog_box hidden" id="chromosome_hist" title="Chromosome Size"></div>
 <div class="dialog_box hidden" id="gc_histogram" title="Chromosome Size"></div>
+<div class="dialog_box hidden" id="wobble_gc_histogram" title="Histogram of Wobble GC Content for CDS"></div>
+<div class="dialog_box hidden" id="wobble_gc_diff_histogram" title="(CDS GC - wobble GC) Content Histogram"></div>
+<div class="dialog_box hidden" id="codon_usage_table" title="Codon Usage Table"></div>
+<div class="dialog_box hidden" id="aa_usage_table" title="Amino Acid Usage Table"></div>
+<div class="dialog_box hidden" id="edit_genome_info" title="Edit Genome Information"></div>
+
+
+<TMPL_IF NAME='ADMIN_AREA'>
+    <div class="alert">You are a CoGe Admin. Use your power wisely</div>
+</TMPL_IF>
 
 <table style="overflow:hidden;">
     <tr style="vertical-align:top;">
@@ -865,10 +944,8 @@ function delete_dataset (dsid) {
             <span class='ui-button ui-corner-all ui-button-icon-right' onclick="window.open('GenomeView.pl?gid=<TMPL_VAR NAME=GID>')"><span class="ui-icon ui-icon-extlink"></span>View</span>
         </td>
         <td style="padding-left:10px;">
-            <span id='genome_data' style="color:dimgray;font-weight:bold;"><!--Genome Data-->&nbsp;</span>
-            <div class="small ui-widget-content ui-corner-all"><TMPL_VAR NAME="GENOME_DATA"></div>
-
-            <br>
+            <TMPL_VAR NAME="GENOME_DATA">
+            <div class="left coge-table-header">Tools</div>
             <table class="small ui-corner-all ui-widget-content">
                 <tr>
                     <td class='title5'>Download:</td>
@@ -899,7 +976,7 @@ function delete_dataset (dsid) {
                 </tr>
                 </TMPL_IF>
                 <tr>
-                    <td class='title5'>Tools:</td>
+                    <td class='title5'>Analysis:</td>
                     <td class='data5'>
                         <a href='OrganismView.pl?dsgid=<TMPL_VAR NAME=GID>' target=_new>OrganismView</a>&nbsp|
                         <a href='CodeOn.pl?dsgid=<TMPL_VAR NAME=GID>' target=_new>CodeOn</a>&nbsp|
