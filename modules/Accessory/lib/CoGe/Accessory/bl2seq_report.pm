@@ -79,57 +79,83 @@ sub process_file
 #	$self = undef;
 #}
 
-
-
-
 sub _parseHeader 
   {
     my ($self) = shift;
     my $header = shift;
     return unless $header;
-    $header =~ s/.*Query/Query/s;
-    my ($query, $subject) = split/\n\n+/,$header;#=~ /^(.*letters\))\s+(.*)$/s;
-    warn "Problem parsing header from file: ".$self->file."\n header:\n$header\n" unless $query && $subject;
-    if ($query =~ /Query=\s+(.+)/)
-      { 
-	my $qname = $1;
+    
+# mdb removed 1/28/14, issue 288
+#    $header =~ s/.*Query/Query/s;
+#    my ($query, $subject) = split(/\n\n+/,$header);#=~ /^(.*letters\))\s+(.*)$/s;
+#    warn "Problem parsing header from file: ".$self->file."\n header:\n$header\n" unless $query && $subject;
+#    if ($query =~ /Query=\s+(.+)/)
+#      { 
+#	my $qname = $1;
+#	$self->query($qname);
+#      }
+#    else
+#      {
+#	warn "problem parsing bl2seq report query name from $query\n";
+#	$self->query("UNKNOWN");
+#      }
+#    if ($query =~ /Length=\s*(\d+)/)
+#      {
+#	my $qlength = $1;
+#	$self->qlength($qlength);
+#      }
+#    else
+#      {
+#	warn "problem parsing bl2seq report query length from $query\n";
+#	$self->qlength("ERROR");
+#      }
+#    if ($subject =~ /Subject=\s+(.+)/)
+#      {
+#	my $sname = $1;
+#	$self->subject($sname);
+#      }
+#    else
+#      {
+#	warn "problem parsing bl2seq report subject name from $subject\n";
+#	$self->subject("UNKNOWN");
+#      }
+#    if ($subject =~ /Length=\s*(\d+)/i)
+#      {
+#	my $slength = $1;
+#	$self->slength($slength);
+#      }
+#    else
+#      {
+#	warn "problem parsing bl2seq report subject length from $subject\n";
+#	$self->slength("ERROR");
+#      }
+    
+    # mdb added 1/28/14, issue 288
+	my ($qname, $qlen, $sname, $slen) = $header =~ /.*Query=\s?(\S+).+Length=(\d+).+Subject=\s?(\S+).+Length=(\d+)/s;
+	print STDERR "$qname $qlen $sname $slen\n";
+	
+	if (not defined $qname) {
+		warn "problem parsing bl2seq report query name\n";
+		$qname = 'UNKNOWN';
+	}
+	if (not defined $sname) {
+		warn "problem parsing bl2seq report subject name\n";
+		$sname = 'UNKNOWN';
+	}
+	if (not defined $qlen) {
+		warn "problem parsing bl2seq report query length\n";
+		$qlen = 'ERROR';
+	}	
+	if (not defined $slen) {
+		warn "problem parsing bl2seq report subject length\n";
+		$slen = 'ERROR';
+	}
+	
 	$self->query($qname);
-      }
-    else
-      {
-	warn "problem parsing bl2seq report query name from $query\n";
-	$self->query("UNKNOWN");
-      }
-    if ($query =~ /Length=\s*(\d+)/)
-      {
-	my $qlength = $1;
-	$self->qlength($qlength);
-      }
-    else
-      {
-	warn "problem parsing bl2seq report query length from $query\n";
-	$self->qlength("ERROR");
-      }
-    if ($subject =~ /Subject=\s+(.+)/)
-      {
-	my $sname = $1;
+	$self->qlength($qlen);
 	$self->subject($sname);
-      }
-    else
-      {
-	warn "problem parsing bl2seq report subject name from $subject\n";
-	$self->subject("UNKNOWN");
-      }
-    if ($subject =~ /Length=\s*(\d+)/i)
-      {
-	my $slength = $1;
-	$self->slength($slength);
-      }
-    else
-      {
-	warn "problem parsing bl2seq report subject length from $subject\n";
-	$self->slength("ERROR");
-      }
+	$self->slength($slen);
+    
     return;
 }
 
