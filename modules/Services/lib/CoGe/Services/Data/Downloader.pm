@@ -36,7 +36,7 @@ sub get {
             return;
         }
 
-        @path = ($conf->{SECTEMPDIR}, $page, "downloads", $eid, $dir, $file);
+        @path = ($conf->{SECTEMPDIR}, $page, "downloads", $gid, $dir, $file);
     } elsif ($eid) {
         my $exp = $db->resultset('Experiment')->find($eid);
         if ($exp->restricted and
