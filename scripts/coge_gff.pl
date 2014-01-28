@@ -102,7 +102,8 @@ unless ( -r $file and -r "$file.finished") {
         cds                       => $cds,
         name_unique               => $name_unique,
         id_type                   => $id_type,
-        unique_parent_annotations => $upa
+        unique_parent_annotations => $upa,
+			 base_url => $P->{SERVER},
     );
 
     close($fh);
