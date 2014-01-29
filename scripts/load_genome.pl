@@ -21,7 +21,7 @@ use vars qw($staging_dir $install_dir $fasta_files $irods_files
   $P $MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE $MAX_CHR_NAME_LENGTH );
 
 $MAX_CHROMOSOMES     = 200000;    # max number of chromosomes or contigs
-$MAX_PRINT           = 5;
+$MAX_PRINT           = 10;
 $MAX_SEQUENCE_SIZE   = 5 * 1024 * 1024 * 1024;    # 5 gig
 $MAX_CHR_NAME_LENGTH = 255;
 
@@ -64,7 +64,7 @@ $| = 1;
 die unless ($staging_dir);
 mkpath($staging_dir); # make sure this exists
 my $logfile = "$staging_dir/log.txt";
-open( my $log, ">>$logfile" ) or die "Error opening log file";
+open( my $log, ">>$logfile" ) or die "Error opening log file: $logfile: $!";
 $log->autoflush(1);
 print $log "Starting $0 (pid $$)\n";
 
@@ -324,7 +324,7 @@ foreach my $chr ( sort keys %sequences ) {
 }
 
 # !!!! Don't change line below, gets parsed by calling code !!!!
-print $log "log: Added genome id" . $genome->id . "\n";
+print $log "log: Added genome id " . $genome->id . "\n";
 
 # Copy files from staging directory to installation directory
 my $t1 = new Benchmark;
@@ -444,7 +444,7 @@ sub process_fasta_file {
             exit(-1);
         }
         if ( defined $pSeq->{$chr} ) {
-            print $log "log: error: Duplicate section name '$chr'";
+            print $log "log: error: Duplicate section name '$chr'\n";
             exit(-1);
         }
         if ( $seq =~ /\W/ ) {
@@ -478,10 +478,10 @@ sub process_fasta_file {
             return $totalLength;
         }
         if ( $count <= $MAX_PRINT ) {
-            print $log "log: Processed '$chr' in $filename\n";
+            print $log "log: Processed chr '$chr' in $filename\n";
         }
         elsif ( $count == $MAX_PRINT + 1 ) {
-            print $log "log: (only showing first $MAX_PRINT)\n";
+            print $log "log: (only showing first $MAX_PRINT chromosomes)\n";
         }
         elsif ( ( $count % 10000 ) == 0 ) {
             print $log "log: Processed "

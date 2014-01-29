@@ -537,7 +537,7 @@ sub get_load_log {
             
             last;
         }
-        elsif ( $_ =~ /log: Added genome id(\d+)/i ) {
+        elsif ( $_ =~ /log: Added genome id (\d+)/i ) {
             $gid = $1;
         }
         elsif ( $_ =~ /log: error/i ) {
