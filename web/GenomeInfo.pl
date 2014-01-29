@@ -16,7 +16,7 @@ use POSIX qw(floor);
 no warnings 'redefine';
 
 use vars qw(
-  $P $PAGE_TITLE $TEMPDIR $LOAD_ID $USER $CONFIGFILE $coge $FORM %FUNCTION
+  $P $PAGE_TITLE $TEMPDIR $SECTEMPDIR $LOAD_ID $USER $CONFIGFILE $coge $FORM %FUNCTION
   $MAX_SEARCH_RESULTS $LINK $node_types $ERROR $HISTOGRAM $TEMPURL $SERVER
 );
 
@@ -35,6 +35,7 @@ $FORM = new CGI;
 
 $LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
+$SECTEMPDIR    = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 $TEMPDIR   = $P->{TEMPDIR} . "/$PAGE_TITLE";
 $TEMPURL   = $P->{TEMPURL} . "/$PAGE_TITLE";
 $HISTOGRAM = $P->{HISTOGRAM};
@@ -389,7 +390,7 @@ sub get_codon_usage {
     }
     if ($dsgid) {
         my $dsg = $coge->resultset('Genome')->find($dsgid);
-        return "unable to find genome id$dsgid\n" unless $dsgid;
+        return "unable to find genome id $dsgid\n" unless $dsgid;
         $gstid = $dsg->type->id;
         push @items, $dsg;
         push @datasets, $dsg->datasets;
@@ -812,7 +813,7 @@ sub get_gc_for_noncoding {
     }
     if ($dsgid) {
         my $dsg = $coge->resultset('Genome')->find($dsgid);
-        return "unable to find genome id$dsgid\n" unless $dsgid;
+        return "unable to find genome id $dsgid\n" unless $dsgid;
         $gstid = $dsg->type->id;
         push @items, $dsg;
         push @datasets, $dsg->datasets;
@@ -942,7 +943,7 @@ sub get_gc_for_feature_type {
     }
     if ($dsgid) {
         my $dsg = $coge->resultset('Genome')->find($dsgid);
-        return "unable to find genome id$dsgid\n" unless $dsgid;
+        return "unable to find genome id $dsgid\n" unless $dsgid;
         $gstid = $dsg->type->id;
         push @items, $dsg;
         push @datasets, $dsg->datasets;
@@ -1412,7 +1413,7 @@ sub get_genome_download_links {
 #          db          => $coge,
 #          user_id     => $USER->id,
 #          page        => $PAGE_TITLE,
-#          description => "delete dataset id$dsid in genome id$gid"
+#          description => "delete dataset id $dsid in genome id $gid"
 #      );
 #
 #    return 1;
@@ -1544,7 +1545,7 @@ sub delete_genome {
         db          => $coge,
         user_id     => $USER->id,
         page        => $PAGE_TITLE,
-        description => "$delete_or_undelete genome id$gid"
+        description => "$delete_or_undelete genome id $gid"
     );
 
     return 1;
@@ -1559,6 +1560,7 @@ sub copy_genome {
     my %opts = @_;
     my $gid  = $opts{gid};
     my $mask = $opts{mask};
+    my $seq_only = $opts{seq_only};
     $mask = 0 unless $mask;
 
     print STDERR "copy_and_mask_genome: gid=$gid mask=$mask\n";
@@ -1568,11 +1570,11 @@ sub copy_genome {
     }
 
     # Setup staging area and log file
-    my $stagepath = $TEMPDIR . '/staging/';
+    my $stagepath = $SECTEMPDIR . '/staging/';
     mkpath $stagepath;
 
     my $logfile = $stagepath . '/log.txt';
-    open( my $log, ">$logfile" ) or die "Error creating log file";
+    open( my $log, ">$logfile" ) or die "Error creating log file: $logfile: $!";
     print $log "Calling copy_load_mask_genome.pl ...\n";
     my $cmd =
         $P->{SCRIPTDIR} . "/copy_genome/copy_load_mask_genome.pl "
@@ -1581,6 +1583,7 @@ sub copy_genome {
         . "-mask $mask "
         . "-staging_dir $stagepath "
         . "-conf_file $CONFIGFILE";
+    $cmd .= " -sequence_only" if $seq_only;
     print STDERR "$cmd\n";
     print $log "$cmd\n";
     close($log);
@@ -1601,9 +1604,9 @@ sub get_log {
     #my %opts    = @_;
     #print STDERR "get_log $LOAD_ID\n";
 
-    my $logfile = $TEMPDIR . "staging/log.txt";
+    my $logfile = $SECTEMPDIR . "/staging/log.txt";
     open( my $fh, $logfile ) or
-      return encode_json( { status => -1, log => ["Error opening log file"] } );
+      return encode_json( { status => -1, log => ["Error opening log file: $logfile: $!"] } );
 
     my @lines = ();
     my $gid;
@@ -1614,7 +1617,7 @@ sub get_log {
             $status = 1;
             last;
         }
-        elsif ( $_ =~ /log: Added genome id(\d+)/i ) {
+        elsif ( $_ =~ /log: Added genome id (\d+)/i ) {
             $gid = $1;
         }
         elsif ( $_ =~ /log: error/i ) {
@@ -1649,7 +1652,7 @@ sub get_aa_usage {
     }
     if ($dsgid) {
         my $dsg = $coge->resultset('Genome')->find($dsgid);
-        return "unable to find genome id$dsgid\n" unless $dsgid;
+        return "unable to find genome id $dsgid\n" unless $dsgid;
         $gstid = $dsg->type->id;
         push @items, $dsg;
         push @datasets, $dsg->datasets;
@@ -2374,7 +2377,7 @@ sub generate_body {
     return "No genome specified" unless $gid;
 
     my $genome = $coge->resultset('Genome')->find($gid);
-    return "Genome id$gid not found" unless ($genome);
+    return "Genome id $gid not found" unless ($genome);
     return "Access denied" unless $USER->has_access_to_genome($genome);
 
     my $user_can_edit = $USER->is_admin || $USER->is_owner_editor( dsg => $gid );

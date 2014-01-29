@@ -39,8 +39,8 @@ $| = 1;
 
 mkpath($download_dir, 0, 0777) unless -r $download_dir;
 
-my $logfile = File::Spec->catdir($download_dir, "$filename.log");
-open (my $logh, ">", $logfile) or die "Error opening log file";
+#my $logfile = File::Spec->catdir($download_dir, "$filename.log");
+#open (my $logh, ">", $logfile) or die "Error opening log file";
 
 if ($config) {
     $P    = CoGe::Accessory::Web::get_defaults($config);
@@ -56,12 +56,12 @@ $gid = unescape($gid) if $gid;
 $filename = unescape($filename) if $filename;
 
 if (not $gid) {
-    say $logh "log: error: genome not specified use gid";
+    say STDERR "log: error: genome not specified use gid";
     exit(-1);
 }
 
 if (not $filename) {
-    say $logh "log: error: output file not specified use output";
+    say STDERR "log: error: output file not specified use output";
     exit(-1);
 }
 
@@ -71,7 +71,7 @@ my $coge = CoGeX->connect( $connstr, $user, $pass );
 #$coge->storage->debug(1);
 
 unless ($coge) {
-    say $logh "log: error: couldn't connect to database";
+    say STDERR "log: error: couldn't connect to database";
     exit(-1);
 }
 
@@ -102,7 +102,8 @@ unless ( -r $file and -r "$file.finished") {
         cds                       => $cds,
         name_unique               => $name_unique,
         id_type                   => $id_type,
-        unique_parent_annotations => $upa
+        unique_parent_annotations => $upa,
+			 base_url => $P->{SERVER},
     );
 
     close($fh);

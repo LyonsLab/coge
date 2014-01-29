@@ -234,7 +234,7 @@ sub process_sequence {
                 $header = "$out_chr";
             }
             my $tmp_seq =
-              $dsg->genomic_sequence( chr => $chr, strand => $strand );
+              $dsg->get_genomic_sequence( chr => $chr, strand => $strand );
             $seq .= $tmp_seq;
             my $seq_len = length($tmp_seq);
             my $ori = $strand eq "1" ? "+" : "-";
@@ -273,7 +273,7 @@ sub process_sequence {
                 $pos += $join;
                 $part_num++;
             }
-            my $tmp_seq = $dsg->genomic_sequence( chr => $chr );
+            my $tmp_seq = $dsg->get_genomic_sequence( chr => $chr );
             $seq .= $tmp_seq;
             my $seq_len = length($tmp_seq);
             print AGP join( "\t",
