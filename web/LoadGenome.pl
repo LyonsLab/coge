@@ -14,6 +14,7 @@ use Sort::Versions;
 use File::Path qw(mkpath);
 use File::Copy qw(copy);
 use File::Basename;
+use File::Listing qw(parse_dir);
 use URI;
 use URI::Escape::JavaScript qw(escape);
 use LWP::Simple;
