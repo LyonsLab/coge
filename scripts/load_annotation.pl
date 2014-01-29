@@ -17,7 +17,7 @@ my $t1 = new Benchmark;
 
 my $GO          = 1;
 my $DEBUG       = 1;
-my $DB_BATCH_SZ = 10 * 1000;
+my $DB_BATCH_SZ = 50 * 1000;
 use vars qw($staging_dir $data_file
   $name $description $link $version $restricted
   $gid $source_name $user_name $config
@@ -352,7 +352,7 @@ foreach my $source ( keys %data ) {
                       . ", $strand)\n"
                       if $DEBUG;
                     $loaded_annot++;
-                    batch_add(
+                    batch_add_async(
                         \@loc_buffer,
                         'Location',
                         {    #my $loc_tmp = $feat->add_to_locations({
@@ -381,7 +381,7 @@ foreach my $source ( keys %data ) {
                       ( $master ? " (MASTER)" : '' ), "\n"
                       if $DEBUG;
 
-                    batch_add(
+                    batch_add_async(
                         \@name_buffer,
                         'FeatureName',
                         {    #my $feat_name = $feat->add_to_feature_names({
@@ -408,7 +408,7 @@ foreach my $source ( keys %data ) {
                             print $log "Adding annotation ($type_name): $anno\n"
                               . ( $link ? "\tlink: $link" : '' ) . "\n"
                               if $DEBUG;
-                            batch_add(
+                            batch_add_async(
                                 \@anno_buffer,
                                 'FeatureAnnotation',
                                 {    #$feat->add_to_annotations({
@@ -462,6 +462,32 @@ sub batch_add {
         if ( @$buffer >= $DB_BATCH_SZ or not defined $item ) {
             print $log "Populate $table_name " . @$buffer . "\n";
             $coge->resultset($table_name)->populate($buffer) if (@$buffer);
+            @$buffer = ();
+        }
+    }
+}
+
+sub batch_add_async {
+#  batch_add(@_);
+#  return;
+    my $buffer     = shift;
+    my $table_name = shift;
+    my $item       = shift;
+
+    if ( defined $buffer ) {
+        push @$buffer, $item if ( defined $item );
+        if ( @$buffer >= $DB_BATCH_SZ or not defined $item ) {
+            print $log "Async populate $table_name " . @$buffer . "\n";
+            if ( !defined( my $child_pid = fork() ) ) {
+	      print STDERR "Cannot fork: $!";
+	      batch_add(@_);
+	      return;
+	    }
+	    elsif ( $child_pid == 0 ) {
+	      print $log "child running to populate $table_name\n";
+	      $coge->resultset($table_name)->populate($buffer) if (@$buffer);
+	      exit;
+	    }
             @$buffer = ();
         }
     }
