@@ -708,7 +708,7 @@ function check_and_report_login() {
     return true;
 }
 
-function copy_genome(mask) {
+function copy_genome(mask, seq_only) {
     // Prevent concurrent executions - issue 101
     if ( $("#copy_dialog").dialog( "isOpen" ) )
         return;
@@ -720,6 +720,9 @@ function copy_genome(mask) {
     reset_log();
     if (mask) {
         $('#copy_dialog').dialog('option', 'title', 'Copying & Masking Genome');
+    }
+    else if (seq_only) {
+        $('#copy_dialog').dialog('option', 'title', 'Copying Genome (No Annotations)');
     }
     else {
         $('#copy_dialog').dialog('option', 'title', 'Copying Genome');
@@ -733,6 +736,7 @@ function copy_genome(mask) {
             load_id: '<TMPL_VAR NAME="LOAD_ID">',
             gid: '<TMPL_VAR NAME="GID">',
             mask: mask,
+	    seq_only: seq_only,
             timestamp: new Date().getTime()
         },
         success : function(error) {
@@ -970,8 +974,9 @@ function get_content_dialog(id, request, chromosome) {
                 <tr>
                     <td class='title5'>Functions:</td>
                     <td class='data5'>
-                        <span class='link' onDblClick="copy_genome(0);" onClick="copy_genome(0);">Copy</span>&nbsp|
-                        <span class='link' onDblClick="copy_genome(1);" onClick="copy_genome(1);">Copy & Mask</span>
+                        <span class='link' onDblClick="copy_genome(0,0);" onClick="copy_genome(0,0);">Copy</span>&nbsp|
+                        <span class='link' onDblClick="copy_genome(0,1);" onClick="copy_genome(0,1);">Copy (No Annotations)</span>&nbsp|
+                        <span class='link' onDblClick="copy_genome(1,0);" onClick="copy_genome(1,0);">Copy & Mask</span>
                     </td>
                 </tr>
                 </TMPL_IF>
