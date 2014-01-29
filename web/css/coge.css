@@ -1048,10 +1048,6 @@ header {
     font-weight: normal;
 }
 
-#wikifeed > div div {
-    padding: 5px 15px 10px 15px;
-}
-
 #wikifeed > div div a {
     color: #1631BB;
 }

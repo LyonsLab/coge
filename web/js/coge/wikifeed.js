@@ -33,6 +33,16 @@ window.wikifeed = function(url, element, size) {
             return inner;
         }
 
+        if(elem.is("table")) {
+            var images = $(value).find(".gallerybox")
+                .removeAttr("style");
+
+            images.find("*").removeAttr("style");
+            images.find("p").addClass("center");
+
+            return images;
+        }
+
         return value;
     };
 
