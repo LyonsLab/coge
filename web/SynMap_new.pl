@@ -3225,7 +3225,9 @@ sub get_results {
                 general  => undef,
                 homolog  => undef,
                 diagonal => undef,
-                result   => $spa_url,
+                result   => $spa_url.
+                qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=$conffile;l=$tiny_link');" >Generate Pseudo-Assembled Genomic Sequence</span>},
+,
             },
             {
                 general  => undef,

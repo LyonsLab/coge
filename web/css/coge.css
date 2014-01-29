@@ -1048,10 +1048,6 @@ header {
     font-weight: normal;
 }
 
-#wikifeed > div div {
-    padding: 5px 15px 10px 15px;
-}
-
 #wikifeed > div div a {
     color: #1631BB;
 }
@@ -1080,8 +1076,7 @@ header {
 }
 
 #wikifeed > div div img {
-    text-align: center;
-    max-width: 50%;
+    max-width: 95%;
 }
 
 .sidebar_right {

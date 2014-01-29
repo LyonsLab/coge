@@ -8,7 +8,7 @@ use Data::Dumper;
 use Getopt::Long;
 use File::Path;
 
-use vars qw($conf_file $coge $gid $restricted $P $mask $uid $staging_dir);
+use vars qw($conf_file $coge $gid $restricted $P $mask $uid $staging_dir $seq_only);
 
 GetOptions(
 	"conf_file|cf=s" => \$conf_file,
@@ -17,6 +17,7 @@ GetOptions(
 	"restricted|r=i" => \$restricted,
 	"mask|m=i"       => \$mask,
 	"uid=i"          => \$uid, # user id to assign the new genome to
+	"sequence_only" => \$seq_only, #flag for only copying the sequences -- no structural annotations
 );
 
 # Open log file
@@ -30,7 +31,7 @@ unless ($staging_dir) {
 }
 mkpath( $staging_dir, 1, 0777 );    # make sure this exists
 my $logfile = "$staging_dir/log.txt";
-open( my $log, ">>$logfile" ) or die "Error opening log file";
+open( my $log, ">>$logfile" ) or die "Error opening log file: $logfile: $!";
 $log->autoflush(1);
 print $log "Starting $0 (pid $$)\n";
 
@@ -98,8 +99,11 @@ unless ($new_gid) {
 }
 
 # Copy annotations
-print $log "log: Copying annotations (may take a few minutes)\n";
-add_annotations( gid1 => $gid, gid2 => $new_gid );
+unless ($seq_only)
+  {
+    print $log "log: Copying annotations (may take a few minutes)\n";
+    add_annotations( gid1 => $gid, gid2 => $new_gid );
+  }
 
 # Done
 print $log "log: Finished copying genome!\n";
@@ -155,7 +159,7 @@ sub load_genome {
 	open( IN, $staging_dir . "/log.txt" )
 	  || die "can't find log file: " . $staging_dir . "/log.txt";
 	while (<IN>) {
-		if (/log: Added genome id(\d+)/) {
+		if (/log: Added genome id (\d+)/) {
 			$genomeid = $1;
 			print $log "Captured gid: $genomeid\n";
 			last;
