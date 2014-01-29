@@ -1,4 +1,5 @@
 <script src="js/coge/wikifeed.js"></script>
+<script src="js/coge/utils.js"></script>
 <script language="javascript">
 $(document).ready(function(){
     var feed = new wikifeed("<tmpl_var name=wikifeed>", $("#wikifeed"));
@@ -35,6 +36,7 @@ $(document).ready(function(){
         ["600px-Phylogeny_fr_PhyML.png","Linking to phylogeny.fr for one-click phylogenetics","Phylogenetics_in_CoGe#Send_sequences_to_phylogeny.fr"]
     );
 
+    var path = "https://gdata.youtube.com/feeds/api/videos?author=CoGeVids&v=2&orderby=updated&alt=jsonc";
 
     images.forEach(function(value, index, list) {
         var im = new Image();
@@ -43,7 +45,13 @@ $(document).ready(function(){
     	return value;
     });
 
-    cross_fade("#crossfade", images, 1);
+    getYoutubeVideos(path, function(videos) {
+        var first = videos.shift();
+        var list = coge.utils.shuffle(images.concat(videos));
+        list.unshift(first);
+
+        cross_fade("#crossfade", list, 1);
+    });
 
     //$("#accordion").accordion({collapsible:true, active: false}).show();
     $("#accordion2").accordion({active: false, icons: false, disabled: true}).removeClass('invisible');
@@ -65,6 +73,36 @@ $(document).ready(function(){
         }
     });
 });
+
+function getYoutubeVideos(path, callback) {
+    var parseVideos = function(channel) {
+        var entries = channel.data.items;
+        var videos = [];
+
+        for (var i=0; i< entries.length; i++) {
+            var id = entries[i].id;
+            var title = entries[i].title;
+            var description = entries[i].description;
+
+            var src = 'http://www.youtube.com/embed/' + id
+            + '?wmode=transparent&amp;HD=0&amp;rel=0&amp;showinfo=0&amp;'
+            + 'controls=1&amp;fs=1&amp;autoplay="0"';
+
+            var element = $('<iframe frameborder="0" allowfullscreen><iframe>')
+                .attr("src", src);
+
+            videos.push([element, title, entries[i].player["default"]]);
+        }
+
+        callback(videos);
+    }
+
+    $.ajax({
+        url: path,
+        dataType: "json",
+        success: parseVideos
+    });
+}
 
 function cross_fade(selector, image, delay) {
     var element = $(selector),
@@ -102,7 +140,7 @@ function cross_fade(selector, image, delay) {
         .css("box-shadow", "10px 10px 5px 0px rgba(0,0,0,0.15)")
         .css("text-align", "center")
         .css("border", "solid 1px lightgray")
-        .css("padding", "10px");
+        .css("padding", "10px")
 
     element.append(controls)
         .append(viewer)
@@ -112,9 +150,15 @@ function cross_fade(selector, image, delay) {
         var transition = function() {
             link = "http://genomevolution.org/wiki/index.php/"+image[index][2];
 
-            var pict = $(image[index][0])
+            var elem = $(image[index][0])
                 .css("width", "90%")
                 .css("max-height", "50%");
+
+            if(elem.is("iframe")) {
+                elem.css("height", "500px")
+                    .css("width", "95%")
+                    .bind("click", pause);
+            }
 
             var description = $("<div></div>")
                 .addClass("padded")
@@ -126,7 +170,7 @@ function cross_fade(selector, image, delay) {
             viewer.unbind()
                 .on("click", function() { window.open(link); })
                 .html("")
-                .append(pict)
+                .append(elem)
                 .append(description)
                 .fadeIn(duration);
         };
