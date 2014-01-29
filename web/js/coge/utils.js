@@ -10,6 +10,18 @@ var coge = window.coge = (function(ns) {
 
         open: function(link) {
             window.open(link, "_self");
+        },
+        shuffle: function(array) {
+            var copy = array.slice(0), n = array.length, tmp, i;
+
+            while (n) {
+                i = Math.floor(Math.random() * n--);
+                tmp = copy[n];
+                copy[n] = copy[i];
+                copy[i] = tmp;
+            };
+
+            return copy;
         }
     };
 

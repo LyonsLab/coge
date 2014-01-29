@@ -21,7 +21,7 @@ my $DB_BATCH_SZ = 50 * 1000;
 use vars qw($staging_dir $data_file
   $name $description $link $version $restricted
   $gid $source_name $user_name $config
-  $host $port $db $user $pass);
+  $host $port $db $user $pass $ignore_unknown_chr);
 
 GetOptions(
     "staging_dir=s" => \$staging_dir,
@@ -34,6 +34,7 @@ GetOptions(
     "gid=s"         => \$gid,            # genome id
     "source_name=s" => \$source_name,    # data source name (JS escaped)
     "user_name=s"   => \$user_name,      # user name
+    "ignore_unknown_chr" =>\$ignore_unknown_chr, #are entries in GTF ignored if their chromosome doesn't exist in CoGe?
 
     # Database params
     "host|h=s"      => \$host,
@@ -113,7 +114,8 @@ my %valid_chrs = map { $_ => 1 } $genome->chromosomes;
 my @check_names = (
     "ID",           "name",   "Name",     "Alias",
     "gene",         "Parent", "Locus_id", "ID_converter",
-    "Gene_symbols", "gene_id",
+    "Gene_symbols", "gene_id", "transcript_id", "gene_name",
+    "transcript_name", "protein_id",
 );
 my %check_names = map { $_ => 1 } @check_names;
 
@@ -134,6 +136,8 @@ my @anno_names = (
     "Description",
     "Function",
     "Derives_from",
+		  "gene_biotype",
+		  
 );
 my %anno_names = map { $_ => 1 } @anno_names;
 
@@ -170,12 +174,13 @@ unless ( process_gff_file() ) {
 # Create gene annotations if none present in GFF file
 unless ( $seen_types{gene} ) {
     print $log "log: Creating gene entities\n";
-    foreach my $source ( keys %data ) {
-        foreach my $chr_loc ( keys %{ $data{$source} } ) {
-          name: foreach my $name ( keys %{ $data{$source}{$chr_loc} } ) {
+#    foreach my $source ( keys %data ) {
+        foreach my $chr_loc ( keys %data ) {
+          name: foreach my $name ( keys %{ $data{$chr_loc} } ) {
                 my ( $chr, $start, $stop, $strand );
                 my %names;
-                my $name = $data{$source}{$chr_loc}{$name};
+                my $name = $data{$chr_loc}{$name};
+		my $gene_type = "gene";
                 foreach my $type ( keys %$name ) {
                     map { $names{$_} = 1 } keys %{ $name->{$type}{names} };
                     foreach my $loc ( @{ $name->{$type}{loc} } ) {
@@ -191,8 +196,9 @@ unless ( $seen_types{gene} ) {
                     foreach my $loc ( @{ $name->{$type}{loc} } ) {
                         $loc->{strand} = $strand;
                     }
+		    $gene_type = "pseudogene" if $type =~ /pseudogene/;
                 }
-                $name->{gene}{loc} = [
+                $name->{$gene_type}{loc} = [
                     {
                         start  => $start,
                         stop   => $stop,
@@ -205,7 +211,7 @@ unless ( $seen_types{gene} ) {
             }
         }
     }
-}
+#}
 
 print $log "log: Annotation types:\n", join(
     "\n",
@@ -274,26 +280,26 @@ my %feat_types;    # store feature type objects
 
 # Count total annotations to load -- mdb added 1/8/14, issue 260
 my $total_annot = 0;
-foreach my $source ( keys %data ) {
-    foreach my $chr_loc ( keys %{ $data{$source} } ) {
-        foreach my $name ( keys %{ $data{$source}{$chr_loc} } ) {
-            foreach my $feat_type ( keys %{ $data{$source}{$chr_loc}{$name} } ) {
-            	foreach ( @{$data{$source}{$chr_loc}{$name}{$feat_type}{loc}} ) {
+#foreach my $source ( keys %data ) {
+    foreach my $chr_loc ( keys %data) {
+        foreach my $name ( keys %{ $data{$chr_loc} } ) {
+            foreach my $feat_type ( keys %{ $data{$chr_loc}{$name} } ) {
+            	foreach ( @{$data{$chr_loc}{$name}{$feat_type}{loc}} ) {
             		$total_annot++;
             	}
             }
         }
     }
-}
+#}
 
 print $log "log: Loading database ...\n";
 my $loaded_annot = 0;
 my @loc_buffer;     # buffer for bulk inserts into Location table
 my @anno_buffer;    # buffer for bulk inserts into FeatureAnnotation table
 my @name_buffer;    # buffer for bulk inserts into FeatureName table
-foreach my $source ( keys %data ) {
-    foreach my $chr_loc ( sort { $a cmp $b } keys %{ $data{$source} } ) {
-        foreach my $name ( sort { $a cmp $b } keys %{ $data{$source}{$chr_loc} } ) {
+#foreach my $source ( keys %data ) {
+    foreach my $chr_loc ( sort { $a cmp $b } keys %data) {
+        foreach my $name ( sort { $a cmp $b } keys %{ $data{$chr_loc} } ) {
         	my $pctLoaded = int( 100 * $loaded_annot / $total_annot );
                 print $log "log: Loaded "
                   . commify($loaded_annot)
@@ -302,10 +308,10 @@ foreach my $source ( keys %data ) {
                   . "%)\n\n"
                   if ( $loaded_annot and ( $loaded_annot % 1000 ) == 0 );
                   
-            foreach my $feat_type ( sort { $a cmp $b } keys %{ $data{$source}{$chr_loc}{$name} } ) {
+            foreach my $feat_type ( sort { $a cmp $b } keys %{ $data{$chr_loc}{$name} } ) {
                 print $log "\n" if $DEBUG;
 
-                my $loc = $data{$source}{$chr_loc}{$name}{$feat_type}{loc};
+                my $loc = $data{$chr_loc}{$name}{$feat_type}{loc};
                 my $start =
                   min map { $_->{start} }
                   @$loc
@@ -367,7 +373,7 @@ foreach my $source ( keys %data ) {
 
                 my %names =
                   map { $_ => 1 }
-                  keys %{ $data{$source}{$chr_loc}{$name}{$feat_type}{names} };
+                  keys %{ $data{$chr_loc}{$name}{$feat_type}{names} };
                 my %seen_annos
                   ;    #hash to store annotations so duplicates aren't added
 
@@ -424,7 +430,7 @@ foreach my $source ( keys %data ) {
             }
         }
     }
-}
+#}
 
 # Flush insert buffers
 batch_add( \@loc_buffer,  'Location' );
@@ -446,7 +452,7 @@ CoGe::Accessory::Web::log_history(
     description => 'load dataset id' . $dataset->id,
     link        => 'GenomeView.pl?gid=' . $genome->id
 );
-print $log "log: All done!";
+print $log "log: All done!\n";
 close($log);
 
 exit;
@@ -466,7 +472,6 @@ sub batch_add {
         }
     }
 }
-
 sub batch_add_async {
 #  batch_add(@_);
 #  return;
@@ -518,7 +523,7 @@ sub process_gff_file {
             return 0;
         }
         my $chr    = $line[0];
-        my $source = $line[1];
+        my $bio_type = $line[1]; #more of a biotype
         my $type   = $line[2];
         my $start  = $line[3];
         my $stop   = $line[4];
@@ -546,26 +551,11 @@ sub process_gff_file {
         unless ( $valid_chrs{$chr} ) {
             print $log
               "log: error:  Chromosome '$chr' does not exist in the dataset.\n";
-            return 0;
+	    unless ($ignore_unknown_chr)
+	      {
+		return 0;
+	      }
         }
-
-        $type = "mRNA" if $type eq "transcript";
-        # In many GFF files, the mRNA is what CoGe calls a Gene (the full extent
-        # of the transcribed sequence including introns and exons.  Instead,
-        # what the GFF calls an exon is really the transcribed mRNA.  In this
-        # cases, we want to hold the mRNA information to link to Parents and
-        # whatever annotation it contains, but don't want to actually add the
-        # location.  We will change the feature type to something weird that
-        # can be handled downstream correctly -- specifically the locations
-        if ( $type =~ /([mt]RNA)/ ) { # mdb changed from /(.*RNA.*)/, 9/3/13 issue 198
-            $last_RNA = $type;
-            $type     = "$1_no_locs";
-        }
-        $type = $last_RNA if $type eq "exon";
-        $type = $last_RNA if $type eq "five_prime_UTR";
-        $type = $last_RNA if $type eq "three_prime_UTR";
-
-        $seen_types{$type}++;
 
         my %names;
         my $name;
@@ -611,7 +601,6 @@ sub process_gff_file {
         elsif ( $strand =~ /\./ ) { $strand = 0;  }
         else  { $strand = 1; } # mdb changed 11/7/13 issue 248 - made '+' strand the default
 
-        my @types = ($type);
 
         #push @types, "CDS" if $add_cds && $type eq "mRNA";
         # phytozome replications of CDS to mRNA
@@ -620,6 +609,19 @@ sub process_gff_file {
         # replicate mRNA to gene
         #push @types, "gene" if $type eq "mRNA";
 
+#	$type = "mRNA" if $type eq "exon";
+        $seen_types{$bio_type}++;
+        my @types;# = ($type);
+	if ($bio_type eq "protein_coding" ||
+	       $bio_type =~ /_gene/)
+	  {
+	    $type = "mRNA" if $type eq "exon";
+	    push @types, $type;
+	  }
+	else
+	  {
+	    push @types, $bio_type;
+	  }
         foreach my $tmp (@types) {
             my $tmp_name = $name;
             my $type     = $tmp;
@@ -628,15 +630,15 @@ sub process_gff_file {
                     #print join ("\t", $name, $tmp_name),"\n";
 
             # initialize data structure
-            $data{$source}{$chr}{$tmp_name}{$type} = {}
-              unless $data{$source}{$chr}{$tmp_name}{$type};
+            $data{$chr}{$tmp_name}{$type} = {}
+              unless $data{$chr}{$tmp_name}{$type};
             foreach my $n ( keys %names ) {
-                $data{$source}{$chr}{$tmp_name}{$type}{names}{$n} = 1;
+                $data{$chr}{$tmp_name}{$type}{names}{$n} = 1;
             }
             next
               if $tmp =~
                   /_no_locs/;    # skip adding locations for things like mRNA
-            push @{ $data{$source}{$chr}{$tmp_name}{$type}{loc} },
+            push @{ $data{$chr}{$tmp_name}{$type}{loc} },
               {
                 start  => $start,
                 stop   => $stop,
