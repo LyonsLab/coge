@@ -12,15 +12,13 @@ var coge = window.coge = (function(ns) {
             window.open(link, "_self");
         },
         shuffle: function(array) {
-            var copy = [], n = array.length, i = 0;
+            var copy = array.slice(0), n = array.length, tmp, i;
 
             while (n) {
-                i = Math.floor(Math.random() * array.length);
-                if (i in array) {
-                    copy.push(array[i]);
-                    delete array[i];
-                    n--;
-                }
+                i = Math.floor(Math.random() * n--);
+                tmp = copy[n];
+                copy[n] = copy[i];
+                copy[i] = tmp;
             };
 
             return copy;
