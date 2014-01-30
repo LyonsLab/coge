@@ -117,19 +117,6 @@ sub get_genome_info_details {
     my $total_length = $dsg->length;
 
 
-    #    my $chr_num = $dsg->genomic_sequences->count();
-    #$html .= "<tr valign=top><td><table class='small annotation_table'>";
-
-    # Name
-    $html .= qq{<tr><td>Name:</td><td>} . $dsg->name . qq{</td></tr>}
-      if $dsg->name;
-
-
-    # Description
-    $html .=
-      qq{<tr><td>Description:</td><td>} . $dsg->description . qq{</td></tr>}
-      if $dsg->description;
-
     # Count
     my $chr_num = $dsg->chromosome_count();
     $html .= qq{<tr><td class="title5">Chromosome count:</td</td>}
