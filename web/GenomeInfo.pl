@@ -135,9 +135,9 @@ sub get_genome_info_details {
 
     # Sequence Type
     $html .=
-qq{<tr><td class="title5">Sequence type:<td class="data5">}
+qq{<tr><td class="title5">Sequence type:<td class="data5" title="gstid$gstid">}
       . $gst_name
-      . qq{ (gstid$gstid)<input type=hidden id=gstid value=}
+      . qq{ <input type=hidden id=gstid value=}
       . $gstid
       . qq{></td></tr>};
     $html .= qq{<tr><td class="title5">Length: </td>};
@@ -248,11 +248,12 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
     foreach my $type ( sort { $a cmp $b } keys %$feats ) {
         $feat_string .= "<tr valign=top>";
         $feat_string .=
-            qq{<td valign=top class="title5"><div id=$type  >}
-          . $feats->{$type}{name}
-          . " (ftid"
+            qq{<td valign=top class="title5"><div id="$type" }
+          . 'title="ftid'
           . $feats->{$type}{id}
-          . ")</div>";
+          . '">'
+          . $feats->{$type}{name}
+          . "</div>";
         $feat_string .=
           qq{<td class="data5"valign=top align=right>} . commify( $feats->{$type}{count} );
 
