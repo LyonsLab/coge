@@ -1146,10 +1146,22 @@ Are you sure you want to move this genome into your trash?<p>
             <td class='title5' style='white-space:nowrap;'>Restricted:</td>
             <td class='data5'><TMPL_VAR NAME="RESTRICTED"></td>
         </tr>
+        <tmpl_if name="owner">
+        <tr>
+            <td class='title5' style='white-space:nowrap;'>Owner:</td>
+            <td class='data5'><tmpl_var name="owner"></td>
+        </tr>
+        </tmpl_if>
         <tr>
             <td class='title5' valign='top' style='white-space:nowrap;'>Users with access:</td>
             <td class='data5'><TMPL_VAR NAME="USERS_WITH_ACCESS"></td>
         </tr>
+        <tmpl_if name="groups_with_access">
+        <tr>
+            <td class='title5' valign='top' style='white-space:nowrap;'>Groups with access:</td>
+            <td class='data5'><tmpl_var name="groups_with_access"></td>
+        </tr>
+        </tmpl_if>
         <TMPL_IF NAME="DELETED">
         <tr>
             <td class='alert' style='white-space:nowrap;'>Note:</td>
