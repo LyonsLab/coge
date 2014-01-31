@@ -97,25 +97,11 @@ sub get_genome_info_details {
     my $dsg = $coge->resultset("Genome")->find($dsgid);
     return "Unable to get genome object for id: $dsgid" unless $dsg;
     my $html;
-    my $genome_message;
-    $genome_message = $dsg->message if $dsg->message;
-    $genome_message .= " Private Genome!  Authorized Use Only!"
-      if $dsg->restricted && !$dsg->message;
 
     #TABLE
     $html .= qq{<div class="left coge-table-header">Statistics</div>};
     $html .= qq{<table style="padding: 2px; margin-bottom: 5px;" class="ui-corner-all ui-widget-content">};
-
-    # GENOME ALERT
-    $html .= qq{<tr><td class="small alert" colspan="2">$genome_message</td></tr>}
-      if $genome_message;
-
-    # OWNER FIELD
-    $html .=
-    qq{<tr><td><span class="alert padded">You are the owner of this genome.</span></td></tr>}
-      if $USER->is_owner( dsg => $dsg );
     my $total_length = $dsg->length;
-
 
     # Count
     my $chr_num = $dsg->chromosome_count();
