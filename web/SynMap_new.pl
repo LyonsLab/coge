@@ -820,6 +820,7 @@ qq{<tr><td>DNA content: <td id=gc_content$org_num class='link' onclick="get_gc($
     $html_dsg_info .= "<tr><td>Contains plasmid" if $plasmid;
     $html_dsg_info .= "<tr><td>Contains contigs" if $contig;
     $html_dsg_info .= "<tr><td>Contains scaffolds" if $scaffold;
+    $html_dsg_info .= qq{<tr class="alert"><td>Restricted:</td><td>Yes} if $dsg->restricted;
     $html_dsg_info .= "</table>";
     if ( $dsg->restricted && !$USER->has_access_to_genome($dsg) ) {
         $html_dsg_info = "Restricted";
