@@ -110,13 +110,6 @@ sub get_genome_info_details {
     $html .= qq{<tr><td class="small alert" colspan="2">$genome_message</td></tr>}
       if $genome_message;
 
-    # More info link
-    $html .=
-        qq{<tr><td class='link' colspan="2" onclick='window.open("}
-      . $dsg->link
-      . qq{")'> More information</tr></td>}
-      if $dsg->link;
-
     # OWNER FIELD
     $html .=
     qq{<tr><td><span class="alert padded">You are the owner of this genome.</span></td></tr>}
