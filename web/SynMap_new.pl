@@ -781,12 +781,6 @@ sub get_genome_info {
             $org->description
         );
     }
-    $html_dsg_info .=
-      qq{<div><span>Organism: </span><span class="small">$orgname</span></div>};
-    $html_dsg_info .=
-qq{<div><span>Description:</span><span class="small">$org_desc</span></div>};
-    $html_dsg_info .=
-qq{<div><span class="link" onclick=window.open('OrganismView.pl?dsgid=$dsgid')>Genome Information: </span><br>};
     my $i = 0;
 
     my (
@@ -798,6 +792,9 @@ qq{<div><span class="link" onclick=window.open('OrganismView.pl?dsgid=$dsgid')>G
     $link = $BASE_URL unless $link;
     $link = "http://" . $link unless $link && $link =~ /^http/;
     $html_dsg_info .= qq{<table class=small>};
+    $html_dsg_info .= qq{<tr><td>Genome Information:</td><td class="link" onclick=window.open('GenomeInfo.pl?gid=$dsgid')>}.$dsg->info.qq{</td></tr>};
+    $html_dsg_info .= qq{<tr><td>Organism:</td><td>$orgname</td></tr>};
+    $html_dsg_info .= qq{<tr><td>Taxonomy:</td><td>$org_desc</td></tr>};
     $html_dsg_info .= "<tr><td>Name: <td>" . $dsg->name if $dsg->name;
     $html_dsg_info .= "<tr><td>Description: <td>" . $dsg->description
       if $dsg->description;
