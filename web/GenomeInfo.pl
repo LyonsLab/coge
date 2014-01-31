@@ -117,19 +117,6 @@ sub get_genome_info_details {
     my $total_length = $dsg->length;
 
 
-    #    my $chr_num = $dsg->genomic_sequences->count();
-    #$html .= "<tr valign=top><td><table class='small annotation_table'>";
-
-    # Name
-    $html .= qq{<tr><td>Name:</td><td>} . $dsg->name . qq{</td></tr>}
-      if $dsg->name;
-
-
-    # Description
-    $html .=
-      qq{<tr><td>Description:</td><td>} . $dsg->description . qq{</td></tr>}
-      if $dsg->description;
-
     # Count
     my $chr_num = $dsg->chromosome_count();
     $html .= qq{<tr><td class="title5">Chromosome count:</td</td>}
@@ -1147,6 +1134,7 @@ sub get_genome_info {
 
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+
     $template->param(
         DO_GENOME_INFO => 1,
         ORGANISM       => $genome->organism->name,
@@ -1162,6 +1150,11 @@ sub get_genome_info {
         DELETED        => $genome->deleted
     );
 
+    my $owner = $genome->owner;
+    my $groups = ($genome->restricted ? join(', ', map { $_->name } $USER->groups_with_access($genome))
+                                                   : undef);
+    $template->param( groups_with_access => $groups) if $groups;
+    $template->param( OWNER => $owner->display_name ) if $owner;
     $template->param( GID => $genome->id );
 
     return $template->output;
