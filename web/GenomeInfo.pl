@@ -1134,6 +1134,7 @@ sub get_genome_info {
 
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+
     $template->param(
         DO_GENOME_INFO => 1,
         ORGANISM       => $genome->organism->name,
@@ -1149,6 +1150,11 @@ sub get_genome_info {
         DELETED        => $genome->deleted
     );
 
+    my $owner = $genome->owner;
+    my $groups = ($genome->restricted ? join(', ', map { $_->name } $USER->groups_with_access($genome))
+                                                   : undef);
+    $template->param( groups_with_access => $groups) if $groups;
+    $template->param( OWNER => $owner->display_name ) if $owner;
     $template->param( GID => $genome->id );
 
     return $template->output;
