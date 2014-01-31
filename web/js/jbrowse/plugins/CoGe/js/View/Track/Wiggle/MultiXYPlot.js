@@ -24,15 +24,9 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	// Load cookie params - mdb added 1/13/14, issue 279
 	constructor: function() {
 		this.inherited(arguments); // call superclass constructor
-    	try {
-    		var cookieName = 'track-' + this.name;
-    		this.config.style.featureColor = dojo.fromJson(
-    			this.browser.cookie(cookieName)
-            );
-    		if (!this.config.style.featureColor)
-    			this.config.style.featureColor = {};
-    	}
-    	catch (x) {}
+
+        if (!this.config.style.featureColor)
+            this.config.style.featureColor = {};
 	},
 	
     _defaultConfig: function() {
@@ -515,7 +509,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 		                      	        		
 		                      	        		// Use cookie to persist color choice - mdb added 1/13/14, issue 279
 		                      	        		var cookieName = 'track-' + track.name;
-		                      	        		track.browser.cookie(cookieName, track.config.style.featureColor);
+                                                track.browser.cookie(cookieName, track.config.style);
 		                      	        		
 		                      	        		// Repaint track
 		                      	        		track.changed();
