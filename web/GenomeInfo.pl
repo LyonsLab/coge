@@ -704,6 +704,11 @@ sub generate_features {
 }
 
 sub export_features {
+    my %opts = @_;
+    my $gid = $opts{gid};
+    my $dsid = $opts{dsid};
+    my $fid = $opts{fid};
+    my $protein = $opts{protein};
     my ($statusCode, $file) = generate_features(@_);
     my (%json, %meta);
 
@@ -713,6 +718,23 @@ sub export_features {
     if ($statusCode) {
         $json{error} = 1;
     } else {
+        my $genome = $coge->resultset('Genome')->find($gid);
+        my $feature_type = $coge->resultset('FeatureType')->find($fid);
+
+        %meta = (
+            'Imported From' => "CoGe: http://genomevolution.org",
+            'CoGe OrganismView Link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
+            'CoGe GenomeInfo Link'=> "http://genomevolution.org/CoGe/GenomeInfo.pl?gid=".$genome->id,
+            'CoGe Genome ID'   => $genome->id,
+            'Organism Name'    => $genome->organism->name,
+            'Organism Taxonomy'    => $genome->organism->description,
+            'Version'     => $genome->version,
+            'Type'        => $genome->type->info,
+            'Feature Type' => $feature_type->name,
+            'Data Type'    => "FASTA",
+        );
+        $meta{'Feature Description'} = $feature_type->description if $feature_type->description;
+
         $json{error} = export_to_irods( file => $file, meta => \%meta );
     }
 
