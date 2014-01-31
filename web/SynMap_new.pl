@@ -603,17 +603,17 @@ sub gen_dsg_menu {
             next unless $dsgid && $dsg->id == $dsgid;
             $name = "Restricted";
         }
-	elsif ($dsg->deleted)
-	  {
-	    if ($dsgid && $dsgid == $dsg->id)
-	      {
-		$name = "DELETED: ".$dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ")";
-	      }
-	    else 
-	      {
-		next;
-	      }
-	  }
+    elsif ($dsg->deleted)
+      {
+        if ($dsgid && $dsgid == $dsg->id)
+          {
+        $name = "DELETED: ".$dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ")";
+          }
+        else
+          {
+        next;
+          }
+      }
         else {
             $name .= $dsg->name . ": " if $dsg->name;
             $name .=
@@ -826,7 +826,7 @@ qq{<tr><td>DNA content: <td id=gc_content$org_num class='link' onclick="get_gc($
     }
     if ($dsg->deleted)
       {
-	$html_dsg_info = "<span class=alert>This genome has been deleted and cannot be used in this analysis.</span>  <a href=GenomeInfo.pl?gid=$dsgid target=_new>More information</a>.";
+    $html_dsg_info = "<span class=alert>This genome has been deleted and cannot be used in this analysis.</span>  <a href=GenomeInfo.pl?gid=$dsgid target=_new>More information</a>.";
       }
     my $t2 = new Benchmark;
     my $time = timestr( timediff( $t2, $t1 ) );
@@ -1698,11 +1698,11 @@ sub go {
             push @blastargs, [ "-o", $outfile, 1 ];
         }
         elsif ( $cmd =~ /last_wrapper/i ) {
-        	# mdb added 9/20/13 issue 213
-        	my $dbpath = $P->{LASTDB} . '/' . $dsgid2;		
-        	mkpath($dbpath);
-			push @blastargs, [ "--dbpath", $dbpath, 0 ];
-			
+            # mdb added 9/20/13 issue 213
+            my $dbpath = $P->{LASTDB} . '/' . $dsgid2;
+            mkpath($dbpath);
+            push @blastargs, [ "--dbpath", $dbpath, 0 ];
+
             push @blastargs, [ "",   $db,      0 ];
             push @blastargs, [ "",   $fasta,   0 ];
             push @blastargs, [ "-o", $outfile, 1 ];
@@ -3065,8 +3065,8 @@ sub get_results {
 #            msg  => qq{Fasta file for $org_name2: $feat_type2}
 #        );
 
-		# mdb added 9/20/13 issue 77
-		print STDERR "$feat_type1 $feat_type2\n";
+        # mdb added 9/20/13 issue 77
+        print STDERR "$feat_type1 $feat_type2\n";
         my $fasta1_url = _filename_to_link(
             url  => ( $feat_type1 eq "genomic" ? "services/JBrowse/service.pl/sequence/$dsgid1" : undef ),
             file => ( $feat_type1 eq "genomic" ? undef : $FASTADIR . "/$dsgid1-$feat_type1.fasta" ),
@@ -3128,8 +3128,8 @@ sub get_results {
             file => $merged_dagchainer_file,
             msg  => qq{Merged DAGChainer output}
         );
-	#merged dagchainer output is not specified in results.  This hack gets it there.
-	$dagchainer_url.=$merged_dag_url if -r $merged_dagchainer_file;
+    #merged dagchainer output is not specified in results.  This hack gets it there.
+    $dagchainer_url.=$merged_dag_url if -r $merged_dagchainer_file;
 
         my $quota_align_coverage_url = _filename_to_link(
             file => $quota_align_coverage,
@@ -3241,7 +3241,7 @@ sub get_results {
         ########################################################################
 
         $results->param( link => $tiny_link );
-	my ($ks_file) = $ks_db =~ /([^\/]*)$/;
+    my ($ks_file) = $ks_db =~ /([^\/]*)$/;
         if ($ks_type) {
             my $link = "SynSub.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;file=$ks_file";
             $results->param( synsub => $link );
@@ -3324,10 +3324,10 @@ sub _filename_to_link {
 
     my $link;
     if ( -r $file or $url) {
-    	if (!$url) {
-        	$url = $opts{file};
-        	$url =~ s/$DIR/$URL/;
-    	}
+        if (!$url) {
+            $url = $opts{file};
+            $url =~ s/$DIR/$URL/;
+        }
 
         $link =
             q{<span class="}
