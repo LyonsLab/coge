@@ -113,6 +113,16 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     	}
     },
 
+    _draw: function(scale, leftBase, rightBase, block, canvas, features, featureRects, dataScale, pixels, spans) {
+        this._preDraw(      scale, leftBase, rightBase, block, canvas, features, featureRects, dataScale );
+
+        this._drawFeatures( scale, leftBase, rightBase, block, canvas, features, featureRects, dataScale );
+
+        if ( spans ) {
+            this._maskBySpans( scale, leftBase, rightBase, block, canvas, pixels, dataScale, spans );
+        }
+        this._postDraw(     scale, leftBase, rightBase, block, canvas, features, featureRects, dataScale );
+    },
     /**
      * Draw a set of features on the canvas.
      * @private
