@@ -2162,16 +2162,14 @@ sub go {
     $out .= ".w$width";
 
     ############################################################################
-    # KS Calculations (Slow and needs to be optimized)
+    # KS Calculations
     ############################################################################
     my ( $ks_db, $ks_blocks_file, $svg_file );
+    my $check_ks = $final_dagchainer_file =~ /^(.*?CDS-CDS)/;
+    $check_ks = $final_dagchainer_file =~ /^(.*?protein-protein)/
+        unless $check_ks;
 
-    if ($ks_type) {
-        my $check_ks = $final_dagchainer_file =~ /^(.*?CDS-CDS)/;
-        $check_ks = $final_dagchainer_file =~ /^(.*?protein-protein)/
-          unless $check_ks;
-
-        if ($check_ks) {
+    if ($ks_type and $check_ks) {
             $ks_db          = "$final_dagchainer_file.sqlite";
             $ks_blocks_file = "$final_dagchainer_file.ks";
 
@@ -2222,10 +2220,38 @@ sub go {
             CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
             CoGe::Accessory::Web::write_log( "Added generation of svg dotplot",
                 $cogeweb->logfile );
-        }
-        else {
-            $ks_type = undef;
-        }
+    } else {
+        $ks_type = undef;
+
+        ####################################################################
+        # Generate svg dotplot
+        ####################################################################
+
+        my @svgargs = ();
+        push @svgargs, [ '--dag_file', $final_dagchainer_file, 1 ];
+        push @svgargs, [ '--flip', "", 1 ] if $flip;
+        push @svgargs, [ '--xhead', '"' . $org_name1 . '"', 1 ]
+            if $org_name1;
+        push @svgargs, [ '--yhead', '"' . $org_name2 . '"', 1 ]
+            if $org_name2;
+        push @svgargs, [ '--output', $final_dagchainer_file, 1 ];
+        push @svgargs, [ '--no-ks', "", 1 ];
+
+        $svg_file = $final_dagchainer_file . ".svg";
+
+        $workflow->add_job(
+            cmd         => $SVG_DOTPLOT,
+            script      => undef,
+            args        => \@svgargs,
+            inputs      => [$final_dagchainer_file],
+            outputs     => [$svg_file],
+            description => "Generating svg image...",
+        );
+
+        CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+        CoGe::Accessory::Web::write_log( "Added generation of svg dotplot",
+            $cogeweb->logfile );
+
     }
 
     ############################################################################
@@ -2876,10 +2902,6 @@ sub get_results {
         if ($check_ks) {
             $ks_db          = "$final_dagchainer_file.sqlite";
             $ks_blocks_file = "$final_dagchainer_file.ks";
-
-            ####################################################################
-            # Generate svg dotplot
-            ####################################################################
             $svg_file = $ks_blocks_file . ".svg";
         }
         else {
@@ -2887,6 +2909,8 @@ sub get_results {
               . " one genome lacking CDS features.";
             $ks_type = undef;
         }
+    } else {
+        $svg_file = "$final_dagchainer_file.svg";
     }
 
     ############################################################################
