@@ -937,6 +937,7 @@ function get_content_dialog(id, request, chromosome) {
             <div id='genome_info' class="small ui-widget-content ui-corner-all" style="width:400px;"><TMPL_VAR NAME="GENOME_INFO"></div>
             <TMPL_IF NAME='USER_CAN_EDIT'>
                 <span class='ui-button ui-corner-all' onClick="edit_genome_info();">Edit Info</span>
+                <span class='ui-button ui-corner-all ui-button-icon-right' onclick="window.open('LoadGenome.pl?gid=<TMPL_VAR NAME=GID>')"><span class="ui-icon ui-icon-extlink"></span>Load a new version</span>
             </TMPL_IF>
             <TMPL_IF NAME='USER_CAN_DELETE'>
                 <TMPL_IF NAME='DELETED'>
