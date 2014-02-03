@@ -669,7 +669,11 @@ function sort_name (a,b) {
   <tr>
     <td>Organism:</td>
     <td>
-      <input id="edit_organism" type="search" placeholder="Search" onkeyup="wait_to_search(search_organisms, this.value);" size="50" spellcheck="false" />
+      <tmpl_if name=ORGANISM_NAME>
+        <input id="edit_organism" type="search" placeholder="Search" onkeyup="wait_to_search(search_organisms, this.value);" value="<tmpl_var name=ORGANISM_NAME>"size="50" spellcheck="false" />
+      <tmpl_else>
+        <input id="edit_organism" type="search" placeholder="Search" onkeyup="wait_to_search(search_organisms, this.value);" size="50" spellcheck="false" />
+      </tmpl_if>
       <span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all'>New</span>
     </td>
   </tr>
