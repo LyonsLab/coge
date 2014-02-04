@@ -124,11 +124,11 @@ sub generate_body {
         MAX_FTP_FILES            => 30
     );
 
-    my $gid = $FORM->param("gid");
-    my $genome = $coge->resultset('Genome')->find($gid) if $gid;
+    my $oid = $FORM->param("oid");
+    my $organism = $coge->resultset('Organism')->find($oid) if $oid;
 
-    if ($genome and $USER->has_access_to_genome($genome)) {
-        $template->param(ORGANISM_NAME => $genome->organism->name);
+    if ($organism) {
+        $template->param(ORGANISM_NAME => $organism->name);
     }
 
     $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
