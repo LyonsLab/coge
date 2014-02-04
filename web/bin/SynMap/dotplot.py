@@ -426,11 +426,10 @@ if __name__ == "__main__":
 
     xgenes, xchrs = replace_gff_parse(opts.dag_file, first=True, noks=opts.noks)
     ygenes, ychrs = replace_gff_parse(opts.dag_file, first=False, noks=opts.noks)
-    print xgenes
+
     if opts.flip:
         xgenes, ygenes = ygenes, xgenes
         xchrs, ychrs = ychrs, xchrs
-#    print xchrs,ychrs
 
     xchrs, xend = chr_info(xchrs, linewidth)
     ychrs, yend = chr_info(ychrs, linewidth)
