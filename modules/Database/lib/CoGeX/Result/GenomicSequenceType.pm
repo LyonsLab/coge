@@ -5,6 +5,7 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 use CoGeX::ResultSet::GenomicSequenceType;
+use JSON qw(encode_json);
 
 =head1 NAME
 
@@ -59,6 +60,35 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("genomic_sequence_type_id");
 __PACKAGE__->has_many("genomes"=>"CoGeX::Result::Genome","genomic_sequence_type_id");
 
+################################################ subroutine header begin ##
+
+=head2 to_*
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub to_hash {
+    my $self = shift;
+    return {
+        id => $self->id,
+        name => $self->name,
+        description => $self->description
+    }
+}
+
+sub to_json {
+    return encode_json( shift->to_hash );
+}
 
 ################################################ subroutine header begin ##
 
