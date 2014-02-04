@@ -31,9 +31,9 @@ $PAGE_TITLE = 'LoadGenome';
 
 $FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-    #cgi => $FORM,
-    url => 'http://coge.iplantcollaborative.org/mbomhoff'.$ENV{REQUEST_URI},
-    ticket => $FORM->param('ticket') || undef,
+    cgi => $FORM,
+    #url => 'http://coge.iplantcollaborative.org/mbomhoff'.$ENV{REQUEST_URI},
+    #ticket => $FORM->param('ticket') || undef,
     page_title => $PAGE_TITLE
 );
 
@@ -49,7 +49,7 @@ $OPEN_STATUS = (defined $FORM->param('load_id'));
 $LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $TEMPDIR    = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 
-$MAX_SEARCH_RESULTS = 100;
+$MAX_SEARCH_RESULTS = 400;
 
 %FUNCTION = (
     irods_get_path => \&irods_get_path,
@@ -123,6 +123,13 @@ sub generate_body {
         MAX_IRODS_TRANSFER_FILES => 30,
         MAX_FTP_FILES            => 30
     );
+
+    my $oid = $FORM->param("oid");
+    my $organism = $coge->resultset('Organism')->find($oid) if $oid;
+
+    if ($organism) {
+        $template->param(ORGANISM_NAME => $organism->name);
+    }
 
     $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 
@@ -537,7 +544,7 @@ sub get_load_log {
             
             last;
         }
-        elsif ( $_ =~ /log: Added genome id (\d+)/i ) {
+        elsif ( $_ =~ /log: Added genome id\s?(\d+)/i ) {
             $gid = $1;
         }
         elsif ( $_ =~ /log: error/i ) {

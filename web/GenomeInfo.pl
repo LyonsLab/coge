@@ -97,45 +97,11 @@ sub get_genome_info_details {
     my $dsg = $coge->resultset("Genome")->find($dsgid);
     return "Unable to get genome object for id: $dsgid" unless $dsg;
     my $html;
-    my $genome_message;
-    $genome_message = $dsg->message if $dsg->message;
-    $genome_message .= " Private Genome!  Authorized Use Only!"
-      if $dsg->restricted && !$dsg->message;
 
     #TABLE
     $html .= qq{<div class="left coge-table-header">Statistics</div>};
     $html .= qq{<table style="padding: 2px; margin-bottom: 5px;" class="ui-corner-all ui-widget-content">};
-
-    # GENOME ALERT
-    $html .= qq{<tr><td class="small alert" colspan="2">$genome_message</td></tr>}
-      if $genome_message;
-
-    # More info link
-    $html .=
-        qq{<tr><td class='link' colspan="2" onclick='window.open("}
-      . $dsg->link
-      . qq{")'> More information</tr></td>}
-      if $dsg->link;
-
-    # OWNER FIELD
-    $html .=
-    qq{<tr><td><span class="alert padded">You are the owner of this genome.</span></td></tr>}
-      if $USER->is_owner( dsg => $dsg );
     my $total_length = $dsg->length;
-
-
-    #    my $chr_num = $dsg->genomic_sequences->count();
-    #$html .= "<tr valign=top><td><table class='small annotation_table'>";
-
-    # Name
-    $html .= qq{<tr><td>Name:</td><td>} . $dsg->name . qq{</td></tr>}
-      if $dsg->name;
-
-
-    # Description
-    $html .=
-      qq{<tr><td>Description:</td><td>} . $dsg->description . qq{</td></tr>}
-      if $dsg->description;
 
     # Count
     my $chr_num = $dsg->chromosome_count();
@@ -155,9 +121,9 @@ sub get_genome_info_details {
 
     # Sequence Type
     $html .=
-qq{<tr><td class="title5">Sequence type:<td class="data5">}
+qq{<tr><td class="title5">Sequence type:<td class="data5" title="gstid$gstid">}
       . $gst_name
-      . qq{ (gstid$gstid)<input type=hidden id=gstid value=}
+      . qq{ <input type=hidden id=gstid value=}
       . $gstid
       . qq{></td></tr>};
     $html .= qq{<tr><td class="title5">Length: </td>};
@@ -268,11 +234,12 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
     foreach my $type ( sort { $a cmp $b } keys %$feats ) {
         $feat_string .= "<tr valign=top>";
         $feat_string .=
-            qq{<td valign=top class="title5"><div id=$type  >}
-          . $feats->{$type}{name}
-          . " (ftid"
+            qq{<td valign=top class="title5"><div id="$type" }
+          . 'title="ftid'
           . $feats->{$type}{id}
-          . ")</div>";
+          . '">'
+          . $feats->{$type}{name}
+          . "</div>";
         $feat_string .=
           qq{<td class="data5"valign=top align=right>} . commify( $feats->{$type}{count} );
 
@@ -724,6 +691,11 @@ sub generate_features {
 }
 
 sub export_features {
+    my %opts = @_;
+    my $gid = $opts{gid};
+    my $dsid = $opts{dsid};
+    my $fid = $opts{fid};
+    my $protein = $opts{protein};
     my ($statusCode, $file) = generate_features(@_);
     my (%json, %meta);
 
@@ -733,6 +705,23 @@ sub export_features {
     if ($statusCode) {
         $json{error} = 1;
     } else {
+        my $genome = $coge->resultset('Genome')->find($gid);
+        my $feature_type = $coge->resultset('FeatureType')->find($fid);
+
+        %meta = (
+            'Imported From' => "CoGe: http://genomevolution.org",
+            'CoGe OrganismView Link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
+            'CoGe GenomeInfo Link'=> "http://genomevolution.org/CoGe/GenomeInfo.pl?gid=".$genome->id,
+            'CoGe Genome ID'   => $genome->id,
+            'Organism Name'    => $genome->organism->name,
+            'Organism Taxonomy'    => $genome->organism->description,
+            'Version'     => $genome->version,
+            'Type'        => $genome->type->info,
+            'Feature Type' => $feature_type->name,
+            'Data Type'    => "FASTA",
+        );
+        $meta{'Feature Description'} = $feature_type->description if $feature_type->description;
+
         $json{error} = export_to_irods( file => $file, meta => \%meta );
     }
 
@@ -1154,6 +1143,7 @@ sub get_genome_info {
 
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+
     $template->param(
         DO_GENOME_INFO => 1,
         ORGANISM       => $genome->organism->name,
@@ -1169,6 +1159,11 @@ sub get_genome_info {
         DELETED        => $genome->deleted
     );
 
+    my $owner = $genome->owner;
+    my $groups = ($genome->restricted ? join(', ', map { $_->name } $USER->groups_with_access($genome))
+                                                   : undef);
+    $template->param( groups_with_access => $groups) if $groups;
+    $template->param( OWNER => $owner->display_name ) if $owner;
     $template->param( GID => $genome->id );
 
     return $template->output;
@@ -2382,6 +2377,8 @@ sub generate_body {
 
     my $user_can_edit = $USER->is_admin || $USER->is_owner_editor( dsg => $gid );
     my $user_can_delete = $USER->is_admin || $USER->is_owner( dsg => $gid );
+
+    $template->param( OID => $genome->organism->id );
 
     $template->param(
         LOAD_ID         => $LOAD_ID,
