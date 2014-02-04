@@ -937,6 +937,7 @@ function get_content_dialog(id, request, chromosome) {
             <div id='genome_info' class="small ui-widget-content ui-corner-all" style="width:400px;"><TMPL_VAR NAME="GENOME_INFO"></div>
             <TMPL_IF NAME='USER_CAN_EDIT'>
                 <span class='ui-button ui-corner-all' onClick="edit_genome_info();">Edit Info</span>
+                <span class='ui-button ui-corner-all ui-button-icon-right' onclick="window.open('LoadGenome.pl?oid=<TMPL_VAR NAME=OID>')"><span class="ui-icon ui-icon-extlink"></span>Load a new version</span>
             </TMPL_IF>
             <TMPL_IF NAME='USER_CAN_DELETE'>
                 <TMPL_IF NAME='DELETED'>
@@ -1146,10 +1147,22 @@ Are you sure you want to move this genome into your trash?<p>
             <td class='title5' style='white-space:nowrap;'>Restricted:</td>
             <td class='data5'><TMPL_VAR NAME="RESTRICTED"></td>
         </tr>
+        <tmpl_if name="owner">
+        <tr>
+            <td class='title5' style='white-space:nowrap;'>Owner:</td>
+            <td class='data5'><tmpl_var name="owner"></td>
+        </tr>
+        </tmpl_if>
         <tr>
             <td class='title5' valign='top' style='white-space:nowrap;'>Users with access:</td>
             <td class='data5'><TMPL_VAR NAME="USERS_WITH_ACCESS"></td>
         </tr>
+        <tmpl_if name="groups_with_access">
+        <tr>
+            <td class='title5' valign='top' style='white-space:nowrap;'>Groups with access:</td>
+            <td class='data5'><tmpl_var name="groups_with_access"></td>
+        </tr>
+        </tmpl_if>
         <TMPL_IF NAME="DELETED">
         <tr>
             <td class='alert' style='white-space:nowrap;'>Note:</td>

@@ -603,17 +603,17 @@ sub gen_dsg_menu {
             next unless $dsgid && $dsg->id == $dsgid;
             $name = "Restricted";
         }
-	elsif ($dsg->deleted)
-	  {
-	    if ($dsgid && $dsgid == $dsg->id)
-	      {
-		$name = "DELETED: ".$dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ")";
-	      }
-	    else 
-	      {
-		next;
-	      }
-	  }
+    elsif ($dsg->deleted)
+      {
+        if ($dsgid && $dsgid == $dsg->id)
+          {
+        $name = "DELETED: ".$dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ")";
+          }
+        else
+          {
+        next;
+          }
+      }
         else {
             $name .= $dsg->name . ": " if $dsg->name;
             $name .=
@@ -781,12 +781,6 @@ sub get_genome_info {
             $org->description
         );
     }
-    $html_dsg_info .=
-      qq{<div><span>Organism: </span><span class="small">$orgname</span></div>};
-    $html_dsg_info .=
-qq{<div><span>Description:</span><span class="small">$org_desc</span></div>};
-    $html_dsg_info .=
-qq{<div><span class="link" onclick=window.open('OrganismView.pl?dsgid=$dsgid')>Genome Information: </span><br>};
     my $i = 0;
 
     my (
@@ -798,6 +792,9 @@ qq{<div><span class="link" onclick=window.open('OrganismView.pl?dsgid=$dsgid')>G
     $link = $BASE_URL unless $link;
     $link = "http://" . $link unless $link && $link =~ /^http/;
     $html_dsg_info .= qq{<table class=small>};
+    $html_dsg_info .= qq{<tr><td>Genome Information:</td><td class="link" onclick=window.open('GenomeInfo.pl?gid=$dsgid')>}.$dsg->info.qq{</td></tr>};
+    $html_dsg_info .= qq{<tr><td>Organism:</td><td>$orgname</td></tr>};
+    $html_dsg_info .= qq{<tr><td>Taxonomy:</td><td>$org_desc</td></tr>};
     $html_dsg_info .= "<tr><td>Name: <td>" . $dsg->name if $dsg->name;
     $html_dsg_info .= "<tr><td>Description: <td>" . $dsg->description
       if $dsg->description;
@@ -823,13 +820,14 @@ qq{<tr><td>DNA content: <td id=gc_content$org_num class='link' onclick="get_gc($
     $html_dsg_info .= "<tr><td>Contains plasmid" if $plasmid;
     $html_dsg_info .= "<tr><td>Contains contigs" if $contig;
     $html_dsg_info .= "<tr><td>Contains scaffolds" if $scaffold;
+    $html_dsg_info .= qq{<tr class="alert"><td>Restricted:</td><td>Yes} if $dsg->restricted;
     $html_dsg_info .= "</table>";
     if ( $dsg->restricted && !$USER->has_access_to_genome($dsg) ) {
         $html_dsg_info = "Restricted";
     }
     if ($dsg->deleted)
       {
-	$html_dsg_info = "<span class=alert>This genome has been deleted and cannot be used in this analysis.</span>  <a href=GenomeInfo.pl?gid=$dsgid target=_new>More information</a>.";
+    $html_dsg_info = "<span class=alert>This genome has been deleted and cannot be used in this analysis.</span>  <a href=GenomeInfo.pl?gid=$dsgid target=_new>More information</a>.";
       }
     my $t2 = new Benchmark;
     my $time = timestr( timediff( $t2, $t1 ) );
@@ -1701,11 +1699,11 @@ sub go {
             push @blastargs, [ "-o", $outfile, 1 ];
         }
         elsif ( $cmd =~ /last_wrapper/i ) {
-        	# mdb added 9/20/13 issue 213
-        	my $dbpath = $P->{LASTDB} . '/' . $dsgid2;		
-        	mkpath($dbpath);
-			push @blastargs, [ "--dbpath", $dbpath, 0 ];
-			
+            # mdb added 9/20/13 issue 213
+            my $dbpath = $P->{LASTDB} . '/' . $dsgid2;
+            mkpath($dbpath);
+            push @blastargs, [ "--dbpath", $dbpath, 0 ];
+
             push @blastargs, [ "",   $db,      0 ];
             push @blastargs, [ "",   $fasta,   0 ];
             push @blastargs, [ "-o", $outfile, 1 ];
@@ -2164,16 +2162,14 @@ sub go {
     $out .= ".w$width";
 
     ############################################################################
-    # KS Calculations (Slow and needs to be optimized)
+    # KS Calculations
     ############################################################################
     my ( $ks_db, $ks_blocks_file, $svg_file );
+    my $check_ks = $final_dagchainer_file =~ /^(.*?CDS-CDS)/;
+    $check_ks = $final_dagchainer_file =~ /^(.*?protein-protein)/
+        unless $check_ks;
 
-    if ($ks_type) {
-        my $check_ks = $final_dagchainer_file =~ /^(.*?CDS-CDS)/;
-        $check_ks = $final_dagchainer_file =~ /^(.*?protein-protein)/
-          unless $check_ks;
-
-        if ($check_ks) {
+    if ($ks_type and $check_ks) {
             $ks_db          = "$final_dagchainer_file.sqlite";
             $ks_blocks_file = "$final_dagchainer_file.ks";
 
@@ -2224,10 +2220,38 @@ sub go {
             CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
             CoGe::Accessory::Web::write_log( "Added generation of svg dotplot",
                 $cogeweb->logfile );
-        }
-        else {
-            $ks_type = undef;
-        }
+    } else {
+        $ks_type = undef;
+
+        ####################################################################
+        # Generate svg dotplot
+        ####################################################################
+
+        my @svgargs = ();
+        push @svgargs, [ '--dag_file', $final_dagchainer_file, 1 ];
+        push @svgargs, [ '--flip', "", 1 ] if $flip;
+        push @svgargs, [ '--xhead', '"' . $org_name1 . '"', 1 ]
+            if $org_name1;
+        push @svgargs, [ '--yhead', '"' . $org_name2 . '"', 1 ]
+            if $org_name2;
+        push @svgargs, [ '--output', $final_dagchainer_file, 1 ];
+        push @svgargs, [ '--no-ks', "", 1 ];
+
+        $svg_file = $final_dagchainer_file . ".svg";
+
+        $workflow->add_job(
+            cmd         => $SVG_DOTPLOT,
+            script      => undef,
+            args        => \@svgargs,
+            inputs      => [$final_dagchainer_file],
+            outputs     => [$svg_file],
+            description => "Generating svg image...",
+        );
+
+        CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+        CoGe::Accessory::Web::write_log( "Added generation of svg dotplot",
+            $cogeweb->logfile );
+
     }
 
     ############################################################################
@@ -2878,10 +2902,6 @@ sub get_results {
         if ($check_ks) {
             $ks_db          = "$final_dagchainer_file.sqlite";
             $ks_blocks_file = "$final_dagchainer_file.ks";
-
-            ####################################################################
-            # Generate svg dotplot
-            ####################################################################
             $svg_file = $ks_blocks_file . ".svg";
         }
         else {
@@ -2889,6 +2909,8 @@ sub get_results {
               . " one genome lacking CDS features.";
             $ks_type = undef;
         }
+    } else {
+        $svg_file = "$final_dagchainer_file.svg";
     }
 
     ############################################################################
@@ -3068,8 +3090,8 @@ sub get_results {
 #            msg  => qq{Fasta file for $org_name2: $feat_type2}
 #        );
 
-		# mdb added 9/20/13 issue 77
-		print STDERR "$feat_type1 $feat_type2\n";
+        # mdb added 9/20/13 issue 77
+        print STDERR "$feat_type1 $feat_type2\n";
         my $fasta1_url = _filename_to_link(
             url  => ( $feat_type1 eq "genomic" ? "services/JBrowse/service.pl/sequence/$dsgid1" : undef ),
             file => ( $feat_type1 eq "genomic" ? undef : $FASTADIR . "/$dsgid1-$feat_type1.fasta" ),
@@ -3131,8 +3153,8 @@ sub get_results {
             file => $merged_dagchainer_file,
             msg  => qq{Merged DAGChainer output}
         );
-	#merged dagchainer output is not specified in results.  This hack gets it there.
-	$dagchainer_url.=$merged_dag_url if -r $merged_dagchainer_file;
+    #merged dagchainer output is not specified in results.  This hack gets it there.
+    $dagchainer_url.=$merged_dag_url if -r $merged_dagchainer_file;
 
         my $quota_align_coverage_url = _filename_to_link(
             file => $quota_align_coverage,
@@ -3244,7 +3266,7 @@ sub get_results {
         ########################################################################
 
         $results->param( link => $tiny_link );
-	my ($ks_file) = $ks_db =~ /([^\/]*)$/;
+    my ($ks_file) = $ks_db =~ /([^\/]*)$/;
         if ($ks_type) {
             my $link = "SynSub.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;file=$ks_file";
             $results->param( synsub => $link );
@@ -3327,10 +3349,10 @@ sub _filename_to_link {
 
     my $link;
     if ( -r $file or $url) {
-    	if (!$url) {
-        	$url = $opts{file};
-        	$url =~ s/$DIR/$URL/;
-    	}
+        if (!$url) {
+            $url = $opts{file};
+            $url =~ s/$DIR/$URL/;
+        }
 
         $link =
             q{<span class="}

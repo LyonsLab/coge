@@ -606,7 +606,7 @@ accn: foreach my $accn (@accns) {
 		#initialize genome object if needed
 		if ( $organism && !$genome )    #gst_id 1 is for unmasked sequence data
 		{
-			print $log "Creating Genome Object . . .";
+			print $log "Creating Genome Object ...\n";
 			$genome = generate_genome(
 				version => $version,
 				org_id  => $organism->id,
@@ -618,7 +618,7 @@ accn: foreach my $accn (@accns) {
 			}
 			
 			print $log "log: Added genome id", $genome->id, "\n"; # !!!! don't change, gets parsed by calling code
-			print $log "Creating install path for sequences. . .";
+			print $log "Creating install path for sequences ...\n";
 			$install_dir =
 			  "$install_dir/"
 			  . CoGe::Accessory::Storage::get_tiered_path( $genome->id ) . "/";

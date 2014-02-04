@@ -306,6 +306,29 @@ sub datasets {
 }
 
 ################################################ subroutine header begin ##
+#
+#=head2 owner
+#
+#Usage     : 
+#Purpose   : Returns user object
+#Returns   : user object
+#Argument  : None
+#Throws    : None
+#Comments  : 
+#
+#=cut
+#
+################################################### subroutine header end ##
+
+sub owner {
+    my $self = shift;
+
+    foreach ( $self->user_connectors( { role_id => 2 } ) ) {    #FIXME hardcoded
+        return $_->parent;
+    }
+}
+
+################################################ subroutine header begin ##
 
 =head2 get_genomic_sequence
 
