@@ -1165,6 +1165,7 @@ sub get_genome_info {
     $template->param( groups_with_access => $groups) if $groups;
     $template->param( OWNER => $owner->display_name ) if $owner;
     $template->param( GID => $genome->id );
+    $template->param( OID => $genome->organism->id );
 
     return $template->output;
 }
