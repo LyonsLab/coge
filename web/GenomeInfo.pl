@@ -1165,7 +1165,6 @@ sub get_genome_info {
     $template->param( groups_with_access => $groups) if $groups;
     $template->param( OWNER => $owner->display_name ) if $owner;
     $template->param( GID => $genome->id );
-    $template->param( OID => $genome->organism->id );
 
     return $template->output;
 }
@@ -2378,6 +2377,8 @@ sub generate_body {
 
     my $user_can_edit = $USER->is_admin || $USER->is_owner_editor( dsg => $gid );
     my $user_can_delete = $USER->is_admin || $USER->is_owner( dsg => $gid );
+
+    $template->param( OID => $genome->organism->id );
 
     $template->param(
         LOAD_ID         => $LOAD_ID,
