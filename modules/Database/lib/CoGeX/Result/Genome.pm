@@ -7,6 +7,7 @@ use base 'DBIx::Class::Core';
 #use CoGeX::ResultSet::Genome;
 use CoGe::Accessory::Storage qw( get_genome_seq get_genome_file );
 use CoGe::Accessory::Utils qw( commify );
+use JSON qw(encode_json);
 use Data::Dumper;
 use Text::Wrap;
 use base 'Class::Accessor';
@@ -160,6 +161,43 @@ sub desc {
 
 sub annotations {
     shift->genome_annotations(@_);
+}
+
+################################################ subroutine header begin ##
+
+=head2 to_*
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub to_hash {
+	my $self = shift;
+	return {
+		id => $self->id,
+		name => $self->name,
+		description => $self->description,
+		version => $self->version,
+		organism => $self->organism->to_hash,
+		type => $self->genomic_sequence_type->to_hash,
+		restricted => $self->restricted,
+		message => $self->message,
+		link => $self->link,
+		deleted => $self->deleted
+	}
+}
+
+sub to_json {
+	return encode_json( shift->to_hash );
 }
 
 ################################################ subroutine header begin ##
