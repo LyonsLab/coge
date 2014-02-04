@@ -244,11 +244,17 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 var fRect = pair.featureRect;
                 var score = f.get('score');
                 
-                if (config.transformLog) {
+                if (config.transformLog10) {
                 	if (score >= 0)
                 		score = log10(Math.abs(score)+1);
                 	else
                 		score = -1*log10(Math.abs(score)+1);
+                }
+                else if (config.transformLog2) {
+                	if (score >= 0)
+                		score = log2(Math.abs(score)+1);
+                	else
+                		score = -1*log2(Math.abs(score)+1);
                 }
                 
                 fRect.t = toY( score );
@@ -559,7 +565,14 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
    								{ 	label: 'Log10',
    								    onClick: function(event) {
    								    	clearTransforms(config);
-   								        track.config.transformLog = true;
+   								        track.config.transformLog10 = true;
+   								        track.changed();
+   								    }
+   								},
+   								{ 	label: 'Log2',
+   								    onClick: function(event) {
+   								    	clearTransforms(config);
+   								        track.config.transformLog2 = true;
    								        track.changed();
    								    }
    								}
@@ -611,10 +624,15 @@ function log10(x) {
     return Math.log(x) / Math.log(10);
 }
 
+function log2(x) {
+    return Math.log(x) / Math.log(2);
+}
+
 function clearTransforms(config) {
 	config.transformAverage = false;
 	config.transformDifference = false;
-	config.transformLog = false;
+	config.transformLog10 = false;
+	config.transformLog2 = false;
 }
 
 function nbspPad(s, padLength) {
