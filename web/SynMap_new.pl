@@ -1171,6 +1171,14 @@ sub get_query_link {
 
     my $dsgid1   = $url_options{dsgid1};
     my $dsgid2   = $url_options{dsgid2};
+
+
+    unless($dsgid1 and $dsgid2) {
+        return encode_json({
+            error => "Missing a genome id."
+        });
+    }
+
     my $ks_type  = $url_options{ks_type};
     my $assemble = $url_options{assemble} =~ /true/i ? 1 : 0;
     $assemble = 2 if $assemble && $url_options{show_non_syn} =~ /true/i;
@@ -2447,21 +2455,20 @@ sub get_results {
     my $dsgid2 = $opts{dsgid2};
 
     unless ( $dsgid1 && $dsgid2 ) {
-        return "<span class=alert>You must select two genomes.</span>";
+        return encode_json({
+            error => "You must select two genomes."
+        });
     }
 
     my ($dsg1) = $coge->resultset('Genome')->find($dsgid1);
     my ($dsg2) = $coge->resultset('Genome')->find($dsgid2);
 
     unless ( $dsg1 && $dsg2 ) {
-        return
-"<span class=alert>Problem generating dataset group objects for ids:  $dsgid1, $dsgid2.</span>";
+        return encode_json({
+            error => "Problem generating dataset group objects for ids:  $dsgid1, $dsgid2."
+        });
     }
 
-    unless ( $dsg1 && $dsg2 ) {
-        return
-"<span class=alert>Problem generating one of the genome objects for id1: $dsgid1 or id2: $dsgid2</span>";
-    }
     my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
 
     ############################################################################
@@ -2532,18 +2539,18 @@ sub get_results {
     }
 
     if ( $job->status == 1 ) {
-        ;
-        #return qq{<span class="alert">The analysis is still running.</span>};
+        return encode_json({ error => 'The analysis is still running.'});
     }
     elsif ( $job->status == 3 ) {
-        return qq{<span class="alert">The analysis was cancelled.</span>};
+        return encode_json({ error => 'The analysis was cancelled'});
     }
     elsif ( $job->status == 4 ) {
-        return qq{<span class="alert">The analysis was terminated.</span>};
+        return encode_json({error => 'The analysis was terminated.'});
     }
     elsif ( $job->status == 5 ) {
-        return '<span class="alert">A problem was encountered the analysis'
-          . ' failed to be generated.</span>';
+        return encode_json({
+                error => 'A problem was encountered the analysis'
+                 . ' failed to be generated.'});
     }
 
     ############################################################################
@@ -3293,7 +3300,9 @@ sub get_results {
         $html .= "<br>";
     }
     else {
-        $problem = qq{The output $out.html could not be found.};
+        return encode_json({
+            error => "The output $out.html could not be found."
+        });
     }
 
     my $log = $cogeweb->logfile;
@@ -3333,7 +3342,7 @@ qq{<span id="clear" style="font-size: 0.8em" class="ui-button ui-corner-all"
     my $output = $results->output;
     $output =~ s/<script src="\/CoGe\/js\/jquery-1.3.2.js"><\/script>//g;
 
-    return $output;
+    return encode_json({ html => $output });
 }
 
 sub _filename_to_link {

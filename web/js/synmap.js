@@ -185,8 +185,8 @@ function run_synmap(scheduled){
 
     argument_list.fname = 'get_query_link';
     $('#results').hide();
+    close_dialog();
     $('#synmap_dialog').dialog('open');
-    $('#synmap_dialog').find('#text').html("<p>Initializing SynMap...</p>");
 
     $.ajax({
         url: request,
@@ -636,13 +636,15 @@ function update_dialog(request, identifier, formatter, args) {
             type: 'GET',
             url: request,
             data: args,
+            dataType: "json",
             success: function(data) {
-                $('#results').html(data);
-                $(function() {$("#synmap_zoom_box").draggable();});
-                if (completed) {
+                if (completed && !data.error) {
+                    $("#synmap_zoom_box").draggable();
+                    $('#results').html(data.html);
                     dialog.find('#progress').hide();
                     dialog.find('#dialog_success').slideDown();
                 } else {
+                    $('#results').html(data.error);
                     dialog.find('#progress').hide();
                     dialog.find('#dialog_error').slideDown();
                 }
