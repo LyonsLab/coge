@@ -429,11 +429,11 @@ sub parse_proxy_response {
 	my $response = shift;
 	
 	if ($response =~ /authenticationSuccess/) {
-		my ($user_name) = $response =~ /\<cas\:user\>(\w+)\<\/cas\:user\>/;
-		my ($first_name) = $response =~ /\<cas\:firstName\>(\w+)\<\/cas\:firstName\>/;
-		my ($last_name) = $response =~ /\<cas\:lastName\>(\w+)\<\/cas\:lastName\>/;
-		my ($email) = $response =~ /\<cas\:email\>(\w+)\<\/cas\:email\>/;
-		print STDERR "parse_reset_response: $user_name $first_name $last_name $email\n";
+		my ($user_name) = $response =~ /\<cas\:user\>(.*)\<\/cas\:user\>/;
+		my ($first_name) = $response =~ /\<cas\:firstName\>(.*)\<\/cas\:firstName\>/;
+		my ($last_name) = $response =~ /\<cas\:lastName\>(.*)\<\/cas\:lastName\>/;
+		my ($email) = $response =~ /\<cas\:email\>(.*)\<\/cas\:email\>/;
+		print STDERR "parse_proxy_response: user_name=$user_name first_name=$first_name last_name=$last_name email=$email\n";
 		return ($user_name, $first_name, $last_name, $email);
 	}
 	
