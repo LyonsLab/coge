@@ -183,31 +183,54 @@ function run_synmap(scheduled){
         });
     };
 
-    argument_list.fname = 'get_query_link';
+
+    var tiny_callback = function() {
+        argument_list.fname = 'get_query_link';
+        close_dialog();
+        $('#synmap_dialog').dialog('open');
+
+        $.ajax({
+            url: request,
+            dataType: 'json',
+            data: argument_list,
+            success: function(data) {
+                var link = "Return to this analysis: <a href="
+                + data.link + " onclick=window.open('tiny')"
+                + "target = _new>" + data.link + "</a><br>"
+                + "To run this analysis on the previous version of SynMap <a href="
+                + data.old_link + " onclick=window.open('tiny')"
+                + "target = _new>click here</a>";
+
+                var logfile = '<a href="tmp/SynMap/'
+                + pageObj.basename + '.log">Logfile</a>';
+
+                $('#dialog_log').html(logfile);
+                $('#synmap_link').html(link);
+
+                start_callback(data.link, data.request);
+            }
+        });
+    };
+
+    argument_list.fname = "get_results";
     $('#results').hide();
-    close_dialog();
-    $('#synmap_dialog').dialog('open');
+    var overlay = $("#overlay").show();
 
     $.ajax({
-        url: request,
-        dataType: 'json',
+        type: 'GET',
         data: argument_list,
+        dataType: "json",
         success: function(data) {
-            var link = "Return to this analysis: <a href="
-            + data.link + " onclick=window.open('tiny')"
-            + "target = _new>" + data.link + "</a><br>"
-            + "To run this analysis on the previous version of SynMap <a href="
-            + data.old_link + " onclick=window.open('tiny')"
-            + "target = _new>click here</a>";
+            if (!data.error) {
+                $("#synmap_zoom_box").draggable();
+                $('#results').html(data.html).slideDown();
+            } else {
+                tiny_callback();
+            }
 
-            var logfile = '<a href="tmp/SynMap/'
-            + pageObj.basename + '.log">Logfile</a>';
-
-            $('#dialog_log').html(logfile);
-            $('#synmap_link').html(link);
-
-            start_callback(data.link, data.request);
-        }
+            overlay.hide();
+        },
+        error: tiny_callback.bind(this)
     });
 
     return false;
@@ -572,7 +595,7 @@ function synmap_formatter(item) {
         job_status.addClass('running');
         job_status.addClass('bold');
     } else if (item.status == 'skipped') {
-        job_status.append(item.status);
+        job_status.append("already generated");
         job_status.addClass('skipped');
         job_status.addClass('bold');
     } else if (item.status == 'cancelled') {
