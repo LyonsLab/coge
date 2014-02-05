@@ -1,3 +1,5 @@
+@import url(coge-spinner.css);
+
 BODY {
   font-family: Arial, Helvetica, fixed;
   background: #FFFFFF;
@@ -1235,3 +1237,4 @@ header {
     padding: 10px;
     overflow-y: scroll;
 }
+

@@ -484,9 +484,51 @@ $(document).ready(function(){
 
     var autogo = "<tmpl_var name=autogo>";
     if (autogo==1) {
-      run_synmap(autogo);
+        var overlay = $("#overlay").show();
+        var args = fetch_arguments();
+        args.fname = "get_results";
+
+        $.ajax({
+            type: 'GET',
+            data: args,
+            dataType: "json",
+            success: function(data) {
+                if (!data.error) {
+                    $("#synmap_zoom_box").draggable();
+                    $('#results').html(data.html).slideDown();
+                } else {
+                    run_synmap(autogo);
+                }
+
+                overlay.hide();
+            },
+            error: run_synmap.bind(autogo)
+        });
+
+
     }
 
     $("#tabs").removeClass("invisible");
  });
 </script>
+
+<div id="overlay">
+    <div id="floatingCirclesG">
+        <div class="f_circleG" id="frotateG_01">
+        </div>
+        <div class="f_circleG" id="frotateG_02">
+        </div>
+        <div class="f_circleG" id="frotateG_03">
+        </div>
+        <div class="f_circleG" id="frotateG_04">
+        </div>
+        <div class="f_circleG" id="frotateG_05">
+        </div>
+        <div class="f_circleG" id="frotateG_06">
+        </div>
+        <div class="f_circleG" id="frotateG_07">
+        </div>
+        <div class="f_circleG" id="frotateG_08">
+        </div>
+    </div>
+</div>
