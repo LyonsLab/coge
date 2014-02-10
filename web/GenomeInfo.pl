@@ -58,7 +58,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
 #    delete_dataset             => \&delete_dataset,
     check_login                => \&check_login,
     copy_genome                => \&copy_genome,
-    get_log                    => \&get_log,
+    get_copy_log               => \&get_copy_log,
     export_fasta_irods         => \&export_fasta_irods,
     get_annotations            => \&get_annotations,
     add_annotation             => \&add_annotation,
@@ -158,7 +158,8 @@ qq{<tr><td class="title5">Sequence type:<td class="data5" title="gstid$gstid">}
     }
 
     $html .= "</table>";
-    $html .= qq{<div id="genome_features" class="small padded link" onclick="get_features('#genome_features');" >Click for Features</div>};
+    $html .= qq{<div class="left coge-table-header">Features</div>}
+          .  qq{<div id="genome_features" class="small padded link" onclick="get_features('#genome_features');" >Click for Features</div>};
 
     return $html;
 }
@@ -227,8 +228,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
     $gc_args .= "typeid: ";
     my $feat_list_string = $dsid ? "dsid=$dsid" : "dsgid=$dsgid";
     $feat_list_string .= ";chr=$chr" if defined $chr;
-    my $feat_string;    # .= qq{<div>Features for $name</div>};
-    $feat_string .= qq{<div class="left coge-table-header">Features</div>};
+    my $feat_string;
     $feat_string .= qq{<table style="padding: 2px; margin-bottom: 5px;" class="ui-corner-all ui-widget-content">};
 
     foreach my $type ( sort { $a cmp $b } keys %$feats ) {
@@ -1594,9 +1594,9 @@ sub copy_genome {
     return;
 }
 
-sub get_log {
+sub get_copy_log {
     #my %opts    = @_;
-    #print STDERR "get_log $LOAD_ID\n";
+    #print STDERR "get_copy_log $LOAD_ID\n";
 
     my $logfile = $SECTEMPDIR . "/staging/log.txt";
     open( my $fh, $logfile ) or

@@ -19,7 +19,7 @@ $(document).ready(function() {
 
     $(".dialog_box").dialog({ autoOpen: false, width: 500 });
 
-    $("#copy_dialog").dialog({modal: true});
+    $("#status_dialog").dialog({modal: true});
 
     $("#export_dialog").dialog({modal: true});
 
@@ -378,8 +378,8 @@ function get_gff() {
             nu = +$('#name_unique')[0].checked,
             upa = +$('#upa')[0].checked;
 
-        var height = $('#copy_log')[0].scrollHeight;
-        $("#copy_log").animate({ scrollTop: height}, 500);
+        var height = $('#status_log')[0].scrollHeight;
+        $("#status_log").animate({ scrollTop: height}, 500);
 
         var title = $("<h4>Generating gff file</h4>");
 
@@ -677,7 +677,7 @@ function export_fasta_irods() {
 }
 
 function reset_log() {
-    $('#copy_log').html('');
+    $('#status_log').html('');
     $('#status_msg').show();
     $('#finished_msg,#error_msg,#ok_button').hide();
     $('#finish_button,#cancel_button').hide();
@@ -710,7 +710,7 @@ function check_and_report_login() {
 
 function copy_genome(mask, seq_only) {
     // Prevent concurrent executions - issue 101
-    if ( $("#copy_dialog").dialog( "isOpen" ) )
+    if ( $("#status_dialog").dialog( "isOpen" ) )
         return;
 
     // Make sure user is still logged-in - issue 206
@@ -719,16 +719,16 @@ function copy_genome(mask, seq_only) {
     // Open status dialog right away - issue 101
     reset_log();
     if (mask) {
-        $('#copy_dialog').dialog('option', 'title', 'Copying & Masking Genome');
+        $('#status_dialog').dialog('option', 'title', 'Copying & Masking Genome');
     }
     else if (seq_only) {
-        $('#copy_dialog').dialog('option', 'title', 'Copying Genome (No Annotations)');
+        $('#status_dialog').dialog('option', 'title', 'Copying Genome (No Annotations)');
     }
     else {
-        $('#copy_dialog').dialog('option', 'title', 'Copying Genome');
+        $('#status_dialog').dialog('option', 'title', 'Copying Genome');
     }
-    $('#copy_dialog').dialog('open');
-    $('#copy_log').html('Initializing ...');
+    $('#status_dialog').dialog('open');
+    $('#status_log').html('Initializing ...');
 
     $.ajax({
         data: {
@@ -759,7 +759,7 @@ function get_log() {
     $.ajax({
         data: {
             dataType: 'text',
-            fname: 'get_log',
+            fname: 'get_copy_log',
             load_id: '<TMPL_VAR NAME="LOAD_ID">'
         },
         success : function(data) {
@@ -770,9 +770,9 @@ function get_log() {
 
             var obj = jQuery.parseJSON(data);
             if (obj.log) {
-                $('#copy_log').html(obj.log.join('<BR>'));
-                var height = $('#copy_log')[0].scrollHeight;
-                $("#copy_log").animate({ scrollTop: height}, 500);
+                $('#status_log').html(obj.log.join('<BR>'));
+                var height = $('#status_log')[0].scrollHeight;
+                $("#status_log").animate({ scrollTop: height}, 500);
             }
 
             if (obj.status == 1) {
@@ -1078,8 +1078,8 @@ Are you sure you want to move this genome into your trash?<p>
  </div>
 </div>
 
-<div id="copy_dialog" class="hidden dialog_box">
-    <div id="copy_log" class="small ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
+<div id="status_dialog" class="hidden dialog_box">
+    <div id="status_log" class="small ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
     </div>
     <br>
     <div id="status_msg">
@@ -1088,9 +1088,9 @@ Are you sure you want to move this genome into your trash?<p>
     </div>
     <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
     <input id="new_genome_id" type="hidden" />
-    <span id="ok_button" onClick="$('#copy_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all">OK</span>
+    <span id="ok_button" onClick="$('#status_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all">OK</span>
     <span id="finish_button" onClick="continue_to_view();" style="float:right;" class="hidden ui-button ui-corner-all">Go to new genome</span>
-    <span id="cancel_button" onClick="$('#copy_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go">Cancel</span>
+    <span id="cancel_button" onClick="$('#status_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go">Cancel</span>
 </div>
 
 <div id="export_dialog" class="hidden dialog_box" title="Exporting ...">
