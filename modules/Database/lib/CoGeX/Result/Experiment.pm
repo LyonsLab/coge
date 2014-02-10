@@ -308,7 +308,7 @@ sub annotation_pretty_print_html {
     $anno_type->Type_delimit(": <td class=\"data5\">");
     $anno_type->add_Annot( $self->version . "</td>" );
     $anno_obj->add_Annot($anno_type);
-
+    
     $anno_type =
       new CoGe::Accessory::Annotation(
             Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">"
@@ -320,7 +320,7 @@ sub annotation_pretty_print_html {
         my $info = $type->name;
         $info .= ": " . $type->description if $type->description;
         if ($allow_delete) {
-# NOTE: it is somewhat undesirable to have a javascript call in a DB object, but it works
+            # NOTE: it is undesirable to have a javascript call in a DB object, but it works
             $info .=
                 "<span onClick=\"remove_experiment_type({eid: '"
               . $self->id
@@ -331,7 +331,7 @@ sub annotation_pretty_print_html {
         $anno_type->add_Annot($info);
     }
     $anno_obj->add_Annot($anno_type);
-
+    
     $anno_type =
       new CoGe::Accessory::Annotation(
             Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">"
