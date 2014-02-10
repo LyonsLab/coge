@@ -44,37 +44,37 @@ BEGIN {
     @ISA     = qw (Exporter);
     @EXPORT =
       qw( get_tiered_path get_genome_file index_genome_file get_genome_seq
-      get_experiment_path get_experiment_data
+      get_experiment_path get_experiment_files get_experiment_data
       reverse_complement);
 
-	# Experiment Data Types
-	$DATA_TYPE_QUANT = 1;	# Quantitative data
-	$DATA_TYPE_POLY	 = 2;	# Polymorphism data
-	$DATA_TYPE_ALIGN = 3;	# Alignments
+    # Experiment Data Types
+    $DATA_TYPE_QUANT    = 1; # Quantitative data
+    $DATA_TYPE_POLY     = 2; # Polymorphism data
+    $DATA_TYPE_ALIGN    = 3; # Alignments
 }
 
 ################################################ subroutine header begin ##
 
 =head2 get_tiered_path
 
- Usage     : 
+ Usage     :
  Purpose   : This method determines the correct directory structure for storing
- 			 the files for a genome/experiment.
- Returns   : 
- Argument  : 
+             the files for a genome/experiment.
+ Returns   :
+ Argument  :
  Throws    : none
  Comments  : The idea is to build a dir structure that holds large amounts of
- 			 files, and is easy to lookup based on genome ID number.
-			 The strucuture is three levels of directorys, and each dir holds
-			 1000 files and/or directorys.
-			 Thus:
-			 ./0/0/0/ will hold files 0-999
-			 ./0/0/1/ will hold files 1000-1999
-			 ./0/0/2/ will hold files 2000-2999
-			 ./0/1/0 will hold files 1000000-1000999
-			 ./level0/level1/level2/
+             files, and is easy to lookup based on genome ID number.
+             The strucuture is three levels of directorys, and each dir holds
+             1000 files and/or directorys.
+             Thus:
+             ./0/0/0/ will hold files 0-999
+             ./0/0/1/ will hold files 1000-1999
+             ./0/0/2/ will hold files 2000-2999
+             ./0/1/0 will hold files 1000000-1000999
+             ./level0/level1/level2/
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -104,16 +104,16 @@ sub get_genome_file {
     unless ($base_path) {
         $base_path = $seqdir . '/' . get_tiered_path($gid) . '/';
     }
-    
+
     # First check for legacy filename
     my $file_path = $base_path . "$gid.faa";
     return $file_path if ( -r $file_path );
 
-	# Not there, so check for new filename
+    # Not there, so check for new filename
     $file_path = $base_path . 'genome.faa';
-	if ( not -r $file_path ) {
-    	print STDERR "Storage::get_genome_file: genome file '$file_path' not found or not readable!\n";
-	}
+    if ( not -r $file_path ) {
+        print STDERR "Storage::get_genome_file: genome file '$file_path' not found or not readable!\n";
+    }
 
     return $file_path;
 }
@@ -192,7 +192,7 @@ sub get_genome_seq {
     my $fasta             = ( defined $format and $format eq 'fasta' );
     #my $FASTA_LINE_LENGTH = 60;
     my $seq;
-	#print STDERR "Storage::get_genome_seq gid=$gid chr=" . ($chr ? $chr : '') . " start=" . (defined $start ? $start : '') . " stop=" . (defined $stop ? $stop : '') . "\n";
+    #print STDERR "Storage::get_genome_seq gid=$gid chr=" . ($chr ? $chr : '') . " start=" . (defined $start ? $start : '') . " stop=" . (defined $stop ? $stop : '') . "\n";
 
     # Validate params
     my $len;
@@ -262,8 +262,8 @@ sub get_genome_seq {
         }
     }
     else {
-    	print STDERR "Storage::get_genome_seq: ERROR, file not found or zero length: $file_path\n";
-    	return;
+        print STDERR "Storage::get_genome_seq: ERROR, file not found or zero length: $file_path\n";
+        return;
     }
 #    else {    # old method
 #        $file_path =
@@ -303,18 +303,43 @@ sub get_experiment_path {
 
     my $expdir = CoGe::Accessory::Web::get_defaults()->{'EXPDIR'};
     unless ($expdir) {
-        print STDERR
-"Storage::get_experiment_path: WARNING, conf file parameter EXPDIR is blank!\n";
+        print STDERR "Storage::get_experiment_path: WARNING, conf file parameter EXPDIR is blank!\n";
     }
 
     my $path = $expdir . '/' . get_tiered_path($eid) . '/';
     unless ( -r $path ) {
-        print STDERR
-"Storage::get_experiment_path: experiment path '$path' doesn't exist!\n";
+        print STDERR "Storage::get_experiment_path: experiment path '$path' doesn't exist!\n";
         return;
     }
 
     return $path;
+}
+
+sub get_experiment_files {
+    my ($eid, $data_type)  = @_;
+    return unless ($eid and $data_type);
+
+    my $file_path = get_experiment_path($eid);
+    my @files;
+
+    if ($data_type == $DATA_TYPE_QUANT) {
+        @files = glob "$file_path/*.csv";
+    }
+    elsif ($data_type == $DATA_TYPE_POLY) {
+        @files = glob "$file_path/*.vcf";
+    }
+    elsif ($data_type == $DATA_TYPE_ALIGN) {
+        @files = glob "$file_path/*.bam";
+    }
+    elsif ($data_type == $DATA_TYPE_SEQUENCE) {
+        @files = glob "$file_path/*.fastq $file_path/*.fq";
+    }
+    else {
+        print STDERR "Storage::get_experiment_files: unknown data type $data_type!\n";
+        return;
+    }
+
+    return \@files;
 }
 
 sub get_experiment_data {
@@ -332,28 +357,28 @@ sub get_experiment_data {
     $stop = $opts{end} if ( not defined $stop );
     $start = 0 if ($start < 0);
     $stop = 0 if ($stop < 0);
-    
+
     my $storage_path = get_experiment_path($eid);
     my $cmd;
-    
+
     if (!$data_type || $data_type == $DATA_TYPE_QUANT || $data_type == $DATA_TYPE_POLY ) {
-    	my $cmdpath = CoGe::Accessory::Web::get_defaults()->{FASTBIT_QUERY};
-    	if ($data_type and $data_type == $DATA_TYPE_POLY) {
-    		$cmd = "$cmdpath -v 1 -d $storage_path -q \"select chr,start,stop,type,id,ref,alt,qual,info where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
-    	}
-    	else { #DATA_TYPE_QUANT
-    		$cmd = "$cmdpath -v 1 -d $storage_path -q \"select chr,start,stop,strand,value1,value2 where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
-    	}
+        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{FASTBIT_QUERY};
+        if ($data_type and $data_type == $DATA_TYPE_POLY) {
+            $cmd = "$cmdpath -v 1 -d $storage_path -q \"select chr,start,stop,type,id,ref,alt,qual,info where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
+        }
+        else { #DATA_TYPE_QUANT
+            $cmd = "$cmdpath -v 1 -d $storage_path -q \"select chr,start,stop,strand,value1,value2 where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
+        }
     }
     elsif ( $data_type == $DATA_TYPE_ALIGN ) {
-    	my $cmdpath = CoGe::Accessory::Web::get_defaults()->{SAMTOOLS};
-    	$cmd = "$cmdpath view $storage_path/alignment.bam $chr:$start-$stop 2>&1";
+        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{SAMTOOLS};
+        $cmd = "$cmdpath view $storage_path/alignment.bam $chr:$start-$stop 2>&1";
     }
     else {
-    	print STDERR "Storage::get_experiment_data: unknown data type\n";	
-    	return;
+        print STDERR "Storage::get_experiment_data: unknown data type\n";
+        return;
     }
-    
+
     #print STDERR "$cmd\n";
     my @cmdOut = qx{$cmd};
     #print STDERR @cmdOut;
@@ -372,14 +397,14 @@ sub get_experiment_data {
 
 =head2 reverse_complement
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
