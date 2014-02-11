@@ -331,9 +331,6 @@ sub get_experiment_files {
     elsif ($data_type == $DATA_TYPE_ALIGN) {
         @files = glob "$file_path/*.bam";
     }
-    elsif ($data_type == $DATA_TYPE_SEQUENCE) {
-        @files = glob "$file_path/*.fastq $file_path/*.fq";
-    }
     else {
         print STDERR "Storage::get_experiment_files: unknown data type $data_type!\n";
         return;
