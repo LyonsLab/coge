@@ -538,7 +538,7 @@ sub get_lists {
         }
     }
     elsif ( $USER->user_id ) {
-        foreach my $list ( sort { $a->name <=> $b->name } $USER->lists ) {
+        foreach my $list ( sort { $a->name cmp $b->name } $USER->lists ) {
             my $name = $list->name;
             $name .= ": " . $list->description if $list->description;
             $name .= " (public)" if !$list->restricted;
