@@ -22,7 +22,7 @@ no warnings 'redefine';
 
 use vars qw(
   $P $PAGE_TITLE $TEMPDIR $BINDIR $USER $coge $FORM $LINK
-  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $OPEN_STATUS
+  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $JOB_ID $OPEN_STATUS
 );
 
 $PAGE_TITLE = 'LoadExperiment';
@@ -40,9 +40,11 @@ $BINDIR     = $P->{SCRIPTDIR}; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
 # Use existing ID if being passed in with AJAX request.  Otherwise generate
 # a new one.  If passed-in as url parameter then open status window
 # automatically.
-$OPEN_STATUS = (defined $FORM->param('load_id'));
+# mdb 2/10/14: added ability to load status for specified job_id instead of load_id
+$OPEN_STATUS = (defined $FORM->param('load_id') || defined $FORM->Vars->{'job_id'});
 $LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
-$TEMPDIR    = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
+$JOB_ID = $FORM->Vars->{'job_id'};
+$TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 
 $MAX_SEARCH_RESULTS = 100;
 
@@ -115,8 +117,10 @@ sub generate_body {
     }
     
     $template->param(
-    	LOAD_ID       => $LOAD_ID,
-        OPEN_STATUS   => $OPEN_STATUS,
+    	LOAD_ID     => $LOAD_ID,
+    	JOB_ID      => $JOB_ID,
+        OPEN_STATUS => $OPEN_STATUS,
+        STATUS_URL  => 'jex/status/',
         FILE_SELECT_SINGLE       => 1,
         DEFAULT_TAB              => 0,
         DISABLE_IRODS_GET_ALL    => 1,
@@ -415,8 +419,12 @@ sub load_experiment {
     return encode_json({ error => "No data items" }) unless $items;
     $items = decode_json($items);
 
+    # Check login
     if ( !$user_name || !$USER->is_admin ) {
         $user_name = $USER->user_name;
+    }
+    if ($user_name eq 'public') {
+        return encode_json({ error => 'Not logged in' });
     }
 
     # Setup staging area and log file
@@ -424,8 +432,8 @@ sub load_experiment {
     mkpath $stagepath;
 
     my $logfile = $stagepath . '/log.txt';
-    open( my $log, ">$logfile" ) or die "Error creating log file";
-    print $log "Starting load experiment $stagepath\n"
+    open( my $logh, ">$logfile" ) or die "Error creating log file";
+    print $logh "Starting load experiment $stagepath\n"
       . "name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
 
     # Verify and decompress files
@@ -448,46 +456,96 @@ sub load_experiment {
         push @files, $fullpath;
     }
 
-	# Call load script
-    my $cmd =
-        "$BINDIR/load_experiment.pl "
-      . "-user_name $user_name "
-      . '-name "'
-      . escape($name) . '" '
-      . '-desc "'
-      . escape($description) . '" '
-      . '-version "'
-      . escape($version) . '" '
-      . "-restricted ". $restricted . ' '
-      . "-gid $gid "
-      . '-source_name "'
-      . escape($source_name) . '" '
-      . "-staging_dir $stagepath "
-      . "-file_type '$file_type' "
-      . '-data_file "'
-      . escape( join( ',', @files ) ) . '" '
-      . "-config $CONFIGFILE";
-	  #"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
-
-    print STDERR "$cmd\n";
-    print $log "$cmd\n";
-    close($log);
-
-    if ( !defined( my $child_pid = fork() ) ) {
-        return encode_json({ error => "Cannot fork: $!" });
-    }
-    elsif ( $child_pid == 0 ) {
-        print STDERR "child running: $cmd\n";
-        `$cmd`;
-        exit;
-    }
-    
     # Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
         url => $P->{SERVER} . "$PAGE_TITLE.pl?load_id=$LOAD_ID"
     );
 
-    return encode_json({ link => $tiny_link });
+    # Determine fastq file type
+    (my $fileext) = $files[0] =~ /\.([^\.]+)$/; # tempfix
+    if ($file_type eq 'fastq' || grep { $_ eq $fileext } ('fastq', 'fq') ) {
+        # Setup JEX
+        my $job = CoGe::Accessory::Web::get_job(
+            tiny_link => $tiny_link,
+            title     => $PAGE_TITLE,
+            user_id   => $USER->id,
+            db_object => $coge
+        );
+
+        # Setup call to analysis script
+        my $cmd =
+            $P->{SCRIPTDIR} . '/qteller.pl '
+            . "-gid $gid "
+            . '-uid ' . $USER->id . ' '
+            . '-jid ' . $job->id . ' '
+            . '-name "' . escape($name) . '" '
+            . '-desc "' . escape($description) . '" '
+            . '-version "' . escape($version) . '" '
+            . "-restricted ". $restricted . ' '
+            . '-source_name "' . escape($source_name) . '" '
+            . "-staging_dir $stagepath "
+            . '-data_file "' . escape( join( ',', @files ) ) . '" '
+            . "-config $CONFIGFILE";
+        print STDERR "$cmd\n";
+        print $logh "$cmd\n";
+        close($logh);
+        
+        # Run analysis script
+        print STDERR "child running: $cmd\n";
+        execute($cmd);
+        
+        # Get tiny link
+        my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
+            url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $job->id . "&load_id=$LOAD_ID"
+        );
+    
+        return encode_json({ job_id => $job->id, link => $tiny_link });
+    }
+    # Else, all other file types
+    else {
+    	# Setup call to load script
+        my $cmd =
+            "$BINDIR/load_experiment.pl "
+          . "-user_name $user_name "
+          . '-name "' . escape($name) . '" '
+          . '-desc "' . escape($description) . '" '
+          . '-version "' . escape($version) . '" '
+          . "-restricted ". $restricted . ' '
+          . "-gid $gid "
+          . '-source_name "' . escape($source_name) . '" '
+          . "-staging_dir $stagepath "
+          . "-file_type '$file_type' "
+          . '-data_file "' . escape( join( ',', @files ) ) . '" '
+          . "-config $CONFIGFILE";
+    	  #"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
+        print STDERR "child running: $cmd\n";
+        print $logh "$cmd\n";
+        close($logh);
+    
+        if ( !defined( my $child_pid = fork() ) ) {
+            return encode_json({ error => "Cannot fork: $!" });
+        }
+        elsif ( $child_pid == 0 ) {
+            # Run load script
+            print STDERR "child running: $cmd\n";
+            execute($cmd);
+            exit;
+        }
+        
+    
+        return encode_json({ link => $tiny_link });
+    }
+}
+
+sub execute { # FIXME this code is duplicate in other places like load_genome.pl
+    my ($cmd, $log) = @_;
+    print $log "$cmd\n" if $log;
+    my @cmdOut = qx{$cmd};
+    my $cmdStatus = $?;
+    if ( $cmdStatus != 0 ) {
+        print $log "log: error: command failed with rc=$cmdStatus: $cmd\n" if $log;
+        exit(-1);
+    }
 }
 
 sub get_load_log {
@@ -499,8 +557,7 @@ sub get_load_log {
       return encode_json( { status => -1, log => "Error opening log file" } );
 
     my @lines = ();
-    my $eid;
-    my $new_load_id;
+    my ($eid, $nid, $new_load_id);
     my $status = 0;
     while (<$fh>) {
         push @lines, $1 if ( $_ =~ /^log: (.+)/i );
@@ -516,6 +573,9 @@ sub get_load_log {
         elsif ( $_ =~ /experiment id: (\d+)/i ) {
             $eid = $1;
         }
+        elsif ( $_ =~ /notebook id: (\d+)/i ) {
+            $nid = $1;
+        }
         elsif ( $_ =~ /log: error/i ) {
             $status = -1;
             last;
@@ -528,6 +588,7 @@ sub get_load_log {
         {
             status        => $status,
             experiment_id => $eid,
+            notebook_id   => $nid,
             new_load_id   => $new_load_id,
             log           => join( "<BR>\n", @lines )
         }
