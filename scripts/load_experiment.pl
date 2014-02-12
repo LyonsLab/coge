@@ -14,7 +14,7 @@ use vars qw($staging_dir $install_dir $data_file $file_type
   $gid $source_name $user_name $config $allow_negative
   $host $port $db $user $pass $P);
 
-#TODO: use these from Storage.pm instead of redeclaring them
+#FIXME: use these from Storage.pm instead of redeclaring them
 my $DATA_TYPE_QUANT = 1;	# Quantitative data
 my $DATA_TYPE_POLY	= 2;	# Polymorphism data
 my $DATA_TYPE_ALIGN = 3;	# Alignments
@@ -227,7 +227,6 @@ my $experiment = $coge->resultset('Experiment')->create(
         name        => $name,
         description => $description,
         version     => $version,
-
         #link				=> $link, #FIXME
         data_source_id => $data_source->id,
         data_type      => $data_type,
@@ -311,55 +310,32 @@ exit;
 
 #-------------------------------------------------------------------------------
 sub detect_data_type {
-	my $filetype = shift;
+    my $filetype = shift;
     my $filepath = shift;
-    print $log "detect_data_type: $filetype $filepath\n";
+    print $log "detect_data_type: $filepath\n";
 
-	if (!$filetype or $filetype eq 'autodetect') {
-		# Try to determine type based on file extension
-		print $log "log: Detecting file type\n";
-   		($filetype) = lc($filepath) =~ /\.([^\.]+)$/;
-	}
-	
+    if (!$filetype or $filetype eq 'autodetect') {
+        # Try to determine type based on file extension
+        print $log "log: Detecting file type\n";
+        ($filetype) = lc($filepath) =~ /\.([^\.]+)$/;
+    }
+    
     if ( grep { $_ eq $filetype } ('csv', 'tsv', 'bed') ) { #TODO add 'bigbed', 'wig', 'bigwig', 'gff', 'gtf'
-    	print $log "log: Detected a quantitative file ($filetype)\n";
+        print $log "log: Detected a quantitative file ($filetype)\n";
         return ($filetype, $DATA_TYPE_QUANT);
     }
     elsif ( $filetype eq 'bam' ) {
-    	print $log "log: Detected an alignment file ($filetype)\n";
-    	return ($filetype, $DATA_TYPE_ALIGN);
+        print $log "log: Detected an alignment file ($filetype)\n";
+        return ($filetype, $DATA_TYPE_ALIGN);
     }
     elsif ( $filetype eq 'vcf' ) {
-    	print $log "log: Detected a polymorphism file ($filetype)\n";
+        print $log "log: Detected a polymorphism file ($filetype)\n";
         return ($filetype, $DATA_TYPE_POLY);
     }
     else {
         print $log "detect_data_type: unknown file ext '$filetype'\n";
         return ($filetype);
     }
-    
-    # Try to determine type based on content - mdb removed 9/11/13, this isn't fail-safe, just use file ext
-#    open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
-#    my $line_num = 1;
-#    while ( my $line = <$in> ) {
-#        last if ( $line_num++ > 100 );    # only check the beginning of the file
-#        chomp $line;
-#        next if $line =~ /^\s*#/;
-#
-#        if ( $line =~ /fileformat\=VCF/ ) {
-#            return $DATA_TYPE_VCF;
-#        }
-#
-#        my @tok = split( /\s+|,/, $line );
-#        if ( @tok >= $MIN_QUANT_COLUMNS && @tok <= $MAX_QUANT_COLUMNS ) {
-#            return $DATA_TYPE_QUANT;
-#        }
-#        elsif ( @tok >= $MIN_VCF_COLUMNS ) {
-#            return $DATA_TYPE_VCF;
-#        }
-#    }
-#    close($in);
-#    return;
 }
 
 # Quant file can be .csv or .bed formats
