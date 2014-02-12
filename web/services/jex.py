@@ -110,6 +110,7 @@ def status(environ, start_response):
     return json.dumps(result)
 
 urls = [
+    (r"status/(?P<id>[a-z0-9\-]+)?", status),
     (r"synmap/status/(?P<id>[a-z0-9\-]+)?", status),
     (r"synfind/status/(?P<id>[a-z0-9\-]+)?", status),
 ]
