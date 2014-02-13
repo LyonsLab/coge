@@ -541,6 +541,7 @@ sub process_gff_file {
         $chr =~ s/chromosome//i;
         $chr =~ s/^chr//i;
         $chr =~ s/^_//i;
+	$chr = "0" if $chr =~ /^0+$/; #EL added 2/13/14 to catch chromosomes with names like "00"
         $chr =~ s/^0//g unless $chr eq '0';
         ($chr) = split( /\s+/, $chr );
         unless ( $valid_chrs{$chr} ) {
