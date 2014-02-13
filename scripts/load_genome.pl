@@ -422,6 +422,7 @@ sub process_fasta_file {
             $chr =~ s/^gi\|//;
             $chr =~ s/chromosome//i;
             $chr =~ s/^chr//i;
+	    $chr = "0" if $chr =~ /^0+$/; #EL added to catch cases where chromosome name is 00 (or something like that)
             $chr =~ s/^0+// unless $chr eq '0';
             $chr =~ s/^_+//;
             $chr =~ s/\s+/ /;
