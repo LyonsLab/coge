@@ -34,6 +34,7 @@ use POSIX qw(floor);
 use File::Spec::Functions;
 use List::Util qw[min max];
 use Data::Dumper;
+use POSIX qw(ceil);
 
 BEGIN {
     use vars qw ($VERSION @ISA @EXPORT $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN);
@@ -231,11 +232,27 @@ sub get_genome_seq {
         #print STDERR "$cmd\n";
         $seq = qx{$cmd};
         unless ($fasta) {
-            # remove header line
-            $seq =~ s/^(?:.*\n)//;
-            # remove end-of-lines
-            $seq =~ s/\n//g;
-        }
+            	# remove header line
+            	$seq =~ s/^(?:.*\n)//;
+#2/17/14:  Note by EL:  THere is a problem where the following type sof regex sbustitutions fail if the string is longer then about 1G (http://www.perlmonks.org/?node_id=754854).  Need to take these strings and divide them into smaller pieces for processing 
+
+        	my @groups;
+        	my $seq_length = length($seq);
+        	if ($seq_length > 1000000) {
+                	my $n = ceil($seq_length/1000000);
+                	@groups = unpack "a$n" x (($seq_length/$n)-1) . "a*", $seq;
+        	}
+        	else {
+                	push @groups, $seq;
+        	}
+        	my $new_seq;
+        	foreach my $item (@groups) {
+            	# remove end-of-lines
+                	$item =~ s/\n//g;
+                	$new_seq .= $item;
+        	}
+        	$seq = $new_seq;
+        	}
 
         #print STDERR "$seq\n";
         my $cmdStatus = $?;
