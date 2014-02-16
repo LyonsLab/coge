@@ -21,7 +21,7 @@ use vars qw($staging_dir $install_dir $fasta_files $irods_files
   $P $MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE $MAX_CHR_NAME_LENGTH );
 
 $MAX_CHROMOSOMES     = 200000;    # max number of chromosomes or contigs
-$MAX_PRINT           = 10;
+$MAX_PRINT           = 50;
 $MAX_SEQUENCE_SIZE   = 5 * 1024 * 1024 * 1024;    # 5 gig
 $MAX_CHR_NAME_LENGTH = 255;
 
@@ -404,8 +404,25 @@ sub process_fasta_file {
         s/\n*\>//g;
         next unless $_;
         my ( $name, $seq ) = split /\n/, $_, 2;
-        $seq =~ s/\n//g;
-        $seq =~ s/\r//g; # mdb added 11/22/13 issue 255 - remove Windows-style CRLF
+	#print STDERR $name,"\tlength: ",length($seq),"\n";
+	#2/17/14:  Note by EL:  THere is a problem where the following type sof regex sbustitutions fail if the string is longer then about 1G (http://www.perlmonks.org/?node_id=754854).  Need to take these strings and divide them into smaller pieces for processing 
+	
+	my @groups;
+	my $seq_length = length($seq);
+	if ($seq_length > 1000000) {
+		my $n = ceil($seq_length/1000000);
+		@groups = unpack "a$n" x (($seq_length/$n)-1) . "a*", $seq;
+	}
+	else {
+		push @groups, $seq;
+	}
+        my $new_seq;
+	foreach my $item (@groups) {
+		$item =~ s/\n//g;
+        	$item =~ s/\r//g; # mdb added 11/22/13 issue 255 - remove Windows-style CRLF
+		$new_seq .= $item;
+	}
+ 	$seq = $new_seq;
         $seq =~ s/\s+$//; # mdb added 12/17/13 issue 267 - trim trailing whitespace
         # Note: not removing spaces from within sequence because sometimes spaces are
         # used ambiguously to indicate gaps.  We will be strict and force error 
@@ -422,7 +439,7 @@ sub process_fasta_file {
             $chr =~ s/^gi\|//;
             $chr =~ s/chromosome//i;
             $chr =~ s/^chr//i;
-	    $chr = "0" if $chr =~ /^0+$/; #EL added to catch cases where chromosome name is 00 (or something like that)
+	    $chr = "0" if $chr =~ /^0+$/; #EL added 2/13/14 to catch cases where chromosome name is 00 (or something like that)
             $chr =~ s/^0+// unless $chr eq '0';
             $chr =~ s/^_+//;
             $chr =~ s/\s+/ /;
@@ -479,7 +496,7 @@ sub process_fasta_file {
             return $totalLength;
         }
         if ( $count <= $MAX_PRINT ) {
-            print $log "log: Processed chr '$chr' in $filename\n";
+            print $log "log: Processed chr '$chr' in $filename.  Length of sequence: ".commify(length($seq))."\n";
         }
         elsif ( $count == $MAX_PRINT + 1 ) {
             print $log "log: (only showing first $MAX_PRINT chromosomes)\n";
