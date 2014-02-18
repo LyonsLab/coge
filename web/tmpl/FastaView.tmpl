@@ -7,8 +7,6 @@ $(document).ready(function(){
 		$('#genfam').show();
 	}
 
-	genfam = "<tmpl_var name=genfam>";
-	
 	prot = <TMPL_VAR NAME=PROT>;
     pageObj.prot=prot; 
     if (prot) {
@@ -117,47 +115,16 @@ var url = "http://sswap.iplantcollaborative.org/ipc/create-pipeline-with-rrg";
  document.body.removeChild(myForm);
 }
 
-
-function get_url(options, callback) {
-    $.ajax({
-        data: options,
-        success: callback
-    });
-}
-
 function post_to_genfam() {
-    var name_only = 0;
-    if ($('#name_only')[0].checked) {name_only = 1};
-    var id_only = 0;
-    if ($('#id_only')[0].checked) {id_only = 1};
+    var form = $("<form></form>");
+    form.attr("method", "post");
+    form.attr("action", "<tmpl_var name=genfam>");
+    form.attr("target", "_blank");
+    form.append($("#seq_text").clone());
 
-    var data = {
-        jquery_ajax: 1,
-        fname: "gen_file",
-        fids: $("#fids").val(),
-        prot: pageObj.prot,
-        name_only: +name_only,
-        id_only: +id_only,
-        gstid: $("#gstid").val()
-    };
-
-    var send_response = function(url) {
-        $.ajax({
-            cache: false,
-            type: "POST",
-            url: "FastaView.pl",
-            contentType: "application/json; charset=utf-8",
-            dataType: "json",
-            data: {
-                url: url
-            },
-            success: function() {
-                console.log("Analysis sent to GenFam");
-            }
-        });
-    };
-
-    get_url(data, send_response);
+    $(document.body).append(form);
+    form.submit();
+    $(document.body).remove(form);
 }
 
 function post_to_target () {
