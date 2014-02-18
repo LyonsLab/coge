@@ -135,3 +135,4 @@ Services/lib/CoGe/Services/JBrowse/Annotation.pm
 Services/lib/CoGe/Services/JBrowse/Configuration.pm
 Services/lib/CoGe/Services/JBrowse/Experiment.pm
 Services/lib/CoGe/Services/JBrowse/Sequence.pm
+Services/lib/CoGe/Services/JBrowse/Feature.pm
