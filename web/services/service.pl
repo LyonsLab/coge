@@ -39,6 +39,11 @@ CGI::Application::Dispatch->dispatch(
             app    => 'Notebook',
             rm     => 'delete'
         },
+        'feature/experiments/:fid/' => {
+            prefix => 'CoGe::Services::Data',
+            app    => 'Feature',
+            rm     => 'get'
+        },
 
         # JBrowse Services
         'config/refseq' => {
