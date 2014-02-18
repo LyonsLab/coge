@@ -18,6 +18,7 @@ Accessory/lib/Coge/Accessory/dialign_report.pm
 Accessory/lib/Coge/Accessory/dialign_report/anchors.pm
 Accessory/lib/Coge/Accessory/chaos_report.pm
 Accessory/lib/Coge/Accessory/GenomeThreader_report.pm
+Accessory/lib/Coge/Accessory/Notebook.pm
 Accessory/lib/Coge/Accessory/SynMap.pm
 Accessory/lib/Coge/Accessory/blastz_report.pm
 Accessory/lib/Coge/Accessory/blastz_report/seq.pm
