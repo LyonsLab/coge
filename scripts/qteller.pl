@@ -18,7 +18,7 @@ use CoGe::Accessory::Web qw(get_defaults get_job schedule_job);
 
 our ($DESC, $YERBA, $LOG, $DEBUG, $P, $db, $host, $port, $user, $pass,
      $name, $description, $version, $restricted, $source_name, $files,
-     $test, $config, $gid, $jobid, $userid, $staging_dir);
+     $CACHE, $test, $config, $gid, $jobid, $userid, $staging_dir);
 
 $DESC = "Running the qTeller pipeline";
 
@@ -61,6 +61,9 @@ sub setup {
     $pass = $P->{DBPASS};
     $YERBA = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
     $LOG = File::Spec->catdir(($staging_dir, "qteller.txt"));
+
+    $CACHE = $P->{CACHEDIR};
+    die "ERROR: CACHEDIR not specified in config" unless $CACHE;
 
     mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
     my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
@@ -126,7 +129,16 @@ sub main {
     my %parse_cuff = create_parse_cufflinks_job(@{$cuff{outputs}}[0]);
 
     # Load csv experiment
-    my %experiment = create_load_experiment_job(@{$parse_cuff{outputs}}[0], $user);
+    my %load_csv = create_load_csv_job(@{$parse_cuff{outputs}}[0], $user);
+
+    # Load bam experiment
+    my %load_bam = create_load_bam_job(@{$parse_cuff{outputs}}[0],
+        @{$sorted_bam{outputs}}[0],
+        $user);
+
+    my %create_notebook = create_notebook_job(@{$load_csv{outputs}}[0],
+        @{$load_bam{outputs}}[0],
+        $user);
 
     $workflow->add_job(%validate);
     $workflow->add_job(%filtered_fasta);
@@ -138,7 +150,9 @@ sub main {
     $workflow->add_job(%sorted_bam);
     $workflow->add_job(%cuff);
     $workflow->add_job(%parse_cuff);
-    $workflow->add_job(%experiment);
+    $workflow->add_job(%load_csv);
+    $workflow->add_job(%load_bam);
+    $workflow->add_job(%create_notebook);
 
     say STDERR "WORKFLOW DUMP\n" . Dumper($workflow) if $DEBUG;
     say STDERR "JOB NOT SCHEDULED TEST MODE" and exit(0) if $test;
@@ -223,7 +237,6 @@ sub create_gff_generation_job {
     my $validated = shift;
     my @path = ($P->{SCRIPTDIR}, "coge_gff.pl");
     my $cmd = File::Spec->catdir(@path);
-
     my $org_name = sanitize_organism_name($genome->organism->name);
     my $name = "$org_name-1-name-0-0-id-" . $genome->id . "-1.gff";
 
@@ -246,7 +259,7 @@ sub create_gff_generation_job {
             $validated
         ],
         outputs => [
-            File::Spec->catdir(($staging_dir, $name))
+            File::Spec->catdir(($CACHE, "$gid/gff", $name))
         ],
         description => "Generating gff..."
     );
@@ -267,7 +280,7 @@ sub create_cutadapt_job {
             ['--quality-base=64', '', 0],
             ['-m', 17, 0],
             ['', $fastq, 1],
-            ['>', $name . '.trimmed.fastq', 1],
+            ['-o', $name . '.trimmed.fastq', 1],
         ],
         inputs => [
             $fastq,
@@ -423,7 +436,7 @@ sub create_parse_cufflinks_job {
         script => undef,
         args => [
             ["", $cufflinks, 0],
-            [">", $name . ".csv", 0]
+            ["", $name . ".csv", 0]
         ],
         inputs => [
             $cufflinks
@@ -435,10 +448,8 @@ sub create_parse_cufflinks_job {
     );
 }
 
-sub create_load_experiment_job {
-    my $csv = shift;
-    my $user = shift;
-
+sub create_load_csv_job {
+    my ($csv, $user) = @_;
     my $cmd = File::Spec->catdir(($P->{SCRIPTDIR}, "load_experiment.pl"));
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
@@ -448,12 +459,12 @@ sub create_load_experiment_job {
         args => [
             ['-user_name', $user->name, 0],
             ['-name', qq{"$name"}, 0],
-            ['-desc', qq{"$description"}, 0],
+            ['-desc', qq{"Expression measurements"}, 0],
             ['-version', qq{"$version"}, 0],
             ['-restricted', $restricted, 0],
             ['-gid', $gid, 0],
             ['-source_name', qq{"$source_name"}, 0],
-            ['-staging_dir', $staging_dir, 0],
+            ['-staging_dir', "./csv", 0],
             ['-file_type', "csv", 0],
             ['-data_file', "$csv", 0],
             ['-config', $config, 1]
@@ -463,8 +474,75 @@ sub create_load_experiment_job {
             $csv
         ],
         outputs => [
+            [File::Spec->catdir(($staging_dir, "csv")), 1],
+            File::Spec->catdir(($staging_dir, "csv/log.done")),
         ],
-       description => "Loading experiment..."
+        description => "Loading expression data..."
+    );
+}
+
+sub create_load_bam_job {
+    my ($csv, $bam, $user) = @_;
+    my $cmd = File::Spec->catdir(($P->{SCRIPTDIR}, "load_experiment.pl"));
+    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+
+    return (
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ['-user_name', $user->name, 0],
+            ['-name', qq{"$name"}, 0],
+            ['-desc', qq{"Mapped reads"}, 0],
+            ['-version', qq{"$version"}, 0],
+            ['-restricted', $restricted, 0],
+            ['-gid', $gid, 0],
+            ['-source_name', qq{"$source_name"}, 0],
+            ['-staging_dir', "./bam", 0],
+            ['-file_type', "bam", 0],
+            ['-data_file', "$bam", 0],
+            ['-config', $config, 1]
+        ],
+        inputs => [
+            $config,
+            $bam,
+            $csv
+        ],
+        outputs => [
+            [File::Spec->catdir(($staging_dir, "bam")), 1],
+            File::Spec->catdir(($staging_dir, "csv/log.done")),
+        ],
+        description => "Loading mapped reads..."
+    );
+}
+
+sub create_notebook_job {
+    my ($bam, $csv, $user) = @_;
+    my $cmd = File::Spec->catdir(($P->{SCRIPTDIR}, "create_notebook.pl"));
+    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+
+    return (
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ['-uid', $user->id, 0],
+            ['-name', qq{"$name"}, 0],
+            ['-desc', qq{"$description"}, 0],
+            ['-page', '""', 0],
+            ['-type', 2, 0],
+            ['-restricted', $restricted, 0],
+            ['-config', $config, 1],
+            ['-log', File::Spec->catdir(($staging_dir, "log.txt")), 0],
+            ['', "bam/log.txt", 0],
+            ['', "csv/log.txt", 0],
+        ],
+        inputs => [
+            $config,
+            $bam,
+            $csv
+        ],
+        outputs => [
+        ],
+        description => "Creating notebook..."
     );
 }
 
