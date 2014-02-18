@@ -272,9 +272,12 @@ function load_succeeded(obj) {
 }
 
 function reset_load() {
-	clear_list();
 	window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>");
 	$('#load_dialog').dialog('close');
+	
+	// Reset file selector
+	file_canceled();
+	clear_list();
 }
 
 function continue_to_view() {
