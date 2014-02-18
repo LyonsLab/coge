@@ -496,7 +496,7 @@ sub process_fasta_file {
             return $totalLength;
         }
         if ( $count <= $MAX_PRINT ) {
-            print $log "log: Processed chr '$chr' in $filename.  Length of sequence: ".commify(length($seq))."\n";
+            print $log "log: Processed chr '$chr' in $filename (".commify(length($seq))." bp)\n";
         }
         elsif ( $count == $MAX_PRINT + 1 ) {
             print $log "log: (only showing first $MAX_PRINT chromosomes)\n";
