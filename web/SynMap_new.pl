@@ -217,7 +217,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     gen_dsg_menu           => \&gen_dsg_menu,
     get_dsg_gc             => \&get_dsg_gc,
     get_query_link         => \&get_query_link,
-    read_log               => \&CoGe::Accessory::Web::read_log,
+    #read_log               => \&CoGe::Accessory::Web::read_log,
     get_results            => \&get_results,
     %ajax,
 );
