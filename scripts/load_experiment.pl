@@ -58,6 +58,7 @@ GetOptions(
 # Open log file
 $| = 1;
 my $logfile = "$staging_dir/log.txt";
+mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
 open( my $log, ">>$logfile" ) or die "Error opening log file $logfile";
 $log->autoflush(1);
 
