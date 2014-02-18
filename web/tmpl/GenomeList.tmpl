@@ -257,40 +257,34 @@ $(function() {
 	   update_table();
 	}
 
-	function run_get_gc(opts){
-	  if (!opts){opts={};}
-	  dsgid = opts.dsgid;
-	  divid1 = opts.divid1;
-	  divid2 = opts.divid2;
-	  divid3 = opts.divid3;
-	  divid4 = opts.divid4;
-
-	  // create a new closure who's scope does *not*
-	  // include the `divid` value so that callback will 
-	  // not clobber the `divid` variable 
-	  var create_callback = function(divid1, divid2, divid3, divid4) {
-	      var local_divid1 = divid1;
-	      var local_divid2 = divid2;
-	      var local_divid3 = divid3;
-	      var local_divid4 = divid4;
-	      return function (data) {
-	          items = data.split('_');
-	          $('#'+local_divid1).html(items[0]);
-	          $('#'+local_divid2).html(items[1]);
-	          $('#'+local_divid3).html(items[2]);
-	          $('#'+local_divid4).html(items[3]);
-	      };
-	  };
-
-	  $.ajax({
+function run_get_gc(opts) {
+	var dsgid = opts.dsgid;
+	var div1 = $('#'+opts.divid1);
+	var div2 = $('#'+opts.divid2);
+	var div3 = $('#'+opts.divid3);
+	var div4 = $('#'+opts.divid4);
+	
+	var busy = '<img src="picts/ajax-loader.gif"/>';
+	div1.html(busy);
+	div2.html(busy);
+	div3.html(busy);
+	div4.html(busy);
+	
+	$.ajax({
 	    data: {
 	 	    jquery_ajax: 1,
-	       	    fname: 'get_gc',
-	    	    dsgid: dsgid 
-	          },
-	    success : create_callback(divid1, divid2, divid3, divid4)
-	  });
-	}
+	       	fname: 'get_gc',
+	       	dsgid: dsgid
+	    },
+		success: function(data) {
+			var items = data.split('_');
+		    div1.html(items[0]);
+		    div2.html(items[1]);
+		    div3.html(items[2]);
+		    div4.html(items[3]);
+		}
+	});
+}
 
         function delete_row (val)
          {
@@ -585,18 +579,18 @@ function edit_list_info (lid) {
 	     <TD><TMPL_VAR NAME=SOURCE></TD>
 	     <TD><TMPL_VAR NAME=PROVENANCE></TD>
 	     <TD><TMPL_VAR NAME=TYPE></TD>
-	     <TD align=center><TMPL_VAR NAME=VER></TD>
-	     <TD align=center><TMPL_VAR NAME=CHR_COUNT></TD>
-	     <TD align=right><TMPL_VAR NAME=LENGTH></TD>
-	     <TD align=right id="gc_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>', divid4: 'x_<TMPL_VAR NAME=COUNT>'})">Get GC</TD>
-	     <TD align=right id="at_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>', divid4: 'x_<TMPL_VAR NAME=COUNT>'})">Get AT</TD>
-	     <TD align=right id="n_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>', divid4: 'x_<TMPL_VAR NAME=COUNT>'})">Get N</TD>
-	     <TD align=right id="x_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>', divid4: 'x_<TMPL_VAR NAME=COUNT>'})">Get X</TD>
-	     <TD align=left id="feat_counts_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#feat_counts_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#feat_counts_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_feat_counts({dsgid: <TMPL_VAR NAME=DSGID>, divid: 'feat_counts_<TMPL_VAR NAME=COUNT>'})">Count Features</TD>
-	     <TD align=left id="aa_usage_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#aa_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#aa_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#aa_usage_<TMPL_VAR NAME=COUNT>').html('<span class=alert>loading...</span>'); run_get_aa_usage({dsgid: '<TMPL_VAR NAME=DSGID>',divid: 'aa_usage_<TMPL_VAR NAME=COUNT>', table_name: 'aa_table<TMPL_VAR NAME=COUNT>'})">Amino Acid Usage</TD>
-	     <TD align=left id="codon_usage_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#codon_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#codon_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_codon_usage({dsgid:<TMPL_VAR NAME=DSGID>, divid: 'codon_usage_<TMPL_VAR NAME=COUNT>'})">Codon Usage</TD>
-	     <TD align=right id="cds_gc_hist_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#cds_gc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#cds_gc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_cds_gc_hist({dsgid: '<TMPL_VAR NAME=DSGID>',divid: 'cds_gc_hist_<TMPL_VAR NAME=COUNT>'})">View Histogram</TD>
-	     <TD align=right id="cds_wgc_hist_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#cds_wgc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#cds_wgc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_cds_wgc_hist({dsgid: '<TMPL_VAR NAME=DSGID>' ,divid: 'cds_wgc_hist_<TMPL_VAR NAME=COUNT>'})">View Histogram</TD>
+	     <TD align='center'><TMPL_VAR NAME=VER></TD>
+	     <TD align='center'><TMPL_VAR NAME=CHR_COUNT></TD>
+	     <TD align='right'><TMPL_VAR NAME=LENGTH></TD>
+	     <TD align='center' id="gc_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>', divid4: 'x_<TMPL_VAR NAME=COUNT>'})">Get GC</TD>
+	     <TD align='center' id="at_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>', divid4: 'x_<TMPL_VAR NAME=COUNT>'})">Get AT</TD>
+	     <TD align='center' id="n_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>', divid4: 'x_<TMPL_VAR NAME=COUNT>'})">Get N</TD>
+	     <TD align='center' id="x_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>', divid4: 'x_<TMPL_VAR NAME=COUNT>'})">Get X</TD>
+	     <TD align='left' id="feat_counts_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#feat_counts_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#feat_counts_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_feat_counts({dsgid: <TMPL_VAR NAME=DSGID>, divid: 'feat_counts_<TMPL_VAR NAME=COUNT>'})">Count Features</TD>
+	     <TD align='left' id="aa_usage_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#aa_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#aa_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#aa_usage_<TMPL_VAR NAME=COUNT>').html('<span class=alert>loading...</span>'); run_get_aa_usage({dsgid: '<TMPL_VAR NAME=DSGID>',divid: 'aa_usage_<TMPL_VAR NAME=COUNT>', table_name: 'aa_table<TMPL_VAR NAME=COUNT>'})">Amino Acid Usage</TD>
+	     <TD align='left' id="codon_usage_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#codon_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#codon_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_codon_usage({dsgid:<TMPL_VAR NAME=DSGID>, divid: 'codon_usage_<TMPL_VAR NAME=COUNT>'})">Codon Usage</TD>
+	     <TD align='right' id="cds_gc_hist_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#cds_gc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#cds_gc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_cds_gc_hist({dsgid: '<TMPL_VAR NAME=DSGID>',divid: 'cds_gc_hist_<TMPL_VAR NAME=COUNT>'})">View Histogram</TD>
+	     <TD align='right' id="cds_wgc_hist_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#cds_wgc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#cds_wgc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_cds_wgc_hist({dsgid: '<TMPL_VAR NAME=DSGID>' ,divid: 'cds_wgc_hist_<TMPL_VAR NAME=COUNT>'})">View Histogram</TD>
              <TD><span class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-trash" onclick="delete_row(<TMPL_VAR NAME=DSGID>)"></span></span></TD>
 	   </TR>
 	  </TMPL_LOOP>
