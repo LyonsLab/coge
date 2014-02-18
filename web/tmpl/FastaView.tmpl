@@ -1,6 +1,30 @@
 <script src="./js/sswap.js"></script>
 <SCRIPT language="JavaScript">
 
+$(document).ready(function(){
+	// Show indicator if not on main site
+	if (document.URL.indexOf('genomevolution.org') == -1) {
+		$('#genfam').show();
+	}
+
+	genfam = "<tmpl_var name=genfam>";
+	
+	prot = <TMPL_VAR NAME=PROT>;
+    pageObj.prot=prot; 
+    if (prot) {
+		$('#prot_button').hide();
+		$('#dna_text_button').hide();
+		$('.prot_option').show();
+		$('.dna_option').hide();
+    }
+    else {
+		$('#prot_text_button').hide();
+		$('#dna_button').hide();
+		$('.prot_option').hide(); 
+		$('.dna_option').show();
+	}
+});
+
 function update_seqs(prot, text)
  {
   $('#seq_text').val("loading . . .");
@@ -190,27 +214,6 @@ function post_to_phylogeny_fr () {
  document.body.removeChild(myForm);
 
 }
-
-$(document).ready(function()
-  {
-    genfam = "<tmpl_var name=genfam>";
-   prot = <TMPL_VAR NAME=PROT>;
-    pageObj.prot=prot; 
-    if (prot)
-     {
-      $('#prot_button').hide();
-      $('#dna_text_button').hide();
-      $('.prot_option').show();
-      $('.dna_option').hide();
-     }
-    else
-     {
-      $('#prot_text_button').hide();
-      $('#dna_button').hide();
-      $('.prot_option').hide(); 
-      $('.dna_option').show();
-     }
-  });
 </script>
 
 
@@ -270,7 +273,7 @@ $(document).ready(function()
     <tr align=top>
     <td><span onClick="post_to_phylogeny_fr();" class='ui-button ui-corner-all'>Phylogeny.fr</span>
     <td>One click phylogeny at <a href="http://www.phylogeny.fr" target=_new>Phylogeny.fr</a><br>
-    <tr>
+    <tr id="genfam" class="hidden">
     <td><span onclick="post_to_genfam();" class='ui-button ui-corner-all'>Send to GenFam</span>
     </table>
 <!-- PROTEIN SEQUENCES ONLY -->
