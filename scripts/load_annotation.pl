@@ -20,7 +20,7 @@ my $DEBUG       = 1;
 my $DB_BATCH_SZ = 50 * 1000;
 use vars qw($staging_dir $data_file
   $name $description $link $version $restricted
-  $gid $source_name $user_name $config
+  $gid $source_name $user_name $config $allow_all_chr
   $host $port $db $user $pass);
 
 GetOptions(
@@ -43,7 +43,10 @@ GetOptions(
     "password|pw=s" => \$pass,
 
     # Or use config file
-    "config=s" => \$config
+    "config=s" => \$config,
+
+    # Flags
+    "allow_all_chr=i" => \$allow_all_chr # Allow non-existent chromosomes
 );
 
 # Open log file
@@ -547,6 +550,7 @@ sub process_gff_file {
         unless ( $valid_chrs{$chr} ) {
             print $log
               "log: error:  Chromosome '$chr' does not exist in the dataset.\n";
+            next if ($allow_all_chr); 
             return 0;
         }
 
