@@ -2390,7 +2390,7 @@ sub generate_body {
         EXPERIMENTS     => get_experiments( genome => $genome ),
         DATASETS        => get_datasets( genome => $genome, exclude_seq => 1 ),
         USER_CAN_EDIT   => $user_can_edit,
-        USER_CAN_ADD    => ( !$genome->restricted or $user_can_edit ),
+        USER_CAN_ADD    => $user_can_edit, #( !$genome->restricted or $user_can_edit ), # mdb removed 2/19/14, not sure why it ever existed
         USER_CAN_DELETE => $user_can_delete,
         DELETED         => $genome->deleted,
         IRODS_HOME      => get_irods_path()
