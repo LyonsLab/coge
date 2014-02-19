@@ -1771,6 +1771,11 @@ sub get_irods_path {
     return $dest;
 }
 
+sub linkify { # FIXME: this routine should be moved into the Utils module
+    my ( $link, $desc ) = @_;
+    return "<span class='link' onclick=\"window.open('$link')\">$desc</span>";
+}
+
 sub get_annotations {
     my %opts = @_;
     my $gid  = $opts{gid};
