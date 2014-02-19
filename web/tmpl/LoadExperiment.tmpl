@@ -194,7 +194,7 @@ function load_experiment() {
 			
 			// Start status update
 			if (obj.job_id) { // JEX status for load FASTQ
-				window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?job_id=" + obj.job_id); // Add job_id to browser URL
+				window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?job_id=" + obj.job_id + '&load_id=' + load_id); // Add job_id and load_id to browser URL
 				update_dialog(status_url + obj.job_id, "#load_dialog", progress_formatter);
 			}
 			else { // non-JEX old method for all other data types
@@ -264,10 +264,18 @@ function load_succeeded(obj) {
 	$('#finished_msg').fadeIn();
 	$('#ok_button').fadeIn();
 	if (notebook_id) { // qTeller pipeline experiment load
-		$('#finish_load_experiment_button').html('NotebookView').fadeIn();
+		$('#finish_load_experiment_button')
+			.html('NotebookView').fadeIn()
+			.unbind().on('click', function() {
+				window.location.href = "NotebookView.pl?nid=" + notebook_id;
+		});
 	}
 	else { // normal experiment load
-		$('#finish_load_experiment_button').html('ExperimentView').fadeIn();
+		$('#finish_load_experiment_button')
+			.html('ExperimentView').fadeIn()
+			.unbind().on('click', function() {
+				window.location.href = "ExperimentView.pl?eid=" + experiment_id;
+		});
 	}
 }
 
@@ -278,10 +286,6 @@ function reset_load() {
 	// Reset file selector
 	file_canceled();
 	clear_list();
-}
-
-function continue_to_view() {
-	window.location.href = "ExperimentView.pl?eid=" + experiment_id;
 }
 
 function wait_to_search (search_func, search_obj) {
@@ -569,7 +573,7 @@ function update_dialog(request, identifier, formatter) {
   <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
   <span id="error_msg" style="display:none;">An error occurred <img src="picts/thumbs_down.png"></span>
   <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Load Another</span>
-  <span id="finish_load_experiment_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all">ExperimentView</span>
+  <span id="finish_load_experiment_button" style="display:none;float:right;" class="ui-button ui-corner-all">ExperimentView</span>
   <span id="cancel_load_experiment_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Cancel</span>
 </div>
 
