@@ -296,6 +296,11 @@ $cmd = "cp -r $staging_dir/* $storage_path";
 print $log "$cmd\n";
 `$cmd`;
 
+# Make sure file permissions are set properly (added for qTeller pipeline)
+$cmd = "chmod -R a+r $storage_path";
+print $log "$cmd\n";
+`$cmd`;
+
 # Yay!
 CoGe::Accessory::Web::log_history(
     db          => $coge,
