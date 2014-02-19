@@ -561,7 +561,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
                 USER_NAME      => $user->name,
                 USER_ROLE      => $conn->role->name,
                 USER_DELETE    => $isEditable
-                  && !$conn->role->is_owner    # owner can't be removed
+                  && (!$conn->role->is_owner || $USER->is_admin)    # owner can't be removed unless admin
             };
         }
         elsif ( $conn->is_parent_group ) {
