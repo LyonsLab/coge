@@ -1463,8 +1463,7 @@ sub get_experiments {
     my @rows;
     foreach my $exp ( sort experimentcmp @experiments ) {
         next if ( $exp->deleted );
-
-#next if ($exp->restricted && !$USER->is_admin && !$is_user && !$USER->has_access(experiment => $exp));
+        next if ($exp->restricted && !$USER->has_access_to_experiment($exp));
 
         my $id = $exp->id;
         my %row;
