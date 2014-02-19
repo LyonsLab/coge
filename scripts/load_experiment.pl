@@ -11,7 +11,7 @@ use CoGe::Accessory::Utils qw( commify );
 
 use vars qw($staging_dir $install_dir $data_file $file_type
   $name $description $version $restricted $ignore_missing_chr
-  $gid $source_name $user_name $config
+  $gid $source_name $user_name $config $allow_negative
   $host $port $db $user $pass $P);
 
 #TODO: use these from Storage.pm instead of redeclaring them
@@ -49,7 +49,10 @@ GetOptions(
     "password|pw=s" => \$pass,
 
     # Or use config file
-    "config=s" => \$config
+    "config=s" => \$config,
+
+    # Optional features for debug and bulk loader
+    "allow_negative=i" => \$allow_negative
 );
 
 # Open log file
@@ -397,6 +400,11 @@ sub validate_quant_data_file {
         else {
         	die; # sanity check
         }
+
+        # mdb added 2/19/14 for bulk loading
+        if ($allow_negative and $val1 < 0) {
+	    $val1 = -1 * $val1; 
+	}
 
         # Validate values and set defaults
         if (   not defined $chr
