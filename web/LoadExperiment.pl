@@ -495,11 +495,11 @@ sub load_experiment {
         execute($cmd);
         
         # Get tiny link
-        my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
-            url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $job->id . "&load_id=$LOAD_ID"
+        my $link = CoGe::Accessory::Web::get_tiny_link(
+            url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $job->id . ";load_id=$LOAD_ID"
         );
-    
-        return encode_json({ job_id => $job->id, link => $tiny_link });
+
+        return encode_json({ job_id => $job->id, link => $link });
     }
     # Else, all other file types
     else {
