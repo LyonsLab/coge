@@ -5,6 +5,7 @@ use Data::Dumper;
 use CoGeX;
 use Getopt::Long;
 use File::Path;
+use File::Touch;
 use URI::Escape::JavaScript qw(unescape);
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Utils qw( commify );
@@ -303,6 +304,10 @@ CoGe::Accessory::Web::log_history(
     description => 'load experiment id' . $experiment->id,
     link        => 'ExperimentView.pl?eid=' . $experiment->id
 );
+
+# Create "log.done" file to indicate completion to JEX
+my $logdonefile = "$staging_dir/log.done";
+touch($logdonefile);
 
 #print STDERR "experiment id: ".$experiment->id,"\n";
 print $log "log: All done!";
