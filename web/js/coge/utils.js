@@ -22,6 +22,22 @@ var coge = window.coge = (function(ns) {
             };
 
             return copy;
+        },
+        post: function(action, params) {
+            var form = document.createElement("form");
+            form.method = "post";
+            form.action = action;
+            form.setAttribute("target", "_self");
+
+            for(var key in params) {
+                var input = document.createElement("input");
+                input.name = key;
+                input.value = params[key];
+
+                form.appendChild(input);
+            }
+
+            form.submit("action");
         }
     };
 
