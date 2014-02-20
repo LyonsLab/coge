@@ -216,7 +216,6 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     get_dotplot            => \&get_dotplot,
     gen_dsg_menu           => \&gen_dsg_menu,
     get_dsg_gc             => \&get_dsg_gc,
-    get_query_link         => \&get_query_link,
     #read_log               => \&CoGe::Accessory::Web::read_log,
     get_results            => \&get_results,
     %ajax,
@@ -1296,43 +1295,10 @@ sub get_query_link {
         feat_type => $feat_type2,
         write_log => 0
     );
-    my $log_msg =
-"<a href='OrganismView.pl?dsgid=$dsgid1' target='_blank'>$org_name1</a> v. <a href='OrganismView.pl?dsgid=$dsgid2' target='_blank'>$org_name2</a>";
-
-    $log_msg .= " Ks" if $ks_type;
-
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(url => $synmap_link);
 
-    my $log = CoGe::Accessory::Web::log_history(
-        db      => $coge,
-        user_id => $USER->id,
-        description => $log_msg,
-        page    => $PAGE_TITLE,
-        link => $tiny_link,
-    );
 
-    my $job = CoGe::Accessory::Web::get_job(
-        tiny_link => $tiny_link,
-        title     => $PAGE_TITLE,
-        user_id   => $USER->id,
-        log_id    => $log->id,
-        db_object => $coge,
-    );
-
-    my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
-
-    my $ua   = LWP::UserAgent->new;
-    my $resp = $ua->get($tiny_link);
-    my $old  = $resp->request->uri;
-    $old =~ s/SynMap/SynMap_old/;
-
-    return encode_json(
-        {
-            link     => $tiny_link,
-            old_link => $old,
-            request  => "jex/synmap/status/" . $job->id,
-        }
-    );
+    return $tiny_link;
 }
 
 sub generate_basefile {
@@ -1366,12 +1332,44 @@ sub go {
 "<span class=alert>Problem generating one of the genome objects for id1: $dsgid1 or id2: $dsgid2</span>";
     }
     my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
+    ############################################################################
+    # Fetch organism name and title
+    ############################################################################
+    my $feat_type1 = $opts{feat_type1};
+    my $feat_type2 = $opts{feat_type2};
 
+    my ( $org_name1, $title1 ) = gen_org_name(
+        dsgid     => $dsgid1,
+        feat_type => $feat_type1,
+        write_log => 1
+    );
+
+    my ( $org_name2, $title2 ) = gen_org_name(
+        dsgid     => $dsgid2,
+        feat_type => $feat_type2,
+        write_log => 1
+    );
+
+    my $ks_type = $opts{ks_type};
     ############################################################################
     # Initialize Jobs
     ############################################################################
 
-    my $tiny_link = $opts{tiny_link};
+    my $tiny_link = get_query_link(@_);
+
+    my $log_msg =
+"<a href='OrganismView.pl?dsgid=$dsgid1' target='_blank'>$org_name1</a> v. <a href='OrganismView.pl?dsgid=$dsgid2' target='_blank'>$org_name2</a>";
+
+    $log_msg .= " Ks" if $ks_type;
+
+    my $log = CoGe::Accessory::Web::log_history(
+        db      => $coge,
+        user_id => $USER->id,
+        description => $log_msg,
+        page    => $PAGE_TITLE,
+        link => $tiny_link,
+    );
+
     say STDERR "tiny_link is required for logging." unless defined($tiny_link);
 
     my $job = CoGe::Accessory::Web::get_job(
@@ -1481,10 +1479,6 @@ sub go {
 
     my $email = 0 if check_address_validity( $opts{email} ) eq 'invalid';
 
-    my $feat_type1 = $opts{feat_type1};
-    my $feat_type2 = $opts{feat_type2};
-
-    my $ks_type = $opts{ks_type};
     my $assemble = $opts{assemble} =~ /true/i ? 1 : 0;
     $assemble = 2 if $assemble && $opts{show_non_syn} =~ /true/i;
     $assemble *= -1 if $assemble && $opts{spa_ref_genome} < 0;
@@ -1499,21 +1493,6 @@ sub go {
     $feat_type2 = $feat_type2 == 2 ? "genomic" : "CDS";
     $feat_type1 = "protein" if $blast == 5 && $feat_type1 eq "CDS"; #blastp time
     $feat_type2 = "protein" if $blast == 5 && $feat_type2 eq "CDS"; #blastp time
-
-    ############################################################################
-    # Fetch organism name and title
-    ############################################################################
-    my ( $org_name1, $title1 ) = gen_org_name(
-        dsgid     => $dsgid1,
-        feat_type => $feat_type1,
-        write_log => 1
-    );
-
-    my ( $org_name2, $title2 ) = gen_org_name(
-        dsgid     => $dsgid2,
-        feat_type => $feat_type2,
-        write_log => 1
-    );
 
     ############################################################################
     # Generate Fasta files
@@ -2442,7 +2421,20 @@ sub go {
     CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
-    return $YERBA->submit_workflow($workflow);
+
+    my $ua   = LWP::UserAgent->new;
+    my $resp = $ua->get($tiny_link);
+    my $old  = $resp->request->uri;
+    $old =~ s/SynMap/SynMap_old/;
+
+    my $response = decode_json($YERBA->submit_workflow($workflow));
+
+    return encode_json({
+        link     => $tiny_link,
+        old_link => $old,
+        request  => "jex/synmap/status/" . $job->id,
+        status   => $response->{status}
+    });
 }
 
 sub get_results {
@@ -2474,7 +2466,8 @@ sub get_results {
     ############################################################################
     # Initialize Job info
     ############################################################################
-    my $tiny_link = $opts{tiny_link};
+    my $tiny_link = get_query_link(@_);
+
     say STDERR "tiny_link is required for logging." unless defined($tiny_link);
 
     my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;

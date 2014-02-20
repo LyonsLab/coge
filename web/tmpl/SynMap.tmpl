@@ -485,12 +485,10 @@ $(document).ready(function(){
     var autogo = "<tmpl_var name=autogo>";
     if (autogo==1) {
         var overlay = $("#overlay").show();
-        var args = fetch_arguments();
-        args.fname = "get_results";
 
         $.ajax({
             type: 'GET',
-            data: args,
+            data: get_params("get_results"),
             dataType: "json",
             success: function(data) {
                 if (!data.error) {
