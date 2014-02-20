@@ -103,7 +103,7 @@ my ($dsg1) = $coge->resultset('Genome')->search( { 'me.genome_id' => $dsgid1 },
     { join => 'genomic_sequences', prefetch => 'genomic_sequences' } );
 unless ($dsg1) {
     print $FORM->header;
-    print "Unable to get genome object for $dsgid1.\n";
+    print "Unable to get genome object for genome_id=$dsgid1.\n";
     exit;
 }
 
@@ -112,7 +112,7 @@ my ($dsg2) = $coge->resultset('Genome')->search( { 'me.genome_id' => $dsgid2 },
   ;    #find($ds);
 unless ($dsg2) {
     print $FORM->header;
-    print "Unable to get genome object for $dsgid2.\n";
+    print "Unable to get genome object for genome_id=$dsgid2.\n";
     exit;
 }
 
