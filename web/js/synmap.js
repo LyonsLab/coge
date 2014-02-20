@@ -105,95 +105,40 @@ function run_synmap(scheduled){
         return;
     }
 
-    var dagchainer = $('#dagchainer_type').filter(':checked');
-    var argument_list = {
-        tdd: $('#tdd').val(),
-        D: $('#D').val(),
-        A: $('#A').val(),
-        gm: $('#gm').val(),
-        Dm: $('#Dm').val(),
-        blast: $('#blast').val(),
-        feat_type1: $('#feat_type1').val(),
-        feat_type2: $('#feat_type2').val(),
-        dsgid1: $('#dsgid1').val(),
-        dsgid2: $('#dsgid2').val(),
-        jobtitle: $('#jobtitle').val(),
-        basename: pageObj.basename,
-        email: $('#email').val(),
-        regen_images: $('#regen_images')[0].checked,
-        width: $('#master_width').val(),
-        dagchainer_type: dagchainer.val(),
-        ks_type: $('#ks_type').val(),
-        assemble: $('#assemble')[0].checked,
-        axis_metric: $('#axis_metric').val(),
-        axis_relationship: $('#axis_relationship').val(),
-        min_chr_size: $('#min_chr_size').val(),
-        spa_ref_genome: $('#spa_ref_genome').val(),
-        show_non_syn: $('#show_non_syn')[0].checked,
-        color_type: $('#color_type').val(),
-        box_diags: $('#box_diags')[0].checked,
-        merge_algo: $('#merge_algo').val(),
-        depth_algo: $('#depth_algo').val(),
-        depth_org_1_ratio: $('#depth_org_1_ratio').val(),
-        depth_org_2_ratio: $('#depth_org_2_ratio').val(),
-        depth_overlap: $('#depth_overlap').val(),
-        fid1: pageObj.fid1,
-        fid2: pageObj.fid2,
-        show_non_syn_dots: $('#show_non_syn_dots')[0].checked,
-        flip: $('#flip')[0].checked,
-        clabel: $('#clabel')[0].checked,
-        skip_rand: $('#skiprand')[0].checked,
-        color_scheme: $('#color_scheme').val(),
-        chr_sort_order: $('#chr_sort_order').val(),
-        codeml_min: $('#codeml_min').val(),
-        codeml_max: $('#codeml_max').val(),
-        logks: $('#logks')[0].checked,
-        csco: $('#csco').val(),
-        jquery_ajax: 1,
-    };
-
-    // TODO: Scale polling time linearly with long running jobs
+    //TODO Scale polling time linearly with long running jobs
     var duration = pageObj.waittime;
-    var request = window.location.href.split('?')[0];
-    var start_callback = function(tiny_link, status_request) {
-        pageObj.nolog=1;
-        argument_list.fname = 'go';
-        argument_list.tiny_link = tiny_link;
 
-        update_dialog_callback = function(data) {
-            if (data.status == 'Attached' || data.status == 'Scheduled') {
-                update_dialog(status_request, "#synmap_dialog", synmap_formatter,
-                        argument_list);
+    $('#results').hide();
+    var overlay = $("#overlay").show();
+
+    return $.ajax({
+        type: 'GET',
+        data: get_params("get_results"),
+        dataType: "json",
+        success: function(data) {
+            if (!data.error) {
+                $("#synmap_zoom_box").draggable();
+                $('#results').html(data.html).slideDown();
             } else {
-                $('#synmap_dialog').find('#text').html(pageObj.engine);
-                $('#synmap_dialog').find('#progress').hide();
-                $('#synmap_dialog').find('#dialog_error').slideDown();
+                schedule(get_params("go"))
             }
-        }
 
-        $.ajax({
-            url: request,
-            data: argument_list,
-            dataType: 'json',
-            success: update_dialog_callback,
-            error: function(err) {
-                $('#synmap_dialog').find('#progress').hide();
-                $('#synmap_dialog').find('#dialog_error').slideDown();
-            }
-        });
-    };
+            overlay.hide();
+        },
+        error: schedule.bind(this, get_params("go"))
+    });
+}
 
+function schedule(params) {
+    pageObj.nolog=1;
+    var status_dialog = $('#synmap_dialog');
+    status_dialog.dialog('open');
 
-    var tiny_callback = function() {
-        argument_list.fname = 'get_query_link';
-        close_dialog();
-        $('#synmap_dialog').dialog('open');
-
-        $.ajax({
-            url: request,
-            dataType: 'json',
-            data: argument_list,
-            success: function(data) {
+    $.ajax({
+        data: params,
+        dataType: 'json',
+        success: function(data) {
+            if (data.status == 'Attached' || data.status == 'Scheduled') {
                 var link = "Return to this analysis: <a href="
                 + data.link + " onclick=window.open('tiny')"
                 + "target = _new>" + data.link + "</a><br>"
@@ -207,38 +152,24 @@ function run_synmap(scheduled){
                 $('#dialog_log').html(logfile);
                 $('#synmap_link').html(link);
 
-                start_callback(data.link, data.request);
-            }
-        });
-    };
-
-    argument_list.fname = "get_results";
-    $('#results').hide();
-    var overlay = $("#overlay").show();
-
-    $.ajax({
-        type: 'GET',
-        data: argument_list,
-        dataType: "json",
-        success: function(data) {
-            if (!data.error) {
-                $("#synmap_zoom_box").draggable();
-                $('#results').html(data.html).slideDown();
+                update_dialog(data.request, "#synmap_dialog", synmap_formatter,
+                        get_params("get_results"));
             } else {
-                tiny_callback();
+                status_dialog.find('#text').html(pageObj.engine);
+                status_dialog.find('#progress').hide();
+                status_dialog.find('#dialog_error').slideDown();
             }
-
-            overlay.hide();
         },
-        error: tiny_callback.bind(this)
-    });
-
-    return false;
+        error: function(err) {
+            status_dialog.find('#progress').hide();
+            status_dialog.find('#dialog_error').slideDown();
+        }
+    })
 }
 
-function fetch_arguments() {
-    var dagchainer = $('#dagchainer_type').filter(':checked');
-    var argument_list = {
+function get_params(name) {
+    return {
+        fname: name,
         tdd: $('#tdd').val(),
         D: $('#D').val(),
         A: $('#A').val(),
@@ -254,7 +185,7 @@ function fetch_arguments() {
         email: $('#email').val(),
         regen_images: $('#regen_images')[0].checked,
         width: $('#master_width').val(),
-        dagchainer_type: dagchainer.val(),
+        dagchainer_type: $('#dagchainer_type').filter(':checked').val(),
         ks_type: $('#ks_type').val(),
         assemble: $('#assemble')[0].checked,
         axis_metric: $('#axis_metric').val(),
@@ -283,8 +214,6 @@ function fetch_arguments() {
         csco: $('#csco').val(),
         jquery_ajax: 1,
     };
-
-    return argument_list;
 }
 
 function close_dialog() {
