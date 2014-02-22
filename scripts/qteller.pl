@@ -65,6 +65,7 @@ sub setup {
     $CACHE = $P->{CACHEDIR};
     die "ERROR: CACHEDIR not specified in config" unless $CACHE;
 
+    mkpath($CACHE, 0, 0777) unless -r $CACHE;
     mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
     my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
 
