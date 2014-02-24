@@ -4,6 +4,7 @@ use CoGeX;
 use CoGe::Accessory::Web qw(get_defaults);
 use File::Path qw(make_path);
 use File::Basename;
+use URI::Escape::JavaScript qw(escape);
 use Data::Dumper;
 
 #-------------------------------------------------------------------------------
@@ -13,36 +14,15 @@ my $DEBUG = 0;
 my $COGE_DIR      = '/opt/apache/coge';
 my $INSTALL_DIR   = '/storage/coge/data/experiments';
 
-# maize:
-#my $gid           = 8062;
-#my $data_dir      = '/home/mbomhoff/tmp/fanli/coge_data/GSE39232';
-#my $staging_dir   = '/home/mbomhoff/tmp/fanli/staging/GSE39232'; #"/home/elyons/projects/EPIC-coge/Jacobsen_2013/stagging";
-#my $metadata_file = '/home/mbomhoff/tmp/fanli/coge_data/GSE39232/metadata_GSE39232.txt'; #"/home/elyons/projects/EPIC-coge/Jacobsen_2013/GSE39901_metadata.txt";
-#my $citation_link = "http://www.ncbi.nlm.nih.gov/pubmed/23739895";
-#my $user          = 'mbomhoff';
-#my $source        = 'Brian Gregory';
-#my $version       = '1';
-
-# soybean:
-#my $gid           = 1611;
-#my $data_dir      = '/home/mbomhoff/data/fanli/coge_data/GSE41753';
-#my $staging_dir   = '/home/mbomhoff/data/fanli/staging/GSE41753';
-#my $metadata_file = '/home/mbomhoff/data/fanli/coge_data/GSE41753/metadata_GSE41753.txt';
-#my $citation_link = "http://www.ncbi.nlm.nih.gov/pubmed/23739894";
-#my $user          = 'mbomhoff';
-#my $source        = 'Brian Gregory';
-#my $version       = '1';
-
-# SoyKB:
 my $gid           = 22716;
-my $data_dir      = '/home/mbomhoff/tmp/Stacey/Nodfactor_Strippedroothair_Timepoints';
+my $data_dir      = '/home/mbomhoff/tmp/data/';
 my $staging_dir   = '/home/mbomhoff/tmp/staging';
 my $metadata_file; # none
 my $citation_link; # none
-my $user          = 'joshitr';
-my $source        = 'SoyKB';
-my $description   = 'RNAseq';
-my $version       = '9.0';
+my $user          = 'mbomhoff';
+my $source        = 'Matt Bomhoff';
+my $description   = '';
+my $version       = '1';
 
 #-------------------------------------------------------------------------------
 
@@ -67,7 +47,7 @@ if ($metadata_file) {
 
 # Load each experiment file
 my $exp_count = 0;
-process_dir();
+process_dir($data_dir);
 
 # Yay!
 print STDERR "Loaded $exp_count experiments\n";
@@ -94,27 +74,50 @@ sub get_metadata {
 }
 
 sub process_dir {
-    print STDERR "data_dir = $data_dir\n";
-    opendir( DIR, $data_dir ) or die;
-    while ( my $item = readdir(DIR) ) {
-        if ( $item =~ /\.csv|\.bam/ && -r "$data_dir/$item" ) {
+    my $dir = shift;
+    my $notebook_name = shift;
+    
+    my @experiments;
+    
+    print STDERR "process_dir: $dir\n";
+    opendir( my $fh, $dir ) or die;
+    my @contents = sort readdir($fh);
+    foreach my $item ( @contents ) {
+        next if ($item =~ /^\./);
+	print STDERR "item: $dir/$item\n";
+        if (-d "$dir/$item") { # directory
+            my $exp_list = process_dir("$dir/$item", $item); # pass in directory name as notebook name
+            
+            if (!$DEBUG && @$exp_list > 0 && $notebook_name) {
+                # Create notebook of experiments
+                if (!create_notebook(name => $notebook_name, item_list => $exp_list)) {
+                    print STDERR "Failed to create notebook '$notebook_name'\n";
+                    exit(-1);
+                }
+                print STDERR "Created notebook '$notebook_name'\n";
+            }
+        }
+        elsif ( $item =~ /\.csv|\.bam/ && -r "$dir/$item" ) { # file
             my $md = ();
             if ($metadata) {
                 if ($metadata->{$item}) {
                     $md = $metadata->{$item};
                 }
                 else {
-                    print "WARNING: no metadata for $item, skipping ...\n";
+                    print STDERR "WARNING: no metadata for $item, skipping ...\n";
                     next;
                 }
             }
-            process_file(
-                file     => "$data_dir/$item",
+            my $eid = process_file(
+                file     => "$dir/$item",
                 metadata => $md
             );
+            push @experiments, $eid if $eid;
         }
     }
-    closedir(DIR);
+    closedir($fh);
+    
+    return \@experiments;
 }
 
 sub process_file {
@@ -152,28 +155,30 @@ sub process_file {
     }
 
     # Run load script
+    $file = escape($file);
     my $cmd = "$COGE_DIR/scripts/load_experiment.pl " .
         "-config $config -user_name $user -restricted 1 -name '$name' -desc '$description' " .
         "-version '$version' -gid $gid -source_name '$source' " .
-        "-staging_dir $staging -install_dir $INSTALL_DIR -data_file $file";
+	    "-allow_negative 1 " .
+        "-staging_dir $staging -install_dir $INSTALL_DIR -data_file '$file'";
     print "Running: " . $cmd, "\n";
     return if ($DEBUG);
     my $output = qx{ $cmd };
     if ( $? != 0 ) {
         print STDERR "load_experiment.pl failed with rc=$?\n";
-        return $?;
+        exit(-1);
     }
+
+    # Extract experiment id from output
+    my ($eid) = $output =~ /experiment id: (\d+)/;
+    if (!$eid) {
+        print STDERR "Unable to retrieve experiment id\n";
+        exit(-1);
+    }
+    print STDERR "Captured experimemt id $eid\n";
 
     # Add experiment annotations from metadata file
     if ($md) {
-        # Extract experiment id from output
-        my ($eid) = $output =~ /experiment id: (\d+)/;
-        if (!$eid) {
-            print STDERR "Unable to retrieve experiment id\n";
-            exit(-1);
-        }
-        print "Captured experimemt id $eid\n";
-        
         my $exp = $coge->resultset('Experiment')->find($eid);
         my $exp_type = $coge->resultset('ExperimentType')->find_or_create( { name => $protocol } );
         $coge->resultset('ExperimentTypeConnector')->create(
@@ -283,4 +288,66 @@ sub process_file {
             }
         );
     }
+    
+    return $eid;
+}
+
+sub create_notebook {
+    my %opts    = @_;
+    my $name    = $opts{name};
+    my $desc    = $opts{desc};
+    my $item_list = $opts{item_list};    # optional
+    my $type_id = 2; # hardcoded to "experiment" type
+
+    $name = '' unless defined $name;
+    $desc = '' unless defined $desc;
+
+    # Get user
+    my ($user) = $coge->resultset('User')->search({user_name => $user});
+    return unless $user;
+
+    # Create the new list
+    my $list = $coge->resultset('List')->create(
+        {
+            name         => $name,
+            description  => $desc,
+            list_type_id => $type_id,
+            restricted => 1
+        }
+    );
+    return unless $list;
+
+    # Set user as owner
+    my $conn = $coge->resultset('UserConnector')->create(
+        {
+            parent_id   => $user->id,
+            parent_type => 5,           #FIXME hardcoded to "user"
+            child_id    => $list->id,
+            child_type  => 1,           #FIXME hardcoded to "list"
+            role_id     => 2            #FIXME hardcoded to "owner"
+        }
+    );
+    return unless $conn;
+
+    # Add selected items to new notebook
+    foreach (@$item_list) {
+        my $conn = $coge->resultset('ListConnector')->find_or_create(
+            {
+                parent_id  => $list->id,
+                child_id   => $_,
+                child_type => 3 # hardcoded to "experiment" type
+            }
+        );
+        return unless $conn;
+    }    
+
+    # Record in log
+    CoGe::Accessory::Web::log_history(
+        db          => $coge,
+        user_id     => $user->id,
+        page        => "User",
+        description => 'create notebook id' . $list->id
+    );
+
+    return 1;
 }
