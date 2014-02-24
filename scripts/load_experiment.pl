@@ -138,6 +138,10 @@ my $staged_data_file = $staging_dir . '/' . $filename;
 
 # Validate the data file
 print $log "log: Validating data file\n";
+if (-s $staged_data_file == 0) {
+    print $log "log: error: input file is empty\n";
+    exit(-1);
+}
 my $count = 0;
 my $pChromosomes;
 my $data_spec;
