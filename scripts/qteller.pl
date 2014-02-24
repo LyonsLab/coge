@@ -539,7 +539,9 @@ sub create_notebook_job {
         inputs => [
             $config,
             $bam,
-            $csv
+            $csv,
+            File::Spec->catdir(($staging_dir, "csv/log.done")),
+            File::Spec->catdir(($staging_dir, "bam/log.done")),
         ],
         outputs => [
         ],
