@@ -121,6 +121,12 @@ sub main {
     my %bam = create_samtools_bam_job(@{$gsnap{outputs}}[0]);
     my %sorted_bam = create_samtools_sort_job($bam{outputs}[0]);
 
+    # Generate bed file
+    my %bed = create_bed_file_job(@{$sorted_bam{outputs}}[0]);
+
+    # Filter bed file
+    my %filtered_bed = create_filter_bed_file_job(@{$bed{outputs}}[0]);
+
     # Run cufflinks
     my %cuff = create_cufflinks_job(@{$gff{outputs}}[0],
         @{$filtered_fasta{outputs}}[0],
@@ -133,12 +139,14 @@ sub main {
     my %load_csv = create_load_csv_job(@{$parse_cuff{outputs}}[0], $user);
 
     # Load bam experiment
-    my %load_bam = create_load_bam_job(@{$parse_cuff{outputs}}[0],
-        @{$sorted_bam{outputs}}[0],
-        $user);
+    my %load_bam = create_load_bam_job(@{$sorted_bam{outputs}}[0], $user);
+
+    # Load bed experiment
+    my %load_bed = create_load_bed_job(@{$filtered_bed{outputs}}[0], $user);
 
     my %create_notebook = create_notebook_job(@{$load_csv{outputs}}[0],
         @{$load_bam{outputs}}[0],
+        @{$load_bed{outputs}}[0],
         $user);
 
     $workflow->add_job(%validate);
@@ -149,10 +157,13 @@ sub main {
     $workflow->add_job(%gsnap);
     $workflow->add_job(%bam);
     $workflow->add_job(%sorted_bam);
+    $workflow->add_job(%bed);
+    $workflow->add_job(%filtered_bed);
     $workflow->add_job(%cuff);
     $workflow->add_job(%parse_cuff);
     $workflow->add_job(%load_csv);
     $workflow->add_job(%load_bam);
+    $workflow->add_job(%load_bed);
     $workflow->add_job(%create_notebook);
 
     say STDERR "WORKFLOW DUMP\n" . Dumper($workflow) if $DEBUG;
@@ -427,6 +438,63 @@ sub create_cufflinks_job {
     );
 }
 
+sub create_bed_file_job {
+    my $bam = shift;
+    my $name = to_filename($bam);
+    my $cmd = $P->{SAMTOOLS};
+    my @paths =  ($P->{SCRIPTDIR}, "pileup_to_bed.pl");
+    my $PILE_TO_BED = File::Spec->catdir(@paths);
+    die "ERROR: SAMTOOLS is not in the config." unless ($cmd);
+    die "ERROR: SCRIPTDIR not specified in config" unless $PILE_TO_BED;
+
+    return (
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ['mpileup', '', 0],
+            ['-D', '', 0],
+            ['-Q', 20, 0],
+            ['', $bam, 1],
+            ['|', 'perl', 0],
+            [$PILE_TO_BED, '', 0],
+            ['>', $name . ".bed",  0]
+        ],
+        inputs => [
+            $bam,
+        ],
+        outputs => [
+            File::Spec->catdir(($staging_dir, $name . ".bed"))
+        ],
+        description => "Generating read depth..."
+    );
+}
+
+sub create_filter_bed_file_job {
+    my $bed = shift;
+    my $name = to_filename($bed);
+    my $cmd = $P->{SAMTOOLS};
+    my @paths =  ($P->{SCRIPTDIR}, "normalize_bed.pl");
+    my $NORMALIZE_BED = File::Spec->catdir(@paths);
+    die "ERROR: SCRIPTDIR not specified in config" unless $NORMALIZE_BED;
+
+    return (
+        cmd => "perl",
+        script => undef,
+        args => [
+            [$NORMALIZE_BED, $bed, 0],
+            ['>', $name . '.normalized.bed', 0]
+        ],
+        inputs => [
+            $bed,
+        ],
+        outputs => [
+            File::Spec->catdir(($staging_dir, $name . ".normalized.bed"))
+        ],
+        description => "Normalizing read depth..."
+    );
+
+}
+
 sub create_parse_cufflinks_job {
     my $cufflinks = shift;
     my $name = to_filename($cufflinks);
@@ -486,7 +554,7 @@ sub create_load_csv_job {
 }
 
 sub create_load_bam_job {
-    my ($csv, $bam, $user) = @_;
+    my ($bam, $user) = @_;
     my $cmd = File::Spec->catdir(($P->{SCRIPTDIR}, "load_experiment.pl"));
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
@@ -509,18 +577,50 @@ sub create_load_bam_job {
         inputs => [
             $config,
             $bam,
-            $csv
         ],
         outputs => [
             [File::Spec->catdir(($staging_dir, "bam")), 1],
-            File::Spec->catdir(($staging_dir, "csv/log.done")),
+            File::Spec->catdir(($staging_dir, "bam/log.done")),
         ],
         description => "Loading mapped reads..."
     );
 }
 
+sub create_load_bed_job {
+    my ($bed, $user) = @_;
+    my $cmd = File::Spec->catdir(($P->{SCRIPTDIR}, "load_experiment.pl"));
+    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+
+    return (
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ['-user_name', $user->name, 0],
+            ['-name', qq{"$name"}, 0],
+            ['-desc', qq{"Read depth per position"}, 0],
+            ['-version', qq{"$version"}, 0],
+            ['-restricted', $restricted, 0],
+            ['-gid', $gid, 0],
+            ['-source_name', qq{"$source_name"}, 0],
+            ['-staging_dir', "./bed", 0],
+            ['-file_type', "bed", 0],
+            ['-data_file', "$bed", 0],
+            ['-config', $config, 1]
+        ],
+        inputs => [
+            $config,
+            $bed,
+        ],
+        outputs => [
+            [File::Spec->catdir(($staging_dir, "bed")), 1],
+            File::Spec->catdir(($staging_dir, "bed/log.done")),
+        ],
+        description => "Loading read depth..."
+    );
+}
+
 sub create_notebook_job {
-    my ($bam, $csv, $user) = @_;
+    my ($bam, $csv, $bed, $user) = @_;
     my $cmd = File::Spec->catdir(($P->{SCRIPTDIR}, "create_notebook.pl"));
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
@@ -538,13 +638,16 @@ sub create_notebook_job {
             ['-log', File::Spec->catdir(($staging_dir, "log.txt")), 0],
             ['', "bam/log.txt", 0],
             ['', "csv/log.txt", 0],
+            ['', "bed/log.txt", 0],
         ],
         inputs => [
             $config,
             $bam,
             $csv,
+            $bed,
             File::Spec->catdir(($staging_dir, "csv/log.done")),
             File::Spec->catdir(($staging_dir, "bam/log.done")),
+            File::Spec->catdir(($staging_dir, "bed/log.done")),
         ],
         outputs => [
         ],
