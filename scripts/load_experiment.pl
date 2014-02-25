@@ -12,7 +12,7 @@ use CoGe::Accessory::Utils qw( commify );
 
 use vars qw($staging_dir $install_dir $data_file $file_type
   $name $description $version $restricted $ignore_missing_chr
-  $gid $source_name $user_name $config $allow_negative
+  $gid $source_name $user_name $config $allow_negative $disable_range_check
   $host $port $db $user $pass $P);
 
 #FIXME: use these from Storage.pm instead of redeclaring them
@@ -53,7 +53,8 @@ GetOptions(
     "config=s" => \$config,
 
     # Optional features for debug and bulk loader
-    "allow_negative=i" => \$allow_negative
+    "allow_negative=i" => \$allow_negative,
+    "disable_range_check" => \$disable_range_check # allow any value in val1 column
 );
 
 # Open log file
@@ -394,8 +395,8 @@ sub validate_quant_data_file {
 
         # mdb added 2/19/14 for bulk loading
         if ($allow_negative and $val1 < 0) {
-	    $val1 = -1 * $val1; 
-	}
+	       $val1 = -1 * $val1;
+        }
 
         # Validate values and set defaults
         if (   not defined $chr
@@ -407,7 +408,7 @@ sub validate_quant_data_file {
               "log: error at line $line_num: missing value in a column\n";
             return;
         }
-        if ( not defined $val1 or $val1 < 0 or $val1 > 1 ) {
+        if ( not defined $val1 or (!$disable_range_check and ($val1 < 0 or $val1 > 1)) ) {
             print $log
               "log: error at line $line_num: value 1 not between 0 and 1\n";
             return;
