@@ -327,6 +327,9 @@ sub create_gsnap_job {
     return (
         cmd => $cmd,
         script => undef,
+        options => {
+            "allow-zero-length" => JSON::false,
+        },
         args => [
             ["-D", ".", 0],
             ["-d", $name, 0],
