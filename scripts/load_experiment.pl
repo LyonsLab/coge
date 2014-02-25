@@ -131,7 +131,7 @@ unless ($genome) {
 my %genome_chr = map { $_ => 1 } $genome->chromosomes;
 
 # Copy input data file to staging area
-my $cmd = "cp -f $data_file $staging_dir";
+my $cmd = "cp -f '$data_file' $staging_dir";
 `$cmd`;
 my ($filename) = $data_file =~ /^.+\/([^\/]+)$/;
 my $staged_data_file = $staging_dir . '/' . $filename;
