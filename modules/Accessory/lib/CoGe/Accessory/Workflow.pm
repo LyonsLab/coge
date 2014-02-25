@@ -42,10 +42,14 @@ sub add_job {
     my $script      = "" unless defined( $opts{script} );
     my $args        = $opts{args};
     my $inputs      = $opts{inputs};
+    my $options     = $opts{options};
     my $outputs     = $opts{outputs};
     my $description = $opts{description};
     my $size        = $self->jobs;
     my $overwrite;
+
+    # Set default
+    $options //= {};
 
     if ( defined( $opts{overwrite} ) && $opts{overwrite} > 0 ) {
         $overwrite = 1;
@@ -58,6 +62,7 @@ sub add_job {
         @{ $self->jobs },
         {
             cmd         => $cmd,
+            options     => $options,
             script      => $script,
             args        => $args,
             description => $description,
