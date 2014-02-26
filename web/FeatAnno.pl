@@ -175,7 +175,7 @@ sub gen_html {
             $color = "#FFDDBB";
         }
         $html .= "<table bgcolor=$color width=100%><tr><td>"
-          . $feat->annotation_pretty_print_html( gstid => $gstid );
+          . $feat->annotation_pretty_print_html( gstid => $gstid, P => $P);
         $html .= qq{<font class="title4">Type: </font>};
         $html .= qq{<font class="data">} . $feat->type->name . "</font>\n";
         $html .= qq{</table>};

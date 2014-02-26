@@ -598,6 +598,17 @@ sub annotation_pretty_print_html {
 			"<span class='data5 link' onclick =\"window.open('GenomeView.pl?gid=$gid&loc=$chr:$temp_start..$temp_stop')\">GenomeView</span>", # mdb added 11/18/13 issue 220, 254 - fix for jbrowse
 			"<span class='data5 link' onclick =\"window.open('SynFind.pl?fid=$fid')\">SynFind</span>",
 		);
+
+        my $P = $opts{P};
+        my $qteller = $P->{QTELLER_URL} if $P;
+
+        if ($qteller) {
+            my $html = qq{<a href="$qteller/bar_chart_coge.php?name=$fid"}
+            . qq{target="_blank" class="data5 link">qTeller</span>};
+
+            push @links, $html;
+        }
+
 		foreach my $item (@links) {
 			$anno_type->add_Annot($item);
 		}
