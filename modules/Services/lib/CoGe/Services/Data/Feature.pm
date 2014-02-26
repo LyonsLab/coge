@@ -125,7 +125,7 @@ sub median {
     my $middle = (@a+1)/2 - 1;
     my $a1 = $a[floor($middle)];
     my $a2 = $a[ceil($middle)];
-    my $med = ($a1+$a2)/2;
+    my $med = ($a1+$a2) / 2.0;
 
     return $med;
 }
@@ -149,12 +149,12 @@ sub get {
     my @data = map { parse_data(fetch_data($_)) } @experiments;
 
     # Find all feature experimental data
-    my $filtered =  grep { defined @$_[1]->{score1}; } @data;
+    my @filtered =  grep { defined @$_[1]->{score1}; } @data;
 
     # Convert to hash ref (#experiment id, scores)
     my $filtered_data = { map {
                 @$_[0], @$_[1];
-        } $filtered
+        } @filtered
     };
 
     # Filter experiment info by features found
