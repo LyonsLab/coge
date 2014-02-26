@@ -38,7 +38,6 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                     //neg_color: 'red',
                     origin_color: '#888',
                     variance_band_color: 'rgba(0,0,0,0.3)',
-                    featureColor: {}
                 },
             }
         );
@@ -489,53 +488,53 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         }
 
         options.push.apply(
-                options,
-                [
-                    { type: 'dijit/MenuSeparator' },
-                    { label: 'Show scores on hover',
-                      type: 'dijit/CheckedMenuItem',
-                      checked: this.config.showHoverScores,
-                      onClick: function(event) {
-                          track.config.showHoverScores = this.checked;
-                          track.changed();
-                      }
+            options,
+            [
+                { type: 'dijit/MenuSeparator' },
+                {
+                    label: 'Show scores on hover',
+                    type: 'dijit/CheckedMenuItem',
+                    checked: this.config.showHoverScores,
+                    onClick: function(event) {
+                        track.config.showHoverScores = this.checked;
+                        track.changed();
                     }
-                ]
-            );
+                },
+                {
+                    label: 'Change colors',
+                    onClick: function(event) {
+                        if (!track.colorDialog) {
+                            track.colorDialog = new ColorDialog({
+                                title: "Change colors",
+                                style: {
+                                    width: '230px',
+                            },
+                            items: track.config.coge.experiments || [track.config.coge],
+                            featureColor: track.config.style.featureColor,
+                            callback: function(id, color) {
+                                var curColor = track.config.style.featureColor[id];
+                                if (!curColor || curColor != color) {
+                                    // Save color choice
+                                    track.config.style.featureColor[id] = color;
+
+                                    // Use cookie to persist color choice - mdb added 1/13/14, issue 279
+                                    var cookieName = 'track-' + track.name;
+                                    track.browser.cookie(cookieName, config.style);
+
+                                    // Repaint track
+                                    track.changed();
+                                    }
+                                }
+                            });
+                        }
+                        track.colorDialog.show();
+                    }
+                }]);
 
         if (config.coge.type == 'notebook') {
             options.push.apply(
                     options,
                     [
-                        { label: 'Change colors',
-                          onClick: function(event) {
-                              if (!track.colorDialog) {
-                                  track.colorDialog = new ColorDialog({
-                                        title: "Change colors",
-                                        style: {
-                                            width: '230px',
-                                        },
-                                        items: track.config.coge.experiments,
-                                        featureColor: track.config.style.featureColor,
-                                        callback: function(id, color) {
-                                            var curColor = track.config.style.featureColor[id];
-                                            if (!curColor || curColor != color) {
-                                                // Save color choice
-                                                track.config.style.featureColor[id] = color;
-
-                                                // Use cookie to persist color choice - mdb added 1/13/14, issue 279
-                                                var cookieName = 'track-' + track.name;
-                                                track.browser.cookie(cookieName, track.config.style);
-
-                                                // Repaint track
-                                                track.changed();
-                                            }
-                                        }
-                                  });
-                              }
-                              track.colorDialog.show();
-                           }
-                        },
                         // Note: would prefer a radio submenu but this is
                         // dojo 1.8 and RadioMenuItem doesn't exist until
                         // dojo 1.9.
