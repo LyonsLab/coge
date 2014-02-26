@@ -57,16 +57,21 @@
         </li>
         <li>
             <div style="float: left; margin: auto; white-space: nowrap;">
-                <img src="<tmpl_var name=ylabel>" style="vertical-align: top;">
+                <tmpl_if name=ylabel>
+                    <img src="<tmpl_var name=ylabel>" style="vertical-align: top;">
+                </tmpl_if>
+
                 <ul style="display: inline-block">
                     <li>
                         <tmpl_if name=dotplot>
                             <tmpl_var name=dotplot>
                         </tmpl_if>
                     </li>
-                    <li>
-                        <img src="<tmpl_var name=xlabel>">
-                    </li>
+                    <tmpl_if name=xlabel>
+                        <li>
+                            <img src="<tmpl_var name=xlabel>">
+                        </li>
+                    </tmpl_if>
                 </ul>
             </div>
             <div style="clear: both;"></div>
