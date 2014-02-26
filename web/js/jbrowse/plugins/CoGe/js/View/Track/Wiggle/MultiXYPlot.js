@@ -21,14 +21,14 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
  * @extends JBrowse.View.Track.WiggleBase
  */
 {
-	// Load cookie params - mdb added 1/13/14, issue 279
-	constructor: function() {
-		this.inherited(arguments); // call superclass constructor
+    // Load cookie params - mdb added 1/13/14, issue 279
+    constructor: function() {
+        this.inherited(arguments); // call superclass constructor
 
         if (!this.config.style.featureColor)
             this.config.style.featureColor = {};
-	},
-	
+    },
+
     _defaultConfig: function() {
         return Util.deepUpdate(
             dojo.clone( this.inherited(arguments) ),
@@ -45,7 +45,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     },
 
     _getScaling: function( viewArgs, successCallback, errorCallback ) {
-    	
+
         this._getScalingStats( viewArgs, dojo.hitch(this, function( stats ) {
 
             //calculate the scaling if necessary
@@ -77,11 +77,11 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     },
 
     updateStaticElements: function( coords ) {
-    	//console.log('updateStaticElements');
+        //console.log('updateStaticElements');
         this.inherited( arguments );
         this.updateYScaleFromViewDimensions( coords );
     },
-    
+
     fillTooManyFeaturesMessage: function( blockIndex, block, scale ) {
         this.fillMessage(
             blockIndex,
@@ -90,8 +90,8 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 + (scale >= this.browser.view.maxPxPerBp ? '': '; zoom in to see detail')
                 + '.'
         );
-    },    
-    
+    },
+
     fillMessage: function( blockIndex, block, message, class_ ) {
         domConstruct.empty( block.domNode );
         var msgDiv = dojo.create(
@@ -100,17 +100,17 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 innerHTML: message
             }, block.domNode );
         this.heightUpdate( dojo.position(msgDiv).h, blockIndex );
-    },    
-    
+    },
+
     renderBlock: function( args ) {
-    	var featureScale = this.config.style.featureScale;
-    	var scale = args.block.scale;
-    	if (scale <= featureScale) { // don't draw, too zoomed-out, modeled after HTMLFeatures
-    		this.fillTooManyFeaturesMessage(args.blockIndex, args.block, scale);
-    	}
-    	else { // render features
-    		this.inherited( arguments );
-    	}
+        var featureScale = this.config.style.featureScale;
+        var scale = args.block.scale;
+        if (scale <= featureScale) { // don't draw, too zoomed-out, modeled after HTMLFeatures
+            this.fillTooManyFeaturesMessage(args.blockIndex, args.block, scale);
+        }
+        else { // render features
+            this.inherited( arguments );
+        }
     },
 
     _draw: function(scale, leftBase, rightBase, block, canvas, features, featureRects, dataScale, pixels, spans) {
@@ -128,16 +128,16 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
      * @private
      */
     _drawFeatures: function( scale, leftBase, rightBase, block, canvas, features, featureRects, dataScale ) {
-    	//console.log('_drawFeatures');
-    	var config = this.config;
-    	var context = canvas.getContext('2d');
+        //console.log('_drawFeatures');
+        var config = this.config;
+        var context = canvas.getContext('2d');
         var canvasHeight = canvas.height;
         var toY = dojo.hitch( this, function( val ) {
            return canvasHeight * ( 1-dataScale.normalize.call(this, val) );
         });
         var originY = toY( dataScale.origin );
         var disableClipMarkers = this.config.disable_clip_markers;
-        
+
         // Note: transform cases below can be consolidated/optimized
         if (config.transformAverage) {
             var sum_f = [];
@@ -146,123 +146,123 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
             var count_r = [];
             var width = [];
             dojo.forEach( features, function(f,i) {
-            	var score = f.get('score');
-            	var l = featureRects[i].l;
-            	var w = featureRects[i].w;
-	        	if (score >= 0) {
-	        		sum_f[l] = l in sum_f ? sum_f[l] + score : score;
-	        		count_f[l] = l in count_f ? count_f[l] + 1 : 1;
-	        	}
-	        	else {
-	        		sum_r[l] = l in sum_r ? sum_r[l] + score : score;
-	        		count_r[l] = l in count_r ? count_r[l] + 1 : 1;
-	        	}
-            	width[l] = l in width ? Math.max(width[l], w) : w;
+                var score = f.get('score');
+                var l = featureRects[i].l;
+                var w = featureRects[i].w;
+                if (score >= 0) {
+                    sum_f[l] = l in sum_f ? sum_f[l] + score : score;
+                    count_f[l] = l in count_f ? count_f[l] + 1 : 1;
+                }
+                else {
+                    sum_r[l] = l in sum_r ? sum_r[l] + score : score;
+                    count_r[l] = l in count_r ? count_r[l] + 1 : 1;
+                }
+                width[l] = l in width ? Math.max(width[l], w) : w;
             });
-        	sum_f.forEach( function(x,l) { // bar goes upward
-        		var avg = sum_f[l]/count_f[l];
-        		var height = toY( avg );
-        		context.fillStyle = 'gray';
-        		if( height <= canvasHeight ) { // if the rectangle is visible at all
-        			context.fillRect( l, height, width[l], originY-height+1);
-        		}
-        	});
-        	sum_r.forEach( function(x,l) { // bar goes downward
-        		var avg = sum_r[l]/count_r[l];
-        		var height = toY( avg );
-        		context.fillStyle = 'gray';
-        		if( height <= canvasHeight ) { // if the rectangle is visible at all
-        			context.fillRect( l, originY, width[l], height-originY+1 );
-        		}
-        	});
+            sum_f.forEach( function(x,l) { // bar goes upward
+                var avg = sum_f[l]/count_f[l];
+                var height = toY( avg );
+                context.fillStyle = 'gray';
+                if( height <= canvasHeight ) { // if the rectangle is visible at all
+                    context.fillRect( l, height, width[l], originY-height+1);
+                }
+            });
+            sum_r.forEach( function(x,l) { // bar goes downward
+                var avg = sum_r[l]/count_r[l];
+                var height = toY( avg );
+                context.fillStyle = 'gray';
+                if( height <= canvasHeight ) { // if the rectangle is visible at all
+                    context.fillRect( l, originY, width[l], height-originY+1 );
+                }
+            });
         }
         else if (config.transformDifference) {
             var width   = [];
             var max_f   = []; // forward strand
             var max_r   = []; // reverse strand
             var min_f   = [];
-            var min_r   = [];            
+            var min_r   = [];
             var color_f = [];
             var color_r = [];
             var count_f = [];
             var count_r = [];
             dojo.forEach( features, dojo.hitch(this, function(f,i) {
-            	var score = f.get('score');
-            	var l = featureRects[i].l;
-            	var w = featureRects[i].w;
-            	width[l] = l in width ? Math.max(width[l], w) : w;
-            	
-            	var color = this._getFeatureColor( f.get('id') );
-            	
-            	if (score >= 0) {
-            		count_f[l] = l in count_f ? count_f[l] + 1 : 1;
-            		max_f[l] = l in max_f ? Math.max(max_f[l], score) : score;
-            		min_f[l] = l in min_f ? Math.min(min_f[l], score) : score;
-            		if (score >= max_f[l])
-            			color_f[l] = color;
-            	}
-            	else {
-            		count_r[l] = l in count_r ? count_r[l] + 1 : 1;
-            		score = Math.abs(score);
-            		max_r[l] = l in max_r ? Math.max(max_r[l], score) : score;
-            		min_r[l] = l in min_r ? Math.min(min_r[l], score) : score;
-            		if (score >= max_r[l])
-            			color_r[l] = color;
-            	}
+                var score = f.get('score');
+                var l = featureRects[i].l;
+                var w = featureRects[i].w;
+                width[l] = l in width ? Math.max(width[l], w) : w;
+
+                var color = this._getFeatureColor( f.get('id') );
+
+                if (score >= 0) {
+                    count_f[l] = l in count_f ? count_f[l] + 1 : 1;
+                    max_f[l] = l in max_f ? Math.max(max_f[l], score) : score;
+                    min_f[l] = l in min_f ? Math.min(min_f[l], score) : score;
+                    if (score >= max_f[l])
+                        color_f[l] = color;
+                }
+                else {
+                    count_r[l] = l in count_r ? count_r[l] + 1 : 1;
+                    score = Math.abs(score);
+                    max_r[l] = l in max_r ? Math.max(max_r[l], score) : score;
+                    min_r[l] = l in min_r ? Math.min(min_r[l], score) : score;
+                    if (score >= max_r[l])
+                        color_r[l] = color;
+                }
             }));
-        	max_f.forEach( function(x,l) { // bar goes upward
-        		var diff = max_f[l] - min_f[l];
-        		if (count_f[l] == 1)
-        			diff = max_f[l];
-        		var height = toY(diff);
-        		if( height <= canvasHeight ) { // if the rectangle is visible at all
-        			context.fillStyle = color_f[l];
-        			context.fillRect( l, height, width[l], originY-height+1);
-        		}
-        	});
-        	max_r.forEach( function(x,l) { // bar goes downward
-        		var diff = max_r[l] - min_r[l];
-        		if (count_r[l] == 1)
-        			diff = max_r[l];
-        		var height = toY(-1*diff);
-        		if( height <= canvasHeight ) { // if the rectangle is visible at all
-        			context.fillStyle = color_r[l];
-    				context.fillRect( l, originY, width[l], height-originY+1 );
-        		}
-        	});
+            max_f.forEach( function(x,l) { // bar goes upward
+                var diff = max_f[l] - min_f[l];
+                if (count_f[l] == 1)
+                    diff = max_f[l];
+                var height = toY(diff);
+                if( height <= canvasHeight ) { // if the rectangle is visible at all
+                    context.fillStyle = color_f[l];
+                    context.fillRect( l, height, width[l], originY-height+1);
+                }
+            });
+            max_r.forEach( function(x,l) { // bar goes downward
+                var diff = max_r[l] - min_r[l];
+                if (count_r[l] == 1)
+                    diff = max_r[l];
+                var height = toY(-1*diff);
+                if( height <= canvasHeight ) { // if the rectangle is visible at all
+                    context.fillStyle = color_r[l];
+                    context.fillRect( l, originY, width[l], height-originY+1 );
+                }
+            });
         }
         else {
             // sort features by score
             var sorted = [];
             dojo.forEach( features, function(f,i) {
-            	sorted.push({ feature: f, featureRect: featureRects[i] });
+                sorted.push({ feature: f, featureRect: featureRects[i] });
             });
             sorted.sort( sortByScore );
-        	
+
             dojo.forEach( sorted, function(pair,i) {
-            	var f = pair.feature;
+                var f = pair.feature;
                 var fRect = pair.featureRect;
                 var score = f.get('score');
-                
+
                 if (config.transformLog10) {
-                	if (score >= 0)
-                		score = log10(Math.abs(score)+1);
-                	else
-                		score = -1*log10(Math.abs(score)+1);
+                    if (score >= 0)
+                        score = log10(Math.abs(score)+1);
+                    else
+                        score = -1*log10(Math.abs(score)+1);
                 }
                 else if (config.transformLog2) {
-                	if (score >= 0)
-                		score = log2(Math.abs(score)+1);
-                	else
-                		score = -1*log2(Math.abs(score)+1);
+                    if (score >= 0)
+                        score = log2(Math.abs(score)+1);
+                    else
+                        score = -1*log2(Math.abs(score)+1);
                 }
-                
+
                 fRect.t = toY( score );
                 if( fRect.t <= canvasHeight ) { // if the rectangle is visible at all
-                	var id = f.get('id');
-                	context.fillStyle = this._getFeatureColor(id);
+                    var id = f.get('id');
+                    context.fillStyle = this._getFeatureColor(id);
 
-                	if( fRect.t <= originY ) // bar goes upward
+                    if( fRect.t <= originY ) // bar goes upward
                         context.fillRect( fRect.l, fRect.t, fRect.w, originY-fRect.t+1);
                     else // bar goes downward
                         context.fillRect( fRect.l, originY, fRect.w, fRect.t-originY+1 );
@@ -275,7 +275,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
      * Draw anything needed after the features are drawn.
      */
     _postDraw: function( scale, leftBase, rightBase, block, canvas, features, featureRects, dataScale ) {
-//    	console.log('_postDraw');
+//      console.log('_postDraw');
         var context = canvas.getContext('2d');
         var canvasHeight = canvas.height;
         var toY = dojo.hitch( this, function( val ) {
@@ -331,132 +331,132 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
             context.fillRect( 0, originY, canvas.width-1, 1 );
         }
     },
-    
+
     _calculatePixelScores: function( canvasWidth, features, featureRects ) {
-    	var pixelValues = new Array( canvasWidth );
-    	
-    	if (this.config.showHoverScores) {
-	        // sort features by score
-	        var sorted = [];
-	        dojo.forEach( features, function(f,i) {
-	        	sorted.push({ feature: f, featureRect: featureRects[i] });
-	        });
-	        sorted.sort( sortByScore );
-	        
-	        // make an array of the max score at each pixel on the canvas
-	        dojo.forEach( sorted, function( f, i ) {
-	            var fRect = f.featureRect;
-	            var jEnd = fRect.r;
-	            var score = f.feature.get('score');
-	            var score2 = f.feature.get('score2');
-	            var id = f.feature.get('id');
-	            var name = this._getFeatureName(f.feature);
-	            var color = this._getFeatureColor(id);
-	            for( var j = Math.round(fRect.l); j < jEnd; j++ ) {
-	            	var label = '<div style="background-color:'+color+';">' +
-	            		nbspPad(score.toPrecision(6).toString(), 11) +
-	            		(score2 ? nbspPad(score2.toPrecision(6).toString(), 11) : '') +
-	            		name + '</div>';
-	                pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
-	            }
-	        },this);
-	        
-	        
-	        // compute transform scores - FIXME dup'ed in _drawFeatures
-	        if (this.config.transformAverage) {
-		        var sum_f = [];
-		        var sum_r = [];
-		        var count_f = [];
-		        var count_r = [];
-		        var width = [];
-		        dojo.forEach( features, function(f,i) {
-		        	var score = f.get('score');
-		        	var l = featureRects[i].l;
-		        	var w = featureRects[i].w;
-		        	if (score >= 0) {
-		        		sum_f[l] = l in sum_f ? sum_f[l] + score : score;
-		        		count_f[l] = l in count_f ? count_f[l] + 1 : 1;
-		        	}
-		        	else {
-		        		sum_r[l] = l in sum_r ? sum_r[l] + score : score;
-		        		count_r[l] = l in count_r ? count_r[l] + 1 : 1;
-		        	}
-		        	width[l] = l in width ? Math.max(width[l], w) : w;
-		        });
-	        
-		        sum_f.forEach( function(x,l) {
-	        		var avg = sum_f[l]/count_f[l];
-	        		for( var j = Math.round(l); j < l+width[l]; j++ ) {
-	                	var label = '<div style="background-color:gray;">' + 
-	                		nbspPad(avg.toPrecision(6).toString(), 11) 
-	                		+ 'Average (+)' + '</div>';
-	                    pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
-	                }
-	        	});
-		        sum_r.forEach( function(x,l) {
-	        		var avg = sum_r[l]/count_r[l];
-	        		for( var j = Math.round(l); j < l+width[l]; j++ ) {
-	                	var label = '<div style="background-color:gray;">' + 
-	                		nbspPad(avg.toPrecision(6).toString(), 11) 
-	                		+ 'Average (-)' + '</div>';
-	                    pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
-	                }
-	        	});
-	        }
-	        else if (this.config.transformDifference) {
-	            var max_f = [];
-	            var max_r = [];
-	            var min_f = [];
-	            var min_r = [];
-	            var count_f = [];
-	            var count_r = []; 
-	            var width = [];
-	            dojo.forEach( features, function(f,i) {
-	            	var score = f.get('score');
-	            	var l = featureRects[i].l;
-	            	var w = featureRects[i].w;
-	            	width[l] = l in width ? Math.max(width[l], w) : w;
-	            	if (score >= 0) {
-	            		count_f[l] = l in count_f ? count_f[l] + 1 : 1;
-	            		max_f[l] = l in max_f ? Math.max(max_f[l], score) : score;
-	            		min_f[l] = l in min_f ? Math.min(min_f[l], score) : score;
-	            	}
-	            	else {
-	            		score = Math.abs(score);
-	            		count_r[l] = l in count_r ? count_r[l] + 1 : 1;
-	            		max_r[l] = l in max_r ? Math.max(max_r[l], score) : score;
-	            		min_r[l] = l in min_r ? Math.min(min_r[l], score) : score;
-	            	}
-	            });
-		        
-		        max_f.forEach( function(x,l) {
-		        	var diff = max_f[l] - min_f[l];
-		        	if (count_f[l] == 1)
-		        		diff = max_f[l];
-	        		for( var j = Math.round(l); j < l+width[l]; j++ ) {
-	                	var label = '<div style="background-color:gray;">' + 
-	                		nbspPad(diff.toPrecision(6).toString(), 11) 
-	                		+ 'Difference (+)' + '</div>';
-	                    pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
-	                }
-	        	});
-		        max_r.forEach( function(x,l) {
-		        	var diff = max_r[l] - min_r[l];
-		        	if (count_r[l] == 1)
-		        		diff = max_r[l];
-	        		for( var j = Math.round(l); j < l+width[l]; j++ ) {
-	                	var label = '<div style="background-color:gray;">' + 
-	                		nbspPad(diff.toPrecision(6).toString(), 11) 
-	                		+ 'Difference (-)' + '</div>';
-	                    pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
-	                }
-	        	});
-	        }
+        var pixelValues = new Array( canvasWidth );
+
+        if (this.config.showHoverScores) {
+            // sort features by score
+            var sorted = [];
+            dojo.forEach( features, function(f,i) {
+                sorted.push({ feature: f, featureRect: featureRects[i] });
+            });
+            sorted.sort( sortByScore );
+
+            // make an array of the max score at each pixel on the canvas
+            dojo.forEach( sorted, function( f, i ) {
+                var fRect = f.featureRect;
+                var jEnd = fRect.r;
+                var score = f.feature.get('score');
+                var score2 = f.feature.get('score2');
+                var id = f.feature.get('id');
+                var name = this._getFeatureName(f.feature);
+                var color = this._getFeatureColor(id);
+                for( var j = Math.round(fRect.l); j < jEnd; j++ ) {
+                    var label = '<div style="background-color:'+color+';">' +
+                        nbspPad(score.toPrecision(6).toString(), 11) +
+                        (score2 ? nbspPad(score2.toPrecision(6).toString(), 11) : '') +
+                        name + '</div>';
+                    pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
+                }
+            },this);
+
+
+            // compute transform scores - FIXME dup'ed in _drawFeatures
+            if (this.config.transformAverage) {
+                var sum_f = [];
+                var sum_r = [];
+                var count_f = [];
+                var count_r = [];
+                var width = [];
+                dojo.forEach( features, function(f,i) {
+                    var score = f.get('score');
+                    var l = featureRects[i].l;
+                    var w = featureRects[i].w;
+                    if (score >= 0) {
+                        sum_f[l] = l in sum_f ? sum_f[l] + score : score;
+                        count_f[l] = l in count_f ? count_f[l] + 1 : 1;
+                    }
+                    else {
+                        sum_r[l] = l in sum_r ? sum_r[l] + score : score;
+                        count_r[l] = l in count_r ? count_r[l] + 1 : 1;
+                    }
+                    width[l] = l in width ? Math.max(width[l], w) : w;
+                });
+
+                sum_f.forEach( function(x,l) {
+                    var avg = sum_f[l]/count_f[l];
+                    for( var j = Math.round(l); j < l+width[l]; j++ ) {
+                        var label = '<div style="background-color:gray;">' +
+                            nbspPad(avg.toPrecision(6).toString(), 11)
+                            + 'Average (+)' + '</div>';
+                        pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
+                    }
+                });
+                sum_r.forEach( function(x,l) {
+                    var avg = sum_r[l]/count_r[l];
+                    for( var j = Math.round(l); j < l+width[l]; j++ ) {
+                        var label = '<div style="background-color:gray;">' +
+                            nbspPad(avg.toPrecision(6).toString(), 11)
+                            + 'Average (-)' + '</div>';
+                        pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
+                    }
+                });
+            }
+            else if (this.config.transformDifference) {
+                var max_f = [];
+                var max_r = [];
+                var min_f = [];
+                var min_r = [];
+                var count_f = [];
+                var count_r = [];
+                var width = [];
+                dojo.forEach( features, function(f,i) {
+                    var score = f.get('score');
+                    var l = featureRects[i].l;
+                    var w = featureRects[i].w;
+                    width[l] = l in width ? Math.max(width[l], w) : w;
+                    if (score >= 0) {
+                        count_f[l] = l in count_f ? count_f[l] + 1 : 1;
+                        max_f[l] = l in max_f ? Math.max(max_f[l], score) : score;
+                        min_f[l] = l in min_f ? Math.min(min_f[l], score) : score;
+                    }
+                    else {
+                        score = Math.abs(score);
+                        count_r[l] = l in count_r ? count_r[l] + 1 : 1;
+                        max_r[l] = l in max_r ? Math.max(max_r[l], score) : score;
+                        min_r[l] = l in min_r ? Math.min(min_r[l], score) : score;
+                    }
+                });
+
+                max_f.forEach( function(x,l) {
+                    var diff = max_f[l] - min_f[l];
+                    if (count_f[l] == 1)
+                        diff = max_f[l];
+                    for( var j = Math.round(l); j < l+width[l]; j++ ) {
+                        var label = '<div style="background-color:gray;">' +
+                            nbspPad(diff.toPrecision(6).toString(), 11)
+                            + 'Difference (+)' + '</div>';
+                        pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
+                    }
+                });
+                max_r.forEach( function(x,l) {
+                    var diff = max_r[l] - min_r[l];
+                    if (count_r[l] == 1)
+                        diff = max_r[l];
+                    for( var j = Math.round(l); j < l+width[l]; j++ ) {
+                        var label = '<div style="background-color:gray;">' +
+                            nbspPad(diff.toPrecision(6).toString(), 11)
+                            + 'Difference (-)' + '</div>';
+                        pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
+                    }
+                });
+            }
         }
-        
+
         return pixelValues;
-    }, 
-    
+    },
+
     _showPixelValue: function( scoreDisplay, score ) {
         var scoreType = typeof score;
         if( scoreType == 'number' ) {
@@ -477,17 +477,17 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
             return false;
         }
     },
-    
+
     _trackMenuOptions: function() {
-    	var options = this.inherited(arguments);
-    	var track = this;
-    	var config = this.config;
-    	if (config.coge.menuOptions) {
-    		config.coge.menuOptions.forEach( function(e) {
-    			options.push(e);
-    		});
-    	}
-    	
+        var options = this.inherited(arguments);
+        var track = this;
+        var config = this.config;
+        if (config.coge.menuOptions) {
+            config.coge.menuOptions.forEach( function(e) {
+                options.push(e);
+            });
+        }
+
         options.push.apply(
                 options,
                 [
@@ -502,117 +502,117 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                     }
                 ]
             );
-    	
-    	if (config.coge.type == 'notebook') {
-	        options.push.apply(
-	                options,
-	                [
-	                    { label: 'Change colors',
-	                      onClick: function(event) {
-	                    	  if (!track.colorDialog) {
-	                    		  track.colorDialog = new ColorDialog({
-		                      	        title: "Change colors",
-		                      	        style: {
-		                      	        	width: '230px',
-		                      	        },
-		                      	        items: track.config.coge.experiments,
-		                      	        featureColor: track.config.style.featureColor,
-		                      	        callback: function(id, color) {
-		                      	        	var curColor = track.config.style.featureColor[id];
-		                      	        	if (!curColor || curColor != color) {
-		                      	        		// Save color choice
-		                      	        		track.config.style.featureColor[id] = color;
-		                      	        		
-		                      	        		// Use cookie to persist color choice - mdb added 1/13/14, issue 279
-		                      	        		var cookieName = 'track-' + track.name;
+
+        if (config.coge.type == 'notebook') {
+            options.push.apply(
+                    options,
+                    [
+                        { label: 'Change colors',
+                          onClick: function(event) {
+                              if (!track.colorDialog) {
+                                  track.colorDialog = new ColorDialog({
+                                        title: "Change colors",
+                                        style: {
+                                            width: '230px',
+                                        },
+                                        items: track.config.coge.experiments,
+                                        featureColor: track.config.style.featureColor,
+                                        callback: function(id, color) {
+                                            var curColor = track.config.style.featureColor[id];
+                                            if (!curColor || curColor != color) {
+                                                // Save color choice
+                                                track.config.style.featureColor[id] = color;
+
+                                                // Use cookie to persist color choice - mdb added 1/13/14, issue 279
+                                                var cookieName = 'track-' + track.name;
                                                 track.browser.cookie(cookieName, track.config.style);
-		                      	        		
-		                      	        		// Repaint track
-		                      	        		track.changed();
-		                      	        	}
-				                        }
-		                      	  });
-	                    	  }
-	                    	  track.colorDialog.show();
-	                       }
-	                    },
-	                    // Note: would prefer a radio submenu but this is
-	                    // dojo 1.8 and RadioMenuItem doesn't exist until 
-	                    // dojo 1.9.
-	                    {	label: 'Transform',
-	                    	type: 'dijit/DropDownMenu',
-	                    	children: [
-								{ 	label: 'None',
-								    onClick: function(event) {
-								    	clearTransforms(config);
-								        track.changed();
-								    }
-								},
-								{ 	label: 'Average',
-								    onClick: function(event) {
-								    	clearTransforms(config);
-								        track.config.transformAverage = true;
-								        track.changed();
-								    }
-								},
-   								{ 	label: 'Difference',
-   								    onClick: function(event) {
-   								    	clearTransforms(config);
-   								        track.config.transformDifference = true;
-   								        track.changed();
-   								    }
-   								},
-   								{ 	label: 'Log10',
-   								    onClick: function(event) {
-   								    	clearTransforms(config);
-   								        track.config.transformLog10 = true;
-   								        track.changed();
-   								    }
-   								},
-   								{ 	label: 'Log2',
-   								    onClick: function(event) {
-   								    	clearTransforms(config);
-   								        track.config.transformLog2 = true;
-   								        track.changed();
-   								    }
-   								}
-	                    	]
-	                    }
-	                ]
-	            );
-    	}
-    	
-    	return options;
+
+                                                // Repaint track
+                                                track.changed();
+                                            }
+                                        }
+                                  });
+                              }
+                              track.colorDialog.show();
+                           }
+                        },
+                        // Note: would prefer a radio submenu but this is
+                        // dojo 1.8 and RadioMenuItem doesn't exist until
+                        // dojo 1.9.
+                        {   label: 'Transform',
+                            type: 'dijit/DropDownMenu',
+                            children: [
+                                {   label: 'None',
+                                    onClick: function(event) {
+                                        clearTransforms(config);
+                                        track.changed();
+                                    }
+                                },
+                                {   label: 'Average',
+                                    onClick: function(event) {
+                                        clearTransforms(config);
+                                        track.config.transformAverage = true;
+                                        track.changed();
+                                    }
+                                },
+                                {   label: 'Difference',
+                                    onClick: function(event) {
+                                        clearTransforms(config);
+                                        track.config.transformDifference = true;
+                                        track.changed();
+                                    }
+                                },
+                                {   label: 'Log10',
+                                    onClick: function(event) {
+                                        clearTransforms(config);
+                                        track.config.transformLog10 = true;
+                                        track.changed();
+                                    }
+                                },
+                                {   label: 'Log2',
+                                    onClick: function(event) {
+                                        clearTransforms(config);
+                                        track.config.transformLog2 = true;
+                                        track.changed();
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                );
+        }
+
+        return options;
     },
 
     _getFeatureName: function(f) {
-    	var id = f.get('id');
-    	var coge = this.config.coge;
-    	
-    	if (coge.type == 'experiment') {
-    		return coge.name;
-    	}
-    	else if (coge.type == 'notebook') {
-	    	var experiments = coge.experiments || [];
-	    	var name = '';
-	    	experiments.every( function(e) {
-	    		if (e.id == id) {
-	    			name = e.name;
-	    			if (e.type == 'snp')
-	    				name += ' ' + f.get('name');
-	    			return false;
-	    		}
-	    		return true;
-	    	});
-	    	return name;
-    	}
+        var id = f.get('id');
+        var coge = this.config.coge;
+
+        if (coge.type == 'experiment') {
+            return coge.name;
+        }
+        else if (coge.type == 'notebook') {
+            var experiments = coge.experiments || [];
+            var name = '';
+            experiments.every( function(e) {
+                if (e.id == id) {
+                    name = e.name;
+                    if (e.type == 'snp')
+                        name += ' ' + f.get('name');
+                    return false;
+                }
+                return true;
+            });
+            return name;
+        }
     },
-    
+
     _getFeatureColor: function(id) {
-    	if (this.config.style.featureColor && this.config.style.featureColor[id]) {
-    		return this.config.style.featureColor[id];
-    	}
-    	return '#' + ((((id * 1234321) % 0x1000000) | 0x444444) & 0xe7e7e7 ).toString(16); //FIXME: dup'ed in CoGe.js
+        if (this.config.style.featureColor && this.config.style.featureColor[id]) {
+            return this.config.style.featureColor[id];
+        }
+        return '#' + ((((id * 1234321) % 0x1000000) | 0x444444) & 0xe7e7e7 ).toString(16); //FIXME: dup'ed in CoGe.js
     }
 
 });
@@ -629,19 +629,19 @@ function log2(x) {
 }
 
 function clearTransforms(config) {
-	config.transformAverage = false;
-	config.transformDifference = false;
-	config.transformLog10 = false;
-	config.transformLog2 = false;
+    config.transformAverage = false;
+    config.transformDifference = false;
+    config.transformLog10 = false;
+    config.transformLog2 = false;
 }
 
 function nbspPad(s, padLength) {
-	for (var i = s.length;  i < padLength;  i++) {
-		s += '&nbsp;';
-	}
-	return s;
+    for (var i = s.length;  i < padLength;  i++) {
+        s += '&nbsp;';
+    }
+    return s;
 }
 
 function sortByScore(a,b) { // sort features by score
-	return Math.abs( b.feature.get('score') ) - Math.abs( a.feature.get('score') );
+    return Math.abs( b.feature.get('score') ) - Math.abs( a.feature.get('score') );
 }
