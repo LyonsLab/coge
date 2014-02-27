@@ -28,10 +28,7 @@ while (<>) {
     
     if (!defined $start || ($pos-$stop > 1) || $depth != $prevDepth || $chr ne $prevChr) {
         # Print interval
-        if (defined $start) {
-            $prevChr =~ s/^lcl\||gi\|//;
-            print join("\t", $prevChr, $start, $stop+1, '.', $prevDepth, '+'), "\n";
-        }
+        print_line($prevChr, $start, $stop, $prevDepth);
         
         # Reset interval
         $start = $pos;
@@ -44,8 +41,7 @@ while (<>) {
 
 # Print last interval
 if (defined $start and $start != $stop) {
-    $prevChr =~ s/^lcl\||gi\|//;
-    print join("\t", $prevChr, $start, $stop+1, '.', $prevDepth, '+'), "\n";
+    print_line($prevChr, $start, $stop, $prevDepth);
 }
 
 exit;
@@ -54,4 +50,10 @@ exit;
 sub fix_chr_name {
     $prevChr =~ s/^lcl\|//;
     $prevChr =~ s/^gi\|//;
+}
+
+sub print_line {
+    my ($chr, $start, $stop, $score1);
+    $chr =~ s/^lcl\||gi\|//;
+    print join("\t", $chr, $start, $stop+1, '.', $score1, '+'), "\n";
 }
