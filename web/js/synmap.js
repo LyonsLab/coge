@@ -88,14 +88,6 @@ function run_synmap(scheduled){
                 return;
     }
 
-    if(!pageObj.basename) {
-        var run_callback = function() {
-            run_synmap(scheduled);
-        };
-
-        setTimeout(run_callback, 100);
-        return;
-    }
 
     if (!has_organisms())
         return;
@@ -105,11 +97,12 @@ function run_synmap(scheduled){
         return;
     }
 
+    var overlay = $("#overlay").show();
+
     //TODO Scale polling time linearly with long running jobs
     var duration = pageObj.waittime;
 
     $('#results').hide();
-    var overlay = $("#overlay").show();
 
     return $.ajax({
         type: 'GET',
@@ -117,13 +110,12 @@ function run_synmap(scheduled){
         dataType: "json",
         success: function(data) {
             if (!data.error) {
+                overlay.hide();
                 $("#synmap_zoom_box").draggable();
                 $('#results').html(data.html).slideDown();
             } else {
                 schedule(get_params("go"))
             }
-
-            overlay.hide();
         },
         error: schedule.bind(this, get_params("go"))
     });
@@ -132,12 +124,13 @@ function run_synmap(scheduled){
 function schedule(params) {
     pageObj.nolog=1;
     var status_dialog = $('#synmap_dialog');
-    status_dialog.dialog('open');
 
     $.ajax({
         data: params,
         dataType: 'json',
         success: function(data) {
+            $("#overlay").hide();
+            status_dialog.dialog('open');
             if (data.status == 'Attached' || data.status == 'Scheduled') {
                 var link = "Return to this analysis: <a href="
                 + data.link + " onclick=window.open('tiny')"
@@ -161,6 +154,8 @@ function schedule(params) {
             }
         },
         error: function(err) {
+            $("#overlay").hide();
+            status_dialog.dialog('open');
             status_dialog.find('#progress').hide();
             status_dialog.find('#dialog_error').slideDown();
         }
