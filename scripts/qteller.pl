@@ -88,7 +88,7 @@ sub main {
     my $fasta = get_genome_file($gid);
 
     #XXX: files should allow for comma seperated list of files
-    my $fastq = $files;
+    my $fastq = unescape($files);
     die "ERROR: no experiment files found" unless $fastq;
 
     my $workflow = $YERBA->create_workflow(
