@@ -13,6 +13,7 @@ use CoGe::Accessory::Utils qw( commify );
 use vars qw($staging_dir $install_dir $data_file $file_type
   $name $description $version $restricted $ignore_missing_chr
   $gid $source_name $user_name $config $allow_negative $disable_range_check
+  $annotations $types
   $host $port $db $user $pass $P);
 
 #FIXME: use these from Storage.pm instead of redeclaring them
@@ -22,26 +23,24 @@ my $DATA_TYPE_ALIGN = 3;	# Alignments
 
 #my $MIN_QUANT_COLUMNS = 5;
 #my $MAX_QUANT_COLUMNS = 6;
-
 my $MIN_VCF_COLUMNS = 8;
 #my $MAX_VCF_COLUMNS = 10;
 
 GetOptions(
-    "staging_dir=s" => \$staging_dir,
-    "install_dir=s" => \$install_dir,    # optional
-    "data_file=s"   => \$data_file,      # data file (JS escape)
-    "file_type=s"   => \$file_type,		 # file type
+    "staging_dir=s" => \$staging_dir,    # temporary staging path
+    "install_dir=s" => \$install_dir,    # final installation path
+    "data_file=s"   => \$data_file,      # input data file (JS escape)
+    "file_type=s"   => \$file_type,		 # input file type
     "name=s"        => \$name,           # experiment name (JS escaped)
     "desc=s"        => \$description,    # experiment description (JS escaped)
     "version=s"     => \$version,        # experiment version (JS escaped)
     "restricted=i"  => \$restricted,     # experiment restricted flag
+    "source_name=s" => \$source_name,    # experiment source name (JS escaped)
     "gid=s"         => \$gid,            # genome id
-    "source_name=s" => \$source_name,    # data source name (JS escaped)
     "user_name=s"   => \$user_name,      # user name
+    "annotations=s" => \$annotations,    # optional: semicolon-separated list of locked annotations (link:group:type:text;...)
+    "types=s"       => \$types,          # optional: semicolon-separated list of experiment type names
     
-    # Flags
-    "ignore-missing-chr=i" => \$ignore_missing_chr,
-
     # Database params
     "host|h=s"      => \$host,
     "port|p=s"      => \$port,
@@ -52,9 +51,10 @@ GetOptions(
     # Or use config file
     "config=s" => \$config,
 
-    # Optional features for debug and bulk loader
-    "allow_negative=i" => \$allow_negative,
-    "disable_range_check" => \$disable_range_check # allow any value in val1 column
+    # Optional flags for debug and bulk loader
+    "ignore-missing-chr=i" => \$ignore_missing_chr,
+    "allow_negative=i"     => \$allow_negative,
+    "disable_range_check"  => \$disable_range_check # allow any value in val1 column
 );
 
 # Open log file
@@ -220,9 +220,9 @@ if ( $data_type == $DATA_TYPE_QUANT or $data_type == $DATA_TYPE_POLY ) {
 
 # Create data source
 my $data_source =
-  $coge->resultset('DataSource')
-  ->find_or_create( { name => $source_name, description => "" } )
-  ;    #, description => "Loaded into CoGe via LoadExperiment" } );
+  $coge->resultset('DataSource')->find_or_create( { 
+      name => $source_name, description => "" } 
+  );#, description => "Loaded into CoGe via LoadExperiment" } );
 unless ($data_source) {
     print $log "log: error creating data source\n";
     exit(-1);
@@ -242,6 +242,87 @@ my $experiment = $coge->resultset('Experiment')->create(
         restricted     => $restricted
     }
 );
+
+# Create types
+if ($types) {
+    foreach my $type_name ( split(/\s*;\s*/, $types) ) {
+        # Try to find a matching type by name, ignoring description
+        my $type = $coge->resultset('ExperimentType')->find({ name => $type_name });
+        if (!$type) {
+            $type = $coge->resultset('ExperimentType')->create({ name => $type_name }); # null description
+        }
+        unless ($type) {
+            print $log "log: error creating experiment type\n";
+            exit(-1);
+        }
+        my $conn = $coge->resultset('ExperimentTypeConnector')->find_or_create({ 
+            experiment_id => $experiment->id,
+            experiment_type_id => $type->id
+        });
+        unless ($conn) {
+            print $log "log: error creating experiment type connector\n";
+            exit(-1);
+        }
+    }
+}
+
+# Create annotations
+if ($annotations) {
+    foreach ( split(/\s*;\s*/, $annotations) ) {
+        my @tok = split(/\s*\|\s*/, $_);
+        my ($link, $group_name, $type_name, $anno_text);
+        $link  = shift @tok if (@tok == 4);
+        $group_name = shift @tok if (@tok == 3);
+        $type_name  = shift @tok if (@tok == 2);
+        $anno_text  = shift @tok if (@tok == 1);
+        unless ($anno_text and $type_name) {
+            print $log "log: missing required annotation type and text fields\n";
+            exit(-1);
+        }
+        
+        # Create type group - first try to find a match by name only
+        my ($group, $type, $anno);
+        if ($group_name) {
+            $group = $coge->resultset('AnnotationTypeGroup')->find({ name => $group });
+            if (!$group) {
+                $group = $coge->resultset('AnnotationTypeGroup')->create({ name => $group }); # null description
+            }
+            unless ($group) {
+                print $log "log: error creating annotation type group\n";
+                exit(-1);
+            }
+        }
+        
+        # Create type - first try to find a match by name and group
+        $type = $coge->resultset('AnnotationType')->find({ 
+            name => $type_name, 
+            annotation_type_group_id => ($group ? $group->id : undef) }
+        );
+        if (!$type) {
+            $type = $coge->resultset('AnnotationType')->create({ 
+                name => $type_name,
+                annotation_type_group_id => ($group ? $group->id : undef)
+            }); # null description
+        }
+        unless ($type) {
+            print $log "log: error creating annotation type\n";
+            exit(-1);
+        }
+        
+        # Create annotation
+        $anno = $coge->resultset('ExperimentAnnotation')->create({
+            experiment_id => $experiment->id,
+            annotation_type_id => ($type ? $type->id : undef),
+            annotation => $anno_text,
+            link => $link,
+            locked => 1
+        }); # null description
+        unless ($anno) {
+            print $log "log: error creating experiment annotation\n";
+            exit(-1);
+        }
+    }
+}
 
 # Determine installation path
 unless ($install_dir) {
