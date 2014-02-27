@@ -53,6 +53,8 @@ __PACKAGE__->add_columns(
   { data_type => "VARCHAR", default_value => "", is_nullable => 1, size => 1024 },
    "image_id",
   { data_type => "INT", default_value => undef, is_nullable => 1, size => 11 },
+  "locked",
+  { data_type => "INT", default_value => "0", is_nullable => 0, size => 1 },
 );
 __PACKAGE__->set_primary_key("genome_annotation_id");
 
@@ -80,9 +82,9 @@ See Also   :
 ################################################## subroutine header end ##
 
 sub type
-  {
+{
     shift->annotation_type(@_);
-  }
+}
 
 
 ################################################ subroutine header begin ##
