@@ -8,27 +8,33 @@
     </section>
 </tmpl_if>
 
-<aside id="intro" class="small" style="width: 50%;">
-    <p>SynMap allows you to generate a syntenic dotplot between
-    two organisms and identify syntenic regions.</p>
-
+<aside id="intro" class="info">
+    <p><a class="bold" href="http://genomevolution.org/wiki/index.php/SynMap" target="_blank">SynMap</a> generates a syntenic dotplot between
+    two organisms and identify syntenic regions.
+	    <span class="link" onClick="$(this).remove(); $('#getting_started').fadeIn();">More...</span>
+    </p>
+    
     <div id="getting_started" class="hidden">
+	    <ol>
+	    	<li>Finds putative genes or regions of homology between two genomes
+	    	<li>Identies collinear sets of genes or regions of sequence similarity to infer synteny
+	    	<li>Generates a dotplot of the results and coloring syntenic pairs.
+	    </ol>
+    	
+	    	If you choose, synonymous and non-synonymous site mutation data can be calculated for protein coding genes that are identified as syntenic. These genes will then be colored based on those values in the dotplot for rapid identification of different age-classes of syntenic regions.
+    	
         <p>
-            <a href="http://www.genomevolution.org/r/btab">
+            <a href="http://www.genomevolution.org/r/btab" target="_blank">
                 Click here for an example analysis between
                 <em>Arabidopsis thaliana</em> and <em>Arabidopsis lyrata</em>.
             </a>
         </p>
         <p>
-            <a href="http://genomevolution.org/wiki/index.php/SynMap#Example_Results">
-                Click here for an explaination of the results.
+            <a href="http://genomevolution.org/wiki/index.php/Syntenic_comparison_of_Arabidopsis_thaliana_and_Arabidopsis_lyrata" target="_blank">
+                Click here for an explanation of the results.
             </a>
         </p>
     </div>
-
-    <span class="link" onClick="$(this).remove(); $('#getting_started').fadeIn();">
-        <strong>Click here for more information.</strong>
-    </span>
 </aside>
 
 <section id="tabs" class="invisible" style="margin-top: 0.5em; min-width: 645px;">
