@@ -244,17 +244,17 @@ sub track_config {
 
         my ($type, $featureScale, $histScale);
         if (!$e->data_type or $e->data_type == 1) { #FIXME hardcoded data_type 'quantitative'
-			$type = "CoGe/View/Track/Wiggle/MultiXYPlot";
+			$type = 'CoGe/View/Track/Wiggle/MultiXYPlot';
 			$featureScale = 0.001;
 			$histScale = 0.05;
 		}
 		elsif ($e->data_type == 2) { #FIXME hardcoded data_type 'polymorphism'
-			$type = "CoGe/View/Track/CoGeVariants"; 
+			$type = 'CoGe/View/Track/CoGeVariants'; 
 			$featureScale = 0.0001;
 			$histScale = 0.01;
 		}
 		elsif ($e->data_type == 3) { #FIXME hardcoded data_type 'alignment'
-			$type = "JBrowse/View/Track/Alignments2"; 
+			$type = 'CoGe/View/Track/CoGeAlignment';#"JBrowse/View/Track/Alignments2"; 
 			$featureScale = 0.005;
 			$histScale = 0.01;
 		}
