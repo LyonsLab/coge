@@ -271,7 +271,7 @@ sub annotation_pretty_print_html {
     $anno_type->add_Annot( $self->id . "</td>" );
     $anno_obj->add_Annot($anno_type);
 
-    my $anno_type =
+    $anno_type =
       new CoGe::Accessory::Annotation(
         Type => "<tr><td nowrap='true'><span class=\"title5\">" . "Name"
           . "</span>" );
