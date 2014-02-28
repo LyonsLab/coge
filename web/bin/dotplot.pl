@@ -443,17 +443,19 @@ binmode OUT;
 print OUT $graphics_context->png;
 close OUT;
 
-#Write out graphics context - the generated x axis - to a .png file
-open( OUT, ">" . $basename . ".x.png" ) || die "$!";
-binmode OUT;
-print OUT $x_labels_gd->png;
-close OUT;
+if ($labels) {
+    #Write out graphics context - the generated x axis - to a .png file
+    open( OUT, ">" . $basename . ".x.png" ) || die "$!";
+    binmode OUT;
+    print OUT $x_labels_gd->png;
+    close OUT;
 
-#Write out graphics context - the generated y axis - to a .png file
-open( OUT, ">" . $basename . ".y.png" ) || die "$!";
-binmode OUT;
-print OUT $y_labels_gd->png;
-close OUT;
+    #Write out graphics context - the generated y axis - to a .png file
+    open( OUT, ">" . $basename . ".y.png" ) || die "$!";
+    binmode OUT;
+    print OUT $y_labels_gd->png;
+    close OUT;
+}
 
 #CoGe::Accessory::Web::gzip($dagfile) if $dagfile && -r $dagfile;
 #CoGe::Accessory::Web::gzip($alignfile) if $alignfile && -r $alignfile;

@@ -171,6 +171,7 @@ function load_annotation() {
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
 			if (obj && obj.error) {
+				reset_load();
 				alert(obj.error);
 				return;
 			}

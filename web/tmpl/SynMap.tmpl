@@ -1,54 +1,4 @@
 <tmpl_if name=MAIN>
-    <div class="small" style="padding-bottom: 5px; color: dimgray;">
-        <span class="large">Welcome to the <span class="alert">new beta version</span> of SynMap.</span><br>If you experience any difficulties
-        or prefer to use the old version, please <a id="beta_link" href="SynMap_old.pl">click here</a>.
-        <br>
-    </div>
-<section id="intro">
-    <span class="link small" onClick="$(this).hide(); $('#getting_started').fadeIn();">
-        Click here to see how to get started.
-    </span>
-
-    <div id="getting_started" class="hidden padded ui-widget-content ui-corner-all">
-        <ul class="horizontal">
-            <li>
-                <span class="alert">What is new:</span>
-            </li>
-
-            <li>
-                SynMap is now using a job execution engine to run your analysis
-                and a new user experience.
-            </li>
-        </ul>
-        <ul class="horizontal">
-            <li>
-                <span class="alert">Please Note:</span>
-            </li>
-
-            <li>SynMap is a very computationally intense, multi-step program which may take hours to complete for large genomes.<br>If available, select previously run parameter-sets for your organisms to see esults instantly.
-            </li>
-        </ul>
-
-        <ul class="horizontal">
-            <li style="vertical-align:top; margin-right: 5px;" class="alert">
-                Get Started:
-            </li>
-            <li style="display:inline-block;">
-                <span class="link" onclick=window.open("http://genomevolution.org/r/6mou") >
-                    Click here for an example analysis between
-                    <em>Arabidopsis thaliana</em> and <em>Arabidopsis lyrata</em>.
-                </span> <br>
-                <span class="small">
-                    (Note that syntenic gene pairs are colored by synonymous mutations (Ks))
-                </span> <br>
-                <span class="link" onclick="window.open('http://genomevolution.org/wiki/index.php/SynMap#Example_Results')">
-                    Click here for an explaination of the results.
-                </span>
-            </li>
-        </ul>
-    </div>
-</section>
-
 <tmpl_if name=results>
     <section id="results" class="ui-widget-content ui-corner-all">
         <tmpl_var name=results>
@@ -57,6 +7,35 @@
     <section id="results" class="hidden ui-widget-content ui-corner-all">
     </section>
 </tmpl_if>
+
+<aside id="intro" class="info">
+    <p><a class="bold" href="http://genomevolution.org/wiki/index.php/SynMap" target="_blank">SynMap</a> generates a syntenic dotplot between
+    two organisms and identify syntenic regions.
+	    <span class="link" onClick="$(this).remove(); $('#getting_started').fadeIn();">More...</span>
+    </p>
+    
+    <div id="getting_started" class="hidden">
+	    <ol>
+	    	<li>Finds putative genes or regions of homology between two genomes
+	    	<li>Identies collinear sets of genes or regions of sequence similarity to infer synteny
+	    	<li>Generates a dotplot of the results and coloring syntenic pairs.
+	    </ol>
+    	
+	    	If you choose, synonymous and non-synonymous site mutation data can be calculated for protein coding genes that are identified as syntenic. These genes will then be colored based on those values in the dotplot for rapid identification of different age-classes of syntenic regions.
+    	
+        <p>
+            <a href="http://www.genomevolution.org/r/btab" target="_blank">
+                Click here for an example analysis between
+                <em>Arabidopsis thaliana</em> and <em>Arabidopsis lyrata</em>.
+            </a>
+        </p>
+        <p>
+            <a href="http://genomevolution.org/wiki/index.php/Syntenic_comparison_of_Arabidopsis_thaliana_and_Arabidopsis_lyrata" target="_blank">
+                Click here for an explanation of the results.
+            </a>
+        </p>
+    </div>
+</aside>
 
 <section id="tabs" class="invisible" style="margin-top: 0.5em; min-width: 645px;">
     <ul>
@@ -430,15 +409,6 @@ $(document).ready(function(){
         cache: false
     });
 
-    var items = location.href.split('?');
-    var link = $('#beta_link').attr('href').split('?');
-
-    if (items.length > 1  && link.length < 2) {
-        $('#beta_link').each(function() {
-            this.href += "?" + items[1];
-        });
-    }
-
     $(".dialog_box").dialog({
         autoOpen: false,
         width: 500,
@@ -482,28 +452,9 @@ $(document).ready(function(){
     pageObj.fid2 = "<tmpl_var name=fid2>";
     pageObj.tempdir="<tmpl_var name=tempdir>";
 
-    var autogo = "<tmpl_var name=autogo>";
-    if (autogo==1) {
-        var overlay = $("#overlay").show();
-
-        $.ajax({
-            type: 'GET',
-            data: get_params("get_results"),
-            dataType: "json",
-            success: function(data) {
-                if (!data.error) {
-                    $("#synmap_zoom_box").draggable();
-                    $('#results').html(data.html).slideDown();
-                } else {
-                    run_synmap(autogo);
-                }
-
-                overlay.hide();
-            },
-            error: run_synmap.bind(autogo)
-        });
-
-
+    var autogo = parseInt("<tmpl_var name=autogo>");
+    if (autogo === 1) {
+        run_synmap(autogo);
     }
 
     $("#tabs").removeClass("invisible");

@@ -379,8 +379,11 @@ sub load_annotation {
 	# print STDERR "load_annotation: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
     return encode_json({ error => "No data items" }) unless $items;
     $items = decode_json($items);
+    #print STDERR Dumper $items;
 
-    #	print STDERR Dumper $items;
+    # mdb added issue 309 - workaround here because checking perms in search_genomes() is too slow
+    return encode_json({ error => "You do not have permission to modify this genome" })
+        unless ($USER->is_owner_editor( dsg => $gid ));
 
     if ( !$user_name || !$USER->is_admin ) {
         $user_name = $USER->user_name;
@@ -544,11 +547,11 @@ sub search_genomes {
 	# Combine matching genomes with matching organism genomes, preventing duplicates
     my %unique;
     map {
-        $unique{ $_->id } = $_ if ( $USER->has_access_to_genome($_) )
+        $unique{ $_->id } = $_ if ($USER->has_access_to_genome($_))
     } @genomes;
     foreach my $organism (@organisms) {
         map {
-            $unique{ $_->id } = $_ if ( $USER->has_access_to_genome($_) )
+            $unique{ $_->id } = $_ if ($USER->has_access_to_genome($_))
         } $organism->genomes;
     }
 

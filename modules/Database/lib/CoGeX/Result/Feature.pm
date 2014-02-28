@@ -598,6 +598,17 @@ sub annotation_pretty_print_html {
 			"<span class='data5 link' onclick =\"window.open('GenomeView.pl?gid=$gid&loc=$chr:$temp_start..$temp_stop')\">GenomeView</span>", # mdb added 11/18/13 issue 220, 254 - fix for jbrowse
 			"<span class='data5 link' onclick =\"window.open('SynFind.pl?fid=$fid')\">SynFind</span>",
 		);
+
+        my $P = $opts{P};
+        my $qteller = $P->{QTELLER_URL} if $P;
+
+        if ($qteller) {
+            my $html = qq{<a href="$qteller/bar_chart_coge.php?name=$fid"}
+            . qq{target="_blank" class="data5 link">qTeller</span>};
+
+            push @links, $html;
+        }
+
 		foreach my $item (@links) {
 			$anno_type->add_Annot($item);
 		}
@@ -1860,6 +1871,85 @@ sub fasta {
 		return $head, $seq if ($sep);
 	}
 	return $fasta;
+}
+
+sub fasta_object { # mdb added 2/28/14 for genfam
+    my $self = shift;
+    my %opts = @_;
+    my $col;
+    $col = $opts{col};
+    my $prot = $opts{protein} || $opts{prot};
+
+    #$col can be set to zero so we want to test for defined variable
+    $col = $opts{column} unless defined $col;
+    $col = $opts{wrap}   unless defined $col;
+    $col = 100           unless defined $col;
+    my $rc         = $opts{rc};
+    my $upstream   = $opts{upstream} || 0;
+    my $downstream = $opts{downstream} || 0;
+    my $gstid = $opts{gstid};
+    my $gst;
+    
+    my %obj;
+
+    if ($gstid) {
+        foreach my $dsg ( $self->dataset->genomes ) {
+            ($gst) = $dsg->type if $dsg->type->id == $gstid;
+        }
+    }
+    if ( !$gst ) {
+        ($gst) = $self->sequence_type();
+        $gstid = $gst->id if $gst;
+    }
+    my ($name) = $self->names;
+    
+    $obj{organism} = $self->dataset->organism->name . "(v" . $self->version
+        . ($gst ? ", " . $gst->name : '') . ")";
+    $obj{names} = $self->names;
+    $obj{type} = $self->type->name;
+    $obj{chromosome} = $self->chromosome;
+    $obj{location} = $self->genbank_location_string;
+    $obj{id} = $self->id;
+    
+    my ( $start, $stop ) = ( $self->start, $self->stop );
+    if ($rc) {
+        $start -= $downstream;
+        $stop += $upstream;
+    }
+    else {
+        $start -= $upstream;
+        $stop += $downstream;
+    }
+
+    my $seq;
+    $Text::Wrap::columns = $col;
+    my $fasta;
+    if ($prot) {
+        $seq = $self->genomic_sequence(
+            upstream   => $upstream,
+            downstream => $downstream,
+            gstid      => $gstid
+          )
+          if $upstream || $downstream;
+        foreach
+          my $seq ( $self->protein_sequence( gstid => $gstid, seq => $seq ) )
+        {
+            $seq = join( "\n", wrap( "", "", $seq ) ) if $col;
+        }
+    }
+    else {
+        $seq = $self->genomic_sequence(
+            upstream   => $upstream,
+            downstream => $downstream,
+            gstid      => $gstid
+        );
+        $seq = $self->reverse_complement($seq) if $rc;
+        $seq = join( "\n", wrap( "", "", $seq ) ) if $col;
+    }
+    
+    $obj{sequence} = $seq;
+    
+    return \%obj;
 }
 
 ################################################ subroutine header begin ##
