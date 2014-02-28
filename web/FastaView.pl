@@ -67,8 +67,8 @@ elsif ( $FORM->param('text') ) {
     print gen_html();
 }
 else {
-    #print $pj->build_html( $FORM, \&gen_html );
-    print $FORM->header,gen_html();
+    print $pj->build_html( $FORM, \&gen_html );
+    #print $FORM->header,gen_html();
 }
 
 sub gen_html {
