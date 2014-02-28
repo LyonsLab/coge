@@ -371,7 +371,7 @@ sub has_access_to_dataset {
 sub is_owner {
 	my $self = shift;
 	my %opts = @_;
-	$opts{role} = 'owner';
+	$opts{role_id} = 2;#'owner';
 	return is_role($self, %opts);
 }
 
@@ -396,7 +396,7 @@ sub is_editor {
 	my $self = shift;
 	return unless $self->id; # ignore public user
 	my %opts = @_;
-	$opts{role} = 'editor';
+	$opts{role_id} = 3;#'editor';
 	return is_role($self, %opts);
 }
 
@@ -422,10 +422,10 @@ sub is_owner_editor {
 	return unless $self->id; # ignore public user
 	my %opts = @_;
 
-	$opts{role} = 'editor';
+	$opts{role_id} = 3; #'editor';
 	return 1 if (is_role($self, %opts));
 
-	$opts{role} = 'owner';
+	$opts{role_id} = 2; #'owner';
 	return is_role($self, %opts);
 }
 
@@ -450,7 +450,7 @@ sub is_reader {
 	my $self = shift;
 	return unless $self->id; # ignore public user
 	my %opts = @_;
-	$opts{role} = 'reader';
+	$opts{role_id} = 4;#'reader';
 	return is_role($self, %opts);
 }
 
@@ -478,7 +478,8 @@ sub is_role {
 	my $self = shift;
 	return 0 unless $self->id; # ignore public user
 	my %opts = @_;
-	my $role = $opts{role};
+	#my $role = $opts{role};       # mdb removed 2/28/14
+	my $role_id = $opts{role_id};  # mdb added 2/28/24
 	my $group = $opts{group};
 	my $dsg  = $opts{dsg}; #FIXME rename to 'genome'
 	my $ds   = $opts{ds};
@@ -487,30 +488,34 @@ sub is_role {
 	return 0 unless $self->id; # not logged in
 	return 0 unless $dsg || $ds || $list || $experiment || $group;
 
+    if ($dsg) { # genome
+        my $dsgid = $dsg =~ /^\d+$/ ? $dsg : $dsg->id;
+        my $conn = $self->child_connector(id=>$dsgid, type=>'genome');
+        #return 1 if ($conn && $conn->role->name =~ /$role/i); # mdb removed 2/28/14
+        return 1 if ($conn && $conn->role_id == $role_id); # mdb added 2/28/14 for performance
+    }
+
 	if ($group) {
 		my $ugid = $group =~ /^\d+$/ ? $group : $group->id;
 		foreach my $conn ($self->group_connectors({child_id => $ugid})) {
-			return 1 if ($conn->role->name =~ /$role/i);
+			#return 1 if ($conn->role->name =~ /$role/i); # mdb removed 2/28/14
+			return 1 if ($conn->role_id == $role_id); # mdb added 2/28/14 for performance
 		}
 	}
 
 	if ($list) {
 		my $lid = $list =~ /^\d+$/ ? $list : $list->id;
 		my $conn = $self->child_connector(id=>$lid, type=>'list');
-		return 1 if ($conn && $conn->role->name =~ /$role/i);
-	}
-
-	if ($dsg) { # genome
-		my $dsgid = $dsg =~ /^\d+$/ ? $dsg : $dsg->id;
-		my $conn = $self->child_connector(id=>$dsgid, type=>'genome');
-		return 1 if ($conn && $conn->role->name =~ /$role/i);
+		#return 1 if ($conn && $conn->role->name =~ /$role/i); # mdb removed 2/28/14
+		return 1 if ($conn && $conn->role_id == $role_id); # mdb added 2/28/14 for performance
 	}
 
 	if ($ds) { # dataset
 		my $dsid = $ds =~ /^\d+$/ ? $ds : $ds->id;
 		foreach my $conn ($self->all_child_connectors(type=>'genome')) {
 			foreach ($conn->child->datasets) {
-				return 1 if ($_->id == $dsid && $conn->role->name =~ /$role/i);
+				#return 1 if ($_->id == $dsid && $conn->role->name =~ /$role/i); # mdb removed 2/28/14
+				return 1 if ($_->id == $dsid && $conn->role_id == $role_id); # mdb added 2/28/14 for performance
 			}
 		}
 	}
@@ -518,7 +523,8 @@ sub is_role {
 	if ($experiment) {
 		my $eid = $experiment =~ /^\d+$/ ? $experiment : $experiment->id;
 		my $conn = $self->child_connector(id=>$eid, type=>'experiment');
-		return 1 if ($conn && $conn->role->name =~ /$role/i);
+		#return 1 if ($conn && $conn->role->name =~ /$role/i); # mdb removed 2/28/14
+		return 1 if ($conn && $conn->role_id == $role_id); # mdb added 2/28/14 for performance
 	}
 
 	return 0;
