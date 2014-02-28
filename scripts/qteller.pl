@@ -530,8 +530,8 @@ sub create_load_csv_job {
         script => undef,
         args => [
             ['-user_name', $user->name, 0],
-            ['-name', qq{"$name"}, 0],
-            ['-desc', qq{"Expression measurements"}, 0],
+            ['-name', qq{"$name (FPKM)"}, 0],
+            ['-desc', qq{"Transcript expression measurements"}, 0],
             ['-version', qq{"$version"}, 0],
             ['-restricted', $restricted, 0],
             ['-gid', $gid, 0],
@@ -565,7 +565,7 @@ sub create_load_bam_job {
         script => undef,
         args => [
             ['-user_name', $user->name, 0],
-            ['-name', qq{"$name"}, 0],
+            ['-name', qq{"$name (alignment)"}, 0],
             ['-desc', qq{"Mapped reads"}, 0],
             ['-version', qq{"$version"}, 0],
             ['-restricted', $restricted, 0],
@@ -600,7 +600,7 @@ sub create_load_bed_job {
         script => undef,
         args => [
             ['-user_name', $user->name, 0],
-            ['-name', qq{"$name"}, 0],
+            ['-name', qq{"$name (read depth)"}, 0],
             ['-desc', qq{"Read depth per position"}, 0],
             ['-version', qq{"$version"}, 0],
             ['-restricted', $restricted, 0],
