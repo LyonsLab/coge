@@ -744,6 +744,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
      * that they are turned on.
      */
     setTracksActive: function( /**Array[Object]*/ trackConfigs ) {
+        var browser = this.browser;
     	console.log('setTracksActive ');
         dojo.query( '.coge-tracklist-label', this.div )
 	        .forEach( function( labelNode, i ) {
@@ -753,7 +754,20 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	    				dojo.addClass(labelNode, 'selected');
 	        			if (dojo.hasClass(labelNode, 'coge-experiment')) {
 	        				var id = trackConfig.coge.id;
-	        				var color = getFeatureColor(id);
+                            var color;
+                            var style = trackConfig.style;
+                            var cookie = browser.cookie('track-' + trackConfig.track);
+
+                            if (cookie) {
+                                style = dojo.fromJson(cookie);
+                            }
+
+                            if (style.featureColor &&
+                                style.featureColor[id]) {
+	        				    color = style.featureColor[id];
+                            } else {
+	        				    color = getFeatureColor(id);
+                            }
 	        				dojo.style(labelNode, 'background', color);
 	        			}
 	        			else {

@@ -9,6 +9,7 @@ use HTML::Template;
 use Data::Dumper;
 use File::Basename;
 use Text::Wrap qw($columns &wrap);
+use JSON::XS;
 
 no warnings 'redefine';
 
@@ -67,7 +68,7 @@ elsif ( $FORM->param('text') ) {
 }
 else {
     print $pj->build_html( $FORM, \&gen_html );
-    #print $FORM->header,\&gen_html;
+    #print $FORM->header,gen_html();
 }
 
 sub gen_html {
@@ -110,6 +111,17 @@ sub gen_html {
         upstream   => $upstream,
         downstream => $downstream
     );
+    
+    my $json = get_json(
+        prot       => $prot,
+        fids       => \@fids,
+        textbox    => $textbox,
+        gstid      => $gstid,
+        name_only  => $name_only,
+        id_only    => $id_only,
+        upstream   => $upstream,
+        downstream => $downstream
+    );    
 
     if ($text) {
         return $seqs;
@@ -118,6 +130,7 @@ sub gen_html {
         BODY => gen_body(
             fids       => \@fids,
             seqs       => $seqs,
+            json       => $json,
             seq_count  => $seq_count,
             feat_count => $feat_count,
             gstid      => $gstid,
@@ -127,8 +140,6 @@ sub gen_html {
             message    => $warning,
         )
     );
-
-
 
     $html .= $template->output;
     return $html;
@@ -196,6 +207,47 @@ qq{<textarea id=seq_text name=seq_text class="ui-widget-content ui-corner-all ba
     return $seqs, $seq_count, $fid_count, $warning;
 }
 
+sub get_json { # mdb added 2/28/14 for genfam integration
+    my %opts       = @_;
+    my $fids       = $opts{fids};
+    my $prot       = $opts{prot};
+    my $gstid      = $opts{gstid};
+    my $upstream   = $opts{upstream};
+    my $downstream = $opts{downstream};
+    my @fids       = ref($fids) =~ /array/i ? @$fids : split( /,/, $fids );
+    my %seen       = ();
+    @fids = grep { !$seen{$_}++ } @fids;
+
+    my @obj;
+    foreach my $item (@fids) {
+        foreach my $featid ( split( /,/, $item ) ) {
+            my ( $fid, $gstidt );
+            if ( $featid =~ /_/ ) {
+                ( $fid, $gstidt ) = split /_/, $featid;
+            }
+            else {
+                ( $fid, $gstidt ) = ( $featid, $gstid );
+            }
+            my ($feat) = $coge->resultset('Feature')->find($fid);
+            next unless ($feat);
+            
+            my ($dsg) = $feat->dataset->genomes;
+            next if ( !$USER->has_access_to_genome($dsg) );
+            
+            my $tmp = $feat->fasta_object(
+                col        => 100,
+                prot       => $prot,
+                gstid      => $gstidt,
+                upstream   => $upstream,
+                downstream => $downstream
+            );
+            push @obj, $tmp;
+        }
+    }
+      
+    return encode_json({fasta => \@obj});  
+}
+
 sub gen_file {
     my %opts       = @_;
     my $fids       = $opts{fids};
@@ -206,7 +258,7 @@ sub gen_file {
     my $gstid      = $opts{gstid};
     my $upstream   = $opts{upstream};
     my $downstream = $opts{downstream};
-    my @fids       = ref($fids) =~ /array/i ? @$fids : split /,/, $fids;
+    my @fids       = ref($fids) =~ /array/i ? @$fids : split(/,/, $fids);
 
     my ($seqs)     = get_seqs(
         prot       => $prot,
@@ -231,6 +283,7 @@ sub gen_file {
 sub gen_body {
     my %opts       = @_;
     my $seqs       = $opts{seqs};
+    my $json       = $opts{json};
     my $seq_count  = $opts{seq_count};
     my $feat_count = $opts{feat_count};
     my $message    = $opts{message};
@@ -244,6 +297,7 @@ sub gen_body {
       HTML::Template->new( filename => $P->{TMPLDIR} . 'FastaView.tmpl' );
     $template->param( BOTTOM_BUTTONS => 1 );
     $template->param( SEQ            => $seqs ) if $seqs;
+    $template->param( FASTA_JSON     => $json ) if $json;
     $template->param( SEQ_COUNT      => $seq_count ) if defined $seq_count;
     $template->param( FEAT_COUNT     => $feat_count ) if defined $feat_count;
     $template->param( WARNING        => $message ) if defined $message;

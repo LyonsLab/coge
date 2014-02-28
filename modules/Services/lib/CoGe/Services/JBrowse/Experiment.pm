@@ -303,26 +303,59 @@ sub features {
         elsif ( $data_type == $DATA_TYPE_ALIGN ) {
 	        my $cmdOut = CoGe::Accessory::Storage::get_experiment_data(
 	            eid   => $eid,
-	            data_type  => $exp->data_type,
+	            data_type => $exp->data_type,
 	            chr   => $chr,
 	            start => $start,
 	            end   => $end
 	        );
 	        
 	        # Convert SAMTools output into JSON
-	        foreach (@$cmdOut) {
-	        	chomp;
-	        	my ($qname, $flag, $rname, $pos, $mapq, $cigar, undef, undef, undef, $seq, $qual, $tags) = split(/\t/);
-	        	
-	        	my $len = length($seq);
-	        	my $start = $pos;
-	        	my $end = $pos + $len;
-	        	my $strand = ($flag & 0x10 ? '-1' : '1');
-	        	#TODO reverse complement sequence if neg strand?
-	        	my $qual = join(' ', map { $_ - $QUAL_ENCODING_OFFSET } unpack("C*", $qual));
-	        	
-	        	$results .= ( $results ? ',' : '' )
-                  . qq{{ "uniqueID": "$qname", "name": "$qname", "start": $start, "end": $end, "strand": $strand, "score": $mapq, "seq": "$seq", "qual": "$qual", "Seq length": $len, "CIGAR": "$cigar" }};
+	        if ($nid) { # return read count if being displayed in a notebook
+	           # Bin the read counts by position
+                my %bins;
+                foreach (@$cmdOut) {
+                    chomp;
+                    my (undef, undef, undef, $pos, $mapq, undef, undef, undef, undef, $seq) = split(/\t/);
+                    for (my $i = $pos; $i < $pos+length($seq); $i++) {
+                        $bins{$i}++;
+                    }
+                }
+                # Convert to intervals
+                my ($start, $stop, $lastCount);
+                foreach my $pos (sort {$a <=> $b} keys %bins) {
+                    my $count = $bins{$pos};
+                    if (!defined $start || ($pos-$stop > 1) || $lastCount != $count) {
+                        if (defined $start) {
+                            $stop++;
+                            $results .= ( $results ? ',' : '' )
+                                . qq{{ "id": $eid, "start": $start, "end": $stop, "score": $lastCount }};
+                        }
+                        $start = $pos;
+                    }
+                    $lastCount = $count;
+                    $stop = $pos;
+               }
+               if (defined $start and $start != $stop) { # do last interval
+                    $stop++;
+                    $results .= ( $results ? ',' : '' )
+                        . qq{{ "id": $eid, "start": $start, "end": $stop, "score": $lastCount }};
+                }
+	        }
+	        else { # else return list reads with qual and seq
+    	        foreach (@$cmdOut) {
+    	        	chomp;
+    	        	my ($qname, $flag, $rname, $pos, $mapq, $cigar, undef, undef, undef, $seq, $qual, $tags) = split(/\t/);
+    	        	
+    	        	my $len = length($seq);
+    	        	my $start = $pos;
+    	        	my $end = $pos + $len;
+    	        	my $strand = ($flag & 0x10 ? '-1' : '1');
+    	        	#TODO reverse complement sequence if neg strand?
+    	        	my $qual = join(' ', map { $_ - $QUAL_ENCODING_OFFSET } unpack("C*", $qual));
+    	        	
+    	        	$results .= ( $results ? ',' : '' )
+                      . qq{{ "uniqueID": "$qname", "name": "$qname", "start": $start, "end": $end, "strand": $strand, "score": $mapq, "seq": "$seq", "qual": "$qual", "Seq length": $len, "CIGAR": "$cigar" }};
+    	        }
 	        }
         }
         else {

@@ -1823,7 +1823,7 @@ sub get_annotations {
             $html .= '<td style="padding-left:5px;">';
             $html .= linkify( $a->link, 'Link' ) if $a->link;
             $html .= '</td>';
-            if ($user_can_edit) {
+            if ($user_can_edit  && !$a->locked) {
                 my $aid = $a->id;
                 $html .=
                     '<td style="padding-left:20px;white-space:nowrap;">'
