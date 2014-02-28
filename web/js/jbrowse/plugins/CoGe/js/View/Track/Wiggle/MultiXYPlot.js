@@ -523,6 +523,9 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 
                                     // Repaint track
                                     track.changed();
+
+                                    //FIXME TrackList should update itself
+                                    track.browser.publish('/jbrowse/v1/c/tracks/show', [track.config]);
                                     }
                                 }
                             });
