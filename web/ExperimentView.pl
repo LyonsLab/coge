@@ -670,14 +670,14 @@ sub gen_body {
     $template->param(
         MAIN                   => 1,
         PAGE_NAME              => $PAGE_TITLE . '.pl',
-        EXPERIMENT_INFO        => get_experiment_info( eid => $eid ),
-        EXPERIMENT_ANNOTATIONS => get_annotations( eid => $eid ),
         EID                    => $eid,
         DEFAULT_TYPE           => 'note',
         rows                   => commify($exp->row_count),
         IRODS_HOME             => get_irods_path(),
         link                   => "GenomeView.pl?gid=$gid&tracks=experiment$eid"
     );
+    $template->param( EXPERIMENT_INFO => get_experiment_info( eid => $eid ) || undef );
+    $template->param( EXPERIMENT_ANNOTATIONS => get_annotations( eid => $eid ) || undef );
 
     return $template->output;
 }
