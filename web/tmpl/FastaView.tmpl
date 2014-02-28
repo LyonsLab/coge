@@ -116,7 +116,9 @@ var url = "http://sswap.iplantcollaborative.org/ipc/create-pipeline-with-rrg";
 }
 
 function post_to_genfam() {
-    var form = $("<form></form>");
+	// TODO: get json via ajax class instead of always inserting it into fasta_json div
+	
+	var form = $("<form></form>");
     form.attr("method", "post");
     form.attr("action", "<tmpl_var name=genfam>");
     form.attr("target", "_blank");
