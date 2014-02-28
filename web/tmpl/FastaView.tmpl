@@ -120,7 +120,7 @@ function post_to_genfam() {
     form.attr("method", "post");
     form.attr("action", "<tmpl_var name=genfam>");
     form.attr("target", "_blank");
-    form.append($("#seq_text").clone());
+    form.append($("#fasta_json").clone());
 
     $(document.body).append(form);
     form.submit();
@@ -229,10 +229,6 @@ function post_to_phylogeny_fr () {
 
 <div id="pipelineButton"></div>
 
-
-
-
-
     <td> Send sequence(s) to the <a href = "http://sswap.info/wiki" target =_sswap>iPlant/SSWAP</a> semantic discovery service
     <tr align=top>
     <td><span onClick="post_to_target();" class='ui-button ui-corner-all'>TARGeT</span>
@@ -253,6 +249,8 @@ function post_to_phylogeny_fr () {
    </div>
  </DIV>
 
+<div id="fasta_json" class="hidden"><TMPL_VAR NAME=FASTA_JSON></div> 
+ 
 </TMPL_IF>
 
 
