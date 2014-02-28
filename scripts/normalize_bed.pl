@@ -14,7 +14,7 @@ open(my $fh, $filename);
 # Determine max score
 my $maxScore = 0;
 while (<$fh>) {
-    my @col = split("\t", $_);
+    my @col = split("\t");
     my $score = normalize($col[4]);
     $maxScore = $score if ($score > $maxScore);
 }
@@ -22,11 +22,13 @@ while (<$fh>) {
 # Generate normalized output
 seek($fh, 0, 0);
 while (<$fh>) {
-    my @col = split("\t", $_);
+    chomp;
+    my @col = split("\t");
     if ($maxScore > 0) {
+        push @col, $col[4]; # copy original score value into column 7 - this is not standard BED format
         $col[4] = normalize($col[4]) / $maxScore;
     }
-    print join("\t", @col);
+    print join("\t", @col), "\n";
 }
 
 close($fh);

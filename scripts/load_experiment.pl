@@ -469,6 +469,7 @@ sub validate_quant_data_file {
         	next if ( $line =~ /^track/ );
         	@tok = split( /\s+/, $line );
         	( $chr, $start, $stop, undef, $val1, $strand ) = @tok;
+        	$val2 = $tok[6] if (@tok >= 7);
         }
         else {
         	die; # sanity check
