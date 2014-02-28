@@ -1873,6 +1873,85 @@ sub fasta {
 	return $fasta;
 }
 
+sub fasta_object { # mdb added 2/28/14 for genfam
+    my $self = shift;
+    my %opts = @_;
+    my $col;
+    $col = $opts{col};
+    my $prot = $opts{protein} || $opts{prot};
+
+    #$col can be set to zero so we want to test for defined variable
+    $col = $opts{column} unless defined $col;
+    $col = $opts{wrap}   unless defined $col;
+    $col = 100           unless defined $col;
+    my $rc         = $opts{rc};
+    my $upstream   = $opts{upstream} || 0;
+    my $downstream = $opts{downstream} || 0;
+    my $gstid = $opts{gstid};
+    my $gst;
+    
+    my %obj;
+
+    if ($gstid) {
+        foreach my $dsg ( $self->dataset->genomes ) {
+            ($gst) = $dsg->type if $dsg->type->id == $gstid;
+        }
+    }
+    if ( !$gst ) {
+        ($gst) = $self->sequence_type();
+        $gstid = $gst->id if $gst;
+    }
+    my ($name) = $self->names;
+    
+    $obj{organism} = $self->dataset->organism->name . "(v" . $self->version
+        . ($gst ? ", " . $gst->name : '') . ")";
+    $obj{names} = $self->names;
+    $obj{type} = $self->type->name;
+    $obj{chromosome} = $self->chromosome;
+    $obj{location} = $self->genbank_location_string;
+    $obj{id} = $self->id;
+    
+    my ( $start, $stop ) = ( $self->start, $self->stop );
+    if ($rc) {
+        $start -= $downstream;
+        $stop += $upstream;
+    }
+    else {
+        $start -= $upstream;
+        $stop += $downstream;
+    }
+
+    my $seq;
+    $Text::Wrap::columns = $col;
+    my $fasta;
+    if ($prot) {
+        $seq = $self->genomic_sequence(
+            upstream   => $upstream,
+            downstream => $downstream,
+            gstid      => $gstid
+          )
+          if $upstream || $downstream;
+        foreach
+          my $seq ( $self->protein_sequence( gstid => $gstid, seq => $seq ) )
+        {
+            $seq = join( "\n", wrap( "", "", $seq ) ) if $col;
+        }
+    }
+    else {
+        $seq = $self->genomic_sequence(
+            upstream   => $upstream,
+            downstream => $downstream,
+            gstid      => $gstid
+        );
+        $seq = $self->reverse_complement($seq) if $rc;
+        $seq = join( "\n", wrap( "", "", $seq ) ) if $col;
+    }
+    
+    $obj{sequence} = $seq;
+    
+    return \%obj;
+}
+
 ################################################ subroutine header begin ##
 
 =head2 sequence_type
