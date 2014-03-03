@@ -43,8 +43,8 @@ BEGIN {
     $VERSION = 0.1;
     @ISA     = qw (Exporter);
     @EXPORT =
-      qw( get_tiered_path get_genome_file index_genome_file get_genome_seq
-      get_experiment_path get_experiment_files get_experiment_data
+      qw( get_tiered_path get_genome_file index_genome_file get_genome_seq 
+      get_genome_path get_experiment_path get_experiment_files get_experiment_data
       reverse_complement);
 
     # Experiment Data Types
@@ -97,7 +97,7 @@ sub get_genome_path {
     return unless $gid;
 
     my $seqdir = CoGe::Accessory::Web::get_defaults()->{'SEQDIR'};
-    unless ($expdir) {
+    unless ($seqdir) {
         print STDERR "Storage::get_genome_path: WARNING, conf file parameter SEQDIR is blank!\n";
     }
 
