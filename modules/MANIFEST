@@ -5,6 +5,7 @@ Accessory/lib/CoGe/Accessory/LogUser.pm
 Accessory/lib/CoGe/Accessory/GBlite.pm
 Accessory/lib/CoGe/Accessory/Storage.pm
 Accessory/lib/CoGe/Accessory/Utils.pm
+Accessory/lib/CoGe/Accessory/TDS.pm
 Accessory/lib/CoGe/Accessory/Web.pm
 Accessory/lib/CoGe/Accessory/IRODS.pm
 Accessory/lib/CoGe/Accessory/Workflow.pm
