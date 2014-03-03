@@ -35,7 +35,7 @@ BEGIN {
     require Exporter;
 
     $VERSION = 0.1;
-    $MAX_DOCUMENT_SZ = 1024*1024; # 1M
+    $MAX_DOCUMENT_SZ = 1024*1024*1024; # 1G
     @ISA     = qw( Exporter );
     @EXPORT  = qw( read write );
 }
