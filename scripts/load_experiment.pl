@@ -417,7 +417,7 @@ sub detect_data_type {
         ($filetype) = lc($filepath) =~ /\.([^\.]+)$/;
     }
     
-    if ( grep { $_ eq $filetype } ('csv', 'tsv', 'bed') ) { #TODO add 'bigbed', 'wig', 'bigwig', 'gff', 'gtf'
+    if ( grep { $_ eq $filetype } ('csv', 'tsv', 'bed', 'gff', 'gtf') ) { #TODO add 'bigbed', 'wig', 'bigwig'
         print $log "log: Detected a quantitative file ($filetype)\n";
         return ($filetype, $DATA_TYPE_QUANT);
     }
@@ -451,8 +451,9 @@ sub validate_quant_data_file {
     open( my $out, ">$outfile" );
     while ( my $line = <$in> ) {
         $line_num++;
-        next if ( $line =~ /^\s*#/ );
+        next if ( $line =~ /^\s*#/ ); # skip comments
         chomp $line;
+        next unless $line; # skip blanks
         
         # Interpret tokens according to file type
         my @tok;
@@ -470,6 +471,10 @@ sub validate_quant_data_file {
         	@tok = split( /\s+/, $line );
         	( $chr, $start, $stop, undef, $val1, $strand ) = @tok;
         	$val2 = $tok[6] if (@tok >= 7);
+        }
+        elsif ($filetype eq 'gff' or $filetype eq 'gtf') {
+            @tok = split( /\t/, $line );
+            ( $chr, undef, undef, $start, $stop, $val1, $strand ) = @tok;
         }
         else {
         	die; # sanity check
