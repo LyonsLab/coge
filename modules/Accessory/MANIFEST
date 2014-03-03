@@ -9,6 +9,7 @@ lib/CoGe/Accessory/LogUser.pm
 lib/CoGe/Accessory/GBlite.pm
 lib/CoGe/Accessory/Storage.pm
 lib/CoGe/Accessory/Utils.pm
+lib/CoGe/Accessory/TDS.pm
 lib/CoGe/Accessory/Web.pm
 lib/CoGe/Accessory/IRODS.pm
 lib/CoGe/Accessory/Workflow.pm
