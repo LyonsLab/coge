@@ -1458,7 +1458,7 @@ sub get_experiments {
     }
 
     my @experiments = $genome->experiments;
-    return '<span class="note">There a no experiments for this genome.</span>' unless @experiments;
+    return '<span class="padded note">There a no experiments for this genome.</span>' unless @experiments;
 
     my @rows;
     foreach my $exp ( sort experimentcmp @experiments ) {
