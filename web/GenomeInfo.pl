@@ -79,7 +79,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     get_genome_info_details    => \&get_genome_info_details,
     get_features               => \&get_feature_counts,
     gen_data                   => \&gen_data,
-    get_gc_for_chromosome      => \&get_gc_for_chromosome,
+    get_gc_for_genome          => \&get_gc_for_genome,
     get_gc_for_noncoding       => \&get_gc_for_noncoding,
     get_gc_for_feature_type    => \&get_gc_for_feature_type,
     get_chr_length_hist        => \&get_chr_length_hist,
@@ -134,11 +134,11 @@ qq{<tr><td class="title5">Sequence type:<td class="data5" title="gstid$gstid">}
       . commify($total_length)
       . " bp </div>";
     my $gc = $total_length < 10000000
-      && $chr_num < 20 ? get_gc_for_chromosome( dsgid => $dsgid ) : 0;
+      && $chr_num < 20 ? get_gc_for_genome( dsgid => $dsgid ) : 0;
     $gc =
         $gc
       ? $gc :
-      qq{  <div style="float: left; text-indent: 1em;" id="dsg_gc" class="link" onclick="get_gc_content('#dsg_gc', 'get_gc_for_chromosome');">%GC</div><br/>};
+      qq{  <div style="float: left; text-indent: 1em;" id="dsg_gc" class="link" onclick="get_gc_content('#dsg_gc', 'get_gc_for_genome');">%GC</div><br/>};
     $html .= "$gc</td></tr>";
 
     # Non-coding Sequence
@@ -683,7 +683,7 @@ sub export_features {
     return encode_json(\%json);
 }
 
-sub get_gc_for_chromosome {
+sub get_gc_for_genome {
     my %opts  = @_;
     my $dsid  = $opts{dsid};
     my $chr   = $opts{chr};
