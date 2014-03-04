@@ -8,7 +8,8 @@ use CoGe::Accessory::Utils;
 use CoGe::Accessory::IRODS;
 use CoGe::Core::Genome qw(get_wobble_histogram get_noncoding_gc_stats
     get_wobble_gc_diff_histogram get_feature_type_gc_histogram
-    get_gc_stats);
+    get_gc_stats has_statistic);
+
 use HTML::Template;
 use JSON::XS;
 use Sort::Versions;
@@ -134,18 +135,31 @@ qq{<tr><td class="title5">Sequence type:<td class="data5" title="gstid$gstid">}
         qq{<td class="data5"><div style="float: left;"> }
       . commify($total_length)
       . " bp </div>";
-    my $gc = $total_length < 10000000
-      && $chr_num < 20 ? get_gc_for_genome( dsgid => $dsgid ) : 0;
+
+    my $gc = (has_statistic($dsg, "gc") or ($total_length < 10000000
+      && $chr_num < 20)) ? get_gc_for_genome( dsgid => $dsgid ) : 0;
     $gc =
         $gc
       ? $gc :
       qq{  <div style="float: left; text-indent: 1em;" id="dsg_gc" class="link" onclick="get_gc_content('#dsg_gc', 'get_gc_for_genome');">%GC</div><br/>};
     $html .= "$gc</td></tr>";
 
-    # Non-coding Sequence
-    $html .= qq{
-<tr><td class="title5">Noncoding sequence:<td><span id=dsg_noncoding_gc class="link small" onclick="get_gc_content('#dsg_noncoding_gc', 'get_gc_for_noncoding');">%GC</div></td></tr>
-} if $total_length;
+    my $noncoding = (has_statistic($dsg, "noncoding_gc") and $total_length)
+        ? get_gc_for_noncoding(dsgid => $dsgid) : 0;
+
+    if ($noncoding) {
+        # Non-coding Sequence
+        $html .= qq{
+        <tr><td class="title5">Noncoding sequence:<td class="data5">$noncoding</td></tr>
+        } if $total_length;
+
+    } else {
+        # Non-coding Sequence
+        $html .= qq{
+    <tr><td class="title5">Noncoding sequence:<td><span id=dsg_noncoding_gc class="link small" onclick="get_gc_content('#dsg_noncoding_gc', 'get_gc_for_noncoding');">%GC</div></td></tr>
+    } if $total_length;
+    }
+
 
 #temporarily removed until this is connected correctly for individual users
 #    $html .= qq{&nbsp|&nbsp};
