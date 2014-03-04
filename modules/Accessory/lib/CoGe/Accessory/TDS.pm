@@ -28,6 +28,8 @@ LICENSE file included with this module.
 use strict;
 use warnings;
 
+use File::Basename qw(dirname);
+use File::Path qw(mkpath);
 use JSON::XS;
 
 BEGIN {
@@ -55,11 +57,12 @@ sub read {
 
 sub write {
     my ($filepath, $pData) = @_;
+    mkpath(dirname($filepath), 0, 0777);
 
     my $json = encode_json($pData);
     return if (length($json) > $MAX_DOCUMENT_SZ);
 
-    open($fh, "+< $filepath") || return;
+    open(my $fh, ">", $filepath) || return;
     flock($fh, 2); # exclusive lock
     seek($fh, 0, 0); truncate(MYFILE, 0); # clear file
     print $fh $json;
