@@ -311,51 +311,55 @@ sub get_annotations {
     }
     return unless ( $num_annot or $user_can_edit );
 
-    my $html =
-'<table id="list_annotation_table" class="ui-widget-content ui-corner-all small" style="max-width:400px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
-    foreach my $group ( sort keys %groups ) {
-        my $first = 1;
-        foreach my $a ( sort { $a->id <=> $b->id } @{ $groups{$group} } ) {
-            $html .= "<tr style='vertical-align:top;'>"
-              . (
-                $first-- > 0
-                ? "<th align='right' class='title5' rowspan='"
-                  . @{ $groups{$group} }
-                  . "' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;'>$group:</th>"
-                : ''
-              );
-
-            $html .= "<td>";
-            my $image_link =
-              ( $a->image ? 'image.pl?id=' . $a->image->id : '' );
-            my $image_info = (
-                $a->image
-                ? "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='padding:1px;border:1px solid lightgray;vertical-align:text-top;'></a>"
-                : ''
-            );
-            $html .= $image_info if $image_info;
-            $html .= "</td>";
-
-            $html .= "<td class='data5'>" . $a->info . "</td>";
-            $html .= "<td style='padding-left:5px;'>";
-            $html .= linkify( $a->link, "Link" ) if $a->link;
-            $html .= "</td>";
-            if ($user_can_edit  && !$a->locked) {
-                my $aid = $a->id;
-                $html .=
-                    '<td style="padding-left:20px;white-space:nowrap;">'
-                  . "<span onClick=\"edit_annotation_dialog($aid);\" class='link ui-icon ui-icon-gear'></span>"
-                  . "<span onClick=\"\$(this).fadeOut(); remove_annotation($aid);\" class='link ui-icon ui-icon-trash'></span>"
-                  . '</td>';
+    my $html;
+    if ($num_annot) {
+        $html .= '<table id="list_annotation_table" class="ui-widget-content ui-corner-all small" style="max-width:400px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
+        foreach my $group ( sort keys %groups ) {
+            my $first = 1;
+            foreach my $a ( sort { $a->id <=> $b->id } @{ $groups{$group} } ) {
+                $html .= "<tr style='vertical-align:top;'>"
+                  . (
+                    $first-- > 0
+                    ? "<th align='right' class='title5' rowspan='"
+                      . @{ $groups{$group} }
+                      . "' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;'>$group:</th>"
+                    : ''
+                  );
+    
+                $html .= "<td>";
+                my $image_link =
+                  ( $a->image ? 'image.pl?id=' . $a->image->id : '' );
+                my $image_info = (
+                    $a->image
+                    ? "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='padding:1px;border:1px solid lightgray;vertical-align:text-top;'></a>"
+                    : ''
+                );
+                $html .= $image_info if $image_info;
+                $html .= "</td>";
+    
+                $html .= "<td class='data5'>" . $a->info . "</td>";
+                $html .= "<td style='padding-left:5px;'>";
+                $html .= linkify( $a->link, "Link" ) if $a->link;
+                $html .= "</td>";
+                if ($user_can_edit  && !$a->locked) {
+                    my $aid = $a->id;
+                    $html .=
+                        '<td style="padding-left:20px;white-space:nowrap;">'
+                      . "<span onClick=\"edit_annotation_dialog($aid);\" class='link ui-icon ui-icon-gear'></span>"
+                      . "<span onClick=\"\$(this).fadeOut(); remove_annotation($aid);\" class='link ui-icon ui-icon-trash'></span>"
+                      . '</td>';
+                }
+                $html .= '</tr>';
             }
-            $html .= '</tr>';
         }
+        $html .= '</tbody></table>';
     }
-    $html .= '</tbody></table>';
+    elsif ($user_can_edit) {
+        $html .= '<table class="ui-widget-content ui-corner-all small padded note"><tr><td>There a no additional metadata items for this notebook.</tr></td></table>';
+    }
 
     if ($user_can_edit) {
-        $html .=
-qq{<span onClick="add_annotation_dialog();" style="font-size: .75em" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add Annotation</span>};
+        $html .= qq{<span onClick="add_annotation_dialog();" style="font-size: .75em" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>};
     }
 
     return $html;
@@ -563,128 +567,116 @@ sub get_list_contents {
     my $html;
     my $num_items = 0;
     my $first     = 1;
-    $html =
-'<table id="list_contents_table" class="small ui-widget-content ui-corner-all" style="border-spacing:0;border-collapse:collapse;">'
-      ;    #<thead style="display:none;"></thead><tbody>';
-
-    my $genome_count = $list->genomes( count => 1 )
-      ; #EL: moved outside of loop; massive speed improvement due to cost of this call
-
-    #	my $delete_count=0;
-    foreach my $genome ( sort genomecmp $list->genomes ) {
-        $html .= "<tr valign='top'>"
-          . (
-            $first-- > 0
-            ? "<th align='right' class='title5' rowspan='$genome_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Genomes ($genome_count):</th>"
-            : ''
-          );
-
-        #		if ($genome->deleted) {
-        #		    $delete_count++;
-        #		    next;
-        #		}
-
-        my $gid = $genome->id;
-        $html .=
-qq{<td class='data5'><span id='genome$gid' class='link' onclick="window.open('GenomeInfo.pl?gid=$gid')">}
-          . $genome->info
-          . "</span></td>";
-        if ($user_can_edit) {
-            $html .=
-"<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {item_type: '"
-              . $node_types->{genome}
-              . "', item_id: '$gid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
-        }
-        $html .= '</tr>';
-        $num_items++;
-    }
-
-#	if ($delete_count) {
-#	    $html .= "<tr valign='top'><th></th><td class='data5'><span>$delete_count genomes from this notebook are deleted</span></td>";
-#	    #TODO add functionality that clicking on the "X" will remove the deleted items from the notebook
-#	    $html .= '</tr>';
-#	}
-
-    $first = 1;
-    my $exp_count = $list->experiments( count => 1 )
-      ;    #EL: moved outside of loop; massive speed improvement
-    foreach my $experiment ( sort experimentcmp $list->experiments ) {
-        $html .= "<tr valign='top'>"
-          . (
-            $first-- > 0
-            ? "<th align='right' class='title5' rowspan='$exp_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Experiments ($exp_count):</th>"
-            : ''
-          );
-        my $eid = $experiment->id;
-        $html .=
-qq{<td class='data5'><span id='experiment$eid' class='link' onclick="window.open('ExperimentView.pl?eid=$eid')">}
-          . $experiment->info
-          . "</span></td>";
-        if ($user_can_edit) {
-            $html .=
-"<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '"
-              . $node_types->{experiment}
-              . "', item_id: '$eid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
-        }
-        $html .= '</tr>';
-        $num_items++;
-    }
-
-    $first = 1;
-    my $feat_count = $list->features( count => 1 )
-      ;    #EL: moved outside of loop; massive speed improvement
-    foreach my $feature ( sort featurecmp $list->features ) {
-        $html .= "<tr valign='top'>"
-          . (
-            $first-- > 0
-            ? "<th align='right' class='title5' rowspan='$feat_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Features ($feat_count):</th>"
-            : ''
-          );
-        my $fid = $feature->id;
-        $html .=
-qq{<td class='data5'><span id='feature$fid' class='link' onclick="window.open('FeatView.pl?fid=$fid')">}
-          . $feature->info
-          . "</span></td>";
-        if ($user_can_edit) {
-            $html .=
-"<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '"
-              . $node_types->{feature}
-              . "', item_id: '$fid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
-        }
-        $html .= '</tr>';
-        $num_items++;
-    }
-
-    $first = 1;
+    
+    #EL: moved outside of loop; massive speed improvement
+    my $genome_count = $list->genomes( count => 1 );
+    my $exp_count = $list->experiments( count => 1 );
+    my $feat_count = $list->features( count => 1 ); 
     my $list_count = $list->lists( count => 1 );
-    foreach my $list ( sort listcmp $list->lists ) {
-        $html .= "<tr valign='top'>"
-          . (
-            $first-- > 0
-            ? "<th align='right' class='title5' rowspan='$list_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Notebooks ($list_count):</th>"
-            : ''
-          );
-        my $child_id = $list->id;
-        $html .=
-qq{<td class='data5'><span id='list$child_id' class='link' onclick="window.open('$PAGE_TITLE.pl?lid=$child_id')">}
-          . $list->info
-          . "</span></td>";
-        if ($user_can_edit) {
-            $html .=
-"<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '"
-              . $node_types->{list}
-              . "', item_id: '$child_id'});\" class='link ui-icon ui-icon-closethick'></span></td>";
+    
+    if ($genome_count or $exp_count or $feat_count or $list_count) {
+        $html = '<table id="list_contents_table" class="small ui-widget-content ui-corner-all" style="border-spacing:0;border-collapse:collapse;">';#<thead style="display:none;"></thead><tbody>';
+    
+        #my $delete_count=0;
+        foreach my $genome ( sort genomecmp $list->genomes ) {
+            $html .= "<tr valign='top'>"
+              . (
+                $first-- > 0
+                ? "<th align='right' class='title5' rowspan='$genome_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Genomes ($genome_count):</th>"
+                : ''
+              );
+    
+            #if ($genome->deleted) {
+            #    $delete_count++;
+            #    next;
+            #}
+    
+            my $gid = $genome->id;
+            $html .= qq{<td class='data5'><span id='genome$gid' class='link' onclick="window.open('GenomeInfo.pl?gid=$gid')">}
+              . $genome->info
+              . "</span></td>";
+            if ($user_can_edit) {
+                $html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {item_type: '"
+                  . $node_types->{genome}
+                  . "', item_id: '$gid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
+            }
+            $html .= '</tr>';
+            $num_items++;
         }
-        $html .= '</tr>';
-        $num_items++;
+    
+        #if ($delete_count) {
+        #    $html .= "<tr valign='top'><th></th><td class='data5'><span>$delete_count genomes from this notebook are deleted</span></td>";
+        #    #TODO add functionality that clicking on the "X" will remove the deleted items from the notebook
+        #    $html .= '</tr>';
+        #}
+    
+        $first = 1;
+        foreach my $experiment ( sort experimentcmp $list->experiments ) {
+            $html .= "<tr valign='top'>"
+              . (
+                $first-- > 0
+                ? "<th align='right' class='title5' rowspan='$exp_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Experiments ($exp_count):</th>"
+                : ''
+              );
+            my $eid = $experiment->id;
+            $html .= qq{<td class='data5'><span id='experiment$eid' class='link' onclick="window.open('ExperimentView.pl?eid=$eid')">}
+              . $experiment->info
+              . "</span></td>";
+            if ($user_can_edit) {
+                $html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '"
+                  . $node_types->{experiment}
+                  . "', item_id: '$eid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
+            }
+            $html .= '</tr>';
+            $num_items++;
+        }
+    
+        $first = 1;
+        foreach my $feature ( sort featurecmp $list->features ) {
+            $html .= "<tr valign='top'>"
+              . ( $first-- > 0
+                ? "<th align='right' class='title5' rowspan='$feat_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Features ($feat_count):</th>"
+                : '' );
+            my $fid = $feature->id;
+            $html .= qq{<td class='data5'><span id='feature$fid' class='link' onclick="window.open('FeatView.pl?fid=$fid')">}
+              . $feature->info
+              . "</span></td>";
+            if ($user_can_edit) {
+                $html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '"
+                  . $node_types->{feature}
+                  . "', item_id: '$fid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
+            }
+            $html .= '</tr>';
+            $num_items++;
+        }
+    
+        $first = 1;
+        foreach my $list ( sort listcmp $list->lists ) {
+            $html .= "<tr valign='top'>"
+              . ( $first-- > 0
+                ? "<th align='right' class='title5' rowspan='$list_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Notebooks ($list_count):</th>"
+                : '' );
+            my $child_id = $list->id;
+            $html .= qq{<td class='data5'><span id='list$child_id' class='link' onclick="window.open('$PAGE_TITLE.pl?lid=$child_id')">}
+              . $list->info
+              . "</span></td>";
+            if ($user_can_edit) {
+                $html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '"
+                  . $node_types->{list}
+                  . "', item_id: '$child_id'});\" class='link ui-icon ui-icon-closethick'></span></td>";
+            }
+            $html .= '</tr>';
+            $num_items++;
+        }
+    
+        $html .= '</table>';#'</tbody></table>';
     }
-
-    $html .= '</table>';    #'</tbody></table>';
+    else {
+        $html .= '<table class="ui-widget-content ui-corner-all small padded note"><tr><td>This notebook is empty.</tr></td></table>';
+    }
 
     if ($user_can_edit) {
-        $html .=
-qq{<span style="font-size: .75em" class='ui-button ui-button-icon-left ui-corner-all' onClick="add_list_items();"><span class="ui-icon ui-icon-plus"></span>Add Items</span>};
-
+        $html .= qq{<span style="font-size:.75em;" class='ui-button ui-button-icon-left ui-corner-all' onClick="add_list_items();"><span class="ui-icon ui-icon-plus"></span>Add</span>};
     }
 
     return unless ( $num_items or $user_can_edit );

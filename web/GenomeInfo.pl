@@ -156,10 +156,10 @@ qq{<tr><td class="title5">Sequence type:<td class="data5" title="gstid$gstid">}
           . $exp_count
           . "</span></td></tr>";
     }
-
     $html .= "</table>";
+    
     $html .= qq{<div class="left coge-table-header">Features</div>}
-          .  qq{<div id="genome_features" class="small padded link" onclick="get_features('#genome_features');" >Click for Features</div>};
+          .  qq{<div id="genome_features" style="margin-bottom: 5px;" class="small padded link ui-widget-content ui-corner-all" onclick="get_features('#genome_features');" >Click for Features</div>};
 
     return $html;
 }
@@ -1798,46 +1798,51 @@ sub get_annotations {
         push @{ $groups{$group} }, $a;
         $num_annot++;
     }
-    return unless ( $num_annot or $user_can_edit );
 
-    my $html = '<table id="genome_annotation_table" class="ui-widget-content ui-corner-all small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
-    foreach my $group ( sort keys %groups ) {
-        my $first = 1;
-        foreach my $a ( sort { $a->id <=> $b->id } @{ $groups{$group} } ) {
-            $html .= "<tr style='vertical-align:top;'>";
-            $html .= "<th align='right' class='title5' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;' rowspan="
-              . @{ $groups{$group} }
-              . ">$group:</th>"
-              if ( $first-- > 0 );
-            #$html .= '<td>';
-            my $image_link =
-              ( $a->image ? 'image.pl?id=' . $a->image->id : '' );
-            my $image_info = (
-                $a->image
-                ? "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='float:left;padding:1px;border:1px solid lightgray;margin-right:5px;'></a>"
-                : ''
-            );
-            #$html .= $image_info if $image_info;
-            #$html .= "</td>";
-            $html .= "<td class='data5'>" . $image_info . $a->info . '</td>';
-            $html .= '<td style="padding-left:5px;">';
-            $html .= linkify( $a->link, 'Link' ) if $a->link;
-            $html .= '</td>';
-            if ($user_can_edit  && !$a->locked) {
-                my $aid = $a->id;
-                $html .=
-                    '<td style="padding-left:20px;white-space:nowrap;">'
-                  . "<span onClick=\"edit_annotation_dialog($aid);\" class='link ui-icon ui-icon-gear'></span>"
-                  . "<span onClick=\"\$(this).fadeOut(); remove_annotation($aid);\" class='link ui-icon ui-icon-trash'></span>"
-                  . '</td>';
+    my $html;
+    if ($num_annot) {
+        $html .= '<table id="genome_annotation_table" class="ui-widget-content ui-corner-all small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
+        foreach my $group ( sort keys %groups ) {
+            my $first = 1;
+            foreach my $a ( sort { $a->id <=> $b->id } @{ $groups{$group} } ) {
+                $html .= "<tr style='vertical-align:top;'>";
+                $html .= "<th align='right' class='title5' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;' rowspan="
+                  . @{ $groups{$group} }
+                  . ">$group:</th>"
+                  if ( $first-- > 0 );
+                #$html .= '<td>';
+                my $image_link =
+                  ( $a->image ? 'image.pl?id=' . $a->image->id : '' );
+                my $image_info = (
+                    $a->image
+                    ? "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='float:left;padding:1px;border:1px solid lightgray;margin-right:5px;'></a>"
+                    : ''
+                );
+                #$html .= $image_info if $image_info;
+                #$html .= "</td>";
+                $html .= "<td class='data5'>" . $image_info . $a->info . '</td>';
+                $html .= '<td style="padding-left:5px;">';
+                $html .= linkify( $a->link, 'Link' ) if $a->link;
+                $html .= '</td>';
+                if ($user_can_edit  && !$a->locked) {
+                    my $aid = $a->id;
+                    $html .=
+                        '<td style="padding-left:20px;white-space:nowrap;">'
+                      . "<span onClick=\"edit_annotation_dialog($aid);\" class='link ui-icon ui-icon-gear'></span>"
+                      . "<span onClick=\"\$(this).fadeOut(); remove_annotation($aid);\" class='link ui-icon ui-icon-trash'></span>"
+                      . '</td>';
+                }
+                $html .= '</tr>';
             }
-            $html .= '</tr>';
         }
+        $html .= '</tbody></table>';
     }
-    $html .= '</tbody></table>';
+    elsif ($user_can_edit) {
+        $html .= '<table class="ui-widget-content ui-corner-all small padded note"><tr><td>There a no additional metadata items for this genome.</tr></td></table>';
+    }
 
     if ($user_can_edit) {
-        $html .= qq{<span onClick="add_annotation_dialog();" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add Annotation</span>};
+        $html .= qq{<span onClick="add_annotation_dialog();" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>};
     }
 
     return $html;
