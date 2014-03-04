@@ -1458,7 +1458,7 @@ sub get_experiments {
     }
 
     my @experiments = $genome->experiments;
-    return "" unless @experiments;
+    return '<span class="note">There a no experiments for this genome.</span>' unless @experiments;
 
     my @rows;
     foreach my $exp ( sort experimentcmp @experiments ) {
@@ -1467,16 +1467,11 @@ sub get_experiments {
 
         my $id = $exp->id;
         my %row;
-        $row{EXPERIMENT_INFO} =
-qq{<span class="link" onclick='window.open("ExperimentView.pl?eid=$id")'>}
-          . $exp->info
-          . "</span>";
-
+        $row{EXPERIMENT_INFO} = qq{<span class="link" onclick='window.open("ExperimentView.pl?eid=$id")'>} . $exp->info . "</span>";
         push @rows, \%row;
     }
 
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
         DO_EXPERIMENTS  => 1,
         EXPERIMENT_LOOP => \@rows
@@ -2392,13 +2387,13 @@ sub generate_body {
     $template->param(
         LOAD_ID         => $LOAD_ID,
         GID             => $gid,
-        GENOME_INFO     => get_genome_info( genome => $genome ),
-        GENOME_DATA     => get_genome_info_details( dsgid => $genome->id),
+        GENOME_INFO     => get_genome_info( genome => $genome ) || undef,
+        GENOME_DATA     => get_genome_info_details( dsgid => $genome->id) || undef,
         LOGON           => ( $USER->user_name ne "public" ),
         GENOME_ANNOTATIONS => get_annotations( gid => $gid ) || undef,
         DEFAULT_TYPE    => 'note', # default annotation type
-        EXPERIMENTS     => get_experiments( genome => $genome ),
-        DATASETS        => get_datasets( genome => $genome, exclude_seq => 1 ),
+        EXPERIMENTS     => get_experiments( genome => $genome ) || undef,
+        DATASETS        => get_datasets( genome => $genome, exclude_seq => 1 ) || undef,
         USER_CAN_EDIT   => $user_can_edit,
         USER_CAN_ADD    => $user_can_edit, #( !$genome->restricted or $user_can_edit ), # mdb removed 2/19/14, not sure why it ever existed
         USER_CAN_DELETE => $user_can_delete,
