@@ -6,6 +6,7 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils;
 use CoGe::Accessory::IRODS;
+use CoGe::Core::Genome qw(get_wobble_histogram);
 use HTML::Template;
 use JSON::XS;
 use Sort::Versions;
@@ -426,74 +427,27 @@ sub get_wobble_gc {
     my $max   = $opts{max};     #limit results with gc values smaller than $max;
     my $hist_type = $opts{hist_type};
     return "error" unless $dsid || $dsgid;
-    my $gc = 0;
-    my $at = 0;
-    my $n  = 0;
     my $search;
     $search = { "feature_type_id" => 3 };
     $search->{"me.chromosome"} = $chr if defined $chr;
-    my @data;
-    my @fids;
+
+    my $genome = $coge->resultset('Genome')->find($dsgid);
+    my $raw = get_wobble_histogram($genome);
+
     my @dsids;
-    push @dsids, $dsid if $dsid;
+    push @dsids, map { $_->id } $genome->datasets();
 
-    if ($dsgid) {
-        my $dsg = $coge->resultset('Genome')->find($dsgid);
-        unless ($dsg) {
-            my $error = "unable to create genome object using id $dsgid\n";
-            return $error;
-        }
-        $gstid = $dsg->type->id;
-        foreach my $ds ( $dsg->datasets() ) {
-            push @dsids, $ds->id;
-        }
-    }
-    foreach my $dsidt (@dsids) {
-        my $ds = $coge->resultset('Dataset')->find($dsidt);
-        unless ($ds) {
-            warn "no dataset object found for id $dsidt\n";
-            next;
-        }
-        foreach my $feat (
-            $ds->features(
-                $search,
-                {
-                    join => [
-                        'locations',
-                        { 'dataset' => { 'dataset_connectors' => 'genome' } }
-                    ],
-                    prefetch => [
-                        'locations',
-                        { 'dataset' => { 'dataset_connectors' => 'genome' } }
-                    ],
-                }
-            )
-          )
-        {
-            my @gc = $feat->wobble_content( counts => 1 );
-            $gc += $gc[0] if $gc[0] && $gc[0] =~ /^\d+$/;
-            $at += $gc[1] if $gc[1] && $gc[1] =~ /^\d+$/;
-            $n  += $gc[2] if $gc[2] && $gc[2] =~ /^\d+$/;
-            my $total = 0;
-            $total += $gc[0] if $gc[0];
-            $total += $gc[1] if $gc[1];
-            $total += $gc[2] if $gc[2];
-            my $perc_gc = 100 * $gc[0] / $total if $total;
-            next unless $perc_gc;    #skip if no values
-            next
-              if defined $min
-                  && $min =~ /\d+/
-                  && $perc_gc < $min;    #check for limits
-            next
-              if defined $max
-                  && $max =~ /\d+/
-                  && $perc_gc > $max;    #check for limits
-            push @data, sprintf( "%.2f", $perc_gc );
-            push @fids, $feat->id . "_" . $gstid;
+    my @fids = keys $raw;
+    my @data = map { $_->{percent_gc} } values $raw;
 
-            #push @data, sprintf("%.2f",100*$gc[0]/$total) if $total;
-        }
+    my ($gc, $at, $n) = (0, 0, 0);
+
+    for my $item (values $raw) {
+        $gc += $item->{gc} if $item->{gc};
+        $at += $item->{at} if $item->{at};
+        $n  += $item->{n}  if $item->{n};
     }
+
     my $total = $gc + $at + $n;
     return "error" unless $total;
 
