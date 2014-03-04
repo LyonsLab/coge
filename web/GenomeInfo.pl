@@ -6,7 +6,7 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils;
 use CoGe::Accessory::IRODS;
-use CoGe::Core::Genome qw(get_wobble_histogram
+use CoGe::Core::Genome qw(get_wobble_histogram get_noncoding_gc_stats
     get_wobble_gc_diff_histogram get_feature_type_gc_histogram
     get_gc_stats);
 use HTML::Template;
@@ -540,50 +540,17 @@ sub get_wobble_gc_diff {
     my @dsids;
     push @dsids, $dsid if $dsid;
 
-    if ($dsgid) {
-        my $dsg = $coge->resultset('Genome')->find($dsgid);
-        unless ($dsg) {
-            my $error = "unable to create genome object using id $dsgid\n";
-            return $error;
-        }
-        $gstid = $dsg->type->id;
-        foreach my $ds ( $dsg->datasets() ) {
-            push @dsids, $ds->id;
-        }
+    my $genome = $coge->resultset('Genome')->find($dsgid);
+    my $data = get_wobble_gc_diff_histogram($genome);
+    foreach my $ds ( $genome->datasets() ) {
+        push @dsids, $ds->id;
     }
-    foreach my $dsidt (@dsids) {
-        my $ds = $coge->resultset('Dataset')->find($dsidt);
-        unless ($ds) {
-            warn "no dataset object found for id $dsidt\n";
-            next;
-        }
-        foreach my $feat (
-            $ds->features(
-                $search,
-                {
-                    join => [
-                        'locations',
-                        { 'dataset' => { 'dataset_connectors' => 'genome' } }
-                    ],
-                    prefetch => [
-                        'locations',
-                        { 'dataset' => { 'dataset_connectors' => 'genome' } }
-                    ]
-                }
-            )
-          )
-        {
-            my @wgc  = $feat->wobble_content();
-            my @gc   = $feat->gc_content();
-            my $diff = $gc[0] - $wgc[0] if defined $gc[0] && defined $wgc[0];
-            push @data, sprintf( "%.2f", 100 * $diff ) if $diff;
-        }
-    }
-    return "error", " " unless @data;
+
+    return "error", " " unless @$data;
     my $file = $TEMPDIR . "/" . join( "_", @dsids ) . "_wobble_gc_diff.txt";
     open( OUT, ">" . $file );
     print OUT "#wobble gc for dataset ids: " . join( " ", @dsids ), "\n";
-    print OUT join( "\n", @data ), "\n";
+    print OUT join( "\n", @$data ), "\n";
     close OUT;
     my $cmd = $HISTOGRAM;
     $cmd .= " -f $file";
@@ -593,8 +560,8 @@ sub get_wobble_gc_diff {
     $cmd .= " -t \"CDS GC - wobble gc content\"";
     `$cmd`;
     my $sum = 0;
-    map { $sum += $_ } @data;
-    my $mean = sprintf( "%.2f", $sum / scalar @data );
+    map { $sum += $_ } @$data;
+    my $mean = sprintf( "%.2f", $sum / scalar @$data );
     my $info = "Mean $mean%";
     $info .= " (";
     $info .= $mean > 0 ? "CDS" : "wobble";
