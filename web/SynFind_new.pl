@@ -1853,6 +1853,7 @@ sub get_master_syn_sets {
             push @dsgs, $coge->resultset('Genome')->find($dsgid);
         }
     }
+    
     my $header = "Content-disposition: attachement; filename=";  #test.gff\n\n";
     $header .= join( "_",
         ( map { $_->id } ( $qdsg, @dsgs ) ),
@@ -1879,14 +1880,25 @@ sub get_master_syn_sets {
           . $cutoff . "_"
           . $scoring_function
           . ".$algo" . ".db";
+        
+        unless (-r $db) { # mdb added 3/4/14, issue 324
+            print STDERR qq{SQLite database not found: $db\n};
+            next;
+        }
+          
         my $dbh   = DBI->connect( "dbi:SQLite:dbname=$db", "", "" );
-        my $query = "SELECT * FROM synteny";
-        my $sth   = $dbh->prepare($query);
-
-        unless ($sth) {
+        unless ($dbh) {
             print STDERR qq{Problem connecting to $db\n};
             next;
         }
+        
+        my $query = "SELECT * FROM synteny";
+        my $sth   = $dbh->prepare($query);
+        unless ($sth) {
+            print STDERR qq{Problem querying $db\n};
+            next;
+        }
+        
         $sth->execute();
         while ( my @data = $sth->fetchrow_array ) {
             next unless $data[6] == $qdsgid;
@@ -1919,6 +1931,7 @@ sub get_master_syn_sets {
         )
       ),
       "\tGEvo link", "\n";
+
     my $total;
     foreach my $sort_chr ( sort keys %lookup ) {
         foreach my $sort_start ( sort keys %{ $lookup{$sort_chr} } ) {

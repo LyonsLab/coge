@@ -43,8 +43,8 @@ BEGIN {
     $VERSION = 0.1;
     @ISA     = qw (Exporter);
     @EXPORT =
-      qw( get_tiered_path get_genome_file index_genome_file get_genome_seq
-      get_experiment_path get_experiment_files get_experiment_data
+      qw( get_tiered_path get_genome_file index_genome_file get_genome_seq 
+      get_genome_path get_experiment_path get_experiment_files get_experiment_data
       reverse_complement);
 
     # Experiment Data Types
@@ -92,18 +92,30 @@ sub get_tiered_path {
     return $path;
 }
 
+sub get_genome_path {
+    my $gid = shift;
+    return unless $gid;
+
+    my $seqdir = CoGe::Accessory::Web::get_defaults()->{'SEQDIR'};
+    unless ($seqdir) {
+        print STDERR "Storage::get_genome_path: WARNING, conf file parameter SEQDIR is blank!\n";
+    }
+
+    my $path = $seqdir . '/' . get_tiered_path($gid) . '/';
+    unless ( -r $path ) {
+        print STDERR "Storage::get_genome_path: genome path '$path' doesn't exist!\n";
+        return;
+    }
+
+    return $path;
+}
+
 sub get_genome_file {
     my $gid = shift;
     return unless $gid;
     my $base_path = shift;    # optional
-
-    my $seqdir = CoGe::Accessory::Web::get_defaults()->{'SEQDIR'};
-    unless ($seqdir) {
-        print STDERR "Storage::get_genome_file: WARNING, conf file parameter SEQDIR is blank!\n";
-    }
-    unless ($base_path) {
-        $base_path = $seqdir . '/' . get_tiered_path($gid) . '/';
-    }
+    
+    $base_path = get_genome_path($gid) unless ($base_path);
 
     # First check for legacy filename
     my $file_path = $base_path . "$gid.faa";
