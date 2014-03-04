@@ -14,7 +14,7 @@ BEGIN {
 
     $VERSION = 0.1;
     @ISA = qw ( Exporter );
-    @EXPORT = qw (
+    @EXPORT = qw ( has_statistic get_gc_stats get_noncoding_gc_stats
         get_wobble_histogram get_wobble_gc_diff_histogram get_feature_type_gc_histogram );
 }
 
@@ -107,6 +107,16 @@ sub get_wobble_gc_diff_histogram {
     return $data->{wobble_gc_diff_histogram};
 }
 
+sub has_statistic {
+    my $genome = _get_genome_or_exit(shift);
+    my $stat = shift;
+
+    my $storage_path = _get_stats_file($genome->id);
+    my $data = read($storage_path);
+
+    return defined $data->{$stat};
+}
+
 sub _generate_wobble_content {
     my $genome = shift;
     my $gstid = $genome->type->id;
@@ -144,6 +154,50 @@ sub _generate_wobble_content {
     return $wobble_content;
 }
 
+sub get_gc_stats {
+    my $genome = _get_genome_or_exit(shift);
+    my $storage_path = _get_stats_file($genome->id);
+
+    my $data = read($storage_path);
+    return $data->{gc} if defined $data->{gc};
+
+    $data->{gc} = _generate_gc_stats($genome);
+
+    # Exit if generate failed
+    unless(defined $data->{gc}) {
+        say STDERR "Genome::get_gc_stats: generate noncoding gc stats failed!";
+        exit;
+    }
+
+    say STDERR "Genome::get_gc_stats: write failed!"
+        unless write($storage_path, $data);
+
+    # Return data
+    return $data->{gc};
+}
+
+sub get_noncoding_gc_stats {
+    my $genome = _get_genome_or_exit(@_);
+    my $storage_path = _get_stats_file($genome->id);
+
+    my $data = read($storage_path);
+    return $data->{noncoding_gc} if defined $data->{noncoding_gc};
+
+    $data->{noncoding_gc} = _generate_noncoding_gc_stats($genome);
+
+    # Exit if generate failed
+    unless(defined $data->{noncoding_gc}) {
+        say STDERR "Genome::get_noncoding_gc_stats: generate noncoding gc stats failed!";
+        exit;
+    }
+
+    say STDERR "Genome::get_noncoding_gc_stats: write failed!"
+        unless write($storage_path, $data);
+
+    # Return data
+    return $data->{noncoding_gc};
+}
+
 #
 # Private functions
 #
@@ -162,7 +216,9 @@ sub _get_histogram_file {
     File::Spec->catdir((get_genome_path(shift), "metadata/histograms.json"));
 }
 
-
+sub _get_stats_file {
+    File::Spec->catdir((get_genome_path(shift), "metadata/stats.json"));
+}
 
 sub _generate_wobble_gc_diff {
     my $genome = shift;
@@ -253,5 +309,92 @@ sub _generate_feature_type_gc {
     return $gc_content;
 }
 
+sub _generate_gc_stats {
+    my $genome = shift;
+    my $gstid = $genome->type->id;
+
+    my %chr;
+    my ( $gc, $at, $n, $x ) = (0) x 4;
+
+    foreach my $ds ($genome->datasets) {
+        map { $chr{$_} = 1 } $ds->chromosomes;
+
+        foreach my $chr ( keys %chr ) {
+            my @gc =
+              $ds->percent_gc( chr => $chr, seq_type => $gstid, count => 1 );
+            $gc += $gc[0] if $gc[0];
+            $at += $gc[1] if $gc[1];
+            $n  += $gc[2] if $gc[2];
+            $x  += $gc[3] if $gc[3];
+        }
+    }
+    my $total = $gc + $at + $n + $x;
+    return unless $total;
+
+    return {
+        total => $total,
+        gc    => $gc / $total,
+        at    => $at / $total,
+        n     => $n  / $total,
+        x     => $x  / $total,
+    };
+}
+
+sub _generate_noncoding_gc_stats {
+    my $genome = shift;
+    my (@items, @datasets);
+
+    my $gstid = $genome->type->id;
+    push @items, $genome;
+    push @datasets, $genome->datasets;
+
+    my %seqs; # prefetch the sequences with one call to genomic_sequence (slow for many seqs)
+    foreach my $item (@items) {
+        map {
+            $seqs{$_} = $item->get_genomic_sequence( chr => $_, seq_type => $gstid )
+        } $item->chromosomes;
+    }
+
+    foreach my $ds (@datasets) {
+        foreach my $feat ($ds->features(@LOCATIONS_PREFETCH)) {
+            foreach my $loc ( $feat->locations ) {
+                if ( $loc->stop > length( $seqs{ $feat->chromosome } ) ) {
+                    print STDERR "feature "
+                      . $feat->id
+                      . " stop exceeds sequence length: "
+                      . $loc->stop . " :: "
+                      . length( $seqs{ $feat->chromosome } ), "\n";
+                }
+                substr(
+                    $seqs{ $feat->chromosome },
+                    $loc->start - 1,
+                    ( $loc->stop - $loc->start + 1 )
+                ) = "-" x ( $loc->stop - $loc->start + 1 );
+            }
+
+            #push @data, sprintf("%.2f",100*$gc[0]/$total) if $total;
+        }
+    }
+
+    my ( $gc, $at, $n, $x ) = ( 0, 0, 0, 0 );
+
+    foreach my $seq ( values %seqs ) {
+        $gc += $seq =~ tr/GCgc/GCgc/;
+        $at += $seq =~ tr/ATat/ATat/;
+        $n  += $seq =~ tr/nN/nN/;
+        $x  += $seq =~ tr/xX/xX/;
+    }
+
+    my $total = $gc + $at + $n + $x;
+    return unless $total;
+
+    return {
+        total => $total,
+        gc    => $gc / $total,
+        at    => $at / $total,
+        n     => $n  / $total,
+        x     => $x  / $total,
+    };
+}
 1;
 
