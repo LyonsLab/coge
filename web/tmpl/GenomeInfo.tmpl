@@ -217,7 +217,7 @@ function get_features(selector) {
         },
         success: function(data) {
             elem.fadeOut(function() {;
-                elem.html(data).removeClass("small link padded").slideDown();
+                elem.html(data).removeClass("small link padded ui-widget-content ui-corner-all").slideDown();
             });
         }
     })
@@ -933,11 +933,10 @@ function get_content_dialog(id, request, chromosome) {
 <table style="overflow:hidden;">
     <tr style="vertical-align:top;">
         <td>
-            <span style="color:dimgray;font-weight:bold;">Genome Info</span>
+            <span style="color:dimgray;font-weight:bold;">Info</span>
             <div id='genome_info' class="small ui-widget-content ui-corner-all" style="width:400px;"><TMPL_VAR NAME="GENOME_INFO"></div>
             <TMPL_IF NAME='USER_CAN_EDIT'>
                 <span class='ui-button ui-corner-all' onClick="edit_genome_info();">Edit Info</span>
-                <span class='ui-button ui-corner-all ui-button-icon-right' onclick="window.open('LoadGenome.pl?oid=<TMPL_VAR NAME=OID>')"><span class="ui-icon ui-icon-extlink"></span>Load a new version</span>
             </TMPL_IF>
             <TMPL_IF NAME='USER_CAN_DELETE'>
                 <TMPL_IF NAME='DELETED'>
@@ -973,16 +972,17 @@ function get_content_dialog(id, request, chromosome) {
                     </td>
                 </tr>
                 <tr>
-                    <td class='title5'>Functions:</td>
+                    <td class='title5'>Duplicate:</td>
                     <td class='data5'>
                         <span class='link' onDblClick="copy_genome(0,0);" onClick="copy_genome(0,0);">Copy</span>&nbsp|
                         <span class='link' onDblClick="copy_genome(0,1);" onClick="copy_genome(0,1);">Copy (No Annotations)</span>&nbsp|
-                        <span class='link' onDblClick="copy_genome(1,0);" onClick="copy_genome(1,0);">Copy & Mask</span>
+                        <span class='link' onDblClick="copy_genome(1,0);" onClick="copy_genome(1,0);">Copy & Mask</span>&nbsp|
+                        <span class='link' onClick="window.open('LoadGenome.pl?oid=<TMPL_VAR NAME=OID>')">Load new version</span>
                     </td>
                 </tr>
                 </TMPL_IF>
                 <tr>
-                    <td class='title5'>Analysis:</td>
+                    <td class='title5'>Analyze:</td>
                     <td class='data5'>
                         <a href='OrganismView.pl?dsgid=<TMPL_VAR NAME=GID>' target=_new>OrganismView</a>&nbsp|
                         <a href='CodeOn.pl?dsgid=<TMPL_VAR NAME=GID>' target=_new>CodeOn</a>&nbsp|
@@ -999,7 +999,7 @@ function get_content_dialog(id, request, chromosome) {
 
 <TMPL_IF NAME="GENOME_ANNOTATIONS">
 <div>
- <div style="color:dimgray;font-weight:bold;">Genome Annotations</div>
+ <div style="color:dimgray;font-weight:bold;">Metadata</div>
  <div id="genome_annotations">
   <TMPL_VAR NAME="GENOME_ANNOTATIONS">
  </div>
