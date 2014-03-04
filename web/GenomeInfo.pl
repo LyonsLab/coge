@@ -6,7 +6,8 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils;
 use CoGe::Accessory::IRODS;
-use CoGe::Core::Genome qw(get_wobble_histogram);
+use CoGe::Core::Genome qw(get_wobble_histogram
+    get_wobble_gc_diff_histogram get_feature_type_gc_histogram);
 use HTML::Template;
 use JSON::XS;
 use Sort::Versions;
@@ -743,121 +744,25 @@ sub get_gc_for_noncoding {
     my $at = 0;
     my $n  = 0;
     my $x  = 0;
-    my $search = { "feature_type_id" => 3 };
-    $search->{"me.chromosome"} = $chr if defined $chr;
-    my @data;
 
-    my (@items, @datasets);
-    if ($dsid) {
-        my $ds = $coge->resultset('Dataset')->find($dsid);
-        return "unable to find dataset id$dsid\n" unless $ds;
-        push @items, $ds;
-        push @datasets, $ds;
-    }
-    if ($dsgid) {
-        my $dsg = $coge->resultset('Genome')->find($dsgid);
-        return "unable to find genome id $dsgid\n" unless $dsgid;
-        $gstid = $dsg->type->id;
-        push @items, $dsg;
-        push @datasets, $dsg->datasets;
-    }
+    my $genome = $coge->resultset('Genome')->find($dsgid);
+    my $stats = get_noncoding_gc_stats($genome);
 
-    my %seqs; # prefetch the sequences with one call to genomic_sequence (slow for many seqs)
-    foreach my $item (@items) {
-        map {
-            $seqs{$_} = $item->get_genomic_sequence( chr => $_, seq_type => $gstid )
-        } (defined $chr ? ($chr) : $item->chromosomes);
-    }
-
-    foreach my $ds (@datasets) {
-        foreach my $feat (
-            $ds->features(
-                $search,
-                {
-                    join => [
-                        'locations',
-                        { 'dataset' => { 'dataset_connectors' => 'genome' } }
-                    ],
-                    prefetch => [
-                        'locations',
-                        { 'dataset' => { 'dataset_connectors' => 'genome' } }
-                    ]
-                }
-            )
-          )
-        {
-            foreach my $loc ( $feat->locations ) {
-                if ( $loc->stop > length( $seqs{ $feat->chromosome } ) ) {
-                    print STDERR "feature "
-                      . $feat->id
-                      . " stop exceeds sequence length: "
-                      . $loc->stop . " :: "
-                      . length( $seqs{ $feat->chromosome } ), "\n";
-                }
-                substr(
-                    $seqs{ $feat->chromosome },
-                    $loc->start - 1,
-                    ( $loc->stop - $loc->start + 1 )
-                ) = "-" x ( $loc->stop - $loc->start + 1 );
-            }
-
-            #push @data, sprintf("%.2f",100*$gc[0]/$total) if $total;
-        }
-    }
-    foreach my $seq ( values %seqs ) {
-        $gc += $seq =~ tr/GCgc/GCgc/;
-        $at += $seq =~ tr/ATat/ATat/;
-        $n  += $seq =~ tr/nN/nN/;
-        $x  += $seq =~ tr/xX/xX/;
-    }
-    my $total = $gc + $at + $n + $x;
-    return "error" unless $total;
     return
-        commify($total) . " bp"
+        commify($stats->{total}) . " bp"
       . "&nbsp(GC: "
-      . sprintf( "%.2f", 100 * $gc / ($total) )
+      . sprintf( "%.2f", 100 * $stats->{gc})
       . "%  AT: "
-      . sprintf( "%.2f", 100 * $at / ($total) ) . "% N: "
-      . sprintf( "%.2f", 100 * $n /  ($total) ) . "% X: "
-      . sprintf( "%.2f", 100 * $x /  ($total) ) . "%)";
-
-    my @dsids = map { $_->id } @datasets;
-    my $file = $TEMPDIR . "/" . join( "_", @dsids ) . "_wobble_gc.txt";
-    open( OUT, ">" . $file );
-    print OUT "#wobble gc for dataset ids: " . join( " ", @dsids ), "\n";
-    print OUT join( "\n", @data ), "\n";
-    close OUT;
-    my $cmd = $HISTOGRAM;
-    $cmd .= " -f $file";
-    my $out = $file;
-    $out =~ s/txt$/png/;
-    $cmd .= " -o $out";
-    $cmd .= " -t \"CDS wobble gc content\"";
-    $cmd .= " -min 0";
-    $cmd .= " -max 100";
-    `$cmd`;
-    my $info =
-        "<div class = small>Total: "
-      . commify($total)
-      . " codons.  Mean GC: "
-      . sprintf( "%.2f", 100 * $gc / ($total) )
-      . "%  AT: "
-      . sprintf( "%.2f", 100 * $at / ($total) )
-      . "%  N: "
-      . sprintf( "%.2f", 100 * ($n) / ($total) )
-      . "%</div>";
-    $out =~ s/$TEMPDIR/$TEMPURL/;
-    my $hist_img = "<img src=\"$out\">";
-
-    return $info, $hist_img;
+      . sprintf( "%.2f", 100 * $stats->{at}) . "% N: "
+      . sprintf( "%.2f", 100 * $stats->{n}) . "% X: "
+      . sprintf( "%.2f", 100 * $stats->{x}) . "%)";
 }
 
 sub get_gc_for_feature_type {
     my %opts   = @_;
     my $dsid   = $opts{dsid};
     my $dsgid  = $opts{dsgid};
-    my $chr    = $opts{chr};
-    my $typeid = $opts{typeid};
+    my $chr    = $opts{chr}; my $typeid = $opts{typeid};
     my $gstid  = $opts{gstid};  #genomic sequence type id
     my $min    = $opts{min};    #limit results with gc values greater than $min;
     my $max    = $opts{max};    #limit results with gc values smaller than $max;
@@ -870,87 +775,31 @@ sub get_gc_for_feature_type {
     $hist_type = undef if $hist_type && $hist_type eq "undefined";
     $typeid = 1 if $typeid eq "undefined";
     return unless $dsid || $dsgid;
-    my $gc   = 0;
-    my $at   = 0;
-    my $n    = 0;
-    my $type = $coge->resultset('FeatureType')->find($typeid);
-    my @data;
-    my @fids;    #storage for fids that passed.  To be sent to FeatList
+
+    my $genome = $coge->resultset('Genome')->find($dsgid);
+    my $raw = get_feature_type_gc_histogram($genome, $typeid);
 
     my (@items, @datasets);
-    if ($dsid) {
-        my $ds = $coge->resultset('Dataset')->find($dsid);
-        return "unable to find dataset id$dsid\n" unless $ds;
-        push @items, $ds;
-        push @datasets, $ds;
-    }
-    if ($dsgid) {
-        my $dsg = $coge->resultset('Genome')->find($dsgid);
-        return "unable to find genome id $dsgid\n" unless $dsgid;
-        $gstid = $dsg->type->id;
-        push @items, $dsg;
-        push @datasets, $dsg->datasets;
-    }
 
-    my %seqs; # prefetch the sequences with one call to genomic_sequence (slow for many seqs)
-    foreach my $item (@items) {
-        map {
-            $seqs{$_} = $item->get_genomic_sequence( chr => $_, seq_type => $gstid )
-        } (defined $chr ? ($chr) : $item->chromosomes);
+    my @dsids;
+    push @dsids, map { $_->id } $genome->datasets();
+
+    #storage for fids that passed.  To be sent to FeatList
+    my @fids = keys $raw;
+    my @data = map { $_->{percent_gc} } values $raw;
+
+    my ($gc, $at, $n) = (0) x 3;
+
+    for my $item (values $raw) {
+        $gc += $item->{gc} if $item->{gc};
+        $at += $item->{at} if $item->{at};
+        $n  += $item->{n}  if $item->{n};
     }
 
-    my $search = { "feature_type_id" => $typeid };
-    $search->{"me.chromosome"} = $chr if defined $chr;
-
-    foreach my $ds (@datasets) {
-        my @feats = $ds->features(
-            $search,
-            {
-                join => [
-                    'locations',
-                    { 'dataset' => { 'dataset_connectors' => 'genome' } }
-                ],
-                prefetch => [
-                    'locations',
-                    { 'dataset' => { 'dataset_connectors' => 'genome' } }
-                ],
-            }
-        );
-        foreach my $feat (@feats) {
-            my $seq = substr(
-                $seqs{ $feat->chromosome },
-                $feat->start - 1,
-                $feat->stop - $feat->start + 1
-            );
-
-            $feat->genomic_sequence( seq => $seq );
-            my @gc = $feat->gc_content( counts => 1 );
-
-            $gc += $gc[0] if $gc[0] =~ /^\d+$/;
-            $at += $gc[1] if $gc[1] =~ /^\d+$/;
-            $n  += $gc[2] if $gc[2] =~ /^\d+$/;
-            my $total = 0;
-            $total += $gc[0] if $gc[0];
-            $total += $gc[1] if $gc[1];
-            $total += $gc[2] if $gc[2];
-            my $perc_gc = 100 * $gc[0] / $total if $total;
-            next unless $perc_gc;    #skip if no values
-            next
-              if defined $min
-                  && $min =~ /\d+/
-                  && $perc_gc < $min;    #check for limits
-            next
-              if defined $max
-                  && $max =~ /\d+/
-                  && $perc_gc > $max;    #check for limits
-            push @data, sprintf( "%.2f", $perc_gc );
-            push @fids, $feat->id . "_" . $gstid;
-        }
-    }
     my $total = $gc + $at + $n;
     return "error" unless $total;
 
-    my @dsids = map { $_->id } @datasets;
+    my $type = $coge->resultset('FeatureType')->find($typeid);
     my $file = $TEMPDIR . "/" . join( "_", @dsids );
 
     #perl -T flag
