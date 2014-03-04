@@ -960,11 +960,12 @@ li {
     margin: 5px 0 5px 0;
 }
 
-th {
+/* mdb removed 3/4/14 for SynFind results table */
+/* th {
     font-size: 1.25em;
     font-weight: normal;
     text-align: center;
-}
+} */
 
 .inline {
     display: inline-block;
