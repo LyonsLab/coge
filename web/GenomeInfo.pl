@@ -7,7 +7,8 @@ use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils;
 use CoGe::Accessory::IRODS;
 use CoGe::Core::Genome qw(get_wobble_histogram
-    get_wobble_gc_diff_histogram get_feature_type_gc_histogram);
+    get_wobble_gc_diff_histogram get_feature_type_gc_histogram
+    get_gc_stats);
 use HTML::Template;
 use JSON::XS;
 use Sort::Versions;
@@ -689,48 +690,24 @@ sub get_gc_for_genome {
     my $chr   = $opts{chr};
     my $gstid = $opts{gstid};
     my $dsgid = $opts{dsgid};
-    my @ds;
-    if ($dsid) {
-        my $ds = $coge->resultset('Dataset')->find($dsid);
-        push @ds, $ds if $ds;
-    }
-    if ($dsgid) {
-        my $dsg = $coge->resultset('Genome')->find($dsgid);
-        $gstid = $dsg->type->id;
-        map { push @ds, $_ } $dsg->datasets;
-    }
-    return unless @ds;
-    my ( $gc, $at, $n, $x ) = ( 0, 0, 0, 0 );
-    my %chr;
-    foreach my $ds (@ds) {
-        if ( defined $chr ) {
-            $chr{$chr} = 1;
-        }
-        else {
-            map { $chr{$_} = 1 } $ds->chromosomes;
-        }
-        foreach my $chr ( keys %chr ) {
-            my @gc =
-              $ds->percent_gc( chr => $chr, seq_type => $gstid, count => 1 );
-            $gc += $gc[0] if $gc[0];
-            $at += $gc[1] if $gc[1];
-            $n  += $gc[2] if $gc[2];
-            $x  += $gc[3] if $gc[3];
-        }
-    }
-    my $total = $gc + $at + $n + $x;
-    return "error" unless $total;
+
+    my $genome = $coge->resultset('Genome')->find($dsgid);
+    my $data = get_gc_stats($genome);
+
+    # Skip if no data
+    return unless $data;
+
     my $results =
         "&nbsp(GC: "
-      . sprintf( "%.2f", 100 * $gc / $total )
+      . sprintf( "%.2f", 100 * $data->{gc})
       . "%  AT: "
-      . sprintf( "%.2f", 100 * $at / $total )
+      . sprintf( "%.2f", 100 * $data->{at})
       . "%  N: "
-      . sprintf( "%.2f", 100 * $n / $total )
+      . sprintf( "%.2f", 100 * $data->{n})
       . "%  X: "
-      . sprintf( "%.2f", 100 * $x / $total ) . "%)"
-      if $total;
-      return $results;
+      . sprintf( "%.2f", 100 * $data->{x}) . "%)";
+
+    return $results;
 }
 
 sub get_gc_for_noncoding {
