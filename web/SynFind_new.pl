@@ -167,7 +167,7 @@ sub gen_body {
       HTML::Template->new( filename => $P->{TMPLDIR} . 'SynFind.tmpl' );
     my $form = $FORM;
 
-    $template->param( BETA => 1 );
+    #$template->param( BETA => 1 );
 
     #comparison algorithm
     my $algo = $FORM->param('algo') if $FORM->param('algo');
