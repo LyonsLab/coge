@@ -2080,7 +2080,7 @@ sub get_unique_genes {
     my $dsgid1 = $qdsg->id;
     my $dsgid2 = $sdsg->id;
     ( $org1, $org2, $dsgid1, $dsgid2 ) = ( $org2, $org1, $dsgid2, $dsgid1 )
-      if ( $org2 lt $org1 );
+        if ( $dsgid2 lt $dsgid1 );
     my $basedir  = $DIAGSDIR . "/" . $dsgid1 . "/" . $dsgid2;
     my $basename = $dsgid1 . "_" . $dsgid2 . "." . "CDS-CDS";
     my $db =
