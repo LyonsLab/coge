@@ -7,8 +7,18 @@
     </div>
 </tmpl_if>
 
-<br>
-  <span id="run_synfind_button" style="font-size: 1em" class='ui-button ui-button-go ui-corner-all'>Run SynFind</span><BR><br>
+<aside class="info">
+	<p><a class="bold" href="http://genomevolution.org/wiki/index.php/SynFind" target="_blank">SynFind</a> identifies syntenic regions against any set of genomes given a gene in one genome.
+		<span class="link" onClick="$(this).remove(); $('#getting_started').fadeIn();">More...</span>
+	</p>
+	
+	<div id="getting_started" class="hidden">
+		<p>SynFind identifies all syntenic regions to all genes in the query genome. 
+		Complete syntenic gene-sets can be downloaded, and syntenic depth tables are
+		generated to access the polyploidy level between the query genome and each 
+		target genome.</p>
+	</div>
+</aside>
 
   <div id=tabs style='margin-top: 0.5em'>
    <ul>
@@ -26,21 +36,24 @@
 
 
  <div id="tab1">
-  <b>Specify Organisms:</b>
+ 
+ <span id="run_synfind_button" style="font-size: 1em" class='ui-button ui-button-go ui-corner-all'>Run SynFind</span><BR><br>
+ 
   <table class="ui-widget-content ui-corner-all">
-        <tr><Td>
-    <DIV id="blah">Organism Name: <input type="text" size=11 style="font-style:italic" class="org_search_name" value="Search" name="org_name" id="org_name"></DIV>
-    <DIV id="blah">Organism Description: <input type="text" class="org_search_desc" size=11 style="font-style:italic" value="Search" name="org_desc" id="org_desc"></DIV>
-<tr valign=top><td>
-    <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
-    <DIV id="org_seq_types"><TMPL_VAR NAME="ORG_SEQ_TYPES"></DIV>
-    <span id="genome_info_button" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-info"></span>Get Genome Info</span>
-    <span id="add_all_listed_button" href="javascript:void(0)" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plusthick"></span>Add all listed</span>
-      </TD>
-      <TD valign="middle" align=middle>
-      <span onClick="remove_selected_orgs();" style="display:none" id="remove" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span>
-      <span onClick="add_selected_orgs();" id="add" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>
-      </TD>
+  	<tr><td><b>Specify Organisms</b></td></tr>
+    <tr class="small"><td>
+    	<DIV>Organism Name: <input type="text" size=11 style="font-style:italic" class="org_search_name" value="Search" name="org_name" id="org_name"></DIV>
+    	<DIV>Organism Description: <input type="text" class="org_search_desc" size=11 style="font-style:italic" value="Search" name="org_desc" id="org_desc"></DIV>
+    <tr class="small" valign="top"><td>
+    	<DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
+    	<DIV id="org_seq_types"><TMPL_VAR NAME="ORG_SEQ_TYPES"></DIV>
+    	<span id="genome_info_button" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-info"></span>Get Genome Info</span>
+    	<span id="add_all_listed_button" href="javascript:void(0)" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plusthick"></span>Add all listed</span>
+    	</TD>
+    	<TD valign="middle" align=middle>
+    	<span onClick="remove_selected_orgs();" style="display:none" id="remove" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span>
+    	<span onClick="add_selected_orgs();" id="add" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>
+    	</TD>
            <TD>
               <div style="float:left" id=db_title class=small>Genomes to search: </DIV><div style="float:left;text-indent:1em;vertical-align: bottom" id=selected_genome_count class=small> </div>
 
@@ -48,59 +61,75 @@
               <option id=blank value=null>No Database Selected</option>
               </SELECT></DIV>
            <span onClick="clear_org_list();" id="clearlist" name=clearlist class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minusthick"></span>Clear Org List</span>
-           <span class='small ui-button ui-corner-all' onclick="sort_genome_choice()">Sort</span>
+           <span class='ui-button ui-corner-all' onclick="sort_genome_choice()">Sort</span>
               <TMPL_IF NAME="SAVE_ORG_LIST">
           <span class='ui-button ui-button-icon-left ui-corner-all' onclick="save_orglist_synfind(['args__dsgids','args__'+$('#genome_choice').getLength(1)],[])"><span class="ui-icon ui-icon-disk"></span>Save Org List</span>
               </TMPL_IF>
            </TD>
-     </table>
+  </table>
 
-<b>Specify Feature</b>
+  <br>
 
-<TABLE class="ui-widget-content ui-corner-all">
-       <TR>
-         <TD nowrap>
-           Name:
-         <tD>
-          <input type="text" name="accn" id="accn" tabindex="1"  size="10" value="<TMPL_VAR NAME=ACCN>" onkeypress="onEnter(event);"/>
-       <TR>
-         <TD nowrap>
-          Annotation:
-         <tD nowrap>
-          <input type="text" name="annosearch" id="annosearch" tabindex="1"  size="10" value="<TMPL_VAR NAME=ANNO>" onkeypress="onEnter(event);"/>
-        <TR>
-     <tD valign="top" nowrap>
-          Organism:
-         <TD>
-         Name: <input type="text" size=11 onFocus="search_bar('org_name_feat')" style="font-style:italic" value="Search" name="org_name_feat" id="org_name_feat" onKeyUp='timing("org_name_feat");'><br>
-     Description: <input type="text" size=11 value="Search" name = "org_desc_feat" id="org_desc_feat" style="font-style:italic" onFocus="search_bar('org_desc_feat')" onKeyUp='timing("org_desc_feat");'>
-      <DIV id="org_list_feat"><TMPL_VAR NAME="ORG_LIST_FEAT"></DIV>
-        <tr>
-    <td><span class="ui-button ui-corner-all" onclick="search_chain(1)">Search</span>
-</TABLE>
-<table id="data_table" style="display:none" class="ui-widget-content ui-corner-all">
- <thead align=left>
+<table class="ui-widget-content ui-corner-all">
+	<tr><td><b>Specify Feature</b></td></tr>
+	<TR class="small">
+		<td nowrap>
+		Name:
+		</td>
+		<td>
+		<input type="text" name="accn" id="accn" tabindex="1"  size="10" value="<TMPL_VAR NAME=ACCN>" onkeypress="onEnter(event);"/>
+		</td>
+	</tr> 
+	<tr class="small">
+		<TD nowrap>
+		Annotation:
+		<td nowrap>
+		<input type="text" name="annosearch" id="annosearch" tabindex="1"  size="10" value="<TMPL_VAR NAME=ANNO>" onkeypress="onEnter(event);"/>
+	</tr>
+	<TR class="small">
+		<td valign="top" nowrap>
+		Organism:</td>
+		<TD>
+		Name: <input type="text" size=11 onFocus="search_bar('org_name_feat')" style="font-style:italic" value="Search" name="org_name_feat" id="org_name_feat" onKeyUp='timing("org_name_feat");'><br>
+		Description: <input type="text" size=11 value="Search" name = "org_desc_feat" id="org_desc_feat" style="font-style:italic" onFocus="search_bar('org_desc_feat')" onKeyUp='timing("org_desc_feat");'>
+		<DIV id="org_list_feat"><TMPL_VAR NAME="ORG_LIST_FEAT"></DIV>
+		</td>
+	</tr>
+	<tr class="small">
+		<td><span class="ui-button ui-corner-all" onclick="search_chain(1)">Search</span></td>
+	</tr>
+</table>
+
+<br>
+
+<table id="data_table" class="hidden ui-widget-content ui-corner-all">
+ <thead style="text-align:left;">
   <th>Matches</th>
   <th>Types</th>
   <th>Genomes</th>
  </thead>
- <tbody>
- <TR valign=top>
-  <TD valign=top>
-   <DIV class="" id="accn_list"><input type="hidden" id="accn_select" ></DIV>
-  </TD>
-  <TD valign=top>
-    <DIV class="" id="FeatType"></DIV>
+ <tbody class="small">
+ <tr valign="top">
+  <td valign="top">
+   <DIV id="accn_list"><input type="hidden" id="accn_select" ></DIV>
   </td>
-  <TD valign=top>
-   <DIV class="" id="Source"><TMPL_VAR NAME="FEAT_DSGID"></DIV>
+  <td valign="top">
+    <DIV id="FeatType"></DIV>
+  </td>
+  <td valign="top">
+   <DIV id="Source"><TMPL_VAR NAME="FEAT_DSGID"></DIV>
  </tbody>
-</TABLE>
-<DIV id="fid" style="display:none"><TMPL_VAR NAME="FID"></div>
-<DIV id="anno" class="ui-widget-content ui-corner-all"></DIV>
+</table>
 
+<br>
 
- </div> <!--close tab 1-->
+<DIV id="fid" class="hidden"><TMPL_VAR NAME="FID"></div>
+
+<DIV id="anno" class="hidden ui-widget-content ui-corner-all"></DIV>
+
+</div> <!--close tab 1-->
+ 
+ 
  <div id="tab2">
  General parameters:
    <TABLE class=small>
@@ -148,8 +177,8 @@
 </TMPL_IF>
 
 <TMPL_IF NAME="RESULTS_DIV">
-  <DIV id=log_text class='dna' style="display:none"></DIV>
-  <DIV id=results class="ui-widget-content ui-corner-all" style="display:none"></DIV>
+  <DIV id="log_text" class='dna hidden'></DIV>
+  <DIV id="results" class="hidden ui-widget-content ui-corner-all"></DIV>
  <div id="feature_info_popup" class="dialog_box" title="Feature Information"></div>
 </TMPL_IF>
 
@@ -231,7 +260,7 @@ function reset_basename(){
 function launch(){
   if (!$('#fid').html())
   {
-    alert('You need to search and select a feature for this analysis.')
+    alert('Please search and select a feature for this analysis.')
     return;
   }
   if(!pageObj.basename)
@@ -243,7 +272,7 @@ function launch(){
   //alert("Passed setTimeout loop");
   var check = $('#genome_choice').getLength();
   if(($('#blank').val())||(check==0)){
-    alert('You have not selected any genomes to search. You must select at least one.');
+    alert('Please select at least one genome to search.');
     return;
   }
   jQuery('html, body').animate({scrollTop: 0}, 500);
@@ -635,28 +664,25 @@ function search_chain(val) {
  $('#FeatType').hide();
  var searched = 0;
  if ((val == 1)){
-   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >');
-   $('#anno').show();
+   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >').show();
    searched=1;
    go_cogefeatsearch();
 
  }
  else if ($('#accn').val().length > accnminlen) {
-   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >');
-   $('#anno').show();
+   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >').show();
    searched=1;
    go_cogefeatsearch();
  }
  else if ($('#annosearch').val().length > annominlen) {
-   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >');
-   $('#anno').show();
+   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >').show();
    searched=1;
    go_cogefeatsearch();
  }
 
  if (!searched)
   {
-    $('anno').html('Search not run.');
+    $('anno').html('Search not run.').show();
   }
 
 }

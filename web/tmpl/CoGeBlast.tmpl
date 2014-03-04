@@ -1243,13 +1243,61 @@ function toggle_title(id, full, partial) {
 }
 
 </SCRIPT>
-<tmpl_if name="BETA">
-    <div class="small" style="padding-bottom: 5px; color: dimgray;">
+
+  <tmpl_if name="BETA">
+	<div class="small" style="padding-bottom: 5px; color: dimgray;">
         <span class="large">Welcome to the <span class="alert">new beta version</span> of CoGeBlast.</span><br>If you experience any difficulties
         or prefer to use the old version, please <a id="beta_link" href="CoGeBlast_old.pl">click here</a>.
         <br>
     </div>
-</tmpl_if>
+  </tmpl_if>
+  
+  <aside class="info">
+	  <p><a class="bold" href="http://genomevolution.org/wiki/index.php/CoGeBlast" target="_blank">CoGeBlast</a> provides an interface to blast any genome within CoGe and view tabular and graphical results.
+		    <span class="link" onClick="$(this).remove(); $('#getting_started').fadeIn();">More...</span>
+	  </p>
+	  
+	  <div id="getting_started" class="hidden">
+	   Steps:
+	   <ol>
+	   	 <li>Paste-in query sequences
+	   	 <li>Find and select any number of organisms and genomes to search against
+	   	 <li>Configure the analysis parameters
+	   	 <li>Click the <strong>Run CoGe Blast</strong> button to start the analysis
+	   </ol>
+	   
+	   Results:
+	   <ol>
+	   <li>Visualize an overview of blast hits (High-scoring Sequence Pairs; HSP) in relationship to their genomic locations
+	   <li>Interact with a sortable list of blast hits detailing
+		  <ol>
+	   		<li>which query sequence matched which organism
+	   		<li>their genomic location
+	   		<li>query sequence coverage
+	   		<li>variety of blast hit metrics (length, e-value, score, percent ID, quality)
+	   		<li>find the closest genomic feature in the searched organisms
+	   	  </ol>
+	   <li>Visualize individual hits in their genomic context to determine the extent to which you query matched
+	   <li>Get sequence, alignment and positional information for a given hit
+	   <li>An overview of the number of times your query sequences matched a given organism
+	   <li>Links to data files including
+	     <ol>
+	       <li>table of blast hits metrics and sequences
+	       <li>fasta file of query Hit sequences
+	       <li>fasta file of subject Hit sequences
+	       <li>file of blast hit alignments
+	       <li>raw blast reports for each organisms searched
+	     </ol>
+	   <li>Ability to select identified genomic regions and:
+		   <ol>
+		     <li>send to other tools within CoGe
+		     <li>generate a FASTA file of nearby genomic features
+		     <li>export results to a tab delimited file or Excel spreadsheet
+		   </ol>
+		<ol>
+	  </div>
+  </aside>  
+  
   <div id="table_opts_dialog" class="dialog_box hidden" title="Table Information Options">
     <table id="show_columns" class="small ui-widget-content ui-corner-all" style="padding:5px;">
       <tr>
