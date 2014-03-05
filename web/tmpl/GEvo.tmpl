@@ -258,6 +258,11 @@ set_up_sort();
   pageObj.nolog = 0;
   pageObj.waittime = 1000;
   pageObj.tempdir="<TMPL_VAR NAME=TEMPDIR>";
+
+    // track analysis
+    $("#go").on("click", function() {
+        ga('send', 'event', 'gevo', 'run');
+    });
  });
 
 function populate_page_obj(basefile)
