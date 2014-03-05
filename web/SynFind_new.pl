@@ -2200,8 +2200,9 @@ sub get_unique_genes {
     my $count = 0;
     foreach my $fid (@qunique) {
         $count++;
-        $list->add_to_list_connectors_as_parent(
-            { child_id => $fid, child_type => 4 } );
+        $list->add_to_list_connectors({
+            parent_id => $list->id, child_id => $fid, child_type => 4
+        });
     }
     print $form->header;
     my $listview = $SERVER . "NotebookView.pl?lid=" . $list->id;
