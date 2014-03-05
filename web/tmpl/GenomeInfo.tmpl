@@ -946,7 +946,32 @@ function get_content_dialog(id, request, chromosome) {
                 </TMPL_IF>
             </TMPL_IF>
             <span class='ui-button ui-corner-all ui-button-icon-right' onclick="window.open('GenomeView.pl?gid=<TMPL_VAR NAME=GID>')"><span class="ui-icon ui-icon-extlink"></span>View</span>
+
+            <br><br>
+            <TMPL_IF NAME="GENOME_ANNOTATIONS">
+            <div>
+            <div style="color:dimgray;font-weight:bold;">Metadata</div>
+            <div id="genome_annotations">
+            <TMPL_VAR NAME="GENOME_ANNOTATIONS">
+            </div>
+            </div>
+            <br>
+
+            </TMPL_IF>
+
+            <span style="color:dimgray;font-weight:bold;">Sequence & Gene Annotation</span><br>
+            <TMPL_IF NAME='DATASETS'>
+                <table id="datasets" class="small ui-widget-content ui-corner-all" style="color:gray;">
+                    <TMPL_VAR NAME='DATASETS'>
+                </table>
+            </TMPL_IF>
+            <TMPL_IF NAME='USER_CAN_EDIT'>
+                <span class='ui-button ui-corner-all ui-button-icon-right' onclick="window.open('LoadAnnotation.pl?gid=<TMPL_VAR NAME=GID>')"><span class="ui-icon ui-icon-extlink"></span>Load Gene Annotation</span>
+            </TMPL_IF>
+            <br><br>
+
         </td>
+
         <td style="padding-left:10px;">
             <TMPL_VAR NAME="GENOME_DATA">
             <div class="left coge-table-header">Tools</div>
@@ -996,28 +1021,6 @@ function get_content_dialog(id, request, chromosome) {
 </table>
 <br>
 
-
-<TMPL_IF NAME="GENOME_ANNOTATIONS">
-<div>
- <div style="color:dimgray;font-weight:bold;">Metadata</div>
- <div id="genome_annotations">
-  <TMPL_VAR NAME="GENOME_ANNOTATIONS">
- </div>
-</div>
-<br>
-
-</TMPL_IF>
-
-<span style="color:dimgray;font-weight:bold;">Sequence & Gene Annotation</span><br>
-<TMPL_IF NAME='DATASETS'>
-    <table id="datasets" class="small ui-widget-content ui-corner-all" style="color:gray;">
-        <TMPL_VAR NAME='DATASETS'>
-    </table>
-</TMPL_IF>
-<TMPL_IF NAME='USER_CAN_EDIT'>
-    <span class='ui-button ui-corner-all ui-button-icon-right' onclick="window.open('LoadAnnotation.pl?gid=<TMPL_VAR NAME=GID>')"><span class="ui-icon ui-icon-extlink"></span>Load Gene Annotation</span>
-</TMPL_IF>
-<br><br>
 
 <span style="color:dimgray;font-weight:bold;">Experiments</span><br>
 <TMPL_IF NAME='EXPERIMENTS'>

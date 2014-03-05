@@ -1870,7 +1870,7 @@ sub get_master_syn_sets {
         my $dsgid1 = $qdsg->id;
         my $dsgid2 = $dsg->id;
         ( $org1, $org2, $dsgid1, $dsgid2 ) = ( $org2, $org1, $dsgid2, $dsgid1 )
-          if ( $org2 lt $org1 );
+          if ( $dsgid2 lt $dsgid1 );
         my $basedir  = $DIAGSDIR . "/" . $dsgid1 . "/" . $dsgid2;
         my $basename = $dsgid1 . "_" . $dsgid2 . "." . "CDS-CDS";
         my $db =
@@ -2080,7 +2080,7 @@ sub get_unique_genes {
     my $dsgid1 = $qdsg->id;
     my $dsgid2 = $sdsg->id;
     ( $org1, $org2, $dsgid1, $dsgid2 ) = ( $org2, $org1, $dsgid2, $dsgid1 )
-      if ( $org2 lt $org1 );
+        if ( $dsgid2 lt $dsgid1 );
     my $basedir  = $DIAGSDIR . "/" . $dsgid1 . "/" . $dsgid2;
     my $basename = $dsgid1 . "_" . $dsgid2 . "." . "CDS-CDS";
     my $db =
@@ -2200,8 +2200,9 @@ sub get_unique_genes {
     my $count = 0;
     foreach my $fid (@qunique) {
         $count++;
-        $list->add_to_list_connectors_as_parent(
-            { child_id => $fid, child_type => 4 } );
+        $list->add_to_list_connectors({
+            parent_id => $list->id, child_id => $fid, child_type => 4
+        });
     }
     print $form->header;
     my $listview = $SERVER . "NotebookView.pl?lid=" . $list->id;
