@@ -39,6 +39,16 @@ $(document).ready(function(){
 	blast_param_on_select('coge_radio','coge');
 	blast_param(); //blast_param([],[animate_params]);
 	database_param(); //database_param([],['database']);
+
+    // track analysis
+    $("#run_cogeblast_button").on("click", function() {
+        ga('send', 'event', 'cogeblast', 'run', 'coge');
+    });
+
+    $("#ncbi_blast").on("click", function() {
+        ga('send', 'event', 'cogeblast', 'run', 'ncbi');
+    });
+
 });
 
 function generate_basefile() {
