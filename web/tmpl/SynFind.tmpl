@@ -191,6 +191,11 @@ $(document).ready(function(){
   $("#tabs").tabs();
   <TMPL_VAR NAME="DOCUMENT_READY">
   pageObj.tempdir="<TMPL_VAR NAME=TEMPDIR>";
+
+    // track analysis
+    $("#run_synfind_button").on("click", function() {
+        ga('send', 'event', 'synfind', 'run');
+    });
 });
 
 //jQuery UI opts
