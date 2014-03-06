@@ -458,6 +458,11 @@ $(document).ready(function(){
     }
 
     $("#tabs").removeClass("invisible");
+
+    // track analysis
+    $("#synmap_go").on("click", function() {
+        ga('send', 'event', 'synmap', 'run');
+    });
  });
 </script>
 

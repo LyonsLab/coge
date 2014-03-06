@@ -30,7 +30,7 @@
     </ul>
 
 <div id="tab1">
-	<span id="run_synfind_button" onClick="launch();" style="font-size: 1em" class='ui-button ui-button-go ui-corner-all'>Run SynFind</span><BR><br>
+	<span id="run_synfind_button" style="font-size: 1em" class='ui-button ui-button-go ui-corner-all'>Run SynFind</span><BR><br>
 	<TMPL_INCLUDE NAME='widgets/GenomeSelect.tmpl'> 
 	<br>
 
@@ -158,6 +158,11 @@ $(function() {
     $(".dialog_box").dialog({ autoOpen: false, width: 500 });
 
     $("#tabs").tabs().show();
+    
+    $("#run_synfind_button").on("click", function() {
+        ga('send', 'event', 'synfind', 'run'); // for analytics
+        launch();
+    });
 	
 	setTimeout(function() {	<TMPL_VAR NAME="DOCUMENT_READY"> }, 100 );
 });
