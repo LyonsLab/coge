@@ -1,174 +1,5 @@
-<TMPL_IF NAME="FRONT_PAGE">
-<tmpl_if name="beta">
-    <div class="small" style="padding-bottom: 5px; color: dimgray;">
-        <span class="large">Welcome to the <span class="alert">new beta version</span> of SynFind.</span><br>If you experience any difficulties
-        or prefer to use the old version, please <a id="beta_link" href="SynFind_old.pl">click here</a>.
-        <br>
-    </div>
-</tmpl_if>
+var spinner = '<img src="picts/ajax-loader.gif"/>';
 
-<aside class="info">
-    <p><a class="bold" href="http://genomevolution.org/wiki/index.php/SynFind" target="_blank">SynFind</a> identifies syntenic regions against any set of genomes given a gene in one genome.
-        <span class="link" onClick="$(this).remove(); $('#getting_started').fadeIn();">More...</span>
-    </p>
-
-    <div id="getting_started" class="hidden" style="max-width:90%;">
-        <p>Complete syntenic gene-sets can be downloaded, and syntenic depth tables are
-        generated to access the polyploidy level between the query genome and each
-        target genome.</p>
-    </div>
-</aside>
-
-<div id="tabs" class="hidden" style='margin-top: 0.5em'>
-    <ul>
-        <li class="small">
-            <a href="#tab1"><span>Configure Search</span></a>
-        </li>
-        <li class="small">
-            <a href="#tab2"><span>Configure Parameters</span></a>
-        </li>
-    </ul>
-
-<div id="tab1">
-    <span id="run_synfind_button" style="font-size: 1em" class='ui-button ui-button-go ui-corner-all'>Run SynFind</span><BR><br>
-    <TMPL_INCLUDE NAME='widgets/GenomeSelect.tmpl'>
-    <br>
-
-    <table class="ui-widget-content ui-corner-all" style="padding-right:5px;">
-        <tr><td colspan="2"><b>Specify Feature</b></td></tr>
-        <TR class="small">
-            <td nowrap style="padding-left:5px;padding-top:1px;">Name:</td>
-            <td>
-                <input type="search" name="accn" id="accn" tabindex="1"  size="20" placeholder="Search" value="<TMPL_VAR NAME=ACCN>" onkeypress="onEnter(event);"/>
-            </td>
-        </tr>
-        <tr class="small">
-            <TD nowrap style="padding-left:5px;padding-bottom:1px;">Annotation:</td>
-            <td nowrap>
-                <input type="search" name="annosearch" id="annosearch" tabindex="1"  size="20" placeholder="Search" value="<TMPL_VAR NAME=ANNO>" onkeypress="onEnter(event);"/>
-            </td>
-        </tr>
-        <TR class="small">
-            <td valign="top" nowrap style="padding-left:5px;">Organism:</td>
-            <TD>
-                <input type="search" size="20" placeholder="Search" name="org_name_desc_feat" id="org_name_desc_feat" onKeyUp='get_orgs_feat();'><br>
-                <DIV id="org_list_feat" style="padding-top:5px;"><TMPL_VAR NAME="ORG_LIST_FEAT"></DIV>
-            </td>
-        </tr>
-        <tr class="small">
-            <td><span class="ui-button ui-corner-all" onclick="search_chain(1)">Search</span></td>
-        </tr>
-    </table>
-
-    <br>
-
-    <table id="data_table" class="hidden">
-     <thead style="text-align:left;">
-      <th>Matches</th>
-      <th style="min-width:60px">Types</th>
-      <th>Genomes</th>
-     </thead>
-     <tbody class="small">
-     <tr valign="top">
-      <td valign="top">
-       <DIV id="accn_list"><input type="hidden" id="accn_select"></DIV>
-      </td>
-      <td valign="top">
-        <DIV id="FeatType"></DIV>
-      </td>
-      <td valign="top">
-       <DIV id="Source"><TMPL_VAR NAME="FEAT_DSGID"></DIV>
-     </tbody>
-    </table>
-
-    <br>
-
-    <DIV id="fid" class="hidden"><TMPL_VAR NAME="FID"></div>
-
-    <DIV id="anno" class="hidden"></DIV>
-
-</div> <!--close tab 1-->
-
-
-<div id="tab2">
-    <strong>General parameters</strong>
-    <TABLE class='small'>
-        <TR>
-            <TD>Comparison Algorithm: </TD>
-            <TD>
-                <select id='algo'>
-                    <option value='last' <TMPL_VAR NAME=LAST>>Last</option>
-                    <option value='lastz' <TMPL_VAR NAME=LASTZ>>LastZ</option>
-                </select>
-            </TD>
-        </TR>
-        </table>
-        <br>
-
-        <strong>Syntney finding parameters</strong>
-        <table class='small'>
-            <TR>
-                <TD>Gene window size: </TD>
-                <TD><input id='ws' type='text' size='3' value='<TMPL_VAR NAME=WS>'></TD>
-            </TR>
-            <TR>
-                <TD>Minimum number of genes: </TD>
-                <TD><input id='co' type='text' size='3' value='<TMPL_VAR NAME=CO>'></TD>
-            </TR>
-            <TR>
-                <TD>Scoring Funciton: </TD>
-                <TD>
-                    <select id='sf'>
-                        <option value='1' <TMPL_VAR NAME=SF_COLLINEAR> >Collinear</option>
-                        <option value='2' <TMPL_VAR NAME=SF_DENSITY> >Density</option>
-                    </select>
-                </TD>
-            <TR>
-                <TD>Max Syntenic Depth: <br><span class='small note'>(leave blank for unlimited)</span></TD>
-                <TD><input id='sd' type='text' size='3' value='<TMPL_VAR NAME=SD>'></TD>
-            </TR>
-        </TABLE>
-        </TR>
-    </TABLE>
-</div> <!--close tab 2-->
-
-</div> <!--close all tabs-->
-
-</TMPL_IF>
-
-
-<TMPL_IF NAME="RESULTS_DIV">
-    <DIV id="log_text" class='dna hidden' style="padding:15px;width:100%;border-top:1px solid lightgray;"></DIV>
-    <DIV id="results" class="hidden" style="padding:15px;border-top:1px solid lightgray;"></DIV>
-    <div id="feature_info_popup" class="hidden dialog_box" title="Feature Information"></div>
-</TMPL_IF>
-
-
-<TMPL_IF NAME="JAVASCRIPT">
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
-<script lanaguage="javascript" type="text/javascript" src="./js/synfind.js"></script>
-<SCRIPT language="JavaScript">
-$(function() {
-    $.ajaxSetup({
-        type: "GET",
-        url: '<TMPL_VAR NAME="PAGE_NAME">',
-        dataType: "html",
-        cache: false,
-    });
-
-    $(".dialog_box").dialog({ autoOpen: false, width: 500 });
-
-    $("#tabs").tabs().show();
-
-    $("#run_synfind_button").on("click", function() {
-        ga('send', 'event', 'synfind', 'run'); // for analytics
-        launch();
-    });
-
-    setTimeout(function() { <TMPL_VAR NAME="DOCUMENT_READY"> }, 100 );
-});
-
-<<<<<<< HEAD
 //function loading(id, msg) {
 //  $('#'+id).html('<font class="loading">Loading '+msg+' . . .</font>');
 //}
@@ -227,7 +58,7 @@ function launch() {
     $('#results').slideUp('fast',
             function() {
                 $('#results').html('');
-                $('#log_text').html('Running...').slideDown();
+                $('#log_text').slideDown();
             });
 
     var selected_genomes = $('#genome_choice').getLength(1);
@@ -568,7 +399,8 @@ function go_cogefeatsearch() {
     var accn = $('#accn').val();
     var annosearch = $('#annosearch').val();
     var org_id = $('#org_id_feat').val();
-    var org_name_desc = $('#org_name_desc_feat').val();
+    var org_name = $('#org_name_feat').val();
+    var org_desc = $('#org_desc_feat').val();
 
     //cogefeatsearch(['args__accn','accn', 'args__anno','annosearch',
     //'args__org_id','org_id_feat', 'args__org_name','org_name_feat',
@@ -579,7 +411,8 @@ function go_cogefeatsearch() {
             accn:       accn,
             anno:       annosearch,
             org_id:     org_id,
-            org_name_desc:  org_name_desc,
+            org_name:   org_name,
+            org_desc:   org_desc
         },
         success : function(data) {
             source_search_chain(data);
@@ -600,7 +433,8 @@ function source_search_chain(val) {
 
     var accn = $('#accn_select').val()[0];
     var org_id = $('#org_id_feat').val();
-    var org_name_desc = $('#org_name_desc_feat').val();
+    var org_name = $('#org_name_feat').val();
+    var org_desc = $('#org_desc_feat').val();
 
     //source_search(['args__accn','accn_select', 'args__org_id','org_id_feat',
     //'args__org_name','org_name_feat','args__org_desc','org_desc_feat'], [get_types_chain]);
@@ -609,7 +443,8 @@ function source_search_chain(val) {
             fname:      'source_search',
             accn:       accn,
             org_id:     org_id,
-            org_name_desc:  org_name_desc,
+            org_name:   org_name,
+            org_desc:   org_desc
         },
         success : function(data) {
             get_types_chain(data);
@@ -683,12 +518,24 @@ function show_anno(anno, fid) {
     setup_button_states();
 }
 
-function get_orgs_feat() {
-    var searchterm = $('#org_name_desc_feat').val();
+function search_org_feat(val){
+    if (val == 'name') {
+        $('#org_desc_feat').val("");
+        var searchterm = $('#org_name_feat').val();
+        get_orgs_feat('name', searchterm); //pageObj.time = setTimeout("get_orgs_feat(['args__type','args__name','args__search','org_name_feat'],['org_list_feat'])",500);
+    }
+    else if (val == 'desc') {
+        $('#org_name_feat').val("");
+        var searchterm = $('#org_desc_feat').val();
+        get_orgs_feat('desc', searchterm); //pageObj.time = setTimeout("get_orgs_feat(['args__type','args__desc','args__search','org_desc_feat'],['org_list_feat'])",500);
+    }
+}
 
+function get_orgs_feat(type, searchterm) {
     $.ajax({
         data: {
             fname:  'get_orgs_feat',
+            type:   type,
             search: searchterm,
         },
         success : function(html) {
@@ -706,9 +553,12 @@ function onEnter(e){
     }
 }
 
+function update_info_box(featid) {
+    generate_feat_info(featid); //generate_feat_info(['args__'+featid],['feature_info_popup']);
+    $('#feature_info_popup').dialog('open');
+}
+
 function generate_feat_info(featid) {
-    //generate_feat_info(['args__'+featid],['feature_info_popup']);
-    $('#feature_info_popup').html('Loading...').dialog('open');
     $.ajax({
         data: {
             fname:  'generate_feat_info',
@@ -740,7 +590,3 @@ function get_master(link) {
     }
     window.open(link);
 }
-=======
->>>>>>> refactor javascript out of template
-</SCRIPT>
-</TMPL_IF>
