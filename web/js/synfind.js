@@ -31,7 +31,7 @@ var spinner = '<img src="picts/ajax-loader.gif"/>';
 //  });
 //}
 
-function launch() {
+function launch(dialog, results) {
     var fid = $('#fid').html();
     if (!fid) {
         alert('Please search and select a feature for this analysis.')
@@ -49,17 +49,17 @@ function launch() {
         return;
     }
 
-    $('html, body').animate({scrollTop: 0}, 500);
+    var _results = $(results).hide().html('');
+    var status_dialog = $(dialog).dialog({
+        title: 'Running SynFind ....',
+        modal: true,
+        autoOpen: true
+    });
 
 //  pageObj.nolog = 1;
     pageObj.waittime = 1000;
 //  monitor_log();
-
-    $('#results').slideUp('fast',
-            function() {
-                $('#results').html('');
-                $('#log_text').slideDown();
-            });
+//
 
     var selected_genomes = $('#genome_choice').getLength(1);
     var qdsgid = $('#feat_dsgid').val();
@@ -90,7 +90,27 @@ function launch() {
             depth:              sd
         },
         success : function(html) {
-            handle_results(html);
+            if(!html) {
+                status_dialog.find(".error").slideDown();
+                status_dialog.find(".running").hide();
+                return;
+            }
+
+            status_dialog.find(".running").hide();
+            status_dialog.find(".complete").slideDown();
+
+            _results.html(html);
+
+            status_dialog.unbind().on("dialogclose", function() {
+                _results.removeClass('hidden').slideDown();
+
+                // reset dialog
+                status_dialog.find(".error,.complete").hide();
+                status_dialog.find(".running").show();
+            });
+
+            init_table_sorter();
+            setup_button_states();
         },
     });
 }
@@ -209,11 +229,6 @@ function launch() {
 //  if (message)
 //      $('#log_text').html("<div class='small'>"+message+'</div>');
 //}
-
-function update_status() {
-
-
-}
 
 //function clear_org_list()
 // {
@@ -363,11 +378,6 @@ $.fn.sortSelect = function(){
 };
 
 function handle_results(html) {
-    clearTimeout();
-    $('#log_text').hide(0);
-    $('#results').slideUp().html(html).slideDown();
-    init_table_sorter();
-    setup_button_states();
 }
 
 /*------------------------------------------------------------------------------
