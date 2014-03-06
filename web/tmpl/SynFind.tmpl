@@ -227,7 +227,7 @@ function launch() {
 	$('#results').slideUp('fast', 
 			function() { 
 				$('#results').html('');
-				$('#log_text').slideDown();
+				$('#log_text').html('Running...').slideDown();
 			});
 	
 	var selected_genomes = $('#genome_choice').getLength(1);
