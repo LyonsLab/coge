@@ -191,7 +191,7 @@ sub gen_body {
     $template->param( ACCN => $accn );
 
     #$template->param(FEAT_TYPE=> get_feature_types());
-    $template->param( ORG_LIST_FEAT => get_orgs_feat( type => "none" ) );
+    $template->param( ORG_LIST_FEAT => get_orgs_feat() );
     my $doc_ready;
     $doc_ready .= qq{search_chain(1);\n} if $accn;
 
@@ -256,7 +256,7 @@ sub get_orgs { #FIXME: dup'ed in CoGeBlast.pl
       $opts{html_only};    # optional flag to return html instead of JSON
     my $timestamp = $opts{timestamp};
 
-    #print STDERR "get_orgs: " . ($name_desc ? $name_desc : '') . "\n";
+    print STDERR "get_orgs: " . ($name_desc ? $name_desc : '') . "\n";
 
     my $html;
     my @organisms;
@@ -889,47 +889,49 @@ sub get_anno {
 
 sub get_orgs_feat {
     my %opts    = @_;
-    my $type    = $opts{type};
     my $search  = $opts{search};
     my $id_only = $opts{id_only};
     
-    my @db;
+    print STDERR "get_orgs_feat: search=$search\n";
+    
+    my @organisms;
     my $count;
-    if ( $type && $type eq "name" ) {
-        @db = $coge->resultset("Organism")->search( { name => { like => "%" . $search . "%" } } );
-        $count = scalar @db;
-    }
-    elsif ( $type && $type eq "desc" ) {
-        @db = $coge->resultset("Organism")->search( { description => { like => "%" . $search . "%" } } );
-        $count = scalar @db;
-    }
+
+    if ($search) {
+        $search = '%' . $search . '%';
+        @organisms = $coge->resultset("Organism")->search(
+            \[
+                'name LIKE ? OR description LIKE ?',
+                [ 'name',        $search ],
+                [ 'description', $search ]
+            ]
+        );  
+        $count = @organisms;
+    }  
     else {
         $count = $coge->resultset("Organism")->count();
-        #@db = $coge->resultset("Organism")->all;
     }
-    return map { $_->id } @db if $id_only;
+    return map { $_->id } @organisms if $id_only;
 
-    #my @db = $name ? $coge->resultset('Organism')->search({name=>{like=>"%".$name."%"}})
-    #  : $coge->resultset('Organism')->all();
     my @opts;
-    foreach my $item ( sort { uc( $a->name ) cmp uc( $b->name ) } @db ) {
+    foreach my $item ( sort { uc( $a->name ) cmp uc( $b->name ) } @organisms ) {
         push @opts,
             "<OPTION value=\"" . $item->id . "\" id=\"o" . $item->id . "\">" . $item->name . "</OPTION>";
     }
     my $html;
-    $html .= qq{<FONT CLASS ="small" id="org_count">Organism count: } . $count . qq{</FONT>\n<BR>\n};
+    $html .= qq{<div class="note" id="org_count">Matches: } . $count . qq{</div>\n};
     if ( $search && !@opts ) {
         $html .= qq{<input type = hidden name="org_id_feat" id="org_id_feat"><br>} . "No results";
         return $html;
     }
-    unshift( @opts,
-        "<OPTION value=\"all\" id=\"all\">All Listed Organisms</OPTION>" );
+    unshift( @opts, "<OPTION value=\"all\" id=\"all\">All Listed Organisms</OPTION>" );
     my $size = scalar @opts;
     $size = 8 if $size > 8;
     $html .= qq{<SELECT id="org_id_feat" SIZE="$size" MULTIPLE >\n}
          . join( "\n", @opts )
          . "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
+    
     return $html;
 }
 
@@ -937,22 +939,15 @@ sub source_search {
     my %opts     = @_;
     my $accn     = $opts{accn};
     my $org_id   = $opts{org_id};
-    my $org_name = $opts{org_name};
-    my $org_desc = $opts{org_desc};
+    my $org_name_desc = $opts{org_name_desc};
     $org_id = "all" unless $org_id;
-    #print STDERR "source_search: accn=$accn org_id=$org_id org_name=$org_name org_desc=$org_desc\n";
+    print STDERR "source_search: accn=$accn org_id=$org_id org_name_desc=$org_name_desc\n";
     
     my %org_ids;
     if ( $org_id eq "all" ) {
-        my ( $type, $search );
-        ( $type, $search ) = ( "name", $org_name )
-          if $org_name && $org_name ne "Search";
-        ( $type, $search ) = ( "desc", $org_desc )
-          if $org_desc && $org_desc ne "Search";
-        %org_ids =
-          map { $_ => 1 }
-          get_orgs( id_only => 1, type => $type, search => $search )
-          if $type && $search;
+        %org_ids = map { $_ => 1 } 
+            get_orgs( id_only => 1, search => $org_name_desc ) 
+                if $org_name_desc;
     }
     else {
         $org_ids{$org_id} = 1;
