@@ -179,11 +179,10 @@
     <div class="link small" style="color:dimgray; padding-left: 5px;"></div>
 </div>
 
-
-<TMPL_IF NAME="JAVASCRIPT">
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+<tmpl_if name="JAVASCRIPT">
+<script language="javascript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></script>
 <script lanaguage="javascript" type="text/javascript" src="./js/synfind.js"></script>
-<SCRIPT language="JavaScript">
+<script language="javascript">
 $(function() {
     $.ajaxSetup({
         type: "GET",
@@ -196,23 +195,35 @@ $(function() {
 
     $("#tabs").tabs().show();
 
-    $("#run_synfind_button").on("click", function() {
-        ga('send', 'event', 'synfind', 'run'); // for analytics
-
-        launch('#status_dialog', '#results', {
-            dsgids: $('#genome_choice').getLength(1),
-            fid: $('#fid').html(),
-            qdsgid: $('#feat_dsgid').val(),
-            window_size: $('#ws').val(),
-            cutoff: $('#co').val(),
-            scoring_function: $('#sf').val(),
-            algo: $('#algo').val(),
-            depth: $('#sd').val()
-        });
-    });
+    $("#run_synfind_button").on("click", schedule);
 
     setTimeout(function() { <TMPL_VAR NAME="DOCUMENT_READY"> }, 100 );
 });
 
-</SCRIPT>
-</TMPL_IF>
+function schedule() {
+    var options = {
+        dsgids: $('#genome_choice').getLength(1),
+        fid: $('#fid').html(),
+        qdsgid: $('#feat_dsgid').val(),
+        window_size: $('#ws').val(),
+        cutoff: $('#co').val(),
+        scoring_function: $('#sf').val(),
+        algo: $('#algo').val(),
+        depth: $('#sd').val()
+    };
+
+    if (options.fid === '') {
+        alert('Please search and select a feature for this analysis.')
+        return;
+    }
+
+    if (options.dsgids === 'blank') {
+        alert('Please select at least one genome to search.');
+        return;
+    }
+
+    launch('#status_dialog', '#results', options);
+    ga('send', 'event', 'synfind', 'run'); // for analytics
+}
+</script>
+</tmpl_if>
