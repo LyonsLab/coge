@@ -31,20 +31,13 @@ var spinner = '<img src="picts/ajax-loader.gif"/>';
 //  });
 //}
 
-function launch(dialog, results) {
-    var fid = $('#fid').html();
-    if (!fid) {
+function launch(dialog, results, options) {
+    if (options.fid === '') {
         alert('Please search and select a feature for this analysis.')
         return;
     }
 
-//  if (!pageObj.basename) {
-//      setTimeout("launch()", 100);
-//      return;
-//  }
-
-    var check = $('#genome_choice').getLength();
-    if( $('#blank').val() || check == 0 ){
+    if (options.dsgids === 'blank') {
         alert('Please select at least one genome to search.');
         return;
     }
@@ -56,39 +49,12 @@ function launch(dialog, results) {
         autoOpen: true
     });
 
-//  pageObj.nolog = 1;
-    pageObj.waittime = 1000;
-//  monitor_log();
-//
-
-    var selected_genomes = $('#genome_choice').getLength(1);
-    var qdsgid = $('#feat_dsgid').val();
-    var ws = $('#ws').val();
-    var co = $('#co').val();
-    var sf = $('#sf').val();
-    var algo = $('#algo').val();
-    var sd = $('#sd').val();
-
-    //go(['args__dsgids','args__'+selected_genomes,'args__fid','fid',
-    //'args__qdsgid','feat_dsgid', 'args__basename','args__'+pageObj.basename,
-    //'args__window_size','ws', 'args__cutoff','co', 'args__scoring_function','sf',
-    //'args__algo','algo', 'args__depth','sd'],[handle_results],'POST');
-
+    options.fname = 'go_synfind';
     // Sends to JEX and blocks until completion
-    $.ajax({
+    return $.ajax({
         type: 'POST',
         dataType: 'html',
-        data: {
-            fname:              'go_synfind',
-            dsgids:             selected_genomes,
-            fid:                fid,
-            qdsgid:             qdsgid,
-            window_size:        ws,
-            cutoff:             co,
-            scoring_function:   sf,
-            algo:               algo,
-            depth:              sd
-        },
+        data: options,
         success : function(html) {
             if(!html) {
                 status_dialog.find(".error").slideDown();

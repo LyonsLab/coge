@@ -199,7 +199,16 @@ $(function() {
     $("#run_synfind_button").on("click", function() {
         ga('send', 'event', 'synfind', 'run'); // for analytics
 
-        launch('#status_dialog', '#results');
+        launch('#status_dialog', '#results', {
+            dsgids: $('#genome_choice').getLength(1),
+            fid: $('#fid').html(),
+            qdsgid: $('#feat_dsgid').val(),
+            window_size: $('#ws').val(),
+            cutoff: $('#co').val(),
+            scoring_function: $('#sf').val(),
+            algo: $('#algo').val(),
+            depth: $('#sd').val()
+        });
     });
 
     setTimeout(function() { <TMPL_VAR NAME="DOCUMENT_READY"> }, 100 );
