@@ -706,12 +706,9 @@ function onEnter(e){
 	}
 }
 
-function update_info_box(featid) {
-	generate_feat_info(featid); //generate_feat_info(['args__'+featid],['feature_info_popup']);
-	$('#feature_info_popup').dialog('open');
-}
-
 function generate_feat_info(featid) {
+	//generate_feat_info(['args__'+featid],['feature_info_popup']);
+	$('#feature_info_popup').html('Loading...').dialog('open');
 	$.ajax({
 		data: {
 			fname:	'generate_feat_info',
