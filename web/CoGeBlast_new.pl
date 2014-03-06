@@ -2531,9 +2531,8 @@ qq{<span class=link onclick="\$('#org_desc').val('$_').focus();">$_</span>}
     my $link = $ds->data_source->link;
     $link = "http://" . $link unless $link =~ /^http/;
     $html .=
-        "<tr valign='top'><td>Source:<td><a class = 'link' href="
-      . $link
-      . " target=_new>"
+        "<tr valign='top'><td>Source:"
+      . '<td>' . ($link ? "<a class='link' href='$link' target=_new>" : '')
       . $ds->data_source->name . "</a>"
       . qq{<tr valign='top'><td style='white-space:nowrap'>Chromosomes:<td>$chr_num}
       . qq{<tr valign='top'><td style='white-space:nowrap'>Total length:<td>}

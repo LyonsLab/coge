@@ -535,8 +535,8 @@ sub get_genome_info { #FIXME: dup'ed in CoGeBlast.pl
     $html .= "<tr valign='top'><td style='white-space:nowrap'>Description:<td>" . join(
         "; ",
         map {
-qq{<span class=link onclick="\$('#org_desc').val('$_').focus();">$_</span>}
-          } split( /;\s+/, $dsg->organism->description )
+            qq{<span class=link onclick="\$('#org_desc').val('$_').focus();">$_</span>}
+        } split( /;\s+/, $dsg->organism->description )
       ) if $dsg->organism->description;
 
     my @gs = $dsg->genomic_sequences;
@@ -545,11 +545,10 @@ qq{<span class=link onclick="\$('#org_desc').val('$_').focus();">$_</span>}
     map { $total_length += $_->sequence_length } @gs;
     my ($ds) = $dsg->datasets;
     my $link = $ds->data_source->link;
-    $link = "http://" . $link unless $link =~ /^http/;
+    $link = "http://" . $link unless ($link && $link =~ /^http/);
     $html .=
-        "<tr valign='top'><td>Source:<td><a class = 'link' href="
-      . $link
-      . " target=_new>"
+        "<tr valign='top'><td>Source:"
+      . '<td>' . ($link ? "<a class='link' href='$link' target=_new>" : '')
       . $ds->data_source->name . "</a>"
       . qq{<tr valign='top'><td style='white-space:nowrap'>Chromosomes:<td>$chr_num}
       . qq{<tr valign='top'><td style='white-space:nowrap'>Total length:<td>}
@@ -559,14 +558,15 @@ qq{<span class=link onclick="\$('#org_desc').val('$_').focus();">$_</span>}
       . qq{<input type='hidden' id='gstid' value=}
       . $dsg->genomic_sequence_type->id;
 
-    #    foreach my $gs (@gs)
-    #      {
-    #   my $chr = $gs->chromosome;
-    #   my $length = $gs->sequence_length;
-    #   $length = commify($length);
-    #   $html .= qq{$chr:  $length bp<br>};
-    #     }
-    #    $html .= "</table>";
+#    foreach my $gs (@gs)
+#      {
+#   my $chr = $gs->chromosome;
+#   my $length = $gs->sequence_length;
+#   $length = commify($length);
+#   $html .= qq{$chr:  $length bp<br>};
+#     }
+#    $html .= "</table>";
+
     return $html;
 }
 
