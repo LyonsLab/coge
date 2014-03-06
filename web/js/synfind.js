@@ -41,12 +41,12 @@ function launch(dialog, results, options) {
 
     options.fname = 'go_synfind';
     // Sends to JEX and blocks until completion
-    return $.ajax({
+    var submit = $.ajax({
         type: 'POST',
-        dataType: 'html',
+        dataType: 'json',
         data: options,
-        success : function(html) {
-            if(!html) {
+        success : function(json) {
+            if(json.error) {
                 status_dialog.find(".error").slideDown();
                 status_dialog.find(".running").hide();
                 return;
@@ -55,7 +55,7 @@ function launch(dialog, results, options) {
             status_dialog.find(".running").hide();
             status_dialog.find(".complete").slideDown();
 
-            _results.html(html);
+            _results.html(json.html);
 
             status_dialog.unbind().on("dialogclose", function() {
                 _results.removeClass('hidden').slideDown();
