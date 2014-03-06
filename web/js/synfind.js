@@ -221,7 +221,6 @@ function update_status() {
 // counting();
 // }
 
-
 //function remove_selected_orgs() {
 // $('#genome_choice option:selected').each(function(){
 //    $('#'+$(this).val()).remove();
