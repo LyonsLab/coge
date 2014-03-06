@@ -3,6 +3,13 @@
 <SCRIPT language="JavaScript">
 
 $(document).ready(function(){
+	$.ajaxSetup({
+		type: "GET",
+		url: '<TMPL_VAR NAME="PAGE_NAME">',
+		dataType: "html",
+		cache: false,
+	});
+	
 	$(".dialog_box").dialog({ autoOpen: false, width: 500 });
 
 	//Object Generation
@@ -619,7 +626,6 @@ function blastOff() {
 		type: "POST",
         dataType: 'json',
 		data: {
-			jquery_ajax: 	1,
 			fname:			'blast_search',
 			program:		program,
 			expect:			expect,
@@ -1257,7 +1263,7 @@ function toggle_title(id, full, partial) {
 		    <span class="link" onClick="$(this).remove(); $('#getting_started').fadeIn();">More...</span>
 	  </p>
 	  
-	  <div id="getting_started" class="hidden">
+	  <div id="getting_started" class="hidden" style="max-width:90%;">
 	   Steps:
 	   <ol>
 	   	 <li>Paste-in query sequences

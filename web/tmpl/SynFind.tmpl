@@ -12,158 +12,119 @@
 		<span class="link" onClick="$(this).remove(); $('#getting_started').fadeIn();">More...</span>
 	</p>
 	
-	<div id="getting_started" class="hidden">
-		<p>SynFind identifies all syntenic regions to all genes in the query genome. 
-		Complete syntenic gene-sets can be downloaded, and syntenic depth tables are
+	<div id="getting_started" class="hidden" style="max-width:90%;">
+		<p>Complete syntenic gene-sets can be downloaded, and syntenic depth tables are
 		generated to access the polyploidy level between the query genome and each 
 		target genome.</p>
 	</div>
 </aside>
 
-  <div id=tabs style='margin-top: 0.5em'>
-   <ul>
-     <li class="small">
-        <a href="#tab1">
-        <span>Configure Search</span>
-    </a>
-      </li>
-     <li class="small">
-        <a href="#tab2">
-        <span>Configure Parameters</span>
-    </a>
-      </li>
-     </ul>
+<div id="tabs" class="hidden" style='margin-top: 0.5em'>
+    <ul>
+    	<li class="small">
+        	<a href="#tab1"><span>Configure Search</span></a>
+        </li>
+        <li class="small">
+        	<a href="#tab2"><span>Configure Parameters</span></a>
+        </li>
+    </ul>
 
+<div id="tab1">
+	<span id="run_synfind_button" onClick="launch();" style="font-size: 1em" class='ui-button ui-button-go ui-corner-all'>Run SynFind</span><BR><br>
+	<TMPL_INCLUDE NAME='widgets/GenomeSelect.tmpl'> 
+	<br>
 
- <div id="tab1">
- 
- <span id="run_synfind_button" style="font-size: 1em" class='ui-button ui-button-go ui-corner-all'>Run SynFind</span><BR><br>
- 
-  <table class="ui-widget-content ui-corner-all">
-  	<tr><td><b>Specify Organisms</b></td></tr>
-    <tr class="small"><td>
-    	<DIV>Organism Name: <input type="text" size=11 style="font-style:italic" class="org_search_name" value="Search" name="org_name" id="org_name"></DIV>
-    	<DIV>Organism Description: <input type="text" class="org_search_desc" size=11 style="font-style:italic" value="Search" name="org_desc" id="org_desc"></DIV>
-    <tr class="small" valign="top"><td>
-    	<DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
-    	<DIV id="org_seq_types"><TMPL_VAR NAME="ORG_SEQ_TYPES"></DIV>
-    	<span id="genome_info_button" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-info"></span>Get Genome Info</span>
-    	<span id="add_all_listed_button" href="javascript:void(0)" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plusthick"></span>Add all listed</span>
-    	</TD>
-    	<TD valign="middle" align=middle>
-    	<span onClick="remove_selected_orgs();" style="display:none" id="remove" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span>
-    	<span onClick="add_selected_orgs();" id="add" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>
-    	</TD>
-           <TD>
-              <div style="float:left" id=db_title class=small>Genomes to search: </DIV><div style="float:left;text-indent:1em;vertical-align: bottom" id=selected_genome_count class=small> </div>
+	<table class="ui-widget-content ui-corner-all">
+		<tr><td><b>Specify Feature</b></td></tr>
+		<TR class="small">
+			<td nowrap>Name:</td>
+			<td>
+				<input type="text" name="accn" id="accn" tabindex="1"  size="10" value="<TMPL_VAR NAME=ACCN>" onkeypress="onEnter(event);"/>
+			</td>
+		</tr> 
+		<tr class="small">
+			<TD nowrap>Annotation:</td>
+			<td nowrap>
+				<input type="text" name="annosearch" id="annosearch" tabindex="1"  size="10" value="<TMPL_VAR NAME=ANNO>" onkeypress="onEnter(event);"/>
+			</td>
+		</tr>
+		<TR class="small">
+			<td valign="top" nowrap>Organism:</td>
+			<TD>
+				Name: <input type="search" size="11" placeholder="Search" name="org_name_feat" id="org_name_feat" onKeyUp='search_org_feat("name");'><br>
+				Description: <input type="search" size="11" placeholder="Search" name="org_desc_feat" id="org_desc_feat" onKeyUp='search_org_feat("desc");'>
+				<DIV id="org_list_feat"><TMPL_VAR NAME="ORG_LIST_FEAT"></DIV>
+			</td>
+		</tr>
+		<tr class="small">
+			<td><span class="ui-button ui-corner-all" onclick="search_chain(1)">Search</span></td>
+		</tr>
+	</table>
 
-              <DIV id=db_select><SELECT id="genome_choice" SIZE="8" MULTIPLE onClick="$('#add').hide(0);$('#remove').show(0);">
-              <option id=blank value=null>No Database Selected</option>
-              </SELECT></DIV>
-           <span onClick="clear_org_list();" id="clearlist" name=clearlist class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minusthick"></span>Clear Org List</span>
-           <span class='ui-button ui-corner-all' onclick="sort_genome_choice()">Sort</span>
-              <TMPL_IF NAME="SAVE_ORG_LIST">
-          <span class='ui-button ui-button-icon-left ui-corner-all' onclick="save_orglist_synfind(['args__dsgids','args__'+$('#genome_choice').getLength(1)],[])"><span class="ui-icon ui-icon-disk"></span>Save Org List</span>
-              </TMPL_IF>
-           </TD>
-  </table>
+	<br>
 
-  <br>
+	<table id="data_table" class="hidden">
+	 <thead style="text-align:left;">
+	  <th>Matches</th>
+	  <th style="min-width:60px">Types</th>
+	  <th>Genomes</th>
+	 </thead>
+	 <tbody class="small">
+	 <tr valign="top">
+	  <td valign="top">
+	   <DIV id="accn_list"><input type="hidden" id="accn_select"></DIV>
+	  </td>
+	  <td valign="top">
+	    <DIV id="FeatType"></DIV>
+	  </td>
+	  <td valign="top">
+	   <DIV id="Source"><TMPL_VAR NAME="FEAT_DSGID"></DIV>
+	 </tbody>
+	</table>
 
-<table class="ui-widget-content ui-corner-all">
-	<tr><td><b>Specify Feature</b></td></tr>
-	<TR class="small">
-		<td nowrap>
-		Name:
-		</td>
-		<td>
-		<input type="text" name="accn" id="accn" tabindex="1"  size="10" value="<TMPL_VAR NAME=ACCN>" onkeypress="onEnter(event);"/>
-		</td>
-	</tr> 
-	<tr class="small">
-		<TD nowrap>
-		Annotation:
-		<td nowrap>
-		<input type="text" name="annosearch" id="annosearch" tabindex="1"  size="10" value="<TMPL_VAR NAME=ANNO>" onkeypress="onEnter(event);"/>
-	</tr>
-	<TR class="small">
-		<td valign="top" nowrap>
-		Organism:</td>
-		<TD>
-		Name: <input type="text" size=11 onFocus="search_bar('org_name_feat')" style="font-style:italic" value="Search" name="org_name_feat" id="org_name_feat" onKeyUp='timing("org_name_feat");'><br>
-		Description: <input type="text" size=11 value="Search" name = "org_desc_feat" id="org_desc_feat" style="font-style:italic" onFocus="search_bar('org_desc_feat')" onKeyUp='timing("org_desc_feat");'>
-		<DIV id="org_list_feat"><TMPL_VAR NAME="ORG_LIST_FEAT"></DIV>
-		</td>
-	</tr>
-	<tr class="small">
-		<td><span class="ui-button ui-corner-all" onclick="search_chain(1)">Search</span></td>
-	</tr>
-</table>
+	<br>
 
-<br>
-
-<table id="data_table" class="hidden ui-widget-content ui-corner-all">
- <thead style="text-align:left;">
-  <th>Matches</th>
-  <th>Types</th>
-  <th>Genomes</th>
- </thead>
- <tbody class="small">
- <tr valign="top">
-  <td valign="top">
-   <DIV id="accn_list"><input type="hidden" id="accn_select" ></DIV>
-  </td>
-  <td valign="top">
-    <DIV id="FeatType"></DIV>
-  </td>
-  <td valign="top">
-   <DIV id="Source"><TMPL_VAR NAME="FEAT_DSGID"></DIV>
- </tbody>
-</table>
-
-<br>
-
-<DIV id="fid" class="hidden"><TMPL_VAR NAME="FID"></div>
-
-<DIV id="anno" class="hidden ui-widget-content ui-corner-all"></DIV>
+	<DIV id="fid" class="hidden"><TMPL_VAR NAME="FID"></div>
+	
+	<DIV id="anno" class="hidden"></DIV>
 
 </div> <!--close tab 1-->
  
  
- <div id="tab2">
+<div id="tab2">
  General parameters:
-   <TABLE class=small>
+   <TABLE class='small'>
     <TR>
-     <Td>Comparison Algorithm:</Td>
+     <TD>Comparison Algorithm:</TD>
      <TD>
-      <select id=algo>
-        <option value=last <TMPL_VAR NAME=LAST> >Last</option>
-        <option value=lastz <TMPL_VAR NAME=LASTZ> >LastZ</option>
+      <select id='algo'>
+        <option value='last' <TMPL_VAR NAME=LAST>>Last</option>
+        <option value='lastz' <TMPL_VAR NAME=LASTZ>>LastZ</option>
       </select>
      </TD>
     </TR>
     </table>
   Syntney finding parameters:
-    <table class=small>
+    <table class='small'>
     <TR>
      <TD>Gene window size:</TD>
-     <TD><input id=ws type=text size=3 value=<TMPL_VAR NAME=WS>></TD>
+     <TD><input id='ws' type='text' size='3' value='<TMPL_VAR NAME=WS>'></TD>
     </TR>
     <TR>
      <TD>Minimum number of genes: </TD>
-     <TD><input id=co type=text size=3 value=<TMPL_VAR NAME=CO>></TD>
+     <TD><input id='co' type='text' size='3' value='<TMPL_VAR NAME=CO>'></TD>
     </TR>
     <TR>
      <TD>Scoring Funciton:</TD>
      <TD>
-      <select id=sf>
-        <option value=1 <TMPL_VAR NAME=SF_COLLINEAR> >Collinear</option>
-        <option value=2 <TMPL_VAR NAME=SF_DENSITY> >Density</option>
+      <select id='sf'>
+        <option value='1' <TMPL_VAR NAME=SF_COLLINEAR> >Collinear</option>
+        <option value='2' <TMPL_VAR NAME=SF_DENSITY> >Density</option>
       </select>
     <TR>
      <TD>Max Syntenic Depth:<br>
          (leave blank for unlimited)</TD>
-     <TD><input id=sd type=text size=3 value=<TMPL_VAR NAME=SD>></TD>
+     <TD><input id='sd' type='text' size='3' value='<TMPL_VAR NAME=SD>'></TD>
      </TD>
      </TR></TABLE>
     </TR>
@@ -171,413 +132,335 @@
  </div> <!--close tab 2-->
 </div> <!--close all tabs-->
 
-
-<div id="genome_info_popup" class="dialog_box" title="Genome Information"><span class=loading>Loading. . .</span></div>
-
 </TMPL_IF>
+
 
 <TMPL_IF NAME="RESULTS_DIV">
-  <DIV id="log_text" class='dna hidden'></DIV>
-  <DIV id="results" class="hidden ui-widget-content ui-corner-all"></DIV>
- <div id="feature_info_popup" class="dialog_box" title="Feature Information"></div>
+  <DIV id="log_text" class='dna hidden' style="padding:15px;width:100%;border-top:1px solid lightgray;"></DIV>
+  <DIV id="results" class="hidden" style="padding:15px;border-top:1px solid lightgray;"></DIV>
+ <div id="feature_info_popup" class="hidden dialog_box" title="Feature Information"></div>
 </TMPL_IF>
+
 
 <TMPL_IF NAME="JAVASCRIPT">
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
 <SCRIPT language="JavaScript">
-
-
-$(document).ready(function(){
-  $("#tabs").tabs();
-  <TMPL_VAR NAME="DOCUMENT_READY">
-  pageObj.tempdir="<TMPL_VAR NAME=TEMPDIR>";
-});
-
-//jQuery UI opts
-
+var spinner = '<img src="picts/ajax-loader.gif"/>';
 
 $(function() {
- //substaniate dialog boxes
-        $(".dialog_box").dialog({ autoOpen: false, width: 500 });
+	$.ajaxSetup({
+		type: "GET",
+		url: '<TMPL_VAR NAME="PAGE_NAME">',
+		dataType: "html",
+		cache: false,
+	});
+	
+    $(".dialog_box").dialog({ autoOpen: false, width: 500 });
 
-/**Button initializations**/
-    //Run SynFind
-    $('#run_synfind_button').click(function() {
-                    reset_basename();
-                    generate_basefile([],[update_basename]);
-                    launch();
-            });
-    //Add all Listed
-    $('#add_all_listed_button').click(function() {
-                 add_all_orgs();
-            });
-    //Remove
-    $('#remove').click(function() {
-        $('#genome_choice option:selected').each(function(){
-                      $('#'+$(this).val()).remove();
-            });
-        counting();
-    });
-    //Add
-    $('#add').click(function() {
-            add_selected_orgs();
-    });
-
-
-
-    //Get org info
-    if ($('#dsgid').length > 0) { // mdb tempfix for issue #21
-        $("#genome_info_button").click(function() {
-                        get_genome_info(['args__dsgid','dsgid'],['genome_info_popup']);
-                        $('#genome_info_popup').dialog('open');
-                });
-    }
+    $("#tabs").tabs().show();
+	
+	setTimeout(function() {	<TMPL_VAR NAME="DOCUMENT_READY"> }, 100 );
 });
 
-$(".dialog_box").dialog({ autoOpen: false, width: 500 });
+//function loading(id, msg) {
+//	$('#'+id).html('<font class="loading">Loading '+msg+' . . .</font>');
+//}
 
-function loading(id,msg) {
-  var message = '<font class="loading">Loading '+msg+' . . .</font>';
-  $('#'+id).html(message);
+//function counting(){
+//	var count = $('#genome_choice').getLength();
+//	if (count == 0) {
+//		$('#genome_choice').html('<option id=blank value=null>No Organism Selected</option>');
+//	}
+//	$('#selected_genome_count').html(count);
+//}
+
+//function update_basename(basename){
+//    pageObj.basename = basename;
+//}
+//
+//function reset_basename(){
+//    if (pageObj.basename) pageObj.basename = 0;
+//}
+//
+//function generate_basefile() {
+//	$.ajax({
+//		data: {
+//			fname: 'generate_basefile',
+//		},
+//		success : function(filename) {
+//			update_basename(filename);
+//		}
+//	});
+//}
+
+function launch() {
+	var fid = $('#fid').html();
+	if (!fid) {
+		alert('Please search and select a feature for this analysis.')
+		return;
+	}
+	
+//	if (!pageObj.basename) {
+//		setTimeout("launch()", 100);
+//		return;
+//	}
+	
+	var check = $('#genome_choice').getLength();
+	if( $('#blank').val() || check == 0 ){
+		alert('Please select at least one genome to search.');
+		return;
+	}
+	
+	$('html, body').animate({scrollTop: 0}, 500);
+	
+//	pageObj.nolog = 1;
+	pageObj.waittime = 1000;
+//	monitor_log();
+	
+	$('#results').slideUp('fast', 
+			function() { 
+				$('#results').html('');
+				$('#log_text').slideDown();
+			});
+	
+	var selected_genomes = $('#genome_choice').getLength(1);
+	var qdsgid = $('#feat_dsgid').val();
+	var ws = $('#ws').val();
+	var co = $('#co').val();
+	var sf = $('#sf').val();
+	var algo = $('#algo').val();
+	var sd = $('#sd').val();
+	
+	//go(['args__dsgids','args__'+selected_genomes,'args__fid','fid',
+	//'args__qdsgid','feat_dsgid', 'args__basename','args__'+pageObj.basename,
+	//'args__window_size','ws', 'args__cutoff','co', 'args__scoring_function','sf',
+	//'args__algo','algo', 'args__depth','sd'],[handle_results],'POST');
+	
+	// Sends to JEX and blocks until completion
+	$.ajax({
+		type: 'POST',
+        dataType: 'html',
+		data: {
+			fname: 				'go_synfind',
+			dsgids: 			selected_genomes,
+			fid: 				fid,
+			qdsgid: 			qdsgid,
+			window_size: 		ws,
+			cutoff: 			co,
+			scoring_function: 	sf,
+			algo: 				algo,
+			depth: 				sd
+		},
+		success : function(html) {
+			handle_results(html);
+		},
+	});
 }
 
+//function show_add() {
+//  if($('#add').is(":hidden")) {
+//    $('#remove').hide(0);
+//    $('#add').show(0);
+//  }
+//}
 
-function counting(){
-  var count = $('#genome_choice').getLength();
-  if (count == 0) {$('#genome_choice').html('<option id=blank value=null>No Organism Selected</option>');}
-  $('#selected_genome_count').html(count);
+//function org_search(desc_search){
+//  if (pageObj.time){
+//   clearTimeout(pageObj.time);
+//  }
+//  name = $('#org_name').val();
+//  desc = $('#org_desc').val()
+//  if (desc_search) {
+//    if ( pageObj.prev_desc == desc ) {return;}
+//    pageObj.time = setTimeout("get_orgs(['args__desc','args__'+desc], ['org_list']);",500);
+//    setTimeout("pageObj.prev_desc=desc",500);
+//    pageObj.prev_name="";
+//   }
+//  else
+//   {
+//    if ( pageObj.prev_name == name) {return;}
+//    pageObj.time = setTimeout("get_orgs(['args__name','args__'+name], ['org_list']);",500);
+//    setTimeout("pageObj.prev_name=name",500);
+//    pageObj.prev_desc="";
+//
+//   }
+//  setTimeout("seq_type_search()",600);
+//}
+
+//function seq_type_search() {
+// if (ajax.length)
+//    {
+//     setTimeout("seq_type_search()",500);
+//    }
+//  else if ($('#org_id').val()) {
+//    gen_dsg_menu(['args__oid', 'org_id'],['org_seq_types']);
+//    show_add();
+//   }
+//  else {
+//   $('#org_seq_types').html('');
+//   $('#add').hide(0);
+//  }
+//}
+
+//function monitor_log(log) {
+//	var fasta = "";
+//	var blast = 0;
+//	var results = 0;
+//	var done = 0;
+//	var match;
+//	pageObj.finished = 0;
+//	
+//	if (log) {
+//		if (log.match(/\*\s+fasta\sfile/i)) {
+//			fasta="Generating blastable databases . . . <br/>";
+//			match=log.match(/\*(.+)\*\sblastdb/g);
+//			if (match) {
+//				var crappy_workaround;
+//				for (i=0;i<match.length;i++) {
+//					crappy_workaround = match[i].match(/\*(.+)\*/);
+//					fasta += "&nbsp;&nbsp;&nbsp;"+crappy_workaround[1]+" database built!<br/>";
+//				}
+//			}
+//		}
+//		
+//		if (log.match(/running/i)) {
+//			fasta += "Blastable databases generation done!<br/>";
+//			
+//			var blast_program = log.match(/-p\s(\w+)\s/);
+//			if (!blast_program)
+//				blast_program = log.match(/(blastz)/);
+//			blast="Running blast algorithm . . . <br/>";
+//			
+//			match=log.match(/\*(.+)\*\sblast\sanalysis\scomplete/g);
+//			if (match) {
+//				var crappy_workaround;
+//				for (i=0;i<match.length;i++) {
+//					crappy_workaround = match[i].match(/\*(.+)\*/);
+//					blast += "&nbsp;&nbsp;&nbsp;"+crappy_workaround[1]+" complete!<br/>";
+//				}
+//			}
+//		}
+//		
+//		if (log.match(/Results/i)) {
+//			blast += "Analysis complete!<br/>";
+//			results = "Collating results. . . ";
+//		}
+//		if (log.match(/Finished/i)) {
+//			results += "done!<br/>";
+//			done = "Displaying results.  This may take your browser some time to process the HSP table.  Please be patient."
+//			pageObj.finished = 1;
+//		}
+//	}
+//	else {
+//		pageObj.nolog += 1;
+//	}
+//	
+//	var message = "Initializing search . . . ";
+//	if (fasta) message += "done!<br/>"+fasta;
+//	if (blast) message += blast;
+//	if (results) message = results;
+//	if (done) message += done;
+//	
+//	if ( !pageObj.finished && pageObj.nolog < 20 ) {
+//		pageObj.waittime = pageObj.waittime*2;
+//		if (pageObj.waittime > 60*1000)
+//			pageObj.waittime = 60*1000;
+//		message += "<br/>Next progress check in "+pageObj.waittime/1000+" seconds.";
+//		setTimeout("monitor_log()", pageObj.waittime);
+//	}
+//	if (message) 
+//		$('#log_text').html("<div class='small'>"+message+'</div>');
+//}
+
+function update_status() {
+	
+
 }
 
-function update_basename(basename){
-    pageObj.basename=basename;
-    //alert(pageObj.basename);
-}
-
-function reset_basename(){
-    if(pageObj.basename) pageObj.basename=0;
-}
-
-function launch(){
-  if (!$('#fid').html())
-  {
-    alert('Please search and select a feature for this analysis.')
-    return;
-  }
-  if(!pageObj.basename)
-  {
-    setTimeout("launch()", 100);
-    return;
-  }
-  pageObj.waittime=1000;
-  //alert("Passed setTimeout loop");
-  var check = $('#genome_choice').getLength();
-  if(($('#blank').val())||(check==0)){
-    alert('Please select at least one genome to search.');
-    return;
-  }
-  jQuery('html, body').animate({scrollTop: 0}, 500);
-  $('#results').html('').hide(0);
-  $('#log_text').html('').show(0);
-
-  pageObj.nolog=1;
-  setTimeout("monitor_log()", 1000);
-  var selected_genomes = $('#genome_choice').getLength(1);
-
-  go(['args__dsgids','args__'+selected_genomes,'args__fid','fid','args__qdsgid','feat_dsgid', 'args__basename','args__'+pageObj.basename,'args__window_size','ws', 'args__cutoff','co', 'args__scoring_function','sf', 'args__algo','algo', 'args__depth','sd'],[handle_results],'POST');
+//function clear_org_list()
+// {
+// $('#genome_choice').empty();
+// counting();
+// }
 
 
-}
+//function remove_selected_orgs() {
+// $('#genome_choice option:selected').each(function(){
+//    $('#'+$(this).val()).remove();
+//    });
+// counting();
+// }
 
-function show_add() {
-  if($('#add').is(":hidden")) {
-    $('#remove').hide(0);
-    $('#add').show(0);
-  }
-}
+//function add_all_orgs() {
+// var ids;
+// var count =0;
+// $('#org_id option').each(function(){
+//     ids = ids+","+$(this).val();
+//     if (count == 100)
+//      {
+//         get_dsg_for_search_menu(['args__orgid','args__'+ids],[add_to_list])
+//         ids = "";
+//         count =0;
+//      }
+//
+//     count++;
+//   });
+// get_dsg_for_search_menu(['args__orgid','args__'+ids],[add_to_list])
+// sort_genome_choice();
+//}
 
-function org_search(desc_search){
-  if (pageObj.time){
-   clearTimeout(pageObj.time);
-  }
-  name = $('#org_name').val();
-  desc = $('#org_desc').val()
-  if (desc_search) {
-    if ( pageObj.prev_desc == desc ) {return;}
-    pageObj.time = setTimeout("get_orgs(['args__desc','args__'+desc], ['org_list']);",500);
-    setTimeout("pageObj.prev_desc=desc",500);
-    pageObj.prev_name="";
-   }
-  else
-   {
-    if ( pageObj.prev_name == name) {return;}
-    pageObj.time = setTimeout("get_orgs(['args__name','args__'+name], ['org_list']);",500);
-    setTimeout("pageObj.prev_name=name",500);
-    pageObj.prev_desc="";
+//function add_selected_orgs() {
+// var ids;
+// var count =0;
+// $('#org_id option:selected').each(function(){
+//     ids = ids+","+$(this).val();
+//     if (count == 100)
+//      {
+//         get_dsg_for_search_menu(['args__orgid','args__'+ids],[add_to_list]);
+//         ids = "";
+//         count =0;
+//      }
+//
+//     count++;
+//    });
+//  if (count == 1)
+//   {
+//        if ($('#dsgid').length > 0) { // mdb tempfix for issue #21
+//            get_dsg_for_search_menu(['args__dsgid','dsgid'],[add_to_list]);
+//        }
+//   }
+//  else
+//   {
+//    get_dsg_for_search_menu(['args__orgid','args__'+ids],[add_to_list]);
+//   }
+//  sort_genome_choice();
+//}
 
-   }
-  setTimeout("seq_type_search()",600);
-}
+//function add_to_list(stuff){
+//  var orgs = stuff.split(':::');
+//  for (var i=0; i < orgs.length; i++)
+//   {
+//     var item = orgs[i].split('::');
+//     id = item[0];
+//     org = item[1];
+//     if (!id && !org) {continue;}
+//     var check = $('#'+id).val();
+//     if (check){ continue; }
+//     var html = '<option id='+id+' value='+id+' ondblclick="remove_selected_orgs();">'+org+'</option>';
+//     $('#blank').remove();
+//     $('#genome_choice').append(html);
+//   }
+//  counting();
+//}
 
-function seq_type_search() {
-
- if (ajax.length)
-    {
-     setTimeout("seq_type_search()",500);
-    }
-  else if ($('#org_id').val()) {
-    gen_dsg_menu(['args__oid', 'org_id'],['org_seq_types']);
-    show_add();
-   }
-  else {
-   $('#org_seq_types').html('');
-   $('#add').hide(0);
-  }
-}
-
- function monitor_log(log)
-{
-//  console.log(log);
-  var fasta = "";
-  var blast = 0;
-  var results = 0;
-  var done = 0;
-  var match;
-  pageObj.finished = 0;
-  if (log) {
-  /*
-
-   if (log.match(/Finished!/))
-    {
-     database = database+"done!\n";
-     pageObj.finished = 1;
-    }
-
-   match=log.match(/fasta/i);
-  if (match && match[0])
-   {
-     match.reverse();
-     sequence = "Generating "+match[0]+". . .";
-   }
-   match=log.match(/running\s+(\(.*?\))/g);
-   if (match && match[0]) {
-     sequence = sequence +"done!<br/>";
-     match.reverse();
-     val = match[0];
-     if (!val) val = "";
-     algo = "Alignment algorithm "+val+". . .";
-   }
-
-   match=log.match(/image\s+(\(.*?\))/g);
-   if (match && match[0]) {
-     algo = algo+"done!<br/>";
-     match.reverse();
-     val = match[0];
-     if (!val) val = "";
-     image = "Rendering "+val+". . .";
-   }
-   if (log.match(/database/)) {
-     image = image+"done!<br/>";
-     database = "Generating annotation database. . .";
-   }
-  }
-  */
-  //match=log.match(/\*\s+fasta\sfile/);
-  if(log.match(/\*\s+fasta\sfile/i))
-  {
-    fasta="Generating blastable databases . . . <br/>";
-    match=log.match(/\*(.+)\*\sblastdb/g);
-    if(match)
-    {
-        var crappy_workaround;
-        for (i=0;i<match.length;i++)
-        {
-            crappy_workaround = match[i].match(/\*(.+)\*/);
-            fasta += "&nbsp;&nbsp;&nbsp;"+crappy_workaround[1]+" database built!<br/>";
-        }
-    }
-  }
-
-    if(log.match(/running/i))
-  {
-    fasta += "Blastable databases generation done!<br/>";
-    var blast_program = log.match(/-p\s(\w+)\s/);
-    if (!blast_program)
-      {
-        blast_program = log.match(/(blastz)/);
-      }
-    blast="Running blast algorithm . . . <br/>";
-
-    match=log.match(/\*(.+)\*\sblast\sanalysis\scomplete/g);
-    if(match)
-    {
-        var crappy_workaround;
-        for (i=0;i<match.length;i++)
-        {
-            crappy_workaround = match[i].match(/\*(.+)\*/);
-            blast += "&nbsp;&nbsp;&nbsp;"+crappy_workaround[1]+" complete!<br/>";
-        }
-    }
-  }
-
-  if(log.match(/Results/i))
-  {
-    blast += "Analysis complete!<br/>";
-    results = "Collating results. . . ";
-  }
-     if (log.match(/Finished/i))
-    {
-     results += "done!<br/>";
-     done = "Displaying results.  This may take your browser some time to process the HSP table.  Please be patient."
-
-     pageObj.finished = 1;
-    }
-
-  }
-
-  else {pageObj.nolog += 1;}
-  var message = "Initializing search . . . ";
-
-  if (fasta) message += "done!<br/>"+fasta;
-  if (blast) message += blast;
-  if (results) message = results;
-  if (done) message += done;
-
-/*  if (!pageObj.finished && pageObj.nolog<8) {
-  setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__SynFind'], [monitor_log])",1000);
-  }
-*/
-//  if (ajax.length) {setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__GEvo'], [monitor_log])",1000);}
-  if (!pageObj.finished && pageObj.nolog<8)
-  {
-    var waittime = pageObj.waittime;
-    pageObj.waittime = pageObj.waittime*2;
-    message+="<br/>Next progress check in "+waittime/1000+" seconds.";
-    setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__tempdir', 'args__'+pageObj.tempdir], [monitor_log])",pageObj.waittime);
-//    setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__SynFind'], [monitor_log])",waittime);
-  }
-/*
-  else
-  {
-   message = "There has been no update on your results during the first "+pageObj.waittime/1000+ "seconds of your analysis.  An error may have occured.  You can check your logfile at <a href='tmp/GEvo/"+pageObj.basename+".log' target=_new>this link</a> which may help you determin what went wrong, or send it to CoGe's adminstrator for debugging.  In the meanwhile, we suggest that you either wait a bit longer to see if the analsysi completes, and if not rerun your analysis.  If you have submitting very large regions for anlaysis (e.g. several megabases), please try a smaller region for analsyis.";
-  }
-  */
-  if (message) $('#log_text').html("<div class='small'>"+message+'</div>');
-}
-
-
-function clear_org_list()
- {
- $('#genome_choice').empty();
- counting();
- }
-
-
-function remove_selected_orgs() {
- $('#genome_choice option:selected').each(function(){
-    $('#'+$(this).val()).remove();
-    });
- counting();
- }
-
-function add_all_orgs() {
- var ids;
- var count =0;
- $('#org_id option').each(function(){
-     ids = ids+","+$(this).val();
-     if (count == 100)
-      {
-         get_dsg_for_search_menu(['args__orgid','args__'+ids],[add_to_list])
-         ids = "";
-         count =0;
-      }
-
-     count++;
-   });
- get_dsg_for_search_menu(['args__orgid','args__'+ids],[add_to_list])
- sort_genome_choice();
-}
-
-function add_selected_orgs() {
- var ids;
- var count =0;
- $('#org_id option:selected').each(function(){
-     ids = ids+","+$(this).val();
-     if (count == 100)
-      {
-         get_dsg_for_search_menu(['args__orgid','args__'+ids],[add_to_list]);
-         ids = "";
-         count =0;
-      }
-
-     count++;
-    });
-  if (count == 1)
-   {
-        if ($('#dsgid').length > 0) { // mdb tempfix for issue #21
-            get_dsg_for_search_menu(['args__dsgid','dsgid'],[add_to_list]);
-        }
-   }
-  else
-   {
-    get_dsg_for_search_menu(['args__orgid','args__'+ids],[add_to_list]);
-   }
-  sort_genome_choice();
-}
-
-function add_to_list(stuff){
-  var orgs = stuff.split(':::');
-  for (var i=0; i < orgs.length; i++)
-   {
-     var item = orgs[i].split('::');
-     id = item[0];
-     org = item[1];
-     if (!id && !org) {continue;}
-     var check = $('#'+id).val();
-     if (check){ continue; }
-     var html = '<option id='+id+' value='+id+' ondblclick="remove_selected_orgs();">'+org+'</option>';
-     $('#blank').remove();
-     $('#genome_choice').append(html);
-   }
-  counting();
-}
-
-
-function sort_genome_choice() {
-    if (ajax.length)
-     {
-       setTimeout("sort_genome_choice()",100);
-       return;
-     }
-   $('#genome_choice').append().sortSelect();
-}
-
-//jQuery setup for org search textboxes
-$(function() {
-         $(".org_search_name")
-         .focus(function() {
-                     //Clear search bar if 'Search' is in it or is empty (if someone refreshes)
-                     if( $(this).val() == 'Search' ||  $(this).val() == ''){
-                  $(this).val('');
-                  }
-                 $(this).css({fontStyle: "normal"});
-                 org_search();
-               })
-        .keyup(function() {
-                      org_search();
-                  });
-         $(".org_search_desc")
-         .focus(function() {
-                     //Clear search bar if 'Search' is in it or is empty (if someone refreshes)
-                     if( $(this).val() == 'Search' ||  $(this).val() == ''){
-                    $(this).val('');
-                  }
-                 $(this).css({fontStyle: "normal"});
-                 org_search(1);
-               })
-        .keyup(function() {
-                      org_search(1);
-                  });
-});
+//function sort_genome_choice() {
+//    if (ajax.length)
+//     {
+//       setTimeout("sort_genome_choice()",100);
+//       return;
+//     }
+//   $('#genome_choice').append().sortSelect();
+//}
 
 $.fn.getLength = function(val){
   var opt_length;
@@ -643,175 +526,231 @@ $.fn.sortSelect = function(){
 };
 
 function handle_results(html) {
-  $('#log_text').hide(0);
-  $('#results').html(html);
-  $('#results').show(0);
-  init_table_sorter();
-  setup_button_states();
+	clearTimeout();
+	$('#log_text').hide(0);
+	$('#results').slideUp().html(html).slideDown();
+	init_table_sorter();
+	setup_button_states();
 }
 
-////////////////////
-//feat search stuff
-////////////////////
+/*------------------------------------------------------------------------------
+	Feature Search 
+------------------------------------------------------------------------------*/
 
 function search_chain(val) {
- $('#data_table').show(0);
- accnminlen = 3;
- annominlen = 8;
- $('#anno').hide();
- $('#accn_list').hide();
- $('#Source').hide();
- $('#FeatType').hide();
- var searched = 0;
- if ((val == 1)){
-   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >').show();
-   searched=1;
-   go_cogefeatsearch();
-
- }
- else if ($('#accn').val().length > accnminlen) {
-   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >').show();
-   searched=1;
-   go_cogefeatsearch();
- }
- else if ($('#annosearch').val().length > annominlen) {
-   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >').show();
-   searched=1;
-   go_cogefeatsearch();
- }
-
- if (!searched)
-  {
-    $('anno').html('Search not run.').show();
-  }
-
+	$('#data_table').show(0);
+	$('#anno,#accn_list,#Source,#FeatType').hide();
+	
+	var accnminlen = 3;
+	var annominlen = 8;
+	
+	if ( val == 1 
+		|| $('#accn').val().length > accnminlen 
+		|| $('#annosearch').val().length > annominlen ) 
+	{
+		$('#anno').html(spinner).show();
+		go_cogefeatsearch();
+	}
+	else {
+		$('anno').html('Search not run.').show();
+	}
 }
 
-function go_cogefeatsearch () {
- $('#fid').html('');
- cogefeatsearch(['args__accn','accn', 'args__anno','annosearch','args__org_id','org_id_feat', 'args__org_name','org_name_feat','args__org_desc','org_desc_feat'],[source_search_chain]);
+function go_cogefeatsearch() {
+	$('#fid').html('');
+	var accn = $('#accn').val();
+	var annosearch = $('#annosearch').val();
+	var org_id = $('#org_id_feat').val();
+	var org_name = $('#org_name_feat').val();
+	var org_desc = $('#org_desc_feat').val();
+	
+	//cogefeatsearch(['args__accn','accn', 'args__anno','annosearch',
+	//'args__org_id','org_id_feat', 'args__org_name','org_name_feat',
+	//'args__org_desc','org_desc_feat'],[source_search_chain]);
+	$.ajax({
+		data: {
+			fname: 		'cogefeatsearch',
+			accn: 		accn,
+			anno: 		annosearch,
+			org_id: 	org_id,
+			org_name: 	org_name,
+			org_desc: 	org_desc
+		},
+		success : function(data) {
+			source_search_chain(data);
+		},
+	});
 }
 
-function source_search_chain (val) {
- if (val) {
-   $('#accn_list').html(val);
-   $('#accn_list').show();
-  }
- else {
-   $('#fid').html('');
-  }
-  $('#Source').html('searching. . .');
-  $('#FeatType').html('searching. . .');
-  $('#anno').html('');
-  source_search(['args__accn','accn_select', 'args__org_id','org_id_feat','args__org_name','org_name_feat','args__org_desc','org_desc_feat'], [get_types_chain]);
-
+function source_search_chain(val) {
+	if (val) {
+		$('#accn_list').html(val).show();
+	}
+	else {
+		$('#fid').html('');
+	}
+	$('#Source').html(spinner);
+	$('#FeatType').html(spinner);
+	$('#anno').html('');
+	
+	var accn = $('#accn_select').val()[0];
+	var org_id = $('#org_id_feat').val();
+	var org_name = $('#org_name_feat').val();
+	var org_desc = $('#org_desc_feat').val();
+	
+	//source_search(['args__accn','accn_select', 'args__org_id','org_id_feat',
+	//'args__org_name','org_name_feat','args__org_desc','org_desc_feat'], [get_types_chain]);
+	$.ajax({
+		data: {
+			fname: 		'source_search',
+			accn: 		accn,
+			org_id: 	org_id,
+			org_name: 	org_name,
+			org_desc: 	org_desc
+		},
+		success : function(data) {
+			get_types_chain(data);
+		},
+	});
 }
 
-function get_types_chain (val1) {
- if (val1) {$('#Source').html(val1);$('#Source').show();}
- get_types(['args__accn','accn_select', 'args__dsgid','feat_dsgid'],[get_anno_chain]);
+function get_types_chain(val) {
+	if (val) {
+		$('#Source').html(val).show();
+	}
+	
+	var accn = $('#accn_select').val()[0];
+	var dsgid = $('#feat_dsgid').val()[0];
+	
+	//get_types(['args__accn','accn_select', 'args__dsgid','feat_dsgid'],[get_anno_chain]);
+	$.ajax({
+		data: {
+			fname:		'get_types',
+			accn:		accn,
+			dsgid:		dsgid,
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj) {
+				get_anno_chain(obj.html, obj.dsgid);
+			}
+		},
+	});	
 }
 
-function get_anno_chain (val1,dsgid) {
- if (val1) {
-   $('#FeatType').html(val1);
-   $('#FeatType').show();
-   if ($('#add_all').is(":hidden")) {$('#add_all').show(0);}
-   if ($('#remove').is(":hidden")) {$('#remove').show(0);}
-   if ($('#clear').is(":hidden")) {$('#clear').show(0);}
-   if ($('#send').is(":hidden")) {$('#send').show(0);}
- }
- $('#anno').html('searching. . .');
- get_anno(['args__accn','accn_select', 'args__type','Type_name', 'args__dsgid','args__'+dsgid],[show_anno]);
+function get_anno_chain(val, dsgid, fid) {
+	if (val) {
+		$('#FeatType').html(val).show();
+		if ($('#add_all').is(":hidden")) {$('#add_all').show(0);}
+		if ($('#remove').is(":hidden")) {$('#remove').show(0);}
+		if ($('#clear').is(":hidden")) {$('#clear').show(0);}
+		if ($('#send').is(":hidden")) {$('#send').show(0);}
+	}
+	
+	var accn;
+	if ( $('#accn_select').length )
+		accn = $('#accn_select').val()[0];
+	var type;
+	if ( $('#type_name').length )
+		type = $('#type_name').val()[0];
+	
+	$('#anno').html(spinner).show();
+	
+	//get_anno(['args__accn','accn_select', 'args__type','type_name', 'args__dsgid','args__'+dsgid],[show_anno]);
+	$.ajax({
+		data: {
+			fname:	'get_anno',
+			fid:    fid,
+			accn:	accn,
+			type:	type,
+			dsgid:	dsgid
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj) {
+				show_anno(obj.anno, obj.fid);
+			}
+		},
+	});	
 }
 
-function show_anno (anno,fid)
- {
- $('#anno').html(anno);
- $('#fid').html(fid);
- setup_button_states();
- }
+function show_anno(anno, fid) {
+	$('#anno').html(anno);
+	$('#fid').html(fid);
+	setup_button_states();
+}
 
-function timing(val){
-  namere = /name/;
-  descre = /desc/;
-  if (namere.exec(val))
-   {
-    $('#org_desc_feat').val("Search").css({fontStyle: "italic"});
-    searchterm = $('#'+val).val();
-   }
-  else if (descre.exec(val))
-   {
-    $('#org_name_feat').val("Search").css({fontStyle: "italic"}); ;
-    searchterm = $('#'+val).val();
-   }
-  var searchterm;
-  if (!searchterm) {val=0;}
-  if(searchterm == "Search")
-  {
-    searchterm = "";
-  }
-  if (pageObj.search && pageObj.search+val == searchterm+val)
-   {
-    return;
-   }
-  pageObj.search=searchterm+val;
-  if (pageObj.time){
-   clearTimeout(pageObj.time);
-  }
-  re = /(\d+)/;
-  i = re.exec(val);
-  if (namere.exec(val))
-   {
-     pageObj.time = setTimeout("get_orgs_feat(['args__type','args__name','args__search','org_name_feat'],['org_list_feat'])",500);
-   }
-  else if (descre.exec(val))
-   {
-     pageObj.time = setTimeout("get_orgs_feat(['args__type','args__desc','args__search','org_desc_feat'],['org_list_feat'])",500);
-   }
+function search_org_feat(val){
+	if (val == 'name') {
+		$('#org_desc_feat').val("");
+		var searchterm = $('#org_name_feat').val();
+		get_orgs_feat('name', searchterm); //pageObj.time = setTimeout("get_orgs_feat(['args__type','args__name','args__search','org_name_feat'],['org_list_feat'])",500);
+	}
+	else if (val == 'desc') {
+		$('#org_name_feat').val("");
+		var searchterm = $('#org_desc_feat').val();
+		get_orgs_feat('desc', searchterm); //pageObj.time = setTimeout("get_orgs_feat(['args__type','args__desc','args__search','org_desc_feat'],['org_list_feat'])",500);
+	}
+}
+
+function get_orgs_feat(type, searchterm) {
+	$.ajax({
+		data: {
+			fname:	'get_orgs_feat',
+			type:	type,
+			search:	searchterm,
+		},
+		success : function(html) {
+			$('#org_list_feat').html(html);
+		},
+	});		
 }
 
 function onEnter(e){
-  if (!e){
-   var e = window.event;}
-  if(e.which == 13){
-search_chain(1);
- }
+	if (!e) {
+		var e = window.event;
+	}
+	if (e.which == 13){
+		search_chain(1);
+	}
 }
-
-function search_bar(div_id){
-//  console.log(div_id);
-  if($('#'+div_id).val() == "Search") $('#'+div_id).val("").css({fontStyle: "normal"});
-}
-
 
 function update_info_box(featid) {
- generate_feat_info(['args__'+featid],['feature_info_popup']);
-  $('#feature_info_popup').dialog('open');
+	generate_feat_info(featid); //generate_feat_info(['args__'+featid],['feature_info_popup']);
+	$('#feature_info_popup').dialog('open');
 }
 
-function init_table_sorter(){
-
-$(function(){
- $("#syntelog_table").tablesorter({
-        sortClassAsc: 'headerSortUp',       // Class name for ascending sorting action to header
-        sortClassDesc: 'headerSortDown',    // Class name for descending sorting action to header
-        headerClass: 'header',          // Class name for headers (th's)
-        widgets: ['zebra'],
-//      textExtraction: 'complex',
-        });
- });
+function generate_feat_info(featid) {
+	$.ajax({
+		data: {
+			fname:	'generate_feat_info',
+			featid:	featid
+		},
+		success : function(html) {
+			$('#feature_info_popup').html(html);
+		},
+	});	
 }
 
-function get_master(link)
- {
-   pad =  $('#pad').val();
-   pad=pad*1;
-   if (pad)
-    {
-     link += ";pad="+pad;
-    }
-   window.open(link);
- }
+function init_table_sorter() {
+	$(function() {
+		$("#syntelog_table").tablesorter({
+	        sortClassAsc: 'headerSortUp',       // Class name for ascending sorting action to header
+	        sortClassDesc: 'headerSortDown',    // Class name for descending sorting action to header
+	        headerClass: 'header',          	// Class name for headers (th's)
+	        widgets: ['zebra'],
+	        //textExtraction: 'complex',
+	    });
+	});
+}
+
+function get_master(link) {
+	pad = $('#pad').val();
+	pad = pad*1;
+	if (pad) {
+		link += ";pad="+pad;
+	}
+	window.open(link);
+}
 </SCRIPT>
 </TMPL_IF>
