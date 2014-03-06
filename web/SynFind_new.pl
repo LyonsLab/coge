@@ -8,7 +8,7 @@ use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web;
 use CGI;
-use CGI::Ajax;
+use JSON::XS;
 use HTML::Template;
 use Data::Dumper;
 use Digest::MD5 qw(md5_base64);
@@ -23,21 +23,34 @@ no warnings 'redefine';
 
 #example URL: http://toxic.berkeley.edu/CoGe/SynFind.pl?fid=34519245;qdsgid=3;dsgid=4241,6872,7084,7094,7111
 
-use vars
-  qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE $PAGE_NAME $DIR $URL $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $BEDDIR $LASTZ $LAST $CONVERT_BLAST $BLAST2BED $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $SERVER $connstr $COOKIE_NAME $YERBA $GEN_FASTA);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS 
+    $PAGE_TITLE $PAGE_NAME $DIR $LINK $TEMPDIR $TEMPURL $DATADIR $FASTADIR 
+    $BLASTDBDIR $DIAGSDIR $BEDDIR $LASTZ $LAST $CONVERT_BLAST $BLAST2BED 
+    $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE 
+    $coge $cogeweb $RESULTSLIMIT $MAX_SEARCH_RESULTS $MAX_PROC $SERVER $COOKIE_NAME 
+    $YERBA $GEN_FASTA);
 
-$P             = CoGe::Accessory::Web::get_defaults();
+$PAGE_TITLE    = "SynFind";
+$PAGE_NAME     = $PAGE_TITLE . ".pl";
+
+$RESULTSLIMIT       = 100;
+$MAX_SEARCH_RESULTS = 1000;
+
+$FORM = new CGI;
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
+    page_title => $PAGE_TITLE,
+    cgi => $FORM
+);
+
 $YERBA         = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
+
 $ENV{PATH}     = $P->{COGEDIR};
-$TEMPDIR       = $P->{TEMPDIR} . "SynFind";
-$TEMPURL       = $P->{TEMPURL} . "SynFind";
+$TEMPDIR       = $P->{TEMPDIR} . $PAGE_TITLE;
+$TEMPURL       = $P->{TEMPURL} . $PAGE_TITLE;
 $SERVER        = $P->{SERVER};
 $ENV{BLASTDB}  = $P->{BLASTDB};
 $ENV{BLASTMAT} = $P->{BLASTMATRIX};
-$PAGE_TITLE    = "SynFind";
-$PAGE_NAME     = $PAGE_TITLE . ".pl";
 $DIR           = $P->{COGEDIR};
-$URL           = $P->{URL};
 $DATADIR       = $P->{DATADIR};
 $DIAGSDIR      = $P->{DIAGSDIR};
 
@@ -67,106 +80,69 @@ $BLAST2RAW        = $P->{BLAST2RAW};
 $SYNTENY_SCORE    = $P->{SYNTENY_SCORE};
 $PYTHON26         = $P->{PYTHON};
 $DATASETGROUP2BED = $P->{DATASETGROUP2BED};
-
-$DATE = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
-
-$FORM = new CGI;
-my %ajax = CoGe::Accessory::Web::ajax_func();
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-
-#$coge->storage->debugobj(new DBIxProfiler());
-#$coge->storage->debug(1);
-
-$COOKIE_NAME = $P->{COOKIE_NAME};
-
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
+$COOKIE_NAME      = $P->{COOKIE_NAME};
 
 if ( $FORM->param('get_master') ) {
     get_master_syn_sets();
+    exit;
 }
-if ( $FORM->param('ug') )    #generating unique gene lists
-{
+if ( $FORM->param('ug') ) { # generating unique gene lists
     get_unique_genes();
+    exit;
 }
-my $pj = new CGI::Ajax(
-    %ajax,
-    gen_html                => \&gen_html,
+
+my %FUNCTION = (
     get_orgs                => \&get_orgs,
     gen_dsg_menu            => \&gen_dsg_menu,
     get_genome_info         => \&get_genome_info,
-    get_dsg_for_search_menu => \&get_dsg_for_search_menu,
-    generate_basefile       => \&generate_basefile,
+    get_dsg_for_menu        => \&get_dsg_for_menu,
+#    generate_basefile       => \&generate_basefile,
     save_orglist_synfind    => \&save_orglist_synfind,
+    search_lists            => \&search_lists,
+    get_list_preview        => \&get_list_preview,
+    get_genomes_for_list    => \&get_genomes_for_list,
 
-    go => \&go_synfind,
-
-    get_types      => \&get_types,
-    cogefeatsearch => \&cogefeatsearch,
-    get_anno       => \&get_anno,
-    get_orgs_feat  => \&get_orgs_feat,
-    source_search  => \&get_data_source_info_for_accn,
-
-    generate_feat_info => \&generate_feat_info,
-
+    get_types               => \&get_types,
+    cogefeatsearch          => \&cogefeatsearch,
+    get_anno                => \&get_anno,
+    get_orgs_feat           => \&get_orgs_feat,
+    source_search           => \&source_search,
+    generate_feat_info      => \&generate_feat_info,
+    
+    save_settings           => \&save_settings,
+    go_synfind              => \&go_synfind,
 );
-$pj->js_encode_function('escape');
-print $pj->build_html( $FORM, \&gen_html );
 
-#print $FORM->header, gen_html();
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
-    my $html;
     my ($body) = gen_body();
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( TITLE      => 'Syntenic Compiler' );
-    $template->param( PAGE_TITLE => 'SynFind' );
-    $template->param( HELP       => '/wiki/index.php?title=SynFind' );
+    
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+    $template->param( TITLE      => 'Syntenic Compiler',
+                      PAGE_TITLE => 'SynFind',
+                      HELP       => '/wiki/index.php?title=SynFind' );
+                      
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER     => $name );
+    
     $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
     $template->param( LOGO_PNG => "SynFind-logo.png" );
-
-    #    $template->param(BOX_NAME=>'SynFind Settings');
+    #$template->param(BOX_NAME=>'SynFind Settings');
     $template->param( ADJUST_BOX => 1 );
     $template->param( BODY       => $body );
-    my $prebox =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'SynFind.tmpl' );
+    
+    my $prebox = HTML::Template->new( filename => $P->{TMPLDIR} . 'SynFind.tmpl' );
     $prebox->param( RESULTS_DIV => 1 );
     $template->param( PREBOX => $prebox->output );
-    $html .= $template->output;
-    return $html;
+    
+    return $template->output;
 }
 
 sub gen_body {
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'SynFind.tmpl' );
-    my $form = $FORM;
-
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'SynFind.tmpl' );
     #$template->param( BETA => 1 );
 
     #comparison algorithm
@@ -203,54 +179,45 @@ sub gen_body {
     my $sd;
     $sd = $FORM->param('sd') if $FORM->param('sd');
     $template->param( 'SD' => $sd ) if $sd;
-
-    $template->param( JAVASCRIPT => 1 );
-    $template->param( FRONT_PAGE => 1 );
+    $template->param( JAVASCRIPT => 1,
+                      FRONT_PAGE => 1 );
 
     #set up org search
     $template->param( ORG_LIST => get_orgs() );
 
     #set up feat search
     my $accn;
-    $accn = $form->param('accn');
+    $accn = $FORM->param('accn');
     $template->param( ACCN => $accn );
 
-    #    $template->param(FEAT_TYPE=> get_feature_types());
+    #$template->param(FEAT_TYPE=> get_feature_types());
     $template->param( ORG_LIST_FEAT => get_orgs_feat( type => "none" ) );
     my $doc_ready;
     $doc_ready .= qq{search_chain(1);\n} if $accn;
 
-#This was changed because of an error it was causing in some browsers on Windows where the "()" were causing JS errors.  This bug was reported by johannes.hofberger and this fixed his problem (Eric L.)
-    my $prefs
-      ; # = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
-    ####
-    if ( $form->param('dsgid') ) {
-        foreach my $item ( $form->param('dsgid') ) {
+    my $prefs; # = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
+    if ( $FORM->param('dsgid') ) {
+        foreach my $item ( $FORM->param('dsgid') ) {
             foreach my $dsgid ( split( /,/, $item ) ) {
-                my $id = get_dsg_for_search_menu( dsgid => $dsgid );
-                $doc_ready .= qq{
-  add_to_list('$id');
-};
+                my $id = get_dsg_for_menu( dsgid => $dsgid );
+                $doc_ready .= qq{add_to_list('$id');};
             }
         }
     }
     elsif ( $prefs->{dsgids} ) {
         foreach my $dsgid ( split( /,/, $prefs->{dsgids} ) ) {
-            my $id = get_dsg_for_search_menu( dsgid => $dsgid );
-            $doc_ready .= qq{
-  add_to_list('$id');
-};
+            my $id = get_dsg_for_menu( dsgid => $dsgid );
+            $doc_ready .= qq{add_to_list('$id');};
         }
     }
-    if ( my $fid = $form->param('fid') ) {
+    if ( my $fid = $FORM->param('fid') ) {
         my ( $fid, $seq_type_id ) = split( /_/, $fid );
         $seq_type_id = 1 unless $seq_type_id;
-        my $qdsgid = $form->param('qdsgid');
+        my $qdsgid = $FORM->param('qdsgid');
         unless ($qdsgid) {
             my $feat = $coge->resultset('Feature')->find($fid);
             foreach my $dsg ( $feat->genomes ) {
-                if ( $dsg->type->id eq
-                    $seq_type_id )    #find the unmasked version of the data
+                if ( $dsg->type->id eq $seq_type_id ) # find the unmasked version of the data
                 {
                     $qdsgid = $dsg->id;
                     last;
@@ -258,121 +225,287 @@ sub gen_body {
             }
             $qdsgid = $feat->genomes->[0]->id unless $qdsgid;
         }
-        $doc_ready .= qq{
- get_anno(['args__fid','args__$fid','args__dsgid','args__$qdsgid'],[show_anno]);
-};
-        $template->param(
-            FEAT_DSGID => qq{<input type=hidden id=feat_dsgid value=$qdsgid>} )
+        $doc_ready .= qq{get_anno_chain('', $qdsgid, $fid);}; #qq{get_anno(['args__fid','args__$fid','args__dsgid','args__$qdsgid'],[show_anno]);};
+        $template->param( FEAT_DSGID => qq{<input type='hidden' id='feat_dsgid' value='$qdsgid'>} )
           if $qdsgid;
     }
     $template->param( DOCUMENT_READY => $doc_ready ) if $doc_ready;
     $template->param( SAVE_ORG_LIST => 1 ) unless $USER->user_name eq "public";
-    $template->param( TEMPDIR => $TEMPDIR );
     return $template->output;
 }
 
-sub generate_basefile {
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
-    return $cogeweb->basefilename;
-}
+#sub generate_basefile {
+#    $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
+#    return $cogeweb->basefilename;
+#}
 
-sub get_orgs {
-    my %opts = @_;
-    my $name = $opts{name};
-    my $desc = $opts{desc};
-    $name = "" if $name && $name =~ /^Search$/i;
-    $desc = "" if $desc && $desc =~ /^Search$/i;
+sub get_orgs { #FIXME: dup'ed in CoGeBlast.pl
+    my %opts      = @_;
+    my $name_desc = $opts{name_desc};
+    my $html_only =
+      $opts{html_only};    # optional flag to return html instead of JSON
+    my $timestamp = $opts{timestamp};
+
+    #print STDERR "get_orgs: " . ($name_desc ? $name_desc : '') . "\n";
+
     my $html;
-    my @db;
-    if ($name) {
-        @db =
-          $coge->resultset('Organism')
-          ->search( { name => { like => "%" . $name . "%" } } );
-    }
-    elsif ($desc) {
-        @db =
-          $coge->resultset("Organism")
-          ->search( { description => { like => "%" . $desc . "%" } } );
+    my @organisms;
+    if ($name_desc) {
+        $name_desc = '%' . $name_desc . '%';
+        my @organisms = $coge->resultset("Organism")->search(
+            \[
+                'name LIKE ? OR description LIKE ?',
+                [ 'name',        $name_desc ],
+                [ 'description', $name_desc ]
+            ]
+        );
+
+        my @opts;
+        foreach
+          my $item ( sort { uc( $a->name ) cmp uc( $b->name ) } @organisms )
+        {
+            push @opts,
+                "<OPTION value=\""
+              . $item->id
+              . "\" id=\"o"
+              . $item->id . "\">"
+              . $item->name
+              . "</OPTION>";
+        }
+
+#$html .= qq{<FONT class="small" id="org_count">Matching Organisms (} . scalar @opts . qq{)</FONT><BR>};
+        if (@opts) {
+            if ( @opts <= $MAX_SEARCH_RESULTS ) {
+
+#$html .= qq{<SELECT MULTIPLE id="org_id" SIZE="8" style="min-width:200px;" onchange="gen_dsg_menu(['args__oid','org_id'],['dsgid']);" ondblclick="add_selected_orgs();">\n};
+                $html .= join( "\n", @opts );
+
+                #$html .= "\n</SELECT>\n";
+                #$html =~ s/OPTION/OPTION SELECTED/;
+            }
+            else {
+                $html .=
+"<option id='null_org' style='color:gray;' disabled='disabled'>Too many results to display, please refine your search.</option>";
+
+#$html .= qq{<SELECT MULTIPLE id="org_id" SIZE="8" style="min-width:200px;"><option id='null_org' style='color:gray;'>Too many results to display, please refine your search.</option></SELECT><input type='hidden' id='gstid'>\n};
+            }
+        }
+        else {
+            $html .=
+"<option id='null_org' style='color:gray;' disabled='disabled'>No results</option>";
+
+#$html .= qq{<SELECT MULTIPLE id="org_id" SIZE="8" style="min-width:200px;"><option id='null_org' style='color:gray;'>No results</option></SELECT><input type='hidden' id='gstid'>\n};
+        }
     }
     else {
+
+#       $html .= qq{<FONT class="small" id="org_count">Matching Organisms } . '(' . $coge->resultset('Organism')->count() . ')' . qq{</FONT>\n<br>\n};
+#       $html .= qq{<SELECT MULTIPLE id="org_id" SIZE="8" style="min-width:200px;"><option id='null_org' style='color:gray;'>Please enter a search term</option></SELECT><input type='hidden' id='gstid'>\n};
         $html .=
-            qq{<FONT CLASS ="small" id="org_count">Organism count: }
-          . $coge->resultset('Organism')->count()
-          . qq{</FONT>\n<BR>\n};
-        $html .=
-qq{<SELECT id="org_id" SIZE="8" MULTIPLE"><option id=null_org>Please search</option></SELECT><input type=hidden id=gstid>\n};
-        return $html;
-    }
-    my @opts;
-    foreach my $item ( sort { uc( $a->name ) cmp uc( $b->name ) } @db ) {
-        push @opts,
-            "<OPTION value=\""
-          . $item->id
-          . "\" id=\"o"
-          . $item->id . "\">"
-          . $item->name
-          . "</OPTION>";
+"<option id='null_org' style='color:gray;' disabled='disabled'>Please enter a search term</option>";
     }
 
-    $html .=
-        qq{<FONT CLASS ="small" id="org_count">Organism count: }
-      . scalar @opts
-      . qq{</FONT>\n<BR>\n};
-    unless (@opts) {
-        $html .= qq{<input type = hidden name="org_id" id="org_id"><br>};
-        $html .= "No results";
-        return $html;
-    }
-    $html .=
-qq{<SELECT id="org_id" SIZE="8" MULTIPLE onclick="show_add()" onchange="gen_dsg_menu(['args__oid','org_id'],['org_seq_types']);" ondblclick="add_selected_orgs();">\n};
-    $html .= join( "\n", @opts );
-    $html .= "\n</SELECT>\n";
-    $html =~ s/OPTION/OPTION SELECTED/;
-    return $html;
+    return $html if ($html_only);
+    return encode_json( { timestamp => $timestamp, html => $html } );
 }
 
-sub gen_dsg_menu {
-    my $t1    = new Benchmark;
+sub gen_dsg_menu { #FIXME: dup'ed in CoGeBlast.pl
+    #my $t1    = new Benchmark;
     my %opts  = @_;
     my $oid   = $opts{oid};
     my $dsgid = $opts{dsgid};
-    my @dsg_menu;
+
+   #print STDERR "gen_dsg_menu: $oid " . (defined $dsgid ? $dsgid : '') . "\n";
+
+    my @genomes;
     foreach my $dsg (
-        sort { versioncmp( $b->version, $a->version ) || $b->id cmp $a->id }
-        $coge->resultset('Genome')->search(
+        sort {
+            versioncmp( $b->version, $a->version )
+              || $a->type->id <=> $b->type->id
+        } $coge->resultset('Genome')->search(
             { organism_id => $oid },
             { prefetch    => ['genomic_sequence_type'] }
         )
       )
     {
-        next if $dsg->deleted;
-        next unless ( $USER->has_access_to_genome($dsg) );
+        next unless $USER->has_access_to_genome($dsg);
         $dsgid = $dsg->id unless $dsgid;
-        my $name    = $dsg->info;
-        my $has_cds = has_cds( $dsg->id );
-        $name .= " NO CDS ANNOTATIONS.  CAN'T BE USED." unless $has_cds;
-        push @dsg_menu, [ $dsg->id, $name ];
+        my $name = join( ", ", map { $_->name } $dsg->source ) . ": ";
+
+ #$name .= $dsg->name ? $dsg->name : $dsg->datasets->[0]->name;
+ #$name .= ", ";
+ #$name .= $dsg->type->name." (v".$dsg->version.") ".commify($dsg->length)."nt";
+        $name .= $dsg->name . ", " if $dsg->name; # : $dsg->datasets->[0]->name;
+        $name .= "v"
+          . $dsg->version . " "
+          . $dsg->type->name . " "
+          . commify( $dsg->length ) . "nt";
+
+        push @genomes, [ $dsg->id, $name ];
     }
-    my $size = scalar @dsg_menu;
+    my $size = scalar @genomes;
     $size = 5 if $size > 5;
 
-    my $dsg_menu = qq{
-   <select id=dsgid multiple size=$size onclick="show_add();" ondblclick="get_dsg_for_search_menu(['args__dsgid','dsgid'],[add_to_list]);">>
-};
-    foreach (@dsg_menu) {
-        my ( $numt, $name ) = @$_;
-        my $selected = " selected" if $dsgid && $numt == $dsgid;
-        $selected = " " unless $selected;
-        $dsg_menu .= qq{
-   <OPTION VALUE=$numt $selected>$name</option>
-};
-    }
-    $dsg_menu .= "</select>";
-    my $t2 = new Benchmark;
-    my $time = timestr( timediff( $t2, $t1 ) );
-    return ($dsg_menu);
+    my $dsg_menu = '';
+    if (@genomes) {
 
+#$dsg_menu .= 'Genomes for Organism<br>';
+#$dsg_menu .= qq{<select multiple id='dsgid' size='$size' onclick="show_add();" ondblclick="get_dsg_for_menu(['args__dsgid','dsgid'],[add_to_list]);">};
+        foreach (@genomes) {
+            my ( $numt, $name ) = @$_;
+            my $selected = ( $dsgid && $numt == $dsgid ? 'selected' : '' );
+            $dsg_menu .= qq{<option value='$numt' $selected>$name</option>};
+        }
+
+        #$dsg_menu .= '</select>';
+    }
+
+    #my $t2 = new Benchmark;
+    #my $time = timestr( timediff( $t2, $t1 ) );
+    return $dsg_menu;
 }
+
+sub get_dsg_for_menu { #FIXME: dup'ed in CoGeBlast.pl
+    my %opts   = @_;
+    my $dsgids = $opts{dsgid};
+    my $orgids = $opts{orgid};
+    my %dsgs;
+
+#   print STDERR "get_dsg_for_menu: dsgids=" . ($dsgids ? $dsgids : '') . " orgids=" . ($orgids ? $orgids : '') . "\n";
+
+    if ($orgids) {
+        my @orgids = split( /,/, $orgids );
+        foreach my $dsg (
+            $coge->resultset('Genome')->search( { organism_id => [@orgids] } ) )
+        {
+            next unless $USER->has_access_to_genome($dsg);
+            $dsgs{ $dsg->id } = $dsg;
+        }
+    }
+
+    if ($dsgids) {
+        %dsgs = () if ( $dsgs{$dsgids} );
+        foreach my $dsgid ( split( /,/, $dsgids ) ) {
+            my $dsg = $coge->resultset('Genome')->find($dsgid);
+            next unless $USER->has_access_to_genome($dsg);
+            $dsgs{ $dsg->id } = $dsg;
+        }
+    }
+
+    my $html;
+    foreach my $dsg ( values %dsgs ) {
+        my ($ds) = $dsg->datasets;
+        $html .= ":::" if $html;
+        my $org_name = $dsg->organism->name;
+        $org_name =~ s/'//g;
+        $html .=
+            $dsg->id . "::"
+          . $org_name . " ("
+          . $ds->data_source->name . " "
+          . $dsg->type->name . " v"
+          . $dsg->version . ")";
+    }
+
+    return $html;
+}
+
+#sub get_orgs {
+#    my %opts = @_;
+#    my $name = $opts{name};
+#    my $desc = $opts{desc};
+#    $name = "" if $name && $name =~ /^Search$/i;
+#    $desc = "" if $desc && $desc =~ /^Search$/i;
+#    my $html;
+#    my @db;
+#    if ($name) {
+#        @db =
+#          $coge->resultset('Organism')
+#          ->search( { name => { like => "%" . $name . "%" } } );
+#    }
+#    elsif ($desc) {
+#        @db =
+#          $coge->resultset("Organism")
+#          ->search( { description => { like => "%" . $desc . "%" } } );
+#    }
+#    else {
+#        $html .=
+#            qq{<FONT CLASS ="small" id="org_count">Organism count: }
+#          . $coge->resultset('Organism')->count()
+#          . qq{</FONT>\n<BR>\n};
+#        $html .=
+#qq{<SELECT id="org_id" SIZE="8" MULTIPLE"><option id=null_org>Please search</option></SELECT><input type=hidden id=gstid>\n};
+#        return $html;
+#    }
+#    my @opts;
+#    foreach my $item ( sort { uc( $a->name ) cmp uc( $b->name ) } @db ) {
+#        push @opts,
+#            "<OPTION value=\""
+#          . $item->id
+#          . "\" id=\"o"
+#          . $item->id . "\">"
+#          . $item->name
+#          . "</OPTION>";
+#    }
+#
+#    $html .=
+#        qq{<FONT CLASS ="small" id="org_count">Organism count: }
+#      . scalar @opts
+#      . qq{</FONT>\n<BR>\n};
+#    unless (@opts) {
+#        $html .= qq{<input type = hidden name="org_id" id="org_id"><br>};
+#        $html .= "No results";
+#        return $html;
+#    }
+#    $html .=
+#qq{<SELECT id="org_id" SIZE="8" MULTIPLE onclick="show_add()" onchange="gen_dsg_menu(['args__oid','org_id'],['org_seq_types']);" ondblclick="add_selected_orgs();">\n};
+#    $html .= join( "\n", @opts );
+#    $html .= "\n</SELECT>\n";
+#    $html =~ s/OPTION/OPTION SELECTED/;
+#    return $html;
+#}
+
+#sub gen_dsg_menu {
+#    my $t1    = new Benchmark;
+#    my %opts  = @_;
+#    my $oid   = $opts{oid};
+#    my $dsgid = $opts{dsgid};
+#    my @dsg_menu;
+#    foreach my $dsg (
+#        sort { versioncmp( $b->version, $a->version ) || $b->id cmp $a->id }
+#        $coge->resultset('Genome')->search(
+#            { organism_id => $oid },
+#            { prefetch    => ['genomic_sequence_type'] }
+#        )
+#      )
+#    {
+#        next if $dsg->deleted;
+#        next unless ( $USER->has_access_to_genome($dsg) );
+#        $dsgid = $dsg->id unless $dsgid;
+#        my $name    = $dsg->info;
+#        my $has_cds = has_cds( $dsg->id );
+#        $name .= " NO CDS ANNOTATIONS.  CAN'T BE USED." unless $has_cds;
+#        push @dsg_menu, [ $dsg->id, $name ];
+#    }
+#    my $size = scalar @dsg_menu;
+#    $size = 5 if $size > 5;
+#
+#    my $dsg_menu = qq{
+#   <select id=dsgid multiple size=$size onclick="show_add();" ondblclick="get_dsg_for_search_menu(['args__dsgid','dsgid'],[add_to_list]);">>
+#};
+#    foreach (@dsg_menu) {
+#        my ( $numt, $name ) = @$_;
+#        my $selected = " selected" if $dsgid && $numt == $dsgid;
+#        $selected = " " unless $selected;
+#        $dsg_menu .= qq{
+#   <OPTION VALUE=$numt $selected>$name</option>
+#};
+#    }
+#    $dsg_menu .= "</select>";
+#    my $t2 = new Benchmark;
+#    my $time = timestr( timediff( $t2, $t1 ) );
+#    return ($dsg_menu);
+#
+#}
 
 sub get_genome_info {
     my %opts  = @_;
@@ -420,53 +553,54 @@ sub get_genome_info {
     return $html;
 }
 
-sub get_dsg_for_search_menu {
-    my %opts   = @_;
-    my $dsgids = $opts{dsgid};
-    my $orgids = $opts{orgid};
-    my %dsgs;
-    if ($orgids) {
-        my @orgids = split( /,/, $orgids );
-        foreach my $dsg (
-            $coge->resultset('Genome')->search( { organism_id => [@orgids] } ) )
-        {
-            next if $dsg->deleted;
-            $dsgs{ $dsg->id } = $dsg;
-        }
-    }
-    if ($dsgids) {
-        %dsgs = () if ( $dsgs{$dsgids} );
-        foreach my $dsgid ( split( /,/, $dsgids ) ) {
-            my $dsg = $coge->resultset('Genome')->find($dsgid);
-            next unless $dsg;
-            $dsgs{ $dsg->id } = $dsg;
-        }
-    }
-    my $opts;
-    foreach my $dsg ( values %dsgs ) {
-        my ($ds) = $dsg->datasets;
-        $opts .= ":::" if $opts;
-        next unless has_cds( $dsg->id );    #skip if it has no CDS annotations
-        my $item =
-            $dsg->id . "::"
-          . $dsg->organism->name . " ("
-          . $ds->data_source->name . " "
-          . $dsg->type->name . " v"
-          . $dsg->version . ")";
-        $opts .= $item;
-    }
-    return $opts;
-}
+#sub get_dsg_for_search_menu {
+#    my %opts   = @_;
+#    my $dsgids = $opts{dsgid};
+#    my $orgids = $opts{orgid};
+#    my %dsgs;
+#    if ($orgids) {
+#        my @orgids = split( /,/, $orgids );
+#        foreach my $dsg (
+#            $coge->resultset('Genome')->search( { organism_id => [@orgids] } ) )
+#        {
+#            next if $dsg->deleted;
+#            $dsgs{ $dsg->id } = $dsg;
+#        }
+#    }
+#    if ($dsgids) {
+#        %dsgs = () if ( $dsgs{$dsgids} );
+#        foreach my $dsgid ( split( /,/, $dsgids ) ) {
+#            my $dsg = $coge->resultset('Genome')->find($dsgid);
+#            next unless $dsg;
+#            $dsgs{ $dsg->id } = $dsg;
+#        }
+#    }
+#    my $opts;
+#    foreach my $dsg ( values %dsgs ) {
+#        my ($ds) = $dsg->datasets;
+#        $opts .= ":::" if $opts;
+#        next unless has_cds( $dsg->id );    #skip if it has no CDS annotations
+#        my $item =
+#            $dsg->id . "::"
+#          . $dsg->organism->name . " ("
+#          . $ds->data_source->name . " "
+#          . $dsg->type->name . " v"
+#          . $dsg->version . ")";
+#        $opts .= $item;
+#    }
+#    return $opts;
+#}
 
 sub get_types {
     my %opts = @_;
-
-    #    my ($dsid, $gstid) = split(/_/, $opts{dsid});
+    #my ($dsid, $gstid) = split(/_/, $opts{dsid});
     my $dsgid = $opts{dsgid};
     my $accn  = $opts{accn};
     my $ftid  = $opts{ftid};
+    #print STDERR "get_types: dsgid=$dsgid accn=$accn ftid=$ftid\n";
+    
     my $html;
-    my $blank = qq{<input type="hidden" id="Type_name">-------};
+    my $blank = qq{<font class='small note'>(0)</font><br><SELECT id="type_name" size="10" style="min-width:60px"></SELECT>};#<input type="hidden" id="type_name">};
     my %seen;
     my $search = {
         'feature_names.name'           => $accn,
@@ -477,26 +611,135 @@ sub get_types {
     my @opts =
       sort map { "<OPTION>$_</OPTION>" }
       grep     { !$seen{$_}++ }
-      map      { $_->type->name } $coge->resultset('Feature')->search(
-        $search,
-        ,
-        { join => [ 'feature_names', { 'dataset' => 'dataset_connectors' } ] }
-      );
+      map      { $_->type->name } 
+          $coge->resultset('Feature')->search(
+            $search,
+            ,
+            { join => [ 'feature_names', { 'dataset' => 'dataset_connectors' } ] }
+          );
 
     if (@opts) {
-        $html .=
-          "<font class=small>Type count: " . scalar @opts . "</font>\n<BR>\n";
-
-        $html .=
-qq{<SELECT id="Type_name" SIZE="10" MULTIPLE onChange="get_anno(['args__accn','accn_select','args__type','Type_name', 'args__dsgid','dsgid'],[show_anno])" >\n};
-        $html .= join( "\n", @opts );
-        $html .= "\n</SELECT>\n";
+        $html .= "<font class='small note'>(" . scalar @opts . ")</font>\n<BR>\n"
+            . qq{<SELECT id="type_name" size="10" style="min-width:60px" MULTIPLE }
+            . qq{onChange="get_anno_chain('', $dsgid)" >\n}
+            . join( "\n", @opts )
+            . "\n</SELECT>\n";
         $html =~ s/OPTION/OPTION SELECTED/;
     }
-    else { return $blank; }
+    else { 
+        return encode_json({ html => $blank }); 
+    }
 
-    #    return $blank unless $html =~ /OPTION/;
-    return ( $html, $dsgid );
+    #return $blank unless $html =~ /OPTION/;
+    return encode_json({ html => $html, dsgid => $dsgid });
+}
+
+sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl and CoGeBlast.pl
+    my %opts = @_;
+    return if ( $USER->user_name eq 'public' );
+    my $search_term = $opts{search_term};
+    my $timestamp   = $opts{timestamp};
+    #print STDERR "$search_term $timestamp\n";
+
+    my @notebooks;
+    my $num_results;
+    my $group_str = join( ',', map { $_->id } $USER->groups );
+
+    # Try to get all items if blank search term
+    if ( !$search_term ) {
+        my $sql = "locked=0"
+          ;    # AND restricted=0 OR user_group_id IN ( $group_str ))"; # FIXME
+        $num_results = $coge->resultset("List")->count_literal($sql);
+        if ( $num_results < $MAX_SEARCH_RESULTS ) {
+            foreach
+              my $notebook ( $coge->resultset("List")->search_literal($sql) )
+            {
+                next unless $USER->has_access_to_list($notebook);
+                push @notebooks, $notebook;
+            }
+        }
+    }
+
+    # Perform search
+    else {
+
+        # Get public lists and user's private lists
+        $search_term = '%' . $search_term . '%';
+        foreach my $notebook (
+            $coge->resultset("List")->search_literal(
+"locked=0 AND (name LIKE '$search_term' OR description LIKE '$search_term')"
+            )
+          )
+        {
+            next unless $USER->has_access_to_list($notebook);
+            push @notebooks, $notebook;
+        }
+        $num_results = @notebooks;
+    }
+
+    # Limit number of results display
+    if ( $num_results > $MAX_SEARCH_RESULTS ) {
+        return encode_json(
+            {
+                timestamp => $timestamp,
+                html =>
+"<option>$num_results matches, please refine your search.</option>"
+            }
+        );
+    }
+
+    # Build select items out of results
+    my $html;
+    foreach my $n ( sort listcmp @notebooks ) {
+        my $item_spec = 1 . ':' . $n->id;    #FIXME magic number for item_type
+        $html .= "<option value='$item_spec'>" . $n->info . "</option><br>\n";
+    }
+    $html = "<option disabled='disabled'>No matches</option>" unless $html;
+
+    return encode_json( { timestamp => $timestamp, html => $html } );
+}
+
+sub get_list_preview {
+    my %opts      = @_;
+    my $item_spec = $opts{item_spec};
+
+    my ( undef, $lid ) = split( ':', $item_spec );
+
+    my $list = $coge->resultset('List')->find($lid);
+    my $html = '';
+    if ($list) {
+        $html .=
+          "List <b>'" . $list->name . "'</b> (id" . $list->id . ') contains ';
+        $html .=
+            @{ $list->genomes }
+          . ' genomes <ul>'
+          . join( '', map { '<li>' . $_->info . '</li>' } $list->genomes )
+          . '</ul>';
+    }
+
+    return $html;
+}
+
+sub get_genomes_for_list {
+    my %opts      = @_;
+    my $item_spec = $opts{item_spec};
+
+    my ( undef, $lid ) = split( ':', $item_spec );
+
+    my $list    = $coge->resultset('List')->find($lid);
+    my $genomes = '';
+    if ($list) {
+        my $dsgids = join( ',', map { $_->id } $list->genomes );
+        $genomes = get_dsg_for_menu( dsgid => $dsgids );
+    }
+
+    return $genomes;
+}
+
+# FIXME mdb 8/29/12 - this routine is redundantly declared (e.g. ListView.pl, GroupView.pl)
+sub listcmp {
+    no warnings 'uninitialized';    # disable warnings for undef values in sort
+    $a->name cmp $b->name;
 }
 
 sub cogefeatsearch {
@@ -514,9 +757,9 @@ sub cogefeatsearch {
     $org_name = undef if $org_name =~ /^search$/i;
     my $org_desc = $opts{org_desc};
     $org_desc = undef if $org_desc =~ /^search$/i;
-    my $blank =
-qq{<input type="hidden" id="accn_select"><input type="hidden" id="feat_dsgid">};
+    my $blank = qq{<input type="hidden" id="accn_select"><input type="hidden" id="feat_dsgid">};
     my $weak_query = "Query needs to be better defined.";
+    #print STDERR "cogefeatsearch: accn=$accn anno=$anno fid=$fid\n";
 
     if ( !$accn && !$anno && !$fid ) {
         return $weak_query . $blank unless $org_id && $type;
@@ -526,8 +769,7 @@ qq{<input type="hidden" id="accn_select"><input type="hidden" id="feat_dsgid">};
     my $search = {};
     $search->{feature_type_id} = 3;    #$type if $type;
     $search->{'organism.name'} = { like => "%" . $org_name . "%" } if $org_name;
-    $search->{'organism.description'} = { like => "%" . $org_desc . "%" }
-      if $org_desc;
+    $search->{'organism.description'} = { like => "%" . $org_desc . "%" } if $org_desc;
     my $join = {
         join => [
             {
@@ -544,13 +786,11 @@ qq{<input type="hidden" id="accn_select"><input type="hidden" id="feat_dsgid">};
     my @names;
     if ($accn) {
         push @names,
-          $coge->resultset('FeatureName')->search( $search, $join )
-          ->search_literal( 'MATCH(me.name) AGAINST (?)', $accn );
+          $coge->resultset('FeatureName')->search( $search, $join )->search_literal( 'MATCH(me.name) AGAINST (?)', $accn );
     }
     if ($anno) {
         push @names,
-          $coge->resultset('FeatureName')->search( $search, $join )
-          ->search_literal( 'MATCH(annotation) AGAINST (?)', $anno );
+          $coge->resultset('FeatureName')->search( $search, $join )->search_literal( 'MATCH(annotation) AGAINST (?)', $anno );
     }
     my @opts;
     foreach my $name (@names) {
@@ -560,15 +800,12 @@ qq{<input type="hidden" id="accn_select"><input type="hidden" id="feat_dsgid">};
         push @opts, "<OPTION>$item</OPTION>" if $name->feature->dataset;
     }
     if ( @opts > 10000 ) {
-        return $blank
-          . "Search results over 10000, please refine your search.\n";
+        return $blank . "Search results over 10000, please refine your search.\n";
     }
-    $html .=
-      "<font class=small>Name count: " . scalar @opts . "</font>\n<BR>\n";
-    $html .=
-qq{<SELECT id="accn_select" SIZE="10" MULTIPLE onChange="source_search_chain(); " >\n};
-    $html .= join( "\n", @opts );
-    $html .= "\n</SELECT>\n";
+    $html .= "<font class='small note'>(" . scalar @opts . ")</font>\n<BR>\n"
+        . qq{<SELECT id="accn_select" SIZE="10" MULTIPLE onChange="source_search_chain();">\n}
+        . join( "\n", @opts )
+        . "\n</SELECT>\n";
     $html =~ s/<OPTION/<OPTION SELECTED/;
     return $blank . "No results found\n" unless $html =~ /OPTION/;
     return $html;
@@ -581,77 +818,66 @@ sub get_anno {
     my $type  = $opts{type};
     my $dsgid = $opts{dsgid};
     return unless $accn || $fid;
+    print STDERR "get_anno: " . ($accn ? "accn=$accn " : '') . ($fid ? "fid=$fid " : '') . ($type ? "type=$type " : '') . "dsgid=$dsgid\n";
+
+    my $genome = $coge->resultset('Genome')->find($dsgid);
+    return unless ( $USER->has_access_to_genome($genome) );
 
     my @feats;
-    my $genome = $coge->resultset('Genome')->find($dsgid);
-    next unless ( $USER->has_access_to_genome($genome) );
-
     if ($accn) {
         foreach my $feat (
             $coge->resultset('Feature')->search(
-                {
-                    'feature_names.name'           => $accn,
+                {   'feature_names.name'           => $accn,
                     "dataset_connectors.genome_id" => $dsgid
                 },
-                {
-                    join => [
-                        'feature_names', { 'dataset' => 'dataset_connectors' }
-                    ]
-                }
-            )
-          )
+                {   join => [ 'feature_names', { 'dataset' => 'dataset_connectors' } ] }))
         {
             push @feats, $feat if ( $feat->type->name eq $type );
         }
     }
-    else {
-        push @feats, $coge->resultset('Feature')->find($fid);
+    elsif ($fid) {
+        my $feat = $coge->resultset('Feature')->find($fid);
+        push @feats, $feat if $feat;
     }
     return unless @feats;
+    
     my $anno;
-    $anno .=
-        "<font class=small>Annotation count: "
-      . scalar @feats
-      . "</font>\n<BR><hr>\n"
-      if scalar @feats;
+    $anno .= "<div style='border-bottom:1px solid gray;'><strong>Annotations</strong> <font class='small note'>(" . scalar @feats . ")</font></div><br>\n"
+        if scalar @feats;
     my $i   = 0;
     my $dsg = $coge->resultset('Genome')->find($dsgid);
     unless ($dsg) {
         foreach my $tdsg ( $feats[0]->genomes ) {
-            $dsg = $tdsg
-              if $tdsg->type->id eq
-                  "1";    #default to unmasked sequence if possible
+            $dsg = $tdsg if $tdsg->type->id eq "1"; # default to unmasked sequence if possible
         }
         ($dsg) = $feats[0]->genomes unless $dsg;
     }
     my $gstid = $dsg->type->id;
     foreach my $feat (@feats) {
         my ($genome) = $feat->genomes;
-        return ( "restricted", 0 ) unless ($USER->has_access_to_genome($genome));
-
-#	next if $feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset);
+        return encode_json({ anno => 'restricted', fid => 0 }) unless ($USER->has_access_to_genome($genome));
+        #next if $feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset);
         $i++;
 
-#	my $featid = $feat->id;
-#	my $chr = $feat->chr;
-#	my $rc = 0;
-#	my $pro = 0;
-#	my $ds = $feat->dataset->id;
-#	my $x = $feat->start;
-#	my $z = 4;
-#	$anno .= qq{<span class="ui-button ui-corner-all" onClick="window.open('FastaView.pl?featid=$featid&gstid=$gstid');">Get Sequence</span>};
-#	$anno .= qq{<span class="ui-button ui-corner-all" onClick="window.open('CoGeBlast.pl?featid=$featid;gstid=$gstid');">CoGeBlast</span>};
-#	$anno .= qq{<span class="ui-button ui-corner-all" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z;gstid=$gstid');">Genome Browser</span>};
+        #my $featid = $feat->id;
+        #my $chr = $feat->chr;
+        #my $rc = 0;
+        #my $pro = 0;
+        #my $ds = $feat->dataset->id;
+        #my $x = $feat->start;
+        #my $z = 4;
+        #$anno .= qq{<span class="ui-button ui-corner-all" onClick="window.open('FastaView.pl?featid=$featid&gstid=$gstid');">Get Sequence</span>};
+        #$anno .= qq{<span class="ui-button ui-corner-all" onClick="window.open('CoGeBlast.pl?featid=$featid;gstid=$gstid');">CoGeBlast</span>};
+        #$anno .= qq{<span class="ui-button ui-corner-all" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z;gstid=$gstid');">Genome Browser</span>};
+        $anno .= '<span class="small">Organism: </span>';
         foreach my $item ( split( /;/, $feat->organism->description ) ) {
-            $anno .=
-qq{<span class=link onclick="\$('#org_desc').val('$item').focus()">$item</span>;};
+            $anno .= qq{<span class='small note link' onclick="\$('#org_desc').val('$item').focus()">$item;</span>};
         }
-        $anno .= join "\n<BR><HR><BR>\n",
-          $feat->annotation_pretty_print_html( gstid => $gstid );
+        $anno .= '<br><br>';
+        $anno .= join("\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html( gstid => $gstid ));
     }
-    $anno = "<font class=\"annotation\">No annotations for this entry</font>"
-      unless $anno;
-    return ( $anno, $feats[0]->id );
+    $anno = "<font class=\"annotation\">No annotations for this entry</font>" unless $anno;
+    return encode_json({ anno => $anno, fid => $feats[0]->id });
 }
 
 sub get_orgs_feat {
@@ -659,68 +885,56 @@ sub get_orgs_feat {
     my $type    = $opts{type};
     my $search  = $opts{search};
     my $id_only = $opts{id_only};
+    
     my @db;
     my $count;
     if ( $type && $type eq "name" ) {
-        @db =
-          $coge->resultset("Organism")
-          ->search( { name => { like => "%" . $search . "%" } } );
+        @db = $coge->resultset("Organism")->search( { name => { like => "%" . $search . "%" } } );
         $count = scalar @db;
     }
     elsif ( $type && $type eq "desc" ) {
-        @db =
-          $coge->resultset("Organism")
-          ->search( { description => { like => "%" . $search . "%" } } );
+        @db = $coge->resultset("Organism")->search( { description => { like => "%" . $search . "%" } } );
         $count = scalar @db;
     }
     else {
         $count = $coge->resultset("Organism")->count();
-
-        #	@db = $coge->resultset("Organism")->all;
+        #@db = $coge->resultset("Organism")->all;
     }
     return map { $_->id } @db if $id_only;
 
-#my @db = $name ? $coge->resultset('Organism')->search({name=>{like=>"%".$name."%"}})
-#  : $coge->resultset('Organism')->all();
+    #my @db = $name ? $coge->resultset('Organism')->search({name=>{like=>"%".$name."%"}})
+    #  : $coge->resultset('Organism')->all();
     my @opts;
     foreach my $item ( sort { uc( $a->name ) cmp uc( $b->name ) } @db ) {
         push @opts,
-            "<OPTION value=\""
-          . $item->id
-          . "\" id=\"o"
-          . $item->id . "\">"
-          . $item->name
-          . "</OPTION>";
+            "<OPTION value=\"" . $item->id . "\" id=\"o" . $item->id . "\">" . $item->name . "</OPTION>";
     }
     my $html;
-    $html .=
-        qq{<FONT CLASS ="small" id="org_count">Organism count: } 
-      . $count
-      . qq{</FONT>\n<BR>\n};
+    $html .= qq{<FONT CLASS ="small" id="org_count">Organism count: } . $count . qq{</FONT>\n<BR>\n};
     if ( $search && !@opts ) {
-        $html .=
-          qq{<input type = hidden name="org_id_feat" id="org_id_feat"><br>};
-        $html .= "No results";
+        $html .= qq{<input type = hidden name="org_id_feat" id="org_id_feat"><br>} . "No results";
         return $html;
     }
     unshift( @opts,
         "<OPTION value=\"all\" id=\"all\">All Listed Organisms</OPTION>" );
     my $size = scalar @opts;
     $size = 8 if $size > 8;
-    $html .= qq{<SELECT id="org_id_feat" SIZE="$size" MULTIPLE >\n};
-    $html .= join( "\n", @opts );
-    $html .= "\n</SELECT>\n";
+    $html .= qq{<SELECT id="org_id_feat" SIZE="$size" MULTIPLE >\n}
+         . join( "\n", @opts )
+         . "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
     return $html;
 }
 
-sub get_data_source_info_for_accn {
+sub source_search {
     my %opts     = @_;
     my $accn     = $opts{accn};
     my $org_id   = $opts{org_id};
     my $org_name = $opts{org_name};
     my $org_desc = $opts{org_desc};
     $org_id = "all" unless $org_id;
+    #print STDERR "source_search: accn=$accn org_id=$org_id org_name=$org_name org_desc=$org_desc\n";
+    
     my %org_ids;
     if ( $org_id eq "all" ) {
         my ( $type, $search );
@@ -786,9 +1000,7 @@ sub get_data_source_info_for_accn {
         }
     }
     my $html;
-    $html .= qq{
-<SELECT name = "feat_dsgid" id="feat_dsgid" MULTIPLE SIZE="10" onChange="get_types_chain();">
-};
+    $html .= qq{<SELECT name="feat_dsgid" id="feat_dsgid" MULTIPLE SIZE="10" onChange="get_types_chain();">};
     my $count = 0;
     foreach my $title (
         sort {
@@ -803,15 +1015,12 @@ sub get_data_source_info_for_accn {
 
         #	my $gstid = $sources{$title}{gstid};
         #	my $val = $id."_".$gstid;
-        $html .= qq{  <option value="$id" >$title\n};
+        $html .= qq{  <option value="$id">$title\n};
         $html =~ s/option/option selected/ unless $count;
         $count++;
     }
     $html .= qq{</SELECT>\n};
-    return ("<font class=small>Dataset count: " 
-          . $count
-          . "</font>\n<BR>\n"
-          . $html );
+    return ("<font class='small note'>(" . $count . ")</font>\n<BR>\n" . $html );
 }
 
 sub get_feature_types {
@@ -851,21 +1060,19 @@ sub go_synfind {
     my $fid              = $opts{fid};
     my $source_dsgid     = $opts{qdsgid};
     my $algo             = $opts{algo};
-    my $basename         = $opts{basename};
+    #my $basename         = $opts{basename}; # mdb removed 3/6/14
     my $window_size      = $opts{window_size};
     my $cutoff           = $opts{cutoff};
     my $scoring_function = $opts{scoring_function};
-    my $depth            = $opts{depth};           #max syntenic depth to report
+    my $depth            = $opts{depth}; # max syntenic depth to report
 
     $window_size = 40  unless defined $window_size;
     $cutoff      = 0.1 unless defined $cutoff;
-    $cutoff      = "0" . $cutoff
-      if $cutoff =~ /^\./;    #add the prepending 0 for filename consistence
+    $cutoff      = "0" . $cutoff if $cutoff =~ /^\./; # add the prepending 0 for filename consistence
     $scoring_function = 1 unless defined $scoring_function;
 
-#need to set this link before the scoring function changes to a different name type
-    my $synfind_link = $SERVER
-      . "SynFind.pl?fid=$fid;ws=$window_size;co=$cutoff;sf=$scoring_function;algo=$algo";
+    #need to set this link before the scoring function changes to a different name type
+    my $synfind_link = $SERVER . "SynFind.pl?fid=$fid;ws=$window_size;co=$cutoff;sf=$scoring_function;algo=$algo";
     my $unique_gene_link = $synfind_link;
     $synfind_link .= ";dsgid=$dsgids;qdsgid=$source_dsgid";
     $synfind_link .= ";sd=$depth" if $depth;
@@ -878,23 +1085,14 @@ sub go_synfind {
         url     => $P->{SERVER} . "/GenomeList.pl?dsgid=$dsgids"
     );
 
-    my $list_link =
-        qq{<a href="$genomes_url" target="_blank">} 
-      . @ids
-      . ' genome'
-      . ( @ids > 1 ? 's' : '' ) . '</a>';
+    my $list_link = qq{<a href="$genomes_url" target="_blank">} . @ids . ' genome' . ( @ids > 1 ? 's' : '' ) . '</a>';
 
     my $feat = $coge->resultset('Feature')->find($fid);
-    my $feat_url =
-      "<a href='FeatView.pl?fid=$fid' target='_blank'>" . $feat->name . "</a>";
+    my $feat_url = "<a href='FeatView.pl?fid=$fid' target='_blank'>" . $feat->name . "</a>";
 
-    my ( $source_name, $titleA ) = gen_org_name(
-        dsgid     => $source_dsgid,
-        write_log => 0
-    );
+    my ( $source_name, $titleA ) = gen_org_name( dsgid => $source_dsgid, write_log => 0 );
 
-#my $name = "<a href='OrganismView.pl?dsgid=$source_dsgid' target='_blank'>$source_name</a>";
-
+    #my $name = "<a href='OrganismView.pl?dsgid=$source_dsgid' target='_blank'>$source_name</a>";
     my $log_msg = 'Searched ' . $list_link . '  for feature ' . $feat_url;
 
     my $tiny_synfind_link = CoGe::Accessory::Web::get_tiny_link(
@@ -922,8 +1120,8 @@ sub go_synfind {
 
     CoGe::Accessory::Web::schedule_job( job => $job );
 
-   #convert numerical codes for different scoring functions to appropriate types
-    if ( $scoring_function == 2 ) {
+    #convert numerical codes for different scoring functions to appropriate types
+    if ( $scoring_function eq '2' ) {
         $scoring_function = "density";
     }
     else {
@@ -947,9 +1145,7 @@ sub go_synfind {
     );
 
     my ( $query_info, @target_info );
-
     foreach my $dsgid ( $source_dsgid, split( /,/, $dsgids ) ) {
-
         #check for taint
         ($dsgid) = $dsgid =~ /(\d+)/;
 
@@ -1021,41 +1217,26 @@ sub go_synfind {
     foreach my $target (@target_info) {
         my ( $org1, $org2 ) = ( $query_info->{org_name}, $target->{org_name} );
         my ( $dsgid1, $dsgid2 ) = ( $query_info->{dsgid}, $target->{dsgid} );
-        my ( $feat_type1, $feat_type2 ) =
-          ( $query_info->{feat_type}, $target->{feat_type} );
+        my ( $feat_type1, $feat_type2 ) = ( $query_info->{feat_type}, $target->{feat_type} );
         my ( $fasta1, $fasta2 ) = ( $query_info->{fasta}, $target->{fasta} );
 
-        #	my ($db1, $db2) = ($query_info->{blastdb},$target->{blastdb});
-
-        (
-            $org1, $org2, $dsgid1, $dsgid2, $feat_type1, $feat_type2, $fasta1,
-            $fasta2
-          )
-          = (
-            $org2, $org1, $dsgid2, $dsgid1, $feat_type2, $feat_type1, $fasta2,
-            $fasta1
-          ) if ( $dsgid2 lt $dsgid1 );
+        #my ($db1, $db2) = ($query_info->{blastdb},$target->{blastdb});
+        ( $org1, $org2, $dsgid1, $dsgid2, $feat_type1, $feat_type2, $fasta1, $fasta2 )
+            = ($org2, $org1, $dsgid2, $dsgid1, $feat_type2, $feat_type1, $fasta2, $fasta1
+        ) if ( $dsgid2 lt $dsgid1 );
 
         my $basedir = $DIAGSDIR . "/" . $dsgid1 . "/" . $dsgid2;
         mkpath( $basedir, 0, 0777 ) unless -d $basedir;
-        my $basename =
-          $dsgid1 . "_" . $dsgid2 . "." . $feat_type1 . "-" . $feat_type2;
+        my $basename = $dsgid1 . "_" . $dsgid2 . "." . $feat_type1 . "-" . $feat_type2;
         my $blastfile = $basedir . "/" . $basename . ".$algo";
         my $bedfile1  = $BEDDIR . $dsgid1 . ".bed";
         my $bedfile2  = $BEDDIR . $dsgid2 . ".bed";
-        $target->{synteny_score_db} =
-            $basedir . "/"
-          . $basename . "_"
-          . $window_size . "_"
-          . $cutoff . "_"
-          . $scoring_function
-          . ".$algo" . ".db";
+        $target->{synteny_score_db}    = $basedir . "/" . $basename . "_" . $window_size . "_" . $cutoff . "_" . $scoring_function . ".$algo" . ".db";
         $target->{basedir}             = $basedir;
         $target->{basename}            = $basename;
         $target->{blastfile}           = $blastfile;
         $target->{converted_blastfile} = $blastfile . ".short_names";
-        $target->{filtered_blastfile} =
-          $target->{converted_blastfile} . ".filtered";
+        $target->{filtered_blastfile}  = $target->{converted_blastfile} . ".filtered";
         $target->{bedfile1}    = $bedfile1;
         $target->{bedfile2}    = $bedfile2;
         $target->{dsgid1}      = $dsgid1;
@@ -1063,7 +1244,7 @@ sub go_synfind {
         $target->{query_fasta} = $fasta1
           ; #need to determine the correct query/target order so output is compatibable with SynMap
 
-#	$target->{target_db} = $db2;#need to determine the correct query/target order so output is compatibable with SynMap
+        #$target->{target_db} = $db2;#need to determine the correct query/target order so output is compatibable with SynMap
         $target->{target_fasta} = $fasta2;
     }
 
@@ -1080,7 +1261,6 @@ sub go_synfind {
                 [ "-d", $target->{target_fasta}, 1 ],
                 [ "-o", $target->{blastfile},    1 ]
             ];
-
             $blast_cmd = $LASTZ;
         }
         else {
@@ -1089,7 +1269,6 @@ sub go_synfind {
                 [ "",   $target->{query_fasta},  1 ],
                 [ "-o", $target->{blastfile},    1 ]
             ];
-
             $blast_cmd = $LAST;
         }
 
@@ -1105,14 +1284,11 @@ sub go_synfind {
         #######################################################################
         # Convert Blast
         #######################################################################
-
         my $convert_args = [
             [ '<', $target->{blastfile},           1 ],
             [ '>', $target->{converted_blastfile}, 1 ]
         ];
-
         my $convert_inputs = [ $target->{blastfile} ];
-
         my $convert_outputs = [ $target->{converted_blastfile}, ];
 
         $workflow->add_job(
@@ -1142,7 +1318,6 @@ sub go_synfind {
 
         my $raw_outputs = [
             $target->{filtered_blastfile},
-
             #$target->{filtered_blastfile} . ".q.localdups",
             #$target->{filtered_blastfile} . ".s.localdups",
         ];
@@ -1159,8 +1334,7 @@ sub go_synfind {
         #######################################################################
         # Synteny Score
         #######################################################################
-
-        $cutoff = sprintf( "%.2f", $cutoff / $window_size ) if $cutoff >= 1;
+        $cutoff = sprintf( "%.2f", $cutoff / $window_size ) if ( $cutoff >= 1 );
 
         my $synteny_score_args = [
             [ '',          $target->{filtered_blastfile}, 1 ],
@@ -1201,28 +1375,25 @@ sub go_synfind {
         depth       => $depth
     );
 
-    my $tiny_gevo_link =
-      CoGe::Accessory::Web::get_tiny_link( url => $gevo_link );
-    CoGe::Accessory::Web::write_log( "#TINY GEVO LINK: $tiny_gevo_link",
-        $cogeweb->logfile );
+    my $tiny_gevo_link = CoGe::Accessory::Web::get_tiny_link( url => $gevo_link );
+    CoGe::Accessory::Web::write_log( "#TINY GEVO LINK: $tiny_gevo_link", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Finished!", $cogeweb->logfile );
 
-    #make table of results
-    #table to look them up later;
+    # make table of results
+    # table to look them up later;
     my %dsgids = map { $_->{dsgid}, => 1 } @target_info;
     $dsgids{ $query_info->{dsgid} } = 1;
 
-    $html .=
-      qq{<table id=syntelog_table class="ui-widget-content ui-corner-all">};
-    $html .= qq{<THEAD><tr>};
-    $html .= qq{<th>Organism};
-    $html .= qq{<th>Genome};
-    $html .= qq{<th>Type};
-    $html .= qq{<th>Name};
-    $html .= qq{<th>Chr};
-    $html .= qq{<th>Synteny Score};
-    $html .= qq{<th>SynMap};
-    $html .= qq{</tr></THEAD><TBODY>};
+    $html .= qq{<table id='syntelog_table' class="ui-widget-content ui-corner-all">}
+         . qq{<THEAD><tr>}
+         . qq{<th>Organism}
+         . qq{<th>Genome}
+         . qq{<th>Type}
+         . qq{<th>Name}
+         . qq{<th>Chr}
+         . qq{<th>Synteny Score}
+         . qq{<th>SynMap}
+         . qq{</tr></THEAD><TBODY>};
     my $synmap_algo_num;    #from SynMap's lookup table on algorithms
 
     if ( $algo eq "lastz" ) {
@@ -1231,8 +1402,7 @@ sub go_synfind {
     elsif ( $algo eq "last" ) {
         $synmap_algo_num = 6;    #last
     }
-    my $synmap_link =
-      "SynMap.pl?autogo=1;b=$synmap_algo_num;dsgid1=$source_dsgid;dsgid2=";
+    my $synmap_link = "SynMap.pl?autogo=1;b=$synmap_algo_num;dsgid1=$source_dsgid;dsgid2=";
     my @res;
     my %open_all_synmap;
     my @homologs;
@@ -1244,8 +1414,7 @@ sub go_synfind {
         my $dsg;
         foreach my $dsgt ( $feat->genomes ) {
             if ( $dsgids{ $dsgt->id } ) {
-
-                #		delete $dsgids{$dsgt->id};
+                #delete $dsgids{$dsgt->id};
                 $dsg = $dsgt;
                 last;
             }
@@ -1281,11 +1450,9 @@ sub go_synfind {
         $open_all_synmap{$synmap_open_link} = 1;
         my $oid   = $feat->organism->id;
         my $dsgid = $dsg->id;
-        $html .= join( "<td>",
-"<span class='link' onclick=window.open('OrganismView.pl?oid=$oid')>"
+        $html .= join( "<td>", "<span class='link' onclick=window.open('OrganismView.pl?oid=$oid')>"
               . $feat->organism->name
-              . "</span>",
-"<span class='link' onclick=window.open('OrganismView.pl?dsgid=$dsgid')>"
+              . "</span>", "<span class='link' onclick=window.open('OrganismView.pl?dsgid=$dsgid')>"
               . $dsg_name
               . "</span>",
             $match_type,
@@ -1301,81 +1468,58 @@ sub go_synfind {
         $count++;
     }
     $html .= "</tbody></table>";
-    $html .=
-"<br><a style='font-size: 1em' href='$tiny_gevo_link' onclick=window.open('$tiny_gevo_link') class='ui-button ui-corner-all' target=_new_gevo>Compare and visualize region in GEvo: $tiny_gevo_link</a><br><br>";
-
-    my $featlist_link =
-      gen_featlist_link( fids => [ $fid, map { $_->[0] } @$matches ] );
-    $html .=
-"<a href='$tiny_synfind_link' class='ui-button ui-corner-all' target=_new_synfind>Regenerate this analysis: $tiny_synfind_link</a>";
+    
+    my $featlist_link = gen_featlist_link( fids => [ $fid, map { $_->[0] } @$matches ] );
+    
+    $html .= '<br><strong>Links</strong><br>'
+        . qq{<span class="small">Compare and visualize region in GEvo: </span><a href='$tiny_gevo_link' onclick="window.open('$tiny_gevo_link')" class='small link' target=_new_gevo>$tiny_gevo_link</a><br>}
+        . qq{<span class="small">Regenerate this analysis: </span><a href='$tiny_synfind_link' class='small link' target=_new_synfind>$tiny_synfind_link</a><br>};
     my $open_all_synmap = join( "\n", keys %open_all_synmap );
-    $html .=
-qq{<a onclick='$open_all_synmap' class='ui-button ui-corner-all'>Generate all dotplots</a><br><br>};
-    my $feat_list_link =
-      qq{FeatList.pl?fid=} . join( ",", map { $_->id } @homologs );
-    $html .=
-qq{<a onclick='window.open("$feat_list_link")' class='ui-button ui-corner-all'>Generate Feature List</a>};
-    my $fasta_link =
-      qq{FastaView.pl?fid=} . join( ",", map { $_->id } @homologs );
-    $html .=
-qq{<a onclick='window.open("$fasta_link")' class='ui-button ui-corner-all'>Generate Fasta Sequences</a><br><br>};
+    $html .= qq{<a onclick='$open_all_synmap' class='small link'>Generate all dotplots</a><br>};
+    my $feat_list_link = qq{FeatList.pl?fid=} . join( ",", map { $_->id } @homologs );
+    $html .= qq{<a onclick='window.open("$feat_list_link")' class='small link'>Generate Feature List</a><br>};
+    my $fasta_link = qq{FastaView.pl?fid=} . join( ",", map { $_->id } @homologs );
+    $html .= qq{<a onclick='window.open("$fasta_link")' class='small link'>Generate Fasta Sequences</a><br>};
 
     my $master_list_link = $synfind_link . ";get_master=1";
 
-#    $html .= "<a onclick=window.open('$master_list_link') class='ui-button ui-corner-all' target=_new_synfind>Generate master gene set table</a>";
-    $html .=
-"<span onclick=get_master('$master_list_link') class='link ui-button ui-corner-all' target=_new_synfind>Generate master gene set table</span>";
+    #$html .= "<a onclick=window.open('$master_list_link') class='ui-button ui-corner-all' target=_new_synfind>Generate master gene set table</a>";
+    $html .= qq{<span onclick="get_master('$master_list_link')" class='small link' target=_new_synfind>Generate master gene set table</span><br>};
     $master_list_link .= ";limit=1";
 
-#    $html .= "<a onclick=window.open('$master_list_link') class='ui-button ui-corner-all' target=_new_synfind>Generate master gene set table (top one syntenlog per organism)</a>";
-    $html .=
-"<a onclick=get_master('$master_list_link') class='ui-button ui-corner-all' target=_new_synfind>Generate master gene set table (top one syntenlog per organism)</a>";
-    $html .=
-qq{<span class="small">Pad Sequence in GEvo <input type="text" size=11 id=pad size=11 value=0></span>};
-    CoGe::Accessory::Web::write_log( "#SYNFIND LINK $synfind_link",
-        $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "#TINY SYNFIND LINK $tiny_synfind_link",
-        $cogeweb->logfile );
+    #$html .= "<a onclick=window.open('$master_list_link') class='ui-button ui-corner-all' target=_new_synfind>Generate master gene set table (top one syntenlog per organism)</a>";
+    $html .= qq{<span onclick="get_master('$master_list_link')" class='small link' target=_new_synfind>Generate master gene set table (top one syntenlog per organism)</span><br>};
+    $html .= qq{<span class="small">Pad Sequence in GEvo <input type="text" size=11 id=pad size=11 value=0></span>};
+    CoGe::Accessory::Web::write_log( "#SYNFIND LINK $synfind_link", $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "#TINY SYNFIND LINK $tiny_synfind_link", $cogeweb->logfile );
     my $log_file = $cogeweb->logfile;
     $log_file =~ s/$TEMPDIR/$TEMPURL/;
 
-    $html .=
-qq{<br><br><a href="/wiki/index.php/SynFind#Syntenic_Depth" target=_new>Syntenic Depth:</a> <span class=small>(Query genome depth coverage)</span><br>}
-      . get_master_histograms(
-        target_dbs       => \@target_info,
-        query_dsgid      => $source_dsgid,
-        unique_gene_link => $unique_gene_link
-      );
-    $html .= "<br>Downloads:";
-    $html .= qq{<table class="small ui-widget-content ui-corner-all">};
-    $html .=
-      qq{<tr><td><a href=$log_file target=_new class="small">Log File</a>};
+    $html .= qq{<br><br><strong>Syntenic Depth</strong> }
+        . qq{<a href="/wiki/index.php/SynFind#Syntenic_Depth" target=_new class="ui-icon ui-icon-help" style='border:1px solid gray;border-radius:50%;'></a>}
+        . qq{ <span class="small note">Query genome depth coverage</span><br>}
+        . get_master_histograms(
+                target_dbs       => \@target_info,
+                query_dsgid      => $source_dsgid,
+                unique_gene_link => $unique_gene_link );
+    $html .= "<br><strong>Downloads</strong><br>"
+        . qq{<a href=$log_file target=_new class="small">Log File</a><br>};
 
     foreach my $item (@target_info) {
         # mdb added 10/8/13
         my $blastfile_link = $item->{blastfile};
         $blastfile_link =~ s/$P->{COGEDIR}//;
 
-        $html .= qq{<tr>};
-        $html .= qq{<td>} . $item->{org_name};
-        $html .=
-          qq{<td><a href="$blastfile_link" target=_new>Raw Blast File</a>};
+        $html .= '<span class="small">' . $item->{org_name} . ':</span> ' . qq{<a href="$blastfile_link" class="small" target=_new>Raw Blast File</a>, };
 
         # mdb added 10/8/13
         $blastfile_link = $item->{filtered_blastfile};
         $blastfile_link =~ s/$P->{COGEDIR}//;
 
-        $html .=
-          qq{<td><a href="$blastfile_link" target=_new>Filtered Blast File</a>};
+        $html .= qq{<a href="$blastfile_link" class="small" target=_new>Filtered Blast File</a><br>};
     }
-    $html .= qq{</table>};
 
-    $job->update(
-        {
-            status   => 2,
-            end_time => \"current_timestamp"
-        }
-    ) if defined($job);
+    $job->update({ status => 2, end_time => \"current_timestamp" }) if defined($job);
 
     return $html;
 }
@@ -1426,11 +1570,15 @@ sub gen_org_name {
     my $dsgid     = $opts{dsgid};
     my $feat_type = $opts{feat_type} || 1;
     my $write_log = $opts{write_log} || 0;
-    my ($dsg) = $coge->resultset('Genome')->search( { genome_id => $dsgid },
-        { join => 'organism', prefetch => 'organism' } );
+    
+    my ($dsg) = $coge->resultset('Genome')->search( 
+        { genome_id => $dsgid },
+        { join => 'organism', prefetch => 'organism' } 
+    );
+    return unless $dsg;
+    
     my $org_name = $dsg->organism->name;
-    my $title =
-      $org_name . " (v" . $dsg->version . ", dsgid" . $dsgid . ")" . $feat_type;
+    my $title = $org_name . " (v" . $dsg->version . ", dsgid" . $dsgid . ")" . $feat_type;
     $title =~ s/(`|')//g;
     CoGe::Accessory::Web::write_log( "#INITIALIZING#", $cogeweb->logfile )
       if $write_log;
@@ -1636,7 +1784,6 @@ sub run_convert_blast {
             $cogeweb->logfile );
         return $outfile;
     }
-    print STDERR "In sub run_convert_blast\n";
     CoGe::Accessory::Web::gunzip("$infile");
     CoGe::Accessory::Web::write_log(
         "convering blast file to short names: $cmd",
@@ -1662,7 +1809,6 @@ sub run_blast2raw {
         );
         return $outfile;
     }
-    print STDERR "IN SUB run_blast2raw\n";
     CoGe::Accessory::Web::gunzip("$blastfile");
     CoGe::Accessory::Web::gunzip("$bedfile1");
     CoGe::Accessory::Web::gunzip("$bedfile2");
@@ -1794,8 +1940,7 @@ sub gen_featlist_link {
 
 sub generate_feat_info {
     my $featid = shift;
-    my ($dsgid);
-    ( $featid, $dsgid ) = split( /_/, $featid );
+    ( $featid, my $dsgid ) = split( /_/, $featid );
     my ($dsg)  = $coge->resultset('Genome')->find($dsgid);
     my ($feat) = $coge->resultset("Feature")->find($featid);
     unless ( ref($feat) =~ /Feature/i ) {
@@ -1829,12 +1974,11 @@ sub has_cds {
 }
 
 sub get_master_syn_sets {
-    my $form             = $FORM;
-    my $window_size      = $form->param('ws');
-    my $cutoff           = $form->param('co');
-    my $scoring_function = $form->param('sf');
-    my $pad              = $form->param('pad');
-    my $algo             = $form->param('algo');
+    my $window_size      = $FORM->param('ws');
+    my $cutoff           = $FORM->param('co');
+    my $scoring_function = $FORM->param('sf');
+    my $pad              = $FORM->param('pad');
+    my $algo             = $FORM->param('algo');
     if ( $scoring_function == 2 ) {
         $scoring_function = "density";
     }
@@ -1842,13 +1986,13 @@ sub get_master_syn_sets {
         $scoring_function = "collinear";
     }
 
-    my $qdsgid = $form->param('qdsgid');
-    my $limit  = $form->param('limit')
+    my $qdsgid = $FORM->param('qdsgid');
+    my $limit  = $FORM->param('limit')
       ;    #limit the number of syntelogs returned per organism searched
     my $qdsg = $coge->resultset('Genome')->find($qdsgid);
     my %qdsids = map { $_->id, 1 } $qdsg->datasets;
     my @dsgs;
-    foreach my $item ( $form->param('dsgid') ) {
+    foreach my $item ( $FORM->param('dsgid') ) {
         foreach my $dsgid ( split( /,/, $item ) ) {
             push @dsgs, $coge->resultset('Genome')->find($dsgid);
         }
@@ -2048,19 +2192,17 @@ sub get_master_syn_sets {
             }
         }
     }
-    exit;
 }
 
 sub get_unique_genes {
-    my $form             = $FORM;
-    my $window_size      = $form->param('ws');
-    my $cutoff           = $form->param('co');
-    my $scoring_function = $form->param('sf');
-    my $pad              = $form->param('pad');
-    my $algo             = $form->param('algo');
-    my $fid              = $form->param('fid');
-    my $qdsgid           = $form->param('qdsgid');
-    my $sdsgid           = $form->param('sdsgid');
+    my $window_size      = $FORM->param('ws');
+    my $cutoff           = $FORM->param('co');
+    my $scoring_function = $FORM->param('sf');
+    my $pad              = $FORM->param('pad');
+    my $algo             = $FORM->param('algo');
+    my $fid              = $FORM->param('fid');
+    my $qdsgid           = $FORM->param('qdsgid');
+    my $sdsgid           = $FORM->param('sdsgid');
     my $synfind_link     = $SERVER
       . "SynFind.pl?fid=$fid;qdsgid=$qdsgid;ws=$window_size;co=$cutoff;sf=$scoring_function;algo=$algo;dsgid=$sdsgid";
 
@@ -2083,22 +2225,16 @@ sub get_unique_genes {
       if ( $org2 lt $org1 );
     my $basedir  = $DIAGSDIR . "/" . $dsgid1 . "/" . $dsgid2;
     my $basename = $dsgid1 . "_" . $dsgid2 . "." . "CDS-CDS";
-    my $db =
-        $basedir . "/"
-      . $basename . "_"
-      . $window_size . "_"
-      . $cutoff . "_"
-      . $scoring_function
-      . ".$algo" . ".db";
+    my $db = $basedir . "/" . $basename . "_" . $window_size . "_" . $cutoff . "_" . $scoring_function . ".$algo" . ".db";
     my $dbh   = DBI->connect( "dbi:SQLite:dbname=$db", "", "" );
     my $query = "SELECT * FROM synteny";
     my $sth   = $dbh->prepare($query);
-
     unless ($sth) {
         print STDERR qq{Problem connecting to $db\n};
         next;
     }
     $sth->execute();
+    
     my %qdata;
     my %sdata;
     while ( my @data = $sth->fetchrow_array ) {
@@ -2114,19 +2250,17 @@ sub get_unique_genes {
     my @sunique;
 
     my $rs = $coge->resultset('Feature')->search(
-        {
-            feature_type_id => 3,
+        {   feature_type_id => 3,
             genome_id       => $qdsgid
         },
-        { join => [ { dataset => 'dataset_connectors' } ], }
+        { join => [ { dataset => 'dataset_connectors' } ] }
     );
     foreach my $item ( $rs->get_column('feature_id')->all ) {
         push @qunique, $item unless $qdata{$item};
     }
 
     $rs = $coge->resultset('Feature')->search(
-        {
-            feature_type_id => 3,
+        {   feature_type_id => 3,
             genome_id       => $sdsgid
         },
         { join => [ { dataset => 'dataset_connectors' } ], }
@@ -2136,64 +2270,51 @@ sub get_unique_genes {
     }
 
     my $list_type = $coge->resultset('ListType')->find_or_create(
-        {
-            name        => 'SynFind Unique Genes',
+        {   name        => 'SynFind Unique Genes',
             description => 'Auto-generated by SynFind'
         }
     );
 
     #let's create a list of these items and add them to the user's lists
-    my $list = $coge->resultset('List')->create(
-        {
-            name         => "Unique genes in " . $qdsg->organism->name,
-            description  => "Compared to " . $sdsg->organism->name,
-            list_type_id => $list_type->id,
-            restricted   => 1
-        }
-    );
+    my $list = $coge->resultset('List')->create({
+        name         => "Unique genes in " . $qdsg->organism->name,
+        description  => "Compared to " . $sdsg->organism->name,
+        list_type_id => $list_type->id,
+        restricted   => 1
+    });
     return unless $list;
 
-    my $conn = $coge->resultset('UserConnector')->create(
-        {
-            parent_id   => $USER->id,
-            parent_type => 5,           # FIXME hardcoded to "user"
-            child_id    => $list->id,
-            child_type  => 1,           # FIXME hardcoded to "list"
-            role_id     => 2,           # FIXME hardcoded to "owner"
-        }
-    );
+    my $conn = $coge->resultset('UserConnector')->create({
+        parent_id   => $USER->id,
+        parent_type => 5,           # FIXME hardcoded to "user"
+        child_id    => $list->id,
+        child_type  => 1,           # FIXME hardcoded to "list"
+        role_id     => 2,           # FIXME hardcoded to "owner"
+    });
     return unless $conn;
 
     my $annotation_type =
       $coge->resultset('AnnotationType')
       ->find_or_create( { name => "CoGe Note" } );
-    $list->add_to_list_annotations(
-        {
-            annotation_type_id => $annotation_type->id,
-            annotation         => "Auto created by SynFind",
-        }
-    );
-    $list->add_to_list_annotations(
-        {
-            annotation_type_id => $annotation_type->id,
-            annotation         => "Regenerate Analysis in SynFind",
-            link => CoGe::Accessory::Web::get_tiny_link( url => $synfind_link ),
-        }
-    );
-    $list->add_to_list_annotations(
-        {
-            annotation_type_id => $annotation_type->id,
-            annotation         => "Query Genome: " . $qdsg->info,
-            link => $SERVER . "OrganismView.pl?dsgid=" . $qdsg->id,
-        }
-    );
-    $list->add_to_list_annotations(
-        {
-            annotation_type_id => $annotation_type->id,
-            annotation         => "Target Genome: " . $sdsg->info,
-            link => $SERVER . "OrganismView.pl?dsgid=" . $sdsg->id,
-        }
-    );
+    $list->add_to_list_annotations({
+        annotation_type_id => $annotation_type->id,
+        annotation         => "Auto created by SynFind",
+    });
+    $list->add_to_list_annotations({
+        annotation_type_id => $annotation_type->id,
+        annotation         => "Regenerate Analysis in SynFind",
+        link => CoGe::Accessory::Web::get_tiny_link( url => $synfind_link ),
+    });
+    $list->add_to_list_annotations({
+        annotation_type_id => $annotation_type->id,
+        annotation         => "Query Genome: " . $qdsg->info,
+        link => $SERVER . "OrganismView.pl?dsgid=" . $qdsg->id,
+    });
+    $list->add_to_list_annotations({
+        annotation_type_id => $annotation_type->id,
+        annotation         => "Target Genome: " . $sdsg->info,
+        link => $SERVER . "OrganismView.pl?dsgid=" . $sdsg->id,
+    });
 
     #add feature_ids
     #FIXME:  hardcoded value for item_type:  id == 4 for features
@@ -2203,10 +2324,9 @@ sub get_unique_genes {
         $list->add_to_list_connectors_as_parent(
             { child_id => $fid, child_type => 4 } );
     }
-    print $form->header;
+    print $FORM->header;
     my $listview = $SERVER . "NotebookView.pl?lid=" . $list->id;
     print qq{<meta HTTP-EQUIV="REFRESH" content="0; url=$listview">};
-    exit;
 }
 
 sub get_master_histograms {
@@ -2230,39 +2350,28 @@ sub get_master_histograms {
         }
         $sth->execute();
         my %data;
-        while ( my @data = $sth->fetchrow_array
-          )    #data base contains reciprocal entries for each item (a=>b; b=>a)
-        {
+        while ( my @data = $sth->fetchrow_array ) { # data base contains reciprocal entries for each item (a=>b; b=>a)
             next unless $data[6] == $query_dsgid;
             my $id     = $data[0];    #query feature ID
             my $sdsgid = $data[7];    #target genome ID
             $data{$id}++;             #data{query_feature_id}{subject_genome_id}
         }
+        
         my $genome = $coge->resultset('Genome')->find( $item->{dsgid2} );
+        next unless $genome;
 
-        $html .=
-            qq{<span class=link onclick='window.open("OrganismView.pl?dsgid=}
+        $html .= qq{<span class="link" onclick='window.open("OrganismView.pl?dsgid=}
           . $item->{dsgid2} . "\")'>"
           . $genome->info
           . "</span>";
+        $html .= '<div style="padding-left:20px;">';
         if ( $query_dsgid eq $item->{dsgid2} ) {
-            $html .=
-"<br><span class=small>(self-self comparison: self-self syntenic regions ignored)</span>";
+            $html .= "<span class='small'>(self-self comparison: self-self syntenic regions ignored)</span><br>";
         }
-        my $link =
-            $unique_gene_link
-          . ";ug=1;sdsgid="
-          . $item->{dsgid2}
-          . ";qdsgid=$query_dsgid";
-        $html .=
-qq{<br><span class="small link" onclick=window.open('$link')>Query genome unique genes</span>};
-        $link =
-            $unique_gene_link
-          . ";ug=1;qdsgid="
-          . $item->{dsgid2}
-          . ";sdsgid=$query_dsgid";
-        $html .=
-qq{<br><span class="small link" onclick=window.open('$link')>Target genome unique genes</span>};
+        my $link = $unique_gene_link . ";ug=1;sdsgid=" . $item->{dsgid2} . ";qdsgid=$query_dsgid";
+        $html .= qq{<span class="small link" onclick=window.open('$link')>Query genome unique genes</span><br>};
+        $link = $unique_gene_link . ";ug=1;qdsgid=" . $item->{dsgid2} . ";sdsgid=$query_dsgid";
+        $html .= qq{<span class="small link" onclick=window.open('$link')>Target genome unique genes</span><br>};
         my $depths;
         $html .= depth_table(
             depth_data => \%data,
@@ -2272,20 +2381,21 @@ qq{<br><span class="small link" onclick=window.open('$link')>Target genome uniqu
         push @all, [ $depths, $item->{dsgid2} ];
     }
     $html .= master_depth_table( data => \@all );
+    $html .= '</div>';
     return $html;
 }
 
 sub master_depth_table {
     my %opts = @_;
     my $data = $opts{data};
-    my $html = "<table class='small  ui-widget-content ui-corner-all'>";
+    my $html = "<table class='small' style='border-top:1px solid lightgray'>";
     my $max  = 0;
     foreach
       my $item ( sort { scalar @{ $b->[0] } <=> scalar @{ $a->[0] } } @$data )
     {
         unless ($max) {
             $max = scalar @{ $item->[0] };
-            $html .= "<tr>" . "<th>Org";
+            $html .= "<tr>" . "<th style='text-align:left'>Organism";
             foreach ( my $i = 0 ; $i < $max ; $i++ ) {
                 $html .= "<th>Depth: $i";
             }
@@ -2314,18 +2424,17 @@ sub depth_table {
     my $total_w_depth = 0;
     map { $total_w_depth += $_ } values %depths;
     $depths{0} = ( $total - $total_w_depth );
-    my $html = "<table class='small  ui-widget-content ui-corner-all'>";
+    my $html = "<table class='small' style='border-top:1px solid lightgray'>";
     my @depths;
 
     foreach my $depth ( sort { $a <=> $b } keys %depths ) {
-        $html .= "<tr>";
-        $html .= "<td>Depth $depth";
-        $html .= "<td>" . $depths{$depth};
-        $html .= "<td>of";
-        $html .= "<td>$total";
-        $html .=
-          "<td>" . sprintf( "%.2f", $depths{$depth} / $total * 100 ) . "%";
-        $html .= "</tr>";
+        $html .= "<tr>"
+         . "<td>Depth $depth"
+         . "<td>" . $depths{$depth}
+         . "<td>of"
+         . "<td>$total"
+         . "<td>" . sprintf( "%.2f", $depths{$depth} / $total * 100 ) . "%"
+         . "</tr>";
         push @depths, $depths{$depth};
     }
     $html .= "</table>";
@@ -2333,7 +2442,7 @@ sub depth_table {
     return $html;
 }
 
-sub save_orglist_synfind {
+sub save_settings {
     my %opts   = @_;
     my $dsgids = $opts{dsgids};
     my $prefs  = CoGe::Accessory::Web::load_settings(
