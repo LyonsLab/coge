@@ -2501,7 +2501,7 @@ sub generate_blast {
     return $url;
 }
 
-sub get_genome_info {
+sub get_genome_info { #FIXME: dup'ed in SynFind.pl
     my %opts  = @_;
     my $dsgid = $opts{dsgid};
 
@@ -2513,19 +2513,17 @@ sub get_genome_info {
 
     my $html = qq{<table class='small'>}
       ;    # = qq{<div style="overflow:auto; max-height:78px">};
-    $html .=
-qq{<tr valign='top'><td style='white-space:nowrap'>Name:<td><span class='link' onclick=window.open('OrganismView.pl?dsgid=$dsgid')>}
+    $html .= qq{<tr valign='top'><td style='white-space:nowrap'>Name:<td><span class='link' onclick=window.open('OrganismView.pl?dsgid=$dsgid')>}
       . $dsg->organism->name
       . "</span>";
-    $html .=
-      "<tr valign='top'><td style='white-space:nowrap'>Description:<td>" . join(
+    $html .= "<tr valign='top'><td style='white-space:nowrap'>Description:<td>" . join(
         "; ",
         map {
 qq{<span class=link onclick="\$('#org_desc').val('$_').focus();">$_</span>}
           } split( /;\s+/, $dsg->organism->description )
       ) if $dsg->organism->description;
 
-    my @gs = sort { $a->chromosome cmp $b->chromosome } $dsg->genomic_sequences;
+    my @gs = $dsg->genomic_sequences;
     my $chr_num = scalar @gs;
     my $total_length;
     map { $total_length += $_->sequence_length } @gs;

@@ -256,7 +256,7 @@ sub get_orgs { #FIXME: dup'ed in CoGeBlast.pl
       $opts{html_only};    # optional flag to return html instead of JSON
     my $timestamp = $opts{timestamp};
 
-    print STDERR "get_orgs: " . ($name_desc ? $name_desc : '') . "\n";
+#    print STDERR "get_orgs: " . ($name_desc ? $name_desc : '') . "\n";
 
     my $html;
     my @organisms;
@@ -517,49 +517,56 @@ sub get_dsg_for_menu { #FIXME: dup'ed in CoGeBlast.pl
 #
 #}
 
-sub get_genome_info {
+sub get_genome_info { #FIXME: dup'ed in CoGeBlast.pl
     my %opts  = @_;
     my $dsgid = $opts{dsgid};
+
+    #   print STDERR "get_genome_info: $dsgid\n";
     return " " unless $dsgid;
+
     my $dsg = $coge->resultset("Genome")->find($dsgid);
     return "Unable to create genome object for id: $dsgid" unless $dsg;
-    my $html;    # = qq{<div style="overflow:auto; max-height:78px">};
-    my $total_length;
-    my @gs = sort { $a->chromosome cmp $b->chromosome } $dsg->genomic_sequences;
-    my $chr_num = scalar @gs;
 
-    #    $html .=qq{<table class=small ><tr class=small valign=top>};
-    my $count = 0;
-    foreach my $gs (@gs) {
-        my $chr    = $gs->chromosome;
-        my $length = $gs->sequence_length;
-        $total_length += $length;
-        $length = commify($length);
-        $html .= qq{$chr:  $length bp<br>};
-        $count++;
-    }
+    my $html = qq{<table class='small'>}
+      ;    # = qq{<div style="overflow:auto; max-height:78px">};
+    $html .= qq{<tr valign='top'><td style='white-space:nowrap'>Name:<td><span class='link' onclick=window.open('OrganismView.pl?dsgid=$dsgid')>}
+      . $dsg->organism->name
+      . "</span>";
+    $html .= "<tr valign='top'><td style='white-space:nowrap'>Description:<td>" . join(
+        "; ",
+        map {
+qq{<span class=link onclick="\$('#org_desc').val('$_').focus();">$_</span>}
+          } split( /;\s+/, $dsg->organism->description )
+      ) if $dsg->organism->description;
+
+    my @gs = $dsg->genomic_sequences;
+    my $chr_num = scalar @gs;
+    my $total_length;
+    map { $total_length += $_->sequence_length } @gs;
     my ($ds) = $dsg->datasets;
     my $link = $ds->data_source->link;
     $link = "http://" . $link unless $link =~ /^http/;
-    $html =
-        qq{<span class='link' onclick="window.open('OrganismView.pl?dsgid=}
-      . $dsgid
-      . qq{')">View in OrganismView</span><br>}
-      . "Source:  <a class = 'link' href="
+    $html .=
+        "<tr valign='top'><td>Source:<td><a class = 'link' href="
       . $link
       . " target=_new>"
-      . $ds->data_source->name
-      . "</a><br>"
-      . qq{Chromosome count: $chr_num<br>}
-      . qq{<div style="float:left;">Total length: }
-      . commify($total_length) . " bp" . "<br>"
-      . qq{Sequence Type: }
+      . $ds->data_source->name . "</a>"
+      . qq{<tr valign='top'><td style='white-space:nowrap'>Chromosomes:<td>$chr_num}
+      . qq{<tr valign='top'><td style='white-space:nowrap'>Total length:<td>}
+      . commify($total_length) . " bp"
+      . qq{<tr valign='top'><td style='white-space:nowrap'>Sequence Type:<td>}
       . $dsg->genomic_sequence_type->name
-      . qq{<input type=hidden id=gstid value=}
-      . $dsg->genomic_sequence_type->id . qq{>}
-      . qq{<br>}
-      . qq{-----------<br>Chr:   (length)<br>}
-      . $html;
+      . qq{<input type='hidden' id='gstid' value=}
+      . $dsg->genomic_sequence_type->id;
+
+    #    foreach my $gs (@gs)
+    #      {
+    #   my $chr = $gs->chromosome;
+    #   my $length = $gs->sequence_length;
+    #   $length = commify($length);
+    #   $html .= qq{$chr:  $length bp<br>};
+    #     }
+    #    $html .= "</table>";
     return $html;
 }
 
@@ -760,10 +767,7 @@ sub cogefeatsearch {
     my $fid      = $opts{fid};
     my $type     = $opts{type};
     my $org_id   = $opts{org_id};
-    my $org_name = $opts{org_name};
-    $org_name = undef if $org_name =~ /^search$/i;
-    my $org_desc = $opts{org_desc};
-    $org_desc = undef if $org_desc =~ /^search$/i;
+    my $org_name_desc = $opts{org_name_desc};
     my $blank = qq{<input type="hidden" id="accn_select"><input type="hidden" id="feat_dsgid">};
     my $weak_query = "Query needs to be better defined.";
     #print STDERR "cogefeatsearch: accn=$accn anno=$anno fid=$fid\n";
@@ -775,12 +779,11 @@ sub cogefeatsearch {
     my %seen;
     my $search = {};
     $search->{feature_type_id} = 3;    #$type if $type;
-    $search->{'organism.name'} = { like => "%" . $org_name . "%" } if $org_name;
-    $search->{'organism.description'} = { like => "%" . $org_desc . "%" } if $org_desc;
+    $search->{'organism.name'} = { like => "%" . $org_name_desc . "%" } if $org_name_desc;
+    $search->{'organism.description'} = { like => "%" . $org_name_desc . "%" } if $org_name_desc;
     my $join = {
         join => [
-            {
-                'feature' => {
+            { 'feature' => {
                     'dataset' =>
                       { 'dataset_connectors' => { 'genome' => 'organism' } }
                 }
@@ -892,7 +895,7 @@ sub get_orgs_feat {
     my $search  = $opts{search};
     my $id_only = $opts{id_only};
     
-    print STDERR "get_orgs_feat: search=$search\n";
+    #print STDERR "get_orgs_feat: search=$search\n";
     
     my @organisms;
     my $count;
@@ -941,7 +944,7 @@ sub source_search {
     my $org_id   = $opts{org_id};
     my $org_name_desc = $opts{org_name_desc};
     $org_id = "all" unless $org_id;
-    print STDERR "source_search: accn=$accn org_id=$org_id org_name_desc=$org_name_desc\n";
+#    print STDERR "source_search: accn=$accn org_id=$org_id org_name_desc=$org_name_desc\n";
     
     my %org_ids;
     if ( $org_id eq "all" ) {
