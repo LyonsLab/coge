@@ -23,11 +23,11 @@ no warnings 'redefine';
 
 #example URL: http://toxic.berkeley.edu/CoGe/SynFind.pl?fid=34519245;qdsgid=3;dsgid=4241,6872,7084,7094,7111
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS 
-    $PAGE_TITLE $PAGE_NAME $DIR $LINK $TEMPDIR $TEMPURL $DATADIR $FASTADIR 
-    $BLASTDBDIR $DIAGSDIR $BEDDIR $LASTZ $LAST $CONVERT_BLAST $BLAST2BED 
-    $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE 
-    $coge $cogeweb $RESULTSLIMIT $MAX_SEARCH_RESULTS $MAX_PROC $SERVER $COOKIE_NAME 
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS
+    $PAGE_TITLE $PAGE_NAME $DIR $LINK $TEMPDIR $TEMPURL $DATADIR $FASTADIR
+    $BLASTDBDIR $DIAGSDIR $BEDDIR $LASTZ $LAST $CONVERT_BLAST $BLAST2BED
+    $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE
+    $coge $cogeweb $RESULTSLIMIT $MAX_SEARCH_RESULTS $MAX_PROC $SERVER $COOKIE_NAME
     $YERBA $GEN_FASTA $MAX_FEATURES_IN_LIST);
 
 $PAGE_TITLE    = "SynFind";
@@ -115,27 +115,27 @@ CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
     my ($body) = gen_body();
-    
+
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( TITLE      => 'Syntenic Compiler',
                       PAGE_TITLE => 'SynFind',
                       HELP       => '/wiki/index.php?title=SynFind' );
-                      
+
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER     => $name );
-    
+
     $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
     $template->param( LOGO_PNG => "SynFind-logo.png" );
     #$template->param(BOX_NAME=>'SynFind Settings');
     $template->param( ADJUST_BOX => 1 );
     $template->param( BODY       => $body );
-    
+
     my $prebox = HTML::Template->new( filename => $P->{TMPLDIR} . 'SynFind.tmpl' );
     $prebox->param( RESULTS_DIV => 1 );
     $template->param( PREBOX => $prebox->output );
-    
+
     return $template->output;
 }
 
@@ -200,7 +200,7 @@ sub gen_body {
         coge => $coge
     );
     $prefs = {} unless $prefs;
-    
+
     if ( $FORM->param('dsgid') ) {
         foreach my $item ( $FORM->param('dsgid') ) {
             foreach my $dsgid ( split( /,/, $item ) ) {
@@ -215,7 +215,7 @@ sub gen_body {
             $doc_ready .= qq{add_to_list('$id');};
         }
     }
-    
+
     if ( my $fid = $FORM->param('fid') ) {
         my ( $fid, $seq_type_id ) = split( /_/, $fid );
         $seq_type_id = 1 unless $seq_type_id;
@@ -235,10 +235,10 @@ sub gen_body {
         $template->param( FEAT_DSGID => qq{<input type='hidden' id='feat_dsgid' value='$qdsgid'>} )
           if $qdsgid;
     }
-    
+
     $template->param( DOCUMENT_READY => $doc_ready ) if $doc_ready;
     $template->param( SAVE_ORG_LIST => 1 ) unless $USER->user_name eq "public";
-    
+
     return $template->output;
 }
 
@@ -613,7 +613,7 @@ sub get_types {
     my $accn  = $opts{accn};
     my $ftid  = $opts{ftid};
     #print STDERR "get_types: dsgid=$dsgid accn=$accn ftid=$ftid\n";
-    
+
     my $html;
     my $blank = qq{<font class='small note'>(0)</font><br><SELECT id="type_name" size="10" style="min-width:60px"></SELECT>};#<input type="hidden" id="type_name">};
     my %seen;
@@ -626,7 +626,7 @@ sub get_types {
     my @opts =
       sort map { "<OPTION>$_</OPTION>" }
       grep     { !$seen{$_}++ }
-      map      { $_->type->name } 
+      map      { $_->type->name }
           $coge->resultset('Feature')->search(
             $search,
             ,
@@ -641,8 +641,8 @@ sub get_types {
             . "\n</SELECT>\n";
         $html =~ s/OPTION/OPTION SELECTED/;
     }
-    else { 
-        return encode_json({ html => $blank }); 
+    else {
+        return encode_json({ html => $blank });
     }
 
     #return $blank unless $html =~ /OPTION/;
@@ -848,7 +848,7 @@ sub get_anno {
         push @feats, $feat if $feat;
     }
     return unless @feats;
-    
+
     my $anno;
     $anno .= "<div style='border-bottom:1px solid gray;'><strong>Annotations</strong> <font class='small note'>(" . scalar @feats . ")</font></div><br>\n"
         if scalar @feats;
@@ -892,9 +892,9 @@ sub get_orgs_feat {
     my %opts    = @_;
     my $search  = $opts{search};
     my $id_only = $opts{id_only};
-    
+
     #print STDERR "get_orgs_feat: search=$search\n";
-    
+
     my @organisms;
     my $count;
 
@@ -906,9 +906,9 @@ sub get_orgs_feat {
                 [ 'name',        $search ],
                 [ 'description', $search ]
             ]
-        );  
+        );
         $count = @organisms;
-    }  
+    }
     else {
         $count = $coge->resultset("Organism")->count();
     }
@@ -932,7 +932,7 @@ sub get_orgs_feat {
          . join( "\n", @opts )
          . "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
-    
+
     return $html;
 }
 
@@ -942,12 +942,12 @@ sub source_search {
     my $org_id   = $opts{org_id};
     my $org_name_desc = $opts{org_name_desc};
     $org_id = "all" unless $org_id;
-#    print STDERR "source_search: accn=$accn org_id=$org_id org_name_desc=$org_name_desc\n";
-    
+    #print STDERR "source_search: accn=$accn org_id=$org_id org_name=$org_name org_desc=$org_desc\n";
+
     my %org_ids;
     if ( $org_id eq "all" ) {
-        %org_ids = map { $_ => 1 } 
-            get_orgs( id_only => 1, search => $org_name_desc ) 
+        %org_ids = map { $_ => 1 }
+            get_orgs( id_only => 1, search => $org_name_desc )
                 if $org_name_desc;
     }
     else {
@@ -1471,13 +1471,13 @@ sub go_synfind {
         $count++;
     }
     $html .= "</tbody></table>";
-    
+
     my $featlist_link = gen_featlist_link( fids => [ $fid, map { $_->[0] } @$matches ] );
-    
+
     $html .= '<br><strong>Links</strong><br>'
         . qq{<span class="small">Regenerate this analysis: </span><a href='$tiny_synfind_link' class='small link' target=_new_synfind>$tiny_synfind_link</a><br>}
         . qq{<a class="small link" href='$tiny_gevo_link' target=_blank)">Compare and visualize region in GEvo</a><br>};
-        
+
     my $open_all_synmap = join( "\n", keys %open_all_synmap );
     $html .= qq{<a onclick='$open_all_synmap' class='small link'>Generate all dotplots</a><br>};
     my $feat_list_link = qq{FeatList.pl?fid=} . join( ",", map { $_->id } @homologs );
@@ -1574,13 +1574,13 @@ sub gen_org_name {
     my $dsgid     = $opts{dsgid};
     my $feat_type = $opts{feat_type} || 1;
     my $write_log = $opts{write_log} || 0;
-    
-    my ($dsg) = $coge->resultset('Genome')->search( 
+
+    my ($dsg) = $coge->resultset('Genome')->search(
         { genome_id => $dsgid },
-        { join => 'organism', prefetch => 'organism' } 
+        { join => 'organism', prefetch => 'organism' }
     );
     return unless $dsg;
-    
+
     my $org_name = $dsg->organism->name;
     my $title = $org_name . " (v" . $dsg->version . ", dsgid" . $dsgid . ")" . $feat_type;
     $title =~ s/(`|')//g;
@@ -2002,7 +2002,7 @@ sub get_master_syn_sets {
             push @dsgs, $coge->resultset('Genome')->find($dsgid);
         }
     }
-    
+
     my $header = "Content-disposition: attachement; filename=";  #test.gff\n\n";
     $header .= join( "_",
         ( map { $_->id } ( $qdsg, @dsgs ) ),
@@ -2029,25 +2029,25 @@ sub get_master_syn_sets {
           . $cutoff . "_"
           . $scoring_function
           . ".$algo" . ".db";
-        
+
         unless (-r $db) { # mdb added 3/4/14, issue 324
             print STDERR qq{SQLite database not found: $db\n};
             next;
         }
-          
+
         my $dbh   = DBI->connect( "dbi:SQLite:dbname=$db", "", "" );
         unless ($dbh) {
             print STDERR qq{Problem connecting to $db\n};
             next;
         }
-        
+
         my $query = "SELECT * FROM synteny";
         my $sth   = $dbh->prepare($query);
         unless ($sth) {
             print STDERR qq{Problem querying $db\n};
             next;
         }
-        
+
         $sth->execute();
         while ( my @data = $sth->fetchrow_array ) {
             next unless $data[6] == $qdsgid;
@@ -2238,7 +2238,7 @@ sub get_unique_genes {
         next;
     }
     $sth->execute();
-    
+
     my %qdata;
     my %sdata;
     while ( my @data = $sth->fetchrow_array ) {
@@ -2272,7 +2272,7 @@ sub get_unique_genes {
 #    foreach my $item ( $rs->get_column('feature_id')->all ) {
 #        push @sunique, $item unless $sdata{$item};
 #    }
-    
+
     # Create a list of these items and add them to the user's lists
     # mdb added 3/6/14 - limit max number of items
     if (@qunique <= $MAX_FEATURES_IN_LIST) {
@@ -2289,7 +2289,7 @@ sub get_unique_genes {
             restricted   => 1
         });
         return unless $list;
-    
+
         my $conn = $coge->resultset('UserConnector')->create({
             parent_id   => $USER->id,
             parent_type => 5,           # FIXME hardcoded to "user"
@@ -2298,7 +2298,7 @@ sub get_unique_genes {
             role_id     => 2,           # FIXME hardcoded to "owner"
         });
         return unless $conn;
-    
+
         my $annotation_type = $coge->resultset('AnnotationType')->find_or_create( { name => "CoGe Note" } );
         $list->add_to_list_annotations({
             annotation_type_id => $annotation_type->id,
@@ -2319,13 +2319,13 @@ sub get_unique_genes {
             annotation         => "Target Genome: " . $sdsg->info,
             link => $SERVER . "OrganismView.pl?dsgid=" . $sdsg->id,
         });
-    
+
         foreach my $fid (@qunique) {
             $list->add_to_list_connectors({
                 parent_id => $list->id, child_id => $fid, child_type => 4 # FIXME: hardcoded type
             });
         }
-        
+
         my $listview = $SERVER . "NotebookView.pl?lid=" . $list->id;
         print $FORM->header, qq{<meta HTTP-EQUIV="REFRESH" content="0; url=$listview">};
     }
@@ -2358,7 +2358,7 @@ sub get_master_histograms {
             my $sdsgid = $data[7];    #target genome ID
             $data{$id}++;             #data{query_feature_id}{subject_genome_id}
         }
-        
+
         my $genome = $coge->resultset('Genome')->find( $item->{dsgid2} );
         next unless $genome;
 
