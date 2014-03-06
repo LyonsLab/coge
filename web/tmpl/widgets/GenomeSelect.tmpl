@@ -2,14 +2,7 @@
 
 $(document).ready(function(){
 
-	$("#org_name_desc").focus(
-		function() {
-			if( $(this).val() == 'Search'){ 
-				$(this).val('');
-			}
-			$(this).css({fontStyle: "normal", color: "black"});
-		}
-	).keyup(
+	$("#org_name_desc").keyup(
 		function() {
 			org_search();
 		}
@@ -35,6 +28,7 @@ $(document).ready(function(){
 
 	$("#genome_info_button").click(
 		function() {
+			$('#genome_info_popup').html('<span class="small">Loading...</span><img src="picts/ajax-loader.gif">').dialog('open');
 			if ($('#dsgid').val()) {
 				var dsgid = $('#dsgid').val();
 				$.ajax({
@@ -45,7 +39,6 @@ $(document).ready(function(){
 					},
 					success : function(html) {
 						$('#genome_info_popup').html(html);
-						$('#genome_info_popup').dialog('open');
 					}
 				});
 			}
@@ -287,6 +280,23 @@ function search_lists (search_term) {
 	});
 }
 
+function wait_to_search (search_func, search_term) {
+	if (!search_term || search_term.length > 2) {
+		pageObj.search_term = search_term;
+
+		if (pageObj.time) {
+			clearTimeout(pageObj.time);
+		}
+
+		pageObj.time = setTimeout(
+			function() {
+				search_func(pageObj.search_term);
+			},
+			500
+		);
+	}
+}
+
 function get_list_preview () {
 	$('#list_preview').hide();
 	$('#select_list_items > option:selected:last').each(
@@ -345,7 +355,7 @@ function import_lists() {
               <tr>
                 <td>Organism:</td>
                 <td>
-                  <input id="org_name_desc" name="org_name_desc" type="text" size="27" style="font-style:italic;color:gray;" value="Search" />
+                  <input id="org_name_desc" name="org_name_desc" type="search" placeholder="Search" size="27" />
                   <img id="wait_indicator" src="picts/ajax-loader.gif" style="opacity:0;" />
                 </td>
               </tr>
@@ -358,25 +368,25 @@ function import_lists() {
               <tr valign='top'>
                 <td>
                   <div id="org_list">
-                    Matching Organisms <span id="org_count"></span><br>
+                    <span class="small info">Matching Organisms <span id="org_count"></span></span><br>
                     <select MULTIPLE id="org_id" SIZE="8" style="min-width:200px;" ondblclick="add_selected_orgs();">
                       <TMPL_VAR NAME="ORG_LIST">
                     </select>
                   </div>
                   <div id="org_seq_types" style='display:none;'>
-                    Genomes for Organism <span id="genome_count"></span><br>
+                  <span class="small info">Genomes for Organism <span id="genome_count"></span></span><br>
                   	<select multiple id='dsgid' ondblclick="get_dsg_for_menu({dsgid: $('#dsgid').val()});">
                   	</select>
-                  </div> 
-                  <span id="genome_info_button" href="javascript:void(0)" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-info"></span>Genome Info</span>
-                  <span id="add_all_listed_button" href="javascript:void(0)" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plusthick"></span>Add all</span>
+                  </div>
+              	  <span id="genome_info_button" href="javascript:void(0)" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-info"></span>Genome Info</span>
+              	  <span id="add_all_listed_button" href="javascript:void(0)" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plusthick"></span>Add all</span>
                 </td>
                 <td valign="middle" align="middle">
                   <span id="remove" href="javascript:void(0)" onClick="remove_selected_orgs();" style="display:none;width:35px;" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span>
                   <span id="add" href="javascript:void(0)" onClick="add_selected_orgs();" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all' style="width:35px;"><span class="ui-icon ui-icon-plus"></span>Add</span>
                 </td>
                 <td>
-                  Selected Genomes <span id='selected_genome_count' class='small'></span><br>
+                  <span class="small info">Selected Genomes <span id='selected_genome_count' class='small'></span><span><br>
                   <div id='db_select'>
                     <select MULTIPLE id="genome_choice" size="8" style="min-width:200px;">
                       <option id='blank' value=null style='color:gray;' disabled='disabled'>None</option>
@@ -397,8 +407,7 @@ function import_lists() {
   </tr>
 </table>
 
-<!--POPUP-->
-  <div id="import_list_box" class="dialog_box" title="Import List" style="display:none;">
+  <div id="import_list_box" class="hidden dialog_box" title="Import List">
     <table class="small">
       <tr>
         <td colspan='2'>
@@ -420,11 +429,8 @@ function import_lists() {
         <td colspan='2' style='color:gray;'><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
       </tr>
     </table>
-    <span href="javascript:void(0)" onClick="import_lists();" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
+    <span href="javascript:void(0)" onClick="import_lists();" class='ui-button ui-corner-all'>Add Selected Items</span>
   </div>
 
-
-
-<!--POPUP-->
-  <div id="genome_info_popup" class="dialog_box" title="Genome Information" style="display:none;">
+  <div id="genome_info_popup" class="hidden dialog_box" title="Genome Information">
   </div>
