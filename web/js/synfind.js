@@ -32,16 +32,6 @@ var spinner = '<img src="picts/ajax-loader.gif"/>';
 //}
 
 function launch(dialog, results, options) {
-    if (options.fid === '') {
-        alert('Please search and select a feature for this analysis.')
-        return;
-    }
-
-    if (options.dsgids === 'blank') {
-        alert('Please select at least one genome to search.');
-        return;
-    }
-
     var _results = $(results).hide().html('');
     var status_dialog = $(dialog).dialog({
         title: 'Running SynFind ....',
