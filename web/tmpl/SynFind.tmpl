@@ -35,25 +35,24 @@
 	<br>
 
 	<table class="ui-widget-content ui-corner-all">
-		<tr><td><b>Specify Feature</b></td></tr>
+		<tr><td colspan="2"><b>Specify Feature</b></td></tr>
 		<TR class="small">
 			<td nowrap>Name:</td>
 			<td>
-				<input type="text" name="accn" id="accn" tabindex="1"  size="10" value="<TMPL_VAR NAME=ACCN>" onkeypress="onEnter(event);"/>
+				<input type="search" name="accn" id="accn" tabindex="1"  size="15" placeholder="Search" value="<TMPL_VAR NAME=ACCN>" onkeypress="onEnter(event);"/>
 			</td>
 		</tr> 
 		<tr class="small">
 			<TD nowrap>Annotation:</td>
 			<td nowrap>
-				<input type="text" name="annosearch" id="annosearch" tabindex="1"  size="10" value="<TMPL_VAR NAME=ANNO>" onkeypress="onEnter(event);"/>
+				<input type="search" name="annosearch" id="annosearch" tabindex="1"  size="15" placeholder="Search" value="<TMPL_VAR NAME=ANNO>" onkeypress="onEnter(event);"/>
 			</td>
 		</tr>
 		<TR class="small">
 			<td valign="top" nowrap>Organism:</td>
 			<TD>
-				Name: <input type="search" size="11" placeholder="Search" name="org_name_feat" id="org_name_feat" onKeyUp='search_org_feat("name");'><br>
-				Description: <input type="search" size="11" placeholder="Search" name="org_desc_feat" id="org_desc_feat" onKeyUp='search_org_feat("desc");'>
-				<DIV id="org_list_feat"><TMPL_VAR NAME="ORG_LIST_FEAT"></DIV>
+				<input type="search" size="15" placeholder="Search" name="org_name_desc_feat" id="org_name_desc_feat" onKeyUp='get_orgs_feat();'><br>
+				<DIV id="org_list_feat" style="padding-top:5px;"><TMPL_VAR NAME="ORG_LIST_FEAT"></DIV>
 			</td>
 		</tr>
 		<tr class="small">
@@ -569,8 +568,7 @@ function go_cogefeatsearch() {
 	var accn = $('#accn').val();
 	var annosearch = $('#annosearch').val();
 	var org_id = $('#org_id_feat').val();
-	var org_name = $('#org_name_feat').val();
-	var org_desc = $('#org_desc_feat').val();
+	var org_name_desc = $('#org_name_desc_feat').val();
 	
 	//cogefeatsearch(['args__accn','accn', 'args__anno','annosearch',
 	//'args__org_id','org_id_feat', 'args__org_name','org_name_feat',
@@ -581,8 +579,7 @@ function go_cogefeatsearch() {
 			accn: 		accn,
 			anno: 		annosearch,
 			org_id: 	org_id,
-			org_name: 	org_name,
-			org_desc: 	org_desc
+			org_name_desc: 	org_name_desc,
 		},
 		success : function(data) {
 			source_search_chain(data);
@@ -603,8 +600,7 @@ function source_search_chain(val) {
 	
 	var accn = $('#accn_select').val()[0];
 	var org_id = $('#org_id_feat').val();
-	var org_name = $('#org_name_feat').val();
-	var org_desc = $('#org_desc_feat').val();
+	var org_name_desc = $('#org_name_desc_feat').val();
 	
 	//source_search(['args__accn','accn_select', 'args__org_id','org_id_feat',
 	//'args__org_name','org_name_feat','args__org_desc','org_desc_feat'], [get_types_chain]);
@@ -613,8 +609,7 @@ function source_search_chain(val) {
 			fname: 		'source_search',
 			accn: 		accn,
 			org_id: 	org_id,
-			org_name: 	org_name,
-			org_desc: 	org_desc
+			org_name_desc: 	org_name_desc,
 		},
 		success : function(data) {
 			get_types_chain(data);
@@ -688,24 +683,12 @@ function show_anno(anno, fid) {
 	setup_button_states();
 }
 
-function search_org_feat(val){
-	if (val == 'name') {
-		$('#org_desc_feat').val("");
-		var searchterm = $('#org_name_feat').val();
-		get_orgs_feat('name', searchterm); //pageObj.time = setTimeout("get_orgs_feat(['args__type','args__name','args__search','org_name_feat'],['org_list_feat'])",500);
-	}
-	else if (val == 'desc') {
-		$('#org_name_feat').val("");
-		var searchterm = $('#org_desc_feat').val();
-		get_orgs_feat('desc', searchterm); //pageObj.time = setTimeout("get_orgs_feat(['args__type','args__desc','args__search','org_desc_feat'],['org_list_feat'])",500);
-	}
-}
-
-function get_orgs_feat(type, searchterm) {
+function get_orgs_feat() {
+	var searchterm = $('#org_name_desc_feat').val();
+	
 	$.ajax({
 		data: {
 			fname:	'get_orgs_feat',
-			type:	type,
 			search:	searchterm,
 		},
 		success : function(html) {
