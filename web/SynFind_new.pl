@@ -1459,7 +1459,7 @@ sub go_synfind {
               . $dsg_name
               . "</span>",
             $match_type,
-            qq{<span class='link' onclick='update_info_box("$tfid} . "_"
+            qq{<span class='link' onclick='generate_feat_info("$tfid} . "_"
               . $dsg->id
               . qq{")'>}
               . $name
@@ -1943,11 +1943,12 @@ sub gen_featlist_link {
 }
 
 sub generate_feat_info {
-    my $featid = shift;
+    my %opts = @_;
+    my $featid = $opts{featid};
     ( $featid, my $dsgid ) = split( /_/, $featid );
     my ($dsg)  = $coge->resultset('Genome')->find($dsgid);
     my ($feat) = $coge->resultset("Feature")->find($featid);
-    unless ( ref($feat) =~ /Feature/i ) {
+    unless ( $dsg && $feat && ref($feat) =~ /Feature/i ) {
         return "Unable to retrieve Feature object for id: $featid";
     }
     my $html = $feat->annotation_pretty_print_html( gstid => $dsg->type->id );
