@@ -2854,43 +2854,35 @@ sub color_pallet {
     return wantarray ? @colors : \@colors;
 }
 
-sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
+sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl and SynFind.pl
     my %opts = @_;
     return if ( $USER->user_name eq 'public' );
     my $search_term = $opts{search_term};
     my $timestamp   = $opts{timestamp};
-
-    #	print STDERR "$search_term $timestamp\n";
+    #print STDERR "$search_term $timestamp\n";
 
     my @notebooks;
-    my $num_results;
+    my $num_results = 0;
     my $group_str = join( ',', map { $_->id } $USER->groups );
 
-    # Try to get all items if blank search term
-    if ( !$search_term ) {
-        my $sql = "locked=0"
-          ;    # AND restricted=0 OR user_group_id IN ( $group_str ))"; # FIXME
-        $num_results = $coge->resultset("List")->count_literal($sql);
-        if ( $num_results < $MAX_SEARCH_RESULTS ) {
-            foreach
-              my $notebook ( $coge->resultset("List")->search_literal($sql) )
-            {
-                next unless $USER->has_access_to_list($notebook);
-                push @notebooks, $notebook;
-            }
-        }
-    }
+    # Try to get all items if blank search term - mdb removed 3/6/14, this is too slow
+#    if ( !$search_term ) {
+#        my $sql = "locked=0"; # AND restricted=0 OR user_group_id IN ( $group_str ))"; # FIXME
+#        $num_results = $coge->resultset("List")->count_literal($sql);
+#        if ( $num_results < $MAX_SEARCH_RESULTS ) {
+#            foreach my $notebook ( $coge->resultset("List")->search_literal($sql) )
+#            {
+#                next unless $USER->has_access_to_list($notebook);
+#                push @notebooks, $notebook;
+#            }
+#        }
+#    }
 
     # Perform search
-    else {
-
+    if ($search_term) {
         # Get public lists and user's private lists
         $search_term = '%' . $search_term . '%';
-        foreach my $notebook (
-            $coge->resultset("List")->search_literal(
-"locked=0 AND (name LIKE '$search_term' OR description LIKE '$search_term')"
-            )
-          )
+        foreach my $notebook ($coge->resultset("List")->search_literal("locked=0 AND (name LIKE '$search_term' OR description LIKE '$search_term')"))
         {
             next unless $USER->has_access_to_list($notebook);
             push @notebooks, $notebook;
@@ -2900,22 +2892,26 @@ sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
 
     # Limit number of results display
     if ( $num_results > $MAX_SEARCH_RESULTS ) {
-        return encode_json(
-            {
-                timestamp => $timestamp,
-                html =>
-"<option>$num_results matches, please refine your search.</option>"
-            }
-        );
+        return encode_json({
+            timestamp => $timestamp,
+            html => "<option>$num_results matches, please refine your search.</option>"
+        });
     }
 
     # Build select items out of results
     my $html;
     foreach my $n ( sort listcmp @notebooks ) {
-        my $item_spec = 1 . ':' . $n->id;    #FIXME magic number for item_type
+        my $item_spec = 1 . ':' . $n->id; #FIXME magic number for item_type
         $html .= "<option value='$item_spec'>" . $n->info . "</option><br>\n";
     }
-    $html = "<option disabled='disabled'>No matches</option>" unless $html;
+    if (!$html) {
+        if (!$search_term) {
+            $html = "<option disabled='disabled'>Please enter a search term</option>";
+        }
+        else {
+            $html = "<option disabled='disabled'>No matches</option>";
+        }
+    }
 
     return encode_json( { timestamp => $timestamp, html => $html } );
 }

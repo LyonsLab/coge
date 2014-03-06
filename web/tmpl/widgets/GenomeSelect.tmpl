@@ -287,6 +287,23 @@ function search_lists (search_term) {
 	});
 }
 
+function wait_to_search (search_func, search_term) {
+	if (!search_term || search_term.length > 2) {
+		pageObj.search_term = search_term;
+
+		if (pageObj.time) {
+			clearTimeout(pageObj.time);
+		}
+
+		pageObj.time = setTimeout(
+			function() {
+				search_func(pageObj.search_term);
+			},
+			500
+		);
+	}
+}
+
 function get_list_preview () {
 	$('#list_preview').hide();
 	$('#select_list_items > option:selected:last').each(

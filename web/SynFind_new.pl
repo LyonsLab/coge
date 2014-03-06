@@ -195,7 +195,14 @@ sub gen_body {
     my $doc_ready;
     $doc_ready .= qq{search_chain(1);\n} if $accn;
 
-    my $prefs; # = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
+    # Load saved dsgids
+    my $prefs = CoGe::Accessory::Web::load_settings(
+        user => $USER,
+        page => $PAGE_NAME,
+        coge => $coge
+    );
+    $prefs = {} unless $prefs;
+    
     if ( $FORM->param('dsgid') ) {
         foreach my $item ( $FORM->param('dsgid') ) {
             foreach my $dsgid ( split( /,/, $item ) ) {
@@ -210,6 +217,7 @@ sub gen_body {
             $doc_ready .= qq{add_to_list('$id');};
         }
     }
+    
     if ( my $fid = $FORM->param('fid') ) {
         my ( $fid, $seq_type_id ) = split( /_/, $fid );
         $seq_type_id = 1 unless $seq_type_id;
@@ -229,8 +237,10 @@ sub gen_body {
         $template->param( FEAT_DSGID => qq{<input type='hidden' id='feat_dsgid' value='$qdsgid'>} )
           if $qdsgid;
     }
+    
     $template->param( DOCUMENT_READY => $doc_ready ) if $doc_ready;
     $template->param( SAVE_ORG_LIST => 1 ) unless $USER->user_name eq "public";
+    
     return $template->output;
 }
 
@@ -642,34 +652,27 @@ sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
     #print STDERR "$search_term $timestamp\n";
 
     my @notebooks;
-    my $num_results;
+    my $num_results = 0;
     my $group_str = join( ',', map { $_->id } $USER->groups );
 
-    # Try to get all items if blank search term
-    if ( !$search_term ) {
-        my $sql = "locked=0"
-          ;    # AND restricted=0 OR user_group_id IN ( $group_str ))"; # FIXME
-        $num_results = $coge->resultset("List")->count_literal($sql);
-        if ( $num_results < $MAX_SEARCH_RESULTS ) {
-            foreach
-              my $notebook ( $coge->resultset("List")->search_literal($sql) )
-            {
-                next unless $USER->has_access_to_list($notebook);
-                push @notebooks, $notebook;
-            }
-        }
-    }
+    # Try to get all items if blank search term - mdb removed 3/6/14, this is too slow
+#    if ( !$search_term ) {
+#        my $sql = "locked=0"; # AND restricted=0 OR user_group_id IN ( $group_str ))"; # FIXME
+#        $num_results = $coge->resultset("List")->count_literal($sql);
+#        if ( $num_results < $MAX_SEARCH_RESULTS ) {
+#            foreach my $notebook ( $coge->resultset("List")->search_literal($sql) )
+#            {
+#                next unless $USER->has_access_to_list($notebook);
+#                push @notebooks, $notebook;
+#            }
+#        }
+#    }
 
     # Perform search
-    else {
-
+    if ($search_term) {
         # Get public lists and user's private lists
         $search_term = '%' . $search_term . '%';
-        foreach my $notebook (
-            $coge->resultset("List")->search_literal(
-"locked=0 AND (name LIKE '$search_term' OR description LIKE '$search_term')"
-            )
-          )
+        foreach my $notebook ($coge->resultset("List")->search_literal("locked=0 AND (name LIKE '$search_term' OR description LIKE '$search_term')"))
         {
             next unless $USER->has_access_to_list($notebook);
             push @notebooks, $notebook;
@@ -679,22 +682,26 @@ sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
 
     # Limit number of results display
     if ( $num_results > $MAX_SEARCH_RESULTS ) {
-        return encode_json(
-            {
-                timestamp => $timestamp,
-                html =>
-"<option>$num_results matches, please refine your search.</option>"
-            }
-        );
+        return encode_json({
+            timestamp => $timestamp,
+            html => "<option>$num_results matches, please refine your search.</option>"
+        });
     }
 
     # Build select items out of results
     my $html;
     foreach my $n ( sort listcmp @notebooks ) {
-        my $item_spec = 1 . ':' . $n->id;    #FIXME magic number for item_type
+        my $item_spec = 1 . ':' . $n->id; #FIXME magic number for item_type
         $html .= "<option value='$item_spec'>" . $n->info . "</option><br>\n";
     }
-    $html = "<option disabled='disabled'>No matches</option>" unless $html;
+    if (!$html) {
+        if (!$search_term) {
+            $html = "<option disabled='disabled'>Please enter a search term</option>";
+        }
+        else {
+            $html = "<option disabled='disabled'>No matches</option>";
+        }
+    }
 
     return encode_json( { timestamp => $timestamp, html => $html } );
 }
@@ -1472,8 +1479,9 @@ sub go_synfind {
     my $featlist_link = gen_featlist_link( fids => [ $fid, map { $_->[0] } @$matches ] );
     
     $html .= '<br><strong>Links</strong><br>'
-        . qq{<span class="small">Compare and visualize region in GEvo: </span><a href='$tiny_gevo_link' onclick="window.open('$tiny_gevo_link')" class='small link' target=_new_gevo>$tiny_gevo_link</a><br>}
-        . qq{<span class="small">Regenerate this analysis: </span><a href='$tiny_synfind_link' class='small link' target=_new_synfind>$tiny_synfind_link</a><br>};
+        . qq{<span class="small">Regenerate this analysis: </span><a href='$tiny_synfind_link' class='small link' target=_new_synfind>$tiny_synfind_link</a><br>}
+        . qq{<a class="small link" href='$tiny_gevo_link' target=_blank)">Compare and visualize region in GEvo</a><br>};
+        
     my $open_all_synmap = join( "\n", keys %open_all_synmap );
     $html .= qq{<a onclick='$open_all_synmap' class='small link'>Generate all dotplots</a><br>};
     my $feat_list_link = qq{FeatList.pl?fid=} . join( ",", map { $_->id } @homologs );
@@ -1488,8 +1496,8 @@ sub go_synfind {
     $master_list_link .= ";limit=1";
 
     #$html .= "<a onclick=window.open('$master_list_link') class='ui-button ui-corner-all' target=_new_synfind>Generate master gene set table (top one syntenlog per organism)</a>";
-    $html .= qq{<span onclick="get_master('$master_list_link')" class='small link' target=_new_synfind>Generate master gene set table (top one syntenlog per organism)</span><br>};
-    $html .= qq{<span class="small">Pad Sequence in GEvo <input type="text" size=11 id=pad size=11 value=0></span>};
+    $html .= qq{<span onclick="get_master('$master_list_link')" class='small link' target=_new_synfind>Generate master gene set table (top one syntenlog per organism)</span>};
+    #$html .= qq{<span class="small">Pad Sequence in GEvo <input type="text" size=11 id=pad size=11 value=0></span>};
     CoGe::Accessory::Web::write_log( "#SYNFIND LINK $synfind_link", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "#TINY SYNFIND LINK $tiny_synfind_link", $cogeweb->logfile );
     my $log_file = $cogeweb->logfile;
@@ -1510,13 +1518,13 @@ sub go_synfind {
         my $blastfile_link = $item->{blastfile};
         $blastfile_link =~ s/$P->{COGEDIR}//;
 
-        $html .= '<span class="small">' . $item->{org_name} . ':</span> ' . qq{<a href="$blastfile_link" class="small" target=_new>Raw Blast File</a>, };
+        $html .= '<span class="small">' . $item->{org_name} . ':</span> ' . qq{<a href="$blastfile_link" class="small" target=_new>Raw Blast</a>, };
 
         # mdb added 10/8/13
         $blastfile_link = $item->{filtered_blastfile};
         $blastfile_link =~ s/$P->{COGEDIR}//;
 
-        $html .= qq{<a href="$blastfile_link" class="small" target=_new>Filtered Blast File</a><br>};
+        $html .= qq{<a href="$blastfile_link" class="small" target=_new>Filtered Blast</a><br>};
     }
 
     $job->update({ status => 2, end_time => \"current_timestamp" }) if defined($job);
@@ -2361,18 +2369,15 @@ sub get_master_histograms {
         my $genome = $coge->resultset('Genome')->find( $item->{dsgid2} );
         next unless $genome;
 
-        $html .= qq{<span class="link" onclick='window.open("OrganismView.pl?dsgid=}
-          . $item->{dsgid2} . "\")'>"
-          . $genome->info
-          . "</span>";
-        $html .= '<div style="padding-left:20px;">';
+        $html .= qq{<span class="link" onclick='window.open("OrganismView.pl?dsgid=} . $item->{dsgid2} . "\")'>" . $genome->info . "</span>";
+        $html .= '<div>';
         if ( $query_dsgid eq $item->{dsgid2} ) {
             $html .= "<span class='small'>(self-self comparison: self-self syntenic regions ignored)</span><br>";
         }
         my $link = $unique_gene_link . ";ug=1;sdsgid=" . $item->{dsgid2} . ";qdsgid=$query_dsgid";
-        $html .= qq{<span class="small link" onclick=window.open('$link')>Query genome unique genes</span><br>};
+        $html .= qq{<span class="small link" onclick="window.open('$link')">Query genome unique genes</span><br>};
         $link = $unique_gene_link . ";ug=1;qdsgid=" . $item->{dsgid2} . ";sdsgid=$query_dsgid";
-        $html .= qq{<span class="small link" onclick=window.open('$link')>Target genome unique genes</span><br>};
+        $html .= qq{<span class="small link" onclick="window.open('$link')">Target genome unique genes</span><br>};
         my $depths;
         $html .= depth_table(
             depth_data => \%data,
@@ -2425,7 +2430,7 @@ sub depth_table {
     my $total_w_depth = 0;
     map { $total_w_depth += $_ } values %depths;
     $depths{0} = ( $total - $total_w_depth );
-    my $html = "<table class='small' style='border-top:1px solid lightgray'>";
+    my $html = "<table class='small' style='border-top:1px solid lightgray;border-bottom:1px solid lightgray;'>";
     my @depths;
 
     foreach my $depth ( sort { $a <=> $b } keys %depths ) {
@@ -2438,20 +2443,29 @@ sub depth_table {
          . "</tr>";
         push @depths, $depths{$depth};
     }
-    $html .= "</table>";
+    $html .= "</table><br>";
     $$depths = \@depths;
     return $html;
 }
 
 sub save_settings {
     my %opts   = @_;
-    my $dsgids = $opts{dsgids};
+
     my $prefs  = CoGe::Accessory::Web::load_settings(
         user => $USER,
         page => $PAGE_NAME,
         coge => $coge
     );
-    $prefs->{dsgids} = $dsgids;
+
+    foreach my $key ( keys %opts ) {
+        if ($opts{$key}) {
+            $prefs->{$key} = $opts{$key};
+        }
+        else {
+            delete $prefs->{$key};
+        }
+    }
+
     my $item = CoGe::Accessory::Web::save_settings(
         opts => $prefs,
         user => $USER,
