@@ -2,14 +2,7 @@
 
 $(document).ready(function(){
 
-	$("#org_name_desc").focus(
-		function() {
-			if( $(this).val() == 'Search'){ 
-				$(this).val('');
-			}
-			$(this).css({fontStyle: "normal", color: "black"});
-		}
-	).keyup(
+	$("#org_name_desc").keyup(
 		function() {
 			org_search();
 		}
@@ -362,7 +355,7 @@ function import_lists() {
               <tr>
                 <td>Organism:</td>
                 <td>
-                  <input id="org_name_desc" name="org_name_desc" type="text" size="27" style="font-style:italic;color:gray;" value="Search" />
+                  <input id="org_name_desc" name="org_name_desc" type="search" placeholder="Search" size="27" />
                   <img id="wait_indicator" src="picts/ajax-loader.gif" style="opacity:0;" />
                 </td>
               </tr>
@@ -375,13 +368,13 @@ function import_lists() {
               <tr valign='top'>
                 <td>
                   <div id="org_list">
-                    Matching Organisms <span id="org_count"></span><br>
+                    <span class="small info">Matching Organisms <span id="org_count"></span></span><br>
                     <select MULTIPLE id="org_id" SIZE="8" style="min-width:200px;" ondblclick="add_selected_orgs();">
                       <TMPL_VAR NAME="ORG_LIST">
                     </select>
                   </div>
                   <div id="org_seq_types" style='display:none;'>
-                    Genomes for Organism <span id="genome_count"></span><br>
+                  <span class="small info">Genomes for Organism <span id="genome_count"></span></span><br>
                   	<select multiple id='dsgid' ondblclick="get_dsg_for_menu({dsgid: $('#dsgid').val()});">
                   	</select>
                   </div> 
@@ -393,7 +386,7 @@ function import_lists() {
                   <span id="add" href="javascript:void(0)" onClick="add_selected_orgs();" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all' style="width:35px;"><span class="ui-icon ui-icon-plus"></span>Add</span>
                 </td>
                 <td>
-                  Selected Genomes <span id='selected_genome_count' class='small'></span><br>
+                  <span class="small info">Selected Genomes <span id='selected_genome_count' class='small'></span><span><br>
                   <div id='db_select'>
                     <select MULTIPLE id="genome_choice" size="8" style="min-width:200px;">
                       <option id='blank' value=null style='color:gray;' disabled='disabled'>None</option>
