@@ -1920,6 +1920,9 @@ sub fasta_object { # mdb added 2/28/14 for genfam
         $start -= $upstream;
         $stop += $downstream;
     }
+    
+    $obj{start} = $start;
+    $obj{stop} = $stop;
 
     my $seq;
     $Text::Wrap::columns = $col;
