@@ -1368,8 +1368,155 @@ sub go_synfind {
         );
     }
 
-    my $status = $YERBA->submit_workflow($workflow);
-    $YERBA->wait_for_completion( $workflow->id );
+    $YERBA->submit_workflow($workflow);
+    $YERBA->wait_for_completion($workflow->id);
+
+    return get_results(@_);
+}
+
+sub get_results {
+    my %opts             = @_;
+    my $dsgids           = $opts{dsgids};
+    my $fid              = $opts{fid};
+    my $source_dsgid     = $opts{qdsgid};
+    my $algo             = $opts{algo};
+    #my $basename         = $opts{basename}; # mdb removed 3/6/14
+    my $window_size      = $opts{window_size};
+    my $cutoff           = $opts{cutoff};
+    my $scoring_function = $opts{scoring_function};
+    my $depth            = $opts{depth}; # max syntenic depth to report
+
+    $window_size = 40  unless defined $window_size;
+    $cutoff      = 0.1 unless defined $cutoff;
+    $cutoff      = "0" . $cutoff if $cutoff =~ /^\./; # add the prepending 0 for filename consistence
+    $scoring_function = 1 unless defined $scoring_function;
+
+    #need to set this link before the scoring function changes to a different name type
+    my $synfind_link = $SERVER . "SynFind.pl?fid=$fid;ws=$window_size;co=$cutoff;sf=$scoring_function;algo=$algo";
+    my $unique_gene_link = $synfind_link;
+    $synfind_link .= ";dsgid=$dsgids;qdsgid=$source_dsgid";
+    $synfind_link .= ";sd=$depth" if $depth;
+
+    my @ids = split( /,/, $dsgids );
+
+    my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
+        user_id => $USER->id,
+        page    => "GenomeList",
+        url     => $P->{SERVER} . "/GenomeList.pl?dsgid=$dsgids"
+    );
+
+    my $list_link = qq{<a href="$genomes_url" target="_blank">} . @ids . ' genome' . ( @ids > 1 ? 's' : '' ) . '</a>';
+
+    my $feat = $coge->resultset('Feature')->find($fid);
+    my $feat_url = "<a href='FeatView.pl?fid=$fid' target='_blank'>" . $feat->name . "</a>";
+
+    my ( $source_name, $titleA ) = gen_org_name( dsgid => $source_dsgid, write_log => 0 );
+
+    #my $name = "<a href='OrganismView.pl?dsgid=$source_dsgid' target='_blank'>$source_name</a>";
+    my $log_msg = 'Searched ' . $list_link . '  for feature ' . $feat_url;
+
+    my $tiny_synfind_link = CoGe::Accessory::Web::get_tiny_link(
+        db      => $coge,
+        user_id => $USER->id,
+        page    => $PAGE_NAME,
+        url     => $synfind_link
+    );
+
+    my $job = CoGe::Accessory::Web::get_job(
+        tiny_link => $tiny_synfind_link,
+        title     => $PAGE_TITLE,
+        user_id   => $USER->id,
+        db_object => $coge
+    );
+
+    $job->update({ status => 2, end_time => \"current_timestamp" }) if defined($job);
+
+    #convert numerical codes for different scoring functions to appropriate types
+    if ( $scoring_function eq '2' ) {
+        $scoring_function = "density";
+    }
+    else {
+        $scoring_function = "collinear";
+    }
+
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
+
+    #need to blast source_dsg against each dsgids
+    my @blast_results;
+    my $html;
+
+    my ( $query_info, @target_info );
+    foreach my $dsgid ( $source_dsgid, split( /,/, $dsgids ) ) {
+        #check for taint
+        ($dsgid) = $dsgid =~ /(\d+)/;
+
+        my $has_cds   = has_cds($dsgid);
+        my $feat_type = $has_cds ? "CDS" : "genomic";
+        my $fasta     = $FASTADIR . "/$dsgid-$feat_type.fasta";
+
+        if ( $dsgid && $has_cds ) {
+            my ( $org_name, $title ) = gen_org_name(
+                dsgid     => $dsgid,
+                feat_type => $feat_type,
+                write_log => 1
+            );
+
+            push @target_info,
+              {
+                dsgid     => $dsgid,
+                feat_type => $feat_type,
+                fasta     => $fasta,
+                org_name  => $org_name,
+              };
+        }
+        else {
+            my $dsg = $coge->resultset('Genome')->find($dsgid);
+            CoGe::Accessory::Web::write_log( "#WARNING:#", $cogeweb->logfile );
+            CoGe::Accessory::Web::write_log(
+                $dsg->organism->name
+                  . " does not have CDS sequences.  Can't process in SynFind.\n",
+                $cogeweb->logfile
+            );
+            next;
+        }
+    }
+
+    #query is the first item on this list.
+    $query_info = shift @target_info;
+
+    foreach my $target (@target_info) {
+        my ( $org1, $org2 ) = ( $query_info->{org_name}, $target->{org_name} );
+        my ( $dsgid1, $dsgid2 ) = ( $query_info->{dsgid}, $target->{dsgid} );
+        my ( $feat_type1, $feat_type2 ) = ( $query_info->{feat_type}, $target->{feat_type} );
+        my ( $fasta1, $fasta2 ) = ( $query_info->{fasta}, $target->{fasta} );
+
+        #my ($db1, $db2) = ($query_info->{blastdb},$target->{blastdb});
+        ( $org1, $org2, $dsgid1, $dsgid2, $feat_type1, $feat_type2, $fasta1, $fasta2 )
+            = ($org2, $org1, $dsgid2, $dsgid1, $feat_type2, $feat_type1, $fasta2, $fasta1
+        ) if ( $dsgid2 lt $dsgid1 );
+
+        my $basedir = $DIAGSDIR . "/" . $dsgid1 . "/" . $dsgid2;
+        mkpath( $basedir, 0, 0777 ) unless -d $basedir;
+        my $basename = $dsgid1 . "_" . $dsgid2 . "." . $feat_type1 . "-" . $feat_type2;
+        my $blastfile = $basedir . "/" . $basename . ".$algo";
+        my $bedfile1  = $BEDDIR . $dsgid1 . ".bed";
+        my $bedfile2  = $BEDDIR . $dsgid2 . ".bed";
+        $target->{synteny_score_db}    = $basedir . "/" . $basename . "_" . $window_size . "_" . $cutoff . "_" . $scoring_function . ".$algo" . ".db";
+        $target->{basedir}             = $basedir;
+        $target->{basename}            = $basename;
+        $target->{blastfile}           = $blastfile;
+        $target->{converted_blastfile} = $blastfile . ".short_names";
+        $target->{filtered_blastfile}  = $target->{converted_blastfile} . ".filtered";
+        $target->{bedfile1}    = $bedfile1;
+        $target->{bedfile2}    = $bedfile2;
+        $target->{dsgid1}      = $dsgid1;
+        $target->{dsgid2}      = $dsgid2;
+        $target->{query_fasta} = $fasta1
+          ; #need to determine the correct query/target order so output is compatibable with SynMap
+
+        #$target->{target_db} = $db2;#need to determine the correct query/target order so output is compatibable with SynMap
+        $target->{target_fasta} = $fasta2;
+    }
 
     my ( $gevo_link, $matches ) = gen_gevo_link(
         fid         => $fid,
@@ -1523,9 +1670,9 @@ sub go_synfind {
         $html .= qq{<a href="$blastfile_link" class="small" target=_new>Filtered Blast</a><br>};
     }
 
-    $job->update({ status => 2, end_time => \"current_timestamp" }) if defined($job);
-
-    return $html;
+    return encode_json({
+        html => $html
+    });
 }
 
 sub gen_fasta {
