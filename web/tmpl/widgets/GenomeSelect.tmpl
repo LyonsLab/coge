@@ -28,6 +28,7 @@ $(document).ready(function(){
 
 	$("#genome_info_button").click(
 		function() {
+			$('#genome_info_popup').html('<span class="small">Loading...</span><img src="picts/ajax-loader.gif">').dialog('open');
 			if ($('#dsgid').val()) {
 				var dsgid = $('#dsgid').val();
 				$.ajax({
@@ -38,7 +39,6 @@ $(document).ready(function(){
 					},
 					success : function(html) {
 						$('#genome_info_popup').html(html);
-						$('#genome_info_popup').dialog('open');
 					}
 				});
 			}
@@ -377,9 +377,9 @@ function import_lists() {
                   <span class="small info">Genomes for Organism <span id="genome_count"></span></span><br>
                   	<select multiple id='dsgid' ondblclick="get_dsg_for_menu({dsgid: $('#dsgid').val()});">
                   	</select>
-                  </div> 
-                  <span id="genome_info_button" href="javascript:void(0)" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-info"></span>Genome Info</span>
-                  <span id="add_all_listed_button" href="javascript:void(0)" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plusthick"></span>Add all</span>
+                  </div>
+              	  <span id="genome_info_button" href="javascript:void(0)" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-info"></span>Genome Info</span>
+              	  <span id="add_all_listed_button" href="javascript:void(0)" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plusthick"></span>Add all</span>
                 </td>
                 <td valign="middle" align="middle">
                   <span id="remove" href="javascript:void(0)" onClick="remove_selected_orgs();" style="display:none;width:35px;" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span>
