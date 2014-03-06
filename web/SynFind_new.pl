@@ -2394,7 +2394,7 @@ sub get_master_histograms {
 sub master_depth_table {
     my %opts = @_;
     my $data = $opts{data};
-    my $html = "<table class='small' style='border-top:1px solid lightgray'>";
+    my $html = "<table class='small' style='border-top:1px solid lightgray;border-bottom:1px solid lightgray;'>";
     my $max  = 0;
     foreach
       my $item ( sort { scalar @{ $b->[0] } <=> scalar @{ $a->[0] } } @$data )

@@ -92,53 +92,56 @@
  
  
 <div id="tab2">
- General parameters:
-   <TABLE class='small'>
-    <TR>
-     <TD>Comparison Algorithm:</TD>
-     <TD>
-      <select id='algo'>
-        <option value='last' <TMPL_VAR NAME=LAST>>Last</option>
-        <option value='lastz' <TMPL_VAR NAME=LASTZ>>LastZ</option>
-      </select>
-     </TD>
-    </TR>
-    </table>
-  Syntney finding parameters:
-    <table class='small'>
-    <TR>
-     <TD>Gene window size:</TD>
-     <TD><input id='ws' type='text' size='3' value='<TMPL_VAR NAME=WS>'></TD>
-    </TR>
-    <TR>
-     <TD>Minimum number of genes: </TD>
-     <TD><input id='co' type='text' size='3' value='<TMPL_VAR NAME=CO>'></TD>
-    </TR>
-    <TR>
-     <TD>Scoring Funciton:</TD>
-     <TD>
-      <select id='sf'>
-        <option value='1' <TMPL_VAR NAME=SF_COLLINEAR> >Collinear</option>
-        <option value='2' <TMPL_VAR NAME=SF_DENSITY> >Density</option>
-      </select>
-    <TR>
-     <TD>Max Syntenic Depth:<br>
-         (leave blank for unlimited)</TD>
-     <TD><input id='sd' type='text' size='3' value='<TMPL_VAR NAME=SD>'></TD>
-     </TD>
-     </TR></TABLE>
-    </TR>
-   </TABLE>
- </div> <!--close tab 2-->
+	<strong>General parameters</strong>
+	<TABLE class='small'>
+		<TR>
+			<TD>Comparison Algorithm: </TD>
+			<TD>
+				<select id='algo'>
+					<option value='last' <TMPL_VAR NAME=LAST>>Last</option>
+					<option value='lastz' <TMPL_VAR NAME=LASTZ>>LastZ</option>
+				</select>
+			</TD>
+		</TR>
+		</table>
+		<br>
+		
+		<strong>Syntney finding parameters</strong>
+		<table class='small'>
+			<TR>
+				<TD>Gene window size: </TD>
+				<TD><input id='ws' type='text' size='3' value='<TMPL_VAR NAME=WS>'></TD>
+			</TR>
+			<TR>
+				<TD>Minimum number of genes: </TD>
+				<TD><input id='co' type='text' size='3' value='<TMPL_VAR NAME=CO>'></TD>
+			</TR>
+			<TR>
+				<TD>Scoring Funciton: </TD>
+				<TD>
+					<select id='sf'>
+						<option value='1' <TMPL_VAR NAME=SF_COLLINEAR> >Collinear</option>
+						<option value='2' <TMPL_VAR NAME=SF_DENSITY> >Density</option>
+					</select>
+				</TD>
+			<TR>
+				<TD>Max Syntenic Depth: <br><span class='small note'>(leave blank for unlimited)</span></TD>
+				<TD><input id='sd' type='text' size='3' value='<TMPL_VAR NAME=SD>'></TD>
+			</TR>
+		</TABLE>
+		</TR>
+	</TABLE>
+</div> <!--close tab 2-->
+
 </div> <!--close all tabs-->
 
 </TMPL_IF>
 
 
 <TMPL_IF NAME="RESULTS_DIV">
-  <DIV id="log_text" class='dna hidden' style="padding:15px;width:100%;border-top:1px solid lightgray;"></DIV>
-  <DIV id="results" class="hidden" style="padding:15px;border-top:1px solid lightgray;"></DIV>
- <div id="feature_info_popup" class="hidden dialog_box" title="Feature Information"></div>
+	<DIV id="log_text" class='dna hidden' style="padding:15px;width:100%;border-top:1px solid lightgray;"></DIV>
+	<DIV id="results" class="hidden" style="padding:15px;border-top:1px solid lightgray;"></DIV>
+	<div id="feature_info_popup" class="hidden dialog_box" title="Feature Information"></div>
 </TMPL_IF>
 
 
