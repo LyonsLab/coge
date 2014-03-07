@@ -13,6 +13,7 @@ use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
 use CoGe::Graphics::Feature::HSP;
+use DBI;
 use CGI;
 use JSON::XS;
 use HTML::Template;
