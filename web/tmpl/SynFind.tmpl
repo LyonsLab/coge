@@ -179,6 +179,27 @@
     <div class="link small" style="color:dimgray; padding-left: 5px;"></div>
 </div>
 
+<div id="overlay">
+    <div id="floatingCirclesG">
+        <div class="f_circleG" id="frotateG_01">
+        </div>
+        <div class="f_circleG" id="frotateG_02">
+        </div>
+        <div class="f_circleG" id="frotateG_03">
+        </div>
+        <div class="f_circleG" id="frotateG_04">
+        </div>
+        <div class="f_circleG" id="frotateG_05">
+        </div>
+        <div class="f_circleG" id="frotateG_06">
+        </div>
+        <div class="f_circleG" id="frotateG_07">
+        </div>
+        <div class="f_circleG" id="frotateG_08">
+        </div>
+    </div>
+</div>
+
 <tmpl_if name="JAVASCRIPT">
 <script language="javascript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></script>
 <script lanaguage="javascript" type="text/javascript" src="./js/synfind.js"></script>
@@ -222,7 +243,20 @@ function schedule() {
         return;
     }
 
-    launch('#status_dialog', '#results', options);
+    $('html, body').animate({scrollTop: 0}, 500);
+    var results = $("#results").slideUp().html('');
+    var overlay = $("#overlay").show();
+
+    query_results(options).then(function(response) {
+        overlay.hide();
+
+        if (response.success) {
+            results.html(response.html).slideDown();
+        } else {
+            launch('#status_dialog', '#results', options);
+        }
+    });
+
     ga('send', 'event', 'synfind', 'run'); // for analytics
 }
 </script>

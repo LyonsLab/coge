@@ -31,8 +31,18 @@ var spinner = '<img src="picts/ajax-loader.gif"/>';
 //  });
 //}
 
+function query_results(options) {
+    options.fname = "get_results";
+
+    return $.ajax({
+        type: "GET",
+        data: options,
+        dataType: "json"
+    });
+}
+
 function launch(dialog, results, options) {
-    var _results = $(results).hide().html('');
+    var _results = $(results);
     var status_dialog = $(dialog).dialog({
         title: 'Running SynFind ....',
         modal: true,

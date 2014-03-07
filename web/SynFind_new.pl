@@ -109,6 +109,7 @@ my %FUNCTION = (
     generate_feat_info      => \&generate_feat_info,
     save_settings           => \&save_settings,
     go_synfind              => \&go_synfind,
+    get_results             => \&get_results,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -1422,15 +1423,6 @@ sub get_results {
         url     => $synfind_link
     );
 
-    my $job = CoGe::Accessory::Web::get_job(
-        tiny_link => $tiny_synfind_link,
-        title     => $PAGE_TITLE,
-        user_id   => $USER->id,
-        db_object => $coge
-    );
-
-    $job->update({ status => 2, end_time => \"current_timestamp" }) if defined($job);
-
     #convert numerical codes for different scoring functions to appropriate types
     if ( $scoring_function eq '2' ) {
         $scoring_function = "density";
@@ -1445,7 +1437,7 @@ sub get_results {
     my @blast_results;
     my $html;
 
-    my ( $query_info, @target_info );
+    my ( $query_info, @target_info, @invalid );
     foreach my $dsgid ( $source_dsgid, split( /,/, $dsgids ) ) {
         #check for taint
         ($dsgid) = $dsgid =~ /(\d+)/;
@@ -1453,13 +1445,16 @@ sub get_results {
         my $has_cds   = has_cds($dsgid);
         my $feat_type = $has_cds ? "CDS" : "genomic";
         my $fasta     = $FASTADIR . "/$dsgid-$feat_type.fasta";
+        my ( $org_name, $title ) = gen_org_name(
+            dsgid     => $dsgid,
+            feat_type => $feat_type,
+        );
 
         if ( $dsgid && $has_cds ) {
-            my ( $org_name, $title ) = gen_org_name(
-                dsgid     => $dsgid,
-                feat_type => $feat_type,
-                write_log => 1
-            );
+            return encode_json({
+                success => JSON::false,
+                message => "A genome is missing a fasta file.",
+            }) unless -r $fasta;
 
             push @target_info,
               {
@@ -1470,14 +1465,13 @@ sub get_results {
               };
         }
         else {
-            my $dsg = $coge->resultset('Genome')->find($dsgid);
-            CoGe::Accessory::Web::write_log( "#WARNING:#", $cogeweb->logfile );
-            CoGe::Accessory::Web::write_log(
-                $dsg->organism->name
-                  . " does not have CDS sequences.  Can't process in SynFind.\n",
-                $cogeweb->logfile
-            );
-            next;
+            push @invalid,
+              {
+                dsgid     => $dsgid,
+                feat_type => $feat_type,
+                org_name  => $org_name,
+                fasta     => undef
+              };
         }
     }
 
@@ -1496,12 +1490,17 @@ sub get_results {
         ) if ( $dsgid2 lt $dsgid1 );
 
         my $basedir = $DIAGSDIR . "/" . $dsgid1 . "/" . $dsgid2;
-        mkpath( $basedir, 0, 0777 ) unless -d $basedir;
         my $basename = $dsgid1 . "_" . $dsgid2 . "." . $feat_type1 . "-" . $feat_type2;
         my $blastfile = $basedir . "/" . $basename . ".$algo";
         my $bedfile1  = $BEDDIR . $dsgid1 . ".bed";
         my $bedfile2  = $BEDDIR . $dsgid2 . ".bed";
         $target->{synteny_score_db}    = $basedir . "/" . $basename . "_" . $window_size . "_" . $cutoff . "_" . $scoring_function . ".$algo" . ".db";
+
+        return encode_json({
+            success => JSON::false,
+            message => "A genome is missing a database."
+        }) unless -r $target->{synteny_score_db};
+
         $target->{basedir}             = $basedir;
         $target->{basename}            = $basename;
         $target->{blastfile}           = $blastfile;
@@ -1518,17 +1517,9 @@ sub get_results {
         $target->{target_fasta} = $fasta2;
     }
 
-    # Find all existing databases
-    my @dbs = grep { -r $_; } ( map { $_->{synteny_score_db} } @target_info );
-
-    return encode_json({
-        success => JSON::false,
-        message => "No databases found."
-    }) unless @dbs;
-
     my ( $gevo_link, $matches ) = gen_gevo_link(
         fid         => $fid,
-        dbs         => \@dbs,
+        dbs         => [ map { $_->{synteny_score_db} } @target_info ],
         window_size => $window_size,
         depth       => $depth
     );
@@ -2079,6 +2070,7 @@ sub gen_gevo_link {
     my $count = 2;
     my %seen_fids;
     foreach my $db (@$dbs) {
+        next unless -s $db;
         my $dbh   = DBI->connect( "dbi:SQLite:dbname=$db", "", "" );
         my $query = "SELECT * FROM  synteny where query = $fid";
         my $sth   = $dbh->prepare($query);
@@ -2516,6 +2508,7 @@ sub get_master_histograms {
     my $html;
     my @all;
     foreach my $item (@$target_dbs) {
+        next unless -s $item;
         my $db    = $item->{synteny_score_db};
         my $dbh   = DBI->connect( "dbi:SQLite:dbname=$db", "", "" );
         my $query = "SELECT * FROM synteny";
