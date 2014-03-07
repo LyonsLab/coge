@@ -45,18 +45,7 @@ function launch(dialog, results, options) {
         type: 'POST',
         dataType: 'json',
         data: options,
-        success : function(json) {
-            if(json.error) {
-                status_dialog.find(".error").slideDown();
-                status_dialog.find(".running").hide();
-                return;
-            }
-
-            status_dialog.find(".running").hide();
-            status_dialog.find(".complete").slideDown();
-
-            _results.html(json.html);
-
+        success : function(response) {
             status_dialog.unbind().on("dialogclose", function() {
                 _results.removeClass('hidden').slideDown();
 
@@ -65,8 +54,24 @@ function launch(dialog, results, options) {
                 status_dialog.find(".running").show();
             });
 
-            init_table_sorter();
-            setup_button_states();
+            if(response.success) {
+                status_dialog.find(".running").hide();
+                status_dialog.find(".complete").slideDown();
+
+                _results.html(response.html);
+
+                init_table_sorter();
+                setup_button_states();
+            } else {
+                var error = $("<div></div>")
+                    .addClass("alert")
+                    .html(response.message);
+
+                _results.append(error);
+                status_dialog.find(".error").slideDown();
+                status_dialog.find(".running").hide();
+                return;
+            }
         },
     });
 }

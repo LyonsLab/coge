@@ -1518,9 +1518,17 @@ sub get_results {
         $target->{target_fasta} = $fasta2;
     }
 
+    # Find all existing databases
+    my @dbs = grep { -r $_; } ( map { $_->{synteny_score_db} } @target_info );
+
+    return encode_json({
+        success => JSON::false,
+        message => "No databases found."
+    }) unless @dbs;
+
     my ( $gevo_link, $matches ) = gen_gevo_link(
         fid         => $fid,
-        dbs         => [ map { $_->{synteny_score_db} } @target_info ],
+        dbs         => \@dbs,
         window_size => $window_size,
         depth       => $depth
     );
@@ -1534,16 +1542,6 @@ sub get_results {
     my %dsgids = map { $_->{dsgid}, => 1 } @target_info;
     $dsgids{ $query_info->{dsgid} } = 1;
 
-    $html .= qq{<table id='syntelog_table' class="ui-widget-content ui-corner-all">}
-         . qq{<THEAD><tr>}
-         . qq{<th>Organism}
-         . qq{<th>Genome}
-         . qq{<th>Type}
-         . qq{<th>Name}
-         . qq{<th>Chr}
-         . qq{<th>Synteny Score}
-         . qq{<th>SynMap}
-         . qq{</tr></THEAD><TBODY>};
     my $synmap_algo_num;    #from SynMap's lookup table on algorithms
 
     if ( $algo eq "lastz" ) {
@@ -1558,10 +1556,26 @@ sub get_results {
     my @homologs;
     my $count = 0;
     my $last_tdsgid;
+
+    my $table_header .= qq{<table id='syntelog_table' class="ui-widget-content ui-corner-all">}
+        . qq{<THEAD><tr>}
+        . qq{<th>Organism}
+        . qq{<th>Genome}
+        . qq{<th>Type}
+        . qq{<th>Name}
+        . qq{<th>Chr}
+        . qq{<th>Synteny Score}
+        . qq{<th>SynMap}
+        . qq{</tr></THEAD><TBODY>};
+
+
+    my $table_content;
+
     foreach my $item ( [ $fid, "query" ], @$matches ) {
         my ( $tfid, $match_type, $synteny_score ) = @$item;
         my $feat = $coge->resultset('Feature')->find($tfid);
         my $dsg;
+
         foreach my $dsgt ( $feat->genomes ) {
             if ( $dsgids{ $dsgt->id } ) {
                 #delete $dsgids{$dsgt->id};
@@ -1569,11 +1583,14 @@ sub get_results {
                 last;
             }
         }
+
+        next unless $dsg;
+
         $last_tdsgid = $dsg->id unless $last_tdsgid;
         $count = 0 unless $dsg->id eq $last_tdsgid;
         $last_tdsgid = $dsg->id;
         next if $depth && $count > $depth;
-        $html .= qq{<tr><td>};
+        $table_content .= qq{<tr><td>};
         my $name;
         if ( $match_type eq "S" ) {
             $match_type = "syntelog";
@@ -1600,7 +1617,7 @@ sub get_results {
         $open_all_synmap{$synmap_open_link} = 1;
         my $oid   = $feat->organism->id;
         my $dsgid = $dsg->id;
-        $html .= join( "<td>", "<span class='link' onclick=window.open('OrganismView.pl?oid=$oid')>"
+        $table_content .= join( "<td>", "<span class='link' onclick=window.open('OrganismView.pl?oid=$oid')>"
               . $feat->organism->name
               . "</span>", "<span class='link' onclick=window.open('OrganismView.pl?dsgid=$dsgid')>"
               . $dsg_name
@@ -1617,7 +1634,16 @@ sub get_results {
         );
         $count++;
     }
-    $html .= "</tbody></table>";
+
+    if ($table_content) {
+        $html .= $table_header . $table_content . "</tbody></table>" if $table_content;
+    } else {
+        #XXX Move this error checking up
+        return encode_json({
+            success => JSON::false,
+            message => "The feature selected does not exist in any of the genomes selected."
+        });
+    }
 
     my $featlist_link = gen_featlist_link( fids => [ $fid, map { $_->[0] } @$matches ] );
 
@@ -1671,6 +1697,7 @@ sub get_results {
     }
 
     return encode_json({
+        success => JSON::true,
         html => $html
     });
 }
