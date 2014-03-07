@@ -60,13 +60,13 @@ function launch(dialog, results, options) {
                 _results.removeClass('hidden').slideDown();
 
                 // reset dialog
-                status_dialog.find(".error,.complete").hide();
-                status_dialog.find(".running").show();
+                status_dialog.find(".dialog-error,.dialog-complete").hide();
+                status_dialog.find(".dialog-running").show();
             });
 
             if(response.success) {
-                status_dialog.find(".running").hide();
-                status_dialog.find(".complete").slideDown();
+                status_dialog.find(".dialog-running").hide();
+                status_dialog.find(".dialog-complete").slideDown();
 
                 _results.html(response.html);
 
@@ -78,8 +78,8 @@ function launch(dialog, results, options) {
                     .html(response.message);
 
                 _results.append(error);
-                status_dialog.find(".error").slideDown();
-                status_dialog.find(".running").hide();
+                status_dialog.find(".dialog-error").slideDown();
+                status_dialog.find(".dialog-running").hide();
                 return;
             }
         },
