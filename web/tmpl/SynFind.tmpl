@@ -225,7 +225,7 @@ function schedule() {
     var options = {
         dsgids: $('#genome_choice').getLength(1),
         fid: $('#fid').html(),
-        qdsgid: $('#feat_dsgid').val(),
+        qdsgid: $('#feat_dsgid').val()[0],
         window_size: $('#ws').val(),
         cutoff: $('#co').val(),
         scoring_function: $('#sf').val(),

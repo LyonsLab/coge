@@ -145,7 +145,8 @@ sub gen_body {
     #$template->param( BETA => 1 );
 
     #comparison algorithm
-    my $algo = $FORM->param('algo') if $FORM->param('algo');
+    my $algo;
+    $algo = $FORM->param('algo') if $FORM->param('algo');
     $algo = "last" unless $algo;
     if ( $algo eq "last" ) {
         $template->param( 'LAST' => "selected" );
@@ -233,7 +234,7 @@ sub gen_body {
             $qdsgid = $feat->genomes->[0]->id unless $qdsgid;
         }
         $doc_ready .= qq{get_anno_chain('', $qdsgid, $fid);}; #qq{get_anno(['args__fid','args__$fid','args__dsgid','args__$qdsgid'],[show_anno]);};
-        $template->param( FEAT_DSGID => qq{<input type='hidden' id='feat_dsgid' value='$qdsgid'>} )
+        $template->param( FEAT_DSGID => qq{<select MULTIPLE type='hidden' id='feat_dsgid' name='feat_dsgid'><option value='$qdsgid' selected></option></select>} )
           if $qdsgid;
     }
 
@@ -767,7 +768,7 @@ sub cogefeatsearch {
     my $type     = $opts{type};
     my $org_id   = $opts{org_id};
     my $org_name_desc = $opts{org_name_desc};
-    my $blank = qq{<input type="hidden" id="accn_select"><input type="hidden" id="feat_dsgid">};
+    my $blank = qq{<input type="hidden" id="accn_select"><select MULTIPLE type='hidden' id='feat_dsgid'></select>};
     my $weak_query = "Query needs to be better defined.";
     #print STDERR "cogefeatsearch: accn=$accn anno=$anno fid=$fid\n";
 
@@ -1004,7 +1005,7 @@ sub source_search {
         }
     }
     my $html;
-    $html .= qq{<SELECT name="feat_dsgid" id="feat_dsgid" MULTIPLE SIZE="10" onChange="get_types_chain();">};
+    $html .= qq{<SELECT MULTIPLE name="feat_dsgid" id="feat_dsgid" size="10" onChange="get_types_chain();">};
     my $count = 0;
     foreach my $title (
         sort {
@@ -2469,21 +2470,25 @@ sub get_unique_genes {
         $list->add_to_list_annotations({
             annotation_type_id => $annotation_type->id,
             annotation         => "Auto created by SynFind",
+            locked => 1
         });
         $list->add_to_list_annotations({
             annotation_type_id => $annotation_type->id,
             annotation         => "Regenerate Analysis in SynFind",
             link => CoGe::Accessory::Web::get_tiny_link( url => $synfind_link ),
+            locked => 1
         });
         $list->add_to_list_annotations({
             annotation_type_id => $annotation_type->id,
             annotation         => "Query Genome: " . $qdsg->info,
             link => $SERVER . "OrganismView.pl?dsgid=" . $qdsg->id,
+            locked => 1
         });
         $list->add_to_list_annotations({
             annotation_type_id => $annotation_type->id,
             annotation         => "Target Genome: " . $sdsg->info,
             link => $SERVER . "OrganismView.pl?dsgid=" . $sdsg->id,
+            locked => 1
         });
 
         foreach my $fid (@qunique) {
