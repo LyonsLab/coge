@@ -517,9 +517,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                                     // Save color choice
                                     track.config.style.featureColor[id] = color;
 
-                                    // Use cookie to persist color choice - mdb added 1/13/14, issue 279
-                                    var cookieName = 'track-' + track.name;
-                                    track.browser.cookie(cookieName, config.style);
+                                    track.updateUserStyles({ featureColor : track.config.style.featureColor });
 
                                     // Repaint track
                                     track.changed();
