@@ -217,19 +217,26 @@ $(function() {
     $("#run_synfind_button").on("click", schedule);
 
     setTimeout(function() { <TMPL_VAR NAME="DOCUMENT_READY"> }, 100 );
-    pageObj.fid = "<tmpl_var name=FID>";
-    pageObj.targets = "<tmpl_var name=TARGETS>";
 
     if (+"<tmpl_var name=RUN>") {
-        schedule();
+        var fid = "<tmpl_var name=FID>",
+            targets = "<tmpl_var name=TARGETS>";
+
+        schedule(fid, targets);
     }
 });
 
-function schedule() {
+function schedule(fid, targets) {
+    var feat = $('#feat_dsgid').val();
+    if (!feat) {
+        alert('Please search and select a feature for this analysis.')
+        return;
+    }
+
     var options = {
         dsgids: $('#genome_choice').getLength(1),
-        fid: $('#fid').html() || pageObj.fid,
-        qdsgid: $('#feat_dsgid').val()[0],
+        fid: $('#fid').html(),
+        qdsgid: feat[0],
         window_size: $('#ws').val(),
         cutoff: $('#co').val(),
         scoring_function: $('#sf').val(),
@@ -238,15 +245,19 @@ function schedule() {
     };
 
     if (options.fid === '') {
+        options.fid = fid || '';
+    }
+
+    if (options.fid === '') {
         alert('Please search and select a feature for this analysis.')
         return;
     }
 
     if (options.dsgids === 'blank') {
-        options.dsgids = pageObj.targets;
+        options.dsgids = targets || '';
     }
 
-    if (options.dsgid === '') {
+    if (options.dsgids === '') {
         alert('Please select at least one genome to search.');
         return;
     }
