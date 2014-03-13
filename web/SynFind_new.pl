@@ -2513,7 +2513,7 @@ sub get_master_histograms {
     my $html;
     my @all;
     foreach my $item (@$target_dbs) {
-        next unless -s $item;
+        next unless -s $item->{synteny_score_db};
         my $db    = $item->{synteny_score_db};
         my $dbh   = DBI->connect( "dbi:SQLite:dbname=$db", "", "" );
         my $query = "SELECT * FROM synteny";
