@@ -62,7 +62,7 @@ function launch(dialog, results, options) {
                 // reset dialog
                 status_dialog.find(".dialog-error,.dialog-complete").hide();
                 status_dialog.find(".dialog-running").show();
-                status_dialog.find(".dialog-text").hmtl("");
+                status_dialog.find(".dialog-text").html("");
                 status_dialog.find(".dialog-link").html("");
                 status_dialog.find(".dialog-log").html("");
             });
