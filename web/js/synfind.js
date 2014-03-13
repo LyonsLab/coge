@@ -544,9 +544,9 @@ $.fn.sortSelect = function(){
 };
 
 function handle_results(selector, html) {
+    $(selector).html(html);
     init_table_sorter();
     setup_button_states();
-    $(selector).html(html).slideDown();
 }
 
 /*------------------------------------------------------------------------------
