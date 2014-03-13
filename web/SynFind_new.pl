@@ -1397,7 +1397,19 @@ sub go_synfind {
     CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
-    return get_results(@_);
+    my $response = decode_json($YERBA->submit_workflow($workflow));
+    my $success = JSON::true;
+    $success = JSON::false if lc($response->{status}) eq "error";
+
+    my $log_url = $cogeweb->logfile;
+    $log_url =~ s/$TEMPDIR/$TEMPURL/;
+
+    return encode_json({
+        success => $success,
+        logfile => $log_url,
+        link    => $tiny_synfind_link,
+        request => 'jex/status/' . $job->id,
+    });
 }
 
 sub get_results {
