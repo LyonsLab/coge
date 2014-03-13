@@ -480,9 +480,14 @@ sub validate_quant_data_file {
         	die; # sanity check
         }
 
-        # mdb added 2/19/14 for bulk loading
+        # mdb added 2/19/14 for bulk loading based on user request
         if ($allow_negative and $val1 < 0) {
-	       $val1 = -1 * $val1;
+	       $val1 = abs($val1);
+        }
+        # mdb added 3/13/14 issue 331
+        elsif ($strand eq '.') {
+            $strand = ($val1 >= 0 ? 1 : -1);
+            $val1 = abs($val1);
         }
 
         # Validate values and set defaults
@@ -491,13 +496,11 @@ sub validate_quant_data_file {
             or not defined $stop
             or not defined $strand )
         {
-            print $log
-              "log: error at line $line_num: missing value in a column\n";
+            print $log "log: error at line $line_num: missing value in a column\n";
             return;
         }
         if ( not defined $val1 or (!$disable_range_check and ($val1 < 0 or $val1 > 1)) ) {
-            print $log
-              "log: error at line $line_num: value 1 not between 0 and 1\n";
+            print $log "log: error at line $line_num: value 1 not between 0 and 1\n";
             return;
         }
         if ( not defined $val2 ) {
@@ -506,8 +509,7 @@ sub validate_quant_data_file {
 
 		$chr = fix_chromosome_id($chr, $genome_chr);
         if (!$chr) {
-            print $log
-              "log: error at line $line_num: trouble parsing chromosome\n";
+            print $log "log: error at line $line_num: trouble parsing chromosome\n";
             return;
         }
         $strand = $strand =~ /-/ ? -1 : 1;
