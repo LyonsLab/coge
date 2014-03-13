@@ -250,6 +250,7 @@ function schedule() {
 
         if (response.success) {
             handle_results("#results", response.html);
+            results.slideDown();
         } else {
             launch('#status_dialog', '#results', options);
         }
