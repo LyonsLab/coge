@@ -75,8 +75,6 @@ sub init {
     	$url    = $cgi->url;
     }
 
-    print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . " page_title=" . ($page_title ? $page_title : '') . "\n";
-
     # Get config
     $CONF = get_defaults();
 
@@ -136,6 +134,8 @@ sub init {
 		}
     }
 
+    print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . " page_title=" . ($page_title ? $page_title : '') . " user=" . ($user ? $user->name : '') . "\n";
+    
     return ( $db, $user, $CONF, $link );
 }
 
