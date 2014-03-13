@@ -1123,6 +1123,24 @@ sub go_synfind {
         db_object => $coge
     );
 
+    my ($tiny_id) = $tiny_synfind_link =~ /\/(\w+)$/;
+    my $workflow_id = "synfind-$tiny_id";
+
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
+
+    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "Creating Workflow", $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "Link to Regenerate Analysis",
+        $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "$tiny_synfind_link", $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "",           $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "Created Workflow: $workflow_id",
+        $cogeweb->logfile );
+
+
     CoGe::Accessory::Web::schedule_job( job => $job );
 
     #convert numerical codes for different scoring functions to appropriate types
@@ -1133,7 +1151,6 @@ sub go_synfind {
         $scoring_function = "collinear";
     }
 
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
 
     #need to blast source_dsg against each dsgids
     my @blast_results;
@@ -1145,7 +1162,7 @@ sub go_synfind {
     my $config   = $ENV{COGE_HOME} . "coge.conf";
     my $workflow = $YERBA->create_workflow(
         id      => $job->id,
-        name    => "synfind-$dsgids",
+        name    => $workflow_id,
         logfile => $cogeweb->logfile
     );
 
@@ -1175,7 +1192,9 @@ sub go_synfind {
         }
         else {
             my $dsg = $coge->resultset('Genome')->find($dsgid);
-            CoGe::Accessory::Web::write_log( "#WARNING:#", $cogeweb->logfile );
+
+            CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+            CoGe::Accessory::Web::write_log( "WARNING:", $cogeweb->logfile );
             CoGe::Accessory::Web::write_log(
                 $dsg->organism->name
                   . " does not have CDS sequences.  Can't process in SynFind.\n",
@@ -1370,10 +1389,27 @@ sub go_synfind {
         );
     }
 
-    $YERBA->submit_workflow($workflow);
-    $YERBA->wait_for_completion($workflow->id);
+    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
-    return get_results(@_);
+    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "Running Workflow", $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+
+    my $response = decode_json($YERBA->submit_workflow($workflow));
+    my $success = JSON::true;
+    $success = JSON::false if lc($response->{status}) eq "error";
+
+    my $log_url = $cogeweb->logfile;
+    $log_url =~ s/$TEMPDIR/$TEMPURL/;
+
+    return encode_json({
+        success => $success,
+        logfile => $log_url,
+        link    => $tiny_synfind_link,
+        request => 'jex/status/' . $job->id,
+    });
 }
 
 sub get_results {
@@ -1659,8 +1695,6 @@ sub get_results {
     #$html .= "<a onclick=window.open('$master_list_link') class='ui-button ui-corner-all' target=_new_synfind>Generate master gene set table (top one syntenlog per organism)</a>";
     $html .= qq{<span onclick="get_master('$master_list_link')" class='small link' target=_new_synfind>Generate master gene set table (top one syntenlog per organism)</span>};
     #$html .= qq{<span class="small">Pad Sequence in GEvo <input type="text" size=11 id=pad size=11 value=0></span>};
-    CoGe::Accessory::Web::write_log( "#SYNFIND LINK $synfind_link", $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "#TINY SYNFIND LINK $tiny_synfind_link", $cogeweb->logfile );
     my $log_file = $cogeweb->logfile;
     $log_file =~ s/$TEMPDIR/$TEMPURL/;
 
@@ -1750,12 +1784,11 @@ sub gen_org_name {
     my $org_name = $dsg->organism->name;
     my $title = $org_name . " (v" . $dsg->version . ", dsgid" . $dsgid . ")" . $feat_type;
     $title =~ s/(`|')//g;
-    CoGe::Accessory::Web::write_log( "#INITIALIZING#", $cogeweb->logfile )
+
+    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile )
       if $write_log;
     CoGe::Accessory::Web::write_log( "ORGANISM: " . $title, $cogeweb->logfile )
       if $write_log;
-    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile ) if $write_log;
-    return ( $org_name, $title );
 }
 
 sub generate_fasta {

@@ -65,26 +65,221 @@ function launch(dialog, results, options) {
             });
 
             if(response.success) {
-                status_dialog.find(".dialog-running").hide();
-                status_dialog.find(".dialog-complete").slideDown();
+                pageObj.runtime = 0;
+                pageObj.fetch_error = 0;
+                pageObj.error = 0;
+                pageObj.engine = "<span class=\"alert\">The job engine has failed.</span><br>Please use the link below to use the previous version of SynMap.";
 
-                _results.html(response.html);
+                var link = "Return to this analysis: <a href="
+                + response.link + " onclick=window.open('tiny')"
+                + "target = _new>" + response.link + "</a><br>";
 
-                init_table_sorter();
-                setup_button_states();
+                var logfile = $("<a></a>")
+                    .attr("href", response.logfile)
+                    .html("Logfile");
+
+                status_dialog.find(".dialog-link").html(link);
+                status_dialog.find(".dialog-log").html(logfile);
+
+                options.fname = "get_results";
+
+                update_dialog(response.request, dialog, results, formatter, options);
             } else {
+
                 var error = $("<div></div>")
                     .addClass("alert")
                     .html(response.message);
 
-                _results.append(error);
+                _results.append(results, error);
                 status_dialog.find(".dialog-error").slideDown();
                 status_dialog.find(".dialog-running").hide();
-                return;
             }
         },
     });
 }
+
+function formatter(item) {
+    var msg;
+    var row = $('<li>'+ item.description + ' </li>');
+    row.addClass('small');
+
+    var job_status = $('<span></span>');
+
+    if (item.status == 'scheduled') {
+        job_status.append(item.status);
+        job_status.addClass('down');
+        job_status.addClass('bold');
+    } else if (item.status == 'completed') {
+        job_status.append(item.status);
+        job_status.addClass('completed');
+        job_status.addClass('bold');
+    } else if (item.status == 'running') {
+        job_status.append(item.status);
+        job_status.addClass('running');
+        job_status.addClass('bold');
+    } else if (item.status == 'skipped') {
+        job_status.append("already generated");
+        job_status.addClass('skipped');
+        job_status.addClass('bold');
+    } else if (item.status == 'cancelled') {
+        job_status.append(item.status);
+        job_status.addClass('alert');
+        job_status.addClass('bold');
+    } else if (item.status == 'failed') {
+        job_status.append(item.status);
+        job_status.addClass('alert');
+        job_status.addClass('bold');
+    } else {
+        return;
+    }
+
+    row.append(job_status);
+
+    /*
+    if (item.status == "skipped") {
+        row.append("<p>The analyses previously was generated</p>");
+    }
+    */
+
+    return row;
+}
+
+function update_dialog(request, identifier, result, formatter, args) {
+    var get_status = function () {
+        $.ajax({
+            type: 'GET',
+            url: request,
+            dataType: 'json',
+            success: update_callback,
+            error: update_callback,
+        });
+    };
+
+    var get_poll_rate = function() {
+        pageObj.runtime += 1;
+
+        if (pageObj.runtime <= 5) {
+            return 1000;
+        } else if (pageObj.runtime <= 60) {
+            return 2000;
+        } else if (pageObj.runtime <= 300) {
+            return 5000;
+        } else if (pageObj.runtime <= 1800) {
+            return 30000;
+        } else if (pageObj.runtime <= 10800) {
+            return 60000;
+        } else {
+            return 300000;
+        }
+    };
+
+    var fetch_results = function(completed) {
+        var request = window.location.href.split('?')[0];
+        args.fname = 'get_results';
+        dialog = $(identifier);
+
+        $.ajax({
+            type: 'GET',
+            url: request,
+            data: args,
+            dataType: "json",
+            success: function(data) {
+                if (completed && !data.error) {
+                    handle_results(result, data.html);
+                    dialog.find('.dialog-running').hide();
+                    dialog.find('.dialog-complete').slideDown();
+                } else {
+                    handle_results(result, data.error);
+                    dialog.find('.dialog-running').hide();
+                    dialog.find('.dialog-error').slideDown();
+                }
+            },
+            error: function(data) {
+                if (pageObj.fetch_error >= 3) {
+                    dialog.find('.dialog-running').hide();
+                    dialog.find('.dialog-error').slideDown();
+                } else {
+                    pageObj.fetch_error += 1;
+                    var callback = function() {fetch_results(completed)};
+                    setTimeout(callback, 100);
+                }
+            }
+        });
+    }
+
+    var update_callback = function(json) {
+        var dialog = $(identifier);
+        var workflow_status = $("<p></p>");
+        var data = $("<ul></ul>");
+        var results = [];
+        var current_status;
+        var timeout = get_poll_rate();
+
+        var callback = function() {
+            update_dialog(request, identifier, result, formatter, args);
+        }
+
+        if (json.error) {
+            pageObj.error++;
+            if (pageObj.error > 3) {
+                workflow_status.html(pageObj.engine);
+                dialog.find('.dialog-text').html(workflow_status);
+                dialog.find('.dialog-running').hide();
+                dialog.find('.dialog-error').slideDown();
+                return;
+            }
+        } else {
+            pageObj.error = 0;
+        }
+
+        if (json.status) {
+            current_status = json.status.toLowerCase();
+            workflow_status.html("Workflow status: ");
+            workflow_status.append($('<span></span>').html(json.status));
+            workflow_status.addClass('bold');
+        } else {
+            setTimeout(callback, timeout);
+            return;
+        }
+
+        if (json.jobs) {
+            var jobs = json.jobs;
+            for (var index = 0; index < jobs.length; index++) {
+                var item = formatter(jobs[index]);
+                if (item) {
+                    results.push(item);
+                }
+            }
+        }
+
+        if (!dialog.dialog('isOpen')) {
+            return;
+        }
+
+        if (current_status == "completed") {
+            workflow_status.find('span').addClass('completed');
+            fetch_results(true);
+        } else if (current_status == "failed" || current_status == "error"
+                || current_status == "terminated"
+                || current_status == "cancelled") {
+            workflow_status.find('span').addClass('alert');
+            fetch_results(false);
+        } else if (current_status == "notfound") {
+            setTimeout(callback, timeout);
+            return;
+        } else {
+            workflow_status.find('span') .addClass('running');
+            setTimeout(callback, timeout);
+        }
+
+        results.push(workflow_status);
+        data.append(results);
+        dialog.find('.dialog-text').html(data);
+    };
+
+    get_status();
+}
+
 
 //function show_add() {
 //  if($('#add').is(":hidden")) {
@@ -348,7 +543,10 @@ $.fn.sortSelect = function(){
     return this;
 };
 
-function handle_results(html) {
+function handle_results(selector, html) {
+    init_table_sorter();
+    setup_button_states();
+    $(selector).html(html).slideDown();
 }
 
 /*------------------------------------------------------------------------------
