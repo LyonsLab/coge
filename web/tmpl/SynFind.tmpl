@@ -217,12 +217,18 @@ $(function() {
     $("#run_synfind_button").on("click", schedule);
 
     setTimeout(function() { <TMPL_VAR NAME="DOCUMENT_READY"> }, 100 );
+    pageObj.fid = "<tmpl_var name=FID>";
+    pageObj.targets = "<tmpl_var name=TARGETS>";
+
+    if (+"<tmpl_var name=RUN>") {
+        schedule();
+    }
 });
 
 function schedule() {
     var options = {
         dsgids: $('#genome_choice').getLength(1),
-        fid: $('#fid').html(),
+        fid: $('#fid').html() || pageObj.fid,
         qdsgid: $('#feat_dsgid').val()[0],
         window_size: $('#ws').val(),
         cutoff: $('#co').val(),
@@ -237,6 +243,10 @@ function schedule() {
     }
 
     if (options.dsgids === 'blank') {
+        options.dsgids = pageObj.targets;
+    }
+
+    if (options.dsgid === '') {
         alert('Please select at least one genome to search.');
         return;
     }
