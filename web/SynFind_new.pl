@@ -1789,6 +1789,8 @@ sub gen_org_name {
       if $write_log;
     CoGe::Accessory::Web::write_log( "ORGANISM: " . $title, $cogeweb->logfile )
       if $write_log;
+
+    return ( $org_name, $title );
 }
 
 sub generate_fasta {
