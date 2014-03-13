@@ -73,9 +73,13 @@ function launch(dialog, results, options) {
                 pageObj.error = 0;
                 pageObj.engine = "<span class=\"alert\">The job engine has failed.</span><br>Please use the link below to use the previous version of SynMap.";
 
-                var link = "Return to this analysis: <a href="
-                + response.link + " onclick=window.open('tiny')"
-                + "target = _new>" + response.link + "</a><br>";
+                var link = $("<a></a>")
+                    .attr("href", response.link)
+                    .html(response.link);
+
+                var link_message = $("<span></span>")
+                    .html("Return to this analysis: ")
+                    .append(link);
 
                 var logfile = $("<a></a>")
                     .attr("href", response.logfile)

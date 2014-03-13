@@ -204,6 +204,8 @@ sub gen_body {
     $prefs = {} unless $prefs;
 
     if ( $FORM->param('dsgid') ) {
+        $template->param(TARGETS => $FORM->param('dsgid'));
+
         foreach my $item ( $FORM->param('dsgid') ) {
             foreach my $dsgid ( split( /,/, $item ) ) {
                 my $id = get_dsg_for_menu( dsgid => $dsgid );
@@ -236,10 +238,14 @@ sub gen_body {
         $doc_ready .= qq{get_anno_chain('', $qdsgid, $fid);}; #qq{get_anno(['args__fid','args__$fid','args__dsgid','args__$qdsgid'],[show_anno]);};
         $template->param( FEAT_DSGID => qq{<select MULTIPLE type='hidden' id='feat_dsgid' name='feat_dsgid'><option value='$qdsgid' selected></option></select>} )
           if $qdsgid;
+
+        $template->param( FID => $fid);
     }
 
     $template->param( DOCUMENT_READY => $doc_ready ) if $doc_ready;
     $template->param( SAVE_ORG_LIST => 1 ) unless $USER->user_name eq "public";
+
+    $template->param( RUN => 1) if $FORM->param('run');
 
     return $template->output;
 }
@@ -1081,6 +1087,7 @@ sub go_synfind {
     my $unique_gene_link = $synfind_link;
     $synfind_link .= ";dsgid=$dsgids;qdsgid=$source_dsgid";
     $synfind_link .= ";sd=$depth" if $depth;
+    $synfind_link .= ";run=1";
 
     my @ids = split( /,/, $dsgids );
 
