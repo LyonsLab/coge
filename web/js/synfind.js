@@ -180,34 +180,31 @@ function update_dialog(request, identifier, result, formatter, args) {
         }
     };
 
-    var fetch_results = function(completed) {
-        var request = window.location.href.split('?')[0];
-        args.fname = 'get_results';
+    var fetch_results = function(completed, attempts) {
         dialog = $(identifier);
 
         $.ajax({
             type: 'GET',
-            url: request,
+            url: 'SynFind.pl',
             data: args,
             dataType: "json",
             success: function(data) {
-                if (completed && !data.error) {
+                if (completed && data.success) {
                     handle_results(result, data.html);
                     dialog.find('.dialog-running').hide();
                     dialog.find('.dialog-complete').slideDown();
                 } else {
-                    handle_results(result, data.error);
+                    handle_results(result, data.message);
                     dialog.find('.dialog-running').hide();
                     dialog.find('.dialog-error').slideDown();
                 }
             },
             error: function(data) {
-                if (pageObj.fetch_error >= 3) {
+                if (attempts >= 3) {
                     dialog.find('.dialog-running').hide();
                     dialog.find('.dialog-error').slideDown();
                 } else {
-                    pageObj.fetch_error += 1;
-                    var callback = function() {fetch_results(completed)};
+                    var callback = function() {fetch_results(completed, attempts + 1)};
                     setTimeout(callback, 100);
                 }
             }
@@ -265,12 +262,12 @@ function update_dialog(request, identifier, result, formatter, args) {
 
         if (current_status == "completed") {
             workflow_status.find('span').addClass('completed');
-            fetch_results(true);
+            fetch_results(true, 1);
         } else if (current_status == "failed" || current_status == "error"
                 || current_status == "terminated"
                 || current_status == "cancelled") {
             workflow_status.find('span').addClass('alert');
-            fetch_results(false);
+            fetch_results(false, 1);
         } else if (current_status == "notfound") {
             setTimeout(callback, timeout);
             return;
