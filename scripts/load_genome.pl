@@ -439,13 +439,14 @@ sub process_fasta_file {
             $chr =~ s/^gi\|//;
             $chr =~ s/chromosome//i;
             $chr =~ s/^chr//i;
-	    $chr = "0" if $chr =~ /^0+$/; #EL added 2/13/14 to catch cases where chromosome name is 00 (or something like that)
+	        $chr = "0" if $chr =~ /^0+$/; #EL added 2/13/14 to catch cases where chromosome name is 00 (or something like that)
             $chr =~ s/^0+// unless $chr eq '0';
             $chr =~ s/^_+//;
             $chr =~ s/\s+/ /;
             $chr =~ s/^\s//;
             $chr =~ s/\s$//;
             $chr =~ s/\//_/; # mdb added 12/17/13 issue 266 - replace '/' with '_'
+            $chr =~ s/\|$//; # mdb added 3/14/14 issue 332 - remove trailing pipes
         }
 
         # Check validity of chr name and sequence
