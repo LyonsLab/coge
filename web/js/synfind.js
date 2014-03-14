@@ -89,6 +89,7 @@ function launch(dialog, results, options) {
                 status_dialog.find(".dialog-log").html(logfile);
 
                 options.fname = "get_results";
+                options.logfile = response.logfile;
 
                 update_dialog(response.request, dialog, results, formatter, options);
             } else {

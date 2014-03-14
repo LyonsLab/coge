@@ -14,6 +14,7 @@ use Data::Dumper;
 use Digest::MD5 qw(md5_base64);
 use POSIX;
 use File::Path;
+use File::Basename qw(fileparse);
 use Benchmark qw(:all);
 use Parallel::ForkManager;
 use DBI;
@@ -1430,6 +1431,8 @@ sub get_results {
     my $cutoff           = $opts{cutoff};
     my $scoring_function = $opts{scoring_function};
     my $depth            = $opts{depth}; # max syntenic depth to report
+    my $logfile          = $opts{logfile};
+    $logfile =~ s/$TEMPURL/$TEMPDIR/ if $logfile;
 
     $window_size = 40  unless defined $window_size;
     $cutoff      = 0.1 unless defined $cutoff;
@@ -1475,7 +1478,8 @@ sub get_results {
         $scoring_function = "collinear";
     }
 
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
+    my ($name, $path, $ext) = fileparse($logfile, qr{\.log}) if $logfile;
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR, basename => $name);
 
     #need to blast source_dsg against each dsgids
     my @blast_results;
