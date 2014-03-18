@@ -12,7 +12,18 @@
             <strong>Warning: </strong><tmpl_var name="warning">
         </div>
     </tmpl_if>
+<div id="data">
+    <ul>
+        <li class="small"><a href="#results-1">Current Version</a></li>
+        <li class="small"><a href="#results-2">Test Version</a></li>
+    </ul>
 
+<div id="results-2">
+    <div class="toolbar">
+        <button id="reset" class="ui-button ui-corner-all">Reset size</button>
+    </div>
+</div>
+<div id="results-1" class="hidden">
     <div class="ui-widget-content ui-corner-all padded" id="synmap_zoom_box"
     style="width: 350px; z-index: 1;">Zoom SynMap:
         <table class="small">
@@ -88,66 +99,77 @@
 
             <span class='small'>Algorithm: <tmpl_var name="algorithm"></span>
         </li>
-        <li>
-        <tmpl_if name="histogram">
-            <div class='small link ui-widget-content ui-corner-all padded' style='float:left'
-                onclick="window.open('<tmpl_var name=histogram>')">
-                Histogram of <tmpl_var name=ks_type> values.<br>
-            <img src="<tmpl_var name=histogram>">
-            </div>
-            <div style='clear: both;'> </div>
-        </tmpl_if>
-        </li>
-        <li>
-            <div class="ui-widget-content ui-corner-all padded">
-            <table id="files" class="small">
-                <th colspan="4">
-                    Links and Downloads <span class="link small" onClick="$(this).hide(); $('#files tbody').fadeIn();">
-                    click here to see more...</span>
-                </th>
-                <tbody class="hidden small">
-                    <tmpl_loop name="files">
-                        <tr>
-                            <td><tmpl_var name="general"></td>
-                            <td><tmpl_var name="homolog"></td>
-                            <td><tmpl_var name="diagonal"></td>
-                            <td><tmpl_var name="result"></td>
-                        </tr>
-                    </tmpl_loop>
-                    </td>
-                </tbody>
-            </table>
-            </div>
-        </li>
-        <tmpl_if name=synsub>
-        <li>
-            <span  class='ui-button ui-corner-all'
-                onclick="window.open('<tmpl_var name=synsub>')">
-                Generate Substitution Matrix of Syntelogs
-            </span>
-        </li>
-        </tmpl_if>
-
-        <tmpl_if name=grimm>
-        <li>
-            <br>
-            <span class="ui-button ui-corner-all" id="grimm_link"
-            onclick="post_to_grimm('<tmpl_var name=seq1>','<tmpl_var name=seq2>')">
-                Rearrangement Analysis
-            </span>
-            <a class="small" href="<tmpl_var name=grimm_link>" target=_new>(Powered by GRIMM!)</a>
-        </li>
-        </tmpl_if>
-        <li>
-            <a href="<tmpl_var name=link>" class="ui-button ui-corner-all"
-            style='color: #000000' target=_new_synmap>Regenerate this analysis: <tmpl_var name=link></a>
-        </li>
-        <li>
-            <span id="clear" style="font-size: 0.8em" class="ui-button ui-corner-all"
-                onClick="$('#results').hide(); $(this).hide(); $('#intro').fadeIn();" >
-                Clear Results
-            </span>
-        </li>
     </ul>
+</div>
 
+<ul class="padded">
+    <li>
+    <tmpl_if name="histogram">
+        <div class='small link ui-widget-content ui-corner-all padded' style='float:left'
+            onclick="window.open('<tmpl_var name=histogram>')">
+            Histogram of <tmpl_var name=ks_type> values.<br>
+        <img src="<tmpl_var name=histogram>">
+        </div>
+        <div style='clear: both;'> </div>
+    </tmpl_if>
+    </li>
+    <li>
+        <div class="ui-widget-content ui-corner-all padded">
+        <table id="files" class="small">
+            <th colspan="4">
+                Links and Downloads <span class="link small" onClick="$(this).hide(); $('#files tbody').fadeIn();">
+                click here to see more...</span>
+            </th>
+            <tbody class="hidden small">
+                <tmpl_loop name="files">
+                    <tr>
+                        <td><tmpl_var name="general"></td>
+                        <td><tmpl_var name="homolog"></td>
+                        <td><tmpl_var name="diagonal"></td>
+                        <td><tmpl_var name="result"></td>
+                    </tr>
+                </tmpl_loop>
+                </td>
+            </tbody>
+        </table>
+        </div>
+    </li>
+    <tmpl_if name=synsub>
+    <li>
+        <span  class='ui-button ui-corner-all'
+            onclick="window.open('<tmpl_var name=synsub>')">
+            Generate Substitution Matrix of Syntelogs
+        </span>
+    </li>
+    </tmpl_if>
+
+    <tmpl_if name=grimm>
+    <li>
+        <br>
+        <span class="ui-button ui-corner-all" id="grimm_link"
+        onclick="post_to_grimm('<tmpl_var name=seq1>','<tmpl_var name=seq2>')">
+            Rearrangement Analysis
+        </span>
+        <a class="small" href="<tmpl_var name=grimm_link>" target=_new>(Powered by GRIMM!)</a>
+    </li>
+    </tmpl_if>
+    <li>
+        <span>Regenerate this analysis:</span>
+        <a href="<tmpl_var name=link>" target=_new_synmap>
+            <tmpl_var name=link>
+        </a>
+    </li>
+    <li>
+        <span id="clear" style="font-size: 0.8em" class="ui-button ui-corner-all"
+            onClick="$('#results').hide(); $(this).hide(); $('#intro').fadeIn();" >
+            Clear Results
+        </span>
+    </li>
+</ul>
+
+<script>
+    $(document).ready(function(){
+        $(function() {$("#data").tabs({selected:0});});
+    });
+</script>
 </tmpl_if>
