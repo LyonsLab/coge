@@ -11,6 +11,8 @@ lib/CoGe/Accessory/Storage.pm
 lib/CoGe/Accessory/Utils.pm
 lib/CoGe/Accessory/TDS.pm
 lib/CoGe/Accessory/Web.pm
+lib/CoGe/Accessory/Notebook.pm
+lib/CoGe/Accessory/Metadata.pm
 lib/CoGe/Accessory/IRODS.pm
 lib/CoGe/Accessory/Workflow.pm
 lib/CoGe/Accessory/Jex.pm
