@@ -9,6 +9,7 @@ use File::Touch;
 use URI::Escape::JavaScript qw(unescape);
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Utils qw( commify );
+use CoGe::Accessory::Metadata qw( create_annotations );
 
 use vars qw($staging_dir $install_dir $data_file $file_type
   $name $description $version $restricted $ignore_missing_chr
@@ -268,60 +269,7 @@ if ($types) {
 
 # Create annotations
 if ($annotations) {
-    foreach ( split(/\s*;\s*/, $annotations) ) {
-        my @tok = split(/\s*\|\s*/, $_);
-        my ($link, $group_name, $type_name, $anno_text);
-        $link  = shift @tok if (@tok == 4);
-        $group_name = shift @tok if (@tok == 3);
-        $type_name  = shift @tok if (@tok == 2);
-        $anno_text  = shift @tok if (@tok == 1);
-        unless ($anno_text and $type_name) {
-            print $log "log: missing required annotation type and text fields\n";
-            exit(-1);
-        }
-        
-        # Create type group - first try to find a match by name only
-        my ($group, $type, $anno);
-        if ($group_name) {
-            $group = $coge->resultset('AnnotationTypeGroup')->find({ name => $group });
-            if (!$group) {
-                $group = $coge->resultset('AnnotationTypeGroup')->create({ name => $group }); # null description
-            }
-            unless ($group) {
-                print $log "log: error creating annotation type group\n";
-                exit(-1);
-            }
-        }
-        
-        # Create type - first try to find a match by name and group
-        $type = $coge->resultset('AnnotationType')->find({ 
-            name => $type_name, 
-            annotation_type_group_id => ($group ? $group->id : undef) }
-        );
-        if (!$type) {
-            $type = $coge->resultset('AnnotationType')->create({ 
-                name => $type_name,
-                annotation_type_group_id => ($group ? $group->id : undef)
-            }); # null description
-        }
-        unless ($type) {
-            print $log "log: error creating annotation type\n";
-            exit(-1);
-        }
-        
-        # Create annotation
-        $anno = $coge->resultset('ExperimentAnnotation')->create({
-            experiment_id => $experiment->id,
-            annotation_type_id => ($type ? $type->id : undef),
-            annotation => $anno_text,
-            link => $link,
-            locked => 1
-        }); # null description
-        unless ($anno) {
-            print $log "log: error creating experiment annotation\n";
-            exit(-1);
-        }
-    }
+    CoGe::Accessory::Metadata::create_annotations(db => $coge, target => $experiment, annotations => $annotations, locked => 1);
 }
 
 # Determine installation path
