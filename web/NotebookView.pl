@@ -341,7 +341,13 @@ sub get_annotations {
                 $html .= "<td style='padding-left:5px;'>";
                 $html .= linkify( $a->link, "Link" ) if $a->link;
                 $html .= "</td>";
-                if ($user_can_edit  && !$a->locked) {
+                if ($a->locked) {
+                    $html .=
+                        '<td style="padding-left:20px;white-space:nowrap;">'
+                      . "<span onClick=\"alert('This item is locked and cannot be edited or removed.');\" class='link ui-icon ui-icon-locked'></span>"
+                      . '</td>';
+                }
+                elsif ($user_can_edit) {
                     my $aid = $a->id;
                     $html .=
                         '<td style="padding-left:20px;white-space:nowrap;">'
