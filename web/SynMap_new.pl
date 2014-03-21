@@ -29,20 +29,20 @@ use POSIX;
 use Sort::Versions;
 
 our (
-    $P,           $DEBUG,         $DIR,            $URL,
-    $SERVER,      $USER,          $FORM,           $coge,
-    $cogeweb,     $PAGE_NAME,     $FORMATDB,       $BLAST,
-    $TBLASTX,     $BLASTN,        $BLASTP,         $LASTZ,
-    $LAST,        $DATADIR,       $FASTADIR,       $BLASTDBDIR,
-    $DIAGSDIR,    $MAX_PROC,      $DAG_TOOL,       $PYTHON,
-    $PYTHON26,    $TANDEM_FINDER, $RUN_DAGCHAINER, $EVAL_ADJUST,
-    $FIND_NEARBY, $DOTPLOT,       $SVG_DOTPLOT,    $NWALIGN,
-    $QUOTA_ALIGN, $CLUSTER_UTILS, $BLAST2RAW,      $BASE_URL,
-    $BLAST2BED,   $SYNTENY_SCORE, $TEMPDIR,        $TEMPURL,
-    $ALGO_LOOKUP, $GZIP,          $GUNZIP,         %FUNCTIONS,
-    $YERBA,       $GENE_ORDER,    $PAGE_TITLE,     $KSCALC,
-    $GEN_FASTA,   $RUN_ALIGNMENT, $RUN_COVERAGE,   $GEVO_LINKS,
-    $PROCESS_DUPS,
+    $P,            $DEBUG,         $DIR,            $URL,
+    $SERVER,       $USER,          $FORM,           $coge,
+    $cogeweb,      $PAGE_NAME,     $FORMATDB,       $BLAST,
+    $TBLASTX,      $BLASTN,        $BLASTP,         $LASTZ,
+    $LAST,         $DATADIR,       $FASTADIR,       $BLASTDBDIR,
+    $DIAGSDIR,     $MAX_PROC,      $DAG_TOOL,       $PYTHON,
+    $PYTHON26,     $TANDEM_FINDER, $RUN_DAGCHAINER, $EVAL_ADJUST,
+    $FIND_NEARBY,  $DOTPLOT,       $SVG_DOTPLOT,    $NWALIGN,
+    $QUOTA_ALIGN,  $CLUSTER_UTILS, $BLAST2RAW,      $BASE_URL,
+    $BLAST2BED,    $SYNTENY_SCORE, $TEMPDIR,        $TEMPURL,
+    $ALGO_LOOKUP,  $GZIP,          $GUNZIP,         %FUNCTIONS,
+    $YERBA,        $GENE_ORDER,    $PAGE_TITLE,     $KSCALC,
+    $GEN_FASTA,    $RUN_ALIGNMENT, $RUN_COVERAGE,   $GEVO_LINKS,
+    $PROCESS_DUPS, $DOTPLOT_DOTS,
 );
 
 $DEBUG = 0;
@@ -101,6 +101,7 @@ $RUN_ALIGNMENT = $P->{RUN_ALIGNMENT};
 $RUN_COVERAGE  = $P->{RUN_COVERAGE};
 $PROCESS_DUPS  = $P->{PROCESS_DUPS};
 $GEVO_LINKS =  $P->{GEVO_LINKS};
+$DOTPLOT_DOTS = $P->{DOTPLOT_DOTS};
 
 #in the web form, each sequence search algorithm has a unique number.  This table identifies those and adds appropriate options
 $ALGO_LOOKUP = {
@@ -2346,6 +2347,37 @@ sub go {
         description => "Generating images...",
     );
 
+    my $dot_args = [
+        [ '-cf', $config, 0 ],
+        [ '-d', $dag_file12_all, 0 ],
+        [ '-a', $final_dagchainer_file, 1 ],
+        [ '-b', $dotfile, 1 ],
+        [ '-genome1', $dsgid1, 0 ],
+        [ '-genome2', $dsgid2, 0 ],
+    ];
+
+    if ($snsd) {
+        push @$dot_args, [ '-d', $dag_file12_all, 0 ];
+    }
+
+    push @$dot_args, [ '-ksdb', $ks_db,   1 ];
+
+    my $dot_inputs = [
+        $final_dagchainer_file,
+    ];
+
+    push @$dot_inputs, $dag_file12_all if $dag_file12_all;
+    push @$dot_inputs, $ks_db if $ks_db;
+
+    $workflow->add_job(
+        cmd         => $DOTPLOT_DOTS,
+        script      => undef,
+        args        => $dot_args,
+        inputs      => $dot_inputs,
+        outputs     => [ "$dotfile.json" ],
+        description => "Generating dotplot dots...",
+    );
+
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Added dotplot generation",
         $cogeweb->logfile );
@@ -2948,6 +2980,7 @@ sub get_results {
     # was requested
     my $spa_file = $dotfile . ".spa_info.txt";
     $out = $dotfile;
+    my $json_file = $dotfile.".json";
 
     ############################################################################
     # Generate html
@@ -3196,6 +3229,10 @@ sub get_results {
             file => $spa_file,
             msg  => qq{Syntenic Path Assembly mapping},
         );
+        my $json_url = _filename_to_link(
+            file => $json_file,
+            msg  => qq{Dotplot JSON},
+        );
 
         my $conffile = $ENV{COGE_HOME} . 'coge.conf';
 
@@ -3262,6 +3299,12 @@ sub get_results {
                 diagonal => undef,
                 result   => $svg_url,
             },
+            {
+                general  => undef,
+                homolog  => undef,
+                diagonal => undef,
+                result   => $json_url,
+            },
         ];
 
         $results->param( files => $rows );
@@ -3303,11 +3346,20 @@ sub get_results {
         });
     }
 
+    unless(-r $json_file and -s $json_file) {
+        return encode_json({
+            error => "The json file could not be found."
+        });
+    }
+
     my $log = $cogeweb->logfile;
     $log =~ s/$DIR/$URL/;
+    $json_file =~ s/$DIR/$URL/;
+
     $results->param( error   => $problem ) if $problem;
     $results->param( warning => $warn )    if $warn;
     $results->param( log     => $log );
+    $results->param( json     => $json_file );
 
     ##print out all the datafiles created
     $html .= "<br>";
