@@ -862,21 +862,33 @@ var synmap = function(element, metric, sort) {
         keys = pairs.pop();
         data = generatePlot(keys[0], keys[1], json.layers, metric, sort);
 
+        var handler =  function() {
+            var active = [];
+
+            for (var layerId in data.layers) {
+                if (data.layers[layerId].enabled) {
+                    active.push(data.layers[layerId]);
+                }
+            }
+
+            return active;
+        };
+
         var plot = new DotPlot(element, {
             size: { width: 1000, height: 800 },
-            extent: { width: data.xtotal, height: data.ytotal },
-            chromosomes: [ data.xlabels, data.ylabels ],
-            fetchDataHandler: function() {
-                var active = [];
-
-                for (var layerId in data.layers) {
-                    if (data.layers[layerId].enabled) {
-                        active.push(data.layers[layerId]);
-                    }
-                }
-
-                return active;
+            genomes: [{
+                name: data.xlabel,
+                length: data.xtotal,
+                chromosomes: data.xlabels,
+                fetchDataHandler: handler
             },
+            {
+                name: data.ylabel,
+                length: data.ytotal,
+                chromosomes: data.ylabels,
+                fetchDataHandler: handler
+            }],
+            fetchDataHandler: handler,
             style: {
                 position: "relative",
                 minHeight: "800px"
@@ -916,6 +928,8 @@ var synmap = function(element, metric, sort) {
         layers = createAllLayers(layers, genome1, genome2, xlabels, ylabels);
 
         return {
+            "xtitle": genomes[genome1].name,
+            "ytitle" : genomes[genome2].name,
             "xlabels": xlabels,
             "ylabels": ylabels,
             "xtotal": sum(xlabels.map(pick("length"))),
