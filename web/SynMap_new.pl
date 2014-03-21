@@ -507,6 +507,8 @@ sub gen_body {
     $template->param( 'SHOW_NON_SYN' => "checked" ) if $spa && $spa =~ /2/;
     $template->param( 'SPA_FEW_SELECT'  => "selected" ) if $spa && $spa > 0;
     $template->param( 'SPA_MORE_SELECT' => "selected" ) if $spa && $spa < 0;
+    $template->param(beta => 1) if $FORM->param("beta");
+
     my $file = $form->param('file');
     if ($file) {
         my $results = read_file($file);
