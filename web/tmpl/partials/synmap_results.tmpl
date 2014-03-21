@@ -191,7 +191,13 @@
             boxes = $("#boxes"),
             sortHandler;
 
-        $("#data").tabs({selected:0});
+        var beta = "<tmpl_var name=beta>";
+        if (+beta) {
+            $("#data").tabs({selected:1});
+        } else {
+            $("#data").tabs({selected:0});
+        }
+
         $("#toolbar").buttonset();
 
         sortHandler = function() {

@@ -3359,7 +3359,8 @@ sub get_results {
     $results->param( error   => $problem ) if $problem;
     $results->param( warning => $warn )    if $warn;
     $results->param( log     => $log );
-    $results->param( json     => $json_file );
+    $results->param( json    => $json_file );
+    $results->param( beta    => 1) if $opts{beta};
 
     ##print out all the datafiles created
     $html .= "<br>";
