@@ -168,6 +168,7 @@ function get_params(name) {
         tdd: $('#tdd').val(),
         D: $('#D').val(),
         A: $('#A').val(),
+        beta: pageObj.beta,
         gm: $('#gm').val(),
         Dm: $('#Dm').val(),
         blast: $('#blast').val(),
