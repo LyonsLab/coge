@@ -813,10 +813,37 @@ function toObject(pairs) {
     }, {});
 }
 
-function sortBy(attribute) {
-    return function (a, b) {
-        return a[attribute] - b[attribute];
+function compareAlphaNumeric(a, b) {
+    var regAlpha = /[^a-zA-Z_]/g,
+        regNumeric = /[^0-9]/g,
+        aString = a.toString(),
+        bString = b.toString(),
+        aAlpha,
+        aNum,
+        bAlpha,
+        bNum;
+
+    aAlpha = aString.replace(regAlpha, "");
+    bAlpha = bString.replace(regAlpha, "");
+
+    if(aAlpha === bAlpha) {
+        aNum = parseInt(aString.replace(regNumeric, ""), 10);
+        bNum = parseInt(bString.replace(regNumeric, ""), 10);
+
+        return aNum === bNum ? 0 : aNum > bNum ? 1 : -1;
     }
+
+    return aAlpha.localeCompare(bAlpha);
+}
+
+function sortBy(attribute, cmp) {
+    return function (a, b) {
+        if (cmp) {
+            return cmp(a[attribute], b[attribute]);
+        } else {
+            return a[attribute] - b[attribute];
+        }
+    };
 }
 
 function inverse(func) {
