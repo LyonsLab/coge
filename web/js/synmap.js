@@ -933,10 +933,18 @@ var synmap = function(element, metric, sort) {
         var index;
 
         for(index = 0; index < plots.length; index++) {
-            if (!plots[index].data.layers[layerId]) continue;
+            if (plots[index].data.layers[layerId]) {
+                plots[index].data.layers[layerId].enabled = enabled;
+                plots[index].plot.redraw();
+            }
+        }
+    }
 
-            plots[index].data.layers[layerId].enabled = enabled;
-            plots[index].plot.redraw();
+    my.reset = function() {
+        var index;
+
+        for(index = 0; index < plots.length; index++) {
+            plots[index].plot.reset();
         }
     }
 
@@ -948,6 +956,8 @@ var synmap = function(element, metric, sort) {
             layers;
 
         // Construct labels with property axis and offsets
+        // x is flipped to sort by maximum value
+        // y is not flipped because increasing value is down in canvas
         xlabels = generateLabels(genomes[genome1].chromosomes, metric, inverse(by));
         ylabels = generateLabels(genomes[genome2].chromosomes, metric, by);
 
