@@ -170,6 +170,17 @@
 <script>
     $(document).ready(function(){
         $(function() {$("#data").tabs({selected:0});});
+
+        var response = $.ajax({
+            url: "<tmpl_var name=json>",
+            dataType: "json"
+        });
+
+        response.then(load);
     });
+
+    function load(json) {
+        window.raw = json;
+    }
 </script>
 </tmpl_if>

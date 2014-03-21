@@ -156,7 +156,11 @@ my $box_coords = get_dots(
     json_data      => \%json_data,
     syntenic_pairs => 1,
 );
-$json_data{$genomeid1}{$genomeid2}{syntenic_blocks} = $box_coords;
+
+$json_data{layers}{syntenic_blocks}{data}{rects}{$genomeid1}{$genomeid2} = $box_coords;
+$json_data{layers}{syntenic_blocks}{style} = {
+    strokeStyle => "rgba(0, 155, 0, 0.6)"
+};
 
 #write out JSON file of dots"
 #print Dumper \%json_data;
@@ -190,23 +194,24 @@ sub get_dots {
     open( IN, $file )
       || die "Can't open $file: $!";    #this is where the problem lies!
 
-    my @boxes;
-    my ( $block_min_nt_1, $block_min_nt_2, $block_max_nt_1, $block_max_nt_2 )
-      ;                                 #for storing bounds of syntenic blocks
-    my (
-        $block_min_gene_1, $block_min_gene_2,
-        $block_max_gene_1, $block_max_gene_2
-    );                                  #for storing bounds of syntenic blocks
+    my ($boxes, $block_chr1, $block_chr2);
+
+    #for storing bounds of syntenic blocks
+    my ( $block_min_nt_1, $block_min_nt_2, $block_max_nt_1, $block_max_nt_2 );
+
+    #for storing bounds of syntenic blocks
+    my ($block_min_gene_1, $block_min_gene_2,  $block_max_gene_1, $block_max_gene_2);
+
     my $count = 0;
     while (<IN>) {
         chomp;
         if (/^#/) {
-            push @boxes,
-              {
+            push @{$boxes->{$block_chr1}{$block_chr2}},
+
        #coordinates is an array of values with: start1, stop1, start2, stop2
-       nucleotides=>[int($block_min_nt_1), int($block_max_nt_1), int($block_min_nt_2), int($block_max_nt_2)],
-       genes=>[int($block_min_gene_1), int($block_max_gene_1), int($block_min_gene_2), int($block_max_gene_2)],
-	      }
+       [int($block_min_nt_1), int($block_max_nt_1), int($block_min_nt_2), int($block_max_nt_2)]
+       #nucleotides=>[int($block_min_nt_1), int($block_max_nt_1), int($block_min_nt_2), int($block_max_nt_2)],
+       #genes=>[int($block_min_gene_1), int($block_max_gene_1), int($block_min_gene_2), int($block_max_gene_2)],
             if defined $block_min_nt_1
                   && defined $block_min_nt_2
                   && defined $block_max_nt_1
@@ -223,6 +228,8 @@ sub get_dots {
             $block_min_gene_2 = undef;
             $block_max_gene_1 = undef;
             $block_max_gene_2 = undef;
+            $block_chr1 = undef;
+            $block_chr2 = undef;
         }
 
         next if /^#/;
@@ -251,30 +258,39 @@ sub get_dots {
                 next if $chr2 ne $CHR2;
             }
         }
-        next
-          unless $org1->{$chr1}
-              && $org2->{ $chr2
-              }; #sometimes there will be data that is skipped, e.g. where chromosome="random";
+        #sometimes there will be data that is skipped, e.g. where chromosome="random";
+        next unless $org1->{$chr1} && $org2->{$chr2};
 
-        my ( $nt_min_1, $nt_max_1 ) =
-          sort ( $item1[1], $item1[2] );    #absolute positions
-        my ( $nt_min_2, $nt_max_2 ) =
-          sort ( $item2[1], $item2[2] );    #absolute positions
-        my ( $gene_order_1, $gene_order_2 ) =
-          ( $item1[7], $item2[7] );       #relative position
-        my $data_item = {
-			 chr1   => $chr1,
-			 chr2   => $chr2,
-			 feat1  => int($fid1),
-			 feat2  => int($fid2),
-			 #coordinates is an array of values with: start1, stop1, start2, stop2
-			 nucleotides=>[int($nt_min_1), int($nt_max_1), int($nt_min_2), int($nt_max_2)],
-			 genes=>[int($gene_order_1), int($gene_order_1), int($gene_order_2), int($gene_order_2)],
-			};
-        $data_item->{ks_data} = $ks_vals
-          if $ks_vals;    #check with Evan if missing data should still have key
-        push @{ $json_data->{$genomeid1}{$genomeid2}{$data_label} }, $data_item;
+        #absolute positions
+        my($nt_min_1, $nt_max_1) = sort ($item1[1], $item1[2]);
+        my($nt_min_2, $nt_max_2) = sort ($item2[2], $item2[2]);
 
+        #relative position
+        my ( $gene_order_1, $gene_order_2 ) = ( $item1[7], $item2[7] );
+#        my $data_item = {
+#			 chr1   => $chr1,
+#			 chr2   => $chr2,
+#			 feat1  => int($fid1),
+#			 feat2  => int($fid2),
+#			 #coordinates is an array of values with: start1, stop1, start2, stop2
+#			 nucleotides=>[int($nt_min_1), int($nt_max_1), int($nt_min_2), int($nt_max_2)],
+#			 genes=>[int($gene_order_1), int($gene_order_1), int($gene_order_2), int($gene_order_2)],
+#			};
+#        $data_item->{ks_data} = $ks_vals
+#          if $ks_vals;    #check with Evan if missing data should still have key
+#        push @{ $json_data->{$genomeid1}{$genomeid2}{$data_label} }, $data_item;
+
+        my $data_item = [int($item1[1]), int($item1[2]), int($item2[1]), int($item2[2])];
+#        $data_item->{ks_data} = $ks_vals
+#          if $ks_vals;    #check with Evan if missing data should still have key
+#          #push @{ $json_data->{data}->{$genomeid1}{$genomeid2}{$data_label}{$chr1}{$chr2}}, $data_item;
+        push @{ $json_data->{layers}->{$data_label}{data}{lines}{$genomeid1}{$genomeid2}{$chr1}{$chr2}}, $data_item;
+
+        if ($syntenic_pairs) {
+            $json_data->{layers}->{$data_label}{style} = {
+                strokeStyle => "rgb(0, 150, 0)"
+            };
+        }
         #syntenic blocks
         $block_min_nt_1 = $nt_min_1 unless $block_min_nt_1;
         $block_min_nt_1 = $nt_min_1 if $nt_min_1 < $block_min_nt_1;
@@ -294,15 +310,17 @@ sub get_dots {
         $block_max_gene_2 = $gene_order_2 unless $block_max_gene_2;
         $block_max_gene_2 = $gene_order_2 if $gene_order_2 > $block_max_gene_2;
 
+        $block_chr1 = $chr1;
+        $block_chr2 = $chr2;
         $count++;
     }
+
     close IN;
-    push @boxes,
-      {
+    push @{$boxes->{$block_chr1}{$block_chr2}},
        #coordinates is an array of values with: start1, stop1, start2, stop2
-       nucleotides=>[int($block_min_nt_1), int($block_max_nt_1), int($block_min_nt_2), int($block_max_nt_2)],
-       genes=>[int($block_min_gene_1), int($block_max_gene_1), int($block_min_gene_2), int($block_max_gene_2)],
-      }
+       [int($block_min_nt_1), int($block_max_nt_1), int($block_min_nt_2), int($block_max_nt_2)]
+       #nucleotides=>[int($block_min_nt_1), int($block_max_nt_1), int($block_min_nt_2), int($block_max_nt_2)],
+       #genes=>[int($block_min_gene_1), int($block_max_gene_1), int($block_min_gene_2), int($block_max_gene_2)],
       if defined $block_min_nt_1
           && defined $block_min_nt_2
           && defined $block_max_nt_1
@@ -312,7 +330,7 @@ sub get_dots {
           && defined $block_max_gene_1
           && defined $block_max_gene_2;
 
-    return \@boxes;
+    return $boxes;
 }
 
 sub get_ksdata {
@@ -401,7 +419,6 @@ sub add_genome_to_json {
     my $dbh   = $coge->storage->dbh; #database handle for direct queries
 
     my %data;
-    $data{id}      = int($genomeid);
     $data{orgId}   = int( $genome->organism->id );
     $data{orgName} = $genome->organism->name . " (v" . $genome->version . ")";
     $data{name}    = $genome->organism->name . " (v" . $genome->version . ")";
@@ -428,16 +445,13 @@ SELECT count(distinct(feature_id))
         push $chrs, {
 				    name   => $chr,
 				    nucleotides => int( $org_data->{$chr}{length} ),
-				    genes => int( $gene_count ),
-				    id     => int( $order++ )
+#				    genes => int( $gene_count ),
+#				    id     => int( $order++ )
 				    , #eric changed from 'order' to 'id'.  Make sure that it isn't assumed to be an order.  See if this value can be dropped
 		};
       }
     $data{chromosomes} = $chrs;
-
-    $json_data{genomes} = defined($json_data{genomes}) ? $json_data{genomes} : [];
-
-    push $json_data{genomes}, \%data;
+    $json_data{genomes}{$genomeid} = \%data;
 }
 
 #Print out info on script usage
