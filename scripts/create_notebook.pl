@@ -12,10 +12,12 @@ use JSON qw(decode_json);
 use URI::Escape::JavaScript qw(unescape);
 
 use CoGe::Accessory::Notebook qw( create_notebook );
+use CoGe::Accessory::Metadata qw( create_annotations );
 use CoGeX;
 
 our ($LOG, $DEBUG, $PAGE, $P, $db, $host, $port, $user, $pass, $config,
-     $name, $description, $version, $type, $userid, $restricted, @ITEMS);
+     $name, $description, $version, $type, $userid, $restricted, 
+     $annotations, @ITEMS);
 
 GetOptions(
     "userid|uid=s"      => \$userid, # User creating the notebook
@@ -30,6 +32,7 @@ GetOptions(
     "type|t=s"          => \$type,
     "description|d=s"   => \$description,
     "restricted|r=s"    => \$restricted,
+    "annotations=s"     => \$annotations, # optional: semicolon-separated list of locked annotations (link:group:type:text;...)
 );
 
 $| = 1;
@@ -85,7 +88,8 @@ sub main {
     die "ERROR: user could not be found for id: $userid" unless $user;
 
     my @ids = parse_files(@ITEMS);
-
+    
+    # Create notebook
     my $notebook = create_notebook(
         db         => $coge,
         user       => $user,
@@ -96,6 +100,11 @@ sub main {
         restricted => $restricted);
 
     exit(-1) unless $notebook;
+
+    # Create annotations
+    if ($annotations) {
+        CoGe::Accessory::Metadata::create_annotations(db => $coge, target => $notebook, annotations => $annotations, locked => 1);
+    }
 
     open(my $fh, ">>", $LOG);
     say $fh "notebook id: " . $notebook->id;
