@@ -1251,4 +1251,6 @@ header {
     box-shadow: 1px 1px gray;
     -moz-box-shadow: 1px 1px gray;
     -webkit-box-shadow: 1px 1px gray;
+
+    font-size: 80%;
 }
