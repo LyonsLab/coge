@@ -24,6 +24,14 @@
         <label for="allpoints">Show non-syntenic matches</label>
         <input type="checkbox" id="boxes">
         <label for="boxes">Show syntenic regions</label>
+        <button id="reset">Reset Zoom</button>
+
+        <label for="sortType">Sort Chromosomes by:</label>
+        <select id="sortType">
+            <option value="length">Length</option>
+            <option value="name">Name</option>
+        </select>
+        <button id="sort">Sort</button>
     </div>
     <div id="dotplot">
     </div>
@@ -173,20 +181,60 @@
 </ul>
 <script src="js/jdot/src/dotplot2.js"></script>
 <script>
-    var plots;
-
     $(document).ready(function(){
+        var plots,
+            raw,
+            sortField = "length",
+            sortButton = $("#sort"),
+            sortType = $("#sortType"),
+            allpoints = $("#allpoints"),
+            boxes = $("#boxes"),
+            sortHandler;
+
         $("#data").tabs({selected:0});
         $("#toolbar").buttonset();
 
-        plots = synmap("dotplot", "nucleotides", sortBy("length"));
+        sortHandler = function() {
+            var sortfunc;
 
-        $("#allpoints").on("click", function(e) {
+            $("#dotplot").html("");
+            sortField= sortType.val();
+            sortButton.attr("disabled", "disabled");
+
+            if (sortField === "length") {
+                sortfunc = sortBy(sortField);
+            } else {
+                sortfunc = inverse(sortBy(sortField, compareAlphaNumeric));
+            }
+
+            plots = synmap("dotplot", "nucleotides", sortfunc);
+
+            plots.loadPlots(raw);
+            plots.toggleLayer("syntenic_pairs", true);
+            plots.toggleLayer("pairs", allpoints.is(":checked"));
+            plots.toggleLayer("syntenic_blocks", boxes.is(":checked"));
+        };
+
+        sortType.on("change", function(e) {
+            if ($(this).val() === sortField) {
+                sortButton.attr("disabled", "disabled");
+                sortButton.unbind();
+            } else {
+                sortButton.removeAttr("disabled");
+                sortButton.on("click", sortHandler);
+            }
+        });
+
+        allpoints.on("click", function(e) {
             plots.toggleLayer("pairs", $(this).is(":checked"));
         });
 
-        $("#boxes").on("click", function(e) {
+        boxes.on("click", function(e) {
             plots.toggleLayer("syntenic_blocks", $(this).is(":checked"));
+        });
+
+        $("#reset").on("click", function(e) {
+            plots.reset();
         });
 
         var response = $.ajax({
@@ -195,8 +243,8 @@
         });
 
         response.then(function(json) {
-            plots.loadPlots(json);
-            plots.toggleLayer("syntenic_pairs", true);
+            raw = json;
+            sortHandler();
         });
     });
 </script>
