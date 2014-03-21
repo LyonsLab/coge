@@ -769,3 +769,298 @@ function post_to_grimm(seq1, seq2) {
     query_form.submit("action");
 }
 
+function add(a, b) {
+    return a + b;
+};
+
+function sum(iterable) {
+    return iterable.reduce(add);
+}
+
+function pick(attribute) {
+    return function(object, index, list) {
+        return object[attribute];
+    };
+};
+
+function zip(coll1, coll2) {
+    var length = Math.min(coll1.length, coll2.length),
+        index,
+        zipped = [];
+
+    for(index = 0; index < length; index++) {
+        zipped.push([coll1[index], coll2[index]]);
+    }
+
+    return zipped;
+}
+
+function scan(func, initial, iterable) {
+    var values = [initial],
+        index;
+
+    for(index = 0; index < iterable.length; index++) {
+        values.push(func(values[index], iterable[index]));
+    }
+
+    return values;
+}
+
+function toObject(pairs) {
+    return pairs.reduce(function(object, value, index) {
+        object[value[0]] = value[1];
+        return object
+    }, {});
+}
+
+function sortBy(attribute) {
+    return function (a, b) {
+        return a[attribute] - b[attribute];
+    }
+}
+
+function inverse(func) {
+    return function(a, b) {
+        return func(b, a);
+    }
+}
+
+function getValues(object, keys) {
+    var index,
+        coll = [];
+
+    for(index = 0; index < keys.length; index++) {
+        coll.push(object[keys[index]]);
+    }
+
+    return coll;
+}
+
+var synmap = function(element, metric, sort) {
+    var genomes,
+        pairs = [],
+        plots = [];
+
+    my = {};
+
+    my.loadPlots = function(json) {
+        var keys,
+            layer,
+            source,
+            reference;
+
+        genomes = json.genomes;
+        for(layer in json.layers) {
+            for (reference in json.layers[layer].data.lines) {
+                for (source in json.layers[layer].data.lines[reference]) {
+                    pairs.push([reference, source]);
+                }
+            }
+        }
+
+        // generate plots
+        keys = pairs.pop();
+        data = generatePlot(keys[0], keys[1], json.layers, metric, sort);
+
+        var plot = new DotPlot(element, {
+            size: { width: 1000, height: 800 },
+            extent: { width: data.xtotal, height: data.ytotal },
+            chromosomes: [ data.xlabels, data.ylabels ],
+            fetchDataHandler: function() {
+                var active = [];
+
+                for (var layerId in data.layers) {
+                    if (data.layers[layerId].enabled) {
+                        active.push(data.layers[layerId]);
+                    }
+                }
+
+                return active;
+            },
+            style: {
+                position: "relative",
+                minHeight: "800px"
+            }
+        });
+        plot.redraw();
+
+        plots.push({
+            "data": data,
+            "plot": plot
+        });
+    }
+
+    my.toggleLayer = function(layerId, enabled) {
+        var index;
+
+        for(index = 0; index < plots.length; index++) {
+            if (!plots[index].data.layers[layerId]) continue;
+
+            plots[index].data.layers[layerId].enabled = enabled;
+            plots[index].plot.redraw();
+        }
+    }
+
+    function generatePlot(genome1, genome2, layers, metric, by) {
+        var xlabels,
+            ylabels,
+            xtotal,
+            ytotal,
+            layers;
+
+        // Construct labels with property axis and offsets
+        xlabels = generateLabels(genomes[genome1].chromosomes, metric, inverse(by));
+        ylabels = generateLabels(genomes[genome2].chromosomes, metric, by);
+
+        // Generate the layers
+        layers = createAllLayers(layers, genome1, genome2, xlabels, ylabels);
+
+        return {
+            "xlabels": xlabels,
+            "ylabels": ylabels,
+            "xtotal": sum(xlabels.map(pick("length"))),
+            "ytotal": sum(ylabels.map(pick("length"))),
+            "layers": layers
+        };
+    }
+
+    function generateLabels(chromosomes, metric, by) {
+        return orderBy(getLengths(chromosomes, metric), by);
+    }
+
+    function getLengths(chromosomes, prop) {
+        return chromosomes.map(function(x) {
+            return { name : x.name, length: x[prop] };
+        });
+    }
+
+    function orderBy(chromosomes, by) {
+        return chromosomes.sort(by);
+    };
+
+    function offsets(chromosomes) {
+        return scan(add, 0, chromosomes.map(pick("length")));
+    };
+
+    function generateIndexBy(collection, by) {
+        var index = {};
+
+        for(i = 0; i < collection.length; i++) {
+            index[by(collection[i])] = i;
+        };
+
+        return index;
+    };
+
+    function createAllLayers(layers, genome1, genome2, xlabels, ylabels) {
+        var xindex = generateIndexBy(xlabels, pick("name")),
+            yindex = generateIndexBy(ylabels, pick("name")),
+            xoffsets = offsets(xlabels),
+            // For Canvas coordinates the chromosome should be offset
+            // starting from the end of its length
+            yoffsets = offsets(ylabels).slice(1),
+            output = {},
+            create,
+            layerId,
+            rawLayers,
+            transformedLayers;
+
+        create = createLayer.bind(null, genome1, genome2, xoffsets, yoffsets,
+                    xindex, yindex);
+
+        layerIds = Object.keys(layers);
+        rawLayers = getValues(layers, layerIds);
+        transformedLayers = rawLayers.map(create);
+
+        return toObject(zip(layerIds, transformedLayers));
+    }
+
+    function createLayer(genome1, genome2, xoffset, yoffset, xindex, yindex, layer) {
+        var style = layer.style || {},
+            enabled = layer.enabled || false,
+            points,
+            rects,
+            lines,
+            raw;
+
+        if (layer.data.points) {
+            raw = layer.data.points[genome1][genome2];
+            points = transformBy(raw, xoffset, yoffset, xindex, yindex, transformPoint);
+        }
+
+        if (layer.data.lines) {
+            raw = layer.data.lines[genome1][genome2]
+            lines = transformBy(raw, xoffset, yoffset, xindex, yindex, transformLine);
+        }
+
+        if (layer.data.rects) {
+            raw = layer.data.rects[genome1][genome2];
+            rects = transformBy(raw, xoffset, yoffset, xindex, yindex, transformRect);
+        }
+
+        return {
+            "enabled": enabled,
+            "style": style,
+            "points": points,
+            "lines": lines,
+            "rects": rects
+        };
+    }
+
+    function transformBy(gridLayer, rowOffset, colOffset, rowIndex, colIndex, transform) {
+        var row,
+            col,
+            r,
+            c,
+            data,
+            transformed,
+            collection = [];
+
+        for(row in gridLayer) {
+            for (col in gridLayer[row]) {
+                r = rowOffset[rowIndex[row]];
+                c = colOffset[colIndex[col]];
+                data = gridLayer[row][col];
+
+                if (data !== undefined)  {
+                    transformed = data.map(transform.bind(undefined, r, c));
+                    collection = [].concat.call(collection, transformed);
+                }
+            }
+        }
+
+        return collection;
+    }
+
+    function toCanvasRow(offset, position) {
+        return offset - position;
+    }
+
+    function transformPoint(rowoffset, colOffset, point) {
+        return {
+            x: point[0] + rowOffset,
+            y: toCanvasRow(colOffset, point[1]),
+        };
+    }
+
+    function transformLine(rowOffset, colOffset, line) {
+        return {
+            x1: line[0] + rowOffset,
+            x2: line[1] + rowOffset,
+            y1: toCanvasRow(colOffset, line[2]),
+            y2: toCanvasRow(colOffset, line[3])
+        };
+    }
+
+    function transformRect(rowOffset, colOffset, rect) {
+        var width = Math.abs(rect[0] - rect[1]),
+            height = Math.abs(rect[2] - rect[3]),
+            x = Math.min(rect[0], rect[1]);
+            y = Math.max(rect[2], rect[3]);
+
+        return [x + rowOffset, colOffset - y, width, height];
+    }
+
+    return my;
+}
+

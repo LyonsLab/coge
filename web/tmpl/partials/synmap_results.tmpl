@@ -20,7 +20,12 @@
 
 <div id="results-2">
     <div class="toolbar">
-        <button id="reset" class="ui-button ui-corner-all">Reset size</button>
+        <input type="checkbox" id="allpoints">
+        <label for="allpoints">Show non-syntenic matches</label>
+        <input type="checkbox" id="boxes">
+        <label for="boxes">Show syntenic regions</label>
+    </div>
+    <div id="dotplot">
     </div>
 </div>
 <div id="results-1" class="hidden">
@@ -166,21 +171,33 @@
         </span>
     </li>
 </ul>
-
+<script src="js/jdot/src/dotplot2.js"></script>
 <script>
+    var plots;
+
     $(document).ready(function(){
-        $(function() {$("#data").tabs({selected:0});});
+        $("#data").tabs({selected:0});
+        $("#toolbar").buttonset();
+
+        plots = synmap("dotplot", "nucleotides", sortBy("length"));
+
+        $("#allpoints").on("click", function(e) {
+            plots.toggleLayer("pairs", $(this).is(":checked"));
+        });
+
+        $("#boxes").on("click", function(e) {
+            plots.toggleLayer("syntenic_blocks", $(this).is(":checked"));
+        });
 
         var response = $.ajax({
             url: "<tmpl_var name=json>",
             dataType: "json"
         });
 
-        response.then(load);
+        response.then(function(json) {
+            plots.loadPlots(json);
+            plots.toggleLayer("syntenic_pairs", true);
+        });
     });
-
-    function load(json) {
-        window.raw = json;
-    }
 </script>
 </tmpl_if>
