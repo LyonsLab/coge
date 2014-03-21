@@ -21,11 +21,11 @@
 <div id="results-2">
     <div class="toolbar">
         <input type="checkbox" id="allpoints">
-        <label for="allpoints">Show non-syntenic matches</label>
+        <label for="allpoints" class="seperator">Show non-syntenic matches</label>
         <input type="checkbox" id="boxes">
-        <label for="boxes">Show syntenic regions</label>
-        <button id="reset">Reset Zoom</button>
-
+        <label for="boxes" class="seperator">Show syntenic regions</label>
+        <button id="reset">Reset zoom level</button>
+        <span class="seperator"></span>
         <label for="sortType">Sort Chromosomes by:</label>
         <select id="sortType">
             <option value="length">Length</option>
@@ -33,7 +33,7 @@
         </select>
         <button id="sort">Sort</button>
     </div>
-    <div id="dotplot">
+    <div id="dotplot" style="margin-top: 10px;">
     </div>
 </div>
 <div id="results-1" class="hidden">
