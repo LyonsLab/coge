@@ -904,13 +904,13 @@ var synmap = function(element, metric, sort) {
         var plot = new DotPlot(element, {
             size: { width: 1000, height: 800 },
             genomes: [{
-                name: data.xlabel,
+                name: data.xtitle,
                 length: data.xtotal,
                 chromosomes: data.xlabels,
                 fetchDataHandler: handler
             },
             {
-                name: data.ylabel,
+                name: data.ytitle,
                 length: data.ytotal,
                 chromosomes: data.ylabels,
                 fetchDataHandler: handler
