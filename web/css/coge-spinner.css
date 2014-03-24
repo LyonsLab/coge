@@ -10,6 +10,17 @@
     display: none;
 }
 
+#inline-spinner {
+    margin: 0 auto;
+    width:250px;
+    height:250px;
+    -moz-transform:scale(0.6);
+    -webkit-transform:scale(0.6);
+    -ms-transform:scale(0.6);
+    -o-transform:scale(0.6);
+    transform:scale(0.6);
+}
+
 #floatingCirclesG{
     position: fixed;
     top: 50%;
