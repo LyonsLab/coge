@@ -42,6 +42,24 @@ Use the mouse scroll wheel to zoom in/out, the left button to pan (when zoomed i
         <button id="sort">Sort</button>
     </div>
     <div id="dotplot" style="margin-top: 10px;">
+    <div id="inline-spinner">
+        <div class="f_circleG" id="frotateG_01">
+        </div>
+        <div class="f_circleG" id="frotateG_02">
+        </div>
+        <div class="f_circleG" id="frotateG_03">
+        </div>
+        <div class="f_circleG" id="frotateG_04">
+        </div>
+        <div class="f_circleG" id="frotateG_05">
+        </div>
+        <div class="f_circleG" id="frotateG_06">
+        </div>
+        <div class="f_circleG" id="frotateG_07">
+        </div>
+        <div class="f_circleG" id="frotateG_08">
+        </div>
+    </div>
     </div>
 </div>
 <div id="results-1" class="hidden">
@@ -192,6 +210,7 @@ Use the mouse scroll wheel to zoom in/out, the left button to pan (when zoomed i
     $(document).ready(function(){
         var plots,
             raw,
+            dotplot = $("#dotplot"),
             sortField = "length",
             sortButton = $("#sort"),
             sortType = $("#sortType"),
@@ -211,7 +230,7 @@ Use the mouse scroll wheel to zoom in/out, the left button to pan (when zoomed i
         sortHandler = function() {
             var sortfunc;
 
-            $("#dotplot").html("");
+            dotplot.html("");
             sortField= sortType.val();
             sortButton.attr("disabled", "disabled");
 
