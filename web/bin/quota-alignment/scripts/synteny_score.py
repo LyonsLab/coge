@@ -169,28 +169,32 @@ def batch_query(qbed, sbed, all_data, options, c=None, transpose=False):
 def main(blast_file, options):
     qbed_file, sbed_file = options.qbed, options.sbed
     sqlite = options.sqlite
-    
+
     print >>sys.stderr, "read annotation files %s and %s" % (qbed_file, sbed_file)
-    qbed = Bed(qbed_file)
-    sbed = Bed(sbed_file)
 
-    qorder = qbed.get_order()
-    sorder = sbed.get_order()
+    try:
+        qbed = Bed(qbed_file)
+        sbed = Bed(sbed_file)
+        qorder = qbed.get_order()
+        sorder = sbed.get_order()
 
-    fp = file(blast_file)
-    print >>sys.stderr, "read BLAST file %s (total %d lines)" % \
-            (blast_file, sum(1 for line in fp))
-    fp.seek(0)
-    blasts = sorted([BlastLine(line) for line in fp], \
-            key=lambda b: b.score, reverse=True)
+        fp = file(blast_file)
+        print >>sys.stderr, "read BLAST file %s (total %d lines)" % \
+                (blast_file, sum(1 for line in fp))
+        fp.seek(0)
+        blasts = sorted([BlastLine(line) for line in fp], \
+                key=lambda b: b.score, reverse=True)
 
-    all_data = []
-    for b in blasts:
-        query, subject = b.query, b.subject
-        if query not in qorder or subject not in sorder: continue
-        qi, q = qorder[query]
-        si, s = sorder[subject]
-        all_data.append((qi, si))
+        all_data = []
+        for b in blasts:
+            query, subject = b.query, b.subject
+            if query not in qorder or subject not in sorder: continue
+            qi, q = qorder[query]
+            si, s = sorder[subject]
+            all_data.append((qi, si))
+
+    except IndexError:
+        print >>sys.stderr, "No results were found in the query or source bed file"
 
     c = None
     if options.sqlite:
