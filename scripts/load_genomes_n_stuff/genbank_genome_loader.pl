@@ -689,7 +689,7 @@ if ($GO) {
 			foreach my $chr ( $ds->chromosomes ) {
 				$fasta_output .= fasta_genomic_sequence(
 					genome => $genome,
-					seq    => $ds->genomic_sequence( chr => $chr ),
+					seq    => $ds->get_genomic_sequence( chr => $chr ),
 					chr    => $chr
 				);
 			}
@@ -796,7 +796,7 @@ sub fasta_genomic_sequence {
 	$seq =~ s/\n//g;
 
 	my $seqlen = length $seq;
-	if ( my ($item) = $genome->genomic_sequences( { chromosome => $chr } ) ) {
+	if ( my ($item) = $genome->get_genomic_sequence( { chromosome => $chr } ) ) {
 		my $prev_length = $item->sequence_length;
 		print $log "$chr has previously been added to this genome.  Previous length: $prev_length.  Currently length: $seqlen.  Skipping.\n";
 		return;
