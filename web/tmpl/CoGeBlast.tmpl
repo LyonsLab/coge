@@ -707,10 +707,15 @@ function init_table () {
 			widgets: ['zebra'],
 			textExtraction: 'complex',
 			headers: {0: {sorter: false},
+                      4: {sorter: 'digit'},
+                      5: {sorter: 'digit'},
+                      6: {sorter: 'digit'},
 			          7: {sorter: 'percent'},
+                      8: {sorter: 'digit'},
 			          9: {sorter: 'percent'},
+                      10: {sorter: 'digit'},
 			          11: {sorter: 'percent'}
-			},
+			}
 			//sortList: [[2,0],[5,0]], // mdb removed 3/8/13 - misleading if column 2 or 5 is hidden
 		});
 	});
