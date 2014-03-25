@@ -19,33 +19,39 @@ use vars qw($P $USER $FORM $coge $LINK);
 $FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init( cgi => $FORM );
 
-#logout is only called through this program!  All logouts from other pages are redirected to this page
-CoGe::Accessory::Web->logout_cas(
-    cookie_name => $P->{COOKIE_NAME},
-    coge        => $coge,
-    user        => $USER,
-    form        => $FORM,
-    url			=> $P->{SERVER} . '/index.pl' # mdb added 12/10/13 -- was redirecting to wrong url
-) if $FORM->param('logout');
+# Logout is only called through this program!  All logouts from other pages are redirected to this page.
+# mdb changed 2/24/14, issue 329 - added confirmation for CoGe-only or iPlant-all logout
+if ($FORM->param('logout_coge')) {
+    CoGe::Accessory::Web->logout_coge(
+        cookie_name => $P->{COOKIE_NAME},
+        coge        => $coge,
+        user        => $USER,
+        form        => $FORM,
+        url         => $P->{SERVER} . '/index.pl'
+    );
+}
+elsif ($FORM->param('logout_all')) {
+    CoGe::Accessory::Web->logout_cas(
+        cookie_name => $P->{COOKIE_NAME},
+        coge        => $coge,
+        user        => $USER,
+        form        => $FORM,
+        url			=> $P->{SERVER} . '/index.pl' # mdb added 12/10/13 -- was redirecting to wrong url
+    );
+}
 
 my %FUNCTION = ( get_latest_genomes => \&get_latest_genomes );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 
 sub generate_html {
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param(
-        TITLE =>
-'Accelerating <span style="color: #119911">Co</span>mparative <span style="color: #119911">Ge</span>nomics',
+        TITLE => 'Accelerating <span style="color: #119911">Co</span>mparative <span style="color: #119911">Ge</span>nomics',
         PAGE_TITLE => 'Comparative Genomics',
         PAGE_LINK  => $LINK,
         HELP       => '/wiki/index.php',
-        USER       => $name,
+        USER       => $USER->display_name || undef,
         ADJUST_BOX => 1,
         LOGO_PNG   => "CoGe-logo.png",
         BODY       => generate_body(),
@@ -58,7 +64,6 @@ sub generate_html {
 
 sub generate_body {
     my $tmpl = HTML::Template->new( filename => $P->{TMPLDIR} . 'index.tmpl' );
-    my $html;
 
     #    elsif ($USER && !$FORM->param('logout') && !$FORM->param('login'))
     #      {
@@ -109,8 +114,7 @@ sub generate_body {
     #        $url =~ s/:::/;/g if $url;
     #        $tmpl->param(URL=>$url);
     #     }
-    $html .= $tmpl->output;
-    return $html;
+    return $tmpl->output;
 }
 
 sub actions {
