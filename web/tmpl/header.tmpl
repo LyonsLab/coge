@@ -101,13 +101,12 @@ We have finished our maintenance of CoGe, including migration to a new server.  
 </div>
 -->
 <header>
-<div id="signin_popup" class="image_window" style="display:none"></div>
 
 <TMPL_UNLESS NAME="MENU">
 <div id="menubar" style="float:right;visibility:hidden;">
 	<span style="float:left;color:gray; margin-right:50px;">
 		<TMPL_IF NAME="LOGON">
-			<span class="small">You are logged-in as <b><TMPL_VAR NAME="USER"></b> - <a href="index.pl?logout=1" class="small"><b>Sign-out</b></a></span>
+			<span class="small">You are logged-in as <b><TMPL_VAR NAME="USER"></b> - <a href='' onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');" class="small"><b>Sign-out</b></a></span>
 		<TMPL_ELSE>
 			<span class="small">Welcome! You are not logged-in ... <a href="javascript:void(0)" onClick="login_cas();return true;" class="small"><b>Sign-in</b></a> <a href="http://genomevolution.org/wiki/index.php/How_to_get_a_CoGe_account" target=_login_info><br>New here? Get a CoGe account.</a></span>
      </TMPL_IF>
@@ -145,6 +144,15 @@ We have finished our maintenance of CoGe, including migration to a new server.  
 </div>
 <div id="dev" class='small alert'></div>
 </TMPL_UNLESS>
+
+<div id="logout_dialog" class="hidden dialog_box" title="Log out of CoGe">
+	<div style="text-align:center;padding:30px;">
+		<div class="info">Would you like to log out of all iPlant applications?</div>
+		<br><br>
+		<span onClick="location.href='index.pl?logout_coge=1';" style="font-size:0.75em;margin:15px;padding:5px;" class='ui-button ui-corner-all'>Log out of CoGe only</span>
+		<span onClick="location.href='index.pl?logout_all=1';" style="font-size:0.75em;margin:15px;padding:5px;" class='ui-button ui-corner-all'>Log out of all iPlant services</span>
+	</div>
+</div>
 
 <div>
 	<TMPL_IF NAME="LOGO_PNG">

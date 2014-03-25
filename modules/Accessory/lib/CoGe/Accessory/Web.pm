@@ -315,17 +315,33 @@ sub self_or_default {    #from CGI.pm
     return wantarray ? @_ : $Q;
 }
 
-sub logout_cas {
+sub logout_coge { # mdb added 3/24/14, issue 329
     my $self        = shift;
     my %opts        = @_;
-    #my $cookie_name = $opts{cookie_name}; # mdb removed 12/10/13 -- unused?
     my $coge        = $opts{coge};
     my $user        = $opts{user};
     my $form        = $opts{form}; # CGI form for calling page
     my $url         = $opts{this_url};
     $url = $form->url() unless $url;
-    #my $cas_url = 'http://coge.iplantcollaborative.org/coge/'; # mdb removed 12/10/13 -- unused?
-    #my %cookies = fetch CGI::Cookie; # mdb removed 12/10/13 -- unused?
+    print STDERR "Web::logout_coge url=", ($url ? $url : ''), "\n"; 
+    
+    # Delete user session from db
+    my $session = md5_base64( $user->user_name . $ENV{REMOTE_ADDR} );
+    $session =~ s/\+/1/g;
+    ($session) = $coge->resultset('UserSession')->find( { session => $session } );
+    $session->delete if $session;
+    
+    print "Location: ", $form->redirect($url);
+}
+
+sub logout_cas {
+    my $self        = shift;
+    my %opts        = @_;
+    my $coge        = $opts{coge};
+    my $user        = $opts{user};
+    my $form        = $opts{form}; # CGI form for calling page
+    my $url         = $opts{this_url};
+    $url = $form->url() unless $url;
     print STDERR "Web::logout_cas url=", ($url ? $url : ''), "\n"; 
     
     # Delete user session from db
@@ -334,8 +350,7 @@ sub logout_cas {
     ($session) = $coge->resultset('UserSession')->find( { session => $session } );
     $session->delete if $session;
     
-    print "Location: " .
-    	$form->redirect("https://auth.iplantcollaborative.org/cas/logout?service=" . $url . "&gateway=1");
+    print "Location: ", $form->redirect("https://auth.iplantcollaborative.org/cas/logout?service=" . $url . "&gateway=1");
 }
 
 sub login_cas_proxy {
