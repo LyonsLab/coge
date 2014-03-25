@@ -13,11 +13,12 @@ use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use DBIxProfiler;
-$| =1;
+
+$| = 1;
 our (
-    $cogeweb, $basename, $gid,     $feature, $fasta,
-    $coge,    $P,        $TEMPDIR, $NWALIGN, $DBNAME,
-    $DBHOST,  $DBPORT,   $DBUSER,  $DBPASS,  $CONFIG, $debug
+    $cogeweb, $basename, $gid,     $feature, $fasta,  $coge,
+    $P,       $TEMPDIR,  $NWALIGN, $DBNAME,  $DBHOST, $DBPORT,
+    $DBUSER,  $DBPASS,   $CONFIG,  $debug
 );
 
 GetOptions(
@@ -29,11 +30,10 @@ GetOptions(
 );
 
 $P = CoGe::Accessory::Web::get_defaults($CONFIG);
-$ENV{PATH} = join ":",
-  (
-    $P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR} . "SynMap",
-    "/usr/bin", "/usr/local/bin"
-  );
+$ENV{PATH} = join(":",
+  ( $P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR} . "SynMap",
+    "/usr/bin", "/usr/local/bin" )
+);
 $TEMPDIR = $P->{TEMPDIR} . "SynMap";
 $NWALIGN = $P->{NWALIGN};
 
@@ -43,9 +43,9 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 
-my $connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
+my $connstr = "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
 $coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
+
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
@@ -62,41 +62,37 @@ sub gen_fasta {
     my $gid          = $opts{gid};
     my $feature_type = $opts{feature_type};
     my $file         = $opts{fasta};
-    my ($genome) =
+    my ($genome)     =
       $coge->resultset('Genome')->search( { "me.genome_id" => $gid },
         { join => 'genomic_sequences', prefetch => 'genomic_sequences' } );
 
     my $output;
 
-    my %datasets; #storage for dataset objects based on dataset id 
-    my %feat_types; #storage for feature type objects
+    my %datasets;      #storage for dataset objects based on dataset id
+    my %feat_types;    #storage for feature type objects
 
     if ( $feature_type eq "CDS" || $feature_type eq "protein" ) {
         my $count = 1;
-	my $t1 = new Benchmark if $debug;
-	my %chr_sequence;# = map{$_=>$genome->get_genomic_sequence(chr=>$_)} $genome->get_chromosomes;
-	my $t2 = new Benchmark if $debug;
-	my $d0 = timestr( timediff( $t2, $t1 ) ) if $debug;
-	say STDERR "Populate genomic sequence time: $d0" if $debug;
-        my @res   = $coge->resultset('Feature')->search(
+        my $t1 = new Benchmark if $debug;
+        my %chr_sequence; # = map{$_=>$genome->get_genomic_sequence(chr=>$_)} $genome->get_chromosomes;
+        my $t2 = new Benchmark if $debug;
+        my $d0 = timestr( timediff( $t2, $t1 ) ) if $debug;
+        say STDERR "Populate genomic sequence time: $d0" if $debug;
+        my @res = $coge->resultset('Feature')->search(
             {
                 feature_type_id => [ 3, 5, 8 ],
                 genome_id       => $gid
             },
             {
                 join => [ { dataset => 'dataset_connectors' } ],
-                prefetch => ['feature_names', 'locations']
+                prefetch => [ 'feature_names', 'locations' ]
             }
         );
-	my $t3 = new Benchmark if $debug;
-	my $d1 = timestr( timediff( $t3, $t2 ) ) if $debug;
-	say STDERR "Query time: $d1" if $debug;
+        my $t3 = new Benchmark if $debug;
+        my $d1 = timestr( timediff( $t3, $t2 ) ) if $debug;
+        say STDERR "Query time: $d1"             if $debug;
 
-        my @feats =
-          sort { $a->chromosome cmp $b->chromosome || $a->start <=> $b->start }
-          @res;
-	
-
+        my @feats = sort { $a->chromosome cmp $b->chromosome || $a->start <=> $b->start } @res;
 
         CoGe::Accessory::Web::write_log(
             "Getting sequence for "
@@ -105,75 +101,89 @@ sub gen_fasta {
             $cogeweb->logfile
         );
         foreach my $feat (@feats) {
-	  my $t3 = new Benchmark if $debug;
-            my ($chr) = $feat->chromosome;    #=~/(\d+)/;
+            my $t3 = new Benchmark if $debug;
+            
+            # mdb added 3/25/14, issue 338 - handle start/stop reversed
+            my $start = $feat->start;
+            my $stop = $feat->stop;
+            ($start, $stop) = ($stop, $start) if ($start > $stop);
+            
+            my ($chr) = $feat->chromosome;#=~/(\d+)/;
             my $name;
             foreach my $n ( $feat->names ) {
                 $name = $n;
                 last unless $name =~ /\s/;
             }
             unless ($name) {
-
-  #    print STDERR "Error:  missing valid name for feature_id ".$feat->id."\n";
+                #print STDERR "Error:  missing valid name for feature_id ".$feat->id."\n";
                 $name = $feat->id;
             }
 
             $name =~ s/\s+/_/g;
-	    my $feat_type_name;
-	    if ($feat_types{$feat->feature_type_id})
-	      {
-		$feat_type_name = $feat_types{$feat->feature_type_id}->name;
-	      }
-	    else
-	      {
-		my $feat_type = $feat->type;
-		$feat_types{$feat_type->id}=$feat_type;
-		$feat_type_name = $feat_type->name;
-	      }
+            my $feat_type_name;
+            if ( $feat_types{ $feat->feature_type_id } ) {
+                $feat_type_name = $feat_types{ $feat->feature_type_id }->name;
+            }
+            else {
+                my $feat_type = $feat->type;
+                $feat_types{ $feat_type->id } = $feat_type;
+                $feat_type_name = $feat_type->name;
+            }
             my $title = join( "||",
-                $chr, $feat->start, $feat->stop, $name, $feat->strand,
+                $chr, $start, $stop, $name, $feat->strand,
                 $feat_type_name, $feat->id, $count );
-#	    print STDERR "getting sequence\n";
-            if ( $feature_type eq "CDS" ) {
-	        my $dataset;
-		if ($datasets{$feat->dataset_id})
-		  {
-		    $dataset = $datasets{$feat->dataset_id};
-		  }
-		else
-		  {
-		    $dataset = $feat->dataset;
-		    $datasets{$dataset->id} = $dataset;
-		  }
-		$chr_sequence{$feat->chromosome} = $genome->get_genomic_sequence(chr=>$feat->chromosome) unless $chr_sequence{$feat->chromosome};
-		unless ($chr_sequence{$feat->chromosome})
-		  {
-		    $chr_sequence{$feat->chromosome} = $genome->get_genomic_sequence(chr=>uc($feat->chromosome))
-		  }
-		next unless $chr_sequence{$feat->chromosome};
-		my $subseq = substr($chr_sequence{$feat->chromosome}, $feat->start-1, $feat->stop-$feat->start+1);
-		unless ($subseq) {
-#		  print STDERR join ("\t", $feat->chromosome, $feat->start, $feat->stop),"\n";
-		}
-#		print STDERR $subseq,"\n",$genome->get_genomic_sequence(start=>$feat->start, stop=>$feat->stop, chr=>$feat->chromosome),"\n","#"x20,"\n";
 
-                my $seq = $feat->genomic_sequence(dsgid => $genome, dataset => $dataset, seq=>$subseq);
-		my $t4 = new Benchmark if $debug;
-		my $d2 = timestr( timediff( $t4, $t3 ) ) if $debug;
-		say STDERR "Seq $count time: $d2" if $debug;
+            #print STDERR "getting sequence\n";
+            if ( $feature_type eq "CDS" ) {
+                my $dataset;
+                if ( $datasets{ $feat->dataset_id } ) {
+                    $dataset = $datasets{ $feat->dataset_id };
+                }
+                else {
+                    $dataset = $feat->dataset;
+                    $datasets{ $dataset->id } = $dataset;
+                }
+                $chr_sequence{ $feat->chromosome } =
+                  $genome->get_genomic_sequence( chr => $feat->chromosome )
+                  unless $chr_sequence{ $feat->chromosome };
+                unless ( $chr_sequence{ $feat->chromosome } ) {
+                    $chr_sequence{ $feat->chromosome } =
+                      $genome->get_genomic_sequence(
+                        chr => uc( $feat->chromosome ) );
+                }
+                next unless $chr_sequence{ $feat->chromosome };
+                my $subseq = substr(
+                    $chr_sequence{ $feat->chromosome },
+                    $start - 1,
+                    $stop - $start + 1
+                );
+                #unless ($subseq) {
+                #print STDERR join ("\t", $feat->chromosome, $feat->start, $feat->stop),"\n";
+                #}
+                #print STDERR $subseq,"\n",$genome->get_genomic_sequence(start=>$feat->start, stop=>$feat->stop, chr=>$feat->chromosome),"\n","#"x20,"\n";
+
+                my $seq = $feat->genomic_sequence(
+                    dsgid   => $genome,
+                    dataset => $dataset,
+                    seq     => $subseq
+                );
+                my $t4 = new Benchmark if $debug;
+                my $d2 = timestr( timediff( $t4, $t3 ) ) if $debug;
+                say STDERR "Seq $count time: $d2" if $debug;
 
                 next unless $seq;
 
                 #skip sequences that are only 'x' | 'n';
                 next unless $seq =~ /[^x|n]/i;
+
                 #print OUT ">" . $title . "\n";
-		if ($seq)
-		  {
-		    $output .= ">" . $title . "\n";
-		    #print OUT $seq, "\n";
-		    $output .= $seq. "\n";
-		    $count++;
-		  }
+                if ($seq) {
+                    $output .= ">" . $title . "\n";
+
+                    #print OUT $seq, "\n";
+                    $output .= $seq . "\n";
+                    $count++;
+                }
             }
             elsif ( $feature_type eq "protein" ) {
                 next unless $feat->feature_type_id == 3;
@@ -185,7 +195,7 @@ sub gen_fasta {
                 $title = ">" . $title . "\n";
 
                 #print OUT $title, $seqs[0], "\n";
-                $output .= $title. $seqs[0]. "\n";
+                $output .= $title . $seqs[0] . "\n";
                 $count++;
             }
         }
@@ -201,20 +211,20 @@ sub gen_fasta {
 
         $file = $genome->file_path;
 
-        #   foreach my $chr (@chr)
-        #     {
-        #       my $seq = $genome->get_genomic_sequence(chr=>$chr);
-        #       next unless $seq;
-        #       print OUT ">".$chr."\n";
-        #       print OUT $seq,"\n";
-        #     }
+        #foreach my $chr (@chr)
+        #{
+        #    my $seq = $genome->get_genomic_sequence(chr=>$chr);
+        #    next unless $seq;
+        #    print OUT ">".$chr."\n";
+        #    print OUT $seq,"\n";
+        #}
     }
+    
     open( OUT, ">$file" ) || die "Can't open $file for writing: $!";
     print OUT $output;
     close OUT;
     return 1 if -r $file;
-    CoGe::Accessory::Web::write_log( "Error with fasta file creation",
-        $cogeweb->logfile );
-
+    
+    CoGe::Accessory::Web::write_log( "Error with fasta file creation", $cogeweb->logfile );
     return 0;
 }
