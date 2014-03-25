@@ -760,7 +760,10 @@ function init_table_sorter() {
             sortClassDesc: 'headerSortDown',    // Class name for descending sorting action to header
             headerClass: 'header',              // Class name for headers (th's)
             widgets: ['zebra'],
-            //textExtraction: 'complex',
+            headers: {
+                5: { sorter: 'digit' }
+            },
+            textExtraction: 'complex',
         });
     });
 }
