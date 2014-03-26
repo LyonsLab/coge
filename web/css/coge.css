@@ -1047,7 +1047,7 @@ header {
 
 #wikifeed .date {
     display: block;
-    font-size: 0.35em;
+    font-size: 80%;
     font-weight: normal;
 }
 
@@ -1062,15 +1062,20 @@ header {
 #wikifeed ol {
     list-style-type: decimal;
 }
+
 #wikifeed ul {
     list-style-type: square;
 }
 
-#wikifeed > div div p,
-#wikifeed > div div pre,
-#wikifeed > div div ul,
-#wikifeed > div div ol {
-    font-size: 0.6em;
+#wikifeed ul li::-moz-list-bullet {
+    font-size: inherit;
+}
+
+#wikifeed > div div > p,
+#wikifeed > div div > pre,
+#wikifeed > div div > ul,
+#wikifeed > div div > ol {
+    font-size: 70%;
     word-wrap: break-word;
 }
 
