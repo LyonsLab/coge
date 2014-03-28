@@ -43,26 +43,26 @@
         </select>
         <button id="sort">Sort</button>
     </div>
-    <div id="dotplot-errors" class="alert"></div>
+    <div id="dotplot-errors" class="padded alert"></div>
     <div id="dotplot" style="margin-top: 10px;">
-    <div id="inline-spinner">
-        <div class="f_circleG" id="frotateG_01">
+        <div id="inline-spinner">
+            <div class="f_circleG" id="frotateG_01">
+            </div>
+            <div class="f_circleG" id="frotateG_02">
+            </div>
+            <div class="f_circleG" id="frotateG_03">
+            </div>
+            <div class="f_circleG" id="frotateG_04">
+            </div>
+            <div class="f_circleG" id="frotateG_05">
+            </div>
+            <div class="f_circleG" id="frotateG_06">
+            </div>
+            <div class="f_circleG" id="frotateG_07">
+            </div>
+            <div class="f_circleG" id="frotateG_08">
+            </div>
         </div>
-        <div class="f_circleG" id="frotateG_02">
-        </div>
-        <div class="f_circleG" id="frotateG_03">
-        </div>
-        <div class="f_circleG" id="frotateG_04">
-        </div>
-        <div class="f_circleG" id="frotateG_05">
-        </div>
-        <div class="f_circleG" id="frotateG_06">
-        </div>
-        <div class="f_circleG" id="frotateG_07">
-        </div>
-        <div class="f_circleG" id="frotateG_08">
-        </div>
-    </div>
     </div>
 </div>
 <div id="results-1" class="hidden">
@@ -210,101 +210,111 @@
 </ul>
 <script src="js/jdot/src/dotplot2.js"></script>
 <script>
+var BETA = "<tmpl_var name=beta>",
+    SYNTENIC_URL = "<tmpl_var name=json>",
+    ALLPOINTS_URL = "<tmpl_var name=allpairs>";
+
 $(document).ready(function(){
     var plots,
         raw,
+        sortHandler,
+        loaded = false,
+        layers = [],
         dotplot = $("#dotplot"),
         sortField = "length",
         sortButton = $("#sort"),
         sortType = $("#sortType"),
         allpoints = $("#allpoints"),
         boxes = $("#boxes"),
-        sortHandler,
-        loaded = false,
-        layers = [],
         MAXIMUM_SIZE = 268435456;
 
-    sortHandler = function() {
-        var sortfunc;
+    if (checkRequestSize(SYNTENIC_URL) > MAXIMUM_SIZE) {
+        message = "The analysis was too large to be displayed." +
+            " Support for larger analyses will be added in the future.";
 
-        dotplot.html("");
-        sortField= sortType.val();
-        sortButton.attr("disabled", "disabled");
+        $("#dotplot-errors").html(message);
+        dotplot.remove();
+        $("#data").tabs({ selected: 0 });
+        $(".toolbar").remove();
+    } else {
+        sortHandler = function() {
+            var sortfunc;
 
-        if (sortField === "length") {
-            sortfunc = sortBy(sortField);
-        } else {
-            sortfunc = inverse(sortBy(sortField, compareAlphaNumeric));
-        }
-
-        plots = synmap("dotplot", "nucleotides", sortfunc);
-        plots.loadPlots(raw);
-        plots.toggleLayer("syntenic_pairs", true);
-        plots.toggleLayer("pairs", allpoints.is(":checked"));
-        plots.toggleLayer("syntenic_blocks", boxes.is(":checked"));
-    };
-
-    $("#data").tabs({
-        select: function(event, ui) {
-            if (ui.index === 1 && !plots) {
-                sortHandler();
-            }
-        }
-    });
-
-    $("#toolbar").buttonset();
-
-    sortType.on("change", function(e) {
-        if ($(this).val() === sortField) {
+            dotplot.html("");
+            sortField= sortType.val();
             sortButton.attr("disabled", "disabled");
-            sortButton.unbind();
-        } else {
-            sortButton.removeAttr("disabled");
-            sortButton.on("click", sortHandler);
-        }
-    });
 
-    allpoints.unbind().on("change", function() {
-        plots.toggleLayer("pairs", $(this).is(":checked"));
-    });
+            if (sortField === "length") {
+                sortfunc = sortBy(sortField);
+            } else {
+                sortfunc = inverse(sortBy(sortField, compareAlphaNumeric));
+            }
 
-    boxes.on("click", function(e) {
-        plots.toggleLayer("syntenic_blocks", $(this).is(":checked"));
-    });
+            plots = synmap("dotplot", "nucleotides", sortfunc);
+            plots.loadPlots(raw);
+            plots.toggleLayer("syntenic_pairs", true);
+            plots.toggleLayer("pairs", allpoints.is(":checked"));
+            plots.toggleLayer("syntenic_blocks", boxes.is(":checked"));
+        };
 
-    $("#reset").on("click", function(e) {
-        plots.reset();
-    });
-
-    var response = $.ajax({
-        url: "<tmpl_var name=json>",
-        dataType: "json"
-    });
-
-    response.then(function(json) {
-        raw = json;
-
-        $("#data").tabs("select", (+"<tmpl_var name=beta>") ? 1 : 0);
-
-        var response,
-            url = "<tmpl_var name=allpairs>",
-            allpoints = $("#allpoints");
-
-        if (checkRequestSize(url) < MAXIMUM_SIZE) {
-
-            response = $.getJSON(url, function(json) {
-                for (var layer in json.layers) {
-                    raw.layers[layer] = json.layers[layer];
+        $("#data").tabs({
+            select: function(event, ui) {
+                if (ui.index === 1 && !plots) {
+                    setTimeout(sortHandler, 200);
                 }
-            });
-        } else {
-            var label = $("label[for=" +allpoints.attr("id") + "]");
-            label.attr("title", "Can't display non-syntenic matches too much data.");
-            label.css("border-bottom", "1px dotted");
-            allpoints.attr("disabled", "disabled");
-            allpoints.unbind();
-        }
-    });
+            }
+        });
+
+        $("#toolbar").buttonset();
+
+        sortType.on("change", function(e) {
+            if ($(this).val() === sortField) {
+                sortButton.attr("disabled", "disabled");
+                sortButton.unbind();
+            } else {
+                sortButton.removeAttr("disabled");
+                sortButton.on("click", sortHandler);
+            }
+        });
+
+        allpoints.unbind().on("change", function() {
+            plots.toggleLayer("pairs", $(this).is(":checked"));
+        });
+
+        boxes.on("click", function(e) {
+            plots.toggleLayer("syntenic_blocks", $(this).is(":checked"));
+        });
+
+        $("#reset").on("click", function(e) {
+            plots.reset();
+        });
+
+        var response = $.ajax({
+            url: SYNTENIC_URL,
+            dataType: "json"
+        });
+
+        $("#data").tabs("select", (+BETA) ? 1 : 0);
+
+        response.then(function(json) {
+            raw = json;
+
+            if (checkRequestSize(ALLPOINTS_URL) < MAXIMUM_SIZE) {
+                $.getJSON(ALLPOINTS_URL, function(json) {
+                    for (var layer in json.layers) {
+                        raw.layers[layer] = json.layers[layer];
+                    }
+                });
+            } else {
+                var label = $("label[for=" +allpoints.attr("id") + "]");
+                label.attr("title", "Can't display non-syntenic matches too much data.");
+                label.css("border-bottom", "1px dotted");
+                allpoints.attr("disabled", "disabled");
+                allpoints.unbind();
+            }
+        });
+
+    }
 });
 </script>
 </tmpl_if>
