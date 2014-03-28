@@ -224,15 +224,6 @@ $(document).ready(function(){
         layers = [],
         MAXIMUM_SIZE = 268435456;
 
-    var beta = "<tmpl_var name=beta>";
-    if (+beta) {
-        $("#data").tabs({selected:1});
-    } else {
-        $("#data").tabs({selected:0});
-    }
-
-    $("#toolbar").buttonset();
-
     sortHandler = function() {
         var sortfunc;
 
@@ -252,6 +243,16 @@ $(document).ready(function(){
         plots.toggleLayer("pairs", allpoints.is(":checked"));
         plots.toggleLayer("syntenic_blocks", boxes.is(":checked"));
     };
+
+    $("#data").tabs({
+        select: function(event, ui) {
+            if (ui.index === 1 && !plots) {
+                sortHandler();
+            }
+        }
+    });
+
+    $("#toolbar").buttonset();
 
     sortType.on("change", function(e) {
         if ($(this).val() === sortField) {
@@ -283,11 +284,11 @@ $(document).ready(function(){
     response.then(function(json) {
         raw = json;
 
+        $("#data").tabs("select", (+"<tmpl_var name=beta>") ? 1 : 0);
+
         var response,
             url = "<tmpl_var name=allpairs>",
             allpoints = $("#allpoints");
-
-        sortHandler();
 
         if (checkRequestSize(url) < MAXIMUM_SIZE) {
 
@@ -295,8 +296,6 @@ $(document).ready(function(){
                 for (var layer in json.layers) {
                     raw.layers[layer] = json.layers[layer];
                 }
-
-                sortHandler();
             });
         } else {
             var label = $("label[for=" +allpoints.attr("id") + "]");
