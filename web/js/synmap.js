@@ -847,6 +847,10 @@ function sortBy(attribute, cmp) {
     };
 }
 
+function identity(x) {
+    return x;
+}
+
 function inverse(func) {
     return function(a, b) {
         return func(b, a);
@@ -864,6 +868,21 @@ function getValues(object, keys) {
     return coll;
 }
 
+function checkRequestSize(url) {
+    var size,
+        request;
+
+    request = $.ajax({
+        type: "HEAD",
+        async: false,
+        url: url
+    });
+
+    if (request.status === 200) {
+        return +request.getResponseHeader("Content-Length");
+    }
+}
+
 var synmap = function(element, metric, sort) {
     var genomes,
         pairs = [],
@@ -873,14 +892,17 @@ var synmap = function(element, metric, sort) {
 
     my.loadPlots = function(json) {
         var keys,
+            type,
             layer,
             source,
             reference;
 
         genomes = json.genomes;
+
         for(layer in json.layers) {
-            for (reference in json.layers[layer].data.lines) {
-                for (source in json.layers[layer].data.lines[reference]) {
+            type = Object.keys(json.layers[layer].data)[0];
+            for (reference in json.layers[layer].data[type]) {
+                for (source in json.layers[layer].data[type][reference]) {
                     pairs.push([reference, source]);
                 }
             }
@@ -891,11 +913,12 @@ var synmap = function(element, metric, sort) {
         data = generatePlot(keys[0], keys[1], json.layers, metric, sort);
 
         var handler =  function() {
-            var active = [];
+            var active = [],
+                ids = Object.keys(data.layers).reverse();
 
-            for (var layerId in data.layers) {
-                if (data.layers[layerId].enabled) {
-                    active.push(data.layers[layerId]);
+            for (var index = 0; index < ids.length; index++) {
+                if (data.layers[ids[index]].enabled) {
+                    active.push(data.layers[ids[index]]);
                 }
             }
 
@@ -924,6 +947,7 @@ var synmap = function(element, metric, sort) {
         });
         plot.redraw();
 
+        plots.length = 0;
         plots.push({
             "data": data,
             "plot": plot

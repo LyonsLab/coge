@@ -1,23 +1,22 @@
 #!/usr/bin/perl -w
-
+use v5.14;
 use strict;
+
 use GD;
 use Getopt::Long;
 
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::SynMap_report;
-use CoGe::Accessory::Utils qw( commify );
 use DBI;
 use Data::Dumper;
 use DBI;
 use POSIX;
 use Sort::Versions;
 use JSON::XS;
-#encode_json(\%hash);
 
-use vars
-  qw($P $dagfile $alignfile $genomeid1 $genomeid2 $help $coge $CHR1 $CHR2 $basename $ks_db $assemble $GZIP $GUNZIP $URL $conffile %json_data);
+our ($P, $dagfile, $alignfile, $genomeid1, $genomeid2, $help, $coge, $CHR1,
+     $CHR2, $basename, $ks_db, $assemble, $GZIP, $GUNZIP, $URL, $conffile,
+     %all_pairs, %base_data, %ks_data);
 
 GetOptions(
     "dagfile|d=s"         => \$dagfile,      #all dots
@@ -29,10 +28,7 @@ GetOptions(
     "chr2|c2=s"           => \$CHR2,
     "basename|b=s"        => \$basename,
     "ksdb|ks_db=s"        => \$ks_db,
-#    "assemble=s"       => \$assemble,      #syntenic path assembly option
-#    "axis_metrix|am=s" => \$axis_metric, #not needed, but send these data in JSON
-#    "box_diags|bd=i"   => \$box_diags, #make sure to send blocks in JSON
-    "config_file|cf=s" => \$conffile,
+    "config_file|cf=s"    => \$conffile,
 );
 
 $P      = CoGe::Accessory::Web::get_defaults($conffile);
@@ -72,8 +68,6 @@ if ( $dagfile && -r $dagfile && $dagfile =~ /\.gz$/ ) {
 
 $basename = "test" unless $basename;
 $coge = CoGeX->dbconnect($P);
-
-my $synmap_report = new CoGe::Accessory::SynMap_report;
 
 my ($genome1) = $coge->resultset('Genome')->find($genomeid1);
 my ($genome2) = $coge->resultset('Genome')->find($genomeid2);
@@ -116,12 +110,12 @@ Error:  one or both of the genomes has no effective length:
 
 #add org_info to json_data now that order has been determined
 add_genome_to_json(
-    json_data => \%json_data,
+    json_data => \%base_data,
     org_data  => $org1info,
     genomeid  => $genomeid1
 );
 add_genome_to_json(
-    json_data => \%json_data,
+    json_data => \%base_data,
     org_data  => $org2info,
     genomeid  => $genomeid2
 );
@@ -142,7 +136,7 @@ get_dots(
     org2      => $org2info,
     genomeid1 => $genomeid1,
     genomeid2 => $genomeid2,
-    json_data => \%json_data
+    json_data => \%all_pairs
 ) if defined $dagfile && -r $dagfile;
 
 #get_syntenic_dots
@@ -152,24 +146,37 @@ my $box_coords = get_dots(
     org2           => $org2info,
     genomeid1      => $genomeid1,
     genomeid2      => $genomeid2,
-    ksdata         => $ksdata,
-    json_data      => \%json_data,
+    json_data      => \%base_data,
     syntenic_pairs => 1,
 );
 
-$json_data{layers}{syntenic_blocks}{data}{rects}{$genomeid1}{$genomeid2} = $box_coords;
-$json_data{layers}{syntenic_blocks}{style} = {
+$base_data{layers}{syntenic_blocks}{data}{rects}{$genomeid1}{$genomeid2} = $box_coords;
+$base_data{layers}{syntenic_blocks}{style} = {
     strokeStyle => "rgba(0, 155, 0, 0.6)"
 };
 
 #write out JSON file of dots"
-#print Dumper \%json_data;
-open( OUT, ">" . $basename . ".json" ) || die "$!";
-print OUT encode_json( \%json_data );
-close OUT;
 
-#CoGe::Accessory::Web::gzip($dagfile) if $dagfile && -r $dagfile;
-#CoGe::Accessory::Web::gzip($alignfile) if $alignfile && -r $alignfile;
+if (%base_data) {
+    #print Dumper \%json_data;
+    open( OUT, ">" . $basename . ".json" ) || die "$!";
+    print OUT encode_json( \%base_data );
+    close OUT;
+}
+
+if (%all_pairs) {
+    #print Dumper \%all_pairs;
+    open( OUT, ">" . $basename . ".all.json" ) || die "$!";
+    print OUT encode_json( \%all_pairs);
+    close OUT;
+}
+
+if ($ksdata) {
+    #print Dumper \%all_pairs;
+    open( OUT, ">" . $basename . ".ks.json" ) || die "$!";
+    print OUT encode_json( $ksdata);
+    close OUT;
+}
 #generate_historgram of ks values if necessary
 
 #This function appears to parse dagchainer output, generated in SynMap.pl, and draw the results to the GD graphics context.
@@ -279,8 +286,27 @@ sub get_dots {
 #        $data_item->{ks_data} = $ks_vals
 #          if $ks_vals;    #check with Evan if missing data should still have key
 #        push @{ $json_data->{$genomeid1}{$genomeid2}{$data_label} }, $data_item;
+#
+        my ($s1, $e1, $s2, $e2);
 
-        my $data_item = [int($item1[1]), int($item1[2]), int($item2[1]), int($item2[2])];
+        if($org1->{$chr1}{rev}) {
+            $s1 = int($org1->{$chr1}{length}) - int($item1[1]);
+            $e1 = int($org1->{$chr1}{length}) - int($item1[2]);
+        } else {
+            $s1 = int($item1[1]);
+            $e1 = int($item1[2]);
+        }
+
+        if($org2->{$chr2}{rev}) {
+            $s2 = int($org2->{$chr2}{length}) - int($item2[1]);
+            $e2 = int($org2->{$chr2}{length}) - int($item2[2]);
+        } else {
+            $s2 = int($item2[1]);
+            $e2 = int($item2[2]);
+        }
+
+        my $data_item = [$s1, $e1, $s2, $e2];
+
 #        $data_item->{ks_data} = $ks_vals
 #          if $ks_vals;    #check with Evan if missing data should still have key
 #          #push @{ $json_data->{data}->{$genomeid1}{$genomeid2}{$data_label}{$chr1}{$chr2}}, $data_item;
@@ -354,7 +380,6 @@ sub get_ksdata {
         my %item = (
             KS => int($data->[3]),
             KN => int($data->[4]),
-#            'KN_KS' => $data->[5], #don't think this is needed to be sent as it can be calculated
         );
         $data{ $data->[1] }{ $data->[2] } = \%item;
 
@@ -451,7 +476,7 @@ SELECT count(distinct(feature_id))
 		};
       }
     $data{chromosomes} = $chrs;
-    $json_data{genomes}{$genomeid} = \%data;
+    $json_data->{genomes}{$genomeid} = \%data;
 }
 
 #Print out info on script usage
