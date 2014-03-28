@@ -226,7 +226,7 @@ $(document).ready(function(){
         sortType = $("#sortType"),
         allpoints = $("#allpoints"),
         boxes = $("#boxes"),
-        MAXIMUM_SIZE = 268435456;
+        MAXIMUM_SIZE = 67108864;
 
     if (checkRequestSize(SYNTENIC_URL) > MAXIMUM_SIZE) {
         message = "The analysis was too large to be displayed." +
