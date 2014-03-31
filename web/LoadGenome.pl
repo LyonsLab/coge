@@ -19,6 +19,8 @@ use URI;
 use URI::Escape::JavaScript qw(escape);
 use LWP::Simple;
 use XML::Simple;
+use DateTime;
+use DateTime::Format::MySQL;
 use Data::Dumper;
 no warnings 'redefine';
 
@@ -153,23 +155,38 @@ sub irods_get_path {
 
     my $result = CoGe::Accessory::IRODS::irods_ils($path);
     my $error  = $result->{error};
+
     if ($error) {
-        my $email = $P->{SUPPORT_EMAIL};
-        my $body =
-            "irods ils command failed\n\n" 
-          . 'User: '
-          . $USER->name . ' id='
-          . $USER->id . ' '
-          . $USER->date . "\n\n"
-          . $error . "\n\n"
-          . $P->{SERVER};
-        CoGe::Accessory::Web::send_email(
-            from    => $email,
-            to      => $email,
-            subject => "System error notification from $PAGE_TITLE",
-            body    => $body
-        );
-        return encode_json( { error => $error } );
+        # Test for recent new account.  The iPlant IRODS isn't ready for a few
+        # minues the first time a user logs into CoGe.
+        # mdb added 3/31/14
+        my $isNewAccount = 0;
+        if ($USER->date ne '0000-00-00 00:00:00') {
+            my $dt_user = DateTime::Format::MySQL->parse_datetime( $USER->date );
+            my $dt_now = DateTime->now( time_zone => 'America/Phoenix' );
+            my $diff = $dt_now->subtract_datetime($dt_user);
+            my ( $years, $months, $days, $hours, $minutes ) = $diff->in_units('years', 'months', 'days', 'hours', 'minutes');
+            $isNewAccount = (!$years && !$months && !$days && !$hours && $minutes < 5) ? 1 : 0;
+        }
+        
+        if (!$isNewAccount) {
+            my $email = $P->{SUPPORT_EMAIL};
+            my $body =
+                "irods ils command failed\n\n" 
+              . 'User: '
+              . $USER->name . ' id='
+              . $USER->id . ' '
+              . $USER->date . "\n\n"
+              . $error . "\n\n"
+              . $P->{SERVER};
+            CoGe::Accessory::Web::send_email(
+                from    => $email,
+                to      => $email,
+                subject => "System error notification from $PAGE_TITLE",
+                body    => $body
+            );
+            return encode_json( { error => $error } );
+        }
     }
     return encode_json(
         { path => $path, items => $result->{items} } );
