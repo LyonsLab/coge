@@ -336,7 +336,8 @@ function toc_select(toc_id) {
 		$('#group_button,#delete_button').show();
 	}
 	else if (toc_id == ITEM_TYPE_SHARED || toc_id == ITEM_TYPE_ACTIVITY || toc_id == ITEM_TYPE_ACTIVITY_VIZ) {
-		$('#share_button,#notebook_button,#group_button,#delete_button,#send_button,#undelete_button,#cancel_button').hide();
+		$('#group_button,#delete_button,#send_button,#undelete_button,#cancel_button').hide();
+		$('#share_button,#notebook_button').show();
 	}
 	else if (toc_id == ITEM_TYPE_ACTIVITY_ANALYSES) {
 		$('#share_button,#notebook_button,#group_button,#delete_button,#send_button,#undelete_button').hide();
