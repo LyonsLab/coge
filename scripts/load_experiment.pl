@@ -18,14 +18,16 @@ use vars qw($staging_dir $install_dir $data_file $file_type
   $host $port $db $user $pass $P);
 
 #FIXME: use these from Storage.pm instead of redeclaring them
-my $DATA_TYPE_QUANT = 1;	# Quantitative data
-my $DATA_TYPE_POLY	= 2;	# Polymorphism data
-my $DATA_TYPE_ALIGN = 3;	# Alignments
+my $DATA_TYPE_QUANT  = 1; # Quantitative data
+my $DATA_TYPE_POLY	 = 2; # Polymorphism data
+my $DATA_TYPE_ALIGN  = 3; # Alignments
+my $DATA_TYPE_MARKER = 4; # Markers
 
 #my $MIN_QUANT_COLUMNS = 5;
 #my $MAX_QUANT_COLUMNS = 6;
 my $MIN_VCF_COLUMNS = 8;
 #my $MAX_VCF_COLUMNS = 10;
+my $MIN_GFF_COLUMNS = 9;
 
 GetOptions(
     "staging_dir=s" => \$staging_dir,    # temporary staging path
@@ -163,6 +165,10 @@ elsif ( $data_type == $DATA_TYPE_ALIGN ) {
 	( $staged_data_file, $data_spec, $count, $pChromosomes ) =
       validate_bam_data_file( file => $staged_data_file, genome_chr => \%genome_chr );
 }
+elsif ( $data_type == $DATA_TYPE_MARKER ) {
+    ( $staged_data_file, $data_spec, $count, $pChromosomes ) =
+      validate_gff_data_file( file => $staged_data_file, genome_chr => \%genome_chr );
+}
 if ( not $count ) {
     print $log "log: error: file contains no data\n";
     exit(-1);
@@ -190,7 +196,10 @@ if (not $ignore_missing_chr) {
 	}
 }
 
-if ( $data_type == $DATA_TYPE_QUANT or $data_type == $DATA_TYPE_POLY ) {
+if ( $data_type == $DATA_TYPE_QUANT
+     or $data_type == $DATA_TYPE_POLY
+     or $data_type == $DATA_TYPE_MARKER )
+{
 	# Generate fastbit database/index
 	#TODO redirect fastbit output to log file instead of stderr
 	print $log "log: Generating database\n";
@@ -365,7 +374,7 @@ sub detect_data_type {
         ($filetype) = lc($filepath) =~ /\.([^\.]+)$/;
     }
     
-    if ( grep { $_ eq $filetype } ('csv', 'tsv', 'bed', 'gff', 'gtf') ) { #TODO add 'bigbed', 'wig', 'bigwig'
+    if ( grep { $_ eq $filetype } ('csv', 'tsv', 'bed') ) { #TODO add 'bigbed', 'wig', 'bigwig'
         print $log "log: Detected a quantitative file ($filetype)\n";
         return ($filetype, $DATA_TYPE_QUANT);
     }
@@ -376,6 +385,10 @@ sub detect_data_type {
     elsif ( $filetype eq 'vcf' ) {
         print $log "log: Detected a polymorphism file ($filetype)\n";
         return ($filetype, $DATA_TYPE_POLY);
+    }
+    elsif ( grep { $_ eq $filetype } ( 'gff', 'gtf' ) ) {
+        print $log "log: Detected a marker file ($filetype)\n";
+        return ($filetype, $DATA_TYPE_MARKER);
     }
     else {
         print $log "detect_data_type: unknown file ext '$filetype'\n";
@@ -661,6 +674,64 @@ sub validate_bam_data_file {
 	}
 
     return ( $newfilepath, undef, $count, \%chromosomes );
+}
+
+# http://www.sanger.ac.uk/resources/software/gff/spec.html
+sub validate_gff_data_file {
+    my %opts       = @_;
+    my $filepath   = $opts{file};
+    my $genome_chr = $opts{genome_chr};
+
+    my %chromosomes;
+    my $line_num = 1;
+    my $count    = 0;
+
+    print $log "validate_gff_data_file: $filepath\n";
+    open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
+    my $outfile = $filepath . ".processed";
+    open( my $out, ">$outfile" );
+    while ( my $line = <$in> ) {
+        $line_num++;
+        next if ( $line =~ /^#/ );
+        chomp $line;
+        next unless $line;
+        my @tok = split( /\t/, $line );
+
+        # Validate format
+        if ( @tok < $MIN_GFF_COLUMNS ) {
+            print $log "log: error at line $line_num: more columns expected (" . @tok . " < $MIN_GFF_COLUMNS)\n";
+            return;
+        }
+
+        # Validate values and set defaults
+        my ( $chr, $source, $type, $start, $stop, $score, $strand, $frame, $attr ) = @tok;
+        if (   not defined $chr
+            || not defined $type
+            || not defined $start
+            || not defined $stop )
+        {
+            print $log "log: error at line $line_num: missing required value in a column\n";
+            return;
+        }
+        
+        $chr = fix_chromosome_id($chr, $genome_chr);
+        if (!$chr) {
+            print $log "log: error at line $line_num: trouble parsing chromosome\n";
+            return;
+        }
+        $chromosomes{$chr}++;
+
+        $strand = (!defined $strand or $strand ne '-' ? 1 : -1);
+        $score = 0 if (!defined $score || $score =~ /\D/);
+        $attr = '' if (!defined $attr);
+
+        print $out join(",", $chr, $start, $stop, $strand, $type, $score, $attr), "\n";
+        $count++;
+    }
+    close($in);
+    close($out);
+    my $format = "chr:key, start:unsigned long, stop:unsigned long, strand:key, type:key, score:double, attr:text";
+    return ( $outfile, $format, $count, \%chromosomes );
 }
 
 sub fix_chromosome_id {

@@ -174,10 +174,8 @@ sub track_config {
                 key          => $type_name,
                 type         => "JBrowse/View/Track/HTMLFeatures",
                 storeClass   => "JBrowse/Store/SeqFeature/REST",
-                region_stats => 1
-                , # see HTMLFeatures.js, force calls to stats/region instead of stats/global
-                onClick =>
-"FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end};type=$type_name",
+                region_stats => 1, # see HTMLFeatures.js, force calls to stats/region instead of stats/global
+                onClick => "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end};type=$type_name",
                 maxFeatureScreenDensity => 1000,     #50,
                 maxHeight               => 100000,
                 style                   => {
@@ -258,6 +256,10 @@ sub track_config {
 			$featureScale = 0.005;
 			$histScale = 0.01;
 		}
+        elsif ($e->data_type == 4) { #FIXME hardcoded data_type 'marker'
+            $type = "JBrowse/View/Track/HTMLFeatures";
+            $histScale = 0.002;
+        }
         
         push @tracks, {
             baseUrl      => "services/JBrowse/service.pl/experiment/$eid/",
@@ -274,7 +276,8 @@ sub track_config {
                 labelScale   => 0.5,
                 showLabels   => 'true',
                 className    => '{type}',
-                histCss => 'background-color:' . getFeatureColor($eid)
+                histCss => 'background-color:' . getFeatureColor($eid),
+                featureCss => 'background-color:' . getFeatureColor($eid)
             },
             
             histograms => {

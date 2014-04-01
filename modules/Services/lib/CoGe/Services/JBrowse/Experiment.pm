@@ -7,12 +7,14 @@ use CoGe::Accessory::Storage qw( get_experiment_data );
 use JSON::XS;
 
 #TODO: use these from Storage.pm instead of redeclaring them
-my $DATA_TYPE_QUANT = 1;	# Quantitative data
-my $DATA_TYPE_POLY	= 2;	# Polymorphism data
-my $DATA_TYPE_ALIGN = 3;	# Alignments
+my $DATA_TYPE_QUANT  = 1; # Quantitative data
+my $DATA_TYPE_POLY	 = 2; # Polymorphism data
+my $DATA_TYPE_ALIGN  = 3; # Alignments
+my $DATA_TYPE_MARKER = 4; # Markers
 
 my $NUM_QUANT_COL   = 6;
 my $NUM_VCF_COL     = 9;
+my $NUM_GFF_COL     = 7;
 my $MAX_EXPERIMENTS = 20;
 my $MAX_WINDOW_SIZE = 1000000;#500000;
 
@@ -149,6 +151,33 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
                 $bins[$b]++;
 	        }
         }
+        elsif ( $data_type == $DATA_TYPE_MARKER ) {
+            my $cmdOut = CoGe::Accessory::Storage::get_experiment_data(
+                eid   => $eid,
+                data_type  => $exp->data_type,
+                chr   => $chr,
+                start => $start,
+                end   => $end
+            );
+
+            # Convert FastBit output into JSON
+            foreach (@$cmdOut) {
+                chomp;
+                if (/^\"/) {    #if (/^\"$chr\"/) { # potential result line
+                    s/"//g;
+                    my @items = split(/,\s*/);
+                    next if ( @items != $NUM_GFF_COL ); # || $items[0] !~ /^\"?$chr/); # make sure it's a row output line
+
+                    # Bin results
+                    my ( undef, $s, $e ) = @items;
+                    $e = $s + 1 if ( $e == $s );    #FIXME revisit this
+                    my $mid = int( ( $s + $e ) / 2 );
+                    my $b   = int( ( $mid - $start ) / $bpPerBin );
+                    $b = 0 if ( $b < 0 );
+                    $bins[$b]++;
+                }
+            }
+        }        
         else {
         	print STDERR "JBrowse::Experiment::stats_regionFeatureDensities unknown data type for experiment $eid\n";
         	next;
@@ -358,13 +387,38 @@ sub features {
     	        }
 	        }
         }
+        elsif ( $data_type == $DATA_TYPE_MARKER ) {
+            my $cmdOut = CoGe::Accessory::Storage::get_experiment_data(
+                eid   => $eid,
+                data_type  => $exp->data_type,
+                chr   => $chr,
+                start => $start,
+                end   => $end
+            );
+
+            # Convert FastBit output into JSON
+            foreach (@$cmdOut) {
+                chomp;
+                if (/^\"/) {    #if (/^\"$chr\"/) { # potential result line
+                    s/"//g;
+                    my @items = split(/,\s*/);
+                    next if ( @items != $NUM_GFF_COL ); # || $items[0] !~ /^\"?$chr/); # make sure it's a row output line
+
+                    my ( $chr, $start, $end,  $strand, $type, $score, $attr ) = @items;
+                    $end = $start + 1 if ( $end == $start ); #FIXME revisit this
+                    my $uniqueID = $start . '_' . $stop;
+                    $results .= ( $results ? ',' : '' )
+                      . qq{{ "uniqueID": "$uniqueID", "type": "$type", "start": $start, "end": $end, "strand": $strand, "score": $score, "name": "$attr" }};
+                }
+            }
+        }
         else {
         	print STDERR "JBrowse::Experiment::features unknown data type $data_type for experiment $eid\n";
         	next;
         }
     }
 
-    #	print STDERR "{ 'features' : [ $results ] }\n";
+    #print STDERR "{ 'features' : [ $results ] }\n";
     return qq{{ "features" : [ $results ] }};
 }
 
