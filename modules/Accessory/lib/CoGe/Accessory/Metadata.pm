@@ -22,8 +22,6 @@ sub create_annotations {
     my $annotations = $opts{annotations}; # semicolon-separated list of annotations (link:group:type:text;...)
     my $locked = $opts{locked};           # boolean
     
-    print STDERR "matt: $annotations\n";
-    
     my @result = ();
     foreach ( split(/\s*;\s*/, $annotations) ) {
         my @tok = split(/\s*\|\s*/, $_);
@@ -67,7 +65,6 @@ sub create_annotations {
         }
         
         # Create annotation
-        print STDERR "matt: ", ref($target), "\n";
         if (ref($target) =~ /Experiment/) {
             $anno = $db->resultset('ExperimentAnnotation')->create({
                 experiment_id => $target->id,
