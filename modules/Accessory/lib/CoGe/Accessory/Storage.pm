@@ -25,6 +25,7 @@ LICENSE file included with this module.
 
 =cut
 
+use v5.14;
 use strict;
 use warnings;
 
@@ -37,7 +38,7 @@ use Data::Dumper;
 use POSIX qw(ceil);
 
 BEGIN {
-    use vars qw ($VERSION @ISA @EXPORT $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN);
+    use vars qw ($VERSION @ISA @EXPORT $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER);
     require Exporter;
 
     $VERSION = 0.1;
@@ -45,12 +46,13 @@ BEGIN {
     @EXPORT =
       qw( get_tiered_path get_genome_file index_genome_file get_genome_seq 
       get_genome_path get_experiment_path get_experiment_files get_experiment_data
-      reverse_complement);
+      reverse_complement );
 
     # Experiment Data Types
-    $DATA_TYPE_QUANT    = 1; # Quantitative data
-    $DATA_TYPE_POLY     = 2; # Polymorphism data
-    $DATA_TYPE_ALIGN    = 3; # Alignments
+    $DATA_TYPE_QUANT  = 1; # Quantitative data
+    $DATA_TYPE_POLY   = 2; # Polymorphism data
+    $DATA_TYPE_ALIGN  = 3; # Alignments
+    $DATA_TYPE_MARKER = 4; # Markers
 }
 
 ################################################ subroutine header begin ##
@@ -356,8 +358,7 @@ sub get_experiment_data {
     my $eid  = $opts{eid};    # required
     my $data_type = $opts{data_type};   # required
     unless ($eid) {
-        print STDERR
-          "Storage::get_experiment_data: experiment id not specified!\n";
+        print STDERR "Storage::get_experiment_data: experiment id not specified!\n";
         return;
     }
     my $chr   = $opts{chr};
@@ -382,6 +383,10 @@ sub get_experiment_data {
     elsif ( $data_type == $DATA_TYPE_ALIGN ) {
         my $cmdpath = CoGe::Accessory::Web::get_defaults()->{SAMTOOLS};
         $cmd = "$cmdpath view $storage_path/alignment.bam $chr:$start-$stop 2>&1";
+    }
+    elsif ( $data_type == $DATA_TYPE_MARKER ) {
+        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{FASTBIT_QUERY};
+        $cmd = "$cmdpath -v 1 -d $storage_path -q \"select chr,start,stop,strand,type,score,attr where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
     }
     else {
         print STDERR "Storage::get_experiment_data: unknown data type\n";
