@@ -233,6 +233,7 @@ sub create_fasta_filter_job {
     my $validated = shift;
     my $name = to_filename($fasta);
     my $cmd = File::Spec->catdir(($P->{SCRIPTDIR}, "fasta_reheader.pl"));
+    my $FASTA_CACHE_DIR = File::Spec->catdir(($CACHE, "$gid/fasta"));
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
     return (
@@ -247,7 +248,7 @@ sub create_fasta_filter_job {
             $validated
         ],
         outputs => [
-            File::Spec->catdir(($staging_dir, $name . ".filtered.fasta"))
+            File::Spec->catdir(($FASTA_CACHE_DIR, $name . ".filtered.fasta"))
         ],
         description => "Filtering fasta file..."
     );
@@ -318,6 +319,7 @@ sub create_gmap_index_job {
     my $fasta = shift;
     my $name = to_filename($fasta);
     my $cmd = $P->{GMAP_BUILD};
+    my $GMAP_CACHE_DIR = File::Spec->catdir(($CACHE, "$gid/gmap_index"));
     die "ERROR: GMAP_BUILD is not in the config." unless ($cmd);
 
     return (
@@ -332,7 +334,7 @@ sub create_gmap_index_job {
             $fasta
         ],
         outputs => [
-            [File::Spec->catdir(($staging_dir, $name . "-index")), 1]
+            [File::Spec->catdir(($GMAP_CACHE_DIR, $name . "-index")), 1]
         ],
         description => "Generating index..."
     );
