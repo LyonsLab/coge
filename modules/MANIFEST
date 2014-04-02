@@ -130,10 +130,15 @@ Graphics/lib/CoGe/Graphics/Feature/Flag.pm
 Graphics/lib/CoGe/Graphics/Feature/Quant.pm
 Graphics/t/001_load.t
 Graphics/t/002_load.t
-Services/lib/CoGe/Services/Data/Sequence.pm
-Services/lib/CoGe/Services/Data/Organism.pm
+Services/lib/CoGe/Services/Routes.pm
+Services/lib/CoGe/Services/Data/Experiment.pm
 Services/lib/CoGe/Services/Data/Genome.pm
+Services/lib/CoGe/Services/Data/Genome2.pm
+Services/lib/CoGe/Services/Data/Group.pm
 Services/lib/CoGe/Services/Data/Notebook.pm
+Services/lib/CoGe/Services/Data/Organism.pm
+Services/lib/CoGe/Services/Data/Sequence.pm
+Services/lib/CoGe/Services/Data/User.pm
 Services/lib/CoGe/Services/JBrowse/Annotation.pm
 Services/lib/CoGe/Services/JBrowse/Configuration.pm
 Services/lib/CoGe/Services/JBrowse/Experiment.pm
