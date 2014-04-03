@@ -42,7 +42,8 @@ sub gen_body {
 
 	my $gid = $FORM->param('gid');
 	my $genome = $coge->resultset('Genome')->find($gid);
-    return '' unless $genome;
+	return 'Genome not found' unless $genome;
+    return 'Access denied' unless ( $USER->has_access_to_genome($genome) );
 	
 	$template->param( GENOME_ID => $gid );
 	$template->param( GENOME_INFO => $genome->info );
