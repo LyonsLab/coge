@@ -30,6 +30,7 @@ use strict;
 use warnings;
 
 use CoGe::Accessory::Web qw(get_defaults);
+use CoGe::Accessory::TDS qw(read);
 use File::Basename qw(fileparse);
 use POSIX qw(floor);
 use File::Spec::Functions;
@@ -147,8 +148,7 @@ sub index_genome_file {
     # Index fasta file
     my $samtools = CoGe::Accessory::Web::get_defaults()->{'SAMTOOLS'};
     unless ($samtools) {
-        print STDERR
-"Storage::index_genome_file: WARNING, conf file parameter SAMTOOLS is blank!\n";
+        print STDERR "Storage::index_genome_file: WARNING, conf file parameter SAMTOOLS is blank!\n";
     }
     my $cmd = "$samtools faidx $file_path";
     qx{ $cmd };
@@ -162,8 +162,7 @@ sub index_genome_file {
     if ($compress) {
         my $razip = CoGe::Accessory::Web::get_defaults()->{'RAZIP'};
         unless ($razip) {
-            print STDERR
-"Storage::index_genome_file: WARNING, conf file parameter RAZIP is blank!\n";
+            print STDERR "Storage::index_genome_file: WARNING, conf file parameter RAZIP is blank!\n";
         }
 
         # Compress fasta file into RAZF using razip
@@ -353,6 +352,30 @@ sub get_experiment_files {
     return \@files;
 }
 
+sub get_fastbit_columns {
+    my $path = shift;
+    my $data_type = shift;
+    my $format_file = $path . '/format.json';
+    
+    if (not -r $format_file) { # Backward compatibility, see issue 352 -- FIXME: remove someday by adding format.json files to old experiments
+        if (!$data_type || $data_type == $DATA_TYPE_QUANT) {
+            return 'chr,start,stop,strand,value1,value2';
+        }
+        elsif ($data_type == $DATA_TYPE_POLY) {
+            return 'chr,start,stop,type,id,ref,alt,qual,info';
+        }
+        elsif ( $data_type == $DATA_TYPE_MARKER ) {
+            return 'chr,start,stop,strand,type,score,attr';
+        }
+        return; # should never happen!
+    }
+    
+    my $format = CoGe::Accessory::TDS::read($format_file);
+    my $columns = join(',', map { $_->{name} } @{$format->{columns}});
+
+    return $columns;
+}
+
 sub get_experiment_data {
     my %opts = @_;
     my $eid  = $opts{eid};    # required
@@ -371,22 +394,18 @@ sub get_experiment_data {
     my $storage_path = get_experiment_path($eid);
     my $cmd;
 
-    if (!$data_type || $data_type == $DATA_TYPE_QUANT || $data_type == $DATA_TYPE_POLY ) {
+    if (!$data_type || 
+        $data_type == $DATA_TYPE_QUANT || 
+        $data_type == $DATA_TYPE_POLY || 
+        $data_type == $DATA_TYPE_MARKER) 
+    {
+        my $columns = get_fastbit_columns($storage_path, $data_type);
         my $cmdpath = CoGe::Accessory::Web::get_defaults()->{FASTBIT_QUERY};
-        if ($data_type and $data_type == $DATA_TYPE_POLY) {
-            $cmd = "$cmdpath -v 1 -d $storage_path -q \"select chr,start,stop,type,id,ref,alt,qual,info where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
-        }
-        else { #DATA_TYPE_QUANT
-            $cmd = "$cmdpath -v 1 -d $storage_path -q \"select chr,start,stop,strand,value1,value2 where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
-        }
+        $cmd = "$cmdpath -v 1 -d $storage_path -q \"select $columns where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
     }
     elsif ( $data_type == $DATA_TYPE_ALIGN ) {
         my $cmdpath = CoGe::Accessory::Web::get_defaults()->{SAMTOOLS};
         $cmd = "$cmdpath view $storage_path/alignment.bam $chr:$start-$stop 2>&1";
-    }
-    elsif ( $data_type == $DATA_TYPE_MARKER ) {
-        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{FASTBIT_QUERY};
-        $cmd = "$cmdpath -v 1 -d $storage_path -q \"select chr,start,stop,strand,type,score,attr where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
     }
     else {
         print STDERR "Storage::get_experiment_data: unknown data type\n";
