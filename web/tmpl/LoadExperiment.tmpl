@@ -194,6 +194,7 @@ function load_experiment() {
 
             // Start status update
             if (obj.job_id) { // JEX status for load FASTQ
+                job_id = obj.job_id;
                 window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?job_id=" + obj.job_id + '&load_id=' + load_id); // Add job_id and load_id to browser URL
                 update_dialog(status_url + obj.job_id, "#load_dialog", progress_formatter);
             }
@@ -250,6 +251,14 @@ function load_failed() {
     $('#loading_msg').hide();
     $('#error_msg').fadeIn();
     $('#cancel_load_experiment_button').fadeIn();
+
+    $.ajax({
+        data: {
+            fname: "send_error_report",
+            load_id: load_id,
+            job_id: job_id
+        }
+    });
 }
 
 function load_succeeded(obj) {
