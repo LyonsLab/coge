@@ -91,4 +91,11 @@ sub fetch {
     });
 }
 
+sub items {
+    my $self = shift;
+    $self->render(json => {
+        items => []
+    });
+}
+
 1;

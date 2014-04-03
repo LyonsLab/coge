@@ -46,6 +46,10 @@ sub startup {
         ->name("users-fetch")
         ->to("user#fetch", id => undef);
 
+    $r->get("/users/fetch/:id/items" => [id => qr/\d+/])
+        ->name("users-fetch-items")
+        ->to("user#items", id => undef);
+
     # User group routes
     $r->get("/groups/search/#term")
         ->name("groups-search")
@@ -54,6 +58,10 @@ sub startup {
     $r->get("/groups/fetch/:id" => [id => qr/\d+/])
         ->name("groups-fetch")
         ->to("group#fetch", id => undef);
+
+    $r->get("/groups/fetch/:id/items" => [id => qr/\d+/])
+        ->name("groups-fetch-items")
+        ->to("group#items", id => undef);
 
     # Job routes
 }
