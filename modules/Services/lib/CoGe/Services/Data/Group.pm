@@ -56,7 +56,39 @@ sub search {
 
 sub fetch {
     my $self = shift;
-    $self->render(json => { success => Mojo::JSON->true });
+    my $id = int($self->stash('id'));
+    my $key = $self->param("apiKey");
+
+    # Connect to the database
+    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
+
+    # Deny a public user access to any user
+    if ($user->is_public) {
+        $self->render(json => {
+            error => { Auth => "Access denied"}
+        }, status => 401);
+        return;
+    }
+
+    my $group = $db->resultset("UserGroup")->find($id);
+
+    unless (defined $group) {
+        $self->render(json => {
+            error => { Error => "Item not found"}
+        });
+        return;
+    }
+
+    $self->render(json => {
+        id => int($group->id),
+        name => $group->name,
+        description => $group->description,
+        role => {
+            name => $group->role->name,
+            description => $group->role->description
+        },
+        users => [ map { int($_->id) } $group->users ]
+    });
 }
 
 1;
