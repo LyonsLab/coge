@@ -7,6 +7,7 @@ use Getopt::Long;
 use File::Path;
 use File::Touch;
 use URI::Escape::JavaScript qw(unescape);
+use JSON::XS;
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Utils qw( commify );
 use CoGe::Accessory::Metadata qw( create_annotations );
@@ -148,25 +149,21 @@ if (-s $staged_data_file == 0) {
 }
 my $count = 0;
 my $pChromosomes;
-my $data_spec;
+my $format;
 if ( $data_type == $DATA_TYPE_QUANT ) {
-    ( $staged_data_file, $data_spec, $count, $pChromosomes ) =
-      validate_quant_data_file(
-        file       => $staged_data_file,
-        file_type  => $file_type,
-        genome_chr => \%genome_chr
-      );
+    ( $staged_data_file, $format, $count, $pChromosomes ) =
+      validate_quant_data_file( file => $staged_data_file, file_type => $file_type, genome_chr => \%genome_chr );
 }
 elsif ( $data_type == $DATA_TYPE_POLY ) {
-    ( $staged_data_file, $data_spec, $count, $pChromosomes ) =
+    ( $staged_data_file, $format, $count, $pChromosomes ) =
       validate_vcf_data_file( file => $staged_data_file, genome_chr => \%genome_chr );
 }
 elsif ( $data_type == $DATA_TYPE_ALIGN ) {
-	( $staged_data_file, $data_spec, $count, $pChromosomes ) =
+	( $staged_data_file, $format, $count, $pChromosomes ) =
       validate_bam_data_file( file => $staged_data_file, genome_chr => \%genome_chr );
 }
 elsif ( $data_type == $DATA_TYPE_MARKER ) {
-    ( $staged_data_file, $data_spec, $count, $pChromosomes ) =
+    ( $staged_data_file, $format, $count, $pChromosomes ) =
       validate_gff_data_file( file => $staged_data_file, genome_chr => \%genome_chr );
 }
 if ( not $count ) {
@@ -196,11 +193,22 @@ if (not $ignore_missing_chr) {
 	}
 }
 
+# Save data format doc
+if ($format) {
+    my $format_file = $staging_dir . '/' . 'format.json';
+    open(my $out, '>', $format_file);
+    print $out encode_json($format);
+    close($out);
+}
+
+# Generate fastbit database/index (doesn't apply to BAM files)
 if ( $data_type == $DATA_TYPE_QUANT
      or $data_type == $DATA_TYPE_POLY
      or $data_type == $DATA_TYPE_MARKER )
 {
-	# Generate fastbit database/index
+    # Determine data scheme
+    my $data_spec = join(',', map { $_->{name} . ':' . $_->{type} } @{$format->{columns}} );
+    
 	#TODO redirect fastbit output to log file instead of stderr
 	print $log "log: Generating database\n";
 	$cmd = "$FASTBIT_LOAD -d $staging_dir -m \"$data_spec\" -t $staged_data_file";
@@ -405,6 +413,8 @@ sub validate_quant_data_file {
     my %chromosomes;
     my $line_num = 1;
     my $count    = 0;
+    my $hasLabels = 0;
+    my $hasVal2   = 0;
 
     print $log "validate_quant_data_file: $filepath\n";
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
@@ -418,7 +428,7 @@ sub validate_quant_data_file {
         
         # Interpret tokens according to file type
         my @tok;
-        my ( $chr, $start, $stop, $strand, $val1, $val2 );
+        my ( $chr, $start, $stop, $strand, $val1, $val2, $label );
         if ($filetype eq 'csv') {
         	@tok = split( /,/, $line );
         	( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
@@ -430,12 +440,8 @@ sub validate_quant_data_file {
         elsif ($filetype eq 'bed') {
         	next if ( $line =~ /^track/ );
         	@tok = split( /\s+/, $line );
-        	( $chr, $start, $stop, undef, $val1, $strand ) = @tok;
+        	( $chr, $start, $stop, $label, $val1, $strand ) = @tok;
         	$val2 = $tok[6] if (@tok >= 7);
-        }
-        elsif ($filetype eq 'gff' or $filetype eq 'gtf') {
-            @tok = split( /\t/, $line );
-            ( $chr, undef, undef, $start, $stop, $val1, $strand ) = @tok;
         }
         else {
         	die; # sanity check
@@ -464,24 +470,46 @@ sub validate_quant_data_file {
             print $log "log: error at line $line_num: value 1 not between 0 and 1\n";
             return;
         }
-        if ( not defined $val2 ) {
-            $val2 = 0;
-        }
-
+        
 		$chr = fix_chromosome_id($chr, $genome_chr);
         if (!$chr) {
             print $log "log: error at line $line_num: trouble parsing chromosome\n";
             return;
         }
         $strand = $strand =~ /-/ ? -1 : 1;
-        print $out join( ",", $chr, $start, $stop, $strand, $val1, $val2 ),
-          "\n";
+        
+        # Build output line
+        my @fields  = ( $chr, $start, $stop, $strand, $val1 ); # default fields
+        if (defined $val2) {
+            $hasVal2 = 1;
+            push @fields, $val2;
+        }
+        if (defined $label) {
+            $hasLabels = 1;
+            push @fields, $label;
+        }
+        print $out join( ",", @fields ), "\n";
+        
         $chromosomes{$chr}++;
         $count++;
     }
     close($in);
     close($out);
-    my $format = "chr:key, start:unsigned long, stop:unsigned long, strand:byte, value1:double, value2:double";
+    
+    #my $format = "chr:key, start:unsigned long, stop:unsigned long, strand:byte, value1:double, value2:double, label:text"; # mdb removed 4/2/14, issue 352
+    # mdb added 4/2/14, issue 352
+    my $format = {
+        columns => [
+            { name => 'chr',    type => 'key' },
+            { name => 'start',  type => 'unsigned long' },
+            { name => 'stop',   type => 'unsigned long' },
+            { name => 'strand', type => 'byte' },
+            { name => 'value1', type => 'double' }
+        ]
+    };
+    push(@{$format->{columns}}, { name => 'value2', type => 'double' }) if $hasVal2;
+    push(@{$format->{columns}}, { name => 'label',  type => 'text' }) if $hasLabels;
+    
     return ( $outfile, $format, $count, \%chromosomes );
 }
 
@@ -523,8 +551,7 @@ sub validate_vcf_data_file {
             || not defined $ref
             || not defined $alt )
         {
-            print $log
-"log: error at line $line_num: missing required value in a column\n";
+            print $log "log: error at line $line_num: missing required value in a column\n";
             return;
         }
         next if ( $alt eq '.' );    # skip monomorphic sites
@@ -557,7 +584,23 @@ sub validate_vcf_data_file {
     }
     close($in);
     close($out);
-    my $format = "chr:key, start:unsigned long, stop:unsigned long, type:key, id:text, ref:key, alt:key, qual:double, info:text";
+    
+    #my $format = "chr:key, start:unsigned long, stop:unsigned long, type:key, id:text, ref:key, alt:key, qual:double, info:text"; # mdb removed 4/2/14, issue 352
+    # mdb added 4/2/14, issue 352
+    my $format = {
+        columns => [
+            { name => 'chr',   type => 'key' },
+            { name => 'start', type => 'unsigned long' },
+            { name => 'stop',  type => 'unsigned long' },
+            { name => 'type',  type => 'key' },
+            { name => 'id',    type => 'text' },
+            { name => 'ref',   type => 'key' },
+            { name => 'alt',   type => 'key' },
+            { name => 'qual',  type => 'double' },
+            { name => 'info',  type => 'text' }
+        ]
+    };
+    
     return ( $outfile, $format, $count, \%chromosomes );
 }
 
@@ -730,7 +773,21 @@ sub validate_gff_data_file {
     }
     close($in);
     close($out);
-    my $format = "chr:key, start:unsigned long, stop:unsigned long, strand:key, type:key, score:double, attr:text";
+    
+    #my $format = "chr:key, start:unsigned long, stop:unsigned long, strand:key, type:key, score:double, attr:text"; # mdb removed 4/2/14, issue 352
+    # mdb added 4/2/14, issue 352
+    my $format = {
+        columns => [
+            { name => 'chr',    type => 'key' },
+            { name => 'start',  type => 'unsigned long' },
+            { name => 'stop',   type => 'unsigned long' },
+            { name => 'strand', type => 'key' },
+            { name => 'type',   type => 'key' },
+            { name => 'score',  type => 'double' },
+            { name => 'attr',   type => 'text' }
+        ]
+    };
+    
     return ( $outfile, $format, $count, \%chromosomes );
 }
 

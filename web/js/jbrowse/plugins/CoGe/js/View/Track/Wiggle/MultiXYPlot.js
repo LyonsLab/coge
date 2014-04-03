@@ -256,15 +256,36 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                         score = -1*log2(Math.abs(score)+1);
                 }
 
+                var isUpward = (fRect.t <= originY); // bar goes upward
+                
                 fRect.t = toY( score );
                 if( fRect.t <= canvasHeight ) { // if the rectangle is visible at all
                     var id = f.get('id');
                     context.fillStyle = this._getFeatureColor(id);
-
-                    if( fRect.t <= originY ) // bar goes upward
+                    if (isUpward) 
                         context.fillRect( fRect.l, fRect.t, fRect.w, originY-fRect.t+1);
-                    else // bar goes downward
+                    else
                         context.fillRect( fRect.l, originY, fRect.w, fRect.t-originY+1 );
+                }
+                
+                // mdb added 4/2/14 - add labels, issue 346
+                var start = f.get('start'); 
+                if (start >= block.startBase && start <= block.endBase) { // print label only for first spanning block
+	                var label = f.get('label');
+	                if (label) {
+	                	var topOffset = ( isUpward ? fRect.t-12 : fRect.t );
+	                    var rulerdiv =
+	                        dojo.create('div', 
+	                    		{   style: {
+	                                	width: '100px',
+	                                    position: 'absolute',
+	                                    left: fRect.l,
+	                                    top: topOffset,
+	                                    //zIndex: 10,
+	                                },
+	                                innerHTML: label
+	                            }, canvas.parentNode );
+	                }
                 }
             }, this );
         }
@@ -349,13 +370,14 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 var score = f.feature.get('score');
                 var score2 = f.feature.get('score2');
                 var id = f.feature.get('id');
+                var fLabel = (f.feature.get('label') || ' ') + ' ';
                 var name = this._getFeatureName(f.feature);
                 var color = this._getFeatureColor(id);
                 for( var j = Math.round(fRect.l); j < jEnd; j++ ) {
                     var label = '<div style="background-color:'+color+';">' +
                         nbspPad(score.toPrecision(6).toString(), 11) +
                         (score2 ? nbspPad(score2.toPrecision(6).toString(), 11) : '') +
-                        name + '</div>';
+                        fLabel + name + '</div>';
                     pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
                 }
             },this);

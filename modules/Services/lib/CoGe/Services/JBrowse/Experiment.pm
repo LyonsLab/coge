@@ -276,22 +276,24 @@ sub features {
                 if (/^\"/) {    #if (/^\"$chr\"/) { # potential result line
                     s/"//g;
                     my @items = split(/,\s*/);
-                    next
-                      if ( @items != $NUM_QUANT_COL )
-                      ; # || $items[0] !~ /^\"?$chr/); # make sure it's a row output line
+                    # FIXME need a better way of detecting data lines ...
+                    next if ( $items[0] !~ /^\"?$chr/); # make sure it's a row output line
                     for ( my $i = 0 ; $i < @items ; $i++ ) {
                         $items[$i] = 1 if $items[$i] !~ /\w/; # what's this for?
                     }
 
                     #$results .= '[' . join(',', map {"\"$_\""} @items) . ']';
 
-                    my ( $chr, $start, $end, $strand, $value1, $value2 ) =
-                      @items;
+                    my ( $chr, $start, $end, $strand, $value1, $value2, $label ) = @items;
                     $end = $start + 1 if ( $end == $start ); #FIXME revisit this
                     $strand = -1 if ( $strand == 0 );
                     $value1 = $strand * $value1;
                     $results .= ( $results ? ',' : '' )
-                      . qq{{ "id": $eid, "start": $start, "end": $end, "score": $value1, "score2": $value2 }};
+                      . '{ '
+                      . qq{"id": $eid, "start": $start, "end": $end, "score": $value1 }
+                      . (defined $value2 ? qq{, "score2": $value2 } : '')
+                      . ($label ? qq{, "label": "$label"} : '')
+                      . ' }'
                 }
             }
         }
