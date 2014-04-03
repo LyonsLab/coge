@@ -12,7 +12,7 @@ sub search {
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
-        $self->render(json => { status => Mojo::JSON->false, error => 'Too many search results'});
+        $self->render(json => { error => {Error => 'Too many results'}});
         return;
     }
 
@@ -44,11 +44,6 @@ sub search {
 sub fetch {
     my $self = shift;
     my $id = int($self->stash('id'));
-
-    if ($id < 1) {
-        $self->render(json => { status => Mojo::JSON->false, error => 'Not a valid id'});
-        return;
-    }
 
     # Connect to the database
     my ( $db, $user, $conf ) = CoGe::Accessory::Web->init();
