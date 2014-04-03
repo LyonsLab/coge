@@ -61,6 +61,7 @@ $MAX_SEARCH_RESULTS = 100;
     search_users            => \&search_users,
     get_load_log            => \&get_load_log,
     check_login			    => \&check_login,
+    send_error_report       => \&send_error_report
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
@@ -720,4 +721,38 @@ sub create_source {
     return unless ($source);
 
     return $name;
+}
+
+sub send_error_report {
+    my %opts = @_;
+    my $load_id = $opts{load_id};
+    my $job_id = $opts{job_id};
+
+    my @paths= ($P->{SECTEMPDIR}, $PAGE_TITLE, $USER->name, $load_id,
+        "staging");
+
+    # Get the staging directory
+    my $staging_dir = File::Spec->catdir(@paths);
+
+    my $url = $P->{SERVER} . "$PAGE_TITLE.pl?";
+    $url .= "job_id=$job_id;" if $job_id;
+    $url .= "load_id=$load_id";
+
+    my $email = $P->{SUPPORT_EMAIL};
+
+    my $body =
+        "Load experiment failed\n\n"
+        . 'For user: '
+        . $USER->name . ' id='
+        . $USER->id . ' '
+        . $USER->date . "\n\n"
+        . "staging_directory: $staging_dir\n\n"
+        . "tiny link: $url\n\n";
+
+    CoGe::Accessory::Web::send_email(
+        from    => $email,
+        to      => $email,
+        subject => "Load error notification from $PAGE_TITLE",
+        body    => $body
+    );
 }
