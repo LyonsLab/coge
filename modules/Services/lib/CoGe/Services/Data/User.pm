@@ -50,7 +50,45 @@ sub search {
 
 sub fetch {
     my $self = shift;
-    $self->render(json => { success => Mojo::JSON->true });
+    my $id = int($self->stash('id'));
+    my $key = $self->param("apiKey");
+
+    # Connect to the database
+    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
+
+    # Deny a public user access to any user
+    if ($user->is_public) {
+        $self->render(json => {
+            error => { Auth => "Access denied"}
+        }, status => 401);
+        return;
+    }
+
+    my $fetched_user = $db->resultset("User")->find($id);
+
+    unless (defined $fetched_user) {
+        $self->render(json => {
+            error => { Error => "Item not found"}
+        });
+        return;
+    }
+
+    # Restrict a user's access to themselves
+    if ($user->id ne $fetched_user->id) {
+        $self->render(json => {
+            error => { Auth => "Access denied"}
+        }, status => 401);
+        return;
+    }
+
+    $self->render(json => {
+        id => int($fetched_user->id),
+        user_name => $fetched_user->user_name,
+        first_name => $fetched_user->first_name,
+        last_name => $fetched_user->last_name,
+        email => $fetched_user->email,
+        description => $fetched_user->description,
+    });
 }
 
 1;
