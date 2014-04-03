@@ -88,7 +88,7 @@ unless ( -r $file and -r "$file.finished") {
     if ($gid) {
         $item = $coge->resultset('Genome')->find($gid);
         $id  = $gid;
-        $org = $item->organism->name . "_dsgid";
+        $org = $item->organism->name . "_gid";
     }
     elsif ($dsid) {
         $item = $coge->resultset('Dataset')->find($dsid);
