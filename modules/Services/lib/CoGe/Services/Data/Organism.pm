@@ -56,7 +56,9 @@ sub fetch {
     my $organism = $db->resultset("Organism")->find($id);
 
     unless (defined $organism) {
-        $self->render(json => { status => Mojo::JSON->false, error => 'The organism could not be found'});
+        $self->render(json => {
+            error => { Error => "Item not found"}
+        });
         return;
     }
 
