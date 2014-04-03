@@ -11,7 +11,7 @@ sub startup {
         ->name("organisms-search")
         ->to("organism#search", term => undef);
 
-    $r->get("/organisms/fetch/:id" => [id => qr/\d+/])
+    $r->get("/organisms/:id" => [id => qr/\d+/])
         ->name("organisms-fetch")
         ->to("organism#fetch", id => undef);
 
@@ -24,7 +24,7 @@ sub startup {
         ->name("genomes-search")
         ->to("genome2#search", term => undef);
 
-    $r->get("/genomes/fetch/:id" => [id => qr/\d+/])
+    $r->get("/genomes/:id" => [id => qr/\d+/])
         ->name("genomes-fetch")
         ->to("genome2#fetch", id => undef);
 
@@ -33,7 +33,7 @@ sub startup {
         ->name("experiments-search")
         ->to("experiment#search", term => undef);
 
-    $r->get("/experiments/fetch/:id" => [id => qr/\d+/])
+    $r->get("/experiments/:id" => [id => qr/\d+/])
         ->name("experiments-fetch")
         ->to("experiment#fetch", id => undef);
 
@@ -42,12 +42,12 @@ sub startup {
         ->name("users-search")
         ->to("user#search", term => undef);
 
-    $r->get("/users/fetch/:id" => [id => qr/\d+/])
+    $r->get("/users/:id" => [id => qr/\d+/])
         ->name("users-fetch")
         ->to("user#fetch", id => undef);
 
-    $r->get("/users/fetch/:id/items" => [id => qr/\d+/])
-        ->name("users-fetch-items")
+    $r->get("/users/:id/items" => [id => qr/\d+/])
+        ->name("users-items")
         ->to("user#items", id => undef);
 
     # User group routes
@@ -55,12 +55,12 @@ sub startup {
         ->name("groups-search")
         ->to("group#search", term => undef);
 
-    $r->get("/groups/fetch/:id" => [id => qr/\d+/])
+    $r->get("/groups/:id" => [id => qr/\d+/])
         ->name("groups-fetch")
         ->to("group#fetch", id => undef);
 
-    $r->get("/groups/fetch/:id/items" => [id => qr/\d+/])
-        ->name("groups-fetch-items")
+    $r->get("/groups/:id/items" => [id => qr/\d+/])
+        ->name("groups-items")
         ->to("group#items", id => undef);
 
     # Job routes
