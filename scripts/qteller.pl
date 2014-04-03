@@ -379,6 +379,7 @@ sub create_gsnap_job {
             ["-Q", '', 0],
             ["--gmap-mode=none", '', 0],
             ["--nofails", $fastq, 1],
+	    ["--batch=5",'',0],
             [">", $name . ".sam", 1]
         ],
         inputs => [
