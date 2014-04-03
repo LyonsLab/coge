@@ -19,7 +19,7 @@ sub search {
     # Connect to the database
     my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
 
-    # Search genomes
+    # Search experiments
     my $search_term2 = '%' . $search_term . '%';
     my @experiments = $db->resultset("Experiment")->search(
         \[
@@ -49,7 +49,61 @@ sub search {
 
 sub fetch {
     my $self = shift;
-    $self->render(json => { success => Mojo::JSON->true});
+    my $id = int($self->stash('id'));
+    my $key = $self->param("apiKey");
+
+    # Connect to the database
+    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
+
+    my $experiment = $db->resultset("Experiment")->find($id);
+
+    unless (defined $experiment) {
+        $self->render(json => {
+            error => { Error => "Item not found"}
+        });
+        return;
+    }
+
+    unless ($user->has_access_to_experiment($experiment)) {
+        $self->render(json => {
+            error => { Auth => "Access denied"}
+        }, status => 401);
+        return;
+    }
+
+    # Format metadata
+    my @metadata = map {
+        {
+            text => $_->annotation,
+            link => $_->link,
+            type => $_->type->name,
+            type_group => $_->type->group
+        }
+    } $experiment->annotations;
+
+    # Format types
+    my @types = map {
+        {
+            name => $_->name,
+            description => $_->description
+        }
+    } $experiment->types;
+
+    $self->render(json => {
+        id => int($experiment->id),
+        name => $experiment->name,
+        description => $experiment->description,
+        version => $experiment->version,
+        genome_id  => int($experiment->genome->id),
+        source => {
+            name => $experiment->source->name,
+            description => $experiment->source->description,
+            link => $experiment->source->link
+        },
+        types => \@types,
+        metadata => \@metadata,
+        restricted => $experiment->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+    });
 }
 
 1;
