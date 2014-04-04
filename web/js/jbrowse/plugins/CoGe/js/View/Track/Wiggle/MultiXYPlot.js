@@ -267,8 +267,13 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                     else
                         context.fillRect( fRect.l, originY, fRect.w, fRect.t-originY+1 );
                 }
-                
-                // mdb added 4/2/14 - add labels, issue 346
+            }, this );
+            
+            // mdb added 4/2/14 - draw labels on top of bars, issue 346
+            dojo.forEach( sorted, function(pair,i) {
+                var f = pair.feature;
+                var fRect = pair.featureRect;
+                var isUpward = (fRect.t <= originY); // bar goes upward
                 var start = f.get('start'); 
                 if (start >= block.startBase && start <= block.endBase) { // print label only for first spanning block
 	                var label = f.get('label');
@@ -286,7 +291,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	                                innerHTML: label
 	                            }, canvas.parentNode );
 	                }
-                }
+                }                
             }, this );
         }
     },
