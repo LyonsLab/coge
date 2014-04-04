@@ -373,7 +373,8 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 var score = f.feature.get('score');
                 var score2 = f.feature.get('score2');
                 var id = f.feature.get('id');
-                var fLabel = (f.feature.get('label') || ' ') + ' ';
+                var fLabel = f.feature.get('label');
+                if (!fLabel || fLabel == '.') fLabel = '';
                 var name = this._getFeatureName(f.feature);
                 var color = this._getFeatureColor(id);
                 for( var j = Math.round(fRect.l); j < jEnd; j++ ) {
