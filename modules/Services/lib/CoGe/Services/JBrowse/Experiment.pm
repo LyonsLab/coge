@@ -5,6 +5,7 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Storage qw( get_experiment_data );
 use JSON::XS;
+use Data::Dumper;
 
 #TODO: use these from Storage.pm instead of redeclaring them
 my $DATA_TYPE_QUANT  = 1; # Quantitative data
@@ -177,7 +178,7 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
                     $bins[$b]++;
                 }
             }
-        }        
+        }
         else {
         	print STDERR "JBrowse::Experiment::stats_regionFeatureDensities unknown data type for experiment $eid\n";
         	next;
@@ -262,7 +263,7 @@ sub features {
         my $data_type = $exp->data_type;
 
         if ( !$data_type || $data_type == $DATA_TYPE_QUANT ) {
-            my $cmdOut = CoGe::Accessory::Storage::get_experiment_data(
+            my $pData = CoGe::Accessory::Storage::get_experiment_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
                 chr   => $chr,
@@ -270,35 +271,25 @@ sub features {
                 end   => $end
             );
 
-            # Convert FastBit output into JSON
-            foreach (@$cmdOut) {
-                chomp;
-                if (/^\"/) {    #if (/^\"$chr\"/) { # potential result line
-                    s/"//g;
-                    my @items = split(/,\s*/);
-                    # FIXME need a better way of detecting data lines ...
-                    next if ( $items[0] !~ /^\"?$chr/); # make sure it's a row output line
-                    for ( my $i = 0 ; $i < @items ; $i++ ) {
-                        $items[$i] = 1 if $items[$i] !~ /\w/; # what's this for?
-                    }
-
-                    #$results .= '[' . join(',', map {"\"$_\""} @items) . ']';
-
-                    my ( $chr, $start, $end, $strand, $value1, $value2, $label ) = @items;
-                    $end = $start + 1 if ( $end == $start ); #FIXME revisit this
-                    $strand = -1 if ( $strand == 0 );
-                    $value1 = $strand * $value1;
-                    $results .= ( $results ? ',' : '' )
-                      . '{ '
-                      . qq{"id": $eid, "start": $start, "end": $end, "score": $value1 }
-                      . (defined $value2 ? qq{, "score2": $value2 } : '')
-                      . ($label ? qq{, "label": "$label"} : '')
-                      . ' }'
-                }
+            # Convert to JSON
+            foreach my $d (@$pData) {
+                my %result = (
+                    id     => $eid,
+                    start  => $d->{start},
+                    end    => $d->{stop},
+                    strand => $d->{strand}
+                );
+                $result{strand} = -1 if ($result{strand} == 0);
+                $result{stop} = $result{start} + 1 if ( $result{stop} == $result{start} ); #FIXME revisit this
+                $result{score} = $result{strand} * $d->{value1};
+                $result{score2} = $d->{value2} if (defined $d->{value2});
+                $result{label} = $d->{label} if (defined $d->{label});
+                $results .= ( $results ? ',' : '') . encode_json(\%result);
+                #print STDERR $result{score}, " ";
             }
         }
         elsif ( $data_type == $DATA_TYPE_POLY ) {
-            my $cmdOut = CoGe::Accessory::Storage::get_experiment_data(
+            my $pData = CoGe::Accessory::Storage::get_experiment_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
                 chr   => $chr,
@@ -306,31 +297,54 @@ sub features {
                 end   => $end
             );
 
-            # Convert FastBit output into JSON
-            foreach (@$cmdOut) {
-                chomp;
-                if (/^\"/) {    #if (/^\"$chr\"/) { # potential result line
-                    s/"//g;
-                    my @items = split(/,\s*/);
-                    next
-                      if ( @items != $NUM_VCF_COL )
-                      ; # || $items[0] !~ /^\"?$chr/); # make sure it's a row output line
-
-                    my (
-                        $chr, $start, $end,  $type, $id,
-                        $ref, $alt,   $qual, $info
-                    ) = @items;
-                    $end = $start + 1 if ( $end == $start ); #FIXME revisit this
-                    my $name =
-                      ( ( $id && $id ne '.' ) ? "$id " : '' )
-                      . "$type $ref > $alt";
-                    $type = $type . $ref . 'to' . $alt
-                      if ( lc($type) eq 'snp' );
-                    $results .= ( $results ? ',' : '' )
-                      . qq{{ "id": $eid, "name": "$name", "type": "$type", "start": $start, "end": $end, "ref": "$ref", "alt": "$alt", "score": $qual, "info": "$info" }};
-                }
+            # Convert to JSON
+            foreach my $d (@$pData) {
+                my %result = (
+                    id    => $eid,
+                    name  => $d->{name},
+                    type  => $d->{type},
+                    start => $d->{start},
+                    end   => $d->{stop},
+                    ref   => $d->{ref},
+                    alt   => $d->{alt},
+                    score => $d->{qual},
+                    info  => $d->{info}
+                );
+                $result{score2} = $d->{value2} if (defined $d->{value2});
+                $result{label} = $d->{label} if (defined $d->{label});
+                $result{name} = (( $d->{id} && $d->{id} ne '.' ) ? $d->{id} . ' ' : '')
+                    . $d->{type} . ' ' . $d->{ref} . " > " . $d->{alt};
+                $result{type} = $d->{type} . $d->{ref} . 'to' . $d->{alt}
+                    if ( lc($d->{type}) eq 'snp' );
+                $results .= ( $results ? ',' : '') . encode_json(\%result);
             }
         }
+        elsif ( $data_type == $DATA_TYPE_MARKER ) {
+            my $pData = CoGe::Accessory::Storage::get_experiment_data(
+                eid   => $eid,
+                data_type  => $exp->data_type,
+                chr   => $chr,
+                start => $start,
+                end   => $end
+            );
+
+            # Convert to JSON
+            foreach my $d (@$pData) {
+                my %result = (
+                    uniqueID => $d->{start} . '_' . $d->{stop},
+                    type     => $d->{type},
+                    start    => $d->{start},
+                    end      => $d->{stop},
+                    strand   => $d->{strand},
+                    score    => $d->{value1},
+                    attr     => $d->{attr}
+                );
+                $result{'strand'} = -1 if ($result{'strand'} == 0);
+                $result{'stop'} = $result{'start'} + 1 if ( $result{'stop'} == $result{'start'} ); #FIXME revisit this
+                $result{'value1'} = $result{'strand'} * $result{'value1'};
+                $results .= ( $results ? ',' : '') . encode_json(\%result);
+            }
+        }        
         elsif ( $data_type == $DATA_TYPE_ALIGN ) {
 	        my $cmdOut = CoGe::Accessory::Storage::get_experiment_data(
 	            eid   => $eid,
@@ -388,31 +402,6 @@ sub features {
                       . qq{{ "uniqueID": "$qname", "name": "$qname", "start": $start, "end": $end, "strand": $strand, "score": $mapq, "seq": "$seq", "qual": "$qual", "Seq length": $len, "CIGAR": "$cigar" }};
     	        }
 	        }
-        }
-        elsif ( $data_type == $DATA_TYPE_MARKER ) {
-            my $cmdOut = CoGe::Accessory::Storage::get_experiment_data(
-                eid   => $eid,
-                data_type  => $exp->data_type,
-                chr   => $chr,
-                start => $start,
-                end   => $end
-            );
-
-            # Convert FastBit output into JSON
-            foreach (@$cmdOut) {
-                chomp;
-                if (/^\"/) {    #if (/^\"$chr\"/) { # potential result line
-                    s/"//g;
-                    my @items = split(/,\s*/);
-                    next if ( @items != $NUM_GFF_COL ); # || $items[0] !~ /^\"?$chr/); # make sure it's a row output line
-
-                    my ( $chr, $start, $end,  $strand, $type, $score, $attr ) = @items;
-                    $end = $start + 1 if ( $end == $start ); #FIXME revisit this
-                    my $uniqueID = $start . '_' . $stop;
-                    $results .= ( $results ? ',' : '' )
-                      . qq{{ "uniqueID": "$uniqueID", "type": "$type", "start": $start, "end": $end, "strand": $strand, "score": $score, "name": "$attr" }};
-                }
-            }
         }
         else {
         	print STDERR "JBrowse::Experiment::features unknown data type $data_type for experiment $eid\n";
