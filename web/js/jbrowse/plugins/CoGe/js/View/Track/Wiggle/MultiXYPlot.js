@@ -275,7 +275,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 var start = f.get('start'); 
                 if (start >= block.startBase && start <= block.endBase) { // print label only for first spanning block
 	                var label = f.get('label');
-	                if (label) {
+	                if (label && label != '.') {
 	                	var topOffset = ( isUpward ? fRect.t-12 : fRect.t );
 	                    var rulerdiv =
 	                        dojo.create('div', 
