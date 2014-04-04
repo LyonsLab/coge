@@ -412,7 +412,7 @@ sub login_cas_proxy {
     $request_ua =
       HTTP::Request->new(
         POST => 'https://user.iplantcollaborative.org/api/v1/service/coge/add/' . $uname );
-    $request_ua->authorization_basic( '6mv9x9lyts8oje8uj3t6yo', 'f59ba33ee35d363ffefd8b27b375e587b0e5c7a1' );
+    $request_ua->authorization_basic( get_defaults()->{AUTHNAME}, get_defaults()->{AUTHPASS} );
 
     #print STDERR "request uri: " . $request_ua->uri . "\n";
     #$request_ua->content($request);
@@ -518,9 +518,8 @@ sub login_cas_saml {
 	#$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0; # this doesn't work for bypassing cert check, need line in apache cfg
     $request_ua =
       HTTP::Request->new(
-        POST => 'https://user.iplantcollaborative.org/api/v1/service/coge/add/'
-          . $uname );
-    $request_ua->authorization_basic( '6mv9x9lyts8oje8uj3t6yo', 'f59ba33ee35d363ffefd8b27b375e587b0e5c7a1' );
+        POST => 'https://user.iplantcollaborative.org/api/v1/service/coge/add/' . $uname );
+    $request_ua->authorization_basic( get_defaults()->{AUTHNAME}, get_defaults()->{AUTHPASS} );
 
     #print STDERR "request uri: " . $request_ua->uri . "\n";
     #$request_ua->content($request);
