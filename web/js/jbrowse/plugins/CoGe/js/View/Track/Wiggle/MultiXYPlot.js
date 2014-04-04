@@ -256,15 +256,13 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                         score = -1*log2(Math.abs(score)+1);
                 }
 
-                var isUpward = (fRect.t <= originY); // bar goes upward
-                
                 fRect.t = toY( score );
                 if( fRect.t <= canvasHeight ) { // if the rectangle is visible at all
                     var id = f.get('id');
                     context.fillStyle = this._getFeatureColor(id);
-                    if (isUpward) 
+                    if (fRect.t <= originY) // bar goes upward
                         context.fillRect( fRect.l, fRect.t, fRect.w, originY-fRect.t+1);
-                    else
+                    else // downward
                         context.fillRect( fRect.l, originY, fRect.w, fRect.t-originY+1 );
                 }
             }, this );
