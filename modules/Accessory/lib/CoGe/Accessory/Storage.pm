@@ -457,9 +457,9 @@ sub get_experiment_data {
         my $cmdpath = CoGe::Accessory::Web::get_defaults()->{FASTBIT_QUERY};
         $cmd = "$cmdpath -v 1 -d $storage_path -q \"select $columns where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
         
-        print STDERR "\n$cmd\n";
+        #print STDERR "\n$cmd\n";
         my @cmdOut = qx{$cmd};
-        print STDERR @cmdOut;
+        #print STDERR @cmdOut;
         my $cmdStatus = $?;
         if ( $? != 0 ) {
             print STDERR "Storage::get_experiment_data: error $? executing command: $cmd\n";

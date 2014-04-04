@@ -285,7 +285,6 @@ sub features {
                 $result{score2} = $d->{value2} if (defined $d->{value2});
                 $result{label} = $d->{label} if (defined $d->{label});
                 $results .= ( $results ? ',' : '') . encode_json(\%result);
-                print STDERR "result: ", $result{score}, "\n";
             }
         }
         elsif ( $data_type == $DATA_TYPE_POLY ) {
