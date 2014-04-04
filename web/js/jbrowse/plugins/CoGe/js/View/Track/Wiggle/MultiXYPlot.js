@@ -381,7 +381,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                     var label = '<div style="background-color:'+color+';">' +
                         nbspPad(score.toPrecision(6).toString(), 11) +
                         (score2 ? nbspPad(score2.toPrecision(6).toString(), 11) : '') +
-                        fLabel + name + '</div>';
+                        (fLabel ? fLabel+' ') + name + '</div>';
                     pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
                 }
             },this);
