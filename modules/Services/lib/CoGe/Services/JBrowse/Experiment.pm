@@ -273,19 +273,19 @@ sub features {
 
             # Convert to JSON
             foreach my $d (@$pData) {
+                next if ($d->{value1} == 0 and $d->{value2} == 0);
                 my %result = (
-                    id     => $eid,
+                    id     => int($eid),
                     start  => $d->{start},
                     end    => $d->{stop},
-                    strand => $d->{strand}
                 );
-                $result{strand} = -1 if ($result{strand} == 0);
-                $result{stop} = $result{start} + 1 if ( $result{stop} == $result{start} ); #FIXME revisit this
-                $result{score} = $result{strand} * $d->{value1};
+                $d->{strand} = -1 if ($d->{strand} == 0);
+                $result{end} = $result{start} + 1 if ( $result{end} == $result{start} ); #FIXME revisit this
+                $result{score} = $d->{strand} * $d->{value1};
                 $result{score2} = $d->{value2} if (defined $d->{value2});
                 $result{label} = $d->{label} if (defined $d->{label});
                 $results .= ( $results ? ',' : '') . encode_json(\%result);
-                #print STDERR $result{score}, " ";
+                print STDERR "result: ", $result{score}, "\n";
             }
         }
         elsif ( $data_type == $DATA_TYPE_POLY ) {
