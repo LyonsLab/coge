@@ -410,6 +410,7 @@ sub load_experiment {
     my $gid         = $opts{gid};
     my $items       = $opts{items};
     my $file_type	= $opts{file_type};
+    my $aligner     = $opts{aligner};
 
 	# Added EL: 10/24/2013.  Solves the problem when restricted is unchecked.  
 	# Otherwise, command-line call fails with next arg being passed to 
@@ -479,6 +480,7 @@ sub load_experiment {
             . "-gid $gid "
             . '-uid ' . $USER->id . ' '
             . '-jid ' . $job->id . ' '
+            . "-alignment $aligner "
             . '-name "' . escape($name) . '" '
             . '-desc "' . escape($description) . '" '
             . '-version "' . escape($version) . '" '
@@ -487,6 +489,7 @@ sub load_experiment {
             . "-staging_dir $stagepath "
             . '-data_file "' . escape( join( ',', @files ) ) . '" '
             . "-config $CONFIGFILE";
+
         print STDERR "$cmd\n";
         print $logh "$cmd\n";
         close($logh);

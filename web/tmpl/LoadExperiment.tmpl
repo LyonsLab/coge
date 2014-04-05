@@ -47,6 +47,14 @@ $(document).ready(function(){
             setTimeout(function() { get_load_log(); }, 0);
         }
     }
+    $("#file_type_selector").on("change", function() {
+        var alignment = $("#alignment");
+        if ($(this).val() === "fastq") {
+           alignment.slideDown();
+        } else {
+           alignment.slideUp();
+        }
+    })
 });
 
 function file_selected(filename, url) {
@@ -56,10 +64,30 @@ function file_selected(filename, url) {
 }
 
 function file_finished(size, url) {
+    var files = get_selected_files(),
+        exp = /(:?fastq|fq)/;
+
+    var isFastq = exp.test.bind(exp);
+
+    if (files.map(getPath).some(isFastq)) {
+        $("#file_type_selector")
+            .find("option[value=fastq]")
+            .prop("selected", true)
+            .change();
+    }
 }
 
+function getPath(item) {
+    return item.path;
+}
+
+
 function file_canceled() {
-    $('#select_file_type').hide();
+    $('#select_file_type').hide()
+        .find("option[value=autodetect")
+        .prop("selected", true)
+        .change()
+
     $('#select_file_button').show();
 }
 
@@ -117,6 +145,7 @@ function load_experiment() {
     var genome = $('#edit_genome').val();
     var gid = $('#gid').val();
     var file_type = $("#select_file_type option:selected").val();
+    var aligner = $("#alignment").find(":checked").val();
 
     if (!name) {
         alert('Please specify an experiment name.');
@@ -180,6 +209,7 @@ function load_experiment() {
             user_name: user_name,
             items: json,
             file_type: file_type,
+            aligner: aligner,
             timestamp: new Date().getTime()
         },
         success : function(data) {
@@ -533,7 +563,7 @@ function update_dialog(request, identifier, formatter) {
       <span id="select_file_button" onClick="$('#file_select_dialog').dialog('open');" class='ui-button ui-corner-all'> Select Data File</span>
       <span id="select_file_type" class="hidden" style="padding-left:15px;vertical-align:5px;">
           File type:
-          <select>
+          <select id="file_type_selector">
             <option value="autodetect">Detect from filename</option>
             <optgroup label="Quantitative">
               <option value="csv">Comma-separated value (CSV)</option>
@@ -552,6 +582,16 @@ function update_dialog(request, identifier, formatter) {
             </optgroup>
           </select>
       </span>
+    </td>
+  </tr>
+  <tr id="alignment" class="hidden">
+    <td>Aligner:</td>
+    <td>
+        <input name="aligner" type="radio" value="gsnap" checked>
+        <label for="gsnap">GSNAP</label>
+
+        <input name="aligner" type="radio" value="tophat">
+        <label for="gsnap">TopHat</label>
     </td>
   </tr>
 </table>
