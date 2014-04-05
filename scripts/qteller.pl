@@ -4,9 +4,9 @@ use strict;
 use warnings;
 
 use Data::Dumper qw(Dumper);
-use File::Basename qw(fileparse basename);
+use File::Basename qw(fileparse basename dirname);
 use File::Path qw(mkpath);
-use File::Spec qw(catdir);
+use File::Spec::Functions qw(catdir);
 use Getopt::Long qw(GetOptions);
 use JSON qw(decode_json);
 use URI::Escape::JavaScript qw(unescape);
@@ -18,7 +18,7 @@ use CoGe::Accessory::Web qw(get_defaults get_job schedule_job);
 
 our ($DESC, $YERBA, $LOG, $DEBUG, $P, $db, $host, $port, $user, $pass,
      $name, $description, $version, $restricted, $source_name, $files,
-     $CACHE, $test, $config, $gid, $jobid, $userid, $staging_dir,
+     $CACHE, $test, $config, $gid, $jobid, $userid, $staging_dir, $alignment,
      $ANNOTATIONS);
 
 $DESC = "Running the qTeller pipeline";
@@ -42,6 +42,7 @@ GetOptions(
     # General configuratino options
     "staging_dir|dir=s" => \$staging_dir,
     "config|cfg=s"      => \$config,
+    "alignment|a=s"     => \$alignment,
 
     # Load experiment options
     "name|n=s"          => \$name,
@@ -69,10 +70,13 @@ sub setup {
     $user = $P->{DBUSER};
     $pass = $P->{DBPASS};
     $YERBA = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
-    $LOG = File::Spec->catdir(($staging_dir, "qteller.txt"));
+    $LOG = catdir(($staging_dir, "qteller.txt"));
 
     $CACHE = $P->{CACHEDIR};
     die "ERROR: CACHEDIR not specified in config" unless $CACHE;
+
+    # Set default alignment program if alignment is not set or incorrect
+    $alignment = "gsnap" unless $alignment and $alignment =~ /tophat|gsnap/;
 
     mkpath($CACHE, 0, 0777) unless -r $CACHE;
     mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
@@ -106,77 +110,78 @@ sub main {
         logfile => $LOG
     );
 
+    my (@jobs, @steps, $bam, $include_csv);
+
     # Validate the fastq file
     # XXX: Add job dependencies
     my %validate = create_validate_fastq_job($fastq);
+    push @jobs, \%validate;
 
     # Filter the fasta file (clean up headers)
-    my %filtered_fasta = create_fasta_filter_job($fasta, "$fastq.validated");
+    my %filter = create_fasta_filter_job($fasta, "$fastq.validated");
+    my $filtered_fasta = @{$filter{outputs}}[0];
+    push @jobs, \%filter;
 
     # Cleanup fastq
     my %trimmed = create_cutadapt_job($fastq, "$fastq.validated");
+    my $trimmed_fastq = @{$trimmed{outputs}}[0];
+    push @jobs, \%trimmed;
 
-    # Generate index
-    my %gmap = create_gmap_index_job(@{$filtered_fasta{outputs}}[0]);
+    if ($alignment eq "tophat") {
+        ($bam, @steps) = tophat_pipeline($filtered_fasta, $trimmed_fastq);
+    } else {
+        ($bam, @steps) = gsnap_pipeline($filtered_fasta, $trimmed_fastq);
+    }
 
-    # Generate sam file
-    my %gsnap = create_gsnap_job(@{$trimmed{outputs}}[0], @{@{$gmap{outputs}}[0]}[0]);
-
-    # Generate and sort bam
-    my %bam = create_samtools_bam_job(@{$gsnap{outputs}}[0]);
-    my %sorted_bam = create_samtools_sort_job($bam{outputs}[0]);
+    # Join alignment pipeline
+    @jobs = (@jobs, @steps);
 
     # Generate bed file
-    my %bed = create_bed_file_job(@{$sorted_bam{outputs}}[0]);
+    my %bed = create_bed_file_job($bam);
+    push @jobs, \%bed;
 
     # Filter bed file
     my %filtered_bed = create_filter_bed_file_job(@{$bed{outputs}}[0]);
-
-    my $csv;
+    push @jobs, \%filtered_bed;
 
     # Check for annotations required by cufflinks
     if (has_annotations($genome, $coge)) {
+        $include_csv = 1;
+
         # Generate gff
         my %gff = create_gff_generation_job($genome, "$fastq.validated");
+        my $gff_file = @{$gff{outputs}}[0];
+        push @jobs, \%gff;
 
         # Run cufflinks
-        my %cuff = create_cufflinks_job(@{$gff{outputs}}[0],
-            @{$filtered_fasta{outputs}}[0],
-            @{$sorted_bam{outputs}}[0]);
+        my %cuff = create_cufflinks_job($gff_file, $filtered_fasta, $bam);
+
+        push @jobs, \%cuff;
 
         # Convert final output into csv
         my %parse_cuff = create_parse_cufflinks_job(@{$cuff{outputs}}[0]);
+        push @jobs, \%parse_cuff;
 
         # Load csv experiment
         my %load_csv = create_load_csv_job(@{$parse_cuff{outputs}}[0], $user);
-        $csv = 1;
-
-        $workflow->add_job(%gff);
-        $workflow->add_job(%cuff);
-        $workflow->add_job(%parse_cuff);
-        $workflow->add_job(%load_csv);
+        push @jobs, \%load_csv;
     }
 
     # Load bam experiment
-    my %load_bam = create_load_bam_job(@{$sorted_bam{outputs}}[0], $user);
+    my %load_bam = create_load_bam_job($bam, $user);
+    push @jobs, \%load_bam;
 
     # Load bed experiment
     my %load_bed = create_load_bed_job(@{$filtered_bed{outputs}}[0], $user);
+    push @jobs, \%load_bed;
 
-    my %create_notebook = create_notebook_job($csv, 1, 1, $user);
+    # Create notebook
+    my %notebook = create_notebook_job($include_csv, 1, 1, $user);
+    push @jobs, \%notebook;
 
-    $workflow->add_job(%validate);
-    $workflow->add_job(%filtered_fasta);
-    $workflow->add_job(%trimmed);
-    $workflow->add_job(%gmap);
-    $workflow->add_job(%gsnap);
-    $workflow->add_job(%bam);
-    $workflow->add_job(%sorted_bam);
-    $workflow->add_job(%bed);
-    $workflow->add_job(%filtered_bed);
-    $workflow->add_job(%load_bam);
-    $workflow->add_job(%load_bed);
-    $workflow->add_job(%create_notebook);
+    for my $job (@jobs) {
+        $workflow->add_job(%{$job});
+    }
 
     say STDERR "WORKFLOW DUMP\n" . Dumper($workflow) if $DEBUG;
     say STDERR "JOB NOT SCHEDULED TEST MODE" and exit(0) if $test;
@@ -224,10 +229,11 @@ sub has_annotations {
     return $count > 0;
 }
 
+
 sub create_validate_fastq_job {
     my $fastq = shift;
 
-    my $cmd = File::Spec->catdir(($P->{SCRIPTDIR}, "validate_fastq.pl"));
+    my $cmd = catdir(($P->{SCRIPTDIR}, "validate_fastq.pl"));
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
     return (
@@ -250,8 +256,8 @@ sub create_fasta_filter_job {
     my $fasta = shift;
     my $validated = shift;
     my $name = to_filename($fasta);
-    my $cmd = File::Spec->catdir(($P->{SCRIPTDIR}, "fasta_reheader.pl"));
-    my $FASTA_CACHE_DIR = File::Spec->catdir(($CACHE, "$gid/fasta"));
+    my $cmd = catdir(($P->{SCRIPTDIR}, "fasta_reheader.pl"));
+    my $FASTA_CACHE_DIR = catdir(($CACHE, "$gid/fasta"));
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
     return (
@@ -266,7 +272,7 @@ sub create_fasta_filter_job {
             $validated
         ],
         outputs => [
-            File::Spec->catdir(($FASTA_CACHE_DIR, $name . ".filtered.fasta"))
+            catdir(($FASTA_CACHE_DIR, $name . ".filtered.fasta"))
         ],
         description => "Filtering fasta file..."
     );
@@ -276,7 +282,7 @@ sub create_gff_generation_job {
     my $genome = shift;
     my $validated = shift;
     my @path = ($P->{SCRIPTDIR}, "coge_gff.pl");
-    my $cmd = File::Spec->catdir(@path);
+    my $cmd = catdir(@path);
     my $org_name = sanitize_organism_name($genome->organism->name);
     my $name = "$org_name-1-name-0-0-id-" . $genome->id . "-1.gff";
 
@@ -299,7 +305,7 @@ sub create_gff_generation_job {
             $validated
         ],
         outputs => [
-            File::Spec->catdir(($CACHE, "$gid/gff", $name))
+            catdir(($CACHE, "$gid/gff", $name))
         ],
         description => "Generating gff..."
     );
@@ -327,117 +333,9 @@ sub create_cutadapt_job {
             $validated
         ],
         outputs => [
-            File::Spec->catdir(($staging_dir, $name . '.trimmed.fastq'))
+            catdir(($staging_dir, $name . '.trimmed.fastq'))
         ],
         description => "Running cutadapt..."
-    );
-}
-
-sub create_gmap_index_job {
-    my $fasta = shift;
-    my $name = to_filename($fasta);
-    my $cmd = $P->{GMAP_BUILD};
-    my $GMAP_CACHE_DIR = File::Spec->catdir(($CACHE, "$gid/gmap_index"));
-    die "ERROR: GMAP_BUILD is not in the config." unless ($cmd);
-
-    return (
-        cmd => $cmd,
-        script => undef,
-        args => [
-            ["-D", ".", 0],
-            ["-d", $name . "-index", 0],
-            ["", $fasta, 1]
-        ],
-        inputs => [
-            $fasta
-        ],
-        outputs => [
-            [File::Spec->catdir(($GMAP_CACHE_DIR, $name . "-index")), 1]
-        ],
-        description => "Generating index..."
-    );
-}
-
-sub create_gsnap_job {
-    my ($fastq, $gmap) = @_;
-    my $name = basename($gmap);
-    my $cmd = $P->{GSNAP};
-    die "ERROR: GSNAP is not in the config." unless ($cmd);
-
-    return (
-        cmd => $cmd,
-        script => undef,
-        options => {
-            "allow-zero-length" => JSON::false,
-        },
-        args => [
-            ["-D", ".", 0],
-            ["-d", $name, 0],
-            ["--nthreads=32", '', 0],
-            ["-n", 5, 0],
-            ["--format=sam", '', 0],
-            ["-Q", '', 0],
-            ["--gmap-mode=none", '', 0],
-            ["--nofails", $fastq, 1],
-	    ["--batch=5",'',0],
-            [">", $name . ".sam", 1]
-        ],
-        inputs => [
-            $fastq,
-            [$gmap, 1]
-        ],
-        outputs => [
-            File::Spec->catdir(($staging_dir, $name . ".sam"))
-        ],
-        description => "Running gsnap..."
-    );
-}
-
-sub create_samtools_bam_job {
-    my $samfile = shift;
-    my $name = to_filename($samfile);
-    my $cmd = $P->{SAMTOOLS};
-    die "ERROR: SAMTOOLS is not in the config." unless ($cmd);
-
-    return (
-        cmd => $cmd,
-        script => undef,
-        args => [
-            ["view", '', 0],
-            ["-bS", $samfile, 1],
-            [">", $name . ".bam", 0]
-        ],
-        inputs => [
-            $samfile
-        ],
-        outputs => [
-            File::Spec->catdir(($staging_dir, $name . ".bam"))
-        ],
-        description => "Generating bam file..."
-    );
-}
-
-sub create_samtools_sort_job {
-    my $bam = shift;
-    my $name = to_filename($bam);
-    my $cmd = $P->{SAMTOOLS};
-    die "ERROR: SAMTOOLS is not in the config." unless ($cmd);
-
-    return (
-        cmd => $cmd,
-        script => undef,
-        args => [
-            ["sort", '', 0],
-            ["", $bam, 1],
-            ["", $name . "-sorted", 1]
-        ],
-        inputs => [
-            $bam
-        ],
-        outputs => [
-            File::Spec->catdir(($staging_dir, $name . "-sorted.bam"))
-        ],
-        description => "Sorting bam file..."
     );
 }
 
@@ -450,7 +348,6 @@ sub create_cufflinks_job {
         cmd => $cmd,
         script => undef,
         args => [
-            ['--GTF', $gff, 1],
             ['-u', '', 0],
             ['-b', $fasta, 1],
             ['-p', 24, 0],
@@ -462,7 +359,7 @@ sub create_cufflinks_job {
             $fasta
         ],
         outputs => [
-            File::Spec->catdir(($staging_dir, "genes.fpkm_tracking"))
+            catdir(($staging_dir, "genes.fpkm_tracking"))
         ],
         description => "Running cufflinks..."
     );
@@ -473,7 +370,7 @@ sub create_bed_file_job {
     my $name = to_filename($bam);
     my $cmd = $P->{SAMTOOLS};
     my @paths =  ($P->{SCRIPTDIR}, "pileup_to_bed.pl");
-    my $PILE_TO_BED = File::Spec->catdir(@paths);
+    my $PILE_TO_BED = catdir(@paths);
     die "ERROR: SAMTOOLS is not in the config." unless ($cmd);
     die "ERROR: SCRIPTDIR not specified in config" unless $PILE_TO_BED;
 
@@ -493,18 +390,19 @@ sub create_bed_file_job {
             $bam,
         ],
         outputs => [
-            File::Spec->catdir(($staging_dir, $name . ".bed"))
+            catdir(($staging_dir, $name . ".bed"))
         ],
         description => "Generating read depth..."
     );
 }
+
 
 sub create_filter_bed_file_job {
     my $bed = shift;
     my $name = to_filename($bed);
     my $cmd = $P->{SAMTOOLS};
     my @paths =  ($P->{SCRIPTDIR}, "normalize_bed.pl");
-    my $NORMALIZE_BED = File::Spec->catdir(@paths);
+    my $NORMALIZE_BED = catdir(@paths);
     die "ERROR: SCRIPTDIR not specified in config" unless $NORMALIZE_BED;
 
     return (
@@ -518,7 +416,7 @@ sub create_filter_bed_file_job {
             $bed,
         ],
         outputs => [
-            File::Spec->catdir(($staging_dir, $name . ".normalized.bed"))
+            catdir(($staging_dir, $name . ".normalized.bed"))
         ],
         description => "Normalizing read depth..."
     );
@@ -544,7 +442,7 @@ sub create_parse_cufflinks_job {
             $cufflinks
         ],
         outputs => [
-            File::Spec->catdir(($staging_dir, $name . ".csv"))
+            catdir(($staging_dir, $name . ".csv"))
         ],
         description => "Processing cufflinks output ..."
     );
@@ -552,7 +450,7 @@ sub create_parse_cufflinks_job {
 
 sub create_load_csv_job {
     my ($csv, $user) = @_;
-    my $cmd = File::Spec->catdir(($P->{SCRIPTDIR}, "load_experiment.pl"));
+    my $cmd = catdir(($P->{SCRIPTDIR}, "load_experiment.pl"));
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
     return (
@@ -578,8 +476,8 @@ sub create_load_csv_job {
             $csv
         ],
         outputs => [
-            [File::Spec->catdir(($staging_dir, "csv")), 1],
-            File::Spec->catdir(($staging_dir, "csv/log.done")),
+            [catdir(($staging_dir, "csv")), 1],
+            catdir(($staging_dir, "csv/log.done")),
         ],
         description => "Loading expression data..."
     );
@@ -587,7 +485,7 @@ sub create_load_csv_job {
 
 sub create_load_bam_job {
     my ($bam, $user) = @_;
-    my $cmd = File::Spec->catdir(($P->{SCRIPTDIR}, "load_experiment.pl"));
+    my $cmd = catdir(($P->{SCRIPTDIR}, "load_experiment.pl"));
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
     return (
@@ -613,8 +511,8 @@ sub create_load_bam_job {
             $bam,
         ],
         outputs => [
-            [File::Spec->catdir(($staging_dir, "bam")), 1],
-            File::Spec->catdir(($staging_dir, "bam/log.done")),
+            [catdir(($staging_dir, "bam")), 1],
+            catdir(($staging_dir, "bam/log.done")),
         ],
         description => "Loading mapped reads..."
     );
@@ -622,7 +520,7 @@ sub create_load_bam_job {
 
 sub create_load_bed_job {
     my ($bed, $user) = @_;
-    my $cmd = File::Spec->catdir(($P->{SCRIPTDIR}, "load_experiment.pl"));
+    my $cmd = catdir(($P->{SCRIPTDIR}, "load_experiment.pl"));
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
     return (
@@ -648,8 +546,8 @@ sub create_load_bed_job {
             $bed,
         ],
         outputs => [
-            [File::Spec->catdir(($staging_dir, "bed")), 1],
-            File::Spec->catdir(($staging_dir, "bed/log.done")),
+            [catdir(($staging_dir, "bed")), 1],
+            catdir(($staging_dir, "bed/log.done")),
         ],
         description => "Loading read depth..."
     );
@@ -657,7 +555,7 @@ sub create_load_bed_job {
 
 sub create_notebook_job {
     my ($csv, $bam, $bed, $user) = @_;
-    my $cmd = File::Spec->catdir(($P->{SCRIPTDIR}, "create_notebook.pl"));
+    my $cmd = catdir(($P->{SCRIPTDIR}, "create_notebook.pl"));
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
     my $args = [
@@ -669,27 +567,27 @@ sub create_notebook_job {
         ['-restricted', $restricted, 0],
         ['-annotations', $ANNOTATIONS, 0],
         ['-config', $config, 1],
-        ['-log', File::Spec->catdir(($staging_dir, "log.txt")), 0],
+        ['-log', catdir(($staging_dir, "log.txt")), 0],
     ];
 
     my $inputs = [$config];
 
     if ($bed) {
         push @$args, ['', "bed/log.txt", 0];
-        push @$inputs, [File::Spec->catdir(($staging_dir, "bed")), 1];
-        push @$inputs, File::Spec->catdir(($staging_dir, "bed/log.done")),
+        push @$inputs, [catdir(($staging_dir, "bed")), 1];
+        push @$inputs, catdir(($staging_dir, "bed/log.done")),
     }
 
     if ($bam) {
         push @$args, ['', "bam/log.txt", 0];
-        push @$inputs, [File::Spec->catdir(($staging_dir, "bam")), 1];
-        push @$inputs, File::Spec->catdir(($staging_dir, "bam/log.done"));
+        push @$inputs, [catdir(($staging_dir, "bam")), 1];
+        push @$inputs, catdir(($staging_dir, "bam/log.done"));
     }
 
     if ($csv) {
         push @$args, ['', "csv/log.txt", 0];
-        push @$inputs, [File::Spec->catdir(($staging_dir, "csv")), 1];
-        push @$inputs, File::Spec->catdir(($staging_dir, "csv/log.done"));
+        push @$inputs, [catdir(($staging_dir, "csv")), 1];
+        push @$inputs, catdir(($staging_dir, "csv/log.done"));
     }
 
     return (
@@ -699,6 +597,224 @@ sub create_notebook_job {
         inputs => $inputs,
         outputs => [],
         description => "Creating notebook..."
+    );
+}
+
+
+#
+# GSNAP PIPELINE AND JOBS
+#
+sub gsnap_pipeline {
+    my ($fasta, $fastq) = @_;
+
+    # Generate index
+    my %gmap = create_gmap_index_job($fasta);
+
+    # Generate sam file
+    my %gsnap = create_gsnap_job($fastq, @{@{$gmap{outputs}}[0]}[0]);
+
+    # Generate and sort bam
+    my %bam = create_samtools_bam_job(@{$gsnap{outputs}}[0]);
+    my %sorted_bam = create_samtools_sort_job(@{$bam{outputs}}[0]);
+
+    # Return the bam output name and jobs required
+    return @{$sorted_bam{outputs}}[0], (
+        \%gmap,
+        \%gsnap,
+        \%bam,
+        \%sorted_bam
+    );
+}
+
+sub create_gmap_index_job {
+    my $fasta = shift;
+    my $name = to_filename($fasta);
+    my $cmd = $P->{GMAP_BUILD};
+    my $GMAP_CACHE_DIR = catdir(($CACHE, "$gid/gmap_index"));
+    die "ERROR: GMAP_BUILD is not in the config." unless ($cmd);
+
+    return (
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ["-D", ".", 0],
+            ["-d", $name . "-index", 0],
+            ["", $fasta, 1]
+        ],
+        inputs => [
+            $fasta
+        ],
+        outputs => [
+            [catdir(($GMAP_CACHE_DIR, $name . "-index")), 1]
+        ],
+        description => "Generating gmap index..."
+    );
+}
+
+sub create_gsnap_job {
+    my ($fastq, $gmap) = @_;
+    my $name = basename($gmap);
+    my $cmd = $P->{GSNAP};
+    die "ERROR: GSNAP is not in the config." unless ($cmd);
+
+    return (
+        cmd => $cmd,
+        script => undef,
+        options => {
+            "allow-zero-length" => JSON::false,
+        },
+        args => [
+            ["-D", ".", 0],
+            ["-d", $name, 0],
+            ["--nthreads=32", '', 0],
+            ["-n", 5, 0],
+            ["--format=sam", '', 0],
+            ["-Q", '', 0],
+            ["--gmap-mode=none", '', 0],
+            ["--nofails", $fastq, 1],
+            ["--batch=5",'',0],
+            [">", $name . ".sam", 1]
+        ],
+        inputs => [
+            $fastq,
+            [$gmap, 1]
+        ],
+        outputs => [
+            catdir(($staging_dir, $name . ".sam"))
+        ],
+        description => "Running gsnap..."
+    );
+}
+
+sub create_samtools_bam_job {
+    my $samfile = shift;
+    my $name = to_filename($samfile);
+    my $cmd = $P->{SAMTOOLS};
+    die "ERROR: SAMTOOLS is not in the config." unless ($cmd);
+
+    return (
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ["view", '', 0],
+            ["-bS", $samfile, 1],
+            [">", $name . ".bam", 0]
+        ],
+        inputs => [
+            $samfile
+        ],
+        outputs => [
+            catdir(($staging_dir, $name . ".bam"))
+        ],
+        description => "Generating bam file..."
+    );
+}
+
+sub create_samtools_sort_job {
+    my $bam = shift;
+    my $name = to_filename($bam);
+    my $cmd = $P->{SAMTOOLS};
+    die "ERROR: SAMTOOLS is not in the config." unless ($cmd);
+
+    return (
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ["sort", '', 0],
+            ["", $bam, 1],
+            ["", $name . "-sorted", 1]
+        ],
+        inputs => [
+            $bam
+        ],
+        outputs => [
+            catdir(($staging_dir, $name . "-sorted.bam"))
+        ],
+        description => "Sorting bam file..."
+    );
+}
+
+#
+# TopHat pipeline
+#
+sub tophat_pipeline {
+    my ($fasta, $fastq, $gff) = @_;
+    my $BOWTIE_CACHE_DIR = catdir(($CACHE, "$gid/bowtie_index"));
+
+    my ($index, %bowtie) = create_bowtie_index_job($fasta);
+    my %tophat = create_tophat_job(
+        fastq => $fastq,
+        fasta => $fasta,
+        index_name => $index,
+        index_files => ($bowtie{outputs}));
+
+    # Return the bam output name and jobs required
+    return @{$tophat{outputs}}[0], (
+        \%bowtie,
+        \%tophat
+    );
+}
+
+sub create_bowtie_index_job {
+    my $fasta = shift;
+    my $name = to_filename($fasta);
+    my $cmd = $P->{BOWTIE_BUILD};
+    my $BOWTIE_CACHE_DIR = catdir(($CACHE, "$gid/bowtie_index"));
+    die "ERROR: BOWTIE_BUILD is not in the config." unless ($cmd);
+
+    return catdir(($BOWTIE_CACHE_DIR, $name)), (
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ["", $fasta, 1],
+            ["", $name, 0],
+        ],
+        inputs => [
+            $fasta
+        ],
+        outputs => [
+            catdir(($BOWTIE_CACHE_DIR, $name . ".1.bt2")),
+            catdir(($BOWTIE_CACHE_DIR, $name . ".2.bt2")),
+            catdir(($BOWTIE_CACHE_DIR, $name . ".3.bt2")),
+            catdir(($BOWTIE_CACHE_DIR, $name . ".4.bt2")),
+            catdir(($BOWTIE_CACHE_DIR, $name . ".rev.1.bt2")),
+            catdir(($BOWTIE_CACHE_DIR, $name . ".rev.2.bt2"))
+        ],
+        description => "Generating bowtie index..."
+    );
+}
+
+#FIXME Add gff support for tophat pipeline
+sub create_tophat_job {
+    my %opts = @_;
+    my $cmd = $P->{TOPHAT};
+    my $name = basename($opts{index_name});
+
+    die "ERROR: TOPHAT is not in the config." unless ($cmd);
+
+    return (
+        cmd => $cmd,
+        script => undef,
+        options => {
+            "allow-zero-length" => JSON::false,
+        },
+        args => [
+            ["-o", ".", 0],
+            ["-g", "1", 0],
+            ["-p", '32', 0],
+            #["-G", $gff, 1],
+            ["", $name, 1],
+            ["", $opts{fastq}, 1]
+        ],
+        inputs => [
+            $opts{fasta},
+            $opts{fastq},
+            @{$opts{index_files}}
+        ],
+        outputs => [
+            catdir(($staging_dir, "accepted_hits.bam"))
+        ],
+        description => "Running tophat..."
     );
 }
 
