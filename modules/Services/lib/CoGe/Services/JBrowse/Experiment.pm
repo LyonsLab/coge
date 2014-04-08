@@ -250,11 +250,15 @@ sub features {
     foreach my $e (@all_experiments) {
         unless ( $user->has_access_to_experiment($e) ) {
         	print STDERR "JBrowse::Experiment::features access denied to experiment id$eid\n";
-        	next
+        	next;
     	}
         push @experiments, $e;
     }
     splice( @experiments, $MAX_EXPERIMENTS, @experiments );
+    
+    if (!@experiments) {
+        return qq{{ "features" : [ ] }};
+    }
 
 	# Query range for each experiment and build up json response - #TODO could parallelize this for multiple experiments
     my $results = '';
