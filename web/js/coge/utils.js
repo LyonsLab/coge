@@ -38,6 +38,18 @@ var coge = window.coge = (function(ns) {
             }
 
             form.submit("action");
+        },
+        toPrettyDuration: function(seconds) {
+            var fields = [
+                [parseInt((seconds / 86400).toFixed(1)), " days"],
+                [parseInt((seconds / 3600).toFixed(1)) % 24, " hours"],
+                [parseInt(((seconds / 60) % 60).toFixed(1)), " minutes"],
+                [(seconds % 60).toFixed(2), " seconds"]
+            ];
+
+            return fields.filter(function(item) { return item[0] !== 0; })
+                .map(function(item) { return item.join(""); })
+                .join(", ");
         }
     };
 
