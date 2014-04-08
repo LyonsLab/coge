@@ -125,8 +125,17 @@ sub main {
     my $trimmed_fastq = @{$trimmed{outputs}}[0];
     push @jobs, \%trimmed;
 
+    my $gff_file;
+    # Generate gff if genome annotated
+    if ($annotated) {
+        my %gff = create_gff_generation_job($genome, "$fastq.validated");
+        $gff_file = @{$gff{outputs}}[0];
+        push @jobs, \%gff;
+    }
+
     if ($alignment eq "tophat") {
-        ($bam, @steps) = tophat_pipeline($filtered_fasta, $trimmed_fastq);
+        ($bam, @steps) = tophat_pipeline($filtered_fasta, $trimmed_fastq,
+            $gff_file);
     } else {
         ($bam, @steps) = gsnap_pipeline($filtered_fasta, $trimmed_fastq);
     }
@@ -145,11 +154,6 @@ sub main {
     # Check for annotations required by cufflinks
     if ($annotated) {
         $include_csv = 1;
-
-        # Generate gff
-        my %gff = create_gff_generation_job($genome, "$fastq.validated");
-        my $gff_file = @{$gff{outputs}}[0];
-        push @jobs, \%gff;
 
         # Run cufflinks
         my %cuff = create_cufflinks_job($gff_file, $filtered_fasta, $bam);
@@ -770,6 +774,7 @@ sub tophat_pipeline {
     my %tophat = create_tophat_job(
         fastq => $fastq,
         fasta => $fasta,
+        gff   => $gff,
         index_name => $index,
         index_files => ($bowtie{outputs}));
 
@@ -809,7 +814,6 @@ sub create_bowtie_index_job {
     );
 }
 
-#FIXME Add gff support for tophat pipeline
 sub create_tophat_job {
     my %opts = @_;
     my $cmd = $P->{TOPHAT};
@@ -817,25 +821,32 @@ sub create_tophat_job {
 
     die "ERROR: TOPHAT is not in the config." unless ($cmd);
 
+    my $args = [
+        ["-o", ".", 0],
+        ["-g", "1", 0],
+        ["-p", '32', 0],
+        ["", $name, 1],
+        ["", $opts{fastq}, 1]
+    ];
+
+    my $inputs = [
+        $opts{fasta},
+        $opts{fastq},
+        @{$opts{index_files}}
+    ];
+
+    # add gff file if genome has annotations
+    unshift @$args, ["-G", $opts{gff}, 1] if $opts{gff};
+    unshift @$inputs, $opts{gff} if $opts{gff};
+
     return (
         cmd => $cmd,
         script => undef,
         options => {
             "allow-zero-length" => JSON::false,
         },
-        args => [
-            ["-o", ".", 0],
-            ["-g", "1", 0],
-            ["-p", '32', 0],
-            #["-G", $gff, 1],
-            ["", $name, 1],
-            ["", $opts{fastq}, 1]
-        ],
-        inputs => [
-            $opts{fasta},
-            $opts{fastq},
-            @{$opts{index_files}}
-        ],
+        args => $args,
+        inputs => $inputs,
         outputs => [
             catdir(($staging_dir, "accepted_hits.bam"))
         ],
