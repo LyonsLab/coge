@@ -104,6 +104,7 @@ unless ( -r $file and -r "$file.finished") {
         id_type                   => $id_type,
         unique_parent_annotations => $upa,
 			 base_url => $P->{SERVER},
+	debug=>$DEBUG,
     );
 
     close($fh);
