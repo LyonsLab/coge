@@ -221,8 +221,7 @@ print $log "log: Annotation types:\n", join(
 print $log "log: Data types:\n", join(
     "\n",
     map {
-            "log: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" 
-          . $_ . "\t"
+        "log: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" . $_ . "\t"
           . commify( $seen_attr{$_} )
       } sort keys %seen_attr
   ),
@@ -236,10 +235,7 @@ my $t2 = new Benchmark;
 ################################################################################
 
 # Create datasource
-my $datasource =
-  $coge->resultset('DataSource')
-  ->find_or_create( { name => $source_name, description => "" } )
-  ;    #, description => "Loaded into CoGe via LoadExperiment" } );
+my $datasource = $coge->resultset('DataSource')->find_or_create( { name => $source_name, description => "" } );
 unless ($datasource) {
     print $log "log: error creating data source\n";
     exit(-1);
@@ -264,9 +260,7 @@ unless ($dataset) {
 #TODO set link field if loaded from FTP
 print $log "dataset id: " . $dataset->id . "\n";
 
-my $dsconn =
-  $coge->resultset('DatasetConnector')
-  ->find_or_create( { dataset_id => $dataset->id, genome_id => $genome->id } );
+my $dsconn = $coge->resultset('DatasetConnector')->find_or_create( { dataset_id => $dataset->id, genome_id => $genome->id } );
 unless ($dsconn) {
     print $log "log: error creating dataset connector\n";
     exit(-1);
@@ -298,36 +292,41 @@ foreach my $source ( keys %data ) {
     foreach my $chr_loc ( sort { $a cmp $b } keys %{ $data{$source} } ) {
         foreach my $name ( sort { $a cmp $b } keys %{ $data{$source}{$chr_loc} } ) {
         	my $pctLoaded = int( 100 * $loaded_annot / $total_annot );
-                print $log "log: Loaded "
-                  . commify($loaded_annot)
-                  . " annotations ("
-                  . ( $pctLoaded ? $pctLoaded : '<1' )
-                  . "%)\n\n"
-                  if ( $loaded_annot and ( $loaded_annot % 1000 ) == 0 );
-                  
+            print $log "log: Loaded " . commify($loaded_annot) . " annotations (" . ( $pctLoaded ? $pctLoaded : '<1' ) . "%)\n\n"
+              if ( $loaded_annot and ( $loaded_annot % 1000 ) == 0 );
+            
             foreach my $feat_type ( sort { $a cmp $b } keys %{ $data{$source}{$chr_loc}{$name} } ) {
                 print $log "\n" if $DEBUG;
-
+                
+                my ($start, $stop, $strand, $chr);
                 my $loc = $data{$source}{$chr_loc}{$name}{$feat_type}{loc};
-                my $start =
-                  min map { $_->{start} }
-                  @$loc
-                  ; #my ($start) = sort { $a <=> $b } map { $_->{start} } @$loc;
-                my $stop =
-                  max map { $_->{stop} }
-                  @$loc
-                  ;   #my ($stop) = sort { $b <=> $a } map { $_->{stop} } @$loc;
-                my ($strand) = map { $_->{strand} } @$loc;
-                my ($chr)    = map { $_->{chr} } @$loc;
-                $feat_types{$feat_type} =
-                  $coge->resultset('FeatureType')
-                  ->find_or_create( { name => $feat_type } )
+                if (@$loc) {
+                    $start    = min map { $_->{start} } @$loc;
+                    $stop     = max map { $_->{stop}  } @$loc;
+                    ($strand) = map { $_->{strand} } @$loc;
+                    ($chr)    = map { $_->{chr}    } @$loc;
+                }
+                else { # mdb added else 4/8/14 issue 358 - no locations (e.g. tRNA w/o parent)
+                    my $coords = $data{$source}{$chr_loc}{$name}{$feat_type}{coords};
+                    $start  = $coords->{start};
+                    $stop   = $coords->{stop};
+                    $strand = $coords->{strand};
+                    $chr    = $coords->{chr};
+                }
+                
+                $feat_types{$feat_type} = $coge->resultset('FeatureType')->find_or_create( { name => $feat_type } )
                   if $GO && !$feat_types{$feat_type};
                 my $feat_type_obj = $feat_types{$feat_type};
 
                 print $log "Creating feature of type $feat_type\n" if $DEBUG;
 
-#TODO this could be batched by nesting location & other inserts, see http://search.cpan.org/~abraxxa/DBIx-Class-0.08209/lib/DBIx/Class/ResultSet.pm#populate
+                # mdb added check 4/8/14 issue 358
+                unless (defined $start and defined $stop and defined $chr) {
+                    print $log "log: error: feature missing coordinates\n";
+                    exit(-1);
+                }
+                
+                #TODO this could be batched by nesting location & other inserts, see http://search.cpan.org/~abraxxa/DBIx-Class-0.08209/lib/DBIx/Class/ResultSet.pm#populate
                 my $feat = $dataset->add_to_features(
                     {
                         feature_type_id => $feat_type_obj->id,
@@ -342,23 +341,17 @@ foreach my $source ( keys %data ) {
                 my %seen_locs;
                 my $loc_count = 0;
                 foreach my $loc ( sort { $a->{start} <=> $b->{start} } @$loc ) {
+                    my ($start, $stop) = ($loc->{start}, $loc->{stop});
                     $loc_count++;
-                    next
-                      if $feat_type eq "gene"
-                          && $loc_count > 1
-                    ; #only use the first one as this will be the full length of the gene.  Stupid hack
-                    next if $seen_locs{ $loc->{start} }{ $loc->{stop} };
-                    $seen_locs{ $loc->{start} }{ $loc->{stop} } = 1;
-                    print $log "Adding location $chr:("
-                      . $loc->{start} . "-"
-                      . $loc->{stop}
-                      . ", $strand)\n"
-                      if $DEBUG;
+                    next if $feat_type eq "gene" && $loc_count > 1; #only use the first one as this will be the full length of the gene.  Stupid hack
+                    next if $seen_locs{$start}{$stop};
+                    $seen_locs{$start}{$stop} = 1;
+                    print $log "Adding location $chr:(" . $start . "-" . $stop . ", $strand)\n" if $DEBUG;
                     $loaded_annot++;
                     batch_add_async(
                         \@loc_buffer,
                         'Location',
-                        {    #my $loc_tmp = $feat->add_to_locations({
+                        {
                             feature_id => $feat->id,
                             chromosome => $loc->{chr},
                             start      => $loc->{start},
@@ -367,14 +360,13 @@ foreach my $source ( keys %data ) {
                         }
                     ) if $GO;
                 }
-
+                
                 my %names =
                   map { $_ => 1 }
                   keys %{ $data{$source}{$chr_loc}{$name}{$feat_type}{names} };
-                my %seen_annos
-                  ;    #hash to store annotations so duplicates aren't added
+                my %seen_annos; #hash to store annotations so duplicates aren't added
 
-              master_names: foreach my $tmp ( keys %names ) {
+                master_names: foreach my $tmp ( keys %names ) {
                     foreach my $re (@skip_names_re) {
                         next master_names if $tmp =~ /$re/i;
                     }
@@ -402,19 +394,15 @@ foreach my $source ( keys %data ) {
                             my $type_name = $annos{$tmp}{$anno}{type} || "Note";
                             my ($anno_type) = $anno_types{$type_name};
                             unless ($anno_type) {
-                                ($anno_type) =
-                                  $coge->resultset('AnnotationType')
-                                  ->find_or_create( { name => $type_name } );
+                                ($anno_type) = $coge->resultset('AnnotationType')->find_or_create( { name => $type_name } );
                                 $anno_types{$type_name} = $anno_type;
                             }
                             my $link = $annos{$tmp}{$anno}{link};
-                            print $log "Adding annotation ($type_name): $anno\n"
-                              . ( $link ? "\tlink: $link" : '' ) . "\n"
-                              if $DEBUG;
+                            print $log "Adding annotation ($type_name): $anno\n" . ( $link ? "\tlink: $link" : '' ) . "\n" if $DEBUG;
                             batch_add_async(
                                 \@anno_buffer,
                                 'FeatureAnnotation',
-                                {    #$feat->add_to_annotations({
+                                {
                                     feature_id         => $feat->id,
                                     annotation_type_id => $anno_type->id,
                                     annotation         => $anno,
@@ -503,8 +491,7 @@ sub process_gff_file {
 
     my $line_num   = 0;
     my $gene_count = 0;
-    my $last_RNA   = "mRNA"
-      ; #storage for the last RNA type seen.  For converting exons to appropriate RNA type.
+    my $last_RNA   = "mRNA"; #storage for the last RNA type seen.  For converting exons to appropriate RNA type.
     while ( my $line = <$in> ) {
         $line_num++;
         next if $line =~ /^#/;
@@ -516,8 +503,7 @@ sub process_gff_file {
 
         my @line = split( /\t/, $line );
         if ( @line != 9 ) {
-            print $log
-"log: error:  Incorrect format (too many columns) at line $line_num\n";
+            print $log "log: error:  Incorrect format (too many columns) at line $line_num\n";
             return 0;
         }
         my $chr    = $line[0];
@@ -544,13 +530,12 @@ sub process_gff_file {
         $chr =~ s/chromosome//i;
         $chr =~ s/^chr//i;
         $chr =~ s/^_//i;
-	$chr = "0" if $chr =~ /^0+$/; #EL added 2/13/14 to catch chromosomes with names like "00"
+	    $chr = "0" if $chr =~ /^0+$/; #EL added 2/13/14 to catch chromosomes with names like "00"
         $chr =~ s/^0//g unless $chr eq '0';
         ($chr) = split( /\s+/, $chr );
         unless ( $valid_chrs{$chr} ) {
-            print $log
-              "log: error:  Chromosome '$chr' does not exist in the dataset.\n";
-            next if ($allow_all_chr); 
+            print $log "log: error:  Chromosome '$chr' does not exist in the dataset.\n";
+            next if ($allow_all_chr);
             return 0;
         }
 
@@ -592,7 +577,7 @@ sub process_gff_file {
                 foreach my $item ( split( /,/, $value ) ) {
                     $names{$item} = 1;
 
-# these nexts will skip from using the primary name as the ID to the Parent name
+                    # these nexts will skip from using the primary name as the ID to the Parent name
                     foreach my $re (@skip_names_re) {
                         next outer if $item =~ /$re/i;
                     }
@@ -602,22 +587,21 @@ sub process_gff_file {
                         $tmp =~ s/^LOC_//;
                         $names{$tmp} = 1;
                     }
-		    $name =~ s/_cds_\d+$//i;
-		    $name =~ s/_exon_\d+$//i;
+		            $name =~ s/_cds_\d+$//i;
+		            $name =~ s/_exon_\d+$//i;
                 }
             }
-            next unless $name;    # no name, don't know what to do!
-            $value = uri_unescape($value);    # remove URL formatting
+            next unless $name; # no name, don't know what to do!
+            $value = uri_unescape($value); # remove URL formatting
             $annos{$name}{$value} = { type => $key } if $anno_names{$key};
         }
-        next unless $name;                    # no name, don't know what to do!
+        next unless $name; # no name, don't know what to do!
 
         if    ( $strand =~ /-/ )  { $strand = -1; }
         elsif ( $strand =~ /\./ ) { $strand = 0;  }
-        else  { $strand = 1; } # mdb changed 11/7/13 issue 248 - made '+' strand the default
+        else                      { $strand = 1;  } # mdb changed 11/7/13 issue 248 - made '+' strand the default
 
         my @types = ($type);
-
         #push @types, "CDS" if $add_cds && $type eq "mRNA";
         # phytozome replications of CDS to mRNA
         #push @types, "mRNA" if $type eq "CDS";
@@ -629,8 +613,8 @@ sub process_gff_file {
             my $tmp_name = $name;
             my $type     = $tmp;
             $type =~ s/_no_locs//;
-            $tmp_name = $parent if $type eq "gene" && $parent;    # ugly hack
-                    #print join ("\t", $name, $tmp_name),"\n";
+            $tmp_name = $parent if $type eq "gene" && $parent; # ugly hack
+            #print join ("\t", $name, $tmp_name),"\n";
 
             # initialize data structure
             $data{$source}{$chr}{$tmp_name}{$type} = {}
@@ -638,9 +622,19 @@ sub process_gff_file {
             foreach my $n ( keys %names ) {
                 $data{$source}{$chr}{$tmp_name}{$type}{names}{$n} = 1;
             }
-            next
-              if $tmp =~
-                  /_no_locs/;    # skip adding locations for things like mRNA
+            
+            # mdb added 4/8/14 issue 358 - save location for later
+            if ($tmp =~ /_no_locs/) {
+                $data{$source}{$chr}{$tmp_name}{$type}{coords} =
+                  {
+                    start  => $start,
+                    stop   => $stop,
+                    strand => $strand,
+                    chr    => $chr
+                };
+            }
+            
+            next if ($tmp =~ /_no_locs/); # skip adding locations for things like mRNA
             push @{ $data{$source}{$chr}{$tmp_name}{$type}{loc} },
               {
                 start  => $start,
