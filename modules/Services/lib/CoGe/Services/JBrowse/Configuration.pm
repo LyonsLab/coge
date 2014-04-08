@@ -240,25 +240,29 @@ sub track_config {
         #			}
         #		}
 
-        my ($type, $featureScale, $histScale);
+        my ($type, $featureScale, $histScale, $labelScale);
         if (!$e->data_type or $e->data_type == 1) { #FIXME hardcoded data_type 'quantitative'
 			$type = 'CoGe/View/Track/Wiggle/MultiXYPlot';
 			$featureScale = 0.001;
 			$histScale = 0.05;
+			$labelScale = 0.05;
 		}
 		elsif ($e->data_type == 2) { #FIXME hardcoded data_type 'polymorphism'
 			$type = 'CoGe/View/Track/CoGeVariants'; 
 			$featureScale = 0.0001;
 			$histScale = 0.01;
+			$labelScale = 0.5;
 		}
 		elsif ($e->data_type == 3) { #FIXME hardcoded data_type 'alignment'
 			$type = 'CoGe/View/Track/CoGeAlignment';#"JBrowse/View/Track/Alignments2"; 
 			$featureScale = 0.005;
 			$histScale = 0.01;
+			$labelScale = 0.5;
 		}
         elsif ($e->data_type == 4) { #FIXME hardcoded data_type 'marker'
             $type = "JBrowse/View/Track/HTMLFeatures";
             $histScale = 0.002;
+            $labelScale = 0.5;
         }
         
         push @tracks, {
@@ -273,11 +277,11 @@ sub track_config {
             style => {
                 featureScale => $featureScale,
                 histScale    => $histScale,
-                labelScale   => 0.5,
+                labelScale   => $labelScale,
                 showLabels   => 'true',
                 className    => '{type}',
-                histCss => 'background-color:' . getFeatureColor($eid),
-                featureCss => 'background-color:' . getFeatureColor($eid)
+                histCss      => 'background-color:' . getFeatureColor($eid),
+                featureCss   => 'background-color:' . getFeatureColor($eid)
             },
             
             histograms => {
@@ -285,7 +289,6 @@ sub track_config {
             },
 
             # CoGe-specific stuff
-            showHoverScores => 1,
             coge => {
                 id      => $eid,
                 type    => 'experiment',

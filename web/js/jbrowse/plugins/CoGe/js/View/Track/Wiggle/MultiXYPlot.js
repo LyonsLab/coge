@@ -27,6 +27,10 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 
         if (!this.config.style.featureColor)
             this.config.style.featureColor = {};
+        if (typeof(this.config.showHoverScores) == "undefined")
+        	this.config.showHoverScores = 1;
+        if (typeof(this.config.showLabels) == "undefined")
+        	this.config.showLabels = 1;
     },
 
     _defaultConfig: function() {
@@ -268,29 +272,31 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
             }, this );
             
             // mdb added 4/2/14 - draw labels on top of bars, issue 346
-            dojo.forEach( sorted, function(pair,i) {
-                var f = pair.feature;
-                var fRect = pair.featureRect;
-                var isUpward = (fRect.t <= originY); // bar goes upward
-                var start = f.get('start'); 
-                if (start >= block.startBase && start <= block.endBase) { // print label only for first spanning block
-	                var label = f.get('label');
-	                if (label && label != '.') {
-	                	var topOffset = ( isUpward ? fRect.t-12 : fRect.t );
-	                    var rulerdiv =
-	                        dojo.create('div', 
-	                    		{   style: {
-	                                	width: '100px',
-	                                    position: 'absolute',
-	                                    left: fRect.l,
-	                                    top: topOffset,
-	                                    //zIndex: 10,
-	                                },
-	                                innerHTML: label
-	                            }, canvas.parentNode );
-	                }
-                }                
-            }, this );
+            if (this.config.showLabels && scale > this.config.style.labelScale) {
+	            dojo.forEach( sorted, function(pair,i) {
+	                var f = pair.feature;
+	                var fRect = pair.featureRect;
+	                var isUpward = (fRect.t <= originY); // bar goes upward
+	                var start = f.get('start'); 
+	                if (start >= block.startBase && start <= block.endBase) { // print label only for first spanning block
+		                var label = f.get('label');
+		                if (label && label != '.') {
+		                	var topOffset = ( isUpward ? fRect.t-12 : fRect.t );
+		                    var rulerdiv =
+		                        dojo.create('div', 
+		                    		{   style: {
+		                                	width: '100px',
+		                                    position: 'absolute',
+		                                    left: fRect.l,
+		                                    top: topOffset,
+		                                    //zIndex: 10,
+		                                },
+		                                innerHTML: label
+		                            }, canvas.parentNode );
+		                }
+	                }                
+	            }, this );
+            }
         }
     },
 
@@ -527,6 +533,15 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                     }
                 },
                 {
+                    label: 'Show labels',
+                    type: 'dijit/CheckedMenuItem',
+                    checked: this.config.showLabels,
+                    onClick: function(event) {
+                        track.config.showLabels = this.checked;
+                        track.changed();
+                    }
+                },
+                {
                     label: 'Change colors',
                     onClick: function(event) {
                         if (!track.colorDialog) {
@@ -556,7 +571,8 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                         }
                         track.colorDialog.show();
                     }
-                }]);
+                }
+            ]);
 
         if (config.coge.type == 'notebook') {
             options.push.apply(
