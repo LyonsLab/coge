@@ -1,4 +1,5 @@
 <TMPL_IF NAME='MAIN'>
+<script type="text/javascript" src="js/coge/utils.js"></script>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
 
 <SCRIPT language="JavaScript">
@@ -430,6 +431,11 @@ function progress_formatter(item) {
     }
 
     row.append(job_status);
+
+    if (item.elapsed)  {
+        row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
+    }
+
     return row;
 }
 
@@ -491,7 +497,17 @@ function update_dialog(request, identifier, formatter) {
             return;
         }
 
+        //FIXME Update when a workflow supports elapsed time
         if (current_status == "completed") {
+            var total = json.jobs.reduce(function(a, b) {
+                if (!b.elapsed) return a;
+
+                return a + b.elapsed;
+            }, 0);
+
+            var duration = coge.utils.toPrettyDuration(total);
+
+            workflow_status.append("<br>Finished in " + duration);
             workflow_status.find('span').addClass('completed');
             get_load_log(function(result) {
                 load_succeeded(result);

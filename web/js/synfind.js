@@ -143,6 +143,10 @@ function formatter(item) {
 
     row.append(job_status);
 
+    if (item.elapsed)  {
+        row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
+    }
+
     /*
     if (item.status == "skipped") {
         row.append("<p>The analyses previously was generated</p>");
@@ -261,7 +265,17 @@ function update_dialog(request, identifier, result, formatter, args) {
             return;
         }
 
+        //FIXME Update when a workflow supports elapsed time
         if (current_status == "completed") {
+            var total = json.jobs.reduce(function(a, b) {
+                if (!b.elapsed) return a;
+
+                return a + b.elapsed;
+            }, 0);
+
+            var duration = coge.utils.toPrettyDuration(total);
+
+            workflow_status.append("<br>Finished in " + duration);
             workflow_status.find('span').addClass('completed');
             fetch_results(true, 1);
         } else if (current_status == "failed" || current_status == "error"
