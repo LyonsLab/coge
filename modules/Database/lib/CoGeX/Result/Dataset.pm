@@ -630,6 +630,18 @@ sub get_chromosomes {
     else {
         @data = map { $_->chromosome } $self->features( $search, $search_type );
     }
+    unless (@data)
+      {
+	my %seen;
+	foreach my $feat ($self->features({},{distinct=>'chromosome'}) )
+	  {
+	    #print STDERR $feat->chromosome,"\n" if $feat->chromosome;
+	    $seen{$feat->chromosome}=1 if $feat->chromosome;
+	  }
+	@data = sort keys %seen;
+      }
+#    print STDERR Dumper \@data;
+#    print STDERR "!!!\n";
     return wantarray ? @data : \@data;
 }
 
@@ -904,6 +916,7 @@ sub gff {
     $output .= $tmp if $tmp;
     print $tmp if $print && !$no_gff_head;
     foreach my $chr (@chrs) {
+        next unless $chrs{$chr};
         $tmp = "##sequence-region $chr 1 " . $chrs{$chr} . "\n";
         $output .= $tmp;
         print $tmp if $print;
@@ -928,21 +941,25 @@ sub gff {
     foreach my $chr (@chrs) {
         my %seen = (); #for storage of seen names organized by $feat_name{$name}
         my $rs_feat = $ds->features(
-            { 'me.chromosome' => $chr, },
+            {},
             {
                 'prefetch' => $prefetch,
-                'order_by' => [ 'me.start', 'me.feature_type_id'
+                'order_by' => [ 'me.chromosome', 'me.start', 'me.feature_type_id'
                   ] #go by order in genome, then make sure that genes (feature_type_id == 1) is first
             }
         );
 
         #gff: chr  organization feature_type  start stop strand . name
-        print STDERR "dataset_id: " . $ds->id . ";  chr: $chr\n" if $debug;
+        print STDERR "dataset_id: " . $ds->id."\n" if $debug;# . ";  chr: $chr\n" if $debug;
       main: while ( my $feat = $rs_feat->next ) {
             if ( $fids{ $feat->feature_id } ) {
                 next;
             }
             my $ft = $feat->feature_type;
+#	    my $chr = $feat->chromosome;
+	    next unless $feat->start;
+	    next unless defined $feat->chromosome;
+	    print STDERR join ("\t", $ft->name, $feat->chromosome, $feat->start),"\n" if $debug;
             $types{ $ft->name }++;
             $count++;
             my @out;      #story hashref of items for output
