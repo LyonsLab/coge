@@ -638,8 +638,7 @@ qq{<tr><td><span class="link" onclick="window.open('SeqType.pl')">Sequence type:
     #    my $cogedir  = $P->{COGEDIR};
     #    my $cogeurl  = $P->{URL};
     #    $seq_file =~ s/$cogedir/$cogeurl/i;
-    my $seq_url = "services/JBrowse/service.pl/sequence/$dsgid"
-      ;    # mdb added 7/31/13 issue 77
+    my $seq_url = "services/service.pl/sequence/$dsgid";#my $seq_url = "services/JBrowse/service.pl/sequence/$dsgid"; # mdb added 7/31/13 issue 77 # mdb changed 8/9/14
 
     #print STDERR Dumper $seq_file;
     $html .= qq{<TR><TD>Download:</td>};
