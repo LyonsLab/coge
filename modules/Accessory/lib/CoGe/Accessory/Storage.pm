@@ -217,7 +217,10 @@ sub get_genome_seq {
     # No chromosome specified, return whole genome fasta file
     unless (defined $chr and $chr ne '') {
         my $file_path = get_genome_file($gid);
-        open( my $fh, $file_path ) or die;
+        if ( !open( my $fh, $file_path ) ) {
+            print STDERR "Storage::get_genome_seq: can't open fasta file '$file_path'!\n";
+            return;
+        }
         read( $fh, $seq, -s $file_path );
         close($fh);
         return $seq;
