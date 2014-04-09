@@ -25,7 +25,7 @@ LICENSE file included with this module.
 
 =cut
 
-use v5.14;
+#use v5.14;
 use strict;
 use warnings;
 
@@ -37,6 +37,7 @@ use File::Spec::Functions;
 use List::Util qw[min max];
 use Data::Dumper;
 use POSIX qw(ceil);
+use File::Slurp;
 
 BEGIN {
     use vars qw ($VERSION @ISA @EXPORT $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER);
@@ -216,15 +217,20 @@ sub get_genome_seq {
 
     # No chromosome specified, return whole genome fasta file
     unless (defined $chr and $chr ne '') {
+        # mdb added 4/9/14 issue 359
         my $file_path = get_genome_file($gid);
-        my $fh;
-        if ( !open( $fh, $file_path ) ) {
-            print STDERR "Storage::get_genome_seq: can't open fasta file '$file_path'!\n";
-            return;
-        }
-        read( $fh, $seq, -s $file_path );
-        close($fh);
+        my $seq = read_file($file_path);
         return $seq;
+
+# mdb removed 4/9/14 issue 359
+#        my $fh;
+#        if ( !open( $fh, $file_path ) ) {
+#            print STDERR "Storage::get_genome_seq: can't open fasta file '$file_path'!\n";
+#            return;
+#        }
+#        my $readLen = read( $fh, $seq, -s $fh );
+#        close($fh);
+#        return $seq;
     }
 
     # Determine file path - first try new indexed method, otherwise
