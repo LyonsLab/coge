@@ -350,7 +350,7 @@ sub logout_cas {
     ($session) = $coge->resultset('UserSession')->find( { session => $session } );
     $session->delete if $session;
     
-    print "Location: ", $form->redirect("https://auth.iplantcollaborative.org/cas/logout?service=" . $url . "&gateway=1");
+    print "Location: ", $form->redirect(get_defaults()->{CAS_URL} . "/logout?service=" . $url . "&gateway=1");
 }
 
 sub login_cas_proxy {
@@ -362,14 +362,9 @@ sub login_cas_proxy {
 	print STDERR "Web::login_cas_proxy ticket=$ticket this_url=$this_url\n";
 
 	# https://wiki.jasig.org/display/CAS/Proxy+CAS+Walkthrough
-	#https://foo.bar.com/is/cas/proxyValidate?service=http://localhost/bongo&ticket=PT-957-ZuucXqTZ1YcJw81T3dxf
-
 	my $ua = new LWP::UserAgent;
     my $request_ua =
-      HTTP::Request->new(
-        GET => 'https://auth.iplantcollaborative.org/cas/proxyValidate?service='.$this_url.'&ticket='.$ticket
-      	#GET => 'https://gucumatz.iplantcollaborative.org/cas/proxyValidate?service='.$this_url.'&ticket='.$ticket # mdb added 12/5/13 for hackathon1 
-      );
+      HTTP::Request->new( GET => get_defaults()->{CAS_URL}.'/proxyValidate?service='.$this_url.'&ticket='.$ticket );
     my $response = $ua->request($request_ua);
     my $result   = $response->content;
     print STDERR $result, "\n";
@@ -410,8 +405,7 @@ sub login_cas_proxy {
 	# mdb added 10/19/12 - FIXME key/secret are hardcoded - wait: this will get replaced by openauth soon
 	#$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0; # this doesn't work for bypassing cert check, need line in apache cfg
     $request_ua =
-      HTTP::Request->new(
-        POST => 'https://user.iplantcollaborative.org/api/v1/service/coge/add/' . $uname );
+      HTTP::Request->new( POST => 'https://user.iplantcollaborative.org/api/v1/service/coge/add/' . $uname );
     $request_ua->authorization_basic( get_defaults()->{AUTHNAME}, get_defaults()->{AUTHPASS} );
 
     #print STDERR "request uri: " . $request_ua->uri . "\n";
@@ -473,8 +467,7 @@ sub login_cas_saml {
     my $request_ua =
       HTTP::Request->new(
         #POST => 'https://gucumatz.iplantcollaborative.org/cas/samlValidate?TARGET=' # mdb added 12/5/13 - Hackathon1
-        POST => 'https://auth.iplantcollaborative.org/cas/samlValidate?TARGET='
-          . $this_url );
+        POST => get_defaults()->{CAS_URL} . '/samlValidate?TARGET=' . $this_url );
     $request_ua->content($request);
     $request_ua->content_type("text/xml; charset=utf-8");
     my $response = $ua->request($request_ua);
