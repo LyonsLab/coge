@@ -3,27 +3,26 @@ package CoGe::Services::Data::Group;
 use Mojo::Base 'Mojolicious::Controller';
 #use IO::Compress::Gzip 'gzip';
 use CoGeX;
-use CoGe::Accessory::Web;
+use CoGe::Services::Auth;
 
 sub search {
     my $self = shift;
     my $search_term = $self->stash('term');
-    my $key = $self->param("apiKey");
 
-    # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
-    # Deny a public group access to groups
-    if ($user->is_public) {
+    # Deny a public user access to groups
+    unless ($user && !$user->is_public) {
         $self->render(json => {
-            error => { Auth => "Access denied"}
+            error => { Auth => "Access denied" }
         }, status => 401);
         return;
     }
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
-        $self->render(json => { status => Mojo::JSON->false, error => 'Too many search results'});
+        $self->render(json => { error => { Error => 'Search term is shorter than 3 characters' } });
         return;
     }
 
@@ -31,7 +30,7 @@ sub search {
     my $search_term2 = '%' . $search_term . '%';
     my @groups = $db->resultset("UserGroup")->search(
         \[
-            'user_group_id= ? OR name LIKE ? OR description LIKE ?',
+            'user_group_id = ? OR name LIKE ? OR description LIKE ?',
             [ 'user_group_id', $search_term ],
             [ 'name', $search_term2 ],
             [ 'description', $search_term2 ],
@@ -57,24 +56,23 @@ sub search {
 sub fetch {
     my $self = shift;
     my $id = int($self->stash('id'));
-    my $key = $self->param("apiKey");
 
-    # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
     # Deny a public user access to any group
-    if ($user->is_public) {
+    unless ($user && !$user->is_public) {
         $self->render(json => {
             error => { Auth => "Access denied"}
         }, status => 401);
         return;
     }
 
+    # Get group
     my $group = $db->resultset("UserGroup")->find($id);
-
     unless (defined $group) {
         $self->render(json => {
-            error => { Error => "Item not found"}
+            error => { Error => "Item not found" }
         });
         return;
     }
@@ -94,24 +92,23 @@ sub fetch {
 sub items {
     my $self = shift;
     my $id = int($self->stash('id'));
-    my $key = $self->param("apiKey");
 
-    # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
     # Deny a public user access to any group
-    if ($user->is_public) {
+    unless ($user && !$user->is_public) {
         $self->render(json => {
-            error => { Auth => "Access denied"}
+            error => { Auth => "Access denied" }
         }, status => 401);
         return;
     }
 
+    # Get group
     my $group = $db->resultset("UserGroup")->find($id);
-
     unless (defined $group) {
         $self->render(json => {
-            error => { Error => "Item not found"}
+            error => { Error => "Item not found" }
         });
         return;
     }
@@ -119,7 +116,7 @@ sub items {
     # Restrict access to users in the group
     unless ($group->has_member($user)) {
         $self->render(json => {
-            error => { Auth => "Access denied"}
+            error => { Auth => "Access denied" }
         }, status => 401);
         return;
     }

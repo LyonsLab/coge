@@ -2,21 +2,21 @@ package CoGe::Services::Data::Genome2;
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 use CoGeX;
-use CoGe::Accessory::Web;
+use CoGe::Services::Auth;
 
 sub search {
     my $self = shift;
     my $search_term = $self->stash('term');
-    my $key = $self->param("apiKey");
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
-        $self->render(json => { status => Mojo::JSON->false, error => 'Too many search results'});
+        $self->render(json => { error => { Error => 'Search term is shorter than 3 characters' } });
         return;
     }
 
-    # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
+    # Authenticate user and connect to the database
+    #my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
     # Search genomes
     my $search_term2 = '%' . $search_term . '%';
@@ -49,13 +49,12 @@ sub search {
 sub fetch {
     my $self = shift;
     my $id = int($self->stash('id'));
-    my $key = $self->param("apiKey");
 
-    # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
+    # Authenticate user and connect to the database
+    #my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
     my $genome = $db->resultset("Genome")->find($id);
-
     unless (defined $genome) {
         $self->render(json => {
             error => { Error => "Item not found"}

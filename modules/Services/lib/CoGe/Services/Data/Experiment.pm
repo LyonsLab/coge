@@ -1,29 +1,30 @@
 package CoGe::Services::Data::Experiment;
 
 use Mojo::Base 'Mojolicious::Controller';
+use Data::Dumper;
 #use IO::Compress::Gzip 'gzip';
 use CoGeX;
-use CoGe::Accessory::Web;
+use CoGe::Services::Auth;
+
 
 sub search {
     my $self = shift;
     my $search_term = $self->stash('term');
-    my $key = $self->param("apiKey");
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
-        $self->render(json => { status => Mojo::JSON->false, error => 'Too many search results'});
+        $self->render(json => { error => { Error => 'Search term is shorter than 3 characters' } });
         return;
     }
 
-    # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
     # Search experiments
     my $search_term2 = '%' . $search_term . '%';
     my @experiments = $db->resultset("Experiment")->search(
         \[
-            'experiment_id= ? OR name LIKE ? OR description LIKE ?',
+            'experiment_id = ? OR name LIKE ? OR description LIKE ?',
             [ 'experiment_id', $search_term  ],
             [ 'name',        $search_term2 ],
             [ 'description', $search_term2 ]
@@ -50,13 +51,11 @@ sub search {
 sub fetch {
     my $self = shift;
     my $id = int($self->stash('id'));
-    my $key = $self->param("apiKey");
 
-    # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
     my $experiment = $db->resultset("Experiment")->find($id);
-
     unless (defined $experiment) {
         $self->render(json => {
             error => { Error => "Item not found"}
@@ -104,6 +103,49 @@ sub fetch {
         metadata => \@metadata,
         restricted => $experiment->restricted ? Mojo::JSON->true : Mojo::JSON->false,
     });
+}
+
+sub add {
+    my $self = shift;
+    my $data = $self->req->json;
+    
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    
+    print STDERR Dumper $self, "\n";
+    $self->render(json => 
+        { 
+            success => Mojo::JSON->true,
+            job_id => 123,
+            link => ''
+        }
+    );
+    return;
+
+    my $genome = $db->resultset("Genome")->find( $data->{genome_id} );
+    unless ($genome) {
+        $self->render(json => {
+            error => { Error => "Item not found"}
+        });
+        return;
+    }
+    
+    unless ($user->is_admin || $user->is_owner_editor( dsg => $genome->id )) {
+        $self->render(json => {
+            error => { Auth => "Access denied"}
+        });
+        return;        
+    }
+    
+    #TODO finish this
+    
+    $self->render(json => 
+        { 
+            success => Mojo::JSON->true,
+            job_id => 123,
+            link => ''
+        }
+    );
 }
 
 1;

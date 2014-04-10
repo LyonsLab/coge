@@ -45,8 +45,7 @@ LICENSE file included with this module.
 =cut
 
 BEGIN {
-    use vars
-      qw ($CONF $VERSION @ISA @EXPORT @EXPORT_OK $Q $TEMPDIR $BASEDIR $CONF);
+    use vars qw ($CONF $VERSION @ISA @EXPORT @EXPORT_OK $Q $TEMPDIR $BASEDIR $CONF);
     require Exporter;
 
     $BASEDIR = ( $ENV{COGE_HOME} ? $ENV{COGE_HOME} : '/opt/apache/coge/web/' );
@@ -56,7 +55,7 @@ BEGIN {
     @EXPORT  = qw( );
     __PACKAGE__->mk_accessors(
         'restricted_orgs', 'basefilename', 'basefile', 'logfile',
-        'sqlitefile'
+        'sqlitefile', 'get_session_id'
     );
 }
 
@@ -315,6 +314,13 @@ sub self_or_default {    #from CGI.pm
     return wantarray ? @_ : $Q;
 }
 
+sub get_session_id {
+    my ($user_name, $remote_ip) = @_;
+    my $session_id = md5_base64( $user_name . $remote_ip );
+    $session_id =~ s/\+/1/g;
+    return $session_id;
+}
+
 sub logout_coge { # mdb added 3/24/14, issue 329
     my $self        = shift;
     my %opts        = @_;
@@ -326,9 +332,8 @@ sub logout_coge { # mdb added 3/24/14, issue 329
     print STDERR "Web::logout_coge url=", ($url ? $url : ''), "\n"; 
     
     # Delete user session from db
-    my $session = md5_base64( $user->user_name . $ENV{REMOTE_ADDR} );
-    $session =~ s/\+/1/g;
-    ($session) = $coge->resultset('UserSession')->find( { session => $session } );
+    my $session_id = get_session_id($user->user_name, $ENV{REMOTE_ADDR});
+    my ($session) = $coge->resultset('UserSession')->find( { session => $session_id } );
     $session->delete if $session;
     
     print "Location: ", $form->redirect($url);
@@ -345,9 +350,8 @@ sub logout_cas {
     print STDERR "Web::logout_cas url=", ($url ? $url : ''), "\n"; 
     
     # Delete user session from db
-    my $session = md5_base64( $user->user_name . $ENV{REMOTE_ADDR} );
-    $session =~ s/\+/1/g;
-    ($session) = $coge->resultset('UserSession')->find( { session => $session } );
+    my $session_id = get_session_id($user->user_name, $ENV{REMOTE_ADDR});
+    my ($session) = $coge->resultset('UserSession')->find( { session => $session_id } );
     $session->delete if $session;
     
     print "Location: ", $form->redirect("https://auth.iplantcollaborative.org/cas/logout?service=" . $url . "&gateway=1");
@@ -403,9 +407,8 @@ sub login_cas_proxy {
     }
 
     #create a session ID for the user and log
-    my $session = md5_base64( $uname . $ENV{REMOTE_ADDR} );
-    $session =~ s/\+/1/g;
-    my $sid = $coge->log_user( user => $coge_user, session => $session );
+    my $session_id = get_session_id($uname, $ENV{REMOTE_ADDR});
+    $coge->log_user( user => $coge_user, session => $session_id );
 
 	# mdb added 10/19/12 - FIXME key/secret are hardcoded - wait: this will get replaced by openauth soon
 	#$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0; # this doesn't work for bypassing cert check, need line in apache cfg
@@ -431,7 +434,7 @@ sub login_cas_proxy {
 
     #gen and set the web cookie, yum!
     my $c = CoGe::Accessory::LogUser->gen_cookie(
-        session     => $session,
+        session     => $session_id,
         cookie_name => $cookie_name,
     );
 
@@ -510,9 +513,8 @@ sub login_cas_saml {
     }
 
     #create a session ID for the user and log
-    my $session = md5_base64( $uname . $ENV{REMOTE_ADDR} );
-    $session =~ s/\+/1/g;
-    my $sid = $coge->log_user( user => $coge_user, session => $session );
+    my $session_id = get_session_id($uname, $ENV{REMOTE_ADDR});
+    $coge->log_user( user => $coge_user, session => $session_id );
 
 	# mdb added 10/19/12 - FIXME key/secret are hardcoded - wait: this will get replaced by openauth soon
 	#$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0; # this doesn't work for bypassing cert check, need line in apache cfg
@@ -539,7 +541,7 @@ sub login_cas_saml {
 
     #gen and set the web cookie, yum!
     my $c = CoGe::Accessory::LogUser->gen_cookie(
-        session     => $session,
+        session     => $session_id,
         cookie_name => $cookie_name,
     );
 

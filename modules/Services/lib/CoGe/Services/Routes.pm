@@ -5,7 +5,7 @@ sub startup {
     my $self = shift;
 
     my $r = $self->routes->namespaces(["CoGe::Services::Data"]);
-
+    
     # Organism routes
     $r->get("/organisms/search/#term")
         ->name("organisms-search")
@@ -36,17 +36,21 @@ sub startup {
     $r->get("/experiments/:id" => [id => qr/\d+/])
         ->name("experiments-fetch")
         ->to("experiment#fetch", id => undef);
+        
+    $r->post("/experiments")
+        ->name("experiments-add")
+        ->to("experiment#add");
 
     # User routes
     $r->get("/users/search/#term")
         ->name("users-search")
         ->to("user#search", term => undef);
 
-    $r->get("/users/:id" => [id => qr/\d+/])
+    $r->get("/users/:id" => [id => qr/\w+/])
         ->name("users-fetch")
         ->to("user#fetch", id => undef);
 
-    $r->get("/users/:id/items" => [id => qr/\d+/])
+    $r->get("/users/:id/items" => [id => qr/\w+/])
         ->name("users-items")
         ->to("user#items", id => undef);
 
