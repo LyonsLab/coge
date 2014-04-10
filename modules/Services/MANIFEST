@@ -1,5 +1,6 @@
 MANIFEST
 Makefile.PL
+lib/CoGe/Services/Auth.pm
 lib/CoGe/Services/Routes.pm
 lib/CoGe/Services/Data/Experiment.pm
 lib/CoGe/Services/Data/Genome.pm

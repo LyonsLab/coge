@@ -2,21 +2,29 @@ package CoGe::Services::Data::User;
 
 use Mojo::Base 'Mojolicious::Controller';
 #use IO::Compress::Gzip 'gzip';
+use Data::Dumper;
 use CoGeX;
-use CoGe::Accessory::Web;
+use CoGe::Services::Auth;
 
 sub search {
     my $self = shift;
     my $search_term = $self->stash('term');
-    my $key = $self->param("apiKey");
+    
+    # mdb 4/10/14: blocking access until a way to check for registered 
+    # iPlant API clients is determined.  See CoGe API spec.
+    $self->render(json => {
+        error => { Auth => "Access denied" }
+    }, status => 401);
+    return;
 
-    # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
+    # Authenticate user and connect to the database
+    #my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
     # Deny a public user access to users
-    if ($user->is_public) {
+    unless ($user && !$user->is_public) {
         $self->render(json => {
-            error => { Auth => "Access denied"}
+            error => { Auth => "Access denied" }
         }, status => 401);
         return;
     }
@@ -25,8 +33,7 @@ sub search {
     my $search_term2 = '%' . $search_term . '%';
     my @users = $db->resultset("User")->search(
         \[
-            'user_id= ? OR user_name LIKE ? OR first_name LIKE ?
-                OR last_name LIKE ?',
+            'user_id = ? OR user_name LIKE ? OR first_name LIKE ? OR last_name LIKE ?',
             [ 'user_id', $search_term ],
             [ 'user_name', $search_term2 ],
             [ 'first_name', $search_term2 ],
@@ -51,24 +58,24 @@ sub search {
 sub fetch {
     my $self = shift;
     my $id = int($self->stash('id'));
-    my $key = $self->param("apiKey");
 
-    # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
+    # Authenticate user and connect to the database
+    #my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
     # Deny a public user access to any user
-    if ($user->is_public) {
+    unless ($user && !$user->is_public) {
         $self->render(json => {
-            error => { Auth => "Access denied"}
+            error => { Auth => "Access denied" }
         }, status => 401);
         return;
     }
 
+    # Get requested user
     my $fetched_user = $db->resultset("User")->find($id);
-
     unless (defined $fetched_user) {
         $self->render(json => {
-            error => { Error => "Item not found"}
+            error => { Error => "Item not found" }
         });
         return;
     }
@@ -76,7 +83,7 @@ sub fetch {
     # Restrict a user's access to themselves
     if ($user->id ne $fetched_user->id) {
         $self->render(json => {
-            error => { Auth => "Access denied"}
+            error => { Auth => "Access denied" }
         }, status => 401);
         return;
     }
@@ -86,7 +93,7 @@ sub fetch {
         user_name => $fetched_user->user_name,
         first_name => $fetched_user->first_name,
         last_name => $fetched_user->last_name,
-        email => $fetched_user->email,
+        #email => $fetched_user->email,
         description => $fetched_user->description,
     });
 }
@@ -94,24 +101,23 @@ sub fetch {
 sub items {
     my $self = shift;
     my $id = int($self->stash('id'));
-    my $key = $self->param("apiKey");
 
-    # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
+    # Authenticate user and connect to the database
+    #my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
     # Deny a public user access to any user
-    if ($user->is_public) {
+    unless ($user && !$user->is_public) {
         $self->render(json => {
-            error => { Auth => "Access denied"}
+            error => { Auth => "Access denied" }
         }, status => 401);
         return;
     }
 
     my $fetched_user = $db->resultset("User")->find($id);
-
     unless (defined $fetched_user) {
         $self->render(json => {
-            error => { Error => "Item not found"}
+            error => { Error => "Item not found" }
         });
         return;
     }
@@ -119,7 +125,7 @@ sub items {
     # Restrict a user's access to themselves
     if ($user->id ne $fetched_user->id) {
         $self->render(json => {
-            error => { Auth => "Access denied"}
+            error => { Auth => "Access denied" }
         }, status => 401);
         return;
     }

@@ -8,16 +8,17 @@ use CoGe::Accessory::Web;
 sub search {
     my $self = shift;
     my $search_term = $self->stash('term');
-    my $key = $self->param("apiKey");
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
-        $self->render(json => { error => {Error => 'Too many results'}});
+        $self->render(json => { error => { Error => 'Search term is shorter than 3 characters' } });
         return;
     }
 
     # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
+    # Note: don't need to authenticate this service
+    my $conf = CoGe::Accessory::Web::get_defaults();
+    my $db = CoGeX->dbconnect($conf);
 
     # Search organisms
     my $search_term2 = '%' . $search_term . '%';
@@ -46,10 +47,11 @@ sub fetch {
     my $id = int($self->stash('id'));
 
     # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init();
+    # Note: don't need to authenticate this service
+    my $conf = CoGe::Accessory::Web::get_defaults();
+    my $db = CoGeX->dbconnect($conf);
 
     my $organism = $db->resultset("Organism")->find($id);
-
     unless (defined $organism) {
         $self->render(json => {
             error => { Error => "Item not found"}
@@ -66,7 +68,10 @@ sub fetch {
 
 sub add {
     my $self = shift;
-    $self->render(json => { success => Mojo::JSON->true });
+    $self->render(json => {
+        error => { Auth => "Access denied"}
+    }, status => 401);
+    return;
 }
 
 1;
