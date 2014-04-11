@@ -6,6 +6,7 @@ use CoGeX;
 use Getopt::Long;
 use File::Path;
 use File::Touch;
+use File::Basename qw( basename );
 use URI::Escape::JavaScript qw(unescape);
 use JSON::XS;
 use CoGe::Accessory::Web qw(get_defaults);
@@ -135,11 +136,16 @@ unless ($genome) {
 # Hash chromosome names
 my %genome_chr = map { $_ => 1 } $genome->chromosomes;
 
+my $cmd;
+
 # Copy input data file to staging area
-my $cmd = "cp -f '$data_file' $staging_dir";
-`$cmd`;
-my ($filename) = $data_file =~ /^.+\/([^\/]+)$/;
+# If running via JEX the file will already be there
+my ($filename) = basename($data_file);#$data_file =~ /^.+\/([^\/]+)$/;
 my $staged_data_file = $staging_dir . '/' . $filename;
+unless (-r $staged_data_file) {
+    $cmd = "cp -f '$data_file' $staging_dir";
+    `$cmd`;
+}
 
 # Validate the data file
 print $log "log: Validating data file\n";
