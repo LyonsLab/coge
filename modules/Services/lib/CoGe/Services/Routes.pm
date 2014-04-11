@@ -37,18 +37,21 @@ sub startup {
         ->name("experiments-fetch")
         ->to("experiment#fetch", id => undef);
         
-    $r->post("/experiments")
-        ->name("experiments-add")
-        ->to("experiment#add");
+    # Not finished yet
+#    $r->post("/experiments")
+#        ->name("experiments-add")
+#        ->to("experiment#add");
 
     # User routes
-    $r->get("/users/search/#term")
-        ->name("users-search")
-        ->to("user#search", term => undef);
+    # mdb 4/10/14: Removing search & fetch because they are available via the
+    # iPlant Trellis API.
+#    $r->get("/users/search/#term")
+#        ->name("users-search")
+#        ->to("user#search", term => undef);
 
-    $r->get("/users/:id" => [id => qr/\w+/])
-        ->name("users-fetch")
-        ->to("user#fetch", id => undef);
+#    $r->get("/users/:id" => [id => qr/\w+/])
+#        ->name("users-fetch")
+#        ->to("user#fetch", id => undef);
 
     $r->get("/users/:id/items" => [id => qr/\w+/])
         ->name("users-items")
@@ -68,6 +71,13 @@ sub startup {
         ->to("group#items", id => undef);
 
     # Job routes
+#    $r->get("/jobs/:id" => [id => qr/\d+/])
+#        ->name("jobs-fetch")
+#        ->to("job#fetch", id => undef);
+
+#    $r->get("/jobs/:id/results/:num" => { id => qr/\d+/, num => qr/\d+/ })
+#        ->name("jobs-results")
+#        ->to("job#results", id => undef, num => undef);    
 }
 
 1;

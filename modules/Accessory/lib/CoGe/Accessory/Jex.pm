@@ -132,7 +132,7 @@ sub terminate {
     return $msg;
 }
 
-sub get_status {
+sub get_job {
     my ($self, $id ) = @_;
     my ( $socket, $reply, $msg );
 
@@ -165,6 +165,13 @@ sub get_status {
 
     my $res  = decode_json($data);
 
+    return $res;
+}
+
+sub get_status {
+    my ($self, $id ) = @_;
+    my $res = get_job($id);
+    return unless ($res);
     return ${$res}{status};
 }
 
