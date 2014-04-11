@@ -52,10 +52,10 @@ BEGIN {
     $VERSION = 0.1;
     $TEMPDIR = $BASEDIR . "tmp";
     @ISA     = ( @ISA, qw (Exporter) );
-    @EXPORT  = qw( );
+    @EXPORT  = qw( get_session_id );
     __PACKAGE__->mk_accessors(
         'restricted_orgs', 'basefilename', 'basefile', 'logfile',
-        'sqlitefile', 'get_session_id'
+        'sqlitefile'
     );
 }
 
@@ -160,6 +160,9 @@ A valid parameter file must be specified or very little will work!};
         $items{$name} = $path;
     }
     close IN;
+
+    # mdb added 4/10/14 - add path to the file that was loaded
+    $items{_CONFIG_PATH} = $param_file;
 
     $CONF = \%items;
     return $CONF;

@@ -31,13 +31,13 @@ sub init {
     return unless $db;
     
     # Check for existing user session
-    my $session_id = CoGe::Accessory::Web::get_session_id($username, $remote_ip);
-    my $session = $db->resultset('UserSession')->find( { session => $session_id } );
+    #my $session_id = CoGe::Accessory::Web::get_session_id($username, $remote_ip);
+    my $session;# = $db->resultset('UserSession')->find( { session => $session_id } );
     # TODO add expiration to session table and check it here
     
     # Otherwise, validate user
     unless ($session or validate($username, $token)) {
-        return;
+        return ( $db, undef, $conf );
     }
     
     # Get user from DB
@@ -46,7 +46,7 @@ sub init {
     # Otherwise, get user info and add to DB
     if (!$user) {
         # TODO get user info from iPlant user API and add user to database
-        return; # tempfix
+        return ( $db, undef, $conf ); # tempfix
     }
 
     # Lastly, create or renew session

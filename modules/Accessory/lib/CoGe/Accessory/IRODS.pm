@@ -116,14 +116,16 @@ sub irods_chksum {
 }
 
 sub irods_iget {
-    my ( $src, $dest ) = @_;
+    my ( $src, $dest, $opts ) = @_;
+    my $no_execute = ( $opts and $opts->{no_execute} ); # mdb added 4/10/14 for REST API
 
     #print STDERR "irods_iget $src $dest\n";
     my $env_file = _irods_get_env_file();
     return unless $env_file;
 
-    my $cmd = "export irodsEnvFile='$env_file'; iget -fT $src $dest";
-    print STDERR "cmd: $cmd\n";
+    my $cmd = "export irodsEnvFile='$env_file'; iget -fT " . ($src || '') . ' ' . ($dest || '');
+    return $cmd if $no_execute;
+    #print STDERR "cmd: $cmd\n";
     my @result = `$cmd`;
     #print STDERR "@result";
 
