@@ -10,13 +10,6 @@ sub search {
     my $self = shift;
     my $search_term = $self->stash('term');
     
-    # mdb 4/10/14: blocking access until a way to check for registered 
-    # iPlant API clients is determined.  See CoGe API spec.
-    $self->render(json => {
-        error => { Auth => "Access denied" }
-    }, status => 401);
-    return;
-
     # Authenticate user and connect to the database
     #my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
     my ($db, $user) = CoGe::Services::Auth::init($self);
