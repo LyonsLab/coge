@@ -1,10 +1,10 @@
 function init_table() {
     $("#prev_table").tablesorter({
-		sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
-		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
-		headerClass: 'header',		// Class name for headers (th's)
-		widgets: ['zebra'],
-		textExtraction: 'complex'
+        sortClassAsc: 'headerSortUp',       // Class name for ascending sorting action to header
+        sortClassDesc: 'headerSortDown',    // Class name for descending sorting action to header
+        headerClass: 'header',      // Class name for headers (th's)
+        widgets: ['zebra'],
+        textExtraction: 'complex'
     });
  }
 
@@ -304,9 +304,9 @@ function update_params(val) {
 }
 
 function handle_dsg_info(dsg_html, feat_menu, genome_message, length, org_num, org_name, seq_id) {
-	$('#dsg_info'+org_num).html(dsg_html);
-	$('#feattype_menu'+org_num).html(feat_menu);
-	$('#genome_message'+org_num).html(genome_message);
+    $('#dsg_info'+org_num).html(dsg_html);
+    $('#feattype_menu'+org_num).html(feat_menu);
+    $('#genome_message'+org_num).html(genome_message);
 
     if (org_num == 1) {
         pageObj.org_length1 = length;
@@ -429,75 +429,61 @@ function display_dagchainer_settings(params,type) {
     set_dagchainer_defaults(params, type);
 }
 
-function search_bar(div_id){
-    if ($('#'+div_id).val() == "Search")
-        $('#'+div_id).val("");
-
-    if ($('#'+div_id).val() != "Search")
-        $('#'+div_id).css({fontStyle: "normal"});
-}
-
-function restore_search_bar(div_id) {
-  if(! $('#'+div_id).val()) {
-    $('#'+div_id).val("Search").css({fontStyle: "italic"});
-  }
-}
-
 //These two functions are involved with emailing results
 function toggle_email_field() {
-	if ($('#check_email')[0].checked) {
-		$('.email_box').show(0);
-	} else {
-		$('.email_box').hide(0);
-		$('#email').val('');
-		$('#email_error').hide(0);
-	}
+    if ($('#check_email')[0].checked) {
+        $('.email_box').show(0);
+    } else {
+        $('.email_box').hide(0);
+        $('#email').val('');
+        $('#email_error').hide(0);
+    }
 }
 
 function address_validity_check(validity) {
-	if (validity) {
-		if(validity == 'invalid') {
-		    $('#email_error').show(0);
-		} else {
+    if (validity) {
+        if(validity == 'invalid') {
+            $('#email_error').show(0);
+        } else {
             $('#email_error').hide(0);
-		}
-	} else {
+        }
+    } else {
         check_address_validity(['email'],[address_validity_check]);
-	}
+    }
 }
 
 function fill_jobtitle(){
-	var title;
-	var org1 = $('#org_id1 option:selected').html() || 0;
-	var org2 = $('#org_id2 option:selected').html() || 0;
+    var title;
+    var org1 = $('#org_id1 option:selected').html() || 0;
+    var org2 = $('#org_id2 option:selected').html() || 0;
 
-	if (org1 != 0) {
+    if (org1 != 0) {
         org1 = org1.replace(/\s+\(id\d+\)$/,"");
     }
 
-	if (org2 != 0) {
+    if (org2 != 0) {
         org2 = org2.replace(/\s+\(id\d+\)$/,"");
     }
 
-	if (org1 != 0 && org2 != 0) {
+    if (org1 != 0 && org2 != 0) {
         title = org1 + " v. " + org2;
-	} else if (org1 != 0) {
+    } else if (org1 != 0) {
         title = org1;
-	} else if (org2 != 0) {
+    } else if (org2 != 0) {
         title = org2;
-	} else {
+    } else {
         return;
     }
 
-	$('#jobtitle').val(title);
+    $('#jobtitle').val(title);
 }
 
 function update_basename(basename){
-	pageObj.basename=basename;
+    pageObj.basename=basename;
 }
 
 function reset_basename(){
-	if(pageObj.basename) pageObj.basename=0;
+    if(pageObj.basename) pageObj.basename=0;
 }
 
 function synmap_formatter(item) {

@@ -446,8 +446,12 @@ $(document).ready(function(){
     merge_select_check();
     depth_algo_check();
 
+    $("#pair_info").draggable();
+    $("#tabs").tabs({selected:0});
+    $(".resizable").resizable();
     $('#depth_org_1').html($('#org_id1 option:selected').html());
     $('#depth_org_2').html($('#org_id2 option:selected').html());
+
 
     pageObj.fid1 = "<tmpl_var name=fid1>";
     pageObj.fid2 = "<tmpl_var name=fid2>";
