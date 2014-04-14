@@ -2355,7 +2355,6 @@ sub go {
         [ '-cf', $config, 0 ],
         [ '-genome1', $dsgid1, 0 ],
         [ '-genome2', $dsgid2, 0 ],
-        [ '-d', $dag_file12_all, 0 ],
         [ '-a', $final_dagchainer_file, 1 ],
         [ '-b', $json_basename, 1 ],
     ];
@@ -2371,6 +2370,7 @@ sub go {
     ];
 
     if (-r $dag_file12_all) {
+        push @$dot_args, [ '-d', $dag_file12_all, 0 ];
         push @$dot_inputs, $dag_file12_all;
         push @$dot_outputs, "$json_basename.all.json";
     }
