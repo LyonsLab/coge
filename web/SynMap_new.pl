@@ -2366,13 +2366,14 @@ sub go {
         $final_dagchainer_file,
     ];
 
-    push @$dot_inputs, $dag_file12_all if $dag_file12_all;
-
     my $dot_outputs = [
         "$json_basename.json",
     ];
 
-    push @$dot_inputs, "$json_basename.all.json" if $dag_file12_all;
+    if (-r $dag_file12_all) {
+        push @$dot_inputs, $dag_file12_all;
+        push @$dot_outputs, "$json_basename.all.json";
+    }
 
     if ($ks_db) {
         push @$dot_inputs, $ks_db if $ks_db;
