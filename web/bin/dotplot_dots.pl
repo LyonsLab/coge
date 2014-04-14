@@ -363,8 +363,8 @@ sub get_ksdata {
     my %opts  = @_;
     my $ks_db = $opts{ks_db};
     my $pairs = $opts{pairs};
-    my %data;
-    return \%data unless -r $ks_db;
+    my @data;
+    return \@data unless -r $ks_db;
     my $select = "select * from ks_data";
     my $dbh    = DBI->connect( "dbi:SQLite:dbname=$ks_db", "", "" );
     my $sth    = $dbh->prepare($select);
@@ -377,17 +377,20 @@ sub get_ksdata {
             }
         }
         next unless $data->[3] && $data->[3] =~ /\d/;
-        my %item = (
-            KS => int($data->[3]),
-            KN => int($data->[4]),
-        );
-        $data{ $data->[1] }{ $data->[2] } = \%item;
+        my $item = {
+          fid1 =>  int($data->[1]),
+          fid2 =>  int($data->[2]),
+          ks   =>  $data->[3] + 0.0,
+          kn   =>  $data->[4] + 0.0,
+        };
+
+        push @data, $item;
 
     }
     $sth->finish();
     undef $sth;
     $dbh->disconnect();
-    return \%data;
+    return \@data;
 }
 
 sub get_pairs {

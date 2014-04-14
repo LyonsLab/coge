@@ -1141,3 +1141,77 @@ var synmap = function(element, metric, sort) {
     return my;
 }
 
+synmap.dropdown = function(element, datasets) {
+    var my = {},
+        listeners = [],
+        el = $(element);
+
+    el.on("change", function(e) {
+        return my.handleSelected(datasets[$(this).val()].dataset);
+    });
+
+    my.selected = function(callback) {
+        listeners.push(callback);
+    };
+
+    my.handleSelected = function(selected) {
+        listeners.forEach(function(callback) {
+            callback(selected);
+        });
+    };
+
+    my.datasets = function() {
+        return datasets;
+    }
+
+    var options = datasets.map(function(dataset, index) {
+        return $("<option>").attr("value", index)
+            .html(dataset.title);
+    });
+
+    el.append(options);
+
+    return my;
+}
+
+function Histogram(dataset) {
+    var my = {};
+
+    my.get = function() {
+        return dataset;
+    };
+
+    return my;
+}
+
+function HistogramController(element, model, config) {
+    var histogram = bioplot.histogram(),
+        scheme,
+        my = {};
+
+    my.setModel = function(newModel) {
+        model = newModel;
+        setTimeout(update, 200);
+    };
+
+    my.setColorScheme = function(colors) {
+        histogram.configure({colors: colors});
+        setTimeout(update, 200);
+    };
+
+    my.select = function(selection) {
+        model.get({selected: selection});
+    }
+
+    my.render = function() {
+        if(!model) return;
+        update();
+    }
+
+    function update() {
+        var bins = histogram.bin(model.get());
+        histogram(element, bins);
+    }
+
+    return my;
+}

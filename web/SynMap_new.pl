@@ -2992,6 +2992,7 @@ sub get_results {
     my $spa_file = $dotfile . ".spa_info.txt";
     my $json_file = "$out.json";
     my $all_json_file = "$out.all.json";
+    my $hist_json_file = "$out.ks.json";
 
     $out = $dotfile;
 
@@ -3359,9 +3360,15 @@ sub get_results {
         });
     }
 
-    unless(-r $json_file and -s $json_file) {
+    unless(-r $json_file and -s $json_file ) {
         return encode_json({
             error => "The json file could not be found."
+        });
+    }
+
+    if(defined $ks_type and -s $hist_json_file == 0) {
+        return encode_json({
+            error => "The histogram json file could not be found."
         });
     }
 
@@ -3369,12 +3376,14 @@ sub get_results {
     $log =~ s/$DIR/$URL/;
     $json_file =~ s/$DIR/$URL/;
     $all_json_file =~ s/$DIR/$URL/;
+    $hist_json_file =~ s/$DIR/$URL/;
 
     $results->param( error    => $problem ) if $problem;
     $results->param( warning  => $warn )    if $warn;
     $results->param( log      => $log );
     $results->param( json     => $json_file );
     $results->param( allpairs => $all_json_file );
+    $results->param( hist     => $hist_json_file );
     $results->param( beta     => 1) if $opts{beta};
 
     ##print out all the datafiles created
