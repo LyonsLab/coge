@@ -170,7 +170,7 @@ sub get_job {
 
 sub get_status {
     my ($self, $id ) = @_;
-    my $res = get_job($id);
+    my $res = get_job($self, $id);
     return unless ($res);
     return ${$res}{status};
 }
