@@ -2370,8 +2370,9 @@ sub go {
 
     my $dot_outputs = [
         "$json_basename.json",
-        "$json_basename.all.json"
     ];
+
+    push @$dot_inputs, "$json_basename.all.json" if $dag_file12_all;
 
     if ($ks_db) {
         push @$dot_inputs, $ks_db if $ks_db;
