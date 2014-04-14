@@ -41,9 +41,9 @@ var coge = window.coge = (function(ns) {
         },
         toPrettyDuration: function(seconds) {
             var fields = [
-                [parseInt((seconds / 86400).toFixed(1)), " day"],
-                [parseInt((seconds / 3600).toFixed(1)) % 24, " hour"],
-                [parseInt(((seconds / 60) % 60).toFixed(1)), " minute"],
+                [parseInt((seconds / 86400).toFixed(1), 10), " day"],
+                [parseInt((seconds / 3600).toFixed(1), 10) % 24, " hour"],
+                [parseInt(((seconds / 60) % 60).toFixed(1), 10), " minute"],
                 [(seconds % 60).toFixed(2), " second"]
             ];
 
