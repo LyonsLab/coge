@@ -53,6 +53,10 @@ var coge = window.coge = (function(ns) {
                     return item[0] + word;
                 })
                 .join(", ");
+        },
+
+        log10: function(value) {
+            return Math.log(value) / Math.log(10);
         }
     };
 

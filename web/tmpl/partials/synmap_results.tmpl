@@ -64,6 +64,16 @@
             </div>
         </div>
     </div>
+    <br>
+    <div id="histogram" class="padded">
+        <div class="toolbar" style="width: 200px;">
+            <label for="hist_data" class="bold">Histogram data</label>
+            <select id="hist_data">
+            </select>
+            <select id="color_selector">
+            </select>
+        </div>
+    </div>
 </div>
 <div id="results-1" class="hidden">
     <div class="ui-widget-content ui-corner-all padded" id="synmap_zoom_box"
@@ -141,11 +151,7 @@
 
             <span class='small'>Algorithm: <tmpl_var name="algorithm"></span>
         </li>
-    </ul>
-</div>
-
-<ul class="padded">
-    <li>
+        <li>
     <tmpl_if name="histogram">
         <div class='small link ui-widget-content ui-corner-all padded' style='float:left'
             onclick="window.open('<tmpl_var name=histogram>')">
@@ -154,7 +160,11 @@
         </div>
         <div style='clear: both;'> </div>
     </tmpl_if>
-    </li>
+        </li>
+    </ul>
+</div>
+
+<ul class="padded">
     <li>
         <div class="ui-widget-content ui-corner-all padded">
         <table id="files" class="small">
@@ -208,11 +218,17 @@
         </span>
     </li>
 </ul>
+<script src="js/d3/d3.v3.min.js"></script>
 <script src="js/jdot/src/dotplot2.js"></script>
+<script src="js/coge/utils.js"></script>
+<script src="js/coge/colors.js"></script>
+<script src="js/bioplot/dist/bioplot.js"></script>
+<link href="js/bioplot/dist/bioplot.min.css" rel="stylesheet" />
 <script>
 var BETA = "<tmpl_var name=beta>",
     SYNTENIC_URL = "<tmpl_var name=json>",
     ALLPOINTS_URL = "<tmpl_var name=allpairs>";
+    HIST_URL = "<tmpl_var name=hist>";
 
 $(document).ready(function(){
     var plots,
@@ -226,7 +242,8 @@ $(document).ready(function(){
         sortType = $("#sortType"),
         allpoints = $("#allpoints"),
         boxes = $("#boxes"),
-        MAXIMUM_SIZE = 67108864;
+        histogram = HistogramController("#histogram"),
+        MAXIMUM_SIZE = 268435456;
 
     $("#data").tabs({
         select: function(event, ui) {
@@ -316,6 +333,45 @@ $(document).ready(function(){
 
             sortHandler();
         }
+        $.getJSON(HIST_URL, loadHistogram);
+    }
+
+    function loadHistogram(data) {
+        var ks = data.map(pick("ks")),
+            kn = data.map(pick("kn")),
+            select_data,
+            selector,
+            datasets;
+
+        datasets = [
+            { title: "KS Values", dataset: Histogram(ks) },
+            { title: "KS Values (log10)", dataset: Histogram(transform(ks)) },
+            { title: "KN Values", dataset: Histogram(kn) },
+            { title: "KN Values (log10)", dataset: Histogram(transform(kn)) }
+        ];
+
+        histogram.setModel(datasets[0].dataset);
+
+
+        color_selector = coge.color.dropdown("#color_selector");
+        color_selector.selected(histogram.setColorScheme);
+
+        data_selector = synmap.dropdown("#hist_data", datasets);
+        data_selector.selected(histogram.setModel);
+    }
+
+    function transform(data) {
+        // non-zero min
+        var extent = d3.extent(data.filter(function(x) {
+            return x !== 0;
+        }));
+
+        return data.map(function(item) {
+            if (item === 0) item = extent[0];
+            if (item === 0) return 0;
+
+            return coge.utils.log10(item);
+        });
     }
 });
 </script>
