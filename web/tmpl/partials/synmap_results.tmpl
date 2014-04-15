@@ -319,6 +319,7 @@ $(document).ready(function(){
                     $.getJSON(ALLPOINTS_URL, function(json) {
                         for (var layer in json.layers) {
                             raw.layers[layer] = json.layers[layer];
+                            sortHandler();
                         }
                     });
                 } else {
@@ -328,11 +329,11 @@ $(document).ready(function(){
                     allpoints.attr("disabled", "disabled");
                     allpoints.unbind();
                 }
+                sortHandler();
             });
-
-            sortHandler();
         }
-        $.getJSON(HIST_URL, loadHistogram);
+
+        //$.getJSON(HIST_URL, loadHistogram);
     }
 
     function loadHistogram(data) {
