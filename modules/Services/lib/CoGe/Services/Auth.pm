@@ -15,12 +15,14 @@ sub init {
     my $username = $mojo->param('username');
     my $token    = $mojo->param('token');
     my $remote_ip = $mojo->req->env->{HTTP_X_FORWARDED_FOR};
-    return unless ($username and $token and $remote_ip);
-    print STDERR "CoGe::Services::Auth::init: username=$username token=$token remote_ip=$remote_ip\n";
+    print STDERR "CoGe::Services::Auth::init: username=", ($username ? $username : ''), " token=", ($token ? $token : ''), " remote_ip=", ($remote_ip ? $remote_ip : ''), "\n";
     
     # Get config
     my $conf = CoGe::Accessory::Web::get_defaults();
-    return unless $conf;
+    unless (defined $conf) {
+        print STDERR "CoGe::Services::Auth::init: couldn't load config file\n";
+        return;
+    }
 
     # Connect to DB
     my $db = CoGeX->dbconnect($conf);
@@ -28,7 +30,10 @@ sub init {
 #        $db->storage->debugobj(new DBIxProfiler());
 #        $db->storage->debug(1);
 #    }
-    return unless $db;
+    unless (defined $db) {
+        print STDERR "CoGe::Services::Auth::init: couldn't connect to database\n";
+        return;
+    }
     
     # Check for existing user session
     #my $session_id = CoGe::Accessory::Web::get_session_id($username, $remote_ip);
@@ -37,6 +42,7 @@ sub init {
     
     # Otherwise, validate user
     unless ($session or validate($username, $token)) {
+        print STDERR "CoGe::Services::Auth::init: validation failed\n";
         return ( $db, undef, $conf );
     }
     
