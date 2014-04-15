@@ -39,7 +39,7 @@ sub search {
 
     # Filter response
     my @filtered = grep {
-        $user->has_access_to_experiment($_);
+         !$_->restricted || (defined $user && $user->has_access_to_experiment($_))
     } @experiments;
 
     # Format response

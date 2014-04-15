@@ -31,7 +31,7 @@ sub search {
 
     # Filter response
     my @filtered = grep {
-        $user->has_access_to_genome($_);
+        !$_->restricted || (defined $user && $user->has_access_to_genome($_))
     } @genomes;
 
     # Format response
