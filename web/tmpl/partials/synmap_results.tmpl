@@ -65,7 +65,7 @@
         </div>
     </div>
     <br>
-    <div id="histogram" class="padded">
+    <div id="histogram" class="padded hidden">
         <div class="toolbar" style="width: 200px;">
             <label for="hist_data" class="bold">Histogram data</label>
             <select id="hist_data">
@@ -253,12 +253,13 @@ $(document).ready(function(){
         }
     });
 
+    // Swap tabs if BETA is set
+    $("#data").tabs("select", (+BETA) ? 1 : 0);
 
     function setup() {
         if (checkRequestSize(SYNTENIC_URL) > MAXIMUM_SIZE) {
             message = "The analysis was too large to be displayed." +
                 " Support for larger analyses will be added in the future.";
-
             $("#dotplot-errors").html(message);
             dotplot.remove();
             $(".toolbar").remove();
@@ -311,8 +312,6 @@ $(document).ready(function(){
                 dataType: "json"
             });
 
-            $("#data").tabs("select", (+BETA) ? 1 : 0);
-
             response.then(function(json) {
                 raw = json;
 
@@ -337,6 +336,8 @@ $(document).ready(function(){
     }
 
     function loadHistogram(data) {
+        $("#histogram").removeClass("hidden");
+
         var ks = data.map(pick("ks")),
             kn = data.map(pick("kn")),
             select_data,
