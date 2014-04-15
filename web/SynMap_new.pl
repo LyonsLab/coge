@@ -3366,7 +3366,7 @@ sub get_results {
         });
     }
 
-    if(defined $ks_type and -s $hist_json_file == 0) {
+    if($ks_type and -s $hist_json_file == 0) {
         return encode_json({
             error => "The histogram json file could not be found."
         });
