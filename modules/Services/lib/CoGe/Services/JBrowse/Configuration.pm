@@ -245,7 +245,7 @@ sub track_config {
 			$type = 'CoGe/View/Track/Wiggle/MultiXYPlot';
 			$featureScale = 0.001;
 			$histScale = 0.05;
-			$labelScale = 0.05;
+			$labelScale = 0.1;
 		}
 		elsif ($e->data_type == 2) { #FIXME hardcoded data_type 'polymorphism'
 			$type = 'CoGe/View/Track/CoGeVariants'; 
