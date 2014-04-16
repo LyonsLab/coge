@@ -370,7 +370,7 @@
         <li id="error_msg">An error occurred <img src="picts/thumbs_down.png"></li>
         <li id="dialog_log" class="small"></li>
         <li id="cancel_button" class="ui-button ui-corner-all ui-button-go r">
-            <span onClick="close_dialog(); load_results();" >
+            <span onClick="close_dialog($('#synmap_dialog')); load_results();" >
                 Close
             </span>
         </li>
@@ -382,7 +382,7 @@
             <img src="picts/thumbs_up.png">
         </li>
         <li id="ok_button" class="ui-button ui-corner-all r">
-            <span onClick="close_dialog(); load_results();" >
+            <span onClick="close_dialog($('#synmap_dialog')); load_results();" >
                 OK
             </span>
         </li>

@@ -128,6 +128,7 @@ function run_synmap(scheduled, regenerate){
 function schedule(params) {
     pageObj.nolog=1;
     var status_dialog = $('#synmap_dialog');
+    close_dialog(status_dialog);
 
     return $.ajax({
         data: params,
@@ -216,16 +217,12 @@ function get_params(name, regenerate) {
     };
 }
 
-function close_dialog() {
-    var dialog_window = $('#synmap_dialog');
-    if(dialog_window.dialog('isOpen')) {
-        dialog_window.dialog('close');
-    }
-
-    dialog_window.find('#text').html('');
-    dialog_window.find('#progress').show();
-    dialog_window.find('#dialog_error').hide();
-    dialog_window.find('#dialog_success').hide();
+function close_dialog(dialog) {
+    dialog.dialog('close');
+    dialog.find('#text').html('');
+    dialog.find('#progress').show();
+    dialog.find('#dialog_error').hide();
+    dialog.find('#dialog_success').hide();
 }
 
 function load_results() {
