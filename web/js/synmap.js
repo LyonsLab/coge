@@ -62,7 +62,7 @@ function populate_page_obj(basefile) {
     pageObj.engine = "<span class=\"alert\">The job engine has failed.</span><br>Please use the link below to use the previous version of SynMap.";
 }
 
-function run_synmap(scheduled){
+function run_synmap(scheduled, regenerate){
     populate_page_obj();
 
     var org_name1 = pageObj.org_name1;
@@ -104,6 +104,10 @@ function run_synmap(scheduled){
 
     $('#results').hide();
 
+    if (regenerate) {
+        return schedule(get_params("go", regenerate));
+    }
+
     return $.ajax({
         type: 'GET',
         data: get_params("get_results"),
@@ -125,7 +129,7 @@ function schedule(params) {
     pageObj.nolog=1;
     var status_dialog = $('#synmap_dialog');
 
-    $.ajax({
+    return $.ajax({
         data: params,
         dataType: 'json',
         success: function(data) {
@@ -162,7 +166,7 @@ function schedule(params) {
     })
 }
 
-function get_params(name) {
+function get_params(name, regenerate) {
     return {
         fname: name,
         tdd: $('#tdd').val(),
@@ -179,7 +183,7 @@ function get_params(name) {
         jobtitle: $('#jobtitle').val(),
         basename: pageObj.basename,
         email: $('#email').val(),
-        regen_images: $('#regen_images')[0].checked,
+        regen_images: regenerate,
         width: $('#master_width').val(),
         dagchainer_type: $('#dagchainer_type').filter(':checked').val(),
         ks_type: $('#ks_type').val(),
