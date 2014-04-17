@@ -1241,7 +1241,7 @@ sub get_query_link {
         $SERVER
       . "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2"
       . ";D=$dagchainer_D;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;"
-      . "ft2=$feat_type2;regen_images=1;autogo=1";
+      . "ft2=$feat_type2;autogo=1";
 
     $synmap_link .= ";Dm=$Dm"       if defined $Dm;
     $synmap_link .= ";csco=$cscore" if $cscore;

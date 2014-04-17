@@ -335,7 +335,7 @@
     </div> <!-- close tab-3 -->
 </section> <!--close tabs section-->
 <div style="padding: 15px 0 5px 0;">
-    <span style="font-size: 1em" class="ui-button ui-button-go ui-corner-all" id="synmap_go" onClick="run_synmap(false);" >Generate SynMap</span>
+    <span style="font-size: 1em" class="ui-button ui-button-go ui-corner-all" id="synmap_go" >Generate SynMap</span>
 </div>
 
 <section id="prev_container" class="hidden">
@@ -370,7 +370,7 @@
         <li id="error_msg">An error occurred <img src="picts/thumbs_down.png"></li>
         <li id="dialog_log" class="small"></li>
         <li id="cancel_button" class="ui-button ui-corner-all ui-button-go r">
-            <span onClick="close_dialog(); load_results();" >
+            <span onClick="close_dialog($('#synmap_dialog')); load_results();" >
                 Close
             </span>
         </li>
@@ -382,7 +382,7 @@
             <img src="picts/thumbs_up.png">
         </li>
         <li id="ok_button" class="ui-button ui-corner-all r">
-            <span onClick="close_dialog(); load_results();" >
+            <span onClick="close_dialog($('#synmap_dialog')); load_results();" >
                 OK
             </span>
         </li>
@@ -460,13 +460,14 @@ $(document).ready(function(){
 
     var autogo = parseInt("<tmpl_var name=autogo>");
     if (autogo === 1) {
-        run_synmap(autogo);
+        run_synmap(autogo, $('#regen_images')[0].checked);
     }
 
     $("#tabs").removeClass("invisible");
 
     // track analysis
     $("#synmap_go").on("click", function() {
+        run_synmap(false, $('#regen_images')[0].checked);
         ga('send', 'event', 'synmap', 'run');
     });
  });

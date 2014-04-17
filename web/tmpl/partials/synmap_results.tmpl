@@ -312,6 +312,7 @@ $(document).ready(function(){
                 dataType: "json"
             });
 
+            //FIXME This should only be called when the file exists
             response.then(function(json) {
                 raw = json;
 
@@ -333,7 +334,8 @@ $(document).ready(function(){
             });
         }
 
-        //$.getJSON(HIST_URL, loadHistogram);
+        //FIXME This should only be called when the file exists
+        $.getJSON(HIST_URL, loadHistogram);
     }
 
     function loadHistogram(data) {
