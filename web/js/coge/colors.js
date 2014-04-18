@@ -143,7 +143,15 @@ var coge = window.coge = (function(ns) {
                 listeners.forEach(function(callback) {
                     callback(colors);
                 });
-            }
+            };
+
+            my.select = function(index) {
+                var child = el.children()[index];
+                if (child) {
+                    $(child).attr("selected", "selected");
+                    el.change();
+                }
+            };
 
             names = Object.keys(coge.color.schemes);
             items = names.map(function(name) {

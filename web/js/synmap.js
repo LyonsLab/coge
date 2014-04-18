@@ -967,13 +967,23 @@ var synmap = function(element, metric, sort) {
         }
     }
 
+    my.update = function() {
+        for(index = 0; index < plots.length; index++) {
+            plots[index].plot.redraw();
+        }
+    };
+
+    my.getLayer = function(layerId) {
+        return plots[0].data.layers[layerId];
+    };
+
     my.reset = function() {
         var index;
 
         for(index = 0; index < plots.length; index++) {
             plots[index].plot.reset();
         }
-    }
+    };
 
     function generatePlot(genome1, genome2, layers, metric, by) {
         var xlabels,
@@ -1165,6 +1175,14 @@ synmap.dropdown = function(element, datasets) {
     my.datasets = function() {
         return datasets;
     }
+
+    my.select = function(index) {
+        var child = el.children()[index];
+        if (child) {
+            $(child).attr("selected", "selected");
+            el.change();
+        }
+    };
 
     var options = datasets.map(function(dataset, index) {
         return $("<option>").attr("value", index)
