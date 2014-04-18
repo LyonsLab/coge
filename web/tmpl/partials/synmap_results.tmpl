@@ -331,11 +331,10 @@ $(document).ready(function(){
                     allpoints.unbind();
                 }
                 sortHandler();
+                //FIXME This should only be called when the file exists
+                $.getJSON(HIST_URL, loadHistogram);
             });
         }
-
-        //FIXME This should only be called when the file exists
-        $.getJSON(HIST_URL, loadHistogram);
     }
 
     function loadHistogram(data) {
