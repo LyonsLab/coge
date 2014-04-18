@@ -707,8 +707,7 @@ sub get_dataset_info {
 
 	my $chr_num_limit = 20;    
     my $html = "";
-    $html .=
-"<span class='alert large'>Private Dataset!  Authorized Use Only!</span><br>"
+    $html .= "<span class='alert small'>Restricted dataset</span><br>"
       if $ds->restricted;
     $html .= "<table>";
     $html .= "<tr valign=top><td><table class=\"small annotation_table\">";
