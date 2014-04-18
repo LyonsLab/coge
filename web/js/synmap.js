@@ -1165,6 +1165,14 @@ synmap.dropdown = function(element, datasets) {
         return datasets;
     }
 
+    my.select = function(index) {
+        var child = el.children()[index];
+        if (child) {
+            $(child).attr("selected", "selected");
+            el.change();
+        }
+    };
+
     var options = datasets.map(function(dataset, index) {
         return $("<option>").attr("value", index)
             .html(dataset.title);
