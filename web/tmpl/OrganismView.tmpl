@@ -2,8 +2,38 @@
 <script language="javascript">
 
 $(function() {
- $(".dialog").dialog({ autoOpen: false} );
- });
+	<TMPL_IF NAME='SHOW_RESULTS'>
+	timing('org_search');
+	$("._orgviewresult").fadeIn();
+	</TMPL_IF>
+	
+  $('#allorg').hide();
+  if ($('#org_name').val() && $('#org_name').val() != "Search") {
+    $('#org_name').css({fontStyle: "normal"});
+    if($('#org_list').html()) {get_org_info(['args__oid','org_id'],[genome_chain]);} else {timing('org_search');};
+  }  
+  if ($('#org_desc').val() && $('#org_desc').val() != "Search") {
+    $('#org_desc').css({fontStyle: "normal"});
+    timing('org_search');
+  }  
+//  if($('#ds_name').val() && $('#ds_name').val() != "Search") {
+//    $('#ds_name').css({fontStyle: "normal"});
+//    if ($('#ds_list').html() == "undefined") {
+//     timing('ds_name');
+//    } else { dataset_info_chain();}
+//  }
+  
+  $(".dialog").dialog({ autoOpen: false} );
+
+  //set up jquery ajax
+  $.ajaxSetup({
+                type: "GET",
+                url: "<TMPL_VAR NAME='PAGE_NAME'>",
+                dataType: "html",
+                cache: false,
+        });
+});
+
 $.fn.sortSelect = function(){
   this.each(
           function()
@@ -239,7 +269,7 @@ function genome_chain(val) {
 function genome_info_chain(val, val2) {
   if (val) {$('#dsg_list').html(val);}
   if (val2) {$('#dsg_count').html(val2);}
-  $('#dsg_info').html('<span class="small alert">loading. . .</span>');
+  $('#dsg_info').html('<span class="small alert">loading...</span>');
   get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);
 }
 
@@ -256,7 +286,7 @@ function recent_dataset_chain() {
 function dataset_info_chain(val, val2) {
  if (val) {$('#ds_list').html(val);}
  if (val2) {$('#ds_count').html(val2);}
- $('#ds_info').html('<span class="small alert">loading. . .</span>');
+ $('#ds_info').html('<span class="small alert">loading...</span>');
  $('#chr_list').empty();
  $('#chr_count').empty();	
  $('#chr_info').empty();	
@@ -339,36 +369,6 @@ function timing(val){
 	}
 }
 
-$(document).ready(function(){
-  $('#allorg').hide();
-  if($('#org_name').val() && $('#org_name').val() != "Search") {
-    $('#org_name').css({fontStyle: "normal"});
-    if($('#org_list').html()) {get_org_info(['args__oid','org_id'],[genome_chain]);} else {timing('org_name')};
-  }  
-  if($('#org_desc').val() && $('#org_desc').val() != "Search") {
-    $('#org_desc').css({fontStyle: "normal"});
-    timing('org_desc');
-  }  
-  if($('#ds_name').val() && $('#ds_name').val() != "Search") {
-    $('#ds_name').css({fontStyle: "normal"});
-    if ($('#ds_list').html() == "undefined") {
-     timing('ds_name');
-    } else { dataset_info_chain();}
-     
-  }
-
-  //set up jquery ajax
-  $.ajaxSetup({
-                type: "GET",
-                url: "<TMPL_VAR NAME='PAGE_NAME'>",
-                dataType: "html",
-                cache: false,
-        });
-
- });
-
-//ajax function call
-
 function get_feat_gc(opts){
  if (!opts){opts={};}
  chr = opts.chr;
@@ -378,7 +378,7 @@ function get_feat_gc(opts){
  hist_type = $('#feat_hist_type').val();
  dsid = opts.dsid;
  dsgid = $('#dsg_id').val();
- $('#gc_histogram').html('loading. . .');
+ $('#gc_histogram').html('loading...');
 
  $.ajax({
    data: {
@@ -398,7 +398,7 @@ function get_feat_gc(opts){
 }
 
 function chr_hist (dsgid){
-   $('#chromosome_hist').html('loading. . .');
+   $('#chromosome_hist').html('loading...');
   $.ajax({
    data: {
           jquery_ajax: 1,
