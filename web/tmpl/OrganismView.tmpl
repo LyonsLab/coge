@@ -178,7 +178,6 @@ function add_all_genomes_from_org(val){
 	}
 }
 
-
 function get_organism_name_chain(val)
 {
  get_orgs(['args__name','args__'+val, 'args__dsgid','dsg_id'], [get_org_info_chain]);	 
@@ -187,6 +186,11 @@ function get_organism_name_chain(val)
 function get_organism_desc_chain(val)
 {
  get_orgs(['args__desc','args__'+val, 'args__dsgid','dsg_id'], [get_org_info_chain]);	 
+}
+
+function get_organism_chain(val)
+{
+ get_orgs(['args__name','args__'+val, 'args__desc','args__'+val, 'args__dsgid','dsg_id'], [get_org_info_chain]);	 
 }
 
 function get_org_info_chain(val, val2)
@@ -278,6 +282,8 @@ function populate_dataset_chr_info (chr_info, viewer, get_seq){
  $('#viewer').html(viewer);
  $('#get_seq').html(get_seq);
  setup_button_states(); //get them buttons working!
+ $('#busy').animate({opacity:0});
+ $("._orgviewresult").fadeIn();
 }
 
 function launch_seqview(dsgid, chr, dsid)
@@ -287,7 +293,6 @@ function launch_seqview(dsgid, chr, dsid)
    window.open("SeqView.pl?dsgid="+dsgid+"&dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop);
  }
 
-
 function launch_viewer (dsgid, chr) {
  x = $('#x').val();
  z = $('#z').val();
@@ -295,43 +300,43 @@ function launch_viewer (dsgid, chr) {
  link =  "GenomeView.pl?z="+z+"&x="+x+"&gid="+dsgid+"&chr="+chr;
  window.open(link);
 }
-function timing(val){
-  var searchterm;
-  if (val == "org_name") 
-   {
-    searchterm = $('#org_name').val();
-   }
-  else if (val == "org_desc")
-   {
-    searchterm = $('#org_desc').val();
-   }
-  else if (val == "ds_name")
-   {
-    searchterm = $('#ds_name').val();
-    if (!searchterm) {val=0;}
-   }
-  if (!searchterm) {val=0;}
-  if(searchterm == "Search")
-  {
-    searchterm = "";
-  }
 
-  pageObj.search=searchterm;
-  if (pageObj.time){
-   clearTimeout(pageObj.time);
-  }
-  if (val == "org_name") 
-   {
-     pageObj.time = setTimeout("get_organism_name_chain($('#org_name').val())",1000);
-   }
-  else if (val == "org_desc")
-   {
-     pageObj.time = setTimeout("get_organism_desc_chain($('#org_desc').val())",1000);
-   }
-  else if (val == "ds_name")
-   {
-     pageObj.time = setTimeout("get_dataset_name_chain($('#ds_name').val())",1000);
-   }
+function timing(val){
+//  var searchterm;
+//  if (val == "org_name") 
+//    searchterm = $('#org_name').val();
+//  else if (val == "org_desc")
+//    searchterm = $('#org_desc').val();
+//  else if (val == "ds_name")
+//   {
+//    searchterm = $('#ds_name').val();
+//    if (!searchterm) {val=0;}
+//   }
+//  if (!searchterm) {val=0;}
+//  if(searchterm == "Search")
+//    searchterm = "";
+
+//	pageObj.search=searchterm;
+	if (pageObj.time)
+		clearTimeout(pageObj.time);
+  
+	var searchterm = $('#org_search').val();
+	if (!searchterm || !val) {
+		$("._orgviewresult").hide();
+		$('#busy').animate({opacity:0});
+	}
+	else {
+		$('#busy').animate({opacity:1});
+		
+//		if (val == "org_search")
+			pageObj.time = setTimeout("get_organism_chain($('#org_search').val())", 500);
+//		else if (val == "org_name")
+//			pageObj.time = setTimeout("get_organism_name_chain($('#org_name').val())", 1000);
+//		else if (val == "org_desc")
+//			pageObj.time = setTimeout("get_organism_desc_chain($('#org_desc').val())", 1000);
+//		else if (val == "ds_name")
+//			pageObj.time = setTimeout("get_dataset_name_chain($('#ds_name').val())", 1000);
+	}
 }
 
 $(document).ready(function(){
@@ -522,14 +527,24 @@ function export_bed () {
 
 </script>
 
-<span class="header">Search for organisms and genomes</span>
+<div class="ui-widget-content ui-corner-all padded">
+	<div class="header">Search for organisms and genomes</div>
+	<div class="small padded" style="vertical-align:middle;width:50%;">
+		Organism: <input type="search" placeholder="Search" size="50" value="<TMPL_VAR NAME=ORG_NAME>" name="org_search" id="org_search" onkeyup='timing("org_search");'>
+		<span class='ui-button ui-corner-all' onClick="timing('org_search');">
+			<span class="ui-icon ui-icon-arrowrefresh-1-w"></span>
+		</span>
+		<img id="busy" src="picts/ajax-loader.gif" style="opacity:0;"/>
+	</div>
+</div>
+
 <TABLE>
+	<!--
    <TR><TD valign='top'>
     <table class="ui-widget-content ui-corner-all" style="min-width:330px;">
      <tr>
        <td>Organism Name:</td>
        <td>
-         <input type="text" size=15 value="<TMPL_VAR NAME="ORG_NAME">" name="org_name" id="org_name" style="font-style:italic" onFocus="search_bar('org_name')" onKeyUp='timing("org_name");'><span class='ui-button ui-corner-all' onClick="timing('org_name');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
        </td>
      </tr>
      <tr>
@@ -537,14 +552,22 @@ function export_bed () {
      <tr>
        <td>Dataset Name:<td><input type="text" size=15 value="<TMPL_VAR NAME="DS_NAME">" name="ds_name" style="font-style:italic" id="ds_name" onFocus="search_bar('ds_name')" onKeyUp='timing("ds_name");' ><span class='ui-button ui-corner-all' onClick="timing('ds_name');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
    </table>
-  <tr><td>
-   <span class="coge-table-header padding">Organisms: </span><span class='small' id='org_count'><TMPL_VAR NAME="ORG_COUNT"></span> 
+   -->
+   <tr>
+   	<td>
+   		<br>
+   	</td>
+   </tr>
+  
+   <tr class="hidden _orgviewresult"><td>
+   <span class="coge-table-header">Organisms: </span><span class='small' id='org_count'><TMPL_VAR NAME="ORG_COUNT"></span> 
    <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
    <span class="ui-button ui-corner-all" id='allorg' onClick="add_all_org();$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add all to Genome List</span><br>
    <td valign='top'>
    <div class="coge-table-header">Organism information</div>
    <div id='org_info' class="small ui-corner-all ui-widget-content" ></div>
-  <tr valign='top'>
+  
+   <tr class="hidden _orgviewresult" valign='top'>
   <td>
   <span class="coge-table-header">Genomes: </span><span class='small' id='dsg_count'><TMPL_VAR NAME="DSG_COUNT"></span> 
   <DIV style="vertical-align: top;" id="dsg_list"><TMPL_VAR NAME="DSG_LIST"></DIV>
@@ -552,21 +575,23 @@ function export_bed () {
    <div class="coge-table-header">Genome Information</div>
    <DIV id="dsg_info" class = "small ui-corner-all ui-widget-content"><TMPL_VAR NAME="DSG_INFO"></DIV>
 	
-  <tr  valign=top>
+  <tr class="hidden _orgviewresult" valign="top">
   <td>
    <span class="coge-table-header">Datasets: </span><span class=small id=ds_count><TMPL_VAR NAME="DS_COUNT"></span> 
    <DIV style="vertical-align: top;" id="ds_list"><TMPL_VAR NAME="DS_LIST"></DIV>
-  <TD valign=top>
+  <td valign="top">
    <div class="coge-table-header">Dataset Information</div>
    <DIV id="ds_info" class = "small ui-corner-all ui-widget-content" ><TMPL_VAR NAME="DS_INFO"></DIV>
-  <tr  valign=top>
+  
+   <tr class="hidden _orgviewresult" valign="top">
   <td>
    <span class="coge-table-header">Chromosomes: </span><span class='small' id='chr_count'><TMPL_VAR NAME="CHR_COUNT"></span> 
    <DIV style="vertical-align: top;" id="chr_list"><TMPL_VAR NAME="CHR_LIST"></DIV>
-  <TD valign=top>
+  <td valign="top">
    <div class="coge-table-header">Chromosome information</div>
    <DIV id="chr_info" class = "small ui-corner-all ui-widget-content" ><TMPL_VAR NAME="CHR_INFO"></DIV>
-  <tr valign=top>
+  
+   <tr class="hidden _orgviewresult" valign="top">
 	<td>
   <DIV id="gn_list"  ><TMPL_VAR NAME="GN_LIST"></DIV>
 

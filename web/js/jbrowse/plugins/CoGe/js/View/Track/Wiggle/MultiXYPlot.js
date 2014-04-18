@@ -628,6 +628,41 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                     ]
                 );
         }
+        else { // individual experiment track
+            options.push.apply(
+                    options,
+                    [
+                        // Note: would prefer a radio submenu but this is
+                        // dojo 1.8 and RadioMenuItem doesn't exist until
+                        // dojo 1.9.
+                        {   label: 'Transform',
+                            type: 'dijit/DropDownMenu',
+                            children: [
+                                {   label: 'None',
+                                    onClick: function(event) {
+                                        clearTransforms(config);
+                                        track.changed();
+                                    }
+                                },
+                                {   label: 'Log10',
+                                    onClick: function(event) {
+                                        clearTransforms(config);
+                                        track.config.transformLog10 = true;
+                                        track.changed();
+                                    }
+                                },
+                                {   label: 'Log2',
+                                    onClick: function(event) {
+                                        clearTransforms(config);
+                                        track.config.transformLog2 = true;
+                                        track.changed();
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                );        	
+        }
 
         return options;
     },
