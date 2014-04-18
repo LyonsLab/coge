@@ -142,6 +142,7 @@ sub gen_body {
     my $dsgid    = $form->param('dsgid');
     $dsgid = $form->param('gid') if ( $form->param('gid') );
     my ($dsg) = $coge->resultset('Genome')->find($dsgid) if $dsgid;
+    $template->param( SHOW_RESULTS => 1 ) if ($dsgid or $dsid or $desc or $oid or $org or $dsname);
 
     my $link = "http://" . $P->{SERVER} . $PAGE_NAME . "?";
     my @params;
@@ -189,7 +190,6 @@ sub gen_body {
       ? "<input type='hidden' id='dsg_id' value='$dsgid'>"
       : "<input type='hidden' id='dsg_id'>";
     $template->param( DSG_INFO => $dsginfo );
-    $template->param( SHOW_RESULTS => 1 ) if ($dsgid or $dsid or $desc or $oid or $org or $dsname);
     return $template->output;
 }
 
