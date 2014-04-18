@@ -183,12 +183,13 @@ sub gen_body {
       if $dsname;
     $template->param( DS_LIST  => $dslist )  if $dslist;
     $template->param( DS_COUNT => $dscount ) if $dscount;
-    my $dsginfo = "<input type=hidden id=gstid>";
+    my $dsginfo = "<input type='hidden' id='gstid'>";
     $dsginfo .=
       $dsgid
-      ? "<input type=hidden id=dsg_id value=$dsgid>"
-      : "<input type=hidden id=dsg_id>";
+      ? "<input type='hidden' id='dsg_id' value='$dsgid'>"
+      : "<input type='hidden' id='dsg_id'>";
     $template->param( DSG_INFO => $dsginfo );
+    $template->param( SHOW_RESULTS => 1 ) if ($dsgid or $dsid or $desc or $oid or $org or $dsname);
     return $template->output;
 }
 
@@ -347,19 +348,15 @@ sub get_orgs {
     my @db;
     my $count = 0;
     if ($name) {
-        @db =
-          $coge->resultset("Organism")
-          ->search( { name => { like => "%" . $name . "%" } } );
+        @db = $coge->resultset("Organism")->search( { name => { like => "%" . $name . "%" } } );
     }
     elsif ($desc) {
-        @db =
-          $coge->resultset("Organism")
-          ->search( { description => { like => "%" . $desc . "%" } } );
+        @db = $coge->resultset("Organism")->search( { description => { like => "%" . $desc . "%" } } );
     }
     else {
         $count = $coge->resultset("Organism")->count();
         return (
-qq{<input type = hidden name="org_id" id="org_id"><span class="small alert">Please search</span>},
+            qq{<input type="hidden" name="org_id" id="org_id"><span class="small alert">Please refine your search</span>},
             $count
         );
     }
@@ -378,13 +375,11 @@ qq{<input type = hidden name="org_id" id="org_id"><span class="small alert">Plea
     }
     my $html;
     if ( ( $name || $desc ) && !@opts ) {
-        $html .=
-qq{<input type = hidden name="org_id" id="org_id"><span class="small alert">No organisms found</span>};
+        $html .= qq{<input type="hidden" name="org_id" id="org_id"><span class="small alert">No organisms found</span>};
         return $html, 0;
     }
     $count = scalar @db unless $count;
-    $html .=
-qq{<SELECT class="ui-widget-content ui-corner-all" id="org_id" SIZE="5" MULTIPLE onChange="get_org_info(['args__oid','org_id'],[genome_chain])" >\n};
+    $html .= qq{<SELECT class="ui-widget-content ui-corner-all" id="org_id" size="5" MULTIPLE onChange="get_org_info(['args__oid','org_id'],[genome_chain])" >\n};
     $html .= join( "\n", @opts );
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/ unless $html =~ /SELECTED/;
@@ -393,8 +388,7 @@ qq{<SELECT class="ui-widget-content ui-corner-all" id="org_id" SIZE="5" MULTIPLE
     $opts .= "desc=$desc;"   if $desc;
     $opts .= "oid=$oid;"     if $oid;
     $opts .= "dsgid=$dsgid;" if $dsgid;
-    $html .=
-qq{<br><span class='link small' onclick="window.open('get_org_list.pl$opts');">Download Organism List</span>};
+    $html .= qq{<br><span class='link small' onclick="window.open('get_org_list.pl$opts');">Download Organism List</span>};
     return $html, $count;
 }
 
@@ -896,7 +890,7 @@ qq{<SELECT class="ui-widget-content ui-corner-all" id="chr" size =$size onChange
     $html .= qq{</table>};
 
     my $chr_count = $chr_num;
-    $chr_count .= " <span class=alert>Only $chr_num_limit largest listed</span>"
+    $chr_count .= " <span class='note'> (only $chr_num_limit largest listed)</span>"
       if ( $chr_count > $chr_num_limit );
     return $html, $html2, $chr_count;
 }
