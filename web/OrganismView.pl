@@ -394,7 +394,7 @@ qq{<SELECT class="ui-widget-content ui-corner-all" id="org_id" SIZE="5" MULTIPLE
     $opts .= "oid=$oid;"     if $oid;
     $opts .= "dsgid=$dsgid;" if $dsgid;
     $html .=
-qq{<br><span class='link small' onclick="window.open('get_org_list.pl$opts');">Download Organism List</span>};
+qq{<div class="padded"><span class='ui-button ui-corner-all' onclick="window.open('get_org_list.pl$opts');">Download Organism List</span></div>};
     return $html, $count;
 }
 
@@ -572,25 +572,8 @@ sub get_genome_info {
     return " " unless $dsgid;
     my $dsg = $coge->resultset("Genome")->find($dsgid);
     return "Unable to get genome object for id: $dsgid" unless $dsg;
-    my $html;
-    my $genome_message;
-    $genome_message = $dsg->message if $dsg->message;
-    $genome_message .= " Private Genome!  Authorized Use Only!"
-      if $dsg->restricted && !$dsg->message;
-    $html .= "<span class='alert large'>$genome_message</span><br>"
-      if $genome_message;
 
-    $html .=
-        qq{<span class='link' onclick='window.open("}
-      . $dsg->link
-      . qq{")'> More information</span><br>}
-      if $dsg->link;
-    $html .=
-"&nbsp&nbsp&nbsp<span class=alert>You are a CoGe Admin.  Use your power wisely</span><br>"
-      if $USER->is_admin;
-    $html .=
-"&nbsp&nbsp&nbsp<span class=alert>You are the owner of this genome.</span><br>"
-      if $USER->is_owner( dsg => $dsg );
+    my $html;
     my $total_length = $dsg->length;
 
     #    my $chr_num = $dsg->genomic_sequences->count();
@@ -602,16 +585,12 @@ sub get_genome_info {
     $html .=
       qq{<tr><td>Description:</td><td>} . $dsg->description . qq{</td></tr>}
       if $dsg->description;
-    $html .= qq{<tr><td>Chromosome count: <td>} . commify($chr_num);
-    $html .=
-qq{ <span class="link" onclick="\$('#chromosome_hist').dialog('open');chr_hist($dsgid);">Histogram of sizes (Mean, Mode, N50)</span>};
-    $html .= qq{</td></tr>};
 
     my $gstid    = $dsg->genomic_sequence_type->id;
     my $gst_name = $dsg->genomic_sequence_type->name;
     $gst_name .= ": " . $dsg->type->description if $dsg->type->description;
     $html .=
-qq{<tr><td><span class="link" onclick="window.open('SeqType.pl')">Sequence type: </span><td>}
+qq{<tr><td>Sequence type <a href="SeqType.pl">?</a>: <td>}
       . $gst_name
       . qq{ (gstid$gstid)<input type=hidden id=gstid value=}
       . $gstid
@@ -621,17 +600,6 @@ qq{<tr><td><span class="link" onclick="window.open('SeqType.pl')">Sequence type:
         qq{<td><div style="float: left;"> }
       . commify($total_length)
       . " bp </div>";
-    my $gc = $total_length < 10000000
-      && $chr_num < 20 ? get_gc_for_chromosome( dsgid => $dsgid ) : 0;
-    $gc =
-        $gc
-      ? $gc
-      : qq{  <div style="float: left; text-indent: 1em;" id=datasetgroup_gc class="link" onclick="gen_data(['args__loading...'],['datasetgroup_gc']);\$('#datasetgroup_gc').removeClass('link'); get_gc_for_chromosome(['args__dsgid','dsg_id','args__gstid', 'gstid'],['datasetgroup_gc']);">  Click for percent GC content</div><br/>};
-    $html .= "$gc</td></tr>";
-
-    $html .= qq{
-<tr><td>Noncoding sequence:<td><div id=dsg_noncoding_gc class="link" onclick = "gen_data(['args__loading...'],['dsg_noncoding_gc']);\$('#dsg_noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsgid','dsg_id','args__gstid', 'gstid'],['dsg_noncoding_gc']);">Click for percent GC content</div></td></tr> 
-} if $total_length;
 
     # mdb removed 7/31/13 issue 77
     #    my $seq_file = $dsg->file_path;
@@ -641,34 +609,14 @@ qq{<tr><td><span class="link" onclick="window.open('SeqType.pl')">Sequence type:
     my $seq_url = "services/service.pl/sequence/$dsgid";#my $seq_url = "services/JBrowse/service.pl/sequence/$dsgid"; # mdb added 7/31/13 issue 77 # mdb changed 8/9/14
 
     #print STDERR Dumper $seq_file;
-    $html .= qq{<TR><TD>Download:</td>};
-    $html .= qq{<td>};
-    $html .=
-      qq{<a class=link href='$seq_url' target="_new">Fasta Sequences</a>};
-    $html .= qq{&nbsp|&nbsp};
-    $html .=
-qq{<span class=link onclick="\$('#gff_export').dialog('option', 'width', 400).dialog('open')">Export GFF</span>};
-    $html .= qq{&nbsp|&nbsp};
-    $html .= qq{<span class=link onclick="export_tbl()"">Export TBL</span>};
-    $html .= qq{&nbsp|&nbsp};
-    $html .= qq{<span class=link onclick="export_bed()"">Export bed</span>};
-
-#    $html .= qq{<a href='coge_gff.pl?dsgid=$dsgid;cds=1' target=_new>GFF CDS; Names Only</a>};
-#    $html .= qq{&nbsp|&nbsp};
-#    $html .= qq{<a href='coge_gff.pl?dsgid=$dsgid;cds=1;annos=1' target=_new>GFF CDS; with Annotations</a>};
-#    $html .= qq{&nbsp|&nbsp};
-#    $html .= qq{<a href='coge_gff.pl?dsgid=$dsgid' target=_new>GFF All; Names Only</a>};
-#    $html .= qq{&nbsp|&nbsp};
-#    $html .= qq{<a href='coge_gff.pl?dsgid=$dsgid;annos=1' target=_new>GFF All; with Annotations</a>};
-    $html .= qq{</td></tr>};
 
     $html .= "<tr><td>Links:</td>";
     $html .= qq{<td>};
     $html .=
-"<a href='OrganismView.pl?dsgid=$dsgid' target=_new>OrganismView</a>&nbsp|&nbsp<a href='CodeOn.pl?dsgid=$dsgid' target=_new>CodeOn</a>";
+qq{<a href="GenomeInfo.pl?gid=$dsgid"><strong>Click here for more info</strong></a>};
     $html .= qq{&nbsp|&nbsp};
     $html .=
-qq{<span class='link' onclick="window.open('GenomeInfo.pl?gid=$dsgid');">GenomeInfo</span>};
+"<a href='OrganismView.pl?dsgid=$dsgid' target=_new>OrganismView</a>&nbsp|&nbsp<a href='CodeOn.pl?dsgid=$dsgid' target=_new>CodeOn</a>";
     $html .= qq{&nbsp|&nbsp};
     $html .=
 qq{<span class='link' onclick="window.open('SynMap.pl?dsgid1=$dsgid;dsgid2=$dsgid');">SynMap</span>};
@@ -680,33 +628,8 @@ qq{<span class='link' onclick="window.open('CoGeBlast.pl?dsgid=$dsgid');">CoGeBl
 #    $html .= qq{&nbsp|&nbsp};
 #    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$dsgid'],['irods']);">Send To iPlant Data Store</span>};
     $html .= "</td></tr>";
-    if ( my $exp_count = $dsg->experiments->count( { deleted => 0 } ) ) {
-        $html .= "<tr><td>Experiment count:</td>";
-        $html .=
-            "<td><span class=link onclick=window.open('ExperimentList.pl?dsgid="
-          . $dsg->id . "')>"
-          . $exp_count
-          . "</span></td></tr>";
-    }
-
-    my $feat_string = qq{
-<tr><td><div id=dsg_feature_count class="small link" onclick="gen_data(['args__loading...'],['dsg_features']); get_feature_counts(['args__dsgid','dsg_id', 'args__gstid','gstid'],['dsg_features']);" >Click for Features</div>};
-    $html .= $feat_string;
     $html .=
-qq{<tr><td colspan=2><div><span class="ui-button ui-corner-all" onClick="update_genomelist(['args__genomeid','args__$dsgid'],[add_to_genomelist]);\$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add to Genome List</span>};
-    if ( $USER->is_owner( dsg => $dsgid ) || $USER->is_admin ) {
-        $html .=
-qq{<span class="ui-button ui-corner-all ui-button-go" onClick="make_dsg_public('$dsgid')">Make Genome Public</span>}
-          if $dsg->restricted;
-        $html .=
-qq{<span class="ui-button ui-corner-all ui-button-go" onClick="make_dsg_private('$dsgid')">Make Genome Private</span>}
-          if !$dsg->restricted;
-        $html .=
-qq{<span class="ui-button ui-corner-all ui-button-go" onClick="edit_genome_info('$dsgid')">Edit Genome Info</span>};
-
-#	my $users_with_access = join (", ", map {"<span class=link onclick=window.open('GroupView.pl?ugid=".$_->group->id."')>".$_->group->name."</span>"} $dsg->lists);
-#	$html .= "User Groups with Access: $users_with_access" if $users_with_access;
-    }
+qq{<tr><td colspan=2><div class="padded"><span class="ui-button ui-corner-all" onClick="update_genomelist(['args__genomeid','args__$dsgid'],[add_to_genomelist]);\$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add to Genome List</span>};
     $html .= qq{</div></td></tr>};
     $html .= "</table></td>";
     $html .= qq{<td id=dsg_features></td>};
@@ -946,8 +869,8 @@ sub get_dataset_chr_info {
     $html .= qq{</table>};
     my $viewer;
     if ( defined $chr ) {
-        $viewer .= "<font>Genome Viewer</font><br>";
-        $viewer .= "<table class=\"small ui-corner-all ui-widget-content\">";
+        $viewer .= qq{<div class="coge-table-header">Genome Viewer</div>};
+        $viewer .= qq{<table class="small ui-corner-all ui-widget-content">};
         $viewer .= "<tr><td nowrap>Starting location: ";
         $viewer .= qq{<td><input type="text" size=10 value="20000" id="x">};
         $viewer .=
@@ -959,7 +882,7 @@ qq{<tr><td colspan=2><span style="font-size:1em" class='ui-button ui-button-icon
     }
     my $seq_grab;
     if ( defined $chr ) {
-        $seq_grab .= qq{<font>Genomic Sequence Retrieval</font><br>};
+        $seq_grab .= qq{<div class="coge-table-header">Genomic Sequence Retrieval</div>};
         $seq_grab .=
           qq{<table class=\"small ui-corner-all ui-widget-content\">};
         $seq_grab .= "<tr><td>Start position: ";
