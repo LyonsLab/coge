@@ -967,13 +967,23 @@ var synmap = function(element, metric, sort) {
         }
     }
 
+    my.update = function() {
+        for(index = 0; index < plots.length; index++) {
+            plots[index].plot.redraw();
+        }
+    };
+
+    my.getLayer = function(layerId) {
+        return plots[0].data.layers[layerId];
+    };
+
     my.reset = function() {
         var index;
 
         for(index = 0; index < plots.length; index++) {
             plots[index].plot.reset();
         }
-    }
+    };
 
     function generatePlot(genome1, genome2, layers, metric, by) {
         var xlabels,
