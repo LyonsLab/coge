@@ -234,6 +234,30 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 }
             });
         }
+        else if (config.transformInflate) {
+            // sort features by score
+            var sorted = [];
+            dojo.forEach( features, function(f,i) {
+                sorted.push({ feature: f, featureRect: featureRects[i] });
+            });
+            sorted.sort( sortByScore );
+
+            dojo.forEach( sorted, function(pair,i) {
+                var f = pair.feature;
+                var fRect = pair.featureRect;
+                var score = ( f.get('score') > 0 ? 1 : -1 );
+
+                fRect.t = toY( score );
+                if( fRect.t <= canvasHeight ) { // if the rectangle is visible at all
+                    var id = f.get('id');
+                    context.fillStyle = this._getFeatureColor(id);
+                    if (fRect.t <= originY) // bar goes upward
+                        context.fillRect( fRect.l, fRect.t, fRect.w, originY-fRect.t+1);
+                    else // downward
+                        context.fillRect( fRect.l, originY, fRect.w, fRect.t-originY+1 );
+                }
+            }, this );
+        }
         else {
             // sort features by score
             var sorted = [];
@@ -657,6 +681,13 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                                         track.config.transformLog2 = true;
                                         track.changed();
                                     }
+                                },
+                                {   label: 'Inflate',
+                                    onClick: function(event) {
+                                        clearTransforms(config);
+                                        track.config.transformInflate = true;
+                                        track.changed();
+                                    }
                                 }
                             ]
                         }
@@ -711,10 +742,12 @@ function log2(x) {
 }
 
 function clearTransforms(config) {
+	// FIXME change to config.transforms.average, etc...
     config.transformAverage = false;
     config.transformDifference = false;
     config.transformLog10 = false;
     config.transformLog2 = false;
+    config.transformInflate = false;
 }
 
 function nbspPad(s, padLength) {
