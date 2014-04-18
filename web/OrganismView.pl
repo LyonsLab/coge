@@ -162,7 +162,7 @@ sub gen_body {
     $template->param( SERVER => $SERVER );
     $org      = $dsg->organism if $dsg;
     $org_name = $org->name     if $org;
-    $org_name = "Search" unless $org_name;
+    #$org_name = "Search" unless $org_name;
     $template->param( ORG_NAME => $org_name ) if $org_name;
     $desc = "Search" unless $desc;
     $template->param( ORG_DESC => $desc ) if $desc;
@@ -532,8 +532,6 @@ sub get_genomes {
         $html .=
 qq{<SELECT class="ui-widget-content ui-corner-all" id="dsg_id" SIZE="5" MULTIPLE onChange="get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);" >\n};
         $html .= join( "\n", @opts );
-        $html .=
-qq{\n</SELECT><br/><br/>	<span class="ui-button ui-corner-all" id=all onClick="add_all_genomes(); ">Add all to Genome List</span><br/>\n};
         $html =~ s/OPTION/OPTION SELECTED/ unless $html =~ /SELECTED/i;
     }
     else {
@@ -869,31 +867,24 @@ sub get_dataset_chr_info {
     $html .= qq{</table>};
     my $viewer;
     if ( defined $chr ) {
-        $viewer .= qq{<div class="coge-table-header">Genome Viewer</div>};
-        $viewer .= qq{<table class="small ui-corner-all ui-widget-content">};
-        $viewer .= "<tr><td nowrap>Starting location: ";
-        $viewer .= qq{<td><input type="text" size=10 value="20000" id="x">};
-        $viewer .=
-qq{<tr><td >Zoom level:<td><input type = "text" size=10 value ="6" id = "z">};
-        $viewer .=
-qq{<tr><td colspan=2><span style="font-size:1em" class='ui-button ui-button-icon-left ui-corner-all' onClick="launch_viewer('$dsgid', '$chr')"><span class="ui-icon ui-icon-newwin"></span>Launch Genome Viewer</span>};
-        $viewer .= "</table>";
-
+        $viewer .= qq{<div class="coge-table-header _orgviewresult">Genome Viewer</div>}
+         . "<table class=\"small ui-corner-all ui-widget-content _orgviewresult\">"
+         . "<tr><td nowrap>Starting location: "
+         . qq{<td><input type="text" size=10 value="20000" id="x">}
+         . qq{<tr><td >Zoom level:<td><input type = "text" size=10 value ="6" id = "z">}
+         . qq{<tr><td colspan=2><span style="font-size:1em" class='ui-button ui-button-icon-left ui-corner-all' onClick="launch_viewer('$dsgid', '$chr')"><span class="ui-icon ui-icon-newwin"></span>Launch Genome Viewer</span>}
+         . "</table>";
     }
     my $seq_grab;
     if ( defined $chr ) {
-        $seq_grab .= qq{<div class="coge-table-header">Genomic Sequence Retrieval</div>};
-        $seq_grab .=
-          qq{<table class=\"small ui-corner-all ui-widget-content\">};
-        $seq_grab .= "<tr><td>Start position: ";
-        $seq_grab .= qq{<td><input type="text" size=10 value="1" id="start">};
-        $seq_grab .= "<tr><td>End position: ";
-        $seq_grab .=
-          qq{<td><input type="text" size=10 value="100000" id="stop">};
-        $seq_grab .=
-qq{<tr><td colspan=2><span style="font-size:1em" class='ui-button ui-button-icon-left ui-corner-all' onClick="launch_seqview('$dsgid', '$chr','$dsid')"><span class="ui-icon ui-icon-newwin"></span>Get Sequence</span>};
-        $seq_grab .= qq{</table>};
-
+        $seq_grab .= qq{<div class="coge-table-header _orgviewresult">Genomic Sequence Retrieval</div>}
+         . qq{<table class=\"small ui-corner-all ui-widget-content _orgviewresult padded\">}
+         . "<tr><td>Start position: "
+         . qq{<td><input type="text" size=10 value="1" id="start">}
+         . "<tr><td>End position: "
+         . qq{<td><input type="text" size=10 value="100000" id="stop">}
+         . qq{<tr><td colspan=2><span style="font-size:1em" class='ui-button ui-button-icon-left ui-corner-all' onClick="launch_seqview('$dsgid', '$chr','$dsid')"><span class="ui-icon ui-icon-newwin"></span>Get Sequence</span>}
+         . qq{</table>};
     }
     return $html, $viewer, $seq_grab;
 }

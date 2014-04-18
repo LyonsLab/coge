@@ -996,7 +996,7 @@ var synmap = function(element, metric, sort) {
         // x is flipped to sort by maximum value
         // y is not flipped because increasing value is down in canvas
         xlabels = generateLabels(genomes[genome1].chromosomes, metric, inverse(by));
-        ylabels = generateLabels(genomes[genome2].chromosomes, metric, by);
+        ylabels = generateLabels(genomes[genome2].chromosomes, metric, inverse(by));
 
         // Generate the layers
         layers = createAllLayers(layers, genome1, genome2, xlabels, ylabels);
@@ -1046,7 +1046,7 @@ var synmap = function(element, metric, sort) {
             xoffsets = offsets(xlabels),
             // For Canvas coordinates the chromosome should be offset
             // starting from the end of its length
-            yoffsets = offsets(ylabels).slice(1),
+            yoffsets = offsets(ylabels),//.slice(1),
             output = {},
             create,
             layerId,
@@ -1120,14 +1120,15 @@ var synmap = function(element, metric, sort) {
         return collection;
     }
 
-    function toCanvasRow(offset, position) {
-        return offset - position;
-    }
+    // mdb
+//    function toCanvasRow(offset, position) {
+//        return offset - position;
+//    }
 
     function transformPoint(rowoffset, colOffset, point) {
         return {
             x: point[0] + rowOffset,
-            y: toCanvasRow(colOffset, point[1]),
+            y: point[1] + colOffset //toCanvasRow(colOffset, point[1]), // mdb
         };
     }
 
@@ -1135,8 +1136,8 @@ var synmap = function(element, metric, sort) {
         return {
             x1: line[0] + rowOffset,
             x2: line[1] + rowOffset,
-            y1: toCanvasRow(colOffset, line[2]),
-            y2: toCanvasRow(colOffset, line[3])
+            y1: line[2] + colOffset, //toCanvasRow(colOffset, line[2]), // mdb
+            y2: line[3] + colOffset  //toCanvasRow(colOffset, line[3])  // mdb
         };
     }
 
@@ -1144,9 +1145,9 @@ var synmap = function(element, metric, sort) {
         var width = Math.abs(rect[0] - rect[1]),
             height = Math.abs(rect[2] - rect[3]),
             x = Math.min(rect[0], rect[1]);
-            y = Math.max(rect[2], rect[3]);
+            y = Math.min(rect[2], rect[3]);
 
-        return [x + rowOffset, colOffset - y, width, height];
+        return [x + rowOffset, y + colOffset, width, height];
     }
 
     return my;
