@@ -871,18 +871,10 @@ function getValues(object, keys) {
 }
 
 function checkRequestSize(url) {
-    var size,
-        request;
-
-    request = $.ajax({
+    return $.ajax({
         type: "HEAD",
-        async: false,
         url: url
     });
-
-    if (request.status === 200) {
-        return +request.getResponseHeader("Content-Length");
-    }
 }
 
 var synmap = function(element, metric, sort) {
