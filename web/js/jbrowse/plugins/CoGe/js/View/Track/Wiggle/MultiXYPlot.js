@@ -294,38 +294,40 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                         context.fillRect( fRect.l, originY, fRect.w, fRect.t-originY+1 );
                 }
             }, this );
-            
-            // mdb added 4/2/14 - draw labels on top of bars, issue 346
-            var prevStart, prevEnd;
-            if (this.config.showLabels && scale > this.config.style.labelScale) {
-	            dojo.forEach( sorted, function(pair,i) {
-	                var f = pair.feature;
-	                var fRect = pair.featureRect;
-	                var isUpward = (fRect.t <= originY); // bar goes upward
-	                var start = f.get('start'); 
-	                if (start >= block.startBase && start <= block.endBase) { // print label only for first spanning block
-		                var label = f.get('label');
-		                if (label && label != '.') {
-		                	if (!(start >= prevStart && start <= prevEnd)) { // mdb added 4/15/14 - don't allow overlapping labels, only print the first one
-			                	var topOffset = ( isUpward ? fRect.t-12 : fRect.t );
-			                    var rulerdiv =
-			                        dojo.create('div', 
-			                    		{   style: {
-			                                	width: '100px',
-			                                    position: 'absolute',
-			                                    left: fRect.l,
-			                                    top: topOffset,
-			                                    //zIndex: 10,
-			                                },
-			                                innerHTML: label
-			                            }, canvas.parentNode );
-			                    prevStart = start;
-			                    prevEnd = f.get('end');
-		                	}
-		                }
-	                }                
-	            }, this );
-            }
+        }
+        
+        // mdb added 4/2/14 - draw labels on top of bars, issue 346
+        console.log('showLabels='+this.config.showLabels);
+        var prevStart, prevEnd;
+        if (this.config.showLabels && scale > this.config.style.labelScale) {
+            dojo.forEach( sorted, function(pair,i) {
+                var f = pair.feature;
+                var fRect = pair.featureRect;
+                var isUpward = (fRect.t <= originY); // bar goes upward
+                var start = f.get('start'); 
+                if (start >= block.startBase && start <= block.endBase) { // print label only for first spanning block
+	                var label = f.get('label');
+	                if (label && label != '.') {
+	                	if (!(start >= prevStart && start <= prevEnd)) { // mdb added 4/15/14 - don't allow overlapping labels, only print the first one
+		                	var topOffset = ( isUpward ? fRect.t-12 : fRect.t );
+		                    var rulerdiv =
+		                        dojo.create('div', 
+		                    		{   style: {
+		                                	width: '100px',
+		                                    position: 'absolute',
+		                                    left: fRect.l,
+		                                    top: topOffset,
+		                                    //zIndex: 10,
+		                                },
+		                                innerHTML: label
+		                            }, canvas.parentNode );
+		                    console.log('label='+label);
+		                    prevStart = start;
+		                    prevEnd = f.get('end');
+	                	}
+	                }
+                }                
+            }, this );
         }
     },
 
