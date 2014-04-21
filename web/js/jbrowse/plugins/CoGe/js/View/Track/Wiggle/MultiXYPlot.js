@@ -297,7 +297,6 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         }
         
         // mdb added 4/2/14 - draw labels on top of bars, issue 346
-        console.log('showLabels='+this.config.showLabels);
         var prevStart, prevEnd;
         if (this.config.showLabels && scale > this.config.style.labelScale) {
             dojo.forEach( sorted, function(pair,i) {
@@ -321,7 +320,6 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 		                                },
 		                                innerHTML: label
 		                            }, canvas.parentNode );
-		                    console.log('label='+label);
 		                    prevStart = start;
 		                    prevEnd = f.get('end');
 	                	}
