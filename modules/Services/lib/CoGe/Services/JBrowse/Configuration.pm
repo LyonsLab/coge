@@ -203,7 +203,7 @@ sub track_config {
     
     # Add a feature group for each dataset
     if ( @{$genome->datasets} > 1) {
-        foreach my $ds ( $genome->datasets ) {
+        foreach my $ds ( sort { $a->name cmp $b->name } $genome->datasets ) {
             @feat_type_names = grep( !/chromosome/, $ds->distinct_feature_type_names ); # exclude "chromosome" features
             if (@feat_type_names) {
                 my $dsid = $ds->id;
