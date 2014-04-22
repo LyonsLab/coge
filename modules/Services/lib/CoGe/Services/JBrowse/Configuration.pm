@@ -149,8 +149,8 @@ sub track_config {
                 arrowheadClass           => "arrowhead",
                 className                => "generic_parent",
                 maxDescriptionLength     => 70,
-                showLabels               => 'true',
-                centerChildrenVertically => 'true',
+                showLabels               => JSON::true,#'true',
+                centerChildrenVertically => JSON::true,#'true',
                 subfeatureClasses        => { match_part => "match_part7" }
             },
 
@@ -183,9 +183,9 @@ sub track_config {
                     histScale                => 0.002,
                     minSubfeatureWidth       => 6,
                     maxDescriptionLength     => 70,
-                    showLabels               => 'true',
+                    showLabels               => JSON::true,#'true',
                     description              => "note, description",
-                    centerChildrenVertically => 'true',
+                    centerChildrenVertically => JSON::true,#'true',
                     subfeatureClasses        => { match_part => "match_part7" }
                 },
 
@@ -228,8 +228,8 @@ sub track_config {
                         arrowheadClass           => "arrowhead",
                         className                => "generic_parent",
                         maxDescriptionLength     => 70,
-                        showLabels               => 'true',
-                        centerChildrenVertically => 'true',
+                        showLabels               => JSON::true,#'true',
+                        centerChildrenVertically => JSON::true,#'true',
                         subfeatureClasses        => { match_part => "match_part7" }
                     },
         
@@ -262,9 +262,9 @@ sub track_config {
                             histScale                => 0.002,
                             minSubfeatureWidth       => 6,
                             maxDescriptionLength     => 70,
-                            showLabels               => 'true',
+                            showLabels               => JSON::true,#'true',
                             description              => "note, description",
-                            centerChildrenVertically => 'true',
+                            centerChildrenVertically => JSON::true,#'true',
                             subfeatureClasses        => { match_part => "match_part7" }
                         },
         
@@ -359,7 +359,7 @@ sub track_config {
                 featureScale => $featureScale,
                 histScale    => $histScale,
                 labelScale   => $labelScale,
-                showLabels   => 'true',
+                showLabels   => JSON::true,#'true',
                 className    => '{type}',
                 histCss      => 'background-color:' . getFeatureColor($eid),
                 featureCss   => 'background-color:' . getFeatureColor($eid)
