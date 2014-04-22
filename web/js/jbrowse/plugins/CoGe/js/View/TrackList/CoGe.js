@@ -177,6 +177,8 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 
     /** @private */
     createTrackList: function( renderTo, trackConfigs ) {
+    	var that = this;
+    	
         var trackPane = this.pane = dojo.create(
             'div',
             { id: 'trackPane',
@@ -208,9 +210,8 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
         
         // create a DnD source for sequence
         this.trackListWidgets = [];
-        
-        var temp = this._createDnDSource(1);
-        temp.insertNodes(
+        this.trackListWidgets.push( 
+        	this._createDnDSource(1).insertNodes(
             	false,
             	trackConfigs.filter( function(e) {
             		var type = e.coge.type;
@@ -218,21 +219,26 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
             				  type == 'sequence' || 
             				  type == 'gc_content' );
             	})
-            );
-        this.trackListWidgets.push( temp );
+            )
+        );
         
-        // create a DnD source for features
-        this.trackListWidgets = [];
-        
-        var temp = this._createDnDSource(1);
-        temp.insertNodes(
-            	false,
-            	trackConfigs.filter( function(e) {
-            		var type = e.coge.type;
-            		return ( type && type == 'features' );
-            	})
+        // create a DnD source for each feature group
+        var feature_groups = trackConfigs.filter( function(fg) {
+    		return (fg.coge.type && fg.coge.type == 'feature_group');
+    	});
+    	var features = trackConfigs.filter( function(f) {
+    		return (f.coge.type && f.coge.type == 'features');
+    	});
+    	feature_groups.forEach( function(fg) {
+    		that.trackListWidgets.push( 
+    			that._createDnDSource().insertNodes(
+                	false,
+                	[fg].concat(features.filter( function(f) {
+                		return f.coge.dataset_id == fg.coge.id;
+                	}))
+                ) 
             );
-        this.trackListWidgets.push( temp );        
+    	});
         
         // create a DnD source for each notebook
         var notebooks = trackConfigs.filter( function(e) {
@@ -241,16 +247,15 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
     	var experiments = trackConfigs.filter( function(e) {
     		return (e.coge.type && e.coge.type == 'experiment');
     	});
-    	var that = this;
         notebooks.forEach( function(n) {
-    		temp = that._createDnDSource();
-    		temp.insertNodes(
+    		that.trackListWidgets.push( 
+    			that._createDnDSource().insertNodes(
                 	false,
                 	[n].concat(experiments.filter( function(e) {
                 		return e.coge.notebooks && dojo.indexOf(e.coge.notebooks, n.coge.id) != -1;
                 	}))
-                );
-    		that.trackListWidgets.push( temp );
+                ) 
+            );
     	});
         
         // Initialize text filter label
