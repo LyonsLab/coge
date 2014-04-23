@@ -127,17 +127,16 @@ sub track_config {
 
     #print STDERR 'time1: ' . (time - $start_time) . "\n";
 
-    # Add feature tracks
-    my @feat_type_names =
-      grep( !/chromosome/, $genome->distinct_feature_type_names );
+    # Add overall feature group for all datasets
+    my @feat_type_names = grep( !/chromosome/, $genome->distinct_feature_type_names ); # exclude "chromosome" features
     if (@feat_type_names) {
-        # Add main "Features" track
+        # Add main overall composite track
         push @tracks, {
             baseUrl      => "services/JBrowse/track/annotation/$gid/",
             autocomplete => "all",
             track        => "features",
             label        => "features",
-            key          => "Features",
+            key          => "Features: all",
             type         => "CoGe/View/Track/CoGeFeatures",
             description  => "note, description",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
@@ -150,20 +149,20 @@ sub track_config {
                 arrowheadClass           => "arrowhead",
                 className                => "generic_parent",
                 maxDescriptionLength     => 70,
-                showLabels               => 'true',
-                centerChildrenVertically => 'true',
+                showLabels               => JSON::true,#'true',
+                centerChildrenVertically => JSON::true,#'true',
                 subfeatureClasses        => { match_part => "match_part7" }
             },
 
             # CoGe-specific stuff
             coge => {
                 id        => 0,
-                type      => 'features',
+                type      => 'feature_group',
                 classes   => ['coge-tracklist-collapsible'],
-                collapsed => 1                              #FIXME move into CSS
+                collapsed => 1 #FIXME move into CSS
             }
         };
-
+        
         # Add a track for each feature type
         foreach my $type_name ( sort @feat_type_names ) {
             push @tracks, {
@@ -184,23 +183,105 @@ sub track_config {
                     histScale                => 0.002,
                     minSubfeatureWidth       => 6,
                     maxDescriptionLength     => 70,
-                    showLabels               => 'true',
+                    showLabels               => JSON::true,#'true',
                     description              => "note, description",
-                    centerChildrenVertically => 'true',
+                    centerChildrenVertically => JSON::true,#'true',
                     subfeatureClasses        => { match_part => "match_part7" }
                 },
 
                 # CoGe-specific stuff
                 coge => {
-                    id      => "features_$type_name",
+                    id      => "$type_name",
                     type    => 'features',
                     classes => ['coge-tracklist-indented'],
-                    collapsed => 1    #FIXME move into CSS
+                    collapsed => 1, #FIXME move into CSS
+                    dataset_id => 0
                 }
             };
         }
     }
-
+    
+    # Add a feature group for each dataset
+    if ( @{$genome->datasets} > 1) {
+        foreach my $ds ( sort { $a->name cmp $b->name } $genome->datasets ) {
+            @feat_type_names = grep( !/chromosome/, $ds->distinct_feature_type_names ); # exclude "chromosome" features
+            if (@feat_type_names) {
+                my $dsid = $ds->id;
+                my $dsname = $ds->name || 'ds'.$dsid;
+                
+                # Add overall feature track
+                push @tracks, {
+                    baseUrl      => "services/JBrowse/track/annotation/$gid/datasets/$dsid",
+                    autocomplete => "all",
+                    track        => "features_ds".$dsid,
+                    label        => "features_ds".$dsid,
+                    key          => "Features: ".$dsname,
+                    type         => "CoGe/View/Track/CoGeFeatures",
+                    description  => "note, description",
+                    storeClass   => "JBrowse/Store/SeqFeature/REST",
+                    onClick      => "FeatAnno.pl?ds=$dsid;chr={chr};start={start};stop={end}",
+                    maxFeatureScreenDensity => 20,
+                    maxHeight               => 100000,
+                    minSubfeatureWidth      => 4,
+                    style                   => {
+                        labelScale               => 0.02,
+                        arrowheadClass           => "arrowhead",
+                        className                => "generic_parent",
+                        maxDescriptionLength     => 70,
+                        showLabels               => JSON::true,#'true',
+                        centerChildrenVertically => JSON::true,#'true',
+                        subfeatureClasses        => { match_part => "match_part7" }
+                    },
+        
+                    # CoGe-specific stuff
+                    coge => {
+                        id         => $dsid,
+                        type       => 'feature_group',
+                        classes    => ['coge-tracklist-collapsible'],
+                        collapsed  => 1, #FIXME move into CSS
+                    }
+                };
+                
+                # Add a track for each feature type
+                foreach my $type_name ( sort @feat_type_names ) {
+                    push @tracks, {
+                        baseUrl => "services/JBrowse/track/annotation/$gid/types/$type_name/",
+                        autocomplete => "all",
+                        track        => 'features_ds'.$dsid.'_'.$type_name,
+                        label        => 'features_ds'.$dsid.'_'.$type_name,
+                        key          => $type_name,
+                        type         => "JBrowse/View/Track/HTMLFeatures",
+                        storeClass   => "JBrowse/Store/SeqFeature/REST",
+                        region_stats => 1, # see HTMLFeatures.js, force calls to stats/region instead of stats/global
+                        onClick => "FeatAnno.pl?ds=$dsid;chr={chr};start={start};stop={end};type=$type_name",
+                        maxFeatureScreenDensity => 1000,     #50,
+                        maxHeight               => 100000,
+                        style                   => {
+                            arrowheadClass           => "arrowhead",
+                            className                => "generic_parent",
+                            histScale                => 0.002,
+                            minSubfeatureWidth       => 6,
+                            maxDescriptionLength     => 70,
+                            showLabels               => JSON::true,#'true',
+                            description              => "note, description",
+                            centerChildrenVertically => JSON::true,#'true',
+                            subfeatureClasses        => { match_part => "match_part7" }
+                        },
+        
+                        # CoGe-specific stuff
+                        coge => {
+                            id         => $dsid.'_'.$type_name,
+                            type       => 'features',
+                            classes    => ['coge-tracklist-indented'],
+                            collapsed  => 1, #FIXME move into CSS
+                            dataset_id => $dsid
+                        }
+                    };
+                }
+            }
+        }
+    }
+    
     #print STDERR 'time2: ' . (time - $start_time) . "\n";
 
     # Add experiment tracks
@@ -278,7 +359,7 @@ sub track_config {
                 featureScale => $featureScale,
                 histScale    => $histScale,
                 labelScale   => $labelScale,
-                showLabels   => 'true',
+                showLabels   => JSON::true,#'true',
                 className    => '{type}',
                 histCss      => 'background-color:' . getFeatureColor($eid),
                 featureCss   => 'background-color:' . getFeatureColor($eid)

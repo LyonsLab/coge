@@ -242,20 +242,19 @@ sub get_dots {
         next if /^#/;
         next unless $_;
 
-        my @line = split /\t/;
+        my @line = split(/\t/);
         my $ks_vals;
-        my @item1 = split /\|\|/, $line[1];
-        my @item2 = split /\|\|/, $line[5];
+        my @item1 = split(/\|\|/, $line[1]);
+        my @item2 = split(/\|\|/, $line[5]);
         my $fid1  = $item1[6];
         my $fid2  = $item2[6];
         if ($has_ksdata) {
             $ks_vals = $ksdata->{$fid1}{$fid2} if $ksdata->{$fid1}{$fid2};
         }
-        my ( $a, $chr1 ) = split /_/, $line[0], 2;
-        my ( $b, $chr2 ) = split /_/, $line[4], 2;
-        my $special = 0
-          ; #stupid variable name so that if we are viewing a single chr to single chr comparison within the same organism, this will make collinear matches appear on the inverse section
-        if ( $CHR1 && $CHR2 ) {
+        my ( undef, $chr1 ) = split(/_/, $line[0], 2);
+        my ( undef, $chr2 ) = split(/_/, $line[4], 2);
+        my $special = 0; #stupid variable name so that if we are viewing a single chr to single chr comparison within the same organism, this will make collinear matches appear on the inverse section
+        if ( defined $CHR1 && defined $CHR2 ) {
             if ( $CHR1 eq $chr2 && $CHR2 eq $chr1 ) {
                 $special = 1;
                 ( $chr1, $chr2 ) = ( $chr2, $chr1 );
@@ -266,11 +265,12 @@ sub get_dots {
             }
         }
         #sometimes there will be data that is skipped, e.g. where chromosome="random";
-        next unless $org1->{$chr1} && $org2->{$chr2};
+        next unless (defined $org1->{$chr1} && defined $org2->{$chr2});
 
         #absolute positions
-        my($nt_min_1, $nt_max_1) = sort ($item1[1], $item1[2]);
-        my($nt_min_2, $nt_max_2) = sort ($item2[2], $item2[2]);
+        my ($s1, $e1, $s2, $e2) = (int($line[2]), int($line[3]), int($line[6]), int($line[7]));
+        my ($nt_min_1, $nt_max_1) = sort {$a <=> $b} ($s1, $e1);
+        my ($nt_min_2, $nt_max_2) = sort {$a <=> $b} ($s2, $e2);
 
         #relative position
         my ( $gene_order_1, $gene_order_2 ) = ( $item1[7], $item2[7] );
@@ -286,25 +286,18 @@ sub get_dots {
 #        $data_item->{ks_data} = $ks_vals
 #          if $ks_vals;    #check with Evan if missing data should still have key
 #        push @{ $json_data->{$genomeid1}{$genomeid2}{$data_label} }, $data_item;
-#
-        my ($s1, $e1, $s2, $e2);
 
-        if($org1->{$chr1}{rev}) {
-            $s1 = int($org1->{$chr1}{length}) - int($item1[1]);
-            $e1 = int($org1->{$chr1}{length}) - int($item1[2]);
-        } else {
-            $s1 = int($item1[1]);
-            $e1 = int($item1[2]);
+        # Complement coordinates if chromosome is complemented
+        if ($org1->{$chr1}{rev}) {
+            $s1 = int($org1->{$chr1}{length}) - $s1;
+            $e1 = int($org1->{$chr1}{length}) - $e1;
+        }
+        if ($org2->{$chr2}{rev}) {
+            $s2 = int($org2->{$chr2}{length}) - $s2;
+            $e2 = int($org2->{$chr2}{length}) - $e2;
         }
 
-        if($org2->{$chr2}{rev}) {
-            $s2 = int($org2->{$chr2}{length}) - int($item2[1]);
-            $e2 = int($org2->{$chr2}{length}) - int($item2[2]);
-        } else {
-            $s2 = int($item2[1]);
-            $e2 = int($item2[2]);
-        }
-
+        # Save coordinates as data point
         my $data_item = [$s1, $e1, $s2, $e2];
 
 #        $data_item->{ks_data} = $ks_vals
@@ -404,9 +397,9 @@ sub get_pairs {
         chomp;
         next if /^#/;
         next unless $_;
-        my @line  = split /\t/;
-        my @item1 = split /\|\|/, $line[1];
-        my @item2 = split /\|\|/, $line[5];
+        my @line  = split(/\t/);
+        my @item1 = split(/\|\|/, $line[1]);
+        my @item2 = split(/\|\|/, $line[5]);
         next unless $item1[6] && $item2[6];
         if ($chr1) {
             next unless $item1[0] eq $chr1 || $item2[0] eq $chr1;
