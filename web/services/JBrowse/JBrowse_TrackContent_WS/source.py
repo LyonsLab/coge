@@ -203,6 +203,11 @@ def an_features(environ, start_response): # mdb rewritten 11/8/13 issue 246 - ad
         feat_type = args['feat_type']
     except KeyError:
         feat_type = ""
+    # mdb added 4/21/14 issue 363
+    try:
+        dataset_id = args['dataset_id']
+    except KeyError:
+        dataset_id = 0;
 
     sys.stderr.write('an_features: '+str(genome_id)+' '+str(chr_id)+' '+str(start)+' '+str(end)+'\n')
 
@@ -224,6 +229,9 @@ def an_features(environ, start_response): # mdb rewritten 11/8/13 issue 246 - ad
             .format(genome_id, chr_id, start, end)
     if feat_type:
         query +=  " AND ft.name = '{0}'".format(feat_type)
+    # mdb added 4/21/14 issue 363
+    if dataset_id:
+        query += " AND dc.dataset_id = {0}".format(dataset_id)
 
     try:
         # Query for features
@@ -447,6 +455,8 @@ urls = [
         an_features),
     (r'annotation/(?P<genome_id>\d+)/features/(?P<chr_id>\S+)?$',
         an_features),
+    (r'annotation/(?P<genome_id>\d+)/datasets/(?P<dataset_id>\S+)/features/(?P<chr_id>\S+)?$',
+        an_features), # mdb added 4/21/14 issue 363
     (r'gc/(?P<genome_id>\d+)/features/(?P<chr_id>\S+)?$',
         gc_features),
 ]
