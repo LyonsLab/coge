@@ -213,6 +213,7 @@ def an_features(environ, start_response): # mdb rewritten 11/8/13 issue 246 - ad
 
     con = db_connect()
     cur = con.cursor()
+    # mdb 4/24/14 - added fn.primary_name=1 constraint to keep from returning arbitrary name
     query = "SELECT l.start, l.stop, l.strand, ft.name, fn.name, \
             l.location_id, f.start, f.stop, f.feature_id, fn.primary_name \
             FROM genome g \
@@ -223,9 +224,10 @@ def an_features(environ, start_response): # mdb rewritten 11/8/13 issue 246 - ad
             JOIN feature_name fn ON f.feature_id = fn.feature_id \
             JOIN feature_type ft ON f.feature_type_id = ft.feature_type_id \
             WHERE g.genome_id = {0} \
-            AND f.chromosome = '{1}' \
-            AND f.stop > {2} AND f.start <= {3} \
-            AND ft.feature_type_id != 4" \
+                AND f.chromosome = '{1}' \
+                AND f.stop > {2} AND f.start <= {3} \
+                AND ft.feature_type_id != 4 \
+                AND fn.primary_name = 1" \
             .format(genome_id, chr_id, start, end)
     if feat_type:
         query +=  " AND ft.name = '{0}'".format(feat_type)
