@@ -69,21 +69,16 @@ my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
 my $coge = CoGeX->connect( $connstr, $user, $pass );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
-
 unless ($coge) {
     say STDERR "log: error: couldn't connect to database";
     exit(-1);
 }
 
 my $file = File::Spec->catdir($download_dir, $filename);
-
-
 unless ( -r $file and -r "$file.finished") {
     open(my $fh, ">", $file) or die "Error creating gff file";
 
-    my $item;
-    my $id;
-    my $org;
+    my ($item, $id, $org);
 
     if ($gid) {
         $item = $coge->resultset('Genome')->find($gid);
@@ -103,8 +98,8 @@ unless ( -r $file and -r "$file.finished") {
         name_unique               => $name_unique,
         id_type                   => $id_type,
         unique_parent_annotations => $upa,
-			 base_url => $P->{SERVER},
-	debug=>$DEBUG,
+        base_url => $P->{SERVER},
+        debug => $DEBUG,
     );
 
     close($fh);
