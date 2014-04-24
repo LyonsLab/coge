@@ -173,39 +173,37 @@ unless ( process_gff_file() ) {
 # Create gene annotations if none present in GFF file
 unless ( $seen_types{gene} ) {
     print $log "log: Creating gene entities\n";
-    foreach my $source ( keys %data ) {
-        foreach my $chr_loc ( keys %{ $data{$source} } ) {
-          name: foreach my $name ( keys %{ $data{$source}{$chr_loc} } ) {
-                my ( $chr, $start, $stop, $strand );
-                my %names;
-                my $name = $data{$source}{$chr_loc}{$name};
-                foreach my $type ( keys %$name ) {
-                    map { $names{$_} = 1 } keys %{ $name->{$type}{names} };
-                    foreach my $loc ( @{ $name->{$type}{loc} } ) {
-                        next name if $type eq "gene";
-                        $start = $loc->{start} unless $start;
-                        $start = $loc->{start} if $loc->{start} < $start;
-                        $stop = $loc->{stop} unless $stop;
-                        $stop   = $loc->{stop}   if $loc->{stop} > $stop;
-                        $strand = $loc->{strand} if $loc->{strand};
-                        $strand = 1 unless (defined $strand); # mdb added 11/7/13 issue 248 - set default strand to '+'
-                        $chr    = $loc->{chr};
-                    }
-                    foreach my $loc ( @{ $name->{$type}{loc} } ) {
-                        $loc->{strand} = $strand;
-                    }
+    foreach my $chr_loc ( keys %data ) {
+      name: foreach my $name ( keys %{ $data{$chr_loc} } ) {
+            my ( $chr, $start, $stop, $strand );
+            my %names;
+            my $name = $data{$chr_loc}{$name};
+            foreach my $type ( keys %$name ) {
+                map { $names{$_} = 1 } keys %{ $name->{$type}{names} };
+                foreach my $loc ( @{ $name->{$type}{loc} } ) {
+                    next name if $type eq "gene";
+                    $start = $loc->{start} unless $start;
+                    $start = $loc->{start} if $loc->{start} < $start;
+                    $stop = $loc->{stop} unless $stop;
+                    $stop   = $loc->{stop}   if $loc->{stop} > $stop;
+                    $strand = $loc->{strand} if $loc->{strand};
+                    $strand = 1 unless (defined $strand); # mdb added 11/7/13 issue 248 - set default strand to '+'
+                    $chr    = $loc->{chr};
                 }
-                $name->{gene}{loc} = [
-                    {
-                        start  => $start,
-                        stop   => $stop,
-                        strand => $strand,
-                        chr    => $chr,
-                    }
-                ];
-                $name->{gene}{names} = \%names;
-                $seen_types{gene}++;
+                foreach my $loc ( @{ $name->{$type}{loc} } ) {
+                    $loc->{strand} = $strand;
+                }
             }
+            $name->{gene}{loc} = [
+                {
+                    start  => $start,
+                    stop   => $stop,
+                    strand => $strand,
+                    chr    => $chr,
+                }
+            ];
+            $name->{gene}{names} = \%names;
+            $seen_types{gene}++;
         }
     }
 }
@@ -271,14 +269,12 @@ my %feat_types;    # store feature type objects
 
 # Count total annotations to load -- mdb added 1/8/14, issue 260
 my $total_annot = 0;
-foreach my $source ( keys %data ) {
-    foreach my $chr_loc ( keys %{ $data{$source} } ) {
-        foreach my $name ( keys %{ $data{$source}{$chr_loc} } ) {
-            foreach my $feat_type ( keys %{ $data{$source}{$chr_loc}{$name} } ) {
-            	foreach ( @{$data{$source}{$chr_loc}{$name}{$feat_type}{loc}} ) {
-            		$total_annot++;
-            	}
-            }
+foreach my $chr_loc ( keys %data ) {
+    foreach my $name ( keys %{ $data{$chr_loc} } ) {
+        foreach my $feat_type ( keys %{ $data{$chr_loc}{$name} } ) {
+        	foreach ( @{$data{$chr_loc}{$name}{$feat_type}{loc}} ) {
+        		$total_annot++;
+        	}
         }
     }
 }
@@ -288,18 +284,17 @@ my $loaded_annot = 0;
 my @loc_buffer;     # buffer for bulk inserts into Location table
 my @anno_buffer;    # buffer for bulk inserts into FeatureAnnotation table
 my @name_buffer;    # buffer for bulk inserts into FeatureName table
-foreach my $source ( keys %data ) {
-    foreach my $chr_loc ( sort { $a cmp $b } keys %{ $data{$source} } ) {
-        foreach my $name ( sort { $a cmp $b } keys %{ $data{$source}{$chr_loc} } ) {
+    foreach my $chr_loc ( sort { $a cmp $b } keys %data ) {
+        foreach my $name ( sort { $a cmp $b } keys %{ $data{$chr_loc} } ) {
         	my $pctLoaded = int( 100 * $loaded_annot / $total_annot );
             print $log "log: Loaded " . commify($loaded_annot) . " annotations (" . ( $pctLoaded ? $pctLoaded : '<1' ) . "%)\n\n"
               if ( $loaded_annot and ( $loaded_annot % 1000 ) == 0 );
             
-            foreach my $feat_type ( sort { $a cmp $b } keys %{ $data{$source}{$chr_loc}{$name} } ) {
+            foreach my $feat_type ( sort { $a cmp $b } keys %{ $data{$chr_loc}{$name} } ) {
                 print $log "\n" if $DEBUG;
                 
                 my ($start, $stop, $strand, $chr);
-                my $loc = $data{$source}{$chr_loc}{$name}{$feat_type}{loc};
+                my $loc = $data{$chr_loc}{$name}{$feat_type}{loc};
                 if (@$loc) {
                     $start    = min map { $_->{start} } @$loc;
                     $stop     = max map { $_->{stop}  } @$loc;
@@ -307,7 +302,7 @@ foreach my $source ( keys %data ) {
                     ($chr)    = map { $_->{chr}    } @$loc;
                 }
                 else { # mdb added else 4/8/14 issue 358 - no locations (e.g. tRNA w/o parent)
-                    my $coords = $data{$source}{$chr_loc}{$name}{$feat_type}{coords};
+                    my $coords = $data{$chr_loc}{$name}{$feat_type}{coords};
                     $start  = $coords->{start};
                     $stop   = $coords->{stop};
                     $strand = $coords->{strand};
@@ -322,7 +317,8 @@ foreach my $source ( keys %data ) {
 
                 # mdb added check 4/8/14 issue 358
                 unless (defined $start and defined $stop and defined $chr) {
-                    print $log "log: error: feature missing coordinates\n";
+                    print $log "log: error: feature '", (defined $name ? $name : ''), "' missing coordinates", "\n";
+                    print $log Dumper $data{$chr_loc}{$name}{$feat_type}, "\n";
                     exit(-1);
                 }
                 
@@ -363,7 +359,7 @@ foreach my $source ( keys %data ) {
                 
                 my %names =
                   map { $_ => 1 }
-                  keys %{ $data{$source}{$chr_loc}{$name}{$feat_type}{names} };
+                  keys %{ $data{$chr_loc}{$name}{$feat_type}{names} };
                 my %seen_annos; #hash to store annotations so duplicates aren't added
 
                 master_names: foreach my $tmp ( keys %names ) {
@@ -415,7 +411,6 @@ foreach my $source ( keys %data ) {
             }
         }
     }
-}
 
 # Flush insert buffers
 batch_add( \@loc_buffer,  'Location' );
@@ -506,13 +501,7 @@ sub process_gff_file {
             print $log "log: error:  Incorrect format (too many columns) at line $line_num\n";
             return 0;
         }
-        my $chr    = $line[0];
-        my $source = $line[1];
-        my $type   = $line[2];
-        my $start  = $line[3];
-        my $stop   = $line[4];
-        my $strand = $line[6];
-        my $attr   = $line[8];
+        my ($chr, $type, $start, $stop, $strand, $attr) = ($line[0], $line[2], $line[3], $line[4], $line[6], $line[8]);
 
         # Ignore these types
         #next if $type eq "";
@@ -617,15 +606,15 @@ sub process_gff_file {
             #print join ("\t", $name, $tmp_name),"\n";
 
             # initialize data structure
-            $data{$source}{$chr}{$tmp_name}{$type} = {}
-              unless $data{$source}{$chr}{$tmp_name}{$type};
+            $data{$chr}{$tmp_name}{$type} = {}
+              unless $data{$chr}{$tmp_name}{$type};
             foreach my $n ( keys %names ) {
-                $data{$source}{$chr}{$tmp_name}{$type}{names}{$n} = 1;
+                $data{$chr}{$tmp_name}{$type}{names}{$n} = 1;
             }
             
             # mdb added 4/8/14 issue 358 - save location for later
             if ($tmp =~ /_no_locs/) {
-                $data{$source}{$chr}{$tmp_name}{$type}{coords} =
+                $data{$chr}{$tmp_name}{$type}{coords} =
                   {
                     start  => $start,
                     stop   => $stop,
@@ -635,7 +624,7 @@ sub process_gff_file {
             }
             
             next if ($tmp =~ /_no_locs/); # skip adding locations for things like mRNA
-            push @{ $data{$source}{$chr}{$tmp_name}{$type}{loc} },
+            push @{ $data{$chr}{$tmp_name}{$type}{loc} },
               {
                 start  => $start,
                 stop   => $stop,
