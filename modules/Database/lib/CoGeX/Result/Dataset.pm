@@ -1,7 +1,5 @@
 package CoGeX::Result::Dataset;
 
-# Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
-
 use strict;
 use warnings;
 use Data::Dumper;
@@ -25,37 +23,18 @@ This object uses the DBIx::Class to define an interface to the C<dataset> table 
 
 =head1 DESCRIPTION
 
-Has columns:
-C<dataset_id> (Primary Key)
-Type: INT, Default: undef, Nullable: no, Size: 11
+=head1 AUTHORS
 
-C<data_source_id>
-Type: INT, Default: 0, Nullable: no, Size: 11
+ Eric Lyons
+ Brent Pedersen
 
-C<name>
-Type: VARCHAR, Default: "", Nullable: no, Size: 100
+=head1 COPYRIGHT
 
-C<description>
-Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl itself.
 
-C<version>
-Type: VARCHAR, Default: undef, Nullable: yes, Size: 50
-
-C<link>
-Type: TEXT, Default: undef, Nullable: yes, Size: 65535
-
-C<date>
-Type: DATETIME, Default: "", Nullable: no, Size: 19
-
-Belongs to CCoGeX::Result::CoGeX::DataSource> via C<data_source_id>
-Has many CCoGeX::Result::Feature> via C<dataset_id>
-Has many CCoGeX::Result::DatasetConnector> via C<dataset_id>
-
-=head1 USAGE
-
- use CoGeX;
-
-=head1 METHODS
+The full text of the license can be found in the
+LICENSE file included with this module.
 
 =cut
 
@@ -118,8 +97,6 @@ __PACKAGE__->has_many(
     "dataset_connectors" => "CoGeX::Result::DatasetConnector",
     'dataset_id'
 );
-
-#__PACKAGE__->has_many( "user_group_data_connectors" => "CoGeX::Result::UserGroupDataConnector", 'dataset_id' );
 __PACKAGE__->belongs_to(
     "data_source" => "CoGeX::Result::DataSource",
     'data_source_id'
@@ -146,6 +123,7 @@ sub genomes {
     my $self = shift;
     my %opts = @_;
     my $chr  = $opts{chr};
+    
     my @genomes;
     foreach my $dsc ( $self->dataset_connectors() ) {
         if ( defined $chr ) {
@@ -171,11 +149,6 @@ sub dataset_groups {
     shift->genomes(@_);
 }
 
-#sub groups
-#{
-#	shift->genomes(@_);
-#}
-
 ################################################ subroutine header begin ##
 
 =head2 organism
@@ -198,31 +171,13 @@ sub organism {
     my %opts = @_;
     my %orgs = map { $_->id, $_ } map { $_->organism } $self->genomes;
     if ( keys %orgs > 1 ) {
-        warn
-"sub organism in Dataset.pm fetched more than one organism!  Very odd:\n";
+        warn "sub organism in Dataset.pm fetched more than one organism!  Very odd:\n";
         warn join( "\n", map { $_->name } values %orgs ), "\n";
         warn "Only one will be returned\n";
     }
     my ($org) = values %orgs;
     return $org;
 }
-
-################################################ subroutine header begin ##
-
-=head2 datasource
-
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    :
- Comments  : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
 
 sub datasource {
     shift->data_source(@_);
@@ -412,11 +367,11 @@ sub last_chromosome_position {
     my $self = shift;
     my $chr  = shift;
     return 0 unless defined $chr;
-    my ($dsg) = $self->genomes;
+    
+    my $dsg = $self->first_genome; #my ($dsg) = $self->genomes; # mdb changed 4/23/14 issue 364
     my ($item) = $dsg->genomic_sequences( { chromosome => "$chr" } );
     unless ($item) {
-        warn
-"Dataset::last_chromosome_position: unable to find genomic_sequence object for '$chr'";
+        warn "Dataset::last_chromosome_position: unable to find genomic_sequence object for '$chr'";
         return 0;
     }
     my $stop = $item->sequence_length();
@@ -447,14 +402,12 @@ See Also   :
 sub last_chromosome_position_old {
     my $self = shift;
     my $chr  = shift;
-    my $stop =
-      $self->genomic_sequences( { chromosome => "$chr", }, )->get_column('stop')
-      ->max;
+    my $stop = $self->genomic_sequences( { chromosome => "$chr", }, )->get_column('stop')->max;
     unless ($stop) {
         warn "No genomic sequence for ", $self->name, " for chr $chr\n";
         return;
     }
-    $stop;
+    return $stop;
 }
 
 ################################################ subroutine header begin ##
@@ -540,8 +493,6 @@ sub has_gene_annotation {
       ->count;
 }
 
-################################################ subroutine header begin ##
-
 sub sequence_type {
     my $self   = shift;
     my (@dsgs) = $self->genomes;
@@ -560,23 +511,6 @@ sub sequence_type {
         return undef;
     }
 }
-
-################################################ subroutine header begin ##
-
-=head2 genomic_sequence_type
-
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
 
 sub genomic_sequence_type {
     my $self = shift;
@@ -601,18 +535,16 @@ See Also   :
 ################################################## subroutine header end ##
 
 sub get_chromosomes {
-    my $self = shift;
-    my %opts = @_;
-    my $ftid =
-      $opts{ftid};    #feature_type_id for feature_type of name "chromosome";
-    my $length = $opts{length};    #opts to return length of chromosomes as well
-    my $limit =
-      $opts{limit}; #opt to set the number of chromosomes to return, sorted by size
+    my $self   = shift;
+    my %opts   = @_;
+    my $ftid   = $opts{ftid};   #feature_type_id for feature_type of name "chromosome";
+    my $length = $opts{length}; #opts to return length of chromosomes as well
+    my $limit  = $opts{limit};  #opt to set the number of chromosomes to return, sorted by size
     my @data;
 
-#this query is faster if the feature_type_id of feature_type "chromosome" is known.
-#features of this type refer to the entire stored sequence which may be a fully
-# assembled chromosome, or a contig, supercontig, bac, etc.
+    #this query is faster if the feature_type_id of feature_type "chromosome" is known.
+    #features of this type refer to the entire stored sequence which may be a fully
+    #assembled chromosome, or a contig, supercontig, bac, etc.
     my $search = {};
     my $search_type = { order_by => { -desc => 'stop' } };
     if ($ftid) {
@@ -630,37 +562,16 @@ sub get_chromosomes {
     else {
         @data = map { $_->chromosome } $self->features( $search, $search_type );
     }
-    unless (@data)
-      {
-	my %seen;
-	foreach my $feat ($self->features({},{distinct=>'chromosome'}) )
-	  {
-	    #print STDERR $feat->chromosome,"\n" if $feat->chromosome;
-	    $seen{$feat->chromosome}=1 if $feat->chromosome;
-	  }
-	@data = sort keys %seen;
-      }
-#    print STDERR Dumper \@data;
-#    print STDERR "!!!\n";
+    unless (@data) {
+        my %seen;
+        foreach my $feat ($self->features({},{distinct=>'chromosome'}) ) {
+            #print STDERR $feat->chromosome,"\n" if $feat->chromosome;
+	       $seen{$feat->chromosome}=1 if $feat->chromosome;
+        }
+        @data = sort keys %seen;
+    }
     return wantarray ? @data : \@data;
 }
-
-################################################ subroutine header begin ##
-
-=head2 chromosomes
-
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
 
 sub chromosomes {
     my $self = shift;
@@ -744,23 +655,6 @@ sub percent_gc {
     return sprintf( "%.4f", $gc / $length ), sprintf( "%.4f", $at / $length ),
       sprintf( "%.4f", $n / $length ), sprintf( "%.4f", $x / $length );
 }
-
-################################################ subroutine header begin ##
-
-=head2 gc_content
-
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
 
 sub gc_content {
     shift->percent_gc(@_);
@@ -869,7 +763,6 @@ sub fasta {
              id_type     =>    Specify if the GFF entry IDs are going to be unique numbers or unique names.
              unique_parent_annotations => Flag to NOT print redundant annotations in children entries.  E.g. if parent has an annotation, a child will not have that annotation
              name_unique =>   Flag for specifying that the name tag of an entry will be unique
-
  Throws    : 
  Comments  : 
 
@@ -882,35 +775,36 @@ See Also   : genome->gff
 sub gff {
     my $self = shift;
     my %opts = @_;
-    my $name_re =
-      $opts{name_re};    #regular expression to search for a specific name
-    my $debug = $opts{debug};    #debug flag
-    my $print = $opts{print};    #flag to print gff as it is being retrieved
-    my $annos = $opts{annos};    #flag to retrieve and add annotations
-    my $no_gff_head =
-      $opts{no_gff_head}; #flag to NOT print gff headers (used in conjunction with genome->gff which generates its own headers
-    my $ds = $opts{ds};   #ds object, uses self if one is not passed in
-    my $count =
-      $opts{id}; #number to be used for unique identification of each id.  starts at 0 unless one is passed in
-    my $cds = $opts{cds};    #flag to only print protein coding genes
-    my $name_unique =
-      $opts{name_unique}; #flag for making Name tag of output unique by appending type and occurrence to feature name
-    my $unique_parent_annotations =
-      $opts{unique_parent_annotations}; #flag so that annotations are not propogated to children if they are contained by their parent
-    my $id_type =
-      $opts{id_type};    #type of ID (name, num):  unique number; unique name
-    my $cds_exon =
-      $opts{cds_exon}; #option so that CDSs are used for determining an exon instead of the mRNA.  This keeps UTRs from being called an exon
+    my $name_re = $opts{name_re};  #regular expression to search for a specific name
+    my $debug   = $opts{debug};    #debug flag
+    my $print   = $opts{print};    #flag to print gff as it is being retrieved
+    my $annos   = $opts{annos};    #flag to retrieve and add annotations
+    my $no_gff_head = $opts{no_gff_head}; #flag to NOT print gff headers (used in conjunction with genome->gff which generates its own headers
+    my $ds    = $opts{ds};  #ds object, uses self if one is not passed in
+    my $count = $opts{id};  #number to be used for unique identification of each id.  starts at 0 unless one is passed in
+    my $cds   = $opts{cds}; #flag to only print protein coding genes
+    my $name_unique = $opts{name_unique}; #flag for making Name tag of output unique by appending type and occurrence to feature name
+    my $unique_parent_annotations = $opts{unique_parent_annotations}; #flag so that annotations are not propogated to children if they are contained by their parent
+    my $id_type  = $opts{id_type};  #type of ID (name, num):  unique number; unique name
+    my $cds_exon = $opts{cds_exon}; #option so that CDSs are used for determining an exon instead of the mRNA.  This keeps UTRs from being called an exon
     $id_type = "name" unless defined $id_type;
-
-    $count = 0 unless $count && $count =~ /^\d+$/;
+    $count = 0 unless ($count && $count =~ /^\d+$/);
     $ds = $self unless $ds;
-    my $output;        #store the goodies
+    
+    # mdb added 4/22/14 issue 364 - cache db objects to improve performance
+    my $cache;
+    $cache->{feature_annotations} = {};
+    $cache->{annotation_type} = {};
+    
+    my $output; # store the goodies
+    
+    # Generate GFF header
     my %chrs;
     foreach my $chr ( $ds->get_chromosomes ) {
         $chrs{$chr} = $ds->last_chromosome_position($chr);
     }
     my @chrs = sort { $a cmp $b } keys %chrs;
+    
     my $tmp;
     $tmp = "##gff-version\t3\n" unless $no_gff_head;
     $output .= $tmp if $tmp;
@@ -921,27 +815,23 @@ sub gff {
         $output .= $tmp;
         print $tmp if $print;
     }
-    my %fids = ();    #skip fids that we have processed
-    my %types;        #track the number of different feature types encountered
-    my %ids2names
-      ; #lookup table for unique id numbers to unique id names (determined by $id_type)
-    my %unique_ids;    #place to make sure that each ID used is unique;
-    my %prev_annos
-      ; #hash to store previously used annotations by parents.  Used in conjunction with the $unique_parent_annotations flag
-
-    my %prior_genes
-      ; #place to store previous gene models for alternatively spliced transcript lookup of parents.  keys is the primary name of the transcript.  value is coge feature object
-    my %orphaned_RNA;    #place to store RNAs without a parent feature
-     #    my $prior_gene;  #place to store the prior gene, if needed.  Some alternatively spliced transcripts have one gene per transcript, some have one gene for all transcripts.
-     #    my $prior_gene_id; #place to store the prior gene's ID for use the GFF file.  Use of this is tied to having and using a prior_gene
+    
+    my %fids = ();  #skip fids that we have processed
+    my %types;      #track the number of different feature types encountered
+    my %ids2names;  #lookup table for unique id numbers to unique id names (determined by $id_type)
+    my %unique_ids; #place to make sure that each ID used is unique;
+    my %prev_annos; #hash to store previously used annotations by parents.  Used in conjunction with the $unique_parent_annotations flag
+    my %prior_genes;  #place to store previous gene models for alternatively spliced transcript lookup of parents.  keys is the primary name of the transcript.  value is coge feature object
+    my %orphaned_RNA; #place to store RNAs without a parent feature
+    #my $prior_gene;  #place to store the prior gene, if needed.  Some alternatively spliced transcripts have one gene per transcript, some have one gene for all transcripts.
+    #my $prior_gene_id; #place to store the prior gene's ID for use the GFF file.  Use of this is tied to having and using a prior_gene
 
     my $prefetch = [ 'feature_type', 'feature_names' ];
-
-    #    push @$prefetch, {'annotations' => 'annotation_type'} if $annos;
+    #push @$prefetch, {'annotations' => 'annotation_type'} if $annos;
     foreach my $chr (@chrs) {
         my %seen = (); #for storage of seen names organized by $feat_name{$name}
         my $rs_feat = $ds->features(
-            {},
+            { 'chromosome' => $chr},
             {
                 'prefetch' => $prefetch,
                 'order_by' => [ 'me.chromosome', 'me.start', 'me.feature_type_id'
@@ -949,17 +839,15 @@ sub gff {
             }
         );
 
-        #gff: chr  organization feature_type  start stop strand . name
+        #gff columns: chr organization feature_type start stop strand . name
         print STDERR "dataset_id: " . $ds->id."\n" if $debug;# . ";  chr: $chr\n" if $debug;
-      main: while ( my $feat = $rs_feat->next ) {
-            if ( $fids{ $feat->feature_id } ) {
-                next;
-            }
+        main: while ( my $feat = $rs_feat->next ) {
+            next if ( $fids{ $feat->feature_id } );
             my $ft = $feat->feature_type;
-#	    my $chr = $feat->chromosome;
-	    next unless $feat->start;
-	    next unless defined $feat->chromosome;
-	    print STDERR join ("\t", $ft->name, $feat->chromosome, $feat->start),"\n" if $debug;
+#	        my $chr = $feat->chromosome;
+            next unless $feat->start;
+            next unless defined $feat->chromosome;
+            print STDERR join ("\t", $ft->name, $feat->chromosome, $feat->start),"\n" if $debug;
             $types{ $ft->name }++;
             $count++;
             my @out;      #story hashref of items for output
@@ -974,15 +862,12 @@ sub gff {
             }
             $prior_genes{ $feat_names[0] } = $feat
               if $ft->name eq "gene" && !$prior_genes{ $feat_names[0] };
-            if ( $ft->name =~
-                /RNA/ )    #perhaps an alternatively spliced transcript
-            {
-
+            if ( $ft->name =~ /RNA/ ) { #perhaps an alternatively spliced transcript
                 #check for name congruence
                 my $match = 0;
                 my $prior_gene;
                 my $prior_gene_id;
-              name_search: foreach my $name ( $feat->names ) {
+                name_search: foreach my $name ( $feat->names ) {
                     if ( $prior_genes{$name} ) {
                         $match         = 1;
                         $prior_gene    = $prior_genes{$name};
@@ -1004,11 +889,12 @@ sub gff {
                             parent_id   => $prior_gene_id,
                             chr         => $chr,
                             ds          => $ds,
-                            cds_exon    => $cds_exon
+                            cds_exon    => $cds_exon,
                         )
                       )
                     {
                         my $tmp = $self->_format_gff_line(
+                            cache       => $cache,
                             out         => \@out,
                             notes       => \%notes,
                             cds         => $cds,
@@ -1031,12 +917,9 @@ sub gff {
                     $orphaned_RNA{ $feat->id } = $feat;
                     next main;
                 }
-
             }
 
-            foreach
-              my $loc ( $feat->locations( {}, { 'order_by' => 'start' } ) )
-            {
+            foreach my $loc ( $feat->locations( {}, { 'order_by' => 'start' } ) ) {
                 push @out,
                   {
                     f         => $feat,
@@ -1054,6 +937,7 @@ sub gff {
 #			unless ( $ft->id == 1 && @feat_names )    #if not a gene, don't do the next set of searches.
             unless ( $ft->name =~ /gene/i && @feat_names ) {
                 my $tmp = $self->_format_gff_line(
+                    cache                     => $cache,
                     out                       => \@out,
                     notes                     => \%notes,
                     cds                       => $cds,
@@ -1084,11 +968,12 @@ sub gff {
                     parent_feat => $feat,
                     chr         => $chr,
                     ds          => $ds,
-                    cds_exon    => $cds_exon
+                    cds_exon    => $cds_exon,
                 )
               )
             {
                 my $tmp = $self->_format_gff_line(
+                    cache                     => $cache,
                     out                       => \@out,
                     notes                     => \%notes,
                     cds                       => $cds,
@@ -1111,26 +996,20 @@ sub gff {
                 name_search => \@feat_names,
                 skip_ftids  => [ 1, 2 ],
                 ds          => $ds,
-                chr         => $chr
+                chr         => $chr,
             );
             my $parent_id = $count;
             $parent_id--;
             while ( my $f = $sub_rs->next() ) {
                 if ( $fids{ $f->feature_id } ) { next; }
-                my $ftn =
-                  $self->process_feature_type_name( $f->feature_type->name );
-                push @{ $notes{gene}{"Encoded_feature"} },
-                  $self->escape_gff($ftn);
-                foreach
-                  my $loc ( $f->locations( {}, { 'order_by' => 'start' } ) )
-                {
-                    next
-                      if $loc->start > $feat->stop
-                          || $loc->stop < $feat->start
-                    ; #outside of genes boundaries;  Have to count it as something else
-                     #sometimes mRNA features are missing. . . this is due to the original dataset not having them enumerated.  Need to do some special stuff for such cases where a CDS retrieved in the absense of an mRNA)
+                my $ftn = $self->process_feature_type_name( $f->feature_type->name );
+                push @{ $notes{gene}{"Encoded_feature"} }, $self->escape_gff($ftn);
+                foreach my $loc ( $f->locations( {}, { 'order_by' => 'start' } ) ) {
+                    next if ($loc->start > $feat->stop || $loc->stop < $feat->start); 
+                    #outside of genes boundaries;  Have to count it as something else
+                    #sometimes mRNA features are missing.  This is due to the original dataset not having them enumerated.  
+                    # Need to do some special stuff for such cases where a CDS retrieved in the absense of an mRNA)
                     if ( $f->feature_type->name eq "CDS" ) {
-
                         #let's add the mRNA, change the parent and count (id)
                         push @out,
                           {
@@ -1145,7 +1024,6 @@ sub gff {
                         $parent_id = $count;
                         $count++;
                     }
-
                     push @out,
                       {
                         f         => $f,
@@ -1171,6 +1049,7 @@ sub gff {
                     $types{ $f->feature_type->name }++;
                 }
                 my $tmp = $self->_format_gff_line(
+                    cache                     => $cache,
                     out                       => \@out,
                     notes                     => \%notes,
                     cds                       => $cds,
@@ -1191,7 +1070,6 @@ sub gff {
     }
     if ($print) {
         print "#Orphaned RNAs\n";
-
         foreach my $fid ( keys %orphaned_RNA ) {
             next if $fids{$fid};
             print "#", join( "\t", $fid, $orphaned_RNA{$fid}->names ), "\n";
@@ -1207,6 +1085,8 @@ sub _feat_search {
     my $skip_ftids  = $opts{skip_ftids};
     my $ds          = $opts{ds};
     my $chr         = $opts{chr};
+    #print STDERR "_feat_search\n";
+    
     return $ds->features(
         {
             'me.chromosome'      => $chr,
@@ -1216,8 +1096,7 @@ sub _feat_search {
         {
             'join'     => 'feature_names',
             'prefetch' => [ 'feature_type', 'locations' ],
-            'order_by' =>
-              [ 'me.start', 'locations.start', 'me.feature_type_id' ]
+            'order_by' => [ 'me.start', 'locations.start', 'me.feature_type_id' ]
         }
     );
 }
@@ -1236,23 +1115,21 @@ sub _search_rna {
     my $name_re     = $opts{name_re};
     my $chr         = $opts{chr};
     my $ds          = $opts{ds};
-    my $cds_exon =
-      $opts{cds_exon}; #option so that CDSs are used for determining an exon instead of the mRNA.  This keeps UTRs from being called an exon
+    my $cds_exon = $opts{cds_exon}; #option so that CDSs are used for determining an exon instead of the mRNA.  This keeps UTRs from being called an exon
+    #print STDERR "_search_rna\n";
 
     my $rna_rs = $self->_feat_search(
         name_search => $name_search,
         skip_ftids  => [1],
         ds          => $ds,
-        chr         => $chr
+        chr         => $chr,
     );
 
     #assemble RNA info
     while ( my $f = $rna_rs->next() ) {
         if ( $fids->{ $f->feature_id } ) { next; }
-        next
-          unless $f->feature_type->name =~
-              /RNA/i;    #searching for feat_types of RNA
-                         #process the RNAs
+        next unless $f->feature_type->name =~ /RNA/i; #searching for feat_types of RNA
+        #process the RNAs
         $parent_id = $self->_process_rna(
             notes       => $notes,
             fids        => $fids,
@@ -1271,14 +1148,14 @@ sub _search_rna {
             name_search => [ $f->names ],
             skip_ftids  => [ 1, $f->feature_type_id ],
             ds          => $ds,
-            chr         => $chr
+            chr         => $chr, 
         );
 
         my %tmp_types;    #only want to process one of each type.
         while ( my $f = $sub_rs->next() ) {
             if ( $fids->{ $f->feature_id } ) { next; }
 
-           #	      next unless join (",", @feat_names) eq join (",", $f->names);
+            #next unless join (",", @feat_names) eq join (",", $f->names);
             next if $tmp_types{ $f->feature_type->name };
             $tmp_types{ $f->feature_type->name }++;
             my $ftn =
@@ -1333,14 +1210,14 @@ sub _process_rna {
     my $parent_feat = $opts{parent_feat};
     my $parent_id   = $opts{parent_id};
     my $name_re     = $opts{name_re};
-    my $cds_exon =
-      $opts{cds_exon}; #option so that CDSs are used for determining an exon instead of the mRNA.  This keeps UTRs from being called an exon
+    my $cds_exon = $opts{cds_exon}; #option so that CDSs are used for determining an exon instead of the mRNA.  This keeps UTRs from being called an exon
     my $ftn = $self->process_feature_type_name( $f->feature_type->name );
     push @{ $notes->{gene}{"encoded_feature"} }, $self->escape_gff($ftn);
     $fids->{ $f->feature_id } = 1;    #feat_id has been used;
     $types->{ $f->feature_type->name }++;
-
-#have mRNA.  mRNA in CoGe translates to what most people have settled on calling exons.  the output mRNA therefore needs to be a replicate of the gene
+    #print STDERR "_process_rna\n";
+    
+    #have mRNA.  mRNA in CoGe translates to what most people have settled on calling exons.  the output mRNA therefore needs to be a replicate of the gene
     unless ($parent_id) {
         $parent_id = $$count;
         $parent_id--;
@@ -1382,44 +1259,62 @@ sub _process_rna {
     return $parent_id;
 }
 
+# mdb added 4/22/14 issue 364 - cache DB objects to improve performance
+sub _annotation_type {
+    my ($feat_anno, $cache) = @_;
+    my $annotation_type_id = $feat_anno->annotation_type_id;
+#    print STDERR "**** _annotation_type: ".$annotation_type_id."\n";
+    if (not exists $cache->{$annotation_type_id}) {
+        $cache->{$annotation_type_id} = $feat_anno->annotation_type;
+    }
+#    else {
+#        print STDERR "**** using cache\n";
+#    }
+    return $cache->{$annotation_type_id};
+}
+
+# mdb added 4/22/14 issue 364 - cache DB objects to improve performance
+sub _feature_annotations {
+    my ($feature, $cache) = @_;
+    my $feature_id = $feature->id;
+#    print STDERR "**** _feature_annotations: ".$feature_id."\n";
+    if (not exists($cache->{$feature_id})) {
+        my @annotations = $feature->annotations;
+        $cache->{$feature_id} = \@annotations;
+    }
+#    else {
+#        print STDERR "**** using cache\n";
+#    }
+    return $cache->{$feature_id};
+}
+
 sub _format_gff_line {
     my $self  = shift;
     my %opts  = @_;
-    my $out   = $opts{out};      #array of hashref of output items
-    my $notes = $opts{notes};    #hashref of notes; keyed by feature type
-    my $cds   = $opts{cds};      #only print CDS genes
-    my $print = $opts{print};    #are lines printed here?
-    my $annos = $opts{annos};    #are annotations retrieved?
-    my $unique_parent_annos =
-      $opts{unique_parent_annotations}; #parent annotations are NOT propogated to children
-    my $prev_annos =
-      $opts{prev_annos}; #hash for storing previously seen annotations by parents and children -- used in conjuction with $unique_parent_annos flag
-
-    my $seen =
-      $opts{seen}; #general var for checking if a simlar feature has been seen before (looked up by type and name string)
-    my $ids2names =
-      $opts{ids2names}; #hash to looking up names for a particular id.  May be a number (same as the id) or a unique name;
-    my $id_type =
-      $opts{id_type};    #type of ID (name, num):  unique number; unique name
-    my $name_unique =
-      $opts{name_unique}; #flag for making Name tag of output unique by appending type and occurrence to feature name
-    my $unique_ids =
-      $opts{unique_ids}; #hash for making sure that each used ID happens once for each ID
-                         #check to see if we are only printing cds
-
+    my $out   = $opts{out};   #array of hashref of output items
+    my $notes = $opts{notes}; #hashref of notes; keyed by feature type
+    my $cds   = $opts{cds};   #only print CDS genes
+    my $print = $opts{print}; #are lines printed here?
+    my $annos = $opts{annos}; #are annotations retrieved?
+    my $unique_parent_annos = $opts{unique_parent_annotations}; #parent annotations are NOT propogated to children
+    my $prev_annos  = $opts{prev_annos};  #hash for storing previously seen annotations by parents and children -- used in conjuction with $unique_parent_annos flag
+    my $seen        = $opts{seen};        #general var for checking if a simlar feature has been seen before (looked up by type and name string)
+    my $ids2names   = $opts{ids2names};   #hash to looking up names for a particular id.  May be a number (same as the id) or a unique name;
+    my $id_type     = $opts{id_type};     #type of ID (name, num):  unique number; unique name
+    my $name_unique = $opts{name_unique}; #flag for making Name tag of output unique by appending type and occurrence to feature name
+    my $unique_ids  = $opts{unique_ids};  #hash for making sure that each used ID happens once for each ID
+    my $cache = $opts{cache};
+    #print STDERR "_format_gff_line\n";
+    
     my $output;
     foreach my $item (@$out) {
-        my $f    = $item->{f};    #feature object
-        my $type = $item
-          ->{type}; #feature type.  may be retrieved from feature object, but these may differ
-        my $name_re = $item->{name_re}; #regex for searching for a specific name
-        my $id      = $item->{id};      #unique id for the gff feature;
-        my $parent_id =
-          $item->{parent_id};    #unique id for the parent of the gff feature
-        my $start = $item
-          ->{start}; #start of entry.  May be the feat start, may be a loc start.  Need to declare in logic outside of this routine
-        my $stop = $item
-          ->{stop}; #stop of entry.  May be the feat stop, may be a loc stop.  Need to declare in logic outside of this routine
+        my $f         = $item->{f};         #feature object
+        my $type      = $item->{type};      #feature type.  may be retrieved from feature object, but these may differ
+        my $name_re   = $item->{name_re};   #regex for searching for a specific name
+        my $id        = $item->{id};        #unique id for the gff feature;
+        my $parent_id = $item->{parent_id}; #unique id for the parent of the gff feature
+        my $start     = $item->{start};     #start of entry.  May be the feat start, may be a loc start.  Need to declare in logic outside of this routine
+        my $stop      = $item->{stop};      #stop of entry.  May be the feat stop, may be a loc stop.  Need to declare in logic outside of this routine
         my $parsed_type = $self->process_feature_type_name($type);
 
         #check to see if we are only printing CDS genes
@@ -1451,8 +1346,7 @@ sub _format_gff_line {
 
         #store the unqiue name and associate it with the unique ID number
         if ( $ids2names->{$id} ) {
-            warn "ERROR!  $id is already in use in \$ids2names lookup table: "
-              . $ids2names->{$id} . "\n";
+            warn "ERROR!  $id is already in use in \$ids2names lookup table: " . $ids2names->{$id} . "\n";
         }
         $ids2names->{$id} = $unique_name;
 
@@ -1464,16 +1358,15 @@ sub _format_gff_line {
             $id        = $ids2names->{$id}        if $ids2names->{$id};
             $parent_id = $ids2names->{$parent_id} if $ids2names->{$parent_id};
         }
-        warn "ERROR:  ID $id has been previously used!"
-          if ( $unique_ids->{$id} );
+        warn "ERROR:  ID $id has been previously used!" if ( $unique_ids->{$id} );
         $unique_ids->{$id}++;
+        
         my $attrs;
         $attrs .= "Parent=$parent_id;" if $parent_id;
         $attrs .= "ID=$id";
         $attrs .= ";Name=$name"        if $name;
         $attrs .= ";Alias=$alias"      if $alias;
         $attrs .= ";coge_fid=" . $f->id . "";
-
         foreach my $key ( keys %{ $notes->{$type} } ) {
             $attrs .= ";$key=" . join( ",", @{ $notes->{$type}{$key} } );
         }
@@ -1481,25 +1374,24 @@ sub _format_gff_line {
         my $anno_stuff;
         if ($annos) {
             my %annos;
-            foreach my $anno ( $f->annotations ) {
+            foreach my $anno ( @{_feature_annotations($f, $cache->{feature_annotations})} ) { #$f->annotations ) {
                 next unless defined $anno->annotation;
                 if (   $unique_parent_annos
                     && $prev_annos->{$parent_id}{ $anno->annotation } )
                 {
-
                     #we have used this annotation in a parent annotation
                     $prev_annos->{$id}{ $anno->annotation } = 1;
                     next;
                 }
-                $prev_annos->{$id}{ $anno->annotation } = 1
-                  if $unique_parent_annos;
-                $prev_annos->{$parent_id}{ $anno->annotation } = 1
-                  if $unique_parent_annos;
+                if ($unique_parent_annos) {
+                    $prev_annos->{$id}{ $anno->annotation } = 1;
+                    $prev_annos->{$parent_id}{ $anno->annotation } = 1;
+                }
                 my $atn;      #attribute name
                 my $stuff;    #annotation;
-                my $anno_type = $anno->annotation_type;
+                my $anno_type = _annotation_type($anno, $cache->{annotation_type});
 
-#some anno_types have a group.  If there is a group, that should be the attr name, otherwise it is the anno type;
+                #some anno_types have a group.  If there is a group, that should be the attr name, otherwise it is the anno type;
                 if ( $anno_type->annotation_type_group ) {
                     $atn = $anno_type->annotation_type_group->name;
                     $stuff .= $anno_type->name . ", ";
@@ -1513,15 +1405,13 @@ sub _format_gff_line {
                 $stuff .= $anno->annotation;
                 $stuff = $self->escape_gff($stuff);
                 my $tmp;
-
-                #		$tmp .= $atn."=".$stuff;
+                #$tmp .= $atn."=".$stuff;
                 $annos{$atn}{$stuff} = 1;
             }
 
-            #	    $anno_stuff = join (";", keys %annos);
+            #$anno_stuff = join (";", keys %annos);
             foreach my $key ( keys %annos ) {
-                $anno_stuff .=
-                  $key . "=" . join( ",", keys %{ $annos{$key} } ) . ";";
+                $anno_stuff .= $key . "=" . join( ",", keys %{ $annos{$key} } ) . ";";
             }
         }
 
@@ -1569,24 +1459,6 @@ sub escape_gff {
     $tmp =~ s/,/\%2C/g;
     return $tmp;
 }
-
-################################################ subroutine header begin ##
-
-=head2 trans_type
-
- Usage     : 
-
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
 
 sub trans_type {
     my $self = shift;
@@ -1657,22 +1529,3 @@ sub user_groups() {
 }
 
 1;
-
-=head1 SUPPORT
-
-=head1 AUTHORS
-
- Eric Lyons
- Brent Pedersen
-
-=head1 COPYRIGHT
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl itself.
-
-The full text of the license can be found in the
-LICENSE file included with this module.
-
-=head1 SEE ALSO
-
-=cut
