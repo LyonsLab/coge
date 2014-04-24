@@ -383,7 +383,7 @@ sub load_annotation {
 
     # mdb added issue 309 - workaround here because checking perms in search_genomes() is too slow
     return encode_json({ error => "You do not have permission to modify this genome" })
-        unless ($USER->is_owner_editor( dsg => $gid ));
+        unless ($USER->is_admin || $USER->is_owner_editor( dsg => $gid ));
 
     if ( !$user_name || !$USER->is_admin ) {
         $user_name = $USER->user_name;

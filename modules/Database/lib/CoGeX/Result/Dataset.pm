@@ -831,7 +831,7 @@ sub gff {
     foreach my $chr (@chrs) {
         my %seen = (); #for storage of seen names organized by $feat_name{$name}
         my $rs_feat = $ds->features(
-            { 'chromosome' => $chr},
+            { chromosome => $chr }, # mdb added 4/23/14 issue 364
             {
                 'prefetch' => $prefetch,
                 'order_by' => [ 'me.chromosome', 'me.start', 'me.feature_type_id'
