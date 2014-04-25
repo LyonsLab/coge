@@ -333,6 +333,7 @@ sub features {
 
             # Convert to JSON
             foreach my $d (@$pData) {
+                my ($name) = $d->{attr} =~ /ID\=([\w\.\-]+)\;/; # mdb added 4/24/14 for Amanda
                 my %result = (
                     uniqueID => $d->{start} . '_' . $d->{stop},
                     type     => $d->{type},
@@ -340,7 +341,8 @@ sub features {
                     end      => $d->{stop},
                     strand   => $d->{strand},
                     score    => $d->{value1},
-                    attr     => $d->{attr}
+                    attr     => $d->{attr},
+                    name     => $name
                 );
                 $result{'strand'} = -1 if ($result{'strand'} == 0);
                 $result{'stop'} = $result{'start'} + 1 if ( $result{'stop'} == $result{'start'} ); #FIXME revisit this
