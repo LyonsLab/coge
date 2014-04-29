@@ -1,28 +1,17 @@
-function init_table() {
-    $("#prev_table").tablesorter({
-        sortClassAsc: 'headerSortUp',       // Class name for ascending sorting action to header
-        sortClassDesc: 'headerSortDown',    // Class name for descending sorting action to header
-        headerClass: 'header',      // Class name for headers (th's)
-        widgets: ['zebra'],
-        textExtraction: 'complex'
-    });
- }
-
+//TODO: Replace helper with state checking
 function has_organisms () {
     return ($('#org_id1').val() != "") &&
         ($('#org_id2').val() != "");
 }
 
-$(function() {$("#pair_info").draggable();});
-$(function() {$("#tabs").tabs({selected:0});});
-$(function() {$(".resizable").resizable();});
-
+//TODO: Create a proper helper function
 function get_gc (dsgid, divid)
 {
     $('#'+divid).removeClass('link').html('loading...');
     get_dsg_gc(['args__dsgid','args__'+dsgid,'args__text','args__1'],[divid]);
 }
 
+//TODO: Replace with proper promise chain
 function get_organism_chain(type,val,i)
 {
     $('#org_list').html('<input type=hidden id = "org_id"+i><font class="loading"></font>');
@@ -30,10 +19,10 @@ function get_organism_chain(type,val,i)
     else if (type == 'desc') {get_orgs(['args__desc','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
     $('#dsg_info'+i).html('<div class="loading dna_small small">loading. . .</div>');
     ajax_wait("gen_dsg_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['dsg_menu"+i+"', 'genome_message"+i+"']);");
-    ajax_wait("check_previous_analyses();");
     ajax_wait("get_genome_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],[handle_dsg_info]);");
 }
 
+//TODO: Replace with proper promise chain
 function get_genome_info_chain(i) {
     $('#dsg_info'+i).html('<div class=dna_small class=loading class=small>loading. . .</div>');
     // ajax_wait("gen_dsg_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['dsg_menu"+i+"','genome_message"+i+"']);");
@@ -41,14 +30,15 @@ function get_genome_info_chain(i) {
     $('#depth_org_1').html($('#org_id1 option:selected').html());
     $('#depth_org_2').html($('#org_id2 option:selected').html());
 
-    ajax_wait("check_previous_analyses();");
     ajax_wait("get_genome_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],[handle_dsg_info]);");
 }
 
+//TODO: Remove basename generation from client
 function rand () {
     return ( Math.floor ( Math.random ( ) * 99999999 + 1 ) );
 }
 
+//TODO: Create a proper state object
 function populate_page_obj(basefile) {
     if (!basefile) {
         basefile = "SynMap_"+rand();
@@ -59,7 +49,10 @@ function populate_page_obj(basefile) {
     pageObj.runtime = 0;
     pageObj.fetch_error = 0;
     pageObj.error = 0;
-    pageObj.engine = "<span class=\"alert\">The job engine has failed.</span><br>Please use the link below to use the previous version of SynMap.";
+    pageObj.engine = $("<span></span>", {
+        "class": "alert",
+        text: "The job engine has failed."
+    });
 }
 
 function run_synmap(scheduled, regenerate){
@@ -235,32 +228,6 @@ function handle_results(val){
     $('#results').html(val);
     $(function() {$("#synmap_zoom_box").draggable();});
     setup_button_states();
-    ajax_wait("check_previous_analyses();");
-}
-
-function check_previous_analyses(){
-    var gid1 = $('#org_id1').val();
-    var gid2 = $('#org_id2').val();
-
-    if (gid1 && gid2) {
-        $.ajax({
-            data: {
-                jquery_ajax: 1,
-                oid1: gid1,
-                oid2: gid2,
-                fname: 'get_previous_analyses',
-            },
-            success: function(data)  {
-                load_previous_analyses(data);
-            }
-        });
-    }
-//get_previous_analyses(['args__oid1','org_id1', 'args__oid2','org_id2'],[load_previous_analyses]);
-}
-
-function load_previous_analyses (stuff) {
-    $('#previous_analyses').html(stuff);
-    init_table();
 }
 
 function update_params(val) {
