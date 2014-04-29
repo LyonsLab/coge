@@ -16,7 +16,7 @@ use JSON::XS;
 
 our ($P, $dagfile, $alignfile, $genomeid1, $genomeid2, $help, $coge, $CHR1,
      $CHR2, $basename, $ks_db, $assemble, $GZIP, $GUNZIP, $URL, $conffile,
-     %all_pairs, %base_data, %ks_data);
+     %all_pairs, %base_data, %ks_data, $DEBUG);
 
 GetOptions(
     "dagfile|d=s"         => \$dagfile,      #all dots
@@ -28,6 +28,7 @@ GetOptions(
     "chr2|c2=s"           => \$CHR2,
     "basename|b=s"        => \$basename,
     "ksdb|ks_db=s"        => \$ks_db,
+    "debug|dbg=i"         => \$DEBUG,
     "config_file|cf=s"    => \$conffile,
 );
 
@@ -158,26 +159,26 @@ $base_data{layers}{syntenic_blocks}{style} = {
 #write out JSON file of dots"
 
 if (%base_data) {
-    #print Dumper \%json_data;
+    print Dumper \%base_data if $DEBUG;
     open( OUT, ">" . $basename . ".json" ) || die "$!";
     print OUT encode_json( \%base_data );
     close OUT;
 }
 
 if (%all_pairs) {
-    #print Dumper \%all_pairs;
+    print Dumper \%all_pairs if $DEBUG;
     open( OUT, ">" . $basename . ".all.json" ) || die "$!";
     print OUT encode_json( \%all_pairs);
     close OUT;
 }
 
-if ($ksdata) {
-    #print Dumper \%all_pairs;
-    open( OUT, ">" . $basename . ".ks.json" ) || die "$!";
-    print OUT encode_json( $ksdata);
+#generate_historgram of ks values if necessary
+if (%ks_json) {
+    print Dumper \%all_pairs if $DEBUG;
+    open( OUT, ">" . $basename . ".datasets.json" ) || die "$!";
+    print OUT encode_json( \%ks_json );
     close OUT;
 }
-#generate_historgram of ks values if necessary
 
 #This function appears to parse dagchainer output, generated in SynMap.pl, and draw the results to the GD graphics context.
 sub get_dots {

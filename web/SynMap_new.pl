@@ -2377,7 +2377,7 @@ sub go {
 
     if ($ks_db) {
         push @$dot_inputs, $ks_db if $ks_db;
-        push @$dot_outputs, "$json_basename.ks.json";
+        push @$dot_outputs, "$json_basename.datasets.json";
     }
 
     $workflow->add_job(
@@ -2992,7 +2992,7 @@ sub get_results {
     my $spa_file = $dotfile . ".spa_info.txt";
     my $json_file = "$out.json";
     my $all_json_file = "$out.all.json";
-    my $hist_json_file = "$out.ks.json";
+    my $hist_json_file = "$out.datasets.json";
 
     $out = $dotfile;
 
