@@ -13,16 +13,15 @@ use Data::Dumper;
 my $DEBUG = 0;
 my $COGE_DIR      = '/opt/apache/coge';
 my $INSTALL_DIR   = '/storage/coge/data/experiments';
+my $DELIMITER     = '\s*\"?\t\"?\s*';
 
-my $gid           = 22716;
-my $data_dir      = '/home/mbomhoff/tmp/data/';
-my $staging_dir   = '/home/mbomhoff/tmp/staging';
-my $metadata_file; # none
-my $citation_link; # none
-my $user          = 'mbomhoff';
-my $source        = 'Matt Bomhoff';
-my $description   = '';
-my $version       = '1';
+my $gid           = 16904; # ID for genome to assign experiments to
+my $data_dir      = '/home/mbomhoff/tmp/test';  # location of data files
+my $staging_dir   = '/home/mbomhoff/tmp/staging';           # temporary staging path
+my $metadata_file = '/home/mbomhoff/tmp/jmccurdy/51genos/dmr_genetic_influences_ip_array.txt'; # optional metadata file
+my $user          = 'mbomhoff';     # owner
+my $source        = 'Matt Bomhoff'; # default source if not specified in metadata file
+my $version       = '1';            # default version if not specified in metadata file
 
 #-------------------------------------------------------------------------------
 
@@ -37,9 +36,9 @@ my $coge = CoGeX->connect( $connstr, $P->{DBUSER}, $P->{DBPASS} );
 # Load metadata file
 my $metadata;
 if ($metadata_file) {
-    get_metadata($metadata_file);
+    $metadata = get_metadata($metadata_file);
     unless ($metadata) {
-        print STDERR "load_all_experiments: no metadata\n";
+        print STDERR "load_all_experiments: error: no metadata loaded\n";
         exit(-1);
     }
     #print STDERR Dumper $metadata;
@@ -47,7 +46,7 @@ if ($metadata_file) {
 
 # Load each experiment file
 my $exp_count = 0;
-process_dir($data_dir);
+process_dir($data_dir, $metadata);
 
 # Yay!
 print STDERR "Loaded $exp_count experiments\n";
@@ -55,49 +54,88 @@ print STDERR "All done!\n";
 exit;
 
 #-------------------------------------------------------------------------------
-sub get_metadata {
+# Format defined here:  http://genomevolution.org/wiki/index.php/Experiment_Metadata
+sub get_metadata { 
     my $file = shift;
-    open( IN, $file );
-    my %data;
-
-    #Name   Mark    Genome  Protocol        Platform ID     Platform name   Citation        Processing      Raw files       Processed files Series  Samples
-    while (<IN>) {
-        chomp;
-        next unless $_;
-        next if /^#/;
-        my @line = split(/\t/);
-        my $processed_file = $line[9];
-        $data{ $processed_file } = \@line;
+    my $metadata = shift;
+    my (@header, %data);
+    my $lineNum = 0;
+    
+    open(my $fh, $file);
+    while (my $line = <$fh>) {
+        $lineNum++;
+        chomp $line;
+        next unless ($line && $line =~ /\S+/);
+        next if $line =~ /^#/;
+        
+        # First line of file (after any comment lines) should be the header
+        unless (@header) {
+            @header = map { trim($_) } split($DELIMITER, $line);
+            if (!@header) {
+                print STDERR "load_all_experiments: error: empty header line\n";
+                exit(-1);
+            }
+            #print STDERR join(",\n", @header),"\n";
+            next;
+        }
+        
+        # Parse data line
+        my @tok = map { trim($_) } split($DELIMITER, $line);
+        die if (@tok != @header);
+        my $i = 0;
+        my %fields = map { $_ => $tok[$i++] } @header;
+        #print STDERR Dumper \%fields, "\n";
+        
+        # Make sure required fields are present
+        my $filename = $fields{Filename};
+        if (!$filename or !$fields{Name}) {
+            print STDERR "load_all_experiments: error: missing required column:\nline $lineNum: $line\n";
+            exit(-1);
+        }
+        if ($data{$filename}) {
+            print STDERR "load_all_experiments: error: duplicate filename '$filename'\n";
+            exit(-1);
+        }
+        
+        $data{$filename} = \%fields;
     }
-    close IN;
+    close($fh);
     return \%data;
+}
+
+sub trim {
+    my $s = shift;
+    $s =~ s/^\s+//;
+    $s =~ s/\s+$//;
+    $s =~ s/^\"//;
+    $s =~ s/\"$//;
+    return $s;
 }
 
 sub process_dir {
     my $dir = shift;
+    my $metadata = shift;
     my $notebook_name = shift;
-    
     my @experiments;
     
-    print STDERR "process_dir: $dir\n";
+    print STDERR "process_dir: $dir ", ($notebook_name ? $notebook_name : ''), "\n";
     opendir( my $fh, $dir ) or die;
     my @contents = sort readdir($fh);
     foreach my $item ( @contents ) {
         next if ($item =~ /^\./);
-	print STDERR "item: $dir/$item\n";
+        print STDERR "item: $dir/$item\n";
         if (-d "$dir/$item") { # directory
-            my $exp_list = process_dir("$dir/$item", $item); # pass in directory name as notebook name
-            
-            if (!$DEBUG && @$exp_list > 0 && $notebook_name) {
+            my $exp_list = process_dir("$dir/$item", $metadata, $item); # pass in directory name as notebook name
+            if (!$DEBUG && @$exp_list > 0) {
                 # Create notebook of experiments
-                if (!create_notebook(name => $notebook_name, item_list => $exp_list)) {
-                    print STDERR "Failed to create notebook '$notebook_name'\n";
+                if (!create_notebook(name => $item, item_list => $exp_list)) {
+                    print STDERR "Failed to create notebook '$item'\n";
                     exit(-1);
                 }
-                print STDERR "Created notebook '$notebook_name'\n";
+                print STDERR "Created notebook '$item'\n";
             }
         }
-        elsif ( $item =~ /\.csv|\.bam/ && -r "$dir/$item" ) { # file
+        elsif ( $item =~ /\.csv|\.bam|\.bed/ && -r "$dir/$item" ) { # file
             my $md = ();
             if ($metadata) {
                 if ($metadata->{$item}) {
@@ -125,23 +163,6 @@ sub process_file {
     my $file = $opts{file};
     my $md   = $opts{metadata};
     
-    my (
-        $name,        $mark,            $genome,   $protocol,
-        $platform_id, $platform_name,   $citation, $processing,
-        $raw_files,   $processed_files, $series,   $samples
-    );
-    
-    if ($md) {
-        (
-            $name,        $mark,            $genome,   $protocol,
-            $platform_id, $platform_name,   $citation, $processing,
-            $raw_files,   $processed_files, $series,   $samples
-        ) = @$md;
-    }
-    else {
-        ($name) = fileparse($file, qr/\.[^.]*/);
-    }
-
     $exp_count++;
     
     # Create/clear staging directory
@@ -153,13 +174,29 @@ sub process_file {
     else {
         make_path($staging);
     }
+    
+    # Check params and set defaults
+    my $name;
+    $name = $md->{Name} if ($md and $md->{Name});
+    $name = $md->{name} if ($md and $md->{name});
+    my $description = '';
+    $description = $md->{Description} if ($md and $md->{Description});
+    $description = $md->{description} if ($md and $md->{description});
+    $source      = $md->{Source} if ($md and $md->{Source});
+    $source      = $md->{source} if ($md and $md->{source});
+    $version     = $md->{Version} if ($md and $md->{Version});
+    $version     = $md->{version} if ($md and $md->{version});
+    my $restricted = 1;
+    $restricted = ($md->{Restricted} eq 'yes') if ($md and $md->{Restricted});
+    $restricted = ($md->{restricted} eq 'yes') if ($md and $md->{restricted});
+    die unless ($name and $gid and $source and $user);
 
     # Run load script
     $file = escape($file);
     my $cmd = "$COGE_DIR/scripts/load_experiment.pl " .
         "-config $config -user_name $user -restricted 1 -name '$name' -desc '$description' " .
         "-version '$version' -gid $gid -source_name '$source' " .
-	    "-allow_negative 1 " .
+	    #"-allow_negative 0 " .
         "-staging_dir $staging -install_dir $INSTALL_DIR -data_file '$file'";
     print "Running: " . $cmd, "\n";
     return if ($DEBUG);
@@ -180,113 +217,23 @@ sub process_file {
     # Add experiment annotations from metadata file
     if ($md) {
         my $exp = $coge->resultset('Experiment')->find($eid);
-        my $exp_type = $coge->resultset('ExperimentType')->find_or_create( { name => $protocol } );
-        $coge->resultset('ExperimentTypeConnector')->create(
-            {
-                experiment_type_id => $exp_type->id,
-                experiment_id      => $exp->id
-            }
-        );
-    
-        $exp_type = $coge->resultset('ExperimentType')->find_or_create( { name => $platform_name } );
-        $coge->resultset('ExperimentTypeConnector')->create(
-            {
-                experiment_type_id => $exp_type->id,
-                experiment_id      => $exp->id
-            }
-        );
-    
-        my $etype =
-          $coge->resultset('AnnotationType')
-          ->find_or_create( { name => "Citation" } );
-        $exp->add_to_experiment_annotations(
-            {
-                annotation_type_id => $etype->id,
-                annotation         => $citation,
-                link               => $citation_link
-            }
-        );
-        $etype =
-          $coge->resultset('AnnotationType')
-          ->find_or_create( { name => "Mark" } );
-        $exp->add_to_experiment_annotations(
-            {
-                annotation_type_id => $etype->id,
-                annotation         => $mark,
-            }
-        );
-        $etype =
-          $coge->resultset('AnnotationType')
-          ->find_or_create( { name => "Platform" } );
-        $exp->add_to_experiment_annotations(
-            {
-                annotation_type_id => $etype->id,
-                annotation         => $platform_name,
-            }
-        );
-        $etype =
-          $coge->resultset('AnnotationType')
-          ->find_or_create( { name => "Platform ID" } );
-        $exp->add_to_experiment_annotations(
-            {
-                annotation_type_id => $etype->id,
-                annotation         => $platform_id,
-            }
-        );
-        $etype =
-          $coge->resultset('AnnotationType')
-          ->find_or_create( { name => "Processed files" } );
-        $exp->add_to_experiment_annotations(
-            {
-                annotation_type_id => $etype->id,
-                annotation         => $processed_files,
-            }
-        );
-        $etype =
-          $coge->resultset('AnnotationType')
-          ->find_or_create( { name => "Processing" } );
-        $exp->add_to_experiment_annotations(
-            {
-                annotation_type_id => $etype->id,
-                annotation         => $processing,
-            }
-        );
-        $etype =
-          $coge->resultset('AnnotationType')
-          ->find_or_create( { name => "Protocol" } );
-        $exp->add_to_experiment_annotations(
-            {
-                annotation_type_id => $etype->id,
-                annotation         => $protocol,
-            }
-        );
-        $etype =
-          $coge->resultset('AnnotationType')
-          ->find_or_create( { name => "Series" } );
-        $exp->add_to_experiment_annotations(
-            {
-                annotation_type_id => $etype->id,
-                annotation         => $series,
-            }
-        );
-        $etype =
-          $coge->resultset('AnnotationType')
-          ->find_or_create( { name => "Samples" } );
-        $exp->add_to_experiment_annotations(
-            {
-                annotation_type_id => $etype->id,
-                annotation         => $samples,
-            }
-        );
-        $etype =
-          $coge->resultset('AnnotationType')
-          ->find_or_create( { name => "Gene mutant" } );
-        $exp->add_to_experiment_annotations(
-            {
-                annotation_type_id => $etype->id,
-                annotation         => $genome,
-            }
-        );
+        die unless $exp;
+
+        foreach my $column_name (keys %$md) {
+            # Skip built-in fields
+            next if (grep { /$column_name/i } ('filename', 'name', 'description', 'source', 'version', 'restricted'));
+            
+            # Add annotation
+            my $type = $coge->resultset('AnnotationType')->find_or_create( { name => $column_name } );
+            $exp->add_to_experiment_annotations(
+                {
+                    annotation_type_id => $type->id,
+                    annotation         => $md->{$column_name}
+                }
+            );
+        }
+
+        # TODO add support for "_link" option
     }
     
     return $eid;
