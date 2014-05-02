@@ -234,59 +234,57 @@ sub get_annotations {
     my %opts = @_;
     my $eid  = $opts{eid};
     return "Must have valid experiment id\n" unless ($eid);
+    
     my $exp = $coge->resultset('Experiment')->find($eid);
     return "Access denied\n" unless $USER->has_access_to_experiment($exp);
 
-    my $user_can_edit =
-      ( $USER->is_admin || $USER->is_owner_editor( experiment => $eid ) );
+    my $user_can_edit = ( $USER->is_admin || $USER->is_owner_editor( experiment => $eid ) );
 
+    # Categorize annotations based on type group and type
     my %groups;
     my $num_annot = 0;
     foreach my $a ( $exp->annotations ) {
-        my $group = (
-            defined $a->type->group
-            ? $a->type->group->name . ':' . $a->type->name
-            : $a->type->name
-        );
-        push @{ $groups{$group} }, $a;
+        my $group = ( $a->type->group ? $a->type->group->name : undef);
+        my $type = $a->type->name;
+        push @{ $groups{$group}{$type} }, $a;
         $num_annot++;
     }
-
+    
+    # Build annotation table
     my $html;
     if ($num_annot) {
         $html .= '<table id="experiment_annotation_table" class="ui-widget-content ui-corner-all small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
-        foreach my $group ( sort keys %groups ) {
-            my $first = 1;
-            foreach my $a ( sort { $a->id <=> $b->id } @{ $groups{$group} } ) {
-                $html .= "<tr style='vertical-align:top;'>";
-                $html .= "<th align='right' class='title5' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;' rowspan="
-                  . @{ $groups{$group} }
-                  . ">$group:</th>"
-                  if ( $first-- > 0 );
-    
-                #$html .= '<td>';
-                my $image_link =
-                  ( $a->image ? 'image.pl?id=' . $a->image->id : '' );
-                my $image_info = (
-                    $a->image
-                    ? "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='float:left;padding:1px;border:1px solid lightgray;margin-right:5px;'></a>"
-                    : ''
-                );
-                #$html .= $image_info if $image_info;
-                #$html .= "</td>";
-                $html .= "<td class='data5'>" . $image_info . $a->info . '</td>';
-                $html .= '<td style="padding-left:5px;">';
-                $html .= linkify( $a->link, 'Link' ) if $a->link;
-                $html .= '</td>';
-                if ($user_can_edit && !$a->locked) {
-                    my $aid = $a->id;
-                    $html .=
-                        '<td style="padding-left:20px;white-space:nowrap;">'
-                      . "<span onClick=\"edit_annotation_dialog($aid);\" class='link ui-icon ui-icon-gear'></span>"
-                      . "<span onClick=\"\$(this).fadeOut(); remove_annotation($aid);\" class='link ui-icon ui-icon-trash'></span>"
-                      . '</td>';
+        foreach my $group ( sort keys %groups ) { # groups
+            my $first_group = 1;
+            foreach my $type ( sort keys %{ $groups{$group} } ) { # types
+                my $first_type = 1;
+                foreach my $a ( sort { $a->id <=> $b->id } @{ $groups{$group}{$type} } ) { # annotations
+                    my $header = ($group and $first_group-- > 0 ? "<b>$group</b>: " : '') . ($first_type-- > 0 ? "$type:" : '');
+                    $html .= "<tr style='vertical-align:top;'>";
+                    $html .= "<th align='right' class='title5' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;'>$header</th>";
+                    #$html .= '<td>';
+                    my $image_link = ( $a->image ? 'image.pl?id=' . $a->image->id : '' );
+                    my $image_info = (
+                        $a->image
+                        ? "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='float:left;padding:1px;border:1px solid lightgray;margin-right:5px;'></a>"
+                        : ''
+                    );
+                    #$html .= $image_info if $image_info;
+                    #$html .= "</td>";
+                    $html .= "<td class='data5'>" . $image_info . $a->info . '</td>';
+                    $html .= '<td style="padding-left:5px;">';
+                    $html .= linkify( $a->link, 'Link' ) if $a->link;
+                    $html .= '</td>';
+                    if ($user_can_edit && !$a->locked) {
+                        my $aid = $a->id;
+                        $html .=
+                            '<td style="padding-left:20px;white-space:nowrap;">'
+                          . "<span onClick=\"edit_annotation_dialog($aid);\" class='link ui-icon ui-icon-gear'></span>"
+                          . "<span onClick=\"\$(this).fadeOut(); remove_annotation($aid);\" class='link ui-icon ui-icon-trash'></span>"
+                          . '</td>';
+                    }
+                    $html .= '</tr>';
                 }
-                $html .= '</tr>';
             }
         }
         $html .= '</tbody></table>';
@@ -340,7 +338,7 @@ sub add_annotation {
     my $image_filename = $opts{edit_annotation_image};
     my $fh             = $FORM->upload('edit_annotation_image');
 
-    #   print STDERR "add_annotation: $eid $type $annotation $link\n";
+    #print STDERR "add_annotation: $eid $type $annotation $link\n";
 
     # Create the type and type group if not already present
     my $group_rs;
