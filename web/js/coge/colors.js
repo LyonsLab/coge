@@ -1,171 +1,171 @@
-var coge = window.coge = (function(ns) {
-    ns.color = {
-        schemes: {
-            "Rainbow 1": [
-                "rgb(255, 255, 0)",
-                "rgb(200, 200, 0)",
-                "rgb(0,   200, 0)",
-                "rgb(0,   100, 100)",
-                "rgb(0,   200, 200)",
-                "rgb(0,   0,   200)",
-                "rgb(100, 0,   100)",
-                "rgb(200, 0,   200)",
-                "rgb(200, 0,   0)",
-                "rgb(100, 0,   0)",
-                "rgb(200, 100, 0)",
-                "rgb(255, 126, 0)"
-            ],
-            "Rainbow 2": [
-                "rgb(255, 255, 0)",
-                "rgb(255, 0,   0)",
-                "rgb(0,   255, 0)",
-                "rgb(0,   255, 255)",
-                "rgb(220, 0,   220)",
-                "rgb(0,   0,   255)"
-            ],
-            "2.1xRainbow": [
-                "rgb(255, 0,   0)",
-                "rgb(255, 255, 0)",
-                "rgb(0,   255, 0)",
-                "rgb(0,   255, 255)",
-                "rgb(220, 0,   220)",
-                "rgb(0,   0,   255)",
-                "rgb(255, 0,   0)",
-                "rgb(255, 255, 0)",
-                "rgb(0,   255, 0)",
-                "rgb(0,   255, 255)",
-                "rgb(220, 0,   220)",
-                "rgb(0,   0,   255)"
-            ],
-            "2.2xRainbow": [
-                "rgb(255, 0,   0)",
-                "rgb(255, 255, 0)",
-                "rgb(0,   255, 0)",
-                "rgb(0,   255, 255)",
-                "rgb(220, 0,   220)",
-                "rgb(0,   0,   255)",
-                "rgb(255, 0,   0)",
-                "rgb(255, 255, 0)",
-                "rgb(0,   255, 0)",
-                "rgb(0,   255, 255)",
-                "rgb(220, 0,   220)",
-                "rgb(0,   0,   255)",
-                "rgb(255, 0,   0)",
-                "rgb(255, 255, 0)",
-                "rgb(0,   255, 0)",
-                "rgb(0,   255, 255)",
-                "rgb(220, 0,   220)",
-                "rgb(0,   0,   255)"
-            ],
-            "3x1Rainbow": [
-                "rgb(255, 0,   0)",
-                "rgb(255, 155, 0)",
-                "rgb(0,   255, 0)",
-                "rgb(0,   255, 255)",
-                "rgb(220, 0,   220)",
-                "rgb(0,   0,   255)",
-                "rgb(255, 0,   0)",
-                "rgb(255, 155, 0)",
-                "rgb(0,   255, 0)",
-                "rgb(0,   255, 255)",
-                "rgb(220, 0,   220)",
-                "rgb(0,   0,   255)"
-            ],
-            "3x2Rainbow": [
-                "rgb(255, 0,   0)",
-                "rgb(255, 155, 0)",
-                "rgb(0,   255, 0)",
-                "rgb(0,   255, 255)",
-                "rgb(220, 0,   220)",
-                "rgb(0,   0,   255)",
-                "rgb(255, 0,   0)",
-                "rgb(255, 155, 0)",
-                "rgb(0,   255, 0)",
-                "rgb(0,   255, 255)",
-                "rgb(220, 0,   220)",
-                "rgb(0,   0,   255)",
-                "rgb(255, 0,   0)",
-                "rgb(255, 155, 0)",
-                "rgb(0,   255, 0)",
-                "rgb(0,   255, 255)",
-                "rgb(220, 0,   220)",
-                "rgb(0,   0,   255)"
-            ],
-            "RYB": [
-                "rgb(0, 0, 150)",
-                "rgb(220, 220, 20)",
-                "rgb(255, 0, 0)"
-            ],
-            "RYBG": [
-                "rgb(0, 200, 0)",
-                "rgb(0, 0, 200)",
-                "rgb(220, 220, 20)",
-                "rgb(255, 0, 0)"
-            ],
-            "Black-Red": [
-                "rgb(255, 0, 0)",
-                "rgb(0, 0, 0)"
-            ],
-            "3xRed-Blue": [
-                "rgb(0, 255, 255)",
-                "rgb(255, 0, 0)",
-                "rgb(0, 255, 255)",
-                "rgb(255, 0, 0)",
-                "rgb(0, 255, 255)",
-                "rgb(255, 0, 0)"
-            ],
-            "3xBlue-Orange": [
-                "rgb(0, 0, 255)",
-                "rgb(255, 99, 33)",
-                "rgb(0, 0, 255)",
-                "rgb(255, 99, 33)",
-                "rgb(0, 0, 255)",
-                "rgb(255, 99, 33)"
-            ]
-        },
-        dropdown: function(element, colorSchemes) {
-            var my = {},
-                listeners = [],
-                el = $(element),
-                schemes = colorSchemes || coge.color.schemes,
-                items;
+(function(coge) {
+    var color = coge.color = {};
 
-            my.selected = function(callback) {
-                listeners.push(callback);
-            };
-
-            el.on("change", function(e) {
-                var colors = schemes[$(this).val()];
-                my.handleSelected(colors);
-            });
-
-            my.handleSelected = function(colors) {
-                listeners.forEach(function(callback) {
-                    callback(colors);
-                });
-            };
-
-            my.select = function(index) {
-                var child = el.children()[index];
-                if (child) {
-                    $(child).attr("selected", "selected");
-                    el.change();
-                }
-            };
-
-            names = Object.keys(coge.color.schemes);
-            items = names.map(function(name) {
-                return $("<option>")
-                    .attr("value", name)
-                    .html(name);
-            });
-
-            // Add color schemes
-            el.append(items);
-
-            return my;
-        }
+    color.schemes = {
+        "Rainbow 1": [
+            "#ffff00",
+            "#c8c800",
+            "#00c800",
+            "#006464",
+            "#00c8c8",
+            "#0000c8",
+            "#640064",
+            "#c800c8",
+            "#c80000",
+            "#640000",
+            "#c86400",
+            "#ff7e00"
+        ],
+        "Rainbow 2": [
+            "#ffff00",
+            "#ff0000",
+            "#00ff00",
+            "#00ffff",
+            "#dc00dc",
+            "#0000ff"
+        ],
+        "2.1xRainbow": [
+            "#ff0000",
+            "#ffff00",
+            "#00ff00",
+            "#00ffff",
+            "#dc00dc",
+            "#0000ff",
+            "#ff0000",
+            "#ffff00",
+            "#00ff00",
+            "#00ffff",
+            "#dc00dc",
+            "#0000ff"
+        ],
+        "2.2xRainbow": [
+            "#ff0000",
+            "#ffff00",
+            "#00ff00",
+            "#00ffff",
+            "#dc00dc",
+            "#0000ff",
+            "#ff0000",
+            "#ffff00",
+            "#00ff00",
+            "#00ffff",
+            "#dc00dc",
+            "#0000ff",
+            "#ff0000",
+            "#ffff00",
+            "#00ff00",
+            "#00ffff",
+            "#dc00dc",
+            "#0000ff"
+        ],
+        "3x1Rainbow": [
+            "#ff0000",
+            "#ff9b00",
+            "#00ff00",
+            "#00ffff",
+            "#dc00dc",
+            "#0000ff",
+            "#ff0000",
+            "#ff9b00",
+            "#00ff00",
+            "#00ffff",
+            "#dc00dc",
+            "#0000ff"
+        ],
+        "3x2Rainbow": [
+            "#ff0000",
+            "#ff9b00",
+            "#00ff00",
+            "#00ffff",
+            "#dc00dc",
+            "#0000ff",
+            "#ff0000",
+            "#ff9b00",
+            "#00ff00",
+            "#00ffff",
+            "#dc00dc",
+            "#0000ff",
+            "#ff0000",
+            "#ff9b00",
+            "#00ff00",
+            "#00ffff",
+            "#dc00dc",
+            "#0000ff"
+        ],
+        "RYB": [
+            "#000063",
+            "#dcdc14",
+            "#ff0000"
+        ],
+        "RYBG": [
+            "#00c800",
+            "#0000c8",
+            "#dcdc14",
+            "#ff0000"
+        ],
+        "Black-Red": [
+            "#ff0000",
+            "#000000"
+        ],
+        "3xRed-Blue": [
+            "#00ffff",
+            "#ff0000",
+            "#00ffff",
+            "#ff0000",
+            "#00ffff",
+            "#ff0000"
+        ],
+        "3xBlue-Orange": [
+            "#0000ff",
+            "#ff6333",
+            "#0000ff",
+            "#ff6333",
+            "#0000ff",
+            "#ff6333"
+        ]
     };
 
-    return ns;
-})(coge || {});
+    color.dropdown = function(element, colorSchemes) {
+        var my = {},
+            listeners = [],
+            el = $(element),
+            schemes = colorSchemes || coge.color.schemes,
+            names,
+            items;
+
+        my.selected = function(callback) {
+            listeners.push(callback);
+        };
+
+        el.on("change", function() {
+            var colors = schemes[$(this).val()];
+            my.handleSelected(colors);
+        });
+
+        my.handleSelected = function(colors) {
+            listeners.forEach(function(callback) {
+                callback(colors);
+            });
+        };
+
+        my.select = function(index) {
+            var child = el.children()[index];
+            if (child) {
+                $(el.child).attr("selected", "selected");
+                el.change();
+            }
+        };
+
+        names = Object.keys(coge.color.schemes);
+        items = names.map(function(name) {
+            return $("<option>")
+                .attr("value", name)
+                .html(name);
+        });
+
+        // Add color schemes
+        el.append(items);
+
+        return my;
+    };
+}(window.coge || (window.coge = {})));
