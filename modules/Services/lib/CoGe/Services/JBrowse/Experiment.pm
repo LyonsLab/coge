@@ -94,12 +94,11 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
     my @bins;
     foreach my $exp (@experiments) {
         my $data_type = $exp->data_type;
-
 		if ( !$data_type or $data_type == $DATA_TYPE_QUANT ) {
 			next;
 		}
-        elsif ( $data_type == $DATA_TYPE_POLY ) {
-            my $cmdOut = CoGe::Accessory::Storage::get_experiment_data(
+        elsif ( $data_type == $DATA_TYPE_POLY || $data_type == $DATA_TYPE_MARKER ) {
+            my $pData = CoGe::Accessory::Storage::get_experiment_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
                 chr   => $chr,
@@ -107,24 +106,13 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
                 end   => $end
             );
 
-            # Convert FastBit output into JSON
-            foreach (@$cmdOut) {
-                chomp;
-                if (/^\"/) {    #if (/^\"$chr\"/) { # potential result line
-                    s/"//g;
-                    my @items = split(/,\s*/);
-                    next
-                      if ( @items != $NUM_VCF_COL )
-                      ; # || $items[0] !~ /^\"?$chr/); # make sure it's a row output line
-
-                    # Bin results
-                    my ( undef, $s, $e ) = @items;
-                    $e = $s + 1 if ( $e == $s );    #FIXME revisit this
-                    my $mid = int( ( $s + $e ) / 2 );
-                    my $b   = int( ( $mid - $start ) / $bpPerBin );
-                    $b = 0 if ( $b < 0 );
-                    $bins[$b]++;
-                }
+            # Bin and convert to JSON
+            foreach my $d (@$pData) {
+                my ($s, $e) = ($d->{start}, $d->{stop});
+                my $mid = int( ( $s + $e ) / 2 );
+                my $b   = int( ( $mid - $start ) / $bpPerBin );
+                $b = 0 if ( $b < 0 );
+                $bins[$b]++;
             }
         }
         elsif ( $data_type == $DATA_TYPE_ALIGN ) {
@@ -151,33 +139,6 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
                 $b = 0 if ( $b < 0 );
                 $bins[$b]++;
 	        }
-        }
-        elsif ( $data_type == $DATA_TYPE_MARKER ) {
-            my $cmdOut = CoGe::Accessory::Storage::get_experiment_data(
-                eid   => $eid,
-                data_type  => $exp->data_type,
-                chr   => $chr,
-                start => $start,
-                end   => $end
-            );
-
-            # Convert FastBit output into JSON
-            foreach (@$cmdOut) {
-                chomp;
-                if (/^\"/) {    #if (/^\"$chr\"/) { # potential result line
-                    s/"//g;
-                    my @items = split(/,\s*/);
-                    next if ( @items != $NUM_GFF_COL ); # || $items[0] !~ /^\"?$chr/); # make sure it's a row output line
-
-                    # Bin results
-                    my ( undef, $s, $e ) = @items;
-                    $e = $s + 1 if ( $e == $s );    #FIXME revisit this
-                    my $mid = int( ( $s + $e ) / 2 );
-                    my $b   = int( ( $mid - $start ) / $bpPerBin );
-                    $b = 0 if ( $b < 0 );
-                    $bins[$b]++;
-                }
-            }
         }
         else {
         	print STDERR "JBrowse::Experiment::stats_regionFeatureDensities unknown data type for experiment $eid\n";
