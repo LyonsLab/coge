@@ -955,7 +955,7 @@ sub send_email {
     my $subject = $opts{subject};
     my $body    = $opts{body};
 
-    print STDERR "Sending email: from=$from to=$to subject=$subject\n";
+    print STDERR "Sending email: from=$from to=$to subject=$subject\nbody:\n$body\n";
 
     my $mailer = Mail::Mailer->new("sendmail");
     $mailer->open(

@@ -751,6 +751,7 @@ sub send_error_report {
         . $USER->date . "\n\n"
         . "staging_directory: $staging_dir\n\n"
         . "tiny link: $url\n\n";
+    $body .= get_load_log();
 
     CoGe::Accessory::Web::send_email(
         from    => $email,
