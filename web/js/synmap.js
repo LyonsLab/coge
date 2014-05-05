@@ -826,12 +826,12 @@ function inverse(func) {
     }
 }
 
-function getValues(object, keys) {
-    var index,
+function getValues(object) {
+    var key,
         coll = [];
 
-    for(index = 0; index < keys.length; index++) {
-        coll.push(object[keys[index]]);
+    for(key in object) {
+        coll.push(object[key]);
     }
 
     return coll;
@@ -844,353 +844,533 @@ function checkRequestSize(url) {
     });
 }
 
-var synmap = function(element, metric, sort) {
-    var genomes,
-        pairs = [],
-        plots = [];
+(function(root, $, _) {
+    var synmap = root.synmap = {};
 
-    my = {};
+    var ArrayProto = Array.prototype.slice;
+    var slice = ArrayProto.slice;
 
-    my.loadPlots = function(json) {
-        var keys,
-            type,
-            layer,
-            source,
-            reference;
+    var lastElement = function(x) { return _.last(x, 1); };
 
-        genomes = json.genomes;
+    var PlotViewer = synmap.PlotViewer = function(element, metric, sort) {
+        var genomes,
+            pairs = [],
+            plots = [],
+            filter = Filter("syntenic_pairs");
 
-        for(layer in json.layers) {
-            type = Object.keys(json.layers[layer].data)[0];
-            for (reference in json.layers[layer].data[type]) {
-                for (source in json.layers[layer].data[type][reference]) {
-                    pairs.push([reference, source]);
-                }
-            }
-        }
-
-        // generate plots
-        keys = pairs.pop();
-        data = generatePlot(keys[0], keys[1], json.layers, metric, sort);
-
-        var handler =  function() {
-            var active = [],
-                ids = Object.keys(data.layers).reverse();
-
-            for (var index = 0; index < ids.length; index++) {
-                if (data.layers[ids[index]].enabled) {
-                    active.push(data.layers[ids[index]]);
-                }
-            }
-
-            return active;
-        };
-
-        var plot = new DotPlot(element, {
-            size: { width: 1000, height: 800 },
-            genomes: [{
-                name: data.xtitle,
-                length: data.xtotal,
-                chromosomes: data.xlabels,
-                fetchDataHandler: handler
-            },
-            {
-                name: data.ytitle,
-                length: data.ytotal,
-                chromosomes: data.ylabels,
-                fetchDataHandler: handler
-            }],
-            fetchDataHandler: handler,
-            style: {
-                position: "relative",
-                minHeight: "800px"
-            }
-        });
-        plot.redraw();
-
-        plots.length = 0;
-        plots.push({
-            "data": data,
-            "plot": plot
-        });
-    }
-
-    my.toggleLayer = function(layerId, enabled) {
-        var index;
-
-        for(index = 0; index < plots.length; index++) {
-            if (plots[index].data.layers[layerId]) {
-                plots[index].data.layers[layerId].enabled = enabled;
-                plots[index].plot.redraw();
-            }
-        }
-    }
-
-    my.update = function() {
-        for(index = 0; index < plots.length; index++) {
-            plots[index].plot.redraw();
-        }
-    };
-
-    my.getLayer = function(layerId) {
-        return plots[0].data.layers[layerId];
-    };
-
-    my.reset = function() {
-        var index;
-
-        for(index = 0; index < plots.length; index++) {
-            plots[index].plot.reset();
-        }
-    };
-
-    function generatePlot(genome1, genome2, layers, metric, by) {
-        var xlabels,
-            ylabels,
-            xtotal,
-            ytotal,
-            layers;
-
-        // Construct labels with property axis and offsets
-        // x is flipped to sort by maximum value
-        // y is not flipped because increasing value is down in canvas
-        xlabels = generateLabels(genomes[genome1].chromosomes, metric, inverse(by));
-        ylabels = generateLabels(genomes[genome2].chromosomes, metric, inverse(by));
-
-        // Generate the layers
-        layers = createAllLayers(layers, genome1, genome2, xlabels, ylabels);
-
-        return {
-            "xtitle": genomes[genome1].name,
-            "ytitle" : genomes[genome2].name,
-            "xlabels": xlabels,
-            "ylabels": ylabels,
-            "xtotal": sum(xlabels.map(pick("length"))),
-            "ytotal": sum(ylabels.map(pick("length"))),
-            "layers": layers
-        };
-    }
-
-    function generateLabels(chromosomes, metric, by) {
-        return orderBy(getLengths(chromosomes, metric), by);
-    }
-
-    function getLengths(chromosomes, prop) {
-        return chromosomes.map(function(x) {
-            return { name : x.name, length: x[prop] };
-        });
-    }
-
-    function orderBy(chromosomes, by) {
-        return chromosomes.sort(by);
-    };
-
-    function offsets(chromosomes) {
-        return scan(add, 0, chromosomes.map(pick("length")));
-    };
-
-    function generateIndexBy(collection, by) {
-        var index = {};
-
-        for(i = 0; i < collection.length; i++) {
-            index[by(collection[i])] = i;
-        };
-
-        return index;
-    };
-
-    function createAllLayers(layers, genome1, genome2, xlabels, ylabels) {
-        var xindex = generateIndexBy(xlabels, pick("name")),
-            yindex = generateIndexBy(ylabels, pick("name")),
-            xoffsets = offsets(xlabels),
-            // For Canvas coordinates the chromosome should be offset
-            // starting from the end of its length
-            yoffsets = offsets(ylabels),//.slice(1),
-            output = {},
-            create,
-            layerId,
-            rawLayers,
-            transformedLayers;
-
-        create = createLayer.bind(null, genome1, genome2, xoffsets, yoffsets,
-                    xindex, yindex);
-
-        layerIds = Object.keys(layers);
-        rawLayers = getValues(layers, layerIds);
-        transformedLayers = rawLayers.map(create);
-
-        return toObject(zip(layerIds, transformedLayers));
-    }
-
-    function createLayer(genome1, genome2, xoffset, yoffset, xindex, yindex, layer) {
-        var style = layer.style || {},
-            enabled = layer.enabled || false,
-            points,
-            rects,
-            lines,
-            raw;
-
-        if (layer.data.points) {
-            raw = layer.data.points[genome1][genome2];
-            points = transformBy(raw, xoffset, yoffset, xindex, yindex, transformPoint);
-        }
-
-        if (layer.data.lines) {
-            raw = layer.data.lines[genome1][genome2]
-            lines = transformBy(raw, xoffset, yoffset, xindex, yindex, transformLine);
-        }
-
-        if (layer.data.rects) {
-            raw = layer.data.rects[genome1][genome2];
-            rects = transformBy(raw, xoffset, yoffset, xindex, yindex, transformRect);
-        }
-
-        return {
-            "enabled": enabled,
-            "style": style,
-            "points": points,
-            "lines": lines,
-            "rects": rects
-        };
-    }
-
-    function transformBy(gridLayer, rowOffset, colOffset, rowIndex, colIndex, transform) {
-        var row,
-            col,
-            r,
-            c,
-            data,
-            transformed,
-            collection = [];
-
-        for(row in gridLayer) {
-            for (col in gridLayer[row]) {
-                r = rowOffset[rowIndex[row]];
-                c = colOffset[colIndex[col]];
-                data = gridLayer[row][col];
-
-                if (data !== undefined)  {
-                    transformed = data.map(transform.bind(undefined, r, c));
-                    collection = [].concat.call(collection, transformed);
-                }
-            }
-        }
-
-        return collection;
-    }
-
-    // mdb
-//    function toCanvasRow(offset, position) {
-//        return offset - position;
-//    }
-
-    function transformPoint(rowoffset, colOffset, point) {
-        return {
-            x: point[0] + rowOffset,
-            y: point[1] + colOffset //toCanvasRow(colOffset, point[1]), // mdb
-        };
-    }
-
-    function transformLine(rowOffset, colOffset, line) {
-        return {
-            x1: line[0] + rowOffset,
-            x2: line[1] + rowOffset,
-            y1: line[2] + colOffset, //toCanvasRow(colOffset, line[2]), // mdb
-            y2: line[3] + colOffset  //toCanvasRow(colOffset, line[3])  // mdb
-        };
-    }
-
-    function transformRect(rowOffset, colOffset, rect) {
-        var width = Math.abs(rect[0] - rect[1]),
-            height = Math.abs(rect[2] - rect[3]),
-            x = Math.min(rect[0], rect[1]);
-            y = Math.min(rect[2], rect[3]);
-
-        return [x + rowOffset, y + colOffset, width, height];
-    }
-
-    return my;
-}
-
-synmap.dropdown = function(element, datasets) {
-    var my = {},
-        listeners = [],
-        el = $(element);
-
-    el.on("change", function(e) {
-        return my.handleSelected(datasets[$(this).val()].dataset);
-    });
-
-    my.selected = function(callback) {
-        listeners.push(callback);
-    };
-
-    my.handleSelected = function(selected) {
-        listeners.forEach(function(callback) {
-            callback(selected);
-        });
-    };
-
-    my.datasets = function() {
-        return datasets;
-    }
-
-    my.select = function(index) {
-        var child = el.children()[index];
-        if (child) {
-            $(child).attr("selected", "selected");
-            el.change();
-        }
-    };
-
-    var options = datasets.map(function(dataset, index) {
-        return $("<option>").attr("value", index)
-            .html(dataset.title);
-    });
-
-    el.append(options);
-
-    return my;
-}
-
-function Histogram(dataset) {
-    var my = {};
-
-    my.get = function() {
-        return dataset;
-    };
-
-    return my;
-}
-
-function HistogramController(element, model, config) {
-    var histogram = bioplot.histogram(),
-        scheme,
         my = {};
 
-    my.setModel = function(newModel) {
-        model = newModel;
-        setTimeout(update, 200);
+        my.loadPlots = function(json) {
+            var keys,
+                type,
+                layer,
+                source,
+                reference;
+
+            genomes = json.genomes;
+
+            for(layer in json.layers) {
+                type = Object.keys(json.layers[layer].data)[0];
+                for (reference in json.layers[layer].data[type]) {
+                    for (source in json.layers[layer].data[type][reference]) {
+                        pairs.push([reference, source]);
+                    }
+                }
+            }
+
+            // generate plots
+            keys = pairs.pop();
+            data = generatePlot(keys[0], keys[1], json.layers, metric, sort);
+
+            var handler =  function() {
+                var active = [],
+                    index,
+                    layer,
+                    new_layer,
+                    lines,
+                    rects,
+                    points,
+                    ids = _.keys(data.layers).reverse();
+
+                for (index = 0; index < ids.length; index++) {
+                    if (data.layers[ids[index]].enabled) {
+                        layer = data.layers[ids[index]];
+                        new_layer = _.clone(layer);
+
+                        lines = layer.lines || {};
+                        rects = layer.rects || {};
+                        points = layer.points || {};
+
+                        if (ids[index] === filter.name && !filter.empty()) {
+                            new_layer.lines = _.values(_.pick(lines, filter.indices));
+                            new_layer.rects = _.values(_.pick(rects, filter.indices));
+                            new_layer.points = _.values(_.pick(points, filter.indices));
+                        } else {
+                            new_layer.lines = _.values(lines);
+                            new_layer.rects = _.values(rects);
+                            new_layer.points = _.values(points);
+                        }
+
+                        active.push(new_layer);
+                    }
+                }
+
+                return active;
+            };
+
+            var plot = new DotPlot(element, {
+                size: { width: 1000, height: 800 },
+                genomes: [{
+                    name: data.xtitle,
+                    length: data.xtotal,
+                    chromosomes: data.xlabels,
+                    fetchDataHandler: handler
+                },
+                {
+                    name: data.ytitle,
+                    length: data.ytotal,
+                    chromosomes: data.ylabels,
+                    fetchDataHandler: handler
+                }],
+                fetchDataHandler: handler,
+                style: {
+                    position: "relative",
+                    minHeight: "800px"
+                }
+            });
+
+            plot.redraw();
+
+            plots.length = 0;
+            plots.push({
+                "data": data,
+                "plot": plot
+            });
+        }
+
+        my.toggleLayer = function(layerId, enabled) {
+            var index;
+
+            for(index = 0; index < plots.length; index++) {
+                if (plots[index].data.layers[layerId]) {
+                    plots[index].data.layers[layerId].enabled = enabled;
+                    plots[index].plot.redraw();
+                }
+            }
+        }
+
+        my.filter = function(indices) {
+            filter.clear();
+            filter.add(indices);
+            my.update();
+        };
+
+        my.update = function() {
+            for(index = 0; index < plots.length; index++) {
+                plots[index].plot.redraw();
+            }
+        };
+
+        my.getLayer = function(layerId) {
+            return plots[0].data.layers[layerId];
+        };
+
+        my.reset = function() {
+            var index;
+
+            for(index = 0; index < plots.length; index++) {
+                plots[index].plot.reset();
+            }
+        };
+
+        function generatePlot(genome1, genome2, layers, metric, by) {
+            var xlabels,
+                ylabels,
+                xtotal,
+                ytotal,
+                layers;
+
+            // Construct labels with property axis and offsets
+            // x is flipped to sort by maximum value
+            // y is not flipped because increasing value is down in canvas
+            xlabels = generateLabels(genomes[genome1].chromosomes, metric, inverse(by));
+            ylabels = generateLabels(genomes[genome2].chromosomes, metric, inverse(by));
+
+            // Generate the layers
+            layers = createAllLayers(layers, genome1, genome2, xlabels, ylabels);
+
+            return {
+                "xtitle": genomes[genome1].name,
+                "ytitle" : genomes[genome2].name,
+                "xlabels": xlabels,
+                "ylabels": ylabels,
+                "xtotal": sum(xlabels.map(pick("length"))),
+                "ytotal": sum(ylabels.map(pick("length"))),
+                "layers": layers
+            };
+        }
+
+        function generateLabels(chromosomes, metric, by) {
+            return orderBy(getLengths(chromosomes, metric), by);
+        }
+
+        function getLengths(chromosomes, prop) {
+            return chromosomes.map(function(x) {
+                return { name : x.name, length: x[prop] };
+            });
+        }
+
+        function orderBy(chromosomes, by) {
+            return chromosomes.sort(by);
+        };
+
+        function offsets(chromosomes) {
+            return scan(add, 0, chromosomes.map(pick("length")));
+        };
+
+        function generateIndexBy(collection, by) {
+            var index = {};
+
+            for(i = 0; i < collection.length; i++) {
+                index[by(collection[i])] = i;
+            };
+
+            return index;
+        };
+
+        function createAllLayers(layers, genome1, genome2, xlabels, ylabels) {
+            var xindex = generateIndexBy(xlabels, pick("name")),
+                yindex = generateIndexBy(ylabels, pick("name")),
+                xoffsets = offsets(xlabels),
+                // For Canvas coordinates the chromosome should be offset
+                // starting from the end of its length
+                yoffsets = offsets(ylabels),//.slice(1),
+                output = {},
+                create,
+                layerId,
+                rawLayers,
+                transformedLayers;
+
+            create = createLayer.bind(null, genome1, genome2, xoffsets, yoffsets,
+                        xindex, yindex);
+
+            layerIds = Object.keys(layers);
+            rawLayers = getValues(layers);
+            transformedLayers = rawLayers.map(create);
+
+            return _.object(_.zip(layerIds, transformedLayers));
+        }
+
+        function createLayer(genome1, genome2, xoffset, yoffset, xindex, yindex, layer) {
+            var style = layer.style || (style = {}),
+                enabled = layer.enabled || false,
+                points,
+                rects,
+                lines,
+                raw;
+
+            if (layer.data.points) {
+                raw = layer.data.points[genome1][genome2];
+                points = transformBy(raw, xoffset, yoffset, xindex, yindex, transformPoint);
+            }
+
+            if (layer.data.lines) {
+                raw = layer.data.lines[genome1][genome2]
+                lines = transformBy(raw, xoffset, yoffset, xindex, yindex, transformLine);
+            }
+
+            if (layer.data.rects) {
+                raw = layer.data.rects[genome1][genome2];
+                rects = transformBy(raw, xoffset, yoffset, xindex, yindex, transformRect);
+            }
+
+            return {
+                "enabled": enabled,
+                "style": style,
+                "points": points,
+                "lines": lines,
+                "rects": rects
+            };
+        }
+
+        function transformBy(gridLayer, rowOffset, colOffset, rowIndex, colIndex, transform) {
+            var row,
+                col,
+                r,
+                c,
+                data,
+                transformed,
+                collection = [];
+
+            for(row in gridLayer) {
+                for (col in gridLayer[row]) {
+                    r = rowOffset[rowIndex[row]];
+                    c = colOffset[colIndex[col]];
+                    data = gridLayer[row][col];
+
+                    if (data !== undefined)  {
+                        indexes = _.keys(data);
+                        values = _.values(data);
+                        transformed = values.map(transform.bind(undefined, r, c));
+                        collection = [].concat.call(collection, _.zip(indexes, transformed));
+                    }
+                }
+            }
+
+            return _.object(collection);
+        }
+
+        // mdb
+    //    function toCanvasRow(offset, position) {
+    //        return offset - position;
+    //    }
+
+        function transformPoint(rowoffset, colOffset, point) {
+            return {
+                x: point[0] + rowOffset,
+                y: point[1] + colOffset //toCanvasRow(colOffset, point[1]), // mdb
+            };
+        }
+
+        function transformLine(rowOffset, colOffset, line) {
+            return {
+                x1: line[0] + rowOffset,
+                x2: line[1] + rowOffset,
+                y1: line[2] + colOffset, //toCanvasRow(colOffset, line[2]), // mdb
+                y2: line[3] + colOffset  //toCanvasRow(colOffset, line[3])  // mdb
+            };
+        }
+
+        function transformRect(rowOffset, colOffset, rect) {
+            var width = Math.abs(rect[0] - rect[1]),
+                height = Math.abs(rect[2] - rect[3]),
+                x = Math.min(rect[0], rect[1]);
+                y = Math.min(rect[2], rect[3]);
+
+            return [x + rowOffset, y + colOffset, width, height];
+        }
+
+        return my;
     };
 
-    my.setColorScheme = function(colors) {
-        histogram.configure({colors: colors});
-        setTimeout(update, 200);
+    var Event = function() {
+        var listeners = [];
+        return {
+            attach: function(observer) {
+                listeners.push(observer);
+            },
+            notify: function(args) {
+                for(var i = 0; i < listeners.length; i++) {
+                    listeners[i](args);
+                }
+            }
+        };
     };
 
-    my.select = function(selection) {
-        model.get({selected: selection});
-    }
+    var Histogram = synmap.Histogram = function(element, model, config) {
+        var histogram = bioplot.histogram(),
+            selectionChange = Event(),
+            transform,
+            scheme,
+            my = {};
 
-    my.render = function() {
-        if(!model) return;
-        update();
-    }
+        my.onSelection = function(observer) {
+            selectionChange.attach(observer);
+        }
 
-    function update() {
-        var bins = histogram.bin(model.get());
-        histogram(element, bins);
-    }
+        my.setModel = function(newModel) {
+            model = newModel;
+            my.render();
+        };
 
-    return my;
-}
+        my.setTransform = function(func) {
+            model.setTransform(func);
+            my.render();
+        };
+
+        my.colors = function() {
+            var pairs = model.get({pairs: true});
+            var colors = _.map(_.map(pairs, _.last), histogram.color());
+
+            return _.object(_.map(pairs, _.first), colors);
+        }
+
+        my.setColorScheme = function(colors) {
+            histogram.configure({colors: colors});
+            my.render();
+        };
+
+        my.select = function(selection) {
+            model.get({selected: selection});
+        }
+
+        my.render = function() {
+            var pairs = model.get({pairs: true});
+            var bins = histogram.bin(pairs, lastElement);
+            histogram(element, bins);
+        }
+
+        histogram.on("selected", function(selection) {
+            // Publish the list of selected indices
+            selectionChange.notify(_.map(selection, _.first));
+        });
+
+        return my;
+    };
+
+    var Dataset = synmap.Dataset = function(dataset) {
+        var my = {},
+            transform = undefined,
+            keys = Object.keys(dataset);
+
+        my.layer = function(dataset) {
+            return dataset.layer;
+        };
+
+        my.setTransform = function(func) {
+            if (_.isFunction(func)) {
+                transform = func;
+            }
+        }
+
+        my.get = function(attr) {
+            var values;
+
+            if (transform === undefined) {
+                values = _.values(dataset);
+            } else {
+                values = transform(_.values(dataset));
+            }
+
+            if (_.isObject(attr) && attr.pairs) {
+                return _.zip(keys, values);
+            }
+
+            if (_.isNumber(attr)){
+                return values[attr];
+            }
+
+            return values;
+        };
+
+        return my;
+    };
+
+    var Dropdown = synmap.Dropdown = function(element, datasets) {
+        var my = {},
+            listeners = [],
+            el = $(element);
+
+        el.on("change", function(e) {
+            my.handleSelected(datasets[$(this).val()].data);
+        });
+
+        my.selected = function(callback) {
+            listeners.push(callback);
+        };
+
+        my.handleSelected = function(selected) {
+            listeners.forEach(function(callback) {
+                callback(selected);
+            });
+        };
+
+        my.datasets = function() {
+            return datasets;
+        };
+
+        my.select = function(index) {
+            var child = el.children()[index];
+            if (child) {
+                $(child).attr("selected", "selected");
+                el.change();
+            }
+        };
+
+        var options = Object.keys(datasets).map(function(dataset, index) {
+            return $("<option>").attr("value", index)
+                .attr("value", dataset)
+                .html(datasets[dataset].title);
+        });
+
+        el.append(options);
+
+        return my;
+    };
+
+    var Filter = synmap.Filter = function(name, type) {
+        var id = _.uniqueId();
+
+        return {
+            id: id,
+            name:  name || ("Unnamed filter " + id),
+            indices: [],
+            enabled: true,
+            type: type || ("inclusive"),
+            toggle: function() {
+                this.enabled = !this.enabled;
+            },
+            empty: function() {
+                return !this.indices.length;
+            },
+            add: function(indice) {
+                if (_.isArray(indice)) {
+                    this.indices = _.union(indice);
+                } else {
+                    this.indices = _.union(arguments);
+                }
+            },
+            remove: function() {
+                this.indices = _.without(indices, arguments);
+            },
+            clear: function() {
+                this.indices.length = 0;
+            }
+        };
+    };
+
+    var FilterChain = synmap.FilterChain = function() {
+        var filters = [];
+
+        return {
+            indices: function() {
+                var enabled,
+                    grouped,
+                    inclusive,
+                    exclusive;
+
+                // Only use filters that are enabled
+                enabled = _.where(filters, {enabled: true});
+
+                grouped = _.groupBy(enabled, "type");
+                inclusive = _.flatten(_.pluck(grouped.inclusive, "indices"));
+                exclusive = _.flatten(_.pluck(grouped.exclusive, "indices"));
+
+                return _.difference(_.union(inclusive), _.union(exclusive));
+            },
+            addFilter: function(filter) {
+                var added = _.where(filters, {id: filter.id});
+
+                if (added.length === 0) {
+                    filters.push(filter);
+                }
+            },
+            removeFilter: function(id) {
+                filters = _.without(filters, this.get(id));
+            },
+            getFilter: function(id) {
+                return _.findWhere(filters, {"id": String(id)});
+            },
+            toggleFilter: function(id) {
+                var filter = this.get(id);
+                if (filter !== undefined) {
+                    filter = filter.toggle();
+                }
+            },
+            all: function() {
+                return slice.call(filters, 0);
+            }
+        };
+    };
+
+}(this.coge || (this.coge = {}), jQuery, _));

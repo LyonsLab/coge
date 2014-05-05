@@ -130,6 +130,16 @@ my $ksdata = get_ksdata(
     pairs => $pairs
 ) if $ks_db && -r $ks_db;
 
+my %ks_json;
+$ks_json{datasets}{histogram}{kn}{layer} = "syntenic_pairs";
+$ks_json{datasets}{histogram}{kn}{title} = "Ks Values";
+
+$ks_json{datasets}{histogram}{ks}{layer} = "syntenic_pairs";
+$ks_json{datasets}{histogram}{ks}{title} = "Kn Values";
+
+$ks_json{datasets}{features}{layer} = "syntenic_pairs";
+$ks_json{datasets}{features}{title} = "Features";
+
 #get dots for all matches
 get_dots(
     file      => $dagfile,
@@ -137,6 +147,8 @@ get_dots(
     org2      => $org2info,
     genomeid1 => $genomeid1,
     genomeid2 => $genomeid2,
+    ksdata    => $ksdata,
+    ks_json   => \%ks_json,
     json_data => \%all_pairs
 ) if defined $dagfile && -r $dagfile;
 
@@ -153,7 +165,7 @@ my $box_coords = get_dots(
 
 $base_data{layers}{syntenic_blocks}{data}{rects}{$genomeid1}{$genomeid2} = $box_coords;
 $base_data{layers}{syntenic_blocks}{style} = {
-    strokeStyle => "rgba(0, 155, 0, 0.6)"
+    strokeStyle => "rgba(25, 25, 25, 0.6)"
 };
 
 #write out JSON file of dots"
@@ -189,6 +201,7 @@ sub get_dots {
     my $genomeid1 = $opts{genomeid1};
     my $genomeid2 = $opts{genomeid2};
     my $ksdata    = $opts{ksdata};
+    my $ks_json   = $opts{ks_json};
     my $json_data =
       $opts{json_data}; #EL: 9/12/2013: holder for data to be converted to a JSON string to test better dotplot viewer
     my $syntenic_pairs =
@@ -210,24 +223,28 @@ sub get_dots {
     #for storing bounds of syntenic blocks
     my ($block_min_gene_1, $block_min_gene_2,  $block_max_gene_1, $block_max_gene_2);
 
-    my $count = 0;
+    my ($count, $block_count) = (0, 0);
     while (<IN>) {
         chomp;
         if (/^#/) {
-            push @{$boxes->{$block_chr1}{$block_chr2}},
+            my $block = [int($block_min_nt_1), int($block_max_nt_1), int($block_min_nt_2), int($block_max_nt_2)];
 
-       #coordinates is an array of values with: start1, stop1, start2, stop2
-       [int($block_min_nt_1), int($block_max_nt_1), int($block_min_nt_2), int($block_max_nt_2)]
-       #nucleotides=>[int($block_min_nt_1), int($block_max_nt_1), int($block_min_nt_2), int($block_max_nt_2)],
-       #genes=>[int($block_min_gene_1), int($block_max_gene_1), int($block_min_gene_2), int($block_max_gene_2)],
-            if defined $block_min_nt_1
-                  && defined $block_min_nt_2
-                  && defined $block_max_nt_1
-                  && defined $block_max_nt_2
-                  && defined $block_min_gene_1
-                  && defined $block_min_gene_2
-                  && defined $block_max_gene_1
-                  && defined $block_max_gene_2;
+            if (defined $block_min_nt_1
+                && defined $block_min_nt_2
+                && defined $block_max_nt_1
+                && defined $block_max_nt_2
+                && defined $block_min_gene_1
+                && defined $block_min_gene_2
+                && defined $block_max_gene_1
+                && defined $block_max_gene_2) {
+
+                $boxes->{$block_chr1}{$block_chr2}{$block_count} = $block;
+                #coordinates is an array of values with: start1, stop1, start2, stop2
+                #nucleotides=>[int($block_min_nt_1), int($block_max_nt_1), int($block_min_nt_2), int($block_max_nt_2)],
+                #genes=>[int($block_min_gene_1), int($block_max_gene_1), int($block_min_gene_2), int($block_max_gene_2)],
+                $block_count++;
+            };
+
             $block_min_nt_1   = undef;
             $block_min_nt_2   = undef;
             $block_max_nt_1   = undef;
@@ -298,13 +315,19 @@ sub get_dots {
             $e2 = int($org2->{$chr2}{length}) - $e2;
         }
 
+        if ($ks_vals) {
+            $ks_json{datasets}{features}{data}{$count} = $ks_vals->{features};
+            $ks_json{datasets}{histogram}{kn}{data}{$count} = $ks_vals->{kn};
+            $ks_json{datasets}{histogram}{ks}{data}{$count} = $ks_vals->{ks};
+        }
+
         # Save coordinates as data point
         my $data_item = [$s1, $e1, $s2, $e2];
 
 #        $data_item->{ks_data} = $ks_vals
 #          if $ks_vals;    #check with Evan if missing data should still have key
 #          #push @{ $json_data->{data}->{$genomeid1}{$genomeid2}{$data_label}{$chr1}{$chr2}}, $data_item;
-        push @{ $json_data->{layers}->{$data_label}{data}{lines}{$genomeid1}{$genomeid2}{$chr1}{$chr2}}, $data_item;
+        $json_data->{layers}->{$data_label}{data}{lines}{$genomeid1}{$genomeid2}{$chr1}{$chr2}{$count} = $data_item;
 
         if ($syntenic_pairs) {
             $json_data->{layers}->{$data_label}{style} = {
@@ -336,7 +359,7 @@ sub get_dots {
     }
 
     close IN;
-    push @{$boxes->{$block_chr1}{$block_chr2}},
+    $boxes->{$block_chr1}{$block_chr2}{$block_count} =
        #coordinates is an array of values with: start1, stop1, start2, stop2
        [int($block_min_nt_1), int($block_max_nt_1), int($block_min_nt_2), int($block_max_nt_2)]
        #nucleotides=>[int($block_min_nt_1), int($block_max_nt_1), int($block_min_nt_2), int($block_max_nt_2)],
@@ -357,8 +380,8 @@ sub get_ksdata {
     my %opts  = @_;
     my $ks_db = $opts{ks_db};
     my $pairs = $opts{pairs};
-    my @data;
-    return \@data unless -r $ks_db;
+    my %data;
+    return \%data unless -r $ks_db;
     my $select = "select * from ks_data";
     my $dbh    = DBI->connect( "dbi:SQLite:dbname=$ks_db", "", "" );
     my $sth    = $dbh->prepare($select);
@@ -370,21 +393,22 @@ sub get_ksdata {
                 next;
             }
         }
+
         next unless $data->[3] && $data->[3] =~ /\d/;
-        my $item = {
-          fid1 =>  int($data->[1]),
-          fid2 =>  int($data->[2]),
-          ks   =>  $data->[3] + 0.0,
-          kn   =>  $data->[4] + 0.0,
+        my $fid1 = int($data->[1]);
+        my $fid2 = int($data->[2]);
+
+        $data{$fid1}{$fid2} = {
+            ks       =>  $data->[3] + 0.0,
+            kn       =>  $data->[4] + 0.0,
+            features => { fid1 =>  $fid1, fid2 =>  $fid2, },
         };
-
-        push @data, $item;
-
     }
+
     $sth->finish();
     undef $sth;
     $dbh->disconnect();
-    return \@data;
+    return \%data;
 }
 
 sub get_pairs {

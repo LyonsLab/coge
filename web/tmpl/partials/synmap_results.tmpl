@@ -66,11 +66,18 @@
     </div>
     <br>
     <div id="histogram" class="padded hidden">
-        <div class="toolbar" style="width: 200px;">
-            <label for="hist_data" class="bold">Histogram data</label>
+        <div class="toolbar">
+            <label for="hist_data">Dataset</label>
             <select id="hist_data">
             </select>
+            <span class="seperator"></span>
+            <label for="color_selector">Color Scheme</label>
             <select id="color_selector">
+            </select>
+            <span class="seperator"></span>
+
+            <label for="transform">Transformation</label>
+            <select id="transform">
             </select>
         </div>
     </div>
@@ -218,17 +225,12 @@
         </span>
     </li>
 </ul>
-<script src="js/d3/d3.v3.min.js"></script>
-<script src="js/jdot/src/dotplot2.js"></script>
-<script src="js/coge/utils.js"></script>
-<script src="js/coge/colors.js"></script>
-<script src="js/bioplot/dist/bioplot.js"></script>
-<link href="js/bioplot/dist/bioplot.min.css" rel="stylesheet" />
 <script>
 var BETA = "<tmpl_var name=beta>",
     SYNTENIC_URL = "<tmpl_var name=json>",
-    ALLPOINTS_URL = "<tmpl_var name=allpairs>";
-    HIST_URL = "<tmpl_var name=hist>";
+    ALLPOINTS_URL = "<tmpl_var name=allpairs>",
+    HIST_URL = "<tmpl_var name=hist>",
+    synmap = coge.synmap;
 
 $(document).ready(function(){
     var plots,
@@ -242,7 +244,7 @@ $(document).ready(function(){
         sortType = $("#sortType"),
         allpoints = $("#allpoints"),
         boxes = $("#boxes"),
-        histogram = HistogramController("#histogram"),
+        histogram = synmap.Histogram("#histogram"),
         MAXIMUM_SIZE = 268435456;
 
     $("#data").tabs({
@@ -286,7 +288,7 @@ $(document).ready(function(){
                         sortfunc = inverse(sortBy(sortField, compareAlphaNumeric));
                     }
 
-                    plots = synmap("dotplot", "nucleotides", sortfunc);
+                    plots = coge.synmap.PlotViewer("dotplot", "nucleotides", sortfunc);
                     plots.loadPlots(raw);
                     plots.toggleLayer("syntenic_pairs", true);
                     plots.toggleLayer("pairs", allpoints.is(":checked"));
@@ -336,7 +338,7 @@ $(document).ready(function(){
                             $.getJSON(ALLPOINTS_URL, function(json) {
                                 for (var layer in json.layers) {
                                     raw.layers[layer] = json.layers[layer];
-                                    sortHandler();
+                                    //sortHandler();
                                 }
                             });
                         } else {
@@ -357,30 +359,61 @@ $(document).ready(function(){
         });
     }
 
-    function loadHistogram(data) {
+    function loadHistogram(json) {
         $("#histogram").removeClass("hidden");
 
-        var ks = data.map(pick("ks")),
-            kn = data.map(pick("kn")),
-            select_data,
-            selector,
-            datasets;
+        var select_data,
+            models,
+            selector;
 
-        datasets = [
-            { title: "KS Values", dataset: Histogram(ks) },
-            { title: "KS Values (log10)", dataset: Histogram(transform(ks)) },
-            { title: "KN Values", dataset: Histogram(kn) },
-            { title: "KN Values (log10)", dataset: Histogram(transform(kn)) }
-        ];
-
-        histogram.setModel(datasets[0].dataset);
-
+        models = _.map(json.datasets.histogram, function(dataset) {
+            return {
+                title: dataset.title,
+                data: synmap.Dataset(dataset.data)
+            };
+        });
 
         color_selector = coge.color.dropdown("#color_selector");
-        color_selector.selected(histogram.setColorScheme);
+        color_selector.selected(function(colorScheme) {
+            histogram.setColorScheme(colorScheme);
+            updateColors();
+        });
+        data_selector = synmap.Dropdown("#hist_data", models);
+        data_selector.selected(function(model) {
+            histogram.setModel(model);
+            updateColors();
+        });
 
-        data_selector = synmap.dropdown("#hist_data", datasets);
-        data_selector.selected(histogram.setModel);
+
+        histogram.onSelection(plots.filter);
+
+        transform_selector = synmap.Dropdown("#transform", [
+            { title: "No transformation", data: function(x) { return x; }},
+            { title: "Log10", data: transform }
+        ]);
+
+        transform_selector.selected(function(func) {
+            histogram.setTransform(func);
+            updateColors();
+        });
+
+        // Update the model and color scheme
+        data_selector.select(0);
+        color_selector.select(0);
+    }
+
+    //FIXME: This should be something that is controlled by the plot
+    function updateColors() {
+        var layer = plots.getLayer("syntenic_pairs"),
+            colors = histogram.colors(transform);
+
+        for(var key in colors) {
+            if (key in layer.lines) {
+                layer.lines[key].color = colors[key];
+            }
+        }
+
+        plots.update();
     }
 
     function transform(data) {
