@@ -1247,10 +1247,12 @@ function checkRequestSize(url) {
     var Dropdown = synmap.Dropdown = function(element, datasets) {
         var my = {},
             listeners = [],
+            selectedIndex = 0,
             el = $(element);
 
         el.on("change", function(e) {
             my.handleSelected(datasets[$(this).val()].data);
+            selectedIndex = el.prop("selectedIndex");
         });
 
         my.selected = function(callback) {
@@ -1259,7 +1261,7 @@ function checkRequestSize(url) {
 
         my.handleSelected = function(selected) {
             listeners.forEach(function(callback) {
-                callback(selected);
+                callback(selected, selectedIndex);
             });
         };
 
