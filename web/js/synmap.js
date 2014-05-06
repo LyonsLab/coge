@@ -1171,10 +1171,14 @@ function checkRequestSize(url) {
             my.render();
         };
 
-        my.setTransform = function(func) {
-            model.setTransform(func);
+        my.setTransform = function(func, index) {
+            model.setTransform(func, index);
             my.render();
         };
+
+        my.getSelectedTransform = function() {
+            return model.getTransform();
+        }
 
         my.colors = function() {
             var pairs = model.get({pairs: true});
@@ -1209,17 +1213,23 @@ function checkRequestSize(url) {
     var Dataset = synmap.Dataset = function(dataset) {
         var my = {},
             transform = undefined,
+            transformIndex,
             keys = Object.keys(dataset);
 
         my.layer = function(dataset) {
             return dataset.layer;
         };
 
-        my.setTransform = function(func) {
+        my.setTransform = function(func, index) {
             if (_.isFunction(func)) {
                 transform = func;
+                transformIndex = index;
             }
-        }
+        };
+
+        my.getTransform = function() {
+            return transformIndex;
+        };
 
         my.get = function(attr) {
             var values;
@@ -1251,8 +1261,9 @@ function checkRequestSize(url) {
             el = $(element);
 
         el.on("change", function(e) {
+            selectedIndex = el.find("option:selected").val();
+
             my.handleSelected(datasets[$(this).val()].data);
-            selectedIndex = el.prop("selectedIndex");
         });
 
         my.selected = function(callback) {
@@ -1278,8 +1289,8 @@ function checkRequestSize(url) {
         };
 
         var options = Object.keys(datasets).map(function(dataset, index) {
-            return $("<option>").attr("value", index)
-                .attr("value", dataset)
+            return $("<option>")
+                .attr("value", index)
                 .html(datasets[dataset].title);
         });
 
