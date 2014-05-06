@@ -838,7 +838,7 @@ function checkRequestSize(url) {
     var ArrayProto = Array.prototype.slice;
     var slice = ArrayProto.slice;
 
-    var lastElement = function(x) { return _.last(x, 1); };
+    var lastElement = function(x) { return _.last(x); };
 
     var PlotViewer = synmap.PlotViewer = function(element, metric, sort) {
         var genomes,
