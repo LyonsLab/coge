@@ -753,18 +753,6 @@ function pick(attribute) {
     };
 };
 
-function zip(coll1, coll2) {
-    var length = Math.min(coll1.length, coll2.length),
-        index,
-        zipped = [];
-
-    for(index = 0; index < length; index++) {
-        zipped.push([coll1[index], coll2[index]]);
-    }
-
-    return zipped;
-}
-
 function scan(func, initial, iterable) {
     var values = [initial],
         index;
