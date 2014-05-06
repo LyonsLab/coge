@@ -524,13 +524,12 @@ function export_gff() {
         // RESET DIALOG
         reset_dialog();
 
-        // Open status dialog right away
-        $('#export_dialog').dialog('open');
-        $('#export_log').html(
-                "<br>Copying this genomes's FASTA file to <br><br>" +
-                '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
-                + ''
-        );
+        var title = $("<h4>Generating gff file</h4>");
+
+        $("#export_log")
+            .html(title)
+            .append(note)
+
         $("#export_dialog")
             .unbind()
             .dialog({ title: "Exporting file", autoOpen: true});
