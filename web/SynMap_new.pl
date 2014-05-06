@@ -1434,7 +1434,8 @@ sub go {
     my $dupdist = defined( $opts{tdd} ) ? $opts{tdd} : 10;
 
     # dotplot options
-    my $regen_images      = ( $opts{regen_images} eq "true" ) ? 1 : 0;
+    my $regen = $opts{regen_images};
+    my $regen_images      = ( $regen && $regen eq "true" ) ? 1 : 0;
     my $job_title         = $opts{jobtitle};
     my $width             = $opts{width};
     my $axis_metric       = $opts{axis_metric};
@@ -2619,7 +2620,8 @@ sub get_results {
     my $dupdist = defined( $opts{tdd} ) ? $opts{tdd} : 10;
 
     # dotplot options
-    my $regen_images      = ( $opts{regen_images} eq "true" ) ? 1 : 0;
+    my $regen = $opts{regen_images};
+    my $regen_images      = ( $regen and $regen eq "true" ) ? 1 : 0;
     my $job_title         = $opts{jobtitle};
     my $width             = $opts{width};
     my $axis_metric       = $opts{axis_metric};
@@ -3145,7 +3147,8 @@ sub get_results {
 #        );
 
         # mdb added 9/20/13 issue 77
-        print STDERR "$feat_type1 $feat_type2\n";
+        print_debug(msg => "$feat_type1 $feat_type2");
+
         my $fasta1_url = _filename_to_link(
             url  => ( $feat_type1 eq "genomic" ? "services/JBrowse/service.pl/sequence/$dsgid1" : undef ),
             file => ( $feat_type1 eq "genomic" ? undef : $FASTADIR . "/$dsgid1-$feat_type1.fasta" ),
@@ -3207,8 +3210,11 @@ sub get_results {
             file => $merged_dagchainer_file,
             msg  => qq{Merged DAGChainer output}
         );
-    #merged dagchainer output is not specified in results.  This hack gets it there.
-    $dagchainer_url.=$merged_dag_url if -r $merged_dagchainer_file;
+
+        #merged dagchainer output is not specified in results.  This hack gets it there.
+        if ($merged_dagchainer_file and -r $merged_dagchainer_file) {
+            $dagchainer_url .= $merged_dag_url;
+        };
 
         my $quota_align_coverage_url = _filename_to_link(
             file => $quota_align_coverage,
@@ -3245,6 +3251,8 @@ sub get_results {
             file => $spa_file,
             msg  => qq{Syntenic Path Assembly mapping},
         );
+        $spa_url =\\ "";
+
         my $json_url = _filename_to_link(
             file => $json_file,
             msg  => qq{Dotplot JSON},
