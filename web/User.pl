@@ -615,7 +615,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
       HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
         SHARE_DIALOG => 1,
-        IS_EDITABLE  => $isEditable,
+        IS_EDITABLE  => $USER->is_admin || $isEditable,
         GROUP_LOOP =>
           [ sort { $a->{GROUP_NAME} cmp $b->{GROUP_NAME} } values %group_rows ],
         USER_LOOP => [
