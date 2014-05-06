@@ -13,12 +13,12 @@ use Data::Dumper;
 my $DEBUG = 0;
 my $COGE_DIR      = '/opt/apache/coge';
 my $INSTALL_DIR   = '/storage/coge/data/experiments';
-my $DELIMITER     = '\s*\"?\t\"?\s*';
+my $DELIMITER     = '\t';
 
 my $gid           = 16904; # ID for genome to assign experiments to
-my $data_dir      = '/home/mbomhoff/tmp/test';  # location of data files
-my $staging_dir   = '/home/mbomhoff/tmp/staging';           # temporary staging path
-my $metadata_file = '/home/mbomhoff/tmp/jmccurdy/51genos/dmr_genetic_influences_ip_array.txt'; # optional metadata file
+my $data_dir      = '/home/mbomhoff/tmp/jmccurdy2';  # location of data files
+my $staging_dir   = '/home/mbomhoff/tmp/staging';    # temporary staging path
+my $metadata_file = '/home/mbomhoff/tmp/jmccurdy2/chipseq/chip-seq-sample.txt'; # optional metadata file
 my $user          = 'mbomhoff';     # owner
 my $source        = 'Matt Bomhoff'; # default source if not specified in metadata file
 my $version       = '1';            # default version if not specified in metadata file
@@ -75,13 +75,17 @@ sub get_metadata {
                 print STDERR "load_all_experiments: error: empty header line\n";
                 exit(-1);
             }
-            #print STDERR join(",\n", @header),"\n";
+#            print STDERR Dumper \@header,"\n";
             next;
         }
         
         # Parse data line
         my @tok = map { trim($_) } split($DELIMITER, $line);
-        die if (@tok != @header);
+        if (@tok < @header) {
+            print STDERR "load_all_experiments: error: missing fields (", scalar(@tok), "<", scalar(@header), ") on line $lineNum\n";
+#            print STDERR Dumper \@tok,"\n";
+            exit(-1);
+        }
         my $i = 0;
         my %fields = map { $_ => $tok[$i++] } @header;
         #print STDERR Dumper \%fields, "\n";
