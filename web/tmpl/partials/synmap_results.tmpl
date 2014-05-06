@@ -271,7 +271,7 @@ $(document).ready(function(){
                         sortfunc = inverse(sortBy(sortField, compareAlphaNumeric));
                     }
 
-                    plots = coge.synmap.PlotViewer("dotplot", "nucleotides", sortfunc);
+                    plots = synmap.PlotViewer("dotplot", "nucleotides", sortfunc);
                     plots.loadPlots(raw);
                     plots.toggleLayer("syntenic_pairs", true);
                     plots.toggleLayer("pairs", allpoints.is(":checked"));
@@ -321,7 +321,10 @@ $(document).ready(function(){
                             $.getJSON(ALLPOINTS_URL, function(json) {
                                 for (var layer in json.layers) {
                                     raw.layers[layer] = json.layers[layer];
-                                    //sortHandler();
+                                    sortHandler();
+
+                                    //FIXME This should only be called when the file exists
+                                    $.getJSON(HIST_URL, loadHistogram);
                                 }
                             });
                         } else {
@@ -330,10 +333,10 @@ $(document).ready(function(){
                             label.css("border-bottom", "1px dotted");
                             allpoints.attr("disabled", "disabled");
                             allpoints.unbind();
-                        }
 
-                        //FIXME This should only be called when the file exists
-                        $.getJSON(HIST_URL, loadHistogram);
+                            //FIXME This should only be called when the file exists
+                            $.getJSON(HIST_URL, loadHistogram);
+                        }
 
                     });
                     sortHandler();
