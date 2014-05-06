@@ -359,6 +359,15 @@ $(document).ready(function(){
             };
         });
 
+        transform_selector = synmap.Dropdown("#transform", [
+            { title: "No transformation", data: function(x) { return x; }},
+            { title: "Log10", data: transform }
+        ]);
+        transform_selector.selected(function(func, index) {
+            histogram.setTransform(func, index);
+            updateColors();
+        });
+
         color_selector = coge.color.dropdown("#color_selector");
         color_selector.selected(function(colorScheme) {
             histogram.setColorScheme(colorScheme);
@@ -367,22 +376,17 @@ $(document).ready(function(){
         data_selector = synmap.Dropdown("#hist_data", models);
         data_selector.selected(function(model) {
             histogram.setModel(model);
+            var index = histogram.getSelectedTransform();
+            if (index !== undefined) {
+                transform_selector.select(index);
+            } else {
+                transform_selector.select(0);
+            }
+
             updateColors();
         });
-
 
         histogram.onSelection(plots.filter);
-
-        transform_selector = synmap.Dropdown("#transform", [
-            { title: "No transformation", data: function(x) { return x; }},
-            { title: "Log10", data: transform }
-        ]);
-
-        transform_selector.selected(function(func) {
-            histogram.setTransform(func);
-            updateColors();
-        });
-
         // Update the model and color scheme
         data_selector.select(0);
         color_selector.select(0);
