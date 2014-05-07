@@ -31,6 +31,8 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         	this.config.showHoverScores = 1;
         if (typeof(this.config.showLabels) == "undefined")
         	this.config.showLabels = 1;
+        if (typeof(this.config.showBackground) == "undefined")
+        	this.config.showBackground = 0;
     },
 
     _defaultConfig: function() {
@@ -141,6 +143,22 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         var originY = toY( dataScale.origin );
         var disableClipMarkers = this.config.disable_clip_markers;
 
+        // mdb added 5/7/14 issue 374 - add background bar so that zero values are visible
+        if (config.showBackground) {
+            dojo.forEach( features, function(f,i) {
+                var fRect = featureRects[i];
+                var score = ( f.get('score') > 0 ? 1 : -1 );
+                fRect.t = toY(score);
+                context.fillStyle = 'lightgray';
+                if( fRect.t <= canvasHeight ) { // if the rectangle is visible at all
+                    if (fRect.t <= originY) // bar goes upward
+                        context.fillRect( fRect.l, fRect.t, fRect.w, originY-fRect.t+1);
+                    else // downward
+                        context.fillRect( fRect.l, originY, fRect.w, fRect.t-originY+1 );
+                }
+            }, this );
+        }
+        
         // Note: transform cases below can be consolidated/optimized
         if (config.transformAverage) {
             var sum_f = [];
@@ -298,7 +316,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         
         // mdb added 4/2/14 - draw labels on top of bars, issue 346
         var prevStart, prevEnd;
-        if (this.config.showLabels && scale > this.config.style.labelScale) {
+        if (config.showLabels && scale > config.style.labelScale) {
             dojo.forEach( sorted, function(pair,i) {
                 var f = pair.feature;
                 var fRect = pair.featureRect;
@@ -567,6 +585,15 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                     checked: this.config.showLabels,
                     onClick: function(event) {
                         track.config.showLabels = this.checked;
+                        track.changed();
+                    }
+                },
+                {
+                    label: 'Show background',
+                    type: 'dijit/CheckedMenuItem',
+                    checked: this.config.showBackground,
+                    onClick: function(event) {
+                        track.config.showBackground = this.checked;
                         track.changed();
                     }
                 },
