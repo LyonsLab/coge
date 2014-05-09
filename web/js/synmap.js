@@ -1169,6 +1169,20 @@ function checkRequestSize(url) {
             selectionChange.attach(observer);
         }
 
+        my.el = function() {
+            return $(element)[0];
+        };
+
+        my.resize = function(size) {
+            var width = size.width - 25,
+                height = size.height - 120;
+
+            histogram.setSize(width, height);
+            var pairs = model.get({pairs: true});
+            var bins = histogram.bin(pairs, lastElement);
+            histogram(element, bins);
+        };
+
         my.setModel = function(newModel) {
             model = newModel;
             my.render();
@@ -1191,7 +1205,7 @@ function checkRequestSize(url) {
         }
 
         my.setColorScheme = function(colors) {
-            histogram.configure({colors: colors});
+            histogram.setColors(colors);
             my.render();
         };
 
