@@ -27,7 +27,7 @@
     dotplot viewer.<br><br>
 <b>Use the mouse scroll wheel to zoom in/out, the left button to pan (when zoomed in), and shift+left button to select a region.</b>
     </div>
-    <div class="toolbar">
+    <h3 class="toolbar">
         <input type="checkbox" id="allpoints">
         <label for="allpoints">Show non-syntenic matches</label>
         <span class="seperator"></span>
@@ -42,14 +42,14 @@
             <option value="name">Name</option>
         </select>
         <button id="sort">Sort</button>
-    </div>
+    </h3>
     <div id="dotplot-errors" class="padded alert"></div>
     <div id="dotplot" style="margin-top: 10px;">
         <tmpl_include name="../widgets/Spinner.tmpl">
     </div>
     <br>
     <div id="histogram" class="padded hidden">
-        <div class="toolbar">
+        <h3 class="toolbar">
             <label for="hist_data">Dataset</label>
             <select id="hist_data">
             </select>
@@ -62,7 +62,7 @@
             <label for="transform">Transformation</label>
             <select id="transform">
             </select>
-        </div>
+        </h3>
     </div>
 </div>
 <div id="results-1" class="hidden">
@@ -273,6 +273,7 @@ $(document).ready(function(){
 
                     plots = synmap.PlotViewer(dotplot[0], "nucleotides", sortfunc);
                     synmap.Resizable(plots);
+                    synmap.Draggable(plots);
 
                     plots.loadPlots(raw);
                     plots.toggleLayer("syntenic_pairs", true);
@@ -394,6 +395,7 @@ $(document).ready(function(){
         color_selector.select(0);
 
         synmap.Resizable(histogram);
+        synmap.Draggable(histogram);
     }
 
     //FIXME: This should be something that is controlled by the plot

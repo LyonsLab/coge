@@ -857,6 +857,17 @@ function checkRequestSize(url) {
         return view;
     };
 
+    var Draggable = synmap.Draggable = function(view) {
+        var el = $(view.el());
+
+        el.draggable({
+            handle: "h3",
+            containment: "parent",
+        });
+
+        return view;
+    };
+
     var PlotViewer = synmap.PlotViewer = function(element, metric, sort) {
         var genomes,
             pairs = [],
