@@ -873,6 +873,7 @@ function checkRequestSize(url) {
             pairs = [],
             plots = [],
             filter = Filter("syntenic_pairs"),
+            builder = PlotBuilder(),
             my = {};
 
         my.el = function(_) {
@@ -886,8 +887,6 @@ function checkRequestSize(url) {
                 source,
                 reference;
 
-            genomes = json.genomes;
-
             for(layer in json.layers) {
                 type = Object.keys(json.layers[layer].data)[0];
                 for (reference in json.layers[layer].data[type]) {
@@ -897,9 +896,15 @@ function checkRequestSize(url) {
                 }
             }
 
-            // generate plots
             keys = pairs.pop();
-            data = generatePlot(keys[0], keys[1], json.layers, metric, sort);
+
+            // Create a new dotplot
+            builder.loadJSON(json);
+            builder.setAxisMetric(metric);
+            builder.setChromosomeSort(sort);
+            builder.setReference(keys[0]);
+            builder.setSource(keys[1]);
+            data = builder.get();
 
             var handler =  function() {
                 var active = [],
@@ -1002,32 +1007,87 @@ function checkRequestSize(url) {
             }
         };
 
-        function generatePlot(genome1, genome2, layers, metric, by) {
+        return my;
+    };
+
+    var PlotBuilder = function() {
+        var my = {},
+            genomes = {},
+            layers = {},
+            by = undefined,
+            metric = "nucleotides",
+            source,
+            reference;
+
+        my.setChromosomeSort = function(func) {
+            by = func;
+        };
+
+        my.setAxisMetric = function(new_metric) {
+            metric = new_metric;
+        };
+
+        my.setSource = function(src) {
+            source = src;
+        }
+
+        my.setReference = function(ref) {
+            reference = ref;
+        };
+
+        my.addGenome = function(id, data) {
+            genomes[id] = data;
+        };
+
+        my.addLayer = function(id, data) {
+            layers[id] = data;
+        };
+
+        my.loadJSON = function(json) {
+            // Add genomes
+            _.each(json.genomes, function(data, id) {
+                my.addGenome(id, data);
+            });
+
+            // Add layers
+            _.each(json.layers, function(layer, id) {
+                my.addLayer(id, layer);
+            });
+        };
+
+        my.get = function() {
             var xlabels,
                 ylabels,
                 xtotal,
                 ytotal,
-                layers;
+                new_layers,
+                genome1 = genomes[reference],
+                genome2 = genomes[source];
+
+            // Check if we have any genomes
+            if (genome1 === undefined || genome2 === undefined) {
+                return;
+            };
 
             // Construct labels with property axis and offsets
             // x is flipped to sort by maximum value
             // y is not flipped because increasing value is down in canvas
-            xlabels = generateLabels(genomes[genome1].chromosomes, metric, inverse(by));
-            ylabels = generateLabels(genomes[genome2].chromosomes, metric, inverse(by));
+            xlabels = generateLabels(genome1.chromosomes, metric, inverse(by));
+            ylabels = generateLabels(genome2.chromosomes, metric, inverse(by));
 
             // Generate the layers
-            layers = createAllLayers(layers, genome1, genome2, xlabels, ylabels);
+            new_layers = createAllLayers(xlabels, ylabels);
 
             return {
-                "xtitle": genomes[genome1].name,
-                "ytitle" : genomes[genome2].name,
+                "xtitle": genome1.name,
+                "ytitle" : genome2.name,
                 "xlabels": xlabels,
                 "ylabels": ylabels,
                 "xtotal": sum(xlabels.map(pick("length"))),
                 "ytotal": sum(ylabels.map(pick("length"))),
-                "layers": layers
+                "layers": new_layers
             };
-        }
+        };
 
         function generateLabels(chromosomes, metric, by) {
             return orderBy(getLengths(chromosomes, metric), by);
@@ -1045,7 +1105,7 @@ function checkRequestSize(url) {
 
         function offsets(chromosomes) {
             return scan(add, 0, chromosomes.map(pick("length")));
-        };
+        }
 
         function generateIndexBy(collection, by) {
             var index = {};
@@ -1055,9 +1115,9 @@ function checkRequestSize(url) {
             };
 
             return index;
-        };
+        }
 
-        function createAllLayers(layers, genome1, genome2, xlabels, ylabels) {
+        function createAllLayers(xlabels, ylabels) {
             var xindex = generateIndexBy(xlabels, pick("name")),
                 yindex = generateIndexBy(ylabels, pick("name")),
                 xoffsets = offsets(xlabels),
@@ -1070,8 +1130,7 @@ function checkRequestSize(url) {
                 rawLayers,
                 transformedLayers;
 
-            create = createLayer.bind(null, genome1, genome2, xoffsets, yoffsets,
-                        xindex, yindex);
+            create = createLayer.bind(null, xoffsets, yoffsets, xindex, yindex);
 
             layerIds = Object.keys(layers);
             rawLayers = getValues(layers);
@@ -1080,7 +1139,7 @@ function checkRequestSize(url) {
             return _.object(_.zip(layerIds, transformedLayers));
         }
 
-        function createLayer(genome1, genome2, xoffset, yoffset, xindex, yindex, layer) {
+        function createLayer(xoffset, yoffset, xindex, yindex, layer) {
             var style = layer.style || (style = {}),
                 enabled = layer.enabled || false,
                 points,
@@ -1089,17 +1148,17 @@ function checkRequestSize(url) {
                 raw;
 
             if (layer.data.points) {
-                raw = layer.data.points[genome1][genome2];
+                raw = layer.data.points[reference][source];
                 points = transformBy(raw, xoffset, yoffset, xindex, yindex, transformPoint);
             }
 
             if (layer.data.lines) {
-                raw = layer.data.lines[genome1][genome2]
+                raw = layer.data.lines[reference][source]
                 lines = transformBy(raw, xoffset, yoffset, xindex, yindex, transformLine);
             }
 
             if (layer.data.rects) {
-                raw = layer.data.rects[genome1][genome2];
+                raw = layer.data.rects[reference][source];
                 rects = transformBy(raw, xoffset, yoffset, xindex, yindex, transformRect);
             }
 
@@ -1138,11 +1197,6 @@ function checkRequestSize(url) {
 
             return _.object(collection);
         }
-
-        // mdb
-    //    function toCanvasRow(offset, position) {
-    //        return offset - position;
-    //    }
 
         function transformPoint(rowoffset, colOffset, point) {
             return {
