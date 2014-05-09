@@ -271,7 +271,8 @@ $(document).ready(function(){
                         sortfunc = inverse(sortBy(sortField, compareAlphaNumeric));
                     }
 
-                    plots = synmap.PlotViewer("dotplot", "nucleotides", sortfunc);
+                    plots = synmap.PlotViewer(dotplot[0], "nucleotides", sortfunc);
+
                     plots.loadPlots(raw);
                     plots.toggleLayer("syntenic_pairs", true);
                     plots.toggleLayer("pairs", allpoints.is(":checked"));
