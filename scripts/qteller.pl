@@ -352,7 +352,7 @@ sub create_cutadapt_job {
         script => undef,
         args => [
             ['-q', 25, 0],
-            ['--quality-base=64', '', 0],
+            #['--quality-base=64', '', 0],
             ['-m', 17, 0],
             ['', $fastq, 1],
             ['-o', $name . '.trimmed.fastq', 1],
