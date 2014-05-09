@@ -376,9 +376,9 @@ sub self_or_default {    #adapted from CGI.pm
 
 sub node_types {
     my $self  = shift;
-    my %opts  = @_;
     my %types = (
         list       => 1,
+        notebook   => 1,   # alias for list
         genome     => 2,
         experiment => 3,
         feature    => 4,
@@ -387,6 +387,15 @@ sub node_types {
         group      => 6    # alias for user_group
     );
     return wantarray ? %types : \%types;
+}
+
+sub node_type_name {
+    my $self = shift;
+    my $type_id = shift;
+    my $node_types = $self->node_types;
+    my ($type_name) = grep { $node_types->{$_} eq $type_id } keys %$node_types;
+    $type_name = 'notebook' if ( $type_name eq 'list' );
+    return $type_name;
 }
 
 1;
