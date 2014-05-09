@@ -243,6 +243,10 @@ $(document).ready(function(){
 
     function setup() {
         var request = checkRequestSize(SYNTENIC_URL);
+            plots = synmap.PlotViewer(dotplot[0], "nucleotides");
+
+        synmap.Resizable(plots);
+        synmap.Draggable(plots);
 
         request.then(function() {
             var size;
@@ -271,10 +275,7 @@ $(document).ready(function(){
                         sortfunc = inverse(sortBy(sortField, compareAlphaNumeric));
                     }
 
-                    plots = synmap.PlotViewer(dotplot[0], "nucleotides", sortfunc);
-                    synmap.Resizable(plots);
-                    synmap.Draggable(plots);
-
+                    plots.setSort(sortfunc);
                     plots.loadPlots(raw);
                     plots.toggleLayer("syntenic_pairs", true);
                     plots.toggleLayer("pairs", allpoints.is(":checked"));
@@ -396,6 +397,9 @@ $(document).ready(function(){
 
         synmap.Resizable(histogram);
         synmap.Draggable(histogram);
+
+        // attach color scheme updating to change event
+        plots.onChanged(updateColors);
     }
 
     //FIXME: This should be something that is controlled by the plot
