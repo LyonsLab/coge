@@ -840,6 +840,23 @@ function checkRequestSize(url) {
 
     var lastElement = function(x) { return _.last(x); };
 
+    var Resizable = synmap.Resizable = function(view, classes) {
+        var el = $(view.el()),
+            resize = _.debounce(view.resize, 300);
+
+        classes || (classes = "ui-widget-content ui-corner-all");
+
+        el.resizable({
+            minWidth: 300,
+            minHeight: 300,
+            resize: function(e, ui) {
+                resize(ui.size);
+            }
+        }).addClass(classes);
+
+        return view;
+    };
+
     var PlotViewer = synmap.PlotViewer = function(element, metric, sort) {
         var genomes,
             pairs = [],
