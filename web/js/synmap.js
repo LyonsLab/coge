@@ -868,13 +868,19 @@ function checkRequestSize(url) {
         return view;
     };
 
-    var PlotViewer = synmap.PlotViewer = function(element, metric, sort) {
+    var PlotViewer = synmap.PlotViewer = function(element, metric) {
         var genomes,
             pairs = [],
             plots = [],
+            sort,
             filter = Filter("syntenic_pairs"),
             builder = PlotBuilder(),
+            changedEvent = Event();
             my = {};
+
+        my.onChanged = function(callback) {
+            changedEvent.attach(callback);
+        };
 
         my.el = function(_) {
             return element;
@@ -970,7 +976,13 @@ function checkRequestSize(url) {
                 "data": data,
                 "plot": plot
             });
-        }
+
+            changedEvent.notify();
+        };
+
+        my.setSort = function(func) {
+            sort = func;
+        };
 
         my.toggleLayer = function(layerId, enabled) {
             var index;
@@ -981,6 +993,8 @@ function checkRequestSize(url) {
                     plots[index].plot.redraw();
                 }
             }
+
+            changedEvent.notify();
         }
 
         my.filter = function(indices) {
