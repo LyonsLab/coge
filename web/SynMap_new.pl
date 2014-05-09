@@ -3425,7 +3425,6 @@ qq{<span id="clear" style="font-size: 0.8em" class="ui-button ui-corner-all"
     # -- otherwise it over-loads the stuff in the web-page already.
     # -- This can mess up other loaded js such as tablesoter
     my $output = $results->output;
-    $output =~ s/<script src="\/CoGe\/js\/jquery-1.3.2.js"><\/script>//g;
 
     return encode_json({ html => $output });
 }
