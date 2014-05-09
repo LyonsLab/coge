@@ -272,6 +272,7 @@ $(document).ready(function(){
                     }
 
                     plots = synmap.PlotViewer(dotplot[0], "nucleotides", sortfunc);
+                    synmap.Resizable(plots);
 
                     plots.loadPlots(raw);
                     plots.toggleLayer("syntenic_pairs", true);
@@ -391,6 +392,8 @@ $(document).ready(function(){
         // Update the model and color scheme
         data_selector.select(0);
         color_selector.select(0);
+
+        synmap.Resizable(histogram);
     }
 
     //FIXME: This should be something that is controlled by the plot
