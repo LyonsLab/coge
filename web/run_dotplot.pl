@@ -213,7 +213,7 @@ sub generate_dotplot {
     }
 
     $cmd .=
-qq{ -d $dag -a "$coords" -b "$outfile" -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 1 -chr1 "$qchr" -chr2 "$schr" -flip $flip -grid 1};
+qq{ -d $dag -a "$coords" -b "$outfile" -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 1 -chr1 "$qchr" -chr2 "$schr" -flip $flip -grid 1 -sa 1};
     $cmd .= qq{ -fid1 $fid1}       if $fid1;
     $cmd .= qq{ -fid2 $fid2}       if $fid2;
     $cmd .= qq { -am $metric}      if $metric;
