@@ -844,9 +844,12 @@ function checkRequestSize(url) {
         var genomes,
             pairs = [],
             plots = [],
-            filter = Filter("syntenic_pairs");
+            filter = Filter("syntenic_pairs"),
+            my = {};
 
-        my = {};
+        my.el = function(_) {
+            return element;
+        };
 
         my.loadPlots = function(json) {
             var keys,
@@ -906,7 +909,7 @@ function checkRequestSize(url) {
                 return active;
             };
 
-            var plot = new DotPlot(element, {
+            var plot = new DotPlot(element.id, {
                 size: { width: 1000, height: 800 },
                 genomes: [{
                     name: data.xtitle,
