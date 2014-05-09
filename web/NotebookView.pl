@@ -15,7 +15,7 @@ no warnings 'redefine';
 
 use vars
   qw($P $PAGE_TITLE $PAGE_NAME $TEMPDIR $USER $BASEFILE $coge %FUNCTION $EMBED
-  $FORM $TEMPDIR $TEMPURL $MAX_SEARCH_RESULTS $LINK);
+  $FORM $TEMPDIR $TEMPURL $MAX_SEARCH_RESULTS $LINK $node_types);
 
 $PAGE_TITLE = 'NotebookView';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
@@ -31,7 +31,7 @@ $TEMPURL = $P->{TEMPURL} . "$PAGE_TITLE/";
 
 $MAX_SEARCH_RESULTS = 1000;
 
-my $node_types = CoGeX::node_types();
+$node_types = $coge->node_types();
 
 %FUNCTION = (
     get_list_info              => \&get_list_info,
@@ -722,20 +722,29 @@ sub add_item_to_list {
     return 0 unless $item_spec;
 
     my ( $item_type, $item_id ) = split( /:/, $item_spec );
-
-#print STDERR "add_item_to_list: lid=$lid item_type=$item_type item_id=$item_id\n";
+    #print STDERR "add_item_to_list: lid=$lid item_type=$item_type item_id=$item_id\n";
 
     my $list = $coge->resultset('List')->find($lid);
     return 0 unless $list;
     return 0 if ( $list->locked && !$USER->is_admin );
-    return 0
-      unless ( $USER->is_admin || $USER->is_owner_editor( list => $lid ) );
+    return 0 unless ( $USER->is_admin || $USER->is_owner_editor( list => $lid ) );
 
     my $lc =
-      $coge->resultset('ListConnector')
-      ->find_or_create(
-        { parent_id => $lid, child_id => $item_id, child_type => $item_type } );
+      $coge->resultset('ListConnector')->find_or_create(
+        {   parent_id => $lid, 
+            child_id => $item_id, 
+            child_type => $item_type 
+        });
     return 0 unless $lc;
+    
+    my $type_name = $coge->node_type_name($item_type);
+    CoGe::Accessory::Web::log_history(
+        db          => $coge,
+        user_id     => $USER->id,
+        page        => "NotebookView",
+        description => "add $type_name id$item_id to notebook $lid",
+        link        => "NotebookView.pl?nid=$lid"
+    );
 
     return 1;
 }
@@ -748,19 +757,30 @@ sub remove_list_item {
     my $list = $coge->resultset('List')->find($lid);
     return 0 unless $list;
     return 0 if ( $list->locked && !$USER->is_admin );
-    return 0
-      unless ( $USER->is_admin || $USER->is_owner_editor( list => $lid ) );
+    return 0 unless ( $USER->is_admin || $USER->is_owner_editor( list => $lid ) );
 
     my $item_type = $opts{item_type};
     my $item_id   = $opts{item_id};
-
-#print STDERR "remove_list_item: lid=$lid item_type=$item_type item_id=$item_id\n";
+    #print STDERR "remove_list_item: lid=$lid item_type=$item_type item_id=$item_id\n";
 
     my $lc =
-      $coge->resultset('ListConnector')
-      ->find(
-        { parent_id => $lid, child_id => $item_id, child_type => $item_type } );
-    $lc->delete() if $lc;
+      $coge->resultset('ListConnector')->find(
+        {   parent_id => $lid, 
+            child_id => $item_id, 
+            child_type => $item_type 
+        });
+    if ($lc) {
+        $lc->delete();
+
+        my $type_name = $coge->node_type_name($item_type);
+        CoGe::Accessory::Web::log_history(
+            db          => $coge,
+            user_id     => $USER->id,
+            page        => "NotebookView",
+            description => "remove $type_name id$item_id from notebook $lid",
+            link        => "NotebookView.pl?nid=$lid"
+        );
+    }
 
     return 1;
 }
@@ -771,7 +791,7 @@ sub search_mystuff {
     my $search_term = $opts{search_term};
     my $timestamp   = $opts{timestamp};
 
-    #	print STDERR "$lid $search_term\n";
+    #print STDERR "$lid $search_term\n";
     return 0 unless $lid;
 
     # Get items already in list
