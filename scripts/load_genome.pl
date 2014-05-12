@@ -515,7 +515,7 @@ sub process_fasta_file {
     return $totalLength;
 }
 
-sub execute {
+sub execute { # FIXME move into Util.pm
     my $cmd = shift;
     print $log "$cmd\n";
     my @cmdOut    = qx{$cmd};
