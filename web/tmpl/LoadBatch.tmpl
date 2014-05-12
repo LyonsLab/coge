@@ -1,0 +1,564 @@
+<TMPL_IF NAME='MAIN'>
+<script type="text/javascript" src="js/coge/utils.js"></script>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
+
+<SCRIPT language="JavaScript">
+var timestamps = new Array();
+var load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
+var job_id = '<TMPL_VAR NAME="JOB_ID">';
+var status_url = '<TMPL_VAR NAME="STATUS_URL">';
+var experiment_id;
+var notebook_id;
+
+$(document).ready(function(){
+    $.ajaxSetup({
+        type: "GET",
+        url: '<TMPL_VAR NAME="PAGE_NAME">',
+        dataType: "html",
+        cache: false,
+    });
+
+    $(".dialog_box").dialog({autoOpen: false, width: 500});
+    $('#load_dialog').dialog("widget").find('.ui-dialog-titlebar-close').hide();
+    $('#load_dialog').dialog({modal: true, closeOnEscape: false})
+
+    $("#edit_genome").autocomplete({
+        source:[],
+        select: function(event, ui) {
+            $('#edit_genome').val(ui.item.label);
+            $('#gid').val(ui.item.value);
+            return false; // Prevent the widget from inserting the value.
+        },
+        focus: function(event, ui) {
+            //$("#edit_genome").val(ui.item.label);
+            return false; // Prevent the widget from inserting the value.
+        }
+    });
+
+    // Open status dialog
+    if ('<TMPL_VAR NAME="OPEN_STATUS">') {
+        $('#loading_msg').hide();
+        $('#load_dialog').dialog('open');
+        if (job_id) { // JEX status for FASTQ data type
+            update_dialog(status_url + job_id, "#load_dialog", progress_formatter);
+        }
+        else { // Log status for all other data types
+            setTimeout(function() { get_load_log(); }, 0);
+        }
+    }
+});
+
+function file_selected(filename, url) {
+    $('#file_select_dialog').dialog('close');
+    $('#select_file_button').hide();
+    $('#select_file_type').show();
+}
+
+function file_finished(size, url) {}
+
+function file_canceled() {
+    $('#select_file_type').hide()
+        .find("option[value=autodetect")
+        .prop("selected", true)
+        .change()
+
+    $('#select_file_button').show();
+}
+
+function reset_log() {
+    $('#load_log').html('');
+    $('#loading_msg').show();
+    $('#finished_msg').hide();
+    $('#error_msg').hide();
+    $('#ok_button').hide();
+    $('#finish_load_button').hide();
+    $('#cancel_load_button').hide();
+}
+
+function check_login() {
+    var logged_in = false;
+
+    $.ajax({
+        async: false,
+        data: {
+            fname: 'check_login',
+        },
+        success : function(rc) {
+            logged_in = rc;
+        }
+    });
+
+    return logged_in;
+}
+
+function load_batch() {
+    var name = $('#edit_name').val();
+    var description = $('#edit_description').val();
+    var genome = $('#edit_genome').val();
+    var gid = $('#gid').val();
+
+    if (!name) {
+        alert('Please specify an experiment name.');
+        return;
+    }
+    if (!genome || genome == 'Search') {
+        alert('Please specify a genome.');
+        return;
+    }
+
+    var items = get_selected_files();
+    if (items == null) {
+        alert('Files are still being transferred, please wait.');
+        return;
+    }
+    else if (items.length == 0) {
+        alert('Please select a data file.');
+        return;
+    }
+    var json = JSON.stringify(items);
+
+    var user_name = $('#edit_user').val(); // only exists if admin
+    if (user_name == 'Search') { user_name = ''; }
+
+    // Prevent concurrent executions - issue 101
+    if ( $("#load_dialog").dialog( "isOpen" ) )
+        return;
+
+    // Make sure user is still logged-in - issue 206
+    if (!check_login()) {
+        alert('Your session has expired, please log in again.');
+        location.reload(true)
+        return;
+    }
+
+    // Open status dialog right away - issue 101
+    reset_log();
+    $('#load_dialog').dialog('open');
+    $('#load_log').html('Initializing ...');
+
+    $.ajax({
+        data: {
+            fname: 'load_batch',
+            load_id: load_id,
+            name: name,
+            description: description,
+            gid: gid,
+            user_name: user_name,
+            items: json,
+            timestamp: new Date().getTime()
+        },
+        success : function(data) {
+            var obj = jQuery.parseJSON(data);
+            if (obj && obj.error) {
+                alert(obj.error);
+                return;
+            }
+
+            // Set link in status dialog
+            $('#loading_msg span a').attr('href', obj.link).html(obj.link);
+
+            // Start status update
+            if (obj.job_id) { // JEX status for load FASTQ
+                job_id = obj.job_id;
+                window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?job_id=" + obj.job_id + '&load_id=' + load_id); // Add job_id and load_id to browser URL
+                update_dialog(status_url + obj.job_id, "#load_dialog", progress_formatter);
+            }
+            else { // non-JEX old method for all other data types
+                window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?load_id=" + load_id); // Add load_id to browser URL
+                setTimeout(function() { get_load_log(); }, 1000);
+            }
+        }
+        // TODO: handle error, show in status dialog
+    });
+}
+
+function get_load_log(callback) {
+    $.ajax({
+        data: {
+            dataType: 'text',
+            fname: 'get_load_log',
+            load_id: load_id,
+            timestamp: new Date().getTime()
+        },
+        success : function(data) {
+            if (!data) { // workaround for issue #45, jquery intermittently dropping payload
+                setTimeout(function() { get_load_log(); }, 1000);
+                return;
+            }
+
+            var obj = jQuery.parseJSON(data);
+
+            if (callback) {
+                callback(obj);
+                return;
+            }
+
+            // Update log contents and scroll to bottom
+            $('#load_log').html(obj.log);
+            var height = $('#load_log')[0].scrollHeight;
+            $("#load_log").animate({ scrollTop: height}, 500);
+
+            if (obj.status == 1) { // finished successfully
+                load_succeeded(obj);
+            }
+            else if (obj.status == -1) { // error occurred
+                load_failed();
+            }
+            else { // not done yet, continue polling
+                setTimeout(function() { get_load_log(); }, 2000);
+            }
+        }
+    });
+}
+
+function load_failed() {
+    // Update dialog
+    $('#loading_msg').hide();
+    $('#error_msg').fadeIn();
+    $('#cancel_load_button').fadeIn();
+
+//    $.ajax({
+//        data: {
+//            fname: "send_error_report",
+//            load_id: load_id,
+//            job_id: job_id
+//        }
+//    });
+}
+
+function load_succeeded(obj) {
+    // Update globals
+    load_id = obj.new_load_id;          // for reusing page to load again
+    experiment_id = obj.experiment_id;  // for continuing to ExperimentView
+    notebook_id = obj.notebook_id;      // for continuing to NotebookView
+
+    // Update dialog
+
+    $('#loading_msg').hide();
+    $('#finished_msg').fadeIn();
+    $('#ok_button').fadeIn();
+    if (notebook_id) { // qTeller pipeline experiment load
+        $('#finish_load_button')
+            .html('NotebookView').fadeIn()
+            .unbind().on('click', function() {
+                window.location.href = "NotebookView.pl?nid=" + notebook_id;
+        });
+    }
+    else { // normal experiment load
+        $('#finish_load_button')
+            .html('ExperimentView').fadeIn()
+            .unbind().on('click', function() {
+                window.location.href = "ExperimentView.pl?eid=" + experiment_id;
+        });
+    }
+}
+
+function reset_load() {
+    window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>");
+    $('#load_dialog').dialog('close');
+
+    // Reset file selector
+    file_canceled();
+    clear_list();
+}
+
+function wait_to_search (search_func, search_obj) {
+    var search_term = search_obj.value;
+    if (!search_term || search_term.length >= 2) {
+        if (pageObj.time) {
+            clearTimeout(pageObj.time);
+        }
+
+        pageObj.time = setTimeout(
+            function() {
+                search_func(search_obj.value);
+            },
+            500
+        );
+    }
+}
+
+function search_genomes (search_term) {
+    $.ajax({
+        data: {
+            fname: 'search_genomes',
+            search_term: search_term,
+            timestamp: new Date().getTime()
+        },
+        success : function(data) {
+            var obj = jQuery.parseJSON(data);
+            if (obj.items) {
+                obj.items.forEach(function(element) {
+                    element.label = element.label.replace(/&reg;/g, "\u00ae"); // (R)
+                });
+                $("#edit_genome").autocomplete({source: obj.items});
+                $("#edit_genome").autocomplete("search");
+            }
+        },
+    });
+}
+
+function search_users (search_term) {
+    $.ajax({
+        data: {
+            fname: 'search_users',
+            search_term: search_term,
+            timestamp: new Date().getTime()
+        },
+        success : function(data) {
+            var obj = jQuery.parseJSON(data);
+            if (obj && obj.items) {
+                $("#edit_user").autocomplete({source: obj.items});
+                $("#edit_user").autocomplete("search");
+            }
+        },
+    });
+}
+
+function get_sources () {
+    $.ajax({
+        data: {
+            fname: 'get_sources',
+        },
+        success : function(data) {
+            var obj = jQuery.parseJSON(data);
+            if (obj) {
+                $("#edit_source").autocomplete({source: obj});
+            }
+        },
+    });
+}
+
+function progress_formatter(item) {
+    var msg;
+    var row = $('<li>'+ item.description + ' </li>');
+    row.addClass('small');
+
+    var job_status = $('<span></span>');
+
+    if (item.status == 'scheduled') {
+        job_status.append(item.status);
+        job_status.addClass('down');
+        job_status.addClass('bold');
+    } else if (item.status == 'completed') {
+        job_status.append(item.status);
+        job_status.addClass('completed');
+        job_status.addClass('bold');
+    } else if (item.status == 'running') {
+        job_status.append(item.status);
+        job_status.addClass('running');
+        job_status.addClass('bold');
+    } else if (item.status == 'skipped') {
+        job_status.append("already generated");
+        job_status.addClass('skipped');
+        job_status.addClass('bold');
+    } else if (item.status == 'cancelled') {
+        job_status.append(item.status);
+        job_status.addClass('alert');
+        job_status.addClass('bold');
+    } else if (item.status == 'failed') {
+        job_status.append(item.status);
+        job_status.addClass('alert');
+        job_status.addClass('bold');
+    } else {
+        return;
+    }
+
+    row.append(job_status);
+
+    if (item.elapsed)  {
+        row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
+    }
+
+    return row;
+}
+
+function update_dialog(request, identifier, formatter) {
+    var get_status = function () {
+        $.ajax({
+            type: 'GET',
+            url: request,
+            dataType: 'json',
+            success: update_callback,
+            error: update_callback,
+        });
+    };
+
+    var update_callback = function(json) {
+        var dialog = $(identifier);
+        var workflow_status = $("<p></p>");
+        var data = $("<ul></ul>");
+        var results = [];
+        var current_status;
+        var timeout = 2000;
+
+        var callback = function() {
+            update_dialog(request, identifier, formatter);
+        }
+
+        if (json.error) {
+            pageObj.error++;
+            if (pageObj.error > 3) {
+                workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
+                load_failed();
+                return;
+            }
+        } else {
+            pageObj.error = 0;
+        }
+
+        if (json.status) {
+            current_status = json.status.toLowerCase();
+            workflow_status.html("Workflow status: ");
+            workflow_status.append($('<span></span>').html(json.status));
+            workflow_status.addClass('bold');
+        } else {
+            setTimeout(callback, timeout);
+            return;
+        }
+
+        if (json.jobs) {
+            var jobs = json.jobs;
+            for (var index = 0; index < jobs.length; index++) {
+                var item = formatter(jobs[index]);
+                if (item) {
+                    results.push(item);
+                }
+            }
+        }
+
+        if (!dialog.dialog('isOpen')) {
+            return;
+        }
+
+        //FIXME Update when a workflow supports elapsed time
+        if (current_status == "completed") {
+            var total = json.jobs.reduce(function(a, b) {
+                if (!b.elapsed) return a;
+
+                return a + b.elapsed;
+            }, 0);
+
+            var duration = coge.utils.toPrettyDuration(total);
+
+            workflow_status.append("<br>Finished in " + duration);
+            workflow_status.find('span').addClass('completed');
+            get_load_log(function(result) {
+                load_succeeded(result);
+            });
+
+        }
+        else if (current_status == "failed"
+                || current_status == "error"
+                || current_status == "terminated"
+                || current_status == "cancelled")
+        {
+            workflow_status.find('span').addClass('alert');
+            load_failed();
+        }
+        else if (current_status == "notfound") {
+            setTimeout(callback, timeout);
+            return;
+        }
+        else {
+            workflow_status.find('span').addClass('running');
+            setTimeout(callback, timeout);
+        }
+
+        results.push(workflow_status);
+        data.append(results);
+        dialog.find('#load_log').html(data);
+    };
+
+    get_status();
+}
+</SCRIPT>
+
+
+<table class="small ui-widget-content ui-corner-all">
+  <tr>
+    <td>Name:</td>
+    <td><input id="edit_name" type="textbox" size="50" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" /></td>
+  </tr>
+  <tr>
+    <td>Description:</td>
+    <td><textarea id="edit_description" rows="5" cols="50" ><TMPL_VAR NAME='DESC'></textarea></td>
+  </tr>
+  <tr>
+    <td>Genome:</td>
+    <td>
+      <input id="edit_genome" type="search" placeholder="Search" spellcheck="false" onkeypress="wait_to_search(search_genomes, this);" size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
+      <input id="gid" type="hidden" value="<TMPL_VAR NAME='GENOME_ID'>" />
+    </td>
+  </tr>
+  <tr>
+    <td style="vertical-align:middle;">Data file:</td>
+    <td>
+      <table id='file_table' class="small" style="display:inline;"></table>
+      <span id="select_file_button" onClick="$('#file_select_dialog').dialog('open');" class='ui-button ui-corner-all'> Select Data File</span>
+    </td>
+  </tr>
+</table>
+
+<br>
+<span onClick="load_batch();" style="font-size:1em;" class='ui-button ui-corner-all ui-button-go'>Load Experiment</span>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+
+<div id="file_select_dialog" class="dialog_box" title="Select Data File ..." style="display:none;">
+  <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
+  <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all">Done</span>
+</div>
+
+
+
+<div id="load_dialog" class="dialog_box" title="Loading Batch Experiments ..." style="display:none;">
+  <div id="load_log" class="small ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
+  </div>
+  <br>
+  <div id="loading_msg">
+    <span class="small" style="float:right;">Link: <a></a></span>
+    Please wait ... <img src="picts/ajax-loader.gif"/>
+  </div>
+  <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
+  <span id="error_msg" style="display:none;">An error occurred <img src="picts/thumbs_down.png"></span>
+  <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Load Another</span>
+  <span id="finish_load_button" style="display:none;float:right;" class="ui-button ui-corner-all">ExperimentView</span>
+  <span id="cancel_load_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Cancel</span>
+</div>
+
+
+
+<TMPL_IF NAME='ADMIN_AREA'>
+<script>
+$(document).ready(function() {
+    $("#edit_user").autocomplete({
+        source:[],
+        focus: function() { return false; },
+    });
+});
+</script>
+<br><br><hr>
+<span style="color:dimgray;font-weight:bold;">Admin Functions</span><br>
+<table class="small ui-widget-content ui-corner-all">
+  <tr>
+    <td>Assign to user:</td>
+    <td>
+      <input id="edit_user" type="search" placeholder="Search" spellcheck="false" onkeyup="wait_to_search(search_users, this.value);" size="10" />
+    </td>
+  </tr>
+</table>
+<br>
+</TMPL_IF>
+
+</TMPL_IF> <!-- MAIN -->
+
+
+
+<TMPL_IF NAME='LOGIN'>
+    <TMPL_INCLUDE NAME="widgets/Login.tmpl">
+</TMPL_IF>
