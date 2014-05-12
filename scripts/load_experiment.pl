@@ -13,7 +13,7 @@ use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Utils qw( commify );
 use CoGe::Accessory::Metadata qw( create_annotations );
 
-use vars qw($staging_dir $install_dir $data_file $file_type
+use vars qw($staging_dir $install_dir $data_file $file_type $log_file
   $name $description $version $restricted $ignore_missing_chr
   $gid $source_name $user_name $config $allow_negative $disable_range_check
   $annotations $types
@@ -59,14 +59,15 @@ GetOptions(
     # Optional flags for debug and bulk loader
     "ignore-missing-chr=i" => \$ignore_missing_chr,
     "allow_negative=i"     => \$allow_negative,
-    "disable_range_check"  => \$disable_range_check # allow any value in val1 column
+    "disable_range_check"  => \$disable_range_check, # allow any value in val1 column
+    "log_file=s"           => \$log_file
 );
 
 # Open log file
 $| = 1;
-my $logfile = "$staging_dir/log.txt";
+$log_file = "$staging_dir/log.txt" unless $log_file;
 mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
-open( my $log, ">>$logfile" ) or die "Error opening log file $logfile";
+open( my $log, ">>$log_file" ) or die "Error opening log file $log_file";
 $log->autoflush(1);
 
 # Process and verify parameters
@@ -372,7 +373,7 @@ my $logdonefile = "$staging_dir/log.done";
 touch($logdonefile);
 
 #print STDERR "experiment id: ".$experiment->id,"\n";
-print $log "log: All done!";
+print $log "log: All done!\n";
 close($log);
 exit;
 

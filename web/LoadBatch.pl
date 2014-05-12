@@ -25,7 +25,7 @@ use vars qw(
   %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $JOB_ID $OPEN_STATUS
 );
 
-$PAGE_TITLE = 'LoadExperiment';
+$PAGE_TITLE = 'LoadBatch';
 
 $FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
@@ -54,9 +54,7 @@ $MAX_SEARCH_RESULTS = 100;
     load_from_ftp           => \&load_from_ftp,
     ftp_get_file            => \&ftp_get_file,
     upload_file             => \&upload_file,
-    load_experiment         => \&load_experiment,
-    get_sources             => \&get_sources,
-    create_source           => \&create_source,
+    load_batch              => \&load_batch,
     search_genomes          => \&search_genomes,
     search_users            => \&search_users,
     get_load_log            => \&get_load_log,
@@ -144,8 +142,7 @@ sub irods_get_path {
     $path = $basepath unless $path;
 
     if ( $path !~ /^$basepath/ ) {
-        print STDERR
-          "Attempt to access '$path' denied (basepath='$basepath')\n";
+        print STDERR "Attempt to access '$path' denied (basepath='$basepath')\n";
         return;
     }
 
@@ -325,44 +322,6 @@ sub ftp_get_file {
     );
 }
 
-sub ncbi_search {
-    my %opts      = @_;
-    my $accn      = $opts{accn};
-    my $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=$accn";
-    my $result = get($esearch);
-
-    #print STDERR $result;
-
-    my $record = XMLin($result);
-
-    #print STDERR Dumper $record;
-
-    my $id = $record->{IdList}->{Id};
-    print STDERR "id = $id\n";
-
-    my $title;
-    if ($id) {
-        $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nucleotide&id=$id";
-        my $result = get($esearch);
-        #print STDERR $result;
-        $record = XMLin($result);
-        #print STDERR Dumper $record;
-
-        foreach ( @{ $record->{DocSum}->{Item} } )
-        {    #FIXME use grep here instead
-            if ( $_->{Name} eq 'Title' ) {
-                $title = $_->{content};
-                print STDERR "title=$title\n";
-                last;
-            }
-        }
-    }
-
-    return unless $id and $title;
-    return encode_json(
-        { name => $title, id => $id } );
-}
-
 sub upload_file {
     my %opts      = @_;
     my $filename  = '' . $FORM->param('input_upload_file');
@@ -395,29 +354,19 @@ sub upload_file {
 }
 
 sub check_login {
-	print STDERR $USER->user_name . ' ' . int($USER->is_public) . "\n";
+	#print STDERR $USER->user_name . ' ' . int($USER->is_public) . "\n";
 	return ($USER && !$USER->is_public);
 }
 
-sub load_experiment {
+sub load_batch {
     my %opts        = @_;
     my $name        = $opts{name};
     my $description = $opts{description};
-    my $version     = $opts{version};
-    my $source_name = $opts{source_name};
-    my $restricted  = $opts{restricted};
     my $user_name   = $opts{user_name};
     my $gid         = $opts{gid};
     my $items       = $opts{items};
-    my $file_type	= $opts{file_type};
-    my $aligner     = $opts{aligner};
+	# print STDERR "load_batch: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
 
-	# Added EL: 10/24/2013.  Solves the problem when restricted is unchecked.  
-	# Otherwise, command-line call fails with next arg being passed to 
-	# restricted as option
-	$restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
-
-	# print STDERR "load_experiment: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
     return encode_json({ error => "No data items" }) unless $items;
     $items = decode_json($items);
 
@@ -435,26 +384,16 @@ sub load_experiment {
 
     my $logfile = $stagepath . '/log.txt';
     open( my $logh, ">$logfile" ) or die "Error creating log file";
-    print $logh "Starting load experiment $stagepath\n"
-      . "name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
+    print $logh "Starting load experiment $stagepath\nname=$name description=$description gid=$gid\n";
 
-    # Verify and decompress files
+    # Verify files
     my @files;
     foreach my $item (@$items) {
         my $fullpath = $TEMPDIR . $item->{path};
         return encode_json({ error => "File doesn't exist! $fullpath" }) if ( not -e $fullpath );
         my ( $path, $filename ) = $item->{path} =~ /^(.+)\/([^\/]+)$/;
         my ($fileext) = $filename =~ /\.([^\.]+)$/;
-
         #print STDERR "$path $filename $fileext\n";
-        if ( $fileext eq 'gz' ) {
-            my $cmd = $P->{GUNZIP} . ' ' . $fullpath;
-            #print STDERR "$cmd\n";
-            `$cmd`;
-            $fullpath =~ s/\.$fileext$//;
-        }
-
-        #TODO support detecting/untarring tar files also
         push @files, $fullpath;
     }
 
@@ -465,79 +404,69 @@ sub load_experiment {
 
     # Determine fastq file type
     (my $fileext) = $files[0] =~ /\.([^\.]+)$/; # tempfix
-    if ($file_type eq 'fastq' || grep { $_ eq $fileext } ('fastq', 'fq') ) {
-        # Setup JEX
-        my $job = CoGe::Accessory::Web::get_job(
-            tiny_link => $tiny_link,
-            title     => $PAGE_TITLE,
-            user_id   => $USER->id,
-            db_object => $coge
-        );
+#        # Setup JEX
+#        my $job = CoGe::Accessory::Web::get_job(
+#            tiny_link => $tiny_link,
+#            title     => $PAGE_TITLE,
+#            user_id   => $USER->id,
+#            db_object => $coge
+#        );
+#
+#        # Setup call to analysis script
+#        my $cmd =
+#            $P->{SCRIPTDIR} . '/qteller.pl '
+#            . "-gid $gid "
+#            . '-uid ' . $USER->id . ' '
+#            . '-jid ' . $job->id . ' '
+#            . "-alignment $aligner "
+#            . '-name "' . escape($name) . '" '
+#            . '-desc "' . escape($description) . '" '
+#            . '-version "' . escape($version) . '" '
+#            . "-restricted ". $restricted . ' '
+#            . '-source_name "' . escape($source_name) . '" '
+#            . "-staging_dir $stagepath "
+#            . '-data_file "' . escape( join( ',', @files ) ) . '" '
+#            . "-config $CONFIGFILE";
+#
+#        print STDERR "$cmd\n";
+#        print $logh "$cmd\n";
+#        close($logh);
+#        
+#        # Run analysis script
+#        print STDERR "child running: $cmd\n";
+#        execute($cmd);
+#        
+#        # Get tiny link
+#        my $link = CoGe::Accessory::Web::get_tiny_link(
+#            url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $job->id . ";load_id=$LOAD_ID"
+#        );
+#
+#        return encode_json({ job_id => $job->id, link => $link });
 
-        # Setup call to analysis script
-        my $cmd =
-            $P->{SCRIPTDIR} . '/qteller.pl '
-            . "-gid $gid "
-            . '-uid ' . $USER->id . ' '
-            . '-jid ' . $job->id . ' '
-            . "-alignment $aligner "
-            . '-name "' . escape($name) . '" '
-            . '-desc "' . escape($description) . '" '
-            . '-version "' . escape($version) . '" '
-            . "-restricted ". $restricted . ' '
-            . '-source_name "' . escape($source_name) . '" '
-            . "-staging_dir $stagepath "
-            . '-data_file "' . escape( join( ',', @files ) ) . '" '
-            . "-config $CONFIGFILE";
+	# Setup call to load script
+    my $cmd =
+        "$BINDIR/load_batch.pl "
+      . "-user_name $user_name "
+      . '-name "' . escape($name) . '" '
+      . '-desc "' . escape($description) . '" '
+      . "-gid $gid "
+      . "-staging_dir $stagepath "
+      . '-data_file "' . escape( join( ',', @files ) ) . '" '
+      . "-config $CONFIGFILE";
+    print $logh "$cmd\n";
+    close($logh);
 
-        print STDERR "$cmd\n";
-        print $logh "$cmd\n";
-        close($logh);
-        
-        # Run analysis script
+    if ( !defined( my $child_pid = fork() ) ) {
+        return encode_json({ error => "Cannot fork: $!" });
+    }
+    elsif ( $child_pid == 0 ) {
+        # Run load script
         print STDERR "child running: $cmd\n";
         execute($cmd);
-        
-        # Get tiny link
-        my $link = CoGe::Accessory::Web::get_tiny_link(
-            url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $job->id . ";load_id=$LOAD_ID"
-        );
-
-        return encode_json({ job_id => $job->id, link => $link });
+        exit;
     }
-    # Else, all other file types
-    else {
-    	# Setup call to load script
-        my $cmd =
-            "$BINDIR/load_experiment.pl "
-          . "-user_name $user_name "
-          . '-name "' . escape($name) . '" '
-          . '-desc "' . escape($description) . '" '
-          . '-version "' . escape($version) . '" '
-          . "-restricted ". $restricted . ' '
-          . "-gid $gid "
-          . '-source_name "' . escape($source_name) . '" '
-          . "-staging_dir $stagepath "
-          . "-file_type '$file_type' "
-          . '-data_file "' . escape( join( ',', @files ) ) . '" '
-          . "-config $CONFIGFILE";
-    	  #"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
-        print $logh "$cmd\n";
-        close($logh);
     
-        if ( !defined( my $child_pid = fork() ) ) {
-            return encode_json({ error => "Cannot fork: $!" });
-        }
-        elsif ( $child_pid == 0 ) {
-            # Run load script
-            print STDERR "child running: $cmd\n";
-            execute($cmd);
-            exit;
-        }
-        
-    
-        return encode_json({ link => $tiny_link });
-    }
+    return encode_json({ link => $tiny_link });
 }
 
 sub execute { # FIXME this code is duplicate in other places like load_genome.pl
@@ -564,7 +493,7 @@ sub get_load_log {
     my $status = 0;
     while (<$fh>) {
         push @lines, $1 if ( $_ =~ /^log: (.+)/i );
-        if ( $_ =~ /All done/i ) {
+        if ( $_ =~ /Loaded \d+ experiments/i ) {
             $status = 1;
             
             # Generate a new load session ID in case the user chooses to 
@@ -572,9 +501,6 @@ sub get_load_log {
         	$new_load_id = get_unique_id();
             
             last;
-        }
-        elsif ( $_ =~ /experiment id: (\d+)/i ) {
-            $eid = $1;
         }
         elsif ( $_ =~ /notebook id: (\d+)/i ) {
             $nid = $1;
@@ -629,7 +555,7 @@ sub search_genomes
         ]
     );
 
-# Combine matching genomes with matching organism genomes, preventing duplicates
+    # Combine matching genomes with matching organism genomes, preventing duplicates
     my %unique;
     map {
         $unique{ $_->id } = $_ if ( $USER->has_access_to_genome($_) )
@@ -695,43 +621,12 @@ sub search_users {
     );
 }
 
-sub get_sources {
-
-    #my %opts = @_;
-
-    my %unique;
-    foreach ( $coge->resultset('DataSource')->all() ) {
-        $unique{ $_->name }++;
-    }
-
-    return encode_json( [ sort keys %unique ] );
-}
-
-sub create_source {
-    my %opts = @_;
-    my $name = $opts{name};
-    return unless $name;
-    my $desc = $opts{desc};
-    my $link = $opts{link};
-    $link =~ s/^\s+//;
-    $link = 'http://' . $link if ( not $link =~ /^(\w+)\:\/\// );
-
-    my $source =
-      $coge->resultset('DataSource')
-      ->find_or_create(
-        { name => $name, description => $desc, link => $link } );
-    return unless ($source);
-
-    return $name;
-}
-
 sub send_error_report {
     my %opts = @_;
     my $load_id = $opts{load_id};
     my $job_id = $opts{job_id};
 
-    my @paths= ($P->{SECTEMPDIR}, $PAGE_TITLE, $USER->name, $load_id,
-        "staging");
+    my @paths= ($P->{SECTEMPDIR}, $PAGE_TITLE, $USER->name, $load_id, "staging");
 
     # Get the staging directory
     my $staging_dir = File::Spec->catdir(@paths);
@@ -743,7 +638,7 @@ sub send_error_report {
     my $email = $P->{SUPPORT_EMAIL};
 
     my $body =
-        "Load experiment failed\n\n"
+        "Load batch experiment failed\n\n"
         . 'For user: '
         . $USER->name . ' id='
         . $USER->id . ' '
