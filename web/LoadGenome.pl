@@ -492,6 +492,7 @@ sub load_genome {
 	        if ( $fileext eq 'gz' ) {
 	            my $cmd = $P->{GUNZIP} . ' ' . $fullpath;
 	            #print STDERR "$cmd\n";
+	            print $log "log: Decompressing '$filename'\n";
 	            `$cmd`;
 	            $fullpath =~ s/\.$fileext$//;
 	        }

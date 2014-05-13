@@ -410,6 +410,7 @@ sub load_annotation {
         if ( $fileext eq 'gz' ) {
             my $cmd = $P->{GUNZIP} . ' ' . $fullpath;
             #print STDERR "$cmd\n";
+            print $log "log: Decompressing '$filename'\n";
             `$cmd`;
             $fullpath =~ s/\.$fileext$//;
         }
