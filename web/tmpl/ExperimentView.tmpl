@@ -52,7 +52,7 @@ function get_experiment_info() {
     $.ajax({
         data: {
             fname: 'get_experiment_info',
-            eid: "<TMPL_VAR NAME='EID'>",
+            eid: eid,
         },
         success : function (data) {
             $('#experiment_info').html(data);
@@ -64,7 +64,7 @@ function edit_experiment_info() {
     $.ajax({
         data: {
             fname: 'edit_experiment_info',
-            eid: "<TMPL_VAR NAME='EID'>",
+            eid: eid,
         },
         success : function(data) {
             var obj = jQuery.parseJSON(data);
@@ -97,7 +97,7 @@ function update_experiment_info (){
     $.ajax({
         data: {
             fname: 'update_experiment_info',
-            eid: "<TMPL_VAR NAME='EID'>",
+            eid: eid,
             name: name,
             desc: desc,
             source_id: source_id,
@@ -126,7 +126,7 @@ function make_experiment_public () {
     $.ajax({
         data: {
             fname: 'make_experiment_public',
-            eid: "<TMPL_VAR NAME='EID'>"
+            eid: eid
         },
         success : function(val) {
             get_experiment_info();
@@ -138,7 +138,7 @@ function make_experiment_private () {
     $.ajax({
         data: {
             fname: 'make_experiment_private',
-            eid: "<TMPL_VAR NAME='EID'>"
+            eid: eid
         },
         success : function(val) {
             get_experiment_info();
@@ -150,7 +150,7 @@ function add_experiment_type () {
     $.ajax({
         data: {
             fname: 'add_experiment_type',
-            eid: "<TMPL_VAR NAME='EID'>"
+            eid: eid
         },
         success : function(data) {
             $("#experiment_type_edit_box").dialog({
@@ -172,7 +172,7 @@ function add_type_to_experiment () {
         $.ajax({
             data: {
                 fname: 'add_type_to_experiment',
-                eid: "<TMPL_VAR NAME='EID'>",
+                eid: eid,
                 name: name,
                 description: description
             },
@@ -215,13 +215,13 @@ function download_files() {
     $('#progress_dialog').dialog('open');
     $('#progress_log').html(
             "<br>The download is being generated<br><br>" +
-            "File: experiment_" + <tmpl_var name=eid> + ".tar.gz"
+            "File: experiment_" + eid + ".tar.gz"
     );
 
     $.ajax({
         data: {
             fname: "get_file_urls",
-            eid: '<TMPL_VAR NAME=EID>'
+            eid: eid
         },
         dataType: "json",
         success : function(json) {
@@ -269,7 +269,7 @@ function export_data() {
     $.ajax({
         data: {
             fname: 'export_experiment_irods',
-            eid: '<TMPL_VAR NAME=EID>'
+            eid: eid
         },
         success : function(filename) {
             if (filename) {  // finished successfully
@@ -571,7 +571,7 @@ function remove_experiment_type (opts) {
     $.ajax({
         data: {
             fname: 'remove_experiment_type',
-            eid: "<TMPL_VAR NAME='EID'>",
+            eid: eid,
             etid: etid,
         },
         success : function(val) {
@@ -584,7 +584,7 @@ function get_annotations() {
     $.ajax({
         data: {
             fname: 'get_annotations',
-            eid: "<TMPL_VAR NAME='EID'>",
+            eid: eid,
         },
         success : function(data) {
             $('#experiment_annotations').html(data);
@@ -597,7 +597,7 @@ function remove_annotation (eaid) {
     $.ajax({
         data: {
             fname: 'remove_annotation',
-            eid: "<TMPL_VAR NAME='EID'>",
+            eid: eid,
             eaid: eaid,
         },
         success : function() {
@@ -672,6 +672,7 @@ function get_type_description (name) {
 			            	<span class="data5 link" ondblclick="export_data()" onclick="export_data()">Export Data</span>
 		                </td>
 		            </tr>
+		            <TMPL_IF NAME="ALIGNMENT_TYPE">
 		            <tr>
 		                <td>
 			                <span class="title5">Analyze:</span>
@@ -680,6 +681,7 @@ function get_type_description (name) {
 			                <span class="data5 link" ondblclick="find_snps()" onclick="find_snps()">Find SNPs</span>
 		                </td>
 			        </tr>
+			        </TMPL_IF>
 			    </table>
 		    </div>
 		</td>
