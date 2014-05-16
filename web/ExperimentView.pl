@@ -11,13 +11,18 @@ use Spreadsheet::WriteExcel;
 use File::Basename;
 use File::Path;
 use File::Slurp;
-use File::Spec;
+use File::Spec::Functions qw(catdir catfile);
 use Sort::Versions;
 use Data::Dumper;
-use vars qw( $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION $ERROR);
+
+use vars qw(
+    $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION $ERROR $OPEN_STATUS
+    $JOB_ID $LOAD_ID $TEMPDIR $CONFIGFILE
+);
 
 $PAGE_TITLE = "ExperimentView";
 $ERROR = encode_json( { error => 1 });
+$CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
 
 $FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
@@ -25,9 +30,16 @@ $FORM = new CGI;
     page_title => $PAGE_TITLE,
 );
 
+# Generate a unique session ID for this load.
+# Use existing ID if being passed in with AJAX request.  Otherwise generate
+# a new one.  If passed-in as url parameter then open status window
+# automatically.
+$OPEN_STATUS = (defined $FORM->param('load_id') || defined $FORM->Vars->{'job_id'});
+$LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
+$JOB_ID = $FORM->Vars->{'job_id'};
+$TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
+
 %FUNCTION = (
-    # remove_group            => \&remove_group,
-    get_groups                 => \&get_groups,
     get_experiment_info        => \&get_experiment_info,
     edit_experiment_info       => \&edit_experiment_info,
     update_experiment_info     => \&update_experiment_info,
@@ -48,17 +60,12 @@ $FORM = new CGI;
     check_login                => \&check_login,
     export_experiment_irods    => \&export_experiment_irods,
     get_file_urls              => \&get_file_urls,
+    find_snps                  => \&find_snps,
+    get_progress_log           => \&get_progress_log,
+    send_error_report          => \&send_error_report,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
-
-# sub remove_group {
-#   my %opts  = @_;
-#   my $ugid  = $opts{ugid};
-#   my $expid = $opts{expid};
-#   my $ugec  = $coge->resultset('UserGroupExperimentConnector')->find( { user_group_id => $ugid, experiment_id => $expid } );
-#   $ugec->delete();
-# }
 
 sub edit_experiment_info {
     my %opts = @_;
@@ -587,12 +594,9 @@ sub remove_annotation {
     return "No experiment ID specified" unless $eid;
     my $eaid = $opts{eaid};
     return "No experiment annotation ID specified" unless $eaid;
+    #return "Permission denied" unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
 
-#return "Permission denied" unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
-
-    my $ea =
-      $coge->resultset('ExperimentAnnotation')
-      ->find( { experiment_annotation_id => $eaid } );
+    my $ea = $coge->resultset('ExperimentAnnotation')->find( { experiment_annotation_id => $eaid } );
     $ea->delete();
 
     return 1;
@@ -630,35 +634,6 @@ sub gen_html {
     return $template->output;
 }
 
-sub get_groups {
-    my %opts  = @_;
-    my $expid = $opts{expid};
-    my $groups;
-
-    my $exp = $coge->resultset('Experiment')->find($expid);
-    if ($exp) {
-
-#       foreach my $ug ( $exp->user_groups ) {
-#           $groups .= "<tr>";
-#
-#           $groups .= "<td>" . $ug->name . ( $ug->description ? ': ' . $ug->description : '' ) . "</td>";
-#           $groups .= "<td>" . $ug->role->name . "</td>";
-#           $groups .= "<td>" . join( ", ", map { $_->name } $ug->role->permissions ) . "</td>";
-#
-#           my @users;
-#           foreach my $user ( $ug->users ) {
-#               push @users, $user->name;
-#           }
-#           $groups .= "<td>" . join( ",<br>", @users ) . "</td>";
-#           my $ugid = $ug->id;
-#           $groups .= qq{<td><span class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-trash" onclick="} . "remove_group({ugid: $ugid, expid: $expid});" . qq{"</span></span></td>};
-#
-#           $groups .= "</tr>";
-#       }
-    }
-    return $groups;
-}
-
 sub gen_body {
     my $eid = $FORM->param('eid');
     return "Need a valid experiment id\n" unless $eid;
@@ -671,13 +646,16 @@ sub gen_body {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param(
-        MAIN                   => 1,
-        PAGE_NAME              => $PAGE_TITLE . '.pl',
-        EID                    => $eid,
-        DEFAULT_TYPE           => 'note',
-        rows                   => commify($exp->row_count),
-        IRODS_HOME             => get_irods_path(),
-        link                   => "GenomeView.pl?gid=$gid&tracks=experiment$eid"
+        MAIN            => 1,
+        PAGE_NAME       => $PAGE_TITLE . '.pl',
+        EID             => $eid,
+        DEFAULT_TYPE    => 'note',
+        rows            => commify($exp->row_count),
+        IRODS_HOME      => get_irods_path(),
+        JOB_ID          => $JOB_ID,
+        LOAD_ID         => $LOAD_ID,
+        OPEN_STATUS     => $OPEN_STATUS,
+        STATUS_URL      => 'jex/status/',
     );
     $template->param( EXPERIMENT_INFO => get_experiment_info( eid => $eid ) || undef );
     $template->param( EXPERIMENT_ANNOTATIONS => get_annotations( eid => $eid ) || undef );
@@ -693,27 +671,25 @@ sub get_experiment_info {
 
     return "Unable to find an entry for $eid" unless $exp;
 
-    my $allow_edit = $USER->is_admin
-      || $USER->is_owner_editor( experiment => $eid );
+    my $allow_edit = $USER->is_admin || $USER->is_owner_editor( experiment => $eid );
+    
+    my $gid = $exp->genome->id;
+    
     my $html;
-
     $html .= $exp->annotation_pretty_print_html( allow_delete => $allow_edit );
+    $html .= qq{<a style="font-size: .75em; color: black; float:right;" target="_blank" class='ui-button ui-corner-all ui-button-icon-right' href="GenomeView.pl?gid=$gid&tracks=experiment$eid">View<span class="ui-icon ui-icon-extlink"></span></a>};
 
     if ($allow_edit) {
-        $html .=
-qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="edit_experiment_info();">Edit Info</span>};
-        $html .=
-qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="\$('#experiment_type_edit_box').dialog('open');">Add Type</span>};
+        $html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="edit_experiment_info();">Edit Info</span>};
+        $html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="\$('#experiment_type_edit_box').dialog('open');">Add Type</span>};
     }
 
     if ( $USER->is_admin || $USER->is_owner( experiment => $eid ) ) {
         if ( $exp->restricted ) {
-            $html .=
-qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_experiment_public();">Make Public</span>};
+            $html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_experiment_public();">Make Public</span>};
         }
         else {
-            $html .=
-qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_experiment_private();">Make Private</span>};
+            $html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_experiment_private();">Make Private</span>};
         }
     }
 
@@ -725,7 +701,7 @@ sub search_annotation_types {
     my $type_group  = $opts{type_group};
     my $search_term = $opts{search_term};
 
-    #   print STDERR "search_annotation_types: $search_term $type_group\n";
+    #print STDERR "search_annotation_types: $search_term $type_group\n";
     return '' unless $search_term;
 
     $search_term = '%' . $search_term . '%';
@@ -733,17 +709,15 @@ sub search_annotation_types {
     my $group;
     if ($type_group) {
         $group =
-          $coge->resultset('AnnotationTypeGroup')
-          ->find( { name => $type_group } );
+          $coge->resultset('AnnotationTypeGroup')->find( { name => $type_group } );
     }
 
     my @types;
     if ($group) {
-
-        #       print STDERR "type_group=$type_group " . $group->id . "\n";
+        #print STDERR "type_group=$type_group " . $group->id . "\n";
         @types = $coge->resultset("AnnotationType")->search(
             \[
-'annotation_type_group_id = ? AND (name LIKE ? OR description LIKE ?)',
+                'annotation_type_group_id = ? AND (name LIKE ? OR description LIKE ?)',
                 [ 'annotation_type_group_id', $group->id ],
                 [ 'name',                     $search_term ],
                 [ 'description',              $search_term ]
@@ -766,9 +740,6 @@ sub search_annotation_types {
 }
 
 sub get_annotation_type_groups {
-
-    #my %opts = @_;
-
     my %unique;
 
     my $rs = $coge->resultset('AnnotationTypeGroup');
@@ -779,3 +750,144 @@ sub get_annotation_type_groups {
     return encode_json( [ sort keys %unique ] );
 }
 
+sub find_snps {
+    my %opts        = @_;
+    my $user_name   = $opts{user_name};
+    my $eid         = $opts{eid};
+    my $load_id     = $opts{load_id};
+
+    # Check login
+    if ( !$user_name || !$USER->is_admin ) {
+        $user_name = $USER->user_name;
+    }
+    if ($user_name eq 'public') {
+        return encode_json({ error => 'Not logged in' });
+    }
+
+    # Setup staging area and log file
+    my $stagepath = catdir($TEMPDIR, 'staging');
+    mkpath($stagepath);
+    my $logfile = catfile($stagepath, 'log.txt');
+    open( my $logh, ">$logfile" ) or die "Error creating log file";
+    print $logh "Starting SNP finder for experiment id$eid, $stagepath\n";
+
+    # Get tiny link
+    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
+        url => $P->{SERVER} . "$PAGE_TITLE.pl?eid=$eid;load_id=$load_id"
+    );
+
+    # Setup JEX
+    my $job = CoGe::Accessory::Web::get_job(
+        tiny_link => $tiny_link,
+        title     => $PAGE_TITLE,
+        user_id   => $USER->id,
+        db_object => $coge
+    );
+
+    # Setup call to analysis script
+    my $cmd =
+        catfile($P->{SCRIPTDIR}, 'find_SNPs.pl') . ' '
+        . "-eid $eid "
+        . '-uid ' . $USER->id . ' '
+        . '-jid ' . $job->id . ' '
+#        . '-name "' . escape($name) . '" '
+#        . '-desc "' . escape($description) . '" '
+#        . '-version "' . escape($version) . '" '
+        . "-staging_dir $stagepath "
+        . "-log_file $logfile "
+        . "-config $CONFIGFILE";
+
+    print STDERR "$cmd\n";
+    print $logh "$cmd\n";
+    close($logh);
+        
+    # Run analysis script
+    print STDERR "child running: $cmd\n";
+    if (execute($cmd)) {
+        return encode_json({ error => 'Failed to execute job' });
+    }
+        
+    # Get tiny link
+    my $link = CoGe::Accessory::Web::get_tiny_link(
+        url => $P->{SERVER} . "$PAGE_TITLE.pl?eid=$eid;job_id=" . $job->id . ";load_id=$load_id"
+    );
+
+    return encode_json({ job_id => $job->id, link => $link });
+}
+
+sub get_progress_log {
+    my $logfile = catfile($TEMPDIR, 'staging', 'load_experiment', 'log.txt');
+    open( my $fh, $logfile ) or 
+        return encode_json( { status => -1, log => "Error opening log file" } );
+
+    my @lines = ();
+    my ($eid, $nid, $new_load_id);
+    my $status = 0;
+    my $message = '';
+    while (<$fh>) {
+        push @lines, $1 if ( $_ =~ /^log: (.+)/i );
+        if ( $_ =~ /All done/i ) {
+            $status = 1;
+            
+            # Generate a new load session ID in case the user chooses to 
+            # reuse the form to start another load.
+            $new_load_id = get_unique_id();
+            
+            last;
+        }
+        elsif ( $_ =~ /experiment id: (\d+)/i ) {
+            $eid = $1;
+        }
+        elsif ( $_ =~ /log: error: input file is empty/i ) {
+            $status = -2;
+            $message = 'No SNPs were detected in this experiment';
+            last;
+        }
+        elsif ( $_ =~ /log: error/i ) {
+            $status = -1;
+            last;
+        }
+    }
+
+    close($fh);
+
+    return encode_json(
+        {
+            status        => $status,
+            experiment_id => $eid,
+            new_load_id   => $new_load_id,
+            message       => $message
+        }
+    );
+}
+
+sub send_error_report {
+    my %opts = @_;
+    my $load_id = $opts{load_id};
+    my $job_id = $opts{job_id};
+
+    my $staging_dir = catdir($TEMPDIR, 'staging');
+
+    my $url = $P->{SERVER} . "$PAGE_TITLE.pl?";
+    $url .= "job_id=$job_id;" if $job_id;
+    $url .= "load_id=$load_id";
+
+    my $email = $P->{SUPPORT_EMAIL};
+
+    my $body =
+        "SNP finder failed\n\n"
+        . 'For user: '
+        . $USER->name . ' id='
+        . $USER->id . ' '
+        . $USER->date . "\n\n"
+        . "staging_directory: $staging_dir\n\n"
+        . "tiny link: $url\n\n";
+    $body .= get_progress_log();
+
+    CoGe::Accessory::Web::send_email(
+        from    => $email,
+        to      => $email,
+        subject => "Load error notification from $PAGE_TITLE",
+        body    => $body
+    );
+}
