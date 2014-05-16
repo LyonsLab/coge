@@ -656,6 +656,7 @@ sub gen_body {
         LOAD_ID         => $LOAD_ID,
         OPEN_STATUS     => $OPEN_STATUS,
         STATUS_URL      => 'jex/status/',
+        ALIGNMENT_TYPE  => ($exp->data_type == 3) # FIXME: hardcoded type value
     );
     $template->param( EXPERIMENT_INFO => get_experiment_info( eid => $eid ) || undef );
     $template->param( EXPERIMENT_ANNOTATIONS => get_annotations( eid => $eid ) || undef );
