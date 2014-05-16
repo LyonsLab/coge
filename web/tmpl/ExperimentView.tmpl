@@ -5,6 +5,11 @@
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
 <SCRIPT language="JavaScript">
 
+var eid = '<TMPL_VAR NAME="EID">';
+var load_id = '<TMPL_VAR NAME="LOAD_ID">';
+var job_id = '<TMPL_VAR NAME="JOB_ID">';
+var status_url = '<TMPL_VAR NAME="STATUS_URL">';
+
 $(document).ready(function() {
     pageObj = new Object();
     pageObj.timers = new Array();
@@ -18,7 +23,7 @@ $(document).ready(function() {
 
     $(".dialog_box").dialog({autoOpen: 0, width: 450});
 
-    $("#experiment_dialog").dialog({modal: true});
+    $("#progress_dialog").dialog({modal: true});
 
     $("#edit_type_name").autocomplete({
         source: function() { get_experiment_types(); },
@@ -27,7 +32,16 @@ $(document).ready(function() {
 
     set_annotation_table();
 
-    init_annotation_dialog(<TMPL_VAR NAME="EID">, '<TMPL_VAR NAME="DEFAULT_TYPE">');
+    init_annotation_dialog(eid, '<TMPL_VAR NAME="DEFAULT_TYPE">');
+    
+    // Open status dialog
+    if ('<TMPL_VAR NAME="OPEN_STATUS">') {
+        $('#progress_msg').hide();
+        $('#progress_dialog').dialog('open');
+        if (job_id) { // JEX status for FASTQ data type
+            update_dialog(status_url + job_id, "#progress_dialog", progress_formatter);
+        }
+    }
 });
 
 function set_annotation_table() {
@@ -172,48 +186,22 @@ function add_type_to_experiment () {
 }
 
 function reset_dialog() {
-    $('#loading_msg').show();
-    $('#finished_msg').hide();
-    $('#ok_button').html("Download").hide();
+    $('#progress_msg').show();
+    $('#finished_msg,#error_msg,#custom_msg,#ok_button').hide();
+}
+
+function reset_load() {
+	$('#progress_dialog').dialog('close');
+	window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?eid=" + eid);
 }
 
 function download_files() {
-    /*
-    var menu = coge.progress()
-        .title("Preparing Download")
-        .data("The download is being generated")
-        .status({ message: "Please wait...", button: false})
-        .show();
-
-    $.ajax({
-        url: "<tmpl_var name=PAGE_NAME>",
-        dataType: "json",
-        data: {
-            fname: "get_file_urls",
-            eid: <tmpl_var name="eid">,
-        },
-        success: function(json) {
-            if (json.files) {
-                menu.button("Download").status({
-                    message: "Finished",
-                    state: "complete",
-                    button: true
-                });
-
-                menu.element().on("dialogclose", function(ui, event) {
-                    json.files.forEach(coge.utils.open);
-                });
-            }
-        }
-    });
-    */
-
-    $("#experiment_dialog")
+    $("#progress_dialog")
         .unbind()
         .dialog("option", "title", "Preparing Download");
 
     // Prevent concurrent executions
-    if ( $("#experiment_dialog").dialog( "isOpen" ) )
+    if ( $("#progress_dialog").dialog( "isOpen" ) )
         return;
 
     // Make sure user is still logged-in
@@ -224,8 +212,8 @@ function download_files() {
     reset_dialog();
 
     // Open status dialog right away
-    $('#experiment_dialog').dialog('open');
-    $('#export_log').html(
+    $('#progress_dialog').dialog('open');
+    $('#progress_log').html(
             "<br>The download is being generated<br><br>" +
             "File: experiment_" + <tmpl_var name=eid> + ".tar.gz"
     );
@@ -238,16 +226,16 @@ function download_files() {
         dataType: "json",
         success : function(json) {
             if (json.files) {  // finished successfully
-                $('#loading_msg').hide();
+                $('#progress_msg').hide();
                 $('#finished_msg').fadeIn();
-                $('#ok_button').html("Download").fadeIn();
+                $('#ok_button').fadeIn();
 
-                $("#experiment_dialog").on("dialogclose", function(ui, event) {
+                $("#progress_dialog").on("dialogclose", function(ui, event) {
                     json.files.forEach(coge.utils.open);
                 });
             }
             else { // error occurred
-                $('#loading_msg').hide();
+                $('#progress_msg').hide();
                 $('#finished_msg').hide();
                 $('#error_msg').fadeIn();
                 $('#ok_button').fadeIn();
@@ -258,7 +246,7 @@ function download_files() {
 
 function export_data() {
     // Prevent concurrent executions
-    if ( $("#experiment_dialog").dialog( "isOpen" ) )
+    if ( $("#progress_dialog").dialog( "isOpen" ) )
         return;
 
     // Make sure user is still logged-in
@@ -269,11 +257,11 @@ function export_data() {
     reset_dialog();
 
     // Open status dialog right away
-    $('#experiment_dialog')
+    $('#progress_dialog')
         .unbind()
         .dialog({ autoOpen: true, title: "Exporting ..."});
 
-    $('#export_log').html(
+    $('#progress_log').html(
             "<br>Copying this experiment's data files to <br><br>" +
             '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
     );
@@ -285,59 +273,272 @@ function export_data() {
         },
         success : function(filename) {
             if (filename) {  // finished successfully
-                $('#loading_msg').hide();
+                $('#progress_msg').hide();
                 $('#finished_msg').fadeIn();
-                $('#ok_button').html("OK").fadeIn();
-                $('#export_log').append('<br><br>File: ' + filename);
+                $('#ok_button').fadeIn();
+                $('#progress_log').append('<br><br>File: ' + filename);
             }
             else { // error occurred
-                $('#loading_msg').hide();
+                $('#progress_msg').hide();
                 $('#finished_msg').hide();
                 $('#error_msg').fadeIn();
-                $('#ok_button').html("Close").fadeIn();
+                $('#ok_button').fadeIn();
             }
         }
     });
-    /*
-    var menu = coge.progress()
-        .title("Exporting")
-        .button("Close")
-        .data($("#progress_info").html())
-        .status({
-            message: "Please wait..."
-        })
-        .show();
+}
+
+function find_snps() {
+    // Prevent concurrent executions
+    if ( $("#progress_dialog").dialog( "isOpen" ) )
+        return;
+
+    // Make sure user is still logged-in
+    if (!check_and_report_login())
+        return;
+
+    //CLEAR DIALOG
+    reset_dialog();
+
+    // Open status dialog right away
+    $('#progress_dialog')
+        .unbind()
+        .dialog({ autoOpen: true, title: "Finding SNPs ..."});
+
+    $('#progress_log').html('Initializing ...');
 
     $.ajax({
-        data:  {
-            fname: "export_experiment_irods",
-            eid: "<tmpl_var name=eid>"
+        data: {
+            fname: 'find_snps',
+            load_id: load_id,
+            eid: eid,
+            timestamp: new Date().getTime()
         },
-        dataType: "json",
-        success: function(json) {
-            if (json.error) {
-                menu.status({
-                    message: "Failed",
-                    state: "error",
-                    delay: true,
-                    button: true
-                });
-            } else {
-                menu.status({
-                    message: "Finished",
-                    state: "complete",
-                    delay: true,
-                    link: {
-                        message: "Go to iPlant Data Store",
-                        href: "http://preview.iplantcollaborative.org/de/?type=data"
-                    },
-                    button: true
-                })
+        success : function(data) {
+            var obj = jQuery.parseJSON(data);
+            if (obj && obj.error) {
+                alert(obj.error);
+                return;
+            }
+
+            // Set link in status dialog
+            $('#progress_msg span a').attr('href', obj.link).html(obj.link);
+
+            // Start status update
+            if (obj.job_id) { // JEX status for load FASTQ
+                job_id = obj.job_id;
+                window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?eid=" + eid + "&job_id=" + obj.job_id + '&load_id=' + load_id); // Add job_id and load_id to browser URL
+                update_dialog(status_url + obj.job_id, "#progress_dialog", progress_formatter);
+            }
+        }
+        // TODO: handle error, show in status dialog
+    });
+}
+
+function update_dialog(request, identifier, formatter) {
+    var get_status = function () {
+        $.ajax({
+            type: 'GET',
+            url: request,
+            dataType: 'json',
+            success: update_callback,
+            error: update_callback,
+        });
+    };
+
+    var update_callback = function(json) {
+        var dialog = $(identifier);
+        var workflow_status = $("<p></p>");
+        var data = $("<ul></ul>");
+        var results = [];
+        var current_status;
+        var timeout = 2000;
+
+        var callback = function() {
+            update_dialog(request, identifier, formatter);
+        }
+        
+        if (json.error) {
+            pageObj.error++;
+            if (pageObj.error > 3) {
+                workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
+                progress_failed();
+                return;
+            }
+        } else {
+            pageObj.error = 0;
+        }
+
+        if (json.status) {
+            current_status = json.status.toLowerCase();
+            workflow_status.html("Workflow status: ");
+            workflow_status.append($('<span></span>').html(json.status));
+            workflow_status.addClass('bold');
+        } else {
+            setTimeout(callback, timeout);
+            return;
+        }
+
+        if (json.jobs) {
+            var jobs = json.jobs;
+            for (var index = 0; index < jobs.length; index++) {
+                var item = formatter(jobs[index]);
+                if (item) {
+                    results.push(item);
+                }
+            }
+        }
+
+        if (!dialog.dialog('isOpen')) {
+            return;
+        }
+
+        //FIXME Update when a workflow supports elapsed time
+        if (current_status == "completed") {
+            var total = json.jobs.reduce(function(a, b) {
+                if (!b.elapsed) return a;
+                return a + b.elapsed;
+            }, 0);
+
+            var duration = coge.utils.toPrettyDuration(total);
+
+            workflow_status.append("<br>Finished in " + duration);
+            workflow_status.find('span').addClass('completed');
+            get_progress_log(function(result) {
+                progress_succeeded(result);
+            });
+        }
+        else if (current_status == "failed"
+                || current_status == "error"
+                || current_status == "terminated"
+                || current_status == "cancelled")
+        {
+            workflow_status.find('span').addClass('alert');
+            get_progress_log(function(result) {
+            	progress_failed(result);
+            });
+        }
+        else if (current_status == "notfound") {
+            setTimeout(callback, timeout);
+            return;
+        }
+        else {
+            workflow_status.find('span').addClass('running');
+            setTimeout(callback, timeout);
+        }
+
+        results.push(workflow_status);
+        data.append(results);
+        dialog.find('#progress_log').html(data);
+    };
+
+    get_status();
+}
+
+function progress_formatter(item) {
+    var msg;
+    var row = $('<li>'+ item.description + ' </li>');
+    row.addClass('small');
+
+    var job_status = $('<span></span>');
+
+    if (item.status == 'scheduled') {
+        job_status.append(item.status);
+        job_status.addClass('down');
+        job_status.addClass('bold');
+    } else if (item.status == 'completed') {
+        job_status.append(item.status);
+        job_status.addClass('completed');
+        job_status.addClass('bold');
+    } else if (item.status == 'running') {
+        job_status.append(item.status);
+        job_status.addClass('running');
+        job_status.addClass('bold');
+    } else if (item.status == 'skipped') {
+        job_status.append("already generated");
+        job_status.addClass('skipped');
+        job_status.addClass('bold');
+    } else if (item.status == 'cancelled') {
+        job_status.append(item.status);
+        job_status.addClass('alert');
+        job_status.addClass('bold');
+    } else if (item.status == 'failed') {
+        job_status.append(item.status);
+        job_status.addClass('alert');
+        job_status.addClass('bold');
+    } else {
+        return;
+    }
+
+    row.append(job_status);
+
+    if (item.elapsed)  {
+        row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
+    }
+
+    return row;
+}
+
+function progress_failed(obj) {
+    // Update dialog
+    $('#progress_msg').hide();
+    if (obj && obj.status == -2 && obj.message) {
+    	$('#custom_msg').html(obj.message).fadeIn();
+    }
+    else {
+    	$('#error_msg').fadeIn();
+    }
+    $('#ok_button').fadeIn();
+    	
+//    $.ajax({
+//        data: {
+//            fname: "send_error_report",
+//            load_id: load_id,
+//            job_id: job_id
+//        }
+//    });
+}
+
+function progress_succeeded(obj) {
+    // Update globals
+    load_id = obj.new_load_id;          // for reusing page to load again
+    experiment_id = obj.experiment_id;  // for continuing to ExperimentView
+    
+    // Update dialog
+    $('#progress_msg').hide();
+    $('#finished_msg').fadeIn();
+    $('#ok_button').fadeIn();
+    { // normal experiment load
+        $('#experiment_view_button')
+            .html('ExperimentView').fadeIn()
+            .unbind().on('click', function() {
+                window.location.href = "ExperimentView.pl?eid=" + experiment_id;
+        });
+    }
+}
+
+function get_progress_log(callback) {
+    $.ajax({
+        data: {
+            dataType: 'text',
+            fname: 'get_progress_log',
+            load_id: load_id,
+            timestamp: new Date().getTime()
+        },
+        success : function(data) {
+            if (!data) { // workaround for issue #45, jquery intermittently dropping payload
+                setTimeout(function() { get_progress_log(); }, 1000);
+                return;
+            }
+
+            var obj = jQuery.parseJSON(data);
+
+            if (callback) {
+                callback(obj);
+                return;
             }
         }
     });
-
-    */
 }
 
 function check_login() {
@@ -430,33 +631,62 @@ function get_type_description (name) {
 }
 </SCRIPT>
 
-<section class="coge-margin-bottom">
-    <div style="color:dimgray;font-weight:bold;">Info</div>
-    <div id='experiment_info' class="inline">
-        <TMPL_VAR NAME="EXPERIMENT_INFO">
-    </div>
-    <div class="small inline top" style="padding-left: 10px;">
-        <ul class="ui-widget-content ui-corner-all" style="padding: 2px;">
-            <li>
-                <span class="title5">Rows:</span>
-                <span class="data5"><tmpl_var name=rows><span>
-            </li>
-            <li>
-                <span class="title5">iPlant Data Store:</span>
-                <span class="data5 link" ondblclick="export_data()" onclick="export_data()">Export data</span>
-            </li>
-            <li>
-                <span class="title5">Download:</span>
-                <span class="data5 link" onclick="download_files();">Experiment Data</span>
-            </li>
-        </ul>
-        <a style="font-size: .9em; color: black;" target="_blank" class='ui-button ui-corner-all ui-button-icon-right' href="<tmpl_var name=link>">
-            View
-            <span class="ui-icon ui-icon-extlink"></span>
-        </a>
-    </div>
-</section>
+<table>
+	<tr style="vertical-align:top">
+		<td>
+			<div>
+			    <div style="color:dimgray;font-weight:bold;">Info</div>
+			    <div id='experiment_info' class="inline">
+			        <TMPL_VAR NAME="EXPERIMENT_INFO">
+			    </div>
+			</div>
+		</td>
+		<td>
+			<div style="padding-left:10px; padding-bottom:10px;">
+			    <div style="color:dimgray;font-weight:bold;">Statistics</div>
+			    <div class="small inline top">
+			        <ul class="ui-widget-content ui-corner-all" style="padding: 2px;">
+			            <li>
+			                <span class="title5">Rows:</span>
+			                <span class="data5"><tmpl_var name=rows><span>
+			            </li>
+			        </ul>
+			    </div>
+			</div>
+			<div style="padding-left: 10px;">
+			    <div style="color:dimgray;font-weight:bold;">Tools</div>
+			    <table class="small inline top ui-widget-content ui-corner-all">
+			        <tr>
+			            <td>
+			                <span class="title5">Download:</span>
+			            </td>
+			            <td>
+			                <span class="data5 link" onclick="download_files();">Experiment Data</span>
+			            </td>
+			        </tr>
+			        <tr>
+			            <td>
+			                <span class="title5">iPlant Data Store:</span>
+			            </td>
+			            <td>
+			            	<span class="data5 link" ondblclick="export_data()" onclick="export_data()">Export Data</span>
+		                </td>
+		            </tr>
+		            <tr>
+		                <td>
+			                <span class="title5">Analyze:</span>
+			            </td>
+			            <td>
+			                <span class="data5 link" ondblclick="find_snps()" onclick="find_snps()">Find SNPs</span>
+		                </td>
+			        </tr>
+			    </table>
+		    </div>
+		</td>
+	</tr>
+</table>
 <br>
+
 <TMPL_IF NAME="EXPERIMENT_ANNOTATIONS">
 <div>
  <div style="color:dimgray;font-weight:bold;">Metadata</div>
@@ -482,14 +712,16 @@ function get_type_description (name) {
   <span onClick="add_type_to_experiment();" class='ui-button ui-corner-all'>Add</span>
 </div>
 
-<div id="experiment_dialog" class="hidden dialog_box" title="Exporting ...">
-    <div id="export_log" class="ui-widget-content ui-corner-all" style="text-align:center;overflow-y:auto;width:415px;height:200px;color:dimgray;">
+<div id="progress_dialog" class="hidden dialog_box">
+    <div id="progress_log" class="small padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:415px;height:200px;color:dimgray;">
     </div>
     <br>
-    <span id="loading_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
+    <span id="progress_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
     <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
+    <span id="custom_msg" class="hidden"></span>
     <span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
-    <span id="ok_button" onClick="$('#experiment_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all">OK</span>
+    <span id="ok_button" onClick="reset_load();" class="hidden r ui-button ui-corner-all">OK</span>
+    <span id="experiment_view_button" class="hidden r ui-button ui-corner-all">ExperimentView</span>
 </div>
 
 <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'> <!-- Add/Edit Annotation Dialog -->
@@ -539,13 +771,3 @@ $(function() {
 <br>
 <span onClick="update_experiment_info();" class='ui-button ui-corner-all'>Update</span>
 </TMPL_IF>
-
-<!--
-<div id="progress_info" class="hidden info" style="padding:20px;" title="Exporting to iPlant Data Store" align='center'>
-    <span>Copying this experiment's data files to</span>
-    <br><br>
-    <a href="http://data.iplantcollaborative.org/" target=_new style="font-weight:bold">
-        <tmpl_var name=irods_home>
-    </a>
-</div>
--->
