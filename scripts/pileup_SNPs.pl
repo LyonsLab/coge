@@ -29,7 +29,7 @@ while ($line = <>) {
     # Count alleles that meet minimum criteria
     my %filtered;
     foreach my $b (keys %$pAlleles) {
-        #TODO skip reference allele
+        next if ($b eq $refAllele); # skip reference allele
         my $freq = $pAlleles->{$b} / $hqDepth;
         if ($freq >= $MIN_ALLELE_FREQ and $pAlleles->{$b} >= $MIN_ALLELE_COUNT) {
             $filtered{$b} = { freq => $freq, depth => $pAlleles->{$b} };
