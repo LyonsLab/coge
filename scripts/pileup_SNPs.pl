@@ -39,7 +39,7 @@ while ($line = <>) {
     if (keys %filtered > 1) {
         foreach my $b (keys %filtered) {
             my $info = 'DP='.$filtered{$b}{depth}.';AF='.$filtered{$b}{freq};
-            print join("\t", $ref, $pos, '.', '.', $b, '.', '.', $info), "\n";
+            print join("\t", $ref, $pos, '.', $refAllele, $b, '.', '.', $info), "\n";
         }
     }
 }
