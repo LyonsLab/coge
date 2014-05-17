@@ -19,7 +19,7 @@ use CoGe::Accessory::Web qw(get_defaults get_job schedule_job);
 our ($DESC, $YERBA, $DEBUG, $P, $user,
      $name, $description, $version, $restricted, $source_name,
      $test, $config, $eid, $jobid, $userid, $staging_dir, $log_file, $log,
-     $METADATA);
+     $METADATA, $FASTA_CACHE_DIR );
 
 $DESC = "Running the SNP-finder pipeline";
 
@@ -93,6 +93,9 @@ sub main {
     # Set metadata for the pipeline being used
     #$METADATA = generate_metadata($alignment, $annotated);
 
+    $FASTA_CACHE_DIR = catdir($P->{CACHEDIR}, $genome->id, "fasta");
+    die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
+    
     my $fasta_file = get_genome_file($genome->id);
     my $files = get_experiment_files($eid, $experiment->data_type);
     my $bam_file = shift @$files;
@@ -105,8 +108,15 @@ sub main {
     );
 
     # Setup the jobs
+    my $filtered_file = to_filename($fasta_file) . ".filtered.fasta";
     $workflow->add_job(
-        create_samtools_job($fasta_file, $bam_file)
+        create_fasta_reheader_job($fasta_file, $genome->id, $filtered_file)
+    );
+    $workflow->add_job(
+        create_fasta_index_job($filtered_file, $genome->id)
+    );    
+    $workflow->add_job(
+        create_samtools_job($filtered_file, $genome->id, $bam_file)
     );
     $workflow->add_job(
         create_load_experiment_job(catfile($staging_dir, 'snps.vcf'), $user, $experiment)
@@ -148,8 +158,59 @@ sub generate_metadata {
     return '"' . join(';', @annotations) . '"';
 }
 
+sub to_filename { # FIXME: move into Utils module
+    my ($name, undef, undef) = fileparse(shift, qr/\.[^.]*/);
+    return $name;
+}
+
+sub create_fasta_reheader_job {
+    my ($fasta, $gid, $output) = @_;
+    
+    my $cmd = catfile($P->{SCRIPTDIR}, "fasta_reheader.pl");
+    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+
+    return (
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ["", $fasta, 1],
+            ["", $output, 0]
+        ],
+        inputs => [
+            $fasta
+        ],
+        outputs => [
+            catfile($FASTA_CACHE_DIR, $output)
+        ],
+        description => "Filter fasta file..."
+    );
+}
+
+sub create_fasta_index_job {
+    my ($fasta, $gid) = @_;
+    
+    my $samtools = $P->{SAMTOOLS};
+    die "ERROR: SAMTOOLS not specified in config" unless $samtools;
+
+    return (
+        cmd => $samtools,
+        script => undef,
+        args => [
+            ['faidx', '', 0],
+            ['', $fasta, 1]
+        ],
+        inputs => [
+            catfile($FASTA_CACHE_DIR, $fasta)
+        ],
+        outputs => [
+            catfile($FASTA_CACHE_DIR, $fasta) . '.fai'
+        ],
+        description => "Index fasta file..."
+    );
+}
+
 sub create_samtools_job {
-    my ($fasta, $bam) = @_;
+    my ($fasta, $gid, $bam) = @_;
 
     my $samtools = $P->{SAMTOOLS};
     die "ERROR: SAMTOOLS not specified in config" unless $samtools;
@@ -169,13 +230,14 @@ sub create_samtools_job {
             ['>', $output_name,  0]
         ],
         inputs => [
-            $fasta,
+            catfile($FASTA_CACHE_DIR, $fasta),
+            catfile($FASTA_CACHE_DIR, $fasta) . '.fai',
             $bam
         ],
         outputs => [
             catfile($staging_dir, $output_name)
         ],
-        description => "Identifying SNPs ..."
+        description => "Identify SNPs ..."
     );
 }
 
