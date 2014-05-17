@@ -226,9 +226,11 @@ def an_features(environ, start_response): # mdb rewritten 11/8/13 issue 246 - ad
             WHERE g.genome_id = {0} \
                 AND f.chromosome = '{1}' \
                 AND f.stop > {2} AND f.start <= {3} \
-                AND ft.feature_type_id != 4 \
-                AND fn.primary_name = 1" \
-            .format(genome_id, chr_id, start, end)
+                AND ft.feature_type_id != 4".format(genome_id, chr_id, start, end)
+    # erb 5/16/14 issue 381 - all genbank genomes have fn.primary_name=0
+    #            AND fn.primary_name = 1"
+    #       .format(genome_id, chr_id, start, end)
+
     if feat_type:
         query +=  " AND ft.name = '{0}'".format(feat_type)
     # mdb added 4/21/14 issue 363
