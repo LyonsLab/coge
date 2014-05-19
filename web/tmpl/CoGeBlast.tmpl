@@ -207,8 +207,18 @@ function update_checkbox(name, dist, hspid, id){
 	var id_array = new Array();
 	if (id) {
 		id_array = id.split(',');
-		$('#checkbox'+id_array[0]).attr("id","checkbox"+id_array[1]);
-		$('#'+id_array[0]).attr("value",id_array[1]).attr("id",id_array[1]);
+		
+		// mdb removed 5/19/14 issue 382 - jquery not working with html injection
+		//$('#checkbox'+id_array[0]).attr("id","checkbox"+id_array[1]);
+		//$('#'+id_array[0]).attr("value",id_array[1]).attr("id",id_array[1]);
+		
+		// mdb added 5/19/14 issue 382
+		var old_id = id_array[0];
+		var new_id = id_array[1];
+		var e = document.getElementById('checkbox' + old_id);
+		e.id = "checkbox" + new_id;
+		e = document.getElementById(old_id);
+		e.id = e.value = new_id;
 	}
 }
 
