@@ -3426,6 +3426,12 @@ qq{<span id="clear" style="font-size: 0.8em" class="ui-button ui-corner-all"
     # -- This can mess up other loaded js such as tablesoter
     my $output = $results->output;
 
+    # erb 5/19/2014 - older version of dotplot would generate javascript inline
+    # Remove jquery and xhairs from generate html
+    $output =~ s/<script src="\/CoGe\/js\/jquery-1.3.2.js"><\/script>//g;
+    $output =~ s/<script src="\/CoGe\/js\/xhairs.js"><\/script>//g;
+
+    #FIXME Return the json representation of the data instead of html
     return encode_json({ html => $output });
 }
 
