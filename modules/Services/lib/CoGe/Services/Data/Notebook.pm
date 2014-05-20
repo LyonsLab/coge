@@ -1,45 +1,101 @@
 package CoGe::Services::Data::Notebook;
-use base 'CGI::Application';
+use Mojo::Base 'Mojolicious::Controller';
+use Mojo::JSON;
+use CoGeX;
+use CoGe::Services::Auth;
 
-use CoGe::Accessory::Web;
-
-sub setup {
+sub search {
     my $self = shift;
-    $self->run_modes( 'create' => 'create', );
-    $self->mode_param('rm');
+    my $search_term = $self->stash('term');
+
+    # Validate input
+    if (!$search_term or length($search_term) < 3) {
+        $self->render(json => { error => { Error => 'Search term is shorter than 3 characters' } });
+        return;
+    }
+
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+
+    # Search genomes
+    my $search_term2 = '%' . $search_term . '%';
+    my @notebooks = $db->resultset("List")->search(
+        \[
+            'list_id = ? OR name LIKE ? OR description LIKE ?',
+            [ 'list_id', $search_term  ],
+            [ 'name',        $search_term2 ],
+            [ 'description', $search_term2 ]
+        ]
+    );
+
+    # Filter response
+    my @filtered = grep {
+        !$_->restricted || (defined $user && $user->has_access_to_notebook($_))
+    } @notebooks;
+
+    # Format response
+    my @result = map {
+      {
+        id => int($_->id),
+        name => $_->name,
+        description => $_->description
+      }
+    } @filtered;
+
+    $self->render(json => { notebooks => \@result });
 }
 
-sub create {
-    my $self         = shift;
-    my $name         = $self->query->param('name');
-    my $description  = $self->query->param('description');
-    my $list_type_id = $self->query->param('list_type_id');
-    my $restricted   = $self->query->param('restricted');
-    print STDERR "Data::Notebook::create\n";
+sub fetch {
+    my $self = shift;
+    my $id = int($self->stash('id'));
 
-    my ( $db, $user ) = CoGe::Accessory::Web->init;
-    return $user->display_name;
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
-    # Create the new list
-    #    my $list = $coge->resultset('List')->create({
-    #    	name => $name,
-    #        description => $desc,
-    #        list_type_id => $list_type_id,
-    #        restricted => 1
-    #    });
-    #    return unless $list;
+    my $notebook = $db->resultset("List")->find($id);
+    unless (defined $notebook) {
+        $self->render(json => {
+            error => { Error => "Item not found"}
+        });
+        return;
+    }
 
-    # Set user as owner
-    #    my $conn = $coge->resultset('UserConnector')->create({
-    #    	parent_id => $USER->id,
-    #    	parent_type => 5, #FIXME hardcoded to "user"
-    #    	child_id => $list->id,
-    #    	child_type => 1, #FIXME hardcoded to "list"
-    #    	role_id => 2 #FIXME hardcoded to "owner"
-    #    });
-    #    return unless $conn;
+    unless (defined $user && $user->has_access_to_genome($notebook)) {
+        $self->render(json => {
+            error => { Auth => "Access denied"}
+        }, status => 401);
+        return;
+    }
 
-    return qq{};
+    # Format metadata
+    my @metadata = map {
+        {
+            text => $_->annotation,
+            link => $_->link,
+            type => $_->type->name,
+            type_group => $_->type->group
+        }
+    } $notebook->annotations;
+    
+    # Format items
+    my @items = map {
+        { type => 'genome', id => $_->id }
+    } $notebook->genomes;
+    
+    push @items, map {
+        { type => 'experiment', id => $_->id }
+    } $notebook->experiments;
+
+    # Format response
+    $self->render(json => {
+        id => int($notebook->id),
+        name => $notebook->name,
+        description => $notebook->description,
+        type => $notebook->type->name,
+        restricted => $notebook->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+        metadata => \@metadata,
+        items => \@items
+    });
 }
 
 1;

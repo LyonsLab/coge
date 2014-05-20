@@ -36,6 +36,15 @@ sub startup {
     $r->get("/experiments/:id" => [id => qr/\d+/])
         ->name("experiments-fetch")
         ->to("experiment#fetch", id => undef);
+
+    # Notebook routes
+    $r->get("/notebooks/search/#term")
+        ->name("notebooks-search")
+        ->to("notebook#search", term => undef);
+
+    $r->get("/notebooks/:id" => [id => qr/\d+/])
+        ->name("notebooks-fetch")
+        ->to("notebook#fetch", id => undef);
         
     # Not finished yet
 #    $r->post("/experiments")

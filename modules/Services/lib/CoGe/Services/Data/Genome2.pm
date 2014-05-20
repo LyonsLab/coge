@@ -20,7 +20,7 @@ sub search {
 
     # Search genomes
     my $search_term2 = '%' . $search_term . '%';
-    my @genomes= $db->resultset("Genome")->search(
+    my @genomes = $db->resultset("Genome")->search(
         \[
             'genome_id = ? OR name LIKE ? OR description LIKE ?',
             [ 'genome_id', $search_term  ],
@@ -62,7 +62,7 @@ sub fetch {
         return;
     }
 
-    unless ($user->has_access_to_genome($genome)) {
+    unless (defined $user && $user->has_access_to_genome($genome)) {
         $self->render(json => {
             error => { Auth => "Access denied"}
         }, status => 401);
