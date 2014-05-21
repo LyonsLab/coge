@@ -71,7 +71,7 @@ sub fetch {
     }
 
     # Check permissions
-    unless ($user->has_access_to_experiment($experiment)) {
+    unless ( !$experiment->restricted || (defined $user && $user->has_access_to_experiment($experiment)) ) {
         $self->render(json => {
             error => { Auth => "Access denied" }
         }, status => 401);
