@@ -454,6 +454,16 @@ sub validate_quant_data_file {
         	die; # sanity check
         }
 
+        # Validate mandatory fields
+        if (   not defined $chr
+            or not defined $start
+            or not defined $stop
+            or not defined $strand )
+        {
+            print $log "log: error at line $line_num: missing value in a column\n";
+            return;
+        }
+
         # mdb added 2/19/14 for bulk loading based on user request
         if ($allow_negative and $val1 < 0) {
 	       $val1 = abs($val1);
@@ -464,15 +474,6 @@ sub validate_quant_data_file {
             $val1 = abs($val1);
         }
 
-        # Validate values and set defaults
-        if (   not defined $chr
-            or not defined $start
-            or not defined $stop
-            or not defined $strand )
-        {
-            print $log "log: error at line $line_num: missing value in a column\n";
-            return;
-        }
         if ( not defined $val1 or (!$disable_range_check and ($val1 < 0 or $val1 > 1)) ) {
             print $log "log: error at line $line_num: value 1 not between 0 and 1\n";
             return;
