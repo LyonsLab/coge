@@ -30,7 +30,7 @@ sub search {
 
     # Filter response
     my @filtered = grep {
-        !$_->restricted || (defined $user && $user->has_access_to_notebook($_))
+        !$_->restricted || (defined $user && $user->has_access_to_list($_))
     } @notebooks;
 
     # Format response
@@ -60,7 +60,7 @@ sub fetch {
         return;
     }
 
-    unless (defined $user && $user->has_access_to_genome($notebook)) {
+    unless ( !$restricted || (defined $user && $user->has_access_to_genome($notebook)) ) {
         $self->render(json => {
             error => { Auth => "Access denied"}
         }, status => 401);
