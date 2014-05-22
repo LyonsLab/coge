@@ -3,35 +3,24 @@
 
 $(function() {
 	<TMPL_IF NAME='SHOW_RESULTS'>
-	timing('org_search');
-	$("._orgviewresult").fadeIn();
+		timing('org_search');
+		$("._orgviewresult").fadeIn();
 	</TMPL_IF>
 	
-  $('#allorg').hide();
-  if ($('#org_name').val() && $('#org_name').val() != "Search") {
-    $('#org_name').css({fontStyle: "normal"});
-    if($('#org_list').html()) {get_org_info(['args__oid','org_id'],[genome_chain]);} else {timing('org_search');};
-  }  
-  if ($('#org_desc').val() && $('#org_desc').val() != "Search") {
-    $('#org_desc').css({fontStyle: "normal"});
-    timing('org_search');
-  }  
-//  if($('#ds_name').val() && $('#ds_name').val() != "Search") {
-//    $('#ds_name').css({fontStyle: "normal"});
-//    if ($('#ds_list').html() == "undefined") {
-//     timing('ds_name');
-//    } else { dataset_info_chain();}
-//  }
+	// Auto-show results
+    if ($('#org_search').val()) {
+        timing('org_search');
+    }  
   
-  $(".dialog").dialog({ autoOpen: false} );
+    $(".dialog").dialog({ autoOpen: false} );
 
-  //set up jquery ajax
-  $.ajaxSetup({
-                type: "GET",
-                url: "<TMPL_VAR NAME='PAGE_NAME'>",
-                dataType: "html",
-                cache: false,
-        });
+    // Initialize jQuery AJAX
+    $.ajaxSetup({
+        type: "GET",
+        url: "<TMPL_VAR NAME='PAGE_NAME'>",
+        dataType: "html",
+        cache: false,
+    });
 });
 
 $.fn.sortSelect = function(){
@@ -394,66 +383,6 @@ function get_feat_gc(opts){
          },
    success: function(data) {$('#gc_histogram').html(data);}
  });
-
-}
-
-function chr_hist (dsgid){
-   $('#chromosome_hist').html('loading...');
-  $.ajax({
-   data: {
-          jquery_ajax: 1,
-          fname: 'get_chr_length_hist',
-	  dsgid: dsgid,
-	  },
-   success: function (data) {$('#chromosome_hist').html(data);}
-  });
-}
-
-function search_bar(div_id){
-  if($('#'+div_id).val() == "Search") $('#'+div_id).val("").css({fontStyle: "normal"});
-}
-
-function restore_search_bar(div_id){
-  if(! $('#'+div_id).val()) {
-    $('#'+div_id).val("Search").css({fontStyle: "italic"});
-  }
-}
-
-function changeColor(id, color) {
-  document.getElementById(id).style.color = color;
-}
-
-$(function() {
- //substaniate dialog boxes	     
-        $(".dialog_box").dialog({ autoOpen: false, width: 500 });
-});
-
-function make_dsg_public (dsgid) {
- $.ajax({
-        data: {
-     	   jquery_ajax: 1,
-	   fname: 'make_genome_public',
-	   dsgid: dsgid,
-           },
-        success : function(val) {
-	      if (val != 1) {alert(val);}
-	      get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);
-	},
-      });
-}
-
-function make_dsg_private (dsgid) {
- $.ajax({
-        data: {
-     	   jquery_ajax: 1,
-	   fname: 'make_genome_private',
-	   dsgid: dsgid,
-           },
-        success : function(val) {
-	      if (val != 1) {alert(val);}
-	      get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);
-	},
-      });
 }
 
 function edit_genome_info (dsgid) {
@@ -472,57 +401,56 @@ function edit_genome_info (dsgid) {
 }
 
 function update_genome_info (dsgid) {
- dsg_name = $('#dsg_name').val();
- dsg_desc = $('#dsg_desc').val();
- dsg_ver = $('#dsg_ver').val();
- dsg_message = $('#dsg_message').val();
- dsg_link = $('#dsg_link').val();
- $.ajax({
+    dsg_name = $('#dsg_name').val();
+    dsg_desc = $('#dsg_desc').val();
+    dsg_ver = $('#dsg_ver').val();
+    dsg_message = $('#dsg_message').val();
+    dsg_link = $('#dsg_link').val();
+    $.ajax({
         data: {
-     	   jquery_ajax: 1,
-	   fname: 'update_genome_info',
-	   dsgid: dsgid,
-	   name: dsg_name,
-	   desc: dsg_desc,
-	   ver: dsg_ver,
-	   message: dsg_message,
-	   link: dsg_link
-           },
+     	    jquery_ajax: 1,
+     	    fname: 'update_genome_info',
+     	    dsgid: dsgid,
+     	    name: dsg_name,
+     	    desc: dsg_desc,
+     	    ver: dsg_ver,
+     	    message: dsg_message,
+     	    link: dsg_link
+        },
         success : function(val) {
-	      if (val != 1) {alert(val);}
-	      $('#edit_genome_info').html('');
-	      $('#edit_genome_info').dialog('close');
-	      get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);
-	},
-      });
+        	if (val != 1) {alert(val);}
+        	$('#edit_genome_info').html('');
+        	$('#edit_genome_info').dialog('close');
+        	get_genome_info(['args__dsgid','dsg_id'], [dataset_chain]);
+        },
+    });
 }
 
 function export_gff () {
- var server = '<TMPL_VAR NAME="SERVER">';
- var link = server+"bin/export/coge_gff.pl?dsgid=";
- link += $('#dsg_id').val();
- if ($('#cds_only')[0].checked) {link += ";cds=1";}
- if ($('#annos')[0].checked) {link += ";annos=1";}
- if ($('#name_unique')[0].checked) {link += ";nu=1";}
- if ($('#upa')[0].checked) {link += ";upa=1";}
- link += ";id_type="+$('#gff_id_type').val();
- $('#export_gff_link').html("<a href="+link+" target=_new>Link: "+ link+"<\a>");
- window.open(link);
-
+    var server = '<TMPL_VAR NAME="SERVER">';
+    var link = server+"bin/export/coge_gff.pl?dsgid=";
+    link += $('#dsg_id').val();
+    if ($('#cds_only')[0].checked) {link += ";cds=1";}
+    if ($('#annos')[0].checked) {link += ";annos=1";}
+    if ($('#name_unique')[0].checked) {link += ";nu=1";}
+    if ($('#upa')[0].checked) {link += ";upa=1";}
+    link += ";id_type="+$('#gff_id_type').val();
+    $('#export_gff_link').html("<a href="+link+" target=_new>Link: "+ link+"<\a>");
+    window.open(link);
 }
 
 function export_tbl () {
- var server = '<TMPL_VAR NAME="SERVER">';
- var link = server+"bin/export/export_NCBI_TBL.pl?dsgid=";
- link += $('#dsg_id').val();
- window.open(link);
+    var server = '<TMPL_VAR NAME="SERVER">';
+    var link = server+"bin/export/export_NCBI_TBL.pl?dsgid=";
+    link += $('#dsg_id').val();
+    window.open(link);
 }
 
 function export_bed () {
- var server = '<TMPL_VAR NAME="SERVER">';
- var link = server+"bin/export/coge2bed.pl?gid=";
- link += $('#dsg_id').val();
- window.open(link);
+    var server = '<TMPL_VAR NAME="SERVER">';
+    var link = server+"bin/export/coge2bed.pl?gid=";
+    link += $('#dsg_id').val();
+    window.open(link);
 }
 
 </script>
@@ -592,17 +520,11 @@ function export_bed () {
 	<td>
   <DIV id="gn_list"  ><TMPL_VAR NAME="GN_LIST"></DIV>
 
-<!--   <td valign=top>
-   Organisms With Recently Added Datasets:
-    <DIV id="recent_orgs"><a href="#" onclick="get_recent_orgs([],['recent_orgs']);">Show</a></DIV>-->
-
 <TR nowrap>
   <TD colspan=2 align=left valign=top nowrap>
    <div class="inline top" id="viewer"></div>
    <div class="inline top" id="get_seq"></div>
 </Table>
-
-
 
 
 
