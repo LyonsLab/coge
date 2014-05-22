@@ -4,14 +4,15 @@ use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON qw( decode_json );
 use Data::Dumper;
 use File::Path qw( mkpath );
-use File::Basename qw( basename );
+use File::Basename qw( basename dirname );
+use File::Spec::Functions qw( catdir catfile );
 #use IO::Compress::Gzip 'gzip';
 use CoGeX;
 use CoGe::Services::Auth;
 use CoGe::Accessory::Utils;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
-use CoGe::Accessory::IRODS;
+use CoGe::Accessory::IRODS qw( irods_iget );
 
 sub search {
     my $self = shift;
@@ -116,7 +117,7 @@ sub fetch {
 sub add {
     my $self = shift;
     my $data = $self->req->json;
-    #print STDERR Dumper $data, "\n";
+    print STDERR (caller(0))[3], "\n", Dumper $data, "\n";
     
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
@@ -131,8 +132,8 @@ sub add {
         return;
     }
     
-    # Check permissions to add to genome
-    unless ($user && ($user->is_admin || $user->is_owner_editor( dsg => $gid ))) {
+    # User authentication is required to add experiment
+    unless (defined $user) {
         $self->render(json => {
             error => { Auth => "Access denied" }
         });
@@ -140,6 +141,8 @@ sub add {
     }
     
     # TODO validate metadata parameters
+    
+    # Valid data items
     if (!@{ $data->{items} }) {
         $self->render(json => {
             error => { Error => "No data items specified" }
@@ -148,6 +151,7 @@ sub add {
     }
     
     # Connect to workflow engine and get an id
+    # TODO move this into a common function in middle lay to be used for all experiment loads
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
     my $job = $db->resultset('Job')->create(
         {
@@ -166,15 +170,17 @@ sub add {
     }
     
     my $load_id = CoGe::Accessory::Utils::get_unique_id();
-    my $tempdir = File::Spec->catdir($conf->{SECTEMPDIR}, 'api', $user->name, $load_id);
-    my $staging_dir = File::Spec->catdir($tempdir, 'staging');
+    #FIXME add routine to Storage.pm to get staging & results paths
+    my $staging_dir = catdir($conf->{SECTEMPDIR}, 'staging', 'experiment', $user->name, $job->id);
     mkpath($staging_dir);
+    my $result_dir = catdir($conf->{SECTEMPDIR}, 'results', 'experiment', $user->name, $job->id);
+    mkpath($result_dir);
     
     # Create the workflow
     my $workflow = $jex->create_workflow(
         id => $job->id,
-        name => 'blah blah blah',
-        logfile => $staging_dir.'/log_main.txt'
+        name => 'Experiment Batch Add',
+        logfile => catfile($staging_dir, 'log_main.txt')
     );
     
     my %load_params;
@@ -192,7 +198,7 @@ sub add {
         push @staged_files, $load_params{outputs}[0];
     }
     
-    %load_params = _create_load_job($conf, $data, $user, $staging_dir, \@staged_files);
+    %load_params = _create_load_job($conf, $data, $user, $staging_dir, \@staged_files, $result_dir);
     unless ( $workflow and %load_params ) {
         $self->render(json => {
             error => { Error => "Could not create load task" }
@@ -200,7 +206,6 @@ sub add {
         return;
     }
     $workflow->add_job(%load_params);
-    
     
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);
@@ -226,26 +231,26 @@ sub add {
 sub _create_iget_job {
     my ($conf, $irods_path, $staging_dir) = @_;
     
-    my $dest = $irods_path;
-    my $cmd = CoGe::Accessory::IRODS::irods_iget( $irods_path, undef, { no_execute => 1 } );
+    my $dest_file = catdir($staging_dir, 'irods', $irods_path);
+    my $dest_path = dirname($dest_file);
+    mkpath($dest_path);
+    my $cmd = irods_iget( $irods_path, $dest_path, { no_execute => 1 } );
     
     return (
         cmd => $cmd,
         script => undef,
-        args => [
-            ['', $dest, 1]
-        ],
+        args => [],
         inputs => [],
         outputs => [
-            File::Spec->catdir($staging_dir, 'irods', $dest)
+            $dest_file
         ],
         description => "Fetching $irods_path..."    
     );
 }
 
 sub _create_load_job {
-    my ($conf, $data, $user, $staging_dir, $files) = @_;
-    my $cmd = File::Spec->catdir(($conf->{SCRIPTDIR}, "load_experiment.pl"));
+    my ($conf, $data, $user, $staging_dir, $files, $result_dir) = @_;
+    my $cmd = catfile($conf->{SCRIPTDIR}, "load_experiment.pl");
     return unless $cmd; # SCRIPTDIR undefined
     
     my $file_str = join(',', map { basename($_) } @$files);
@@ -263,17 +268,18 @@ sub _create_load_job {
             ['-source_name', '"' . $data->{source_name} . '"', 0],
             #['-types', qq{"Expression"}, 0], # FIXME
             #['-annotations', $ANNOTATIONS, 0],
-            ['-staging_dir', 'staging', 0],
+            ['-staging_dir', "'$staging_dir'", 0],
             ['-file_type', "csv", 0], # FIXME
-            ['-data_file', "$file_str", 0],
-            ['-config', $conf->{_CONFIG_PATH}, 1]
+            ['-data_file', "'$file_str'", 0],
+            ['-config', $conf->{_CONFIG_PATH}, 1],
+            ['-result_dir', "'$result_dir'", 0]
         ],
         inputs => [
             ($conf->{_CONFIG_PATH}, @$files)
         ],
         outputs => [
             [$staging_dir, 1],
-            File::Spec->catdir($staging_dir, 'log.done')
+            catdir($staging_dir, 'log.done')
         ],
         description => "Loading experiment data..."
     );

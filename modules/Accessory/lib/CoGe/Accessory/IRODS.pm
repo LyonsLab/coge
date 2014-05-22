@@ -117,7 +117,7 @@ sub irods_chksum {
 
 sub irods_iget {
     my ( $src, $dest, $opts ) = @_;
-    my $no_execute = ( $opts and $opts->{no_execute} ); # mdb added 4/10/14 for REST API
+    my $no_execute = ( $opts and $opts->{no_execute} ); # mdb added 4/10/14 for REST API, get command name but don't execute
 
     #print STDERR "irods_iget $src $dest\n";
     my $env_file = _irods_get_env_file();
