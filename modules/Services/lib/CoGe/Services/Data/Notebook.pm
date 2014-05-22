@@ -60,7 +60,7 @@ sub fetch {
         return;
     }
 
-    unless ( !$restricted || (defined $user && $user->has_access_to_genome($notebook)) ) {
+    unless ( !$notebook->restricted || (defined $user && $user->has_access_to_genome($notebook)) ) {
         $self->render(json => {
             error => { Auth => "Access denied"}
         }, status => 401);
