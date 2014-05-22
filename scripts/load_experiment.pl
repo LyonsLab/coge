@@ -373,7 +373,7 @@ CoGe::Accessory::Web::log_history(
 # Save results for web services
 if ($result_dir) {
     my %result = (
-        experiment_id => $experiment->id
+        experiment_id => int($experiment->id)
     );
     my $result_file_path = catfile($result_dir, '1');
     CoGe::Accessory::TDS::write($result_file_path, \%result);
