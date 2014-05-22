@@ -220,8 +220,8 @@ sub add {
     $self->render(json => 
         {
             success => Mojo::JSON->true,
-            job_id => $job->id,
-            link => ''
+            job_id => int($job->id),
+            link => undef
         }
     );
 }
