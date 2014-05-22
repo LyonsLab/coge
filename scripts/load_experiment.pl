@@ -7,13 +7,15 @@ use Getopt::Long;
 use File::Path;
 use File::Touch;
 use File::Basename qw( basename );
+use File::Spec::Functions qw( catdir catfile );
 use URI::Escape::JavaScript qw(unescape);
 use JSON::XS;
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Utils qw( commify );
 use CoGe::Accessory::Metadata qw( create_annotations );
+use CoGe::Accessory::TDS;
 
-use vars qw($staging_dir $install_dir $data_file $file_type $log_file
+use vars qw($staging_dir $result_dir $install_dir $data_file $file_type $log_file
   $name $description $version $restricted $ignore_missing_chr
   $gid $source_name $user_name $config $allow_negative $disable_range_check
   $annotations $types
@@ -34,6 +36,7 @@ my $MIN_GFF_COLUMNS = 9;
 GetOptions(
     "staging_dir=s" => \$staging_dir,    # temporary staging path
     "install_dir=s" => \$install_dir,    # final installation path
+    "result_dir=s"  => \$result_dir,     # results path (for Web Services only)
     "data_file=s"   => \$data_file,      # input data file (JS escape)
     "file_type=s"   => \$file_type,		 # input file type
     "name=s"        => \$name,           # experiment name (JS escaped)
@@ -65,7 +68,7 @@ GetOptions(
 
 # Open log file
 $| = 1;
-$log_file = "$staging_dir/log.txt" unless $log_file;
+$log_file = catfile($staging_dir, 'log.txt') unless $log_file;
 mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
 open( my $log, ">>$log_file" ) or die "Error opening log file $log_file";
 $log->autoflush(1);
@@ -202,7 +205,7 @@ if (not $ignore_missing_chr) {
 
 # Save data format doc
 if ($format) {
-    my $format_file = $staging_dir . '/' . 'format.json';
+    my $format_file = catfile($staging_dir, 'format.json');
     open(my $out, '>', $format_file);
     print $out encode_json($format);
     close($out);
@@ -299,13 +302,12 @@ if ($annotations) {
 # Determine installation path
 unless ($install_dir) {
     unless ($P) {
-        print $log
-"log: error: can't determine install directory, set 'install_dir' or 'config' params\n";
+        print $log "log: error: can't determine install directory, set 'install_dir' or 'config' params\n";
         exit(-1);
     }
     $install_dir = $P->{EXPDIR};
 }
-my $storage_path = "$install_dir/" . CoGe::Accessory::Storage::get_tiered_path( $experiment->id ) . '/';
+my $storage_path = catdir($install_dir, CoGe::Accessory::Storage::get_tiered_path( $experiment->id ));
 print $log 'Storage path: ', $storage_path, "\n";
 # mdb removed 8/7/13, issue 77
 #$experiment->storage_path($storage_path);
@@ -367,6 +369,15 @@ CoGe::Accessory::Web::log_history(
     description => 'load experiment id' . $experiment->id,
     link        => 'ExperimentView.pl?eid=' . $experiment->id
 );
+
+# Save results for web services
+if ($result_dir) {
+    my %result = (
+        experiment_id => $experiment->id
+    );
+    my $result_file_path = catfile($result_dir, '1');
+    CoGe::Accessory::TDS::write($result_file_path, \%result);
+}
 
 # Create "log.done" file to indicate completion to JEX
 my $logdonefile = "$staging_dir/log.done";
