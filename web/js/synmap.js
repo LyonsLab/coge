@@ -876,7 +876,10 @@ function checkRequestSize(url) {
             filter = Filter("syntenic_pairs"),
             builder = PlotBuilder(),
             changedEvent = Event();
+            plotElement = $("<div></div>", { id: _.uniqueId("plot") });
             my = {};
+
+        plotElement.appendTo(element);
 
         my.onChanged = function(callback) {
             changedEvent.attach(callback);
@@ -948,7 +951,8 @@ function checkRequestSize(url) {
                 return active;
             };
 
-            var plot = new DotPlot(element.id, {
+            plotElement.html("");
+            var plot = new DotPlot(plotElement.attr("id"), {
                 size: { width: 1000, height: 800 },
                 genomes: [{
                     name: data.xtitle,
