@@ -19,10 +19,9 @@ no warnings 'redefine';
 
 use vars qw($P $PAGE_NAME $PAGE_TITLE $LINK
   $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM
-  %FUNCTION $P $SERVER);
+  %FUNCTION $P $SERVER $MAX_NUM_ORGANISM_RESULTS);
 
 $| = 1;    # turn off buffering
-
 
 $PAGE_TITLE = 'OrganismView';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
@@ -37,6 +36,8 @@ $TEMPDIR   = $P->{TEMPDIR} . "/$PAGE_TITLE";
 $TEMPURL   = $P->{TEMPURL} . "/$PAGE_TITLE";
 $SERVER    = $P->{SERVER};
 $HISTOGRAM = $P->{HISTOGRAM};
+
+$MAX_NUM_ORGANISM_RESULTS = 5000;
 
 %FUNCTION = (
     get_genomes             => \&get_genomes,
@@ -163,11 +164,8 @@ sub gen_body {
     $template->param( SERVER => $SERVER );
     $org      = $dsg->organism if $dsg;
     $org_name = $org->name     if $org;
-    #$org_name = "Search" unless $org_name;
-    $template->param( ORG_NAME => $org_name ) if $org_name;
-    $desc = "Search" unless $desc;
-    $template->param( ORG_DESC => $desc ) if $desc;
-    $org_name = "" if $org_name =~ /Search/;
+    $org_name .= $desc if $desc; # mdb added 4/22/14 combined org name & desc searches into single input
+    $template->param( ORG_SEARCH => $org_name ) if $org_name;
 
     my ( $org_list, $org_count ) =
       get_orgs( name => $org_name, oid => $oid, dsgid => $dsgid );
@@ -345,19 +343,18 @@ sub get_orgs {
     my $dsg   = $coge->resultset('Genome')->find($dsgid) if $dsgid;
     $dsg = undef unless $USER->has_access_to_genome($dsg);
 
-    my @db;
-    my $count = 0;
-    if ($name) {
-        @db = $coge->resultset("Organism")->search( { name => { like => "%" . $name . "%" } } );
-    }
-    elsif ($desc) {
-        @db = $coge->resultset("Organism")->search( { description => { like => "%" . $desc . "%" } } );
-    }
-    else {
-        $count = $coge->resultset("Organism")->count();
+    my $search_term = '%' . $name . '%';
+    my @db = $coge->resultset("Organism")->search(
+        \[
+            'name LIKE ? OR description LIKE ?',
+            [ 'name', $search_term ], [ 'description', $search_term ]
+        ]
+    );
+    
+    if (@db > $MAX_NUM_ORGANISM_RESULTS) {
         return (
             qq{<input type="hidden" name="org_id" id="org_id"><span class="small alert">Please refine your search</span>},
-            $count
+            scalar(@db)
         );
     }
 
@@ -378,7 +375,6 @@ sub get_orgs {
         $html .= qq{<input type="hidden" name="org_id" id="org_id"><span class="small alert">No organisms found</span>};
         return $html, 0;
     }
-    $count = scalar @db unless $count;
     $html .= qq{<SELECT class="ui-widget-content ui-corner-all" id="org_id" size="5" MULTIPLE onChange="get_org_info(['args__oid','org_id'],[genome_chain])" >\n};
     $html .= join( "\n", @opts );
     $html .= "\n</SELECT>\n";
@@ -389,7 +385,7 @@ sub get_orgs {
     $opts .= "oid=$oid;"     if $oid;
     $opts .= "dsgid=$dsgid;" if $dsgid;
     $html .= qq{<!--<div class="padded"><span class='ui-button ui-corner-all' onclick="window.open('get_org_list.pl$opts');">Download Organism List</span></div>-->};
-    return $html, $count;
+    return $html, scalar(@db);
 }
 
 sub update_genomelist {
