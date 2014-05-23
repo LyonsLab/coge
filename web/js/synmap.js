@@ -212,7 +212,7 @@ function get_params(name, regenerate) {
 
 function close_dialog(dialog) {
     dialog.dialog('close');
-    dialog.find('#text').html('');
+    dialog.find('#text').empty();
     dialog.find('#progress').show();
     dialog.find('#dialog_error').hide();
     dialog.find('#dialog_success').hide();
@@ -226,7 +226,7 @@ function load_results() {
 
 function handle_results(val){
     $('#results').html(val);
-    $(function() {$("#synmap_zoom_box").draggable();});
+    $("#synmap_zoom_box").draggable();
     setup_button_states();
 }
 
@@ -861,8 +861,7 @@ function checkRequestSize(url) {
         var el = $(view.el());
 
         el.draggable({
-            handle: "h3",
-            containment: "parent",
+            handle: "h3"
         });
 
         return view;
@@ -951,7 +950,7 @@ function checkRequestSize(url) {
                 return active;
             };
 
-            plotElement.html("");
+            plotElement.empty();
             var plot = new DotPlot(plotElement.attr("id"), {
                 size: { width: 1000, height: 800 },
                 genomes: [{
