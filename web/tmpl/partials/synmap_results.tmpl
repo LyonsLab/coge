@@ -27,24 +27,24 @@
     dotplot viewer.<br><br>
 <b>Use the mouse scroll wheel to zoom in/out, the left button to pan (when zoomed in), and shift+left button to select a region.</b>
     </div>
-    <h3 class="toolbar">
-        <input type="checkbox" id="allpoints">
-        <label for="allpoints">Show non-syntenic matches</label>
-        <span class="seperator"></span>
-        <input type="checkbox" checked="checked" id="boxes">
-        <label for="boxes">Show syntenic regions</label>
-        <span class="seperator"></span>
-        <button id="reset">Reset zoom level</button>
-        <span class="seperator"></span>
-        <label for="sortType">Sort Chromosomes by:</label>
-        <select id="sortType">
-            <option value="length">Length</option>
-            <option value="name">Name</option>
-        </select>
-        <button id="sort">Sort</button>
-    </h3>
     <div id="dotplot-errors" class="padded alert"></div>
     <div id="dotplot" style="margin-top: 10px;">
+        <h3 class="toolbar">
+            <input type="checkbox" id="allpoints">
+            <label for="allpoints">Show non-syntenic matches</label>
+            <span class="seperator"></span>
+            <input type="checkbox" checked="checked" id="boxes">
+            <label for="boxes">Show syntenic regions</label>
+            <span class="seperator"></span>
+            <button id="reset">Reset zoom level</button>
+            <span class="seperator"></span>
+            <label for="sortType">Sort Chromosomes by:</label>
+            <select id="sortType">
+                <option value="length">Length</option>
+                <option value="name">Name</option>
+            </select>
+            <button id="sort">Sort</button>
+        </h3>
         <tmpl_include name="../widgets/Spinner.tmpl">
     </div>
     <br>
@@ -265,7 +265,7 @@ $(document).ready(function(){
                 sortHandler = function() {
                     var sortfunc;
 
-                    dotplot.html("");
+                    dotplot.find(".spinner").remove("");
                     sortField= sortType.val();
                     sortButton.attr("disabled", "disabled");
 
