@@ -28,7 +28,7 @@
 <b>Use the mouse scroll wheel to zoom in/out, the left button to pan (when zoomed in), and shift+left button to select a region.</b>
     </div>
     <div id="dotplot-errors" class="padded alert"></div>
-    <div id="dotplot" style="margin-top: 10px;">
+    <div id="dotplot" style="margin-top: 10px; z-index: 10;">
         <h3 class="toolbar">
             <input type="checkbox" id="allpoints">
             <label for="allpoints">Show non-syntenic matches</label>
@@ -48,7 +48,7 @@
         <tmpl_include name="../widgets/Spinner.tmpl">
     </div>
     <br>
-    <div id="histogram" class="padded hidden">
+    <div id="histogram" class="padded hidden" style="z-index: 10;">
         <h3 class="toolbar">
             <label for="hist_data">Dataset</label>
             <select id="hist_data">
@@ -265,7 +265,7 @@ $(document).ready(function(){
                 sortHandler = function() {
                     var sortfunc;
 
-                    dotplot.find(".spinner").remove("");
+                    dotplot.find(".spinner").remove();
                     sortField= sortType.val();
                     sortButton.attr("disabled", "disabled");
 
