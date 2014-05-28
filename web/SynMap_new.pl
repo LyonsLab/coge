@@ -2472,12 +2472,12 @@ sub go {
     my $old  = $resp->request->uri;
     $old =~ s/SynMap/SynMap_old/;
 
-    my $response = decode_json($YERBA->submit_workflow($workflow));
+    my $response = $YERBA->submit_workflow($workflow);
 
     return encode_json({
         link     => $tiny_link,
         old_link => $old,
-        request  => "jex/synmap/status/" . $job->id,
+        request  => "jex/synmap/status/" . $response->{id},
         status   => $response->{status}
     });
 }

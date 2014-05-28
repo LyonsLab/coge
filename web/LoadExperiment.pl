@@ -7,11 +7,13 @@ use CGI;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
+use CoGe::Accessory::TDS;
 use CoGe::Accessory::Utils;
 use HTML::Template;
 use JSON::XS;
 use URI::Escape::JavaScript qw(escape);
 use File::Path;
+use File::Spec::Functions;
 use File::Copy;
 use File::Basename;
 use File::Listing qw(parse_dir);
@@ -497,14 +499,21 @@ sub load_experiment {
         
         # Run analysis script
         print STDERR "child running: $cmd\n";
-        execute($cmd);
+        my $statusCode = execute($cmd);
         
+
+        if ($statusCode) {
+            return encode_json({ error => 'Failed to execute job' });
+        }
+
+        my $job_id = CoGe::Accessory::TDS::read(catdir($stagepath, "workflow.json"));
+
         # Get tiny link
         my $link = CoGe::Accessory::Web::get_tiny_link(
-            url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $job->id . ";load_id=$LOAD_ID"
+            url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $job_id->{id} . ";load_id=$LOAD_ID"
         );
 
-        return encode_json({ job_id => $job->id, link => $link });
+        return encode_json({ job_id => $job_id->{id}, link => $link });
     }
     # Else, all other file types
     else {

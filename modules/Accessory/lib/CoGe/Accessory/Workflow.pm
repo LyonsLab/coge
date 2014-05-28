@@ -21,6 +21,12 @@ has 'name' => (
     default  => "",
 );
 
+has 'priority' => (
+    is       => 'ro',
+    isa      => 'Int',
+    default  => 0,
+);
+
 has 'logfile' => (
     is       => 'ro',
     isa      => 'Str',

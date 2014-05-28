@@ -808,13 +808,15 @@ sub find_snps {
     if (execute($cmd)) {
         return encode_json({ error => 'Failed to execute job' });
     }
+
+    my $job_id = CoGe::Accessory::TDS::read(catdir($stagepath, "workflow.json"));
         
     # Get tiny link
     my $link = CoGe::Accessory::Web::get_tiny_link(
-        url => $P->{SERVER} . "$PAGE_TITLE.pl?eid=$eid;job_id=" . $job->id . ";load_id=$load_id"
+        url => $P->{SERVER} . "$PAGE_TITLE.pl?eid=$eid;job_id=" . $job_id->{id} . ";load_id=$load_id"
     );
 
-    return encode_json({ job_id => $job->id, link => $link });
+    return encode_json({ job_id => $job_id->{id}, link => $link });
 }
 
 sub get_progress_log {

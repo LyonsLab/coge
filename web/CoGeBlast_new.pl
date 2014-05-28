@@ -831,7 +831,7 @@ sub blast_search {
     }
 
     my $status = $YERBA->submit_workflow($workflow);
-    $YERBA->wait_for_completion( $workflow->id );
+    $YERBA->wait_for_completion( $status->{id} );
 
     my @completed;
 
