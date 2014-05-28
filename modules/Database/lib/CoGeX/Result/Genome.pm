@@ -5,7 +5,7 @@ use warnings;
 use base 'DBIx::Class::Core';
 
 #use CoGeX::ResultSet::Genome;
-use CoGe::Accessory::Storage qw( get_genome_seq get_genome_file );
+use CoGe::Core::Storage qw( get_genome_seq get_genome_file );
 use CoGe::Accessory::Utils qw( commify );
 use JSON qw(encode_json);
 use Data::Dumper;
@@ -545,13 +545,13 @@ sub get_genomic_sequence {
 # mdb added 7/29/13, issue #77
 sub file_path {
     my $self = shift;
-    return CoGe::Accessory::Storage::get_genome_file( $self->id );
+    return CoGe::Core::Storage::get_genome_file( $self->id );
 }
 
 # mdb added 8/6/13, issue #157
 sub create_index {
     my $self = shift;
-    return CoGe::Accessory::Storage::index_genome_file( gid => $self->id );
+    return CoGe::Core::Storage::index_genome_file( gid => $self->id );
 }
 
 sub is_indexed {

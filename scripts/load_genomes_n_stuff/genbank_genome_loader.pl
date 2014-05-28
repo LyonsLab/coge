@@ -7,7 +7,7 @@ use Getopt::Long;
 use CoGeX;
 use File::Path;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Storage;
+use CoGe::Core::Storage;
 use CoGe::Accessory::GenBank;
 use POSIX qw(ceil);
 
@@ -621,7 +621,7 @@ accn: foreach my $accn (@accns) {
 			print $log "Creating install path for sequences ...\n";
 			$install_dir =
 			  "$install_dir/"
-			  . CoGe::Accessory::Storage::get_tiered_path( $genome->id ) . "/";
+			  . CoGe::Core::Storage::get_tiered_path( $genome->id ) . "/";
 			if ($GO) {
 				mkpath($install_dir);
 				unless ( -d $install_dir ) {
@@ -773,7 +773,7 @@ sub add_and_index_sequence {
 	print OUT $fasta;
 	close OUT;
 	print $log "Indexing genome file\n";
-	my $rc = CoGe::Accessory::Storage::index_genome_file(
+	my $rc = CoGe::Core::Storage::index_genome_file(
 		file_path => $file,
 		compress  => $compress
 	);

@@ -13,7 +13,7 @@ use URI::Escape::JavaScript qw(unescape);
 
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Jex;
-use CoGe::Accessory::Storage qw(get_genome_file get_experiment_files);
+use CoGe::Core::Storage qw(get_genome_file get_experiment_files);
 use CoGe::Accessory::Web qw(get_defaults get_job schedule_job);
 
 our ($DESC, $YERBA, $LOG, $DEBUG, $P, $db, $host, $port, $user, $pass,
