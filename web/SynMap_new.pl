@@ -2532,63 +2532,23 @@ sub get_results {
     );
 
     given ( lc( $YERBA->get_status( $job->id ) ) ) {
-        when ('completed') {
-            if ( $job->status != 2 ) {
-                $job->update(
-                    {
-                        status => 2,
-                        end_time => \"current_timestamp",
-                    }
-                );
-            }
-        }
         when ('failed') {
-            if ( $job->status != 5 ) {
-                $job->update(
-                    {
-                        status => 5,
-                        end_time => \"current_timestamp",
-                    }
-                );
-            }
+            return encode_json({
+                error => "The workflow failed."
+            })
         }
 
         when ('cancelled') {
-            if ( $job->status != 3 ) {
-                $job->update(
-                    {
-                        status => 3,
-                        end_time => \"current_timestamp",
-                    }
-                );
-            }
+            return encode_json({
+                error => "The workflow was cancelled."
+            })
         }
 
         when ('terminated') {
-            if ( $job->status != 4 ) {
-                $job->update(
-                    {
-                        status => 4,
-                        end_time => \"current_timestamp",
-                    }
-                );
-            }
+            return encode_json({
+                error => "The workflow was terminated."
+            })
         }
-    }
-
-    if ( $job->status == 1 ) {
-        return encode_json({ error => 'The analysis is still running.'});
-    }
-    elsif ( $job->status == 3 ) {
-        return encode_json({ error => 'The analysis was cancelled'});
-    }
-    elsif ( $job->status == 4 ) {
-        return encode_json({error => 'The analysis was terminated.'});
-    }
-    elsif ( $job->status == 5 ) {
-        return encode_json({
-                error => 'A problem was encountered the analysis'
-                 . ' failed to be generated.'});
     }
 
     ############################################################################
