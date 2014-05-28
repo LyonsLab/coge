@@ -11,7 +11,7 @@ use Getopt::Long qw(GetOptions);
 use JSON qw(decode_json);
 use URI::Escape::JavaScript qw(unescape);
 
-use CoGe::Accessory::Notebook qw( create_notebook );
+use CoGe::Core::Notebook qw( create_notebook );
 use CoGe::Accessory::Metadata qw( create_annotations );
 use CoGeX;
 
