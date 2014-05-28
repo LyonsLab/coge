@@ -169,7 +169,6 @@ sub add {
         return;
     }
     
-    my $load_id = CoGe::Accessory::Utils::get_unique_id();
     #FIXME add routine to Storage.pm to get staging & results paths
     my $staging_dir = catdir($conf->{SECTEMPDIR}, 'staging', 'experiment', $user->name, $job->id);
     mkpath($staging_dir);
