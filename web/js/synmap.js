@@ -132,10 +132,7 @@ function schedule(params) {
             if (data.status == 'Attached' || data.status == 'Scheduled') {
                 var link = "Return to this analysis: <a href="
                 + data.link + " onclick=window.open('tiny')"
-                + "target = _new>" + data.link + "</a><br>"
-                + "To run this analysis on the previous version of SynMap <a href="
-                + data.old_link + " onclick=window.open('tiny')"
-                + "target = _new>click here</a>";
+                + "target = _new>" + data.link + "</a>";
 
                 var logfile = '<a href="tmp/SynMap/'
                 + pageObj.basename + '.log">Logfile</a>';
