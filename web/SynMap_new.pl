@@ -2466,17 +2466,10 @@ sub go {
     CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
-
-    my $ua   = LWP::UserAgent->new;
-    my $resp = $ua->get($tiny_link);
-    my $old  = $resp->request->uri;
-    $old =~ s/SynMap/SynMap_old/;
-
     my $response = $YERBA->submit_workflow($workflow);
 
     return encode_json({
         link     => $tiny_link,
-        old_link => $old,
         request  => "jex/synmap/status/" . $response->{id},
         status   => $response->{status}
     });
