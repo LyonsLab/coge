@@ -3,7 +3,7 @@
 use strict;
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Storage qw( index_genome_file get_tiered_path );
+use CoGe::Core::Storage qw( index_genome_file get_tiered_path );
 use CoGe::Accessory::Utils qw( commify units print_fasta );
 use CoGe::Accessory::IRODS qw( irods_imeta $IRODS_METADATA_PREFIX );
 use Data::Dumper;
@@ -142,7 +142,7 @@ print $log "log: Processed " . commify($numSequences) . " sequences total\n";
 
 # Index the overall fasta file
 print $log "Indexing genome file\n";
-my $rc = CoGe::Accessory::Storage::index_genome_file(
+my $rc = CoGe::Core::Storage::index_genome_file(
     file_path => "$staging_dir/genome.faa",
     compress  => $compress
 );
@@ -213,7 +213,7 @@ unless ($install_dir) {
     $install_dir = $P->{SEQDIR};
 }
 $install_dir = "$install_dir/"
-  . CoGe::Accessory::Storage::get_tiered_path( $genome->id ) . "/";
+  . CoGe::Core::Storage::get_tiered_path( $genome->id ) . "/";
 print $log "install path: $install_dir\n";
 
 # mdb removed 7/29/13, issue 77

@@ -5,7 +5,7 @@ use warnings;
 use Data::Dumper;
 use POSIX;
 use Carp qw (cluck);
-use CoGe::Accessory::Storage qw( reverse_complement );
+use CoGe::Core::Storage qw( reverse_complement );
 
 use base 'DBIx::Class::Core';
 

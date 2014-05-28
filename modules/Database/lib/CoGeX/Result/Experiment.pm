@@ -184,7 +184,7 @@ sub experiment_types {
 # mdb added 8/7/13 issue 77
 sub storage_path {
     my $self = shift;
-    return CoGe::Accessory::Storage::get_experiment_path( $self->id );
+    return CoGe::Core::Storage::get_experiment_path( $self->id );
 }
 
 ################################################ subroutine header begin ##
