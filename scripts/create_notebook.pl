@@ -12,7 +12,7 @@ use JSON qw(decode_json);
 use URI::Escape::JavaScript qw(unescape);
 
 use CoGe::Core::Notebook qw( create_notebook );
-use CoGe::Accessory::Metadata qw( create_annotations );
+use CoGe::Core::Metadata qw( create_annotations );
 use CoGeX;
 
 our ($LOG, $DEBUG, $PAGE, $P, $db, $host, $port, $user, $pass, $config,
@@ -103,7 +103,7 @@ sub main {
 
     # Create annotations
     if ($annotations) {
-        CoGe::Accessory::Metadata::create_annotations(db => $coge, target => $notebook, annotations => $annotations, locked => 1);
+        CoGe::Core::Metadata::create_annotations(db => $coge, target => $notebook, annotations => $annotations, locked => 1);
     }
 
     open(my $fh, ">>", $LOG);

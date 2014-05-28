@@ -12,7 +12,7 @@ use URI::Escape::JavaScript qw(unescape);
 use JSON::XS;
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Utils qw( commify );
-use CoGe::Accessory::Metadata qw( create_annotations );
+use CoGe::Core::Metadata qw( create_annotations );
 use CoGe::Accessory::TDS;
 
 use vars qw($staging_dir $result_dir $install_dir $data_file $file_type $log_file
@@ -296,7 +296,7 @@ if ($types) {
 
 # Create annotations
 if ($annotations) {
-    CoGe::Accessory::Metadata::create_annotations(db => $coge, target => $experiment, annotations => $annotations, locked => 1);
+    CoGe::Core::Metadata::create_annotations(db => $coge, target => $experiment, annotations => $annotations, locked => 1);
 }
 
 # Determine installation path
