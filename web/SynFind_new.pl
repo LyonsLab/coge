@@ -1405,7 +1405,7 @@ sub go_synfind {
     CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
-    my $response = decode_json($YERBA->submit_workflow($workflow));
+    my $response = $YERBA->submit_workflow($workflow);
     my $success = JSON::true;
     $success = JSON::false if lc($response->{status}) eq "error";
 
@@ -1416,7 +1416,7 @@ sub go_synfind {
         success => $success,
         logfile => $log_url,
         link    => $tiny_synfind_link,
-        request => 'jex/status/' . $job->id,
+        request => 'jex/status/' . $response->{id}
     });
 }
 
