@@ -633,11 +633,14 @@ sub get_dataset {
     my $dsgid  = $opts{dsgid};
     my $dsname = $opts{dsname};
     my $dsid   = $opts{dsid};
-    return "<hidden id='ds_id'>", 0 unless $dsid || $dsname || $dsgid;
+    
+    return qq{<input type="hidden" name="ds_id" id="ds_id">}, 0 unless ($dsid || $dsname || $dsgid);
+    
     if ($dsid) {
         my ($ds) = $coge->resultset('Dataset')->resolve($dsid);
         $dsname = $ds->name;
     }
+    
     my $html;
     my @opts;
     if ($dsgid) {
@@ -691,7 +694,7 @@ qq{<SELECT class="ui-widget-content ui-corner-all" id="ds_id" SIZE="5" MULTIPLE 
         $html =~ s/OPTION/OPTION SELECTED/ unless $dsid;
     }
     else {
-        $html .= qq{<input type = hidden name="ds_id" id="ds_id">};
+        $html .= qq{<input type="hidden" name="ds_id" id="ds_id">};
     }
     return $html, scalar @opts;
 }
