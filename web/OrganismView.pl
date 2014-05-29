@@ -340,6 +340,9 @@ sub get_orgs {
     my $desc  = $opts{desc};
     my $oid   = $opts{oid};
     my $dsgid = $opts{dsgid};
+
+    return ('', 0) unless ($name || $desc);
+
     my $dsg   = $coge->resultset('Genome')->find($dsgid) if $dsgid;
     $dsg = undef unless $USER->has_access_to_genome($dsg);
 
@@ -759,7 +762,7 @@ qq{<TR><TD><span class=link onclick="window.open('Sources.pl')">Data Source:</sp
         $size = 5 if $size > 5;
         my $select;
         $select .=
-qq{<SELECT class="ui-widget-content ui-corner-all" id="chr" size =$size onChange="dataset_chr_info_chain()" >\n};
+qq{<SELECT class="ui-widget-content ui-corner-all" id="chr" size="$size" onChange="dataset_chr_info_chain()" >\n};
         $select .= join(
             "\n",
             map {
