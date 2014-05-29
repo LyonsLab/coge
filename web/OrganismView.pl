@@ -299,7 +299,6 @@ sub get_recent_orgs {
     );
 
     my $i = 0;
-
     my @opts;
     my %org_names;
     foreach my $item (@db) {
@@ -318,18 +317,17 @@ sub get_recent_orgs {
           . $item->organism->id . ") "
           . "</OPTION>";
     }
+    
     my $html;
-
-#    $html .= qq{<FONT CLASS ="small">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
+    #$html .= qq{<FONT CLASS ="small">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
     unless (@opts) {
-        $html .= qq{<input type = hidden name="org_id" id="org_id">};
+        $html .= qq{<input type="hidden" name="org_id" id="org_id">};
         return $html;
     }
-    print STDERR $i . '+++++++++++++\n';
-    $html .=
-qq{<SELECT class="ui-widget-content ui-corner-all" id="recent_org_id" SIZE="5" MULTIPLE onChange="recent_dataset_chain()" >\n};
-    $html .= join( "\n", @opts );
-    $html .= "\n</SELECT>\n";
+    #print STDERR $i . '+++++++++++++\n';
+    $html .= qq{<SELECT class="ui-widget-content ui-corner-all" id="recent_org_id" SIZE="5" MULTIPLE onChange="recent_dataset_chain()" >\n}
+          . join( "\n", @opts )
+          . "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
     return $html;
 }
@@ -566,10 +564,8 @@ sub get_genome_info {
     my $html;
     my $total_length = $dsg->length;
 
-    #    my $chr_num = $dsg->genomic_sequences->count();
-    my $chr_num = $dsg->chromosome_count();
-    $html .= qq{<table>};
-    $html .= "<tr valign=top><td><table class='small annotation_table'>";
+    my $chr_num = $dsg->chromosome_count();#$dsg->genomic_sequences->count();
+    $html .= qq{<table>} . "<tr valign=top><td><table class='small annotation_table'>";
     $html .= qq{<tr><td>Name:</td><td>} . $dsg->name . qq{</td></tr>}
       if $dsg->name;
     $html .=
@@ -580,14 +576,13 @@ sub get_genome_info {
     my $gst_name = $dsg->genomic_sequence_type->name;
     $gst_name .= ": " . $dsg->type->description if $dsg->type->description;
     $html .=
-qq{<tr><td>Sequence type <a href="SeqType.pl">?</a>: <td>}
+        qq{<tr><td>Sequence type <a href="SeqType.pl">?</a>: <td>}
       . $gst_name
       . qq{ (gstid$gstid)<input type=hidden id=gstid value=}
       . $gstid
-      . qq{></td></tr>};
-    $html .= qq{<tr><td>Length: </td>};
-    $html .=
-        qq{<td><div style="float: left;"> }
+      . qq{></td></tr>}
+      . qq{<tr><td>Length: </td>}
+      . qq{<td><div style="float: left;"> }
       . commify($total_length)
       . " bp </div>";
 
@@ -598,32 +593,25 @@ qq{<tr><td>Sequence type <a href="SeqType.pl">?</a>: <td>}
     #    $seq_file =~ s/$cogedir/$cogeurl/i;
     my $seq_url = "services/service.pl/sequence/$dsgid";#my $seq_url = "services/JBrowse/service.pl/sequence/$dsgid"; # mdb added 7/31/13 issue 77 # mdb changed 8/9/14
 
-    #print STDERR Dumper $seq_file;
-
-    $html .= "<tr><td>Links:</td>";
-    $html .= qq{<td>};
-    $html .=
-qq{<a href="GenomeInfo.pl?gid=$dsgid"><strong>Click here for more info</strong></a>};
-    $html .= qq{&nbsp|&nbsp};
-    $html .=
-"<a href='OrganismView.pl?dsgid=$dsgid' target=_new>OrganismView</a>&nbsp|&nbsp<a href='CodeOn.pl?dsgid=$dsgid' target=_new>CodeOn</a>";
-    $html .= qq{&nbsp|&nbsp};
-    $html .=
-qq{<span class='link' onclick="window.open('SynMap.pl?dsgid1=$dsgid;dsgid2=$dsgid');">SynMap</span>};
-    $html .= qq{&nbsp|&nbsp};
-    $html .=
-qq{<span class='link' onclick="window.open('CoGeBlast.pl?dsgid=$dsgid');">CoGeBlast</span>};
+    $html .= "<tr><td>Links:</td>"
+     . qq{<td>}
+     . qq{<a href="GenomeInfo.pl?gid=$dsgid"><strong>Click here for more info</strong></a>}
+     . qq{&nbsp|&nbsp}
+     . "<a href='OrganismView.pl?dsgid=$dsgid' target=_new>OrganismView</a>&nbsp|&nbsp<a href='CodeOn.pl?dsgid=$dsgid' target=_new>CodeOn</a>"
+     . qq{&nbsp|&nbsp}
+     . qq{<span class='link' onclick="window.open('SynMap.pl?dsgid1=$dsgid;dsgid2=$dsgid');">SynMap</span>}
+     . qq{&nbsp|&nbsp}
+     . qq{<span class='link' onclick="window.open('CoGeBlast.pl?dsgid=$dsgid');">CoGeBlast</span>};
 
 #temporarily removed until this is connected correctly for individual users
 #    $html .= qq{&nbsp|&nbsp};
 #    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$dsgid'],['irods']);">Send To iPlant Data Store</span>};
-    $html .= "</td></tr>";
-    $html .=
-qq{<tr><td colspan=2><div class="padded"><span class="ui-button ui-corner-all" onClick="update_genomelist(['args__genomeid','args__$dsgid'],[add_to_genomelist]);\$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add to Genome List</span>};
-    $html .= qq{</div></td></tr>};
-    $html .= "</table></td>";
-    $html .= qq{<td id=dsg_features></td>};
-    $html .= "</table>";
+    $html .= "</td></tr>"
+          . qq{<tr><td colspan=2><div class="padded"><span class="ui-button ui-corner-all" onClick="update_genomelist(['args__genomeid','args__$dsgid'],[add_to_genomelist]);\$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add to Genome List</span>}
+          . qq{</div></td></tr>}
+          . "</table></td>"
+          . qq{<td id=dsg_features></td>}
+          . "</table>";
 
     return $html;
 }
@@ -705,7 +693,10 @@ sub get_dataset_info {
       unless ($dsid); # error flag for empty dataset
 
     my $ds = $coge->resultset("Dataset")->find($dsid);
-    return "unable to find dataset object for id: $dsid" unless $ds;
+    unless ($ds) {
+        print STDERR "get_dataset_info: unable to find dataset object for id: $dsid";
+        return qq{<input type="hidden" id="chr" value="">}, " ", 0;
+    }
 
 	my $chr_num_limit = 20;    
     my $html = "";
@@ -742,11 +733,24 @@ sub get_dataset_info {
     my $total_length = $ds->total_length( ftid => 4 );
     my $chr_num = $ds->chromosome_count( ftid => 4 );
 
-    #working here.  Need to deal with large number of chromosomes (e.g. > 1000.  Perl object creation is killing performance)
     my %chr;
-    map { $chr{ $_->chromosome } = { length => $_->stop } }
-      ( $ds->get_chromosomes( ftid => 4, length => 1, limit => $chr_num_limit )
-      );    #the chromosome feature type in coge is 301
+    
+# mdb removed 5/29/14 - doesn't work when chr name strings are returned from get_chromosomes() instead of db objects
+#    map { $chr{ $_->chromosome } = { length => $_->stop } }
+#      ( $ds->get_chromosomes( ftid => 4, length => 1, limit => $chr_num_limit )
+#      );    #the chromosome feature type in coge is 301
+      
+    # mdb added 5/29/14
+    my $tmp_count = 0;
+    foreach my $c ( $ds->get_chromosomes( ftid => 4, length => 1, limit => $chr_num_limit ) ) {
+        if (ref($c) =~ /CoGeX/ ) {
+            $chr{ $c->chromosome } = { length => $c->stop }
+        }
+        else {
+            $chr{ $c } = { length => 0 };
+        }
+    }
+       
     my $count = 100000;
     foreach my $item ( sort keys %chr ) {
         my ($num) = $item =~ /(\d+)/;
@@ -762,8 +766,7 @@ sub get_dataset_info {
         my $size = scalar @chr;
         $size = 5 if $size > 5;
         my $select;
-        $select .=
-qq{<SELECT class="ui-widget-content ui-corner-all" id="chr" size="$size" onChange="dataset_chr_info_chain()" >\n};
+        $select .= qq{<SELECT class="ui-widget-content ui-corner-all" id="chr" size="$size" onChange="dataset_chr_info_chain()" >\n};
         $select .= join(
             "\n",
             map {

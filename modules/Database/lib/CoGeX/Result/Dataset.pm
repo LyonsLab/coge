@@ -564,9 +564,8 @@ sub get_chromosomes {
     }
     unless (@data) {
         my %seen;
-        foreach my $feat ($self->features({},{distinct=>'chromosome'}) ) {
-            #print STDERR $feat->chromosome,"\n" if $feat->chromosome;
-	       $seen{$feat->chromosome}=1 if $feat->chromosome;
+        foreach my $feat ( $self->features({}, { distinct => 'chromosome' }) ) {
+	       $seen{$feat->chromosome} = 1 if $feat->chromosome;
         }
         @data = sort keys %seen;
     }
