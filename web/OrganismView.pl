@@ -727,24 +727,22 @@ sub get_dataset_info {
     $source_name =
       "<a href =\"" . $link . "\" target=_new\>" . $source_name . "</a>"
       if $ds->data_source->link;
-    $html .= qq{<tr><td>Name: <td>$dataset} . "\n";
-    $html .=
-qq{<TR><TD><span class=link onclick="window.open('Sources.pl')">Data Source:</span> <TD>$source_name (id}
-      . $ds->data_source->id . qq{)} . "\n";
-    $html .= qq{<tr><td>Version: <td>} . $ds->version . "\n";
-    $html .=
-        qq{<tr><td>Organism:<td class="link"><a href="OrganismView.pl?oid=}
-      . $ds->organism->id
-      . qq{" target=_new>}
-      . $ds->organism->name
-      . "</a>\n";
-    $html .= qq{<tr><td>Date deposited: <td>} . $ds->date . "\n";
+    $html .= qq{<tr><td>Name: <td>$dataset} . "\n"
+          . qq{<TR><TD><span class="link" onclick="window.open('Sources.pl')">Data Source:</span> <TD>$source_name (id}
+          . $ds->data_source->id . qq{)} . "\n"
+          . qq{<tr><td>Version: <td>} . $ds->version . "\n"
+          . qq{<tr><td>Organism:<td class="link"><a href="OrganismView.pl?oid=}
+          . $ds->organism->id
+          . qq{" target=_new>}
+          . $ds->organism->name
+          . "</a>\n"
+          . qq{<tr><td>Date deposited: <td>} . $ds->date . "\n";
 
     my $html2;
     my $total_length = $ds->total_length( ftid => 4 );
     my $chr_num = $ds->chromosome_count( ftid => 4 );
 
-#working here.  Need to deal with large number of chromosomes (e.g. > 1000.  Perl object creation is killing performance)
+    #working here.  Need to deal with large number of chromosomes (e.g. > 1000.  Perl object creation is killing performance)
     my %chr;
     map { $chr{ $_->chromosome } = { length => $_->stop } }
       ( $ds->get_chromosomes( ftid => 4, length => 1, limit => $chr_num_limit )
