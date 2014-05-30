@@ -1123,16 +1123,8 @@ sub go_synfind {
         link        => $tiny_synfind_link,
     );
 
-    my $job = CoGe::Accessory::Web::get_job(
-        tiny_link => $tiny_synfind_link,
-        title     => $PAGE_TITLE,
-        user_id   => $USER->id,
-        log_id    => $log->id,
-        db_object => $coge
-    );
-
     my ($tiny_id) = $tiny_synfind_link =~ /\/(\w+)$/;
-    my $workflow_id = "synfind-$tiny_id";
+    my $workflow_name = "synfind-$tiny_id";
 
     $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
 
@@ -1145,11 +1137,9 @@ sub go_synfind {
         $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "$tiny_synfind_link", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "",           $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "Created Workflow: $workflow_id",
+    CoGe::Accessory::Web::write_log( "Created Workflow: $workflow_name",
         $cogeweb->logfile );
 
-
-    CoGe::Accessory::Web::schedule_job( job => $job );
 
     #convert numerical codes for different scoring functions to appropriate types
     if ( $scoring_function eq '2' ) {
@@ -1169,8 +1159,8 @@ sub go_synfind {
     ###########################################################################
     my $config   = $ENV{COGE_HOME} . "coge.conf";
     my $workflow = $YERBA->create_workflow(
-        id      => $job->id,
-        name    => $workflow_id,
+        id      => 0,
+        name    => $workflow_name,
         logfile => $cogeweb->logfile
     );
 
