@@ -1375,17 +1375,8 @@ sub go {
 
     say STDERR "tiny_link is required for logging." unless defined($tiny_link);
 
-    my $job = CoGe::Accessory::Web::get_job(
-        tiny_link => $tiny_link,
-        title     => $PAGE_TITLE,
-        user_id   => $USER->id,
-        db_object => $coge
-    );
-
-    CoGe::Accessory::Web::schedule_job(job => $job);
-
     my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
-    my $workflow_id = "synmap-$tiny_id";
+    my $workflow_name = "synmap-$tiny_id";
 
     my $basename = $opts{basename};
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(
@@ -1401,7 +1392,7 @@ sub go {
         $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "$tiny_link", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "",           $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "Created Workflow: synmap-$workflow_id",
+    CoGe::Accessory::Web::write_log( "Created Workflow: synmap-$workflow_name",
         $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
     ############################################################################
@@ -1524,8 +1515,8 @@ sub go {
     #        #}
     #    }
     $workflow = $YERBA->create_workflow(
-        id      => $job->id,
-        name    => $workflow_id,
+        id      => 0,
+        name    => $workflow_name,
         logfile => $cogeweb->logfile
     );
 
@@ -2508,15 +2499,8 @@ sub get_results {
 
     say STDERR "tiny_link is required for logging." unless defined($tiny_link);
 
-    my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
-    my $workflow_id .= "-$tiny_id";
-
-    my $job = CoGe::Accessory::Web::get_job(
-        tiny_link => $tiny_link,
-        title     => $PAGE_TITLE,
-        user_id   => $USER->id,
-        db_object => $coge,
-    );
+#    my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
+#    my $workflow_name .= "-$tiny_id";
 
     my $basename = $opts{basename};
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(
@@ -2524,25 +2508,26 @@ sub get_results {
         tempdir  => $TEMPDIR
     );
 
-    given ( lc( $YERBA->get_status( $job->id ) ) ) {
-        when ('failed') {
-            return encode_json({
-                error => "The workflow failed."
-            })
-        }
-
-        when ('cancelled') {
-            return encode_json({
-                error => "The workflow was cancelled."
-            })
-        }
-
-        when ('terminated') {
-            return encode_json({
-                error => "The workflow was terminated."
-            })
-        }
-    }
+#FIXME: The id needs to be an input argument
+#    given ( lc( $YERBA->get_status( 0 ) ) ) {
+#        when ('failed') {
+#            return encode_json({
+#                error => "The workflow failed."
+#            })
+#        }
+#
+#        when ('cancelled') {
+#            return encode_json({
+#                error => "The workflow was cancelled."
+#            })
+#        }
+#
+#        when ('terminated') {
+#            return encode_json({
+#                error => "The workflow was terminated."
+#            })
+#        }
+#    }
 
     ############################################################################
     # Parameters
