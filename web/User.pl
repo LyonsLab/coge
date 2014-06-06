@@ -1356,7 +1356,7 @@ sub get_contents {
           {
             CONTENTS_ITEM_ID   => 0,
             CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_viz},
-            CONTENTS_ITEM_INFO => qq{<iframe frameborder="0" width="100%" height="100%" scrolling="no" src="http://genomevolution.org/blacktea/standalone/$user_id/$job_list"></iframe>} # FIXME: hardcoded server name
+            CONTENTS_ITEM_INFO => qq{<iframe frameborder="0" width="100%" height="100%" scrolling="no" src="//genomevolution.org/blacktea/standalone/$user_id/$job_list"></iframe>} # FIXME: hardcoded server name
           };
     }
 
