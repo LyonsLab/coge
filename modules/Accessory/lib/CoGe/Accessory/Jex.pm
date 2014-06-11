@@ -38,9 +38,22 @@ has '_context' => (
 # Public functions
 sub create_workflow {
     my ( $self, %opts ) = @_;
+    my $id;
+
+    if ($opts{init} and $opts{init} == 1) {
+        my $request = {
+            request => 'new',
+            data    => []
+        };
+
+        my $response = _send_request($self, $request);
+        $id = $response->{id};
+
+        die "The workflow could not be initialized" unless $id;
+    }
 
     my $workflow = CoGe::Accessory::Workflow->new(
-        id      => $opts{id},
+        id      => $id,
         name    => $opts{name},
         logfile => $opts{logfile},
     );
@@ -122,7 +135,7 @@ sub get_all_workflows {
     my ($request, $response, $workflows);
 
     $request = {
-        request => 'get_workflows',
+        request => 'workflows',
         data    => {},
     };
 
@@ -136,7 +149,7 @@ sub get_all_workflows {
 # Private functions
 sub _send_request {
     my ($self, $request) = @_;
-    my ($waited, $TIMEOUT) = (0, 30);
+    my ($submitted, $TIMEOUT) = (time, 30000);
 
     # Set the default response as an error in case a response is not recieved.
     my $response = { status => "error" };
@@ -149,11 +162,9 @@ sub _send_request {
 
         zmq_connect($socket, _connection_string($self->host, $self->port));
         zmq_sendmsg($socket, $json_request, ZMQ_NOBLOCK);
-
-        while ($TIMEOUT > $waited && not defined($msg)) {
+        while ((time - $submitted) < $TIMEOUT && not defined($msg)) {
             $msg = zmq_recvmsg($socket, ZMQ_NOBLOCK);
-            $waited++;
-            sleep 1;
+            sleep 0.01;
         }
 
         zmq_close($socket);
