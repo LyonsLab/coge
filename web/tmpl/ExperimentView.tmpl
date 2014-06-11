@@ -9,6 +9,7 @@ var eid = '<TMPL_VAR NAME="EID">';
 var load_id = '<TMPL_VAR NAME="LOAD_ID">';
 var job_id = '<TMPL_VAR NAME="JOB_ID">';
 var status_url = '<TMPL_VAR NAME="STATUS_URL">';
+var page_name = '<TMPL_VAR NAME="PAGE_NAME">';
 
 $(document).ready(function() {
     pageObj = new Object();
@@ -16,7 +17,7 @@ $(document).ready(function() {
 
     $.ajaxSetup({
         type: "GET",
-        url: "<TMPL_VAR NAME='PAGE_NAME'>",
+        url: page_name,
         dataType: "html",
         cache: false,
     });
@@ -192,7 +193,7 @@ function reset_dialog() {
 
 function reset_load() {
 	$('#progress_dialog').dialog('close');
-	window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?eid=" + eid);
+	window.history.pushState({}, "Title", page_name + "?eid=" + eid);
 }
 
 function download_files() {
@@ -299,7 +300,7 @@ function find_snps() {
     // Open status dialog right away
     $('#progress_dialog')
         .unbind()
-        .dialog({ autoOpen: true, title: "Finding SNPs ..."});
+        .dialog({ autoOpen: true, title: "Finding SNPs ..." });
 
     $('#progress_log').html('Initializing ...');
 
@@ -323,7 +324,7 @@ function find_snps() {
             // Start status update
             if (obj.job_id) { // JEX status for load FASTQ
                 job_id = obj.job_id;
-                window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?eid=" + eid + "&job_id=" + obj.job_id + '&load_id=' + load_id); // Add job_id and load_id to browser URL
+                window.history.pushState({}, "Title", page_name + "?eid=" + eid + "&job_id=" + obj.job_id); // Add job_id to browser URL
                 update_dialog(status_url + obj.job_id, "#progress_dialog", progress_formatter);
             }
         }

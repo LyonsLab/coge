@@ -13,6 +13,7 @@ use File::Path;
 use File::Slurp;
 use File::Spec::Functions qw(catdir catfile);
 use Sort::Versions;
+use CoGe::Pipelines::FindSNPs qw( run );
 use Data::Dumper;
 
 use vars qw(
@@ -766,6 +767,10 @@ sub find_snps {
         return encode_json({ error => 'Not logged in' });
     }
 
+    # Get experiment
+    my $experiment = $coge->resultset('Experiment')->find($eid);
+    return encode_json({ error => 'Experiment not found' }) unless $experiment;
+
     # Setup staging area and log file
     my $stagepath = catdir($TEMPDIR, 'staging');
     mkpath($stagepath);
@@ -785,36 +790,37 @@ sub find_snps {
         user_id   => $USER->id,
         db_object => $coge
     );
-
+    
+    # Submit workflow to generate experiment
+    my ($job_id, $error_msg) = CoGe::Pipelines::FindSNPs::run(
+        db => $coge,
+        experiment => $experiment,
+        user => $USER
+    );
     # Setup call to analysis script
-    my $cmd =
-        catfile($P->{SCRIPTDIR}, 'find_SNPs.pl') . ' '
-        . "-eid $eid "
-        . '-uid ' . $USER->id . ' '
-        . '-jid ' . $job->id . ' '
-#        . '-name "' . escape($name) . '" '
-#        . '-desc "' . escape($description) . '" '
-#        . '-version "' . escape($version) . '" '
-        . "-staging_dir $stagepath "
-        . "-log_file $logfile "
-        . "-config $CONFIGFILE";
-
-    print STDERR "$cmd\n";
-    print $logh "$cmd\n";
+#    my $cmd =
+#        catfile($P->{SCRIPTDIR}, 'find_SNPs.pl') . ' '
+#        . "-eid $eid "
+#        . '-uid ' . $USER->id . ' '
+#        . '-jid ' . $job->id . ' '
+#        . "-staging_dir $stagepath "
+#        . "-log_file $logfile "
+#        . "-config $CONFIGFILE";
+    
+    print STDERR "job_id=$job_id\n";
+    print $logh "job_id=$job_id\n";
     close($logh);
-        
-    # Run analysis script
-    print STDERR "child running: $cmd\n";
-    if (execute($cmd)) {
-        return encode_json({ error => 'Failed to execute job' });
+    unless ($job_id) {
+        print STDERR $error_msg, "\n";
+        return encode_json({ error => "Workflow submission failed: " . $error_msg });
     }
-        
+    
     # Get tiny link
     my $link = CoGe::Accessory::Web::get_tiny_link(
-        url => $P->{SERVER} . "$PAGE_TITLE.pl?eid=$eid;job_id=" . $job->id . ";load_id=$load_id"
+        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $job_id
     );
-
-    return encode_json({ job_id => $job->id, link => $link });
+    
+    return encode_json({ job_id => $job_id, link => $link });    
 }
 
 sub get_progress_log {
