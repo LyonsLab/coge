@@ -8,20 +8,24 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
+use CoGe::Core::Storage qw(create_experiment get_workflow_paths);
+use CoGe::Pipelines::qTeller qw(run);
 use HTML::Template;
 use JSON::XS;
 use URI::Escape::JavaScript qw(escape);
 use File::Path;
 use File::Copy;
 use File::Basename;
+use File::Spec::Functions qw(catdir catfile);
 use File::Listing qw(parse_dir);
 use LWP::Simple;
 use URI;
 use Sort::Versions;
+use Data::Dumper;
 no warnings 'redefine';
 
 use vars qw(
-  $P $PAGE_TITLE $TEMPDIR $BINDIR $USER $coge $FORM $LINK
+  $P $PAGE_TITLE $TEMPDIR $USER $coge $FORM $LINK
   %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $JOB_ID $OPEN_STATUS
 );
 
@@ -34,7 +38,6 @@ $FORM = new CGI;
 );
 
 $CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
-$BINDIR     = $P->{SCRIPTDIR}; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
 
 # Generate a unique session ID for this load (issue 177).
 # Use existing ID if being passed in with AJAX request.  Otherwise generate
@@ -144,8 +147,7 @@ sub irods_get_path {
     $path = $basepath unless $path;
 
     if ( $path !~ /^$basepath/ ) {
-        print STDERR
-          "Attempt to access '$path' denied (basepath='$basepath')\n";
+        print STDERR "Attempt to access '$path' denied (basepath='$basepath')\n";
         return;
     }
 
@@ -428,117 +430,91 @@ sub load_experiment {
     if ($user_name eq 'public') {
         return encode_json({ error => 'Not logged in' });
     }
-
+    
     # Setup staging area and log file
-    my $stagepath = $TEMPDIR . 'staging/';
-    mkpath $stagepath;
-
-    my $logfile = $stagepath . '/log.txt';
+    my $stagepath = catdir($TEMPDIR, 'staging');
+    mkpath($stagepath);
+    my $logfile = catfile($stagepath, 'log.txt');
     open( my $logh, ">$logfile" ) or die "Error creating log file";
     print $logh "Starting load experiment $stagepath\n"
       . "name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
 
-    # Verify and decompress files
-    my @files;
-    foreach my $item (@$items) {
-        my $fullpath = $TEMPDIR . $item->{path};
-        return encode_json({ error => "File doesn't exist! $fullpath" }) if ( not -e $fullpath );
-        my ( $path, $filename ) = $item->{path} =~ /^(.+)\/([^\/]+)$/;
-        my ($fileext) = $filename =~ /\.([^\.]+)$/;
-
-        #print STDERR "$path $filename $fileext\n";
-        if ( $fileext eq 'gz' ) {
-            my $cmd = $P->{GUNZIP} . ' ' . $fullpath;
-            #print STDERR "$cmd\n";
-            print $logh "log: Decompressing '$filename'\n";
-            `$cmd`;
-            $fullpath =~ s/\.$fileext$//;
-        }
-
-        #TODO support detecting/untarring tar files also
-        push @files, $fullpath;
-    }
-
-    # Get tiny link
-    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
-        url => $P->{SERVER} . "$PAGE_TITLE.pl?load_id=$LOAD_ID"
-    );
+    # Setup path to file
+    my $data_file = $TEMPDIR . $items->[0]->{path}; 
 
     # Determine fastq file type
-    (my $fileext) = $files[0] =~ /\.([^\.]+)$/; # tempfix
-    if ($file_type eq 'fastq' || grep { $_ eq $fileext } ('fastq', 'fq') ) {
-        # Setup JEX
-        my $job = CoGe::Accessory::Web::get_job(
-            tiny_link => $tiny_link,
-            title     => $PAGE_TITLE,
-            user_id   => $USER->id,
-            db_object => $coge
+    my ($job_id, $error_msg);
+    if ( $file_type eq 'fastq' || is_fastq_file($data_file) ) {
+        # Get genome
+        my $genome = $coge->resultset('Genome')->find($gid);
+        
+        # Submit workflow to generate experiment
+        ($job_id, $error_msg) = CoGe::Pipelines::qTeller::run(
+            db => $coge,
+            genome => $genome,
+            user => $USER,
+            metadata => {
+                name => $name,
+                description => $description,
+                version => $version,
+                source_name => $source_name,
+                restricted => $restricted
+            },
+            files => [ $data_file ],
+            alignment_type => $aligner
         );
-
         # Setup call to analysis script
-        my $cmd =
-            $P->{SCRIPTDIR} . '/qteller.pl '
-            . "-gid $gid "
-            . '-uid ' . $USER->id . ' '
-            . '-jid ' . $job->id . ' '
-            . "-alignment $aligner "
-            . '-name "' . escape($name) . '" '
-            . '-desc "' . escape($description) . '" '
-            . '-version "' . escape($version) . '" '
-            . "-restricted ". $restricted . ' '
-            . '-source_name "' . escape($source_name) . '" '
-            . "-staging_dir $stagepath "
-            . '-data_file "' . escape( join( ',', @files ) ) . '" '
-            . "-config $CONFIGFILE";
-
-        print STDERR "$cmd\n";
-        print $logh "$cmd\n";
-        close($logh);
-        
-        # Run analysis script
-        print STDERR "child running: $cmd\n";
-        execute($cmd);
-        
-        # Get tiny link
-        my $link = CoGe::Accessory::Web::get_tiny_link(
-            url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $job->id . ";load_id=$LOAD_ID"
-        );
-
-        return encode_json({ job_id => $job->id, link => $link });
+#        my $cmd =
+#            catfile($P->{SCRIPTDIR}, 'qteller.pl') . ' '
+#            . "-gid $gid "
+#            . '-uid ' . $USER->id . ' '
+#            . "-alignment $aligner "
+#            . '-name "' . escape($name) . '" '
+#            . '-desc "' . escape($description) . '" '
+#            . '-version "' . escape($version) . '" '
+#            . "-restricted ". $restricted . ' '
+#            . '-source_name "' . escape($source_name) . '" '
+#            . "-staging_dir $stagepath "
+#            . '-data_file "' . escape( join( ',', @files ) ) . '" '
+#            . "-config $CONFIGFILE";
     }
     # Else, all other file types
     else {
-    	# Setup call to load script
-        my $cmd =
-            "$BINDIR/load_experiment.pl "
-          . "-user_name $user_name "
-          . '-name "' . escape($name) . '" '
-          . '-desc "' . escape($description) . '" '
-          . '-version "' . escape($version) . '" '
-          . "-restricted ". $restricted . ' '
-          . "-gid $gid "
-          . '-source_name "' . escape($source_name) . '" '
-          . "-staging_dir $stagepath "
-          . "-file_type '$file_type' "
-          . '-data_file "' . escape( join( ',', @files ) ) . '" '
-          . "-config $CONFIGFILE";
-    	  #"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
-        print $logh "$cmd\n";
-        close($logh);
-    
-        if ( !defined( my $child_pid = fork() ) ) {
-            return encode_json({ error => "Cannot fork: $!" });
-        }
-        elsif ( $child_pid == 0 ) {
-            # Run load script
-            print STDERR "child running: $cmd\n";
-            execute($cmd);
-            exit;
-        }
-        
-    
-        return encode_json({ link => $tiny_link });
+    	# Submit workflow to generate experiment
+        ($job_id, $error_msg) = create_experiment(
+            genome => $gid,
+            user => $USER,
+            metadata => {
+                name => $name,
+                description => $description,
+                version => $version,
+                source_name => $source_name,
+                restricted => $restricted,
+            },
+            files => [ $data_file ],
+            file_type => $file_type
+        );
     }
+    
+    print STDERR "job_id=$job_id\n";
+    print $logh "job_id=$job_id\n";
+    close($logh);
+    unless ($job_id) {
+        print STDERR $error_msg, "\n";
+        return encode_json({ error => "Workflow submission failed: " . $error_msg });
+    }
+    
+    # Get tiny link
+    my $link = CoGe::Accessory::Web::get_tiny_link(
+        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $job_id
+    );
+    
+    return encode_json({ job_id => $job_id, link => $link });
+}
+
+sub is_fastq_file {
+    my $filename = shift;
+    return ($filename =~ /fastq$/ || $filename =~ /fastq\.gz$/ || $filename =~ /fq$/ || $filename =~ /fq\.gz$/);
 }
 
 sub execute { # FIXME this code is duplicate in other places like load_genome.pl
@@ -553,51 +529,77 @@ sub execute { # FIXME this code is duplicate in other places like load_genome.pl
 }
 
 sub get_load_log {
-    #my %opts    = @_;
+    my %opts         = @_;
+    my $workflow_id = $opts{workflow_id};
+    return unless $workflow_id;
+    #TODO authenticate user access to workflow
+    
+    my $results_path = get_workflow_paths($workflow_id);
+    return unless (-r $results_path);
 
-    my $logfile = $TEMPDIR . "staging/log.txt";
-    open( my $fh, $logfile )
-      or
-      return encode_json( { status => -1, log => "Error opening log file" } );
+    my $result_file = catfile($results_path, '1');
+    return unless (-r $result_file);
 
-    my @lines = ();
-    my ($eid, $nid, $new_load_id);
-    my $status = 0;
-    while (<$fh>) {
-        push @lines, $1 if ( $_ =~ /^log: (.+)/i );
-        if ( $_ =~ /All done/i ) {
-            $status = 1;
-            
-            # Generate a new load session ID in case the user chooses to 
-        	# reuse the form to start another load.
-        	$new_load_id = get_unique_id();
-            
-            last;
-        }
-        elsif ( $_ =~ /experiment id: (\d+)/i ) {
-            $eid = $1;
-        }
-        elsif ( $_ =~ /notebook id: (\d+)/i ) {
-            $nid = $1;
-        }
-        elsif ( $_ =~ /log: error/i ) {
-            $status = -1;
-            last;
-        }
-    }
-
-    close($fh);
+    my $result = CoGe::Accessory::TDS::read($result_file);
+    return unless $result;
+    
+    my $new_load_id = get_unique_id();
 
     return encode_json(
-        {
-            status        => $status,
-            experiment_id => $eid,
-            notebook_id   => $nid,
-            new_load_id   => $new_load_id,
-            log           => join( "<BR>\n", @lines )
+        { 
+            experiment_id => $result->{experiment_id},
+            notebook_id   => $result->{notebook_id},
+            new_load_id   => $new_load_id, 
         }
     );
 }
+
+#sub get_load_log {
+#    #my %opts    = @_;
+#
+#    my $logfile = $TEMPDIR . "staging/log.txt";
+#    open( my $fh, $logfile )
+#      or
+#      return encode_json( { status => -1, log => "Error opening log file" } );
+#
+#    my @lines = ();
+#    my ($eid, $nid, $new_load_id);
+#    my $status = 0;
+#    while (<$fh>) {
+#        push @lines, $1 if ( $_ =~ /^log: (.+)/i );
+#        if ( $_ =~ /All done/i ) {
+#            $status = 1;
+#            
+#            # Generate a new load session ID in case the user chooses to 
+#        	# reuse the form to start another load.
+#        	$new_load_id = get_unique_id();
+#            
+#            last;
+#        }
+#        elsif ( $_ =~ /experiment id: (\d+)/i ) {
+#            $eid = $1;
+#        }
+#        elsif ( $_ =~ /notebook id: (\d+)/i ) {
+#            $nid = $1;
+#        }
+#        elsif ( $_ =~ /log: error/i ) {
+#            $status = -1;
+#            last;
+#        }
+#    }
+#
+#    close($fh);
+#
+#    return encode_json(
+#        {
+#            status        => $status,
+#            experiment_id => $eid,
+#            notebook_id   => $nid,
+#            new_load_id   => $new_load_id,
+#            log           => join( "<BR>\n", @lines )
+#        }
+#    );
+#}
 
 sub search_genomes
 {    # FIXME: common with LoadAnnotation et al., move into web service
@@ -697,9 +699,6 @@ sub search_users {
 }
 
 sub get_sources {
-
-    #my %opts = @_;
-
     my %unique;
     foreach ( $coge->resultset('DataSource')->all() ) {
         $unique{ $_->name }++;

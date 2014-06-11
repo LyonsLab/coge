@@ -7,23 +7,27 @@ var timestamps = new Array();
 var load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
 var job_id = '<TMPL_VAR NAME="JOB_ID">';
 var status_url = '<TMPL_VAR NAME="STATUS_URL">';
+var page_name = '<TMPL_VAR NAME="PAGE_NAME">';
 var experiment_id;
 var notebook_id;
 
 $(document).ready(function(){
+	// Configure jQuery ajax
     $.ajaxSetup({
         type: "GET",
-        url: '<TMPL_VAR NAME="PAGE_NAME">',
+        url: page_name,
         dataType: "html",
         cache: false,
     });
 
+    // Configure dialogs
     $(".dialog_box").dialog({autoOpen: false, width: 500});
     $('#load_dialog').dialog("widget").find('.ui-dialog-titlebar-close').hide();
     $('#load_dialog').dialog({modal: true, closeOnEscape: false})
 
+    // Initialize drop-downs
     get_sources();
-
+    
     $("#edit_genome").autocomplete({
         source:[],
         select: function(event, ui) {
@@ -36,6 +40,15 @@ $(document).ready(function(){
             return false; // Prevent the widget from inserting the value.
         }
     });
+    
+    $("#file_type_selector").on("change", function() {
+        var alignment = $("#alignment");
+        if ($(this).val() === "fastq") {
+           alignment.slideDown();
+        } else {
+           alignment.slideUp();
+        }
+    });
 
     // Open status dialog
     if ('<TMPL_VAR NAME="OPEN_STATUS">') {
@@ -44,18 +57,7 @@ $(document).ready(function(){
         if (job_id) { // JEX status for FASTQ data type
             update_dialog(status_url + job_id, "#load_dialog", progress_formatter);
         }
-        else { // Log status for all other data types
-            setTimeout(function() { get_load_log(); }, 0);
-        }
     }
-    $("#file_type_selector").on("change", function() {
-        var alignment = $("#alignment");
-        if ($(this).val() === "fastq") {
-           alignment.slideDown();
-        } else {
-           alignment.slideUp();
-        }
-    })
 });
 
 function file_selected(filename, url) {
@@ -82,12 +84,11 @@ function getPath(item) {
     return item.path;
 }
 
-
 function file_canceled() {
     $('#select_file_type').hide()
         .find("option[value=autodetect")
         .prop("selected", true)
-        .change()
+        .change();
 
     $('#select_file_button').show();
 }
@@ -115,11 +116,7 @@ function create_source() {
 function reset_log() {
     $('#load_experiment_log').html('');
     $('#loading_msg').show();
-    $('#finished_msg').hide();
-    $('#error_msg').hide();
-    $('#ok_button').hide();
-    $('#finish_load_experiment_button').hide();
-    $('#cancel_load_experiment_button').hide();
+    $('#ok_button,#error_msg,#finished_msg,#finish_load_experiment_button,#cancel_load_experiment_button').hide();
 }
 
 function check_login() {
@@ -178,9 +175,6 @@ function load_experiment() {
     }
     var json = JSON.stringify(items);
 
-    var user_name = $('#edit_user').val(); // only exists if admin
-    if (user_name == 'Search') { user_name = ''; }
-
     // Prevent concurrent executions - issue 101
     if ( $("#load_dialog").dialog( "isOpen" ) )
         return;
@@ -207,7 +201,6 @@ function load_experiment() {
             restricted: restricted,
             gid: gid,
             source_name: source,
-            user_name: user_name,
             items: json,
             file_type: file_type,
             aligner: aligner,
@@ -226,15 +219,11 @@ function load_experiment() {
             // Start status update
             if (obj.job_id) { // JEX status for load FASTQ
                 job_id = obj.job_id;
-                window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?job_id=" + obj.job_id + '&load_id=' + load_id); // Add job_id and load_id to browser URL
+                window.history.pushState({}, "Title", page_name + "?job_id=" + obj.job_id); // Add job_id to browser URL
                 update_dialog(status_url + obj.job_id, "#load_dialog", progress_formatter);
             }
-            else { // non-JEX old method for all other data types
-                window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?load_id=" + load_id); // Add load_id to browser URL
-                setTimeout(function() { get_load_log(); }, 1000);
-            }
         }
-        // TODO: handle error, show in status dialog
+        // TODO: handle ajax error, show in status dialog
     });
 }
 
@@ -243,7 +232,7 @@ function get_load_log(callback) {
         data: {
             dataType: 'text',
             fname: 'get_load_log',
-            load_id: load_id,
+            workflow_id: job_id,
             timestamp: new Date().getTime()
         },
         success : function(data) {
@@ -258,21 +247,6 @@ function get_load_log(callback) {
                 callback(obj);
                 return;
             }
-
-            // Update log contents and scroll to bottom
-            $('#load_experiment_log').html(obj.log);
-            var height = $('#load_experiment_log')[0].scrollHeight;
-            $("#load_experiment_log").animate({ scrollTop: height}, 500);
-
-            if (obj.status == 1) { // finished successfully
-                load_succeeded(obj);
-            }
-            else if (obj.status == -1) { // error occurred
-                load_failed();
-            }
-            else { // not done yet, continue polling
-                setTimeout(function() { get_load_log(); }, 2000);
-            }
         }
     });
 }
@@ -280,8 +254,7 @@ function get_load_log(callback) {
 function load_failed() {
     // Update dialog
     $('#loading_msg').hide();
-    $('#error_msg').fadeIn();
-    $('#cancel_load_experiment_button').fadeIn();
+    $('#error_msg,#cancel_load_experiment_button').fadeIn();
 
     $.ajax({
         data: {
@@ -294,15 +267,13 @@ function load_failed() {
 
 function load_succeeded(obj) {
     // Update globals
-    load_id = obj.new_load_id;          // for reusing page to load again
-    experiment_id = obj.experiment_id;  // for continuing to ExperimentView
-    notebook_id = obj.notebook_id;      // for continuing to NotebookView
+    load_id       = obj.new_load_id;   // for reusing page to load again
+    experiment_id = obj.experiment_id; // for continuing to ExperimentView
+    notebook_id   = obj.notebook_id;   // for continuing to NotebookView
 
     // Update dialog
-
     $('#loading_msg').hide();
-    $('#finished_msg').fadeIn();
-    $('#ok_button').fadeIn();
+    $('#finished_msg,#ok_button').fadeIn();
     if (notebook_id) { // qTeller pipeline experiment load
         $('#finish_load_experiment_button')
             .html('NotebookView').fadeIn()
@@ -320,7 +291,7 @@ function load_succeeded(obj) {
 }
 
 function reset_load() {
-    window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>");
+    window.history.pushState({}, "Title", page_name);
     $('#load_dialog').dialog('close');
 
     // Reset file selector
@@ -402,33 +373,20 @@ function progress_formatter(item) {
 
     var job_status = $('<span></span>');
 
-    if (item.status == 'scheduled') {
-        job_status.append(item.status);
-        job_status.addClass('down');
-        job_status.addClass('bold');
-    } else if (item.status == 'completed') {
-        job_status.append(item.status);
-        job_status.addClass('completed');
-        job_status.addClass('bold');
-    } else if (item.status == 'running') {
-        job_status.append(item.status);
-        job_status.addClass('running');
-        job_status.addClass('bold');
-    } else if (item.status == 'skipped') {
-        job_status.append("already generated");
-        job_status.addClass('skipped');
-        job_status.addClass('bold');
-    } else if (item.status == 'cancelled') {
-        job_status.append(item.status);
-        job_status.addClass('alert');
-        job_status.addClass('bold');
-    } else if (item.status == 'failed') {
-        job_status.append(item.status);
-        job_status.addClass('alert');
-        job_status.addClass('bold');
-    } else {
+    if (item.status == 'scheduled')
+        job_status.append(item.status).addClass('down bold');
+    else if (item.status == 'completed')
+        job_status.append(item.status).addClass('completed bold');
+    else if (item.status == 'running')
+        job_status.append(item.status).addClass('running bold');
+    else if (item.status == 'skipped')
+        job_status.append("already generated").addClass('skipped bold');
+    else if (item.status == 'cancelled')
+        job_status.append(item.status).addClass('alert bold');
+    else if (item.status == 'failed')
+        job_status.append(item.status).addClass('alert bold');
+    else
         return;
-    }
 
     row.append(job_status);
 
@@ -475,9 +433,10 @@ function update_dialog(request, identifier, formatter) {
 
         if (json.status) {
             current_status = json.status.toLowerCase();
-            workflow_status.html("Workflow status: ");
-            workflow_status.append($('<span></span>').html(json.status));
-            workflow_status.addClass('bold');
+            workflow_status
+            	.html("Workflow status: ")
+            	.append( $('<span></span>').html(json.status) )
+            	.addClass('bold');
         } else {
             setTimeout(callback, timeout);
             return;
