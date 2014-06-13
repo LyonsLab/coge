@@ -529,7 +529,7 @@ sub load_genome {
     elsif ( $child_pid == 0 ) {
         print STDERR "child running: $cmd\n";
         `$cmd`;
-        exit;
+        CORE::exit;
     }
     
     # Get tiny link

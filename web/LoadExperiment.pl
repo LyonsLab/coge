@@ -533,7 +533,7 @@ sub load_experiment {
             # Run load script
             print STDERR "child running: $cmd\n";
             execute($cmd);
-            exit;
+            CORE::exit;
         }
         
     

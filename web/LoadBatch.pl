@@ -463,7 +463,7 @@ sub load_batch {
         # Run load script
         print STDERR "child running: $cmd\n";
         execute($cmd);
-        exit;
+        CORE::exit;
     }
     
     return encode_json({ link => $tiny_link });
