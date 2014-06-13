@@ -387,73 +387,23 @@
 <script src="js/coge/colors.js"></script>
 <script src="js/bioplot/dist/bioplot.js"></script>
 <script src="js/xhairs.js"></script>
-<script type="text/javascript" src="js/coge/utils.js"></script>
-<script type="text/javascript" src="js/synmap.js"></script>
+<script src="js/coge/utils.js"></script>
+<script src="js/synmap.js"></script>
 <script type="text/javascript">
-$(document).ready(function(){
-    $.ajaxSetup({
-        type: "GET",
-        url: "<tmpl_var name=page_name>",
-        dataType: "html",
-        cache: false
-    });
-
-    $(".dialog_box").dialog({
-        autoOpen: false,
-        width: 500,
-    });
-
-    $("#synmap_dialog").dialog({modal: true});
-
-    if($('#org_name1').val() != "Search") {
-        $('#org_name1').css({fontStyle: "normal"});
-        timing('org_name1',1);
-    }
-    if($('#org_desc1').val() != "Search") {
-        $('#org_desc1').css({fontStyle: "normal"});
-        timing('org_desc1',1);
-    }
-    if($('#org_name2').val() != "Search") {
-        $('#org_name2').css({fontStyle: "normal"});
-        timing('org_name2',1);
-    }
-    if($('#org_desc2').val() != "Search") {
-        $('#org_desc2').css({fontStyle: "normal"});
-        timing('org_desc2',1);
-    }
-
+$(function(){
     <tmpl_var name=display_dagchainer_settings>
 
-    if ($('#assemble')[0].checked) {
-        $('#assemble_info').toggle();
-    }
+    //FIXME: Remove global state
+    pageObj = {
+        "id1": "<tmpl_var name=fid1>",
+        "id2": "<tmpl_var name=fid2>",
+        "tempdir": "<tmpl_var name=tempdir>",
+        "beta": "<tmpl_var name=beta>",
+        "page": "<tmpl_var name=page_name>",
+        "rootElement": $(".box"),
+        "autostart": Boolean(parseInt("<tmpl_var name=autogo>", 10))
+    };
 
-    $(".options tr:even").addClass("even");
-    merge_select_check();
-    depth_algo_check();
-
-    $("#pair_info").draggable();
-    $("#tabs").tabs({selected:0});
-    $(".resizable").resizable();
-    $('#depth_org_1').html($('#org_id1 option:selected').html());
-    $('#depth_org_2').html($('#org_id2 option:selected').html());
-
-    pageObj.fid1 = "<tmpl_var name=fid1>";
-    pageObj.fid2 = "<tmpl_var name=fid2>";
-    pageObj.tempdir="<tmpl_var name=tempdir>";
-    pageObj.beta = "<tmpl_var name=beta>";
-
-    var autogo = parseInt("<tmpl_var name=autogo>");
-    if (autogo === 1) {
-        run_synmap(autogo, $('#regen_images')[0].checked);
-    }
-
-    $("#tabs").removeClass("invisible");
-
-    // track analysis
-    $("#synmap_go").on("click", function() {
-        run_synmap(false, $('#regen_images')[0].checked);
-        ga('send', 'event', 'synmap', 'run');
-    });
- });
+    coge.synmap.setup(pageObj);
+});
 </script>
