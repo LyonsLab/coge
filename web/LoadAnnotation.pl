@@ -450,7 +450,7 @@ sub load_annotation {
     elsif ( $child_pid == 0 ) {
         print STDERR "child running: $cmd\n";
         `$cmd`;
-        exit;
+        CORE::exit;
     }
 
 	# Get tiny link
