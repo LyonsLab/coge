@@ -1115,14 +1115,6 @@ sub go_synfind {
         url     => $synfind_link
     );
 
-    my $log = CoGe::Accessory::Web::log_history(
-        db          => $coge,
-        user_id     => $USER->id,
-        description => $log_msg,
-        page        => $PAGE_TITLE,
-        link        => $tiny_synfind_link,
-    );
-
     my ($tiny_id) = $tiny_synfind_link =~ /\/(\w+)$/;
     my $workflow_name = "synfind-$tiny_id";
 
@@ -1398,6 +1390,15 @@ sub go_synfind {
     my $response = $YERBA->submit_workflow($workflow);
     my $success = JSON::true;
     $success = JSON::false if lc($response->{status}) eq "error";
+
+    my $log = CoGe::Accessory::Web::log_history(
+        db          => $coge,
+        user_id     => $USER->id,
+        description => $log_msg,
+        page        => $PAGE_TITLE,
+        link        => $tiny_synfind_link,
+        workflow_id => $response->{id}
+    ) if $response and $response->{id};
 
     my $log_url = $cogeweb->logfile;
     $log_url =~ s/$TEMPDIR/$TEMPURL/;
