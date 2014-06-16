@@ -762,11 +762,6 @@ function get_log() {
             load_id: '<TMPL_VAR NAME="LOAD_ID">'
         },
         success : function(data) {
-            if (!data) { // workaround for issue #45, jquery intermittently dropping payload
-                setTimeout(function() { get_log(); }, 1000);
-                return;
-            }
-
             var obj = jQuery.parseJSON(data);
             if (obj.log) {
                 $('#status_log').html(obj.log.join('<BR>'));

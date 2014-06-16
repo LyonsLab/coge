@@ -10,9 +10,6 @@ use File::Spec::Functions qw( catdir catfile );
 use CoGeX;
 use CoGe::Services::Auth;
 use CoGe::Accessory::Utils;
-use CoGe::Accessory::Jex;
-use CoGe::Accessory::Workflow;
-use CoGe::Accessory::IRODS qw( irods_iget );
 
 sub search {
     my $self = shift;
@@ -143,6 +140,7 @@ sub add {
     # TODO validate metadata parameters
     
     # Valid data items
+    my @items;
     if (!@{ $data->{items} }) {
         $self->render(json => {
             error => { Error => "No data items specified" }
@@ -150,69 +148,16 @@ sub add {
         return;
     }
     
-    # Connect to workflow engine and get an id
-    # TODO move this into a common function in middle lay to be used for all experiment loads
-    my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
-    my $job = $db->resultset('Job')->create(
-        {
-            link       => '',
-            page       => 'api',
-            #process_id => getpid(),
-            user_id    => $user->id,
-            status     => 0,
-        }
+    # Submit workflow to generate experiment
+    my ($job_id, $error_msg) = create_experiment(
+        genome => $genome, 
+        user => $user, 
+        metadata => $data, 
+        irods => \@items
     );
-    unless ($jex and $job) {
+    unless ($job_id) {
         $self->render(json => {
-            error => { Error => "Could not connect to JEX" }
-        });
-        return;
-    }
-    
-    my $load_id = CoGe::Accessory::Utils::get_unique_id();
-    #FIXME add routine to Storage.pm to get staging & results paths
-    my $staging_dir = catdir($conf->{SECTEMPDIR}, 'staging', 'experiment', $user->name, $job->id);
-    mkpath($staging_dir);
-    my $result_dir = catdir($conf->{SECTEMPDIR}, 'results', 'experiment', $user->name, $job->id);
-    mkpath($result_dir);
-    
-    # Create the workflow
-    my $workflow = $jex->create_workflow(
-        id => $job->id,
-        name => 'Experiment Batch Add',
-        logfile => catfile($staging_dir, 'log_main.txt')
-    );
-    
-    my %load_params;
-    my @staged_files;
-    foreach my $item (@{ $data->{items} }) {
-        next unless ($item->{type} eq 'irods');
-        %load_params = _create_iget_job($conf, $item->{path}, $staging_dir);
-        unless ( %load_params ) {
-            $self->render(json => {
-                error => { Error => "Could not create iget task" }
-            });
-            return;
-        }
-        $workflow->add_job(%load_params);
-        push @staged_files, $load_params{outputs}[0];
-    }
-    
-    %load_params = _create_load_job($conf, $data, $user, $staging_dir, \@staged_files, $result_dir);
-    unless ( $workflow and %load_params ) {
-        $self->render(json => {
-            error => { Error => "Could not create load task" }
-        });
-        return;
-    }
-    $workflow->add_job(%load_params);
-    
-    # Submit the workflow
-    my $result = $jex->submit_workflow($workflow);
-    my $status = decode_json($result);
-    if ($status->{error}) {
-        $self->render(json => {
-            error => { Error => "Could not submit workflow: " . $status->{error} }
+            error => { Error => "Workflow submission failed: " . $error_msg }
         });
         return;
     }
@@ -220,68 +165,9 @@ sub add {
     $self->render(json => 
         {
             success => Mojo::JSON->true,
-            job_id => int($job->id),
+            job_id => int($job_id),
             link => undef
         }
-    );
-}
-
-#-------------------------------------------------------------------------------
-
-sub _create_iget_job {
-    my ($conf, $irods_path, $staging_dir) = @_;
-    
-    my $dest_file = catdir($staging_dir, 'irods', $irods_path);
-    my $dest_path = dirname($dest_file);
-    mkpath($dest_path);
-    my $cmd = irods_iget( $irods_path, $dest_path, { no_execute => 1 } );
-    
-    return (
-        cmd => $cmd,
-        script => undef,
-        args => [],
-        inputs => [],
-        outputs => [
-            $dest_file
-        ],
-        description => "Fetching $irods_path..."    
-    );
-}
-
-sub _create_load_job {
-    my ($conf, $data, $user, $staging_dir, $files, $result_dir) = @_;
-    my $cmd = catfile($conf->{SCRIPTDIR}, "load_experiment.pl");
-    return unless $cmd; # SCRIPTDIR undefined
-    
-    my $file_str = join(',', map { basename($_) } @$files);
-    
-    return (
-        cmd => $cmd,
-        script => undef,
-        args => [
-            ['-user_name', $user->name, 0],
-            ['-name', '"' . $data->{name} . '"', 0],
-            ['-desc', '"' . $data->{description} . '"', 0],
-            ['-version', '"' . $data->{version} . '"', 0],
-            ['-restricted', ( $data->{name} ? 1 : 0 ), 0],
-            ['-gid', $data->{genome_id}, 0],
-            ['-source_name', '"' . $data->{source_name} . '"', 0],
-            #['-types', qq{"Expression"}, 0], # FIXME
-            #['-annotations', $ANNOTATIONS, 0],
-            ['-staging_dir', "'$staging_dir'", 0],
-            ['-file_type', "csv", 0], # FIXME
-            ['-data_file', "'$file_str'", 0],
-            ['-config', $conf->{_CONFIG_PATH}, 1],
-            ['-result_dir', "'$result_dir'", 0]
-        ],
-        inputs => [
-            ($conf->{_CONFIG_PATH}, @$files)
-        ],
-        outputs => [
-            [$staging_dir, 1],
-            catdir($staging_dir, 'log.done')
-        ],
-        description => "Loading experiment data..."
     );
 }
 

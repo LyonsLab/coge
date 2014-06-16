@@ -1,4 +1,4 @@
-package CoGe::Accessory::Notebook;
+package CoGe::Core::Notebook;
 use v5.14;
 use strict;
 use warnings;

@@ -5,7 +5,7 @@ use warnings;
 
 use File::Spec;
 
-use CoGe::Accessory::Storage qw(get_genome_path);
+use CoGe::Core::Storage qw(get_genome_path);
 use CoGe::Accessory::TDS qw(write read);
 
 BEGIN {

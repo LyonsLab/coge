@@ -4,7 +4,7 @@ use base 'CGI::Application';
 
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Storage qw( get_experiment_data );
+use CoGe::Core::Storage qw( get_experiment_data );
 use File::Spec;
 use File::Slurp;
 use Data::Dumper;

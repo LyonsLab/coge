@@ -3,12 +3,15 @@
 use strict;
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Storage qw( index_genome_file get_tiered_path );
+use CoGe::Core::Storage qw( index_genome_file get_tiered_path );
 use CoGe::Accessory::Utils qw( commify units print_fasta );
 use CoGe::Accessory::IRODS qw( irods_imeta $IRODS_METADATA_PREFIX );
 use Data::Dumper;
 use Getopt::Long;
 use File::Path;
+use File::Touch;
+use File::Basename qw( basename );
+use File::Spec::Functions qw( catdir catfile );
 use URI::Escape::JavaScript qw(unescape);
 use POSIX qw(ceil);
 use Benchmark;
@@ -16,7 +19,7 @@ use Benchmark;
 use vars qw($staging_dir $install_dir $fasta_files $irods_files
   $name $description $link $version $type_id $restricted $message
   $organism_id $source_id $source_name $source_desc $user_id $user_name 
-  $keep_headers $split $compress
+  $keep_headers $split $compress $result_dir
   $host $port $db $user $pass $config
   $P $MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE $MAX_CHR_NAME_LENGTH );
 
@@ -28,6 +31,7 @@ $MAX_CHR_NAME_LENGTH = 255;
 GetOptions(
     "staging_dir=s" => \$staging_dir,
     "install_dir=s" => \$install_dir,    # optional, for debug
+    "result_dir=s"  => \$result_dir,     # results path
     "fasta_files=s" => \$fasta_files,    # comma-separated list (JS escaped) of files to load
     "irods_files=s" => \$irods_files,    # optional comma-separated list (JS escaped) of files to set metadata
     "name=s"        => \$name,           # genome name (JS escaped)
@@ -43,20 +47,10 @@ GetOptions(
     "source_desc=s" => \$source_desc,    # data source description (JS escaped)
     "user_id=i"		=> \$user_id,		 # user ID
     "user_name=s"   => \$user_name,      # user name
-    "keep_headers=i" =>
-      \$keep_headers,    # flag to keep original headers (no parsing)
+    "keep_headers=i" => \$keep_headers,  # flag to keep original headers (no parsing)
     "split=i"    => \$split,       # split fasta into chr directory
     "compress=i" => \$compress,    # compress fasta into RAZF before indexing
-
-    # Database params
-    "host|h=s"      => \$host,
-    "port|p=s"      => \$port,
-    "database|db=s" => \$db,
-    "user|u=s"      => \$user,
-    "password|pw=s" => \$pass,
-
-    # Or use config file
-    "config=s" => \$config
+    "config=s"   => \$config       # configuration file
 );
 
 # Open log file
@@ -64,7 +58,7 @@ $| = 1;
 die unless ($staging_dir);
 mkpath($staging_dir); # make sure this exists
 my $logfile = "$staging_dir/log.txt";
-open( my $log, ">>$logfile" ) or die "Error opening log file: $logfile: $!";
+open( my $log, ">$logfile" ) or die "Error opening log file: $logfile: $!";
 $log->autoflush(1);
 print $log "Starting $0 (pid $$)\n";
 
@@ -94,30 +88,47 @@ if ($user_name and $user_name eq 'public') {
 	print $log "log: error: not logged in\n";
     exit(-1);
 }
-
-# Load config file ... only needed to get the DB params if user specified
-# a config file instead of specifying them on command-line.
-if ($config) {
-    $P    = CoGe::Accessory::Web::get_defaults($config);
-    $db   = $P->{DBNAME};
-    $host = $P->{DBHOST};
-    $port = $P->{DBPORT};
-    $user = $P->{DBUSER};
-    $pass = $P->{DBPASS};
+unless ($organism_id) {
+    print $log "log: error: organism_id not specified\n";
+    exit(-1);
 }
 
+# Load config file
+unless ($config) {
+    print $log "log: error: can't find config file\n";
+    print STDERR "can't find config file\n";
+    exit(-1);
+}
+$P    = CoGe::Accessory::Web::get_defaults($config);
+$db   = $P->{DBNAME};
+$host = $P->{DBHOST};
+$port = $P->{DBPORT};
+$user = $P->{DBUSER};
+$pass = $P->{DBPASS};
+my $GUNZIP = $P->{GUNZIP};
+
 # Process each file into staging area
-my @files = split( ',', $fasta_files );
 my %sequences;
 my $seqLength;
 my $numSequences;
+my @files = split( ',', $fasta_files );
 foreach my $file (@files) {
+    my $filename = basename($file);# =~ /^.+\/([^\/]+)$/;
+    
+    # Decompress file if necessary
+    if ( $file =~ /\.gz$/ ) {
+        print $log "log: Decompressing '$filename'\n";
+        execute($GUNZIP . ' ' . $file);
+        $file =~ s/\.gz$//;
+    }
+
+    # Ensure text file
     if ( -B $file ) {
-        my ($filename) = $file =~ /^.+\/([^\/]+)$/;
         print $log "log: error: '$filename' is a binary file\n";
         exit(-1);
     }
 
+    # Load file
     $seqLength += process_fasta_file( \%sequences, $file, $staging_dir );
     $numSequences = keys %sequences;
 
@@ -142,7 +153,7 @@ print $log "log: Processed " . commify($numSequences) . " sequences total\n";
 
 # Index the overall fasta file
 print $log "Indexing genome file\n";
-my $rc = CoGe::Accessory::Storage::index_genome_file(
+my $rc = CoGe::Core::Storage::index_genome_file(
     file_path => "$staging_dir/genome.faa",
     compress  => $compress
 );
@@ -206,14 +217,13 @@ print $log "genome id: " . $genome->id . "\n";
 # Determine installation path
 unless ($install_dir) {
     unless ($P) {
-        print $log
-"log: error: can't determine install directory, set 'install_dir' or 'config' params\n";
+        print $log "log: error: can't determine install directory, set 'install_dir' or 'config' params\n";
         exit(-1);
     }
     $install_dir = $P->{SEQDIR};
 }
 $install_dir = "$install_dir/"
-  . CoGe::Accessory::Storage::get_tiered_path( $genome->id ) . "/";
+  . CoGe::Core::Storage::get_tiered_path( $genome->id ) . "/";
 print $log "install path: $install_dir\n";
 
 # mdb removed 7/29/13, issue 77
@@ -256,7 +266,7 @@ unless ($conn) {
 # Create datasets
 my %datasets;
 foreach my $file (@files) {
-    my ($filename) = $file =~ /^.+\/([^\/]+)$/;
+    my $filename = basename($file);#$file =~ /^.+\/([^\/]+)$/;
     my $dataset = $coge->resultset('Dataset')->create(
         {
             data_source_id => $datasource->id,
@@ -276,8 +286,10 @@ foreach my $file (@files) {
     $datasets{$file} = $dataset->id;
 
     my $dsconn =
-      $coge->resultset('DatasetConnector')
-      ->create( { dataset_id => $dataset->id, genome_id => $genome->id } );
+      $coge->resultset('DatasetConnector')->create( { 
+          dataset_id => $dataset->id, 
+          genome_id => $genome->id 
+      } );
     unless ($dsconn) {
         print $log "log: error creating dataset connector\n";
         exit(-1);
@@ -323,9 +335,6 @@ foreach my $chr ( sort keys %sequences ) {
     );
 }
 
-# !!!! Don't change line below, gets parsed by calling code !!!!
-print $log "log: Added genome id " . $genome->id . "\n";
-
 # Copy files from staging directory to installation directory
 my $t1 = new Benchmark;
 print $log "log: Copying files ...\n";
@@ -350,15 +359,9 @@ if ($compress) {
     execute("cp $staging_dir/genome.faa.razf $install_dir/");
     execute("cp $staging_dir/genome.faa.razf.fai $install_dir/");
 }
+my $time = timestr( timediff( new Benchmark, $t1 ) );
+print $log "Took $time to copy\n";
 
-# Yay, log success!
-CoGe::Accessory::Web::log_history(
-    db          => $coge,
-    user_id     => $user->id,
-    page        => "LoadGenome",
-    description => 'load genome id' . $genome->id,
-    link        => 'GenomeInfo.pl?gid=' . $genome->id
-);
 print $log "log: "
   . commify($numSequences)
   . " sequences loaded totaling "
@@ -376,14 +379,34 @@ if ($irods_files) {
 	}
 }
 
-# Finish logging and copy log file into installation directory
-my $t2 = new Benchmark;
-my $time = timestr( timediff( $t2, $t1 ) );
-print $log "Took $time to copy\n";
-# !!!! Don't change line below, parsed by calling code to determine completion
-print $log "log: Finished loading genome!\n";
+# Copy log file into installation directory
+print $log "log: All done!\n";
 close($log);
 `cp $staging_dir/log.txt $install_dir/`; #FIXME use perl copy and detect failure
+
+# Save result document
+if ($result_dir) {
+    mkpath($result_dir);
+    CoGe::Accessory::TDS::write(
+        catfile($result_dir, '1'),
+        {
+            genome_id => int($genome->id)
+        }
+    );
+}
+
+# Yay, log success!
+CoGe::Accessory::Web::log_history(
+    db          => $coge,
+    user_id     => $user->id,
+    page        => "LoadGenome",
+    description => 'load genome id' . $genome->id,
+    link        => 'GenomeInfo.pl?gid=' . $genome->id
+);
+
+# Create "log.done" file to indicate completion to JEX
+my $logdonefile = "$staging_dir/log.done";
+touch($logdonefile);
 
 exit;
 
@@ -471,7 +494,7 @@ sub process_fasta_file {
             exit(-1);
         }
 
-        my ($filename) = $filepath =~ /^.+\/([^\/]+)$/;
+        my $filename = basename($filepath);#$filepath =~ /^.+\/([^\/]+)$/;
 
         # Append sequence to master file
         open( my $out, ">>$target_dir/genome.faa" );
