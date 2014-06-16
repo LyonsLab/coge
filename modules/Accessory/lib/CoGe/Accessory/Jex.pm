@@ -131,12 +131,30 @@ sub get_status {
 }
 
 sub get_all_workflows {
-    my ($self) = @_;
+    my $self = $_;
     my ($request, $response, $workflows);
 
     $request = {
         request => 'workflows',
         data    => {},
+    };
+
+    $response = _send_request($self, $request);
+    $workflows = $response->{workflows} if $response and $response->{workflows};
+    $workflows //= [];
+
+    return $workflows;
+}
+
+sub find_workflows {
+    my ($self, @workflows) = @_;
+    my ($request, $response, $workflows);
+
+    $request = {
+        request => 'workflows',
+        data    => {
+            workflows => \@workflows
+        },
     };
 
     $response = _send_request($self, $request);

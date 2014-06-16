@@ -695,14 +695,6 @@ sub blast_search {
 
     my $link = CoGe::Accessory::Web::get_tiny_link(url => $url);
     
-    my $log = CoGe::Accessory::Web::log_history(
-        db          => $coge,
-        user_id     => $USER->id,
-       	page        => $PAGE_TITLE,
-      	description => $log_msg,
-        link        => $link
-    );
-
     my ($tiny_id) = $link =~ /\/(\w+)$/;
     my $workflow = $YERBA->create_workflow(
         name    => "cogeblast-$tiny_id",
@@ -822,6 +814,16 @@ sub blast_search {
     }
 
     my $status = $YERBA->submit_workflow($workflow);
+
+    my $log = CoGe::Accessory::Web::log_history(
+        db          => $coge,
+        user_id     => $USER->id,
+        page        => $PAGE_TITLE,
+        description => $log_msg,
+        link        => $link,
+        workflow_id => $status->{id}
+    ) if $status and $status->{id};
+
     $YERBA->wait_for_completion( $status->{id} );
 
     my @completed;
