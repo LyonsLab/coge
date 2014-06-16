@@ -152,7 +152,7 @@ $(document).ready(function(){
             time_range: 0,
         },
         success: function(data) {
-            jobs.load(data);
+            jobs.load(data.jobs);
             entries = data.length;
             $("#filter_busy").hide();
         }

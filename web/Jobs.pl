@@ -4,6 +4,7 @@ use strict;
 
 use CGI;
 use Digest::MD5 qw(md5_base64);
+use Time::Piece;
 
 use HTML::Template;
 use JSON::XS;
@@ -11,6 +12,7 @@ use JSON::XS;
 # CoGe packages
 use CoGeX;
 use CoGe::Accessory::Jex;
+use CoGe::Accessory::Utils qw(format_time_diff);
 use CoGe::Accessory::Web;
 
 no warnings 'redefine';
@@ -38,41 +40,66 @@ $YERBA =
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub get_jobs_for_user {
-    my @jobs;
+    my @entries;
 
     if ( $USER->is_admin ) {
-        @jobs =
-          $coge->resultset('Job')
-          ->search( undef, { order_by => { -desc => 'job_id' } } );
-    }
-    elsif ( $USER->is_public ) {
-        @jobs =
-          $coge->resultset('Job')
-          ->search( { user_id => 0 }, { order_by => 'job_id ASC', } );
+        @entries = $coge->resultset('Log')->search(
+            #{ description => { 'not like' => 'page access' } },
+            {
+                type     => { '!='  => 0 },
+                workflow_id  => { "!=" => undef}
+            },
+            { order_by => { -desc => 'time' } },
+        );
     }
     else {
-        @jobs = $USER->jobs->search( { user_id => $USER->id },
-            { order_by => { -desc => 'job_id' } } );
+        @entries = $coge->resultset('Log')->search(
+            {
+                user_id => $USER->id,
+                workflow_id  => { "!=" => undef},
+
+                #{ description => { 'not like' => 'page access' } }
+                type => { '!=' => 0 }
+            },
+            { order_by => { -desc => 'time' } },
+        );
     }
 
     my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
-    my @job_items;
+    my @workflows = map { $_->workflow_id } @entries;
+    my $workflows = $YERBA->find_workflows(@workflows);
 
-    foreach (@jobs) {
-        push @job_items,
-          {
-            id        => int( $_->id ),
-            link      => $_->link,
-            tool      => $_->page,
-            status    => $_->status_description,
-            started   => $_->start_time,
-            completed => $_->end_time ? $_->end_time : '',
-            elapsed   => $_->elapsed_time(),
-            user      => $_->user_id ? $users{ $_->user_id } : 'public',
+    my @job_items;
+    my %workflow_results;
+
+    foreach (@{$workflows}) {
+        my($id, $name, $submitted, $completed, $status) = @{$_};
+
+        my $start_time = localtime($submitted)->strftime('%F %I:%M%P');
+        my $end_time = localtime($completed)->strftime('%F %I:%M%P');
+        my $diff = $completed - $submitted;
+
+          $workflow_results{$id} = {
+            status    => $status,
+            started   => $start_time, #$_->start_time,
+            completed => $end_time, #$_->end_time ? $_->end_time : '',
+            elapsed   => format_time_diff($diff), #$_->elapsed_time(),
           };
     }
 
-    return encode_json( \@job_items );
+    my $index = 1;
+    foreach (@entries) {
+        my $entry = $workflow_results{$_->workflow_id};
+
+        push @job_items, {
+            id => int($index++),
+            user  => $users{$_->user_id},
+            tool  => $_->page,
+            link  => $_->link,
+            %{$entry}
+        };
+    }
+    return encode_json({ jobs => \@job_items });
 }
 
 sub gen_html {
