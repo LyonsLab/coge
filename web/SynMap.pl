@@ -1365,14 +1365,6 @@ sub go {
 
     $log_msg .= " Ks" if $ks_type;
 
-    my $log = CoGe::Accessory::Web::log_history(
-        db      => $coge,
-        user_id => $USER->id,
-        description => $log_msg,
-        page    => $PAGE_TITLE,
-        link => $tiny_link,
-    );
-
     say STDERR "tiny_link is required for logging." unless defined($tiny_link);
 
     my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
@@ -1515,9 +1507,8 @@ sub go {
     #        #}
     #    }
     $workflow = $YERBA->create_workflow(
-        id      => 0,
-        name    => $workflow_name,
-        logfile => $cogeweb->logfile
+        name     => $workflow_name,
+        logfile  => $cogeweb->logfile,
     );
 
     if ( $feat_type1 eq "genomic" ) {
@@ -2458,6 +2449,15 @@ sub go {
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
     my $response = $YERBA->submit_workflow($workflow);
+
+    my $log = CoGe::Accessory::Web::log_history(
+        db      => $coge,
+        user_id => $USER->id,
+        description => $log_msg,
+        page    => $PAGE_TITLE,
+        link => $tiny_link,
+        workflow_id => $response->{id}
+    ) if $response and $response->{id};
 
     return encode_json({
         link     => $tiny_link,
