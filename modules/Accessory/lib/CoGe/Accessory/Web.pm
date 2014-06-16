@@ -611,6 +611,7 @@ sub log_history {
     my %opts        = @_;
     my $db          = $opts{db};
     my $user_id     = $opts{user_id};
+    my $workflow_id = $opts{workflow_id};
     my $page        = $opts{page};
     my $description = $opts{description};
     my $type        = $opts{type} || 0;
@@ -625,7 +626,8 @@ sub log_history {
             page        => $page,
             type        => $type,
             description => $description,
-            link        => $link
+            link        => $link,
+            workflow_id => $workflow_id
         }
     );
 }
