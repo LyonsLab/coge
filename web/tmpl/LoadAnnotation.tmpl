@@ -1,15 +1,19 @@
 <TMPL_IF NAME='MAIN'>
+<script type="text/javascript" src="js/coge/utils.js"></script>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
 
 <SCRIPT language="JavaScript">
 var LOG_POLL_TIME = 2000;
 var timestamps = new Array();
-var load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
+var load_id    = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
+var job_id     = '<TMPL_VAR NAME="JOB_ID">';
+var status_url = '<TMPL_VAR NAME="STATUS_URL">';
+var PAGE_NAME  = '<TMPL_VAR NAME="PAGE_NAME">';
 
 $(document).ready(function(){
 	$.ajaxSetup({
 		type: "GET",
-		url: '<TMPL_VAR NAME="PAGE_NAME">',
+		url: PAGE_NAME,
 		dataType: "html",
 		cache: false,
 	});
@@ -34,11 +38,13 @@ $(document).ready(function(){
 	});
 	
 	// Open status dialog
-	if ('<TMPL_VAR NAME="OPEN_STATUS">') {
-		$('#loading_msg').hide();
-		$('#load_dialog').dialog('open'); 
-		setTimeout(function() { get_load_log(); }, 0);
-	}
+    if ('<TMPL_VAR NAME="OPEN_STATUS">') {
+        $('#loading_msg').hide();
+        $('#load_dialog').dialog('open');
+        if (job_id) { // JEX status for FASTQ data type
+            update_dialog(status_url + job_id, "#load_dialog", progress_formatter);
+        }
+    }
 });
 
 function file_selected(filename, url) {
@@ -76,11 +82,7 @@ function create_source() {
 function reset_log() {
 	$('#load_log').html('');
 	$('#loading_msg').show();
-	$('#finished_msg').hide();
-	$('#error_msg').hide();
-	$('#ok_button').hide();
-	$('#finish_load_button').hide();
-	$('#cancel_load_button').hide();
+	$('#finished_msg,#error_msg,#ok_button,#finish_button,#cancel_button').hide();
 }
 
 function check_login() {
@@ -176,75 +178,244 @@ function load_annotation() {
 				return;
 			}
 			
-			// Add load_id to browser URL
-			window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?load_id=" + load_id);
-			
 			// Set link in status dialog
 			$('#loading_msg span a').attr('href', obj.link).html(obj.link);
 			
 			// Start status update
-			setTimeout(function() { get_load_log(); }, LOG_POLL_TIME/2);
+            if (obj.job_id) { // JEX status for load FASTQ
+                job_id = obj.job_id;
+                window.history.pushState({}, "Title", PAGE_NAME + "?gid=" + gid + "&job_id=" + obj.job_id); // Add job_id to browser URL
+                update_dialog(status_url + obj.job_id, "#load_dialog", progress_formatter);
+            }
 		}
 		// TODO: handle error, show in status dialog
 	});
 }
 
-function get_load_log() {
-	timestamps['get_load_log'] = new Date().getTime();
-	
-	$.ajax({
-		data: {
-			fname: 'get_load_log',
-			load_id: load_id,
-			timestamp: timestamps['get_load_log']
-		},
-		success : function(data) {
-			if (!data) { // workaround for issue #45, jquery intermittently dropping payload
-				setTimeout(function() { get_load_log(); }, LOG_POLL_TIME);
-				return;
-			}
-			
-			var obj = jQuery.parseJSON(data);
+function get_load_log(callback) {
+    $.ajax({
+        data: {
+            dataType:    'text',
+            fname:       'get_load_log',
+            workflow_id: job_id,
+            timestamp:   new Date().getTime()
+        },
+        success : function(data) {
+            if (callback) {
+            	var obj = jQuery.parseJSON(data);
+                callback(obj);
+                return;
+            }
+        }
+    });
+}
+//function get_load_log() {
+//	timestamps['get_load_log'] = new Date().getTime();
+//	
+//	$.ajax({
+//		data: {
+//			fname: 'get_load_log',
+//			load_id: load_id,
+//			timestamp: timestamps['get_load_log']
+//		},
+//		success : function(data) {
+//			if (!data) { // workaround for issue #45, jquery intermittently dropping payload
+//				setTimeout(function() { get_load_log(); }, LOG_POLL_TIME);
+//				return;
+//			}
+//			
+//			var obj = jQuery.parseJSON(data);
+//
+//			/*if (obj.timestamp && obj.timestamp != timestamps['get_load_log']) {
+//				return;
+//			}*/
+//			
+//			$('#load_log').html(obj.log);
+//			var height = $('#load_log')[0].scrollHeight;
+//    		$("#load_log").animate({ scrollTop: height}, 500);
+//    						
+//			if (obj.status == 1) { // finished successfully
+//				// Update load_id in case user reuses page to load again
+//				load_id = obj.new_load_id;
+//				
+//				$('#dataset_id').val( obj.dataset_id );
+//				$('#loading_msg').hide();
+//				$('#finished_msg,#ok_button,#finish_load_button').fadeIn();
+//			}
+//			else if (obj.status == -1) { // error occurred
+//				$('#loading_msg').hide();
+//				$('#error_msg,#cancel_load_button').fadeIn();
+//			}
+//			else { // not done yet, continue polling
+//				setTimeout(function() { get_load_log(); }, LOG_POLL_TIME);
+//			}
+//		}
+//	});	
+//}
 
-			/*if (obj.timestamp && obj.timestamp != timestamps['get_load_log']) {
-				return;
-			}*/
-			
-			$('#load_log').html(obj.log);
-			var height = $('#load_log')[0].scrollHeight;
-    		$("#load_log").animate({ scrollTop: height}, 500);
-    						
-			if (obj.status == 1) { // finished successfully
-				// Update load_id in case user reuses page to load again
-				load_id = obj.new_load_id;
-				
-				$('#dataset_id').val( obj.dataset_id );
-				$('#loading_msg').hide();
-				$('#finished_msg').fadeIn();
-				$('#ok_button').fadeIn();
-				$('#finish_load_button').fadeIn();
-			}
-			else if (obj.status == -1) { // error occurred
-				$('#loading_msg').hide();
-				$('#error_msg').fadeIn();
-				$('#cancel_load_button').fadeIn();
-			}
-			else { // not done yet, continue polling
-				setTimeout(function() { get_load_log(); }, LOG_POLL_TIME);
-			}
-		}
-	});	
+function progress_formatter(item) {
+    var msg;
+    var row = $('<li>'+ item.description + ' </li>');
+    row.addClass('small');
+
+    var job_status = $('<span></span>');
+
+    if (item.status == 'scheduled')
+        job_status.append(item.status).addClass('down bold');
+    else if (item.status == 'completed')
+        job_status.append(item.status).addClass('completed bold');
+    else if (item.status == 'running')
+        job_status.append(item.status).addClass('running bold');
+    else if (item.status == 'skipped')
+        job_status.append("already generated").addClass('skipped bold');
+    else if (item.status == 'cancelled')
+        job_status.append(item.status).addClass('alert bold');
+    else if (item.status == 'failed')
+        job_status.append(item.status).addClass('alert bold');
+    else
+        return;
+
+    row.append(job_status);
+
+    if (item.elapsed)  {
+        row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
+    }
+
+    return row;
+}
+
+function update_dialog(request, identifier, formatter) {
+    var get_status = function () {
+        $.ajax({
+            type: 'GET',
+            url: request,
+            dataType: 'json',
+            success: update_callback,
+            error: update_callback,
+        });
+    };
+
+    var update_callback = function(json) {
+        var dialog = $(identifier);
+        var workflow_status = $("<p></p>");
+        var data = $("<ul></ul>");
+        var results = [];
+        var current_status;
+        var timeout = 2000;
+
+        var callback = function() {
+            update_dialog(request, identifier, formatter);
+        }
+
+        if (json.error) {
+            pageObj.error++;
+            if (pageObj.error > 3) {
+                workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
+                load_failed();
+                return;
+            }
+        } else {
+            pageObj.error = 0;
+        }
+
+        if (json.status) {
+            current_status = json.status.toLowerCase();
+            workflow_status.html("Workflow status: ");
+            workflow_status.append($('<span></span>').html(json.status));
+            workflow_status.addClass('bold');
+        } else {
+            setTimeout(callback, timeout);
+            return;
+        }
+
+        if (json.jobs) {
+            var jobs = json.jobs;
+            for (var index = 0; index < jobs.length; index++) {
+                var item = formatter(jobs[index]);
+                if (item) {
+                    results.push(item);
+                }
+            }
+        }
+
+        if (!dialog.dialog('isOpen')) {
+            return;
+        }
+
+        //FIXME Update when a workflow supports elapsed time
+        if (current_status == "completed") {
+            var total = json.jobs.reduce(function(a, b) {
+                if (!b.elapsed) return a;
+
+                return a + b.elapsed;
+            }, 0);
+
+            var duration = coge.utils.toPrettyDuration(total);
+
+            workflow_status.append("<br>Finished in " + duration);
+            workflow_status.find('span').addClass('completed');
+            get_load_log(function(result) {
+                load_succeeded(result);
+            });
+
+        }
+        else if (current_status == "failed"
+                || current_status == "error"
+                || current_status == "terminated"
+                || current_status == "cancelled")
+        {
+            workflow_status.find('span').addClass('alert');
+            load_failed();
+        }
+        else if (current_status == "notfound") {
+            setTimeout(callback, timeout);
+            return;
+        }
+        else {
+            workflow_status.find('span').addClass('running');
+            setTimeout(callback, timeout);
+        }
+
+        results.push(workflow_status);
+        data.append(results);
+        dialog.find('#load_log').html(data);
+    };
+
+    get_status();
+}
+
+function load_failed() {
+    // Update dialog
+    $('#loading_msg').hide();
+    $('#error_msg').fadeIn();
+    $('#cancel_button').fadeIn();
+
+//    $.ajax({
+//        data: {
+//            fname: "send_error_report",
+//            load_id: load_id,
+//            job_id: job_id
+//        }
+//    });
+}
+
+function load_succeeded(obj) {
+    // Update globals
+    //load_id = obj.new_load_id; // for reusing page to load again // mdb removed 6/5/14
+    genome_id = obj.genome_id; // for continuing to GenomeInfo
+
+    // Update dialog
+    $('#loading_msg').hide();
+    $('#finished_msg,#finish_button,#ok_button').fadeIn();
 }
 
 function reset_load() {
 	clear_list();
-	window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>");
+	window.history.pushState({}, "Title", PAGE_NAME);
 	$('#load_dialog').dialog('close');
 }
 
 function continue_to_view() {
-	//var dsid = $('#dataset_id').val();
-	//window.location.href = "GenomeView.pl?dsid=" + dsid;
 	window.location.href = "GenomeView.pl?gid=<TMPL_VAR NAME='GENOME_ID'>;tracks=features";
 }
 
@@ -397,8 +568,8 @@ function more() {
   <span id="error_msg" style="display:none;">An error occurred <img src="picts/thumbs_down.png"></span>
   <input id="dataset_id" type="hidden" /> 
   <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Load Another</span>
-  <span id="finish_load_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all">GenomeView</span>
-  <span id="cancel_load_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Cancel</span>
+  <span id="finish_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all">GenomeView</span>
+  <span id="cancel_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Cancel</span>
 </div>
 
 

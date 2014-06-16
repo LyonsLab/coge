@@ -11,12 +11,12 @@ use Getopt::Long qw(GetOptions);
 use JSON qw(decode_json);
 use URI::Escape::JavaScript qw(unescape);
 
-use CoGe::Accessory::Notebook qw( create_notebook );
-use CoGe::Accessory::Metadata qw( create_annotations );
+use CoGe::Core::Notebook qw( create_notebook );
+use CoGe::Core::Metadata qw( create_annotations );
 use CoGeX;
 
 our ($LOG, $DEBUG, $PAGE, $P, $db, $host, $port, $user, $pass, $config,
-     $name, $description, $version, $type, $userid, $restricted, 
+     $name, $description, $version, $type, $userid, $restricted, $result_dir 
      $annotations, @ITEMS);
 
 GetOptions(
@@ -25,6 +25,7 @@ GetOptions(
     # General configuration options
     "log=s"             => \$LOG,
     "config|cfg=s"      => \$config,
+    "result_dir=s"      => \$result_dir, # results path
 
     # Notebook options
     "page=s"            => \$PAGE, # The reference page
@@ -103,12 +104,23 @@ sub main {
 
     # Create annotations
     if ($annotations) {
-        CoGe::Accessory::Metadata::create_annotations(db => $coge, target => $notebook, annotations => $annotations, locked => 1);
+        CoGe::Core::Metadata::create_annotations(db => $coge, target => $notebook, annotations => $annotations, locked => 1);
     }
 
     open(my $fh, ">>", $LOG);
     say $fh "notebook id: " . $notebook->id;
     close($fh);
+    
+    # Save result document
+    if ($result_dir) {
+        mkpath($result_dir);
+        CoGe::Accessory::TDS::write(
+            catfile($result_dir, '1'),
+            {
+                notebook_id => int($notebook->id)
+            }
+        );
+    }
 }
 
 main;

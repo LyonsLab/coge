@@ -12,7 +12,7 @@ use URI::Escape::JavaScript qw(unescape);
 use JSON::XS;
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Utils qw( commify );
-use CoGe::Accessory::Metadata qw( create_annotations );
+use CoGe::Core::Metadata qw( create_annotations );
 use CoGe::Accessory::TDS;
 
 use vars qw($staging_dir $result_dir $install_dir $data_file $file_type $log_file
@@ -36,7 +36,7 @@ my $MIN_GFF_COLUMNS = 9;
 GetOptions(
     "staging_dir=s" => \$staging_dir,    # temporary staging path
     "install_dir=s" => \$install_dir,    # final installation path
-    "result_dir=s"  => \$result_dir,     # results path (for Web Services only)
+    "result_dir=s"  => \$result_dir,     # results path
     "data_file=s"   => \$data_file,      # input data file (JS escape)
     "file_type=s"   => \$file_type,		 # input file type
     "name=s"        => \$name,           # experiment name (JS escaped)
@@ -48,16 +48,7 @@ GetOptions(
     "user_name=s"   => \$user_name,      # user name
     "annotations=s" => \$annotations,    # optional: semicolon-separated list of locked annotations (link:group:type:text;...)
     "types=s"       => \$types,          # optional: semicolon-separated list of experiment type names
-    
-    # Database params
-    "host|h=s"      => \$host,
-    "port|p=s"      => \$port,
-    "database|db=s" => \$db,
-    "user|u=s"      => \$user,
-    "password|pw=s" => \$pass,
-
-    # Or use config file
-    "config=s" => \$config,
+    "config=s"      => \$config,         # configuration file
 
     # Optional flags for debug and bulk loader
     "ignore-missing-chr=i" => \$ignore_missing_chr,
@@ -68,9 +59,11 @@ GetOptions(
 
 # Open log file
 $| = 1;
+die unless ($staging_dir);
+mkpath($staging_dir); # make sure this exists
 $log_file = catfile($staging_dir, 'log.txt') unless $log_file;
 mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
-open( my $log, ">>$log_file" ) or die "Error opening log file $log_file";
+open( my $log, ">$log_file" ) or die "Error opening log file $log_file";
 $log->autoflush(1);
 
 # Process and verify parameters
@@ -87,32 +80,53 @@ if ($user_name eq 'public') {
 }
 
 # Load config file
-if ($config) {
-    $P = CoGe::Accessory::Web::get_defaults($config);
-    $db   = $P->{DBNAME};
-    $host = $P->{DBHOST};
-    $port = $P->{DBPORT};
-    $user = $P->{DBUSER};
-    $pass = $P->{DBPASS};
+unless ($config) {
+    print $log "log: error: can't find config file\n";
+    print STDERR "can't find config file\n";
+    exit(-1);
 }
-else {
-	$P = CoGe::Accessory::Web::get_defaults();
-}
+$P    = CoGe::Accessory::Web::get_defaults($config);
+$db   = $P->{DBNAME};
+$host = $P->{DBHOST};
+$port = $P->{DBPORT};
+$user = $P->{DBUSER};
+$pass = $P->{DBPASS};
+
 my $FASTBIT_LOAD  = $P->{FASTBIT_LOAD};
 my $FASTBIT_QUERY = $P->{FASTBIT_QUERY};
-my $SAMTOOLS = $P->{SAMTOOLS};
+my $SAMTOOLS      = $P->{SAMTOOLS};
+my $GUNZIP        = $P->{GUNZIP};
 if (   not $FASTBIT_LOAD
     or not $FASTBIT_QUERY
     or not $SAMTOOLS
+    or not $GUNZIP
     or not -e $FASTBIT_LOAD
     or not -e $FASTBIT_QUERY
-    or not -e $SAMTOOLS )
+    or not -e $SAMTOOLS
+    or not -e $GUNZIP )
 {
-    print $log "FASTBIT_LOAD: $FASTBIT_LOAD\n";
-    print $log "FASTBIT_QUERY: $FASTBIT_QUERY\n";
-    print $log "SAMTOOLS: $SAMTOOLS\n";
     print $log "log: error: can't find required command(s)\n";
     exit(-1);
+}
+
+my $cmd;
+
+# Copy input data file to staging area
+# If running via JEX the file will already be there
+my ($filename) = basename($data_file);#$data_file =~ /^.+\/([^\/]+)$/;
+my $staged_data_file = $staging_dir . '/' . $filename;
+unless (-r $staged_data_file) {
+    $cmd = "cp -f '$data_file' $staging_dir";
+    `$cmd`;
+}
+
+# Decompress file if necessary
+if ( $staged_data_file =~ /\.gz$/ ) {
+    my $cmd = $GUNZIP . ' ' . $staged_data_file;
+    #print STDERR "$cmd\n";
+    print $log "log: Decompressing '$filename'\n";
+    `$cmd`;
+    $data_file =~ s/\.gz$//;
 }
 
 # Determine file type
@@ -139,17 +153,6 @@ unless ($genome) {
 
 # Hash chromosome names
 my %genome_chr = map { $_ => 1 } $genome->chromosomes;
-
-my $cmd;
-
-# Copy input data file to staging area
-# If running via JEX the file will already be there
-my ($filename) = basename($data_file);#$data_file =~ /^.+\/([^\/]+)$/;
-my $staged_data_file = $staging_dir . '/' . $filename;
-unless (-r $staged_data_file) {
-    $cmd = "cp -f '$data_file' $staging_dir";
-    `$cmd`;
-}
 
 # Validate the data file
 print $log "log: Validating data file\n";
@@ -270,6 +273,7 @@ my $experiment = $coge->resultset('Experiment')->create(
         restricted     => $restricted
     }
 );
+print $log "experiment id: " . $experiment->id . "\n";
 
 # Create types
 if ($types) {
@@ -296,7 +300,7 @@ if ($types) {
 
 # Create annotations
 if ($annotations) {
-    CoGe::Accessory::Metadata::create_annotations(db => $coge, target => $experiment, annotations => $annotations, locked => 1);
+    CoGe::Core::Metadata::create_annotations(db => $coge, target => $experiment, annotations => $annotations, locked => 1);
 }
 
 # Determine installation path
@@ -307,21 +311,14 @@ unless ($install_dir) {
     }
     $install_dir = $P->{EXPDIR};
 }
-my $storage_path = catdir($install_dir, CoGe::Accessory::Storage::get_tiered_path( $experiment->id ));
+my $storage_path = catdir($install_dir, CoGe::Core::Storage::get_tiered_path( $experiment->id ));
 print $log 'Storage path: ', $storage_path, "\n";
-# mdb removed 8/7/13, issue 77
-#$experiment->storage_path($storage_path);
-#$experiment->update;
 
 # This is a check for dev server which may be out-of-sync with prod
 if ( -e $storage_path ) {
     print $log "log: error: install path already exists\n";
     exit(-1);
 }
-
-# Don't change, gets parsed by calling code
-print $log "experiment id: " . $experiment->id . "\n";
-print "experiment id: " . $experiment->id . "\n";
 
 #TODO create experiment type & connector
 
@@ -352,7 +349,7 @@ unless (-r $storage_path) {
 	print $log "log: error: could not create installation path\n";
 	exit(-1);
 }
-$cmd = "cp -r $staging_dir/* $storage_path";
+$cmd = "cp -r $staging_dir/* $storage_path"; #FIXME use perl copy and detect failure
 print $log "$cmd\n";
 `$cmd`;
 
@@ -360,6 +357,17 @@ print $log "$cmd\n";
 $cmd = "chmod -R a+r $storage_path";
 print $log "$cmd\n";
 `$cmd`;
+
+# Save result document
+if ($result_dir) {
+    mkpath($result_dir);
+    CoGe::Accessory::TDS::write(
+        catfile($result_dir, '1'),
+        {
+            experiment_id => int($experiment->id)
+        }
+    );
+}
 
 # Yay!
 CoGe::Accessory::Web::log_history(
@@ -370,22 +378,13 @@ CoGe::Accessory::Web::log_history(
     link        => 'ExperimentView.pl?eid=' . $experiment->id
 );
 
-# Save results for web services
-if ($result_dir) {
-    my %result = (
-        experiment_id => int($experiment->id)
-    );
-    my $result_file_path = catfile($result_dir, '1');
-    CoGe::Accessory::TDS::write($result_file_path, \%result);
-}
-
 # Create "log.done" file to indicate completion to JEX
 my $logdonefile = "$staging_dir/log.done";
 touch($logdonefile);
 
-#print STDERR "experiment id: ".$experiment->id,"\n";
 print $log "log: All done!\n";
 close($log);
+
 exit;
 
 #-------------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-package CoGe::Accessory::Metadata;
+package CoGe::Core::Metadata;
 use v5.14;
 use strict;
 use warnings;

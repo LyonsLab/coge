@@ -11,7 +11,7 @@
 use DBI;
 use strict;
 use CoGeX;
-use CoGe::Accessory::Storage;
+use CoGe::Core::Storage;
 use CoGe::Accessory::Utils;
 use Getopt::Long;
 use File::Path;
@@ -57,7 +57,7 @@ foreach my $genome (sort {$a->id <=> $b->id} $coge->resultset('Genome')->all) {
 		next;
 	}
 	
-	my $tier_path = CoGe::Accessory::Storage::get_tiered_path( $genome->id );
+	my $tier_path = CoGe::Core::Storage::get_tiered_path( $genome->id );
 	my $new_fasta_path = $new_path . '/' . $tier_path;
 	my $new_fasta_file = $new_fasta_path . '/genome.faa';
 	print STDERR "   new fasta: $new_fasta_path/genome.faa\n";
@@ -67,7 +67,7 @@ foreach my $genome (sort {$a->id <=> $b->id} $coge->resultset('Genome')->all) {
 	process_fasta_file($fasta_file, $new_fasta_path);
 	
 	print STDERR "   indexing ...\n";
-	my $rc = CoGe::Accessory::Storage::index_genome_file( file_path => $new_fasta_file );
+	my $rc = CoGe::Core::Storage::index_genome_file( file_path => $new_fasta_file );
 	die if ($rc != 0);
 	
 	die if (not (-r $new_fasta_file and -r "$new_fasta_file.fai"));

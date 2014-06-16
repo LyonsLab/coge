@@ -3,7 +3,7 @@ use base 'CGI::Application';
 
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Storage qw( get_genome_seq );
+use CoGe::Core::Storage qw( get_genome_seq );
 use Data::Dumper;
 
 sub setup {

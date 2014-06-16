@@ -130,6 +130,8 @@ Graphics/lib/CoGe/Graphics/Feature/Flag.pm
 Graphics/lib/CoGe/Graphics/Feature/Quant.pm
 Graphics/t/001_load.t
 Graphics/t/002_load.t
+Pipelines/qTeller/lib/CoGe/Pipelines/qTeller.pm
+Pipelines/FindSNPs/lib/CoGe/Pipelines/FindSNPs.pm
 Services/lib/CoGe/Services/Auth.pm
 Services/lib/CoGe/Services/Routes.pm
 Services/lib/CoGe/Services/Data/Experiment.pm

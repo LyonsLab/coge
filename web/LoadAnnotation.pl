@@ -8,12 +8,14 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils;
 use CoGe::Accessory::IRODS;
+use CoGe::Core::Storage qw( create_annotation_dataset get_workflow_paths );
 use HTML::Template;
 use JSON::XS;
 use URI::Escape::JavaScript qw(escape);
 use File::Path;
 use File::Copy;
 use File::Basename;
+use File::Spec::Functions qw( catdir catfile );
 use File::Listing qw(parse_dir);
 use LWP::Simple;
 use URI;
@@ -23,7 +25,7 @@ no warnings 'redefine';
 use vars qw(
   $P $PAGE_TITLE $LINK
   $TEMPDIR $BINDIR $USER $coge $FORM $TEMPURL
-  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $OPEN_STATUS
+  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $JOB_ID $OPEN_STATUS
 );
 
 $PAGE_TITLE = 'LoadAnnotation';
@@ -40,12 +42,11 @@ $BINDIR     = $P->{SCRIPTDIR}; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
 # Generate a unique session ID for this load (issue 177).
 # Use existing ID if being passed in with AJAX request.  Otherwise generate
 # a new one.  If passed-in as url parameter then open status window
-# automatically.
-$OPEN_STATUS = (defined $FORM->param('load_id'));
-
-$LOAD_ID = $FORM->Vars->{'load_id'} if defined $FORM->Vars->{'load_id'};
-$LOAD_ID = get_unique_id() unless defined $LOAD_ID;
-
+# automatically.  This needs to be done right away rather than at load time 
+# so that uploaded/imported files have a place to go.
+$OPEN_STATUS = (defined $FORM->param('load_id') || defined $FORM->Vars->{'job_id'});
+$LOAD_ID     = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
+$JOB_ID      = $FORM->Vars->{'job_id'};
 $TEMPDIR    = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 
 $MAX_SEARCH_RESULTS = 100;
@@ -62,6 +63,7 @@ $MAX_SEARCH_RESULTS = 100;
     search_genomes  => \&search_genomes,
     get_load_log    => \&get_load_log,
 	check_login     => \&check_login,
+	send_error_report => \&send_error_report
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
@@ -125,7 +127,10 @@ sub generate_body {
 
     $template->param(
     	LOAD_ID       => $LOAD_ID,
+    	JOB_ID        => $JOB_ID,
         OPEN_STATUS   => $OPEN_STATUS,
+        STATUS_URL    => 'jex/status/',
+        SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
         FILE_SELECT_SINGLE       => 1,
         DEFAULT_TAB              => 0,
         DISABLE_IRODS_GET_ALL    => 1,
@@ -370,13 +375,23 @@ sub load_annotation {
     my $user_name   = $opts{user_name};
     my $gid         = $opts{gid};
     my $items       = $opts{items};
+    
+    # print STDERR "load_annotation: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
 
 	# Added EL: 10/24/2013.  Solves the problem when restricted is unchecked.  
 	# Otherwise, command-line call fails with next arg being passed to 
 	# restricted as option
-   $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
+    $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
  
-	# print STDERR "load_annotation: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
+    # Check login
+    if ( !$user_name || !$USER->is_admin ) {
+        $user_name = $USER->user_name;
+    }
+    if ($user_name eq 'public') {
+        return encode_json({ error => 'Not logged in' });
+    }
+ 
+    # Check data items
     return encode_json({ error => "No data items" }) unless $items;
     $items = decode_json($items);
     #print STDERR Dumper $items;
@@ -385,131 +400,135 @@ sub load_annotation {
     return encode_json({ error => "You do not have permission to modify this genome" })
         unless ($USER->is_admin || $USER->is_owner_editor( dsg => $gid ));
 
-    if ( !$user_name || !$USER->is_admin ) {
-        $user_name = $USER->user_name;
-    }
-
-    # Setup staging area and log file
-    my $stagepath = $TEMPDIR . 'staging/';
+    # Setup staging area
+    my $stagepath = catdir($TEMPDIR, 'staging');
     mkpath $stagepath;
 
-    my $logfile = $stagepath . '/log.txt';
-    open( my $log, ">$logfile" ) or die "Error creating log file";
-    print $log "Starting load annotation $stagepath\n"
-      . "name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
-
-    # Verify and decompress files
-    my @files;
-    foreach my $item (@$items) {
-        my $fullpath = $TEMPDIR . $item->{path};
-        return encode_json({ error => "File doesn't exist! $fullpath" }) if ( not -e $fullpath );
-        my ( $path, $filename ) = $item->{path} =~ /^(.+)\/([^\/]+)$/;
-        my ($fileext) = $filename =~ /\.([^\.]+)$/;
-
-        #print STDERR "$path $filename $fileext\n";
-        if ( $fileext eq 'gz' ) {
-            my $cmd = $P->{GUNZIP} . ' ' . $fullpath;
-            #print STDERR "$cmd\n";
-            print $log "log: Decompressing '$filename'\n";
-            `$cmd`;
-            $fullpath =~ s/\.$fileext$//;
-        }
-
-        #TODO support detecting/untarring tar files also
-        push @files, $fullpath;
-    }
+    # Setup paths to files
+    my @files = map { $TEMPDIR . $_->{path} } @$items;
 
 	# Call load script
-    my $cmd =
-        "$BINDIR/load_annotation.pl "
-      . "-user_name $user_name "
-      . '-name "'
-      . escape($name) . '" '
-      . '-desc "'
-      . escape($description) . '" '
-      . '-link "'
-      . escape($link) . '" '
-      . '-version "'
-      . escape($version) . '" '
-      . "-restricted "
-      . $restricted . ' '
-      . "-gid $gid "
-      . '-source_name "'
-      . escape($source_name) . '" '
-      . "-staging_dir $stagepath "
-      . '-data_file "'
-      . escape( join( ',', @files ) ) . '" '
-      . "-config $CONFIGFILE";
-    print STDERR "$cmd\n";
-    print $log "$cmd\n";
-    close($log);
+#    my $cmd =
+#        "$BINDIR/load_annotation.pl "
+#      . "-user_name $user_name "
+#      . '-name "'
+#      . escape($name) . '" '
+#      . '-desc "'
+#      . escape($description) . '" '
+#      . '-link "'
+#      . escape($link) . '" '
+#      . '-version "'
+#      . escape($version) . '" '
+#      . "-restricted "
+#      . $restricted . ' '
+#      . "-gid $gid "
+#      . '-source_name "'
+#      . escape($source_name) . '" '
+#      . "-staging_dir $stagepath "
+#      . '-data_file "'
+#      . escape( join( ',', @files ) ) . '" '
+#      . "-config $CONFIGFILE";
 
-    if ( !defined( my $child_pid = fork() ) ) {
-        return encode_json({ error => "Cannot fork: $!" });
+    # Submit workflow to add genome
+    my ($workflow_id, $error_msg) = create_annotation_dataset(
+        user => $USER, 
+        metadata => {
+            name => $name,
+            description => $description,
+            link => $link,
+            version => $version,
+            source_name => $source_name,
+            restricted => $restricted,
+            genome_id => $gid
+        },
+        files => \@files
+    );
+    unless ($workflow_id) {
+        return encode_json({ error => "Workflow submission failed: " . $error_msg });
     }
-    elsif ( $child_pid == 0 ) {
-        print STDERR "child running: $cmd\n";
-        `$cmd`;
-        exit;
-    }
-
+    
 	# Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
-        url => $P->{SERVER} . "$PAGE_TITLE.pl?load_id=$LOAD_ID"
+        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id
     );
 
-    return encode_json({ link => $tiny_link });
+    return encode_json({ job_id => $workflow_id, link => $tiny_link });
 }
 
+#sub get_load_log {
+#    my %opts      = @_;
+#    my $timestamp = $opts{timestamp};
+#
+#    #print STDERR "get_load_log: $load_id " . $USER->name . "\n";
+#
+#    my $logfile = $TEMPDIR . "staging/log.txt";
+#    open( my $fh, $logfile )
+#      or return encode_json(
+#        {
+#            timestamp => $timestamp,
+#            status    => -1,
+#            log       => "Error opening log file"
+#        }
+#      );
+#
+#    my @lines = ();
+#    my $dsid;
+#    my $new_load_id;
+#    my $status = 0;
+#    while (<$fh>) {
+#        push @lines, $1 if ( $_ =~ /^log: (.+)/i );
+#        if ( $_ =~ /All done/i ) {
+#            $status = 1;
+#            
+#            # Generate a new load session ID in case the user chooses to 
+#        	# reuse the form to start another load.
+#        	$new_load_id = get_unique_id();
+#            
+#            last;
+#        }
+#        elsif ( $_ =~ /dataset id: (\d+)/i ) {
+#            $dsid = $1;
+#        }
+#        elsif ( $_ =~ /log: error/i ) {
+#            $status = -1;
+#            last;
+#        }
+#    }
+#
+#    close($fh);
+#
+#    return encode_json(
+#        {
+#            timestamp  => $timestamp,
+#            status     => $status,
+#            dataset_id => $dsid,
+#            new_load_id => $new_load_id,
+#            log        => join( "<BR>\n", @lines )
+#        }
+#    );
+#}
 sub get_load_log {
-    my %opts      = @_;
-    my $timestamp = $opts{timestamp};
+    my %opts         = @_;
+    my $workflow_id = $opts{workflow_id};
+    return unless $workflow_id;
+    #TODO authenticate user access to workflow
+    
+    my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
+    return unless (-r $results_path);
 
-    #	print STDERR "get_load_log: $load_id " . $USER->name . "\n";
+    my $result_file = catfile($results_path, '1');
+    return unless (-r $result_file);
 
-    my $logfile = $TEMPDIR . "staging/log.txt";
-    open( my $fh, $logfile )
-      or return encode_json(
-        {
-            timestamp => $timestamp,
-            status    => -1,
-            log       => "Error opening log file"
-        }
-      );
-
-    my @lines = ();
-    my $dsid;
-    my $new_load_id;
-    my $status = 0;
-    while (<$fh>) {
-        push @lines, $1 if ( $_ =~ /^log: (.+)/i );
-        if ( $_ =~ /All done/i ) {
-            $status = 1;
-            
-            # Generate a new load session ID in case the user chooses to 
-        	# reuse the form to start another load.
-        	$new_load_id = get_unique_id();
-            
-            last;
-        }
-        elsif ( $_ =~ /dataset id: (\d+)/i ) {
-            $dsid = $1;
-        }
-        elsif ( $_ =~ /log: error/i ) {
-            $status = -1;
-            last;
-        }
-    }
-
-    close($fh);
+    my $result = CoGe::Accessory::TDS::read($result_file);
+    return unless $result;
+    
+    my $new_load_id = get_unique_id();
 
     return encode_json(
-        {
-            timestamp  => $timestamp,
-            status     => $status,
-            dataset_id => $dsid,
-            new_load_id => $new_load_id,
-            log        => join( "<BR>\n", @lines )
+        { 
+            genome_id   => $result->{genome_id},
+            dataset_id  => $result->{dataset_id},
+            new_load_id => $new_load_id
         }
     );
 }
@@ -607,4 +626,38 @@ sub create_source {
     return unless ($source);
 
     return $name;
+}
+
+sub send_error_report {
+    my %opts = @_;
+    my $load_id = $opts{load_id};
+    my $job_id = $opts{job_id};
+
+    my @paths= ($P->{SECTEMPDIR}, $PAGE_TITLE, $USER->name, $load_id, "staging");
+
+    # Get the staging directory
+    my $staging_dir = File::Spec->catdir(@paths);
+
+    my $url = $P->{SERVER} . "$PAGE_TITLE.pl?";
+    $url .= "job_id=$job_id;" if $job_id;
+    $url .= "load_id=$load_id";
+
+    my $email = $P->{SUPPORT_EMAIL};
+
+    my $body =
+        "Load failed\n\n"
+        . 'For user: '
+        . $USER->name . ' id='
+        . $USER->id . ' '
+        . $USER->date . "\n\n"
+        . "staging_directory: $staging_dir\n\n"
+        . "tiny link: $url\n\n";
+    $body .= get_load_log();
+
+    CoGe::Accessory::Web::send_email(
+        from    => $email,
+        to      => $email,
+        subject => "Load error notification from $PAGE_TITLE",
+        body    => $body
+    );
 }

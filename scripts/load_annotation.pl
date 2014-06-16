@@ -6,6 +6,8 @@ use CoGeX;
 use Getopt::Long;
 use File::Path;
 use File::Basename;
+use File::Spec::Functions qw( catdir catfile );
+use File::Touch;
 use URI::Escape;
 use URI::Escape::JavaScript qw(unescape);
 use CoGe::Accessory::Web qw(get_defaults);
@@ -18,13 +20,14 @@ my $t1 = new Benchmark;
 my $GO          = 1;
 my $DEBUG       = 1;
 my $DB_BATCH_SZ = 50 * 1000;
-use vars qw($staging_dir $data_file
+use vars qw($staging_dir $result_dir $data_file
   $name $description $link $version $restricted
   $gid $source_name $user_name $config $allow_all_chr
-  $host $port $db $user $pass);
+  $host $port $db $user $pass $P);
 
 GetOptions(
     "staging_dir=s" => \$staging_dir,
+    "result_dir=s"  => \$result_dir,     # results path
     "data_file=s"   => \$data_file,      # data file (JS escape)
     "name=s"        => \$name,           # experiment name (JS escaped)
     "desc=s"        => \$description,    # experiment description (JS escaped)
@@ -34,25 +37,18 @@ GetOptions(
     "gid=s"         => \$gid,            # genome id
     "source_name=s" => \$source_name,    # data source name (JS escaped)
     "user_name=s"   => \$user_name,      # user name
+    "config=s"      => \$config,         # configuration file
 
-    # Database params
-    "host|h=s"      => \$host,
-    "port|p=s"      => \$port,
-    "database|db=s" => \$db,
-    "user|u=s"      => \$user,
-    "password|pw=s" => \$pass,
-
-    # Or use config file
-    "config=s" => \$config,
-
-    # Flags
+    # Optional Flags
     "allow_all_chr=i" => \$allow_all_chr # Allow non-existent chromosomes
 );
 
 # Open log file
 $| = 1;
+die unless ($staging_dir);
+mkpath($staging_dir); # make sure this exists
 my $logfile = "$staging_dir/log.txt";
-open( my $log, ">>$logfile" ) or die "Error opening log file $logfile";
+open( my $log, ">$logfile" ) or die "Error opening log file $logfile";
 $log->autoflush(1);
 
 # Process and verify parameters
@@ -69,16 +65,18 @@ if ($user_name eq 'public') {
     exit(-1);
 }
 
-# Load config file ... only needed to get the DB params if user specified
-# a config file instead of specifying them on command-line.
-if ($config) {
-    my $P = CoGe::Accessory::Web::get_defaults($config);
-    $db   = $P->{DBNAME};
-    $host = $P->{DBHOST};
-    $port = $P->{DBPORT};
-    $user = $P->{DBUSER};
-    $pass = $P->{DBPASS};
+# Load config file
+unless ($config) {
+    print $log "log: error: can't find config file\n";
+    print STDERR "can't find config file\n";
+    exit(-1);
 }
+$P    = CoGe::Accessory::Web::get_defaults($config);
+$db   = $P->{DBNAME};
+$host = $P->{DBHOST};
+$port = $P->{DBPORT};
+$user = $P->{DBUSER};
+$pass = $P->{DBPASS};
 
 # Validate the data file
 print $log "log: Validating data file ...\n";
@@ -423,6 +421,18 @@ print $log "Time to parse: "
   . timestr( timediff( $t2, $t1 ) )
   . ", Time to load: "
   . timestr( timediff( $t3, $t2 ) ) . "\n";
+  
+# Save result document
+if ($result_dir) {
+    mkpath($result_dir);
+    CoGe::Accessory::TDS::write(
+        catfile($result_dir, '1'),
+        {
+            genome_id  => int($gid),
+            dataset_id => int($dataset->id)
+        }
+    );
+}
 
 # Yay!
 CoGe::Accessory::Web::log_history(
@@ -432,6 +442,11 @@ CoGe::Accessory::Web::log_history(
     description => 'load dataset id' . $dataset->id,
     link        => 'GenomeView.pl?gid=' . $genome->id
 );
+
+# Create "log.done" file to indicate completion to JEX
+my $logdonefile = "$staging_dir/log.done";
+touch($logdonefile);
+
 print $log "log: All done!";
 close($log);
 

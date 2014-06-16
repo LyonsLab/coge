@@ -2,7 +2,7 @@ package CoGe::Services::JBrowse::Sequence;
 use base 'CGI::Application';
 
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Storage qw( get_genome_seq );
+use CoGe::Core::Storage qw( get_genome_seq );
 use URI::Escape qw(uri_unescape);
 use List::Util qw( min );
 

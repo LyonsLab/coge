@@ -8,12 +8,14 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
+use CoGe::Core::Storage qw(create_genome_from_file create_genome_from_NCBI get_workflow_paths);
 use HTML::Template;
 use JSON::XS;
 use Sort::Versions;
 use File::Path qw(mkpath);
 use File::Copy qw(copy);
 use File::Basename;
+use File::Spec::Functions qw( catdir catfile );
 use File::Listing qw(parse_dir);
 use URI;
 use URI::Escape::JavaScript qw(escape);
@@ -25,31 +27,29 @@ use Data::Dumper;
 no warnings 'redefine';
 
 use vars qw(
-  $P $PAGE_TITLE $TEMPDIR $BINDIR $USER $coge $FORM $LINK
+  $P $PAGE_TITLE $TEMPDIR $user $coge $FORM $LINK $JOB_ID
   %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $OPEN_STATUS
 );
 
 $PAGE_TITLE = 'LoadGenome';
 
 $FORM = new CGI;
-( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
+( $coge, $user, $P, $LINK ) = CoGe::Accessory::Web->init(
     cgi => $FORM,
-    #url => 'http://coge.iplantcollaborative.org/mbomhoff'.$ENV{REQUEST_URI},
-    #ticket => $FORM->param('ticket') || undef,
     page_title => $PAGE_TITLE
 );
 
 $CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
-$BINDIR     = $P->{SCRIPTDIR}; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
 
 # Generate a unique session ID for this load (issue 177).
 # Use existing ID if being passed in with AJAX request.  Otherwise generate
 # a new one.  If passed-in as url parameter then open status window
 # automatically.  This needs to be done right away rather than at load time 
 # so that uploaded/imported files have a place to go.
-$OPEN_STATUS = (defined $FORM->param('load_id'));
-$LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
-$TEMPDIR    = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
+$OPEN_STATUS = (defined $FORM->param('load_id') || defined $FORM->Vars->{'job_id'});
+$LOAD_ID     = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
+$JOB_ID      = $FORM->Vars->{'job_id'};
+$TEMPDIR     = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $user->name . '/' . $LOAD_ID . '/';
 
 $MAX_SEARCH_RESULTS = 400;
 
@@ -70,6 +70,7 @@ $MAX_SEARCH_RESULTS = 400;
     get_sources          => \&get_sources,
     get_load_log         => \&get_load_log,
 	check_login			 => \&check_login,
+	send_error_report    => \&send_error_report
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
@@ -81,15 +82,15 @@ sub generate_html {
     $template->param( PAGE_TITLE => $PAGE_TITLE,
     				  PAGE_LINK  => $LINK,
 					  HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= ' ' . $USER->last_name
-      if ( $USER->first_name && $USER->last_name );
+    my $name = $user->user_name;
+    $name = $user->first_name if $user->first_name;
+    $name .= ' ' . $user->last_name
+      if ( $user->first_name && $user->last_name );
     $template->param(
         USER     => $name,
         LOGO_PNG => $PAGE_TITLE . "-logo.png",
     );
-    $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
+    $template->param( LOGON => 1 ) unless $user->user_name eq "public";
     my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
     $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
 
@@ -101,7 +102,7 @@ sub generate_html {
 }
 
 sub generate_body {
-    if ( $USER->user_name eq 'public' ) {
+    if ( $user->user_name eq 'public' ) {
         my $template =
           HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
         $template->param(
@@ -117,7 +118,9 @@ sub generate_body {
         MAIN          => 1,
         PAGE_NAME     => $PAGE_TITLE . '.pl',
         LOAD_ID       => $LOAD_ID,
+        JOB_ID        => $JOB_ID,
         OPEN_STATUS   => $OPEN_STATUS,
+        STATUS_URL    => 'jex/status/',
         SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
         ENABLE_NCBI              => 1,
         DEFAULT_TAB              => 0,
@@ -133,7 +136,7 @@ sub generate_body {
         $template->param(ORGANISM_NAME => $organism->name);
     }
 
-    $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
+    $template->param( ADMIN_AREA => 1 ) if $user->is_admin;
 
     return $template->output;
 }
@@ -142,14 +145,13 @@ sub irods_get_path {
     my %opts      = @_;
     my $path      = $opts{path};
 
-    my $username = $USER->name;
+    my $username = $user->name;
     my $basepath = $P->{IRODSDIR};
     $basepath =~ s/\<USER\>/$username/;
     $path = $basepath unless $path;
 
     if ( $path !~ /^$basepath/ ) {
-        print STDERR
-          "Attempt to access '$path' denied (basepath='$basepath')\n";
+        print STDERR "Attempt to access '$path' denied (basepath='$basepath')\n";
         return;
     }
 
@@ -161,8 +163,8 @@ sub irods_get_path {
         # minues the first time a user logs into CoGe.
         # mdb added 3/31/14
         my $isNewAccount = 0;
-        if ($USER->date ne '0000-00-00 00:00:00') {
-            my $dt_user = DateTime::Format::MySQL->parse_datetime( $USER->date );
+        if ($user->date ne '0000-00-00 00:00:00') {
+            my $dt_user = DateTime::Format::MySQL->parse_datetime( $user->date );
             my $dt_now = DateTime->now( time_zone => 'America/Phoenix' );
             my $diff = $dt_now->subtract_datetime($dt_user);
             my ( $years, $months, $days, $hours, $minutes ) = $diff->in_units('years', 'months', 'days', 'hours', 'minutes');
@@ -174,9 +176,9 @@ sub irods_get_path {
             my $body =
                 "irods ils command failed\n\n" 
               . 'User: '
-              . $USER->name . ' id='
-              . $USER->id . ' '
-              . $USER->date . "\n\n"
+              . $user->name . ' id='
+              . $user->id . ' '
+              . $user->date . "\n\n"
               . $error . "\n\n"
               . $P->{SERVER};
             CoGe::Accessory::Web::send_email(
@@ -411,8 +413,8 @@ sub upload_file {
 }
 
 sub check_login {
-	#print STDERR $USER->user_name . ' ' . int($USER->is_public) . "\n";
-	return ($USER && !$USER->is_public);
+	#print STDERR $user->user_name . ' ' . int($user->is_public) . "\n";
+	return ($user && !$user->is_public);
 }
 
 sub load_genome {
@@ -429,8 +431,7 @@ sub load_genome {
     my $keep_headers = $opts{keep_headers};
     my $items        = $opts{items};
 
-	print STDERR Dumper \%opts, "\n";
-	print STDERR "load_genome: organism_id=$organism_id name=$name description=$description version=$version type_id=$type_id restricted=$restricted\n";
+	#print STDERR "load_genome: organism_id=$organism_id name=$name description=$description version=$version type_id=$type_id restricted=$restricted\n";
 
 	# Added EL: 7/8/2013.  Solves the problem when restricted is unchecked.  
 	# Otherwise, command-line call fails with '-organism_id' being passed to 
@@ -438,8 +439,8 @@ sub load_genome {
     $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
 
 	# Check login
-    if ( !$user_name || !$USER->is_admin ) {
-        $user_name = $USER->user_name;
+    if ( !$user_name || !$user->is_admin ) {
+        $user_name = $user->user_name;
     }
     if ($user_name eq 'public') {
     	return encode_json({ error => 'Not logged in' });
@@ -448,132 +449,92 @@ sub load_genome {
     # Check data items
     return encode_json({ error => 'No files specified' }) unless $items;
     $items = decode_json($items);
-
+    my @files = map { catfile($TEMPDIR, $_->{path}) } @$items;
+    
     # Setup staging area
-    my $stagepath = $TEMPDIR . '/staging/';
+    my $stagepath = catdir($TEMPDIR, 'staging');
     mkpath $stagepath;
 
-	# Open log file
-    my $logfile = $stagepath . '/log.txt';
-    open( my $log, ">$logfile" ) or die "Error creating log file";
-    print $log "Starting load genome $stagepath\n"
-      . "name=$name description=$description version=$version type_id=$type_id restricted=$restricted org_id=$organism_id\n";
-
-	# If NCBI load call special script
-	my $cmd;
-	my @accn;
+    # Gather NCBI accession numbers if present
+    my @accns;
     foreach my $item (@$items) {
-    	if ($item->{type} eq 'ncbi') {
-    		my $path = $item->{path};
-    		$path =~ s/\.\d+$//; # strip off version number
-    		push @accn, $path;
-    	}
+        if ($item->{type} eq 'ncbi') {
+            my $path = $item->{path};
+            $path =~ s/\.\d+$//; # strip off version number
+            push @accns, $path;
+        }
     }
-    if (@accn) {
-	    $cmd =
-	        "$BINDIR/load_genomes_n_stuff/genbank_genome_loader.pl "
-	      . join(' ', map {'-accn '.$_} @accn) . ' '
-	      . "-user_name $user_name "
-	      . "-staging_dir $stagepath "
-	      . "-conf $CONFIGFILE "
-	      . '-GO 1';
-    }
-    # Setup file-based load script
-	else {
-	    # Verify and decompress files #TODO move this into scripts/load_genome.pl
-	    my @files;
-	    foreach my $item (@$items) {
-	        my $fullpath = $TEMPDIR . $item->{path};
-	        return encode_json({ error => "File doesn't exist: $fullpath" }) if ( not -e $fullpath );
-	        my ( $path, $filename ) = $item->{path} =~ /^(.+)\/([^\/]+)$/;
-	        my ($fileext) = $filename =~ /\.([^\.]+)$/;
-	
-	        #print STDERR "$path $filename $fileext\n";
-	        if ( $fileext eq 'gz' ) {
-	            my $cmd = $P->{GUNZIP} . ' ' . $fullpath;
-	            #print STDERR "$cmd\n";
-	            print $log "log: Decompressing '$filename'\n";
-	            `$cmd`;
-	            $fullpath =~ s/\.$fileext$//;
-	        }
-	
-	        #TODO support detecting/untarring tar files also
-	        push @files, $fullpath;
-	    }
-	
-	    $cmd =
-	        "$BINDIR/load_genome.pl "
-	      . "-user_name $user_name "
-	      . '-keep_headers '
-	      . ( $keep_headers && $keep_headers eq 'true' ? '1' : '0' ) . ' ';
-	    $cmd .= '-name "' . escape($name) . '" '        if $name;
-	    $cmd .= '-desc "' . escape($description) . '" ' if $description;
-	    $cmd .= '-link "' . escape($link) . '" '        if $link;
-	    $cmd .= '-version "' . escape($version) . '" '  if $version;
-	    $cmd .= "-type_id $type_id ";
-	    $cmd .= "-restricted " . $restricted . ' '      if $restricted;
-	    $cmd .= "-organism_id $organism_id ";
-	    $cmd .= '-source_name "' . escape($source_name) . '" ';
-	    $cmd .= "-staging_dir $stagepath ";
-	    $cmd .= '-fasta_files "' . escape( join( ',', @files ) ) . '" ';
-	    $cmd .= "-config $CONFIGFILE"; #"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
-	}
     
-    # Call load script
-    print STDERR "$cmd\n";
-    print $log "$cmd\n";
-    close($log);
-    if ( !defined( my $child_pid = fork() ) ) {
-        return encode_json({ error => "Cannot fork: $!" });
+    # Submit workflow to add genome
+    my ($workflow_id, $error_msg);
+    if (@accns) { # NCBI accession numbers specified
+#        my $cmd =
+#            $P->{SCRIPTDIR} . "/load_genomes_n_stuff/genbank_genome_loader.pl "
+#          . join(' ', map {'-accn '.$_} @accns) . ' '
+#          . "-user_name $user_name "
+#          . "-staging_dir $stagepath "
+#          . "-conf $CONFIGFILE "
+#          . '-GO 1';
+        
+        ($workflow_id, $error_msg) = create_genome_from_NCBI(
+            user => $user,
+            accns => \@accns
+        );
+    } 
+    else { # File-based load
+        ($workflow_id, $error_msg) = create_genome_from_file(
+            user => $user, 
+            metadata => {
+                name => $name,
+                description => $description,
+                version => $version,
+                source_name => $source_name,
+                restricted => $restricted,
+                organism_id => $organism_id,
+                type_id => $type_id
+            },
+            files => \@files
+        );
     }
-    elsif ( $child_pid == 0 ) {
-        print STDERR "child running: $cmd\n";
-        `$cmd`;
-        exit;
+    
+    unless ($workflow_id) {
+        return encode_json({ error => "Workflow submission failed: " . $error_msg });
     }
     
     # Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
-        url => $P->{SERVER} . "$PAGE_TITLE.pl?load_id=$LOAD_ID"
+        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id
     );
 
-    return encode_json({ link => $tiny_link });
+    return encode_json({ job_id => $workflow_id, link => $tiny_link });
 }
 
 sub get_load_log {
-    #print STDERR "get_load_log $LOAD_ID\n";
+    my %opts         = @_;
+    my $workflow_id = $opts{workflow_id};
+    return unless $workflow_id;
+    #TODO authenticate user access to workflow
+    
+    my (undef, $results_path) = get_workflow_paths($user->name, $workflow_id);
+    return unless (-r $results_path);
 
-    my $logfile = $TEMPDIR . "staging/log.txt";
-    open( my $fh, $logfile ) or
-      return encode_json( { status => -1, log => ["Error opening log file"] } );
+    my $result_file = catfile($results_path, '1');
+    return unless (-r $result_file);
 
-    my @lines = ();
-    my $gid;
-    my $new_load_id;
-    my $status = 0;
-    while (<$fh>) {
-        push @lines, $1 if ( $_ =~ /^log:\s+(.+)/i );
-        if ( $_ =~ /log: Finished loading/i ) {
-        	$status = 1;
-        	
-        	# Generate a new load session ID in case the user chooses to 
-        	# reuse the form to start another load.
-        	$new_load_id = get_unique_id();
-            
-            last;
-        }
-        elsif ( $_ =~ /log: Added genome id\s?(\d+)/i ) {
-            $gid = $1;
-        }
-        elsif ( $_ =~ /log: error/i ) {
-            $status = -1;
-            last;
-        }
-    }
-    close($fh);
+    my $result = CoGe::Accessory::TDS::read($result_file);
+    return unless $result;
+    
+    my $new_load_id = get_unique_id();
+    my $genome_id = (exists $result->{genome_id} ? $result->{genome_id} : undef);
+    my $links = (exists $result->{links} ? $result->{links} : undef);
 
     return encode_json(
-        { status => $status, genome_id => $gid, new_load_id => $new_load_id, log => \@lines } );
+        { 
+            genome_id   => $genome_id, 
+            new_load_id => $new_load_id,
+            links       => $links
+        }
+    );
 }
 
 sub get_sequence_types {
@@ -715,4 +676,38 @@ sub create_source {
     return unless ($source);
 
     return $name;
+}
+
+sub send_error_report {
+    my %opts = @_;
+    my $load_id = $opts{load_id};
+    my $job_id = $opts{job_id};
+
+    my @paths= ($P->{SECTEMPDIR}, $PAGE_TITLE, $user->name, $load_id, "staging");
+
+    # Get the staging directory
+    my $staging_dir = File::Spec->catdir(@paths);
+
+    my $url = $P->{SERVER} . "$PAGE_TITLE.pl?";
+    $url .= "job_id=$job_id;" if $job_id;
+    $url .= "load_id=$load_id";
+
+    my $email = $P->{SUPPORT_EMAIL};
+
+    my $body =
+        "Load failed\n\n"
+        . 'For user: '
+        . $user->name . ' id='
+        . $user->id . ' '
+        . $user->date . "\n\n"
+        . "staging_directory: $staging_dir\n\n"
+        . "tiny link: $url\n\n";
+    #$body .= get_load_log();
+
+    CoGe::Accessory::Web::send_email(
+        from    => $email,
+        to      => $email,
+        subject => "Load error notification from $PAGE_TITLE",
+        body    => $body
+    );
 }
