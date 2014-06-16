@@ -4,8 +4,8 @@ use strict;
 use CGI;
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Utils;
-use CoGe::Accessory::IRODS;
+use CoGe::Accessory::Utils qw(sanitize_name get_unique_id commify);
+use CoGe::Accessory::IRODS qw(irods_iput irods_imeta);
 use CoGe::Core::Genome qw(get_wobble_histogram get_noncoding_gc_stats
     get_wobble_gc_diff_histogram get_feature_type_gc_histogram
     get_gc_stats has_statistic);
@@ -1804,7 +1804,7 @@ sub generate_tbl {
     my $coge_tbl = File::Spec->catdir(@paths);
 
     # Generate filename
-    my $org_name = sanitize_organism_name($dsg->organism->name);
+    my $org_name = sanitize_name($dsg->organism->name);
     my $filename = $org_name . "dsgid" . $dsg->id . "_tbl.txt";
     my $path = get_download_path($dsg->id);
 
@@ -1871,7 +1871,7 @@ sub generate_bed {
     my $coge_bed = File::Spec->catdir(@paths);
 
     # Generate file name
-    my $org_name = sanitize_organism_name($dsg->organism->name);
+    my $org_name = sanitize_name($dsg->organism->name);
     my $filename = "$org_name" . "_gid" . $dsg->id . ".bed";
     my $path = get_download_path($dsg->id);
 
@@ -1952,7 +1952,7 @@ sub generate_gff {
     my $upa = $FORM->param('upa') if $FORM->param('upa'); #unqiue_parent_annotations
 
     # Generate file name
-    my $org_name = sanitize_organism_name($dsh->organism->name);
+    my $org_name = sanitize_name($dsh->organism->name);
     my $filename = "$org_name-$id_type-$annos-$cds-$name_unique";
     $filename .= "id-" . $dsh->id;
     $filename .= "-$upa" if $upa;
@@ -2040,21 +2040,6 @@ sub export_gff {
     return encode_json(\%json);
 }
 
-sub sanitize_organism_name {
-    my $org = shift;
-
-    $org =~ s/\///g;
-    $org =~ s/\s+/_/g;
-    $org =~ s/\(//g;
-    $org =~ s/\)//g;
-    $org =~ s/://g;
-    $org =~ s/;//g;
-    $org =~ s/#/_/g;
-    $org =~ s/'//g;
-    $org =~ s/"//g;
-
-    return $org;
-}
 
 #XXX: Add error checking
 sub export_to_irods {

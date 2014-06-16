@@ -38,7 +38,7 @@ BEGIN {
     $FASTA_LINE_LEN = 80;
     @ISA     = qw (Exporter);
     @EXPORT =
-      qw( units commify print_fasta get_unique_id get_link_coords format_time_diff );
+      qw( units commify print_fasta get_unique_id get_link_coords format_time_diff sanitize_name);
 }
 
 sub units {
@@ -94,6 +94,22 @@ sub get_link_coords { # mdb added 11/20/13 issue 254
 	$start -= $offset;
 	$stop  += $offset;
 	return ($start, $stop);
+}
+
+sub sanitize_name {
+    my $org = shift;
+
+    $org =~ s/\///g;
+    $org =~ s/\s+/_/g;
+    $org =~ s/\(//g;
+    $org =~ s/\)//g;
+    $org =~ s/://g;
+    $org =~ s/;//g;
+    $org =~ s/#/_/g;
+    $org =~ s/'//g;
+    $org =~ s/"//g;
+
+    return $org;
 }
 
 sub format_time_diff {
