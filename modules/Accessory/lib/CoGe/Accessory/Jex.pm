@@ -130,6 +130,12 @@ sub get_status {
     return $response->{status};
 }
 
+sub is_successful {
+    my ($self, $response) = @_;
+
+    return $response and not $response->{status} =~ /error/i;
+}
+
 sub get_all_workflows {
     my $self = $_;
     my ($request, $response, $workflows);
