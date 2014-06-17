@@ -38,7 +38,8 @@ BEGIN {
     $FASTA_LINE_LEN = 80;
     @ISA     = qw (Exporter);
     @EXPORT =
-      qw( units commify print_fasta get_unique_id get_link_coords format_time_diff sanitize_name);
+      qw( units commify print_fasta get_unique_id get_link_coords format_time_diff sanitize_name
+        execute );
 }
 
 sub units {
@@ -131,5 +132,19 @@ sub format_time_diff {
 
     return $elapsed;
 }
+
+sub execute {
+    my $cmd = shift;
+
+    my @cmdOut = qx{$cmd};
+    my $cmdStatus = $?;
+
+    if ($cmdStatus != 0) {
+        say STDERR "log: error: command failed with rc=$cmdStatus: $cmd";
+    }
+
+    return $cmdStatus;
+}
+
 
 1;
