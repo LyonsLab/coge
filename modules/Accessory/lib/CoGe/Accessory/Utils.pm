@@ -38,7 +38,8 @@ BEGIN {
     $FASTA_LINE_LEN = 80;
     @ISA     = qw (Exporter);
     @EXPORT =
-      qw( units commify print_fasta get_unique_id get_link_coords format_time_diff );
+      qw( units commify print_fasta get_unique_id get_link_coords format_time_diff sanitize_name
+        execute );
 }
 
 sub units {
@@ -96,6 +97,22 @@ sub get_link_coords { # mdb added 11/20/13 issue 254
 	return ($start, $stop);
 }
 
+sub sanitize_name {
+    my $org = shift;
+
+    $org =~ s/\///g;
+    $org =~ s/\s+/_/g;
+    $org =~ s/\(//g;
+    $org =~ s/\)//g;
+    $org =~ s/://g;
+    $org =~ s/;//g;
+    $org =~ s/#/_/g;
+    $org =~ s/'//g;
+    $org =~ s/"//g;
+
+    return $org;
+}
+
 sub format_time_diff {
     my $diff = shift;
 
@@ -115,5 +132,19 @@ sub format_time_diff {
 
     return $elapsed;
 }
+
+sub execute {
+    my $cmd = shift;
+
+    my @cmdOut = qx{$cmd};
+    my $cmdStatus = $?;
+
+    if ($cmdStatus != 0) {
+        say STDERR "log: error: command failed with rc=$cmdStatus: $cmd";
+    }
+
+    return $cmdStatus;
+}
+
 
 1;

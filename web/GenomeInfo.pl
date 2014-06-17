@@ -4,8 +4,8 @@ use strict;
 use CGI;
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Utils;
-use CoGe::Accessory::IRODS;
+use CoGe::Accessory::Utils qw(sanitize_name get_unique_id commify);
+use CoGe::Accessory::IRODS qw(irods_iput irods_imeta);
 use CoGe::Core::Genome qw(get_wobble_histogram get_noncoding_gc_stats
     get_wobble_gc_diff_histogram get_feature_type_gc_histogram
     get_gc_stats has_statistic);
@@ -15,12 +15,13 @@ use JSON::XS;
 use Sort::Versions;
 use File::Basename qw(basename);
 use File::Path qw(mkpath);
+use File::Spec::Functions;
 use POSIX qw(floor);
 
 no warnings 'redefine';
 
 use vars qw(
-  $P $PAGE_TITLE $TEMPDIR $SECTEMPDIR $LOAD_ID $USER $CONFIGFILE $coge $FORM %FUNCTION
+  $P $PAGE_TITLE $TEMPDIR $SECTEMPDIR $LOAD_ID $USER $conf $coge $FORM %FUNCTION
   $MAX_SEARCH_RESULTS $LINK $node_types $ERROR $HISTOGRAM $TEMPURL $SERVER
 );
 
@@ -32,18 +33,17 @@ $node_types = CoGeX::node_types();
 
 
 $FORM = new CGI;
-( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $conf, $LINK ) = CoGe::Accessory::Web->init(
     cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 
 $LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
-$CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
-$SECTEMPDIR    = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
-$TEMPDIR   = $P->{TEMPDIR} . "/$PAGE_TITLE";
-$TEMPURL   = $P->{TEMPURL} . "/$PAGE_TITLE";
-$HISTOGRAM = $P->{HISTOGRAM};
-$SERVER    = $P->{SERVER};
+$SECTEMPDIR    = $conf->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
+$TEMPDIR   = $conf->{TEMPDIR} . "/$PAGE_TITLE";
+$TEMPURL   = $conf->{TEMPURL} . "/$PAGE_TITLE";
+$HISTOGRAM = $conf->{HISTOGRAM};
+$SERVER    = $conf->{SERVER};
 
 $MAX_SEARCH_RESULTS = 100;
 $ERROR = encode_json({ error => 1 });
@@ -602,8 +602,8 @@ sub generate_features {
         return 1 unless ($USER->has_access_to_genome($genomes));
     }
 
-    my $conf = File::Spec->catdir($P->{COGEDIR}, "coge.conf");
-    my $cmd = File::Spec->catdir($P->{SCRIPTDIR}, "export_features_by_type.pl")
+    my $conf = catfile($conf->{COGEDIR}, "coge.conf");
+    my $cmd = catfile($conf->{SCRIPTDIR}, "export_features_by_type.pl")
         . " -ftid $fid -prot $protein -config $conf";
 
     my $dir;
@@ -624,7 +624,7 @@ sub generate_features {
     $filename .= "-prot" if $protein;
     $filename .= ".fasta";
 
-    return (execute($cmd), File::Spec->catdir($dir, $filename));
+    return (execute($cmd), catfile($dir, $filename));
 }
 
 sub export_features {
@@ -903,7 +903,7 @@ sub get_genome_info {
     }
 
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+      HTML::Template->new( filename => $conf->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
 
     $template->param(
         DO_GENOME_INFO => 1,
@@ -939,7 +939,7 @@ sub edit_genome_info {
     return unless ($genome);
 
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+      HTML::Template->new( filename => $conf->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param(
         EDIT_GENOME_INFO => 1,
         ORGANISM         => $genome->organism->name,
@@ -1129,7 +1129,7 @@ sub get_genome_data {
     }
 
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+      HTML::Template->new( filename => $conf->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param(
         #CHROMOSOME_COUNT => commify( $genome->chromosome_count() ),
         #LENGTH           => commify( $genome->length ),
@@ -1232,7 +1232,7 @@ sub get_experiments {
         push @rows, \%row;
     }
 
-    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    my $template = HTML::Template->new( filename => $conf->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
         DO_EXPERIMENTS  => 1,
         EXPERIMENT_LOOP => \@rows
@@ -1268,7 +1268,7 @@ sub get_datasets {
     return '' unless @rows;
 
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+      HTML::Template->new( filename => $conf->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
         DO_DATASETS  => 1,
         DATASET_LOOP => \@rows
@@ -1327,12 +1327,12 @@ sub copy_genome {
     open( my $log, ">$logfile" ) or die "Error creating log file: $logfile: $!";
     print $log "Calling copy_load_mask_genome.pl ...\n";
     my $cmd =
-        $P->{SCRIPTDIR} . "/copy_genome/copy_load_mask_genome.pl "
+        $conf->{SCRIPTDIR} . "/copy_genome/copy_load_mask_genome.pl "
         . "-gid $gid "
         . "-uid " . $USER->id . " "
         . "-mask $mask "
         . "-staging_dir $stagepath "
-        . "-conf_file $CONFIGFILE";
+        . "-conf_file $conf";
     $cmd .= " -sequence_only" if $seq_only;
     print STDERR "$cmd\n";
     print $log "$cmd\n";
@@ -1522,7 +1522,7 @@ sub export_fasta_irods {
 
 sub get_irods_path {
     my $username = $USER->user_name;
-    my $dest = $P->{IRODSDIR};
+    my $dest = $conf->{IRODSDIR};
     $dest =~ s/\<USER\>/$username/;
     return $dest;
 }
@@ -1800,20 +1800,19 @@ sub get_annotation_type_groups {
 
 sub generate_tbl {
     my $dsg = shift;
-    my @paths = ($P->{SCRIPTDIR}, "export_NCBI_TBL.pl");
-    my $coge_tbl = File::Spec->catdir(@paths);
+    my $coge_tbl = catfile($conf->{SCRIPTDIR}, "export_NCBI_TBL.pl");
 
     # Generate filename
-    my $org_name = sanitize_organism_name($dsg->organism->name);
+    my $org_name = sanitize_name($dsg->organism->name);
     my $filename = $org_name . "dsgid" . $dsg->id . "_tbl.txt";
     my $path = get_download_path($dsg->id);
 
     # Create command
     my $cmd = "$coge_tbl -f '$filename' -download_dir $path"
-        . " -config $CONFIGFILE"
+        . " -config $conf"
         . " -gid " . $dsg->id;
 
-    return (execute($cmd), File::Spec->catdir(($path, $filename)));
+    return (execute($cmd), catfile($path, $filename));
 }
 
 sub get_tbl {
@@ -1867,20 +1866,19 @@ sub export_tbl {
 
 sub generate_bed {
     my $dsg = shift;
-    my @paths = ($P->{SCRIPTDIR}, "coge2bed.pl");
-    my $coge_bed = File::Spec->catdir(@paths);
+    my $coge_bed = catfile($conf->{SCRIPTDIR}, "coge2bed.pl");
 
     # Generate file name
-    my $org_name = sanitize_organism_name($dsg->organism->name);
+    my $org_name = sanitize_name($dsg->organism->name);
     my $filename = "$org_name" . "_gid" . $dsg->id . ".bed";
     my $path = get_download_path($dsg->id);
 
     # Create command
     my $cmd = "$coge_bed -f '$filename' -download_dir $path"
-        . " -config $CONFIGFILE"
+        . " -config $conf"
         . " -gid " . $dsg->id;
 
-    return (execute($cmd), File::Spec->catdir(($path, $filename)));
+    return (execute($cmd), catfile($path, $filename));
 }
 
 sub get_bed {
@@ -1937,8 +1935,7 @@ sub generate_gff {
     my $dsg = $args{dsg};
     my $ds = $args{ds};
     my $dsh = defined($dsg) ? $dsg : $ds;
-    my @paths = ($P->{SCRIPTDIR}, "coge_gff.pl");
-    my $coge_gff = File::Spec->catdir(@paths);
+    my $coge_gff = catfile($conf->{SCRIPTDIR}, "coge_gff.pl");
 
     # FORM Parameters
     my $id_type = 0;
@@ -1952,7 +1949,7 @@ sub generate_gff {
     my $upa = $FORM->param('upa') if $FORM->param('upa'); #unqiue_parent_annotations
 
     # Generate file name
-    my $org_name = sanitize_organism_name($dsh->organism->name);
+    my $org_name = sanitize_name($dsh->organism->name);
     my $filename = "$org_name-$id_type-$annos-$cds-$name_unique";
     $filename .= "id-" . $dsh->id;
     $filename .= "-$upa" if $upa;
@@ -1962,13 +1959,13 @@ sub generate_gff {
 
     my $cmd = "$coge_gff -f '$filename' -download_dir $path"
         . " -cds $cds -annos $annos -nu $name_unique"
-        . " -id_type $id_type -config $CONFIGFILE";
+        . " -id_type $id_type -config $conf";
 
     $cmd .= " -upa $upa" if $upa;
     $cmd .= " -dsid " . $dsg->id if defined($ds);
     $cmd .= " -gid "  . $dsg->id if defined($dsg);
 
-    return (execute($cmd), File::Spec->catdir(($path, $filename)));
+    return (execute($cmd), catfile($path, $filename));
 }
 
 sub get_gff {
@@ -2040,21 +2037,6 @@ sub export_gff {
     return encode_json(\%json);
 }
 
-sub sanitize_organism_name {
-    my $org = shift;
-
-    $org =~ s/\///g;
-    $org =~ s/\s+/_/g;
-    $org =~ s/\(//g;
-    $org =~ s/\)//g;
-    $org =~ s/://g;
-    $org =~ s/;//g;
-    $org =~ s/#/_/g;
-    $org =~ s/'//g;
-    $org =~ s/"//g;
-
-    return $org;
-}
 
 #XXX: Add error checking
 sub export_to_irods {
@@ -2068,7 +2050,7 @@ sub export_to_irods {
     return 1 unless -r $file and "$file.finished";
 
     my $ipath = get_irods_path();
-    my $ifile = File::Spec->catdir(($ipath, basename($file)));
+    my $ifile = catfile($ipath, basename($file));
 
     CoGe::Accessory::IRODS::irods_iput($file, $ifile);
     CoGe::Accessory::IRODS::irods_imeta($ifile, $meta);
@@ -2081,7 +2063,7 @@ sub get_download_url {
     my $dsgid = $args{dsgid};
     my $filename = basename($args{file});
 
-    my @url = ($P->{SERVER}, "services/JBrowse",
+    my @url = ($conf->{SERVER}, "services/JBrowse",
         "service.pl/download/GenomeInfo",
         "?gid=$dsgid&file=$filename");
 
@@ -2089,8 +2071,7 @@ sub get_download_url {
 }
 
 sub get_download_path {
-    my @paths = ($P->{SECTEMPDIR}, "GenomeInfo/downloads", shift);
-    return File::Spec->catdir(@paths);
+    return catfile($conf->{SECTEMPDIR}, "GenomeInfo/downloads", shift);
 }
 
 sub execute {
@@ -2113,7 +2094,7 @@ sub generate_html {
       if ( $USER->first_name && $USER->last_name );
 
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+      HTML::Template->new( filename => $conf->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param(
         PAGE_TITLE => $PAGE_TITLE,
         PAGE_LINK  => $LINK,
@@ -2130,7 +2111,7 @@ sub generate_html {
 
 sub generate_body {
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+      HTML::Template->new( filename => $conf->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param( MAIN => 1, PAGE_NAME => "$PAGE_TITLE.pl" );
 
     my $gid = $FORM->param('gid');

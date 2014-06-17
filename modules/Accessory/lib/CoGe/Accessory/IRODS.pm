@@ -25,11 +25,13 @@ LICENSE file included with this module.
 
 use strict;
 use warnings;
+
+use CoGe::Accessory::Web;
 #use Data::Dumper;
 use IPC::System::Simple qw(capture system $EXITVAL EXIT_ANY);
 
 BEGIN {
-    use vars qw ($VERSION @ISA @EXPORT $IRODS_METADATA_PREFIX);
+    use vars qw ($VERSION @ISA @EXPORT $IRODS_METADATA_PREFIX $IRODS_ENV);
     require Exporter;
 
     $VERSION = 0.1;
@@ -170,8 +172,14 @@ sub irods_imeta {
     return;
 }
 
+sub irods_set_env {
+    $IRODS_ENV = shift;
+}
+
 sub _irods_get_env_file {
-	my $env_file = CoGe::Accessory::Web::get_defaults()->{IRODSENV};
+    my $env_file = $IRODS_ENV;
+    $env_file //= CoGe::Accessory::Web::get_defaults()->{IRODSENV};
+
     if ( not defined $env_file or not -e $env_file ) {
         print STDERR "CoGe::Accessory::IRODS: fatal error: iRODS env file missing!\n";
         return;
