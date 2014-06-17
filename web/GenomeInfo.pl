@@ -15,6 +15,7 @@ use JSON::XS;
 use Sort::Versions;
 use File::Basename qw(basename);
 use File::Path qw(mkpath);
+use File::Spec::Functions;
 use POSIX qw(floor);
 
 no warnings 'redefine';
@@ -601,8 +602,8 @@ sub generate_features {
         return 1 unless ($USER->has_access_to_genome($genomes));
     }
 
-    my $conf = File::Spec->catdir($conf->{COGEDIR}, "coge.conf");
-    my $cmd = File::Spec->catdir($conf->{SCRIPTDIR}, "export_features_by_type.pl")
+    my $conf = catfile($conf->{COGEDIR}, "coge.conf");
+    my $cmd = catfile($conf->{SCRIPTDIR}, "export_features_by_type.pl")
         . " -ftid $fid -prot $protein -config $conf";
 
     my $dir;
@@ -623,7 +624,7 @@ sub generate_features {
     $filename .= "-prot" if $protein;
     $filename .= ".fasta";
 
-    return (execute($cmd), File::Spec->catdir($dir, $filename));
+    return (execute($cmd), catfile($dir, $filename));
 }
 
 sub export_features {
@@ -1799,8 +1800,7 @@ sub get_annotation_type_groups {
 
 sub generate_tbl {
     my $dsg = shift;
-    my @paths = ($conf->{SCRIPTDIR}, "export_NCBI_TBL.pl");
-    my $coge_tbl = File::Spec->catdir(@paths);
+    my $coge_tbl = catfile($conf->{SCRIPTDIR}, "export_NCBI_TBL.pl");
 
     # Generate filename
     my $org_name = sanitize_name($dsg->organism->name);
@@ -1812,7 +1812,7 @@ sub generate_tbl {
         . " -config $conf"
         . " -gid " . $dsg->id;
 
-    return (execute($cmd), File::Spec->catdir(($path, $filename)));
+    return (execute($cmd), catfile($path, $filename));
 }
 
 sub get_tbl {
@@ -1866,8 +1866,7 @@ sub export_tbl {
 
 sub generate_bed {
     my $dsg = shift;
-    my @paths = ($conf->{SCRIPTDIR}, "coge2bed.pl");
-    my $coge_bed = File::Spec->catdir(@paths);
+    my $coge_bed = catfile($conf->{SCRIPTDIR}, "coge2bed.pl");
 
     # Generate file name
     my $org_name = sanitize_name($dsg->organism->name);
@@ -1879,7 +1878,7 @@ sub generate_bed {
         . " -config $conf"
         . " -gid " . $dsg->id;
 
-    return (execute($cmd), File::Spec->catdir(($path, $filename)));
+    return (execute($cmd), catfile($path, $filename));
 }
 
 sub get_bed {
@@ -1936,8 +1935,7 @@ sub generate_gff {
     my $dsg = $args{dsg};
     my $ds = $args{ds};
     my $dsh = defined($dsg) ? $dsg : $ds;
-    my @paths = ($conf->{SCRIPTDIR}, "coge_gff.pl");
-    my $coge_gff = File::Spec->catdir(@paths);
+    my $coge_gff = catfile($conf->{SCRIPTDIR}, "coge_gff.pl");
 
     # FORM Parameters
     my $id_type = 0;
@@ -1967,7 +1965,7 @@ sub generate_gff {
     $cmd .= " -dsid " . $dsg->id if defined($ds);
     $cmd .= " -gid "  . $dsg->id if defined($dsg);
 
-    return (execute($cmd), File::Spec->catdir(($path, $filename)));
+    return (execute($cmd), catfile($path, $filename));
 }
 
 sub get_gff {
@@ -2052,7 +2050,7 @@ sub export_to_irods {
     return 1 unless -r $file and "$file.finished";
 
     my $ipath = get_irods_path();
-    my $ifile = File::Spec->catdir(($ipath, basename($file)));
+    my $ifile = catfile($ipath, basename($file));
 
     CoGe::Accessory::IRODS::irods_iput($file, $ifile);
     CoGe::Accessory::IRODS::irods_imeta($ifile, $meta);
@@ -2073,8 +2071,7 @@ sub get_download_url {
 }
 
 sub get_download_path {
-    my @paths = ($conf->{SECTEMPDIR}, "GenomeInfo/downloads", shift);
-    return File::Spec->catdir(@paths);
+    return catfile($conf->{SECTEMPDIR}, "GenomeInfo/downloads", shift);
 }
 
 sub execute {
