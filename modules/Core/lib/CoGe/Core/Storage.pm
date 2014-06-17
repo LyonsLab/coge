@@ -578,6 +578,67 @@ sub create_experiment {
     return ($result->{id}, undef);
 }
 
+sub create_experiments_from_batch {
+    my %opts = @_;
+    my $genome = $opts{genome}; # genome object or id
+    my $user = $opts{user};
+    my $irods = $opts{irods};
+    my $files = $opts{files};
+    my $metadata = $opts{metadata};
+    
+    print STDERR (caller(0))[3], "\n";
+    
+    my $gid = $genome =~ /^\d+$/ ? $genome : $genome->id;
+
+    # Connect to workflow engine and get an id
+    my $conf = CoGe::Accessory::Web::get_defaults();
+    my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
+    unless (defined $jex) {
+        return (undef, "Could not connect to JEX");
+    }
+    
+    # Create the workflow
+    my $workflow = $jex->create_workflow( name => 'Create Experiments', init => 1 );
+    unless ($workflow and $workflow->id) {
+        return (undef, 'Could not create workflow');
+    }
+    
+    # Setup log file, staging, and results paths
+    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
+    $workflow->logfile( catfile($staging_dir, 'log_main.txt') );
+    
+    # Create list of files to load
+    my @staged_files;
+    push @staged_files, @$files;
+    
+    # Create jobs to retrieve irods files
+    my %load_params;
+    foreach my $item (@$irods) {
+        next unless ($item->{type} eq 'irods');
+        %load_params = _create_iget_job($conf, $item->{path}, $staging_dir);
+        unless ( %load_params ) {
+            return (undef, "Could not create iget task");
+        }
+        $workflow->add_job(%load_params);
+        push @staged_files, $load_params{outputs}[0];
+    }
+    
+    # Create load job
+    %load_params = _create_load_batch_job($conf, $metadata, $user->name, \@staged_files, $staging_dir, $result_dir);
+    unless ( %load_params ) {
+        return (undef, "Could not create load task");
+    }
+    $workflow->add_job(%load_params);
+    
+    # Submit the workflow
+    my $result = $jex->submit_workflow($workflow);
+    if ($result->{status} =~ /error/i) {
+        return (undef, "Could not submit workflow");
+    }
+    
+    return ($result->{id}, undef);
+}
+
 # Note: Using user names in file path instead of user ID.  This is okay because
 # user names are guaranteed to only consist of letters, numbers, hyphens,
 # and underscores.
@@ -756,6 +817,45 @@ sub _create_load_experiment_job {
     );
 }
 
+sub _create_load_batch_job {
+    my ($conf, $metadata, $gid, $user_name, $files, $staging_dir, $result_dir) = @_;
+    my $cmd = catfile($conf->{SCRIPTDIR}, "load_batch.pl");
+    return unless $cmd; # SCRIPTDIR undefined
+    
+#    my $cmd =
+#        "$BINDIR/load_batch.pl "
+#      . "-user_name $user_name "
+#      . '-name "' . escape($name) . '" '
+#      . '-desc "' . escape($description) . '" '
+#      . "-gid $gid "
+#      . "-staging_dir $stagepath "
+#      . '-data_file "' . escape( join( ',', @files ) ) . '" '
+#      . "-config $CONFIGFILE";
+    
+    return (
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ['-user_name', $user_name, 0],
+            ['-name', '"' . $metadata->{name} . '"', 0],
+            ['-desc', '"' . $metadata->{description} . '"', 0],
+            ['-gid', $gid, 0],
+            ['-staging_dir', "'".$staging_dir."'", 0],
+            ['-result_dir', "'".$result_dir."'", 0],
+            ['-data_file', "'".$file_str."'", 0],
+            ['-config', $conf->{_CONFIG_PATH}, 1]
+        ],
+        inputs => [
+            ($conf->{_CONFIG_PATH}, @$files)
+        ],
+        outputs => [
+            [$staging_dir, 1],
+            catdir($staging_dir, 'log.done')
+        ],
+        description => "Loading batch experiments..."
+    );
+}
+
 sub _create_load_genome_job {
     my ($conf, $metadata, $user_name, $staging_dir, $files, $result_dir) = @_;
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_genome.pl");
@@ -803,7 +903,8 @@ sub _create_load_genome_from_NCBI_job {
             ['-user_name', $user_name, 0],
             ['-staging_dir', "'".$staging_dir."'", 0],
             ['-result_dir', "'".$result_dir."'", 0],
-            ['-config', $conf->{_CONFIG_PATH}, 1]
+            ['-config', $conf->{_CONFIG_PATH}, 1],
+            ['-GO', 1, 0]
         ],
         inputs => [
             $conf->{_CONFIG_PATH}
