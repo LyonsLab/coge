@@ -54,7 +54,8 @@ BEGIN {
       get_tiered_path get_workflow_paths
       get_genome_file index_genome_file get_genome_seq get_genome_path 
       get_experiment_path get_experiment_files get_experiment_data 
-      create_experiment create_genome_from_file create_genome_from_NCBI 
+      create_experiment create_experiments_from_batch
+      create_genome_from_file create_genome_from_NCBI 
       create_annotation_dataset reverse_complement 
     );
 
@@ -588,6 +589,8 @@ sub create_experiments_from_batch {
     
     print STDERR (caller(0))[3], "\n";
     
+    my $conf = CoGe::Accessory::Web::get_defaults();
+    
     my $gid = $genome =~ /^\d+$/ ? $genome : $genome->id;
 
     # Connect to workflow engine and get an id
@@ -605,7 +608,7 @@ sub create_experiments_from_batch {
     
     # Setup log file, staging, and results paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
-    $workflow->logfile( catfile($staging_dir, 'log_main.txt') );
+    $workflow->logfile( catfile($staging_dir, 'workflow.log') );
     
     # Create list of files to load
     my @staged_files;
@@ -624,7 +627,7 @@ sub create_experiments_from_batch {
     }
     
     # Create load job
-    %load_params = _create_load_batch_job($conf, $metadata, $user->name, \@staged_files, $staging_dir, $result_dir);
+    %load_params = _create_load_batch_job($conf, $metadata, $gid, $user->name, \@staged_files, $staging_dir, $result_dir);
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
@@ -821,6 +824,8 @@ sub _create_load_batch_job {
     my ($conf, $metadata, $gid, $user_name, $files, $staging_dir, $result_dir) = @_;
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_batch.pl");
     return unless $cmd; # SCRIPTDIR undefined
+    
+    my $file_str = join(',', map { basename($_) } @$files);
     
 #    my $cmd =
 #        "$BINDIR/load_batch.pl "

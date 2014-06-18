@@ -63,7 +63,7 @@ die unless ($staging_dir);
 mkpath($staging_dir); # make sure this exists
 $log_file = catfile($staging_dir, 'log.txt') unless $log_file;
 mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
-open( my $log, ">$log_file" ) or die "Error opening log file $log_file";
+open( my $log, ">>$log_file" ) or die "Error opening log file $log_file";
 $log->autoflush(1);
 
 # Process and verify parameters
@@ -274,6 +274,7 @@ my $experiment = $coge->resultset('Experiment')->create(
     }
 );
 print $log "experiment id: " . $experiment->id . "\n";
+print STDOUT "experiment id: " . $experiment->id . "\n"; # DON'T DELETE: needed by load_batch.pl
 
 # Create types
 if ($types) {
