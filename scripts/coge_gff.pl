@@ -7,15 +7,14 @@ use File::Path;
 use File::Spec;
 use URI::Escape::JavaScript qw(unescape);
 
-our ($DEBUG, $db, $user, $pass, $gid, $config, $host, $port, $P,
-     $filename, $download_dir, $dsid, $annos, $cds, $name_unique,
-     $id_type, $upa);
+our ($DEBUG, $db, $user, $pass, $id, $config, $host, $port, $P,
+     $filename, $annos, $cds, $name_unique, $staging_dir,
+     $id_type, $upa, $coge);
 
 GetOptions(
     "debug=s"                         => \$DEBUG,
-    "gid=i"                           => \$gid,
-    "dsid=i"                          => \$dsid,
-    "download_dir=s"                  => \$download_dir,
+    "id=i"                            => \$id,
+    "staging_dir=s"                  => \$staging_dir,
     "filename|f=s"                    => \$filename,
     "annos=i"                         => \$annos,
     "cds=i"                           => \$cds,
@@ -36,11 +35,27 @@ GetOptions(
 
 
 $| = 1;
-
-mkpath($download_dir, 0, 0777) unless -r $download_dir;
-
-#my $logfile = File::Spec->catdir($download_dir, "$filename.log");
 #open (my $logh, ">", $logfile) or die "Error opening log file";
+$staging_dir //= ".";
+$filename = unescape($filename) if $filename;
+$id = unescape($id) if $id;
+
+if (not $filename) {
+    say STDERR "log: error: output file not specified use output";
+    exit(-1);
+}
+
+my $file = catfile($staging_dir, $filename);
+my $file_temp = $file . ".tmp";
+
+# Check if file already exists
+return if -r $file;
+
+# Verify parameters
+if (not $id) {
+    say STDERR "log: error: genome not specified use id";
+    exit(-1);
+}
 
 if ($config) {
     $P    = CoGe::Accessory::Web::get_defaults($config);
@@ -49,59 +64,34 @@ if ($config) {
     $port = $P->{DBPORT};
     $user = $P->{DBUSER};
     $pass = $P->{DBPASS};
+
+    my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
+    $coge = CoGeX->connect( $connstr, $user, $pass );
+    #$coge->storage->debugobj(new DBIxProfiler());
+    #$coge->storage->debug(1);
 }
 
-# Verify parameters
-$gid = unescape($gid) if $gid;
-$filename = unescape($filename) if $filename;
-
-if (not $gid) {
-    say STDERR "log: error: genome not specified use gid";
-    exit(-1);
-}
-
-if (not $filename) {
-    say STDERR "log: error: output file not specified use output";
-    exit(-1);
-}
-
-my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
-my $coge = CoGeX->connect( $connstr, $user, $pass );
-#$coge->storage->debugobj(new DBIxProfiler());
-#$coge->storage->debug(1);
 unless ($coge) {
     say STDERR "log: error: couldn't connect to database";
     exit(-1);
 }
 
-my $file = File::Spec->catdir($download_dir, $filename);
-unless ( -r $file and -r "$file.finished") {
-    open(my $fh, ">", $file) or die "Error creating gff file";
+my ($item, $org);
+$item = $coge->resultset('Genome')->find($id);
+$org = $item->organism->name . "id";
 
-    my ($item, $id, $org);
+open(my $fh, ">", $file) or die "Error creating gff file";
 
-    if ($gid) {
-        $item = $coge->resultset('Genome')->find($gid);
-        $id  = $gid;
-        $org = $item->organism->name . "_gid";
-    }
-    elsif ($dsid) {
-        $item = $coge->resultset('Dataset')->find($dsid);
-        $id   = $dsid;
-        $org  = $item->organism->name . "_dsid";
-    }
+print $fh $item->gff(
+    print                     => 0,
+    annos                     => $annos,
+    cds                       => $cds,
+    name_unique               => $name_unique,
+    id_type                   => $id_type,
+    unique_parent_annotations => $upa,
+    base_url => $P->{SERVER},
+    debug => $DEBUG,
+);
 
-    print $fh $item->gff(
-        print                     => 0,
-        annos                     => $annos,
-        cds                       => $cds,
-        name_unique               => $name_unique,
-        id_type                   => $id_type,
-        unique_parent_annotations => $upa,
-        base_url => $P->{SERVER},
-        debug => $DEBUG,
-    );
-
-    close($fh);
-    system("touch $file.finished");
-}
+close($fh);
+copy($file_temp, $file);

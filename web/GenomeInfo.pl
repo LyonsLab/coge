@@ -4,11 +4,13 @@ use strict;
 use CGI;
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Utils qw(sanitize_name get_unique_id commify);
+use CoGe::Accessory::Jex;
+use CoGe::Accessory::Utils qw(sanitize_name get_unique_id commify execute);
 use CoGe::Accessory::IRODS qw(irods_iput irods_imeta);
 use CoGe::Core::Genome qw(get_wobble_histogram get_noncoding_gc_stats
     get_wobble_gc_diff_histogram get_feature_type_gc_histogram
     get_gc_stats has_statistic);
+use CoGe::Tasks::Genome::Gff;
 
 use HTML::Template;
 use JSON::XS;
@@ -22,7 +24,7 @@ no warnings 'redefine';
 
 use vars qw(
   $P $PAGE_TITLE $TEMPDIR $SECTEMPDIR $LOAD_ID $USER $conf $coge $FORM %FUNCTION
-  $MAX_SEARCH_RESULTS $LINK $node_types $ERROR $HISTOGRAM $TEMPURL $SERVER
+  $MAX_SEARCH_RESULTS $LINK $node_types $ERROR $HISTOGRAM $TEMPURL $SERVER $JEX
 );
 
 $PAGE_TITLE = 'GenomeInfo';
@@ -38,6 +40,7 @@ $FORM = new CGI;
     page_title => $PAGE_TITLE
 );
 
+$JEX = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
 $LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $SECTEMPDIR    = $conf->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 $TEMPDIR   = $conf->{TEMPDIR} . "/$PAGE_TITLE";
@@ -1930,73 +1933,29 @@ sub export_bed {
 # GFF FILE
 #
 
-sub generate_gff {
-    my %args = @_;
-    my $dsg = $args{dsg};
-    my $ds = $args{ds};
-    my $dsh = defined($dsg) ? $dsg : $ds;
-    my $coge_gff = catfile($conf->{SCRIPTDIR}, "coge_gff.pl");
-
-    # FORM Parameters
-    my $id_type = 0;
-    $id_type = $FORM->param('id_type') if $FORM->param('id_type');
-    my $annos   = 0;
-    $annos = $FORM->param('annos') if $FORM->param('annos');
-    my $cds = 0;    #flag for printing only genes, mRNA, and CDSs
-    $cds = $FORM->param('cds') if $FORM->param('cds');
-    my $name_unique = 0;
-    $name_unique = $FORM->param('nu') if $FORM->param('nu');
-    my $upa = $FORM->param('upa') if $FORM->param('upa'); #unqiue_parent_annotations
-
-    # Generate file name
-    my $org_name = sanitize_name($dsh->organism->name);
-    my $filename = "$org_name-$id_type-$annos-$cds-$name_unique";
-    $filename .= "id-" . $dsh->id;
-    $filename .= "-$upa" if $upa;
-    $filename .= ".gff";
-
-    my $path = get_download_path($dsh->id);
-
-    my $cmd = "$coge_gff -f '$filename' -download_dir $path"
-        . " -cds $cds -annos $annos -nu $name_unique"
-        . " -id_type $id_type -config $conf";
-
-    $cmd .= " -upa $upa" if $upa;
-    $cmd .= " -dsid " . $dsg->id if defined($ds);
-    $cmd .= " -gid "  . $dsg->id if defined($dsg);
-
-    return (execute($cmd), catfile($path, $filename));
-}
 
 sub get_gff {
     my %args = @_;
-    my $gid = $args{gid};
-    my $dsid = $args{dsid};
+    my $dsg = $coge->resultset('Genome')->find($args{gid});
 
-    my (%json, $statusCode, $gff);
+    # ensure user has permission
+    return $ERROR unless $USER->has_access_to_genome($dsg);
 
-    if ($gid) {
-        my $dsg = $coge->resultset('Genome')->find($gid);
+    $args{script_dir} = $conf->{SCRIPTDIR};
+    $args{secure_tmp} = $conf->{SECTEMPDIR};
+    $args{basename} = $dsg->organism->name;
+    $args{conf} = catfile($conf->{COGEDIR}, "coge.conf");
 
-        # ensure user has permission
-        return $ERROR unless $USER->has_access_to_genome($dsg);
+    my $workflow = $JEX->create_workflow(name => "Export gff");
+    my ($output, %task) = generate_gff(%args);
+    $workflow->add_job(%task);
 
-        ($statusCode, $gff) = generate_gff(dsg => $dsg);
-    } else {
-        my $dsg = $coge->resultset('Genome')->find($gid);
+    my $response = $JEX->submit_workflow($workflow);
+    say STDERR "RESPONSE ID: " . $response->{id};
+    $JEX->wait_for_completion($response->{id});
 
-        # ensure user has permission
-        return $ERROR unless $USER->has_access_to_genome($dsg);
-
-        ($statusCode, $gff) = generate_gff(ds => $dsg);
-    }
-    $json{file} = basename($gff);
-
-    if ($statusCode) {
-        $json{error} = 1;
-    } else {
-        $json{files} = [ get_download_url(dsgid => $gid, file => $gff) ];
-    }
+    my %json;
+    $json{files} = [ get_download_url(dsgid => $args{gid}, file => basename($output))];
 
     return encode_json(\%json);
 }
@@ -2068,10 +2027,6 @@ sub get_download_url {
         "?gid=$dsgid&file=$filename");
 
     return join "/", @url;
-}
-
-sub get_download_path {
-    return catfile($conf->{SECTEMPDIR}, "GenomeInfo/downloads", shift);
 }
 
 sub execute {
