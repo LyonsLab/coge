@@ -10,6 +10,7 @@
 <SCRIPT type="text/javascript">
 var timestamps = new Array();
 var load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
+var ENTREZ_URL = '//eutils.ncbi.nlm.nih.gov/entrez/eutils/';
 
 $(document).ready(function(){
 	$.ajaxSetup({
@@ -43,10 +44,6 @@ $(document).ready(function(){
 		   		return false;
 			}
 	});
-	
-	//$('#tax_tree')
-		//.jstree({ plugins: ["themes"] })
-		//.jstree("set_theme", "classic");
 	
 	// Open status dialog
 	if ('<TMPL_VAR NAME="OPEN_STATUS">') {
@@ -456,7 +453,7 @@ function search_ncbi_taxonomy(search_term) {
 	$("#edit_organism_info").slideUp();
 
 	$.get(
-		"http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=taxonomy&term=" + search_term + "*",
+		ENTREZ_URL + "esearch.fcgi?db=taxonomy&term=" + search_term + "*",
 		function(xml) {
 			var ids;
 			$(xml).find("Id").each(
@@ -467,7 +464,7 @@ function search_ncbi_taxonomy(search_term) {
 			
 			if (ids) {
 				$.get(
-					"http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=" + ids,
+					ENTREZ_URL + "efetch.fcgi?db=taxonomy&id=" + ids,
 					function(xml) {
 						var results = new Array();
 						
@@ -504,78 +501,6 @@ function search_ncbi_taxonomy(search_term) {
 	);
 }
 
-/*
-function search_ncbi_taxonomy (search_term) {
-	if (!search_term || search_term.length < 3) {
-		return;
-	}
-	
-	$("#wait_ncbi").animate({opacity:1});
-	$('#tax_empty').fadeOut();
-	$("#edit_organism_info").slideUp();
-	
-	timestamps['search_ncbi_taxonomy'] = new Date().getTime();
-	
-	$.ajax({
-		data: {
-			fname: 'search_ncbi_taxonomy',
-			search_term: search_term,
-			timestamp: timestamps['search_ncbi_taxonomy']
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			if (obj) {
-				var tree = $("#tax_tree");
-				if (obj.timestamp == timestamps['search_ncbi_taxonomy']) {
-					if (obj.results.length == 0) {
-						tree.slideUp('fast', 
-							function() {
-								tree.empty();
-								$('#tax_empty').fadeIn();
-								$('#edit_organism_name').val('');
-								$('#edit_organism_desc').val('');
-								activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');
-							}
-						);
-					}
-					else {
-						var items = $('<ul></ul>');
-						obj.results.forEach(
-							function(e) {
-								var id = 'taxon' + e.id;
-								$(items)
-									.append('<li id="' + id + '" name="' + e.name + '">' +
-											'<a href="#">' + e.name + '</a></li>');
-								//tree.jstree("create_node", null, "last", {attr: {id: id}, data: e.name})
-							}
-						);
-						tree.empty()
-							.append(items)
-							.jstree()
-								.bind("select_node.jstree", 
-							      	function (event, data) { 
-										var id = data.rslt.obj.attr("id");
-										taxonomy_get_node(id);
-									}
-								)
-							.slideDown();
-					}
-				}
-			}
-			else {
-				$('#ncbi_result').html('<i>No result</i>');
-				$('#create_organism_button').addClass('ui-state-disabled');
-			}
-			$("#wait_ncbi").animate({opacity:0});
-		},
-		error : function() {
-			$('#ncbi_result').html('<span class="alert">Error occurred</span>');
-			$("#wait_ncbi").animate({opacity:0});
-		}
-	});
-}
-*/
-
 function taxonomy_get_node(id) { // FIXME: cleanup and merge common stuff with search_ncbi_taxonomy
 	var tree = $("#tax_tree");
 	var node = $("#"+id);
@@ -601,7 +526,7 @@ function taxonomy_get_node(id) { // FIXME: cleanup and merge common stuff with s
 	$("#wait_ncbi").animate({opacity:1});
 
 	$.get(
-		"http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=taxonomy&term=" + name + "&field=nxlv",
+		ENTREZ_URL + "esearch.fcgi?db=taxonomy&term=" + name + "&field=nxlv",
 		function(xml) {
 			var ids;
 			$(xml).find("Id").each(
@@ -612,7 +537,7 @@ function taxonomy_get_node(id) { // FIXME: cleanup and merge common stuff with s
 			
 			if (ids) {
 				$.get(
-					"http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=" + ids,
+					ENTREZ_URL + "efetch.fcgi?db=taxonomy&id=" + ids,
 					function(xml) {
 						var results = new Array();
 						
@@ -783,34 +708,6 @@ function sort_name (a,b) {
 			</tr>
 		</table>
 	</div>
-  <!--<table class="small">
-    <tr>
-      <td>Search NCBI:</td>
-      <td><input id="edit_organism_name" type="textbox" size="80" spellcheck="false" onkeyup="activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button'); wait_to_search(search_ncbi_taxonomy, this.value);" /></td>
-    </tr>
-    <tr>
-      <td>Description:</td>
-      <td>
-      	<textarea id="edit_organism_desc" rows="5" cols="77" readonly onkeyup="activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');">
-      	</textarea>
-      </td>
-    </tr>
-    <tr>
-    	<td></td>
-    	<td>
-    		<span style="color:dimgray;">
-		    	Please specify a full <a target="_blank" href="http://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Root">NCBI taxonomy</a> for the organism description.<br>
-		    	<span class="link" onclick="$(this).hide().next().show();">Example</span>
-		    	<span class="hidden">
-			    	Example for <i>Oryza sativa japonica</i>:<br>
-			    	<div style="padding-left:15px;font-family:Courier New, Courier, monospace;">
-			    	Eukaryota; Viridiplantae; Streptophyta; Streptophytina; Embryophyta; Tracheophyta; Euphyllophyta; Spermatophyta; Magnoliophyta; Liliopsida; commelinids; Poales; Poaceae; BEP clade; Ehrhartoideae; Oryzeae; Oryza
-			    	</div>
-		   		</span>
-    		</span>
-    	</td>
-    </tr>
-  </table>-->
   <br>
   <span id="create_organism_button" onClick="create_organism();" class="ui-state-disabled ui-button ui-corner-all ui-button-go">Create</span>
 </div>
