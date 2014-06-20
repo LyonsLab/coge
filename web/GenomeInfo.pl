@@ -1289,10 +1289,9 @@ sub copy_genome {
         return 'Not logged in';
     }
 
-
     my $workflow = $JEX->create_workflow(name => "Copy and mask genome", init => 1);
 
-    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
+    my ($staging_dir, $result_dir) = get_workflow_paths($USER->name, $workflow->id);
 
     $args{uid} = $USER->id;
     $args{conf} = catfile($conf->{COGEDIR}, "coge.conf");
