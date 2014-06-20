@@ -3,10 +3,11 @@ package CoGe::Core::Genome;
 use strict;
 use warnings;
 
-use File::Spec;
+use File::Spec::Functions;
 
-use CoGe::Core::Storage qw(get_genome_path);
 use CoGe::Accessory::TDS qw(write read);
+use CoGe::Accessory::Utils;
+use CoGe::Core::Storage qw(get_genome_path);
 
 BEGIN {
     our ( @EXPORT, @ISA, $VERSION );
@@ -15,7 +16,8 @@ BEGIN {
     $VERSION = 0.1;
     @ISA = qw ( Exporter );
     @EXPORT = qw ( has_statistic get_gc_stats get_noncoding_gc_stats
-        get_wobble_histogram get_wobble_gc_diff_histogram get_feature_type_gc_histogram );
+        get_wobble_histogram get_wobble_gc_diff_histogram get_feature_type_gc_histogram
+        get_download_path);
 }
 
 my @LOCATIONS_PREFETCH = (
@@ -52,6 +54,10 @@ sub get_wobble_histogram {
 
     # Return data
     return $data->{wobble_histogram};
+}
+
+sub get_download_path {
+    return catfile(shift, "GenomeInfo/downloads", shift);
 }
 
 sub get_feature_type_gc_histogram {
@@ -213,11 +219,11 @@ sub _get_genome_or_exit {
 }
 
 sub _get_histogram_file {
-    File::Spec->catdir((get_genome_path(shift), "metadata/histograms.json"));
+    catfile((get_genome_path(shift), "metadata/histograms.json"));
 }
 
 sub _get_stats_file {
-    File::Spec->catdir((get_genome_path(shift), "metadata/stats.json"));
+    catfile((get_genome_path(shift), "metadata/stats.json"));
 }
 
 sub _generate_wobble_gc_diff {

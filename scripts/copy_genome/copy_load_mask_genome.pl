@@ -1,25 +1,30 @@
 #!/usr/bin/perl -w
 
 use strict;
+no warnings 'redefine';
+
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils;
 use Data::Dumper;
 use Getopt::Long;
+use File::Spec::Functions;
 use File::Path;
 
-use vars qw($conf_file $coge $gid $restricted $P $mask $uid $staging_dir $seq_only);
+use vars qw($conf_file $coge $gid $restricted $P $mask $uid $staging_dir $result_dir $seq_only);
 
 GetOptions(
 	"conf_file|cf=s" => \$conf_file,
 	"staging_dir=s"  => \$staging_dir,
+	"result_dir=s"   => \$result_dir,
 	"gid=i"          => \$gid,
 	"restricted|r=i" => \$restricted,
 	"mask|m=i"       => \$mask,
 	"uid=i"          => \$uid, # user id to assign the new genome to
-	"sequence_only" => \$seq_only, #flag for only copying the sequences -- no structural annotations
+	"sequence_only"  => \$seq_only, #flag for only copying the sequences -- no structural annotations
 );
 
+$staging_dir //= ".";
 # Open log file
 $| = 1;
 unless ($staging_dir) {
@@ -31,8 +36,9 @@ unless ($staging_dir) {
 }
 mkpath( $staging_dir, 1, 0777 );    # make sure this exists
 my $logfile = "$staging_dir/log.txt";
-open( my $log, ">>$logfile" ) or die "Error opening log file: $logfile: $!";
-$log->autoflush(1);
+my $log = *STDOUT;
+#open( my $log, ">>$logfile" ) or die "Error opening log file: $logfile: $!";
+#$log->autoflush(1);
 print $log "Starting $0 (pid $$)\n";
 
 # Process and verify parameters
@@ -105,9 +111,20 @@ unless ($seq_only)
     add_annotations( gid1 => $gid, gid2 => $new_gid );
   }
 
+
+if ($result_dir) {
+    mkpath($result_dir);
+    CoGe::Accessory::TDS::write(
+        catfile($result_dir, '1'),
+        {
+            genome_id => int($new_gid)
+        }
+    );
+}
+
 # Done
 print $log "log: Finished copying genome!\n";
-exit;
+exit(0);
 
 #-------------------------------------------------------------------------------
 
@@ -156,10 +173,11 @@ sub load_genome {
 	execute($cmd);
 
 	my $genomeid;
-	open( IN, $staging_dir . "/log.txt" )
+	open( IN, catfile($staging_dir, "/log.txt"))
 	  || die "can't find log file: " . $staging_dir . "/log.txt";
 	while (<IN>) {
-		if (/log: Added genome id (\d+)/) {
+        print $log $_;
+		if (/genome id: (\d+)/) {
 			$genomeid = $1;
 			print $log "Captured gid: $genomeid\n";
 			last;
