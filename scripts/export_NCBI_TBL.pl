@@ -3,8 +3,8 @@
 use strict;
 use CoGeX;
 use Getopt::Long;
-use File::Path;
-use File::Spec;
+use File::Spec::Functions;
+use Sort::Versions;
 use URI::Escape::JavaScript qw(unescape);
 
 our ($DEBUG, $db, $user, $pass, $gid, $config, $host, $port, $P,
@@ -29,9 +29,10 @@ GetOptions(
 
 $| = 1;
 
-mkpath($download_dir, 0, 0777) unless -r $download_dir;
+# Set default download directory
+$download_dir //= ".";
 
-my $logfile = File::Spec->catdir($download_dir, "$filename.log");
+my $logfile = catfile($download_dir, "$filename.log");
 open (my $logh, ">", $logfile) or die "Error opening log file";
 
 if ($config) {
@@ -67,9 +68,11 @@ unless ($coge) {
     exit(-1);
 }
 
-my $file = File::Spec->catdir($download_dir, $filename);
+my $file = catfile($download_dir, $filename);
 
-unless (-r $file and -r "$file.finished") {
+return if -r $file;
+
+sub main {
     my $dsg = $coge->resultset('Genome')->find($gid);
 
     open(my $fh, ">", $file);
@@ -116,7 +119,6 @@ unless (-r $file and -r "$file.finished") {
         }
     }
     close($fh);
-    system("touch $file.finished");
 }
 
 sub get_name_tag {
@@ -141,3 +143,5 @@ sub get_locs {
     }
     return \@locs;
 }
+
+main;
