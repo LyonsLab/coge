@@ -4,11 +4,11 @@ use strict;
 use CoGeX;
 use Getopt::Long;
 use File::Path;
-use File::Spec;
+use File::Spec::Functions;
 use URI::Escape::JavaScript qw(unescape);
 
-our ($DEBUG, $db, $user, $pass, $gid, $config, $host, $port, $P,
-     $filename, $download_dir);
+our ($DEBUG, $dbname, $user, $pass, $gid, $config, $host, $port, $P,
+     $filename, $download_dir, $db);
 
 GetOptions(
     "debug=s"           => \$DEBUG,
@@ -19,7 +19,7 @@ GetOptions(
     # Database params
     "host|h=s"          => \$host,
     "port|p=s"          => \$port,
-    "database|db=s"     => \$db,
+    "database|db=s"     => \$dbname,
     "user|u=s"          => \$user,
     "password|pw=s"     => \$pass,
 
@@ -28,49 +28,52 @@ GetOptions(
 );
 
 $| = 1;
+sub main {
+    $download_dir //= ".";
+    mkpath($download_dir, 0, 0777) unless -r $download_dir;
 
-mkpath($download_dir, 0, 0777) unless -r $download_dir;
+    my $logfile = catfile($download_dir, "$filename.log");
+    open (my $logh, ">", $logfile) or die "Error opening log file";
 
-my $logfile = File::Spec->catdir($download_dir, "$filename.log");
-open (my $logh, ">", $logfile) or die "Error opening log file";
+    if ($config) {
+        $P     = CoGe::Accessory::Web::get_defaults($config);
+        $dbname= $P->{DBNAME};
+        $host = $P->{DBHOST};
+        $port = $P->{DBPORT};
+        $user = $P->{DBUSER};
+        $pass = $P->{DBPASS};
+    }
 
-if ($config) {
-    $P    = CoGe::Accessory::Web::get_defaults($config);
-    $db   = $P->{DBNAME};
-    $host = $P->{DBHOST};
-    $port = $P->{DBPORT};
-    $user = $P->{DBUSER};
-    $pass = $P->{DBPASS};
-}
+    # Verify parameters
+    $gid = unescape($gid) if $gid;
+    $filename = unescape($filename) if $filename;
 
-# Verify parameters
-$gid = unescape($gid) if $gid;
-$filename = unescape($filename) if $filename;
+    if (not $gid) {
+        say $logh "log: error: genome not specified use gid";
+        exit(-1);
+    }
 
-if (not $gid) {
-    say $logh "log: error: genome not specified use gid";
-    exit(-1);
-}
+    if (not $filename) {
+        say $logh "log: error: output file not specified use output";
+        exit(-1);
+    }
 
-if (not $filename) {
-    say $logh "log: error: output file not specified use output";
-    exit(-1);
-}
+    my $connstr = "dbi:mysql:db=$dbname;host=$host;port=$port;";
+    $db = CoGeX->connect( $connstr, $user, $pass );
+    #$db->storage->debugobj(new DBIxProfiler());
+    #$db->storage->debug(1);
 
-my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
-my $coge = CoGeX->connect( $connstr, $user, $pass );
-#$coge->storage->debugobj(new DBIxProfiler());
-#$coge->storage->debug(1);
+    unless ($db) {
+        say $logh "log: error: couldn't connect to database";
+        exit(-1);
+    }
 
-unless ($coge) {
-    say $logh "log: error: couldn't connect to database";
-    exit(-1);
-}
+    my $file = catfile($download_dir, $filename);
 
-my $file = File::Spec->catdir($download_dir, $filename);
+    # Exit if file already exists
+    return if -r $file;
 
-unless (-r $file and -r "$file.finished") {
-    my $genome = $coge->resultset('Genome')->find($gid);
+    my $genome = $db->resultset('Genome')->find($gid);
     my @datasets = map { $_->dataset_id } $genome->datasets;
 
     get_locs(datasets => \@datasets, file => $file);
@@ -107,7 +110,7 @@ sub get_locs {
     my $SEP      = "\t";
     my %chrs;
     foreach my $ds (@$datasets) {
-        my $dso = $coge->resultset('Dataset')->resolve($ds);
+        my $dso = $db->resultset('Dataset')->resolve($ds);
         foreach my $chr ( $dso->get_chromosomes ) {
             $chrs{$chr} = $dso->last_chromosome_position($chr);
         }
@@ -121,7 +124,7 @@ sub get_locs {
 
     foreach my $chr (@chrs) {
         my %seen    = ();
-        my $gene_rs = $coge->resultset('Feature')->search(
+        my $gene_rs = $db->resultset('Feature')->search(
             {
                 'me.dataset_id' => { 'IN' => $datasets },
                 'me.chromosome' => $chr,
@@ -157,7 +160,7 @@ sub get_locs {
             #if ($index > 100) {print STDERR "breaking at 100\n";return ; }
 
             $index++;
-            my $cds_rs = $coge->resultset('Feature')->search(
+            my $cds_rs = $db->resultset('Feature')->search(
                 {
                     'me.dataset_id'      => { 'IN' => $datasets },
                     'me.chromosome'      => $chr,
@@ -200,7 +203,7 @@ sub get_locs {
                 );
             }
             else {
-                my $sub_rs = $coge->resultset('Feature')->search(
+                my $sub_rs = $db->resultset('Feature')->search(
                     {
                         'me.dataset_id'      => { 'IN' => $datasets },
                         'feature_names.name' => $gene_name,
@@ -246,7 +249,6 @@ sub get_locs {
         }
     }
     close($fh);
-    system("touch $file.finished");
 
     return \%chrs;
 }
@@ -283,3 +285,5 @@ sub add_sorted_locs {
     @locs = sort { $a <=> $b } @locs;
     return \@locs;
 }
+
+main;

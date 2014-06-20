@@ -7,9 +7,9 @@ use CoGe::Accessory::Web;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Utils qw(sanitize_name get_unique_id commify execute);
 use CoGe::Accessory::IRODS qw(irods_iput irods_imeta);
-use CoGe::Core::Genome qw(get_wobble_histogram get_noncoding_gc_stats
-    get_wobble_gc_diff_histogram get_feature_type_gc_histogram
-    get_gc_stats has_statistic);
+use CoGe::Core::Genome;
+
+use CoGe::Tasks::Genome::Bed;
 use CoGe::Tasks::Genome::Gff;
 
 use HTML::Template;
@@ -1867,22 +1867,6 @@ sub export_tbl {
 # BED FILE
 #
 
-sub generate_bed {
-    my $dsg = shift;
-    my $coge_bed = catfile($conf->{SCRIPTDIR}, "coge2bed.pl");
-
-    # Generate file name
-    my $org_name = sanitize_name($dsg->organism->name);
-    my $filename = "$org_name" . "_gid" . $dsg->id . ".bed";
-    my $path = get_download_path($dsg->id);
-
-    # Create command
-    my $cmd = "$coge_bed -f '$filename' -download_dir $path"
-        . " -config $conf"
-        . " -gid " . $dsg->id;
-
-    return (execute($cmd), catfile($path, $filename));
-}
 
 sub get_bed {
     my %args = @_;
@@ -1892,15 +1876,21 @@ sub get_bed {
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
-    my %json;
-    my ($statusCode, $bed) = generate_bed($dsg);
-    $json{file} = basename($bed);
+    $args{script_dir} = $conf->{SCRIPTDIR};
+    $args{secure_tmp} = $conf->{SECTEMPDIR};
+    $args{basename} = sanitize_name($dsg->organism->name);
+    $args{conf} = catfile($conf->{COGEDIR}, "coge.conf");
 
-    if ($statusCode) {
-        $json{error} = 1;
-    } else {
-        $json{files} = [ get_download_url(dsgid => $gid, file => $bed) ];
-    }
+    my $workflow = $JEX->create_workflow(name => "Export bed file");
+    my ($output, %task) = generate_bed(%args);
+    $workflow->add_job(%task);
+
+    my $response = $JEX->submit_workflow($workflow);
+    say STDERR "RESPONSE ID: " . $response->{id};
+    $JEX->wait_for_completion($response->{id});
+
+    my %json;
+    $json{files} = [ get_download_url(dsgid => $args{gid}, file => basename($output))];
 
     return encode_json(\%json);
 }
