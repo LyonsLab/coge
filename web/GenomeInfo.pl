@@ -10,6 +10,7 @@ use CoGe::Accessory::IRODS qw(irods_iput irods_imeta);
 use CoGe::Core::Genome;
 
 use CoGe::Tasks::Genome::Bed;
+use CoGe::Tasks::Genome::Copy;
 use CoGe::Tasks::Genome::Features;
 use CoGe::Tasks::Genome::Gff;
 use CoGe::Tasks::Genome::Tbl;
@@ -1278,11 +1279,9 @@ sub check_login {
 }
 
 sub copy_genome {
-    my %opts = @_;
-    my $gid  = $opts{gid};
-    my $mask = $opts{mask};
-    my $seq_only = $opts{seq_only};
-    $mask = 0 unless $mask;
+    my %args = @_;
+    my $gid  = $args{gid};
+    my $mask = $args{mask};
 
     print STDERR "copy_and_mask_genome: gid=$gid mask=$mask\n";
 
@@ -1290,33 +1289,22 @@ sub copy_genome {
         return 'Not logged in';
     }
 
-    # Setup staging area and log file
-    my $stagepath = $SECTEMPDIR . '/staging/';
-    mkpath $stagepath;
 
-    my $logfile = $stagepath . '/log.txt';
-    open( my $log, ">$logfile" ) or die "Error creating log file: $logfile: $!";
-    print $log "Calling copy_load_mask_genome.pl ...\n";
-    my $cmd =
-        $conf->{SCRIPTDIR} . "/copy_genome/copy_load_mask_genome.pl "
-        . "-gid $gid "
-        . "-uid " . $USER->id . " "
-        . "-mask $mask "
-        . "-staging_dir $stagepath "
-        . "-conf_file $conf";
-    $cmd .= " -sequence_only" if $seq_only;
-    print STDERR "$cmd\n";
-    print $log "$cmd\n";
-    close($log);
+    my $workflow = $JEX->create_workflow(name => "Copy and mask genome", init => 1);
 
-    if ( !defined( my $child_pid = fork() ) ) {
-        return "Cannot fork: $!";
-    }
-    elsif ( $child_pid == 0 ) {
-        print STDERR "child running: $cmd\n";
-        `$cmd`;
-        exit;
-    }
+    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
+
+    $args{uid} = $USER->id;
+    $args{conf} = catfile($conf->{COGEDIR}, "coge.conf");
+    $args{script_dir} = $conf->{SCRIPTDIR};
+    $args{staging_dir} = $staging_dir;
+    $args{result_dir} = $result_dir;
+
+    my %task = copy_and_mask(%args);
+    $workflow->add_job(%task);
+
+    my $response = $JEX->submit_workflow($workflow);
+    $JEX->wait_for_completion($response->{id});
 
     return;
 }
@@ -1974,17 +1962,8 @@ sub get_download_url {
     return join "/", @url;
 }
 
-sub execute {
-    my $cmd = shift;
-
-    my @cmdOut = qx{$cmd};
-    my $cmdStatus = $?;
-
-    if ($cmdStatus != 0) {
-        say STDERR "log: error: command failed with rc=$cmdStatus: $cmd";
-    }
-
-    return $cmdStatus;
+sub get_download_path {
+    return catfile($conf->{SECTEMPDIR}, "GenomeInfo/downloads", shift);
 }
 
 sub generate_html {
