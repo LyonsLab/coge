@@ -115,7 +115,7 @@ sub parse_syn_blocks
 	$data{rev}=0;
 	$data{dsgid}=$dsgid1;	
 	#print out the blocks in order.  Note ones that are in reverse orientation
-	foreach my $block (@{$best_chr2contigs{$chr1}})
+	foreach my $block (sort {$a->{start}<=>$b->{start}} @{$best_chr2contigs{$chr1}})
 	  {
 	    my $rev = 1 if $block->{rev} && $block->{rev}/$block->{score} >= 0.5;
 	    push @$ordered2, {chr=>$block->{name}, rev=>$rev, matching_chr=>[$chr1], dsgid=>$dsgid2};
