@@ -11,6 +11,7 @@ use CoGe::Core::Genome;
 
 use CoGe::Tasks::Genome::Bed;
 use CoGe::Tasks::Genome::Gff;
+use CoGe::Tasks::Genome::Tbl;
 
 use HTML::Template;
 use JSON::XS;
@@ -1800,41 +1801,28 @@ sub get_annotation_type_groups {
 # TBL FILE
 #
 
-
-sub generate_tbl {
-    my $dsg = shift;
-    my $coge_tbl = catfile($conf->{SCRIPTDIR}, "export_NCBI_TBL.pl");
-
-    # Generate filename
-    my $org_name = sanitize_name($dsg->organism->name);
-    my $filename = $org_name . "dsgid" . $dsg->id . "_tbl.txt";
-    my $path = get_download_path($dsg->id);
-
-    # Create command
-    my $cmd = "$coge_tbl -f '$filename' -download_dir $path"
-        . " -config $conf"
-        . " -gid " . $dsg->id;
-
-    return (execute($cmd), catfile($path, $filename));
-}
-
 sub get_tbl {
     my %args = @_;
-    my $gid = $args{gid};
-    my $dsg = $coge->resultset('Genome')->find($gid);
+    my $dsg = $coge->resultset('Genome')->find($args{gid});
 
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
-    my %json;
-    my ($statusCode, $tbl) = generate_tbl($dsg);
-    $json{file} = basename($tbl);
+    $args{script_dir} = $conf->{SCRIPTDIR};
+    $args{secure_tmp} = $conf->{SECTEMPDIR};
+    $args{basename} = sanitize_name($dsg->organism->name);
+    $args{conf} = catfile($conf->{COGEDIR}, "coge.conf");
 
-    if ($statusCode) {
-        $json{error} = 1;
-    } else {
-        $json{files} = [ get_download_url(dsgid => $gid, file => $tbl) ];
-    }
+    my $workflow = $JEX->create_workflow(name => "Export Tbl");
+    my ($output, %task) = generate_tbl(%args);
+    $workflow->add_job(%task);
+
+    my $response = $JEX->submit_workflow($workflow);
+    say STDERR "RESPONSE ID: " . $response->{id};
+    $JEX->wait_for_completion($response->{id});
+
+    my %json;
+    $json{files} = [ get_download_url(dsgid => $args{gid}, file => basename($output))];
 
     return encode_json(\%json);
 }
