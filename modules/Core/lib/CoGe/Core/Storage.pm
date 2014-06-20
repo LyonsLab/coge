@@ -594,7 +594,6 @@ sub create_experiments_from_batch {
     my $gid = $genome =~ /^\d+$/ ? $genome : $genome->id;
 
     # Connect to workflow engine and get an id
-    my $conf = CoGe::Accessory::Web::get_defaults();
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
     unless (defined $jex) {
         return (undef, "Could not connect to JEX");
