@@ -476,7 +476,7 @@ sub execute { # FIXME this code is duplicate in other places like load_genome.pl
     my $cmdStatus = $?;
     if ( $cmdStatus != 0 ) {
         print $log "log: error: command failed with rc=$cmdStatus: $cmd\n" if $log;
-        exit(-1);
+        CORE::exit(-1);
     }
 }
 
