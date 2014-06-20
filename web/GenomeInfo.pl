@@ -4,11 +4,16 @@ use strict;
 use CGI;
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Utils qw(sanitize_name get_unique_id commify);
+use CoGe::Accessory::Jex;
+use CoGe::Accessory::Utils qw(sanitize_name get_unique_id commify execute);
 use CoGe::Accessory::IRODS qw(irods_iput irods_imeta);
-use CoGe::Core::Genome qw(get_wobble_histogram get_noncoding_gc_stats
-    get_wobble_gc_diff_histogram get_feature_type_gc_histogram
-    get_gc_stats has_statistic);
+use CoGe::Core::Genome;
+
+use CoGe::Tasks::Genome::Bed;
+use CoGe::Tasks::Genome::Copy;
+use CoGe::Tasks::Genome::Features;
+use CoGe::Tasks::Genome::Gff;
+use CoGe::Tasks::Genome::Tbl;
 
 use HTML::Template;
 use JSON::XS;
@@ -22,7 +27,7 @@ no warnings 'redefine';
 
 use vars qw(
   $P $PAGE_TITLE $TEMPDIR $SECTEMPDIR $LOAD_ID $USER $conf $coge $FORM %FUNCTION
-  $MAX_SEARCH_RESULTS $LINK $node_types $ERROR $HISTOGRAM $TEMPURL $SERVER
+  $MAX_SEARCH_RESULTS $LINK $node_types $ERROR $HISTOGRAM $TEMPURL $SERVER $JEX
 );
 
 $PAGE_TITLE = 'GenomeInfo';
@@ -38,6 +43,7 @@ $FORM = new CGI;
     page_title => $PAGE_TITLE
 );
 
+$JEX = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
 $LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $SECTEMPDIR    = $conf->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 $TEMPDIR   = $conf->{TEMPDIR} . "/$PAGE_TITLE";
@@ -586,81 +592,47 @@ sub get_wobble_gc_diff {
 }
 
 
-sub generate_features {
-    my %opts = @_;
-    my $gid = $opts{gid};
-    my $dsid = $opts{dsid};
-    my $fid = $opts{fid};
-    my $protein = $opts{protein};
-
-    if ($gid) {
-        my $genome = $coge->resultset('Genome')->find($gid);
-        return 1 unless ($USER->has_access_to_genome($genome));
-    } else {
-        my $ds = $coge->resultset('Dataset')->find($dsid) if $dsid;
-        my ($genomes) = $ds->genomes if $ds;
-        return 1 unless ($USER->has_access_to_genome($genomes));
-    }
-
-    my $conf = catfile($conf->{COGEDIR}, "coge.conf");
-    my $cmd = catfile($conf->{SCRIPTDIR}, "export_features_by_type.pl")
-        . " -ftid $fid -prot $protein -config $conf";
-
-    my $dir;
-    my $filename;
-
-    if($gid) {
-        $filename .= $gid;
-        $dir = get_download_path($gid);
-        $cmd .= " -gid $gid -dir $dir";
-    } else {
-        $filename .= $dsid   if $dsid;
-        $dir = get_download_path($dsid);
-        $cmd .= " -dsid $dsid -dir $dir";
-    }
-
-    my $ft = $coge->resultset('FeatureType')->find($fid);
-    $filename .= "-" . $ft->name;
-    $filename .= "-prot" if $protein;
-    $filename .= ".fasta";
-
-    return (execute($cmd), catfile($dir, $filename));
-}
-
 sub export_features {
-    my %opts = @_;
-    my $gid = $opts{gid};
-    my $dsid = $opts{dsid};
-    my $fid = $opts{fid};
-    my $protein = $opts{protein};
-    my ($statusCode, $file) = generate_features(@_);
-    my (%json, %meta);
+    my %args = @_;
+    my $genome = $coge->resultset('Genome')->find($args{gid});
+    my $ft = $coge->resultset('FeatureType')->find($args{fid});
 
-    say STDERR $file;
-    $json{file} = basename($file);
+    return 1 unless ($USER->has_access_to_genome($genome));
 
-    if ($statusCode) {
-        $json{error} = 1;
-    } else {
-        my $genome = $coge->resultset('Genome')->find($gid);
-        my $feature_type = $coge->resultset('FeatureType')->find($fid);
+    my $workflow = $JEX->create_workflow(name => "Export features");
 
-        %meta = (
-            'Imported From' => "CoGe: http://genomevolution.org",
-            'CoGe OrganismView Link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
-            'CoGe GenomeInfo Link'=> "http://genomevolution.org/CoGe/GenomeInfo.pl?gid=".$genome->id,
-            'CoGe Genome ID'   => $genome->id,
-            'Organism Name'    => $genome->organism->name,
-            'Organism Taxonomy'    => $genome->organism->description,
-            'Version'     => $genome->version,
-            'Type'        => $genome->type->info,
-            'Feature Type' => $feature_type->name,
-            'Data Type'    => "FASTA",
-        );
-        $meta{'Feature Description'} = $feature_type->description if $feature_type->description;
+    my $basename = sanitize_name($genome->organism->name . "-ft-" . $ft->name);
 
-        $json{error} = export_to_irods( file => $file, meta => \%meta );
-    }
+    $args{script_dir} = $conf->{SCRIPTDIR};
+    $args{secure_tmp} = $conf->{SECTEMPDIR};
+    $args{conf} = catfile($conf->{COGEDIR}, "coge.conf");
+    $args{basename} = $basename;
+
+    my ($output, %task) = generate_features(%args);
+    $workflow->add_job(%task);
+
+    my $response = $JEX->submit_workflow($workflow);
+    say STDERR "RESPONSE ID: " . $response->{id};
+    $JEX->wait_for_completion($response->{id});
+
+    my %json;
+    $json{file} = basename($output);
+
+    my %meta = (
+        'Imported From' => "CoGe: http://genomevolution.org",
+        'CoGe OrganismView Link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
+        'CoGe GenomeInfo Link'=> "http://genomevolution.org/CoGe/GenomeInfo.pl?gid=".$genome->id,
+        'CoGe Genome ID'   => $genome->id,
+        'Organism Name'    => $genome->organism->name,
+        'Organism Taxonomy'    => $genome->organism->description,
+        'Version'     => $genome->version,
+        'Type'        => $genome->type->info,
+        'Feature Type' => $ft->name,
+        'Data Type'    => "FASTA",
+    );
+    $meta{'Feature Description'} = $ft->description if $ft->description;
+
+    $json{error} = export_to_irods( file => $output, meta => \%meta );
 
     return encode_json(\%json);
 }
@@ -1307,11 +1279,9 @@ sub check_login {
 }
 
 sub copy_genome {
-    my %opts = @_;
-    my $gid  = $opts{gid};
-    my $mask = $opts{mask};
-    my $seq_only = $opts{seq_only};
-    $mask = 0 unless $mask;
+    my %args = @_;
+    my $gid  = $args{gid};
+    my $mask = $args{mask};
 
     print STDERR "copy_and_mask_genome: gid=$gid mask=$mask\n";
 
@@ -1319,33 +1289,22 @@ sub copy_genome {
         return 'Not logged in';
     }
 
-    # Setup staging area and log file
-    my $stagepath = $SECTEMPDIR . '/staging/';
-    mkpath $stagepath;
 
-    my $logfile = $stagepath . '/log.txt';
-    open( my $log, ">$logfile" ) or die "Error creating log file: $logfile: $!";
-    print $log "Calling copy_load_mask_genome.pl ...\n";
-    my $cmd =
-        $conf->{SCRIPTDIR} . "/copy_genome/copy_load_mask_genome.pl "
-        . "-gid $gid "
-        . "-uid " . $USER->id . " "
-        . "-mask $mask "
-        . "-staging_dir $stagepath "
-        . "-conf_file $conf";
-    $cmd .= " -sequence_only" if $seq_only;
-    print STDERR "$cmd\n";
-    print $log "$cmd\n";
-    close($log);
+    my $workflow = $JEX->create_workflow(name => "Copy and mask genome", init => 1);
 
-    if ( !defined( my $child_pid = fork() ) ) {
-        return "Cannot fork: $!";
-    }
-    elsif ( $child_pid == 0 ) {
-        print STDERR "child running: $cmd\n";
-        `$cmd`;
-        exit;
-    }
+    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
+
+    $args{uid} = $USER->id;
+    $args{conf} = catfile($conf->{COGEDIR}, "coge.conf");
+    $args{script_dir} = $conf->{SCRIPTDIR};
+    $args{staging_dir} = $staging_dir;
+    $args{result_dir} = $result_dir;
+
+    my %task = copy_and_mask(%args);
+    $workflow->add_job(%task);
+
+    my $response = $JEX->submit_workflow($workflow);
+    $JEX->wait_for_completion($response->{id});
 
     return;
 }
@@ -1797,41 +1756,28 @@ sub get_annotation_type_groups {
 # TBL FILE
 #
 
-
-sub generate_tbl {
-    my $dsg = shift;
-    my $coge_tbl = catfile($conf->{SCRIPTDIR}, "export_NCBI_TBL.pl");
-
-    # Generate filename
-    my $org_name = sanitize_name($dsg->organism->name);
-    my $filename = $org_name . "dsgid" . $dsg->id . "_tbl.txt";
-    my $path = get_download_path($dsg->id);
-
-    # Create command
-    my $cmd = "$coge_tbl -f '$filename' -download_dir $path"
-        . " -config $conf"
-        . " -gid " . $dsg->id;
-
-    return (execute($cmd), catfile($path, $filename));
-}
-
 sub get_tbl {
     my %args = @_;
-    my $gid = $args{gid};
-    my $dsg = $coge->resultset('Genome')->find($gid);
+    my $dsg = $coge->resultset('Genome')->find($args{gid});
 
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
-    my %json;
-    my ($statusCode, $tbl) = generate_tbl($dsg);
-    $json{file} = basename($tbl);
+    $args{script_dir} = $conf->{SCRIPTDIR};
+    $args{secure_tmp} = $conf->{SECTEMPDIR};
+    $args{basename} = sanitize_name($dsg->organism->name);
+    $args{conf} = catfile($conf->{COGEDIR}, "coge.conf");
 
-    if ($statusCode) {
-        $json{error} = 1;
-    } else {
-        $json{files} = [ get_download_url(dsgid => $gid, file => $tbl) ];
-    }
+    my $workflow = $JEX->create_workflow(name => "Export Tbl");
+    my ($output, %task) = generate_tbl(%args);
+    $workflow->add_job(%task);
+
+    my $response = $JEX->submit_workflow($workflow);
+    say STDERR "RESPONSE ID: " . $response->{id};
+    $JEX->wait_for_completion($response->{id});
+
+    my %json;
+    $json{files} = [ get_download_url(dsgid => $args{gid}, file => basename($output))];
 
     return encode_json(\%json);
 }
@@ -1864,22 +1810,6 @@ sub export_tbl {
 # BED FILE
 #
 
-sub generate_bed {
-    my $dsg = shift;
-    my $coge_bed = catfile($conf->{SCRIPTDIR}, "coge2bed.pl");
-
-    # Generate file name
-    my $org_name = sanitize_name($dsg->organism->name);
-    my $filename = "$org_name" . "_gid" . $dsg->id . ".bed";
-    my $path = get_download_path($dsg->id);
-
-    # Create command
-    my $cmd = "$coge_bed -f '$filename' -download_dir $path"
-        . " -config $conf"
-        . " -gid " . $dsg->id;
-
-    return (execute($cmd), catfile($path, $filename));
-}
 
 sub get_bed {
     my %args = @_;
@@ -1889,15 +1819,21 @@ sub get_bed {
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
-    my %json;
-    my ($statusCode, $bed) = generate_bed($dsg);
-    $json{file} = basename($bed);
+    $args{script_dir} = $conf->{SCRIPTDIR};
+    $args{secure_tmp} = $conf->{SECTEMPDIR};
+    $args{basename} = sanitize_name($dsg->organism->name);
+    $args{conf} = catfile($conf->{COGEDIR}, "coge.conf");
 
-    if ($statusCode) {
-        $json{error} = 1;
-    } else {
-        $json{files} = [ get_download_url(dsgid => $gid, file => $bed) ];
-    }
+    my $workflow = $JEX->create_workflow(name => "Export bed file");
+    my ($output, %task) = generate_bed(%args);
+    $workflow->add_job(%task);
+
+    my $response = $JEX->submit_workflow($workflow);
+    say STDERR "RESPONSE ID: " . $response->{id};
+    $JEX->wait_for_completion($response->{id});
+
+    my %json;
+    $json{files} = [ get_download_url(dsgid => $args{gid}, file => basename($output))];
 
     return encode_json(\%json);
 }
@@ -1930,73 +1866,29 @@ sub export_bed {
 # GFF FILE
 #
 
-sub generate_gff {
-    my %args = @_;
-    my $dsg = $args{dsg};
-    my $ds = $args{ds};
-    my $dsh = defined($dsg) ? $dsg : $ds;
-    my $coge_gff = catfile($conf->{SCRIPTDIR}, "coge_gff.pl");
-
-    # FORM Parameters
-    my $id_type = 0;
-    $id_type = $FORM->param('id_type') if $FORM->param('id_type');
-    my $annos   = 0;
-    $annos = $FORM->param('annos') if $FORM->param('annos');
-    my $cds = 0;    #flag for printing only genes, mRNA, and CDSs
-    $cds = $FORM->param('cds') if $FORM->param('cds');
-    my $name_unique = 0;
-    $name_unique = $FORM->param('nu') if $FORM->param('nu');
-    my $upa = $FORM->param('upa') if $FORM->param('upa'); #unqiue_parent_annotations
-
-    # Generate file name
-    my $org_name = sanitize_name($dsh->organism->name);
-    my $filename = "$org_name-$id_type-$annos-$cds-$name_unique";
-    $filename .= "id-" . $dsh->id;
-    $filename .= "-$upa" if $upa;
-    $filename .= ".gff";
-
-    my $path = get_download_path($dsh->id);
-
-    my $cmd = "$coge_gff -f '$filename' -download_dir $path"
-        . " -cds $cds -annos $annos -nu $name_unique"
-        . " -id_type $id_type -config $conf";
-
-    $cmd .= " -upa $upa" if $upa;
-    $cmd .= " -dsid " . $dsg->id if defined($ds);
-    $cmd .= " -gid "  . $dsg->id if defined($dsg);
-
-    return (execute($cmd), catfile($path, $filename));
-}
 
 sub get_gff {
     my %args = @_;
-    my $gid = $args{gid};
-    my $dsid = $args{dsid};
+    my $dsg = $coge->resultset('Genome')->find($args{gid});
 
-    my (%json, $statusCode, $gff);
+    # ensure user has permission
+    return $ERROR unless $USER->has_access_to_genome($dsg);
 
-    if ($gid) {
-        my $dsg = $coge->resultset('Genome')->find($gid);
+    $args{script_dir} = $conf->{SCRIPTDIR};
+    $args{secure_tmp} = $conf->{SECTEMPDIR};
+    $args{basename} = $dsg->organism->name;
+    $args{conf} = catfile($conf->{COGEDIR}, "coge.conf");
 
-        # ensure user has permission
-        return $ERROR unless $USER->has_access_to_genome($dsg);
+    my $workflow = $JEX->create_workflow(name => "Export gff");
+    my ($output, %task) = generate_gff(%args);
+    $workflow->add_job(%task);
 
-        ($statusCode, $gff) = generate_gff(dsg => $dsg);
-    } else {
-        my $dsg = $coge->resultset('Genome')->find($gid);
+    my $response = $JEX->submit_workflow($workflow);
+    say STDERR "RESPONSE ID: " . $response->{id};
+    $JEX->wait_for_completion($response->{id});
 
-        # ensure user has permission
-        return $ERROR unless $USER->has_access_to_genome($dsg);
-
-        ($statusCode, $gff) = generate_gff(ds => $dsg);
-    }
-    $json{file} = basename($gff);
-
-    if ($statusCode) {
-        $json{error} = 1;
-    } else {
-        $json{files} = [ get_download_url(dsgid => $gid, file => $gff) ];
-    }
+    my %json;
+    $json{files} = [ get_download_url(dsgid => $args{gid}, file => basename($output))];
 
     return encode_json(\%json);
 }
@@ -2072,19 +1964,6 @@ sub get_download_url {
 
 sub get_download_path {
     return catfile($conf->{SECTEMPDIR}, "GenomeInfo/downloads", shift);
-}
-
-sub execute {
-    my $cmd = shift;
-
-    my @cmdOut = qx{$cmd};
-    my $cmdStatus = $?;
-
-    if ($cmdStatus != 0) {
-        say STDERR "log: error: command failed with rc=$cmdStatus: $cmd";
-    }
-
-    return $cmdStatus;
 }
 
 sub generate_html {

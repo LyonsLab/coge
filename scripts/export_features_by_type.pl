@@ -5,21 +5,23 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use Data::Dumper;
 use Getopt::Long;
-use File::Path;
+use File::Copy;
+use File::Spec::Functions;
 use Text::Wrap;
 
 $|++;
 
 
 our ($P, $db, $host, $port, $user, $pass, $dsid, $gid, $ftid, $prot,
-    $workdir, $config);
+     $filename, $workdir, $config);
 
 GetOptions(
-    "dir=s"  => \$workdir,
-    "gid=n"   => \$gid,
-    "dsid"   => \$dsid,
-    "ftid=n" => \$ftid,
-    "prot=n" => \$prot,
+    "dir=s"    => \$workdir,
+    "gid=n"    => \$gid,
+    "dsid"     => \$dsid,
+    "ftid=n"   => \$ftid,
+    "prot=n"   => \$prot,
+    "file|f=s" => \$filename,
 
     # Database params
     "host|h=s"          => \$host,
@@ -32,8 +34,10 @@ GetOptions(
     "config=s"          => \$config,
 );
 
-mkpath( $workdir, 1, 0755 );
-my $logfile = File::Spec->catdir($workdir, "export.log");
+$workdir //= ".";
+
+my $logfile = catfile($workdir, "export.log");
+
 open (my $logh, ">", $logfile) or die "Error opening log file";
 
 if ($config) {
@@ -72,17 +76,11 @@ $ds = $coge->resultset('Dataset')->find($dsid) if $dsid;
 ($dsg) = $ds->genomes if $ds;
 
 my $ft = $coge->resultset('FeatureType')->find($ftid);
-my $filename;
-$filename .= $gid  if $gid;
-$filename .= $dsid   if $dsid;
-$filename .= "-" . $ft->name;
-$filename .= "-prot" if $prot;
-$filename .= ".fasta";
-
-my $file = File::Spec->catdir($workdir, $filename);
+my $file = catfile($workdir, $filename);
+my $file_temp = $file . ".tmp";
 
 # Exit if the file already exists
-exit if -r $file and -r "$file.finished";
+exit if -r $file;
 
 my $count = 1;
 my @feats;
@@ -95,7 +93,7 @@ else {
 
 my $org = $dsg->organism->name;
 
-open(my $fh, ">", $file);
+open(my $fh, ">", $file_temp);
 
 foreach my $feat (@feats) {
     my ($chr) = $feat->chromosome;    #=~/(\d+)/;
@@ -135,6 +133,6 @@ foreach my $feat (@feats) {
     }
 }
 
-system("touch $file.finished");
 close($fh);
 close($logh);
+move($file_temp, $file);
