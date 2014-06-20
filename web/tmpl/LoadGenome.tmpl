@@ -26,17 +26,10 @@ $(document).ready(function(){
 	});
 	
 	// Configure dialogs
-	$(".dialog_box").dialog({
-		autoOpen: false, 
-		width: 500, 
-		// open: function (e, ui) {
-		//       	$(this).closest('.ui-dialog').css({position: 'fixed'});
-  		//       }
-		// position: [$(window).width()/2-250, 200]
-  	});
+    $(".dialog_box").dialog({autoOpen: false, width: 500});
+    $('#load_dialog').dialog("widget").find('.ui-dialog-titlebar-close').hide();
+    $('#load_dialog').dialog({modal: true, closeOnEscape: false})
 
-  	$("#load_dialog").dialog({modal: true});
-	
   	// Initialize drop-downs
 	get_sequence_types();
 	get_sources();
