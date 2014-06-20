@@ -10,6 +10,7 @@ use CoGe::Accessory::IRODS qw(irods_iput irods_imeta);
 use CoGe::Core::Genome;
 
 use CoGe::Tasks::Genome::Bed;
+use CoGe::Tasks::Genome::Features;
 use CoGe::Tasks::Genome::Gff;
 use CoGe::Tasks::Genome::Tbl;
 
@@ -590,81 +591,47 @@ sub get_wobble_gc_diff {
 }
 
 
-sub generate_features {
-    my %opts = @_;
-    my $gid = $opts{gid};
-    my $dsid = $opts{dsid};
-    my $fid = $opts{fid};
-    my $protein = $opts{protein};
-
-    if ($gid) {
-        my $genome = $coge->resultset('Genome')->find($gid);
-        return 1 unless ($USER->has_access_to_genome($genome));
-    } else {
-        my $ds = $coge->resultset('Dataset')->find($dsid) if $dsid;
-        my ($genomes) = $ds->genomes if $ds;
-        return 1 unless ($USER->has_access_to_genome($genomes));
-    }
-
-    my $conf = catfile($conf->{COGEDIR}, "coge.conf");
-    my $cmd = catfile($conf->{SCRIPTDIR}, "export_features_by_type.pl")
-        . " -ftid $fid -prot $protein -config $conf";
-
-    my $dir;
-    my $filename;
-
-    if($gid) {
-        $filename .= $gid;
-        $dir = get_download_path($gid);
-        $cmd .= " -gid $gid -dir $dir";
-    } else {
-        $filename .= $dsid   if $dsid;
-        $dir = get_download_path($dsid);
-        $cmd .= " -dsid $dsid -dir $dir";
-    }
-
-    my $ft = $coge->resultset('FeatureType')->find($fid);
-    $filename .= "-" . $ft->name;
-    $filename .= "-prot" if $protein;
-    $filename .= ".fasta";
-
-    return (execute($cmd), catfile($dir, $filename));
-}
-
 sub export_features {
-    my %opts = @_;
-    my $gid = $opts{gid};
-    my $dsid = $opts{dsid};
-    my $fid = $opts{fid};
-    my $protein = $opts{protein};
-    my ($statusCode, $file) = generate_features(@_);
-    my (%json, %meta);
+    my %args = @_;
+    my $genome = $coge->resultset('Genome')->find($args{gid});
+    my $ft = $coge->resultset('FeatureType')->find($args{fid});
 
-    say STDERR $file;
-    $json{file} = basename($file);
+    return 1 unless ($USER->has_access_to_genome($genome));
 
-    if ($statusCode) {
-        $json{error} = 1;
-    } else {
-        my $genome = $coge->resultset('Genome')->find($gid);
-        my $feature_type = $coge->resultset('FeatureType')->find($fid);
+    my $workflow = $JEX->create_workflow(name => "Export features");
 
-        %meta = (
-            'Imported From' => "CoGe: http://genomevolution.org",
-            'CoGe OrganismView Link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
-            'CoGe GenomeInfo Link'=> "http://genomevolution.org/CoGe/GenomeInfo.pl?gid=".$genome->id,
-            'CoGe Genome ID'   => $genome->id,
-            'Organism Name'    => $genome->organism->name,
-            'Organism Taxonomy'    => $genome->organism->description,
-            'Version'     => $genome->version,
-            'Type'        => $genome->type->info,
-            'Feature Type' => $feature_type->name,
-            'Data Type'    => "FASTA",
-        );
-        $meta{'Feature Description'} = $feature_type->description if $feature_type->description;
+    my $basename = sanitize_name($genome->organism->name . "-ft-" . $ft->name);
 
-        $json{error} = export_to_irods( file => $file, meta => \%meta );
-    }
+    $args{script_dir} = $conf->{SCRIPTDIR};
+    $args{secure_tmp} = $conf->{SECTEMPDIR};
+    $args{conf} = catfile($conf->{COGEDIR}, "coge.conf");
+    $args{basename} = $basename;
+
+    my ($output, %task) = generate_features(%args);
+    $workflow->add_job(%task);
+
+    my $response = $JEX->submit_workflow($workflow);
+    say STDERR "RESPONSE ID: " . $response->{id};
+    $JEX->wait_for_completion($response->{id});
+
+    my %json;
+    $json{file} = basename($output);
+
+    my %meta = (
+        'Imported From' => "CoGe: http://genomevolution.org",
+        'CoGe OrganismView Link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
+        'CoGe GenomeInfo Link'=> "http://genomevolution.org/CoGe/GenomeInfo.pl?gid=".$genome->id,
+        'CoGe Genome ID'   => $genome->id,
+        'Organism Name'    => $genome->organism->name,
+        'Organism Taxonomy'    => $genome->organism->description,
+        'Version'     => $genome->version,
+        'Type'        => $genome->type->info,
+        'Feature Type' => $ft->name,
+        'Data Type'    => "FASTA",
+    );
+    $meta{'Feature Description'} = $ft->description if $ft->description;
+
+    $json{error} = export_to_irods( file => $output, meta => \%meta );
 
     return encode_json(\%json);
 }
