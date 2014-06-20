@@ -58,7 +58,7 @@ $| = 1;
 die unless ($staging_dir);
 mkpath($staging_dir); # make sure this exists
 my $logfile = "$staging_dir/log.txt";
-open( my $log, ">$logfile" ) or die "Error opening log file: $logfile: $!";
+open( my $log, ">>$logfile" ) or die "Error opening log file: $logfile: $!";
 $log->autoflush(1);
 print $log "Starting $0 (pid $$)\n";
 
