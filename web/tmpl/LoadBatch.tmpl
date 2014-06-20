@@ -7,13 +7,14 @@ var timestamps = new Array();
 var load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
 var job_id = '<TMPL_VAR NAME="JOB_ID">';
 var status_url = '<TMPL_VAR NAME="STATUS_URL">';
+var page_name = '<TMPL_VAR NAME="PAGE_NAME">';
 var experiment_id;
 var notebook_id;
 
 $(document).ready(function(){
     $.ajaxSetup({
         type: "GET",
-        url: '<TMPL_VAR NAME="PAGE_NAME">',
+        url: page_name,
         dataType: "html",
         cache: false,
     });
@@ -41,9 +42,6 @@ $(document).ready(function(){
         $('#load_dialog').dialog('open');
         if (job_id) { // JEX status for FASTQ data type
             update_dialog(status_url + job_id, "#load_dialog", progress_formatter);
-        }
-        else { // Log status for all other data types
-            setTimeout(function() { get_load_log(); }, 0);
         }
     }
 });
@@ -160,13 +158,13 @@ function load_batch() {
             // Start status update
             if (obj.job_id) { // JEX status for load FASTQ
                 job_id = obj.job_id;
-                window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?job_id=" + obj.job_id + '&load_id=' + load_id); // Add job_id and load_id to browser URL
+                window.history.pushState({}, "Title", page_name + "?job_id=" + obj.job_id); // Add job_id to browser URL
                 update_dialog(status_url + obj.job_id, "#load_dialog", progress_formatter);
             }
-            else { // non-JEX old method for all other data types
-                window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?load_id=" + load_id); // Add load_id to browser URL
-                setTimeout(function() { get_load_log(); }, 1000);
-            }
+//            else { // non-JEX old method for all other data types
+//                window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?load_id=" + load_id); // Add load_id to browser URL
+//                setTimeout(function() { get_load_log(); }, 1000);
+//            }
         }
         // TODO: handle error, show in status dialog
     });
@@ -175,36 +173,53 @@ function load_batch() {
 function get_load_log(callback) {
     $.ajax({
         data: {
-            dataType: 'text',
-            fname: 'get_load_log',
-            load_id: load_id,
-            timestamp: new Date().getTime()
+            dataType:    'text',
+            fname:       'get_load_log',
+            workflow_id: job_id,
+            timestamp:   new Date().getTime()
         },
         success : function(data) {
-            var obj = jQuery.parseJSON(data);
-
             if (callback) {
+            	var obj = jQuery.parseJSON(data);
                 callback(obj);
                 return;
-            }
-
-            // Update log contents and scroll to bottom
-            $('#load_log').html(obj.log);
-            var height = $('#load_log')[0].scrollHeight;
-            $("#load_log").animate({ scrollTop: height}, 500);
-
-            if (obj.status == 1) { // finished successfully
-                load_succeeded(obj);
-            }
-            else if (obj.status == -1) { // error occurred
-                load_failed();
-            }
-            else { // not done yet, continue polling
-                setTimeout(function() { get_load_log(); }, 2000);
             }
         }
     });
 }
+//function get_load_log(callback) {
+//    $.ajax({
+//        data: {
+//            dataType: 'text',
+//            fname: 'get_load_log',
+//            load_id: load_id,
+//            timestamp: new Date().getTime()
+//        },
+//        success : function(data) {
+//            var obj = jQuery.parseJSON(data);
+//
+//            if (callback) {
+//                callback(obj);
+//                return;
+//            }
+//
+//            // Update log contents and scroll to bottom
+//            $('#load_log').html(obj.log);
+//            var height = $('#load_log')[0].scrollHeight;
+//            $("#load_log").animate({ scrollTop: height}, 500);
+//
+//            if (obj.status == 1) { // finished successfully
+//                load_succeeded(obj);
+//            }
+//            else if (obj.status == -1) { // error occurred
+//                load_failed();
+//            }
+//            else { // not done yet, continue polling
+//                setTimeout(function() { get_load_log(); }, 2000);
+//            }
+//        }
+//    });
+//}
 
 function load_failed() {
     // Update dialog
@@ -249,7 +264,7 @@ function load_succeeded(obj) {
 }
 
 function reset_load() {
-    window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>");
+    window.history.pushState({}, "Title", page_name);
     $('#load_dialog').dialog('close');
 
     // Reset file selector

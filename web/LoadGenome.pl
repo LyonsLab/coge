@@ -468,14 +468,6 @@ sub load_genome {
     # Submit workflow to add genome
     my ($workflow_id, $error_msg);
     if (@accns) { # NCBI accession numbers specified
-#        my $cmd =
-#            $P->{SCRIPTDIR} . "/load_genomes_n_stuff/genbank_genome_loader.pl "
-#          . join(' ', map {'-accn '.$_} @accns) . ' '
-#          . "-user_name $user_name "
-#          . "-staging_dir $stagepath "
-#          . "-conf $CONFIGFILE "
-#          . '-GO 1';
-        
         ($workflow_id, $error_msg) = create_genome_from_NCBI(
             user => $user,
             accns => \@accns

@@ -6,6 +6,7 @@ use Data::Dumper;
 use Getopt::Long;
 use CoGeX;
 use File::Path;
+use File::Touch;
 use File::Spec::Functions qw( catdir catfile );
 use CoGe::Accessory::Web;
 use CoGe::Core::Storage;
@@ -403,7 +404,6 @@ accn: foreach my $accn (@accns) {
 			foreach my $anno ( keys %{$annot} ) {
 				my $stuff = $annot->{$anno};
 
-                print "anno=", $anno, "\n";
 				# deal with db_xref: (taxon:3702) (GeneID:821318) (GI:18379324)
 				if ( $anno =~ /xref/i ) {
 					my $anno_type_group =

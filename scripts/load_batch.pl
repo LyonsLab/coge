@@ -2,16 +2,17 @@
 use strict;
 use CoGeX;
 use CoGe::Accessory::Web qw(get_defaults);
-use File::Path qw(make_path);
+use File::Path;
 use File::Basename;
 use File::Spec::Functions qw(catdir catfile);
+use File::Touch;
 use Getopt::Long;
 use URI::Escape::JavaScript qw(escape unescape);
 use Data::Dumper;
 
 use vars qw(
     $staging_dir $data_file $notebook_name $notebook_desc $gid $user_name 
-    $config $log_file $user $genome 
+    $config $log_file $user $genome $result_dir
 );
   
 my $DEBUG = 0;
@@ -21,6 +22,7 @@ my $DELIMITER = '\t';
 
 GetOptions(
     "staging_dir=s" => \$staging_dir,    # temporary staging path
+    "result_dir=s"  => \$result_dir,     # results path
     "data_file=s"   => \$data_file,      # input data file (JS escape)
     "name=s"        => \$notebook_name,  # notebook name (JS escaped)
     "desc=s"        => \$notebook_desc,  # notebook description (JS escaped)
@@ -33,9 +35,10 @@ GetOptions(
 # Open log file
 $| = 1;
 $log_file = "$staging_dir/log.txt" unless $log_file;
-make_path($staging_dir) unless -r $staging_dir;
+mkpath($staging_dir) unless -r $staging_dir;
 open( my $log, ">>$log_file" ) or die "Error opening log file $log_file";
 $log->autoflush(1);
+print $log "Starting $0 (pid $$)\n";
 
 # Process and verify parameters
 $data_file     = unescape($data_file);
@@ -89,7 +92,7 @@ unless ($data_file =~ /\.tar\.gz$/) {
     exit(-1);
 }
 print $log "log: Decompressing/extracting data\n";
-make_path($data_dir);
+mkpath($data_dir);
 execute( $P->{TAR}.' -xf '.$data_file.' --directory '.$data_dir );
 
 # Find metadata file
@@ -113,7 +116,20 @@ if ($metadata_file) {
 
 # Load each experiment file
 my $exp_count = 0;
-my $notebook = process_dir($data_dir, $metadata);
+my ($notebook, $exp_ids) = process_dir($data_dir, $metadata);
+
+# Save result document
+if ($result_dir) {
+    mkpath($result_dir);
+    CoGe::Accessory::TDS::write(
+        catfile($result_dir, '1'),
+        {
+            genome_id => int($genome->id),
+            notebook_id => int($notebook->id),
+            experiments => $exp_ids
+        }
+    );
+}
 
 # Yay!
 CoGe::Accessory::Web::log_history(
@@ -123,8 +139,14 @@ CoGe::Accessory::Web::log_history(
     description => 'load batch experiments',
     link        => 'NotebookView.pl?nid=' . $notebook->id
 );
+
 print $log "log: Loaded $exp_count experiments\n";
 close($log);
+
+# Create "log.done" file to indicate completion to JEX
+my $logdonefile = "$staging_dir/log.done";
+touch($logdonefile);
+
 exit;
 
 #-------------------------------------------------------------------------------
@@ -218,7 +240,7 @@ sub process_dir {
                 file     => "$dir/$item",
                 metadata => $md
             );
-            push @experiments, $eid if $eid;
+            push @experiments, int($eid) if $eid;
         }
     }
     closedir($fh);
@@ -236,7 +258,7 @@ sub process_dir {
     }
     print $log "notebook id: ".$notebook->id."\n"; # !!!! don't change, gets parsed by calling code
     print $log "log: Created notebook '$notebook_name'\n";
-    return $notebook;
+    return ($notebook, \@experiments);
 }
 
 sub process_file {
@@ -246,15 +268,7 @@ sub process_file {
     
     $exp_count++;
     
-    # Create/clear staging directory
-    my $staging = "$staging_dir/$exp_count";
-#    if (-e $staging) {
-#        print "Clearing staging directory: $staging\n";
-#        `rm $staging/*`;
-#    }
-#    else {
-        make_path($staging);
-#    }
+    my $exp_staging_dir = catdir($staging_dir, $exp_count);
     
     # Check params and set defaults
     my $name;
@@ -280,16 +294,17 @@ sub process_file {
     my $cmd = catfile($P->{SCRIPTDIR}, 'load_experiment.pl') . ' ' .
         "-config $config -user_name '".$user->user_name."' -restricted 1 -name '$name' -desc '$description' " .
         "-version '$version' -gid $gid -source_name '$source' " .
-	    #"-allow_negative 0 " .
-        "-staging_dir $staging -install_dir ".$P->{EXPDIR}." -data_file '$file' " .
-        "-log_file $log_file";
-    print "Running: " . $cmd, "\n";
+        "-staging_dir $exp_staging_dir -install_dir ".$P->{EXPDIR}." -data_file '$file' " .
+        "-log_file $log_file"; # reuse log so that all experiment loads are present
+    print $log "Running: " . $cmd, "\n";
     return if ($DEBUG);
     my $output = qx{ $cmd };
     if ( $? != 0 ) {
         print $log "log: error: load_experiment.pl failed with rc=$?\n";
         exit(-1);
     }
+    open( $log, ">>$log_file" ) or die "Error opening log file $log_file"; # Reopen log file
+    print $log "log: Experiment '$name' loaded successfully\n";
 
     # Extract experiment id from output
     my ($eid) = $output =~ /experiment id: (\d+)/;
@@ -297,7 +312,7 @@ sub process_file {
         print $log "log: error: unable to retrieve experiment id\n";
         exit(-1);
     }
-    print $log "Captured experimemt id $eid\n";
+    print $log "Captured experiment id $eid\n";
 
     # Add experiment annotations from metadata file
     if ($md) {
@@ -320,7 +335,7 @@ sub process_file {
 
         # TODO add support for "_link" option
     }
-    
+
     return $eid;
 }
 
