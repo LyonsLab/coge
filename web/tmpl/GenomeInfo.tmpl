@@ -5,9 +5,27 @@
 <script language="javascript" type="text/javascript" src="./js/jquery.fileupload.js"></script>
 
 <script language="javascript">
-var page_name = "<TMPL_VAR NAME='PAGE_NAME'>",
-    gid = '<TMPL_VAR NAME="GID">',
-    job_id = '<TMPL_VAR NAME="JOB_ID">';
+var page_name = "<TMPL_VAR NAME=PAGE_NAME>",
+    job_id = "<TMPL_VAR NAME=JOB_ID>",
+    genome_id = "<TMPL_VAR NAME=GID>",
+    load_id = "<TMPL_VAR NAME=LOAD_ID>",
+    default_type = "<TMPL_VAR NAME=DEFAULT_TYPE>",
+    irods_home = "<TMPL_VAR NAME=IRODS_HOME>",
+    showDialog = parseInt("<TMPL_VAR NAME=OPEN_STATUS>", 10);
+
+// EXPORT DIALOG GLOBALS
+var irods_home = $("<p>Sending to: " + irods_home + "</p>");
+var export_error = $("<p></p>")
+    .text("Failed to export to the iPlant Data Store.")
+    .addClass("alert");
+var download_error = $("<p></p>")
+    .text("The file could not be fetched")
+    .addClass("alert");
+var spinner = $("<img></img>").attr("src", "picts/ajax-loader.gif");
+var message = $("<div></div>").text("Please wait...  ").append(spinner.clone());
+var note = $("<p></p>").addClass("small")
+        .text("(This may take several minutes)");
+
 
 $(document).ready(function() {
     pageObj = new Object();
@@ -29,10 +47,10 @@ $(document).ready(function() {
 
     set_annotation_table();
 
-    init_annotation_dialog(gid, '<TMPL_VAR NAME="DEFAULT_TYPE">');
+    init_annotation_dialog(genome_id, default_type);
 
     // Open status dialog
-    if ('<TMPL_VAR NAME="OPEN_STATUS">') {
+    if (showDialog) {
         $('#loading_msg').hide();
         $('#load_dialog').dialog('open');
         if (job_id) { // JEX status for FASTQ data type
@@ -53,7 +71,7 @@ function get_gc_content(id, fname) {
         dataType: "html",
         data: {
             fname: fname,
-            dsgid: gid,
+            dsgid: genome_id,
             gstid: $("#gstid").val()
         },
         success: function(data) {
@@ -86,7 +104,7 @@ function get_feat_gc(opts){
 
     $.ajax({
         data: {
-                dsgid: gid,
+                dsgid: genome_id,
                 jquery_ajax: 1,
                     fname: 'get_gc_for_feature_type',
                 dsid: dsid,
@@ -149,12 +167,14 @@ function export_features_to_irods(id, feature, isGenome, type) {
     if (data.protein) {
         $('#export_log').html(
                 "<br>Copying protein sequences to <br><br>" +
-                '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
+                '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
+                irods_home + '</a>'
         );
     } else {
         $('#export_log').html(
                     "<br>Copying nucleotide sequences to <br><br>" +
-                '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
+                '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
+                irods_home + '</a>'
         );
 
     }
@@ -225,7 +245,7 @@ function get_features(selector) {
     $.ajax({
         data: {
             fname: "get_features",
-            dsgid: <TMPL_VAR NAME='GID'>,
+            dsgid: genome_id,
             gstid: $("#gstid").val()
         },
         success: function(data) {
@@ -259,7 +279,7 @@ function get_genome_info () {
         data: {
             jquery_ajax: 1,
             fname: 'get_genome_info',
-            gid: <TMPL_VAR NAME='GID'>
+            gid: genome_id
         },
         success : function(data) {
             if (data) {
@@ -274,7 +294,7 @@ function edit_genome_info () {
         data: {
             jquery_ajax: 1,
             fname: 'edit_genome_info',
-            gid: <TMPL_VAR NAME='GID'>
+            gid: genome_id
         },
         success : function(data) {
             if (data) {
@@ -313,7 +333,7 @@ function update_genome_info (){
         data: {
             jquery_ajax: 1,
             fname: 'update_genome_info',
-            gid: "<TMPL_VAR NAME='GID'>",
+            gid: genome_id,
             name: name,
             description: description,
             version: version,
@@ -340,7 +360,7 @@ function delete_genome () {
     $.ajax({
         data: {
             fname: 'delete_genome',
-            gid: '<TMPL_VAR NAME="GID">',
+            gid: genome_id,
         },
         success : function(rc) {
             if (rc) {
@@ -352,20 +372,6 @@ function delete_genome () {
         },
     });
 }
-
-// EXPORT DIALOG GLOBALS
-var genome_id = <TMPL_VAR NAME=GID>;
-var irods_home = $("<p>Sending to: <TMPL_VAR NAME=IRODS_HOME></p>");
-var export_error = $("<p></p>")
-    .text("Failed to export to the iPlant Data Store.")
-    .addClass("alert");
-var download_error = $("<p></p>")
-    .text("The file could not be fetched")
-    .addClass("alert");
-var spinner = $("<img></img>").attr("src", "picts/ajax-loader.gif");
-var message = $("<div></div>").text("Please wait...  ").append(spinner.clone());
-var note = $("<p></p>").addClass("small")
-        .text("(This may take several minutes)");
 
 function show_error() {
     $('#export_loading_msg').hide();
@@ -589,7 +595,8 @@ function export_tbl() {
 
     $('#export_log').html(
             "<br>Copying this genomes's TBL file to <br><br>" +
-            '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
+            '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
+            irods_home + '</a>'
     );
 
     $.ajax({
@@ -629,7 +636,8 @@ function export_bed() {
 
     $('#export_log').html(
             "<br>Generating/copying this genomes's BED file to <br><br>" +
-            '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
+            '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
+            irods_home + '</a>'
     );
 
     $.ajax({
@@ -668,13 +676,14 @@ function export_fasta_irods() {
 
     $('#export_log').html(
             "<br>Copying this genomes's FASTA file to <br><br>" +
-            '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
+            '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
+            irods_home + '</a>'
     );
 
     $.ajax({
         data: {
             fname: 'export_fasta_irods',
-            gid: '<TMPL_VAR NAME=GID>'
+            gid: genome_id
         },
         success : function(filename) {
             if (filename) {  // finished successfully
@@ -696,7 +705,7 @@ function reset_log() {
 }
 
 function reset_load() {
-    window.history.pushState({}, "Title", page_name + "?gid=" + gid);
+    window.history.pushState({}, "Title", page_name + "?gid=" + genome_id);
     $('#load_dialog').dialog('close');
 }
 
@@ -786,8 +795,8 @@ function copy_genome(mask, seq_only) {
         dataType: "json",
         data: {
             fname: 'copy_genome',
-            load_id: '<TMPL_VAR NAME="LOAD_ID">',
-            gid: '<TMPL_VAR NAME="GID">',
+            load_id: load_id,
+            gid: genome_id,
             mask: mask,
             seq_only: seq_only,
             timestamp: new Date().getTime()
@@ -804,7 +813,7 @@ function copy_genome(mask, seq_only) {
             $('#loading_msg span a').attr('href', data.link).html(data.link);
 
             // Add load_id to browser URL
-            window.history.pushState({}, "Title", page_name + "?gid=" + gid + "&job_id=" + data.job_id); // Add job_id to browser URL
+            window.history.pushState({}, "Title", page_name + "?gid=" + genome_id + "&job_id=" + data.job_id); // Add job_id to browser URL
             update_dialog("jex/status/" + data.job_id, "#load_dialog", progress_formatter);
         }
         // TODO: handle error, show in status dialog
@@ -963,8 +972,7 @@ function get_load_log(callback) {
 }
 
 function continue_to_view() {
-    var gid = genome_id;
-    window.location.href = "GenomeInfo.pl?gid=" + gid;
+    window.location.href = "GenomeInfo.pl?gid=" + genome_id;
 }
 
 function set_annotation_table() {
@@ -975,7 +983,7 @@ function get_annotations() {
     $.ajax({
         data: {
             fname: 'get_annotations',
-            gid: "<TMPL_VAR NAME='GID'>",
+            gid: genome_id,
         },
         success : function(data) {
             $('#genome_annotations').html(data);
@@ -988,7 +996,7 @@ function remove_annotation (gaid) {
     $.ajax({
         data: {
             fname: 'remove_annotation',
-            gid: "<TMPL_VAR NAME='GID'>",
+            gid: genome_id,
             gaid: gaid,
         },
         success : function() {
@@ -1001,7 +1009,7 @@ function get_datasets() {
     $.ajax({
         data: {
             fname: 'get_datasets',
-            gid: "<TMPL_VAR NAME='GID'>",
+            gid: genome_id,
         },
         success : function(data) {
             $('#datasets').html(data);
@@ -1013,7 +1021,7 @@ function delete_dataset (dsid) {
     $.ajax({
         data: {
             fname: 'delete_dataset',
-            gid: "<TMPL_VAR NAME='GID'>",
+            gid: genome_id,
             dsid: dsid,
         },
         success : function() {
@@ -1040,7 +1048,7 @@ function open_aa_usage_table(chromosome)
     $.ajax({
         data: {
             fname: "get_aa_usage",
-            dsgid: "<TMPL_VAR NAME='GID'>",
+            dsgid: genome_id,
             chr: chromosome
         },
         dataType: "html",
@@ -1071,7 +1079,7 @@ function get_content_dialog(id, request, chromosome) {
     $.ajax({
         data: {
             fname: request,
-            dsgid: "<TMPL_VAR NAME='GID'>",
+            dsgid: genome_id,
             chr: chromosome,
         },
         dataType: "html",
