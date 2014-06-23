@@ -1094,7 +1094,7 @@ function toggle_star(img) {
 				<input type="checkbox" style="margin-right:8px;" onclick="select_item();" />
 			</TMPL_IF>
 			<TMPL_VAR NAME="CONTENTS_ITEM_ICON"> 
-			<span class="link" onmouseover="enter_item(this.parentNode);" onmouseout="exit_item(this.parentNode);" onclick="window.open('<TMPL_VAR NAME="CONTENTS_ITEM_LINK">');">
+			<span class="link" onmouseover="enter_item(this.parentNode);" onmouseout="exit_item(this.parentNode);" <TMPL_IF NAME='CONTENTS_ITEM_LINK'>onclick="window.open('<TMPL_VAR NAME="CONTENTS_ITEM_LINK">');"</TMPL_IF>>
 				<TMPL_VAR NAME="CONTENTS_ITEM_INFO">
 			</span>
 		</div>
