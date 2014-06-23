@@ -487,13 +487,13 @@ function progress_failed(obj) {
     }
     $('#ok_button').fadeIn();
     	
-//    $.ajax({
-//        data: {
-//            fname: "send_error_report",
-//            load_id: load_id,
-//            job_id: job_id
-//        }
-//    });
+    $.ajax({
+        data: {
+            fname: "send_error_report",
+            load_id: load_id,
+            job_id: job_id
+        }
+    });
 }
 
 function progress_succeeded(obj) {
