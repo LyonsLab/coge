@@ -5,6 +5,7 @@ use CGI;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
+use CoGe::Core::Storage qw(get_workflow_paths);
 use HTML::Template;
 use JSON::XS;
 use Spreadsheet::WriteExcel;
@@ -254,7 +255,7 @@ sub get_annotations {
     foreach my $a ( $exp->annotations ) {
         my $group = ( $a->type->group ? $a->type->group->name : undef);
         my $type = $a->type->name;
-        push @{ $groups{$group}{$type} }, $a;
+        push @{ $groups{$group}{$type} }, $a if (defined $group and defined $type);
         $num_annot++;
     }
     
@@ -654,7 +655,7 @@ sub gen_body {
         rows            => commify($exp->row_count),
         IRODS_HOME      => get_irods_path(),
         JOB_ID          => $JOB_ID,
-        LOAD_ID         => $LOAD_ID,
+        #LOAD_ID         => $LOAD_ID,
         OPEN_STATUS     => $OPEN_STATUS,
         STATUS_URL      => 'jex/status/',
         ALIGNMENT_TYPE  => ($exp->data_type == 3), # FIXME: hardcoded type value
@@ -761,7 +762,6 @@ sub find_snps {
     my %opts        = @_;
     my $user_name   = $opts{user_name};
     my $eid         = $opts{eid};
-    my $load_id     = $opts{load_id};
 
     # Check login
     if ( !$user_name || !$USER->is_admin ) {
@@ -775,91 +775,92 @@ sub find_snps {
     my $experiment = $coge->resultset('Experiment')->find($eid);
     return encode_json({ error => 'Experiment not found' }) unless $experiment;
 
-    # Setup staging area and log file
-    my $stagepath = catdir($TEMPDIR, 'staging');
-    mkpath($stagepath);
-    my $logfile = catfile($stagepath, 'log.txt');
-    open( my $logh, ">$logfile" ) or die "Error creating log file";
-    print $logh "Starting SNP finder for experiment id$eid, $stagepath\n";
-
     # Submit workflow to generate experiment
-    my ($job_id, $error_msg) = CoGe::Pipelines::FindSNPs::run(
+    my ($workflow_id, $error_msg) = CoGe::Pipelines::FindSNPs::run(
         db => $coge,
         experiment => $experiment,
         user => $USER
     );
-    # Setup call to analysis script
-#    my $cmd =
-#        catfile($P->{SCRIPTDIR}, 'find_SNPs.pl') . ' '
-#        . "-eid $eid "
-#        . '-uid ' . $USER->id . ' '
-#        . '-jid ' . $job->id . ' '
-#        . "-staging_dir $stagepath "
-#        . "-log_file $logfile "
-#        . "-config $CONFIGFILE";
-    
-    print STDERR "job_id=$job_id\n";
-    print $logh "job_id=$job_id\n";
-    close($logh);
-
-    unless ($job_id) {
+    unless ($workflow_id) {
         print STDERR $error_msg, "\n";
         return encode_json({ error => "Workflow submission failed: " . $error_msg });
     }
     
     # Get tiny link
     my $link = CoGe::Accessory::Web::get_tiny_link(
-        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $job_id
+        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id
     );
     
-    return encode_json({ job_id => $job_id, link => $link });    
+    return encode_json({ job_id => $workflow_id, link => $link });    
 }
 
 sub get_progress_log {
-    my $logfile = catfile($TEMPDIR, 'staging', 'load_experiment', 'log.txt');
-    open( my $fh, $logfile ) or 
-        return encode_json( { status => -1, log => "Error opening log file" } );
+    my %opts         = @_;
+    my $workflow_id = $opts{workflow_id};
+    return unless $workflow_id;
+    
+    my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
+    return unless (-r $results_path);
 
-    my @lines = ();
-    my ($eid, $nid, $new_load_id);
-    my $status = 0;
-    my $message = '';
-    while (<$fh>) {
-        push @lines, $1 if ( $_ =~ /^log: (.+)/i );
-        if ( $_ =~ /All done/i ) {
-            $status = 1;
-            
-            # Generate a new load session ID in case the user chooses to 
-            # reuse the form to start another load.
-            $new_load_id = get_unique_id();
-            
-            last;
-        }
-        elsif ( $_ =~ /experiment id: (\d+)/i ) {
-            $eid = $1;
-        }
-        elsif ( $_ =~ /log: error: input file is empty/i ) {
-            $status = -2;
-            $message = 'No SNPs were detected in this experiment';
-            last;
-        }
-        elsif ( $_ =~ /log: error/i ) {
-            $status = -1;
-            last;
-        }
-    }
+    my $result_file = catfile($results_path, '1');
+    return unless (-r $result_file);
 
-    close($fh);
+    my $result = CoGe::Accessory::TDS::read($result_file);
+    return unless $result;
+    
+    my $new_load_id = get_unique_id();
 
     return encode_json(
-        {
-            status        => $status,
-            experiment_id => $eid,
-            new_load_id   => $new_load_id,
-            message       => $message
+        { 
+            experiment_id => $result->{experiment_id},
         }
     );
 }
+#sub get_progress_log {
+#    my $logfile = catfile($TEMPDIR, 'staging', 'load_experiment', 'log.txt');
+#    open( my $fh, $logfile ) or 
+#        return encode_json( { status => -1, log => "Error opening log file" } );
+#
+#    my @lines = ();
+#    my ($eid, $nid, $new_load_id);
+#    my $status = 0;
+#    my $message = '';
+#    while (<$fh>) {
+#        push @lines, $1 if ( $_ =~ /^log: (.+)/i );
+#        if ( $_ =~ /All done/i ) {
+#            $status = 1;
+#            
+#            # Generate a new load session ID in case the user chooses to 
+#            # reuse the form to start another load.
+#            $new_load_id = get_unique_id();
+#            
+#            last;
+#        }
+#        elsif ( $_ =~ /experiment id: (\d+)/i ) {
+#            $eid = $1;
+#        }
+#        elsif ( $_ =~ /log: error: input file is empty/i ) {
+#            $status = -2;
+#            $message = 'No SNPs were detected in this experiment';
+#            last;
+#        }
+#        elsif ( $_ =~ /log: error/i ) {
+#            $status = -1;
+#            last;
+#        }
+#    }
+#
+#    close($fh);
+#
+#    return encode_json(
+#        {
+#            status        => $status,
+#            experiment_id => $eid,
+#            new_load_id   => $new_load_id,
+#            message       => $message
+#        }
+#    );
+#}
 
 sub send_error_report {
     my %opts = @_;
@@ -870,7 +871,7 @@ sub send_error_report {
 
     my $url = $P->{SERVER} . "$PAGE_TITLE.pl?";
     $url .= "job_id=$job_id;" if $job_id;
-    $url .= "load_id=$load_id";
+    $url .= "load_id=$load_id" if $load_id;
 
     my $email = $P->{SUPPORT_EMAIL};
 
