@@ -997,21 +997,21 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
         $args .= "'args__dsgid','dsg_id'," if $dsgid;
         $args .= "'args__chr','chr',"      if defined $chr;
         $feat_string .=
-"<div class=\"small link\" id=wobble_gc onclick=\"\$('#wobble_gc_histogram').html('loading...');\$('#wobble_gc_histogram').dialog('open');get_wobble_gc([$args],['wobble_gc_histogram'])\">"
+            "<div class=\"small link\" id=wobble_gc onclick=\"\$('#wobble_gc_histogram').html('loading...').show().dialog('open');"
+          . "get_wobble_gc([$args],['wobble_gc_histogram']);\">"
           . "Histogram of wobble codon GC content"
           . "</div>";
         $feat_string .=
-"<div class=\"small link\" id=wobble_gc_diff onclick=\"\$('#wobble_gc_diff_histogram').html('loading...');\$('#wobble_gc_diff_histogram').dialog('open');get_wobble_gc_diff([$args],['wobble_gc_diff_histogram'])\">"
+            "<div class=\"small link\" id=wobble_gc_diff onclick=\"\$('#wobble_gc_diff_histogram').html('loading...').show().dialog('open');"
+          . "get_wobble_gc_diff([$args],['wobble_gc_diff_histogram']);\">"
           . "Histogram of diff(CDS GC vs. wobble codon GC) content"
           . "</div>";
-        $feat_string .= "<div class=\"small link\" id=codon_usage onclick=\"
-        \$('#codon_usage_table').html('loading...');
-        \$('#codon_usage_table').dialog('open');
+        $feat_string .= "<div class=\"small link \" id='codon_usage' onclick=\"
+        \$('#codon_usage_table').html('loading...').show().dialog('open');
         get_codon_usage([$args],['codon_usage_table']); 
         \">" . "Codon usage table" . "</div>";
         $feat_string .= "<div class=\"small link\" id=aa_usage onclick=\"
-        \$('#aa_usage_table').html('loading...');
-        \$('#aa_usage_table').dialog('open');
+        \$('#aa_usage_table').html('loading...').show().dialog('open');
         get_aa_usage([$args],[open_aa_usage_table]); 
         \">" . "Amino acid usage table" . "</div>";
 
@@ -1440,11 +1440,11 @@ sub get_codon_usage {
     }
     %codons = map { $_, $codons{$_} / $codon_total } keys %codons;
 
-    my $html = "Codon Usage: $code_type" .
+    my $html = "<div class='coge-table-header'>Codon Usage: $code_type</div>" .
      	CoGe::Accessory::genetic_code->html_code_table(
         	data => \%codons,
         	code => $code
-    	);
+    	) . '<br>';
     return $html;
 }
 
@@ -1530,8 +1530,9 @@ sub get_aa_usage {
 
 #    my $html1 = "Codon Usage: $code_type";
 #    $html1 .= CoGe::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
-    my $html2 .= "Predicted amino acid usage using $code_type";
-    $html2 .= CoGe::Accessory::genetic_code->html_aa_new( data => \%aa );
+    my $html2 .= "<div class='coge-table-header'>Predicted Amino Acid Usage: $code_type</div>"
+        . CoGe::Accessory::genetic_code->html_aa_new( data => \%aa )
+        . '<br>';
     return $html2; #return $html1, $html2;
 }
 
@@ -1633,21 +1634,21 @@ sub get_wobble_gc {
     $cmd .= " -f $file";
     my $out = $file;
     $out =~ s/txt$/png/;
-    $cmd .= " -o $out";
-    $cmd .= " -t \"CDS wobble gc content\"";
-    $cmd .= " -min 0";
-    $cmd .= " -max 100";
+    $cmd .= " -o $out"
+         . " -t \"CDS wobble gc content\""
+         . " -min 0"
+         . " -max 100";
     $cmd .= " -ht $hist_type" if $hist_type;
     `$cmd`;
     $min = 0   unless defined $min && $min =~ /\d+/;
     $max = 100 unless defined $max && $max =~ /\d+/;
     my $info;
-    $info .= qq{<div class="small">
+    $info .= qq{<div class="coge-table-header">Wobble Codon GC Content</div><div class="small">
 Min: <input type="text" size="3" id="wobble_gc_min" value="$min">
-Max: <input type=text size=3 id=wobble_gc_max value=$max>
-Type: <select id=wobble_hist_type>
-<option value ="counts">Counts</option>
-<option value = "percentage">Percentage</option>
+Max: <input type="text" size="3" id="wobble_gc_max" value="$max">
+Type: <select id="wobble_hist_type">
+<option value="counts">Counts</option>
+<option value="percentage">Percentage</option>
 </select>
 };
     $info =~ s/>Per/ selected>Per/ if $hist_type =~ /per/;
@@ -1659,8 +1660,7 @@ Type: <select id=wobble_hist_type>
     $args .= "'args__max','wobble_gc_max',";
     $args .= "'args__max','wobble_gc_max',";
     $args .= "'args__hist_type', 'wobble_hist_type',";
-    $info .=
-qq{<span class="link" onclick="get_wobble_gc([$args],['wobble_gc_histogram']);\$('#wobble_gc_histogram').html('loading...');">Regenerate histogram</span>};
+    $info .= qq{<span class="link" onclick="get_wobble_gc([$args],['wobble_gc_histogram']).html('loading...');">Regenerate histogram</span>};
     $info .= "</div>";
 
     $info .=
@@ -1677,16 +1677,13 @@ qq{<span class="link" onclick="get_wobble_gc([$args],['wobble_gc_histogram']);\$
     if ( $min || $max ) {
         $min = 0   unless defined $min;
         $max = 100 unless defined $max;
-        $info .=
-qq{<div class=small style="color: red;">Limits set:  MIN: $min  MAX: $max</div>
-};
+        $info .= qq{<div class=small style="color: red;">Limits set:  MIN: $min  MAX: $max</div>};
     }
     my $stuff = join "::", @fids;
-    $info .=
-qq{<div class="link small" onclick="window.open('FeatList.pl?fid=$stuff')">Open FeatList of Features</div>};
+    $info .= qq{<div class="link small" onclick="window.open('FeatList.pl?fid=$stuff')">Open FeatList of Features</div>};
     $out =~ s/$TEMPDIR/$TEMPURL/;
     my $hist_img = "<img src=\"$out\">";
-    return $info . "<br>" . $hist_img;
+    return $info . "<br>" . $hist_img . '<br>';
 }
 
 sub get_wobble_gc_diff {
@@ -1752,19 +1749,20 @@ sub get_wobble_gc_diff {
     $cmd .= " -f $file";
     my $out = $file;
     $out =~ s/txt$/png/;
-    $cmd .= " -o $out";
-    $cmd .= " -t \"CDS GC - wobble gc content\"";
+    $cmd .= " -o $out"
+         . " -t \"CDS GC - wobble gc content\"";
     `$cmd`;
     my $sum = 0;
     map { $sum += $_ } @data;
     my $mean = sprintf( "%.2f", $sum / scalar @data );
-    my $info = "Mean $mean%";
-    $info .= " (";
+    my $info = "<div class='coge-table-header'>CDS GC vs. Wobble Codon GC</div>"
+        . "<div class='small'>Mean $mean%"
+        . " (";
     $info .= $mean > 0 ? "CDS" : "wobble";
-    $info .= " is more GC rich)";
+    $info .= " is more GC rich)</div>";
     $out =~ s/$TEMPDIR/$TEMPURL/;
     my $hist_img = "<img src=\"$out\">";
-    return $info . "<br>" . $hist_img;
+    return $info . "<div class='padded'>" . $hist_img . "</div>";
 }
 
 sub get_chr_length_hist {
@@ -1823,7 +1821,7 @@ sub get_chr_length_hist {
       . " nt</table>";
     $out =~ s/$TEMPDIR/$TEMPURL/;
     my $hist_img = "<img src=\"$out\">";
-    return $info . "<br>" . $hist_img;
+    return $info . "<div class='padded'>" . $hist_img . "</div>";
 }
 
 sub get_total_length_for_ds {
