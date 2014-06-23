@@ -1325,6 +1325,14 @@ sub get_contents {
     
     #print STDERR "get_contents: time5=" . ((time - $start_time)*1000) . "\n";
     if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity_analyses} ) {
+        push @rows, 
+          { CONTENTS_ITEM_ID   => 0,
+            CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_analyses},
+            CONTENTS_ITEM_INFO => '<span class="small alert">Please note: This area is undergoing changes and the analyses shown do not reflect recent activity.</span>',
+            #CONTENTS_ITEM_LINK => undef,
+            CONTENTS_ITEM_SELECTABLE => 0
+          };
+        
         foreach my $entry (
             $USER->jobs(
                 {},
