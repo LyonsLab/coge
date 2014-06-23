@@ -37,7 +37,7 @@ sub generate_features {
             ["-ftid", $args{fid}, 0],
             ["-prot", $args{protein}, 0],
         ],
-        output => [$output_file]
+        outputs => [$output_file]
     );
 }
 
