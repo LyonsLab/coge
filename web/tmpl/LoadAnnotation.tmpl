@@ -56,7 +56,7 @@ function file_finished(size, url) {
 }
 
 function file_canceled() {
-	$('#select_file_button').fadeIn();
+	$('#select_file_button').show();
 }
 
 function create_source() {
@@ -410,9 +410,12 @@ function load_succeeded(obj) {
 }
 
 function reset_load() {
-	clear_list();
 	window.history.pushState({}, "Title", PAGE_NAME);
 	$('#load_dialog').dialog('close');
+	
+    // Reset file selector
+    file_canceled();
+    clear_list();
 }
 
 function continue_to_view() {
@@ -519,7 +522,7 @@ function more() {
   <tr>
     <td>Data file:</td>
     <td>
-      <table id='file_table' class="small"></table>
+      <table id='file_table' class="small" style="display:inline;"></table>
       <span id="select_file_button" onClick="$('#file_select_dialog').dialog('open');" class='ui-button ui-corner-all'> Select Data File</span>
     </td>
   </tr>
