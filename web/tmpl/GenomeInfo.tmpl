@@ -5,13 +5,17 @@
 <script language="javascript" type="text/javascript" src="./js/jquery.fileupload.js"></script>
 
 <script language="javascript">
+var page_name = "<TMPL_VAR NAME='PAGE_NAME'>",
+    gid = '<TMPL_VAR NAME="GID">',
+    job_id = '<TMPL_VAR NAME="JOB_ID">';
+
 $(document).ready(function() {
     pageObj = new Object();
     pageObj.timers = new Array();
 
     $.ajaxSetup({
         type: "GET",
-        url: '<TMPL_VAR NAME="PAGE_NAME">',
+        url: page_name,
         timeout: Math.pow(100, 10),
         dataType: "html",
         cache: false,
@@ -25,7 +29,16 @@ $(document).ready(function() {
 
     set_annotation_table();
 
-    init_annotation_dialog(<TMPL_VAR NAME="GID">, '<TMPL_VAR NAME="DEFAULT_TYPE">');
+    init_annotation_dialog(gid, '<TMPL_VAR NAME="DEFAULT_TYPE">');
+
+    // Open status dialog
+    if ('<TMPL_VAR NAME="OPEN_STATUS">') {
+        $('#loading_msg').hide();
+        $('#load_dialog').dialog('open');
+        if (job_id) { // JEX status for FASTQ data type
+            update_dialog("jex/status/" + job_id, "#load_dialog", progress_formatter);
+        }
+    }
 });
 
 function get_gc_content(id, fname) {
@@ -40,7 +53,7 @@ function get_gc_content(id, fname) {
         dataType: "html",
         data: {
             fname: fname,
-            dsgid: <TMPL_VAR NAME='GID'>,
+            dsgid: gid,
             gstid: $("#gstid").val()
         },
         success: function(data) {
@@ -73,7 +86,7 @@ function get_feat_gc(opts){
 
     $.ajax({
         data: {
-                dsgid: '<TMPL_VAR NAME="GID">',
+                dsgid: gid,
                 jquery_ajax: 1,
                     fname: 'get_gc_for_feature_type',
                 dsid: dsid,
@@ -682,6 +695,46 @@ function reset_log() {
     $('#finish_button,#cancel_button').hide();
 }
 
+function reset_load() {
+    window.history.pushState({}, "Title", page_name + "?gid=" + gid);
+    $('#load_dialog').dialog('close');
+}
+
+function load_failed(obj) {
+    // Handle special case of genbank load of existing genome
+    if ( obj && obj.links && obj.links.length ) {
+        var link_text = obj.links.reduce(function(prev, cur) {
+                return prev + '<a href="' + cur + '" target=_new>' + cur + '</a>' + '<br>';
+            },
+            '<b>Cannot load because the data already exist in the system:</b><br>');
+        var log = $('#load_log');
+        log.html( log.html() + link_text );
+    }
+
+    // Update dialog
+    $('#loading_msg').hide();
+    $('#error_msg').fadeIn();
+    $('#cancel_button').fadeIn();
+
+//    $.ajax({
+//        data: {
+//            fname: "send_error_report",
+//            load_id: load_id,
+//            job_id: job_id
+//        }
+//    });
+}
+
+function load_succeeded(obj) {
+    // Update globals
+    //load_id = obj.new_load_id; // for reusing page to load again // mdb removed 6/5/14
+    genome_id = obj.genome_id; // for continuing to GenomeInfo
+
+    // Update dialog
+    $('#loading_msg').hide();
+    $('#finished_msg,#finish_button,#ok_button').fadeIn();
+}
+
 function check_login() {
     var logged_in = false;
 
@@ -718,78 +771,199 @@ function copy_genome(mask, seq_only) {
     // Open status dialog right away - issue 101
     reset_log();
     if (mask) {
-        $('#status_dialog').dialog('option', 'title', 'Copying & Masking Genome');
+        $('#load_dialog').dialog('option', 'title', 'Copying & Masking Genome');
     }
     else if (seq_only) {
-        $('#status_dialog').dialog('option', 'title', 'Copying Genome (No Annotations)');
+        $('#load_dialog').dialog('option', 'title', 'Copying Genome (No Annotations)');
     }
     else {
-        $('#status_dialog').dialog('option', 'title', 'Copying Genome');
+        $('#load_dialog').dialog('option', 'title', 'Copying Genome');
     }
-    $('#status_dialog').dialog('open');
-    $('#status_log').html('Initializing ...');
+    $('#load_dialog').dialog('open');
+//   $('#status_log').html('Initializing ...');
 
     $.ajax({
+        dataType: "json",
         data: {
             fname: 'copy_genome',
             load_id: '<TMPL_VAR NAME="LOAD_ID">',
             gid: '<TMPL_VAR NAME="GID">',
             mask: mask,
-	    seq_only: seq_only,
+            seq_only: seq_only,
             timestamp: new Date().getTime()
         },
-        success : function(error) {
-            if (error) {
-                alert(error);
+        success : function(data) {
+            if (data.error) {
+                alert(data.error);
                 return;
             }
 
-            // Add load_id to browser URL
-            //window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?load_id=<TMPL_VAR NAME='LOAD_ID'>");
+            job_id = data.job_id;
 
-            // Start status update
-            setTimeout(function() { get_log(); }, 1000);
+            // Set link in status dialog
+            $('#loading_msg span a').attr('href', data.link).html(data.link);
+
+            // Add load_id to browser URL
+            window.history.pushState({}, "Title", page_name + "?gid=" + gid + "&job_id=" + data.job_id); // Add job_id to browser URL
+            update_dialog("jex/status/" + data.job_id, "#load_dialog", progress_formatter);
         }
         // TODO: handle error, show in status dialog
     });
 }
 
-function get_log() {
+
+function progress_formatter(item) {
+    var msg;
+    var row = $('<li>'+ item.description + ' </li>');
+    row.addClass('small');
+
+    var job_status = $('<span></span>');
+
+    if (item.status == 'scheduled')
+        job_status.append(item.status).addClass('down bold');
+    else if (item.status == 'completed')
+        job_status.append(item.status).addClass('completed bold');
+    else if (item.status == 'running')
+        job_status.append(item.status).addClass('running bold');
+    else if (item.status == 'skipped')
+        job_status.append("already generated").addClass('skipped bold');
+    else if (item.status == 'cancelled')
+        job_status.append(item.status).addClass('alert bold');
+    else if (item.status == 'failed')
+        job_status.append(item.status).addClass('alert bold');
+    else
+        return;
+
+    row.append(job_status);
+
+    if (item.elapsed)  {
+        row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
+    }
+
+    return row;
+}
+
+function update_dialog(request, identifier, formatter) {
+    var get_status = function () {
+        $.ajax({
+            type: 'GET',
+            url: request,
+            dataType: 'json',
+            success: update_callback,
+            error: update_callback,
+        });
+    };
+
+    var update_callback = function(json) {
+        var dialog = $(identifier);
+        var workflow_status = $("<p></p>");
+        var data = $("<ul></ul>");
+        var results = [];
+        var current_status;
+        var timeout = 2000;
+
+        var callback = function() {
+            update_dialog(request, identifier, formatter);
+        }
+
+        if (json.error) {
+            pageObj.error++;
+            if (pageObj.error > 3) {
+                workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
+                load_failed();
+                return;
+            }
+        } else {
+            pageObj.error = 0;
+        }
+
+        if (json.status) {
+            current_status = json.status.toLowerCase();
+            workflow_status.html("Workflow status: ");
+            workflow_status.append($('<span></span>').html(json.status));
+            workflow_status.addClass('bold');
+        } else {
+            setTimeout(callback, timeout);
+            return;
+        }
+
+        if (json.jobs) {
+            var jobs = json.jobs;
+            for (var index = 0; index < jobs.length; index++) {
+                var item = formatter(jobs[index]);
+                if (item) {
+                    results.push(item);
+                }
+            }
+        }
+
+        if (!dialog.dialog('isOpen')) {
+            return;
+        }
+
+        //FIXME Update when a workflow supports elapsed time
+        if (current_status == "completed") {
+            var total = json.jobs.reduce(function(a, b) {
+                if (!b.elapsed) return a;
+
+                return a + b.elapsed;
+            }, 0);
+
+            var duration = coge.utils.toPrettyDuration(total);
+
+            workflow_status.append("<br>Finished in " + duration);
+            workflow_status.find('span').addClass('completed');
+            get_load_log(function(result) {
+                load_succeeded(result);
+            });
+
+        }
+        else if (current_status == "failed"
+                || current_status == "error"
+                || current_status == "terminated"
+                || current_status == "cancelled")
+        {
+            workflow_status.find('span').addClass('alert');
+            get_load_log(function(result) {
+                load_failed(result);
+            });
+        }
+        else if (current_status == "notfound") {
+            setTimeout(callback, timeout);
+            return;
+        }
+        else {
+            workflow_status.find('span').addClass('running');
+            setTimeout(callback, timeout);
+        }
+
+        results.push(workflow_status);
+        data.append(results);
+        dialog.find('#load_log').html(data);
+    };
+
+    get_status();
+}
+
+function get_load_log(callback) {
     $.ajax({
+        dataType:    'json',
         data: {
-            dataType: 'text',
-            fname: 'get_copy_log',
-            load_id: '<TMPL_VAR NAME="LOAD_ID">'
+            fname:       'get_load_log',
+            workflow_id: job_id,
+            timestamp:   new Date().getTime()
         },
         success : function(data) {
-            var obj = jQuery.parseJSON(data);
-            if (obj.log) {
-                $('#status_log').html(obj.log.join('<BR>'));
-                var height = $('#status_log')[0].scrollHeight;
-                $("#status_log").animate({ scrollTop: height}, 500);
-            }
-
-            if (obj.status == 1) {
-                $('#new_genome_id').val( obj.genome_id );
-                $('#status_msg').hide();
-                $('#finished_msg').fadeIn();
-                $('#ok_button').fadeIn();
-                $('#finish_button').fadeIn();
-            }
-            else if (obj.status == -1) {
-                $('#status_msg').hide();
-                $('#error_msg').fadeIn();
-                $('#cancel_button').fadeIn();
-            }
-            else {
-                setTimeout(function() { get_log(); }, 1000);
+            if (callback) {
+                callback(data);
+                return;
             }
         }
     });
 }
 
 function continue_to_view() {
-    var gid = $('#new_genome_id').val();
+    var gid = genome_id;
     window.location.href = "GenomeInfo.pl?gid=" + gid;
 }
 
@@ -1292,3 +1466,19 @@ Are you sure you want to move this genome into your trash?<p>
     </div>
     <br>
 </TMPL_IF>
+
+
+<div id="load_dialog" class="hidden dialog_box" title="Copying Genome ...">
+  <div id="load_log" class="small ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
+  </div>
+  <br>
+  <div id="loading_msg">
+    <span class="small" style="float:right;">Link: <a></a></span>
+    Please wait ... <img src="picts/ajax-loader.gif"/>
+  </div>
+  <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
+  <span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
+  <span id="ok_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all">Load Another</span>
+  <span id="finish_button" onClick="continue_to_view();" style="float:right;" class="hidden ui-button ui-corner-all">Continue to GenomeInfo</span>
+  <span id="cancel_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go">Cancel</span>
+</div>

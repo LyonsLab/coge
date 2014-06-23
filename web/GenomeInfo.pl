@@ -8,6 +8,7 @@ use CoGe::Accessory::Jex;
 use CoGe::Accessory::Utils qw(sanitize_name get_unique_id commify execute);
 use CoGe::Accessory::IRODS qw(irods_iput irods_imeta);
 use CoGe::Core::Genome;
+use CoGe::Core::Storage;
 
 use CoGe::Tasks::Genome::Bed;
 use CoGe::Tasks::Genome::Copy;
@@ -28,6 +29,7 @@ no warnings 'redefine';
 use vars qw(
   $P $PAGE_TITLE $TEMPDIR $SECTEMPDIR $LOAD_ID $USER $conf $coge $FORM %FUNCTION
   $MAX_SEARCH_RESULTS $LINK $node_types $ERROR $HISTOGRAM $TEMPURL $SERVER $JEX
+  $OPEN_STATUS $JOB_ID
 );
 
 $PAGE_TITLE = 'GenomeInfo';
@@ -44,6 +46,8 @@ $FORM = new CGI;
 );
 
 $JEX = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
+$OPEN_STATUS = (defined $FORM->param('load_id') || defined $FORM->Vars->{'job_id'});
+$JOB_ID      = $FORM->Vars->{'job_id'};
 $LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $SECTEMPDIR    = $conf->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 $TEMPDIR   = $conf->{TEMPDIR} . "/$PAGE_TITLE";
@@ -68,7 +72,6 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
 #    delete_dataset             => \&delete_dataset,
     check_login                => \&check_login,
     copy_genome                => \&copy_genome,
-    get_copy_log               => \&get_copy_log,
     export_fasta_irods         => \&export_fasta_irods,
     get_annotations            => \&get_annotations,
     add_annotation             => \&add_annotation,
@@ -80,6 +83,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     get_bed                    => \&get_bed,
     get_gff                    => \&get_gff,
     get_tbl                    => \&get_tbl,
+    get_load_log               => \&get_load_log,
     export_bed                 => \&export_bed,
     export_gff                 => \&export_gff,
     export_tbl                 => \&export_tbl,
@@ -1303,40 +1307,49 @@ sub copy_genome {
     $workflow->add_job(%task);
 
     my $response = $JEX->submit_workflow($workflow);
-    $JEX->wait_for_completion($response->{id});
 
-    return;
+    unless ($JEX->is_successful($response)) {
+        return encode_json({error => "The job could not be scheduled"});
+    }
+
+    # Get tiny link
+    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
+        url => $P->{SERVER} . "$PAGE_TITLE.pl?gid=" . $gid . "&job_id=" . $response->{id}
+    );
+
+    return encode_json({
+        job_id => $response->{id},
+        link   => $tiny_link
+    });
 }
 
-sub get_copy_log {
-    #my %opts    = @_;
-    #print STDERR "get_copy_log $LOAD_ID\n";
+sub get_load_log {
+    my %opts         = @_;
+    my $workflow_id = $opts{workflow_id};
+    return unless $workflow_id;
+    #TODO authenticate user access to workflow
 
-    my $logfile = $SECTEMPDIR . "/staging/log.txt";
-    open( my $fh, $logfile ) or
-      return encode_json( { status => -1, log => ["Error opening log file: $logfile: $!"] } );
+    my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
+    return unless (-r $results_path);
 
-    my @lines = ();
-    my $gid;
-    my $status = 0;
-    while (<$fh>) {
-        push @lines, $1 if ( $_ =~ /^log:\s+(.+)/i );
-        if ( $_ =~ /log: Finished copying/i ) {
-            $status = 1;
-            last;
-        }
-        elsif ( $_ =~ /log: Added genome id (\d+)/i ) {
-            $gid = $1;
-        }
-        elsif ( $_ =~ /log: error/i ) {
-            $status = -1;
-            last;
-        }
-    }
-    close($fh);
+    my $result_file = catfile($results_path, '1');
+    return unless (-r $result_file);
+
+    my $result = CoGe::Accessory::TDS::read($result_file);
+
+    return unless $result;
+
+    my $new_load_id = get_unique_id();
+    my $genome_id = (exists $result->{genome_id} ? $result->{genome_id} : undef);
+    my $links = (exists $result->{links} ? $result->{links} : undef);
 
     return encode_json(
-        { status => $status, genome_id => $gid, log => \@lines } );
+        {
+            genome_id   => $genome_id,
+            new_load_id => $new_load_id,
+            links       => $links
+        }
+    );
 }
 
 sub get_aa_usage {
@@ -2006,6 +2019,8 @@ sub generate_body {
 
     $template->param(
         LOAD_ID         => $LOAD_ID,
+        JOB_ID          => $JOB_ID,
+        OPEN_STATUS     => $OPEN_STATUS,
         GID             => $gid,
         GENOME_INFO     => get_genome_info( genome => $genome ) || undef,
         GENOME_DATA     => get_genome_info_details( dsgid => $genome->id) || undef,
