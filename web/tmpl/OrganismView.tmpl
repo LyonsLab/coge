@@ -402,7 +402,7 @@ function export_bed () {
 <div class="padded">
 	<div class="header">Search for organisms and genomes</div>
 	<div class="small padded" style="vertical-align:middle;width:50%;">
-		Organism: <input type="search" placeholder="Search" size="50" value="<TMPL_VAR NAME=ORG_SEARCH>" name="org_search" id="org_search" onkeyup='timing("org_search");'>
+		Organism: <input type="search" placeholder="Search" spellcheck="false" size="50" value="<TMPL_VAR NAME=ORG_SEARCH>" name="org_search" id="org_search" onkeyup='timing("org_search");'>
 		<span class='ui-button ui-corner-all' onClick="timing('org_search');">
 			<span class="ui-icon ui-icon-arrowrefresh-1-w"></span>
 		</span>
