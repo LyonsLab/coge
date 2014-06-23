@@ -10,11 +10,11 @@ var page_name = "<TMPL_VAR NAME=PAGE_NAME>",
     genome_id = "<TMPL_VAR NAME=GID>",
     load_id = "<TMPL_VAR NAME=LOAD_ID>",
     default_type = "<TMPL_VAR NAME=DEFAULT_TYPE>",
-    irods_home = "<TMPL_VAR NAME=IRODS_HOME>",
+    irods_home_path = "<TMPL_VAR NAME=IRODS_HOME>",
     showDialog = parseInt("<TMPL_VAR NAME=OPEN_STATUS>", 10);
 
 // EXPORT DIALOG GLOBALS
-var irods_home = $("<p>Sending to: " + irods_home + "</p>");
+var irods_home = $("<p>Sending to: " + irods_home_path + "</p>");
 var export_error = $("<p></p>")
     .text("Failed to export to the iPlant Data Store.")
     .addClass("alert");
@@ -34,7 +34,7 @@ $(document).ready(function() {
     $.ajaxSetup({
         type: "GET",
         url: page_name,
-        timeout: Math.pow(100, 10),
+        timeout: 86400,
         dataType: "html",
         cache: false,
     });
@@ -168,13 +168,13 @@ function export_features_to_irods(id, feature, isGenome, type) {
         $('#export_log').html(
                 "<br>Copying protein sequences to <br><br>" +
                 '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
-                irods_home + '</a>'
+                irods_home_path + '</a>'
         );
     } else {
         $('#export_log').html(
                     "<br>Copying nucleotide sequences to <br><br>" +
                 '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
-                irods_home + '</a>'
+                irods_home_path + '</a>'
         );
 
     }
@@ -596,7 +596,7 @@ function export_tbl() {
     $('#export_log').html(
             "<br>Copying this genomes's TBL file to <br><br>" +
             '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
-            irods_home + '</a>'
+            irods_home_path + '</a>'
     );
 
     $.ajax({
@@ -637,7 +637,7 @@ function export_bed() {
     $('#export_log').html(
             "<br>Generating/copying this genomes's BED file to <br><br>" +
             '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
-            irods_home + '</a>'
+            irods_home_path + '</a>'
     );
 
     $.ajax({
@@ -677,7 +677,7 @@ function export_fasta_irods() {
     $('#export_log').html(
             "<br>Copying this genomes's FASTA file to <br><br>" +
             '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
-            irods_home + '</a>'
+            irods_home_path + '</a>'
     );
 
     $.ajax({
