@@ -99,7 +99,7 @@ foreach my $feat (@feats) {
     my ($chr) = $feat->chromosome;    #=~/(\d+)/;
     my $name;
 
-    eval {{
+    eval {
         foreach my $n ( $feat->names ) {
             $name = $n;
             last unless $name =~ /\s/;
@@ -125,7 +125,7 @@ foreach my $feat (@feats) {
         say $fh $title, $seq, "\n";
 
         $count++;
-    }};
+    };
 
     if ($@) {
         say $logh "DOWNLOAD ABORTED: $filename";
@@ -135,4 +135,6 @@ foreach my $feat (@feats) {
 
 close($fh);
 close($logh);
-move($file_temp, $file);
+
+# ensure the file has been copied successfully
+exit 1 unless move($file_temp, $file);
