@@ -1954,7 +1954,7 @@ sub export_to_irods {
     say STDERR "IFILE: $file";
 
     #Exit if the file does not exist
-    return 1 unless -r $file and "$file.finished";
+    return 1 unless -r $file;
 
     my $ipath = get_irods_path();
     my $ifile = catfile($ipath, basename($file));
