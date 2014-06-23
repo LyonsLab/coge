@@ -38,7 +38,8 @@ sub copy_and_mask {
             ["-staging_dir", $args{staging_dir}, 0],
             ["-result_dir", $args{result_dir}, 0],
             ["-sequence_only", $args{sequence_only}, 0]
-        ]
+        ],
+        description => "Copy and masking genome..."
     );
 }
 
