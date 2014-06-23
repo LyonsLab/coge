@@ -6,7 +6,6 @@
 <SCRIPT language="JavaScript">
 
 var eid = '<TMPL_VAR NAME="EID">';
-var load_id = '<TMPL_VAR NAME="LOAD_ID">';
 var job_id = '<TMPL_VAR NAME="JOB_ID">';
 var status_url = '<TMPL_VAR NAME="STATUS_URL">';
 var page_name = '<TMPL_VAR NAME="PAGE_NAME">';
@@ -294,7 +293,7 @@ function find_snps() {
     if (!check_and_report_login())
         return;
 
-    //CLEAR DIALOG
+    // Clear dialog
     reset_dialog();
 
     // Open status dialog right away
@@ -307,7 +306,6 @@ function find_snps() {
     $.ajax({
         data: {
             fname: 'find_snps',
-            load_id: load_id,
             eid: eid,
             timestamp: new Date().getTime()
         },
@@ -490,7 +488,6 @@ function progress_failed(obj) {
     $.ajax({
         data: {
             fname: "send_error_report",
-            load_id: load_id,
             job_id: job_id
         }
     });
@@ -498,7 +495,6 @@ function progress_failed(obj) {
 
 function progress_succeeded(obj) {
     // Update globals
-    load_id = obj.new_load_id;          // for reusing page to load again
     experiment_id = obj.experiment_id;  // for continuing to ExperimentView
     
     // Update dialog
@@ -519,7 +515,7 @@ function get_progress_log(callback) {
         data: {
             dataType: 'text',
             fname: 'get_progress_log',
-            load_id: load_id,
+            workflow_id: job_id,
             timestamp: new Date().getTime()
         },
         success : function(data) {
