@@ -1789,6 +1789,7 @@ sub get_tbl {
     $JEX->wait_for_completion($response->{id});
 
     my %json;
+    $json{file} = basename($output);
     $json{files} = [ get_download_url(dsgid => $args{gid}, file => basename($output))];
 
     return encode_json(\%json);
@@ -1845,6 +1846,7 @@ sub get_bed {
     $JEX->wait_for_completion($response->{id});
 
     my %json;
+    $json{file} = basename($output);
     $json{files} = [ get_download_url(dsgid => $args{gid}, file => basename($output))];
 
     return encode_json(\%json);
@@ -1900,6 +1902,7 @@ sub get_gff {
     $JEX->wait_for_completion($response->{id});
 
     my %json;
+    $json{file} = basename($output);
     $json{files} = [ get_download_url(dsgid => $args{gid}, file => basename($output))];
 
     return encode_json(\%json);
