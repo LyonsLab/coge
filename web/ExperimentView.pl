@@ -682,6 +682,8 @@ sub get_experiment_info {
     $html .= $exp->annotation_pretty_print_html( allow_delete => $allow_edit );
     $html .= qq{<a style="font-size: .75em; color: black; float:right;" target="_blank" class='ui-button ui-corner-all ui-button-icon-right' href="GenomeView.pl?gid=$gid&tracks=experiment$eid">View<span class="ui-icon ui-icon-extlink"></span></a>};
 
+    $html .= "<div class='inline'>";
+
     if ($allow_edit) {
         $html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="edit_experiment_info();">Edit Info</span>};
         $html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="\$('#experiment_type_edit_box').dialog('open');">Add Type</span>};
@@ -696,6 +698,8 @@ sub get_experiment_info {
         }
     }
 
+    $html .= "</div>";
+    
     return $html;
 }
 
