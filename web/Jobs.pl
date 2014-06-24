@@ -91,6 +91,9 @@ sub get_jobs_for_user {
     foreach (@entries) {
         my $entry = $workflow_results{$_->workflow_id};
 
+        # A log entry must correspond to a workflow
+        next unless $entry;
+
         push @job_items, {
             id => int($index++),
             user  => $users{$_->user_id},
