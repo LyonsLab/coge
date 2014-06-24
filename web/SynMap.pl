@@ -1341,6 +1341,12 @@ sub go {
     my $feat_type1 = $opts{feat_type1};
     my $feat_type2 = $opts{feat_type2};
 
+    my $basename = $opts{basename};
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(
+        basename => $basename,
+        tempdir  => $TEMPDIR
+    );
+
     my ( $org_name1, $title1 ) = gen_org_name(
         dsgid     => $dsgid1,
         feat_type => $feat_type1,
@@ -1370,11 +1376,6 @@ sub go {
     my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
     my $workflow_name = "synmap-$tiny_id";
 
-    my $basename = $opts{basename};
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(
-        basename => $basename,
-        tempdir  => $TEMPDIR
-    );
     CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Creating Workflow", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
