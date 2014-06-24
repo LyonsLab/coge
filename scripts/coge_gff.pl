@@ -4,7 +4,7 @@ use strict;
 use CoGeX;
 use Getopt::Long;
 use File::Path;
-use File::Spec;
+use File::Spec::Functions;
 use URI::Escape::JavaScript qw(unescape);
 
 our ($DEBUG, $db, $user, $pass, $id, $config, $host, $port, $P,
