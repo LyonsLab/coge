@@ -129,7 +129,7 @@ function schedule(params) {
         success: function(data) {
             $("#overlay").hide();
             status_dialog.dialog('open');
-            if (data.status == 'Attached' || data.status == 'Scheduled') {
+            if (data.status == 'Scheduled' || data.status == 'Running' || data.status === 'Completed') {
                 var link = "Return to this analysis: <a href="
                 + data.link + " onclick=window.open('tiny')"
                 + "target = _new>" + data.link + "</a>";
