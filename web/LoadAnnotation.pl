@@ -25,7 +25,7 @@ no warnings 'redefine';
 use vars qw(
   $P $PAGE_TITLE $LINK
   $TEMPDIR $BINDIR $USER $coge $FORM $TEMPURL
-  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $JOB_ID $OPEN_STATUS
+  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $JOB_ID
 );
 
 $PAGE_TITLE = 'LoadAnnotation';
@@ -39,15 +39,9 @@ $FORM = new CGI;
 $CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
 $BINDIR     = $P->{SCRIPTDIR}; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
 
-# Generate a unique session ID for this load (issue 177).
-# Use existing ID if being passed in with AJAX request.  Otherwise generate
-# a new one.  If passed-in as url parameter then open status window
-# automatically.  This needs to be done right away rather than at load time 
-# so that uploaded/imported files have a place to go.
-$OPEN_STATUS = (defined $FORM->param('load_id') || defined $FORM->Vars->{'job_id'});
-$LOAD_ID     = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
-$JOB_ID      = $FORM->Vars->{'job_id'};
-$TEMPDIR    = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
+$JOB_ID  = $FORM->Vars->{'job_id'};
+$LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
+$TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 
 $MAX_SEARCH_RESULTS = 100;
 
@@ -122,13 +116,12 @@ sub generate_body {
     }
     
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
-        url => $P->{SERVER} . "$PAGE_TITLE.pl?load_id=$LOAD_ID"
+        url => $P->{SERVER} . "$PAGE_TITLE.pl"
     );
 
     $template->param(
     	LOAD_ID       => $LOAD_ID,
     	JOB_ID        => $JOB_ID,
-        OPEN_STATUS   => $OPEN_STATUS,
         STATUS_URL    => 'jex/status/',
         SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
         FILE_SELECT_SINGLE       => 1,
@@ -407,28 +400,6 @@ sub load_annotation {
     # Setup paths to files
     my @files = map { $TEMPDIR . $_->{path} } @$items;
 
-	# Call load script
-#    my $cmd =
-#        "$BINDIR/load_annotation.pl "
-#      . "-user_name $user_name "
-#      . '-name "'
-#      . escape($name) . '" '
-#      . '-desc "'
-#      . escape($description) . '" '
-#      . '-link "'
-#      . escape($link) . '" '
-#      . '-version "'
-#      . escape($version) . '" '
-#      . "-restricted "
-#      . $restricted . ' '
-#      . "-gid $gid "
-#      . '-source_name "'
-#      . escape($source_name) . '" '
-#      . "-staging_dir $stagepath "
-#      . '-data_file "'
-#      . escape( join( ',', @files ) ) . '" '
-#      . "-config $CONFIGFILE";
-
     # Submit workflow to add genome
     my ($workflow_id, $error_msg) = create_annotation_dataset(
         user => $USER, 
@@ -522,13 +493,10 @@ sub get_load_log {
     my $result = CoGe::Accessory::TDS::read($result_file);
     return unless $result;
     
-    my $new_load_id = get_unique_id();
-
     return encode_json(
         { 
             genome_id   => $result->{genome_id},
             dataset_id  => $result->{dataset_id},
-            new_load_id => $new_load_id
         }
     );
 }

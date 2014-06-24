@@ -29,7 +29,7 @@ no warnings 'redefine';
 use vars qw(
   $P $PAGE_TITLE $TEMPDIR $SECTEMPDIR $LOAD_ID $USER $conf $coge $FORM %FUNCTION
   $MAX_SEARCH_RESULTS $LINK $node_types $ERROR $HISTOGRAM $TEMPURL $SERVER $JEX
-  $OPEN_STATUS $JOB_ID
+  $JOB_ID
 );
 
 $PAGE_TITLE = 'GenomeInfo';
@@ -38,7 +38,6 @@ $PAGE_TITLE = 'GenomeInfo';
 #my $node_types = CoGeX::node_types();
 $node_types = CoGeX::node_types();
 
-
 $FORM = new CGI;
 ( $coge, $USER, $conf, $LINK ) = CoGe::Accessory::Web->init(
     cgi => $FORM,
@@ -46,9 +45,8 @@ $FORM = new CGI;
 );
 
 $JEX = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
-$OPEN_STATUS = (defined $FORM->param('load_id') || defined $FORM->Vars->{'job_id'});
-$JOB_ID      = $FORM->Vars->{'job_id'};
-$LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
+$JOB_ID  = $FORM->Vars->{'job_id'};
+$LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $SECTEMPDIR    = $conf->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 $TEMPDIR   = $conf->{TEMPDIR} . "/$PAGE_TITLE";
 $TEMPURL   = $conf->{TEMPURL} . "/$PAGE_TITLE";
@@ -1339,14 +1337,12 @@ sub get_load_log {
 
     return unless $result;
 
-    my $new_load_id = get_unique_id();
     my $genome_id = (exists $result->{genome_id} ? $result->{genome_id} : undef);
     my $links = (exists $result->{links} ? $result->{links} : undef);
 
     return encode_json(
         {
             genome_id   => $genome_id,
-            new_load_id => $new_load_id,
             links       => $links
         }
     );
@@ -2023,7 +2019,6 @@ sub generate_body {
     $template->param(
         LOAD_ID         => $LOAD_ID,
         JOB_ID          => $JOB_ID,
-        OPEN_STATUS     => $OPEN_STATUS,
         GID             => $gid,
         GENOME_INFO     => get_genome_info( genome => $genome ) || undef,
         GENOME_DATA     => get_genome_info_details( dsgid => $genome->id) || undef,

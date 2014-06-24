@@ -162,7 +162,7 @@ if ($assemble) {
     my ( $org1_association, $org2_association ) =
       $synmap_report->parse_syn_blocks( file => $alignfile )
       if $assemble;
-#    print STDERR Dumper $org1_association, $org2_association;
+    #print STDERR Dumper $org1_association, $org2_association;
     my $output;
     if (   @$org1_association > @$org2_association && $assemble > 0
         || @$org1_association < @$org2_association && $assemble < 0 )

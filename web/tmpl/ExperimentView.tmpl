@@ -5,10 +5,11 @@
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
 <SCRIPT language="JavaScript">
 
+const STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
+const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
+
 var eid = '<TMPL_VAR NAME="EID">';
 var job_id = '<TMPL_VAR NAME="JOB_ID">';
-var status_url = '<TMPL_VAR NAME="STATUS_URL">';
-var page_name = '<TMPL_VAR NAME="PAGE_NAME">';
 
 $(document).ready(function() {
     pageObj = new Object();
@@ -16,7 +17,7 @@ $(document).ready(function() {
 
     $.ajaxSetup({
         type: "GET",
-        url: page_name,
+        url: PAGE_NAME,
         dataType: "html",
         cache: false,
     });
@@ -35,12 +36,10 @@ $(document).ready(function() {
     init_annotation_dialog(eid, '<TMPL_VAR NAME="DEFAULT_TYPE">');
     
     // Open status dialog
-    if ('<TMPL_VAR NAME="OPEN_STATUS">') {
+    if (job_id) {
         $('#progress_msg').hide();
         $('#progress_dialog').dialog('open');
-        if (job_id) { // JEX status for FASTQ data type
-            update_dialog(status_url + job_id, "#progress_dialog", progress_formatter);
-        }
+        update_dialog(STATUS_URL + job_id, "#progress_dialog", progress_formatter);
     }
 });
 
@@ -192,7 +191,7 @@ function reset_dialog() {
 
 function reset_load() {
 	$('#progress_dialog').dialog('close');
-	window.history.pushState({}, "Title", page_name + "?eid=" + eid);
+	window.history.pushState({}, "Title", PAGE_NAME + "?eid=" + eid);
 }
 
 function download_files() {
@@ -322,8 +321,8 @@ function find_snps() {
             // Start status update
             if (obj.job_id) { // JEX status for load FASTQ
                 job_id = obj.job_id;
-                window.history.pushState({}, "Title", page_name + "?eid=" + eid + "&job_id=" + obj.job_id); // Add job_id to browser URL
-                update_dialog(status_url + obj.job_id, "#progress_dialog", progress_formatter);
+                window.history.pushState({}, "Title", PAGE_NAME + "?eid=" + eid + "&job_id=" + obj.job_id); // Add job_id to browser URL
+                update_dialog(STATUS_URL + obj.job_id, "#progress_dialog", progress_formatter);
             }
         }
         // TODO: handle error, show in status dialog

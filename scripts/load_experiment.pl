@@ -126,11 +126,11 @@ if ( $staged_data_file =~ /\.gz$/ ) {
     #print STDERR "$cmd\n";
     print $log "log: Decompressing '$filename'\n";
     `$cmd`;
-    $data_file =~ s/\.gz$//;
+    $staged_data_file =~ s/\.gz$//;
 }
 
 # Determine file type
-my ($file_type, $data_type) = detect_data_type($file_type, $data_file);
+my ($file_type, $data_type) = detect_data_type($file_type, $staged_data_file);
 if ( !$file_type or !$data_type ) {
     print $log "log: error: unknown or unsupported file type '$file_type'\n";
     exit(-1);
@@ -157,7 +157,7 @@ my %genome_chr = map { $_ => 1 } $genome->chromosomes;
 # Validate the data file
 print $log "log: Validating data file\n";
 if (-s $staged_data_file == 0) {
-    print $log "log: error: input file is empty\n";
+    print $log "log: error: input file '$staged_data_file' is empty\n";
     exit(-1);
 }
 my $count = 0;

@@ -7,7 +7,7 @@ var LOG_POLL_TIME = 2000;
 var timestamps = new Array();
 var load_id    = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
 var job_id     = '<TMPL_VAR NAME="JOB_ID">';
-var status_url = '<TMPL_VAR NAME="STATUS_URL">';
+var STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
 var PAGE_NAME  = '<TMPL_VAR NAME="PAGE_NAME">';
 
 $(document).ready(function(){
@@ -38,12 +38,10 @@ $(document).ready(function(){
 	});
 	
 	// Open status dialog
-    if ('<TMPL_VAR NAME="OPEN_STATUS">') {
+    if (job_id) {
         $('#loading_msg').hide();
         $('#load_dialog').dialog('open');
-        if (job_id) { // JEX status for FASTQ data type
-            update_dialog(status_url + job_id, "#load_dialog", progress_formatter);
-        }
+        update_dialog(STATUS_URL + job_id, "#load_dialog", progress_formatter);
     }
 });
 
@@ -185,7 +183,7 @@ function load_annotation() {
             if (obj.job_id) { // JEX status for load FASTQ
                 job_id = obj.job_id;
                 window.history.pushState({}, "Title", PAGE_NAME + "?gid=" + gid + "&job_id=" + obj.job_id); // Add job_id to browser URL
-                update_dialog(status_url + obj.job_id, "#load_dialog", progress_formatter);
+                update_dialog(STATUS_URL + obj.job_id, "#load_dialog", progress_formatter);
             }
 		}
 		// TODO: handle error, show in status dialog
@@ -401,7 +399,6 @@ function load_failed() {
 
 function load_succeeded(obj) {
     // Update globals
-    //load_id = obj.new_load_id; // for reusing page to load again // mdb removed 6/5/14
     genome_id = obj.genome_id; // for continuing to GenomeInfo
 
     // Update dialog

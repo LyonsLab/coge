@@ -28,7 +28,7 @@ no warnings 'redefine';
 
 use vars qw(
   $P $PAGE_TITLE $TEMPDIR $USER $coge $FORM $LINK
-  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $JOB_ID $OPEN_STATUS
+  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $JOB_ID
 );
 
 $PAGE_TITLE = 'LoadExperiment';
@@ -41,14 +41,8 @@ $FORM = new CGI;
 
 $CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
 
-# Generate a unique session ID for this load (issue 177).
-# Use existing ID if being passed in with AJAX request.  Otherwise generate
-# a new one.  If passed-in as url parameter then open status window
-# automatically.
-# mdb 2/10/14: added ability to load status for specified job_id instead of load_id
-$OPEN_STATUS = (defined $FORM->param('load_id') || defined $FORM->Vars->{'job_id'});
-$LOAD_ID = ( $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
-$JOB_ID = $FORM->Vars->{'job_id'};
+$JOB_ID  = $FORM->Vars->{'job_id'};
+$LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 
 $MAX_SEARCH_RESULTS = 100;
@@ -125,7 +119,6 @@ sub generate_body {
     $template->param(
     	LOAD_ID     => $LOAD_ID,
     	JOB_ID      => $JOB_ID,
-        OPEN_STATUS => $OPEN_STATUS,
         STATUS_URL  => 'jex/status/',
         FILE_SELECT_SINGLE       => 1,
         DEFAULT_TAB              => 0,
@@ -493,7 +486,6 @@ sub load_experiment {
             file_type => $file_type
         );
     }
-    
     unless ($job_id) {
         print STDERR $error_msg, "\n";
         return encode_json({ error => "Workflow submission failed: " . $error_msg });
@@ -519,7 +511,7 @@ sub execute { # FIXME this code is duplicate in other places like load_genome.pl
     my $cmdStatus = $?;
     if ( $cmdStatus != 0 ) {
         print $log "log: error: command failed with rc=$cmdStatus: $cmd\n" if $log;
-        exit(-1);
+        CORE::exit(-1);
     }
 }
 
@@ -538,13 +530,10 @@ sub get_load_log {
     my $result = CoGe::Accessory::TDS::read($result_file);
     return unless $result;
     
-    my $new_load_id = get_unique_id();
-
     return encode_json(
         { 
             experiment_id => $result->{experiment_id},
-            notebook_id   => $result->{notebook_id},
-            new_load_id   => $new_load_id, 
+            notebook_id   => $result->{notebook_id}
         }
     );
 }

@@ -3,18 +3,19 @@
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
 
 <SCRIPT language="JavaScript">
+const STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
+const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
+
 var timestamps = new Array();
 var load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
 var job_id = '<TMPL_VAR NAME="JOB_ID">';
-var status_url = '<TMPL_VAR NAME="STATUS_URL">';
-var page_name = '<TMPL_VAR NAME="PAGE_NAME">';
 var experiment_id;
 var notebook_id;
 
 $(document).ready(function(){
     $.ajaxSetup({
         type: "GET",
-        url: page_name,
+        url: PAGE_NAME,
         dataType: "html",
         cache: false,
     });
@@ -37,12 +38,10 @@ $(document).ready(function(){
     });
 
     // Open status dialog
-    if ('<TMPL_VAR NAME="OPEN_STATUS">') {
+    if (job_id) {
         $('#loading_msg').hide();
         $('#load_dialog').dialog('open');
-        if (job_id) { // JEX status for FASTQ data type
-            update_dialog(status_url + job_id, "#load_dialog", progress_formatter);
-        }
+        update_dialog(STATUS_URL + job_id, "#load_dialog", progress_formatter);
     }
 });
 
@@ -158,8 +157,8 @@ function load_batch() {
             // Start status update
             if (obj.job_id) { // JEX status for load FASTQ
                 job_id = obj.job_id;
-                window.history.pushState({}, "Title", page_name + "?job_id=" + obj.job_id); // Add job_id to browser URL
-                update_dialog(status_url + obj.job_id, "#load_dialog", progress_formatter);
+                window.history.pushState({}, "Title", PAGE_NAME + "?job_id=" + obj.job_id); // Add job_id to browser URL
+                update_dialog(STATUS_URL + obj.job_id, "#load_dialog", progress_formatter);
             }
 //            else { // non-JEX old method for all other data types
 //                window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?load_id=" + load_id); // Add load_id to browser URL
@@ -238,7 +237,6 @@ function load_failed() {
 
 function load_succeeded(obj) {
     // Update globals
-    load_id = obj.new_load_id;          // for reusing page to load again
     experiment_id = obj.experiment_id;  // for continuing to ExperimentView
     notebook_id = obj.notebook_id;      // for continuing to NotebookView
 
@@ -264,7 +262,7 @@ function load_succeeded(obj) {
 }
 
 function reset_load() {
-    window.history.pushState({}, "Title", page_name);
+    window.history.pushState({}, "Title", PAGE_NAME);
     $('#load_dialog').dialog('close');
 
     // Reset file selector

@@ -77,7 +77,7 @@ $link = CoGe::Accessory::Web::get_tiny_link(
 
 my $synmap_report = new CoGe::Accessory::SynMap_report;
 $synfile = gunzip($synfile);
-$synfile = gunzip( $synfile . ".gz" );
+gunzip( $synfile . ".gz" ); #EL: gunzip was returning the input filename with the .gz extension.  Causing failures later in the code.
 
 my ( $chr1, $chr2, $dsgid1, $dsgid2 ) =
   $synmap_report->parse_syn_blocks( file => $synfile );
