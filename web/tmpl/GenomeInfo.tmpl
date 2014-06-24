@@ -5,13 +5,14 @@
 <script language="javascript" type="text/javascript" src="./js/jquery.fileupload.js"></script>
 
 <script language="javascript">
-var page_name = "<TMPL_VAR NAME=PAGE_NAME>",
-    job_id = "<TMPL_VAR NAME=JOB_ID>",
+
+const PAGE_NAME = "<TMPL_VAR NAME=PAGE_NAME>";
+
+var job_id = "<TMPL_VAR NAME=JOB_ID>",
     genome_id = "<TMPL_VAR NAME=GID>",
     load_id = "<TMPL_VAR NAME=LOAD_ID>",
     default_type = "<TMPL_VAR NAME=DEFAULT_TYPE>",
-    irods_home_path = "<TMPL_VAR NAME=IRODS_HOME>",
-    showDialog = parseInt("<TMPL_VAR NAME=OPEN_STATUS>", 10);
+    irods_home_path = "<TMPL_VAR NAME=IRODS_HOME>";
 
 // EXPORT DIALOG GLOBALS
 var irods_home = $("<p>Sending to: " + irods_home_path + "</p>");
@@ -33,7 +34,7 @@ $(document).ready(function() {
 
     $.ajaxSetup({
         type: "GET",
-        url: page_name,
+        url: PAGE_NAME,
         timeout: 86400,
         dataType: "html",
         cache: false,
@@ -50,12 +51,10 @@ $(document).ready(function() {
     init_annotation_dialog(genome_id, default_type);
 
     // Open status dialog
-    if (showDialog) {
+    if (job_id) {
         $('#loading_msg').hide();
         $('#load_dialog').dialog('open');
-        if (job_id) { // JEX status for FASTQ data type
-            update_dialog("jex/status/" + job_id, "#load_dialog", progress_formatter);
-        }
+        update_dialog("jex/status/" + job_id, "#load_dialog", progress_formatter);
     }
 });
 
@@ -705,7 +704,7 @@ function reset_log() {
 }
 
 function reset_load() {
-    window.history.pushState({}, "Title", page_name + "?gid=" + genome_id);
+    window.history.pushState({}, "Title", PAGE_NAME + "?gid=" + genome_id);
     $('#load_dialog').dialog('close');
 }
 
@@ -736,7 +735,6 @@ function load_failed(obj) {
 
 function load_succeeded(obj) {
     // Update globals
-    //load_id = obj.new_load_id; // for reusing page to load again // mdb removed 6/5/14
     genome_id = obj.genome_id; // for continuing to GenomeInfo
 
     // Update dialog
@@ -813,7 +811,7 @@ function copy_genome(mask, seq_only) {
             $('#loading_msg span a').attr('href', data.link).html(data.link);
 
             // Add load_id to browser URL
-            window.history.pushState({}, "Title", page_name + "?gid=" + genome_id + "&job_id=" + data.job_id); // Add job_id to browser URL
+            window.history.pushState({}, "Title", PAGE_NAME + "?gid=" + genome_id + "&job_id=" + data.job_id); // Add job_id to browser URL
             update_dialog("jex/status/" + data.job_id, "#load_dialog", progress_formatter);
         }
         // TODO: handle error, show in status dialog
