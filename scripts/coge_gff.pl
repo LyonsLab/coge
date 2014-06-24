@@ -80,7 +80,7 @@ my ($item, $org);
 $item = $coge->resultset('Genome')->find($id);
 $org = $item->organism->name . "id";
 
-open(my $fh, ">", $file) or die "Error creating gff file";
+open(my $fh, ">", $file_temp) or die "Error creating gff file";
 
 print $fh $item->gff(
     print                     => 0,
