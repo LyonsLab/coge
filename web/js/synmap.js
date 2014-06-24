@@ -1024,7 +1024,7 @@ function checkRequestSize(url) {
         return my;
     };
 
-    var PlotBuilder = function() {
+    var PlotBuilder = synmap.PlotBuilder = function() {
         var my = {},
             genomes = {},
             layers = {},
