@@ -85,7 +85,7 @@ function launch(dialog, results, options) {
                     .attr("href", response.logfile)
                     .html("Logfile");
 
-                status_dialog.find(".dialog-link").html(link);
+                status_dialog.find(".dialog-link").html(link_message);
                 status_dialog.find(".dialog-log").html(logfile);
 
                 options.fname = "get_results";
