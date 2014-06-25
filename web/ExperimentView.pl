@@ -554,19 +554,6 @@ sub get_download_url {
     return join "/", @url;
 }
 
-sub execute {
-    my $cmd = shift;
-
-    my @cmdOut = qx{$cmd};
-    my $cmdStatus = $?;
-
-    if ($cmdStatus != 0) {
-        say STDERR "log: error: command failed with rc=$cmdStatus: $cmd";
-    }
-
-    return $cmdStatus;
-}
-
 sub get_file_urls {
     my %opts = @_;
     my $eid = $opts{eid};
