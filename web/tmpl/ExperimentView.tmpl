@@ -38,7 +38,7 @@ $(document).ready(function() {
     // Open status dialog
     if (job_id) {
         $('#progress_msg').hide();
-        $('#progress_dialog').dialog('open');
+        $('#progress_dialog').dialog({ autoOpen: true, title: "Finding SNPs ..." });
         update_dialog(STATUS_URL + job_id, "#progress_dialog", progress_formatter);
     }
 });
