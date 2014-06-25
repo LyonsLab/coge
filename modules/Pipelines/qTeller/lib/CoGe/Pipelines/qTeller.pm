@@ -138,7 +138,7 @@ sub run {
     push @jobs, \%load_bed;
 
     # Create notebook
-    my %notebook = create_notebook_job($metadata, $include_csv, 1, 1, $user, $annotations, $staging_dir);
+    my %notebook = create_notebook_job($metadata, $include_csv, 1, 1, $user, $annotations, $staging_dir, $result_dir);
     push @jobs, \%notebook;
 
     for my $job (@jobs) {
@@ -546,7 +546,7 @@ sub create_load_bed_job {
 }
 
 sub create_notebook_job {
-    my ($md, $csv, $bam, $bed, $user, $annotations, $staging_dir) = @_;
+    my ($md, $csv, $bam, $bed, $user, $annotations, $staging_dir, $result_dir) = @_;
     my $cmd = catfile($CONF->{SCRIPTDIR}, "create_notebook.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
@@ -560,6 +560,7 @@ sub create_notebook_job {
         ['-annotations', $annotations, 0],
         ['-config', $CONF->{_CONFIG_PATH}, 1],
         ['-log', catfile($staging_dir, "log.txt"), 0],
+        ['-result_dir', $result_dir, 0]
     ];
 
     my $inputs = [$CONF->{_CONFIG_PATH}];
@@ -587,7 +588,9 @@ sub create_notebook_job {
         script => undef,
         args => $args,
         inputs => $inputs,
-        outputs => [],
+        outputs => [
+            catfile($result_dir, '1')
+        ],
         description => "Creating notebook..."
     );
 }

@@ -6,7 +6,7 @@ use Data::Dumper qw(Dumper);
 
 use File::Basename qw(fileparse basename);
 use File::Path qw(mkpath);
-use File::Spec qw(catdir);
+use File::Spec::Functions qw(catdir catfile);
 use Getopt::Long qw(GetOptions);
 use JSON qw(decode_json);
 use URI::Escape::JavaScript qw(unescape);
@@ -16,7 +16,7 @@ use CoGe::Core::Metadata qw( create_annotations );
 use CoGeX;
 
 our ($LOG, $DEBUG, $PAGE, $P, $db, $host, $port, $user, $pass, $config,
-     $name, $description, $version, $type, $userid, $restricted, $result_dir 
+     $name, $description, $version, $type, $userid, $restricted, $result_dir, 
      $annotations, @ITEMS);
 
 GetOptions(
