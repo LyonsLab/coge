@@ -140,7 +140,7 @@ sub execute {
     my $cmdStatus = $?;
 
     if ($cmdStatus != 0) {
-        say STDERR "log: error: command failed with rc=$cmdStatus: $cmd";
+        say STDERR "error: command failed with rc=$cmdStatus: $cmd";
     }
 
     return $cmdStatus;
