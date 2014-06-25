@@ -440,7 +440,7 @@ function get_gff() {
 }
 
 function get_tbl() {
-    var title = $("<h4>Generating tbl file.</h4>");
+    var title = $("<h4>Generating tbl file</h4>");
 
     reset_dialog();
 
@@ -474,7 +474,7 @@ function get_tbl() {
 }
 
 function get_bed() {
-    var title = $("<h4>Generating bed file.</h4>");
+    var title = $("<h4>Generating bed file</h4>");
 
     reset_dialog();
 
@@ -709,7 +709,7 @@ function reset_load() {
 }
 
 function load_failed(obj) {
-    // Handle special case of genbank load of existing genome
+    // Handle special case of genbank load of existing genome - FIXME: should this be here or miscopy from LoadGenome.tmpl?
     if ( obj && obj.links && obj.links.length ) {
         var link_text = obj.links.reduce(function(prev, cur) {
                 return prev + '<a href="' + cur + '" target=_new>' + cur + '</a>' + '<br>';
@@ -718,6 +718,16 @@ function load_failed(obj) {
         var log = $('#load_log');
         log.html( log.html() + link_text );
     }
+	else { // mdb added 6/24/14 - temporary message until JEX logging is improved
+		var msg = 
+			'<div class="alert">' + 
+			'We recently made some changes that limit our ability to report errors (more details <a href="https://genomevolution.org/wiki/index.php/Jex_Logging" target=_blank>here</a>). ' +
+			'While we fix this please feel free to contact us at <a href="mailto:coge.genome@gmail.com">coge.genome@gmail.com</a> regarding this failure to load data ' +
+			'and we can help to determine the cause.  Thanks!' +
+			'</div>';
+		var log = $('#load_log');
+		log.html( log.html() + msg );
+	}
 
     // Update dialog
     $('#loading_msg').hide();
@@ -1256,7 +1266,7 @@ Are you sure you want to move this genome into your trash?<p>
 </div>
 
 <div id="status_dialog" class="hidden dialog_box">
-    <div id="status_log" class="small ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
+    <div id="status_log" class="small padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
     </div>
     <br>
     <div id="status_msg">
@@ -1475,7 +1485,7 @@ Are you sure you want to move this genome into your trash?<p>
 
 
 <div id="load_dialog" class="hidden dialog_box" title="Copying Genome ...">
-  <div id="load_log" class="small ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
+  <div id="load_log" class="small padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
   </div>
   <br>
   <div id="loading_msg">
@@ -1484,7 +1494,7 @@ Are you sure you want to move this genome into your trash?<p>
   </div>
   <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
   <span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
-  <span id="ok_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all">Load Another</span>
-  <span id="finish_button" onClick="continue_to_view();" style="float:right;" class="hidden ui-button ui-corner-all">Continue to GenomeInfo</span>
+  <span id="ok_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all">OK</span>
+  <span id="finish_button" onClick="continue_to_view();" style="float:right;" class="hidden ui-button ui-corner-all">Continue to new copy</span>
   <span id="cancel_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go">Cancel</span>
 </div>
