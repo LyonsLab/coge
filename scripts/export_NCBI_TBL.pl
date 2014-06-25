@@ -3,6 +3,7 @@
 use strict;
 use CoGeX;
 use Getopt::Long;
+use File::Copy;
 use File::Spec::Functions;
 use Sort::Versions;
 use URI::Escape::JavaScript qw(unescape);
@@ -47,6 +48,7 @@ if ($config) {
 # Verify parameters
 $gid = unescape($gid) if $gid;
 $filename = unescape($filename) if $filename;
+my $file_temp = $filename . ".tmp";
 
 if (not $gid) {
     say $logh "log: error: genome not specified use gid";
@@ -75,7 +77,7 @@ return if -r $file;
 sub main {
     my $dsg = $coge->resultset('Genome')->find($gid);
 
-    open(my $fh, ">", $file);
+    open(my $fh, ">", $file_temp);
 
     my %chr2ds;
     foreach my $ds ( $dsg->datasets ) {
@@ -119,6 +121,7 @@ sub main {
         }
     }
     close($fh);
+    exit 1 unless move($file_temp, $file);
 }
 
 sub get_name_tag {

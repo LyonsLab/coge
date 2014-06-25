@@ -10,11 +10,11 @@ use CoGe::Accessory::IRODS qw(irods_iput irods_imeta);
 use CoGe::Core::Genome;
 use CoGe::Core::Storage;
 
-use CoGe::Tasks::Genome::Bed;
-use CoGe::Tasks::Genome::Copy;
-use CoGe::Tasks::Genome::Features;
-use CoGe::Tasks::Genome::Gff;
-use CoGe::Tasks::Genome::Tbl;
+use CoGe::Pipelines::Misc::Bed;
+use CoGe::Pipelines::Misc::Copy;
+use CoGe::Pipelines::Misc::Features;
+use CoGe::Pipelines::Misc::Gff;
+use CoGe::Pipelines::Misc::Tbl;
 
 use HTML::Template;
 use JSON::XS;

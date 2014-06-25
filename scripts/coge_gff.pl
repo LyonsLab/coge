@@ -94,4 +94,4 @@ print $fh $item->gff(
 );
 
 close($fh);
-copy($file_temp, $file);
+exit 1 unless move($file_temp, $file);
