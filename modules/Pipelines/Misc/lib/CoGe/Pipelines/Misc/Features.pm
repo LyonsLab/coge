@@ -1,4 +1,4 @@
-package CoGe::Tasks::Genome::Features;
+package CoGe::Pipelines::Misc::Features;
 
 use strict;
 use warnings;

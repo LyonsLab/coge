@@ -1,7 +1,5 @@
 MANIFEST
 Makefile.PL
-lib/CoGe/Tasks/Genome/Gff.pm
-lib/CoGe/Tasks/Genome/Bed.pm
 Accessory/lib/CoGe/Accessory/Tile/Cache.pm
 Accessory/lib/CoGe/Accessory/LogUser.pm
 Accessory/lib/CoGe/Accessory/GBlite.pm
@@ -134,6 +132,11 @@ Graphics/t/001_load.t
 Graphics/t/002_load.t
 Pipelines/qTeller/lib/CoGe/Pipelines/qTeller.pm
 Pipelines/FindSNPs/lib/CoGe/Pipelines/FindSNPs.pm
+Pipelines/Misc/lib/CoGe/Pipelines/Misc/Bed.pm
+Pipelines/Misc/lib/CoGe/Pipelines/Misc/Copy.pm
+Pipelines/Misc/lib/CoGe/Pipelines/Misc/Features.pm
+Pipelines/Misc/lib/CoGe/Pipelines/Misc/Gff.pm
+Pipelines/Misc/lib/CoGe/Pipelines/Misc/Tbl.pm
 Services/lib/CoGe/Services/Auth.pm
 Services/lib/CoGe/Services/Routes.pm
 Services/lib/CoGe/Services/Data/Experiment.pm
