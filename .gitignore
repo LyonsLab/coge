@@ -7,3 +7,6 @@ MYMETA.yml
 Makefile
 irodsEnv
 irodsA
+web/tmp
+web/data
+web/coge.conf
