@@ -3,6 +3,7 @@
 use strict;
 use CoGeX;
 use Getopt::Long;
+use File::Copy;
 use File::Path;
 use File::Spec::Functions;
 use URI::Escape::JavaScript qw(unescape);
@@ -69,6 +70,7 @@ sub main {
     }
 
     my $file = catfile($download_dir, $filename);
+    my $file_temp = $file . ".tmp";
 
     # Exit if file already exists
     return if -r $file;
@@ -76,7 +78,9 @@ sub main {
     my $genome = $db->resultset('Genome')->find($gid);
     my @datasets = map { $_->dataset_id } $genome->datasets;
 
-    get_locs(datasets => \@datasets, file => $file);
+    get_locs(datasets => \@datasets, file => $file_temp);
+
+    exit 1 unless move($file_temp, $file);
 }
 
 sub get_sizes {

@@ -1,4 +1,4 @@
-package CoGe::Tasks::Genome::Gff;
+package CoGe::Pipelines::Misc::Gff;
 
 use strict;
 use warnings;
