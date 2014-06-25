@@ -3,6 +3,7 @@
 use strict;
 use CoGeX;
 use Getopt::Long;
+use File::Copy;
 use File::Path;
 use File::Spec::Functions;
 use URI::Escape::JavaScript qw(unescape);
