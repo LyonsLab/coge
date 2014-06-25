@@ -344,6 +344,16 @@ function load_failed(obj) {
 		var log = $('#load_log');
 		log.html( log.html() + link_text );
 	}
+	else { // mdb added 6/24/14 - temporary message until JEX logging is improved
+		var msg = 
+			'<div class="alert">' + 
+			'We recently made some changes that limit our ability to report errors (more details <a href="https://genomevolution.org/wiki/index.php/Jex_Logging" target=_blank>here</a>). ' +
+			'While we fix this please feel free to contact us at <a href="mailto:coge.genome@gmail.com">coge.genome@gmail.com</a> regarding this failure to load data ' +
+			'and we can help to determine the cause.  Thanks!' +
+			'</div>';
+		var log = $('#load_log');
+		log.html( log.html() + msg );
+	}
 	
     // Update dialog
     $('#loading_msg').hide();
@@ -920,7 +930,7 @@ function update_dialog(request, identifier, formatter) {
 
 
 <div id="load_dialog" class="hidden dialog_box" title="Loading Genome ...">
-  <div id="load_log" class="small ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
+  <div id="load_log" class="small padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
   </div>
   <br>
   <div id="loading_msg">
