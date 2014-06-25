@@ -1,4 +1,4 @@
-package CoGe::Tasks::Genome::Copy;
+package CoGe::Pipelines::Misc::Copy;
 
 use strict;
 use warnings;

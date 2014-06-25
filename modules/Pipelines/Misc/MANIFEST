@@ -1,0 +1,7 @@
+MANIFEST
+Makefile.PL
+lib/CoGe/Pipelines/Misc/Bed.pm
+lib/CoGe/Pipelines/Misc/Copy.pm
+lib/CoGe/Pipelines/Misc/Features.pm
+lib/CoGe/Pipelines/Misc/Gff.pm
+lib/CoGe/Pipelines/Misc/Tbl.pm
