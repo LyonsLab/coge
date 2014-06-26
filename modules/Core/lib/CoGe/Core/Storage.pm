@@ -691,7 +691,7 @@ sub create_genome_from_file {
     
     # Create list of files to load
     my @staged_files;
-    push @staged_files, @$files;
+    push @staged_files, @$files if ($files);
     
     # Create jobs to retrieve irods files
     my %load_params;
