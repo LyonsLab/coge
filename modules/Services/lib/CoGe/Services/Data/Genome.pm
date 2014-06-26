@@ -98,21 +98,21 @@ sub load {
     print $log "Starting load genome $stagepath\n"; #. "name=$name description=$description version=$version type_id=$type_id restricted=$restricted org_id=$organism_id\n";
 
 	# Copy files from iPlant Data Store to staging path
-	foreach my $item (@{$data->{items}}) {
-		print STDERR 'item: ', $item->{type}, ' ', $item->{path}, "\n";
-		next unless ($item->{type} and $item->{type} eq 'irods');
-		my $local_path = irods_get_file($item->{path}, $TEMPDIR);
-		print STDERR 'local_path=', $local_path, "\n";
-		unless (-r $local_path) {
-			#$self->header_props( -status => 500 );
-			return encode_json({
-				success => JSON::false,
-				error => 'Failed to retrieve file: ' . $item->{path}
-			});
-		}
-		push @files, $local_path;
-	}
-	print STDERR Dumper \@files, "\n";
+#	foreach my $item (@{$data->{items}}) {
+#		print STDERR 'item: ', $item->{type}, ' ', $item->{path}, "\n";
+#		next unless ($item->{type} and $item->{type} eq 'irods');
+#		my $local_path = irods_get_file($item->{path}, $TEMPDIR);
+#		print STDERR 'local_path=', $local_path, "\n";
+#		unless (-r $local_path) {
+#			#$self->header_props( -status => 500 );
+#			return encode_json({
+#				success => JSON::false,
+#				error => 'Failed to retrieve file: ' . $item->{path}
+#			});
+#		}
+#		push @files, $local_path;
+#	}
+#	print STDERR Dumper \@files, "\n";
 	
 	#FIXME: what happens when files take a long time to transfer? !!!!!!!!!!!!!!
 
@@ -164,7 +164,7 @@ sub load {
             organism_id => $organism_id,
             type_id => $type_id
         },
-        files => \@files,
+        #files => \@files,
         irods => $data->{items}
     );
     unless ($workflow_id) {
