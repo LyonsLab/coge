@@ -190,6 +190,7 @@ sub create_load_experiment_job {
             ['-types', qq{"SNP"}, 0],
             ['-annotations', $annotations, 0],
             ['-staging_dir', "./load_experiment", 0],
+            ['-result_dir', $result_dir, 0],
             ['-file_type', "vcf", 0],
             ['-data_file', "$vcf", 0],
             ['-config', $CONF->{_CONFIG_PATH}, 1]
