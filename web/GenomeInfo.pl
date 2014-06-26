@@ -1312,7 +1312,7 @@ sub copy_genome {
 
     # Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
-        url => $P->{SERVER} . "$PAGE_TITLE.pl?gid=" . $gid . "&job_id=" . $response->{id}
+        url => $SERVER . "$PAGE_TITLE.pl?gid=" . $gid . ";job_id=" . $response->{id}
     );
 
     return encode_json({
