@@ -5,6 +5,7 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Accessory::IRODS;
+use CoGe::Core::Storage qw(create_genome_from_file);
 use Data::Dumper;
 use JSON qw(decode_json encode_json);
 use URI::Escape::JavaScript qw(escape);
@@ -136,42 +137,63 @@ sub load {
 #        push @files, $fullpath;
 #    }
     
-    my $CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
-    my $cmd = $conf->{SCRIPTDIR} . "/load_genome.pl ";
-    $cmd .= '-user_name "' . $user->name . '" ';
-    $cmd .= '-name "' . escape($data->{name}) . '" '        if $data->{name};
-    $cmd .= '-desc "' . escape($data->{description}) . '" ' if $data->{description};
-    $cmd .= '-link "' . escape($data->{link}) . '" '        if $data->{link};
-    $cmd .= '-version "' . escape($data->{version}) . '" '  if $data->{version};
-    $cmd .= '-type_id ' . $type_id . ' ';
-    $cmd .= "-restricted " . $data->{restricted} . ' '      if $data->{restricted};
-    $cmd .= '-organism_id ' . $organism_id . ' ';
-    $cmd .= '-source_name "' . escape($source_name) . '" ';
-    $cmd .= "-staging_dir $stagepath ";
-    $cmd .= '-fasta_files "' . escape( join( ',', @files ) ) . '" ';
-    $cmd .= '-irods_files "' . escape( join( ',', map { $_->{path} } @{$data->{items}} ) ) . '" ';
-    $cmd .= "-config $CONFIGFILE"; #"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
+#    my $CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
+#    my $cmd = $conf->{SCRIPTDIR} . "/load_genome.pl ";
+#    $cmd .= '-user_name "' . $user->name . '" ';
+#    $cmd .= '-name "' . escape($data->{name}) . '" '        if $data->{name};
+#    $cmd .= '-desc "' . escape($data->{description}) . '" ' if $data->{description};
+#    $cmd .= '-link "' . escape($data->{link}) . '" '        if $data->{link};
+#    $cmd .= '-version "' . escape($data->{version}) . '" '  if $data->{version};
+#    $cmd .= '-type_id ' . $type_id . ' ';
+#    $cmd .= "-restricted " . $data->{restricted} . ' '      if $data->{restricted};
+#    $cmd .= '-organism_id ' . $organism_id . ' ';
+#    $cmd .= '-source_name "' . escape($source_name) . '" ';
+#    $cmd .= "-staging_dir $stagepath ";
+#    $cmd .= '-fasta_files "' . escape( join( ',', @files ) ) . '" ';
+#    $cmd .= '-irods_files "' . escape( join( ',', map { $_->{path} } @{$data->{items}} ) ) . '" ';
+#    $cmd .= "-config $CONFIGFILE"; #"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
+
+    ($workflow_id, $error_msg) = create_genome_from_file(
+        user => $user, 
+        metadata => {
+            name => escape($data->{name}),
+            description => escape($data->{description}),
+            version => escape($data->{version}),
+            source_name => escape($source_name),
+            restricted => $data->{restricted},
+            organism_id => $organism_id,
+            type_id => $type_id
+        },
+        files => \@files,
+        irods => $data->{items}
+    );
+    unless ($workflow_id) {
+        return encode_json({ 
+            success => JSON::false,
+            error => "Workflow submission failed: " . $error_msg
+        });
+    }
 
     # Call load script
-    print STDERR "$cmd\n";
-    print $log "$cmd\n";
-    close($log);
-    if ( !defined( my $child_pid = fork() ) ) {
-    	#$self->header_props( -status => 500 );
-        return encode_json({ 
-			success => JSON::false,
-			error => "Cannot fork process: $!"
-		});
-    }
-    elsif ( $child_pid == 0 ) {
-        print STDERR "child running: $cmd\n";
-        `$cmd`;
-        return;
-    }
+#    print STDERR "$cmd\n";
+#    print $log "$cmd\n";
+#    close($log);
+#    if ( !defined( my $child_pid = fork() ) ) {
+#    	#$self->header_props( -status => 500 );
+#        return encode_json({ 
+#			success => JSON::false,
+#			error => "Cannot fork process: $!"
+#		});
+#    }
+#    elsif ( $child_pid == 0 ) {
+#        print STDERR "child running: $cmd\n";
+#        `$cmd`;
+#        return;
+#    }
 
     # Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
-        url => $conf->{SERVER} . "LoadGenome.pl?load_id=$LOAD_ID"
+        url => $conf->{SERVER} . "LoadGenome.pl?job_id=$workflow_id"
     );
     unless ($tiny_link) {
     	#$self->header_props( -status => 500 );

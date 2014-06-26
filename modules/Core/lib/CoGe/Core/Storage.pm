@@ -706,7 +706,7 @@ sub create_genome_from_file {
     }
     
     # Create load job
-    %load_params = _create_load_genome_job($conf, $metadata, $user->name, $staging_dir, \@staged_files, $result_dir);
+    %load_params = _create_load_genome_job($conf, $metadata, $user->name, $staging_dir, \@staged_files, $result_dir, $irods);
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
@@ -861,11 +861,12 @@ sub _create_load_batch_job {
 }
 
 sub _create_load_genome_job {
-    my ($conf, $metadata, $user_name, $staging_dir, $files, $result_dir) = @_;
+    my ($conf, $metadata, $user_name, $staging_dir, $files, $result_dir, $irods) = @_;
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_genome.pl");
     return unless $cmd; # SCRIPTDIR undefined
     
     my $file_str = join(',', map { basename($_) } @$files);
+    my $irods_str = join(',', map { basename($_) } @$irods);
     
     return (
         cmd => $cmd,
@@ -881,6 +882,7 @@ sub _create_load_genome_job {
             ['-type_id', '"' . $metadata->{type_id} . '"', 0],
             ['-staging_dir', "'".$staging_dir."'", 0],
             ['-fasta_files', "'".$file_str."'", 0],
+            ['-irods_files', "'".$irods_str."'", 0],
             ['-config', $conf->{_CONFIG_PATH}, 1],
             ['-result_dir', "'".$result_dir."'", 0]
         ],
