@@ -27,7 +27,7 @@ BEGIN {
     @EXPORT = qw( run );
 }
 
-our ($CONF, $staging_dir, $log_file, $METADATA, $FASTA_CACHE_DIR );
+our ($CONF, $staging_dir, $result_dir, $log_file, $METADATA, $FASTA_CACHE_DIR );
 
 sub run {
     my %opts = @_;
@@ -50,7 +50,7 @@ sub run {
     my $workflow = $jex->create_workflow( name => 'Running the SNP-finder pipeline', init => 1 );
     
     # Setup log file, staging, and results paths
-    my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
+    ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
     $workflow->logfile( catfile($staging_dir, 'log_main.txt') );
     
     $FASTA_CACHE_DIR = catdir($CONF->{CACHEDIR}, $genome->id, "fasta");
@@ -195,7 +195,7 @@ sub create_load_experiment_job {
             ['-config', $CONF->{_CONFIG_PATH}, 1]
         ],
         inputs => [
-            $CONF,
+            $CONF->{_CONFIG_PATH},
             $vcf
         ],
         outputs => [
