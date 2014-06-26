@@ -34,7 +34,7 @@ use CoGe::Accessory::TDS qw(read);
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::IRODS qw(irods_iget);
-use File::Basename qw(fileparse basename);
+use File::Basename;
 use POSIX qw(floor);
 use File::Spec::Functions;
 use File::Path qw(mkpath);
