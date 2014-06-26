@@ -9,6 +9,7 @@ var load_id    = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
 var job_id     = '<TMPL_VAR NAME="JOB_ID">';
 var STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
 var PAGE_NAME  = '<TMPL_VAR NAME="PAGE_NAME">';
+var genome_id;
 
 $(document).ready(function(){
 	$.ajaxSetup({
@@ -428,7 +429,7 @@ function reset_load() {
 }
 
 function continue_to_view() {
-	window.location.href = "GenomeView.pl?gid=<TMPL_VAR NAME='GENOME_ID'>;tracks=features";
+	window.location.href = "GenomeView.pl?gid=" + genome_id + ";tracks=features";
 }
 
 function wait_to_search (search_func, search_obj) {
