@@ -143,6 +143,7 @@ sub gen_body {
     return $template->output;
 }
 
+#FIXME: This currently does not get the right id back
 sub cancel_job {
     my $job_id = _check_job_args(@_);
     my $job    = _get_validated_job($job_id);
