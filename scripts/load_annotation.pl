@@ -287,10 +287,10 @@ my @name_buffer;    # buffer for bulk inserts into FeatureName table
         	my $pctLoaded = int( 100 * $loaded_annot / $total_annot );
             print $log "log: Loaded " . commify($loaded_annot) . " annotations (" . ( $pctLoaded ? $pctLoaded : '<1' ) . "%)\n\n"
               if ( $loaded_annot and ( $loaded_annot % 1000 ) == 0 );
-            
+
             foreach my $feat_type ( sort { $a cmp $b } keys %{ $data{$chr_loc}{$name} } ) {
                 print $log "\n" if $DEBUG;
-                
+
                 my ($start, $stop, $strand, $chr);
                 my $loc = $data{$chr_loc}{$name}{$feat_type}{loc};
                 if (@$loc) {
@@ -306,7 +306,7 @@ my @name_buffer;    # buffer for bulk inserts into FeatureName table
                     $strand = $coords->{strand};
                     $chr    = $coords->{chr};
                 }
-                
+
                 $feat_types{$feat_type} = $coge->resultset('FeatureType')->find_or_create( { name => $feat_type } )
                   if $GO && !$feat_types{$feat_type};
                 my $feat_type_obj = $feat_types{$feat_type};
@@ -319,7 +319,7 @@ my @name_buffer;    # buffer for bulk inserts into FeatureName table
                     print $log Dumper $data{$chr_loc}{$name}{$feat_type}, "\n";
                     exit(-1);
                 }
-                
+
                 #TODO this could be batched by nesting location & other inserts, see http://search.cpan.org/~abraxxa/DBIx-Class-0.08209/lib/DBIx/Class/ResultSet.pm#populate
                 my $feat = $dataset->add_to_features(
                     {
@@ -354,7 +354,7 @@ my @name_buffer;    # buffer for bulk inserts into FeatureName table
                         }
                     ) if $GO;
                 }
-                
+
                 my %names =
                   map { $_ => 1 }
                   keys %{ $data{$chr_loc}{$name}{$feat_type}{names} };
@@ -421,7 +421,7 @@ print $log "Time to parse: "
   . timestr( timediff( $t2, $t1 ) )
   . ", Time to load: "
   . timestr( timediff( $t3, $t2 ) ) . "\n";
-  
+
 # Save result document
 if ($result_dir) {
     mkpath($result_dir);
@@ -626,7 +626,7 @@ sub process_gff_file {
             foreach my $n ( keys %names ) {
                 $data{$chr}{$tmp_name}{$type}{names}{$n} = 1;
             }
-            
+
             # mdb added 4/8/14 issue 358 - save location for later
             if ($tmp =~ /_no_locs/) {
                 $data{$chr}{$tmp_name}{$type}{coords} =
@@ -637,7 +637,7 @@ sub process_gff_file {
                     chr    => $chr
                 };
             }
-            
+
             next if ($tmp =~ /_no_locs/); # skip adding locations for things like mRNA
             push @{ $data{$chr}{$tmp_name}{$type}{loc} },
               {

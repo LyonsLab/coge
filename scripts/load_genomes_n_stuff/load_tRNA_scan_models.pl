@@ -10,7 +10,7 @@ my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 #$coge->storage->debug(1);
 
 my ($dsid, $file, $GO);
-GetOptions ( 
+GetOptions (
             "dsid=i" => \$dsid,
              "go=s"    => \$GO,
 	   "file=s"=>\$file,
@@ -92,7 +92,7 @@ while (<IN>)
 	$feat->add_to_feature_names({
 				 name=>$name,
 				}) if $GO;
-	
+
 	$feat->add_to_annotations({annotation=>$name, annotation_type_id => $product_anno_type->id}) if $GO;
 	my $anticodon = $line[5];
 	$anticodon =~ s/T/U/g;

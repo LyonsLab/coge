@@ -297,7 +297,7 @@ sub gen_body {
             dsgid   => $dsgid,
             seq_num => $i
         ) if $pos;
-        
+
         # mdb added 11/20/13 issue 254
         my ($start, $stop);
         if ($fid) {
@@ -311,7 +311,7 @@ sub gen_body {
         	$start = $gbstart - $drup;
         	$stop = $gbstart + $gblength-1 + $drdown;
         }
-        
+
         push @seq_nums, { SEQ_NUM => $i, };
         my %opts = (
             SEQ_NUM   => $display_order,
@@ -1048,7 +1048,6 @@ sub run {
     );
     CoGe::Accessory::Web::schedule_job(job => $job);
 
-
     my $t2 = new Benchmark;
 
     # set up output page
@@ -1271,7 +1270,7 @@ qq{<br><a href="http://genomevolution.org/wiki/index.php/Gobe" class="small" sty
     }
 
     $html .=
-        "<div><A HREF=\"" 
+        "<div><A HREF=\""
       . $TEMPURL . "/"
       . basename($all_file)
       . "\" target=_new>all sequences</A></font></DIV>\n";
@@ -1352,7 +1351,6 @@ GEvo Benchmark: $DATE
   Time to find and update sqlite database for HSPs  : $db_hsp_time
   Time to process html                              : $html_time
 Total time                                          : $total_time
-
 
 };
 
@@ -2476,7 +2474,7 @@ sub process_hsps {
               if $seq;
             $seq =~ s/-//g if $seq;
             $desc .=
-                "<tr><td>Sequence:<td><span style=\"white-space: nowrap\">" 
+                "<tr><td>Sequence:<td><span style=\"white-space: nowrap\">"
               . $seq
               . "</span>"
               if $seq;
@@ -3665,13 +3663,13 @@ qq{'args__rgb$i', 'args__'+\$('#sample_color$i').css('backgroundColor'),};
     $params .= qq{
         'args__pad_gs', 'pad_gs',
 
-	'args__spike', 'spike', 
-	'args__blast_word', 'blast_wordsize', 
-	'args__blast_gapo', 'blast_gapopen', 
-	'args__blast_gape', 'blast_gapextend', 
+	'args__spike', 'spike',
+	'args__blast_word', 'blast_wordsize',
+	'args__blast_gapo', 'blast_gapopen',
+	'args__blast_gape', 'blast_gapextend',
 	'args__blast_mmatch', 'blast_mismatch',
 	'args__blast_match', 'blast_match',
-	'args__blast_eval', 'blast_eval', 
+	'args__blast_eval', 'blast_eval',
 	'args__blast_params', 'blastparams',
         'args__blast_filter','blast_filter',
 
@@ -3698,7 +3696,6 @@ qq{'args__rgb$i', 'args__'+\$('#sample_color$i').css('backgroundColor'),};
         'args__dialign_motif_penalty','dialign_motif_penalty',
         'args__dialign_use_anchor','dialign_use_anchor',
         'args__dialign_anchor_program','dialign_anchor_program',
-
 
         'args__blastz_wordsize','blastz_wordsize',
         'args__blastz_chaining','blastz_chaining',
@@ -3756,7 +3753,7 @@ sub gen_go_run {
     my $params   = gen_params($num_seqs);
     my $run      = qq!
 <SCRIPT language="JavaScript">
-function go_run (){ 
+function go_run (){
  if (ajax.length)
   {
    setTimeout("go_run()", 100);
@@ -4705,17 +4702,15 @@ sub email_results {
 
 Thank you for using the Genome Evolution Analysis Tool! The results from your latest analysis are ready, and can be viewed here:
 } . $server . qq{/GEvo_direct.pl?name=$basefilename
-			
+
 To contact us or to cite CoGe please visit:
 http://genomevolution.org/wiki/index.php/Contact_Page
 
 You can use this URL for regenerating your results:
 $full_gevo_url
 
-
-
 Thank you for using the CoGe Software Package.
-	
+
 - The CoGe Team
 };
 

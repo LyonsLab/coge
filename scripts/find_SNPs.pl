@@ -27,7 +27,7 @@ GetOptions(
     # Debug options
     "debug|d=s"         => \$DEBUG,       # Dumps the workflow hash
     "test|t=s"          => \$test,        # Skip workflow submission
-    
+
     # General configuration options
     "eid=s"             => \$eid,         # BAM experiment id
     "jobid|jid=s"       => \$jobid,       # Reference job id
@@ -56,19 +56,19 @@ die "ERROR: config not specified, use -config or -cfg" unless $config;
 sub setup {
     # Setup staging path if not already there
     mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
-    
+
     # Setup log file
     $log_file = catfile($staging_dir, "log.txt") unless $log_file;
     open( my $log, ">>$log_file" ) or die "Error opening log file $log_file";
     $log->autoflush(1);
     print $log $DESC, "\n";
-    
+
     # Open config file
     $P = CoGe::Accessory::Web::get_defaults($config);
-    
+
     # Connect to JEX
     $YERBA = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
-    
+
     # Connect to DB
     my $connstr = "dbi:mysql:dbname=".$P->{DBNAME}.";host=".$P->{DBHOST}.";port=".$P->{DBPORT}.";";
     return CoGeX->connect( $connstr, $P->{DBUSER}, $P->{DBPASS} );
@@ -86,7 +86,7 @@ sub main {
 
     my $experiment = $coge->resultset("Experiment")->find($eid);
     die "ERROR: experiment $eid not found" unless $experiment;
-    
+
     my $genome = $experiment->genome;
     die "ERROR: genome for experiment $eid not found" unless $genome; # should never happen
 
@@ -95,7 +95,7 @@ sub main {
 
     $FASTA_CACHE_DIR = catdir($P->{CACHEDIR}, $genome->id, "fasta");
     die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
-    
+
     my $fasta_file = get_genome_file($genome->id);
     my $files = get_experiment_files($eid, $experiment->data_type);
     my $bam_file = shift @$files;
@@ -114,7 +114,7 @@ sub main {
     );
     $workflow->add_job(
         create_fasta_index_job($filtered_file, $genome->id)
-    );    
+    );
     $workflow->add_job(
         create_samtools_job($filtered_file, $genome->id, $bam_file)
     );
@@ -166,7 +166,7 @@ sub to_filename { # FIXME: move into Utils module
 
 sub create_fasta_reheader_job {
     my ($fasta, $gid, $output) = @_;
-    
+
     my $cmd = catfile($P->{SCRIPTDIR}, "fasta_reheader.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
@@ -189,7 +189,7 @@ sub create_fasta_reheader_job {
 
 sub create_fasta_index_job {
     my ($fasta, $gid) = @_;
-    
+
     my $samtools = $P->{SAMTOOLS};
     die "ERROR: SAMTOOLS not specified in config" unless $samtools;
 
@@ -244,7 +244,7 @@ sub create_samtools_job {
 
 sub create_load_experiment_job {
     my ($vcf, $user, $experiment) = @_;
-    
+
     my $cmd = catfile(($P->{SCRIPTDIR}, "load_experiment.pl"));
     my $output_path = catdir($staging_dir, "load_experiment");
 

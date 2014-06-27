@@ -18,7 +18,6 @@ bool PointCompare(const Point &f1, const Point &f2) {
 	}
 }
 
-
 //internal function that i dont need to care about.
 char* rolltonum(char* str) {
 	char *got1 = 0, *got2 = 0;
@@ -50,7 +49,6 @@ char* rolltonum(char* str) {
 	return &str[i];
 }
 
-
 //reads one line of input at a time.
 long long int getline(FILE *infile, hll *tt) {
 	char temp[1024];
@@ -73,7 +71,6 @@ long long int getline(FILE *infile, hll *tt) {
 		return 1;
 	}
 }
-
 
 void printFragment ( Fragment * curfrag ) {
 	if (curfrag == NULL) {
@@ -98,7 +95,6 @@ void printFragment ( Fragment * curfrag ) {
 	);
 }
 
-
 void printAllFragments(long long int numFragments) {
 	long long int i;
 	for (i=0; i<numFragments; i++) {
@@ -106,7 +102,6 @@ void printAllFragments(long long int numFragments) {
 	}
 	return;
 }
-
 
 // prints a chain upwards starting at the fragment called last.
 long long int printChain(Fragment *current) {
@@ -117,14 +112,12 @@ long long int printChain(Fragment *current) {
 	return 0;
 }
 
-
 void swap(long long int *a, long long int *b) {
 	long long int temp;
 	temp = *a;
 	*a = *b;
 	*b = temp;
 }
-
 
 // initialises the parameters for a fragment.
 // note the swap at the end of this function.
@@ -158,7 +151,6 @@ Fragment createFragment(hll *temp) {
 	}
 	return frag;
 }
-
 
 // reads the input file and returns the number of fragments read.
 long long int readInput(char * fileName) {
@@ -203,7 +195,6 @@ long long int readInput(char * fileName) {
 	return i;
 }
 
-
 void createPointLists(long long int numFragments) {
 	long long int i;
 	Point startPoint, endPoint;
@@ -227,7 +218,6 @@ void createPointLists(long long int numFragments) {
 	sort(endPoints.begin(), endPoints.end(), PointCompare);
 }
 
-
 void printPointLists(long long int numFragments) {
 	long long int i;
 	printf("StartPoint lists:\n");
@@ -242,7 +232,6 @@ void printPointLists(long long int numFragments) {
 	}
 	printf("End lists");
 }
-
 
 void findAllNames(long long int numFragments) {
 	long long int i;
@@ -267,7 +256,6 @@ void findAllNames(long long int numFragments) {
 	if (DEBUG) { fprintf(stderr, "The number of contigs is %lld",numContigs); }
 }
 
-
 void decideContigBase() {
 	Name::iterator currName;
 	long long int offset =0;
@@ -279,7 +267,6 @@ void decideContigBase() {
 		offset += (10 + temp);
 	}
 }
-
 
 void storeIterators(long long int numFragments) {
 	long long int i;

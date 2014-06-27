@@ -12,7 +12,7 @@
 function get_selected_files() {
 	var items = new Array();
 	var transferring = 0;
-	
+
 	$('#file_table tr').each(
 		function() {
 			//FIXME optimize this
@@ -29,11 +29,11 @@ function get_selected_files() {
 			}
 		}
 	);
-	
+
 	if (transferring) {
 		return null;
 	}
-	
+
 	return items;
 }
 
@@ -52,13 +52,13 @@ $(document).ready(function() {
 		return;
 	}
 	alreadyDone = 1;
-	
+
 	if (!load_id) {
 		console.error('FileSelect widget error: load_id not defined!')
 	}
-	
+
 	$("#tabs").tabs({selected:<TMPL_VAR NAME='DEFAULT_TAB'>});
-	
+
 	irods_get_path();
 
 	$('#input_url').bind('keyup focus click', function() {
@@ -69,7 +69,7 @@ $(document).ready(function() {
 			$('#ftp_get_button').addClass('ui-state-disabled');
 		}
 	});
-	
+
 	$('#input_accn').bind('keyup focus click', function() {
 		if ( $('#input_accn').val() ) {
 			$('#ncbi_get_button').removeClass('ui-state-disabled');
@@ -78,7 +78,7 @@ $(document).ready(function() {
 			$('#ncbi_get_button').addClass('ui-state-disabled');
 		}
 	});
-	
+
 	$('#input_upload_file').fileupload({
     	dataType: 'json',
 // mdb 10/29/13 - moved below
@@ -98,15 +98,15 @@ $(document).ready(function() {
 			    		fname: 'upload_file',
 			    		load_id: load_id
 			    	}});
-					
+
 					data.submit();
 				}
     		},
-		done: 
+		done:
 			function(e, data) {
 				finish_file_in_list('file', 'file://'+data.result.filename, data.result.path, data.result.size);
 			}
-	});	
+	});
 });
 
 function add_file_to_list(filename, url) {
@@ -115,27 +115,27 @@ function add_file_to_list(filename, url) {
 			return (url == $(this).data('url'));
 		}
 	);
-	
+
 	if (tr.length) { // already exists
 		return 0;
 	}
-	
+
 	var tr = $('<tr class="note"><td style="padding-right:15px;">' + filename + '</td>' + '</tr>');
 	var td = $('<td style="float:right;"><img src="picts/ajax-loader.gif"/></td>');
 	$(tr).append(td).fadeIn();
 	$(tr).data('url', url);
-	
+
 	<TMPL_IF NAME='FILE_SELECT_SINGLE'>
 		$('#file_table').empty(); // remove all rows
 	</TMPL_IF>
 
 	$('#file_table').append(tr).show();
-	
+
 	// Call template user's generic hander if defined
 	if (typeof file_selected == 'function') {
 		file_selected(filename, url);
 	}
-	
+
 	return 1;
 }
 
@@ -150,12 +150,12 @@ function finish_file_in_list(type, url, path, size) {
 		'path': path,
 		'type': type
 	});
-	
+
 	// Animate completion in list
 	$(tr).children().last().remove();
-	$(tr).append( 
-		$('<td align="right">' + 
-			'<span style="vertical-align:2px">' + units(size) + '</span>' + 
+	$(tr).append(
+		$('<td align="right">' +
+			'<span style="vertical-align:2px">' + units(size) + '</span>' +
 			'<span onClick="cancel_callback(this);" class="link ui-icon ui-icon-closethick"></span>' +
 		  '</td>'
 		).fadeIn()
@@ -163,19 +163,19 @@ function finish_file_in_list(type, url, path, size) {
 		'font-style': 'normal',
 		'color': 'black'
 	});
-	
+
 	// Call template user's generic hander if defined
 	if (typeof file_finished == 'function') {
 		file_finished(size, url);
-	}	
+	}
 }
 
 function cancel_callback(that) {
 	// Remove from file list
-	$(that).closest('tr').hide('fast', 
-		function() { 
-			$(this).remove(); 
-			
+	$(that).closest('tr').hide('fast',
+		function() {
+			$(this).remove();
+
 			// Hide table if empty
 			if ($('#file_table tr').length == 0) {
 				$('#file_table').hide();
@@ -237,7 +237,7 @@ function irods_get_path (path) {
 		},
 		success : function(data) {
 			$('#ids_loading').fadeOut();
-			
+
 			var result = jQuery.parseJSON(data);
 			if (result == null) {
 				return;
@@ -260,7 +260,7 @@ function irods_get_path (path) {
 
 			$('#ids_table').html('');
 			var parent_path = result.path.split('/').slice(0,-2).join('/') + '/';
-			
+
 			// Save for later resolve_path()
 			pageObj.parent_path = parent_path;
 			pageObj.current_path = result.path;
@@ -281,7 +281,7 @@ function irods_get_path (path) {
 						icon = '<span class="ui-icon ui-icon-document"></span>';
 					}
 					tr = $('<tr class="'+obj.type+'"><td style="white-space:nowrap;">'+icon+obj.name+'</td><td>'+obj.size+'</td><td>'+obj.timestamp+'</td></tr>');
-					
+
 					if (obj.type == 'directory') {
 						$(tr).click(
 							function() {
@@ -290,7 +290,7 @@ function irods_get_path (path) {
 						);
 					}
 					else {
-						$(tr).click( 
+						$(tr).click(
 							function() {
 								if ( add_file_to_list(obj.name, 'irods://'+obj.path) ) {
 									irods_get_file(obj.path);
@@ -301,12 +301,12 @@ function irods_get_path (path) {
 							}
 						);
 					}
-					
+
 					$(tr).hover(
 						function() {$(this).css({"cursor":"pointer", "background-color":"greenyellow"});},
 						function() {$(this).css("background-color", "white");}
 					);
-					
+
 					$('#ids_table').append(tr);
 				}
 			);
@@ -325,7 +325,7 @@ function irods_get_file(path) {
 			var obj = jQuery.parseJSON(data);
 			finish_file_in_list('irods', 'irods://'+path, obj.path, obj.size);
 		},
-	});	
+	});
 }
 
 function irods_get_all_files (path) {
@@ -346,7 +346,7 @@ function irods_get_all_files (path) {
 				alert("Too many files (" + filelist.length + ") at specified location, limit is <TMPL_VAR NAME='MAX_IRODS_TRANSFER_FILES'>.");
 				return;
 			}
-			
+
 			var count = 0;
 			result.items.forEach(
 				function(obj) {
@@ -361,7 +361,7 @@ function irods_get_all_files (path) {
 						);
 					}
 				}
-			);		
+			);
 		}
 	});
 }
@@ -397,14 +397,14 @@ function ftp_get_file(url, username, password) {
 			var obj = jQuery.parseJSON(data);
 			finish_file_in_list('ftp', url, obj.path, obj.size);
 		},
-	});	
+	});
 }
 
 function load_from_ftp() {
 	var url = $('#input_url').val();
 	var username = $('#input_username').val();
 	var password = $('#input_password').val();
-	
+
 	$('#ftp_get_button').addClass('ui-state-disabled');
 	$('#ftp_status').html('<img src="picts/ajax-loader.gif"/> Contacting host...');
 
@@ -424,10 +424,10 @@ function load_from_ftp() {
 				alert("Too many files (" + filelist.length + ") at specified location, limit is <TMPL_VAR NAME='MAX_FTP_FILES'>.");
 				return;
 			}
-			
+
 			pageObj.filecount = filelist.length;
 			$('#ftp_status').html('<img src="picts/ajax-loader.gif"/> Retrieving '+pageObj.filecount+' files');
-			
+
 			var count = 0;
 			filelist.forEach(
 				function(obj) {
@@ -442,7 +442,7 @@ function load_from_ftp() {
 							}
 						},
 						500 * count++
-					); 
+					);
 				}
 			);
 		},
@@ -451,10 +451,10 @@ function load_from_ftp() {
 
 function load_from_ncbi() {
 	var accn = $('#input_accn').val();
-	
+
 	$('#ncbi_get_button').addClass('ui-state-disabled');
 	$('#ncbi_status').html('<img src="picts/ajax-loader.gif"/> Contacting NCBI...');
-	
+
 	$.ajax({
 		data: {
 			fname: 'search_ncbi_nucleotide',
@@ -474,11 +474,11 @@ function load_from_ncbi() {
 					}
 				}
 			}
-			
+
 			$('#ncbi_get_button').removeClass('ui-state-disabled');
 			$('#ncbi_status').html('');
 		},
-	});	
+	});
 }
 </SCRIPT>
 
@@ -524,11 +524,11 @@ function load_from_ncbi() {
   </div>
 
   <div id="tab-3" class="small" style="height:200px;">
-	Select a file to upload from your computer.  This method is best for smaller files (less than 200MB, 2GB maximum). 
+	Select a file to upload from your computer.  This method is best for smaller files (less than 200MB, 2GB maximum).
 	For larger files use the iPlant Data Store. <br><br><br>
     File: <input id="input_upload_file" name="input_upload_file" type="file" size="30" data-url='<TMPL_VAR NAME="PAGE_NAME">' />
   </div>
-  
+
   <TMPL_IF NAME='ENABLE_NCBI'>
   <div id="tab-4" class="small" style="height:200px;">
     Enter the NCBI accession number of the item to add.<br><br>

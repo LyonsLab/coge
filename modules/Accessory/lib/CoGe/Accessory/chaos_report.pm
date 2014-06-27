@@ -7,13 +7,12 @@ use base qw(Class::Accessor);
 
 use Data::Dumper;
 
-
 BEGIN
   {
     use vars qw($VERSION);
     $VERSION = "0.01";
   }
-__PACKAGE__->mk_accessors('file', 'hsps', 'hsp_count', 'query', 'subject', 
+__PACKAGE__->mk_accessors('file', 'hsps', 'hsp_count', 'query', 'subject',
 	'qlength', 'slength', 'gotname', 'DEBUG');
 
 ###############################################################################
@@ -40,7 +39,7 @@ sub process_file
     while (<IN>)
     {
      $tmp .= $_;
-     if (/perc/) 
+     if (/perc/)
      {push @data,$tmp;$tmp="";}
     }
     close IN;
@@ -53,7 +52,6 @@ sub process_file
     return $self;
 }
 
-
 sub _parseReport {
 	my $self = shift;
 	my $data = shift;
@@ -65,7 +63,7 @@ sub _parseReport {
         my ($name1,$start1,$stop1,$name2,$start2,$stop2,$score_plus,$strand) = (0,0,0,0,0,0,0,0);
         my @aligns;
 	foreach my $things (split /\n/,$data)
-	{ 
+	{
          next unless $things;
 	 if ($things =~/;/)
 	   {
@@ -131,7 +129,7 @@ sub _parseReport {
     $self->hsp_count($hsp_count) if $hsp;
     return $hsp;
  }
- 
+
 sub _getNames {
 	my $self = shift;
 	my $query = shift;
@@ -141,7 +139,6 @@ sub _getNames {
 	$self->gotname(1);
 	return $self;
 }
-	
 
 1;
 

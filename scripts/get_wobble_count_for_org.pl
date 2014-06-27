@@ -29,7 +29,7 @@ foreach my $ds ($coge->get_current_datasets_for_org(org=>$org->id))
 #	print join ("\t", $name, map {sprintf("%.2f",100*$_)} $feat->wobble_content),"\n";
 	push @data, [$name, map {sprintf("%.2f",100*$_)} $feat->wobble_content];
       }
-		      
+
   }
 print join ("\t", qw(NAME GC AT)),"\n";
 my $limit =100;
@@ -48,5 +48,3 @@ foreach my $item (sort {$b->[1]<=>$a->[1]} @data)
     $count++;
     last if $count == 100;
   }
-
-

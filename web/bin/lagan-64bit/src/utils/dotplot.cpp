@@ -15,7 +15,7 @@ int main (int argc, char **argv){
     fprintf (stderr, "Usage: dotplot anchfile [name1 [name2]] \n");
     exit(1);
   }
-  
+
   if (argc > 2) name1 = argv[2];
   if (argc > 3) name2 = argv[3];
   if (name1 == NULL) name1 = dummy;
@@ -23,7 +23,7 @@ int main (int argc, char **argv){
 
   pa = -1;
   pb = -1;
-  
+
   file = fopen (argv[1], "r");
   while (!feof (file)){
     if (fscanf (file,
@@ -47,7 +47,6 @@ int main (int argc, char **argv){
   printf ("set title \"Dotplot: %s vs. %s\"\n", name1, name2);
   printf ("set style line 1 linetype 3 linewidth 3\n");
   printf ("set style line 2 linetype 1 linewidth 4\n");
-
 
   while (!feof (file)){
     if (fscanf (file,
@@ -84,7 +83,7 @@ int main (int argc, char **argv){
 	PAD = (s1e-s1b)* 2/10;
 	PAD2 = (s2b-s2e)* 2/10;
 	printf ("set arrow from %d,%d to %d,%d nohead ls 2\n",
-	  s1b-PAD2, s2b+PAD2, 
+	  s1b-PAD2, s2b+PAD2,
 		s1e+PAD2, s2e-PAD2);
 
 	// draw connections
@@ -101,7 +100,6 @@ int main (int argc, char **argv){
   printf ("set terminal postscript enhanced color\n");
   printf ("set output \"sin.ps\"\n");
   printf ("replot\n");
-
 
   fclose (file);
 }

@@ -1132,7 +1132,6 @@ sub go_synfind {
     CoGe::Accessory::Web::write_log( "Created Workflow: $workflow_name",
         $cogeweb->logfile );
 
-
     #convert numerical codes for different scoring functions to appropriate types
     if ( $scoring_function eq '2' ) {
         $scoring_function = "density";
@@ -1140,7 +1139,6 @@ sub go_synfind {
     else {
         $scoring_function = "collinear";
     }
-
 
     #need to blast source_dsg against each dsgids
     my @blast_results;
@@ -1597,7 +1595,6 @@ sub get_results {
         . qq{<th>Synteny Score}
         . qq{<th>SynMap}
         . qq{</tr></THEAD><TBODY>};
-
 
     my $table_content;
 

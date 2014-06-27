@@ -1543,7 +1543,6 @@ sub sort_nt3
     return $val;
   }
 
-
 sub color_by_usage
   {
     my $self = shift;
@@ -1642,7 +1641,7 @@ sub html_aa_new
 };
     my $total = 0;
     foreach (sort {$aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b}keys %$aa_sort)
-      {	
+      {
 	my $color_str;
 	my $current_val = $data->{$_} =~ /\d/ ? sprintf("%.2f",100*$data->{$_}) : $data->{$_};#sprintf("%.2f",100*$data->{$_});
 	if ($current_val =~ /^\d/)
@@ -1716,7 +1715,7 @@ sub html_aa
     $html .= "<table class='ui-widget-content ui-corner-all'>";
     my $total = 0;
     foreach (sort {$aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b}keys %$aa_sort)
-      {	
+      {
 	my $color_str;
 	my $current_val = $data->{$_} =~ /\d/ ? sprintf("%.2f",100*$data->{$_}) : $data->{$_};#sprintf("%.2f",100*$data->{$_});
 	if ($current_val =~ /^\d/)
@@ -1756,6 +1755,5 @@ sub html_aa
     $html .= "</table>" if $split_table;
     return $html;
   }
-
 
 1;

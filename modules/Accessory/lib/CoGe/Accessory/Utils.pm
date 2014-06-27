@@ -69,10 +69,10 @@ sub print_fasta {
 	my $fh = shift;
 	my $name = shift;	# fasta section name
 	my $pIn = shift; 	# reference to section data
-	
+
 	my $len = length $$pIn;
 	my $ofs = 0;
-	
+
 	print {$fh} ">$name\n";
     while ($ofs < $len) {
     	print {$fh} substr($$pIn, $ofs, $FASTA_LINE_LEN) . "\n";
@@ -83,13 +83,13 @@ sub print_fasta {
 sub get_unique_id {
 	my $id = Data::GUID->new->as_hex;
 	$id =~ s/^0x//;
-	return $id;	
+	return $id;
 }
 
 sub get_link_coords { # mdb added 11/20/13 issue 254
 	my ($start, $stop) = @_;
 	return ($start, $stop) unless (defined $start and defined $stop);
-	
+
 	my $offset = 500;#int( abs($stop-$start+1) / 4 );
 	($start, $stop) = ($stop, $start) if ($start > $stop);
 	$start -= $offset;
@@ -145,6 +145,5 @@ sub execute {
 
     return $cmdStatus;
 }
-
 
 1;

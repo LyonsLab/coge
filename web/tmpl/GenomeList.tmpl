@@ -4,12 +4,12 @@
 <SCRIPT language="JavaScript">
 
 $(document).ready(function(){
-	$('#genome_table').tablesorter({		
+	$('#genome_table').tablesorter({
 		cssAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		cssDesc: 'headerSortDown',	// Class name for descending sorting action to header
 		//cssHeader: 'header',		// Class name for headers (th's)
 		widgets: ['zebra'],
-		headers: {0: {sorter: false},},					
+		headers: {0: {sorter: false},},
 	});
 	check_display();
 /*	$('#genome_table').columnFilters({
@@ -38,24 +38,22 @@ $(document).ready(function(){
 	});
 });
 
-
-
 //set up the jquery ui
 $(function() {
-	//substaniate dialog box	     
-	$("#table_opts_dialog").dialog({ 
+	//substaniate dialog box
+	$("#table_opts_dialog").dialog({
 		height: 200,
 		width: 627,
 		autoOpen: false,
 	});
-	
-	$("#edit_genome_info").dialog({ 
+
+	$("#edit_genome_info").dialog({
 		autoOpen: false,
 		//height: 331,
 		//width: 461,
-		buttons: { 
+		buttons: {
 			"Cancel": function() { $(this).dialog("close"); },
-			"Save": function() { 
+			"Save": function() {
 				$.ajax({
 					data: {
 						jquery_ajax: 1,
@@ -69,12 +67,12 @@ $(function() {
 					},
 					success: function(val){}
 				});
-									
-				$(this).dialog("close"); 
+
+				$(this).dialog("close");
 			}
 		}
 	});
-	
+
 	//button effects on events
 	$('#table_opts').click(function() {
 		$('#table_opts_dialog').dialog('open');
@@ -82,7 +80,7 @@ $(function() {
 	$('#history_dialog_button').click(function() {
 		$('#save_form').dialog('open');
 	});
-}); 
+});
 
 	//Filters Rows for search_text - Case sensitive as of now, and searches hidden columns...
 	function filter_rows (search_text){
@@ -92,7 +90,7 @@ $(function() {
 	    if( $('#search_type').val() == 1 ) { $("#genome_table_body tr:not(:icontains('"+search_text+"'))").hide(); }
 	    else { $("#genome_table_body tr:icontains('"+search_text+"')").hide(); }
 	  }
-	  
+
 	  $('#filter_count').html('Showing ' + $("#genome_table_body tr:visible").length + ' of ' + $("#genome_table_body tr").length + ' genomes');
 	}
 
@@ -106,7 +104,7 @@ $(function() {
 			alert("Danger Will Robinson!\n1D-10T error!  You have not selected any genomes.");
 			return;
 		}
-		
+
 		$.ajax({
 			data: {
 				jquery_ajax: 1,
@@ -116,7 +114,7 @@ $(function() {
 			success : function(url) {
 				window.open(url,'_blank');
 			}
-		});		
+		});
 	}
 
 	function export_url(url,num_accns) {
@@ -142,7 +140,7 @@ $(function() {
 	 }
 	 $('#show_all_codon').remove();
 	}
-	
+
 	function get_all_wobble_hist(num){
 		for (var i=1; i<=num; i++)
 		 {
@@ -153,7 +151,7 @@ $(function() {
 		 }
 		 $('#get_all_wcg').remove();
 	}
-	
+
 	function get_all_gc_hist(num){
 		for (var i=1; i<=num; i++)
 		 {
@@ -171,7 +169,7 @@ $(function() {
 	   setTimeout("update_table()",100);
 	   return;
 	 }
-	 $('#genome_table').trigger("update");	
+	 $('#genome_table').trigger("update");
 	}
 
 	function get_codon_table (num) {
@@ -209,8 +207,8 @@ $(function() {
 	  divid = opts.divid;
 
 	  // create a new closure who's scope does *not*
-	  // include the `divid` value so that callback will 
-	  // not clobber the `divid` variable 
+	  // include the `divid` value so that callback will
+	  // not clobber the `divid` variable
 	  var create_callback = function(divid) {
 	      var local_divid = divid;
 	      return function (data) {
@@ -263,13 +261,13 @@ function run_get_gc(opts) {
 	var div2 = $('#'+opts.divid2);
 	var div3 = $('#'+opts.divid3);
 	var div4 = $('#'+opts.divid4);
-	
+
 	var busy = '<img src="picts/ajax-loader.gif"/>';
 	div1.html(busy);
 	div2.html(busy);
 	div3.html(busy);
 	div4.html(busy);
-	
+
 	$.ajax({
 	    data: {
 	 	    jquery_ajax: 1,
@@ -290,7 +288,7 @@ function run_get_gc(opts) {
          {
            $('#gl'+val).remove();
 	 }
-	 
+
 	function get_all_feat_counts(num) {
 	for (var i=1; i<=num; i++)
 	 {
@@ -300,7 +298,7 @@ function run_get_gc(opts) {
 	  run_get_feat_counts({dsgid: dsgid, divid: 'feat_counts_'+i});
 	 }
 	 $('#get_all_feat_counts').remove();
-	 update_table();	
+	 update_table();
 	}
 
 	function run_get_feat_counts(opts){
@@ -309,8 +307,8 @@ function run_get_gc(opts) {
 	  divid = opts.divid;
 
 	  // create a new closure who's scope does *not*
-	  // include the `divid` value so that callback will 
-	  // not clobber the `divid` variable 
+	  // include the `divid` value so that callback will
+	  // not clobber the `divid` variable
 	  var create_callback = function(divid) {
 	      var local_divid = divid;
 	      return function (data) {
@@ -326,7 +324,6 @@ function run_get_gc(opts) {
 	          },
 	    success : create_callback(divid)
 	  });
-
 
 	}
 
@@ -350,7 +347,6 @@ function run_get_gc(opts) {
 		     success : create_callback(divid)
 		   });
 	}
-
 
 	function get_cds_gc_hist(opts){
 	if (!opts){opts={};}
@@ -384,7 +380,7 @@ function run_get_gc(opts) {
 	  run_get_aa_usage({dsgid: dsgid, table_name: table_name, divid: 'aa_usage_'+i});
 	 }
 	 $('#get_all_aa_usage').remove();
-	 update_table();	
+	 update_table();
 	}
 
 	function run_get_aa_usage(opts){
@@ -394,8 +390,8 @@ function run_get_gc(opts) {
 	  divid = opts.divid;
 
 	  // create a new closure who's scope does *not*
-	  // include the `divid` value so that callback will 
-	  // not clobber the `divid` variable 
+	  // include the `divid` value so that callback will
+	  // not clobber the `divid` variable
 	  var create_callback = function(divid) {
 	      var local_divid = divid;
 	      var local_table_name = table_name;
@@ -420,11 +416,7 @@ function run_get_gc(opts) {
 	    success : create_callback(divid)
 	  });
 
-
 	}
-
-
-
 
 	function toggle_column(index) {
 	show = 0;
@@ -440,7 +432,7 @@ function run_get_gc(opts) {
 	   $('#genome_table td:nth-child('+(1*index+1)+')').hide();
 	   $('#genome_table th:nth-child('+(1*index+1)+')').hide();
 	  }
-  
+
 	}
 
 	function check_display() {
@@ -480,7 +472,7 @@ function run_get_gc(opts) {
 	    display: index,
 	          },
 	    success: function(data) {
-	    	     $('#table_opts_dialog').dialog('close');	      
+	    	     $('#table_opts_dialog').dialog('close');
 	    }
 	  });
 //	save_GenomeList_settings(['args__display','args__'+index],[]);
@@ -501,8 +493,6 @@ function edit_list_info (lid) {
       });
 }
 
-
-
 	</SCRIPT>
 
 <div style='padding-top:10px;'>
@@ -514,7 +504,7 @@ function edit_list_info (lid) {
 
 <!--
 	<div class="small">
-     Your Lists: 
+     Your Lists:
      <span id=user_lists><TMPL_VAR NAME=USER_LISTS></span>
      Public Lists:
 	 <span id=pub_lists><TMPL_VAR NAME=PUBLIC_LISTS></span>
@@ -523,7 +513,7 @@ function edit_list_info (lid) {
 	<table class="small" width="100%" style="padding-top:10px">
 	 <tr>
 	  <td>
-	   Filter: 
+	   Filter:
 	   <input type="text" id="search_bar">
 	   <select id="search_type">
 	   <option value="1">Contains</option>
@@ -612,7 +602,7 @@ function edit_list_info (lid) {
 	</table>
 
 	<div class='small'>
-	 Send selected genomes to:  
+	 Send selected genomes to:
 	  <select name="checked_action" id="checked_action">
 	   <option value="send_to_fasta">FASTA Sequences</option>
 	   <option value="send_to_csv">Export CSV</option>
@@ -623,9 +613,9 @@ function edit_list_info (lid) {
 	   <option value="send_to_GenomeList">GenomeList</option>
 	   <option value="send_to_list">Create Notebook</option>
 	  </select>
-	<span class='ui-button ui-corner-all ui-button-icon-right  ui-button-go' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id=retrieve_message class=alert></span>  
+	<span class='ui-button ui-corner-all ui-button-icon-right  ui-button-go' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id=retrieve_message class=alert></span>
 	 </div>
-	 
+
 	 <br>
 
 	<div id="table_opts_dialog" title="Table Information Options">
@@ -660,10 +650,7 @@ function edit_list_info (lid) {
 	</div>
 	</form>
 
-
 <div class="dialog_box" id="edit_genome_info" title="Edit Genome Information" style="display:none;"></div>
-
-
 
 </TMPL_IF>
 
@@ -693,7 +680,6 @@ function edit_list_info (lid) {
 <span href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-newwin"></span>Save Table</span>
 <span class="ui-button ui-corner-all ui-button-go" onClick="update_genome_info('$dsgid')">Update</span>
 </TMPL_IF>
-
 
 <TMPL_IF NAME=LIST_LIST>
 

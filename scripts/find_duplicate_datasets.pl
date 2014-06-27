@@ -24,6 +24,5 @@ foreach my $ds (sort {$b->id <=> $a->id} $coge->resultset('Dataset')->all())
 	next;
       }
     $data{$ds->name}{$ds->version}=$ds;
-    
-  }
 
+  }

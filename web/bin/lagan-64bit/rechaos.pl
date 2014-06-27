@@ -41,13 +41,13 @@ $translate = 0;
 sub max {
     my ($a, $b) = @_;
     return $a if ($a > $b);
-    return $b;    
+    return $b;
 }
 
 sub min {
     my ($a, $b) = @_;
     return $a if ($a < $b);
-    return $b;    
+    return $b;
 }
 
 $i = 2;
@@ -90,7 +90,7 @@ while ($i < @ARGV) {
 	$anchparams = $anchparams." -gap ".$ARGV[++$i];
 	$anchparams = $anchparams." ".$ARGV[++$i];
     }
-    else { 
+    else {
 	die ("Unrecognized option $ARGV[$i]\n");
     }
     $i++;
@@ -144,7 +144,7 @@ $i = 0;
 while (1) {
     $goodanchs = 0;
     $totalanchs = 0;
-    
+
     $stillmore = ($recurfl =~ /\((\d+)\,(\d+)\,(\d+)\,(\d+)\)(\w*)(.*)/);
     if (! $stillmore) {
 	if ($extracase1 || $extracase2) {
@@ -161,7 +161,7 @@ while (1) {
 	$cutoff = $3;
 	$extcutoff = $4;
 	$tail = $5;
-	
+
 	$extraparams = "";
 	$extraparams = "-t ".$extraparams if ((index ($tail, "t") != -1) && ($translate));
 	$extraparams = $extraparams." -rsc $extcutoff" if (index ($tail, "x") != -1);
@@ -188,17 +188,17 @@ while (1) {
 #    print STDERR "$lagandir/chaos $seq1 $seq2 -wl $wordlen -nd $degeneracy -co $cutoff $extraparams $gfc $chaosfl -pairs $$.anchs.pairs > $$.anchtemp";
 
 # PERFORM THE ALIGNMENTS USING CHAOS
-    
+
     $saver = "$lagandir/chaos_coge $seq1 $seq2 $extraparams -wl $wordlen -nd $degeneracy -co $cutoff $gfc $chaosfl -pairs $tempdir/$$.anchs.pairs > $tempdir/$$.anchtemp";
     #print $saver,"\n",`$saver`;
     #print STDERR "\nstuff being sent to chaos: $lagandir/chaos $seq1 $seq2 $extraparams -wl $wordlen -nd $degeneracy -co $cutoff $gfc $chaosfl -pairs $$.anchs.pairs > $$.anchtemp\n";
      ;
-     
+
      #print STDERR "readout from chaos? is: ",`$lagandir/chaos $seq1 $seq2 $extraparams -wl $wordlen -nd $degeneracy -co $cutoff $gfc $chaosfl -pairs $$.anchs.pairs > $$.anchtemp`,"\n";
-     
-    if ($?) { 
+
+    if ($?) {
 	print STDERR "$saver\n";
-	exit(1); 
+	exit(1);
     }
 
 # ADD IN BOUNDARIES
@@ -219,7 +219,7 @@ while (1) {
     close (OFILE);
 
 #    `wc $$.anchtemp` =~ /(\d+)/x;
-#    $totalanchs = $totalanchs + $1;	
+#    $totalanchs = $totalanchs + $1;
 #    print STDERR "CHAOS hits\n";
 #    print STDERR `cat $$.anchtemp`;
 
@@ -231,10 +231,10 @@ while (1) {
 # IF WE'RE DONE, THEN QUIT!
 
     $stillmore = ($recurfl =~ /\((\d+)\,(\d+)\,(\d+)\,(\d+)\)(\w*)(.*)/);
-    if (!$stillmore && !$extracase1 && !$extracase2) { 
-	last; 
+    if (!$stillmore && !$extracase1 && !$extracase2) {
+	last;
     }
-    
+
 #    `wc $$.anchs` =~ /(\d+)/x;
 #    print STDERR "ANCHS hits\n";
 #    print STDERR `cat $$.anchs.sorted`;
@@ -256,13 +256,13 @@ while (1) {
     @scores = 0;
 
     $app_str = "";
-    
+
     # FOR EACH UNALIGNED REGION
 
     $area = 0;
     $maxarea = 0;
     $k = 0;
-    
+
     for ($m = 0; $m < @anchors; $m++){
 
 	# SAVE OLD ANCHORS (SKIP FIRST AND LAST FAKE ANCHORS)
@@ -290,7 +290,7 @@ while (1) {
 	#print STDERR "\nnextanchorscore is: $nextanchorscore\n";
 
 	# CHECK IF RECURSION NEEDED
-	
+
 	$boxarea = ($gap1end - $gap1begin + 1) * ($gap2end - $gap2begin + 1);
 	$area = $area + $boxarea;
 	$maxarea = $boxarea if ($boxarea > $maxarea);
@@ -299,7 +299,7 @@ while (1) {
 	    ($gap2end - $gap2begin + 1) > $minside ){
 
 	    # FAST REJECT
-	    
+
 	    if ($fastreject && ($i >= $frminlevel) && ($i <= $frmaxlevel)){
 
 		# SKIP MARKED ENDS OF ALIGNMENT
@@ -310,7 +310,7 @@ while (1) {
 		}
 
 		# TRIM NEW ENDS OF ALIGNMENT
-		
+
 		if ($prevanchorscore == $sentinelleft){
 #		    if ($boxarea > $frseq1[$i] * $frseq2[$i]){
 		    if (($gap1end - $gap1begin > $frseq1[$i]) ||
@@ -384,4 +384,3 @@ else {
 }
 
 print STDERR "$cumanchs cumulative anchors\n"
-

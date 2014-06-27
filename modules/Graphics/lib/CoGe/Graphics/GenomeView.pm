@@ -5,11 +5,9 @@ use strict;
 use Data::Dumper;
 use GD;
 
-
 #################### main pod documentation begin ###################
-## 
-## 
-
+##
+##
 
 =head1 NAME  GenomeView
 
@@ -54,7 +52,7 @@ use GD;
 
  my $file = $gv->generate_png(filename=>"image.png");
  my $map = $gv->generate_imagemap(mapname=>"genomeview_imagemap");
- 
+
  print qq{Content-Type: text/html
 
 <html>
@@ -65,14 +63,12 @@ use GD;
 </html>
 };
 
-
 =head1 DESCRIPTION
- 
+
  GenomeView creates images that give a graphical overview of an entire chromosome that can be painted
  with tick marks.  These tick marks can be used to show where blast hits fall on a chromosome, where
  genes reside, etc.  Each tick mark can also be used as a link in an imagemap to other web-pages or
  javascript functions.
-
 
 =head1 USAGE
 
@@ -84,7 +80,7 @@ use GD;
 
 =head1 SUPPORT
 
- Please contact Eric Lyons with questions, comments, suggestions, and most importantly code 
+ Please contact Eric Lyons with questions, comments, suggestions, and most importantly code
 improvements.
 
 =head1 AUTHOR
@@ -105,7 +101,6 @@ LICENSE file included with this module.
  GD
 =cut
 
-
 #for best performance, create all the chromosomes before generating the features.
 
 __PACKAGE__->mk_accessors(qw(organism chromosomes features image_width image_height legend_height _default_feature_color _gd _color_set color_band_flag legend chromosome_height show_count draw_ends max_count));
@@ -113,7 +108,6 @@ __PACKAGE__->mk_accessors(qw(organism chromosomes features image_width image_hei
 my $DEFAULT_COLOR = [255,100,100];
 my $FONT = GD::Font->MediumBold;
 my $FONTTT="/usr/local/fonts/arial.ttf"; #needs to be fixed to get from conf file
-
 
 sub generate_imagemap
   {
@@ -206,7 +200,7 @@ sub imagemap_features
 	     }
 	   $map .= " ".$feat->{imagemap}." " if $feat->{imagemap};
 	   $map .= qq!alt="$feat->{name}">\n!;
-	   
+
 	   if ($color_band_flag)
 	     {
 	       my $xt = sprintf("%.0f",($x+$feat->{end}/$chr->{end}*$width));
@@ -287,7 +281,6 @@ sub generate_chromosomes
     my $white = $self->get_color([255,255,255]);
     my $TITLE_FONT = gdGiantFont;
     $gd->string($TITLE_FONT, $self->image_width/2-(length ($self->organism)/2*$TITLE_FONT->width), $TITLE_FONT->height, $self->organism, $black) if $self->organism;
-    
 
     foreach my $name (sort {$chrs->{$b}->{end} <=> $chrs->{$a}->{end}} keys %$chrs)
       {
@@ -298,7 +291,7 @@ sub generate_chromosomes
 	my $pos_word_length = (length $chrs->{$name}->{end})*($vert_spacer/5);
 	my $offset_width = ($real_width+$pos_word_length) - $self->image_width;
 	#print STDERR "offset width: ",$offset_width,"\n";
-	$real_width -= ($offset_width - 15) if $offset_width > 0; 
+	$real_width -= ($offset_width - 15) if $offset_width > 0;
 	my ($cstart, $cend) = ($chrs->{$name}->{centromere_start}, $chrs->{$name}->{centromere_end});
 	$gd->rectangle($horz_spacer, $count*$vert_spacer, $horz_spacer+$width, $count*$vert_spacer+$height, $black);
 	$gd->arc($horz_spacer, $count*$vert_spacer+$height/2, $height, $height, 90, 270, $black) unless defined $self->draw_ends && $self->draw_ends == 0;
@@ -344,7 +337,7 @@ sub draw_features
 	$max_count = $points{$x1}{$feat->{up}}{count} if $points{$x1}{$feat->{up}}{count} > $max_count;
 	$points{$x1}{$feat->{up}}{color} = $feat->{color};
 	$points{$x1}{$feat->{up}}{heatmap} = $feat->{heatmap};
-	
+
       }
     $self->max_count($max_count);
     foreach my $x1 (sort {$points{$a}{0}{count}+$points{$a}{1}{count} <=> $points{$b}{0}{count}+$points{$b}{1}{count}} keys %points)
@@ -367,7 +360,7 @@ sub draw_features
 	     }
 	   $color = $self->get_color($color) if ref ($color) =~ /array/i;
 	   $color = $self->default_feature_color unless $color;
-	   
+
 	   $y = sprintf("%.0f", $y);
 	   my $poly = new GD::Polygon;
 	   if ($up)
@@ -466,7 +459,7 @@ sub gd
 	$gd = new GD::Image($wid, $hei);
 	$gd->colorAllocate(255,255,255);
 	$self->_gd($gd);
-	
+
       }
 
     return $gd;
@@ -554,7 +547,7 @@ sub add_chromosome
     $self->chr({}) unless $self->chr;
     my $chr = $self->chr();
     $chr->{$name} = {
-		     start=>$start, 
+		     start=>$start,
 		     end=>$end,
 		     name=>$name,
 		     centromere_start=>$cstart,

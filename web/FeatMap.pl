@@ -226,7 +226,7 @@ sub generate_chromosome_images {
                 start    => $feat->start,
                 stop     => $feat->stop,
                 chr      => "Chr: $chr",
-                imagemap => qq/class="imagemaplink" title="/ 
+                imagemap => qq/class="imagemaplink" title="/
                   . $name . qq/ (/
                   . $feat->type->name
                   . qq/)" onclick="show_feature_info('/

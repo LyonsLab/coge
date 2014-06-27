@@ -18,13 +18,11 @@ my ($extra1, $extra2) =(0, 0);
 if (-e "$seq1.masked") { $seq1 = "$seq1.masked"; $extra1 = 1;}
 if (-e "$seq2.masked") { $seq2 = "$seq2.masked"; $extra2 = 1;}
 
-
 my ($outName1, $outName2) = ($ARGV[0], $ARGV[1]);
 $outName1 =~ s/^.*\///;
 $outName1 =~ s/\..*//;
 $outName2 =~ s/^.*\///;
 $outName2 =~ s/\..*//;
-
 
 my $max_ext = 25000;
 my $ext_mul = 1;
@@ -103,7 +101,6 @@ die("$0: Supermap generated no regions. Stopped") unless scalar @regs;
 close FH;
 unlink "seq1len"; unlink "seq2len"; # unlink $supermap_outfile;
 
-
 for (my $k = 0; $k < @regs; $k++) {
 	$regs[$k] =~ /^([^\s]+)\s([\d]+)\s([\d]+)\s\s\s([^\s]+)\s([\d]+)\s([\d]+)\s(\+|\-)\s\((DM|M1|M2),\s([\d]+)\saligns\)$/o;
 
@@ -148,6 +145,5 @@ for (my $k = 0; $k < @regs; $k++) {
 unlink(glob("*.$$"));
 if ($extra1 || $extra2) { `rm *.$$.masked`; }
 exit(0);
-
 
 # out: .chaos .mon->.smap .xmfa

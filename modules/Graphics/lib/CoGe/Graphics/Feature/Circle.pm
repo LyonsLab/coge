@@ -1,4 +1,3 @@
-
 package CoGe::Graphics::Feature::Circle;
 use strict;
 use base qw(CoGe::Graphics::Feature);
@@ -17,7 +16,6 @@ LICENSE file included with this module.
 
 =cut
 
-
 BEGIN {
     use vars qw($VERSION $HEIGHT $BLOCK_HEIGHT);
     $VERSION     = '0.1';
@@ -32,9 +30,9 @@ BEGIN {
 sub _initialize
   {
     my $self = shift;
-    
+
     #my %opts = @_;
-    my $h = $HEIGHT; #total image height 
+    my $h = $HEIGHT; #total image height
     my $s = $self->start;
     my $e = $self->stop;
     my $w = $e-$s;
@@ -42,21 +40,20 @@ sub _initialize
     $self->image_width($w);
     $self->image_height($h);
     $self->merge_percent(100);
-    $self->bgcolor([255,255,255]) unless $self->bgcolor; 
+    $self->bgcolor([255,255,255]) unless $self->bgcolor;
     $self->skip_duplicate_search(1);
     $self->force_label(1);
     $self->type('Diamond') unless $self->type;
     $self->mag(1);
     $self->font_size(10);
     $self->color_matches(0) unless defined $self->color_matches();
-    
+
   }
-  
 
 sub _post_initialize
   {
     my $self = shift;
-   
+
     #my %opts = @_;
 
     my $w = $self->image_width;
@@ -64,47 +61,43 @@ sub _post_initialize
     my $s = $self->start;
     my $e = $self->stop;;
     my $color=$self->color;
-    
+
     my @color=split(/\,/,$color);
 
     my $w2=$w-5;
     my $h2=$h-10;
     my $w3=$w-100;
-    
+
     my $gd=$self->gd;
- 
-    #make a colored box around the hsp    
-    #$gd->fill(1,1, $self->get_color(@color));    
-    #$gd->rectangle(1,1,$w-1, $h-1, $self->get_color(@color));    
-    
+
+    #make a colored box around the hsp
+    #$gd->fill(1,1, $self->get_color(@color));
+    #$gd->rectangle(1,1,$w-1, $h-1, $self->get_color(@color));
+
     ##this works to draw a flag
-    #$gd->filledRectangle(1,1,$w, $h, $self->get_color(@color));    
+    #$gd->filledRectangle(1,1,$w, $h, $self->get_color(@color));
     #$gd->filledRectangle(0,10,$w2, $h, $self->get_color([255,255,255]));
     ####
 
     ##This works for a diamond
-    $gd->filledRectangle(1,1,$w, $h, $self->get_color([255,255,255]));        
-    #my $poly1 = GD::Polygon->new;  
+    $gd->filledRectangle(1,1,$w, $h, $self->get_color([255,255,255]));
+    #my $poly1 = GD::Polygon->new;
     #$poly1->addPt(0,10);
     #$poly1->addPt(100,0);
-    #$poly1->addPt(200,10); 
+    #$poly1->addPt(200,10);
     #$gd->filledPolygon($poly1, $self->get_color(@color));
-
 
     #Trying to draw a circle
     my $poly3 = GD::Circle->new;
     $gd->Circle($gd,"100","10","50",[@color]);
-    
-    
 
-
-    #my $poly2 = GD::Polygon->new;  
+    #my $poly2 = GD::Polygon->new;
     #$poly2->addPt(0,10);
     #$poly2->addPt(100,20);
-    #$poly2->addPt(200,10); 
+    #$poly2->addPt(200,10);
     #$gd->filledPolygon($poly2, $self->get_color(@color));
   }
-  
+
 sub _rounded_edges
 {
     my $self = shift;
@@ -120,10 +113,10 @@ sub _rounded_edges
       #my $poly = GD::Polygon->new;
       #$poly->addPt($x1,$y1);
       #$poly->addPt($x1+($negx*($dist-$i)),$y1);
-      #$poly->addPt($x1,$y1+($negy*($i+1))); 
+      #$poly->addPt($x1,$y1+($negy*($i+1)));
       print STDERR "($x1,$y1)\n";
       print STDERR "(",$x1+($negx*($dist-$i)),",$y1)\n";
-      print STDERR "($x1,",$y1+($negy*($i+1)),")\n\n"; 
+      print STDERR "($x1,",$y1+($negy*($i+1)),")\n\n";
       #$gd->filledPolygon($poly, $self->get_color(255,255,255));
     }
 }
@@ -140,17 +133,15 @@ sub _rounded_edges
  Comment   : This is a sample subroutine header.
            : It is polite to include more pod and fewer comments.
 
-See Also   : 
+See Also   :
 
 =cut
 
 #################### subroutine header end ####################
 
-
 #################### main pod documentation begin ###################
-## Below is the stub of documentation for your module. 
+## Below is the stub of documentation for your module.
 ## You better edit it!
-
 
 =head1 NAME
 
@@ -160,20 +151,13 @@ CoGe::Graphics::Feature::Base
 
   use CoGe::Graphics::Feature::Base
 
-
 =head1 DESCRIPTION
 
 =head1 USAGE
 
-
-
 =head1 BUGS
 
-
-
 =head1 SUPPORT
-
-
 
 =head1 AUTHOR
 
@@ -189,7 +173,6 @@ This program is free software licensed under the...
 The full text of the license can be found in the
 LICENSE file included with this module.
 
-
 =head1 SEE ALSO
 
 perl(1).
@@ -198,7 +181,5 @@ perl(1).
 
 #################### main pod documentation end ###################
 
-
 1;
 # The preceding line will help the module return a true value
-

@@ -69,25 +69,24 @@ __PACKAGE__->set_primary_key("feature_name_id");
 __PACKAGE__->belongs_to("feature" => "CoGeX::Result::Feature", "feature_id");
 __PACKAGE__->has_one("feature_annotation" => "CoGeX::Result::FeatureAnnotation", {'foreign.feature_id'=>'self.feature_id'});
 
-
 sub primary
  {
    shift->primary_name(@_);
  }
- 
+
 ################################################ subroutine header begin ##
 
 =head2 info
 
  Usage     : $self->info
- Purpose   : returns a string of information about the feature name.  
+ Purpose   : returns a string of information about the feature name.
 
  Returns   : returns a string
  Argument  : none
- Throws    : 
+ Throws    :
  Comments  : To be used to quickly generate a string about the feature name
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -103,7 +102,6 @@ sub info
 }
 
 1;
-
 
 =head1 AUTHORS
 

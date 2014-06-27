@@ -42,7 +42,6 @@ Relates to CCoGeX::Result::Genome> via C<genomic_sequence_type_id> in a one-to-m
 
 =cut
 
-
 __PACKAGE__->table("genomic_sequence_type");
 __PACKAGE__->add_columns(
   "genomic_sequence_type_id",
@@ -64,14 +63,14 @@ __PACKAGE__->has_many("genomes"=>"CoGeX::Result::Genome","genomic_sequence_type_
 
 =head2 to_*
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -94,15 +93,15 @@ sub to_json {
 
 =head2 info
 
- Usage     : 
+ Usage     :
  Purpose   : provides quick information about the type
  Returns   : a string
- Argument  : 
- Throws    : 
+ Argument  :
+ Throws    :
  Comments  : name, description
-           : 
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -116,9 +115,7 @@ sub info
 	return $info;
 }
 
-
 1;
-
 
 =head1 AUTHORS
 

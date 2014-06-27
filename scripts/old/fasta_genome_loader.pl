@@ -13,12 +13,11 @@ use Getopt::Long;
 
 use vars qw($DEBUG $coge $GENOMIC_SEQ_LEN $GO $ERASE);
 
-
 my ($nt_file, $nt_dir, $org_name, $org_desc, $org_id, $ds_name, $ds_desc, $ds_link, $ds_id, $di_name, $di_desc, $di_link, $di_version, $di_id, $use_contigs_as_features, $chr, $seq_type_name, $seq_type_desc, $seq_type_id, $chr_basename, $add_chr_name, $use_fasta_header);
 
 GetOptions ( "debug=s" => \$DEBUG,
 	     "go=s"    => \$GO,
-	     "erase|e" => \$ERASE, 
+	     "erase|e" => \$ERASE,
 	     "fasta_file|fasta|faa|nt_file|nt=s" => \$nt_file,
 	     "fasta_dir|nt_dir|dir=s"=>\$nt_dir,
 	     "org_name=s" => \$org_name,
@@ -46,19 +45,13 @@ GetOptions ( "debug=s" => \$DEBUG,
 $DEBUG = 1 unless defined $DEBUG; # set to '1' to get updates on what's going on
 $GO = 1 unless defined $GO; #set to 1 to actually make db calls.
 
-
-
 $use_contigs_as_features =0 unless defined $use_contigs_as_features;
-
-
 
 my $GENOMIC_SEQ_LEN = 10000; #length to break up genomic sequence
 my $connstr = 'dbi:mysql:dbname=genomes;host=HOST;port=PORT';
 $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
-
-
 
 my $di = $di_id ? $coge->resultset('Dataset')->find($di_id) : generate_di(
 									  org_name => $org_name,
@@ -76,7 +69,7 @@ my $di = $di_id ? $coge->resultset('Dataset')->find($di_id) : generate_di(
 unless ($di)
   {
     warn "dataset object not initialized.  Exiting.";
-    exit;    
+    exit;
   }
 
 my $gstype = generate_gstype(id=>$seq_type_id, name=>$seq_type_name, desc=>$seq_type_desc);
@@ -175,7 +168,6 @@ sub process_nt
 	process_nt_file (file=>$file, di=>$di, chr=>$chr);
       }
   }
-
 
 sub process_nt_file
   {
@@ -300,7 +292,7 @@ sub generate_di
     my $di = $coge->resultset('Dataset')->find_or_create({
 									   name                => $di_name,
 									   description         => $di_desc,
-									   link                => $di_link, 
+									   link                => $di_link,
 									   organism_id         => $org->id,
 									   data_source_id      => $ds->id(),
 									   version=>$di_version,

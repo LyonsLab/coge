@@ -188,7 +188,6 @@ void writeSeq(FILE *out,FILE *seq,long offset,int length,int sameStrand) {
 	writeSeqBuf(out,buf,length,sameStrand);
 }
 
-
 /*OLD
 void writeSeqCut(FILE *out,FILE *seq,long offset,int length,int sameStrand,int cutStart,int cutEnd) {
 	offset+=cutStart;

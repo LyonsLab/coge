@@ -154,12 +154,12 @@ sub types {
 
  Usage     : $self->experiment_types
  Purpose   : pass through experiment_type_connector to fake a many-to-many connection with experiment_type
- Returns   : 
+ Returns   :
  Argument  : none, really
- Throws    : 
- Comments  : 
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -193,12 +193,12 @@ sub storage_path {
 
  Usage     : $self->lists
  Purpose   : returns lists containing with experiments
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -290,7 +290,7 @@ sub annotation_pretty_print_html {
 
     $anno_type =
       new CoGe::Accessory::Annotation(
-            Type => "<tr><td nowrap='true'><span class=\"title5\">" 
+            Type => "<tr><td nowrap='true'><span class=\"title5\">"
           . "Genome"
           . "</span>" );
     $anno_type->Type_delimit(": <td class=\"data5\">");
@@ -299,7 +299,7 @@ sub annotation_pretty_print_html {
 
     $anno_type =
       new CoGe::Accessory::Annotation(
-            Type => "<tr><td nowrap='true'><span class=\"title5\">" 
+            Type => "<tr><td nowrap='true'><span class=\"title5\">"
           . "Source"
           . "</span>" );
     $anno_type->Type_delimit(": <td class=\"data5\">");
@@ -316,7 +316,7 @@ sub annotation_pretty_print_html {
     $anno_type->Type_delimit(": <td class=\"data5\">");
     $anno_type->add_Annot( $self->version . "</td>" );
     $anno_obj->add_Annot($anno_type);
-    
+
     $anno_type =
       new CoGe::Accessory::Annotation(
             Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">"
@@ -339,7 +339,7 @@ sub annotation_pretty_print_html {
         $anno_type->add_Annot($info);
     }
     $anno_obj->add_Annot($anno_type);
-    
+
     $anno_type =
       new CoGe::Accessory::Annotation(
             Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">"
@@ -385,14 +385,14 @@ sub annotation_pretty_print_html {
 =head2 info
 
  Usage     : $self->info
- Purpose   : returns a string of information about the experiment.  
+ Purpose   : returns a string of information about the experiment.
 
  Returns   : returns a string
  Argument  : none
- Throws    : 
+ Throws    :
  Comments  : To be used to quickly generate a string about the experiment
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -425,15 +425,15 @@ sub info {
 
 =head2 info_html
 
- Usage     : 
+ Usage     :
  Purpose   : provides quick information about the list wrapped with a link to LIstView
  Returns   : a string
- Argument  : 
- Throws    : 
+ Argument  :
+ Throws    :
  Comments  : name, description, restricted, type
-           : 
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 

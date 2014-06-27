@@ -8,5 +8,3 @@ BEGIN { use_ok( 'CoGe::Algos::Pairwise' ); }
 
 my $object = CoGe::Algos::Pairwise->new ();
 isa_ok ($object, 'CoGe::Algos::Pairwise');
-
-

@@ -670,7 +670,7 @@ sub blast_search {
     my $link = $P->{SERVER} . $PAGE_NAME . "?dsgid=$blastable";
     $link .= ";fid=$fid" if ($fid);
     $link = CoGe::Accessory::Web::get_tiny_link(url => $link);
-    
+
     CoGe::Accessory::Web::log_history(
         db          => $coge,
         user_id     => $USER->id,
@@ -2937,4 +2937,3 @@ sub get_genomes_for_list {
 
     return $genomes;
 }
-

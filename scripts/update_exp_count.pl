@@ -44,7 +44,7 @@ $coge = CoGeX->connect($connstr, $user, $pass);
 my $dbh = $coge->storage->dbh;
 
 #-------------------------------------------------------------------------------
-#  
+#
 #-------------------------------------------------------------------------------
 
 foreach my $e ($coge->resultset('Experiment')->all) {#search({row_count => undef})) {
@@ -59,10 +59,10 @@ foreach my $e ($coge->resultset('Experiment')->all) {#search({row_count => undef
 			last;
 		}
 	}
-	
+
 	$e->row_count($row_count);
 	$e->update;
-	
+
 	print STDERR 'Experiment id' . $e->id . " row_count set to $row_count\n";
 }
 
@@ -73,4 +73,3 @@ foreach my $e ($coge->resultset('Experiment')->all) {#search({row_count => undef
 $coge->resultset('Log')->create( { user_id => 0, page => $0, description => 'All experiment row_counts updated' } );
 print STDERR "All done!\n";
 exit;
-

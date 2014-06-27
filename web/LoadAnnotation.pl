@@ -76,7 +76,7 @@ sub generate_html {
     $template->param( USER     => $name );
     $template->param( LOGO_PNG => $PAGE_TITLE . "-logo.png" );
     $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-    
+
     my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
     $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
 
@@ -114,7 +114,7 @@ sub generate_body {
             );
         }
     }
-    
+
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
         url => $P->{SERVER} . "$PAGE_TITLE.pl"
     );
@@ -368,14 +368,14 @@ sub load_annotation {
     my $user_name   = $opts{user_name};
     my $gid         = $opts{gid};
     my $items       = $opts{items};
-    
+
     # print STDERR "load_annotation: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
 
-	# Added EL: 10/24/2013.  Solves the problem when restricted is unchecked.  
-	# Otherwise, command-line call fails with next arg being passed to 
+	# Added EL: 10/24/2013.  Solves the problem when restricted is unchecked.
+	# Otherwise, command-line call fails with next arg being passed to
 	# restricted as option
     $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
- 
+
     # Check login
     if ( !$user_name || !$USER->is_admin ) {
         $user_name = $USER->user_name;
@@ -383,7 +383,7 @@ sub load_annotation {
     if ($user_name eq 'public') {
         return encode_json({ error => 'Not logged in' });
     }
- 
+
     # Check data items
     return encode_json({ error => "No data items" }) unless $items;
     $items = decode_json($items);
@@ -402,7 +402,7 @@ sub load_annotation {
 
     # Submit workflow to add genome
     my ($workflow_id, $error_msg) = create_annotation_dataset(
-        user => $USER, 
+        user => $USER,
         metadata => {
             name => $name,
             description => $description,
@@ -417,7 +417,7 @@ sub load_annotation {
     unless ($workflow_id) {
         return encode_json({ error => "Workflow submission failed: " . $error_msg });
     }
-    
+
 	# Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
         url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id
@@ -450,11 +450,11 @@ sub load_annotation {
 #        push @lines, $1 if ( $_ =~ /^log: (.+)/i );
 #        if ( $_ =~ /All done/i ) {
 #            $status = 1;
-#            
-#            # Generate a new load session ID in case the user chooses to 
+#
+#            # Generate a new load session ID in case the user chooses to
 #        	# reuse the form to start another load.
 #        	$new_load_id = get_unique_id();
-#            
+#
 #            last;
 #        }
 #        elsif ( $_ =~ /dataset id: (\d+)/i ) {
@@ -483,7 +483,7 @@ sub get_load_log {
     my $workflow_id = $opts{workflow_id};
     return unless $workflow_id;
     #TODO authenticate user access to workflow
-    
+
     my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
     return unless (-r $results_path);
 
@@ -492,9 +492,9 @@ sub get_load_log {
 
     my $result = CoGe::Accessory::TDS::read($result_file);
     return unless $result;
-    
+
     return encode_json(
-        { 
+        {
             genome_id   => $result->{genome_id},
             dataset_id  => $result->{dataset_id},
         }

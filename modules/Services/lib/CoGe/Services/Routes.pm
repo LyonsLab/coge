@@ -5,7 +5,7 @@ sub startup {
     my $self = shift;
 
     my $r = $self->routes->namespaces(["CoGe::Services::Data"]);
-    
+
     # Organism routes
     $r->get("/organisms/search/#term")
         ->name("organisms-search")
@@ -40,7 +40,7 @@ sub startup {
     $r->put("/experiments")
         ->name("experiments-add")
         ->to("experiment#add");
-        
+
     # Notebook routes
     $r->get("/notebooks/search/#term")
         ->name("notebooks-search")
@@ -49,7 +49,7 @@ sub startup {
     $r->get("/notebooks/:id" => [id => qr/\d+/])
         ->name("notebooks-fetch")
         ->to("notebook#fetch", id => undef);
-        
+
     # User routes
     # mdb 4/10/14: Removing search & fetch because they are available via the
     # iPlant Trellis API.
@@ -85,7 +85,7 @@ sub startup {
 
     $r->get("/jobs/:id/results/:name" => { id => qr/\d+/, name => qr/\w+/ })
         ->name("jobs-results")
-        ->to("job#results", id => undef, name => undef);    
+        ->to("job#results", id => undef, name => undef);
 }
 
 1;

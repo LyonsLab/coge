@@ -1,4 +1,3 @@
-
 <TMPL_IF NAME="JS">
 <SCRIPT language="JavaScript">
 
@@ -15,7 +14,6 @@ $('#maketable').html('<div id ="annotation" style = "overflow: auto; height: 300
   $(".dialog_box").dialog({ autoOpen: false, width: 500 });
 //  get_sequence(<TMPL_VAR NAME=RC>);
 });
-
 
 function generate_seq_obj(dsid,dsgid, chr,gstid, rel){
   this.start=$('#upstream').val()*1;
@@ -65,7 +63,7 @@ function dynamic_buttons(button){
 }
 
 function onEnter(e){
-  if (!e){ 
+  if (!e){
    var e = window.event;}
   if(e.which == 13){
     redefine();}
@@ -161,7 +159,7 @@ function waiting(tag,rc) {
   if ((rc==2)&&(seq_length > 80000)){
      $('#'+tag).html('<font class="loading dna">Loading. . .</font>');}
   else if (seq_length > 400000){
-  //alert(html+' is '+seq_length+' chars long'); 
+  //alert(html+' is '+seq_length+' chars long');
   //if (
     $('#'+tag).html('<font class="loading dna">Loading. . .</font>');}
   else{
@@ -187,7 +185,6 @@ function redefine(rc){
    down = $('#adddown').val().replace(/,|\./g,"");
    $('#adddown').val(down);
   }
-
 
   if(! isNaN($('#addup').val())) {
    up = ($('#upstream').val()*1)-($('#addup').val()*1);
@@ -215,35 +212,35 @@ function get_sequence(rc,pro,add){
   else {
     myObj.pro=pro;
   }
-  
+
   if (typeof rc == 'undefined') {
     rc = myObj.rc || 0;
   }
   else {
     myObj.rc=rc;
   }
-  
+
   var wrap = 0;
   if($('#wrap')[0].checked) {
 	  wrap=1;
 	}
 
   get_seq([
-    'args__featid', 'args__'+myObj.featid, 
-    'args__pro', 'args__'+pro, 
-    'args__rc', 'args__'+rc, 
-    'args__chr', 'args__'+myObj.chr, 
-    'args__dsid', 'args__'+myObj.dsid, 
-    'args__dsgid', 'args__'+myObj.dsgid, 
-    'args__featname', 'args__'+myObj.featname, 
-    'args__upstream', 'upstream', 
+    'args__featid', 'args__'+myObj.featid,
+    'args__pro', 'args__'+pro,
+    'args__rc', 'args__'+rc,
+    'args__chr', 'args__'+myObj.chr,
+    'args__dsid', 'args__'+myObj.dsid,
+    'args__dsgid', 'args__'+myObj.dsgid,
+    'args__featname', 'args__'+myObj.featname,
+    'args__upstream', 'upstream',
     'args__downstream', 'downstream',
-    'args__locations', 'args__' + '<TMPL_VAR NAME=LOCATIONS>', 
+    'args__locations', 'args__' + '<TMPL_VAR NAME=LOCATIONS>',
     'args__start', 'args__'+myObj.start,
     'args__stop', 'args__'+myObj.stop,
-    'args__add', 'args__'+add, 
-    'args__wrap','args__'+wrap, 
-    'args__gstid','args__'+myObj.gstid, 
+    'args__add', 'args__'+add,
+    'args__wrap','args__'+wrap,
+    'args__gstid','args__'+myObj.gstid,
     'args__rel','args__'+myObj.rel],['seq_text']
   );
 }
@@ -271,7 +268,6 @@ $(function(){
 		});
 });
 
-
 </SCRIPT>
 </TMPL_IF>
 <TMPL_IF NAME=SEQ_BOX>
@@ -283,7 +279,7 @@ $(function(){
           <br>
 	      </td>
         <td valign="top">
-          <TMPL_IF NAME=FEATURE> 
+          <TMPL_IF NAME=FEATURE>
           <span class='ui-button ui-corner-all' onClick="generate_feat_info(['args__<TMPL_VAR NAME=FEATID>'],['feature_info']); $('#feature_info').dialog('open');">Get Feature Info</span>
           </TMPL_IF>
         </td>
@@ -342,7 +338,7 @@ $(function(){
    <INPUT type="text" id="addup"  onkeypress="onEnter(event,1);" value= "<TMPL_VAR NAME="ADDUP">"  size=6>
      </td>
      <TD  class=small>
-     Add 3': 
+     Add 3':
     </td>
    <td>
      <INPUT type="text" id="adddown" onkeypress="onEnter(event,1);" value= "<TMPL_VAR NAME="ADDDOWN">" size=6>
@@ -369,8 +365,6 @@ $(function(){
 
 </TMPL_IF>
 
-
-
 <TMPL_IF NAME=BOTTOM_BUTTONS>
 </TMPL_IF>
 
@@ -382,4 +376,3 @@ $(function(){
    </TR>
  </TABLE>
 </TMPL_IF>
-

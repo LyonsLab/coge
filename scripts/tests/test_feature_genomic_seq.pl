@@ -20,8 +20,6 @@ my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
 my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 $type = "CDS" unless $type;
 
-
-
 my @aa = qw(R H K D E S T N Q C G P A I L M F W Y V);
 my @codons = gen_codon_table();
 print STDERR "length $length\n" if $DEBUG;

@@ -14,7 +14,7 @@ my %gene_models;
 
 while (<STDIN>) {
     unless (/\w/) { next; }
-    
+
     if (/^\#/) {
         if ($chain_text) {
             &process_chain_text($chain_text);
@@ -33,22 +33,20 @@ foreach my $gene_model (keys %gene_models) {
     print "$gene_model\n";
 }
 
-
 exit(0);
-
 
 ####
 sub process_chain_text {
     my $text = shift;
 
     my @entries = split (/\n/, $text);
-    
+
     my $header = shift @entries;
     $header =~ /num aligned pairs: (\d+)/ or confess "Error, cannot determine num aligned pairs from header\n$header\n\n$text\n\n!!";
 
     my $num_pairs = $1;
 
-    if ($num_pairs < $min_chain_len) { 
+    if ($num_pairs < $min_chain_len) {
         return;
     }
 
@@ -58,8 +56,7 @@ sub process_chain_text {
 
         $gene_models{"$chr_A; $gene_A"} = 1;
         $gene_models{"$chr_B; $gene_B"} = 1;
-        
-    }
 
+    }
 
 }

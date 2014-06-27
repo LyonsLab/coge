@@ -7,12 +7,12 @@ $(document).ready(function(){
 		dataType: "html",
 		cache: false,
 	});
-        $('#group_table').tablesorter({		
+        $('#group_table').tablesorter({
 		cssAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		cssDesc: 'headerSortDown',	// Class name for descending sorting action to header
 //		cssHeader: 'header',			// Class name for headers (th's)
 		widgets: ['zebra'],
-		headers: {0: {sorter: false},},	//don't allow sort on the first column				
+		headers: {0: {sorter: false},},	//don't allow sort on the first column
 		});
 });
 
@@ -22,14 +22,14 @@ function run_ajax(opts){
       stuff = opts.stuff; //example of passing in some stuff
 
       // create a new closure who's scope does *not*
-      // include the `divid` value so that callback will 
-      // not clobber the `divid` variable 
+      // include the `divid` value so that callback will
+      // not clobber the `divid` variable
       var create_callback = function(divid) {
               var local_divid = divid;
               return function (data) {
                   $('#'+local_divid).html(data);
               };
-          }; 
+          };
 
       $.ajax({
         data: {
@@ -47,15 +47,15 @@ function remove_selected_motifs() {
 
 var value=$(this).val();
 //console.log('removing',value);
-    
+
 $('#'+$(this).val()).remove();
     });
  counting();
  }
 $(function() {
- //substaniate dialog boxes	     
+ //substaniate dialog boxes
         $(".dialog_box").dialog({ autoOpen: false, width: 500 });
-	
+
 /**Button initializations**/
 	//Add all Listed
 	$('#add_all_listed_button').click(function() {
@@ -72,10 +72,10 @@ $(function() {
 	//Add
 	$('#add').click(function() {
 			add_selected_motifs();
-	});	
-				  	
+	});
+
 	//Get motif info
-	$("#motif_info_button").click(function() {	
+	$("#motif_info_button").click(function() {
 	get_motifs_selected();
 	$('#motif_info_popup').dialog('open');
 			});
@@ -91,7 +91,6 @@ count++;
 get_motif_info(['args__motifs','args__'+ids],[add_to_info_list]);
 }
 
-
 function show_add() {
   if($('#add').is(":hidden")) {
     $('#remove').hide(0);
@@ -106,7 +105,7 @@ function add_selected_motifs() {
  ids=$(this).val();
 });
 
-  get_motif_vals(['args__motifs','args__'+ids],[add_to_list]);	
+  get_motif_vals(['args__motifs','args__'+ids],[add_to_list]);
   sort_motif_choice();
 }
 $.fn.getLength = function(val){
@@ -191,12 +190,12 @@ for (var i=0; i<motif.length; i++)
 //     console.log('name',name);
      seq = item[1];
 //     console.log('seq',seq);
-     color=item[2];	
+     color=item[2];
      title=item[6];
-     litref=item[5];    
+     litref=item[5];
      link='http://www.ncbi.nlm.nih.gov/pubmed/?term='+title;
 //     console.log('link',link);
-     html=html+name+':'+seq+':<a href='+link+' target=new>'+title+'</a><br>';          
+     html=html+name+':'+seq+':<a href='+link+' target=new>'+title+'</a><br>';
 }
 //html+='</table>';
 $('#motif_info_popup').append(html);
@@ -206,21 +205,21 @@ function add_all_motifs() {
  var ids;
  var count =0;
  $('#motif_select option').each(function(){
-     ids = ids+"\|\|\|"+$(this).val();     
+     ids = ids+"\|\|\|"+$(this).val();
    });
  get_motif_vals(['args__motifs','args__'+ids],[add_to_list]);
  sort_motif_choice();
 }
 
-function clear_motif_list() 
-{ $('#motif_choice').empty(); 
-counting(); 
+function clear_motif_list()
+{ $('#motif_choice').empty();
+counting();
 }
 
 function sort_motif_choice() {
     if (ajax.length)
      {
-       setTimeout("sort_motif_choice()",100);	
+       setTimeout("sort_motif_choice()",100);
        return;
      }
    $('#motif_choice').append().sortSelect();
@@ -237,12 +236,12 @@ function clear_selected_motifs(){
 $('input:checkbox[name=tfbs_motif]').each(function(){
 this.value=""
 //this.checked=false
-});	
+});
 }
 
-function clear_motif_list() 
-{ $('#motif_choice').empty(); 
-counting(); 
+function clear_motif_list()
+{ $('#motif_choice').empty();
+counting();
 }
 function get_selected_motifs() {
 var ids2=[];
@@ -268,13 +267,13 @@ console.log('joinvals2',joinvals2);
    <Table>
        <TR valign=top align=left>
         <TH>Enter Query Sequence<br>
-        
+
 	<table class ="ui-corner-all ui-widget-content">
-	
+
 	<TR>
 	<TD>
    	<DIV id="blah">Enter Gene Names (No Sequence)</DIV></td>
-	<TD><textarea class="backbox" rows="10" cols="20" tabindex="1" name=gene_names id=gene_names value="<TMPL_VAR NAME="GENE_NAMES">" /></textarea></TD>	
+	<TD><textarea class="backbox" rows="10" cols="20" tabindex="1" name=gene_names id=gene_names value="<TMPL_VAR NAME="GENE_NAMES">" /></textarea></TD>
 
 	<td>
 <table>
@@ -304,23 +303,22 @@ console.log('joinvals2',joinvals2);
    	<DIV id="blah">Enter Sequences (Fasta Format):</DIV></td>
 	<TD><textarea class="backbox" rows="10" cols="20" tabindex="1" name=search_seqs id=search_seqs value="<TMPL_VAR NAME="SEARCH_SEQS">" /></textarea></TD>
 
-
      </table>
 
 <br>
 <Table>
        <TR valign=top align=left>
         <TH>Enter Motifs to Search<br>
-        
+
 	<table class ="ui-corner-all ui-widget-content">
-	
+
 	<TR>
 	<TD>
    	<DIV id="blah">Enter Motifs (Consensus Sequence Only)</DIV></td>
-	<TD><textarea class="backbox" rows="10" cols="20" tabindex="1" name=motif_names id=motif_names value="<TMPL_VAR NAME="MOTIF_NAMES">" /></textarea></TD>	
+	<TD><textarea class="backbox" rows="10" cols="20" tabindex="1" name=motif_names id=motif_names value="<TMPL_VAR NAME="MOTIF_NAMES">" /></textarea></TD>
 </TR>
 </table>
-<br>	
+<br>
 <TABLE>
 <TR valign=top align=left>
         <TH>Select Motifs to Search<br>
@@ -332,10 +330,10 @@ console.log('joinvals2',joinvals2);
 <font color=black>For a list of all TFBS motifs used in this site, click </font><a href=http://genomevolution.org/CoGe/data/distrib/Motiflist.txt target=new>here</a>
 </TD>
 
-<TD valign="middle" align=middle>	
+<TD valign="middle" align=middle>
 <span href="javascript:void(0)" id="remove" onClick="remove_selected_motifs();" style="display:none" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span><span href="javascript:void(0)" onClick="
 ();" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>   	  </TD>
-          
+
 <TD>
 <div style="float:left" id=db_title class=small>Selected Motifs: </DIV>
 <div style="float:left;text-indent:1em;vertical-align: bottom" id=selected_motif_count class=small></div>  <DIV><SELECT class="backbox" id="motif_choice" name="motif_choice" SIZE="15" MULTIPLE onClick="$('#add').hide(0);$('#remove').show(0);"> <option id=blank value=null>No Motifs Selected</option>              </SELECT></DIV>

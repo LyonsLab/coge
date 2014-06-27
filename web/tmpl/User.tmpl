@@ -31,7 +31,7 @@ $(function() {
 	pageObj.timer = new Array();
 	pageObj.timer['item'] = null;
 	pageObj.timestamp['idle'] = new Date().getTime();
-	
+
 	// Initialize AJAX
 	$.ajaxSetup({
 		type: "GET",
@@ -52,8 +52,8 @@ $(function() {
 					$('#user_image').attr('src', 'picts/ajax-loader-large.gif');
 					data.submit();
 				}
-    		}, 	
-		done: 
+    		},
+		done:
 			function(e, data) {
 				if (data.result && data.result.link) {
 					$('#user_image').attr('src', data.result.link);
@@ -76,7 +76,7 @@ $(function() {
 	if (!toc_id || toc_id == 'null') {
 		toc_id = ITEM_TYPE_MINE;
 	}
-	
+
 	// Initialize main panels
 	exit_item(); // initialize info panel
 	toc_select(toc_id); // initialize toc panel
@@ -118,7 +118,7 @@ function schedule_poll(now) {
 		pageObj.timer['poll'] = setTimeout(
 			function() { poll(); },
 			0
-		);		
+		);
 		return;
 	}
 
@@ -241,7 +241,7 @@ function sync_items(html) {
 function get_contents(sync) {
 	var myName = arguments.callee.toString();
 	pageObj.timestamp[myName] = new Date().getTime();
-	
+
 	var lastUpdate = (sync ? pageObj.timestamp['lastUpdate'] : 0);
 
 	// Clear pending refresh
@@ -258,7 +258,7 @@ function get_contents(sync) {
 			if (obj) {
 				if (!pageObj.timestamp[myName] || obj.timestamp >= pageObj.timestamp[myName]) {
 					pageObj.timestamp[myName] = obj.timestamp;
-					
+
 					if (sync) { // merge with existing contents
 						sync_items(obj.html);
 					}
@@ -273,7 +273,7 @@ function get_contents(sync) {
 			// Setup next refresh
 			schedule_poll();
 		}
-	});	
+	});
 }
 
 function filter_contents() {
@@ -290,16 +290,16 @@ function filter_contents() {
 						&& !$(this).hasClass('deleted');
 			}
 			else if (pageObj.content_type == ITEM_TYPE_MINE) {
-				show = !$(this).hasClass('deleted') 
-						&& !$(this).hasClass('shared') 
+				show = !$(this).hasClass('deleted')
+						&& !$(this).hasClass('shared')
 						&& item_type != ITEM_TYPE_ACTIVITY
 						&& item_type != ITEM_TYPE_ACTIVITY_ANALYSES
 						&& item_type != ITEM_TYPE_ACTIVITY_VIZ
 						&& item_type != ITEM_TYPE_GROUP;
 			}
 			else if (pageObj.content_type == ITEM_TYPE_SHARED) {
-				show = $(this).hasClass('shared') 
-						&& !$(this).hasClass('deleted') 
+				show = $(this).hasClass('shared')
+						&& !$(this).hasClass('deleted')
 						&& item_type != ITEM_TYPE_ACTIVITY
 						&& item_type != ITEM_TYPE_ACTIVITY_ANALYSES
 						&& item_type != ITEM_TYPE_ACTIVITY_VIZ;
@@ -308,7 +308,7 @@ function filter_contents() {
 				show = $(this).hasClass('deleted');
 			}
 			else {
-				show = (item_type == pageObj.content_type 
+				show = (item_type == pageObj.content_type
 						&& !$(this).hasClass('deleted')
 						&& !$(this).hasClass('shared'));
 			}
@@ -347,7 +347,7 @@ function toc_select(toc_id) {
 		$('#undelete_button,#group_button,#cancel_button').hide();
 		$('#share_button,#notebook_button,#delete_button,#send_button').show();
 	}
-	
+
 	// Icons are set to invisible on load
 	$('.item-button').removeClass('invisible');
 
@@ -363,7 +363,7 @@ function toc_select(toc_id) {
 
 	var title = $('#toc_label_'+toc_id).html();
 	$('#contents_title').html(title);
-	
+
 	// Update browser url
 	window.history.pushState({}, "", "<TMPL_VAR NAME='PAGE_NAME'>?p="+toc_id);
 }
@@ -371,7 +371,7 @@ function toc_select(toc_id) {
 function delete_items() {
 	var selected = get_selected_items();
 	if (selected.length) {
-		selected.parent().fadeOut('fast', 
+		selected.parent().fadeOut('fast',
 			function() {
 				selected.parent().addClass('deleted');
 				selected.prop('checked', false);
@@ -394,7 +394,7 @@ function delete_items() {
 function undelete_items() {
 	var selected = get_selected_items();
 	if (selected.length) {
-		selected.parent().fadeOut('fast', 
+		selected.parent().fadeOut('fast',
 			function() {
 				selected.parent().removeClass('deleted');
 				selected.prop('checked', false);
@@ -410,7 +410,7 @@ function undelete_items() {
 			},
 			success : function(data) {
 			}
-		});		
+		});
 	}
 }
 
@@ -428,7 +428,7 @@ function cancel_jobs() {
 	            	poll();
 	            }
 			}
-		});		
+		});
 	}
 }
 
@@ -445,10 +445,10 @@ function wait_to_search (search_func, search_term) {
 		if (pageObj.timer['search']) {
 			clearTimeout(pageObj.timer['search']);
 		}
-		
+
 		pageObj.timer['search'] = setTimeout(
-			function() { 
-				search_func(pageObj.search_term); 
+			function() {
+				search_func(pageObj.search_term);
 			},
 			500
 		);
@@ -457,11 +457,11 @@ function wait_to_search (search_func, search_term) {
 
 function search_notebooks () {
 	var search_term = $('#notebook_search_input').attr('value');
-	
+
 	$("#wait_notebook").animate({opacity:1});
 	$("#notebook_select").html("<option disabled='disabled'>Searching...</option>");
 	pageObj.timestamp['notebooks'] = new Date().getTime();
-	
+
 	$.ajax({
 		data: {
 			fname: 'search_notebooks',
@@ -513,7 +513,7 @@ function share_dialog() {
 			success : function(data) {
 				$('#share_dialog').html(data).dialog({width:500}).dialog('open');
 			}
-		});	
+		});
 	}
 }
 
@@ -560,10 +560,10 @@ function add_items_to_user_or_group() {
 
 function search_share () {
 	var search_term = $('#share_input').attr('value');
-	
+
 	//$("#wait_notebook").animate({opacity:1});
 	pageObj.timestamp['share'] = new Date().getTime();
-	
+
 	$.ajax({
 		data: {
 			fname: 'search_share',
@@ -582,9 +582,9 @@ function search_share () {
 
 function search_group () { // FIXME dup of above routine but for group dialog
 	var search_term = $('#group_input').attr('value');
-	
+
 	pageObj.timestamp['search_group'] = new Date().getTime();
-	
+
 	$.ajax({
 		data: {
 			fname: 'search_share',
@@ -612,7 +612,7 @@ function group_dialog() {
 			success : function(data) {
 				$('#group_dialog').html(data).dialog({width:500}).dialog('open');
 			}
-		});	
+		});
 	}
 }
 
@@ -677,7 +677,7 @@ function remove_user_from_group(user_id) {
 
 function hide_top_panel() {
 	top_panel_height = $('#top_panel').height();
-	$('#top_panel').slideUp('slow', 
+	$('#top_panel').slideUp('slow',
 		function() {
 			$('#show_panel_button').show();
 		}
@@ -736,12 +736,12 @@ function verify_image_file(file) {
 		alert('Error: specified file is not an image');
 		return 0;
 	}
-	
+
 	if (file.size > 2*1024*1024) {
 		alert('Error: image file is too large (>2MB)');
 		return 0;
 	}
-	
+
 	return 1;
 }
 
@@ -870,7 +870,7 @@ function send_items_to(page_name, format) {
 				}
 			}
 		});
-	}	
+	}
 }
 
 function toggle_star(img) {
@@ -893,7 +893,7 @@ function toggle_star(img) {
 		<span id="hide_panel_button" onClick="hide_top_panel();" class="link ui-icon ui-icon-minus" style="float:right;margin-left:20px;margin-right:5px;border:1px solid lightgray;"></span>
 
 		<!--<div style="float:right;">
-			<span style="font-weight:bold;color:dimgray;">History</span> 
+			<span style="font-weight:bold;color:dimgray;">History</span>
 			<span class='link ui-icon ui-icon-extlink' onclick="window.open('History.pl');"></span>
 			<span style="padding-left:5px;">
 				<span id='recent' class='small link' style="font-weight:bold;" onclick="show_recent_activity();">recent</span>
@@ -1001,7 +1001,7 @@ function toggle_star(img) {
 					<img id="wait_notebook" src="picts/ajax-loader.gif" style="opacity: 0;" />
 				</span>
 				<span style="float:left;font-weight:bold;">Notebooks</span>
-			</td>  
+			</td>
 		</tr>
 		<tr>
 			<td colspan='2'>
@@ -1031,7 +1031,7 @@ function toggle_star(img) {
 					<TMPL_VAR NAME="ROLES">
 				</select>
 			</td>
-		</tr> 
+		</tr>
 	</table>
 	<br><br>
 	<span onClick="create_new_group();" class="ui-button ui-corner-all ui-button-go">Create Group</span>
@@ -1054,7 +1054,7 @@ function toggle_star(img) {
 					<TMPL_VAR NAME="NOTEBOOK_TYPES">
 				</select>
 			</td>
-		</tr> 
+		</tr>
 	</table>
 	<br><br>
 	<span onClick="create_new_notebook();" class="ui-button ui-corner-all ui-button-go">Create Notebook</span>
@@ -1065,8 +1065,6 @@ function toggle_star(img) {
 <div id="group_dialog" class="dialog_box hidden" title="Edit Group"></div>
 
 </TMPL_IF> <!-- MAIN -->
-
-
 
 <TMPL_IF NAME="DO_TOC">
 	<TMPL_LOOP NAME="TOC_ITEM_LOOP">
@@ -1085,22 +1083,19 @@ function toggle_star(img) {
 	</TMPL_LOOP>
 </TMPL_IF>
 
-
-
 <TMPL_IF NAME="DO_CONTENTS">
 	<TMPL_LOOP NAME="CONTENTS_ITEM_LOOP">
 		<div id="content_<TMPL_VAR NAME='CONTENTS_ITEM_ID'>_<TMPL_VAR NAME='CONTENTS_ITEM_TYPE'>" style="border-bottom:1px solid lightgray;padding:3px;padding-left:<TMPL_VAR NAME='CONTENTS_ITEM_INDENT'>px;" class="hidden <TMPL_IF NAME='CONTENTS_ITEM_DELETED'>deleted</TMPL_IF> <TMPL_IF NAME='CONTENTS_ITEM_SHARED'>shared</TMPL_IF>">
 			<TMPL_IF NAME="CONTENTS_ITEM_SELECTABLE">
 				<input type="checkbox" style="margin-right:8px;" onclick="select_item();" />
 			</TMPL_IF>
-			<TMPL_VAR NAME="CONTENTS_ITEM_ICON"> 
+			<TMPL_VAR NAME="CONTENTS_ITEM_ICON">
 			<span class="link" onmouseover="enter_item(this.parentNode);" onmouseout="exit_item(this.parentNode);" <TMPL_IF NAME='CONTENTS_ITEM_LINK'>onclick="window.open('<TMPL_VAR NAME="CONTENTS_ITEM_LINK">');"</TMPL_IF>>
 				<TMPL_VAR NAME="CONTENTS_ITEM_INFO">
 			</span>
 		</div>
 	</TMPL_LOOP>
 </TMPL_IF>
-
 
 <!--
 <TMPL_IF NAME='LOG_TABLE'>
@@ -1115,7 +1110,6 @@ function toggle_star(img) {
 	</table>
 </TMPL_IF>
 -->
-
 
 <TMPL_IF NAME='SHARE_DIALOG'>
 	<script>
@@ -1179,7 +1173,7 @@ function toggle_star(img) {
 							<TMPL_VAR NAME="NOTEBOOK_USER_FULL_NAME"> (<TMPL_VAR NAME="NOTEBOOK_USER_NAME">)<span><br>
 						</TMPL_LOOP>
 					</div>
-				</TMPL_LOOP>				
+				</TMPL_LOOP>
 				<TMPL_IF NAME="ACCESS_MSG">
 					<div style="color:dimgray;font-style:italic;">
 						<TMPL_VAR NAME="ACCESS_MSG">
@@ -1205,8 +1199,6 @@ function toggle_star(img) {
 		<span href="javascript:void(0)" onClick="$('#share_dialog').dialog('close')" class='ui-button ui-corner-all'>Done</span>-->
 	</div>
 </TMPL_IF>
-
-
 
 <TMPL_IF NAME='GROUP_DIALOG'>
 <script>
@@ -1270,8 +1262,6 @@ $(function(){
 </div>
 </TMPL_IF>
 
-
-
 <TMPL_IF NAME='ERROR_DIALOG'>
 <div class="small" align='center'>
 	<br>
@@ -1282,13 +1272,9 @@ $(function(){
 </div>
 </TMPL_IF>
 
-
-
 <TMPL_IF NAME='LOGIN'>
 	<TMPL_INCLUDE NAME="widgets/Login.tmpl">
 </TMPL_IF>
-
-
 
 <TMPL_IF NAME='ADMIN_AREA'>
 <!--

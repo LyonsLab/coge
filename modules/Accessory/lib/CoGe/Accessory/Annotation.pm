@@ -12,7 +12,7 @@ BEGIN {
     @EXPORT      = qw ();
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
-    __PACKAGE__->mk_accessors('Type', 'Values', 'Search_term', 
+    __PACKAGE__->mk_accessors('Type', 'Values', 'Search_term',
     	'Val_delimit', 'Type_delimit', '_index', 'Add_type', 'String_end');
 }
 
@@ -43,12 +43,11 @@ BEGIN {
              to condense objects of same
              type into a single object.
  Argument : The user can give args Type and
-            Values or either of them, but the 
-            should always have the key 'Type' 
+            Values or either of them, but the
+            should always have the key 'Type'
             or 'Values'.
 
 =cut
-
 
 sub new {
     my ($class,%params) = @_ ;
@@ -107,7 +106,6 @@ sub new {
                attribute array.
  Argument  :   can be an array, ref to an array, another
                Annotation object or a string.
-            
 
 =cut
 
@@ -132,7 +130,6 @@ sub add_Annot {
       }
     }
   }
-  
 
 =head2 to_String
 
@@ -170,36 +167,36 @@ sub add_Annot {
 
 sub to_String {
   my $self = shift ;
-  my $str; 
+  my $str;
   #for each of the elements in the Values
   #array, check the data type of each
   #element.
   $str .= $self->Type. $self->Type_delimit if $self->Add_type;
-  
+
   foreach my $item(@{$self->Values()})
     {
       #if the element is an annotation
       #object, call the to_String() method on
-      #the object; 
+      #the object;
       if(ref($item) =~ /Annotation/)
 	{
-	  $str .= $item->to_String(); 
+	  $str .= $item->to_String();
 	  }
-      else 
+      else
 	{
           $str .= $item if $item;
-        } 
+        }
       ## Attach a delimiter between every
-      #element.  
+      #element.
       unless($str eq "")
 	{
 	  $str .= $self->Val_delimit;
         }
-    } 
+    }
   #remove trailing delimiter
-  #characters 
+  #characters
   my $vd = $self->Val_delimit;
-  $str =~ s/$vd+$//g; 
+  $str =~ s/$vd+$//g;
   $str .= $self->String_end if $self->String_end;
   return $str ;
 }
@@ -212,7 +209,7 @@ sub to_String {
               object(s) of type equal to the search term,
               else returns false.
  Returns   :  a boolean.
- Argument  :  Requires the search term 
+ Argument  :  Requires the search term
 
 =cut
 
@@ -235,11 +232,11 @@ sub has_a {
 
 =head2 is_a
 
- Usage     : $annot->is_a($search_term) ; 
+ Usage     : $annot->is_a($search_term) ;
  Purpose   : Checks if the given search term equal to
              the Type attribute of the annotation object
-             that the method is called on.  
- Returns   : a boolean.  
+             that the method is called on.
+ Returns   : a boolean.
  Argument  : Requires the search term
 
 =cut
@@ -252,7 +249,7 @@ sub is_a {
 
 =head2 get_by_type
 
- Usage     :  my $type_object = $annot->get_by_type('searchterm'); 
+ Usage     :  my $type_object = $annot->get_by_type('searchterm');
               OR  my @type_Arr = $annot->get_by_type('searchterm');
  Purpose   :  If the Values attribute of
               the annotation object contains
@@ -264,7 +261,7 @@ sub is_a {
  Returns   :  An array( OR its reference) of Annotation
               objects whose Type attribute is same as
               the search term entered by the user.
- Argument  :  search type 
+ Argument  :  search type
 
 =cut
 
@@ -282,7 +279,7 @@ sub get_by_type{
     if(ref($item) =~ /Annotation/){
       if($item->Type() =~ /$esc_search/){
         push(@arr,$item) ;
-      } 
+      }
       if($item->has_a($search)){
         push(@arr,$item->get_by_type($search)) ;
       }
@@ -339,10 +336,10 @@ sub count {
 
 =head2 DESTROY
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
 
 =cut
 
@@ -352,7 +349,6 @@ sub DESTROY {
 }
 
 1;
-
 
 =head1 NAME
 

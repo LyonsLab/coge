@@ -8,7 +8,7 @@ $(document).ready(function(){
 	}
 
 	prot = <TMPL_VAR NAME=PROT>;
-    pageObj.prot=prot; 
+    pageObj.prot=prot;
     if (prot) {
 		$('#prot_button').hide();
 		$('#dna_text_button').hide();
@@ -18,7 +18,7 @@ $(document).ready(function(){
     else {
 		$('#prot_text_button').hide();
 		$('#dna_button').hide();
-		$('.prot_option').hide(); 
+		$('.prot_option').hide();
 		$('.dna_option').show();
 	}
 });
@@ -77,7 +77,6 @@ gen_file(['args__fids','fids', 'args__prot','args__'+pageObj.prot,'args__name_on
 }
 
 function post_to_SSWAP(url) {
- 
 
 // var myseq = $('#seq_text').val();
  var jsonRRG= {
@@ -95,7 +94,6 @@ function post_to_SSWAP(url) {
 var tmp = {};
 tmp[url] = {"rdf:type": "mime:text/X-multiFasta"};
 jsonRRG["definitions"] = tmp;
-
 
 //to modify to use a URL to fetch data, put the URL in where ever there is "_:object" -> "http://thingie"
 
@@ -117,7 +115,7 @@ var url = "http://sswap.iplantcollaborative.org/ipc/create-pipeline-with-rrg";
 
 function post_to_genfam() {
 	// TODO: get json via ajax class instead of always inserting it into fasta_json div
-	
+
 	var form = $("<form></form>");
     form.attr("method", "post");
     form.attr("action", "<tmpl_var name=genfam>");
@@ -185,20 +183,18 @@ function post_to_phylogeny_fr () {
 }
 </script>
 
-
 <TABLE>
  <tr class=small>
-  <td>Sequence Count: <span id=seq_count><TMPL_VAR NAME=SEQ_COUNT></span>&nbsp&nbsp 
+  <td>Sequence Count: <span id=seq_count><TMPL_VAR NAME=SEQ_COUNT></span>&nbsp&nbsp
       Feature Count: <span id=feat_count><TMPL_VAR NAME=FEAT_COUNT></span>&nbsp&nbsp
       <span class = alert id=warning><TMPL_VAR NAME=WARNING></span>
-   
+
  <TR>
-  <TD><div id=seq>	
+  <TD><div id=seq>
    <TMPL_VAR NAME="SEQ">
    </div>
 </TABLE>
 <TMPL_VAR NAME="FIDS">
-
 
 <TMPL_IF NAME=BOTTOM_BUTTONS>
   <DIV id="dynamic_button">
@@ -208,7 +204,7 @@ function post_to_phylogeny_fr () {
    <td><span class='ui-button ui-corner-all'id="dna_button" onclick="update_seqs(0)">DNA Sequence</span>
    <td><span class='ui-button ui-corner-all'id="prot_text_button" onclick="update_seqs(1,1)">Plain Text</span>
    <td><span class='ui-button ui-corner-all'id="dna_text_button" onclick="update_seqs(0,1)"> Plain Text</span>
-   <td><span class='ui-button ui-corner-all'id="blast_button"onclick="window.open('CoGeBlast.pl?featid='+$('#fids').val())">CoGe Blast</span> 
+   <td><span class='ui-button ui-corner-all'id="blast_button"onclick="window.open('CoGeBlast.pl?featid='+$('#fids').val())">CoGe Blast</span>
  </TR>
   </TABLE>
 <span id=add_seq class=small>
@@ -246,13 +242,11 @@ function post_to_phylogeny_fr () {
    <table>
     <tr align=top>
     <td><span onClick="post_to_prosite();" class='ui-button ui-corner-all'>ProSite</span>
-    <td>Scan for protein domains at <span class=link onclick="window.open('http://www.expasy.ch/prosite/')">ProSite</span>.  
+    <td>Scan for protein domains at <span class=link onclick="window.open('http://www.expasy.ch/prosite/')">ProSite</span>.
   </table>
    </div>
  </DIV>
 
-<textarea id="fasta_json" name="fasta_json" class="hidden"><TMPL_VAR NAME=FASTA_JSON></textarea> 
- 
+<textarea id="fasta_json" name="fasta_json" class="hidden"><TMPL_VAR NAME=FASTA_JSON></textarea>
+
 </TMPL_IF>
-
-

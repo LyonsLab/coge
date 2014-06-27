@@ -16,7 +16,7 @@
 	    		               { name: 'jDataView', location: 'jDataView/src', main: 'jdataview' },
 	    		               'JBrowse'
 	    		             ]
-	      		 }, 
+	      		 },
 	      	['JBrowse/Browser', 'dojo/io-query', 'dojo/json' ],
 	        function (Browser,ioQuery,JSON) {
 	      		var queryParams = ioQuery.queryToObject( window.location.search.slice(1) );
@@ -48,7 +48,7 @@
 	                },
 	                updateBrowserURL: true
 	            };
-	
+
 	            JBrowse = new Browser( config );
 	            if (callback) callback(JBrowse);
 	      	}

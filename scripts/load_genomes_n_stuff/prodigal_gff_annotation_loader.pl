@@ -46,10 +46,7 @@ my$coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 #pain in my ass!
 my $sgd_link = "http://www.yeastgenome.org/cgi-bin/locus.fpl?dbid=";
 
-
-
-
-GetOptions ( 
+GetOptions (
 	     "source_name=s" => \$source_name, # datasource
 	     "source_desc=s" => \$source_desc,
 	     "source_link=s" => \$source_link,
@@ -157,7 +154,6 @@ while (<IN>)
 
     ($chr) = split /\s+/,$chr;
 
-   
     my %names;
     my $name;
     foreach my $item (split /;/, $line[-1])
@@ -190,7 +186,7 @@ while (<IN>)
 	if ($type eq "dbxref")
 	  {
 	    $info =~ s/SGD://;
-	    $annos{$name}{"View annotation at SGD"}={link=>$sgd_link."$info", type=>"SGD link"} 
+	    $annos{$name}{"View annotation at SGD"}={link=>$sgd_link."$info", type=>"SGD link"}
 	  }
       }
     next unless $name; #No name, don't know what to do!
@@ -221,7 +217,6 @@ while (<IN>)
     #phytozome replications of CDS to mRNA
     push @type, "mRNA" if $type eq "CDS";
     push @type, "gene" if $type eq "CDS";
-
 
     foreach my $type (@type)
       {
@@ -287,8 +282,6 @@ if ($add_gene)
 #print Dumper \%annos;
 #exit;
 
-
-
 #time to load information into database
 
 my %anno_types; #hash to store annotation type objects
@@ -297,7 +290,7 @@ foreach my $source (keys %data)
   {
     foreach my $chr_loc (keys %{$data{$source}})
       {
-	
+
 	foreach my $name (keys %{$data{$source}{$chr_loc}})
 	  {
 	    foreach my $feat_type (keys %{$data{$source}{$chr_loc}{$name}})
@@ -309,9 +302,9 @@ foreach my $source (keys %data)
 		my ($chr) = map {$_->{chr}} @{$data{$source}{$chr_loc}{$name}{$feat_type}{loc}};
 		$feat_types{$feat_type} = $coge->resultset('FeatureType')->find_or_create( { name => $feat_type } ) if $GO && !$feat_types{$feat_type};
 		my $feat_type_obj = $feat_types{$feat_type};
-		
+
 		print "Creating feature of type $feat_type\n" if $DEBUG;
-		
+
 		my $feat = $ds->add_to_features({
 						 feature_type_id => $feat_type_obj->id,
 						 start=>$start,
@@ -347,7 +340,7 @@ foreach my $source (keys %data)
 		  }
 		foreach my $tmp (keys %names)
 		  {
-		    
+
 		    print "Adding name $tmp to feature ", $featid ,"\n" if $DEBUG;
 		    my $feat_name = $feat->add_to_feature_names({
 								 name=>$tmp,
@@ -362,7 +355,7 @@ foreach my $source (keys %data)
 			    my ($anno_type) = $anno_types{$type_name};
 			    unless ($anno_type)
 			      {
-				($anno_type) = $coge->resultset('AnnotationType')->find_or_create({name=>$type_name}); 
+				($anno_type) = $coge->resultset('AnnotationType')->find_or_create({name=>$type_name});
 				$anno_types{$type_name} = $anno_type;
 			      }
 			    my $link = $annos{$tmp}{$anno}{link};
@@ -409,7 +402,7 @@ sub generate_ds
       $coge->resultset('Dataset')->find_or_create({
 						   name                => $ds_name,
 						   description         => $ds_desc,
-						   link                => $ds_link, 
+						   link                => $ds_link,
 						   data_source_id      => $source_id,
 						   version=>$ds_version,
 						  });;
@@ -443,7 +436,7 @@ sub process_annotation_file
 		$anno_names->{$name2}{$tmp}=1;
 	      }
 	  }
-	
+
 	#sorghum annotations
 	unless ($line[2] =~ /no.*defline/)
 	  {

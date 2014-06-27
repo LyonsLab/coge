@@ -8,7 +8,6 @@ use Getopt::Long;
 use CoGeX;
 use File::Path;
 
-
 # variables
 my ($DEBUG, $GO, $ERASE,$autoupdate,@accns, $tmpdir, $help, $user_chr, $ds_link, $test);
 my $connstr = 'dbi:mysql:dbname=coge;host=biocon.berkeley.edu;port=3306';
@@ -16,14 +15,13 @@ my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
-
 $| =1;
 
 # parse command line options
-GetOptions ( 
+GetOptions (
 	    "debug" 			=> \$DEBUG,
 	    "go"    			=> \$GO,
-	    "erase|e"  		=> \$ERASE, 
+	    "erase|e"  		=> \$ERASE,
 	    "accn|a=s"			=> \@accns,
 	    "temp_dir|td=s"	=> \$tmpdir,
 	    "help|h"			=> \$help,
@@ -47,7 +45,6 @@ my %dsg;
 help () if $help;
 
 print "Go = $GO \n" if $DEBUG;
-
 
 my $data_source = get_data_source(); #for NCBI
 
@@ -84,7 +81,7 @@ accn: foreach my $accn (@accns)
 		  }
 		$ds->delete;
 	      }
-	    else 
+	    else
 	      {
 		$previous_datasets{$item->{ds}->id} = $item->{ds};
 		next accn;
@@ -143,7 +140,7 @@ accn: foreach my $accn (@accns)
     my $name = $genbank->accession;
     $name .= ".gbk" unless $name =~ /gbk$/;
     $name .= ".test" if $test;
-    # actually create a dataset object if 
+    # actually create a dataset object if
     $ds_link = "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&dopt=gbwithparts&list_uids=".$accn unless $ds_link;
     $dataset = $coge->resultset('Dataset')->create(
 						   {
@@ -209,7 +206,7 @@ accn: foreach my $accn (@accns)
 	    push @gbs, $entry;
 	  }
 #	@gbs = @{$genbank->wgs_data};
-	
+
       }
     else
       {
@@ -246,7 +243,7 @@ accn: foreach my $accn (@accns)
 							       stop=>$stop,
 							      }) if $GO;
 	    # expect first feature to be the source feature!
-	    if ($feature->type() =~ /chromosome/i) 
+	    if ($feature->type() =~ /chromosome/i)
 	      {
 		# generate name based on chromosome
 		my $feat_name = $coge->resultset('FeatureName')->create(
@@ -267,7 +264,7 @@ accn: foreach my $accn (@accns)
 								      name => $entry->accession.".".$entry->version,
 								      feature_id => $db_feature->id
 								     }) if $GO;
-		
+
 		# generate name for GI
 		$feat_name = $coge->resultset('FeatureName')->create(
 								     {
@@ -276,14 +273,14 @@ accn: foreach my $accn (@accns)
 								      feature_id => $db_feature->id
 								     }) if $GO;
 	      }
-	    
+
 	    # add a location entry
 	    my $loc_string = $feature->location;
 	    $loc_string =~ s/complement//g;
 	    $loc_string =~ s/join//;
 	    $loc_string =~ s/order//;
 	    $loc_string =~ s/\(|\)//g;
-	    
+
 	    # loop through the locatons
 	    foreach my $loc (split /,/,$loc_string)
 	      {
@@ -305,7 +302,7 @@ accn: foreach my $accn (@accns)
 	    # now work through the qualifiers for this feature
 	    # start by getting the hashref of qualifiers
 	    my $annot = $feature->qualifiers();
-	    
+
 	    my %names;
 	    #	      print Dumper $annot;
 	    foreach  my $anno (keys %{$annot})
@@ -325,7 +322,7 @@ accn: foreach my $accn (@accns)
 											    name => $inner[0],
 											    annotation_type_group_id => $anno_type_group->id(),
 											   }) if $GO;
-			
+
 			# now create the row for the data value of the xref
 			my $sub_anno = $db_feature->add_to_annotations(
 								       {
@@ -340,7 +337,7 @@ accn: foreach my $accn (@accns)
 		       || $anno =~ /gene/i
 		       || $anno =~ /standard_name/i
 		       || $anno =~ /synonym/i # synonyms are embedded in the /note= tag! these are names
-		       || $anno eq "names")    
+		       || $anno eq "names")
 		  {
 		    foreach my $item (@{$stuff})
 		      {
@@ -459,14 +456,14 @@ accn: foreach my $accn (@accns)
 	  }
 
 	#format blastable db
-    
+
       }
     print "completed parsing $accn!\n";# if $DEBUG;
   }
 #need to add previous datasets if new dataset was added with a new dataset group
 if ($GO)
   {
-  
+
     if ($dsg && keys %previous_datasets)
       {
 	my $ver; #need a higher version number than previous
@@ -531,12 +528,11 @@ if ($GO && $dsg)
     `$cmd`;
   }
 
-
 if ($ERASE)
   {
     print "You are going to erase data!  Press any key to continue.  Control-c to abort!\n";
     <STDIN>;
-    
+
     my %dsgs;
     $dsgs{$dsg->id}=$dsg if $dsg;
     foreach my $ds (values %previous_datasets)
@@ -554,7 +550,6 @@ if ($ERASE)
 	delete_dataset_group($item);
       }
   }
-
 
 sub load_genomic_sequence
   {
@@ -729,7 +724,7 @@ sub generate_dsg
     my $org_id = $opts{org_id};
     my $gst_id = $opts{gst_id};
     my $dsg_id = $opts{dsg_id};
-    my $dsg = $dsg_id ? $coge->resultset('DatasetGroup')->find($dsg_id) : 
+    my $dsg = $dsg_id ? $coge->resultset('DatasetGroup')->find($dsg_id) :
       $coge->resultset('DatasetGroup')->create({name=>$name,
 					       description=>$desc,
 					       version=>$version,
@@ -746,8 +741,6 @@ sub generate_dsg
       }
     return $dsg;
   }
-
-
 
 sub check_accn
   {
@@ -774,12 +767,12 @@ sub check_accn
 	    $cogelength += $feat->length;
 	  }
 	$length_diff = $cogelength eq $length ? 0 : 1;
-	push @results, {ds=>$ds, 
+	push @results, {ds=>$ds,
 			version_diff=>$version_diff,
 			length_diff=>$length_diff,
 			coge_length =>$cogelength,
 			ncbi_length => $length,
-			
+
 		       };
       }
     return \@results;
@@ -816,8 +809,6 @@ sub get_gi_summary
     return $result;
   }
 
-
-
 sub help
 {
 	print qq
@@ -827,4 +818,3 @@ sub help
 		Options:
 	};
 }
-

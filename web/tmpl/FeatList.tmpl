@@ -3,12 +3,12 @@
 <SCRIPT language="JavaScript">
 
 $(document).ready(function(){
-	$('#feat_table').tablesorter({		
+	$('#feat_table').tablesorter({
 		cssAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		cssDesc: 'headerSortDown',	// Class name for descending sorting action to header
 //		cssHeader: 'header',		// Class name for headers (th's)
 		widgets: ['zebra'],
-		headers: {0: {sorter: false},},					
+		headers: {0: {sorter: false},},
 	}).show();
 	check_display();
 /*	$('#feat_table').columnFilters({
@@ -30,22 +30,21 @@ $(document).ready(function(){
 	filter_rows();
 });
 
-
 //set up the jquery ui
 $(function() {
-	//substaniate dialog box	     
-	$("#table_opts_dialog").dialog({ 
+	//substaniate dialog box
+	$("#table_opts_dialog").dialog({
 		height: 150,
 		width: 627,
 		autoOpen: false,
 	});
-	
+
 /*	var page_url = document.location;
 	     $("#save_form").dialog({ autoOpen: false,
 	     			      height: 331,
 				      width: 461,
 	     			      buttons: { "Cancel": function() { $(this).dialog("close"); },
-				      	        "Save": function() { 
+				      	        "Save": function() {
 						add_to_user_history(['args__work_name','work_name',
 								     'args__description','description',
 								     'args__archive','args__'+1,
@@ -55,7 +54,7 @@ $(function() {
 						}
 	});
 */
-	
+
 	//button effects on events
 	$('#table_opts').click(function() {
 		$('#table_opts_dialog').dialog('open');
@@ -63,7 +62,7 @@ $(function() {
 	$('#history_dialog_button').click(function() {
 		$('#save_form').dialog('open');
 	});
-}); 
+});
 
 //Filters Rows for search_text - Case sensitive as of now, and searches hidden columns...
 function filter_rows (search_text){
@@ -86,7 +85,7 @@ function feature_checkboxes(){
 		alert("Danger Will Robinson!\n1D-10T error!  You have not selected any features.");
 		return;
 	}
-	
+
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
@@ -96,7 +95,7 @@ function feature_checkboxes(){
 		success : function(url) {
 			window.open(url,'_blank');
 		}
-	});		
+	});
 }
 
 function export_url(url,num_accns) {
@@ -145,7 +144,7 @@ function codon_table(fid, num) {
       success : function(data) {
         $('#codon_usage'+num).html(data);
       }
-   });  
+   });
 }
 
 function update_table() {
@@ -154,7 +153,7 @@ function update_table() {
  //    setTimeout("update_table()",100);
  //    return;
  //  }
-  $('#feat_table').trigger("update");	
+  $('#feat_table').trigger("update");
  }
 
 function get_anno(fid, num) {
@@ -167,7 +166,7 @@ function get_anno(fid, num) {
       success : function(data) {
         $('#anno_'+num).hide().html(data).slideDown();
       }
-   });  
+   });
 }
 
 function get_all_annos(num) {
@@ -193,7 +192,7 @@ function get_gc(fid, num) {
         $('#gc_'+num).html(obj[0]);
         $('#at_'+num).html(obj[1]);
       }
-   });  
+   });
 }
 
 function get_all_gc(num) {
@@ -220,7 +219,7 @@ function get_wobble_gc(fid, num) {
         $('#wgc_'+num).html(obj[0]);
         $('#wat_'+num).html(obj[1]);
       }
-   });  
+   });
 }
 
 function get_all_wgc(num) {
@@ -324,7 +323,7 @@ save_FeatList_settings(['args__display','args__'+index],[]);
 </div>
 
 <div class="small" style="padding-top:15px;padding-bottom:5px;">
-Filter: 
+Filter:
 <input type="text" id="search_bar">
 <select id="search_type">
 <option value="1">Contains</option>
@@ -404,7 +403,7 @@ Filter:
 -->
 
 <div class='small'>
- Send selected features to:  
+ Send selected features to:
  <select name='checked_action' id='checked_action'>
   <option value="send_to_blast">CoGeBlast</option>
   <option value="send_to_gevo">GEvo</option>
@@ -417,7 +416,7 @@ Filter:
   <option value="send_to_SynFind">SynFind</option>
   <option value="send_to_list">New List</option>
  </select>
- <span class='ui-button ui-corner-all ui-button-icon-right' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id="retrieve_message" class="alert"></span>  
+ <span class='ui-button ui-corner-all ui-button-icon-right' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id="retrieve_message" class="alert"></span>
 </div>
 
 <br>

@@ -60,4 +60,3 @@ foreach my $accn ( keys %annotations ) {
 }
 
 #TODO: fix me
-

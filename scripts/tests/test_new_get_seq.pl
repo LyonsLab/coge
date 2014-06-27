@@ -42,7 +42,6 @@ foreach my $feat ($coge->resultset('Feature')->search(
 my $t1 = new Benchmark;
 my $time = timestr(timediff($t1,$t0));
 print "Time to run:  $time\n";
-	       
 
 sub get_seq
   {
@@ -67,11 +66,11 @@ sub get_seq
     my $seq = join( "", @seqs );
     return $seq;
   }
-    
+
 sub reverse_complement
   {
     my $seq = shift;# || $self->genomic_sequence;
     my $rcseq = reverse($seq);
-    $rcseq =~ tr/ATCGatcg/TAGCtagc/; 
+    $rcseq =~ tr/ATCGatcg/TAGCtagc/;
     return $rcseq;
   }

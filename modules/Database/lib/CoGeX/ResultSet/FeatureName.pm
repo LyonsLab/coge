@@ -8,15 +8,15 @@
 
 =head2 esearch
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -27,9 +27,8 @@ sub esearch {
     my $join = $_[1]{'join'};
     my $prefetch = $_[1]{'prefetch'};
 
-    map { push(@$prefetch, $_ ) } 
+    map { push(@$prefetch, $_ ) }
         ({ 'feature' => ['locations','feature_type'] });
-
 
     $_[1]{'join'} = $join;
     $_[1]{'prefetch'} = $prefetch;

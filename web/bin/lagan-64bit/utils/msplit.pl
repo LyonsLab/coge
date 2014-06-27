@@ -20,7 +20,6 @@ open(FASTAFILE, "$filename") || die "Could not open $filename.\n\n";
 #    $prefix = substr $filename, 0, (rindex $prefix, ".");
 #}
 
-
 $line = <FASTAFILE>;
 chomp $line;
 

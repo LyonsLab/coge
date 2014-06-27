@@ -12,7 +12,7 @@ my $chain_text = "";
 
 while (<STDIN>) {
     unless (/\w/) { next; }
-    
+
     if (/^\#/) {
         if ($chain_text) {
             &process_chain_text($chain_text);
@@ -29,23 +29,21 @@ if ($chain_text) {
 
 exit(0);
 
-
 ####
 sub process_chain_text {
     my $text = shift;
 
     my @entries = split (/\n/, $text);
-    
+
     my $header = shift @entries;
     $header =~ /num aligned pairs: (\d+)/ or confess "Error, cannot determine num aligned pairs from header\n$header\n\n$text\n\n!!";
 
     my $num_pairs = $1;
 
-    if ($num_pairs < $min_chain_len) { 
+    if ($num_pairs < $min_chain_len) {
         return;
     }
-    
+
     print $text . "\n";
-    
 
 }

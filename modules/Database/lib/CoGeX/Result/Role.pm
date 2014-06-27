@@ -56,12 +56,12 @@ __PACKAGE__->has_many(
 
 =head2 is_<ROLE>
 
- Usage     : 
- Purpose   : 
+ Usage     :
+ Purpose   :
  Returns   :
  Argument  : None
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -87,7 +87,7 @@ sub is_reader {
  Returns   : true or false
  Argument  : None
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -113,7 +113,7 @@ sub is_lower {
  Returns   : DBIX::Class for user_group objects
  Argument  : None
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -126,12 +126,12 @@ sub groups {
 
 =head2 permissions
 
- Usage     : 
+ Usage     :
  Purpose   : Returns permission objects
  Returns   : wantArray of permission objects
  Argument  : None
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 

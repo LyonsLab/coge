@@ -9,8 +9,6 @@ my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
 my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 my $GO = 1; #set to 1 to load into database
 
-
-
 my $file = "/tmp/CNSwithCompleteInfo";
 
 my $org = $coge->resultset('Organism')->resolve(1);
@@ -26,7 +24,6 @@ foreach my $ds ($org->current_datasets)
         warn "Problem with dataset version:  previously identified: $version, new: ",$ds->version,"\n";
       }
   }
-
 
 open (IN, $file);
 #<IN>; #toss header

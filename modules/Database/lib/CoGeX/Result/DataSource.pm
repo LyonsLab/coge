@@ -80,15 +80,15 @@ sub desc
 
 =head2 info
 
- Usage     : 
+ Usage     :
  Purpose   : provides quick information about the source
  Returns   : a string
- Argument  : 
- Throws    : 
+ Argument  :
+ Throws    :
  Comments  : name, description, restricted, type
-           : 
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -106,15 +106,15 @@ sub info
 
 =head2 info_html
 
- Usage     : 
+ Usage     :
  Purpose   : provides quick information about the source wrapped with a link
  Returns   : a string
- Argument  : 
- Throws    : 
+ Argument  :
+ Throws    :
  Comments  : name, description, restricted, type
-           : 
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -135,7 +135,6 @@ sub info_html
 
 1;
 
-
 =head1 SUPPORT
 
 =head1 AUTHORS
@@ -154,4 +153,3 @@ LICENSE file included with this module.
 =head1 SEE ALSO
 
 =cut
-

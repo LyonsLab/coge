@@ -23,7 +23,6 @@ This object uses the DBIx::Class to define an interface to the C<image> table in
 
 =cut
 
-
 __PACKAGE__->table("image");
 __PACKAGE__->add_columns(
 	"image_id",
@@ -43,7 +42,6 @@ __PACKAGE__->has_one( list_annotation => 'CoGeX::Result::ListAnnotation', 'image
 __PACKAGE__->has_one( user => 'CoGeX::Result::User', 'image_id');
 
 1;
-
 
 =head1 AUTHORS
 

@@ -17,4 +17,3 @@ perl -p -i -e "s/GEv[^']+/$1/" /opt/apache/CoGe/gobe/index.html
 N=`ls /opt/apache/CoGe/tmp/GEvo/${1}*.png | wc -l`
 echo $N
 perl -p -i -e "s/\('n'\)\s*\|\|\s*[^\)]+/('n') || ${N}/" /opt/apache/CoGe/gobe/index.html
-

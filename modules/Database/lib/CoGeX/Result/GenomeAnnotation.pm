@@ -62,8 +62,6 @@ __PACKAGE__->belongs_to( annotation_type => 'CoGeX::Result::AnnotationType', 'an
 __PACKAGE__->belongs_to( genome => 'CoGeX::Result::Genome', 'genome_id');
 __PACKAGE__->belongs_to( image => 'CoGeX::Result::Image', 'image_id');
 
-
-
 ################################################ subroutine header begin ##
 
 =head2 type
@@ -71,11 +69,11 @@ __PACKAGE__->belongs_to( image => 'CoGeX::Result::Image', 'image_id');
  Usage     : $Annotation_obj->type->AnnotationType_object_method_or_value
  Purpose   : Shorthand for getting an Annotation Type from an Annotation object.
  Returns   : AnnotationType object.
- Argument  : 
+ Argument  :
  Throws    : None.
- Comments  : 
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -86,20 +84,19 @@ sub type
     shift->annotation_type(@_);
 }
 
-
 ################################################ subroutine header begin ##
 
 =head2 info
 
  Usage     : $self->info
- Purpose   : returns a string of information about the annotation.  
+ Purpose   : returns a string of information about the annotation.
 
  Returns   : returns a string
  Argument  : none
- Throws    : 
+ Throws    :
  Comments  : To be used to quickly generate a string about the annotation
 
-See Also   : 
+See Also   :
 
 =cut
 

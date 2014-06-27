@@ -70,7 +70,6 @@ unless ($ftid) {
     exit;
 }
 
-
 my ( $dsg, $ds );
 ($dsg) = $coge->resultset('Genome')->search( { "me.genome_id" => $dsgid },
     { join => 'genomic_sequences', prefetch => 'genomic_sequences' } )

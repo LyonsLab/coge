@@ -6,7 +6,6 @@ use strict;
 
 my $db = new CoGe::Genome;
 
-
 unless (@ARGV)
   {
     print qq{
@@ -26,5 +25,3 @@ foreach my $id (@ARGV)
     $di->delete;
     print "Done\n";
   }
-
-

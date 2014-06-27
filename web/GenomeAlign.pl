@@ -237,4 +237,3 @@ sub gen_data {
     my $message = shift;
     return qq{<font class="loading">$message. . .</font>};
 }
-

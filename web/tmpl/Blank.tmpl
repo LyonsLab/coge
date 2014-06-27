@@ -7,12 +7,12 @@ $(document).ready(function(){
 		dataType: "html",
 		cache: false,
 	});
-        $('#group_table').tablesorter({		
+        $('#group_table').tablesorter({
 		cssAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		cssDesc: 'headerSortDown',	// Class name for descending sorting action to header
 //		cssHeader: 'header',			// Class name for headers (th's)
 		widgets: ['zebra'],
-		headers: {0: {sorter: false},},	//don't allow sort on the first column				
+		headers: {0: {sorter: false},},	//don't allow sort on the first column
 		});
 });
 
@@ -22,14 +22,14 @@ function run_ajax(opts){
       stuff = opts.stuff; //example of passing in some stuff
 
       // create a new closure who's scope does *not*
-      // include the `divid` value so that callback will 
-      // not clobber the `divid` variable 
+      // include the `divid` value so that callback will
+      // not clobber the `divid` variable
       var create_callback = function(divid) {
               var local_divid = divid;
               return function (data) {
                   $('#'+local_divid).html(data);
               };
-          }; 
+          };
 
       $.ajax({
         data: {
@@ -49,7 +49,7 @@ This is a blank page.  Use it to create a new page for CoGe!
 
 Here is a sortable table (the first column is not able to be sorted upon):<br>
 <TABLE id=group_table class="small ui-widget-content ui-corner-all">
- <THEAD align=left> 
+ <THEAD align=left>
   <TR>
    <TH>Name</TH>
    <TH>Description</TH>

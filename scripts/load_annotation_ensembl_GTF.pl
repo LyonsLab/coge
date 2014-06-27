@@ -137,7 +137,7 @@ my @anno_names = (
     "Function",
     "Derives_from",
 		  "gene_biotype",
-		  
+
 );
 my %anno_names = map { $_ => 1 } @anno_names;
 
@@ -224,7 +224,7 @@ print $log "log: Annotation types:\n", join(
 print $log "log: Data types:\n", join(
     "\n",
     map {
-            "log: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" 
+            "log: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
           . $_ . "\t"
           . commify( $seen_attr{$_} )
       } sort keys %seen_attr
@@ -307,7 +307,7 @@ my @name_buffer;    # buffer for bulk inserts into FeatureName table
                   . ( $pctLoaded ? $pctLoaded : '<1' )
                   . "%)\n\n"
                   if ( $loaded_annot and ( $loaded_annot % 1000 ) == 0 );
-                  
+
             foreach my $feat_type ( sort { $a cmp $b } keys %{ $data{$chr_loc}{$name} } ) {
                 print $log "\n" if $DEBUG;
 
@@ -600,7 +600,6 @@ sub process_gff_file {
         if    ( $strand =~ /-/ )  { $strand = -1; }
         elsif ( $strand =~ /\./ ) { $strand = 0;  }
         else  { $strand = 1; } # mdb changed 11/7/13 issue 248 - made '+' strand the default
-
 
         #push @types, "CDS" if $add_cds && $type eq "mRNA";
         # phytozome replications of CDS to mRNA

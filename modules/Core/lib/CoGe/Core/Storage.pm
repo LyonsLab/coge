@@ -52,11 +52,11 @@ BEGIN {
     @ISA     = qw (Exporter);
     @EXPORT = qw(
       get_tiered_path get_workflow_paths
-      get_genome_file index_genome_file get_genome_seq get_genome_path 
-      get_experiment_path get_experiment_files get_experiment_data 
+      get_genome_file index_genome_file get_genome_seq get_genome_path
+      get_experiment_path get_experiment_files get_experiment_data
       create_experiment create_experiments_from_batch
-      create_genome_from_file create_genome_from_NCBI 
-      create_annotation_dataset reverse_complement 
+      create_genome_from_file create_genome_from_NCBI
+      create_annotation_dataset reverse_complement
     );
 
     # Experiment Data Types
@@ -127,7 +127,7 @@ sub get_genome_file {
     my $gid = shift;
     return unless $gid;
     my $base_path = shift;    # optional
-    
+
     $base_path = get_genome_path($gid) unless ($base_path);
 
     # First check for legacy filename
@@ -266,7 +266,7 @@ sub get_genome_seq {
         unless ($fasta) {
             	# remove header line
             	$seq =~ s/^(?:.*\n)//;
-#2/17/14:  Note by EL:  THere is a problem where the following type sof regex sbustitutions fail if the string is longer then about 1G (http://www.perlmonks.org/?node_id=754854).  Need to take these strings and divide them into smaller pieces for processing 
+#2/17/14:  Note by EL:  THere is a problem where the following type sof regex sbustitutions fail if the string is longer then about 1G (http://www.perlmonks.org/?node_id=754854).  Need to take these strings and divide them into smaller pieces for processing
 
         	my @groups;
         	my $seq_length = length($seq);
@@ -377,10 +377,10 @@ sub get_fastbit_format {
 
     my $storage_path = get_experiment_path($eid);
     my $format_file = $storage_path . '/format.json';
-    
+
     # Backward compatibility, see issue 352
     # FIXME: remove someday by adding format.json files to old experiments
-    if (not -r $format_file) { 
+    if (not -r $format_file) {
         if (!$data_type || $data_type == $DATA_TYPE_QUANT) {
             return {
                 columns => [
@@ -423,7 +423,7 @@ sub get_fastbit_format {
         }
         return; # should never happen!
     }
-    
+
     # Otherwise read format json file
     return CoGe::Accessory::TDS::read($format_file);
 }
@@ -432,11 +432,11 @@ sub parse_fastbit_line {
     my $format = shift;
     my $line = shift;
     my $chr = shift;
-    
+
     $line =~ s/"//g;
     my @items = split(/,\s*/, $line);
     return if ( $items[0] !~ /^\"?$chr/); # make sure it's a row output line
-    
+
     my %result;
     foreach (@{$format->{columns}}) {
         my $item = shift @items;
@@ -466,16 +466,16 @@ sub get_experiment_data {
     my $storage_path = get_experiment_path($eid);
     my $cmd;
 
-    if (!$data_type || 
-        $data_type == $DATA_TYPE_QUANT || 
-        $data_type == $DATA_TYPE_POLY || 
-        $data_type == $DATA_TYPE_MARKER) 
+    if (!$data_type ||
+        $data_type == $DATA_TYPE_QUANT ||
+        $data_type == $DATA_TYPE_POLY ||
+        $data_type == $DATA_TYPE_MARKER)
     {
         my $pFormat = get_fastbit_format($eid, $data_type);
         my $columns = join(',', map { $_->{name} } @{$pFormat->{columns}});
         my $cmdpath = CoGe::Accessory::Web::get_defaults()->{FASTBIT_QUERY};
         $cmd = "$cmdpath -v 1 -d $storage_path -q \"select $columns where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
-        
+
         #print STDERR "\n$cmd\n";
         my @cmdOut = qx{$cmd};
         #print STDERR @cmdOut;
@@ -484,7 +484,7 @@ sub get_experiment_data {
             print STDERR "Storage::get_experiment_data: error $? executing command: $cmd\n";
             return;
         }
-    
+
         # Parse output into a hash result
         my @results;
         foreach (@cmdOut) {
@@ -494,7 +494,7 @@ sub get_experiment_data {
                 push @results, $pResult if ($pResult);
             }
         }
-        
+
         return \@results;
     }
     elsif ( $data_type == $DATA_TYPE_ALIGN ) { # FIXME move output parsing from Storage.pm to here
@@ -524,33 +524,33 @@ sub create_experiment {
     my $files = $opts{files};
     my $file_type = $opts{file_type};
     my $metadata = $opts{metadata};
-    
+
     print STDERR (caller(0))[3], "\n";
-    
+
     my $conf = CoGe::Accessory::Web::get_defaults();
-    
+
     my $gid = $genome =~ /^\d+$/ ? $genome : $genome->id;
-    
+
     # Connect to workflow engine and get an id
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
     unless (defined $jex) {
         return (undef, "Could not connect to JEX");
     }
-    
+
     # Create the workflow
     my $workflow = $jex->create_workflow( name => 'Create Experiment', init => 1 );
     unless ($workflow and $workflow->id) {
         return (undef, 'Could not create workflow');
     }
-    
+
     # Setup log file, staging, and results paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
     $workflow->logfile( catfile($staging_dir, 'log_main.txt') );
-    
+
     # Create list of files to load
     my @staged_files;
     push @staged_files, @$files;
-    
+
     # Create jobs to retrieve irods files
     my %load_params;
     foreach my $item (@$irods) {
@@ -562,20 +562,20 @@ sub create_experiment {
         $workflow->add_job(%load_params);
         push @staged_files, $load_params{outputs}[0];
     }
-    
+
     # Create load job
     %load_params = _create_load_experiment_job($conf, $metadata, $gid, $user->name, $staging_dir, \@staged_files, $file_type, $result_dir);
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
     $workflow->add_job(%load_params);
-    
+
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);
     if ($result->{status} =~ /error/i) {
         return (undef, "Could not submit workflow");
     }
-    
+
     return ($result->{id}, undef);
 }
 
@@ -586,11 +586,11 @@ sub create_experiments_from_batch {
     my $irods = $opts{irods};
     my $files = $opts{files};
     my $metadata = $opts{metadata};
-    
+
     print STDERR (caller(0))[3], "\n";
-    
+
     my $conf = CoGe::Accessory::Web::get_defaults();
-    
+
     my $gid = $genome =~ /^\d+$/ ? $genome : $genome->id;
 
     # Connect to workflow engine and get an id
@@ -598,21 +598,21 @@ sub create_experiments_from_batch {
     unless (defined $jex) {
         return (undef, "Could not connect to JEX");
     }
-    
+
     # Create the workflow
     my $workflow = $jex->create_workflow( name => 'Create Experiments', init => 1 );
     unless ($workflow and $workflow->id) {
         return (undef, 'Could not create workflow');
     }
-    
+
     # Setup log file, staging, and results paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
     $workflow->logfile( catfile($staging_dir, 'workflow.log') );
-    
+
     # Create list of files to load
     my @staged_files;
     push @staged_files, @$files;
-    
+
     # Create jobs to retrieve irods files
     my %load_params;
     foreach my $item (@$irods) {
@@ -624,20 +624,20 @@ sub create_experiments_from_batch {
         $workflow->add_job(%load_params);
         push @staged_files, $load_params{outputs}[0];
     }
-    
+
     # Create load job
     %load_params = _create_load_batch_job($conf, $metadata, $gid, $user->name, \@staged_files, $staging_dir, $result_dir);
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
     $workflow->add_job(%load_params);
-    
+
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);
     if ($result->{status} =~ /error/i) {
         return (undef, "Could not submit workflow");
     }
-    
+
     return ($result->{id}, undef);
 }
 
@@ -650,7 +650,7 @@ sub get_workflow_paths {
         print STDERR "Storage::get_workflow_paths ERROR: missing required param\n";
         return;
     }
-    
+
     my $tmp_path = CoGe::Accessory::Web::get_defaults()->{SECTEMPDIR};
     my $staging_path = catdir($tmp_path, 'staging', $user_name, $workflow_id);
     my $results_path = catdir($tmp_path, 'results', $user_name, $workflow_id);
@@ -669,7 +669,7 @@ sub create_genome_from_file {
     my $irods = $opts{irods};
     my $files = $opts{files};
     my $metadata = $opts{metadata};
-    
+
     print STDERR (caller(0))[3], "\n";
 
     # Connect to workflow engine and get an id
@@ -678,21 +678,21 @@ sub create_genome_from_file {
     unless (defined $jex) {
         return (undef, "Could not connect to JEX");
     }
-    
+
     # Create the workflow
     my $workflow = $jex->create_workflow( name => 'Create Genome', init => 1 );
     unless ($workflow and $workflow->id) {
         return (undef, 'Could not create workflow');
     }
-    
+
     # Setup log file, staging, and results paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
     $workflow->logfile( catfile($staging_dir, 'log_main.txt') );
-    
+
     # Create list of files to load
     my @staged_files;
     push @staged_files, @$files if ($files);
-    
+
     # Create jobs to retrieve irods files
     my %load_params;
     foreach my $item (@$irods) {
@@ -704,20 +704,20 @@ sub create_genome_from_file {
         $workflow->add_job(%load_params);
         push @staged_files, $load_params{outputs}[0];
     }
-    
+
     # Create load job
     %load_params = _create_load_genome_job($conf, $metadata, $user->name, $staging_dir, \@staged_files, $result_dir, $irods);
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
     $workflow->add_job(%load_params);
-    
+
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);
     if ($result->{status} =~ /error/i) {
         return (undef, "Could not submit workflow");
     }
-    
+
     return ($result->{id}, undef);
 }
 
@@ -725,50 +725,50 @@ sub create_genome_from_NCBI {
     my %opts = @_;
     my $user = $opts{user};
     my $accns = $opts{accns};
-    
+
     print STDERR (caller(0))[3], "\n";
-    
+
     # Connect to workflow engine and get an id
     my $conf = CoGe::Accessory::Web::get_defaults();
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
     unless (defined $jex) {
         return (undef, "Could not connect to JEX");
     }
-    
+
     # Create the workflow
     my $workflow = $jex->create_workflow( name => 'Create Genome (NCBI)', init => 1 );
     unless ($workflow and $workflow->id) {
         return (undef, 'Could not create workflow');
     }
-    
+
     # Setup log file, staging, and results paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
     $workflow->logfile( catfile($staging_dir, 'log_main.txt') );
-    
+
     # Create load job
     my %load_params = _create_load_genome_from_NCBI_job($conf, $user->name, $accns, $staging_dir, $result_dir);
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
     $workflow->add_job(%load_params);
-    
+
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);
     if ($result->{status} =~ /error/i) {
         return (undef, "Could not submit workflow");
     }
-    
+
     return ($result->{id}, undef);
 }
 
 sub _create_iget_job {
     my ($conf, $irods_path, $staging_dir) = @_;
-    
+
     my $dest_file = catdir($staging_dir, 'irods', $irods_path);
     my $dest_path = dirname($dest_file);
     mkpath($dest_path);
     my $cmd = irods_iget( $irods_path, $dest_path, { no_execute => 1 } );
-    
+
     return (
         cmd => $cmd,
         script => undef,
@@ -777,7 +777,7 @@ sub _create_iget_job {
         outputs => [
             $dest_file
         ],
-        description => "Fetching $irods_path..."    
+        description => "Fetching $irods_path..."
     );
 }
 
@@ -785,10 +785,10 @@ sub _create_load_experiment_job {
     my ($conf, $metadata, $gid, $user_name, $staging_dir, $files, $file_type, $result_dir) = @_;
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_experiment.pl");
     return unless $cmd; # SCRIPTDIR undefined
-    
+
     my $file_str = join(',', map { basename($_) } @$files);
     $file_type = 'csv' unless $file_type;
-    
+
     return (
         cmd => $cmd,
         script => undef,
@@ -823,9 +823,9 @@ sub _create_load_batch_job {
     my ($conf, $metadata, $gid, $user_name, $files, $staging_dir, $result_dir) = @_;
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_batch.pl");
     return unless $cmd; # SCRIPTDIR undefined
-    
+
     my $file_str = join(',', map { basename($_) } @$files);
-    
+
 #    my $cmd =
 #        "$BINDIR/load_batch.pl "
 #      . "-user_name $user_name "
@@ -835,7 +835,7 @@ sub _create_load_batch_job {
 #      . "-staging_dir $stagepath "
 #      . '-data_file "' . escape( join( ',', @files ) ) . '" '
 #      . "-config $CONFIGFILE";
-    
+
     return (
         cmd => $cmd,
         script => undef,
@@ -864,12 +864,12 @@ sub _create_load_genome_job {
     my ($conf, $metadata, $user_name, $staging_dir, $files, $result_dir, $irods) = @_;
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_genome.pl");
     return unless $cmd; # SCRIPTDIR undefined
-    
+
     my $file_str = join(',', map { basename($_) } @$files);
     my $irods_str = join(',', map { basename($_) } @$irods);
-    
+
     $file_str = '' if ($irods_str);
-    
+
     return (
         cmd => $cmd,
         script => undef,
@@ -903,7 +903,7 @@ sub _create_load_genome_from_NCBI_job {
     my ($conf, $user_name, $accns, $staging_dir, $result_dir, $files) = @_;
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_genomes_n_stuff", "genbank_genome_loader.pl");
     return unless $cmd; # SCRIPTDIR undefined
-    
+
     my %p = (
         cmd => $cmd,
         script => undef,
@@ -923,11 +923,11 @@ sub _create_load_genome_from_NCBI_job {
         ],
         description => "Loading genome data ..."
     );
-    
+
     foreach (@$accns) {
         push @{ $p{args} }, ['-accn', "'".$_."'", 0];
     }
-    
+
     return %p;
 }
 
@@ -937,30 +937,30 @@ sub create_annotation_dataset {
     my $irods = $opts{irods};
     my $files = $opts{files};
     my $metadata = $opts{metadata};
-    
+
     print STDERR (caller(0))[3], "\n";
-    
+
     # Connect to workflow engine and get an id
     my $conf = CoGe::Accessory::Web::get_defaults();
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
     unless (defined $jex) {
         return (undef, "Could not connect to JEX");
     }
-    
+
     # Create the workflow
     my $workflow = $jex->create_workflow( name => 'Load Genome Annotation', init => 1 );
     unless ($workflow and $workflow->id) {
         return (undef, 'Could not create workflow');
     }
-    
+
     # Setup log file, staging, and results paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
     $workflow->logfile( catfile($staging_dir, 'log_main.txt') );
-    
+
     # Create list of files to load
     my @staged_files;
     push @staged_files, @$files;
-    
+
     # Create jobs to retrieve irods files
     my %load_params;
     foreach my $item (@$irods) {
@@ -972,20 +972,20 @@ sub create_annotation_dataset {
         $workflow->add_job(%load_params);
         push @staged_files, $load_params{outputs}[0];
     }
-    
+
     # Create load job
     %load_params = _create_load_annotation_job($conf, $metadata, $user->name, $staging_dir, \@staged_files, $result_dir);
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
     $workflow->add_job(%load_params);
-    
+
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);
     if ($result->{status} =~ /error/i) {
         return (undef, "Could not submit workflow");
     }
-    
+
     return ($result->{id}, undef);
 }
 
@@ -993,9 +993,9 @@ sub _create_load_annotation_job {
     my ($conf, $metadata, $user_name, $staging_dir, $files, $result_dir) = @_;
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_annotation.pl");
     return unless $cmd; # SCRIPTDIR undefined
-    
+
     my $file_str = join(',', map { basename($_) } @$files);
-    
+
     return (
         cmd => $cmd,
         script => undef,

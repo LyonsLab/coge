@@ -56,12 +56,12 @@ __PACKAGE__->has_many( 'lists' => "CoGeX::Result::List", 'list_type_id' );
 
 =head2 is_*
 
- Usage     : 
+ Usage     :
  Purpose   : Test for particular list type
  Returns   : boolean
  Argument  : None
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 

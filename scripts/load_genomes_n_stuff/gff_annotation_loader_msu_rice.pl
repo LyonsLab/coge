@@ -20,8 +20,7 @@ my$coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
-
-GetOptions ( 
+GetOptions (
 	     "source_name=s" => \$source_name, # datasource
 	     "source_desc=s" => \$source_desc,
 	     "source_link=s" => \$source_link,
@@ -214,9 +213,9 @@ foreach my $source (keys %data)
 	    my ($chr) = map {$_->{chr}} @{$data{$source}{$name}{$feat_type}{loc}};
 	    $feat_types{$feat_type} = $coge->resultset('FeatureType')->find_or_create( { name => $feat_type } ) if $GO && !$feat_types{$feat_type};
 	    my $feat_type_obj = $feat_types{$feat_type};
-	    
+
 	    print "Creating feature of type $feat_type\n" if $DEBUG;
-	    
+
 	    my $feat = $ds->add_to_features({
 					     feature_type_id => $feat_type_obj->id,
 					     start=>$start,
@@ -286,7 +285,7 @@ sub generate_ds
       $coge->resultset('Dataset')->find_or_create({
 						   name                => $ds_name,
 						   description         => $ds_desc,
-						   link                => $ds_link, 
+						   link                => $ds_link,
 						   data_source_id      => $source_id,
 						   version=>$ds_version,
 						  });;

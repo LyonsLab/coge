@@ -34,28 +34,28 @@ sub run {
     my $db = $opts{db};
     my $experiment = $opts{experiment};
     my $user = $opts{user};
-    
+
     my $eid = $experiment->id;
     my $genome = $experiment->genome;
-    
+
     $CONF = CoGe::Accessory::Web::get_defaults();
-    
+
     # Connect to workflow engine and get an id
     my $jex = CoGe::Accessory::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
     unless (defined $jex) {
         return (undef, "Could not connect to JEX");
     }
-    
+
     # Create the workflow
     my $workflow = $jex->create_workflow( name => 'Running the SNP-finder pipeline', init => 1 );
-    
+
     # Setup log file, staging, and results paths
     ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
     $workflow->logfile( catfile($staging_dir, 'log_main.txt') );
-    
+
     $FASTA_CACHE_DIR = catdir($CONF->{CACHEDIR}, $genome->id, "fasta");
     die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
-    
+
     my $fasta_file = get_genome_file($genome->id);
     my $files = get_experiment_files($eid, $experiment->data_type);
     my $bam_file = shift @$files;
@@ -67,20 +67,20 @@ sub run {
     );
     $workflow->add_job(
         create_fasta_index_job($filtered_file, $genome->id)
-    );    
+    );
     $workflow->add_job(
         create_samtools_job($filtered_file, $genome->id, $bam_file)
     );
     $workflow->add_job(
         create_load_experiment_job(catfile($staging_dir, 'snps.vcf'), $user, $experiment)
     );
-    
+
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);
     if ($result->{status} =~ /error/i) {
         return (undef, "Could not submit workflow");
     }
-    
+
     return ($result->{id}, undef);
 }
 
@@ -91,7 +91,7 @@ sub to_filename { # FIXME: move into Utils module
 
 sub create_fasta_reheader_job {
     my ($fasta, $gid, $output) = @_;
-    
+
     my $cmd = catfile($CONF->{SCRIPTDIR}, "fasta_reheader.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
@@ -114,7 +114,7 @@ sub create_fasta_reheader_job {
 
 sub create_fasta_index_job {
     my ($fasta, $gid) = @_;
-    
+
     my $samtools = $CONF->{SAMTOOLS};
     die "ERROR: SAMTOOLS not specified in config" unless $samtools;
 
@@ -169,7 +169,7 @@ sub create_samtools_job {
 
 sub create_load_experiment_job {
     my ($vcf, $user, $experiment) = @_;
-    
+
     my $cmd = catfile(($CONF->{SCRIPTDIR}, "load_experiment.pl"));
     my $output_path = catdir($staging_dir, "load_experiment");
 

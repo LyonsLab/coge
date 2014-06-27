@@ -77,7 +77,7 @@ __PACKAGE__->belongs_to( 'user' => "CoGeX::Result::User", 'user_id' );
  Returns   : a string
  Argument  : None
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 

@@ -51,7 +51,7 @@ sub read {
     my $json = <$fh>;
     $pData = decode_json($json);
     close($fh);
-    
+
     return $pData;
 }
 
@@ -67,7 +67,7 @@ sub write {
     seek($fh, 0, 0); truncate(MYFILE, 0); # clear file
     print $fh $json;
     close($fh);
-    
+
     return 1;
 }
 

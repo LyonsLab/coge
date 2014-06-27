@@ -10,7 +10,7 @@ $(document).ready(function(){
     dataType: "html",
     cache: false,
   });
-  	
+
   $(".dialog_box").dialog({autoOpen: false});
 
   set_table();
@@ -27,7 +27,7 @@ function filter_rows (search_text){
 	$('#filter_count').html('Showing ' + $("#experiment_table_body tr:visible").length + ' of ' + $("#experiment_table_body tr").length + ' experiments');
 }
 
-function set_table () {  
+function set_table () {
   $('#experiment_table').tablesorter({widgets: ['zebra']});
 }
 
@@ -80,8 +80,6 @@ Are you sure you want to delete this experiment?<p>
 
 </TMPL_IF> <!-- MAIN -->
 
-
-
 <TMPL_IF NAME='DO_EXPERIMENT_TABLE'>
 <SCRIPT language="JavaScript">
 $(document).ready(function(){
@@ -100,7 +98,7 @@ $(document).ready(function(){
 </SCRIPT>
 
 <div class='small' style="padding-top:5px;padding-bottom:5px;">
- Filter: 
+ Filter:
  <input type="text" id="search_bar">
  <select id="search_type">
   <option value="1">Contains</option>
@@ -110,7 +108,7 @@ $(document).ready(function(){
 </div>
 
 <table id="experiment_table" class="small ui-widget-content ui-corner-all">
- <thead align="left"> 
+ <thead align="left">
   <tr>
    <th>Name</th>
    <th>Version</th>

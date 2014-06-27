@@ -56,7 +56,6 @@ __PACKAGE__->belongs_to('image'=>"CoGeX::Result::Image","image_id");
 __PACKAGE__->has_many('work_orders'=>"CoGeX::Result::WorkOrder","work_id");
 1;
 
-
 =head1 AUTHORS
 
  Josh Kane

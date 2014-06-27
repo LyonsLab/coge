@@ -12,7 +12,7 @@
     }
     .cell-normal {
 		vertical-align: middle;
-		font-size: small;    	
+		font-size: small;
     }
   </style>
 
@@ -123,7 +123,7 @@ $(function () {
 	grid.onSort.subscribe(function (e, args) {
 		sortcol = args.sortCol.field;
 		dataView.sort(comparer, args.sortAsc);
-	});	
+	});
 
 	// Wire up model events to drive the grid
 	dataView.onRowCountChanged.subscribe(function (e, args) {
@@ -141,7 +141,7 @@ $(function () {
 	// Wire up the show selector to apply the filter to the model
 	$("#show_select,#search_type").change(function (e) {
 		updateFilter();
-	});	
+	});
 
 	// Wire up the search textbox to apply the filter to the model
 	$("#search_input").keyup(function (e) {
@@ -172,7 +172,7 @@ function myFilter(item, args) {
 	var page 		= (item['page'] ? item['page'].toLowerCase() : '');
 	var link 		= (item['link'] ? item['link'].toLowerCase() : '');
 	var comment 	= (item['comment'] ? item['comment'].toLowerCase() : '');
-	
+
 	var show = 1;
 	if (args.show != 0) {
 		if (args.show == -1) { // Starred
@@ -201,7 +201,7 @@ function myFilter(item, args) {
 				description.indexOf(args.searchString) == -1 &&
 				page.indexOf(args.searchString) == -1 &&
 				link.indexOf(args.searchString) == -1 &&
-				comment.toLowerCase().indexOf(args.searchString) == -1 ) 
+				comment.toLowerCase().indexOf(args.searchString) == -1 )
 			{
 				return false;
 			}
@@ -215,7 +215,7 @@ function myFilter(item, args) {
 				comment.toLowerCase().indexOf(args.searchString) != -1 )
 			{
 				return false;
-			}		
+			}
 		}
 	}
 
@@ -250,7 +250,7 @@ function toggle_star(img) {
 
 <div class="small" style="padding-top:15px;padding-bottom:5px;height:27px;">
   <span style="padding-right:10px">
-  Show: 
+  Show:
   <select id="show_select">
    <option value="0">All</option>
    <TMPL_IF NAME="OPTION_ALL"><option selected='selected' value="-3">Mine</option></TMPL_IF>
@@ -264,7 +264,7 @@ function toggle_star(img) {
   </select>
  </span>
  <span>
-  Filter: 
+  Filter:
   <input id="search_input" type="text">
   <select id="search_type">
    <option value="1">Contains</option>
@@ -278,13 +278,9 @@ function toggle_star(img) {
 
 </TMPL_IF>
 
-
-
 <TMPL_IF NAME='LOGIN'>
 	<TMPL_INCLUDE NAME="widgets/Login.tmpl">
 </TMPL_IF>
-
-
 
 <TMPL_IF NAME='ADMIN_AREA'>
 <!--

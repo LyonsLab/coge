@@ -5,9 +5,6 @@ use Data::Dumper;
 use CoGeX;
 use Getopt::Long;
 
-
-
-
 use vars qw($DEBUG $GO $file $dsid $feat_type_name  $ds_name $ds_desc $ds_link $ds_version $source_name $source_desc $source_link $source_id);
 
 GetOptions (
@@ -32,8 +29,7 @@ unless ($file && -r $file && $feat_type_name)
     exit();
   }
 
-
-print "***************'go' flag is not set.  Nothing will be added to the database****************\n" unless $GO; 
+print "***************'go' flag is not set.  Nothing will be added to the database****************\n" unless $GO;
 my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
 my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 
@@ -145,7 +141,7 @@ sub generate_ds
       $coge->resultset('Dataset')->find_or_create({
 						   name                => $ds_name,
 						   description         => $ds_desc,
-						   link                => $ds_link, 
+						   link                => $ds_link,
 						   data_source_id      => $source_id,
 						   version=>$ds_version,
 						  });;
@@ -159,14 +155,12 @@ sub usage
     print qq{
 Usage $0 -file <tab delimited location file> -dsid <dataset database id> -feat_type_name <name of type of feature> -go
 
-
 Options:
-   -file | -f      name of tab delimited file with feature 
+   -file | -f      name of tab delimited file with feature
 
  File format:
 Chromsome <tab> start <tab> stop <tab> strand <tab> name <tab> description/annotation
 Names are good!  If no description/annotation is provided, none will be added.
-
 
   -feat_type_name | ftn   name of feature type e.g. gene, mRNA, CDS, CNS, gene_space
 
@@ -200,8 +194,6 @@ Names are good!  If no description/annotation is provided, none will be added.
  -ds_link           html/url link to dataset
 
  -ds_version        version of dataset
-
-
 
 };
 

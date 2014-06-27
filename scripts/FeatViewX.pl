@@ -47,15 +47,11 @@ $pj->DEBUG(2);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
 
-
-
 sub gen_data
   {
     my $message = shift;
     return qq{<font class="loading">$message. . .</font>};
   }
-
-
 
 sub get_types
   {
@@ -78,8 +74,8 @@ sub get_types
         $seen{$ftype}++;
         push(@opts,"<option>$ftype<option");
     }
-    my $html = "<font class=small>Type count: " 
-         . scalar @opts 
+    my $html = "<font class=small>Type count: "
+         . scalar @opts
          ."</font>\n<BR>\n"
          . qq{<SELECT id="Type_name" SIZE="5" MULTIPLE onChange="get_anno(['accn_select','Type_name', 'dsid'],['anno'])" >\n}
          .  join ("\n", @opts)
@@ -89,7 +85,6 @@ sub get_types
     return $blank unless $html =~ /option/;
     return ($html, 1);
   }
-
 
 sub cogesearch
   {
@@ -129,7 +124,6 @@ sub cogesearch
     return $blank."No results found.\n" unless $html =~ /option/;
     return $html;
   }
-
 
 sub get_anno
   {
@@ -195,7 +189,6 @@ sub show_express
     return $link;
   }
 
-
 sub gen_html
   {
     my $html;
@@ -213,7 +206,7 @@ sub gen_html
 	$template->param(bOX_NAME=>"Feature Selection");
 	my $body = gen_body();
 	$template->param(BODY=>$body);
-	
+
 	$html .= $template->output;
       }
     return $html;
@@ -224,7 +217,7 @@ sub gen_body
     my $template = HTML::Template->new(filename=>'/opt/apache/bpederse/cogex/tmpl/FeatView.tmpl');
 
     $template->param(ACCN=>$ACCN);
-    $template->param(TYPE_LOOP=> [{TYPE=>"<OPTION VALUE=0>All</OPTION>"},map {{TYPE=>"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"}} sort {uc($a->name) cmp uc($b->name)} 
+    $template->param(TYPE_LOOP=> [{TYPE=>"<OPTION VALUE=0>All</OPTION>"},map {{TYPE=>"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"}} sort {uc($a->name) cmp uc($b->name)}
     $DB->resultset('FeatureType')->search() ]);
 
     my @orgs;
@@ -234,7 +227,7 @@ sub gen_body
     #TODO: move this after
     my $rscount = $rs->count;
     my $anno = "<font class=small>Annotation count: ". $rscount .  "</font>\n<BR>\n" if $rscount;
-    
+
     while( my $org =$rs->next())
       {
 	push @orgs, $org unless $restricted_orgs{$org->name};
@@ -243,7 +236,7 @@ sub gen_body
     $template->param(ORG_LOOP=> [{ORG=>"<OPTION VALUE=0>All</OPTION>"},
         map {{ORG=>"<OPTION value=\"".$_->organism_id."\">".$_->name."</OPTION>"}}  @orgs]);
     my $html = $template->output;
-    $html =~ s/(>gene<\/OPTION)/ SELECTED$1/; 
+    $html =~ s/(>gene<\/OPTION)/ SELECTED$1/;
     return $html;
   }
 
@@ -290,4 +283,3 @@ sub get_data_source_info_for_accn
     $html .= qq{</SELECT>\n};
     return ("<font class=small>Dataset count: ".$count ."</font>\n<BR>\n".$html, 1);
   }
-

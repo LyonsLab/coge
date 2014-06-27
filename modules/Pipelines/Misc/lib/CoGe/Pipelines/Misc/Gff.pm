@@ -19,7 +19,6 @@ BEGIN {
     @EXPORT = qw (generate_gff);
 }
 
-
 sub generate_gff {
     my %args = (
         annos   => 0,
@@ -59,4 +58,3 @@ sub generate_gff {
 }
 
 1;
-

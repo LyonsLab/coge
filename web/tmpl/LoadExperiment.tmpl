@@ -29,7 +29,7 @@ $(document).ready(function(){
 
     // Initialize drop-downs
     get_sources();
-    
+
     $("#edit_genome").autocomplete({
         source:[],
         select: function(event, ui) {
@@ -42,7 +42,7 @@ $(document).ready(function(){
             return false; // Prevent the widget from inserting the value.
         }
     });
-    
+
     $("#file_type_selector").on("change", function() {
         var alignment = $("#alignment");
         if ($(this).val() === "fastq") {
@@ -247,15 +247,15 @@ function get_load_log(callback) {
 
 function load_failed() {
 	// mdb added 6/24/14 - temporary message until JEX logging is improved
-	var msg = 
-		'<div class="alert">' + 
+	var msg =
+		'<div class="alert">' +
 		'We recently made some changes that limit our ability to report errors (more details <a href="https://genomevolution.org/wiki/index.php/Jex_Logging" target=_blank>here</a>). ' +
 		'While we fix this please feel free to contact us at <a href="mailto:coge.genome@gmail.com">coge.genome@gmail.com</a> regarding this failure to load data ' +
 		'and we can help to determine the cause.  Thanks!' +
 		'</div>';
 	var log = $('#load_log');
-	log.html( log.html() + msg );	
-	
+	log.html( log.html() + msg );
+
     // Update dialog
     $('#loading_msg').hide();
     $('#error_msg,#cancel_load_experiment_button').fadeIn();
@@ -504,7 +504,6 @@ function update_dialog(request, identifier, formatter) {
 }
 </SCRIPT>
 
-
 <table class="small ui-widget-content ui-corner-all">
   <tr>
     <td>Name:</td>
@@ -584,13 +583,10 @@ function update_dialog(request, identifier, formatter) {
 <br>
 <br>
 
-
 <div id="file_select_dialog" class="dialog_box" title="Select Data File ..." style="display:none;">
   <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
   <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all">Done</span>
 </div> <!-- file_select_dialog -->
-
-
 
 <div id="load_dialog" class="dialog_box" title="Loading Experiment ..." style="display:none;">
   <div id="load_log" class="small padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
@@ -606,8 +602,6 @@ function update_dialog(request, identifier, formatter) {
   <span id="finish_load_experiment_button" style="display:none;float:right;" class="ui-button ui-corner-all">ExperimentView</span>
   <span id="cancel_load_experiment_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Cancel</span>
 </div>
-
-
 
 <div id="create_new_source_dialog" class="dialog_box" title="Create New Source" style="display:none;">
   <table class="small">
@@ -627,8 +621,6 @@ function update_dialog(request, identifier, formatter) {
   <br>
   <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all ui-button-go">Create</span>
 </div>
-
-
 
 <TMPL_IF NAME='ADMIN_AREA'>
 <script>
@@ -653,8 +645,6 @@ $(document).ready(function() {
 </TMPL_IF> <!-- ADMIN_AREA -->
 
 </TMPL_IF> <!-- MAIN -->
-
-
 
 <TMPL_IF NAME='LOGIN'>
     <TMPL_INCLUDE NAME="widgets/Login.tmpl">

@@ -5,7 +5,6 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
-
 =head1 NAME
 
 CoGeX::
@@ -55,7 +54,6 @@ __PACKAGE__->belongs_to("genome" => "CoGeX::Result::Genome", "genome_id");
 __PACKAGE__->belongs_to("dataset" => "CoGeX::Result::Dataset", "dataset_id");
 
 1;
-
 
 =head1 SUPPORT
 

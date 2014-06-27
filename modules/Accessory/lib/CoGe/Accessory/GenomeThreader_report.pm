@@ -11,7 +11,6 @@ use Data::Dumper;
 #./bin/gth -genomic eric_example/at_genomic.faa -protein eric_example/at_protein.faa -scorematrix /opt/apache/CoGe/data/blast/matrix/aa/BLOSUM62
 __PACKAGE__->mk_accessors('file', 'genes', 'hsps', 'query', 'subject');
 
-
 sub new {
         my $proto = shift;
         my $class = ref($proto) || $proto;
@@ -88,7 +87,7 @@ sub process_block
 	    last;
 #	    $alignment_flag=0;  #turn of alignment flag if a query has more than one possible gene structure
 	  }
-	  
+
 	if ($alignment_flag)
 	  {
 	    $alignment .= $line."\n";
@@ -135,9 +134,9 @@ sub process_block
 #     $data{strand} = $feat->strand;
 #     foreach my $loc ($feat->locations)
 #       {0
-# 	push $data{locs}, 
+# 	push $data{locs},
 #       }
-    
+
 #   }
 
 1;

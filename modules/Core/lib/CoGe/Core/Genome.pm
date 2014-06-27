@@ -90,7 +90,6 @@ sub get_feature_type_gc_histogram {
     return $data->{$key};
 }
 
-
 sub get_wobble_gc_diff_histogram {
     my $genome = _get_genome_or_exit(@_);
     my $storage_path = _get_histogram_file($genome->id);
@@ -403,4 +402,3 @@ sub _generate_noncoding_gc_stats {
     };
 }
 1;
-

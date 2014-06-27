@@ -13,7 +13,6 @@ use CoGe::Accessory::Utils qw( commify );
 
 use vars qw($P $PAGE_NAME $PAGE_TITLE $FORM $USER $coge $LINK);
 
-
 $PAGE_TITLE = 'SeqView';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 

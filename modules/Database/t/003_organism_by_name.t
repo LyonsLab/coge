@@ -12,7 +12,7 @@ my $s = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 isa_ok ($s, 'CoGeX');
 
 my $rs = $s->resultset('Organism')->search(
-                                      { 
+                                      {
                                         name => { 'like' => 'Nostoc%' }
                                       }
                                     );

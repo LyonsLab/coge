@@ -30,7 +30,6 @@ Owner::iterator LILookUpOwnerIterator(LI * LeftInfluence, long long int seq1, lo
 	}
 }
 
-
 Fragment * LILookUpOwnerEnd(LI * LeftInfluence,Fragment * current) {
 	Owner::iterator own = LILookUpOwnerIterator(LeftInfluence, current->seq1End, current->getSeq2End(LeftInfluence->reflectFlag));
 
@@ -41,7 +40,6 @@ Fragment * LILookUpOwnerEnd(LI * LeftInfluence,Fragment * current) {
 	}
 }
 
-
 Fragment * LILookUpOwnerStart(LI * LeftInfluence, Fragment * current) {
 	Owner::iterator own = LILookUpOwnerIterator(LeftInfluence, current->seq1Start, current->getSeq2Start(LeftInfluence->reflectFlag));
 
@@ -51,7 +49,6 @@ Fragment * LILookUpOwnerStart(LI * LeftInfluence, Fragment * current) {
 		return *own;
 	}
 }
-
 
 // Returns the column boundary before the current point, if there is none it returns end
 CBound::iterator LICColumn(LI * LeftInfluence, long long int /* seq1 */, long long int seq2) {
@@ -70,7 +67,6 @@ CBound::iterator LICColumn(LI * LeftInfluence, long long int /* seq1 */, long lo
     }
 }
 
-
 Fragment * LICOwner(LI * LeftInfluence, long long int seq1, long long int seq2) {
 	CBound::iterator citer;
 	citer = LICColumn(LeftInfluence, seq1, seq2);
@@ -82,7 +78,6 @@ Fragment * LICOwner(LI * LeftInfluence, long long int seq1, long long int seq2) 
 	}
 }
 
-
 Fragment * LIDOwner(LI * LeftInfluence, long long int seq1, long long int seq2) {
 	DBound::iterator diter;
 	diter = LIDDiagonal(LeftInfluence, seq1, seq2);
@@ -93,7 +88,6 @@ Fragment * LIDOwner(LI * LeftInfluence, long long int seq1, long long int seq2) 
 		return *(diter->second);
 	}
 }
-
 
 //returns the diagonal boundary,  or end if all the point is before all the diagonal boundaries
 DBound::iterator LIDDiagonal(LI * LeftInfluence, long long int seq1, long long int seq2) {
@@ -108,7 +102,6 @@ DBound::iterator LIDDiagonal(LI * LeftInfluence, long long int seq1, long long i
         return diter;
     }
 }
-
 
 // this function should never get called with the LI dummy
 // can the scores become negative and how do we handle this?
@@ -128,7 +121,6 @@ float LILookUpScore(LI * LeftInfluence, Fragment * current) {
 	}
 }
 
-
 void InitLI(LI * LeftInfluence, long long int scoreIndex) {
 	LeftInfluence->scoreIndex = scoreIndex;
 
@@ -145,7 +137,6 @@ void InitLI(LI * LeftInfluence, long long int scoreIndex) {
 	//there will be a list of structures to insert this into
 	(LeftInfluence->o).insert((LeftInfluence->o).begin(), &LI_dummy);
 }
-
 
 long long int LI_Winner(LI * LeftInfluence, Fragment * first, Fragment * second) {
 	Fragment dummy;
@@ -169,7 +160,6 @@ long long int LI_Winner(LI * LeftInfluence, Fragment * first, Fragment * second)
 		return FALSE;
 	}
 }
-
 
 long long int LICommitPoint(LI * LeftInfluence, Fragment * current) {
 	Owner::iterator cowner, ownerIter;
@@ -208,12 +198,10 @@ long long int LICommitPoint(LI * LeftInfluence, Fragment * current) {
 	}
 }
 
-
 Owner::iterator LI_OwnerInsertAfter(LI * LeftInfluence, Owner::iterator current, Fragment * curfrag) {
 	current++;
 	return (LeftInfluence->o).insert(current, curfrag);
 }
-
 
 long long int LI_CommitDiagonalOwner(LI * LeftInfluence, Fragment * current, Fragment * owner) {
 	CBound::iterator current_column, next_column;
@@ -341,7 +329,6 @@ long long int LI_CommitDiagonalOwner(LI * LeftInfluence, Fragment * current, Fra
 	return TRUE;
 }
 
-
 long long int LI_CommitColumnOwner(LI * LeftInfluence, Fragment * current, Fragment * owner) {
 	CBound::iterator current_column, next_column;
 	CInter::iterator nextColInter, colInter;
@@ -436,7 +423,6 @@ long long int LI_CommitColumnOwner(LI * LeftInfluence, Fragment * current, Fragm
 	return TRUE;
 }
 
-
 void CreateIntersectionPoint(LI * LeftInfluence, long long int col, long long int diag, CInter::iterator colInter, DInter::iterator diagInter) {
 	Point temp;
 
@@ -451,13 +437,11 @@ void CreateIntersectionPoint(LI * LeftInfluence, long long int col, long long in
 	diagInter->second = tempinter;
 }
 
-
 void DeleteIntersectionPoint(InterPoint::iterator tobeerased, CInter::iterator colInter, DInter::iterator diagInter) {
 	inter.erase(tobeerased);
 	colInter->second = inter.end();
 	diagInter->second = inter.end();
 }
-
 
 // handles one intersection point that is at the head of inter
 void HandleOneIntersectionPoint() {
@@ -565,7 +549,6 @@ void HandleOneIntersectionPoint() {
 	inter.erase(inter.begin());
 }
 
-
 long long int printDBound(LI * LeftInfluence) {
 	if (DEBUG) { return 0; }
 	DBound::iterator i;
@@ -580,7 +563,6 @@ long long int printDBound(LI * LeftInfluence) {
 	fprintf(stderr, "Dbound Done/n");
 	return diagCount;
 }
-
 
 long long int printCBound(LI * LeftInfluence) {
 	if (DEBUG) { return 0; }
@@ -597,7 +579,6 @@ long long int printCBound(LI * LeftInfluence) {
 	return colCount;
 }
 
-
 long long int printOwners(LI * LeftInfluence) {
 	if (DEBUG) { return 0; }
 	Owner::iterator i;
@@ -613,7 +594,6 @@ long long int printOwners(LI * LeftInfluence) {
 	return ownerCount;
 }
 
-
 void printState(LI * LeftInfluence) {
 	if (DEBUG) { return; }
 	long long int colCount, diagCount, ownerCount;
@@ -624,7 +604,6 @@ void printState(LI * LeftInfluence) {
 	diagCount = printDBound(LeftInfluence);
 	interPointPrint();
 }
-
 
 void interPointPrint() {
 	if (DEBUG) { return; }

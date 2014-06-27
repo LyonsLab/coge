@@ -4,8 +4,8 @@
 
 use Test::More qw(no_plan);
 
-BEGIN { 
-    use_ok( 'CoGe::Graphics::Chromosome' ); 
+BEGIN {
+    use_ok( 'CoGe::Graphics::Chromosome' );
     use_ok( 'CoGe::Graphics::Feature' );
     use_ok( 'CoGe::Graphics::Feature::Gene' );
     use_ok( 'CoGe::Graphics::Feature::NucTide' );
@@ -164,13 +164,9 @@ $o->chr_length(250000000);
 #$o->set_point (125000000);
 $o->set_point (54400);
 
-
-
 #$o->set_region(start=>5000, stop=>6000);
 $o->mag(14);
 $o->iw(800);
 $o->draw_chromosome(1);
 
 $o->generate_png();
-
-

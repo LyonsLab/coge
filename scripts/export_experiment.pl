@@ -163,4 +163,3 @@ sub export_annotations {
 
     return @files;
 }
-

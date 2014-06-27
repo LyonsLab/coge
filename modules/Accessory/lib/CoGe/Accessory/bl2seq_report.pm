@@ -6,13 +6,12 @@ use CoGe::Accessory::parse_report::HSP;
 use base qw(Class::Accessor);
 use Data::Dumper;
 
-
 BEGIN
   {
     use vars qw($VERSION);
     $VERSION = "0.01";
   }
-__PACKAGE__->mk_accessors('file', 'lastline', 'report_done', 'hsps', 
+__PACKAGE__->mk_accessors('file', 'lastline', 'report_done', 'hsps',
 	'hsp_count', 'eval_cutoff', 'query', 'subject', 'qlength', 'slength');
 
 sub qname    {shift->query(@_)}
@@ -60,7 +59,6 @@ sub process_file
        push @hsps, $hsp if $hsp;
       }
 
-    
     #	close( $self->{FH} );
     $self->hsps(\@hsps);
     return $self;
@@ -79,18 +77,18 @@ sub process_file
 #	$self = undef;
 #}
 
-sub _parseHeader 
+sub _parseHeader
   {
     my ($self) = shift;
     my $header = shift;
     return unless $header;
-    
+
 # mdb removed 1/28/14, issue 288
 #    $header =~ s/.*Query/Query/s;
 #    my ($query, $subject) = split(/\n\n+/,$header);#=~ /^(.*letters\))\s+(.*)$/s;
 #    warn "Problem parsing header from file: ".$self->file."\n header:\n$header\n" unless $query && $subject;
 #    if ($query =~ /Query=\s+(.+)/)
-#      { 
+#      {
 #	my $qname = $1;
 #	$self->query($qname);
 #      }
@@ -129,11 +127,11 @@ sub _parseHeader
 #	warn "problem parsing bl2seq report subject length from $subject\n";
 #	$self->slength("ERROR");
 #      }
-    
+
     # mdb added 1/28/14, issue 288
 	my ($qname, $qlen, $sname, $slen) = $header =~ /.*Query=\s?(\S+).+Length=(\d+).+Subject=\s?(\S+).+Length=(\d+)/s;
 	print STDERR "$qname $qlen $sname $slen\n";
-	
+
 	if (not defined $qname) {
 		warn "problem parsing bl2seq report query name\n";
 		$qname = 'UNKNOWN';
@@ -145,17 +143,17 @@ sub _parseHeader
 	if (not defined $qlen) {
 		warn "problem parsing bl2seq report query length\n";
 		$qlen = 'ERROR';
-	}	
+	}
 	if (not defined $slen) {
 		warn "problem parsing bl2seq report subject length\n";
 		$slen = 'ERROR';
 	}
-	
+
 	$self->query($qname);
 	$self->qlength($qlen);
 	$self->subject($sname);
 	$self->slength($slen);
-    
+
     return;
 }
 
@@ -214,7 +212,7 @@ sub _processHSP {
 	my(@hspline) = ();;
 	foreach (split /\n/, $data)
 	  {
-	  if ($_ !~ /\S/) 
+	  if ($_ !~ /\S/)
 	    {next;} # blank line, skip
 	  elsif ($_ =~ /(^>)|(^Lambda)|(^\s+Database:)/)
 	    {
@@ -224,26 +222,26 @@ sub _processHSP {
 	    push @hspline, $_;           # store the query line
 	  }
 	}
-	
+
 	#########################
 	# parse alignment lines #
 	#########################
 	my ($ql, $sl, $as) = ("", "", "");
 	my ($qb, $qe, $sb, $se) = (0,0,0,0);
 	my (@QL, @SL, @AS) = (); # for better memory management
-			
+
 	for(my $i=0;$i<@hspline;$i+=3) {
 		#warn $hspline[$i], $hspline[$i+2];
 		$hspline[$i]   =~ /^Query\s+(\d+)\s*(\S+)\s+(\d+)/;
 		$ql = $2; $qb = $1 unless $qb; $qe = $3;
-		
+
 		my $offset = index($hspline[$i], $ql);
 		$as = substr($hspline[$i+1], $offset, CORE::length($ql))
 			if $hspline[$i+1];
-		
+
 		$hspline[$i+2] =~ /^Sbjct\s+(\d+)\s*(\S+)\s+(\d+)/;
 		$sl = $2; $sb = $1 unless $sb; $se = $3;
-		
+
 		push @QL, $ql; push @SL, $sl; push @AS, $as;
 	}
 

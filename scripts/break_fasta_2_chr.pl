@@ -5,8 +5,6 @@ use strict;
 my $dir = shift;
 process_dir($dir);
 
-
-
 sub process_dir
   {
     my $dir = shift;

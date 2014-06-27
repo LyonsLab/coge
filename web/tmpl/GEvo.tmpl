@@ -66,7 +66,7 @@ function set_up_sort() {
   			 i=1;
 			 $('.portlet').each(function(){
 			   $($($(this).children()[0]).children()[1]).val(i);
-			   i++; 
+			   i++;
  			 });
 			},
 		});
@@ -84,7 +84,7 @@ function set_display_order () {
  i=1;
  $('.portlet').each(function(){
    $($($(this).children()[0]).children()[1]).val(i);
-   i++; 
+   i++;
  });
 }
 
@@ -144,7 +144,7 @@ function update_color_picker(color_id, all) {
 	 if (all) {
 	  $('.color_chooser').each(function(){
 	   $(this).css("background-color", ""+setcolor);
-	   });	   
+	   });
 	 }
 }
 
@@ -161,7 +161,7 @@ Gobe.set_genespace= function (updown, idx, value, length, anchorlength){
     $('#'+eid).val(value);
     value = value*-1;
     if (value < 1) {value = 1;}
-    if (updown == "up") 
+    if (updown == "up")
      {
       var orig_gbstart = parseFloat($('#gbstart'+idx).val());
       var orig_dirstart = parseFloat($('#dirstart'+idx).val());
@@ -177,7 +177,7 @@ Gobe.set_genespace= function (updown, idx, value, length, anchorlength){
        var dirlength = $('#dirlength'+idx).val();
        if (dirlength == undefined || dirlength == ""){dirlength=length;}
        dirlength = dirlength-($('#dirstart'+idx).val()-orig_dirstart);
-       $('#dirlength'+idx).val(dirlength);      
+       $('#dirlength'+idx).val(dirlength);
      }
     else if (updown == "down")
      {
@@ -187,7 +187,7 @@ Gobe.set_genespace= function (updown, idx, value, length, anchorlength){
 
        var tmp = (anchorlength-value+1)-parseFloat($('#dirstart'+idx).val());
        dirlength = length-value-($('#dirstart'+idx).val()-pageObj.orig_dirstarts[idx]);
-       $('#dirlength'+idx).val(dirlength);    
+       $('#dirlength'+idx).val(dirlength);
      }
 };
 
@@ -198,8 +198,8 @@ function return_image_info (id) {
     data: {
            async: false,
     	   jquery_ajax: 1,
-	   fname: 'get_image_info', 
-           id: id, 
+	   fname: 'get_image_info',
+           id: id,
            basename: pageObj.basefile
 	  },
     success: function (pos) {
@@ -211,7 +211,7 @@ function return_image_info (id) {
 Gobe.handle_html= function (html) {
   html = "<span class='ui-button ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
   $('#results_info').html(html);
-  
+
   if ( !$('#results_info').dialog('isOpen') && html && !html.match(/multiple hits/) ) {
    // $('#results_info').dialog('option', 'position', 'right');
    var xpos = $(document).width - 500;
@@ -222,12 +222,12 @@ Gobe.handle_html= function (html) {
 
 function open_all_sequence_option_menus(open) {
    if (open)
-    { $('.ui-button-toggle:not(.ui-state-active)').click(); 
+    { $('.ui-button-toggle:not(.ui-state-active)').click();
       $('#open_all_sequence_open_menus').hide();
       $('#close_all_sequence_open_menus').show();
     }
    else
-    { $('.ui-button-toggle.ui-state-active').click(); 
+    { $('.ui-button-toggle.ui-state-active').click();
       $('#open_all_sequence_open_menus').show();
       $('#close_all_sequence_open_menus').hide();
     }
@@ -317,7 +317,6 @@ function walk (direction) {
   }
 }
 
-
 // Following 2 js functions take care of emailing GEvo results to user
 
 function toggle_email_field(){
@@ -353,23 +352,23 @@ function rset () {
 
  for (var i =1; i<= num_seqs; i++)
   {
-    
+
     $('#accn'+i).val("");
     $('#drup'+i).val("10000");
     $('#drdown'+i).val("10000");
-    
+
     // dataset_search(['args__accn','accn'+i,'args__num',
 	// 'args__'+i],[genome_search_chain]);
     accn = encodeURIComponent(document.getElementById('accn'+i).value);
     dataset_search(['args__accn','args__'+accn,'args__num', 'args__'+i],[genome_search_chain]);
-    
+
     $('#gbaccn'+i).val("");
     $('#gbstart'+i).val("1");
     $('#gblength'+i).val("");
     $('#dirseq'+i).val("");
     $('#dirstart'+i).val("1");
     $('#dirlength'+i).val("");
-    
+
   }
 
 }
@@ -438,7 +437,7 @@ $('#anchor_options').html(html);
 animate_section(".anchor", "fadeIn");
 
 }
-  
+
 function check_alignment_program (){
 
  var alignment = $("#alignment_program").val();
@@ -454,30 +453,30 @@ function check_alignment_program (){
   $('.help').html(help);
   var spike = $("#spike").val();
 // $("#spike").val(0);
-  
+
 if (alignment == "blastz")
  {
-  
+
   animate_section("#blastz_options", "slideToggle");
  }
 else if (alignment == "LAGAN")
  {
-  animate_section("#lagan_options", "slideToggle");	
+  animate_section("#lagan_options", "slideToggle");
  }
 else if (alignment == "CHAOS")
  {
-  animate_section("#chaos_options", "slideToggle");	
+  animate_section("#chaos_options", "slideToggle");
   animate_section("#spike_sequence", "slideDown");
   // if (spike == "undefined" || spike == 0) {spike = 15;}
   // $("#spike").val(spike);
-	
+
  }
 else if (alignment == "DiAlign_2")
  {
-  animate_section("#dialign_options", "slideToggle");	
-  animate_section("#dialign_parameters", "slideToggle");	
+  animate_section("#dialign_options", "slideToggle");
+  animate_section("#dialign_parameters", "slideToggle");
   check_dialign_anchor_program();
- } 
+ }
 else if (alignment == "tblastx")
  {
   $("#blast_wordsize").val(3);
@@ -488,7 +487,7 @@ else if (alignment == "tblastx")
   animate_section(".blastn_options", "hide",0);
   animate_section("#blast_options", "slideDown");
   animate_section("#tblastx_options", "slideDown");
- }	
+ }
 else if (alignment == 'blastn')
  {
 // $("#blast_wordsize").val(7);
@@ -497,7 +496,7 @@ else if (alignment == 'blastn')
 // $("#blast_eval").val(30);
   // if (spike == "undefined" || spike == 0) {spike = 15;}
   // $("#spike").val(spike);
-  check_spike();		
+  check_spike();
   animate_section("#blast_options", "slideDown");
   animate_section(".blastn_options", "slideDown");
  }
@@ -508,8 +507,6 @@ else if (alignment == 'GenomeThreader')
 
  }
 
-
-
 function handle_results (html,w, h, img_base, n_images, gevo_link, basefilename, message) {
  alert_message(message);
  populate_page_obj(basefilename);
@@ -517,9 +514,9 @@ function handle_results (html,w, h, img_base, n_images, gevo_link, basefilename,
    {
     $('#results').html(html);
     var getQueryParamValue = swfobject.getQueryParamValue;
-    var width = getQueryParamValue('w') || w; 
+    var width = getQueryParamValue('w') || w;
     pageObj.width=width;
-    var height = getQueryParamValue('h') || h; 
+    var height = getQueryParamValue('h') || h;
     var params = {'bgcolor': '#FFFFFF', 'wmode': "opaque"};
     var flashVars = {
             'n'        : getQueryParamValue('n') || n_images,
@@ -546,11 +543,11 @@ function handle_results (html,w, h, img_base, n_images, gevo_link, basefilename,
   }
   if (gevo_link)
    {
-    
+
      gevo_link = gevo_link.replace(/__/g,':::')
      get_tiny_url(['args__url','args__'+gevo_link],['tiny_link']);
    }
-   
+
    // Take care of Save results button
    setup_button_states();
 }
@@ -561,7 +558,7 @@ function save_GEvo_results () {
 	     			      height: 331,
 				      width: 461,
 	     			      buttons: { "Cancel": function() { $(this).dialog("close"); },
-				      	        "Save": function() { 
+				      	        "Save": function() {
 						add_to_user_history(['args__work_name','work_name',
 								     'args__description','description',
 								     'args__archive','args__'+1,
@@ -572,7 +569,7 @@ function save_GEvo_results () {
 	})
 	.show(0)
 	.dialog('open');
-	
+
 }
 
 function remove_seq () {
@@ -595,14 +592,13 @@ function add_hsp_colors (stuff, num) {
  $('.color_chooser').click(function() {color_dialog_setter(this);});
 }
 
-
 function update_go_run (val){
  if (val) $('#go_run').html(val);
 }
 
 function alert_message (message) {
  if (message) alert(message);
-} 
+}
 
 function check_seq_submit () {
  var num_seqs = $("#num_seqs").val();
@@ -618,7 +614,6 @@ function check_seq_submit () {
   }
 
 }
-
 
 function seq_submit_change (seq_num) {
  animate_section(".seq_submission_type"+seq_num,"hide",0);
@@ -642,21 +637,20 @@ function process_add_seq (newseq, num_seqs, go_run, refseq, old_num_seqs)
  while (i <= num_seqs)
   {
    seq_submit_change(i);
-   add_button_states('seqopts'+i); 
+   add_button_states('seqopts'+i);
    if ($('#accn'+i).val())
     {
-     $('#accn'+i).select();   
+     $('#accn'+i).select();
      $('#accn'+i).blur();
     }
-   i++;   
+   i++;
   }
  $('#num_seqs').val(num_seqs);
  $('#go_run').html(go_run);
  $('#new_refseq').html(refseq);
  autodistance_setup();
- gen_hsp_colors(['args__num_seqs','num_seqs'],[add_hsp_colors]); 
+ gen_hsp_colors(['args__num_seqs','num_seqs'],[add_hsp_colors]);
 }
-
 
 function monitor_log(log)
 {
@@ -672,11 +666,11 @@ function monitor_log(log)
      database = database+"done!\n";
      pageObj.finished = 1;
     }
-   
+
    match=log.match(/sequence file/g); // \s+(\d+)/g);
   if (match && match[0])
-   { 
-     match.reverse();  
+   {
+     match.reverse();
      sequence = "Generating "+match[0]+"s. . .";
    }
    match=log.match(/running\s+(\(.*?\))/g);
@@ -687,7 +681,7 @@ function monitor_log(log)
      if (!val) val = "";
      algo = "Alignment algorithm "+val+". . .";
    }
-  
+
    match=log.match(/image\s+(\(.*?\))/g);
    if (match && match[0]) {
      algo = algo+"done!<br/>";
@@ -753,7 +747,7 @@ function genome_view(seq_num)
   var dsgid = $('#dsgid'+seq_num).val();
   // alert (fid+"::"+rc+"::"+left+"::"+right);
   // window.open("GenomeView.pl?fid="+fid+"&dsid="+dsid+"&chr="+chr+"&x="+pos+"&gid="+dsgid+";z=5"); // mdb removed 11/20/13 issue 254
-  
+
   // mdb added 11/20/13 issue 254
   var start = $('#featid'+seq_num+'_start').val();
   var stop = $('#featid'+seq_num+'_stop').val();
@@ -787,7 +781,6 @@ function rand ()
 {
   return ( Math.floor ( Math.random ( ) * 99999999 + 1 ) );
 }
-
 
 </SCRIPT>
 
@@ -826,16 +819,16 @@ function rand ()
 
 <div id="tabs-1">
 <input name="num_seqs" id="num_seqs" type="hidden" readonly value=<TMPL_VAR NAME ="NUM_SEQS">>
-  <span class='ui-button ui-corner-all ui-button-icon-left ' 
+  <span class='ui-button ui-corner-all ui-button-icon-left '
   onClick="add_seq(['num_seqs'],[process_add_seq]);  $('#new_drseq').remove;"><span class="ui-icon ui-icon-plus"></span>Add Sequence</span>
 
 <!--
 #REMOVED THIS FUNCTION AS I DON"T THINK IT GETS USED.  WE"LL SEE IF USERS COMPLAIN
 <span class='ui-button ui-corner-all ui-button-icon-left ' onClick="remove_seq()"><span class="ui-icon ui-icon-minus"></span>Remove</span>
- --> 
+ -->
 
 <span class="small">Merge Previous GEvo Analysis (paste in URL): <input name=previous_url id=previous_url type="textbox" size=20 value=<TMPL_VAR NAME ="PANEL_URL">></span>
-  <span class='ui-button ui-corner-all ui-button-icon-left ' 
+  <span class='ui-button ui-corner-all ui-button-icon-left '
   onClick="merge_previous(['previous_url','num_seqs'],[process_add_seq]); gen_hsp_colors(['args__num_seqs','num_seqs'],[add_hsp_colors]);"><span class="ui-icon ui-icon-plus"></span>Merge</span>
  <br><br>
 <span class="small note">Change order by dragging boxes.</span><br><br>
@@ -856,7 +849,7 @@ function rand ()
      &nbsp&nbsp&nbsp&nbsp
      Pad CoGe Sequences with additional sequence: <input type="textbox" name="pad_gs" id="pad_gs" value="<TMPL_VAR NAME="PAD_GS">" size =8/>
 
-<br>     
+<br>
      E-mail GEvo results?<input type=checkbox id=check_email onclick="toggle_email_field()"><span id=email_box style="display:none;">Your E-mail Address: <input type=text id=email onBlur='address_validity_check()'><font id=email_error style="display: none; color: red;">You have supplied an invalid e-mail address.</font></span> </div>
     </table>
 </div> <!--end div tag for tabs_1-->
@@ -877,28 +870,27 @@ function rand ()
    <font class="xsmall help" style="cursor: help"></font>
    </TD>
  </TR>
-   </Table>    
-
+   </Table>
 
  <DIV id = "blast_options" class="algo_options">
- <Table class=small>    
+ <Table class=small>
 
  <TR class="blastn_options">
   <TD>Match Score (-r): </TD>
   <TD><input type="text" name="blast_match" id="blast_match" tabindex="1" size="3" value="<TMPL_VAR NAME="BLAST_MATCH">" /></TD>
- </TR>    
+ </TR>
  <TR class="blastn_options">
   <TD>Mismatch Penalty (-q): </TD>
   <TD><input  type="text" name="blast_mismatch" id="blast_mismatch" tabindex="1" size="3" value="<TMPL_VAR NAME="BLAST_MISMATCH">" /></TD>
- </TR> 
+ </TR>
  <TR>
   <TD>Gap Open Penalty (-G): </TD>
   <TD><input  type="text" name="blast_gapopen" id="blast_gapopen" tabindex="1" size="3" value="<TMPL_VAR NAME="BLAST_GAPOPEN">" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Gap Extension Penalty (-E): </TD>
   <TD><input  type="text" name="blast_gapextend" id="blast_gapextend" tabindex="1" size="3" value="<TMPL_VAR NAME="BLAST_GAPEXT">" /></TD>
- </TR>    
+ </TR>
   <TR>
   <TD>Word Size (-W):</TD>
   <TD><input  type="text" name="blast_wordsize" id="blast_wordsize" tabindex="1" size="3" value="<TMPL_VAR NAME="BLAST_WORDSIZE">" /></TD>
@@ -911,7 +903,7 @@ function rand ()
      <option value="F" <TMPL_VAR NAME="BLAST_FILTER_NO"> >No</option>
     </select>
   </TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Expectation value (-e): </TD>
   <TD><input  type="text" name="blast_eval" id="blast_eval" tabindex="1" size="4" value="<TMPL_VAR NAME="BLAST_EVAL">" /></TD>
@@ -923,47 +915,45 @@ function rand ()
 </TABLE>
 </DIV>
 
-
  <DIV id="tblastx_options" class="small algo_options" style="display: none">
  <font class="small">Hide HSPs with stop codons in a coding sequence?<label><input  type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="1" <TMPL_VAR NAME="HIDE_STOP_YES"> />Yes</label><label><input  type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="0"   <TMPL_VAR NAME="HIDE_STOP_NO"> />No</label></font>
 <br>Note: Word size limited to 3 for tblastx
-</DIV> 
-
+</DIV>
 
  <DIV id="chaos_options" class="small  algo_options" style="display: none">
 <table class = small>
    <TR>
   <TD>Word size: </TD>
   <TD><input  type="text" name="chaos_word_length" id="chaos_word_length" tabindex="1" size="3" value="8" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Score cutoff: </TD>
   <TD><input  type="text" name="chaos_score_cutoff" id="chaos_score_cutoff" tabindex="1" size="3" value="25" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Rescore cutoff: </TD>
   <TD><input  type="text" name="chaos_rescore_cutoff" id="chaos_rescore_cutoff" tabindex="1" size="3" value="250" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Lookback distance:<br><font class=small>(length between seed alignments for chaining)</font></TD>
   <TD><input  type="text" name="chaos_lookback" id="chaos_lookback" tabindex="1" size="3" value="20" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Maximum gap length between seeds for chaining: </TD>
   <TD><input  type="text" name="chaos_gap_length" id="chaos_gap_length" tabindex="1" size="3" value="5" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Gap start penality: </TD>
   <TD><input  type="text" name="chaos_gap_start" id="chaos_gap_start" tabindex="1" size="3" value="0" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Gap extend penality: </TD>
   <TD><input  type="text" name="chaos_gap_extension" id="chaos_gap_extension" tabindex="1" size="3" value="-1" /></TD>
- </TR>    
+ </TR>
   <TR>
   <TD>Other CHAOS parameters: </TD>
   <TD><input  type="text" name="chaos_params" id="chaos_params" tabindex="1" size="10" /></TD>
- </TR>         
+ </TR>
 
 </table>
 </DIV>
@@ -980,22 +970,20 @@ function rand ()
   </table>
  </DIV>
 
-
-
  <DIV id="blastz_options" class="small algo_options" style="display: none">
 <table class = small>
    <TR>
   <TD>Word size: </TD>
   <TD><input  type="text" name="blastz_wordsize" id="blastz_wordsize" tabindex="1" size="4" value="<TMPL_VAR NAME=BLASTZ_WORDSIZE>" /></TD>
- </TR>    
+ </TR>
 <TR>
   <TD>Gap start penality: </TD>
   <TD><input  type="text" name="blastz_gap_start" id="blastz_gap_start" tabindex="1" size="4" value="<TMPL_VAR NAME=BLASTZ_GAPSTART>" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Gap extend penality: </TD>
   <TD><input  type="text" name="blastz_gap_extension" id="blastz_gap_extension" tabindex="1" size="4" value="<TMPL_VAR NAME=BLASTZ_GAPEXT>" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Chaining: </TD>
   <TD><select  id="blastz_chaining" tabindex="1" />
@@ -1004,67 +992,65 @@ function rand ()
       <option value=2 <TMPL_VAR NAME=BLASTZ_CHAIN_EXT> >chain and extend</option>
       <option value=3 <TMPL_VAR NAME=BLASTZ_CHAIN_HSP> >just output HSPs</option>
       </select></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Score threshold: </TD>
   <TD><input  type="text" name="blastz_threshold" id="blastz_threshold" tabindex="1" size="4" value="<TMPL_VAR NAME=BLASTZ_SCORETHRESH>" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Mask threshold: </TD>
   <TD><input  type="text" name="blastz_mask" id="blastz_mask" tabindex="1" size="4" value="<TMPL_VAR NAME=BLASTZ_MASKTHRESH>" /></TD>
- </TR>    
-
+ </TR>
 
   <TR>
   <TD>Other Blastz parameters: </TD>
   <TD><input  type="text" name="blastz_params" id="blastz_params" tabindex="1" size="10" /></TD>
- </TR>         
+ </TR>
 
 </table>
-
 
 </DIV>
 
  <DIV id="lagan_options" class="small algo_options" style="display: none">
-   <Table class=small>    
+   <Table class=small>
   <TR>
   <TD>Min HSP Length: </TD>
   <TD><input  type="text" name="lagan_min_length" id="lagan_min_length" tabindex="1" size="3" value="21" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Max Contiguous Gaps in HSPs: </TD>
   <TD><input  type="text" name="lagan_max_gap" id="lagan_max_gap" tabindex="1" size="3" value="3" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Min Percent Identity: </TD>
   <TD><input  type="text" name="lagan_percent_id" id="lagan_percent_id" tabindex="1" size="3" value="70" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Other LAGAN Parameters: </TD>
   <TD><input  type="text" name="lagan_params" id="lagan_params" tabindex="1" size="10" /></TD>
- </TR>         
+ </TR>
 
 </TABLE>
 </DIV>
 
 <DIV id="dialign_options" class="small algo_options" style="display: none">
-   <Table class=small>    
+   <Table class=small>
   <TR>
    <TD>Use Anchored Alignment: </TD>
    <TD><select  id="dialign_use_anchor" size="1" onchange="check_dialign_anchor_program();">
        <option value="1">Use Anchored Search</option>
        <option value="0" selected>Do NOT use Anchored Search</option>
-      </select> 
+      </select>
    </TD>
   </TR>
   <TR>
   <TD>Min Alignment Score: </TD>
   <TD><input  type="text" name="dialign_min_score" id="dialign_min_score" tabindex="1" size="3" value="1" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Max Contiguous Low Score Alignments in HSPs: </TD>
   <TD><input  type="text" name="dialign_max_gap" id="dialign_max_gap" tabindex="1" size="3" value="4" /></TD>
- </TR> 
+ </TR>
  <TR>
   <TD>Split HSPs on Different Alignment Scores: </TD>
   <TD><input  type="radio" name="dialign_split_score" id="dialign_split_score" tabindex="1" value="1" />Yes</label><label><input  type="radio" name="dialign_split_score" id="dialign_split_score" tabindex="1" value="0" checked />No</label></TD>
@@ -1075,7 +1061,7 @@ function rand ()
        <option value="-n ">Short Sequence Alignment, No Translation</option>
        <option value="-nt -cs -ma ">Short Sequence Alignment with Translation</option>
        <option value="-ds -n -thr 2 -lmax 30 ">Long Sequence Alignment</option>
-      </select> 
+      </select>
    </TD>
   </TR>
   <TR>
@@ -1085,7 +1071,7 @@ function rand ()
  </TABLE>
   </DIV>
  <DIV id="dialign_motif_options" class="small algo_options hidden">
- <Table class=small>  
+ <Table class=small>
  <TR>
  <TD align=right> Motif:  </TD>
   <TD><input type="text" name="dialign_motif_motif" id="dialign_motif_motif" tabindex="1" size="5" /></TD>
@@ -1105,7 +1091,7 @@ function rand ()
  <TR>
   <TD>Other DiAlign Parameters: </TD>
   <TD><input  type="text" name="dialign_params" id="dialign_params" tabindex="1" size="20"  value="-n"/></TD>
- </TR>         
+ </TR>
 </TABLE>
 <b>Note</b>: Using Translation Increases CDS Alignment Accuracy at Cost of Speed - Not Recommended for Sequences > 10 kb
 </DIV>
@@ -1116,10 +1102,9 @@ function rand ()
  </table>
 </div>
 
-
 <TABLE class="small anchor algo_options" style="display: none;">
  <TR align=left>
-  <TH>Select Anchor Program: 
+  <TH>Select Anchor Program:
   <select  id="dialign_anchor_program" size="1" onchange='check_dialign_anchor_program()'>
        <option value="blastz">blastz</option>
        <option value="bl2seq">bl2seq</option>
@@ -1140,7 +1125,6 @@ function rand ()
  </table>
 
 </div> <!-- end tabs-2 div -->
-
 
 <div id="tabs-3" class="hidden">
 <table>
@@ -1325,13 +1309,11 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
   <label><input  type="radio" name="show_gene_space" id="show_gene_space" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_GENESPACE_YES">/>Yes</label>
   <label><input  type="radio" name="show_gene_space" id="show_gene_space" tabindex="1" value="0" <TMPL_VAR NAME="SHOW_GENESPACE_NO"> />No</label>
 
-
-
   </table>
 </div>
 <div class="small" style="float: left; margin: 5px;">
    Change HSP colors <span>(Click Color to Adjust)</span><br>
-   Use First Color for all:   
+   Use First Color for all:
   <label><input  type="radio" name="hsp_single_color" id="hsp_single_color" tabindex="1" value="1" <TMPL_VAR NAME="HSP_SINGLE_COLOR_YES">/>Yes</label>
   <label><input  type="radio" name="hsp_single_color" id="hsp_single_color" tabindex="1" value="0" <TMPL_VAR NAME="HSP_SINGLE_COLOR_NO"> />No</label>
 
@@ -1377,7 +1359,6 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
 </div>
 </TMPL_IF>
 
-
 <TMPL_IF NAME="SEQ_SELECT">
 	<TMPL_LOOP NAME="SEQ_SELECT_LOOP">
 		<div id="seq_set<TMPL_VAR NAME="SEQ_NUM">" class="portlet" style='padding: 0.3em'>
@@ -1400,9 +1381,9 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
 					<TD align="left"><input  type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['args__accn','args__'+encodeURIComponent(document.getElementById('accn<TMPL_VAR NAME="SEQ_NUM">').value),'args__num', 'args__<TMPL_VAR NAME="SEQ_NUM">', 'args__dsid', 'args__<TMPL_VAR NAME="DSID">', 'args__dsgid', 'args__<TMPL_VAR NAME="DSGID">', 'args__gstid', 'args__<TMPL_VAR NAME="GSTID">'],[genome_search_chain])" value="<TMPL_VAR NAME=DRACCN>" /></td>
 				</tr>
 			</table>
-		</div>      
-	
-		<DIV id="cogepos<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">	
+		</div>
+
+		<DIV id="cogepos<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
 			<table class="small">
 				<tr>
 					<td>Organism: <TMPL_VAR NAME=ORGINFO></td>
@@ -1413,22 +1394,22 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
 				</tr>
 			</table>
 		</DIV>
-	
+
 	<div id="drcoge<TMPL_VAR NAME="SEQ_NUM">"  style="display: none;" class="seq_submisttion_type seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> drcoge<TMPL_VAR NAME="SEQ_NUM"> ">
 	<table>
 		<tr>
 	    	<td colspan=2>
 	        	<DIV id="dataset<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="DSID">"></DIV>
-	
+
 	        	<DIV id="genome<TMPL_VAR NAME="SEQ_NUM">" nowrap><TMPL_VAR NAME="DSG_STUFF"></DIV>
-	
+
 	        	<DIV id="genomic_sequence_type<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="gstid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="GSTID">"></DIV>
 	        	<DIV id="feat<TMPL_VAR NAME="SEQ_NUM">">
 	        		<input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="FEATID">">
 	        	</DIV>
-	
+
 	        	<DIV id="chromosome<TMPL_VAR NAME="SEQ_NUM">"><TMPL_VAR NAME="CHR_STUFF"></DIV>
-	        	
+
 	        	<input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">_start" value ="<TMPL_VAR NAME="START">">
         		<input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">_stop" value ="<TMPL_VAR NAME="STOP">">
 	        </td>
@@ -1447,8 +1428,7 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
 	    </tr>
 	</table>
 	</DIV>
-	
-	
+
 	<DIV id="gb<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
 	<TABLE class="small">
 	       <TR valign="top">
@@ -1462,22 +1442,21 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
 	       <TD><input  type="text" name="gblength<TMPL_VAR NAME="SEQ_NUM">" id="gblength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=GBLENGTH>"/>
 	</TABLE>
 	</DIV>
-	
-	<DIV id="dir<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">	
+
+	<DIV id="dir<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
 	<TABLE class="small">
 	      <TR valign="top">
-	      <TD>       
+	      <TD>
 	     Paste fasta or genbank format sequence below:<BR> <textarea  name="dirseq<TMPL_VAR NAME="SEQ_NUM">" id="dirseq<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  rows="5" cols="90"></textarea><BR>
 	     <font class="small">Start: <input  type="text" name="dirstart<TMPL_VAR NAME="SEQ_NUM">" id="dirstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value="1" /></font>
 	     <font class="small">Length: <input  type="text" name="dirlength<TMPL_VAR NAME="SEQ_NUM">" id="dirlength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value=""  /></font><br>
 	</table>
 	</DIV>
-	
-	
+
 	<table>
 	<tr><td>
 	<div id=skip_font<TMPL_VAR NAME="SEQ_NUM"> style="color: red;display:none"> Sequence Skipped</div>
-	
+
 	   <span id="seqopts<TMPL_VAR NAME="SEQ_NUM">" class="small ui-button ui-corner-all ui-button-toggle" onClick='$(".sequence_options<TMPL_VAR NAME="SEQ_NUM">").slideToggle();'>Sequence <TMPL_VAR NAME="SEQ_NUM"> Options</span>
 	   <Table class="small sequence_options<TMPL_VAR NAME="SEQ_NUM">" style="display: none;">
 	 <TR align=left>
@@ -1497,7 +1476,7 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
 		<label><input  type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" <TMPL_VAR NAME=REF_NO> />No</label><br>
 	  </tr>
 	  <TR nowrap>
-		<TD>Reverse complement: 
+		<TD>Reverse complement:
 		<td nowrap><label><input  type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />Yes</label>&nbsp<label><input  type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />No</label>
 	</tr>
 	 <TR align=left>
@@ -1518,10 +1497,9 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
 	</table>
 	</DIV>
 	</DIV>
-	
+
 	</TMPL_LOOP>
 </TMPL_IF>
-
 
 <TMPL_IF NAME=HSP_COLOR_FORM>
  <table>
@@ -1539,17 +1517,13 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
   </table>
 </TMPL_IF>
 
-
-
 <TMPL_IF NAME=GEN_REFERENCE_SEQUENCES>
 <TMPL_LOOP NAME="REF_SEQ">
 <div id="refseq<TMPL_VAR NAME=SEQ_NUM>">
-<font class ="small">Sequence <TMPL_VAR NAME=SEQ_NUM>: 
+<font class ="small">Sequence <TMPL_VAR NAME=SEQ_NUM>:
 <label><input  type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" checked />On</label>
 <label><input  type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" />Off</label><br>
 </div>
 </TMPL_LOOP>
 <div id="new_refseq"></div>
 </TMPL_IF>
- 
-

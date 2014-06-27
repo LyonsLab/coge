@@ -28,7 +28,6 @@ Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
 C<annotation_type_group_id>
 Type: INT, Default: undef, Nullable: yes, Size: 11
 
-
 Belongs to CCoGeX::Result::AnnotationTypeGroup> via C<annotation_type_group_id>
 Has many CCoGeX::Result::Annotation> via C<annotation_type_id>
 Has many CCoGeX::Result::ExperimentAnnotation> via C<annotation_type_id>
@@ -36,7 +35,7 @@ Has many CCoGeX::Result::ExperimentAnnotation> via C<annotation_type_id>
 =head1 USAGE
 
  use CoGeX;
- 
+
 =head1 METHODS
 
 =cut
@@ -65,8 +64,6 @@ __PACKAGE__->has_many("list_annotations" => "CoGeX::Result::ListAnnotation", 'an
 
 __PACKAGE__->belongs_to("annotation_type_group" => "CoGeX::Result::AnnotationTypeGroup", 'annotation_type_group_id');
 
-
-
 ################################################ subroutine header begin ##
 
 =head2 group
@@ -74,11 +71,11 @@ __PACKAGE__->belongs_to("annotation_type_group" => "CoGeX::Result::AnnotationTyp
  Usage     : $AnnotationType_obj->group->AnnotationTypeGroup_object_method_or_value
  Purpose   : Returns the AnnotationTypeGroup object associated with this AnnotationType object.
  Returns   : AnnotationTypeGroup object
- Argument  : 
+ Argument  :
  Throws    : None
- Comments  : 
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -95,7 +92,6 @@ sub desc
     }
 
 1;
-
 
 =head1 AUTHORS
 

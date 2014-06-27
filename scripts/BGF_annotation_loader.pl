@@ -14,7 +14,6 @@ my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
-
 GetOptions ( "dsid=i" => \$dsid,
 	     "go=s"    => \$GO,
 	     "debug=s" => \$DEBUG,
@@ -125,7 +124,7 @@ foreach my $name (keys %data)
 	my ($chr) = map {$_->{chr}} @{$data{$name}{$feat_type}};
 	my $feat_type_obj = $coge->resultset('FeatureType')->find_or_create( { name => $feat_type } ) if $GO;
 	print "Creating feature of type $feat_type\n" if $DEBUG;
-	
+
 	my $feat = $ds->add_to_features({
 					 feature_type_id => $feat_type_obj->id,
 					 start=>$start,

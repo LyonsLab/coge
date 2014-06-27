@@ -50,7 +50,6 @@ __PACKAGE__->belongs_to("user"=>"CoGeX::Result::User", 'user_id');
 
 1;
 
-
 =head1 AUTHORS
 
  Eric Lyons

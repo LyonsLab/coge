@@ -25,12 +25,12 @@ div.legend {
 </style>
 
 <script type="text/javascript">
-var colors = [ 
-  { name: 'list',       link: 'NotebookView.pl?nid=',   color: 'Tomato',      show: 1 }, 
-  { name: 'genome',     link: 'GenomeInfo.pl?gid=',     color: 'YellowGreen', show: 1 }, 
-  { name: 'experiment', link: 'ExperimentView.pl?eid=', color: 'Orchid',      show: 1 }, 
-  { name: 'feature',    link: '',                       color: 'orange',      show: 1 }, 
-  { name: 'user',       link: '',                       color: 'DeepSkyBlue', show: 1 }, 
+var colors = [
+  { name: 'list',       link: 'NotebookView.pl?nid=',   color: 'Tomato',      show: 1 },
+  { name: 'genome',     link: 'GenomeInfo.pl?gid=',     color: 'YellowGreen', show: 1 },
+  { name: 'experiment', link: 'ExperimentView.pl?eid=', color: 'Orchid',      show: 1 },
+  { name: 'feature',    link: '',                       color: 'orange',      show: 1 },
+  { name: 'user',       link: '',                       color: 'DeepSkyBlue', show: 1 },
   { name: 'group',      link: 'GroupView.pl?ugid=',     color: 'Turquoise',   show: 1 },
 ];
 
@@ -51,7 +51,7 @@ $(function() {
 
   // Create legend
   colors.forEach(function(element, index) {
-    var item = 
+    var item =
       $('<div class="link legend selected">'+colors[index].name+'</div>')
         .css('color', 'white')
         .css('background-color', colors[index].color)
@@ -61,7 +61,7 @@ $(function() {
             $(this).css('color', 'white');
             $(this).css('background-color', colors[index].color);
           }
-          else {    
+          else {
             $(this).css('color', colors[index].color);
             $(this).css('background-color', '');
           }
@@ -193,6 +193,5 @@ function flatten(root) {
 
 <span id="legend" style="float:left;"></span>
 <span id="chart"></span>
-
 
 </TMPL_IF>

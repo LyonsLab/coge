@@ -137,7 +137,6 @@ if ($res) {
     print $res if $url_only;
     print qq{Content-Type: text/html
 
-
 <html>
 <head>
 <meta HTTP-EQUIV="REFRESH" content="0; url=$res.html">

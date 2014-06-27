@@ -286,13 +286,13 @@ sub users
 
 =head2 annotations
 
- Usage     : 
+ Usage     :
  Purpose   : Alias to the list_annotations() method.
  Returns   : See list_annotations()
  Argument  : None
- Throws    : 
- Comments  : 
-           : 
+ Throws    :
+ Comments  :
+           :
 
 See Also   : ListAnnotation()
 
@@ -308,13 +308,13 @@ sub annotations {
 
 =head2 type
 
- Usage     : 
+ Usage     :
  Purpose   : Alias to the list_type() method.
  Returns   : See list_type()
  Argument  : None
- Throws    : 
- Comments  : 
-           : 
+ Throws    :
+ Comments  :
+           :
 
 See Also   : ListType
 
@@ -354,15 +354,15 @@ sub is_other {
 
 =head2 info
 
- Usage     : 
+ Usage     :
  Purpose   : provides quick information about the list
  Returns   : a string
- Argument  : 
- Throws    : 
+ Argument  :
+ Throws    :
  Comments  : name, description, restricted, type
-           : 
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -381,15 +381,15 @@ sub info {
 
 =head2 info_html
 
- Usage     : 
+ Usage     :
  Purpose   : provides quick information about the list wrapped with a link to LIstView
  Returns   : a string
- Argument  : 
- Throws    : 
+ Argument  :
+ Throws    :
  Comments  : name, description, restricted, type
-           : 
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -410,15 +410,15 @@ sub info_html {
 
 =head2 data_summary
 
- Usage     : 
+ Usage     :
  Purpose   : provides quick summary of the data contained in the list
  Returns   : a string
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -463,7 +463,7 @@ sub contents_summary_html {
              in a nice html format with breaks and class tags (called "annotation")
  Returns   : returns a string
  Argument  : none
- Throws    : 
+ Throws    :
  Comments  : uses Coge::Genome::Accessory::Annotation to build the annotations,
            : specifying delimters, and printing to string.   Pretty cool object.
 
@@ -543,7 +543,7 @@ sub annotation_pretty_print_html {
     my $users = join( ', ', map { $_->display_name } $self->users );
     $anno_type->add_Annot( $users . "</td>" );
     $anno_obj->add_Annot($anno_type);
-    
+
     if ( $self->deleted ) {
         $anno_type =
           new CoGe::Accessory::Annotation(
@@ -552,7 +552,7 @@ sub annotation_pretty_print_html {
         $anno_type->Type_delimit(": <td class=\"alert\">");
         $anno_type->add_Annot( "This notebook is deleted" . "</td>" );
         $anno_obj->add_Annot($anno_type);
-    }    
+    }
 
     return
         "<table cellpadding=0 class='ui-widget-content ui-corner-all small'>"

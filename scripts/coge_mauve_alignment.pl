@@ -76,8 +76,8 @@ Options:
 
 -mauve_sub_matrix  Where the substitution matrix is for Mauve to use for generating the alignment.  If none is specified the default matrix compiled into Mauve is used:
 
-static const score_t hoxd_matrix[4][4] = 
-{ 
+static const score_t hoxd_matrix[4][4] =
+{
         {91,    -114,   -31,    -123}, // A
 
         {-114,  100,    -125,   -31}, // C

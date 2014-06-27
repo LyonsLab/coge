@@ -26,7 +26,6 @@ Usage:  $0 -dsid 123
 
     exit();
   }
-	   
 
 my $ds = $coge->resultset('Dataset')->find($dsid);
 
@@ -44,7 +43,6 @@ foreach my $item ($ds->dataset_groups)
 	$chr{$gs->chromosome} = $gs->sequence_length;
       }
   }
-
 
 my ($ft) = $coge->resultset('FeatureType')->search({name=>"chromosome"});
 foreach my $chr (keys %chr)

@@ -222,7 +222,6 @@ sub generate_metadata {
     return '"' . join(';', @annotations) . '"';
 }
 
-
 sub to_filename {
     my ($name, undef, undef) = fileparse(shift, qr/\.[^.]*/);
     return $name;
@@ -258,7 +257,6 @@ sub has_annotations {
 
     return $count > 0;
 }
-
 
 sub create_validate_fastq_job {
     my $fastq = shift;
@@ -425,7 +423,6 @@ sub create_bed_file_job {
         description => "Generating read depth..."
     );
 }
-
 
 sub create_filter_bed_file_job {
     my $bed = shift;
@@ -629,7 +626,6 @@ sub create_notebook_job {
         description => "Creating notebook..."
     );
 }
-
 
 #
 # GSNAP PIPELINE AND JOBS

@@ -47,24 +47,22 @@ __PACKAGE__->set_primary_key("experiment_type_id");
 
 __PACKAGE__->has_many('experiment_type_connectors'=>"CoGeX::Result::ExperimentTypeConnector","experiment_type_id");
 
-
 ################################################ subroutine header begin ##
 
 =head2 desc
 
- Usage     : 
+ Usage     :
  Purpose   : alias for $self->description
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
 ################################################## subroutine header end ##
-
 
 sub desc
   {
@@ -77,12 +75,12 @@ sub desc
 
  Usage     : $self->experiments
  Purpose   : pass through experiment_type_connector to fake a many-to-many connection with experiment
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -94,7 +92,6 @@ sub experiments
  }
 
 1;
-
 
 =head1 AUTHORS
 

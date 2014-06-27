@@ -22,4 +22,3 @@ foreach my $feat ($coge->resultset('Feature')->search(
 	print $anno->annotation,"\n";
       }
   }
-

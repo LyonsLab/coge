@@ -167,14 +167,14 @@ sub annotations {
 
 =head2 to_*
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -207,11 +207,11 @@ sub to_json {
  Usage     : $self->lists
  Purpose   : Get lists that contain this genome
  Returns   : array or array ref of parent lists
- Argument  : 
- Throws    : 
- Comments  : 
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -270,14 +270,14 @@ sub notebooks {
 
 =head2 datasets
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -309,12 +309,12 @@ sub datasets {
 #
 #=head2 owner
 #
-#Usage     : 
+#Usage     :
 #Purpose   : Returns user object
 #Returns   : user object
 #Argument  : None
 #Throws    : None
-#Comments  : 
+#Comments  :
 #
 #=cut
 #
@@ -332,14 +332,14 @@ sub owner {
 
 =head2 get_genomic_sequence
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -568,10 +568,10 @@ sub is_indexed {
  Returns   : an integer that refers to the last position in the genomic sequence refered
              to by a dataset given a chromosome
  Argument  : string => chromsome for which the last position is sought
- Throws    : 
- Comments  : 
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -612,14 +612,14 @@ sub last_chromosome_position {
 
 =head2 sequence_type
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -633,14 +633,14 @@ sub sequence_type {
 
 =head2 type
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -654,14 +654,14 @@ sub type {
 
 =head2 get_chromosomes
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -680,14 +680,14 @@ sub get_chromosomes {
 
 =head2 chromosomes
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -702,14 +702,14 @@ sub chromosomes {
 
 =head2 percent_gc
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -753,10 +753,10 @@ sub percent_gc {
 
 =head2 fasta
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
             col      =>   number of sequence characters per line (default 100)
             chr_name =>   fasta header contains only the chromosome name (default 0)
             start    =>  start position (default 1)
@@ -765,10 +765,10 @@ sub percent_gc {
             rc       =>  generate the reverse complement (default: 0)
             prot     =>  translate to protein, will do 6 frame automatically if it is not in a proper reading frame (default: 0)
 
- Throws    : 
- Comments  : 
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -863,8 +863,8 @@ sub fasta {
              id_type     =>    Specify if the GFF entry IDs are going to be unique numbers or unique names.
              unique_parent_annotations => Flag to NOT print redundant annotations in children entries.  E.g. if parent has an annotation, a child will not have that annotation
              name_unique =>   Flag for specifying that the name tag of an entry will be unique
- Throws    : 
- Comments  : 
+ Throws    :
+ Comments  :
 
 See Also   : dataset->gff
 
@@ -927,15 +927,15 @@ sub gff {
 
 =head2 trans_type
 
- Usage     : 
+ Usage     :
 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1001,11 +1001,11 @@ sub chr_info {
  Usage     : $self->length
  Purpose   : get total length of sequence in dataset group
  Returns   : number
- Argument  : 
- Throws    : 
- Comments  : 
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1032,11 +1032,11 @@ sub length {
  Usage     : $self->chromosome_count
  Purpose   : get count of chromosomes in the dataset group
  Returns   : number
- Argument  : 
- Throws    : 
- Comments  : 
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1053,11 +1053,11 @@ sub chromosome_count {
  Usage     : $self->features
  Purpose   : run through associated datasets and get their features
  Returns   : array of feature objects
- Argument  : 
- Throws    : 
- Comments  : 
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1077,13 +1077,13 @@ sub feature_count { # mdb added 11/22/13
 	my $self = shift;
 	my %opts = @_;
     my $chr = $opts{chr};
-    
+
     my $total = 0;
     foreach my $ds ( $self->datasets ) {
     	my $n = $ds->features( chromosome => $chr )->count;
     	$total += $n if ($n);
     }
-    
+
     return $total;
 }
 
@@ -1125,14 +1125,14 @@ sub source {
 =head2 info
 
  Usage     : $self->info
- Purpose   : returns a string of information about the genome.  
+ Purpose   : returns a string of information about the genome.
 
  Returns   : returns a string
  Argument  : none
- Throws    : 
+ Throws    :
  Comments  : To be used to quickly generate a string about the genome
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1155,15 +1155,15 @@ sub info {
 
 =head2 info_html
 
- Usage     : 
+ Usage     :
  Purpose   : provides quick information about the genome wrapped with a link to LIstView
  Returns   : a string
- Argument  : 
- Throws    : 
+ Argument  :
+ Throws    :
  Comments  : name, description, restricted, type
-           : 
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1184,14 +1184,14 @@ sub info_html {
 
 =head2 date
 
- Usage     : 
+ Usage     :
  Purpose   : returns load data from first dataset entry
  Returns   : a string
- Argument  : 
- Throws    : 
+ Argument  :
+ Throws    :
  Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 

@@ -1,5 +1,5 @@
 package CoGe::Accessory::blastz_report;
- 
+
 use strict;
 use POSIX;
 use CoGe::Accessory::blastz_report::seq;
@@ -9,15 +9,13 @@ use base qw(Class::Accessor);
 use Carp;
 use Data::Dumper;
 
-
 BEGIN
   {
     use vars qw($VERSION);
     $VERSION = "0.01";
   }
-__PACKAGE__->mk_accessors('hsps', 'hsp_count', 'file', '_params', 'seq_info', 
+__PACKAGE__->mk_accessors('hsps', 'hsp_count', 'file', '_params', 'seq_info',
 	'file_base', 'query', 'subject', 'match');
-
 
 ###############################################################################
 # blastz report parser -- Eric Lyons All rights and lefts reserved!
@@ -31,16 +29,16 @@ __PACKAGE__->mk_accessors('hsps', 'hsp_count', 'file', '_params', 'seq_info',
  Returns   : a blastz_report object
  Argument  : a string that points to a blastz file
  Throws    : lots of errors and warnings if the blastz file is missing or can't be read
- Comment   : 
-           : 
+ Comment   :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
 #################### subroutine header end ####################
 
-sub new 
+sub new
   {
     my $proto = shift;
     my $opts = shift;
@@ -58,7 +56,6 @@ sub new
       }
     return $self;
 }
-
 
 sub process_file
   {
@@ -78,7 +75,7 @@ sub process_file
 	$self->parse_file_names($_) if /^s/;
 	$self->parse_fasta_header($_) if /^h/;
 	$self->parse_alignment($_) if /^a/;
-      }	
+      }
     $self->parse_sequences(); #let's see if we get lucky with finding sequence files
     close IN;
   }
@@ -122,7 +119,7 @@ sub parse_params
 	      }
 	    $matrix++;
 	  }
-	
+
       }
     $self->_params(\%results);
   }
@@ -131,10 +128,10 @@ sub parse_params
 =head2 matrix string
 
  Usage     : my $matrix = $blastz->matrix_string();
- Purpose   : generates a string of the matrix used 
+ Purpose   : generates a string of the matrix used
  Returns   : a string
  Argument  : none (blastz file is parsed during object creation)
- Throws    : 
+ Throws    :
  Comment   : Example file:
         A       C       G       T
 A       91      -114    -31     -123
@@ -142,7 +139,7 @@ C       -114    100     -125    -31
 G       -31     -125    100     -114
 T       -123    -31     -114    91
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -200,8 +197,7 @@ $VAR1 = {
                  }
         };
 
-
-See Also   : 
+See Also   :
 
 =cut
 
@@ -238,7 +234,7 @@ $VAR1 = {
           'E' => '30'
         };
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -275,7 +271,7 @@ sub params
  Comment   : example string
            : E=30, K=3000, L=3000, M=50, O=400
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -287,7 +283,6 @@ sub param_string
     my $params = $self->params;
     return join (", ", map {$_."=". $params->{$_}} sort keys %$params);
   }
-
 
 sub parse_file_names
   {
@@ -351,7 +346,7 @@ sub parse_fasta_header
  Purpose   : get sequence information for seq1 from a blastz run
  Returns   : a CoGe::Accessory::blastz_report::seq object
  Argument  : none
- Throws    : 
+ Throws    :
  Comment   : the seq object has accessor functions for:
               file => file name
               start => start position
@@ -360,7 +355,7 @@ sub parse_fasta_header
               strand => strand used
               contig => something blastz uses when comparing contigs.  Not sure what this means, check blastz docs.
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -382,7 +377,7 @@ sub seq1_info
  Purpose   : get sequence information for seq2 from a blastz run
  Returns   : a CoGe::Accessory::blastz_report::seq object
  Argument  : none
- Throws    : 
+ Throws    :
  Comment   : the seq object has accessor functions for:
               file => file name
               start => start position
@@ -391,7 +386,7 @@ sub seq1_info
               strand => strand used
               contig => something blastz uses when comparing contigs.  Not sure what this means, check blastz docs.
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -459,7 +454,7 @@ sub parse_alignment
  		$sstart = ($len-$sstop+1);
  		$sstop  = ($len-$tmp+1);
  	      }
-	    my $seg = new CoGe::Accessory::blastz_report::segment({number=>$seg_count++, 
+	    my $seg = new CoGe::Accessory::blastz_report::segment({number=>$seg_count++,
 								   query_start=>$qstart,
 								   query_stop=>$qstop,
 								   subject_start=>$sstart,
@@ -559,7 +554,7 @@ sub parse_sequences
 	    if ($hsp->strand =~ /-/)
 	      {
 		$qi = $len-$i;
-		$qi1 = $qi-1;		
+		$qi1 = $qi-1;
 	      }
 #	    print STDERR "i: $i, qi: $qi, qi1: $qi1\n";
 	    my $gap1 = $hsp->segments->[$i+1]->query_start-$hsp->segments->[$i]->query_end-1 if $hsp->segments->[$i+1];
@@ -584,7 +579,7 @@ sub parse_sequences
 	    $seq_1 .= $qadd if $qadd;
  	    if ($hsp->strand =~ /-/ && $sadd)
  	      {
-		
+
 # 		$sadd = reverse($sadd);
 # 		$sadd =~ tr/ATCG/TAGC/;
  		$seq_2 = $sadd.$seq_2;
@@ -621,7 +616,6 @@ sub parse_sequences
       }
   }
 
-
 sub get_seq
   {
     my $self = shift;
@@ -646,20 +640,19 @@ sub get_seq
     return $seq;
   }
 
-
 #################### subroutine header begin ####################
 
-=head2 
+=head2
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comment   : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comment   :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 

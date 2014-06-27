@@ -8,5 +8,3 @@ BEGIN { use_ok( 'CoGe::Graphics' ); }
 
 my $object = CoGe::Graphics->new ();
 isa_ok ($object, 'CoGe::Graphics');
-
-

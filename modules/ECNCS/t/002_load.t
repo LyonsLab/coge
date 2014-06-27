@@ -8,5 +8,3 @@ BEGIN { use_ok( 'CoGe::ECNCS::DB' ); }
 
 my $object = CoGe::ECNCS::DB->new ();
 isa_ok ($object, 'CoGe::ECNCS::DB');
-
-

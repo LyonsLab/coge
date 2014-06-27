@@ -11,4 +11,3 @@ while (<>)
     $line[1] = $item2[6] if $item2[6];
     print join ("\t", @line);
   }
-

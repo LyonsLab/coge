@@ -1,4 +1,3 @@
-
 package CoGe::Graphics::Feature::HSP;
 use strict;
 use base qw(CoGe::Graphics::Feature);
@@ -17,7 +16,6 @@ LICENSE file included with this module.
 
 =cut
 
-
 BEGIN {
     use vars qw($VERSION $HEIGHT $BLOCK_HEIGHT);
     $VERSION     = '0.1';
@@ -33,7 +31,7 @@ sub _initialize
   {
     my $self = shift;
     my %opts = @_;
-    my $h = $HEIGHT; #total image height 
+    my $h = $HEIGHT; #total image height
     my $s = $self->start;
     my $e = $self->stop;;
     my $w = $e-$s;
@@ -83,7 +81,7 @@ sub _post_initialize
 	elsif ($chr ne " ") #probably an amino acid match
 	  {
 	    $gd->filledRectangle($count*3, 0,  $count*3+2, $self->ih, $self->get_color($self->color));
-	  }  
+	  }
 	$count++;
       }
     $gd->rectangle(1,1,$self->iw-1, $self->ih-1, $self->get_color($self->color));
@@ -104,10 +102,10 @@ sub _rounded_edges
 	    my $poly = GD::Polygon->new;
 	    $poly->addPt($x1,$y1);
 	    $poly->addPt($x1+($negx*($dist-$i)),$y1);
-	    $poly->addPt($x1,$y1+($negy*($i+1))); 
+	    $poly->addPt($x1,$y1+($negy*($i+1)));
 	    print STDERR "($x1,$y1)\n";
 	    print STDERR "(",$x1+($negx*($dist-$i)),",$y1)\n";
-	    print STDERR "($x1,",$y1+($negy*($i+1)),")\n\n"; 
+	    print STDERR "($x1,",$y1+($negy*($i+1)),")\n\n";
 	    $gd->filledPolygon($poly, $self->get_color(255,255,255));
 	  }
 }
@@ -124,17 +122,15 @@ sub _rounded_edges
  Comment   : This is a sample subroutine header.
            : It is polite to include more pod and fewer comments.
 
-See Also   : 
+See Also   :
 
 =cut
 
 #################### subroutine header end ####################
 
-
 #################### main pod documentation begin ###################
-## Below is the stub of documentation for your module. 
+## Below is the stub of documentation for your module.
 ## You better edit it!
-
 
 =head1 NAME
 
@@ -144,20 +140,13 @@ CoGe::Graphics::Feature::Base
 
   use CoGe::Graphics::Feature::Base
 
-
 =head1 DESCRIPTION
 
 =head1 USAGE
 
-
-
 =head1 BUGS
 
-
-
 =head1 SUPPORT
-
-
 
 =head1 AUTHOR
 
@@ -173,7 +162,6 @@ This program is free software licensed under the...
 The full text of the license can be found in the
 LICENSE file included with this module.
 
-
 =head1 SEE ALSO
 
 perl(1).
@@ -182,7 +170,5 @@ perl(1).
 
 #################### main pod documentation end ###################
 
-
 1;
 # The preceding line will help the module return a true value
-

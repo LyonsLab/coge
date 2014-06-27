@@ -63,8 +63,6 @@ if (defined $min || defined $max)
     $data = \@data;
   }
 
-
-
 my $hist = new CoGe::Accessory::histogram($width, $height);
 my $bins = CoGe::Accessory::histogram::_histogram_bins($data, 100);
 my $colors = gen_color_list($bins);
@@ -72,7 +70,7 @@ my $count=0;
 my @color_names;
 foreach my $color (@$colors)
   {
-    my $name = "c$count"; 
+    my $name = "c$count";
     $hist->add_colour($name=>$color);
     push @color_names, $name;
     $count++;
@@ -108,8 +106,6 @@ else
   {
     print $gd->png;
   }
-
-
 
 sub gen_color_list
   {
@@ -161,7 +157,6 @@ sub range
     return ($max, $min, $non_zero_min);
   }
 
-
 sub get_color
   {
     my %opts = @_;
@@ -191,7 +186,6 @@ sub get_color
       }
     return $color;
   }
- 
 
 sub get_pairs
   {
@@ -222,7 +216,7 @@ sub get_pairs
     close IN;
     return \%data;
   }
-sub usage 
+sub usage
   {
     print qq{
 welcome to $0!
@@ -252,7 +246,7 @@ Options:
 
 -mean                  flag to calculate the mean of the values
 
--hist_type |  ht       Histogram of data counts or distribution of percentages.  Values: count percentage.  Default: count 
+-hist_type |  ht       Histogram of data counts or distribution of percentages.  Values: count percentage.  Default: count
 
 -help     |    h       print this message
 

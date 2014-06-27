@@ -13,8 +13,8 @@ BEGIN {
     @EXPORT      = qw ();
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
-    __PACKAGE__->mk_accessors('file', 'org1_ordered', 'org2_ordered', 
-    	'chrs1_scores', 'chrs2_scores', 'blocks1', 'blocks2', 'chrs1', 'chrs2', 
+    __PACKAGE__->mk_accessors('file', 'org1_ordered', 'org2_ordered',
+    	'chrs1_scores', 'chrs2_scores', 'blocks1', 'blocks2', 'chrs1', 'chrs2',
     	'dsgid1', 'dsgid2');
 }
 
@@ -66,7 +66,7 @@ sub parse_syn_blocks
 	$chrs1->{$item->{name}}{$item->{match}}{rev}+=$item->{score} if $item->{rev}; #needs to be a weighted metric based on this size of the block.  Bigger blocks in rev orientation get more weight
 	$chrs1->{$item->{name}}{$item->{match}}{start}=$item->{match_start} unless $chrs1->{$item->{name}}{$item->{match}}{start};
 	#update start position if new start is less than existing start AND the block higher scoring
-	$chrs1->{$item->{name}}{$item->{match}}{start}=$item->{match_start} if 
+	$chrs1->{$item->{name}}{$item->{match}}{start}=$item->{match_start} if
 	    $chrs1->{$item->{name}}{$item->{match}}{hi_score} < $item->{score} ;
 	$chrs1->{$item->{name}}{$item->{match}}{hi_score}=$item->{score} if $chrs1->{$item->{name}}{$item->{match}}{hi_score}<$item->{score};
 	$chrs1_scores->{$item->{name}}+=$item->{score};
@@ -81,7 +81,7 @@ sub parse_syn_blocks
 	$chrs2->{$item->{name}}{$item->{match}}{rev}+=$item->{score} if $item->{rev}; #needs to be a weighted metric based on this size of the block.  Bigger blocks in rev orientation get more weight
 	$chrs2->{$item->{name}}{$item->{match}}{start}=$item->{match_start} unless $chrs2->{$item->{name}}{$item->{match}}{start};
 	#update start position if new start is less than existing start AND the block higher scoring
-	$chrs2->{$item->{name}}{$item->{match}}{start}=$item->{match_start} if 
+	$chrs2->{$item->{name}}{$item->{match}}{start}=$item->{match_start} if
 	    $chrs2->{$item->{name}}{$item->{match}}{hi_score} < $item->{score} ;
 	$chrs2->{$item->{name}}{$item->{match}}{hi_score}=$item->{score} if $chrs2->{$item->{name}}{$item->{match}}{hi_score}<$item->{score};
 	$chrs2_scores->{$item->{name}}+=$item->{score};
@@ -113,7 +113,7 @@ sub parse_syn_blocks
 	$data{chr}=$chr1;
 	$data{matching_chr}=[map {$_->{name}} sort {$a->{start}<=>$b->{start}} @{$best_chr2contigs{$chr1}}];
 	$data{rev}=0;
-	$data{dsgid}=$dsgid1;	
+	$data{dsgid}=$dsgid1;
 	#print out the blocks in order.  Note ones that are in reverse orientation
 	foreach my $block (sort {$a->{start}<=>$b->{start}} @{$best_chr2contigs{$chr1}})
 	  {
@@ -135,7 +135,6 @@ sub parse_syn_blocks
     $self->dsgid2($dsgid2);
     return $ordered1, $ordered2, $dsgid1, $dsgid2;
   }
-
 
 sub process_syn_block
   {
@@ -252,13 +251,10 @@ sub process_syn_block
     return \%seq1, \%seq2;
   }
 
-
-
 1;
 
 ########################################### Main pod documentation begin ##
 # Below is the stub of documentation for your module. You better edit it!
-
 
 =head1 NAME
 
@@ -268,23 +264,15 @@ SynMap_report
 
   use CoGe::Accessory::SynMap_report
 
-
-
 =head1 DESCRIPTION
 
 This module is for parsing the output of SynMap
 
 =head1 USAGE
 
-
-
 =head1 BUGS
 
-
-
 =head1 SUPPORT
-
-
 
 =head1 AUTHOR
 
@@ -300,7 +288,6 @@ it and/or modify it under the same terms as Perl itself.
 The full text of the license can be found in the
 LICENSE file included with this module.
 
-
 =head1 SEE ALSO
 
 perl(1).
@@ -308,4 +295,3 @@ perl(1).
 =cut
 
 ############################################# main pod documentation end ##
-

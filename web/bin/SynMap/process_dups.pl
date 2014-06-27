@@ -19,7 +19,6 @@ $P = CoGe::Accessory::Web::get_defaults($CONFIG);
 $TEMPDIR = $P->{TEMPDIR} . "SynMap";
 $BASE_URL = $P->{SERVER};
 
-
 $cogeweb = CoGe::Accessory::Web::initialize_basefile(
     tempdir  => $TEMPDIR
 );

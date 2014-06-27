@@ -13,7 +13,7 @@ use vars qw( $P $PAGE_TITLE $USER $coge $FORM %FUNCTION $LINK );
 $PAGE_TITLE = 'Genomes';
 
 $FORM = new CGI;
-( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init( 
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
 	cgi => $FORM,
 	page_title => $PAGE_TITLE
 );

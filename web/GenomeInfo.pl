@@ -130,7 +130,6 @@ sub get_genome_info_details {
     my $gst_name = $dsg->genomic_sequence_type->name;
     $gst_name .= ": " . $dsg->type->description if $dsg->type->description;
 
-
     # Sequence Type
     $html .=
 qq{<tr><td class="title5">Sequence type:<td class="data5" title="gstid$gstid">}
@@ -168,7 +167,6 @@ qq{<tr><td class="title5">Sequence type:<td class="data5" title="gstid$gstid">}
     } if $total_length;
     }
 
-
 #temporarily removed until this is connected correctly for individual users
 #    $html .= qq{&nbsp|&nbsp};
 #    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$dsgid'],['irods']);">Send To iPlant Data Store</span>};
@@ -182,7 +180,7 @@ qq{<tr><td class="title5">Sequence type:<td class="data5" title="gstid$gstid">}
           . "</span></td></tr>";
     }
     $html .= "</table>";
-    
+
     $html .= qq{<div class="left coge-table-header">Features</div>}
           .  qq{<div id="genome_features" style="margin-bottom: 5px;" class="small padded link ui-widget-content ui-corner-all" onclick="get_features('#genome_features');" >Click for Features</div>};
 
@@ -592,7 +590,6 @@ sub get_wobble_gc_diff {
     my $hist_img = "<img src=\"$out\">";
     return $info . "<br>" . $hist_img;
 }
-
 
 sub export_features {
     my %args = @_;
@@ -1148,7 +1145,6 @@ sub get_genome_download_links {
 #
 #    return 1;
 #}
-
 
 sub get_sequence_types {
     my $type_id = shift;
@@ -1819,7 +1815,6 @@ sub export_tbl {
 # BED FILE
 #
 
-
 sub get_bed {
     my %args = @_;
     my $gid = $args{gid};
@@ -1875,7 +1870,6 @@ sub export_bed {
 #
 # GFF FILE
 #
-
 
 sub get_gff {
     my %args = @_;
@@ -1939,7 +1933,6 @@ sub export_gff {
 
     return encode_json(\%json);
 }
-
 
 #XXX: Add error checking
 sub export_to_irods {

@@ -11,7 +11,6 @@ use Text::Wrap;
 
 $|++;
 
-
 our ($P, $db, $host, $port, $user, $pass, $dsid, $gid, $ftid, $prot,
      $filename, $workdir, $config);
 

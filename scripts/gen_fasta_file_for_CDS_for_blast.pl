@@ -3,7 +3,6 @@ use strict;
 use Data::Dumper;
 use CoGeX;
 
-
 my $coge = CoGeX->dbconnect();
 my $dsgid=shift;
 unless ($dsgid)
@@ -35,4 +34,3 @@ foreach my $ds ($dsg->datasets)
 	print $seq,"\n";
       }
   }
-

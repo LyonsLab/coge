@@ -81,7 +81,6 @@ s/<textarea rows="3" name="SCREEN" id="SCREEN" style="width:100%">/<textarea row
 
 print qq{Content-Type: text/html; charset=ISO-8859-1
 
-
 };
 print $content;
 print qq{

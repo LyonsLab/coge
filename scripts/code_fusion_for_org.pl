@@ -21,14 +21,13 @@ GetOptions ("h|help" =>  \$help,
 	    "org_search|os=s" =>\$org_search,
             );
 
-
 my $MAX_PROC = 10;
 my $coge = CoGeX->dbconnect;
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 $type = "CDS" unless $type;
 my $aragorn = "/home/elyons/bin//aragorn";
-#my $db = "/home/elyons/projects/code_fusion/data/code_usage/code_usage.sqlite"; 
+#my $db = "/home/elyons/projects/code_fusion/data/code_usage/code_usage.sqlite";
 my $db = "/tmp/code_fusion.sqlite";
 my $init = -r $db ? 0 : 1;
 #$sqlite = DBI->connect("dbi:SQLite:dbname=$db","","");
@@ -173,7 +172,7 @@ SELECT * FROM code_usage where coge_id = "$org_id";
 	  }
 	print STDERR "finished!\n" if $DEBUG;
       }
-    
+
     if (($gc+$at) == 0)
       {
 	print STDERR $oname ." has no sequence\n" if $DEBUG;
@@ -361,7 +360,6 @@ sub gen_codon_table
     return @codons;
   }
 
-
 sub gen_fasta
   {
     my %opts = @_;
@@ -391,7 +389,7 @@ sub run_aragorn
     print STDERR "running $cmd\n" if $DEBUG;
     my $count=0;
     open (IN, $cmd."|");
-    
+
     while (<IN>)
       {
 	next if /^>/;
@@ -408,7 +406,7 @@ sub run_aragorn
     close IN;
     return \%data;
   }
-    
+
 sub init_sqlite
   {
     my $create = qq{
@@ -428,13 +426,12 @@ sys2_perc varchar(255),
     $create .= join (" varchar(255),\n", (map{$_,$_."_perc"} sort @aa, sort @codons), (map {"t".$_,"t".$_."_perc"} sort @codons), (map {$_,$_."_perc"} qw(GC AT wobble_GC wobble_AT genome_GC genome_AT) ) )." varchar(255)\n";
     $create .= ")";
 #    print $create;
-    $sqlite->do($create); 
+    $sqlite->do($create);
   }
 
 sub db
  {
    return DBI->connect("dbi:SQLite:dbname=$db","","");
-
 
  }
 

@@ -67,14 +67,14 @@ __PACKAGE__->has_many("genomes" => "CoGeX::Result::Genome", 'organism_id');
 
 =head2 to_*
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -101,12 +101,12 @@ sub to_json {
  Usage     : $org->genomes
  Purpose   : alias for $org->dataset_groups (defined through database relationship)
  Returns   : dataset_group objects
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -121,15 +121,15 @@ sub dataset_groups
 
 =head2 public genomes
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -143,15 +143,15 @@ sub public_genomes
 
 =head2 current_genome
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -176,15 +176,15 @@ sub current_genome
 
 =head2 current_datasets
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -201,15 +201,15 @@ sub current_datasets
 
 =head2 current_datasets_old
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -254,14 +254,14 @@ sub current_datasets_old
 
 =head2 genomic_sequence_types
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -282,11 +282,11 @@ sub genomic_sequence_types
 
 =head2 types
 
- Usage     : 
+ Usage     :
  Purpose   : See genomic_sequence_types()
- Returns   : 
- Argument  : 
- Throws    : 
+ Returns   :
+ Argument  :
+ Throws    :
  Comments  : Alias for genomic_sequence_types() method.
 
 See Also   : genomic_sequence_types()
@@ -303,14 +303,14 @@ sub types
 
 =head2 datasets
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -325,7 +325,6 @@ sub datasets
   }
 
 1;
-
 
 =head1 AUTHORS
 

@@ -18,7 +18,6 @@ BEGIN {
     @EXPORT = qw (generate_bed);
 }
 
-
 sub generate_bed {
     my %args = @_;
 

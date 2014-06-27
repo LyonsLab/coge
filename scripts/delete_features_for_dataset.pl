@@ -8,10 +8,8 @@ my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
-
 my $dsid = shift;
 my $feat_type_id = shift;
-
 
 unless ($dsid)
   {
@@ -42,4 +40,3 @@ else
 	    $feat->delete;
       }
   }
-

@@ -11,16 +11,14 @@ use File::Path;
 
 use vars qw($DEBUG $coge $GENOMIC_SEQ_LEN $GO $ERASE);
 
-
 my ($gb_file, $gb_dir, $org_name, $org_desc, $org_id, $org_restricted, $source_name, $source_desc, $source_link, $source_id, $ds_name, $ds_desc, $ds_link, $ds_version, $ds_id, $chr, $seq_type_name, $seq_type_desc, $seq_type_id, $chr_basename, $add_chr_name, $use_fasta_header, $dsg_name, $dsg_desc, $dsg_version, $dsg_id, $restricted, $db, $user, $pass, $seq_dir, $tmp_dir, $chr_prefix);
 
 ##Example usage:
 #./fasta_genome_loader.pl -org_name "Allenigales" -source_id 24 -ds_name oldsuper2.fasta -ds_version 2 -use_fasta_header -nt ~/projects/genome/data/Selaginella_moellendorffii/pre-v2/oldsuper2.fasta
 
-
 GetOptions ( "debug=s" => \$DEBUG,
              "go=s"    => \$GO,
-             "erase|e" => \$ERASE, 
+             "erase|e" => \$ERASE,
              "gb_file|file|gb=s" => \$gb_file,
              "gb_dir|dir=s"=>\$gb_dir,
              "org_name=s" => \$org_name,
@@ -62,7 +60,6 @@ $DEBUG = 1 unless defined $DEBUG; # set to '1' to get updates on what's going on
 $GO = 0 unless defined $GO; #set to 1 to actually make db calls.
 ($ds_name) = $gb_file=~ /([^\/]*)$/ unless ($ds_name);
 
-
 $restricted = 0 unless defined $restricted;
 print STDERR "Running $0\n";
 
@@ -70,7 +67,6 @@ my $formatdb =  "/usr/bin/formatdb -p F -o T"; #path to blast's formatdb program
 
 my $connstr = "dbi:mysql:dbname=$db;host=localhost;port=3307" if $db;
 $coge = CoGeX->connect($connstr, $user, $pass ) if $db;
-
 
 if ($org_name && $GO)
   {
@@ -89,7 +85,6 @@ if ($source_name && $GO)
     $source_id = $source->id;
   }
 
-
 unless (($org_id && $source_id))
   {
     print "Need a valid organism id and data source id in order to create dataset and dataset_group objects.  Loading aborted.\n\n";
@@ -106,7 +101,6 @@ if ($seq_type_name && $GO)
   }
 $seq_type_id = 1 unless $seq_type_id;  #default to unmasked sequence data
 
-
 my $ds = generate_ds(ds_name => $ds_name,
                      ds_desc => $ds_desc,
                      ds_link => $ds_link,
@@ -119,9 +113,8 @@ my $ds = generate_ds(ds_name => $ds_name,
 unless ($ds || !$GO)
   {
     warn "dataset object not initialized.  Exiting.";
-    exit;    
+    exit;
   }
-
 
 $dsg_version = $ds->version unless $dsg_version || !$GO;
 my $dsg = generate_dsg(name=>$dsg_name,
@@ -135,7 +128,6 @@ my $dsg = generate_dsg(name=>$dsg_name,
 #link dataset and dataset_group
 
 $coge->resultset('DatasetConnector')->find_or_create({dataset_id=>$ds->id, dataset_group_id=>$dsg->id}) if $GO;
-
 
 if ($ERASE)
   {
@@ -151,7 +143,6 @@ print "dataset_group_id: ".$dsg->id,"\n\n\n" if $dsg;
 process_gb (file=>$gb_file, ds=>$ds, dsg=>$dsg, dir=>$gb_dir, chr=>$chr, chr_prefix=>$chr_prefix) if $gb_file || $gb_dir;
 print "dataset_id: ".$ds->id,"\n" if $ds;
 print "dataset_group_id: ".$dsg->id,"\n" if $dsg;
-
 
 sub process_gb
   {
@@ -187,7 +178,7 @@ sub process_gb
       }
   }
 
-sub check_gb_file 
+sub check_gb_file
   {
     #need to determine if this is a multi-entry gb file
     my %opts = @_;
@@ -250,7 +241,6 @@ sub process_gb_file
 	    $dsg->update;
 	  }
       }
-    
 
   }
 
@@ -292,7 +282,7 @@ sub load_features
 							      stop=>$stop,
 							     }) if $GO;
 	# expect first feature to be the source feature!
-	if ($feature->type() =~ /chromosome/i) 
+	if ($feature->type() =~ /chromosome/i)
 	  {
 	    # generate name based on chromosome
 	    my $feat_name = $coge->resultset('FeatureName')->create(
@@ -301,14 +291,14 @@ sub load_features
 								     feature_id  => $db_feature->id
 								    }) if $GO;
 	  }
-	
+
 	# add a location entry
 	my $loc_string = $feature->location;
 	$loc_string =~ s/complement//g;
 	$loc_string =~ s/join//;
 	$loc_string =~ s/order//;
 	$loc_string =~ s/\(|\)//g;
-	
+
 	# loop through the locatons
 	foreach my $loc (split /,/,$loc_string)
 	  {
@@ -317,7 +307,7 @@ sub load_features
 	    $stop = $start unless $stop;
 	    $start =~ s/\^.*//;
 	    $stop =~ s/\^.*//;
-	    
+
 	    die "problem with $chr start $start or stop $stop\n" unless $start =~ /^\d+$/ && $stop =~ /^\d+$/;
 	    print "\tAdding Location: $start - $stop\n" if $DEBUG;
 	    my $location = $db_feature->add_to_locations(
@@ -331,7 +321,7 @@ sub load_features
 	# now work through the qualifiers for this feature
 	# start by getting the hashref of qualifiers
 	my $annot = $feature->qualifiers();
-	
+
 	my %names;
 	#	      print Dumper $annot;
 	foreach  my $anno (keys %{$annot})
@@ -351,7 +341,7 @@ sub load_features
 											name => $inner[0],
 											annotation_type_group_id => $anno_type_group->id(),
 										       }) if $GO;
-		    
+
 		    # now create the row for the data value of the xref
 		    my $sub_anno = $db_feature->add_to_annotations(
 								   {
@@ -366,7 +356,7 @@ sub load_features
 		   || $anno =~ /gene/i
 		   || $anno =~ /standard_name/i
 		   || $anno =~ /synonym/i # synonyms are embedded in the /note= tag! these are names
-		   || $anno eq "names")    
+		   || $anno eq "names")
 	      {
 		my $master =1; #make first one master
 		foreach my $item (@{$stuff})
@@ -494,7 +484,6 @@ sub load_features
     print "Processed $count features\n";
   }
 
-
 sub divide_gb_file
   {
     my %opts = @_;
@@ -518,7 +507,6 @@ sub divide_gb_file
     return \@files;
   }
 
-
 sub generate_ds
   {
     my %opts = @_;
@@ -538,7 +526,7 @@ sub generate_ds
       $coge->resultset('Dataset')->create({
 					   name                => $ds_name,
 					   description         => $ds_desc,
-					   link                => $ds_link, 
+					   link                => $ds_link,
 					   data_source_id      => $source_id,
 					   restricted          => $restricted,
 					   version=>$ds_version,
@@ -546,7 +534,6 @@ sub generate_ds
     return $ds;
 
   }
-
 
 sub generate_dsg
   {
@@ -558,7 +545,7 @@ sub generate_dsg
     my $gst_id = $opts{gst_id};
     my $dsg_id = $opts{dsg_id};
     my $restricted = $opts{restricted} || 0;
-    my $dsg = $dsg_id ? $coge->resultset('DatasetGroup')->find($dsg_id) : 
+    my $dsg = $dsg_id ? $coge->resultset('DatasetGroup')->find($dsg_id) :
       $coge->resultset('DatasetGroup')->create({name=>$name,
                                                 description=>$desc,
                                                 version=>$version,

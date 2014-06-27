@@ -18,11 +18,11 @@ $(document).ready(function(){
 		dataType: "html",
 		cache: false,
 	});
-	
+
 	$(".dialog_box").dialog({autoOpen: false, width: 500});
 	$('#load_dialog').dialog("widget").find('.ui-dialog-titlebar-close').hide();
 	$('#load_dialog').dialog({modal: true, closeOnEscape: false})
-	
+
 	get_sources();
 
 	$("#edit_genome").autocomplete({
@@ -37,7 +37,7 @@ $(document).ready(function(){
 			return false; // Prevent the widget from inserting the value.
 		}
 	});
-	
+
 	// Open status dialog
     if (job_id) {
         $('#loading_msg').hide();
@@ -86,7 +86,7 @@ function reset_log() {
 
 function check_login() {
 	var logged_in = false;
-	
+
 	$.ajax({
 		async: false,
 		data: {
@@ -96,7 +96,7 @@ function check_login() {
 			logged_in = rc;
 		}
 	});
-	
+
 	return logged_in;
 }
 
@@ -108,7 +108,7 @@ function load_annotation() {
 	var restricted = $('#restricted').is(':checked');
 	var genome = $('#edit_genome').val();
 	var gid = $('#gid').val();
-	
+
 	if (!version) {
 		alert('Please specify a version.');
 		return;
@@ -122,7 +122,7 @@ function load_annotation() {
 	if (!source || source == 'Search') {
 		alert('Please specify a data source.');
 		return;
-	}	
+	}
 
 	var items = get_selected_files();
 	if (items == null) {
@@ -134,26 +134,26 @@ function load_annotation() {
 		return;
 	}
 	var json = JSON.stringify(items);
-	
+
 	var user_name = $('#edit_user').val(); // only exists if admin
-	if (user_name == 'Search') { user_name = ''; }	
-	
+	if (user_name == 'Search') { user_name = ''; }
+
 	// Prevent concurrent executions - issue 101
 	if ( $("#load_dialog").dialog( "isOpen" ) )
 		return;
-	
+
 	// Make sure user is still logged-in - issue 206
 	if (!check_login()) {
 		alert('Your session has expired, please log in again.');
 		location.reload(true)
 		return;
 	}
-	
+
 	// Open status dialog right away - issue 101
 	reset_log();
 	$('#load_dialog').dialog('open');
-	$('#load_log').html('Initializing ...');	
-	
+	$('#load_log').html('Initializing ...');
+
 	$.ajax({
 		data: {
 			fname: 'load_annotation',
@@ -176,10 +176,10 @@ function load_annotation() {
 				alert(obj.error);
 				return;
 			}
-			
+
 			// Set link in status dialog
 			$('#loading_msg span a').attr('href', obj.link).html(obj.link);
-			
+
 			// Start status update
             if (obj.job_id) { // JEX status for load FASTQ
                 job_id = obj.job_id;
@@ -210,7 +210,7 @@ function get_load_log(callback) {
 }
 //function get_load_log() {
 //	timestamps['get_load_log'] = new Date().getTime();
-//	
+//
 //	$.ajax({
 //		data: {
 //			fname: 'get_load_log',
@@ -222,21 +222,21 @@ function get_load_log(callback) {
 //				setTimeout(function() { get_load_log(); }, LOG_POLL_TIME);
 //				return;
 //			}
-//			
+//
 //			var obj = jQuery.parseJSON(data);
 //
 //			/*if (obj.timestamp && obj.timestamp != timestamps['get_load_log']) {
 //				return;
 //			}*/
-//			
+//
 //			$('#load_log').html(obj.log);
 //			var height = $('#load_log')[0].scrollHeight;
 //    		$("#load_log").animate({ scrollTop: height}, 500);
-//    						
+//
 //			if (obj.status == 1) { // finished successfully
 //				// Update load_id in case user reuses page to load again
 //				load_id = obj.new_load_id;
-//				
+//
 //				$('#dataset_id').val( obj.dataset_id );
 //				$('#loading_msg').hide();
 //				$('#finished_msg,#ok_button,#finish_load_button').fadeIn();
@@ -249,7 +249,7 @@ function get_load_log(callback) {
 //				setTimeout(function() { get_load_log(); }, LOG_POLL_TIME);
 //			}
 //		}
-//	});	
+//	});
 //}
 
 function progress_formatter(item) {
@@ -387,15 +387,15 @@ function update_dialog(request, identifier, formatter) {
 
 function load_failed() {
 	// mdb added 6/24/14 - temporary message until JEX logging is improved
-	var msg = 
-		'<div class="alert">' + 
+	var msg =
+		'<div class="alert">' +
 		'We recently made some changes that limit our ability to report errors (more details <a href="https://genomevolution.org/wiki/index.php/Jex_Logging" target=_blank>here</a>). ' +
 		'While we fix this please feel free to contact us at <a href="mailto:coge.genome@gmail.com">coge.genome@gmail.com</a> regarding this failure to load data ' +
 		'and we can help to determine the cause.  Thanks!' +
 		'</div>';
 	var log = $('#load_log');
 	log.html( log.html() + msg );
-	
+
     // Update dialog
     $('#loading_msg').hide();
     $('#error_msg').fadeIn();
@@ -422,7 +422,7 @@ function load_succeeded(obj) {
 function reset_load() {
 	window.history.pushState({}, "Title", PAGE_NAME);
 	$('#load_dialog').dialog('close');
-	
+
     // Reset file selector
     file_canceled();
     clear_list();
@@ -438,10 +438,10 @@ function wait_to_search (search_func, search_obj) {
 		if (pageObj.time) {
 			clearTimeout(pageObj.time);
 		}
-		
+
 		pageObj.time = setTimeout(
-			function() { 
-				search_func(search_obj.value); 
+			function() {
+				search_func(search_obj.value);
 			},
 			500
 		);
@@ -505,7 +505,6 @@ function more() {
 }
 </SCRIPT>
 
-
 <table class="small ui-widget-content ui-corner-all">
   <tr>
     <td>Version:</td>
@@ -517,7 +516,7 @@ function more() {
       <input id="edit_source" type="search" placeholder="Search" size="45" spellcheck="false" />
       <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
     </td>
-  </tr> 
+  </tr>
   <tr>
     <td>Restricted?</td>
     <td><input id="restricted" type="checkbox" checked></td>
@@ -550,7 +549,7 @@ function more() {
   <tr class="hidden">
     <td>Link:</td>
     <td><input id="edit_link" type="textbox" placeholder="Optional" size="58" /></td>
-  </tr>  
+  </tr>
 </table>
 
 <br>
@@ -561,13 +560,10 @@ function more() {
 <br>
 <br>
 
-
 <div id="file_select_dialog" class="dialog_box" title="Select Data File ..." style="display:none;">
   <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
   <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all">Done</span>
 </div>
-
-
 
 <div id="load_dialog" class="dialog_box" title="Loading Annotation ..." style="display:none;">
   <div id="load_log" class="small padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
@@ -579,13 +575,11 @@ function more() {
   </div>
   <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
   <span id="error_msg" style="display:none;">An error occurred <img src="picts/thumbs_down.png"></span>
-  <input id="dataset_id" type="hidden" /> 
+  <input id="dataset_id" type="hidden" />
   <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Load Another</span>
   <span id="finish_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all">GenomeView</span>
   <span id="cancel_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Cancel</span>
 </div>
-
-
 
 <div id="create_new_source_dialog" class="dialog_box" title="Create New Source" style="display:none;">
   <table class="small">
@@ -608,13 +602,9 @@ function more() {
 
 </TMPL_IF> <!-- MAIN -->
 
-
-
 <TMPL_IF NAME='LOGIN'>
 <TMPL_INCLUDE NAME="widgets/Login.tmpl">
 </TMPL_IF>
-
-
 
 <TMPL_IF NAME='ADMIN_AREA'>
 <br><br><hr>

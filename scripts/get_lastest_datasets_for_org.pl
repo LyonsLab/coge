@@ -1,6 +1,5 @@
 #!/usr/bin/perl -w
 
-
 use CoGeX;
 use Data::Dumper;
 use strict;

@@ -161,7 +161,7 @@ sub get_orgs {
     }
     my $html;
     $html .=
-        qq{<FONT CLASS ="small" id="org_count">Organism count: } 
+        qq{<FONT CLASS ="small" id="org_count">Organism count: }
       . $count
       . qq{</FONT>\n<BR>\n};
     if ( $search && !@opts ) {

@@ -26,19 +26,19 @@ my ($prevChr, $prevDepth);
 while (<>) {
     chomp;
     my ($chr, $pos, undef, $depth) = split("\t");
-    
+
     if (!defined $start || ($pos-$stop > 1) || $depth != $prevDepth || $chr ne $prevChr) {
         # Print interval
         if (defined $start) {
             print_line();
         }
-        
+
         # Reset interval
         $start = $pos;
         $prevDepth = $depth;
         $prevChr = $chr;
     }
-    
+
     $stop = $pos;
 }
 

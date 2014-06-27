@@ -8,15 +8,14 @@
 
 =head2 esearch
 
- Usage     : 
+ Usage     :
  Purpose   : Returns not only annotaion data, but related annotaion type and annotation type group.
- Returns   : 
- Argument  : 
- Throws    : 
+ Returns   :
+ Argument  :
+ Throws    :
  Comments  : Extended SEARCH
- 
- 
-See Also   : 
+
+See Also   :
 
 =cut
 
@@ -26,7 +25,7 @@ sub esearch
 {
 	my $self = shift;
 	my $join = $_[1]{'join'};
-	
+
 	map { push(@$join, $_ ) } ('annotation_type');
 
 	my $prefetch = $_[1]{'prefetch'};
@@ -41,7 +40,7 @@ sub esearch
 }
 
   1;
-  
+
 =head1 AUTHORS
 
  Eric Lyons
