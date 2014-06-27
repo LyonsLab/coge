@@ -5,7 +5,6 @@ use CoGeX;
 
 my $coge = CoGeX->dbconnect();
 
-
 print join ("\t", qw(CHR1 START1 STOP1 NAME1 CHR2 START2 STOP2 NAME2)),"\n";
 
 while (<>)

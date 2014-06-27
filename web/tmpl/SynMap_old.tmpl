@@ -305,7 +305,6 @@ function handle_dsg_info(dsg_html, feat_menu, genome_message, length, org_num, o
    }
 }
 
-
 function set_dagchainer_defaults(params, type) {
   var settings = $('#dagchainer_default').val();
   if (!(params && type))
@@ -599,7 +598,6 @@ function reset_basename(){
   }
  }
 
-
   else {pageObj.nolog += 1;}
   var message = "Initializing search . . . ";
 
@@ -730,17 +728,14 @@ For the new beta version of SynMap, please <a id="beta_link" href="SynMap_new.pl
 <span class="alert" style="float:left; margin-right: 5px; ">Please Note:</span>
 <div style="float: left">SynMap is a very computationally intense, multi-step program which may take hours to complete for large genomes.<br>If available, select previously run parameter-sets for your organisms to see results instantly.</div>
 
-
 <div style="clear: both;"> </div>
 <hr>
 <span class="alert" style="float: left; margin-right: 5px;">Get Started:</span>
 <div style="float: left"><div class="link" onclick=window.open("http://genomevolution.org/r/6mou")>Click here for an example analysis between <i>Arabidopsis thaliana</i> and <i>Arabidopsis lyrata</i>.</div><span class=small>(Note that syntenic gene pairs are colored by synonymous mutations (Ks))</span><div class="link" onclick=window.open("http://genomevolution.org/wiki/index.php/SynMap#Example_Results")>Click here for an explaination of the results.</div ></div>
 
-
 </TMPL_IF>
 </div>
 </table>
-
 
 <span style="font-size: 1em" class="ui-button ui-button-go ui-corner-all" id="synmap_go" onClick="run_synmap(false);" >Generate SynMap</span>
 
@@ -753,7 +748,6 @@ For the new beta version of SynMap, please <a id="beta_link" href="SynMap_new.pl
  <li class=small><a href="#tab-2">Analysis Options</a></li>
  <li class=small><a href="#tab-3">Display Options</a></li>
 </ul>
-
 
 <div id="tab-1">
  <table><tr valign=top>
@@ -783,7 +777,6 @@ For the new beta version of SynMap, please <a id="beta_link" href="SynMap_new.pl
     <label>Relative Gene Order<input id="dagchainer_type" name="dagchainer_type" checked="true" type=radio value="geneorder" <TMPL_VAR DAG_GENE_SELECT>  onCLick="display_dagchainer_settings()"></label>
     <label>Nucleotide Distance<input id="dagchainer_type" name="dagchainer_type" type=radio value="distance" <TMPL_VAR DAG_DISTANCE_SELECT>  onCLick="display_dagchainer_settings()"></label><span class=small>We recommend using "Relative Gene Order"</span>
 
-
    <span id=dagchainer_distance>Default distance settings for:
       <select id="dagchainer_default" onChange="set_dagchainer_defaults();">
        <option value="1">Plant
@@ -805,7 +798,6 @@ For the new beta version of SynMap, please <a id="beta_link" href="SynMap_new.pl
    <TD>Minimum number of aligned pairs (-A):
    <TD><input type=text size=8 id="A" value=""> genes
 </TABLE>
-
 
 <tr valign=top>
   <td style="color:#009900">Merge Syntenic Blocks:
@@ -842,7 +834,6 @@ For the new beta version of SynMap, please <a id="beta_link" href="SynMap_new.pl
         <span style="color:#009900" id=depth_org_2></span><br>
         Overlap distance: <input type=text size=8 id="depth_overlap" value="<TMPL_VAR NAME="DEPTH_OVERLAP">">
        </div>
-
 
 <tr valign=top>
 <td style="color:#009900">CodeML
@@ -881,7 +872,6 @@ For the new beta version of SynMap, please <a id="beta_link" href="SynMap_new.pl
    <td>
      Tandem duplication distance <input type=text size=2 id="tdd" name="tdd" value="<TMPL_VAR NAME="DUPDIST">"><br>
      C-score (filters low quality hits: value [0-1])<input type=text size=2 id="csco" name="csco" value="<TMPL_VAR NAME="CSCORE">"><br>
-
 
 </table>
 </div> <!-- close tab-2 -->

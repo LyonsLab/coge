@@ -18,7 +18,7 @@ use Benchmark;
 
 use vars qw($staging_dir $install_dir $fasta_files $irods_files
   $name $description $link $version $type_id $restricted $message
-  $organism_id $source_id $source_name $source_desc $user_id $user_name 
+  $organism_id $source_id $source_name $source_desc $user_id $user_name
   $keep_headers $split $compress $result_dir
   $host $port $db $user $pass $config
   $P $MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE $MAX_CHR_NAME_LENGTH );
@@ -114,7 +114,7 @@ my $numSequences;
 my @files = split( ',', $fasta_files );
 foreach my $file (@files) {
     my $filename = basename($file);# =~ /^.+\/([^\/]+)$/;
-    
+
     # Decompress file if necessary
     if ( $file =~ /\.gz$/ ) {
         print $log "log: Decompressing '$filename'\n";
@@ -286,9 +286,9 @@ foreach my $file (@files) {
     $datasets{$file} = $dataset->id;
 
     my $dsconn =
-      $coge->resultset('DatasetConnector')->create( { 
-          dataset_id => $dataset->id, 
-          genome_id => $genome->id 
+      $coge->resultset('DatasetConnector')->create( {
+          dataset_id => $dataset->id,
+          genome_id => $genome->id
       } );
     unless ($dsconn) {
         print $log "log: error creating dataset connector\n";
@@ -304,7 +304,7 @@ foreach my $chr ( sort keys %sequences ) {
     $genome->add_to_genomic_sequences(
         { sequence_length => $seqlen, chromosome => $chr } );
 
-	# Must add a feature of type chromosome to the dataset so the dataset 
+	# Must add a feature of type chromosome to the dataset so the dataset
 	# "knows" its chromosomes
     my $feat_type =
       $coge->resultset('FeatureType')
@@ -428,8 +428,8 @@ sub process_fasta_file {
         next unless $_;
         my ( $name, $seq ) = split /\n/, $_, 2;
 	#print STDERR $name,"\tlength: ",length($seq),"\n";
-	#2/17/14:  Note by EL:  THere is a problem where the following type sof regex sbustitutions fail if the string is longer then about 1G (http://www.perlmonks.org/?node_id=754854).  Need to take these strings and divide them into smaller pieces for processing 
-	
+	#2/17/14:  Note by EL:  THere is a problem where the following type sof regex sbustitutions fail if the string is longer then about 1G (http://www.perlmonks.org/?node_id=754854).  Need to take these strings and divide them into smaller pieces for processing
+
 	my @groups;
 	my $seq_length = length($seq);
 	if ($seq_length > 1000000) {
@@ -448,7 +448,7 @@ sub process_fasta_file {
  	$seq = $new_seq;
         $seq =~ s/\s+$//; # mdb added 12/17/13 issue 267 - trim trailing whitespace
         # Note: not removing spaces from within sequence because sometimes spaces are
-        # used ambiguously to indicate gaps.  We will be strict and force error 
+        # used ambiguously to indicate gaps.  We will be strict and force error
         # if spaces are present.
         $lineNum++;
 

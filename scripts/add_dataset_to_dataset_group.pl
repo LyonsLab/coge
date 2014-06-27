@@ -3,8 +3,6 @@ use strict;
 use CoGeX;
 use Getopt::Long;
 
-
-
 my $dsid;
 my $dsgid;
 

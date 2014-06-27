@@ -25,7 +25,6 @@ if (@skipped)
     print join ("\n", @skipped),"\n";
   }
 
-
 sub get_accns_from_ncbi
   {
     my $ftp = "ftp://ftp.ncbi.nih.gov/genomes/Bacteria/lproks_0.txt";
@@ -56,7 +55,6 @@ sub get_accns_from_ncbi
 #      }
   }
 
-
 sub run_genbank_genome_loader
   {
     my %opts = @_;
@@ -65,7 +63,6 @@ sub run_genbank_genome_loader
     return unless @$accns;
     $prog .= " -autoupdate" if $autoupdate;
     my $run = $prog." -accn ".join (" -accn ", @$accns);
-
 
     $run .= " -td '/tmp/gb/'";
     $run .= " -go";

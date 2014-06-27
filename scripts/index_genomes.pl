@@ -42,7 +42,7 @@ foreach my $genome ($coge->resultset('Genome')->all) {
 		print STDERR "Genome " . $genome->id . " is already indexed, skipping\n";
 		next;
 	}
-	
+
 	print STDERR "Indexing genome " . $genome->id . "\n";
 	my $rc = $genome->create_index();
 	if ($rc != 0) {
@@ -60,4 +60,3 @@ foreach my $genome ($coge->resultset('Genome')->all) {
 print STDERR "$count genomes indexed, $skipped skipped\n";
 print STDERR "All done!\n";
 exit;
-

@@ -8,5 +8,3 @@ BEGIN { use_ok( 'CoGe::ECNCS::DB::Algorithm_data' ); }
 
 my $object = CoGe::ECNCS::DB::Algorithm_data->new ();
 isa_ok ($object, 'CoGe::ECNCS::DB::Algorithm_data');
-
-

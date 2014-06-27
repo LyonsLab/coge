@@ -12,4 +12,3 @@ my $object = CoGe::Algos::Codeml->new (-alignment=>$file,
 isa_ok ($object, 'CoGe::Algos::Codeml');
 $object->run;
 print STDERR Dumper ($object->results());
-

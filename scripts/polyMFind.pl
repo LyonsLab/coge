@@ -48,15 +48,10 @@ my $coge = CoGeX->dbconnect();
 #    $val->{ds} = $ds;
 #  }
 
-
-
-
-
-
 my %SYNMORPHS; #global var, I'm lazy
 my %ROW_TYPE_COUNT; #global var, I'm lazy
 my %HOMOPOLYMERS; #global var, I'm lazy
-my %FALSE_POSITIVE_SCORES; 
+my %FALSE_POSITIVE_SCORES;
 my %NAMES_COUNT; #used to track whether a gene has multiple polymorphisms in it.  This is indiciative of sequencing or assembly problems, and the polymorphisms may be false positives.
 
 my ($dsgs, $output) = process_file($file);
@@ -183,11 +178,10 @@ print qq{
 
 print "</html>";
 
-
 sub process_file
   {
     my $file = shift;
-    
+
     open (IN, $file)|| die "Can't open $file for reading: $!\n";
     $/ = "\n=\n";
     my $count =1;
@@ -235,7 +229,7 @@ sub process_alignment_block
 	$seq = uc($seq);
 	my @seq = split//, $seq;
 	push @seqs, {genome=>($genome),
-		     start=>$start, 
+		     start=>$start,
 		     stop=>$stop,
 		     seq=>\@seq};
       }
@@ -257,7 +251,6 @@ sub find_alignment_differences
     my $n_flag =0; #are we in a joined contig region?
     my @prior_char;
     my $prior_str;
-
 
     my @output;  #storage for output;
     my @n_trace; #which sequences have n?
@@ -282,7 +275,7 @@ sub find_alignment_differences
 #	print join ("\t", $str, length($str), scalar keys %$dsgs),"\n";
 	next unless length $str == scalar keys %$dsgs;
 
-	if ($gap_flag) 
+	if ($gap_flag)
 	  {
 	    my $gevosize = $gap_flag*2;
 	    $gevosize = 100 if $gevosize < 100;
@@ -338,7 +331,7 @@ sub find_alignment_differences
 		$gap_flag=0;
 	      }
 	  }
-	if ($n_flag) 
+	if ($n_flag)
 	  {
 	    my $gevosize = $n_flag*2;
 	    $gevosize = 100 if $gevosize < 100;
@@ -363,7 +356,7 @@ sub find_alignment_differences
 	my $seqview_links = gen_SeqViewlink(positions=>\%rw_position, data=>$data, char=>\@strain_info, adjust=>-1, dsgs=>$dsgs);
 
 	if ($gevolink ne "-")
-	  {	    
+	  {
 	    my $align_length = 12;
 	    $align_length = 300 if $type =~ /contig/;
 	    my ($align_str, $tmp_score) = gen_alignment(data=>$data, pos=>$i-1, length => $align_length, dsgs=>$dsgs);
@@ -381,17 +374,17 @@ sub find_alignment_differences
 		  {
 		    my $item = $n_trace[$i];
 		    $item = 0 unless $item;
-		    if ($item>0) 
+		    if ($item>0)
 		      {$seqview_links->[$i] = "<span align='center' class='seqview'>N</span>";$count++;}
 		    else {$seqview_links->[$i]= " ";}
 		    $seqs_with_gaps++ if $item;
 		  }
-		$subtype = "Contig join in all" if $count == scalar @char; 
+		$subtype = "Contig join in all" if $count == scalar @char;
 #		$false_pos_score = 10 if ($seqs_with_gaps == scalar @n_trace || $seqs_with_gaps == 1);
 	      }
 
 #	    push @output, [commify($rw_position{$data->[-1]{genome}}), $rw_position{$data->[-1]{genome}}, $names, $homo_false_pos_score, $multi_false_pos_score, $type, $subtype, commify($size), $size, "<span style=\"font-family: 'Courier New', monospace;\">$info</span>", @$seqview_links, $align_str, $annos, $codon, $gevolink, $alignlink];
-	    
+
 	    my $in_strain = process_synmorphs(data=>$info, type=>$type, subtype=>$subtype, name=>$names, n_trace=>\@n_trace, dsgs=>$dsgs);
 	    undef @n_trace;
 	    next if ($INSTRAIN && !$in_strain);  #specific strain specified, no match to it
@@ -426,7 +419,7 @@ sub find_alignment_differences
 	    $info = join ("",@char);
 	    $gevolink = gen_gevolink(positions=>\%rw_position, data=>$data, size=>100, dsgs=>$dsgs);
 	    $alignlink = $annos eq "INTERGENIC"?"-": gen_alignlink(\%rw_position);
-	    
+
 	  }
 	my $seqview_links = gen_SeqViewlink(positions=>\%rw_position, data=>$data, char=>\@char);
 	if ($gevolink ne "-")
@@ -467,7 +460,7 @@ sub find_alignment_differences
 	    $output .=  $thing;
 	  }
 	$output .=  "\n";
-	
+
 	$ROW_TYPE_COUNT{$item->[4]}++;
 	my $st = $item->[5];
 	$st = "Nonsynonymous" if $st =~ /nonsynon/i;
@@ -476,7 +469,6 @@ sub find_alignment_differences
       }
     return $output;
   }
-
 
 sub trace_n
     {
@@ -601,7 +593,7 @@ sub gen_alignment
       #track homopolymers.  Common source of sequence errors with 454's technology
       my ($max_hp_length) = sort {$b <=> $a} @homopolymers; #get longest homopolymer
       if (!$skip_homopolymer_check && $max_hp_length > 1) #we have a homopolymer.  Otherwise, just a SNP
-	{ #need to determine of the SNP is an extra nt or missing a nt.  
+	{ #need to determine of the SNP is an extra nt or missing a nt.
 	  #debugging
 #	  for (my $i=0; $i<@homopolymers; $i++)
 #	    {
@@ -614,7 +606,7 @@ sub gen_alignment
 
 	  $HOMOPOLYMERS{frequency}{$real_correct_length}{'missing'} = 0 unless defined $HOMOPOLYMERS{frequency}{$real_correct_length}{'missing'};
 	  $HOMOPOLYMERS{frequency}{$real_correct_length}{'extra'} = 0 unless defined $HOMOPOLYMERS{frequency}{$real_correct_length}{'extra'};
-	  
+
 	  #tally which strains had the putative sequencing error
 	  for (my $i=0; $i<@homopolymers; $i++)
 	    {
@@ -692,7 +684,7 @@ sub get_position_info
 		my ($codon) = $codons =~ /(^.{3})/; #grab the first codon;
 		$amino_acids{$genetic_code->{uc($codon)}}=1;
 		push @{$codons{$i}}, "(".$feat->strand."):".$codons;
-		
+
 	      }
 	  }
       }
@@ -772,7 +764,7 @@ sub get_position_info
 	    $type .= join (" ", sort keys %amino_acids);
 	  }
       }
-    
+
     return $codon, $names, $annos, $type;
   }
 
@@ -857,7 +849,7 @@ print qq{<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 
 <Script language="JavaScript">
 \$(document).ready(function(){
-                \$('#feat_table').tablesorter({          
+                \$('#feat_table').tablesorter({
                 cssAsc: 'headerSortUp',         // Class name for ascending sorting action to header
                 cssDesc: 'headerSortDown',      // Class name for descending sorting action to header
                 widgets: ['zebra'],
@@ -867,22 +859,22 @@ print qq{<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
                           7: {sorter:'digit'}
                          }
                 });
-                \$('#mut_types').tablesorter({          
+                \$('#mut_types').tablesorter({
                 cssAsc: 'headerSortUp',         // Class name for ascending sorting action to header
                 cssDesc: 'headerSortDown',      // Class name for descending sorting action to header
                 widgets: ['zebra']
                 });
-                \$('#row_types').tablesorter({          
+                \$('#row_types').tablesorter({
                 cssAsc: 'headerSortUp',         // Class name for ascending sorting action to header
                 cssDesc: 'headerSortDown',      // Class name for descending sorting action to header
                 widgets: ['zebra']
                 });
-                \$('#common_muts').tablesorter({          
+                \$('#common_muts').tablesorter({
                 cssAsc: 'headerSortUp',         // Class name for ascending sorting action to header
                 cssDesc: 'headerSortDown',      // Class name for descending sorting action to header
                 widgets: ['zebra']
                 });
-                \$('#pairs').tablesorter({          
+                \$('#pairs').tablesorter({
                 cssAsc: 'headerSortUp',         // Class name for ascending sorting action to header
                 cssDesc: 'headerSortDown',      // Class name for descending sorting action to header
                 widgets: ['zebra']

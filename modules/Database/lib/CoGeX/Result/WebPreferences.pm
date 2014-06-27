@@ -28,7 +28,6 @@ Type: VARCHAR, Default: "", Nullable: no, Size: 255
 C<options>
 Type: TEXT, Default: "", Nullable: no, Size: N/A
 
-
 =head1 USAGE
 
   use CoGeX;
@@ -47,7 +46,6 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("user_id");
 
 1;
-
 
 =head1 AUTHORS
 

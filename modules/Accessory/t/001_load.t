@@ -8,5 +8,3 @@ BEGIN { use_ok( 'CoGe::Accessory::Tile::Cache' ); }
 
 my $object = CoGe::Accessory::Tile::Cache->new ();
 isa_ok ($object, 'CoGe::Accessory::Tile::Cache');
-
-

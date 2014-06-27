@@ -4,7 +4,6 @@ use strict;
 use CoGeX;
 use Data::Dumper;
 
-
 my $dsid1 = shift;
 my $dsid2 = shift;
 
@@ -86,7 +85,6 @@ foreach my $feat1 ($ds1->features)
 				   sequence_data=>$seq->sequence_data,
 #				  };
 				  });
-	  
+
       }
   }
-

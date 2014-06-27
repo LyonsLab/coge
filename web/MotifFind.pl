@@ -108,7 +108,7 @@ sub gen_params {
 'args__motif_names', 'motif_names',
 'args__up_stream', 'up_stream',
 'args__down_stream', 'down_stream',
- 
+
 };
     return $params;
 }
@@ -199,7 +199,7 @@ sub motif_list {
 
         if ( $seq =~ /\w+/ ) {
             push @opts,
-                "<OPTION value=\"$motifval\">" 
+                "<OPTION value=\"$motifval\">"
               . $iupac . " : "
               . $showmotifname
               . "</OPTION>";
@@ -219,4 +219,3 @@ qq{<SELECT class="backbox" id="motif_select" SIZE="15" MULTIPLE onclick="show_ad
 
     return $html;
 }
-

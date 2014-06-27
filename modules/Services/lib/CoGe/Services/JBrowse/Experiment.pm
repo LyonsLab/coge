@@ -32,7 +32,7 @@ sub setup {
 }
 
 sub stats_global {
-	print STDERR "JBrowse::Experiment::stats_global\n";  
+	print STDERR "JBrowse::Experiment::stats_global\n";
     return qq{{
 		"scoreMin" : -1,
 		"scoreMax" : 1
@@ -123,16 +123,16 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
 	            start => $start,
 	            end   => $end
 	        );
-	        
+
 	        # Convert SAMTools output into JSON
 	        foreach (@$cmdOut) {
 	        	chomp;
 	        	my ($qname, $flag, $rname, $pos, $mapq, $cigar, undef, undef, undef, $seq, $qual, $tags) = split(/\t/);
-	        	
+
 	        	my $len = length($seq);
 	        	my $s = $pos;
 	        	my $e = $pos + $len;
-	        	
+
 				# Bin results
                 my $mid = int( ( $s + $e ) / 2 );
                 my $b   = int( ( $mid - $start ) / $bpPerBin );
@@ -216,7 +216,7 @@ sub features {
         push @experiments, $e;
     }
     splice( @experiments, $MAX_EXPERIMENTS, @experiments );
-    
+
     if (!@experiments) {
         return qq{{ "features" : [ ] }};
     }
@@ -310,7 +310,7 @@ sub features {
                 $result{'value1'} = $result{'strand'} * $result{'value1'};
                 $results .= ( $results ? ',' : '') . encode_json(\%result);
             }
-        }        
+        }
         elsif ( $data_type == $DATA_TYPE_ALIGN ) {
 	        my $cmdOut = CoGe::Core::Storage::get_experiment_data(
 	            eid   => $eid,
@@ -319,7 +319,7 @@ sub features {
 	            start => $start,
 	            end   => $end
 	        );
-	        
+
 	        # Convert SAMTools output into JSON
 	        if ($nid) { # return read count if being displayed in a notebook
 	           # Bin the read counts by position
@@ -356,14 +356,14 @@ sub features {
     	        foreach (@$cmdOut) {
     	        	chomp;
     	        	my ($qname, $flag, $rname, $pos, $mapq, $cigar, undef, undef, undef, $seq, $qual, $tags) = split(/\t/);
-    	        	
+
     	        	my $len = length($seq);
     	        	my $start = $pos;
     	        	my $end = $pos + $len;
     	        	my $strand = ($flag & 0x10 ? '-1' : '1');
     	        	#TODO reverse complement sequence if neg strand?
     	        	my $qual = join(' ', map { $_ - $QUAL_ENCODING_OFFSET } unpack("C*", $qual));
-    	        	
+
     	        	$results .= ( $results ? ',' : '' )
                       . qq{{ "uniqueID": "$qname", "name": "$qname", "start": $start, "end": $end, "strand": $strand, "score": $mapq, "seq": "$seq", "qual": "$qual", "Seq length": $len, "CIGAR": "$cigar" }};
     	        }

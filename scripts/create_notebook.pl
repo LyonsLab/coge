@@ -16,7 +16,7 @@ use CoGe::Core::Metadata qw( create_annotations );
 use CoGeX;
 
 our ($LOG, $DEBUG, $PAGE, $P, $db, $host, $port, $user, $pass, $config,
-     $name, $description, $version, $type, $userid, $restricted, $result_dir, 
+     $name, $description, $version, $type, $userid, $restricted, $result_dir,
      $annotations, @ITEMS);
 
 GetOptions(
@@ -89,7 +89,7 @@ sub main {
     die "ERROR: user could not be found for id: $userid" unless $user;
 
     my @ids = parse_files(@ITEMS);
-    
+
     # Create notebook
     my $notebook = create_notebook(
         db         => $coge,
@@ -110,7 +110,7 @@ sub main {
     open(my $fh, ">>", $LOG);
     say $fh "notebook id: " . $notebook->id;
     close($fh);
-    
+
     # Save result document
     if ($result_dir) {
         mkpath($result_dir);

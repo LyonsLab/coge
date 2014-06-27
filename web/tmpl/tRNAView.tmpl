@@ -17,16 +17,16 @@ function search_bar(div_id){
 }
 
 function get_organism_name_chain(val) {
- get_orgs(['args__'+val], ['org_list']);	 
+ get_orgs(['args__'+val], ['org_list']);
 }
 
 function restore_search_bar(div_id){
   if($('#'+div_id).val() == "") {
   var regex = /^Organism\scount:\s(\d+)$/;
   var count = regex.exec($('#org_count').html());
- 
+
  //TODO - use javascript obj to update this value 4354 to current number of organisms!
-   if (count[1] < 4353) get_organism_name_chain($('#org_text').val()); 
+   if (count[1] < 4353) get_organism_name_chain($('#org_text').val());
    $('#'+div_id).val("Search").css({fontStyle: "italic"});
  }
 }
@@ -36,31 +36,31 @@ function run_search(input){
 	var orgid = $('#org_id').val();
 	var search_type = $('#search_type').val();
 	var gcode = $('#gcode').val();
-	
+
 	var dna_top;
 	if($('#seq_top')[0].checked)
 	{
 		dna_top = "-l";
 	}
-	
+
 	else{
 		dna_top = "-c";
 	}
-	
+
 	var strand = $('#strand').val();
 	var pseudo;
-	
+
 	if($('#pseudo')[0].checked) {pseudo = "-rp";}
-	
+
 	var email;
 	if($('#check_email')[0].checked) {email = $('#email').val();}
-	
+
 	var format = $('#format').val();
-	
+
 	var seq;
-	
+
 	if(input) seq = $('#fasta_seqs').val();
-	
+
 	run_aragorn([
 		'args__orgid','args__'+orgid,
 		'args__type','args__'+search_type,
@@ -241,4 +241,3 @@ Enter Sequence in FASTA Format:<br>
 <TMPL_IF NAME="RESULTS_DIV">
   <div id=results align=right></div>
 </TMPL_IF>
-			

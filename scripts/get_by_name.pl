@@ -77,9 +77,9 @@ sub get_accn_locs {
             my $strand = ( $feat->strand =~ /-/ ) ? -1 : 1;
 
             my $header =
-                $chr . "||" 
-              . $name . "||" 
-              . $start . "||" 
+                $chr . "||"
+              . $name . "||"
+              . $start . "||"
               . $stop . "||"
               . $strand . "||"
               . uc( $feat->feature_type->name ) . "||"

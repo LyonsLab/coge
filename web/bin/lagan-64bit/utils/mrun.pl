@@ -17,7 +17,6 @@ $presolution = 25;
 $pwindow = 40;
 $pnumwindows = 4;
 
-
 if (@ARGV < 1) {
     print ("usage:\n mrun.pl filename -tree \"(tree...)\"\n");
     print ("options: [base sequence name [sequence pairs]]\n");
@@ -50,7 +49,7 @@ while ($i < @ARGV) {
 	    } else {
 		$j++;
 		@params[$j] = $ARGV[$i];
-		if ((@params[$j] eq "-gapstart") || 
+		if ((@params[$j] eq "-gapstart") ||
 		    (@params[$j] eq "-gapend") ||
 		    (@params[$j] eq "-gapcont") ||
 		    (@params[$j] eq "-gapperseq") ||
@@ -82,7 +81,7 @@ for ($i=0; $i<@vparams; $i+=2) {
     elsif (@vparams[$i] eq "--numwindows") { $pnumwindows = @vparams[$i+1]; }
 }
 
-if (!$treespec) { 
+if (!$treespec) {
     print ("Must specify valid phylogenetic tree...\n");
     exit(1);
 }
@@ -100,7 +99,7 @@ if (-e "$filename.masked") {
     $mextstr = "$lagandir/utils/mextract.pl $filename.masked -masked";
     print "$mextstr\n";
     if(!`$mextstr`) {
-	print "\nMasked Multi-FASTA extraction failure...\n"; 
+	print "\nMasked Multi-FASTA extraction failure...\n";
 	exit(1);
     }
 }
@@ -149,7 +148,7 @@ foreach $s (@keys) {
     @fnames[$list{$s}] = "$prefix$keys[$list{$s}].fa";
 }
 
-if ((@targets > 1)) { 
+if ((@targets > 1)) {
     if (@targets %2 != 1) {
 	$c = @targets;
 	print ("$c sequences: ");
@@ -178,7 +177,7 @@ if (@targets == 1) {
     foreach $s (@keys) {
 	if ($s ne @targets[0]) {
 	    @targets[++$i] = @targets[0];
-	    @targets[++$i] = $s;	    
+	    @targets[++$i] = $s;
 	}
     }
 
@@ -225,14 +224,14 @@ foreach $s (@bins) {
     print PLOTFILE " SEQUENCES @targets[$i] @targets[$i+1]\n";
     print PLOTFILE " REGIONS $paregmin $paregmax\n";
     print PLOTFILE " MIN $pamin\n";
-    print PLOTFILE "END\n\n";   
+    print PLOTFILE "END\n\n";
     $i+=2;
 }
 
 print "touch $prefix.ann\n\n";
 `touch $prefix.ann`;
 
-print PLOTFILE "GENES $prefix.ann\n\n";    
+print PLOTFILE "GENES $prefix.ann\n\n";
 print PLOTFILE "LEGEND on\n\n";
 print PLOTFILE "COORDINATE @targets[0]\n\n";
 print PLOTFILE "PAPER letter\n\n";
@@ -255,13 +254,3 @@ print PLOTFILE "NUM_WINDOWS $pnumwindows\n\n";
 #if (!`$vistastr`) { print "\nVISTA failure...\n"; exit(1); }
 
 print "\n\nmrun.pl -- end.\n\n";
-
-
-
-
-
-
-
-
-
-

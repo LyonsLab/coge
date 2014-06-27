@@ -317,7 +317,7 @@ sub get_recent_orgs {
           . $item->organism->id . ") "
           . "</OPTION>";
     }
-    
+
     my $html;
     #$html .= qq{<FONT CLASS ="small">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
     unless (@opts) {
@@ -351,7 +351,7 @@ sub get_orgs {
             [ 'name', $search_term ], [ 'description', $search_term ]
         ]
     );
-    
+
     if (@db > $MAX_NUM_ORGANISM_RESULTS) {
         return (
             qq{<input type="hidden" name="org_id" id="org_id"><span class="small alert">Please refine your search</span>},
@@ -621,14 +621,14 @@ sub get_dataset {
     my $dsgid  = $opts{dsgid};
     my $dsname = $opts{dsname};
     my $dsid   = $opts{dsid};
-    
+
     return qq{<input type="hidden" name="ds_id" id="ds_id">}, 0 unless ($dsid || $dsname || $dsgid);
-    
+
     if ($dsid) {
         my ($ds) = $coge->resultset('Dataset')->resolve($dsid);
         $dsname = $ds->name;
     }
-    
+
     my $html;
     my @opts;
     if ($dsgid) {
@@ -698,7 +698,7 @@ sub get_dataset_info {
         return qq{<input type="hidden" id="chr" value="">}, " ", 0;
     }
 
-	my $chr_num_limit = 20;    
+	my $chr_num_limit = 20;
     my $html = "";
     $html .= "<span class='alert small'>Restricted dataset</span><br>"
       if $ds->restricted;
@@ -734,12 +734,12 @@ sub get_dataset_info {
     my $chr_num = $ds->chromosome_count( ftid => 4 );
 
     my %chr;
-    
+
 # mdb removed 5/29/14 - doesn't work when chr name strings are returned from get_chromosomes() instead of db objects
 #    map { $chr{ $_->chromosome } = { length => $_->stop } }
 #      ( $ds->get_chromosomes( ftid => 4, length => 1, limit => $chr_num_limit )
 #      );    #the chromosome feature type in coge is 301
-      
+
     # mdb added 5/29/14
     my $tmp_count = 0;
     foreach my $c ( $ds->get_chromosomes( ftid => 4, length => 1, limit => $chr_num_limit ) ) {
@@ -750,7 +750,7 @@ sub get_dataset_info {
             $chr{ $c } = { length => 0 };
         }
     }
-       
+
     my $count = 100000;
     foreach my $item ( sort keys %chr ) {
         my ($num) = $item =~ /(\d+)/;
@@ -770,7 +770,7 @@ sub get_dataset_info {
         $select .= join(
             "\n",
             map {
-                    "<OPTION value=\"$_\">" 
+                    "<OPTION value=\"$_\">"
                   . $_ . " ("
                   . commify( $chr{$_}{length} )
                   . " bp)</OPTION>"
@@ -1008,11 +1008,11 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
           . "</div>";
         $feat_string .= "<div class=\"small link \" id='codon_usage' onclick=\"
         \$('#codon_usage_table').html('loading...').show().dialog('open');
-        get_codon_usage([$args],['codon_usage_table']); 
+        get_codon_usage([$args],['codon_usage_table']);
         \">" . "Codon usage table" . "</div>";
         $feat_string .= "<div class=\"small link\" id=aa_usage onclick=\"
         \$('#aa_usage_table').html('loading...').show().dialog('open');
-        get_aa_usage([$args],[open_aa_usage_table]); 
+        get_aa_usage([$args],[open_aa_usage_table]);
         \">" . "Amino acid usage table" . "</div>";
 
     }
@@ -1075,7 +1075,7 @@ sub get_gc_for_feature_type {
 
     my $search = { "feature_type_id" => $typeid };
     $search->{"me.chromosome"} = $chr if defined $chr;
-    
+
     foreach my $ds (@datasets) {
         my @feats = $ds->features(
             $search,
@@ -1285,7 +1285,7 @@ sub get_gc_for_noncoding {
         	$seqs{$_} = $item->get_genomic_sequence( chr => $_, seq_type => $gstid )
         } (defined $chr ? ($chr) : $item->chromosomes);
     }
-    
+
     foreach my $ds (@datasets) {
         foreach my $feat (
             $ds->features(
@@ -1394,7 +1394,7 @@ sub get_codon_usage {
         push @items, $dsg;
         push @datasets, $dsg->datasets;
     }
-    
+
     my %seqs; # prefetch the sequences with one call to genomic_sequence (slow for many seqs)
     foreach my $item (@items) {
         map {
@@ -1406,7 +1406,7 @@ sub get_codon_usage {
     my $codon_total = 0;
     my $feat_count  = 0;
     my ( $code, $code_type );
-    
+
     foreach my $ds (@datasets) {
         foreach my $feat (
             $ds->features(
@@ -1488,7 +1488,7 @@ sub get_aa_usage {
     my $aa_total   = 0;
     my $feat_count = 0;
     my ( $code, $code_type );
-        
+
     foreach my $ds (@datasets) {
         foreach my $feat (
             $ds->features(

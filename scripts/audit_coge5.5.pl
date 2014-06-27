@@ -46,7 +46,7 @@ $coge = CoGeX->connect($connstr, $user, $pass);
 my $dbh = $coge->storage->dbh;
 
 #-------------------------------------------------------------------------------
-# Audit 
+# Audit
 #-------------------------------------------------------------------------------
 
 # Verify users
@@ -64,7 +64,7 @@ foreach my $user ($coge->resultset('User')->all) {
 print STDERR "Verifying groups ---------------------------------------------\n";
 foreach my $group ($coge->resultset('UserGroup')->all) {
 	my $group_desc = $group->id." ('" . $group->name . "')";
-	
+
 	# Find orphan groups
 	unless ($group->user_connectors) {
 		print STDERR "Group $group_desc is orphaned\n";
@@ -73,14 +73,14 @@ foreach my $group ($coge->resultset('UserGroup')->all) {
 
 	# Check that each group has a creator
 	unless ($group->creator) {
-		print STDERR "Group $group_desc is missing creator user\n";	
-	}	
-	
+		print STDERR "Group $group_desc is missing creator user\n";
+	}
+
 	# Check that each group has an owner user connection
 	unless ($group->owner) {
-		print STDERR "Group $group_desc is missing owner user\n";	
+		print STDERR "Group $group_desc is missing owner user\n";
 	}
-	
+
 	# Check that non-owner users' roles match group role
 	foreach my $conn ($group->user_connectors) {
 		next if ($conn->role_id == 2); # skip owner
@@ -112,10 +112,10 @@ foreach my $conn ($coge->resultset('ListConnector')->all) {
 	}
 }
 foreach my $lid (keys %missing_parent) {
-	print STDERR "Parent list " . $lid . " is missing for list connectors: " . join(', ', @{$missing_parent{$lid}}) . "\n";	
+	print STDERR "Parent list " . $lid . " is missing for list connectors: " . join(', ', @{$missing_parent{$lid}}) . "\n";
 }
 foreach my $child_id (keys %missing_child) {
-	print STDERR "Child  " . $child_id . " is missing for list connectors: " . join(', ', @{$missing_child{$child_id}}) . "\n";	
+	print STDERR "Child  " . $child_id . " is missing for list connectors: " . join(', ', @{$missing_child{$child_id}}) . "\n";
 }
 
 print STDERR "Verifying images ---------------------------------------------\n";
@@ -129,7 +129,7 @@ foreach my $image ($coge->resultset('Image')->all) {
 print STDERR "Verifying genomes --------------------------------------------\n";
 foreach my $genome ($coge->resultset('Genome')->all) {
 	#next if ($genome->deleted);
-	
+
 	my $deleted = ($genome->deleted ? '(deleted)' : '');
 	unless ($genome->list_connectors or $genome->user_connectors or $genome->group_connectors) {
 		print STDERR "Genome ".$genome->id." is orphaned $deleted\n";
@@ -166,4 +166,3 @@ foreach my $experiment ($coge->resultset('Experiment')->all) {
 $coge->resultset('Log')->create( { user_id => 0, page => $0, description => 'database audited' } );
 print STDERR "All done!\n";
 exit;
-

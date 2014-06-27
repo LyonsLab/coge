@@ -30,7 +30,6 @@ void writeSeq(FILE *f,char* seq,int start,int end) {
 	if (j>0) fputc('\n',f);
 }
 
-
 int main (int argc,char* argv[]) {
 	char buf[bufSize];
 

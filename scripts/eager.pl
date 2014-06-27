@@ -61,4 +61,3 @@ sub search {
         map { push( @results, $_->annotation ) } $feat->annotations;
     }
 }
-

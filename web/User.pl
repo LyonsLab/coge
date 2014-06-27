@@ -370,7 +370,7 @@ sub delete_items {
                 $type_name = 'experiment';
             }
         }
-        
+
         # Record in log
         if ($type_name) {
 			CoGe::Accessory::Web::log_history(
@@ -414,7 +414,7 @@ sub undelete_items {
                 $notebook->update;
                 $type_name = 'notebook';
             }
-        }                
+        }
         elsif ( $item_type == $ITEM_TYPE{genome} ) {
             my $genome = $coge->resultset('Genome')->find($item_id);
             return unless $genome;
@@ -436,7 +436,7 @@ sub undelete_items {
                 $type_name = 'experiment';
             }
         }
-        
+
         # Record in log
         if ($type_name) {
 			CoGe::Accessory::Web::log_history(
@@ -461,12 +461,12 @@ sub cancel_jobs {
         my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
         next unless ( $item_id and $item_type );
         print STDERR "cancel $item_id $item_type\n";
-        
+
         my $job = $coge->resultset('Job')->find($item_id);
 	    if ( ( !$job || $job->user_id != $USER->id ) && !$USER->is_admin ) {
 	        return;
 	    }
-	    
+
 	    my $status = $jex->get_status( $job->id );
 	    print STDERR "job " . $job->id . " status=$status\n";
 	    if ( $status =~ /running/i ) {
@@ -652,7 +652,7 @@ sub get_group_dialog {
         my $group = $coge->resultset('UserGroup')->find($item_id);
         next unless ( $group and $group->is_editable($USER) );
 		next if ( $group->locked and !$USER->is_admin );
-		
+
 		my $role = $group->role;
 		$lowest_role = $role if (!$lowest_role or $role->is_lower($lowest_role));
 		my $creator_id = $group->creator_user_id;
@@ -661,7 +661,7 @@ sub get_group_dialog {
 			my $uid = $user->id;
 	        $users{$uid} = $user;
 	        if ( not defined $roles{$uid}
-	        	 or $role->is_lower($roles{$uid}) ) 
+	        	 or $role->is_lower($roles{$uid}) )
 	        {
 	        	$roles{$uid} = $role;
 	        }
@@ -692,7 +692,7 @@ sub get_group_dialog {
             USER_DELETE    => !$owners{$uid} # owner can't be removed
         };
     }
-    
+
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 
@@ -758,7 +758,7 @@ sub add_items_to_user_or_group {
     my $item_list = $opts{item_list};
     my @items = split( ',', $item_list );
     return unless @items;
-    
+
     my ( $target_id, $target_type ) = $target_item =~ /(\d+)\:(\d+)/;
     return unless ( $target_id and $target_type );
 
@@ -943,7 +943,7 @@ sub add_users_to_group {
         # TODO check that user has visibility of this group (one that they own or belong to)
 		map { $users{$_->id} = $_ } $group->users;
      }
-    
+
     # Add users to the target groups
     foreach (@target_items) {
         # Find target group and check permission to modify
@@ -966,7 +966,7 @@ sub add_users_to_group {
 		            child_type  => 6                 #FIXME hardcoded to "group"
 		        }
 		    );
-		    
+
 		    # Create new user connection if one wasn't found
 		    if (!$conn) {
 			    $conn = $coge->resultset('UserConnector')->create(
@@ -980,7 +980,7 @@ sub add_users_to_group {
 			    );
 		    }
 		    next unless $conn;
-		
+
 		    # Record in log
 		    CoGe::Accessory::Web::log_history(
 		        db          => $coge,
@@ -990,7 +990,7 @@ sub add_users_to_group {
 		    );
 	    }
 	}
-    
+
     return get_group_dialog( item_list => $opts{target_items} );
 }
 
@@ -1016,7 +1016,7 @@ sub remove_user_from_group {
 	    my $target_group = $coge->resultset('UserGroup')->find($target_id);
 	    next unless ( $target_group and $target_group->is_editable($USER) );
 	    next if ( $target_group->locked && !$USER->is_admin );
-	    
+
     	# Get user connection to target group
     	my $conn = $coge->resultset('UserConnector')->find(
 		    {
@@ -1027,11 +1027,11 @@ sub remove_user_from_group {
 		    }
 		);
 	    next unless $conn;
-	    
+
 	    # Delete user connection if not owner
 	    next if ($conn->role->is_owner);
 	    $conn->delete;
-		
+
 	    # Record in log
 	    CoGe::Accessory::Web::log_history(
 		    db          => $coge,
@@ -1055,7 +1055,7 @@ sub change_group_role {
 	# Verify role
 	my $role = $coge->resultset('Role')->find($role_id);
     return unless $role;
-    
+
     # Change role for the target groups
     foreach (@target_items) {
         # Find target group and check permission to modify
@@ -1070,7 +1070,7 @@ sub change_group_role {
 		$target_group->role_id($role_id);
 		$target_group->update;
     }
-    
+
 	return get_group_dialog( item_list => $opts{target_items} );
 }
 
@@ -1150,7 +1150,7 @@ sub get_toc {    # table of contents
 	    },
 		{ 	TOC_ITEM_ID => $ITEM_TYPE{group},
  	 		TOC_ITEM_INFO => 'Groups',
- 			#TOC_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15"/>' 
+ 			#TOC_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15"/>'
 		},
     	{   TOC_ITEM_ID       => $ITEM_TYPE{activity},
 	        TOC_ITEM_INFO     => 'Activity',
@@ -1216,8 +1216,8 @@ sub get_contents {
     #print STDERR "Time to run user->children_by_type_role_id: $time\n";
     #print STDERR "get_contents: time1=" . ((time - $start_time)*1000) . "\n";
 
-	if (   $type == $ITEM_TYPE{all} 
-		or $type == $ITEM_TYPE{group} ) 
+	if (   $type == $ITEM_TYPE{all}
+		or $type == $ITEM_TYPE{group} )
 	{
 	 	foreach my $group ( sort {$a->name cmp $b->name} values %{ $children->{6} } ) { #FIXME hardcoded type
 	 		push @rows, { CONTENTS_ITEM_ID => $group->id,
@@ -1322,17 +1322,17 @@ sub get_contents {
               };
         }
     }
-    
+
     #print STDERR "get_contents: time5=" . ((time - $start_time)*1000) . "\n";
     if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity_analyses} ) {
-        push @rows, 
+        push @rows,
           { CONTENTS_ITEM_ID   => 0,
             CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_analyses},
             CONTENTS_ITEM_INFO => '<span class="small alert">Please note: This area is undergoing changes and the analyses shown do not reflect recent activity.</span>',
             #CONTENTS_ITEM_LINK => undef,
             CONTENTS_ITEM_SELECTABLE => 0
           };
-        
+
         foreach my $entry (
             $USER->jobs(
                 {},
@@ -1340,7 +1340,7 @@ sub get_contents {
                 	time => { '>=' => $last_update },
                 	join => 'log',
                 	prefetch => 'log',
-                	order_by => { -desc => 'start_time' } 
+                	order_by => { -desc => 'start_time' }
                 }
             )
           )
@@ -1356,7 +1356,7 @@ sub get_contents {
         }
     }
     #print STDERR "get_contents: time6=" . ((time - $start_time)*1000) . "\n";
-    
+
     if ($html_only) {    # only do this for initial page load, not polling
         my $user_id = $USER->id;
         my $job_list = 'cogeblast/synmap/gevo/synfind/loadgenome/loadexperiment/organismview/user';

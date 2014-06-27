@@ -78,7 +78,7 @@ $contigdir = dirname ($ARGV[1]);
 
 `cp $ARGV[1] $newdir`;
 @contigs = `perl $lagandir/mextract.pl $newdir/$contigfile`;
-if ($?) { exit(1);} 
+if ($?) { exit(1);}
 for ($i = 0; $i < @contigs; $i++){
     chomp $contigs[$i];
     `$lagandir/utils/rc < $contigs[$i] > $contigs[$i].rc`;
@@ -92,7 +92,7 @@ if (-e $maskedname){
     $maskedcontigfile = basename ($maskedname);
     `cp $maskedname $newdir`;
     @maskedcontigs = `perl $lagandir/mextract.pl $newdir/$maskedcontigfile -masked`;
-    if ($?) { exit(1);} 
+    if ($?) { exit(1);}
     for ($i = 0; $i < @maskedcontigs; $i++){
 	chomp $maskedcontigs[$i];
 	`$lagandir/utils/rc < $maskedcontigs[$i] > $contigs[$i].rc.masked`;
@@ -114,12 +114,12 @@ for ($i = 0; $i < @contigs; $i++){
 	`$execute`;
 	$ex_val = $? >> 8;
 	if (!(-e "$contigs[$i].mfa")) { $skip1 = 1; }
-	elsif ($?) { exit(1);} 
+	elsif ($?) { exit(1);}
 
 	if (!$skip1 && $usebounds){
 	    # compute bounds
 	    @bounds = `$lagandir/utils/getbounds anchs.final $ARGV[0] $contigs[$i]`;
-	    if ($?) { exit(1);} 
+	    if ($?) { exit(1);}
 	    $bounds[0] =~ /-s1 (\d+) (\d+) -s2 (\d+) (\d+)/;
 	    $s1shift = $1 - 1;
 	    $s2shift = $3 - 1;
@@ -133,11 +133,11 @@ for ($i = 0; $i < @contigs; $i++){
 	`$execute`;
 	$ex_val = $? >> 8;
 	if (!(-e "$contigs[$i].rc.mfa")) { $skip2 = 1; }
-	elsif ($?) { exit(1);} 
+	elsif ($?) { exit(1);}
  	if (!$skip2 && $usebounds){
 	    # compute bounds
 	    @bounds = `$lagandir/utils/getbounds anchs.final $ARGV[0] $contigs[$i].rc`;
-	    if ($?) { exit(1);} 
+	    if ($?) { exit(1);}
 	    $bounds[0] =~ /-s1 (\d+) (\d+) -s2 (\d+) (\d+)/;
 	    $s1rcshift = $1 - 1;
 	    $s2rcshift = $3 - 1;
@@ -150,20 +150,20 @@ for ($i = 0; $i < @contigs; $i++){
     }
     else {
 	$fscore = `$lagandir/utils/scorealign $contigs[$i].mfa $startingrate`; chomp $fscore;
-	if ($?) { exit(1);} 
+	if ($?) { exit(1);}
     }
     if ($skip2) {
 	$bscore = 0;
     }
     else {
 	$bscore = `$lagandir/utils/scorealign $contigs[$i].rc.mfa $startingrate`; chomp $bscore;
-	if ($?) { exit(1);} 
+	if ($?) { exit(1);}
     }
     # pick strand
 
 #    print LFILE "$s1shift $contigs[$i].mfa\n" if (!$lazyflag);
 #    print LFILE "$s1rcshift $contigs[$i].rc.mfa\n" if (!$lazyflag);
-    
+
 #    if (0){
     if ($fscore > 0 || $bscore > 0){
 	$j = $i + 1;
@@ -200,13 +200,13 @@ $foundorder = 0;
 
 for ($cutoff = $startingrate; !$foundorder && ($cutoff < 100); $cutoff += $rateinc){
     `$lagandir/utils/scorecontigs /$newdir/filenames $ARGV[0] $newdir/contignames $cutoff > $newdir/ranges`;
-    if ($?) { exit(1);} 
+    if ($?) { exit(1);}
     @list = `cat $newdir/ranges`;
     $list[0] =~ /numContigs = (\d+)/;
     next if ($1 == 0);
 
     `$lagandir/utils/contigorder $newdir/ranges > $newdir/corder`;
-    if ($?) { exit(1);} 
+    if ($?) { exit(1);}
     @list = `cat $newdir/corder`;
     chomp $list[0];
     $foundorder = 1 if ($list[0] ne "ordering failed");
@@ -216,7 +216,7 @@ if ($foundorder){
     open (OFILE, ">$newdir/draft");
     print OFILE ("Draft Ordering\n");
     print OFILE ("--------------\n\n");
-    
+
     @contignames = `cat $newdir/contignames`;
     for ($i = 0; $i < @contignames; $i++){
 	$contignames[$i] =~ /(\d+) (\d+) (\d+) (.*)/;
@@ -233,7 +233,7 @@ if ($foundorder){
 	print OFILE ("$filenames[$1] --> ($2 $3) score=$score, offset=($s1shifts[$1] $s2shifts[$1]), index=$num[$1]\n");
     }
     close (OFILE);
-    
+
     print STDERR `cat $newdir/draft`;
     print LOGFILE `cat $newdir/draft`;
     close (LOGFILE);
@@ -264,4 +264,3 @@ print STDERR ("Computing Final Alignment\n");
 print STDERR ("-------------------------\n\n");
 
 # `rm -rf $newdir`;
-

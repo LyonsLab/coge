@@ -116,7 +116,7 @@ sub gen_html {
 
     #$template->param(TITLE=>'CoGe BLAST Analysis');
     $template->param( PAGE_TITLE => 'BLAST',
-    				  PAGE_LINK  => $LINK, 
+    				  PAGE_LINK  => $LINK,
     				  HELP       => '/wiki/index.php?title=CoGeBlast' );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
@@ -694,7 +694,7 @@ sub blast_search {
     $url .= ";fid=$fid" if ($fid);
 
     my $link = CoGe::Accessory::Web::get_tiny_link(url => $url);
-    
+
     my ($tiny_id) = $link =~ /\/(\w+)$/;
     my $workflow = $YERBA->create_workflow(
         name    => "cogeblast-$tiny_id",
@@ -717,7 +717,6 @@ sub blast_search {
     my @results;
     my $count = 1;
     my $t2    = new Benchmark;
-
 
     foreach my $dsgid (@dsg_ids) {
         my ( $org, $dbfasta, $dsg ) = get_blast_db($dsgid);
@@ -800,7 +799,6 @@ sub blast_search {
             organism => $org,
             dsg      => $dsg
           };
-
 
         $workflow->add_job(
             cmd     => "/usr/bin/nice",
@@ -2944,4 +2942,3 @@ sub get_genomes_for_list {
 
     return $genomes;
 }
-

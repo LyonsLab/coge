@@ -3,7 +3,7 @@
 <SCRIPT type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
 <SCRIPT type="text/javascript" src="./js/jstree/jquery.jstree.js"></SCRIPT>
 
-<style type="text/css"> 
+<style type="text/css">
 .jstree li a ins { display:none !important; }
 .jstree.jstree-focused { background:white; }
 </style>
@@ -26,7 +26,7 @@ $(document).ready(function(){
 		dataType: "html",
 		cache: false
 	});
-	
+
 	// Configure dialogs
     $(".dialog_box").dialog({autoOpen: false, width: 500});
     $('#load_dialog').dialog("widget").find('.ui-dialog-titlebar-close').hide();
@@ -46,7 +46,7 @@ $(document).ready(function(){
 		   		return false;
 			}
 	});
-	
+
 	// Open status dialog for existing load
     if (job_id) {
         $('#loading_msg').hide();
@@ -157,7 +157,7 @@ function reset_log() {
 
 function check_login() {
 	var logged_in = false;
-	
+
 	$.ajax({
 		async: false,
 		data: {
@@ -167,7 +167,7 @@ function check_login() {
 			logged_in = rc;
 		}
 	});
-	
+
 	return logged_in;
 }
 
@@ -182,7 +182,7 @@ function load_genome() {
 		alert('Please select some sequence files by clicking "Add Sequence Files".');
 		return;
 	}
-	
+
 	// Prevent mix of NCBI and file data types
 	var types = {};
 	items.forEach(function(item) { types[item.type] = 1; });
@@ -220,7 +220,7 @@ function load_genome() {
 	var type_id = $('#select_type').val();
 	var restricted = $('#restricted').is(':checked');
 	var json = JSON.stringify(items);
-	
+
 	// Prevent concurrent executions - issue 101
 	if ( $("#load_dialog").dialog( "isOpen" ) )
 		return;
@@ -231,12 +231,12 @@ function load_genome() {
 		location.reload(true)
 		return;
 	}
-	
+
 	// Open status dialog right away - issue 101
 	reset_log();
 	$('#load_dialog').dialog('open');
 	$('#load_log').html('Initializing ...');
-	
+
 	$.ajax({
 		data: {
 			fname: 'load_genome',
@@ -260,10 +260,10 @@ function load_genome() {
 				alert(obj.error);
 				return;
 			}
-			
+
 			// Set link in status dialog
 			$('#loading_msg span a').attr('href', obj.link).html(obj.link);
-			
+
 			// Start status update
             if (obj.job_id) { // JEX status for load FASTQ
                 job_id = obj.job_id;
@@ -315,7 +315,7 @@ function get_load_log(callback) {
 //			if (obj.status == 1) {  // finished successfully
 //				// Update load_id in case user reuses page to load again
 //				load_id = obj.new_load_id;
-//				
+//
 //				$('#genome_id').val( obj.genome_id );
 //				$('#loading_msg').hide();
 //				$('#finished_msg').fadeIn();
@@ -331,7 +331,7 @@ function get_load_log(callback) {
 //				setTimeout(function() { get_load_log(); }, 1000);
 //			}
 //		}
-//	});	
+//	});
 //}
 
 function load_failed(obj) {
@@ -339,14 +339,14 @@ function load_failed(obj) {
 	if ( obj && obj.links && obj.links.length ) {
 		var link_text = obj.links.reduce(function(prev, cur) {
 				return prev + '<a href="' + cur + '" target=_new>' + cur + '</a>' + '<br>';
-			}, 
+			},
 			'<b>Cannot load because the data already exist in the system:</b><br>');
 		var log = $('#load_log');
 		log.html( log.html() + link_text );
 	}
 	else { // mdb added 6/24/14 - temporary message until JEX logging is improved
-		var msg = 
-			'<div class="alert">' + 
+		var msg =
+			'<div class="alert">' +
 			'We recently made some changes that limit our ability to report errors (more details <a href="https://genomevolution.org/wiki/index.php/Jex_Logging" target=_blank>here</a>). ' +
 			'While we fix this please feel free to contact us at <a href="mailto:coge.genome@gmail.com">coge.genome@gmail.com</a> regarding this failure to load data ' +
 			'and we can help to determine the cause.  Thanks!' +
@@ -354,7 +354,7 @@ function load_failed(obj) {
 		var log = $('#load_log');
 		log.html( log.html() + msg );
 	}
-	
+
     // Update dialog
     $('#loading_msg').hide();
     $('#error_msg').fadeIn();
@@ -390,15 +390,15 @@ function continue_to_view() {
 
 function wait_to_search (search_func, search_term) {
 	pageObj.search_term = search_term;
-		
+
 	if (pageObj.time) {
 		clearTimeout(pageObj.time);
 	}
-	
+
 	// FIXME: could generalize by passing select id instead of separate search_* functions
 	pageObj.time = setTimeout(
-		function() { 
-			search_func(pageObj.search_term); 
+		function() {
+			search_func(pageObj.search_term);
 		},
 		500
 	);
@@ -464,7 +464,7 @@ function build_taxonomy_tree(items) {
 	if (items) {
 		var tree = $("#tax_tree");
 		if (items.length == 0) {
-			tree.slideUp('fast', 
+			tree.slideUp('fast',
 				function() {
 					tree.empty();
 					$('#tax_empty').fadeIn();
@@ -488,8 +488,8 @@ function build_taxonomy_tree(items) {
 			tree.empty()
 				.append(list)
 				.jstree()
-					.bind("select_node.jstree", 
-				      	function (event, data) { 
+					.bind("select_node.jstree",
+				      	function (event, data) {
 							var id = data.rslt.obj.attr("id");
 							taxonomy_get_node(id);
 						}
@@ -508,7 +508,7 @@ function search_ncbi_taxonomy(search_term) {
 	if (!search_term || search_term.length < 3) {
 		return;
 	}
-	
+
 	$("#wait_ncbi").animate({opacity:1});
 	$('#tax_empty').fadeOut();
 	$("#edit_organism_info").slideUp();
@@ -522,13 +522,13 @@ function search_ncbi_taxonomy(search_term) {
 					ids += $(this).text() + ',';
 				}
 			);
-			
+
 			if (ids) {
 				$.get(
 					ENTREZ_URL + "efetch.fcgi?db=taxonomy&id=" + ids,
 					function(xml) {
 						var results = new Array();
-						
+
 						$(xml).children("Taxon").each(
 							function() {
 								var id = $(this).children('TaxId').text();
@@ -537,16 +537,16 @@ function search_ncbi_taxonomy(search_term) {
 								results.push({id: id, name: name, lineage: lineage});
 							}
 						);
-						
+
 						build_taxonomy_tree(results);
-						
+
 						$("#wait_ncbi").animate({opacity:0});
 					}
 				);
 			}
 			else {
 				var tree = $("#tax_tree");
-				tree.slideUp('fast', 
+				tree.slideUp('fast',
 					function() {
 						tree.empty();
 						$('#tax_empty').fadeIn();
@@ -566,7 +566,7 @@ function taxonomy_get_node(id) { // FIXME: cleanup and merge common stuff with s
 	var tree = $("#tax_tree");
 	var node = $("#"+id);
 	var name = $(node).attr('name');
-	
+
 	// If the node is open then it has children so just
 	// close the node and return.
 	var is_open = tree.jstree("is_open", node);
@@ -574,7 +574,7 @@ function taxonomy_get_node(id) { // FIXME: cleanup and merge common stuff with s
 		tree.jstree("close_node", node);
 		return;
 	}
-	
+
 	// If not a leaf node then we already retreived the children so
 	// just open the node and return.
 	var is_leaf = tree.jstree("is_leaf", node);
@@ -595,13 +595,13 @@ function taxonomy_get_node(id) { // FIXME: cleanup and merge common stuff with s
 					ids += $(this).text() + ',';
 				}
 			);
-			
+
 			if (ids) {
 				$.get(
 					ENTREZ_URL + "efetch.fcgi?db=taxonomy&id=" + ids,
 					function(xml) {
 						var results = new Array();
-						
+
 						$(xml).children("Taxon").each(
 							function() {
 								var id = $(this).children('TaxId').text();
@@ -610,7 +610,7 @@ function taxonomy_get_node(id) { // FIXME: cleanup and merge common stuff with s
 								results.push({id: id, name: name, lineage: lineage});
 							}
 						);
-						
+
 						if (results.length) {
 							results.sort(sort_name).forEach(
 								function(e) {
@@ -620,7 +620,7 @@ function taxonomy_get_node(id) { // FIXME: cleanup and merge common stuff with s
 							);
 							tree.jstree("open_node", node);
 						}
-						
+
 						$("#wait_ncbi").animate({opacity:0});
 					}
 				);
@@ -820,7 +820,7 @@ function update_dialog(request, identifier, formatter) {
   </tr>
   <tr id='more'>
     <td colspan="2"><span class="link" onclick="more();">more...</span></td>
-  </tr>  
+  </tr>
   <tr class="hidden">
     <td>Name:</td>
     <td><input id="edit_name" type="textbox" placeholder="Optional" size="58" spellcheck="false" /></td>
@@ -832,13 +832,13 @@ function update_dialog(request, identifier, formatter) {
   <tr class="hidden">
     <td>Link:</td>
     <td><input id="edit_link" type="textbox" placeholder="Optional" size="58" /></td>
-  </tr> 
+  </tr>
 </table>
 
 <br>
 <span id='genome_data' style="color:dimgray;font-weight:bold;">Genome Data</span><br>
 <div class="small info" style="width:550px;">
-  Click the <b>Add Data</b> button to select the data items to be loaded for the genome from: 
+  Click the <b>Add Data</b> button to select the data items to be loaded for the genome from:
   1) iPlant Data Store, 2) FTP/HTTP site, 3) browser upload, and 4) NCBI.
   For 1-3, only sequence FASTA files can be loaded at this stage.  GFF annotation files can be loaded later on.
   For 4, both sequence and annotation associated with the specified accession are loaded.
@@ -855,7 +855,6 @@ function update_dialog(request, identifier, formatter) {
 <br>
 <br>
 <br>
-
 
 <div id="create_new_type_dialog" class="hidden dialog_box" title="Create New Sequence Type">
   <table class="small">
@@ -906,8 +905,6 @@ function update_dialog(request, identifier, formatter) {
   <span id="create_organism_button" onClick="create_organism();" class="ui-state-disabled ui-button ui-corner-all ui-button-go">Create</span>
 </div>
 
-
-
 <div id="create_new_source_dialog" class="hidden dialog_box" title="Create New Source">
   <table class="small">
     <tr>
@@ -927,8 +924,6 @@ function update_dialog(request, identifier, formatter) {
   <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all ui-button-go">Create</span>
 </div>
 
-
-
 <div id="load_dialog" class="hidden dialog_box" title="Loading Genome ...">
   <div id="load_log" class="small padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
   </div>
@@ -944,22 +939,18 @@ function update_dialog(request, identifier, formatter) {
   <span id="cancel_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go">Cancel</span>
 </div>
 
-
-
 <div id="file_select_dialog" class="hidden dialog_box" title="Select Data File ...">
   <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
   <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all">Done</span>
 </div>
 
-
-
 <TMPL_IF NAME='ADMIN_AREA'>
 <script>
 $(document).ready(function() {
 	$("#edit_user").autocomplete({
-		source:[], 
+		source:[],
 		focus: function() { return false; },
-	});	
+	});
 });
 </script>
 <br><br><hr>
@@ -982,8 +973,6 @@ $(document).ready(function() {
 </TMPL_IF>
 
 </TMPL_IF> <!-- MAIN -->
-
-
 
 <TMPL_IF NAME='LOGIN'>
 	<TMPL_INCLUDE NAME="widgets/Login.tmpl">

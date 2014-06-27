@@ -110,7 +110,7 @@ sub generate_body {
             );
         }
     }
-    
+
     $template->param(
     	LOAD_ID     => $LOAD_ID,
     	JOB_ID      => $JOB_ID,
@@ -146,7 +146,7 @@ sub irods_get_path {
     if ($error) {
         my $email = $P->{SUPPORT_EMAIL};
         my $body =
-            "irods ils command failed\n\n" 
+            "irods ils command failed\n\n"
           . 'User: '
           . $USER->name . ' id='
           . $USER->id . ' '
@@ -360,7 +360,7 @@ sub load_batch {
     my $user_name   = $opts{user_name};
     my $gid         = $opts{gid};
     my $items       = $opts{items};
-    
+
 	# print STDERR "load_batch: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
 
     # Check login
@@ -374,7 +374,7 @@ sub load_batch {
     # Check data items
     return encode_json({ error => 'No files specified' }) unless $items;
     $items = decode_json($items);
-    my $data_file = catdir($TEMPDIR, $items->[0]->{path}); 
+    my $data_file = catdir($TEMPDIR, $items->[0]->{path});
 
     # Submit workflow
     my ($workflow_id, $error_msg) = create_experiments_from_batch(
@@ -389,7 +389,7 @@ sub load_batch {
     unless ($workflow_id) {
         return encode_json({ error => "Workflow submission failed: " . $error_msg });
     }
-    
+
     # Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
         url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id
@@ -403,7 +403,7 @@ sub get_load_log {
     my $workflow_id = $opts{workflow_id};
     return unless $workflow_id;
     #TODO authenticate user access to workflow
-    
+
     my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
     return unless (-r $results_path);
 
@@ -412,11 +412,11 @@ sub get_load_log {
 
     my $result = CoGe::Accessory::TDS::read($result_file);
     return unless $result;
-    
+
     my $notebook_id = (exists $result->{notebook_id} ? $result->{notebook_id} : undef);
 
     return encode_json(
-        { 
+        {
             notebook_id => $notebook_id
         }
     );

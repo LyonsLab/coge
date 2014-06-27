@@ -4,13 +4,11 @@ use CoGeX;
 use Data::Dumper;
 use Getopt::Long;
 
-
 my ($type, $file, @anno);
 GetOptions ("t|type=s"=>\$type,
 	    "f|file=s"=>\$file,
 	    "a|anno=s"=>\@anno,
 	    );
-
 
 my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
 my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
@@ -27,7 +25,7 @@ org: foreach my $orgname (keys %$data)
       {
 	feat: foreach my $feat ($ds->features({name=>$type},{join=>feature_type}))
 	  {
-	    
+
 	    my $name = $orgname.": ". join (", ", $feat->names, map {$_->annotation} $feat->annotations)."\n";
 	    if (@anno)
 	      {
@@ -48,8 +46,6 @@ org: foreach my $orgname (keys %$data)
     print STDERR "no sequence for ",$orgname,"\n"unless $found;
   }
 
-
-
 sub process_file
   {
     my $file = shift;
@@ -65,4 +61,3 @@ sub process_file
     close IN;
     return \%data;
   }
-

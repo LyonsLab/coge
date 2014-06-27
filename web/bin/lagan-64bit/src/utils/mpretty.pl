@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-# defaults 
+# defaults
 
 $linelen = 50;
 $interval = 10;
@@ -19,7 +19,6 @@ $useend = 0;
 $minlinelen = 10;
 $mininterval = 10;
 $minlabellen = 3;
-
 
 # usage notes
 
@@ -41,7 +40,6 @@ if (@ARGV < 1) {
     print (" -nocounts\n");
     exit(1);
 }
-
 
 # parse parameters
 
@@ -97,7 +95,7 @@ if ($uselabels) {
 }
 
 if (($usestart && ($liststart<1)) || ($useend && ($listend<$liststart))) {
-    die "Invalid range specified: [$liststart, $listend].\n\n"; 
+    die "Invalid range specified: [$liststart, $listend].\n\n";
 }
 
 # read in Multi-FASTA file
@@ -160,7 +158,7 @@ if ($usebase) {
 	$foundseq = ($s eq $baseseq) || $foundseq;
     }
 if (!$foundseq) { die "Could not find Base Sequence: <$baseseq>\n\n"; }
-}	
+}
 
 # preprocessing for counts
 
@@ -173,13 +171,12 @@ if ($usecounts) {
 }
 
 # length of sequence display
-$l=$maxlen; 
+$l=$maxlen;
 if ((!$listend) || ($listend>$maxlen)) {
     $listend = $maxlen;
 }
 
 if ($maxlen < $liststart) { die "Starting out of bounds...\b\b"; }
-
 
 if ($usebase) {
 
@@ -221,17 +218,17 @@ for ($i=$liststart-1; $i<$listend; $i+=$linelen) {
 	}
 	$p = substr(@strs[$list{$s}], $i, $linelen);
 	print "$p";
-	    
+
 	if ($usecounts) {
 	    $_ = $p;
 	    $lc = tr/ATCGN/ATGCN/;
 	    @count[$list{$s}]+=$lc;
 	    print " @ @count[$list{$s}]/@tot[$list{$s}]";
 	}
-	    
+
 	print "\n";
     }
-	
+
     if ($useintervals) {
 	if ($uselabels) {
 	    print "$labtail = ";
@@ -247,17 +244,3 @@ for ($i=$liststart-1; $i<$listend; $i+=$linelen) {
     }
     print "\n";
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -9,7 +9,7 @@ package CoGe::Accessory::GBlite;
 use strict;
 use Compress::Zlib;
 use base ('Class::Accessor');
-use Data::Dumper; 
+use Data::Dumper;
 # Month - for converting GenBank date format to numeric format
   my %Month = ( JAN=>'01', FEB=>'02', MAR=>'03', APR=>'04',
 		MAY=>'05', JUN=>'06', JUL=>'07', AUG=>'08', SEP=>'09',
@@ -60,17 +60,16 @@ sub DESTROY {
 		close( $self->{FH} );
 	}
 }
-	
 
 sub nextEntry {
   my ($self) = @_;
   $self->_fastForward or return 0;
   my $FH = $self->{FH};
-	
+
   # These are the fields that will be kept
   my ($locus, $mol_type, $division, $date, $definition, $accession, $version,
       $gi, $keywords, $organism, $organism_long, $features, $sequence, $source);
-	
+
   # get LOCUS, MOL_TYPE, DIVISION, DATE from LOCUS line
   my $locus_line = $self->{LASTLINE};
   my @field = split(/\s+/, $locus_line);
@@ -105,7 +104,7 @@ sub nextEntry {
   $definition = join("", @def_line);
   $definition =~ s/\s+/ /g;
   $definition = substr($definition, 11);
-	
+
   # get ACCESSION, VERSION, and GI from the VERSION line
   if ( $self->{FILETYPE} eq "GZIP" ) {
     while ($FH->gzreadline($_) > 0) {
@@ -131,7 +130,7 @@ sub nextEntry {
   if (not defined $version) {
     warn "no version identified >> $versionline";
   }
-	
+
   # parse the KEYWORDS, which may span several lines
   my %keyword;
   if ( $self->{FILETYPE} eq "GZIP" ) {
@@ -187,7 +186,7 @@ sub nextEntry {
     ($source) = $source_line =~ /SOURCE\s+(.+)/;
   }
   $source =~ s/[\.;]//g;	# remove punctuation
-	
+
   # parse the ORGANISM
   my @lines = ();
   if ( $self->{FILETYPE} eq "GZIP" ) {
@@ -265,7 +264,7 @@ sub nextEntry {
   if (@$features == 0) {
     die "unexpected fatal parsing error\n";
   }
-	
+
   # parse the SEQUENCE
   my @seq;
   if ( $self->{FILETYPE} eq "GZIP" ) {
@@ -287,7 +286,7 @@ sub nextEntry {
   }
   $sequence = join("", @seq);
   $sequence = uc $sequence;
-	
+
   $self->{LASTLINE} = $_;
 #  print join (",\t","l: $locus", "mt: $mol_type", "D: $division", "DA: $date" ,"DEF: $definition", "ACC: $accession", "V: $version", "GI: $gi", "KW: $keywords", "S: $source", "O: $organism", "OL: $organism_long", "F: $features"),"\n";
   my $entry = CoGe::Accessory::GBlite::Entry::new($locus, $mol_type, $division, $date,$definition, $accession, $version, $gi, $keywords, $source, $organism, $organism_long, $features, $sequence);
@@ -320,8 +319,6 @@ sub _fastForward {
   #warn "Possible parse error in _fastForward in GBlite.pm\n", $_;
 }
 
-
-
 ################################################################################
 # GBlite::Entry
 ################################################################################
@@ -349,13 +346,13 @@ my @Field = qw(
 
 sub new {
 	my $entry = bless {};
-	
+
 	($entry->{LOCUS}, $entry->{MOL_TYPE}, $entry->{DIVISION}, $entry->{DATE},
 		$entry->{DEFINITION}, $entry->{ACCESSION}, $entry->{VERSION},
 		$entry->{GI}, $entry->{KEYWORDS}, $entry->{SOURCE},
     $entry->{ORGANISM}, $entry->{ORGANISM_LONG}, $entry->{FEATURES},
     $entry->{SEQUENCE}) = @_;
-	
+
 	my $CONSTRUCTOR_ERROR = 0;
 	foreach my $name (@Field) {
     # this can only get filled in the Feature parsing stage of a script, so just skip it
@@ -422,7 +419,6 @@ sub set_dir {
 	return $dir;
 }
 
-
 ################################################################################
 # GBlite::Feature
 ################################################################################
@@ -463,16 +459,16 @@ sub new {
       $qualifiers->{$key} = "";
     }
   }
-  
+
   if ( keys %$qualifiers > 0 ) {
     $feature->{QUALIFIERS} = $qualifiers;
   } else {
     $feature->{QUALIFIERS} = {};
   }
-  
+
   $feature->{KEY}        = $key;
   $feature->{LOCATION}   = $location;
-  
+
   $feature->{STRAND} = $location =~ /complement/ ? "-1" : 1;
   $location =~ s/complement//;
   $location =~ s/join//;
@@ -480,7 +476,7 @@ sub new {
   my @temp = split( /\.\./, $location );
   $feature->{START} = $temp[0];
   $feature->{STOP} = $temp[1];
-  
+
   return $feature;
 }
 
@@ -492,7 +488,6 @@ sub strand     {shift->{STRAND}}
 sub qualifiers {shift->{QUALIFIERS}}
 
 1;
-
 
 __END__
 
@@ -519,7 +514,7 @@ GBlite.pm
    $entry->features;       # reference to ARRAY
    $entry->sequence;
    $entry->chromosome;
-   
+
    foreach my $feature (@{$entry->features}) {
      $feature->key;
      $feature->location;
@@ -552,7 +547,3 @@ Copyright (C) 2000 Ian Korf. All Rights Reserved.
 This software is provided "as is" without warranty of any kind.
 
 =cut
-
-
-
-

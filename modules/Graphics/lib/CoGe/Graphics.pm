@@ -40,7 +40,7 @@ $BENCHMARK = 0;
  Comment   : This is a sample subroutine header.
            : It is polite to include more pod and fewer comments.
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -68,20 +68,13 @@ CoGe::Graphics - CoGe::Graphics
   use CoGe::Graphics;
   blah blah blah
 
-
 =head1 DESCRIPTION
 
 =head1 USAGE
 
-
-
 =head1 BUGS
 
-
-
 =head1 SUPPORT
-
-
 
 =head1 AUTHOR
 
@@ -126,13 +119,13 @@ perl(1).
                                    layers=>\@layers,
 				   );
  Purpose   : mama of a function.  Docs to come.
- Returns   : 
- Argument  : 
- Throws    : 
- Comment   : 
-           : 
+ Returns   :
+ Argument  :
+ Throws    :
+ Comment   :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -231,8 +224,8 @@ sub genomic_view
 	{
 	  $org = $dsg->organism;
 	  $version = $dsg->version;
-	}	
-	
+	}
+
 	print STDERR "generating image for ds: " . $ds->name . " (" . $ds->id . ")\n" if $self->DEBUG;
 	my $ta = new Benchmark if $BENCHMARK;
 	my $tb = new Benchmark if $BENCHMARK;
@@ -273,7 +266,7 @@ sub genomic_view
 		warn "error initializing the chromosome object.  Failed for valid chr_length\n";
 		return (0);
 	}
-	
+
 	my $t1  = new Benchmark if $BENCHMARK;
 	my $taa = new Benchmark if $BENCHMARK;
 	print STDERR "processing features\n" if $self->DEBUG;
@@ -284,7 +277,7 @@ sub genomic_view
 		my $feat_time = timestr( timediff( $tab, $taa ) ) if $BENCHMARK;
 		print STDERR " processing features for dsid " . $item->name, " ", Dumper($layers), " (", $item->id, "):   $feat_time\n" if $BENCHMARK;
 	}
-	
+
 	if ($expids && $layers->{quant} && ref ($expids) =~ /array/i)
 	{
 		foreach my $expid (@$expids)
@@ -317,7 +310,6 @@ BENCHMARKING GenomePNG.pl
 Total Initialization:   $init_time
 Processing features:    $feature_time
 Image generation:       $draw_time
-
 
 } if $BENCHMARK;
 
@@ -466,10 +458,10 @@ sub process_nucleotides
 	$pos = 0;
 	if ( $layers->{gbox} )
 	{
-		my $startseq; 
+		my $startseq;
 		if ($ds) {$startseq = uc( $ds->get_genomic_sequence( start => $start - 5, end => $start - 1, chr => $chr, gstid => $gstid ) );}
 		if ($dsg) {$startseq = uc( $dsg->get_genomic_sequence( start => $start - 5, end => $start - 1, chr => $chr, gstid => $gstid ) );}
-		my $stopseq;  
+		my $stopseq;
 		if ($ds) {$stopseq = uc( $ds->get_genomic_sequence( start => $stop + 1,  end => $stop + 5,  chr => $chr, gstid => $gstid ) );}
 		if ($dsg) {$stopseq = uc( $dsg->get_genomic_sequence( start => $stop + 1,  end => $stop + 5,  chr => $chr, gstid => $gstid ) );}
 		my $tmpseq   = $seq;
@@ -604,7 +596,7 @@ sub process_features
              {
                 push @feats, $coge->get_features_in_region( start => $start, end => $stop, dataset => $id, chr => $chr, ftid => $ftid );
              }
-	  } 
+	  }
 
 	#    print STDERR "$start - $stop\n";
 	my %feats = map { $_->id, $_ } @feats;
@@ -901,12 +893,12 @@ sub process_experiment
 	my $expid = $opts{expid};
 	my $c = $opts{c};
 	my $color=$opts{color};
-	
+
 	# We will need to abstract out the call to the data engine in order for
-	# this to be compatible on systems with multiple intsallations of coge 
+	# this to be compatible on systems with multiple intsallations of coge
 	# using different databases
 	my $url = "http://genomevolution.org/CoGe/bin/fastbit_query.pl?exp_id=$expid;chr=$chr;start=$start;stop=$stop"; #FIXME hardcoded server
-	
+
 	# mdb removed 3/26/13
 #	my $cmd = "curl '$url'";
 #	my $result = `$cmd`;
@@ -917,7 +909,7 @@ sub process_experiment
 	my $result = LWP::Simple::get($url);
 	#print STDERR "$url\n$result\n";
 	return unless $result;
-	
+
 	my $data = decode_json($result);
 	foreach my $quant (@{$data->{results}})
 	{
@@ -930,9 +922,8 @@ sub process_experiment
 		$f->strand( $quant->[3] );
 		$f->skip_overlap_search(1);
 		$c->add_feature($f);
-	}	
+	}
 }
-	
 
 sub generate_output
 {

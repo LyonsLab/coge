@@ -60,19 +60,18 @@ __PACKAGE__->belongs_to("list" 		 	=> "CoGeX::Result::List", 		{ "foreign.list_i
 			});
 __PACKAGE__->belongs_to("role" 		 	=> "CoGeX::Result::Role", "role_id" );
 
-
 ################################################ subroutine header begin ##
 
 =head2 debug
 
- Usage     : print debug info to stderr 
- Purpose   : 
- Returns   : 
+ Usage     : print debug info to stderr
+ Purpose   :
+ Returns   :
  Argument  : None
- Throws    : 
- Comments  : 
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -88,14 +87,14 @@ sub debug
 
 =head2 is_parent_XXXXXXXX
 
- Usage     : 
- Purpose   : 
- Returns   : 
+ Usage     :
+ Purpose   :
+ Returns   :
  Argument  : None
- Throws    : 
- Comments  : 
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -115,14 +114,14 @@ sub is_parent_group
 
 =head2 is_child_XXXXXXXX
 
- Usage     : 
- Purpose   : 
- Returns   : 
+ Usage     :
+ Purpose   :
+ Returns   :
  Argument  : None
- Throws    : 
- Comments  : 
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -157,14 +156,14 @@ sub is_child_group
 
 =head2 parent
 
- Usage     : 
- Purpose   : 
- Returns   : 
+ Usage     :
+ Purpose   :
+ Returns   :
  Argument  : None
- Throws    : 
- Comments  : 
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -173,7 +172,7 @@ See Also   :
 sub parent
 {
 	my $self = shift;
-	
+
 	if ($self->is_parent_user) {
 		return $self->user;
 	}
@@ -191,14 +190,14 @@ sub parent
 
 =head2 child
 
- Usage     : 
- Purpose   : 
- Returns   : 
+ Usage     :
+ Purpose   :
+ Returns   :
  Argument  : None
- Throws    : 
- Comments  : 
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -207,7 +206,7 @@ See Also   :
 sub child
 {
 	my $self = shift;
-	
+
 	if ($self->is_child_experiment) {
 		return $self->experiment();
 	}
@@ -218,7 +217,7 @@ sub child
 		return $self->feature();
 	}
 	elsif ($self->is_child_list) {
-		return $self->list();	
+		return $self->list();
 	}
 	elsif ($self->is_child_group) {
 		return $self->child_group();
@@ -229,7 +228,6 @@ sub child
 
 	return;
 }
-
 
 1;
 

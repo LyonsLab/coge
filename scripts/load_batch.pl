@@ -11,10 +11,10 @@ use URI::Escape::JavaScript qw(escape unescape);
 use Data::Dumper;
 
 use vars qw(
-    $staging_dir $data_file $notebook_name $notebook_desc $gid $user_name 
+    $staging_dir $data_file $notebook_name $notebook_desc $gid $user_name
     $config $log_file $user $genome $result_dir
 );
-  
+
 my $DEBUG = 0;
 my $DELIMITER = '\t';
 
@@ -151,19 +151,19 @@ exit;
 
 #-------------------------------------------------------------------------------
 # Format defined here:  http://genomevolution.org/wiki/index.php/Experiment_Metadata
-sub get_metadata { 
+sub get_metadata {
     my $file = shift;
     my $metadata = shift;
     my (@header, %data);
     my $lineNum = 0;
-    
+
     open(my $fh, $file);
     while (my $line = <$fh>) {
         $lineNum++;
         chomp $line;
         next unless ($line && $line =~ /\S+/);
         next if $line =~ /^#/;
-        
+
         # First line of file (after any comment lines) should be the header
         unless (@header) {
             @header = map { trim($_) } split($DELIMITER, $line);
@@ -174,7 +174,7 @@ sub get_metadata {
 #            print STDERR Dumper \@header,"\n";
             next;
         }
-        
+
         # Parse data line
         my @tok = map { trim($_) } split($DELIMITER, $line);
         if (@tok < @header) {
@@ -185,7 +185,7 @@ sub get_metadata {
         my $i = 0;
         my %fields = map { $_ => $tok[$i++] } @header;
         #print STDERR Dumper \%fields, "\n";
-        
+
         # Make sure required fields are present
         my $filename = $fields{Filename};
         if (!$filename or !$fields{Name}) {
@@ -196,7 +196,7 @@ sub get_metadata {
             print $log "log: error: duplicate filename '$filename'\n";
             exit(-1);
         }
-        
+
         $data{$filename} = \%fields;
     }
     close($fh);
@@ -215,9 +215,9 @@ sub trim {
 sub process_dir {
     my $dir = shift;
     my $metadata = shift;
-    
+
     print $log "process_dir: $dir\n";
-    
+
     # Load all experiment files in directory
     my @experiments;
     opendir( my $fh, $dir ) or die;
@@ -244,7 +244,7 @@ sub process_dir {
         }
     }
     closedir($fh);
-    
+
     unless (@experiments) {
         print $log "log: error: no experiment files found\n";
         exit(-1);
@@ -265,11 +265,11 @@ sub process_file {
     my %opts = @_;
     my $file = $opts{file};
     my $md   = $opts{metadata};
-    
+
     $exp_count++;
-    
+
     my $exp_staging_dir = catdir($staging_dir, $exp_count);
-    
+
     # Check params and set defaults
     my $name;
     $name = $md->{Name} if ($md and $md->{Name});
@@ -322,7 +322,7 @@ sub process_file {
         foreach my $column_name (keys %$md) {
             # Skip built-in fields
             next if (grep { /$column_name/i } ('filename', 'name', 'description', 'source', 'version', 'restricted'));
-            
+
             # Add annotation
             my $type = $coge->resultset('AnnotationType')->find_or_create( { name => $column_name } );
             $exp->add_to_experiment_annotations(
@@ -382,7 +382,7 @@ sub create_notebook {
             }
         );
         return unless $conn;
-    }    
+    }
 
     # Record in log
     CoGe::Accessory::Web::log_history(

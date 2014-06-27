@@ -47,31 +47,31 @@ foreach my $genome (sort {$a->id <=> $b->id} $coge->resultset('Genome')->all) {
 	my $gid = $genome->id;
 	next if (defined $start_id and $gid < $start_id);
 	next if (defined $stop_id and $gid > $stop_id);
-	
+
 	print STDERR "Genome " . $genome->id . "\n";
-	
+
 	my $fasta_file = $genome->file_path();
 	print STDERR "   old fasta: $fasta_file\n";
 	if (not -e $fasta_file) {
 		print STDERR "   fasta not found, skipping\n";
 		next;
 	}
-	
+
 	my $tier_path = CoGe::Core::Storage::get_tiered_path( $genome->id );
 	my $new_fasta_path = $new_path . '/' . $tier_path;
 	my $new_fasta_file = $new_fasta_path . '/genome.faa';
 	print STDERR "   new fasta: $new_fasta_path/genome.faa\n";
-	
+
 	die "   New path already exists, please delete first\n" if (-e $new_fasta_path);
 	mkpath($new_fasta_path);
 	process_fasta_file($fasta_file, $new_fasta_path);
-	
+
 	print STDERR "   indexing ...\n";
 	my $rc = CoGe::Core::Storage::index_genome_file( file_path => $new_fasta_file );
 	die if ($rc != 0);
-	
+
 	die if (not (-r $new_fasta_file and -r "$new_fasta_file.fai"));
-	
+
 	$count++;
 }
 

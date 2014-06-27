@@ -27,7 +27,6 @@ var message = $("<div></div>").text("Please wait...  ").append(spinner.clone());
 var note = $("<p></p>").addClass("small")
         .text("(This may take several minutes)");
 
-
 $(document).ready(function() {
     pageObj = new Object();
     pageObj.timers = new Array();
@@ -89,7 +88,6 @@ function get_feat_gc(opts){
         of: $(".box")
     });
     elem.dialog("open");
-
 
     if (!opts){opts={};}
     chr = opts.chr;
@@ -719,8 +717,8 @@ function load_failed(obj) {
         log.html( log.html() + link_text );
     }
 	else { // mdb added 6/24/14 - temporary message until JEX logging is improved
-		var msg = 
-			'<div class="alert">' + 
+		var msg =
+			'<div class="alert">' +
 			'We recently made some changes that limit our ability to report errors (more details <a href="https://genomevolution.org/wiki/index.php/Jex_Logging" target=_blank>here</a>). ' +
 			'While we fix this please feel free to contact us at <a href="mailto:coge.genome@gmail.com">coge.genome@gmail.com</a> regarding this failure to load data ' +
 			'and we can help to determine the cause.  Thanks!' +
@@ -827,7 +825,6 @@ function copy_genome(mask, seq_only) {
         // TODO: handle error, show in status dialog
     });
 }
-
 
 function progress_formatter(item) {
     var msg;
@@ -1067,7 +1064,6 @@ function open_aa_usage_table(chromosome)
     });
 }
 
-
 function get_content_dialog(id, request, chromosome) {
     var elem = $(id);
 
@@ -1078,7 +1074,6 @@ function get_content_dialog(id, request, chromosome) {
         at: "top",
         of: ".box"
     });
-
 
     elem.html("Please wait... ")
         .append(spinner.clone())
@@ -1097,9 +1092,7 @@ function get_content_dialog(id, request, chromosome) {
     })
 }
 
-
 </SCRIPT>
-
 
 <div class="dialog_box hidden" id="chromosome_hist" title="Chromosome Size"></div>
 <div class="dialog_box hidden" id="gc_histogram" title="Chromosome Size"></div>
@@ -1108,7 +1101,6 @@ function get_content_dialog(id, request, chromosome) {
 <div class="dialog_box hidden" id="codon_usage_table" title="Codon Usage Table"></div>
 <div class="dialog_box hidden" id="aa_usage_table" title="Amino Acid Usage Table"></div>
 <div class="dialog_box hidden" id="edit_genome_info" title="Edit Genome Information"></div>
-
 
 <TMPL_IF NAME='ADMIN_AREA'>
     <div class="alert">You are a CoGe Admin. Use your power wisely</div>
@@ -1205,7 +1197,6 @@ function get_content_dialog(id, request, chromosome) {
 </table>
 <br>
 
-
 <span style="color:dimgray;font-weight:bold;">Experiments</span><br>
 <TMPL_IF NAME='EXPERIMENTS'>
     <table class="small ui-widget-content ui-corner-all">
@@ -1294,8 +1285,6 @@ Are you sure you want to move this genome into your trash?<p>
 
 </TMPL_IF>
 
-
-
 <TMPL_IF NAME="DO_GENOME_INFO">
     <table class="small">
         <tr>
@@ -1359,8 +1348,6 @@ Are you sure you want to move this genome into your trash?<p>
     </table>
 </TMPL_IF>
 
-
-
 <TMPL_IF NAME="EDIT_GENOME_INFO">
     <script>
     $(function() {
@@ -1415,15 +1402,11 @@ Are you sure you want to move this genome into your trash?<p>
     <span onClick="update_genome_info();" class='ui-button ui-corner-all ui-button-go'>Update</span>
 </TMPL_IF>
 
-
-
 <TMPL_IF NAME='DO_EXPERIMENTS'>
     <TMPL_LOOP NAME="EXPERIMENT_LOOP">
         <TMPL_VAR NAME="EXPERIMENT_INFO"><br>
     </TMPL_LOOP>
 </TMPL_IF>
-
-
 
 <TMPL_IF NAME='DO_DATASETS'>
     <TMPL_LOOP NAME="DATASET_LOOP">
@@ -1439,8 +1422,6 @@ Are you sure you want to move this genome into your trash?<p>
         </tr>
     </TMPL_LOOP>
 </TMPL_IF>
-
-
 
 <TMPL_IF NAME='ADMIN_AREA'>
     <script>
@@ -1482,7 +1463,6 @@ Are you sure you want to move this genome into your trash?<p>
     </div>
     <br>
 </TMPL_IF>
-
 
 <div id="load_dialog" class="hidden dialog_box" title="Copying Genome ...">
   <div id="load_log" class="small padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">

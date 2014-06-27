@@ -22,14 +22,14 @@ function check_update()
  }
 
 $(function() {
- //substaniate dialog boxes          
+ //substaniate dialog boxes
         $(".dialog_box").dialog({ autoOpen: false, width: 500 });
 });
 
 Gobe.handle_html= function (html) {
   html = "<span class='ui-button ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
   $('#results_info').html(html);
-  
+
   if (html && !html.match(/multiple hits/)) {
    $('#results_info').dialog('open');
   }
@@ -83,10 +83,10 @@ function update_line_width(val)
 
 <DIV id="results_info" class="dialog_box" title="GEvo Results Info"></DIV>
 <TMPL_VAR NAME="STUFF">
-<script language="JavaScript">     
+<script language="JavaScript">
     var getQueryParamValue = swfobject.getQueryParamValue;
-    var width = getQueryParamValue('w') || <TMPL_VAR NAME="WIDTH">; 
-    var height = getQueryParamValue('h') || <TMPL_VAR NAME="HEIGHT">; 
+    var width = getQueryParamValue('w') || <TMPL_VAR NAME="WIDTH">;
+    var height = getQueryParamValue('h') || <TMPL_VAR NAME="HEIGHT">;
     var params = {'bgcolor': '#FFFFFF', 'wmode': "opaque"};
     var flashVars = {
             'n'        : getQueryParamValue('n') || <TMPL_VAR NAME="SEQ_NUM">,
@@ -101,4 +101,3 @@ function update_line_width(val)
                 , "/CoGe/gobe/static/swfobject/expresssinstall.swf", flashVars, params, {}, function(){Gobe.swf=Gobe.get_movie();});
 
 </script>
-

@@ -27,11 +27,11 @@ sub load {
     print STDERR Dumper $q, "\n";
 	print STDERR "POSTDATA: $post", "\n";
 	print STDERR Dumper \%ENV, "\n";
-	
+
 	# Problem: when status is anything but 200 it adds on an html doc
 	# to the reponse even if type is 'application/json'
 	# Need to migrate to Apache::REST
-	
+
 	# Validate POST data
 	if (!$post) {
 		#$self->header_props( -status => 500, -type => 'application/json' );
@@ -62,13 +62,13 @@ sub load {
  	$url =~ s/\/$//;
     my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $ticket, ticket_type => 'proxy', url => $url);
 	print STDERR "Data::Genome::load user=", $user->name, "\n";
-	
+
 	# Must be authenticated to load a genome
 	if (not $user or $user->is_public) {
 		$self->header_props(-status => '401 Unauthorized');
 		return;
 	}
-	
+
 	# Set defaults #TODO review these values
 	$data->{name} = '' unless (defined $data->{name});
 	$data->{description} = '' unless (defined $data->{desription});
@@ -113,7 +113,7 @@ sub load {
 #		push @files, $local_path;
 #	}
 #	print STDERR Dumper \@files, "\n";
-	
+
 	#FIXME: what happens when files take a long time to transfer? !!!!!!!!!!!!!!
 
     # Verify and decompress files #TODO move this into scripts/load_genome.pl
@@ -136,7 +136,7 @@ sub load {
 #        #TODO support detecting/untarring tar files also
 #        push @files, $fullpath;
 #    }
-    
+
 #    my $CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
 #    my $cmd = $conf->{SCRIPTDIR} . "/load_genome.pl ";
 #    $cmd .= '-user_name "' . $user->name . '" ';
@@ -154,7 +154,7 @@ sub load {
 #    $cmd .= "-config $CONFIGFILE"; #"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
 
     ($workflow_id, $error_msg) = create_genome_from_file(
-        user => $user, 
+        user => $user,
         metadata => {
             name => escape($data->{name}),
             description => escape($data->{description}),
@@ -168,7 +168,7 @@ sub load {
         irods => $data->{items}
     );
     unless ($workflow_id) {
-        return encode_json({ 
+        return encode_json({
             success => JSON::false,
             error => "Workflow submission failed: " . $error_msg
         });
@@ -180,7 +180,7 @@ sub load {
 #    close($log);
 #    if ( !defined( my $child_pid = fork() ) ) {
 #    	#$self->header_props( -status => 500 );
-#        return encode_json({ 
+#        return encode_json({
 #			success => JSON::false,
 #			error => "Cannot fork process: $!"
 #		});
@@ -202,7 +202,7 @@ sub load {
 			error => 'Link generation failed'
 		});
     }
-	
+
 	print STDERR "link: $tiny_link\n";
 	return encode_json({
 		success => JSON::true,

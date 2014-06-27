@@ -2,7 +2,6 @@
 use strict;
 use CoGeX;
 
-
 my $source_id = shift || 21;
 
 my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
@@ -23,4 +22,3 @@ foreach my $ds ($source->datasets)
 	$data{uc($ds->name)}=1;
       }
   }
-

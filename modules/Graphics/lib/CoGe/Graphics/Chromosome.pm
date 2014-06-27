@@ -7,9 +7,8 @@ use Benchmark;
 use GD;
 
 #################### main pod documentation begin ###################
-## 
-## 
-
+##
+##
 
 =head1 NAME
 
@@ -31,11 +30,11 @@ CoGe::Graphics::Chromosome - Object for drawing chromosomes that provides functi
   $c->set_region(start=>1, stop=>100000);
 
   #create a gene feature that will be added to the chromosome
-  #this feature object inherits from the base class CoGe::Graphics::Feature which 
+  #this feature object inherits from the base class CoGe::Graphics::Feature which
   #provides the basic ties for generating features on the chromosome.  The base class
-  #can be used alone and custom features designed ad hoc.  Addionally, you can create 
+  #can be used alone and custom features designed ad hoc.  Addionally, you can create
   #a new feature class by inheriting from the base class and designing you own custom
-  #drawing routines.  Please see CoGe::Graphics::Feature for details and refer to 
+  #drawing routines.  Please see CoGe::Graphics::Feature for details and refer to
   #CoGe::Graphics::Feature::Gene and others for examples.
 
   my $f = CoGe::Graphics::Feature::Gene->new();
@@ -59,10 +58,10 @@ CoGe::Graphics::Chromosome - Object for drawing chromosomes that provides functi
   $c->add_feature($f);
 
   #next, let's add some nucleotide sequence data and use the Feature::NucTide object.
-  #Remember, this object inherits from CoGe::Graphics::Feature, but has some special 
+  #Remember, this object inherits from CoGe::Graphics::Feature, but has some special
   #attributes and functionality to draw individual nucleotides in the background image
   #of the chromosome.  Refer to its documentation for more information
-  
+
   #First, we'll need to get some DNA sequence covering the region of interest.  This is
   #NOT a subroutine of this object and is mearly provided to fill in code.
   my $seq = get_dna_sequence(); #returns a string of DNA sequence (ATCGTC...) for the region
@@ -79,7 +78,7 @@ CoGe::Graphics::Chromosome - Object for drawing chromosomes that provides functi
      next unless $subseq && $rcseq;
      my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+1, options=>"gc"});
      my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+1, options=>"gc"});
-     $f1->show_label(1); 
+     $f1->show_label(1);
      $f2->show_label(1);
      $c->add_feature($f1) if $f1;
      $c->add_feature($f2) if $f2;
@@ -96,11 +95,10 @@ CoGe::Graphics::Chromosome - Object for drawing chromosomes that provides functi
 
   #you are finished!
 
-
 =head1 DESCRIPTION
 
 The overall goal of this object is to create an easy-to-use thingie (TM) for generating images
-of chromosomes on which enlightening "features" (genes, functional domains, expression data, 
+of chromosomes on which enlightening "features" (genes, functional domains, expression data,
 whatever) are painted with the use of MINIMAL PROGRAMMING and dependencies, yet perserving as
 much flexibility as possible so that the final image was fully customizable for advanced and
 patient programmers.
@@ -110,9 +108,9 @@ in PERL, I felt that something new was needed.  Most of the existing tools were 
 work with, required vast knowledge of many other modules, and were rather inflexible towards
 customization.  I wanted a module that would allow me to navigate a chromsome with as much ease
 as Google Maps(tm) allowed me to navigate my local neighborhood, plop tags at specific
-locales, and zoom in on things of interest. 
+locales, and zoom in on things of interest.
 
-To this end, I hope this package helps others create views of genomes with the features 
+To this end, I hope this package helps others create views of genomes with the features
 and patterns they find interesting.
 
 The specific aims of this package is to:
@@ -123,7 +121,6 @@ The specific aims of this package is to:
 
 4. Gives the user power to customize many aspects of the final image if desired.
 
-
 =head1 USAGE
 
  use CoGe::Graphics::Chromsome;
@@ -131,11 +128,9 @@ The specific aims of this package is to:
 
 =head1 BUGS
 
-
-
 =head1 SUPPORT
 
-Please contact Eric Lyons with questions, comments, suggestions, and most importantly code 
+Please contact Eric Lyons with questions, comments, suggestions, and most importantly code
 improvements.
 
 =head1 AUTHOR
@@ -180,7 +175,7 @@ BEGIN {
 "draw_chr_end", #flag for drawing "ends" of chromosome"
 "ruler_color", "tick_color", #color for ruler and ticks on ruler respectively
 "ruler_height", #height of ruler
-"image_width", "image_height", 
+"image_width", "image_height",
 "padding",
 "font",
 "chr_height", #the starting height of the chromosome,
@@ -197,7 +192,7 @@ BEGIN {
 "_chr_center", "_chr_height", "_chr_h1", "_chr_h2", #interal storage of chromosome image height positions
 "_features", #internal storage of features
 "_fill_features", #internal storeage of fill features
-"chr_end",#end position of chromosome -- this lets you stop the chromosome in the middle of the image 
+"chr_end",#end position of chromosome -- this lets you stop the chromosome in the middle of the image
 "_max_track", #place to store the maximum number of tracks on which to draw genomic features
 "region_generated",#place to store a flag for whether or not the region has been previously generated;
 "benchmark", #stores a flag for printing benchmark information for image generation
@@ -214,25 +209,24 @@ BEGIN {
  Usage     : my $c = CoGe::Graphics::Chromosome->new()
  Purpose   : Creates a Chromsome object and set up the default parameters
  Returns   : a CoGe::Graphics::Chromosome object
- Argument  : Currently no paramters can be passed in and used to set the defaults. 
+ Argument  : Currently no paramters can be passed in and used to set the defaults.
              However, you can use the objects Accessor functions to override the defaults
  Throws    : None
  Comment   : This is the mama-jama new.  If you don't know new, then you need to read up
            : on object oriented programming
 
-See Also   : 
+See Also   :
 
 =cut
 
 #################### subroutine header end ####################
-
 
 sub new
 {
     my ($class, %opts) = @_;
     #print STDERR "CHR IS BEING CALLED\n";
     my $self = bless ({}, ref ($class) || $class);
-    
+
     $self->chr_height($CHR_HEIGHT);
     $self->image_width($DEFAULT_WIDTH);
     $self->padding ($PADDING);
@@ -257,7 +251,6 @@ sub new
     return $self;
 }
 
-
 #################### subroutine header begin ####################
 
 =head2 accessor methods
@@ -267,7 +260,7 @@ sub new
  set during when new is called.  Many of the defaults can be changed easily by looking at the
  BEGIN block of the module and finding the appropriate global variable.
 
- DEBUG            =>    (DEFAULT: 0) When set to 1, this will cause the object to print debugging 
+ DEBUG            =>    (DEFAULT: 0) When set to 1, this will cause the object to print debugging
                          messages
 
  benchmark        =>    (DEFAULT: 0) Output benchmarking on image generation
@@ -301,27 +294,25 @@ sub new
  minor_tick_labels=>    Options for drawing minor tick lables.  1 draws them above the tick, -1 draws them below the tick,
                         0 for not drawing tick labels.  (DEFAULT: 0)
 
- chr_height       =>    (DEFAULT: 30)  This is the number, in pixels, of the starting height of the 
+ chr_height       =>    (DEFAULT: 30)  This is the number, in pixels, of the starting height of the
                         chromosome before adjustments for featurs are made
 
- image_width      =>    (DEFAULT: 200) The width in pixels of the final image. 
+ image_width      =>    (DEFAULT: 200) The width in pixels of the final image.
  alias:  iw
 
-
  image_height     =>    This holds the height of the image and is a value that is calculated
-                        dynamically by the module (sub set_image_height) when the image is 
+                        dynamically by the module (sub set_image_height) when the image is
                         generated.  IMPORTANT:  THIS VALUE SHOULD NOT BE MODIFIED BY THE USER
-                        DIRECTLY.  One thing to keep in mind is that, the height of the 
+                        DIRECTLY.  One thing to keep in mind is that, the height of the
                         chromosomal images are dynamic.  This is due to the factors such as the
                         number and scaling aspects of features on the chromosome,and
                         customize the final height of the image by specifying the scaling factors
-                        and heights of the various image parts, but it is not recommended to 
+                        and heights of the various image parts, but it is not recommended to
                         change this value as strange(tm) things may happen.
  alias:  ih
 
-
- padding         =>     (DEFAULT: 15) This is the padding (in pixels) used between most items 
-                        drawn on the final image.  
+ padding         =>     (DEFAULT: 15) This is the padding (in pixels) used between most items
+                        drawn on the final image.
 
  font            =>     (DEFAULT: "/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf")
                         This is the path to a true-type font used for text labels on the image
@@ -330,7 +321,7 @@ sub new
 
  fill_labels     =>     (DEFAULT: 1) Flag used for whether or not to print "fill" features labels.
                         A "fill feature" is one that is used to fill in a region on the chromosome
-                        and is distinct from regular features.  An example of this would be 
+                        and is distinct from regular features.  An example of this would be
                         the CoGe::Graphics::Feature::NucTide object with, by default, is a fill
                         feature.  This means that when one of these features is drawn, it fills
                         in the background area of the chromosome over the region is covers.  The
@@ -354,7 +345,7 @@ sub new
  skip_duplicate_features => flag for whether to skip two featrues if they are identical.  Default: 0
 
  draw_hi_qual       =>  (DEFAULT: 0)This flag determines if the high quality mapping function for drawing features
-                        on the chromosome is used or the low quality mapping.  The cost, of course, is 
+                        on the chromosome is used or the low quality mapping.  The cost, of course, is
                         speed (roughly twice as long for high quality).  Overall, there is only minor difference
                         between hi qual and low qual images
 
@@ -363,7 +354,6 @@ sub new
 =cut
 
 #################### subroutine header end ####################
-
 
 #################### subroutine header begin ####################
 
@@ -376,8 +366,6 @@ sub new
 #=cut
 
 #################### subroutine header end ####################
-
-
 
 sub start
   {
@@ -428,7 +416,6 @@ sub _region_stop
 
 #################### subroutine header end ####################
 
-
 sub set_region
   {
     my $self = shift;
@@ -462,7 +449,7 @@ sub set_region
            : layer          => 1
            : type           => "unknown"
            : Also, the feature's GD object will be initialized upon import.
-	   : There is a check for whether the added feature overlaps other features.  
+	   : There is a check for whether the added feature overlaps other features.
 	   : If so, a counter, $feat->_overlap is incemented in the feature object.
 	   : This is later used by the $self->_draw_feature algorithm to figure
 	   : out how to best draw overlapping features.  The overlap check is skipped
@@ -472,9 +459,6 @@ See Also   : CoGe::Graphics::Feature
 =cut
 
 #################### subroutine header end ####################
-
-
-
 
 sub add_feature
   {
@@ -487,7 +471,7 @@ sub add_feature
     foreach my $feat (@feats)
       {
 	unless (ref ($feat) =~ /Feature/i)
-	  {	
+	  {
 	    warn "Feature ($feat) does not appear to be a feature object.  Skipping. . .\n";
 	    next;
 	  }
@@ -512,7 +496,7 @@ sub add_feature
 	$feat->gd; #initialize feature;
 	$feat->mag(1) unless defined $feat->mag;
 	$feat->overlay(1) unless defined $feat->overlay();
-	$feat->_overlap(1) unless defined $feat->_overlap;#detects overlapping feature on the same track 
+	$feat->_overlap(1) unless defined $feat->_overlap;#detects overlapping feature on the same track
 	$feat->_overlap_pos(1) unless $feat->_overlap_pos; #placement for overlapping features
 	$feat->layer(1) unless $feat->layer;
 	$feat->type("unknown") unless $feat->type;
@@ -541,10 +525,10 @@ sub add_feature
  Purpose   : deletes a feature from the chromosome graphics object
  Returns   : nothing
  Argument  : a CoGe::Graphics::Feature object or derivative object
- Throws    : 
+ Throws    :
  Comment   : Features are stored in a complex hash for quick and speedy retrieval
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -567,13 +551,12 @@ sub delete_feature
  Argument  : string or none
                all (or blank) => deletes all the features
                <name of feature type> => e.g. "gene", "tRNA", "aa", "nt", etc.  depends on what feature derivatives used
- Throws    : 
- Comment   : 
+ Throws    :
+ Comment   :
 
 =cut
 
 #################### subroutine header end ####################
-
 
 sub delete_features
   {
@@ -588,7 +571,6 @@ sub delete_features
     delete $feats->{$type};
   }
 
-
 #################### subroutine header begin ####################
 
 =head2 get_features
@@ -598,14 +580,14 @@ sub delete_features
  Returns   : an array or array ref based on wantarray
  Argument  : optional hash with the following keys:
            : order => get features that are on that order.  Order is the order by which features
-                      are drawn on the chromosome.  order=>1 is for features to be drawn closest 
-                      to the center of the chromosome.  order=>2 is for the next layer of 
+                      are drawn on the chromosome.  order=>1 is for features to be drawn closest
+                      to the center of the chromosome.  order=>2 is for the next layer of
                       features, etc.
              type  => get features whose type match this value
-             strand=> get features from that strand (1, -1, +, -) etc.  
+             strand=> get features from that strand (1, -1, +, -) etc.
                       this just searches for matching on "-"
-             fill  => get "fill features".  Fill features are those feature that are drawn to 
-                      "fill in" a region on a chromsome.  An example of this would be a 
+             fill  => get "fill features".  Fill features are those feature that are drawn to
+                      "fill in" a region on a chromsome.  An example of this would be a
                       nucleotide where you would want to color an entire region of the chromosome
                       for a specific nucleotide.
              start => get features that start at this position
@@ -613,7 +595,7 @@ sub delete_features
 	     last_order => flag for retrieving only the feature with the highest order
              overlay    => get features at a particular overlay level
  Throws    : none
- Comment   : This is mostly used internally, but is provided in case you want to retrieve a 
+ Comment   : This is mostly used internally, but is provided in case you want to retrieve a
            : feature that was previously added
 
 See Also   : CoGe::Graphics::Feature
@@ -621,7 +603,6 @@ See Also   : CoGe::Graphics::Feature
 =cut
 
 #################### subroutine header end ####################
-
 
 sub get_features
   {
@@ -714,7 +695,6 @@ sub get_features
 
 #################### subroutine header end ####################
 
-
 sub get_feature
   {
     my $self = shift;
@@ -731,7 +711,6 @@ sub get_feature
 =cut
 
 #################### subroutine header end ####################
-
 
 sub get_feats
   {
@@ -752,17 +731,16 @@ sub get_feats
              file => is the path for the output png
  Throws    : none
  Comment   : This routine calls the method generate_region to render the image in GD
-           : and then calls GD->png to generate the png.  You may wish to generate the 
+           : and then calls GD->png to generate the png.  You may wish to generate the
            : picture in another format or do additional modifications on the GD object.
            : If so, you can call generate_region and then access the gd object direcly.
            : When this routine is finished, the gd object is cleared (set to undef) so
-           : that the same object may be used again to generate another image 
-See Also   : 
+           : that the same object may be used again to generate another image
+See Also   :
 
 =cut
 
 #################### subroutine header end ####################
-
 
 sub generate_png
   {
@@ -786,7 +764,6 @@ sub generate_png
     $self->_gd(undef);
   }
 
-
 #################### subroutine header begin ####################
 
 =head2 generate_region
@@ -802,12 +779,11 @@ sub generate_png
              _draw_ruler      (to generate the ruler at the top of the image)
              _draw_chromosome (to generate the chromosome image)
              _draw_features   (add features to the image)
-See Also   : 
+See Also   :
 
 =cut
 
 #################### subroutine header end ####################
-
 
 sub generate_region
   {
@@ -851,18 +827,18 @@ sub generate_region
  Usage     : $c->generate_imagemap
  Purpose   : Generates an image for the features on the chromosome
  Returns   : html image map string
- Argument  : mapname => name of the image map to use the HTML tag: <map name="mapname">             
+ Argument  : mapname => name of the image map to use the HTML tag: <map name="mapname">
  Throws    : none
  Comment   : This is also designed to use a javascript function called "change" to display
-           : information stored in the feature object description accessor function 
+           : information stored in the feature object description accessor function
              ($feat->description)in a textarea box.  For example:
            : <script type="text/javascript">
              function change( info ) {	document.info.info.value = info }
              </script>
              <FORM NAME="info"><TEXTAREA NAME="info" cols=50 rows=12></TEXTAREA></FORM>
-             Will cause the textarea to change to the features description as the mouse 
+             Will cause the textarea to change to the features description as the mouse
              is moved over the feature on the image.
-             Also, this usll generate a link in the imagemap using the URI stored in the 
+             Also, this usll generate a link in the imagemap using the URI stored in the
              feature's link accessor function ($feat->link)
              The alt field is the label of the feature.
 
@@ -875,7 +851,6 @@ See Also   : CoGe::Graphics::Feature
 =cut
 
 #################### subroutine header end ####################
-
 
 sub generate_imagemap
   {
@@ -923,7 +898,7 @@ sub generate_imagemap
 	next if $fe < 1;
 	next if $fs > $self->iw;
 	my $fw = sprintf("%.1f",$fe - $fs)+1; #calculate the width of the feature;
-	
+
 	next if $fw < 1; #skip drawing if less than one pix wide
 	my $link = $feat->link;
 	my $alt = $feat->alt || $feat->label;
@@ -952,8 +927,7 @@ sub generate_imagemap
 
 #################### subroutine header end ####################
 
-
-sub ih 
+sub ih
   {
     my $self = shift;
     return $self->image_height(@_);
@@ -969,13 +943,11 @@ sub ih
 
 #################### subroutine header end ####################
 
-
 sub iw
   {
     my $self = shift;
     return $self->image_width(@_);
   }
-
 
 #################### subroutine header begin ####################
 
@@ -988,14 +960,13 @@ sub iw
  Throws    : none
  Comment   : This checks to see if a gd object has been previously created and stored
            : in $self->_gd.  If not, it creates the GD object using $self->image_width
-           : and $self->image_height for dimensions.  
+           : and $self->image_height for dimensions.
 
 See Also   : GD (which is an excellent module to know if you need to generate images)
 
 =cut
 
 #################### subroutine header end ####################
-
 
 sub gd
   {
@@ -1032,7 +1003,6 @@ See Also   : GD
 
 #################### subroutine header end ####################
 
-
 sub get_color
   {
     my $self = shift;
@@ -1066,9 +1036,9 @@ sub get_color
 =head2 set_image_height
 
  Usage     : $c->set_image_height
- Purpose   : This routine figures out how tall the final image will be and sets 
+ Purpose   : This routine figures out how tall the final image will be and sets
              $self->image_height with that value.  The height of the image depends on
-             a number of factors including feature height, the number 
+             a number of factors including feature height, the number
              type and placement of features, the height of the positional ruler, the padding
              between picture elements, etc.
  Returns   : none
@@ -1083,7 +1053,6 @@ See Also   : $self->gd
 =cut
 
 #################### subroutine header end ####################
-
 
 sub set_image_height
   {
@@ -1130,7 +1099,6 @@ sub set_image_height
 
   }
 
-
 #################### subroutine header begin ####################
 
 =head2 chr_brush
@@ -1141,18 +1109,16 @@ sub set_image_height
  Argument  : none, but uses $self->chr_outer_color and $self->chr_inner_color to figure out the
              colors needed for the GD image
  Throws    : none
- Comment   : This routine generates a GD object that is used to paint the border of the 
+ Comment   : This routine generates a GD object that is used to paint the border of the
            : chromosome.  It makes a smooth blend from the interior color to the exterior color
            : of the chromosome.  The actual obejct is stored in $self->_chr_brush.  If that
-           : exists, that object is returned, otherwise a GD object is create, the image 
+           : exists, that object is returned, otherwise a GD object is create, the image
            : generated, the object store in $self->_chr_brush, and then returned.
 See Also   : Accessor functions $self->chr_outer_color, $self->chr_inner_color
 
 =cut
 
 #################### subroutine header end ####################
-
-
 
 sub chr_brush
   {
@@ -1178,9 +1144,6 @@ sub chr_brush
     return $self->_chr_brush;
   }
 
-
-
-
 #################### subroutine header begin ####################
 
 =head2 region_length
@@ -1191,9 +1154,9 @@ sub chr_brush
  Argument  : none
  Throws    : none
  Comment   : return the value of $self->region_stop - $self->region_start + 1;
-           : 
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1217,41 +1180,33 @@ sub region_length
 
 #################### subroutine header end ####################
 
-
-
-
 sub chr_length
   {
     shift->region_length(@_);
   }
-
-
-
 
 #################### subroutine header begin ####################
 
 =head2 _invert_chromosome
 
  Usage     : $c->_invert_chromosome
- Purpose   : makes up->down, down->up, etc.  
- Returns   : 
- Argument  : 
- Throws    : 
+ Purpose   : makes up->down, down->up, etc.
+ Returns   :
+ Argument  :
+ Throws    :
  Comment   : Should not be called directly.  Set invert_chromosome flag to 1 and this will be called by _draw_features
-           : 
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
 #################### subroutine header end ####################
 
-
-
 sub _invert_chromosome
   {
     my $self = shift;
-    #make up->down, down->up, left->right and right->left . . . up, up, down, down, left, right, left, right, B, A start! 
+    #make up->down, down->up, left->right and right->left . . . up, up, down, down, left, right, left, right, B, A start!
     foreach my $feat ($self->get_features())
       {
 	my $strand = $feat->strand =~ /-/ ? 1 : "-1";
@@ -1264,25 +1219,23 @@ sub _invert_chromosome
       }
   }
 
-
-
 #################### subroutine header begin ####################
 
 =head2 _check_overlap
 
  Usage     : $self->_check_overlap($feature);
- Purpose   : This internal method is called by $self->add_feature in determine if the 
+ Purpose   : This internal method is called by $self->add_feature in determine if the
            : being added overlaps another feature on the same strand, order, overlay level, and fill
 	   : type.  If so, it increments an internal counter in both features called
-	   : _overlap. A positional counter called _overlap_pos is incremented in the feature 
-	   : being searched.  This counter is later used by $self->_draw_feature to 
+	   : _overlap. A positional counter called _overlap_pos is incremented in the feature
+	   : being searched.  This counter is later used by $self->_draw_feature to
 	   : determine the appropriate way to draw the overlapping features
  Returns   : none
  Argument  : a CoGe::Graphics::Feature object
  Throws    : none
  Comment   : this algorithm can get slow with lots of features and doing an overlap search.
-           : The overlap search algorithm is a linear search through all previously entered features 
-             for any that overlap the newly added feature.  This can probably go faster with a different 
+           : The overlap search algorithm is a linear search through all previously entered features
+             for any that overlap the newly added feature.  This can probably go faster with a different
              algo.
 
 See Also   : $self->add_feature();
@@ -1373,15 +1326,13 @@ sub _check_duplicate
  Throws    : none
  Comment   : This routine will generate the chromsome background picture as well as calculating
            : the center and height of the chromosome picture.  These latter values are important
-           : for the drawing of features.  This method is called internally by 
+           : for the drawing of features.  This method is called internally by
            : $self->generate_region
-See Also   : 
+See Also   :
 
 =cut
 
 #################### subroutine header end ####################
-
-
 
 sub _draw_chromosome
   {
@@ -1397,8 +1348,7 @@ sub _draw_chromosome
     my $xe = $self->region_stop > $self->chr_end ? $w-$w*($self->region_stop-$self->chr_end -1)/($self->region_stop-$self->start-1) : $w;
 #    print STDERR join ("\t",$self->start, $self->stop, $self->chr_end, $self->chr_length,($self->chr_end-$self->region_stop - 1)/($self->chr_end-$self->start-1)),"\n";
     print STDERR "Chromosome image: Height/2: $ch, Height Center: $hc, xs: $xs, xe: $xe  draw_chromsome: ".$self->draw_chromosome."\n" if $self->DEBUG;
-    
-    
+
     my $brush = $self->chr_brush;
     $gd->setBrush($brush);
     $gd->line($xs, $hc-$ch-$brush->height, $xe, $hc-$ch-$brush->height, gdBrushed) unless $xe < 0;
@@ -1410,14 +1360,14 @@ sub _draw_chromosome
     $gd->line($xs, $hc, $xe, $hc, gdStyled) unless $xe < 0;
     $self->_draw_chr_end (x=>$xs, dir=>"left", 'y'=>$hc) if ($xs > 0) && $self->draw_chr_end;
     $self->_draw_chr_end (x=>$xe, dir=>"right",'y'=> $hc) if ($xe < $w) && $self->draw_chr_end;
-    
+
   }
 
 #################### subroutine header begin ####################
 
 =head2 _draw_chr_end
 
- Usage     : $c->_draw_chr_end (x=>$x_pos, dir=>"left", y=>$y_pos) 
+ Usage     : $c->_draw_chr_end (x=>$x_pos, dir=>"left", y=>$y_pos)
  Purpose   : this internal method draws a semi-circle end to the chromosome picture (if needed)
  Returns   : none
  Argument  : hash of key-value pairs where:
@@ -1426,14 +1376,13 @@ sub _draw_chromosome
              dir => ('left' or 'right') for which end of the chromosome this will lie
  Throws    : none
  Comment   : this is called internall by $self->_draw_chromosome
-           : 
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
 #################### subroutine header end ####################
-
 
 sub _draw_chr_end
   {
@@ -1444,7 +1393,7 @@ sub _draw_chr_end
     my $y = $opts{'y'}; #$ch/2+$self->_image_h_used+$self->mag/2; #height of center of chromsome image
     my $gd = $self->gd;
     my $ch = $self->_chr_height+$self->chr_brush->height*2.5;
-    
+
     my @arc1 = $dir =~ /left/i ? (90, 180) : (0, 90);
     my @arc2 = $dir =~ /left/i ? (180, 270) : (270, 360);
     my @arc3 = $dir =~ /left/i ? (90, 270) : (270,90);
@@ -1459,7 +1408,6 @@ sub _draw_chr_end
     $gd->setBrush($self->chr_brush);
 
   }
-
 
 #################### subroutine header begin ####################
 
@@ -1483,7 +1431,6 @@ See Also   : $self>_draw_feature for individual feature rendering
 
 #################### subroutine header end ####################
 
-
 sub _draw_features
   {
     my $self = shift;
@@ -1503,7 +1450,7 @@ sub _draw_features
 	$offset = 0 if $feat->fill;
 	$feat_h = ($self->_chr_height)/2 * $feat->fill_height if $feat->fill;
 	my $feat_mag_offset = ($feat_h*$feat->mag - $feat_h)/2;
-	my $y = $feat->strand =~ /-/ ? 
+	my $y = $feat->strand =~ /-/ ?
 	  $c + $offset + $feat_h  * ($feat->_overlap_pos-1) - $feat_mag_offset+ 1  :
 	  $c - $offset - $feat_h  *  $feat->_overlap_pos - $feat_mag_offset;
 #	print STDERR "overlap: ", $feat->_overlap," ",$feat->_overlap_pos," ",$feat->type," ",$feat->start," ",$y," ",$feat_h,"\n" if $feat->_overlap > 1;
@@ -1545,7 +1492,7 @@ sub _draw_features
  Throws    : 0 if a valid feature object was not specified
  Comment   : This uses GD->copyResampled to resample the gd image from the feature object onto
            : the chromosome gd objects.  The feature height is determined by either a specified
-             parameter or by the feature object.  The width of the feature is calculated based 
+             parameter or by the feature object.  The width of the feature is calculated based
              on the chromosomal location of the feature (usually in nucleotides).  Together
              this easily allows for the generation of a feature image on the chromosome image
              that scales smoothly at the requested magnification.  This routine is called by
@@ -1603,7 +1550,7 @@ sub _draw_feature
 	    #1. create a blank image of the appropriate size
 	    my $newgd = GD::Image->new ($fw, $ex_hei*$scale,[1]);
 	    #2. copy, resize, and resample the feature onto the new image
-	    $newgd->copyResampled($ei, 0, 0, 0, 0, $newgd->width, $newgd->height, $ex_wid, $ex_hei);  
+	    $newgd->copyResampled($ei, 0, 0, 0, 0, $newgd->width, $newgd->height, $ex_wid, $ex_hei);
 	    if ($highqual)
  	      {
  		#3. find any colors that are close to white and set them to white.
@@ -1637,7 +1584,7 @@ sub _draw_feature
 	my $srcw = $feat->stop-$feat->start+1 - $srcx-1;
 	$srcw -= ($feat->stop-$re) if $re< $feat->stop;
 	# source image   destx dest y  srcx srcy  destw desth  srcw  srch
- 	$newgd->copyResized($feat->gd, 0, 0, $srcx, 0, $fw, $ih, $srcw, $feat->ih);  
+ 	$newgd->copyResized($feat->gd, 0, 0, $srcx, 0, $fw, $ih, $srcw, $feat->ih);
 	if ($highqual)
 	      {
 		#3. find any colors that are close to white and set them to white.
@@ -1663,7 +1610,7 @@ sub _draw_feature
     $ymin = sprintf("%.0f",$y);
     $xmax = sprintf("%.0f",$fe);
     $ymax = sprintf("%.0f",$y+$ih-1);
-    
+
     my $size = $feat->font_size ? $feat->font_size : $ih;
     if ($self->fill_labels && $feat->fill) {$size=$fw >= 15 ? 15 : $fw;}
     $sy=$y+$ih/2-$size/2 unless $sy;
@@ -1684,14 +1631,13 @@ sub _draw_feature
  Argument  : none
  Throws    : none
  Comment   : formula is image_width/visable_region_size (nt)
-           : 
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
 #################### subroutine header end ####################
-
 
 sub _calc_unit_size
   {
@@ -1708,15 +1654,14 @@ sub _calc_unit_size
  Returns   : none
  Argument  : none
  Throws    : none
- Comment   : 
+ Comment   :
            : called by $self->generate_region
 
-See Also   : 
+See Also   :
 
 =cut
 
 #################### subroutine header end ####################
-
 
 sub _draw_ruler
   {
@@ -1769,19 +1714,18 @@ sub _draw_ruler
               range_end   => number representing the ending poitn of the ruler
               scale       => points along the range at which to generate a tick mark
  Throws    : 0
- Comment   : This method will convert numbers drawn at the tick marks to use 
+ Comment   : This method will convert numbers drawn at the tick marks to use
               "K" if the number ends in 000
               "M" if the nubmer ends in 000000
               "G" if the number ends in 000000000
-           : This method also generates ticks that are the size of one chromsomal unit 
+           : This method also generates ticks that are the size of one chromsomal unit
              (usually nucleotides) if the magnification is high enough.
            : This method is called by $self->_generate_ruler
-See Also   : 
+See Also   :
 
 =cut
 
 #################### subroutine header end ####################
-
 
 sub _make_ticks
   {
@@ -1875,7 +1819,6 @@ See Also   : GD
 
 #################### subroutine header end ####################
 
-
 sub _gd_string
   {
     my $self = shift;
@@ -1896,7 +1839,7 @@ sub _gd_string
     my $angle = $opts{angle} || $opts{ANGLE} || 0;
     $color = $self->get_color($color);
     my $gd = $self->gd;
-    
+
     if (-r $self->font)
       {
 	$gd->stringFT($color, $self->font, $size, $angle, $x, $y+$size, $text);
@@ -1917,26 +1860,21 @@ sub round
 
 #################### subroutine header begin ####################
 
-=head2 
+=head2
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comment   : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comment   :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
 #################### subroutine header end ####################
 
-
-
-
-
     1;
 # The preceding line will help the module return a true value
-

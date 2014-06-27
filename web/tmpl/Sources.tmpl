@@ -10,13 +10,13 @@ $(document).ready(function(){
 		dataType: "html",
 		cache: false,
 	});
-	
+
 	set_table();
-	
+
 	$(".dialog_box").dialog({autoOpen: 0, width: 600});
 });
 
-function set_table () {	 
+function set_table () {
 	$('#source_table').tablesorter({widgets: ['zebra']});
 }
 
@@ -27,10 +27,10 @@ function input_focus(div_id) {
 function run_get_sources(opts){
 	if (!opts) { opts={}; }
 	divid = opts.divid; // ID for DIV where results will be displayed in page
-	
+
 	// create a new closure who's scope does *not*
-	// include the `divid` value so that callback will 
-	// not clobber the `divid` variable 
+	// include the `divid` value so that callback will
+	// not clobber the `divid` variable
 	var create_callback = function(divid) {
 		var local_divid = divid;
 		return function (data) {
@@ -114,7 +114,7 @@ function update_source_info (dsid){
 		alert('Error: Must have a name');
 		return;
 	}
-	
+
 	desc = $('#edit_desc').val();
 	link = $('#edit_link').val();
 
@@ -145,11 +145,9 @@ function update_source_info (dsid){
 
 </TMPL_IF> <!-- MAIN -->
 
-
-
 <TMPL_IF NAME=SOURCE_TABLE>
 <table id="source_table" class="small ui-widget-content ui-corner-all">
- <thead align="left"> 
+ <thead align="left">
   <tr>
    <th>Name</th>
    <th>Description</th>
@@ -190,8 +188,6 @@ function update_source_info (dsid){
 </TABLE>
 </TMPL_IF> <!-- SOURCE_TABLE -->
 
-
-
 <TMPL_IF NAME=EDIT_SOURCE_INFO>
 <table class="small">
  <tr>
@@ -205,12 +201,11 @@ function update_source_info (dsid){
  <tr>
   <td>Link:</td>
   <td><input id="edit_version" type="textbox" size="53" value="<TMPL_VAR NAME=LINK>"></td>
- </tr>  
+ </tr>
 </table>
 <br>
 <span onClick="update_source_info('<TMPL_VAR NAME=DSID>');" class='ui-button ui-corner-all ui-button-go'>Update Source Info</span>
 </TMPL_IF> <!-- EDIT_SOURCE_INFO -->
-
 
 <TMPL_IF NAME=ADMIN_AREA>
 <!--

@@ -56,7 +56,7 @@ Chromosome count mismatch!  Continuing.  Check errors below.
 
 foreach my $chr1 ( sort $dsg1->chromosomes ) {
 	unless ( $ds2->{$chr1} ) {
-		print STDERR 
+		print STDERR
 "Chromosome $chr1 does not exist in dataset_group_2.  Please check the chromosome names if you think this is in error.  Skipping to next chromosome\n" if $DEBUG;
 		next;
 	}

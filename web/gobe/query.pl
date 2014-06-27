@@ -8,14 +8,10 @@ use POSIX;
 use JSON::Syck;
 use LWP::Simple;
 
-
-
 my $q = new CGI;
 print "Content-Type: text/html\n\n";
 
-
 my $tmpdir = "/opt/apache/CoGe/tmp/GEvo/";
-
 
 if($ENV{SERVER_NAME} !~ /(toxic|synteny)/){
     $tmpdir = "tmp/";
@@ -36,10 +32,10 @@ sub get_cns {
     # (and here as well). use those with image_id == 1 to find pair in
     # image_id == 2, if we cant find the pair, then it must be
     # off-screen.
-    $sth = $dbh->prepare(qq! SELECT xmin, xmax, ymin, ymax, id, pair_id, image_id  
+    $sth = $dbh->prepare(qq! SELECT xmin, xmax, ymin, ymax, id, pair_id, image_id
                              FROM image_data WHERE bpmin || "," || bpmax IN
-                            (SELECT bpmin || "," || bpmax 
-                                FROM image_data WHERE type = "CNS") 
+                            (SELECT bpmin || "," || bpmax
+                                FROM image_data WHERE type = "CNS")
                             AND type = "HSP"; !);
     $sth->execute();
     my @cnss;
@@ -72,9 +68,6 @@ sub get_cns {
     return \@coordslist;
 }
 
-
-
-
 if ($q->param('get_info')){
     my %result;
     my %data;
@@ -99,7 +92,7 @@ if ($q->param('get_info')){
 
     my $i = 0;
     foreach my $item (sort {$a<=>$b} keys %data) {
-        
+
         my $img = $data{$item}{img};
         my $name = $img->{image_name};
         $result{$name}{title} = $img->{title};
@@ -135,7 +128,7 @@ if ($q->param('predict')){
         last if $seen == 2;
         chomp $line;
         if ($line =~ /bl2seq/){ $bl2seq = $line; }
-        elsif ($line =~ /cutoff/i){ 
+        elsif ($line =~ /cutoff/i){
             print STDERR $line . "\n";
             if ($seen == 0 ){ $eval1 = $line; $seen++; }
             elsif ($seen == 1){ $eval2 = $line; $seen++; }
@@ -178,14 +171,14 @@ elsif ($q->param('bbox')) {
     my $query ="SELECT * FROM image_data WHERE ? + 1 > xmin AND ? - 1 < xmax AND ? - 1 > ymin AND ? + 1 < ymax AND image_id = ? and pair_id != -99 and type = 'HSP'";
     $sth = $dbh->prepare($query);
     $sth->execute($bbox[2], $bbox[0], $bbox[3], $bbox[1], $img_id);
-} 
+}
 elsif($all){
     $sth = $dbh->prepare("SELECT distinct(image_track) FROM image_data WHERE ? BETWEEN ymin and ymax and image_id = ? order by abs(image_track) DESC");
     $sth->execute($y, $img_id);
     my ($track) = $sth->fetchrow_array();
 
-    $statement = qq{ SELECT id, xmin, xmax, ymin, ymax, image_id, image_track, pair_id, color FROM image_data 
-                    WHERE ( (image_track = ?) or (image_track = (? * -1) ) ) 
+    $statement = qq{ SELECT id, xmin, xmax, ymin, ymax, image_id, image_track, pair_id, color FROM image_data
+                    WHERE ( (image_track = ?) or (image_track = (? * -1) ) )
                     and image_id = ? and pair_id != -99 and type = "HSP" };
     $sth = $dbh->prepare($statement);
 
@@ -199,10 +192,6 @@ else{
 #  print STDERR Dumper \@params;
     $sth->execute(@params);
 }
-
-
-
-
 
 my @results;
 while( my $result = $sth->fetchrow_hashref() ){

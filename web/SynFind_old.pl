@@ -666,7 +666,7 @@ sub get_orgs_feat {
     }
     my $html;
     $html .=
-        qq{<FONT CLASS ="small" id="org_count">Organism count: } 
+        qq{<FONT CLASS ="small" id="org_count">Organism count: }
       . $count
       . qq{</FONT>\n<BR>\n};
     if ( $search && !@opts ) {
@@ -780,7 +780,7 @@ sub get_data_source_info_for_accn {
         $count++;
     }
     $html .= qq{</SELECT>\n};
-    return ("<font class=small>Dataset count: " 
+    return ("<font class=small>Dataset count: "
           . $count
           . "</font>\n<BR>\n"
           . $html );
@@ -842,7 +842,6 @@ sub go_synfind {
     $synfind_link .= ";dsgid=$dsgids;qdsgid=$source_dsgid";
     $synfind_link .= ";sd=$depth" if $depth;
 
-
     my @ids = split( /,/, $dsgids );
 
     my $list_link =
@@ -861,7 +860,6 @@ sub go_synfind {
 
     #my $name = "<a href='OrganismView.pl?dsgid=$source_dsgid' target='_blank'>$source_name</a>";
 
-
     my $log_msg = 'Searched ' . $list_link . '  for feature ' . $feat_url;
 
     my $tiny_synfind_link = CoGe::Accessory::Web::get_tiny_link(
@@ -878,7 +876,6 @@ sub go_synfind {
         page    => $PAGE_TITLE,
         link => $tiny_synfind_link,
     );
-
 
    #convert numerical codes for different scoring functions to appropriate types
     if ( $scoring_function == 2 ) {
@@ -1236,16 +1233,16 @@ qq{<br><br><a href="/wiki/index.php/SynFind#Syntenic_Depth" target=_new>Syntenic
     	# mdb added 10/8/13
     	my $blastfile_link = $item->{blastfile};
     	$blastfile_link =~ s/$P->{COGEDIR}//;
-    	
+
         $html .= qq{<tr>};
         $html .= qq{<td>} . $item->{org_name};
         $html .=
             qq{<td><a href="$blastfile_link" target=_new>Raw Blast File</a>};
-            
+
         # mdb added 10/8/13
     	$blastfile_link = $item->{filtered_blastfile};
-    	$blastfile_link =~ s/$P->{COGEDIR}//;    
-            
+    	$blastfile_link =~ s/$P->{COGEDIR}//;
+
         $html .=
             qq{<td><a href="$blastfile_link" target=_new>Filtered Blast File</a>};
     }

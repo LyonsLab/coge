@@ -235,7 +235,7 @@ accn: foreach my $accn (@accns) {
 		}
 	  )
 	  if $GO;
-	  
+
 	### Main Feature Processing Loop ###
 	my @gbs;
 	if ( @{ $genbank->wgs_data } ) {
@@ -289,7 +289,7 @@ accn: foreach my $accn (@accns) {
 	else {
 		push @gbs, $genbank;
 	}
-	
+
 	foreach my $entry (@gbs) {
 		$chromosome = "contig_" . $entry->accession if @{ $genbank->wgs_data };
 		print $log "Processing features for " . $entry->accession . "...\n"
@@ -616,7 +616,7 @@ accn: foreach my $accn (@accns) {
 				print $log "Error adding genome to database\n";
 				exit(-1);
 			}
-			
+
 			print $log "log: Added genome id", $genome->id, "\n"; # !!!! don't change, gets parsed by calling code
 			print $log "Creating install path for sequences ...\n";
 			$install_dir =
@@ -665,9 +665,9 @@ accn: foreach my $accn (@accns) {
 	}
 }
 
-unless ($genome) { 
+unless ($genome) {
 	print $log "log: No new datasets to load, see links above to existing ones\n";
-	
+
 	# Save result document
     if ($result_dir) {
         mkpath($result_dir);
@@ -678,7 +678,7 @@ unless ($genome) {
             }
         );
     }
-	
+
 	exit(-1);
 }
 
@@ -1071,13 +1071,12 @@ Welcome to $0!  This program loads genbank entries into the CoGe genomes databas
 
 Example usage: genbank_genome_loader.pl -config /opt/apache/coge/web/coge.conf -go -accn <accn_1> -accn <accn_2>
 
-
 Options:
  -help|h       :      Print this message
 
  -go (flag)    :      Make database inserts happen.  Otherwise, it is a fake load.  No options.
 
- -accn         :      Specify the genbank/refseq accession(s) to load.  It is recommended that a version 
+ -accn         :      Specify the genbank/refseq accession(s) to load.  It is recommended that a version
                       number is not used.  Multiple accessions for a single genome may be specified by:
                       -accn <accn_1> -accn <accn_2> -accn <accn_3>
 
@@ -1086,9 +1085,8 @@ Options:
  -config       :      Optional:  CoGe conf file for determining database connection stuff, temp_dir, server
                       for links, and sequence installation directory for fasta files.
 
-
- -temp_dir|staging_dir|td:  Directory to which genbank files are downloaded for processing.  
-                            Default: /tmp/ncbi/".ceil(rand(9999999999)) 
+ -temp_dir|staging_dir|td:  Directory to which genbank files are downloaded for processing.
+                            Default: /tmp/ncbi/".ceil(rand(9999999999))
 
  -install_dir  :      Directory for installing sequences.  Includes indexing them.
 
@@ -1111,4 +1109,3 @@ Options:
 
 	};
 }
-

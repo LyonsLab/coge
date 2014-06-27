@@ -26,6 +26,5 @@ foreach my $ds ($coge->get_current_datasets_for_org(org=>$org->id))
       {
 	print $feat->fasta,"\n";
       }
-		      
-  }
 
+  }

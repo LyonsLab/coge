@@ -3,7 +3,6 @@ use strict;
 use Getopt::Long;
 use CoGeX;
 
-
 my ($help, $dsgid, $version, $type, $chr, $DEBUG, $user, $pass, $db);
 
 GetOptions ("h|help" =>  \$help,
@@ -18,8 +17,6 @@ GetOptions ("h|help" =>  \$help,
 
 $help = 1 unless ($dsgid);
 help() if $help;
-
-
 
 my $connstr = "dbi:mysql:dbname=$db;host=localhost;port=3307";
 my $coge = CoGeX->connect($connstr, $user, $pass );
@@ -39,8 +36,6 @@ foreach my $ds ($dsg->datasets)
 	print join ("\t", $feat->type->name, $feat->chr, $feat->start, $feat->stop, $feat->strand, join (", ", $feat->names)),"\n";
       }
   }
-		
-
 
 sub help
   {
@@ -50,7 +45,7 @@ Welcome to $0
 This program generates a table of all the features in a genome
 
 Options:
-  
+
   -h | -help               prints this message
 
   -dsgid                   CoGe dataset group database id
@@ -65,7 +60,6 @@ Options:
   -db                       database database name
 
   -d | -debug              print debugging messages
-
 
 };
 exit(0);

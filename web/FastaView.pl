@@ -37,7 +37,6 @@ my %FUNCTIONS = (
     %ajax,
 );
 
-
 #CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 my $pj = new CGI::Ajax(%FUNCTIONS);
 $pj->js_encode_function('escape');
@@ -111,7 +110,7 @@ sub gen_html {
         upstream   => $upstream,
         downstream => $downstream
     );
-    
+
     my $json = get_json(
         prot       => $prot,
         fids       => \@fids,
@@ -121,7 +120,7 @@ sub gen_html {
         id_only    => $id_only,
         upstream   => $upstream,
         downstream => $downstream
-    );    
+    );
 
     if ($text) {
         return $seqs;
@@ -230,10 +229,10 @@ sub get_json { # mdb added 2/28/14 for genfam integration
             }
             my ($feat) = $coge->resultset('Feature')->find($fid);
             next unless ($feat);
-            
+
             my ($dsg) = $feat->dataset->genomes;
             next if ( !$USER->has_access_to_genome($dsg) );
-            
+
             my $tmp = $feat->fasta_object(
                 col        => 100,
                 prot       => $prot,
@@ -244,8 +243,8 @@ sub get_json { # mdb added 2/28/14 for genfam integration
             push @obj, $tmp;
         }
     }
-      
-    return encode_json({fasta => \@obj});  
+
+    return encode_json({fasta => \@obj});
 }
 
 sub gen_file {
@@ -310,4 +309,3 @@ qq{<input type=hidden id=fids value=$fids><input type=hidden id=gstid value=$gst
     $template->param( genfam => $P->{GENFAMURL});
     return $template->output;
 }
-

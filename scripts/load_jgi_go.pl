@@ -12,7 +12,6 @@ my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
-
 GetOptions ( "dsid=i" => \$dsid,
              "go=s"    => \$GO,
              "debug=s" => \$DEBUG,
@@ -35,15 +34,13 @@ The gff file needs to be previously loaded to and present in order to match jgi 
 my $protid2name = process_gff_file($gff_file);
 process_go_file($go_file);
 
-
-
 sub process_go_file
   {
     my $file = shift;
     my %go;
     my %goid;
     my %orgs;
-    
+
     open (IN, $file);
     while (<IN>)
       {
@@ -60,7 +57,7 @@ sub process_go_file
 	    ($atg) = $coge->resultset('AnnotationTypeGroup')->search({name=>$go_cat});
 	    $go{$line[3]} = $atg;
 	  }
-	
+
 	print " no go cat for $line[3]\n" if $DEBUG && !$atg;
 	my $at = $goid{$line[4]};
 	unless ($at)

@@ -56,9 +56,9 @@ BEGIN {
  Returns   : CoGeX object
  Argument  : none
  Throws    : none
- Comments  : 
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -94,8 +94,8 @@ sub dbconnect {
 
 =head2 get_features_in_region
 
- Usage     : $object->get_features_in_region(start   => $start, 
-                                             stop    => $stop, 
+ Usage     : $object->get_features_in_region(start   => $start,
+                                             stop    => $stop,
                                              chr     => $chr,
                                              ftid    => $ftid,
                                              dataset_id => $dataset->id(),);
@@ -112,9 +112,9 @@ sub dbconnect {
              count   => flag to return only the number of features in a region
              ftid    => limit features to those with this feature type id
  Throws    : none
- Comments  : 
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -291,8 +291,8 @@ sub get_features_in_region_split {
 
 =head2 count_features_in_region
 
- Usage     : $object->count_features_in_region(start   => $start, 
-                                             stop    => $stop, 
+ Usage     : $object->count_features_in_region(start   => $start,
+                                             stop    => $stop,
                                              chr     => $chr,
                                              dataset_id => $dataset->id());
 
@@ -305,9 +305,9 @@ sub get_features_in_region_split {
                         CoGe::Dataset object)
                         of the dna seq will be returned
  Throws    : none
- Comments  : 
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 

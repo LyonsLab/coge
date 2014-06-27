@@ -9,7 +9,6 @@ use vars qw($P $PAGE_TITLE
   $USER $BASEFILE $coge $cogeweb %FUNCTION
   $FORM    );
 
-
 $PAGE_TITLE = 'SeqType';
 
 $FORM = new CGI;
@@ -58,4 +57,3 @@ sub gen_body {
     $template->param( SEQTYPE => \@types );
     return $template->output;
 }
-

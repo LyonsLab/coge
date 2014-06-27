@@ -23,14 +23,14 @@ if (ajax.length)
 
 function init_table () {
 $(function(){
- $("#featlist").tablesorter({		
+ $("#featlist").tablesorter({
 // 		sortColumn: 'HSP No.',			// Integer or String of the name of the column to sort by.
 		sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
 		headerClass: 'header',			// Class name for headers (th's)
 		widgets: ['zebra'],
 		textExtraction: 'complex',
-		headers: {0: {sorter: false}},					
+		headers: {0: {sorter: false}},
 		sortList: [[2,0],[3,0]],
 		});
  });
@@ -75,7 +75,6 @@ jQuery.fn.checkCheckboxes = function()
 	//returnWhat = this;
 };
 
-
 jQuery.fn.unCheckCheckboxes = function()
 {
 	//var returnWhat = jQuery([]);
@@ -104,7 +103,7 @@ jQuery.fn.unCheckCheckboxes = function()
 		 <td>
          <TMPL_VAR NAME=CHR_IMAGE>
          </td>
-   </tr>       
+   </tr>
 </TMPL_LOOP>
 </table>
 </div>
@@ -138,7 +137,7 @@ jQuery.fn.unCheckCheckboxes = function()
   </tbody>
  </table>
  </form>
- Select color: 
+ Select color:
  <select id=color_select>
  <option value='red'>Red</option>
  <option value='blue'>Blue</option>

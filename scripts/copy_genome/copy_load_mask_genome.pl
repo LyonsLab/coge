@@ -111,7 +111,6 @@ unless ($seq_only)
     add_annotations( gid1 => $gid, gid2 => $new_gid );
   }
 
-
 if ($result_dir) {
     mkpath($result_dir);
     CoGe::Accessory::TDS::write(
@@ -184,7 +183,7 @@ sub load_genome {
 		}
 	}
 	close IN;
-	
+
 	unless ($genomeid) {
 		print $log "Unable able to find gid in log file: " . $staging_dir . "/log.txt";
 		exit(-1);
@@ -222,11 +221,11 @@ sub mask_genome {
 	my $masked = $staging_dir . "/" . $rnd . ".masked";
 	my $hard   = $masked . ".hard";
 	my $faa    = $genome->file_path;
-	
+
 	print $log "log: Running WindowMasker (stage 1)\n";
 	my $cmd    = $windowmasker . " -in " . $faa . " -mk_counts -out " . $counts;
 	execute($cmd);
-	
+
 	print $log "log: Running WindowMasker (stage 2)\n";
 	$cmd =
 	    $windowmasker . " -in " . $faa
@@ -235,7 +234,7 @@ sub mask_genome {
 	  . " -outfmt fasta -dust T -out "
 	  . $masked;
 	execute($cmd);
-	
+
 	print $log "log: Running hard masking\n";
 	$cmd = $hard_mask . " < $masked > $hard";
 	execute($cmd);

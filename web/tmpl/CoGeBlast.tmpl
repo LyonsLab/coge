@@ -9,7 +9,7 @@ $(document).ready(function(){
 		dataType: "html",
 		cache: false,
 	});
-	
+
 	$(".dialog_box").dialog({ autoOpen: false, width: 500 });
 
 	//Object Generation
@@ -207,11 +207,11 @@ function update_checkbox(name, dist, hspid, id){
 	var id_array = new Array();
 	if (id) {
 		id_array = id.split(',');
-		
+
 		// mdb removed 5/19/14 issue 382 - jquery not working with html injection
 		//$('#checkbox'+id_array[0]).attr("id","checkbox"+id_array[1]);
 		//$('#'+id_array[0]).attr("value",id_array[1]).attr("id",id_array[1]);
-		
+
 		// mdb added 5/19/14 issue 382
 		var old_id = id_array[0];
 		var new_id = id_array[1];
@@ -1265,12 +1265,12 @@ function toggle_title(id, full, partial) {
         <br>
     </div>
   </tmpl_if>
-  
+
   <aside class="info">
 	  <p><a class="bold" href="http://genomevolution.org/wiki/index.php/CoGeBlast" target="_blank">CoGeBlast</a> provides an interface to blast any genome within CoGe and view tabular and graphical results.
 		    <span class="link" onClick="$(this).remove(); $('#getting_started').fadeIn();">More...</span>
 	  </p>
-	  
+
 	  <div id="getting_started" class="hidden" style="max-width:90%;">
 	   Steps:
 	   <ol>
@@ -1279,7 +1279,7 @@ function toggle_title(id, full, partial) {
 	   	 <li>Configure the analysis parameters
 	   	 <li>Click the <strong>Run CoGe Blast</strong> button to start the analysis
 	   </ol>
-	   
+
 	   Results:
 	   <ol>
 	   <li>Visualize an overview of blast hits (High-scoring Sequence Pairs; HSP) in relationship to their genomic locations
@@ -1310,8 +1310,8 @@ function toggle_title(id, full, partial) {
 		   </ol>
 		<ol>
 	  </div>
-  </aside>  
-  
+  </aside>
+
   <div id="table_opts_dialog" class="dialog_box hidden" title="Table Information Options">
     <table id="show_columns" class="small ui-widget-content ui-corner-all" style="padding:5px;">
       <tr>
@@ -1346,7 +1346,6 @@ function toggle_title(id, full, partial) {
   <div id="big_picture" title="Enlarged Image of HSP Hits" class="dialog_box hidden"></div>
 
   <div id="sequence_popup" class="dialog_box hidden" title="Sequence Information"></div>
-
 
   <div id="feature_info_popup" class="dialog_box hidden" title="Feature Information">
     <span class="loading">Loading...</span>
@@ -1388,8 +1387,6 @@ function toggle_title(id, full, partial) {
   </table>
 </TMPL_IF> <!-- MAIN -->
 
-
-
 <TMPL_IF NAME="BLAST_NU">
   <th align="left" valign="top">Nucleotide Specific Parameters
     <br>
@@ -1410,8 +1407,6 @@ function toggle_title(id, full, partial) {
     </TABLE>
   </th>
 </TMPL_IF> <!-- BLAST_NU -->
-
-
 
 <TMPL_IF NAME="BLAST_PRO">
   <TH align="left" valign="top">Protein Specific Parameters
@@ -1447,8 +1442,6 @@ function toggle_title(id, full, partial) {
   </TH>
 </TMPL_IF> <!-- BLAST_PRO -->
 
-
-
 <TMPL_IF NAME="NCBI_BLAST_NU">
   <TH align="left" valign="top">Nucleotide Specific Parameters
     <br>
@@ -1469,8 +1462,6 @@ function toggle_title(id, full, partial) {
     </TABLE>
   </TH>
 </TMPL_IF> <!-- NCBI_BLAST_NU -->
-
-
 
 <TMPL_IF NAME="NCBI_BLAST_PRO">
   <TH align="left" valign="top">Protein Specific Parameters
@@ -1505,8 +1496,6 @@ function toggle_title(id, full, partial) {
   </TH>
 </TMPL_IF> <!-- NCBI_BLAST_PRO -->
 
-
-
 <TMPL_IF NAME="NU_DB">
   <select name="ncbi_db" id="ncbi_db">
     <optgroup label="Genomic plus Transcript">
@@ -1531,8 +1520,6 @@ function toggle_title(id, full, partial) {
   </select>
 </TMPL_IF> <!-- NU_DB -->
 
-
-
 <TMPL_IF NAME="PRO_DB">
   <select name="blast_db" id="blast_db">
     <option value="nr" selected>Non-redundant protein sequences (nr)</option>
@@ -1543,8 +1530,6 @@ function toggle_title(id, full, partial) {
     <option value="env_nr">Environmental samples(env_nr)</option>
   </select>
 </TMPL_IF> <!-- PRO_DB -->
-
-
 
 <TMPL_IF NAME="T_DB">
   <select name="blast_db" id="blast_db">
@@ -1563,8 +1548,6 @@ function toggle_title(id, full, partial) {
     <option value="env_nt">Environmental samples (env_nt)</option>
   </select>
 </TMPL_IF> <!-- T_DB -->
-
-
 
 <TMPL_IF NAME="RESULT_TABLE">
   <span href="javascript:void(0)" id="table_opts" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</span>
@@ -1629,8 +1612,6 @@ function toggle_title(id, full, partial) {
   </div> <!-- table_size -->
 </TMPL_IF> <!-- RESULT_TABLE -->
 
-
-
 <TMPL_IF NAME="CHROMOSOMES_IF">
   <table>
     <TMPL_LOOP NAME="CHROMOSOME_LOOP">
@@ -1645,8 +1626,6 @@ function toggle_title(id, full, partial) {
   </table>
 </TMPL_IF> <!-- CHROMOSOMES_IF -->
 
-
-
 <TMPL_IF NAME="CHROMOSOMES_LARGE_IF">
   <TMPL_LOOP NAME="CHROMOSOME_LOOP_LARGE">
     <div id=large_db<TMPL_VAR NAME=IMAGE_ID_LARGE> style="display:none">
@@ -1657,8 +1636,6 @@ function toggle_title(id, full, partial) {
     </div>
   </TMPL_LOOP>
 </TMPL_IF> <!-- CHROMOSOMES_LARGE_IF -->
-
-
 
 <TMPL_IF NAME="HSP_IF">
   <span class="species">HSP Number <TMPL_VAR NAME="HSP_NUM"> Information:</span>
@@ -1758,8 +1735,6 @@ function toggle_title(id, full, partial) {
   <TMPL VAR NAME="HSP_EXCEL_LINK">
 </TMPL_IF>
 
-
-
 <TMPL_IF NAME="BLAST_RESULTS">
   <TABLE class="ui-widget-content ui-corner-all">
     <thead align="left">
@@ -1820,8 +1795,6 @@ function toggle_title(id, full, partial) {
     </tbody>
   </TABLE>
 </TMPL_IF>
-
-
 
 <TMPL_IF NAME="RESULTS_div">
 <div align='left'>

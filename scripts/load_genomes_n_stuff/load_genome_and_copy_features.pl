@@ -10,7 +10,6 @@ use vars qw($DEBUG $GO $db $user $pass $coge $dsgid $faa $fasta_genome_loader $r
 #../delete_dataset_group.pl -u xxx -db coge -pw xxx -delete_seqs -dsgid 19478
 #./load_and_genome.pl  -u xxx -p xxx -db coge -dsgid 782 -faa ~/tmp/autog-test.faa -seq_type_id 3 -debug 1 -go 1
 
-
 GetOptions ( "debug=s" => \$DEBUG,
              "go=s"    => \$GO,
              "database|db=s"=>\$db,
@@ -34,7 +33,6 @@ $coge = CoGeX->connect($connstr, $user, $pass );
 $fasta_genome_loader = "/home/elyons/projects/CoGeX/scripts/load_genomes_n_stuff/fasta_genome_loader.pl" unless $fasta_genome_loader;
 $replicate_annotations = "/home/elyons/projects/CoGeX/scripts/load_genomes_n_stuff/replicate_annotations.pl" unless $replicate_annotations;
 $restricted = 0 unless $restricted;
-
 
 unless ($coge && $dsgid && $faa)
   {

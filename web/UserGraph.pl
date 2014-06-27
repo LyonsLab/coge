@@ -230,4 +230,3 @@ sub get_node {
 
     return encode_json( { url => $url, children => \@children } );
 }
-

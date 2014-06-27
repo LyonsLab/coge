@@ -15,7 +15,6 @@ use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Algos::KsCalc;
 
-
 our (
     $cogeweb, $basename, $infile,  $dbfile,   $blockfile, $coge,
     $P,       $TEMPDIR,  $NWALIGN, $MAX_PROC, $DBNAME,    $DBHOST,
@@ -90,7 +89,6 @@ sub run {
     );
     die if $ret;
 }
-
 
 sub batch_add {
     my %opts = @_;

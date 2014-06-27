@@ -6,7 +6,6 @@ use CoGeX;
 my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
 my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 
-
 my %orgs;
 
 foreach my $org ($coge->resultset('Organism')->all())

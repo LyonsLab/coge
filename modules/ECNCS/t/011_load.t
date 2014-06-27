@@ -8,5 +8,3 @@ BEGIN { use_ok( 'CoGe::ECNCS::DB::Location' ); }
 
 my $object = CoGe::ECNCS::DB::Location->new ();
 isa_ok ($object, 'CoGe::ECNCS::DB::Location');
-
-

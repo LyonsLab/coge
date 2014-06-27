@@ -23,22 +23,22 @@ $(function() {
 	            	},
 	            	"group" : {
 	                	"icon" : {
-	                    	"image" : "picts/group-icon-small.png" 
+	                    	"image" : "picts/group-icon-small.png"
 	                	}
 	            	},
 	            	"list" : {
 	                	"icon" : {
-	                    	"image" : "picts/notebook-icon-small.png" 
+	                    	"image" : "picts/notebook-icon-small.png"
 	                	}
 	            	},
 	            	"genome" : {
 	                	"icon" : {
-	                    	"image" : "picts/dna-icon-small.png" 
+	                    	"image" : "picts/dna-icon-small.png"
 	                	}
 	            	},
 	            	"experiment" : {
 	                	"icon" : {
-	                    	"image" : "picts/testtube-icon-small.png" 
+	                    	"image" : "picts/testtube-icon-small.png"
 	                	}
 	            	},
 	            	"default" : {
@@ -50,9 +50,9 @@ $(function() {
             },
             "plugins" : ["themes","html_data","dnd","ui","crrm","types"]
         })
-		.bind("select_node.jstree", 
+		.bind("select_node.jstree",
 			function (event, data) {
-				var id = data.rslt.obj.attr("id"); 
+				var id = data.rslt.obj.attr("id");
 				//var type = data.rslt.obj.attr("rel");
 				get_node(id);
 			}
@@ -101,11 +101,10 @@ function get_node(id) {
 				}
 			}
 		},
-	});	
+	});
 }
 
 </SCRIPT>
-
 
 <div id="tree">
 	<ul>

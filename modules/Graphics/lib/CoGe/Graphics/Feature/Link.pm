@@ -2,7 +2,6 @@ package CoGe::Graphics::Feature::Link;
 use strict;
 use base qw(CoGe::Graphics::Feature);
 
-
 =head1 AUTHOR
 
 	Eric Lyons
@@ -78,12 +77,10 @@ sub _post_initialize
 #	my $ex_wid = $ei->width;
 #	my $ex_hei = $ei->height;
 	#2. copy, resize, and resample the feature onto the new image
-#	$self->gd->copyResampled($ei, 0, 0, 0, 0, $self->gd->width, $self->gd->height, $ex_wid, $ex_hei); 
+#	$self->gd->copyResampled($ei, 0, 0, 0, 0, $self->gd->width, $self->gd->height, $ex_wid, $ex_hei);
 #	$self->_gd($ei);
 #      }
   }
-
-
 
 #################### subroutine header begin ####################
 
@@ -97,17 +94,15 @@ sub _post_initialize
  Comment   : This is a sample subroutine header.
            : It is polite to include more pod and fewer comments.
 
-See Also   : 
+See Also   :
 
 =cut
 
 #################### subroutine header end ####################
 
-
 #################### main pod documentation begin ###################
-## Below is the stub of documentation for your module. 
+## Below is the stub of documentation for your module.
 ## You better edit it!
-
 
 =head1 NAME
 
@@ -117,20 +112,13 @@ CoGe::Graphics::Feature::Base
 
   use CoGe::Graphics::Feature::Base
 
-
 =head1 DESCRIPTION
 
 =head1 USAGE
 
-
-
 =head1 BUGS
 
-
-
 =head1 SUPPORT
-
-
 
 =head1 AUTHOR
 
@@ -146,7 +134,6 @@ This program is free software licensed under the...
 The full text of the license can be found in the
 LICENSE file included with this module.
 
-
 =head1 SEE ALSO
 
 perl(1).
@@ -155,7 +142,5 @@ perl(1).
 
 #################### main pod documentation end ###################
 
-
 1;
 # The preceding line will help the module return a true value
-

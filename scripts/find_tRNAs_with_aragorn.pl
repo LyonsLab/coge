@@ -27,9 +27,6 @@ my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 $type = "CDS" unless $type;
 my $aragorn = "/home/elyons/bin//aragorn";
 
-
-
-
 $| =1;
 
 my @orgs;
@@ -48,7 +45,6 @@ else
 	  }
       }
   }
-
 
 unless (@orgs)
   {
@@ -179,4 +175,3 @@ sub run_aragorn
     close IN;
     return \%data;
   }
-    

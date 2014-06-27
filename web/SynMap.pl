@@ -4,7 +4,6 @@ use strict;
 no warnings 'redefine';
 umask(0);
 
-
 use CoGeX;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
@@ -552,7 +551,6 @@ sub gen_org_menu {
     if ($dsg and $USER->has_access_to_genome($dsg)) {
         my $org = $dsg->organism;
         $oid = $org->id;
-
 
         my ( $dsg_info, $feattype_menu, $message ) = get_genome_info(
             dsgid    => $dsgid,
@@ -1174,7 +1172,6 @@ sub get_query_link {
     my $dsgid1   = $url_options{dsgid1};
     my $dsgid2   = $url_options{dsgid2};
 
-
     unless($dsgid1 and $dsgid2) {
         return encode_json({
             error => "Missing a genome id."
@@ -1299,7 +1296,6 @@ sub get_query_link {
         write_log => 0
     );
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(url => $synmap_link);
-
 
     return $tiny_link;
 }
@@ -2384,7 +2380,6 @@ sub go {
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Final Post Processing",
         $cogeweb->logfile);
-
 
     my $subject_dup_args = [
         ['--config', $config,                         0 ],

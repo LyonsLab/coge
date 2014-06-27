@@ -23,9 +23,8 @@ BEGIN {
 }
 
 #################### main pod documentation begin ###################
-## Below is the stub of documentation for your module. 
+## Below is the stub of documentation for your module.
 ## You better edit it!
-
 
 =head1 NAME
 
@@ -36,7 +35,6 @@ CoGe::ECNCS - CoGe::ECNCS
   use CoGe::ECNCS;
   blah blah blah
 
-
 =head1 DESCRIPTION
 
 Stub documentation for this module was created by ExtUtils::ModuleMaker.
@@ -45,18 +43,11 @@ to leave the stub unedited.
 
 Blah blah blah.
 
-
 =head1 USAGE
-
-
 
 =head1 BUGS
 
-
-
 =head1 SUPPORT
-
-
 
 =head1 AUTHOR
 
@@ -75,7 +66,6 @@ This program is free software licensed under the...
 The full text of the license can be found in the
 LICENSE file included with this module.
 
-
 =head1 SEE ALSO
 
 perl(1).
@@ -83,8 +73,6 @@ perl(1).
 =cut
 
 #################### main pod documentation end ###################
-
-
 
 #################### subroutine header begin ####################
 
@@ -98,12 +86,11 @@ perl(1).
  Comment   : This is a sample subroutine header.
            : It is polite to include more pod and fewer comments.
 
-See Also   : 
+See Also   :
 
 =cut
 
 #################### subroutine header end ####################
-
 
 sub new
 {
@@ -138,7 +125,6 @@ sub get_alg_data_obj
     return $self->get_algorithm_data_obj();
   }
 
-
 sub get_algorithm_run_obj
   {
     my $self = shift;
@@ -150,7 +136,6 @@ sub get_alg_run_obj
     my $self = shift;
     return $self->get_algorithm_run_obj();
   }
-
 
 sub get_author_obj
   {
@@ -164,7 +149,6 @@ sub get_auth_obj
     return $self->get_author_obj();
   }
 
-
 sub get_classification_obj
   {
     my $self = shift;
@@ -176,7 +160,6 @@ sub get_class_obj
     my $self = shift;
     return $self->get_classification_obj();
   }
-
 
 sub get_data_mask_obj
   {
@@ -190,8 +173,6 @@ sub get_mask_obj
     return $self->get_data_mask_obj();
   }
 
-
-
 sub get_ecncs_obj
   {
     my $self = shift;
@@ -203,7 +184,6 @@ sub get_cns_obj
     my $self = shift;
     return $self->get_ecncs_obj();
   }
-
 
 sub get_location_obj
   {
@@ -217,13 +197,11 @@ sub get_loc_obj
     return $self->get_location_obj();
   }
 
-
 sub get_spike_obj
   {
     my $self = shift;
     return CoGe::ECNCS::DB::Spike->new();
   }
-
 
 sub get_status_obj
   {
@@ -237,8 +215,5 @@ sub get_stat_obj
     return $self->get_status_obj();
   }
 
-
-
 1;
 # The preceding line will help the module return a true value
-

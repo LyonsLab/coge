@@ -222,15 +222,15 @@ function get_load_log(callback) {
 
 function load_failed() {
 	// mdb added 6/24/14 - temporary message until JEX logging is improved
-	var msg = 
-		'<div class="alert">' + 
+	var msg =
+		'<div class="alert">' +
 		'We recently made some changes that limit our ability to report errors (more details <a href="https://genomevolution.org/wiki/index.php/Jex_Logging" target=_blank>here</a>). ' +
 		'While we fix this please feel free to contact us at <a href="mailto:coge.genome@gmail.com">coge.genome@gmail.com</a> regarding this failure to load data ' +
 		'and we can help to determine the cause.  Thanks!' +
 		'</div>';
 	var log = $('#load_log');
-	log.html( log.html() + msg );	
-	
+	log.html( log.html() + msg );
+
     // Update dialog
     $('#loading_msg').hide();
     $('#error_msg').fadeIn();
@@ -494,7 +494,6 @@ function update_dialog(request, identifier, formatter) {
 }
 </SCRIPT>
 
-
 <table class="small ui-widget-content ui-corner-all">
   <tr>
     <td>Name:</td>
@@ -528,13 +527,10 @@ function update_dialog(request, identifier, formatter) {
 <br>
 <br>
 
-
 <div id="file_select_dialog" class="dialog_box" title="Select Data File ..." style="display:none;">
   <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
   <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all">Done</span>
 </div>
-
-
 
 <div id="load_dialog" class="dialog_box" title="Loading Batch Experiments ..." style="display:none;">
   <div id="load_log" class="small padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
@@ -550,8 +546,6 @@ function update_dialog(request, identifier, formatter) {
   <span id="finish_load_button" style="display:none;float:right;" class="ui-button ui-corner-all">ExperimentView</span>
   <span id="cancel_load_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Cancel</span>
 </div>
-
-
 
 <TMPL_IF NAME='ADMIN_AREA'>
 <script>
@@ -576,8 +570,6 @@ $(document).ready(function() {
 </TMPL_IF>
 
 </TMPL_IF> <!-- MAIN -->
-
-
 
 <TMPL_IF NAME='LOGIN'>
     <TMPL_INCLUDE NAME="widgets/Login.tmpl">

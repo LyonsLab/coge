@@ -52,9 +52,9 @@ function animate_section(name, style, speedy, show) {
   return speedy;
  }
 
-function clear_motif_list() 
-{ $('#motif_choice').empty(); 
-counting(); 
+function clear_motif_list()
+{ $('#motif_choice').empty();
+counting();
 }
 
 function remove_selected_motifs() {
@@ -63,7 +63,7 @@ function remove_selected_motifs() {
 
 var value=$(this).val();
 //console.log('removing',value);
-    
+
 $('#'+$(this).val()).remove();
     });
  counting();
@@ -75,9 +75,9 @@ $('#'+$(this).val()).remove();
 
 //jQuery UI opts
 $(function() {
- //substaniate dialog boxes	     
+ //substaniate dialog boxes
         $(".dialog_box").dialog({ autoOpen: false, width: 500 });
-	
+
 /**Button initializations**/
 	//Add all Listed
 	$('#add_all_listed_button').click(function() {
@@ -94,21 +94,20 @@ $(function() {
 	//Add
 	$('#add').click(function() {
 			add_selected_motifs();
-	});	
-				  	
+	});
+
 	//Get motif info
-	$("#motif_info_button").click(function() {	
+	$("#motif_info_button").click(function() {
 	get_motifs_selected();
 	$('#motif_info_popup').dialog('open');
 			});
 });
 
-
 function add_all_motifs() {
  var ids;
  var count =0;
  $('#motif_select option').each(function(){
-     ids = ids+"\|\|\|"+$(this).val();     
+     ids = ids+"\|\|\|"+$(this).val();
    });
  get_motif_vals(['args__motifs','args__'+ids],[add_to_list]);
  sort_motif_choice();
@@ -203,7 +202,7 @@ var html='<option';
      //name = item[1];
      //seq = item[2];
 //console.log('id',id);
-    html +=' id='+id+' value='+joinedvals+' ondblclick="remove_selected_motifs();">'+seq+'</option>\n';    
+    html +=' id='+id+' value='+joinedvals+' ondblclick="remove_selected_motifs();">'+seq+'</option>\n';
 //}
 $('#blank').remove();
 $('#motif_choice').append(html);
@@ -229,12 +228,12 @@ for (var i=0; i<motif.length; i++)
 //     console.log('name',name);
      seq = item[1];
 //     console.log('seq',seq);
-     color=item[2];	
+     color=item[2];
      title=item[6];
-     litref=item[5];    
+     litref=item[5];
      link='http://www.ncbi.nlm.nih.gov/pubmed/?term='+title;
 //     console.log('link',link);
-     html=html+name+':'+seq+':<a href='+link+' target=new>'+title+'</a><br>';          
+     html=html+name+':'+seq+':<a href='+link+' target=new>'+title+'</a><br>';
 }
 //html+='</table>';
 $('#motif_info_popup').append(html);
@@ -246,7 +245,7 @@ function add_selected_motifs() {
  //ids+="\|\|\|"+$(this).val();
  ids=$(this).val();
 });
-  get_motif_vals(['args__motifs','args__'+ids],[add_to_list]);	
+  get_motif_vals(['args__motifs','args__'+ids],[add_to_list]);
   sort_motif_choice();
 }
 
@@ -260,11 +259,10 @@ count++;
 get_motif_info(['args__motifs','args__'+ids],[add_to_info_list]);
 }
 
-
 function sort_motif_choice() {
     if (ajax.length)
      {
-       setTimeout("sort_motif_choice()",100);	
+       setTimeout("sort_motif_choice()",100);
        return;
      }
    $('#motif_choice').append().sortSelect();
@@ -302,14 +300,12 @@ pageObj.tfbs_motif = joinvals1;
 
 }
 
-
 function clear_selected_motifs(){
 $('input:checkbox[name=tfbs_motif]').each(function(){
 this.value=""
 //this.checked=false
-});	
-}		
-
+});
+}
 
 function set_up_tabs() {
  $(function(){
@@ -327,7 +323,7 @@ function set_up_sort() {
   			 i=1;
 			 $('.portlet').each(function(){
 			   $($($(this).children()[0]).children()[1]).val(i);
-			   i++; 
+			   i++;
  			 });
 			},
 		});
@@ -345,7 +341,7 @@ function set_display_order () {
  i=1;
  $('.portlet').each(function(){
    $($($(this).children()[0]).children()[1]).val(i);
-   i++; 
+   i++;
  });
 }
 
@@ -372,7 +368,7 @@ function set_display_order () {
 
 //set up the jquery ui
 $(function() {
-	     //initialize dialog box	     
+	     //initialize dialog box
 	     $("#color_dialog").dialog({autoOpen: false,
 	     				height: 500,
 					width: 502,
@@ -420,7 +416,7 @@ Gobe.set_genespace= function (updown, idx, value, length, anchorlength){
     if (value < 1) {value = 1;}
 //    if (value > length) {value = length;}
 
-    if (updown == "up") 
+    if (updown == "up")
      {
       var orig_gbstart = parseFloat($('#gbstart'+idx).val());
       var orig_dirstart = parseFloat($('#dirstart'+idx).val());
@@ -436,7 +432,7 @@ Gobe.set_genespace= function (updown, idx, value, length, anchorlength){
        var dirlength = $('#dirlength'+idx).val();
        if (dirlength == undefined || dirlength == ""){dirlength=length;}
        dirlength = dirlength-($('#dirstart'+idx).val()-orig_dirstart);
-       $('#dirlength'+idx).val(dirlength);      
+       $('#dirlength'+idx).val(dirlength);
      }
     else if (updown == "down")
      {
@@ -444,14 +440,14 @@ Gobe.set_genespace= function (updown, idx, value, length, anchorlength){
        if (tmp > length){tmp=length;}
        $('#gblength'+idx).val(tmp);
        var tmp = (anchorlength-value+1)-parseFloat($('#dirstart'+idx).val());
-       $('#dirlength'+idx).val(tmp);    
+       $('#dirlength'+idx).val(tmp);
      }
 };
 
 Gobe.handle_html= function (html) {
-  html = "<span class='ui-button ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;  
+  html = "<span class='ui-button ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
   $('#results_info').html(html);
-  
+
   if (html && !html.match(/multiple hits/)) {
    $('#results_info').dialog('open');
   }
@@ -459,12 +455,12 @@ Gobe.handle_html= function (html) {
 
 function open_all_sequence_option_menus(open) {
    if (open)
-    { $('.ui-button-toggle:not(.ui-state-active)').click(); 
+    { $('.ui-button-toggle:not(.ui-state-active)').click();
       $('#open_all_sequence_open_menus').hide();
       $('#close_all_sequence_open_menus').show();
     }
    else
-    { $('.ui-button-toggle.ui-state-active').click(); 
+    { $('.ui-button-toggle.ui-state-active').click();
       $('#open_all_sequence_open_menus').show();
       $('#close_all_sequence_open_menus').hide();
     }
@@ -537,7 +533,6 @@ function walk (direction) {
   }
 }
 
-
 //Following 2 js functions take care of emailing GEvo results to user
 
 function toggle_email_field(){
@@ -573,7 +568,7 @@ function rset () {
 
  for (var i =1; i<= num_seqs; i++)
   {
-    
+
     $('#accn'+i).val("");
     $('#drup'+i).val("10000");
     $('#drdown'+i).val("10000");
@@ -584,7 +579,7 @@ function rset () {
     $('#dirseq'+i).val("");
     $('#dirstart'+i).val("1");
     $('#dirlength'+i).val("");
-    
+
   }
 
 }
@@ -648,7 +643,7 @@ $('#anchor_options').html(html);
 animate_section(".anchor", "fadeIn");
 
 }
-  
+
 function check_alignment_program (){
 
  var alignment = $("#alignment_program").val();
@@ -663,30 +658,30 @@ function check_alignment_program (){
   $('.help').html(help);
   var spike = $("#spike").val();
   $("#spike").val(0);
-  
+
 if (alignment == "blastz")
  {
-  
+
   animate_section("#blastz_options", "slideToggle");
  }
 else if (alignment == "LAGAN")
  {
-  animate_section("#lagan_options", "slideToggle");	
+  animate_section("#lagan_options", "slideToggle");
  }
 else if (alignment == "CHAOS")
  {
-  animate_section("#chaos_options", "slideToggle");	
+  animate_section("#chaos_options", "slideToggle");
   animate_section("#spike_sequence", "slideDown");
-  if (spike == "undefined" || spike == 0) {spike = 15;} 	
+  if (spike == "undefined" || spike == 0) {spike = 15;}
   $("#spike").val(spike);
-	
+
  }
 else if (alignment == "DiAlign_2")
  {
-  animate_section("#dialign_options", "slideToggle");	
-  animate_section("#dialign_parameters", "slideToggle");	
+  animate_section("#dialign_options", "slideToggle");
+  animate_section("#dialign_parameters", "slideToggle");
   check_dialign_anchor_program();
- } 
+ }
 else if (alignment == "tblastx")
  {
   $("#blast_wordsize").val(3);
@@ -697,16 +692,16 @@ else if (alignment == "tblastx")
   animate_section(".blastn_options", "hide",0);
   animate_section("#blast_options", "slideDown");
   animate_section("#tblastx_options", "slideDown");
- }	
+ }
 else if (alignment == 'blastn')
  {
   $("#blast_wordsize").val(7);
   $("#blast_gapopen").val(5);
   $("#blast_gapextend").val(2);
   $("#blast_eval").val(30);
-  if (spike == "undefined" || spike == 0) {spike = 15;} 	
+  if (spike == "undefined" || spike == 0) {spike = 15;}
   $("#spike").val(spike);
-  check_spike();		
+  check_spike();
   animate_section("#blast_options", "slideDown");
   animate_section(".blastn_options", "slideDown");
  }
@@ -717,16 +712,14 @@ else if (alignment == 'GenomeThreader')
 
  }
 
-
-
 function handle_results (html,w, h, img_base, n_images, gevo_link, message) {
  alert_message(message);
  if (n_images >1)
    {
     $('#results').html(html);
     var getQueryParamValue = swfobject.getQueryParamValue;
-    var width = getQueryParamValue('w') || w; 
-    var height = getQueryParamValue('h') || h; 
+    var width = getQueryParamValue('w') || w;
+    var height = getQueryParamValue('h') || h;
     var params = {'bgcolor': '#FFFFFF', 'wmode': "opaque"};
     var flashVars = {
             'n'        : getQueryParamValue('n') || n_images,
@@ -749,7 +742,7 @@ function handle_results (html,w, h, img_base, n_images, gevo_link, message) {
    {
      get_tiny_url(['args__url','args__'+gevo_link],['tiny_link']);
    }
-   
+
    //Take care of Save results button
    setup_button_states();
 }
@@ -760,7 +753,7 @@ function save_GEvo_results () {
 	     			      height: 331,
 				      width: 461,
 	     			      buttons: { "Cancel": function() { $(this).dialog("close"); },
-				      	        "Save": function() { 
+				      	        "Save": function() {
 						add_to_user_history(['args__work_name','work_name',
 								     'args__description','description',
 								     'args__archive','args__'+1,
@@ -771,7 +764,7 @@ function save_GEvo_results () {
 	})
 	.show(0)
 	.dialog('open');
-	
+
 }
 
 function remove_seq () {
@@ -794,14 +787,13 @@ function add_hsp_colors (stuff, num) {
  $('.color_chooser').click(function() {color_dialog_setter(this);});
 }
 
-
 function update_go_run (val){
  if (val) $('#go_run').html(val);
 }
 
 function alert_message (message) {
  if (message) alert(message);
-} 
+}
 
 function check_seq_submit () {
  var num_seqs = $("#num_seqs").val();
@@ -817,7 +809,6 @@ function check_seq_submit () {
   }
 
 }
-
 
 function seq_submit_change (seq_num) {
  animate_section(".seq_submission_type"+seq_num,"hide",0);
@@ -841,21 +832,20 @@ function process_add_seq (newseq, num_seqs, go_run, refseq, old_num_seqs)
  while (i <= num_seqs)
   {
    seq_submit_change(i);
-   add_button_states('seqopts'+i); 
+   add_button_states('seqopts'+i);
    if ($('#accn'+i).val())
     {
-     $('#accn'+i).select();   
+     $('#accn'+i).select();
      $('#accn'+i).blur();
     }
-   i++;   
+   i++;
   }
  $('#num_seqs').val(num_seqs);
  $('#go_run').html(go_run);
  $('#new_refseq').html(refseq);
  autodistance_setup();
- gen_hsp_colors(['args__num_seqs','num_seqs'],[add_hsp_colors]); 
+ gen_hsp_colors(['args__num_seqs','num_seqs'],[add_hsp_colors]);
 }
-
 
 function monitor_log(log)
 {
@@ -871,11 +861,11 @@ function monitor_log(log)
      database = database+"done!\n";
      pageObj.finished = 1;
     }
-   
+
    match=log.match(/sequence file/g); //\s+(\d+)/g);
   if (match && match[0])
-   { 
-     match.reverse();  
+   {
+     match.reverse();
      sequence = "Generating "+match[0]+"s. . .";
    }
    match=log.match(/running\s+(\(.*?\))/g);
@@ -886,7 +876,7 @@ function monitor_log(log)
      if (!val) val = "";
      algo = "Alignment algorithm "+val+". . .";
    }
-  
+
    match=log.match(/image\s+(\(.*?\))/g);
    if (match && match[0]) {
      algo = algo+"done!<br/>";
@@ -970,7 +960,6 @@ function hide_skip(num){
 	$('#skip_font'+num).hide(0);
 }
 
-
 function update_line_width(val)
  {
    val = val+(1*$('#line_width_val').val());
@@ -1003,7 +992,6 @@ s</tr>
 </table>
 </div>
 
-
 <span id=go style="font-size: 1em" class='ui-button-go ui-corner-all' onClick="set_display_order(); loading([],['results']); initialize_basefile(['args__prog','args__GEvo', 'args__return_name','args__1'],[populate_page_obj]);get_selected_motifs();go_run(); ">Find Motifs!</span>
 <span id=go style="font-size: 1em" class='ui-button ui-corner-all' value="Clear" onClick="location.reload(); $('#tabs-4 :checkbox').attr('checked', false); motif_regexp.value=' ';">Clear all previous analysis</span>
 <table>
@@ -1014,10 +1002,6 @@ s</tr>
 </TD>
  <td nowrap>
 
-
-
-
-
 </table>
 
 <form method="post" enctype="multipart/form-data" name="main_form" onSubmit="">
@@ -1027,10 +1011,9 @@ s</tr>
 <ul>
   <li class=small><a href="#tabs-1">Sequence Submission</a></li>
   <li class=small><a href="#tabs-2">Algorithm</a></li>
-  <li class=small><a href="#tabs-3">Results Parameters</a></li>			
- <li class=small><a href="#tabs-4">Select Motifs</a></li>				
+  <li class=small><a href="#tabs-3">Results Parameters</a></li>
+ <li class=small><a href="#tabs-4">Select Motifs</a></li>
 </ul>
-
 
 <div id="tabs-4">
  <table>
@@ -1042,7 +1025,7 @@ s</tr>
 
 <Table class="small regex_table" style="display: none;">
 
-<TR>			  
+<TR>
   <TD>
    <div class="small"><span style="color:#009900;">
      Enter TFBS Motif Regular Expression :
@@ -1062,7 +1045,7 @@ s</tr>
 <table>
 <tr>
 <td>
-	
+
 <div id="list_table" class=portlet style='padding: 0.6em'>
 <div class=partlet-content>
 
@@ -1076,9 +1059,9 @@ s</tr>
 <font color=black>For a list of all TFBS motifs used in this site, click </font><a href=http://genomevolution.org/CoGe/data/distrib/Motiflist.txt target=new>here</a>
 </TD>
 
-<TD valign="middle" align=middle>	
+<TD valign="middle" align=middle>
 <span href="javascript:void(0)" id="remove" onClick="remove_selected_motifs();" style="display:none" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span><span href="javascript:void(0)" onClick="add_selected_motifs();" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>   	  </TD>
-          
+
 <TD>
 <div style="float:left" id=db_title class=small>Selected Motifs: </DIV>
 <div style="float:left;text-indent:1em;vertical-align: bottom" id=selected_motif_count class=small></div>  <DIV><SELECT class="backbox" id="motif_choice" name="motif_choice" SIZE="15" MULTIPLE onClick="$('#add').hide(0);$('#remove').show(0);"> <option id=blank value=null>No Motifs Selected</option>              </SELECT></DIV>
@@ -1214,7 +1197,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -1365,7 +1347,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -1661,7 +1642,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -1715,7 +1695,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -1835,7 +1814,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -1865,7 +1843,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -1992,7 +1969,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -2136,7 +2112,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -2254,7 +2229,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -2300,7 +2274,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -2330,7 +2303,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -2359,7 +2331,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -2486,7 +2457,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -2548,7 +2518,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -2577,7 +2546,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -2624,7 +2592,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -2670,7 +2637,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -2700,7 +2666,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -2729,7 +2694,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -2767,7 +2731,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -2846,7 +2809,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -2883,7 +2845,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -2986,7 +2947,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -3015,7 +2975,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -3070,7 +3029,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -3123,7 +3081,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -3218,7 +3175,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -3247,7 +3203,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -3309,7 +3264,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -3563,7 +3517,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -3882,7 +3835,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -3936,7 +3888,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -3965,7 +3916,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -4004,7 +3954,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -4033,7 +3982,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -4096,7 +4044,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -4133,7 +4080,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -4188,7 +4134,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -4217,7 +4162,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -4256,7 +4200,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -4285,7 +4228,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -4363,7 +4305,6 @@ s</tr>
 </td>
 </tr>
 </table>
-
 
 <table>
 <tr>
@@ -4546,7 +4487,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -4720,7 +4660,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -4822,7 +4761,6 @@ s</tr>
 </tr>
 </table>
 
-
 <table>
 <tr>
 <td>
@@ -4861,19 +4799,18 @@ s</tr>
 
 </div> <!-- end tabs-2 div -->
 
-
 <div id="tabs-1">
 <input class="backbox" name=num_seqs id=num_seqs type="hidden"readonly value=<TMPL_VAR NAME ="NUM_SEQS">>
-  <span class='ui-button ui-corner-all ui-button-icon-left ' 
+  <span class='ui-button ui-corner-all ui-button-icon-left '
   onClick="add_seq(['num_seqs'],[process_add_seq]);  $('#new_drseq').remove;"><span class="ui-icon ui-icon-plus"></span>Add Sequence</span>
 
 <!--
 #REMOVED THIS FUNCTION AS I DON"T THINK IT GETS USED.  WE"LL SEE IF USERS COMPLAIN
 <span class='ui-button ui-corner-all ui-button-icon-left ' onClick="remove_seq()"><span class="ui-icon ui-icon-minus"></span>Remove</span>
- --> 
+ -->
 
 <span class="small">Merge Previous GEvo Analysis (paste in URL): <input class="backbox" name=previous_url id=previous_url type="textbox" size=20 value=<TMPL_VAR NAME ="PANEL_URL">></span>
-  <span class='ui-button ui-corner-all ui-button-icon-left ' 
+  <span class='ui-button ui-corner-all ui-button-icon-left '
   onClick="merge_previous(['previous_url','num_seqs'],[process_add_seq]); gen_hsp_colors(['args__num_seqs','num_seqs'],[add_hsp_colors]);"><span class="ui-icon ui-icon-plus"></span>Merge</span>
  <br>
 
@@ -4894,7 +4831,7 @@ s</tr>
      &nbsp&nbsp&nbsp&nbsp
      Pad CoGe Sequences with additional sequence: <input type="textbox" name="pad_gs" id="pad_gs" value="<TMPL_VAR NAME="PAD_GS">" size =8/>
 
-<br>     
+<br>
      E-mail GEvo results?<input type=checkbox id=check_email onclick="toggle_email_field()"><span id=email_box style="display:none;">Your E-mail Address: <input type=text id=email onBlur='address_validity_check()'><font id=email_error style="display: none; color: red;">You have supplied an invalid e-mail address.</font></span> </div>
     </table>
 </div> <!--end div tag for tabs_1-->
@@ -4915,28 +4852,27 @@ s</tr>
    <font class="xsmall help" style="cursor: help"></font>
    </TD>
  </TR>
-   </Table>    
-
+   </Table>
 
  <DIV id = "blast_options" class="algo_options">
- <Table class=small>    
+ <Table class=small>
 
  <TR class="blastn_options">
   <TD>Match Score (-r): </TD>
   <TD><input class="backbox" type="text" name="blast_match" id="blast_match" tabindex="1" size="3" value="1" /></TD>
- </TR>    
+ </TR>
  <TR class="blastn_options">
   <TD>Mismatch Penalty (-q): </TD>
   <TD><input class="backbox" type="text" name="blast_mismatch" id="blast_mismatch" tabindex="1" size="3" value="-2" /></TD>
- </TR> 
+ </TR>
  <TR>
   <TD>Gap Open Penalty (-G): </TD>
   <TD><input class="backbox" type="text" name="blast_gapopen" id="blast_gapopen" tabindex="1" size="3" value="5" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Gap Extension Penalty (-E): </TD>
   <TD><input class="backbox" type="text" name="blast_gapextend" id="blast_gapextend" tabindex="1" size="3" value="2" /></TD>
- </TR>    
+ </TR>
   <TR>
   <TD>Word Size (-W):</TD>
   <TD><input class="backbox" type="text" name="blast_wordsize" id="blast_wordsize" tabindex="1" size="3" value="7" /></TD>
@@ -4949,7 +4885,7 @@ s</tr>
      <option value="F" selected>No</option>
     </select>
   </TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Expectation value (-e): </TD>
   <TD><input class="backbox" type="text" name="blast_eval" id="blast_eval" tabindex="1" size="4" value="30" /></TD>
@@ -4961,47 +4897,45 @@ s</tr>
 </TABLE>
 </DIV>
 
-
  <DIV id="tblastx_options" class="small algo_options" style="display: none">
  <font class="small">Hide HSPs with stop codons in a coding sequence?<label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="0" checked />No</label></font>
 <br>Note: Word size limited to 3 for tblastx
-</DIV> 
-
+</DIV>
 
  <DIV id="chaos_options" class="small  algo_options" style="display: none">
 <table class = small>
    <TR>
   <TD>Word size: </TD>
   <TD><input class="backbox" type="text" name="chaos_word_length" id="chaos_word_length" tabindex="1" size="3" value="8" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Score cutoff: </TD>
   <TD><input class="backbox" type="text" name="chaos_score_cutoff" id="chaos_score_cutoff" tabindex="1" size="3" value="25" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Rescore cutoff: </TD>
   <TD><input class="backbox" type="text" name="chaos_rescore_cutoff" id="chaos_rescore_cutoff" tabindex="1" size="3" value="250" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Lookback distance:<br><font class=small>(length between seed alignments for chaining)</font></TD>
   <TD><input class="backbox" type="text" name="chaos_lookback" id="chaos_lookback" tabindex="1" size="3" value="20" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Maximum gap length between seeds for chaining: </TD>
   <TD><input class="backbox" type="text" name="chaos_gap_length" id="chaos_gap_length" tabindex="1" size="3" value="5" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Gap start penality: </TD>
   <TD><input class="backbox" type="text" name="chaos_gap_start" id="chaos_gap_start" tabindex="1" size="3" value="0" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Gap extend penality: </TD>
   <TD><input class="backbox" type="text" name="chaos_gap_extension" id="chaos_gap_extension" tabindex="1" size="3" value="-1" /></TD>
- </TR>    
+ </TR>
   <TR>
   <TD>Other CHAOS parameters: </TD>
   <TD><input class="backbox" type="text" name="chaos_params" id="chaos_params" tabindex="1" size="10" /></TD>
- </TR>         
+ </TR>
 
 </table>
 </DIV>
@@ -5018,22 +4952,20 @@ s</tr>
   </table>
  </DIV>
 
-
-
  <DIV id="blastz_options" class="small algo_options" style="display: none">
 <table class = small>
    <TR>
   <TD>Word size: </TD>
   <TD><input class="backbox" type="text" name="blastz_wordsize" id="blastz_wordsize" tabindex="1" size="4" value="8" /></TD>
- </TR>    
+ </TR>
 <TR>
   <TD>Gap start penality: </TD>
   <TD><input class="backbox" type="text" name="blastz_gap_start" id="blastz_gap_start" tabindex="1" size="4" value="400" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Gap extend penality: </TD>
   <TD><input class="backbox" type="text" name="blastz_gap_extension" id="blastz_gap_extension" tabindex="1" size="4" value="30" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Chaining: </TD>
   <TD><select class="backbox" id="blastz_chaining" tabindex="1" />
@@ -5042,67 +4974,65 @@ s</tr>
       <option value=2>chain and extend</option>
       <option value=3>just output HSPs</option>
       </select></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Score threshold: </TD>
   <TD><input class="backbox" type="text" name="blastz_threshold" id="blastz_threshold" tabindex="1" size="4" value="3000" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Mask threshold: </TD>
   <TD><input class="backbox" type="text" name="blastz_mask" id="blastz_mask" tabindex="1" size="4" value="0" /></TD>
- </TR>    
-
+ </TR>
 
   <TR>
   <TD>Other Blastz parameters: </TD>
   <TD><input class="backbox" type="text" name="blastz_params" id="blastz_params" tabindex="1" size="10" /></TD>
- </TR>         
+ </TR>
 
 </table>
-
 
 </DIV>
 
  <DIV id="lagan_options" class="small algo_options" style="display: none">
-   <Table class=small>    
+   <Table class=small>
   <TR>
   <TD>Min HSP Length: </TD>
   <TD><input class="backbox" type="text" name="lagan_min_length" id="lagan_min_length" tabindex="1" size="3" value="21" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Max Contiguous Gaps in HSPs: </TD>
   <TD><input class="backbox" type="text" name="lagan_max_gap" id="lagan_max_gap" tabindex="1" size="3" value="3" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Min Percent Identity: </TD>
   <TD><input class="backbox" type="text" name="lagan_percent_id" id="lagan_percent_id" tabindex="1" size="3" value="70" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Other LAGAN Parameters: </TD>
   <TD><input class="backbox" type="text" name="lagan_params" id="lagan_params" tabindex="1" size="10" /></TD>
- </TR>         
+ </TR>
 
 </TABLE>
 </DIV>
 
 <DIV id="dialign_options" class="small algo_options" style="display: none">
-   <Table class=small>    
+   <Table class=small>
   <TR>
    <TD>Use Anchored Alignment: </TD>
    <TD><select class="backbox" id="dialign_use_anchor" size="1" onchange="check_dialign_anchor_program();">
        <option value="1">Use Anchored Search</option>
        <option value="0" selected>Do NOT use Anchored Search</option>
-      </select> 
+      </select>
    </TD>
   </TR>
   <TR>
   <TD>Min Alignment Score: </TD>
   <TD><input class="backbox" type="text" name="dialign_min_score" id="dialign_min_score" tabindex="1" size="3" value="1" /></TD>
- </TR>    
+ </TR>
  <TR>
   <TD>Max Contiguous Low Score Alignments in HSPs: </TD>
   <TD><input class="backbox" type="text" name="dialign_max_gap" id="dialign_max_gap" tabindex="1" size="3" value="4" /></TD>
- </TR> 
+ </TR>
  <TR>
   <TD>Split HSPs on Different Alignment Scores: </TD>
   <TD><input class="backbox" type="radio" name="dialign_split_score" id="dialign_split_score" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="dialign_split_score" id="dialign_split_score" tabindex="1" value="0" checked />No</label></TD>
@@ -5113,7 +5043,7 @@ s</tr>
        <option value="-n ">Short Sequence Alignment, No Translation</option>
        <option value="-nt -cs -ma ">Short Sequence Alignment with Translation</option>
        <option value="-ds -n -thr 2 -lmax 30 ">Long Sequence Alignment</option>
-      </select> 
+      </select>
    </TD>
   </TR>
   <TR>
@@ -5123,7 +5053,7 @@ s</tr>
  </TABLE>
   </DIV>
  <DIV id="dialign_motif_options" class="small  algo_options" style="display: none">
- <Table class=small>  
+ <Table class=small>
  <TR>
  <TD align=right> Motif:  </TD>
   <TD><input class="backbox" type="text" name="dialign_motif_motif" id="dialign_motif_motif" tabindex="1" size="5" /></TD>
@@ -5143,7 +5073,7 @@ s</tr>
  <TR>
   <TD>Other DiAlign Parameters: </TD>
   <TD><input class="backbox" type="text" name="dialign_params" id="dialign_params" tabindex="1" size="20"  value="-n"/></TD>
- </TR>         
+ </TR>
 </TABLE>
 <b>Note</b>: Using Translation Increases CDS Alignment Accuracy at Cost of Speed - Not Recommended for Sequences > 10 kb
 </DIV>
@@ -5154,10 +5084,9 @@ s</tr>
  </table>
 </div>
 
-
 <TABLE class="small anchor algo_options" style="display: none">
  <TR align=left>
-  <TH>Select Anchor Program: 
+  <TH>Select Anchor Program:
   <select class="backbox" id="dialign_anchor_program" size="1" onchange='check_dialign_anchor_program()'>
        <option value="blastz">blastz</option>
        <option value="bl2seq">bl2seq</option>
@@ -5178,7 +5107,6 @@ s</tr>
  </table>
 
 </div> <!-- end tabs-2 div -->
-
 
 <div id="tabs-3">
 <table>
@@ -5326,14 +5254,13 @@ s</tr>
    <option value = "0" <TMPL_VAR NAME="DRAW_MODEL_NO">>No</option>
   </select> Models
 
-
  <TR>
   <TD>
   <font class="small">Show preloaded annotations?</font>
 <td>
   <label class="small"><input class="backbox" type="checkbox" name="show_cns" id="show_cns" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_CNS_YES">/>CNS</label>
 <label class="small"><input class="backbox" type="checkbox" name="show_cns" id="show_gene_space" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_GENE_SPACE_YES">/>Gene Space</label>
- 
+
  <TR>
   <TD>
   <font class="small">Restrict motif finding to annotations above?</font>
@@ -5382,7 +5309,6 @@ s</tr>
 </div>
 </TMPL_IF>
 
-
 <TMPL_IF NAME="SEQ_SELECT">
 <TMPL_LOOP NAME="SEQ_SELECT_LOOP">
  <div id="seq_set<TMPL_VAR NAME="SEQ_NUM">" class=portlet style='padding: 0.3em'>
@@ -5406,10 +5332,9 @@ s</tr>
         <TD>Name:
         <TD align=left><input class="backbox" type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['args__accn','accn<TMPL_VAR NAME="SEQ_NUM">','args__num', 'args__<TMPL_VAR NAME="SEQ_NUM">', 'args__dsid', 'args__<TMPL_VAR NAME="DSID">', 'args__dsgid', 'args__<TMPL_VAR NAME="DSGID">', 'args__gstid', 'args__<TMPL_VAR NAME="GSTID">'],[dataset_group_search_chain])" value="<TMPL_VAR NAME=DRACCN>" />
 </table>
-</DIV>      
+</DIV>
 
-
-<DIV id="cogepos<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">	
+<DIV id="cogepos<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
 <TABLE class="small">
       <TR>
        <TD>Organism: <TMPL_VAR NAME=ORGINFO>
@@ -5422,7 +5347,7 @@ s</tr>
 <div id="drcoge<TMPL_VAR NAME="SEQ_NUM">"  style="display: none;" class="seq_submission_type seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> drcoge<TMPL_VAR NAME="SEQ_NUM"> ">
 <table>
       <tr>
-       <td colspan=2>     
+       <td colspan=2>
         <DIV id="dataset<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="DSID">"></DIV>
 
 <!--        <DIV id="dataset_group<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsgid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="DSGID">"></DIV> -->
@@ -5443,10 +5368,9 @@ s</tr>
    <tr>
     <TD class=small><div class="link" id="get_seq<TMPL_VAR NAME=SEQ_NUM>" onclick="get_seq(<TMPL_VAR NAME=SEQ_NUM>)">Get Sequence</div>
     <TD class=small><div class="link" id="get_seq<TMPL_VAR NAME=SEQ_NUM>" onclick="genome_view(<TMPL_VAR NAME=SEQ_NUM>)">Genome View</div>
-     
+
 </table>
 </DIV>
-
 
 <DIV id="gb<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
 <TABLE class="small">
@@ -5462,16 +5386,15 @@ s</tr>
 </TABLE>
 </DIV>
 
-<DIV id="dir<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">	
+<DIV id="dir<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
 <TABLE class="small">
       <TR valign="top">
-      <TD>       
+      <TD>
      Paste fasta or genbank format sequence below:<BR> <textarea class="backbox" name="dirseq<TMPL_VAR NAME="SEQ_NUM">" id="dirseq<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  rows="5" cols="30"></textarea><BR>
      <font class="small">Start: <input class="backbox" type="text" name="dirstart<TMPL_VAR NAME="SEQ_NUM">" id="dirstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value="1" /></font>
      <font class="small">Length: <input class="backbox" type="text" name="dirlength<TMPL_VAR NAME="SEQ_NUM">" id="dirlength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value=""  /></font><br>
 </table>
 </DIV>
-
 
 <table>
 <tr><td>
@@ -5496,7 +5419,7 @@ s</tr>
 	<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" <TMPL_VAR NAME=REF_NO> />No</label><br>
   </tr>
   <TR nowrap>
-	<TD>Reverse complement: 
+	<TD>Reverse complement:
 	<td nowrap><label><input class="backbox" type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />Yes</label>&nbsp<label><input class="backbox" type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />No</label>
 </tr>
  <TR align=left>
@@ -5521,7 +5444,6 @@ s</tr>
 </TMPL_LOOP>
 </TMPL_IF>
 
-
 <TMPL_IF NAME=HSP_COLOR_FORM>
  <table>
   <tr valign = top>
@@ -5538,17 +5460,15 @@ s</tr>
   </table>
 </TMPL_IF>
 
-
-
 <TMPL_IF NAME=GEN_REFERENCE_SEQUENCES>
 <TMPL_LOOP NAME="REF_SEQ">
 <div id="refseq<TMPL_VAR NAME=SEQ_NUM>">
-<font class ="small">Sequence <TMPL_VAR NAME=SEQ_NUM>: 
+<font class ="small">Sequence <TMPL_VAR NAME=SEQ_NUM>:
 <label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" checked />On</label>
 <label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" />Off</label><br>
 </div>
 </TMPL_LOOP>
 <div id="new_refseq"></div>
 </TMPL_IF>
- 
+
 <div id="motif_info_popup" class="dialog_box" title="Motif Information"></div>

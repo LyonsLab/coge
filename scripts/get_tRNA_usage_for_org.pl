@@ -22,7 +22,6 @@ my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 $type = "tRNA" unless $type;
 my $aragorn = "";
 
-
 my @aa = qw(R H K D E S T N Q C G P A I L M F W Y V);
 my %codons = map {$_,0} gen_codon_table();
 
@@ -45,7 +44,6 @@ else
 	  }
       }
   }
-
 
 foreach my $org (@orgs)
   {
@@ -250,7 +248,7 @@ sub run_aragorn
     my %data;
     print STDERR "running $cmd" if $DEBUG;
     open (IN, $cmd."|");
-    
+
     while (<IN>)
       {
 	next if /^>/;
@@ -266,4 +264,3 @@ sub run_aragorn
     close IN;
     return \%data;
   }
-    

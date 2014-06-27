@@ -771,7 +771,7 @@ qq{<div><span class="link" onclick=window.open('OrganismView.pl?dsgid=$dsgid')>G
     $html_dsg_info .= "<tr><td>Description: <td>" . $dsg->description
       if $dsg->description;
     $html_dsg_info .=
-        "<tr><td>Source:  <td><a href=" 
+        "<tr><td>Source:  <td><a href="
       . $link
       . " target=_new>"
       . $ds->data_source->name . "</a>";
@@ -1801,8 +1801,8 @@ sub run_quota_align_coverage {
     my $org2         = $opts{org2};           #ratio of org2
     my $overlap_dist = $opts{overlap_dist};
     my $returnfile =
-        $infile . ".qac" 
-      . $org1 . "." 
+        $infile . ".qac"
+      . $org1 . "."
       . $org2 . "."
       . $overlap_dist;                        #ma stands for merge algo
     return $returnfile if -r $returnfile || -r $returnfile . ".gz";
@@ -2748,7 +2748,7 @@ sub get_query_link {
         write_log => 0
     );
     my $log_msg =
-        "<span class=link onclick=window.open('OrganismView.pl?dsgid=" 
+        "<span class=link onclick=window.open('OrganismView.pl?dsgid="
       . $dsgid1
       . "')>$org_name1</span> v. <span class=link"
       . "onclick=window.open('OrganismView.pl?dsgid=$dsgid2')>$org_name2</span>";
@@ -2993,7 +2993,7 @@ sub go {
           . $orgkey2 => {
             fasta    => $fasta1,
             db       => $blastdb,
-            basename => $dsgid1 . "_" 
+            basename => $dsgid1 . "_"
               . $dsgid2
               . ".$feat_type1-$feat_type2."
               . $ALGO_LOOKUP->{$blast}{filename},
@@ -3395,7 +3395,7 @@ sub go {
  <td>Image Width
  <td><input class="backbox" type=text name=zoom_width id=zoom_width size=6 value="400">
 <tr>
- <td>Ks, Kn, Kn/Ks cutoffs: 
+ <td>Ks, Kn, Kn/Ks cutoffs:
  <td>Min: <input class="backbox" type=text name=zoom_min id=zoom_min size=6 value="};
             $html .= $codeml_min if defined $codeml_min;
             $html .= qq{">
@@ -4006,13 +4006,13 @@ sub email_results {
     $subject .= ": $job_title" if $job_title;
     my $name = $USER->display_name;
     my $body = qq{Dear $name,
-		
+
 Thank you for using SynMap! The results from your latest analysis between $org_name1 and $org_name2 are ready.  To view your results, follow this link and press "Generate SynMap":
-	
+
 $link
 
 Thank you for using the CoGe Software Package.
-	
+
 - The CoGe Team
 };
 
@@ -4087,4 +4087,3 @@ sub get_dotplot {
 qq{<iframe src=$url frameborder=0 width=$w height=$h scrolling=no></iframe>};
     return $html;
 }
-

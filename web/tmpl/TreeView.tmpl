@@ -1,6 +1,6 @@
 <TMPL_IF NAME="FRONT_PAGE">
 <form method="post" enctype="multipart/form-data">
-<DIV>Please select a tree file to upload:  
+<DIV>Please select a tree file to upload:
 <input type = "file" class = "backbox" name= "file">
 </DIV>
 <DIV>
@@ -24,7 +24,7 @@ Tree drawing diection:
 <input class="backbox" type ="radio" name = "LR" id="LR" value=1 />Left to Right
 <input class="backbox" type ="radio" name = "LR" id="LR" value=0 checked/>Top to Bottom
 <tr>
-<td> Zoom: 
+<td> Zoom:
 <td> <input id="zoom" name= "zoom" type="textbox" size=10 value=0>
 </table>
 
@@ -34,7 +34,7 @@ Tree drawing diection:
 <div class="prep">search_pattern graphviz_node_qualifiers</DIV>
 <DIV>
 <textarea class="backbox" name="nodes" id="nodes" rows="5" cols="80">
-at       shape=rectangle, color=green4, fillcolor="#00FF005f", style=filled 
+at       shape=rectangle, color=green4, fillcolor="#00FF005f", style=filled
 os       shape=ellipse, color=cyan4, fillcolor="#00FFFF5F" style=filled
 zm       shape=hexagon, color=orange4, fillcolor="#FF66005F" style=filled
 </textarea></DIV>
@@ -47,14 +47,14 @@ zm       shape=hexagon, color=orange4, fillcolor="#FF66005F" style=filled
 <TMPL_ELSE>
 <table>
 <tr>
-<td><div><input type="button" value="zoom in (x20)" id="zoom-in" onClick="zoom(['zoi', 'tfile', 'mod', 'args__19', 'rooted', 'overlap', 'LR'],['img', 'im', 'zi', 'zo'])"></DIV> 
-<td><div><input type="button" value="zoom in (x10)" id="zoom-in" onClick="zoom(['zoi', 'tfile', 'mod', 'args__9', 'rooted', 'overlap', 'LR'],['img', 'im', 'zi', 'zo'])"></DIV> 
-<td><div><input type="button" value="zoom in (x5)" id="zoom-in" onClick="zoom(['zoi', 'tfile', 'mod', 'args__4', 'rooted', 'overlap', 'LR'],['img', 'im', 'zi', 'zo'])"></DIV> 
-<td><div><input type="button" value="zoom in" id="zoom-in" onClick="zoom(['zoi', 'tfile', 'mod','args__0', 'rooted', 'overlap', 'LR'],['img', 'im', 'zi', 'zo'])"></DIV> 
-<td><div><input type="button" value="zoom out" id="zoom-out" onClick="zoom(['zoo', 'tfile', 'mod', 'args__0', 'rooted', 'overlap', 'LR'],['img', 'im', 'zi', 'zo'])"></DIV> 
-<td><div><input type="button" value="zoom out (x5)" id="zoom-out" onClick="zoom(['zoo', 'tfile', 'mod', 'args__-4', 'rooted', 'overlap', 'LR'],['img', 'im', 'zi', 'zo'])"></DIV> 
-<td><div><input type="button" value="zoom out (x10)" id="zoom-out" onClick="zoom(['zoo', 'tfile', 'mod', 'args__-9', 'rooted', 'overlap', 'LR'],['img', 'im', 'zi', 'zo'])"></DIV> 
-<td><div><input type="button" value="zoom out (x20)" id="zoom-out" onClick="zoom(['zoo', 'tfile', 'mod', 'args__-19', 'rooted', 'overlap', 'LR'],['img', 'im', 'zi', 'zo'])"></DIV> 
+<td><div><input type="button" value="zoom in (x20)" id="zoom-in" onClick="zoom(['zoi', 'tfile', 'mod', 'args__19', 'rooted', 'overlap', 'LR'],['img', 'im', 'zi', 'zo'])"></DIV>
+<td><div><input type="button" value="zoom in (x10)" id="zoom-in" onClick="zoom(['zoi', 'tfile', 'mod', 'args__9', 'rooted', 'overlap', 'LR'],['img', 'im', 'zi', 'zo'])"></DIV>
+<td><div><input type="button" value="zoom in (x5)" id="zoom-in" onClick="zoom(['zoi', 'tfile', 'mod', 'args__4', 'rooted', 'overlap', 'LR'],['img', 'im', 'zi', 'zo'])"></DIV>
+<td><div><input type="button" value="zoom in" id="zoom-in" onClick="zoom(['zoi', 'tfile', 'mod','args__0', 'rooted', 'overlap', 'LR'],['img', 'im', 'zi', 'zo'])"></DIV>
+<td><div><input type="button" value="zoom out" id="zoom-out" onClick="zoom(['zoo', 'tfile', 'mod', 'args__0', 'rooted', 'overlap', 'LR'],['img', 'im', 'zi', 'zo'])"></DIV>
+<td><div><input type="button" value="zoom out (x5)" id="zoom-out" onClick="zoom(['zoo', 'tfile', 'mod', 'args__-4', 'rooted', 'overlap', 'LR'],['img', 'im', 'zi', 'zo'])"></DIV>
+<td><div><input type="button" value="zoom out (x10)" id="zoom-out" onClick="zoom(['zoo', 'tfile', 'mod', 'args__-9', 'rooted', 'overlap', 'LR'],['img', 'im', 'zi', 'zo'])"></DIV>
+<td><div><input type="button" value="zoom out (x20)" id="zoom-out" onClick="zoom(['zoo', 'tfile', 'mod', 'args__-19', 'rooted', 'overlap', 'LR'],['img', 'im', 'zi', 'zo'])"></DIV>
 </table>
 <div id="zi"><input type="hidden" id="zoi" value=1></div>
 <div id="zo"><input type="hidden" id="zoo" value=-1></div>

@@ -51,18 +51,11 @@ to leave the stub unedited.
 
 Blah blah blah.
 
-
 =head1 USAGE
-
-
 
 =head1 BUGS
 
-
-
 =head1 SUPPORT
-
-
 
 =head1 AUTHOR
 
@@ -70,7 +63,6 @@ Blah blah blah.
 	CPAN ID: MODAUTHOR
         UC Berkeley
 	elyons(@t)nature.berkeley.edu
-
 
 =head1 COPYRIGHT
 
@@ -80,7 +72,6 @@ This program is free software licensed under the...
 
 The full text of the license can be found in the
 LICENSE file included with this module.
-
 
 =head1 SEE ALSO
 
@@ -295,7 +286,6 @@ sub global_align {
     $NWALIGN = $P->{NWALIGN};
     $MATRIX_FILE = $P->{BLASTMATRIX}."aa/BLOSUM62";
     $matrix = $MATRIX_FILE unless $matrix && -r $matrix;
-
 
     my ($align1, $align2);
     if ($self->nwalign_server_port)
@@ -1202,4 +1192,3 @@ sub _initialize_default_scoring_matrix {
 
 1;
 # The preceding line will help the module return a true value
-

@@ -40,4 +40,3 @@ sub generate_tbl {
 }
 
 1;
-

@@ -13,16 +13,16 @@
     two organisms and identify syntenic regions.
 	    <span class="link" onClick="$(this).remove(); $('#getting_started').fadeIn();">More...</span>
     </p>
-    
+
     <div id="getting_started" class="hidden" style="max-width:90%;">
 	    <ol>
 	    	<li>Finds putative genes or regions of homology between two genomes
 	    	<li>Identies collinear sets of genes or regions of sequence similarity to infer synteny
 	    	<li>Generates a dotplot of the results and coloring syntenic pairs.
 	    </ol>
-    	
+
 	    	If you choose, synonymous and non-synonymous site mutation data can be calculated for protein coding genes that are identified as syntenic. These genes will then be colored based on those values in the dotplot for rapid identification of different age-classes of syntenic regions.
-    	
+
         <p>
             <a href="http://www.genomevolution.org/r/btab" target="_blank">
                 Click here for an example analysis between
@@ -437,7 +437,6 @@ $(document).ready(function(){
     $(".resizable").resizable();
     $('#depth_org_1').html($('#org_id1 option:selected').html());
     $('#depth_org_2').html($('#org_id2 option:selected').html());
-
 
     pageObj.fid1 = "<tmpl_var name=fid1>";
     pageObj.fid2 = "<tmpl_var name=fid2>";

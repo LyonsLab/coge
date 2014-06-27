@@ -7,7 +7,6 @@ use Getopt::Long;
 
 my ($help, $org, $version, $type, $chr, $DEBUG, $name, $anno);
 
-
 GetOptions ("h|help" =>  \$help,
             "o|org=s" => \$org,
             "v|version=s" => \$version,
@@ -17,7 +16,6 @@ GetOptions ("h|help" =>  \$help,
 	    "n|name|accn=s" =>\$name,
 	    "a|anno=s"=>\$anno,
             );
-
 
 my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
 my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
@@ -75,4 +73,3 @@ sub cogesearch
 	print join ("\t", $name->name, $name->name." ". join (", ", map {$_->annotation} $name->feature->annotations)),"\n";
       }
   }
-

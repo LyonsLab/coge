@@ -17,14 +17,13 @@ $s->storage->debug(0);
 
 =begin
 my $rs = $s->resultset('Feature')->esearch(
-        { 
+        {
             'me.dataset_id' => 505,
             'feature_type.name' => 'CDS'
         },
         {
             join => 'feature_names'
         });
-
 
 while( my $feat = $rs->next()){
     my $name = ($feat->names())[0];
@@ -104,4 +103,3 @@ foreach my $chr ( keys %feats ) {
 
     #exit();
 }
-

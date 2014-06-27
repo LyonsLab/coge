@@ -56,7 +56,6 @@ __PACKAGE__->belongs_to("experiment_type" => "CoGeX::Result::ExperimentType", "e
 
 1;
 
-
 =head1 AUTHORS
 
  Eric Lyons
@@ -69,7 +68,6 @@ it and/or modify it under the same terms as Perl itself.
 
 The full text of the license can be found in the
 LICENSE file included with this module.
-
 
 =head1 SEE ALSO
 

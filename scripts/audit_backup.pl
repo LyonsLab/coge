@@ -26,7 +26,7 @@ my @files;
 find(
 	sub {
 		push @files, $File::Find::name if (not -d $File::Find::name);
-	}, 
+	},
 	( $source_dir )
 );
 
@@ -37,14 +37,14 @@ foreach my $file (sort @files) {
 	$backup_file =~ s/$source_dir//;
 	$backup_file = $backup_dir . $backup_file;
 	print STDERR "       to $backup_file\n";
-	
+
 	my $md5_source = local_md5sum($file);
 	print STDERR "   source: $md5_source\n" if ($md5_source);
-	
+
 	my $md5_backup = irods_md5sum($backup_file);
 	print STDERR "   backup: $md5_backup\n" if ($md5_backup);
-	
-	die "Mismatch detected!\n" if (!$md5_backup or !$md5_source or $md5_backup ne $md5_source); 
+
+	die "Mismatch detected!\n" if (!$md5_backup or !$md5_source or $md5_backup ne $md5_source);
 }
 
 # All done!
@@ -55,7 +55,7 @@ exit;
 #-------------------------------------------------------------------------------
 sub local_md5sum {
 	my $filepath = shift;
-	
+
 	my $cmd = "cat $filepath | md5sum";
     my $out = qx{ $cmd };
     if ( $? != 0 ) {
@@ -69,7 +69,7 @@ sub local_md5sum {
 
 sub irods_md5sum { #FIXME dup of CoGe::Accessory::IRODS::irods_checksum()
 	my $filepath = shift;
-	
+
 	my $cmd = "ichksum $filepath";
     my @out = qx{ $cmd };
     if ( $? != 0 ) {

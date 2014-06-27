@@ -11,7 +11,7 @@ $(document).ready(function(){
 		dataType: "html",
 		cache: false,
 	});
-	
+
 	//set_table();
 	$(".dialog_box").dialog({autoOpen: false, width: 500, maxWidth: 600});
 });
@@ -62,15 +62,15 @@ function update_group_info (ugid){
 
 function run_get_group_info(divid, ugid){
 	// create a new closure who's scope does *not*
-	// include the `divid` value so that callback will 
-	// not clobber the `divid` variable 
+	// include the `divid` value so that callback will
+	// not clobber the `divid` variable
 	var create_callback = function(divid) {
 		var local_divid = divid;
 		return function (data) {
 			$('#'+local_divid).html(data);
 			//set_table();
 		};
-	}; 
+	};
 
 	$.ajax({
 		data: {
@@ -167,8 +167,6 @@ function delete_group () {
 }
 </SCRIPT>
 
-
-
 <div id="group_info">
  <TMPL_VAR NAME="GROUP_INFO">
 </div>
@@ -179,8 +177,6 @@ function delete_group () {
 
 <div id="admin_stuff"></div>
 </TMPL_IF> <!-- MAIN -->
-
-
 
 <TMPL_IF NAME="EDIT_GROUP_INFO">
 <table class="small">
@@ -200,13 +196,11 @@ function delete_group () {
    </TMPL_LOOP>
    </select>
   </td>
- </tr> 
+ </tr>
 </table>
 <br>
 <span onClick="update_group_info(<TMPL_VAR NAME=UGID>);" class="ui-button ui-corner-all">Update Group Info</span>
 </TMPL_IF>
-
-
 
 <TMPL_IF NAME="MODIFY_USERS">
 <table class="small">
@@ -220,11 +214,11 @@ function delete_group () {
      </TMPL_LOOP>
     </select>
    </form>
-   <SCRIPT TYPE="text/javascript"> 
+   <SCRIPT TYPE="text/javascript">
     var current_user_filter = new filterlist(document.current_users.current_ugid);
    </SCRIPT>
    Filter: <INPUT NAME="regexp" onKeyUp="current_user_filter.set(this.value)" size="10"/>
-  </td> 
+  </td>
   <td>
    <span id="remove_user" href="javascript:void(0)" onClick="remove_user(<TMPL_VAR NAME=UGID>);" style="display:none" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span>
    <span id="add_user" href="javascript:void(0)" onClick="add_user(<TMPL_VAR NAME='UGID'>);" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>
@@ -239,7 +233,7 @@ function delete_group () {
     </select>
     <br>
    </form>
-   <SCRIPT TYPE="text/javascript"> 
+   <SCRIPT TYPE="text/javascript">
     var new_user_filter = new filterlist(document.new_users.new_ugid);
    </SCRIPT>
    Filter: <INPUT name="regexp" onKeyUp="new_user_filter.set(this.value)" size="10"/>
@@ -251,8 +245,6 @@ function delete_group () {
 -->
 <span onClick="$(this).parent().dialog('close');" style="float:right;margin-top:15px;" class="ui-button ui-corner-all ui-button-go">Done</span>
 </TMPL_IF>
-
-
 
 <!-- <TMPL_IF NAME=ADD_LISTS>
 <SCRIPT language="JavaScript">
@@ -276,8 +268,6 @@ search_lists(<TMPL_VAR NAME=UGID>, '');
 <span href="javascript:void(0)" onClick="add_lists_to_group(<TMPL_VAR NAME=UGID>);" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
 </TMPL_IF> -->
 
-
-
 <TMPL_IF NAME="SET_GROUP_CREATOR">
 <table class="small">
  <tr>
@@ -290,7 +280,7 @@ search_lists(<TMPL_VAR NAME=UGID>, '');
      </TMPL_LOOP>
     </select><br>
    </form>
-   <SCRIPT TYPE="text/javascript"> 
+   <SCRIPT TYPE="text/javascript">
     var new_user_filter = new filterlist(document.new_creator.new_creator_uid);
    </SCRIPT>
    Filter: <INPUT name="regexp" onKeyUp="new_user_filter.set(this.value)">
@@ -299,8 +289,6 @@ search_lists(<TMPL_VAR NAME=UGID>, '');
 </table>
 <span href="javascript:void(0)" onClick="set_group_creator(<TMPL_VAR NAME=UGID>);" class='ui-button ui-button-go ui-corner-all'>Set Creator</span>
 </TMPL_IF> <!-- SET_GROUP_CREATOR -->
-
-
 
 <TMPL_IF NAME="ADMIN_AREA">
 <SCRIPT language="JavaScript">

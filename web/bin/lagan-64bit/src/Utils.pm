@@ -35,8 +35,8 @@ sub Reg_Merge( $ ; $ $ $ );
 use vars qw(@ISA @EXPORT $VERSION $JOB $Error $Syslog $Facility $Msg_Prefix);
 
 @ISA = qw(Exporter);
-@EXPORT = qw(Trim Lock_File Unlock_File Write_Log Parse_Filename 
-  Get_Abs_Path Expand_Path Hex2Ascii Ascii2Hex Get_Config_Record 
+@EXPORT = qw(Trim Lock_File Unlock_File Write_Log Parse_Filename
+  Get_Abs_Path Expand_Path Hex2Ascii Ascii2Hex Get_Config_Record
   Get_Random_Key Round Set_Log Log Min Max Reg_Diff Reg_Rem_Overlap
   Reg_Sort Reg_Intersect Reg_Merge redirect_err2log openlogs safe_glob
   daemon wr_log wr_err start_watcher confirm $JOB);
@@ -151,7 +151,7 @@ sub Write_Log( $ $ ; $ $ ) {
 sub Parse_Filename( $ ) {
   my ($name) = @_;
   my ($last_slash_pos, $dir, $file);
-  
+
   if (!defined($name)) { return (); }
   $last_slash_pos = rindex($name, "/");
   if ($last_slash_pos >= 0) {
@@ -167,7 +167,7 @@ sub Parse_Filename( $ ) {
 sub Expand_Path( $ ) {
   my ($path) = @_;
   my $home_dir;
-  
+
   $path && ($path =~ /^~/o) or return $path;
   $path =~ /^~([^\/]*)(.*)$/o;
   $home_dir = $1 ? (getpwnam($1))[7] :
@@ -183,13 +183,13 @@ sub Get_Abs_Path( $ ) {
   $path = Expand_Path($path);
   $path =~ /^\//o or $path = getcwd() . "/$path";
   $path =~ s(/{2,})(/)g;
-  
+
 # get rid of "/./"
 
-  while ($path =~ /^(.*?)\/\.(?:|\/(.*))$/o) {  
+  while ($path =~ /^(.*?)\/\.(?:|\/(.*))$/o) {
     $path = "$1/" . ($2 ? $2 : "");
   }
-  
+
 # get rid of "/../"
 
   while ($path =~ /^(((?:.*?\/)*?)[^\/]+){0,1}?\/\.\.(?:|\/(.*))$/o) {
@@ -204,7 +204,7 @@ sub Get_Abs_Path( $ ) {
 
 sub Get_Random_Key( ; $ ) {
   my ($len) = @_;
-  
+
   if (!defined($len) || ($len !~ /^\d+$/o) || ($len < 2) || ($len > 1024)) {
     $len = 8;
   }
@@ -213,7 +213,7 @@ sub Get_Random_Key( ; $ ) {
 
 sub Hex2Ascii( $ ) {
   my ($str) = @_;
-  
+
   if ($str) { $str =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg; }
   return $str;
 }
@@ -245,7 +245,7 @@ sub Hex2Ascii( $ ) {
     "\\" => "%5C",
     "^" => "%5E",
     "~" => "%7E",
-    "`" => "%60"};	
+    "`" => "%60"};
 
 sub Ascii2Hex( $ ) {
   my ($str) = @_;
@@ -296,7 +296,7 @@ sub Get_Config_Record( $ $ ) {
 
 sub Round( $ ) {
   my ($num) = @_;
-  
+
   return int($num + 0.5);
 }
 
@@ -309,27 +309,27 @@ sub Log( $ $ ) {
 
 sub Set_Log( $ $ ) {
   my ($log_num, $file) = @_;
-  
+
   (defined($log_num) && ($log_num >= 0) && $file) and
     $LOG_FILE[$log_num] = $file;
 }
 
 sub Min( $ $ ) {
   my ($i, $j) = @_;
-  
+
   return ($i < $j) ? $i : $j;
 }
 
 sub Max( $ $ ) {
   my ($i, $j) = @_;
-  
+
   return ($i > $j) ? $i : $j;
 }
 
 sub Reg_Diff( $ $ ; $ $ $ $ $ ) {
   my ($regs1, $regs2, $strict, $s1, $e1, $s2, $e2) = @_;
   my (@new_regs, $start, $end, $new_reg);
-  
+
   $regs1 && $regs2 or return $regs1;
   $s1 ||= 0;
   defined($e1) or $e1 = 1;
@@ -370,7 +370,7 @@ sub Reg_Diff( $ $ ; $ $ $ $ $ ) {
 sub Reg_Rem_Overlap( $ ; $ $ $ ) {
   my ($regs, $strict, $s, $e) = @_;
   my (@new_regs);
-  
+
   $regs or return $regs;
   $s ||= 0;
   defined($e) or $e = 1;
@@ -392,7 +392,7 @@ sub Reg_Rem_Overlap( $ ; $ $ $ ) {
 sub Reg_Sort( $ ; $ $ $ ) {
   my ($regs, $rev, $s, $e) = @_;
   my (@new_regs);
-  
+
   $regs or return $regs;
   $s ||= 0;
   defined($e) or $e = 1;
@@ -406,7 +406,7 @@ sub Reg_Sort( $ ; $ $ $ ) {
 
 sub Reg_Intersect( $ $ ; $ $ $ $ $ ) {
   my ($regs1, $regs2, $strict, $s1, $e1, $s2, $e2) = @_;
-  
+
   $regs1 && $regs2 or return undef;
   $s1 ||= 0;
   defined($e1) or $e1 = 1;
@@ -419,7 +419,7 @@ sub Reg_Intersect( $ $ ; $ $ $ $ $ ) {
 sub Reg_Merge( $ ; $ $ $ ) {
   my ($regs, $strict, $s, $e) = @_;
   my (@new_regs);
-  
+
   $regs or return $regs;
   $s ||= 0;
   defined($e) or $e = 1;
@@ -443,7 +443,7 @@ sub safe_glob {
   my ($regexp, $dir) = @_;
   my (@files);
   local (*DIR);
-  
+
   $dir ||= ".";
   $regexp ||= ".*";
   opendir(DIR, $dir) or return;
@@ -454,22 +454,22 @@ sub safe_glob {
 
 sub redirect_err2log {
   my ($facility) = @_;
-  
+
   $Facility = $facility;
   stderr2log();
 }
 
 sub stderr2log {
   my ($oldfh);
-  
+
   open(STDERR, "> /dev/null");
   open(STDERR, "| logger -p $Facility.err -t '$0\[$$\]'");
-  $oldfh = select(STDERR); $| = 1; select($oldfh);  
+  $oldfh = select(STDERR); $| = 1; select($oldfh);
 }
 
 sub openlogs {
   my ($facility) = @_;
-  
+
   $facility and $Facility = $facility;
   stderr2log();
   setlogsock("unix");
@@ -518,7 +518,7 @@ sub start_watcher {
 
 sub wr_log {
   my $msg = shift;
-  
+
   chomp($msg);
   $msg = ( $Msg_Prefix ? &$Msg_Prefix : "") . $msg;
   if ($Syslog) {
@@ -530,7 +530,7 @@ sub wr_log {
 
 sub wr_err {
   my $msg = shift;
-  
+
   chomp($msg);
   print STDERR (( $Msg_Prefix ? &$Msg_Prefix : ""), "$msg\n");
   return 1;
@@ -539,7 +539,7 @@ sub wr_err {
 sub confirm {
   my ($msg) = @_;
   my ($ans);
-  
+
   print $msg;
   $ans = <STDIN>;
   chomp($ans);

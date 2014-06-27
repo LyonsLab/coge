@@ -68,7 +68,7 @@ sub init {
     my $debug  = $opts{debug};  # optional flag for enabling debugging messages
     my $page_title = $opts{page_title}; # optional page title
     my $ticket_type = $opts{ticket_type}; #optional ticket type (saml or proxy)
-    
+
     if ($cgi) {
     	$ticket = $cgi->param('ticket') || undef;
     	$url    = $cgi->url;
@@ -121,7 +121,7 @@ sub init {
 	        $link = get_tiny_link(
 	            url => 'http://' . $ENV{SERVER_NAME} . $ENV{REQUEST_URI},
 	        );
-	        
+
 	        # Log this page access
 	        CoGe::Accessory::Web::log_history(
 		        db          => $db,
@@ -134,7 +134,7 @@ sub init {
     }
 
     print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . " page_title=" . ($page_title ? $page_title : '') . " user=" . ($user ? $user->name : '') . "\n";
-    
+
     return ( $db, $user, $CONF, $link );
 }
 
@@ -332,13 +332,13 @@ sub logout_coge { # mdb added 3/24/14, issue 329
     my $form        = $opts{form}; # CGI form for calling page
     my $url         = $opts{this_url};
     $url = $form->url() unless $url;
-    print STDERR "Web::logout_coge url=", ($url ? $url : ''), "\n"; 
-    
+    print STDERR "Web::logout_coge url=", ($url ? $url : ''), "\n";
+
     # Delete user session from db
     my $session_id = get_session_id($user->user_name, $ENV{REMOTE_ADDR});
     my ($session) = $coge->resultset('UserSession')->find( { session => $session_id } );
     $session->delete if $session;
-    
+
     print "Location: ", $form->redirect($url);
 }
 
@@ -350,13 +350,13 @@ sub logout_cas {
     my $form        = $opts{form}; # CGI form for calling page
     my $url         = $opts{this_url};
     $url = $form->url() unless $url;
-    print STDERR "Web::logout_cas url=", ($url ? $url : ''), "\n"; 
-    
+    print STDERR "Web::logout_cas url=", ($url ? $url : ''), "\n";
+
     # Delete user session from db
     my $session_id = get_session_id($user->user_name, $ENV{REMOTE_ADDR});
     my ($session) = $coge->resultset('UserSession')->find( { session => $session_id } );
     $session->delete if $session;
-    
+
     print "Location: ", $form->redirect(get_defaults()->{CAS_URL} . "/logout?service=" . $url . "&gateway=1");
 }
 
@@ -442,7 +442,7 @@ sub login_cas_proxy {
 
 sub parse_proxy_response {
 	my $response = shift;
-	
+
 	if ($response =~ /authenticationSuccess/) {
 		my ($user_name) = $response =~ /\<cas\:user\>(.*)\<\/cas\:user\>/;
 		my ($first_name) = $response =~ /\<cas\:firstName\>(.*)\<\/cas\:firstName\>/;
@@ -451,7 +451,7 @@ sub parse_proxy_response {
 		print STDERR "parse_proxy_response: user_name=$user_name first_name=$first_name last_name=$last_name email=$email\n";
 		return ($user_name, $first_name, $last_name, $email);
 	}
-	
+
 	return;
 }
 
@@ -650,7 +650,7 @@ sub get_tiny_link {
 #        return "Unable to produce tiny url from server";
 #    }
 #    return $tiny;
-    
+
     # mdb added 1/8/14, issue 272
     my $ua = new LWP::UserAgent;
 	$ua->timeout(5);

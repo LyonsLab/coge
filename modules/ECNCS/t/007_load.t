@@ -8,5 +8,3 @@ BEGIN { use_ok( 'CoGe::ECNCS::DB::Classification' ); }
 
 my $object = CoGe::ECNCS::DB::Classification->new ();
 isa_ok ($object, 'CoGe::ECNCS::DB::Classification');
-
-

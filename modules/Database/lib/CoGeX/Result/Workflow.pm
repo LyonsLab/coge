@@ -31,7 +31,6 @@ Type: VARCHAR, Default: "", Nullable: yes, Size: 255
 C<date>
 Type: TIMESTAMP, Default: "time created", Nullable: no,
 
-
 =head1 USAGE
 
   use CoGeX;
@@ -56,16 +55,13 @@ __PACKAGE__->set_primary_key("workflow_id");
 __PACKAGE__->has_many('work_orders'=>"CoGeX::Result::WorkOrder","workflow_id");
 __PACKAGE__->belongs_to('user'=>"CoGeX::Result::User","user_id");
 
-
 sub works
   {
     my @works = map {$_->work} shift->work_orders;  #awesome perlese!
     return wantarray ? @works : \@works;
   }
 
-
 1;
-
 
 =head1 AUTHORS
 

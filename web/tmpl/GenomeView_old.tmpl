@@ -58,13 +58,13 @@
 		overflow-y: auto !important;
 	}
 </style>
-    
+
 <script src="js/OpenLayers.js"></script>
 <script src="js/Genomic.js"></script>
 <script src="js/opengenes.js"></script>
 
 <TMPL_INCLUDE NAME="widgets/JBrowse.tmpl">
-    
+
 <script type="text/javascript">
 if(! window.console){ console={}; console.log = console.debug = function(){}}
 
@@ -85,8 +85,8 @@ var gstid = '<TMPL_VAR NAME=GSTID>';
 
 function init_GenomeView(){
 	OpenLayers.Layer.Genomic.prototype.buffer = 1;
-    map = new OpenLayers.GenomeBrowser( $('#map')[0] , 
-    {   
+    map = new OpenLayers.GenomeBrowser( $('#map')[0] ,
+    {
          maxExtent: new
          OpenLayers.Bounds(-500000,-10000,1000000000,10000),
          units     :'bp',
@@ -97,10 +97,9 @@ function init_GenomeView(){
     layers = [
     new OpenLayers.Layer.Genomic( "Ruler" , server
          ,{'ds':ds,'dsg':dsg,  'gstid':gstid, 'chr':chr,layers:"background,ruler"}
-         ,{isBaseLayer:true} 
+         ,{isBaseLayer:true}
      ),
     ]
-
 
     map.addLayers(layers);
 
@@ -180,7 +179,7 @@ function init_GenomeView(){
     map.addLayer(genes);
 
 	<TMPL_VAR NAME="DYNAMIC_LAYERS_ADD">
-	    
+
 	<TMPL_IF NAME="QUANT_LAYER">
     </TMPL_IF>
 
@@ -189,12 +188,10 @@ function init_GenomeView(){
             map.addLayer(transposable);
         </TMPL_IF>
 
-
  	    <TMPL_IF NAME="GEVO_LINK_LAYER">
             local_dup.setVisibility(<TMPL_VAR NAME="GEVO_LINK">);
             map.addLayer(GEvo_link);
             </TMPL_IF>
-
 
             wobble_GC_usage.setVisibility(<TMPL_VAR NAME="WOBBLEGC">);
             map.addLayer(wobble_GC_usage);
@@ -217,7 +214,7 @@ function init_GenomeView(){
             map.addLayer(func_domain);
             </TMPL_IF>
 
-	    <TMPL_IF NAME="REPEATS_LAYER">	
+	    <TMPL_IF NAME="REPEATS_LAYER">
             repeats.setVisibility(<TMPL_VAR NAME="REPEATS">);
             map.addLayer(repeats);
             </TMPL_IF>
@@ -229,7 +226,7 @@ function init_GenomeView(){
             map.addLayer(prot);
             /*                                          zoomLevel */
             map.setCenter(new OpenLayers.BasePair(loc), zoom);
-            bp = new OpenLayers.Control.MousePosition() 
+            bp = new OpenLayers.Control.MousePosition()
 
             map.addControl(new OpenLayers.Control.PanZoomBar());
             map.addControl(bp );
@@ -244,7 +241,6 @@ function init_GenomeView(){
 	    map.events.register('moveend',map,updateSliderPosition);
 	    map.zoomOut();
 
-
 	    /*CUSTOMIZATION FOR SPECIFIC DATASETS*/
             /*
             if(ds == '582'){
@@ -253,7 +249,7 @@ function init_GenomeView(){
                 var bs = ['http://128.32.8.28/rice_count/', 'http://kosh-370-311c-001-d.pmb.berkeley.edu/rice_count/'];
                 map.addLayer( new OpenLayers.Layer.Genomic( "copy count" , bs
                               ,{'seqid': chr }
-                               ,{isBaseLayer:false} 
+                               ,{isBaseLayer:false}
                                             ));
 
             }*/
@@ -268,19 +264,17 @@ function init_GenomeView(){
 
                 map.addLayer( new OpenLayers.Layer.Genomic( "methylation" , bs
                               ,{'seqid': chr }
-                               ,{isBaseLayer:false} 
+                               ,{isBaseLayer:false}
                                             ));
                 map.addLayer( new OpenLayers.Layer.Genomic( "salk-tome expression" , tome
                               ,{'seqid': chr }
-                               ,{isBaseLayer:false} 
+                               ,{isBaseLayer:false}
                                             ));
-
 
             }
 
-
 }
-	
+
 function updateSliderPosition() {
 	var pos_obj = map.getCenter();
 	var pos = pos_obj.lon;
@@ -295,7 +289,7 @@ function updateSliderPosition() {
         function mapMouseUp(e){
             var tx = e.xy.x;
             var ty = e.xy.y;
-            var tot = Math.abs(map.lastMouseX - tx) 
+            var tot = Math.abs(map.lastMouseX - tx)
                 + Math.abs(map.lastMouseY - ty);
             if(4 > tot){
                 // dont need to figure out basepairs from pixels
@@ -312,7 +306,7 @@ function updateSliderPosition() {
                  }
             }
         }
-        
+
 function mapMouseOut(e) {
 	if (pageObj.time) clearTimeout(pageObj.time);
 }
@@ -325,14 +319,14 @@ function mapMouseOut(e) {
        var mouse_y = e.pageY;
        pageObj.time = setTimeout("info_popup()",100);
      }
-     
+
      function info_popup(position_str) {
        var url = 'FeatAnno.pl?chr='+ chr + '&version='+version+'&org='+org+'&loc='
        + parseInt(bp.element.innerHTML) +'&ds='+ds+'&dsg='+dsg+'&gstid='+gstid+'&name_only='+1;
        jfetch(url,'short_anno_popup');
        $('#short_anno_popup').dialog('open');
      }
-	
+
         function updateZoom(){
             $('#resolution').innerHTML = map.getResolution() + 'bp/pixel';
 
@@ -340,14 +334,14 @@ function mapMouseOut(e) {
         function query(x){
            var url = 'FeatAnno.pl?chr='
            + chr + '&version='+version+'&org='+org+'&loc='
-           + x+'&ds='+ds+'&dsg='+dsg+'&gstid='+gstid; 
+           + x+'&ds='+ds+'&dsg='+dsg+'&gstid='+gstid;
 	   $('#query_popup').html(' ');
            jfetch(url,'query_popup');
            $('#query_popup').dialog('open');
          }
-         
+
  function onEnter(e){
-  if (!e){ 
+  if (!e){
    var e = window.event;}
   if(e.which == 13){
     $('#map').css('width',$('#width').val());
@@ -422,9 +416,9 @@ function go_save_options() {
 	var show_funcdomain =func_domain.visibility;
 	var show_prot =prot.visibility;
 	save_options([
-	'args__flat','args__'+$('#flat_models').is(':checked'), 
-	'args__expand','args__'+$('#overlap_models').is(':checked'), 
-	'args__popupanno','args__'+$('#popup_anno').is(':checked'), 
+	'args__flat','args__'+$('#flat_models').is(':checked'),
+	'args__expand','args__'+$('#overlap_models').is(':checked'),
+	'args__popupanno','args__'+$('#popup_anno').is(':checked'),
 	'args__gc','args__'+show_gc,
 	'args__gaga','args__'+show_gaga,
 	'args__gbox','args__'+show_gbox,
@@ -463,17 +457,17 @@ $(function() {
 		dataType: "html",
 		cache: false,
 	});
-	
+
 	$('#select_view').change(function() {
 		var viewer = $(this).find("option:selected").val();
 		if (viewer != 'JBrowse') {
 			$('#jbrowse').hide();
 			$('#main').show();
 			$('#resize').show();
-			
+
 			if (!map && !genomeViewIniting) {
 				genomeViewIniting = true;
-				
+
 				pageObj.getseq = 3;
 				$('#width').val($('#main').width());
 				$('#map').css('width',$('#width').val());
@@ -482,16 +476,16 @@ $(function() {
 				$(".dialog_box").dialog({ autoOpen: false, width: 500  });
 				<TMPL_IF NAME="SHOW_LEGEND">$('.legend').toggle();</TMPL_IF>
 				<TMPL_IF NAME="MAIZEGDB">$('#maizegdb_popup').dialog('open');</TMPL_IF>
-	
+
 				$('#slider').slider({
 					orientation: 'horizontal',
-					max: <TMPL_VAR NAME="CHR_LENGTH">, 
-					value: <TMPL_VAR NAME="LOC">, 
+					max: <TMPL_VAR NAME="CHR_LENGTH">,
+					value: <TMPL_VAR NAME="LOC">,
 					slide: moveMap,
 					change: panMap,
 					stop: panMap,
 				});
-				
+
 				genomeViewIniting = false;
 			}
 		}
@@ -502,11 +496,11 @@ $(function() {
 			$('#jbrowse').show();
 			if (!jbrowse && !jbrowseIniting) {
 				jbrowseIniting = true;
-				
+
 				//var height = $(document).height() - 230; // not working
 				//$('#jbrowse').height(height)
 				$('#jbrowse').html('<img src="picts/ajax-loader.gif"> Loading ...');
-				
+
 				// Initialize JBrowse widget
 				init_JBrowse('jbrowse',
 					function(browser) {
@@ -522,7 +516,6 @@ $(function() {
 	$('#select_view').val(viewer).change();
 });
 </script>
-
 
 <span>Viewer:
 	<select id='select_view'>
@@ -550,8 +543,8 @@ $(function() {
 		<span class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#set_range').show(0);$('#extract_feat').show();$('#grab_seq').hide();$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;"><span class="ui-icon ui-icon-scissors"></span>Extract Features</span>
 		<span class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_info_popup').html('Loading. . .');get_genome_info(['args__dsgid', 'args__<TMPL_VAR NAME=DSG>'],['genome_info_popup']);$('#genome_info_popup').dialog('open');"><span class="ui-icon ui-icon-newwin"></span>Genome Info</span>
 		<br>
-		<span id="set_range" style="display:none" > 
-			<input type=text id='grab_from' value='0'> to <input type='text' id="grab_to" value='0'> 
+		<span id="set_range" style="display:none" >
+			<input type=text id='grab_from' value='0'> to <input type='text' id="grab_to" value='0'>
 		</span>
 		<span id="grab_seq" style="display:none" class='ui-button ui-corner-all' onClick="launch_seqview('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>','<TMPL_VAR NAME=DSG>')"> View Sequence</span>
 		<span id="extract_feat" style="display:none" class='ui-button ui-corner-all' onClick="launch_featlist('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>','<TMPL_VAR NAME=DSG>')">Get Features</span>
@@ -567,7 +560,7 @@ $(function() {
 	<span class="legend ui-button ui-corner-all" onclick="$('.legend').toggle()">Show Legend</span>
 	<span class="legend ui-button ui-corner-all" style="display:none" onclick="$('.legend').toggle()">Hide Legend</span>
 	<div class="legend" style="display:none">
-		<TMPL_IF NAME="MAIZEGDB"> 
+		<TMPL_IF NAME="MAIZEGDB">
 			<span class="ui-button ui-corner-all" onclick="$('#maizegdb_popup').dialog('open')">Maize Researcher Information</span><br>
 		</TMPL_IF>
 		<img width="600" src="/CoGe/picts/GenomeView-legend.png">

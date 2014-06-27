@@ -163,11 +163,11 @@ sub irods_get_path {
             my ( $years, $months, $days, $hours, $minutes ) = $diff->in_units('years', 'months', 'days', 'hours', 'minutes');
             $isNewAccount = (!$years && !$months && !$days && !$hours && $minutes < 5) ? 1 : 0;
         }
-        
+
         if (!$isNewAccount) {
             my $email = $P->{SUPPORT_EMAIL};
             my $body =
-                "irods ils command failed\n\n" 
+                "irods ils command failed\n\n"
               . 'User: '
               . $user->name . ' id='
               . $user->id . ' '
@@ -260,7 +260,7 @@ sub ftp_get_file {
 	my $type = $uri->scheme;
 	my ($filename, $filepath) = fileparse($uri->path);
 	$filepath = $uri->host . $filepath;
-    
+
     #print STDERR "url=$url type=$type filepath=$filepath filename=$filename ", ($username and $password ? "$username $password" : ''), "\n";
     return unless ( $type and $filepath and $filename );
 
@@ -343,7 +343,7 @@ sub search_ncbi_nucleotide { #TODO this can be done client-side instead
     my %opts      = @_;
     my $accn      = $opts{accn};
     my $timestamp = $opts{timestamp};
-    
+
     my $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=$accn";
     my $result = get($esearch);
     #print STDERR $result;
@@ -426,8 +426,8 @@ sub load_genome {
 
 	#print STDERR "load_genome: organism_id=$organism_id name=$name description=$description version=$version type_id=$type_id restricted=$restricted\n";
 
-	# Added EL: 7/8/2013.  Solves the problem when restricted is unchecked.  
-	# Otherwise, command-line call fails with '-organism_id' being passed to 
+	# Added EL: 7/8/2013.  Solves the problem when restricted is unchecked.
+	# Otherwise, command-line call fails with '-organism_id' being passed to
 	# restricted as option
     $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
 
@@ -438,12 +438,12 @@ sub load_genome {
     if ($user_name eq 'public') {
     	return encode_json({ error => 'Not logged in' });
     }
-    
+
     # Check data items
     return encode_json({ error => 'No files specified' }) unless $items;
     $items = decode_json($items);
     my @files = map { catfile($TEMPDIR, $_->{path}) } @$items;
-    
+
     # Setup staging area
     my $stagepath = catdir($TEMPDIR, 'staging');
     mkpath $stagepath;
@@ -457,7 +457,7 @@ sub load_genome {
             push @accns, $path;
         }
     }
-    
+
     # Submit workflow to add genome
     my ($workflow_id, $error_msg);
     if (@accns) { # NCBI accession numbers specified
@@ -465,10 +465,10 @@ sub load_genome {
             user => $user,
             accns => \@accns
         );
-    } 
+    }
     else { # File-based load
         ($workflow_id, $error_msg) = create_genome_from_file(
-            user => $user, 
+            user => $user,
             metadata => {
                 name => $name,
                 description => $description,
@@ -484,7 +484,7 @@ sub load_genome {
     unless ($workflow_id) {
         return encode_json({ error => "Workflow submission failed: " . $error_msg });
     }
-    
+
     # Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
         url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id
@@ -498,7 +498,7 @@ sub get_load_log {
     my $workflow_id = $opts{workflow_id};
     return unless $workflow_id;
     #TODO authenticate user access to workflow
-    
+
     my (undef, $results_path) = get_workflow_paths($user->name, $workflow_id);
     return unless (-r $results_path);
 
@@ -507,13 +507,13 @@ sub get_load_log {
 
     my $result = CoGe::Accessory::TDS::read($result_file);
     return unless $result;
-    
+
     my $genome_id = (exists $result->{genome_id} ? $result->{genome_id} : undef);
     my $links = (exists $result->{links} ? $result->{links} : undef);
 
     return encode_json(
-        { 
-            genome_id   => $genome_id, 
+        {
+            genome_id   => $genome_id,
             links       => $links
         }
     );

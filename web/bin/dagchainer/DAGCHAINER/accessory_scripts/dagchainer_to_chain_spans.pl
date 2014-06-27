@@ -3,7 +3,6 @@
 use strict;
 use warnings;
 
-
 my @chains;
 my $curr_chain = undef;
 
@@ -11,14 +10,14 @@ while (<>) {
 	chomp;
 	my $line = $_;
 	if (/^\#/) {
-		
+
 		my @x = split (/\s+/, $line);
 		my $accA = $x[2];
 		my $accB = $x[4];
 		my $orientation = ($line =~ /\(reverse\)/) ? '-' : '+';
 		$line =~ /num aligned pairs: (\d+)/ or die "Error, cannot find num aligned pairs";
 		my $num_aligned_pairs = $1;
-		
+
 		$curr_chain = {
 			accA => $accA,
 			accB => $accB,
@@ -26,14 +25,14 @@ while (<>) {
 			num_gene_pairs => $num_aligned_pairs,
 			coordsA => [],
 			coordsB => [],
-			
+
 		};
-		
+
 		push (@chains, $curr_chain);
-		
+
 	}
 	else {
-		my ($contigA, $geneA, $lendA, $rendA, 
+		my ($contigA, $geneA, $lendA, $rendA,
 			$contigB, $geneB, $lendB, $rendB,
 			$evalue, $dagchainscore) = split (/\t/);
 
@@ -41,11 +40,11 @@ while (<>) {
 		push (@{$curr_chain->{coordsB}}, $lendB, $rendB);
 
 	}
-	
+
 }
 
 foreach my $chain (@chains) {
-	
+
 	my $accA = $chain->{accA};
 	my $accB = $chain->{accB};
 	my $orient = $chain->{orient};
@@ -55,7 +54,6 @@ foreach my $chain (@chains) {
 	@coordsA = sort {$a<=>$b} @coordsA;
 	my $lendA = shift @coordsA;
 	my $rendA = pop @coordsA;
-	
 
 	my @coordsB = @{$chain->{coordsB}};
 	@coordsB = sort {$a<=>$b} @coordsB;
@@ -66,9 +64,4 @@ foreach my $chain (@chains) {
 
 }
 
-
 exit(0);
-
-	
-	
-	

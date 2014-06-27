@@ -6,12 +6,12 @@ $(function() {
 		timing('org_search');
 		$("._orgviewresult").fadeIn();
 	</TMPL_IF>
-	
+
 	// Auto-show results
     if ($('#org_search').val()) {
         timing('org_search');
-    }  
-  
+    }
+
     $(".dialog").dialog({ autoOpen: false} );
 
     // Initialize jQuery AJAX
@@ -124,7 +124,7 @@ function add_to_genomelist_nowarn(genome_name,gstid)
 {
 	var check = $('#'+gstid).val();
 	  if (check){
-	   
+
 	   return;
 	  }else{
 	  var html = '<option id='+gstid+' value='+gstid+ ' >'+genome_name+'</option>';
@@ -146,14 +146,13 @@ function add_to_genomelist(genome_name,gstid) {
 	  $('#blank').remove();
 	  $('#genomelist_choice').append(html);
 	  counting();
-	
+
 }
 
 function open_aa_usage_table (html) {
     $('#aa_usage_table').html(html);
-    $('#aa_table').tablesorter(); 
+    $('#aa_table').tablesorter();
 }
-
 
 function clear_genome_list(){
 	var listlength = $('#genomelist_choice')[0].length;
@@ -166,7 +165,7 @@ function clear_genome_list(){
 
 function counting(){
 	var count=0;
-	if($('#blank').val()){ count =0;} 
+	if($('#blank').val()){ count =0;}
 	else { count = $('#genomelist_choice')[0].length;}
 	if(count==0) { $('#genomelist_choice').html('<option id="blank" value=null>No genome selected</option>') ; }
 	$('#count').html('Genome Count:'+count);
@@ -192,15 +191,15 @@ function add_all_genomes_from_org(val){
 }
 
 function get_organism_name_chain(val) {
-    get_orgs(['args__name','args__'+val, 'args__dsgid','dsg_id'], [get_org_info_chain]);	 
+    get_orgs(['args__name','args__'+val, 'args__dsgid','dsg_id'], [get_org_info_chain]);
 }
 
 function get_organism_desc_chain(val) {
-    get_orgs(['args__desc','args__'+val, 'args__dsgid','dsg_id'], [get_org_info_chain]);	 
+    get_orgs(['args__desc','args__'+val, 'args__dsgid','dsg_id'], [get_org_info_chain]);
 }
 
 function get_organism_chain(val) {
-	get_orgs(['args__name','args__'+val, 'args__desc','args__'+val, 'args__dsgid','dsg_id'], [get_org_info_chain]);	 
+	get_orgs(['args__name','args__'+val, 'args__desc','args__'+val, 'args__dsgid','dsg_id'], [get_org_info_chain]);
 }
 
 function get_org_info_chain(val, val2) {
@@ -213,7 +212,7 @@ function get_org_info_chain(val, val2) {
 	get_org_info(['args__oid','org_id'],[genome_chain]);
 }
 
-function get_dataset_name_chain(val) { 
+function get_dataset_name_chain(val) {
     if (val){
     	get_dataset(['args__dsname','args__'+val], [dataset_info_chain]);
     	$('#org_list').html('<hidden id="org_id">');
@@ -227,7 +226,7 @@ function genome_chain(val) {
     if (val) $('#org_info').html(val);
     get_genomes(['args__oid','org_id','args__dsgid','dsg_id'],[genome_info_chain]);
     $('#dsg_list').html('<hidden id="dsg_id">');
-    $('#dsg_count,#dsg_info,#ds_count,#ds_info,#chr_list,#chr_count,#chr_info,#viewer,#get_seq').empty();	
+    $('#dsg_count,#dsg_info,#ds_count,#ds_info,#chr_list,#chr_count,#chr_info,#viewer,#get_seq').empty();
     $('#ds_list').html('<hidden id="ds_id">');
 }
 
@@ -258,11 +257,10 @@ function dataset_info_chain(val, val2) {
 function dataset_chr_info_chain(val, val2, val3) {
 	if (val) $('#ds_info').html(val);
 	if (val2) $('#chr_list').html(val2);
-	if (val3) $('#chr_count').html(val3);	
+	if (val3) $('#chr_count').html(val3);
 	$('#viewer,#get_seq,#feature_count_data').empty();
 	get_dataset_chr_info(['ds_id', 'chr', 'dsg_id'],[populate_dataset_chr_info]);
 }
-
 
 function populate_dataset_chr_info (chr_info, viewer, get_seq){
 	$('#chr_info').html(chr_info);
@@ -290,7 +288,7 @@ function launch_viewer (dsgid, chr) {
 function timing(val){
 	if (pageObj.time)
 		clearTimeout(pageObj.time);
-  
+
 	var searchterm = $('#org_search').val();
 	if (!searchterm || searchterm.length < 3 || !val) {
 		$("._orgviewresult").hide();
@@ -428,7 +426,7 @@ function export_bed () {
 
   <tr class="hidden _orgviewresult">
     <td>
-      <span class="coge-table-header">Organisms: </span><span class='small' id='org_count'><TMPL_VAR NAME="ORG_COUNT"></span> 
+      <span class="coge-table-header">Organisms: </span><span class='small' id='org_count'><TMPL_VAR NAME="ORG_COUNT"></span>
       <div id="org_list"><TMPL_VAR NAME="ORG_LIST"></div>
       <!--
    	  <span class="ui-button ui-corner-all" id='allorg' onClick="add_all_org();$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add all to Genome List</span><br>
@@ -439,20 +437,20 @@ function export_bed () {
       <div id='org_info' class="small ui-corner-all ui-widget-content"></div>
     </td>
   </tr>
-    
+
   <tr class="hidden _orgviewresult" valign='top'>
     <td>
-      <span class="coge-table-header">Genomes: </span><span class='small' id='dsg_count'><TMPL_VAR NAME="DSG_COUNT"></span> 
+      <span class="coge-table-header">Genomes: </span><span class='small' id='dsg_count'><TMPL_VAR NAME="DSG_COUNT"></span>
       <div style="vertical-align: top;" id="dsg_list"><TMPL_VAR NAME="DSG_LIST"></div>
     <td valign='top'>
       <div class="coge-table-header">Genome Information</div>
       <div id="dsg_info" class = "small ui-corner-all ui-widget-content"><TMPL_VAR NAME="DSG_INFO"></div>
     </td>
   </tr>
-	
+
   <tr class="hidden _orgviewresult" valign="top">
     <td>
-      <span class="coge-table-header">Datasets: </span><span class=small id=ds_count><TMPL_VAR NAME="DS_COUNT"></span> 
+      <span class="coge-table-header">Datasets: </span><span class=small id=ds_count><TMPL_VAR NAME="DS_COUNT"></span>
       <div style="vertical-align: top;" id="ds_list"><TMPL_VAR NAME="DS_LIST"></div>
     </td>
     <td valign="top">
@@ -460,10 +458,10 @@ function export_bed () {
       <div id="ds_info" class = "small ui-corner-all ui-widget-content" ><TMPL_VAR NAME="DS_INFO"></div>
     </td>
   </tr>
-  
+
   <tr class="hidden _orgviewresult" valign="top">
     <td>
-      <span class="coge-table-header">Chromosomes: </span><span class='small' id='chr_count'><TMPL_VAR NAME="CHR_COUNT"></span> 
+      <span class="coge-table-header">Chromosomes: </span><span class='small' id='chr_count'><TMPL_VAR NAME="CHR_COUNT"></span>
       <div style="vertical-align: top;" id="chr_list"><TMPL_VAR NAME="CHR_LIST"></div>
     </td>
     <td valign="top">
@@ -471,7 +469,7 @@ function export_bed () {
       <div id="chr_info" class = "small ui-corner-all ui-widget-content" ><TMPL_VAR NAME="CHR_INFO"></div>
     </td>
   </tr>
-  
+
   <tr class="hidden _orgviewresult" valign="top">
     <td>
       <div id="gn_list"><TMPL_VAR NAME="GN_LIST"></div>
@@ -486,8 +484,6 @@ function export_bed () {
   </tr>
 </table>
 
-
-
 <div class="dialog_box hidden" id="gc_histogram" title="Histogram of GC Content"><input type=hidden id=feat_gc_min></div>
 <div class="dialog_box hidden" id="wobble_gc_histogram" title="Histogram of Wobble GC Content for CDS"></div>
 <div class="dialog_box hidden" id="wobble_gc_diff_histogram" title="(CDS GC - wobble GC) Content Histogram"></div>
@@ -495,8 +491,6 @@ function export_bed () {
 <div class="dialog_box hidden" id="aa_usage_table" title="Amino Acid Usage Table"></div>
 <div class="dialog_box hidden" id="edit_genome_info" title="Edit Genome Information"></div>
 <div class="dialog_box hidden" id="chromosome_hist" title="Chromosome Size"></div>
-
-
 
 <div class="dialog hidden" title="Genome List" id="geno_list">
     <span id=count class="small count">Genome Count: 0</span><br>

@@ -176,7 +176,6 @@ sub main() {
 	return 0;
 }
 
-
 # Startup tasks
 sub init() {
 	system('export LC_ALL="C"'); # Things may misbehave if locale is set to UTF-8
@@ -315,7 +314,6 @@ sub init() {
 	}
 }
 
-
 # Load sequence names and sizes either from GPDB or from file
 sub getSeqSizes($$$) {
 	my ($dbh, $dataset, $gen_size_file) = @_;
@@ -334,7 +332,6 @@ sub getSeqSizes($$$) {
 		return \%sizes;
 	}
 }
-
 
 # Convert BLAT to CHAOS if necessary
 # Flip hits on circular sequence if necessary
@@ -408,7 +405,6 @@ $$cur_align[START2] += $erode_align; $$cur_align[END2] -= $erode_align;
 		print "$0: Single-sequence flip mode: ".($flip_counter+0)." hits flipped\n" if $debug;
 	}
 }
-
 
 # Load all hits into a hash table, then write the hits for each sequence into a file
 # Run SLAGAN on each of these files, via worker instances either on the cluster or sequentially
@@ -498,7 +494,7 @@ sub runSLAGAN() {
 			print WH2 $$cur_align[SEQ1]." ".$$cur_align[START1]." ".$$cur_align[END1]."; ".$$cur_align[SEQ2]." ".$$cur_align[START2]." ".$$cur_align[END2]."; "."score = ".$$cur_align[SCORE]." (".$$cur_align[ORIENT].")\n";
 			print WH3 $$cur_align[SEQ1]." ".$$cur_align[START1]." ".$$cur_align[END1]."; ".$$cur_align[SEQ2]." ".$$cur_align[START2]." ".$$cur_align[END2]."; "."score = ".$$cur_align[SCORE]." (".$$cur_align[ORIENT].")\n";
 		}
-		
+
 #		print WH2 $$cur_align[SEQ1]." ".$$cur_align[START1]." ".$$cur_align[END1]."; ".$$cur_align[SEQ2]." ".$$cur_align[START2]." ".$$cur_align[END2]."; "."score = ".$$cur_align[SCORE]." (".$$cur_align[ORIENT].")\n" if @$cur_align;
 #		print WH3 $$cur_align[SEQ1]." ".$$cur_align[START1]." ".$$cur_align[END1]."; ".$$cur_align[SEQ2]." ".$$cur_align[START2]." ".$$cur_align[END2]."; "."score = ".$$cur_align[SCORE]." (".$$cur_align[ORIENT].")\n" if @$cur_align;
 #		$cur_align = $next_align;
@@ -565,12 +561,11 @@ sub runSLAGAN() {
 
 	unlink "$tmp_dir$input_glob.chaos" unless $nodelete;
 	unlink $tmp_dir."CLUSTER_JOB_PARAMS" unless $nodelete;
-	
+
 	foreach my $file (@input_files) {
 		unlink $tmp_dir.$file.".chaos" unless $nodelete;
 	}
 }
-
 
 sub reprintInputHit($$$) {
 	my ($base_gen, $align, $FH) = @_;
@@ -587,7 +582,6 @@ sub reprintInputHit($$$) {
 	}
 }
 
-
 sub writeJobFile($$) {
 	my ($job_id, $seq_list) = @_;
 	local *LIST;
@@ -598,7 +592,6 @@ sub writeJobFile($$) {
 
 	foreach my $file (sort alnum keys(%$seq_list)) { unlink $file unless $nodelete; }
 }
-
 
 # Separate input into files based on sequence name and reverse order in gen2base hits
 sub reprintInputHits($$$) {
@@ -649,7 +642,6 @@ sub reprintInputHits($$$) {
 	$sizes2 = \%pruned_sizes if $base_gen == 2;
 	return $job_id;
 }
-
 
 sub seqBelowMinScore($) {
 	my ($line) = @_;
@@ -757,7 +749,6 @@ sub processResults() {
 	print STDERR "$0: Warning: Alignments for $dropped_seqs sequences discarded due to total score below cutoff ($min_seq_score)\n" if $dropped_seqs and not $quiet;
 }
 
-
 sub removeSLAGANOutput() {
 	my $input_prefix = $tmp_dir.$input_files[0].".gen1base";
 	foreach my $seq (sort alnum keys(%$sizes1)) { unlink "$input_prefix.$seq.chaos.glocal-out" unless $nodelete; }
@@ -770,13 +761,11 @@ sub removeSLAGANOutput() {
 	rmdir $tmp_dir;
 }
 
-
 sub alignHashID($) {
 	my ($align) = @_;
 #	return 23*$$align[START1] + 41*$$align[START2] + 61*$$align[END1] + 83*$$align[END2];
 	return $$align[SEQ1].":".$$align[START1]."-".$$align[END1]."=".$$align[SEQ2].":".$$align[START2]."-".$$align[END2];
 }
-
 
 # The chain writer lags the chainer by two chains because the full contents of neighboring chains must be known.
 sub printChainToTemp($$$$) {
@@ -798,7 +787,6 @@ sub printChainToTemp($$$$) {
 	print $FH "\n";
 }
 
-
 sub chainBase1Hits($$) {
 	my ($FH, $hashesDM) = @_;
 	local *OUT;
@@ -819,7 +807,7 @@ sub chainBase1Hits($$) {
 		$$cur_align[SEQ2] =~ s/^\s+//; $$cur_align[SEQ2] =~ s/\s+$//;
 #warn("Seen: ".$_) if $$cur_align[SEQ1] eq "AC002301.1";
 		checkAlignCoords($cur_align);
-				
+
 		if ($proflip and defined $flipped_aligns{alignHashID($cur_align)}) {
 			my $seq2center = $$sizes2{(keys(%$sizes2))[0]} / 2;
 			my $j = $$cur_align[START2];
@@ -902,7 +890,6 @@ printChainToTemp(*OUT, $prev_chain, $cur_chain, undef);# unless defined $cur_seq
 	print "$0: Single-sequence flip mode: ".($flip_counter+0)." gen1base hits backflipped\n" if $debug and $proflip;
 	warn "$0: Warning: ".@bad_aligns." bad SLAGAN alignments discarded" if @bad_aligns > 0;
 }
-
 
 # Input is base 2, i.e. (start2 end2)=(start1 end1)...
 sub chainBase2Hits($) {
@@ -987,7 +974,6 @@ sub chainBase2Hits($) {
 	warn "$0: Warning: ".@bad_aligns." bad SLAGAN alignments discarded" if @bad_aligns > 0;
 }
 
-
 # Input: file with lines of the form "seq1 seq2 hash" (seq2 should be the same per file)
 # Output: hash(key->align hash ID, value->1). Input file is deleted.
 sub load2MHashes($) {
@@ -1004,7 +990,6 @@ sub load2MHashes($) {
 	unlink $file unless $nodelete;
 	return \%hashes;
 }
-
 
 # Input: file with gen2base alignments which should have the same seq1 ordered by start2 or not exist
 # Output: hash(key->align hash ID, value->[prev align hash ID, next align hash ID]). Input file is deleted.
@@ -1036,7 +1021,6 @@ sub loadBase2Hashes($) {
 	unlink $file unless $nodelete;
 	return \%hashes;
 }
-
 
 # Load chained regions and expand them according to the expansion rules, then print them out and display some chain statistics
 sub postProcessRegions() {
@@ -1076,7 +1060,6 @@ sub postProcessRegions() {
 	close RH3; waitpid $sort_pid3, 0;
 	close OUT;
 }
-
 
 # Input: chains ordered by seq1, start1
 # Output: chains expanded on seq1
@@ -1121,7 +1104,6 @@ sub expandSeq1($$) {
 	expSeq1Reg($WH, $cur_chain, $next_chain, undef, $cur_seq);
 }
 
-
 sub expSeq1Reg($$$$$) {
 	my ($WH, $prev_chain, $cur_chain, $next_chain, $cur_seq) = @_;
 	my ($preexpand1, $postexpand1);
@@ -1163,7 +1145,6 @@ sub expSeq1Reg($$$$$) {
 	}
 	print $WH "\n";
 }
-
 
 # Input: chains ordered by seq2, start2
 # Output: chains expanded on seq1 and seq2 (final output)
@@ -1207,7 +1188,6 @@ sub expandSeq2($$) {
 	}
 	expSeq2Reg($WH, $cur_chain, $next_chain, undef, $cur_seq);
 }
-
 
 sub expSeq2Reg($$$$$) {
 	my ($WH, $prev_chain, $cur_chain, $next_chain, $cur_seq) = @_;
@@ -1267,7 +1247,6 @@ sub expSeq2Reg($$$$$) {
 	print $WH "\n";
 }
 
-
 sub finalExpReg($$$$$) {
 	my ($WH, $prev_chain, $cur_chain, $next_chain, $cur_seq) = @_;
 	my ($preexpand1, $postexpand1, $preexpand2, $postexpand2);
@@ -1308,7 +1287,6 @@ sub finalExpReg($$$$$) {
 	}
 	print $WH "\n";
 }
-
 
 sub finalExpand($$) {
 	my ($RH, $WH) = @_;
@@ -1381,7 +1359,6 @@ sub finalExpand($$) {
 	}
 }
 
-
 # Called only in a "$0 worker" invocation
 sub workerRun($$$$) {
 	my ($tar_file, $score_file, $SLAGAN, $debug) = @_;
@@ -1417,7 +1394,6 @@ sub workerRun($$$$) {
 	unlink(glob("core.*")) unless $nodelete;
 }
 
-
 # Interrupt handler
 sub dequeueClustJobs($) {
 	print "\n$0: Received SIG".$_[0].". Cleaning up... ";
@@ -1441,7 +1417,6 @@ sub dequeueClustJobs($) {
 	print "\n";
 	exit(1);
 }
-
 
 # Retrieve sequence length data from GPDB
 sub get_all_seqs($$) {
@@ -1472,7 +1447,6 @@ sub get_all_seqs($$) {
 	return \%sizes;
 }
 
-
 sub alnum {
 	my ($i);
 	my ($len1, $len2) = (length($a), length($b));
@@ -1489,7 +1463,6 @@ sub alnum {
 	(($a_n <=> $b_n) || ($a_s cmp $b_s)) : ($a cmp $b);
 }
 
-
 sub isBLAT($) {
 	my ($file) = @_;
 	local *FH;
@@ -1504,7 +1477,6 @@ sub isBLAT($) {
 		die("$0: Unknown input format in $file. Stopped");
 	}
 }
-
 
 sub getMinSeqScore($) {
 	my ($file) = @_;
@@ -1521,7 +1493,6 @@ sub getMinSeqScore($) {
 	return $score;
 }
 
-
 sub writeSizes($$) {
 	my ($sizes, $outfile) = @_; local *FH;
 	open(FH, "> ".$outfile) or die("$0: Could not open file $outfile for writing: ".$!);
@@ -1530,7 +1501,6 @@ sub writeSizes($$) {
 	}
 	close FH;
 }
-
 
 # Borrowed from if.pm to enable standalone conditional module loading on earlier versions of Perl
 sub useIf($$) {
@@ -1544,7 +1514,6 @@ sub useIf($$) {
 	goto &$method_entry_point if $method_entry_point;
 }
 
-
 sub checkAlignCoords($) {
 	my $cur_align = $_[0];
 	if ($$cur_align[START1] > $$cur_align[END1]) { my $i = $$cur_align[START1]; $$cur_align[START1] = $$cur_align[END1]; $$cur_align[END1] = $i; }
@@ -1553,7 +1522,6 @@ sub checkAlignCoords($) {
 #	if ($$cur_align[OSTART1] > $$cur_align[OEND1]) { my $i = $$cur_align[OSTART1]; $$cur_align[OSTART1] = $$cur_align[OEND1]; $$cur_align[OEND1] = $i; }
 #	if ($$cur_align[OSTART2] > $$cur_align[OEND2]) { my $i = $$cur_align[OSTART2]; $$cur_align[OSTART2] = $$cur_align[OEND2]; $$cur_align[OEND2] = $i; }
 }
-
 
 =head1 NAME
 

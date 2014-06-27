@@ -58,23 +58,23 @@ if ($cleanup) {
 #			$group->delete if ($go);
 #		}
 #	}
-#	
+#
 #	foreach my $list ($coge->resultset('List')->all) {
 #		# Delete owner list (auto-cascades down owner list and associated list_connectors)
 #		if ($list->description =~ /owner list/i and $list->locked) {
 #			print STDERR "Deleting owner list '" . $list->name . "' id=" . $list->id . "\n";
 #			$list->delete if ($go);
 #		}
-#	}	
+#	}
 
 	# Remove "locked" column from list table
 	#drop_column("list", "locked");
 	# Remove "user_group_id" column from list table
 	#drop_column("list", "user_group_id");
 	# Remove user_group_connector table
-	#sql("drop table user_group_connector");	
-	
-	exit;	
+	#sql("drop table user_group_connector");
+
+	exit;
 }
 
 #-------------------------------------------------------------------------------
@@ -119,7 +119,7 @@ foreach my $group ($coge->resultset('UserGroup')->all) {
 				foreach my $child (@{$children->{$type}}) {
 					print STDERR "   add user-child connection (owner) uid=" . $group->creator_user_id . " child_id=" . $child->id . " child_type=" . $type . " \n";
 					if ($go) {
-						my $conn = $coge->resultset('UserConnector')->find_or_create( { 
+						my $conn = $coge->resultset('UserConnector')->find_or_create( {
 							parent_id => $group->creator_user_id,
 							parent_type => 5, #FIXME hardcoded to "user"
 							child_id => $child->id,
@@ -138,7 +138,7 @@ foreach my $group ($coge->resultset('UserGroup')->all) {
 			next if ($list->list_type_id == 3); # skip owner list
 			print STDERR "   add group-list connection ugid=" . $group->id . " lid=" . $list->id . "\n";
 			if ($go) {
-				my $conn = $coge->resultset('UserConnector')->find_or_create( { 
+				my $conn = $coge->resultset('UserConnector')->find_or_create( {
 					parent_id => $group->id,
 					parent_type => 6, #FIXME hardcoded to "group"
 					child_id => $list->id,
@@ -148,7 +148,7 @@ foreach my $group ($coge->resultset('UserGroup')->all) {
 				die unless $conn;
 			}
 		}
-		
+
 		# Map group member users (user_group_connector) in user_connector;
 		my @users;
 		foreach my $conn ($coge->resultset('UserGroupConnector')->search({user_group_id=>$group->id})) {
@@ -157,7 +157,7 @@ foreach my $group ($coge->resultset('UserGroup')->all) {
 		foreach my $user (@users) {
 			print STDERR "   add group-user connection ugid=" . $group->id . " uid=" . $user->id . "\n";
 			if ($go) {
-				my $conn = $coge->resultset('UserConnector')->find_or_create( { 
+				my $conn = $coge->resultset('UserConnector')->find_or_create( {
 					parent_id => $user->id,
 					parent_type => 5, #FIXME hardcoded to "user"
 					child_id => $group->id,
@@ -177,7 +177,6 @@ foreach my $group ($coge->resultset('UserGroup')->all) {
 $coge->resultset('Log')->create( { user_id => 0, page => $0, description => 'database migrated to coge5.5' } );
 print STDERR "All done!\n";
 exit;
-
 
 #-------------------------------------------------------------------------------
 sub sql {
@@ -209,4 +208,3 @@ sub add_column {
 	}
 	$sth->finish();
 }
-

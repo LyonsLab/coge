@@ -102,12 +102,12 @@ sub gen_fasta {
         );
         foreach my $feat (@feats) {
             my $t3 = new Benchmark if $debug;
-            
+
             # mdb added 3/25/14, issue 338 - handle start/stop reversed
             my $start = $feat->start;
             my $stop = $feat->stop;
             ($start, $stop) = ($stop, $start) if ($start > $stop);
-            
+
             my ($chr) = $feat->chromosome;#=~/(\d+)/;
             my $name;
             foreach my $n ( $feat->names ) {
@@ -219,12 +219,12 @@ sub gen_fasta {
         #    print OUT $seq,"\n";
         #}
     }
-    
+
     open( OUT, ">$file" ) || die "Can't open $file for writing: $!";
     print OUT $output;
     close OUT;
     return 1 if -r $file;
-    
+
     CoGe::Accessory::Web::write_log( "Error with fasta file creation", $cogeweb->logfile );
     return 0;
 }

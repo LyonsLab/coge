@@ -70,7 +70,6 @@ sub plot
     my $data = GD::Graph::Data->new([ \@labelArr, $binArrRef ]) or die GD::Graph::Data->error;
     return $self->SUPER::plot($data);
 
-
 }
 
 sub add_colour
@@ -92,7 +91,7 @@ sub add_colour
 #
 ###################################################################
 sub _histogram_bins {
-  
+
 	my ( $data, $nbins, $min_bin, $max_bin ) = @_;
 	if( !defined $data ) { return; }
 
@@ -161,14 +160,14 @@ sub _histogram_frequency {
 		push( @freqs, 0 );
 	}
 
-	foreach (@$data) 
+	foreach (@$data)
 	{
-		for( my $i = 0; $i < scalar( @$cutPoints ); $i++ ) 
+		for( my $i = 0; $i < scalar( @$cutPoints ); $i++ )
 		{
 		if( ($_ >= $cutPoints->[$i]->[0] && $_ < $cutPoints->[$i]->[1])
 			||
-			($i == (scalar (@$cutPoints) - 1) && $_ >= $cutPoints->[$i]->[1]) ) 
-			{	
+			($i == (scalar (@$cutPoints) - 1) && $_ >= $cutPoints->[$i]->[1]) )
+			{
 
 				$freqs[$i]++;
 			}
@@ -182,21 +181,20 @@ sub _numformat {
 
 	unless(defined $v) { return undef; }
 
-	unless(defined $f1) { $f1 = "%.4e"; } 
+	unless(defined $f1) { $f1 = "%.4e"; }
 
-	unless(defined $f2) { 
+	unless(defined $f2) {
 		if ($v < 1) {
-			$f2 = "%.5f"; 
+			$f2 = "%.5f";
 		} else {
-			$f2 = "%.3f"; 
+			$f2 = "%.3f";
 		}
-	} 
-
+	}
 
     	## To display no for eg. 22.50 as 22.5
     	if ($v =~ /^([+-]?\d+)\.(\d+)$/) {
-    		my $no = $1; 
-		my $fraction = $2; 
+    		my $no = $1;
+		my $fraction = $2;
 		$fraction =~ s/0+$//;
 		$v = (length($fraction) == 0) ? $no : "$no.$fraction";
 	}
@@ -205,25 +203,23 @@ sub _numformat {
 		if ($v == 0) {
 			$v = 0;
 		} elsif (($v > -0.001) and ($v < 0.001)) {
-			$v = sprintf($f1, $v); 
+			$v = sprintf($f1, $v);
 		} else {
-			$v = sprintf($f2, $v); 
+			$v = sprintf($f2, $v);
 		}
-	} 
+	}
 
 	return $v;
 }
 
-sub _has_default { 
+sub _has_default {
     my $self = shift;
     my $attr = shift || return;
     exists $Defaults{$attr} || $self->SUPER::_has_default($attr);
 }
 
-
 ########################################### main pod documentation begin ##
 # Below is the stub of documentation for your module. You better edit it!
-
 
 =head1 NAME
 
@@ -236,13 +232,13 @@ GD::Graph::histogram - Histogram plotting module for Perl5
 =head1 DESCRIPTION
 
 GD::Graph::histogram extends the GD::Graph module to create histograms.
-The module allow creation of count or percentage histograms. 
+The module allow creation of count or percentage histograms.
 
 =head1 USAGE
 
 Fill an array with all the data values that are to be plotted. Note that
 GD::Graph::histogram unlike the other GD::Graph modules can only plot one
-data set at a time. 
+data set at a time.
 
 	$data = [1,5,7,8,9,10,11,3,3,5,5,5,7,2,2];
 
@@ -252,7 +248,7 @@ Create the graph
 
 Set graph options
 
-	$graph->set( 
+	$graph->set(
 		x_label         => 'X Label',
 		y_label         => 'Count',
 		title           => 'A Simple Count Histogram Chart',
@@ -261,7 +257,7 @@ Set graph options
 		shadow_depth    => 1,
 		shadowclr       => 'dred',
 		transparent     => 0,
-	) 
+	)
 	or warn $graph->error;
 
 plot the graph
@@ -281,7 +277,7 @@ Please refer to the GD::Graph documentation for more information.
 
 The only method that behaves differently is I<plot>
 
-The I<plot> method provided by GD::Graph::histogram expects a 
+The I<plot> method provided by GD::Graph::histogram expects a
 reference to an array of numbers.
 
 Based on the input data, GD::Graph::histogram will generate the
@@ -320,10 +316,9 @@ module, you could get burned. I may change them at any time.
 
 Thanks for all the feedback, bug reports and bug fixes
 
-Martin Corley 
-Jonathan Barber 
+Martin Corley
+Jonathan Barber
 William Miller
-
 
 =head1 COPYRIGHT
 

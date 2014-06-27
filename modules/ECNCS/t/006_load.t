@@ -8,5 +8,3 @@ BEGIN { use_ok( 'CoGe::ECNCS::DB::Data_mask' ); }
 
 my $object = CoGe::ECNCS::DB::Data_mask->new ();
 isa_ok ($object, 'CoGe::ECNCS::DB::Data_mask');
-
-

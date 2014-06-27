@@ -301,4 +301,3 @@ sub add_sorted_locs {
     @locs = sort { $a <=> $b } @locs;
     return \@locs;
 }
-

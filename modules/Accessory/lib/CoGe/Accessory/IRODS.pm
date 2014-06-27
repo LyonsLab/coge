@@ -37,7 +37,7 @@ BEGIN {
     $VERSION = 0.1;
     @ISA     = qw (Exporter);
     @EXPORT = qw( irods_ils irods_imeta irods_iget irods_chksum irods_iput $IRODS_METADATA_PREFIX );
-    
+
     $IRODS_METADATA_PREFIX = 'ipc-coge-';
 }
 
@@ -153,7 +153,7 @@ sub irods_imeta {
     my ( $dest, $pHash ) = @_;
     #print STDERR "irods_imeta $dest\n";
     return unless ( defined $pHash and keys %$pHash );
-    
+
     my $env_file = _irods_get_env_file();
     return unless $env_file;
 
@@ -162,7 +162,7 @@ sub irods_imeta {
 			print STDERR "CoGe::Accessory::IRODS::imeta: improper key/value pair\n";
 			next;
 		}
-		
+
 	    my $cmd = "export irodsEnvFile='$env_file'; imeta add -d '" . $dest . "' '" . $k . "' '" . $v . "'";
 	    print STDERR "cmd: $cmd\n";
 	    my @result = `$cmd`;

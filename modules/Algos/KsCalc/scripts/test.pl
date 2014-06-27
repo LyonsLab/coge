@@ -33,4 +33,3 @@ my $aln = new File::Temp ( TEMPLATE=>'Ks__XXXXX',
 			   SUFFIX=>'.aln',
 			   UNLINK=>0);
 print Dumper $object->KsCalc($aln);
-

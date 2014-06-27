@@ -19,4 +19,3 @@ while (my $item = $sth->fetchrow_arrayref)
     $update->execute($item->[1],$item->[0]);
   }
 #    $name =~ s/\s+$//g;
-

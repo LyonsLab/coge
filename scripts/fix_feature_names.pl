@@ -7,7 +7,7 @@ use CoGeX;
 my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
 my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 
-#need to check: , ; = / : " ' <space> [ ] |  ( ) { } 
+#need to check: , ; = / : " ' <space> [ ] |  ( ) { }
 foreach my $fn ($coge->resultset('FeatureName')->search({name=>{'like'=>'CDS%'}}))
   {
     my $name = $fn->name;
@@ -163,7 +163,7 @@ foreach my $fn ($coge->resultset('FeatureName')->search({name=>{'like'=>"%;%"}})
   {
     my $name = $fn->name;
     #example error: name fgenesh1_pg.C_LG_I000019; proteinId 62667; ex
-    if ($name =~ /^name/) 
+    if ($name =~ /^name/)
       {
 	print $name,"\n";
 	$name =~ s/^name //;

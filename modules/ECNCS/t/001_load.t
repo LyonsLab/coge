@@ -48,7 +48,6 @@ isa_ok($status_obj, 'CoGe::ECNCS::DB::Status');
 $status_obj = $object->get_stat_obj();
 isa_ok($status_obj, 'CoGe::ECNCS::DB::Status');
 
-
 my $alg = $algo_obj->find_or_create(name=>'test algorithm',
 				   description=>'auto created by test script',
 				   link=>'www.fake.net',
@@ -77,7 +76,7 @@ for (my $i = 1; $i <=100; $i++)
 				  note             =>"auto_created by test script",
 #				  date
 				  });
-    #make algo_data    
+    #make algo_data
     for (my $j=1; $j<=2; $j++)
     {
 	my $loc = $loc_obj->create({start=>int(rand(10000)),
@@ -92,7 +91,7 @@ for (my $i = 1; $i <=100; $i++)
 	    spike_id         =>$spike->id,
 	});
     }
-    #make data_mask    
+    #make data_mask
     for (my $j=1; $j<=5; $j++)
     {
 	my $loc = $loc_obj->create({start=>int(rand(10000)),
@@ -105,8 +104,8 @@ for (my $i = 1; $i <=100; $i++)
 	    location_id      =>$loc->id,
 	});
     }
-    
-    #make ecncs   
+
+    #make ecncs
     for (my $j=1; $j<=5; $j++)
     {
 	my $loc = $loc_obj->create({start=>int(rand(10000)),
@@ -126,7 +125,7 @@ for (my $i = 1; $i <=100; $i++)
 	    valid            => "Y",
 	});
     }
-    
+
 }
 
 $alg->delete;

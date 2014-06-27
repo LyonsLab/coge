@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-# defaults 
+# defaults
 # constants
 
 # usage notes
@@ -69,7 +69,6 @@ if (@keys != 2) {
     exit(1);
 }
 
-
 # pack bin
 # format from Alex Poliakov's glass2bin.pl script
 
@@ -79,15 +78,12 @@ $l = length @strs[0]; # $l--;
 $s1 = reverse(@strs[0]);
 $s2 = reverse(@strs[1]);
 
-
 for ($i=0; $i<$l; $i++) {
     if ($tofile) {
-	print OUTFILE pack("H2", 
+	print OUTFILE pack("H2",
 			   $base_code{chop($s1)} . $base_code{chop($s2)});
     } else {
-	print pack("H2", 
+	print pack("H2",
 		   $base_code{chop($s1)} . $base_code{chop($s2)});
     }
 }
-
-

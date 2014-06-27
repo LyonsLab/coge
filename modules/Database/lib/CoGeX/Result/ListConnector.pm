@@ -55,11 +55,11 @@ __PACKAGE__->add_columns(
 	"list_connector_id",
 	{ data_type => "INT", default_value => 1, is_nullable => 0, size => 11 },
 	"parent_id",
-	{ data_type => "INT", default_value => "", is_nullable => 0, size => 11 }, 
+	{ data_type => "INT", default_value => "", is_nullable => 0, size => 11 },
 	"child_id",
 	{ data_type => "INT", default_value => "", is_nullable => 0, size => 11 },
 	"child_type",
-	{ data_type => "TINYINT", default_value => "", is_nullable => 0, size => 1 },	
+	{ data_type => "TINYINT", default_value => "", is_nullable => 0, size => 1 },
 );
 __PACKAGE__->set_primary_key("list_connector_id");
 
@@ -73,21 +73,18 @@ __PACKAGE__->belongs_to("feature"    => "CoGeX::Result::Feature",    "child_id")
 __PACKAGE__->belongs_to("child_list"   => "CoGeX::Result::List",  {'foreign.list_id' => 'self.child_id'}); # a list of lists
 __PACKAGE__->belongs_to("parent_list"  => "CoGeX::Result::List",  {'foreign.list_id' => 'self.parent_id' } ); # parent list of a genome/experiment/feature/list
 
-
-
-
 ################################################ subroutine header begin ##
 
 =head2 type
 
- Usage     : 
+ Usage     :
  Purpose   : Alias to the child_type() method.
  Returns   : See child_type()
  Argument  : None
- Throws    : 
- Comments  : 
- 
-See Also   : 
+ Throws    :
+ Comments  :
+
+See Also   :
 
 =cut
 
@@ -102,14 +99,14 @@ sub type
 
 =head2 is_list
 
- Usage     : 
- Purpose   : 
- Returns   : 
+ Usage     :
+ Purpose   :
+ Returns   :
  Argument  : None
- Throws    : 
- Comments  : 
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -124,14 +121,14 @@ sub is_list
 
 =head2 is_genome
 
- Usage     : 
- Purpose   : 
- Returns   : 
+ Usage     :
+ Purpose   :
+ Returns   :
  Argument  : None
- Throws    : 
- Comments  : 
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -146,14 +143,14 @@ sub is_genome
 
 =head2 is_feature
 
- Usage     : 
- Purpose   : 
- Returns   : 
+ Usage     :
+ Purpose   :
+ Returns   :
  Argument  : None
- Throws    : 
- Comments  : 
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -164,19 +161,18 @@ sub is_feature
 	return shift->child_type() == $node_types->{feature};
 }
 
-
 ################################################ subroutine header begin ##
 
 =head2 is_experiment
 
- Usage     : 
- Purpose   : 
- Returns   : 
+ Usage     :
+ Purpose   :
+ Returns   :
  Argument  : None
- Throws    : 
- Comments  : 
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -187,19 +183,18 @@ sub is_experiment
 	return shift->child_type() == $node_types->{experiment};
 }
 
-
 ################################################ subroutine header begin ##
 
 =head2 child
 
- Usage     : 
- Purpose   : 
- Returns   : 
+ Usage     :
+ Purpose   :
+ Returns   :
  Argument  : None
- Throws    : 
- Comments  : 
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -208,7 +203,7 @@ See Also   :
 sub child
 {
 	my $self = shift;
-	
+
 	if ($self->is_experiment) {
 		return $self->experiment;
 	}
@@ -228,9 +223,7 @@ sub child
 	return;
 }
 
-
 1;
-
 
 =head1 AUTHORS
 
