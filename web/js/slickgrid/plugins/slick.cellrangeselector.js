@@ -6,7 +6,6 @@
     }
   });
 
-
   function CellRangeSelector(options) {
     var _grid;
     var _canvas;
@@ -19,7 +18,6 @@
         "border": "2px dashed blue"
       }
     };
-
 
     function init(grid) {
       options = $.extend(true, {}, _defaults, options);

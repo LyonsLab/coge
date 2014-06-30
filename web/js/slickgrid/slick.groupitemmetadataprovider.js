@@ -7,7 +7,6 @@
     }
   });
 
-
   /***
    * Provides item metadata for group (Slick.Group) and totals (Slick.Totals) rows produced by the DataView.
    * This metadata overrides the default behavior and formatting of those rows so that they appear and function
@@ -37,7 +36,6 @@
 
     options = $.extend(true, {}, _defaults, options);
 
-
     function defaultGroupCellFormatter(row, cell, value, columnDef, item) {
       if (!options.enableExpandCollapse) {
         return item.title;
@@ -51,7 +49,6 @@
     function defaultTotalsCellFormatter(row, cell, value, columnDef, item) {
       return (columnDef.groupTotalsFormatter && columnDef.groupTotalsFormatter(item, columnDef)) || "";
     }
-
 
     function init(grid) {
       _grid = grid;
@@ -127,7 +124,6 @@
         editor: null
       };
     }
-
 
     return {
       "init": init,

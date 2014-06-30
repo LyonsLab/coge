@@ -1,4 +1,3 @@
-
 OpenLayers.GenomeBrowser = OpenLayers.Map;
 
 OpenLayers.GenomeBrowser.prototype.pan = function(dx, dy) {
@@ -7,7 +6,7 @@ OpenLayers.GenomeBrowser.prototype.pan = function(dx, dy) {
 
     // adjust
     var newCenterPx = centerPx.add(dx, 0);
-    
+
     // only call setCenter if there has been a change
     if (newCenterPx.x != centerPx.x) {
         var newCenterLonLat = this.getLonLatFromViewPortPx(newCenterPx);
@@ -20,11 +19,10 @@ OpenLayers.GenomeBrowser.prototype.pan = function(dx, dy) {
 OpenLayers.GenomeBrowser.prototype.centerLayerContainer = function(lonlat){
             var originPx = this.getViewPortPxFromLonLat(this.layerContainerOrigin);
             var newPx = this.getViewPortPxFromLonLat(lonlat);
-    
+
             if ((originPx != null) && (newPx != null)) {
                 this.layerContainerDiv.style.left = (originPx.x - newPx.x) + "px";
             }
-
 
 };
 
@@ -41,11 +39,11 @@ OpenLayers.Control.PanZoom.prototype.draw = function(px) {
     px.y = centered.y+sz.h;
     this._addButton("panleft", "west-mini.png", px, sz);
     this._addButton("panright", "east-mini.png", px.add(sz.w, 0), sz);
-    this._addButton("zoomin", "zoom-plus-mini.png", 
+    this._addButton("zoomin", "zoom-plus-mini.png",
                     centered.add(0, sz.h*3+5), sz);
-    this._addButton("zoomworld", "zoom-world-mini.png", 
-                    centered.add(0, sz.h*4+5), sz); 
-    this._addButton("zoomout", "zoom-minus-mini.png", 
+    this._addButton("zoomworld", "zoom-world-mini.png",
+                    centered.add(0, sz.h*4+5), sz);
+    this._addButton("zoomout", "zoom-minus-mini.png",
                     centered.add(0, sz.h*5+5), sz);
     return this.div;
 };
@@ -84,7 +82,7 @@ OpenLayers.Control.MousePosition.prototype.redraw = function(evt) {
         lonLat = this.map.getLonLatFromPixel(evt.xy);
         this.lastXy = evt.xy;
     }
-    
+
     var digits = parseInt(this.numdigits);
     var newHtml = parseInt(lonLat.lon) + this.map.units;
 
@@ -116,7 +114,7 @@ OpenLayers.Util.onImageLoadError = function() {
                 guess = Math.floor(urls.length * Math.random())
                 new_url = urls[guess];
             }
-            this.src = src.replace(current_url, new_url); 
+            this.src = src.replace(current_url, new_url);
         } else {
             this.src = this.src;
         }
@@ -141,7 +139,6 @@ OpenLayers.Tile.Image.prototype.destroy = function() {
         this.frame = null;
         OpenLayers.Tile.prototype.destroy.apply(this, arguments);
     };
-
 
 OpenLayers.Tile.Image.prototype.draw = function() {
         if (this.layer != this.layer.map.baseLayer && this.layer.reproject) {

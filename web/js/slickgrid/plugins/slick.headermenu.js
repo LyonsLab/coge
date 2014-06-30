@@ -8,7 +8,6 @@
     }
   });
 
-
   /***
    * A plugin to add drop-down menus to column headers.
    *
@@ -88,7 +87,6 @@
     var $menu;
     var $activeHeaderColumn;
 
-
     function init(grid) {
       options = $.extend(true, {}, _defaults, options);
       _grid = grid;
@@ -103,19 +101,16 @@
       $(document.body).bind("mousedown", handleBodyMouseDown);
     }
 
-
     function destroy() {
       _handler.unsubscribeAll();
       $(document.body).unbind("mousedown", handleBodyMouseDown);
     }
-
 
     function handleBodyMouseDown(e) {
       if ($menu && $menu[0] != e.target && !$.contains($menu[0], e.target)) {
         hideMenu();
       }
     }
-
 
     function hideMenu() {
       if ($menu) {
@@ -154,7 +149,6 @@
       }
     }
 
-
     function handleBeforeHeaderCellDestroy(e, args) {
       var column = args.column;
 
@@ -162,7 +156,6 @@
         $(args.node).find(".slick-header-menubutton").remove();
       }
     }
-
 
     function showMenu(e) {
       var $menuButton = $(this);
@@ -179,13 +172,11 @@
         return;
       }
 
-
       if (!$menu) {
         $menu = $("<div class='slick-header-menu'></div>")
           .appendTo(document.body);
       }
       $menu.empty();
-
 
       // Construct the menu items.
       for (var i = 0; i < menu.items.length; i++) {
@@ -222,19 +213,16 @@
           .appendTo($li);
       }
 
-
       // Position the menu.
       $menu
         .css("top", $(this).offset().top + $(this).height())
         .css("left", $(this).offset().left);
-
 
       // Mark the header as active to keep the highlighting.
       $activeHeaderColumn = $menuButton.closest(".slick-header-column");
       $activeHeaderColumn
         .addClass("slick-header-column-active");
     }
-
 
     function handleMenuItemClick(e) {
       var command = $(this).data("command");

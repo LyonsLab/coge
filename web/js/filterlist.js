@@ -91,7 +91,6 @@ function filterlist(selectobj) {
     this.set('');
   }
 
-
   //--------------------------------------------------
   this.set = function(pattern) {
     // This method removes all of the options from the select list,
@@ -155,7 +154,6 @@ function filterlist(selectobj) {
 
   }
 
-
   //--------------------------------------------------
   this.set_ignore_case = function(value) {
     // This method sets the regexp flags.
@@ -169,14 +167,12 @@ function filterlist(selectobj) {
     }
   }
 
-
   //--------------------------------------------------
   this.debug = function(msg) {
     if (this.show_debug) {
       alert('FilterList: ' + msg);
     }
   }
-
 
   //==================================================
   // Initialize the object

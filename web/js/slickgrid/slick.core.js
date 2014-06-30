@@ -252,7 +252,6 @@
     }
   }
 
-
   /***
    * A base class that all special / non-data rows (like Group and GroupTotals) derive from.
    * @class NonDataItem
@@ -261,7 +260,6 @@
   function NonDataItem() {
     this.__nonDataRow = true;
   }
-
 
   /***
    * Information about a group of rows.
@@ -426,5 +424,3 @@
     };
   }
 })(jQuery);
-
-

@@ -6,7 +6,6 @@
     }
   });
 
-
   function CellSelectionModel(options) {
     var _grid;
     var _canvas;
@@ -21,7 +20,6 @@
     var _defaults = {
       selectActiveCell: true
     };
-
 
     function init(grid) {
       _options = $.extend(true, {}, _defaults, options);

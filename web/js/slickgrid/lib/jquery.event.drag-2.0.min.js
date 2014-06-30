@@ -1,5 +1,5 @@
-/*! 
- * jquery.event.drag - v 2.0.0 
+/*!
+ * jquery.event.drag - v 2.0.0
  * Copyright (c) 2010 Three Dub Media - http://threedubmedia.com
  * Open Source MIT License - http://threedubmedia.com/code/license
  */

@@ -18,10 +18,8 @@
     var onDataLoading = new Slick.Event();
     var onDataLoaded = new Slick.Event();
 
-
     function init() {
     }
-
 
     function isDataLoaded(from, to) {
       for (var i = from; i <= to; i++) {
@@ -33,14 +31,12 @@
       return true;
     }
 
-
     function clear() {
       for (var key in data) {
         delete data[key];
       }
       data.length = 0;
     }
-
 
     function ensureData(from, to) {
       if (req) {
@@ -99,7 +95,6 @@
       }, 50);
     }
 
-
     function onError(fromPage, toPage) {
       alert("error loading pages " + fromPage + " to " + toPage);
     }
@@ -118,14 +113,12 @@
       onDataLoaded.notify({from: from, to: to});
     }
 
-
     function reloadData(from, to) {
       for (var i = from; i <= to; i++)
         delete data[i];
 
       ensureData(from, to);
     }
-
 
     function setSort(column, dir) {
       sortcol = column;
@@ -137,7 +130,6 @@
       searchstr = str;
       clear();
     }
-
 
     init();
 
