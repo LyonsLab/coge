@@ -8,8 +8,8 @@ define(['dojo/_base/declare',
         'dojo/fx/easing',
         'dijit/form/TextBox',
         'dojo/mouse',
-        "dijit/form/DropDownButton", 
-        "dijit/DropDownMenu", 
+        "dijit/form/DropDownButton",
+        "dijit/DropDownMenu",
         "dijit/MenuItem",
         'JBrowse/View/ConfirmDialog',
         'JBrowse/View/InfoDialog'
@@ -31,12 +31,12 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 
         // maintain a list of the HTML nodes of filtered tracks
         this.filteredNodes = {};
-        
+
         // maximum tracks that can be added via "+" button
         this.maxTracksToAdd = 20;
-        
+
         // subscribe to drop events for tracks being DND'ed
-        this.browser.subscribe( '/dnd/drop', 
+        this.browser.subscribe( '/dnd/drop',
         						dojo.hitch( this, 'moveTracks' ));
 
         // subscribe to commands coming from the the controller
@@ -51,16 +51,16 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
         this.browser.subscribe( '/jbrowse/v1/c/tracks/delete',
                                 dojo.hitch( this, 'deleteTracks' ));
     },
-    
+
     moveTracks: function( source, nodes, copy, target ) {
     	if ( source == target) { // both source and target
     		console.log('source = target');
     		return;
     	}
-    	
+
     	var isSource = this.trackListWidgets.indexOf(source) != -1;
     	var isTarget = this.trackListWidgets.indexOf(target) != -1;
-    	
+
     	if( isSource && !isTarget ) { // source
         	console.log('/dnd/drop/source');
         	// get the configs from the tracks being dragged in
@@ -70,16 +70,16 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                         }),
                 function(c) {return c;}
             );
-        	
+
             // highlight track to show it is enabled
             this.dndDrop = true;
             this.browser.publish( '/jbrowse/v1/v/tracks/show', confs ); // mdb: why not just call setTrackActive directly?
             this.dndDrop = false;
         }
-    	
+
         if( this.trackListWidgets.indexOf(target) != -1 ) { // target
         	console.log('/dnd/drop/target');
-        	
+
             // get the configs from the tracks being dragged in
             var confs = dojo.filter(
                 dojo.map( nodes, function(n) {
@@ -87,7 +87,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                         }),
                 function(c) {return c;}
             );
-            
+
             // return if no confs; whatever was dragged here probably wasn't a track from browser
             if( confs.length ) {
                 // un-highlight track to show it is disabled
@@ -104,7 +104,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
             			notebookId = notebookName.match(/\d+/);
             		});
             	});
-            	
+
             	if (notebookId && notebookId > 0) { // target is notebook
             		// Add experiment to notebook
             		nodes.forEach( dojo.hitch(this, function(node) {
@@ -178,14 +178,14 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
     /** @private */
     createTrackList: function( renderTo, trackConfigs ) {
     	var that = this;
-    	
+
         var trackPane = this.pane = dojo.create(
             'div',
             { id: 'trackPane',
-              style: { 
+              style: {
             	  width: '215px', // 'min-width': '200px' -- mdb: messes up resize
             	  'background-color': 'rgb(242, 242, 242)'
-              } 
+              }
             },
             renderTo
         );
@@ -193,7 +193,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
         // create text filter input
         this._createTextFilter(trackConfigs, trackPane);
         this._updateTextFilterControl();
-        
+
         // splitter on right side
         var trackWidget = new ContentPane({region: "right", splitter: true}, trackPane);
 
@@ -207,21 +207,21 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
             },
             trackPane
         );
-        
+
         // create a DnD source for sequence
         this.trackListWidgets = [];
-        this.trackListWidgets.push( 
+        this.trackListWidgets.push(
         	this._createDnDSource(1).insertNodes(
             	false,
             	trackConfigs.filter( function(e) {
             		var type = e.coge.type;
             		return ( !type ||
-            				  type == 'sequence' || 
+            				  type == 'sequence' ||
             				  type == 'gc_content' );
             	})
             )
         );
-        
+
         // create a DnD source for each feature group
         var feature_groups = trackConfigs.filter( function(fg) {
     		return (fg.coge.type && fg.coge.type == 'feature_group');
@@ -230,16 +230,16 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
     		return (f.coge.type && f.coge.type == 'features');
     	});
     	feature_groups.forEach( function(fg) {
-    		that.trackListWidgets.push( 
+    		that.trackListWidgets.push(
     			that._createDnDSource().insertNodes(
                 	false,
                 	[fg].concat(features.filter( function(f) {
                 		return f.coge.dataset_id == fg.coge.id;
                 	}))
-                ) 
+                )
             );
     	});
-        
+
         // create a DnD source for each notebook
         var notebooks = trackConfigs.filter( function(e) {
     		return (e.coge.type && e.coge.type == 'notebook');
@@ -248,25 +248,25 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
     		return (e.coge.type && e.coge.type == 'experiment');
     	});
         notebooks.forEach( function(n) {
-    		that.trackListWidgets.push( 
+    		that.trackListWidgets.push(
     			that._createDnDSource().insertNodes(
                 	false,
                 	[n].concat(experiments.filter( function(e) {
                 		return e.coge.notebooks && dojo.indexOf(e.coge.notebooks, n.coge.id) != -1;
                 	}))
-                ) 
+                )
             );
     	});
-        
+
         // Initialize text filter label
         this._textFilter();
-        
+
         return this.div;
     },
-    
+
     _createDnDSource: function(isStatic) {
         var div = dojo.create( 'div', {}, this.div );
-    	
+
     	return new dndSource( // modifies div to be DnD-able
             div,
             {
@@ -275,7 +275,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 copyOnly: true,
                 checkAcceptance: function( source, nodes ) {
                 	console.log('checkAcceptance');
-                	if (isStatic) 
+                	if (isStatic)
                 		return false;
                 	var target = this;
                 	var nbNode = target.getAllNodes().shift();
@@ -284,18 +284,18 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 },
                 creator: dojo.hitch( this, function( trackConfig, hint ) {
                 	//console.log('creator ' + trackConfig.coge.id);
-                	
+
                 	var node = this._createLabelNode( trackConfig );
                 	var coge = trackConfig.coge;
-                	
+
                 	node.id = coge.type + coge.id;
-                	
+
                     if (coge.classes) {
                     	dojo.addClass( node, coge.classes.join(' ') );
                     }
-                	
+
                     this._setTrackTitle(trackConfig, node);
-                	
+
                     dojo.connect( node, "click", dojo.hitch(this, function(e) {
                     	//console.log('click ' + node.id + ' ' + e.shiftKey);
                     	if (dojo.hasClass(node, 'selected')) {
@@ -305,13 +305,13 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                     		this.browser.publish( '/jbrowse/v1/v/tracks/show', [trackConfig] );
                     	}
                     }));
-                    
+
                     // in the list, wrap the list item in a container for border drag-insertion-point monkeying
-                    var container = dojo.create( 'div', 
-	                    {  	className: 'coge-tracklist-container', 
-	                    	style: { 'white-space': 'nowrap', 'overflow-x': 'hidden' } 
+                    var container = dojo.create( 'div',
+	                    {  	className: 'coge-tracklist-container',
+	                    	style: { 'white-space': 'nowrap', 'overflow-x': 'hidden' }
 	                    });
-                    
+
                     // Add expand/collapse button
                     if ( dojo.hasClass( node, 'coge-tracklist-collapsible') ) { // parent
 	                	var button = dom.create( // FIXME: how to put image in div using css?
@@ -319,7 +319,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	                    	    {	className: (coge.collapsed ? 'coge-tracklist-expandIcon' : 'coge-tracklist-collapseIcon'),
 	                				src: (coge.collapsed ? 'js/jbrowse/plugins/CoGe/img/arrow-right-icon.png' : 'js/jbrowse/plugins/CoGe/img/arrow-down-icon.png'),
 	                				style: { float: 'right', padding: '5px' }
-	                    	    }, 
+	                    	    },
 	                    	    container
 	                    	);
 	                	dojo.connect( button, "click", dojo.hitch(this, function() {
@@ -345,7 +345,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                     else if (coge.collapsed) { // child
                     	dojo.addClass(container, 'collapsed');
                     }
-                    
+
                     // Add delete button
                     if ( dojo.hasClass( node, 'coge-tracklist-deletable' ) ) {
 	            		var deleteButton = dom.create( // FIXME: how to put image in div using css?
@@ -385,7 +385,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 			    				                        }).show();
 			    					    		return;
 			    					    	}
-			    					    	
+
 			    					    	// Remove node from tracklist
 			    					    	div.removeChild(container);
 			    					    	// Reload track in browser
@@ -401,10 +401,10 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 		                			return;
 		                		}
 	            			}
-	                		
+
                 			// Else, it's not inside a notebook
                 			new ConfirmDialog({
-                    				title: 'Delete ' + coge.type + '?', 
+                    				title: 'Delete ' + coge.type + '?',
                     				message: 'Really delete this ' + coge.type + '?  '
                     					+ (coge.type == 'experiment' ? 'Deleting it will move it to the trash.' : 'Deleting it is permanent.')
                 				})
@@ -466,7 +466,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                                      }
                                  }));
 	                    }));
-	            		
+
 	            		// Show/hide button based on hover
 	            		dojo.connect( container, "onmouseenter", function(e) {
 	            			dojo.style(deleteButton, 'visibility', 'visible');
@@ -475,7 +475,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	            			dojo.style(deleteButton, 'visibility', 'hidden');
 	                    });
                     }
-                    
+
                     // Add info button
                     if ( dojo.hasClass( node, 'coge-tracklist-info' ) ) {
 	            		var infoButton = dom.create( // FIXME: how to put image in div using css?
@@ -485,19 +485,19 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	                				style: {
 	                					visibility: 'hidden',
 	                					float: 'right', padding: '3px', width: '14px', height: '14px' }
-	                    	    }, 
+	                    	    },
 	                    	    container
 	                    	);
-	            		
+
 	            		dojo.connect( infoButton, "click", dojo.hitch(this, function() {
 	            			// Open dialog (copied from BlockBased.js)
 	            			var iframeDims = function() {
 	                            var d = domGeom.position( this.browser.container );
 	                            return { h: Math.round(d.h * 0.8), w: Math.round( d.w * 0.8 ) };
 	                        }.call(this);
-	            			
+
 	                        var dialog = new dijit.Dialog( { title: capitalize(coge.type) + ' View' } );
-	
+
 	                        var iframe = dojo.create(
 	                            'iframe', {
 	                                tabindex: "0",
@@ -506,9 +506,9 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	                                style: { border: 'none' },
 	                                src: trackConfig.coge.onClick
 	                            });
-	
+
 	                        dialog.set( 'content', iframe );
-	                        
+
 	                        var updateIframeSize = function() {
 	                            // hitch a ride on the dialog box's
 	                            // layout function, which is called on
@@ -523,10 +523,10 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	                        };
 	                        aspect.after( dialog, 'layout', updateIframeSize );
 	                        aspect.after( dialog, 'show', updateIframeSize );
-	                        
+
 	                        dialog.show();
 	                    }));
-	            		
+
 	            		// Show/hide button based on hover
 	            		dojo.connect( container, "onmouseenter", function(e) {
 	            			dojo.style(infoButton, 'visibility', 'visible');
@@ -535,15 +535,15 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	            			dojo.style(infoButton, 'visibility', 'hidden');
 	                    });
                     }
-                    
+
                     container.appendChild(node);
                     container.id = node.id;//dojo.dnd.getUniqueId();
                     return {node: container, data: trackConfig, type: ["track", coge.type]};
                 })
             }
-        ); 
+        );
     },
-    
+
     _setTrackTitle: function( config, node) {
     	var coge = config.coge;
     	var name = config.key;
@@ -557,18 +557,18 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
     	node.innerHTML += '<img height="19" width="0" style="visibility:hidden;"/>'; // force min height
     	node.innerHTML += '<span class="tracklist-text" style="white-space:nowrap">' + name + '</span>';
     },
-    
+
     _createTextFilter: function( trackConfigs, parent ) {
         this.textFilterDiv = dom.create( 'div', {
             className: 'coge-textfilter', //className: 'textfilter', // replace jbrowse styling
-            style: 
-	            { width: '95%', 
+            style:
+	            { width: '95%',
 	              position: 'relative',
 	              overflow: 'hidden',
-	              'border-bottom': '1px solid lightgray' 
+	              'border-bottom': '1px solid lightgray'
 	            }
         }, parent); //this.div );
-        
+
 		this.textFilterInput = dom.create(
 			'input',
 			{	type: 'text',
@@ -585,13 +585,13 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 						500
 					);
 					this._updateTextFilterControl();
-					
+
 					evt.stopPropagation();
 				})
 			},
 			dom.create('div',{ style: 'overflow: show;' }, this.textFilterDiv )
 		);
-		
+
 		dom.create('div', {
 			className: 'jbrowseIconCancel',
 			onclick: dojo.hitch( this, function() {
@@ -601,9 +601,9 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 			style: { // FIXME move into css
 				cursor: 'pointer', position: 'absolute', left: '4px', top: '4px' }
 		}, this.textFilterDiv );
-		
+
 //		this._createDropDownMenu();
-		
+
 		dom.create('img', { // FIXME: style with css icon instead of img
 			title: 'Add all experiments',
 			src: 'js/jbrowse/plugins/CoGe/img/plus-icon.png',
@@ -625,7 +625,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 				}
 			})
 		}, this.textFilterDiv );
-		
+
 		dom.create('img', { // FIXME: style with css icon instead of img
 			title: 'Clear all experiments',
 			src: 'js/jbrowse/plugins/CoGe/img/clear-icon.png',
@@ -637,17 +637,17 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 			}),
 			style: { cursor: 'pointer', position: 'absolute', right: '8px', top: '4px', width: '14px', height: '14px' }
 		}, this.textFilterDiv );
-		
+
 		dom.create('div', {
 			style: { clear: 'both' }
 		}, this.textFilterDiv );
-		
+
 		this.textFilterLabel = dom.create('div', {
 			innerHTML: '? tracks shown',
 			style: { color: 'gray', 'text-shadow': '1px 1px white', 'padding-left' : '20px' }
 		}, this.textFilterDiv );
     },
-    
+
 //    _createDropDownMenu: function() {
 //    	var menu = new DropDownMenu({ style: "display: none;"});
 //	    var menuItem1 = new MenuItem({
@@ -672,17 +672,17 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 //	    });
 //	    this.div.appendChild(button.domNode);
 //    },
-    
+
     _createLabelNode: function( trackConfig ) {
     	var coge = trackConfig.coge;
     	return dojo.create(
     				'div',
 	                { className: 'coge-tracklist-label coge-' + coge.type,
-	                  title: capitalize(coge.type) + " id" + coge.id + 
+	                  title: capitalize(coge.type) + " id" + coge.id +
 	                  		 (coge.name ? "\nName: " + coge.name : '') +
 	                  		 (coge.description ? "\nDescription: " + coge.description : '') +
 	                  		 (coge.annotations ?
-	                  				"\n" + 
+	                  				"\n" +
 	                  				 coge.annotations
 		                  				.map(function(a) {
 	                  						return a.type + ': ' + a.text
@@ -718,7 +718,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
         	}
         	filteredNodes = {};
         }
-        
+
         // Update filter label
         var count = dojo.query( '.coge-tracklist-container:not(.collapsed)', this.div ).length;
         this.textFilterLabel.innerHTML = count + ' track' + (count == 1 ? '' : 's') + ' shown';
@@ -815,8 +815,8 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 	        			dojo.removeClass(labelNode, 'selected');
 	        		}
 	        	});
-	        });  
-    	
+	        });
+
         // remove any tracks in our track list that are being set as visible
 //        if( ! this.dndDrop ) {
 //            var n = this.trackListWidget.insertNodes( false, trackConfigs );
@@ -828,10 +828,10 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 //            this._blinkTracks( trackConfigs );
 //        }
     },
-    
+
     _blinkTracks: function( trackConfigs ) {
     	console.log('_blinkTracks');
-    	
+
         // scroll the tracklist all the way to the bottom so we can see the blinking nodes
 //        this.trackListWidget.node.scrollTop = this.trackListWidget.node.scrollHeight;
 //
@@ -853,7 +853,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 //            }
 //        },this);
     },
-    
+
     /**
      * Make the track selector visible.
      * This does nothing for the Simple track selector, since it is always visible.
@@ -880,7 +880,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 
 function hasLabelNode(div, nodes) {
 	var container;
-	
+
 	nodes.forEach( function(node) {
 		dojo.query( '#'+node.id+' > .coge-tracklist-label', div )
 		 	.forEach( function( labelNode ) {
@@ -890,7 +890,7 @@ function hasLabelNode(div, nodes) {
 		 		}
 		 	});
 	});
-	
+
 	return container;
 }
 
@@ -913,7 +913,7 @@ function getVisibleConfigs(div, trackConfigs) {
 }
 
 function getFeatureColor(id) { //FIXME: dup'ed in MultiXYPlot.js
-	return '#' + ((((id * 1234321) % 0x1000000) | 0x444444) & 0xe7e7e7 ).toString(16); 
+	return '#' + ((((id * 1234321) % 0x1000000) | 0x444444) & 0xe7e7e7 ).toString(16);
 }
 
 function capitalize( string ) { //FIXME: doesn't go here, extend String class instead

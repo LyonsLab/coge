@@ -119,7 +119,7 @@
             this.$containers = $([]);
 
             var self = this, o = this.options;
-            
+
             this.$tabs.each(function(i, a) {
                 // inline tab
                 if (a.hash && a.hash.replace('#', '')) { // safari 2 reports '#' for an empty hash
@@ -282,7 +282,7 @@
                     this.blur();
                     return false;
                 }
-                    
+
                 // if tab may be closed
                 if (o.unselect) {
                     if ($li.is('.' + o.selectedClass)) {

@@ -20,7 +20,6 @@ var moved = function (dx, dy, msg) {
     same(actual, expected, 'dragged[' + dragged.dx + ', ' + dragged.dy + '] ' + msg);
 }
 
-
 var ROWS = 500, COLS = 10;
 var data = [], row;
 for (var i=0; i<ROWS; i++) {
@@ -46,8 +45,6 @@ cols[0].minWidth = 70;
 grid = new Slick.Grid("#container", data, cols);
 grid.render();
 
-
-
 module("grid - column resizing");
 
 test("minWidth is respected", function() {
@@ -56,7 +53,6 @@ test("minWidth is respected", function() {
     firstCol.find(".slick-resizable-handle:first").simulate("drag", {dx:-200,dy:0});
     equal(firstCol.outerWidth(), 70, "width set to minWidth");
 });
-
 
 test("onColumnsResized is fired on column resize", function() {
     expect(2);
@@ -67,10 +63,8 @@ test("onColumnsResized is fired on column resize", function() {
 
 });
 
-
 test("getData should return data", function() {
     equal(grid.getData(), data);
 });
-
 
 })(jQuery);

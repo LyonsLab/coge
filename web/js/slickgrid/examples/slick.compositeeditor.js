@@ -6,7 +6,6 @@
     }
   });
 
-
   /***
    * A composite SlickGrid editor factory.
    * Generates an editor that is composed of multiple editors for given columns.
@@ -48,7 +47,6 @@
 
     options = $.extend({}, defaultOptions, options);
 
-
     function getContainerBox(i) {
       var c = containers[i];
       var offset = $(c).offset();
@@ -66,10 +64,8 @@
       };
     }
 
-
     function editor(args) {
       var editors = [];
-
 
       function init() {
         var newArgs = {};
@@ -88,7 +84,6 @@
         }
       }
 
-
       this.destroy = function () {
         var idx = editors.length;
         while (idx--) {
@@ -98,12 +93,10 @@
         options.destroy && options.destroy();
       };
 
-
       this.focus = function () {
         // if validation has failed, set the focus to the first invalid editor
         (firstInvalidEditor || editors[0]).focus();
       };
-
 
       this.isValueChanged = function () {
         var idx = editors.length;
@@ -115,7 +108,6 @@
         return false;
       };
 
-
       this.serializeValue = function () {
         var serializedValue = [];
         var idx = editors.length;
@@ -125,7 +117,6 @@
         return serializedValue;
       };
 
-
       this.applyValue = function (item, state) {
         var idx = editors.length;
         while (idx--) {
@@ -133,14 +124,12 @@
         }
       };
 
-
       this.loadValue = function (item) {
         var idx = editors.length;
         while (idx--) {
           editors[idx].loadValue(item);
         }
       };
-
 
       this.validate = function () {
         var validationResults;
@@ -176,7 +165,6 @@
         }
       };
 
-
       this.hide = function () {
         var idx = editors.length;
         while (idx--) {
@@ -184,7 +172,6 @@
         }
         options.hide && options.hide();
       };
-
 
       this.show = function () {
         var idx = editors.length;
@@ -194,11 +181,9 @@
         options.show && options.show();
       };
 
-
       this.position = function (box) {
         options.position && options.position(box);
       };
-
 
       init();
     }

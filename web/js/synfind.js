@@ -299,7 +299,6 @@ function update_dialog(request, identifier, result, formatter, args) {
     get_status();
 }
 
-
 //function show_add() {
 //  if($('#add').is(":hidden")) {
 //    $('#remove').hide(0);

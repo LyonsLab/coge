@@ -27,7 +27,6 @@ if (typeof Slick === "undefined") {
   throw "slick.core.js not loaded";
 }
 
-
 (function ($) {
   // Slick.Grid
   $.extend(true, window, {
@@ -161,7 +160,6 @@ if (typeof Slick === "undefined") {
     var columnPosLeft = [];
     var columnPosRight = [];
 
-
     // async call handles
     var h_editorLoader = null;
     var h_render = null;
@@ -173,7 +171,6 @@ if (typeof Slick === "undefined") {
     // perf counters
     var counter_rows_rendered = 0;
     var counter_rows_removed = 0;
-
 
     //////////////////////////////////////////////////////////////////////////////////////////////
     // Initialization
@@ -978,7 +975,6 @@ if (typeof Slick === "undefined") {
       $container.empty().removeClass(uid);
     }
 
-
     //////////////////////////////////////////////////////////////////////////////////////////////
     // General
 
@@ -1429,7 +1425,6 @@ if (typeof Slick === "undefined") {
       rowsCache[row].cellRenderQueue.push(cell);
       rowsCache[row].cellColSpans[cell] = colspan;
     }
-
 
     function cleanupRows(rangeToKeep) {
       for (var i in rowsCache) {
@@ -2987,7 +2982,6 @@ if (typeof Slick === "undefined") {
       }
     }
 
-
     //////////////////////////////////////////////////////////////////////////////////////////////
     // IEditor implementation for the editor lock
 
@@ -3090,7 +3084,6 @@ if (typeof Slick === "undefined") {
       }
       selectionModel.setSelectedRanges(rowsToRanges(rows));
     }
-
 
     //////////////////////////////////////////////////////////////////////////////////////////////
     // Debug

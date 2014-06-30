@@ -158,7 +158,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 }
             }, this );
         }
-        
+
         // Note: transform cases below can be consolidated/optimized
         if (config.transformAverage) {
             var sum_f = [];
@@ -313,7 +313,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 }
             }, this );
         }
-        
+
         // mdb added 4/2/14 - draw labels on top of bars, issue 346
         var prevStart, prevEnd;
         if (config.showLabels && scale > config.style.labelScale) {
@@ -321,14 +321,14 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 var f = pair.feature;
                 var fRect = pair.featureRect;
                 var isUpward = (fRect.t <= originY); // bar goes upward
-                var start = f.get('start'); 
+                var start = f.get('start');
                 if (start >= block.startBase && start <= block.endBase) { // print label only for first spanning block
 	                var label = f.get('label');
 	                if (label && label != '.') {
 	                	if (!(start >= prevStart && start <= prevEnd)) { // mdb added 4/15/14 - don't allow overlapping labels, only print the first one
 		                	var topOffset = ( isUpward ? fRect.t-12 : fRect.t );
 		                    var rulerdiv =
-		                        dojo.create('div', 
+		                        dojo.create('div',
 		                    		{   style: {
 		                                	width: '100px',
 		                                    position: 'absolute',
@@ -342,7 +342,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 		                    prevEnd = f.get('end');
 	                	}
 	                }
-                }                
+                }
             }, this );
         }
     },
@@ -438,7 +438,6 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                     pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
                 }
             },this);
-
 
             // compute transform scores - FIXME dup'ed in _drawFeatures
             if (this.config.transformAverage) {
@@ -719,7 +718,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                             ]
                         }
                     ]
-                );        	
+                );
         }
 
         return options;

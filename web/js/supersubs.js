@@ -1,4 +1,3 @@
-
 /*
  * Supersubs v0.2b - jQuery plugin
  * Copyright (c) 2008 Joel Birch
@@ -37,7 +36,7 @@
 			// cache all ul elements
 			$ULs = $$.find('ul');
 			// loop through each ul in menu
-			$ULs.each(function(i) {	
+			$ULs.each(function(i) {
 				// cache this ul
 				var $ul = $ULs.eq(i);
 				// get all (li) children of this ul
@@ -77,7 +76,7 @@
 					$childUl.css(offsetDirection,emWidth);
 				});
 			});
-			
+
 		});
 	};
 	// expose defaults
@@ -86,5 +85,5 @@
 		maxWidth		: 25,		// requires em unit.
 		extraWidth		: 0			// extra width can ensure lines don't sometimes turn over due to slight browser differences in how they round-off values
 	};
-	
+
 })(jQuery); // plugin code ends

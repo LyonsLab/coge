@@ -28,7 +28,6 @@
 
     options = $.extend(true, {}, _defaults, options);
 
-
     function show(range) {
       if (!_elem) {
         _elem = $("<div></div>", {css: options.selectionCss})

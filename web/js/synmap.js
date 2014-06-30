@@ -81,7 +81,6 @@ function run_synmap(scheduled, regenerate){
                 return;
     }
 
-
     if (!has_organisms())
         return;
 
@@ -284,7 +283,6 @@ function handle_dsg_info(dsg_html, feat_menu, genome_message, length, org_num, o
     }
 }
 
-
 function set_dagchainer_defaults(params, type) {
     var settings = $('#dagchainer_default').val();
 
@@ -381,7 +379,6 @@ function timing(val, val2){
         }
     }
 }
-
 
 function display_dagchainer_settings(params,type) {
 
@@ -500,7 +497,6 @@ function synmap_formatter(item) {
 
     return row;
 }
-
 
 function update_dialog(request, identifier, formatter, args) {
     var get_status = function () {
