@@ -8,26 +8,20 @@ use CoGe::Accessory::Web;
 no warnings 'redefine';
 
 umask(0);
-use vars
-  qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $DATADIR $DIAGSDIR $DOTPLOT);
-$P         = CoGe::Accessory::Web::get_defaults();
-$ENV{PATH} = $P->{COGEDIR};
-$DEBUG     = 0;
-$DIR       = $P->{COGEDIR};
-$URL       = $P->{URL};
-$DATADIR   = $P->{DATADIR};
-$DIAGSDIR  = $P->{DIAGSDIR};
-$DOTPLOT   = $P->{DOTPLOT} . " -cf " . $ENV{COGE_HOME} . 'coge.conf';
+our ($CONFIG, $DATE, $DEBUG, $DIR, $URL, $FORM, $coge, $DATADIR, $DIAGSDIR,
+     $DOTPLOT);
 
+$DEBUG  = 0;
 $FORM   = new CGI;
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
+
+( $coge, undef, $CONFIG ) = CoGe::Accessory::Web->init(cgi => $FORM);
+
+$ENV{PATH} = $CONFIG->{COGEDIR};
+$DIR       = $CONFIG->{COGEDIR};
+$URL       = $CONFIG->{URL};
+$DATADIR   = $CONFIG->{DATADIR};
+$DIAGSDIR  = $CONFIG->{DIAGSDIR};
+$DOTPLOT   = $CONFIG->{DOTPLOT} . " -cf " . $CONFIG->{_CONFIG_PATH};
 
 my $dsgid1       = $FORM->param('dsg1');
 my $dsgid2       = $FORM->param('dsg2');
@@ -61,8 +55,8 @@ my ( $md51, $md52, $mask1, $mask2, $type1, $type2, $blast, $params ) =
   $basename =~
   /(.*?)_(.*?)\.(\d+)-(\d+)\.(\w+)-(\w+)\.(\w+)\.dag\.?a?l?l?_(.*)/;
 
-my ($dsg1) = $coge->resultset('Genome')->resolve($dsgid1);
-my ($dsg2) = $coge->resultset('Genome')->resolve($dsgid2);
+my ($dsg1) = $coge->resultset('Genome')->find($dsgid1);
+my ($dsg2) = $coge->resultset('Genome')->find($dsgid2);
 exit unless $dsg1 && $dsg2;
 
 # my $name1 = $dsg1->organism->name;
@@ -183,7 +177,6 @@ sub generate_dotplot {
     my $color_type   = $opts{color_type};
     my $color_scheme = $opts{color_scheme};
 
-#   CoGe::Accessory::Web::write_log("generate dotplot: running $cmd", $cogeweb->logfile);
     my $cmd = $DOTPLOT;
     if ( $ksdb && -r $ksdb ) {
         $cmd     .= qq{ -ksdb $ksdb -kst $kstype};
@@ -207,7 +200,6 @@ sub generate_dotplot {
     $tmp .= ".$max" if defined $max && $max =~ /\d/;
     if ( -r $tmp . ".html" && !$regen_images ) {
 
-#CoGe::Accessory::Web::write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
         return $outfile;
     }
 
