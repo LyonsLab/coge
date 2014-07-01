@@ -24,7 +24,7 @@ no warnings 'redefine';
 
 #example URL: http://toxic.berkeley.edu/CoGe/SynFind.pl?fid=34519245;qdsgid=3;dsgid=4241,6872,7084,7094,7111
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS
+use vars qw($config $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS
     $PAGE_TITLE $PAGE_NAME $DIR $LINK $TEMPDIR $TEMPURL $DATADIR $FASTADIR
     $BLASTDBDIR $DIAGSDIR $BEDDIR $LASTZ $LAST $CONVERT_BLAST $BLAST2BED
     $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE
@@ -39,50 +39,50 @@ $MAX_SEARCH_RESULTS = 1000;
 $MAX_FEATURES_IN_LIST = 100;
 
 $FORM = new CGI;
-( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $config, $LINK ) = CoGe::Accessory::Web->init(
     page_title => $PAGE_TITLE,
     cgi => $FORM
 );
 
-$YERBA         = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
+$YERBA         = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
 
-$ENV{PATH}     = $P->{COGEDIR};
-$TEMPDIR       = $P->{TEMPDIR} . $PAGE_TITLE;
-$TEMPURL       = $P->{TEMPURL} . $PAGE_TITLE;
-$SERVER        = $P->{SERVER};
-$ENV{BLASTDB}  = $P->{BLASTDB};
-$ENV{BLASTMAT} = $P->{BLASTMATRIX};
-$DIR           = $P->{COGEDIR};
-$DATADIR       = $P->{DATADIR};
-$DIAGSDIR      = $P->{DIAGSDIR};
+$ENV{PATH}     = $config->{COGEDIR};
+$TEMPDIR       = $config->{TEMPDIR} . $PAGE_TITLE;
+$TEMPURL       = $config->{TEMPURL} . $PAGE_TITLE;
+$SERVER        = $config->{SERVER};
+$ENV{BLASTDB}  = $config->{BLASTDB};
+$ENV{BLASTMAT} = $config->{BLASTMATRIX};
+$DIR           = $config->{COGEDIR};
+$DATADIR       = $config->{DATADIR};
+$DIAGSDIR      = $config->{DIAGSDIR};
 
-$FASTADIR   = $P->{FASTADIR};
-$BLASTDBDIR = $P->{BLASTDB};
-$BEDDIR     = $P->{BEDDIR};
+$FASTADIR   = $config->{FASTADIR};
+$BLASTDBDIR = $config->{BLASTDB};
+$BEDDIR     = $config->{BEDDIR};
 mkpath( $BEDDIR, 0, 0777 ) unless -d $BEDDIR;
 
-$MAX_PROC = $P->{MAX_PROC};
+$MAX_PROC = $config->{MAX_PROC};
 $LASTZ =
-    $P->{PYTHON} . " "
-  . $P->{MULTI_LASTZ}
+    $config->{PYTHON} . " "
+  . $config->{MULTI_LASTZ}
   . " -A $MAX_PROC --path="
-  . $P->{LASTZ};
+  . $config->{LASTZ};
 $LAST =
-    $P->{PYTHON} . " "
-  . $P->{MULTI_LAST}
+    $config->{PYTHON} . " "
+  . $config->{MULTI_LAST}
   . " -a $MAX_PROC --path="
-  . $P->{LAST_PATH}
+  . $config->{LAST_PATH}
   . " --dbpath="
-  . $P->{LASTDB};
+  . $config->{LASTDB};
 
-$GEN_FASTA        = $P->{GEN_FASTA};
-$CONVERT_BLAST    = $P->{CONVERT_BLAST};
-$BLAST2BED        = $P->{BlAST2BED};
-$BLAST2RAW        = $P->{BLAST2RAW};
-$SYNTENY_SCORE    = $P->{SYNTENY_SCORE};
-$PYTHON26         = $P->{PYTHON};
-$DATASETGROUP2BED = $P->{DATASETGROUP2BED};
-$COOKIE_NAME      = $P->{COOKIE_NAME};
+$GEN_FASTA        = $config->{GEN_FASTA};
+$CONVERT_BLAST    = $config->{CONVERT_BLAST};
+$BLAST2BED        = $config->{BlAST2BED};
+$BLAST2RAW        = $config->{BLAST2RAW};
+$SYNTENY_SCORE    = $config->{SYNTENY_SCORE};
+$PYTHON26         = $config->{PYTHON};
+$DATASETGROUP2BED = $config->{DATASETGROUP2BED};
+$COOKIE_NAME      = $config->{COOKIE_NAME};
 
 if ( $FORM->param('get_master') ) {
     get_master_syn_sets();
@@ -118,7 +118,7 @@ CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 sub gen_html {
     my ($body) = gen_body();
 
-    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+    my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( TITLE      => 'Syntenic Compiler',
                       PAGE_TITLE => 'SynFind',
                       HELP       => '/wiki/index.php?title=SynFind' );
@@ -134,7 +134,7 @@ sub gen_html {
     $template->param( ADJUST_BOX => 1 );
     $template->param( BODY       => $body );
 
-    my $prebox = HTML::Template->new( filename => $P->{TMPLDIR} . 'SynFind.tmpl' );
+    my $prebox = HTML::Template->new( filename => $config->{TMPLDIR} . 'SynFind.tmpl' );
     $prebox->param( RESULTS_DIV => 1 );
     $template->param( PREBOX => $prebox->output );
 
@@ -142,7 +142,7 @@ sub gen_html {
 }
 
 sub gen_body {
-    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'SynFind.tmpl' );
+    my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'SynFind.tmpl' );
     #$template->param( BETA => 1 );
 
     #comparison algorithm
@@ -1095,7 +1095,7 @@ sub go_synfind {
     my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
         user_id => $USER->id,
         page    => "GenomeList",
-        url     => $P->{SERVER} . "/GenomeList.pl?dsgid=$dsgids"
+        url     => $config->{SERVER} . "/GenomeList.pl?dsgid=$dsgids"
     );
 
     my $list_link = qq{<a href="$genomes_url" target="_blank">} . @ids . ' genome' . ( @ids > 1 ? 's' : '' ) . '</a>';
@@ -1147,7 +1147,6 @@ sub go_synfind {
     ###########################################################################
     # Setup workflow
     ###########################################################################
-    my $config   = $ENV{COGE_HOME} . "coge.conf";
     my $workflow = $YERBA->create_workflow(
         id      => 0,
         name    => $workflow_name,
@@ -1192,7 +1191,7 @@ sub go_synfind {
         }
 
         my $fasta_args = [
-            [ "--config",       $config,    0 ],
+            [ "--config",       $config->{_CONFIG_PATH}, 0 ],
             [ "--genome_id",    $dsgid,     1 ],
             [ "--feature_type", $feat_type, 1 ],
             [ "--fasta",        $fasta,     1 ]
@@ -1208,7 +1207,7 @@ sub go_synfind {
         );
 
         my $bed_args = [
-            [ " -cf ",  $config,                   0 ],
+            [ " -cf ",  $config->{_CONFIG_PATH}, 0 ],
             [ '-dsgid', $dsgid,                    1 ],
             [ '>',      $BEDDIR . $dsgid . ".bed", 1 ]
         ];
@@ -1439,7 +1438,7 @@ sub get_results {
     my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
         user_id => $USER->id,
         page    => "GenomeList",
-        url     => $P->{SERVER} . "/GenomeList.pl?dsgid=$dsgids"
+        url     => $config->{SERVER} . "/GenomeList.pl?dsgid=$dsgids"
     );
 
     my $list_link = qq{<a href="$genomes_url" target="_blank">} . @ids . ' genome' . ( @ids > 1 ? 's' : '' ) . '</a>';
@@ -1710,13 +1709,13 @@ sub get_results {
     foreach my $item (@target_info) {
         # mdb added 10/8/13
         my $blastfile_link = $item->{blastfile};
-        $blastfile_link =~ s/$P->{COGEDIR}//;
+        $blastfile_link =~ s/$config->{COGEDIR}//;
 
         $html .= '<span class="small">' . $item->{org_name} . ':</span> ' . qq{<a href="$blastfile_link" class="small" target=_new>Raw Blast</a>, };
 
         # mdb added 10/8/13
         $blastfile_link = $item->{filtered_blastfile};
-        $blastfile_link =~ s/$P->{COGEDIR}//;
+        $blastfile_link =~ s/$config->{COGEDIR}//;
 
         $html .= qq{<a href="$blastfile_link" class="small" target=_new>Filtered Blast</a><br>};
     }
