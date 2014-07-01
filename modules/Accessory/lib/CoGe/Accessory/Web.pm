@@ -4,6 +4,7 @@ use v5.10;
 use strict;
 use base 'Class::Accessor';
 use Data::Dumper;
+use Carp qw(cluck);
 use CoGeX;
 use DBIxProfiler;
 use CGI::Carp('fatalsToBrowser');
@@ -642,7 +643,7 @@ sub get_tiny_link {
 #    my $disable_logging = $opts{disable_logging};    # flag
 
     $url =~ s/:::/__/g;
-    my $request_url = "http://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url";
+    my $request_url = "https://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url";
 
 # mdb removed 1/8/14, issue 272
 #    my $tiny = LWP::Simple::get($request_url);
@@ -659,7 +660,8 @@ sub get_tiny_link {
 		return $response->content;
 	}
 	else {
-		return "Unable to produce tiny url from server";
+        cluck "Unable to produce tiny url from server falling back to url";
+        return $url;
 	}
 
     # Log the page
