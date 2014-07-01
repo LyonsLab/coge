@@ -16,7 +16,6 @@ use DBIxProfiler;
 use Data::Dumper;
 use HTML::Template;
 use JSON::XS;
-use LWP::Simple;
 use LWP::UserAgent;
 use Parallel::ForkManager;
 use GD;
@@ -3658,10 +3657,17 @@ sub get_dotplot {
     $url .= ";fid1=$fid1"       if defined $fid1 && $fid1 =~ /^\d+$/;
     $url .= ";fid2=$fid2"       if defined $fid2 && $fid2 =~ /^\d+$/;
 
-    my $content = LWP::Simple::get($url);
-    unless ($content) {
+
+    my $ua = LWP::UserAgent->new;
+    $ua->timeout(10);
+    my $response = $ua->get($url);
+
+    unless ($response->is_success) {
         return "Unable to get image for dotplot: $url";
     }
+
+    my $content = $response->decoded_content;
+
     ($url) = $content =~ /url=(.*?)"/is;
     my $png = $url;
     $png =~ s/html$/png/;
