@@ -3426,7 +3426,7 @@ sub gen_org_name {
       . $feat_type;
     $title =~ s/(`|')//g;
 
-    if ($write_log) {
+    if ($cogeweb and $write_log) {
         CoGe::Accessory::Web::write_log( "Generated organism name:",
             $cogeweb->logfile );
         CoGe::Accessory::Web::write_log( " " x (2) . $title,
