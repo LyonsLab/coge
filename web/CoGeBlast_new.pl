@@ -34,7 +34,7 @@ use Sort::Versions;
 
 use vars qw($P $PAGE_NAME $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR
   $FORMATDB $BLAST_PROGS $FORM $USER $LINK $coge $cogeweb $RESULTSLIMIT
-  $MAX_PROC $MAX_SEARCH_RESULTS %FUNCTION $PAGE_TITLE $YERBA);
+  $MAX_PROC $MAX_SEARCH_RESULTS %FUNCTION $PAGE_TITLE $JEX);
 
 $PAGE_TITLE = "CoGeBlast";
 $PAGE_NAME  = $PAGE_TITLE . ".pl";
@@ -48,7 +48,7 @@ $FORM = new CGI;
     cgi => $FORM
 );
 
-$YERBA         = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
+$JEX         = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
 $ENV{PATH}     = $P->{COGEDIR};
 $ENV{BLASTDB}  = $P->{BLASTDB};
 $ENV{BLASTMAT} = $P->{BLASTMATRIX};
@@ -696,7 +696,7 @@ sub blast_search {
     my $link = CoGe::Accessory::Web::get_tiny_link(url => $url);
 
     my ($tiny_id) = $link =~ /\/(\w+)$/;
-    my $workflow = $YERBA->create_workflow(
+    my $workflow = $JEX->create_workflow(
         name    => "cogeblast-$tiny_id",
         id      => 0,
         logfile => $cogeweb->logfile
@@ -811,7 +811,7 @@ sub blast_search {
         $count++;
     }
 
-    my $status = $YERBA->submit_workflow($workflow);
+    my $status = $JEX->submit_workflow($workflow);
 
     my $log = CoGe::Accessory::Web::log_history(
         db          => $coge,
@@ -822,7 +822,7 @@ sub blast_search {
         workflow_id => $status->{id}
     ) if $status and $status->{id};
 
-    $YERBA->wait_for_completion( $status->{id} );
+    $JEX->wait_for_completion( $status->{id} );
 
     my @completed;
 

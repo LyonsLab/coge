@@ -38,7 +38,7 @@ our (
     $QUOTA_ALIGN,  $CLUSTER_UTILS, $BLAST2RAW,      $BASE_URL,
     $BLAST2BED,    $SYNTENY_SCORE, $TEMPDIR,        $TEMPURL,
     $ALGO_LOOKUP,  $GZIP,          $GUNZIP,         %FUNCTIONS,
-    $YERBA,        $GENE_ORDER,    $PAGE_TITLE,     $KSCALC,
+    $JEX,          $GENE_ORDER,    $PAGE_TITLE,     $KSCALC,
     $GEN_FASTA,    $RUN_ALIGNMENT, $RUN_COVERAGE,   $GEVO_LINKS,
     $PROCESS_DUPS, $DOTPLOT_DOTS,
 );
@@ -55,7 +55,7 @@ $PAGE_NAME  = "$PAGE_TITLE.pl";
     page_title => $PAGE_TITLE,
 );
 
-$YERBA = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
+$JEX = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
 
 $ENV{PATH} = join ":",
   (
@@ -1500,7 +1500,7 @@ sub go {
     #        #    $file = $FASTADIR . "/$gid-$feat_type.fasta";
     #        #}
     #    }
-    $workflow = $YERBA->create_workflow(
+    $workflow = $JEX->create_workflow(
         name     => $workflow_name,
         logfile  => $cogeweb->logfile,
     );
@@ -2441,7 +2441,7 @@ sub go {
     CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
-    my $response = $YERBA->submit_workflow($workflow);
+    my $response = $JEX->submit_workflow($workflow);
 
     my $log = CoGe::Accessory::Web::log_history(
         db      => $coge,
@@ -2500,27 +2500,6 @@ sub get_results {
         basename => $basename,
         tempdir  => $TEMPDIR
     );
-
-#FIXME: The id needs to be an input argument
-#    given ( lc( $YERBA->get_status( 0 ) ) ) {
-#        when ('failed') {
-#            return encode_json({
-#                error => "The workflow failed."
-#            })
-#        }
-#
-#        when ('cancelled') {
-#            return encode_json({
-#                error => "The workflow was cancelled."
-#            })
-#        }
-#
-#        when ('terminated') {
-#            return encode_json({
-#                error => "The workflow was terminated."
-#            })
-#        }
-#    }
 
     ############################################################################
     # Parameters
@@ -3639,6 +3618,9 @@ sub get_dotplot {
     $box_diags = $box_diags eq "true" ? 1 : 0;
 
     # base=8_8.CDS-CDS.blastn.dag_geneorder_D60_g30_A5;
+
+
+    qr/https?:\/{2}/;
 
     $url = $config->{SERVER} . "run_dotplot.pl?" . $url;
     $url .= ";flip=$flip"       if $flip;

@@ -17,7 +17,7 @@ use CoGe::Accessory::Web;
 
 no warnings 'redefine';
 
-our ( $P, $PAGE_TITLE, $USER, $BASEFILE, $coge, %FUNCTION, $FORM, $YERBA,
+our ( $P, $PAGE_TITLE, $USER, $BASEFILE, $coge, %FUNCTION, $FORM, $JEX,
     $LINK );
 
 $PAGE_TITLE = 'Jobs';
@@ -28,7 +28,7 @@ $FORM = new CGI;
     page_title => $PAGE_TITLE
 );
 
-$YERBA =
+$JEX =
   CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
 
 %FUNCTION = (
@@ -67,7 +67,7 @@ sub get_jobs_for_user {
 
     my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
     my @workflows = map { $_->workflow_id } @entries;
-    my $workflows = $YERBA->find_workflows(@workflows);
+    my $workflows = $JEX->find_workflows(@workflows);
 
     my @job_items;
     my %workflow_results;
@@ -150,11 +150,11 @@ sub cancel_job {
 
     return encode_json( {} ) unless defined($job);
 
-    my $status = $YERBA->get_status( $job->id );
+    my $status = $JEX->get_status( $job->id );
 
     if ( $status =~ /scheduled|running|notfound/i ) {
         $job->update( { status => 3, end_time => \'current_timestamp' } );
-        return encode_json( $YERBA->terminate( $job->id ) );
+        return encode_json( $JEX->terminate( $job->id ) );
     }
     else {
         return encode_json( {} );

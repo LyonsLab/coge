@@ -16,7 +16,7 @@ use CoGe::Accessory::Jex;
 use CoGe::Core::Storage qw(get_genome_file get_experiment_files);
 use CoGe::Accessory::Web qw(get_defaults get_job schedule_job);
 
-our ($DESC, $YERBA, $DEBUG, $P, $user,
+our ($DESC, $JEX, $DEBUG, $P, $user,
      $name, $description, $version, $restricted, $source_name,
      $test, $config, $eid, $jobid, $userid, $staging_dir, $log_file, $log,
      $METADATA, $FASTA_CACHE_DIR );
@@ -67,7 +67,7 @@ sub setup {
     $P = CoGe::Accessory::Web::get_defaults($config);
 
     # Connect to JEX
-    $YERBA = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
+    $JEX = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
 
     # Connect to DB
     my $connstr = "dbi:mysql:dbname=".$P->{DBNAME}.";host=".$P->{DBHOST}.";port=".$P->{DBPORT}.";";
@@ -101,7 +101,7 @@ sub main {
     my $bam_file = shift @$files;
 
     # Setup the workflow
-    my $workflow = $YERBA->create_workflow(
+    my $workflow = $JEX->create_workflow(
         id => $job->id,
         name => $DESC,
         logfile => $log_file
@@ -126,7 +126,7 @@ sub main {
     say STDERR "JOB NOT SCHEDULED TEST MODE" and exit(0) if $test;
 
     # check if the schedule was successful
-    my $status = $YERBA->submit_workflow($workflow);
+    my $status = $JEX->submit_workflow($workflow);
     exit(1) if defined($status->{error}) and lc($status->{error}) eq "error";
 
     CoGe::Accessory::TDS::write(catdir($staging_dir, "workflow.json"), $status);
