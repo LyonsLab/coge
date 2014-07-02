@@ -161,7 +161,6 @@ sub gen_body {
         url     => $link
     ) if @params;
 
-    $template->param( SERVER => $SERVER );
     $org      = $dsg->organism if $dsg;
     $org_name = $org->name     if $org;
     $org_name .= $desc if $desc; # mdb added 4/22/14 combined org name & desc searches into single input
