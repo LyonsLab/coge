@@ -143,16 +143,21 @@ qq{<tr><td class="title5">Sequence type:<td class="data5" title="gstid$gstid">}
       . commify($total_length)
       . " bp </div>";
 
-    my $gc = (has_statistic($dsg, "gc") or ($total_length < 10000000
-      && $chr_num < 20)) ? get_gc_for_genome( dsgid => $dsgid ) : 0;
+    my ($gc, $noncoding);
+
+    eval {
+        $gc = (has_statistic($dsg, "gc") or ($total_length < 10000000
+        && $chr_num < 20)) ? get_gc_for_genome( dsgid => $dsgid ) : 0;
+
+        $noncoding = (has_statistic($dsg, "noncoding_gc") and $total_length)
+        ? get_gc_for_noncoding(dsgid => $dsgid) : 0;
+    };
+
     $gc =
         $gc
       ? $gc :
       qq{  <div style="float: left; text-indent: 1em;" id="dsg_gc" class="link" onclick="get_gc_content('#dsg_gc', 'get_gc_for_genome');">%GC</div><br/>};
     $html .= "$gc</td></tr>";
-
-    my $noncoding = (has_statistic($dsg, "noncoding_gc") and $total_length)
-        ? get_gc_for_noncoding(dsgid => $dsgid) : 0;
 
     if ($noncoding) {
         # Non-coding Sequence
