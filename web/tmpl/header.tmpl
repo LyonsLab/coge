@@ -157,7 +157,9 @@ Please note:  the iPlant Data Store will be unavailable Tuesday, April 15th for 
 
 <div>
 	<TMPL_IF NAME="LOGO_PNG">
-		<img style="vertical-align:bottom;" onclick="window.open('<TMPL_VAR NAME=HELP>')" src='picts/<TMPL_VAR NAME="LOGO_PNG">'>
+        <a href="http://www.genomevolution.org/<TMPL_VAR NAME=HELP>">
+		    <img style="vertical-align:bottom;" src='picts/<TMPL_VAR NAME="LOGO_PNG">'>
+        </a>
 	</TMPL_IF>
 	<span class="tagline"><TMPL_VAR NAME="TITLE"></span>
 </div>
