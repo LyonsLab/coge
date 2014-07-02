@@ -29,7 +29,7 @@ use vars qw($config $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS
     $BLASTDBDIR $DIAGSDIR $BEDDIR $LASTZ $LAST $CONVERT_BLAST $BLAST2BED
     $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE
     $coge $cogeweb $RESULTSLIMIT $MAX_SEARCH_RESULTS $MAX_PROC $SERVER $COOKIE_NAME
-    $YERBA $GEN_FASTA $MAX_FEATURES_IN_LIST);
+    $JEX $GEN_FASTA $MAX_FEATURES_IN_LIST);
 
 $PAGE_TITLE    = "SynFind";
 $PAGE_NAME     = $PAGE_TITLE . ".pl";
@@ -44,7 +44,7 @@ $FORM = new CGI;
     cgi => $FORM
 );
 
-$YERBA         = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
+$JEX         = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
 
 $ENV{PATH}     = $config->{COGEDIR};
 $TEMPDIR       = $config->{TEMPDIR} . $PAGE_TITLE;
@@ -1147,7 +1147,7 @@ sub go_synfind {
     ###########################################################################
     # Setup workflow
     ###########################################################################
-    my $workflow = $YERBA->create_workflow(
+    my $workflow = $JEX->create_workflow(
         id      => 0,
         name    => $workflow_name,
         logfile => $cogeweb->logfile
@@ -1384,7 +1384,7 @@ sub go_synfind {
     CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
-    my $response = $YERBA->submit_workflow($workflow);
+    my $response = $JEX->submit_workflow($workflow);
     my $success = JSON::true;
     $success = JSON::false if lc($response->{status}) eq "error";
 
