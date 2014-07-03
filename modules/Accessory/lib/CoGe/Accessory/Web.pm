@@ -21,6 +21,7 @@ use CoGe::Accessory::LogUser;
 use Digest::MD5 qw(md5_base64);
 use POSIX qw(!tmpnam !tmpfile);
 use Mail::Mailer;
+use URI;
 
 =head1 NAME
 
@@ -56,7 +57,7 @@ BEGIN {
     @ISA     = ( qw (Exporter Class::Accessor) );
     @EXPORT  = qw( get_session_id );
     @EXPORT_OK = qw( check_filename_taint check_taint gunzip gzip send_email
-                     get_defaults set_defaults );
+                     get_defaults set_defaults url_for );
 
     __PACKAGE__->mk_accessors(
         'restricted_orgs', 'basefilename', 'basefile', 'logfile',
@@ -981,6 +982,54 @@ sub send_email {
 
     print $mailer $body;
     $mailer->close();
+}
+
+sub url_for {
+    my ($path, %params) = @_;
+
+    # Error if CONFIG not set
+    croak "CONFIG was not found." unless $CONF;
+
+    my $SERVER = $CONF->{SERVER};
+    my $BASE_URL = $CONF->{URL};
+
+    # Error if SERVER not found
+    croak "SERVER option not found in CONFIG." unless $SERVER;
+
+    # Configures the default scheme
+    my $scheme = $CONF->{SECURE} ? "https://" : "http://";
+
+    # SERVER may override the default scheme
+    if ($SERVER =~ /(?<scheme>https?:\/{2})/) {
+        $scheme = $+{scheme};
+    }
+
+    # Strip leading /
+    $path =~ s/^\///;
+
+    # Strip scheme and /
+    $SERVER =~ s/\/$//;
+    $SERVER =~ s/^https?:\/{2}//;
+    $SERVER =~ s/\/$//;
+
+    # Strip leading and trailing /
+    $BASE_URL =~ s/^\///;
+    $BASE_URL =~ s/\/$//;
+
+    # Build up parts and ignore BASE_URL if not set
+    my @parts = (length $BASE_URL) ? ($SERVER, $BASE_URL, $path)
+                                   : ($SERVER, $path);
+
+    # Build query string from params
+    my ($query_string, @pairs) = ("", ());
+
+    foreach my $key (sort keys %params) {
+        push @pairs, $key . "=" . $params{$key};
+    }
+
+    $query_string = "?" . join("&", @pairs) if @pairs;
+
+    return $scheme . join("/", @parts) . $query_string;;
 }
 
 1;
