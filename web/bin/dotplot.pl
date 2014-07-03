@@ -5,7 +5,7 @@ use GD;
 use Getopt::Long;
 
 use CoGeX;
-use CoGe::Accessory::Web;
+use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::SynMap_report;
 use CoGe::Accessory::Utils qw( commify );
 use DBI;
@@ -16,7 +16,7 @@ use Sort::Versions;
 use HTML::Template;
 
 use vars
-  qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order $font $GZIP $GUNZIP $URL $conffile $skip_random $force_box $chr_order $dotsize $linesize $STANDALONE);
+  qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order $font $GZIP $GUNZIP $conffile $skip_random $force_box $chr_order $dotsize $linesize $STANDALONE);
 
 GetOptions(
     "dagfile|d=s"            => \$dagfile,        #all dots
@@ -70,7 +70,6 @@ $P      = CoGe::Accessory::Web::get_defaults($conffile);
 $font   = $P->{FONT} unless $font && -r $font;
 $GZIP   = $P->{GZIP};
 $GUNZIP = $P->{GUNZIP};
-$URL    = $P->{URL};
 
 usage() if $help;
 unless ( ( defined $dagfile && -r $dagfile )
@@ -685,12 +684,17 @@ sub draw_dots {
         push @points, [ $y, $y_real, $tsize, $tsize, 0, 360, $tuse_color, $val ]
           if ( $add_inverse && $chr1 eq $chr2 && $x ne $y );
 
+        my %URL_PARAMS = (
+            drup1 => 50000,
+            drdown1 => 50000,
+            drup2 => 50000,
+            drdown2 => 50000
+        );
+
         if ( $link_type == 1 ) {
 #working here.  Need to build a GEvo link using datasets/chr/position if dealing with genomic data.
-            my $link =
-qq{$URL/GEvo.pl?drup1=50000&drdown1=50000&drup2=50000&drdown2=50000};
             if ($fid1) {
-                $link .= qq{;fid1=$fid1};
+                $URL_PARAMS{fid1} = $fid1;
             }
             else {
                 #just added the coge->ds object to $org
@@ -699,10 +703,12 @@ qq{$URL/GEvo.pl?drup1=50000&drdown1=50000&drup2=50000&drdown2=50000};
                   . commify( $item1[1] ) . " - "
                   . commify( $item1[2] );
                 my $chr = $item1[0];
-                $link .= qq{;dsgid1=$dsgid1;x1=$midx;chr1=$chr};
+                @URL_PARAMS{qw(dsgid1 x1 chr1)} = ($dsgid1, $midx, $chr);
+                #$link .= qq{;dsgid1=$dsgid1;x1=$midx;chr1=$chr};
             }
             if ($fid2) {
-                $link .= qq{;fid2=$fid2};
+                #$link .= qq{;fid2=$fid2};
+                $URL_PARAMS{fid2} = $fid2;
             }
             else {
                 #just added the coge->ds object to $org
@@ -711,14 +717,14 @@ qq{$URL/GEvo.pl?drup1=50000&drdown1=50000&drup2=50000&drdown2=50000};
                   . commify( $item2[1] ) . " - "
                   . commify( $item2[2] );
                 my $chr = $item2[0];
-                $link .= qq{;dsgid2=$dsgid2;x2=$midy;chr2=$chr};
+                @URL_PARAMS{qw(dsgid2 x2 chr2)} = ($dsgid2, $midy, $chr);
             }
             unless ( $points{$x}{$y} )   #cuts down on the size of the image map
             {
                 push @feats,
                   [
                     $x, $graphics_context->height - $y,
-                    $item1[6], $item2[6], $link
+                    $item1[6], $item2[6], url_for("GEvo.pl", %URL_PARAMS)
                   ];
                 $points{$x}{$y} = 1;
             }
@@ -793,7 +799,7 @@ qq{$URL/GEvo.pl?drup1=50000&drdown1=50000&drup2=50000&drdown2=50000};
         my $include_histogram = (-e $basename . ".hist.png") ? 1 : 0;
 
         $template->param(
-            url         => $URL,
+            url         => url_for(""),
             img         => $img,
             chr1        => $CHR1,
             chr2        => $CHR2,
@@ -951,7 +957,7 @@ sub draw_chromosome_grid {
         my ($img) = $basename =~ /([^\/]*$)/;
 
         $template->param(
-            url        => $URL,
+            url        => url_for(""),
             img        => $img,
             histogram  => 0,
             click_map  => $map,
