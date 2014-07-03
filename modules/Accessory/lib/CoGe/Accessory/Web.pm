@@ -56,7 +56,7 @@ BEGIN {
     @ISA     = ( qw (Exporter Class::Accessor) );
     @EXPORT  = qw( get_session_id );
     @EXPORT_OK = qw( check_filename_taint check_taint gunzip gzip send_email
-                     get_defaults );
+                     get_defaults set_defaults );
 
     __PACKAGE__->mk_accessors(
         'restricted_orgs', 'basefilename', 'basefile', 'logfile',
@@ -171,6 +171,11 @@ A valid parameter file must be specified or very little will work!};
 
     $CONF = \%items;
     return $CONF;
+}
+
+sub set_defaults {
+    my $NEW_CONF = shift;
+    $CONF = \(%$CONF, %$NEW_CONF);
 }
 
 sub is_ajax {
