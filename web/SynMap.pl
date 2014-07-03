@@ -7,7 +7,7 @@ umask(0);
 use CoGeX;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
-use CoGe::Accessory::Web;
+use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils qw( commify );
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
@@ -3613,33 +3613,30 @@ sub get_dotplot {
     my $color_scheme = $opts{color_scheme};
     my $fid1         = $opts{fid1};
     my $fid2         = $opts{fid2};
+    my %params;
 
     #print STDERR Dumper \%opts;
     $box_diags = $box_diags eq "true" ? 1 : 0;
 
     # base=8_8.CDS-CDS.blastn.dag_geneorder_D60_g30_A5;
 
+    $params{flip} = $flip       if $flip;
+    $params{regen} = $regen     if $regen;
+    $params{width} = $width     if $width;
+    $params{ksdb} = $ksdb       if $ksdb eq /undefined/;
+    $params{kstype} = $kstype   if $kstype;
+    $params{log} = 1            if $kstype;
+    $params{min} = $min         if $min;
+    $params{max} = $max         if $max;
+    $params{am} = $metric       if defined $metric;
+    $params{ar} = $relationship if defined $relationship;
+    $params{ct} = $color_type   if $color_type;
+    $params{bd} = $box_diags    if $box_diags;
+    $params{cs} = $color_scheme if defined $color_scheme;
+    $params{fid1} = $fid1       if defined $fid1 && $fid1 =~ /^\d+$/;
+    $params{fid2} = $fid2       if defined $fid2 && $fid2 =~ /^\d+$/;
 
-    qr/https?:\/{2}/;
-
-    $url = $config->{SERVER} . "run_dotplot.pl?" . $url;
-    $url .= ";flip=$flip"       if $flip;
-    $url .= ";regen=$regen"     if $regen;
-    $url .= ";width=$width"     if $width;
-    $url .= ";ksdb=$ksdb"       if $ksdb;
-    $url .= ";kstype=$kstype"   if $kstype;
-    $url .= ";log=1"            if $kstype;
-    $url .= ";min=$min"         if defined $min;
-    $url .= ";max=$max"         if defined $max;
-    $url .= ";am=$metric"       if defined $metric;
-    $url .= ";ar=$relationship" if defined $relationship;
-    $url .= ";ct=$color_type"   if $color_type;
-    $url .= ";bd=$box_diags"    if $box_diags;
-    $url .= ";cs=$color_scheme" if defined $color_scheme;
-    $url .= ";fid1=$fid1"       if defined $fid1 && $fid1 =~ /^\d+$/;
-    $url .= ";fid2=$fid2"       if defined $fid2 && $fid2 =~ /^\d+$/;
-
-
+    $url = url_for("run_dotplot.pl", %params) . "&" . $url;
     my $ua = LWP::UserAgent->new;
     $ua->timeout(10);
     my $response = $ua->get($url);
