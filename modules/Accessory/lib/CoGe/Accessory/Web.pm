@@ -45,15 +45,19 @@ LICENSE file included with this module.
 
 =cut
 
+our($CONF, $VERSION, @ISA, @EXPORT, @EXPORT_OK, $Q, $TEMPDIR, $BASEDIR);
+
 BEGIN {
-    use vars qw ($CONF $VERSION @ISA @EXPORT @EXPORT_OK $Q $TEMPDIR $BASEDIR $CONF);
     require Exporter;
 
     $BASEDIR = ( $ENV{COGE_HOME} ? $ENV{COGE_HOME} : '/opt/apache/coge/web/' );
     $VERSION = 0.1;
     $TEMPDIR = $BASEDIR . "tmp";
-    @ISA     = ( @ISA, qw (Exporter) );
+    @ISA     = ( qw (Exporter Class::Accessor) );
     @EXPORT  = qw( get_session_id );
+    @EXPORT_OK = qw( check_filename_taint check_taint gunzip gzip send_email
+                     get_defaults );
+
     __PACKAGE__->mk_accessors(
         'restricted_orgs', 'basefilename', 'basefile', 'logfile',
         'sqlitefile'
