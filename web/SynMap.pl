@@ -163,9 +163,9 @@ $DATADIR  = $config->{DATADIR};
 $DIAGSDIR = $config->{DIAGSDIR};
 $FASTADIR = $config->{FASTADIR};
 
-mkpath( $FASTADIR,    1, 0777 );
-mkpath( $DIAGSDIR,    1, 0777 );    # mdb added 7/9/12
-mkpath( $config->{LASTDB}, 1, 0777 );    # mdb added 7/9/12
+mkpath( $FASTADIR,    0, 0777 );
+mkpath( $DIAGSDIR,    0, 0777 );    # mdb added 7/9/12
+mkpath( $config->{LASTDB}, 0, 0777 );    # mdb added 7/9/12
 $BLASTDBDIR = $config->{BLASTDB};
 
 $PYTHON        = $config->{PYTHON};                         #this was for python2.5
@@ -1668,7 +1668,7 @@ sub go {
         elsif ( $cmd =~ /last_wrapper/i ) {
             # mdb added 9/20/13 issue 213
             my $dbpath = $config->{LASTDB} . '/' . $dsgid2;
-            mkpath($dbpath);
+            mkpath($dbpath, 0, 0777);
             push @blastargs, [ "--dbpath", $dbpath, 0 ];
 
             push @blastargs, [ "",   $db,      0 ];
