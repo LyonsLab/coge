@@ -393,10 +393,6 @@ sub load_annotation {
     return encode_json({ error => "You do not have permission to modify this genome" })
         unless ($USER->is_admin || $USER->is_owner_editor( dsg => $gid ));
 
-    # Setup staging area
-    my $stagepath = catdir($TEMPDIR, 'staging');
-    mkpath $stagepath;
-
     # Setup paths to files
     my @files = map { $TEMPDIR . $_->{path} } @$items;
 
