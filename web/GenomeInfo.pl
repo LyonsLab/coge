@@ -1362,7 +1362,7 @@ sub get_aa_usage {
 
     my $search;
     $search = { "feature_type.name" => "CDS" };
-    $search->{"me.chromosome"} = $chr if defined $chr;
+    $search->{"me.chromosome"} = $chr if defined $chr and $chr;
 
     my (@items, @datasets);
     if ($dsid) {
