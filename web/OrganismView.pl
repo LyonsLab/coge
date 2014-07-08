@@ -751,15 +751,15 @@ sub get_dataset_info {
         }
     }
 
-    my $count = 100000;
-    foreach my $item ( sort keys %chr ) {
-        my ($num) = $item =~ /(\d+)/;
-        $num = $count unless $num;
-        $chr{$item}{num} = $num;
-        $count++;
-    }
-
     if ($chr_num) {
+        my $count = 100000;
+        foreach my $item ( sort keys %chr ) {
+            my ($num) = $item =~ /(\d+)/;
+            $num = $count unless $num;
+            $chr{$item}{num} = $num;
+            $count++;
+        }
+        
         my @chr =
           $chr_num > $chr_num_limit
           ? sort { $chr{$b}{length} <=> $chr{$a}{length} } keys %chr
