@@ -213,7 +213,7 @@ function get_org_info_chain(val, val2) {
 }
 
 function get_dataset_name_chain(val) {
-    if (val){
+    if (val) {
     	get_dataset(['args__dsname','args__'+val], [dataset_info_chain]);
     	$('#org_list').html('<hidden id="org_id">');
     	$('#dsg_list').html('<hidden id="dsg_id">');
@@ -428,7 +428,7 @@ function update_genome_info (dsgid) {
     </td>
     <td valign="top">
       <div class="coge-table-header">Dataset Information</div>
-      <div id="ds_info" class = "small ui-corner-all ui-widget-content" ><TMPL_VAR NAME="DS_INFO"></div>
+      <div id="ds_info" class="small ui-corner-all ui-widget-content"><TMPL_VAR NAME="DS_INFO"></div>
     </td>
   </tr>
 
@@ -439,7 +439,7 @@ function update_genome_info (dsgid) {
     </td>
     <td valign="top">
       <div class="coge-table-header">Chromosome information</div>
-      <div id="chr_info" class = "small ui-corner-all ui-widget-content" ><TMPL_VAR NAME="CHR_INFO"></div>
+      <div id="chr_info" class="small ui-corner-all ui-widget-content"><TMPL_VAR NAME="CHR_INFO"></div>
     </td>
   </tr>
 
@@ -457,7 +457,7 @@ function update_genome_info (dsgid) {
   </tr>
 </table>
 
-<div class="dialog_box hidden" id="gc_histogram" title="Histogram of GC Content"><input type=hidden id=feat_gc_min></div>
+<div class="dialog_box hidden" id="gc_histogram" title="Histogram of GC Content"><input type="hidden" id="feat_gc_min"></div>
 <div class="dialog_box hidden" id="wobble_gc_histogram" title="Histogram of Wobble GC Content for CDS"></div>
 <div class="dialog_box hidden" id="wobble_gc_diff_histogram" title="(CDS GC - wobble GC) Content Histogram"></div>
 <div class="dialog_box hidden" id="codon_usage_table" title="Codon Usage Table"></div>
@@ -466,46 +466,45 @@ function update_genome_info (dsgid) {
 <div class="dialog_box hidden" id="chromosome_hist" title="Chromosome Size"></div>
 
 <div class="dialog hidden" title="Genome List" id="geno_list">
-    <span id=count class="small count">Genome Count: 0</span><br>
-             <select id="genomelist_choice" SIZE="10" MULTIPLE >
-              <option id=blank value=null>No Genome Selected</option>
-              </select>
- <br>
-    <span class="ui-button ui-corner-all" id=send onClick="$('#genomelist_choice').sortSelect()">Sort List Alphabetically</span><br><br>
-    <span class="ui-button ui-corner-all" id=send onClick="send_to_GenoList()">Send to GenomeList</span><br><br>
-      <span class="ui-button ui-corner-all" id=remove onClick="remove_selected_genomes();">Remove</span><br><br>
-    <span class="ui-button ui-corner-all" id=clear onClick="clear_genome_list()">Clear</span><br>
-
-    <div id=add_all_search></div>
+	<span id=count class="small count">Genome Count: 0</span><br>
+    <select id="genomelist_choice" SIZE="10" MULTIPLE>
+		<option id="blank" value=null>No Genome Selected</option>
+	</select>
+	<br>
+    <span class="ui-button ui-corner-all" onClick="$('#genomelist_choice').sortSelect()">Sort List Alphabetically</span><br><br>
+    <span class="ui-button ui-corner-all" onClick="send_to_GenoList()">Send to GenomeList</span><br><br>
+    <span class="ui-button ui-corner-all" onClick="remove_selected_genomes();">Remove</span><br><br>
+    <span class="ui-button ui-corner-all" onClick="clear_genome_list()">Clear</span><br>
+    <div id="add_all_search"></div>
 </div>
 
-<DIV class="dialog hidden" title="GFF Exporter" id="gff_export">
-<table class=small>
- <tr>
-   <td>Do not generate features for ncRNA genes (CDS genes only)</td>
-   <td><input type=checkbox name="cds_only" id="cds_only"></td>
- </tr>
- <tr>
-   <td>Include feature annotations (descriptive text; Geneontology; etc)</td>
-   <td><input type=checkbox name="annos" id="annos" checked></td>
- </tr>
- <tr>
-   <td>Ensure that GFF Name tag is unique for each feature</td>
-   <td><input type=checkbox name="name_unique" id="name_unique" checked></td>
- </tr>
- <tr>
-   <td>Do not propagate duplicate annotations to children</td>
-   <td><input type=checkbox name="upa" id="upa" checked></td>
- </tr>
- <tr>
-   <td>For GFF "ID" and "Parent" tags, use unique:
-   <td>
-     <select id=gff_id_type>
-      <option value="name" selected>Name</option>
-      <option value="num">Number</option>
-     </select>
- </tr>
-</table>
-<span class="ui-button ui-corner-all ui-button-go" onClick="export_gff('$dsgid')">Export GFF File</span>
-<br><br><span class="small" id=export_gff_link></span>
+<div class="dialog hidden" title="GFF Exporter" id="gff_export">
+	<table class="small">
+	 <tr>
+	   <td>Do not generate features for ncRNA genes (CDS genes only)</td>
+	   <td><input type=checkbox name="cds_only" id="cds_only"></td>
+	 </tr>
+	 <tr>
+	   <td>Include feature annotations (descriptive text; Geneontology; etc)</td>
+	   <td><input type=checkbox name="annos" id="annos" checked></td>
+	 </tr>
+	 <tr>
+	   <td>Ensure that GFF Name tag is unique for each feature</td>
+	   <td><input type=checkbox name="name_unique" id="name_unique" checked></td>
+	 </tr>
+	 <tr>
+	   <td>Do not propagate duplicate annotations to children</td>
+	   <td><input type=checkbox name="upa" id="upa" checked></td>
+	 </tr>
+	 <tr>
+	   <td>For GFF "ID" and "Parent" tags, use unique:
+	   <td>
+	     <select id="gff_id_type">
+	       <option value="name" selected>Name</option>
+	       <option value="num">Number</option>
+	     </select>
+	 </tr>
+	</table>
+	<span class="ui-button ui-corner-all ui-button-go" onClick="export_gff('$dsgid')">Export GFF File</span><br><br>
+	<span class="small" id="export_gff_link"></span>
 </div>
