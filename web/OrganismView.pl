@@ -19,7 +19,7 @@ no warnings 'redefine';
 
 use vars qw($P $PAGE_NAME $PAGE_TITLE $LINK
   $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM
-  %FUNCTION $P $SERVER $MAX_NUM_ORGANISM_RESULTS);
+  %FUNCTION $P $SERVER $MAX_NUM_ORGANISM_RESULTS $MAX_DS_LENGTH);
 
 $| = 1;    # turn off buffering
 
@@ -38,6 +38,7 @@ $SERVER    = $P->{SERVER};
 $HISTOGRAM = $P->{HISTOGRAM};
 
 $MAX_NUM_ORGANISM_RESULTS = 5000;
+$MAX_DS_LENGTH = 10000000;
 
 %FUNCTION = (
     get_genomes             => \&get_genomes,
@@ -784,31 +785,25 @@ sub get_dataset_info {
         $html2 .= qq{<input type="hidden" id="chr" value="">};
         $html2 .= "<tr><td>No chromosomes";
     }
-    $html .= "<tr><td>Chromosome count:<td><div style=\"float: left;\">"
-      . commify($chr_num);
-    $html .= "<tr><td>Total length:<td><div style=\"float: left;\">"
-      . commify($total_length) . " bp ";
-    my $gc =
-      $total_length < 10000000 && $chr_num < $chr_num_limit
+    $html .= "<tr><td>Chromosome count:<td><div style=\"float: left;\">" . commify($chr_num)
+          .  "<tr><td>Total length:<td><div style=\"float: left;\">" . commify($total_length) . " bp ";
+    my $gc = 
+      $total_length && $total_length < $MAX_DS_LENGTH && $chr_num && $chr_num < $chr_num_limit
       ? get_gc_for_chromosome( dsid => $ds->id )
       : 0;
-    $gc =
-        $gc
-      ? $gc
-      : qq{  </div><div style="float: left; text-indent: 1em;" id="dataset_gc" class="link" onclick="gen_data(['args__loading...'],['dataset_gc']);\$('#dataset_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for percent GC content</div>}
+    $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id="dataset_gc" class="link" onclick="gen_data(['args__loading...'],['dataset_gc']);\$('#dataset_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for percent GC content</div>}
       if $total_length;
     $html .= $gc if $gc;
-    $html .= qq{<tr><td>Links:</td>};
-    $html .= "<td>";
-    $html .= "<a href='OrganismView.pl?dsid=$dsid' target=_new>OrganismView</a>";
-    $html .= qq{</td></tr>};
-    my $feat_string = qq{
-<tr><td><div id="ds_feature_count" class="small link" onclick="gen_data(['args__loading...'],['ds_features']);get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['ds_features']);" >Click for Features</div></td></tr>};
+    $html .= qq{<tr><td>Links:</td>}
+          . "<td>"
+          . "<a href='OrganismView.pl?dsid=$dsid' target=_new>OrganismView</a>"
+          . qq{</td></tr>};
+    my $feat_string = qq{<tr><td><div id="ds_feature_count" class="small link" onclick="gen_data(['args__loading...'],['ds_features']);get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['ds_features']);" >Click for Features</div></td></tr>};
     $html .= $feat_string;
 
-    $html .= qq{</table></td>};
-    $html .= qq{<td id="ds_features"></td>};
-    $html .= qq{</table>};
+    $html .= qq{</table></td>}
+          . qq{<td id="ds_features"></td>}
+          . qq{</table>};
 
     my $chr_count = $chr_num;
     $chr_count .= " <span class='note'> (only $chr_num_limit largest listed)</span>"
@@ -836,7 +831,7 @@ sub get_dataset_chr_info {
     my $length = 0;
     $length = $ds->last_chromosome_position($chr) if defined $chr;
     my $gc =
-      $length < 10000000
+      $length < $MAX_DS_LENGTH
       ? get_gc_for_chromosome( dsid => $ds->id, chr => $chr )
       : 0;
     $gc =
