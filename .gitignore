@@ -11,3 +11,8 @@ web/tmp
 web/data
 web/coge.conf
 web/js/vendor
+web/js/jbrowse/*
+web/js/jbrowse/plugins/*
+!web/js/jbrowse
+!web/js/jbrowse/plugins/
+!web/js/jbrowse/plugins/CoGe
