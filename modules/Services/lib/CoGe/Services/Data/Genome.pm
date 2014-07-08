@@ -80,22 +80,22 @@ sub load {
 	my $organism_id = 38378; # FIXME hardcoded to "test" organism, need to change to "unknown" or something
 
     # Setup staging area
-    my $LOAD_ID = get_unique_id();
-	my $TEMPDIR = $conf->{SECTEMPDIR} . '/LoadGenome/' . $user->name . '/' . $LOAD_ID . '/';
-    my $stagepath = $TEMPDIR . '/staging/';
-    mkpath $stagepath;
-	if (not -r $stagepath) {
-		#$self->header_props( -status => 500 );
-		return encode_json({
-			success => JSON::false,
-			error => 'Cannot create staging path'
-		});
-	}
+#    my $LOAD_ID = get_unique_id();
+#	my $TEMPDIR = $conf->{SECTEMPDIR} . '/LoadGenome/' . $user->name . '/' . $LOAD_ID . '/';
+#    my $stagepath = $TEMPDIR . '/staging/';
+#    mkpath $stagepath;
+#	if (not -r $stagepath) {
+#		#$self->header_props( -status => 500 );
+#		return encode_json({
+#			success => JSON::false,
+#			error => 'Cannot create staging path'
+#		});
+#	}
 
 	# Open log file
-    my $logfile = $stagepath . '/log.txt';
-    open( my $log, ">$logfile" ) or die "Error creating log file";
-    print $log "Starting load genome $stagepath\n"; #. "name=$name description=$description version=$version type_id=$type_id restricted=$restricted org_id=$organism_id\n";
+#    my $logfile = $stagepath . '/log.txt';
+#    open( my $log, ">$logfile" ) or die "Error creating log file";
+#    print $log "Starting load genome $stagepath\n"; #. "name=$name description=$description version=$version type_id=$type_id restricted=$restricted org_id=$organism_id\n";
 
 	# Copy files from iPlant Data Store to staging path
 #	foreach my $item (@{$data->{items}}) {
@@ -153,7 +153,7 @@ sub load {
 #    $cmd .= '-irods_files "' . escape( join( ',', map { $_->{path} } @{$data->{items}} ) ) . '" ';
 #    $cmd .= "-config $CONFIGFILE"; #"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
 
-    ($workflow_id, $error_msg) = create_genome_from_file(
+    my ($workflow_id, $error_msg) = create_genome_from_file(
         user => $user, 
         metadata => {
             name => escape($data->{name}),
