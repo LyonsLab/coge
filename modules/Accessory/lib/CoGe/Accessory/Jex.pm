@@ -88,10 +88,10 @@ sub wait_for_completion {
 
         given ($status) {
             when (/completed/i)  { return 1; }
-            when (/notfound/i)   { return 1; }
-            when (/failed/i)     { return 1; }
-            when (/terminated/i) { return 2; }
-            when (/error/i)      { return 3; }
+            when (/notfound/i)   { return 0; }
+            when (/failed/i)     { return 0; }
+            when (/terminated/i) { return 0; }
+            when (/error/i)      { return 0; }
             default {
                 sleep $wait;
                 $wait = $wait + 0.25;
