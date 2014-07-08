@@ -19,7 +19,7 @@ var Gobe = {
     'clear': function(){
         // dont change this!
         Gobe.swf.clear_wedges();
-    },       
+    },
     'set_linewidth': function(linewidth){
         // dont change this. could check for 0 <= lw <= ?
         Gobe.swf.set_linewidth(linewidth);
@@ -32,6 +32,5 @@ var Gobe = {
         }
         Gobe.swf.set_connector(contype);
     }
-    
-    
+
 };

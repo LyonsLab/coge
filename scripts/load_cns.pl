@@ -74,10 +74,10 @@ while ( my $line = <> ) {
 
     if (
         $seen{
-                $qchr . ", " 
-              . $qstart . "," 
-              . $qstop . "," 
-              . $schr . "," 
+                $qchr . ", "
+              . $qstart . ","
+              . $qstop . ","
+              . $schr . ","
               . $sstart . ","
               . $sstop
         }

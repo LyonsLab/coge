@@ -14,9 +14,9 @@ use vars qw($DEBUG $coge);
 
 my ($exp_id, $coge_conf, $chr, $start, $stop, $P, $DBNAME, $DBHOST, $DBPORT, $DBUSER, $DBPASS, $CMDPATH);
 
-GetOptions ( 
+GetOptions (
 			"debug=s" 			=> \$DEBUG,
-	    
+
 	    "exp_id=i" 			=> \$exp_id,
 
 	    "database|db=s" => \$DBNAME,
@@ -28,7 +28,7 @@ GetOptions (
 			"chr=s" 				=> \$chr,
 			"start=i" 			=> \$start,
 			"stop=i" 				=> \$stop,
-			
+
       "coge_conf=s" 	=> \$coge_conf
 	   );
 
@@ -76,9 +76,9 @@ exit;
 sub help
 {
 	my $msg = shift;
-	
+
 	print $msg if ($msg);
-	
+
 	print qq
 	{
     Options:

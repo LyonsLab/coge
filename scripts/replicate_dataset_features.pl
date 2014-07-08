@@ -22,7 +22,7 @@ unless ($dsid1 && $dsid2)
   {
     print qq{
 Usage:
-$0 -dsid1 <dataset id 1> -dsid2 <dataset id 2> 
+$0 -dsid1 <dataset id 1> -dsid2 <dataset id 2>
 
 This program will copy the features from dataset 1 to dataset 2.
 
@@ -53,10 +53,8 @@ my $coge = CoGeX->connect($connstr, $user, $pass );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
-
 my ($ds1) = $coge->resultset('Dataset')->find($dsid1);
 my ($ds2) = $coge->resultset('Dataset')->find($dsid2);
-
 
 unless ($ds1 && $ds2)
   {
@@ -64,11 +62,8 @@ unless ($ds1 && $ds2)
     exit;
   }
 
-
-
 my $search = {feature_type_id=>$ftid} if $ftid;
 my %skip_ids = map{$_=>1} @skip_ftids;
-
 
 my $count =0;
 my %types;
@@ -132,10 +127,9 @@ foreach my $feat1 ($ds1->features($search))
 				   sequence_data=>$seq->sequence_data,
 #				  };
 				  });
-	  
+
       }
     $count++;
   }
 print $count, "Features Processed\n";
 print Dumper \%types;
-

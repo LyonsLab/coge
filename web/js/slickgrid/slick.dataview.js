@@ -13,7 +13,6 @@
     }
   });
 
-
   /***
    * A sample Model implementation.
    * Provides a filtered view of the underlying data.
@@ -27,7 +26,6 @@
       groupItemMetadataProvider: null,
       inlineFilters: false
     };
-
 
     // private
     var idProperty = "id";  // property holding a unique row id
@@ -70,7 +68,6 @@
     var onPagingInfoChanged = new Slick.Event();
 
     options = $.extend(true, {}, defaults, options);
-
 
     function beginUpdate() {
       suspend = true;

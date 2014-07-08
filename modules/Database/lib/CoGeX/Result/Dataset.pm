@@ -106,14 +106,14 @@ __PACKAGE__->belongs_to(
 
 =head2 genomes
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
  Throws    :
- Comments  : 
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -123,7 +123,7 @@ sub genomes {
     my $self = shift;
     my %opts = @_;
     my $chr  = $opts{chr};
-    
+
     my @genomes;
     foreach my $dsc ( $self->dataset_connectors() ) {
         if ( defined $chr ) {
@@ -153,14 +153,14 @@ sub dataset_groups {
 
 =head2 organism
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
  Throws    :
- Comments  : 
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -196,14 +196,14 @@ sub desc {
 =head2 info
 
  Usage     : $self->info
- Purpose   : returns a string of information about the data set.  
+ Purpose   : returns a string of information about the data set.
 
  Returns   : returns a string
  Argument  : none
- Throws    : 
+ Throws    :
  Comments  : To be used to quickly generate a string about the data set
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -221,16 +221,16 @@ sub info {
 
 ################################################ subroutine header begin ##
 
-=head2 get_genomic_sequence 
+=head2 get_genomic_sequence
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
  Throws    :
- Comments  : 
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -321,14 +321,14 @@ sub get_genomic_sequence {
 
 =head2 trim_sequence
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
  Throws    :
- Comments  : 
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -354,10 +354,10 @@ sub trim_sequence {
  Returns   : an integer that refers to the last position in the genomic sequence refered
              to by a dataset given a chromosome
  Argument  : string => chromsome for which the last position is sought
- Throws    : 
- Comments  : 
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -367,7 +367,7 @@ sub last_chromosome_position {
     my $self = shift;
     my $chr  = shift;
     return 0 unless defined $chr;
-    
+
     my $dsg = $self->first_genome; #my ($dsg) = $self->genomes; # mdb changed 4/23/14 issue 364
     my ($item) = $dsg->genomic_sequences( { chromosome => "$chr" } );
     unless ($item) {
@@ -386,14 +386,14 @@ sub last_chromosome_position {
 
 =head2 last_chromosome_position_old
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -414,14 +414,14 @@ sub last_chromosome_position_old {
 
 =head2 sequence_type
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -457,11 +457,11 @@ sub total_length {
  Usage     : $self->chromosome_count
  Purpose   : get count of chromosomes in the dataset group
  Returns   : number
- Argument  : 
- Throws    : 
- Comments  : 
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -521,14 +521,14 @@ sub genomic_sequence_type {
 
 =head2 get_chromosomes
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -584,11 +584,11 @@ sub chromosomes {
  Usage     : $ds->has_chromosome(chr=>"12")
  Purpose   : test to see if a dataset has a particular chromsome
  Returns   : 1 if yes, 0 if no
- Argument  : 
- Throws    : 
- Comments  : 
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -624,14 +624,14 @@ sub has_chromosome {
 
 =head2 percent_gc
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -663,14 +663,14 @@ sub gc_content {
 
 =head2 fasta
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -762,8 +762,8 @@ sub fasta {
              id_type     =>    Specify if the GFF entry IDs are going to be unique numbers or unique names.
              unique_parent_annotations => Flag to NOT print redundant annotations in children entries.  E.g. if parent has an annotation, a child will not have that annotation
              name_unique =>   Flag for specifying that the name tag of an entry will be unique
- Throws    : 
- Comments  : 
+ Throws    :
+ Comments  :
 
 See Also   : genome->gff
 
@@ -789,21 +789,21 @@ sub gff {
     $id_type = "name" unless defined $id_type;
     $count = 0 unless ($count && $count =~ /^\d+$/);
     $ds = $self unless $ds;
-    
+
     # mdb added 4/22/14 issue 364 - cache db objects to improve performance
     my $cache;
     $cache->{feature_annotations} = {};
     $cache->{annotation_type} = {};
-    
+
     my $output; # store the goodies
-    
+
     # Generate GFF header
     my %chrs;
     foreach my $chr ( $ds->get_chromosomes ) {
         $chrs{$chr} = $ds->last_chromosome_position($chr);
     }
     my @chrs = sort { $a cmp $b } keys %chrs;
-    
+
     my $tmp;
     $tmp = "##gff-version\t3\n" unless $no_gff_head;
     $output .= $tmp if $tmp;
@@ -814,7 +814,7 @@ sub gff {
         $output .= $tmp;
         print $tmp if $print;
     }
-    
+
     my %fids = ();  #skip fids that we have processed
     my %types;      #track the number of different feature types encountered
     my %ids2names;  #lookup table for unique id numbers to unique id names (determined by $id_type)
@@ -1004,9 +1004,9 @@ sub gff {
                 my $ftn = $self->process_feature_type_name( $f->feature_type->name );
                 push @{ $notes{gene}{"Encoded_feature"} }, $self->escape_gff($ftn);
                 foreach my $loc ( $f->locations( {}, { 'order_by' => 'start' } ) ) {
-                    next if ($loc->start > $feat->stop || $loc->stop < $feat->start); 
+                    next if ($loc->start > $feat->stop || $loc->stop < $feat->start);
                     #outside of genes boundaries;  Have to count it as something else
-                    #sometimes mRNA features are missing.  This is due to the original dataset not having them enumerated.  
+                    #sometimes mRNA features are missing.  This is due to the original dataset not having them enumerated.
                     # Need to do some special stuff for such cases where a CDS retrieved in the absense of an mRNA)
                     if ( $f->feature_type->name eq "CDS" ) {
                         #let's add the mRNA, change the parent and count (id)
@@ -1085,7 +1085,7 @@ sub _feat_search {
     my $ds          = $opts{ds};
     my $chr         = $opts{chr};
     #print STDERR "_feat_search\n";
-    
+
     return $ds->features(
         {
             'me.chromosome'      => $chr,
@@ -1147,7 +1147,7 @@ sub _search_rna {
             name_search => [ $f->names ],
             skip_ftids  => [ 1, $f->feature_type_id ],
             ds          => $ds,
-            chr         => $chr, 
+            chr         => $chr,
         );
 
         my %tmp_types;    #only want to process one of each type.
@@ -1215,7 +1215,7 @@ sub _process_rna {
     $fids->{ $f->feature_id } = 1;    #feat_id has been used;
     $types->{ $f->feature_type->name }++;
     #print STDERR "_process_rna\n";
-    
+
     #have mRNA.  mRNA in CoGe translates to what most people have settled on calling exons.  the output mRNA therefore needs to be a replicate of the gene
     unless ($parent_id) {
         $parent_id = $$count;
@@ -1304,7 +1304,7 @@ sub _format_gff_line {
     my $unique_ids  = $opts{unique_ids};  #hash for making sure that each used ID happens once for each ID
     my $cache = $opts{cache};
     #print STDERR "_format_gff_line\n";
-    
+
     my $output;
     foreach my $item (@$out) {
         my $f         = $item->{f};         #feature object
@@ -1359,7 +1359,7 @@ sub _format_gff_line {
         }
         warn "ERROR:  ID $id has been previously used!" if ( $unique_ids->{$id} );
         $unique_ids->{$id}++;
-        
+
         my $attrs;
         $attrs .= "Parent=$parent_id;" if $parent_id;
         $attrs .= "ID=$id";

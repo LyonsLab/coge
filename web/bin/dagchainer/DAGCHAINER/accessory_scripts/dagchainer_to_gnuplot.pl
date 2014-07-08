@@ -4,18 +4,16 @@ use strict;
 use warnings;
 use Getopt::Long qw(:config no_ignore_case bundling);
 
-
 my $usage = <<_EOUSAGE_;
-
 
 ############################################################
 #
-#  Required:  
+#  Required:
 #
 #  --genomeA    fasta file for genome A
 #  --genomeB    fasta file for genome B
 #  --aligncoords   DAGchainer aligncoords output file
-# 
+#
 # Optional:
 #  --prefix     prefix for plotting files (default: 'gp')
 #  --min_diag_genes     minumum number of genes of a diagonal to plot
@@ -27,7 +25,6 @@ _EOUSAGE_
 
 	;
 
-
 my ($genomeA, $genomeB, $aligncoords, $help, $accession);
 
 my $min_diag_genes = 2; #default minimum number of genes that can constitute a chain.
@@ -36,7 +33,7 @@ my $prefix = "gp";
 &GetOptions ('h' => \$help,
 			 'genomeA=s' => \$genomeA,
 			 'genomeB=s' => \$genomeB,
-			 'aligncoords=s' => \$aligncoords, 
+			 'aligncoords=s' => \$aligncoords,
 			 'prefix=s' => \$prefix,
 			 'min_diag_genes=i' => \$min_diag_genes,
 			 'accession=s' => \$accession,
@@ -44,7 +41,7 @@ my $prefix = "gp";
 
 if ($help) { die $usage; }
 
-unless ($genomeA && $genomeB && $aligncoords) { 
+unless ($genomeA && $genomeB && $aligncoords) {
 	die $usage;
 }
 
@@ -53,35 +50,32 @@ main: {
 	my %seqLengthsA = &parse_seqlengths_from_fasta($genomeA);
 	my %seqLengthsB = &parse_seqlengths_from_fasta($genomeB);
 
-	my @DAGchain_structs = &parse_DAGchainer_output($aligncoords);  
-	
+	my @DAGchain_structs = &parse_DAGchainer_output($aligncoords);
+
 	if ($genomeA eq $genomeB) {
 		@DAGchain_structs = &reciprocate_chains(\@DAGchain_structs);
 	}
 
-	
 	my (%contigsA, %contigsB); # store the accessions for those entries encountered.
 	@DAGchain_structs = &filter_DAGchains(\@DAGchain_structs, \%contigsA, \%contigsB);
-		
+
 	## create fake scaffolding for a big XY plot.
 	my %scaffoldsA = &create_scaffolding(\%seqLengthsA, \%contigsA);
 	my %scaffoldsB = &create_scaffolding(\%seqLengthsB, \%contigsB);
-	
-		
+
 	&plot_DAGchains($prefix, \@DAGchain_structs, \%scaffoldsA, \%scaffoldsB);
-	
+
 	&write_gnuplot_script($prefix, \%scaffoldsA, \%scaffoldsB);
-		
+
 	exit(0);
 }
-
 
 ####
 sub parse_seqlengths_from_fasta {
 	my ($genome_file) = @_;
 
 	my $acc = "";
-	
+
 	my %lengths;
 
 	my $seq_lengths_file = "$genome_file.seq_lengths";
@@ -101,9 +95,9 @@ sub parse_seqlengths_from_fasta {
 		while (<$fh>) {
 			if (/^>(\S+)/) {
 				$acc = $1;
-				
+
 				print STDERR "\r$genome_file: computing length for $acc         ";
-				
+
 			}
 			else {
 				s/\s+//g;
@@ -114,11 +108,11 @@ sub parse_seqlengths_from_fasta {
 				$lengths{$acc} += $len;
 			}
 		}
-		
+
 		close $fh;
-		
+
 		print STDERR "\n";
-		
+
 		# write the seqlengths file
 		open ($fh, ">$seq_lengths_file") or die "Error, cannot write file $seq_lengths_file";
 		foreach my $acc (keys %lengths) {
@@ -126,28 +120,27 @@ sub parse_seqlengths_from_fasta {
 		}
 		close $fh;
 	}
-	
-	return (%lengths);
-	
-}
 
+	return (%lengths);
+
+}
 
 ####
 sub parse_DAGchainer_output {
 	my ($dagchainer_outfile) = @_;
 
 	my @DAGchain_structs;
-	
+
 	###########################################################################################
 	#
 	# atts:
 	#
 	#   accA => ""
 	#   accB => ""
-	#   match_pairs => [   
+	#   match_pairs => [
 	#                        [ [matchA1_lend, matchA1_rend] , [matchB1_lend, matchB1_rend] ],
 	#                        [  [matchA2_lend, matchA2_rend] , [matchB2_lend, matchB2_rend] ],
-	#                       
+	#
 	#                  ]
 	#   rangeA => [ far_A_lend, far_A_rend]
 	#   rangeB => [ far_B_lend, far_B_rend]
@@ -155,32 +148,31 @@ sub parse_DAGchainer_output {
 	#   orient => +|-     # for rangeB, since rangeA is always +
 	#
 	##########################################################################################
-	
-	
+
 	my $dagchain;
 
 	open (my $fh, $dagchainer_outfile) or die "Error, cannot open $dagchainer_outfile";
 	while (<$fh>) {
 		chomp;
-		
+
 		if (/^\#/) {
 			## start a new dagchain
-			$dagchain = { 
-				match_pairs => [] 
+			$dagchain = {
+				match_pairs => []
 				};
-			
+
 			push (@DAGchain_structs, $dagchain);
-			
+
 			my $line = $_;
 
 			# parse molecule accessions:
 			$line =~ /(\S+) vs\. (\S+)/;
-			
+
 			my ($contigA, $contigB) = ($1, $2);
-			
+
 			$dagchain->{accA} = $contigA;
 			$dagchain->{accB} = $contigB;
-			
+
 			if ($line =~ /\(reverse\)/) {
 				# reverse strand for molecule B
 				$dagchain->{orient} = '-';
@@ -191,22 +183,18 @@ sub parse_DAGchainer_output {
 		}
 		elsif (/\w/) {
 			# add entry to chain:
-			my ($contigA, $geneA, $end5A, $end3A, 
+			my ($contigA, $geneA, $end5A, $end3A,
 				$contigB, $geneB, $end5B, $end3B,
 				$score) = split (/\t/);
-			
-			
+
 			my $match_pairs_aref = $dagchain->{match_pairs};
-			
+
 			push (@$match_pairs_aref, [ [$end5A, $end3A],
 										[$end5B, $end3B] ] );
-	
+
 		}
 
-		
 	}
-
-
 
 	## get chain spans:
 	foreach my $dagchain (@DAGchain_structs) {
@@ -235,69 +223,61 @@ sub parse_DAGchainer_output {
 
 		my $lend_B = shift @mol_B_coords;
 		my $rend_B = pop @mol_B_coords;
-		
-		
+
 		$dagchain->{rangeA} = [ $lend_A, $rend_A ];
 		$dagchain->{rangeB} = [ $lend_B, $rend_B ];
-		
-	}
 
+	}
 
 	return (@DAGchain_structs);
 }
 
-
 sub filter_DAGchains {
 	my ($DAGchain_structs_aref, $contigsA_href, $contigsB_href) = @_;
-	
+
 	my @filtered_structs;
 	foreach my $dagchain (@$DAGchain_structs_aref) {
-		
+
 		if ($accession && $dagchain->{accA} ne $accession) { next; }
-		
+
 		$contigsA_href->{ $dagchain->{accA} } = 1;
 		$contigsB_href->{ $dagchain->{accB} } = 1;
-		
+
 		my $match_pairs_aref = $dagchain->{match_pairs};
 		my $num_match_pairs = scalar (@$match_pairs_aref);
 		if ($num_match_pairs >= $min_diag_genes) {
 			push (@filtered_structs, $dagchain);
 		}
 	}
-	
 
 	return (@filtered_structs);
 }
 
-
 ####
 sub create_scaffolding {
 	my ($seqLengths_href, $contigs_href) = @_;
-	
+
 	my %scaffolding;
 
 	my $seq_length = 1;
-	
+
 	foreach my $contig (reverse sort {$seqLengths_href->{$a}<=>$seqLengths_href->{$b}} keys %$contigs_href) {
-		
+
 		$scaffolding{$contig} = $seq_length;
 
 		my $contig_len = $seqLengths_href->{$contig} or die "Error, no length for contig $contig";
-		
+
 		$seq_length += $contig_len;
 	}
-	
+
 	return (%scaffolding);
 }
-
-
-
 
 ####
 sub plot_DAGchains {
 	my ($prefix, $DAGchain_structs_aref,
 		$scaffoldsA_href, $scaffoldsB_href) = @_;
-	
+
 	open (my $dots_forward_fh, ">$prefix.dots_F") or die $!;
 	open (my $dots_reverse_fh, ">$prefix.dots_R") or die $!;
 	open (my $chains_forward_fh, ">$prefix.chains_F") or die $!;
@@ -309,22 +289,22 @@ sub plot_DAGchains {
 
 		my $scaff_pos_A = $scaffoldsA_href->{$accA} or die "Error, no scaff position for A: $accA";
 		my $scaff_pos_B = $scaffoldsB_href->{$accB} or die "Error, no scaff position for B: $accB";
-		
+
 		my $match_pairs_aref = $chain->{match_pairs};
 		my $rangeA = $chain->{rangeA};
 		my $rangeB = $chain->{rangeB};
-		
+
 		my ($range_A_lend, $range_A_rend) = @$rangeA;
 		my ($range_B_lend, $range_B_rend) = @$rangeB;
-		
+
 		$range_A_lend += $scaff_pos_A;
 		$range_A_rend += $scaff_pos_A;
 
 		$range_B_lend += $scaff_pos_B;
 		$range_B_rend += $scaff_pos_B;
-		
+
 		my $orient = $chain->{orient};
-		
+
 		## make the chain bounds line:
 		my $chain_fh = $chains_forward_fh;;
 		my $dots_fh = $dots_forward_fh;
@@ -333,10 +313,10 @@ sub plot_DAGchains {
 			$dots_fh = $dots_reverse_fh;
 			($range_B_lend, $range_B_rend) = ($range_B_rend, $range_B_lend);
 		}
-		
+
 		print $chain_fh "$range_A_lend\t$range_B_lend\n"
 			. "$range_A_rend\t$range_B_rend\n\n";
-		
+
 		## draw the dots
 		foreach my $match (@$match_pairs_aref) {
 			my ($geneA_coords, $geneB_coords) = @$match;
@@ -348,15 +328,14 @@ sub plot_DAGchains {
 
 			$gene_B_end5 += $scaff_pos_B;
 			$gene_B_end3 += $scaff_pos_B;
-			
+
 			print $dots_fh "$gene_A_end5\t$gene_B_end5\n"
 				. "$gene_A_end3\t$gene_B_end3\n\n";
 		}
 	}
-			
+
 	return;
 }
-
 
 ####
 sub write_gnuplot_script {
@@ -365,7 +344,7 @@ sub write_gnuplot_script {
 	my $gnuplot_script_name = "$prefix.gnuplot_script";
 
 	open (my $fh, ">$gnuplot_script_name") or die $!;
-	
+
 	my @xtics = &build_tics($scaffoldsA_href);
 	my @ytics = &build_tics($scaffoldsB_href);
 
@@ -377,7 +356,6 @@ sub write_gnuplot_script {
 		. "set xrange [0:]\n"
 		. "set yrange [0:]\n"
 		. "set xtics rotate\n";
-	
 
 	print $fh "set xtics (\\\n" . join (", \\\n", @xtics) . ")\n";
 	print $fh "set ytics (\\\n" . join (", \\\n", @ytics) . ")\n";
@@ -392,7 +370,7 @@ sub write_gnuplot_script {
 	push (@files_to_plot, " \"$prefix.chains_R\" w lp ls 2 ") if (-s "$prefix.chains_R");
 	push (@files_to_plot, " \"$prefix.dots_F\" w lp ls 3 ") if (-s "$prefix.dots_F");
 	push (@files_to_plot, " \"$prefix.dots_R\" w lp ls 4 ") if (-s "$prefix.dots_R");
-	
+
 	if (@files_to_plot) {
 		print $fh "plot " . join (", \\\n", @files_to_plot) . "\n\n";
 	}
@@ -400,14 +378,12 @@ sub write_gnuplot_script {
 		die "Error, no data points to plot.\n\n";
 	}
 
-		
 	close $fh;
 
-
 	#print "\n\nrun:\n\t% gnuplot $gnuplot_script_name -\n\n\n";
-	
+
 	system ("gnuplot $gnuplot_script_name - ");
-	
+
 	return;
 }
 
@@ -423,7 +399,7 @@ sub build_tics {
 
 	return (@tics);
 }
-		
+
 ####
 sub reciprocate_chains {
 	my ($DAGchain_structs_aref) = @_;
@@ -431,7 +407,7 @@ sub reciprocate_chains {
 	my @ret_structs;
 
 	foreach my $DAGchain (@$DAGchain_structs_aref) {
-		
+
 		my $newchain = {
 			accA => $DAGchain->{accB},
 			accB => $DAGchain->{accA},
@@ -444,20 +420,18 @@ sub reciprocate_chains {
 			match_pairs => [],
 
 		};
-		
+
 		my $match_pairs_aref = $DAGchain->{match_pairs};
 		foreach my $match_pair (@$match_pairs_aref) {
 			my ($match_pairA, $match_pairB) = @$match_pair;
-			
+
 			push (@{$newchain->{match_pairs}}, [ $match_pairB, $match_pairA ] );
 
-
 		}
-		
+
 		push (@ret_structs, $DAGchain, $newchain);
 
 	}
 
 	return (@ret_structs);
 }
-

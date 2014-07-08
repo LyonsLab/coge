@@ -2,7 +2,6 @@ package CoGe::Graphics::Feature::Gene;
 use strict;
 use base qw(CoGe::Graphics::Feature);
 
-
 =head1 AUTHOR
 
 	Eric Lyons
@@ -24,7 +23,7 @@ BEGIN {
     $BLOCK_HEIGHT = 20;
     __PACKAGE__->mk_accessors(
 "block_height",
-"segments", 
+"segments",
 "print_label", #flag for printing feature label in gene
 "add_type", #flag to set if gene type should be appended to label
 "no_3D", #switch between flat images and "3D" images, if given value, use flat images
@@ -81,7 +80,7 @@ sub _initialize
   {
     my $self = shift;
     my %opts = @_;
-    my $h = $HEIGHT; #total image height 
+    my $h = $HEIGHT; #total image height
     my $s;
     my $e;
     $self->segments([]) unless $self->segments;
@@ -139,14 +138,14 @@ sub _post_initialize
 	      {$b -= 75;}
 	    $self->_make_3d(r=>$r, g=>$g, b=>$b, x1=>$x1, x2=>$x2, y1=>$y1, y2=>$y2, gray_lvl=>$gray_lvl);
 	  }
-	else 
+	else
 	  {
 	    $gd->filledRectangle($x1,$y1, $x2, $y2, $self->get_color($self->color));
 	  }
       }
 
     my $x = $self->draw_arrow;
-    
+
     $self->_gd_string(y=>$c-$bh+2, x=>$x, text=>$self->label, size=>$self->block_height-4) if $self->print_label;
   }
 
@@ -161,8 +160,7 @@ sub draw_arrow
     my $y = $self->ih-1;
     my $w = ($seg->[1] - $seg->[0]); #width of segment
     my $x = $seg->[0] - $self->start; #start of segment
-    
-    
+
     my $gray_lvl = 15;
     my $arrow_width = $self->arrow_width;
     $arrow_width = ($self->stop-$self->start)/10 if (!$arrow_width && $self->start && $self->stop);
@@ -243,7 +241,7 @@ sub _draw_join
     my $s = shift;
     my $e = shift;
   }
-  
+
 sub _make_3d
   {
     my $self = shift;
@@ -314,7 +312,6 @@ sub gen_color_by_codon
       }
   }
 
-
 #################### subroutine header begin ####################
 
 =head2 sample_function
@@ -327,17 +324,15 @@ sub gen_color_by_codon
  Comment   : This is a sample subroutine header.
            : It is polite to include more pod and fewer comments.
 
-See Also   : 
+See Also   :
 
 =cut
 
 #################### subroutine header end ####################
 
-
 #################### main pod documentation begin ###################
-## Below is the stub of documentation for your module. 
+## Below is the stub of documentation for your module.
 ## You better edit it!
-
 
 =head1 NAME
 
@@ -347,20 +342,13 @@ CoGe::Graphics::Feature::Base
 
   use CoGe::Graphics::Feature::Base
 
-
 =head1 DESCRIPTION
 
 =head1 USAGE
 
-
-
 =head1 BUGS
 
-
-
 =head1 SUPPORT
-
-
 
 =head1 AUTHOR
 
@@ -376,7 +364,6 @@ This program is free software licensed under the...
 The full text of the license can be found in the
 LICENSE file included with this module.
 
-
 =head1 SEE ALSO
 
 perl(1).
@@ -385,7 +372,5 @@ perl(1).
 
 #################### main pod documentation end ###################
 
-
 1;
 # The preceding line will help the module return a true value
-

@@ -14,7 +14,7 @@ while (<STDIN>) {
     chomp;
     my @x = split (/\t/);
     my ($chrA, $accA, $posA_end5, $posA_end3, $chrB, $accB, $posB_end5, $posB_end3, $evalue) = @x;
-    
+
     my $featA = { chr => $chrA,
 		  acc => $accA,
 		  mid => int (($posA_end5 + $posA_end3)/2 + 0.5)
@@ -23,7 +23,7 @@ while (<STDIN>) {
 		  acc => $accB,
 		  mid => int (($posB_end5 + $posB_end3)/2 + 0.5)
 		  };
-    
+
     my ($chrPair, $match);
     if ($chrA gt $chrB) {
 	($featA, $featB) = ($featB, $featA);
@@ -44,35 +44,30 @@ while (<STDIN>) {
     push (@$list_aref, $match);
 }
 
-
-
 ## Examine each chromosome pairwise comparison, link matches
 foreach my $chromoPair (sort keys %chromoPairToMatchList) {
     my $matchList_aref = $chromoPairToMatchList{$chromoPair};
-    
+
     my @filteredMatches = &filter_matches ("featA", "featB", $matchList_aref);
 
     @filteredMatches = &filter_matches ("featB", "featA", \@filteredMatches);
-    
-    
+
     foreach my $match (@filteredMatches) {
 	print $match->{input};
     }
-    
-}
 
+}
 
 ####
 sub filter_matches {
     my ($accKey, $coordKey, $list_aref) = @_;
-    
+
     @$list_aref = sort {
 	$a->{$accKey}->{acc} cmp $b->{$accKey}->{acc}
 	||
 	    $a->{$coordKey}->{mid} <=> $b->{$coordKey}->{mid}
     } @$list_aref;
-    
-        
+
     my @matchBins = ( [ $list_aref->[0] ] );
     foreach (my $i=1; $i <= $#$list_aref; $i++) {
 	my $currMatch = $list_aref->[$i];
@@ -81,11 +76,11 @@ sub filter_matches {
 	my $prevMatch = $prevMatchList_aref->[$#$prevMatchList_aref];
 	my $prevAcc = $prevMatch->{$accKey}->{acc};
 	my $prevCoordB = $prevMatch->{$coordKey}->{mid};
-	
+
 	my $currAcc = $currMatch->{$accKey}->{acc};
 	my $currCoordB = $currMatch->{$coordKey}->{mid};
-	
-	if ( ($currAcc ne $prevAcc) || 
+
+	if ( ($currAcc ne $prevAcc) ||
 	     ($currAcc eq $prevAcc && ($currCoordB - $prevCoordB > $windowLinkSize) )
 	     ) {
 	    push (@matchBins, [$currMatch]); # start a new bin
@@ -93,10 +88,9 @@ sub filter_matches {
 	    push (@$prevMatchList_aref, $currMatch); # add to existing bin
 	}
     }
-    
-    
+
     ## iterate thru match bins, only print the entry with the lowest evalue
-    
+
     my @retMatches;
     foreach my $bin (@matchBins) {
 	my $binSize = scalar (@$bin);
@@ -113,9 +107,4 @@ sub filter_matches {
     return (@retMatches);
 }
 
-
 exit(0);
-
-
-		     
-		  

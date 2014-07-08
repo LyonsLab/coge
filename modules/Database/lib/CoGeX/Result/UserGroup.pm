@@ -150,12 +150,12 @@ __PACKAGE__->has_many(    # child lists
 
 =head2 users
 
- Usage     : 
+ Usage     :
  Purpose   : Returns users objects
  Returns   : wantArray of users objects
  Argument  : None
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -176,12 +176,12 @@ sub users {
 
 =head2 has_member
 
- Usage     : 
+ Usage     :
  Purpose   : Check if group contains specified user
  Returns   : 0 or 1
  Argument  : user id or user object
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -201,12 +201,12 @@ sub has_member {
 
 =head2 owner
 
- Usage     : 
+ Usage     :
  Purpose   : Returns user object
  Returns   : user object
  Argument  : None
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -225,11 +225,11 @@ sub owner {
 =head2 is_editable
 
  Usage     : is this group editable by the specified user?
- Purpose   : 
+ Purpose   :
  Returns   : 0 or 1
- Argument  : 
+ Argument  :
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -251,11 +251,11 @@ sub is_editable {
 =head2 is_<ROLE>
 
  Usage     : does this group have the specified role?
- Purpose   : 
+ Purpose   :
  Returns   : 0 or 1
- Argument  : 
+ Argument  :
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -275,12 +275,12 @@ sub is_editor {
 
 =head2 lists
 
- Usage     : 
+ Usage     :
  Purpose   : Returns the set of lists associated with the user group
  Returns   : wantArray of lists
  Argument  : None
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -301,12 +301,12 @@ sub lists {
 
 =head2 experiments
 
- Usage     : 
+ Usage     :
  Purpose   : Returns the set of experiments associated with the user group
  Returns   : wantArray of experiments
  Argument  : None
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -326,12 +326,12 @@ sub experiments {
 
 =head2 features
 
- Usage     : 
+ Usage     :
  Purpose   : Returns the set of features associate with the user group
  Returns   : wantArray of features
  Argument  : None
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -351,12 +351,12 @@ sub features {
 
 =head2 genomes
 
- Usage     : 
+ Usage     :
  Purpose   : Returns the set of genomes associated with the user group
  Returns   : wantArray of genomes
  Argument  : None
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -376,12 +376,12 @@ sub genomes {
 
 =head2 datasets
 
- Usage     : 
+ Usage     :
  Purpose   : Returns the set of datasets associated with the user group
  Returns   : wantArray of datasets
  Argument  : None
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -405,7 +405,7 @@ sub datasets {
  Returns   : wantArray of datasets
  Argument  : None
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -480,7 +480,7 @@ sub info_html {
              in a nice html format with breaks and class tags (called "annotation")
  Returns   : returns a string
  Argument  : none
- Throws    : 
+ Throws    :
  Comments  : uses Coge::Genome::Accessory::Annotation to build the annotations,
            : specifying delimters, and printing to string.   Pretty cool object.
 

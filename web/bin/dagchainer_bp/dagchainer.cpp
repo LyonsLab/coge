@@ -6,7 +6,6 @@
 //
 //  Do DP on dag of matches to get chains of matches
 
-
 #include  <stdio.h>
 #include  <stdlib.h>
 //#include  <iostream>
@@ -30,7 +29,6 @@
 
 using namespace std;
 
-
 // gap extension penalty
 float INDEL_SCORE = 1; // must be changed to <= 0
 
@@ -40,12 +38,10 @@ float GAP_OPEN_PENALTY = 1; //must be changed <= 0
 // length for a single gap in basepairs:
 int BP_GAP_SIZE = -1;  // must be changed > 0
 
-
 char filename[100] = {'\0'};
 int MIN_ALIGNMENT_SCORE = -1;
 
 int MAX_DIST_BETWEEN_MATCHES = 100000; // 100 kb default setting.
-
 
 static bool  Reverse_Order = false;
   //  If set true by -r option, then use 2nd coordinates
@@ -58,10 +54,8 @@ static int  Max_Y = 0;
   //  The maximum column value of any match.  Used to adjust coords
   //  for reverse diagonals
 
-
 char Clean_Exit_Msg_Line [MAX_ERROR_MSG_LEN];
   // String to write error messages to before exiting
-
 
 struct  Cell_t {
   float  raw;
@@ -69,22 +63,19 @@ struct  Cell_t {
   unsigned  from : 2;
 };
 
-
-
 struct  Score_t {
   int pairID;  // identifier of match pair
   int  x, y;  // x,y coordinates
   float  score;
 
   bool  operator < (const Score_t & node)  const {
-    return  ( 
-	     (x < node.x) 
-	     || 
+    return  (
+	     (x < node.x)
+	     ||
 	     (x == node.x && y < node.y)
 	     );
   }
 };
-
 
 struct  Path_t {
   float  score;
@@ -92,16 +83,13 @@ struct  Path_t {
   int  sub;
 };
 
-
-
 bool  Descending_Score (const Path_t & a, const Path_t & b) {
-  return  ( 
+  return  (
 	   (a.score > b.score)
-	   || 
+	   ||
 	   (a.score == b.score && a.rc > b.rc)
 	   );
 }
-
 
 static void  Print_Chains (vector <Score_t> & score);
 
@@ -116,11 +104,9 @@ const char* usage = "\n\n###########################\nusage: dagchainer -G singl
 
 int  Best_g = -1, Best_i, Best_j;
 
-
 void process_arguments (int, char*[]);
 
-
-//#define TIMEIT 1 
+//#define TIMEIT 1
 #define SIMPLE_RETURN 1
 
 int  main (int argc, char* argv[])  {
@@ -137,7 +123,7 @@ int  main (int argc, char* argv[])  {
   int  align_ct = 0, max_i = 0, max_j = 0;
   int  f, pairID;
   unsigned int i, j, k, n;
-  
+
   // process parameter settings.
   process_arguments (argc, argv);
 
@@ -155,12 +141,11 @@ int  main (int argc, char* argv[])  {
   }
   //fprintf(stderr, "got %i lines\n", score.size());
   n = score.size();
-  
+
   if  (n == 0)  {
     fprintf (stderr, "No scores read.  Nothing to do\n");
     return (0);
   }
-  
 
   if  (Reverse_Order)  {
     // reverse complement the second coordinate set.
@@ -181,10 +166,10 @@ int  main (int argc, char* argv[])  {
       }
     }
   }
-  
+
   j++;
   score.resize (j);
-    
+
   Print_Chains (score);
 #ifdef TIMEIT
   end_time = clock();
@@ -192,8 +177,6 @@ int  main (int argc, char* argv[])  {
 #endif
   return  0;
 }
-
-
 
 static void  Print_Chains (vector<Score_t> & score) {
 
@@ -213,7 +196,7 @@ static void  Print_Chains (vector<Score_t> & score) {
   bool  done;
   int  ali_ct = 0;
   int  i, j, k, m, n, s;
-  
+
   do {
     done = true;
     n = score.size();
@@ -223,38 +206,34 @@ static void  Print_Chains (vector<Score_t> & score) {
       path_score[i] = score[i].score;
       from[i] = -1;
     }
-    
 
 	int  del_x, del_y, num_gaps;
     double x;
     for (j = 1; j < n; j++) {
       for (i=j-1; i >= 0; i--) {
-	
-	
+
 	del_x = score[j].x - score[i].x - 1;
 	del_y = score[j].y - score [i].y - 1;
-	
+
 	if  (del_y >= 0 && del_x >= 0)  {
-        
+
 	  if (del_x > MAX_DIST_BETWEEN_MATCHES && del_y > MAX_DIST_BETWEEN_MATCHES) {
 	    break;
-	  } 
+	  }
 	  if (del_x > MAX_DIST_BETWEEN_MATCHES || del_y > MAX_DIST_BETWEEN_MATCHES) {
 	    continue;
 	  }
 
-	  	  
 	  num_gaps = (int) ( ((del_x + del_y)+ abs(del_x-del_y)) / (2 * BP_GAP_SIZE)  + 0.5);
-	  
+
 	  x = path_score[i] + score[j].score;
-	  
+
 	  if (num_gaps > 0) {
 	    // Affine gap penalty:
 	    // penalty = open + (num_gaps * extension_penalty)
 	    x += GAP_OPEN_PENALTY + (num_gaps * INDEL_SCORE);
 	  }
-	  
-	  
+
 	  if  (x > path_score [j]) {
 	    path_score [j] = x;
 	    from [j] = i;
@@ -262,7 +241,7 @@ static void  Print_Chains (vector<Score_t> & score) {
 	}
       }
     }
-    
+
     high.clear();
     for  (i = 0;  i < n;  i++) {
       if  (path_score[i] >= MIN_ALIGNMENT_SCORE)  {
@@ -272,9 +251,9 @@ static void  Print_Chains (vector<Score_t> & score) {
 	high.push_back(p);
       }
     }
-    
+
     sort (high.begin(), high.end(), Descending_Score);
-    
+
     m = high.size();
     for  (i = 0;  i < m;  i++) {
       if  (from[high[i].sub] != -2) {
@@ -302,7 +281,7 @@ static void  Print_Chains (vector<Score_t> & score) {
         //fprintf(stderr, "here from c\n");
         printf("%d %.1f\n", score[ans[j]].pairID, path_score[ans[j]]);
 #else
-	    printf ("%3d: %d %6d %6d %7.1f %7.1f\n", 
+	    printf ("%3d: %d %6d %6d %7.1f %7.1f\n",
 		    j, score[ans[j]].pairID, score[ans[j]].x,
 		    printY, score[ans[j]].score,
 		    path_score[ans[j]]);
@@ -323,8 +302,6 @@ static void  Print_Chains (vector<Score_t> & score) {
     }
   } while  (! done);
 }
-
-
 
 FILE *  File_Open
     (const char * fname, const char * mode, const char * src_fname,
@@ -354,10 +331,6 @@ FILE *  File_Open
    return  fp;
   }
 
-
-
-
-
 void  Clean_Exit
     (const char * msg, const char * src_fname, size_t line_num)
 
@@ -377,68 +350,61 @@ void  Clean_Exit
    exit (EXIT_FAILURE);
   }
 
-
-
-
 ////////////////////////////////////////////////////
-
 
 void process_arguments (int argc, char* argv[]) {
 
   int op;
-  
+
   // Option parsing:
   while ((op = getopt(argc, argv, "O:E:F:S:rG:D:")) > 0) {
-    switch (op)  
+    switch (op)
       {
       case 'O':
 	GAP_OPEN_PENALTY = atof(optarg);
 	break;
-	
-      case 'E' : 
+
+      case 'E' :
 	INDEL_SCORE = atof(optarg);
 	break;
-	
+
       case 'F':
 	strcpy(filename, optarg);
 	break;
-	
+
       case 'S':
 	MIN_ALIGNMENT_SCORE = atoi(optarg);
 	break;
-	
+
       case 'r':
 	Reverse_Order = true;
 	break;
-	
+
       case 'G':
 	BP_GAP_SIZE = atoi(optarg);
 	break;
-	
+
       case 'D':
 	MAX_DIST_BETWEEN_MATCHES = atoi(optarg);
 	break;
-	
+
       default:
 	fprintf (stderr, "Option %c is not recognized. %s", optopt, usage);
 	exit(1); //unrecognizable option.
       }
   }
-  
-  
+
   if (argc == 1) {
     fprintf (stderr, "\n%s\n\n", usage);
     exit(1);
   }
-  
 
   if (GAP_OPEN_PENALTY > 0) {
     fprintf (stderr, "The GAP open penalty must be set <= 0\n\n", usage);
     exit(2);
   }
-  
 
-  if (INDEL_SCORE > 0) { 
+  if (INDEL_SCORE > 0) {
     fprintf (stderr, "The INDEL penalty must be set to number <= 0\n\n\n%s", usage);
     exit(2); // didn't specify the indel penalty.
   }
@@ -461,19 +427,4 @@ void process_arguments (int argc, char* argv[]) {
     fprintf (stderr, "The maximum distance between matches must be >= 0 using opt -D %s", usage);
   }
 
-  
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -5,12 +5,12 @@
 <SCRIPT language="JavaScript">
 
 $(document).ready(function(){
-		$('#feat_table').tablesorter({		
+		$('#feat_table').tablesorter({
 		cssAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		cssDesc: 'headerSortDown',	// Class name for descending sorting action to header
 //		cssHeader: 'header',			// Class name for headers (th's)
 		widgets: ['zebra'],
-		headers: {0: {sorter: false},},					
+		headers: {0: {sorter: false},},
 		});
 		$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
 		$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
@@ -18,10 +18,9 @@ $(document).ready(function(){
 		if ($('#anno').val() ) {run_mama();}
 });
 
-
 //set up the jquery ui
 $(function() {
-	     //substaniate dialog box	     
+	     //substaniate dialog box
 	     $("#table_opts_dialog").dialog({ height: 150,
 	       				     width: 627,
 					     autoOpen: false,
@@ -31,7 +30,7 @@ $(function() {
 	     			      height: 331,
 				      width: 461,
 	     			      buttons: { "Cancel": function() { $(this).dialog("close"); },
-				      	        "Save": function() { 
+				      	        "Save": function() {
 						add_to_user_history(['args__work_name','work_name',
 								     'args__description','description',
 								     'args__archive','args__'+1,
@@ -48,10 +47,10 @@ $(function() {
 					$('#save_form').dialog('open');
 			});
 
-}); 
+});
 
 function onEnter(e){
-  if (!e){ 
+  if (!e){
    var e = window.event;}
   if(e.which == 13){
   run_mama();
@@ -60,12 +59,12 @@ function onEnter(e){
 function timing(val){
   namere = /name/;
   descre = /desc/;
-  if (namere.exec(val)) 
+  if (namere.exec(val))
    {
-    $('#org_desc').val("Search").css({fontStyle: "italic"}); 
+    $('#org_desc').val("Search").css({fontStyle: "italic"});
     searchterm = $('#'+val).val();
    }
-  else if (descre.exec(val)) 
+  else if (descre.exec(val))
    {
     $('#org_name').val("Search").css({fontStyle: "italic"}); ;
     searchterm = $('#'+val).val();
@@ -86,11 +85,11 @@ function timing(val){
   }
   re = /(\d+)/;
   i = re.exec(val);
-  if (namere.exec(val)) 
+  if (namere.exec(val))
    {
      pageObj.time = setTimeout("get_orgs(['args__type','args__name','args__search','org_name'],['org_list'])",500);
    }
-  else if (descre.exec(val)) 
+  else if (descre.exec(val))
    {
      pageObj.time = setTimeout("get_orgs(['args__type','args__desc','args__search','org_desc'],['org_list'])",500);
    }
@@ -104,8 +103,6 @@ function run_mama () {
 $('#results').html('<img src=./picts/animations/DNA_orbit_animated_small_third.gif >');
  go(['args__accn','accn', 'args__anno','annosearch', 'args__oid','org_id', 'args__org_name','org_name','args__org_desc','org_desc'],['results']);
 }
-
-
 
 </SCRIPT>
 

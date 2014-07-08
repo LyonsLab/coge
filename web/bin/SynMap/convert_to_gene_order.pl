@@ -18,7 +18,6 @@ GetOptions(
 	   "config_file|cf=s"=>\$conffile,
 	  );
 
-
 my $P = CoGe::Accessory::Web::get_defaults($conffile);
 my $DBNAME = $P->{DBNAME};
 my $DBHOST = $P->{DBHOST};
@@ -74,9 +73,6 @@ while (<IN>)
   }
 close IN;
 
-
-
-
 sub get_order_from_input
   {
     my %opts = @_;
@@ -115,13 +111,13 @@ sub get_gene_order
     $ftid = 3 unless defined $ftid; #default for CDS
     my %data;
     my %chr;
-    foreach my $feat (sort {$a->chromosome cmp $b->chromosome || $a->start <=> $b->start} 
+    foreach my $feat (sort {$a->chromosome cmp $b->chromosome || $a->start <=> $b->start}
 		      $coge->resultset('Feature')->search(
 							  {
-							   feature_type_id=>[3,4,7], 
+							   feature_type_id=>[3,4,7],
 							   dataset_group_id=>$dsgid
 							  },{
-							     join=>[{dataset=>'dataset_connectors'},'feature_names'], 
+							     join=>[{dataset=>'dataset_connectors'},'feature_names'],
 							     prefetch=>['feature_names']}
 							 ))
       {
@@ -134,8 +130,3 @@ sub get_gene_order
     return 0 unless keys %data;
     return \%data;
   }
-
-
-
-
-

@@ -170,7 +170,7 @@ sub parse_genbank_file {
 	my $start  = $opts{start};
 	my $length = $opts{length};
 	$/ = "\n";
-	
+
 	print STDERR "parsing $file\n" if $self->debug;
 
 	open( IN, $file ) || die "Can't open $file for reading";
@@ -810,7 +810,7 @@ sub process_location {
 	}
 	else {
 		my @temp;
-		
+
 		# mdb added 11/14/13 - add handling of variation location syntax
 		if ($locline =~ /\d+\^\d+/) {
 			@temp = split( /\^/, $locline )

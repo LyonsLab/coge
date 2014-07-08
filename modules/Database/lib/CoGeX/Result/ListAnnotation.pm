@@ -55,15 +55,13 @@ __PACKAGE__->add_columns(
 	"image_id",
 	{ data_type => "INT", default_value => undef, is_nullable => 1, size => 11 },
 	"locked",
-    { data_type => "INT", default_value => "0", is_nullable => 0, size => 1 },  
+    { data_type => "INT", default_value => "0", is_nullable => 0, size => 1 },
 );
 __PACKAGE__->set_primary_key("list_annotation_id");
 
 __PACKAGE__->belongs_to( annotation_type => 'CoGeX::Result::AnnotationType', 'annotation_type_id');
 __PACKAGE__->belongs_to( list => 'CoGeX::Result::List', 'list_id');
 __PACKAGE__->belongs_to( image => 'CoGeX::Result::Image', 'image_id');
-
-
 
 ################################################ subroutine header begin ##
 
@@ -72,11 +70,11 @@ __PACKAGE__->belongs_to( image => 'CoGeX::Result::Image', 'image_id');
  Usage     : $Annotation_obj->type->AnnotationType_object_method_or_value
  Purpose   : Shorthand for getting an Annotation Type from an Annotation object.
  Returns   : AnnotationType object.
- Argument  : 
+ Argument  :
  Throws    : None.
- Comments  : 
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -92,14 +90,14 @@ sub type
 =head2 info
 
  Usage     : $self->info
- Purpose   : returns a string of information about the annotation.  
+ Purpose   : returns a string of information about the annotation.
 
  Returns   : returns a string
  Argument  : none
- Throws    : 
+ Throws    :
  Comments  : To be used to quickly generate a string about the annotation
 
-See Also   : 
+See Also   :
 
 =cut
 

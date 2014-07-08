@@ -94,9 +94,9 @@ for ($i = 2; $i < @ARGV; $i++) {
 	`$lagandir/utils/rc < $ARGV[1] > $ARGV[1].rc`;
 	if ($?) { exit(1); }
 	$secondName = "$ARGV[1].rc";
-	if (-e "$ARGV[1].masked") { 
+	if (-e "$ARGV[1].masked") {
 	    `$lagandir/utils/rc < $ARGV[1].masked > $ARGV[1].rc.masked`;
-	    if ($?) { exit(1);} 
+	    if ($?) { exit(1);}
 	}
 	$rcFlag = 1;
 	$direction = "-";
@@ -124,7 +124,7 @@ $arglist = $arglist." -ext ";
 
 if ($rundraft){
     `$lagandir/draft.pl $firstName $secondName $draftparams`;
-    if ($?) { exit(1);} 
+    if ($?) { exit(1);}
     $secondName = "merged_seq.fa";
 }
 
@@ -216,12 +216,12 @@ if ($infofile == 3){
     if ($score > 0){
 	$score = `$lagandir/utils/scorealign $infofilename $consrate`; chomp $score;
 	if ($?) { exit(4); }
-	@temp = `$lagandir/utils/scorealign $infofilename $consrate -bounds 0`; 
+	@temp = `$lagandir/utils/scorealign $infofilename $consrate -bounds 0`;
 	if ($?) { exit(5); }
 	$temp[0] =~ /(.*) (.*)/;
 	$first = $1; $last = $2;
 
-	@temp = `$lagandir/utils/scorealign $infofilename $consrate -bounds 1`; 
+	@temp = `$lagandir/utils/scorealign $infofilename $consrate -bounds 1`;
 	if ($?) { exit(6); }
 	$temp[0] =~ /(.*) (.*)/;
 	$first2 = $1; $last2 = $2;
@@ -238,5 +238,3 @@ if ($infofile == 3){
 if ($?) { exit(1); }
 
 exit(0);
-
-

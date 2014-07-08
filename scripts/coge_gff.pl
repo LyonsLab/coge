@@ -34,7 +34,6 @@ GetOptions(
     "config=s"          => \$config,
 );
 
-
 $| = 1;
 #open (my $logh, ">", $logfile) or die "Error opening log file";
 $staging_dir //= ".";

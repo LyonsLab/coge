@@ -49,7 +49,7 @@ sub get_locs {
           @{ $f->{'locs'} };
         chop $locstr;
 
-        print join( "|", @{ $f->{names} } ) 
+        print join( "|", @{ $f->{names} } )
           . $SEP
           . $f->{'type'}
           . $SEP

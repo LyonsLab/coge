@@ -572,13 +572,13 @@ sub email_results {
     $username .= " " . $USER->last_name
       if $USER->first_name && $USER->last_name;
     my $body = qq{Dear $username,
-		
+
 Thank you for using CoGe and Aragorn! The results from your latest analysis are ready, and can be viewed here:
-	
+
 $url
 
 These results will remain on our servers for approximately 24 hours; please save them to your own computer before they are removed.
-			
+
 The following is a message from the creators of Aragorn:
 --------------------------------------------------------
 Please reference the following papers if you use this
@@ -594,9 +594,9 @@ program to detect tRNA genes in metazoan mitochondrial
 nucleotide sequences
 Bioinformatics, 24(2); 172-175.
 --------------------------------------------------------
-			
+
 Thank you for using the CoGe Software Package.
-	
+
 - The CoGe Team
 };
 

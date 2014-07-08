@@ -59,8 +59,6 @@ foreach my $val (@$data)
     push @data, $tmp;
   }
 
-
-
 my $mean =0;
 map {$mean+=$_} @data;
 $mean = sprintf("%.4f",$mean/scalar(@data));
@@ -75,8 +73,8 @@ my $count=0;
 my @color_names;
 foreach my $color (@$colors)
   {
-    my $name = "c$count"; 
-    
+    my $name = "c$count";
+
     $hist->add_colour($name=>$color);
     push @color_names, $name;
     $count++;
@@ -112,8 +110,6 @@ else
   {
     print $gd->png;
   }
-
-
 
 sub gen_color_list
   {
@@ -182,7 +178,6 @@ sub range
       }
     return ($max, $min, $non_zero_min);
   }
-
 
 sub get_color
   {
@@ -329,7 +324,6 @@ sub get_color
       }
     return $color;
   }
- 
 
 sub get_pairs
   {
@@ -361,7 +355,7 @@ sub get_pairs
     close IN;
     return \%data;
   }
-sub usage 
+sub usage
   {
     print qq{
 welcome to $0!

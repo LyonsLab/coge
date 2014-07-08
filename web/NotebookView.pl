@@ -151,7 +151,7 @@ sub get_list_info {
     if ($user_can_edit) {
         $html .=
 qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="edit_list_info();">Edit Info</span>};
-        
+
         if ( $list->restricted ) {
             $html .=
 qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_list_public();">Make Public</span>};
@@ -325,7 +325,7 @@ sub get_annotations {
                       . "' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;'>$group:</th>"
                     : ''
                   );
-    
+
                 $html .= "<td>";
                 my $image_link =
                   ( $a->image ? 'image.pl?id=' . $a->image->id : '' );
@@ -336,7 +336,7 @@ sub get_annotations {
                 );
                 $html .= $image_info if $image_info;
                 $html .= "</td>";
-    
+
                 $html .= "<td class='data5'>" . $a->info . "</td>";
                 $html .= "<td style='padding-left:5px;'>";
                 $html .= linkify( $a->link, "Link" ) if $a->link;
@@ -573,16 +573,16 @@ sub get_list_contents {
     my $html;
     my $num_items = 0;
     my $first     = 1;
-    
+
     #EL: moved outside of loop; massive speed improvement
     my $genome_count = $list->genomes( count => 1 );
     my $exp_count = $list->experiments( count => 1 );
-    my $feat_count = $list->features( count => 1 ); 
+    my $feat_count = $list->features( count => 1 );
     my $list_count = $list->lists( count => 1 );
-    
+
     if ($genome_count or $exp_count or $feat_count or $list_count) {
         $html = '<table id="list_contents_table" class="small ui-widget-content ui-corner-all" style="border-spacing:0;border-collapse:collapse;">';#<thead style="display:none;"></thead><tbody>';
-    
+
         #my $delete_count=0;
         foreach my $genome ( sort genomecmp $list->genomes ) {
             $html .= "<tr valign='top'>"
@@ -591,12 +591,12 @@ sub get_list_contents {
                 ? "<th align='right' class='title5' rowspan='$genome_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Genomes ($genome_count):</th>"
                 : ''
               );
-    
+
             #if ($genome->deleted) {
             #    $delete_count++;
             #    next;
             #}
-    
+
             my $gid = $genome->id;
             $html .= qq{<td class='data5'><span id='genome$gid' class='link' onclick="window.open('GenomeInfo.pl?gid=$gid')">}
               . $genome->info
@@ -609,13 +609,13 @@ sub get_list_contents {
             $html .= '</tr>';
             $num_items++;
         }
-    
+
         #if ($delete_count) {
         #    $html .= "<tr valign='top'><th></th><td class='data5'><span>$delete_count genomes from this notebook are deleted</span></td>";
         #    #TODO add functionality that clicking on the "X" will remove the deleted items from the notebook
         #    $html .= '</tr>';
         #}
-    
+
         $first = 1;
         foreach my $experiment ( sort experimentcmp $list->experiments ) {
             $html .= "<tr valign='top'>"
@@ -636,7 +636,7 @@ sub get_list_contents {
             $html .= '</tr>';
             $num_items++;
         }
-    
+
         $first = 1;
         foreach my $feature ( sort featurecmp $list->features ) {
             $html .= "<tr valign='top'>"
@@ -655,7 +655,7 @@ sub get_list_contents {
             $html .= '</tr>';
             $num_items++;
         }
-    
+
         $first = 1;
         foreach my $list ( sort listcmp $list->lists ) {
             $html .= "<tr valign='top'>"
@@ -674,7 +674,7 @@ sub get_list_contents {
             $html .= '</tr>';
             $num_items++;
         }
-    
+
         $html .= '</table>';#'</tbody></table>';
     }
     else {
@@ -731,12 +731,12 @@ sub add_item_to_list {
 
     my $lc =
       $coge->resultset('ListConnector')->find_or_create(
-        {   parent_id => $lid, 
-            child_id => $item_id, 
-            child_type => $item_type 
+        {   parent_id => $lid,
+            child_id => $item_id,
+            child_type => $item_type
         });
     return 0 unless $lc;
-    
+
     my $type_name = $coge->node_type_name($item_type);
     CoGe::Accessory::Web::log_history(
         db          => $coge,
@@ -765,9 +765,9 @@ sub remove_list_item {
 
     my $lc =
       $coge->resultset('ListConnector')->find(
-        {   parent_id => $lid, 
-            child_id => $item_id, 
-            child_type => $item_type 
+        {   parent_id => $lid,
+            child_id => $item_id,
+            child_type => $item_type
         });
     if ($lc) {
         $lc->delete();

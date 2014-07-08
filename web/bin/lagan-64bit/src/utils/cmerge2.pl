@@ -77,7 +77,6 @@ for ($i = 3; $i < @list; $i++){
     $s2shifts[$i-3] = $6;
     $num[$i-3] = $7;
 
-
     $temp = $seq1Begin[$i-3] - $s1shifts[$i-3];
     $seq2Begin[$i-3] = `$lagandir/utils/getcontigpos $filenames[$i-3].mfa $temp`; chomp $seq2Begin[$i-3];
     $seq2Begin[$i-3] += $s2shifts[$i-3];
@@ -115,7 +114,7 @@ for ($i = 1; $i < $numContigs; $i++){
     # find the overlap
 
     `$lagandir/utils/getoverlap $newdir/currentanchs` =~ /(-?\d+) (-?\d+) (-?\d+) (-?\d+)/;
-    $rangebegin1 = $1; 
+    $rangebegin1 = $1;
     $rangeend1 = $2;
     $rangebegin2 = $3;
     $rangeend2 = $4;
@@ -127,7 +126,7 @@ for ($i = 1; $i < $numContigs; $i++){
 
     $thislength = `$lagandir/utils/getlength $filenames[$i-1]`; chomp $thislength;
     $nextlength = `$lagandir/utils/getlength $filenames[$i]`; chomp $nextlength;
-    
+
     # if no overlap, flush the buffer
     if ($rangebegin1 == -1 && $rangeend1 == -1){
 
@@ -156,13 +155,13 @@ for ($i = 1; $i < $numContigs; $i++){
 	    `$lagandir/utils/cextract $newdir/current 1 $j 0 0 > $newdir/overlap`;
 	    `$lagandir/utils/cextract $newdir/current.masked 1 $j 0 0 > $newdir/overlap.masked`;
 	    $overlaplength = `$lagandir/utils/getlength $newdir/overlap`; chomp $overlaplength;
-	    
-	    `mv $ARGV[3] $ARGV[3].new`;	
+
+	    `mv $ARGV[3] $ARGV[3].new`;
 	    `$lagandir/utils/seqmerge $ARGV[3].new $newdir/overlap > $ARGV[3]`;
-	    `mv $ARGV[3].masked $ARGV[3].masked.new`;	
+	    `mv $ARGV[3].masked $ARGV[3].masked.new`;
 	    `$lagandir/utils/seqmerge $ARGV[3].masked.new $newdir/overlap.masked > $ARGV[3].masked`;
 	}
-	    
+
 	# extract the nonoverlapped region > current
 	`$lagandir/utils/cextract $filenames[$i] $rangebegin2 $nextlength 0 0 > $newdir/current`;
 	`$lagandir/utils/cextract $filenames[$i].masked $rangebegin2 $nextlength 0 0 > $newdir/current.masked`;
@@ -196,7 +195,6 @@ if (index ($filenames[$numContigs - 1], ".rc") == -1) { $direction = "+"; } else
 chomp $temp[0]; $temp[0] = substr $temp[0], 1;
 print INFOFILE "$temp[0]\n";
 print INFOFILE "$num[$numContigs - 1] $seq1Begin[$numContigs - 1] $seq1End[$numContigs - 1] $contigStart[$numContigs - 1] $contigEnd[$numContigs - 1] $startChop[$numContigs - 1] $endChop[$numContigs - 1] $direction $score[$numContigs - 1] $seq2Begin[$numContigs - 1] $seq2End[$numContigs - 1]\n";
-
 
 print STDERR "Merging complete!\n\n";
 print LOGFILE "Merging complete!\n\n";

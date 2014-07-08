@@ -3,12 +3,12 @@
 <SCRIPT language="JavaScript">
 
 $(document).ready(function(){
-	$('#genome_table').tablesorter({		
+	$('#genome_table').tablesorter({
 		cssAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		cssDesc: 'headerSortDown',	// Class name for descending sorting action to header
 	//	cssHeader: 'header',			// Class name for headers (th's)
 		widgets: ['zebra'],
-		headers: {0: {sorter: false},},					
+		headers: {0: {sorter: false},},
 	});
 	$.ajaxSetup({
 	               type: "POST",
@@ -20,7 +20,6 @@ $(document).ready(function(){
 	pageObj.tempurl = '<TMPL_VAR NAME="TEMPURL">';
 
 });
-
 
 //set up the jquery ui
 
@@ -66,7 +65,6 @@ function readlog() {
 	});
 
 }
-
 
 function monitor_log (log)
 {
@@ -118,7 +116,6 @@ function rand ()
      </li>
   </ul>
 
-
  <div id="tab1">
  </div> <!--close tab 1-->
  <div id="tab2">
@@ -163,5 +160,4 @@ function rand ()
   populate_page_obj();
   genome_checkboxes();setTimeout('readlog()',2000);
 
-">Run Alignment</span><span id=retrieve_message class=alert></span> 
-
+">Run Alignment</span><span id=retrieve_message class=alert></span>

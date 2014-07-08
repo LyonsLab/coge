@@ -82,7 +82,7 @@ Welcome to $0.
   This program generates user accounts for coge.
 
 Options
-  
+
   -help | -h                     => print this message
 
   -user_name | -un               => user name in coge (required)
@@ -94,12 +94,11 @@ Options
   -description | -desc | -d      => user's description
 
   -password | -passwd | -ps | -p => user account's password (required)
- 
+
   -email | -em                   => email of user
 
-  -force | -f                    => force update of user account (this will delete the old account) 
+  -force | -f                    => force update of user account (this will delete the old account)
 
 };
     exit;
   }
-

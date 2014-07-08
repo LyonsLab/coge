@@ -98,7 +98,7 @@ $(document).ready( function() {
 </SCRIPT>
 <!--
 <div class="error-box">
-Please note:  the iPlant Data Store will be unavailable Tuesday, April 15th for scheduled maintenance, preventing data import into CoGe. 
+Please note:  the iPlant Data Store will be unavailable Tuesday, April 15th for scheduled maintenance, preventing data import into CoGe.
 </div>
 -->
 <header>
@@ -129,14 +129,14 @@ Please note:  the iPlant Data Store will be unavailable Tuesday, April 15th for 
 			</li>
 			<li><a href='javascript:void(0)'>Help</a>
 				<ul>
-					<li><a href="/wiki" target="_blank">CoGePedia</a></li>
-					<li><a href="<TMPL_VAR NAME=HELP>" target="_blank">Page Docs</a></li>
+					<li><a href="https://genomevolution.org/wiki" target="_blank">CoGePedia</a></li>
+					<li><a href="https://genomevolution.org/<TMPL_VAR NAME=HELP>" target="_blank">Page Docs</a></li>
 					<li><a href="http://iplant.co/AskCoGe" target="_blank">Forums</a></li>
-					<li><a href="/wiki/index.php/FAQs" target="_blank">About CoGe</a></li>
-					<li><a href="/wiki/index.php/Tutorials" target="_blank">Tutorials</a></li>
-					<li><a href="/wiki/index.php/Contact_Page" target="_blank">Contact or Cite Us</a></li>
-					<li><a href="/wiki/index.php/System_Support" target="_blank">System Support</a></li>
-					<li><a href="/wiki/index.php/CoGepedia:Current_events" target="_blank">Latest News</a><li>
+					<li><a href="https://genomevolution.org/wiki/index.php/FAQs" target="_blank">About CoGe</a></li>
+					<li><a href="https://genomevolution.org/wiki/index.php/Tutorials" target="_blank">Tutorials</a></li>
+					<li><a href="https://genomevolution.org/wiki/index.php/Contact_Page" target="_blank">Contact or Cite Us</a></li>
+					<li><a href="https://genomevolution.org/wiki/index.php/System_Support" target="_blank">System Support</a></li>
+					<li><a href="https://genomevolution.org/wiki/index.php/CoGepedia:Current_events" target="_blank">Latest News</a><li>
 				</ul>
 			</li>
             <li><a href="./" target="_self">Home</a></li>
@@ -157,7 +157,9 @@ Please note:  the iPlant Data Store will be unavailable Tuesday, April 15th for 
 
 <div>
 	<TMPL_IF NAME="LOGO_PNG">
-		<img style="vertical-align:bottom;" onclick="window.open('<TMPL_VAR NAME=HELP>')" src='picts/<TMPL_VAR NAME="LOGO_PNG">'>
+        <a href="http://www.genomevolution.org/<TMPL_VAR NAME=HELP>">
+		    <img style="vertical-align:bottom;" src='picts/<TMPL_VAR NAME="LOGO_PNG">'>
+        </a>
 	</TMPL_IF>
 	<span class="tagline"><TMPL_VAR NAME="TITLE"></span>
 </div>

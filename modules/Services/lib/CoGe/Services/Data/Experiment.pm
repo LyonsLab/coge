@@ -115,10 +115,10 @@ sub add {
     my $self = shift;
     my $data = $self->req->json;
     print STDERR (caller(0))[3], "\n", Dumper $data, "\n";
-    
+
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
-    
+
     # Get genome
     my $gid = $data->{genome_id};
     my $genome = $db->resultset("Genome")->find($gid);
@@ -128,7 +128,7 @@ sub add {
         });
         return;
     }
-    
+
     # User authentication is required to add experiment
     unless (defined $user) {
         $self->render(json => {
@@ -136,9 +136,9 @@ sub add {
         });
         return;
     }
-    
+
     # TODO validate metadata parameters
-    
+
     # Valid data items
     my @items;
     if (!@{ $data->{items} }) {
@@ -147,12 +147,12 @@ sub add {
         });
         return;
     }
-    
+
     # Submit workflow to generate experiment
     my ($job_id, $error_msg) = create_experiment(
-        genome => $genome, 
-        user => $user, 
-        metadata => $data, 
+        genome => $genome,
+        user => $user,
+        metadata => $data,
         irods => \@items
     );
     unless ($job_id) {
@@ -161,8 +161,8 @@ sub add {
         });
         return;
     }
-    
-    $self->render(json => 
+
+    $self->render(json =>
         {
             success => Mojo::JSON->true,
             job_id => int($job_id),

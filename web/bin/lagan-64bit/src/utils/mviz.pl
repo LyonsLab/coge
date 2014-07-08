@@ -1,6 +1,5 @@
 #!/usr/bin/env perl
 
-
 # This script requires the environment variables:
 # LAGAN_DIR and VISTA_DIR
 
@@ -16,7 +15,6 @@ $presolution = 25;
 $pwindow = 40;
 $pnumwindows = 4;
 
-
 if (@ARGV < 2) {
     print ("usage:\n mviz.pl data_file param_file [plotfile]\n\n");
     exit(1);
@@ -28,7 +26,6 @@ if (@ARGV==3) {
     $plotfile=@ARGV[2];
     print "Using VISTA plotfile: $plotfile\n";
 }
-
 
 $filename = $ARGV[1];
 open(PARAMFILE, "$filename") || die "Could not open $filename.\n\n";
@@ -114,8 +111,8 @@ while ($line = <FASTAFILE>) {
     }
 }
 
-if ((@targets > 1)) { 
-    
+if ((@targets > 1)) {
+
     $j=0;
     for ($i=1; $i<@targets; $i++) {
 	$_ = @targets[$i];
@@ -124,7 +121,7 @@ if ((@targets > 1)) {
 	@bp[$j++]=/\w+/g;
     }
     $j=1;
-    foreach $s (@bp) { 
+    foreach $s (@bp) {
 	@targets[$j++]=$s;
     }
     if (@targets %2 != 1) {
@@ -142,7 +139,7 @@ if (@targets == 1) {
 	$s = substr $s, 0, (rindex $s, "_aligned");
 	if ($s ne @targets[0]) {
 	    @targets[++$i] = @targets[0];
-	    @targets[++$i] = $s;	    
+	    @targets[++$i] = $s;
 	}
     }
 }
@@ -185,21 +182,21 @@ if (!$pfspec) {
 	print PLOTFILE "$s ";
     }
     print PLOTFILE "\n\n";
-    
+
     $i=1;
     foreach $s (@bins) {
 	print PLOTFILE "ALIGN $s BINARY\n";
 	print PLOTFILE " SEQUENCES @targets[$i] @targets[$i+1]\n";
 	print PLOTFILE " REGIONS $paregmin $paregmax\n";
 	print PLOTFILE " MIN $pamin\n";
-	print PLOTFILE "END\n\n";   
+	print PLOTFILE "END\n\n";
 	$i+=2;
     }
-    
+
     print "touch $prefix.ann\n\n";
     `touch $prefix.ann`;
-    
-    print PLOTFILE "GENES $prefix.ann\n\n";    
+
+    print PLOTFILE "GENES $prefix.ann\n\n";
     print PLOTFILE "LEGEND on\n\n";
     print PLOTFILE "COORDINATE @targets[0]\n\n";
     print PLOTFILE "PAPER letter\n\n";
@@ -218,5 +215,3 @@ print "$vistastr\n";
 if (!`$vistastr`) { print "\nVISTA failure...\n"; exit(1); }
 
 print "\n\nmviz.pl -- end.\n\n";
-
-

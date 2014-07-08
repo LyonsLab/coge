@@ -8,14 +8,14 @@
 
 =head2 resolve
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -32,7 +32,6 @@ sub resolve {
 
   1;
 
-  
 =head1 AUTHORS
 
  Eric Lyons

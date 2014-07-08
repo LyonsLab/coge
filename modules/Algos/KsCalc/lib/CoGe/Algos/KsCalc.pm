@@ -33,7 +33,6 @@ CoGe::Algos::KsCalc - CoGe::Algos::KsCalc
 
   my $ks = CoGe::Algos::KsCalc->new ();
 
-
   $ks->feat1($coge_feat1);  #a CoGeX::Feature object of type CDS
   $ks->feat2($coge_feat2);  #a CoGeX::Feature object of type CDS
 
@@ -41,7 +40,6 @@ CoGe::Algos::KsCalc - CoGe::Algos::KsCalc
   print "Ka = ", $res->{'dN'},"\n";
   print "Ks = ", $res->{'dS'},"\n";
   print "Ka/Ks = ", $res->{'dN/dS'},"\n";
-
 
 =head1 DESCRIPTION
 
@@ -64,21 +62,11 @@ It procedure is:
 6. store results in $self->results as a hash returned from CoGe::Algos::Codeml
    (see example above)
 
-
-
-
-
 =head1 USAGE
-
-
 
 =head1 BUGS
 
-
-
 =head1 SUPPORT
-
-
 
 =head1 AUTHOR
 
@@ -95,7 +83,6 @@ This program is free software licensed under the...
 
 The full text of the license can be found in the
 LICENSE file included with this module.
-
 
 =head1 SEE ALSO
 
@@ -640,4 +627,3 @@ sub _generate_DNA_alignment {
 1;
 
 # The preceding line will help the module return a true value
-

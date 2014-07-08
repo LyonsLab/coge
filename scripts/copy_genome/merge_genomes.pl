@@ -383,10 +383,9 @@ Options:
 
    -org_name              |      Name for the hybrid genome.  Default: Merged
 
-   -version               |      Version of genome  (Default: 1) 
+   -version               |      Version of genome  (Default: 1)
 
    -restricted            |      mark genome as restricted (Default: 0)
-
 
 Copyright Eric Lyons 2013
 

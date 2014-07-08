@@ -25,7 +25,7 @@ while ($line = <>) {
     next unless ($depth and $depth >= $MIN_DEPTH);
 
     my ($hqDepth, $pAlleles) = getHQAlleles($refAllele, \$seq, \$qual);
-    
+
     # Count alleles that meet minimum criteria
     my %filtered;
     foreach my $b (keys %$pAlleles) {
@@ -35,7 +35,7 @@ while ($line = <>) {
             $filtered{$b} = { freq => $freq, depth => $pAlleles->{$b} };
         }
     }
-    
+
     if (keys %filtered > 1) {
         foreach my $b (keys %filtered) {
             my $info = 'DP='.$filtered{$b}{depth}.';AF='.$filtered{$b}{freq};
@@ -53,18 +53,18 @@ sub getHQAlleles {
     my $refbase = shift;
     my $pseq = shift;
     my $pqual = shift;
-    
+
     my %bases;
     my $count = 0;
-    
+
     my @as = split(//, $$pseq);
     my @aq = unpack("C*", $$pqual);
-    
+
     my ($i, $j);
     for (($i, $j) = (0, 0);  $i < length($$pseq);  $i++) {
         my $c = $as[$i];
         die "error 1: $i $j $$pseq $$pqual\n" if (not defined $c);
-        if ($c eq '>' or $c eq '<') { # reference skip 
+        if ($c eq '>' or $c eq '<') { # reference skip
             $j++;
             next;
         }
@@ -90,7 +90,7 @@ sub getHQAlleles {
             }
             next;
         }
-        
+
         my $q = $aq[$j++];
         die "error 2: $i $j $$pseq $$pqual\n" if (not defined $q);
         if ($q >= $MIN_BASE_QUAL and $c ne 'N') {
@@ -102,6 +102,6 @@ sub getHQAlleles {
         }
     }
     die "error 3: $i $j $$pseq $$pqual" if ($i != @as or $j != @aq);
-    
+
     return ($count, \%bases);
 }

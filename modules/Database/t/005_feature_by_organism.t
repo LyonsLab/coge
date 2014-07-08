@@ -19,7 +19,7 @@ $s->storage->debug(1);
 isa_ok ($s, 'CoGeX');
 
 my $rs = $s->resultset('Feature')->search(
-                    { 
+                    {
                       'organism.name' => { 'like' => 'Nostoc%' }
                     },
                     {

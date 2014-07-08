@@ -15,7 +15,7 @@ define( [
 return declare( [ HTMLVariants ], {
     _exportFormats: function() {
         return [ {name: 'GFF3', label: 'GFF3', fileExt: 'gff3'}, {name: 'BED', label: 'BED', fileExt: 'bed'}, { name: 'SequinTable', label: 'Sequin Table', fileExt: 'sqn' },
-        	{ name: 'VCF4.1', label: 'VCF', fileExt: 'vcf' } ]; 
+        	{ name: 'VCF4.1', label: 'VCF', fileExt: 'vcf' } ];
     },
 });
 });

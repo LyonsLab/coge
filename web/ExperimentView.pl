@@ -238,7 +238,7 @@ sub get_annotations {
     my %opts = @_;
     my $eid  = $opts{eid};
     return "Must have valid experiment id\n" unless ($eid);
-    
+
     my $exp = $coge->resultset('Experiment')->find($eid);
     return "Access denied\n" unless $USER->has_access_to_experiment($exp);
 
@@ -253,7 +253,7 @@ sub get_annotations {
         push @{ $groups{$group}{$type} }, $a if (defined $group and defined $type);
         $num_annot++;
     }
-    
+
     # Build annotation table
     my $html;
     if ($num_annot) {
@@ -656,9 +656,9 @@ sub get_experiment_info {
     return "Unable to find an entry for $eid" unless $exp;
 
     my $allow_edit = $USER->is_admin || $USER->is_owner_editor( experiment => $eid );
-    
+
     my $gid = $exp->genome->id;
-    
+
     my $html;
     $html .= $exp->annotation_pretty_print_html( allow_delete => $allow_edit );
     $html .= qq{<a style="font-size: .75em; color: black; float:right;" target="_blank" class='ui-button ui-corner-all ui-button-icon-right' href="GenomeView.pl?gid=$gid&tracks=experiment$eid">View<span class="ui-icon ui-icon-extlink"></span></a>};
@@ -680,7 +680,7 @@ sub get_experiment_info {
     }
 
     $html .= "</div>";
-    
+
     return $html;
 }
 
@@ -765,20 +765,20 @@ sub find_snps {
         print STDERR $error_msg, "\n";
         return encode_json({ error => "Workflow submission failed: " . $error_msg });
     }
-    
+
     # Get tiny link
     my $link = CoGe::Accessory::Web::get_tiny_link(
         url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id
     );
-    
-    return encode_json({ job_id => $workflow_id, link => $link });    
+
+    return encode_json({ job_id => $workflow_id, link => $link });
 }
 
 sub get_progress_log {
     my %opts         = @_;
     my $workflow_id = $opts{workflow_id};
     return unless $workflow_id;
-    
+
     my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
     return unless (-r $results_path);
 
@@ -787,16 +787,16 @@ sub get_progress_log {
 
     my $result = CoGe::Accessory::TDS::read($result_file);
     return unless $result;
-    
+
     return encode_json(
-        { 
+        {
             experiment_id => $result->{experiment_id},
         }
     );
 }
 #sub get_progress_log {
 #    my $logfile = catfile($TEMPDIR, 'staging', 'load_experiment', 'log.txt');
-#    open( my $fh, $logfile ) or 
+#    open( my $fh, $logfile ) or
 #        return encode_json( { status => -1, log => "Error opening log file" } );
 #
 #    my @lines = ();
@@ -807,11 +807,11 @@ sub get_progress_log {
 #        push @lines, $1 if ( $_ =~ /^log: (.+)/i );
 #        if ( $_ =~ /All done/i ) {
 #            $status = 1;
-#            
-#            # Generate a new load session ID in case the user chooses to 
+#
+#            # Generate a new load session ID in case the user chooses to
 #            # reuse the form to start another load.
 #            $new_load_id = get_unique_id();
-#            
+#
 #            last;
 #        }
 #        elsif ( $_ =~ /experiment id: (\d+)/i ) {

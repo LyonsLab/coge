@@ -23,11 +23,9 @@ my @skipped; #array to hold commands that had skipped reloading.  Will be printe
 #print Dumper get_genomes_for_genomeprj(116);
 #exit;
 
-
 # for understanding accession nomeclature from NCBI see:
 # all: http://www.ncbi.nlm.nih.gov/Sequin/acc.html
 # refseq: http://www.ncbi.nlm.nih.gov/RefSeq/key.html
-
 
 #accessions
 # genbank genlist.cgi type codes:
@@ -48,7 +46,7 @@ my @taxids =(
 	     [2157, 9], #archaea, get WGS
 	     [2,    9], #bacteria, get WGS
 	     [2759, 9], #euks, not ready for WGS -- lots of data with minimal annotations.  Will get there though!
-	     [10239,9], #viruses, phages, 
+	     [10239,9], #viruses, phages,
 	     [12884,9], #viroids
 	    );
 
@@ -64,7 +62,7 @@ foreach my $item (@taxids)
     my %data;
     foreach my $row (@rows)
       {
-	
+
  	next unless $row =~/^<td>/;
  	$row =~ s/\n|\r//g;
  	my @cols = split /<td.*?>/, $row;
@@ -83,7 +81,7 @@ foreach my $item (@taxids)
  	$cols[2] = "unknown" unless $cols[2];
  	#$data{organism}{chromosome} = [accns]
  	push @{$data{$cols[1]}{$cols[2]}}, $cols[3];
-	
+
       }
 #    print Dumper \%data;
     my $orgs = process_orgs(\%data);
@@ -105,10 +103,7 @@ if (@skipped)
     print join ("\n", @skipped),"\n";
   }
 
-
 exit();
-
-
 
 sub process_genome_and_load
   {
@@ -228,7 +223,7 @@ sub get_project  {
 	print "Error getting $url\n";
 #	next;
       }
-	  
+
     my %data;
 #    while ($summary =~/ACCESSION\s+(\S+).*?DBLINK\s+Project:(\d+)/gxs)
 #    print $summary if $accn eq "AC_000167";
@@ -240,13 +235,11 @@ sub get_project  {
     return \%data;
   }
 
-
 sub get_NCBI_genomes
   {
     my $esearchgenomeprj = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=genomeprj&term=all%5Bfilter%5D&retmax=999999"; #genomeprj let's me assemble genomes when there are multiple assemblies (no viruses)
     my $esearchgenome = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=genome&term=all%5Bfilter%5D&retmax=999999"; #get all genome ids
     my @genomes;
-
 
     #get genome projects
     my $entry = get($esearchgenomeprj);
@@ -258,8 +251,8 @@ sub get_NCBI_genomes
 	my $gpid = $1;
 	print "working on $gpid\n";
 	print get("http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=genomeprj&retmode=text&complexity=0&id=$gpid");
-	
-	my $gids = get_genomes_for_genomeprj($gpid); #metagenomes, etc won't have genomes. . . 
+
+	my $gids = get_genomes_for_genomeprj($gpid); #metagenomes, etc won't have genomes. . .
 	my @gids;
 	foreach my $gid (@$gids)
 	  {
@@ -315,7 +308,7 @@ sub get_NCBI_genomes
 			   accns=>[keys %{$orgs{$org}}],
 			   orgs=>[$org]
 			  };
-		
+
 		print Dumper $res;
 		<STDIN>;
 		process_genome_and_load(genome=>$res);
@@ -367,7 +360,7 @@ sub get_genomes_for_genomeprj
       my $xml = XMLin($entry);
 #      print $entry;
       my $items = ref ($xml->{LinkSet}{LinkSetDb}{Link}) =~ /array/i ? [@{$xml->{LinkSet}{LinkSetDb}{Link}}] : [$xml->{LinkSet}{LinkSetDb}{Link}];
-      
+
       foreach my $item (@$items)
 	{
 	  my $id = $item->{Id};
@@ -419,7 +412,7 @@ sub get_nuccore_for_genome_project
 sub get_accns_for_nuccore
    {
      my $id = shift;
-     
+
      my $esumg = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nuccore&retmode=text&complexity=0&id=$id";
      print "running get_accns_for_nuccor: $esumg\n";
      my $item = get($esumg);

@@ -168,5 +168,4 @@ unlink(glob("*.$$"));
 if ($extra1 || $extra2) { `rm *.$$.masked`; }
 exit(0);
 
-
 # out: .chaos .mon->.smap .xmfa

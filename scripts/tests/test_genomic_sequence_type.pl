@@ -9,7 +9,6 @@ my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
-
 my $org = shift;
 ($org) = $coge->resultset('Organism')->resolve($org);
 print join ("\n", map {$_->name} $org->genomic_sequence_types),"\n";

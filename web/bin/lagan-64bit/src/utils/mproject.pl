@@ -77,14 +77,4 @@ foreach $s (@targets) {
 	}
     }
     print "\n";
-} 
-
-
-
-
-
-
-
-
-
-
+}

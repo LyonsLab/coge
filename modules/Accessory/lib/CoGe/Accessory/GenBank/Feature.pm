@@ -4,7 +4,7 @@ use strict;
 use Data::Dumper;
 use base qw(Class::Accessor);
 
-__PACKAGE__->mk_accessors('number', 'type', 'location', 'qualifiers', 
+__PACKAGE__->mk_accessors('number', 'type', 'location', 'qualifiers',
 	'annotation', 'blocks', 'strand', '_start', '_stop');
 
 sub has_qualifier {
@@ -70,7 +70,6 @@ sub _get_position
   }
 
 1;
-
 
 =head1 NAME
 

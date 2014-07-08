@@ -2,7 +2,6 @@
 use strict;
 use Comp_Genomics::Genome;
 
-
 my $chr = shift;
 my $file = shift;
 
@@ -19,8 +18,6 @@ my $version = 6;
 my ($gdb, $org, $data_source, $data_info) = initialize_genome_db($org_name, $org_desc, $data_source_name, $data_source_desc, $data_source_link, $data_info_name, $data_info_desc, $data_info_link, $version);
 
 my $gso = $gdb->get_genomic_sequence_obj();
-
-
 
 my $len = 10000;
 while (<>)
@@ -54,7 +51,7 @@ sub initialize_genome_db
     my $genome = Comp_Genomics::Genome->new();
     my $organism = $genome->get_organism_obj->find_or_create({name=>$org_name, #this adds "Arabidopsis thaliana"
 							      description=>$org_desc, #this adds the complete kingdom to species list
-							     }); 
+							     });
     my $data_source = $genome->get_data_source_obj->find_or_create({name=>$data_source_name,
 								    description=>$data_source_desc,
 								    link=>$data_source_link,

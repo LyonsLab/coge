@@ -15,7 +15,6 @@ my $coge = CoGeX->dbconnect();
 my $res = $coge->resultset('Dataset')->search({dataset_id=>$id});
 my $ds = $res->next();
 
-
 foreach my $chr (sort $ds->chromosomes) {
     print ">$chr\n";
     print $ds->get_genomic_sequence(start=>1, stop=>$ds->last_chromosome_position($chr), chr=>$chr) . "\n";

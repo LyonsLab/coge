@@ -44,8 +44,6 @@ while (<STDIN>) {
     push (@$list_aref, $match);
 }
 
-
-
 ## Examine each chromosome pairwise comparison, link matches
 foreach my $chromoPair (sort keys %chromoPairToMatchList) {
     my $matchList_aref = $chromoPairToMatchList{$chromoPair};
@@ -54,13 +52,11 @@ foreach my $chromoPair (sort keys %chromoPairToMatchList) {
 
     @filteredMatches = &filter_matches ("featB", "featA", \@filteredMatches);
 
-
     foreach my $match (@filteredMatches) {
         print $match->{input};
     }
 
 }
-
 
 ####
 sub filter_matches {
@@ -71,7 +67,6 @@ sub filter_matches {
         ||
         $a->{$coordKey}->{mid} <=> $b->{$coordKey}->{mid}
     } @$list_aref;
-
 
     my @matchBins = ( [ $list_aref->[0] ] );
     foreach (my $i=1; $i <= $#$list_aref; $i++) {
@@ -85,7 +80,7 @@ sub filter_matches {
         my $currAcc = $currMatch->{$accKey}->{acc};
         my $currCoordB = $currMatch->{$coordKey}->{mid};
 
-        if ( ($currAcc ne $prevAcc) || 
+        if ( ($currAcc ne $prevAcc) ||
             ($currAcc eq $prevAcc && ($currCoordB - $prevCoordB > $windowLinkSize) )
         ) {
             push (@matchBins, [$currMatch]); # start a new bin
@@ -93,7 +88,6 @@ sub filter_matches {
             push (@$prevMatchList_aref, $currMatch); # add to existing bin
         }
     }
-
 
     ## iterate thru match bins, only print the entry with the lowest evalue
 
@@ -113,9 +107,4 @@ sub filter_matches {
     return (@retMatches);
 }
 
-
 exit(0);
-
-
-
-

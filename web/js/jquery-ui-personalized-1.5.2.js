@@ -21,26 +21,26 @@ $.ui = {
 		call: function(instance, name, args) {
 			var set = instance.plugins[name];
 			if(!set) { return; }
-			
+
 			for (var i = 0; i < set.length; i++) {
 				if (instance.options[set[i][0]]) {
 					set[i][1].apply(instance.element, args);
 				}
 			}
-		}	
+		}
 	},
 	cssCache: {},
 	css: function(name) {
 		if ($.ui.cssCache[name]) { return $.ui.cssCache[name]; }
 		var tmp = $('<div class="ui-gen">').addClass(name).css({position:'absolute', top:'-5000px', left:'-5000px', display:'block'}).appendTo('body');
-		
+
 		//if (!$.browser.safari)
-			//tmp.appendTo('body'); 
-		
+			//tmp.appendTo('body');
+
 		//Opera and Safari set width and height to 0px instead of auto
 		//Safari returns rgba(0,0,0,0) when bgcolor is not set
 		$.ui.cssCache[name] = !!(
-			(!(/auto|default/).test(tmp.css('cursor')) || (/^[1-9]/).test(tmp.css('height')) || (/^[1-9]/).test(tmp.css('width')) || 
+			(!(/auto|default/).test(tmp.css('cursor')) || (/^[1-9]/).test(tmp.css('height')) || (/^[1-9]/).test(tmp.css('width')) ||
 			!(/none/).test(tmp.css('backgroundImage')) || !(/transparent|rgba\(0, 0, 0, 0\)/).test(tmp.css('backgroundColor')))
 		);
 		try { $('body').get(0).removeChild(tmp.get(0));	} catch(e){}
@@ -59,7 +59,6 @@ $.ui = {
 		return has;
 	}
 };
-
 
 /** jQuery core modifications and additions **/
 
@@ -81,18 +80,18 @@ function getter(namespace, plugin, method) {
 $.widget = function(name, prototype) {
 	var namespace = name.split(".")[0];
 	name = name.split(".")[1];
-	
+
 	// create plugin method
 	$.fn[name] = function(options) {
 		var isMethodCall = (typeof options == 'string'),
 			args = Array.prototype.slice.call(arguments, 1);
-		
+
 		if (isMethodCall && getter(namespace, name, options)) {
 			var instance = $.data(this[0], name);
 			return (instance ? instance[options].apply(instance, args)
 				: undefined);
 		}
-		
+
 		return this.each(function() {
 			var instance = $.data(this, name);
 			if (isMethodCall && instance && $.isFunction(instance[options])) {
@@ -102,14 +101,14 @@ $.widget = function(name, prototype) {
 			}
 		});
 	};
-	
+
 	// create widget constructor
 	$[namespace][name] = function(element, options) {
 		var self = this;
-		
+
 		this.widgetName = name;
 		this.widgetBaseClass = namespace + '-' + name;
-		
+
 		this.options = $.extend({}, $.widget.defaults, $[namespace][name].defaults, options);
 		this.element = $(element)
 			.bind('setData.' + name, function(e, key, value) {
@@ -123,7 +122,7 @@ $.widget = function(name, prototype) {
 			});
 		this.init();
 	};
-	
+
 	// add widget prototype
 	$[namespace][name].prototype = $.extend({}, $.widget.prototype, prototype);
 };
@@ -133,19 +132,19 @@ $.widget.prototype = {
 	destroy: function() {
 		this.element.removeData(this.widgetName);
 	},
-	
+
 	getData: function(key) {
 		return this.options[key];
 	},
 	setData: function(key, value) {
 		this.options[key] = value;
-		
+
 		if (key == 'disabled') {
 			this.element[value ? 'addClass' : 'removeClass'](
 				this.widgetBaseClass + '-disabled');
 		}
 	},
-	
+
 	enable: function() {
 		this.setData('disabled', false);
 	},
@@ -158,56 +157,55 @@ $.widget.defaults = {
 	disabled: false
 };
 
-
 /** Mouse Interaction Plugin **/
 
 $.ui.mouse = {
 	mouseInit: function() {
 		var self = this;
-	
+
 		this.element.bind('mousedown.'+this.widgetName, function(e) {
 			return self.mouseDown(e);
 		});
-		
+
 		// Prevent text selection in IE
 		if ($.browser.msie) {
 			this._mouseUnselectable = this.element.attr('unselectable');
 			this.element.attr('unselectable', 'on');
 		}
-		
+
 		this.started = false;
 	},
-	
+
 	// TODO: make sure destroying one instance of mouse doesn't mess with
 	// other instances of mouse
 	mouseDestroy: function() {
 		this.element.unbind('.'+this.widgetName);
-		
+
 		// Restore text selection in IE
 		($.browser.msie
 			&& this.element.attr('unselectable', this._mouseUnselectable));
 	},
-	
+
 	mouseDown: function(e) {
 		// we may have missed mouseup (out of window)
 		(this._mouseStarted && this.mouseUp(e));
-		
+
 		this._mouseDownEvent = e;
-		
+
 		var self = this,
 			btnIsLeft = (e.which == 1),
 			elIsCancel = (typeof this.options.cancel == "string" ? $(e.target).parents().add(e.target).filter(this.options.cancel).length : false);
 		if (!btnIsLeft || elIsCancel || !this.mouseCapture(e)) {
 			return true;
 		}
-		
+
 		this._mouseDelayMet = !this.options.delay;
 		if (!this._mouseDelayMet) {
 			this._mouseDelayTimer = setTimeout(function() {
 				self._mouseDelayMet = true;
 			}, this.options.delay);
 		}
-		
+
 		if (this.mouseDistanceMet(e) && this.mouseDelayMet(e)) {
 			this._mouseStarted = (this.mouseStart(e) !== false);
 			if (!this._mouseStarted) {
@@ -215,7 +213,7 @@ $.ui.mouse = {
 				return true;
 			}
 		}
-		
+
 		// these delegates are required to keep context
 		this._mouseMoveDelegate = function(e) {
 			return self.mouseMove(e);
@@ -226,43 +224,43 @@ $.ui.mouse = {
 		$(document)
 			.bind('mousemove.'+this.widgetName, this._mouseMoveDelegate)
 			.bind('mouseup.'+this.widgetName, this._mouseUpDelegate);
-		
+
 		return false;
 	},
-	
+
 	mouseMove: function(e) {
 		// IE mouseup check - mouseup happened when mouse was out of window
 		if ($.browser.msie && !e.button) {
 			return this.mouseUp(e);
 		}
-		
+
 		if (this._mouseStarted) {
 			this.mouseDrag(e);
 			return false;
 		}
-		
+
 		if (this.mouseDistanceMet(e) && this.mouseDelayMet(e)) {
 			this._mouseStarted =
 				(this.mouseStart(this._mouseDownEvent, e) !== false);
 			(this._mouseStarted ? this.mouseDrag(e) : this.mouseUp(e));
 		}
-		
+
 		return !this._mouseStarted;
 	},
-	
+
 	mouseUp: function(e) {
 		$(document)
 			.unbind('mousemove.'+this.widgetName, this._mouseMoveDelegate)
 			.unbind('mouseup.'+this.widgetName, this._mouseUpDelegate);
-		
+
 		if (this._mouseStarted) {
 			this._mouseStarted = false;
 			this.mouseStop(e);
 		}
-		
+
 		return false;
 	},
-	
+
 	mouseDistanceMet: function(e) {
 		return (Math.max(
 				Math.abs(this._mouseDownEvent.pageX - e.pageX),
@@ -270,11 +268,11 @@ $.ui.mouse = {
 			) >= this.options.distance
 		);
 	},
-	
+
 	mouseDelayMet: function(e) {
 		return this._mouseDelayMet;
 	},
-	
+
 	// These are placeholder methods, to be overriden by extending plugin
 	mouseStart: function(e) {},
 	mouseDrag: function(e) {},
@@ -306,7 +304,7 @@ $.ui.mouse.defaults = {
 $.widget("ui.tabs", {
 	init: function() {
 		this.options.event += '.tabs'; // namespace event
-		
+
 		// create tabs
 		this.tabify(true);
 	},
@@ -415,19 +413,19 @@ $.widget("ui.tabs", {
 			)).sort();
 			if ($.inArray(o.selected, o.disabled) != -1)
 				o.disabled.splice($.inArray(o.selected, o.disabled), 1);
-			
+
 			// highlight selected tab
 			this.$panels.addClass(o.hideClass);
 			this.$lis.removeClass(o.selectedClass);
 			if (o.selected !== null) {
 				this.$panels.eq(o.selected).show().removeClass(o.hideClass); // use show and remove class to show in any case no matter how it has been hidden before
 				this.$lis.eq(o.selected).addClass(o.selectedClass);
-				
+
 				// seems to be expected behavior that the show callback is fired
 				var onShow = function() {
 					$(self.element).triggerHandler('tabsshow',
 						[self.fakeEvent('tabsshow'), self.ui(self.$tabs[o.selected], self.$panels[o.selected])], o.show);
-				}; 
+				};
 
 				// load if remote tab
 				if ($.data(this.$tabs[o.selected], 'load.tabs'))
@@ -435,9 +433,9 @@ $.widget("ui.tabs", {
 				// just trigger show event
 				else
 					onShow();
-				
+
 			}
-			
+
 			// clean up to avoid memory leaks in certain versions of IE 6
 			$(window).bind('unload', function() {
 				self.$tabs.unbind('.tabs');
@@ -453,7 +451,7 @@ $.widget("ui.tabs", {
 		// reset cache if switching from cached to not cached
 		if (o.cache === false)
 			this.$tabs.removeData('cache.tabs');
-		
+
 		// set up animations
 		var hideFx, showFx, baseFx = { 'min-width': 0, duration: 1 }, baseDuration = 'normal';
 		if (o.fx && o.fx.constructor == Array)
@@ -513,12 +511,12 @@ $.widget("ui.tabs", {
 				$hide = self.$panels.filter(':visible'),
 				$show = $(this.hash);
 
-			// If tab is already selected and not unselectable or tab disabled or 
+			// If tab is already selected and not unselectable or tab disabled or
 			// or is already loading or click callback returns false stop here.
 			// Check if click handler returns false last so that it is not executed
 			// for a disabled or loading tab!
 			if (($li.hasClass(o.selectedClass) && !o.unselect)
-				|| $li.hasClass(o.disabledClass) 
+				|| $li.hasClass(o.disabledClass)
 				|| $(this).hasClass(o.loadingClass)
 				|| $(self.element).triggerHandler('tabsselect', [self.fakeEvent('tabsselect'), self.ui(this, $show[0])], o.select) === false
 				) {
@@ -568,7 +566,7 @@ $.widget("ui.tabs", {
 				}*/
 
 				var a = this;
-				self.load(self.$tabs.index(this), $hide.length ? 
+				self.load(self.$tabs.index(this), $hide.length ?
 					function() {
 						switchTab(a, $li, $hide, $show);
 					} :
@@ -606,7 +604,7 @@ $.widget("ui.tabs", {
 
 	},
 	add: function(url, label, index) {
-		if (index == undefined) 
+		if (index == undefined)
 			index = this.$tabs.length; // append by default
 
 		var o = this.options;
@@ -630,10 +628,10 @@ $.widget("ui.tabs", {
 			$li.insertBefore(this.$lis[index]);
 			$panel.insertBefore(this.$panels[index]);
 		}
-		
+
 		o.disabled = $.map(o.disabled,
 			function(n, i) { return n >= index ? ++n : n });
-			
+
 		this.tabify();
 
 		if (this.$tabs.length == 1) {
@@ -672,7 +670,7 @@ $.widget("ui.tabs", {
 		var o = this.options;
 		if ($.inArray(index, o.disabled) == -1)
 			return;
-			
+
 		var $li = this.$lis.eq(index).removeClass(o.disabledClass);
 		if ($.browser.safari) { // fix disappearing tab (that used opacity indicating disabling) after enabling in Safari 2...
 			$li.css('display', 'inline-block');
@@ -709,12 +707,12 @@ $.widget("ui.tabs", {
 		this.$tabs.eq(index).trigger(this.options.event);
 	},
 	load: function(index, callback) { // callback is for internal usage only
-		
+
 		var self = this, o = this.options, $a = this.$tabs.eq(index), a = $a[0],
 				bypassCache = callback == undefined || callback === false, url = $a.data('load.tabs');
 
 		callback = callback || function() {};
-		
+
 		// no remote or from cache - just finish with callback
 		if (!url || !bypassCache && $.data(a, 'cache.tabs')) {
 			callback();
@@ -722,7 +720,7 @@ $.widget("ui.tabs", {
 		}
 
 		// load remote from here on
-		
+
 		var inner = function(parent) {
 			var $parent = $(parent), $inner = $parent.find('*:last');
 			return $inner.length && $inner.is(':not(img)') && $inner || $parent;
@@ -735,7 +733,7 @@ $.widget("ui.tabs", {
 						});
 			self.xhr = null;
 		};
-		
+
 		if (o.spinner) {
 			var label = inner(a).html();
 			inner(a).wrapInner('<em></em>')
@@ -747,7 +745,7 @@ $.widget("ui.tabs", {
 			success: function(r, s) {
 				$(a.hash).html(r);
 				cleanup();
-				
+
 				if (o.cache)
 					$.data(a, 'cache.tabs', true); // if loaded once do not load them again
 
@@ -756,9 +754,9 @@ $.widget("ui.tabs", {
 					[self.fakeEvent('tabsload'), self.ui(self.$tabs[index], self.$panels[index])], o.load
 				);
 				o.ajaxOptions.success && o.ajaxOptions.success(r, s);
-				
+
 				// This callback is required because the switch has to take
-				// place after loading has completed. Call last in order to 
+				// place after loading has completed. Call last in order to
 				// fire load before show callback...
 				callback();
 			}
@@ -849,24 +847,24 @@ $.ui.tabs.getter = "length";
 $.extend($.ui.tabs.prototype, {
 	rotation: null,
 	rotate: function(ms, continuing) {
-		
+
 		continuing = continuing || false;
-		
+
 		var self = this, t = this.options.selected;
-		
+
 		function start() {
 			self.rotation = setInterval(function() {
 				t = ++t < self.$tabs.length ? t : 0;
 				self.select(t);
-			}, ms); 
+			}, ms);
 		}
-		
+
 		function stop(e) {
 			if (!e || e.clientX) { // only in case of a true click
 				clearInterval(self.rotation);
 			}
 		}
-		
+
 		// start interval
 		if (ms) {
 			start();

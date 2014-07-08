@@ -7,12 +7,11 @@ my $infile;
 my $outfile1;
 my $outfile2;
 
-GetOptions ( 
+GetOptions (
 	    "infile=s" => \$infile,
 	    "outfile1=s"    => \$outfile1,
 	    "outfile2=s"    => \$outfile2,
 	   );
-
 
 my $input =[];
 open (IN, $infile)  || die "Can't open $infile for reading: $!";
@@ -25,9 +24,6 @@ while (<IN>)
 close IN;
 
 $input = convert_blast_genomic_names(data=>$input, outfile=>$infile.".new") if ($infile =~ /genomic/);
-
-
-
 
 my %seen1 = ();
 my %seen2 = ();
@@ -47,7 +43,7 @@ foreach my $item (@$input)
 	print STDERR "Skipping entry because it is not formatted correctly with '||':\nEntry 1: $line[0]\nEntry 2: $line[1]\n";
 	next;
       }
-    
+
     my @item1 = split/\|\|/, $line[0];
     my @item2 = split/\|\|/, $line[1];
     unless (defined $item1[0] && defined $item1[1] && defined $item1[2])
@@ -89,7 +85,7 @@ sub convert_blast_genomic_names
 	my @line = split/\t/, $item;
 	my @item1 = split/\|\|/, $line[0];
 	my @item2 = split/\|\|/, $line[1];
-	#add start and stop positions to items if not present (e.g. genomci sequence hits)  
+	#add start and stop positions to items if not present (e.g. genomci sequence hits)
 	my ($ori1, $ori2); #strand/orientation of features/hits
 	$ori1 = $item1[4];
 	$ori2 = $item2[4];
@@ -168,13 +164,13 @@ sub order_hits
       {
 	my @items = split/\t/, $item;
 	#'||' is the character used to delimit genomic feature information, if not present, it is a genomic hit which needs sorting
-	unless ($items[0] =~ /\/\//) 
+	unless ($items[0] =~ /\/\//)
 	  {
 	    $items[0] =~ s/gi\|//;
 	    $items[0] =~ s/^lcl\|//;
 	    push @to_sort1, [$items[0],$items[6], $items[7]];
 	  }
-	unless ($items[2] =~ /\/\//) 
+	unless ($items[2] =~ /\/\//)
 	  {
 	    $items[1] =~ s/gi\|//;
 	    $items[1] =~ s/^lcl\|//;

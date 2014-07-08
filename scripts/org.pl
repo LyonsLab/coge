@@ -11,4 +11,3 @@ my $s = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 $s->storage->debug(1);
 
 print $s->resultset('Dataset')->chromosomes();
-

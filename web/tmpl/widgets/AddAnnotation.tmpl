@@ -18,10 +18,10 @@ function add_annotation_dialog() {
 	$('#edit_annotation_type').val(default_type);
 	$('#edit_annotation_type_group').val('');
 	$('#edit_annotation_image').val('');
-	
+
 	$('#add_annotation_button').show();
 	$('#update_annotation_button').hide();
-	
+
 	$("#annotation_edit_box").dialog({title: "Add Annotation"}).dialog('open');
 }
 
@@ -40,11 +40,10 @@ function edit_annotation_dialog(aid) {
 				$('#edit_annotation_type').val(obj.type);
 				$('#edit_annotation_type_group').val(obj.type_group);
 				$('#edit_annotation_image').val('');
-				
+
 				$('#add_annotation_button').hide();
 				$('#update_annotation_button').data({annotation_id: aid}).show();
-				
-				
+
 				$("#annotation_edit_box").dialog({title: "Edit Annotation"}).dialog('open');
 			}
 		}
@@ -54,7 +53,7 @@ function edit_annotation_dialog(aid) {
 function add_annotation () {
 	var annotation = $('#edit_annotation').val();
 	var type = $('#edit_annotation_type').val();
-	
+
 	if (!annotation) {
 		alert('Please enter some annotation text.');
 	}
@@ -67,17 +66,17 @@ function add_annotation () {
 
 		var annotation_image_file = $('#edit_annotation_image')[0].files[0];
 
-		if (annotation_image_file) {		
-			if (!verify_image_file(annotation_image_file)) { 
-				return; 
+		if (annotation_image_file) {
+			if (!verify_image_file(annotation_image_file)) {
+				return;
 			}
-			
+
 			$("#wait_annotation").animate({opacity:1});
 		}
 		else {
 			annotation_image_file = '';
 		}
-		
+
 		var parent_id = $('#annotation_edit_box').data('parent_id');
 		$('#edit_annotation_image').fileupload('send', {
 			files: annotation_image_file,
@@ -89,21 +88,21 @@ function add_annotation () {
 				annotation: annotation,
 				link: link
 			}
-		});			
+		});
 	}
 }
 
 function update_annotation() {
 	var annotation = $('#edit_annotation').val();
 	var type = $('#edit_annotation_type').val();
-	
+
 	if (annotation && type) {
 		var type_group = $('#edit_annotation_type_group').val();
 		var link = $('#edit_annotation_link').val();
 		var aid = $('#update_annotation_button').data('annotation_id');
 		var annotation_image_file = $('#edit_annotation_image')[0].files[0];
-		
-		if (annotation_image_file) {		
+
+		if (annotation_image_file) {
 			if (!verify_image_file(annotation_image_file)) {
 				return;
 			}
@@ -123,7 +122,7 @@ function update_annotation() {
 				annotation: annotation,
 				link: link
 			}
-		});			
+		});
 	}
 }
 
@@ -160,7 +159,7 @@ function image_preview(obj, preview) {
 $(function() {
 	$("#edit_annotation_type").autocomplete({source:[]});
 	$("#edit_annotation_type_group").autocomplete({source: function() { get_annotation_type_groups(); }});
-	
+
 		$('#edit_annotation_image').fileupload({
 	       	dataType: 'json',
 	       	replaceFileInput: false,
@@ -168,13 +167,13 @@ $(function() {
 	       		function(e, data) {
 	       			return true;
 	       		},
-			done: 
+			done:
 				function(e, data) {
 					get_annotations();
 					$("#wait_annotation").hide();
 					$("#annotation_edit_box").dialog('close');
 				}
-		});		
+		});
 });
 
 function wait_to_search (search_func) {
@@ -225,12 +224,12 @@ function verify_image_file(file) {
 		alert('Error: specified file is not an image');
 		return 0;
 	}
-	
+
 	if (file.size > 1*1024*1024) {
 		alert('Error: image file is too large (>1MB)');
 		return 0;
 	}
-	
+
 	return 1;
 }
 </SCRIPT>
@@ -248,7 +247,7 @@ function verify_image_file(file) {
     <tr>
       <td>Type:</td>
       <td><input id="edit_annotation_type" onkeypress="wait_to_search(search_annotation_types, 0, this.value);" size="53" /></td>
-    </tr> 
+    </tr>
     <tr>
       <td>Type Group:</td>
       <td><input id="edit_annotation_type_group" size="53" /> (optional)</td>

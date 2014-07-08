@@ -56,5 +56,4 @@ sub process_file
       `rm -f $dir/$file` if $GO;
       `rm -f $dir/$tmp` if $GO;
 
-
     }

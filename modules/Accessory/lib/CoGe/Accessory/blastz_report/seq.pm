@@ -8,7 +8,6 @@ use base qw(Class::Accessor);
 
 use Data::Dumper;
 
-
 BEGIN
   {
     use vars qw($VERSION);
@@ -31,12 +30,12 @@ BEGIN
 								      });
  Purpose   : create an object filled with accessor functions for sequence information from blastz
  Returns   : this object
- Argument  : 
- Throws    : 
- Comment   : 
-           : 
+ Argument  :
+ Throws    :
+ Comment   :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -53,6 +52,5 @@ sub new {
     return $seq;
 
   }
-
 
 1;

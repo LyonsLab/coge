@@ -153,7 +153,7 @@ sub elapsed_time {
 
 	my ($y1, $mo1, $d1, $h1, $m1, $s1) = $self->start_time =~ /(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)/;
 	my $time1 = timelocal( $s1, $m1, $h1, $d1, $mo1-1, $y1 );
-	
+
 	my $time2;
 	if ($self->end_time and $self->status > 2) {
 		my ($y2, $mo2, $d2, $h2, $m2, $s2) = $self->end_time =~ /(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)/;
@@ -162,7 +162,7 @@ sub elapsed_time {
 	else {
 		$time2 = time;
 	}
-	
+
 	my $diff = $time2 - $time1;
 	my $d = int($diff / (60*60*24));
 	$diff -= $d * (60*60*24);
@@ -171,7 +171,7 @@ sub elapsed_time {
 	my $m = int($diff / 60);
 	$diff -= $m * 60;
 	my $s = $diff % 60;
-	
+
     my $elapsed = '';
     $elapsed .= "${d}d " if $d > 0;
     $elapsed .= "${h}h " if $h > 0;

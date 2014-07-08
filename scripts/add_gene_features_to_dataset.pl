@@ -14,7 +14,6 @@ my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
-
 GetOptions ( "dsid=i" => \$dsid,
              "go=s"    => \$GO,
              "debug=s" => \$DEBUG,
@@ -27,7 +26,6 @@ unless ($ds)
     warn "unable to find a valid dataset entry for $dsid\n";
     exit;
   }
-
 
 warn "-go flag is not true, nothing will be added to the database.\n" unless $GO;
 

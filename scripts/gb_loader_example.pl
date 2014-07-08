@@ -221,4 +221,3 @@ while ( my $gb_feature = $gb->get_next_feature ) {
         }
     }
 }
-

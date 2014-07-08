@@ -18,7 +18,7 @@ $s->storage->debug(1);
 isa_ok ($s, 'CoGeX');
 
 my $rs = $s->resultset('Feature')->search(
-                    { 
+                    {
                       'organism.name' => { 'like' => 'Nostoc%' }
                     },
                     {
@@ -31,7 +31,7 @@ my @features = $rs->all();
 is( scalar(@features), 10863 );
 
 $rs = $s->resultset('Feature')->search(
-                    { 
+                    {
                       'organism.name' => { 'like' => 'Drosophila%' },
                       'me.feature_id' => 1367613
                     },

@@ -6,7 +6,6 @@
     }
   });
 
-
   function CellCopyManager() {
     var _grid;
     var _self = this;

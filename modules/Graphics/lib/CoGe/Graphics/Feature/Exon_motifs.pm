@@ -16,7 +16,6 @@ LICENSE file included with this module.
 
 =cut
 
-
 BEGIN {
     use vars qw($VERSION $HEIGHT $WIDTH $DATA $ECUT $OVERCUT);
     $VERSION     = '0.1';
@@ -29,7 +28,7 @@ BEGIN {
 "patterns",
 );
     $DATA = qq{
-#AA BF-EXON DB	7-mer	#exon hits	#exon hits w/ revcom 	#control  hits	#control  hits w/revcom	Exon hit freq	Cntrl hit  freq	Ratio of freqs	C+D	CLICK ME		E+F/15.4	L+M/2	L+M/2 repeat	enrichmentX repeat	CHITEST p	
+#AA BF-EXON DB	7-mer	#exon hits	#exon hits w/ revcom 	#control  hits	#control  hits w/revcom	Exon hit freq	Cntrl hit  freq	Ratio of freqs	C+D	CLICK ME		E+F/15.4	L+M/2	L+M/2 repeat	enrichmentX repeat	CHITEST p
 BF-ALIGNED 	 CTCCTCC 	74	57	72	67	0.000897715	6.29E-005	14.27280108	131		131	9.18	70.09	70.09	14.27	0.00000000000000000000	E
 BF-ALIGNED 	 GGAGGAG 	57	74	67	72	0.000897715	6.29E-005	14.27280108	131		131	9.18	70.09	70.09	14.27	0.00000000000000000000	E
 BF-ALIGNED 	 CTTCTTC 	106	121	453	475	0.001555583	0.000419916	3.704508525	227		227	61.29	144.15	144.15	3.70	0.00000000000000000000	E
@@ -801,7 +800,7 @@ sub _initialize
   {
     my $self = shift;
     my %opts = @_;
-    my $h = $HEIGHT; #total image height 
+    my $h = $HEIGHT; #total image height
     my $w = $WIDTH;
     $self->image_width($w);
     $self->image_height($h);
@@ -830,7 +829,6 @@ sub _initialize
     my $green = 255;
 
     @color = ($blue, $red, $red);
-
 
     $self->color(\@color);
     $self->label($self->nt) if $self->nt;
@@ -872,19 +870,15 @@ sub parse_data
  Comment   : This is a sample subroutine header.
            : It is polite to include more pod and fewer comments.
 
-See Also   : 
+See Also   :
 
 =cut
 
 #################### subroutine header end ####################
 
-
-
-
 #################### main pod documentation begin ###################
-## Below is the stub of documentation for your module. 
+## Below is the stub of documentation for your module.
 ## You better edit it!
-
 
 =head1 NAME
 
@@ -894,20 +888,13 @@ CoGe::Graphics::Feature::Base
 
   use CoGe::Graphics::Feature::Base
 
-
 =head1 DESCRIPTION
 
 =head1 USAGE
 
-
-
 =head1 BUGS
 
-
-
 =head1 SUPPORT
-
-
 
 =head1 AUTHOR
 
@@ -923,7 +910,6 @@ This program is free software licensed under the...
 The full text of the license can be found in the
 LICENSE file included with this module.
 
-
 =head1 SEE ALSO
 
 perl(1).
@@ -932,9 +918,5 @@ perl(1).
 
 #################### main pod documentation end ###################
 
-
-
-
 1;
 # The preceding line will help the module return a true value
-

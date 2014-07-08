@@ -6,7 +6,6 @@
     }
   });
 
-
   function CheckboxSelectColumn(options) {
     var _grid;
     var _self = this;

@@ -36,7 +36,6 @@ submit.attr("type","image").attr("src","http://sswap.iplantcollaborative.org/dis
       });
    }
 
-
    return {
        discover : discover
    };

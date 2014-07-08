@@ -634,7 +634,7 @@ sub get_data_source_info_for_accn {
         $count++;
     }
     $html .= qq{</SELECT>\n};
-    return ("<font class=small>Dataset count: " 
+    return ("<font class=small>Dataset count: "
           . $count
           . "</font>\n<BR>\n"
           . $html );
@@ -680,7 +680,7 @@ sub get_orgs {
     }
     my $html;
     $html .=
-        qq{<FONT CLASS ="small" id="org_count">Organism count: } 
+        qq{<FONT CLASS ="small" id="org_count">Organism count: }
       . $count
       . qq{</FONT>\n<BR>\n};
     if ( $search && !@opts ) {

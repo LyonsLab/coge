@@ -8,14 +8,14 @@ use base 'DBIx::Class::ResultSet';
 
 =head2 resolve
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -33,14 +33,14 @@ sub resolve {
 
 =head2 public
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 

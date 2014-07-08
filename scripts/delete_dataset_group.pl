@@ -20,7 +20,7 @@ welcome to $0
 
 Usage:  $0 -dsgid <database id for genome> -delete_seqs -db <database name> -u <database user name> -pw <database password>
 
-This will delete the database entry for the genome, associated entries in the database_connector table, and the datasets if the datasets do not belong to another genome!  
+This will delete the database entry for the genome, associated entries in the database_connector table, and the datasets if the datasets do not belong to another genome!
 
 To delete the genomic sequences associted with the genome, add flag -delete_seqs
 };
@@ -63,4 +63,3 @@ sub delete_dsg {
 	}
 	$dsg->delete();
 }
-

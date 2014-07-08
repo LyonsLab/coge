@@ -75,7 +75,7 @@ sub gen_html
     my @feats;
     foreach my $tdso ($dso->get_associated_datasets)
       {
-	push @feats, $DB->get_feat_obj->get_features_in_region(dataset => $tdso->id, 
+	push @feats, $DB->get_feat_obj->get_features_in_region(dataset => $tdso->id,
 							       chr => $chr,
 							       start => $start,
 							       stop => $stop,

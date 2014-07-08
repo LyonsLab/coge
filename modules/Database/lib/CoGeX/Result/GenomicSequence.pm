@@ -44,7 +44,6 @@ Relates to a record in the CCoGeX::Result::Genome> object via C<genome_id> in a 
 
 =cut
 
-
 __PACKAGE__->table("genomic_sequence");
 __PACKAGE__->add_columns(
   "genomic_sequence_id",
@@ -60,7 +59,6 @@ __PACKAGE__->set_primary_key("genomic_sequence_id");
 __PACKAGE__->belongs_to("genome" => "CoGeX::Result::Genome", "genome_id");
 
 1;
-
 
 =head1 AUTHORS
 

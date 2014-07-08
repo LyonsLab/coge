@@ -15,7 +15,7 @@ $(document).ready(function(){
 			}
 		}
 	);
-	
+
 	$('#remove').click(
 		function() {
 			$('#genome_choice option:selected').each(function(){
@@ -58,10 +58,10 @@ function org_search(desc_search){
 	if (pageObj.time) {
 		clearTimeout(pageObj.time);
 	}
-	
+
 	name_desc = $('#org_name_desc').val();
 	if (name_desc.length < 3) { return; } //>
-	
+
 	pageObj.time = setTimeout(
 		function() {
 			$("#wait_indicator").css({opacity:1});
@@ -84,7 +84,7 @@ function org_search(desc_search){
 					}
 				}
 			});
-		}, 
+		},
 		500
 	);
 }
@@ -127,7 +127,7 @@ function get_dsg_for_menu(opts) {
 			add_to_list(data);
 			sort_genome_choice();
 		}
-	});			
+	});
 }
 
 function seq_type_search() {
@@ -167,7 +167,7 @@ function add_all_orgs() {
 	$('#org_id option').each(function(){
 		ids = ids+","+$(this).val();
 	});
-	get_dsg_for_menu({orgid: ids});	
+	get_dsg_for_menu({orgid: ids});
 }
 
 function add_selected_orgs() {
@@ -177,7 +177,7 @@ function add_selected_orgs() {
 		ids = ids + "," + $(this).val();
 		count++;
 	});
-	
+
 	if (count == 1) {
 		var dsgid = $('#dsgid').val();
 		get_dsg_for_menu({dsgid: dsgid[0]});
@@ -199,7 +199,7 @@ function add_to_list(stuff) {
 		var html = '<option id='+id+' value='+id+' ondblclick="remove_selected_orgs();">'+org+'</option>';
 		$('#blank').remove();
 		$('#genome_choice').append(html);
-	}	
+	}
 	count_genomes();
 }
 
@@ -214,13 +214,13 @@ function count_organisms() {
 	}
 	else {
 		$('#add_all_listed_button').addClass('ui-state-disabled');
-	}	
+	}
 	$('#org_count').html('('+count+')');
 }
 
 function count_genomes() {
 	var count = $('#genome_choice').getLength();
-	
+
 	if (count) {
 		$('#clear').removeClass('ui-state-disabled');
 	}
@@ -228,7 +228,7 @@ function count_genomes() {
 		$('#clear').addClass('ui-state-disabled');
 		$('#genome_choice').html('<option id="blank" value=null style="color:gray;" disabled="disabled">None</option>');
 	}
-		
+
 	$('#selected_genome_count').html('('+count+')');
 }
 
@@ -249,7 +249,7 @@ function save_org_list() {
 		success : function() {
 			alert('Selected genomes haved been saved and will be loaded by default.');
 		},
-	});	
+	});
 }
 
 function search_lists (search_term) {
@@ -257,7 +257,7 @@ function search_lists (search_term) {
 		$("#wait_list").animate({opacity:1});
 		$("#select_list_items").html("<option disabled='disabled'>Searching...</option>");
 	}
-	
+
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
@@ -308,7 +308,7 @@ function get_list_preview () {
 					fname: 'get_list_preview',
 					item_spec: item_spec,
 				},
-				success : 
+				success :
 					function(data) {
 						var width = $("#import_list_box").dialog("option", "width");
 						$("#select_list_items").width(width/2-30);
@@ -331,11 +331,11 @@ function import_lists() {
 					fname: 'get_genomes_for_list',
 					item_spec: item_spec,
 				},
-				success : 
+				success :
 					function(data) {
 						add_to_list(data);
 					}
-			});			
+			});
 		}
 	);
 	$("#import_list_box").dialog('close');
@@ -395,7 +395,7 @@ function import_lists() {
                   <span id="import" name="import" onClick="search_lists();" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-arrowreturnthick-1-w"></span>Import List</span>
                   <TMPL_IF NAME="SAVE_ORG_LIST">
                   <span id="save" name="save" class='ui-button ui-button-icon-left ui-corner-all' onclick="save_org_list();"><span class="ui-icon ui-icon-disk"></span>Save</span>
-                  </TMPL_IF>                  
+                  </TMPL_IF>
                   <span id="clear" name="clear" onClick="clear_org_list();" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minusthick"></span>Clear</span>
                 </td>
               </tr>

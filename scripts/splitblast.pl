@@ -60,4 +60,3 @@ printf( $BLAST_CMD . " &\n",
     sprintf( $filename, $filei ),
     $SUBJECT_DATABASE, $filei
 );
-

@@ -13,16 +13,16 @@
     two organisms and identify syntenic regions.
 	    <span class="link" onClick="$(this).remove(); $('#getting_started').fadeIn();">More...</span>
     </p>
-    
+
     <div id="getting_started" class="hidden" style="max-width:90%;">
 	    <ol>
 	    	<li>Finds putative genes or regions of homology between two genomes
 	    	<li>Identies collinear sets of genes or regions of sequence similarity to infer synteny
 	    	<li>Generates a dotplot of the results and coloring syntenic pairs.
 	    </ol>
-    	
+
 	    	If you choose, synonymous and non-synonymous site mutation data can be calculated for protein coding genes that are identified as syntenic. These genes will then be colored based on those values in the dotplot for rapid identification of different age-classes of syntenic regions.
-    	
+
         <p>
             <a href="http://www.genomevolution.org/r/btab" target="_blank">
                 Click here for an example analysis between
@@ -379,82 +379,31 @@
 <tmpl_include name="/widgets/Overlay.tmpl">
 
 <!-- Load scripts last for loading -->
-<script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.6.0/underscore-min.js"></script>
-<link href="js/bioplot/dist/bioplot.min.css" rel="stylesheet" />
-<script src="js/d3/d3.v3.min.js"></script>
-<script src="js/jdot/src/dotplot2.js"></script>
 <script src="js/coge/utils.js"></script>
-<script src="js/coge/colors.js"></script>
-<script src="js/bioplot/dist/bioplot.js"></script>
+<script src="js/coge/colors.js"</script>
+<script src="js/synmap.js"></script>
+<link href="js/vendor/bioplot/dist/bioplot.min.css" rel="stylesheet" />
+<script src="js/vendor/underscore/underscore.js"></script>
+<script src="js/vendor/d3/d3.min.js"></script>
+<script src="js/vendor/jdot/dist/jdot.js"></script>
+<script src="js/vendor/bioplot/dist/bioplot.js"></script>
 <script src="js/xhairs.js"></script>
-<script type="text/javascript" src="js/coge/utils.js"></script>
-<script type="text/javascript" src="js/synmap.js"></script>
+<script src="js/synmap.js"></script>
 <script type="text/javascript">
-$(document).ready(function(){
-    $.ajaxSetup({
-        type: "GET",
-        url: "<tmpl_var name=page_name>",
-        dataType: "html",
-        cache: false
-    });
-
-    $(".dialog_box").dialog({
-        autoOpen: false,
-        width: 500,
-    });
-
-    $("#synmap_dialog").dialog({modal: true});
-
-    if($('#org_name1').val() != "Search") {
-        $('#org_name1').css({fontStyle: "normal"});
-        timing('org_name1',1);
-    }
-    if($('#org_desc1').val() != "Search") {
-        $('#org_desc1').css({fontStyle: "normal"});
-        timing('org_desc1',1);
-    }
-    if($('#org_name2').val() != "Search") {
-        $('#org_name2').css({fontStyle: "normal"});
-        timing('org_name2',1);
-    }
-    if($('#org_desc2').val() != "Search") {
-        $('#org_desc2').css({fontStyle: "normal"});
-        timing('org_desc2',1);
-    }
-
+$(function(){
     <tmpl_var name=display_dagchainer_settings>
 
-    if ($('#assemble')[0].checked) {
-        $('#assemble_info').toggle();
-    }
+    //FIXME: Remove global state
+    pageObj = {
+        "id1": "<tmpl_var name=fid1>",
+        "id2": "<tmpl_var name=fid2>",
+        "tempdir": "<tmpl_var name=tempdir>",
+        "beta": "<tmpl_var name=beta>",
+        "page": "<tmpl_var name=page_name>",
+        "rootElement": $(".box"),
+        "autostart": Boolean(parseInt("<tmpl_var name=autogo>", 10))
+    };
 
-    $(".options tr:even").addClass("even");
-    merge_select_check();
-    depth_algo_check();
-
-    $("#pair_info").draggable();
-    $("#tabs").tabs({selected:0});
-    $(".resizable").resizable();
-    $('#depth_org_1').html($('#org_id1 option:selected').html());
-    $('#depth_org_2').html($('#org_id2 option:selected').html());
-
-
-    pageObj.fid1 = "<tmpl_var name=fid1>";
-    pageObj.fid2 = "<tmpl_var name=fid2>";
-    pageObj.tempdir="<tmpl_var name=tempdir>";
-    pageObj.beta = "<tmpl_var name=beta>";
-
-    var autogo = parseInt("<tmpl_var name=autogo>");
-    if (autogo === 1) {
-        run_synmap(autogo, $('#regen_images')[0].checked);
-    }
-
-    $("#tabs").removeClass("invisible");
-
-    // track analysis
-    $("#synmap_go").on("click", function() {
-        run_synmap(false, $('#regen_images')[0].checked);
-        ga('send', 'event', 'synmap', 'run');
-    });
- });
+    coge.synmap.setup(pageObj);
+});
 </script>

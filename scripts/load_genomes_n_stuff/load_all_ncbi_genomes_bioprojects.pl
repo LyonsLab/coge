@@ -6,16 +6,14 @@ use Data::Dumper;
 use XML::Simple;
 use Parallel::ForkManager;
 
-
 my $bpids = get_NCBI_bioprj();
 
 my $pm = new Parallel::ForkManager(20);
 my $out = "Load_all_NCBI.".sprintf( "%04d-%02d-%02d-%02d:%02d:%02d",
                  sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime)).".log";
 
-
 foreach my $bpid (@$bpids)
-  { 
+  {
     my $pid = $pm->start and next;
     my $output;
     $output.= "BioProject $bpid Started\n";
@@ -60,7 +58,7 @@ sub check_bioprj_genome
     my $bpid = shift;
     my $esummary = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=bioproject&retmode=text&complexity=0&id=";
     my $summary = get($esummary.$bpid);
-    
+
     return 1 if $summary=~/Genome sequencing/;
     return 0;
   }
@@ -90,7 +88,6 @@ sub get_nt_accn
       my ($accn) = $entry =~ /<Item Name="Caption" Type="String">(.+?)<\/Item>/;
       return $accn;
     }
-    
 
 sub process_accns
       {
@@ -104,7 +101,7 @@ sub process_accns
 	  }
 	if ($found)
 	  {
-	    
+
 	    $$output .= ("#"x20)."\n";
 	    $$output .= $found."\n";
 	    $$output .= ("#"x20)."\n";

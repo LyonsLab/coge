@@ -124,11 +124,11 @@ __PACKAGE__->mk_accessors( '_genomic_sequence', 'gst', 'dsg', 'trans_type' ); #_
  Purpose   : Shortcut to return a FeatureType object from a Feature object.
  Returns   : A FeatureType object.
  Argument  : None
- Throws    : 
- Comments  : 
-           : 
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -147,9 +147,9 @@ sub type {
  Purpose   : Shortcut to return dataset group objects from a Feature object.
  Returns   : A Genome object. (array or array ref depending on wantarray
  Argument  : None
- Throws    : 
- Comments  : 
-           : 
+ Throws    :
+ Comments  :
+           :
 
 See Also   : org()
 
@@ -171,9 +171,9 @@ sub genomes {
  Purpose   : Shortcut to return an Organism object (name, description, normalized name) from a Feature object.
  Returns   : An Organism object.
  Argument  : None
- Throws    : 
- Comments  : 
-           : 
+ Throws    :
+ Comments  :
+           :
 
 See Also   : org()
 
@@ -191,13 +191,13 @@ sub organism {
 
 =head2 org
 
- Usage     : 
+ Usage     :
  Purpose   : Alias to the organism() method.
  Returns   : See organism()
  Argument  : None
- Throws    : 
- Comments  : 
-           : 
+ Throws    :
+ Comments  :
+           :
 
 See Also   : organism()
 
@@ -214,13 +214,13 @@ sub org {
 
 =head2 annotations
 
- Usage     : 
+ Usage     :
  Purpose   : Alias to the feature_annotations() method.
  Returns   : See feature_annotations()
  Argument  : None
- Throws    : 
- Comments  : 
-           : 
+ Throws    :
+ Comments  :
+           :
 
 See Also   : feature_annotations()
 
@@ -236,15 +236,15 @@ sub annotations {
 
 =head2 names
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -274,15 +274,15 @@ sub names {
 
 =head2 primary_name
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -302,15 +302,15 @@ sub name {
 
 =head2 locs
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -325,15 +325,15 @@ sub locs {
 
 =head2 eannotations
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -348,15 +348,15 @@ sub eannotations {
 
 =head2 annos
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -370,15 +370,15 @@ sub annos {
 
 =head2 length
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -400,7 +400,7 @@ sub length {
              in a nice format with tabs and new-lines and the like.
  Returns   : returns a string
  Argument  : none
- Throws    : 
+ Throws    :
  Comments  : uses Coge::Genome::Accessory::Annotation to build the annotations,
            : specifying delimters, and printing to string.   Pretty cool object.
 
@@ -527,7 +527,7 @@ sub annotation_pretty_print {
              in a nice html format with breaks and class tags (called "annotation")
  Returns   : returns a string
  Argument  : none
- Throws    : 
+ Throws    :
  Comments  : uses Coge::Genome::Accessory::Annotation to build the annotations,
            : specifying delimters, and printing to string.   Pretty cool object.
 
@@ -829,10 +829,10 @@ qq{<span class="data5 link" onclick = "window.open('OrganismView.pl?oid=}
  Returns   : a string
  Argument  : hash:  recalibrate => number of positions to subtract from genomic location
  Throws    : none
- Comments  : 
-           : 
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -883,9 +883,9 @@ sub chr {
  Argument  : none
  Throws    : none
  Comments  : returns $self->dataset->version
-           : 
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -904,7 +904,7 @@ sub version {
  Purpose   : gets the genomic seqence for a feature
  Returns   : a string
  Argument  : none
- Comments  : 
+ Comments  :
 See Also   : CoGe
 
 =cut
@@ -1015,11 +1015,11 @@ sub genomic_sequence {
 
 =head2 genome_sequence
 
- Usage     : 
+ Usage     :
  Purpose   : See genomic_sequence()
- Returns   : 
- Argument  : 
- Throws    : 
+ Returns   :
+ Argument  :
+ Throws    :
  Comments  : Alias for the genomic_sequence() method.
 
 See Also   : genomic_sequence()
@@ -1037,15 +1037,15 @@ See Also   : genomic_sequence()
 
 =head2 has_genomic_sequence
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1067,11 +1067,11 @@ sub has_genomic_sequence {
  Argument  : optional hash
              match    => the score for a nucleotide match. DEFAULT: 1
              mismatch => the score for a nucleotide mismatch.  DEFAULT: -3
- Throws    : 
- Comments  : 
-           : 
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1104,22 +1104,22 @@ sub blast_bit_score {
 
  Usage     : my $lambda = $feature->_estimate_lambda
  Purpose   : estimates lambda for calculating blast bit scores.  Lambda is
-             a matrix-specific constant for normalizing raw blast scores 
+             a matrix-specific constant for normalizing raw blast scores
  Returns   : a number, lambda
  Argument  : optional hash
              match    => the score for a nucleotide match. DEFAULT: 1
              mismatch => the score for a nucleotide mismatch.  DEFAULT: -3
-             precision=> the different between the high and low estimate 
-                         of lambda before lambda is returned.  
+             precision=> the different between the high and low estimate
+                         of lambda before lambda is returned.
                          DEFAULT: 0.001
  Throws    : a warning if there is a problem with the calcualted expected_score
              or the match score is less than 0;
  Comments  : Assumes an equal probability for each nucleotide.
-           : this routine is based on example 4-1 from 
-           : BLAST: An essential guide to the Basic Local Alignment Search Tool 
+           : this routine is based on example 4-1 from
+           : BLAST: An essential guide to the Basic Local Alignment Search Tool
            : by Korf, Yandell, and Bedell published by O'Reilly press.
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1181,15 +1181,15 @@ Problem with scores.  Match: $match (should be greater than 0).
 
 =head2 reverse_complement
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1215,13 +1215,13 @@ sub reverse_complement {
 
 =head2 reverse_comp
 
- Usage     : 
+ Usage     :
  Purpose   : See reverse_complement()
- Returns   : 
- Argument  : 
- Throws    : 
+ Returns   :
+ Argument  :
+ Throws    :
  Comments  : Alias for the reverse_complement function.
-           : 
+           :
 
 See Also   : reverse_complement()
 
@@ -1237,15 +1237,15 @@ sub reverse_comp {
 
 =head2 protein_sequence
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1310,15 +1310,15 @@ sub protein_sequence {
 
 =head2 frame6_trans
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1383,15 +1383,15 @@ sub frame6_trans {
 
 =head2 genetic_code
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1456,15 +1456,15 @@ sub genetic_code {
 
 =head2 _process_seq
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1496,15 +1496,15 @@ sub _process_seq {
 
 =head2 percent_translation_system
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1564,15 +1564,15 @@ sub percent_translation_system {
 
 =head2 aa_frequency
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1612,15 +1612,15 @@ sub aa_frequency {
 
 =head2 codon_frequency
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1661,15 +1661,15 @@ sub codon_frequency {
 
 =head2 gc_content
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1699,13 +1699,13 @@ sub gc_content {
 
 =head2 percent_gc
 
- Usage     : 
+ Usage     :
  Purpose   : See gc_content()
- Returns   : 
- Argument  : 
- Throws    : 
+ Returns   :
+ Argument  :
+ Throws    :
  Comments  : Alias for the gc_content() method.
-           : 
+           :
 
 See Also   : gc_content()
 
@@ -1721,15 +1721,15 @@ sub percent_gc {
 
 =head2 wobble_content
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1765,15 +1765,15 @@ sub wobble_content {
 
 =head2 fasta
 
- Usage     : 
+ Usage     :
  Purpose   : returns a fasta formated sequence for the featre
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1889,7 +1889,7 @@ sub fasta_object { # mdb added 2/28/14 for genfam
     my $downstream = $opts{downstream} || 0;
     my $gstid = $opts{gstid};
     my $gst;
-    
+
     my %obj;
 
     if ($gstid) {
@@ -1902,7 +1902,7 @@ sub fasta_object { # mdb added 2/28/14 for genfam
         $gstid = $gst->id if $gst;
     }
     my ($name) = $self->names;
-    
+
     $obj{organism} = $self->dataset->organism->name . "(v" . $self->version
         . ($gst ? ", " . $gst->name : '') . ")";
     $obj{names} = $self->names;
@@ -1910,7 +1910,7 @@ sub fasta_object { # mdb added 2/28/14 for genfam
     $obj{chromosome} = $self->chromosome;
     $obj{location} = $self->genbank_location_string;
     $obj{id} = $self->id;
-    
+
     my ( $start, $stop ) = ( $self->start, $self->stop );
     if ($rc) {
         $start -= $downstream;
@@ -1920,7 +1920,7 @@ sub fasta_object { # mdb added 2/28/14 for genfam
         $start -= $upstream;
         $stop += $downstream;
     }
-    
+
     $obj{start} = $start;
     $obj{stop} = $stop;
 
@@ -1949,9 +1949,9 @@ sub fasta_object { # mdb added 2/28/14 for genfam
         $seq = $self->reverse_complement($seq) if $rc;
         $seq = join( "\n", wrap( "", "", $seq ) ) if $col;
     }
-    
+
     $obj{sequence} = $seq;
-    
+
     return \%obj;
 }
 
@@ -1959,16 +1959,16 @@ sub fasta_object { # mdb added 2/28/14 for genfam
 
 =head2 sequence_type
 
- Usage     : 
+ Usage     :
  Purpose   : returns the genomic_sequence_type object for the sequence
  Returns   : wantarray -- may be more than one genomic_sequence_type sequences associated with this feature
              looked up through dataset->genome_connector->genome->genomic_sequence_type
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -1990,14 +1990,14 @@ sub sequence_type {
 =head2 info
 
  Usage     : $self->info
- Purpose   : returns a string of information about the feature.  
+ Purpose   : returns a string of information about the feature.
 
  Returns   : returns a string
  Argument  : none
- Throws    : 
+ Throws    :
  Comments  : To be used to quickly generate a string about the feature
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -2007,8 +2007,8 @@ sub info {
 	my $self = shift;
 	my ($info) = $self->name . ' (' . $self->type->name . ')';
 	$info .= ': ' . $self->organism->name .
-	         ' (' . $self->dataset->source->name . 
-	         ', v' . $self->dataset->first_genome->version . 
+	         ' (' . $self->dataset->source->name .
+	         ', v' . $self->dataset->first_genome->version .
 	         ', ' .  $self->dataset->first_genome->genomic_sequence_type->name . ')';
 	return $info;
 }

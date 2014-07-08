@@ -34,7 +34,7 @@ use Sort::Versions;
 
 use vars qw($P $PAGE_NAME $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR
   $FORMATDB $BLAST_PROGS $FORM $USER $LINK $coge $cogeweb $RESULTSLIMIT
-  $MAX_PROC $MAX_SEARCH_RESULTS %FUNCTION $PAGE_TITLE $YERBA);
+  $MAX_PROC $MAX_SEARCH_RESULTS %FUNCTION $PAGE_TITLE $JEX);
 
 $PAGE_TITLE = "CoGeBlast";
 $PAGE_NAME  = $PAGE_TITLE . ".pl";
@@ -48,7 +48,7 @@ $FORM = new CGI;
     cgi => $FORM
 );
 
-$YERBA         = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
+$JEX         = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
 $ENV{PATH}     = $P->{COGEDIR};
 $ENV{BLASTDB}  = $P->{BLASTDB};
 $ENV{BLASTMAT} = $P->{BLASTMATRIX};
@@ -116,7 +116,7 @@ sub gen_html {
 
     #$template->param(TITLE=>'CoGe BLAST Analysis');
     $template->param( PAGE_TITLE => 'BLAST',
-    				  PAGE_LINK  => $LINK, 
+    				  PAGE_LINK  => $LINK,
     				  HELP       => '/wiki/index.php?title=CoGeBlast' );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
@@ -694,9 +694,9 @@ sub blast_search {
     $url .= ";fid=$fid" if ($fid);
 
     my $link = CoGe::Accessory::Web::get_tiny_link(url => $url);
-    
+
     my ($tiny_id) = $link =~ /\/(\w+)$/;
-    my $workflow = $YERBA->create_workflow(
+    my $workflow = $JEX->create_workflow(
         name    => "cogeblast-$tiny_id",
         id      => 0,
         logfile => $cogeweb->logfile
@@ -717,7 +717,6 @@ sub blast_search {
     my @results;
     my $count = 1;
     my $t2    = new Benchmark;
-
 
     foreach my $dsgid (@dsg_ids) {
         my ( $org, $dbfasta, $dsg ) = get_blast_db($dsgid);
@@ -801,7 +800,6 @@ sub blast_search {
             dsg      => $dsg
           };
 
-
         $workflow->add_job(
             cmd     => "/usr/bin/nice",
             script  => undef,
@@ -813,7 +811,7 @@ sub blast_search {
         $count++;
     }
 
-    my $status = $YERBA->submit_workflow($workflow);
+    my $status = $JEX->submit_workflow($workflow);
 
     my $log = CoGe::Accessory::Web::log_history(
         db          => $coge,
@@ -824,7 +822,7 @@ sub blast_search {
         workflow_id => $status->{id}
     ) if $status and $status->{id};
 
-    $YERBA->wait_for_completion( $status->{id} );
+    $JEX->wait_for_completion( $status->{id} );
 
     my @completed;
 
@@ -2944,4 +2942,3 @@ sub get_genomes_for_list {
 
     return $genomes;
 }
-

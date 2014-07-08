@@ -22,7 +22,6 @@ CoGe::Algos::Codeml - Wrapper aroud the PAML program codeml
 
   use CoGe::Algos::Codeml;
 
-
   my $codeml = new CoGe::Algos::Codeml();
   $codeml->alignment($aln);
   $codeml->run();
@@ -151,7 +150,6 @@ the program at least twice, once with a starting omega value E<lt>1 and a
 second time with a value E<gt>1, and use the results corresponding to the
 highest likelihood. The continuous neutral and selection models of
 Nielsen and Yang (1998) are not implemented in the program.
-
 
 B<icode> for genetic code and these correspond to 1-11 in the genbank
 transl table.
@@ -361,7 +359,6 @@ sub new {
  Args    : L<Bio::Align::AlignI> object,
 	   L<Bio::Tree::TreeI> object [optional]
 
-
 =cut
 
 sub run {
@@ -436,7 +433,6 @@ sub parse_output {
  Returns : value of error_string
  Args    : newvalue (optional)
 
-
 =cut
 
 =head2 alignment
@@ -482,7 +478,6 @@ sub parse_output {
  Function: returns the list of parameters as a hash
  Returns : associative array keyed on parameter names
  Args    : none
-
 
 =cut
 
@@ -538,7 +533,6 @@ sub set_parameter{
  Returns : none
  Args    : boolean: keep existing parameter values
 
-
 =cut
 
 sub set_default_parameters{
@@ -568,7 +562,6 @@ sub set_default_parameters{
            trust the sanity checks for parameter values
  Returns : value of no_param_checks
  Args    : newvalue (optional)
-
 
 =cut
 

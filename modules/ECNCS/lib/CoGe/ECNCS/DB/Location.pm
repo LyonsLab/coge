@@ -18,7 +18,6 @@ BEGIN {
     __PACKAGE__->has_many(data_masks=>'CoGe::ECNCS::DB::Data_mask');
 }
 
-
 #################### subroutine header begin ####################
 
 =head2 sample_function
@@ -31,12 +30,11 @@ BEGIN {
  Comment   : This is a sample subroutine header.
            : It is polite to include more pod and fewer comments.
 
-See Also   : 
+See Also   :
 
 =cut
 
 #################### subroutine header end ####################
-
 
 sub new
 {
@@ -47,11 +45,9 @@ sub new
     return $self;
 }
 
-
 #################### main pod documentation begin ###################
-## Below is the stub of documentation for your module. 
+## Below is the stub of documentation for your module.
 ## You better edit it!
-
 
 =head1 NAME
 
@@ -62,7 +58,6 @@ CoGe::ECNCS::DB::location - CoGe::ECNCS::DB::location
   use CoGe::ECNCS::DB::location;
   blah blah blah
 
-
 =head1 DESCRIPTION
 
 Stub documentation for this module was created by ExtUtils::ModuleMaker.
@@ -71,18 +66,11 @@ to leave the stub unedited.
 
 Blah blah blah.
 
-
 =head1 USAGE
-
-
 
 =head1 BUGS
 
-
-
 =head1 SUPPORT
-
-
 
 =head1 AUTHOR
 
@@ -101,7 +89,6 @@ This program is free software licensed under the...
 The full text of the license can be found in the
 LICENSE file included with this module.
 
-
 =head1 SEE ALSO
 
 perl(1).
@@ -109,7 +96,6 @@ perl(1).
 =cut
 
 #################### main pod documentation end ###################
-
 
 sub algo_data
   {
@@ -128,7 +114,6 @@ sub masks
     my $self = shift;
     return $self->data_masks;
   }
-
 
 sub begin
   {
@@ -150,7 +135,5 @@ sub id
     return $self->location_id();
   }
 
-
 1;
 # The preceding line will help the module return a true value
-

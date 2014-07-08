@@ -9,13 +9,13 @@
 =head2 resolve
 
  Usage     : resolve('<object or string here>')
- Purpose   : 
+ Purpose   :
  Returns   : A result set(?), or the GenomicSequenceType object.
  Argument  : One (no hash)
- Throws    : 
+ Throws    :
  Comments  : Searches for results like (or not like?) the provided string.
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -29,13 +29,13 @@ sub resolve {
 
 	#Search for name with beginning (not?) like contents of $info
     my @res = $self->search({
-			     'name' => { '-like' => $info . '%'}, 
+			     'name' => { '-like' => $info . '%'},
 			    }
 			    ,{});
 
 	#If previous search did not return a scalar, repeat, but search for $info anywhere in string
     @res = $self->search({
-			     'name' => { '-like' => '%' . $info . '%'}, 
+			     'name' => { '-like' => '%' . $info . '%'},
 			    }
 			    ,{}) unless scalar @res;
 
@@ -44,7 +44,6 @@ sub resolve {
 
   1;
 
-  
 =head1 AUTHORS
 
  Eric Lyons

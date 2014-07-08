@@ -8,5 +8,3 @@ BEGIN { use_ok( 'CoGe::ECNCS::DB::Spike' ); }
 
 my $object = CoGe::ECNCS::DB::Spike->new ();
 isa_ok ($object, 'CoGe::ECNCS::DB::Spike');
-
-

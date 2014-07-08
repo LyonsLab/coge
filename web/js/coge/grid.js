@@ -52,7 +52,6 @@ var coge = (function (namespace) {
             }
         });
 
-
         // Column picker
         this.columnPicker = new Slick.Controls.ColumnPicker(this.columns,
                 this.grid, this.options);

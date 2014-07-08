@@ -10,7 +10,6 @@ if (@ARGV < 1) {
 
 ($lagandir = $ENV{LAGAN_DIR}) or die "LAGAN_DIR not set";
 
-
 $filename = $ARGV[0];
 open(PARAMFILE, "$filename") || die "Could not open $filename.\n\n";
 
@@ -80,11 +79,11 @@ if($dovista) {
 
     $prefix = substr $seqfile, 0, (rindex $filename, ".");
     $prefix = "$prefix\_";
-    
+
     if ($pairwise) {
 	$prefix="$prefix\pairwise\_";
     }
-    
+
     $plotfile = "$prefix.plotfile";
 
     ($vistadir = $ENV{VISTA_DIR}) or die "VISTA_DIR not set";
@@ -96,16 +95,3 @@ if($dovista) {
 }
 
 print "\nmrunfile.pl -- end.\n\n";
-
-
-
-
-
-
-
-
-
-
-
-
-

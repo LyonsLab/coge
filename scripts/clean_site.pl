@@ -57,7 +57,7 @@ sub process_file
 	    my $animate = qq{
 <SCRIPT language="JavaScript">
 
-jQuery(document).ready(function(){ 
+jQuery(document).ready(function(){
   var anim_speed = jQuery.cookie('anim_speed');
   if (! anim_speed){jQuery.cookie('anim_speed',600);}
   pageObj = new Object();
@@ -66,7 +66,6 @@ jQuery(document).ready(function(){
   //alert(pageObj.speed);
   if (!jQuery.browser.mozilla)browserAlert();
 });
-
 
 jQuery(function(){
 jQuery('ul.jd_menu').jdMenu();
@@ -97,14 +96,14 @@ function animate_section(name, style, speedy, show) {
   else if (style == "fadeOut") {jQuery(name).fadeOut(speedy);}
   return speedy;
  }
- 
+
  function define_animation_speed(val){
    //alert(val);
    val *= 1;
    pageObj.speed = val;
    jQuery.cookie('anim_speed',val);
    var menu_html;
-   
+
    if (val == 0){
      menu_html = '<li><a href="#" target="_self" onClick="define_animation_speed(0)">&radic; Off</a></li><li><a href="#" target="_self" onClick="define_animation_speed(600)">Slow</a></li><li><a href="#" target="_self" onClick="define_animation_speed(400)">Medium</a></li><li><a href="#" target="_self" onClick="define_animation_speed(200)">Fast</a></li>';}
    else{
@@ -118,7 +117,6 @@ function animate_section(name, style, speedy, show) {
      }
      jQuery('.animations').html(menu_html);
 }
-
 
 </SCRIPT>
 };
@@ -163,7 +161,6 @@ pageTracker._trackPageview();
       }
   }
 
-
 sub menu
   {
    return qq{
@@ -198,7 +195,7 @@ sub menu_complete
       </ul>
     </li>
     <li>Downloads
-     <ul>      
+     <ul>
       <li><a href="/CoGe/docs/help/Precomputed_menus_and_lists/CoGe_menus.html" target="_self">Syntenic gene sets</a></li>
 
      </ul>

@@ -767,7 +767,7 @@ sub gen_matrix_output {
                 my $color;
                 if ( $val == $min1 ) {
                     $html .=
-                        "<td style=\"background-color: rgb(125,125,125)\">" 
+                        "<td style=\"background-color: rgb(125,125,125)\">"
                       . $val . " "
                       . $code->{$aa1} . "-"
                       . $code->{$aa2};

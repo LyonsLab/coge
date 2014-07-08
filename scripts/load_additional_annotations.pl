@@ -12,7 +12,7 @@ while (<>)
   {
     chomp;
     my @line = split /\t/;
-    my $alias = process_alias($line[1], $line[-1]);    
+    my $alias = process_alias($line[1], $line[-1]);
     foreach my $feat ($gdb->get_feat_by_name($line[0]))
       {
 	if ($version)
@@ -40,7 +40,6 @@ while (<>)
 					  });
       }
   }
-
 
 sub get_annos
   {

@@ -8,7 +8,6 @@
     }
   });
 
-
   /***
    * A plugin to add custom buttons to column headers.
    *
@@ -70,7 +69,6 @@
       buttonCssClass: "slick-header-button"
     };
 
-
     function init(grid) {
       options = $.extend(true, {}, _defaults, options);
       _grid = grid;
@@ -82,11 +80,9 @@
       _grid.setColumns(_grid.getColumns());
     }
 
-
     function destroy() {
       _handler.unsubscribeAll();
     }
-
 
     function handleHeaderCellRendered(e, args) {
       var column = args.column;
@@ -132,7 +128,6 @@
       }
     }
 
-
     function handleBeforeHeaderCellDestroy(e, args) {
       var column = args.column;
 
@@ -143,7 +138,6 @@
         $(args.node).find("." + options.buttonCssClass).remove();
       }
     }
-
 
     function handleButtonClick(e) {
       var command = $(this).data("command");

@@ -13,7 +13,6 @@ vector<Point>endPoints;
 long long int numFragments;
 InterPoint inter;
 
-
 /*SLAGANCHANGE This has to change*/
 
 RI RI_regions[1<<(UPSTRANDBITS+DOWNSTRANDBITS+RELPOSBITS)];
@@ -22,7 +21,6 @@ LI LI_regions[1<<(UPSTRANDBITS+DOWNSTRANDBITS+RELPOSBITS)];
 vector<class Score*> scoreFunctions[1<<(UPSTRANDBITS+DOWNSTRANDBITS+RELPOSBITS)];
 
 Name allNames;
-
 
 extern Fragment LI_dummy;
 Fragment * unrelatedFrag;
@@ -111,7 +109,6 @@ int main(int, char **argv) {
 	return 0;
 }
 
-
 //Processes till the row number reaches the argument
 long long int startPointHandler() {
 	static long long int current=0;
@@ -169,7 +166,7 @@ long long int startPointHandler() {
 		current++;
 
 		if (DEBUG) { fprintf(stderr,"\ncurrent fragment is %lld",current); }
-		
+
 		if (current>=2*numFragments) {
 			return INF;
 		}
@@ -177,7 +174,6 @@ long long int startPointHandler() {
 
 	return startPoints[current].seq1;
 }
-
 
 //takes as arguements the start row number and the end row number and processes all the rows
 //This would usually have to find the case
@@ -236,7 +232,6 @@ long long int endPointHandler() {
 
 	return endPoints[current].seq1;
 }
-
 
 void intersectionPointHandler() {
 	long long int current_seq1;

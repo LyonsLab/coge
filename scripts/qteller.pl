@@ -16,7 +16,7 @@ use CoGe::Accessory::Jex;
 use CoGe::Core::Storage qw(get_genome_file get_experiment_files);
 use CoGe::Accessory::Web qw(get_defaults get_job schedule_job);
 
-our ($DESC, $YERBA, $LOG, $DEBUG, $P, $db, $host, $port, $user, $pass,
+our ($DESC, $JEX, $LOG, $DEBUG, $P, $db, $host, $port, $user, $pass,
      $name, $description, $version, $restricted, $source_name, $files,
      $CACHE, $test, $config, $gid, $jobid, $userid, $staging_dir, $alignment,
      $ANNOTATIONS);
@@ -61,7 +61,7 @@ sub setup {
     $port = $P->{DBPORT};
     $user = $P->{DBUSER};
     $pass = $P->{DBPASS};
-    $YERBA = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
+    $JEX = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
     $LOG = catdir(($staging_dir, "qteller.txt"));
 
     $CACHE = $P->{CACHEDIR};
@@ -102,7 +102,7 @@ sub main {
     my $fastq = unescape($files);
     die "ERROR: no experiment files found" unless $fastq;
 
-    my $workflow = $YERBA->create_workflow(
+    my $workflow = $JEX->create_workflow(
         id => $job->id,
         name => $DESC,
         logfile => $LOG
@@ -189,7 +189,7 @@ sub main {
     say STDERR "JOB NOT SCHEDULED TEST MODE" and exit(0) if $test;
 
     # check if the schedule was successful
-    my $status = $YERBA->submit_workflow($workflow);
+    my $status = $JEX->submit_workflow($workflow);
     exit(1) if defined($status->{error}) and lc($status->{error}) eq "error";
 
     CoGe::Accessory::TDS::write(catdir($staging_dir, "workflow.json"), $status);
@@ -221,7 +221,6 @@ sub generate_metadata {
 
     return '"' . join(';', @annotations) . '"';
 }
-
 
 sub to_filename {
     my ($name, undef, undef) = fileparse(shift, qr/\.[^.]*/);
@@ -258,7 +257,6 @@ sub has_annotations {
 
     return $count > 0;
 }
-
 
 sub create_validate_fastq_job {
     my $fastq = shift;
@@ -425,7 +423,6 @@ sub create_bed_file_job {
         description => "Generating read depth..."
     );
 }
-
 
 sub create_filter_bed_file_job {
     my $bed = shift;
@@ -629,7 +626,6 @@ sub create_notebook_job {
         description => "Creating notebook..."
     );
 }
-
 
 #
 # GSNAP PIPELINE AND JOBS

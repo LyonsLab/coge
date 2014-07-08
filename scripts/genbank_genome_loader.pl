@@ -16,7 +16,6 @@ use Roman;
 use Data::Dumper;
 use Getopt::Long;
 
-
 my ($HELP, $DEBUG, $GO, $ERASE, @files);
 GetOptions(
 	   'help|h'=>\$HELP,
@@ -29,17 +28,15 @@ $HELP = 1 unless @files;
 $GO = 1 if $ERASE; #set to 1 to actually make db calls.
 help() if $HELP;
 
-
 # vars
 my($statement) = "";
 my $genomic_seq_len = 10000; #length to break up genomic sequence
-
 
 my $genome = new CoGe::Genome();
 
 # read in each file into a GBFile object
 foreach my $longfile ( @files ) {
-	
+
   # open our input data file...
   my $genbank = new CoGe::Accessory::GBlite( $longfile );
   # now remove the path from the file name
@@ -68,7 +65,7 @@ foreach my $longfile ( @files ) {
 	  print "-="x30, "\n";
 	  print "organism_obj returned: ", $organism->id(), "\n" if $organism;
 	}
-	
+
 	$data_source = $genome->get_data_source_obj()->find_or_create(
 									 {
 									  name=>'NCBI',
@@ -82,11 +79,11 @@ foreach my $longfile ( @files ) {
 	  print "-="x30, "\n";
 	  print "data_source_obj returned: ", $data_source->id(), "\n" if $data_source;
 	}
-	
+
 	my $data_information_desc = "LOCUS: "     . $entry->locus();
 	$data_information_desc   .= ", ACCESSION: " . $entry->accession();
 	$data_information_desc   .= ", VERSION: "   . $entry->version();
-	
+
 	$data_information = $genome->get_data_information_obj()->find_or_create(
 										{
 										 name                => $file,
@@ -145,7 +142,7 @@ foreach my $longfile ( @files ) {
       #expect first feature to be the source feature!
       if ( $feature->key() =~ /source/i ) {
         my $quals = $feature->qualifiers(); # get the source qualifiers
-        
+
         if ( exists $quals->{chromosome} ) {
           $chromosome = $quals->{chromosome};
 	  $chromosome =~ s/\s//g;
@@ -289,7 +286,7 @@ foreach my $longfile ( @files ) {
               print "-="x30, "\n";
               print "annotation_obj returned: ", $sub_anno->id(), "\n" if $sub_anno;
             }
-          } # end of processing db_xref 
+          } # end of processing db_xref
         }
         elsif (
              $anno =~ /locus_tag/i
@@ -344,7 +341,7 @@ foreach my $longfile ( @files ) {
 	    }
         }
         elsif ( $anno eq "note")
-        { 
+        {
           # if go annot are present, they'll be in the note qualifier,
           # so process is specifically
           my $leftover = "";
@@ -364,7 +361,7 @@ foreach my $longfile ( @files ) {
 		    print "-="x30, "\n";
 		    print "annotation_type_group_obj returned: ", $anno_type_group->id(), "\n" if $anno_type_group;
 		  }
-		
+
 		# $1 should be "go_function"
 		my $anno_type = $genome->get_annotation_type_obj->find_or_create(
 										 {
@@ -379,7 +376,7 @@ foreach my $longfile ( @files ) {
 		  print "-="x30, "\n";
 		  print "annotation_type_obj returned: ", $anno_type->id(), "\n" if $anno_type;
 		}
-		
+
 		my $sub_anno = $genome->get_annotation_obj->create(
 								   {
 								    annotation => $2,    #this should be "nucleic acid binding"
@@ -409,7 +406,7 @@ foreach my $longfile ( @files ) {
 		  print "-="x30, "\n";
 		  print "annotation_type_obj returned: ", $anno_type->id(), "\n" if $anno_type;
 		}
-		
+
 		my $sub_anno = $genome->get_annotation_obj->find_or_create(
 									   {
 									    annotation         => $leftover,
@@ -458,7 +455,6 @@ foreach my $longfile ( @files ) {
   print "completed parsing $file!\n" if $DEBUG;
 } # end "file" while
 
-
 sub load_genomic_sequence
   {
     my %opts = @_;
@@ -492,18 +488,18 @@ sub help
     print qq{
 Welcome to $0;
 
-This program load genbank files into the CoGe Genomes database.  WARNING: You may 
-need to customize this program for your particular genbank file in order to properly 
+This program load genbank files into the CoGe Genomes database.  WARNING: You may
+need to customize this program for your particular genbank file in order to properly
 handle  specific annotation types such as Geneontology or functional domains.
 
 Options                (Valid values)
 
 -help | -h             (0|1) Print this message
 
--file | -f             (String) Path to genebank genome file for loading into the 
+-file | -f             (String) Path to genebank genome file for loading into the
                        CoGe system
 
--go   | -g             (0|1) You must set this to 1 in order for the data to be loaded 
+-go   | -g             (0|1) You must set this to 1 in order for the data to be loaded
                        (NOTE:  this is a failsafe switch to make sure you are ready!)
 
 -delete | -erase | -e  (0|1) Erase the data instead of loading the data.  You will want

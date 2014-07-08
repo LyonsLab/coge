@@ -9,19 +9,19 @@ $(document).ready(function(){
 	pageObj = new Object();
 	pageObj.timestamp = new Array();
 	pageObj.timers = new Array();
-	
+
 	$.ajaxSetup({
 		type: "GET",
 		url: "<TMPL_VAR NAME='PAGE_NAME'>",
 		dataType: "html",
 		cache: false,
 	});
-	
+
 	$(".dialog_box").dialog({autoOpen: false, width: 450});
 
 	set_contents_table();
 	set_annotation_table();
-	
+
 	init_annotation_dialog(<TMPL_VAR NAME="LID">, '<TMPL_VAR NAME="DEFAULT_TYPE">');
 });
 
@@ -66,7 +66,7 @@ function update_list_info (){
 		alert('Please specify a name.');
 		return;
 	}
-	
+
 	var desc = $('#edit_desc').val();
 	var type = $('#edit_type').val();
 
@@ -145,7 +145,7 @@ function add_selected_items (select_id){
 					lid: "<TMPL_VAR NAME='LID'>",
 					item_spec : item_spec,
 				},
-				success : 
+				success :
 					function(data) {
 						if (data != 1) { alert(data); }
 						else {
@@ -163,9 +163,9 @@ function add_selected_items (select_id){
 function remove_list_item (obj, opts) {
 	var item_id = opts.item_id;
 	var item_type = opts.item_type;
-	
+
 	$(obj).closest('tr').children().animate({opacity:0});
-	
+
 	$.ajax({
 		data: {
 			fname: 'remove_list_item',
@@ -224,11 +224,11 @@ function wait_to_search (search_func, search_term) {
 		if (pageObj.time) {
 			clearTimeout(pageObj.time);
 		}
-		
+
 		// FIXME: could generalize by passing select id instead of separate search_* functions
 		pageObj.time = setTimeout(
-			function() { 
-				search_func(pageObj.search_term); 
+			function() {
+				search_func(pageObj.search_term);
 			},
 			500
 		);
@@ -239,11 +239,11 @@ function wait_to_search (search_func, search_term) {
 
 function search_mystuff () {
 	var search_term = $('#edit_mystuff_search').attr('value');
-	
+
 	$("#wait_mystuff").animate({opacity:1});
 	$("#select_mystuff_items").html("<option disabled='disabled'>Searching...</option>");
 	pageObj.timestamp['mystuff'] = new Date().getTime();
-	
+
 	$.ajax({
 		data: {
 			fname: 'search_mystuff',
@@ -263,11 +263,11 @@ function search_mystuff () {
 
 function search_genomes () {
 	var search_term = $('#edit_genome_search').val();
-	
+
 	$("#wait_genome").animate({opacity:1});
 	$("#select_genome_items").html("<option disabled='disabled'>Searching...</option>");
 	pageObj.timestamp['genomes'] = new Date().getTime();
-	
+
 	$.ajax({
 		data: {
 			fname: 'search_genomes',
@@ -287,11 +287,11 @@ function search_genomes () {
 
 function search_experiments (search_term) {
 	var search_term = $('#edit_experiment_search').val();
-	
+
 	$("#wait_experiment").animate({opacity:1});
 	$("#select_experiments_items").html("<option disabled='disabled'>Searching...</option>");
 	pageObj.timestamp['experiments'] = new Date().getTime();
-	
+
 	$.ajax({
 		data: {
 			fname: 'search_experiments',
@@ -311,11 +311,11 @@ function search_experiments (search_term) {
 
 function search_features () {
 	var search_term = $('#edit_feature_search').attr('value');
-	
+
 	$("#wait_feature").animate({opacity:1});
 	$("#select_feature_items").html("<option disabled='disabled'>Searching...</option>");
 	pageObj.timestamp['features'] = new Date().getTime();
-	
+
 	$.ajax({
 		data: {
 			fname: 'search_features',
@@ -335,11 +335,11 @@ function search_features () {
 
 function search_lists () {
 	var search_term = $('#edit_list_search').attr('value');
-	
+
 	$("#wait_list").animate({opacity:1});
 	$("#select_list_items").html("<option disabled='disabled'>Searching...</option>");
 	pageObj.timestamp['lists'] = new Date().getTime();
-	
+
 	$.ajax({
 		data: {
 			fname: 'search_lists',
@@ -371,7 +371,7 @@ function delete_list () {
 
 function send_list_to() {
 	var action = $('#checked_action').val();
-	
+
 	$.ajax({
 		data: {
 			fname: action,
@@ -418,9 +418,9 @@ function send_list_to() {
 			<TMPL_VAR NAME="LIST_CONTENTS">
 		</div>
 	</div>
-	<br> 
+	<br>
 	<div class='small' style="padding-left:5px;">
-		Send contents to:  
+		Send contents to:
 		<select name="checked_action" id="checked_action">
 			<option value="send_to_blast">CoGeBlast (genomes only)</option>
 			<option value="send_to_featlist">FeatList (features only)</option>
@@ -445,8 +445,6 @@ function send_list_to() {
 
 </TMPL_IF>
 
-
-
 <TMPL_IF NAME='EDIT_LIST_INFO'>
 <table class="small">
  <tr>
@@ -465,19 +463,17 @@ function send_list_to() {
    </TMPL_LOOP>
    </select>
   </td>
- <tr> 
+ <tr>
 </table>
 <br>
 <span onClick="update_list_info();" class='ui-button ui-corner-all'>Update</span>
 </TMPL_IF>
 
-
-
 <TMPL_IF NAME='ADD_LIST_ITEMS'>
 <SCRIPT language="JavaScript">
 $(document).ready(function() {
 	$(function() { $("#tabs").tabs({selected:0}); });
-	
+
 	setTimeout(search_mystuff,     100);
 	setTimeout(search_genomes,     500);
 	setTimeout(search_experiments, 1000);
@@ -595,7 +591,7 @@ $(document).ready(function() {
     <input type="textbox" size="53" id="edit_list_search" onkeyup="wait_to_search(search_lists, this.value);">
     <span class='ui-button ui-corner-all' onclick="search_lists();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
     <img id="wait_list" src="picts/ajax-loader.gif" style="opacity: 0;" />
-   </td>  
+   </td>
   </tr>
   <tr>
    <td colspan='2'>
@@ -613,8 +609,6 @@ $(document).ready(function() {
 </div> <!-- tabs -->
 </TMPL_IF> <!-- ADD_LIST_ITEMS -->
 
-
-
 <TMPL_IF NAME='ADMIN_AREA'>
 <br>
 <hr>
@@ -626,4 +620,3 @@ To do:
    - Disable add button if no items left to add
 </div>
 </TMPL_IF> <!-- ADMIN_AREA -->
-

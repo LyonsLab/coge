@@ -7,7 +7,6 @@
 
 extern vector<class Score*> scoreFunctions[1<<(UPSTRANDBITS+DOWNSTRANDBITS+RELPOSBITS)];
 
-
 float Score::getScore(Fragment *up, Fragment * down) {
 	long long int absSeq1,absSeq2,absDiagonal,absMin,absMax;
 
@@ -22,7 +21,6 @@ float Score::getScore(Fragment *up, Fragment * down) {
 	return absMin*(-minConstant) + absMax* (-maxConstant) + absDiagonal *(-diagConstant) -openConstant +up->totalScore;
 }
 
-
 ScoreInterface::ScoreInterface (float iopenConstant, float iminConstant, float imaxConstant, float idiagConstant) {
 	openConstant = iopenConstant;
 	minConstant = iminConstant;
@@ -30,11 +28,9 @@ ScoreInterface::ScoreInterface (float iopenConstant, float iminConstant, float i
 	diagConstant = idiagConstant;
 }
 
-
 Score::Score (float iopenConstant , float iminConstant ,float imaxConstant,float idiagConstant):ScoreInterface(iopenConstant,iminConstant, imaxConstant, idiagConstant) {
 
 }
-
 
 void initScoreFunctionPointers(char * scoreFileName) {
 	ifstream SFP;
@@ -115,7 +111,6 @@ void createScoreFunctionObjects(char * line) {
 	}
 }
 
-
 long long int charToCase(char in) {
 	switch(in) {
 		case '+': return POSITIVE;
@@ -131,7 +126,6 @@ long long int charToCase(char in) {
 		}
 	}
 }
-
 
 float scoreAll(Fragment * up, Fragment * down, long long int ret_case) {
 	unsigned long long int i;
@@ -162,21 +156,17 @@ float scoreAll(Fragment * up, Fragment * down, long long int ret_case) {
 	return ret_score;
 }
 
-
 long long int Mymax(long long int a, long long int b) {
 	return (a>=b ? a : b);
 }
-
 
 long long int Mymin(long long int a,long long int b) {
 	return (a<=b ? a : b);
 }
 
-
 long long int Myabs(long long int a) {
 	return (a<0 ? -a : a);
 }
-
 
 float fragmentSetScore(Fragment * current, Fragment *owner, LI *LeftInfluence, RI * RightInfluence, long long int rightInfluenceFlag) {
 	/*SLAGANCHANGE change call to the score based on the Leftinfluence, this has to be passed i guess*/
@@ -189,7 +179,7 @@ float fragmentSetScore(Fragment * current, Fragment *owner, LI *LeftInfluence, R
                 current->totalScore = current->score;
                 current->back = owner;
             }
-        } else 
+        } else
         if (tempScore + current->score > current->totalScore) {
             current->totalScore = tempScore + current->score;
 			current->back = owner;
@@ -209,7 +199,7 @@ float fragmentSetScore(Fragment * current, Fragment *owner, LI *LeftInfluence, R
 		}
 	} else {
 		tempScore = scoreAll(owner,current,LeftInfluence->scoreIndex);
-        
+
         if (tempScore == NEGINF) { // TODO
             if (current->totalScore <= 0) {
                 current->totalScore = current->score;

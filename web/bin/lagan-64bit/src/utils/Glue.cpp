@@ -27,7 +27,7 @@ int NCtoNC = 0, NCtoCN = -1000, CNtoNC = -1000, CNtoCN = 0;
 void readScoreMatrix (char *filename){
   FILE *file;
   int i, j, k, numlets = 0;
-  char lets[256], line[1024];  
+  char lets[256], line[1024];
   char *lagan_dir;
 
   lagan_dir = getenv ("LAGAN_DIR");
@@ -79,8 +79,8 @@ void calculateScoreMatrix (int cons_rate){
 
   for (i = 0; i < (int) strlen (alpha); i++){
     for (j = 0; j < (int) strlen (alpha); j++){
-      
-      matchScore[(unsigned char) alpha[i]][(unsigned char) alpha[j]] = 
+
+      matchScore[(unsigned char) alpha[i]][(unsigned char) alpha[j]] =
 	(i == j) ? (int)(match * 100) : (int)(mismatch * 100);
     }
   }
@@ -131,8 +131,8 @@ int rescoreRegion (Sequence &seq1, Sequence &seq2, int begin, int end){
     chooseBestOfTwo (score[NC][i-1] + NCtoNC, score[CN][i-1] + CNtoNC, score[NC][i]);
     chooseBestOfTwo (score[NC][i-1] + NCtoCN, score[CN][i-1] + CNtoCN, score[CN][i]);
     score[CN][i] += scorePosition (*(++lets1), *(++lets2), isGap);
-  }  
-  
+  }
+
   chooseBestOfTwo (score[NC][end], score[CN][end], isGap);
   return isGap;
 }
@@ -162,10 +162,10 @@ void getNucLabels (Sequence &seq1, Sequence &seq2, vi &nucLabels){
 int getSeqCoord (int seq, int pos){
   SafeVector<char>::iterator lets = seqs[seq].getIterator();
   int j = 0;
-  
+
   for (int i = 1; i <= pos; i++)
     if (*(++lets) != '-') j++;
-  
+
   return j;
 }
 
@@ -200,7 +200,7 @@ void scoreAlign (){
 
   int begin = -1, end = -1, score = 0;
   for (int i = 1; i <= seqLen+1; i++){
-    
+
     int conserved = 1;
     if (i == seqLen+1)
       conserved = 0;
@@ -211,16 +211,16 @@ void scoreAlign (){
     }
 
     if (conserved){
-      if (begin == -1) 
+      if (begin == -1)
 	begin = i;
     }
     else {
       if (begin != -1){
 	end = i-1;
-	score += printRegion (begin, end);	
+	score += printRegion (begin, end);
 	begin = end = -1;
       }
-    }    
+    }
   }
 
   cout << "= score=" << score << endl;
@@ -268,7 +268,7 @@ int findSplit (SafeVector<char> &data1, SafeVector<char> &data2, int overlap,
     score += (data1[i+offs1] == data1a[i+offs1]) ? 18 : -8;
     score1[ct] = score;
   }
-  
+
   score = 0;
   for (int ct = 0,i=0; ct < overlap;i++){
     if (isalpha(data2[offs2-i])) ct++;
@@ -285,7 +285,7 @@ int findSplit (SafeVector<char> &data1, SafeVector<char> &data2, int overlap,
   }
 
   //  fprintf (stderr, "0 <= %d <= %d\n", j, overlap);
-  
+
   return j;
 }
 
@@ -334,7 +334,7 @@ int chopRight (SafeVector<T> &data1, SafeVector<T> &data2, int num, bool inAlign
       }
     }
   }
-    
+
   int ret = (int) data1.size() - here;
   data1.resize (here);
   data2.resize (here);
@@ -353,12 +353,12 @@ SafeVector<T> merge (SafeVector<T> &data1, SafeVector<T> &data2){
 
 int main (int argc, char **argv){
   FILE* outfile;
-  
+
   if (argc < 2 || argc > 3){
     cerr << "Usage: Glue align.mfa \n" << endl;
     exit (1);
   }
-  
+
   if (argc == 3) {
     if (!(outfile = fopen (argv[2], "w"))) {
       fprintf (stderr, "couldn't open %s for writing\n", argv[2]);
@@ -369,7 +369,7 @@ int main (int argc, char **argv){
   else outfile = stderr;
 
   //  calculateScoreMatrix (CONS_RATE);
-  
+
   SafeVector<char> merged1, merged2;
   SafeVector<char> strand;
   SafeVector<int> merged1label, merged2label;
@@ -380,10 +380,10 @@ int main (int argc, char **argv){
   strand.push_back ('?'); // nothing for alignNum 0
 
   while (true){
-    
+
     seqs = MultiSequence();
     seqs.addRawFromMFA (data);
-    
+
     if (seqs.getNumSeqs() != 2) break;
     alignNum++;
 
@@ -414,7 +414,7 @@ int main (int argc, char **argv){
     if (overlap > 0){
       int numLeft = findSplit (seqs0, merged1, overlap, seqs1, merged2);
       int numRight = overlap - numLeft;
-      
+
       int choppedLeft = chopLeft (merged1, merged2, numLeft, false);
       int choppedRight = chopRight (seqs0, seqs1, numRight, false);
 
@@ -429,7 +429,7 @@ int main (int argc, char **argv){
 
       SafeVector<int> temp1label (-overlap, 0);
       SafeVector<int> temp2label (-overlap, 0);
-      
+
       merged1label = merge (temp1label, merged1label);
       merged2label = merge (temp2label, merged2label);
     }
@@ -443,7 +443,7 @@ int main (int argc, char **argv){
     //seqs[0].writeXMFAHeader(cerr);
 
     begin1 = b1;
-    
+
     if (data.eof()) break;
     if (data.peek() == '=') data.ignore (MAX_LINE_LENGTH, '\n');
     if (data.eof()) break;
@@ -469,7 +469,7 @@ int main (int argc, char **argv){
     for (int j = 0; j < (int) merged1label.size(); j++){
       if (isalpha(merged1[j])) pos1++;
       if (isalpha(merged2[j])) pos2++;
-      
+
       if (merged1label[j] == i){
 	min1 = min (min1, pos1);
 	max1 = max (max1, pos1);
@@ -488,7 +488,7 @@ int main (int argc, char **argv){
     else
       fprintf (outfile, "%d %d %d 0 0 0 0 %c 0 %d %d\n", i, min1, max1, strand[i], min2, max2);
   }
-  
+
   printMFA (cout, merged1, string ("first"), 60);
   printMFA (cout, merged2, string ("second"), 60);
 }

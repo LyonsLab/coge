@@ -16,14 +16,13 @@ my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
-
 $| =1;
 
 # parse command line options
-GetOptions ( 
+GetOptions (
 	    "debug" 			=> \$DEBUG,
 	    "go"    			=> \$GO,
-	    "erase|e"  		=> \$ERASE, 
+	    "erase|e"  		=> \$ERASE,
 	    "file|f=s" 		=> \@files,
 	    "dir|d=s"  		=> \$dir,
 	    "accn|a=s"			=> \@accns,
@@ -83,7 +82,7 @@ foreach my $longfile (@files)
 		  print Dumper $feature;
 		  next;
 		}
-	      
+
 	      my $feat_type = $coge->resultset('FeatureType')->find_or_create({ name => $feature->key() })  if $GO;
 	      # create a db_feature for to link this feature with the dataset table
 	      my ($start, $stop, $strand) = get_feature_location($feature);
@@ -95,7 +94,7 @@ foreach my $longfile (@files)
 								    start=>$start,
 								    stop=>$stop,
 								   }) if $GO;
-	      
+
 	      # expect first feature to be the source feature!
 	      if ($feature->key() =~ /source/i)
 		{
@@ -118,7 +117,7 @@ foreach my $longfile (@files)
 									name => $entry->accession.".".$entry->version,
 									feature_id => $db_feature->id
 								       }) if $entry->version && $GO;
-		  
+
 		  # generate name for GI
 		  $feat_name = $coge->resultset('FeatureName')->create(
 								       {
@@ -126,14 +125,14 @@ foreach my $longfile (@files)
 									feature_id => $db_feature->id
 								       }) if $entry->gi && $GO;
 		}
-	      
+
 	      # add a location entry
 	      my $loc_string = $feature->location;
 	      $loc_string =~ s/complement//g;
 	      $loc_string =~ s/join//;
 	      $loc_string =~ s/order//;
 	      $loc_string =~ s/\(|\)//g;
-	      
+
 	      # loop through the locations
 	      foreach my $loc (split /,/,$loc_string)
 		{
@@ -151,7 +150,7 @@ foreach my $longfile (@files)
 								chromosome => $chromosome
 							       }) if $GO;
 		}
-	      
+
 	      # now work through the qualifiers for this feature
 	      # start by getting the hashref of qualifiers
 	      my $annot = $feature->qualifiers();
@@ -172,7 +171,7 @@ foreach my $longfile (@files)
 											      name => $inner[0],
 											      annotation_type_group_id => $anno_type_group->id(),
 											     }) if $GO;
-			  
+
 			  # now create the row for the data value of the xref
 			  my $sub_anno = $db_feature->add_to_annotations(
 									 {
@@ -267,7 +266,7 @@ foreach my $longfile (@files)
 	  load_genomic_sequence(len=> $genomic_seq_len, ds=>$dataset, seq=>$entry->sequence, chr=>$chromosome);
 	}
 	print "completed parsing $file!\n" if $DEBUG;
-	
+
 	# cleanup
 	#	$organism->delete() if $GO;
       }
@@ -335,7 +334,7 @@ sub get_genbank_from_ncbi
 	my $content = get ($url);
 	my $message = $content ? "Have content for $accn.\n" : "Did not get a sequence for $accn\n";
 	print "$message" if $DEBUG;
-	
+
 	return $content;
 }
 
@@ -409,5 +408,3 @@ sub get_feature_location
       }
     return ($rstart, $rstop, $strand);
   }
-
-

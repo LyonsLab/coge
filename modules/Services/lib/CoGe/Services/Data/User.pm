@@ -9,7 +9,7 @@ use CoGe::Services::Auth;
 sub search {
     my $self = shift;
     my $search_term = $self->stash('term');
-    
+
     # Authenticate user and connect to the database
     #my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
     my ($db, $user) = CoGe::Services::Auth::init($self);

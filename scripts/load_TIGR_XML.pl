@@ -17,7 +17,6 @@ use Carp;
 use CoGeX;
 use File::Path;
 
-
 #use CoGe::Genome;
 
 my ($file, $dir, $verbose, $help, $chromo, $empty_db, $org_name, $org_desc, $org_id, $data_source_name, $data_source_desc, $data_source_link, $data_source_id, $dataset_id, $dataset_name, $dataset_desc, $dataset_link, $dataset_version, $coge, $add_genomic_seq, $GO);
@@ -67,8 +66,7 @@ unless ($dataset_version)
     print "WARNING: You need to specify a dataset version!\n\n";
   }
 
-
-show_help() if $help; 
+show_help() if $help;
 
 my $connstr = 'dbi:mysql:dbname=coge;host=localhost;port=PORT';
 $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
@@ -131,7 +129,7 @@ sub process_file
       #full path not specified.
       $file = "$pwd/$file";
     }
-    
+
     my ($dataset);
     $dataset = $coge->resultset('Dataset')->find($dataset_id) if $dataset_id;
     $dataset = $coge->resultset('Dataset')->find_or_create(
@@ -187,7 +185,7 @@ sub process_genes
 		    my $gene = "gene";
 #		    $gene = "Transposable Element" if $sub_type eq "TRANSPOSABLE_ELEMENT_GENE";
 		    $gene = "pseudo".$gene if $item->{GENE_INFO}{IS_PSEUDOGENE};
-		    
+
 		    my $models;
 		    $models = $item->{MODEL} if ref ($item->{MODEL}) =~ /array/i;
 		    push @$models, $item->{MODEL} if ref ($item->{MODEL}) =~ /hash/i;
@@ -218,7 +216,7 @@ sub process_genes
 			my %names;
 			my %anno;
 			my %locs;
-			
+
 			$names{$item->{FEAT_NAME}}=1 if $item->{FEAT_NAME};
 			$names{$item->{GENE_INFO}{PUB_LOCUS}}=2 if $item->{GENE_INFO}{PUB_LOCUS};
 			$names{$item->{GENE_INFO}{LOCUS}}=2 if $item->{GENE_INFO}{LOCUS};
@@ -246,7 +244,7 @@ sub process_genes
 			  }
 			my $strand = $item->{COORDSET}{END5} < $item->{COORDSET}{END3} ? 1 : -1;
 			$locs{$gene} = [[$item->{COORDSET}{END5}, $item->{COORDSET}{END3}, $strand, $chr]];
-			
+
 			if (ref ($model->{EXON}) =~ /array/i)
 			  {
 			    foreach my $exon (@{$model->{EXON}})
@@ -314,7 +312,7 @@ sub process_genes
 				print Dumper $item, \%names, \%anno, \%go, \%locs;
 				next;
 			      }
-			    
+
 			  }
 			load_info(
 				  locs=>\%locs,
@@ -353,12 +351,12 @@ sub load_info
 	{
 	  my $locs = $locs->{$type};
 	  my $feat = create_feature($type, $dataset);
-	  
+
 	  load_locations($feat, $locs);
 	  foreach my $name (keys %$names)
 	    {
 	      my $primary = $names->{$name} == 2 ? 1 : 0; #"2" is used to designate primary feature names;
-	      load_name(feat=>$feat, 
+	      load_name(feat=>$feat,
 			name=>$name,
 			primary=>$primary);
 	    }
@@ -419,9 +417,9 @@ sub load_annotation
     my %type_opts = (name=>$type);
     if ($group)
       {
-	my $anno_type_group = $coge->resultset('AnnotationTypeGroup')->find_or_create({name=>$group}); 
+	my $anno_type_group = $coge->resultset('AnnotationTypeGroup')->find_or_create({name=>$group});
 	$type_opts{annotation_type_group_id}=$anno_type_group->id() if $GO;
-	  
+
       }
     my $anno_type = $coge->resultset('AnnotationType')->find_or_create({
 									%type_opts
@@ -507,7 +505,6 @@ sub load_locations
       }
   }
 
-
 sub create_feature
   {
     my ($type, $dataset) = @_;
@@ -571,7 +568,7 @@ sub load_genomic_sequence
     my $feat_name = $feat->add_to_feature_names({
 						 name       => $chr,
 						}) if $GO;
-    
+
     if ($GO)
       {
 	my $load = 1;
@@ -590,7 +587,7 @@ sub load_genomic_sequence_old
     $seq =~ s/\r//g;
     $seq =~ s/\s+//g;
     my $seqlen = length $seq;
-    
+
     print "\tLoading genomic sequence ($seqlen nt)\n";
     $seq =~ s/\s//g;
     $seq =~ s/\n//g;
@@ -655,13 +652,12 @@ sub get_data_source
                                                      }) if $GO;
 }
 
-
 sub gen_locus
   {
     my $item = shift;
     my %locus;
     my $loc =0;
-    
+
     foreach my $line(split/\n/,$item)
       {
 #	$loc = 0 if $
@@ -677,7 +673,7 @@ sub gen_locus
 	    $stuff =~ s/\s+$//;
 	    if ($type =~ /_coords/)
 	      {
-		
+
 	      }
 	    $locus{$type}{$stuff}=1;
 	    $loc = 0;
@@ -694,7 +690,7 @@ sub generate_dsg
     my $org_id = $opts{org_id};
     my $gst_id = $opts{gst_id};
     my $dsg_id = $opts{dsg_id};
-    my $dsg = $dsg_id ? $coge->resultset('DatasetGroup')->find($dsg_id) : 
+    my $dsg = $dsg_id ? $coge->resultset('DatasetGroup')->find($dsg_id) :
       $coge->resultset('DatasetGroup')->create({name=>$name,
 					       description=>$desc,
 					       version=>$version,
@@ -720,10 +716,8 @@ Welcome to $0!
 This program loads TIGR XML data into Berkeley's department of BSBC
 arabidopsis CNS database.
 
-
 Usage:
 $0 --file <xml_file> --chr <chromosome_number>
-
 
 Options:
 
@@ -741,4 +735,3 @@ Options:
 };
 exit;
   }
-
