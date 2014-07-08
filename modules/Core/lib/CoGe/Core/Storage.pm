@@ -868,8 +868,6 @@ sub _create_load_genome_job {
     my $file_str = join(',', map { basename($_) } @$files);
     my $irods_str = join(',', map { basename($_) } @$irods);
     
-    $file_str = '' if ($irods_str);
-    
     return (
         cmd => $cmd,
         script => undef,
