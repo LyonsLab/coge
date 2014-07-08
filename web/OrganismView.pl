@@ -702,8 +702,8 @@ sub get_dataset_info {
     my $html = "";
     $html .= "<span class='alert small'>Restricted dataset</span><br>"
       if $ds->restricted;
-    $html .= "<table>";
-    $html .= "<tr valign=top><td><table class=\"small annotation_table\">";
+    $html .= "<table>"
+          . "<tr valign=top><td><table class=\"small annotation_table\">";
     my $dataset = $ds->name;
     $dataset .= ": " . $ds->description if $ds->description;
     $dataset =
@@ -758,11 +758,13 @@ sub get_dataset_info {
         $chr{$item}{num} = $num;
         $count++;
     }
-    my @chr =
-      $chr_num > $chr_num_limit
-      ? sort { $chr{$b}{length} <=> $chr{$a}{length} } keys %chr
-      : sort { $chr{$a}{num} <=> $chr{$b}{num} || $a cmp $b } keys %chr;
-    if (@chr) {
+
+    if ($chr_num) {
+        my @chr =
+          $chr_num > $chr_num_limit
+          ? sort { $chr{$b}{length} <=> $chr{$a}{length} } keys %chr
+          : sort { $chr{$a}{num} <=> $chr{$b}{num} || $a cmp $b } keys %chr;
+      
         my $size = scalar @chr;
         $size = 5 if $size > 5;
         my $select;
