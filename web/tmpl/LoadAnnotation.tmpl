@@ -269,15 +269,26 @@ function progress_formatter(item) {
         job_status.append("already generated").addClass('skipped bold');
     else if (item.status == 'cancelled')
         job_status.append(item.status).addClass('alert bold');
-    else if (item.status == 'failed')
+    else if (item.status == 'failed') {
         job_status.append(item.status).addClass('alert bold');
-    else
+    } else
         return;
 
     row.append(job_status);
 
+
     if (item.elapsed)  {
         row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
+    }
+
+    if (item.status === 'failed') {
+        var p = item.output.split("\n");
+        var pElements = p.map(function(item) {
+            return $("<div></div>").html(item);
+        });
+
+        var log = $("<div></div>").html(pElements).addClass("padded");
+        row.append(log);
     }
 
     return row;
@@ -393,9 +404,10 @@ function load_failed() {
 		'While we fix this please feel free to contact us at <a href="mailto:coge.genome@gmail.com">coge.genome@gmail.com</a> regarding this failure to load data ' +
 		'and we can help to determine the cause.  Thanks!' +
 		'</div>';
-	var log = $('#load_log');
-	log.html( log.html() + msg );
-	
+
+    var log = $("#load_log");
+	log.html(log.html() + msg );
+
     // Update dialog
     $('#loading_msg').hide();
     $('#error_msg').fadeIn();
