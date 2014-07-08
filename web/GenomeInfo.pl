@@ -1800,8 +1800,7 @@ sub get_tbl {
 
 sub export_tbl {
     my %args = @_;
-    my $gid = $args{gid};
-    my $dsg = $coge->resultset('Genome')->find($gid);
+    my $dsg = $coge->resultset('Genome')->find($args{gid});
 
     # ensure user is logged in
     return $ERROR if $USER->is_public;
@@ -1809,14 +1808,26 @@ sub export_tbl {
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
-    my (%json, %meta);
-    my ($statusCode, $tbl) = generate_tbl($dsg);
-    $json{file} = basename($tbl);
+    $args{script_dir} = $config->{SCRIPTDIR};
+    $args{secure_tmp} = $config->{SECTEMPDIR};
+    $args{basename} = sanitize_name($dsg->organism->name);
+    $args{conf} = $config->{_CONFIG_PATH};
 
-    if($statusCode) {
-        $json{error} = 1;
+    my $workflow = $JEX->create_workflow(name => "Export Tbl");
+    my ($output, %task) = generate_tbl(%args);
+    $workflow->add_job(%task);
+
+    my $response = $JEX->submit_workflow($workflow);
+    say STDERR "RESPONSE ID: " . $response->{id};
+    my $success = $JEX->wait_for_completion($response->{id});
+
+    my (%json, %meta);
+    $json{file} = basename($output);
+
+    if($success) {
+        $json{error} = export_to_irods( file => $output, meta => \%meta );
     } else {
-        $json{error} = export_to_irods( file => $tbl, meta => \%meta );
+        $json{error} = 1;
     }
 
     return encode_json(\%json);
@@ -1828,8 +1839,7 @@ sub export_tbl {
 
 sub get_bed {
     my %args = @_;
-    my $gid = $args{gid};
-    my $dsg = $coge->resultset('Genome')->find($gid);
+    my $dsg = $coge->resultset('Genome')->find($args{gid});
 
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
@@ -1865,14 +1875,26 @@ sub export_bed {
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
-    my (%json, %meta);
-    my ($statusCode, $bed) = generate_bed($dsg);
-    $json{file} = basename($bed);
+    $args{script_dir} = $config->{SCRIPTDIR};
+    $args{secure_tmp} = $config->{SECTEMPDIR};
+    $args{basename} = sanitize_name($dsg->organism->name);
+    $args{conf} = $config->{_CONFIG_PATH};
 
-    if($statusCode) {
-        $json{error} = 1;
+    my $workflow = $JEX->create_workflow(name => "Export bed file");
+    my ($output, %task) = generate_bed(%args);
+    $workflow->add_job(%task);
+
+    my $response = $JEX->submit_workflow($workflow);
+    say STDERR "RESPONSE ID: " . $response->{id};
+    my $success = $JEX->wait_for_completion($response->{id});
+    my (%json, %meta);
+
+    $json{file} = basename($output);
+
+    if($success) {
+        $json{error} = export_to_irods( file => $output, meta => \%meta );
     } else {
-        $json{error} = export_to_irods( file => $bed, meta => \%meta );
+        $json{error} = 1;
     }
 
     return encode_json(\%json);
@@ -1895,7 +1917,7 @@ sub get_gff {
     $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export gff");
-    my ($output, %task) = generate_gff(%args);
+    my ($output, %task) = CoGe::Core::Genome::generate_gff(%args);
     $workflow->add_job(%task);
 
     my $response = $JEX->submit_workflow($workflow);
@@ -1911,35 +1933,35 @@ sub get_gff {
 
 sub export_gff {
     my %args = @_;
-    my $gid = $args{gid};
-    my $dsid = $args{dsid};
+    my $dsg = $coge->resultset('Genome')->find($args{gid});
 
     # ensure user is logged in
     return $ERROR if $USER->is_public;
 
-    my (%json, %meta, $statusCode, $gff);
+    # ensure user has permission
+    return $ERROR unless $USER->has_access_to_genome($dsg);
 
-    if ($gid) {
-        my $dsg = $coge->resultset('Genome')->find($gid);
+    my (%json, %meta);
 
-        # ensure user has permission
-        return $ERROR unless $USER->has_access_to_genome($dsg);
+    $args{script_dir} = $config->{SCRIPTDIR};
+    $args{secure_tmp} = $config->{SECTEMPDIR};
+    $args{basename} = $dsg->organism->name;
+    $args{conf} = $config->{_CONFIG_PATH};
 
-        ($statusCode, $gff) = generate_gff(dsg => $dsg);
+    my $workflow = $JEX->create_workflow(name => "Export gff");
+    my ($output, %task) = generate_gff(%args);
+    $workflow->add_job(%task);
+
+    my $response = $JEX->submit_workflow($workflow);
+    say STDERR "RESPONSE ID: " . $response->{id};
+    my $success = $JEX->wait_for_completion($response->{id});
+
+    $json{file} = basename($output);
+
+    if($success) {
+        $json{error} = export_to_irods( file => $output, meta => \%meta );
     } else {
-        my $dsg = $coge->resultset('Genome')->find($gid);
-
-        # ensure user has permission
-        return $ERROR unless $USER->has_access_to_genome($dsg);
-
-        ($statusCode, $gff) = generate_gff(ds => $dsg);
-    }
-    $json{file} = basename($gff);
-
-    if($statusCode) {
         $json{error} = 1;
-    } else {
-        $json{error} = export_to_irods( file => $gff, meta => \%meta );
     }
 
     return encode_json(\%json);
