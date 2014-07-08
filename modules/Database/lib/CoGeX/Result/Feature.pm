@@ -569,11 +569,12 @@ sub annotation_pretty_print_html {
 	$primary_name = $primary_name->name if $primary_name;
 
 	foreach my $name ( $self->names ) {
+        my $accn = $name;
 		$name = "<b>" . $name . "</b>"
 		  if $primary_name && $primary_name eq $name;
 		$anno_type->add_Annot(
 "<span class=\"data5 link\" onclick=\"window.open('FeatView.pl?accn="
-			  . $name
+			  . $accn
 			  . "');\">"
 			  . $name
 			  . "</span>" );
