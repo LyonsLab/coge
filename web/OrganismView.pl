@@ -820,7 +820,7 @@ sub get_dataset_chr_info {
     my $dsgid = shift;
     $dsgid = 0 unless defined $dsgid;
     $dsid  = 0 unless $dsid;
-    unless ( $dsid && defined $chr )    # error flag for empty dataset
+    unless ( $dsid && defined $chr && $chr ne '' )    # error flag for empty dataset
     {
         return "", "", "";
     }
