@@ -687,7 +687,7 @@ qq{<SELECT class="ui-widget-content ui-corner-all" id="ds_id" SIZE="5" MULTIPLE 
 }
 
 sub get_dataset_info {
-    my $dsid           = shift;
+    my $dsid = shift;
     return qq{<input type="hidden" id="chr" value="">}, " ", 0
       unless ($dsid); # error flag for empty dataset
 
@@ -718,7 +718,7 @@ sub get_dataset_info {
       "<a href =\"" . $link . "\" target=_new\>" . $source_name . "</a>"
       if $ds->data_source->link;
     $html .= qq{<tr><td>Name: <td>$dataset} . "\n"
-          . qq{<TR><TD><span class="link" onclick="window.open('Sources.pl')">Data Source:</span> <TD>$source_name (id}
+          . qq{<tr><td><span class="link" onclick="window.open('Sources.pl')">Data Source:</span> <td>$source_name (id}
           . $ds->data_source->id . qq{)} . "\n"
           . qq{<tr><td>Version: <td>} . $ds->version . "\n"
           . qq{<tr><td>Organism:<td class="link"><a href="OrganismView.pl?oid=}
@@ -795,7 +795,7 @@ sub get_dataset_info {
     $gc =
         $gc
       ? $gc
-      : qq{  </div><div style="float: left; text-indent: 1em;" id=dataset_gc class="link" onclick="gen_data(['args__loading...'],['dataset_gc']);\$('#dataset_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for percent GC content</div>}
+      : qq{  </div><div style="float: left; text-indent: 1em;" id="dataset_gc" class="link" onclick="gen_data(['args__loading...'],['dataset_gc']);\$('#dataset_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for percent GC content</div>}
       if $total_length;
     $html .= $gc if $gc;
     $html .= qq{<tr><td>Links:</td>};
@@ -803,16 +803,17 @@ sub get_dataset_info {
     $html .= "<a href='OrganismView.pl?dsid=$dsid' target=_new>OrganismView</a>";
     $html .= qq{</td></tr>};
     my $feat_string = qq{
-<tr><td><div id=ds_feature_count class="small link" onclick="gen_data(['args__loading...'],['ds_features']);get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['ds_features']);" >Click for Features</div></td></tr>};
+<tr><td><div id="ds_feature_count" class="small link" onclick="gen_data(['args__loading...'],['ds_features']);get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['ds_features']);" >Click for Features</div></td></tr>};
     $html .= $feat_string;
 
     $html .= qq{</table></td>};
-    $html .= qq{<td id=ds_features></td>};
+    $html .= qq{<td id="ds_features"></td>};
     $html .= qq{</table>};
 
     my $chr_count = $chr_num;
     $chr_count .= " <span class='note'> (only $chr_num_limit largest listed)</span>"
       if ( $chr_count > $chr_num_limit );
+      
     return $html, $html2, $chr_count;
 }
 
