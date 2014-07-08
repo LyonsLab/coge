@@ -68,6 +68,7 @@ if ($user_name eq 'public') {
 # Load config file
 unless ($config) {
     print $log "log: error: can't find config file\n";
+    print STDERR "log: error: can't find config file\n";
     print STDERR "can't find config file\n";
     exit(-1);
 }
@@ -90,6 +91,7 @@ my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
 my $coge = CoGeX->connect( $connstr, $user, $pass );
 unless ($coge) {
     print $log "log: couldn't connect to database\n";
+    print STDERR "log: couldn't connect to database\n";
     exit(-1);
 }
 
@@ -97,6 +99,7 @@ unless ($coge) {
 my $user = $coge->resultset('User')->find( { user_name => $user_name } );
 unless ($user) {
     print $log "log: error finding user '$user_name'\n";
+    print STDERR "log: error finding user '$user_name'\n";
     exit(-1);
 }
 
@@ -104,6 +107,7 @@ unless ($user) {
 my $genome = $coge->resultset('Genome')->find( { genome_id => $gid } );
 unless ($genome) {
     print $log "log: error finding genome id$gid\n";
+    print $STDERR "log: error finding genome id$gid\n";
     exit(-1);
 }
 
@@ -165,12 +169,14 @@ my %seen_attr;
 #TODO copy gff file into staging directory to read from instead of upload directory
 unless ( process_gff_file() ) {
     print $log "log: error: no annotations found, perhaps your file is missing required information, please check the <a href='http://genomevolution.org/wiki/index.php/GFF_ingestion'>documentation</a>\n";
+    print STDERR "log: error: no annotations found, perhaps your file is missing required information, please check the <a href='http://genomevolution.org/wiki/index.php/GFF_ingestion'>documentation</a>\n";
     exit(-1);
 }
 
 # Create gene annotations if none present in GFF file
 unless ( $seen_types{gene} ) {
     print $log "log: Creating gene entities\n";
+    print STDERR "log: Creating gene entities\n";
     foreach my $chr_loc ( keys %data ) {
       name: foreach my $name ( keys %{ $data{$chr_loc} } ) {
             my ( $chr, $start, $stop, $strand );
@@ -214,7 +220,26 @@ print $log "log: Annotation types:\n", join(
       } sort keys %seen_types
   ),
   "\n";
+
+print STDERR "log: Annotation types:\n", join(
+    "\n",
+    map {
+        "log: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" . $_ . "\t"
+          . commify( $seen_types{$_} )
+      } sort keys %seen_types
+  ),
+  "\n";
+
 print $log "log: Data types:\n", join(
+    "\n",
+    map {
+        "log: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" . $_ . "\t"
+          . commify( $seen_attr{$_} )
+      } sort keys %seen_attr
+  ),
+  "\n";
+
+print STDERR "log: Data types:\n", join(
     "\n",
     map {
         "log: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" . $_ . "\t"
@@ -234,6 +259,7 @@ my $t2 = new Benchmark;
 my $datasource = $coge->resultset('DataSource')->find_or_create( { name => $source_name, description => "" } );
 unless ($datasource) {
     print $log "log: error creating data source\n";
+    print STDERR "log: error creating data source\n";
     exit(-1);
 }
 
@@ -250,15 +276,18 @@ my $dataset = $coge->resultset('Dataset')->create(
 );
 unless ($dataset) {
     print $log "log: error creating dataset\n";
+    print STDERR "log: error creating dataset\n";
     exit(-1);
 }
 
 #TODO set link field if loaded from FTP
 print $log "dataset id: " . $dataset->id . "\n";
+print STDERR "dataset id: " . $dataset->id . "\n";
 
 my $dsconn = $coge->resultset('DatasetConnector')->find_or_create( { dataset_id => $dataset->id, genome_id => $genome->id } );
 unless ($dsconn) {
     print $log "log: error creating dataset connector\n";
+    print STDERR "log: error creating dataset connector\n";
     exit(-1);
 }
 
@@ -278,6 +307,7 @@ foreach my $chr_loc ( keys %data ) {
 }
 
 print $log "log: Loading database ...\n";
+print STDERR "log: Loading database ...\n";
 my $loaded_annot = 0;
 my @loc_buffer;     # buffer for bulk inserts into Location table
 my @anno_buffer;    # buffer for bulk inserts into FeatureAnnotation table
@@ -286,6 +316,9 @@ my @name_buffer;    # buffer for bulk inserts into FeatureName table
         foreach my $name ( sort { $a cmp $b } keys %{ $data{$chr_loc} } ) {
         	my $pctLoaded = int( 100 * $loaded_annot / $total_annot );
             print $log "log: Loaded " . commify($loaded_annot) . " annotations (" . ( $pctLoaded ? $pctLoaded : '<1' ) . "%)\n\n"
+              if ( $loaded_annot and ( $loaded_annot % 1000 ) == 0 );
+
+            print STDERR "log: Loaded " . commify($loaded_annot) . " annotations (" . ( $pctLoaded ? $pctLoaded : '<1' ) . "%)\n\n"
               if ( $loaded_annot and ( $loaded_annot % 1000 ) == 0 );
             
             foreach my $feat_type ( sort { $a cmp $b } keys %{ $data{$chr_loc}{$name} } ) {
@@ -316,7 +349,9 @@ my @name_buffer;    # buffer for bulk inserts into FeatureName table
                 # mdb added check 4/8/14 issue 358
                 unless (defined $start and defined $stop and defined $chr) {
                     print $log "log: error: feature '", (defined $name ? $name : ''), "' missing coordinates", "\n";
+                    print STDERR "log: error: feature '", (defined $name ? $name : ''), "' missing coordinates", "\n";
                     print $log Dumper $data{$chr_loc}{$name}{$feat_type}, "\n";
+                    print STDERR Dumper $data{$chr_loc}{$name}{$feat_type}, "\n";
                     exit(-1);
                 }
                 
@@ -340,6 +375,7 @@ my @name_buffer;    # buffer for bulk inserts into FeatureName table
                     next if $feat_type eq "gene" && $loc_count > 1; #only use the first one as this will be the full length of the gene.  Stupid hack
                     next if $seen_locs{$start}{$stop};
                     $seen_locs{$start}{$stop} = 1;
+                    print $log "Adding location $chr:(" . $start . "-" . $stop . ", $strand)\n" if $DEBUG;
                     print $log "Adding location $chr:(" . $start . "-" . $stop . ", $strand)\n" if $DEBUG;
                     $loaded_annot++;
                     batch_add_async(
@@ -415,13 +451,19 @@ batch_add( \@loc_buffer,  'Location' );
 batch_add( \@name_buffer, 'FeatureName' );
 batch_add( \@anno_buffer, 'FeatureAnnotation' );
 print $log "log: " . commify($loaded_annot) . " annotations loaded\n";
+print STDERR "log: " . commify($loaded_annot) . " annotations loaded\n";
 
 my $t3 = new Benchmark;
 print $log "Time to parse: "
   . timestr( timediff( $t2, $t1 ) )
   . ", Time to load: "
   . timestr( timediff( $t3, $t2 ) ) . "\n";
-  
+
+print STDERR "Time to parse: "
+  . timestr( timediff( $t2, $t1 ) )
+  . ", Time to load: "
+  . timestr( timediff( $t3, $t2 ) ) . "\n";
+
 # Save result document
 if ($result_dir) {
     mkpath($result_dir);
@@ -448,6 +490,7 @@ my $logdonefile = "$staging_dir/log.done";
 touch($logdonefile);
 
 print $log "log: All done!";
+print STDERR "log: All done!";
 close($log);
 
 exit;
@@ -479,6 +522,7 @@ sub batch_add_async {
         push @$buffer, $item if ( defined $item );
         if ( @$buffer >= $DB_BATCH_SZ or not defined $item ) {
             print $log "Async populate $table_name " . @$buffer . "\n";
+            print STDERR "Async populate $table_name " . @$buffer . "\n";
             if ( !defined( my $child_pid = fork() ) ) {
 	      print STDERR "Cannot fork: $!";
 	      batch_add(@_);
@@ -486,6 +530,7 @@ sub batch_add_async {
 	    }
 	    elsif ( $child_pid == 0 ) {
 	      print $log "child running to populate $table_name\n";
+	      print STDERR "child running to populate $table_name\n";
 	      $coge->resultset($table_name)->populate($buffer) if (@$buffer);
 	      exit;
 	    }
@@ -496,6 +541,7 @@ sub batch_add_async {
 
 sub process_gff_file {
     print $log "process_gff_file: $data_file\n";
+    print STDERR "process_gff_file: $data_file\n";
 
     open( my $in, $data_file ) || die "can't open $data_file for reading: $!";
 
@@ -510,10 +556,13 @@ sub process_gff_file {
         next unless $line;
         print $log "log: Processed " . commify($line_num) . " lines\n"
           unless $line_num % 100000;
+        print STDERR "log: Processed " . commify($line_num) . " lines\n"
+          unless $line_num % 100000;
 
         my @line = split( /\t/, $line );
         if ( @line != 9 ) {
             print $log "log: error:  Incorrect format (too many columns) at line $line_num\n";
+            print STDERR "log: error:  Incorrect format (too many columns) at line $line_num\n";
             return 0;
         }
         my ($chr, $type, $start, $stop, $strand, $attr) = ($line[0], $line[2], $line[3], $line[4], $line[6], $line[8]);
@@ -539,6 +588,7 @@ sub process_gff_file {
         ($chr) = split( /\s+/, $chr );
         unless ( $valid_chrs{$chr} ) {
             print $log "log: error:  Chromosome '$chr' does not exist in the dataset.\n";
+            print STDERR "log: error:  Chromosome '$chr' does not exist in the dataset.\n";
             next if ($allow_all_chr);
             return 0;
         }
@@ -652,5 +702,6 @@ sub process_gff_file {
 
     close($in);
     print $log "log: Processed " . commify($line_num) . " total lines\n";
+    print STDERR "log: Processed " . commify($line_num) . " total lines\n";
     return $total_annot;
 }
