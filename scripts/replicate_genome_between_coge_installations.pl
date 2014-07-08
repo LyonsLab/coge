@@ -6,9 +6,7 @@ use Data::Dumper;
 use Getopt::Long;
 use File::Path;
 
-
 my ($dsgid, $new_seq_dir, $db1, $db2, $u1, $u2, $p1, $p2);
-
 
 #./replicate_genome_between_coge_installations.pl -dsgid 1149 -sd /opt/apache/Oryza_CoGe/data/genomic_sequence/
 GetOptions(
@@ -40,14 +38,11 @@ my $coge2 = CoGeX->connect($connstr2, $u2, $p2 );
 
 my $dsg = $coge1->resultset('DatasetGroup')->find($dsgid);
 
-
-
 unless ($dsg)
   {
     print "Problem with retrieving the coge database object for the genometo be copied.\nExiting.\n";
     exit;
   }
-
 
 print "Finding or creating organism object\n";
 my $org = $coge2->resultset('Organism')->find_or_create({name=>$dsg->organism->name,
@@ -63,7 +58,7 @@ my $new_dsg = $org->add_to_dataset_groups({name=>$dsg->name,
 					   genomic_sequence_type_id=>$gst->id,
 					  });
 replicate_sequences(dsg1=>$dsg, dsg2=>$new_dsg);
-    
+
 foreach my $gs ($dsg->genomic_sequences)
   {
     $new_dsg->add_to_genomic_sequences({
@@ -173,7 +168,6 @@ print "New DatasetGroup id: ".$new_dsg->id,"\n";
 print "Link:\n";
 print "\t"."http://genomevolution.org/CoGe/GenomeView.pl?dsgid=".$new_dsg->id."\n";
 
-
 sub replicate_sequences
   {
     my %opts = @_;
@@ -207,9 +201,8 @@ sub replicate_sequences
     $new_path .= "/".$dsg2->id.".faa";
     $dsg2->file_path($new_path);
     $dsg2->update;
-    
-  }
 
+  }
 
 sub help
   {
@@ -237,7 +230,7 @@ If not specified, db1, u1, and p1 will be used for the sink.
 
 Example:
 
- ./replicate_genome_between_coge_installations.pl -sd /opt/apache/Oryza_CoGe/data/genomic_sequence/ -dsgid 1149 
+ ./replicate_genome_between_coge_installations.pl -sd /opt/apache/Oryza_CoGe/data/genomic_sequence/ -dsgid 1149
 
 };
     exit;

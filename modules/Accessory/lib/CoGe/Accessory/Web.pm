@@ -4,6 +4,7 @@ use v5.10;
 use strict;
 use base 'Class::Accessor';
 use Data::Dumper;
+use Carp qw(cluck);
 use CoGeX;
 use DBIxProfiler;
 use CGI::Carp('fatalsToBrowser');
@@ -20,6 +21,7 @@ use CoGe::Accessory::LogUser;
 use Digest::MD5 qw(md5_base64);
 use POSIX qw(!tmpnam !tmpfile);
 use Mail::Mailer;
+use URI;
 
 =head1 NAME
 
@@ -44,15 +46,19 @@ LICENSE file included with this module.
 
 =cut
 
+our($CONF, $VERSION, @ISA, @EXPORT, @EXPORT_OK, $Q, $TEMPDIR, $BASEDIR);
+
 BEGIN {
-    use vars qw ($CONF $VERSION @ISA @EXPORT @EXPORT_OK $Q $TEMPDIR $BASEDIR $CONF);
     require Exporter;
 
     $BASEDIR = ( $ENV{COGE_HOME} ? $ENV{COGE_HOME} : '/opt/apache/coge/web/' );
     $VERSION = 0.1;
     $TEMPDIR = $BASEDIR . "tmp";
-    @ISA     = ( @ISA, qw (Exporter) );
+    @ISA     = ( qw (Exporter Class::Accessor) );
     @EXPORT  = qw( get_session_id );
+    @EXPORT_OK = qw( check_filename_taint check_taint gunzip gzip send_email
+                     get_defaults set_defaults url_for );
+
     __PACKAGE__->mk_accessors(
         'restricted_orgs', 'basefilename', 'basefile', 'logfile',
         'sqlitefile'
@@ -68,7 +74,7 @@ sub init {
     my $debug  = $opts{debug};  # optional flag for enabling debugging messages
     my $page_title = $opts{page_title}; # optional page title
     my $ticket_type = $opts{ticket_type}; #optional ticket type (saml or proxy)
-    
+
     if ($cgi) {
     	$ticket = $cgi->param('ticket') || undef;
     	$url    = $cgi->url;
@@ -121,7 +127,7 @@ sub init {
 	        $link = get_tiny_link(
 	            url => 'http://' . $ENV{SERVER_NAME} . $ENV{REQUEST_URI},
 	        );
-	        
+
 	        # Log this page access
 	        CoGe::Accessory::Web::log_history(
 		        db          => $db,
@@ -134,7 +140,7 @@ sub init {
     }
 
     print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . " page_title=" . ($page_title ? $page_title : '') . " user=" . ($user ? $user->name : '') . "\n";
-    
+
     return ( $db, $user, $CONF, $link );
 }
 
@@ -166,6 +172,11 @@ A valid parameter file must be specified or very little will work!};
 
     $CONF = \%items;
     return $CONF;
+}
+
+sub set_defaults {
+    my $NEW_CONF = shift;
+    $CONF = \(%$CONF, %$NEW_CONF);
 }
 
 sub is_ajax {
@@ -332,13 +343,13 @@ sub logout_coge { # mdb added 3/24/14, issue 329
     my $form        = $opts{form}; # CGI form for calling page
     my $url         = $opts{this_url};
     $url = $form->url() unless $url;
-    print STDERR "Web::logout_coge url=", ($url ? $url : ''), "\n"; 
-    
+    print STDERR "Web::logout_coge url=", ($url ? $url : ''), "\n";
+
     # Delete user session from db
     my $session_id = get_session_id($user->user_name, $ENV{REMOTE_ADDR});
     my ($session) = $coge->resultset('UserSession')->find( { session => $session_id } );
     $session->delete if $session;
-    
+
     print "Location: ", $form->redirect($url);
 }
 
@@ -350,13 +361,13 @@ sub logout_cas {
     my $form        = $opts{form}; # CGI form for calling page
     my $url         = $opts{this_url};
     $url = $form->url() unless $url;
-    print STDERR "Web::logout_cas url=", ($url ? $url : ''), "\n"; 
-    
+    print STDERR "Web::logout_cas url=", ($url ? $url : ''), "\n";
+
     # Delete user session from db
     my $session_id = get_session_id($user->user_name, $ENV{REMOTE_ADDR});
     my ($session) = $coge->resultset('UserSession')->find( { session => $session_id } );
     $session->delete if $session;
-    
+
     print "Location: ", $form->redirect(get_defaults()->{CAS_URL} . "/logout?service=" . $url . "&gateway=1");
 }
 
@@ -442,7 +453,7 @@ sub login_cas_proxy {
 
 sub parse_proxy_response {
 	my $response = shift;
-	
+
 	if ($response =~ /authenticationSuccess/) {
 		my ($user_name) = $response =~ /\<cas\:user\>(.*)\<\/cas\:user\>/;
 		my ($first_name) = $response =~ /\<cas\:firstName\>(.*)\<\/cas\:firstName\>/;
@@ -451,7 +462,7 @@ sub parse_proxy_response {
 		print STDERR "parse_proxy_response: user_name=$user_name first_name=$first_name last_name=$last_name email=$email\n";
 		return ($user_name, $first_name, $last_name, $email);
 	}
-	
+
 	return;
 }
 
@@ -642,7 +653,7 @@ sub get_tiny_link {
 #    my $disable_logging = $opts{disable_logging};    # flag
 
     $url =~ s/:::/__/g;
-    my $request_url = "http://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url";
+    my $request_url = "https://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url";
 
 # mdb removed 1/8/14, issue 272
 #    my $tiny = LWP::Simple::get($request_url);
@@ -650,7 +661,7 @@ sub get_tiny_link {
 #        return "Unable to produce tiny url from server";
 #    }
 #    return $tiny;
-    
+
     # mdb added 1/8/14, issue 272
     my $ua = new LWP::UserAgent;
 	$ua->timeout(5);
@@ -659,7 +670,8 @@ sub get_tiny_link {
 		return $response->content;
 	}
 	else {
-		return "Unable to produce tiny url from server";
+        cluck "Unable to produce tiny url from server falling back to url";
+        return $url;
 	}
 
     # Log the page
@@ -970,6 +982,54 @@ sub send_email {
 
     print $mailer $body;
     $mailer->close();
+}
+
+sub url_for {
+    my ($path, %params) = @_;
+
+    # Error if CONFIG not set
+    croak "CONFIG was not found." unless $CONF;
+
+    my $SERVER = $CONF->{SERVER};
+    my $BASE_URL = $CONF->{URL};
+
+    # Error if SERVER not found
+    croak "SERVER option not found in CONFIG." unless $SERVER;
+
+    # Configures the default scheme
+    my $scheme = $CONF->{SECURE} ? "https://" : "http://";
+
+    # SERVER may override the default scheme
+    if ($SERVER =~ /(?<scheme>https?:\/{2})/) {
+        $scheme = $+{scheme};
+    }
+
+    # Strip leading /
+    $path =~ s/^\///;
+
+    # Strip scheme and /
+    $SERVER =~ s/\/$//;
+    $SERVER =~ s/^https?:\/{2}//;
+    $SERVER =~ s/\/$//;
+
+    # Strip leading and trailing /
+    $BASE_URL =~ s/^\///;
+    $BASE_URL =~ s/\/$//;
+
+    # Build up parts and ignore BASE_URL if not set
+    my @parts = (length $BASE_URL) ? ($SERVER, $BASE_URL, $path)
+                                   : ($SERVER, $path);
+
+    # Build query string from params
+    my ($query_string, @pairs) = ("", ());
+
+    foreach my $key (sort keys %params) {
+        push @pairs, $key . "=" . $params{$key};
+    }
+
+    $query_string = "?" . join("&", @pairs) if @pairs;
+
+    return $scheme . join("/", @parts) . $query_string;;
 }
 
 1;

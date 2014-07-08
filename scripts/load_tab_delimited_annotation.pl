@@ -5,14 +5,12 @@ use Data::Dumper;
 use CoGeX;
 use Getopt::Long;
 
-
 use vars qw($dsid $GO $DEBUG);
 
 GetOptions ( "dsid=i" => \$dsid,
              "go=s"    => \$GO,
              "debug=s" => \$DEBUG,
            );
-
 
 unless ($dsid)
   {
@@ -60,4 +58,3 @@ while (<>)
     $anno = $feat->add_to_annotations({annotation=>"Tyrosine, Tyr TAC", annotation_type_id => $codon_type->id}) if $GO;
     $feat->add_to_feature_names({name=>$line[0]."_oa", description=>"reannotation of incomplete gene model"}) if $GO;
   }
-

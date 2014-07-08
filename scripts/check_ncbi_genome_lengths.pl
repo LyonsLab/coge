@@ -9,7 +9,6 @@ use CoGe::Accessory::GenBank;
 my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
 my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 
-
 foreach my $ds ($coge->resultset('Dataset')->search({data_source_id=>21}))
   {
     my %chrs;

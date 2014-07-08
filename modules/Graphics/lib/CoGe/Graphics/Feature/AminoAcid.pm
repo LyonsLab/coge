@@ -2,7 +2,6 @@ package CoGe::Graphics::Feature::AminoAcid;
 use strict;
 use base qw(CoGe::Graphics::Feature);
 
-
 =head1 AUTHOR
 
 	Eric Lyons
@@ -35,7 +34,7 @@ BEGIN {
     $ROH = [250,150, 0];
     $AMN = [0, 220, 220];
     $TRP = [180, 90, 180];
-    
+
     %AA = (
     	   A =>'ala',
 	   R =>'bas',
@@ -58,7 +57,7 @@ BEGIN {
 	   Y =>'aro',
 	   V =>'fob',
 	   '*' =>'stop',
-          );	
+          );
     __PACKAGE__->mk_accessors(
 "aa",
 "lastaa",
@@ -71,7 +70,7 @@ sub _initialize
     #print STDERR "AA IS BEING CALLED\n";
     my $self = shift;
     my %opts = @_;
-    my $h = $HEIGHT; #total image height 
+    my $h = $HEIGHT; #total image height
     my $w = $WIDTH;
     $self->image_width($w);
     $self->image_height($h);
@@ -188,7 +187,7 @@ sub _post_initialize
     #$gd->rectangle(12,12,25,25,$self->get_color(0,0,0));
 
   }
-  
+
 sub _make_3d
   {
     my $self = shift;
@@ -239,10 +238,10 @@ sub _rounded_edges
         my $poly3 = GD::Polygon->new;
         $poly1->addPt($x1,$y1);
         $poly1->addPt($x1+($neg_x*3),$y1);
-        $poly1->addPt($x1,$y1+($neg_y*1)); 
+        $poly1->addPt($x1,$y1+($neg_y*1));
         $poly2->addPt($x1,$y1);
         $poly2->addPt($x1+($neg_x*2),$y1);
-        $poly2->addPt($x1,$y1+($neg_y*2)); 
+        $poly2->addPt($x1,$y1+($neg_y*2));
         $poly3->addPt($x1,$y1);
         $poly3->addPt($x1+($neg_x*1),$y1);
         $poly3->addPt($x1,$y1+($neg_y*3));
@@ -250,7 +249,7 @@ sub _rounded_edges
         $gd->filledPolygon($poly2, $self->get_color(255,255,255));
         $gd->filledPolygon($poly3, $self->get_color(255,255,255));
 }
-									    
+
 #################### subroutine header begin ####################
 
 =head2 sample_function
@@ -263,19 +262,15 @@ sub _rounded_edges
  Comment   : This is a sample subroutine header.
            : It is polite to include more pod and fewer comments.
 
-See Also   : 
+See Also   :
 
 =cut
 
 #################### subroutine header end ####################
 
-
-
-
 #################### main pod documentation begin ###################
-## Below is the stub of documentation for your module. 
+## Below is the stub of documentation for your module.
 ## You better edit it!
-
 
 =head1 NAME
 
@@ -285,20 +280,13 @@ CoGe::Graphics::Feature::Base
 
   use CoGe::Graphics::Feature::Base
 
-
 =head1 DESCRIPTION
 
 =head1 USAGE
 
-
-
 =head1 BUGS
 
-
-
 =head1 SUPPORT
-
-
 
 =head1 AUTHOR
 
@@ -314,7 +302,6 @@ This program is free software licensed under the...
 The full text of the license can be found in the
 LICENSE file included with this module.
 
-
 =head1 SEE ALSO
 
 perl(1).
@@ -323,7 +310,5 @@ perl(1).
 
 #################### main pod documentation end ###################
 
-
 1;
 # The preceding line will help the module return a true value
-

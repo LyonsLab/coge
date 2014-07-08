@@ -3,7 +3,7 @@ define([
            'dijit/focus',
            'JBrowse/View/Dialog/WithActionBar',
            'dojo/on',
-           'dojo/store/Memory', 
+           'dojo/store/Memory',
            'dijit/form/ComboBox',
            'dijit/form/Button',
            'dijit/ColorPalette',
@@ -32,7 +32,7 @@ return declare( ActionBarDialog,
     _fillActionBar: function( actionBar ) {
         var thisB = this;
         var firstItem = thisB.items[0];
-        
+
         this.itemBox = new ComboBox({
             //id: "itemSelect",
             //value: firstItem.name,
@@ -54,7 +54,7 @@ return declare( ActionBarDialog,
             	}
             }
         }).placeAt(actionBar);
-        
+
         this.palette = new ColorPalette({
             palette: "7x10",
             value: firstItem.featureColor,
@@ -67,7 +67,7 @@ return declare( ActionBarDialog,
             	}
             }
         }).placeAt(actionBar);
-        
+
 		this.defaultCB = new CheckBox({
 			//id: "defaultCB",
 			checked: !firstItem.featureColor,
@@ -82,9 +82,9 @@ return declare( ActionBarDialog,
 				}
 			}
 		}).placeAt(actionBar);
-		
+
 		actionBar.appendChild(
-			dojo.create("label", 
+			dojo.create("label",
 					{ 'for': 'defaultCB',
 					  innerHTML: ' Default',
 					}
@@ -96,7 +96,7 @@ return declare( ActionBarDialog,
         this.inherited( arguments );
         focus.focus( this.closeButtonNode );
     },
-    
+
     _getFeatureColor: function(id) {
     	return '#' + ((((id * 1234321) % 0x1000000) | 0x444444) & 0xe7e7e7 ).toString(16); //FIXME: dup'ed in CoGe.js
     }

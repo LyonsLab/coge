@@ -7,14 +7,13 @@ use base qw(Class::Accessor);
 
 use Data::Dumper;
 
-
 BEGIN
   {
     use vars qw($VERSION);
     $VERSION = "0.01";
   }
-__PACKAGE__->mk_accessors('file', 'lastline', 'report_done', 'hsps', 
-	'hsp_count', 'eval_cutoff', 'query', 'subject', 'qlength', 'slength', 
+__PACKAGE__->mk_accessors('file', 'lastline', 'report_done', 'hsps',
+	'hsp_count', 'eval_cutoff', 'query', 'subject', 'qlength', 'slength',
 	'limit');
 
 sub qname    {shift->query(@_)}
@@ -93,7 +92,6 @@ sub process_file
     return $self;
   }
 
-
 sub _parseQuery
   {
     my $self = shift;
@@ -165,7 +163,7 @@ sub _processHSP {
 	my(@hspline) = ();;
 	foreach (split /\n/, $data)
 	  {
-	  if ($_ !~ /\S/) 
+	  if ($_ !~ /\S/)
 	    {next;} # blank line, skip
 	  elsif ($_ =~ /(^>)|(^Lambda)|(^\s+Database:)/)
 	    {
@@ -185,17 +183,17 @@ sub _processHSP {
 		#warn $hspline[$i], $hspline[$i+2];
 	  next unless $hspline[$i] =~ /^Query/;
 		$hspline[$i]   =~ /^Query\s+(\d+)\s*(\S+)\s+(\d+)/;
-		$ql = $2; 
-		$qb = $1 unless $qb; 
+		$ql = $2;
+		$qb = $1 unless $qb;
 		$qe = $3;
-		
+
 		my $offset = index($hspline[$i], $ql);
 		$as = substr($hspline[$i+1], $offset, CORE::length($ql))
 			if $hspline[$i+1];
-		
+
 		$hspline[$i+2] =~ /^Sbjct\s+(\d+)\s*(\S+)\s+(\d+)/;
 		$sl = $2; $sb = $1 unless $sb; $se = $3;
-		
+
 		push @QL, $ql; push @SL, $sl; push @AS, $as;
 	}
 	##################

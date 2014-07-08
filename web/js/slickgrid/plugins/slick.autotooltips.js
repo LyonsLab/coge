@@ -6,7 +6,6 @@
     }
   });
 
-
   function AutoTooltips(options) {
     var _grid;
     var _self = this;

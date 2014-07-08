@@ -15,7 +15,7 @@ function get_pass {
     while [[ "$pass1" != "$pass2" ]]; do
         echo -e "\nPasswords did not match."
         read -s -p "Enter password: " pass1; echo
-        read -s -p "Retype Password: " pass2; echo 
+        read -s -p "Retype Password: " pass2; echo
     done
 
     eval "$1"=$pass1
@@ -82,7 +82,7 @@ function configure_apache2 {
     #read -p "Specify the root directory: " coge_root
     #read -p "Specify the server name: " server_name
 
-    echo "<VirtualHost *:80> 
+    echo "<VirtualHost *:80>
     ServerName $server
     DocumentRoot $coge_root/$server_name
     ScriptAlias $server/ \"$coge_root/$server_name/\"
@@ -96,7 +96,7 @@ function configure_apache2 {
         Allow from all
     </Directory>
     </VirtualHost>" > $coge_root/coge.site
-    
+
     echo "Adding coge.site to sites-available."
     echo "Requesting administrative privileges."
 
@@ -132,10 +132,9 @@ function setup_workspace {
     echo "Finished setting up directory structure"
 }
 
-
 function import_database {
     echo -e "\nStage 5: Attempting to import the CoGe database.."
-    read -p "MySQL Username: " DB_USER 
+    read -p "MySQL Username: " DB_USER
     get_pass "DB_PASS"
 
     while [[ -n `mysql -u $DB_USER -p $DB_PASS` ]]; do
@@ -144,7 +143,7 @@ function import_database {
         read -p "MySQL Username: " DB_USER;
         get_pass "DB_PASS"
     done
-    
+
     echo "Importing Database..."
     if [[ -n `mysql -u $DB_USER -p $DB_PASS  coge < schema.sql` ]]; then
         echo "Import failed."
@@ -154,62 +153,61 @@ function import_database {
     echo "CoGe database was imported successfully."
 }
 
-
 function setup_config {
     echo -e "\nStage 6: Generating configuration file..."
 
-    config="##This is a configuration file for CoGe.  
+    config="##This is a configuration file for CoGe.
     ##Key Value pairs:
     ##<NAME>    <PATH>
-    
+
     #database configuration
     DBNAME $DB_NAME
     DBHOST $DB_HOST
     DBPORT $DB_PORT
     DBUSER $DB_USER
     DBPASS $DB_PASS
-    
+
     #basedir for coge
     COGEDIR $coge_root/coge_web/
-    
+
     #bin dir for coge's programs
-    BINDIR $coge_root/$server_name/bin/ 
-    
+    BINDIR $coge_root/$server_name/bin/
+
     #data dir for coge's programs
-    DATADIR $coge_root/$server_name/data/ 
-    
+    DATADIR $coge_root/$server_name/data/
+
     #dir for pair-wise whole genome comparisons (e.g. SynMap)
-    DIAGSDIR $coge_root/$server_name/diags/ 
-    
+    DIAGSDIR $coge_root/$server_name/diags/
+
     #fasta dir
     FASTADIR $coge_root/$server_name/data/fasta/
-    
+
     #TMPL dir for coge's web page templates
     TMPLDIR $coge_root/$server_name/tmpl/
-    
+
     #temp dir for coge
     TEMPDIR $coge_root/$server_name/tmp/
-    
+
     #Base URL for web-site
     URL $server_address/
-    
+
     #URL for temp directory
     TEMPURL $server_name/tmp/
-    
+
     #blast style scoring matrix dirs
     BLASTMATRIX $coge_root/$server_name/data/blast/matrix/
-    
+
     #blastable DB
     BLASTDB $coge_root/$server_name/data/blast/db/
-    
+
     #directory for bed files
     BEDDIR $coge_root/$server_name/data/bed/
-    
+
     #servername for links
     SERVER $server_address/$server_name/
-    
+
     #directory for caching genome browser images
-    IMAGE_CACHE $coge_root/$server_name/data/image_cache/" 
+    IMAGE_CACHE $coge_root/$server_name/data/image_cache/"
 
     echo $config > $coge_root/app.conf
     echo "Successfully generated the configuration file."
@@ -247,7 +245,7 @@ setup_workspace
 # Setup Database
 import_database
 
-# Build configuration 
+# Build configuration
 setup_config
 
 echo "Finished"

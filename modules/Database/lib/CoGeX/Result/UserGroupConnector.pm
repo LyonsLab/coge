@@ -5,7 +5,6 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
-
 =head1 NAME
 
 My::Schema::Result::UserGroupConnector
@@ -47,7 +46,6 @@ __PACKAGE__->belongs_to("user"=>"CoGeX::Result::User",'user_id');
 __PACKAGE__->belongs_to("user_group"=>"CoGeX::Result::UserGroup",'user_group_id');
 
 1;
-
 
 =head1 AUTHORS
 

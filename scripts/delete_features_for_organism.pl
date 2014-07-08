@@ -3,7 +3,6 @@ use strict;
 use Getopt::Long;
 use CoGeX;
 
-
 my ($help, $org, $version, $type, $chr, $DEBUG);
 
 GetOptions ("h|help" =>  \$help,
@@ -17,7 +16,6 @@ GetOptions ("h|help" =>  \$help,
 $help = 1 unless ($org);
 help() if $help;
 
-
 my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
 my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 
@@ -30,8 +28,6 @@ foreach my $ds ($coge->resultset('Dataset')->search({organism_id=>$org, version=
 	$feat->delete;
       }
   }
-		
-
 
 sub help
   {
@@ -41,7 +37,7 @@ Welcome to $0
 This program generates a list of names for all features in an organism
 
 Options:
-  
+
   -h | -help               prints this message
 
   -o | -organism           specify database id for an organism
@@ -56,7 +52,6 @@ Options:
                            will be used.
 
   -d | -debug              print debugging messages
-
 
 };
 exit(0);

@@ -28,4 +28,3 @@ while ( my $fn = $rs->next() ) {
 
     #map { push(@results, $_->annotation)  } $feat->annotations;
 }
-

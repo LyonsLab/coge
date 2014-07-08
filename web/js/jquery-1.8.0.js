@@ -2553,7 +2553,6 @@ if ( !getSetAttribute ) {
 	};
 }
 
-
 // Some attributes require a special call on IE
 if ( !jQuery.support.hrefNormalized ) {
 	jQuery.each([ "href", "src", "width", "height" ], function( i, name ) {
@@ -4520,7 +4519,6 @@ Sizzle.error = function( msg ) {
 	return (baseHasDuplicate = 0);
 });
 
-
 if ( docElem.compareDocumentPosition ) {
 	sortOrder = function( a, b ) {
 		if ( a === b ) {
@@ -5134,7 +5132,6 @@ jQuery.unique = Sizzle.uniqueSort;
 jQuery.text = Sizzle.getText;
 jQuery.isXMLDoc = Sizzle.isXML;
 jQuery.contains = Sizzle.contains;
-
 
 })( window );
 var runtil = /Until$/,
@@ -6322,7 +6319,7 @@ jQuery.sub = function() {
 	var rootjQuerySub = jQuerySub(document);
 	return jQuerySub;
 };
-	
+
 })();
 var curCSS, iframe, iframeDoc,
 	ralpha = /alpha\([^)]*\)/i,
@@ -6768,7 +6765,6 @@ function getWidthOrHeight( elem, name, extra ) {
 		)
 	) + "px";
 }
-
 
 // Try to determine the default display value of an element
 function css_defaultDisplay( nodeName ) {
@@ -8636,7 +8632,6 @@ function defaultPrefilter( elem, props, opts ) {
 		}
 	}
 
-
 	// show/hide pass
 	for ( index in props ) {
 		value = props[ index ];
@@ -9084,7 +9079,6 @@ jQuery.offset = {
 	}
 };
 
-
 jQuery.fn.extend({
 
 	position: function() {
@@ -9128,7 +9122,6 @@ jQuery.fn.extend({
 		});
 	}
 });
-
 
 // Create scrollLeft and scrollTop methods
 jQuery.each( {scrollLeft: "pageXOffset", scrollTop: "pageYOffset"}, function( method, prop ) {

@@ -4,11 +4,10 @@ use strict;
 no warnings 'redefine';
 umask(0);
 
-
 use CoGeX;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
-use CoGe::Accessory::Web;
+use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils qw( commify );
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
@@ -17,7 +16,6 @@ use DBIxProfiler;
 use Data::Dumper;
 use HTML::Template;
 use JSON::XS;
-use LWP::Simple;
 use LWP::UserAgent;
 use Parallel::ForkManager;
 use GD;
@@ -29,7 +27,7 @@ use POSIX;
 use Sort::Versions;
 
 our (
-    $P,            $DEBUG,         $DIR,            $URL,
+    $config,       $DEBUG,         $DIR,            $URL,
     $SERVER,       $USER,          $FORM,           $coge,
     $cogeweb,      $PAGE_NAME,     $FORMATDB,       $BLAST,
     $TBLASTX,      $BLASTN,        $BLASTP,         $LASTZ,
@@ -40,7 +38,7 @@ our (
     $QUOTA_ALIGN,  $CLUSTER_UTILS, $BLAST2RAW,      $BASE_URL,
     $BLAST2BED,    $SYNTENY_SCORE, $TEMPDIR,        $TEMPURL,
     $ALGO_LOOKUP,  $GZIP,          $GUNZIP,         %FUNCTIONS,
-    $YERBA,        $GENE_ORDER,    $PAGE_TITLE,     $KSCALC,
+    $JEX,          $GENE_ORDER,    $PAGE_TITLE,     $KSCALC,
     $GEN_FASTA,    $RUN_ALIGNMENT, $RUN_COVERAGE,   $GEVO_LINKS,
     $PROCESS_DUPS, $DOTPLOT_DOTS,
 );
@@ -52,56 +50,56 @@ $FORM       = new CGI;
 $PAGE_TITLE = "SynMap";
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $config ) = CoGe::Accessory::Web->init(
     cgi => $FORM,
     page_title => $PAGE_TITLE,
 );
 
-$YERBA = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
+$JEX = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
 
 $ENV{PATH} = join ":",
   (
-    $P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR} . "SynMap",
+    $config->{COGEDIR}, $config->{BINDIR}, $config->{BINDIR} . "SynMap",
     "/usr/bin", "/usr/local/bin"
   );
-$ENV{BLASTDB}    = $P->{BLASTDB};
-$ENV{BLASTMAT}   = $P->{BLASTMATRIX};
+$ENV{BLASTDB}    = $config->{BLASTDB};
+$ENV{BLASTMAT}   = $config->{BLASTMATRIX};
 $ENV{PYTHONPATH} = "/opt/apache/CoGe/bin/dagchainer_bp";
 
-$BASE_URL = $P->{SERVER};
-$DIR      = $P->{COGEDIR};
-$URL      = $P->{URL};
-$SERVER   = $P->{SERVER};
-$TEMPDIR  = $P->{TEMPDIR} . "SynMap";
-$TEMPURL  = $P->{TEMPURL} . "SynMap";
-$FORMATDB = $P->{FORMATDB};
-$MAX_PROC = $P->{MAX_PROC};
-$BLAST    = $P->{BLAST} . " -a " . $MAX_PROC . " -K 80 -m 8 -e 0.0001";
+$BASE_URL = $config->{SERVER};
+$DIR      = $config->{COGEDIR};
+$URL      = $config->{URL};
+$SERVER   = $config->{SERVER};
+$TEMPDIR  = $config->{TEMPDIR} . "SynMap";
+$TEMPURL  = $config->{TEMPURL} . "SynMap";
+$FORMATDB = $config->{FORMATDB};
+$MAX_PROC = $config->{MAX_PROC};
+$BLAST    = $config->{BLAST} . " -a " . $MAX_PROC . " -K 80 -m 8 -e 0.0001";
 my $blast_options = " -num_threads $MAX_PROC -evalue 0.0001 -outfmt 6";
-$TBLASTX = $P->{TBLASTX} . $blast_options;
-$BLASTN  = $P->{BLASTN} . $blast_options;
-$BLASTP  = $P->{BLASTP} . $blast_options;
+$TBLASTX = $config->{TBLASTX} . $blast_options;
+$BLASTN  = $config->{BLASTN} . $blast_options;
+$BLASTP  = $config->{BLASTP} . $blast_options;
 $LASTZ =
-    $P->{PYTHON} . " "
-  . $P->{MULTI_LASTZ}
+    $config->{PYTHON} . " "
+  . $config->{MULTI_LASTZ}
   . " -A $MAX_PROC --path="
-  . $P->{LASTZ};
+  . $config->{LASTZ};
 $LAST =
-    $P->{MULTI_LAST}
+    $config->{MULTI_LAST}
   . " -a $MAX_PROC --path="
-  . $P->{LAST_PATH};
+  . $config->{LAST_PATH};
 # mdb removed 9/20/13 issue 213
 #  . " --dbpath="
-#  . $P->{LASTDB};
-$GZIP          = $P->{GZIP};
-$GUNZIP        = $P->{GUNZIP};
-$KSCALC        = $P->{KSCALC};
-$GEN_FASTA     = $P->{GEN_FASTA};
-$RUN_ALIGNMENT = $P->{RUN_ALIGNMENT};
-$RUN_COVERAGE  = $P->{RUN_COVERAGE};
-$PROCESS_DUPS  = $P->{PROCESS_DUPS};
-$GEVO_LINKS =  $P->{GEVO_LINKS};
-$DOTPLOT_DOTS = $P->{DOTPLOT_DOTS};
+#  . $config->{LASTDB};
+$GZIP          = $config->{GZIP};
+$GUNZIP        = $config->{GUNZIP};
+$KSCALC        = $config->{KSCALC};
+$GEN_FASTA     = $config->{GEN_FASTA};
+$RUN_ALIGNMENT = $config->{RUN_ALIGNMENT};
+$RUN_COVERAGE  = $config->{RUN_COVERAGE};
+$PROCESS_DUPS  = $config->{PROCESS_DUPS};
+$GEVO_LINKS =  $config->{GEVO_LINKS};
+$DOTPLOT_DOTS = $config->{DOTPLOT_DOTS};
 
 #in the web form, each sequence search algorithm has a unique number.  This table identifies those and adds appropriate options
 $ALGO_LOOKUP = {
@@ -161,44 +159,44 @@ $ALGO_LOOKUP = {
     },
 };
 
-$DATADIR  = $P->{DATADIR};
-$DIAGSDIR = $P->{DIAGSDIR};
-$FASTADIR = $P->{FASTADIR};
+$DATADIR  = $config->{DATADIR};
+$DIAGSDIR = $config->{DIAGSDIR};
+$FASTADIR = $config->{FASTADIR};
 
 mkpath( $FASTADIR,    1, 0777 );
 mkpath( $DIAGSDIR,    1, 0777 );    # mdb added 7/9/12
-mkpath( $P->{LASTDB}, 1, 0777 );    # mdb added 7/9/12
-$BLASTDBDIR = $P->{BLASTDB};
+mkpath( $config->{LASTDB}, 1, 0777 );    # mdb added 7/9/12
+$BLASTDBDIR = $config->{BLASTDB};
 
-$PYTHON        = $P->{PYTHON};                         #this was for python2.5
-$PYTHON26      = $P->{PYTHON};
-$DAG_TOOL      = $P->{DAG_TOOL};
-$BLAST2BED     = $P->{BLAST2BED};
+$PYTHON        = $config->{PYTHON};                         #this was for python2.5
+$PYTHON26      = $config->{PYTHON};
+$DAG_TOOL      = $config->{DAG_TOOL};
+$BLAST2BED     = $config->{BLAST2BED};
 $GENE_ORDER    = $DIR . "/bin/SynMap/gene_order.py";
-$TANDEM_FINDER = $P->{TANDEM_FINDER}
+$TANDEM_FINDER = $config->{TANDEM_FINDER}
   . " -d 5 -s -r"
   ; #-d option is the distance (in genes) between dups -- not sure if the -s and -r options are needed -- they create dups files based on the input file name
 
 #$RUN_DAGHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05 -s";
-$RUN_DAGCHAINER = $PYTHON26 . " " . $P->{DAGCHAINER};
-$EVAL_ADJUST    = $P->{EVALUE_ADJUST};
+$RUN_DAGCHAINER = $PYTHON26 . " " . $config->{DAGCHAINER};
+$EVAL_ADJUST    = $config->{EVALUE_ADJUST};
 
-$FIND_NEARBY = $P->{FIND_NEARBY}
+$FIND_NEARBY = $config->{FIND_NEARBY}
   . " -d 20"
   ; #the parameter here is for nucleotide distances -- will need to make dynamic when gene order is selected -- 5 perhaps?
 
 #programs to run Haibao Tang's quota_align program for merging diagonals and mapping coverage
-$QUOTA_ALIGN   = $P->{QUOTA_ALIGN};     #the program
-$CLUSTER_UTILS = $P->{CLUSTER_UTILS};   #convert dag output to quota_align input
-$BLAST2RAW     = $P->{BLAST2RAW};       #find local duplicates
-$SYNTENY_SCORE = $P->{SYNTENY_SCORE};
+$QUOTA_ALIGN   = $config->{QUOTA_ALIGN};     #the program
+$CLUSTER_UTILS = $config->{CLUSTER_UTILS};   #convert dag output to quota_align input
+$BLAST2RAW     = $config->{BLAST2RAW};       #find local duplicates
+$SYNTENY_SCORE = $config->{SYNTENY_SCORE};
 
-$DOTPLOT     = $P->{DOTPLOT} . " -cf " . $ENV{COGE_HOME} . 'coge.conf';
-$SVG_DOTPLOT = $P->{SVG_DOTPLOT};
+$DOTPLOT     = $config->{DOTPLOT} . " -cf " . $config->{_CONFIG_PATH};
+$SVG_DOTPLOT = $config->{SVG_DOTPLOT};
 
 #$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
 #$NWALIGN = $DIR."/bin/nwalign-0.3.0/bin/nwalign";
-$NWALIGN = $P->{NWALIGN};
+$NWALIGN = $config->{NWALIGN};
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
 
@@ -271,7 +269,7 @@ sub gen_html {
     my $html;
     my ($body) = gen_body();
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+      HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( PAGE_TITLE => 'SynMap' );
     $template->param( TITLE      => 'Whole Genome Synteny' );
     $template->param( HEAD       => qq{} );
@@ -293,7 +291,7 @@ sub gen_html {
 sub gen_body {
     my $form = shift || $FORM;
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'SynMap.tmpl' );
+      HTML::Template->new( filename => $config->{TMPLDIR} . 'SynMap.tmpl' );
 
     $template->param( MAIN => 1 );
 
@@ -543,7 +541,7 @@ sub gen_org_menu {
 
     my ($dsg) = $coge->resultset('Genome')->find($dsgid);
     my $menu_template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'partials/organism_menu.tmpl' );
+      HTML::Template->new( filename => $config->{TMPLDIR} . 'partials/organism_menu.tmpl' );
     $menu_template->param( ORG_MENU => 1 );
     $menu_template->param( NUM      => $num );
     $menu_template->param( ORG_NAME => $name );
@@ -552,7 +550,6 @@ sub gen_org_menu {
     if ($dsg and $USER->has_access_to_genome($dsg)) {
         my $org = $dsg->organism;
         $oid = $org->id;
-
 
         my ( $dsg_info, $feattype_menu, $message ) = get_genome_info(
             dsgid    => $dsgid,
@@ -1137,7 +1134,7 @@ sub get_pair_info {
         "<table class=small valign=top>"
       . join( "\n", ( map { "<tr><td>" . $_ . "</td></tr>" } @anno ) )
       . "</table>";
-    my $URL = $P->{URL};
+    my $URL = $config->{URL};
     $output =~ s/window\.open\('(.*?)'\)/window.open('$URL$1')/g;
     return $output;
 }
@@ -1173,7 +1170,6 @@ sub get_query_link {
 
     my $dsgid1   = $url_options{dsgid1};
     my $dsgid2   = $url_options{dsgid2};
-
 
     unless($dsgid1 and $dsgid2) {
         return encode_json({
@@ -1299,7 +1295,6 @@ sub get_query_link {
         write_log => 0
     );
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(url => $synmap_link);
-
 
     return $tiny_link;
 }
@@ -1489,8 +1484,6 @@ sub go {
     my $workflow = undef;
     my $status   = undef;
 
-    my $config = $ENV{COGE_HOME} . "coge.conf";
-
     #my @dsgs = ([$dsgid1, $feat_type1]);
     #push @dsgs, [$dsgid2, $feat_type2]
     #  unless $dsgid1 == $dsgid2 && $feat_type1 eq $feat_type2;
@@ -1507,7 +1500,7 @@ sub go {
     #        #    $file = $FASTADIR . "/$gid-$feat_type.fasta";
     #        #}
     #    }
-    $workflow = $YERBA->create_workflow(
+    $workflow = $JEX->create_workflow(
         name     => $workflow_name,
         logfile  => $cogeweb->logfile,
     );
@@ -1523,7 +1516,7 @@ sub go {
     else {
         my @fasta1args = ();
         $fasta1 = $FASTADIR . "/$dsgid1-$feat_type1.fasta";
-        push @fasta1args, [ "--config",       $config,     0 ];
+        push @fasta1args, [ "--config",       $config->{_CONFIG_PATH},     0 ];
         push @fasta1args, [ "--genome_id",    $dsgid1,     1 ];
         push @fasta1args, [ "--feature_type", $feat_type1, 1 ];
         push @fasta1args, [ "--fasta",        $fasta1,     1 ];
@@ -1555,7 +1548,7 @@ sub go {
     else {
         $fasta2 = $FASTADIR . "/$dsgid2-$feat_type2.fasta";
         my @fasta2args = ();
-        push @fasta2args, [ "--config",       $config,     0 ];
+        push @fasta2args, [ "--config",       $config->{_CONFIG_PATH},     0 ];
         push @fasta2args, [ "--genome_id",    $dsgid2,     1 ];
         push @fasta2args, [ "--feature_type", $feat_type2, 1 ];
         push @fasta2args, [ "--fasta",        $fasta2,     1 ];
@@ -1674,7 +1667,7 @@ sub go {
         }
         elsif ( $cmd =~ /last_wrapper/i ) {
             # mdb added 9/20/13 issue 213
-            my $dbpath = $P->{LASTDB} . '/' . $dsgid2;
+            my $dbpath = $config->{LASTDB} . '/' . $dsgid2;
             mkpath($dbpath);
             push @blastargs, [ "--dbpath", $dbpath, 0 ];
 
@@ -1988,7 +1981,7 @@ sub go {
         $merged_dagchainer_file = "$dagchainer_file.Dm$Dm.ma1";
 
         my @mergeargs = ();
-        push @mergeargs, [ '--config',       $config,                 0 ];
+        push @mergeargs, [ '--config',       $config->{_CONFIG_PATH},                 0 ];
         push @mergeargs, [ '--infile',       $dagchainer_file,        1 ];
         push @mergeargs, [ '--outfile',      $merged_dagchainer_file, 1 ];
         push @mergeargs, [ '--max_distance', $Dm,                     1 ];
@@ -2042,7 +2035,7 @@ sub go {
         print_debug( msg => $post_dagchainer_file_w_nearby, enabled => $DEBUG );
 
         my @depthargs = ();
-        push @depthargs, [ '--config',  $config,                        0 ];
+        push @depthargs, [ '--config',  $config->{_CONFIG_PATH},        0 ];
         push @depthargs, [ '--infile',  $post_dagchainer_file_w_nearby, 1 ];
         push @depthargs, [ '--outfile', $quota_align_coverage,          1 ];
         push @depthargs, [ '--depth_ratio_org1', $depth_org_1_ratio, 1 ];
@@ -2150,10 +2143,10 @@ sub go {
             $ks_blocks_file = "$final_dagchainer_file.ks";
 
             my @ksargs = ();
-            push @ksargs, [ '--config',    $config,                0 ];
-            push @ksargs, [ '--infile',    $final_dagchainer_file, 1 ];
-            push @ksargs, [ '--dbfile',    $ks_db,                 1 ];
-            push @ksargs, [ '--blockfile', $ks_blocks_file,        1 ];
+            push @ksargs, [ '--config',    $config->{_CONFIG_PATH}, 0 ];
+            push @ksargs, [ '--infile',    $final_dagchainer_file,  1 ];
+            push @ksargs, [ '--dbfile',    $ks_db,                  1 ];
+            push @ksargs, [ '--blockfile', $ks_blocks_file,         1 ];
 
             $workflow->add_job(
                 cmd         => $KSCALC,
@@ -2336,7 +2329,7 @@ sub go {
     );
 
     my $dot_args = [
-        [ '-cf', $config, 0 ],
+        [ '-cf', $config->{_CONFIG_PATH}, 0 ],
         [ '-genome1', $dsgid1, 0 ],
         [ '-genome2', $dsgid2, 0 ],
         [ '-a', $final_dagchainer_file, 1 ],
@@ -2385,9 +2378,8 @@ sub go {
     CoGe::Accessory::Web::write_log( "Final Post Processing",
         $cogeweb->logfile);
 
-
     my $subject_dup_args = [
-        ['--config', $config,                         0 ],
+        ['--config', $config->{_CONFIG_PATH},                         0 ],
         ['--infile', $slocaldups, 1],#$raw_blastfile . ".s.localdups", 1 ],
         ['--outfile', $raw_blastfile . ".s.tandems",  1 ],
     ];
@@ -2402,7 +2394,7 @@ sub go {
     );
 
     my $query_dup_args = [
-        ['--config',  $config,                         0 ],
+        ['--config',  $config->{_CONFIG_PATH},                         0 ],
         ['--infile',  $qlocaldups,1], #$raw_blastfile . ".q.localdups", 1 ],
         ['--outfile', $raw_blastfile . ".q.tandems",  1 ],
     ];
@@ -2422,7 +2414,7 @@ sub go {
     my $condensed = "$final_dagchainer_file.condensed";
 
     my $link_args = [
-        ['--config', $config, 0],
+        ['--config', $config->{_CONFIG_PATH}, 0],
         ['--infile', $final_dagchainer_file, 1],
         ['--dsgid1', $dsgid1, 1],
         ['--dsgid2', $dsgid2, 1],
@@ -2449,7 +2441,7 @@ sub go {
     CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
-    my $response = $YERBA->submit_workflow($workflow);
+    my $response = $JEX->submit_workflow($workflow);
 
     my $log = CoGe::Accessory::Web::log_history(
         db      => $coge,
@@ -2508,27 +2500,6 @@ sub get_results {
         basename => $basename,
         tempdir  => $TEMPDIR
     );
-
-#FIXME: The id needs to be an input argument
-#    given ( lc( $YERBA->get_status( 0 ) ) ) {
-#        when ('failed') {
-#            return encode_json({
-#                error => "The workflow failed."
-#            })
-#        }
-#
-#        when ('cancelled') {
-#            return encode_json({
-#                error => "The workflow was cancelled."
-#            })
-#        }
-#
-#        when ('terminated') {
-#            return encode_json({
-#                error => "The workflow was terminated."
-#            })
-#        }
-#    }
 
     ############################################################################
     # Parameters
@@ -2646,8 +2617,6 @@ sub get_results {
     my ( $fasta1, $fasta2 );
     my $workflow = undef;
     my $status   = undef;
-
-    my $config = $ENV{COGE_HOME} . "coge.conf";
 
     if ( $feat_type1 eq "genomic" ) {
         my $genome = $coge->resultset('Genome')->find($dsgid1);
@@ -2944,7 +2913,7 @@ sub get_results {
     ############################################################################
     my $results =
       HTML::Template->new(
-        filename => $P->{TMPLDIR} . 'partials/synmap_results.tmpl' );
+        filename => $config->{TMPLDIR} . 'partials/synmap_results.tmpl' );
 
     my ($x_label, $y_label);
 
@@ -3197,12 +3166,12 @@ sub get_results {
             msg  => qq{Dotplot JSON},
         );
 
-        my $conffile = $ENV{COGE_HOME} . 'coge.conf';
-
         $dagchainer_file =~ s/^$URL/$DIR/;
 
         $html .= "<br>"
-          . qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=$conffile;l=$tiny_link');" >Generate Pseudo-Assembled Genomic Sequence</span>}
+          . qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=}
+          . $config->{_CONFIG_PATH}
+          . qq{;l=$tiny_link');" >Generate Pseudo-Assembled Genomic Sequence</span>}
           if $assemble;
 
         my $rows = [
@@ -3252,8 +3221,10 @@ sub get_results {
                 general  => undef,
                 homolog  => undef,
                 diagonal => undef,
-                result   => $spa_url.
-                qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=$conffile;l=$tiny_link');" >Generate Pseudo-Assembled Genomic Sequence</span>},
+                result   => $spa_url
+                    . qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=}
+                    . $config->{_CONFIG_PATH}
+                    . qq{;l=$tiny_link');" >Generate Pseudo-Assembled Genomic Sequence</span>},
 ,
             },
             {
@@ -3433,7 +3404,7 @@ sub gen_org_name {
       . $feat_type;
     $title =~ s/(`|')//g;
 
-    if ($write_log) {
+    if ($cogeweb and $write_log) {
         CoGe::Accessory::Web::write_log( "Generated organism name:",
             $cogeweb->logfile );
         CoGe::Accessory::Web::write_log( " " x (2) . $title,
@@ -3642,33 +3613,40 @@ sub get_dotplot {
     my $color_scheme = $opts{color_scheme};
     my $fid1         = $opts{fid1};
     my $fid2         = $opts{fid2};
+    my %params;
 
     #print STDERR Dumper \%opts;
     $box_diags = $box_diags eq "true" ? 1 : 0;
 
     # base=8_8.CDS-CDS.blastn.dag_geneorder_D60_g30_A5;
 
-    $url = $P->{SERVER} . "run_dotplot.pl?" . $url;
-    $url .= ";flip=$flip"       if $flip;
-    $url .= ";regen=$regen"     if $regen;
-    $url .= ";width=$width"     if $width;
-    $url .= ";ksdb=$ksdb"       if $ksdb;
-    $url .= ";kstype=$kstype"   if $kstype;
-    $url .= ";log=1"            if $kstype;
-    $url .= ";min=$min"         if defined $min;
-    $url .= ";max=$max"         if defined $max;
-    $url .= ";am=$metric"       if defined $metric;
-    $url .= ";ar=$relationship" if defined $relationship;
-    $url .= ";ct=$color_type"   if $color_type;
-    $url .= ";bd=$box_diags"    if $box_diags;
-    $url .= ";cs=$color_scheme" if defined $color_scheme;
-    $url .= ";fid1=$fid1"       if defined $fid1 && $fid1 =~ /^\d+$/;
-    $url .= ";fid2=$fid2"       if defined $fid2 && $fid2 =~ /^\d+$/;
+    $params{flip} = $flip       if $flip;
+    $params{regen} = $regen     if $regen;
+    $params{width} = $width     if $width;
+    $params{ksdb} = $ksdb       if $ksdb eq /undefined/;
+    $params{kstype} = $kstype   if $kstype;
+    $params{log} = 1            if $kstype;
+    $params{min} = $min         if $min;
+    $params{max} = $max         if $max;
+    $params{am} = $metric       if defined $metric;
+    $params{ar} = $relationship if defined $relationship;
+    $params{ct} = $color_type   if $color_type;
+    $params{bd} = $box_diags    if $box_diags;
+    $params{cs} = $color_scheme if defined $color_scheme;
+    $params{fid1} = $fid1       if defined $fid1 && $fid1 =~ /^\d+$/;
+    $params{fid2} = $fid2       if defined $fid2 && $fid2 =~ /^\d+$/;
 
-    my $content = LWP::Simple::get($url);
-    unless ($content) {
+    $url = url_for("run_dotplot.pl", %params) . "&" . $url;
+    my $ua = LWP::UserAgent->new;
+    $ua->timeout(10);
+    my $response = $ua->get($url);
+
+    unless ($response->is_success) {
         return "Unable to get image for dotplot: $url";
     }
+
+    my $content = $response->decoded_content;
+
     ($url) = $content =~ /url=(.*?)"/is;
     my $png = $url;
     $png =~ s/html$/png/;

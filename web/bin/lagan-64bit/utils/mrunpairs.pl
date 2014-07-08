@@ -17,7 +17,6 @@ $presolution = 25;
 $pwindow = 40;
 $pnumwindows = 4;
 
-
 if (@ARGV < 1) {
     print ("usage:\n mrunpairs.pl filename\n");
     print ("options: [base sequence name [sequence pairs]]\n");
@@ -51,7 +50,7 @@ while ($i < @ARGV) {
 	    } else {
 		$j++;
 		@params[$j] = $ARGV[$i];
-		if ((@params[$j] eq "-gapstart") || 
+		if ((@params[$j] eq "-gapstart") ||
 		    (@params[$j] eq "-gapend") ||
 		    (@params[$j] eq "-gapcont") ||
 		    (@params[$j] eq "-gapperseq") ||
@@ -80,7 +79,7 @@ for ($i=0; $i<@vparams; $i+=2) {
     elsif (@vparams[$i] eq "--numwindows") { $pnumwindows = @vparams[$i+1]; }
 }
 
-if (!$treespec) { 
+if (!$treespec) {
     $j++;
     $treepos = $j+1;
     @params[$j] = "-tree";
@@ -100,7 +99,7 @@ if (-e "$filename.masked") {
     $mextstr = "$lagandir/mextract.pl $filename.masked -masked";
     print "$mextstr\n";
     if(!`$mextstr`) {
-	print "\nMasked Multi-FASTA extraction failure...\n"; 
+	print "\nMasked Multi-FASTA extraction failure...\n";
 	exit(1);
     }
 }
@@ -153,8 +152,7 @@ foreach $s (@keys) {
     @fnames[$list{$s}] = "$prefix$keys[$list{$s}].fa";
 }
 
-
-if ((@targets > 1)) { 
+if ((@targets > 1)) {
     if (@targets %2 != 1) {
 	$c = @targets;
 	print ("$c sequences: ");
@@ -169,7 +167,7 @@ if (@targets == 1) {
     foreach $s (@keys) {
 	if ($s ne @targets[0]) {
 	    @targets[++$i] = @targets[0];
-	    @targets[++$i] = $s;	    
+	    @targets[++$i] = $s;
 	}
     }
 
@@ -188,7 +186,7 @@ for($i=1; $i<@targets; $i+=2) {
     foreach $s (@params) {
 	$mparams = "$mparams $s";
     }
-    
+
     $mlagan = "$lagandir/mlagan$mfiles$mparams > $outprefix.out";
     print "\n$mlagan\n\n";
     if(`$mlagan`) { print "\n\n"; exit(1); }
@@ -202,14 +200,12 @@ for($i=1; $i<@targets; $i+=2) {
 
 }
 
-
 %distinct=();
 foreach $s (@targets) {
     $distinct{$s} = 0;
 }
 
 @dseqs = keys %distinct;
-
 
 $plotfile = "$pprefix.plotfile";
 open (PLOTFILE, ">$plotfile");
@@ -229,14 +225,14 @@ foreach $s (@bins) {
     print PLOTFILE " SEQUENCES @targets[$i] @targets[$i+1]\n";
     print PLOTFILE " REGIONS $paregmin $paregmax\n";
     print PLOTFILE " MIN $pamin\n";
-    print PLOTFILE "END\n\n";   
+    print PLOTFILE "END\n\n";
     $i+=2;
 }
 
 print "touch $prefix.ann\n\n";
 `touch $prefix.ann`;
 
-print PLOTFILE "GENES $prefix.ann\n\n";    
+print PLOTFILE "GENES $prefix.ann\n\n";
 print PLOTFILE "LEGEND on\n\n";
 print PLOTFILE "COORDINATE @targets[0]\n\n";
 print PLOTFILE "PAPER letter\n\n";
@@ -253,15 +249,9 @@ print PLOTFILE "NUM_WINDOWS $pnumwindows\n\n";
 #    print ("Must specify environment variable VISTA_DIR\n");
 #    exit(1);
 #}
-    
+
 #$vistastr = "$vistadir/RunVista $plotfile";
 #print "$vistastr\n";
 #if (!`$vistastr`) { print "\nVISTA failure...\n"; exit(1); }
 
-
 print "\n\nmrunpairs.pl -- end.\n\n";
-
-
-
-
-

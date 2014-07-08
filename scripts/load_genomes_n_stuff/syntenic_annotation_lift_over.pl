@@ -5,7 +5,6 @@ use Data::Dumper;
 use CoGeX;
 use Getopt::Long;
 
-
 use vars qw($coge $GO $dsid $file $master);
 
 GetOptions("go=i"=>\$GO,
@@ -21,8 +20,8 @@ unless ($file)
     print qq{
 Usage:  $0 -file <syntenic pairs file from synmap> -master 1 -go 1
 
-This program will auto-extract syntenic gene pairs from a synmap file using 
-their CoGe database ID.  It will then transfer annotations and names from 
+This program will auto-extract syntenic gene pairs from a synmap file using
+their CoGe database ID.  It will then transfer annotations and names from
 the "master" feature to the "slave" feature.
 
 To figure out which is master and which is slave, just run the program without
@@ -43,7 +42,6 @@ Options:
 
 };
 
-
     exit;
   }
 
@@ -56,7 +54,6 @@ $file = gunzip($file);
 process_file($file);
 $file = gzip($file);
 my %seen;
-
 
 sub map_annotations
   {
@@ -111,7 +108,6 @@ sub process_file
 	$seen{$id1} = $id2;
       }
   }
-
 
 sub gzip
     {

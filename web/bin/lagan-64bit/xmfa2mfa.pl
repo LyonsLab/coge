@@ -26,9 +26,9 @@ foreach my $line (@lines) {
 	if ($mode eq "M2") {
 		$line =~ /(\>[^\s\n]+\s([\+\-])[^\n]+)\n(.+)\n(\>[^\s\n]+\s([\+\-])[^\n]+)\n(.+)\n(\=.+?)\n/s;
 #		$line =~ /(\>[^\s\n]+\s([\+\-])[^\n]+)\n([^\n]+)\n(\>[^\s\n]+\s([\+\-])[^\n]+)\n([^\n]+)\n(\=.+?\n)/s;
-		
+
 		my ($head1, $strand1, $seq1, $head2, $strand2, $seq2, $foot) = ($1, $2, $3, $4, $5, $6, $7);
-		
+
 		die if $strand1 ne $strand2;
 		if ($strand1 eq "-") {
 			$seq1 =~ s/\n//g;

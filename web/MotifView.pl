@@ -1342,7 +1342,6 @@ GEvo Benchmark: $DATE
   Time to process html                              : $html_time
 Total time                                          : $total_time
 
-
 };
     print STDERR "\n", $gevo_link, "\n";
     print STDERR $bench if $BENCHMARK;
@@ -2655,7 +2654,7 @@ sub process_hsps {
               if $seq;
             $seq =~ s/-//g if $seq;
             $desc .=
-                "<tr><td>Sequence:<td><span style=\"white-space: nowrap\">" 
+                "<tr><td>Sequence:<td><span style=\"white-space: nowrap\">"
               . $seq
               . "</span>"
               if $seq;
@@ -3981,13 +3980,13 @@ qq{'args__rgb$i', 'args__'+\$('#sample_color$i').css('backgroundColor'),};
     $params .= qq{
         'args__pad_gs', 'pad_gs',
 
-	'args__spike', 'spike', 
-	'args__blast_word', 'blast_wordsize', 
-	'args__blast_gapo', 'blast_gapopen', 
-	'args__blast_gape', 'blast_gapextend', 
+	'args__spike', 'spike',
+	'args__blast_word', 'blast_wordsize',
+	'args__blast_gapo', 'blast_gapopen',
+	'args__blast_gape', 'blast_gapextend',
 	'args__blast_mmatch', 'blast_mismatch',
 	'args__blast_match', 'blast_match',
-	'args__blast_eval', 'blast_eval', 
+	'args__blast_eval', 'blast_eval',
 	'args__blast_params', 'blastparams',
         'args__blast_filter','blast_filter',
 
@@ -4015,7 +4014,6 @@ qq{'args__rgb$i', 'args__'+\$('#sample_color$i').css('backgroundColor'),};
         'args__dialign_use_anchor','dialign_use_anchor',
         'args__dialign_anchor_program','dialign_anchor_program',
 
-
         'args__blastz_wordsize','blastz_wordsize',
         'args__blastz_chaining','blastz_chaining',
         'args__blastz_threshold','blastz_threshold',
@@ -4039,7 +4037,7 @@ qq{'args__rgb$i', 'args__'+\$('#sample_color$i').css('backgroundColor'),};
 	'args__email', 'email',
 	'args__prog', 'alignment_program',
 	'args__motifregexp', 'motif_regexp',
-	'args__motifoverlap', 'motif_overlap',	
+	'args__motifoverlap', 'motif_overlap',
         'args__showallhsps', 'show_hsps_with_stop_codon',
         'args__padding', 'padding',
         'args__num_seqs','args__$num_seqs',
@@ -4090,7 +4088,7 @@ sub gen_go_run {
 
     my $run = qq!
 <SCRIPT language="JavaScript">
-function go_run (){ 
+function go_run (){
  if (ajax.length)
   {
    setTimeout("go_run()", 100);
@@ -5309,17 +5307,15 @@ sub email_results {
 
 Thank you for using the Genome Evolution Analysis Tool! The results from your latest analysis are ready, and can be viewed here:
 http://} . $server . qq{/CoGe/GEvo_direct.pl?name=$basefilename
-			
+
 To contact us or to cite CoGe please visit:
 http://genomevolution.org/wiki/index.php/Contact_Page
 
 You can use this URL for regenerating your results:
 $full_gevo_url
 
-
-
 Thank you for using the CoGe Software Package.
-	
+
 - The CoGe Team
 };
 

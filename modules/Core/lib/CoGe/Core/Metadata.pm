@@ -21,7 +21,7 @@ sub create_annotations {
     my $target = $opts{target};           # experiment, genome, or list object
     my $annotations = $opts{annotations}; # semicolon-separated list of annotations (link:group:type:text;...)
     my $locked = $opts{locked};           # boolean
-    
+
     my @result = ();
     foreach ( split(/\s*;\s*/, $annotations) ) {
         my @tok = split(/\s*\|\s*/, $_);
@@ -34,7 +34,7 @@ sub create_annotations {
             print STDERR "missing required annotation type and text fields\n";
             return;
         }
-        
+
         # Create type group - first try to find a match by name only
         my ($group, $type, $anno);
         if ($group_name) {
@@ -47,14 +47,14 @@ sub create_annotations {
                 return;
             }
         }
-        
+
         # Create type - first try to find a match by name and group
-        $type = $db->resultset('AnnotationType')->find({ 
-            name => $type_name, 
+        $type = $db->resultset('AnnotationType')->find({
+            name => $type_name,
             annotation_type_group_id => ($group ? $group->id : undef) }
         );
         if (!$type) {
-            $type = $db->resultset('AnnotationType')->create({ 
+            $type = $db->resultset('AnnotationType')->create({
                 name => $type_name,
                 annotation_type_group_id => ($group ? $group->id : undef)
             }); # null description
@@ -63,7 +63,7 @@ sub create_annotations {
             print STDERR "error creating annotation type\n";
             return;
         }
-        
+
         # Create annotation
         if (ref($target) =~ /Experiment/) {
             $anno = $db->resultset('ExperimentAnnotation')->create({
@@ -100,10 +100,10 @@ sub create_annotations {
             print STDERR "error creating annotation\n";
             return;
         }
-        
+
         push @result, $anno;
     }
-    
+
     return \@result;
 }
 

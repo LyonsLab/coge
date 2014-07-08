@@ -27,7 +27,6 @@ unless ($org_id && $file_path)
     exit;
   }
 
-
 my $dsg = $coge->resultset('DatasetGroup')->create({
 							    name=>$name,
 							    description=>$desc,
@@ -36,7 +35,6 @@ my $dsg = $coge->resultset('DatasetGroup')->create({
 							    genomic_sequence_type_id=>$gst_id,
 							    file_path=>$file_path
 							   });
-
 
 if ($dsg)
   {
@@ -85,7 +83,7 @@ Options:
                            sequence, 2 is 50x repeat masked, and then there are others.
                            DEFAULT: 1
 
--file      | -f            path to the genomic sequence file in fasta format.  Fasta headers must 
+-file      | -f            path to the genomic sequence file in fasta format.  Fasta headers must
                            be the names of the chromosomes (or contigs)
                            MANDATORY!  Example: /opt/apache/CoGe/data/genomic_sequence/0/0/0/1/1.faa
 

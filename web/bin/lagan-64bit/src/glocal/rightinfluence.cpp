@@ -31,7 +31,6 @@ void initRI(RI *RightInfluence, long long int scoreIndex) {
     RightInfluence->act[+INF] = &end;
 }
 
-
 // Finds the owner in the current right influence region and returns the score using the appropriate score function
 float lookUpScore(RI * RightInfluence, Fragment * current) {
 	Fragment* owner;
@@ -42,7 +41,6 @@ float lookUpScore(RI * RightInfluence, Fragment * current) {
 	// return the score using the appropriate score function
 	return scoreAll(owner, current, RightInfluence->scoreIndex);
 }
-
 
 // Returns the owner of the region
 Fragment * lookUpOwnerStart(RI * RightInfluence, Fragment * current) {
@@ -55,7 +53,6 @@ Fragment * lookUpOwnerStart(RI * RightInfluence, Fragment * current) {
 	return (*ownerIterator).second;
 }
 
-
 Fragment * lookUpOwnerEnd(RI * RightInfluence, Fragment * current) {
 	Active::iterator ownerIterator;
 
@@ -65,7 +62,6 @@ Fragment * lookUpOwnerEnd(RI * RightInfluence, Fragment * current) {
 
 	return (*ownerIterator).second;
 }
-
 
 // Returns true if the first argument is the winner in their common region
 long long int RIWinner(RI * RightInfluence, Fragment * first, Fragment * second) {
@@ -93,16 +89,15 @@ long long int RIWinner(RI * RightInfluence, Fragment * first, Fragment * second)
 	}
 }
 
-
 long long int RICommitEndPoint(RI * RightInfluence, Fragment * current) {
 	Fragment * owner;
 	Fragment * temp;
 	owner = lookUpOwnerEnd(RightInfluence, current);
 
 	if (RIWinner(RightInfluence, owner, current)) { return 0; }
-    
+
 	owner = nextOnActive(RightInfluence, owner);
-    
+
 	while (1) {
 		if (RIWinner(RightInfluence, current, owner)) {
 			temp = owner;
@@ -147,16 +142,13 @@ if (RightInfluence->scoreIndex == possibleCase) {
         i++;
     }
 }
- 
 
     return 1;
 }
 
-
 long long int diagonal(Fragment * current, RI * RightInfluence) {
 	return (current->getSeq2End(RightInfluence->reflectFlag) - current->seq1End);
 }
-
 
 // Returns the successor on the active list
 Fragment * nextOnActive(RI * RightInfluence, Fragment * current) {
@@ -169,7 +161,7 @@ Fragment * nextOnActive(RI * RightInfluence, Fragment * current) {
     if(current->score==-1)
         {
             diagCurrent = -INF;
-            
+
         }
 
     if(current->score ==-2)
@@ -177,7 +169,6 @@ Fragment * nextOnActive(RI * RightInfluence, Fragment * current) {
             diagCurrent = INF;
         }
     //MUKMOD end
-        
 
 	holder = RightInfluence->act.upper_bound(diagCurrent);
 
@@ -187,7 +178,6 @@ Fragment * nextOnActive(RI * RightInfluence, Fragment * current) {
 		return NULL;
 	}
 }
-
 
 long long int printActive(RI * RightInfluence) {
 	Active::iterator temp;

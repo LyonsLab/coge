@@ -13,11 +13,10 @@ $first = 1;
 $plus_sc = 0;
 $minus_sc = 0;
 
-
 while ($line = <STDIN>) {
 
     if ($line =~ /^>/) {
-	if (!$first) { 
+	if (!$first) {
 	    if ($strand eq "+") {
 		print STDOUT "  Region [$s1s $reg1s][$s2s $reg2s] $score $strand\n";
 	    }
@@ -29,7 +28,7 @@ while ($line = <STDIN>) {
 		print STDOUT "INV\n"
 	    }
 	    if ($strand eq "+") { $plus_sc += $score; }
-	    else  { $minus_sc += $score; }	  
+	    else  { $minus_sc += $score; }
 	    if ($plus_sc > $minus_sc) {
 		print STDOUT "Main score (+) $plus_sc; Inverted $minus_sc\n";
 	    }
@@ -82,14 +81,14 @@ while ($line = <STDIN>) {
 	}
 
 	if (!$endblock) {
-	    $s2s = $3;  
+	    $s2s = $3;
 	    $s1s = $1;
 	    $s1e = $2;
 	    $s2e = $4;
 	    $score += $5;
 	    if ($first) {
-		print STDOUT "    "; 
-		print STDOUT "    "; 
+		print STDOUT "    ";
+		print STDOUT "    ";
 		$initstrnd = $strand;
 		$reg1s = $2;
 		$reg2s = $4;
@@ -105,18 +104,18 @@ while ($line = <STDIN>) {
 	    }
 
 	    if ($strand eq "+") { $plus_sc += $score; }
-	    else  { $minus_sc += $score; }	  
+	    else  { $minus_sc += $score; }
 
 	    if ($endblock %2) { print STDOUT "INV "; }
 	    else {print STDOUT "    "; }
 	    if ($endblock > 1) { print STDOUT "TRL "; }
 	    else {print STDOUT "    "; }
-	    $s2s = $3;  
+	    $s2s = $3;
 	    $s1s = $1;
 	    $s1e = $2;
-	    $s2e = $4; 
-	    $reg1s = $s1e; 
-	    $reg2s = $s2e; 
+	    $s2e = $4;
+	    $reg1s = $s1e;
+	    $reg2s = $s2e;
 	    $score = $5;
 	    $strand = $6;
 	    #	    print STDOUT "strand $strand\n";

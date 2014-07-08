@@ -56,40 +56,39 @@ __PACKAGE__->has_many( 'workflows' => "CoGeX::Result::Workflow", 'user_id' );
 __PACKAGE__->has_many( 'logs' => "CoGeX::Result::Log", 'user_id' );
 __PACKAGE__->has_many( 'jobs' => "CoGeX::Result::Job", 'user_id' );
 __PACKAGE__->has_many( # all children (groups/genomes/experiments/lists)
-	'child_connectors' => "CoGeX::Result::UserConnector", 
-	{ "foreign.parent_id" => "self.user_id" }, 
+	'child_connectors' => "CoGeX::Result::UserConnector",
+	{ "foreign.parent_id" => "self.user_id" },
 	{ where => { parent_type => $node_types->{user} } } );
 __PACKAGE__->has_many( # child groups
-	'group_connectors' => "CoGeX::Result::UserConnector", 
-	{ "foreign.parent_id" => "self.user_id" }, 
+	'group_connectors' => "CoGeX::Result::UserConnector",
+	{ "foreign.parent_id" => "self.user_id" },
 	{ where => [ -and => [ parent_type => $node_types->{user}, child_type => $node_types->{group} ] ] } );
 __PACKAGE__->has_many( # child genomes
-	'genome_connectors' => "CoGeX::Result::UserConnector", 
-	{ "foreign.parent_id" => "self.user_id" }, 
+	'genome_connectors' => "CoGeX::Result::UserConnector",
+	{ "foreign.parent_id" => "self.user_id" },
 	{ where => [ -and => [ parent_type => $node_types->{user}, child_type => $node_types->{genome} ] ] } );
 __PACKAGE__->has_many( # child experiments
-	'experiment_connectors' => "CoGeX::Result::UserConnector", 
-	{ "foreign.parent_id" => "self.user_id" }, 
+	'experiment_connectors' => "CoGeX::Result::UserConnector",
+	{ "foreign.parent_id" => "self.user_id" },
 	{ where => [ -and => [ parent_type => $node_types->{user}, child_type => $node_types->{experiment} ] ] } );
 __PACKAGE__->has_many( # child lists
-	'list_connectors' => "CoGeX::Result::UserConnector", 
-	{ "foreign.parent_id" => "self.user_id" }, 
-	{ where => [ -and => [ parent_type => $node_types->{user}, child_type => $node_types->{list} ] ] } );	
+	'list_connectors' => "CoGeX::Result::UserConnector",
+	{ "foreign.parent_id" => "self.user_id" },
+	{ where => [ -and => [ parent_type => $node_types->{user}, child_type => $node_types->{list} ] ] } );
 
 __PACKAGE__->mk_accessors(qw(_genome_ids _experiment_ids));
 #_genome_ids is a hash_ref of the genome_ids that a user has access to
-
 
 ################################################ subroutine header begin ##
 
 =head2 generate_passwd
 
- Usage     : 
+ Usage     :
  Purpose   : Generates a password based on a hashed string and a salt value.
  Returns   : Hash of password and salt value.
  Argument  : 'passwd' or 'pwd'
  Throws    : None
- Comments  : 
+ Comments  :
 
 See Also   : check_passwd()
 
@@ -108,12 +107,12 @@ sub generate_passwd {
 
 =head2 check_passwd
 
- Usage     : 
+ Usage     :
  Purpose   : Checks to see if entered password matches user password.
  Returns   : Result of logic test 'eq' between password has from the database and a hash of the user supplied password.
  Argument  : 'passwd' or 'pwd'
  Throws    : None
- Comments  : 
+ Comments  :
 
 See Also   : generate_passwd()
 
@@ -132,12 +131,12 @@ sub check_passwd {
 
 =head2 name
 
- Usage     : 
+ Usage     :
  Purpose   : alias for $self->user_name
  Returns   : string
- Argument  : 
+ Argument  :
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -154,19 +153,19 @@ sub display_name {
 	my $name = $self->user_name;
 	$name = $self->first_name if $self->first_name;
 	$name .= ' ' . $self->last_name if $self->first_name && $self->last_name;
-	return $name;	
+	return $name;
 }
 
 ################################################ subroutine header begin ##
 
 =head2 user_groups
 
- Usage     : 
+ Usage     :
  Purpose   : Returns the set of groups a user belongs to
  Returns   : Array of Groups
  Argument  : None
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -195,12 +194,12 @@ sub groups {
 
 =head2 collaborators
 
- Usage     : 
+ Usage     :
  Purpose   : return user's collaborators
  Returns   : wantarray of user objects
- Argument  : 
+ Argument  :
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -231,7 +230,7 @@ sub has_collaborator {
 		foreach my $user ( $group->users ) {
 			return 1 if ($user->id == $uid);
 		}
-	}	
+	}
 
 	return 0;
 }
@@ -243,9 +242,9 @@ sub has_collaborator {
  Usage     : $self->is_admin
  Purpose   : determine if a user is an admin
  Returns   : 1 if an admin, 0 if not
- Argument  : 
+ Argument  :
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -264,12 +263,12 @@ sub is_public {
 
 =head2 has_access_to_...
 
- Usage     : 
+ Usage     :
  Purpose   : checks to see if a user has access to a ...
  Returns   : 1/0
  Argument  : None
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -283,7 +282,7 @@ sub has_access_to_list {
 
 	my $lid = $list->id;
 	foreach ($self->lists) {
-		return 1 if ($_->id == $lid);	
+		return 1 if ($_->id == $lid);
 	}
 
 	return 0;
@@ -295,7 +294,7 @@ sub has_access_to_genome {
 	return 0 unless $genome;
 	return 1 if (not $genome->restricted or $self->is_admin); # public genome or superuser
 	return 0 if ($self->is_public); # deny public user for restricted genome
-	
+
 	my $gid = $genome->id;
 	unless ( $self->_genome_ids)  {
 	    $self->_genome_ids({ map{$_->id=>1} $self->genomes(include_deleted => 1) });
@@ -319,7 +318,7 @@ sub has_access_to_experiment {
 	return 0 unless $experiment;
 	return 1 if (not $experiment->restricted or $self->is_admin); # public experiment or superuser
 	return 0 if ($self->is_public); # deny public user for restricted experiment
-	
+
 	unless ( $self->_experiment_ids) {
 	    $self->_experiment_ids({ map{$_->id=>1} $self->experiments(include_deleted => 1) });
 	}
@@ -340,12 +339,12 @@ sub has_access_to_dataset {
 	my ($self, $ds) = @_;
 	return 0 unless $ds;
 	return 1 if (not $ds->restricted or $self->is_admin); # public dataset or superuser
-	return 0 if ($self->is_public); # deny public user for restricted dataset	
-	
+	return 0 if ($self->is_public); # deny public user for restricted dataset
+
 	my $dsid = $ds->id;
 	foreach my $genome ($self->genomes(include_deleted => 1)) {
 		foreach my $dataset ($genome->datasets) {
-			return 1 if ($dataset->id == $dsid);	
+			return 1 if ($dataset->id == $dsid);
 		}
 	}
 	return 0;
@@ -362,7 +361,7 @@ sub has_access_to_dataset {
              ds=>dataset object
              list=>list object
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -386,7 +385,7 @@ sub is_owner {
              ds=>dataset object
              list=>list object
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -411,7 +410,7 @@ sub is_editor {
              ds=>dataset object
              list=>list object
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -440,7 +439,7 @@ sub is_owner_editor {
              ds=>dataset object
              list=>list object
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -461,14 +460,14 @@ sub is_reader {
  Usage     : $self->(dsg=>$dsg)
  Purpose   : checks to see if a user has given role in relation to given group/genome/dataset/list/experiment
  Returns   : 1/0
- Argument  : role => "owner","editor","reader" 
+ Argument  : role => "owner","editor","reader"
  			 group => user group object
              dsg => genome object
              ds => dataset object
              list => list object
              experiment => experiment object
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -534,12 +533,12 @@ sub is_role {
 
 =head2 datasets
 
- Usage     : 
+ Usage     :
  Purpose   : Returns the set of datasets a user has access to
  Returns   : Array of datasets
  Argument  : None
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -548,24 +547,24 @@ sub is_role {
 sub datasets {
 	my $self = shift;
 	return unless $self->id; # ignore public user
-	
+
 	my %datasets;
 	foreach my $ug ( $self->groups ) {
 		map { $datasets{ $_->id } = $_ } $ug->datasets;
 	}
-	return wantarray ? values %datasets : [ values %datasets ];		
+	return wantarray ? values %datasets : [ values %datasets ];
 }
 
 ################################################ subroutine header begin ##
 
 =head2 restricted_datasets
 
- Usage     : 
+ Usage     :
  Purpose   : Returns the set of restricted datasets a user has access to
  Returns   : Array of datasets
  Argument  : None
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -574,12 +573,12 @@ sub datasets {
 sub restricted_datasets {
 	my $self = shift;
 	return unless $self->id; # ignore public user
-	
+
 	my %datasets;
 	foreach my $ug ( $self->groups ) {
 		map { $datasets{ $_->id } = $_ } $ug->restricted_datasets;
 	}
-	return wantarray ? values %datasets : [ values %datasets ];		
+	return wantarray ? values %datasets : [ values %datasets ];
 }
 
 ################################################ subroutine header begin ##
@@ -589,9 +588,9 @@ sub restricted_datasets {
  Usage     : $self->lists
  Purpose   : shows the lists to which user has access
  Returns   : wantarray of list objects
- Argument  : 
+ Argument  :
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -601,9 +600,9 @@ sub lists {
 	my $self = shift;
 	return unless $self->id; # ignore public user
 	my %opts = @_;
-	
+
 	my %lists;
-	foreach my $ug ( $self->groups ) { 
+	foreach my $ug ( $self->groups ) {
 		foreach my $uc ( $ug->list_connectors ) {
 			$lists{ $uc->child_id } = $uc->child;
 		}
@@ -622,9 +621,9 @@ sub lists {
  Usage     : $self->experiments
  Purpose   : Return set of experiments to which user has access
  Returns   : wantarray of experiment objects
- Argument  : 
+ Argument  :
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -640,7 +639,7 @@ sub experiments {
 	foreach ($self->children(type=>'experiment')) {
 		push @experiments, $_ unless ($_->deleted and not $include_deleted);
 	}
-	return wantarray ? @experiments : \@experiments;	
+	return wantarray ? @experiments : \@experiments;
 }
 
 ################################################ subroutine header begin ##
@@ -650,9 +649,9 @@ sub experiments {
  Usage     : $self->restricted_experiments
  Purpose   : Return set of restricted experiments to which user has access
  Returns   : wantarray of experiment objects
- Argument  : 
+ Argument  :
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -663,14 +662,14 @@ sub restricted_experiments {
 	return unless $self->id; # ignore public user
 	my %opts = @_;
 	my $include_deleted = $opts{include_deleted};
-	
+
 	my %experiments;
 	foreach my $ug ( $self->groups ) {
-		map { 
+		map {
 			$experiments{ $_->id } = $_ if (!$_->deleted || $include_deleted)
 		} $ug->restricted_experiments;
 	}
-	return wantarray ? values %experiments : [ values %experiments ];	
+	return wantarray ? values %experiments : [ values %experiments ];
 }
 
 ################################################ subroutine header begin ##
@@ -680,9 +679,9 @@ sub restricted_experiments {
  Usage     : $self->genomes
  Purpose   : Get list of genomes to which user has access
  Returns   : wantarray of genome objects
- Argument  : 
+ Argument  :
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -705,9 +704,9 @@ sub groups_with_access {
 	my $self = shift;
 	return unless $self->id; # ignore public user
 	my $item = shift;
-	
+
 	my %groups;
-	
+
 	# Groups
 	foreach my $conn ( $item->group_connectors ) {
 		my $group = $conn->parent;
@@ -720,29 +719,29 @@ sub groups_with_access {
 		foreach ($list->group_connectors) {
 			my $group = $_->parent;
 			$groups{$group->id} = $group;
-		}		
+		}
 	}
 
-	return wantarray ? values %groups : [ values %groups ];	
+	return wantarray ? values %groups : [ values %groups ];
 }
 
 sub users_with_access {
 	my $self = shift;
 	return unless $self->id; # ignore public user
 	my $item = shift;
-	
+
 	my %users;
-	
+
 	# Direct user connections
 	foreach my $conn ( $item->user_connectors ) {
 		$users{$conn->parent_id} = $conn->parent;
 	}
-	
+
 	# Users in groups
 	foreach my $group ( $self->groups_with_access($item) ) {
 		map { $users{$_->id} = $_ } $group->users;
 	}
-	
+
 	# Lists
 	foreach my $conn ( $item->list_connectors ) {
 		my $list = $conn->parent_list;
@@ -753,14 +752,14 @@ sub users_with_access {
 		foreach ($list->group_connectors) {
 			my $group = $_->parent;
 			map { $users{$_->id} = $_ } $group->users;
-		}		
+		}
 	}
 
-	return wantarray ? values %users : [ values %users ];	
+	return wantarray ? values %users : [ values %users ];
 }
 
-# Only call for children of type genome/experiment, not group/list. 
-sub child_connector { 
+# Only call for children of type genome/experiment, not group/list.
+sub child_connector {
 	my $self = shift;
 	return unless $self->id; # ignore public user
 	my %opts = @_;
@@ -784,7 +783,7 @@ sub child_connector {
 			}
 		}
 	}
-	
+
 	# Scan user's groups
 	foreach my $group ($self->groups) { #TODO move this coge into UserGroup.pm::genomes ...?
 		# Scan group's items
@@ -845,7 +844,7 @@ sub all_child_connectors { #FIXME optimize by mimicking child_by_type_and_id, co
 			}
 		}
 	}
-	
+
 	return wantarray ? values %connectors : [ values %connectors ];
 }
 
@@ -872,11 +871,11 @@ sub children { #FIXME have this use child_by_type_and_id
 			$children{$child->id} = $child;
 		}
 	}
-	
+
 	# Scan user's groups
 	foreach ($self->group_connectors) { #TODO move this coge into UserGroup.pm::genomes ...?
 		my $group = $_->child;
-		
+
 		# Scan group's items
 		foreach ($group->child_connectors({child_type=>$type_num})) {
 			my $child = $_->child;
@@ -891,7 +890,7 @@ sub children { #FIXME have this use child_by_type_and_id
 			}
 		}
 	}
-	
+
 	return wantarray ? values %children : [ values %children ];
 }
 
@@ -908,7 +907,7 @@ sub children_by_type_and_id {
 	foreach my $c ($self->child_connectors) {
 		my $child = $c->child;
 		$children{$c->child_type}{$c->child_id} = $child;
-		
+
 		if ($c->child_type == $node_types->{list}) {
 			foreach my $c ($child->child_connectors) {
 				my $child = $c->child;
@@ -919,7 +918,7 @@ sub children_by_type_and_id {
 			foreach my $c ($child->child_connectors) {
 				my $child = $c->child;
 				$children{$c->child_type}{$c->child_id} = $child;
-				
+
 				if ($c->child_type == $node_types->{list}) {
 					foreach my $c ($child->child_connectors) {
 						my $child = $c->child;
@@ -929,7 +928,7 @@ sub children_by_type_and_id {
 			}
 		}
 	}
-	
+
 #	print STDERR "children_by_type_and_id: time=" . ((time - $start_time)*1000) . "\n";
 
 	return \%children;
@@ -949,7 +948,7 @@ sub children_by_type_role_id {
 		my $child = $c->child;
 		$children{$c->child_type}{$c->child_id} = $child;
 		$roles{$c->role_id}{$c->child_id} = 1;
-		
+
 		if ($c->child_type == $node_types->{list}) {
 			foreach my $lc ($child->child_connectors) {
 				my $child = $lc->child;
@@ -962,7 +961,7 @@ sub children_by_type_role_id {
 				my $child = $c->child;
 				$children{$c->child_type}{$c->child_id} = $child;
 				$roles{$c->role_id}{$c->child_id} = 1;
-				
+
 				if ($c->child_type == $node_types->{list}) {
 					foreach my $lc ($child->child_connectors) {
 						my $child = $lc->child;
@@ -973,7 +972,7 @@ sub children_by_type_role_id {
 			}
 		}
 	}
-	
+
 	#print STDERR "children_by_type_and_id: time=" . ((time - $start_time)*1000) . "\n";
 
 	return (\%children, \%roles);
@@ -983,12 +982,12 @@ sub children_by_type_role_id {
 
 =head2 restricted_genomes
 
- Usage     : 
+ Usage     :
  Purpose   : Returns the set of restricted genomes a user has access to
  Returns   : Array of genomes
  Argument  : None
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -999,14 +998,14 @@ sub restricted_genomes {
 	return unless $self->id; # ignore public user
 	my %opts = @_;
 	my $include_deleted = $opts{include_deleted};
-	
+
 	my %genomes;
 	foreach my $ug ( $self->groups ) {
-		map { 
+		map {
 			$genomes{ $_->id } = $_ if (!$_->deleted || $include_deleted)
 		} $ug->restricted_genomes;
 	}
-	return wantarray ? values %genomes : [ values %genomes ];	
+	return wantarray ? values %genomes : [ values %genomes ];
 }
 
 ################################################ subroutine header begin ##
@@ -1016,9 +1015,9 @@ sub restricted_genomes {
  Usage     : $self->features
  Purpose   : shows the features to which user has access
  Returns   : wantarray of features objects
- Argument  : 
+ Argument  :
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -1028,7 +1027,7 @@ sub features {
 	my $self = shift;
 	return unless $self->id; # ignore public user
 #	my %opts = @_;
-	
+
 	my %features;
 	foreach my $group ( $self->groups ) {
 		map { $features{ $_->id } = $_ } $group->features;
@@ -1043,9 +1042,9 @@ sub features {
  Usage     : $self->history
  Purpose   : get the user's history
  Returns   : wantarray or count of history objects
- Argument  : 
+ Argument  :
  Throws    : None
- Comments  : 
+ Comments  :
 
 =cut
 
@@ -1070,7 +1069,7 @@ sub history {
 =head2 info
 
  Usage     : $self->info
- Purpose   : generate a string of information about the user 
+ Purpose   : generate a string of information about the user
  Returns   : a string
  Argument  : None
  Throws    : None
@@ -1083,7 +1082,7 @@ sub history {
 sub info {
 	my $self = shift;
 	return unless $self->id; # ignore public user
-	return $self->user_name if (not $self->first_name and not $self->last_name); 
+	return $self->user_name if (not $self->first_name and not $self->last_name);
 	return $self->first_name . ' ' . $self->last_name . ' (' . $self->user_name . ')';
 }
 
@@ -1106,4 +1105,3 @@ LICENSE file included with this module.
 =head1 SEE ALSO
 
 =cut
-

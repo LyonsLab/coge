@@ -109,9 +109,9 @@ sub get_accn_locs {
         my $stop  = sprintf( "%09i", $feat->stop );
 
         my $header =
-            $chr . "||" 
-          . $start . "||" 
-          . $stop . "||" 
+            $chr . "||"
+          . $start . "||"
+          . $stop . "||"
           . $name . "||"
           . $feat->strand . "||"
           . uc( $feat->feature_type->name ) . "||"

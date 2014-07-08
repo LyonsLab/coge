@@ -90,7 +90,7 @@ CGI::Application::Dispatch->dispatch(
             prefix => 'CoGe::Services::JBrowse',
             app    => 'Experiment',
             rm     => 'stats_regionFeatureDensities'
-        },        
+        },
         'experiment/:eid/features/:chr' => {
             prefix => 'CoGe::Services::JBrowse',
             app    => 'Experiment',

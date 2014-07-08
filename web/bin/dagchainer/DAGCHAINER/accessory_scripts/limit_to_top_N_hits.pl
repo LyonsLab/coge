@@ -18,7 +18,7 @@ while (my $line = <STDIN>) {
 @all_data = sort {
     $a->[0] cmp $b->[0]
 	||
-	$b->[1] <=> $a->[1] 
+	$b->[1] <=> $a->[1]
     } @all_data;
 
 my $curr_acc = "";
@@ -40,4 +40,3 @@ while (my $entry_aref = shift @all_data) {
 }
 
 exit(0);
-

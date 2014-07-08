@@ -13,10 +13,3 @@ my $cmd = "java -Xmx300M -cp  $libPath  JsyntenyView @ARGV";
 exec $cmd;
 
 die "ERROR, couldn't exec $cmd\n";
-
-
- 
-
-
-
-

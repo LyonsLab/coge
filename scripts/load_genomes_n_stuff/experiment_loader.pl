@@ -16,34 +16,34 @@ my $cmdPath = '/usr/local/bin';
 
 my ($exp_file, $exp_dir, $exp_name, $exp_version, $exp_desc, $exp_storage_path, $exp_link,
 		$exp_type_name, $exp_type_desc, $exp_type_id,
-		$source_name, $source_desc, $source_link, $source_id, 
+		$source_name, $source_desc, $source_link, $source_id,
 		$dsg_id, $restricted, $db, $user, $pass);
 
-GetOptions ( 
+GetOptions (
 			"debug=s" => \$DEBUG,
 	    "go=s"    => \$GO,
 	    "erase|e" => \$ERASE,
-	    
+
 	    # Input file
 	    "exp_file=s" => \$exp_file, 			# input data file
 	    "exp_dir=s" => \$exp_dir,					# target directory in CoGe installation
-	    
+
 	    # 'experiment' table values
 	    "exp_name=s" => \$exp_name,
 	    "exp_version=s" => \$exp_version,
 	    "exp_desc=s" => \$exp_desc,
 	    "exp_link=s" => \$exp_link,
-	    
+
 	    # 'experiment_type' table values - UNUSED
 	    "exp_type_name=s" => \$exp_type_name,
 	    "exp_type_desc=s" => \$exp_type_desc,
 	    "exp_type_id=i" => \$exp_type_id,
-	    
+
 	    "source_name=s" => \$source_name, # datasource
 	    "source_desc=s" => \$source_desc,
 	    "source_link=s" => \$source_link,
 	    "source_id=s"   => \$source_id,
-	    
+
 	    "dsg_id=s"=>\$dsg_id,
 	    "restricted=i"=>\$restricted,
 	    "database|db=s" => \$db,
@@ -70,7 +70,7 @@ my ($dsg) = $coge->resultset("DatasetGroup")->find($dsg_id);
 print help("Couldn't find dataset group") unless ($dsg);
 
 $exp_type_name = "unclassified" unless ($exp_type_name);
-unless ($exp_type_id) 
+unless ($exp_type_id)
 	{
     my $et = $coge->resultset("ExperimentType")->find_or_create({name=>$exp_type_name,description=>$exp_type_desc});
     $exp_type_id = $et->id;
@@ -87,14 +87,14 @@ my $exp = $coge->resultset('Experiment')->create({
 					   	name              => $exp_name,
 					   	description       => $exp_desc,
 					   	version						=> $exp_version,
-					   	link              => $exp_link, 
+					   	link              => $exp_link,
 					   	data_source_id    => $source_id,
 					   	dataset_group_id	=> $dsg_id,
 							restricted        => $restricted
 					  }) if $GO;
 $exp_storage_path = "$exp_dir/".$exp->get_path;
 print 'Storage path: ', $exp_storage_path, "\n";
-$exp->storage_path($exp_storage_path);			
+$exp->storage_path($exp_storage_path);
 $exp->update;
 
 my $etc = $coge->resultset('ExperimentTypeConnector')->create({
@@ -125,9 +125,9 @@ exit;
 sub help # FIXME
 {
 	my $msg = shift;
-	
+
 	print $msg if $msg;
-	
+
 	print qq
 	{
     Options (required):
@@ -139,7 +139,7 @@ sub help # FIXME
         exp_name      name of experiment
         dsg_id        data set group id (genome)
         source_name   data source name
-		    
+
 };
 	exit;
 }

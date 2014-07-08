@@ -114,7 +114,6 @@
       $container.children().wrapAll("<div class='slick-pager' />");
     }
 
-
     function updatePager(pagingInfo) {
       var state = getNavState();
 

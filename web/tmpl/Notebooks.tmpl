@@ -10,14 +10,14 @@ $(document).ready(function(){
 		dataType: "html",
 		cache: false,
 	});
-	
+
 	set_table();
-	
+
 	$(".dialog_box").dialog({autoOpen: 0, width: 600});
 });
 
-function set_table () { 
-	$('#list_table').tablesorter({widgets: ['zebra']});	
+function set_table () {
+	$('#list_table').tablesorter({widgets: ['zebra']});
 }
 
 function input_focus(div_id) {
@@ -28,14 +28,14 @@ function input_focus(div_id) {
 function filter_rows (search_text) { // fast filter search
 	var visible = 0;
 	var total = 0;
-	
+
 	if (search_text && search_text.length < 3) { //>
 		return;
 	}
-	
+
 	//filter_busy(1);
-	
-	if (!search_text) { 
+
+	if (!search_text) {
 		$("#list_table_body tr").each(
 			function(index, element) {
 				total++;
@@ -46,13 +46,13 @@ function filter_rows (search_text) { // fast filter search
 	}
 	else {
 		search_text = search_text.toLowerCase();
-		
+
 		$("#list_table_body tr").each(
 			function(index, element) {
 				total++;
-				
+
 				if (element.innerHTML.toLowerCase().indexOf(search_text) != -1) { // match
-					if ( $('#search_type').val() == 1 ) { 
+					if ( $('#search_type').val() == 1 ) {
 						$(element).show();
 						visible++;
 					}
@@ -61,18 +61,18 @@ function filter_rows (search_text) { // fast filter search
 					}
 				}
 				else { // mismatch
-					if ( $('#search_type').val() == 1 ) { 
+					if ( $('#search_type').val() == 1 ) {
 						$(element).hide();
 					}
 					else {
 						$(element).show();
-						visible++;				
+						visible++;
 					}
 				}
 			}
 		);
 	}
-	
+
 	set_table();
 	//filter_busy(0);
 	$('#filter_count').html('Showing ' + visible + ' of ' + total + ' rows');
@@ -81,10 +81,10 @@ function filter_rows (search_text) { // fast filter search
 function run_get_lists_for_user(opts){
 	if (!opts) { opts={}; }
 	divid = opts.divid; // ID for DIV where results will be displayed in page
-	
+
 	// create a new closure who's scope does *not*
-	// include the `divid` value so that callback will 
-	// not clobber the `divid` variable 
+	// include the `divid` value so that callback will
+	// not clobber the `divid` variable
 	var create_callback = function(divid) {
 		var local_divid = divid;
 		return function (data) {
@@ -174,7 +174,7 @@ $(document).ready(function(){
 </SCRIPT>
 
 <div class='small' style="padding-top:5px;padding-bottom:5px;">
- Filter: 
+ Filter:
  <input type="text" id="search_bar">
  <select id="search_type">
   <option value="1">Contains</option>
@@ -185,7 +185,7 @@ $(document).ready(function(){
 </div>
 
 <table id="list_table" class="small ui-widget-content ui-corner-all">
- <thead align="left"> 
+ <thead align="left">
   <tr>
    <th>Name</th>
    <th>Description</th>

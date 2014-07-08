@@ -52,7 +52,6 @@ Belongs to CCoGeX::Result::Feature> via C<feature_id>
 
 =cut
 
-
 __PACKAGE__->table("location");
 __PACKAGE__->add_columns(
   "location_id",
@@ -72,7 +71,6 @@ __PACKAGE__->set_primary_key("location_id");
 
 __PACKAGE__->belongs_to("feature" => "CoGeX::Result::Feature", 'feature_id');
 1;
-
 
 =head1 AUTHORS
 

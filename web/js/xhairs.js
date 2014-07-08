@@ -72,7 +72,6 @@ function trackpointer(local_event) {
         cross_color = '#ff0000';        //Update the crosshair color to red
     }
 
-
     //Set color and line width
     can_context.strokeStyle = cross_color;
     can_context.lineWidth   = 0.5;

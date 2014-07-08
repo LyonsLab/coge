@@ -31,7 +31,6 @@ Type: INT, Default: "", Nullable: no, Size: 4
 C<date>
 Type: TIMESTAMP, Default: "time created", Nullable: no,
 
-
 =head1 USAGE
 
   use CoGeX;
@@ -53,10 +52,7 @@ __PACKAGE__->set_primary_key("work_order_id");
 __PACKAGE__->belongs_to('work'=>"CoGeX::Result::Work","work_id");
 __PACKAGE__->belongs_to('workflow'=>"CoGeX::Result::Workflow","workflow_id");
 
-
-
 1;
-
 
 =head1 AUTHORS
 

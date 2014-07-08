@@ -162,7 +162,7 @@ sub track_config {
                 collapsed => 1 #FIXME move into CSS
             }
         };
-        
+
         # Add a track for each feature type
         foreach my $type_name ( sort @feat_type_names ) {
             push @tracks, {
@@ -200,7 +200,7 @@ sub track_config {
             };
         }
     }
-    
+
     # Add a feature group for each dataset
     if ( @{$genome->datasets} > 1) {
         foreach my $ds ( sort { $a->name cmp $b->name } $genome->datasets ) {
@@ -208,7 +208,7 @@ sub track_config {
             if (@feat_type_names) {
                 my $dsid = $ds->id;
                 my $dsname = $ds->name || 'ds'.$dsid;
-                
+
                 # Add overall feature track
                 push @tracks, {
                     baseUrl      => "services/JBrowse/track/annotation/$gid/datasets/$dsid",
@@ -232,7 +232,7 @@ sub track_config {
                         centerChildrenVertically => JSON::true,#'true',
                         subfeatureClasses        => { match_part => "match_part7" }
                     },
-        
+
                     # CoGe-specific stuff
                     coge => {
                         id         => $dsid,
@@ -241,7 +241,7 @@ sub track_config {
                         collapsed  => 1, #FIXME move into CSS
                     }
                 };
-                
+
                 # Add a track for each feature type
                 foreach my $type_name ( sort @feat_type_names ) {
                     push @tracks, {
@@ -267,7 +267,7 @@ sub track_config {
                             centerChildrenVertically => JSON::true,#'true',
                             subfeatureClasses        => { match_part => "match_part7" }
                         },
-        
+
                         # CoGe-specific stuff
                         coge => {
                             id         => $dsid.'_'.$type_name,
@@ -281,7 +281,7 @@ sub track_config {
             }
         }
     }
-    
+
     #print STDERR 'time2: ' . (time - $start_time) . "\n";
 
     # Add experiment tracks
@@ -329,13 +329,13 @@ sub track_config {
 			$labelScale = 0.1;
 		}
 		elsif ($e->data_type == 2) { #FIXME hardcoded data_type 'polymorphism'
-			$type = 'CoGe/View/Track/CoGeVariants'; 
+			$type = 'CoGe/View/Track/CoGeVariants';
 			$featureScale = 0.0001;
 			$histScale = 0.01;
 			$labelScale = 0.5;
 		}
 		elsif ($e->data_type == 3) { #FIXME hardcoded data_type 'alignment'
-			$type = 'CoGe/View/Track/CoGeAlignment';#"JBrowse/View/Track/Alignments2"; 
+			$type = 'CoGe/View/Track/CoGeAlignment';#"JBrowse/View/Track/Alignments2";
 			$featureScale = 0.005;
 			$histScale = 0.01;
 			$labelScale = 0.5;
@@ -345,7 +345,7 @@ sub track_config {
             $histScale = 0.002;
             $labelScale = 0.5;
         }
-        
+
         push @tracks, {
             baseUrl      => "services/JBrowse/service.pl/experiment/$eid/",
             autocomplete => "all",
@@ -364,7 +364,7 @@ sub track_config {
                 histCss      => 'background-color:' . getFeatureColor($eid),
                 featureCss   => 'background-color:' . getFeatureColor($eid)
             },
-            
+
             histograms => {
             	store => "JBrowse/Store/SeqFeature/REST"
             },
@@ -374,7 +374,7 @@ sub track_config {
                 id      => $eid,
                 type    => 'experiment',
                 classes => [
-                    'coge-tracklist-indented', 
+                    'coge-tracklist-indented',
                     'coge-tracklist-deletable',
                     'coge-tracklist-info'
                 ],
@@ -442,7 +442,7 @@ sub track_config {
                 id      => $nid,
                 type    => 'notebook',
                 classes => [
-                    'coge-tracklist-collapsible', 
+                    'coge-tracklist-collapsible',
                     'coge-tracklist-deletable',
                     'coge-tracklist-info'
                 ],

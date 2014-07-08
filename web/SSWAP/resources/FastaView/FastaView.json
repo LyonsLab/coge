@@ -10,7 +10,7 @@
   },
 
   "coge:resources/FastaView/FastaView" : {
-  
+
     "sswap:name" : "CoGe FastaView",
     "sswap:oneLineDescription" : "MultiFASTA sequences from CoGe's FastaView",
     "sswap:icon" : "http://genomevolution.org/CoGe/picts/SSWAP/FastaView-SSWAP-logo.png",
@@ -22,4 +22,3 @@
   "definitions" : { }
 
 }
-

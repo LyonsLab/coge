@@ -8,7 +8,6 @@ use Benchmark qw/timethese/;
 
 $| = 1;
 
-
 my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
 my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 $coge->storage->debugobj(new DBIxProfiler());
@@ -43,7 +42,7 @@ sub annotation_pretty_print
       {
 	$anno_type->add_Annot($name);
       }
-    
+
     $anno_obj->add_Annot($anno_type);
     foreach my $anno (sort {$b->type->name cmp $a->type->name} $self->annos)
       {
@@ -69,8 +68,3 @@ sub annotation_pretty_print
       }
     return $anno_obj->to_String;
   }
-
-
-
-
-

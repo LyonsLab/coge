@@ -44,8 +44,6 @@ Options:
 
  -hehlp | -h   print this message
 
-
-
 };
     exit;
   }

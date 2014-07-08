@@ -115,7 +115,7 @@ sub generate_body {
             );
         }
     }
-    
+
     $template->param(
     	LOAD_ID     => $LOAD_ID,
     	JOB_ID      => $JOB_ID,
@@ -151,7 +151,7 @@ sub irods_get_path {
     if ($error) {
         my $email = $P->{SUPPORT_EMAIL};
         my $body =
-            "irods ils command failed\n\n" 
+            "irods ils command failed\n\n"
           . 'User: '
           . $USER->name . ' id='
           . $USER->id . ' '
@@ -409,8 +409,8 @@ sub load_experiment {
     my $file_type	= $opts{file_type};
     my $aligner     = $opts{aligner};
 
-	# Added EL: 10/24/2013.  Solves the problem when restricted is unchecked.  
-	# Otherwise, command-line call fails with next arg being passed to 
+	# Added EL: 10/24/2013.  Solves the problem when restricted is unchecked.
+	# Otherwise, command-line call fails with next arg being passed to
 	# restricted as option
 	$restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
 
@@ -425,20 +425,20 @@ sub load_experiment {
     if ($user_name eq 'public') {
         return encode_json({ error => 'Not logged in' });
     }
-    
+
     # Setup staging area
     my $stagepath = catdir($TEMPDIR, 'staging');
     mkpath $stagepath;
-    
+
     # Setup path to file
-    my $data_file = $TEMPDIR . $items->[0]->{path}; 
+    my $data_file = $TEMPDIR . $items->[0]->{path};
 
     # Determine fastq file type
     my ($job_id, $error_msg);
     if ( $file_type eq 'fastq' || is_fastq_file($data_file) ) {
         # Get genome
         my $genome = $coge->resultset('Genome')->find($gid);
-        
+
         # Submit workflow to generate experiment
         ($job_id, $error_msg) = CoGe::Pipelines::qTeller::run(
             db => $coge,
@@ -490,12 +490,12 @@ sub load_experiment {
         print STDERR $error_msg, "\n";
         return encode_json({ error => "Workflow submission failed: " . $error_msg });
     }
-    
+
     # Get tiny link
     my $link = CoGe::Accessory::Web::get_tiny_link(
         url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $job_id
     );
-    
+
     return encode_json({ job_id => $job_id, link => $link });
 }
 
@@ -520,7 +520,7 @@ sub get_load_log {
     my $workflow_id = $opts{workflow_id};
     return unless $workflow_id;
     #TODO authenticate user access to workflow
-    
+
     my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
     return unless (-r $results_path);
 
@@ -529,9 +529,9 @@ sub get_load_log {
 
     my $result = CoGe::Accessory::TDS::read($result_file);
     return unless $result;
-    
+
     return encode_json(
-        { 
+        {
             experiment_id => $result->{experiment_id},
             notebook_id   => $result->{notebook_id}
         }
@@ -553,11 +553,11 @@ sub get_load_log {
 #        push @lines, $1 if ( $_ =~ /^log: (.+)/i );
 #        if ( $_ =~ /All done/i ) {
 #            $status = 1;
-#            
-#            # Generate a new load session ID in case the user chooses to 
+#
+#            # Generate a new load session ID in case the user chooses to
 #        	# reuse the form to start another load.
 #        	$new_load_id = get_unique_id();
-#            
+#
 #            last;
 #        }
 #        elsif ( $_ =~ /experiment id: (\d+)/i ) {

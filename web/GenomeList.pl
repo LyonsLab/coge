@@ -637,7 +637,7 @@ qq{<span class=link onclick=window.open('OrganismView.pl?org_desc=$_')>$_</span>
             my $link = $ds->link;
             $link = "http://" . $link unless !$link || $link =~ /http/;
             $item =
-                qq{<span class=link onclick="window.open('} 
+                qq{<span class=link onclick="window.open('}
               . $link
               . qq{')">$item</span>}
               if $link;

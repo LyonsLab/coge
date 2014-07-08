@@ -13,8 +13,6 @@ my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 $coge->storage->debugobj(new DBIxProfiler());
 $coge->storage->debug(1);
 
-
-
 if ($orgid)
   {codon_usage_for_org($orgid);}
 else
@@ -102,7 +100,7 @@ sub get_codon_usage_for_chromosome
 	  }
 	else
 	  {
-	    $html .= "</table><td nospan><table>"; 
+	    $html .= "</table><td nospan><table>";
 	  }
 
 	$html .= $str;
@@ -119,7 +117,7 @@ sub get_codon_usage_for_chromosome
  	  }
  	else
  	  {
- 	    $html .= "</table><td nospan><table>"; 
+ 	    $html .= "</table><td nospan><table>";
  	  }
  	$html .= $str;
  	$count++;
@@ -133,10 +131,10 @@ sub get_codon_usage_for_chromosome
 #     foreach (map {$_."(".$code->{$_}.") ".$codons{$_}} sort { substr($a, 0, 2) cmp substr ($b, 0, 2) || sort_nt($a) <=> sort_nt($b) }keys %codons)
 #       {
 # 	$html .= "<tr>" unless $count;
-# 	$html .= "<td nospan>" unless $count%4;	
+# 	$html .= "<td nospan>" unless $count%4;
 # 	$html .= $_."<br>";
 # 	$count++;
-# 	$count = 0 if $count == 16;	
+# 	$count = 0 if $count == 16;
 #       }
 #     return $html;
   }

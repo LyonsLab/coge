@@ -34,11 +34,11 @@ sub run {
     my $files = $opts{files};
     my $metadata = $opts{metadata};
     my $alignment = $opts{alignment_type};
-    
+
     my $gid = $genome->id;
-    
+
     $CONF = CoGe::Accessory::Web::get_defaults();
-    
+
     $CACHE = $CONF->{CACHEDIR};
     die "ERROR: CACHEDIR not specified in config" unless $CACHE;
     mkpath($CACHE, 0, 0777) unless -r $CACHE;
@@ -51,14 +51,14 @@ sub run {
     unless (defined $jex) {
         return (undef, "Could not connect to JEX");
     }
-    
+
     # Create the workflow
     my $workflow = $jex->create_workflow( name => 'Running the qTeller pipeline', init => 1 );
-    
+
     # Setup log file, staging, and results paths
     my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
     $workflow->logfile( catfile($staging_dir, 'log_main.txt') );
-    
+
     # Check if genome has annotations
     my $annotated = has_annotations($genome, $db);
 
@@ -96,7 +96,7 @@ sub run {
     if ($alignment eq "tophat") {
         ($bam, @steps) = tophat_pipeline($gid, $filtered_fasta, $trimmed_fastq,
             $gff_file, $staging_dir);
-    } 
+    }
     else {
         ($bam, @steps) = gsnap_pipeline($gid, $filtered_fasta, $trimmed_fastq, $staging_dir);
     }
@@ -153,7 +153,7 @@ sub run {
     if ($result->{status} =~ /error/i) {
         return (undef, "Could not submit workflow");
     }
-    
+
     return ($result->{id}, undef);
 }
 
@@ -182,7 +182,6 @@ sub generate_metadata {
 
     return '"' . join(';', @annotations) . '"';
 }
-
 
 sub to_filename {
     my ($name, undef, undef) = fileparse(shift, qr/\.[^.]*/);
@@ -219,7 +218,6 @@ sub has_annotations {
 
     return $count > 0;
 }
-
 
 sub create_validate_fastq_job {
     my $fastq = shift;
@@ -387,7 +385,6 @@ sub create_bed_file_job {
         description => "Generating read depth..."
     );
 }
-
 
 sub create_filter_bed_file_job {
     my $bed = shift;
@@ -594,7 +591,6 @@ sub create_notebook_job {
         description => "Creating notebook..."
     );
 }
-
 
 #
 # GSNAP PIPELINE AND JOBS

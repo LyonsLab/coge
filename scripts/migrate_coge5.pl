@@ -8,7 +8,7 @@
 # This script starts by migrating existing table entries, particularly for
 # user_group and user_group_data_connector (whose contents are moving into the
 # new list tables).
-# 
+#
 #ÊAfter the hard stuff is finished, minor modifications are made,
 # mostly just renaming tables and extended indexes from 10 to 11 digits.
 #
@@ -117,8 +117,8 @@ foreach my $group ($coge->resultset('UserGroup')->all) {
 		$group->role_id(3); # set to editor
 		$group->update;
 	}
-	
-	my $list = $coge->resultset('List')->create( 
+
+	my $list = $coge->resultset('List')->create(
 	  { name => $group->name,
 		description => $group->description,
 		list_type_id => 1, # genome type
@@ -131,12 +131,12 @@ foreach my $group ($coge->resultset('UserGroup')->all) {
 	my $sth = $dbh->prepare('SELECT user_group_dataset_connector_id, dataset_group_id FROM user_group_data_connector where user_group_id = ' . $group->id);
 	$sth->execute();
 	while (my ($ugdcid, $dsgid) = $sth->fetchrow_array()) {
-		my $conn = $coge->resultset('ListConnector')->create( 
+		my $conn = $coge->resultset('ListConnector')->create(
 		  { parent_id => $list->id,
 			child_id => $dsgid,
 			child_type => 2, # genome type
 		  } );
-		die unless $conn;		
+		die unless $conn;
 	}
 	$sth->finish();
 }
@@ -144,9 +144,9 @@ foreach my $group ($coge->resultset('UserGroup')->all) {
 # Create an owner group & list for all existing users
 foreach my $user ($coge->resultset('User')->all) {
 	my $group;
-	
+
 	unless ($user->owner_group) {
-		$group = $coge->resultset('UserGroup')->create( 
+		$group = $coge->resultset('UserGroup')->create(
 		  { creator_user_id => $user->id,
 		  	name => $user->name,
 			description => 'Owner group',
@@ -154,21 +154,21 @@ foreach my $user ($coge->resultset('User')->all) {
 			locked => 1
 		  } );
 		die unless $group;
-		
-		my $conn = $coge->resultset('UserGroupConnector')->create( 
+
+		my $conn = $coge->resultset('UserGroupConnector')->create(
 		  { user_id => $user->id,
 		  	user_group_id => $group->id,
 		  } );
-		die unless $conn;		
+		die unless $conn;
 	}
-	
+
 	my $list;
 	if ($list = $user->owner_list) {
 		$list->user_group_id($group);
 		$list->update();
 	}
 	else {
-		$list = $coge->resultset('List')->create( 
+		$list = $coge->resultset('List')->create(
 		  { name => $user->name,
 			description => 'Owner list',
 			list_type_id => 3, # owner type
@@ -176,7 +176,7 @@ foreach my $user ($coge->resultset('User')->all) {
 			restricted => 1,
 			locked => 1
 		  } );
-		die unless $list;	
+		die unless $list;
 	}
 }
 
@@ -346,19 +346,19 @@ $admin_owner_list->update();
 # Assign orphan restricted genomes
 foreach my $genome ($coge->resultset('Genome')->all) {
 	next if (not $genome->restricted);
-	
+
 	my $genome_owner_list;
 	foreach my $lc ($genome->list_connectors) {
 		if ($lc->parent_list->list_type_id == 3) {
 			$genome_owner_list = $lc->parent_list;
 			#print STDERR "skipping genome id" . $genome->id . "\n";
-			last;	
+			last;
 		}
 	}
-	
+
 	unless ($genome_owner_list) {
 		print STDERR "assigning genome id" . $genome->id . "\n";
-		my $conn = $coge->resultset('ListConnector')->create( 
+		my $conn = $coge->resultset('ListConnector')->create(
 		  { parent_id => $admin_owner_list->id,
 			child_id => $genome->id,
 			child_type => 2, # genome type
@@ -374,7 +374,6 @@ foreach my $genome ($coge->resultset('Genome')->all) {
 $coge->resultset('Log')->create( { user_id => 0, page => $0, description => 'database migrated to coge5' } );
 print STDERR "All done!\n";
 exit;
-
 
 #-------------------------------------------------------------------------------
 sub sql {
@@ -406,4 +405,3 @@ sub add_column {
 	}
 	$sth->finish();
 }
-

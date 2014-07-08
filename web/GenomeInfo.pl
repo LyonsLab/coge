@@ -27,7 +27,7 @@ use POSIX qw(floor);
 no warnings 'redefine';
 
 use vars qw(
-  $P $PAGE_TITLE $TEMPDIR $SECTEMPDIR $LOAD_ID $USER $conf $coge $FORM %FUNCTION
+  $P $PAGE_TITLE $TEMPDIR $SECTEMPDIR $LOAD_ID $USER $config $coge $FORM %FUNCTION
   $MAX_SEARCH_RESULTS $LINK $node_types $ERROR $HISTOGRAM $TEMPURL $SERVER $JEX
   $JOB_ID
 );
@@ -39,19 +39,19 @@ $PAGE_TITLE = 'GenomeInfo';
 $node_types = CoGeX::node_types();
 
 $FORM = new CGI;
-( $coge, $USER, $conf, $LINK ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $config, $LINK ) = CoGe::Accessory::Web->init(
     cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 
-$JEX = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
+$JEX = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
 $JOB_ID  = $FORM->Vars->{'job_id'};
 $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
-$SECTEMPDIR    = $conf->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
-$TEMPDIR   = $conf->{TEMPDIR} . "/$PAGE_TITLE";
-$TEMPURL   = $conf->{TEMPURL} . "/$PAGE_TITLE";
-$HISTOGRAM = $conf->{HISTOGRAM};
-$SERVER    = $conf->{SERVER};
+$SECTEMPDIR    = $config->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
+$TEMPDIR   = $config->{TEMPDIR} . "/$PAGE_TITLE";
+$TEMPURL   = $config->{TEMPURL} . "/$PAGE_TITLE";
+$HISTOGRAM = $config->{HISTOGRAM};
+$SERVER    = $config->{SERVER};
 
 $MAX_SEARCH_RESULTS = 100;
 $ERROR = encode_json({ error => 1 });
@@ -130,7 +130,6 @@ sub get_genome_info_details {
     my $gst_name = $dsg->genomic_sequence_type->name;
     $gst_name .= ": " . $dsg->type->description if $dsg->type->description;
 
-
     # Sequence Type
     $html .=
 qq{<tr><td class="title5">Sequence type:<td class="data5" title="gstid$gstid">}
@@ -144,16 +143,21 @@ qq{<tr><td class="title5">Sequence type:<td class="data5" title="gstid$gstid">}
       . commify($total_length)
       . " bp </div>";
 
-    my $gc = (has_statistic($dsg, "gc") or ($total_length < 10000000
-      && $chr_num < 20)) ? get_gc_for_genome( dsgid => $dsgid ) : 0;
+    my ($gc, $noncoding);
+
+    eval {
+        $gc = (has_statistic($dsg, "gc") or ($total_length < 10000000
+        && $chr_num < 20)) ? get_gc_for_genome( dsgid => $dsgid ) : 0;
+
+        $noncoding = (has_statistic($dsg, "noncoding_gc") and $total_length)
+        ? get_gc_for_noncoding(dsgid => $dsgid) : 0;
+    };
+
     $gc =
         $gc
       ? $gc :
       qq{  <div style="float: left; text-indent: 1em;" id="dsg_gc" class="link" onclick="get_gc_content('#dsg_gc', 'get_gc_for_genome');">%GC</div><br/>};
     $html .= "$gc</td></tr>";
-
-    my $noncoding = (has_statistic($dsg, "noncoding_gc") and $total_length)
-        ? get_gc_for_noncoding(dsgid => $dsgid) : 0;
 
     if ($noncoding) {
         # Non-coding Sequence
@@ -168,7 +172,6 @@ qq{<tr><td class="title5">Sequence type:<td class="data5" title="gstid$gstid">}
     } if $total_length;
     }
 
-
 #temporarily removed until this is connected correctly for individual users
 #    $html .= qq{&nbsp|&nbsp};
 #    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$dsgid'],['irods']);">Send To iPlant Data Store</span>};
@@ -182,7 +185,7 @@ qq{<tr><td class="title5">Sequence type:<td class="data5" title="gstid$gstid">}
           . "</span></td></tr>";
     }
     $html .= "</table>";
-    
+
     $html .= qq{<div class="left coge-table-header">Features</div>}
           .  qq{<div id="genome_features" style="margin-bottom: 5px;" class="small padded link ui-widget-content ui-corner-all" onclick="get_features('#genome_features');" >Click for Features</div>};
 
@@ -390,9 +393,12 @@ sub get_codon_usage {
 
     my %seqs; # prefetch the sequences with one call to genomic_sequence (slow for many seqs)
     foreach my $item (@items) {
-        map {
-            $seqs{$_} = $item->get_genomic_sequence( chr => $_, seq_type => $gstid )
-        } (defined $chr ? ($chr) : $item->chromosomes);
+        my @chrs = (defined $chr and $chr) ? ($chr) : $item->chromosomes;
+
+        for my $chr (@chrs) {
+            $seqs{$chr} = $item->get_genomic_sequence(chr => $chr,
+                                                      seq_type => $gstid);
+        }
     }
 
     my %codons;
@@ -593,7 +599,6 @@ sub get_wobble_gc_diff {
     return $info . "<br>" . $hist_img;
 }
 
-
 sub export_features {
     my %args = @_;
     my $genome = $coge->resultset('Genome')->find($args{gid});
@@ -605,9 +610,9 @@ sub export_features {
 
     my $basename = sanitize_name($genome->organism->name . "-ft-" . $ft->name);
 
-    $args{script_dir} = $conf->{SCRIPTDIR};
-    $args{secure_tmp} = $conf->{SECTEMPDIR};
-    $args{conf} = catfile($conf->{COGEDIR}, "coge.conf");
+    $args{script_dir} = $config->{SCRIPTDIR};
+    $args{secure_tmp} = $config->{SECTEMPDIR};
+    $args{conf} = $config->{_CONFIG_PATH};
     $args{basename} = $basename;
 
     my ($output, %task) = generate_features(%args);
@@ -877,7 +882,7 @@ sub get_genome_info {
     }
 
     my $template =
-      HTML::Template->new( filename => $conf->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+      HTML::Template->new( filename => $config->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
 
     $template->param(
         DO_GENOME_INFO => 1,
@@ -913,7 +918,7 @@ sub edit_genome_info {
     return unless ($genome);
 
     my $template =
-      HTML::Template->new( filename => $conf->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+      HTML::Template->new( filename => $config->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param(
         EDIT_GENOME_INFO => 1,
         ORGANISM         => $genome->organism->name,
@@ -1103,7 +1108,7 @@ sub get_genome_data {
     }
 
     my $template =
-      HTML::Template->new( filename => $conf->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+      HTML::Template->new( filename => $config->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param(
         #CHROMOSOME_COUNT => commify( $genome->chromosome_count() ),
         #LENGTH           => commify( $genome->length ),
@@ -1148,7 +1153,6 @@ sub get_genome_download_links {
 #
 #    return 1;
 #}
-
 
 sub get_sequence_types {
     my $type_id = shift;
@@ -1206,7 +1210,7 @@ sub get_experiments {
         push @rows, \%row;
     }
 
-    my $template = HTML::Template->new( filename => $conf->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    my $template = HTML::Template->new( filename => $config->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
         DO_EXPERIMENTS  => 1,
         EXPERIMENT_LOOP => \@rows
@@ -1242,7 +1246,7 @@ sub get_datasets {
     return '' unless @rows;
 
     my $template =
-      HTML::Template->new( filename => $conf->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+      HTML::Template->new( filename => $config->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
         DO_DATASETS  => 1,
         DATASET_LOOP => \@rows
@@ -1296,8 +1300,8 @@ sub copy_genome {
     my ($staging_dir, $result_dir) = get_workflow_paths($USER->name, $workflow->id);
 
     $args{uid} = $USER->id;
-    $args{conf} = catfile($conf->{COGEDIR}, "coge.conf");
-    $args{script_dir} = $conf->{SCRIPTDIR};
+    $args{conf} = $config->{_CONFIG_PATH};
+    $args{script_dir} = $config->{SCRIPTDIR};
     $args{staging_dir} = $staging_dir;
     $args{result_dir} = $result_dir;
 
@@ -1358,7 +1362,7 @@ sub get_aa_usage {
 
     my $search;
     $search = { "feature_type.name" => "CDS" };
-    $search->{"me.chromosome"} = $chr if defined $chr;
+    $search->{"me.chromosome"} = $chr if defined $chr and $chr;
 
     my (@items, @datasets);
     if ($dsid) {
@@ -1377,9 +1381,12 @@ sub get_aa_usage {
 
     my %seqs; # prefetch the sequences with one call to genomic_sequence (slow for many seqs)
     foreach my $item (@items) {
-        map {
-            $seqs{$_} = $item->get_genomic_sequence( chr => $_, seq_type => $gstid )
-        } (defined $chr ? ($chr) : $item->chromosomes);
+        my @chrs = (defined $chr and $chr) ? ($chr) : $item->chromosomes;
+
+        for my $chr (@chrs) {
+            $seqs{$chr} = $item->get_genomic_sequence(chr => $chr,
+                                                      seq_type => $gstid);
+        }
     }
 
     my %codons;
@@ -1489,7 +1496,7 @@ sub export_fasta_irods {
 
 sub get_irods_path {
     my $username = $USER->user_name;
-    my $dest = $conf->{IRODSDIR};
+    my $dest = $config->{IRODSDIR};
     $dest =~ s/\<USER\>/$username/;
     return $dest;
 }
@@ -1771,10 +1778,10 @@ sub get_tbl {
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
-    $args{script_dir} = $conf->{SCRIPTDIR};
-    $args{secure_tmp} = $conf->{SECTEMPDIR};
+    $args{script_dir} = $config->{SCRIPTDIR};
+    $args{secure_tmp} = $config->{SECTEMPDIR};
     $args{basename} = sanitize_name($dsg->organism->name);
-    $args{conf} = catfile($conf->{COGEDIR}, "coge.conf");
+    $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export Tbl");
     my ($output, %task) = generate_tbl(%args);
@@ -1819,7 +1826,6 @@ sub export_tbl {
 # BED FILE
 #
 
-
 sub get_bed {
     my %args = @_;
     my $gid = $args{gid};
@@ -1828,10 +1834,10 @@ sub get_bed {
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
-    $args{script_dir} = $conf->{SCRIPTDIR};
-    $args{secure_tmp} = $conf->{SECTEMPDIR};
+    $args{script_dir} = $config->{SCRIPTDIR};
+    $args{secure_tmp} = $config->{SECTEMPDIR};
     $args{basename} = sanitize_name($dsg->organism->name);
-    $args{conf} = catfile($conf->{COGEDIR}, "coge.conf");
+    $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export bed file");
     my ($output, %task) = generate_bed(%args);
@@ -1876,7 +1882,6 @@ sub export_bed {
 # GFF FILE
 #
 
-
 sub get_gff {
     my %args = @_;
     my $dsg = $coge->resultset('Genome')->find($args{gid});
@@ -1884,10 +1889,10 @@ sub get_gff {
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
-    $args{script_dir} = $conf->{SCRIPTDIR};
-    $args{secure_tmp} = $conf->{SECTEMPDIR};
+    $args{script_dir} = $config->{SCRIPTDIR};
+    $args{secure_tmp} = $config->{SECTEMPDIR};
     $args{basename} = $dsg->organism->name;
-    $args{conf} = catfile($conf->{COGEDIR}, "coge.conf");
+    $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export gff");
     my ($output, %task) = generate_gff(%args);
@@ -1940,7 +1945,6 @@ sub export_gff {
     return encode_json(\%json);
 }
 
-
 #XXX: Add error checking
 sub export_to_irods {
     my %args = @_;
@@ -1966,7 +1970,7 @@ sub get_download_url {
     my $dsgid = $args{dsgid};
     my $filename = basename($args{file});
 
-    my @url = ($conf->{SERVER}, "services/JBrowse",
+    my @url = ($config->{SERVER}, "services/JBrowse",
         "service.pl/download/GenomeInfo",
         "?gid=$dsgid&file=$filename");
 
@@ -1974,7 +1978,7 @@ sub get_download_url {
 }
 
 sub get_download_path {
-    return catfile($conf->{SECTEMPDIR}, "GenomeInfo/downloads", shift);
+    return catfile($config->{SECTEMPDIR}, "GenomeInfo/downloads", shift);
 }
 
 sub generate_html {
@@ -1984,7 +1988,7 @@ sub generate_html {
       if ( $USER->first_name && $USER->last_name );
 
     my $template =
-      HTML::Template->new( filename => $conf->{TMPLDIR} . 'generic_page.tmpl' );
+      HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param(
         PAGE_TITLE => $PAGE_TITLE,
         PAGE_LINK  => $LINK,
@@ -2001,7 +2005,7 @@ sub generate_html {
 
 sub generate_body {
     my $template =
-      HTML::Template->new( filename => $conf->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+      HTML::Template->new( filename => $config->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param( MAIN => 1, PAGE_NAME => "$PAGE_TITLE.pl" );
 
     my $gid = $FORM->param('gid');

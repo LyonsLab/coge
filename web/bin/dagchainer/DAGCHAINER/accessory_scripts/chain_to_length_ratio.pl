@@ -12,9 +12,8 @@ while (<>) {
 	my $lenB = $rendB - $lendB + 1;
 
 	my $ratio = $lenA / $lenB;
-	
+
 	print "$contigA\t$lenA\t$contigB\t$lenB\t$ratio\n";
 }
 
 exit(0);
-

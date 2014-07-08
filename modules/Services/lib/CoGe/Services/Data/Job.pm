@@ -16,7 +16,7 @@ sub fetch {
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
-   
+
     # User authentication is required
     unless (defined $user) {
         $self->render(json => {
@@ -24,7 +24,7 @@ sub fetch {
         });
         return;
     }
-   
+
     # Get job status from JEX
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
     my $job_status = $jex->get_job($id);
@@ -34,7 +34,7 @@ sub fetch {
         });
         return;
     }
-    
+
     unless ($job_status->{status} =~ /completed/i) {
         $self->render(json => {
             id => int($id),
@@ -42,7 +42,7 @@ sub fetch {
         });
         return;
     }
-    
+
     #FIXME add routine to Storage.pm to get results path
     my $result_dir = catdir($conf->{SECTEMPDIR}, 'results', 'experiment', $user->name, $id);
     my @results;
@@ -50,7 +50,7 @@ sub fetch {
     foreach my $file ( readdir($fh) ) {
         my $fullpath = catfile($result_dir, $file);
         next unless -f $fullpath;
-        
+
         my $name = basename($file);
         push @results, {
             type => 'http',
@@ -86,16 +86,16 @@ sub results {
     #FIXME add routine to Storage.pm to get results path
     my $result_dir = catdir($conf->{SECTEMPDIR}, 'results', 'experiment', $user->name, $id);
     my $result_file = catfile($result_dir, $name);
-    
+
     print STDERR $result_file, "\n";
-    
+
     unless (-r $result_file) {
         $self->render(json => {
             error => { Error => "Item not found" }
         });
         return;
     }
-    
+
     my $pResult = CoGe::Accessory::TDS::read($result_file);
 
     $self->render(json => $pResult);

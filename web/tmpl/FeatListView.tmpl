@@ -6,7 +6,7 @@ function edit_list_reload(lid)
  }
 
 function change( info ) {
-        document.getElementById("info").innerHTML = info;        
+        document.getElementById("info").innerHTML = info;
 }
 
 </SCRIPT>
@@ -27,10 +27,9 @@ function change( info ) {
   <TH>Feature count
 <TMPL_LOOP NAME=FEAT_LISTS>
 
-
  <TR valign=top class="<TMPL_VAR NAME=ROW_BG>">
   <TD><input type="IMAGE" src="picts/edit.png"  onClick="edit_list(['args__<TMPL_VAR NAME=LIST_ID>'],['main']);">
-  <TD><input type="IMAGE" src="picts/delete.png"  onClick=" if (confirm('Are you sure you wish to delete this list?')){ delete_list(['args__<TMPL_VAR NAME=LIST_ID>'], []), window.location.reload();}">  
+  <TD><input type="IMAGE" src="picts/delete.png"  onClick=" if (confirm('Are you sure you wish to delete this list?')){ delete_list(['args__<TMPL_VAR NAME=LIST_ID>'], []), window.location.reload();}">
   <TD class="species"> <TMPL_VAR NAME=LIST_NAME>
   <TD><TMPL_VAR NAME=LIST_DESC>
   <TD><TMPL_VAR NAME=LIST_NOTE>
@@ -61,7 +60,6 @@ function change( info ) {
 
 <TMPL_IF NAME="EDIT_LIST">
 
-
 <DIV id="main">
 <font class = "title2">Feature List Editor</font>
 <div><font class="title3"><TMPL_VAR LIST_NAME></font>: <TMPL_VAR LIST_DESC></div>
@@ -78,7 +76,7 @@ function change( info ) {
 <TMPL_LOOP NAME=FEATURE_INFO>
  <DIV id="FID<TMPL_VAR NAME=FEAT_ID>">
  <TR class="<TMPL_VAR NAME=ROW_BG>">
-  <TD><input type="IMAGE" src="picts/delete.png"  onClick=" if (confirm('Are you sure you wish to delete this list?')){ delete_feature(['args__<TMPL_VAR NAME=FEAT_ID>', 'args__<TMPL_VAR NAME=LIST_ID>'], [edit_list_reload]) }">  
+  <TD><input type="IMAGE" src="picts/delete.png"  onClick=" if (confirm('Are you sure you wish to delete this list?')){ delete_feature(['args__<TMPL_VAR NAME=FEAT_ID>', 'args__<TMPL_VAR NAME=LIST_ID>'], [edit_list_reload]) }">
   <TD><TMPL_VAR NAME=FEAT_ORG>
   <TD><TMPL_VAR NAME=FEAT_DATA>
   <TD><TMPL_VAR NAME=FEAT_LOC>
@@ -87,7 +85,7 @@ function change( info ) {
   <TD><TMPL_VAR NAME=FEAT_PNAME>
  </DIV>
 </TMPL_LOOP>
- 
+
 </TABLE>
 <input type="text" size="7" class="backbox" id="add_feat"><input type="submit" value="Add Feature" onClick="add_feature(['add_feat','args__<TMPL_VAR NAME=LIST_ID>'],[edit_list_reload]);">
 </div>
@@ -115,7 +113,7 @@ function change( info ) {
 
  </DIV>
 </TMPL_LOOP>
- 
+
 </TABLE>
 
 </TMPL_IF>
@@ -134,10 +132,9 @@ function change( info ) {
   <TH>Feature List count
 <TMPL_LOOP NAME=LIST_GROUPS>
 
-
  <TR valign=top class="<TMPL_VAR NAME=ROW_BG>">
   <TD><input type="IMAGE" src="picts/edit.png"  onClick="edit_group(['args__<TMPL_VAR NAME=GROUP_ID>'],['main']);">
-  <TD><input type="IMAGE" src="picts/delete.png"  onClick=" if (confirm('Are you sure you wish to delete this group?')){ delete_group(['args__<TMPL_VAR NAME=GROUP_ID>'], []), window.location.reload();}">  
+  <TD><input type="IMAGE" src="picts/delete.png"  onClick=" if (confirm('Are you sure you wish to delete this group?')){ delete_group(['args__<TMPL_VAR NAME=GROUP_ID>'], []), window.location.reload();}">
   <TD class="species"> <a onclick="group_view(['args__<TMPL_VAR NAME=GROUP_ID>'],['main'])"><TMPL_VAR NAME=GROUP_NAME></a>
   <TD><TMPL_VAR NAME=GROUP_DESC>
   <TD><TMPL_VAR NAME=GROUP_NOTE>
@@ -155,7 +152,6 @@ function change( info ) {
 
 </TMPL_IF>
 
-
 <TMPL_IF NAME="EXPAND_GROUP">
 <TABLE>
  <TR>
@@ -171,7 +167,7 @@ function change( info ) {
   <TD><TMPL_VAR NAME=FEAT_COUNT>
  </DIV>
 </TMPL_LOOP>
- 
+
 </TABLE>
 
 </TMPL_IF>
@@ -244,7 +240,7 @@ function change( info ) {
  <TMPL_LOOP NAME=IMAGE_LOOP>
  <tr valign="top" class="<TMPL_VAR NAME=ROW_BG>">
 <!--   <TD><input type="IMAGE" src="picts/edit.png"  onClick="edit_image(['args__<TMPL_VAR NAME=LIST_ID>'],['main']);">-->
-   <TD><input type="IMAGE" src="picts/delete.png" onClick=" if (confirm('Are you sure you wish to delete this image?')){ delete_image(['args__<TMPL_VAR NAME=CID>', 'args__<TMPL_VAR NAME=TYPE>'], []), window.location='<TMPL_VAR RELOAD>';}">  
+   <TD><input type="IMAGE" src="picts/delete.png" onClick=" if (confirm('Are you sure you wish to delete this image?')){ delete_image(['args__<TMPL_VAR NAME=CID>', 'args__<TMPL_VAR NAME=TYPE>'], []), window.location='<TMPL_VAR RELOAD>';}">
    <td><TMPL_VAR NAME=NAME>
    <td><TMPL_VAR NAME=DESC>
    <td><TMPL_VAR NAME=IMAGE>
@@ -258,7 +254,7 @@ function change( info ) {
 <input type="hidden" name="add_image" id = "add_image" value="1">
 <input type="hidden" name="type" id = "type" value="<TMPL_VAR NAME=TYPE>">
 <input type="hidden" name="id" id = "id" value="<TMPL_VAR NAME=ID>">
-<DIV>Please select an image to upload:  
+<DIV>Please select an image to upload:
 <input type = "file" class = "backbox" name= "file">
 <table class="columns">
  <TR>

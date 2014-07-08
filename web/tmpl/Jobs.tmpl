@@ -21,7 +21,6 @@
 <div id="jobs" style="max-width:95%; height: 900px; display:true; font-size: 0.8em; margin-top: 5px;">
 </div>
 
-
 <link rel="stylesheet" href="js/slickgrid/slick.grid.css" type="text/css"/>
 <link rel="stylesheet" href="js/slickgrid/controls/slick.pager.css" type="text/css"/>
 <!--<link rel="stylesheet" href="js/slickgrid/css/smoothness/jquery-ui-1.8.16.custom.css" type="text/css"/> -->
@@ -75,7 +74,6 @@ $(document).ready(function(){
 <tmpl_if name="admin_area">
             ,user = item['user'] ? item['user'].toLowerCase() : ''
 </tmpl_if>;
-
 
         if (args.searchType == 1) {
             if (args.searchString != "" &&
@@ -143,7 +141,6 @@ $(document).ready(function(){
             sortable: true}
     ];
 
-
     window.jobs = new coge.Grid('#jobs', options, columns);
     jobs.grid.registerPlugin(checkbox);
     $.ajax({
@@ -173,7 +170,6 @@ $("#search_bar").keyup(function (e) {
 $("#show_select,#search_type").change(function(e) {
     update_filter();
 });
-
 
 function update_filter() {
     jobs.dataView.setFilterArgs({

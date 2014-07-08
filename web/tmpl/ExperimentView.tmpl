@@ -34,7 +34,7 @@ $(document).ready(function() {
     set_annotation_table();
 
     init_annotation_dialog(eid, '<TMPL_VAR NAME="DEFAULT_TYPE">');
-    
+
     // Open status dialog
     if (job_id) {
         $('#progress_msg').hide();
@@ -351,7 +351,7 @@ function update_dialog(request, identifier, formatter) {
         var callback = function() {
             update_dialog(request, identifier, formatter);
         }
-        
+
         if (json.error) {
             pageObj.error++;
             if (pageObj.error > 3) {
@@ -483,7 +483,7 @@ function progress_failed(obj) {
     	$('#error_msg').fadeIn();
     }
     $('#ok_button').fadeIn();
-    	
+
     $.ajax({
         data: {
             fname: "send_error_report",
@@ -495,7 +495,7 @@ function progress_failed(obj) {
 function progress_succeeded(obj) {
     // Update globals
     experiment_id = obj.experiment_id;  // for continuing to ExperimentView
-    
+
     // Update dialog
     $('#progress_msg').hide();
     $('#finished_msg').fadeIn();
@@ -717,8 +717,6 @@ function get_type_description (name) {
 <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'> <!-- Add/Edit Annotation Dialog -->
 
 </TMPL_IF>
-
-
 
 <TMPL_IF NAME="EDIT_EXPERIMENT_INFO">
 <SCRIPT>

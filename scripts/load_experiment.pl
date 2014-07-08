@@ -221,7 +221,7 @@ if ( $data_type == $DATA_TYPE_QUANT
 {
     # Determine data scheme
     my $data_spec = join(',', map { $_->{name} . ':' . $_->{type} } @{$format->{columns}} );
-    
+
 	#TODO redirect fastbit output to log file instead of stderr
 	print $log "log: Generating database\n";
 	$cmd = "$FASTBIT_LOAD -d $staging_dir -m \"$data_spec\" -t $staged_data_file";
@@ -231,7 +231,7 @@ if ( $data_type == $DATA_TYPE_QUANT
 	    print $log "log: error executing ardea command: $rc\n";
 	    exit(-1);
 	}
-	
+
 	print $log "log: Indexing database (may take a few minutes)\n";
 	$cmd =
 	"$FASTBIT_QUERY -d $staging_dir -v -b \"<binning precision=2/><encoding equality/>\"";
@@ -251,8 +251,8 @@ if ( $data_type == $DATA_TYPE_QUANT
 
 # Create data source
 my $data_source =
-  $coge->resultset('DataSource')->find_or_create( { 
-      name => $source_name, description => "" } 
+  $coge->resultset('DataSource')->find_or_create( {
+      name => $source_name, description => "" }
   );#, description => "Loaded into CoGe via LoadExperiment" } );
 unless ($data_source) {
     print $log "log: error creating data source\n";
@@ -288,7 +288,7 @@ if ($types) {
             print $log "log: error creating experiment type\n";
             exit(-1);
         }
-        my $conn = $coge->resultset('ExperimentTypeConnector')->find_or_create({ 
+        my $conn = $coge->resultset('ExperimentTypeConnector')->find_or_create({
             experiment_id => $experiment->id,
             experiment_type_id => $type->id
         });
@@ -399,7 +399,7 @@ sub detect_data_type {
         print $log "log: Detecting file type\n";
         ($filetype) = lc($filepath) =~ /\.([^\.]+)$/;
     }
-    
+
     if ( grep { $_ eq $filetype } ('csv', 'tsv', 'bed') ) { #TODO add 'bigbed', 'wig', 'bigwig'
         print $log "log: Detected a quantitative file ($filetype)\n";
         return ($filetype, $DATA_TYPE_QUANT);
@@ -443,7 +443,7 @@ sub validate_quant_data_file {
         next if ( $line =~ /^\s*#/ ); # skip comments
         chomp $line;
         next unless $line; # skip blanks
-        
+
         # Interpret tokens according to file type
         my @tok;
         my ( $chr, $start, $stop, $strand, $val1, $val2, $label );
@@ -489,14 +489,14 @@ sub validate_quant_data_file {
             print $log "log: error at line $line_num: value 1 not between 0 and 1\n";
             return;
         }
-        
+
 		$chr = fix_chromosome_id($chr, $genome_chr);
         if (!$chr) {
             print $log "log: error at line $line_num: trouble parsing chromosome\n";
             return;
         }
         $strand = $strand =~ /-/ ? -1 : 1;
-        
+
         # Build output line
         my @fields  = ( $chr, $start, $stop, $strand, $val1 ); # default fields
         if (defined $val2) {
@@ -508,13 +508,13 @@ sub validate_quant_data_file {
             push @fields, $label;
         }
         print $out join( ",", @fields ), "\n";
-        
+
         $chromosomes{$chr}++;
         $count++;
     }
     close($in);
     close($out);
-    
+
     #my $format = "chr:key, start:unsigned long, stop:unsigned long, strand:byte, value1:double, value2:double, label:text"; # mdb removed 4/2/14, issue 352
     # mdb added 4/2/14, issue 352
     my $format = {
@@ -528,7 +528,7 @@ sub validate_quant_data_file {
     };
     push(@{$format->{columns}}, { name => 'value2', type => 'double' }) if $hasVal2;
     push(@{$format->{columns}}, { name => 'label',  type => 'text' }) if $hasLabels;
-    
+
     return ( $outfile, $format, $count, \%chromosomes );
 }
 
@@ -603,7 +603,7 @@ sub validate_vcf_data_file {
     }
     close($in);
     close($out);
-    
+
     #my $format = "chr:key, start:unsigned long, stop:unsigned long, type:key, id:text, ref:key, alt:key, qual:double, info:text"; # mdb removed 4/2/14, issue 352
     # mdb added 4/2/14, issue 352
     my $format = {
@@ -619,7 +619,7 @@ sub validate_vcf_data_file {
             { name => 'info',  type => 'text' }
         ]
     };
-    
+
     return ( $outfile, $format, $count, \%chromosomes );
 }
 
@@ -654,7 +654,7 @@ sub validate_bam_data_file {
 	if ($cmdOut =~ /\d+/) {
 		$count = $cmdOut;
 	}
-	
+
 	# Get the BAM file header
 	$cmd = "$SAMTOOLS view -H $filepath";
 	print $log $cmd, "\n";
@@ -676,7 +676,7 @@ sub validate_bam_data_file {
 			$chromosomes{$newChr}++;
 		}
 	}
-	
+
 	# Reheader the bam file if chromosome names changed
 	my $newfilepath = "$staging_dir/alignment.bam";
 	if (keys %renamed) {
@@ -691,13 +691,13 @@ sub validate_bam_data_file {
 			push @header2, $line."\n";
 		}
 		print $log "New header:\n", @header2;
-		
+
 		# Write header to temp file
 		my $header_file = "$staging_dir/header.txt";
 		open( my $out, ">$header_file" );
 		print $out @header2;
 		close($out);
-		
+
 		# Run samtools to reformat the bam file header
 		$cmd = "$SAMTOOLS reheader $header_file $filepath > $newfilepath";
 		print $log $cmd, "\n";
@@ -706,7 +706,7 @@ sub validate_bam_data_file {
 		    print $log "log: error executing samtools reheader command: $?\n";
 		    exit(-1);
 		}
-		
+
 		# Remove the original bam file
 		$cmd = "rm -f $filepath";
 		qx{$cmd};
@@ -724,7 +724,7 @@ sub validate_bam_data_file {
 		    exit(-1);
 		}
 	}
-	
+
 	# Index the bam file
 	print $log "log: Indexing file\n";
 	$cmd = "$SAMTOOLS index $newfilepath";
@@ -775,7 +775,7 @@ sub validate_gff_data_file {
             print $log "log: error at line $line_num: missing required value in a column\n";
             return;
         }
-        
+
         $chr = fix_chromosome_id($chr, $genome_chr);
         if (!$chr) {
             print $log "log: error at line $line_num: trouble parsing chromosome\n";
@@ -792,7 +792,7 @@ sub validate_gff_data_file {
     }
     close($in);
     close($out);
-    
+
     #my $format = "chr:key, start:unsigned long, stop:unsigned long, strand:key, type:key, score:double, attr:text"; # mdb removed 4/2/14, issue 352
     # mdb added 4/2/14, issue 352
     my $format = {
@@ -806,14 +806,14 @@ sub validate_gff_data_file {
             { name => 'attr',   type => 'text' }
         ]
     };
-    
+
     return ( $outfile, $format, $count, \%chromosomes );
 }
 
 sub fix_chromosome_id {
 	my $chr = shift;
 	my $genome_chr = shift;
-	
+
     # Fix chromosome identifier
     $chr =~ s/^lcl\|//;
     $chr =~ s/chromosome//i;

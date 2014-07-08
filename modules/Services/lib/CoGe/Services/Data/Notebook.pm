@@ -76,12 +76,12 @@ sub fetch {
             type_group => $_->type->group
         }
     } $notebook->annotations;
-    
+
     # Format items
     my @items = map {
         { type => 'genome', id => $_->id }
     } $notebook->genomes;
-    
+
     push @items, map {
         { type => 'experiment', id => $_->id }
     } $notebook->experiments;

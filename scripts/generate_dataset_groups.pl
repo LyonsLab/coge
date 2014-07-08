@@ -7,7 +7,6 @@ use CoGeX;
 my $coge = CoGeX->dbconnect();
 my $DEBUG= 0;
 
-
 print join ("\t", qw{#VERSION ORGANISM_ID GENOMIC_SEQUENCE_TYPE_ID DATASET_IDS}),"\n";
 foreach my $org ($coge->resultset('Organism')->all())
 #foreach my $org ($coge->resultset('Organism')->search({name=>{like=>'%Gluconacetobacter diazotrophicus PAl 5%'}}))
@@ -98,7 +97,6 @@ sub dump_data
 	  }
       }
   }
-
 
 sub dump_contig
   {

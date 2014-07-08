@@ -7,13 +7,12 @@ use base qw(Class::Accessor);
 
 use Data::Dumper;
 
-
 BEGIN
   {
     use vars qw($VERSION);
     $VERSION = "0.01";
   }
-__PACKAGE__->mk_accessors('file', 'hsps', 'hsp_count', 'query', 'subject', 
+__PACKAGE__->mk_accessors('file', 'hsps', 'hsp_count', 'query', 'subject',
 	'qlength', 'slength', 'min_score', 'max_gap', 'split_score');
 
 ###############################################################################
@@ -51,7 +50,7 @@ sub process_file
     $self->parse_seq($data[1]);
     return $self;
 }
- 
+
 sub parse_header
 {
  my $self = shift;
@@ -150,7 +149,7 @@ sub _getHSP
     $self->hsp_count($hsp_count) if $hsp;
     return $hsp;
 }
-  
+
 sub get_align
 {
  my $self = shift;
@@ -182,8 +181,7 @@ sub get_align
  }
  return $seq1,$seq2;
 }
-   
-   
+
 # sub get_align
 # {
 #   my $self = shift;
@@ -212,8 +210,8 @@ sub get_align
 #         }
 #       }
 #    }
-#    
-#    
+#
+#
 #    return (\@starts,\@stops,\@aligns);
 #}
 
@@ -233,7 +231,7 @@ sub get_pipes
   }
   return $align;
 }
- 
+
 sub get_score_aligns
 {
   my $self = shift;

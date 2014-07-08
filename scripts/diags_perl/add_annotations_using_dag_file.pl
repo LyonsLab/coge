@@ -3,8 +3,6 @@ use strict;
 use CoGeX;
 use Getopt::Long;
 
-
-
 use vars qw($DEBUG $file $coge $GO $source @skip_names);
 
 GetOptions(
@@ -32,7 +30,7 @@ OPTIONS:
 
  -source  set to 1 or 2 to specify if the first or second feature in each column is the source
          for annotations.  The source feature's annotations will be copied to the other
-         feature (the sink feature).  (DEFAULT 0.  This means that there is no default 
+         feature (the sink feature).  (DEFAULT 0.  This means that there is no default
          source specified an an error will be thrown.)
 
  -skip_name  set this to some string and it will be used in a regex /^skip_name/
@@ -73,11 +71,10 @@ while (<IN>)
     print "SOURCE FEATURE IS $source\n" if $DEBUG && $source;
     map_annotation(source=>$source_feat, sink=>$sink_feat)    if ($source_feat && $sink_feat);
     print "\n-------------------\n" if $DEBUG;
-    
+
   }
 
 close IN;
-
 
 sub map_annotation
   {

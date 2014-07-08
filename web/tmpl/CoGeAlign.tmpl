@@ -7,11 +7,10 @@ $(document).ready(function(){
 	update_options();
 	var autogo = <TMPL_VAR NAME=AUTOGO>;
          if (autogo) {
-          loading([],['results']); 
+          loading([],['results']);
 	  ajax_wait("prepare_run();");
 	  }
-    
- 
+
 });
 
 function ajax_wait (val){
@@ -24,7 +23,7 @@ if (ajax.length)
 }
 
 function update_options(){
-	 
+
 	var type;
 	if ($('#seq_type_dna')[0].checked)
            {type = 'dna';}
@@ -49,7 +48,7 @@ function update_options(){
 		$('#prot_results_format').show(0);
 	}
         $('#seq_box').val('loading. . .');
-        refresh_seq(['args__fids','args__'+pageObj.fids,'args__seq_type','args__'+type],['seq_box']);	
+        refresh_seq(['args__fids','args__'+pageObj.fids,'args__seq_type','args__'+type],['seq_box']);
 }
 
 function prepare_run(){
@@ -57,16 +56,16 @@ function prepare_run(){
 	var type;
 	if($('#seq_type_dna:checked').val()) type='dna';
 	else type="prot";
-	
+
 	var gap_open = $('#gap_open').val();
 	var gap_ext = $('#gap_ext').val();
 	var iteration = $('#iteration').val();
-	
+
 	var matrix; //for clustalw
-	
+
 	if(type == 'dna') matrix = $('#dna_matrix').val();
 	else matrix = $('#prot_matrix').val();
-	
+
 	run([
 	'args__seq_type','args__'+type,
 	'args__gap_open','args__'+gap_open,
@@ -92,9 +91,8 @@ function clear_box(box){
 	 if(box.value == "Enter Fasta Sequences here")
 	 {
 		box.value = null;
-	}	
+	}
 }
-
 
 function setup_tabs() {
  $(function(){
@@ -117,19 +115,10 @@ function feature_checkboxes(){
   window.open('FeatList.pl?'+accn);
 }
 
-
-
 </SCRIPT>
 </TMPL_IF>
 
-
-
-
-
-
-
 <TMPL_IF NAME=MAIN>
-
 
 <span id=go style="font-size: 1em" class='ui-button ui-button-go ui-corner-all' onClick="loading([],['results']); prepare_run()">Run CoGe Align!</span>
 <div id=tabs>
@@ -139,8 +128,6 @@ function feature_checkboxes(){
   <li class=small><a href="#tabs-2">Alignment Options</a></li>
 <!--  <li class=small><a href="#tabs-3">Output Options</a></li>-->
 </ul>
-
-
 
 <div id="tabs-1">
 <br>
@@ -161,11 +148,10 @@ Generate codon alignment using protein sequences?
 
 </div> <!--end div tag for tabs_1-->
 
-
 <div id="tabs-2">
 
 <table>
-<tr><Td>Select Data Matrix: 
+<tr><Td>Select Data Matrix:
 <td><select name=dna_matrix id=dna_matrix>
 <option value=IUB>IUB
 <option value=CLUSTALW>CLUSTALW
@@ -177,11 +163,11 @@ Generate codon alignment using protein sequences?
 <option value=GONNET>GONNET
 <option value=ID>ID
 </select>
-<tr><td>Gap Open: 
+<tr><td>Gap Open:
 <td><input type=text size="6" id=gap_open value="15">
-<tr><td>Gap Extend: 
+<tr><td>Gap Extend:
 <td><input type=text size="6" id=gap_ext value="6.66">
-<tr><Td>Iteration: 
+<tr><Td>Iteration:
 <td><select id=iteration>
 <option value=NONE>None
 <option value=TREE>Tree

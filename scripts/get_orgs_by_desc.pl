@@ -11,4 +11,3 @@ foreach my $org ($coge->resultset("Organism")->search({description=>{like=>"%".$
  {
    print join ("\t", $org->name, $org->description),"\n";
 }
-

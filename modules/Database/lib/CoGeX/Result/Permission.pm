@@ -48,7 +48,6 @@ __PACKAGE__->has_many('role_permission_connectors'=>"CoGeX::Result::RolePermissi
 
 1;
 
-
 =head1 AUTHORS
 
  Eric Lyons

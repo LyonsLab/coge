@@ -62,7 +62,6 @@ __PACKAGE__->belongs_to( annotation_type => 'CoGeX::Result::AnnotationType', 'an
 __PACKAGE__->belongs_to( feature => 'CoGeX::Result::Feature', 'feature_id');
 __PACKAGE__->has_one("feature_name" => "CoGeX::Result::FeatureName", {'foreign.feature_id'=>'self.feature_id'});
 
-
 ################################################ subroutine header begin ##
 
 =head2 type
@@ -70,11 +69,11 @@ __PACKAGE__->has_one("feature_name" => "CoGeX::Result::FeatureName", {'foreign.f
  Usage     : $Annotation_obj->type->AnnotationType_object_method_or_value
  Purpose   : Shorthand for getting an Annotation Type from an Annotation object.
  Returns   : AnnotationType object.
- Argument  : 
+ Argument  :
  Throws    : None.
- Comments  : 
+ Comments  :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -86,7 +85,6 @@ sub type
   }
 
 1;
-
 
 =head1 AUTHORS
 

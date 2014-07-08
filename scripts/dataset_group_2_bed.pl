@@ -14,7 +14,6 @@ Will generate a dump of all features for a dataset_group in bed format
     exit;
   }
 
-
 my $coge = CoGeX->dbconnect();
 my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
 foreach my $ds ($dsg->datasets)

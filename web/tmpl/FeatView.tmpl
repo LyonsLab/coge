@@ -9,33 +9,32 @@ $(function() {
  $(".dialog").dialog({ autoOpen: false} );
  });
 
-
 function search_chain(val) {
  $('#data_table').show(0);
  accnminlen = 3;
  annominlen = 8;
- $('#anno').hide();	
+ $('#anno').hide();
  $('#accn_list').hide();
  $('#Source').hide();
  $('#FeatType').hide();
  var searched = 0;
  if ((val == 1)){
-   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >'); 
+   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >');
    $('#anno').show();
-   searched=1;	
+   searched=1;
    go_cogesearch();
-    
- } 
+
+ }
  else if ($('#accn').val().length > accnminlen) {
-   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >'); 
+   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >');
    $('#anno').show();
-   searched=1;	
+   searched=1;
    go_cogesearch();
  }
  else if ($('#annosearch').val().length > annominlen) {
-   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >'); 
+   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >');
    $('#anno').show();
-   searched=1;	
+   searched=1;
    go_cogesearch();
  }
 
@@ -58,10 +57,10 @@ function source_search_chain (val) {
 
 function get_types_chain (val1) {
  if (val1) {$('#Source').html(val1);$('#Source').show();}
- get_types(['args__accn','accn_select', 'args__dsid','dsid', 'args__ftid','type'],[get_anno_chain]);	
+ get_types(['args__accn','accn_select', 'args__dsid','dsid', 'args__ftid','type'],[get_anno_chain]);
 }
 
-function get_anno_chain (val1,val2) {	
+function get_anno_chain (val1,val2) {
  if (val1) {
    $('#FeatType').html(val1);
    $('#FeatType').show();
@@ -81,16 +80,15 @@ function show_anno (anno)
 setup_button_states();
  }
 
-
 function timing(val){
   namere = /name/;
   descre = /desc/;
-  if (namere.exec(val)) 
+  if (namere.exec(val))
    {
-    $('#org_desc').val("Search").css({fontStyle: "italic"}); 
+    $('#org_desc').val("Search").css({fontStyle: "italic"});
     searchterm = $('#'+val).val();
    }
-  else if (descre.exec(val)) 
+  else if (descre.exec(val))
    {
     $('#org_name').val("Search").css({fontStyle: "italic"}); ;
     searchterm = $('#'+val).val();
@@ -111,11 +109,11 @@ function timing(val){
   }
   re = /(\d+)/;
   i = re.exec(val);
-  if (namere.exec(val)) 
+  if (namere.exec(val))
    {
      pageObj.time = setTimeout("get_orgs(['args__type','args__name','args__search','org_name'],['org_list'])",500);
    }
-  else if (descre.exec(val)) 
+  else if (descre.exec(val))
    {
      pageObj.time = setTimeout("get_orgs(['args__type','args__desc','args__search','org_desc'],['org_list'])",500);
    }
@@ -141,7 +139,7 @@ function add_to_featlist(featname, featid, gstid){
 
 function add_all (val) {
  var id_array = val.split('||');
- for (var i =0; i < id_array.length; i++) 
+ for (var i =0; i < id_array.length; i++)
   {
       var item = id_array[i].split('::');
       var html = '<option id='+item[0]+' value='+item[0]+ ' >'+item[1]+'</option>';
@@ -162,7 +160,6 @@ function clear_feat_list(){
    }
   counting();
 }
-
 
 $.fn.sortSelect = function(){
   this.each(
@@ -210,7 +207,7 @@ function send_to_FeatList(){
   var featlist = $('#featlist_choice').getLength(1);
   parse_for_FeatList(['args__'+featlist],[send_to_url]);
 }
-  
+
 function send_to_url(url){
   window.open(url);
 }
@@ -246,9 +243,8 @@ $.fn.getLength = function(val){
   else return opt_length;
 };
 
-
 function onEnter(e){
-  if (!e){ 
+  if (!e){
    var e = window.event;}
   if(e.which == 13){
 search_chain(1);
@@ -260,7 +256,6 @@ function search_bar(div_id){
 }
 
 </SCRIPT>
-
 
 <TABLE class="ui-widget-content ui-corner-all">
        <TR>
@@ -304,10 +299,6 @@ function search_bar(div_id){
 	<td align=right><span class="ui-button ui-corner-all" onclick="$('#feat_list').dialog('open');">Feature List</span>
 </TABLE>
 
-
-
-
-
  <table id="data_table" style="display:none" class="ui-widget-content ui-corner-all">
  <thead align=left>
   <th>Matches</th>
@@ -329,14 +320,9 @@ function search_bar(div_id){
 
 <DIV id="anno" class="ui-widget-content ui-corner-all"><TMPL_VAR NAME="FID_ANNO"></DIV>
 
-
-
-
 <div class="dialog" id="codon_table" title="Codon Usage Table"></div>
 <div class="dialog" id="aa_table" title="Amino Acid Usage Table"></div>
 <div class="dialog" id="codon_aa_alignment" title="Amino Acid Usage Table"></div>
-
-
 
 <div class="dialog" title="Feature List" id="feat_list">
     <span class="small count">Feature Count: 0</span><br>

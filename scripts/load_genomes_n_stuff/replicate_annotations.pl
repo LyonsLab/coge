@@ -9,7 +9,6 @@ use vars qw($DEBUG $GO $db $user $pass $coge $dsgid1 $dsgid2);
 
 #Testing: ./replicate_annotations.pl -u coge -p xxx -db xxx -dsgid1 11022 -dsgid2 16746
 
-
 GetOptions ( "debug=s" => \$DEBUG,
              "go=s"    => \$GO,
              "database|db=s"=>\$db,
@@ -23,7 +22,6 @@ my $connstr = "dbi:mysql:dbname=$db;host=localhost;port=3307";
 $coge = CoGeX->connect($connstr, $user, $pass );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
-
 
 unless ($coge && $dsgid1 && $dsgid2)
   {
@@ -111,7 +109,6 @@ sub replicate_annotations
 	$f2->add_to_annotations({annotation=>$anno->annotation, annotation_type_id=>$anno->annotation_type_id}) if $GO;
       }
   }
-
 
 sub replicate_names
   {

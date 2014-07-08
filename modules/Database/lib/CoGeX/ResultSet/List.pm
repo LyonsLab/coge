@@ -8,15 +8,15 @@ use base 'DBIx::Class::ResultSet';
 
 =head2 public_lists
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+           :
 
-See Also   : 
+See Also   :
 
 =cut
 
@@ -30,7 +30,6 @@ sub public_lists
   }
 
 1;
-
 
 =head1 AUTHORS
 

@@ -120,4 +120,3 @@ sub generate_grimm_input
 
     return \@seqs;
 }
-

@@ -337,7 +337,6 @@ define( [
 
                     array.forEach( this.blocks, function( block, blockIndex ) {
 
-
                         // calculate the view left coord relative to the
                         // block left coord in units of pct of the block
                         // width
@@ -643,12 +642,10 @@ define( [
                     return featDiv;
                 },
 
-
                 fillBlockTimeout: function( blockIndex, block ) {
                     this.inherited( arguments );
                     block.featureNodes = {};
                 },
-
 
                 /**
                 * Returns true if a feature is visible and rendered someplace in the blocks of this track.
@@ -816,7 +813,6 @@ define( [
                     featDiv._labelScale = labelScale;
                     featDiv._descriptionScale = descriptionScale;
 
-
                     block.featureNodes[uniqueId] = featDiv;
 
                     // record whether this feature protrudes beyond the left and/or right side of the block
@@ -848,7 +844,7 @@ define( [
                     if ((phase !== null) && (phase !== undefined))
                         //featDiv.className = featDiv.className + " " + featDiv.className + "_phase" + phase;
                         dojo.addClass(featDiv, className + "_phase" + phase);
-                    
+
                     // check if this feature is highlighted
                     var highlighted = this.isFeatureHighlighted( feature, name );
 
@@ -874,7 +870,6 @@ define( [
                     } else {
                         top = 91;
                     }
-
 
                     featType = feature.get('type');
                     types = ["mRNA","CDS","gene","rRNA","tRNA","pseudogene"];
@@ -956,7 +951,7 @@ define( [
                     if ( typeof this.config.hooks.modify == 'function' ) {
                         this.config.hooks.modify(this, feature, featDiv);
                     }
-                    
+
                     // mdb added 11/4/13 issue 246 - add wobble shading
                     if (this.showWobble && className == 'CDS') {
                     	var wobble = feature.get('wobble');
@@ -990,7 +985,6 @@ define( [
                         }
                     }
                 },
-
 
                 /**
                 * Get the height of a div.  Caches div heights based on
@@ -1172,7 +1166,6 @@ define( [
                             maxHeight: this.getConf('maxHeight')
                         });
 
-
                     return this.layout;
                 },
                 _clearLayout: function() {
@@ -1222,7 +1215,7 @@ define( [
                               }
                             },
                             {	label: 'Send to FeatList',
-                            	onClick: function() { 
+                            	onClick: function() {
                             		var url = decodeURIComponent(window.location.href);
                             		var temp = url.match(/gid\=(\d+)/);
                             		var temp2 = url.match(/loc\=(\S+)\:(\S+)\.\.(\S+)/);
@@ -1230,12 +1223,12 @@ define( [
                             			console.log('Error generating FeatList link from '+url);
                             			return;
                             		}
-                            		window.open( 'FeatList.pl?dsgid='+temp[1]+'&chr='+temp2[1]+'&start='+temp2[2]+'&stop='+temp2[3] ); 
+                            		window.open( 'FeatList.pl?dsgid='+temp[1]+'&chr='+temp2[1]+'&start='+temp2[2]+'&stop='+temp2[3] );
                             	}
                             }
                         ]
                 );
-                    
+
                 return o;
             }
 

@@ -6,7 +6,6 @@ use Data::Dumper;
 use CoGe::Accessory::Web;
 use Getopt::Long;
 
-
 use vars qw($dsgid $conffile);
 GetOptions(
 	   "dsgid=i"=>\$dsgid,
