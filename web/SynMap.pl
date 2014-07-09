@@ -1233,6 +1233,29 @@ sub get_query_link {
     #draw a box around identified diagonals?
     my $box_diags = $url_options{box_diags};
     $box_diags = $box_diags eq "true" ? 1 : 0;
+
+
+    my ( $org_name1, $titleA ) = gen_org_name(
+        dsgid     => $dsgid1,
+        feat_type => $feat_type1,
+        write_log => 0
+    );
+
+    my ( $org_name2, $titleB ) = gen_org_name(
+        dsgid     => $dsgid2,
+        feat_type => $feat_type2,
+        write_log => 0
+    );
+
+    # Sort by genome id
+    (
+        $dsgid1, $org_name1, $feat_type1, $depth_org_1_ratio,
+        $dsgid2, $org_name2, $feat_type2, $depth_org_2_ratio
+    ) = (
+        $dsgid2, $org_name2, $feat_type2, $depth_org_2_ratio,
+        $dsgid1, $org_name1, $feat_type1, $depth_org_1_ratio
+    ) if ( $dsgid2 lt $dsgid1 );
+
     my $synmap_link =
         $SERVER
       . "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2"
@@ -1284,16 +1307,6 @@ sub get_query_link {
     $synmap_link .= ";ar=s" if $axis_relationship && $axis_relationship =~ /s/i;
     $synmap_link .= ";ct=$color_type" if $color_type;
 
-    my ( $org_name1, $titleA ) = gen_org_name(
-        dsgid     => $dsgid1,
-        feat_type => $feat_type1,
-        write_log => 0
-    );
-    my ( $org_name2, $titleB ) = gen_org_name(
-        dsgid     => $dsgid2,
-        feat_type => $feat_type2,
-        write_log => 0
-    );
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(url => $synmap_link);
 
     return $tiny_link;
