@@ -66,4 +66,17 @@ is $u5->path,   "/test/Test.pl",     "has correct path";
 is $u5->query,  "a005=1&a05=2&a5=3", "has correct query string regardless of order";
 is $url2, "http://localhost/test/Test.pl?a005=1&a05=2&a5=3", "has correct url";
 
+
+# Base url set in server
+$config->{SERVER} = "http://localhost/test/";
+$config->{URL} = "/test/";
+set_defaults($config);
+my $url3 = url_for("Test.pl", a05 => 2, a5 => 3, a005 => 1);
+my $u6 = URI->new($url2);
+is $u6->scheme, "http",              "has correct scheme (overrides default scheme)";
+is $u6->host,   "localhost",         "has correct host";
+is $u6->path,   "/test/Test.pl",     "has correct path";
+is $u6->query,  "a005=1&a05=2&a5=3", "has correct query string regardless of order";
+is $url3, "http://localhost/test/Test.pl?a005=1&a05=2&a5=3", "has correct url";
+
 done_testing();

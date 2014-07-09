@@ -1007,14 +1007,17 @@ sub url_for {
     # Strip leading /
     $path =~ s/^\///;
 
-    # Strip scheme and /
-    $SERVER =~ s/\/$//;
-    $SERVER =~ s/^https?:\/{2}//;
-    $SERVER =~ s/\/$//;
-
     # Strip leading and trailing /
     $BASE_URL =~ s/^\///;
     $BASE_URL =~ s/\/$//;
+
+    # Strip BASE URL from SERVER
+    $SERVER =~ s/$BASE_URL//;
+
+    # Strip scheme and /
+    $SERVER =~ s/\/*$//;
+    $SERVER =~ s/^https?:\/{2}//;
+    $SERVER =~ s/\/$//;
 
     # Build up parts and ignore BASE_URL if not set
     my @parts = (length $BASE_URL) ? ($SERVER, $BASE_URL, $path)
