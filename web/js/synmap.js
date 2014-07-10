@@ -53,6 +53,7 @@ function populate_page_obj(basefile) {
         "class": "alert",
         text: "The job engine has failed."
     });
+    pageObj.failed = "The workflow could not be submitted.";
 }
 
 function run_synmap(scheduled, regenerate){
@@ -123,12 +124,18 @@ function schedule(params) {
     close_dialog(status_dialog);
 
     return $.ajax({
-        data: params,
+        type: "post",
         dataType: 'json',
+        data: params,
         success: function(data) {
             $("#overlay").hide();
             status_dialog.dialog('open');
-            if (data.status == 'Scheduled' || data.status == 'Running' || data.status === 'Completed') {
+
+            if (data.error) {
+                status_dialog.find('#text').html(data.error).addClass("alert");
+                status_dialog.find('#progress').hide();
+                status_dialog.find('#dialog_error').slideDown();
+            } else if (data.success) {
                 var link = "Return to this analysis: <a href="
                 + data.link + " onclick=window.open('tiny')"
                 + "target = _new>" + data.link + "</a>";
@@ -142,7 +149,7 @@ function schedule(params) {
                 update_dialog(data.request, "#synmap_dialog", synmap_formatter,
                         get_params("get_results"));
             } else {
-                status_dialog.find('#text').html(pageObj.engine);
+                status_dialog.find('#text').html(pageObj.failed).addClass("alert");
                 status_dialog.find('#progress').hide();
                 status_dialog.find('#dialog_error').slideDown();
             }
@@ -150,6 +157,7 @@ function schedule(params) {
         error: function(err) {
             $("#overlay").hide();
             status_dialog.dialog('open');
+            status_dialog.find('#text').html(pageObj.failed).addClass("alert");
             status_dialog.find('#progress').hide();
             status_dialog.find('#dialog_error').slideDown();
         }
