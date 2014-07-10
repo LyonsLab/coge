@@ -1326,22 +1326,34 @@ sub go {
     my $dsgid1 = $opts{dsgid1};
     my $dsgid2 = $opts{dsgid2};
 
-    unless ( $dsgid1 && $dsgid2 ) {
-        return "<span class=alert>You must select two genomes.</span>";
-    }
+    return encode_json({
+        success =>  JSON::false,
+        error => "You must select two genomes."
+    }) unless ($dsgid1 && $dsgid2);
 
     my ($genome1) = $coge->resultset('Genome')->find($dsgid1);
     my ($genome2) = $coge->resultset('Genome')->find($dsgid2);
 
-    unless ( $genome1 && $genome2 ) {
-        return
-"<span class=alert>Problem generating dataset group objects for ids:  $dsgid1, $dsgid2.</span>";
-    }
+    return encode_json({
+        success =>  JSON::false,
+        error => "The Genome $dsgid1 could not be found."
+    }) unless $genome1;
 
-    unless ( $genome1 && $genome2 ) {
-        return
-"<span class=alert>Problem generating one of the genome objects for id1: $dsgid1 or id2: $dsgid2</span>";
-    }
+    return encode_json({
+        success =>  JSON::false,
+        error => "The Genome $dsgid2 could not be found."
+    }) unless $genome2;
+
+    return encode_json({
+        success =>  JSON::false,
+        error => "Genome $dsgid1 primary data is missing."
+    }) unless -r $genome1->file_path;
+
+    return encode_json({
+        success =>  JSON::false,
+        error => "Genome $dsgid2 primary data is missing."
+    }) unless -r $genome2->file_path;
+
     my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
     ############################################################################
     # Fetch organism name and title
@@ -1519,8 +1531,8 @@ sub go {
     );
 
     if ( $feat_type1 eq "genomic" ) {
-        my $genome = $coge->resultset('Genome')->find($dsgid1);
-        $fasta1 = $genome->file_path;
+        $fasta1 = $genome1->file_path;
+
         CoGe::Accessory::Web::write_log( "Fetched fasta file for:",
             $cogeweb->logfile );
         CoGe::Accessory::Web::write_log( " " x (2) . $org_name1,
@@ -1550,8 +1562,8 @@ sub go {
     }
 
     if ( $feat_type2 eq "genomic" ) {
-        my $genome = $coge->resultset('Genome')->find($dsgid2);
-        $fasta2 = $genome->file_path;
+        $fasta2 = $genome2->file_path;
+
         CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
         CoGe::Accessory::Web::write_log( "Fetched fasta file for:",
             $cogeweb->logfile );
@@ -2468,7 +2480,8 @@ sub go {
     return encode_json({
         link     => $tiny_link,
         request  => "jex/synmap/status/" . $response->{id},
-        status   => $response->{status}
+        status   => $response->{status},
+        success  => $JEX->is_successful($response) ? JSON::true : JSON::false
     });
 }
 
@@ -2481,20 +2494,16 @@ sub get_results {
     my $dsgid1 = $opts{dsgid1};
     my $dsgid2 = $opts{dsgid2};
 
-    unless ( $dsgid1 && $dsgid2 ) {
-        return encode_json({
-            error => "You must select two genomes."
-        });
-    }
+    return encode_json({
+        error => "You must select two genomes."
+    }) unless ( $dsgid1 && $dsgid2 );
 
     my ($genome1) = $coge->resultset('Genome')->find($dsgid1);
     my ($genome2) = $coge->resultset('Genome')->find($dsgid2);
 
-    unless ( $genome1 && $genome2 ) {
-        return encode_json({
-            error => "Problem generating dataset group objects for ids:  $dsgid1, $dsgid2."
-        });
-    }
+    return encode_json({
+        error => "Problem generating dataset group objects for ids:  $dsgid1, $dsgid2."
+    }) unless ( $genome1 && $genome2 );
 
     my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
 
