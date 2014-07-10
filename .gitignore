@@ -1,5 +1,6 @@
 *.pyc
 *.o
+.project
 blib
 pm_to_blib
 MYMETA.json
