@@ -1234,7 +1234,6 @@ sub get_query_link {
     my $box_diags = $url_options{box_diags};
     $box_diags = $box_diags eq "true" ? 1 : 0;
 
-
     my ( $org_name1, $titleA ) = gen_org_name(
         dsgid     => $dsgid1,
         feat_type => $feat_type1,
@@ -3359,7 +3358,7 @@ qq{<span id="clear" style="font-size: 0.8em" class="ui-button ui-corner-all"
     my $output = $results->output;
 
     # erb 5/19/2014 - older version of dotplot would generate javascript inline
-    # Remove jquery and xhairs from generate html
+    # Remove jquery and xhairs from generated html
     $output =~ s/<script src="\/CoGe\/js\/jquery-1.3.2.js"><\/script>//g;
     $output =~ s/<script src="\/CoGe\/js\/xhairs.js"><\/script>//g;
 
