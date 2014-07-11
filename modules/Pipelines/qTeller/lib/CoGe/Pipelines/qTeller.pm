@@ -15,7 +15,7 @@ use CoGe::Accessory::TDS qw(read);
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Jex;
 use CoGe::Core::Storage qw(get_genome_file get_experiment_files get_workflow_paths);
-use CoGe::Accessory::Web qw(get_defaults get_job schedule_job);
+use CoGe::Accessory::Web qw(get_defaults);
 
 BEGIN {
     use vars qw ($VERSION @ISA @EXPORT $CACHE $CONF);

@@ -434,13 +434,13 @@ sub load_experiment {
     my $data_file = $TEMPDIR . $items->[0]->{path};
 
     # Determine fastq file type
-    my ($job_id, $error_msg);
+    my ($workflow_id, $error_msg);
     if ( $file_type eq 'fastq' || is_fastq_file($data_file) ) {
         # Get genome
         my $genome = $coge->resultset('Genome')->find($gid);
 
         # Submit workflow to generate experiment
-        ($job_id, $error_msg) = CoGe::Pipelines::qTeller::run(
+        ($workflow_id, $error_msg) = CoGe::Pipelines::qTeller::run(
             db => $coge,
             genome => $genome,
             user => $USER,
@@ -472,7 +472,7 @@ sub load_experiment {
     # Else, all other file types
     else {
     	# Submit workflow to generate experiment
-        ($job_id, $error_msg) = create_experiment(
+        ($workflow_id, $error_msg) = create_experiment(
             genome => $gid,
             user => $USER,
             metadata => {
@@ -486,14 +486,14 @@ sub load_experiment {
             file_type => $file_type
         );
     }
-    unless ($job_id) {
+    unless ($workflow_id) {
         print STDERR $error_msg, "\n";
         return encode_json({ error => "Workflow submission failed: " . $error_msg });
     }
 
     # Get tiny link
     my $link = CoGe::Accessory::Web::get_tiny_link(
-        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $job_id
+        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id
     );
     
     # Log it
@@ -511,7 +511,7 @@ sub load_experiment {
         link        => $link
     );
     
-    return encode_json({ job_id => $job_id, link => $link });
+    return encode_json({ job_id => $workflow_id, link => $link });
 }
 
 sub is_fastq_file {
