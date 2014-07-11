@@ -1,11 +1,13 @@
 #! /usr/bin/perl -w
 
+use v5.10;
 use strict;
-use CGI;
 
+use CGI;
 use JSON::XS;
 use HTML::Template;
 use Sort::Versions;
+use Time::Piece;
 use List::Util qw(first);
 use URI::Escape::JavaScript qw(escape unescape);
 use Data::Dumper;
@@ -17,10 +19,14 @@ use CoGe::Accessory::Jex;
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
+use CoGe::Accessory::Utils qw(format_time_diff);
 use Benchmark;
 no warnings 'redefine';
 
-use vars qw($P $PAGE_TITLE $USER $LINK $coge %FUNCTION $FORM %ITEM_TYPE $MAX_SEARCH_RESULTS);
+use vars qw(
+    $P $PAGE_TITLE $USER $LINK $coge %FUNCTION $FORM %ITEM_TYPE 
+    $MAX_SEARCH_RESULTS $JEX
+);
 
 $PAGE_TITLE = 'User';
 
@@ -30,6 +36,8 @@ $FORM = new CGI;
     cgi => $FORM
 );
 
+$JEX = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
+
 # debug for fileupload:
 # print STDERR $ENV{'REQUEST_METHOD'} . "\n" . $FORM->url . "\n" . Dumper($FORM->Vars) . "\n";	# debug
 # print "data begin\n" . $FORM->param('POSTDATA') . "\ndata end\n" if ($FORM->param('POSTDATA'));
@@ -38,14 +46,18 @@ $MAX_SEARCH_RESULTS = 100;
 
 my $node_types = CoGeX::node_types();
 
-%ITEM_TYPE = (    # content/toc types
+# Content/toc types
+# note: adding new values is okay, but don't change existing values or 
+# will break running User pages in the field
+%ITEM_TYPE = (
     all           		=> 100,
     mine          		=> 101,
     shared        		=> 102,
-    activity      		=> 103,
+    activity_summary	=> 103,
     trash         		=> 104,
     activity_viz  		=> 105,
     activity_analyses	=> 106,
+    activity_loads      => 107,
     user          		=> $node_types->{user},
     group         		=> $node_types->{group},
     notebook      		=> $node_types->{list},
@@ -54,7 +66,6 @@ my $node_types = CoGeX::node_types();
 );
 
 %FUNCTION = (
-    # get_logs				=> \&get_logs,
     upload_image_file               => \&upload_image_file,
     get_item_info                   => \&get_item_info,
     delete_items                    => \&delete_items,
@@ -74,7 +85,8 @@ my $node_types = CoGeX::node_types();
     create_new_group                => \&create_new_group,
     create_new_notebook             => \&create_new_notebook,
     toggle_star                     => \&toggle_star,
-    cancel_jobs						=> \&cancel_jobs
+    cancel_job						=> \&cancel_job,
+    comment_job                     => \&comment_job
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -131,13 +143,12 @@ sub gen_body {
         MAIN      => 1
     );
 
-    $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
+    #$template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 
     $template->param(
         USER_NAME   => $USER->user_name,
         USER_ID     => $USER->id,
         FULL_NAME   => $USER->display_name,
-        DESCRIPTION => $USER->description,
         EMAIL       => $USER->email,
         USER_IMAGE  => (
             $USER->image_id
@@ -150,7 +161,6 @@ sub gen_body {
         $template->param( 'ITEM_TYPE_' . uc($_) => $ITEM_TYPE{$_} );
     }
 
-    # $template->param( LOGS => get_logs() );
     $template->param(
         TOC            => get_toc(),
         CONTENTS       => get_contents( html_only => 1 ),
@@ -449,39 +459,76 @@ sub undelete_items {
     }
 }
 
-sub cancel_jobs {
+#sub cancel_jobs {
+#    my %opts      = @_;
+#    my $item_list = $opts{item_list};
+#    my @items     = split( ',', $item_list );
+#    return unless @items;
+#
+#    foreach (@items) {
+#        my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
+#        next unless ( $item_id and $item_type );
+#        print STDERR "cancel $item_id $item_type\n";
+#
+#        my $job = $coge->resultset('Job')->find($item_id);
+#	    if ( ( !$job || $job->user_id != $USER->id ) && !$USER->is_admin ) {
+#	        return;
+#	    }
+#
+#	    my $status = $JEX->get_status( $job->id );
+#	    print STDERR "job " . $job->id . " status=$status\n";
+#	    if ( $status =~ /running/i ) {
+#	    	my $res = $JEX->terminate( $job->id );
+#	    	if ( $res->{status} =~ /notfound/i ) {
+#	        	print STDERR "job " . $job->id . " termination error: status=" . $res->status . "\n";
+#	    	}
+#	    	else {
+#	    		$job->update( { status => 3 } );
+#	    	}
+#	        return encode_json( $res );
+#	    }
+#    }
+#
+#	return 1;
+#}
+
+sub cancel_job {
     my %opts      = @_;
-    my $item_list = $opts{item_list};
-    my @items     = split( ',', $item_list );
-    return unless @items;
+    my $workflow_id = $opts{workflow_id};
+    return 0 unless $workflow_id;
 
-	my $jex = CoGe::Accessory::Jex->new( host => "localhost", port => 5151 );
+#    my $job = $coge->resultset('Job')->find($workflow_id);
+#    if ( ( !$job || $job->user_id != $USER->id ) && !$USER->is_admin ) {
+#        return;
+#    }
 
-    foreach (@items) {
-        my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
-        next unless ( $item_id and $item_type );
-        print STDERR "cancel $item_id $item_type\n";
-
-        my $job = $coge->resultset('Job')->find($item_id);
-	    if ( ( !$job || $job->user_id != $USER->id ) && !$USER->is_admin ) {
-	        return;
-	    }
-
-	    my $status = $jex->get_status( $job->id );
-	    print STDERR "job " . $job->id . " status=$status\n";
-	    if ( $status =~ /running/i ) {
-	    	my $res = $jex->terminate( $job->id );
-	    	if ( $res->{status} =~ /notfound/i ) {
-	        	print STDERR "job " . $job->id . " termination error: status=" . $res->status . "\n";
-	    	}
-	    	else {
-	    		$job->update( { status => 3 } );
-	    	}
-	        return encode_json( $res );
-	    }
+    my $status = $JEX->get_status( $workflow_id );
+    if ( $status =~ /running/i ) {
+        my $res = $JEX->terminate( $workflow_id );
+        if ( $res =~ /notfound/i ) {
+            print STDERR "job " . $workflow_id . " termination error: status=" . $res . "\n";
+        }
+        return 0;
     }
 
-	return 1;
+    return 1;
+}
+
+sub comment_job {
+    my %opts      = @_;
+    my $log_id = $opts{log_id};
+    my $comment = $opts{comment};
+    return 0 unless $log_id;
+    
+    warn "comment_job: $log_id $comment";
+
+    my $log = $USER->logs->find($log_id);
+    return 0 unless $log;
+
+    $log->comment($comment);
+    $log->update;
+
+    return 1;
 }
 
 sub get_roles {
@@ -493,8 +540,7 @@ sub get_roles {
         next if $role->name =~ /owner/i && !$USER->is_admin;
         my $name = $role->name;
         $name .= ": " . $role->description if $role->description;
-
-#push @roles, { RID => $role->id, NAME => $name, SELECTED => ($role->id == $selected_role_id) };
+        #push @roles, { RID => $role->id, NAME => $name, SELECTED => ($role->id == $selected_role_id) };
         $html .=
             '<option value="'
           . $role->id . '" '
@@ -1152,14 +1198,18 @@ sub get_toc {    # table of contents
  	 		TOC_ITEM_INFO => 'Groups',
  			#TOC_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15"/>'
 		},
-    	{   TOC_ITEM_ID       => $ITEM_TYPE{activity},
+    	{   TOC_ITEM_ID       => $ITEM_TYPE{activity_summary},
 	        TOC_ITEM_INFO     => 'Activity',
-	        TOC_ITEM_CHILDREN => 2
+	        TOC_ITEM_CHILDREN => 3
 	    },
 	    {   TOC_ITEM_ID     => $ITEM_TYPE{activity_analyses},
 	        TOC_ITEM_INFO   => 'Analyses',
 	        TOC_ITEM_INDENT => 20
 	    },
+	    {   TOC_ITEM_ID     => $ITEM_TYPE{activity_loads},
+            TOC_ITEM_INFO   => 'Data loading',
+            TOC_ITEM_INDENT => 20
+        },
     	{   TOC_ITEM_ID     => $ITEM_TYPE{activity_viz},
 	        TOC_ITEM_INFO   => 'Graph',
 	        TOC_ITEM_INDENT => 20
@@ -1190,6 +1240,9 @@ sub get_contents {
     #my $start_time = time;
     my @rows;
 
+    # Check login
+    return if ($USER->is_public);
+
     # Get current time (according to database)
     my $update_time = $coge->storage->dbh_do(
         sub {
@@ -1216,148 +1269,146 @@ sub get_contents {
     #print STDERR "Time to run user->children_by_type_role_id: $time\n";
     #print STDERR "get_contents: time1=" . ((time - $start_time)*1000) . "\n";
 
-	if (   $type == $ITEM_TYPE{all}
-		or $type == $ITEM_TYPE{group} )
+	if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{group} )
 	{
 	 	foreach my $group ( sort {$a->name cmp $b->name} values %{ $children->{6} } ) { #FIXME hardcoded type
-	 		push @rows, { CONTENTS_ITEM_ID => $group->id,
-	 					  CONTENTS_ITEM_TYPE => $ITEM_TYPE{group},
-	 					  CONTENTS_ITEM_DELETED => $group->deleted,
-	 					  CONTENTS_ITEM_INFO => $group->info,
-	 				  	  CONTENTS_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
-	 				  	  CONTENTS_ITEM_LINK =>  'GroupView.pl?ugid=' . $group->id,
-	 				  	  CONTENTS_ITEM_SELECTABLE => 1
+	 		push @rows, { 
+	 		    CONTENTS_ITEM_ID => $group->id,
+	 			CONTENTS_ITEM_TYPE => $ITEM_TYPE{group},
+	 			CONTENTS_ITEM_DELETED => $group->deleted,
+	 			CONTENTS_ITEM_INFO => $group->info,
+	 			CONTENTS_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
+	 			CONTENTS_ITEM_LINK =>  'GroupView.pl?ugid=' . $group->id,
+	 			CONTENTS_ITEM_SELECTABLE => 1
 	 		};
 	 	}
 	}
 
-    if (   $type == $ITEM_TYPE{notebook}
-        or $type == $ITEM_TYPE{all}
-        or $type == $ITEM_TYPE{mine} )
+    if ( $type == $ITEM_TYPE{notebook} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine} )
     {
-        foreach my $list ( sort listcmp values %{ $children->{1} } )
-        {    #FIXME hardcoded type
+        foreach my $list ( sort listcmp values %{ $children->{1} } ) { #FIXME hardcoded type
             push @rows, {
-                CONTENTS_ITEM_ID   => $list->id,
+                CONTENTS_ITEM_ID => $list->id,
                 CONTENTS_ITEM_TYPE => $ITEM_TYPE{notebook},
                 CONTENTS_ITEM_DELETED => $list->deleted,
-                CONTENTS_ITEM_SHARED =>
-                  !$roles->{2}{ $list->id },    #FIXME hardcoded role id
+                CONTENTS_ITEM_SHARED => !$roles->{2}{ $list->id }, #FIXME hardcoded role id
                 CONTENTS_ITEM_INFO => $list->info,
-                CONTENTS_ITEM_ICON =>
-'<img src="picts/notebook-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
-                CONTENTS_ITEM_LINK       => 'NotebookView.pl?nid=' . $list->id,
+                CONTENTS_ITEM_ICON => '<img src="picts/notebook-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
+                CONTENTS_ITEM_LINK => 'NotebookView.pl?nid=' . $list->id,
                 CONTENTS_ITEM_SELECTABLE => 1
             };
         }
     }
 
     #print STDERR "get_contents: time2=" . ((time - $start_time)*1000) . "\n";
-    if (   $type == $ITEM_TYPE{genome}
-        or $type == $ITEM_TYPE{all}
-        or $type == $ITEM_TYPE{mine} )
+    if ( $type == $ITEM_TYPE{genome} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine} )
     {
-        foreach my $genome ( sort genomecmp values %{ $children->{2} } )
-        {    #FIXME hardcoded type
+        foreach my $genome ( sort genomecmp values %{ $children->{2} } ) { #FIXME hardcoded type
             push @rows, {
                 CONTENTS_ITEM_ID      => $genome->id,
                 CONTENTS_ITEM_TYPE    => $ITEM_TYPE{genome},
                 CONTENTS_ITEM_DELETED => $genome->deleted,
-                CONTENTS_ITEM_SHARED =>
-                  !$roles->{2}{ $genome->id },    #FIXME hardcoded role id
+                CONTENTS_ITEM_SHARED  => !$roles->{2}{ $genome->id }, #FIXME hardcoded role id
                 CONTENTS_ITEM_INFO => $genome->info,
-                CONTENTS_ITEM_ICON =>
-'<img src="picts/dna-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
-                CONTENTS_ITEM_LINK       => 'GenomeInfo.pl?gid=' . $genome->id,
+                CONTENTS_ITEM_ICON => '<img src="picts/dna-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
+                CONTENTS_ITEM_LINK => 'GenomeInfo.pl?gid=' . $genome->id,
                 CONTENTS_ITEM_SELECTABLE => 1
             };
         }
     }
 
     #print STDERR "get_contents: time3=" . ((time - $start_time)*1000) . "\n";
-    if (   $type == $ITEM_TYPE{experiment}
-        or $type == $ITEM_TYPE{all}
-        or $type == $ITEM_TYPE{mine} )
+    if ( $type == $ITEM_TYPE{experiment} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine} )
     {
-        foreach my $experiment ( sort experimentcmp values %{ $children->{3} } )
-        {    #FIXME hardcoded type
+        foreach my $experiment ( sort experimentcmp values %{ $children->{3} } ) { #FIXME hardcoded type
             push @rows, {
                 CONTENTS_ITEM_ID      => $experiment->id,
                 CONTENTS_ITEM_TYPE    => $ITEM_TYPE{experiment},
                 CONTENTS_ITEM_DELETED => $experiment->deleted,
-                CONTENTS_ITEM_SHARED =>
-                  !$roles->{2}{ $experiment->id },    #FIXME hardcoded role id
-                CONTENTS_ITEM_INFO => $experiment->info(
-                    source => $sourceIdToName{ $experiment->data_source_id }
-                ),
-                CONTENTS_ITEM_ICON =>
-'<img src="picts/testtube-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
-                CONTENTS_ITEM_LINK => 'ExperimentView.pl?eid='
-                  . $experiment->id,
+                CONTENTS_ITEM_SHARED => !$roles->{2}{ $experiment->id },    #FIXME hardcoded role id
+                CONTENTS_ITEM_INFO => $experiment->info( source => $sourceIdToName{ $experiment->data_source_id } ),
+                CONTENTS_ITEM_ICON => '<img src="picts/testtube-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
+                CONTENTS_ITEM_LINK => 'ExperimentView.pl?eid=' . $experiment->id,
                 CONTENTS_ITEM_SELECTABLE => 1
             };
         }
     }
+    
+    my $jobs = get_jobs($last_update);
 
     #print STDERR "get_contents: time4=" . ((time - $start_time)*1000) . "\n";
-    if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity} ) {
-        foreach my $entry (
-            $USER->logs(
-                {
-                    time => { '>=' => $last_update },
-                    type => { '!=' => 0 }
-                },    #FIXME hardcoded type
-                { order_by => { -desc => 'time' } }
-            )
-          )
-        {
-            my $icon = '<img id="' . $entry->id . '" ' . ( $entry->is_important ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"' ) . ' ' . 'width="15" height="15" style="vertical-align:middle;" ' . 'onclick="toggle_star(this);"' . '/>';
-            push @rows,
-              {
-                CONTENTS_ITEM_ID   => $entry->id,
-                CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity},
-                CONTENTS_ITEM_INFO => $entry->short_info,
-                CONTENTS_ITEM_ICON => $icon,
-                CONTENTS_ITEM_LINK => $entry->link
-              };
-        }
+    if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity_summary} ) {
+        my $summary_html = summarize_jobs($jobs);
+        
+        push @rows,
+          {
+            CONTENTS_ITEM_ID   => 0,
+            CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_summary},
+            CONTENTS_ITEM_INFO => $summary_html,
+            #CONTENTS_ITEM_ICON => $icon,
+            #CONTENTS_ITEM_LINK => $entry->link
+          };
+#        foreach my $entry (
+#            $USER->logs(
+#                {
+#                    time => { '>=' => $last_update },
+#                    type => { '!=' => 0 }
+#                },    #FIXME hardcoded type
+#                { order_by => { -desc => 'time' } }
+#            )
+#          )
+#        {
+#            my $icon = '<img id="' . $entry->id . '" ' . ( $entry->is_important ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"' ) . ' ' . 'width="15" height="15" style="vertical-align:middle;" ' . 'onclick="toggle_star(this);"' . '/>';
+#            push @rows,
+#              {
+#                CONTENTS_ITEM_ID   => $entry->id,
+#                CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_summary},
+#                CONTENTS_ITEM_INFO => $entry->short_info,
+#                CONTENTS_ITEM_ICON => $icon,
+#                CONTENTS_ITEM_LINK => $entry->link
+#              };
+#        }
     }
-
+    
     #print STDERR "get_contents: time5=" . ((time - $start_time)*1000) . "\n";
     if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity_analyses} ) {
-        push @rows,
-          { CONTENTS_ITEM_ID   => 0,
-            CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_analyses},
-            CONTENTS_ITEM_INFO => '<span class="small alert">Please note: This area is undergoing changes and the analyses shown do not reflect recent activity.</span>',
-            #CONTENTS_ITEM_LINK => undef,
-            CONTENTS_ITEM_SELECTABLE => 0
-          };
-
-        foreach my $entry (
-            $USER->jobs(
-                {},
-                {
-                	time => { '>=' => $last_update },
-                	join => 'log',
-                	prefetch => 'log',
-                	order_by => { -desc => 'start_time' }
-                }
-            )
-          )
-        {
+        my $analyses = filter_jobs($jobs, ['synmap', 'cogeblast', 'gevo', 'synfind']);
+        foreach (@$analyses) {
+            my $id = $_->{id};
+            my $isRunning = $_->{status} =~ /running/i;
+            my $star_icon = '<img name="'.$id.'" ' . ( $_->{is_important} ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"' ) . ' ' . 'width="15" height="15" class="link" style="vertical-align:middle;" ' . 'onclick="toggle_star(this);"' . ' title="Favorite this analysis"/>';
+            #<span id="cancel_button" onClick="cancel_jobs();" class="invisible item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+            my $cancel_icon = '<img name="'.$id.'" title="Cancel this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/cancel.png" width="15" onclick="cancel_job_dialog('.($_->{workflow_id} ? $_->{workflow_id} : '').');"/>';
+            my $comment_icon = qq{<img name="$id" title="Add comment" class="link" height="15" style="vertical-align:middle;" src="picts/comment-icon.png" width="15" onclick="comment_dialog($id, '$_->{comment}');" />};
+            my $info_html = format_job_status($_->{status}).' '.$_->{start_time}.' | '. $_->{elapsed}.' | '.$_->{page}.' | '.$_->{description} . ($_->{comment} ? ' | ' . $_->{comment} : '') . ($_->{workflow_id} ? ' | id' . $_->{workflow_id} : '') . ' ' . $id;
             push @rows,
               {
-                CONTENTS_ITEM_ID   => $entry->id,
+                CONTENTS_ITEM_ID   => $id,
                 CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_analyses},
-                CONTENTS_ITEM_INFO => $entry->info_html,
-                CONTENTS_ITEM_LINK => $entry->link,
-                CONTENTS_ITEM_SELECTABLE => 1
+                CONTENTS_ITEM_INFO => $info_html,
+                CONTENTS_ITEM_LINK => $_->{link},
+                CONTENTS_ITEM_ICON => $star_icon . ' ' . $comment_icon . ($isRunning ? ' ' . $cancel_icon : ''),
               };
         }
     }
+    
     #print STDERR "get_contents: time6=" . ((time - $start_time)*1000) . "\n";
+    if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity_loads} ) {
+        my $loads = filter_jobs($jobs, ['loadgenome', 'loadexperiment', 'loadannotation', 'loadbatch']);
+        foreach (@$loads) {
+            my $isRunning = $_->{status} =~ /running/i;
+            my $info_html = format_job_status($_->{status}).' '.$_->{start_time}.' | '. $_->{elapsed}.' | '.$_->{page}.' | '.$_->{description} . ($_->{workflow_id} ? ' | id' . $_->{workflow_id} : '');
+            push @rows,
+              {
+                CONTENTS_ITEM_ID   => $_->{id},
+                CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_loads},
+                CONTENTS_ITEM_INFO => $info_html,
+                CONTENTS_ITEM_LINK => $_->{link},
+              };
+        }
+    }
 
-    if ($html_only) {    # only do this for initial page load, not polling
+    if ($html_only) { # only do this for initial page load, not polling
         my $user_id = $USER->id;
         my $job_list = 'cogeblast/synmap/gevo/synfind/loadgenome/loadexperiment/organismview/user';
         push @rows,
@@ -1368,9 +1419,8 @@ sub get_contents {
           };
     }
 
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-    $template->param( DO_CONTENTS        => 1 );
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    $template->param( DO_CONTENTS => 1 );
     $template->param( CONTENTS_ITEM_LOOP => \@rows );
     my $html = $template->output;
 
@@ -1382,36 +1432,146 @@ sub get_contents {
     );
 }
 
-# sub get_logs {
-# 	return if ($USER->user_name eq "public");
+sub get_jobs {
+    my ($last_update) = @_;
+    
+    # Get all jobs from the log table
+    my @entries = $USER->logs(
+        {
+            workflow_id => { "!=" => undef},
+            type => { '!=' => 0 },
+            #time => { '>=' => $last_update } # for faster refresh
+        },
+        { order_by => { -desc => 'time' } }
+    );
+    
+    # Add status info from job engine for currently active jobs
+    my @workflow_ids = map { $_->workflow_id } @entries;
+    my $workflows = $JEX->find_workflows(@workflow_ids);
+    my %workflowsByID;
+    foreach (@{$workflows}) {
+        my($id, undef, $submitted, $completed, $status) = @{$_};
+        my $diff = (defined $completed and defined $submitted) ? format_time_diff($completed - $submitted) : 0;
+        $workflowsByID{$id} = {
+            status => $status,
+            elapsed => $diff,
+        };
+    }
+    
+    # Extract relevant fields
+    my @results;
+    foreach my $entry (@entries) {
+        my $wid = $entry->workflow_id;
+        next unless defined $workflowsByID{$wid};
+        
+        push @results, {
+            id => int($entry->id),
+            page => $entry->page,
+            description => $entry->description,
+            comment => $entry->comment // '', #/
+            link => $entry->link,
+            start_time => $entry->time,
+            is_important => $entry->is_important,
+            workflow_id => $wid,
+            elapsed => $workflowsByID{$wid}{elapsed},
+            status => $workflowsByID{$wid}{status}
+        };
+    }
 
-# 	my %opts = @_;
-# 	my $type = $opts{type};
+    # Add in old jobs from legacy jobs table
+    foreach my $job ($USER->jobs({},
+            {   time => { '>=' => $last_update },
+                join => 'log',
+                prefetch => 'log',
+                order_by => { -desc => 'start_time' }
+            }))
+    {
+        my $status = $job->status_description;
+        $status =~ s/Running/Cancelled/; # Impossible to be running
+        
+        my $log = $job->log;
+        push @results, {
+            id => int($job->log_id),
+            page => $job->page,
+            description => $log->description,
+            comment => $log->comment // '', #/
+            link => $job->link,
+            start_time => $job->start_time,
+            is_important => $log->is_important,
+            elapsed => $job->elapsed_time,
+            status => $status
+        };
+    }
+    
+    # Filter out redundant results (kludge)
+    my @filtered;
+    foreach (reverse @results) {
+        my $wid = $_->{workflow_id};
+        next if (defined $wid and defined $workflowsByID{$wid}{seen});
+        $workflowsByID{$wid}{seen}++ if (defined $wid);
+        
+        unshift @filtered, $_;
+    }
+    
+    return \@filtered;
+}
 
-# 	my @logs;
-# 	if (!$type or $type eq 'recent') {
-# 		@logs = $coge->resultset('Log')->search( { user_id => $USER->id, description => { 'not like' => 'page access' } }, { order_by => { -desc => 'time' } } ); # $user->logs;
-# 		#my @logs = reverse $coge->resultset('Log')->search_literal( 'user_id = ' . $user->id . ' AND time >= DATE_SUB(NOW(), INTERVAL 1 HOUR)' );
-# 	}
-# 	else {
-# 		@logs = $coge->resultset('Log')->search( { user_id => $USER->id, status => 1 }, { order_by => { -desc => 'time' } } );
-# 	}
+sub filter_jobs {
+    my ($jobs, $page_names) = @_;
+    
+    my @results;
+    foreach my $job (@$jobs) {
+        next unless (grep { $job->{page} =~ /$_/i } @$page_names);
+        push @results, $job;
+    }
+    
+    return \@results;
+}
 
-# 	my @rows;
-# 	foreach (splice(@logs, 0, 100)) {
-# 		push @rows, { LOG_TIME => $_->time,
-# 					  LOG_PAGE => $_->page,
-# 					  LOG_DESC => $_->description,
-# 					  LOG_LINK => $_->link
-# 					};
-# 	}
-# 	return if (not @rows);
+sub summarize_jobs {
+    my $jobs = shift;
+    
+    # Organize jobs by type and page
+    my %page_counts;
+    my %type_counts = ( loads => 0, analyses => 0 );
+    foreach (@$jobs) {
+        my $page = lc($_->{page});
+        $page_counts{$page}++;
+        if ( grep { $page =~ /$_/i } ('synmap', 'cogeblast', 'gevo', 'synfind') ) {
+            $type_counts{analyses}++;
+        }
+        elsif ( grep { $page =~ /$_/i } ('loadgenome', 'loadexperiment', 'loadannotation', 'loadbatch') ) {
+            $type_counts{loads}++;
+        }
+    }
+    
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    $template->param(
+        ACTIVITY_SUMMARY => 1,
+        NUM_ANALYSES => $type_counts{analyses},
+        NUM_COGEBLAST => $page_counts{cogeblast} // 0, #/
+        NUM_GEVO => $page_counts{gevo} // 0, #/
+        NUM_SYNFIND => $page_counts{synfind} // 0, #/
+        NUM_SYNMAP => $page_counts{synmap} // 0, #/
+    );
+    return $template->output;
+}
 
-# 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-# 	$template->param( LOG_TABLE => 1 );
-# 	$template->param( LOG_LOOP => \@rows );
-# 	return $template->output;
-# }
+sub format_job_status {
+    my $status = shift;
+    my $color;
+    
+    $status =~ s/terminated/cancelled/i;
+    
+    given ( $status ) {
+        when (/running/i)   { $color = 'yellowgreen'; }
+        when (/completed/i) { $color = 'cornflowerblue'; }
+        when (/scheduled/i) { $color = 'goldenrod'; }
+        default             { $color = 'salmon'; }
+    }
+    
+    return '<span style="padding-bottom:1px;padding-right:5px;padding-left:5px;border-radius:15px;color:white;background-color:' . $color . ';">' . ucfirst($status) . '</span>';
+}
 
 sub upload_image_file {
     return if ( $USER->user_name eq "public" );
@@ -1419,14 +1579,13 @@ sub upload_image_file {
     my %opts           = @_;
     my $image_filename = '' . $FORM->param('input_upload_file');
     my $fh             = $FORM->upload('input_upload_file');
-    return if ( -s $fh > 2 * 1024 * 1024 );    # limit to 2MB
+    return if ( -s $fh > 2 * 1024 * 1024 ); # limit to 2MB
 
     #TODO delete old image
 
     # Create the image
     my $image;
     if ($fh) {
-
         #print STDERR "$image_filename size=" . (-s $fh) . "\n";
         read( $fh, my $contents, -s $fh );
         $image = $coge->resultset('Image')->create(
@@ -1676,7 +1835,7 @@ sub toggle_star {
     my $log_id = $opts{log_id};
 
     my $entry = $coge->resultset('Log')->find($log_id);
-    return '' unless $entry;
+    return unless $entry;
 
     my $status = $entry->status;
     $entry->status( not $status );

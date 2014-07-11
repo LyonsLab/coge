@@ -6,26 +6,24 @@ div.deleted { display: none; }
 </style>
 
 <SCRIPT type="text/javascript">
-var POLL_TIME = 30*1000; // polling rate when user is not idle
-var IDLE_TIME = 30*1000; // stop polling after this lapse, then poll on next mousemove
+var POLL_TIME = 30*1000, // polling rate when user is not idle
+	IDLE_TIME = 30*1000; // stop polling after this lapse, then poll on next mousemove
 
-var ITEM_TYPE_ALL 			= <TMPL_VAR NAME="ITEM_TYPE_ALL">;
-var ITEM_TYPE_MINE 			= <TMPL_VAR NAME="ITEM_TYPE_MINE">;
-var ITEM_TYPE_SHARED 		= <TMPL_VAR NAME="ITEM_TYPE_SHARED">;
-var ITEM_TYPE_TRASH 		= <TMPL_VAR NAME="ITEM_TYPE_TRASH">;
-var ITEM_TYPE_ACTIVITY 		= <TMPL_VAR NAME="ITEM_TYPE_ACTIVITY">;
-var ITEM_TYPE_ACTIVITY_ANALYSES	= <TMPL_VAR NAME="ITEM_TYPE_ACTIVITY_ANALYSES">;
-var ITEM_TYPE_ACTIVITY_VIZ	= <TMPL_VAR NAME="ITEM_TYPE_ACTIVITY_VIZ">;
-var ITEM_TYPE_USER 			= <TMPL_VAR NAME="ITEM_TYPE_USER">;
-var ITEM_TYPE_GROUP 		= <TMPL_VAR NAME="ITEM_TYPE_GROUP">;
-var ITEM_TYPE_NOTEBOOK 		= <TMPL_VAR NAME="ITEM_TYPE_NOTEBOOK">;
-var ITEM_TYPE_GENOME 		= <TMPL_VAR NAME="ITEM_TYPE_GENOME">;
-var ITEM_TYPE_EXPERIMENT	= <TMPL_VAR NAME="ITEM_TYPE_EXPERIMENT">;
+var ITEM_TYPE_ALL 				= <TMPL_VAR NAME="ITEM_TYPE_ALL">,
+	ITEM_TYPE_MINE 				= <TMPL_VAR NAME="ITEM_TYPE_MINE">,
+	ITEM_TYPE_SHARED 			= <TMPL_VAR NAME="ITEM_TYPE_SHARED">,
+	ITEM_TYPE_TRASH 			= <TMPL_VAR NAME="ITEM_TYPE_TRASH">,
+	ITEM_TYPE_ACTIVITY_SUMMARY  = <TMPL_VAR NAME="ITEM_TYPE_ACTIVITY_SUMMARY">,
+	ITEM_TYPE_ACTIVITY_ANALYSES	= <TMPL_VAR NAME="ITEM_TYPE_ACTIVITY_ANALYSES">,
+	ITEM_TYPE_ACTIVITY_LOADS	= <TMPL_VAR NAME="ITEM_TYPE_ACTIVITY_LOADS">,
+	ITEM_TYPE_ACTIVITY_VIZ		= <TMPL_VAR NAME="ITEM_TYPE_ACTIVITY_VIZ">,
+	ITEM_TYPE_USER 				= <TMPL_VAR NAME="ITEM_TYPE_USER">,
+	ITEM_TYPE_GROUP 			= <TMPL_VAR NAME="ITEM_TYPE_GROUP">,
+	ITEM_TYPE_NOTEBOOK 			= <TMPL_VAR NAME="ITEM_TYPE_NOTEBOOK">,
+	ITEM_TYPE_GENOME 			= <TMPL_VAR NAME="ITEM_TYPE_GENOME">,
+	ITEM_TYPE_EXPERIMENT		= <TMPL_VAR NAME="ITEM_TYPE_EXPERIMENT">;
 
 $(function() {
-	// Initialize dialog boxes
-	$(".dialog_box").dialog({autoOpen: false, resizable: false});
-
 	// Initialize globals
 	pageObj.timestamp = new Array();
 	pageObj.timer = new Array();
@@ -39,6 +37,9 @@ $(function() {
 		dataType: "html",
 		cache: false,
 	});
+	
+	// Initialize dialog boxes
+	$(".dialog_box").dialog({autoOpen: false, resizable: false});
 
 	// Initialize fileupload plugin
 	$('#input_upload_file').fileupload({
@@ -97,8 +98,41 @@ $(function() {
 	// Initiate refresh loop
 	schedule_poll();
 
-	// Initialize add-to-notebo0k dialog
+	// Initialize add-to-notebook dialog
 	setTimeout(search_notebooks, 1000);
+	
+	// Initialize confirm cancel job dialog
+    $("#cancel_dialog").dialog({
+    	height: 180,
+    	modal: true,
+    	buttons: {
+    		No: function() {
+    			$(this).dialog("close");
+    		},
+    		Yes: function() {
+    			cancel_job( $(this).data("job_id") );
+    			$(this).dialog("close");
+    		}
+    	}
+    });
+    
+	// Initialize comment dialog
+    $("#comment_dialog").dialog({
+    	width: 400,
+    	height: 180,
+    	modal: true,
+    	buttons: {
+    		OK: function() {
+    			var log_id = $(this).data("log_id");
+    			var comment = $(this).find("input").first().val();
+    			comment_job( log_id, comment );
+    			$(this).dialog("close");
+    		},
+    		Cancel: function() {
+    			$(this).dialog("close");
+    		}
+    	}
+    });
 });
 
 function getURLParameter(name) {
@@ -239,6 +273,8 @@ function sync_items(html) {
 }
 
 function get_contents(sync) {
+	$('#refresh_label').show();
+	
 	var myName = arguments.callee.toString();
 	pageObj.timestamp[myName] = new Date().getTime();
 
@@ -272,6 +308,9 @@ function get_contents(sync) {
 
 			// Setup next refresh
 			schedule_poll();
+		},
+		complete : function() {
+			$('#refresh_label').hide();
 		}
 	});
 }
@@ -292,7 +331,7 @@ function filter_contents() {
 			else if (pageObj.content_type == ITEM_TYPE_MINE) {
 				show = !$(this).hasClass('deleted')
 						&& !$(this).hasClass('shared')
-						&& item_type != ITEM_TYPE_ACTIVITY
+						&& item_type != ITEM_TYPE_ACTIVITY_SUMMARY 
 						&& item_type != ITEM_TYPE_ACTIVITY_ANALYSES
 						&& item_type != ITEM_TYPE_ACTIVITY_VIZ
 						&& item_type != ITEM_TYPE_GROUP;
@@ -300,7 +339,7 @@ function filter_contents() {
 			else if (pageObj.content_type == ITEM_TYPE_SHARED) {
 				show = $(this).hasClass('shared')
 						&& !$(this).hasClass('deleted')
-						&& item_type != ITEM_TYPE_ACTIVITY
+						&& item_type != ITEM_TYPE_ACTIVITY_SUMMARY 
 						&& item_type != ITEM_TYPE_ACTIVITY_ANALYSES
 						&& item_type != ITEM_TYPE_ACTIVITY_VIZ;
 			}
@@ -326,41 +365,60 @@ function filter_contents() {
 function toc_select(toc_id) {
 	pageObj.content_type = toc_id;
 
+	// Clear search bar
+	$('#search_input').show().val('');
+	
 	// Show/hide action icons based on type of data
-	if (toc_id == ITEM_TYPE_TRASH) {
-		$('#share_button,#notebook_button,#group_button,#delete_button,#send_button,#cancel_button').hide();
-		$('#undelete_button').show();
+	switch(toc_id) {
+		case ITEM_TYPE_MINE:
+		case ITEM_TYPE_NOTEBOOK:
+		case ITEM_TYPE_GENOME:
+		case ITEM_TYPE_EXPERIMENT:
+			$('#undelete_button,#group_button').hide();
+			$('#share_button,#notebook_button,#delete_button,#send_button').show();
+			break;
+		case ITEM_TYPE_TRASH:
+			$('#share_button,#notebook_button,#group_button,#delete_button,#send_button').hide();
+			$('#undelete_button').show();
+			break;
+		case ITEM_TYPE_GROUP:
+			$('#notebook_button,#send_button,#share_button,#undelete_button').hide();
+			$('#group_button,#delete_button').show();
+			break;
+		case ITEM_TYPE_SHARED:
+			$('#group_button,#delete_button,#send_button,#undelete_button').hide();
+			$('#share_button,#notebook_button').show();
+			break;
+		case ITEM_TYPE_ACTIVITY_ANALYSES:
+		case ITEM_TYPE_ACTIVITY_LOADS:
+			$('#share_button,#notebook_button,#group_button,#delete_button,#send_button,#undelete_button').hide(); // hide all
+			break;
+		case ITEM_TYPE_ACTIVITY_SUMMARY:
+		case ITEM_TYPE_ACTIVITY_VIZ:
+			$('#share_button,#notebook_button,#group_button,#delete_button,#send_button,#undelete_button').hide(); // hide all
+			$('#search_input').hide();
+			break;
+		default:
+			$('#share_button,#notebook_button,#group_button,#delete_button,#send_button,#undelete_button').hide(); // hide all
 	}
-	else if (toc_id == ITEM_TYPE_GROUP) {
-		$('#notebook_button,#send_button,#share_button,#undelete_button,#cancel_button').hide();
-		$('#group_button,#delete_button').show();
-	}
-	else if (toc_id == ITEM_TYPE_SHARED || toc_id == ITEM_TYPE_ACTIVITY || toc_id == ITEM_TYPE_ACTIVITY_VIZ) {
-		$('#group_button,#delete_button,#send_button,#undelete_button,#cancel_button').hide();
-		$('#share_button,#notebook_button').show();
-	}
-	else if (toc_id == ITEM_TYPE_ACTIVITY_ANALYSES) {
-		$('#share_button,#notebook_button,#group_button,#delete_button,#send_button,#undelete_button').hide();
-		$('#cancel_button').show();
-	}
-	else {
-		$('#undelete_button,#group_button,#cancel_button').hide();
-		$('#share_button,#notebook_button,#delete_button,#send_button').show();
-	}
-
-	// Icons are set to invisible on load
+	
+	// Icons are set to invisible on load to prevent flickering
 	$('.item-button').removeClass('invisible');
 
-	$('#search_input').val('');
+	// Refilter based on content selection
 	filter_contents();
+	
+	// Reselect any selected items
 	select_item();
 
+	// Show TOC item as selected
 	$('#toc_'+toc_id)
 		.parent()
 		.css({'font-weight':'bold'})
 		.siblings()
 		.css({'font-weight':'normal'});
 
+	// Update title
 	var title = $('#toc_label_'+toc_id).html();
 	$('#contents_title').html(title);
 
@@ -414,6 +472,7 @@ function undelete_items() {
 	}
 }
 
+/*
 function cancel_jobs() {
 	var selected = get_selected_items();
 	if (selected.length) {
@@ -430,6 +489,53 @@ function cancel_jobs() {
 			}
 		});
 	}
+}
+*/
+
+function cancel_job_dialog(id) {
+	if (id) {
+		$('#cancel_dialog')
+			.data("job_id", id)
+			.dialog('open');
+	}
+}
+
+function cancel_job(id) {
+	$.ajax({
+		data: {
+			fname: 'cancel_job',
+			workflow_id: id
+		},
+		success : function(rc) {
+			if (rc) {
+            	poll();
+            }
+		}
+	});
+}
+
+function comment_dialog(id, val) {
+	if (id) {
+		$('#comment_dialog').find("input").first().val(val);
+		$('#comment_dialog')
+			.data("log_id", id)
+			.dialog('open');
+	}
+}
+
+function comment_job(id, comment) {
+	$.ajax({
+		data: {
+			fname: 'comment_job',
+			log_id: id,
+			comment: comment
+		},
+		success : function(rc) {
+			if (rc) {
+            	poll();
+            }
+		}
+	});
 }
 
 function add_to_notebook_dialog() {
@@ -877,11 +983,10 @@ function toggle_star(img) {
 	$.ajax({
 		data: {
 			fname: 'toggle_star',
-			log_id: img.id,
+			log_id: img.name,
 		},
 		success :  function(val) {
-			if (val == 0) { $(img).attr({src:"picts/star-hollow.png"}); }
-			else { $(img).attr({src:"picts/star-full.png"}); }
+			$(img).attr({ src: (val == 0 ? "picts/star-hollow.png" : "picts/star-full.png") });
 		}
 	});
 }
@@ -891,18 +996,6 @@ function toggle_star(img) {
 <div id="top_panel">
 	<div style="width:100%;float:left;border-bottom:1px solid lightgray;">
 		<span id="hide_panel_button" onClick="hide_top_panel();" class="link ui-icon ui-icon-minus" style="float:right;margin-left:20px;margin-right:5px;border:1px solid lightgray;"></span>
-
-		<!--<div style="float:right;">
-			<span style="font-weight:bold;color:dimgray;">History</span>
-			<span class='link ui-icon ui-icon-extlink' onclick="window.open('History.pl');"></span>
-			<span style="padding-left:5px;">
-				<span id='recent' class='small link' style="font-weight:bold;" onclick="show_recent_activity();">recent</span>
-				<span id='important' class='small link' style="padding-left:5px;" onclick="show_important_activity();">important</span>
-			</span>
-			<div id='logs' class="small" style="min-width:350px;max-width:420px;height:100px;overflow:auto;border-top:1px solid lightgray;background:#f8f8f8">
-				<TMPL_VAR NAME='LOGS'>
-			</div>
-		</div>-->
 
 		<table style="float:left;white-space:nowrap;text-align:center;padding-right:15px;">
 			<tr><td>
@@ -918,28 +1011,6 @@ function toggle_star(img) {
 			<div class="small">username <i><TMPL_VAR NAME='USER_NAME'></i>, id<TMPL_VAR NAME='USER_ID'></div>
 			<div class="small"><TMPL_VAR NAME='EMAIL'></div>
 		</div>
-		<!--<table style="float:left;white-space:nowrap;padding-right:5px;">
-			<tr>
-				<td style="font-weight:bold;color:dimgray;float:right;">User name</td>
-				<td style="padding-left:10px;color:dimgray;"><TMPL_VAR NAME='USER_NAME'></td>
-			</tr>
-			<tr>
-				<td style="font-weight:bold;color:dimgray;float:right;">Full name</td>
-				<td style="padding-left:10px;color:dimgray;"><TMPL_VAR NAME='FULL_NAME'></td>
-			</tr>
-			<tr>
-				<td></td>
-				<td class="small" style="padding-left:10px;color:dimgray;"><TMPL_VAR NAME='DESCRIPTION'></td>
-			</tr>
-			<tr>
-				<td style="font-weight:bold;color:dimgray;float:right;">Email</td>
-				<td style="padding-left:10px;color:dimgray;"><TMPL_VAR NAME='EMAIL'></td>
-			</tr>
-		</table>-->
-
-		<!--<div class="small" style="float:left;padding-left:50px;color:gray;">
-			News:
-		</div>-->
 	</div>
 	<div style="clear:both;height:13px;"></div>
 </div>
@@ -980,8 +1051,8 @@ function toggle_star(img) {
 			<li><a onclick="send_items_to('GEvo', 1);">GEvo</a></li>
 		</ul>
 		<span id="undelete_button" onClick="undelete_items();" class="invisible item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
-		<span id="cancel_button" onClick="cancel_jobs();" class="invisible item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
 		<input id="search_input" type="search" placeholder="Search" size="25" style="float:right;margin-right:15px;vertical-align:top;border:1px solid lightgray;" onkeyup="filter_contents();" />
+		<span id="refresh_label" class="xsmall hidden info" style="float:right;padding-right:25px;">Refreshing...</span>
 	</div>
 
 	<div id="contents_panel" class="small panel">
@@ -1064,6 +1135,14 @@ function toggle_star(img) {
 
 <div id="group_dialog" class="dialog_box hidden" title="Edit Group"></div>
 
+<div id="cancel_dialog" class="dialog_box hidden" title="Cancel analysis">
+	<p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>Are you sure you want to cancel this analysis?</p>
+</div>
+
+<div id="comment_dialog" class="dialog_box hidden" title="Add comment to analysis">
+	<p>Comment:<br><input type='text' size="54" maxlength="255" spellcheck="false"/></p>
+</div>
+
 </TMPL_IF> <!-- MAIN -->
 
 <TMPL_IF NAME="DO_TOC">
@@ -1090,26 +1169,16 @@ function toggle_star(img) {
 				<input type="checkbox" style="margin-right:8px;" onclick="select_item();" />
 			</TMPL_IF>
 			<TMPL_VAR NAME="CONTENTS_ITEM_ICON">
-			<span class="link" onmouseover="enter_item(this.parentNode);" onmouseout="exit_item(this.parentNode);" <TMPL_IF NAME='CONTENTS_ITEM_LINK'>onclick="window.open('<TMPL_VAR NAME="CONTENTS_ITEM_LINK">');"</TMPL_IF>>
-				<TMPL_VAR NAME="CONTENTS_ITEM_INFO">
-			</span>
+			<TMPL_IF NAME='CONTENTS_ITEM_LINK'>
+				<span class="link" onmouseover="enter_item(this.parentNode);" onmouseout="exit_item(this.parentNode);" onclick="window.open('<TMPL_VAR NAME="CONTENTS_ITEM_LINK">');">
+			</TMPL_IF>
+			<TMPL_VAR NAME="CONTENTS_ITEM_INFO">
+			<TMPL_IF NAME='CONTENTS_ITEM_LINK'>	
+				</span>
+			</TMPL_IF>
 		</div>
 	</TMPL_LOOP>
 </TMPL_IF>
-
-<!--
-<TMPL_IF NAME='LOG_TABLE'>
-	<table class="small" style="border-collapse:collapse;">
-		<TMPL_LOOP NAME="LOG_LOOP">
-			<tr class="link" style="white-space:nowrap;" onclick="window.open('<TMPL_VAR NAME="LOG_LINK">')">
-				<td><TMPL_VAR NAME="LOG_TIME"></td>
-				<td><TMPL_VAR NAME="LOG_PAGE"></td>
-				<td><TMPL_VAR NAME="LOG_DESC"></td>
-			</tr>
-		</TMPL_LOOP>
-	</table>
-</TMPL_IF>
--->
 
 <TMPL_IF NAME='SHARE_DIALOG'>
 	<script>
@@ -1272,14 +1341,34 @@ $(function(){
 </div>
 </TMPL_IF>
 
+<TMPL_IF NAME='ACTIVITY_SUMMARY'>
+	<br>
+	<TMPL_IF NAME='NUM_ANALYSES'>
+		<span class="bold text">Total analyses run: <TMPL_VAR NAME="NUM_ANALYSES"></span>
+		<table class="small text indent">
+			<tr>
+				<td class="right">CoGeBlast</td>
+				<td class="indent"><TMPL_VAR NAME="NUM_COGEBLAST"></td>
+			</tr>
+			<tr>
+				<td class="right">GEvo</td>
+				<td class="indent"><TMPL_VAR NAME="NUM_GEVO"></td>
+			</tr>
+			<tr>
+				<td class="right">SynFind</td>
+				<td class="indent"><TMPL_VAR NAME="NUM_SYNFIND"></td>
+			</tr>
+			<tr>
+				<td class="right">SynMap</td>
+				<td class="indent"><TMPL_VAR NAME="NUM_SYNMAP"></td>
+			</tr>
+		</table>
+	<TMPL_ELSE>
+		blah
+	</TMPL_IF>
+	<br>
+</TMPL_IF>
+
 <TMPL_IF NAME='LOGIN'>
 	<TMPL_INCLUDE NAME="widgets/Login.tmpl">
 </TMPL_IF>
-
-<TMPL_IF NAME='ADMIN_AREA'>
-<!--
-<br>
-<hr>
-Admin Functions:<br>
--->
-</TMPL_IF> <!-- ADMIN_AREA -->
