@@ -57,7 +57,7 @@ BEGIN {
     @ISA     = ( qw (Exporter Class::Accessor) );
     @EXPORT  = qw( get_session_id );
     @EXPORT_OK = qw( check_filename_taint check_taint gunzip gzip send_email
-                     get_defaults set_defaults url_for );
+                     get_defaults set_defaults url_for get_job schedule_job );
 
     __PACKAGE__->mk_accessors(
         'restricted_orgs', 'basefilename', 'basefile', 'logfile',
