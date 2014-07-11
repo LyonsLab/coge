@@ -1375,8 +1375,8 @@ sub go {
     my $tiny_link = get_query_link(@_);
 
     my $log_msg =
-"<a href='OrganismView.pl?dsgid=$dsgid1' target='_blank'>$org_name1</a> v. <a href='OrganismView.pl?dsgid=$dsgid2' target='_blank'>$org_name2</a>";
-
+        #"<a href='OrganismView.pl?dsgid=$dsgid1' target='_blank'>$org_name1</a> v. <a href='OrganismView.pl?dsgid=$dsgid2' target='_blank'>$org_name2</a>";
+        "$org_name1 v. $org_name2";
     $log_msg .= " Ks" if $ks_type;
 
     say STDERR "tiny_link is required for logging." unless defined($tiny_link);
