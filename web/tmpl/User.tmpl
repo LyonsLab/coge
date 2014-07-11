@@ -1051,7 +1051,7 @@ function toggle_star(img) {
 			<li><a onclick="send_items_to('GEvo', 1);">GEvo</a></li>
 		</ul>
 		<span id="undelete_button" onClick="undelete_items();" class="invisible item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
-		<input id="search_input" type="search" placeholder="Search" size="25" style="float:right;margin-right:15px;vertical-align:top;border:1px solid lightgray;" onkeyup="filter_contents();" />
+		<input id="search_input" type="search" placeholder="Search" size="25" style="float:right;margin-right:15px;vertical-align:top;border:1px solid lightgray;" onkeyup="filter_contents();" onsearch="filter_contents();" />
 		<span id="refresh_label" class="xsmall hidden info" style="float:right;padding-right:25px;">Refreshing...</span>
 	</div>
 
