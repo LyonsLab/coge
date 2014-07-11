@@ -444,6 +444,10 @@ sub load_genome {
     $items = decode_json($items);
     my @files = map { catfile($TEMPDIR, $_->{path}) } @$items;
 
+    # Check organism
+    my $organism = $coge->resultset('Organism')->find($organism_id);
+    return unless $organism;
+
     # Setup staging area
     my $stagepath = catdir($TEMPDIR, 'staging');
     mkpath $stagepath;
@@ -488,6 +492,21 @@ sub load_genome {
     # Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
         url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id
+    );
+    
+    # Log it
+    my $info = '<i>"' . $organism->name;
+    $info .= " (" . $name . ")" if $name;
+    $info .= ": " . $description if $description;
+    $info .= " (v" . $version . ")";
+    $info .= '"</i>';
+    CoGe::Accessory::Web::log_history(
+        db          => $coge,
+        workflow_id => $workflow_id,
+        user_id     => $user->id,
+        page        => "LoadGenome",
+        description => 'Load genome ' . $info,
+        link        => $tiny_link
     );
 
     return encode_json({ job_id => $workflow_id, link => $tiny_link });

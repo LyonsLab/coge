@@ -469,15 +469,6 @@ if ($result_dir) {
     );
 }
 
-# Yay!
-CoGe::Accessory::Web::log_history(
-    db          => $coge,
-    user_id     => $user->id,
-    page        => "LoadAnnotation",
-    description => 'load dataset id' . $dataset->id,
-    link        => 'GenomeView.pl?gid=' . $genome->id
-);
-
 # Create "log.done" file to indicate completion to JEX
 my $logdonefile = "$staging_dir/log.done";
 touch($logdonefile);
