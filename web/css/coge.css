@@ -26,6 +26,10 @@ a:hover {
 	display: none;
 }
 
+.text {
+  color:dimgray;
+}
+
 .note {
   color:gray;
   font-style:italic;
@@ -33,6 +37,10 @@ a:hover {
 
 .info {
   color:gray;
+}
+
+.indent {
+    padding-left: 20px;
 }
 
 .coge_link {
@@ -202,7 +210,7 @@ div.panel {
 
 .alert {
   color:#FF0000;
-  }
+}
 
 .ital {
   font-style: italic;
@@ -269,13 +277,16 @@ div.panel {
   width: 20%;
 }
 
-
 .l {
   float: left;
 }
 
 .r {
   float: right;
+}
+
+.middle {
+    vertical-align: middle;
 }
 
 .tlh {
