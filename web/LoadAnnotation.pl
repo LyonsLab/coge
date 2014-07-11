@@ -383,6 +383,10 @@ sub load_annotation {
     if ($user_name eq 'public') {
         return encode_json({ error => 'Not logged in' });
     }
+    
+    # Check genome
+    my $genome = $coge->resultset('Genome')->find($gid);
+    return unless $genome;
 
     # Check data items
     return encode_json({ error => "No data items" }) unless $items;
@@ -417,6 +421,23 @@ sub load_annotation {
 	# Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
         url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id
+    );
+    
+    # Log it
+    my $info;
+    $info .= " v" . $version;
+    $info .= ' for genome <i>"' . $genome->organism->name;
+    $info .= " (" . $genome->name . ")" if $genome->name;
+    $info .= ": " . $genome->description if $genome->description;
+    $info .= " (v" . $genome->version . ")";
+    $info .= '"</i>';
+    CoGe::Accessory::Web::log_history(
+        db          => $coge,
+        workflow_id => $workflow_id,
+        user_id     => $USER->id,
+        page        => "LoadAnnotation",
+        description => 'Load annotation ' . $info,
+        link        => $tiny_link
     );
 
     return encode_json({ job_id => $workflow_id, link => $tiny_link });

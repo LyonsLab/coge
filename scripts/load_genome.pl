@@ -395,15 +395,6 @@ if ($result_dir) {
     );
 }
 
-# Yay, log success!
-CoGe::Accessory::Web::log_history(
-    db          => $coge,
-    user_id     => $user->id,
-    page        => "LoadGenome",
-    description => 'load genome id' . $genome->id,
-    link        => 'GenomeInfo.pl?gid=' . $genome->id
-);
-
 # Create "log.done" file to indicate completion to JEX
 my $logdonefile = "$staging_dir/log.done";
 touch($logdonefile);

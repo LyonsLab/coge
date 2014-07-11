@@ -370,15 +370,6 @@ if ($result_dir) {
     );
 }
 
-# Yay!
-CoGe::Accessory::Web::log_history(
-    db          => $coge,
-    user_id     => $user->id,
-    page        => "LoadExperiment",
-    description => 'load experiment id' . $experiment->id,
-    link        => 'ExperimentView.pl?eid=' . $experiment->id
-);
-
 # Create "log.done" file to indicate completion to JEX
 my $logdonefile = "$staging_dir/log.done";
 touch($logdonefile);

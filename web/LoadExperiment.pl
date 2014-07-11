@@ -495,7 +495,22 @@ sub load_experiment {
     my $link = CoGe::Accessory::Web::get_tiny_link(
         url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $job_id
     );
-
+    
+    # Log it
+    my $info = '<i>"';
+    $info .= " (" . $name . ")" if $name;
+    $info .= ": " . $description if $description;
+    $info .= " (v" . $version . ")";
+    $info .= '"</i>';
+    CoGe::Accessory::Web::log_history(
+        db          => $coge,
+        workflow_id => $workflow_id,
+        user_id     => $USER->id,
+        page        => "LoadExperiment",
+        description => 'Load experiment ' . $info,
+        link        => $link
+    );
+    
     return encode_json({ job_id => $job_id, link => $link });
 }
 
