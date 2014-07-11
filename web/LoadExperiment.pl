@@ -498,7 +498,7 @@ sub load_experiment {
     
     # Log it
     my $info = '<i>"';
-    $info .= " (" . $name . ")" if $name;
+    $info .= $name if $name;
     $info .= ": " . $description if $description;
     $info .= " (v" . $version . ")";
     $info .= '"</i>';

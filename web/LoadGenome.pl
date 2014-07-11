@@ -496,7 +496,7 @@ sub load_genome {
     
     # Log it
     my $info = '<i>"' . $organism->name;
-    $info .= " (" . $name . ")" if $name;
+    $info .= " " . $name if $name;
     $info .= ": " . $description if $description;
     $info .= " (v" . $version . ")";
     $info .= '"</i>';
