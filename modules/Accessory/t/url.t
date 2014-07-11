@@ -25,7 +25,6 @@ is $u1->path,   "/test/",   "has correct path";
 is $u1->query,  undef,      "has correct query string";
 is url_for(""), "http://host.com/test/", "has correct url";
 
-
 # Set secure
 $config->{SECURE} = 1;
 set_defaults($config);
@@ -35,7 +34,6 @@ is $u2->host,   "host.com", "has correct host";
 is $u2->path,   "/test/",   "has correct path";
 is $u2->query,  undef,      "has correct query string";
 is url_for(""), "https://host.com/test/", "has correct url";
-
 
 # Force default
 $config->{SERVER} = "http://localhost";
@@ -47,7 +45,6 @@ is $u3->path,   "/test/",    "has correct path";
 is $u3->query,  undef,       "has correct query string";
 is url_for("Test.pl"), "http://localhost/test/Test.pl", "has correct url";
 
-
 # VERIFY QUERY STRING
 my $url1 = url_for("Test.pl", a005 => 1, a05 => 2, a5 => 3);
 my $u4 = URI->new($url1);
@@ -57,7 +54,6 @@ is $u4->path,   "/test/Test.pl",     "has correct path";
 is $u4->query,  "a005=1&a05=2&a5=3", "has correct query string";
 is $url1, "http://localhost/test/Test.pl?a005=1&a05=2&a5=3", "has correct url";
 
-
 my $url2 = url_for("Test.pl", a05 => 2, a5 => 3, a005 => 1);
 my $u5 = URI->new($url2);
 is $u5->scheme, "http",              "has correct scheme (overrides default scheme)";
@@ -65,7 +61,6 @@ is $u5->host,   "localhost",         "has correct host";
 is $u5->path,   "/test/Test.pl",     "has correct path";
 is $u5->query,  "a005=1&a05=2&a5=3", "has correct query string regardless of order";
 is $url2, "http://localhost/test/Test.pl?a005=1&a05=2&a5=3", "has correct url";
-
 
 # Base url set in server
 $config->{SERVER} = "http://localhost/test/";

@@ -667,7 +667,7 @@ sub get_tiny_link {
 	$ua->timeout(5);
 	my $response = $ua->get($request_url);
 	if ($response->is_success) {
-		return $response->content;
+        return $response->decoded_content;
 	}
 	else {
         cluck "Unable to produce tiny url from server falling back to url";
