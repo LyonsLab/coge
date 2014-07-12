@@ -497,11 +497,6 @@ sub cancel_job {
     my $workflow_id = $opts{workflow_id};
     return 0 unless $workflow_id;
 
-#    my $job = $coge->resultset('Job')->find($workflow_id);
-#    if ( ( !$job || $job->user_id != $USER->id ) && !$USER->is_admin ) {
-#        return;
-#    }
-
     my $status = $JEX->get_status( $workflow_id );
     if ( $status =~ /running/i ) {
         my $res = $JEX->terminate( $workflow_id );
@@ -1345,29 +1340,7 @@ sub get_contents {
             CONTENTS_ITEM_ID   => 0,
             CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_summary},
             CONTENTS_ITEM_INFO => $summary_html,
-            #CONTENTS_ITEM_ICON => $icon,
-            #CONTENTS_ITEM_LINK => $entry->link
           };
-#        foreach my $entry (
-#            $USER->logs(
-#                {
-#                    time => { '>=' => $last_update },
-#                    type => { '!=' => 0 }
-#                },    #FIXME hardcoded type
-#                { order_by => { -desc => 'time' } }
-#            )
-#          )
-#        {
-#            my $icon = '<img id="' . $entry->id . '" ' . ( $entry->is_important ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"' ) . ' ' . 'width="15" height="15" style="vertical-align:middle;" ' . 'onclick="toggle_star(this);"' . '/>';
-#            push @rows,
-#              {
-#                CONTENTS_ITEM_ID   => $entry->id,
-#                CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_summary},
-#                CONTENTS_ITEM_INFO => $entry->short_info,
-#                CONTENTS_ITEM_ICON => $icon,
-#                CONTENTS_ITEM_LINK => $entry->link
-#              };
-#        }
     }
     
     #print STDERR "get_contents: time5=" . ((time - $start_time)*1000) . "\n";
@@ -1376,9 +1349,11 @@ sub get_contents {
         foreach (@$analyses) {
             my $id = $_->{id};
             my $isRunning = $_->{status} =~ /running/i;
+            my $isCancelled = $_->{status} =~ /cancelled/i;
             my $star_icon = '<img name="'.$id.'" ' . ( $_->{is_important} ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"' ) . ' ' . 'width="15" height="15" class="link" style="vertical-align:middle;" ' . 'onclick="toggle_star(this);"' . ' title="Favorite this analysis"/>';
             #<span id="cancel_button" onClick="cancel_jobs();" class="invisible item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
             my $cancel_icon = '<img name="'.$id.'" title="Cancel this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/cancel.png" width="15" onclick="cancel_job_dialog('.($_->{workflow_id} ? $_->{workflow_id} : '').');"/>';
+            my $restart_icon = qq{<img name="$id" title="Restart this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/refresh-icon.png" width="15" onclick="restart_job('}.($_->{link} ? $_->{link} : '').qq{');"/>};
             my $comment_icon = qq{<img name="$id" title="Add comment" class="link" height="15" style="vertical-align:middle;" src="picts/comment-icon.png" width="15" onclick="comment_dialog($id, '$_->{comment}');" />};
             my $info_html = format_job_status($_->{status}).' '.$_->{start_time}.' | '. $_->{elapsed}.' | '.$_->{page}.' | '.$_->{description} . ($_->{comment} ? ' | ' . $_->{comment} : '') . ($_->{workflow_id} ? ' | id' . $_->{workflow_id} : '');
             push @rows,
@@ -1387,7 +1362,7 @@ sub get_contents {
                 CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_analyses},
                 CONTENTS_ITEM_INFO => $info_html,
                 CONTENTS_ITEM_LINK => $_->{link},
-                CONTENTS_ITEM_ICON => $star_icon . ' ' . $comment_icon . ($isRunning ? ' ' . $cancel_icon : ''),
+                CONTENTS_ITEM_ICON => $star_icon . ' ' . $comment_icon . ($isRunning ? ' ' . $cancel_icon : '') . ($isCancelled ? ' ' . $restart_icon : ''),
               };
         }
     }
