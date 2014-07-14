@@ -206,7 +206,7 @@ unless ( $seen_types{gene} ) {
                     strand => $strand,
                     chr    => $chr,
                 }
-            ];
+            ] if (defined $start and defined $stop and defined $strand);
             $name->{gene}{names} = \%names;
             $seen_types{gene}++;
         }
@@ -346,11 +346,11 @@ my @name_buffer;    # buffer for bulk inserts into FeatureName table
 
                 # mdb added check 4/8/14 issue 358
                 unless (defined $start and defined $stop and defined $chr) {
-                    print $log "log: error: feature '", (defined $name ? $name : ''), "' missing coordinates", "\n";
-                    print STDERR "log: error: feature '", (defined $name ? $name : ''), "' missing coordinates", "\n";
+                    print $log "log: warning: feature '", (defined $name ? $name : ''), "' (type '$feat_type') missing coordinates", "\n";
+                    print STDERR "log: warning: feature '", (defined $name ? $name : ''), "' (type '$feat_type') missing coordinates", "\n";
                     print $log Dumper $data{$chr_loc}{$name}{$feat_type}, "\n";
                     print STDERR Dumper $data{$chr_loc}{$name}{$feat_type}, "\n";
-                    exit(-1);
+                    next; #exit(-1);
                 }
 
                 #TODO this could be batched by nesting location & other inserts, see http://search.cpan.org/~abraxxa/DBIx-Class-0.08209/lib/DBIx/Class/ResultSet.pm#populate
@@ -585,7 +585,7 @@ sub process_gff_file {
         # whatever annotation it contains, but don't want to actually add the
         # location.  We will change the feature type to something weird that
         # can be handled downstream correctly -- specifically the locations
-        if ( $type =~ /([mt]RNA)/ ) { # mdb changed from /(.*RNA.*)/, 9/3/13 issue 198
+        if ( $type =~ /([m]RNA)/ ) { # mdb changed from /(.*RNA.*)/, 9/3/13 issue 198 # mdb changed from [mt]RNA 7/14/14
             $last_RNA = $type;
             $type     = "$1_no_locs";
         }
@@ -662,18 +662,18 @@ sub process_gff_file {
             }
 
             # mdb added 4/8/14 issue 358 - save location for later
-            if ($tmp =~ /_no_locs/) {
-                $data{$chr}{$tmp_name}{$type}{coords} =
-                  {
-                    start  => $start,
-                    stop   => $stop,
-                    strand => $strand,
-                    chr    => $chr
-                };
-            }
+#            if ($tmp =~ /_no_locs/) {
+#                $data{$chr}{$tmp_name}{$type}{coords} =
+#                  {
+#                    start  => $start,
+#                    stop   => $stop,
+#                    strand => $strand,
+#                    chr    => $chr
+#                };
+#            }
 
             next if ($tmp =~ /_no_locs/); # skip adding locations for things like mRNA
-            push @{ $data{$chr}{$tmp_name}{$type}{loc} },
+            push @{ $data{$chr}{$tmp_name}{$type}{loc} }, 
               {
                 start  => $start,
                 stop   => $stop,
