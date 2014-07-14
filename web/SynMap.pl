@@ -3644,7 +3644,7 @@ sub get_dotplot {
     $params{flip} = $flip       if $flip;
     $params{regen} = $regen     if $regen;
     $params{width} = $width     if $width;
-    $params{ksdb} = $ksdb       if $ksdb eq /undefined/;
+    $params{ksdb} = $ksdb       if $ksdb;
     $params{kstype} = $kstype   if $kstype;
     $params{log} = 1            if $kstype;
     $params{min} = $min         if $min;
