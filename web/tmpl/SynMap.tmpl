@@ -58,6 +58,7 @@
     <!--close tab-1 -->
 
     <div id="tab-2">
+    <form id="parameters">
     <fieldset class="options ui-widget-content ui-corner-all">
         <legend style="color:#009900">Blast Algorithm</legend>
         <select id="blast" name="blast">
@@ -85,7 +86,7 @@
 
             <li>
                 <span id="dagchainer_distance">Default distance settings for:
-                    <select id="dagchainer_default" onChange="set_dagchainer_defaults();">
+                    <select id="dagchainer_default" name="dagchainer_defaults" onChange="set_dagchainer_defaults();">
                         <option value="1">Plant
                         <option value="2">Microbe
                     </select>
@@ -93,12 +94,12 @@
             </li>
             <li>
                 <label>Maximum distance between two matches (-D):</label>
-                <input type="number" size="8" id="D" value="">
+                <input type="number" size="8" name="D" id="D" value="">
                 <span class=distance_type></span>
             </li>
             <li>
                 <label>Minimum number of aligned pairs (-A):</label>
-                <input type="number" size="8" id="A" value=""> genes
+                <input type="number" size="8" name="A" id="A" value=""> genes
             </li>
         </ul>
     </fieldset>
@@ -121,12 +122,12 @@
         <ul style="list-style-type:none;padding:0; margin: 0" id="merge_algo_options">
             <li id="max_dist_merge">
                 <label>Average distance expected between syntenic blocks (-gm):</td>
-                <input type="text" size="8" id="gm" value="">
+                <input type="text" size="8" name="gm" id="gm" value="">
                 <span class="distance_type"></span>
             </li>
             <li id="merge_algo_options">
                 <label>Maximum distance between two blocks (-Dm):</label>
-                <input type="text" size="8" id="Dm" value="">
+                <input type="text" size="8" name="Dm" id="Dm" value="">
                 <span class="distance_type"></span>
             </li>
         </ul>
@@ -145,14 +146,14 @@
             <li id="depth_options" style="display:none;">
                 <label>Ratio of coverage depth:</label>
 
-                <span style="color:#009900" id="depth_org_1"></span>
-                <input type="text" size="2" id="depth_org_1_ratio" value="<tmpl_var name=depth_org_1_ratio>">
+                <span style="color:#009900" name="depth_org_1" id="depth_org_1"></span>
+                <input type="text" size="2" name="depth_org_1_ratio" id="depth_org_1_ratio" value="<tmpl_var name=depth_org_1_ratio>">
                 -to-
-                <input type="text" size="2" id="depth_org_2_ratio" value="<tmpl_var name=depth_org_2_ratio>">
-                <span style="color:#009900" id=depth_org_2></span><br>
+                <input type="text" size="2" name="depth_org_2_ratio" id="depth_org_2_ratio" value="<tmpl_var name=depth_org_2_ratio>">
+                <span style="color:#009900" name="depth_org_2" id=depth_org_2></span><br>
 
                 <label>Overlap distance:</label>
-                <input type="text" size="8" id="depth_overlap" value="<tmpl_var name=depth_overlap>">
+                <input type="text" size="8" name="depth_overlap" id="depth_overlap" value="<tmpl_var name=depth_overlap>">
             </li>
         </ul>
     </fieldset>
@@ -187,13 +188,13 @@
             </li>
             <li>
                 <label>Min Val:</label>
-                <input type="text" size="4" id="codeml_min" value="<tmpl_var name=codeml_min>">
+                <input type="text" size="4" name="codeml_min" id="codeml_min" value="<tmpl_var name=codeml_min>">
 
                 <label>Max Val:</label>
-                <input type="text" size="4" id="codeml_max" value="<tmpl_var name=codeml_max>">
+                <input type="text" size="4" name="codeml_max" id="codeml_max" value="<tmpl_var name=codeml_max>">
 
                 <label>Log10 Transform:</label>
-                <input type="checkbox" name="logks" id="logks" <tmpl_var name=logks> >
+                <input type="checkbox" name="logks" value="true" id="logks" <tmpl_var name=logks> >
             </li>
             <li>
                 <span class="small" style="color:red">&nbsp;&nbsp;&nbsp;&nbsp; Only applicable to protein coding sequences (CDS vs. CDS)</span>
@@ -217,31 +218,34 @@
             </li>
         </ul>
     </fieldset>
+        <input type="hidden" name="fname" value="go">
+    </form>
 </div> <!-- close tab-2 -->
 
     <div id="tab-3">
+        <form id="display-options">
         <fieldset class="options ui-widget-content ui-corner-all">
             <legend style="color:#009900">Dotplot options</legend>
             <ul>
                 <li>
                     <label>Regenerate dotplot images?</label>
-                    <input type="checkbox" name="regen_images" id="regen_images">
+                    <input type="checkbox" name="regen_images" value="true" id="regen_images">
                 </li>
                 <li>
                     <label>Show non-syntenic matches (grey dots)?</label>
-                    <input type="checkbox" name="show_non_syn_dots" id="show_non_syn_dots" <tmpl_var name=show_non_syn_dots> >
+                    <input type="checkbox" name="show_non_syn_dots" value="true" id="show_non_syn_dots" <tmpl_var name=show_non_syn_dots> >
                 </li>
                 <li>
                     <label>Draw boxes around syntenic regions?</label>
-                    <input type="checkbox" name="box_diags" id="box_diags" <tmpl_var name=box_diags> >
+                    <input type="checkbox" name="box_diags" id="box_diags" value="true" <tmpl_var name=box_diags> >
                 </li>
                 <li>
                     <label>Label Chromosomes?</label>
-                    <input type="checkbox" name="clabel" id="clabel" <tmpl_var name=chr_label> >
+                    <input type="checkbox" name="clabel" id="clabel" value="true" <tmpl_var name=chr_label> >
                 </li>
                 <li>
                     <label>Skip Random/Unknown Chromosomes?</label>
-                    <input type="checkbox" name="skiprand" id="skiprand" <tmpl_var name=skip_rand> >
+                    <input type="checkbox" name="skiprand" id="skiprand" value="true" <tmpl_var name=skip_rand> >
                 </li>
                 <li>
                     <label>Sort Chromosomes by:</label>
@@ -252,7 +256,7 @@
                 </li>
                 <li>
                     <label>Flip axes?</label>
-                    <input type="checkbox" name="flip" id="flip" <tmpl_var name=flip> >
+                    <input type="checkbox" name="flip" id="flip" value="true" <tmpl_var name=flip> >
                 </li>
                 <li>
                 <label>Color diagonals by:</label>
@@ -292,29 +296,29 @@
                     <label>
                         <a href="http://genomevolution.org/wiki/index.php/Syntenic_path_assembly" target="_CoGepedia">Syntenic Path Assembly (SPA)</a>?
                     </label>
-                    <input type="checkbox" name="assemble" id="assemble" onclick="$('#assemble_info').toggle();" <tmpl_var name=syntenic_path>>
+                    <input type="checkbox" name="assemble" id="assemble"  value="true" onclick="$('#assemble_info').toggle();" <tmpl_var name=syntenic_path>>
                     <br>
-                    <span class="small" id="assemble_info" style="display: none; color: red;">Options:
+                    <span class="small" id="assemble_info" name="assemble_info" style="display: none; color: red;">Options:
 
                     <label>Reference genome (to which the other genome is assembled) has</label>
-                    <select id="spa_ref_genome">
+                    <select id="spa_ref_genome" name="spa_ref_genome">
                         <option value="1" <tmpl_var name="spa_few_select"> > fewer
                         <option value="-1" <tmpl_var name="spa_more_select"> > more
                     </select>
                           pieces (contigs, scaffolds, etc)
                 <li>
                     <label>Hide contigs without synteny?</label>
-                    <input type="checkbox" name="show_non_syn" id="show_non_syn" <tmpl_var name="show_non_syn">><span><br>
+                    <input type="checkbox" name="show_non_syn" id="show_non_syn" value="true" <tmpl_var name="show_non_syn">><span><br>
                 </li>
                 <li>
                     <label>E-mail results?</label>
-                    <input type="checkbox" id="check_email" onclick="toggle_email_field()">
+                    <input type="checkbox" value="true" id="check_email" onclick="toggle_email_field()">
                     <div class="email_box small" style="display:none;">
                         <table class="backbox">
                         <tr>
                             <td>Your E-mail Address: </td>
                             <td>
-                                <input type="email" id="email" onBlur="address_validity_check()"
+                                <input type="email" name="email" id="email" onBlur="address_validity_check()"
                                     value="<tmpl_var name=email>"></input>
                             </td>
                             <td>
@@ -323,7 +327,7 @@
                         </tr><tr>
                             <td>Job Title: </td>
                             <td>
-                                <input type="text" id="jobtitle"></input>
+                                <input type="text" name="jobtitle" id="jobtitle" />
                                 <span class="ui-button ui-corner-all" onClick="fill_jobtitle()">Use Org Names</span>
                             </td>
                         </tr>
@@ -332,6 +336,7 @@
                 </li>
             </ul>
         </fieldset>
+        </form>
     </div> <!-- close tab-3 -->
 </section> <!--close tabs section-->
 <div style="padding: 15px 0 5px 0;">
