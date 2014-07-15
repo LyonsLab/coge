@@ -1917,7 +1917,7 @@ sub get_gff {
     $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export gff");
-    my ($output, %task) = CoGe::Core::Genome::generate_gff(%args);
+    my ($output, %task) = generate_gff(%args);
     $workflow->add_job(%task);
 
     my $response = $JEX->submit_workflow($workflow);

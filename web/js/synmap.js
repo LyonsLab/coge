@@ -1,9 +1,3 @@
-//TODO: Replace helper with state checking
-function has_organisms () {
-    return ($('#org_id1').val() != "") &&
-        ($('#org_id2').val() != "");
-}
-
 //TODO: Create a proper helper function
 function get_gc (dsgid, divid)
 {
@@ -33,179 +27,6 @@ function get_genome_info_chain(i) {
     ajax_wait("get_genome_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],[handle_dsg_info]);");
 }
 
-//TODO: Remove basename generation from client
-function rand () {
-    return ( Math.floor ( Math.random ( ) * 99999999 + 1 ) );
-}
-
-//TODO: Create a proper state object
-function populate_page_obj(basefile) {
-    if (!basefile) {
-        basefile = "SynMap_"+rand();
-    }
-    pageObj.basename = basefile;
-    pageObj.nolog = 0;
-    pageObj.waittime = 1000;
-    pageObj.runtime = 0;
-    pageObj.fetch_error = 0;
-    pageObj.error = 0;
-    pageObj.engine = $("<span></span>", {
-        "class": "alert",
-        text: "The job engine has failed."
-    });
-}
-
-function run_synmap(scheduled, regenerate){
-    populate_page_obj();
-
-    var org_name1 = pageObj.org_name1;
-    var org_name2 = pageObj.org_name2;
-    //feat_type 1 == CDS, 2 == genomic
-    var feat_type1 = $('#feat_type1').val();
-    var feat_type2 = $('#feat_type2').val();
-    var org_length1 = pageObj.org_length1;
-    var org_length2 = pageObj.org_length2;
-    //seq_type == 1 is unmasked
-    var seq_type1 = pageObj.seq_type1;
-    var seq_type2 = pageObj.seq_type2;
-    //check to see if we will allow this run
-    var max_size = 100000000;
-    // console.log (org_name1, org_length1, seq_type1);
-    // console.log (org_name2, org_length2, seq_type2);
-    if (( org_length1 > max_size && feat_type1 == 2 && seq_type1 == 1) &&
-        ( org_length2 > max_size && feat_type2 == 2 && seq_type2 == 1) ) {
-        var message = "You are trying to compare unmasked genomic sequences that are large!  This is a bad idea.  Chances are there will be many repeat sequences that will cause the entire pipeline to take a long time to complete.  This usually means that the analyses will use a lot of RAM and other resources.  As such, these jobs are usually killed before they can complete.  Please contact coge.genome@gmail.com for assistance with your analysis.";
-            alert(message);
-            $('#log_text').hide(0);
-                $('#results').show(0).html("<span class=alert>Analysis Blocked:</span>"+message);
-                return;
-    }
-
-    if (!has_organisms())
-        return;
-
-    if ($('#blast').val() == 5 && (feat_type1 != 1 || feat_type2 != 1) ) {
-        alert('BlastP only works if both genomes have protein coding sequences (CDS) AND CDS is selected for both!');
-        return;
-    }
-
-    var overlay = $("#overlay").show();
-
-    //TODO Scale polling time linearly with long running jobs
-    var duration = pageObj.waittime;
-
-    $('#results').hide();
-
-    if (regenerate) {
-        return schedule(get_params("go", regenerate));
-    }
-
-    return $.ajax({
-        type: 'GET',
-        data: get_params("get_results"),
-        dataType: "json",
-        success: function(data) {
-            if (!data.error) {
-                overlay.hide();
-                $("#synmap_zoom_box").draggable();
-                $('#results').html(data.html).slideDown();
-            } else {
-                schedule(get_params("go"))
-            }
-        },
-        error: schedule.bind(this, get_params("go"))
-    });
-}
-
-function schedule(params) {
-    pageObj.nolog=1;
-    var status_dialog = $('#synmap_dialog');
-    close_dialog(status_dialog);
-
-    return $.ajax({
-        data: params,
-        dataType: 'json',
-        success: function(data) {
-            $("#overlay").hide();
-            status_dialog.dialog('open');
-            if (data.status == 'Scheduled' || data.status == 'Running' || data.status === 'Completed') {
-                var link = "Return to this analysis: <a href="
-                + data.link + " onclick=window.open('tiny')"
-                + "target = _new>" + data.link + "</a>";
-
-                var logfile = '<a href="tmp/SynMap/'
-                + pageObj.basename + '.log">Logfile</a>';
-
-                $('#dialog_log').html(logfile);
-                $('#synmap_link').html(link);
-
-                update_dialog(data.request, "#synmap_dialog", synmap_formatter,
-                        get_params("get_results"));
-            } else {
-                status_dialog.find('#text').html(pageObj.engine);
-                status_dialog.find('#progress').hide();
-                status_dialog.find('#dialog_error').slideDown();
-            }
-        },
-        error: function(err) {
-            $("#overlay").hide();
-            status_dialog.dialog('open');
-            status_dialog.find('#progress').hide();
-            status_dialog.find('#dialog_error').slideDown();
-        }
-    })
-}
-
-function get_params(name, regenerate) {
-    return {
-        fname: name,
-        tdd: $('#tdd').val(),
-        D: $('#D').val(),
-        A: $('#A').val(),
-        beta: pageObj.beta,
-        gm: $('#gm').val(),
-        Dm: $('#Dm').val(),
-        blast: $('#blast').val(),
-        feat_type1: $('#feat_type1').val(),
-        feat_type2: $('#feat_type2').val(),
-        dsgid1: $('#dsgid1').val(),
-        dsgid2: $('#dsgid2').val(),
-        jobtitle: $('#jobtitle').val(),
-        basename: pageObj.basename,
-        email: $('#email').val(),
-        regen_images: regenerate,
-        width: $('#master_width').val(),
-        dagchainer_type: $('#dagchainer_type').filter(':checked').val(),
-        ks_type: $('#ks_type').val(),
-        assemble: $('#assemble')[0].checked,
-        axis_metric: $('#axis_metric').val(),
-        axis_relationship: $('#axis_relationship').val(),
-        min_chr_size: $('#min_chr_size').val(),
-        spa_ref_genome: $('#spa_ref_genome').val(),
-        show_non_syn: $('#show_non_syn')[0].checked,
-        color_type: $('#color_type').val(),
-        box_diags: $('#box_diags')[0].checked,
-        merge_algo: $('#merge_algo').val(),
-        depth_algo: $('#depth_algo').val(),
-        depth_org_1_ratio: $('#depth_org_1_ratio').val(),
-        depth_org_2_ratio: $('#depth_org_2_ratio').val(),
-        depth_overlap: $('#depth_overlap').val(),
-        fid1: pageObj.fid1,
-        fid2: pageObj.fid2,
-        show_non_syn_dots: $('#show_non_syn_dots')[0].checked,
-        flip: $('#flip')[0].checked,
-        clabel: $('#clabel')[0].checked,
-        skip_rand: $('#skiprand')[0].checked,
-        color_scheme: $('#color_scheme').val(),
-        chr_sort_order: $('#chr_sort_order').val(),
-        codeml_min: $('#codeml_min').val(),
-        codeml_max: $('#codeml_max').val(),
-        logks: $('#logks')[0].checked,
-        csco: $('#csco').val(),
-        jquery_ajax: 1,
-    };
-}
-
 function close_dialog(dialog) {
     dialog.dialog('close');
     dialog.find('#text').empty();
@@ -218,12 +39,6 @@ function load_results() {
     $('#intro').hide();
     $('#log_text').hide();
     $('#results').fadeIn();
-}
-
-function handle_results(val){
-    $('#results').html(val);
-    $("#synmap_zoom_box").draggable();
-    setup_button_states();
 }
 
 function update_params(val) {
@@ -446,204 +261,6 @@ function update_basename(basename){
 
 function reset_basename(){
     if(pageObj.basename) pageObj.basename=0;
-}
-
-function synmap_formatter(item) {
-    var msg;
-    var row = $('<li>'+ item.description + ' </li>');
-    row.addClass('small');
-
-    var job_status = $('<span></span>');
-
-    if (item.status == 'scheduled') {
-        job_status.append(item.status);
-        job_status.addClass('down');
-        job_status.addClass('bold');
-    } else if (item.status == 'completed') {
-        job_status.append(item.status);
-        job_status.addClass('completed');
-        job_status.addClass('bold');
-    } else if (item.status == 'running') {
-        job_status.append(item.status);
-        job_status.addClass('running');
-        job_status.addClass('bold');
-    } else if (item.status == 'skipped') {
-        job_status.append("already generated");
-        job_status.addClass('skipped');
-        job_status.addClass('bold');
-    } else if (item.status == 'cancelled') {
-        job_status.append(item.status);
-        job_status.addClass('alert');
-        job_status.addClass('bold');
-    } else if (item.status == 'failed') {
-        job_status.append(item.status);
-        job_status.addClass('alert');
-        job_status.addClass('bold');
-    } else {
-        return;
-    }
-
-    row.append(job_status);
-
-    if (item.elapsed)  {
-        row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
-    }
-
-    /*
-    if (item.status == "skipped") {
-        row.append("<p>The analyses previously was generated</p>");
-    }
-    */
-
-    return row;
-}
-
-function update_dialog(request, identifier, formatter, args) {
-    var get_status = function () {
-        $.ajax({
-            type: 'GET',
-            url: request,
-            dataType: 'json',
-            success: update_callback,
-            error: update_callback,
-        });
-    };
-
-    var get_poll_rate = function() {
-        pageObj.runtime += 1;
-
-        if (pageObj.runtime <= 5) {
-            return 1000;
-        } else if (pageObj.runtime <= 60) {
-            return 2000;
-        } else if (pageObj.runtime <= 300) {
-            return 5000;
-        } else if (pageObj.runtime <= 1800) {
-            return 30000;
-        } else if (pageObj.runtime <= 10800) {
-            return 60000;
-        } else {
-            return 300000;
-        }
-    };
-
-    var fetch_results = function(completed) {
-        var request = window.location.href.split('?')[0];
-        args.fname = 'get_results';
-        dialog = $(identifier);
-
-        $.ajax({
-            type: 'GET',
-            url: request,
-            data: args,
-            dataType: "json",
-            success: function(data) {
-                if (completed && !data.error) {
-                    $("#synmap_zoom_box").draggable();
-                    $('#results').html(data.html);
-                    dialog.find('#progress').hide();
-                    dialog.find('#dialog_success').slideDown();
-                } else {
-                    $('#results').html(data.error);
-                    dialog.find('#progress').hide();
-                    dialog.find('#dialog_error').slideDown();
-                }
-            },
-            error: function(data) {
-                if (pageObj.fetch_error >= 3) {
-                    dialog.find('#progress').hide();
-                    dialog.find('#dialog_error').slideDown();
-                } else {
-                    pageObj.fetch_error += 1;
-                    console.log("error");
-                    var callback = function() {fetch_results(completed)};
-                    setTimeout(callback, 100);
-                }
-            }
-        });
-    }
-
-    var update_callback = function(json) {
-        var dialog = $(identifier);
-        var workflow_status = $("<p></p>");
-        var data = $("<ul></ul>");
-        var results = [];
-        var current_status;
-        var timeout = get_poll_rate();
-
-        var callback = function() {
-            update_dialog(request, identifier, formatter, args);
-        }
-
-        if (json.error) {
-            pageObj.error++;
-            if (pageObj.error > 3) {
-                workflow_status.html(pageObj.engine);
-                dialog.find('#text').html(workflow_status);
-                dialog.find('#progress').hide();
-                dialog.find('#dialog_error').slideDown();
-                return;
-            }
-        } else {
-            pageObj.error = 0;
-        }
-
-        if (json.status) {
-            current_status = json.status.toLowerCase();
-            workflow_status.html("Workflow status: ");
-            workflow_status.append($('<span></span>').html(json.status));
-            workflow_status.addClass('bold');
-        } else {
-            setTimeout(callback, timeout);
-            return;
-        }
-
-        if (json.jobs) {
-            var jobs = json.jobs;
-            for (var index = 0; index < jobs.length; index++) {
-                var item = formatter(jobs[index]);
-                if (item) {
-                    results.push(item);
-                }
-            }
-        }
-
-        if (!dialog.dialog('isOpen')) {
-            return;
-        }
-
-        //FIXME Update when a workflow supports elapsed time
-        if (current_status == "completed") {
-            var total = json.jobs.reduce(function(a, b) {
-                if (!b.elapsed) return a;
-
-                return a + b.elapsed;
-            }, 0);
-
-            var duration = coge.utils.toPrettyDuration(total);
-
-            workflow_status.append("<br>Finished in " + duration);
-            workflow_status.find('span').addClass('completed');
-            fetch_results(true);
-        } else if (current_status == "failed" || current_status == "error"
-                || current_status == "terminated"
-                || current_status == "cancelled") {
-            workflow_status.find('span').addClass('alert');
-            fetch_results(false);
-        } else if (current_status == "notfound") {
-            setTimeout(callback, timeout);
-            return;
-        } else {
-            workflow_status.find('span') .addClass('running');
-            setTimeout(callback, timeout);
-        }
-
-        results.push(workflow_status);
-        data.append(results);
-        dialog.find('#text').html(data);
-    };
-
-    get_status();
 }
 
 function synteny_zoom(dsgid1, dsgid2, basename, chr1, chr2, ksdb) {
@@ -1543,5 +1160,390 @@ function checkRequestSize(url) {
             ga('send', 'event', 'synmap', 'run');
         });
     };
+
+    //TODO: Remove basename generation from client
+    function rand () {
+        return ( Math.floor ( Math.random ( ) * 99999999 + 1 ) );
+    }
+
+    //TODO: Create a proper state object
+    function populate_page_obj(basefile) {
+        if (!basefile) {
+            basefile = "SynMap_"+rand();
+        }
+        pageObj.basename = basefile;
+        pageObj.nolog = 0;
+        pageObj.waittime = 1000;
+        pageObj.runtime = 0;
+        pageObj.fetch_error = 0;
+        pageObj.error = 0;
+        pageObj.engine = $("<span></span>", {
+            "class": "alert",
+            text: "The job engine has failed."
+        });
+        pageObj.failed = "The workflow could not be submitted.";
+    }
+
+    //TODO: Replace helper with state checking
+    function has_organisms () {
+        return ($('#org_id1').val() != "") &&
+            ($('#org_id2').val() != "");
+    }
+
+    function run_synmap(scheduled, regenerate){
+        populate_page_obj();
+
+        var org_name1 = pageObj.org_name1;
+        var org_name2 = pageObj.org_name2;
+        //feat_type 1 == CDS, 2 == genomic
+        var feat_type1 = $('#feat_type1').val();
+        var feat_type2 = $('#feat_type2').val();
+        var org_length1 = pageObj.org_length1;
+        var org_length2 = pageObj.org_length2;
+        //seq_type == 1 is unmasked
+        var seq_type1 = pageObj.seq_type1;
+        var seq_type2 = pageObj.seq_type2;
+        //check to see if we will allow this run
+        var max_size = 100000000;
+        // console.log (org_name1, org_length1, seq_type1);
+        // console.log (org_name2, org_length2, seq_type2);
+        if (( org_length1 > max_size && feat_type1 == 2 && seq_type1 == 1) &&
+            ( org_length2 > max_size && feat_type2 == 2 && seq_type2 == 1) ) {
+            var message = "You are trying to compare unmasked genomic sequences that are large!  This is a bad idea.  Chances are there will be many repeat sequences that will cause the entire pipeline to take a long time to complete.  This usually means that the analyses will use a lot of RAM and other resources.  As such, these jobs are usually killed before they can complete.  Please contact coge.genome@gmail.com for assistance with your analysis.";
+                alert(message);
+                $('#log_text').hide(0);
+                    $('#results').show(0).html("<span class=alert>Analysis Blocked:</span>"+message);
+                    return;
+        }
+
+        if (!has_organisms())
+            return;
+
+        if ($('#blast').val() == 5 && (feat_type1 != 1 || feat_type2 != 1) ) {
+            alert('BlastP only works if both genomes have protein coding sequences (CDS) AND CDS is selected for both!');
+            return;
+        }
+
+        var overlay = $("#overlay").show();
+
+        //TODO Scale polling time linearly with long running jobs
+        var duration = pageObj.waittime;
+
+        $('#results').hide();
+
+        if (regenerate) {
+            return schedule(get_params("go", regenerate));
+        }
+
+        return $.ajax({
+            type: 'GET',
+            data: get_params("get_results"),
+            dataType: "json",
+            success: function(data) {
+                if (!data.error) {
+                    overlay.hide();
+                    $("#synmap_zoom_box").draggable();
+                    $('#results').html(data.html).slideDown();
+                } else {
+                    schedule(get_params("go"))
+                }
+            },
+            error: schedule.bind(this, get_params("go"))
+        });
+    }
+
+    function schedule(params) {
+        pageObj.nolog=1;
+        var status_dialog = $('#synmap_dialog');
+        close_dialog(status_dialog);
+
+        return $.ajax({
+            type: "post",
+            dataType: 'json',
+            data: params,
+            success: function(data) {
+                $("#overlay").hide();
+                status_dialog.dialog('open');
+
+                if (data.error) {
+                    status_dialog.find('#text').html(data.error).addClass("alert");
+                    status_dialog.find('#progress').hide();
+                    status_dialog.find('#dialog_error').slideDown();
+                } else if (data.success) {
+                    var link = "Return to this analysis: <a href="
+                    + data.link + " onclick=window.open('tiny')"
+                    + "target = _new>" + data.link + "</a>";
+
+                    var logfile = '<a href="tmp/SynMap/'
+                    + pageObj.basename + '.log">Logfile</a>';
+
+                    $('#dialog_log').html(logfile);
+                    $('#synmap_link').html(link);
+
+                    update_dialog(data.request, "#synmap_dialog", synmap_formatter,
+                            get_params("get_results"));
+                } else {
+                    status_dialog.find('#text').html(pageObj.failed).addClass("alert");
+                    status_dialog.find('#progress').hide();
+                    status_dialog.find('#dialog_error').slideDown();
+                }
+            },
+            error: function(err) {
+                $("#overlay").hide();
+                status_dialog.dialog('open');
+                status_dialog.find('#text').html(pageObj.failed).addClass("alert");
+                status_dialog.find('#progress').hide();
+                status_dialog.find('#dialog_error').slideDown();
+            }
+        })
+    }
+
+    function get_params(name, regenerate) {
+        return {
+            fname: name,
+            tdd: $('#tdd').val(),
+            D: $('#D').val(),
+            A: $('#A').val(),
+            beta: pageObj.beta,
+            gm: $('#gm').val(),
+            Dm: $('#Dm').val(),
+            blast: $('#blast').val(),
+            feat_type1: $('#feat_type1').val(),
+            feat_type2: $('#feat_type2').val(),
+            dsgid1: $('#dsgid1').val(),
+            dsgid2: $('#dsgid2').val(),
+            jobtitle: $('#jobtitle').val(),
+            basename: pageObj.basename,
+            email: $('#email').val(),
+            regen_images: regenerate,
+            width: $('#master_width').val(),
+            dagchainer_type: $('#dagchainer_type').filter(':checked').val(),
+            ks_type: $('#ks_type').val(),
+            assemble: $('#assemble')[0].checked,
+            axis_metric: $('#axis_metric').val(),
+            axis_relationship: $('#axis_relationship').val(),
+            min_chr_size: $('#min_chr_size').val(),
+            spa_ref_genome: $('#spa_ref_genome').val(),
+            show_non_syn: $('#show_non_syn')[0].checked,
+            color_type: $('#color_type').val(),
+            box_diags: $('#box_diags')[0].checked,
+            merge_algo: $('#merge_algo').val(),
+            depth_algo: $('#depth_algo').val(),
+            depth_org_1_ratio: $('#depth_org_1_ratio').val(),
+            depth_org_2_ratio: $('#depth_org_2_ratio').val(),
+            depth_overlap: $('#depth_overlap').val(),
+            fid1: pageObj.fid1,
+            fid2: pageObj.fid2,
+            show_non_syn_dots: $('#show_non_syn_dots')[0].checked,
+            flip: $('#flip')[0].checked,
+            clabel: $('#clabel')[0].checked,
+            skip_rand: $('#skiprand')[0].checked,
+            color_scheme: $('#color_scheme').val(),
+            chr_sort_order: $('#chr_sort_order').val(),
+            codeml_min: $('#codeml_min').val(),
+            codeml_max: $('#codeml_max').val(),
+            logks: $('#logks')[0].checked,
+            csco: $('#csco').val(),
+            jquery_ajax: 1,
+        };
+    }
+
+    function synmap_formatter(item) {
+        var msg;
+        var row = $('<li>'+ item.description + ' </li>');
+        row.addClass('small');
+
+        var job_status = $('<span></span>');
+
+        if (item.status == 'scheduled') {
+            job_status.append(item.status);
+            job_status.addClass('down');
+            job_status.addClass('bold');
+        } else if (item.status == 'completed') {
+            job_status.append(item.status);
+            job_status.addClass('completed');
+            job_status.addClass('bold');
+        } else if (item.status == 'running') {
+            job_status.append(item.status);
+            job_status.addClass('running');
+            job_status.addClass('bold');
+        } else if (item.status == 'skipped') {
+            job_status.append("already generated");
+            job_status.addClass('skipped');
+            job_status.addClass('bold');
+        } else if (item.status == 'cancelled') {
+            job_status.append(item.status);
+            job_status.addClass('alert');
+            job_status.addClass('bold');
+        } else if (item.status == 'failed') {
+            job_status.append(item.status);
+            job_status.addClass('alert');
+            job_status.addClass('bold');
+        } else {
+            return;
+        }
+
+        row.append(job_status);
+
+        if (item.elapsed)  {
+            row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
+        }
+
+        /*
+        if (item.status == "skipped") {
+            row.append("<p>The analyses previously was generated</p>");
+        }
+        */
+
+        return row;
+    }
+
+    function update_dialog(request, identifier, formatter, args) {
+        var get_status = function () {
+            $.ajax({
+                type: 'GET',
+                url: request,
+                dataType: 'json',
+                success: update_callback,
+                error: update_callback,
+            });
+        };
+
+        var get_poll_rate = function() {
+            pageObj.runtime += 1;
+
+            if (pageObj.runtime <= 5) {
+                return 1000;
+            } else if (pageObj.runtime <= 60) {
+                return 2000;
+            } else if (pageObj.runtime <= 300) {
+                return 5000;
+            } else if (pageObj.runtime <= 1800) {
+                return 30000;
+            } else if (pageObj.runtime <= 10800) {
+                return 60000;
+            } else {
+                return 300000;
+            }
+        };
+
+        var fetch_results = function(completed) {
+            var request = window.location.href.split('?')[0];
+            args.fname = 'get_results';
+            dialog = $(identifier);
+
+            $.ajax({
+                type: 'GET',
+                url: request,
+                data: args,
+                dataType: "json",
+                success: function(data) {
+                    if (completed && !data.error) {
+                        $("#synmap_zoom_box").draggable();
+                        $('#results').html(data.html);
+                        dialog.find('#progress').hide();
+                        dialog.find('#dialog_success').slideDown();
+                    } else {
+                        $('#results').html(data.error);
+                        dialog.find('#progress').hide();
+                        dialog.find('#dialog_error').slideDown();
+                    }
+                },
+                error: function(data) {
+                    if (pageObj.fetch_error >= 3) {
+                        dialog.find('#progress').hide();
+                        dialog.find('#dialog_error').slideDown();
+                    } else {
+                        pageObj.fetch_error += 1;
+                        console.log("error");
+                        var callback = function() {fetch_results(completed)};
+                        setTimeout(callback, 100);
+                    }
+                }
+            });
+        }
+
+        var update_callback = function(json) {
+            var dialog = $(identifier);
+            var workflow_status = $("<p></p>");
+            var data = $("<ul></ul>");
+            var results = [];
+            var current_status;
+            var timeout = get_poll_rate();
+
+            var callback = function() {
+                update_dialog(request, identifier, formatter, args);
+            }
+
+            if (json.error) {
+                pageObj.error++;
+                if (pageObj.error > 3) {
+                    workflow_status.html(pageObj.engine);
+                    dialog.find('#text').html(workflow_status);
+                    dialog.find('#progress').hide();
+                    dialog.find('#dialog_error').slideDown();
+                    return;
+                }
+            } else {
+                pageObj.error = 0;
+            }
+
+            if (json.status) {
+                current_status = json.status.toLowerCase();
+                workflow_status.html("Workflow status: ");
+                workflow_status.append($('<span></span>').html(json.status));
+                workflow_status.addClass('bold');
+            } else {
+                setTimeout(callback, timeout);
+                return;
+            }
+
+            if (json.jobs) {
+                var jobs = json.jobs;
+                for (var index = 0; index < jobs.length; index++) {
+                    var item = formatter(jobs[index]);
+                    if (item) {
+                        results.push(item);
+                    }
+                }
+            }
+
+            if (!dialog.dialog('isOpen')) {
+                return;
+            }
+
+            //FIXME Update when a workflow supports elapsed time
+            if (current_status == "completed") {
+                var total = json.jobs.reduce(function(a, b) {
+                    if (!b.elapsed) return a;
+
+                    return a + b.elapsed;
+                }, 0);
+
+                var duration = coge.utils.toPrettyDuration(total);
+
+                workflow_status.append("<br>Finished in " + duration);
+                workflow_status.find('span').addClass('completed');
+                fetch_results(true);
+            } else if (current_status == "failed" || current_status == "error"
+                    || current_status == "terminated"
+                    || current_status == "cancelled") {
+                workflow_status.find('span').addClass('alert');
+                fetch_results(false);
+            } else if (current_status == "notfound") {
+                setTimeout(callback, timeout);
+                return;
+            } else {
+                workflow_status.find('span') .addClass('running');
+                setTimeout(callback, timeout);
+            }
+
+            results.push(workflow_status);
+            data.append(results);
+            dialog.find('#text').html(data);
+        };
+
+        get_status();
+    }
 
 }(this.coge || (this.coge = {}), jQuery, _));

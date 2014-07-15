@@ -975,26 +975,26 @@ sub get_previous_analyses {
                 select_val => $select_val
             );
             my $geneorder = $file =~ /\.go/;
-            my $dsg1 = $coge->resultset('Genome')->find($dsgid1);
-            next unless $dsg1;
+            my $genome1 = $coge->resultset('Genome')->find($dsgid1);
+            next unless $genome1;
             next
-              if ( $dsg1->restricted && !$USER->has_access_to_genome($dsg1) );
-            my ($ds1) = $dsg1->datasets;
-            my $dsg2 = $coge->resultset('Genome')->find($dsgid2);
-            next unless $dsg2;
+              if ( $genome1->restricted && !$USER->has_access_to_genome($genome1) );
+            my ($ds1) = $genome1->datasets;
+            my $genome2 = $coge->resultset('Genome')->find($dsgid2);
+            next unless $genome2;
             next
-              if ( $dsg2->restricted && !$USER->has_access_to_genome($dsg2) );
-            my ($ds2) = $dsg2->datasets;
-            $data{dsg1} = $dsg1;
-            $data{dsg2} = $dsg2;
+              if ( $genome2->restricted && !$USER->has_access_to_genome($genome2) );
+            my ($ds2) = $genome2->datasets;
+            $data{dsg1} = $genome1;
+            $data{dsg2} = $genome2;
             $data{ds1}  = $ds1;
             $data{ds2}  = $ds2;
             my $genome1;
-            $genome1 .= $dsg1->name if $dsg1->name;
+            $genome1 .= $genome1->name if $genome1->name;
             $genome1 .= ": "        if $genome1;
             $genome1 .= $ds1->data_source->name;
             my $genome2;
-            $genome2 .= $dsg2->name if $dsg2->name;
+            $genome2 .= $genome2->name if $genome2->name;
             $genome2 .= ": "        if $genome2;
             $genome2 .= $ds2->data_source->name;
             $data{genome1}    = $genome1;
@@ -1234,7 +1234,6 @@ sub get_query_link {
     my $box_diags = $url_options{box_diags};
     $box_diags = $box_diags eq "true" ? 1 : 0;
 
-
     my ( $org_name1, $titleA ) = gen_org_name(
         dsgid     => $dsgid1,
         feat_type => $feat_type1,
@@ -1326,22 +1325,34 @@ sub go {
     my $dsgid1 = $opts{dsgid1};
     my $dsgid2 = $opts{dsgid2};
 
-    unless ( $dsgid1 && $dsgid2 ) {
-        return "<span class=alert>You must select two genomes.</span>";
-    }
+    return encode_json({
+        success =>  JSON::false,
+        error => "You must select two genomes."
+    }) unless ($dsgid1 && $dsgid2);
 
-    my ($dsg1) = $coge->resultset('Genome')->find($dsgid1);
-    my ($dsg2) = $coge->resultset('Genome')->find($dsgid2);
+    my ($genome1) = $coge->resultset('Genome')->find($dsgid1);
+    my ($genome2) = $coge->resultset('Genome')->find($dsgid2);
 
-    unless ( $dsg1 && $dsg2 ) {
-        return
-"<span class=alert>Problem generating dataset group objects for ids:  $dsgid1, $dsgid2.</span>";
-    }
+    return encode_json({
+        success =>  JSON::false,
+        error => "The Genome $dsgid1 could not be found."
+    }) unless $genome1;
 
-    unless ( $dsg1 && $dsg2 ) {
-        return
-"<span class=alert>Problem generating one of the genome objects for id1: $dsgid1 or id2: $dsgid2</span>";
-    }
+    return encode_json({
+        success =>  JSON::false,
+        error => "The Genome $dsgid2 could not be found."
+    }) unless $genome2;
+
+    return encode_json({
+        success =>  JSON::false,
+        error => "Genome $dsgid1 primary data is missing."
+    }) unless -r $genome1->file_path;
+
+    return encode_json({
+        success =>  JSON::false,
+        error => "Genome $dsgid2 primary data is missing."
+    }) unless -r $genome2->file_path;
+
     my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
     ############################################################################
     # Fetch organism name and title
@@ -1519,8 +1530,8 @@ sub go {
     );
 
     if ( $feat_type1 eq "genomic" ) {
-        my $genome = $coge->resultset('Genome')->find($dsgid1);
-        $fasta1 = $genome->file_path;
+        $fasta1 = $genome1->file_path;
+
         CoGe::Accessory::Web::write_log( "Fetched fasta file for:",
             $cogeweb->logfile );
         CoGe::Accessory::Web::write_log( " " x (2) . $org_name1,
@@ -1550,8 +1561,8 @@ sub go {
     }
 
     if ( $feat_type2 eq "genomic" ) {
-        my $genome = $coge->resultset('Genome')->find($dsgid2);
-        $fasta2 = $genome->file_path;
+        $fasta2 = $genome2->file_path;
+
         CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
         CoGe::Accessory::Web::write_log( "Fetched fasta file for:",
             $cogeweb->logfile );
@@ -1584,13 +1595,13 @@ sub go {
 
     # Sort by genome id
     (
-        $dsgid1,     $dsg1,              $org_name1,  $fasta1,
-        $feat_type1, $depth_org_1_ratio, $dsgid2,     $dsg2,
+        $dsgid1,     $genome1,              $org_name1,  $fasta1,
+        $feat_type1, $depth_org_1_ratio, $dsgid2,     $genome2,
         $org_name2,  $fasta2,            $feat_type2, $depth_org_2_ratio
       )
       = (
-        $dsgid2,     $dsg2,              $org_name2,  $fasta2,
-        $feat_type2, $depth_org_2_ratio, $dsgid1,     $dsg1,
+        $dsgid2,     $genome2,              $org_name2,  $fasta2,
+        $feat_type2, $depth_org_2_ratio, $dsgid1,     $genome1,
         $org_name1,  $fasta1,            $feat_type1, $depth_org_1_ratio
       ) if ( $dsgid2 lt $dsgid1 );
 
@@ -2111,12 +2122,12 @@ sub go {
     #generate dotplot images
     my ( $org1_length, $org2_length, $chr1_count, $chr2_count ) = (0) x 4;
 
-    foreach my $gs ( $dsg1->genomic_sequences ) {
+    foreach my $gs ( $genome1->genomic_sequences ) {
         $chr1_count++;
         $org1_length += $gs->sequence_length;
     }
 
-    foreach my $gs ( $dsg2->genomic_sequences ) {
+    foreach my $gs ( $genome2->genomic_sequences ) {
         $chr2_count++;
         $org2_length += $gs->sequence_length;
     }
@@ -2468,7 +2479,8 @@ sub go {
     return encode_json({
         link     => $tiny_link,
         request  => "jex/synmap/status/" . $response->{id},
-        status   => $response->{status}
+        status   => $response->{status},
+        success  => $JEX->is_successful($response) ? JSON::true : JSON::false
     });
 }
 
@@ -2481,20 +2493,16 @@ sub get_results {
     my $dsgid1 = $opts{dsgid1};
     my $dsgid2 = $opts{dsgid2};
 
-    unless ( $dsgid1 && $dsgid2 ) {
-        return encode_json({
-            error => "You must select two genomes."
-        });
-    }
+    return encode_json({
+        error => "You must select two genomes."
+    }) unless ( $dsgid1 && $dsgid2 );
 
-    my ($dsg1) = $coge->resultset('Genome')->find($dsgid1);
-    my ($dsg2) = $coge->resultset('Genome')->find($dsgid2);
+    my ($genome1) = $coge->resultset('Genome')->find($dsgid1);
+    my ($genome2) = $coge->resultset('Genome')->find($dsgid2);
 
-    unless ( $dsg1 && $dsg2 ) {
-        return encode_json({
-            error => "Problem generating dataset group objects for ids:  $dsgid1, $dsgid2."
-        });
-    }
+    return encode_json({
+        error => "Problem generating dataset group objects for ids:  $dsgid1, $dsgid2."
+    }) unless ( $genome1 && $genome2 );
 
     my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
 
@@ -2649,13 +2657,13 @@ sub get_results {
 
     # Sort by genome id
     (
-        $dsgid1,     $dsg1,              $org_name1,  $fasta1,
-        $feat_type1, $depth_org_1_ratio, $dsgid2,     $dsg2,
+        $dsgid1,     $genome1,              $org_name1,  $fasta1,
+        $feat_type1, $depth_org_1_ratio, $dsgid2,     $genome2,
         $org_name2,  $fasta2,            $feat_type2, $depth_org_2_ratio
       )
       = (
-        $dsgid2,     $dsg2,              $org_name2,  $fasta2,
-        $feat_type2, $depth_org_2_ratio, $dsgid1,     $dsg1,
+        $dsgid2,     $genome2,              $org_name2,  $fasta2,
+        $feat_type2, $depth_org_2_ratio, $dsgid1,     $genome1,
         $org_name1,  $fasta1,            $feat_type1, $depth_org_1_ratio
       ) if ( $dsgid2 lt $dsgid1 );
 
@@ -2826,12 +2834,12 @@ sub get_results {
     #generate dotplot images
     my ( $org1_length, $org2_length, $chr1_count, $chr2_count ) = (0) x 4;
 
-    foreach my $gs ( $dsg1->genomic_sequences ) {
+    foreach my $gs ( $genome1->genomic_sequences ) {
         $chr1_count++;
         $org1_length += $gs->sequence_length;
     }
 
-    foreach my $gs ( $dsg2->genomic_sequences ) {
+    foreach my $gs ( $genome2->genomic_sequences ) {
         $chr2_count++;
         $org2_length += $gs->sequence_length;
     }
@@ -2951,8 +2959,8 @@ sub get_results {
           "<span class='small'>Axis metrics are in $axis_metric</span><br>";
 
         #add version of genome to organism names
-        $org_name1 .= " (v" . $dsg1->version . ")";
-        $org_name2 .= " (v" . $dsg2->version . ")";
+        $org_name1 .= " (v" . $genome1->version . ")";
+        $org_name2 .= " (v" . $genome2->version . ")";
 
         my $out_url = $out;
         $out_url =~ s/$DIR/$URL/;
@@ -3350,7 +3358,7 @@ qq{<span id="clear" style="font-size: 0.8em" class="ui-button ui-corner-all"
     my $output = $results->output;
 
     # erb 5/19/2014 - older version of dotplot would generate javascript inline
-    # Remove jquery and xhairs from generate html
+    # Remove jquery and xhairs from generated html
     $output =~ s/<script src="\/CoGe\/js\/jquery-1.3.2.js"><\/script>//g;
     $output =~ s/<script src="\/CoGe\/js\/xhairs.js"><\/script>//g;
 
@@ -3636,7 +3644,7 @@ sub get_dotplot {
     $params{flip} = $flip       if $flip;
     $params{regen} = $regen     if $regen;
     $params{width} = $width     if $width;
-    $params{ksdb} = $ksdb       if $ksdb eq /undefined/;
+    $params{ksdb} = $ksdb       if $ksdb;
     $params{kstype} = $kstype   if $kstype;
     $params{log} = 1            if $kstype;
     $params{min} = $min         if $min;
