@@ -3243,7 +3243,7 @@ sub get_results {
                 homolog  => undef,
                 diagonal => undef,
                 result   => $spa_url
-                    . qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=}
+                    . qq{<span class="link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=}
                     . $config->{_CONFIG_PATH}
                     . qq{;l=$tiny_link');" >Generate Pseudo-Assembled Genomic Sequence</span>},
 ,
@@ -3368,7 +3368,7 @@ qq{<span id="clear" style="font-size: 0.8em" class="ui-button ui-corner-all"
 
 sub _filename_to_link {
     my %opts = (
-        styles   => "link small",
+        styles   => "link",
         warn     => 1,
         required => 0,
         @_,
