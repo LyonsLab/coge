@@ -2,6 +2,8 @@
 
 BODY {
   font-family: Arial, Helvetica, fixed;
+  font-size: 100%;
+  line-height: 1.125; /* 18/16 = 1.125 */
   background: #FFFFFF;
   margin: 0;
   height: 100%;
@@ -45,7 +47,8 @@ a:hover {
 
 .coge_link {
   color:#660066;
-  font-size:small;
+  font-size: 0.875em; /* 14/16 = 0.875 */
+}
 }
 
 .alert {
@@ -98,19 +101,19 @@ div.panel {
 }
 
 .title1 {
-  font-size:xx-large;
+  font-size: 1.5em; /* 24/16 = 1.5 */
   color: #000099;
   font-style: oblique;
 }
 
 .title2 {
-  font-size:x-large;
+  font-size: 1.25em; /* 20/16 = 1.25 */
   color: #000099;
   font-style: oblique;
 }
 
 .title3 {
-  font-size:large;
+  font-size: 1.125em; /* 18/16 = 1.125 */
   color: #000099;
   font-style: oblique;
 }
@@ -120,12 +123,12 @@ div.panel {
 }
 
 .title5 {
-  font-size:small;
+  font-size: 0.875em; /* 14/16 = 0.875 */
   color: #000099;
 }
 
 .title6 {
-  font-size:x-small;
+  font-size: 0.75em; /* 12/16 = 0.75 */
   color: #000099;
   font-style: oblique;
 }
@@ -135,17 +138,17 @@ div.panel {
 }
 
 .data1 {
-  font-size:xx-large;
+  font-size: 1.5em; /* 24/16 = 1.5 */
   color: #009900;
 }
 
 .data2 {
-  font-size:x-large;
+  font-size: 1.25em; /* 20/16 = 1.25 */
   color: #009900;
 }
 
 .data3 {
-  font-size:large;
+  font-size: 1.125em; /* 18/16 = 1.125 */
   color: #009900;
 }
 
@@ -154,11 +157,11 @@ div.panel {
 }
 
 .data5 {
-  font-size:small;
+  font-size: 0.875em; /* 14/16 = 0.875 */
   color: #009900;
 }
 .data6 {
-  font-size:x-small;
+  font-size: 0.75em; /* 12/16 = 0.75 */
   color: #009900;
 }
 
@@ -187,23 +190,23 @@ div.panel {
 }
 
 .xsmall {
-  font-size: x-small;
+  font-size: 0.75em; /* 12/16 = 0.75 */
 }
 
 .small {
-  font-size: small;
+  font-size: 0.875em; /*  14/16 = 0.875 */
 }
 
 .medium {
-  font-size: medium;
+    font-size: 1.25em /* 18/16 = 1.125; */
 }
 
 .large {
-  font-size: large;
+  font-size: 1.5em; /* 24/16 = 1.5 */
 }
 
 .error {
-  font-size: large;
+  font-size: 1.5em; /* 24/16 = 1.5 */
   color: #FF0000;
   text-decoration: blink;
 }
@@ -223,13 +226,13 @@ div.panel {
 .oblique_bold {
   font-style: oblique;
   font-weight: bold;
-  font-size: large;
+  font-size: 1.5em; /* 24/16 = 1.5 */
 }
 
 .annotation {
   font-style: oblique;
   font-weight: bold;
-  font-size: large;
+  font-size: 1.5em; /* 24/16 = 1.5 */
   color: #009900;
 }
 
@@ -252,7 +255,7 @@ div.panel {
 .loading {
   font-style: oblique;
   color: #990000;
-  font-size: large;
+  font-size: 1.5em; /* 24/16 = 1.5 */
   text-decoration: blink;
 }
 
@@ -305,7 +308,6 @@ div.panel {
 
 .coge-table-header {
     color: dimgray;
-    font-size: 1em;
     font-weight: bold;
 }
 
@@ -489,7 +491,6 @@ table.basic {
 	border-color: #000000; /* black */
 	border-collapse: collapse;
 	background-color: #FFFFFF; /* darker gray */
-	font-size: 16px
 }
 
 table.columns {
@@ -499,7 +500,6 @@ table.columns {
 	border-left-width: 0px;
 	background-color: #FFFFFF; /* darker gray */
 	border-color: #000000; /* black */
-	font-size: 16px
 }
 
 tr.Aodd {
@@ -588,7 +588,7 @@ tr.ltblue {
   text-decoration: none;
   color: #009900;
   border: 1px solid #00FF36;
-  font-size: small;
+    font-size: 0.875em; /* 14/16 = 0.875 */
 }
 
 
@@ -601,7 +601,7 @@ tr.ltblue {
   text-decoration: none;
   color: #000099;
   border: 1px solid #00FF36;
-  font-size: small;
+    font-size: 0.875em; /* 14/16 = 0.875 */
 }
 
 .boxarttop
@@ -630,7 +630,7 @@ tr.ltblue {
   cursor:pointer;
   text-decoration: none;
   color: #009900;
-  font-size: small;
+    font-size: 0.875em; /* 14/16 = 0.875 */
   border-bottom: 1px solid #00FF35;
 }
 
@@ -718,8 +718,7 @@ span.infobox { /* mdb created 9/20/12 */
 th.header {
  /*background-image: url(/CoGe/picts/blast_table/small.gif);*/
  background-color: #edffed;
- font-weight: bold;
- font-size: 12;
+    font-size: 1.25em; /* 18/16 = 1.25 */
  background-repeat: no-repeat;
  background-position: center left;
  padding-left: 20px;
@@ -732,8 +731,7 @@ th.header {
 
 tfoot {
  background-color: #edffed;
- font-weight: bold;
- font-size: 12;
+    font-size: 1.25em; /* 18/16 = 1.25 */
  background-repeat: no-repeat;
  background-position: center left;
  padding-left: 20px;
@@ -745,13 +743,12 @@ tfoot {
 }
 
 tr.feat {
- font-size:10pt;
+    font-size: 0.875em; /* 14/16 = 0.875 */
 /* font-size-adjust:none;
  font-stretch:normal;
  font-style:normal;
  font-variant:normal;
  font-weight:normal;
- line-height:normal;
  padding:3px 5px;*/
 }
 
@@ -843,7 +840,7 @@ td.link:hover {
 }
 
 .annotation_table {
- line-height: .9em;
+ line-height: .9;
  border-collapse: collapse;
 }
 
@@ -1013,7 +1010,7 @@ li {
 .welcome {
     color: #119911;
     text-shadow: #555555 1px 1px;
-    font-size: 2.5em;
+    font-size: 2.25em; /* 36/16 = 2.25 */
     font-weight: bold;
     display: block;
 }
@@ -1041,7 +1038,7 @@ header {
 .tagline {
     vertical-align: 50%;
     white-space: nowrap;
-    font-size: 1.5em;
+    font-size: 1.75em; /* 26/16 = 1.75 */
     color: #c0c0c0;
     text-shadow: #555555 1px 1px;
 }
@@ -1054,12 +1051,12 @@ header {
 
 #wikifeed > div h2 {
     padding: 5px;
-    font-size: 0.75em;
+    font-size: 0.875em; /* 14/16 = 0.875 */
 }
 
 #wikifeed .date {
     display: block;
-    font-size: 80%;
+    font-size: 0.75em; /* 12/16 = 0.75*/
     font-weight: normal;
 }
 
@@ -1068,7 +1065,7 @@ header {
 }
 
 #wikifeed > div div h3 {
-    font-size: 0.6em;
+    font-size: 0.75em; /* 12/16 = 0.75*/
 }
 
 #wikifeed ol {
@@ -1087,7 +1084,7 @@ header {
 #wikifeed > div div > pre,
 #wikifeed > div div > ul,
 #wikifeed > div div > ol {
-    font-size: 70%;
+    font-size: 0.75em; /* 12/16 = 0.75 */
     word-wrap: break-word;
 }
 
@@ -1140,7 +1137,7 @@ header {
 }
 
 #content p {
-    font-size: 1.5em;
+    font-size: 1.5em; /* 24/16 = 1.5 */
     padding: 0;
     margin: 0;
     font-variant: small-caps;
@@ -1168,7 +1165,7 @@ header {
 
 @media (max-width: 850px) {
     .small {
-        font-size: xx-small;
+        font-size: 0.75em; /* 14/16 = 1.75 */
     }
 
     #content {
@@ -1197,7 +1194,7 @@ header {
     .tagline {
         display: block;
         white-space: normal;
-        font-size: 1em;
+        font-size: 1.5em; /* 24/16 = 1.5 */
     }
 
     .sidebar_left > div {
@@ -1205,7 +1202,7 @@ header {
     }
 
     #content {
-        font-size: .5em;
+        font-size: .75em; /* 12/16 = 0.75 */
         text-align: center;
         clear: both;
         width: 90%;
@@ -1215,7 +1212,7 @@ header {
 
     #wikifeed > div h2 {
         padding: 5px;
-        font-size: 0.6em;
+        font-size: 0.875em; /* 14/16 = 0.875 */
     }
 
     #horizontal li {
@@ -1269,7 +1266,7 @@ header {
     -moz-box-shadow: 1px 1px gray;
     -webkit-box-shadow: 1px 1px gray;
 
-    font-size: 80%;
+    font-size: 0.875em; /* 14/16 = 0.875 */
 }
 
 .toolbar .seperator:after {
