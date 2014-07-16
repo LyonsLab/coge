@@ -856,7 +856,7 @@ sub get_chr_length_hist {
     }
     my $mean = sprintf( "%.0f", $sum / scalar @data );
     my $info =
-        "<table class=small><TR><td>Count:<TD>"
+        "<table><TR><td>Count:<TD>"
       . commify( $dsg->genomic_sequences->count )
       . " chromosomes (contigs, scaffolds, etc.)<tr><Td>Mean:<td>"
       . commify($mean)
