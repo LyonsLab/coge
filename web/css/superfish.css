@@ -4,7 +4,6 @@
 	margin:			0;
 	padding:		0;
 	list-style:		none;
-	background: url(images/ui-bg_inset-hard_75_beef9f_1x100_flip.png) repeat-x 0.4em;
 }
 .sf-menu ul {
 	position:		absolute;
@@ -30,6 +29,7 @@
 	display:		block;
 	position:		relative;
 	text-decoration: none;
+    background: #b3ed8e;
 	color: #000000;
 }
 .sf-menu li:hover ul,
@@ -74,7 +74,7 @@ ul.sf-menu li li li.sfHover ul {
 .sf-menu li:hover, .sf-menu li.sfHover,
 .sf-menu a:focus, .sf-menu a:hover, .sf-menu a:active {
 	color: #000000;
-	background: url(images/ui-bg_inset-hard_75_beef9f_1x100.png) repeat-x 0.4em;
+    background: #7adf39;
 }
 
 /*** arrows **/
