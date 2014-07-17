@@ -1274,3 +1274,108 @@ header {
     padding-left: 5px;
     padding-right: 5px;
 }
+
+
+/*
+ * Buttons & Icons
+ *
+ */
+
+.coge-button {
+    padding: 0.125em 1em ; /* 2/16 = 0.125 */
+    font-weight: 600;
+    font-size: 0.875em;
+    line-height: 1.5;
+    display: inline-block;
+    border: 1px solid #7adf39;
+    background: #9ce76d;
+    vertical-align: middle;
+    min-height: 1em;
+}
+
+.coge-button-sm {
+    padding: 0.125em 0.75em ; /* 2/16 = 0.125 */
+    font-weight: 600;
+    font-size: 0.75em;
+    line-height: 1.5;
+    display: inline-block;
+    border: 1px solid #7adf39;
+    background: #9ce76d;
+    vertical-align: middle;
+    min-height: 1em;
+}
+
+.coge-button-lg {
+    font-size: 1.25em; /* 20/16 = 1.25 */
+    font-weight: 600;
+    padding: 0.125em 1.125em ; /* 2/16 = 0.125 18/16 = 1.125 */
+    line-height: 1.5;
+    display: inline-block;
+    border: 1px solid #7adf39;
+    background: #9ce76d;
+    vertical-align: middle;
+    min-height: 1em;
+}
+
+.coge-button-left {
+    padding-left: 2em;
+}
+
+.coge-button-right {
+    padding-right: 2em;
+}
+
+.coge-button.ui-state-hover,
+.coge-button-lg.ui-state-hover,
+.coge-button-sm.ui-state-hover {
+    border-color: #55ae1c;
+    background: #65d022;
+    outline: none;
+}
+
+.coge-button.ui-state-active,
+.coge-button-lg.ui-state-active,
+.coge-button-sm.ui-state-active {
+    border-color: #55ae1c;
+    background: #65d022;
+    outline: none;
+}
+
+.ui-button-go {
+    background: #ff7979;
+    border-color: #ff6666;
+}
+
+.coge-button.ui-button-go.ui-state-hover,
+.coge-button-lg.ui-button-go.ui-state-hover,
+.coge-button-sm.ui-button-go.ui-state-hover {
+    border-color: #ff1818;
+    background: #ff5252;
+    outline: none;
+}
+
+.coge-button.ui-button-go.ui-state-active,
+.coge-button-lg.ui-button-go.ui-state-active,
+.coge-button-sm.ui-button-go.ui-state-active {
+    border-color: #ff1818;
+    background: #ff5252;
+    outline: none;
+}
+
+.coge-icon {
+    color: #119911;
+    font-size: 1.25em;
+    padding: 1px;
+    border: 1px solid lightgray;
+    cursor: pointer;
+}
+
+.coge-icon:hover {
+    border-color: #55ae1c;
+    color: #65d022;
+    outline: none;
+}
+
+.coge-disabled {
+    opacity: .35;
+}
