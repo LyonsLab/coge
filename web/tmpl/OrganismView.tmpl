@@ -368,6 +368,32 @@ function update_genome_info (dsgid) {
     });
 }
 
+function export_gff () {
+    var server = '<TMPL_VAR NAME="SERVER">';
+    var link = server+"bin/export/coge_gff.pl?dsgid=";
+    link += $('#dsg_id').val();
+    if ($('#cds_only')[0].checked) {link += ";cds=1";}
+    if ($('#annos')[0].checked) {link += ";annos=1";}
+    if ($('#name_unique')[0].checked) {link += ";nu=1";}
+    if ($('#upa')[0].checked) {link += ";upa=1";}
+    link += ";id_type="+$('#gff_id_type').val();
+    $('#export_gff_link').html("<a href="+link+" target=_new>Link: "+ link+"<\a>");
+    window.open(link);
+}
+
+function export_tbl () {
+    var server = '<TMPL_VAR NAME="SERVER">';
+    var link = server+"bin/export/export_NCBI_TBL.pl?dsgid=";
+    link += $('#dsg_id').val();
+    window.open(link);
+}
+
+function export_bed () {
+    var server = '<TMPL_VAR NAME="SERVER">';
+    var link = server+"bin/export/coge2bed.pl?gid=";
+    link += $('#dsg_id').val();
+    window.open(link);
+}
 </script>
 
 <div class="padded">
