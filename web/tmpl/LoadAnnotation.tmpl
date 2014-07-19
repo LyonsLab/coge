@@ -525,7 +525,7 @@ function more() {
     <td>Source:</td>
     <td>
       <input id="edit_source" type="search" placeholder="Search" size="45" spellcheck="false" />
-      <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
+      <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all coge-button'>New</span>
     </td>
   </tr>
   <tr>
@@ -543,7 +543,7 @@ function more() {
     <td>Data file:</td>
     <td>
       <table id='file_table' class="small" style="display:inline;"></table>
-      <span id="select_file_button" onClick="$('#file_select_dialog').dialog('open');" class='ui-button ui-corner-all'> Select Data File</span>
+      <span id="select_file_button" onClick="$('#file_select_dialog').dialog('open');" class='ui-button ui-corner-all coge-button'> Select Data File</span>
     </td>
   </tr>
   <tr id='more'>
@@ -564,7 +564,7 @@ function more() {
 </table>
 
 <br>
-<span onClick="load_annotation();" style="font-size:1em;" class='ui-button ui-corner-all ui-button-go'>Load Annotation</span>
+<span onClick="load_annotation();" style="font-size:1em;" class='ui-button ui-corner-all ui-button-go coge-button-lg'>Load Annotation</span>
 <br>
 <br>
 <br>
@@ -573,7 +573,7 @@ function more() {
 
 <div id="file_select_dialog" class="dialog_box" title="Select Data File ..." style="display:none;">
   <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
-  <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all">Done</span>
+  <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all coge-button">Done</span>
 </div>
 
 <div id="load_dialog" class="dialog_box" title="Loading Annotation ..." style="display:none;">
@@ -587,9 +587,9 @@ function more() {
   <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
   <span id="error_msg" style="display:none;">An error occurred <img src="picts/thumbs_down.png"></span>
   <input id="dataset_id" type="hidden" />
-  <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Load Another</span>
-  <span id="finish_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all">GenomeView</span>
-  <span id="cancel_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Cancel</span>
+  <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all coge-button">Load Another</span>
+  <span id="finish_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all coge-button">GenomeView</span>
+  <span id="cancel_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all coge-button">Cancel</span>
 </div>
 
 <div id="create_new_source_dialog" class="dialog_box" title="Create New Source" style="display:none;">
@@ -608,7 +608,7 @@ function more() {
     </tr>
   </table>
   <br>
-  <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all ui-button-go">Create</span>
+  <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all ui-button-go coge-button">Create</span>
 </div>
 
 </TMPL_IF> <!-- MAIN -->

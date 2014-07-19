@@ -11,7 +11,8 @@ use JSON::XS;
 no warnings 'redefine';
 
 use vars
-  qw($P $PAGE_TITLE $PAGE_NAME $USER $coge %FUNCTION $FORM $MAX_SEARCH_RESULTS $LINK);
+  qw( $P $PAGE_TITLE $PAGE_NAME $USER $coge %FUNCTION $FORM $MAX_SEARCH_RESULTS 
+      $LINK $EMBED );
 
 $PAGE_TITLE = 'GroupView';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
@@ -38,22 +39,29 @@ $FORM = new CGI;
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
-    my $html;
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( HELP => '/wiki/index.php?title=GroupView' );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param( USER       => $name );
-    $template->param( TITLE      => qq{},
-    			 	  PAGE_TITLE => qq{GroupView},
-    				  PAGE_LINK  => $LINK,
-    				  LOGO_PNG   => "GroupView-logo.png" );
-    $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
-    $template->param( BODY       => gen_body() );
-    $template->param( ADJUST_BOX => 1 );
-    $html .= $template->output;
+    my $template;
+
+    $EMBED = $FORM->param('embed');
+    if ($EMBED) {
+        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
+    }
+    else {  
+        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+        $template->param( HELP => '/wiki/index.php?title=GroupView' );
+        my $name = $USER->user_name;
+        $name = $USER->first_name if $USER->first_name;
+        $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
+        $template->param( USER       => $name );
+        $template->param( TITLE      => qq{},
+        			 	  PAGE_TITLE => qq{GroupView},
+        				  PAGE_LINK  => $LINK,
+        				  LOGO_PNG   => "GroupView-logo.png" );
+        $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
+        $template->param( ADJUST_BOX => 1 );
+    }
+    
+    $template->param( BODY => gen_body() );
+    return $template->output;
 }
 
 sub gen_body {
