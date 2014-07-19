@@ -49,6 +49,9 @@ a:hover {
   color:#660066;
   font-size: 0.875em; /* 14/16 = 0.875 */
 }
+
+.coge-green {
+    color: #119911;
 }
 
 .alert {
@@ -718,7 +721,6 @@ span.infobox { /* mdb created 9/20/12 */
 th.header {
  /*background-image: url(/CoGe/picts/blast_table/small.gif);*/
  background-color: #edffed;
-    font-size: 1.25em; /* 18/16 = 1.25 */
  background-repeat: no-repeat;
  background-position: center left;
  padding-left: 20px;
@@ -731,7 +733,6 @@ th.header {
 
 tfoot {
  background-color: #edffed;
-    font-size: 1.25em; /* 18/16 = 1.25 */
  background-repeat: no-repeat;
  background-position: center left;
  padding-left: 20px;
@@ -743,7 +744,7 @@ tfoot {
 }
 
 tr.feat {
-    font-size: 0.875em; /* 14/16 = 0.875 */
+    font-size: 0.75em; /* 12/16 = 0.875 */
 /* font-size-adjust:none;
  font-stretch:normal;
  font-style:normal;
@@ -965,6 +966,10 @@ li {
     padding: 5px;
 }
 
+.coge-padded-large {
+    padding: 10px;
+}
+
 .padded li {
     margin: 5px 0 5px 0;
 }
@@ -1015,11 +1020,11 @@ li {
     display: block;
 }
 
-.shaded {
+.coge-shaded {
     background-color: #beef9f;
 }
 
-.shadow {
+.coge-shadow {
     border-bottom: solid lightgray 1px;
     -moz-box-shadow: 0px 5px 1px -3px rgba(0,0,0,0.25);
     -webkit-box-shadow: 0px 5px 1px -3px rgba(0,0,0,0.25);
@@ -1031,12 +1036,32 @@ h4 {
     padding: 5px;
 }
 
+h5 {
+    font-size: 0.875em;
+}
+
+h1 > small,
+h2 > small,
+h3 > small,
+h4 > small,
+h5 > small {
+    font-size: 80%;
+    font-weight: 500;
+    color: #4B4949;
+}
+
 header {
     padding: 10px;
 }
 
+.intro, .highlights {
+    width: 50%;
+    padding: 10px 20px;
+    float: left;
+    box-sizing: border-box;
+}
+
 .tagline {
-    vertical-align: 50%;
     white-space: nowrap;
     font-size: 1.75em; /* 26/16 = 1.75 */
     color: #c0c0c0;
@@ -1046,7 +1071,7 @@ header {
 /* CoGepedia Wiki Feed */
 
 #wikifeed {
-    padding: 10px 0;
+    padding: 0 10px 5px;
 }
 
 #wikifeed > div h2 {
@@ -1123,6 +1148,49 @@ header {
     text-align: center;
 }
 
+
+.coge-pane {
+    border-radius: 0.375em;
+    border: 1px solid black;
+    padding: 0.125em;
+}
+
+.coge-summary-heading {
+    padding: 0;
+    margin: 0 0 0.3125em;
+}
+
+.coge-section {
+    font-size: 0.75em;
+    padding: 0 0.375em 0.625em;
+    border-radius: 5px;
+    background: #f5f5f5;
+}
+
+.coge-section + .coge-section,
+.coge-summary + .coge-summary {
+    margin-top: 1em;
+}
+
+.coge-summary {
+    box-sizing: border-box;
+}
+
+.coge-summary:after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+.coge-summary > .l {
+    margin-right: 1em;
+}
+
+.coge-summary .coge-summary-body {
+    overflow: hidden;
+}
+
+
 #content {
     text-align: center;
     padding: 10px 0;
@@ -1148,9 +1216,8 @@ header {
     margin: -10px -10px 0 -10px;
 }
 
-#latest_genomes {
+.coge-scroll {
     overflow-y: scroll;
-    max-height: 75%;
 }
 
 /*
@@ -1162,28 +1229,7 @@ header {
     margin: 10px 10px;
 }
 */
-
-@media (max-width: 850px) {
-    .small {
-        font-size: 0.75em; /* 14/16 = 1.75 */
-    }
-
-    #content {
-        width: 70%;
-        margin-left: 2%;
-        margin-right: 2%;
-    }
-
-    .sidebar_right {
-        width: 90%;
-        clear: both;
-        margin-right: 2%;
-        float: left;
-        margin-left: 2%;
-    }
-}
-
-@media (max-width: 600px) {
+@media (max-width: 480px) {
     .sidebar_left {
         display: none;
         clear: both;
@@ -1219,6 +1265,34 @@ header {
         text-align: left;
         display: block;
     }
+}
+
+@media (min-width: 768pxj) {
+    .small {
+        font-size: 0.75em; /* 14/16 = 1.75 */
+    }
+
+    #content {
+        width: 70%;
+        margin-left: 2%;
+        margin-right: 2%;
+    }
+
+    .sidebar_right {
+        width: 90%;
+        clear: both;
+        margin-right: 2%;
+        float: left;
+        margin-left: 2%;
+    }
+}
+
+/* Medium Devices, Desktop */
+@media(min-width: 992px) {
+}
+
+/* Large Devices, Wide Screens */
+@media(min-width: 1200px) {
 }
 
 /*
