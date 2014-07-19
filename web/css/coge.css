@@ -1,9 +1,9 @@
 @import url(coge-spinner.css);
 
 BODY {
-  font-family: Arial, Helvetica, fixed;
-  font-size: 100%;
+  font-family: "Helvetica Neue", Helvetica, Arial, fixed;
   line-height: 1.125; /* 18/16 = 1.125 */
+  font-size: 16px;
   background: #FFFFFF;
   margin: 0;
   height: 100%;
