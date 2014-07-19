@@ -1088,7 +1088,7 @@ qq{<table class="small ui-widget-content ui-corner-all"><tr><th>Query Seq<th>}
 
     my $temp = qq{
 <span style='padding-left:10px;'>
-<span id='link_hidden' class='ui-button ui-corner-all ui-button-icon-right' onclick="\$('#link_hidden').hide(); \$('#link_shown').fadeIn();"><span class="ui-icon ui-icon-arrowreturnthick-1-w"></span>Link to this</span>
+<span id='link_hidden' class='ui-button ui-corner-all ui-button-icon-right coge-button coge-button-right' onclick="\$('#link_hidden').hide(); \$('#link_shown').fadeIn();"><span class="ui-icon ui-icon-arrowreturnthick-1-w"></span>Link to this</span>
 <span id='link_shown' style='display:none;' class='small infobox'>Use this link to return to this page at any time: <span class='link' onclick=window.open('$link');><b>$link</b></span></span>
 </span>};
 
