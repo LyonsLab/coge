@@ -19,11 +19,6 @@ a:hover {
   cursor: pointer;
 }
 
-/*a:visited {
-  color: #0000EE;
-  cursor: pointer;
-}*/
-
 .hidden {
 	display: none;
 }
