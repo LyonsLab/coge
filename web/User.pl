@@ -174,6 +174,7 @@ sub gen_body {
 sub get_item_info {
     my %opts      = @_;
     my $item_spec = $opts{item_spec};
+    my $add_actions = $opts{add_actions}; # boolean flag
     return unless $item_spec;
     my ( $item_id, $item_type ) = $item_spec =~ /content_(\d+)_(\d+)/;
     return unless ( $item_id and defined $item_type );
@@ -204,6 +205,14 @@ sub get_item_info {
               . $_->display_name . ' ('
               . $_->user_name . ')' . '<br>';
         }
+        
+        my $info = 'Group <i>' . $group->info . '</i>';
+        my $edit_link = qq{open_item('$info','GroupView.pl?ugid=$item_id');};
+        
+        $html .= qq{<div><b>Tools:</b><br>}
+            . qq{<div style="padding-left:20px;">}
+            . qq{<span class="link" onclick="$edit_link" title="Edit group metadata and membership">Edit group</span><br>}
+            . qq{</div></div>};        
     }
     elsif ( $item_type == $ITEM_TYPE{notebook} ) {
         my $notebook = $coge->resultset('List')->find($item_id);
@@ -238,13 +247,21 @@ sub get_item_info {
             $html .= 'Everyone';
         }
         $html .= '</div>';
+        
+        my $info = 'Notebook <i>' . $notebook->info . '</i>';
+        my $edit_link = qq{open_item('$info','NotebookView.pl?lid=$item_id');};
+        
+        $html .= qq{<div><b>Tools:</b><br>}
+            . qq{<div style="padding-left:20px;">}
+            . qq{<span class="link" onclick="$edit_link" title="Edit notebook metadata">Edit notebook</span><br>}
+            . qq{<span class="link" onclick="share_dialog();" title="Share notebook with other users or user groups">Share with other users</span><br>}
+            . qq{</div></div>};
     }
     elsif ( $item_type == $ITEM_TYPE{genome} ) {
         my $genome = $coge->resultset('Genome')->find($item_id);
         return unless ( $USER->has_access_to_genome($genome) );
 
-        my $date =
-          ( $genome->datasets ? $genome->datasets()->[0]->date : 'unknown' );
+        my $date = ( $genome->datasets ? $genome->datasets()->[0]->date : 'unknown' );
         my $group_str = join( '<br>',
             sort map { $_->name } $USER->groups_with_access($genome) );
         $html .=
@@ -282,6 +299,20 @@ sub get_item_info {
             $html .= 'Everyone';
         }
         $html .= '</div>';
+        
+        my $info = 'Genome <i>' . $genome->info . '</i>';
+        my $edit_link = qq{open_item('$info','GenomeInfo.pl?gid=$item_id');};
+        my $view_link = qq{open_item('$info','GenomeView.pl?gid=$item_id');};
+        my $load_link = qq{open_item('$info','LoadAnnotation.pl?gid=$item_id');};
+        
+        $html .= qq{<div><b>Tools:</b><br>}
+            . qq{<div style="padding-left:20px;">}
+            . qq{<span class="link" onclick="$edit_link" title="Edit genome metadata, annotation, and experiments">Edit metadata</span><br>}
+            . qq{<span class="link" onclick="$view_link" title="View genome sequence, annotation, and experiment tracks">View tracks</span><br>}
+            . qq{<span class="link" onclick="$load_link" title="Load gene annotation">Load annotation</span><br>}
+            . qq{<span class="link" onclick="share_dialog();" title="Share genome with other users or user groups">Share with other users</span><br>}
+            . qq{<span class="link" onclick="add_to_notebook_dialog();" title="Add genome to a notebook">Add to notebook</span><br>}
+            . qq{</div></div>};
     }
     elsif ( $item_type == $ITEM_TYPE{experiment} ) {
         my $experiment = $coge->resultset('Experiment')->find($item_id);
@@ -320,6 +351,19 @@ sub get_item_info {
             $html .= 'Everyone';
         }
         $html .= '</div>';
+        
+        my $gid = $experiment->genome_id;
+        my $info = 'Experiment <i>' . $experiment->info . '</i>';
+        my $edit_link = qq{open_item('$info','ExperimentView.pl?eid=$item_id');};
+        my $view_link = qq{open_item('$info','GenomeView.pl?gid=$gid&tracks=experiment$item_id');};
+        
+        $html .= qq{<div><b>Tools:</b><br>}
+            . qq{<div style="padding-left:20px;">}
+            . qq{<span class="link" onclick="$edit_link" title="Edit experiment metadata">Edit metadata</span><br>}
+            . qq{<span class="link" onclick="$view_link" title="View experiment track">View track</span><br>}
+            . qq{<span class="link" onclick="share_dialog();" title="Share experiment with other users or user groups">Share with other users</span><br>}
+            . qq{<span class="link" onclick="add_to_notebook_dialog();" title="Add experiment to a notebook">Add to notebook</span><br>}
+            . qq{</div></div>};
     }
 
     return encode_json( { timestamp => $timestamp, html => $html } );
@@ -1170,37 +1214,34 @@ sub send_items_to {
 sub get_toc {    # table of contents
     my @rows = (
     	{  	TOC_ITEM_ID       => $ITEM_TYPE{mine},
-        	TOC_ITEM_INFO     => 'My Stuff',
-        	TOC_ITEM_CHILDREN => 3
-      	},
-		{   TOC_ITEM_ID   => $ITEM_TYPE{notebook},
-	        TOC_ITEM_INFO => 'Notebooks',
-	        TOC_ITEM_ICON =>
-	          '<img src="picts/notebook-icon.png" width="15" height="15"/>',
-	        TOC_ITEM_INDENT => 20
+        	TOC_ITEM_INFO     => 'My Data',
+        	TOC_ITEM_CHILDREN => 2 # enable dropdown button
       	},
       	{   TOC_ITEM_ID   => $ITEM_TYPE{genome},
 	        TOC_ITEM_INFO => 'Genomes',
-	        TOC_ITEM_ICON =>
-	          '<img src="picts/dna-icon.png" width="15" height="15"/>',
+	        TOC_ITEM_ICON => '<img src="picts/dna-icon.png" width="15" height="15"/>',
 	        TOC_ITEM_INDENT => 20
 	    },
 	    {   TOC_ITEM_ID   => $ITEM_TYPE{experiment},
 	        TOC_ITEM_INFO => 'Experiments',
-	        TOC_ITEM_ICON =>
-	          '<img src="picts/testtube-icon.png" width="15" height="15"/>',
+	        TOC_ITEM_ICON => '<img src="picts/testtube-icon.png" width="15" height="15"/>',
 	        TOC_ITEM_INDENT => 20
 	    },
+	    {   TOC_ITEM_ID   => $ITEM_TYPE{notebook},
+            TOC_ITEM_INFO => 'Notebooks',
+            #TOC_ITEM_ICON => '<img src="picts/notebook-icon.png" width="15" height="15"/>',
+            #TOC_ITEM_INDENT => 20
+        },
+        {   TOC_ITEM_ID => $ITEM_TYPE{group},
+            TOC_ITEM_INFO => 'User Groups',
+            #TOC_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15"/>'
+        },
     	{   TOC_ITEM_ID   => $ITEM_TYPE{shared},
 	        TOC_ITEM_INFO => 'Shared with me'
 	    },
-		{ 	TOC_ITEM_ID => $ITEM_TYPE{group},
- 	 		TOC_ITEM_INFO => 'Groups',
- 			#TOC_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15"/>'
-		},
     	{   TOC_ITEM_ID       => $ITEM_TYPE{activity_summary},
 	        TOC_ITEM_INFO     => 'Activity',
-	        TOC_ITEM_CHILDREN => 3
+	        TOC_ITEM_CHILDREN => 3 # enable dropdown button
 	    },
 	    {   TOC_ITEM_ID     => $ITEM_TYPE{activity_analyses},
 	        TOC_ITEM_INFO   => 'Analyses',
@@ -1219,16 +1260,15 @@ sub get_toc {    # table of contents
       	}
     );
 
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-    $template->param( DO_TOC        => 1 );
-    $template->param( TOC_ITEM_LOOP => \@rows );
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    $template->param( DO_TOC        => 1,
+                      TOC_ITEM_LOOP => \@rows );
     return $template->output;
 }
 
 sub get_contents {
     my %opts = @_;
-    my $type = $opts{type};
+    my $type = $opts{item_type};
     $type = $ITEM_TYPE{all} unless $type;
     my $last_update = $opts{last_update};
     $last_update = 0 if ( not defined $last_update );
@@ -1284,7 +1324,7 @@ sub get_contents {
 	 	}
 	}
 
-    if ( $type == $ITEM_TYPE{notebook} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine} )
+    if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{notebook} )
     {
         foreach my $list ( sort listcmp values %{ $children->{1} } ) { #FIXME hardcoded type
             push @rows, {
@@ -1342,6 +1382,7 @@ sub get_contents {
         
         push @rows,
           {
+            CONTENTS_FORMAT_1  => 1,
             CONTENTS_ITEM_ID   => 0,
             CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_summary},
             CONTENTS_ITEM_INFO => $summary_html,
@@ -1383,6 +1424,7 @@ sub get_contents {
             my $info_html = format_job_status($_->{status}).' '.$_->{start_time}.' | '. $_->{elapsed}.' | '.$_->{page}.' | '.$_->{description} . ($_->{comment} ? ' | ' . $_->{comment} : '') . ($_->{workflow_id} ? ' | id' . $_->{workflow_id} : '');
             push @rows,
               {
+                CONTENTS_FORMAT_1  => 1,
                 CONTENTS_ITEM_ID   => $id,
                 CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_analyses},
                 CONTENTS_ITEM_INFO => $info_html,
@@ -1400,6 +1442,7 @@ sub get_contents {
             my $info_html = format_job_status($_->{status}).' '.$_->{start_time}.' | '. $_->{elapsed}.' | '.$_->{page}.' | '.$_->{description} . ($_->{workflow_id} ? ' | id' . $_->{workflow_id} : '');
             push @rows,
               {
+                CONTENTS_FORMAT_1  => 1,
                 CONTENTS_ITEM_ID   => $_->{id},
                 CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_loads},
                 CONTENTS_ITEM_INFO => $info_html,
@@ -1413,6 +1456,7 @@ sub get_contents {
         my $job_list = 'cogeblast/synmap/gevo/synfind/loadgenome/loadexperiment/organismview/user';
         push @rows,
           {
+            CONTENTS_FORMAT_1  => 1,
             CONTENTS_ITEM_ID   => 0,
             CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_viz},
             CONTENTS_ITEM_INFO => qq{<iframe frameborder="0" width="100%" height="100%" scrolling="no" src="//genomevolution.org/blacktea/standalone/$user_id/$job_list"></iframe>} # FIXME: hardcoded server name

@@ -1,11 +1,57 @@
 <TMPL_IF NAME="MAIN">
-<SCRIPT type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
+<script type="text/javascript" src="./js/jquery.fileupload.js"></script>
 
 <style>
 div.deleted { display: none; }
+
+@font-face {
+	font-family: 'Glyphicons Halflings';
+	src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot');
+	src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.woff') format('woff'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.ttf') format('truetype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');
+}
+
+.glyphicon {
+	position: relative;
+	top: 1px;
+	display: inline-block;
+	font-family: 'Glyphicons Halflings';
+	font-style: normal;
+	font-weight: normal;
+	line-height: 1;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+.glyphicon-user:before {
+	content: "\e008";
+}
+.glyphicon-folder-close:before {
+    content: "\e117";
+}
+.glyphicon-folder-open:before {
+	content: "\e118";
+}
+.glyphicon-trash:before {
+	content: "\e020";
+}
+.glyphicon-arrow-right:before {
+    content: "\e092";
+}
+.glyphicon-asterisk:before {
+	content: "\2a";
+}
+.glyphicon-plus:before {
+	content: "\2b";
+}
+.glyphicon-minus:before {
+	content: "\2212";
+}
+.glyphicon-cog:before {
+	content: "\e019";
+}
 </style>
 
-<SCRIPT type="text/javascript">
+<script type="text/javascript">
 var POLL_TIME = 30*1000, // polling rate when user is not idle
 	IDLE_TIME = 30*1000; // stop polling after this lapse, then poll on next mousemove
 
@@ -23,13 +69,17 @@ var ITEM_TYPE_ALL 				= <TMPL_VAR NAME="ITEM_TYPE_ALL">,
 	ITEM_TYPE_GENOME 			= <TMPL_VAR NAME="ITEM_TYPE_GENOME">,
 	ITEM_TYPE_EXPERIMENT		= <TMPL_VAR NAME="ITEM_TYPE_EXPERIMENT">;
 
+var selected_item_id;
+var item_info_cache; // FIXME: move into own module
+	
 $(function() {
 	// Initialize globals
 	pageObj.timestamp = new Array();
 	pageObj.timer = new Array();
 	pageObj.timer['item'] = null;
 	pageObj.timestamp['idle'] = new Date().getTime();
-
+	clear_info_cache();
+	
 	// Initialize AJAX
 	$.ajaxSetup({
 		type: "GET",
@@ -73,7 +123,7 @@ $(function() {
 	$("#send_menu").menu().css({ position: 'absolute', width: '90px' });
 
 	// Get starting page from URL if set
-	var toc_id = getURLParameter('p');
+	var toc_id = parseInt( getURLParameter('p') );
 	if (!toc_id || toc_id == 'null') {
 		toc_id = ITEM_TYPE_MINE;
 	}
@@ -81,7 +131,6 @@ $(function() {
 	// Initialize main panels
 	exit_item(); // initialize info panel
 	toc_select(toc_id); // initialize toc panel
-	select_item(); // initialize content icon buttons
 
 	// Setup idle timer
 	$(document).mousemove(function() {
@@ -103,7 +152,6 @@ $(function() {
 	
 	// Initialize confirm cancel job dialog
     $("#cancel_dialog").dialog({
-    	height: 180,
     	modal: true,
     	buttons: {
     		No: function() {
@@ -119,7 +167,6 @@ $(function() {
 	// Initialize comment dialog
     $("#comment_dialog").dialog({
     	width: 400,
-    	height: 180,
     	modal: true,
     	buttons: {
     		OK: function() {
@@ -142,7 +189,11 @@ function getURLParameter(name) {
 }
 
 function poll() {
-	get_contents(1);
+	// Refresh contents
+	get_contents(1, pageObj.content_type);
+	
+	// Refresh item info cache
+	clear_info_cache();
 }
 
 function schedule_poll(now) {
@@ -171,10 +222,6 @@ function cancel_poll() {
 }
 
 function toc_toggle_children(toc_id, num_children) {
-	//class="link ui-icon ui-icon-triangle-1-s"
-//	$('#toc_'+toc_id)
-//		.next()
-//		.toggleClass('ui-icon-triangle-1-s ui-icon-triangle-1-e');
 	$('#toc_'+toc_id)
 	.next()
 	.attr('src', function(idx, oldSrc) {
@@ -186,93 +233,211 @@ function toc_toggle_children(toc_id, num_children) {
 		.toggle();
 }
 
-function enter_item(obj) {
-	if (pageObj.timer['item']) {
-		clearTimeout(pageObj.timer['item']);
-	}
+function clear_info_cache(id) {
+	if (id)
+		delete item_info_cache[id];
+	else
+		item_info_cache = new Array();
+}
 
-	pageObj.timer['item'] = setTimeout(
-		function() {
-			$.ajax({
-				data: {
-					fname: 'get_item_info',
-					item_spec: obj.id,
-					timestamp: new Date().getTime()
-				},
-				success : function(data) {
-					if (data) {
-						var obj = jQuery.parseJSON(data);
-						var myName = arguments.callee.toString();
-						if (!pageObj.timestamp[myName] || obj.timestamp >= pageObj.timestamp[myName]) {
-							pageObj.timestamp[myName] = obj.timestamp;
-							$('#info_panel').html(obj.html);
-						}
-					}
-				}
-			});
-		},
-		500
-	);
+function refresh_info_cache() {
+	clear_info_cache();
+	
+	var selected = get_selected_items();
+	selected.each(function(index, obj) {
+		get_item_info(obj.parentNode);
+	});
+}
+
+function add_to_info_cache(id, value) {
+	item_info_cache[id] = value;
+}
+
+function get_from_info_cache(id) {
+	return item_info_cache[id];
 }
 
 function default_info() {
-	$('#info_panel').html("Hover over an item to view additional info.<br><br>Select one or more items to share, organize, delete, or send them to one of CoGe's tools.");
+	var text = "";
+	switch(pageObj.content_type) {
+		case ITEM_TYPE_ACTIVITY_SUMMARY:
+			text = "Here is a summary of all analyses you have performed.";
+			break;
+		case ITEM_TYPE_ACTIVITY_ANALYSES:
+			text = "These are the analyses you have performed or started.<br><br>" + 
+				"Select an analysis to open the current progress or finished result in a new tab.<br><br>" +
+				"Use the icons to the left of each analysis to 'Favorite' it, add comments, or cancel (if running).";
+			break;
+		case ITEM_TYPE_ACTIVITY_LOADS:
+			text = "These are the data loading workflows you have performed or started.<br><br>" +
+				"Select an item to open the current progress or finished result in a new tab.";
+			break;
+		case ITEM_TYPE_ACTIVITY_VIZ:
+			text = "Woah, cool!";
+			break;
+		case ITEM_TYPE_TRASH:
+			text = "These are items you deleted.<br><br>" +
+				"Hover over an item to view additional info. Select one or more items to undelete.";
+			break;
+		case ITEM_TYPE_SHARED:
+			text = "These are data items that your collaborators shared with you.<br><br>" +
+				"Hover over an item to view additional info. Select one or more items to share with others or add to a notebook.";
+			break;
+		case ITEM_TYPE_MINE:
+		case ITEM_TYPE_NOTEBOOK:
+		case ITEM_TYPE_GENOME:
+		case ITEM_TYPE_EXPERIMENT:
+			text = "These are data items that you added to the system.<br><br>" +
+				"Hover over an item to view additional info. Select one or more items to share, organize, delete, or send them to one of CoGe's tools.";
+			break;
+		case ITEM_TYPE_GROUP:
+			text = "You are a member of these user groups.<br><br>" +
+				"Hover over a group to view additional info. Select one or more groups to edit or delete."; 
+			break;
+	}
+	$('#info_panel').html(text);
+}
+
+function get_item_info(obj) {
+	var info = get_from_info_cache(obj.id);
+	if ( info ) {
+		$('#info_panel').html(info);
+		return;
+	}
+
+	$.ajax({
+		data: {
+			fname: 'get_item_info',
+			item_spec: obj.id,
+			timestamp: new Date().getTime()
+		},
+		success : function(data) {
+			if (data) {
+				var result = jQuery.parseJSON(data);
+				var myName = arguments.callee.toString();
+				if (!pageObj.timestamp[myName] || result.timestamp >= pageObj.timestamp[myName]) {
+					pageObj.timestamp[myName] = result.timestamp;
+					add_to_info_cache(obj.id, result.html);
+					$('#info_panel').html(result.html);
+				}
+			}
+		}
+	});
+}
+
+function enter_item(obj) {
+	if (selected_item_id)
+		return;
+	
+	if (pageObj.timer['item'])
+		clearTimeout(pageObj.timer['item']);
+
+	pageObj.timer['item'] = setTimeout( get_item_info(obj), 500 );
 }
 
 function exit_item(obj) {
-	if (pageObj.timer['item']) {
+	if (selected_item_id)
+		return;
+	
+	if (pageObj.timer['item'])
 		clearTimeout(pageObj.timer['item']);
-	}
+	
 	pageObj.timer['item'] = setTimeout(
 		default_info,
 		500
 	);
 }
 
+function update_info() {
+	var selected = get_selected_items();
+	var num_items = selected.length;
+
+	if (num_items > 0) {
+		if (num_items == 1) {
+			var item = selected[0].parentNode;
+			get_item_info(item);
+		}
+		else
+			$('#info_panel').html(num_items + ' item' + (num_items > 1 ? 's' : '') + ' selected.<br><br>Click an action icon at the top to share, organize, delete, or analyze.');
+	}
+	else {
+		default_info();
+		selected_item_id = null;
+	}
+	
+	update_icons();
+}
+
+function click_item(item) {
+	$('#'+item.id).toggleClass('coge-selected')
+	update_info();
+}
+
+function select_item(item) {
+	clear_selected_items();
+	
+	$('#'+item.id)
+		.addClass('coge-selected')
+		.find('input[type=checkbox]')
+		.prop('checked', true);
+	selected_item_id = item.id;
+	
+	$('#info_panel').html('<img src="picts/ajax-loader.gif"/>');
+	update_info(item);
+}
+
+function open_item(title, link) {
+	title = title + "<br><a class='xsmall' href='"+link+"' target=new>[Open in new tab]</a> ";
+	link = link + "&embed=1";
+	var d = $('<div class="dialog_box" title="'+title+'"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
+		.dialog({
+			width: '80%',
+			height: '500',
+		})
+		.dialog('open');
+}
+
 function get_selected_items() {
 	return $('#contents_table input[type=checkbox]').filter(':checked').filter(':not(:hidden)');
+}
+
+function clear_selected_items() {
+	$('.coge-list-item,.coge-selected').removeClass('coge-selected');
+	$('#contents_table input[type=checkbox]').filter(':checked').prop('checked', false);
+	update_icons();
+	selected_item_id = null;
+}
+
+function get_item_id(obj) {
+	return obj.id.match(/content_(\w+)_\w+/)[1];
 }
 
 function get_item_type(obj) {
 	return obj.id.match(/content_\w+_(\w+)/)[1];
 }
 
-function select_item() {
-	var selected = get_selected_items();
-	var num_items = selected.length;
-
-	if (num_items > 0) {
-		$('.item-button').removeClass('ui-state-disabled');
-		$('#info_panel').html(num_items + ' item' + (num_items > 1 ? 's' : '') + ' selected.<br><br>Click an action icon at the top to share, organize, delete, or analyze.');
-	}
-	else {
-		$('.item-button').addClass('ui-state-disabled');
-		default_info();
-	}
-}
-
 function sync_items(html) {
-	var content1 = $('#contents_table div');
-	var content2 = $(html).filter('div');
+	var content1 = $('#contents_table .coge-list-item');
+	var content2 = $(html).filter('.coge-list-item'); // FIXME: this is slow
 
 	var insertIndex = 0;
 	content2.each(
 		function() {
-			var match = document.getElementById(this.id);//content1.filter('#'+this.id).get(0);
-			if (!match) { // item doesn't exist
+			var match = document.getElementById(this.id);
+			if (!match) // item doesn't exist
 				$(this).insertBefore( content1.get(insertIndex) );
-			}
 			else { // item exists
-				var checked = $(match).children('input[type=checkbox]').is(':checked');
-				$(this).children('input[type=checkbox]').prop('checked', checked);
-				$(match).replaceWith(this);
+				var src_info = $(this).find('span[name="info"]').html();
+				var dest = $(match).find('span[name="info"]');
+				if (dest.html() !== src_info)
+					dest.html(src_info);
 				insertIndex++;
 			}
 		}
 	);
 }
 
-function get_contents(sync) {
+function get_contents(sync, item_type) {
 	$('#refresh_label').show();
 	
 	var myName = arguments.callee.toString();
@@ -286,6 +451,7 @@ function get_contents(sync) {
 	$.ajax({
 		data: {
 			fname: 'get_contents',
+			item_type: item_type,
 			last_update: lastUpdate,
 			timestamp: pageObj.timestamp[myName]
 		},
@@ -319,7 +485,7 @@ function filter_contents() {
 	var search_term = $('#search_input').val();
 	search_term = search_term.toLowerCase();
 
-	$('#contents_table div').each(
+	$('#contents_table div.coge-list-item').each(
 		function() {
 			var item_type = get_item_type(this);
 			var show;
@@ -334,7 +500,8 @@ function filter_contents() {
 						&& item_type != ITEM_TYPE_ACTIVITY_SUMMARY 
 						&& item_type != ITEM_TYPE_ACTIVITY_ANALYSES
 						&& item_type != ITEM_TYPE_ACTIVITY_VIZ
-						&& item_type != ITEM_TYPE_GROUP;
+						&& item_type != ITEM_TYPE_GROUP
+						&& item_type != ITEM_TYPE_NOTEBOOK;
 			}
 			else if (pageObj.content_type == ITEM_TYPE_SHARED) {
 				show = $(this).hasClass('shared')
@@ -362,7 +529,18 @@ function filter_contents() {
 	);
 }
 
+function update_icons(on) {
+	var selected = get_selected_items();
+	if ( selected.length > 0) 
+		$('.item-button:not(#add_button)').removeClass('coge-disabled');
+	else
+		$('.item-button:not(#add_button)').addClass('coge-disabled');
+}
+
 function toc_select(toc_id) {
+	if (toc_id == pageObj.content_type) 
+		return;
+	
 	pageObj.content_type = toc_id;
 
 	// Clear search bar
@@ -371,35 +549,38 @@ function toc_select(toc_id) {
 	// Show/hide action icons based on type of data
 	switch(toc_id) {
 		case ITEM_TYPE_MINE:
-		case ITEM_TYPE_NOTEBOOK:
 		case ITEM_TYPE_GENOME:
 		case ITEM_TYPE_EXPERIMENT:
-			$('#undelete_button,#group_button').hide();
+			$('#undelete_button,#edit_button,#add_button').hide();
 			$('#share_button,#notebook_button,#delete_button,#send_button').show();
 			break;
+		case ITEM_TYPE_NOTEBOOK:
+			$('#undelete_button,#edit_button,#notebook_button').hide();
+			$('#share_button,#delete_button,#send_button,#add_button').show();
+			break;
 		case ITEM_TYPE_TRASH:
-			$('#share_button,#notebook_button,#group_button,#delete_button,#send_button').hide();
+			$('#share_button,#notebook_button,#edit_button,#delete_button,#send_button,#add_button').hide();
 			$('#undelete_button').show();
 			break;
 		case ITEM_TYPE_GROUP:
 			$('#notebook_button,#send_button,#share_button,#undelete_button').hide();
-			$('#group_button,#delete_button').show();
+			$('#edit_button,#delete_button,#add_button').show();
 			break;
 		case ITEM_TYPE_SHARED:
-			$('#group_button,#delete_button,#send_button,#undelete_button').hide();
+			$('#edit_button,#delete_button,#send_button,#undelete_button,#add_button').hide();
 			$('#share_button,#notebook_button').show();
 			break;
 		case ITEM_TYPE_ACTIVITY_ANALYSES:
 		case ITEM_TYPE_ACTIVITY_LOADS:
-			$('#share_button,#notebook_button,#group_button,#delete_button,#send_button,#undelete_button').hide(); // hide all
+			$('#share_button,#notebook_button,#edit_button,#delete_button,#send_button,#undelete_button,#add_button').hide(); // hide all
 			break;
 		case ITEM_TYPE_ACTIVITY_SUMMARY:
 		case ITEM_TYPE_ACTIVITY_VIZ:
-			$('#share_button,#notebook_button,#group_button,#delete_button,#send_button,#undelete_button').hide(); // hide all
+			$('#share_button,#notebook_button,#edit_button,#delete_button,#send_button,#undelete_button,#add_button').hide(); // hide all
 			$('#search_input').hide();
 			break;
 		default:
-			$('#share_button,#notebook_button,#group_button,#delete_button,#send_button,#undelete_button').hide(); // hide all
+			$('#share_button,#notebook_button,#edit_button,#delete_button,#send_button,#undelete_button,#add_button').hide(); // hide all
 	}
 	
 	// Icons are set to invisible on load to prevent flickering
@@ -408,9 +589,10 @@ function toc_select(toc_id) {
 	// Refilter based on content selection
 	filter_contents();
 	
-	// Reselect any selected items
-	select_item();
-
+	// Clear selected items
+	clear_selected_items();
+	default_info();
+	
 	// Show TOC item as selected
 	$('#toc_'+toc_id)
 		.parent()
@@ -433,7 +615,7 @@ function delete_items() {
 			function() {
 				selected.parent().addClass('deleted');
 				selected.prop('checked', false);
-				select_item(); // reset button states
+				update_info(); // reset button states
 			}
 		);
 
@@ -456,7 +638,7 @@ function undelete_items() {
 			function() {
 				selected.parent().removeClass('deleted');
 				selected.prop('checked', false);
-				select_item(); // reset button states
+				update_info(); // reset button states
 			}
 		);
 
@@ -541,7 +723,7 @@ function comment_job(id, comment) {
 function add_to_notebook_dialog() {
 	var selected = get_selected_items();
 	if (selected.length) {
-		$('#add_to_notebook_dialog').dialog({width:500,height:250}).dialog('open');
+		$('#add_to_notebook_dialog').dialog({width:500}).dialog('open');
 	}
 }
 
@@ -636,6 +818,7 @@ function remove_items_from_user_or_group(target_item) {
 			success : function(data) {
 				if (data) {
 					$('#share_dialog').html(data);
+					refresh_info_cache();
 				}
 			}
 		});
@@ -658,6 +841,7 @@ function add_items_to_user_or_group() {
 			success : function(data) {
 				if (data) {
 					$('#share_dialog').html(data);
+					refresh_info_cache();
 				}
 			}
 		});
@@ -781,6 +965,15 @@ function remove_user_from_group(user_id) {
 	}
 }
 
+function edit_dialog() {
+	if (pageObj.content_type == ITEM_TYPE_GROUP) {
+		group_dialog();
+	}
+//	else if (pageObj.content_type == ITEM_TYPE_NOTEBOOK) {
+//		add_to_notebook_dialog();
+//	}
+}
+
 function hide_top_panel() {
 	top_panel_height = $('#top_panel').height();
 	$('#top_panel').slideUp('slow',
@@ -865,14 +1058,21 @@ function create_menu() {
 
 function create_group_dialog() {
 	$('#edit_group_name,#edit_group_desc').val('');
-	$('#create_group_dialog').dialog({width:400,height:220}).dialog('open');
+	$('#create_group_dialog').dialog({width:400}).dialog('open');
 	$('#create_menu').hide();
 }
 
 function create_notebook_dialog() {
 	$('#edit_notebook_name,#edit_notebook_desc').val('');
-	$('#create_notebook_dialog').dialog({width:400,height:220}).dialog('open');
+	$('#create_notebook_dialog').dialog({width:400}).dialog('open');
 	$('#create_menu').hide();
+}
+
+function add_dialog() {
+	if (pageObj.content_type == ITEM_TYPE_GROUP)
+		create_group_dialog();
+	else if (pageObj.content_type == ITEM_TYPE_NOTEBOOK)
+		create_notebook_dialog();
 }
 
 function create_new_group() {
@@ -991,7 +1191,7 @@ function toggle_star(img) {
 	});
 }
 
-</SCRIPT>
+</script>
 
 <div id="top_panel">
 	<div style="width:100%;float:left;border-bottom:1px solid lightgray;">
@@ -1023,34 +1223,43 @@ function toggle_star(img) {
 		</div>
 	</div>
 
-	<div style="float:left;width:145px;float:left;margin-right:15px;">
-		<div id="toc_panel" class="small panel" style="overflow:auto;padding-right:20px;border-right:1px solid lightgray;margin-bottom:20px;">
+	<div style="float:left;float:left;margin-right:15px;">
+	    <span id="create_button" class='ui-button ui-button-icon-right ui-corner-all coge-button coge-button-right' style="font-size:1em;padding-top:5px;padding-bottom:5px;" onclick="create_menu();">CREATE<span class="ui-icon ui-icon-triangle-1-s"></span></span>
+	    <div id="toc_panel" class="small panel" style="overflow:auto;padding-top:15px;padding-right:20px;">
 			<TMPL_VAR NAME='TOC'>
 		</div>
-		<span id="create_button" class='ui-button ui-corner-all ui-button-icon-right' style="font-size:0.85em;" onclick="create_menu();">CREATE<span class="ui-icon ui-icon-triangle-1-s"></span></span>
-		<ul id="create_menu" class="small hidden">
-			<li><a onclick="create_group_dialog();">New Group</a></li>
-			<li><a onclick="create_notebook_dialog();">New Notebook</a></li>
-			<li><a onclick="window.open('LoadGenome.pl');">Load Genome</a></li>
-			<li><a onclick="window.open('LoadAnnotation.pl');">Load Annotation</a></li>
-			<li><a onclick="window.open('LoadExperiment.pl');">Load Experiment</a></li>
+		<ul id="create_menu" class="coge-menu hidden" style="min-width:15em;white-space:nowrap;">
+			<li><a onclick="create_group_dialog();"><img src="picts/group-icon.png" width="15" height="15"/> New User Group for Sharing</a></li>
+			<li><a onclick="create_notebook_dialog();"><img src="picts/notebook-icon.png" width="15" height="15"/> New Notebook</a></li>
+			<li><a onclick="window.open('LoadGenome.pl');"><img src="picts/dna-icon.png" width="15" height="15"/> New Genome <span class="ui-icon ui-icon-extlink"></span></a></li>
+			<!--<li><a onclick="window.open('LoadAnnotation.pl');"><img src="picts/group-icon.png" width="15" height="15"/> New Annotation <span class="ui-icon ui-icon-extlink"></span></a></li>-->
+			<li><a onclick="window.open('LoadExperiment.pl');"><img src="picts/testtube-icon.png" width="15" height="15"/> New Experiment <span class="ui-icon ui-icon-extlink"></span></a></li>
 		</ul>
 	</div>
 
 	<div style="height:24px;">
-		<span id="contents_title" style="float:left;width:130px;font-weight:bold;"></span>
-		<span id="share_button" onClick="share_dialog();" class="invisible item-button link ui-icon ui-icon-person ui-state-disabled" style="margin-left:20px;margin-right:5px;border:1px solid lightgray;"></span>
-		<span id="notebook_button" onClick="add_to_notebook_dialog();" class="invisible item-button link ui-icon ui-icon-folder-collapsed ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
-		<span id="group_button" onClick="group_dialog();" class="invisible item-button link ui-icon ui-icon-gear ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
-		<span id="delete_button" onClick="delete_items();" class="invisible item-button link ui-icon ui-icon-trash ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
-		<span id="send_button" onClick="send_menu();" class="invisible item-button link ui-icon ui-icon-arrowthick-1-e ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+		<span id="contents_title" style="float:left;min-width:130px;font-weight:bold;margin-right:20px;"></span>
+		<span id="add_button" onClick="add_dialog();" class="coge-icon glyphicon glyphicon-plus item-button invisible" style="margin-right:5px;" title="Create New Item"></span>
+		<span id="share_button" onClick="share_dialog();" class="coge-icon coge-disabled glyphicon glyphicon-user item-button invisible" style="margin-right:5px;" title="Share Selected Items"></span>
+		<span id="notebook_button" onClick="add_to_notebook_dialog();" class="coge-icon coge-disabled glyphicon glyphicon-folder-open item-button invisible" style="margin-right:5px;" title="Add Selected Items to Notebook"></span>
+		<span id="edit_button" onClick="edit_dialog();" class="coge-icon coge-disabled glyphicon glyphicon-cog item-button invisible" style="margin-right:5px;" title="Edit Selected Items"></span>
+		<span id="delete_button" onClick="delete_items();" class="coge-icon coge-disabled glyphicon glyphicon-trash item-button invisible" style="margin-right:5px;" title="Undelete Selected Items"></span>
+		<span id="send_button" onClick="send_menu();" class="coge-icon coge-disabled glyphicon glyphicon-arrow-right item-button invisible" style="margin-right:5px;" title="Send Selected Items to ..."></span>
+		<span id="undelete_button" onClick="undelete_items();" class="coge-icon coge-disabled glyphicon glyphicon-asterisk item-button invisible" style="margin-right:5px;" title="Undelete Selected Items"></span>
 		<ul id="send_menu" class="small hidden">
 			<li><a onclick="send_items_to('CoGeBlast', 2);">CoGeBlast</a></li>
 			<li><a onclick="send_items_to('SynFind');">SynFind</a></li>
 			<li><a onclick="send_items_to('SynMap', 1);">SynMap</a></li>
 			<li><a onclick="send_items_to('GEvo', 1);">GEvo</a></li>
 		</ul>
+		<!--
+		<span id="share_button" onClick="share_dialog();" class="invisible item-button link ui-icon ui-icon-person ui-state-disabled" style="margin-left:20px;margin-right:5px;border:1px solid lightgray;"></span>
+		<span id="notebook_button" onClick="add_to_notebook_dialog();" class="invisible item-button link ui-icon ui-icon-folder-collapsed ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+		<span id="group_button" onClick="group_dialog();" class="invisible item-button link ui-icon ui-icon-gear ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+		<span id="delete_button" onClick="delete_items();" class="invisible item-button link ui-icon ui-icon-trash ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+		<span id="send_button" onClick="send_menu();" class="invisible item-button link ui-icon ui-icon-arrowthick-1-e ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
 		<span id="undelete_button" onClick="undelete_items();" class="invisible item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
+		-->
 		<input id="search_input" type="search" placeholder="Search" size="25" style="float:right;margin-right:15px;vertical-align:top;border:1px solid lightgray;" onkeyup="filter_contents();" onsearch="filter_contents();" />
 		<span id="refresh_label" class="xsmall hidden info" style="float:right;padding-right:25px;">Refreshing...</span>
 	</div>
@@ -1105,7 +1314,7 @@ function toggle_star(img) {
 		</tr>
 	</table>
 	<br><br>
-	<span onClick="create_new_group();" class="ui-button ui-corner-all ui-button-go">Create Group</span>
+	<span onClick="create_new_group();" class="ui-button ui-corner-all">Create Group</span>
 </div>
 
 <div id="create_notebook_dialog" class="dialog_box hidden" title="Create New Notebook">
@@ -1128,7 +1337,7 @@ function toggle_star(img) {
 		</tr>
 	</table>
 	<br><br>
-	<span onClick="create_new_notebook();" class="ui-button ui-corner-all ui-button-go">Create Notebook</span>
+	<span onClick="create_new_notebook();" class="ui-button ui-corner-all">Create Notebook</span>
 </div>
 
 <div id="share_dialog" class="dialog_box hidden" title="Share Items"></div>
@@ -1164,19 +1373,24 @@ function toggle_star(img) {
 
 <TMPL_IF NAME="DO_CONTENTS">
 	<TMPL_LOOP NAME="CONTENTS_ITEM_LOOP">
-		<div id="content_<TMPL_VAR NAME='CONTENTS_ITEM_ID'>_<TMPL_VAR NAME='CONTENTS_ITEM_TYPE'>" style="border-bottom:1px solid lightgray;padding:3px;padding-left:<TMPL_VAR NAME='CONTENTS_ITEM_INDENT'>px;" class="hidden <TMPL_IF NAME='CONTENTS_ITEM_DELETED'>deleted</TMPL_IF> <TMPL_IF NAME='CONTENTS_ITEM_SHARED'>shared</TMPL_IF>">
-			<TMPL_IF NAME="CONTENTS_ITEM_SELECTABLE">
-				<input type="checkbox" style="margin-right:8px;" onclick="select_item();" />
-			</TMPL_IF>
-			<TMPL_VAR NAME="CONTENTS_ITEM_ICON">
-			<TMPL_IF NAME='CONTENTS_ITEM_LINK'>
-				<span class="link" onmouseover="enter_item(this.parentNode);" onmouseout="exit_item(this.parentNode);" onclick="window.open('<TMPL_VAR NAME="CONTENTS_ITEM_LINK">');">
-			</TMPL_IF>
-			<TMPL_VAR NAME="CONTENTS_ITEM_INFO">
-			<TMPL_IF NAME='CONTENTS_ITEM_LINK'>	
+		<TMPL_IF NAME="CONTENTS_FORMAT_1">
+			<div id="content_<TMPL_VAR NAME='CONTENTS_ITEM_ID'>_<TMPL_VAR NAME='CONTENTS_ITEM_TYPE'>" class="hidden coge-list-item coge-unselectable <TMPL_IF NAME='CONTENTS_ITEM_DELETED'>deleted</TMPL_IF> <TMPL_IF NAME='CONTENTS_ITEM_SHARED'>shared</TMPL_IF>">
+				<TMPL_VAR NAME="CONTENTS_ITEM_ICON">
+				<span name="info" class="link" <TMPL_IF NAME='CONTENTS_ITEM_LINK'>onclick="window.open('<TMPL_VAR NAME="CONTENTS_ITEM_LINK">');</TMPL_IF>">
+					<TMPL_VAR NAME="CONTENTS_ITEM_INFO">
 				</span>
-			</TMPL_IF>
-		</div>
+			</div>
+		<TMPL_ELSE>
+			<div id="content_<TMPL_VAR NAME='CONTENTS_ITEM_ID'>_<TMPL_VAR NAME='CONTENTS_ITEM_TYPE'>" onmouseover="enter_item(this);" onmouseout="exit_item(this);" class="hidden coge-list-item coge-highlight coge-unselectable <TMPL_IF NAME='CONTENTS_ITEM_DELETED'>deleted</TMPL_IF> <TMPL_IF NAME='CONTENTS_ITEM_SHARED'>shared</TMPL_IF>">
+				<TMPL_IF NAME="CONTENTS_ITEM_SELECTABLE">
+					<input type="checkbox" style="float:left;margin-right:8px;" onclick="click_item(this.parentNode);" />
+				</TMPL_IF>
+				<span style="display:block;" onclick="select_item(this.parentNode);" ondblclick="open_item('<TMPL_VAR NAME=CONTENTS_ITEM_INFO>', '<TMPL_VAR NAME=CONTENTS_ITEM_LINK>');">
+					<TMPL_VAR NAME="CONTENTS_ITEM_ICON">
+					<span name="info"><TMPL_VAR NAME="CONTENTS_ITEM_INFO"></span>
+				</span>
+			</div>
+		</TMPL_IF>
 	</TMPL_LOOP>
 </TMPL_IF>
 
