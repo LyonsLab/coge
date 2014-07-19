@@ -1453,3 +1453,32 @@ header {
 .coge-disabled {
     opacity: .35;
 }
+
+/*
+ * User Profile
+ *
+ */
+
+.coge-highlight:hover {
+    background-color: greenyellow;
+}
+
+.coge-selected {
+    background-color: greenyellow;
+}
+
+.coge-list-item {
+    border-bottom: 1px solid lightgray;
+    padding: 5px;
+    color: blue;
+    cursor: pointer;
+}
+
+.coge-unselectable {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
