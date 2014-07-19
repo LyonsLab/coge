@@ -1,12 +1,9 @@
-<span id="run_cogeblast_button" style="font-size: 1em" class='ui-button ui-button-go ui-corner-all'>Run CoGe Blast</span>
-<span id="validator" class="alert hidden"></span>
-<br>
-<br>
+<div id="validator" class="alert padded hidden"></div>
 
 <TMPL_INCLUDE NAME='widgets/GenomeSelect.tmpl'><!--<TMPL_VAR NAME=GENOME_SEARCH_STUFF>-->
-
 <br>
-<table class="ui-widget-content ui-corner-all">
+
+<table class="ui-widget-content ui-corner-all" style="width: 100%;">
   <tr valign="top">
     <td align="left">
       <b>BLAST Parameters</b>
@@ -17,7 +14,7 @@
       </div>
       -->
       <div id='blast_params'>
-        <table class="small">
+        <table>
           <tr>
             <td align="left" valign="top"><b>Type</b>
               <br>
