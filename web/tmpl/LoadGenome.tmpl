@@ -793,7 +793,7 @@ function update_dialog(request, identifier, formatter) {
       <tmpl_else>
         <input id="edit_organism" type="search" placeholder="Search" onkeyup="wait_to_search(search_organisms, this.value);" size="50" spellcheck="false" />
       </tmpl_if>
-      <span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all'>New</span>
+      <span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all coge-button'>New</span>
     </td>
   </tr>
   <tr>
@@ -804,14 +804,14 @@ function update_dialog(request, identifier, formatter) {
     <td>Type:</td>
     <td>
       <select id="select_type" style="width:230px;"></select>
-      <span id="new_type_button" onClick="$('#create_new_type_dialog').dialog('open'); activate_on_input('edit_type_name', 'create_type_button');" class='ui-button ui-corner-all'>New</span>
+      <span id="new_type_button" onClick="$('#create_new_type_dialog').dialog('open'); activate_on_input('edit_type_name', 'create_type_button');" class='ui-button ui-corner-all coge-button'>New</span>
     </td>
   </tr>
   <tr>
     <td>Source:</td>
     <td>
       <input id="edit_source" type="search" placeholder="Search" size="50" spellcheck="false" />
-      <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
+      <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all coge-button'>New</span>
     </td>
   </tr>
   <tr>
@@ -843,13 +843,15 @@ function update_dialog(request, identifier, formatter) {
   For 1-3, only sequence FASTA files can be loaded at this stage.  GFF annotation files can be loaded later on.
   For 4, both sequence and annotation associated with the specified accession are loaded.
   </div>
-<span onClick="$('#file_select_dialog').dialog('open')" class='ui-button ui-corner-all'>Add Data</span>
-<span id="files_clear" onClick="clear_list();" class='ui-state-disabled ui-button ui-corner-all'>Clear List</span>
+    <div class="panel">
+        <span onClick="$('#file_select_dialog').dialog('open')" class='ui-button ui-corner-all coge-button'>Add Data</span>
+        <span id="files_clear" onClick="clear_list();" class='ui-state-disabled ui-button ui-corner-all coge-button'>Clear List</span>
+    </div>
 <table id='file_table' class="hidden small ui-widget-content ui-corner-all" style="margin-top:5px;margin-bottom:5px;"></table>
 <br>
 <br>
 <br>
-<span id="load_genome_button" onDblClick="load_genome();" onClick="load_genome();" style="font-size:1em;float-right;" class='ui-button ui-corner-all ui-button-go'>Load Genome</span>
+<span id="load_genome_button" onDblClick="load_genome();" onClick="load_genome();" style="float-right;" class='ui-button ui-corner-all ui-button-go coge-button-lg'>Load Genome</span>
 <br>
 <br>
 <br>
@@ -868,7 +870,7 @@ function update_dialog(request, identifier, formatter) {
     </tr>
   </table>
   <br>
-  <span id="create_type_button" onClick="create_sequence_type();" class="ui-state-disabled ui-button ui-corner-all">Create new type</span>
+  <span id="create_type_button" onClick="create_sequence_type();" class="ui-state-disabled ui-button ui-corner-all coge-button r">Create new type</span>
 </div>
 
 <div id="create_new_organism_dialog" class="hidden dialog_box" title="Create New Organism">
@@ -902,7 +904,7 @@ function update_dialog(request, identifier, formatter) {
 		</table>
 	</div>
   <br>
-  <span id="create_organism_button" onClick="create_organism();" class="ui-state-disabled ui-button ui-corner-all ui-button-go">Create</span>
+  <span id="create_organism_button" onClick="create_organism();" class="ui-state-disabled ui-button ui-corner-all coge-button r">Create</span>
 </div>
 
 <div id="create_new_source_dialog" class="hidden dialog_box" title="Create New Source">
@@ -921,7 +923,7 @@ function update_dialog(request, identifier, formatter) {
     </tr>
   </table>
   <br>
-  <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all ui-button-go">Create</span>
+  <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all coge-button r">Create</span>
 </div>
 
 <div id="load_dialog" class="hidden dialog_box" title="Loading Genome ...">
@@ -934,14 +936,14 @@ function update_dialog(request, identifier, formatter) {
   </div>
   <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
   <span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
-  <span id="ok_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all">Load Another</span>
-  <span id="finish_button" onClick="continue_to_view();" style="float:right;" class="hidden ui-button ui-corner-all">Continue to GenomeInfo</span>
-  <span id="cancel_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go">Cancel</span>
+  <span id="ok_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">Load Another</span>
+  <span id="finish_button" onClick="continue_to_view();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">Continue to GenomeInfo</span>
+  <span id="cancel_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go coge-button">Cancel</span>
 </div>
 
 <div id="file_select_dialog" class="hidden dialog_box" title="Select Data File ...">
   <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
-  <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all">Done</span>
+  <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all coge-button">Done</span>
 </div>
 
 <TMPL_IF NAME='ADMIN_AREA'>

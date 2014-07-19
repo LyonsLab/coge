@@ -7,7 +7,8 @@ use CoGeX;
 use CoGe::Accessory::Web;
 
 use vars
-  qw($P $PAGE_TITLE $USER $coge %FUNCTION $FORM %ITEM_TYPE $MAX_SEARCH_RESULTS);
+  qw( $P $PAGE_TITLE $USER $coge %FUNCTION $FORM %ITEM_TYPE $MAX_SEARCH_RESULTS
+     $EMBED );
 
 $PAGE_TITLE = 'GenomeView';
 
@@ -21,18 +22,25 @@ $FORM = new CGI;
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param(
-        HELP => "/wiki/index.php?title=$PAGE_TITLE",
-        USER => ( $USER->user_name eq "public" ? '' : $USER->display_name ),
-        PAGE_TITLE => 'Genome Viewer',
-        LOGO_PNG   => "$PAGE_TITLE-logo.png",
-        ADJUST_BOX => 1,
-        BODY       => gen_body()
-    );
-    $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
+    my $template;
 
+    $EMBED = $FORM->param('embed');
+    if ($EMBED) {
+        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
+    }
+    else {    
+        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+        $template->param(
+            HELP => "/wiki/index.php?title=$PAGE_TITLE",
+            USER => ( $USER->user_name eq "public" ? '' : $USER->display_name ),
+            PAGE_TITLE => 'Genome Viewer',
+            LOGO_PNG   => "$PAGE_TITLE-logo.png",
+            ADJUST_BOX => 1
+        );
+        $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
+    }
+    
+    $template->param( BODY => gen_body() );
     return $template->output;
 }
 
@@ -46,7 +54,9 @@ sub gen_body {
     return 'Access denied' unless ( $USER->has_access_to_genome($genome) );
 
 	$template->param( GENOME_ID => $gid );
-	$template->param( GENOME_INFO => $genome->info );
+	$template->param( GENOME_INFO => $genome->info ) unless $EMBED;
+	$template->param( HEIGHT => ($EMBED ? '99%' : '80%') );
+	$template->param( WIDTH => ($EMBED ? '99%' : '100%') );
 
     return $template->output;
 }

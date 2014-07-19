@@ -29,7 +29,7 @@ no warnings 'redefine';
 use vars qw(
   $P $PAGE_TITLE $TEMPDIR $SECTEMPDIR $LOAD_ID $USER $config $coge $FORM %FUNCTION
   $MAX_SEARCH_RESULTS $LINK $node_types $ERROR $HISTOGRAM $TEMPURL $SERVER $JEX
-  $JOB_ID
+  $JOB_ID $EMBED
 );
 
 $PAGE_TITLE = 'GenomeInfo';
@@ -1572,7 +1572,7 @@ sub get_annotations {
     }
 
     if ($user_can_edit) {
-        $html .= qq{<span onClick="add_annotation_dialog();" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>};
+        $html .= qq{<div class="panel"><span onClick="add_annotation_dialog();" class='ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left'><span class="ui-icon ui-icon-plus"></span>Add</span></div>};
     }
 
     return $html;
@@ -2004,24 +2004,34 @@ sub get_download_path {
 }
 
 sub generate_html {
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= ' ' . $USER->last_name
-      if ( $USER->first_name && $USER->last_name );
+    my $template;
 
-    my $template =
-      HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param(
-        PAGE_TITLE => $PAGE_TITLE,
-        PAGE_LINK  => $LINK,
-        HELP       => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl',
-        USER       => $name,
-        LOGO_PNG   => $PAGE_TITLE . "-logo.png",
-        BODY       => generate_body(),
-        ADJUST_BOX => 1,
-        LOGON      => ( $USER->user_name ne "public" )
-    );
+    $EMBED = $FORM->param('embed');
+    if ($EMBED) {
+        $template =
+          HTML::Template->new(
+            filename => $config->{TMPLDIR} . 'embedded_page.tmpl' );
+    }
+    else {
+        my $name = $USER->user_name;
+        $name = $USER->first_name if $USER->first_name;
+        $name .= ' ' . $USER->last_name
+          if ( $USER->first_name && $USER->last_name );
+    
+        $template =
+          HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
+        $template->param(
+            PAGE_TITLE => $PAGE_TITLE,
+            PAGE_LINK  => $LINK,
+            HELP       => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl',
+            USER       => $name,
+            LOGO_PNG   => $PAGE_TITLE . "-logo.png",
+            ADJUST_BOX => 1,
+            LOGON      => ( $USER->user_name ne "public" )
+        );
+    }
 
+    $template->param( BODY => generate_body() );
     return $template->output;
 }
 

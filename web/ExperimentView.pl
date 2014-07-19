@@ -298,7 +298,7 @@ sub get_annotations {
     }
 
     if ($user_can_edit) {
-        $html .= qq{<span onClick="add_annotation_dialog();" style="font-size: .75em" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>};
+        $html .= qq{<div class="padded"><span onClick="add_annotation_dialog();" class='ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left'><span class="ui-icon ui-icon-plus"></span>Add</span></div>};
     }
 
     return $html;
@@ -661,23 +661,23 @@ sub get_experiment_info {
 
     my $html;
     $html .= $exp->annotation_pretty_print_html( allow_delete => $allow_edit );
-    $html .= qq{<a style="font-size: .75em; color: black; float:right;" target="_blank" class='ui-button ui-corner-all ui-button-icon-right' href="GenomeView.pl?gid=$gid&tracks=experiment$eid">View<span class="ui-icon ui-icon-extlink"></span></a>};
 
-    $html .= "<div class='inline'>";
+    $html .= "<div class='inline padded'>";
 
     if ($allow_edit) {
-        $html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="edit_experiment_info();">Edit Info</span>};
-        $html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="\$('#experiment_type_edit_box').dialog('open');">Add Type</span>};
+        $html .= qq{<span class='ui-button ui-corner-all coge-button' onClick="edit_experiment_info();">Edit Info</span>};
+        $html .= qq{<span class='ui-button ui-corner-all coge-button' onClick="\$('#experiment_type_edit_box').dialog('open');">Add Type</span>};
     }
 
     if ( $USER->is_admin || $USER->is_owner( experiment => $eid ) ) {
         if ( $exp->restricted ) {
-            $html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_experiment_public();">Make Public</span>};
+            $html .= qq{<span class='ui-button ui-corner-all coge-button' onClick="make_experiment_public();">Make Public</span>};
         }
         else {
-            $html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_experiment_private();">Make Private</span>};
+            $html .= qq{<span class='ui-button ui-corner-all coge-button' onClick="make_experiment_private();">Make Private</span>};
         }
     }
+    $html .= qq{<a target="_blank" style="color: inherit;" class='ui-button ui-corner-all ui-button-icon-right coge-button coge-button-right' href="GenomeView.pl?gid=$gid&tracks=experiment$eid">View<span class="ui-icon ui-icon-extlink"></span></a>};
 
     $html .= "</div>";
 
