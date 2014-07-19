@@ -69,9 +69,16 @@
 ----------------------------------*/
 .ui-state-default, .ui-widget-content .ui-state-default { border: 1px solid #63b861; background: #eeeeee url(images/ui-bg_flat_100_eeeeee_40x100.png) 50% 50% repeat-x; font-weight: bold; color: #022202; outline: none; }
 .ui-state-default a, .ui-state-default a:link, .ui-state-default a:visited { color: #022202; text-decoration: none; outline: none; }
-.ui-state-hover, .ui-widget-content .ui-state-hover, .ui-state-focus, .ui-widget-content .ui-state-focus { border: 1px solid #63b861; background: #f8f8f8 url(images/ui-bg_glass_100_f8f8f8_1x400.png) 50% 50% repeat-x; font-weight: bold; color: #104410; outline: none; }
-.ui-state-hover a, .ui-state-hover a:hover { color: #104410; text-decoration: none; outline: none; }
-.ui-state-active, .ui-widget-content .ui-state-active { border: 1px solid #2c9929; background: #beef9f url(images/ui-bg_inset-hard_75_beef9f_1x100.png) 50% 50% repeat-x; font-weight: bold; color: #022202; outline: none; }
+
+.ui-state-hover, .ui-widget-content .ui-state-hover, .ui-state-focus,
+.ui-widget-content .ui-state-focus { }
+.ui-state-hover a, .ui-state-hover a:hover { }
+
+.ui-state-active, .ui-widget-content .ui-state-active {
+    border: 1px solid #2c9929;
+    background: #9ce76d;
+    font-weight: bold; color: #022202; outline: none;
+}
 .ui-state-active a, .ui-state-active a:link, .ui-state-active a:visited { color: #022202; outline: none; text-decoration: none; }
 
 /* Interaction Cues
@@ -93,7 +100,8 @@
 .ui-widget-content .ui-icon {background-image: url(images/ui-icons_1b6b19_256x240.png); }
 .ui-widget-header .ui-icon {background-image: url(images/ui-icons_1b6b19_256x240.png); }
 .ui-state-default .ui-icon { background-image: url(images/ui-icons_1b6b19_256x240.png); }
-.ui-state-hover .ui-icon, .ui-state-focus .ui-icon {background-image: url(images/ui-icons_27be23_256x240.png); }
+.ui-state-hover .ui-icon, .ui-state-focus .ui-icon {
+}
 .ui-state-active .ui-icon {background-image: url(images/ui-icons_454545_256x240.png); }
 .ui-state-highlight .ui-icon {background-image: url(images/ui-icons_2c9929_256x240.png); }
 .ui-state-error .ui-icon, .ui-state-error-text .ui-icon {background-image: url(images/ui-icons_fbc856_256x240.png); }

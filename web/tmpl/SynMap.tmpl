@@ -106,18 +106,15 @@
 
     <fieldset class="options ui-widget-content ui-corner-all">
         <legend style="color:#009900">Merge Syntenic Blocks</legend>
-        <ul style="padding: 0; margin: 0;">
-            <li>
-                <label>Algorithm:</label>
-                <select id="merge_algo" name="merge_algo" onchange="merge_select_check()">
-                    <option VALUE="0"> --None--
-                    <option VALUE="1" <tmpl_var name="quota_merge_select">>Quota Align Merge
-                    <option VALUE="2" <tmpl_var name="dag_merge_select">>Interative DAGChainer
-                </select>
-            </li>
-            <li>
-            <span class="small">These settings will merge neighboring syntenic blocks.  We recommend "Quota Align".</span>
-        </li>
+            <label>Algorithm:</label>
+            <select id="merge_algo" name="merge_algo" onchange="merge_select_check()">
+                <option VALUE="0"> --None--
+                <option VALUE="1" <tmpl_var name="quota_merge_select">>Quota Align Merge
+                <option VALUE="2" <tmpl_var name="dag_merge_select">>Interative DAGChainer
+            </select>
+            <small>
+                These settings will merge neighboring syntenic blocks.  We recommend "Quota Align".
+            </small>
 
         <ul style="list-style-type:none;padding:0; margin: 0" id="merge_algo_options">
             <li id="max_dist_merge">
@@ -168,7 +165,7 @@
                     <option value="ks" <tmpl_var name=ks1> >Synonymous (Ks)</option>
                     <option value="kn" <tmpl_var name=ks2> >Non-synonymous (Kn)</option>
                     <option value="kn_ks" <tmpl_var name=ks3>>Kn/Ks</option>
-                </select> substitution rates <span style="color:red">(SLOW)</span>
+                </select> substitution rates <small style="color:red">(SLOW)</small>
             </li>
             <li>
                 <label>Color scheme:</label>
@@ -197,7 +194,7 @@
                 <input type="checkbox" name="logks" value="true" id="logks" <tmpl_var name=logks> >
             </li>
             <li>
-                <span class="small" style="color:red">&nbsp;&nbsp;&nbsp;&nbsp; Only applicable to protein coding sequences (CDS vs. CDS)</span>
+                <small style="color:red">&nbsp;&nbsp;&nbsp;&nbsp; Only applicable to protein coding sequences (CDS vs. CDS)</small>
             </li>
         </ul>
     </fieldset>
@@ -265,8 +262,7 @@
                         <option value="inv" <tmpl_var name=color_type_inv> > Inversions </option>
                         <option value="diag" <tmpl_var name=color_type_diag> > Syntenic Block </option>
                     </select>
-                    <br>
-                    <span class="small" style="color:red">&nbsp;&nbsp;&nbsp;&nbsp;Synonymous rates will supercede this option.</span>
+                    <span class="small" style="color:red">Synonymous rates will supercede this option.</span>
                 </li>
                 <li>
                     <label>Dotplot axis metric:</label>
@@ -311,28 +307,14 @@
                     <input type="checkbox" name="show_non_syn" id="show_non_syn" value="true" <tmpl_var name="show_non_syn">><span><br>
                 </li>
                 <li>
-                    <label>E-mail results?</label>
-                    <input type="checkbox" value="true" id="check_email" onclick="toggle_email_field()">
-                    <div class="email_box small" style="display:none;">
-                        <table class="backbox">
-                        <tr>
-                            <td>Your E-mail Address: </td>
-                            <td>
-                                <input type="email" name="email" id="email" onBlur="address_validity_check()"
-                                    value="<tmpl_var name=email>"></input>
-                            </td>
-                            <td>
-                                <font id="email_error" class="small" style="display: none; color: red;">You have supplied an invalid e-mail address.</font>
-                            </td>
-                        </tr><tr>
-                            <td>Job Title: </td>
-                            <td>
-                                <input type="text" name="jobtitle" id="jobtitle" />
-                                <span class="ui-button ui-corner-all" onClick="fill_jobtitle()">Use Org Names</span>
-                            </td>
-                        </tr>
-                        </table>
-                    </div>
+                    <label>Your E-mail Address: </label>
+                    <input type="email" name="email" id="email" onBlur="address_validity_check()"
+                        value="<tmpl_var name=email>"></input>
+                    <span id="email_error" class="small" style="display: none; color: red;">You have supplied an invalid e-mail address.</span>
+                <li>
+                    <label>Job Title: </label>
+                    <input type="text" name="jobtitle" id="jobtitle" />
+                    <span class="ui-button ui-corner-all coge-button-sm" onClick="fill_jobtitle()">Use Org Names</span>
                 </li>
             </ul>
         </fieldset>
@@ -340,7 +322,7 @@
     </div> <!-- close tab-3 -->
 </section> <!--close tabs section-->
 <div style="padding: 15px 0 5px 0;">
-    <span style="font-size: 1em" class="ui-button ui-button-go ui-corner-all" id="synmap_go" >Generate SynMap</span>
+    <span style="font-size: 1em" class="ui-button ui-button-go ui-corner-all coge-button" id="synmap_go" >Generate SynMap</span>
 </div>
 </tmpl_if>
 
@@ -353,7 +335,7 @@
     <ul id="dialog_error" class="horizontal padded hidden">
         <li id="error_msg">An error occurred <img src="picts/thumbs_down.png"></li>
         <li id="dialog_log" class="small"></li>
-        <li id="cancel_button" class="ui-button ui-corner-all ui-button-go r">
+        <li id="cancel_button" class="ui-button ui-corner-all ui-button-go coge-button r">
             <span onClick="close_dialog($('#synmap_dialog')); load_results();" >
                 Close
             </span>
@@ -365,7 +347,7 @@
             <span>Finished!</span>
             <img src="picts/thumbs_up.png">
         </li>
-        <li id="ok_button" class="ui-button ui-corner-all r">
+        <li id="ok_button" class="ui-button ui-corner-all coge-button r">
             <span onClick="close_dialog($('#synmap_dialog')); load_results();" >
                 OK
             </span>

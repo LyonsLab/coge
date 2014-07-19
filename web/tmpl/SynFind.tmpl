@@ -30,7 +30,6 @@
     </ul>
 
 <div id="tab1">
-    <span id="run_synfind_button" style="font-size: 1em" class='ui-button ui-button-go ui-corner-all'>Run SynFind</span><BR><br>
     <TMPL_INCLUDE NAME='widgets/GenomeSelect.tmpl'>
     <br>
 
@@ -56,7 +55,7 @@
             </td>
         </tr>
         <tr class="small">
-            <td><span class="ui-button ui-corner-all" onclick="search_chain(1)">Search</span></td>
+            <td><span class="ui-button ui-corner-all coge-button" onclick="search_chain(1)">Search</span></td>
         </tr>
     </table>
 
@@ -132,6 +131,9 @@
 </div> <!--close tab 2-->
 
 </div> <!--close all tabs-->
+<div class="padded">
+    <span id="run_synfind_button" style="font-size: 1em" class='ui-button ui-button-go ui-corner-all coge-button'>Run SynFind</span><BR><br>
+</div>
 
 </TMPL_IF>
 
@@ -147,7 +149,7 @@
     <ul class="dialog-error horizontal padded hidden">
         <li id="error_msg">An error occurred <img src="picts/thumbs_down.png"></li>
         <li class="dialog-log small"></li>
-        <li id="cancel_button" class="ui-button ui-corner-all ui-button-go r">
+        <li id="cancel_button" class="ui-button ui-corner-all ui-button-go r coge-button">
             <span onClick="$('#status_dialog').dialog('close');" >
                 Close
             </span>
@@ -159,7 +161,7 @@
             <span>Finished!</span>
             <img src="picts/thumbs_up.png">
         </li>
-        <li id="ok_button" class="ui-button ui-corner-all r">
+        <li id="ok_button" class="ui-button ui-corner-all r coge-button">
             <span onClick="$('#status_dialog').dialog('close');" >
                 OK
             </span>

@@ -368,13 +368,39 @@ function update_genome_info (dsgid) {
     });
 }
 
+function export_gff () {
+    var server = '<TMPL_VAR NAME="SERVER">';
+    var link = server+"bin/export/coge_gff.pl?dsgid=";
+    link += $('#dsg_id').val();
+    if ($('#cds_only')[0].checked) {link += ";cds=1";}
+    if ($('#annos')[0].checked) {link += ";annos=1";}
+    if ($('#name_unique')[0].checked) {link += ";nu=1";}
+    if ($('#upa')[0].checked) {link += ";upa=1";}
+    link += ";id_type="+$('#gff_id_type').val();
+    $('#export_gff_link').html("<a href="+link+" target=_new>Link: "+ link+"<\a>");
+    window.open(link);
+}
+
+function export_tbl () {
+    var server = '<TMPL_VAR NAME="SERVER">';
+    var link = server+"bin/export/export_NCBI_TBL.pl?dsgid=";
+    link += $('#dsg_id').val();
+    window.open(link);
+}
+
+function export_bed () {
+    var server = '<TMPL_VAR NAME="SERVER">';
+    var link = server+"bin/export/coge2bed.pl?gid=";
+    link += $('#dsg_id').val();
+    window.open(link);
+}
 </script>
 
 <div class="padded">
 	<div class="header">Search for organisms and genomes</div>
 	<div class="small padded" style="vertical-align:middle;width:50%;">
 		Organism: <input type="search" placeholder="Search" spellcheck="false" size="50" value="<TMPL_VAR NAME=ORG_SEARCH>" name="org_search" id="org_search" onkeyup='timing("org_search");'>
-		<span class='ui-button ui-corner-all' onClick="timing('org_search');">
+		<span class='ui-button ui-corner-all coge-button' onClick="timing('org_search');">
 			<span class="ui-icon ui-icon-arrowrefresh-1-w"></span>
 		</span>
 		<img id="busy" src="picts/ajax-loader.gif" style="opacity:0;"/>
@@ -471,10 +497,10 @@ function update_genome_info (dsgid) {
 		<option id="blank" value=null>No Genome Selected</option>
 	</select>
 	<br>
-    <span class="ui-button ui-corner-all" onClick="$('#genomelist_choice').sortSelect()">Sort List Alphabetically</span><br><br>
-    <span class="ui-button ui-corner-all" onClick="send_to_GenoList()">Send to GenomeList</span><br><br>
-    <span class="ui-button ui-corner-all" onClick="remove_selected_genomes();">Remove</span><br><br>
-    <span class="ui-button ui-corner-all" onClick="clear_genome_list()">Clear</span><br>
+    <span class="ui-button ui-corner-all coge-button" onClick="$('#genomelist_choice').sortSelect()">Sort List Alphabetically</span><br><br>
+    <span class="ui-button ui-corner-all coge-button" onClick="send_to_GenoList()">Send to GenomeList</span><br><br>
+    <span class="ui-button ui-corner-all coge-button" onClick="remove_selected_genomes();">Remove</span><br><br>
+    <span class="ui-button ui-corner-all coge-button" onClick="clear_genome_list()">Clear</span><br>
     <div id="add_all_search"></div>
 </div>
 
@@ -505,6 +531,6 @@ function update_genome_info (dsgid) {
 	     </select>
 	 </tr>
 	</table>
-	<span class="ui-button ui-corner-all ui-button-go" onClick="export_gff('$dsgid')">Export GFF File</span><br><br>
+	<span class="ui-button ui-corner-all ui-button-go coge-button" onClick="export_gff('$dsgid')">Export GFF File</span><br><br>
 	<span class="small" id="export_gff_link"></span>
 </div>
