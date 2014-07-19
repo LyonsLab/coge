@@ -917,6 +917,10 @@ dd {
 	background:greenyellow;
 }
 
+.coge-striped-even > :nth-child(even) {
+    background-color: #f5f5f5;
+}
+
 section#tabs .ui-tabs-panel {
     padding: 1em;
 }
