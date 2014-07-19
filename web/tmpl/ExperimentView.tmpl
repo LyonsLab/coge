@@ -699,7 +699,7 @@ function get_type_description (name) {
     <td><textarea id="edit_type_description" rows="5" cols="50"></textarea></td>
    </tr>
   </table>
-  <span onClick="add_type_to_experiment();" class='ui-button ui-corner-all'>Add</span>
+  <span onClick="add_type_to_experiment();" class='ui-button ui-corner-all coge-button'>Add</span>
 </div>
 
 <div id="progress_dialog" class="hidden dialog_box">
@@ -710,8 +710,8 @@ function get_type_description (name) {
     <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
     <span id="custom_msg" class="hidden"></span>
     <span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
-    <span id="ok_button" onClick="reset_load();" class="hidden r ui-button ui-corner-all">OK</span>
-    <span id="experiment_view_button" class="hidden r ui-button ui-corner-all">ExperimentView</span>
+    <span id="ok_button" onClick="reset_load();" class="hidden r ui-button ui-corner-all coge-button">OK</span>
+    <span id="experiment_view_button" class="hidden r ui-button ui-corner-all coge-button">ExperimentView</span>
 </div>
 
 <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'> <!-- Add/Edit Annotation Dialog -->
@@ -757,5 +757,5 @@ $(function() {
  </tr>
 </table>
 <br>
-<span onClick="update_experiment_info();" class='ui-button ui-corner-all'>Update</span>
+<span onClick="update_experiment_info();" class='ui-button ui-corner-all coge-button'>Update</span>
 </TMPL_IF>
