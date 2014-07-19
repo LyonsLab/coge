@@ -18,6 +18,7 @@
     "d3": "~3.4.8",
     "underscore": "~1.6.0",
     "bioplot": "https://github.com/erbriones/bioplot.git#v0.1.0",
-    "jdot": "https://github.com/LyonsLab/jdot.git"
+    "jdot": "https://github.com/LyonsLab/jdot.git",
+    "bootstrap": "~3.2.0"
   }
 }
