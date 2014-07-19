@@ -100,7 +100,9 @@ window.wikifeed = function(url, element, size) {
 
         feed.accordion({
             autoHeight: false,
-            icons: false
+            icons: false,
+            active: false,
+            collapsible: true
         });
 
         var footer = $("<a>...more...<a>").attr("href", url)

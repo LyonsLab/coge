@@ -58,7 +58,7 @@ $(document).ready(function(){
     $("#accordion4").accordion({active: false, icons: false, disabled: true}).removeClass('invisible');
 
     $("#genome_dialog").dialog({
-        title: "Latest Genomes",
+        title: "Recently Added Genomes",
         width: 450,
         autoOpen: false,
         position: {
@@ -71,7 +71,18 @@ $(document).ready(function(){
             duration: 800
         }
     });
+
+    get_latest_genomes(5).then(load_latest.bind(undefined, $("#latest-genomes")));
 });
+
+function show_genomes(e) {
+    e.preventDefault();
+    $("#genome_dialog").dialog("open");
+
+    var limit = $('#limit').val();
+    var container = $("#genomes-list").slideUp().html("");
+    get_latest_genomes(limit).then(load_latest.bind(undefined, container));
+}
 
 function getYoutubeVideos(path, callback) {
     var parseVideos = function(channel) {
@@ -128,18 +139,16 @@ function cross_fade(selector, image, delay) {
             .on("click", $.proxy(previous, this));
 
     var controls = $("<div></div>")
-        .css("margin", "50px 0 10px 0")
+        .css("margin", "0px 0 10px 0")
         .css("text-align", "center")
         .append(prev_button)
         .append(run_button)
         .append(next_button);
 
     var viewer = $("<div></div>")
-        .addClass("link")
-        .css("box-shadow", "10px 10px 5px 0px rgba(0,0,0,0.15)")
+        .addClass("xsmall link")
         .css("text-align", "center")
-        .css("border", "solid 1px lightgray")
-        .css("padding", "10px")
+        .css("padding", "5px");
 
     element.append(controls)
         .append(viewer)
@@ -150,16 +159,17 @@ function cross_fade(selector, image, delay) {
             link = "https://genomevolution.org/wiki/index.php/"+image[index][2];
 
             var elem = $(image[index][0])
-                .css("width", "90%")
-                .css("max-height", "50%");
+                .css("max-width", "100%")
+                .css("max-height", "100%");
 
             if(elem.is("iframe")) {
-                elem.css("height", "500px")
-                    .css("width", "95%")
-                    .bind("click", pause);
+                elem.bind("click", pause);
 
                 link = image[index][2];
             }
+
+            var wrapper = $("<div></div>")
+                .append(elem);
 
             var description = $("<div></div>")
                 .addClass("padded")
@@ -171,7 +181,7 @@ function cross_fade(selector, image, delay) {
             viewer.unbind()
                 .on("click", function() { window.open(link); })
                 .html("")
-                .append(elem)
+                .append(wrapper)
                 .append(description)
                 .fadeIn(duration);
         };
@@ -234,30 +244,35 @@ function cross_fade(selector, image, delay) {
     resume();
 }
 
-function get_latest_genomes() {
-    var limit = $('#limit').val();
+function load_latest(container, content) {
+    var i,
+        entry,
+        name,
+        added;
 
-    $('#latest_genomes').html('Loading...<img src="picts/ajax-loader.gif"/>');
+    for(i = 0; i < content.length; i++) {
+        console.log(content[i]);
+        entry = $("<h4></h4>");
 
-    $.ajax({
-        data: {
-            jquery_ajax: 1,
-            fname: 'get_latest_genomes',
-            limit: limit
-        },
-        success : function(html) {
-            $('#latest_genomes').fadeOut(
-                function() {
-                    $('#latest_genomes').html(html).slideDown();
-                }
-            );
-        }
-    });
+        name = $("<a></a>", { href: content[i].url, text: content[i].organism });
+        name.addClass("padded");
+
+        added = $("<small></small>", { text: "added on " + content[i].added });
+
+        entry.append(name).append(added);
+        container.append(entry);
+    }
+
+    container.slideDown();
+}
+
+function get_latest_genomes(limit) {
+    return $.getJSON("index.pl?fname=get_latest_genomes&limit="  + limit);
 }
 </SCRIPT>
 
 <TMPL_IF NAME="INTRO">
-    <div id="stats" class="shaded shadow">
+    <div id="stats" class="coge-shaded coge-shadow">
         <ul class="horizontal small bold">
                 <li>Organisms: <span style="color:darkgreen"><TMPL_VAR NAME="ORG_COUNT"></span></li>
                 <li>Genomes: <span style="color:darkgreen"><TMPL_VAR NAME="GEN_COUNT"></span></li>
@@ -267,53 +282,98 @@ function get_latest_genomes() {
         </ul>
     </div>
 
-<div id="wrapper">
-    <aside class="sidebar_left">
-        <div>
-            <h4>New to CoGe?</h4>
-            <div id="accordion2" class="invisible" style="font-size: 0.7em;">
-                <h3 onclick='window.open("https://genomevolution.org/wiki/index.php/New_to_CoGe")'>How to get started</h3>
-                <div></div>
-                <h3 onclick='window.open("https://genomevolution.org/wiki/index.php/Tutorials")'>Tutorials</h3>
-                <div></div>
-                <h3 onclick='window.open("https://genomevolution.org/wiki")'>CoGePedia docs</h3>
-                <div></div>
-                <h3 onclick='window.open("https://genomevolution.org/wiki/index.php/FAQs")'>FAQs</h3>
-                <div></div>
-            </div>
-        </div>
-        <div>
-            <h4 style="padding-top: 25px;">CoGe's Tools</h4>
-            <div style="font-size: 0.7em;">
-                <div id="accordion3" class="invisible">
-                    <TMPL_LOOP NAME="ACTIONS">
-                        <h3 onclick='window.open("<TMPL_VAR NAME=LINK>")'><TMPL_VAR NAME="ACTION"></h3>
-                        <div><TMPL_VAR NAME="DESC"></div>
-                    </TMPL_LOOP>
-                    <h3 onClick="get_latest_genomes(); $('#genome_dialog').dialog('open');">Latest Genomes</h3>
-                    <div style="min-height: 150px;">
-                    </div>
+<div class="intro">
+    <div class="coge-section coge-shadow">
+        <h3>New Users</h3>
+
+        <ul class="horizontal">
+            <li>
+                <a href="https://genomevolution.org/wiki/index.php/New_to_CoGe">Getting started</a>
+            </li>
+            <li>
+                <a href="#">Creating an Account</a>
+            </li>
+            <li>
+                <a href="https://genomevolution.org/wiki/index.php/Tutorials">Tutorials</a>
+            </li>
+            <li>
+                <a href="https://genomevolution.org/wiki">Documentation</a>
+            </li>
+            <li>
+                <a href="https://genomevolution.org/wiki/index.php/FAQs">FAQ</a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="coge-section coge-shadow">
+        <h3>Tools</h3>
+        <TMPL_LOOP NAME="ACTIONS">
+            <div class="coge-summary">
+                <a href="<tmpl_var name=LINK>" class="l">
+                    <img src="<tmpl_var name=LOGO>" style="height: 32px; width: 32px;">
+                </a>
+                <div class="coge-summary-body">
+                    <h4 class="coge-summary-heading">
+                        <a href="<tmpl_var name=LINK>"><TMPL_VAR NAME="ACTION"></a>
+                    </h4>
+                    <TMPL_VAR NAME="DESC">
                 </div>
             </div>
-        </div>
-    </aside>
+        </TMPL_LOOP>
+    </div>
 
-    <section id="content" style="color:dimgray;padding-top:25px;" class="top">
-        <span class="welcome">Welcome to CoGe</span>
-        <p>The Place for Comparative Genomics</p>
+    <div class="coge-section coge-shadow">
+        <h3>What you can do</h3>
+        <p>
+            Compare two genomes
+            <small>This is a description <a href="#">Get Started</a></small>
+        </p>
+        <p>
+            Browse a genome
+            <small>This is a description <a href="#">Get Started</a></small>
+        </p>
+        <p>
+            Load a genome
+            <small>This is a description <a href="#">Get Started</a></small>
+        </p>
+        <p>
+            Load experiment data
+            <small>This is a description <a href="#">Get Started</a></small>
+        </p>
+        <p>
+            Run the RNA-seq pipeline
+            <small>This is a description <a href="#">Get Started</a></small>
+        </p>
+
+        <p>
+            Blast against CoGe's genomes
+            <small>This is a description <a href="#">Get Started</a></small>
+        </p>
+    </div>
+
+    <div class="coge-section coge-shadow">
+        <h3>Recently Added Genomes <small>(<a href="#" onclick="show_genomes(window.event)">more</a>)</small></h3>
+        <div id="latest-genomes">
+        </div>
+    </div>
+</div>
+
+<div class="highlights">
+    <div class="coge-section coge-shadow">
+        <h3>Tutorials</h3>
         <div id="crossfade"></div>
-    </section>
-
-    <aside class="sidebar_right">
-        <div id="wikifeed">
-            <h4 style="text-align: center;">Latest News</h4>
-        </div>
-    </aside>
+    </div>
+    <div id="wikifeed" class="coge-section coge-shadow">
+        <h3>Latest News</h3>
+    </div>
 </div>
 </TMPL_IF>
 
-<div id="genome_dialog" style="display: none;">
-    Number returned: <input id="limit" class="backbox" type="textbox" size="3" value="10">
-    <span class='ui-button ui-corner-all' onClick="get_latest_genomes();">Go</span><br><br>
-    <div id="latest_genomes"></div>
+<div id="genome_dialog" style="display: none;" class="coge-section">
+    <label for="limit">Number returned:</label>
+    <input id="limit" class="backbox" type="textbox" size="3" value="10">
+    <span class='ui-button ui-corner-all coge-button' onClick="show_genomes(window.event)">Go</span>
+    <br>
+    <br>
+    <div id="genomes-list" style="max-height: 500px;" class="coge-scroll coge-striped-even"></div>
 </div>

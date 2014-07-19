@@ -10,7 +10,8 @@ use Data::Dumper;
 use CGI::Log;
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Utils qw( units commify );
+use CoGe::Accessory::Utils qw( units commify sanitize_name );
+use JSON qw(encode_json);
 use POSIX 'ceil';
 
 no warnings 'redefine';
@@ -73,7 +74,8 @@ sub generate_body {
                 {
                     ACTION => $_->{NAME},
                     DESC   => $_->{DESC},
-                    LINK   => $_->{LINK}
+                    LINK   => $_->{LINK},
+                    LOGO   => $_->{LOGO}
                 }
               } sort { $a->{ID} <=> $b->{ID} } @{ actions() }
         ]
@@ -120,31 +122,70 @@ sub generate_body {
 sub actions {
     my @actions = (
         {
-            ID => 6,
-            LOGO =>
-qq{<a href="./GEvo.pl"><img src="picts/carousel/GEvo-logo.png" width="227" height="75" border="0"></a>},
-            ACTION => qq{<a href="./GEvo.pl">GEvo</a>},
-            LINK   => qq{./GEvo.pl},
-            DESC =>
-qq{Compare sequences and genomic regions to discover patterns of genome evolution.  <a href ="GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1" target=_new>Example.</a>},
-            SCREENSHOT =>
-qq{<a href="./GEvo.pl"><img src="picts/preview/GEvo.png"border="0"></a>},
-            NAME =>
-qq{<span style="display:inline-block;width:100px;">GEvo</span>},
+            ID         => 6,
+            LOGO       => "picts/GEvo.svg",
+            ACTION     => qq{<a href="./GEvo.pl">GEvo</a>},
+            LINK       => qq{./GEvo.pl},
+            SCREENSHOT => "picts/preview/GEvo.png",
+            NAME       => "GEvo",
+            DESC       => qq{Compare sequences and genomic regions to discover patterns of genome evolution.  <a href ="GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1" target=_new>Example.</a>},
         },
         {
-            ID => 3,
-            LOGO =>
-qq{<a href="./FeatView.pl"><img src="picts/carousel/FeatView-logo.png" width="227" height="75" border="0"></a>},
-            ACTION => qq{<a href="./FeatView.pl">FeatView</a>},
-            LINK   => qq{./FeatView.pl},
-            DESC =>
-qq{Find and display information about a genomic feature (e.g. gene). <a href = "FeatView.pl?accn=at1g07300" target=_new>Example.</a>},
-            SCREENSHOT =>
-qq{<a href="./FeatView.pl"><img src="picts/preview/FeatView.png" width="400" height="241" border="0"></a>},
-            NAME =>
-qq{<span style="display:inline-block;width:100px;">FeatView</span>},
+            NAME       => "OrganismView",
+            ID         => 1,
+            LOGO       => "picts/OrganismView.svg",
+            ACTION     => qq{<a href="./OrganismView.pl">OrganismView</a>},
+            LINK       => qq{./OrganismView.pl},
+            SCREENSHOT => "picts/preview/OrganismView.png",
+            DESC       => qq{Search for organisms, get an overview of their genomic make-up, and visualize them using a dynamic, interactive genome browser. <a href="OrganismView.pl?org_name=k12" target=_new>Example.</a>},
         },
+        {
+            NAME       => "CoGeBlast",
+            ID         => 2,
+            LOGO       => "picts/CoGeBlast.svg",
+            ACTION     => qq{<a href="./CoGeBlast.pl">CoGeBlast</a>},
+            LINK       => qq{./CoGeBlast.pl},
+            SCREENSHOT => "picts/preview/Blast.png",
+            DESC       => qq{Blast sequences against any number of organisms in CoGe.},
+        },
+        {
+            NAME       => "SynMap",
+            ID         => 4,
+            LOGO       => "picts/SynMap.svg",
+            ACTION     => qq{<a href="./SynMap.pl">SynMap</a>},
+            LINK       => qq{./SynMap.pl},
+            SCREENSHOT => "picts/preview/SynMap.png",
+            DESC       => qq{Compare any two genomes to identify regions of synteny.  <a href="SynMap.pl?dsgid1=3068;dsgid2=8;D=20;g=10;A=5;w=0;b=1;ft1=1;ft2=1;dt=geneorder;ks=1;autogo=1" target=_mew>Example.</a>  <span class=small>(Powered by <a href=http://dagchainer.sourceforge.net/ target=_new>DAGChainer</a></span>)},
+        },
+        {
+            NAME       => "SynFind",
+            ID         => 4,
+            LOGO       => "picts/SynFind.svg",
+            ACTION     => qq{<a href="./SynFind.pl">SynFind</a>},
+            LINK       => qq{./SynFind.pl},
+            SCREENSHOT => "picts/preview/SynMap.png",
+            DESC       => qq{Search CoGe's annotation database for homologs.  <a>Example</a>},
+        },
+#       {
+# 		   {
+# 		    ID => 7,
+# 		    LOGO => qq{<a href="./docs/help/CoGe"><img src="picts/carousel/FAQ-logo.png" width="227" height="75" border="0"></a>},
+# 		    ACTION => qq{<a href="./docs/help/CoGe/">CoGe Faq</a>},
+# 		    DESC   => qq{What is CoGe?  This document covers some of the basics about what CoGe is, how it has been designed, and other information about the system.},
+# 		    SCREENSHOT => qq{<a href="./docs/help/CoGe"><img src="picts/preview/app_schema.png" border="0"></a>},
+# 		   }
+#        {
+#            ID => 3,
+#            LOGO => "picts/carousel/FeatView-logo.png",
+#            ACTION => qq{<a href="./FeatView.pl">FeatView</a>},
+#            LINK   => qq{./FeatView.pl},
+#            DESC =>
+#qq{Find and display information about a genomic feature (e.g. gene). <a href = "FeatView.pl?accn=at1g07300" target=_new>Example.</a>},
+#            SCREENSHOT =>
+#qq{<a href="./FeatView.pl"><img src="picts/preview/FeatView.png" width="400" height="241" border="0"></a>},
+#            NAME =>
+#qq{<span style="display:inline-block;width:100px;">FeatView</span>},
+#        },
 
 # 		   {
 # 		    ID=>3,
@@ -160,69 +201,45 @@ qq{<span style="display:inline-block;width:100px;">FeatView</span>},
 # 		    DESC   => qq{Allows users to submit a tree file and get a graphical view of their tree.  There is support for drawing rooted and unrooted trees, zooming and unzooming functions, and coloring and shaping nodes based on user specifications.},
 # 		    SCREENSHOT=>qq{<a href="./FeatView.pl"><img src="picts/preview/TreeView.png"border="0"></a>},
 # 		   },
-        {
-            ID => 1,
-            LOGO =>
-qq{<a href="./OrganismView.pl"><img src="picts/carousel/OrganismView-logo.png" width="227" height="75" border="0"></a>},
-            ACTION => qq{<a href="./OrganismView.pl">OrganismView</a>},
-            LINK   => qq{./OrganismView.pl},
-            DESC =>
-qq{Search for organisms, get an overview of their genomic make-up, and visualize them using a dynamic, interactive genome browser. <a href="OrganismView.pl?org_name=k12" target=_new>Example.</a>},
-            SCREENSHOT =>
-              qq{<img src="picts/preview/OrganismView.png" border="0"></a>},
-            NAME =>
-qq{<span style="display:inline-block;width:100px;">OrganismView</span>},
-        },
-        {
-            ID => 2,
-            LOGO =>
-qq{<a href="./CoGeBlast.pl"><img src="picts/carousel/CoGeBlast-logo.png" width="227" height="75" border="0"></a>},
-            ACTION => qq{<a href="./CoGeBlast.pl">CoGeBlast</a>},
-            LINK   => qq{./CoGeBlast.pl},
-            DESC =>
-              qq{Blast sequences against any number of organisms in CoGe.},
-            SCREENSHOT =>
-qq{<a href="./CoGeBlast.pl"><img src="picts/preview/Blast.png" width="400" height="241" border="0"></a>},
-            NAME =>
-qq{<span style="display:inline-block;width:100px;">CoGeBlast</span>},
-        },
-
-# 		   {
-# 		    ID => 7,
-# 		    LOGO => qq{<a href="./docs/help/CoGe"><img src="picts/carousel/FAQ-logo.png" width="227" height="75" border="0"></a>},
-# 		    ACTION => qq{<a href="./docs/help/CoGe/">CoGe Faq</a>},
-# 		    DESC   => qq{What is CoGe?  This document covers some of the basics about what CoGe is, how it has been designed, and other information about the system.},
-# 		    SCREENSHOT => qq{<a href="./docs/help/CoGe"><img src="picts/preview/app_schema.png" border="0"></a>},
-# 		   }
-        {
-            ID => 4,
-            LOGO =>
-qq{<a href="./SynMap.pl"><img src="picts/SynMap-logo.png"  border="0"></a>},
-            ACTION => qq{<a href="./SynMap.pl">SynMap</a>},
-            LINK   => qq{./SynMap.pl},
-            DESC =>
-qq{Compare any two genomes to identify regions of synteny.  <a href="SynMap.pl?dsgid1=3068;dsgid2=8;D=20;g=10;A=5;w=0;b=1;ft1=1;ft2=1;dt=geneorder;ks=1;autogo=1" target=_mew>Example.</a>  <span class=small>(Powered by <a href=http://dagchainer.sourceforge.net/ target=_new>DAGChainer</a></span>)},
-            SCREENSHOT =>
-qq{<a href="./SynMap.pl"><img src="picts/preview/SynMap.png" border="0" width="400" height="320"></a>},
-            NAME =>
-qq{<span style="display:inline-block;width:100px;">SynMap</span>},
-        },
-        {
-            ID => 4,
-            LOGO =>
-qq{<a href="./SynFind.pl"><img src="picts/SynFind-logo.png"  border="0"></a>},
-            ACTION => qq{<a href="./SynFind.pl">SynFind</a>},
-            LINK   => qq{./SynFind.pl},
-            SCREENSHOT =>
-qq{<a href="./SynFind.pl"><img src="picts/preview/SynMap.png" border="0" width="400" height="320"></a>},
-            NAME =>
-qq{<span style="display:inline-block;width:100px;">SynFind</span>},
-        },
     );
     return \@actions;
 }
 
 sub get_latest_genomes {
+    my %opts = @_;
+    my $limit = $opts{limit} || 5;
+
+    my @db = $coge->resultset("Genome")->search(
+        {},
+        {
+            distinct => "organism.name",
+            join     => "organism",
+            prefetch => "organism",
+            order_by => "genome_id desc",
+            rows     => $limit * 20,
+        }
+    );
+
+    my (%org_names, @genomes);
+
+    foreach my $dsg (@db) {
+        next unless $USER->has_access_to_genome($dsg);
+        next if $org_names{ $dsg->organism->name };
+        last if @genomes >= $limit;
+
+        $org_names{ $dsg->organism->name } = 1;
+
+        my $name = $dsg->organism->name;
+        my $dataset = shift $dsg->datasets;
+        my $orgview_link = "OrganismView.pl?oid=" . $dsg->organism->id;
+
+        push @genomes, { organism => $name, added => $dataset->date, url => $orgview_link };
+    }
+
+    return encode_json(\@genomes);
+}
+
+sub get_latest_old {
     my %opts = @_;
     my $limit = $opts{limit} || 20;
 
