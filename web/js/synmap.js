@@ -206,17 +206,6 @@ function display_dagchainer_settings(params,type) {
     set_dagchainer_defaults(params, type);
 }
 
-//These two functions are involved with emailing results
-function toggle_email_field() {
-    if ($('#check_email')[0].checked) {
-        $('.email_box').show(0);
-    } else {
-        $('.email_box').hide(0);
-        $('#email').val('');
-        $('#email_error').hide(0);
-    }
-}
-
 function address_validity_check(validity) {
     if (validity) {
         if(validity == 'invalid') {
@@ -1138,7 +1127,6 @@ function checkRequestSize(url) {
             $('#assemble_info').toggle();
         }
 
-        $(".options tr:even").addClass("even");
         merge_select_check();
         depth_algo_check();
 

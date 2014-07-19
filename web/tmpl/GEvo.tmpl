@@ -209,7 +209,7 @@ function return_image_info (id) {
  }
 
 Gobe.handle_html= function (html) {
-  html = "<span class='ui-button ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
+  html = "<span class='ui-button ui-corner-all coge-button-sm' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
   $('#results_info').html(html);
 
   if ( !$('#results_info').dialog('isOpen') && html && !html.match(/multiple hits/) ) {
@@ -804,9 +804,6 @@ function rand ()
   </table>
 </div>
 
-<div style="margin-bottom:10px">
-  <span id="go" style="font-size: 1em;" class='ui-button ui-button-go ui-corner-all go_run' onClick="populate_page_obj(); set_display_order(); loading([],['results']); go_run();">Run GEvo Analysis!</span>
-</div>
 
 <form method="post" enctype="multipart/form-data" name="main_form" onSubmit="">
 
@@ -819,7 +816,7 @@ function rand ()
 
 <div id="tabs-1">
 <input name="num_seqs" id="num_seqs" type="hidden" readonly value=<TMPL_VAR NAME ="NUM_SEQS">>
-  <span class='ui-button ui-corner-all ui-button-icon-left '
+  <span class='ui-button ui-corner-all ui-button-icon-left coge-button-sm coge-button-left'
   onClick="add_seq(['num_seqs'],[process_add_seq]);  $('#new_drseq').remove;"><span class="ui-icon ui-icon-plus"></span>Add Sequence</span>
 
 <!--
@@ -828,7 +825,7 @@ function rand ()
  -->
 
 <span class="small">Merge Previous GEvo Analysis (paste in URL): <input name=previous_url id=previous_url type="textbox" size=20 value=<TMPL_VAR NAME ="PANEL_URL">></span>
-  <span class='ui-button ui-corner-all ui-button-icon-left '
+  <span class='ui-button ui-corner-all ui-button-icon-left coge-button-sm coge-button-left'
   onClick="merge_previous(['previous_url','num_seqs'],[process_add_seq]); gen_hsp_colors(['args__num_seqs','num_seqs'],[add_hsp_colors]);"><span class="ui-icon ui-icon-plus"></span>Merge</span>
  <br><br>
 <span class="small note">Change order by dragging boxes.</span><br><br>
@@ -837,10 +834,10 @@ function rand ()
           <TMPL_VAR NAME="SEQ_SUB">
    </div>
    <tr><td>
-     <span class="ui-button ui-corner-all ui-button-icon-left" id="open_all_sequence_open_menus" onclick="open_all_sequence_option_menus(1);"><span class="ui-icon ui-icon-plus"></span>Open all sequence option menus</span>
-    <span class="ui-button ui-corner-all ui-button-icon-left" style="display: none" id="close_all_sequence_open_menus" onclick="open_all_sequence_option_menus(0);"><span class="ui-icon ui-icon-minus"></span>Close all sequence option menus</span>
-     <span class='ui-button ui-corner-all ui-button-icon-left' onclick="walk(1)"><span class="ui-icon ui-icon-arrowthick-1-w"></span>Walk all sequences left</span>
-       <span class='ui-button ui-corner-all ui-button-icon-right' onclick="walk(-1)"><span class="ui-icon ui-icon-arrowthick-1-e"></span>Walk all sequences right</span>
+    <span class="xsmall link padded" id="open_all_sequence_open_menus" onclick="open_all_sequence_option_menus(1);">Open all sequence option menus</span>
+    <span class="xsmall link padded" style="display: none;" id="close_all_sequence_open_menus" onclick="open_all_sequence_option_menus(0);">Close all sequence option menus</span>
+    <span class="xsmall link padded" onclick="walk(1)">Walk all sequences left</span>
+    <span class="xsmall link padded" onclick="walk(-1)">Walk all sequences right</span>
 
      <div class="small">
 <!--     Apply distance to all CoGe submissions?<input type="checkbox" name="apply_all" id="apply_all" value="0" />-->
@@ -853,7 +850,6 @@ function rand ()
      E-mail GEvo results?<input type=checkbox id=check_email onclick="toggle_email_field()"><span id=email_box style="display:none;">Your E-mail Address: <input type=text id=email onBlur='address_validity_check()'><font id=email_error style="display: none; color: red;">You have supplied an invalid e-mail address.</font></span> </div>
     </table>
 </div> <!--end div tag for tabs_1-->
-
 </TMPL_IF>
 
 <TMPL_IF NAME=OPTIONS>
@@ -1329,6 +1325,10 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
 </div> <!--end div for tabs-3 div -->
 </div> <!--end div for tabs-->
 
+
+<div class="padded">
+  <span id="go" style="font-size: 1em;" class='ui-button ui-button-go ui-corner-all go_run coge-button' onClick="populate_page_obj(); set_display_order(); loading([],['results']); go_run();">Run GEvo Analysis!</span>
+</div>
 </form>
 </TMPL_IF>
 
@@ -1456,8 +1456,7 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
 	<table>
 	<tr><td>
 	<div id=skip_font<TMPL_VAR NAME="SEQ_NUM"> style="color: red;display:none"> Sequence Skipped</div>
-
-	   <span id="seqopts<TMPL_VAR NAME="SEQ_NUM">" class="small ui-button ui-corner-all ui-button-toggle" onClick='$(".sequence_options<TMPL_VAR NAME="SEQ_NUM">").slideToggle();'>Sequence <TMPL_VAR NAME="SEQ_NUM"> Options</span>
+	   <span id="seqopts<TMPL_VAR NAME="SEQ_NUM">" class="small ui-button ui-corner-all ui-button-toggle coge-button" onClick='$(".sequence_options<TMPL_VAR NAME="SEQ_NUM">").slideToggle();'>Sequence <TMPL_VAR NAME="SEQ_NUM"> Options</span>
 	   <Table class="small sequence_options<TMPL_VAR NAME="SEQ_NUM">" style="display: none;">
 	 <TR align=left>
 	  <Td>

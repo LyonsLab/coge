@@ -280,7 +280,7 @@ sub edit_genome_info {
   <td><input type=text id=dsg_link size=50 value="$link"></td>
  </tr>
 </table>
-<span class="ui-button ui-corner-all ui-button-go" onClick="update_genome_info('$dsgid')">Update</span>
+<span class="ui-button ui-corner-all ui-button-go coge-button" onClick="update_genome_info('$dsgid')">Update</span>
 };
     return $html;
 }
@@ -385,7 +385,7 @@ sub get_orgs {
     $opts .= "desc=$desc;"   if $desc;
     $opts .= "oid=$oid;"     if $oid;
     $opts .= "dsgid=$dsgid;" if $dsgid;
-    $html .= qq{<!--<div class="padded"><span class='ui-button ui-corner-all' onclick="window.open('get_org_list.pl$opts');">Download Organism List</span></div>-->};
+    $html .= qq{<!--<div class="padded"><span class='ui-button ui-corner-all coge-button' onclick="window.open('get_org_list.pl$opts');">Download Organism List</span></div>-->};
     return $html, scalar(@db);
 }
 
@@ -607,7 +607,7 @@ sub get_genome_info {
 #    $html .= qq{&nbsp|&nbsp};
 #    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$dsgid'],['irods']);">Send To iPlant Data Store</span>};
     $html .= "</td></tr>"
-          . qq{<tr><td colspan=2><div class="padded"><span class="ui-button ui-corner-all" onClick="update_genomelist(['args__genomeid','args__$dsgid'],[add_to_genomelist]);\$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add to Genome List</span>}
+          . qq{<tr><td colspan=2><div class="padded"><span class="ui-button ui-corner-all coge-button" onClick="update_genomelist(['args__genomeid','args__$dsgid'],[add_to_genomelist]);\$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add to Genome List</span>}
           . qq{</div></td></tr>}
           . "</table></td>"
           . qq{<td id=dsg_features></td>}
@@ -864,7 +864,7 @@ sub get_dataset_chr_info {
          . "<tr><td nowrap>Starting location: "
          . qq{<td><input type="text" size=10 value="20000" id="x">}
          . qq{<tr><td >Zoom level:<td><input type = "text" size=10 value ="6" id = "z">}
-         . qq{<tr><td colspan=2><span style="font-size:1em" class='ui-button ui-button-icon-left ui-corner-all' onClick="launch_viewer('$dsgid', '$chr')"><span class="ui-icon ui-icon-newwin"></span>Launch Genome Viewer</span>}
+         . qq{<tr><td colspan=2><span style="font-size:1em" class='ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left' onClick="launch_viewer('$dsgid', '$chr')"><span class="ui-icon ui-icon-newwin"></span>Launch Genome Viewer</span>}
          . "</table>";
     }
     my $seq_grab;
@@ -875,7 +875,7 @@ sub get_dataset_chr_info {
          . qq{<td><input type="text" size=10 value="1" id="start">}
          . "<tr><td>End position: "
          . qq{<td><input type="text" size=10 value="100000" id="stop">}
-         . qq{<tr><td colspan=2><span style="font-size:1em" class='ui-button ui-button-icon-left ui-corner-all' onClick="launch_seqview('$dsgid', '$chr','$dsid')"><span class="ui-icon ui-icon-newwin"></span>Get Sequence</span>}
+         . qq{<tr><td colspan=2><span style="font-size:1em" class='ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left' onClick="launch_seqview('$dsgid', '$chr','$dsid')"><span class="ui-icon ui-icon-newwin"></span>Get Sequence</span>}
          . qq{</table>};
     }
     return $html, $viewer, $seq_grab;

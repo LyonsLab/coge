@@ -1209,17 +1209,17 @@ sub run {
     my $gobe_buttons = qq{
 <table>
 <tr>
-<td><span class='ui-button ui-corner-all' id="clear_lines" onclick="Gobe.clear()">Clear Connectors</span>
+<td><span class='ui-button ui-corner-all coge-button-sm' id="clear_lines" onclick="Gobe.clear()">Clear Connectors</span>
 
-<td><span class='ui-button ui-corner-all drawline' id="set_lines" onclick="\$('.drawline').hide();\$('#set_wedges').show();\$('.lineopt').show();Gobe.set_connector('line')">Set connector as Lines</span>
+<td><span class='ui-button ui-corner-all coge-button-sm drawline' id="set_lines" onclick="\$('.drawline').hide();\$('#set_wedges').show();\$('.lineopt').show();Gobe.set_connector('line')">Set connector as Lines</span>
 
-<span style="display: none" class='ui-button ui-corner-all lineopt' id="set_wedges" onclick="\$('.drawline').show();\$('.lineopt').hide();Gobe.set_connector('wedge')">Set connector as Wedges</span>
+<span style="display: none" class='ui-button ui-corner-all coge-button-sm lineopt' id="set_wedges" onclick="\$('.drawline').show();\$('.lineopt').hide();Gobe.set_connector('wedge')">Set connector as Wedges</span>
 
 <td><div class=lineopt style="float: left; display: none">
- <span class='ui-button ui-corner-all' id="">Line Width</span>
+ <span class='ui-button ui-corner-all coge-button-sm' id="">Line Width</span>
  <input type=textbox size=2 class="backbox line_width" id=line_width_val value=3 readonly>
- <span class='ui-button ui-corner-all' id="" onclick="update_line_width(1)">+</span>
- <span class='ui-button ui-corner-all' id="" onclick="update_line_width(-1)">-</span>
+ <span class='ui-button ui-corner-all coge-button-sm' id="" onclick="update_line_width(1)">+</span>
+ <span class='ui-button ui-corner-all coge-button-sm' id="" onclick="update_line_width(-1)">-</span>
 </div>
 };
     #$gobe_buttons .=
