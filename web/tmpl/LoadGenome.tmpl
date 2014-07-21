@@ -786,6 +786,13 @@ function update_dialog(request, identifier, formatter) {
 <span style="color:dimgray;font-weight:bold;">Genome Info</span><br>
 <table class="small ui-widget-content ui-corner-all">
   <tr>
+        <td colspan="2" style="padding-bottom: 10px;">
+                <span style="color: red;">
+                	* denotes a required field.
+        	</span>
+  	</td>
+  </tr>
+  <tr>
     <td>Organism:</td>
     <td>
       <tmpl_if name=ORGANISM_NAME>
@@ -795,10 +802,11 @@ function update_dialog(request, identifier, formatter) {
       </tmpl_if>
       <span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all coge-button'>New</span>
     </td>
+    <td><span style="color: red;">*</span></td>
   </tr>
   <tr>
     <td>Version:</td>
-    <td><input id="edit_version" type="textbox" size="10" spellcheck="false" /></td>
+    <td><input id="edit_version" type="textbox" size="10" spellcheck="false" /><span style="color: red;">*</span></td>
   </tr>
   <tr>
     <td>Type:</td>
@@ -813,6 +821,7 @@ function update_dialog(request, identifier, formatter) {
       <input id="edit_source" type="search" placeholder="Search" size="50" spellcheck="false" />
       <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all coge-button'>New</span>
     </td>
+    <td><span style="color: red;">*</span></td>
   </tr>
   <tr>
     <td>Restricted?</td>

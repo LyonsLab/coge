@@ -506,22 +506,31 @@ function update_dialog(request, identifier, formatter) {
 
 <table class="small ui-widget-content ui-corner-all">
   <tr>
+	<td colspan="2" style="padding-bottom: 10px;">
+                <span style="color: red;">
+                	* denotes a required field.
+        	</span>
+  	</td>
+  </tr>
+  <tr>
     <td>Name:</td>
-    <td><input id="edit_name" type="textbox" size="50" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" /></td>
+    <td><input id="edit_name" type="textbox" size="50" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" /><span style="color: red;">*</span></td>
   </tr>
   <tr>
     <td>Description:</td>
     <td><textarea id="edit_description" rows="5" cols="50" ><TMPL_VAR NAME='DESC'></textarea></td>
+    <td><span style="color: red;">*</span></td>
   </tr>
   <tr>
     <td>Version:</td>
-    <td><input id="edit_version" type="textbox" size="10" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" /></td>
+    <td><input id="edit_version" type="textbox" size="10" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" /><span style="color: red;">*</span></td>
   </tr>
   <tr>
     <td>Source:</td>
     <td>
       <input id="edit_source" type="search" placeholder="Search" size="50" spellcheck="false" />
       <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
+      <span style="color: red;">*</span>
     </td>
   </tr>
   <tr>
@@ -533,6 +542,7 @@ function update_dialog(request, identifier, formatter) {
     <td>
       <input id="edit_genome" type="search" placeholder="Search" spellcheck="false" onkeypress="wait_to_search(search_genomes, this);" size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
       <input id="gid" type="hidden" value="<TMPL_VAR NAME='GENOME_ID'>" />
+      <span style="color: red;">*</span>
     </td>
   </tr>
   <tr>
@@ -561,6 +571,7 @@ function update_dialog(request, identifier, formatter) {
             </optgroup>
           </select>
       </span>
+      <span style="color: red;">*</span>
     </td>
   </tr>
   <tr id="alignment" class="hidden">
