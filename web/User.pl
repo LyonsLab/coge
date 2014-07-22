@@ -103,7 +103,7 @@ sub gen_html {
     #$template->param( TITLE      => 'User Profile' );
     $template->param( PAGE_TITLE => 'User Profile',
     				  PAGE_LINK  => $LINK,
-    				  LOGO_PNG   => "$PAGE_TITLE-logo.png" );
+    				  LOGO_PNG   => "MyProfile-logo.png" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => gen_body() );
     $template->param( ADJUST_BOX => 1 );
@@ -189,29 +189,20 @@ sub get_item_info {
         return unless ( $USER->is_admin or $group->has_member($USER) );
 
         $html .=
-            '<b>Group id'
-          . $group->id
-          . '</b><br>'
-          . '<b>Name:</b> '
-          . $group->name . '<br>'
-          . '<b>Description:</b> '
-          . $group->description . '<br>'
-          . '<b>Role:</b> '
-          . $group->role->name . '<br>'
+            '<b>Group id' . $group->id . '</b><br>'
+          . '<b>Name:</b> ' . $group->name . '<br>'
+          . '<b>Description:</b> ' . $group->description . '<br>'
+          . '<b>Role:</b> ' . $group->role->name . '<br>'
           . '<b>Members:</b><br>';
         foreach ( sort usercmp $group->users ) {
             $html .=
                 '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
-              . $_->display_name . ' ('
-              . $_->user_name . ')' . '<br>';
+              . $_->display_name . ' (' . $_->user_name . ')' . '<br>';
         }
-        
-        my $info = 'Group <i>' . $group->info . '</i>';
-        my $edit_link = qq{open_item('$info','GroupView.pl?ugid=$item_id');};
         
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
-            . qq{<span class="link" onclick="$edit_link" title="Edit group metadata and membership">Edit group</span><br>}
+            . qq{<span class="link" onclick="group_dialog();" title="Edit group metadata and membership">Edit group</span><br>}
             . qq{</div></div>};        
     }
     elsif ( $item_type == $ITEM_TYPE{notebook} ) {
@@ -221,13 +212,9 @@ sub get_item_info {
         my $group_str = join( '<br>',
             sort map { $_->name } $USER->groups_with_access($notebook) );
         $html .=
-            '<b>Notebook id'
-          . $notebook->id
-          . '</b><br>'
-          . '<b>Name:</b> '
-          . $notebook->name . '<br>'
-          . '<b>Description:</b> '
-          . $notebook->description . '<br>'
+            '<b>Notebook id' . $notebook->id . '</b><br>'
+          . '<b>Name:</b> ' . $notebook->name . '<br>'
+          . '<b>Description:</b> ' . $notebook->description . '<br>'
           . '<b>Contents:</b>'
           . '<div style="padding-left:20px;">'
           . $notebook->contents_summary_html
