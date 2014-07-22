@@ -66,9 +66,16 @@ $MAX_SEARCH_RESULTS = 100;
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 
 sub generate_html {
-    my $html;
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+    # Check for finished result
+    if ($JOB_ID) {
+        my $res = decode_json( get_load_log(workflow_id => $JOB_ID) );
+        if ($res->{experiment_id}) {
+            my $url = 'ExperimentView.pl?eid=' . $res->{experiment_id};
+            print $FORM->redirect(-url => $url);
+        }
+    }    
+    
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( PAGE_TITLE => $PAGE_TITLE,
     				  PAGE_LINK  => $LINK,
     				  HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
@@ -85,8 +92,7 @@ sub generate_html {
     $template->param( BODY       => generate_body() );
     $template->param( ADJUST_BOX => 1 );
 
-    $html .= $template->output;
-    return $html;
+    return $template->output;
 }
 
 sub generate_body {
