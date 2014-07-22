@@ -1058,13 +1058,13 @@ function create_menu() {
 
 function create_group_dialog() {
 	$('#edit_group_name,#edit_group_desc').val('');
-	$('#create_group_dialog').dialog({width:400}).dialog('open');
+	$('#create_group_dialog').dialog({width:'27em'}).dialog('open');
 	$('#create_menu').hide();
 }
 
 function create_notebook_dialog() {
 	$('#edit_notebook_name,#edit_notebook_desc').val('');
-	$('#create_notebook_dialog').dialog({width:400}).dialog('open');
+	$('#create_notebook_dialog').dialog({width:'27em'}).dialog('open');
 	$('#create_menu').hide();
 }
 
@@ -1297,8 +1297,16 @@ function toggle_star(img) {
 <div id="create_group_dialog" class="dialog_box hidden" title="Create New Group">
 	<table class="small">
 		<tr>
+			<td colspan="2" style="padding-bottom: 10px;">
+				<span style="color: red;">
+					* denotes a required field.
+				</span>
+			</td>
+		</tr>
+		<tr>
 			<td>Name:</td>
 			<td><input id="edit_group_name" type="textbox" size="53" value="" /></td>
+			<td><span style="color: red;">*</span></td>
 		</tr>
 		<tr>
 			<td>Description:</td>
@@ -1320,8 +1328,16 @@ function toggle_star(img) {
 <div id="create_notebook_dialog" class="dialog_box hidden" title="Create New Notebook">
 	<table class="small">
 		<tr>
+                        <td colspan="2" style="padding-bottom: 10px;">
+                                <span style="color: red;">
+                                        * denotes a required field.
+                                </span>
+                        </td>
+                </tr>
+		<tr>
 			<td>Name:</td>
 			<td><input id="edit_notebook_name" type="textbox" size="53" value="" /></td>
+			<td><span style="color: red;">*</span></td>
 		</tr>
 		<tr>
 			<td>Description:</td>
