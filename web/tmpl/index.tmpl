@@ -93,15 +93,28 @@ function getYoutubeVideos(path, callback) {
             var id = entries[i].id;
             var title = entries[i].title;
             var description = entries[i].description;
+	    var thumbnail = entries[i].thumbnail.hqDefault;
 
             var src = 'https://www.youtube.com/embed/' + id
             + '?wmode=transparent&amp;HD=0&amp;rel=0&amp;showinfo=0&amp;'
-            + 'controls=1&amp;fs=1&amp;autoplay="0"';
+            + 'controls=1&amp;fs=1&amp;autoplay=1';
 
-            var element = $('<iframe frameborder="0" allowfullscreen><iframe>')
+            var vid = $('<iframe frameborder="0" allowfullscreen><iframe>')
                 .attr("src", src);
 
-            videos.push([element, title, entries[i].player["default"]]);
+	    var overlay = $("<img class='overlay' src='picts/youtube-play-button.png'>")
+		.css("width", "20%");
+
+            var youtubeHack = $("<div id='youtube-hack' class='youtube-hack'></div>");
+
+	    var element = $('<img></img>', {"id": id, src: thumbnail})
+		.css("width", "100%")
+		.css("height", "100%");
+
+	    youtubeHack.append(element);
+	    youtubeHack.append(overlay);
+
+            videos.push([youtubeHack, title, entries[i].player["default"], vid]);
         }
 
         callback(videos);
@@ -159,11 +172,13 @@ function cross_fade(selector, image, delay) {
             link = "https://genomevolution.org/wiki/index.php/"+image[index][2];
 
             var elem = $(image[index][0])
-                .css("max-width", "100%")
-                .css("max-height", "100%");
+                .css("width", "100%")
+                .css("max-height", "50%");
 
-            if(elem.is("iframe")) {
-                elem.bind("click", pause);
+	    if(image[index].length === 4) {    
+		var vid = $(image[index][3])
+                    .css("width", "95%")
+                    .css("height", "500px");
 
                 link = image[index][2];
             }
@@ -178,13 +193,21 @@ function cross_fade(selector, image, delay) {
                 .css("float", "none")
                 .text(image[index][1]);
 
-            viewer.unbind()
-                .on("click", function() { window.open(link); })
-                .html("")
-                .append(wrapper)
+	    viewer.unbind();
+                if(image[index].length === 4) {
+                    viewer.on("click", $.proxy(pause, run_button))
+		    .on("click", function() {
+                            elem.replaceWith(vid)
+                    });
+
+                } else {
+                    viewer.on("click", function() { window.open(link); });
+                }
+            viewer.html("")
+                .append(elem)
                 .append(description)
-                .fadeIn(duration);
-        };
+                .fadeIn(duration);        
+    };
 
         viewer.fadeOut(duration, transition);
     }
@@ -358,12 +381,12 @@ function get_latest_genomes(limit) {
 </div>
 
 <div class="highlights">
+    <div id="wikifeed" class="coge-section coge-shadow">
+        <h3>Latest News</h3>
+    </div>
     <div class="coge-section coge-shadow">
         <h3>Tutorials</h3>
         <div id="crossfade"></div>
-    </div>
-    <div id="wikifeed" class="coge-section coge-shadow">
-        <h3>Latest News</h3>
     </div>
 </div>
 </TMPL_IF>

@@ -1481,3 +1481,13 @@ header {
     -ms-user-select: none;
     user-select: none;
 }
+
+#youtube-hack {
+    position: relative;
+}
+
+#youtube-hack .overlay {
+    position: absolute;
+    top: 45%;
+    left: 40%;
+}
