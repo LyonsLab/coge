@@ -3180,7 +3180,8 @@ sub get_results {
             file => $spa_file,
             msg  => qq{Syntenic Path Assembly mapping},
         );
-        $spa_url =\\ "";
+
+        $spa_url = "" unless $spa_url;
 
         my $json_url = _filename_to_link(
             file => $json_file,
