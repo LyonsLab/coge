@@ -108,7 +108,8 @@ function getYoutubeVideos(path, callback) {
             var youtubeHack = $("<div id='youtube-hack' class='youtube-hack'></div>");
 
 	    var element = $('<img></img>', {"id": id, src: thumbnail})
-		.css("width", "100%");
+		.css("width", "100%")
+		.css("height", "100%");
 
 	    youtubeHack.append(element);
 	    youtubeHack.append(overlay);
@@ -380,12 +381,12 @@ function get_latest_genomes(limit) {
 </div>
 
 <div class="highlights">
+    <div id="wikifeed" class="coge-section coge-shadow">
+        <h3>Latest News</h3>
+    </div>
     <div class="coge-section coge-shadow">
         <h3>Tutorials</h3>
         <div id="crossfade"></div>
-    </div>
-    <div id="wikifeed" class="coge-section coge-shadow">
-        <h3>Latest News</h3>
     </div>
 </div>
 </TMPL_IF>
