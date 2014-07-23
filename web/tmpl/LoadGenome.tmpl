@@ -4,6 +4,28 @@
 <SCRIPT type="text/javascript" src="./js/jstree/jquery.jstree.js"></SCRIPT>
 
 <style type="text/css">
+
+@font-face {
+        font-family: 'Glyphicons Halflings';
+        src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot');
+	src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.woff') format('woff'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.ttf') format('truetype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');}
+
+.glyphicon {
+        position: relative;
+        top: 1px;
+        display: inline-block;
+        font-family: 'Glyphicons Halflings';
+        font-style: normal;
+        font-weight: normal;
+        line-height: 1;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+}
+
+.glyphicon-asterisk:before {
+        content: "\2a";
+}
+
 .jstree li a ins { display:none !important; }
 .jstree.jstree-focused { background:white; }
 </style>
@@ -788,7 +810,8 @@ function update_dialog(request, identifier, formatter) {
   <tr>
         <td colspan="2" style="padding-bottom: 10px;">
                 <span style="color: red;">
-                	* denotes a required field.
+		<span class="glyphicon glyphicon-asterisk"></span>
+                	 denotes a required field.
         	</span>
   	</td>
   </tr>
@@ -802,11 +825,11 @@ function update_dialog(request, identifier, formatter) {
       </tmpl_if>
       <span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all coge-button'>New</span>
     </td>
-    <td><span style="color: red;">*</span></td>
+    <td><span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span></td>
   </tr>
   <tr>
     <td>Version:</td>
-    <td><input id="edit_version" type="textbox" size="10" spellcheck="false" /><span style="color: red;">*</span></td>
+    <td><input id="edit_version" type="textbox" size="10" spellcheck="false" /><span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span></td>
   </tr>
   <tr>
     <td>Type:</td>
@@ -821,7 +844,7 @@ function update_dialog(request, identifier, formatter) {
       <input id="edit_source" type="search" placeholder="Search" size="50" spellcheck="false" />
       <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all coge-button'>New</span>
     </td>
-    <td><span style="color: red;">*</span></td>
+    <td><span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span></td>
   </tr>
   <tr>
     <td>Restricted?</td>
