@@ -3183,6 +3183,16 @@ sub get_results {
 
         $spa_url = "" unless $spa_url;
 
+        my $spa_result = "";
+
+        if ($spa_url and $assemble) {
+            $spa_result = $spa_url
+                . qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=}
+                . $config->{_CONFIG_PATH}
+                . qq{;l=$tiny_link');" >Generate Pseudo-Assembled Genomic Sequence</span>};
+
+        }
+
         my $json_url = _filename_to_link(
             file => $json_file,
             msg  => qq{Dotplot JSON},
@@ -3190,11 +3200,6 @@ sub get_results {
 
         $dagchainer_file =~ s/^$URL/$DIR/;
 
-        $html .= "<br>"
-          . qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=}
-          . $config->{_CONFIG_PATH}
-          . qq{;l=$tiny_link');" >Generate Pseudo-Assembled Genomic Sequence</span>}
-          if $assemble;
 
         my $rows = [
             {
@@ -3243,10 +3248,7 @@ sub get_results {
                 general  => undef,
                 homolog  => undef,
                 diagonal => undef,
-                result   => $spa_url
-                    . qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=}
-                    . $config->{_CONFIG_PATH}
-                    . qq{;l=$tiny_link');" >Generate Pseudo-Assembled Genomic Sequence</span>},
+                result   => $spa_result
 ,
             },
             {
