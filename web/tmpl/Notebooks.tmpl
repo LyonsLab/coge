@@ -155,8 +155,8 @@ function dialog_delete_list (opts) {
 Are you sure you want to delete this notebook?<p>
  <div>
   <input type='hidden' id='list_delete_lid'>
-  <span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_list();">Yes</span>
-  <span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="$('#list_delete_box').dialog('close');">No</span>
+  <span class='ui-button ui-button-go ui-corner-all' onClick="delete_list();">Yes</span>
+  <span class='ui-button ui-corner-all' onClick="$('#list_delete_box').dialog('close');">No</span>
  </div>
 </div>
 
@@ -201,7 +201,7 @@ $(document).ready(function(){
  <tfoot>
   <tr>
    <td id='create_list_hidden' colspan='9' height='26'>
-    <span style="font-size: 1em" class='ui-button ui-corner-all' onClick="$('#create_list_hidden').hide(); $('#create_list_shown').fadeIn('fast');">Create new notebook</span>
+    <span class='ui-button ui-corner-all' onClick="$('#create_list_hidden').hide(); $('#create_list_shown').fadeIn('fast');">Create new notebook</span>
    </td>
   </tr>
   <tr id='create_list_shown' style="display:none;">
@@ -213,7 +213,7 @@ $(document).ready(function(){
     </TMPL_LOOP>
     </select>
    </td>
-   <td colspan='10'><span style="font-size: 1em" class='ui-button ui-button-go ui-corner-all' onClick="create_list()">Add</span></td>
+   <td colspan='10'><span class='ui-button ui-corner-all' onClick="create_list()">Add</span></td>
   </tr>
  </tfoot>
  <tbody align="left" valign="top" id="list_table_body" class="small">

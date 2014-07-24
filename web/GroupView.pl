@@ -93,7 +93,7 @@ sub gen_body {
 sub get_admin_functions {
     my $ugid = $FORM->param('ugid');
     my $html =
-qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_set_group_creator($ugid);">Set Group Creator</span>};
+qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="dialog_set_group_creator($ugid);">Set Group Creator</span>};
     return $html;
 }
 

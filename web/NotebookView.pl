@@ -150,21 +150,21 @@ sub get_list_info {
 
     if ($user_can_edit) {
         $html .=
-qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="edit_list_info();">Edit Info</span>};
+qq{<span class='ui-button ui-corner-all' onClick="edit_list_info();">Edit Info</span>};
 
         if ( $list->restricted ) {
             $html .=
-qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_list_public();">Make Public</span>};
+qq{<span class='ui-button ui-corner-all' onClick="make_list_public();">Make Public</span>};
         }
         else {
             $html .=
-qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_list_private();">Make Private</span>};
+qq{<span class='ui-button ui-corner-all' onClick="make_list_private();">Make Private</span>};
         }
     }
 
     if ( $user_can_delete ) {
         $html .=
-			qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_list();">} .
+			qq{<span class='ui-button ui-button-go ui-corner-all' onClick="delete_list();">} .
 			($list->deleted ? 'Undelete' : 'Delete') . qq{</span>};
     }
 
@@ -177,7 +177,7 @@ qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="make_
             my $link =
 qq{window.open('GenomeView.pl?gid=$gid&tracks=notebook$lid');};
             $html .=
-qq{<span style="font-size: .75em" class='ui-button ui-corner-all ui-button-icon-right' onClick="$link"><span class="ui-icon ui-icon-extlink"></span>View</span>};
+qq{<span class='ui-button ui-corner-all ui-button-icon-right' onClick="$link"><span class="ui-icon ui-icon-extlink"></span>View</span>};
             last;
         }
     }
@@ -365,7 +365,7 @@ sub get_annotations {
     }
 
     if ($user_can_edit) {
-        $html .= qq{<span onClick="add_annotation_dialog();" style="font-size: .75em" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>};
+        $html .= qq{<span onClick="add_annotation_dialog();" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>};
     }
 
     return $html;
@@ -682,7 +682,7 @@ sub get_list_contents {
     }
 
     if ($user_can_edit) {
-        $html .= qq{<span style="font-size:.75em;" class='ui-button ui-button-icon-left ui-corner-all' onClick="add_list_items();"><span class="ui-icon ui-icon-plus"></span>Add</span>};
+        $html .= qq{<span class='ui-button ui-button-icon-left ui-corner-all' onClick="add_list_items();"><span class="ui-icon ui-icon-plus"></span>Add</span>};
     }
 
     return unless ( $num_items or $user_can_edit );
