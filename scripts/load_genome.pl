@@ -60,7 +60,15 @@ mkpath($staging_dir); # make sure this exists
 my $logfile = "$staging_dir/log.txt";
 open( my $log, ">>$logfile" ) or die "Error opening log file: $logfile: $!";
 $log->autoflush(1);
-print $log "Starting $0 (pid $$)\n";
+print $log "Starting $0 (pid $$)\n",
+           qx/ps -o args $$/;
+
+# Prevent loading again (issue #417)
+my $logdonefile = "$staging_dir/log.done";
+if (-e $logdonefile) {
+    print $log "log: error: done file already exists: $logdonefile\n";
+    exit(-1);
+}
 
 # Process and verify parameters
 $fasta_files = unescape($fasta_files) if ($fasta_files);
@@ -396,7 +404,6 @@ if ($result_dir) {
 }
 
 # Create "log.done" file to indicate completion to JEX
-my $logdonefile = "$staging_dir/log.done";
 touch($logdonefile);
 
 exit;
