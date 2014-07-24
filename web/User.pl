@@ -202,7 +202,7 @@ sub get_item_info {
         
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
-            . qq{<span class="link" onclick="group_dialog();" title="Edit group metadata and membership">Edit group</span><br>}
+            . qq{<span class="link" onclick="group_dialog();" title="Edit metadata and membership">Edit group</span><br>}
             . qq{</div></div>};        
     }
     elsif ( $item_type == $ITEM_TYPE{notebook} ) {
@@ -240,8 +240,8 @@ sub get_item_info {
         
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
-            . qq{<span class="link" onclick="$edit_link" title="Edit notebook metadata">Edit notebook</span><br>}
-            . qq{<span class="link" onclick="share_dialog();" title="Share notebook with other users or user groups">Share with other users</span><br>}
+            . qq{<span class="link" onclick="$edit_link" title="Edit metadata">Edit</span><br>}
+            . qq{<span class="link" onclick="share_dialog();" title="Share with other users or user groups">Share</span><br>}
             . qq{</div></div>};
     }
     elsif ( $item_type == $ITEM_TYPE{genome} ) {
@@ -283,11 +283,11 @@ sub get_item_info {
         
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
-            . qq{<span class="link" onclick="$edit_link" title="Edit genome metadata, annotation, and experiments">Edit metadata</span><br>}
-            . qq{<span class="link" onclick="$view_link" title="View genome sequence, annotation, and experiment tracks">View tracks</span><br>}
+            . qq{<span class="link" onclick="$edit_link" title="View/edit metadata, annotation, and experiments">View details</span><br>}
+            . qq{<span class="link" onclick="$view_link" title="Browse sequence, annotation, and experiment tracks">Browse</span><br>}
+            . qq{<span class="link" onclick="share_dialog();" title="Share with other users or user groups">Share</span><br>}
             . qq{<span class="link" onclick="$load_link" title="Load gene annotation">Load annotation</span><br>}
-            . qq{<span class="link" onclick="share_dialog();" title="Share genome with other users or user groups">Share with other users</span><br>}
-            . qq{<span class="link" onclick="add_to_notebook_dialog();" title="Add genome to a notebook">Add to notebook</span><br>}
+            . qq{<span class="link" onclick="add_to_notebook_dialog();" title="Add to a notebook">Add to notebook</span><br>}
             . qq{</div></div>};
     }
     elsif ( $item_type == $ITEM_TYPE{experiment} ) {
@@ -326,10 +326,10 @@ sub get_item_info {
         
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
-            . qq{<span class="link" onclick="$edit_link" title="Edit experiment metadata">Edit metadata</span><br>}
-            . qq{<span class="link" onclick="$view_link" title="View experiment track">View track</span><br>}
-            . qq{<span class="link" onclick="share_dialog();" title="Share experiment with other users or user groups">Share with other users</span><br>}
-            . qq{<span class="link" onclick="add_to_notebook_dialog();" title="Add experiment to a notebook">Add to notebook</span><br>}
+            . qq{<span class="link" onclick="$edit_link" title="View/edit metadata">View details</span><br>}
+            . qq{<span class="link" onclick="$view_link" title="Browse track data">Browse data</span><br>}
+            . qq{<span class="link" onclick="share_dialog();" title="Share with other users or user groups">Share</span><br>}
+            . qq{<span class="link" onclick="add_to_notebook_dialog();" title="Add a notebook">Add to notebook</span><br>}
             . qq{</div></div>};
     }
 
