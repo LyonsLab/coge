@@ -249,28 +249,17 @@ sub get_item_info {
         return unless ( $USER->has_access_to_genome($genome) );
 
         my $date = ( $genome->datasets ? $genome->datasets()->[0]->date : 'unknown' );
-        my $group_str = join( '<br>',
-            sort map { $_->name } $USER->groups_with_access($genome) );
+        my $group_str = join( '<br>', sort map { $_->name } $USER->groups_with_access($genome) );
         $html .=
-            '<b>Genome id'
-          . $genome->id
-          . '</b><br>'
-          . '<b>Organism: </b>'
-          . $genome->organism->name . '<br>'
-          . '<b>Name:</b> '
-          . ( $genome->name ? $genome->name : '' ) . '<br>'
-          . '<b>Description:</b> '
-          . ( $genome->description ? $genome->description : '' ) . '<br>'
-          . '<b>Version:</b> '
-          . $genome->version . '<br>'
-          . '<b>Type:</b> '
-          . ( $genome->type ? $genome->type->name : '' ) . '<br>'
-          . '<b>Source:</b> '
-          . ( $genome->source ? $genome->source->[0]->name : '' ) . '<br>'
-          . '<b>Created:</b> '
-          . $date . '<br>'
-          . '<b>Experiments:</b> '
-          . $genome->experiments . '<br>'
+            '<b>Genome id' . $genome->id . '</b><br>'
+          . '<b>Organism: </b>' . $genome->organism->name . '<br>'
+          . '<b>Name:</b> ' . ( $genome->name ? $genome->name : '' ) . '<br>'
+          . '<b>Description:</b> ' . ( $genome->description ? $genome->description : '' ) . '<br>'
+          . '<b>Version:</b> ' . $genome->version . '<br>'
+          . '<b>Type:</b> ' . ( $genome->type ? $genome->type->name : '' ) . '<br>'
+          . '<b>Source:</b> ' . ( $genome->source ? $genome->source->[0]->name : '' ) . '<br>'
+          . '<b>Created:</b> ' . $date . '<br>'
+          . '<b>Experiments:</b> ' . $genome->experiments . '<br>'
           . '<b>Groups with access:</b><br>'
           . '<div style="padding-left:20px;">'
           . ( $group_str ? $group_str : 'None' ) . '<br>'
@@ -305,24 +294,15 @@ sub get_item_info {
         my $experiment = $coge->resultset('Experiment')->find($item_id);
         return unless $USER->has_access_to_experiment($experiment);
 
-        my $group_str = join( '<br>',
-            sort map { $_->name } $USER->groups_with_access($experiment) );
+        my $group_str = join( '<br>', sort map { $_->name } $USER->groups_with_access($experiment) );
         $html .=
-            '<b>Experiment id'
-          . $experiment->id
-          . '</b><br>'
-          . '<b>Name:</b> '
-          . $experiment->name . '<br>'
-          . '<b>Description:</b> '
-          . $experiment->description . '<br>'
-          . '<b>Version:</b> '
-          . $experiment->version . '<br>'
-          . '<b>Source:</b> '
-          . ( $experiment->source ? $experiment->source->name : '' ) . '<br>'
-          . '<b>Created:</b> '
-          . $experiment->date . '<br>'
-          . '<b>Genome:</b> '
-          . $experiment->genome->info . '<br>'
+            '<b>Experiment id' . $experiment->id . '</b><br>'
+          . '<b>Name:</b> ' . $experiment->name . '<br>'
+          . '<b>Description:</b> ' . $experiment->description . '<br>'
+          . '<b>Version:</b> ' . $experiment->version . '<br>'
+          . '<b>Source:</b> ' . ( $experiment->source ? $experiment->source->name : '' ) . '<br>'
+          . '<b>Created:</b> ' . $experiment->date . '<br>'
+          . '<b>Genome:</b> ' . $experiment->genome->info . '<br>'
           . '<b>Groups with access:</b><br>'
           . '<div style="padding-left:20px;">'
           . ( $group_str ? $group_str : 'None' ) . '<br>'
@@ -567,8 +547,8 @@ sub get_roles {
 
     my $html;
     foreach my $role ( $coge->resultset('Role')->all() ) {
-        next if $role->name =~ /admin/i && !$USER->is_admin;
-        next if $role->name =~ /owner/i && !$USER->is_admin;
+        next if ($role->name =~ /admin/i && !$USER->is_admin); # skip admin
+        next if ($role->name =~ /owner/i && !$USER->is_admin); # skip owner
         my $name = $role->name;
         $name .= ": " . $role->description if $role->description;
         #push @roles, { RID => $role->id, NAME => $name, SELECTED => ($role->id == $selected_role_id) };
