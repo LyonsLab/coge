@@ -304,7 +304,7 @@ function get_item_info(obj) {
 		$('#info_panel').html(info);
 		return;
 	}
-
+	
 	$.ajax({
 		data: {
 			fname: 'get_item_info',
@@ -330,7 +330,13 @@ function enter_item(obj) {
 	if (timers['item'])
 		window.clearTimeout(timers['item']);
 
-	timers['item'] = window.setTimeout( function() { get_item_info(obj) }, 500 );
+	timers['item'] = window.setTimeout( 
+		function() { 
+			info_busy(); 
+			get_item_info(obj);
+		}, 
+		500 
+	);
 }
 
 function exit_item() {
@@ -341,6 +347,10 @@ function exit_item() {
 		window.clearTimeout(timers['item']);
 	
 	timers['item'] = window.setTimeout( default_info, 500 );
+}
+
+function info_busy() {
+	$('#info_panel').html('<img src="picts/ajax-loader.gif"/>');
 }
 
 function update_info() {
@@ -377,7 +387,7 @@ function select_item(item) {
 		.prop('checked', true);
 	selected_item_id = item.id;
 	
-	$('#info_panel').html('<img src="picts/ajax-loader.gif"/>');
+	info_busy();
 	update_info(item);
 }
 
