@@ -392,7 +392,7 @@ function select_item(item) {
 }
 
 function open_item(title, link) {
-	title = title + "<br><a class='xsmall' href='"+link+"' target=new>[Open in new tab]</a> ";
+	title = title + "<br><a class='xsmall' href='"+link+"' target='_blank'>[Open in new tab]</a> ";
 	link = link + "&embed=1";
 	var d = $('<div class="dialog_box" title="'+title+'"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
 		.dialog({
