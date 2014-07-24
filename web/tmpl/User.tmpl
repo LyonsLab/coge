@@ -69,15 +69,15 @@ var ITEM_TYPE_ALL 				= <TMPL_VAR NAME="ITEM_TYPE_ALL">,
 	ITEM_TYPE_GENOME 			= <TMPL_VAR NAME="ITEM_TYPE_GENOME">,
 	ITEM_TYPE_EXPERIMENT		= <TMPL_VAR NAME="ITEM_TYPE_EXPERIMENT">;
 
-var selected_item_id;
+var selected_item_id, hover_item_id;
 var item_info_cache; // FIXME: move into own module
+var timestamps = new Array();
+var timers = new Array();
 	
 $(function() {
 	// Initialize globals
-	pageObj.timestamp = new Array();
-	pageObj.timer = new Array();
-	pageObj.timer['item'] = null;
-	pageObj.timestamp['idle'] = new Date().getTime();
+	timers['item'] = null;
+	init_timestamp('idle');
 	clear_info_cache();
 	
 	// Initialize AJAX
@@ -135,8 +135,8 @@ $(function() {
 	// Setup idle timer
 	$(document).mousemove(function() {
 		var currentTime = new Date().getTime();
-		var idleTime = currentTime - pageObj.timestamp['idle'];
-		pageObj.timestamp['idle'] = currentTime;
+		var idleTime = currentTime - timestamps['idle'];
+		timestamps['idle'] = currentTime;
 
 		if (idleTime > IDLE_TIME) {
 			// User was idle for a while, refresh page
@@ -148,7 +148,7 @@ $(function() {
 	schedule_poll();
 
 	// Initialize add-to-notebook dialog
-	setTimeout(search_notebooks, 1000);
+	window.setTimeout(search_notebooks, 1000);
 	
 	// Initialize confirm cancel job dialog
     $("#cancel_dialog").dialog({
@@ -200,7 +200,7 @@ function schedule_poll(now) {
 	cancel_poll();
 
 	if (now) {
-		pageObj.timer['poll'] = setTimeout(
+		timers['poll'] = window.setTimeout(
 			function() { poll(); },
 			0
 		);
@@ -208,9 +208,9 @@ function schedule_poll(now) {
 	}
 
 	// Quit polling if page idle for too long
-	var idleTime = new Date().getTime() - pageObj.timestamp['idle'];
+	var idleTime = new Date().getTime() - timestamps['idle'];
 	if (idleTime < IDLE_TIME) {
-		pageObj.timer['poll'] = setTimeout(
+		timers['poll'] = window.setTimeout(
 			function() { poll(); },
 			POLL_TIME
 		);
@@ -218,7 +218,7 @@ function schedule_poll(now) {
 }
 
 function cancel_poll() {
-	clearTimeout(pageObj.timer['poll']);
+	clearTimeout(timers['poll']);
 }
 
 function toc_toggle_children(toc_id, num_children) {
@@ -309,14 +309,12 @@ function get_item_info(obj) {
 		data: {
 			fname: 'get_item_info',
 			item_spec: obj.id,
-			timestamp: new Date().getTime()
+			timestamp: init_timestamp('get_item_info')
 		},
 		success : function(data) {
 			if (data) {
 				var result = jQuery.parseJSON(data);
-				var myName = arguments.callee.toString();
-				if (!pageObj.timestamp[myName] || result.timestamp >= pageObj.timestamp[myName]) {
-					pageObj.timestamp[myName] = result.timestamp;
+				if (test_timestamp('get_item_info', result.timestamp)) {
 					add_to_info_cache(obj.id, result.html);
 					$('#info_panel').html(result.html);
 				}
@@ -329,23 +327,20 @@ function enter_item(obj) {
 	if (selected_item_id)
 		return;
 	
-	if (pageObj.timer['item'])
-		clearTimeout(pageObj.timer['item']);
+	if (timers['item'])
+		window.clearTimeout(timers['item']);
 
-	pageObj.timer['item'] = setTimeout( get_item_info(obj), 500 );
+	timers['item'] = window.setTimeout( function() { get_item_info(obj) }, 500 );
 }
 
-function exit_item(obj) {
+function exit_item() {
 	if (selected_item_id)
 		return;
 	
-	if (pageObj.timer['item'])
-		clearTimeout(pageObj.timer['item']);
+	if (timers['item'])
+		window.clearTimeout(timers['item']);
 	
-	pageObj.timer['item'] = setTimeout(
-		default_info,
-		500
-	);
+	timers['item'] = window.setTimeout( default_info, 500 );
 }
 
 function update_info() {
@@ -440,10 +435,7 @@ function sync_items(html) {
 function get_contents(sync, item_type) {
 	$('#refresh_label').show();
 	
-	var myName = arguments.callee.toString();
-	pageObj.timestamp[myName] = new Date().getTime();
-
-	var lastUpdate = (sync ? pageObj.timestamp['lastUpdate'] : 0);
+	var lastUpdate = (sync ? timestamps['lastUpdate'] : 0);
 
 	// Clear pending refresh
 	cancel_poll();
@@ -453,21 +445,19 @@ function get_contents(sync, item_type) {
 			fname: 'get_contents',
 			item_type: item_type,
 			last_update: lastUpdate,
-			timestamp: pageObj.timestamp[myName]
+			timestamp: init_timestamp('get_contents')
 		},
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
 			if (obj) {
-				if (!pageObj.timestamp[myName] || obj.timestamp >= pageObj.timestamp[myName]) {
-					pageObj.timestamp[myName] = obj.timestamp;
-
+				if (test_timestamp('get_contents', obj.timestamp)) {
 					if (sync) { // merge with existing contents
 						sync_items(obj.html);
 					}
 					else { // replace existing contents
 						$('#contents_table').html(obj.html);
 					}
-					pageObj.timestamp['lastUpdate'] = obj.lastUpdate;
+					timestamps['lastUpdate'] = obj.lastUpdate;
 					filter_contents();
 				}
 			}
@@ -727,14 +717,22 @@ function add_to_notebook_dialog() {
 	}
 }
 
+function init_timestamp(name) { // TODO move into class
+	timestamps[name] = new Date().getTime()
+	return timestamps[name];
+}
+function test_timestamp(name, time) {
+	return time >= timestamps[name];
+}
+
 function wait_to_search (search_func, search_term) {
 	if (!search_term || search_term.length > 2) {
 		pageObj.search_term = search_term;
-		if (pageObj.timer['search']) {
-			clearTimeout(pageObj.timer['search']);
+		if (timers['search']) {
+			clearTimeout(timers['search']);
 		}
 
-		pageObj.timer['search'] = setTimeout(
+		timers['search'] = window.setTimeout(
 			function() {
 				search_func(pageObj.search_term);
 			},
@@ -748,18 +746,17 @@ function search_notebooks () {
 
 	$("#wait_notebook").animate({opacity:1});
 	$("#notebook_select").html("<option disabled='disabled'>Searching...</option>");
-	pageObj.timestamp['notebooks'] = new Date().getTime();
 
 	$.ajax({
 		data: {
 			fname: 'search_notebooks',
 			search_term: search_term,
-			timestamp: pageObj.timestamp['notebooks']
+			timestamp: init_timestamp('search_notebooks')
 		},
 		success : function(data) {
 			if (data) {
 				var obj = jQuery.parseJSON(data);
-				if (obj.timestamp >= pageObj.timestamp['notebooks']) {
+				if (test_timestamp('search_notebooks', obj.timestamp)) {
 					$("#notebook_select").html(obj.html);
 					$("#wait_notebook").animate({opacity:0});
 				}
@@ -852,17 +849,16 @@ function search_share () {
 	var search_term = $('#share_input').attr('value');
 
 	//$("#wait_notebook").animate({opacity:1});
-	pageObj.timestamp['share'] = new Date().getTime();
 
 	$.ajax({
 		data: {
 			fname: 'search_share',
 			search_term: search_term,
-			timestamp: pageObj.timestamp['share']
+			timestamp: init_timestamp('search_share')
 		},
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
-			if (obj && obj.items) {
+			if (obj && test_timestamp('search_share', obj.time) && obj.items) {
 				$("#share_input").autocomplete({source: obj.items}).autocomplete("search");
 				//$("#wait_notebook").animate({opacity:0});
 			}
@@ -873,17 +869,15 @@ function search_share () {
 function search_group () { // FIXME dup of above routine but for group dialog
 	var search_term = $('#group_input').attr('value');
 
-	pageObj.timestamp['search_group'] = new Date().getTime();
-
 	$.ajax({
 		data: {
 			fname: 'search_share',
 			search_term: search_term,
-			timestamp: pageObj.timestamp['search_group']
+			timestamp: init_timestamp('search_group')
 		},
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
-			if (obj && obj.items) {
+			if (obj && test_timestamp('search_group', obj.timestamp) && obj.items) {
 				$("#group_input").autocomplete({source: obj.items}).autocomplete("search");
 			}
 		},
@@ -1277,7 +1271,7 @@ function toggle_star(img) {
 			<td>
 				<span style="float:right;">
 					<input type="textbox" size="53" id="notebook_search_input" onkeyup="wait_to_search(search_notebooks, this.value);" />
-					<span class='ui-button ui-corner-all' onclick="search_notebooks();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+					<span class='ui-button ui-corner-all coge-button' onclick="search_notebooks();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
 					<img id="wait_notebook" src="picts/ajax-loader.gif" style="opacity: 0;" />
 				</span>
 				<span style="float:left;font-weight:bold;">Notebooks</span>
@@ -1291,7 +1285,7 @@ function toggle_star(img) {
 		</tr>
 	</table>
 	<br>
-	<span href="javascript:void(0)" onClick="add_items_to_notebook();" class='ui-button ui-corner-all'>Add Items</span>
+	<span href="javascript:void(0)" onClick="add_items_to_notebook();" class='ui-button ui-corner-all coge-button'>Add Items</span>
 </div>
 
 <div id="create_group_dialog" class="dialog_box hidden" title="Create New Group">
@@ -1323,7 +1317,7 @@ function toggle_star(img) {
 		</tr>
 	</table>
 	<br><br>
-	<span onClick="create_new_group();" class="ui-button ui-corner-all">Create Group</span>
+	<span onClick="create_new_group();" class="ui-button ui-corner-all coge-button">Create Group</span>
 </div>
 
 <div id="create_notebook_dialog" class="dialog_box hidden" title="Create New Notebook">
@@ -1355,7 +1349,7 @@ function toggle_star(img) {
 		</tr>
 	</table>
 	<br><br>
-	<span onClick="create_new_notebook();" class="ui-button ui-corner-all">Create Notebook</span>
+	<span onClick="create_new_notebook();" class="ui-button ui-corner-all coge-button">Create Notebook</span>
 </div>
 
 <div id="share_dialog" class="dialog_box hidden" title="Share Items"></div>
@@ -1399,7 +1393,7 @@ function toggle_star(img) {
 				</span>
 			</div>
 		<TMPL_ELSE>
-			<div id="content_<TMPL_VAR NAME='CONTENTS_ITEM_ID'>_<TMPL_VAR NAME='CONTENTS_ITEM_TYPE'>" onmouseover="enter_item(this);" onmouseout="exit_item(this);" class="hidden coge-list-item coge-highlight coge-unselectable <TMPL_IF NAME='CONTENTS_ITEM_DELETED'>deleted</TMPL_IF> <TMPL_IF NAME='CONTENTS_ITEM_SHARED'>shared</TMPL_IF>">
+			<div id="content_<TMPL_VAR NAME='CONTENTS_ITEM_ID'>_<TMPL_VAR NAME='CONTENTS_ITEM_TYPE'>" onmouseover="enter_item(this);" onmouseout="exit_item();" class="hidden coge-list-item coge-highlight coge-unselectable <TMPL_IF NAME='CONTENTS_ITEM_DELETED'>deleted</TMPL_IF> <TMPL_IF NAME='CONTENTS_ITEM_SHARED'>shared</TMPL_IF>">
 				<TMPL_IF NAME="CONTENTS_ITEM_SELECTABLE">
 					<input type="checkbox" style="float:left;margin-right:8px;" onclick="click_item(this.parentNode);" />
 				</TMPL_IF>
@@ -1489,7 +1483,7 @@ function toggle_star(img) {
 				<span style="color:dimgray">Enter names or groups:</span><br>
 				<input id="share_input" type="search" maxlength="40" spellcheck="false" style="width:270px;border:1px solid lightgray;" onkeyup="wait_to_search(search_share, this.value);" />
 				<select id="share_role_select" class="hidden"><TMPL_VAR NAME="ROLES"></select>
-				<span href="javascript:void(0)" onClick="add_items_to_user_or_group();" class='ui-button ui-corner-all'>Add</span>
+				<span href="javascript:void(0)" onClick="add_items_to_user_or_group();" class='ui-button ui-corner-all coge-button'>Add</span>
 			<TMPL_ELSE>
 				<span style="color:dimgray">
 					You don't have permission to modify the selected item(s).
@@ -1551,7 +1545,7 @@ $(function(){
 		<TMPL_IF NAME="IS_EDITABLE">
 			<span style="color:dimgray">Enter names or groups:</span><br>
 			<input id="group_input" type="search" maxlength="40" spellcheck="false" style="width:270px;border:1px solid lightgray;" onkeyup="wait_to_search(search_group, this.value);" />
-			<span href="javascript:void(0)" onClick="add_users_to_group();" class='ui-button ui-corner-all'>Add</span>
+			<span href="javascript:void(0)" onClick="add_users_to_group();" class='ui-button ui-corner-all coge-button'>Add</span>
 		<TMPL_ELSE>
 			<span style="color:dimgray">
 				You don't have permission to modify this group.
@@ -1569,7 +1563,7 @@ $(function(){
 	<TMPL_VAR NAME='ERROR_MESSAGE'>
 	<br>
 	<br>
-	<span style="font-size:.75em;" class='ui-button ui-corner-all' onClick="$(this.parentNode.parentNode).dialog('close');">&nbsp&nbsp;OK&nbsp&nbsp;</span>
+	<span style="font-size:.75em;" class='ui-button ui-corner-all coge-button' onClick="$(this.parentNode.parentNode).dialog('close');">&nbsp&nbsp;OK&nbsp&nbsp;</span>
 </div>
 </TMPL_IF>
 
