@@ -280,7 +280,7 @@ sub edit_genome_info {
   <td><input type=text id=dsg_link size=50 value="$link"></td>
  </tr>
 </table>
-<span class="ui-button ui-corner-all ui-button-go coge-button" onClick="update_genome_info('$dsgid')">Update</span>
+<span class="ui-button ui-corner-all coge-button" onClick="update_genome_info('$dsgid')">Update</span>
 };
     return $html;
 }

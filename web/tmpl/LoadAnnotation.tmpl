@@ -10,6 +10,7 @@ var job_id     = '<TMPL_VAR NAME="JOB_ID">';
 var STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
 var PAGE_NAME  = '<TMPL_VAR NAME="PAGE_NAME">';
 var genome_id;
+var pageObj = {};
 
 $(document).ready(function(){
 	$.ajaxSetup({
@@ -608,7 +609,7 @@ function more() {
     </tr>
   </table>
   <br>
-  <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all ui-button-go coge-button">Create</span>
+  <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all coge-button">Create</span>
 </div>
 
 </TMPL_IF> <!-- MAIN -->

@@ -174,14 +174,14 @@ function update_source_info (dsid){
  <tfoot>
   <tr>
    <td id='create_source_hidden' colspan='9' height='26'>
-    <span style="font-size: 1em" class='ui-button ui-button-go ui-corner-all' onClick="$('#create_source_hidden').hide(); $('#create_source_shown').fadeIn('fast');">Create new source</span>
+    <span style="font-size: 1em" class='ui-button ui-corner-all' onClick="$('#create_source_hidden').hide(); $('#create_source_shown').fadeIn('fast');">Create new source</span>
    </td>
   </tr>
   <tr id='create_source_shown' style="display:none;">
    <td><input type="textbox" size="16" name="name" id="name" value='Name' style="font-style:italic;color:gray;" onFocus="input_focus('name')"></td>
    <td><input type="textbox" size="40" name="desc" id="desc" value='Description' style="font-style:italic;color:gray;" onFocus="input_focus('desc')"></td>
    <td><input type="textbox" size="40" name="link" id="link" value='Link' style="font-style:italic;color:gray;" onFocus="input_focus('link')"></td>
-   <td colspan='10'><span style="font-size: 1em" class='ui-button ui-button-go ui-corner-all' onClick="create_source()">Add</span></td>
+   <td colspan='10'><span style="font-size: 1em" class='ui-button ui-corner-all' onClick="create_source()">Add</span></td>
   </tr>
  </tfoot>
  </TMPL_IF> <!-- BUTTONS -->
@@ -204,7 +204,7 @@ function update_source_info (dsid){
  </tr>
 </table>
 <br>
-<span onClick="update_source_info('<TMPL_VAR NAME=DSID>');" class='ui-button ui-corner-all ui-button-go'>Update Source Info</span>
+<span onClick="update_source_info('<TMPL_VAR NAME=DSID>');" class='ui-button ui-corner-all'>Update Source Info</span>
 </TMPL_IF> <!-- EDIT_SOURCE_INFO -->
 
 <TMPL_IF NAME=ADMIN_AREA>
