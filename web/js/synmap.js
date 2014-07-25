@@ -1252,6 +1252,76 @@ function checkRequestSize(url) {
         });
     }
 
+    synmap.submit_assembly = function(e, input, gid1, gid2) {
+        e.preventDefault();
+
+        var promise = $.ajax({
+            dataType: "json",
+            data: {
+                fname: "generate_assembly",
+                jquery_ajax: 1,
+                input: input,
+                gid1: gid1,
+                gid2: gid2
+            }
+        });
+
+        $("#dialog").dialog({
+            autoOpen: true,
+            position: {
+                my: "top",
+                at: "top+150",
+            }
+        });
+
+        promise.then(wait_for_assembly)
+               .then(download_file, report_error);
+    };
+
+    check_status = function(id) {
+        return $.getJSON("jex/status/" + id);
+    };
+
+    wait_for_assembly = function(response) {
+        var deferred = $.Deferred();
+
+        if (response.success) {
+            wait_for_job(response.id, deferred, response.output);
+        } else {
+            deferred.reject(undefined);
+        }
+
+        return deferred;
+    };
+
+    wait_for_job = function(id, promise, args) {
+        check_status(id).then(function(response) {
+            switch(response.status) {
+                case "Completed":
+                    promise.resolve(args);
+                    break;
+                case "Failed":
+                    promise.reject("The workflow has failed");
+                    break;
+                default:
+                    setTimeout(function() {
+                        wait_for_job(id, promise, args);
+                    }, 3000);
+                    break;
+            }
+        });
+    };
+
+
+    report_error = function() {
+        $("#dialog").html("The pseudo assembly could not be generated");
+    };
+
+    download_file = function(url) {
+        $("#dialog").dialog("close");
+        window.open(url, "_self");
+    };
+
     function schedule(params) {
         pageObj.nolog=1;
         var status_dialog = $('#synmap_dialog');

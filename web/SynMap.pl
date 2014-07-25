@@ -3191,10 +3191,9 @@ sub get_results {
 
         if ($spa_url and $assemble) {
             $spa_result = $spa_url
-                . qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=}
-                . $config->{_CONFIG_PATH}
-                . qq{;l=$tiny_link');" >Generate Pseudo-Assembled Genomic Sequence</span>};
-
+                . qq{<a href="#" class="small" onclick="coge.synmap.submit_assembly(window.event, '$dagchainer_file', '$dsgid1', '$dsgid2');">}
+                . qq{Generate Pseudo-Assembled Genomic Sequence}
+                . qq{</a>};
         }
 
         my $json_url = _filename_to_link(
@@ -3731,11 +3730,12 @@ sub generate_assembly {
 
     # Submit workflow
     my $submission = generate_pseudo_assembly($JEX, $config, $opts{input}, $output);
+    $output =~ s/$DIR/$URL/;
 
     # Fixup success to return true or false
     return encode_json({
         id => $submission->{id},
-        output => $submission->{output},
+        output => $output,
         success => $submission->{success} ? JSON::true : JSON::false,
     });
 }
