@@ -35,7 +35,7 @@ sub generate_pseudo_assembly {
         ],
         inputs    => [$input, $config->{_CONFIG_PATH}],
         outputs   => [$output],
-        description => "Genearting pseudo assembly"
+        description => "Generating pseudo assembly"
     );
 
     my $response = $JEX->submit_workflow($workflow);
