@@ -10,7 +10,7 @@
 
 <aside class="info">
     <p><a class="bold" href="http://genomevolution.org/wiki/index.php/SynMap" target="_blank">SynMap</a> generates a syntenic dotplot between
-    two organisms and identify syntenic regions.
+    two organisms and identifes syntenic regions.
 	    <span class="link" onClick="$(this).remove(); $('#getting_started').fadeIn();">More...</span>
     </p>
 
@@ -343,8 +343,14 @@
     <span style="font-size: 1em" class="ui-button ui-button-go ui-corner-all" id="synmap_go" >Generate SynMap</span>
 </div>
 </tmpl_if>
-
 <!-- partials -->
+<div id="dialog" class="dialog_box" title="Preparing download" style="display:none;">
+    <div class="coge-dialog-content ui-widget-content ui-corner-all info">
+        <h4 class="center">Generating Pseudo Assembly</h4>
+        <p class="small">(This may take several hours)</p>
+    </div>
+    <div class="coge-dialog-status">Please wait ... <img src="picts/ajax-loader.gif" /></div>
+</div>
 
 <div id="synmap_dialog" class="dialog_box" title="Running SynMap ..." style="display:none;">
     <div id="text" class="small ui-widget-content ui-corner-all inline" style="overflow-y:auto;width:450px;height:200px;color:dimgray;padding: 5px;">
