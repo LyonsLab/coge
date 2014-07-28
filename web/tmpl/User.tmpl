@@ -391,15 +391,20 @@ function select_item(item) {
 	update_info(item);
 }
 
-function open_item(title, link) {
-	title = title + "<br><a class='xsmall' href='"+link+"' target='_blank'>[Open in new tab]</a> ";
-	link = link + "&embed=1";
-	var d = $('<div class="dialog_box" title="'+title+'"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
-		.dialog({
-			width: '80%',
-			height: '500',
-		})
-		.dialog('open');
+function open_item(item_type, title, link) {
+	if (item_type == ITEM_TYPE_GROUP) // FIXME this is a kludge
+		group_dialog();
+	else {
+		title = title + "<br><a class='xsmall' href='"+link+"' target='_blank'>[Open in new tab]</a> ";
+		link = link + "&embed=1";
+		var height = $(window).height() * 0.8;
+		var d = $('<div class="dialog_box" title="'+title+'"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
+			.dialog({
+				width: '80%',
+				height: height//'80%'
+			})
+			.dialog('open');
+	}
 }
 
 function get_selected_items() {
@@ -499,6 +504,7 @@ function filter_contents() {
 						&& !$(this).hasClass('shared')
 						&& item_type != ITEM_TYPE_ACTIVITY_SUMMARY 
 						&& item_type != ITEM_TYPE_ACTIVITY_ANALYSES
+						&& item_type != ITEM_TYPE_ACTIVITY_LOADS
 						&& item_type != ITEM_TYPE_ACTIVITY_VIZ
 						&& item_type != ITEM_TYPE_GROUP
 						&& item_type != ITEM_TYPE_NOTEBOOK;
@@ -508,6 +514,7 @@ function filter_contents() {
 						&& !$(this).hasClass('deleted')
 						&& item_type != ITEM_TYPE_ACTIVITY_SUMMARY 
 						&& item_type != ITEM_TYPE_ACTIVITY_ANALYSES
+						&& item_type != ITEM_TYPE_ACTIVITY_LOADS
 						&& item_type != ITEM_TYPE_ACTIVITY_VIZ;
 			}
 			else if (pageObj.content_type == ITEM_TYPE_TRASH) {
@@ -1407,7 +1414,7 @@ function toggle_star(img) {
 				<TMPL_IF NAME="CONTENTS_ITEM_SELECTABLE">
 					<input type="checkbox" style="float:left;margin-right:8px;" onclick="click_item(this.parentNode);" />
 				</TMPL_IF>
-				<span style="display:block;" onclick="select_item(this.parentNode);" ondblclick="open_item('<TMPL_VAR NAME=CONTENTS_ITEM_INFO>', '<TMPL_VAR NAME=CONTENTS_ITEM_LINK>');">
+				<span style="display:block;" onclick="select_item(this.parentNode);" ondblclick="open_item('<TMPL_VAR NAME=CONTENTS_ITEM_TYPE>', '<TMPL_VAR NAME=CONTENTS_ITEM_INFO>', '<TMPL_VAR NAME=CONTENTS_ITEM_LINK>');">
 					<TMPL_VAR NAME="CONTENTS_ITEM_ICON">
 					<span name="info"><TMPL_VAR NAME="CONTENTS_ITEM_INFO"></span>
 				</span>
@@ -1580,27 +1587,29 @@ $(function(){
 <TMPL_IF NAME='ACTIVITY_SUMMARY'>
 	<br>
 	<TMPL_IF NAME='NUM_ANALYSES'>
-		<span class="bold text">Total analyses run: <TMPL_VAR NAME="NUM_ANALYSES"></span>
-		<table class="small text indent">
-			<tr>
-				<td class="right">CoGeBlast</td>
-				<td class="indent"><TMPL_VAR NAME="NUM_COGEBLAST"></td>
-			</tr>
-			<tr>
-				<td class="right">GEvo</td>
-				<td class="indent"><TMPL_VAR NAME="NUM_GEVO"></td>
-			</tr>
-			<tr>
-				<td class="right">SynFind</td>
-				<td class="indent"><TMPL_VAR NAME="NUM_SYNFIND"></td>
-			</tr>
-			<tr>
-				<td class="right">SynMap</td>
-				<td class="indent"><TMPL_VAR NAME="NUM_SYNMAP"></td>
-			</tr>
-		</table>
+		<div>
+			<div class="bold text">Total analyses run: <TMPL_VAR NAME="NUM_ANALYSES"></div>
+			<table class="small text indent">
+				<tr>
+					<td class="right">CoGeBlast</td>
+					<td class="indent"><TMPL_VAR NAME="NUM_COGEBLAST"></td>
+				</tr>
+				<tr>
+					<td class="right">GEvo</td>
+					<td class="indent"><TMPL_VAR NAME="NUM_GEVO"></td>
+				</tr>
+				<tr>
+					<td class="right">SynFind</td>
+					<td class="indent"><TMPL_VAR NAME="NUM_SYNFIND"></td>
+				</tr>
+				<tr>
+					<td class="right">SynMap</td>
+					<td class="indent"><TMPL_VAR NAME="NUM_SYNMAP"></td>
+				</tr>
+			</table>
+		</div>
 	<TMPL_ELSE>
-		blah
+		<div class='padded'>You haven't run any analyses yet.</div>
 	</TMPL_IF>
 	<br>
 </TMPL_IF>
