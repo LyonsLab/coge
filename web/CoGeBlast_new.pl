@@ -1385,7 +1385,7 @@ qq{<span class=small>Hits colored by Identity.  <span style="color:#AA0000">Min:
             $large_image_file =~ s/$TEMPDIR/$TEMPURL/;
             my $blast_link;
             $blast_link .=
-qq{<span class =\"small link\" onclick="window.open('OrganismView.pl?dsgid=}
+qq{<span class =\"small link\" onclick="window.open('GenomeInfo.pl?gid=}
               . $data{$org}{dsg}->id
               . qq{')">$org</span><br>};
             $blast_link .=
@@ -2500,7 +2500,7 @@ sub get_genome_info { #FIXME: dup'ed in SynFind.pl
 
     my $html = qq{<table class='small'>}
       ;    # = qq{<div style="overflow:auto; max-height:78px">};
-    $html .= qq{<tr valign='top'><td style='white-space:nowrap'>Name:<td><span class='link' onclick=window.open('OrganismView.pl?dsgid=$dsgid')>}
+    $html .= qq{<tr valign='top'><td style='white-space:nowrap'>Name:<td><span class='link' onclick=window.open('GenomeInfo.pl?gid=$dsgid')>}
       . $dsg->organism->name
       . "</span>";
     $html .= "<tr valign='top'><td style='white-space:nowrap'>Description:<td>" . join(
