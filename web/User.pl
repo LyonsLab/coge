@@ -278,7 +278,7 @@ sub get_item_info {
         
         my $info = 'Genome <i>' . $genome->info . '</i>';
         my $edit_link = qq{open_item('$info','GenomeInfo.pl?gid=$item_id');};
-        my $view_link = qq{open_item('$info','GenomeView.pl?gid=$item_id');};
+        my $view_link = qq{open_item('$info','GenomeView.pl?gid=$item_id&tracks=sequence%2Cfeatures');};
         my $load_link = qq{open_item('$info','LoadAnnotation.pl?gid=$item_id');};
         
         $html .= qq{<div><b>Tools:</b><br>}

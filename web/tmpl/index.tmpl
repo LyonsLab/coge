@@ -172,7 +172,7 @@ function cross_fade(selector, image, delay) {
             link = "https://genomevolution.org/wiki/index.php/"+image[index][2];
 
             var elem = $(image[index][0])
-                .css("width", "100%")
+                .css("max-width", "100%")
                 .css("max-height", "50%");
 
 	    if(image[index].length === 4) {    
