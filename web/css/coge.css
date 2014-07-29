@@ -1418,3 +1418,10 @@ header {
     top: 45%;
     left: 40%;
 }
+
+.clearfix:before,
+.clearfix:after {
+    content: " ";
+    display: table;
+    clear:both;
+}
