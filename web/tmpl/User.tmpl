@@ -140,7 +140,7 @@ $(function() {
 
 		if (idleTime > IDLE_TIME) {
 			// User was idle for a while, refresh page
-			schedule_poll(1);
+			schedule_poll(0);
 		}
 	});
 
@@ -196,13 +196,13 @@ function poll() {
 	clear_info_cache();
 }
 
-function schedule_poll(now) {
+function schedule_poll(when) {
 	cancel_poll();
 
-	if (now) {
+	if (when !== undefined) {
 		timers['poll'] = window.setTimeout(
 			function() { poll(); },
-			0
+			when
 		);
 		return;
 	}
@@ -691,17 +691,40 @@ function cancel_job_dialog(id) {
 }
 
 function cancel_job(id) {
-	$.ajax({
-		data: {
-			fname: 'cancel_job',
-			workflow_id: id
-		},
-		success : function(rc) {
-			if (rc) {
-            	poll();
-            }
-		}
-	});
+	if (id) {
+		$.ajax({
+			data: {
+				fname: 'cancel_job',
+				workflow_id: id
+			},
+			success : function(rc) {
+				if (rc) {
+					schedule_poll(0);
+	            }
+			}
+		});
+	}
+}
+
+function restart_job(link) {
+	if (link) {
+		// Doesn't work for http vs. https:
+//		var element = document.createElement("iframe"); 
+//		element.setAttribute('id', 'myframe');
+//		element.setAttribute('src', link);
+//		document.body.appendChild(element);
+
+		// Open the link in a "hidden" window.
+		// Workaround for restarting a workflow until JEX implements a 
+		// restart command.
+		var w = window.open(link,'_blank', 'toolbar=no,status=no,menubar=no,scrollbars=no,resizable=no,left=10000,top=10000,width=1,height=1,visible=none', ''); 
+		setTimeout(function() {
+				schedule_poll(0);
+				w.close();
+			},
+			5000
+		);
+	}
 }
 
 function comment_dialog(id, val) {
@@ -722,7 +745,7 @@ function comment_job(id, comment) {
 		},
 		success : function(rc) {
 			if (rc) {
-            	poll();
+				schedule_poll(0);
             }
 		}
 	});
@@ -1105,7 +1128,7 @@ function create_new_group() {
         },
         success: function(rc) {
             if (rc) {
-            	poll();
+            	schedule_poll(0);
             }
         },
         complete: function() {
@@ -1139,7 +1162,7 @@ function create_new_notebook() {
         },
         success: function(rc) {
             if (rc) {
-            	poll();
+            	schedule_poll(0);
             }
         },
         complete: function() {
