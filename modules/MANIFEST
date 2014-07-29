@@ -137,6 +137,7 @@ Pipelines/Misc/lib/CoGe/Pipelines/Misc/Copy.pm
 Pipelines/Misc/lib/CoGe/Pipelines/Misc/Features.pm
 Pipelines/Misc/lib/CoGe/Pipelines/Misc/Gff.pm
 Pipelines/Misc/lib/CoGe/Pipelines/Misc/Tbl.pm
+Pipelines/SynMap/lib/CoGe/Pipelines/SynMap.pm
 Services/lib/CoGe/Services/Auth.pm
 Services/lib/CoGe/Services/Routes.pm
 Services/lib/CoGe/Services/Data/Experiment.pm

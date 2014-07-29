@@ -735,7 +735,7 @@ qq{<span class="data5 link" onclick="window.open('OrganismView.pl?dsid=}
 		foreach my $dsg ( $ds->genomes ) {
 			my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
 			my $genome =
-qq{<span class="data5 link" onclick="window.open('OrganismView.pl?dsgid=}
+qq{<span class="data5 link" onclick="window.open('GenomeInfo.pl?gid=}
 			  . $dsg->id . "')\">"
 			  . $name . " (v"
 			  . $dsg->version . ")";
@@ -744,7 +744,7 @@ qq{<span class="data5 link" onclick="window.open('OrganismView.pl?dsgid=}
 		$anno_obj->add_Annot(
 			new CoGe::Accessory::Annotation(
 				Type =>
-				  "<tr><td nowrap='true'><span class=\"title5\">Genomes</span>",
+				  "<tr><td nowrap='true'><span class=\"title5\">Genome</span>",
 				Values       => \@genomes,
 				Type_delimit => ":<td>",
 				Val_delimit  => " "

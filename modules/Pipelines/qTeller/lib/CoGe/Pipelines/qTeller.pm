@@ -264,7 +264,7 @@ sub create_fasta_filter_job {
         outputs => [
             catfile($FASTA_CACHE_DIR, $name . ".filtered.fasta")
         ],
-        description => "Filtering fasta file..."
+        description => "Filtering genome sequence..."
     );
 }
 
@@ -296,7 +296,7 @@ sub create_gff_generation_job {
         outputs => [
             catdir($CACHE, $genome->id, "gff", $name)
         ],
-        description => "Generating gff..."
+        description => "Generating genome annotations gff..."
     );
 }
 
@@ -639,7 +639,7 @@ sub create_gmap_index_job {
         outputs => [
             [catdir($GMAP_CACHE_DIR, $name . "-index"), 1]
         ],
-        description => "Generating gmap index..."
+        description => "Indexing genome sequence with GMAP..."
     );
 }
 
@@ -777,7 +777,7 @@ sub create_bowtie_index_job {
             catfile($BOWTIE_CACHE_DIR, $name . ".rev.1.bt2"),
             catfile($BOWTIE_CACHE_DIR, $name . ".rev.2.bt2")
         ],
-        description => "Generating bowtie index..."
+        description => "Indexing genome sequence with Bowtie..."
     );
 }
 

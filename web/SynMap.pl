@@ -9,17 +9,20 @@ use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils qw( commify );
+use CoGe::Pipelines::SynMap qw(generate_pseudo_assembly);
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
 use DBIxProfiler;
 use Data::Dumper;
+use Digest::MD5 qw(md5_hex);
 use HTML::Template;
 use JSON::XS;
 use LWP::UserAgent;
 use Parallel::ForkManager;
 use GD;
 use File::Path;
+use File::Spec::Functions;
 use Mail::Mailer;
 use Benchmark;
 use DBI;
@@ -217,6 +220,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     get_dsg_gc             => \&get_dsg_gc,
     #read_log               => \&CoGe::Accessory::Web::read_log,
     get_results            => \&get_results,
+    generate_assembly      => \&generate_assembly,
     %ajax,
 );
 
@@ -3180,7 +3184,17 @@ sub get_results {
             file => $spa_file,
             msg  => qq{Syntenic Path Assembly mapping},
         );
-        $spa_url =\\ "";
+
+        $spa_url = "" unless $spa_url;
+
+        my $spa_result = "";
+
+        if ($spa_url and $assemble) {
+            $spa_result = $spa_url
+                . qq{<a href="#" class="small" onclick="coge.synmap.submit_assembly(window.event, '$dagchainer_file', '$dsgid1', '$dsgid2');">}
+                . qq{Generate Pseudo-Assembled Genomic Sequence}
+                . qq{</a>};
+        }
 
         my $json_url = _filename_to_link(
             file => $json_file,
@@ -3189,11 +3203,6 @@ sub get_results {
 
         $dagchainer_file =~ s/^$URL/$DIR/;
 
-        $html .= "<br>"
-          . qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=}
-          . $config->{_CONFIG_PATH}
-          . qq{;l=$tiny_link');" >Generate Pseudo-Assembled Genomic Sequence</span>}
-          if $assemble;
 
         my $rows = [
             {
@@ -3242,10 +3251,7 @@ sub get_results {
                 general  => undef,
                 homolog  => undef,
                 diagonal => undef,
-                result   => $spa_url
-                    . qq{<span class="link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=}
-                    . $config->{_CONFIG_PATH}
-                    . qq{;l=$tiny_link');" >Generate Pseudo-Assembled Genomic Sequence</span>},
+                result   => $spa_result
 ,
             },
             {
@@ -3683,4 +3689,53 @@ sub get_dotplot {
     my $html =
 qq{<iframe src=$url frameborder=0 width=$w height=$h scrolling=no></iframe>};
     return $html;
+}
+
+sub generate_assembly {
+    my %opts = @_;
+    my $gid1 = $opts{gid1};
+    my $gid2 = $opts{gid2};
+
+    unless ($gid1 and $gid2) {
+        return encode_json({
+            success => JSON::false,
+            error => "Wrong number of genomes specified"
+         });
+    }
+
+    # Swap order if gid2 < gid1
+    ($gid1, $gid2) = ($gid2, $gid1) if $gid2 lt $gid1;
+
+    my $genome1 = $coge->resultset("Genome")->find($gid1);
+    my $genome2 = $coge->resultset("Genome")->find($gid2);
+
+    unless ($USER->has_access_to_genome($genome1) and
+            $USER->has_access_to_genome($genome2)) {
+
+        return encode_json({
+            success => JSON::false,
+            error => "User does not have access to this dataset"
+        });
+    }
+
+    unless ($opts{input} and -r $opts{input}) {
+        return encode_json({
+            success => JSON::false,
+            error => "The syntenic path assembly could not be found"
+        });
+    }
+
+    my $filename = qq($gid1-$gid2-) . md5_hex($opts{input}) . ".tar.gz";
+    my $output = catfile($DIAGSDIR, $gid1, $gid2, "assembly", $filename);
+
+    # Submit workflow
+    my $submission = generate_pseudo_assembly($JEX, $config, $opts{input}, $output);
+    $output =~ s/$DIR/$URL/;
+
+    # Fixup success to return true or false
+    return encode_json({
+        id => $submission->{id},
+        output => $output,
+        success => $submission->{success} ? JSON::true : JSON::false,
+    });
 }

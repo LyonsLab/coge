@@ -65,6 +65,15 @@ $log_file = catfile($staging_dir, 'log.txt') unless $log_file;
 mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
 open( my $log, ">>$log_file" ) or die "Error opening log file $log_file";
 $log->autoflush(1);
+print $log "Starting $0 (pid $$)\n",
+           qx/ps -o args $$/;
+
+# Prevent loading again (issue #417)
+my $logdonefile = "$staging_dir/log.done";
+if (-e $logdonefile) {
+    print $log "log: error: done file already exists: $logdonefile\n";
+    exit(-1);
+}
 
 # Process and verify parameters
 $data_file   = unescape($data_file);
@@ -371,7 +380,6 @@ if ($result_dir) {
 }
 
 # Create "log.done" file to indicate completion to JEX
-my $logdonefile = "$staging_dir/log.done";
 touch($logdonefile);
 
 print $log "log: All done!\n";

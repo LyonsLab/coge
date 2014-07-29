@@ -1,5 +1,16 @@
 @import url(coge-spinner.css);
 
+.coge-dialog-content {
+    height: 12.5em;
+    width: 28.125em;
+    text-align: center;
+    color: dimgray;
+}
+
+.coge-dialog-status {
+    padding-top: 1em;
+}
+
 BODY {
   font-family: "Helvetica Neue", Helvetica, Arial, fixed;
   line-height: 1.125; /* 18/16 = 1.125 */
