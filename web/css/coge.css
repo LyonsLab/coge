@@ -1281,6 +1281,14 @@ header {
  *
  */
 
+.coge-buttonset {
+    padding: 5px;
+}
+
+.coge-buttonset .ui-button {
+    margin-left: 5px;
+}
+
 .coge-button {
     padding: 0.125em 1em ; /* 2/16 = 0.125 */
     font-weight: 600;
@@ -1306,7 +1314,7 @@ header {
 }
 
 .coge-button-lg {
-    font-size: 1.25em; /* 20/16 = 1.25 */
+    font-size: 1em; /* 20/16 = 1.25 */
     font-weight: 600;
     padding: 0.125em 1.125em ; /* 2/16 = 0.125 18/16 = 1.125 */
     line-height: 1.5;
