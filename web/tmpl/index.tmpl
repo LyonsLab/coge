@@ -93,7 +93,7 @@ function getYoutubeVideos(path, callback) {
             var id = entries[i].id;
             var title = entries[i].title;
             var description = entries[i].description;
-	    var thumbnail = entries[i].thumbnail.hqDefault;
+            var thumbnail = entries[i].thumbnail.hqDefault;
 
             var src = 'https://www.youtube.com/embed/' + id
             + '?wmode=transparent&amp;HD=0&amp;rel=0&amp;showinfo=0&amp;'
@@ -102,17 +102,17 @@ function getYoutubeVideos(path, callback) {
             var vid = $('<iframe frameborder="0" allowfullscreen><iframe>')
                 .attr("src", src);
 
-	    var overlay = $("<img class='overlay' src='picts/youtube-play-button.png'>")
-		.css("width", "20%");
+            var overlay = $("<img class='overlay' src='picts/youtube-play-button.png'>")
+                .css("width", "20%");
 
             var youtubeHack = $("<div id='youtube-hack' class='youtube-hack'></div>");
 
-	    var element = $('<img></img>', {"id": id, src: thumbnail})
-		.css("width", "100%")
-		.css("height", "100%");
+            var element = $('<img></img>', {"id": id, src: thumbnail})
+                .css("width", "100%")
+                .css("max-height", "45%");
 
-	    youtubeHack.append(element);
-	    youtubeHack.append(overlay);
+            youtubeHack.append(element);
+            youtubeHack.append(overlay);
 
             videos.push([youtubeHack, title, entries[i].player["default"], vid]);
         }
@@ -159,7 +159,7 @@ function cross_fade(selector, image, delay) {
         .append(next_button);
 
     var viewer = $("<div></div>")
-        .addClass("xsmall link")
+        .addClass("link")
         .css("text-align", "center")
         .css("padding", "5px");
 
@@ -172,13 +172,12 @@ function cross_fade(selector, image, delay) {
             link = "https://genomevolution.org/wiki/index.php/"+image[index][2];
 
             var elem = $(image[index][0])
-                .css("max-width", "100%")
-                .css("max-height", "50%");
+                    .css("max-width", "100%")
 
-	    if(image[index].length === 4) {    
-		var vid = $(image[index][3])
-                    .css("width", "95%")
-                    .css("height", "500px");
+            if(image[index].length === 4) {
+                var vid = $(image[index][3])
+                            .css("width", "95%")
+                            .css("height", "500px");
 
                 link = image[index][2];
             }
@@ -193,21 +192,20 @@ function cross_fade(selector, image, delay) {
                 .css("float", "none")
                 .text(image[index][1]);
 
-	    viewer.unbind();
-                if(image[index].length === 4) {
-                    viewer.on("click", $.proxy(pause, run_button))
-		    .on("click", function() {
-                            elem.replaceWith(vid)
-                    });
+            viewer.unbind();
 
-                } else {
-                    viewer.on("click", function() { window.open(link); });
-                }
+            if(image[index].length === 4) {
+                viewer.on("click", $.proxy(pause, run_button))
+                    .on("click", function() { elem.replaceWith(vid); });
+            } else {
+                viewer.on("click", function() { window.open(link); });
+            }
+
             viewer.html("")
                 .append(elem)
                 .append(description)
-                .fadeIn(duration);        
-    };
+                .fadeIn(duration);
+        };
 
         viewer.fadeOut(duration, transition);
     }
