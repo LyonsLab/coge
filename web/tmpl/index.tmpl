@@ -59,7 +59,7 @@ $(document).ready(function(){
 
     $("#genome_dialog").dialog({
         title: "Recently Added Genomes",
-        width: 450,
+        width: 550,
         autoOpen: false,
         position: {
             my: "center",
@@ -76,7 +76,7 @@ $(document).ready(function(){
 });
 
 function show_genomes(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
     $("#genome_dialog").dialog("open");
 
     var limit = $('#limit').val();
@@ -271,18 +271,24 @@ function load_latest(container, content) {
     var i,
         entry,
         name,
+        wrapper,
         added;
 
     for(i = 0; i < content.length; i++) {
-        entry = $("<h4></h4>");
+        wrapper = $("<div></div>");
+
+        added = new Date(content[i].added);
+
+        entry = $("<h4></h4>")
+            .html(added.toDateString())
+            .css("width", "10em")
+            .addClass("inline");
 
         name = $("<a></a>", { href: content[i].url, text: content[i].organism });
-        name.addClass("padded");
+        name.addClass("inline");
 
-        added = $("<small></small>", { text: "added on " + content[i].added });
-
-        entry.append(name).append(added);
-        container.append(entry);
+        wrapper.append(entry).append(name);
+        container.append(wrapper);
     }
 
     container.slideDown();
