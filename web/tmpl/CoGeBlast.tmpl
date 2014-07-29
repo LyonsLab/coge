@@ -1252,18 +1252,6 @@ function toggle_display(button_obj, target_id) {
 	}
 }
 
-function toggle_title(id, full, partial) {
-	var obj = $('#'+id);
-	var label = $(obj).html();
-
-	if (label == full) {
-		$(obj).html(partial);
-	}
-	else {
-		$(obj).html(full);
-	}
-}
-
 </SCRIPT>
 
   <tmpl_if name="BETA">
@@ -1381,19 +1369,19 @@ function toggle_title(id, full, partial) {
     </div>
 
     <div style="padding: 0 1.4em 1em; box-sizing: border-box;">
-        <h4>Query Sequences(s)</h4>
-        <textarea id="seq_box" name="seq_box" style='width: 100%; color:gray;' class="ui-corner-all ui-widget-content" spellcheck='false' wrap="off" cols="80"
+        <div class="bold text">Query Sequences(s)</div>
+        <textarea id="seq_box" name="seq_box" style='width: 100%; color:gray;' class="ui-corner-all ui-widget-content coge-section" spellcheck='false' wrap="off" cols="80"
         placeholder="<TMPL_VAR NAME="SEQUENCE">" rows="15"></textarea>
     </div>
   </div> <!-- tabs -->
-    <div class="padded">
-        <span id="run_blast" class='ui-button ui-button-go ui-corner-all coge-button'>Run CoGe Blast</span>
+    <div class="padded" style='margin-top:0.75em;'>
+        <span id="run_blast" class='ui-button ui-button-go ui-corner-all coge-button-lg'>Run CoGe Blast</span>
     </div>
 </TMPL_IF> <!-- MAIN -->
 
 <TMPL_IF NAME="BLAST_NU">
-  <th align="left" valign="top">Nucleotide Specific Parameters
-    <br>
+  <th align="left" valign="top">
+    <div class="bold text">Nucleotide Specific Parameters</div>
     <TABLE class="ui-corner-all ui-widget-content small">
       <TR>
         <TD valign="top">Match/Mismatch Scores:</TD>
@@ -1413,8 +1401,8 @@ function toggle_title(id, full, partial) {
 </TMPL_IF> <!-- BLAST_NU -->
 
 <TMPL_IF NAME="BLAST_PRO">
-  <TH align="left" valign="top">Protein Specific Parameters
-    <br>
+  <TH align="left" valign="top">
+    <div class="bold text">Protein Specific Parameters</div>
     <TABLE class="ui-corner-all ui-widget-content small">
       <TR>
         <TD valign="top">Matrix:</TD>
@@ -1447,8 +1435,8 @@ function toggle_title(id, full, partial) {
 </TMPL_IF> <!-- BLAST_PRO -->
 
 <TMPL_IF NAME="NCBI_BLAST_NU">
-  <TH align="left" valign="top">Nucleotide Specific Parameters
-    <br>
+  <TH align="left" valign="top">
+    <div class="bold text">Nucleotide Specific Parameters</div>
     <TABLE class='ui-widget-content ui-corner-all small'>
       <TR>
         <TD valign="top">Match/Mismatch Scores:</TD>
@@ -1468,8 +1456,8 @@ function toggle_title(id, full, partial) {
 </TMPL_IF> <!-- CBI_BLAST_NU -->
 
 <TMPL_IF NAME="NCBI_BLAST_PRO">
-  <TH align="left" valign="top">Protein Specific Parameters
-    <br>
+  <TH align="left" valign="top">
+    <div class="bold text">Protein Specific Parameters</div>
     <TABLE class='ui-widget-content ui-corner-all small'>
       <TR>
         <TD valign="top">Matrix</TD>
@@ -1554,14 +1542,6 @@ function toggle_title(id, full, partial) {
 </TMPL_IF> <!-- T_DB -->
 
 <TMPL_IF NAME="RESULT_TABLE">
-    <div class="padded">
-    <span href="javascript:void(0)" id="table_opts" class='ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left'>
-        <span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns
-    </span>
-    <span class="small" style="font-style:italic;color:gray;padding-left:15px;">
-        Click column headers to sort
-    </span>
-  </div>
   <div id="table_size">
     <div id="null"><TMPL_VAR NAME="NULLIFY"></div>
     <TMPL_IF NAME="HSP_TABLE">
@@ -1747,58 +1727,69 @@ function toggle_title(id, full, partial) {
 
 <TMPL_IF NAME="BLAST_RESULTS">
     <div class="ui-widgt-content ui-corner-all">
+	    <div class="r">
+		    <span class="bold text">HSP Count </span>
+		    <span class="small link" onclick="toggle_display(this, 'hsp_count_data');">hide</span>
+		    <div id="hsp_count_data">
+		        <TMPL_VAR NAME="HSP_COUNT">
+		    </div>
+	    </div>
+
         <div class="l">
-            <span id="genomic_title" style="font-weight:bold;">Genomic HSP Visualization</span>
-            <span class='small link' style="font-weight:normal;padding-right:15px;" onClick="toggle_display(this, 'left_column');toggle_title('genomic_title', 'Genomic HSP Visualization','Gen...');">hide</span>
+        	<div>
+	            <span id="genomic_title" class="bold text">Genomic HSP Visualization </span>
+	            <span class='small link' style="font-weight:normal;padding-right:15px;" onClick="toggle_display(this, 'left_column');">hide</span>
+            </div>
             <div>
                 <div id="left_column">
-                    <div class="small">
-                    <span class="link" onclick="window.open('<TMPL_VAR NAME=GENOMELIST_LINK>')">Generate List of Matching Genomes
-                    </div>
                     <div id="chromosomes" class="ui-widget-content ui-corner-all" style="width: 405px;overflow: auto;max-height: 700px;">
-                    <TMPL_VAR NAME=CHROMOSOMES>
-                    <TMPL_VAR NAME=CHR_LARGE>
+                    <TMPL_VAR NAME="CHROMOSOMES">
+                    <TMPL_VAR NAME="CHR_LARGE">
+                    <div class="small">
+	                	<span class="link" onclick="window.open('<TMPL_VAR NAME=GENOMELIST_LINK>')">Generate List of Matching Genomes
+	                </div>
                 </div>
-
-                <TMPL_VAR NAME="DATA_FILES">
             </div>
         </div>
     </div>
 
-    <div class="l">
-        <span id="result_toggle">
-        <span style="font-weight:bold;">HSP Table</span>
+    <div class="l" style="clear:both;">
+    	<br><br>
+        <div id="result_toggle">
+        <span class="bold text">HSP Table </span>
         <span class='small link' style="font-weight:normal;padding-right:15px;" onClick="toggle_display(this, 'result_features');">hide</span>
-        </span>
+        </div>
             <div id="result_features" align="left" valign="top">
 
             <TMPL_VAR NAME="HSP_RESULTS">
 
-            <div class="padded">
+            <div class="small padded">
+	            <span href="javascript:void(0)" id="table_opts" class='r ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left'>
+	                <span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns
+	            </span>
                 <span class='ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left' onClick="$('#hsp_result_table :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
                 <span class='ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left' onClick="$('#hsp_result_table :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
-                <span class='small'>Send selected to:</span>
+                <span class='small' style="margin-left:2em;">Send selected to:</span>
                 <select name="overlap_action" id="overlap_action">
-                <option value="gevo">GEvo</option>
-                <option value="fasta">Fasta View</option>
-                <option value="seqview">Sequence View</option>
-                <option value="xls">Excel File</option>
-                <option value="tab">Tab Delimited FIle</option>
-                <option value="list">Feature List</option>
-                <option value="blast">CoGeBlast</option>
-                <option value="phylo">Phylogenetics</option>
-                <option value="CodeOn">Coding Evolution</option>
+	                <option value="gevo">GEvo</option>
+	                <option value="fasta">Fasta View</option>
+	                <option value="seqview">Sequence View</option>
+	                <option value="xls">Excel File</option>
+	                <option value="tab">Tab Delimited FIle</option>
+	                <option value="list">Feature List</option>
+	                <option value="blast">CoGeBlast</option>
+	                <option value="phylo">Phylogenetics</option>
+	                <option value="CodeOn">Coding Evolution</option>
                 </select>
                 <span class='ui-button ui-corner-all coge-button' onClick="overlap_checkboxes();">Go</span>
             </div>
         </div>
     </div>
-    <div style='padding:15px; clear:both;'>
-        <span style="font-weight:bold;">HSP count</span>
-        <span class="small link" onclick="toggle_display(this, 'hsp_count_data');">show</span>
-        <div id="hsp_count_data" style="display:none;">
-            <TMPL_VAR NAME="HSP_COUNT">
-        </div>
+    
+    <div style="clear:both;">
+    	<br><br>
+    	<span class="bold text">Download</span>
+    	<TMPL_VAR NAME="DATA_FILES">
     </div>
 </div>
 </TMPL_IF>

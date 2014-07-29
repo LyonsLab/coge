@@ -3,10 +3,10 @@
 <TMPL_INCLUDE NAME='widgets/GenomeSelect.tmpl'><!--<TMPL_VAR NAME=GENOME_SEARCH_STUFF>-->
 <br>
 
-<table class="ui-widget-content ui-corner-all" style="width: 100%;">
+<div class="bold text">BLAST Parameters</div>
+<table class="ui-widget-content ui-corner-all coge-section" style="width: 100%;">
   <tr valign="top">
     <td align="left">
-      <b>BLAST Parameters</b>
       <!--
       <div class='small' style='color:gray;padding:5px;'>
         <span id='blast_summary'><b>Type:</b> Nucleotide Sequence (blastn) ...</span>
@@ -16,8 +16,8 @@
       <div id='blast_params'>
         <table>
           <tr>
-            <td align="left" valign="top"><b>Type</b>
-              <br>
+            <td align="left" valign="top">
+              <div class="bold text">Type</div>
               <div id="coge_blast_type">
                 <table class="ui-widget-content ui-corner-all small">
                   <tr>
@@ -41,8 +41,9 @@
                     </td>
                   </tr>
                 </table>
-                <br><b>Color Blast Hits According to:<br></b>
-                <div class="ui-widget-content ui-corner-all">&nbsp&nbsp
+                <br>
+                <div class="bold text">Color Blast Hits According to:</div>
+                <div class="ui-widget-content ui-corner-all small">&nbsp&nbsp
                   <input type="radio" name="color_by" id="color_by" value="0" checked>None<br>&nbsp&nbsp
                   <input type="radio" name="color_by" id="color_by" value="query">Query Sequence<br>&nbsp&nbsp
                   <input type="radio" name="color_by" id="color_by" value="quality">Log Quality<br>&nbsp&nbsp
@@ -50,8 +51,8 @@
                 </div>
               </div> <!-- coge_blast_type -->
             </td>
-            <td align="left" valign="top"><b>Parameters</b>
-              <br>
+            <td align="left" valign="top">
+              <div class="bold text">Parameters</div>
               <div id="blast_parameters">
                 <table class="ui-corner-all ui-widget-content small">
                   <tr>
