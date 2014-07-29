@@ -18,9 +18,19 @@
 </HEAD>
 
 <BODY <TMPL_VAR NAME="BODY_ONLOAD">>
-<div style="min-height:100%">
+
+
+<div id="logout_dialog" class="hidden dialog_box" title="Log out of CoGe">
+	<div style="text-align:center;padding:30px;">
+		<div class="info">Would you like to log out of all iPlant applications?</div>
+		<br><br>
+		<span onClick="location.href='index.pl?logout_coge=1';" style="font-size:0.75em;margin:15px;padding:5px;" class='ui-button ui-corner-all'>Log out of CoGe only</span>
+		<span onClick="location.href='index.pl?logout_all=1';" style="font-size:0.75em;margin:15px;padding:5px;" class='ui-button ui-corner-all'>Log out of all iPlant services</span>
+	</div>
+</div>
+
 <TMPL_VAR NAME="JAVASCRIPT">
-<SCRIPT language="JavaScript">
+<script>
 jQuery(document).ready(function(){
 	pageObj = new Object();
 	if (jQuery.browser.msie) {browserAlert()};
@@ -95,78 +105,71 @@ $(document).ready( function() {
 	$('#menubar').css('visibility', 'visible'); // mdb added 10/21/13 -- hidden on startup to prevent "glitching" in rendering
 });
 
-</SCRIPT>
-<!--
-<div class="error-box">
-Please note:  the iPlant Data Store will be unavailable Tuesday, April 15th for scheduled maintenance, preventing data import into CoGe.
-</div>
--->
+</script>
+
+<div style="min-height:100%">
+    <!--
+    <div class="error-box">
+    Please note:  the iPlant Data Store will be unavailable Tuesday, April 15th for scheduled maintenance, preventing data import into CoGe.
+    </div>
+    -->
+
 <header>
+    <div class="clearfix">
+        <TMPL_UNLESS NAME="MENU">
+            <div id="menubar" class="r" style="visibility:hidden;">
+                <span style="float:left;color:gray; margin-right:50px;">
+                    <TMPL_IF NAME="LOGON">
+                        <span class="small">You are logged-in as <b><TMPL_VAR NAME="USER"></b> - <span onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');" class="small bold link">Sign-out</span></span>
+                    <TMPL_ELSE>
+                        <span class="small">Welcome! You are not logged-in ... <a href="javascript:void(0)" onClick="login_cas();return true;" class="small"><b>Sign-in</b></a> <a href="http://genomevolution.org/wiki/index.php/How_to_get_a_CoGe_account" target=_login_info><br>New here? Get a CoGe account.</a></span>
+                </TMPL_IF>
+                </span>
 
-<TMPL_UNLESS NAME="MENU">
-<div id="menubar" style="float:right;visibility:hidden;">
-	<span style="float:left;color:gray; margin-right:50px;">
-		<TMPL_IF NAME="LOGON">
-			<span class="small">You are logged-in as <b><TMPL_VAR NAME="USER"></b> - <span onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');" class="small bold link">Sign-out</span></span>
-		<TMPL_ELSE>
-			<span class="small">Welcome! You are not logged-in ... <a href="javascript:void(0)" onClick="login_cas();return true;" class="small"><b>Sign-in</b></a> <a href="http://genomevolution.org/wiki/index.php/How_to_get_a_CoGe_account" target=_login_info><br>New here? Get a CoGe account.</a></span>
-     </TMPL_IF>
-	</span>
+                <span style="float:right; margin-right: 20px;">
+                    <ul class="sf-menu">
+                        <li><a href="User.pl" target="_self">My Profile</a></li>
+                        <li><a href='User.pl?p=106' target="_self">My History</a></li>
+                        <li><a href='javascript:void(0)'>Tools</a>
+                            <ul>
+                                <li><a href="OrganismView.pl" target="_self">OrganismView</a></li>
+                                <li><a href="CoGeBlast.pl" target="_self">CoGeBlast</a></li>
+                                <li><a href="FeatView.pl" target="_self">FeatView</a></li>
+                                <li><a href="SynFind.pl" target="_self">SynFind</a></li>
+                                <li><a href="SynMap.pl" target="_self">SynMap</a></li>
+                                <li><a href="GEvo.pl" target="_self">GEvo</a></li>
+                            </ul>
+                        </li>
+                        <li><a href='javascript:void(0)'>Help</a>
+                            <ul>
+                                <li><a href="https://genomevolution.org/wiki" target="_blank">CoGePedia</a></li>
+                                <li><a href="https://genomevolution.org/<TMPL_VAR NAME=HELP>" target="_blank">Page Docs</a></li>
+                                <li><a href="http://iplant.co/AskCoGe" target="_blank">Forums</a></li>
+                                <li><a href="https://genomevolution.org/wiki/index.php/FAQs" target="_blank">About CoGe</a></li>
+                                <li><a href="https://genomevolution.org/wiki/index.php/Tutorials" target="_blank">Tutorials</a></li>
+                                <li><a href="https://genomevolution.org/wiki/index.php/Contact_Page" target="_blank">Contact or Cite Us</a></li>
+                                <li><a href="https://genomevolution.org/wiki/index.php/System_Support" target="_blank">System Support</a></li>
+                                <li><a href="https://genomevolution.org/wiki/index.php/CoGepedia:Current_events" target="_blank">Latest News</a><li>
+                            </ul>
+                        </li>
+                        <li><a href="./" target="_self">Home</a></li>
+                    </ul>
+                </span>
+            </div>
+            <div id="dev" class='small alert'></div>
+        </TMPL_UNLESS>
 
-	<span style="float:right; margin-right: 20px;">
-		<ul class="sf-menu">
-			<li><a href="User.pl" target="_self">My Profile</a></li>
-			<li><a href='User.pl?p=106' target="_self">My History</a></li>
-			<li><a href='javascript:void(0)'>Tools</a>
-				<ul>
-					<li><a href="OrganismView.pl" target="_self">OrganismView</a></li>
-					<li><a href="CoGeBlast.pl" target="_self">CoGeBlast</a></li>
-					<li><a href="FeatView.pl" target="_self">FeatView</a></li>
-					<li><a href="SynFind.pl" target="_self">SynFind</a></li>
-					<li><a href="SynMap.pl" target="_self">SynMap</a></li>
-					<li><a href="GEvo.pl" target="_self">GEvo</a></li>
-				</ul>
-			</li>
-			<li><a href='javascript:void(0)'>Help</a>
-				<ul>
-					<li><a href="https://genomevolution.org/wiki" target="_blank">CoGePedia</a></li>
-					<li><a href="https://genomevolution.org/<TMPL_VAR NAME=HELP>" target="_blank">Page Docs</a></li>
-					<li><a href="http://iplant.co/AskCoGe" target="_blank">Forums</a></li>
-					<li><a href="https://genomevolution.org/wiki/index.php/FAQs" target="_blank">About CoGe</a></li>
-					<li><a href="https://genomevolution.org/wiki/index.php/Tutorials" target="_blank">Tutorials</a></li>
-					<li><a href="https://genomevolution.org/wiki/index.php/Contact_Page" target="_blank">Contact or Cite Us</a></li>
-					<li><a href="https://genomevolution.org/wiki/index.php/System_Support" target="_blank">System Support</a></li>
-					<li><a href="https://genomevolution.org/wiki/index.php/CoGepedia:Current_events" target="_blank">Latest News</a><li>
-				</ul>
-			</li>
-            <li><a href="./" target="_self">Home</a></li>
-		</ul>
-	</span>
-</div>
-<div id="dev" class='small alert'></div>
-</TMPL_UNLESS>
+        <TMPL_IF NAME="LOGO_PNG">
+            <a href="http://www.genomevolution.org/<TMPL_VAR NAME=HELP>" class="l">
+                <img style="vertical-align:bottom;" src='picts/<TMPL_VAR NAME="LOGO_PNG">'>
+            </a>
+        </TMPL_IF>
+        <span class="tagline l"><TMPL_VAR NAME="TITLE"></span>
+    </div>
 
-<div id="logout_dialog" class="hidden dialog_box" title="Log out of CoGe">
-	<div style="text-align:center;padding:30px;">
-		<div class="info">Would you like to log out of all iPlant applications?</div>
-		<br><br>
-		<span onClick="location.href='index.pl?logout_coge=1';" style="font-size:0.75em;margin:15px;padding:5px;" class='ui-button ui-corner-all'>Log out of CoGe only</span>
-		<span onClick="location.href='index.pl?logout_all=1';" style="font-size:0.75em;margin:15px;padding:5px;" class='ui-button ui-corner-all'>Log out of all iPlant services</span>
-	</div>
-</div>
+    <noscript>
+    Welcome to CoGe -- a new system for a new kind of comparative genomics.  CoGe is designed for easily visualizing, comparing, and understanding the evolution, struture and dynamics of genomes.
 
-<div class="clearfix">
-	<TMPL_IF NAME="LOGO_PNG">
-        <a href="http://www.genomevolution.org/<TMPL_VAR NAME=HELP>" class="l">
-		    <img style="vertical-align:bottom;" src='picts/<TMPL_VAR NAME="LOGO_PNG">'>
-        </a>
-	</TMPL_IF>
-	<span class="tagline l"><TMPL_VAR NAME="TITLE"></span>
-</div>
-
-<noscript>
-Welcome to CoGe -- a new system for a new kind of comparative genomics.  CoGe is designed for easily visualizing, comparing, and understanding the evolution, struture and dynamics of genomes.
-
-Unfortunately, we have detected that your browser currently has JavaScript disabled. In order for CoGe to function properly, JavaScript must be enabled in your browser. For instruction on how to do so in Mozilla Firefox, please click <a href="http://www.mozilla.org/support/firefox/options#content" target="_blank">here</a>. After enabling JavaScript, simply refresh the page, or click <a href="javascript:location.reload(true);" target="_self">here</a>.
-</noscript>
+    Unfortunately, we have detected that your browser currently has JavaScript disabled. In order for CoGe to function properly, JavaScript must be enabled in your browser. For instruction on how to do so in Mozilla Firefox, please click <a href="http://www.mozilla.org/support/firefox/options#content" target="_blank">here</a>. After enabling JavaScript, simply refresh the page, or click <a href="javascript:location.reload(true);" target="_self">here</a>.
+    </noscript>
 </header>
