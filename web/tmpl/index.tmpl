@@ -3,7 +3,6 @@
 <script language="javascript">
 $(document).ready(function(){
     var feed = new wikifeed("<tmpl_var name=wikifeed>", $("#wikifeed"));
-    $('#uname').focus();
     pageObj = new Object();
     pageObj.index=0;//Math.floor(Math.random()*20);
 
@@ -41,7 +40,7 @@ $(document).ready(function(){
         var im = new Image();
         im.src = "./picts/home_page/" + value[0];
         value[0] = im;
-    	return value;
+        return value;
     });
 
     getYoutubeVideos(path, function(videos) {
@@ -51,11 +50,6 @@ $(document).ready(function(){
 
         cross_fade("#crossfade", list, 1);
     });
-
-    //$("#accordion").accordion({collapsible:true, active: false}).show();
-    $("#accordion2").accordion({active: false, icons: false, disabled: true}).removeClass('invisible');
-    $("#accordion3").accordion({active: false, icons: false, disabled: true}).removeClass('invisible');
-    $("#accordion4").accordion({active: false, icons: false, disabled: true}).removeClass('invisible');
 
     $("#genome_dialog").dialog({
         title: "Recently Added Genomes",
