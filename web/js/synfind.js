@@ -109,7 +109,6 @@ function launch(dialog, results, options) {
 function formatter(item) {
     var msg;
     var row = $('<li>'+ item.description + ' </li>');
-    row.addClass('small');
 
     var job_status = $('<span></span>');
 
