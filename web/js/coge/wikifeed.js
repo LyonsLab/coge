@@ -49,26 +49,27 @@ window.wikifeed = function(url, element, size) {
     function formatPost(value, index, list) {
         var id = $(value[0]).attr("id");
 
-        var link = $("<a></a>");
-        link.attr("href", url + "#" + id)
-            .attr("target", "_blank")
-            .addClass("ui-icon ui-icon-extlink")
-            .css("float", "right");
-
         var content = $("<div></div>");
 
         var items = value.splice(3, value.length);
         items.unshift(link);
 
         var title = $(value[1]);
+
         var text = title.text().replace(/\[edit\]/gmi, "");
         var date = $("<span></span>").html($(value[2]).text())
             .addClass("date");
 
         var parsed = items.map(parseItem);
 
+        var link = $("<a></a>");
+        link.attr("href", url + "#" + id)
+            .html(text);
+
+        title = swapTag($("<h4></h4>"), title);
+
         return {
-            title: title.text(text).append(date),
+            title: title.html(link).append(date),
             content: content.html(parsed)
         };
     }
@@ -78,10 +79,10 @@ window.wikifeed = function(url, element, size) {
         var children = feed.children();
 
         var headers = feed.find("h2").toArray();
-
         if (!headers.length) return console.warn("Could not fetch headers");
 
         var indexes = headers.map(getIndex(children));
+
         indexes.push(children.length);
         var ranges = indexes.map(getRange);
         var items = ranges.map(getData(children.toArray()));
@@ -90,20 +91,17 @@ window.wikifeed = function(url, element, size) {
         render();
     }
 
+    function swapTag(tag, element) {
+        return tag.clone().html(element.innerHTML);
+    }
+
     function render() {
         var feed = $("<div></div>");
 
         for(var i = 0; i < numberOfPosts; i++) {
             feed.append(posts[i].title);
-            feed.append(posts[i].content);
+            //feed.append(posts[i].content);
         }
-
-        feed.accordion({
-            autoHeight: false,
-            icons: false,
-            active: false,
-            collapsible: true
-        });
 
         var footer = $("<a>...more...<a>").attr("href", url)
             .attr("target", "_blank")
