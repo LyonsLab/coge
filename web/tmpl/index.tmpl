@@ -308,92 +308,86 @@ function get_latest_genomes(limit) {
         </ul>
     </div>
 
-<div class="intro">
-    <div class="coge-section coge-shadow">
-        <h3>New Users</h3>
+<div class="wrapper">
+    <div id="intro">
+        <div class="coge-section coge-shadow">
+            <h3>New to CoGe?</h3>
+            <ul class="horizontal">
+                <li>
+                    <a href="https://genomevolution.org/wiki/index.php/New_to_CoGe">Get started</a>
+                </li>
+                <li>
+                    <a href="https://genomevolution.org/wiki/index.php/How_to_get_a_CoGe_account">Create an Account</a>
+                </li>
+                <li>
+                    <a href="https://genomevolution.org/wiki/index.php/Tutorials">Tutorials</a>
+                </li>
+                <li>
+                    <a href="https://genomevolution.org/wiki">Documentation</a>
+                </li>
+                <li>
+                    <a href="https://genomevolution.org/wiki/index.php/FAQs">FAQ</a>
+                </li>
+            </ul>
+        </div>
 
-        <ul class="horizontal">
-            <li>
-                <a href="https://genomevolution.org/wiki/index.php/New_to_CoGe">Getting started</a>
-            </li>
-            <li>
-                <a href="#">Creating an Account</a>
-            </li>
-            <li>
-                <a href="https://genomevolution.org/wiki/index.php/Tutorials">Tutorials</a>
-            </li>
-            <li>
-                <a href="https://genomevolution.org/wiki">Documentation</a>
-            </li>
-            <li>
-                <a href="https://genomevolution.org/wiki/index.php/FAQs">FAQ</a>
-            </li>
-        </ul>
-    </div>
-
-    <div class="coge-section coge-shadow">
-        <h3>Tools</h3>
-        <TMPL_LOOP NAME="ACTIONS">
-            <div class="coge-summary">
-                <a href="<tmpl_var name=LINK>" class="l">
-                    <img src="<tmpl_var name=LOGO>" style="height: 32px; width: 32px;">
-                </a>
-                <div class="coge-summary-body">
-                    <h4 class="coge-summary-heading">
-                        <a href="<tmpl_var name=LINK>"><TMPL_VAR NAME="ACTION"></a>
-                    </h4>
-                    <TMPL_VAR NAME="DESC">
+        <div class="coge-section coge-shadow">
+            <h3>Tools</h3>
+            <TMPL_LOOP NAME="ACTIONS">
+                <div class="coge-summary">
+                    <a href="<tmpl_var name=LINK>" class="l">
+                        <img src="<tmpl_var name=LOGO>">
+                    </a>
+                    <div class="coge-summary-body">
+                        <h4 class="coge-summary-heading">
+                            <a href="<tmpl_var name=LINK>"><TMPL_VAR NAME="ACTION"></a>
+                        </h4>
+                        <TMPL_VAR NAME="DESC">
+                    </div>
                 </div>
+            </TMPL_LOOP>
+        </div>
+
+        <div class="coge-section coge-shadow">
+            <h3>What do you want to do?</h3>
+            <p>
+                <a href="SynMap.pl">Compare two genomes</a>
+            </p>
+            <p>
+                <a href="OrganismView.pl">Browse a genome</a>
+            </p>
+            <p>
+                <a href="LoadGenome.pl">Load a genome</a>
+            </p>
+            <p>
+                <a href="LoadExperiment.pl">Load experiment data</a>
+            </p>
+            <p>
+                <a href="LoadExperiment.pl">Run the RNA-seq pipeline</a>
+            </p>
+            <p>
+                <a href="CoGeBlast.pl">Blast against CoGe's genomes</a>
+            </p>
+        </div>
+
+        <div class="coge-section coge-shadow">
+            <h3>Recently Added Genomes <small>(<a href="#" onclick="show_genomes(window.event)">more</a>)</small></h3>
+            <div id="latest-genomes" class="padded">
             </div>
-        </TMPL_LOOP>
-    </div>
-
-    <div class="coge-section coge-shadow">
-        <h3>What you can do</h3>
-        <p>
-            Compare two genomes
-            <small>This is a description <a href="#">Get Started</a></small>
-        </p>
-        <p>
-            Browse a genome
-            <small>This is a description <a href="#">Get Started</a></small>
-        </p>
-        <p>
-            Load a genome
-            <small>This is a description <a href="#">Get Started</a></small>
-        </p>
-        <p>
-            Load experiment data
-            <small>This is a description <a href="#">Get Started</a></small>
-        </p>
-        <p>
-            Run the RNA-seq pipeline
-            <small>This is a description <a href="#">Get Started</a></small>
-        </p>
-
-        <p>
-            Blast against CoGe's genomes
-            <small>This is a description <a href="#">Get Started</a></small>
-        </p>
-    </div>
-
-    <div class="coge-section coge-shadow">
-        <h3>Recently Added Genomes <small>(<a href="#" onclick="show_genomes(window.event)">more</a>)</small></h3>
-        <div id="latest-genomes">
         </div>
     </div>
-</div>
 
-<div class="highlights">
-    <div id="wikifeed" class="coge-section coge-shadow">
-        <h3>Latest News</h3>
+    <div id="highlights">
+        <div id="wikifeed" class="coge-section coge-shadow">
+            <h3>Latest News</h3>
+        </div>
+        <div class="coge-section coge-shadow">
+            <h3>Tutorials</h3>
+            <div id="crossfade"></div>
+        </div>
     </div>
-    <div class="coge-section coge-shadow">
-        <h3>Tutorials</h3>
-        <div id="crossfade"></div>
-    </div>
+    </TMPL_IF>
 </div>
-</TMPL_IF>
 
 <div id="genome_dialog" style="display: none;" class="coge-section">
     <label for="limit">Number returned:</label>

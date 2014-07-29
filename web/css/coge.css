@@ -1053,14 +1053,15 @@ header {
     padding: 10px;
 }
 
-.intro, .highlights {
-    width: 50%;
+#intro, #highlights {
+    width: 100%;
     padding: 10px 20px;
-    float: left;
     box-sizing: border-box;
 }
 
 .tagline {
+    margin-top: 0.5em;
+    margin-left: 0.5em;
     white-space: nowrap;
     font-size: 1.75em; /* 26/16 = 1.75 */
     color: #c0c0c0;
@@ -1075,21 +1076,15 @@ header {
 
 #wikifeed > div h2 {
     padding: 5px;
-    font-size: 0.875em; /* 14/16 = 0.875 */
 }
 
 #wikifeed .date {
     display: block;
-    font-size: 0.75em; /* 12/16 = 0.75*/
     font-weight: normal;
 }
 
 #wikifeed > div div a {
     color: #1631BB;
-}
-
-#wikifeed > div div h3 {
-    font-size: 0.75em; /* 12/16 = 0.75*/
 }
 
 #wikifeed ol {
@@ -1108,7 +1103,6 @@ header {
 #wikifeed > div div > pre,
 #wikifeed > div div > ul,
 #wikifeed > div div > ol {
-    font-size: 0.75em; /* 12/16 = 0.75 */
     word-wrap: break-word;
 }
 
@@ -1119,34 +1113,6 @@ header {
 #wikifeed > div div img {
     max-width: 95%;
 }
-
-.sidebar_right {
-    width: 20%;
-    margin-right: 1%;
-    float: right;
-    padding: 10px 0;
-}
-
-.sidebar_left h4 {
-    text-align: center;
-}
-
-.sidebar_left h3 {
-    padding: .5em 0;
-}
-
-.sidebar_left div {
-    max-width: 150px;
-}
-
-.sidebar_left {
-    width: 20%;
-    margin-left: 1%;
-    float: left;
-    padding-top: 20px;
-    text-align: center;
-}
-
 
 .coge-pane {
     border-radius: 0.375em;
@@ -1160,15 +1126,10 @@ header {
 }
 
 .coge-section {
-    font-size: 0.75em;
+    font-size: 0.85em;
     padding: 0 0.375em 0.625em;
     border-radius: 5px;
     background: #f5f5f5;
-}
-
-.coge-section + .coge-section,
-.coge-summary + .coge-summary {
-    margin-top: 1em;
 }
 
 .coge-summary {
@@ -1189,25 +1150,26 @@ header {
     overflow: hidden;
 }
 
-
-#content {
-    text-align: center;
-    padding: 10px 0;
-    min-width: 210px;
-    width: 50%;
-    float: left;
+.coge-summary > a img {
+    width: 4em;
+    height: 4em;
 }
 
-#wrapper {
-    padding-top: 10px;
+.coge-result {
+    font-size: 0.85em;
+    padding: 0 0.375em 0.625em;
+    border-radius: 0.3125em;
+}
+
+.coge-section + .coge-section,
+.coge-section + .coge-result,
+.coge-result + .coge-result,
+.coge-summary + .coge-summary {
+    margin-top: 1em;
+}
+
+.wrapper {
     margin: 0 auto;
-}
-
-#content p {
-    font-size: 1.5em; /* 24/16 = 1.5 */
-    padding: 0;
-    margin: 0;
-    font-variant: small-caps;
 }
 
 #stats {
@@ -1228,36 +1190,9 @@ header {
     margin: 10px 10px;
 }
 */
-@media (max-width: 480px) {
-    .sidebar_left {
-        display: none;
-        clear: both;
-        width: 90%;
-        text-align: center;
-    }
-
-    .tagline {
-        display: block;
-        white-space: normal;
-        font-size: 1.5em; /* 24/16 = 1.5 */
-    }
-
-    .sidebar_left > div {
-        display: inline-block;
-    }
-
-    #content {
-        font-size: .75em; /* 12/16 = 0.75 */
-        text-align: center;
-        clear: both;
-        width: 90%;
-        margin-left: 2%;
-        margin-right: 2%;
-    }
-
+@media (min-width: 480px) {
     #wikifeed > div h2 {
         padding: 5px;
-        font-size: 0.875em; /* 14/16 = 0.875 */
     }
 
     #horizontal li {
@@ -1266,32 +1201,24 @@ header {
     }
 }
 
-@media (min-width: 768pxj) {
-    .small {
-        font-size: 0.75em; /* 14/16 = 1.75 */
-    }
-
-    #content {
-        width: 70%;
-        margin-left: 2%;
-        margin-right: 2%;
-    }
-
-    .sidebar_right {
-        width: 90%;
-        clear: both;
-        margin-right: 2%;
-        float: left;
-        margin-left: 2%;
-    }
+@media (min-width: 768px) {
 }
 
 /* Medium Devices, Desktop */
 @media(min-width: 992px) {
+    #intro, #highlights {
+        width: 50%;
+        float: left;
+        box-sizing: border-box;
+    }
 }
 
 /* Large Devices, Wide Screens */
 @media(min-width: 1200px) {
+    .coge-summary > a img {
+        width: 4.5em;
+        height: 4.5em;
+    }
 }
 
 /*
