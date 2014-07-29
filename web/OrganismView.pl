@@ -325,7 +325,7 @@ sub get_recent_orgs {
         return $html;
     }
     #print STDERR $i . '+++++++++++++\n';
-    $html .= qq{<SELECT class="ui-widget-content ui-corner-all" id="recent_org_id" SIZE="5" MULTIPLE onChange="recent_dataset_chain()" >\n}
+    $html .= qq{<SELECT class="small ui-widget ui-widget-content ui-corner-all" id="recent_org_id" SIZE="5" MULTIPLE onChange="recent_dataset_chain()" >\n}
           . join( "\n", @opts )
           . "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
@@ -354,7 +354,7 @@ sub get_orgs {
 
     if (@db > $MAX_NUM_ORGANISM_RESULTS) {
         return (
-            qq{<input type="hidden" name="org_id" id="org_id"><span class="small alert">Please refine your search</span>},
+            qq{<input type="hidden" name="org_id" id="org_id" /><span class="small alert">Please refine your search</span>},
             scalar(@db)
         );
     }
@@ -376,7 +376,7 @@ sub get_orgs {
         $html .= qq{<input type="hidden" name="org_id" id="org_id"><span class="small alert">No organisms found</span>};
         return $html, 0;
     }
-    $html .= qq{<SELECT class="ui-widget-content ui-corner-all" id="org_id" size="5" MULTIPLE onChange="get_org_info(['args__oid','org_id'],[genome_chain])" >\n};
+    $html .= qq{<SELECT class="small ui-widget ui-widget-content ui-corner-all" id="org_id" size="5" MULTIPLE onChange="get_org_info(['args__oid','org_id'],[genome_chain])" >\n};
     $html .= join( "\n", @opts );
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/ unless $html =~ /SELECTED/;
@@ -408,16 +408,17 @@ sub get_org_info {
     return " " unless $oid;
     my $org = $coge->resultset("Organism")->find($oid);
     return "Unable to find an organism for id: $oid\n" unless $org;
-    my $html;    # = qq{<div class="backbox small">};
+    
+    my $html;
     $html .=
-      "<span class=alert>Private Organism!  Authorized Use Only!</span><br>"
+      "<span class='alert'>Private Organism!  Authorized Use Only!</span><br>"
       if $org->restricted;
-    $html .= qq{<table class='small annotation_table'>};
+    $html .= qq{<table class='small annotation_table' style="margin:3px;">};
     $html .= qq{<tr><td>Name:};
     $html .= qq{<td>} . $org->name;
 
     if ( $org->description ) {
-        $html .= qq{<tr><td valign='top'>Description:<td>};
+        $html .= qq{<tr><td class='top'>Description:<td>};
 
         my $desc_len;
         foreach my $item ( split( /;/, $org->description ) ) {
@@ -520,7 +521,7 @@ sub get_genomes {
     if (@opts) {
 
 #	$html = qq{<FONT CLASS ="small">Dataset group count: }.scalar (@opts).qq{</FONT>\n<BR>\n};
-        $html .= qq{<SELECT class="ui-widget-content ui-corner-all" style="max-width:500px;" id="dsg_id" size="5" MULTIPLE onChange="get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);" >\n};
+        $html .= qq{<SELECT class="small ui-widget ui-widget-content ui-corner-all" style="max-width:500px;" id="dsg_id" size="5" MULTIPLE onChange="get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);" >\n};
         $html .= join( "\n", @opts );
         $html =~ s/OPTION/OPTION SELECTED/ unless $html =~ /SELECTED/i;
     }
@@ -565,7 +566,7 @@ sub get_genome_info {
     my $total_length = $dsg->length;
 
     my $chr_num = $dsg->chromosome_count();#$dsg->genomic_sequences->count();
-    $html .= qq{<table>} . "<tr valign=top><td><table class='small annotation_table'>";
+    $html .= qq{<table>} . "<tr class='top'><td><table class='small annotation_table'>";
     $html .= qq{<tr><td>Name:</td><td>} . $dsg->name . qq{</td></tr>}
       if $dsg->name;
     $html .=
@@ -595,7 +596,7 @@ sub get_genome_info {
 
     $html .= "<tr><td>Links:</td>"
      . qq{<td>}
-     . qq{<a href="GenomeInfo.pl?gid=$dsgid"><strong>Click here for more info</strong></a>}
+     . qq{<a href="GenomeInfo.pl?gid=$dsgid"><strong>GenomeInfo</strong></a>}
      . qq{&nbsp|&nbsp}
      . "<a href='OrganismView.pl?dsgid=$dsgid' target=_new>OrganismView</a>&nbsp|&nbsp<a href='CodeOn.pl?dsgid=$dsgid' target=_new>CodeOn</a>"
      . qq{&nbsp|&nbsp}
@@ -607,10 +608,9 @@ sub get_genome_info {
 #    $html .= qq{&nbsp|&nbsp};
 #    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$dsgid'],['irods']);">Send To iPlant Data Store</span>};
     $html .= "</td></tr>"
-          . qq{<tr><td colspan=2><div class="padded"><span class="ui-button ui-corner-all coge-button" onClick="update_genomelist(['args__genomeid','args__$dsgid'],[add_to_genomelist]);\$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add to Genome List</span>}
-          . qq{</div></td></tr>}
+          . qq{<tr><td colspan="2"><span class="link" onClick="update_genomelist(['args__genomeid','args__$dsgid'],[add_to_genomelist]);\$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add to Genome List</span></td></tr>}
           . "</table></td>"
-          . qq{<td id=dsg_features></td>}
+          . qq{<td id="dsg_features"></td>}
           . "</table>";
 
     return $html;
@@ -675,8 +675,7 @@ sub get_dataset {
         }
     }
     if (@opts) {
-        $html .=
-qq{<SELECT class="ui-widget-content ui-corner-all" id="ds_id" SIZE="5" MULTIPLE onChange="dataset_info_chain()" >\n};
+        $html .= qq{<SELECT class="small ui-widget ui-widget-content ui-corner-all" id="ds_id" SIZE="5" MULTIPLE onChange="dataset_info_chain()" >\n};
         $html .= join( "\n", @opts );
         $html .= "\n</SELECT>\n";
         $html =~ s/OPTION/OPTION SELECTED/ unless $dsid;
@@ -703,7 +702,7 @@ sub get_dataset_info {
     $html .= "<span class='alert small'>Restricted dataset</span><br>"
       if $ds->restricted;
     $html .= "<table>"
-          . "<tr valign=top><td><table class=\"small annotation_table\">";
+          . "<tr valign='top'><td><table class=\"small annotation_table\">";
     my $dataset = $ds->name;
     $dataset .= ": " . $ds->description if $ds->description;
     $dataset =
@@ -768,7 +767,7 @@ sub get_dataset_info {
         my $size = scalar @chr;
         $size = 5 if $size > 5;
         my $select;
-        $select .= qq{<SELECT class="ui-widget-content ui-corner-all" id="chr" size="$size" onChange="dataset_chr_info_chain()" >\n};
+        $select .= qq{<SELECT class="small ui-widget ui-widget-content ui-corner-all" id="chr" size="$size" onChange="dataset_chr_info_chain()" >\n};
         $select .= join(
             "\n",
             map {
@@ -793,14 +792,14 @@ sub get_dataset_info {
       $total_length && $total_length < $MAX_DS_LENGTH && $chr_num && $chr_num < $chr_num_limit
       ? get_gc_for_chromosome( dsid => $ds->id )
       : 0;
-    $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id="dataset_gc" class="link" onclick="gen_data(['args__loading...'],['dataset_gc']);\$('#dataset_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for percent GC content</div>}
+    $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id="dataset_gc" class="link" onclick="gen_data(['args__loading...'],['dataset_gc']);\$('#dataset_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for %GC content</div>}
       if $total_length;
     $html .= $gc if $gc;
     $html .= qq{<tr><td>Links:</td>}
           . "<td>"
           . "<a href='OrganismView.pl?dsid=$dsid' target=_new>OrganismView</a>"
           . qq{</td></tr>};
-    my $feat_string = qq{<tr><td><div id="ds_feature_count" class="small link" onclick="gen_data(['args__loading...'],['ds_features']);get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['ds_features']);" >Click for Features</div></td></tr>};
+    my $feat_string = qq{<tr><td><div id="ds_feature_count" class="link" onclick="gen_data(['args__loading...'],['ds_features']);get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['ds_features']);">Click for Features</div></td></tr>};
     $html .= $feat_string;
 
     $html .= qq{</table></td>}
@@ -839,7 +838,7 @@ sub get_dataset_chr_info {
     $gc =
         $gc
       ? $gc
-      : qq{<div style="float: left; text-indent: 1em;" id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chromosome_gc']);">Click for percent GC content</div>};
+      : qq{<div style="float: left; text-indent: 1em;" id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chromosome_gc']);">Click for %GC content</div>};
     $length = commify($length) . " bp ";
     $html .= qq{
 <tr><td>Chromosome:</td><td>$chr</td></tr>
@@ -847,11 +846,11 @@ sub get_dataset_chr_info {
 };
 
     $html .= qq{
-<tr><td>Noncoding sequence:<td colspan=2><div id=noncoding_gc class="link" onclick = "gen_data(['args__loading...'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['noncoding_gc']);">Click for percent GC content</div>
+<tr><td>Noncoding sequence:<td colspan=2><div id=noncoding_gc class="link" onclick = "gen_data(['args__loading...'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['noncoding_gc']);">Click for %GC content</div>
 } if $length;
 
     my $feat_string = qq{
-<tr><td><div class=small id=feature_count onclick="gen_data(['args__loading...'],['chr_features']);get_feature_counts(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chr_features']);" >Click for Features</div></td></tr>};
+<tr><td><div id="feature_count" onclick="gen_data(['args__loading...'],['chr_features']);get_feature_counts(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chr_features']);">Click for Features</div></td></tr>};
 
     $html .= $feat_string;
     $html .= "</table></td>";
@@ -1153,10 +1152,10 @@ sub get_gc_for_feature_type {
     my $info;
     $info .= qq{<div class="small">
 Min: <input type="text" size="3" id="feat_gc_min" value="$min">
-Max: <input type=text size=3 id=feat_gc_max value=$max>
-Type: <select id=feat_hist_type>
-<option value ="counts">Counts</option>
-<option value = "percentage">Percentage</option>
+Max: <input type="text" size="3" id="feat_gc_max" value="$max">
+Type: <select id="feat_hist_type">
+<option value="counts">Counts</option>
+<option value="percentage">Percentage</option>
 </select>
 };
     $info =~ s/>Per/ selected>Per/ if $hist_type =~ /per/;
