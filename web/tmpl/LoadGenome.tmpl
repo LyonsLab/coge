@@ -78,6 +78,7 @@ $(document).ready(function(){
 });
 
 function file_selected(filename, url) {
+	$('#no_files').hide();
 	$('#file_select_dialog').dialog('close');
 	$('#files_clear').removeClass('ui-state-disabled');
 }
@@ -193,15 +194,23 @@ function check_login() {
 	return logged_in;
 }
 
+function error_help(s) {
+	$('#error_help_text')
+		.html(s)
+		.show()
+		.delay(10*1000)
+		.fadeOut(1500);
+}
+
 function load_genome() {
 	// Validate data items
 	var items = get_selected_files();
 	if (items == null) {
-		alert('Files are still being transferred, please wait.');
+		error_help('Files are still being transferred, please wait.');
 		return;
 	}
 	else if (items.length == 0) {
-		alert('Please select some sequence files by clicking "Add Sequence Files".');
+		error_help('Please select some sequence files by clicking <b>Add Data</b>.');
 		return;
 	}
 
@@ -210,7 +219,7 @@ function load_genome() {
 	items.forEach(function(item) { types[item.type] = 1; });
 	var isNCBI = 'ncbi' in types;
 	if (Object.keys(types).length > 1 && isNCBI) {
-		alert('Cannot mix NCBI data with other types.');
+		error_help('Cannot mix NCBI data with other types.');
 		return;
 	}
 
@@ -218,19 +227,19 @@ function load_genome() {
 	var organism_name = $('#edit_organism').val();
 	var organism_id = $('#edit_organism').data("organism_id");
 	if (!isNCBI && (!organism_id || !organism_name)) {
-		alert('Organism not found.');
+		error_help('Organism not found.');
 		return;
 	}
 
 	var version = $('#edit_version').val();
 	if (!isNCBI && !version) {
-		alert('Please specify a genome version.');
+		error_help('Please specify a genome version.');
 		return;
 	}
 
 	var source = $('#edit_source').val();
 	if (!isNCBI && !source) {
-		alert('Please specify a data source.');
+		error_help('Please specify a data source.');
 		return;
 	}
 
@@ -804,90 +813,92 @@ function update_dialog(request, identifier, formatter) {
 
 </SCRIPT>
 
-<span style="color:dimgray;font-weight:bold;">Genome Info</span><br>
-<table class="small ui-widget-content ui-corner-all">
-  <tr>
-        <td colspan="2" style="padding-bottom: 10px;">
-                <span style="color: red;">
-		<span class="glyphicon glyphicon-asterisk"></span>
-                	 denotes a required field.
-        	</span>
-  	</td>
-  </tr>
-  <tr>
-    <td>Organism:</td>
-    <td>
-      <tmpl_if name=ORGANISM_NAME>
-        <input id="edit_organism" type="search" placeholder="Search" onkeyup="wait_to_search(search_organisms, this.value);" value="<tmpl_var name=ORGANISM_NAME>"size="50" spellcheck="false" />
-      <tmpl_else>
-        <input id="edit_organism" type="search" placeholder="Search" onkeyup="wait_to_search(search_organisms, this.value);" size="50" spellcheck="false" />
-      </tmpl_if>
-      <span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all coge-button'>New</span>
-    </td>
-    <td><span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span></td>
-  </tr>
-  <tr>
-    <td>Version:</td>
-    <td><input id="edit_version" type="textbox" size="10" spellcheck="false" /><span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span></td>
-  </tr>
-  <tr>
-    <td>Type:</td>
-    <td>
-      <select id="select_type" style="width:230px;"></select>
-      <span id="new_type_button" onClick="$('#create_new_type_dialog').dialog('open'); activate_on_input('edit_type_name', 'create_type_button');" class='ui-button ui-corner-all coge-button'>New</span>
-    </td>
-  </tr>
-  <tr>
-    <td>Source:</td>
-    <td>
-      <input id="edit_source" type="search" placeholder="Search" size="50" spellcheck="false" />
-      <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all coge-button'>New</span>
-    </td>
-    <td><span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span></td>
-  </tr>
-  <tr>
-    <td>Restricted?</td>
-    <td><input id="restricted" type="checkbox" checked></td>
-  </tr>
-  <tr id='more'>
-    <td colspan="2"><span class="link" onclick="more();">more...</span></td>
-  </tr>
-  <tr class="hidden">
-    <td>Name:</td>
-    <td><input id="edit_name" type="textbox" placeholder="Optional" size="58" spellcheck="false" /></td>
-  </tr>
-  <tr class="hidden">
-    <td>Description:</td>
-    <td><textarea id="edit_description" placeholder="Optional" rows="5" cols="50" ></textarea></td>
-  </tr>
-  <tr class="hidden">
-    <td>Link:</td>
-    <td><input id="edit_link" type="textbox" placeholder="Optional" size="58" /></td>
-  </tr>
-</table>
+<div class="bold text" style="padding-top:1em;">1 - Describe the Genome</div>
+<div class="coge-bg inline padded ui-widget-content ui-corner-all">
+	<div class="small info">
+		Complete the form below to describe the genome sequence.
+		<div class="alert"><span class="small glyphicon glyphicon-asterisk"></span> denotes a required field</div>
+	</div>  
+	
+	<table class="small" style="padding-top:0.5em;">
+	  <tr>
+	    <td>Organism:</td>
+	    <td>
+	      <tmpl_if name=ORGANISM_NAME>
+	        <input id="edit_organism" type="search" placeholder="Search" onkeyup="wait_to_search(search_organisms, this.value);" value="<tmpl_var name=ORGANISM_NAME>"size="50" spellcheck="false" />
+	      <tmpl_else>
+	        <input id="edit_organism" type="search" placeholder="Search" onkeyup="wait_to_search(search_organisms, this.value);" size="50" spellcheck="false" />
+	      </tmpl_if>
+	      <span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all coge-button'>New</span>
+	    </td>
+	    <td><span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span></td>
+	  </tr>
+	  <tr>
+	    <td>Version:</td>
+	    <td><input id="edit_version" type="textbox" size="10" spellcheck="false" /><span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span></td>
+	  </tr>
+	  <tr>
+	    <td>Type:</td>
+	    <td>
+	      <select id="select_type" style="width:230px;"></select>
+	      <span id="new_type_button" onClick="$('#create_new_type_dialog').dialog('open'); activate_on_input('edit_type_name', 'create_type_button');" class='ui-button ui-corner-all coge-button'>New</span>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>Source:</td>
+	    <td>
+	      <input id="edit_source" type="search" placeholder="Search" size="50" spellcheck="false" />
+	      <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all coge-button'>New</span>
+	    </td>
+	    <td><span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span></td>
+	  </tr>
+	  <tr>
+	    <td>Restricted?</td>
+	    <td><input id="restricted" type="checkbox" checked></td>
+	  </tr>
+	  <tr id='more'>
+	    <td colspan="2"><span class="link" onclick="more();">more...</span></td>
+	  </tr>
+	  <tr class="hidden">
+	    <td>Name:</td>
+	    <td><input id="edit_name" type="textbox" placeholder="Optional" size="58" spellcheck="false" /></td>
+	  </tr>
+	  <tr class="hidden">
+	    <td>Description:</td>
+	    <td><textarea id="edit_description" placeholder="Optional" rows="5" cols="50" ></textarea></td>
+	  </tr>
+	  <tr class="hidden">
+	    <td>Link:</td>
+	    <td><input id="edit_link" type="textbox" placeholder="Optional" size="58" /></td>
+	  </tr>
+	</table>
+</div>
 
-<br>
-<span id='genome_data' style="color:dimgray;font-weight:bold;">Genome Data</span><br>
-<div class="small info" style="width:550px;">
-  Click the <b>Add Data</b> button to select the data items to be loaded for the genome from:
-  1) iPlant Data Store, 2) FTP/HTTP site, 3) browser upload, and 4) NCBI.
-  For 1-3, only sequence FASTA files can be loaded at this stage.  GFF annotation files can be loaded later on.
-  For 4, both sequence and annotation associated with the specified accession are loaded.
-  </div>
-    <div class="panel">
-        <span onClick="$('#file_select_dialog').dialog('open')" class='ui-button ui-corner-all coge-button'>Add Data</span>
-        <span id="files_clear" onClick="clear_list();" class='ui-state-disabled ui-button ui-corner-all coge-button'>Clear List</span>
-    </div>
-<table id='file_table' class="hidden small ui-widget-content ui-corner-all" style="margin-top:5px;margin-bottom:5px;"></table>
-<br>
-<br>
-<br>
-<span id="load_genome_button" onDblClick="load_genome();" onClick="load_genome();" style="float-right;" class='ui-button ui-corner-all ui-button-go coge-button-lg'>Load Genome</span>
-<br>
-<br>
-<br>
-<br>
-<br>
+<div class="bold text" style="padding-top:2em;">2 - Add Data</div>
+<div class="coge-bg inline padded ui-widget-content ui-corner-all">
+	<div class="small info" style="width:50em; padding-bottom:1em;">
+	  Use the <b>Add Data</b> button to select the data items to be loaded for the genome from:<br>
+	  <span class="indent">1) iPlant Data Store, 2) FTP/HTTP site, 3) browser upload, 4) NCBI</span><br>
+	  For 1-3, only sequence FASTA files can be loaded at this stage.  GFF annotation files can be loaded later on.<br>
+	  For 4, both sequence and annotation associated with the specified accession are loaded.
+	</div>
+		<div class="l" style="padding-right:0.75em;">
+			<span onClick="$('#file_select_dialog').dialog('open')" class='ui-button ui-corner-all coge-button'>Add Data</span><br>
+			<span id="files_clear" onClick="clear_list();" class='ui-state-disabled ui-button ui-corner-all coge-button' style="margin-top:0.5em;">Clear List</span>
+		</div>
+		<div class="padded" style="background-color: white; overflow:hidden; width:auto; min-height:8em; border:1px solid lightgray; margin-right:5px; margin-bottom:5px;">
+			<div class="small bold text">Selected files:</div>
+			<div>
+				<div id="no_files" class="indent small padded note">You haven't selected any files yet, click "Add Data"</div>
+				<table id='file_table' class="small padded"></table>
+			</div>
+		</div>
+</div>
+
+<div class="middle" style="padding-top:2em;">
+	<span id="load_genome_button" onDblClick="load_genome();" onClick="load_genome();" class='ui-button ui-corner-all ui-button-go coge-button-lg'>Load Genome</span>
+	<span id='error_help_text' class='indent alert italic'></span>
+</div>
 
 <div id="create_new_type_dialog" class="hidden dialog_box" title="Create New Sequence Type">
   <table class="small">
@@ -965,11 +976,13 @@ function update_dialog(request, identifier, formatter) {
     <span class="small" style="float:right;">Link: <a></a></span>
     Please wait ... <img src="picts/ajax-loader.gif"/>
   </div>
+  <div class="coge-buttonset">
   <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
   <span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
-  <span id="ok_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">Load Another</span>
-  <span id="finish_button" onClick="continue_to_view();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">Continue to GenomeInfo</span>
-  <span id="cancel_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go coge-button">Cancel</span>
+	  <span id="ok_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">Load Another</span>
+	  <span id="finish_button" onClick="continue_to_view();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">Continue to GenomeInfo</span>
+	  <span id="cancel_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go coge-button">Cancel</span>
+  </div>
 </div>
 
 <div id="file_select_dialog" class="hidden dialog_box" title="Select Data File ...">
