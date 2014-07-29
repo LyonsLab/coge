@@ -344,14 +344,14 @@ function import_lists() {
 </SCRIPT>
 
 <!--MAIN STUFF-->
-<table class="ui-widget-content ui-corner-all" style="width: 100%; box-sizing: border-box;">
-  <tr valign='top'>
-    <td align='left'><b>Specify Target Genomes</b>
-      <br>
+<div class="bold text">Select Target Genomes</div>
+<table class="ui-widget-content ui-corner-all coge-section" style="width: 100%; box-sizing: border-box;">
+  <tr class="top">
+    <td align='left'>
       <table>
         <tr>
           <td>
-            <table>
+            <table class="small">
               <tr>
                 <td>Organism:</td>
                 <td>
@@ -362,10 +362,10 @@ function import_lists() {
             </table>
           </td>
         </tr>
-        <tr valign='top'>
+        <tr class="top">
           <td>
             <table>
-              <tr valign='top'>
+              <tr class="top">
                 <td>
                   <div id="org_list">
                     <span class="small info">Matching Organisms <span id="org_count"></span></span><br>
@@ -449,7 +449,7 @@ function import_lists() {
         <td colspan='2' style='color:gray;'><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
       </tr>
     </table>
-    <span href="javascript:void(0)" onClick="import_lists();" class='ui-button ui-corner-all coge-button-sm'>Add Selected Items</span>
+    <div class="padded"><span href="javascript:void(0)" onClick="import_lists();" class='ui-button ui-corner-all coge-button-sm'>Add Selected Items</span></div>
   </div>
 
   <div id="genome_info_popup" class="hidden dialog_box" title="Genome Information">
