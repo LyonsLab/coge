@@ -15,6 +15,7 @@ use Digest::MD5 qw(md5_base64);
 use POSIX;
 use File::Path;
 use File::Basename qw(fileparse);
+use File::Spec::Functions;
 use Benchmark qw(:all);
 use Parallel::ForkManager;
 use DBI;
@@ -71,9 +72,7 @@ $LAST =
     $config->{PYTHON} . " "
   . $config->{MULTI_LAST}
   . " -a $MAX_PROC --path="
-  . $config->{LAST_PATH}
-  . " --dbpath="
-  . $config->{LASTDB};
+  . $config->{LAST_PATH};
 
 $GEN_FASTA        = $config->{GEN_FASTA};
 $CONVERT_BLAST    = $config->{CONVERT_BLAST};
@@ -1275,7 +1274,11 @@ sub go_synfind {
             $blast_cmd = $LASTZ;
         }
         else {
+            my $dbpath = catdir($config->{LASTDB}, $target->{dsgid2});
+            mkpath($dbpath, 0, 0777);
+
             $blast_args = [
+                [ "--dbpath", $dbpath, 0 ],
                 [ "",   $target->{target_fasta}, 1 ],
                 [ "",   $target->{query_fasta},  1 ],
                 [ "-o", $target->{blastfile},    1 ]
