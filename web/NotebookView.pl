@@ -148,23 +148,21 @@ sub get_list_info {
     my $user_can_delete = $USER->is_admin
       || ( !$list->locked && $USER->is_owner( list => $lid ) );
 
+    $html .= qq{<div class="panel">};
     if ($user_can_edit) {
-        $html .=
-qq{<span class='ui-button ui-corner-all' onClick="edit_list_info();">Edit Info</span>};
+        $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="edit_list_info();">Edit Info</span>};
 
         if ( $list->restricted ) {
-            $html .=
-qq{<span class='ui-button ui-corner-all' onClick="make_list_public();">Make Public</span>};
+            $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="make_list_public();">Make Public</span>};
         }
         else {
-            $html .=
-qq{<span class='ui-button ui-corner-all' onClick="make_list_private();">Make Private</span>};
+            $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="make_list_private();">Make Private</span>};
         }
     }
 
     if ( $user_can_delete ) {
         $html .=
-			qq{<span class='ui-button ui-button-go ui-corner-all' onClick="delete_list();">} .
+			qq{<span class='ui-button ui-button-go ui-corner-all' style="margin-right:5px;" onClick="delete_list();">} .
 			($list->deleted ? 'Undelete' : 'Delete') . qq{</span>};
     }
 
@@ -173,14 +171,14 @@ qq{<span class='ui-button ui-corner-all' onClick="make_list_private();">Make Pri
             sort { $a <=> $b }
             map  { $_->genome_id } $list->experiments
           )
-        {    # pick a genome, any genome
-            my $link =
-qq{window.open('GenomeView.pl?gid=$gid&tracks=notebook$lid');};
-            $html .=
-qq{<span class='ui-button ui-corner-all ui-button-icon-right' onClick="$link"><span class="ui-icon ui-icon-extlink"></span>View</span>};
+        {    # Pick a genome, any genome # TODO show user a list of genomes to choose from
+            my $link = qq{window.open('GenomeView.pl?gid=$gid&tracks=notebook$lid');};
+            $html .= qq{<span class='ui-button ui-corner-all ui-button-icon-right coge-button coge-button-right' style="margin-right:5px;" onClick="$link"><span class="ui-icon ui-icon-extlink"></span>View</span>};
             last;
         }
     }
+    
+    $html .= qq{</div>};
 
     return $html;
 }
@@ -284,8 +282,7 @@ sub make_list_private {
 
 sub linkify {
     my ( $link, $desc ) = @_;
-    return "<span class='link' onclick=\"window.open('$link')\">" . $desc
-      . "</span>";
+    return "<span class='small link' onclick=\"window.open('$link')\">" . $desc . "</span>";
 }
 
 sub get_annotations {
@@ -313,7 +310,7 @@ sub get_annotations {
 
     my $html;
     if ($num_annot) {
-        $html .= '<table id="list_annotation_table" class="ui-widget-content ui-corner-all small" style="max-width:400px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
+        $html .= '<table id="list_annotation_table" class="ui-widget-content ui-corner-all" style="max-width:400px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
         foreach my $group ( sort keys %groups ) {
             my $first = 1;
             foreach my $a ( sort { $a->id <=> $b->id } @{ $groups{$group} } ) {
@@ -361,11 +358,11 @@ sub get_annotations {
         $html .= '</tbody></table>';
     }
     elsif ($user_can_edit) {
-        $html .= '<table class="ui-widget-content ui-corner-all small padded note"><tr><td>There a no additional metadata items for this notebook.</tr></td></table>';
+        $html .= '<table class="ui-widget-content ui-corner-all small padded note"><tr><td>There are no additional metadata items for this notebook.</tr></td></table>';
     }
 
     if ($user_can_edit) {
-        $html .= qq{<span onClick="add_annotation_dialog();" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>};
+        $html .= qq{<div class="panel"><span onClick="add_annotation_dialog();" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span></div>};
     }
 
     return $html;
@@ -581,7 +578,7 @@ sub get_list_contents {
     my $list_count = $list->lists( count => 1 );
 
     if ($genome_count or $exp_count or $feat_count or $list_count) {
-        $html = '<table id="list_contents_table" class="small ui-widget-content ui-corner-all" style="border-spacing:0;border-collapse:collapse;">';#<thead style="display:none;"></thead><tbody>';
+        $html = '<table id="list_contents_table" class="ui-widget-content ui-corner-all" style="border-spacing:0;border-collapse:collapse;">';#<thead style="display:none;"></thead><tbody>';
 
         #my $delete_count=0;
         foreach my $genome ( sort genomecmp $list->genomes ) {
@@ -678,11 +675,11 @@ sub get_list_contents {
         $html .= '</table>';#'</tbody></table>';
     }
     else {
-        $html .= '<table class="ui-widget-content ui-corner-all small padded note"><tr><td>This notebook is empty.</tr></td></table>';
+        $html .= '<table class="ui-widget-content ui-corner-all padded note"><tr><td>This notebook is empty.</tr></td></table>';
     }
 
     if ($user_can_edit) {
-        $html .= qq{<span class='ui-button ui-button-icon-left ui-corner-all' onClick="add_list_items();"><span class="ui-icon ui-icon-plus"></span>Add</span>};
+        $html .= qq{<div class="padded"><span class='ui-button ui-button-icon-left ui-corner-all' onClick="add_list_items();"><span class="ui-icon ui-icon-plus"></span>Add</span></div>};
     }
 
     return unless ( $num_items or $user_can_edit );
@@ -834,23 +831,23 @@ sub search_mystuff {
         }
     }
 
-    $type = $node_types->{list};
-    foreach my $l ( $USER->lists ) {       #(sort listcmp $USER->lists) {
-        next if ( $l->id == $list->id );    # can't add a list to itself!
-        next if ( $l->locked );             # exclude user's master list
-        if ( !$search_term or $l->info =~ /$search_term/i ) {
-            push @{ $mystuff{$type} }, $l;
-            last if $num_results++ > $MAX_SEARCH_RESULTS;
-        }
-    }
+# mdb: nested notebooks not supported
+#    $type = $node_types->{list};
+#    foreach my $l ( $USER->lists ) {       #(sort listcmp $USER->lists) {
+#        next if ( $l->id == $list->id );    # can't add a list to itself!
+#        next if ( $l->locked );             # exclude user's master list
+#        if ( !$search_term or $l->info =~ /$search_term/i ) {
+#            push @{ $mystuff{$type} }, $l;
+#            last if $num_results++ > $MAX_SEARCH_RESULTS;
+#        }
+#    }
 
     # Limit number of results displayed
     if ( $num_results > $MAX_SEARCH_RESULTS ) {
         return encode_json(
             {
                 timestamp => $timestamp,
-                html =>
-"<option disabled='disabled'>>$MAX_SEARCH_RESULTS results, please refine your search.</option>"
+                html => "<option disabled='disabled'>>$MAX_SEARCH_RESULTS results, please refine your search.</option>"
             }
         );
     }
@@ -861,8 +858,7 @@ sub search_mystuff {
         my ($type_name) = grep { $node_types->{$_} eq $type } keys %$node_types;
         $type_name = 'notebook' if ( $type_name eq 'list' );
         my $type_count = @{ $mystuff{$type} };
-        $html .=
-          "<optgroup label='" . ucfirst($type_name) . "s ($type_count)'>";
+        $html .= "<optgroup label='" . ucfirst($type_name) . "s ($type_count)'>";
         foreach my $item ( @{ $mystuff{$type} } ) {
             my $disable =
               $exists{$type}{ $item->id } ? "disabled='disabled'" : '';

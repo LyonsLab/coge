@@ -652,32 +652,30 @@ sub get_experiment_info {
     my $eid   = $opts{eid};
     my ($exp) = $coge->resultset('Experiment')->find($eid);
     return "Access denied\n" unless $USER->has_access_to_experiment($exp);
-
     return "Unable to find an entry for $eid" unless $exp;
 
     my $allow_edit = $USER->is_admin || $USER->is_owner_editor( experiment => $eid );
-
     my $gid = $exp->genome->id;
 
     my $html;
     $html .= $exp->annotation_pretty_print_html( allow_delete => $allow_edit );
 
-    $html .= "<div class='inline padded'>";
+    $html .= "<div class='panel'>";
 
     if ($allow_edit) {
-        $html .= qq{<span class='ui-button ui-corner-all coge-button' onClick="edit_experiment_info();">Edit Info</span>};
-        $html .= qq{<span class='ui-button ui-corner-all coge-button' onClick="\$('#experiment_type_edit_box').dialog('open');">Add Type</span>};
+        $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="edit_experiment_info();">Edit Info</span>};
+        $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="\$('#experiment_type_edit_box').dialog('open');">Add Type</span>};
     }
 
     if ( $USER->is_admin || $USER->is_owner( experiment => $eid ) ) {
         if ( $exp->restricted ) {
-            $html .= qq{<span class='ui-button ui-corner-all coge-button' onClick="make_experiment_public();">Make Public</span>};
+            $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="make_experiment_public();">Make Public</span>};
         }
         else {
-            $html .= qq{<span class='ui-button ui-corner-all coge-button' onClick="make_experiment_private();">Make Private</span>};
+            $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="make_experiment_private();">Make Private</span>};
         }
     }
-    $html .= qq{<a target="_blank" style="color: inherit;" class='ui-button ui-corner-all ui-button-icon-right coge-button coge-button-right' href="GenomeView.pl?gid=$gid&tracks=experiment$eid">View<span class="ui-icon ui-icon-extlink"></span></a>};
+    $html .= qq{<a target="_blank" style="color:inherit;" class='ui-button ui-corner-all ui-button-icon-right coge-button coge-button-right' href="GenomeView.pl?gid=$gid&tracks=experiment$eid">View<span class="ui-icon ui-icon-extlink"></span></a>};
 
     $html .= "</div>";
 

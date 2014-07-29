@@ -257,7 +257,7 @@ function search_bar(div_id){
 
 </SCRIPT>
 
-<TABLE class="ui-widget-content ui-corner-all">
+<TABLE class="ui-widget-content ui-corner-all coge-section">
        <TR>
          <TD nowrap>
            Name:
@@ -295,30 +295,35 @@ function search_bar(div_id){
 	 Description: <input type="text" size=11 value="Search" name = "org_desc" id="org_desc" style="font-style:italic" onFocus="search_bar('org_desc')" onKeyUp='timing("org_desc");'>
 	  <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
         <tr>
-	<td><span class="ui-button ui-button-go ui-corner-all" onclick="search_chain(1)">Search</span>
-	<td align=right><span class="ui-button ui-corner-all" onclick="$('#feat_list').dialog('open');">Feature List</span>
+	<td><span class="ui-button ui-button-go ui-corner-all coge-button-lg" onclick="search_chain(1)">Search</span>
+	<td align=right><span class="ui-button ui-corner-all coge-button-lg" onclick="$('#feat_list').dialog('open');">Feature List</span>
 </TABLE>
 
- <table id="data_table" style="display:none" class="ui-widget-content ui-corner-all">
- <thead align=left>
-  <th>Matches</th>
-  <th>Types</th>
-  <th>Genomes</th>
- </thead>
- <tbody>
- <TR valign=top>
-  <TD valign=top>
-   <DIV class="" id="accn_list"><input type="hidden" id="accn_select" ></DIV>
-  </TD>
-  <TD valign=top>
-    <DIV class="" id="FeatType"></DIV>
-  </td>
-  <TD valign=top>
-   <DIV class="" id="Source"></DIV>
- </tbody>
-</TABLE>
+<div id="data_table" class="coge-result hidden">
+    <table>
+        <thead align=left>
+            <th>Matches</th>
+            <th>Types</th>
+            <th>Genomes</th>
+        </thead>
+    <tbody>
+        <tr valign=top>
+            <td valign=top>
+                <div class="" id="accn_list">
+                    <input type="hidden" id="accn_select">
+                </div>
+            </td>
+            <td valign=top>
+                <DIV class="" id="FeatType"></DIV>
+            </td>
+            <td valign=top>
+                <div class="" id="Source"></div>
+            </td>
+    </tbody>
+    </table>
+</div>
 
-<DIV id="anno" class="ui-widget-content ui-corner-all"><TMPL_VAR NAME="FID_ANNO"></DIV>
+<div id="anno" class="hidden coge-result"><TMPL_VAR NAME="FID_ANNO"></DIV>
 
 <div class="dialog" id="codon_table" title="Codon Usage Table"></div>
 <div class="dialog" id="aa_table" title="Amino Acid Usage Table"></div>

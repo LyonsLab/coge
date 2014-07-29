@@ -385,9 +385,9 @@ sub get_anno {
     }
     my $anno;
     $anno .=
-        "<font class=small>Annotation count: "
+        qq{<h4>Annotation count: <span class="note">(}
       . scalar @feats
-      . "</font>\n<BR><hr>\n"
+      . qq{)</span></h4><hr>}
       if scalar @feats;
     my $i = 0;
     foreach my $feat (@feats) {
@@ -407,7 +407,7 @@ sub get_anno {
         my $z      = 4;
         my $gid    = $dsg->id;
         $anno .=
-qq{<span class="ui-button ui-corner-all" onClick="window.open('FastaView.pl?featid=$featid&gstid=$gstid');">Get Sequence</span>};
+qq{<div class="coge-buttonset"><span class="ui-button ui-corner-all" onClick="window.open('FastaView.pl?featid=$featid&gstid=$gstid');">Get Sequence</span>};
         $anno .=
 qq{<span class="ui-button ui-corner-all" onClick="window.open('CoGeBlast.pl?featid=$featid;gstid=$gstid');">CoGeBlast</span>};
 		my ($a, $b) = get_link_coords($feat->start, $feat->stop);
@@ -419,23 +419,23 @@ qq{<span class="ui-button ui-corner-all" onClick="window.open('SynFind.pl?fid=$f
 
 #	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
         $anno .=
-qq{<span class="ui-button ui-corner-all" onClick="update_featlist(['args__accn', 'args__$accn','args__type', 'args__$type','args__fid', 'args__$featid', 'args__gstid','args__$gstid'],[add_to_featlist]);\$('#feat_list').dialog('option', 'width', 500).dialog('open');">Add to list</span></DIV>}
+qq{<span class="ui-button ui-corner-all" onClick="update_featlist(['args__accn', 'args__$accn','args__type', 'args__$type','args__fid', 'args__$featid', 'args__gstid','args__$gstid'],[add_to_featlist]);\$('#feat_list').dialog('option', 'width', 500).dialog('open');">Add to list</span></div>}
           if $accn;
 
-        $anno .= join "\n<BR><HR><BR>\n",
+        $anno .= join "\n<hr>\n",
           $feat->annotation_pretty_print_html( gstid => $gstid );
+
         if ( $feat->type->name eq "CDS" ) {
-            $anno .= "<br>";
+            $anno .= qq{<div class="coge-buttonset">};
             $anno .=
 qq{<span class="ui-button ui-corner-all" onClick="codon_table(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_table']); \$('#codon_table').dialog('option', 'width', 600).dialog('open');">Codon Usage</span>};
             $anno .=
 qq{<span class="ui-button ui-corner-all" onClick="protein_table(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['aa_table']);\$('#aa_table').dialog('open');">Amino Acid Usage</span>};
             $anno .=
-qq{<span class="ui-button ui-corner-all"  onClick="codon_aa_alignment(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_aa_alignment']); \$('#codon_aa_alignment').dialog('option', 'width', 650).dialog('open');">Codon/AA alignment</span>};
+qq{<span class="ui-button ui-corner-all"  onClick="codon_aa_alignment(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_aa_alignment']); \$('#codon_aa_alignment').dialog('option', 'width', 650).dialog('open');">Codon/AA alignment</span></div>};
         }
-        $anno .= "<br><hr>";
     }
-    $anno = "<font class=\"annotation\">No annotations for this entry</font>"
+    $anno = "<h4 class=\"annotation\">No annotations for this entry</h4>"
       unless $anno;
     return ($anno);
 }

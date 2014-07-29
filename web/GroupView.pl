@@ -135,7 +135,7 @@ sub get_group_info {
     my $html =
       $group->annotation_pretty_print_html;   #(allow_delete => $user_can_edit);
     if ($user_can_edit) {
-        $html .= '<br>';
+        $html .= qq{<div class="coge-buttonset">};
         $html .=
 qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="edit_group_info($ugid);">Edit Info</span>};
         $html .=
@@ -145,6 +145,7 @@ qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="modif
         $html .=
 			qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_group();">} .
 			($group->deleted ? 'Undelete' : 'Delete') . qq{</span>};
+        $html .= qq{</div>};
     }
 
     return $html;
