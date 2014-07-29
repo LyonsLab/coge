@@ -555,7 +555,7 @@ sub annotation_pretty_print_html {
     }
 
     return
-        "<table cellpadding=0 class='ui-widget-content ui-corner-all small'>"
+        "<table cellpadding=0 class='ui-widget-content ui-corner-all'>"
       . $anno_obj->to_String
       . "</table>";
 }

@@ -814,7 +814,7 @@ qq{<span class="data5 link" onclick = "window.open('OrganismView.pl?oid=}
 			}
 		}
 	}
-	return "<table cellpadding=0 class='ui-widget-content ui-corner-all small'>"
+	return "<table cellpadding=0 class='ui-widget-content ui-corner-all'>"
 	  . $anno_obj->to_String
 	  . "</table>";
 }
