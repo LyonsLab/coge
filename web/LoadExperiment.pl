@@ -45,7 +45,7 @@ $JOB_ID  = $FORM->Vars->{'job_id'};
 $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 
-$MAX_SEARCH_RESULTS = 100;
+$MAX_SEARCH_RESULTS = 1000;
 
 %FUNCTION = (
     irods_get_path          => \&irods_get_path,
@@ -611,7 +611,7 @@ sub search_genomes
     my %opts        = @_;
     my $search_term = $opts{search_term};
     my $timestamp   = $opts{timestamp};
-    #print STDERR "$search_term $timestamp\n";
+    print STDERR "$search_term $timestamp\n";
     return unless $search_term;
 
     # Perform search
@@ -637,7 +637,7 @@ sub search_genomes
         ]
     );
 
-# Combine matching genomes with matching organism genomes, preventing duplicates
+    # Combine matching genomes with matching organism genomes, preventing duplicates
     my %unique;
     map {
         $unique{ $_->id } = $_ if ( $USER->has_access_to_genome($_) )
@@ -654,6 +654,7 @@ sub search_genomes
     }
 
     my @items;
+    print STDERR Dumper \@items, "\n";
     foreach ( sort genomecmp values %unique ) {    #(keys %unique) {
         push @items, { label => $_->info, value => $_->id };
     }
