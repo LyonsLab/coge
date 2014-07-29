@@ -236,7 +236,7 @@ sub get_item_info {
         $html .= '</div>';
         
         my $info = 'Notebook <i>' . $notebook->info . '</i>';
-        my $edit_link = qq{open_item('$info','NotebookView.pl?lid=$item_id');};
+        my $edit_link = qq{open_item('$item_type','$info','NotebookView.pl?lid=$item_id');};
         
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
@@ -277,9 +277,9 @@ sub get_item_info {
         $html .= '</div>';
         
         my $info = 'Genome <i>' . $genome->info . '</i>';
-        my $edit_link = qq{open_item('$info','GenomeInfo.pl?gid=$item_id');};
-        my $view_link = qq{open_item('$info','GenomeView.pl?gid=$item_id&tracks=sequence%2Cfeatures');};
-        my $load_link = qq{open_item('$info','LoadAnnotation.pl?gid=$item_id');};
+        my $edit_link = qq{open_item('$item_type','$info','GenomeInfo.pl?gid=$item_id');};
+        my $view_link = qq{open_item('$item_type','$info','GenomeView.pl?gid=$item_id&tracks=sequence%2Cfeatures');};
+        my $load_link = qq{open_item('$item_type','$info','LoadAnnotation.pl?gid=$item_id');};
         
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
@@ -321,8 +321,8 @@ sub get_item_info {
         
         my $gid = $experiment->genome_id;
         my $info = 'Experiment <i>' . $experiment->info . '</i>';
-        my $edit_link = qq{open_item('$info','ExperimentView.pl?eid=$item_id');};
-        my $view_link = qq{open_item('$info','GenomeView.pl?gid=$gid&tracks=experiment$item_id');};
+        my $edit_link = qq{open_item('$item_type','$info','ExperimentView.pl?eid=$item_id');};
+        my $view_link = qq{open_item('$item_type','$info','GenomeView.pl?gid=$gid&tracks=experiment$item_id');};
         
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
