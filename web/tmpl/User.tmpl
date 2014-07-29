@@ -392,6 +392,7 @@ function select_item(item) {
 }
 
 function open_item(item_type, title, link) {
+	console.log(link);
 	if (item_type == ITEM_TYPE_GROUP) // FIXME this is a kludge
 		group_dialog();
 	else {
@@ -1240,7 +1241,7 @@ function toggle_star(img) {
 			<TMPL_VAR NAME='TOC'>
 		</div>
 		<ul id="create_menu" class="coge-menu hidden" style="min-width:15em;white-space:nowrap;">
-			<li><a onclick="create_group_dialog();"><img src="picts/group-icon.png" width="15" height="15"/> New User Group for Sharing</a></li>
+			<li><a onclick="create_group_dialog();"><img src="picts/group-icon.png" width="15" height="15"/> New User Group</a></li>
 			<li><a onclick="create_notebook_dialog();"><img src="picts/notebook-icon.png" width="15" height="15"/> New Notebook</a></li>
 			<li><a onclick="window.open('LoadGenome.pl');"><img src="picts/dna-icon.png" width="15" height="15"/> New Genome <span class="ui-icon ui-icon-extlink"></span></a></li>
 			<!--<li><a onclick="window.open('LoadAnnotation.pl');"><img src="picts/group-icon.png" width="15" height="15"/> New Annotation <span class="ui-icon ui-icon-extlink"></span></a></li>-->
@@ -1310,9 +1311,7 @@ function toggle_star(img) {
 		<tr>
 			<td colspan="2" style="padding-bottom: 10px;">
 				<span style="color: red;">
-				<span class="glyphicon glyphicon-asterisk"></span>
-					 denotes a required field.
-				</span>
+				<span class="glyphicon glyphicon-asterisk"></span> denotes a required field</span>
 			</td>
 		</tr>
 		<tr>
@@ -1334,7 +1333,7 @@ function toggle_star(img) {
 		</tr>
 	</table>
 	<br><br>
-	<span onClick="create_new_group();" class="ui-button ui-corner-all coge-button">Create Group</span>
+	<span onClick="create_new_group();" class="r ui-button ui-corner-all coge-button">Create Group</span>
 </div>
 
 <div id="create_notebook_dialog" class="dialog_box hidden" title="Create New Notebook">
@@ -1342,9 +1341,7 @@ function toggle_star(img) {
 		<tr>
                         <td colspan="2" style="padding-bottom: 10px;">
                                 <span style="color: red;">
-				<span class="glyphicon glyphicon-asterisk"></span>
-                                         denotes a required field.
-                                </span>
+				<span class="glyphicon glyphicon-asterisk"></span> denotes a required field</span>
                         </td>
                 </tr>
 		<tr>
@@ -1366,7 +1363,7 @@ function toggle_star(img) {
 		</tr>
 	</table>
 	<br><br>
-	<span onClick="create_new_notebook();" class="ui-button ui-corner-all coge-button">Create Notebook</span>
+	<span onClick="create_new_notebook();" class="r ui-button ui-corner-all coge-button">Create Notebook</span>
 </div>
 
 <div id="share_dialog" class="dialog_box hidden" title="Share Items"></div>
