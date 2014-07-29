@@ -37,6 +37,7 @@ $(document).ready(function() {
 
     // Open status dialog
     if (job_id) {
+        reset_dialog();
         $('#progress_msg').hide();
         $('#progress_dialog').dialog({ autoOpen: true, title: "Finding SNPs ..." });
         update_dialog(STATUS_URL + job_id, "#progress_dialog", progress_formatter);
@@ -186,7 +187,7 @@ function add_type_to_experiment () {
 
 function reset_dialog() {
     $('#progress_msg').show();
-    $('#finished_msg,#error_msg,#custom_msg,#ok_button').hide();
+    $('#finished_msg,#error_msg,#custom_msg,#ok_button,#experiment_view_button').hide();
 }
 
 function reset_load() {
@@ -203,15 +204,16 @@ function download_files() {
     if ( $("#progress_dialog").dialog( "isOpen" ) )
         return;
 
-    //CLEAR DIALOG
-    reset_dialog();
-
     // Open status dialog right away
     $('#progress_dialog').dialog('open');
     $('#progress_log').html(
             "<br>The download is being generated<br><br>" +
             "File: experiment_" + eid + ".tar.gz"
     );
+
+    //CLEAR DIALOG
+    reset_dialog();
+
 
     $.ajax({
         data: {
@@ -629,18 +631,18 @@ function get_type_description (name) {
 		<td>
 			<div style="padding-left:10px; padding-bottom:10px;">
 			    <div style="color:dimgray;font-weight:bold;">Statistics</div>
-			    <div class="small inline top">
+			    <div class="inline top">
 			        <ul class="ui-widget-content ui-corner-all" style="padding: 2px;">
 			            <li>
 			                <span class="title5">Rows:</span>
-			                <span class="data5"><tmpl_var name=rows><span>
+			                <span class="data5"><TMPL_VAR NAME="rows"><span>
 			            </li>
 			        </ul>
 			    </div>
 			</div>
 			<div style="padding-left: 10px;">
 			    <div style="color:dimgray;font-weight:bold;">Tools</div>
-			    <table class="small inline top ui-widget-content ui-corner-all">
+			    <table class="inline top ui-widget-content ui-corner-all">
 			        <tr>
 			            <td>
 			                <span class="title5">Download:</span>
@@ -713,7 +715,7 @@ function get_type_description (name) {
     <span id="experiment_view_button" class="hidden r ui-button ui-corner-all coge-button">ExperimentView</span>
 </div>
 
-<TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'> <!-- Add/Edit Annotation Dialog -->
+<TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'>
 
 </TMPL_IF>
 

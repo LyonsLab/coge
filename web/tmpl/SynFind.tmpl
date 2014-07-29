@@ -22,10 +22,10 @@
 <div id="tabs" class="hidden" style='margin-top: 0.5em'>
     <ul>
         <li class="small">
-            <a href="#tab1"><span>Configure Search</span></a>
+            <a href="#tab1"><span>Search</span></a>
         </li>
         <li class="small">
-            <a href="#tab2"><span>Configure Parameters</span></a>
+            <a href="#tab2"><span>Parameters</span></a>
         </li>
     </ul>
 
@@ -33,28 +33,28 @@
     <TMPL_INCLUDE NAME='widgets/GenomeSelect.tmpl'>
     <br>
 
-    <table class="ui-widget-content ui-corner-all" style="padding-right:5px;">
-        <tr><td colspan="2"><b>Specify Feature</b></td></tr>
-        <TR class="small">
+    <div class="bold text">Specify Feature</div>
+    <table class="ui-widget-content ui-corner-all coge-section" style="padding-right:5px;">
+        <tr>
             <td nowrap style="padding-left:5px;padding-top:1px;">Name:</td>
             <td>
                 <input type="search" name="accn" id="accn" tabindex="1"  size="20" placeholder="Search" value="<TMPL_VAR NAME=ACCN>" onkeypress="onEnter(event);"/>
             </td>
         </tr>
-        <tr class="small">
-            <TD nowrap style="padding-left:5px;padding-bottom:1px;">Annotation:</td>
+        <tr>
+            <td nowrap style="padding-left:5px;padding-bottom:1px;">Annotation:</td>
             <td nowrap>
                 <input type="search" name="annosearch" id="annosearch" tabindex="1"  size="20" placeholder="Search" value="<TMPL_VAR NAME=ANNO>" onkeypress="onEnter(event);"/>
             </td>
         </tr>
-        <TR class="small">
+        <tr>
             <td valign="top" nowrap style="padding-left:5px;">Organism:</td>
-            <TD>
+            <td>
                 <input type="search" size="20" placeholder="Search" name="org_name_desc_feat" id="org_name_desc_feat" onKeyUp='get_orgs_feat();'><br>
                 <DIV id="org_list_feat" style="padding-top:5px;"><TMPL_VAR NAME="ORG_LIST_FEAT"></DIV>
             </td>
         </tr>
-        <tr class="small">
+        <tr>
             <td><span class="ui-button ui-corner-all coge-button" onclick="search_chain(1)">Search</span></td>
         </tr>
     </table>
@@ -89,7 +89,7 @@
 </div> <!--close tab 1-->
 
 <div id="tab2">
-    <strong>General parameters</strong>
+    <div class="bold text">General parameters</div>
     <TABLE class='small'>
         <TR>
             <TD>Comparison Algorithm: </TD>
@@ -103,7 +103,7 @@
         </table>
         <br>
 
-        <strong>Syntney finding parameters</strong>
+        <div class="bold text">Syntney finding parameters</div>
         <table class='small'>
             <TR>
                 <TD>Gene window size: </TD>
@@ -132,7 +132,7 @@
 
 </div> <!--close all tabs-->
 <div class="padded">
-    <span id="run_synfind_button" style="font-size: 1em" class='ui-button ui-button-go ui-corner-all coge-button'>Run SynFind</span><BR><br>
+    <span id="run_synfind_button" class='ui-button ui-button-go ui-corner-all coge-button-lg'>Run SynFind</span><BR><br>
 </div>
 
 </TMPL_IF>

@@ -121,9 +121,7 @@ sub get_genome_info_details {
         . qq{<td class="data5">} . commify($chr_num);
 
     # Histogram
-    $html .=
-        qq{ <span class="link" onclick="chr_hist($dsgid);">Histogram</span>};
-
+    $html .= qq{ <span class="link" onclick="chr_hist($dsgid);">Histogram</span>};
     $html .= qq{</td></tr>};
 
     my $gstid    = $dsg->genomic_sequence_type->id;
@@ -131,8 +129,7 @@ sub get_genome_info_details {
     $gst_name .= ": " . $dsg->type->description if $dsg->type->description;
 
     # Sequence Type
-    $html .=
-qq{<tr><td class="title5">Sequence type:<td class="data5" title="gstid$gstid">}
+    $html .= qq{<tr><td class="title5">Sequence type:<td class="data5" title="gstid$gstid">}
       . $gst_name
       . qq{ <input type=hidden id=gstid value=}
       . $gstid

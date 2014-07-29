@@ -39,7 +39,7 @@ $(document).ready(function() {
         cache: false,
     });
 
-    $(".dialog_box").dialog({ autoOpen: false, width: 500 });
+    $(".dialog_box").dialog({ autoOpen: false, width: '30em' });
 
     $("#status_dialog").dialog({modal: true});
 
@@ -51,6 +51,7 @@ $(document).ready(function() {
 
     // Open status dialog
     if (job_id) {
+        reset_log();
         $('#loading_msg').hide();
         $('#load_dialog').dialog('open');
         update_dialog("jex/status/" + job_id, "#load_dialog", progress_formatter);
@@ -1106,22 +1107,18 @@ function get_content_dialog(id, request, chromosome) {
 </TMPL_IF>
 
 <table style="overflow:hidden;">
-    <tr style="vertical-align:top;">
+    <tr class="top">
         <td>
-            <span style="color:dimgray;font-weight:bold;">Info</span>
+            <span class="bold text">Info</span>
             <div id='genome_info' class="ui-widget-content ui-corner-all" style="width:400px;"><TMPL_VAR NAME="GENOME_INFO"></div>
 
             <div class="panel">
                 <TMPL_IF NAME='USER_CAN_EDIT'>
-                    <span class='ui-button ui-corner-all coge-button' onClick="edit_genome_info();">
-                        Edit Info
-                    </span>
+                    <span class='ui-button ui-corner-all coge-button' onClick="edit_genome_info();">Edit Info</span>
                 </TMPL_IF>
                 <TMPL_IF NAME='USER_CAN_DELETE'>
                     <TMPL_IF NAME='DELETED'>
-                        <span class='ui-button ui-corner-all ui-button-go coge-button' onClick="delete_genome();">
-                            Undelete
-                        </span>
+                        <span class='ui-button ui-corner-all ui-button-go coge-button' onClick="delete_genome();">Undelete</span>
                     <TMPL_ELSE>
                         <span class='ui-button ui-corner-all ui-button-go coge-button' onClick="$('#genome_delete_box').dialog('open');">Delete</span>
                     </TMPL_IF>
@@ -1129,21 +1126,18 @@ function get_content_dialog(id, request, chromosome) {
                 <span class='ui-button ui-corner-all ui-button-icon-right coge-button coge-button-right' onclick="window.open('GenomeView.pl?gid=<TMPL_VAR NAME=GID>')"><span class="ui-icon ui-icon-extlink"></span>View</span>
             </div>
 
-            <br><br>
             <TMPL_IF NAME="GENOME_ANNOTATIONS">
-            <div>
-            <div style="color:dimgray;font-weight:bold;">Metadata</div>
-            <div id="genome_annotations">
-            <TMPL_VAR NAME="GENOME_ANNOTATIONS">
+            <div style="padding-top:1em;">
+	            <div class="bold text">Metadata</div>
+	            <div id="genome_annotations">
+	            	<TMPL_VAR NAME="GENOME_ANNOTATIONS">
+	            </div>
             </div>
-            </div>
-            <br>
-
             </TMPL_IF>
 
-            <span style="color:dimgray;font-weight:bold;">Sequence & Gene Annotation</span><br>
+            <div class="bold text" style="padding-top:1em;">Sequence & Gene Annotation</div>
             <TMPL_IF NAME='DATASETS'>
-                <table id="datasets" class="ui-widget-content ui-corner-all" style="color:gray;">
+                <table id="datasets" class="small ui-widget-content ui-corner-all" style="color:gray;">
                     <TMPL_VAR NAME='DATASETS'>
                 </table>
             </TMPL_IF>
@@ -1155,8 +1149,6 @@ function get_content_dialog(id, request, chromosome) {
                     </span>
                 </div>
             </TMPL_IF>
-            <br><br>
-
         </td>
 
         <td style="padding-left:10px;">
@@ -1206,9 +1198,8 @@ function get_content_dialog(id, request, chromosome) {
         </td>
     </tr>
 </table>
-<br>
 
-<span style="color:dimgray;font-weight:bold;">Experiments</span><br>
+<div class="bold text" style="padding-top:1em;">Experiments</div>
 <TMPL_IF NAME='EXPERIMENTS'>
     <table class="small ui-widget-content ui-corner-all">
         <tr>
@@ -1234,46 +1225,46 @@ function get_content_dialog(id, request, chromosome) {
 <div id="genome_groups_edit_box" class="dialog_box hidden" title="Add Groups"></div>
 
 <div id="gff_export" class="dialog_box hidden" title="GFF Exporter">
-<table class=small>
- <tr>
-   <td>Do not generate features for ncRNA genes (CDS genes only)</td>
-   <td><input type=checkbox name="cds_only" id="cds_only"></td>
- </tr>
- <tr>
-   <td>Include feature annotations (descriptive text; Geneontology; etc)</td>
-   <td><input type=checkbox name="annos" id="annos" checked></td>
- </tr>
- <tr>
-   <td>Ensure that GFF Name tag is unique for each feature</td>
-   <td><input type=checkbox name="name_unique" id="name_unique" checked></td>
- </tr>
- <tr>
-   <td>Do not propagate duplicate annotations to children</td>
-   <td><input type=checkbox name="upa" id="upa" checked></td>
- </tr>
- <tr>
-   <td>For GFF "ID" and "Parent" tags, use unique:
-   <td>
-     <select id="gff_id_type">
-      <option value="name" selected>Name</option>
-      <option value="num">Number</option>
-     </select>
- </tr>
-</table>
-<span id="gff_submit" class="ui-button ui-corner-all coge-button" onClick="$('#gff_export').dialog('close');">Export GFF File</span>
-<br><br><span class="small" id="export_gff_link"></span>
+	<table class=small>
+	 <tr>
+	   <td>Do not generate features for ncRNA genes (CDS genes only)</td>
+	   <td><input type=checkbox name="cds_only" id="cds_only"></td>
+	 </tr>
+	 <tr>
+	   <td>Include feature annotations (descriptive text; Geneontology; etc)</td>
+	   <td><input type=checkbox name="annos" id="annos" checked></td>
+	 </tr>
+	 <tr>
+	   <td>Ensure that GFF Name tag is unique for each feature</td>
+	   <td><input type=checkbox name="name_unique" id="name_unique" checked></td>
+	 </tr>
+	 <tr>
+	   <td>Do not propagate duplicate annotations to children</td>
+	   <td><input type=checkbox name="upa" id="upa" checked></td>
+	 </tr>
+	 <tr>
+	   <td>For GFF "ID" and "Parent" tags, use unique:
+	   <td>
+	     <select id="gff_id_type">
+	      <option value="name" selected>Name</option>
+	      <option value="num">Number</option>
+	     </select>
+	 </tr>
+	</table>
+	<span id="gff_submit" class="ui-button ui-corner-all coge-button" style="margin-top:1em;" onClick="$('#gff_export').dialog('close');">Export GFF File</span>
+	<br><br><span class="small" id="export_gff_link"></span>
 </div>
 
 <div id="genome_delete_box" class="dialog_box hidden" title="Delete genome?" align='center'>
 Are you sure you want to move this genome into your trash?<p>
  <div>
-  <span style="font-size:.75em" class='ui-button ui-corner-all coge-button' onClick="delete_genome();">Yes</span>
+  <span style="font-size:.75em" class='ui-button ui-corner-all ui-button-go coge-button' onClick="delete_genome();">Yes</span>
   <span style="font-size:.75em" class='ui-button ui-corner-all coge-button' onClick="$('#genome_delete_box').dialog('close');">No</span>
  </div>
 </div>
 
 <div id="status_dialog" class="hidden dialog_box">
-    <div id="status_log" class="small padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
+    <div id="status_log" class="small text padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;">
     </div>
     <br>
     <div id="status_msg">
@@ -1288,7 +1279,7 @@ Are you sure you want to move this genome into your trash?<p>
 </div>
 
 <div id="export_dialog" class="hidden dialog_box" title="Exporting ...">
-    <div id="export_log" class="ui-widget-content ui-corner-all" style="text-align:center;overflow-y:auto;width:450px;height:200px;color:dimgray;">
+    <div id="export_log" class="center text ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;">
     </div>
     <br>
     <span id="export_loading_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
@@ -1371,11 +1362,11 @@ Are you sure you want to move this genome into your trash?<p>
     });
     </script>
 
-    <table>
+    <table class="small">
       <tr>
         <td>Organism:</td>
         <td>
-          <input id="edit_organism" type="search" onkeyup="wait_to_search(search_organisms, this.value);" size="80" value="<TMPL_VAR NAME='ORGANISM'>"/>
+          <input id="edit_organism" type="search" onkeyup="wait_to_search(search_organisms, this.value);" size="50" value="<TMPL_VAR NAME='ORGANISM'>"/>
           <!--<span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all coge-button'>New</span>-->
         </td>
       </tr>
@@ -1393,13 +1384,13 @@ Are you sure you want to move this genome into your trash?<p>
       <tr>
         <td>Source:</td>
         <td>
-          <input id="edit_source" type="search" size="45" value="<TMPL_VAR NAME='SOURCE'>"/>
+          <input id="edit_source" type="search" size="50" value="<TMPL_VAR NAME='SOURCE'>"/>
           <!-- <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all coge-button'>New</span> -->
         </td>
       </tr>
       <tr>
         <td>Link</td>
-        <td><input id="edit_link" size="45" value="<TMPL_VAR NAME='LINK'>" /></td>
+        <td><input id="edit_link" size="50" value="<TMPL_VAR NAME='LINK'>" /></td>
       </tr>
       <tr>
         <td>Restricted?</td>
@@ -1407,7 +1398,7 @@ Are you sure you want to move this genome into your trash?<p>
       </tr>
       <tr>
         <td>Name:</td>
-        <td><input id="edit_name" type="textbox" placeholder="Optional" size="58" value="<TMPL_VAR NAME='NAME'>" /></td>
+        <td><input id="edit_name" type="textbox" placeholder="Optional" size="50" value="<TMPL_VAR NAME='NAME'>" /></td>
       </tr>
       <tr>
         <td>Description:</td>
@@ -1471,7 +1462,7 @@ Are you sure you want to move this genome into your trash?<p>
     }
     </script>
     <br><br><hr>
-    <span style="color:dimgray;font-weight:bold;">Admin Functions</span><br>
+    <span class="bold text">Admin Functions</span><br>
     <div class="small">
         Assign to user:
         <input id="edit_user" type="search" placeholder="Search" onkeyup="wait_to_search(search_users, this.value);" size="10" />
@@ -1481,7 +1472,7 @@ Are you sure you want to move this genome into your trash?<p>
 </TMPL_IF>
 
 <div id="load_dialog" class="hidden dialog_box" title="Copying Genome ...">
-  <div id="load_log" class="small padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
+  <div id="load_log" class="small text padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;">
   </div>
   <br>
   <div id="loading_msg">
