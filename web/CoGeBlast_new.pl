@@ -1115,38 +1115,29 @@ sub gen_data_file_summary {
     my %opts    = @_;
     my $prog    = $opts{prog};
     my $results = $opts{results};
-    my $html    = "<table><tr>";
-    $html .= qq{<td class = small valign="top">Data Download};
-    $html .=
-"<div class=xsmall><span class='link' onClick=\"get_all_hsp_data();\">HSP Data</span></DIV>\n";
-    $html .=
-"<div class=xsmall><span class='link' onClick=\"get_query_fasta();\">Query HSP FASTA File</span></DIV>\n";
+    my $html    = "<table style='border-top:solid 1px lightgray;'><tr>";
+    $html .= qq{<td class="small top">Data Files};
+    $html .= "<div class='xsmall'><span class='link' onClick=\"get_all_hsp_data();\">HSP Data</span></DIV>\n";
+    $html .= "<div class='xsmall'><span class='link' onClick=\"get_query_fasta();\">Query HSP FASTA File</span></DIV>\n";
     if ( $prog eq "tblastn" ) {
-        $html .=
-"<div class=xsmall><span class='link' onClick=\"get_subject_fasta();\">Subject HSP Protein FASTA File</span></DIV>\n";
-        $html .=
-"<div class=xsmall><span class='link' onClick=\"get_subject_fasta('dna');\">Subject HSP DNA FASTA File</span></DIV>\n";
+        $html .= "<div class='xsmall'><span class='link' onClick=\"get_subject_fasta();\">Subject HSP Protein FASTA File</span></DIV>\n";
+        $html .= "<div class='xsmall'><span class='link' onClick=\"get_subject_fasta('dna');\">Subject HSP DNA FASTA File</span></DIV>\n";
     }
     else {
-        $html .=
-"<div class=xsmall><span class='link' onClick=\"get_subject_fasta();\">Subject HSP FASTA File</span></DIV>\n";
+        $html .= "<div class='xsmall'><span class='link' onClick=\"get_subject_fasta();\">Subject HSP FASTA File</span></DIV>\n";
     }
-    $html .=
-"<div class=xsmall><span class='link' onClick=\"get_alignment_file();\">Alignment File</span></DIV>\n";
-    $html .= qq{<td class = small valign="top">Analysis Files};
+    $html .= "<div class='xsmall'><span class='link' onClick=\"get_alignment_file();\">Alignment File</span></DIV>\n";
+    $html .= qq{<td class='small top'>Analysis Files};
     my $dbname = $TEMPURL . "/" . $cogeweb->basefilename . ".sqlite";
-    $html .=
-"<div class=xsmall><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
+    $html .= "<div class=xsmall><a href=\"$dbname\" target=_new>SQLite DB file</a></div>\n";
     foreach my $item (@$results) {
         my $blast_file = $item->{link};
         my $org        = $item->{organism};
-        $html .=
-qq{<div class=xsmall><a href = "$blast_file" target=_new>Blast file for $org</div>\n};
+        $html .= qq{<div class='xsmall'><a href="$blast_file" target=_new>Blast file for $org</div>\n};
     }
-    $html .= qq{<td class = small valign="top">Log File};
+    $html .= qq{<td class='small top'>Log File};
     my $logfile = $TEMPURL . "/" . $cogeweb->basefilename . ".log";
-    $html .=
-      "<div class=xsmall><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
+    $html .= "<div class='xsmall'><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
     $html .= qq{</table>};
 }
 
