@@ -231,9 +231,12 @@ sub get_latest_genomes {
 
         my $name = $dsg->organism->name;
         my $dataset = shift $dsg->datasets;
-        my $orgview_link = "OrganismView.pl?oid=" . $dsg->organism->id;
+        my $orgview_link = "GenomeInfo.pl?gid=" . $dsg->id;
 
-        push @genomes, { organism => $name, added => $dataset->date, url => $orgview_link };
+
+        my @datetime = split " ", $dataset->date;
+
+        push @genomes, { organism => $name, added => $datetime[0], url => $orgview_link };
     }
 
     return encode_json(\@genomes);
