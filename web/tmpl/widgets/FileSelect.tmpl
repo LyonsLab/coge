@@ -120,7 +120,9 @@ function add_file_to_list(filename, url) {
 		return 0;
 	}
 
-	var tr = $('<tr class="note"><td style="padding-right:15px;">' + filename + '</td>' + '</tr>');
+	var tr = $('<tr class="note middle" style="height:1em;"><td style="padding-right:15px;">' +
+			'<span class="text">Name:</span> ' + filename +
+			'</td>' + '</tr>');
 	var td = $('<td style="float:right;"><img src="picts/ajax-loader.gif"/></td>');
 	$(tr).append(td).fadeIn();
 	$(tr).data('url', url);
@@ -154,8 +156,9 @@ function finish_file_in_list(type, url, path, size) {
 	// Animate completion in list
 	$(tr).children().last().remove();
 	$(tr).append(
-		$('<td align="right">' +
-			'<span style="vertical-align:2px">' + units(size) + '</span>' +
+		$('<td>' +
+			'<span style="margin-right:15px;">' + '<span class="text">Size:</span> ' + units(size) + '</span>' + '</td>' +
+			'<td>' +
 			'<span onClick="cancel_callback(this);" class="link ui-icon ui-icon-closethick"></span>' +
 		  '</td>'
 		).fadeIn()
