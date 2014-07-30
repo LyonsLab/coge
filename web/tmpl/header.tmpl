@@ -114,7 +114,7 @@ $(document).ready( function() {
     </div>
     -->
 
-<header>
+<header class="clearfix">
     <TMPL_UNLESS NAME="MENU">
         <div id="menubar" class="r" style="visibility:hidden;">
             <span style="float:left;color:gray; margin-right:50px;">
@@ -158,10 +158,10 @@ $(document).ready( function() {
         <div id="dev" class='small alert'></div>
     </TMPL_UNLESS>
 
-    <div class="clearfix">
+    <div id="brand">
         <TMPL_IF NAME="LOGO_PNG">
-            <a href="http://www.genomevolution.org/<TMPL_VAR NAME=HELP>" class="l">
-                <img style="vertical-align:bottom;" src='picts/<TMPL_VAR NAME="LOGO_PNG">'>
+            <a href="http://www.genomevolution.org/<TMPL_VAR NAME=HELP>">
+                <img style="vertical-align:bottom;" class="l" src='picts/<TMPL_VAR NAME="LOGO_PNG">'>
             </a>
         </TMPL_IF>
         <span class="tagline l"><TMPL_VAR NAME="TITLE"></span>
