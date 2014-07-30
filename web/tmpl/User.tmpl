@@ -119,7 +119,7 @@ $(function() {
 			at: "left bottom",
 			of: "#create_button"
 		})
-		.css({ position: 'absolute', width: '130px' });
+		.css({ position: 'absolute' });
 	$("#send_menu").menu().css({ position: 'absolute', width: '90px' });
 
 	// Get starting page from URL if set
@@ -1263,7 +1263,7 @@ function toggle_star(img) {
 	    <div id="toc_panel" class="small panel" style="overflow:auto;padding-top:15px;padding-right:20px;">
 			<TMPL_VAR NAME='TOC'>
 		</div>
-		<ul id="create_menu" class="coge-menu hidden" style="min-width:15em;white-space:nowrap;">
+		<ul id="create_menu" class="coge-menu hidden" style="white-space:nowrap;">
 			<li><a onclick="create_group_dialog();"><img src="picts/group-icon.png" width="15" height="15"/> New User Group</a></li>
 			<li><a onclick="create_notebook_dialog();"><img src="picts/notebook-icon.png" width="15" height="15"/> New Notebook</a></li>
 			<li><a onclick="window.open('LoadGenome.pl');"><img src="picts/dna-icon.png" width="15" height="15"/> New Genome <span class="ui-icon ui-icon-extlink"></span></a></li>
