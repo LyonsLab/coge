@@ -14,9 +14,7 @@
  <img id='filter_busy' src="picts/ajax-loader.gif" />
 </div>
 
-<!--
 <span id="test" class="ui-button ui-corner-all" onclick="cancel_job()">Cancel selected jobs</span>
--->
 
 <div id="jobs" style="max-width:95%; height: 900px; display:true; font-size: 0.8em; margin-top: 5px;">
 </div>
@@ -123,7 +121,7 @@ $(document).ready(function(){
     }
     var columns = [
         checkbox.getColumnDefinition(),
-        {id: 'id', name: 'Id', field: 'id', maxWidth: 50, sortable: true},
+        {id: 'id', name: 'Id', field: 'workflow_id', maxWidth: 50, sortable: true},
         {id: 'started', name: 'Started', field: 'started', minWidth: 75,
             sortable: true},
         {id: 'completed', name: 'Completed', field: 'completed', minWidth: 75,
@@ -191,7 +189,7 @@ function cancel_job() {
         if (row.status.toLowerCase() == 'running') {
             var argument_list =  {
                 fname: 'cancel_job',
-                job: row.id,
+                job: row.workflow_id,
             };
 
             $.ajax({

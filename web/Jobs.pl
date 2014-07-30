@@ -144,23 +144,20 @@ sub gen_body {
     return $template->output;
 }
 
-#FIXME: This currently does not get the right id back
 sub cancel_job {
     my $job_id = _check_job_args(@_);
-    my $job    = _get_validated_job($job_id);
 
-    return encode_json( {} ) unless defined($job);
+    say STDERR $job_id;
 
-    my $status = $JEX->get_status( $job->id );
+    return encode_json( {} ) unless defined($job_id);
+
+    my $status = $JEX->get_status( $job_id );
 
     if ( $status =~ /scheduled|running|notfound/i ) {
-        $job->update( { status => 3, end_time => \'current_timestamp' } );
-        return encode_json( $JEX->terminate( $job->id ) );
-    }
-    else {
+        return encode_json({ status => $JEX->terminate( $job_id ) });
+    } else {
         return encode_json( {} );
     }
-
 }
 
 sub schedule_job {
@@ -176,23 +173,6 @@ sub cmp_by_start_time {
     my $job2 = shift;
 
     $job1->start_time cmp $job2->start_time;
-}
-
-# private functions
-
-sub _get_validated_job {
-    my $job_id = shift;
-    my $job    = $coge->resultset('Job')->find($job_id);
-
-    if ( ( not defined($job) || $job->user_id == $USER->id )
-        && not $USER->is_admin )
-    {
-        say STDERR "Job.pl: job $job->id expected user id "
-          . "$job->user_id but received $USER->id";
-        return;
-    }
-
-    return $job;
 }
 
 sub _check_job_args {
