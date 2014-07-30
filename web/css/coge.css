@@ -1098,7 +1098,6 @@ header {
 }
 
 .tagline {
-    margin-top: 0.5em;
     margin-left: 0.5em;
     white-space: nowrap;
     font-size: 1.75em; /* 26/16 = 1.75 */
