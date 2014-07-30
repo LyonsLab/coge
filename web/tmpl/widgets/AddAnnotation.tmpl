@@ -28,7 +28,6 @@ function add_annotation_dialog() {
 function edit_annotation_dialog(aid) {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'get_annotation',
 			aid: aid
 		},
@@ -190,7 +189,6 @@ function search_annotation_types () {
 	if (search_term.length > 2) {
 		$.ajax({
 			data: {
-				jquery_ajax: 1,
 				fname: 'search_annotation_types',
 				type_group: type_group,
 				search_term: search_term,
@@ -207,7 +205,6 @@ function search_annotation_types () {
 function get_annotation_type_groups () {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'get_annotation_type_groups'
 		},
 		success : function(val) {
