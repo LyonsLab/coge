@@ -120,6 +120,7 @@ $(function() {
 			of: "#create_button"
 		})
 		.css({ position: 'absolute' });
+	
 	$("#send_menu").menu().css({ position: 'absolute', width: '90px' });
 
 	// Get starting page from URL if set
@@ -326,7 +327,7 @@ function get_item_info(obj) {
 function enter_item(obj) {
 	if (selected_item_id)
 		return;
-	
+
 	if (timers['item'])
 		window.clearTimeout(timers['item']);
 
@@ -334,8 +335,8 @@ function enter_item(obj) {
 		function() { 
 			info_busy(); 
 			get_item_info(obj);
-		}, 
-		500 
+		},
+		500
 	);
 }
 
@@ -392,12 +393,12 @@ function select_item(item) {
 }
 
 function open_item(item_type, title, link) {
-	console.log(link);
 	if (item_type == ITEM_TYPE_GROUP) // FIXME this is a kludge
 		group_dialog();
 	else {
 		title = title + "<br><a class='xsmall' href='"+link+"' target='_blank'>[Open in new tab]</a> ";
 		link = link + "&embed=1";
+		console.log(link);
 		var height = $(window).height() * 0.8;
 		var d = $('<div class="dialog_box" title="'+title+'"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
 			.dialog({
@@ -1129,6 +1130,7 @@ function create_new_group() {
         success: function(rc) {
             if (rc) {
             	schedule_poll(0);
+            	toc_select(ITEM_TYPE_GROUP);
             }
         },
         complete: function() {
@@ -1163,6 +1165,7 @@ function create_new_notebook() {
         success: function(rc) {
             if (rc) {
             	schedule_poll(0);
+            	toc_select(ITEM_TYPE_NOTEBOOK);
             }
         },
         complete: function() {
@@ -1260,15 +1263,14 @@ function toggle_star(img) {
 
 	<div style="float:left;float:left;margin-right:15px;">
 	    <span id="create_button" class='ui-button ui-button-icon-right ui-corner-all coge-button coge-button-right' style="font-size:1em;padding-top:5px;padding-bottom:5px;" onclick="create_menu();">CREATE<span class="ui-icon ui-icon-triangle-1-s"></span></span>
-	    <div id="toc_panel" class="small panel" style="overflow:auto;padding-top:15px;padding-right:20px;">
+	    <div id="toc_panel" class="small panel" style="overflow:auto;padding-top:1em;padding-right:1em;">
 			<TMPL_VAR NAME='TOC'>
 		</div>
 		<ul id="create_menu" class="coge-menu hidden" style="white-space:nowrap;">
 			<li><a onclick="create_group_dialog();"><img src="picts/group-icon.png" width="15" height="15"/> New User Group</a></li>
 			<li><a onclick="create_notebook_dialog();"><img src="picts/notebook-icon.png" width="15" height="15"/> New Notebook</a></li>
-			<li><a onclick="window.open('LoadGenome.pl');"><img src="picts/dna-icon.png" width="15" height="15"/> New Genome <span class="ui-icon ui-icon-extlink"></span></a></li>
-			<!--<li><a onclick="window.open('LoadAnnotation.pl');"><img src="picts/group-icon.png" width="15" height="15"/> New Annotation <span class="ui-icon ui-icon-extlink"></span></a></li>-->
-			<li><a onclick="window.open('LoadExperiment.pl');"><img src="picts/testtube-icon.png" width="15" height="15"/> New Experiment <span class="ui-icon ui-icon-extlink"></span></a></li>
+			<li><a onclick="open_item(-1, 'Create New Genome', 'LoadGenome.pl?');"><img src="picts/dna-icon.png" width="15" height="15"/> New Genome</a></li>
+			<li><a onclick="open_item(-1, 'Create New Experiment', 'LoadExperiment.pl?');"><img src="picts/testtube-icon.png" width="15" height="15"/> New Experiment</a></li>
 		</ul>
 	</div>
 
@@ -1517,7 +1519,7 @@ function toggle_star(img) {
 		<div class="small" style="padding:20px;padding-left:30px;border-top:1px solid lightgray;">
 			<TMPL_IF NAME="IS_EDITABLE">
 				<span style="color:dimgray">Enter names or groups:</span><br>
-				<input id="share_input" type="search" maxlength="40" spellcheck="false" style="width:270px;border:1px solid lightgray;" onkeyup="wait_to_search(search_share, this.value);" />
+				<input id="share_input" type="search" maxlength="40" spellcheck="false" style="width:270px;border:1px solid lightgray;" onclick='$(this).autocomplete("search");' onkeyup="wait_to_search(search_share, this.value);" />
 				<select id="share_role_select" class="hidden"><TMPL_VAR NAME="ROLES"></select>
 				<span href="javascript:void(0)" onClick="add_items_to_user_or_group();" class='ui-button ui-corner-all coge-button'>Add</span>
 			<TMPL_ELSE>
@@ -1580,7 +1582,7 @@ $(function(){
 	<div class="small" style="padding:20px;padding-left:30px;border-top:1px solid lightgray;">
 		<TMPL_IF NAME="IS_EDITABLE">
 			<span style="color:dimgray">Enter names or groups:</span><br>
-			<input id="group_input" type="search" maxlength="40" spellcheck="false" style="width:270px;border:1px solid lightgray;" onkeyup="wait_to_search(search_group, this.value);" />
+			<input id="group_input" type="search" maxlength="40" spellcheck="false" style="width:270px;border:1px solid lightgray;" onclick='$(this).autocomplete("search");' onkeyup="wait_to_search(search_group, this.value);" />
 			<span href="javascript:void(0)" onClick="add_users_to_group();" class='ui-button ui-corner-all coge-button'>Add</span>
 		<TMPL_ELSE>
 			<span style="color:dimgray">
