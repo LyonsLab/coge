@@ -975,6 +975,10 @@ li {
     padding: 5px;
 }
 
+.coge-padded-top {
+    padding-top: 0.625em;
+}
+
 .coge-padded-large {
     padding: 10px;
 }
