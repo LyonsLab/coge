@@ -67,6 +67,7 @@ $(document).ready(function(){
         },
         focus: function(event, ui) {
             //$("#edit_genome").val(ui.item.label);
+        	console.log('matt');
             return false; // Prevent the widget from inserting the value.
         }
     });
@@ -340,6 +341,7 @@ function reset_load() {
 
 function wait_to_search (search_func, search_obj) {
     var search_term = search_obj.value;
+    console.log(search_term);
     if (!search_term || search_term.length >= 2) {
         if (pageObj.time) {
             clearTimeout(pageObj.time);
@@ -569,7 +571,7 @@ function update_dialog(request, identifier, formatter) {
 	  <tr>
 	    <td>Source:</td>
 	    <td>
-	      <input id="edit_source" type="search" placeholder="Search" size="50" spellcheck="false" />
+	      <input id="edit_source" type="search" placeholder="Search" size="50" spellcheck="false" onclick='$(this).autocomplete("search");' />
 	      <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
 	      <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
 	    </td>
@@ -581,7 +583,7 @@ function update_dialog(request, identifier, formatter) {
 	  <tr>
 	    <td>Genome:</td>
 	    <td>
-	      <input id="edit_genome" type="search" placeholder="Search" spellcheck="false" onkeypress="wait_to_search(search_genomes, this);" size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
+	      <input id="edit_genome" type="search" placeholder="Search" spellcheck="false" onclick='$(this).autocomplete("search");' onkeypress="wait_to_search(search_genomes, this);" size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
 	      <input id="gid" type="hidden" value="<TMPL_VAR NAME='GENOME_ID'>" />
 	      <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
 	    </td>
