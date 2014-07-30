@@ -1093,6 +1093,10 @@ header {
     box-sizing: border-box;
 }
 
+.coge-fill-width {
+    width: 100%;
+}
+
 .tagline {
     margin-top: 0.5em;
     margin-left: 0.5em;
