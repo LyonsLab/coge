@@ -68,10 +68,13 @@ CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 sub generate_html {
     # Check for finished result
     if ($JOB_ID) {
-        my $res = decode_json( get_load_log(workflow_id => $JOB_ID) );
-        if ($res->{experiment_id}) {
-            my $url = 'ExperimentView.pl?eid=' . $res->{experiment_id};
-            print $FORM->redirect(-url => $url);
+        my $log = get_load_log(workflow_id => $JOB_ID);
+        if ($log) {
+            my $res = decode_json($log);
+            if ($res->{experiment_id}) {
+                my $url = 'ExperimentView.pl?eid=' . $res->{experiment_id};
+                print $FORM->redirect(-url => $url);
+            }
         }
     }    
     

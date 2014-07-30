@@ -72,14 +72,14 @@ CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 sub generate_html {
     # Check for finished result
     if ($JOB_ID) {
-	my $log = get_load_log(workflow_id => $JOB_ID);
-	if ($log) {
+    	my $log = get_load_log(workflow_id => $JOB_ID);
+    	if ($log) {
             my $res = decode_json($log);
             if ($res->{genome_id}) {
                 my $url = 'GenomeInfo.pl?gid=' . $res->{genome_id};
                 print $FORM->redirect(-url => $url);
             }
-	}
+        }
     }
     
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
