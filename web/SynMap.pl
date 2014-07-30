@@ -737,9 +737,9 @@ sub get_orgs {
     $org_count = scalar @opts unless $org_count;
     my $html;
     $html .=
-        qq{<FONT CLASS ="small">Organism count: }
+        qq{<span class="small info">Organism count: (}
       . $org_count
-      . qq{</FONT>\n<BR>\n};
+      . qq{)</span>\n<BR>\n};
     unless ( @opts && ( $name || $desc ) ) {
         $html .= qq{<input type = hidden name="org_id$i" id="org_id$i">};
         return $html;
@@ -794,7 +794,7 @@ sub get_genome_info {
     my $link = $ds->data_source->link;
     $link = $BASE_URL unless $link;
     $link = "http://" . $link unless $link && $link =~ /^http/;
-    $html_dsg_info .= qq{<table class=small>};
+    $html_dsg_info .= qq{<table class="xsmall">};
     $html_dsg_info .= qq{<tr><td>Genome Information:</td><td class="link" onclick=window.open('GenomeInfo.pl?gid=$dsgid')>}.$dsg->info.qq{</td></tr>};
     $html_dsg_info .= qq{<tr><td>Organism:</td><td>$orgname</td></tr>};
     $html_dsg_info .= qq{<tr><td>Taxonomy:</td><td>$org_desc</td></tr>};
