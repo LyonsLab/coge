@@ -103,7 +103,19 @@ sub get_jobs_for_user {
             %{$entry}
         };
     }
-    return encode_json({ jobs => \@job_items });
+
+    my @filtered;
+
+    # Filter repeated entries
+    foreach (reverse @job_items) {
+        my $wid = $_->{workflow_id};
+        next if (defined $wid and defined $workflow_results{$wid}{seen});
+        $workflow_results{$wid}{seen}++ if (defined $wid);
+
+        unshift @filtered, $_;
+    }
+
+    return encode_json({ jobs => \@filtered });
 }
 
 sub gen_html {
