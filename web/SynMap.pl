@@ -737,7 +737,7 @@ sub get_orgs {
     $org_count = scalar @opts unless $org_count;
     my $html;
     $html .=
-        qq{<span class="small info">Organism count: (}
+        qq{<span class="small info">Matching Organisms: (}
       . $org_count
       . qq{)</span>\n<BR>\n};
     unless ( @opts && ( $name || $desc ) ) {
