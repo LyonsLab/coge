@@ -616,12 +616,14 @@ function more() {
     <span class="small" style="float:right;">Link: <a></a></span>
     Please wait ... <img src="picts/ajax-loader.gif"/>
   </div>
-  <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
-  <span id="error_msg" style="display:none;">An error occurred <img src="picts/thumbs_down.png"></span>
-  <input id="dataset_id" type="hidden" />
-  <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all coge-button">Load Another</span>
-  <span id="finish_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all coge-button">GenomeView</span>
-  <span id="cancel_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go coge-button">Cancel</span>
+  <div class="coge-buttonset">
+	  <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
+	  <span id="error_msg" style="display:none;">An error occurred <img src="picts/thumbs_down.png"></span>
+	  <input id="dataset_id" type="hidden" />
+	  <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all coge-button">Load Another</span>
+	  <span id="finish_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all coge-button">GenomeView</span>
+	  <span id="cancel_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go coge-button">Cancel</span>
+  </div>
 </div>
 
 <div id="create_new_source_dialog" class="dialog_box" title="Create New Source" style="display:none;">
