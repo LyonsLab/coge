@@ -38,8 +38,10 @@ const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
 var timestamps = new Array();
 var load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
 var job_id = '<TMPL_VAR NAME="JOB_ID">';
+var embed = '<TMPL_VAR NAME="EMBED">';
 var experiment_id;
 var notebook_id;
+var pageObj = {};
 
 $(document).ready(function(){
 	// Configure jQuery ajax
@@ -323,9 +325,9 @@ function load_succeeded(obj) {
     }
     else { // normal experiment load
         $('#finish_load_experiment_button')
-            .html('ExperimentView').fadeIn()
+            .html('Continue to ExperimentView').fadeIn()
             .unbind().on('click', function() {
-                window.location.href = "ExperimentView.pl?eid=" + experiment_id;
+                window.location.href = "ExperimentView.pl?embed=" + embed + "&eid=" + experiment_id;
         });
     }
 }
@@ -559,7 +561,6 @@ function update_dialog(request, identifier, formatter) {
 	  <tr>
 	    <td>Description:</td>
 	    <td><textarea id="edit_description" rows="5" cols="50" ><TMPL_VAR NAME='DESC'></textarea></td>
-	    <td><span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span></td>
 	  </tr>
 	  <tr>
 	    <td>Version:</td>
@@ -648,11 +649,13 @@ function update_dialog(request, identifier, formatter) {
     <span class="small" style="float:right;">Link: <a></a></span>
     Please wait ... <img src="picts/ajax-loader.gif"/>
   </div>
-  <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
-  <span id="error_msg" style="display:none;">An error occurred <img src="picts/thumbs_down.png"></span>
-  <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Load Another</span>
-  <span id="finish_load_experiment_button" style="display:none;float:right;" class="ui-button ui-corner-all">ExperimentView</span>
-  <span id="cancel_load_experiment_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
+  <div class="coge-buttonset">
+	  <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
+	  <span id="error_msg" style="display:none;">An error occurred <img src="picts/thumbs_down.png"></span>
+	  <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Load Another</span>
+	  <span id="finish_load_experiment_button" style="display:none;float:right;" class="ui-button ui-corner-all">ExperimentView</span>
+	  <span id="cancel_load_experiment_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
+  </div>
 </div>
 
 <div id="create_new_source_dialog" class="dialog_box" title="Create New Source" style="display:none;">

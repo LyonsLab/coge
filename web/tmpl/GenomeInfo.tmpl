@@ -1123,7 +1123,7 @@ function get_content_dialog(id, request, chromosome) {
                         <span class='ui-button ui-corner-all ui-button-go coge-button' onClick="$('#genome_delete_box').dialog('open');">Delete</span>
                     </TMPL_IF>
                 </TMPL_IF>
-                <span class='ui-button ui-corner-all ui-button-icon-right coge-button coge-button-right' onclick="window.open('GenomeView.pl?gid=<TMPL_VAR NAME=GID>')"><span class="ui-icon ui-icon-extlink"></span>View</span>
+                <span class='ui-button ui-corner-all coge-button' onclick='location.href="GenomeView.pl?embed=<TMPL_VAR NAME=EMBED>&gid=<TMPL_VAR NAME=GID>"'>View</span>
             </div>
 
             <TMPL_IF NAME="GENOME_ANNOTATIONS">
@@ -1143,10 +1143,7 @@ function get_content_dialog(id, request, chromosome) {
             </TMPL_IF>
             <TMPL_IF NAME='USER_CAN_EDIT'>
                 <div class="panel">
-                    <span class='ui-button ui-corner-all ui-button-icon-right coge-button coge-button-right' onclick="window.open('LoadAnnotation.pl?gid=<TMPL_VAR NAME=GID>')">
-                        <span class="ui-icon ui-icon-extlink"></span>
-                        Load Gene Annotation
-                    </span>
+                    <span class='ui-button ui-corner-all coge-button' onclick="location.href='LoadAnnotation.pl?embed=<TMPL_VAR NAME=EMBED>&gid=<TMPL_VAR NAME=GID>'">Load Gene Annotation</span>
                 </div>
             </TMPL_IF>
         </td>
@@ -1211,10 +1208,7 @@ function get_content_dialog(id, request, chromosome) {
 </TMPL_IF>
 <TMPL_IF NAME='USER_CAN_ADD'>
     <div class="panel">
-        <span class='ui-button ui-corner-all ui-button-icon-right coge-button coge-button-right' onclick="window.open('LoadExperiment.pl?gid=<TMPL_VAR NAME=GID>')">
-            <span class="ui-icon ui-icon-extlink"></span>
-            Load Experiment
-        </span>
+        <span class='ui-button ui-corner-all coge-button' onclick="location.href='LoadExperiment.pl?embed=<TMPL_VAR NAME=EMBED>&gid=<TMPL_VAR NAME=GID>'">Load Experiment</span>
     </div>
 </TMPL_IF>
 <br><br>
@@ -1286,6 +1280,21 @@ Are you sure you want to move this genome into your trash?<p>
     <span id="export_finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
     <span id="export_error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
     <span id="export_ok_button" onClick="$('#export_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all coge-button">OK</span>
+</div>
+
+<div id="load_dialog" class="hidden dialog_box" title="Copying Genome ...">
+	<div id="load_log" class="small text padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;">
+	</div>
+	<br>
+	<div id="loading_msg">
+	  <span class="small" style="float:right;">Link: <a></a></span>
+	  Please wait ... <img src="picts/ajax-loader.gif"/>
+	</div>
+	<span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
+	<span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
+	<span id="ok_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">OK</span>
+	<span id="finish_button" onClick="continue_to_view();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">Continue to new copy</span>
+	<span id="cancel_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go coge-button">Cancel</span>
 </div>
 
 <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'>
@@ -1470,18 +1479,3 @@ Are you sure you want to move this genome into your trash?<p>
     </div>
     <br>
 </TMPL_IF>
-
-<div id="load_dialog" class="hidden dialog_box" title="Copying Genome ...">
-  <div id="load_log" class="small text padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;">
-  </div>
-  <br>
-  <div id="loading_msg">
-    <span class="small" style="float:right;">Link: <a></a></span>
-    Please wait ... <img src="picts/ajax-loader.gif"/>
-  </div>
-  <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
-  <span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
-  <span id="ok_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">OK</span>
-  <span id="finish_button" onClick="continue_to_view();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">Continue to new copy</span>
-  <span id="cancel_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go coge-button">Cancel</span>
-</div>

@@ -27,7 +27,7 @@ use Data::Dumper;
 no warnings 'redefine';
 
 use vars qw(
-  $P $PAGE_TITLE $TEMPDIR $user $coge $FORM $LINK $JOB_ID
+  $P $PAGE_TITLE $TEMPDIR $user $coge $FORM $LINK $JOB_ID $EMBED
   %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID
 );
 
@@ -70,37 +70,46 @@ $MAX_SEARCH_RESULTS = 400;
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 
 sub generate_html {
+    $EMBED = $FORM->param('embed');
+    
     # Check for finished result
     if ($JOB_ID) {
     	my $log = get_load_log(workflow_id => $JOB_ID);
     	if ($log) {
             my $res = decode_json($log);
             if ($res->{genome_id}) {
-                my $url = 'GenomeInfo.pl?gid=' . $res->{genome_id};
+                my $url = 'GenomeInfo.pl?embed=' . $EMBED . '&gid=' . $res->{genome_id};
                 print $FORM->redirect(-url => $url);
             }
         }
     }
     
-    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( PAGE_TITLE => $PAGE_TITLE,
-    				  PAGE_LINK  => $LINK,
-					  HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
-    my $name = $user->user_name;
-    $name = $user->first_name if $user->first_name;
-    $name .= ' ' . $user->last_name
-      if ( $user->first_name && $user->last_name );
-    $template->param(
-        USER     => $name,
-        LOGO_PNG => $PAGE_TITLE . "-logo.png",
-    );
-    $template->param( LOGON => 1 ) unless $user->user_name eq "public";
-    my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-    $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
-
-    $template->param( BODY       => generate_body() );
-    $template->param( ADJUST_BOX => 1 );
-
+    my $template;
+    
+    if ($EMBED) {
+        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
+    }
+    else {
+        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+        $template->param( PAGE_TITLE => $PAGE_TITLE,
+        				  PAGE_LINK  => $LINK,
+    					  HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+        my $name = $user->user_name;
+        $name = $user->first_name if $user->first_name;
+        $name .= ' ' . $user->last_name
+          if ( $user->first_name && $user->last_name );
+        $template->param(
+            USER     => $name,
+            LOGO_PNG => $PAGE_TITLE . "-logo.png",
+        );
+        $template->param( LOGON => 1 ) unless $user->user_name eq "public";
+        my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+        $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
+    
+        $template->param( ADJUST_BOX => 1 );
+    }
+    
+    $template->param( BODY => generate_body() );
     return $template->output;
 }
 
@@ -117,6 +126,7 @@ sub generate_body {
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param(
         MAIN          => 1,
+        EMBED         => 1,
         PAGE_NAME     => $PAGE_TITLE . '.pl',
         LOAD_ID       => $LOAD_ID,
         JOB_ID        => $JOB_ID,
@@ -498,7 +508,7 @@ sub load_genome {
 
     # Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
-        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id
+        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id . "&embed=" . $EMBED
     );
     
     # Log it
