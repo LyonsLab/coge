@@ -45,6 +45,8 @@ $JOB_ID  = $FORM->Vars->{'job_id'};
 $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $user->name . '/' . $LOAD_ID . '/';
 
+$EMBED = $FORM->param('embed');
+
 $MAX_SEARCH_RESULTS = 400;
 
 %FUNCTION = (
@@ -70,8 +72,6 @@ $MAX_SEARCH_RESULTS = 400;
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 
 sub generate_html {
-    $EMBED = $FORM->param('embed');
-    
     # Check for finished result
     if ($JOB_ID) {
     	my $log = get_load_log(workflow_id => $JOB_ID);
@@ -126,7 +126,7 @@ sub generate_body {
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param(
         MAIN          => 1,
-        EMBED         => 1,
+        EMBED         => $EMBED,
         PAGE_NAME     => $PAGE_TITLE . '.pl',
         LOAD_ID       => $LOAD_ID,
         JOB_ID        => $JOB_ID,

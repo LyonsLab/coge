@@ -43,6 +43,8 @@ $JOB_ID  = $FORM->Vars->{'job_id'};
 $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 
+$EMBED = $FORM->param('embed');
+
 $MAX_SEARCH_RESULTS = 100;
 
 %FUNCTION = (
