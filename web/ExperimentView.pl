@@ -675,7 +675,8 @@ sub get_experiment_info {
             $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="make_experiment_private();">Make Private</span>};
         }
     }
-    $html .= qq{<a target="_blank" style="color:inherit;" class='ui-button ui-corner-all ui-button-icon-right coge-button coge-button-right' href="GenomeView.pl?gid=$gid&tracks=experiment$eid">View<span class="ui-icon ui-icon-extlink"></span></a>};
+    my $view_link = "GenomeView.pl?embed=$EMBED&gid=$gid&tracks=experiment$eid";
+    $html .= qq{<a style="color:inherit;" class='ui-button ui-corner-all coge-button' href=$view_link>View</a>};
 
     $html .= "</div>";
 
