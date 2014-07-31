@@ -1,3 +1,4 @@
 MANIFEST
 Makefile.PL
 lib/CoGe/Core/Genome.pm
+lib/CoGe/Core/Experiment.pm
