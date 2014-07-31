@@ -356,8 +356,8 @@ my @name_buffer;    # buffer for bulk inserts into FeatureName table
                 unless (defined $start and defined $stop and defined $chr) {
                     print $log "log: warning: feature '", (defined $name ? $name : ''), "' (type '$feat_type') missing coordinates", "\n";
                     print STDERR "log: warning: feature '", (defined $name ? $name : ''), "' (type '$feat_type') missing coordinates", "\n";
-                    print $log Dumper $data{$chr_loc}{$name}{$feat_type}, "\n";
-                    print STDERR Dumper $data{$chr_loc}{$name}{$feat_type}, "\n";
+                    #print $log Dumper $data{$chr_loc}{$name}{$feat_type}, "\n";
+                    #print STDERR Dumper $data{$chr_loc}{$name}{$feat_type}, "\n";
                     next; #exit(-1);
                 }
 
