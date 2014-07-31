@@ -33,7 +33,7 @@ $JEX =
 
 %FUNCTION = (
     cancel_job   => \&cancel_job,
-    schedule_job => \&schedule_job,
+    restart_job  => \&restart_job,
     get_jobs     => \&get_jobs_for_user,
 );
 
@@ -159,8 +159,6 @@ sub gen_body {
 sub cancel_job {
     my $job_id = _check_job_args(@_);
 
-    say STDERR $job_id;
-
     return encode_json( {} ) unless defined($job_id);
 
     my $status = $JEX->get_status( $job_id );
@@ -172,12 +170,18 @@ sub cancel_job {
     }
 }
 
-sub schedule_job {
+sub restart_job {
     my $job_id = _check_job_args(@_);
-    my $job    = _get_validated_job($job_id);
 
-    return "fail" unless defined($job);
-    return "true";
+    return encode_json( {} ) unless defined($job_id);
+
+    my $status = $JEX->get_status( $job_id );
+
+    if ( $status =~ /running/i ) {
+        return encode_json( {} );
+    } else {
+        return encode_json({ status => $JEX->restart( $job_id ) });
+    }
 }
 
 sub cmp_by_start_time {
