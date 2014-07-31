@@ -8,17 +8,24 @@ function get_gc (dsgid, divid)
 //TODO: Replace with proper promise chain
 function get_organism_chain(type,val,i)
 {
+	$('.feattype_menu').hide();
+	$('#dsgid'+i).html('');
+	
     $('#org_list').html('<input type=hidden id = "org_id"+i><font class="loading"></font>');
-    if (type == 'name') {get_orgs(['args__name','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
-    else if (type == 'desc') {get_orgs(['args__desc','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
-    $('#dsg_info'+i).html('<div class="loading dna_small small">loading. . .</div>');
+    if (type == 'name')
+    	get_orgs(['args__name','args__'+val,'args__i','args__'+i], ['org_list'+i]);
+    else if (type == 'desc') 
+    	get_orgs(['args__desc','args__'+val,'args__i','args__'+i], ['org_list'+i]);
+    //$('#dsg_info'+i).html('<div class="loading dna_small small">loading. . .</div>');
+    $('#dsg_info'+i).html('<div class="small note indent">loading... <img src="picts/ajax-loader.gif"/></div>');
     ajax_wait("gen_dsg_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['dsg_menu"+i+"', 'genome_message"+i+"']);");
     ajax_wait("get_genome_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],[handle_dsg_info]);");
 }
 
 //TODO: Replace with proper promise chain
 function get_genome_info_chain(i) {
-    $('#dsg_info'+i).html('<div class=dna_small class=loading class=small>loading. . .</div>');
+	//$('#dsg_info'+i).html('<div class=dna_small class=loading class=small>loading. . .</div>');
+	$('#dsg_info'+i).html('<div class="small note indent">loading... <img src="picts/ajax-loader.gif"/></div>');
     // ajax_wait("gen_dsg_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['dsg_menu"+i+"','genome_message"+i+"']);");
     gen_dsg_menu(['args__oid','org_id'+i, 'args__num','args__'+i],['dsg_menu'+i, 'genome_message'+i]);
     $('#depth_org_1').html($('#org_id1 option:selected').html());
@@ -80,11 +87,15 @@ function update_params(val) {
     $('#c').val(params[11]);
     merge_select_check();
     depth_algo_check();
-}
+}    
 
 function handle_dsg_info(dsg_html, feat_menu, genome_message, length, org_num, org_name, seq_id) {
     $('#dsg_info'+org_num).html(dsg_html);
+    
     $('#feattype_menu'+org_num).html(feat_menu);
+    if (feat_menu)
+    	$('#feattype_menu'+org_num).show();
+    
     $('#genome_message'+org_num).html(genome_message);
 
     if (org_num == 1) {

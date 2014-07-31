@@ -294,11 +294,9 @@ sub gen_html {
 
 sub gen_body {
     my $form = shift || $FORM;
-    my $template =
-      HTML::Template->new( filename => $config->{TMPLDIR} . 'SynMap.tmpl' );
+    my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'SynMap.tmpl' );
 
     $template->param( MAIN => 1 );
-
     #$template->param( EMAIL       => $USER->email )  if $USER->email;
 
     my $master_width = $FORM->param('w') || 0;
@@ -306,8 +304,7 @@ sub gen_body {
 
     #set search algorithm on web-page
     if ( defined( $FORM->param('b') ) ) {
-        $template->param(
-            $ALGO_LOOKUP->{ $FORM->param('b') }{opt} => "selected" );
+        $template->param( $ALGO_LOOKUP->{ $FORM->param('b') }{opt} => "selected" );
     }
     else {
         $template->param( $ALGO_LOOKUP->{6}{opt} => "selected" );
@@ -317,10 +314,10 @@ sub gen_body {
     $A  = $FORM->param('A');
     $Dm = $FORM->param('Dm');
     $gm = $FORM->param('gm');
-    $gm //= 40;
+    $gm //= 40; #/
     $dt     = $FORM->param('dt');
     $cscore = $FORM->param('csco');
-    $cscore //= 0;
+    $cscore //= 0; #/
     $dupdist = $FORM->param('tdd');
 
 #   $cvalue = $FORM->param('c');       #different c value than the one for cytology.  But if you get that, you probably shouldn't be reading this code
@@ -542,14 +539,15 @@ sub gen_org_menu {
 
     $name = "Search" unless $name;
     $desc = "Search" unless $desc;
-
     my ($dsg) = $coge->resultset('Genome')->find($dsgid);
-    my $menu_template =
-      HTML::Template->new( filename => $config->{TMPLDIR} . 'partials/organism_menu.tmpl' );
-    $menu_template->param( ORG_MENU => 1 );
-    $menu_template->param( NUM      => $num );
-    $menu_template->param( ORG_NAME => $name );
-    $menu_template->param( ORG_DESC => $desc );
+    
+    my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'partials/organism_menu.tmpl' );
+    $template->param(
+        ORG_MENU => 1,
+        NUM      => $num,
+        ORG_NAME => $name,
+        ORG_DESC => $desc
+    );
 
     if ($dsg and $USER->has_access_to_genome($dsg)) {
         my $org = $dsg->organism;
@@ -561,25 +559,26 @@ sub gen_org_menu {
             feattype => $feattype_param
         );
 
-        $menu_template->param( DSG_INFO       => $dsg_info );
-        $menu_template->param( FEATTYPE_MENU  => $feattype_menu );
-        $menu_template->param( GENOME_MESSAGE => $message );
-    }  else {
+        $template->param( 
+            DSG_INFO       => $dsg_info,
+            FEATTYPE_MENU  => $feattype_menu,
+            GENOME_MESSAGE => $message 
+        );
+    }
+    else {
         $oid = 0;
         $dsgid = 0;
     }
 
-    $menu_template->param(
-        'ORG_LIST' => get_orgs( name => $name, i => $num, oid => $oid ) );
+    $template->param( 'ORG_LIST' => get_orgs( name => $name, i => $num, oid => $oid ) );
 
     my ($dsg_menu) = gen_dsg_menu( oid => $oid, dsgid => $dsgid, num => $num );
-    $menu_template->param( DSG_MENU => $dsg_menu );
+    $template->param( DSG_MENU => $dsg_menu );
 
-    return $menu_template->output;
+    return $template->output;
 }
 
 sub gen_dsg_menu {
-    my $t1    = new Benchmark;
     my %opts  = @_;
     my $oid   = $opts{oid};
     my $num   = $opts{num};
@@ -588,7 +587,6 @@ sub gen_dsg_menu {
     my $message;
     my $org_name;
 
-    #    print STDERR join ("\n", map {$_->id} $USER->genomes),"\n";
     foreach my $dsg (
         $coge->resultset('Genome')->search(
             { organism_id => $oid },
@@ -606,21 +604,17 @@ sub gen_dsg_menu {
             next unless $dsgid && $dsg->id == $dsgid;
             $name = "Restricted";
         }
-    elsif ($dsg->deleted)
-      {
-        if ($dsgid && $dsgid == $dsg->id)
-          {
-        $name = "DELETED: ".$dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ")";
-          }
-        else
-          {
-        next;
-          }
-      }
+        elsif ($dsg->deleted) {
+            if ($dsgid && $dsgid == $dsg->id) {
+                $name = "DELETED: ".$dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ")";
+            }
+            else {
+                next;
+            }
+        }
         else {
             $name .= $dsg->name . ": " if $dsg->name;
-            $name .=
-              $dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ")";
+            $name .= $dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ")";
             $org_name = $dsg->organism->name unless $org_name;
             foreach my $ft (
                 $coge->resultset('FeatureType')->search(
@@ -641,12 +635,17 @@ sub gen_dsg_menu {
         }
 
         push @dsg_menu, [ $dsg->id, $name, $dsg, $has_cds ];
-
     }
 
-    my $dsg_menu = qq{
-   <select id=dsgid$num onChange="\$('#dsg_info$num').html('<div class=dna_small class=loading class=small>loading. . .</div>'); get_genome_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],[handle_dsg_info])">
-};
+    return ( qq{<span id="dsgid$num" class="hidden"></span>}, '') unless (@dsg_menu);
+
+    #my $dsg_menu = qq{<select id="dsgid$num" onChange="\$('#dsg_info$num').html('<div class=dna_small class="loading" class="small">loading. . .</div>'); get_genome_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],[handle_dsg_info])">};
+    my $dsg_menu = 
+        qq{<span class="coge-padded-top">} .
+        qq{<span class="small text">Genomes: </span>} .
+        qq{<select id="dsgid$num" style="max-width:400px;" "onChange="get_genome_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],[handle_dsg_info])">} .
+        qq{</span>};
+    
     foreach (
         sort {
                  versioncmp( $b->[2]->version, $a->[2]->version )
@@ -659,21 +658,11 @@ sub gen_dsg_menu {
         my $selected = " selected" if $dsgid && $numt == $dsgid;
         $selected = " " unless $selected;
         $numt = 0 if $name eq "Restricted";
-        $dsg_menu .= qq{
-   <OPTION VALUE=$numt $selected>$name</option>
-};
+        $dsg_menu .= qq{<OPTION VALUE=$numt $selected>$name</option>};
     }
     $dsg_menu .= "</select>";
-    my $t2 = new Benchmark;
-    my $time = timestr( timediff( $t2, $t1 ) );
 
-    #    print STDERR qq{
-    #-----------------
-    #sub gen_dsg_menu runtime:  $time
-    #-----------------
-    #};
     return ( $dsg_menu, $message );
-
 }
 
 sub read_file {
@@ -694,7 +683,6 @@ sub get_orgs {
     my $desc = $opts{desc};
     my $oid  = $opts{oid};
     my $i    = $opts{i};
-    my @db;
 
     #get rid of trailing white-space
     $name =~ s/^\s+//g if $name;
@@ -702,68 +690,63 @@ sub get_orgs {
     $desc =~ s/^\s+//g if $desc;
     $desc =~ s/\s+$//g if $desc;
 
-    $name = ""
-      if $name && $name =~ /Search/;    #need to clear to get full org count
-    $desc = ""
-      if $desc && $desc =~ /Search/;    #need to clear to get full org count
+    $name = "" if $name && $name =~ /Search/; #need to clear to get full org count
+    $desc = "" if $desc && $desc =~ /Search/; #need to clear to get full org count
+    
+    my @organisms;
     my $org_count;
     if ($oid) {
         my $org = $coge->resultset("Organism")->find($oid);
         $name = $org->name if $org;
-        push @db, $org if $name;
+        push @organisms, $org if $name;
     }
     elsif ($name) {
-        @db =
-          $coge->resultset("Organism")
-          ->search( { name => { like => "%" . $name . "%" } } );
+        @organisms = $coge->resultset("Organism")->search( { name => { like => "%" . $name . "%" } } );
     }
     elsif ($desc) {
-        @db =
-          $coge->resultset("Organism")
-          ->search( { description => { like => "%" . $desc . "%" } } );
+        @organisms = $coge->resultset("Organism")->search( { description => { like => "%" . $desc . "%" } } );
     }
     else {
         $org_count = $coge->resultset("Organism")->count;
     }
 
     my @opts;
-    foreach my $item ( sort { uc( $a->name ) cmp uc( $b->name ) } @db ) {
+    foreach my $item ( sort { uc( $a->name ) cmp uc( $b->name ) } @organisms ) {
         my $option = "<OPTION value=\"" . $item->id . "\"";
         $option .= " selected" if $oid && $oid == $item->id;
         $option .= ">" . $item->name . " (id" . $item->id . ")</OPTION>";
         push @opts, $option;
-
     }
+    
+    unless ( @opts && ( $name || $desc ) ) {
+        return qq{<span name="org_id$i" id="org_id$i"></span>};
+    }
+    
     $org_count = scalar @opts unless $org_count;
     my $html;
-    $html .=
-        qq{<span class="small info">Matching Organisms: (}
+    $html .= qq{<span class="small info">Organisms: (}
       . $org_count
       . qq{)</span>\n<BR>\n};
-    unless ( @opts && ( $name || $desc ) ) {
-        $html .= qq{<input type = hidden name="org_id$i" id="org_id$i">};
-        return $html;
-    }
 
-    $html .=
-qq{<SELECT id="org_id$i" SIZE="5" MULTIPLE onChange="get_genome_info_chain($i)" class="coge-fill-width">\n};
-    $html .= join( "\n", @opts );
-    $html .= "\n</SELECT>\n";
+    
+    $html .= qq{<SELECT id="org_id$i" SIZE="5" MULTIPLE onChange="get_genome_info_chain($i)" class="coge-fill-width">\n}
+          . join( "\n", @opts )
+          . "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/ unless $oid;
     return $html;
 }
 
 sub get_genome_info {
-    my $t1       = new Benchmark;
     my %opts     = @_;
     my $dsgid    = $opts{dsgid};
     my $org_num  = $opts{org_num};
     my $feattype = $opts{feattype};
     $feattype = 1 unless defined $feattype;
-    return " ", " ", " " unless $dsgid;
-    my $html_dsg_info;
+    print STDERR Dumper \%opts, "\n";
+    return ("<div class='small note indent'>No matching results found</div>", " ", " ", '', $org_num, '', '') unless ($dsgid && $dsgid =~ /\d+/);
 
-#my ($dsg) = $coge->resultset("Genome")->find({genome_id=>$dsgid},{join=>['organism','genomic_sequences'],prefetch=>['organism','genomic_sequences']});
+    my $html_dsg_info;
+    #my ($dsg) = $coge->resultset("Genome")->find({genome_id=>$dsgid},{join=>['organism','genomic_sequences'],prefetch=>['organism','genomic_sequences']});
     my ($dsg) = $coge->resultset("Genome")->find( { genome_id => $dsgid },
         { join => 'organism', prefetch => 'organism' } );
     return " ", " ", " " unless $dsg;
@@ -778,14 +761,14 @@ sub get_genome_info {
         $org_desc = join(
             "; ",
             map {
-                    qq{<span class=link onclick="\$('#org_desc}
+                    qq{<span class="link" onclick="\$('#org_desc}
                   . qq{$org_num').val('$_').focus();search_bar('org_desc$org_num'); timing('org_desc$org_num')">$_</span>}
               } split /\s*;\s*/,
             $org->description
         );
     }
+    
     my $i = 0;
-
     my (
         $percent_gc, $percent_at, $percent_n, $percent_x, $chr_length,
         $chr_count,  $plasmid,    $contig,    $scaffold
@@ -794,30 +777,23 @@ sub get_genome_info {
     my $link = $ds->data_source->link;
     $link = $BASE_URL unless $link;
     $link = "http://" . $link unless $link && $link =~ /^http/;
-    $html_dsg_info .= qq{<table class="xsmall">};
-    $html_dsg_info .= qq{<tr><td>Genome Information:</td><td class="link" onclick=window.open('GenomeInfo.pl?gid=$dsgid')>}.$dsg->info.qq{</td></tr>};
-    $html_dsg_info .= qq{<tr><td>Organism:</td><td>$orgname</td></tr>};
+    $html_dsg_info .= qq{<table class="xsmall" style="margin-left:1em; border-top:1px solid lightgray;">};
+    $html_dsg_info .= qq{<tr><td>Description:</td><td class="link" onclick=window.open('GenomeInfo.pl?gid=$dsgid')>}.$dsg->info.qq{</td></tr>};
+    #$html_dsg_info .= qq{<tr><td>Organism:</td><td>$orgname</td></tr>}; # redundant
     $html_dsg_info .= qq{<tr><td>Taxonomy:</td><td>$org_desc</td></tr>};
     $html_dsg_info .= "<tr><td>Name: <td>" . $dsg->name if $dsg->name;
-    $html_dsg_info .= "<tr><td>Description: <td>" . $dsg->description
-      if $dsg->description;
-    $html_dsg_info .=
-        "<tr><td>Source:  <td><a href="
-      . $link
-      . " target=_new>"
-      . $ds->data_source->name . "</a>";
+    $html_dsg_info .= "<tr><td>Description: <td>" . $dsg->description if $dsg->description;
+    $html_dsg_info .= "<tr><td>Source:  <td><a href=" . $link . " target=_new>" . $ds->data_source->name . "</a>";
 
     #$html_dsg_info .= $dsg->chr_info(summary=>1);
     $html_dsg_info .= "<tr><td>Dataset: <td>" . $ds->name;
     $html_dsg_info .= ": " . $ds->description if $ds->description;
-    $html_dsg_info .= "<tr><td>Chromosome count: <td>" . commify($chr_count);
+    $html_dsg_info .= "<tr><td>Chromosomes: <td>" . commify($chr_count);
     if ( $percent_gc > 0 ) {
-        $html_dsg_info .=
-"<tr><td>DNA content: <td>GC: $percent_gc%, AT: $percent_at%, N: $percent_n%, X: $percent_x%";
+        $html_dsg_info .= "<tr><td>DNA content: <td>GC: $percent_gc%, AT: $percent_at%, N: $percent_n%, X: $percent_x%";
     }
     else {
-        $html_dsg_info .=
-qq{<tr><td>DNA content: <td id=gc_content$org_num class='link' onclick="get_gc($dsgid, 'gc_content$org_num')">Click to retrieve};
+        $html_dsg_info .= qq{<tr><td>DNA content: <td id=gc_content$org_num class='link' onclick="get_gc($dsgid, 'gc_content$org_num')">Click to retrieve};
     }
     $html_dsg_info .= "<tr><td>Total length: <td>" . commify($chr_length);
     $html_dsg_info .= "<tr><td>Contains plasmid" if $plasmid;
@@ -830,16 +806,8 @@ qq{<tr><td>DNA content: <td id=gc_content$org_num class='link' onclick="get_gc($
     }
     if ($dsg->deleted)
       {
-    $html_dsg_info = "<span class=alert>This genome has been deleted and cannot be used in this analysis.</span>  <a href=GenomeInfo.pl?gid=$dsgid target=_new>More information</a>.";
+    $html_dsg_info = "<span class='alert'>This genome has been deleted and cannot be used in this analysis.</span>  <a href=GenomeInfo.pl?gid=$dsgid target=_new>More information</a>.";
       }
-    my $t2 = new Benchmark;
-    my $time = timestr( timediff( $t2, $t1 ) );
-
-    #    print STDERR qq{
-    #-----------------
-    #sub get_genome_info runtime:  $time
-    #-----------------
-    #};
 
     my $message;
 
@@ -866,10 +834,8 @@ qq{<tr><td>DNA content: <td id=gc_content$org_num class='link' onclick="get_gc($
     $cds_selected     = "selected" if $feattype eq 1 || $feattype eq "CDS";
     $genomic_selected = "selected" if $feattype eq 2 || $feattype eq "genomic";
 
-    my $feattype_menu =
-      qq{<select id="feat_type$org_num" name ="feat_type$org_num">#};
-    $feattype_menu .= qq{<OPTION VALUE=1 $cds_selected>CDS</option>}
-      if $has_cds;
+    my $feattype_menu = qq{<select id="feat_type$org_num" name ="feat_type$org_num">#};
+    $feattype_menu .= qq{<OPTION VALUE=1 $cds_selected>CDS</option>} if $has_cds;
     $feattype_menu .= qq{<OPTION VALUE=2 $genomic_selected>genomic</option>};
     $feattype_menu .= "</select>";
     $message = "<span class='small alert'>No Coding Sequence in Genome</span>"
@@ -993,6 +959,7 @@ sub get_previous_analyses {
             $data{dsg2} = $genome2;
             $data{ds1}  = $ds1;
             $data{ds2}  = $ds2;
+            
             my $genome1;
             $genome1 .= $genome1->name if $genome1->name;
             $genome1 .= ": "        if $genome1;
