@@ -8,6 +8,7 @@ use Sort::Versions;
 use List::Util qw(first);
 use CoGeX;
 use CoGe::Accessory::Web;
+use CoGe::Core::Experiment qw(experimentcmp);
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
@@ -1250,13 +1251,6 @@ sub genomecmp {
     $a->organism->name cmp $b->organism->name
       || versioncmp( $b->version, $a->version )
       || $a->type->id <=> $b->type->id
-      || $a->name cmp $b->name
-      || $b->id cmp $a->id;
-}
-
-sub experimentcmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    versioncmp( $b->version, $a->version )
       || $a->name cmp $b->name
       || $b->id cmp $a->id;
 }

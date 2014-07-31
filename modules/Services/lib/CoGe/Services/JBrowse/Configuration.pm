@@ -3,6 +3,7 @@ use base 'CGI::Application';
 use Switch;
 use CoGeX;
 use CoGe::Accessory::Web;
+use CoGe::Core::Experiment qw(experimentcmp);
 use JSON;
 use URI::Escape qw(uri_escape);
 use Data::Dumper;
@@ -487,14 +488,6 @@ sub getFeatureColor {
     return '#'
       . sprintf( "%06X",
         ( ( ( ( $id * 1234321 ) % 0x1000000 ) | 0x444444 ) & 0xe7e7e7 ) );
-}
-
-# FIXME this comparison routine is duplicated elsewhere
-sub experimentcmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    versioncmp( $b->version, $a->version )
-      || $a->name cmp $b->name
-      || $b->id cmp $a->id;
 }
 
 1;

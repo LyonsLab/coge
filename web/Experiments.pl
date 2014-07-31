@@ -1,6 +1,8 @@
 #! /usr/bin/perl -w
 
 use strict;
+no warnings 'redefine';
+
 use CGI;
 use CoGe::Accessory::Web;
 use HTML::Template;
@@ -10,7 +12,8 @@ use Spreadsheet::WriteExcel;
 use Digest::MD5 qw(md5_base64);
 use File::Path;
 use Sort::Versions;
-no warnings 'redefine';
+
+use CoGe::Core::Experiment qw(experimentcmp);
 
 use vars qw( $P $PAGE_TITLE $USER $LINK $coge $FORM %FUNCTION );
 
@@ -139,12 +142,4 @@ sub gen_body {
     $template->param( EXPERIMENT_TABLE => get_experiments_for_user() );
 
     return $template->output;
-}
-
-# FIXME this comparison routine is duplicated elsewhere
-sub experimentcmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    versioncmp( $b->version, $a->version )
-      || $a->name cmp $b->name
-      || $b->id cmp $a->id;
 }
