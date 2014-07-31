@@ -1193,11 +1193,8 @@ sub get_experiments {
         return unless ($genome);
     }
 
-    my @experiments = $genome->experiments;
-    return '<span class="padded note">There a no experiments for this genome.</span>' unless @experiments;
-
     my @rows;
-    foreach my $exp ( sort experimentcmp @experiments ) {
+    foreach my $exp ( sort experimentcmp $genome->experiments ) {
         next if ( $exp->deleted );
         next if ($exp->restricted && !$USER->has_access_to_experiment($exp));
 
@@ -1206,6 +1203,8 @@ sub get_experiments {
         $row{EXPERIMENT_INFO} = qq{<span class="link" onclick='window.open("ExperimentView.pl?eid=$id")'>} . $exp->info . "</span>";
         push @rows, \%row;
     }
+    
+    return '<span class="padded note">There a no experiments for this genome.</span>' unless @rows;
 
     my $template = HTML::Template->new( filename => $config->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
@@ -1217,7 +1216,6 @@ sub get_experiments {
 
 sub filter_dataset {    # detect chromosome-only datasets
     my $ds = shift;
-
     my @types = $ds->distinct_feature_type_ids;
     return ( @types <= 1 and shift(@types) == 4 );    #FIXME hardcoded type
 }
@@ -1569,7 +1567,7 @@ sub get_annotations {
     }
 
     if ($user_can_edit) {
-        $html .= qq{<div class="panel"><span onClick="add_annotation_dialog();" class='ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left'><span class="ui-icon ui-icon-plus"></span>Add</span></div>};
+        $html .= qq{<div class="panel"><span onClick="add_annotation_dialog();" class='ui-button ui-corner-all coge-button'>Add</span></div>};
     }
 
     return $html;
@@ -2050,6 +2048,7 @@ sub generate_body {
     $template->param( OID => $genome->organism->id );
 
     $template->param(
+        EMBED           => $EMBED,
         LOAD_ID         => $LOAD_ID,
         JOB_ID          => $JOB_ID,
         GID             => $gid,
