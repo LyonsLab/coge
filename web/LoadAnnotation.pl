@@ -63,25 +63,26 @@ $MAX_SEARCH_RESULTS = 100;
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 
 sub generate_html {
+    $EMBED = $FORM->param('embed');
+    
     # Check for finished result
     if ($JOB_ID) {
         my $log = get_load_log(workflow_id => $JOB_ID);
         if ($log) {
             my $res = decode_json($log);
             if ($res->{genome_id}) {
-                my $url = 'GenomeInfo.pl?gid=' . $res->{genome_id};
+                my $url = 'GenomeInfo.pl?embed=' . $EMBED . '&gid=' . $res->{genome_id};
                 print $FORM->redirect(-url => $url);
             }
         }
-    }    
+    }
     
     my $template;
 
-    $EMBED = $FORM->param('embed');
     if ($EMBED) {
         $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
     }
-    else {    
+    else {
         $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param( PAGE_TITLE => $PAGE_TITLE,
         				  PAGE_LINK  => $LINK,
@@ -437,7 +438,7 @@ sub load_annotation {
 
 	# Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
-        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id
+        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id . "&embed=" . $EMBED
     );
     
     # Log it

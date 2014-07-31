@@ -27,7 +27,7 @@ use Data::Dumper;
 no warnings 'redefine';
 
 use vars qw(
-  $P $PAGE_TITLE $TEMPDIR $USER $coge $FORM $LINK
+  $P $PAGE_TITLE $TEMPDIR $USER $coge $FORM $LINK $EMBED
   %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $JOB_ID
 );
 
@@ -76,25 +76,34 @@ sub generate_html {
                 print $FORM->redirect(-url => $url);
             }
         }
-    }    
+    }
     
-    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( PAGE_TITLE => $PAGE_TITLE,
-    				  PAGE_LINK  => $LINK,
-    				  HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= ' ' . $USER->last_name
-      if ( $USER->first_name && $USER->last_name );
-    $template->param( USER     => $name );
-    $template->param( LOGO_PNG => $PAGE_TITLE . "-logo.png" );
-    $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-    my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-    $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
+    my $template;
+    
+    $EMBED = $FORM->param('embed');
+    if ($EMBED) {
+        $template =
+          HTML::Template->new(
+            filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
+    }
+    else {
+        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+        $template->param( PAGE_TITLE => $PAGE_TITLE,
+        				  PAGE_LINK  => $LINK,
+        				  HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+        my $name = $USER->user_name;
+        $name = $USER->first_name if $USER->first_name;
+        $name .= ' ' . $USER->last_name
+          if ( $USER->first_name && $USER->last_name );
+        $template->param( USER     => $name );
+        $template->param( LOGO_PNG => $PAGE_TITLE . "-logo.png" );
+        $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
+        my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+        $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
+        $template->param( ADJUST_BOX => 1 );
+    }
 
-    $template->param( BODY       => generate_body() );
-    $template->param( ADJUST_BOX => 1 );
-
+    $template->param( BODY => generate_body() );
     return $template->output;
 }
 
@@ -126,6 +135,7 @@ sub generate_body {
     }
 
     $template->param(
+        EMBED       => $EMBED,
     	LOAD_ID     => $LOAD_ID,
     	JOB_ID      => $JOB_ID,
         STATUS_URL  => 'jex/status/',
