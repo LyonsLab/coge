@@ -15,6 +15,7 @@
 </div>
 
 <span id="test" class="ui-button ui-corner-all" onclick="cancel_job()">Cancel selected jobs</span>
+<span class="ui-button ui-button-go ui-corner-all" onclick="restart_job()">Restart selected jobs</span>
 
 <div id="jobs" style="max-width:95%; height: 900px; display:true; font-size: 0.8em; margin-top: 5px;">
 </div>
@@ -181,29 +182,43 @@ function update_filter() {
 }
 
 function cancel_job() {
+    submit_task("cancel_job", function(row) {
+        return row.status.toLowerCase() == 'running'
+    });
+}
+
+function restart_job() {
+    submit_task("restart_job", function(row) {
+        return row.status.toLowerCase() != 'running';
+    });
+}
+
+function submit_task(task, predicate) {
     var selectedIndexes = window.jobs.grid.getSelectedRows();
 
-    jQuery.each(selectedIndexes, function(index, value) {
-        var row = window.jobs.dataView.getItem(value);
+    var selectedRows = selectedIndexes.map(function(item) {
+        return window.jobs.dataView.getItem(item);
+    });
 
-        if (row.status.toLowerCase() == 'running') {
-            var argument_list =  {
-                fname: 'cancel_job',
-                job: row.workflow_id,
-            };
+    var validRows = selectedRows.filter(predicate);
 
-            $.ajax({
-                type: "GET",
-                dataType: "json",
-                data: argument_list,
-                success: function(data) {
-                    if (data.status) {
-                        row.status = data.status;
-                        window.jobs.dataView.updateItem(row.id, row);
-                    }
+    jQuery.each(validRows, function(index,row) {
+        var argument_list =  {
+            fname: task,
+            job: row.workflow_id,
+        };
+
+        $.ajax({
+            type: "GET",
+            dataType: "json",
+            data: argument_list,
+            success: function(data) {
+                if (data.status) {
+                    row.status = data.status;
+                    window.jobs.dataView.updateItem(row.id, row);
                 }
-            });
-        }
+            }
+        });
     });
 }
 </script>
