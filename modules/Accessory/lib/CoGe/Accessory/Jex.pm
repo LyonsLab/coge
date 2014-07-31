@@ -115,6 +115,21 @@ sub terminate {
     return $response->{status};
 }
 
+sub restart {
+    my ($self, $id) = @_;
+    my ($request, $response);
+
+    $request = {
+        request => 'restart',
+        data => {
+            id => $id
+        },
+    };
+
+    $response = _send_request($self, $request);
+    return $response->{status};
+}
+
 sub get_status {
     my ($self, $id) = @_;
     my ($request, $response);
