@@ -742,7 +742,6 @@ sub get_genome_info {
     my $org_num  = $opts{org_num};
     my $feattype = $opts{feattype};
     $feattype = 1 unless defined $feattype;
-    print STDERR Dumper \%opts, "\n";
     return ("<div class='small note indent'>No matching results found</div>", " ", " ", '', $org_num, '', '') unless ($dsgid && $dsgid =~ /\d+/);
 
     my $html_dsg_info;
@@ -1112,12 +1111,9 @@ sub get_pair_info {
 
 sub get_query_link {
     my %url_options = @_;
-
-    #  print STDERR Dumper \%url_options;
-
     my $dagchainer_D = $url_options{D};
 
- #    my $dagchainer_g = $url_options{g}; #depreciated -- will be a factor of -D
+ #  my $dagchainer_g = $url_options{g}; #depreciated -- will be a factor of -D
     my $dagchainer_A = $url_options{A};
     my $Dm           = $url_options{Dm};
     my $gm           = $url_options{gm};
@@ -1125,10 +1121,8 @@ sub get_query_link {
     ($gm) = $gm =~ /(\d+)/;
 
 #   my $repeat_filter_cvalue = $url_options{c}; #parameter to be passed to run_adjust_dagchainer_evals
-    my $cscore =
-      $url_options{csco}; #c-score for filtering low quality blast hits, fed to blast to raw
-    my $dupdist =
-      $url_options{tdd};    #tandem duplication distance, fed to blast to raw
+    my $cscore  = $url_options{csco}; #c-score for filtering low quality blast hits, fed to blast to raw
+    my $dupdist = $url_options{tdd}; #tandem duplication distance, fed to blast to raw
     my $regen_images = $url_options{regen_images};
     my $email        = $url_options{email};
     my $job_title    = $url_options{jobtitle};
@@ -1139,8 +1133,8 @@ sub get_query_link {
     my $feat_type1 = $url_options{feat_type1};
     my $feat_type2 = $url_options{feat_type2};
 
-    my $dsgid1   = $url_options{dsgid1};
-    my $dsgid2   = $url_options{dsgid2};
+    my $dsgid1 = $url_options{dsgid1};
+    my $dsgid2 = $url_options{dsgid2};
 
     unless($dsgid1 and $dsgid2) {
         return encode_json({
@@ -1157,7 +1151,7 @@ sub get_query_link {
     my $min_chr_size      = $url_options{min_chr_size};
     my $dagchainer_type   = $url_options{dagchainer_type};
     my $color_type        = $url_options{color_type};
-    my $merge_algo = $url_options{merge_algo};    #is there a merging function?
+    my $merge_algo        = $url_options{merge_algo};    #is there a merging function?
 
     #options for finding syntenic depth coverage by quota align (Bao's algo)
     my $depth_algo        = $url_options{depth_algo};
