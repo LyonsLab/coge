@@ -61,17 +61,17 @@ GetOptions(
 $| = 1;
 die unless ($staging_dir);
 mkpath($staging_dir); # make sure this exists
-$log_file = catfile($staging_dir, 'log.txt') unless $log_file;
+#$log_file = catfile($staging_dir, 'log.txt') unless $log_file;
 mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
-open( my $log, ">>$log_file" ) or die "Error opening log file $log_file";
-$log->autoflush(1);
-print $log "Starting $0 (pid $$)\n",
+#open( my $log, ">>$log_file" ) or die "Error opening log file $log_file";
+#$log->autoflush(1);
+print STDOUT "Starting $0 (pid $$)\n",
            qx/ps -o args $$/;
 
 # Prevent loading again (issue #417)
 my $logdonefile = "$staging_dir/log.done";
 if (-e $logdonefile) {
-    print $log "log: error: done file already exists: $logdonefile\n";
+    print STDOUT "log: error: done file already exists: $logdonefile\n";
     exit(-1);
 }
 
@@ -84,13 +84,13 @@ $source_name = unescape($source_name);
 $restricted  = '0' if ( not defined $restricted );
 
 if ($user_name eq 'public') {
-	print $log "log: error: not logged in\n";
+	print STDOUT "log: error: not logged in\n";
     exit(-1);
 }
 
 # Load config file
 unless ($config) {
-    print $log "log: error: can't find config file\n";
+    print STDOUT "log: error: can't find config file\n";
     print STDERR "can't find config file\n";
     exit(-1);
 }
@@ -114,7 +114,7 @@ if (   not $FASTBIT_LOAD
     or not -e $SAMTOOLS
     or not -e $GUNZIP )
 {
-    print $log "log: error: can't find required command(s)\n";
+    print STDOUT "log: error: can't find required command(s)\n";
     exit(-1);
 }
 
@@ -133,7 +133,7 @@ unless (-r $staged_data_file) {
 if ( $staged_data_file =~ /\.gz$/ ) {
     my $cmd = $GUNZIP . ' ' . $staged_data_file;
     #print STDERR "$cmd\n";
-    print $log "log: Decompressing '$filename'\n";
+    print STDOUT "log: Decompressing '$filename'\n";
     `$cmd`;
     $staged_data_file =~ s/\.gz$//;
 }
@@ -141,7 +141,7 @@ if ( $staged_data_file =~ /\.gz$/ ) {
 # Determine file type
 my ($file_type, $data_type) = detect_data_type($file_type, $staged_data_file);
 if ( !$file_type or !$data_type ) {
-    print $log "log: error: unknown or unsupported file type '$file_type'\n";
+    print STDOUT "log: error: unknown or unsupported file type '$file_type'\n";
     exit(-1);
 }
 
@@ -149,14 +149,14 @@ if ( !$file_type or !$data_type ) {
 my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
 my $coge = CoGeX->connect( $connstr, $user, $pass );
 unless ($coge) {
-    print $log "log: couldn't connect to database\n";
+    print STDOUT "log: couldn't connect to database\n";
     exit(-1);
 }
 
 # Retrieve genome
 my $genome = $coge->resultset('Genome')->find( { genome_id => $gid } );
 unless ($genome) {
-    print $log "log: error finding genome id$gid\n";
+    print STDOUT "log: error finding genome id$gid\n";
     exit(-1);
 }
 
@@ -164,9 +164,9 @@ unless ($genome) {
 my %genome_chr = map { $_ => 1 } $genome->chromosomes;
 
 # Validate the data file
-print $log "log: Validating data file\n";
+print STDOUT "log: Validating data file\n";
 if (-s $staged_data_file == 0) {
-    print $log "log: error: input file '$staged_data_file' is empty\n";
+    print STDOUT "log: error: input file '$staged_data_file' is empty\n";
     exit(-1);
 }
 my $count = 0;
@@ -189,28 +189,28 @@ elsif ( $data_type == $DATA_TYPE_MARKER ) {
       validate_gff_data_file( file => $staged_data_file, genome_chr => \%genome_chr );
 }
 if ( not $count ) {
-    print $log "log: error: file contains no data\n";
+    print STDOUT "log: error: file contains no data\n";
     exit(-1);
 }
-print $log "log: Successfully read " . commify($count) . " lines\n";
+print STDOUT "log: Successfully read " . commify($count) . " lines\n";
 
 # Verify that chromosome names in input file match those for genome
 foreach ( sort keys %genome_chr ) {
-    print $log "genome chromosome $_\n";
+    print STDOUT "genome chromosome $_\n";
 }
 foreach ( sort keys %$pChromosomes ) {
-    print $log "input chromosome $_\n";
+    print STDOUT "input chromosome $_\n";
 }
 if (not $ignore_missing_chr) {
 	my $error = 0;
 	foreach ( sort keys %$pChromosomes ) {
 	    if ( not defined $genome_chr{$_} ) {
-	        print $log "log: chromosome '$_' not found in genome\n";
+	        print STDOUT "log: chromosome '$_' not found in genome\n";
 	        $error++;
 	    }
 	}
 	if ($error) {
-	    print $log "log: error: input chromosome names don't match genome\n";
+	    print STDOUT "log: error: input chromosome names don't match genome\n";
 	    exit(-1);
 	}
 }
@@ -232,22 +232,22 @@ if ( $data_type == $DATA_TYPE_QUANT
     my $data_spec = join(',', map { $_->{name} . ':' . $_->{type} } @{$format->{columns}} );
 
 	#TODO redirect fastbit output to log file instead of stderr
-	print $log "log: Generating database\n";
+	print STDOUT "log: Generating database\n";
 	$cmd = "$FASTBIT_LOAD -d $staging_dir -m \"$data_spec\" -t $staged_data_file";
-	print $log $cmd, "\n";
+	print STDOUT $cmd, "\n";
 	my $rc = system($cmd);
 	if ( $rc != 0 ) {
-	    print $log "log: error executing ardea command: $rc\n";
+	    print STDOUT "log: error executing ardea command: $rc\n";
 	    exit(-1);
 	}
 
-	print $log "log: Indexing database (may take a few minutes)\n";
+	print STDOUT "log: Indexing database (may take a few minutes)\n";
 	$cmd =
 	"$FASTBIT_QUERY -d $staging_dir -v -b \"<binning precision=2/><encoding equality/>\"";
-	print $log $cmd, "\n";
+	print STDOUT $cmd, "\n";
 	$rc = system($cmd);
 	if ( $rc != 0 ) {
-	    print $log "log: error executing ibis command: $rc\n";
+	    print STDOUT "log: error executing ibis command: $rc\n";
 	    exit(-1);
 	}
 }
@@ -264,7 +264,7 @@ my $data_source =
       name => $source_name, description => "" }
   );#, description => "Loaded into CoGe via LoadExperiment" } );
 unless ($data_source) {
-    print $log "log: error creating data source\n";
+    print STDOUT "log: error creating data source\n";
     exit(-1);
 }
 
@@ -282,7 +282,7 @@ my $experiment = $coge->resultset('Experiment')->create(
         restricted     => $restricted
     }
 );
-print $log "experiment id: " . $experiment->id . "\n";
+print STDOUT "experiment id: " . $experiment->id . "\n";
 print STDOUT "experiment id: " . $experiment->id . "\n"; # DON'T DELETE: needed by load_batch.pl
 
 # Create types
@@ -294,7 +294,7 @@ if ($types) {
             $type = $coge->resultset('ExperimentType')->create({ name => $type_name }); # null description
         }
         unless ($type) {
-            print $log "log: error creating experiment type\n";
+            print STDOUT "log: error creating experiment type\n";
             exit(-1);
         }
         my $conn = $coge->resultset('ExperimentTypeConnector')->find_or_create({
@@ -302,7 +302,7 @@ if ($types) {
             experiment_type_id => $type->id
         });
         unless ($conn) {
-            print $log "log: error creating experiment type connector\n";
+            print STDOUT "log: error creating experiment type connector\n";
             exit(-1);
         }
     }
@@ -316,17 +316,17 @@ if ($annotations) {
 # Determine installation path
 unless ($install_dir) {
     unless ($P) {
-        print $log "log: error: can't determine install directory, set 'install_dir' or 'config' params\n";
+        print STDOUT "log: error: can't determine install directory, set 'install_dir' or 'config' params\n";
         exit(-1);
     }
     $install_dir = $P->{EXPDIR};
 }
 my $storage_path = catdir($install_dir, CoGe::Core::Storage::get_tiered_path( $experiment->id ));
-print $log 'Storage path: ', $storage_path, "\n";
+print STDOUT 'Storage path: ', $storage_path, "\n";
 
 # This is a check for dev server which may be out-of-sync with prod
 if ( -e $storage_path ) {
-    print $log "log: error: install path already exists\n";
+    print STDOUT "log: error: install path already exists\n";
     exit(-1);
 }
 
@@ -335,7 +335,7 @@ if ( -e $storage_path ) {
 # Make user owner of new experiment
 my $user = $coge->resultset('User')->find( { user_name => $user_name } );
 unless ($user) {
-    print $log "log: error finding user '$user_name'\n";
+    print STDOUT "log: error finding user '$user_name'\n";
     exit(-1);
 }
 my $node_types = CoGeX::node_types();
@@ -349,23 +349,23 @@ my $conn       = $coge->resultset('UserConnector')->create(
     }
 );
 unless ($conn) {
-    print $log "log: error creating user connector\n";
+    print STDOUT "log: error creating user connector\n";
     exit(-1);
 }
 
 # Copy files from staging directory to installation directory
 mkpath($storage_path);
 unless (-r $storage_path) {
-	print $log "log: error: could not create installation path\n";
+	print STDOUT "log: error: could not create installation path\n";
 	exit(-1);
 }
 $cmd = "cp -r $staging_dir/* $storage_path"; #FIXME use perl copy and detect failure
-print $log "$cmd\n";
+print STDOUT "$cmd\n";
 `$cmd`;
 
 # Make sure file permissions are set properly (added for qTeller pipeline)
 $cmd = "chmod -R a+r $storage_path";
-print $log "$cmd\n";
+print STDOUT "$cmd\n";
 `$cmd`;
 
 # Save result document
@@ -382,8 +382,8 @@ if ($result_dir) {
 # Create "log.done" file to indicate completion to JEX
 touch($logdonefile);
 
-print $log "log: All done!\n";
-close($log);
+print STDOUT "log: All done!\n";
+#close($log);
 
 exit;
 
@@ -391,32 +391,32 @@ exit;
 sub detect_data_type {
     my $filetype = shift;
     my $filepath = shift;
-    print $log "detect_data_type: $filepath\n";
+    print STDOUT "detect_data_type: $filepath\n";
 
     if (!$filetype or $filetype eq 'autodetect') {
         # Try to determine type based on file extension
-        print $log "log: Detecting file type\n";
+        print STDOUT "log: Detecting file type\n";
         ($filetype) = lc($filepath) =~ /\.([^\.]+)$/;
     }
 
     if ( grep { $_ eq $filetype } ('csv', 'tsv', 'bed') ) { #TODO add 'bigbed', 'wig', 'bigwig'
-        print $log "log: Detected a quantitative file ($filetype)\n";
+        print STDOUT "log: Detected a quantitative file ($filetype)\n";
         return ($filetype, $DATA_TYPE_QUANT);
     }
     elsif ( $filetype eq 'bam' ) {
-        print $log "log: Detected an alignment file ($filetype)\n";
+        print STDOUT "log: Detected an alignment file ($filetype)\n";
         return ($filetype, $DATA_TYPE_ALIGN);
     }
     elsif ( $filetype eq 'vcf' ) {
-        print $log "log: Detected a polymorphism file ($filetype)\n";
+        print STDOUT "log: Detected a polymorphism file ($filetype)\n";
         return ($filetype, $DATA_TYPE_POLY);
     }
     elsif ( grep { $_ eq $filetype } ( 'gff', 'gtf' ) ) {
-        print $log "log: Detected a marker file ($filetype)\n";
+        print STDOUT "log: Detected a marker file ($filetype)\n";
         return ($filetype, $DATA_TYPE_MARKER);
     }
     else {
-        print $log "detect_data_type: unknown file ext '$filetype'\n";
+        print STDOUT "detect_data_type: unknown file ext '$filetype'\n";
         return ($filetype);
     }
 }
@@ -433,7 +433,7 @@ sub validate_quant_data_file {
     my $hasLabels = 0;
     my $hasVal2   = 0;
 
-    print $log "validate_quant_data_file: $filepath\n";
+    print STDOUT "validate_quant_data_file: $filepath\n";
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
     my $outfile = $filepath . ".processed";
     open( my $out, ">$outfile" );
@@ -470,7 +470,7 @@ sub validate_quant_data_file {
             or not defined $stop
             or not defined $strand )
         {
-            print $log "log: error at line $line_num: missing value in a column\n";
+            print STDOUT "log: error at line $line_num: missing value in a column\n";
             return;
         }
 
@@ -485,13 +485,13 @@ sub validate_quant_data_file {
         }
 
         if ( not defined $val1 or (!$disable_range_check and ($val1 < 0 or $val1 > 1)) ) {
-            print $log "log: error at line $line_num: value 1 not between 0 and 1\n";
+            print STDOUT "log: error at line $line_num: value 1 not between 0 and 1\n";
             return;
         }
 
 		$chr = fix_chromosome_id($chr, $genome_chr);
         if (!$chr) {
-            print $log "log: error at line $line_num: trouble parsing chromosome\n";
+            print STDOUT "log: error at line $line_num: trouble parsing chromosome\n";
             return;
         }
         $strand = $strand =~ /-/ ? -1 : 1;
@@ -541,7 +541,7 @@ sub validate_vcf_data_file {
     my $line_num = 1;
     my $count    = 0;
 
-    print $log "validate_vcf_data_file: $filepath\n";
+    print STDOUT "validate_vcf_data_file: $filepath\n";
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
     my $outfile = $filepath . ".processed";
     open( my $out, ">$outfile" );
@@ -556,7 +556,7 @@ sub validate_vcf_data_file {
 
         # Validate format
         if ( @tok < $MIN_VCF_COLUMNS ) {
-            print $log "log: error at line $line_num: more columns expected ("
+            print STDOUT "log: error at line $line_num: more columns expected ("
               . @tok
               . " < $MIN_VCF_COLUMNS)\n";
             return;
@@ -569,7 +569,7 @@ sub validate_vcf_data_file {
             || not defined $ref
             || not defined $alt )
         {
-            print $log "log: error at line $line_num: missing required value in a column\n";
+            print STDOUT "log: error at line $line_num: missing required value in a column\n";
             return;
         }
         next if ( $alt eq '.' );    # skip monomorphic sites
@@ -579,7 +579,7 @@ sub validate_vcf_data_file {
 
         $chr = fix_chromosome_id($chr, $genome_chr);
         if (!$chr) {
-            print $log
+            print STDOUT
               "log: error at line $line_num: trouble parsing chromosome\n";
             return;
         }
@@ -640,14 +640,14 @@ sub validate_bam_data_file {
     my %chromosomes;
     my $count = 0;
 
-    print $log "validate_bam_data_file: $filepath\n";
+    print STDOUT "validate_bam_data_file: $filepath\n";
 
 	# Get the number of reads in BAM file
 	my $cmd = "$SAMTOOLS view -c $filepath";
-	print $log $cmd, "\n";
+	print STDOUT $cmd, "\n";
     my $cmdOut = qx{$cmd};
     if ( $? != 0 ) {
-	    print $log "log: error executing samtools view -c command: $?\n";
+	    print STDOUT "log: error executing samtools view -c command: $?\n";
 	    exit(-1);
 	}
 	if ($cmdOut =~ /\d+/) {
@@ -656,11 +656,11 @@ sub validate_bam_data_file {
 
 	# Get the BAM file header
 	$cmd = "$SAMTOOLS view -H $filepath";
-	print $log $cmd, "\n";
+	print STDOUT $cmd, "\n";
     my @header = qx{$cmd};
-    print $log "Old header:\n", @header;
+    print STDOUT "Old header:\n", @header;
     if ( $? != 0 ) {
-	    print $log "log: error executing samtools view -H command: $?\n";
+	    print STDOUT "log: error executing samtools view -H command: $?\n";
 	    exit(-1);
 	}
 
@@ -689,7 +689,7 @@ sub validate_bam_data_file {
 			}
 			push @header2, $line."\n";
 		}
-		print $log "New header:\n", @header2;
+		print STDOUT "New header:\n", @header2;
 
 		# Write header to temp file
 		my $header_file = "$staging_dir/header.txt";
@@ -699,10 +699,10 @@ sub validate_bam_data_file {
 
 		# Run samtools to reformat the bam file header
 		$cmd = "$SAMTOOLS reheader $header_file $filepath > $newfilepath";
-		print $log $cmd, "\n";
+		print STDOUT $cmd, "\n";
 	    qx{$cmd};
 	    if ( $? != 0 ) {
-		    print $log "log: error executing samtools reheader command: $?\n";
+		    print STDOUT "log: error executing samtools reheader command: $?\n";
 		    exit(-1);
 		}
 
@@ -710,7 +710,7 @@ sub validate_bam_data_file {
 		$cmd = "rm -f $filepath";
 		qx{$cmd};
 	    if ( $? != 0 ) {
-		    print $log "log: error removing bam file: $?\n";
+		    print STDOUT "log: error removing bam file: $?\n";
 		    exit(-1);
 		}
 	}
@@ -719,18 +719,18 @@ sub validate_bam_data_file {
 		$cmd = "mv $filepath $newfilepath";
 		qx{$cmd};
 	    if ( $? != 0 ) {
-		    print $log "log: error renaming bam file: $?\n";
+		    print STDOUT "log: error renaming bam file: $?\n";
 		    exit(-1);
 		}
 	}
 
 	# Index the bam file
-	print $log "log: Indexing file\n";
+	print STDOUT "log: Indexing file\n";
 	$cmd = "$SAMTOOLS index $newfilepath";
-	print $log $cmd, "\n";
+	print STDOUT $cmd, "\n";
     qx{$cmd};
     if ( $? != 0 ) {
-	    print $log "log: error executing samtools index command: $?\n";
+	    print STDOUT "log: error executing samtools index command: $?\n";
 	    exit(-1);
 	}
 
@@ -747,7 +747,7 @@ sub validate_gff_data_file {
     my $line_num = 1;
     my $count    = 0;
 
-    print $log "validate_gff_data_file: $filepath\n";
+    print STDOUT "validate_gff_data_file: $filepath\n";
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
     my $outfile = $filepath . ".processed";
     open( my $out, ">$outfile" );
@@ -760,7 +760,7 @@ sub validate_gff_data_file {
 
         # Validate format
         if ( @tok < $MIN_GFF_COLUMNS ) {
-            print $log "log: error at line $line_num: more columns expected (" . @tok . " < $MIN_GFF_COLUMNS)\n";
+            print STDOUT "log: error at line $line_num: more columns expected (" . @tok . " < $MIN_GFF_COLUMNS)\n";
             return;
         }
 
@@ -771,13 +771,13 @@ sub validate_gff_data_file {
             || not defined $start
             || not defined $stop )
         {
-            print $log "log: error at line $line_num: missing required value in a column\n";
+            print STDOUT "log: error at line $line_num: missing required value in a column\n";
             return;
         }
 
         $chr = fix_chromosome_id($chr, $genome_chr);
         if (!$chr) {
-            print $log "log: error at line $line_num: trouble parsing chromosome\n";
+            print STDOUT "log: error at line $line_num: trouble parsing chromosome\n";
             return;
         }
         $chromosomes{$chr}++;
