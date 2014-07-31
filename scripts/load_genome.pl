@@ -126,8 +126,9 @@ foreach my $file (@files) {
     # Decompress file if necessary
     if ( $file =~ /\.gz$/ ) {
         print $log "log: Decompressing '$filename'\n";
-        execute($GUNZIP . ' ' . $file);
+        #execute($GUNZIP . ' ' . $file); # mdb removed 7/31/14 issue 438
         $file =~ s/\.gz$//;
+        execute( $GUNZIP . ' -c ' . $file . '.gz' . ' > ' . $file ); # mdb added 7/31/14 issue 438
     }
 
     # Ensure text file
