@@ -132,17 +132,22 @@ sub restart {
 
 sub get_status {
     my ($self, $id) = @_;
-    my ($request, $response);
 
-    $request = {
+    my $response = $self->get_job($id);
+    return $response->{status};
+}
+
+sub get_job {
+    my ($self, $id) = @_;
+
+    my $request = {
         request => 'get_status',
         data    => {
             id => $id
         },
     };
 
-    $response = _send_request($self, $request);
-    return $response->{status};
+    return _send_request($self, $request);
 }
 
 sub is_successful {
