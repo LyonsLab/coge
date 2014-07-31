@@ -8,7 +8,7 @@ function get_gc (dsgid, divid)
 //TODO: Replace with proper promise chain
 function get_organism_chain(type,val,i)
 {
-	$('.feattype_menu').hide();
+	$('#feattype_menu'+i).hide();
 	$('#dsgid'+i).html('');
 	
     $('#org_list').html('<input type=hidden id = "org_id"+i><font class="loading"></font>');
@@ -93,7 +93,7 @@ function handle_dsg_info(dsg_html, feat_menu, genome_message, length, org_num, o
     $('#dsg_info'+org_num).html(dsg_html);
     
     $('#feattype_menu'+org_num).html(feat_menu);
-    if (feat_menu)
+    if (dsg_html)
     	$('#feattype_menu'+org_num).show();
     
     $('#genome_message'+org_num).html(genome_message);
