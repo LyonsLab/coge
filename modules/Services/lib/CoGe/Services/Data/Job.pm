@@ -56,7 +56,7 @@ sub fetch {
             foreach (split("\n", $task->{output})) {
                 next unless ($_ =~ /^log:/);
                 $_ =~ s/^log: //;
-                $t->{log} .= $_;
+                $t->{log} .= $_ . "\n";
             }
         }
         
