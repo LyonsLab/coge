@@ -20,6 +20,9 @@ $(document).ready(function(){
         cache: false,
     });
 
+    var pageObj = {};
+    pageObj.user = "<tmpl_var name=USER>";
+
     $(".dialog_box").dialog({autoOpen: false, width: 500});
     $('#load_dialog').dialog("widget").find('.ui-dialog-titlebar-close').hide();
     $('#load_dialog').dialog({modal: true, closeOnEscape: false})
@@ -41,7 +44,7 @@ $(document).ready(function(){
     if (job_id) {
         $('#loading_msg').hide();
         $('#load_dialog').dialog('open');
-        update_dialog(STATUS_URL + job_id, "#load_dialog", progress_formatter);
+        update_dialog(STATUS_URL + job_id, pageObj.user, "#load_dialog", progress_formatter);
     }
 });
 
@@ -158,7 +161,7 @@ function load_batch() {
             if (obj.job_id) { // JEX status for load FASTQ
                 job_id = obj.job_id;
                 window.history.pushState({}, "Title", PAGE_NAME + "?job_id=" + obj.job_id); // Add job_id to browser URL
-                update_dialog(STATUS_URL + obj.job_id, "#load_dialog", progress_formatter);
+                update_dialog(STATUS_URL + obj.job_id,  pageObj.user, "#load_dialog", progress_formatter);
             }
 //            else { // non-JEX old method for all other data types
 //                window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?load_id=" + load_id); // Add load_id to browser URL
@@ -353,33 +356,20 @@ function progress_formatter(item) {
 
     var job_status = $('<span></span>');
 
-    if (item.status == 'scheduled') {
-        job_status.append(item.status);
-        job_status.addClass('down');
-        job_status.addClass('bold');
-    } else if (item.status == 'completed') {
-        job_status.append(item.status);
-        job_status.addClass('completed');
-        job_status.addClass('bold');
-    } else if (item.status == 'running') {
-        job_status.append(item.status);
-        job_status.addClass('running');
-        job_status.addClass('bold');
-    } else if (item.status == 'skipped') {
-        job_status.append("already generated");
-        job_status.addClass('skipped');
-        job_status.addClass('bold');
-    } else if (item.status == 'cancelled') {
-        job_status.append(item.status);
-        job_status.addClass('alert');
-        job_status.addClass('bold');
-    } else if (item.status == 'failed') {
-        job_status.append(item.status);
-        job_status.addClass('alert');
-        job_status.addClass('bold');
-    } else {
+    if (item.status == 'scheduled')
+        job_status.append(item.status).addClass('down bold');
+    else if (item.status == 'completed')
+        job_status.append(item.status).addClass('completed bold');
+    else if (item.status == 'running')
+        job_status.append(item.status).addClass('running bold');
+    else if (item.status == 'skipped')
+        job_status.append("already generated").addClass('skipped bold');
+    else if (item.status == 'cancelled')
+        job_status.append(item.status).addClass('alert bold');
+    else if (item.status == 'failed')
+        job_status.append(item.status).addClass('alert bold');
+    else
         return;
-    }
 
     row.append(job_status);
 
@@ -387,17 +377,34 @@ function progress_formatter(item) {
         row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
     }
 
+    if (item.log) {
+        var p = item.log.split("\n");
+
+        var pElements = p.map(function(item) {
+            return $("<div></div>").html(item);
+        });
+
+        var log = $("<div></div>").html(pElements).addClass("padded");
+        row.append(log);
+    }
+
     return row;
 }
 
-function update_dialog(request, identifier, formatter) {
+function update_dialog(request, user, identifier, formatter) {
     var get_status = function () {
         $.ajax({
             type: 'GET',
             url: request,
             dataType: 'json',
+            data: {
+                username: user
+            },
             success: update_callback,
             error: update_callback,
+            xhrFields: {
+                withCredentials: true
+            }
         });
     };
 
@@ -410,7 +417,7 @@ function update_dialog(request, identifier, formatter) {
         var timeout = 2000;
 
         var callback = function() {
-            update_dialog(request, identifier, formatter);
+            update_dialog(request, user, identifier, formatter);
         }
 
         if (json.error) {
@@ -434,8 +441,8 @@ function update_dialog(request, identifier, formatter) {
             return;
         }
 
-        if (json.jobs) {
-            var jobs = json.jobs;
+        if (json.tasks) {
+            var jobs = json.tasks;
             for (var index = 0; index < jobs.length; index++) {
                 var item = formatter(jobs[index]);
                 if (item) {
@@ -450,7 +457,7 @@ function update_dialog(request, identifier, formatter) {
 
         //FIXME Update when a workflow supports elapsed time
         if (current_status == "completed") {
-            var total = json.jobs.reduce(function(a, b) {
+            var total = json.tasks.reduce(function(a, b) {
                 if (!b.elapsed) return a;
 
                 return a + b.elapsed;

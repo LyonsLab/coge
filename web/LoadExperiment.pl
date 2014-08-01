@@ -140,13 +140,14 @@ sub generate_body {
         EMBED       => $EMBED,
     	LOAD_ID     => $LOAD_ID,
     	JOB_ID      => $JOB_ID,
-        STATUS_URL  => 'jex/status/',
+        STATUS_URL  => 'api/v1/jobs/',
         FILE_SELECT_SINGLE       => 1,
         DEFAULT_TAB              => 0,
         DISABLE_IRODS_GET_ALL    => 1,
         MAX_IRODS_LIST_FILES     => 100,
         MAX_IRODS_TRANSFER_FILES => 30,
-        MAX_FTP_FILES            => 30
+        MAX_FTP_FILES            => 30,
+        USER                     => $USER->user_name
     );
     $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 

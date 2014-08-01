@@ -44,6 +44,8 @@ $(document).ready(function(){
 		cache: false,
 	});
 
+    pageObj.user = "<tmpl_var name=USER>"
+
 	$(".dialog_box").dialog({autoOpen: false, width: 500});
 	$('#load_dialog').dialog("widget").find('.ui-dialog-titlebar-close').hide();
 	$('#load_dialog').dialog({modal: true, closeOnEscape: false})
@@ -67,7 +69,7 @@ $(document).ready(function(){
     if (job_id) {
         $('#loading_msg').hide();
         $('#load_dialog').dialog('open');
-        update_dialog(STATUS_URL + job_id, "#load_dialog", progress_formatter);
+        update_dialog(STATUS_URL + job_id, pageObj.user, "#load_dialog", progress_formatter);
     }
 });
 
@@ -209,7 +211,7 @@ function load_annotation() {
             if (obj.job_id) { // JEX status for load FASTQ
                 job_id = obj.job_id;
                 window.history.pushState({}, "Title", PAGE_NAME + "?gid=" + gid + "&job_id=" + obj.job_id); // Add job_id to browser URL
-                update_dialog(STATUS_URL + obj.job_id, "#load_dialog", progress_formatter);
+                update_dialog(STATUS_URL + obj.job_id, pageObj.user, "#load_dialog", progress_formatter);
             }
 		}
 		// TODO: handle error, show in status dialog
@@ -293,46 +295,45 @@ function progress_formatter(item) {
         job_status.append("already generated").addClass('skipped bold');
     else if (item.status == 'cancelled')
         job_status.append(item.status).addClass('alert bold');
-    else if (item.status == 'failed') {
+    else if (item.status == 'failed')
         job_status.append(item.status).addClass('alert bold');
-    } else
+    else
         return;
 
     row.append(job_status);
-
 
     if (item.elapsed)  {
         row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
     }
 
-    if (item.output) {
-        var p = item.output.split("\n");
-        var pattern = /log: /;
+    if (item.log) {
+        var p = item.log.split("\n");
 
-        var entries = p.filter(function(item) {
-            return pattern.test(item);
-        });
-
-        var pElements = entries.map(function(item) {
-            return $("<div></div>").html(item.replace(pattern, ""));
+        var pElements = p.map(function(item) {
+            return $("<div></div>").html(item);
         });
 
         var log = $("<div></div>").html(pElements).addClass("padded");
         row.append(log);
     }
 
-
     return row;
 }
 
-function update_dialog(request, identifier, formatter) {
+function update_dialog(request, user, identifier, formatter) {
     var get_status = function () {
         $.ajax({
             type: 'GET',
             url: request,
             dataType: 'json',
+            data: {
+                username: user
+            },
             success: update_callback,
             error: update_callback,
+            xhrFields: {
+                withCredentials: true
+            }
         });
     };
 
@@ -345,7 +346,7 @@ function update_dialog(request, identifier, formatter) {
         var timeout = 2000;
 
         var callback = function() {
-            update_dialog(request, identifier, formatter);
+            update_dialog(request, user, identifier, formatter);
         }
 
         if (json.error) {
@@ -369,8 +370,8 @@ function update_dialog(request, identifier, formatter) {
             return;
         }
 
-        if (json.jobs) {
-            var jobs = json.jobs;
+        if (json.tasks) {
+            var jobs = json.tasks;
             for (var index = 0; index < jobs.length; index++) {
                 var item = formatter(jobs[index]);
                 if (item) {
@@ -385,7 +386,7 @@ function update_dialog(request, identifier, formatter) {
 
         //FIXME Update when a workflow supports elapsed time
         if (current_status == "completed") {
-            var total = json.jobs.reduce(function(a, b) {
+            var total = json.tasks.reduce(function(a, b) {
                 if (!b.elapsed) return a;
 
                 return a + b.elapsed;
