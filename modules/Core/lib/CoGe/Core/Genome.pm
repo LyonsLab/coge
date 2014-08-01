@@ -4,13 +4,14 @@ use strict;
 use warnings;
 
 use File::Spec::Functions;
+use Sort::Versions;
 
 use CoGe::Accessory::TDS qw(write read);
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage qw(get_genome_path);
 
 BEGIN {
-    our ( @EXPORT, @ISA, $VERSION );
+    our ( @EXPORT, @EXPORT_OK, @ISA, $VERSION );
     require Exporter;
 
     $VERSION = 0.1;
@@ -18,6 +19,8 @@ BEGIN {
     @EXPORT = qw ( has_statistic get_gc_stats get_noncoding_gc_stats
         get_wobble_histogram get_wobble_gc_diff_histogram get_feature_type_gc_histogram
         get_download_path);
+
+    @EXPORT_OK = qw(genomecmp);
 }
 
 my @LOCATIONS_PREFETCH = (

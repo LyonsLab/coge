@@ -545,7 +545,7 @@ sub create_experiment {
 
     # Setup log file, staging, and results paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
-    $workflow->logfile( catfile($staging_dir, 'log_main.txt') );
+    $workflow->logfile( catfile($result_dir, 'debug.log') );
 
     # Create list of files to load
     my @staged_files;
@@ -687,7 +687,7 @@ sub create_genome_from_file {
 
     # Setup log file, staging, and results paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
-    $workflow->logfile( catfile($staging_dir, 'log_main.txt') );
+    $workflow->logfile( catfile($result_dir, 'debug.log') );
 
     # Create list of files to load
     my @staged_files;
@@ -743,7 +743,7 @@ sub create_genome_from_NCBI {
 
     # Setup log file, staging, and results paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
-    $workflow->logfile( catfile($staging_dir, 'log_main.txt') );
+    $workflow->logfile( catfile($result_dir, 'debug.log') );
 
     # Create load job
     my %load_params = _create_load_genome_from_NCBI_job($conf, $user->name, $accns, $staging_dir, $result_dir);
@@ -953,7 +953,7 @@ sub create_annotation_dataset {
 
     # Setup log file, staging, and results paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
-    $workflow->logfile( catfile($staging_dir, 'log_main.txt') );
+    $workflow->logfile( catfile($result_dir, 'debug.log') );
 
     # Create list of files to load
     my @staged_files;

@@ -34,11 +34,11 @@ GetOptions(
 
 # Open log file
 $| = 1;
-$log_file = "$staging_dir/log.txt" unless $log_file;
+#$log_file = "$staging_dir/log.txt" unless $log_file;
 mkpath($staging_dir) unless -r $staging_dir;
-open( my $log, ">>$log_file" ) or die "Error opening log file $log_file";
-$log->autoflush(1);
-print $log "Starting $0 (pid $$)\n";
+#open( my $log, ">>$log_file" ) or die "Error opening log file $log_file";
+#$log->autoflush(1);
+print STDOUT "Starting $0 (pid $$)\n";
 
 # Process and verify parameters
 $data_file     = unescape($data_file);
@@ -46,7 +46,7 @@ $notebook_name = unescape($notebook_name);
 $notebook_desc = unescape($notebook_desc);
 
 if ($user_name eq 'public') {
-    print $log "log: error: not logged in\n";
+    print STDOUT "log: error: not logged in\n";
     exit(-1);
 }
 
@@ -63,55 +63,55 @@ else {
 my $connstr = "dbi:mysql:dbname=".$P->{DBNAME}.";host=".$P->{DBHOST}.";port=".$P->{DBPORT}.";";
 my $coge = CoGeX->connect( $connstr, $P->{DBUSER}, $P->{DBPASS} );
 unless ($coge) {
-    print $log "log: error: couldn't connect to database\n";
+    print STDOUT "log: error: couldn't connect to database\n";
     exit(-1);
 }
 
 # Retrieve genome
 $genome = $coge->resultset('Genome')->find( { genome_id => $gid } );
 unless ($genome) {
-    print $log "log: error finding genome id$gid\n";
+    print STDOUT "log: error finding genome id$gid\n";
     exit(-1);
 }
 
 # Retrieve user
 $user = $coge->resultset('User')->find( { user_name => $user_name } );
 unless ($user) {
-    print $log "log: error finding user '$user_name'\n";
+    print STDOUT "log: error finding user '$user_name'\n";
     exit(-1);
 }
 
 # Untar data file
 my $data_dir = catdir($staging_dir, 'data');
 unless (-r $data_file) {
-    print $log "log: error: cannot access data file\n";
+    print STDOUT "log: error: cannot access data file\n";
     exit(-1);
 }
 unless ($data_file =~ /\.tar\.gz$/) {
-    print $log "log: error: data file needs to be a tarball (end with .tar.gz)\n";
+    print STDOUT "log: error: data file needs to be a tarball (end with .tar.gz)\n";
     exit(-1);
 }
-print $log "log: Decompressing/extracting data\n";
+print STDOUT "log: Decompressing/extracting data\n";
 mkpath($data_dir);
 execute( $P->{TAR}.' -xf '.$data_file.' --directory '.$data_dir );
 
 # Find metadata file
 my ($metadata_file) = glob("$data_dir/*.txt");
 unless ($metadata_file) { # require a metadata file for now but could be optional in the future
-    print $log "log: error: cannot find .txt metadata file\n";
+    print STDOUT "log: error: cannot find .txt metadata file\n";
     exit(-1);
 }
 
 # Load metadata file
 my $metadata;
 if ($metadata_file) {
-    print $log "log: Loading metadata file '".fileparse($metadata_file)."'\n";
+    print STDOUT "log: Loading metadata file '".fileparse($metadata_file)."'\n";
     $metadata = get_metadata($metadata_file);
     unless ($metadata) {
-        print $log "log: error: no metadata loaded\n";
+        print STDOUT "log: error: no metadata loaded\n";
         exit(-1);
     }
-    print $log Dumper($metadata), "\n";
+    print STDOUT Dumper($metadata), "\n";
 }
 
 # Load each experiment file
@@ -140,8 +140,8 @@ CoGe::Accessory::Web::log_history(
     link        => 'NotebookView.pl?nid=' . $notebook->id
 );
 
-print $log "log: Loaded $exp_count experiments\n";
-close($log);
+print STDOUT "log: Loaded $exp_count experiments\n";
+#close($log);
 
 # Create "log.done" file to indicate completion to JEX
 my $logdonefile = "$staging_dir/log.done";
@@ -168,7 +168,7 @@ sub get_metadata {
         unless (@header) {
             @header = map { trim($_) } split($DELIMITER, $line);
             if (!@header) {
-                print $log "log: error: empty header line\n";
+                print STDOUT "log: error: empty header line\n";
                 exit(-1);
             }
 #            print STDERR Dumper \@header,"\n";
@@ -178,7 +178,7 @@ sub get_metadata {
         # Parse data line
         my @tok = map { trim($_) } split($DELIMITER, $line);
         if (@tok < @header) {
-            print $log "log: error: missing fields (", scalar(@tok), "<", scalar(@header), ") on line $lineNum\n";
+            print STDOUT "log: error: missing fields (", scalar(@tok), "<", scalar(@header), ") on line $lineNum\n";
 #            print STDERR Dumper \@tok,"\n";
             exit(-1);
         }
@@ -189,11 +189,11 @@ sub get_metadata {
         # Make sure required fields are present
         my $filename = $fields{Filename};
         if (!$filename or !$fields{Name}) {
-            print $log "log: error: missing required column:\nline $lineNum: $line\n";
+            print STDOUT "log: error: missing required column:\nline $lineNum: $line\n";
             exit(-1);
         }
         if ($data{$filename}) {
-            print $log "log: error: duplicate filename '$filename'\n";
+            print STDOUT "log: error: duplicate filename '$filename'\n";
             exit(-1);
         }
 
@@ -216,7 +216,7 @@ sub process_dir {
     my $dir = shift;
     my $metadata = shift;
 
-    print $log "process_dir: $dir\n";
+    print STDOUT "process_dir: $dir\n";
 
     # Load all experiment files in directory
     my @experiments;
@@ -224,7 +224,7 @@ sub process_dir {
     my @contents = sort readdir($fh);
     foreach my $item ( @contents ) {
         next if ($item =~ /^\./);
-        print $log "item: $dir/$item\n";
+        print STDOUT "item: $dir/$item\n";
         if ( $item =~ /\.csv|\.bam|\.bed/ && -r "$dir/$item" ) { # file
             my $md = ();
             if ($metadata) {
@@ -232,7 +232,7 @@ sub process_dir {
                     $md = $metadata->{$item};
                 }
                 else {
-                    print $log "WARNING: no metadata for $item, skipping ...\n";
+                    print STDOUT "WARNING: no metadata for $item, skipping ...\n";
                     next;
                 }
             }
@@ -246,18 +246,18 @@ sub process_dir {
     closedir($fh);
 
     unless (@experiments) {
-        print $log "log: error: no experiment files found\n";
+        print STDOUT "log: error: no experiment files found\n";
         exit(-1);
     }
 
     # Create notebook of experiments
     my $notebook = create_notebook(name => $notebook_name, desc => $notebook_desc, item_list => \@experiments);
     unless ($notebook) {
-        print $log "log: error: failed to create notebook '$notebook_name'\n";
+        print STDOUT "log: error: failed to create notebook '$notebook_name'\n";
         exit(-1);
     }
-    print $log "notebook id: ".$notebook->id."\n"; # !!!! don't change, gets parsed by calling code
-    print $log "log: Created notebook '$notebook_name'\n";
+    print STDOUT "notebook id: ".$notebook->id."\n"; # !!!! don't change, gets parsed by calling code
+    print STDOUT "log: Created notebook '$notebook_name'\n";
     return ($notebook, \@experiments);
 }
 
@@ -289,30 +289,30 @@ sub process_file {
     die unless ($name and $gid and $source and $user);
 
     # Run load script
-    print $log "log: Loading experiment '$name'\n";
+    print STDOUT "log: Loading experiment '$name'\n";
     $file = escape($file);
     my $cmd = catfile($P->{SCRIPTDIR}, 'load_experiment.pl') . ' ' .
         "-config $config -user_name '".$user->user_name."' -restricted 1 -name '$name' -desc '$description' " .
         "-version '$version' -gid $gid -source_name '$source' " .
         "-staging_dir $exp_staging_dir -install_dir ".$P->{EXPDIR}." -data_file '$file' " .
         "-log_file $log_file"; # reuse log so that all experiment loads are present
-    print $log "Running: " . $cmd, "\n";
+    print STDOUT "Running: " . $cmd, "\n";
     return if ($DEBUG);
     my $output = qx{ $cmd };
     if ( $? != 0 ) {
-        print $log "log: error: load_experiment.pl failed with rc=$?\n";
+        print STDOUT "log: error: load_experiment.pl failed with rc=$?\n";
         exit(-1);
     }
     open( $log, ">>$log_file" ) or die "Error opening log file $log_file"; # Reopen log file
-    print $log "log: Experiment '$name' loaded successfully\n";
+    print STDOUT "log: Experiment '$name' loaded successfully\n";
 
     # Extract experiment id from output
     my ($eid) = $output =~ /experiment id: (\d+)/;
     if (!$eid) {
-        print $log "log: error: unable to retrieve experiment id\n";
+        print STDOUT "log: error: unable to retrieve experiment id\n";
         exit(-1);
     }
-    print $log "Captured experiment id $eid\n";
+    print STDOUT "Captured experiment id $eid\n";
 
     # Add experiment annotations from metadata file
     if ($md) {
@@ -397,11 +397,11 @@ sub create_notebook {
 
 sub execute { # FIXME move into Util.pm
     my $cmd = shift;
-    print $log "$cmd\n";
+    print STDOUT "$cmd\n";
     my @cmdOut    = qx{$cmd};
     my $cmdStatus = $?;
     if ( $cmdStatus != 0 ) {
-        print $log "log: error: command failed with rc=$cmdStatus: $cmd\n";
+        print STDOUT "log: error: command failed with rc=$cmdStatus: $cmd\n";
         exit(-1);
     }
 }

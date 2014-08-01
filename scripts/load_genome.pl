@@ -57,16 +57,16 @@ GetOptions(
 $| = 1;
 die unless ($staging_dir);
 mkpath($staging_dir); # make sure this exists
-my $logfile = "$staging_dir/log.txt";
-open( my $log, ">>$logfile" ) or die "Error opening log file: $logfile: $!";
-$log->autoflush(1);
-print $log "Starting $0 (pid $$)\n",
+#my $logfile = "$staging_dir/log.txt";
+#open( my $log, ">>$logfile" ) or die "Error opening log file: $logfile: $!";
+#$log->autoflush(1);
+print STDOUT "Starting $0 (pid $$)\n",
            qx/ps -o args $$/;
 
 # Prevent loading again (issue #417)
 my $logdonefile = "$staging_dir/log.done";
 if (-e $logdonefile) {
-    print $log "log: error: done file already exists: $logdonefile\n";
+    print STDOUT "log: error: done file already exists: $logdonefile\n";
     exit(-1);
 }
 
@@ -85,25 +85,25 @@ $split       = 0 if ( not defined $split ); 	# split fasta into chr/ files (lega
 $compress    = 0 if ( not defined $compress ); 	# RAZF compress the fasta file
 
 if (not $source_id and not $source_name) {
-	print $log "log: error: source not specified, use source_id or source_name\n";
+	print STDOUT "log: error: source not specified, use source_id or source_name\n";
 	exit(-1);
 }
 if (not $user_id and not $user_name) {
-	print $log "log: error: user not specified, use user_id or user_name\n";
+	print STDOUT "log: error: user not specified, use user_id or user_name\n";
 	exit(-1);
 }
 if ($user_name and $user_name eq 'public') {
-	print $log "log: error: not logged in\n";
+	print STDOUT "log: error: not logged in\n";
     exit(-1);
 }
 unless ($organism_id) {
-    print $log "log: error: organism_id not specified\n";
+    print STDOUT "log: error: organism_id not specified\n";
     exit(-1);
 }
 
 # Load config file
 unless ($config) {
-    print $log "log: error: can't find config file\n";
+    print STDOUT "log: error: can't find config file\n";
     print STDERR "can't find config file\n";
     exit(-1);
 }
@@ -125,7 +125,7 @@ foreach my $file (@files) {
 
     # Decompress file if necessary
     if ( $file =~ /\.gz$/ ) {
-        print $log "log: Decompressing '$filename'\n";
+        print STDOUT "log: Decompressing '$filename'\n";
         #execute($GUNZIP . ' ' . $file); # mdb removed 7/31/14 issue 438
         $file =~ s/\.gz$//;
         execute( $GUNZIP . ' -c ' . $file . '.gz' . ' > ' . $file ); # mdb added 7/31/14 issue 438
@@ -133,7 +133,7 @@ foreach my $file (@files) {
 
     # Ensure text file
     if ( -B $file ) {
-        print $log "log: error: '$filename' is a binary file\n";
+        print STDOUT "log: error: '$filename' is a binary file\n";
         exit(-1);
     }
 
@@ -142,32 +142,32 @@ foreach my $file (@files) {
     $numSequences = keys %sequences;
 
     if ( $seqLength > $MAX_SEQUENCE_SIZE ) {
-        print $log "log: error: total sequence size exceeds limit of "
+        print STDOUT "log: error: total sequence size exceeds limit of "
           . units($MAX_SEQUENCE_SIZE) . "\n";
         exit(-1);
     }
     if ( $numSequences > $MAX_CHROMOSOMES ) {
-        print $log
+        print STDOUT
           "log: error: too many sequences, limit is $MAX_CHROMOSOMES\n";
         exit(-1);
     }
 }
 
 if ( $numSequences == 0 or $seqLength == 0 ) {
-    print $log "log: error: couldn't parse sequences\n";
+    print STDOUT "log: error: couldn't parse sequences\n";
     exit(-1);
 }
 
-print $log "log: Processed " . commify($numSequences) . " sequences total\n";
+print STDOUT "log: Processed " . commify($numSequences) . " sequences total\n";
 
 # Index the overall fasta file
-print $log "Indexing genome file\n";
+print STDOUT "Indexing genome file\n";
 my $rc = CoGe::Core::Storage::index_genome_file(
     file_path => "$staging_dir/genome.faa",
     compress  => $compress
 );
 if ( $rc != 0 ) {
-    print $log "log: error: couldn't index fasta file\n";
+    print STDOUT "log: error: couldn't index fasta file\n";
     exit(-1) if (!$split); # need to abort if not doing legacy method
 }
 
@@ -181,19 +181,19 @@ if ( $rc != 0 ) {
 my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
 my $coge = CoGeX->connect( $connstr, $user, $pass );
 unless ($coge) {
-    print $log "log: error: couldn't connect to database\n";
+    print STDOUT "log: error: couldn't connect to database\n";
     exit(-1);
 }
 
 # Retrieve organism
 my $organism = $coge->resultset('Organism')->find($organism_id);
 unless ($organism) {
-    print $log "log: error finding organism id$organism_id\n";
+    print STDOUT "log: error finding organism id$organism_id\n";
     exit(-1);
 }
 
 # Create datasource
-print $log "log: Updating database ...\n";
+print STDOUT "log: Updating database ...\n";
 my $datasource;
 if ($source_id) {
 	$datasource = $coge->resultset('DataSource')->find($source_id);
@@ -202,7 +202,7 @@ else {
 	$datasource = $coge->resultset('DataSource')->find_or_create({ name => $source_name, description => $source_desc });
 }
 die "Error creating/finding data source" unless $datasource;
-print $log "datasource id: " . $datasource->id . "\n";
+print STDOUT "datasource id: " . $datasource->id . "\n";
 
 # Create genome
 my $genome = $coge->resultset('Genome')->create(
@@ -218,22 +218,22 @@ my $genome = $coge->resultset('Genome')->create(
     }
 );
 unless ($genome) {
-    print $log "log: error creating genome\n";
+    print STDOUT "log: error creating genome\n";
     exit(-1);
 }
-print $log "genome id: " . $genome->id . "\n";
+print STDOUT "genome id: " . $genome->id . "\n";
 
 # Determine installation path
 unless ($install_dir) {
     unless ($P) {
-        print $log "log: error: can't determine install directory, set 'install_dir' or 'config' params\n";
+        print STDOUT "log: error: can't determine install directory, set 'install_dir' or 'config' params\n";
         exit(-1);
     }
     $install_dir = $P->{SEQDIR};
 }
 $install_dir = "$install_dir/"
   . CoGe::Core::Storage::get_tiered_path( $genome->id ) . "/";
-print $log "install path: $install_dir\n";
+print STDOUT "install path: $install_dir\n";
 
 # mdb removed 7/29/13, issue 77
 #$genome->file_path( $install_dir . $genome->id . ".faa" );
@@ -241,7 +241,7 @@ print $log "install path: $install_dir\n";
 
 # This is a check for dev server which may be out-of-sync with prod
 if ( -e $install_dir ) {
-    print $log "log: error: install path already exists\n";
+    print STDOUT "log: error: install path already exists\n";
     exit(-1);
 }
 
@@ -254,7 +254,7 @@ else {
 	$user = $coge->resultset('User')->find( { user_name => $user_name } );
 }
 unless ($user) {
-    print $log "log: error finding user '$user_name'\n";
+    print STDOUT "log: error finding user '$user_name'\n";
     exit(-1);
 }
 my $node_types = CoGeX::node_types();
@@ -268,7 +268,7 @@ my $conn       = $coge->resultset('UserConnector')->create(
     }
 );
 unless ($conn) {
-    print $log "log: error creating user connector\n";
+    print STDOUT "log: error creating user connector\n";
     exit(-1);
 }
 
@@ -286,12 +286,12 @@ foreach my $file (@files) {
         }
     );
     unless ($dataset) {
-        print $log "log: error creating dataset\n";
+        print STDOUT "log: error creating dataset\n";
         exit(-1);
     }
 
     #TODO set link field if loaded from FTP
-    print $log "dataset id: " . $dataset->id . "\n";
+    print STDOUT "dataset id: " . $dataset->id . "\n";
     $datasets{$file} = $dataset->id;
 
     my $dsconn =
@@ -300,7 +300,7 @@ foreach my $file (@files) {
           genome_id => $genome->id
       } );
     unless ($dsconn) {
-        print $log "log: error creating dataset connector\n";
+        print STDOUT "log: error creating dataset connector\n";
         exit(-1);
     }
 }
@@ -346,14 +346,14 @@ foreach my $chr ( sort keys %sequences ) {
 
 # Copy files from staging directory to installation directory
 my $t1 = new Benchmark;
-print $log "log: Copying files ...\n";
+print STDOUT "log: Copying files ...\n";
 unless ( mkpath($install_dir) ) {
-    print $log "log: error in mkpath\n";
+    print STDOUT "log: error in mkpath\n";
     exit(-1);
 }
 if ($split) {
     unless ( mkpath( $install_dir . "/chr" ) ) {
-        print $log "log: error in mkpath\n";
+        print STDOUT "log: error in mkpath\n";
         exit(-1);
     }
     execute("cp -r $staging_dir/chr $install_dir");
@@ -369,9 +369,9 @@ if ($compress) {
     execute("cp $staging_dir/genome.faa.razf.fai $install_dir/");
 }
 my $time = timestr( timediff( new Benchmark, $t1 ) );
-print $log "Took $time to copy\n";
+print STDOUT "Took $time to copy\n";
 
-print $log "log: "
+print STDOUT "log: "
   . commify($numSequences)
   . " sequences loaded totaling "
   . commify($seqLength) . " nt\n";
@@ -389,9 +389,9 @@ if ($irods_files) {
 }
 
 # Copy log file into installation directory
-print $log "log: All done!\n";
-close($log);
-`cp $staging_dir/log.txt $install_dir/`; #FIXME use perl copy and detect failure
+print STDOUT "log: All done!\n";
+#close($log);
+#`cp $staging_dir/log.txt $install_dir/`; #FIXME use perl copy and detect failure
 
 # Save result document
 if ($result_dir) {
@@ -415,7 +415,7 @@ sub process_fasta_file {
     my $filepath   = shift;
     my $target_dir = shift;
 
-    print $log "process_fasta_file: $filepath\n";
+    print STDOUT "process_fasta_file: $filepath\n";
     $/ = "\n>";
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
 
@@ -473,23 +473,23 @@ sub process_fasta_file {
 
         # Check validity of chr name and sequence
         if ( not defined $chr ) {
-            print $log "log: error parsing section header, line $lineNum, name='$name'\n";
+            print STDOUT "log: error parsing section header, line $lineNum, name='$name'\n";
             exit(-1);
         }
         if ( length $seq == 0 ) {
-            print $log "log: warning: skipping zero-length section '$chr'\n";
+            print STDOUT "log: warning: skipping zero-length section '$chr'\n";
             next;
         }
         if ( length($chr) > $MAX_CHR_NAME_LENGTH ) {
-            print $log "log: error: section header name '$chr' is too long (>$MAX_CHR_NAME_LENGTH characters)\n";
+            print STDOUT "log: error: section header name '$chr' is too long (>$MAX_CHR_NAME_LENGTH characters)\n";
             exit(-1);
         }
         if ( defined $pSeq->{$chr} ) {
-            print $log "log: error: Duplicate section name '$chr'\n";
+            print STDOUT "log: error: Duplicate section name '$chr'\n";
             exit(-1);
         }
         if ( $seq =~ /\W/ ) {
-            print $log "log: error: sequence on line $lineNum contains non-alphanumeric characters, perhaps this is not a FASTA file?\n";
+            print STDOUT "log: error: sequence on line $lineNum contains non-alphanumeric characters, perhaps this is not a FASTA file?\n";
             exit(-1);
         }
 
@@ -519,13 +519,13 @@ sub process_fasta_file {
             return $totalLength;
         }
         if ( $count <= $MAX_PRINT ) {
-            print $log "log: Processed chr '$chr' in $filename (".commify(length($seq))." bp)\n";
+            print STDOUT "log: Processed chr '$chr' in $filename (".commify(length($seq))." bp)\n";
         }
         elsif ( $count == $MAX_PRINT + 1 ) {
-            print $log "log: (only showing first $MAX_PRINT chromosomes)\n";
+            print STDOUT "log: (only showing first $MAX_PRINT chromosomes)\n";
         }
         elsif ( ( $count % 10000 ) == 0 ) {
-            print $log "log: Processed "
+            print STDOUT "log: Processed "
               . commify($count) . " ("
               . units($totalLength) . ", "
               . int( 100 * $totalLength / $fileSize )
@@ -539,11 +539,11 @@ sub process_fasta_file {
 
 sub execute { # FIXME move into Util.pm
     my $cmd = shift;
-    print $log "$cmd\n";
+    print STDOUT "$cmd\n";
     my @cmdOut    = qx{$cmd};
     my $cmdStatus = $?;
     if ( $cmdStatus != 0 ) {
-        print $log "log: error: command failed with rc=$cmdStatus: $cmd\n";
+        print STDOUT "log: error: command failed with rc=$cmdStatus: $cmd\n";
         exit(-1);
     }
 }
