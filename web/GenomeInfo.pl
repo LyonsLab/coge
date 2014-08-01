@@ -2078,7 +2078,8 @@ sub generate_body {
         USER_CAN_ADD    => $user_can_edit, #( !$genome->restricted or $user_can_edit ), # mdb removed 2/19/14, not sure why it ever existed
         USER_CAN_DELETE => $user_can_delete,
         DELETED         => $genome->deleted,
-        IRODS_HOME      => get_irods_path()
+        IRODS_HOME      => get_irods_path(),
+        USER => $USER->user_name
     );
 
     if ( $USER->is_admin ) {

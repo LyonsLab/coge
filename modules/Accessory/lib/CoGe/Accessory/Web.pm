@@ -75,6 +75,8 @@ sub init {
     my $page_title = $opts{page_title}; # optional page title
     my $ticket_type = $opts{ticket_type}; #optional ticket type (saml or proxy)
 
+    say STDERR $ENV{REMOTE_ADDR};
+
     if ($cgi) {
     	$ticket = $cgi->param('ticket') || undef;
     	$url    = $cgi->url;
