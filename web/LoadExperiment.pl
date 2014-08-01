@@ -574,53 +574,6 @@ sub get_load_log {
     );
 }
 
-#sub get_load_log {
-#    #my %opts    = @_;
-#
-#    my $logfile = $TEMPDIR . "staging/log.txt";
-#    open( my $fh, $logfile )
-#      or
-#      return encode_json( { status => -1, log => "Error opening log file" } );
-#
-#    my @lines = ();
-#    my ($eid, $nid, $new_load_id);
-#    my $status = 0;
-#    while (<$fh>) {
-#        push @lines, $1 if ( $_ =~ /^log: (.+)/i );
-#        if ( $_ =~ /All done/i ) {
-#            $status = 1;
-#
-#            # Generate a new load session ID in case the user chooses to
-#        	# reuse the form to start another load.
-#        	$new_load_id = get_unique_id();
-#
-#            last;
-#        }
-#        elsif ( $_ =~ /experiment id: (\d+)/i ) {
-#            $eid = $1;
-#        }
-#        elsif ( $_ =~ /notebook id: (\d+)/i ) {
-#            $nid = $1;
-#        }
-#        elsif ( $_ =~ /log: error/i ) {
-#            $status = -1;
-#            last;
-#        }
-#    }
-#
-#    close($fh);
-#
-#    return encode_json(
-#        {
-#            status        => $status,
-#            experiment_id => $eid,
-#            notebook_id   => $nid,
-#            new_load_id   => $new_load_id,
-#            log           => join( "<BR>\n", @lines )
-#        }
-#    );
-#}
-
 sub search_genomes
 {    # FIXME: common with LoadAnnotation et al., move into web service
     my %opts        = @_;
