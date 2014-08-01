@@ -140,6 +140,7 @@ sub generate_body {
     );
 
     $template->param(
+        EMBED         => $EMBED,
     	LOAD_ID       => $LOAD_ID,
     	JOB_ID        => $JOB_ID,
         STATUS_URL    => 'jex/status/',
@@ -463,58 +464,6 @@ sub load_annotation {
     return encode_json({ job_id => $workflow_id, link => $tiny_link });
 }
 
-#sub get_load_log {
-#    my %opts      = @_;
-#    my $timestamp = $opts{timestamp};
-#
-#    #print STDERR "get_load_log: $load_id " . $USER->name . "\n";
-#
-#    my $logfile = $TEMPDIR . "staging/log.txt";
-#    open( my $fh, $logfile )
-#      or return encode_json(
-#        {
-#            timestamp => $timestamp,
-#            status    => -1,
-#            log       => "Error opening log file"
-#        }
-#      );
-#
-#    my @lines = ();
-#    my $dsid;
-#    my $new_load_id;
-#    my $status = 0;
-#    while (<$fh>) {
-#        push @lines, $1 if ( $_ =~ /^log: (.+)/i );
-#        if ( $_ =~ /All done/i ) {
-#            $status = 1;
-#
-#            # Generate a new load session ID in case the user chooses to
-#        	# reuse the form to start another load.
-#        	$new_load_id = get_unique_id();
-#
-#            last;
-#        }
-#        elsif ( $_ =~ /dataset id: (\d+)/i ) {
-#            $dsid = $1;
-#        }
-#        elsif ( $_ =~ /log: error/i ) {
-#            $status = -1;
-#            last;
-#        }
-#    }
-#
-#    close($fh);
-#
-#    return encode_json(
-#        {
-#            timestamp  => $timestamp,
-#            status     => $status,
-#            dataset_id => $dsid,
-#            new_load_id => $new_load_id,
-#            log        => join( "<BR>\n", @lines )
-#        }
-#    );
-#}
 sub get_load_log {
     my %opts         = @_;
     my $workflow_id = $opts{workflow_id};
