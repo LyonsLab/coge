@@ -111,16 +111,6 @@ unless ($seq_only)
     add_annotations( gid1 => $gid, gid2 => $new_gid );
   }
 
-if ($result_dir) {
-    mkpath($result_dir);
-    CoGe::Accessory::TDS::write(
-        catfile($result_dir, '1'),
-        {
-            genome_id => int($new_gid)
-        }
-    );
-}
-
 # Done
 print $log "log: Finished copying genome!\n";
 exit(0);
@@ -147,6 +137,7 @@ sub load_genome {
 	my $stid   = $opts{stid};
 	my $cmd    = $fasta_genome_loader;
 	$cmd .= " -staging_dir " . $staging_dir;
+	$cmd .= " -result_dir " . $result_dir;
 	$cmd .= " -organism_id " . $genome->organism->id;
 	$cmd .= " -name '" . $genome->name . "'" if $genome->name;
 	$cmd .= " -message 'Copy of genome gid:" . $genome->id . "'";
@@ -171,18 +162,9 @@ sub load_genome {
 
 	execute($cmd);
 
-	my $genomeid;
-	open( IN, catfile($staging_dir, "/log.txt"))
-	  || die "can't find log file: " . $staging_dir . "/log.txt";
-	while (<IN>) {
-        print $log $_;
-		if (/genome id: (\d+)/) {
-			$genomeid = $1;
-			print $log "Captured gid: $genomeid\n";
-			last;
-		}
-	}
-	close IN;
+    my $file = catfile($result_dir, "1");
+    my $result = CoGe::Accessory::TDS::read($file);
+    my $genomeid = $result->{genome_id};
 
 	unless ($genomeid) {
 		print $log "Unable able to find gid in log file: " . $staging_dir . "/log.txt";

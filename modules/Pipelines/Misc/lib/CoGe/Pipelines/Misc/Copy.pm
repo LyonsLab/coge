@@ -22,9 +22,13 @@ BEGIN {
 sub copy_and_mask {
     my %args = (
         mask => 0,
-        sequence_only => 0,
+        seq_only => 0,
         @_
     );
+
+    my $desc = $args{mask} ? "Copying and masking genome" : "Copying genome";
+    $desc .= " (no annotations)" if $args{seq_only};
+    $desc .= "...";
 
     my $cmd = "/copy_genome/copy_load_mask_genome.pl";
 
@@ -37,9 +41,9 @@ sub copy_and_mask {
             ["-mask", $args{mask}, 0],
             ["-staging_dir", $args{staging_dir}, 0],
             ["-result_dir", $args{result_dir}, 0],
-            ["-sequence_only", $args{sequence_only}, 0]
+            ["-sequence_only", $args{seq_only}, 0]
         ],
-        description => "Copy and masking genome..."
+        description => $desc
     );
 }
 
