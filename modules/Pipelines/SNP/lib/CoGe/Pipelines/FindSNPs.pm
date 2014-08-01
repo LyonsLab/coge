@@ -27,7 +27,7 @@ BEGIN {
     @EXPORT = qw( run );
 }
 
-our ($CONF, $staging_dir, $result_dir, $log_file, $METADATA, $FASTA_CACHE_DIR );
+our ($CONF, $staging_dir, $result_dir, $METADATA, $FASTA_CACHE_DIR );
 
 sub run {
     my %opts = @_;

@@ -29,7 +29,7 @@ GetOptions(
     "gid=s"         => \$gid,            # genome id
     "user_name=s"   => \$user_name,      # user name
     "config=s"      => \$config,         # CoGe config file
-    "log_file=s"    => \$log_file        # optional log file
+    #"log_file=s"    => \$log_file        # optional log file # mdb removed 8/1/14 - logging sent to STDOUT as part of jex changes
 );
 
 # Open log file
@@ -38,7 +38,7 @@ $| = 1;
 mkpath($staging_dir) unless -r $staging_dir;
 #open( my $log, ">>$log_file" ) or die "Error opening log file $log_file";
 #$log->autoflush(1);
-print STDOUT "Starting $0 (pid $$)\n";
+print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
 
 # Process and verify parameters
 $data_file     = unescape($data_file);
@@ -256,7 +256,7 @@ sub process_dir {
         print STDOUT "log: error: failed to create notebook '$notebook_name'\n";
         exit(-1);
     }
-    print STDOUT "notebook id: ".$notebook->id."\n"; # !!!! don't change, gets parsed by calling code
+    print STDOUT "notebook id: ".$notebook->id."\n";
     print STDOUT "log: Created notebook '$notebook_name'\n";
     return ($notebook, \@experiments);
 }
@@ -294,8 +294,8 @@ sub process_file {
     my $cmd = catfile($P->{SCRIPTDIR}, 'load_experiment.pl') . ' ' .
         "-config $config -user_name '".$user->user_name."' -restricted 1 -name '$name' -desc '$description' " .
         "-version '$version' -gid $gid -source_name '$source' " .
-        "-staging_dir $exp_staging_dir -install_dir ".$P->{EXPDIR}." -data_file '$file' " .
-        "-log_file $log_file"; # reuse log so that all experiment loads are present
+        "-staging_dir $exp_staging_dir -install_dir ".$P->{EXPDIR}." -data_file '$file' ";
+        #"-log_file $log_file"; # reuse log so that all experiment loads are present
     print STDOUT "Running: " . $cmd, "\n";
     return if ($DEBUG);
     my $output = qx{ $cmd };
@@ -303,7 +303,7 @@ sub process_file {
         print STDOUT "log: error: load_experiment.pl failed with rc=$?\n";
         exit(-1);
     }
-    open( $log, ">>$log_file" ) or die "Error opening log file $log_file"; # Reopen log file
+    #open( $log, ">>$log_file" ) or die "Error opening log file $log_file"; # Reopen log file
     print STDOUT "log: Experiment '$name' loaded successfully\n";
 
     # Extract experiment id from output

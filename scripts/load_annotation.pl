@@ -50,8 +50,7 @@ mkpath($staging_dir); # make sure this exists
 #my $logfile = "$staging_dir/log.txt";
 #open( my $log, ">>$logfile" ) or die "Error opening log file $logfile";
 #$log->autoflush(1);
-print STDOUT "Starting $0 (pid $$)\n",
-           qx/ps -o args $$/;
+print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
 
 # Prevent loading again (issue #417)
 my $logdonefile = "$staging_dir/log.done";
@@ -324,9 +323,7 @@ my @name_buffer;    # buffer for bulk inserts into FeatureName table
 
                 # mdb added check 4/8/14 issue 358
                 unless (defined $start and defined $stop and defined $chr) {
-                    #print $log "log: warning: feature '", (defined $name ? $name : ''), "' (type '$feat_type') missing coordinates", "\n";
-                    print STDERR "log: warning: feature '", (defined $name ? $name : ''), "' (type '$feat_type') missing coordinates", "\n";
-                    print STDOUT "log: warning: feature '", (defined $name ? $name : ''), "' (type '$feat_type') missing coordinates", "\n";
+                    print STDOUT "warning: feature '", (defined $name ? $name : ''), "' (type '$feat_type') missing coordinates", "\n";
                     #print STDOUT Dumper $data{$chr_loc}{$name}{$feat_type}, "\n";
                     next; #exit(-1);
                 }
@@ -448,7 +445,7 @@ if ($result_dir) {
 # Create "log.done" file to indicate completion to JEX
 touch($logdonefile);
 
-print STDOUT "log: All done!";
+#print STDOUT "log: All done!";
 #close($log);
 
 exit;

@@ -60,8 +60,7 @@ mkpath($staging_dir); # make sure this exists
 #my $logfile = "$staging_dir/log.txt";
 #open( my $log, ">>$logfile" ) or die "Error opening log file: $logfile: $!";
 #$log->autoflush(1);
-print STDOUT "Starting $0 (pid $$)\n",
-           qx/ps -o args $$/;
+print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
 
 # Prevent loading again (issue #417)
 my $logdonefile = "$staging_dir/log.done";
@@ -389,7 +388,7 @@ if ($irods_files) {
 }
 
 # Copy log file into installation directory
-print STDOUT "log: All done!\n";
+#print STDOUT "log: All done!\n";
 #close($log);
 #`cp $staging_dir/log.txt $install_dir/`; #FIXME use perl copy and detect failure
 
