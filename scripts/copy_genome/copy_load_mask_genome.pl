@@ -96,7 +96,7 @@ else {
 }
 
 # Load genome
-print $log "log: Loading new genome:\n";
+#print $log "log: Loading new genome:\n";
 print $log "Calling load_genome.pl\n";
 my $new_gid = load_genome( faa => $new_faa, genome => $genome, stid => $stid );
 unless ($new_gid) {
