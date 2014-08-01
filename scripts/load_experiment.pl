@@ -54,7 +54,7 @@ GetOptions(
     "ignore-missing-chr=i" => \$ignore_missing_chr,
     "allow_negative=i"     => \$allow_negative,
     "disable_range_check"  => \$disable_range_check, # allow any value in val1 column
-    "log_file=s"           => \$log_file
+    #"log_file=s"           => \$log_file # mdb removed 8/1/14 - logging sent to STDOUT as part of jex changes
 );
 
 # Open log file
@@ -65,8 +65,7 @@ mkpath($staging_dir); # make sure this exists
 mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
 #open( my $log, ">>$log_file" ) or die "Error opening log file $log_file";
 #$log->autoflush(1);
-print STDOUT "Starting $0 (pid $$)\n",
-           qx/ps -o args $$/;
+print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
 
 # Prevent loading again (issue #417)
 my $logdonefile = "$staging_dir/log.done";
@@ -283,7 +282,6 @@ my $experiment = $coge->resultset('Experiment')->create(
     }
 );
 print STDOUT "experiment id: " . $experiment->id . "\n";
-print STDOUT "experiment id: " . $experiment->id . "\n"; # DON'T DELETE: needed by load_batch.pl
 
 # Create types
 if ($types) {
@@ -382,7 +380,7 @@ if ($result_dir) {
 # Create "log.done" file to indicate completion to JEX
 touch($logdonefile);
 
-print STDOUT "log: All done!\n";
+#print STDOUT "log: All done!\n";
 #close($log);
 
 exit;
@@ -395,7 +393,7 @@ sub detect_data_type {
 
     if (!$filetype or $filetype eq 'autodetect') {
         # Try to determine type based on file extension
-        print STDOUT "log: Detecting file type\n";
+        #print STDOUT "log: Detecting file type\n";
         ($filetype) = lc($filepath) =~ /\.([^\.]+)$/;
     }
 
