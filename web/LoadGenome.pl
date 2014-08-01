@@ -130,13 +130,14 @@ sub generate_body {
         PAGE_NAME     => $PAGE_TITLE . '.pl',
         LOAD_ID       => $LOAD_ID,
         JOB_ID        => $JOB_ID,
-        STATUS_URL    => 'jex/status/',
+        STATUS_URL    => 'api/v1/jobs/',
         SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
         ENABLE_NCBI              => 1,
         DEFAULT_TAB              => 0,
         MAX_IRODS_LIST_FILES     => 100,
         MAX_IRODS_TRANSFER_FILES => 30,
-        MAX_FTP_FILES            => 30
+        MAX_FTP_FILES            => 30,
+        USER                     => $user->user_name
     );
 
     my $oid = $FORM->param("oid");
