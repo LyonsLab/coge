@@ -1284,6 +1284,7 @@ sub copy_genome {
     my %args = @_;
     my $gid  = $args{gid};
     my $mask = $args{mask};
+    my $seq_only = $args{seq_only};
 
     print STDERR "copy_and_mask_genome: gid=$gid mask=$mask\n";
 
@@ -1291,7 +1292,10 @@ sub copy_genome {
         return 'Not logged in';
     }
 
-    my $workflow = $JEX->create_workflow(name => "Copy and mask genome", init => 1);
+    my $desc = $mask ? "Copying and masking genome" : "Copying genome";
+    $desc .= " (no annotations)" if $seq_only;
+
+    my $workflow = $JEX->create_workflow(name => $desc, init => 1);
 
     my ($staging_dir, $result_dir) = get_workflow_paths($USER->name, $workflow->id);
 
@@ -1313,6 +1317,16 @@ sub copy_genome {
     # Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
         url => $SERVER . "$PAGE_TITLE.pl?gid=" . $gid . ";job_id=" . $response->{id}
+    );
+
+    # Record in log
+    CoGe::Accessory::Web::log_history(
+        db          => $coge,
+        user_id     => $USER->id,
+        workflow_id => $workflow->id,
+        page        => $PAGE_TITLE,
+        description => $desc,
+        link => $tiny_link
     );
 
     return encode_json({

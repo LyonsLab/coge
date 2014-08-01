@@ -854,6 +854,22 @@ function progress_formatter(item) {
         row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
     }
 
+    if (item.output) {
+        var p = item.output.split("\n");
+        var pattern = /log: /;
+
+        var entries = p.filter(function(item) {
+            return pattern.test(item);
+        });
+
+        var pElements = entries.map(function(item) {
+            return $("<div></div>").html(item.replace(pattern, ""));
+        });
+
+        var log = $("<div></div>").html(pElements).addClass("padded");
+        row.append(log);
+    }
+
     return row;
 }
 
