@@ -34,35 +34,59 @@ sub fetch {
         });
         return;
     }
-
-    unless ($job_status->{status} =~ /completed/i) {
+    
+    unless ($job_status->{status} =~ /completed|running/i) {
         $self->render(json => {
             id => int($id),
             status => $job_status->{status}
         });
         return;
     }
-
+    
+    # Add tasks (if any)
+    my @tasks;
+    foreach my $task (@{$job_status->{jobs}}) {
+        my $t = {
+            description => $task->{description},
+            status => $task->{status},
+            log => undef
+        };
+        
+        if (defined $task->{output}) {
+            foreach (split("\n", $task->{output})) {
+                next unless ($_ =~ /^log:/);
+                $_ =~ s/^log: //;
+                $t->{log} .= $_;
+            }
+        }
+        
+        push @tasks, $t;
+    }
+    
+    # Add results (if any)
     #FIXME add routine to Storage.pm to get results path
     my $result_dir = catdir($conf->{SECTEMPDIR}, 'results', 'experiment', $user->name, $id);
     my @results;
-    opendir(my $fh, $result_dir);
-    foreach my $file ( readdir($fh) ) {
-        my $fullpath = catfile($result_dir, $file);
-        next unless -f $fullpath;
-
-        my $name = basename($file);
-        push @results, {
-            type => 'http',
-            name => $name,
-            path => $conf->{SERVER}.'api/v1/jobs/'.$id.'/results/'.$name # FIXME move api path into conf file ...?
+    if (-r $result_dir) {
+        opendir(my $fh, $result_dir);
+        foreach my $file ( readdir($fh) ) {
+            my $fullpath = catfile($result_dir, $file);
+            next unless -f $fullpath;
+    
+            my $name = basename($file);
+            push @results, {
+                type => 'http',
+                name => $name,
+                path => $conf->{SERVER}.'api/v1/jobs/'.$id.'/results/'.$name # FIXME move api path into conf file ...?
+            };
         }
+        closedir($fh);
     }
-    closedir($fh);
 
     $self->render(json => {
         id => int($id),
         status => $job_status->{status},
+        tasks => \@tasks,
         results => \@results
     });
 }
