@@ -1306,11 +1306,13 @@ Are you sure you want to move this genome into your trash?<p>
 	  <span class="small" style="float:right;">Link: <a></a></span>
 	  Please wait ... <img src="picts/ajax-loader.gif"/>
 	</div>
-	<span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
-	<span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
-	<span id="ok_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">OK</span>
-	<span id="finish_button" onClick="continue_to_view();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">Continue to new copy</span>
-	<span id="cancel_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go coge-button">Cancel</span>
+    <div class="coge-buttonset">
+        <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
+        <span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
+        <span id="ok_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">OK</span>
+        <span id="finish_button" onClick="continue_to_view();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">Continue to new copy</span>
+        <span id="cancel_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go coge-button">Cancel</span>
+    </div>
 </div>
 
 <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'>
