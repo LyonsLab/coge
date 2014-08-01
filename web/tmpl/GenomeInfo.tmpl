@@ -31,6 +31,8 @@ $(document).ready(function() {
     pageObj = new Object();
     pageObj.timers = new Array();
 
+    pageObj.user = "<tmpl_var name=USER>";
+
     $.ajaxSetup({
         type: "GET",
         url: PAGE_NAME,
@@ -54,7 +56,7 @@ $(document).ready(function() {
         reset_log();
         $('#loading_msg').hide();
         $('#load_dialog').dialog('open');
-        update_dialog("jex/status/" + job_id, "#load_dialog", progress_formatter);
+        update_dialog("api/v1/jobs/" + job_id, pageObj.user, $("#load_dialog"), progress_formatter);
     }
 });
 
@@ -821,7 +823,7 @@ function copy_genome(mask, seq_only) {
 
             // Add load_id to browser URL
             window.history.pushState({}, "Title", PAGE_NAME + "?gid=" + genome_id + "&job_id=" + data.job_id); // Add job_id to browser URL
-            update_dialog("jex/status/" + data.job_id, "#load_dialog", progress_formatter);
+            update_dialog("api/v1/jobs/" + data.job_id, "#load_dialog", progress_formatter);
         }
         // TODO: handle error, show in status dialog
     });
@@ -873,14 +875,20 @@ function progress_formatter(item) {
     return row;
 }
 
-function update_dialog(request, identifier, formatter) {
+function update_dialog(request, user, identifier, formatter) {
     var get_status = function () {
         $.ajax({
             type: 'GET',
             url: request,
             dataType: 'json',
+            data: {
+                username: user
+            },
             success: update_callback,
             error: update_callback,
+            xhrFields: {
+                withCredentials: true
+            }
         });
     };
 
@@ -893,7 +901,7 @@ function update_dialog(request, identifier, formatter) {
         var timeout = 2000;
 
         var callback = function() {
-            update_dialog(request, identifier, formatter);
+            update_dialog(request, user, identifier, formatter);
         }
 
         if (json.error) {
@@ -917,8 +925,8 @@ function update_dialog(request, identifier, formatter) {
             return;
         }
 
-        if (json.jobs) {
-            var jobs = json.jobs;
+        if (json.tasks) {
+            var jobs = json.tasks;
             for (var index = 0; index < jobs.length; index++) {
                 var item = formatter(jobs[index]);
                 if (item) {
@@ -933,7 +941,7 @@ function update_dialog(request, identifier, formatter) {
 
         //FIXME Update when a workflow supports elapsed time
         if (current_status == "completed") {
-            var total = json.jobs.reduce(function(a, b) {
+            var total = json.tasks.reduce(function(a, b) {
                 if (!b.elapsed) return a;
 
                 return a + b.elapsed;

@@ -14,7 +14,7 @@ sub init {
     my $opts = shift;
     my $username = $mojo->param('username');
     my $token    = $mojo->param('token');
-    my $remote_ip = $mojo->req->env->{HTTP_X_FORWARDED_FOR};
+    my $remote_ip = $ENV{REMOTE_ADDR}; #$mojo->req->env->{HTTP_X_FORWARDED_FOR};
     print STDERR "CoGe::Services::Auth::init: username=", ($username ? $username : ''), " token=", ($token ? $token : ''), " remote_ip=", ($remote_ip ? $remote_ip : ''), "\n";
 
     # Get config
@@ -36,8 +36,9 @@ sub init {
     }
 
     # Check for existing user session
-    #my $session_id = CoGe::Accessory::Web::get_session_id($username, $remote_ip);
-    my $session;# = $db->resultset('UserSession')->find( { session => $session_id } );
+    my $session_id = CoGe::Accessory::Web::get_session_id($username, $remote_ip);
+    my $session = $db->resultset('UserSession')->find( { session => $session_id } );
+
     # TODO add expiration to session table and check it here
 
     # Otherwise, validate user
