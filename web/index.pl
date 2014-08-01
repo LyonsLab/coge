@@ -207,34 +207,14 @@ sub actions {
 
 sub get_latest_genomes {
     my %opts = @_;
-    my $limit = $opts{limit} || 5;
+    my @latest = $coge->resultset("Genome")->get_recent_public($opts{limit});
+    my @genomes;
 
-    my @db = $coge->resultset("Genome")->search(
-        {},
-        {
-            distinct => "organism.name",
-            join     => "organism",
-            prefetch => "organism",
-            order_by => "genome_id desc",
-            rows     => $limit * 20,
-        }
-    );
-
-    my (%org_names, @genomes);
-
-    foreach my $dsg (@db) {
-        next unless $USER->has_access_to_genome($dsg);
-        next if $org_names{ $dsg->organism->name };
-        last if @genomes >= $limit;
-
-        $org_names{ $dsg->organism->name } = 1;
-
+    foreach my $dsg (@latest) {
         my $name = $dsg->organism->name;
-        my $dataset = shift $dsg->datasets;
         my $orgview_link = "GenomeInfo.pl?gid=" . $dsg->id;
 
-
-        my @datetime = split " ", $dataset->date;
+        my @datetime = split " ", $dsg->date;
 
         push @genomes, { organism => $name, added => $datetime[0], url => $orgview_link };
     }

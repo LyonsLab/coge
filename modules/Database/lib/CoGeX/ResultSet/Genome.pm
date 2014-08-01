@@ -54,6 +54,21 @@ sub public {
 	return $self->search( { 'restricted' => 0 } );
 }
 
+sub get_recent_public {
+    my ($self, $limit) = @_;
+
+    return $self->search(
+        { "me.restricted" => "0", "me.deleted"  => "0"},
+        {
+            group_by => "organism.name",
+            join     => "organism",
+            prefetch => "organism",
+            order_by => "genome_id desc",
+            rows     => $limit || 5,
+        }
+    );
+}
+
 1;
 
 =head1 AUTHORS
