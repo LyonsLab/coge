@@ -269,10 +269,14 @@ function load_latest(container, content) {
     for(i = 0; i < content.length; i++) {
         wrapper = $("<div></div>");
 
-        added = new Date(content[i].added);
+        if (content[i].added === null) {
+            added = "Unknown"
+        } else {
+            added = new Date(content[i].added).toDateString();
+        }
 
         entry = $("<h4></h4>")
-            .html(added.toDateString())
+            .html(added)
             .css("width", "10em")
             .addClass("inline");
 
