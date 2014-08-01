@@ -32,6 +32,7 @@ var job_id     = '<TMPL_VAR NAME="JOB_ID">';
 var embed      = '<TMPL_VAR NAME="EMBED">';
 var STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
 var PAGE_NAME  = '<TMPL_VAR NAME="PAGE_NAME">';
+var embed      = '<TMPL_VAR NAME="EMBED">';
 var genome_id;
 var pageObj = {};
 
@@ -470,7 +471,7 @@ function reset_load() {
 }
 
 function continue_to_view() {
-	window.location.href = "GenomeView.pl?gid=" + genome_id + ";tracks=features";
+	window.location.href = "GenomeView.pl?gid=" + genome_id + ";tracks=features;embed=" + embed;
 }
 
 function wait_to_search (search_func, search_obj) {
