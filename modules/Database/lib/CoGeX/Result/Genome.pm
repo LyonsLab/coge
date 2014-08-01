@@ -294,6 +294,8 @@ sub datasets {
     foreach my $dsc ( $self->dataset_connectors() ) {
         my $ds = $dsc->dataset;
         next if ( $restricted and not $ds->restricted );
+        next unless $ds;
+
         if ( defined $chr ) {
             $datasets{ $ds->id } = $ds
               if $ds->has_chromosome( chr => $chr );    #$ds_chr eq $chr;
