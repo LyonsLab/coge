@@ -8,6 +8,7 @@ use CoGe::Accessory::Jex;
 use CoGe::Accessory::Utils qw(sanitize_name get_unique_id commify execute);
 use CoGe::Accessory::IRODS qw(irods_iput irods_imeta);
 use CoGe::Core::Genome;
+use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Storage;
 
 use CoGe::Pipelines::Misc::Bed;
@@ -2073,12 +2074,4 @@ sub generate_body {
     }
 
     return $template->output;
-}
-
-# FIXME this routine is duplicated elsewhere
-sub experimentcmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    versioncmp( $b->version, $a->version )
-      || $a->name cmp $b->name
-      || $b->id cmp $a->id;
 }

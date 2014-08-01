@@ -91,11 +91,11 @@ unless ( -d $tmpdir ) {
 
 # Open log file
 $| = 1;
-my $logfile = "$tmpdir/log.txt";
-print STDERR "Logfile: $logfile\n";
-open( my $log, ">>$logfile" ) or die "Error opening log file $logfile";
-$log->autoflush(1);
-print $log "Starting $0 (pid $$)\n";
+#my $logfile = "$tmpdir/log.txt";
+#print STDERR "Logfile: $logfile\n";
+#open( my $log, ">>$logfile" ) or die "Error opening log file $logfile";
+#$log->autoflush(1);
+print STDOUT "Starting $0 (pid $$)\n";
 
 # Connect to database
 my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port";
@@ -103,12 +103,12 @@ my $coge    = CoGeX->connect( $connstr, $user, $pass );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 unless ($coge) {
-	print $log "log: error: couldn't connect to database\n";
+	print STDOUT "log: error: couldn't connect to database\n";
 	exit(-1);
 }
 
-print $log "Go = $GO.  Will be adding to the databaes. \n" if $DEBUG;
-print $log "Force is on: will not be checking if genome has been previously loaded.\n"
+print STDOUT "Go = $GO.  Will be adding to the databaes. \n" if $DEBUG;
+print STDOUT "Force is on: will not be checking if genome has been previously loaded.\n"
   if $force;
 my $data_source = get_data_source();    #for NCBI
 
@@ -135,7 +135,7 @@ my $fasta_output;       # storage of main fasta output
 my @links_to_existing;  # links to previously loaded datasets
 
 accn: foreach my $accn (@accns) {
-	print $log "log: Working on $accn...\n";
+	print STDOUT "log: Working on $accn...\n";
 	unless ($force) {
 		my $previous = check_accn($accn);
 		foreach my $item (@$previous) {
@@ -143,12 +143,12 @@ accn: foreach my $accn (@accns) {
 				#push @previous_datasets, $item->{ds};
 				$previous_datasets{ $item->{ds}->id } = $item->{ds};
 				my $link = $server . "OrganismView.pl?dsid=" . $item->{ds}->id;
-				print $log "log: Dataset previously loaded: <a href='$link'>$link</a>.  Skipping ...\n";
+				print STDOUT "log: Dataset previously loaded: <a href='$link'>$link</a>.  Skipping ...\n";
 				push @links_to_existing, $link;
 				next accn;
 			}
 			elsif ( !$item->{version_diff} && $item->{length_diff} ) {
-				print $log
+				print STDOUT
 				  "Detected a difference in total genomic length between CoGe ("
 				  . $item->{coge_length}
 				  . ") and NCBI("
@@ -167,7 +167,7 @@ accn: foreach my $accn (@accns) {
 		accn => $accn
 	);
 	if ( !$genbank->sequence && !@{ $genbank->wgs_data } ) {
-		print $log "Skipping sequence.  No sequence or wgs data\n";
+		print STDOUT "Skipping sequence.  No sequence or wgs data\n";
 		next;
 	}
 	my $EXIT = 0;
@@ -176,10 +176,10 @@ accn: foreach my $accn (@accns) {
 	$user_chr++ if $auto_increment_chr;
 	if ( $genbank->chromosome ) {
 		$chromosome = $genbank->chromosome;
-		print $log "#" x 20, "\n";
-		print $log $genbank->data_source();
-		print $log "GBChr:  $chromosome\n";
-		print $log "#" x 20, "\n";
+		print STDOUT "#" x 20, "\n";
+		print STDOUT $genbank->data_source();
+		print STDOUT "GBChr:  $chromosome\n";
+		print STDOUT "#" x 20, "\n";
 	}
 	$chromosome =~ s/chromosome//i;
 	$chromosome =~ s/chr//i;
@@ -190,25 +190,25 @@ accn: foreach my $accn (@accns) {
 	$chromosome = $base_chr_name . $chromosome if $base_chr_name;
 
 	if ( $chromosomes{$chromosome} ) {
-		print $log "log: previously seen $chromosome.  Updating name.\n";
+		print STDOUT "log: previously seen $chromosome.  Updating name.\n";
 		while ( $chromosomes{$chromosome} ) {
 			$chromosome .= ".1";
 		}
 	}
 	$chromosomes{$chromosome} = 1;
-	print $log "\tchromosome: $chromosome", "\n";
+	print STDOUT "\tchromosome: $chromosome", "\n";
 	my ( $organism, $dataset );
 
 	unless ($organism) {
 		($organism) = get_organism($genbank);
 		if ($organism) {
-			print $log "Organism info:";
-			print $log "\t", $organism->id,          ": ";
-			print $log "\t", $organism->name,        "\n";
-			print $log "\t", $organism->description, "\n";
+			print STDOUT "Organism info:";
+			print STDOUT "\t", $organism->id,          ": ";
+			print STDOUT "\t", $organism->name,        "\n";
+			print STDOUT "\t", $organism->description, "\n";
 		}
 		else {
-			print $log "WARNING:  Unable to retrieve an organism object for $accn.  Probably a problem with the genbank object file parsing\n"
+			print STDOUT "WARNING:  Unable to retrieve an organism object for $accn.  Probably a problem with the genbank object file parsing\n"
 			  unless !$GO;
 			next if $GO;
 		}
@@ -245,40 +245,40 @@ accn: foreach my $accn (@accns) {
 			while ( !$accn ) {
 
 				$entry->get_genbank_from_ncbi( reload => 1 );
-				print $log "#" x 20, "\n";
-				print $log "Warning.  Didn't not retrieve a valid accession for entry.\n";
-				print $log "Requested id: " . $entry->requested_id . "\n";
-				print $log "Trying to retrieve valid entry.\n";
-				print $log "#" x 20, "\n";
+				print STDOUT "#" x 20, "\n";
+				print STDOUT "Warning.  Didn't not retrieve a valid accession for entry.\n";
+				print STDOUT "Requested id: " . $entry->requested_id . "\n";
+				print STDOUT "Trying to retrieve valid entry.\n";
+				print STDOUT "#" x 20, "\n";
 				$accn = $entry->accession;
 				$try++;
 
 				if ( $try >= 10 ) {
-					print $log "Giving up!  Skipping "
+					print STDOUT "Giving up!  Skipping "
 					  . $entry->requested_id
 					  . " after $try trys.\n";
 					next entry;
 				}
 			}
-			print $log "\tChecking WGS $accn...\n";
+			print STDOUT "\tChecking WGS $accn...\n";
 			unless ($force) {
 				my $previous = check_accn($accn);
 				foreach my $item (@$previous) {
 					if ( !$item->{version_diff} && !$item->{length_diff} ) {
 						$previous_datasets{ $item->{ds}->id } = $item->{ds};
 						my $link = $server . "OrganismView.pl?dsid=" . $item->{ds}->id;
-						print $log "log: Dataset previously loaded: $link\n";
+						print STDOUT "log: Dataset previously loaded: $link\n";
 						next entry;
 					}
 					elsif ( !$item->{version_diff} && $item->{length_diff} ) {
-						print $log "Detected a difference in total genomic length between CoGe ("
+						print STDOUT "Detected a difference in total genomic length between CoGe ("
 						  . $item->{coge_length}
 						  . ") and NCBI("
 						  . $item->{ncbi_length}
 						  . ").  Including new dataset.\n";
 					}
 					else {
-						print $log "not present.  Will be loaded.\n";
+						print STDOUT "not present.  Will be loaded.\n";
 					}
 				}
 				push @gbs, $entry;
@@ -292,13 +292,13 @@ accn: foreach my $accn (@accns) {
 
 	foreach my $entry (@gbs) {
 		$chromosome = "contig_" . $entry->accession if @{ $genbank->wgs_data };
-		print $log "Processing features for " . $entry->accession . "...\n"
+		print STDOUT "Processing features for " . $entry->accession . "...\n"
 		  unless $EXIT;
 		foreach my $feature ( @{ $entry->features() } ) {
 			unless ( $feature->type() ) {
-				print $log
+				print STDOUT
 				  "Feature has no feature type name \$feature->type():\n";
-				print $log Dumper $feature;
+				print STDOUT Dumper $feature;
 				next;
 			}
 			if ( $feature->type() =~ /source/i ) {
@@ -400,7 +400,7 @@ accn: foreach my $accn (@accns) {
 			my $annot = $feature->qualifiers();
 			my %names;
 
-			#print $log Dumper $annot;
+			#print STDOUT Dumper $annot;
 			foreach my $anno ( keys %{$annot} ) {
 				my $stuff = $annot->{$anno};
 
@@ -606,29 +606,29 @@ accn: foreach my $accn (@accns) {
 		#initialize genome object if needed
 		if ( $organism && !$genome )    #gst_id 1 is for unmasked sequence data
 		{
-			print $log "Creating Genome Object ...\n";
+			print STDOUT "Creating Genome Object ...\n";
 			$genome = generate_genome(
 				version => $version,
 				org_id  => $organism->id,
 				gst_id  => 1
 			);
 			unless ($genome) {
-				print $log "Error adding genome to database\n";
+				print STDOUT "Error adding genome to database\n";
 				exit(-1);
 			}
 
-			print $log "log: Added genome id", $genome->id, "\n"; # !!!! don't change, gets parsed by calling code
-			print $log "Creating install path for sequences ...\n";
+			print STDOUT "log: Added genome id", $genome->id, "\n"; # !!!! don't change, gets parsed by calling code
+			print STDOUT "Creating install path for sequences ...\n";
 			$install_dir =
 			  "$install_dir/"
 			  . CoGe::Core::Storage::get_tiered_path( $genome->id ) . "/";
 			if ($GO) {
 				mkpath($install_dir);
 				unless ( -d $install_dir ) {
-					print $log "log: error in mkpath $install_dir\n";
+					print STDOUT "log: error in mkpath $install_dir\n";
 					exit(-1);
 				}
-				print $log "completed: $install_dir\n";
+				print STDOUT "completed: $install_dir\n";
 			}
 		}
 
@@ -654,10 +654,10 @@ accn: foreach my $accn (@accns) {
 			}
 		}
 	}
-	print $log "completed parsing for $accn!\n";    # if $DEBUG;
+	print STDOUT "completed parsing for $accn!\n";    # if $DEBUG;
 
 	if ($delete_src_file) {
-		print $log "Deleting genbank src file: " . $genbank->srcfile . "\n";
+		print STDOUT "Deleting genbank src file: " . $genbank->srcfile . "\n";
 		my $cmd = "rm " . $genbank->srcfile;
 		`$cmd`;
 
@@ -666,7 +666,7 @@ accn: foreach my $accn (@accns) {
 }
 
 unless ($genome) {
-	print $log "log: No new datasets to load, see links above to existing ones\n";
+	print STDOUT "log: No new datasets to load, see links above to existing ones\n";
 
 	# Save result document
     if ($result_dir) {
@@ -691,7 +691,7 @@ if ($GO) {
 			  $genome->dataset_connectors( { dataset_id => $ds->id } );
 			if ($test) {
 				my $name = $ds->name;
-				print $log "$name has been previously added to this dataset group.  Skipping\n";
+				print STDOUT "$name has been previously added to this dataset group.  Skipping\n";
 				next;
 			}
 			foreach my $item ( $ds->genomes ) {
@@ -717,7 +717,7 @@ if ($GO) {
 	}
 }
 my $output_file = $install_dir . "/genome.faa";
-print $log "log: Creating output sequence file and indexing\n";
+print STDOUT "log: Creating output sequence file and indexing\n";
 add_and_index_sequence( fasta => $fasta_output, file => $output_file ) if $GO;
 
 # Make user owner of new genome
@@ -730,7 +730,7 @@ if ( $GO and ( $user_id or $user_name ) ) {
 		$user = $coge->resultset('User')->find( { user_name => $user_name } );
 	}
 	unless ($user) {
-		print $log "log: error finding user '$user_name'\n";
+		print STDOUT "log: error finding user '$user_name'\n";
 		exit(-1);
 	}
 
@@ -746,7 +746,7 @@ if ( $GO and ( $user_id or $user_name ) ) {
 	#	}
 	#);
 	#unless ($conn) {
-	#	print $log "log: error creating user connector\n";
+	#	print STDOUT "log: error creating user connector\n";
 	#	exit(-1);
 	#}
 
@@ -772,8 +772,8 @@ if ($result_dir) {
     );
 }
 
-print $log "log: Finished loading genome!\n";
-close($log);
+print STDOUT "log: Finished loading genome!\n";
+#close($log);
 
 # Create "log.done" file to indicate completion to JEX
 my $logdonefile = "$tmpdir/log.done";
@@ -789,25 +789,25 @@ sub add_and_index_sequence {
 	my $file     = $opts{file};
 	my $compress = $opts{compress};
 	unless ($fasta) {
-		print $log
+		print STDOUT
 		  "log: No data to add to file $file.  Not creating fasta file\n";
 		exit;
 	}
 	if ( -r $file ) {
-		print $log
+		print STDOUT
 "log: error:  $file already exists.  Will not overwrite existing sequence.  Fatal error!\n";
 		exit(-1);
 	}
 	open( OUT, ">$file" ) || die "Died: can't open $file for writing: !$\n";
 	print OUT $fasta;
 	close OUT;
-	print $log "Indexing genome file\n";
+	print STDOUT "Indexing genome file\n";
 	my $rc = CoGe::Core::Storage::index_genome_file(
 		file_path => $file,
 		compress  => $compress
 	);
 	if ( $rc != 0 ) {
-		print $log "log: error: couldn't index fasta file\n";
+		print STDOUT "log: error: couldn't index fasta file\n";
 		exit(-1);
 	}
 }
@@ -827,10 +827,10 @@ sub fasta_genomic_sequence {
 	my $seqlen = length $seq;
 	if ( my ($item) = $genome->get_genomic_sequence( { chromosome => $chr } ) ) {
 		my $prev_length = $item->sequence_length;
-		print $log "$chr has previously been added to this genome.  Previous length: $prev_length.  Currently length: $seqlen.  Skipping.\n";
+		print STDOUT "$chr has previously been added to this genome.  Previous length: $prev_length.  Currently length: $seqlen.  Skipping.\n";
 		return;
 	}
-	print $log "Loading genomic sequence ($seqlen nt)\n";    # if $DEBUG;
+	print STDOUT "Loading genomic sequence ($seqlen nt)\n";    # if $DEBUG;
 
 	$genome->add_to_genomic_sequences(
 		{
@@ -935,12 +935,12 @@ sub get_organism {
 	$name =~ s/^\s+//;
 	$name =~ s/\s+$//;
 
-	#  print $log $name,"\n";
-	#  print $log $entry->organism,"\n";
+	#  print STDOUT $name,"\n";
+	#  print STDOUT $entry->organism,"\n";
 	my $desc = $entry->organism();
 	$desc =~ s/^.*?::\s*//;
 	$desc =~ s/\.$//;
-	print $log qq{
+	print STDOUT qq{
 Organism Information from Genbank Entry:
   $name
   $desc
@@ -951,7 +951,7 @@ Organism Information from Genbank Entry:
 	unless ($org) {
 
 		unless ($name) {
-			print $log "WARNING: ", $entry->accession,
+			print STDOUT "WARNING: ", $entry->accession,
 			  " has no organism name\n";
 			return;
 		}
@@ -1005,11 +1005,11 @@ sub check_accn {
 	my $accn = shift;
 	my $gi   = get_gi($accn);
 
-	#    print $log "gi|".$gi."...";
+	#    print STDOUT "gi|".$gi."...";
 	my $summary = get_gi_summary($gi);
 	my ($version) = $summary =~ /ref\|.*?\.(\d+)\|/i;
 
-	#    print $log "version: $version\n";
+	#    print STDOUT "version: $version\n";
 	$version = 1 unless $version;
 	my ($length) =
 	  $summary =~ /<Item Name="Length" Type="Integer">(\d+)<\/Item>/i;
