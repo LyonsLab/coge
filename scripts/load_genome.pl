@@ -16,7 +16,6 @@ use URI::Escape::JavaScript qw(unescape);
 use POSIX qw(ceil);
 use Benchmark;
 
-
 use vars qw($staging_dir $install_dir $fasta_files $irods_files
   $name $description $link $version $type_id $restricted $message
   $organism_id $source_id $source_name $source_desc $user_id $user_name
