@@ -176,13 +176,14 @@ function update_filter() {
 
 function cancel_job() {
     submit_task("cancel_job", function(row) {
-        return row.status.toLowerCase() == 'running'
+        return row.status.toLowerCase() === 'running'
     });
 }
 
 function restart_job() {
     submit_task("restart_job", function(row) {
-        return row.status.toLowerCase() != 'running';
+        return row.status.toLowerCase() === 'cancelled' ||
+               row.status.toLowerCase() === 'stopped';
     });
 }
 
@@ -194,6 +195,9 @@ function submit_task(task, predicate) {
     });
 
     var validRows = selectedRows.filter(predicate);
+
+    // No rows were valid
+    if (!validRows.length) return;
 
     jQuery.each(validRows, function(index,row) {
         var argument_list =  {
@@ -213,6 +217,9 @@ function submit_task(task, predicate) {
             }
         });
     });
+
+    // Deselect all rows
+    window.jobs.grid.setSelectedRows([]);
 }
 </script>
 </tmpl_if>
