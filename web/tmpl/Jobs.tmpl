@@ -1,5 +1,5 @@
-<tmpl_if name="login">
-	<tmpl_include name="widgets/Login.tmpl">
+<tmpl_if name="admin_only">
+    <tmpl_include name="widgets/AdminOnly.tmpl">
 </tmpl_if>
 
 <tmpl_if name="main">
@@ -69,10 +69,8 @@ $(document).ready(function(){
             tool = item['tool'] ? item['tool'].toLowerCase() : '',
             status = item['status'] ? item['status'].toLowerCase() : '',
             started = item['started'] ? item['started'].toLowerCase() : '',
-            completed = item['completed'] ? item['completed'].toLowerCase() : ''
-<tmpl_if name="admin_area">
-            ,user = item['user'] ? item['user'].toLowerCase() : ''
-</tmpl_if>;
+            completed = item['completed'] ? item['completed'].toLowerCase() : '',
+            user = item['user'] ? item['user'].toLowerCase() : '';
 
         if (args.searchType == 1) {
             if (args.searchString != "" &&
@@ -81,9 +79,7 @@ $(document).ready(function(){
                 status.indexOf(args.searchString) == -1 &&
                 started.indexOf(args.searchString) == -1 &&
                 completed.indexOf(args.searchString) == -1
-<tmpl_if name="admin_area">
-                && user.indexOf(args.searchString) == -1
-</tmpl_if>) {
+                && user.indexOf(args.searchString) == -1) {
                 return false;
             }
         } else {
@@ -93,9 +89,8 @@ $(document).ready(function(){
                 status.indexOf(args.searchString) != -1 ||
                 started.indexOf(args.searchString) != -1 ||
                 completed.indexOf(args.searchString) != -1
-<tmpl_if name="admin_area">
-                || user.indexOf(args.searchString) != -1
-</tmpl_if>) {
+
+                || user.indexOf(args.searchString) != -1 ) {
                 return false;
             }
         }
@@ -129,9 +124,7 @@ $(document).ready(function(){
             sortable: true},
         {id: 'elapsed', name: 'Elapsed', field: 'elapsed', minWidth: 55,
             sortable: true},
-<tmpl_if name="admin_area">
         {id: 'user', name: 'User', field: 'user', sortable: true, minWidth: 75},
-</tmpl_if>
         {id: 'tool', name: 'Tool', field: 'tool', minWidth: 75,
             sortable: true},
         {id: 'link', name: 'Link to Analysis', field: 'link', minWidth: 250,
