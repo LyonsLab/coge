@@ -37,6 +37,16 @@ my @LOCATIONS_PREFETCH = (
     }
 );
 
+sub genomecmp($$) {
+    my ($a, $b) = @_;
+
+    $a->organism->name cmp $b->organism->name
+      || versioncmp( $b->version, $a->version )
+      || $a->type->id <=> $b->type->id
+      || $a->name cmp $b->name
+      || $b->id cmp $a->id;
+}
+
 sub get_wobble_histogram {
     my $genome = _get_genome_or_exit(@_);
     my $storage_path = _get_histogram_file($genome->id);
