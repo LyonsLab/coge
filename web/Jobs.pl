@@ -97,7 +97,7 @@ sub get_jobs_for_user {
         push @job_items, {
             id => int($index++),
             workflow_id => $_->workflow_id,
-            user  => $users{$_->user_id},
+            user  => $users{$_->user_id} || "public",
             tool  => $_->page,
             link  => $_->link,
             %{$entry}
