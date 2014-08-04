@@ -76,15 +76,22 @@ sub get_jobs_for_user {
         my($id, $name, $submitted, $completed, $status) = @{$_};
 
         my $start_time = localtime($submitted)->strftime('%F %I:%M%P');
-        my $end_time = localtime($completed)->strftime('%F %I:%M%P');
-        my $diff = $completed - $submitted;
+        my $end_time = "";
+        my $diff;
 
-          $workflow_results{$id} = {
+        if ($completed) {
+            $end_time = localtime($completed)->strftime('%F %I:%M%P') if $completed;
+            $diff = $completed - $submitted;
+        } else {
+            $diff = time - $submitted;
+        }
+
+        $workflow_results{$id} = {
             status    => $status,
-            started   => $start_time, #$_->start_time,
-            completed => $end_time, #$_->end_time ? $_->end_time : '',
-            elapsed   => format_time_diff($diff), #$_->elapsed_time(),
-          };
+            started   => $start_time,
+            completed => $end_time,
+            elapsed   => format_time_diff($diff)
+        };
     }
 
     my $index = 1;
