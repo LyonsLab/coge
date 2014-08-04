@@ -32,7 +32,12 @@ var coge = (function (namespace) {
             //
             var comparator = function(a, b) {
                 var index = args.sortCol.field;
-                return self.options.comparator(a[index], b[index]);
+
+                if (index === "workflow_id") {
+                    return a[index] - b[index];
+                }
+
+                return a[index].localeCompare(b[index]);
             }
 
             self.dataView.sort(comparator, args.sortAsc);
