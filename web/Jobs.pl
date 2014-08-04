@@ -140,11 +140,11 @@ sub gen_html {
 }
 
 sub gen_body {
-    if ( $USER->is_public ) {
+    unless ( $USER->is_admin ) {
         my $template =
           HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
         $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
-        $template->param( LOGIN     => 1 );
+        $template->param( ADMIN_ONLY => 1 );
         return $template->output;
     }
 
@@ -152,7 +152,7 @@ sub gen_body {
       HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param( PAGE_NAME  => "$PAGE_TITLE.pl" );
     $template->param( MAIN       => 1 );
-    $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
+
     return $template->output;
 }
 
