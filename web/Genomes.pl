@@ -4,6 +4,7 @@ use strict;
 use CGI;
 use CoGeX;
 use CoGe::Accessory::Web;
+use CoGe::Core::Genome qw(genomecmp);
 use HTML::Template;
 use Sort::Versions;
 no warnings 'redefine';
@@ -129,14 +130,4 @@ sub generate_body {
     $template->param( GENOME_TABLE => get_genomes_for_user() );
 
     return $template->output;
-}
-
-# FIXME this comparison routine is duplicated elsewhere
-sub genomecmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    $a->organism->name cmp $b->organism->name
-      || versioncmp( $b->version, $a->version )
-      || $a->type->id <=> $b->type->id
-      || $a->name cmp $b->name
-      || $b->id cmp $a->id;
 }
