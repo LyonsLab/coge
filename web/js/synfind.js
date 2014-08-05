@@ -57,7 +57,7 @@ function launch(dialog, results, options) {
         data: options,
         success : function(response) {
             status_dialog.unbind().on("dialogclose", function() {
-                _results.removeClass('hidden').slideDown();
+                _results.removeClass('hidden').slideDown('slow');
 
                 // reset dialog
                 status_dialog.find(".dialog-error,.dialog-complete").hide();
