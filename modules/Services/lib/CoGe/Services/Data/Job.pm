@@ -16,7 +16,7 @@ sub fetch {
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
-
+    
     # User authentication is required
     unless (defined $user) {
         $self->render(json => {
@@ -35,16 +35,17 @@ sub fetch {
         return;
     }
     
-    unless ($job_status->{status} =~ /completed|running/i) {
-        $self->render(json => {
-            id => int($id),
-            status => $job_status->{status}
-        });
-        return;
-    }
+#    unless ($job_status->{status} =~ /completed|running/i) {
+#        $self->render(json => {
+#            id => int($id),
+#            status => $job_status->{status}
+#        });
+#        return;
+#    }
     
     # Add tasks (if any)
     my @tasks;
+    print STDERR Dumper {$job_status->{jobs}};
     foreach my $task (@{$job_status->{jobs}}) {
         my $t = {
             description => $task->{description},
@@ -111,7 +112,7 @@ sub results {
     my $result_dir = catdir($conf->{SECTEMPDIR}, 'results', 'experiment', $user->name, $id);
     my $result_file = catfile($result_dir, $name);
 
-    print STDERR $result_file, "\n";
+#    print STDERR $result_file, "\n";
 
     unless (-r $result_file) {
         $self->render(json => {
