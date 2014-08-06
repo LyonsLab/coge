@@ -6,12 +6,13 @@ use File::Path;
 use File::Basename;
 use File::Spec::Functions qw(catdir catfile);
 use File::Touch;
+use File::Copy qw(copy);
 use Getopt::Long;
 use URI::Escape::JavaScript qw(escape unescape);
 use Data::Dumper;
 
 use vars qw(
-    $staging_dir $data_file $notebook_name $notebook_desc $gid $user_name
+    $staging_dir $file_str $notebook_name $notebook_desc $gid $user_name
     $config $log_file $user $genome $result_dir
 );
 
@@ -23,7 +24,7 @@ my $DELIMITER = '\t';
 GetOptions(
     "staging_dir=s" => \$staging_dir,    # temporary staging path
     "result_dir=s"  => \$result_dir,     # results path
-    "data_file=s"   => \$data_file,      # input data file (JS escape)
+    "files=s"       => \$file_str,      # input data file (JS escape)
     "name=s"        => \$notebook_name,  # notebook name (JS escaped)
     "desc=s"        => \$notebook_desc,  # notebook description (JS escaped)
     "gid=s"         => \$gid,            # genome id
@@ -34,6 +35,7 @@ GetOptions(
 
 # Open log file
 $| = 1;
+die unless ($staging_dir);
 #$log_file = "$staging_dir/log.txt" unless $log_file;
 mkpath($staging_dir) unless -r $staging_dir;
 #open( my $log, ">>$log_file" ) or die "Error opening log file $log_file";
@@ -41,7 +43,7 @@ mkpath($staging_dir) unless -r $staging_dir;
 print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
 
 # Process and verify parameters
-$data_file     = unescape($data_file);
+$file_str      = unescape($file_str);
 $notebook_name = unescape($notebook_name);
 $notebook_desc = unescape($notebook_desc);
 
@@ -81,19 +83,37 @@ unless ($user) {
     exit(-1);
 }
 
-# Untar data file
+# Process each file into staging area
 my $data_dir = catdir($staging_dir, 'data');
-unless (-r $data_file) {
-    print STDOUT "log: error: cannot access data file\n";
-    exit(-1);
-}
-unless ($data_file =~ /\.tar\.gz$/) {
-    print STDOUT "log: error: data file needs to be a tarball (end with .tar.gz)\n";
-    exit(-1);
-}
-print STDOUT "log: Decompressing/extracting data\n";
 mkpath($data_dir);
-execute( $P->{TAR}.' -xf '.$data_file.' --directory '.$data_dir );
+my @files = split( ',', $file_str );
+foreach my $file (@files) {
+    my $filename = basename($file);
+
+    # Decompress file if necessary
+    if ( $file =~ /\.gz$/ ) {
+        print STDOUT "log: Decompressing '$filename'\n";
+        $file =~ s/\.gz$//;
+        execute( $P->{GUNZIP} . ' -c ' . $file . '.gz' . ' > ' . $file );
+    }
+
+    # Untar file if necessary
+    if ( $file =~ /\.tar$/ ) {
+        print STDOUT "log: Extracting files\n";
+        execute( $P->{TAR}.' -xf '.$file_str.' --directory '.$data_dir );
+    }
+    else {
+        print STDERR "matt: $file\n";
+        print STDERR "matt: " . catfile($data_dir, $filename) . "\n";
+        my $cmd = "cp $file $data_dir/$filename";
+        execute($cmd);
+#        unless ( copy( $file, catfile($data_dir, $filename) ) ) {
+#            print STDOUT "log: error copying file:\n";
+#            print STDOUT "log: $!\n";
+#            exit(-1);
+#       }
+    }
+}
 
 # Find metadata file
 my ($metadata_file) = glob("$data_dir/*.txt");

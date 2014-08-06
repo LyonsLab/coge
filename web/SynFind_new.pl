@@ -1707,7 +1707,7 @@ sub get_results {
                 query_dsgid      => $source_dsgid,
                 unique_gene_link => $unique_gene_link );
     $html .= "<br><strong>Downloads</strong><br>"
-        . qq{<a href=$log_file target=_new class="small">Log File</a><br>};
+        . qq{<a href="$log_file" target=_new class="small">Log File</a><br>};
 
     foreach my $item (@target_info) {
         # mdb added 10/8/13
@@ -2570,7 +2570,7 @@ sub get_master_histograms {
         my $genome = $coge->resultset('Genome')->find( $item->{dsgid2} );
         next unless $genome;
 
-        $html .= qq{<span class="link" onclick='window.open("OrganismView.pl?dsgid=} . $item->{dsgid2} . "\")'>" . $genome->info . "</span>";
+        $html .= qq{<span class="small link" onclick='window.open("OrganismView.pl?dsgid=} . $item->{dsgid2} . "\")'>" . $genome->info . "</span>";
         $html .= '<div>';
         if ( $query_dsgid eq $item->{dsgid2} ) {
             $html .= "<span class='small'>(self-self comparison: self-self syntenic regions ignored)</span><br>";
