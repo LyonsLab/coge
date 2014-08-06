@@ -587,7 +587,7 @@ sub create_experiments_from_batch {
     my $files = $opts{files};
     my $metadata = $opts{metadata};
 
-    print STDERR (caller(0))[3], "\n";
+    print STDERR (caller(0))[3], "\n", Dumper $files, "\n";
 
     my $conf = CoGe::Accessory::Web::get_defaults();
 
@@ -607,7 +607,7 @@ sub create_experiments_from_batch {
 
     # Setup log file, staging, and results paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
-    $workflow->logfile( catfile($staging_dir, 'workflow.log') );
+    $workflow->logfile( catfile($staging_dir, 'debug.log') );
 
     # Create list of files to load
     my @staged_files;
@@ -824,17 +824,8 @@ sub _create_load_batch_job {
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_batch.pl");
     return unless $cmd; # SCRIPTDIR undefined
 
-    my $file_str = join(',', map { basename($_) } @$files);
-
-#    my $cmd =
-#        "$BINDIR/load_batch.pl "
-#      . "-user_name $user_name "
-#      . '-name "' . escape($name) . '" '
-#      . '-desc "' . escape($description) . '" '
-#      . "-gid $gid "
-#      . "-staging_dir $stagepath "
-#      . '-data_file "' . escape( join( ',', @files ) ) . '" '
-#      . "-config $CONFIGFILE";
+    #my $file_str = join(',', map { basename($_) } @$files);
+    my $file_str = join(',', @$files);
 
     return (
         cmd => $cmd,
@@ -846,7 +837,7 @@ sub _create_load_batch_job {
             ['-gid', $gid, 0],
             ['-staging_dir', "'".$staging_dir."'", 0],
             ['-result_dir', "'".$result_dir."'", 0],
-            ['-data_file', "'".$file_str."'", 0],
+            ['-files', "'".$file_str."'", 0],
             ['-config', $conf->{_CONFIG_PATH}, 1]
         ],
         inputs => [
