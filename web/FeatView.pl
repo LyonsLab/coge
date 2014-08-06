@@ -391,6 +391,7 @@ sub get_anno {
       if scalar @feats;
     my $i = 0;
     foreach my $feat (@feats) {
+        next unless $feat;
         my ($dsg) = $feat->dataset->genomes;
         return "Restricted Access" unless $USER->has_access_to_genome($dsg);
         return "Deleted"
@@ -410,7 +411,7 @@ sub get_anno {
 qq{<div class="coge-buttonset"><span class="ui-button ui-corner-all" onClick="window.open('FastaView.pl?featid=$featid&gstid=$gstid');">Get Sequence</span>};
         $anno .=
 qq{<span class="ui-button ui-corner-all" onClick="window.open('CoGeBlast.pl?featid=$featid;gstid=$gstid');">CoGeBlast</span>};
-		my ($a, $b) = get_link_coords($feat->start, $feat->stop);
+        my ($a, $b) = get_link_coords($feat->start, $feat->stop);
         $anno .=
 #qq{<span class="ui-button ui-corner-all" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z;gstid=$gstid');">Genome Browser</span>}; # mdb removed 11/20/13 issue 254
 qq{<span class="ui-button ui-corner-all" onClick="window.open('GenomeView.pl?gid=$gid&loc=$chr:$a..$b');">Genome Browser</span>}; # mdb added 11/20/13 issue 254
@@ -422,8 +423,10 @@ qq{<span class="ui-button ui-corner-all" onClick="window.open('SynFind.pl?fid=$f
 qq{<span class="ui-button ui-corner-all" onClick="update_featlist(['args__accn', 'args__$accn','args__type', 'args__$type','args__fid', 'args__$featid', 'args__gstid','args__$gstid'],[add_to_featlist]);\$('#feat_list').dialog('option', 'width', 500).dialog('open');">Add to list</span></div>}
           if $accn;
 
-        $anno .= join "\n<hr>\n",
-          $feat->annotation_pretty_print_html( gstid => $gstid );
+        eval {
+            $anno .= join "\n<hr>\n",
+            $feat->annotation_pretty_print_html( gstid => $gstid );
+        };
 
         if ( $feat->type->name eq "CDS" ) {
             $anno .= qq{<div class="coge-buttonset">};
@@ -472,8 +475,8 @@ sub gen_html {
 
     #$template->param(TITLE=>'Feature Viewer');
     $template->param( PAGE_TITLE => 'FeatView',
-    				  PAGE_LINK  => $LINK,
-    				  HELP       => "/wiki/index.php?title=FeatView" );
+                      PAGE_LINK  => $LINK,
+                      HELP       => "/wiki/index.php?title=FeatView" );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
@@ -582,7 +585,7 @@ sub get_data_source_info_for_accn {
 
         #	next if $val->restricted && !$USER->has_access_to_dataset($val);
         my ($dsg) = $feat->dataset->genomes;
-	next if $dsg->deleted;
+    next if $dsg->deleted;
         #        return "<hidden id=dsid value=0></hidden>Restricted Access"
         unless ( $USER->has_access_to_genome($dsg) ) {
             $sources{"Restricted Access"} = {

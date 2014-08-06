@@ -1298,6 +1298,7 @@ sub copy_genome {
     my $workflow = $JEX->create_workflow(name => $desc, init => 1);
 
     my ($staging_dir, $result_dir) = get_workflow_paths($USER->name, $workflow->id);
+    $workflow->logfile( catfile($result_dir, 'debug.log') );
 
     $args{uid} = $USER->id;
     $args{conf} = $config->{_CONFIG_PATH};
