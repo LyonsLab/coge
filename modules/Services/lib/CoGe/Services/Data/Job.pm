@@ -45,7 +45,6 @@ sub fetch {
     
     # Add tasks (if any)
     my @tasks;
-    print STDERR Dumper {$job_status->{jobs}};
     foreach my $task (@{$job_status->{jobs}}) {
         my $t = {
             description => $task->{description},

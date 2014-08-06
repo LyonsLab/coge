@@ -2,6 +2,10 @@
     var color = coge.color = {};
 
     color.schemes = {
+        "Black-Red": [
+            "#ff0000",
+            "#000000"
+        ],
         "Rainbow 1": [
             "#ffff00",
             "#c8c800",
@@ -102,10 +106,6 @@
             "#0000c8",
             "#dcdc14",
             "#ff0000"
-        ],
-        "Black-Red": [
-            "#ff0000",
-            "#000000"
         ],
         "3xRed-Blue": [
             "#00ffff",
