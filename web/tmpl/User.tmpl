@@ -1519,7 +1519,7 @@ function toggle_star(img) {
 		<div class="small" style="padding:20px;padding-left:30px;border-top:1px solid lightgray;">
 			<TMPL_IF NAME="IS_EDITABLE">
 				<span style="color:dimgray">Enter names or groups:</span><br>
-				<input id="share_input" type="search" maxlength="40" spellcheck="false" style="width:270px;border:1px solid lightgray;" onclick='$(this).autocomplete("search");' onkeyup="wait_to_search(search_share, this.value);" />
+				<input id="share_input" type="search" maxlength="40" spellcheck="false" style="width:20em;border:1px solid lightgray;" onclick='$(this).autocomplete("search");' onkeyup="wait_to_search(search_share, this.value);" />
 				<select id="share_role_select" class="hidden"><TMPL_VAR NAME="ROLES"></select>
 				<span href="javascript:void(0)" onClick="add_items_to_user_or_group();" class='ui-button ui-corner-all coge-button'>Add</span>
 			<TMPL_ELSE>
@@ -1528,8 +1528,6 @@ function toggle_star(img) {
 				</span>
 			</TMPL_IF>
 		</div>
-		<!--<br>
-		<span href="javascript:void(0)" onClick="$('#share_dialog').dialog('close')" class='ui-button ui-corner-all'>Done</span>-->
 	</div>
 </TMPL_IF>
 
