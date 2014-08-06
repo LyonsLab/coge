@@ -900,7 +900,7 @@ function search_share () {
 		},
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
-			if (obj && test_timestamp('search_share', obj.time) && obj.items) {
+			if (obj && test_timestamp('search_share', obj.timestamp) && obj.items) {
 				$("#share_input").autocomplete({source: obj.items}).autocomplete("search");
 				//$("#wait_notebook").animate({opacity:0});
 			}
