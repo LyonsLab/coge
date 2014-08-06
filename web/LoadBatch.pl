@@ -21,6 +21,7 @@ use File::Listing qw(parse_dir);
 use LWP::Simple;
 use URI;
 use Sort::Versions;
+use Data::Dumper;
 no warnings 'redefine';
 
 use vars qw(
@@ -116,9 +117,7 @@ sub generate_body {
     	LOAD_ID     => $LOAD_ID,
     	JOB_ID      => $JOB_ID,
         STATUS_URL  => 'api/v1/jobs/',
-        FILE_SELECT_SINGLE       => 1,
         DEFAULT_TAB              => 0,
-        DISABLE_IRODS_GET_ALL    => 1,
         MAX_IRODS_LIST_FILES     => 100,
         MAX_IRODS_TRANSFER_FILES => 30,
         MAX_FTP_FILES            => 30,
@@ -376,7 +375,7 @@ sub load_batch {
     # Check data items
     return encode_json({ error => 'No files specified' }) unless $items;
     $items = decode_json($items);
-    my $data_file = catdir($TEMPDIR, $items->[0]->{path});
+    my @files = map { catfile($TEMPDIR, $_->{path}) } @$items;
 
     # Submit workflow
     my ($workflow_id, $error_msg) = create_experiments_from_batch(
@@ -386,7 +385,7 @@ sub load_batch {
             name => $name,
             description => $description
         },
-        files => [ $data_file ]
+        files => \@files
     );
     unless ($workflow_id) {
         return encode_json({ error => "Workflow submission failed: " . $error_msg });
