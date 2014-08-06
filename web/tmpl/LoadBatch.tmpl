@@ -2,6 +2,31 @@
 <script type="text/javascript" src="js/coge/utils.js"></script>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
 
+<style type="text/css">
+
+@font-face {
+        font-family: 'Glyphicons Halflings';
+        src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot');
+	src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.woff') format('woff'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.ttf') format('truetype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');}
+
+.glyphicon {
+        position: relative;
+        top: 1px;
+        display: inline-block;
+        font-family: 'Glyphicons Halflings';
+        font-style: normal;
+        font-weight: normal;
+        line-height: 1;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+}
+
+.glyphicon-asterisk:before {
+        content: "\2a";
+}
+
+</style>
+
 <SCRIPT language="JavaScript">
 const STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
 const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
@@ -11,6 +36,7 @@ var load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
 var job_id = '<TMPL_VAR NAME="JOB_ID">';
 var experiment_id;
 var notebook_id;
+var pageObj = {};
 
 $(document).ready(function(){
     $.ajaxSetup({
@@ -20,7 +46,6 @@ $(document).ready(function(){
         cache: false,
     });
 
-    var pageObj = {};
     pageObj.user = "<tmpl_var name=USER>";
 
     $(".dialog_box").dialog({autoOpen: false, width: 500});
@@ -49,6 +74,7 @@ $(document).ready(function(){
 });
 
 function file_selected(filename, url) {
+	$('#no_files').hide();
     $('#file_select_dialog').dialog('close');
     $('#select_file_button').hide();
     $('#select_file_type').show();
@@ -65,14 +91,18 @@ function file_canceled() {
     $('#select_file_button').show();
 }
 
+function error_help(s) {
+	$('#error_help_text')
+		.html(s)
+		.show()
+		.delay(10*1000)
+		.fadeOut(1500);
+}
+
 function reset_log() {
     $('#load_log').html('');
     $('#loading_msg').show();
-    $('#finished_msg').hide();
-    $('#error_msg').hide();
-    $('#ok_button').hide();
-    $('#finish_load_button').hide();
-    $('#cancel_load_button').hide();
+    $('#finished_msg,#error_msg,#ok_button,#finish_load_button,#cancel_load_button').hide();
 }
 
 function check_login() {
@@ -92,30 +122,42 @@ function check_login() {
 }
 
 function load_batch() {
+	// Validate data items
+	var items = get_selected_files();
+	if (items == null) {
+		error_help('Files are still being transferred, please wait.');
+		return;
+	}
+	else if (items.length == 0) {
+		error_help('Please select some sequence files by clicking <b>Add Data</b>.');
+		return;
+	}
+	var json = JSON.stringify(items);
+	
+	// Validate other fields
     var name = $('#edit_name').val();
     var description = $('#edit_description').val();
     var genome = $('#edit_genome').val();
     var gid = $('#gid').val();
 
     if (!name) {
-        alert('Please specify an experiment name.');
+    	error_help('Please specify a name.');
         return;
     }
     if (!genome || genome == 'Search') {
-        alert('Please specify a genome.');
+    	error_help('Please specify a genome.');
         return;
     }
 
     var items = get_selected_files();
     if (items == null) {
-        alert('Files are still being transferred, please wait.');
+    	error_help('Files are still being transferred, please wait.');
         return;
     }
     else if (items.length == 0) {
-        alert('Please select a data file.');
+    	error_help('Please select a data file.');
         return;
     }
-    var json = JSON.stringify(items);
 
     var user_name = $('#edit_user').val(); // only exists if admin
     if (user_name == 'Search') { user_name = ''; }
@@ -163,10 +205,6 @@ function load_batch() {
                 window.history.pushState({}, "Title", PAGE_NAME + "?job_id=" + obj.job_id); // Add job_id to browser URL
                 update_dialog(STATUS_URL + obj.job_id,  pageObj.user, "#load_dialog", progress_formatter);
             }
-//            else { // non-JEX old method for all other data types
-//                window.history.pushState({}, "Title", "<TMPL_VAR NAME='PAGE_NAME'>?load_id=" + load_id); // Add load_id to browser URL
-//                setTimeout(function() { get_load_log(); }, 1000);
-//            }
         }
         // TODO: handle error, show in status dialog
     });
@@ -189,39 +227,6 @@ function get_load_log(callback) {
         }
     });
 }
-//function get_load_log(callback) {
-//    $.ajax({
-//        data: {
-//            dataType: 'text',
-//            fname: 'get_load_log',
-//            load_id: load_id,
-//            timestamp: new Date().getTime()
-//        },
-//        success : function(data) {
-//            var obj = jQuery.parseJSON(data);
-//
-//            if (callback) {
-//                callback(obj);
-//                return;
-//            }
-//
-//            // Update log contents and scroll to bottom
-//            $('#load_log').html(obj.log);
-//            var height = $('#load_log')[0].scrollHeight;
-//            $("#load_log").animate({ scrollTop: height}, 500);
-//
-//            if (obj.status == 1) { // finished successfully
-//                load_succeeded(obj);
-//            }
-//            else if (obj.status == -1) { // error occurred
-//                load_failed();
-//            }
-//            else { // not done yet, continue polling
-//                setTimeout(function() { get_load_log(); }, 2000);
-//            }
-//        }
-//    });
-//}
 
 function load_failed() {
 	// mdb added 6/24/14 - temporary message until JEX logging is improved
@@ -294,7 +299,7 @@ function wait_to_search (search_func, search_obj) {
             function() {
                 search_func(search_obj.value);
             },
-            500
+            250
         );
     }
 }
@@ -500,40 +505,62 @@ function update_dialog(request, user, identifier, formatter) {
 }
 </SCRIPT>
 
-<table class="small ui-widget-content ui-corner-all">
-  <tr>
-    <td>Name:</td>
-    <td><input id="edit_name" type="textbox" size="50" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" /></td>
-  </tr>
-  <tr>
-    <td>Description:</td>
-    <td><textarea id="edit_description" rows="5" cols="50" ><TMPL_VAR NAME='DESC'></textarea></td>
-  </tr>
-  <tr>
-    <td>Genome:</td>
-    <td>
-      <input id="edit_genome" type="search" placeholder="Search" spellcheck="false" onkeypress="wait_to_search(search_genomes, this);" size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
-      <input id="gid" type="hidden" value="<TMPL_VAR NAME='GENOME_ID'>" />
-    </td>
-  </tr>
-  <tr>
-    <td style="vertical-align:middle;">Data file:</td>
-    <td>
-      <table id='file_table' class="small" style="display:inline;"></table>
-      <span id="select_file_button" onClick="$('#file_select_dialog').dialog('open');" class='ui-button ui-corner-all'> Select Data File</span>
-    </td>
-  </tr>
-</table>
+<div class="bold text" style="padding-top:1em;">1 - Describe the Data</div>
+<div class="coge-bg inline padded ui-widget-content ui-corner-all">
+	<div class="small info">
+		Complete the form below to describe the batch of experiments.<br>
+		A notebook of the experiments will be created with the given Name and Description.
+		<div class="alert"><span class="small glyphicon glyphicon-asterisk"></span> denotes a required field</div>
+	</div>
+	
+	<table class="small" style="padding-top:0.5em;">
+	  <tr>
+	    <td>Name:</td>
+	    <td>
+	    	<input id="edit_name" type="textbox" size="50" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" />
+	    	<span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>Description:</td>
+	    <td><textarea id="edit_description" rows="5" cols="50" ><TMPL_VAR NAME='DESC'></textarea></td>
+	  </tr>
+	  <tr>
+	    <td>Genome:</td>
+	    <td>
+	      <input id="edit_genome" type="search" placeholder="Search" spellcheck="false" onkeypress="wait_to_search(search_genomes, this);" size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
+	      <input id="gid" type="hidden" value="<TMPL_VAR NAME='GENOME_ID'>" />
+	      <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
+	    </td>
+	  </tr>
+	</table>
+</div>
 
-<br>
-<span onClick="load_batch();" style="font-size:1em;" class='ui-button ui-corner-all ui-button-go'>Load Experiment</span>
-<br>
-<br>
-<br>
-<br>
-<br>
+<div class="bold text" style="padding-top:2em;">2 - Add Data</div>
+<div class="coge-bg inline padded ui-widget-content ui-corner-all">
+	<div class="small info" style="width:50em; padding-bottom:1em;">
+	  Use the <b>Add Data</b> button to select the metadata/experiment data files to be loaded from:<br>
+	  <span class="indent">1) iPlant Data Store, 2) FTP/HTTP site, 3) browser upload</span><br>
+	</div>
+	<div class="l" style="padding-right:0.75em;">
+		<span onClick="$('#file_select_dialog').dialog('open')" class='ui-button ui-corner-all coge-button'>Add Data</span><br>
+		<span id="files_clear" onClick="clear_list();" class='ui-state-disabled ui-button ui-corner-all coge-button' style="margin-top:0.5em;">Clear List</span>
+	</div>
+	<div class="padded" style="background-color: white; overflow:hidden; width:auto; min-height:8em; border:1px solid lightgray; margin-right:5px; margin-bottom:5px;">
+		<div class="small bold text">Selected files:</div>
+		<div>
+			<div id="no_files" class="indent small padded note">You haven't selected any files yet, click "Add Data"</div>
+			<table id='file_table' class="small padded"></table>
+		</div>
+	</div>
+</div>
 
-<div id="file_select_dialog" class="dialog_box" title="Select Data File ..." style="display:none;">
+<div class="middle" style="padding-top:2em;">
+	<span onDblClick="load_batch();" onClick="load_batch();" class='ui-button ui-corner-all ui-button-go coge-button-lg'>Load Batch</span>
+	<span id='error_help_text' class='indent alert italic'></span>
+</div>
+
+<div id="file_select_dialog" class="hidden dialog_box" title="Select Data Files ...">
   <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
   <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all">Done</span>
 </div>
@@ -546,11 +573,13 @@ function update_dialog(request, user, identifier, formatter) {
     <span class="small" style="float:right;">Link: <a></a></span>
     Please wait ... <img src="picts/ajax-loader.gif"/>
   </div>
-  <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
-  <span id="error_msg" style="display:none;">An error occurred <img src="picts/thumbs_down.png"></span>
-  <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Load Another</span>
-  <span id="finish_load_button" style="display:none;float:right;" class="ui-button ui-corner-all">ExperimentView</span>
-  <span id="cancel_load_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Cancel</span>
+  <div class="coge-buttonset">
+	  <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
+	  <span id="error_msg" style="display:none;">An error occurred <img src="picts/thumbs_down.png"></span>
+	  <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Load Another</span>
+	  <span id="finish_load_button" style="display:none;float:right;" class="ui-button ui-corner-all">ExperimentView</span>
+	  <span id="cancel_load_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Cancel</span>
+  </div>
 </div>
 
 <TMPL_IF NAME='ADMIN_AREA'>
