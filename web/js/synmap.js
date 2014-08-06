@@ -506,7 +506,7 @@ function checkRequestSize(url) {
                 reference;
 
             for(layer in json.layers) {
-                type = Object.keys(json.layers[layer].data)[0];
+                type = _.keys(json.layers[layer].data)[0];
                 for (reference in json.layers[layer].data[type]) {
                     for (source in json.layers[layer].data[type][reference]) {
                         pairs.push([reference, source]);
@@ -759,7 +759,7 @@ function checkRequestSize(url) {
 
             create = createLayer.bind(null, xoffsets, yoffsets, xindex, yindex);
 
-            layerIds = Object.keys(layers);
+            layerIds = _.keys(layers);
             rawLayers = getValues(layers);
             transformedLayers = rawLayers.map(create);
 
@@ -940,7 +940,7 @@ function checkRequestSize(url) {
         var my = {},
             transform = undefined,
             transformIndex,
-            keys = Object.keys(dataset);
+            keys = _.keys(dataset);
 
         my.layer = function(dataset) {
             return dataset.layer;
@@ -1014,7 +1014,7 @@ function checkRequestSize(url) {
             }
         };
 
-        var options = Object.keys(datasets).map(function(dataset, index) {
+        var options = _.keys(datasets).map(function(dataset, index) {
             return $("<option>")
                 .attr("value", index)
                 .html(datasets[dataset].title);

@@ -6,6 +6,7 @@ use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage qw(get_workflow_paths);
+use CoGe::Core::Genome qw(genomecmp);
 use HTML::Template;
 use JSON::XS;
 use Spreadsheet::WriteExcel;
@@ -147,14 +148,6 @@ sub make_experiment_private {
     $exp->update;
 
     return 1;
-}
-
-sub genomecmp {    # FIXME mdb 8/24/12 - redundant declaration in ListView.pl
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    versioncmp( $b->version, $a->version )
-      || $a->type->id <=> $b->type->id
-      || $a->name cmp $b->name
-      || $b->id cmp $a->id;
 }
 
 sub add_type_to_experiment {

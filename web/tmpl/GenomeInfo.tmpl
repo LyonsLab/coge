@@ -788,15 +788,7 @@ function copy_genome(mask, seq_only) {
 
     // Open status dialog right away - issue 101
     reset_log();
-    if (mask) {
-        $('#load_dialog').dialog('option', 'title', 'Copying & Masking Genome');
-    }
-    else if (seq_only) {
-        $('#load_dialog').dialog('option', 'title', 'Copying Genome (No Annotations)');
-    }
-    else {
-        $('#load_dialog').dialog('option', 'title', 'Copying Genome');
-    }
+
     $('#load_dialog').dialog('open');
 //   $('#status_log').html('Initializing ...');
 
@@ -1301,7 +1293,7 @@ Are you sure you want to move this genome into your trash?<p>
     <span id="export_ok_button" onClick="$('#export_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all coge-button">OK</span>
 </div>
 
-<div id="load_dialog" class="hidden dialog_box" title="Copying Genome ...">
+<div id="load_dialog" class="hidden dialog_box" title="Copying Genome">
 	<div id="load_log" class="small text padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;">
 	</div>
 	<br>
