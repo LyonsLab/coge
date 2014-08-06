@@ -104,6 +104,7 @@ $BLAST_PROGS   = {
     get_orgs                 => \&get_orgs,
     read_log                 => \&CoGe::Accessory::Web::read_log,
     save_settings            => \&save_settings,
+    get_results              => \&get_results,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -129,10 +130,6 @@ sub gen_html {
     #	$template->param( BOX_NAME   => 'CoGeBlast Settings' );
     #	$template->param( ADJUST_BOX => 1 );
     $template->param( BODY => $body );
-    my $prebox =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'CoGeBlast.tmpl' );
-    $prebox->param( RESULTS_DIV => 1 );
-    $template->param( PREBOX => $prebox->output );
     $html .= $template->output;
 }
 
@@ -663,13 +660,15 @@ sub blast_search {
     #this is where the dsgids are stored -- stupid name
     my $blastable = $opts{blastable};
 
-    if (!$seq) {
-        return alert("Please specify a sequence of characters to be blasted.");
-    }
+    return encode_json({
+        success => JSON::false,
+        error => "Please specified a sequence of characters to be blasted."
+    }) unless $seq;
 
-    if (!$blastable) {
-        return alert("Please select genomes to be blasted.");
-    }
+    return encode_json({
+        success => JSON::false,
+        error => "Please select genomes to be blasted."
+    }) unless $blastable;
 
     my @dsg_ids = split( /,/, $blastable );
 
@@ -742,7 +741,8 @@ sub blast_search {
             script  => undef,
             args    => $args,
             inputs  => undef,
-            outputs => $outputs
+            outputs => $outputs,
+            description => "Generating blastable database..."
         );
 
         my $outfile = $cogeweb->basefile . "-$count.$program";
@@ -805,13 +805,14 @@ sub blast_search {
             script  => undef,
             args    => $args,
             inputs  => [$fasta_file, "$db.nhr", "$db.nin", "$db.nsq"],
-            outputs => [$outfile]
+            outputs => [$outfile],
+            description => "Blasting sequence against $name"
         );
 
         $count++;
     }
 
-    my $status = $JEX->submit_workflow($workflow);
+    my $response = $JEX->submit_workflow($workflow);
 
     my $log = CoGe::Accessory::Web::log_history(
         db          => $coge,
@@ -819,24 +820,127 @@ sub blast_search {
         page        => $PAGE_TITLE,
         description => $log_msg,
         link        => $link,
-        workflow_id => $status->{id}
-    ) if $status and $status->{id};
+        workflow_id => $response->{id}
+    ) if $response and $response->{id};
 
-    $JEX->wait_for_completion( $status->{id} );
+    return encode_json({
+        id => $response->{id},
+        link => $link,
+        success => $JEX->is_successful($response) ? JSON::true : JSON::false
+    })
+}
+
+sub get_results {
+    my %opts = @_;
+
+    #	print STDERR Dumper \%opts;
+
+    my $color_hsps = $opts{color_hsps};
+    my $program    = $opts{program};
+    my $expect     = $opts{expect};
+    my $job_title  = $opts{job_title};
+    my $wordsize   = $opts{wordsize};
+
+    #$wordsize=11 if $program eq "blastn";
+    my $comp         = $opts{comp};
+    my $matrix       = $opts{matrix};
+    my $gapcost      = $opts{gapcost};
+    my $match_score  = $opts{matchscore};
+    my $filter_query = $opts{filter_query};
+    my $resultslimit = $opts{resultslimit} || $RESULTSLIMIT;
+    my $basename     = $opts{basename};
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(
+        basename => $basename,
+        tempdir  => $TEMPDIR
+    );
+
+    #blastz params
+    my $zwordsize      = $opts{zwordsize};
+    my $zgap_start     = $opts{zgap_start};
+    my $zgap_extension = $opts{zgap_extension};
+    my $zchaining      = $opts{zchaining};
+    my $zthreshold     = $opts{zthreshold};
+    my $zmask          = $opts{zmask};
+
+    my $seq = $opts{seq};
+    #this is where the dsgids are stored -- stupid name
+    my $blastable = $opts{blastable};
+
+    my @dsg_ids = split( /,/, $blastable );
+
+    my $width = $opts{width};
+    my $fid   = $opts{fid};
+
+    my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
+        user_id => $USER->id,
+        page    => "GenomeList",
+        url     => $P->{SERVER} . "GenomeList.pl?dsgid=$blastable"
+    );
+
+    my $list_link =
+        qq{<a href="$genomes_url" target_"blank">}
+      . @dsg_ids
+      . ' genome'
+      . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
+
+    my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
+
+    my $url = $P->{SERVER} . $PAGE_NAME . "?dsgid=$blastable";
+    $url .= ";fid=$fid" if ($fid);
+
+    my $link = CoGe::Accessory::Web::get_tiny_link(url => $url);
+
+    my ($tiny_id) = $link =~ /\/(\w+)$/;
+    my $workflow = $JEX->create_workflow(
+        name    => "cogeblast-$tiny_id",
+        id      => 0,
+        logfile => $cogeweb->logfile
+    );
+
+    CoGe::Accessory::Web::write_log( "process $$", $cogeweb->logfile );
+
+    $width = 400
+      unless $width =~
+          /^\d+$/;    #something wrong with how width is calculated in tmpl file
+
+    my $t1 = new Benchmark;
+    my ( $fasta_file, $query_seqs_info ) = create_fasta_file($seq);
+    my $opts;
+    my $pre_command;
+    my $x;
+    ( $x, $pre_command ) = CoGe::Accessory::Web::check_taint($pre_command);
+    my @results;
+    my $count = 1;
+    my $t2    = new Benchmark;
+
+    foreach my $dsgid (@dsg_ids) {
+        my ( $org, $dbfasta, $dsg ) = get_blast_db($dsgid);
+        next unless $dbfasta;
+        next unless -s $fasta_file;
+
+        my $outfile = $cogeweb->basefile . "-$count.$program";
+
+        push @results,
+          {
+            file     => $outfile,
+            organism => $org,
+            dsg      => $dsg
+          };
+
+        $count++;
+    }
 
     my @completed;
 
     foreach my $item (@results) {
         next unless -r $item->{file};
-        my $command = $item->{command};
         my $outfile = $item->{file};
-        my $ta      = new Benchmark;
+
         my $report =
           $outfile =~ /lastz/
           ? new CoGe::Accessory::blastz_report( { file => $outfile } )
           : new CoGe::Accessory::blast_report( { file => $outfile } );
-        my $tb = new Benchmark;
-        my $itime = timestr( timediff( $tb, $ta ) );
+
         $item->{report} = $report;
         my $file = $report->file();
         $file =~ s/$TEMPDIR//;
@@ -844,12 +948,9 @@ sub blast_search {
         $item->{link} = $file;
         push @completed, $item;
     }
-    my $t3 = new Benchmark;
-    CoGe::Accessory::Web::write_log( "Initializing sqlite database",
-        $cogeweb->logfile );
+
     initialize_sqlite();
-    my $t4 = new Benchmark;
-    CoGe::Accessory::Web::write_log( "Generating Results", $cogeweb->logfile );
+
     my ( $html, $click_all_links ) = gen_results_page(
         results         => \@completed,
         width           => $width,
@@ -859,22 +960,12 @@ sub blast_search {
         query_seqs_info => $query_seqs_info,
         link            => $link
     );
-    my $t5              = new Benchmark;
-    my $init_time       = timestr( timediff( $t2, $t1 ) );
-    my $blast_time      = timestr( timediff( $t3, $t2 ) );
-    my $dbinit_time     = timestr( timediff( $t4, $t3 ) );
-    my $resultpage_time = timestr( timediff( $t5, $t4 ) );
-    my $benchmark       = qq{
-Time to initialize:              $init_time
-Time to blast:                   $blast_time
-Time to initialize sqlite:       $dbinit_time
-Time to generate results page:   $resultpage_time
-};
-    CoGe::Accessory::Web::write_log( "$benchmark", $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "Finished!",  $cogeweb->logfile );
 
-    return encode_json(
-        { html => $html, click_all_links => $click_all_links } );
+    return encode_json ({
+        html => $html,
+        click_all_links => $click_all_links,
+        success => JSON::true
+    });
 }
 
 sub gen_results_page {
