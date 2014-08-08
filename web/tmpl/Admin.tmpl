@@ -32,9 +32,32 @@
 
 <script>
 
+$(function() {
+	<TMPL_IF NAME='SHOW_RESULTS'>
+		timing('org_search');
+		$("._result").fadeIn();
+	</TMPL_IF>
+
+	//Auto-show results
+	if ($('#org_search').val()) {
+		timing('org_search');
+	}
+
+	$(".dialog").dialog({ autoOpen: false} );
+
+	//Initialize AJAX
+	$.ajaxSetup({
+		type: "GET",
+		url: "<TMPL_VAR NAME='PAGE NAME'>",
+		dataType: "html",
+		cache: false,
+	});
+});
+
 var timestamps = new Array();
 
 function search_organisms (search_term) {
+	//console.log(search_term);
 	if (search_term.length > 2) {
 		timestamps['search_organisms'] = new Date().getTime();
 		$.ajax({
@@ -44,9 +67,17 @@ function search_organisms (search_term) {
 				timestamp: timestamps['search_organisms']
 			},
 			success : function(data) {
+				//console.log(data);
 				var obj = jQuery.parseJSON(data);
 				if (obj && obj.items && obj.timestamp == timestamps['search_organisms']) {
-					$("#edit_organism").autocomplete({source: obj.items}).autocomplete("search");
+					var genomeCounter = 0;
+					for(var i = 0; i < obj.items.length; i++) {
+					   //console.log(obj.items[i].label);  This works!
+					   genomeCounter++;
+					}
+					console.log("Genomes: " + genomeCounter);
+					//$("#edit_organism").autocomplete({source: obj.items}).autocomplete("search");
+				
 				}
 			},
 		});
@@ -180,6 +211,7 @@ function update_dialog(request, user, identifier, formatter) {
 }
 
 function wait_to_search (search_func, search_term) {
+	//console.log(search_term);
 	pageObj.search_term = search_term;
 
 	if (pageObj.time) {
@@ -251,6 +283,19 @@ function run_ajax(opts){
 	    </td>
 </div>
 
+<table cellspacing="15" class="hidden _result" style="border-top:1px solid lightgray;">
+	<tr class="hidden _result">
+	   <td>
+		<span class="coge-table-header">Organisms: </span>
+		<span class='small' id='org_count'><TMPL_VAR NAME="ORG_COUNT"></span>
+		<div id="org_list"><TMPL_VAR NAME="ORG_LIST"></div>
+	   </td>
+	   <td valign='top'>
+		<div class="coge-table-header">Organism Information</div>
+		<div id='org_info' class="ui-corner-all ui-widget-content"></div>
+	   </td>
+	</tr>
+</table>
 
 <!--The following is commented out for possible later use.-->
 <!--This is a blank page.  Use it to create a new page for CoGe!
