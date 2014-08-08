@@ -643,7 +643,7 @@ sub gen_dsg_menu {
     my $dsg_menu = 
         qq{<span class="coge-padded-top">} .
         qq{<span class="small text">Genomes: </span>} .
-        qq{<select id="dsgid$num" style="max-width:400px;" "onChange="get_genome_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],[handle_dsg_info])">} .
+        qq{<select id="dsgid$num" style="max-width:400px;" onChange="get_genome_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],[handle_dsg_info])">} .
         qq{</span>};
     
     foreach (
