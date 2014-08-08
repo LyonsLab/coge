@@ -77,3 +77,35 @@ sub search_organisms {
 
     return encode_json( { timestamp => $timestamp, items => \@results } );
 }
+
+sub search_users {
+    my %opts        = @_;
+    my $search_term = $opts{search_term};
+    my $timestamp   = $opts{timestamp};
+
+    #print STDERR "$search_term $timestamp\n";
+    return unless $search_term;
+
+    # Perform search
+    $search_term = '%' . $search_term . '%';
+    my @users = $coge->resultset("User")->search(
+        \[
+            'user_name LIKE ? OR first_name LIKE ? OR last_name LIKE ?',
+            [ 'user_name',  $search_term ],
+            [ 'first_name', $search_term ],
+            [ 'last_name',  $search_term ]
+        ]
+    );
+
+    # Limit number of results displayed
+    # if (@users > $MAX_SEARCH_RESULTS) {
+    # 	return encode_json({timestamp => $timestamp, items => undef});
+    # }
+
+    return encode_json(
+        {
+            timestamp => $timestamp,
+            items     => [ sort map { $_->user_name } @users ]
+        }
+    );
+}
