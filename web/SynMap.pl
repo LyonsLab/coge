@@ -640,12 +640,11 @@ sub gen_dsg_menu {
     return ( qq{<span id="dsgid$num" class="hidden"></span>}, '') unless (@dsg_menu);
 
     #my $dsg_menu = qq{<select id="dsgid$num" onChange="\$('#dsg_info$num').html('<div class=dna_small class="loading" class="small">loading. . .</div>'); get_genome_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],[handle_dsg_info])">};
-    my $dsg_menu = 
+    my $dsg_menu =
         qq{<span class="coge-padded-top">} .
         qq{<span class="small text">Genomes: </span>} .
-        qq{<select id="dsgid$num" style="max-width:400px;" onChange="get_genome_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],[handle_dsg_info])">} .
-        qq{</span>};
-    
+        qq{<select id="dsgid$num" style="max-width:400px;" onChange="get_genome_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],[handle_dsg_info])">} ;
+
     foreach (
         sort {
                  versioncmp( $b->[2]->version, $a->[2]->version )
@@ -661,6 +660,7 @@ sub gen_dsg_menu {
         $dsg_menu .= qq{<OPTION VALUE=$numt $selected>$name</option>};
     }
     $dsg_menu .= "</select>";
+    $dsg_menu .= "</span>";
 
     return ( $dsg_menu, $message );
 }
