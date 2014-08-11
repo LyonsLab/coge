@@ -2335,7 +2335,7 @@ sub go {
         "$json_basename.json",
     ];
 
-    if (-r $dag_file12_all) {
+    if ($dag_file12_all) {
         push @$dot_args, [ '-d', $dag_file12_all, 0 ];
         push @$dot_inputs, $dag_file12_all;
         push @$dot_outputs, "$json_basename.all.json";
