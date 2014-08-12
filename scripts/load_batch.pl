@@ -265,7 +265,6 @@ sub process_dir {
             );
             if ($eid) {
                 push @experiments, int($eid);
-                $success_count++;
             }
         }
     }
