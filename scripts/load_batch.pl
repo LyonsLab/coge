@@ -328,7 +328,7 @@ sub process_file {
     if ( $? != 0 ) {
         print STDOUT "load_experiment.pl failed with rc=$?\n",
                      "log: error: Experiment '$name' was not loaded due to an error\n";
-        push @failed_experments, $name;
+        push @failed_experiments, $name;
         return; #exit(-1); # keep going
     }
     #open( $log, ">>$log_file" ) or die "Error opening log file $log_file"; # Reopen log file
