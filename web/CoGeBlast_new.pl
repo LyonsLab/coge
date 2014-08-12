@@ -1181,11 +1181,6 @@ qq{<table class="small ui-widget-content ui-corner-all"><tr><th>Query Seq<th>}
 <span id='link_shown' style='display:none;' class='small infobox'>Use this link to return to this page at any time: <span class='link' onclick=window.open('$link');><b>$link</b></span></span>
 </span>};
 
-    my $box_template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'box.tmpl' );
-    $box_template->param( BOX_NAME => 'CoGeBlast Results ' . $temp );
-    $box_template->param( BODY     => $html );
-    my $outhtml = $box_template->output;
     my $t2      = new Benchmark;
 
     my $figure_time = timestr( timediff( $t1, $t0 ) );
@@ -1197,7 +1192,7 @@ Time to gen images:              $figure_time
 Time to gen results:             $render_time
 };
     CoGe::Accessory::Web::write_log( $benchmark, $cogeweb->logfile );
-    return $outhtml, $click_all_links;
+    return $html, $click_all_links;
 }
 
 sub gen_data_file_summary {

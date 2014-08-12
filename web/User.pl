@@ -643,6 +643,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
 
         foreach my $conn ( $notebook->user_connectors ) {
             my $user = $conn->parent;
+            next unless $user;
             $users{ $user->id } = {
                 NOTEBOOK_USER_FULL_NAME => $user->display_name,
                 NOTEBOOK_USER_NAME      => $user->name
