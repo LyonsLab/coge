@@ -88,6 +88,7 @@ $BLAST_PROGS   = {
     export_fasta_file        => \&export_fasta_file,
     export_CodeOn            => \&export_CodeOn,
     export_to_excel          => \&export_to_excel,
+    export_top_hits          => \&export_top_hits,
     generate_tab_deliminated => \&generate_tab_deliminated,
     generate_feat_list       => \&generate_feat_list,
     generate_blast           => \&generate_blast,
@@ -703,9 +704,7 @@ sub blast_search {
 
     CoGe::Accessory::Web::write_log( "process $$", $cogeweb->logfile );
 
-    $width = 400
-      unless $width =~
-          /^\d+$/;    #something wrong with how width is calculated in tmpl file
+    $width = 400 unless $width =~ /^\d+$/;    #something wrong with how width is calculated in tmpl file
 
     my $t1 = new Benchmark;
     my ( $fasta_file, $query_seqs_info ) = create_fasta_file($seq);
@@ -1020,7 +1019,7 @@ sub gen_results_page {
                 my $id = $hsp->number . '_' . $dsg->id;
                 $click_all_links .= $id . ',';
 
-#my $feat_link = qq{<span class="link" onclick="fill_nearby_feats('$id','true')">Click for Closest Feature</span>};
+                #my $feat_link = qq{<span class="link" onclick="fill_nearby_feats('$id','true')">Click for Closest Feature</span>};
                 my $feat_link = qq{<span>Loading...</span>};
 
                 my $qname = $hsp->query_name;
@@ -1042,7 +1041,7 @@ sub gen_results_page {
                   if $hsp->{color};
                 my $rc = $hsp->strand =~ /-/ ? 1 : 0;
                 my $seqview_link =
-qq{<span class="small link" onclick="window.open('SeqView.pl?dsid=}
+                  qq{<span class="small link" onclick="window.open('SeqView.pl?dsid=}
                   . $ds->id
                   . qq{;chr=$chr;start=}
                   . $hsp->subject_start
@@ -1057,8 +1056,7 @@ qq{<span class="small link" onclick="window.open('SeqView.pl?dsid=}
                     ID        => $id,
                     QUERY_SEQ => $qname,
                     HSP_ORG   => $org,
-                    HSP =>
-qq{<span class="link" title="Click for HSP information" onclick="update_hsp_info('table_row$id');">}
+                    HSP => qq{<span class="link" title="Click for HSP information" onclick="update_hsp_info('table_row$id');">}
                       . $hsp->number
                       . "</span>",
                     HSP_EVAL   => $hsp->pval,
@@ -1465,15 +1463,10 @@ qq{<span class=small>Hits colored by Identity.  <span style="color:#AA0000">Min:
 
             $image_file       =~ s/$TEMPDIR/$TEMPURL/;
             $large_image_file =~ s/$TEMPDIR/$TEMPURL/;
-            my $blast_link;
-            $blast_link .=
-qq{<span class =\"small link\" onclick="window.open('GenomeInfo.pl?gid=}
+            my $blast_link = qq{<span class="small link" onclick="window.open('GenomeInfo.pl?gid=}
               . $data{$org}{dsg}->id
               . qq{')">$org</span><br>};
-            $blast_link .=
-                "<a class =\"small\" href="
-              . $data{$org}{file}
-              . " target=_new>Blast Report</a> ";
+              #. "<a class =\"small\" href=" . $data{$org}{file} . " target=_new>Blast Report</a> "; # mdb removed 8/7/14 - redundant with blast report in Analysis Files section
             $blast_link .= $data{$org}{extra} if $data{$org}{extra};
             $blast_link .= "<br>";
             push @dsgids, $data{$org}{dsg}->id;
@@ -1489,12 +1482,10 @@ qq{<span class =\"small link\" onclick="window.open('GenomeInfo.pl?gid=}
             push @data,
               {
                 DB_NAME => $blast_link,
-                CHR_IMAGE =>
-"<img style=\"position:relative; z-index=1;\" src=$image_file ismap usemap='#"
+                CHR_IMAGE => "<img style=\"position:relative; z-index=1;\" src=$image_file ismap usemap='#"
                   . $cogeweb->basefilename . "_"
                   . "$count' border=0>$image_map",
-                ENLARGE =>
-"<a href='#' onClick='enlarge_picture_window($count);' class='small large_image'>Enlarge</a>"
+                ENLARGE => "<a href='#' onClick='enlarge_picture_window($count);' class='small large_image'>Enlarge</a>"
               };    #, DIV_STYLE=>'style="position:absolute;"'};
 
             $count++;
@@ -2363,17 +2354,60 @@ sub export_fasta_file {
     return $url;
 }
 
+sub export_top_hits {
+    my %opts      = @_;
+    my $accn_list = $opts{accn};
+    my $filename  = $opts{filename};
+    return unless (defined $accn_list and defined $filename);
+
+    # Setup file path and SQLite DB
+    my $web = CoGe::Accessory::Web::initialize_basefile( basename => $filename, tempdir  => $TEMPDIR );
+    my $dbh = DBI->connect( "dbi:SQLite:dbname=" . $web->sqlitefile, "", "" );
+    my $sth = $dbh->prepare( qq{SELECT * FROM hsp_data WHERE name = ?} );
+
+    $accn_list =~ s/^,//;
+    $accn_list =~ s/,$//;
+
+    # Filter top scoring hits
+    my %hsp;
+    foreach my $accn ( split( /,/, $accn_list ) ) {
+        next if $accn =~ /no$/;
+        my ( $featid, $hsp_num, $dsgid ) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
+        #my $dsg = $coge->resultset("Genome")->find($dsgid);
+        #my ($feat) = $coge->resultset("Feature")->find($featid);
+        #my ($name) = $feat->names;
+        $sth->execute( $hsp_num . "_" . $dsgid ) || die "unable to execute";
+        my ( $qname, $salign, $score );
+        while ( my $hsp_info = $sth->fetchrow_hashref() ) { # FIXME: mdb asks "why is this looped?"
+            #print STDERR Dumper $info, "\n";
+            $qname  = $hsp_info->{qname};
+            $salign = $hsp_info->{salign};
+            $score  = $hsp_info->{score};
+        }
+        if ( !defined $hsp{$qname} || $score > $hsp{$qname}{score} ) {
+            $hsp{$qname}{fasta} = ">$qname\n$salign\n";
+            $hsp{$qname}{score} = $score;
+        }
+    }
+    #print STDERR Dumper \%hsp, "\n";
+
+    # Generate top hits file
+    open( my $fh, "> $TEMPDIR/$filename-tophits.fasta" );
+    foreach my $qname (sort keys %hsp) {
+        print $fh $hsp{$qname}{fasta};
+    }
+    close($fh);
+    
+    return "$TEMPURL/$filename-tophits.fasta";
+}
+
 sub export_to_excel {
     my %opts      = @_;
     my $accn_list = $opts{accn};
     my $filename  = $opts{filename};
 
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(
-        basename => $filename,
-        tempdir  => $TEMPDIR
-    );
-    my $dbh =
-      DBI->connect( "dbi:SQLite:dbname=" . $cogeweb->sqlitefile, "", "" );
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile( basename => $filename, tempdir  => $TEMPDIR );
+    my $dbh = DBI->connect( "dbi:SQLite:dbname=" . $cogeweb->sqlitefile, "", "" );
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
 
     my $workbook = Spreadsheet::WriteExcel->new("$TEMPDIR/Excel_$filename.xls");

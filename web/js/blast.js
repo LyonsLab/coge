@@ -11,7 +11,6 @@ function run_coge_blast() {
 function generate_basefile() {
     return $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'generate_basefile',
         }
     });
@@ -20,7 +19,6 @@ function generate_basefile() {
 function blast_param(blast_type, translate, version) {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'blast_param',
             blast_type: blast_type,
             translate: translate,
@@ -36,7 +34,6 @@ function blast_param(blast_type, translate, version) {
 function database_param(program) {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'database_param',
             program: program,
         },
@@ -62,7 +59,6 @@ function update_info_box(featid) {
     //generate_feat_info(['args__'+featid],['feature_info_popup']);
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'generate_feat_info',
             featid: featid,
         },
@@ -80,7 +76,6 @@ function update_hsp_info (featid) {
     //get_hsp_info(['args__blastfile','args__'+pageObj.basename,'args__num','args__'+featid],['image_info','query_image','subject_image']);
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'get_hsp_info',
             hsp_id: featid,
             blastfile: pageObj.basename
@@ -107,7 +102,6 @@ function fill_nearby_feats(id_array) { // mdb rewritten 3/8/13 issue 47
         var id = id_array.shift();
         $.ajax({
             data: {
-                jquery_ajax: 1,
                 fname: 'get_nearby_feats',
                 basefile: pageObj.basename,
                 num: id
@@ -170,24 +164,22 @@ function update_checkbox(name, dist, hspid, id){
 }
 
 function overlap_checkboxes() {
-    var action = $('#overlap_action').val();
-    var accn="";
-    $('#hsp_result_table :checkbox').each(function(){
-        if (this.checked) {
+    var accn = "";
+    $('#hsp_result_table :checkbox').each(function() {
+        if (this.checked)
             accn = accn + this.id+",";
-        }
     });
     if (!accn || accn == ",") {
         alert("Please select one or more features.");
         return;
     }
-    if (action == "gevo") {
+    
+    var action = $('#overlap_action').val();
+    if (action == "gevo")
         overlap_feats_parse(accn);
-    }
-    else if (action == "fasta"){
+    else if (action == "fasta")
         export_fasta_file(accn);
-    }
-    else if (action == "seqview"){
+    else if (action == "seqview") {
         var locations = new Array();
         $('#hsp_result_table :checkbox').each(function(){
             if (this.checked) {
@@ -197,36 +189,29 @@ function overlap_checkboxes() {
         });
         window.open("SeqView.pl?locations=" + locations.join(','));
     }
-    else if (action == "phylo"){
+    else if (action == "phylo")
         export_fasta_file(accn);
-    }
-    else if (action == "xls"){
+    else if (action == "xls")
         export_to_excel(accn, pageObj.basename);
-    }
-    else if(action == "tab"){
+    else if (action == "tophits")
+        export_top_hits(accn, pageObj.basename);
+    else if(action == "tab")
         generate_tab_deliminated(accn, pageObj.basename);
-    }
-    else if(action == "list"){
+    else if(action == "list")
         generate_feat_list(accn, pageObj.basename);
-    }
-    else if(action == "blast"){
+    else if(action == "blast")
         generate_blast(accn, pageObj.basename);
-    }
-    else if(action == "hsp"){
+    else if(action == "hsp")
         export_hsp_info();
-    }
-    else if (action == "CodeOn") {
+    else if (action == "CodeOn")
         export_CodeOn(accn);
-    }
-    else {
-        alert("Error: function missing '"+action+"'");
-    }
+    else
+        alert("Internal Error: missing '"+action+"'");
 }
 
 function generate_blast(accn, filename) {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'generate_blast',
             accn: accn,
             filename: filename,
@@ -240,7 +225,6 @@ function generate_blast(accn, filename) {
 function generate_feat_list(accn, filename) {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'generate_feat_list',
             accn: accn,
             filename: filename,
@@ -254,7 +238,6 @@ function generate_feat_list(accn, filename) {
 function generate_tab_deliminated(accn, filename) {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'generate_tab_deliminated',
             accn: accn,
             filename: filename,
@@ -268,8 +251,20 @@ function generate_tab_deliminated(accn, filename) {
 function export_to_excel(accn, filename) {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'export_to_excel',
+            accn: accn,
+            filename: filename,
+        },
+        success : function(data) {
+            window.open(data);
+        },
+    });
+}
+
+function export_top_hits(accn, filename) {
+    $.ajax({
+        data: {
+            fname: 'export_top_hits',
             accn: accn,
             filename: filename,
         },
@@ -282,7 +277,6 @@ function export_to_excel(accn, filename) {
 function export_fasta_file(accn) {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'export_fasta_file',
             accn: accn
         },
@@ -295,7 +289,6 @@ function export_fasta_file(accn) {
 function export_CodeOn(accn) {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'export_CodeOn',
             accn: accn
         },
@@ -308,7 +301,6 @@ function export_CodeOn(accn) {
 function overlap_feats_parse(accn) {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'overlap_feats_parse',
             accn: accn
         },
@@ -330,7 +322,6 @@ function overlap_feats_parse(accn) {
 function export_hsp_info() {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'export_hsp_info',
             filename: pageObj.basename
         },
@@ -343,7 +334,6 @@ function export_hsp_info() {
 function export_hsp_query_fasta() {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'export_hsp_query_fasta',
             filename: pageObj.basename
         },
@@ -356,7 +346,6 @@ function export_hsp_query_fasta() {
 function export_hsp_subject_fasta(dna) {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'export_hsp_subject_fasta',
             filename: pageObj.basename,
             dna: dna,
@@ -370,7 +359,6 @@ function export_hsp_subject_fasta(dna) {
 function export_alignment_file() {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'export_alignment_file',
             filename: pageObj.basename,
         },
@@ -1030,7 +1018,6 @@ function select_blast() {
     //get_url([radio],[ncbi_blast]);
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'get_url',
             program: $('#'+radio).val()
         },
@@ -1055,7 +1042,6 @@ function get_seq(which_type) {
         $('#seq_box').val('Loading ...');
         $.ajax({
             data: {
-                jquery_ajax: 1,
                 fname: 'get_sequence',
                 fid: featid,
                 blast_type: program,
@@ -1073,7 +1059,6 @@ function get_seq(which_type) {
         $('#seq_box').val('Loading ...');
         $.ajax({
             data: {
-                jquery_ajax: 1,
                 fname: 'get_sequence',
                 dsid: dsid,
                 dsgid: dsgid,
@@ -1091,7 +1076,6 @@ function get_seq(which_type) {
         $('#seq_box').val('Loading ...');
         $.ajax({
             data: {
-                jquery_ajax: 1,
                 fname: 'get_sequence',
                 blast_type: program,
                 locations: pageObj.locations
@@ -1164,7 +1148,6 @@ function org_search(desc_search){
             $("#wait_indicator").css({opacity:1});
             $.ajax({
                 data: {
-                    jquery_ajax: 1,
                     fname: 'get_orgs',
                     name_desc: name_desc,
                     timestamp: new Date().getTime()
@@ -1245,7 +1228,6 @@ function save_display_settings() {
     //save_settings_cogeblast(['args__display','args__'+index],[]);
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'save_settings',
             display: index,
         },
