@@ -322,8 +322,9 @@ sub process_file {
     my $output = qx{ $cmd };
     print STDOUT $output;
     if ( $? != 0 ) {
-        print STDOUT "log: error: load_experiment.pl failed with rc=$?\n";
-        #exit(-1); # keep going 
+        print STDOUT "load_experiment.pl failed with rc=$?\n";
+        print STDOUT "log: error: Experiment '$name' was not loaded due to an error\n";
+        return; #exit(-1); # keep going
     }
     #open( $log, ">>$log_file" ) or die "Error opening log file $log_file"; # Reopen log file
     print STDOUT "log: Experiment '$name' loaded successfully\n";
