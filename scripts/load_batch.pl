@@ -13,7 +13,7 @@ use Data::Dumper;
 
 use vars qw(
     $staging_dir $file_str $notebook_name $notebook_desc $gid $user_name
-    $config $log_file $user $genome $result_dir $wid
+    $config $log_file $user $genome $result_dir $wid @failed_experiments
 );
 
 my $DEBUG = 0;
@@ -161,7 +161,7 @@ CoGe::Accessory::Web::log_history(
     link        => 'NotebookView.pl?nid=' . $notebook->id
 );
 
-print STDOUT "log: Loaded $exp_count experiments\n";
+print STDOUT "log: Loaded $exp_count experiments, skipped ", scalar(@failed_experiments) , "\n";
 #close($log);
 
 # Create "log.done" file to indicate completion to JEX
@@ -241,6 +241,7 @@ sub process_dir {
 
     # Load all experiment files in directory
     my @experiments;
+    my $load_count = 0;
     opendir( my $fh, $dir ) or die;
     my @contents = sort readdir($fh);
     foreach my $item ( @contents ) {
@@ -257,20 +258,24 @@ sub process_dir {
                     next;
                 }
             }
+            $load_count++;
             my $eid = process_file(
                 file     => "$dir/$item",
                 metadata => $md
             );
-            push @experiments, int($eid) if $eid;
+            if ($eid) {
+                push @experiments, int($eid);
+                $success_count++;
+            }
         }
     }
     closedir($fh);
 
-    unless (@experiments) {
+    unless ($load_count) {
         print STDOUT "log: error: no experiment files found\n";
         exit(-1);
     }
-
+    
     # Create notebook of experiments
     my $notebook = create_notebook(name => $notebook_name, desc => $notebook_desc, item_list => \@experiments);
     unless ($notebook) {
@@ -322,8 +327,9 @@ sub process_file {
     my $output = qx{ $cmd };
     print STDOUT $output;
     if ( $? != 0 ) {
-        print STDOUT "load_experiment.pl failed with rc=$?\n";
-        print STDOUT "log: error: Experiment '$name' was not loaded due to an error\n";
+        print STDOUT "load_experiment.pl failed with rc=$?\n",
+                     "log: error: Experiment '$name' was not loaded due to an error\n";
+        push @failed_experments, $name;
         return; #exit(-1); # keep going
     }
     #open( $log, ">>$log_file" ) or die "Error opening log file $log_file"; # Reopen log file
