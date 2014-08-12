@@ -38,6 +38,8 @@ use File::Basename;
 use POSIX qw(floor);
 use File::Spec::Functions;
 use File::Path qw(mkpath);
+use File::Find qw(find);
+use File::Slurp;
 use List::Util qw[min max];
 use File::Slurp;
 use JSON::XS qw(decode_json);
@@ -54,6 +56,7 @@ BEGIN {
       get_tiered_path get_workflow_paths
       get_genome_file index_genome_file get_genome_seq get_genome_path
       get_experiment_path get_experiment_files get_experiment_data
+      get_experiment_log
       create_experiment create_experiments_from_batch
       create_genome_from_file create_genome_from_NCBI
       create_annotation_dataset reverse_complement
@@ -516,6 +519,72 @@ sub get_experiment_data {
     }
 }
 
+sub get_experiment_log {
+    my %opts = @_;
+    my $experiment_id  = $opts{experiment_id}; # required
+    my $user_id = $opts{user_id}; # required
+    my $getEverything = $opts{getEverything}; # optional
+    print STDERR Dumper \%opts, "\n";
+    
+    my $storage_path = get_experiment_path($experiment_id);
+    my $old_log_file = catfile($storage_path, 'log.txt');
+    
+    my $log_file;
+    if (-e $old_log_file) { # Old logging method pre-JEX
+        $log_file = $old_log_file;
+    }
+    else { # Current JEX logging method
+        # Get workflow id
+        my $metadata_file = catfile($storage_path, 'metadata.json');
+        my $md = CoGe::Accessory::TDS::read($metadata_file);
+        my $workflow_id = $md->{workflow_id};
+        
+        # Determine path
+        my (undef, $results_path) = get_workflow_paths(undef, $workflow_id);
+        $log_file = catfile($results_path, 'debug.log');
+    }
+    
+    # Read-in log file
+    print STDERR $log_file, "\n";
+    open(my $fh, $log_file);
+    #my $log = read_file($fh); # should be a relatively small file, read it all at once
+    my @log = <$fh>;
+    print STDERR \@log, "\n";
+    close($fh);
+    
+    # Parse out content - NOT WORKING YET, LEFT OFF HERE
+#    if (!$getEverything) {
+#        #my @sections = $log =~ m{Command Output:(.*)#########################}sg;
+#        
+#        my $i = 0;
+#        my @sections;
+#        my $capture = 0;
+#        my $line;
+#        foreach (@log) {
+#            if (/^Command Output:/) {
+#                if ($capture) {
+#                    $capture = 1;
+#                    $line = '';
+#                }
+#            }
+#            elsif (/#########################$/) {
+#                $capture = 0;
+#                $i++;
+#            }
+#            elsif ($capture) {
+#                $line .= $_;
+#                print $line, "\n";
+#                push @{$sections[$i]}, $line;
+#            }
+#        }
+#        
+#        print STDERR \@sections, "\n";
+#        #my @lines = split("/\/\n", ${sections[0]});
+#    }
+    
+    return ;
+}
+
 sub create_experiment {
     my %opts = @_;
     my $genome = $opts{genome}; # genome object or id
@@ -524,6 +593,7 @@ sub create_experiment {
     my $files = $opts{files};
     my $file_type = $opts{file_type};
     my $metadata = $opts{metadata};
+    my $options = $opts{options};
 
     print STDERR (caller(0))[3], "\n";
 
@@ -564,7 +634,8 @@ sub create_experiment {
     }
 
     # Create load job
-    %load_params = _create_load_experiment_job($conf, $metadata, $gid, $user->name, $staging_dir, \@staged_files, $file_type, $result_dir);
+    my $ignoreMissing = ( $options->{ignoreMissing} ? 1 : 0 );
+    %load_params = _create_load_experiment_job($conf, $metadata, $gid, $workflow->id, $user->name, $staging_dir, \@staged_files, $file_type, $result_dir, $ignoreMissing);
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
@@ -646,14 +717,29 @@ sub create_experiments_from_batch {
 # and underscores.
 sub get_workflow_paths {
     my ( $user_name, $workflow_id ) = remove_self(@_); # required because this routine is called internally and externally, is there a better way?
-    unless ($user_name and $workflow_id) {
+    unless ($workflow_id) {
         print STDERR "Storage::get_workflow_paths ERROR: missing required param\n";
         return;
     }
-
+    
     my $tmp_path = CoGe::Accessory::Web::get_defaults()->{SECTEMPDIR};
-    my $staging_path = catdir($tmp_path, 'staging', $user_name, $workflow_id);
-    my $results_path = catdir($tmp_path, 'results', $user_name, $workflow_id);
+    my ($staging_path, $results_path);
+    if (!$user_name) {
+        # TODO maybe putting username in filepath isn't worth debug convenience
+        my $staging_dir = catdir($tmp_path, 'staging');
+        my @tmp = read_dir($staging_dir);
+        my @wdir = grep { -d "$staging_dir/$_/$workflow_id" } read_dir($staging_dir);
+        print STDERR Dumper "wdir:\n", \@wdir, "\n";
+        if (@wdir != 1) {
+            print STDERR "Storage::get_workflow_paths ERROR: ambiguous user directory\n";
+            return;
+        }
+        $user_name = $wdir[0];
+    }
+
+    $staging_path = catdir($tmp_path, 'staging', $user_name, $workflow_id);
+    $results_path = catdir($tmp_path, 'results', $user_name, $workflow_id);
+    
     return ($staging_path, $results_path);
 }
 
@@ -782,7 +868,7 @@ sub _create_iget_job {
 }
 
 sub _create_load_experiment_job {
-    my ($conf, $metadata, $gid, $user_name, $staging_dir, $files, $file_type, $result_dir) = @_;
+    my ($conf, $metadata, $gid, $wid, $user_name, $staging_dir, $files, $file_type, $result_dir, $ignoreMissing) = @_;
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_experiment.pl");
     return unless $cmd; # SCRIPTDIR undefined
 
@@ -799,6 +885,7 @@ sub _create_load_experiment_job {
             ['-version', '"' . $metadata->{version} . '"', 0],
             ['-restricted', ( $metadata->{restricted} ? 1 : 0 ), 0],
             ['-gid', $gid, 0],
+            ['-wid', $wid, 0],
             ['-source_name', '"' . $metadata->{source_name} . '"', 0],
             #['-types', qq{"Expression"}, 0], # FIXME
             #['-annotations', $ANNOTATIONS, 0],
@@ -806,7 +893,8 @@ sub _create_load_experiment_job {
             ['-file_type', $file_type, 0], # FIXME
             ['-data_file', "'".$file_str."'", 0],
             ['-config', $conf->{_CONFIG_PATH}, 1],
-            ['-result_dir', "'".$result_dir."'", 0]
+            ['-result_dir', "'".$result_dir."'", 0],
+            ['-ignore-missing-chr', $ignoreMissing, 0]
         ],
         inputs => [
             ($conf->{_CONFIG_PATH}, @$files)
