@@ -697,7 +697,7 @@ sub create_experiments_from_batch {
     }
 
     # Create load job
-    %load_params = _create_load_batch_job($conf, $metadata, $gid, $user->name, \@staged_files, $staging_dir, $result_dir);
+    %load_params = _create_load_batch_job($conf, $metadata, $gid, $workflow->id, $user->name, \@staged_files, $staging_dir, $result_dir);
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
@@ -908,7 +908,7 @@ sub _create_load_experiment_job {
 }
 
 sub _create_load_batch_job {
-    my ($conf, $metadata, $gid, $user_name, $files, $staging_dir, $result_dir) = @_;
+    my ($conf, $metadata, $gid, $wid, $user_name, $files, $staging_dir, $result_dir) = @_;
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_batch.pl");
     return unless $cmd; # SCRIPTDIR undefined
 
@@ -923,6 +923,7 @@ sub _create_load_batch_job {
             ['-name', '"' . $metadata->{name} . '"', 0],
             ['-desc', '"' . $metadata->{description} . '"', 0],
             ['-gid', $gid, 0],
+            ['-wid', $wid, 0],
             ['-staging_dir', "'".$staging_dir."'", 0],
             ['-result_dir', "'".$result_dir."'", 0],
             ['-files', "'".$file_str."'", 0],

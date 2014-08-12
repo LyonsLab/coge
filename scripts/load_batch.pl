@@ -13,7 +13,7 @@ use Data::Dumper;
 
 use vars qw(
     $staging_dir $file_str $notebook_name $notebook_desc $gid $user_name
-    $config $log_file $user $genome $result_dir
+    $config $log_file $user $genome $result_dir $wid
 );
 
 my $DEBUG = 0;
@@ -28,6 +28,7 @@ GetOptions(
     "name=s"        => \$notebook_name,  # notebook name (JS escaped)
     "desc=s"        => \$notebook_desc,  # notebook description (JS escaped)
     "gid=s"         => \$gid,            # genome id
+    "wid=s"         => \$wid,            # workflow id
     "user_name=s"   => \$user_name,      # user name
     "config=s"      => \$config,         # CoGe config file
     #"log_file=s"    => \$log_file        # optional log file # mdb removed 8/1/14 - logging sent to STDOUT as part of jex changes
@@ -313,7 +314,7 @@ sub process_file {
     $file = escape($file);
     my $cmd = catfile($P->{SCRIPTDIR}, 'load_experiment.pl') . ' ' .
         "-config $config -user_name '".$user->user_name."' -restricted 1 -name '$name' -desc '$description' " .
-        "-version '$version' -gid $gid -source_name '$source' " .
+        "-version '$version' -wid $wid -gid $gid -source_name '$source' " .
         "-staging_dir $exp_staging_dir -install_dir ".$P->{EXPDIR}." -data_file '$file' ";
         #"-log_file $log_file"; # reuse log so that all experiment loads are present
     print STDOUT "Running: " . $cmd, "\n";
