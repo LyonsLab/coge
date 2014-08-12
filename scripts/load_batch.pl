@@ -314,6 +314,7 @@ sub process_file {
     die unless ($name and $gid and $source and $user);
 
     # Run load script
+    print STDOUT "log: ----------------------------------------------------\n";
     print STDOUT "log: Loading experiment '$name'\n";
     $file = escape($file);
     my $cmd = catfile($P->{SCRIPTDIR}, 'load_experiment.pl') . ' ' .
