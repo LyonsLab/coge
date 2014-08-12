@@ -792,7 +792,7 @@ sub get_genome_info {
         $html_dsg_info .= "<tr><td>DNA content: <td>GC: $percent_gc%, AT: $percent_at%, N: $percent_n%, X: $percent_x%";
     }
     else {
-        $html_dsg_info .= qq{<tr><td>DNA content: <td id=gc_content$org_num class='link' onclick="get_gc($dsgid, 'gc_content$org_num')">Click to retrieve};
+        $html_dsg_info .= qq{<tr><td>DNA content: <td id='gc_content$org_num' class='link' onclick="get_gc($dsgid, 'gc_content$org_num')">Click to retrieve};
     }
     $html_dsg_info .= "<tr><td>Total length: <td>" . commify($chr_length);
     $html_dsg_info .= "<tr><td>Contains plasmid" if $plasmid;
@@ -805,7 +805,7 @@ sub get_genome_info {
     }
     if ($dsg->deleted)
       {
-    $html_dsg_info = "<span class='alert'>This genome has been deleted and cannot be used in this analysis.</span>  <a href=GenomeInfo.pl?gid=$dsgid target=_new>More information</a>.";
+    $html_dsg_info = "<span class='alert'>This genome has been deleted and cannot be used in this analysis.</span>  <a href='GenomeInfo.pl?gid=$dsgid' target=_new>More information</a>.";
       }
 
     my $message;
