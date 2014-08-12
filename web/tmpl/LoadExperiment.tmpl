@@ -71,7 +71,6 @@ $(document).ready(function(){
         },
         focus: function(event, ui) {
             //$("#edit_genome").val(ui.item.label);
-        	console.log('matt');
             return false; // Prevent the widget from inserting the value.
         }
     });
@@ -91,6 +90,13 @@ $(document).ready(function(){
         $('#load_dialog').dialog('open');
         update_dialog(STATUS_URL + job_id, pageObj.user, "#load_dialog", progress_formatter);
     }
+    
+    <TMPL_IF NAME="ADMIN_AREA">
+    $("#edit_user").autocomplete({
+        source:[],
+        focus: function() { return false; },
+    });
+    </TMPL_IF>
 });
 
 function file_selected(filename, url) {
@@ -185,6 +191,8 @@ function load_experiment() {
     var gid = $('#gid').val();
     var file_type = $("#select_file_type option:selected").val();
     var aligner = $("#alignment").find(":checked").val();
+    var ignore_cb = $('#ignore_missing_chrs');
+    var ignore_missing_chrs = ignore_cb.is(':checked');
 
     if (!name) {
     	error_help('Please specify an experiment name.');
@@ -245,6 +253,7 @@ function load_experiment() {
             items: json,
             file_type: file_type,
             aligner: aligner,
+            ignore_missing_chrs: ignore_missing_chrs,
             timestamp: new Date().getTime()
         },
         success : function(data) {
@@ -345,7 +354,6 @@ function reset_load() {
 
 function wait_to_search (search_func, search_obj) {
     var search_term = search_obj.value;
-    console.log(search_term);
     if (!search_term || search_term.length >= 2) {
         if (pageObj.time) {
             clearTimeout(pageObj.time);
@@ -697,26 +705,18 @@ function update_dialog(request, user, identifier, formatter) {
 </div>
 
 <TMPL_IF NAME='ADMIN_AREA'>
-<script>
-$(document).ready(function() {
-    $("#edit_user").autocomplete({
-        source:[],
-        focus: function() { return false; },
-    });
-});
-</script>
-
-<br><br><hr>
-<span style="color:dimgray;font-weight:bold;">Admin Functions</span><br>
-<table class="small ui-widget-content ui-corner-all">
-  <tr>
-    <td>Assign to user:</td>
-    <td>
-      <input id="edit_user" type="search" placeholder="Search" spellcheck="false" onkeyup="wait_to_search(search_users, this.value);" size="10" />
-    </td>
-  </tr>
-</table>
-<br>
+	<br><br><hr>
+	<div class="bold text">Admin Functions</div>
+	<div class="small">
+	    <div>
+	        Assign to user:
+	    	<input id="edit_user" type="search" placeholder="Search" spellcheck="false" onkeyup="wait_to_search(search_users, this.value);" size="20" />
+	    </div>
+	    <div>
+	    	Ignore missing chromosomes?
+	    	<input id="ignore_missing_chrs" type="checkbox" />
+	    </div>
+    </div>
 </TMPL_IF>
 
 </TMPL_IF> <!-- MAIN -->
