@@ -1466,6 +1466,20 @@ sub go {
     $feat_type1 = "protein" if $blast == 5 && $feat_type1 eq "CDS"; #blastp time
     $feat_type2 = "protein" if $blast == 5 && $feat_type2 eq "CDS"; #blastp time
 
+
+    # Sort by genome id
+    (
+        $dsgid1,     $genome1,              $org_name1,
+        $feat_type1, $depth_org_1_ratio, $dsgid2,     $genome2,
+        $org_name2,  $feat_type2, $depth_org_2_ratio
+      )
+      = (
+        $dsgid2,     $genome2,              $org_name2,
+        $feat_type2, $depth_org_2_ratio, $dsgid1,     $genome1,
+        $org_name1,  $feat_type1, $depth_org_1_ratio
+      ) if ( $dsgid2 lt $dsgid1 );
+
+
     ############################################################################
     # Generate Fasta files
     ############################################################################
@@ -1557,18 +1571,6 @@ sub go {
         CoGe::Accessory::Web::write_log( " " x (2) . $org_name2,
             $cogeweb->logfile );
     }
-
-    # Sort by genome id
-    (
-        $dsgid1,     $genome1,              $org_name1,  $fasta1,
-        $feat_type1, $depth_org_1_ratio, $dsgid2,     $genome2,
-        $org_name2,  $fasta2,            $feat_type2, $depth_org_2_ratio
-      )
-      = (
-        $dsgid2,     $genome2,              $org_name2,  $fasta2,
-        $feat_type2, $depth_org_2_ratio, $dsgid1,     $genome1,
-        $org_name1,  $fasta1,            $feat_type1, $depth_org_1_ratio
-      ) if ( $dsgid2 lt $dsgid1 );
 
     ############################################################################
     # Generate blastdb files
