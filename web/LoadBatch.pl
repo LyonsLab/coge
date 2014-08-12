@@ -534,7 +534,7 @@ sub send_error_report {
         . $USER->date . "\n\n"
         . "staging_directory: $staging_dir\n\n"
         . "tiny link: $url\n\n";
-    $body .= get_load_log();
+    $body .= get_load_log(workflow_id => $job_id);
 
     CoGe::Accessory::Web::send_email(
         from    => $email,
