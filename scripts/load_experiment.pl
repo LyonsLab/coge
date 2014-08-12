@@ -18,7 +18,7 @@ use CoGe::Accessory::TDS;
 use vars qw($staging_dir $result_dir $install_dir $data_file $file_type $log_file
   $name $description $version $restricted $ignore_missing_chr
   $gid $source_name $user_name $config $allow_negative $disable_range_check
-  $annotations $types
+  $annotations $types $wid
   $host $port $db $user $pass $P);
 
 #FIXME: use these from Storage.pm instead of redeclaring them
@@ -45,6 +45,7 @@ GetOptions(
     "restricted=i"  => \$restricted,     # experiment restricted flag
     "source_name=s" => \$source_name,    # experiment source name (JS escaped)
     "gid=s"         => \$gid,            # genome id
+    "wid=s"         => \$wid,            # workflow id
     "user_name=s"   => \$user_name,      # user name
     "annotations=s" => \$annotations,    # optional: semicolon-separated list of locked annotations (link:group:type:text;...)
     "types=s"       => \$types,          # optional: semicolon-separated list of experiment type names
@@ -60,7 +61,6 @@ GetOptions(
 # Open log file
 $| = 1;
 die unless ($staging_dir);
-mkpath($staging_dir); # make sure this exists
 #$log_file = catfile($staging_dir, 'log.txt') unless $log_file;
 mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
 #open( my $log, ">>$log_file" ) or die "Error opening log file $log_file";
@@ -75,6 +75,10 @@ if (-e $logdonefile) {
 }
 
 # Process and verify parameters
+if (!$wid) {
+    print STDOUT "log: error: required workflow ID not specified\n";
+    exit(-1);
+}
 $data_file   = unescape($data_file);
 $name        = unescape($name);
 $description = unescape($description);
@@ -377,6 +381,14 @@ if ($result_dir) {
     );
 }
 
+# Save job_id in experiment data path
+CoGe::Accessory::TDS::write(
+    catfile($storage_path, 'metadata.json'),
+    {
+        workflow_id => int($wid)
+    }
+);
+
 # Create "log.done" file to indicate completion to JEX
 touch($logdonefile);
 
@@ -468,7 +480,7 @@ sub validate_quant_data_file {
             or not defined $stop
             or not defined $strand )
         {
-            print STDOUT "log: error at line $line_num: missing value in a column\n";
+            log_line('missing value in a column', $line_num, $line);
             return;
         }
 
@@ -483,13 +495,13 @@ sub validate_quant_data_file {
         }
 
         if ( not defined $val1 or (!$disable_range_check and ($val1 < 0 or $val1 > 1)) ) {
-            print STDOUT "log: error at line $line_num: value 1 not between 0 and 1\n";
+            log_line('value 1 not between 0 and 1', $line_num, $line);
             return;
         }
 
 		$chr = fix_chromosome_id($chr, $genome_chr);
         if (!$chr) {
-            print STDOUT "log: error at line $line_num: trouble parsing chromosome\n";
+            log_line('trouble parsing chromosome', $line_num, $line);
             return;
         }
         $strand = $strand =~ /-/ ? -1 : 1;
@@ -554,9 +566,7 @@ sub validate_vcf_data_file {
 
         # Validate format
         if ( @tok < $MIN_VCF_COLUMNS ) {
-            print STDOUT "log: error at line $line_num: more columns expected ("
-              . @tok
-              . " < $MIN_VCF_COLUMNS)\n";
+              log_line('more columns expected ('.@tok.' < '.$MIN_VCF_COLUMNS.')', $line_num, $line);
             return;
         }
 
@@ -567,7 +577,7 @@ sub validate_vcf_data_file {
             || not defined $ref
             || not defined $alt )
         {
-            print STDOUT "log: error at line $line_num: missing required value in a column\n";
+            log_line('missing required value in a column', $line_num, $line);
             return;
         }
         next if ( $alt eq '.' );    # skip monomorphic sites
@@ -577,8 +587,7 @@ sub validate_vcf_data_file {
 
         $chr = fix_chromosome_id($chr, $genome_chr);
         if (!$chr) {
-            print STDOUT
-              "log: error at line $line_num: trouble parsing chromosome\n";
+            log_line('trouble parsing chromosome', $line_num, $line);
             return;
         }
         $chromosomes{$chr}++;
@@ -586,7 +595,6 @@ sub validate_vcf_data_file {
         # Each line could encode multiple alleles
         my @alleles = split( ',', $alt );
         foreach my $a (@alleles) {
-
             # Determine site type
             my $type = detect_site_type( $ref, $a );
 
@@ -657,10 +665,7 @@ sub validate_bam_data_file {
 	print STDOUT $cmd, "\n";
     my @header = qx{$cmd};
     print STDOUT "Old header:\n", @header;
-    if ( $? != 0 ) {
-	    print STDOUT "log: error executing samtools view -H command: $?\n";
-	    exit(-1);
-	}
+    execute($cmd);
 
 	# Parse the chromosome names out of the header
 	my %renamed;
@@ -683,7 +688,7 @@ sub validate_bam_data_file {
 			my $match = qr/^(\@SQ\s+SN\:)(\S+)/;
 			if ($line =~ $match) {
 				my $newChr = $renamed{$2};
-				$line =~ s/$match/$1$newChr/;
+				$line =~ s/$match/$1$newChr/ if defined $newChr;
 			}
 			push @header2, $line."\n";
 		}
@@ -697,40 +702,35 @@ sub validate_bam_data_file {
 
 		# Run samtools to reformat the bam file header
 		$cmd = "$SAMTOOLS reheader $header_file $filepath > $newfilepath";
-		print STDOUT $cmd, "\n";
-	    qx{$cmd};
-	    if ( $? != 0 ) {
-		    print STDOUT "log: error executing samtools reheader command: $?\n";
-		    exit(-1);
-		}
+		execute($cmd);
 
 		# Remove the original bam file
 		$cmd = "rm -f $filepath";
-		qx{$cmd};
-	    if ( $? != 0 ) {
-		    print STDOUT "log: error removing bam file: $?\n";
-		    exit(-1);
-		}
+		execute($cmd);
 	}
 	else {
 		# Rename original bam file
 		$cmd = "mv $filepath $newfilepath";
-		qx{$cmd};
-	    if ( $? != 0 ) {
-		    print STDOUT "log: error renaming bam file: $?\n";
-		    exit(-1);
-		}
+		execute($cmd);
 	}
+	
+	# Sort the bam file
+	# TODO this can be slow, is it possible to detect if it is sorted already?
+	my $sorted_file = "$staging_dir/sorted";
+    $cmd = "$SAMTOOLS sort $newfilepath $sorted_file";
+    execute($cmd);
+    if (-e "$sorted_file.bam" && -s "$sorted_file.bam" > 0) {
+        # Replace original file with sorted version
+        execute("mv $sorted_file.bam $newfilepath");
+    }
+    else {
+        print STDOUT "log: error: samtools sort produced no result\n";
+        exit(-1);
+    }
 
 	# Index the bam file
-	print STDOUT "log: Indexing file\n";
 	$cmd = "$SAMTOOLS index $newfilepath";
-	print STDOUT $cmd, "\n";
-    qx{$cmd};
-    if ( $? != 0 ) {
-	    print STDOUT "log: error executing samtools index command: $?\n";
-	    exit(-1);
-	}
+	execute($cmd);
 
     return ( $newfilepath, undef, $count, \%chromosomes );
 }
@@ -758,7 +758,7 @@ sub validate_gff_data_file {
 
         # Validate format
         if ( @tok < $MIN_GFF_COLUMNS ) {
-            print STDOUT "log: error at line $line_num: more columns expected (" . @tok . " < $MIN_GFF_COLUMNS)\n";
+            log_line("more columns expected (" . @tok . " < $MIN_GFF_COLUMNS)\n", $line_num, $line);
             return;
         }
 
@@ -769,13 +769,13 @@ sub validate_gff_data_file {
             || not defined $start
             || not defined $stop )
         {
-            print STDOUT "log: error at line $line_num: missing required value in a column\n";
+            log_line('missing required value in a column', $line_num, $line);
             return;
         }
 
         $chr = fix_chromosome_id($chr, $genome_chr);
         if (!$chr) {
-            print STDOUT "log: error at line $line_num: trouble parsing chromosome\n";
+            log_line('trouble parsing chromosome', $line_num, $line);
             return;
         }
         $chromosomes{$chr}++;
@@ -805,6 +805,22 @@ sub validate_gff_data_file {
     };
 
     return ( $outfile, $format, $count, \%chromosomes );
+}
+
+sub execute { # FIXME move into Util.pm
+    my $cmd = shift;
+    print STDOUT "$cmd\n";
+    my @cmdOut    = qx{$cmd};
+    my $cmdStatus = $?;
+    if ( $cmdStatus != 0 ) {
+        print STDOUT "log: error: command failed with rc=$cmdStatus: $cmd\n";
+        exit(-1);
+    }
+}
+
+sub log_line {
+    my ( $msg, $line_num, $line ) = @_;
+    print STDOUT "log: error at line $line_num: $msg\n", "log: ", substr($line, 0, 100), "\n";    
 }
 
 sub fix_chromosome_id {

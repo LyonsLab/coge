@@ -431,6 +431,7 @@ sub load_experiment {
     my $items       = $opts{items};
     my $file_type	= $opts{file_type};
     my $aligner     = $opts{aligner};
+    my $ignore_missing_chrs = $opts{ignore_missing_chrs};
 
 	# Added EL: 10/24/2013.  Solves the problem when restricted is unchecked.
 	# Otherwise, command-line call fails with next arg being passed to
@@ -477,20 +478,6 @@ sub load_experiment {
             files => [ $data_file ],
             alignment_type => $aligner
         );
-        # Setup call to analysis script
-#        my $cmd =
-#            catfile($P->{SCRIPTDIR}, 'qteller.pl') . ' '
-#            . "-gid $gid "
-#            . '-uid ' . $USER->id . ' '
-#            . "-alignment $aligner "
-#            . '-name "' . escape($name) . '" '
-#            . '-desc "' . escape($description) . '" '
-#            . '-version "' . escape($version) . '" '
-#            . "-restricted ". $restricted . ' '
-#            . '-source_name "' . escape($source_name) . '" '
-#            . "-staging_dir $stagepath "
-#            . '-data_file "' . escape( join( ',', @files ) ) . '" '
-#            . "-config $CONFIGFILE";
     }
     # Else, all other file types
     else {
@@ -506,7 +493,10 @@ sub load_experiment {
                 restricted => $restricted,
             },
             files => [ $data_file ],
-            file_type => $file_type
+            file_type => $file_type,
+            options => {
+                ignoreMissing => $ignore_missing_chrs
+            }
         );
     }
     unless ($workflow_id) {
