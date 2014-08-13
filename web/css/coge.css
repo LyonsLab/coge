@@ -327,6 +327,10 @@ div.panel {
     font-weight: bold;
 }
 
+.coge-code {
+    font-family: "Courier New";
+}
+
 .tht {
   float: left;
   width: 90%;

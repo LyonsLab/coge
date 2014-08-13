@@ -214,7 +214,6 @@ function download_files() {
     //CLEAR DIALOG
     reset_dialog();
 
-
     $.ajax({
         data: {
             fname: "get_file_urls",
@@ -239,6 +238,45 @@ function download_files() {
             }
         }
     });
+}
+
+function toggle_load_log() {
+	var btn = $('#log_button');
+	var log = $('#log_contents');
+	var spinner = $('#log_spinner');
+	
+	var setVisible = function(visible) { // TODO: i want to use jQuery.toggle() instead, oh well
+    	if (visible) {
+			log.removeClass('hidden');
+	    	btn.html('Hide');
+	    	spinner.animate({opacity:0});
+    	}
+    	else {
+    		log.addClass('hidden');
+    		btn.html('Show');
+    		spinner.animate({opacity:0});
+    	}
+	}
+	
+	if (log.is(":hidden")) {
+		if (log.html() == '') {
+			spinner.css({opacity:1});
+			$.ajax({
+		        data: {
+		            fname: 'get_load_log',
+		            eid: eid
+		        },
+		        success: function(data) {
+		        	log.html(data);
+		        	setVisible(true);
+		        }
+		    });
+		}
+		else
+			setVisible(true);
+	}
+	else
+		setVisible(false);
 }
 
 function export_data() {
@@ -648,7 +686,8 @@ function get_type_description (name) {
 			                <span class="title5">Download:</span>
 			            </td>
 			            <td>
-			                <span class="data5 link" onclick="download_files();">Experiment Data</span>
+			                <span class="data5 link" onclick="download_files();">All Experiment Data<!--</span>&nbsp|
+			                <span class="data5 link" onclick="download_load_log();">Load Progress Log</span>-->
 			            </td>
 			        </tr>
                     <TMPL_UNLESS NAME="PUBLIC">
@@ -720,43 +759,54 @@ function get_type_description (name) {
 </TMPL_IF>
 
 <TMPL_IF NAME="EDIT_EXPERIMENT_INFO">
-<SCRIPT>
-$(function() {
-    $("#edit_source").autocomplete({
-        source:
-            function() {
-                get_sources();
-            },
-        select:
-            function(event, ui) {
-                $("#edit_source").val( ui.item.label );
-                $("#edit_source_id").val( ui.item.value );
-                return false;
-            }
-    });
-});
-</SCRIPT>
-<table class="small">
- <tr>
-  <td>Name:</td>
-  <td><input id="edit_name" type="textbox" size="53" value="<TMPL_VAR NAME='NAME'>"></td>
- </tr>
- <tr>
-  <td>Description:</td>
-  <td><textarea id="edit_desc" rows="5" cols="50"><TMPL_VAR NAME='DESC'></textarea></td>
- </tr>
- <tr>
-  <td>Source:</td>
-  <td>
-   <input id="edit_source" size="53" value="<TMPL_VAR NAME='SOURCE'>">
-   <input id="edit_source_id" type="hidden" value="<TMPL_VAR NAME='SOURCE_ID'>">
-  </td>
- </tr>
- <tr>
-  <td>Version:</td>
-  <td><input id="edit_version" type="textbox" size="53" value="<TMPL_VAR NAME='VERSION'>"></td>
- </tr>
-</table>
-<br>
-<span onClick="update_experiment_info();" class='ui-button ui-corner-all coge-button'>Update</span>
+	<SCRIPT>
+	$(function() {
+	    $("#edit_source").autocomplete({
+	        source:
+	            function() {
+	                get_sources();
+	            },
+	        select:
+	            function(event, ui) {
+	                $("#edit_source").val( ui.item.label );
+	                $("#edit_source_id").val( ui.item.value );
+	                return false;
+	            }
+	    });
+	});
+	</SCRIPT>
+	<table class="small">
+	 <tr>
+	  <td>Name:</td>
+	  <td><input id="edit_name" type="textbox" size="53" value="<TMPL_VAR NAME='NAME'>"></td>
+	 </tr>
+	 <tr>
+	  <td>Description:</td>
+	  <td><textarea id="edit_desc" rows="5" cols="50"><TMPL_VAR NAME='DESC'></textarea></td>
+	 </tr>
+	 <tr>
+	  <td>Source:</td>
+	  <td>
+	   <input id="edit_source" size="53" value="<TMPL_VAR NAME='SOURCE'>">
+	   <input id="edit_source_id" type="hidden" value="<TMPL_VAR NAME='SOURCE_ID'>">
+	  </td>
+	 </tr>
+	 <tr>
+	  <td>Version:</td>
+	  <td><input id="edit_version" type="textbox" size="53" value="<TMPL_VAR NAME='VERSION'>"></td>
+	 </tr>
+	</table>
+	<br>
+	<span onClick="update_experiment_info();" class='ui-button ui-corner-all coge-button'>Update</span>
+</TMPL_IF>
+
+<TMPL_IF NAME='ADMIN_AREA'>
+	<br><br><hr>
+	<div class="bold text padded">Admin Functions</div>
+	<div class="small padded">
+		<span>Load Log:</span>
+	    <span id="log_button" onclick="toggle_load_log();" class='ui-button ui-corner-all coge-button' style="width:3em; margin-bottom:1em; overflow:auto;">Show</span>
+	    <img id="log_spinner" src="picts/ajax-loader.gif" style="opacity: 0;"/>
+	    <div id="log_contents" class="border hidden padded coge-code" style="border:1px solid gray; color: navy;"></div>
+	</div>
 </TMPL_IF>
