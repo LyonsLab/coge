@@ -53,10 +53,9 @@ BEGIN {
     $VERSION = 0.1;
     @ISA     = qw (Exporter);
     @EXPORT = qw(
-      get_tiered_path get_workflow_paths
+      get_tiered_path get_workflow_paths get_log
       get_genome_file index_genome_file get_genome_seq get_genome_path
       get_experiment_path get_experiment_files get_experiment_data
-      get_experiment_log
       create_experiment create_experiments_from_batch
       create_genome_from_file create_genome_from_NCBI
       create_annotation_dataset reverse_complement
@@ -519,14 +518,22 @@ sub get_experiment_data {
     }
 }
 
-sub get_experiment_log {
+sub get_log {
     my %opts = @_;
-    my $experiment_id  = $opts{experiment_id}; # required
-    my $user_id = $opts{user_id}; # required
-    my $getEverything = $opts{getEverything}; # optional
-    print STDERR Dumper \%opts, "\n";
+    my $item_id = $opts{item_id}; # required
+    my $item_type  = $opts{item_type}; # required
+    my $getEverything = $opts{getEverything}; # optional - not finished
+    my $html = $opts{html}; # optional
+    #print STDERR Dumper \%opts, "\n";
     
-    my $storage_path = get_experiment_path($experiment_id);
+    my $storage_path;
+    if ($item_type eq 'genome') { #TODO use hash of function refs for this instead
+        $storage_path = get_genome_path($item_id);
+    }
+    elsif ($item_type eq 'experiment') {
+        $storage_path = get_experiment_path($item_id);
+    }
+        
     my $old_log_file = catfile($storage_path, 'log.txt');
     
     my $log_file;
@@ -547,10 +554,18 @@ sub get_experiment_log {
     # Read-in log file
     print STDERR $log_file, "\n";
     open(my $fh, $log_file);
-    #my $log = read_file($fh); # should be a relatively small file, read it all at once
-    my @log = <$fh>;
-    print STDERR \@log, "\n";
+    my $log = read_file($fh); # should be a relatively small file, read it all at once
+    #my @log = <$fh>;
+    #print STDERR \@log, "\n";
     close($fh);
+    
+    if ($html) {
+        # Convert newlines/tabs to HTML equivalents
+        $log =~ s/\t/&nbsp;&nbsp;&nbsp;&nbsp;/g;
+        $log =~ s/\\t/&nbsp;&nbsp;&nbsp;&nbsp;/g;
+        $log =~ s/\n/<br>/g;
+        $log =~ s/\\n/<br>/g;
+    }
     
     # Parse out content - NOT WORKING YET, LEFT OFF HERE
 #    if (!$getEverything) {
@@ -582,7 +597,7 @@ sub get_experiment_log {
 #        #my @lines = split("/\/\n", ${sections[0]});
 #    }
     
-    return ;
+    return $log;
 }
 
 sub create_experiment {

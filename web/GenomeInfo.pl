@@ -83,6 +83,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     get_gff                    => \&get_gff,
     get_tbl                    => \&get_tbl,
     get_load_log               => \&get_load_log,
+    get_progress_log           => \&get_progress_log,
     export_bed                 => \&export_bed,
     export_gff                 => \&export_gff,
     export_tbl                 => \&export_tbl,
@@ -1337,6 +1338,17 @@ sub copy_genome {
 }
 
 sub get_load_log {
+    my %opts = @_;
+    my $gid = $opts{gid};
+    my $getEverything = $opts{get_everything};
+    return unless $gid;
+    
+    my $log = get_log( item_id => $gid, item_type => 'genome', getEverything => $getEverything, html => 1 );
+    
+    return $log;
+}
+
+sub get_progress_log {
     my %opts         = @_;
     my $workflow_id = $opts{workflow_id};
     return unless $workflow_id;

@@ -5,7 +5,7 @@ use CGI;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
-use CoGe::Core::Storage qw(get_workflow_paths);
+use CoGe::Core::Storage qw(get_workflow_paths get_log);
 use CoGe::Core::Genome qw(genomecmp);
 use HTML::Template;
 use JSON::XS;
@@ -60,7 +60,8 @@ $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID .
     get_file_urls              => \&get_file_urls,
     find_snps                  => \&find_snps,
     get_progress_log           => \&get_progress_log,
-    send_error_report          => \&send_error_report,
+    get_load_log               => \&get_load_log,
+    send_error_report          => \&send_error_report
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -606,7 +607,7 @@ sub gen_html {
         );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     }
-
+    
     $template->param( BODY => gen_body() );
     return $template->output;
 }
@@ -632,7 +633,8 @@ sub gen_body {
         JOB_ID          => $JOB_ID,
         STATUS_URL      => 'jex/status/',
         ALIGNMENT_TYPE  => ($exp->data_type == 3), # FIXME: hardcoded type value
-        PUBLIC          => $USER->user_name eq "public" ? 1 : 0
+        PUBLIC          => $USER->user_name eq "public" ? 1 : 0,
+        ADMIN_AREA      => $USER->is_admin
     );
     $template->param( EXPERIMENT_INFO => get_experiment_info( eid => $eid ) || undef );
     $template->param( EXPERIMENT_ANNOTATIONS => get_annotations( eid => $eid ) || undef );
@@ -767,7 +769,7 @@ sub find_snps {
 }
 
 sub get_progress_log {
-    my %opts         = @_;
+    my %opts = @_;
     my $workflow_id = $opts{workflow_id};
     return unless $workflow_id;
 
@@ -786,51 +788,17 @@ sub get_progress_log {
         }
     );
 }
-#sub get_progress_log {
-#    my $logfile = catfile($TEMPDIR, 'staging', 'load_experiment', 'log.txt');
-#    open( my $fh, $logfile ) or
-#        return encode_json( { status => -1, log => "Error opening log file" } );
-#
-#    my @lines = ();
-#    my ($eid, $nid, $new_load_id);
-#    my $status = 0;
-#    my $message = '';
-#    while (<$fh>) {
-#        push @lines, $1 if ( $_ =~ /^log: (.+)/i );
-#        if ( $_ =~ /All done/i ) {
-#            $status = 1;
-#
-#            # Generate a new load session ID in case the user chooses to
-#            # reuse the form to start another load.
-#            $new_load_id = get_unique_id();
-#
-#            last;
-#        }
-#        elsif ( $_ =~ /experiment id: (\d+)/i ) {
-#            $eid = $1;
-#        }
-#        elsif ( $_ =~ /log: error: input file is empty/i ) {
-#            $status = -2;
-#            $message = 'No SNPs were detected in this experiment';
-#            last;
-#        }
-#        elsif ( $_ =~ /log: error/i ) {
-#            $status = -1;
-#            last;
-#        }
-#    }
-#
-#    close($fh);
-#
-#    return encode_json(
-#        {
-#            status        => $status,
-#            experiment_id => $eid,
-#            new_load_id   => $new_load_id,
-#            message       => $message
-#        }
-#    );
-#}
+
+sub get_load_log {
+    my %opts = @_;
+    my $eid = $opts{eid};
+    my $getEverything = $opts{get_everything};
+    return unless $eid;
+    
+    my $log = get_log( item_id => $eid, item_type => 'experiment', getEverything => $getEverything, html => 1 );
+    
+    return $log;
+}
 
 sub send_error_report {
     my %opts = @_;
