@@ -168,7 +168,10 @@ function toggle_load_log() {
 		            gid: genome_id
 		        },
 		        success: function(data) {
-		        	log.html(data);
+		        	if (data)
+		        		log.html(data);
+		        	else
+		        		log.html('<span class="alert">Error: log file not found</span>');
 		        	setVisible(true);
 		        }
 		    });

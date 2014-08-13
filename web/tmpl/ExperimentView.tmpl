@@ -240,7 +240,7 @@ function download_files() {
     });
 }
 
-function toggle_load_log() {
+function toggle_load_log() { // TODO: shared with GenomeInfo.pl, move to module
 	var btn = $('#log_button');
 	var log = $('#log_contents');
 	var spinner = $('#log_spinner');
@@ -267,7 +267,10 @@ function toggle_load_log() {
 		            eid: eid
 		        },
 		        success: function(data) {
-		        	log.html(data);
+		        	if (data)
+		        		log.html(data);
+		        	else
+		        		log.html('<span class="alert">Error: log file not found</span>');
 		        	setVisible(true);
 		        }
 		    });

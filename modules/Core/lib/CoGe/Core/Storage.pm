@@ -525,6 +525,7 @@ sub get_log {
     my $getEverything = $opts{getEverything}; # optional - not finished
     my $html = $opts{html}; # optional
     #print STDERR Dumper \%opts, "\n";
+    return unless ($item_id and $item_type);
     
     my $storage_path;
     if ($item_type eq 'genome') { #TODO use hash of function refs for this instead
@@ -543,6 +544,10 @@ sub get_log {
     else { # Current JEX logging method
         # Get workflow id
         my $metadata_file = catfile($storage_path, 'metadata.json');
+        if (! -e $metadata_file) {
+            print STDERR "Storage::get_log cannot find log file\n";
+            return;
+        }
         my $md = CoGe::Accessory::TDS::read($metadata_file);
         my $workflow_id = $md->{workflow_id};
         
@@ -552,7 +557,6 @@ sub get_log {
     }
     
     # Read-in log file
-    print STDERR $log_file, "\n";
     open(my $fh, $log_file);
     my $log = read_file($fh); # should be a relatively small file, read it all at once
     #my @log = <$fh>;
