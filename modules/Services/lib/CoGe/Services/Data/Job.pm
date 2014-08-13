@@ -47,6 +47,9 @@ sub fetch {
     my @tasks;
     foreach my $task (@{$job_status->{jobs}}) {
         my $t = {
+            started => $task->{started},
+            ended => $task->{ended},
+            elapsed => $task->{elapsed},
             description => $task->{description},
             status => $task->{status},
             log => undef
