@@ -282,6 +282,7 @@ sub process_dir {
         exit(-1);
     }
     print STDOUT "notebook id: ".$notebook->id."\n";
+    print STDOUT "log: ----------------------------------------------------\n";
     print STDOUT "log: Created notebook '$notebook_name'\n";
     return ($notebook, \@experiments);
 }
