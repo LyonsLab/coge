@@ -58,6 +58,13 @@ GetOptions(
     #"log_file=s"           => \$log_file # mdb removed 8/1/14 - logging sent to STDOUT as part of jex changes
 );
 
+
+my @QUANT_TYPES = qw(csv tsv bed);
+my @MARKER_TYPES = qw(gff gtf gff3);
+my @OTHER_TYPES = qw(bam vcf);
+
+my @SUPPORTED_TYPES = (@QUANT_TYPES, @MARKER_TYPES, @OTHER_TYPES);
+
 # Open log file
 $| = 1;
 die unless ($staging_dir);
@@ -144,7 +151,9 @@ if ( $staged_data_file =~ /\.gz$/ ) {
 # Determine file type
 my ($file_type, $data_type) = detect_data_type($file_type, $staged_data_file);
 if ( !$file_type or !$data_type ) {
+    my $types = join ",", sort {$a cmp $b} @SUPPORTED_TYPES;
     print STDOUT "log: error: unknown or unsupported file type '$file_type'\n";
+    print STDOUT "log: file must end with one of the following types: $types\n";
     exit(-1);
 }
 
@@ -409,7 +418,7 @@ sub detect_data_type {
         ($filetype) = lc($filepath) =~ /\.([^\.]+)$/;
     }
 
-    if ( grep { $_ eq $filetype } ('csv', 'tsv', 'bed') ) { #TODO add 'bigbed', 'wig', 'bigwig'
+    if ( grep { $_ eq $filetype } @QUANT_TYPES ) { #TODO add 'bigbed', 'wig', 'bigwig'
         print STDOUT "log: Detected a quantitative file ($filetype)\n";
         return ($filetype, $DATA_TYPE_QUANT);
     }
@@ -421,7 +430,7 @@ sub detect_data_type {
         print STDOUT "log: Detected a polymorphism file ($filetype)\n";
         return ($filetype, $DATA_TYPE_POLY);
     }
-    elsif ( grep { $_ eq $filetype } ( 'gff', 'gtf' ) ) {
+    elsif ( grep { $_ eq $filetype } @MARKER_TYPES ) {
         print STDOUT "log: Detected a marker file ($filetype)\n";
         return ($filetype, $DATA_TYPE_MARKER);
     }
