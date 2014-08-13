@@ -6,13 +6,13 @@
 
 <script language="javascript">
 
-const PAGE_NAME = "<TMPL_VAR NAME=PAGE_NAME>";
-
 var job_id = "<TMPL_VAR NAME=JOB_ID>",
     genome_id = "<TMPL_VAR NAME=GID>",
     load_id = "<TMPL_VAR NAME=LOAD_ID>",
     default_type = "<TMPL_VAR NAME=DEFAULT_TYPE>",
-    irods_home_path = "<TMPL_VAR NAME=IRODS_HOME>";
+    irods_home_path = "<TMPL_VAR NAME=IRODS_HOME>",
+    PAGE_NAME = "<TMPL_VAR NAME=PAGE_NAME>",
+    DISCOVERY_ENVIRONMENT = "https://de.iplantcollaborative.org/de/?type=data&folder=";
 
 // EXPORT DIALOG GLOBALS
 var irods_home = $("<p>Sending to: " + irods_home_path + "</p>");
@@ -206,18 +206,19 @@ function export_features_to_irods(id, feature, isGenome, type) {
         fid: feature
     };
 
+    var link = $("<a></a>")
+            .addClass("bold")
+            .attr("href", DISCOVERY_ENVIRONMENT.concat(irods_home_path))
+            .html(irods_home_path);
+
     if (data.protein) {
         $('#export_log').html(
-                "<br>Copying protein sequences to <br><br>" +
-                '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
-                irods_home_path + '</a>'
-        );
+            "<br>Copying protein sequences to <br><br>"
+        ).append(link);
     } else {
         $('#export_log').html(
-                    "<br>Copying nucleotide sequences to <br><br>" +
-                '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
-                irods_home_path + '</a>'
-        );
+            "<br>Copying nucleotide sequences to <br><br>"
+        ).append(link);
 
     }
 
@@ -585,11 +586,18 @@ function export_gff() {
         // RESET DIALOG
         reset_dialog();
 
-        var title = $("<h4>Generating gff file</h4>");
+        var title = $("<h4>Generating gff and copying file</h4>");
+
+
+        var link = $("<a></a>")
+                .addClass("bold")
+                .attr("href", DISCOVERY_ENVIRONMENT.concat(irods_home_path))
+                .html(irods_home_path);
 
         $("#export_log")
             .html(title)
-            .append(note)
+            .append(link)
+            .append(note);
 
         $("#export_dialog")
             .unbind()
@@ -635,11 +643,14 @@ function export_tbl() {
         .unbind()
         .dialog('open');
 
+    var link = $("<a></a>")
+            .addClass("bold")
+            .attr("href", DISCOVERY_ENVIRONMENT.concat(irods_home_path))
+            .html(irods_home_path);
+
     $('#export_log').html(
-            "<br>Copying this genomes's TBL file to <br><br>" +
-            '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
-            irods_home_path + '</a>'
-    );
+        "<br>Copying this genomes's TBL file to <br><br>"
+    ).append(link);
 
     $.ajax({
         dataType: "json",
@@ -676,11 +687,14 @@ function export_bed() {
         .unbind()
         .dialog('open');
 
+    var link = $("<a></a>")
+            .addClass("bold")
+            .attr("href", DISCOVERY_ENVIRONMENT.concat(irods_home_path))
+            .html(irods_home_path);
+
     $('#export_log').html(
-            "<br>Generating/copying this genomes's BED file to <br><br>" +
-            '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
-            irods_home_path + '</a>'
-    );
+        "<br>Generating/copying this genomes's BED file to <br><br>"
+    ).append(link);
 
     $.ajax({
         dataType: "json",
@@ -716,11 +730,14 @@ function export_fasta_irods() {
         .unbind()
         .dialog('open');
 
+    var link = $("<a></a>")
+            .addClass("bold")
+            .attr("href", DISCOVERY_ENVIRONMENT.concat(irods_home_path))
+            .html(irods_home_path);
+
     $('#export_log').html(
-            "<br>Copying this genomes's FASTA file to <br><br>" +
-            '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
-            irods_home_path + '</a>'
-    );
+            "<br>Copying this genomes's FASTA file to <br><br>"
+    ).append(link);
 
     $.ajax({
         data: {
