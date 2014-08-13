@@ -758,7 +758,7 @@ sub validate_gff_data_file {
 
         # Validate format
         if ( @tok < $MIN_GFF_COLUMNS ) {
-            log_line("more columns expected (" . @tok . " < $MIN_GFF_COLUMNS)\n", $line_num, $line);
+            log_line("more columns expected (" . @tok . " < $MIN_GFF_COLUMNS)", $line_num, $line);
             return;
         }
 
