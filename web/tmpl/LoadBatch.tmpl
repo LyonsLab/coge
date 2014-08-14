@@ -37,6 +37,7 @@ var job_id = '<TMPL_VAR NAME="JOB_ID">';
 var experiment_id;
 var notebook_id;
 var pageObj = {};
+var newLoad = false;
 
 $(document).ready(function(){
     $.ajaxSetup({
@@ -177,6 +178,7 @@ function load_batch() {
     reset_log();
     $('#load_dialog').dialog('open');
     $('#load_log').html('Initializing ...');
+    newLoad = true;
 
     $.ajax({
         data: {
@@ -244,13 +246,15 @@ function load_failed() {
     $('#error_msg').fadeIn();
     $('#cancel_load_button').fadeIn();
 
-    $.ajax({
-        data: {
-            fname: "send_error_report",
-            load_id: load_id,
-            job_id: job_id
-        }
-    });
+    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
+	    $.ajax({
+	        data: {
+	            fname: "send_error_report",
+	            load_id: load_id,
+	            job_id: job_id
+	        }
+	    });
+    }
 }
 
 function load_succeeded(obj) {

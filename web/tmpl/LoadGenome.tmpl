@@ -41,6 +41,7 @@ var job_id     = '<TMPL_VAR NAME="JOB_ID">';
 var embed      = '<TMPL_VAR NAME="EMBED">';
 var genome_id;
 var pageObj = {};
+var newLoad = false;
 
 $(document).ready(function(){
 	// Configure jQuery ajax
@@ -271,6 +272,7 @@ function load_genome() {
 	reset_log();
 	$('#load_dialog').dialog('open');
 	$('#load_log').html('Initializing ...');
+	newLoad = true;
 
 	$.ajax({
 		data: {
@@ -395,13 +397,15 @@ function load_failed(obj) {
     $('#error_msg').fadeIn();
     $('#cancel_button').fadeIn();
 
-    $.ajax({
-        data: {
-            fname: "send_error_report",
-            load_id: load_id,
-            job_id: job_id
-        }
-    });
+    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
+	    $.ajax({
+	        data: {
+	            fname: "send_error_report",
+	            load_id: load_id,
+	            job_id: job_id
+	        }
+	    });
+    }
 }
 
 function load_succeeded(obj) {
