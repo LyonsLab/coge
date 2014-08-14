@@ -181,9 +181,7 @@ if (-s $staged_data_file == 0) {
     print STDOUT "log: error: input file '$staged_data_file' is empty\n";
     exit(-1);
 }
-my $count = 0;
-my $pChromosomes;
-my $format;
+my ($count, $pChromosomes, $format);
 if ( $data_type == $DATA_TYPE_QUANT ) {
     ( $staged_data_file, $format, $count, $pChromosomes ) =
       validate_quant_data_file( file => $staged_data_file, file_type => $file_type, genome_chr => \%genome_chr );
@@ -200,7 +198,10 @@ elsif ( $data_type == $DATA_TYPE_MARKER ) {
     ( $staged_data_file, $format, $count, $pChromosomes ) =
       validate_gff_data_file( file => $staged_data_file, genome_chr => \%genome_chr );
 }
-if ( not $count ) {
+if ( not defined $count ) { # parse error in validate
+    exit(-1);
+}
+if ( $count == 0 ) {
     print STDOUT "log: error: file contains no data\n";
     exit(-1);
 }
@@ -448,7 +449,7 @@ sub validate_quant_data_file {
     my $genome_chr = $opts{genome_chr};
     my %chromosomes;
     my $line_num = 1;
-    my $count    = 0;
+    my $count;
     my $hasLabels = 0;
     my $hasVal2   = 0;
 
@@ -558,7 +559,7 @@ sub validate_vcf_data_file {
 
     my %chromosomes;
     my $line_num = 1;
-    my $count    = 0;
+    my $count;
 
     print STDOUT "validate_vcf_data_file: $filepath\n";
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
@@ -653,7 +654,7 @@ sub validate_bam_data_file {
     my $genome_chr = $opts{genome_chr};
 
     my %chromosomes;
-    my $count = 0;
+    my $count;
 
     print STDOUT "validate_bam_data_file: $filepath\n";
 
@@ -752,7 +753,7 @@ sub validate_gff_data_file {
 
     my %chromosomes;
     my $line_num = 1;
-    my $count    = 0;
+    my $count;
 
     print STDOUT "validate_gff_data_file: $filepath\n";
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
