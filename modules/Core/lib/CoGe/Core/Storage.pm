@@ -47,7 +47,7 @@ use Data::Dumper;
 use POSIX qw(ceil);
 
 BEGIN {
-    use vars qw ($VERSION @ISA @EXPORT $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER);
+    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER);
     require Exporter;
 
     $VERSION = 0.1;
@@ -60,6 +60,7 @@ BEGIN {
       create_genome_from_file create_genome_from_NCBI
       create_annotation_dataset reverse_complement
     );
+    @EXPORT_OK = qw(data_type);
 
     # Experiment Data Types
     $DATA_TYPE_QUANT  = 1; # Quantitative data
@@ -1126,6 +1127,17 @@ sub reverse_complement { #TODO move into Util.pm
     my $rcseq = reverse($seq);
     $rcseq =~ tr/ATCGatcg/TAGCtagc/;
     return $rcseq;
+}
+
+sub data_type {
+    my $data_type = shift;
+
+    # Experiment Data Types
+    return "Quantitative" if $data_type == $DATA_TYPE_QUANT;
+    return "Polymorphism" if $data_type == $DATA_TYPE_POLY;
+    return "Alignment" if $data_type == $DATA_TYPE_ALIGN;
+    return "Marker" if $data_type == $DATA_TYPE_MARKER;
+    return "Unknown";
 }
 
 1;
