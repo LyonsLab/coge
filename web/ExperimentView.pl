@@ -5,7 +5,7 @@ use CGI;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
-use CoGe::Core::Storage qw(get_workflow_paths get_log);
+use CoGe::Core::Storage qw(get_workflow_paths get_log data_type);
 use CoGe::Core::Genome qw(genomecmp);
 use HTML::Template;
 use JSON::XS;
@@ -74,8 +74,10 @@ sub edit_experiment_info {
     my $exp = $coge->resultset('Experiment')->find($eid);
     my $desc = ( $exp->description ? $exp->description : '' );
 
+
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+
     $template->param(
         EDIT_EXPERIMENT_INFO => 1,
         EID                  => $eid,
@@ -185,6 +187,7 @@ sub add_type_to_experiment {
     return 1;
 }
 
+#FIXME: Types should be more generic and be referred to as TAGS
 sub get_experiment_types {
     #my %opts = @_;
 
@@ -642,7 +645,8 @@ sub gen_body {
     return $template->output;
 }
 
-sub get_experiment_info {
+
+sub _get_experiment_info {
     my %opts  = @_;
     my $eid   = $opts{eid};
     my ($exp) = $coge->resultset('Experiment')->find($eid);
@@ -652,30 +656,59 @@ sub get_experiment_info {
     my $allow_edit = $USER->is_admin || $USER->is_owner_editor( experiment => $eid );
     my $gid = $exp->genome->id;
 
-    my $html;
-    $html .= $exp->annotation_pretty_print_html( allow_delete => $allow_edit );
+    foreach my $type ( $exp->types ) {
+       my $info = $type->name;
+       $info .= ": " . $type->description if $type->description;
 
-    $html .= "<div class='panel'>";
-
-    if ($allow_edit) {
-        $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="edit_experiment_info();">Edit Info</span>};
-        $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="\$('#experiment_type_edit_box').dialog('open');">Add Type</span>};
+       if ($allow_edit) {
+           # NOTE: it is undesirable to have a javascript call in a DB object, but it works
+           $info .=
+               "<span onClick=\"remove_experiment_type({eid: '"
+             . $exp->id
+             . "', etid: '"
+             . $type->id
+             . "'});\" class=\"link ui-icon ui-icon-trash\"></span>";
+       }
     }
 
-    if ( $USER->is_admin || $USER->is_owner( experiment => $eid ) ) {
-        if ( $exp->restricted ) {
-            $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="make_experiment_public();">Make Public</span>};
-        }
-        else {
-            $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="make_experiment_private();">Make Private</span>};
-        }
-    }
+    my $editable = 1 if $USER->is_admin || $USER->is_owner( experiment => $eid);
     my $view_link = "GenomeView.pl?embed=$EMBED&gid=$gid&tracks=experiment$eid";
-    $html .= qq{<a style="color:inherit;" class='ui-button ui-corner-all coge-button' href=$view_link>View</a>};
 
-    $html .= "</div>";
+    my $fields = [
+        { title => "ID", value => $exp->id },
+        { title => "Name", value => $exp->name},
+        { title => "Description", value => $exp->description},
+        { title => "Data Type", value => data_type($exp->data_type) },
+        { title => "Genome", value => $exp->genome->info_html },
+        { title => "Source", value => $exp->source->info_html },
+        { title => "Version", value => $exp->version },
+        { title => "Types", value => },
+        { title => "Notebooks", value => },
+        { title => "Restricted", value => $exp->restricted ? "Yes" : "No"},
+    ];
 
-    return $html;
+    push @$fields, { title => "Note", value => "This experiment has been deleted" } if $exp->deleted;
+
+    return {
+        fields => $fields,
+        genome_view_url  => $view_link,
+        editable => $allow_edit,
+        restricted => $exp->restricted
+    };
+}
+
+sub get_experiment_info {
+    my $data = _get_experiment_info(@_);
+
+    my $template_file = catfile($P->{TMPLDIR}, "widgets", "experiment_info_table.tmpl");
+    my $info_table = HTML::Template->new(filename => $template_file);
+
+    $info_table->param(fields => $data->{fields});
+    $info_table->param(genome_view_url => $data->{genome_view_url});
+    $info_table->param(editable => $data->{editable});
+    $info_table->param(restricted => $data->{restricted});
+
+    return $info_table->output;
 }
 
 sub search_annotation_types {
