@@ -10,6 +10,7 @@ const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
 
 var eid = '<TMPL_VAR NAME="EID">';
 var job_id = '<TMPL_VAR NAME="JOB_ID">';
+var newLoad = false;
 
 $(document).ready(function() {
     pageObj = new Object();
@@ -344,7 +345,8 @@ function find_snps() {
         .dialog({ autoOpen: true, title: "Finding SNPs ..." });
 
     $('#progress_log').html('Initializing ...');
-
+    newLoad = true;
+    
     $.ajax({
         data: {
             fname: 'find_snps',
@@ -526,12 +528,14 @@ function progress_failed(obj) {
     }
     $('#ok_button').fadeIn();
 
-    $.ajax({
-        data: {
-            fname: "send_error_report",
-            job_id: job_id
-        }
-    });
+    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
+	    $.ajax({
+	        data: {
+	            fname: "send_error_report",
+	            job_id: job_id
+	        }
+	    });
+    }
 }
 
 function progress_succeeded(obj) {
