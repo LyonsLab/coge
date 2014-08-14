@@ -23,7 +23,7 @@ my $DB_BATCH_SZ = 50 * 1000;
 use vars qw($staging_dir $result_dir $data_file
   $name $description $link $version $restricted
   $gid $source_name $user_name $config $allow_all_chr
-  $host $port $db $user $pass $P);
+  $host $port $db $user $pass $P $GUNZIP);
 
 GetOptions(
     "staging_dir=s" => \$staging_dir,
@@ -84,6 +84,13 @@ $host = $P->{DBHOST};
 $port = $P->{DBPORT};
 $user = $P->{DBUSER};
 $pass = $P->{DBPASS};
+
+$GUNZIP = $P->{GUNZIP};
+if ( not -e $GUNZIP )
+{
+    print STDOUT "log: error: can't find required command(s)\n";
+    exit(-1);
+}
 
 # Validate the data file
 print STDOUT "log: Validating data file ...\n";
@@ -163,12 +170,15 @@ my @skip_names_re = qw(
   _E\d
 );
 
-my %data;
-my %annos;
-my %seen_types;
-my %seen_attr;
+# Decompress file if necessary
+if ( $data_file =~ /\.gz$/ ) {
+    print STDOUT "log: Decompressing '$data_file'\n";
+    $data_file =~ s/\.gz$//;
+    execute( $GUNZIP . ' -c ' . $data_file . '.gz' . ' > ' . $data_file );
+}
 
 # Load GFF file into %data
+my (%data, %annos, %seen_types, %seen_attr);
 #TODO copy gff file into staging directory to read from instead of upload directory
 unless ( process_gff_file() ) {
     print STDOUT "log: error: no annotations found, perhaps your file is missing required information, please check the <a href='http://genomevolution.org/wiki/index.php/GFF_ingestion'>documentation</a>\n";
@@ -511,7 +521,7 @@ sub process_gff_file {
 
         my @line = split( /\t/, $line );
         if ( @line != 9 ) {
-            print STDOUT "log: error:  Incorrect format (too many columns) at line $line_num\n";
+            log_line("Incorrect format (too many columns)", $line_num, $line);
             return 0;
         }
         my ($chr, $type, $start, $stop, $strand, $attr) = ($line[0], $line[2], $line[3], $line[4], $line[6], $line[8]);
@@ -536,7 +546,7 @@ sub process_gff_file {
         $chr =~ s/^0//g unless $chr eq '0';
         ($chr) = split( /\s+/, $chr );
         unless ( $valid_chrs{$chr} ) {
-            print STDOUT "log: error:  Chromosome '$chr' does not exist in the dataset.\n";
+            log_line("Chromosome '$chr' does not exist in the dataset", $line_num, $line);
             next if ($allow_all_chr);
             return 0;
         }
@@ -652,4 +662,20 @@ sub process_gff_file {
     print STDOUT "log: Processed " . commify($line_num) . " total lines\n";
 
     return $total_annot;
+}
+
+sub log_line {
+    my ( $msg, $line_num, $line ) = @_;
+    print STDOUT "log: error at line $line_num: $msg\n", "log: ", substr($line, 0, 100), "\n";    
+}
+
+sub execute { # FIXME move into Util.pm
+    my $cmd = shift;
+    print STDOUT "$cmd\n";
+    my @cmdOut    = qx{$cmd};
+    my $cmdStatus = $?;
+    if ( $cmdStatus != 0 ) {
+        print STDOUT "log: error: command failed with rc=$cmdStatus: $cmd\n";
+        exit(-1);
+    }
 }
