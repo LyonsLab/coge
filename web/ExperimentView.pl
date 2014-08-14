@@ -671,7 +671,6 @@ sub _get_experiment_info {
        }
     }
 
-    my $editable = 1 if $USER->is_admin || $USER->is_owner( experiment => $eid);
     my $view_link = "GenomeView.pl?embed=$EMBED&gid=$gid&tracks=experiment$eid";
 
     my $fields = [
