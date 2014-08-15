@@ -40,10 +40,13 @@ my @LOCATIONS_PREFETCH = (
 sub genomecmp($$) {
     my ($a, $b) = @_;
 
+    my $namea = $a->name ? $a->name :  "";
+    my $nameb = $b->name ? $b->name :  "";
+
     $a->organism->name cmp $b->organism->name
       || versioncmp( $b->version, $a->version )
       || $a->type->id <=> $b->type->id
-      || $a->name cmp $b->name
+      || $namea cmp $nameb
       || $b->id cmp $a->id;
 }
 
