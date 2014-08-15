@@ -1,4 +1,5 @@
 #!/usr/bin/perl -w
+
 use strict;
 use warnings;
 use CGI;
@@ -57,14 +58,17 @@ no warnings 'redefine';
 # for security purposes
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
-use vars qw($P $PAGE_TITLE $PAGE_NAME $LINK
-  $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $GENOMETHREADER
+use vars qw($P $PAGE_TITLE $PAGE_NAME $LINK $DATE
+  $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $GENOMETHREADER
   $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge
   $NUM_SEQS $MAX_SEQS $MAX_PROC %FUNCTION);
 
 $FORM                 = new CGI;
 $CGI::POST_MAX        = 60 * 1024 * 1024;    # 24MB
 $CGI::DISABLE_UPLOADS = 0;
+
+$PAGE_TITLE = 'GEvo';
+$PAGE_NAME  = "$PAGE_TITLE.pl";
 
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     cgi => $FORM,
@@ -74,11 +78,9 @@ $CGI::DISABLE_UPLOADS = 0;
 $ENV{PATH} = $P->{COGEDIR};
 
 #print Dumper $P;
-$PAGE_TITLE = 'GEvo';
-$PAGE_NAME  = "$PAGE_TITLE.pl";
 $BL2SEQ     = $P->{BL2SEQ};
 $BLASTZ     = $P->{LASTZ};
-$BLASTZ .= " --ambiguous=iupac";
+$BLASTZ     .= " --ambiguous=iupac";
 $LAGAN          = $P->{LAGAN};
 $CHAOS          = $P->{CHAOS};
 $GENOMETHREADER = $P->{GENOMETHREADER};
@@ -86,6 +88,12 @@ $DIALIGN        = $P->{DIALIGN};
 $TEMPDIR        = $P->{TEMPDIR} . "GEvo";
 $TEMPURL        = $P->{TEMPURL} . "GEvo";
 $MAX_PROC       = $P->{MAX_PROC};
+
+$DATE = sprintf(
+    "%04d-%02d-%02d %02d:%02d:%02d",
+    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
+      ->(localtime)
+);
 
 #for chaos
 $ENV{'LAGAN_DIR'} = $P->{LAGANDIR};
@@ -99,11 +107,6 @@ $BENCHMARK = 1;
 $NUM_SEQS  = 2;         #SHABARI EDIT
 $MAX_SEQS  = 25;
 $|         = 1;         # turn off buffering
-$DATE      = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
 
@@ -1621,6 +1624,10 @@ sub initialize_sqlite {
     my $dbfile = $cogeweb->sqlitefile;
     return if -r $dbfile;
     my $dbh = DBI->connect( "dbi:SQLite:dbname=$dbfile", "", "" );
+    unless (defined $dbh) {
+        print STDERR "Gevo.pl ERROR connecting to sqlite file\n";
+        return;
+    }
     my $create = qq{
 CREATE TABLE image_data
 (
