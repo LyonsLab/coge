@@ -15,6 +15,7 @@ use File::Basename;
 use File::Temp;
 use LWP::Simple qw(!get !head !getprint !getstore !mirror);
 use LWP::UserAgent;
+use JSON;
 use HTTP::Request;
 use XML::Simple;
 use CoGe::Accessory::LogUser;
@@ -46,7 +47,8 @@ LICENSE file included with this module.
 
 =cut
 
-our($CONF, $VERSION, @ISA, @EXPORT, @EXPORT_OK, $Q, $TEMPDIR, $BASEDIR);
+our($CONF, $VERSION, @ISA, @EXPORT, @EXPORT_OK, $Q, $TEMPDIR, $BASEDIR,
+    $PAYLOAD_ERROR, $NOT_FOUND);
 
 BEGIN {
     require Exporter;
@@ -58,6 +60,9 @@ BEGIN {
     @EXPORT  = qw( get_session_id );
     @EXPORT_OK = qw( check_filename_taint check_taint gunzip gzip send_email
                      get_defaults set_defaults url_for get_job schedule_job );
+
+    $PAYLOAD_ERROR = "The request could not be decoded";
+    $NOT_FOUND = "The action could not be found";
 
     __PACKAGE__->mk_accessors(
         'restricted_orgs', 'basefilename', 'basefile', 'logfile',
@@ -189,22 +194,48 @@ sub is_ajax {
 
 sub dispatch {
     my ( $self, $form, $functions, $default_sub ) = self_or_default(@_);
-    my %args  = $form->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-    	die "Web::dispatch: function '$fname' not found!" if (not defined $functions->{$fname});
-        #my %args = $form->Vars;
-        #print STDERR Dumper \%args;
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $form->header, $functions->{$fname}->(@args_list);
+    my $content_type = $ENV{'CONTENT_TYPE'};
+
+    if ($content_type =~ /application\/json/) {
+        my $payload = $form->param('POSTDATA');
+        my ($params, $resp);
+
+        eval {
+            $params = decode_json($payload) if $payload;
+        };
+
+        if ($params) {
+            my $fname = $params->{fname};
+
+            if (not defined $functions->{$fname}) {
+                carp "Web::dispatch: function '$fname' not found!";
+                $resp = encode_json({ error => { NOT_FOUND => $NOT_FOUND }});
+            } else {
+                $resp = $functions->{$fname}->($params);
+            }
+        } else {
+            $resp = encode_json({ error => { PAYLOAD => $PAYLOAD_ERROR }});
+        }
+
+        print $form->header, $resp;
+    } else {
+        my %args  = $form->Vars;
+        my $fname = $args{'fname'};
+        if ($fname) {
+            die "Web::dispatch: function '$fname' not found!" if (not defined $functions->{$fname});
+            #my %args = $form->Vars;
+            #print STDERR Dumper \%args;
+            if ( $args{args} ) {
+                my @args_list = split( /,/, $args{args} );
+                print $form->header, $functions->{$fname}->(@args_list);
+            }
+            else {
+                print $form->header, $functions->{$fname}->(%args);
+            }
         }
         else {
-            print $form->header, $functions->{$fname}->(%args);
+            print $form->header, $default_sub->();
         }
-    }
-    else {
-        print $form->header, $default_sub->();
     }
 }
 
