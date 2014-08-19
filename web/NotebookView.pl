@@ -10,6 +10,7 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
+use CoGe::Core::List qw(listcmp);
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
@@ -1247,11 +1248,6 @@ sub get_annotation_type_groups {
 }
 
 sub featurecmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    $a->name cmp $b->name;
-}
-
-sub listcmp {
     no warnings 'uninitialized';    # disable warnings for undef values in sort
     $a->name cmp $b->name;
 }

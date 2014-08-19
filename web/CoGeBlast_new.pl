@@ -9,6 +9,7 @@ use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw( commify get_link_coords );
 use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
+use CoGe::Core::List qw(listcmp);
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
@@ -3024,12 +3025,6 @@ sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
     }
 
     return encode_json( { timestamp => $timestamp, html => $html } );
-}
-
-# FIXME mdb 8/29/12 - this routine is redundantly declared (e.g. ListView.pl, GroupView.pl)
-sub listcmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    $a->name cmp $b->name;
 }
 
 sub get_list_preview {

@@ -5,6 +5,7 @@ use CGI;
 use HTML::Template;
 use CoGeX;
 use CoGe::Accessory::Web;
+use CoGe::Core::List qw(listcmp);
 
 use vars qw( $P $PAGE_TITLE $USER $coge %FUNCTION $FORM $LINK );
 
@@ -201,8 +202,3 @@ sub get_list_types {
     return \@types;
 }
 
-#FIXME this routine duplicated elsewhere
-sub listcmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    $a->name cmp $b->name;
-}

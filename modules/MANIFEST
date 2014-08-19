@@ -36,8 +36,12 @@ Algos/KsCalc/lib/CoGe/Algos/KsCalc.pm
 Algos/KsCalc/t/001_load.t
 Algos/Pairwise/lib/CoGe/Algos/Pairwise.pm
 Algos/Pairwise/t/001_load.t
-Core/lib/CoGe/Core/Genome.pm
 Core/lib/CoGe/Core/Experiment.pm
+Core/lib/CoGe/Core/Genome.pm
+Core/lib/CoGe/Core/List.pm
+Core/lib/CoGe/Core/Metadata.pm
+Core/lib/CoGe/Core/Notebook.pm
+Core/lib/CoGe/Core/Storage.pm
 Database/lib/CoGeX.pm
 Database/lib/DBIxProfiler.pm
 Database/lib/CoGeX/Result/AnnotationTypeGroup.pm
