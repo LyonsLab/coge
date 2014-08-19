@@ -7,6 +7,7 @@ use CoGe::Accessory::Utils qw( commify );
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web;
+use CoGe::Core::List qw(listcmp);
 use CGI;
 use JSON::XS;
 use HTML::Template;
@@ -754,12 +755,6 @@ sub get_genomes_for_list {
     }
 
     return $genomes;
-}
-
-# FIXME mdb 8/29/12 - this routine is redundantly declared (e.g. ListView.pl, GroupView.pl)
-sub listcmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    $a->name cmp $b->name;
 }
 
 sub cogefeatsearch {

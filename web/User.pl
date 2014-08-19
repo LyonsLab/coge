@@ -16,6 +16,7 @@ use File::stat;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Jex;
+use CoGe::Core::List qw(listcmp);
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
 use CoGeX::ResultSet::Experiment;
@@ -1831,11 +1832,6 @@ sub toggle_star {
     $entry->update();
 
     return not $status;
-}
-
-sub listcmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    $a->name cmp $b->name;
 }
 
 sub groupcmp {
