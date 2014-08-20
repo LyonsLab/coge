@@ -391,6 +391,12 @@ if ($result_dir) {
     );
 }
 
+# Add experiment ID to log - mdb added 8/19/14, needed after log output was moved to STDOUT for jex
+my $logtxtfile = "$staging_dir/log.txt";
+open(my $logh, '>', $logtxtfile);
+print $logh "experiment id: " . $experiment->id . "\n";
+close($logh);
+
 # Save job_id in experiment data path
 CoGe::Accessory::TDS::write(
     catfile($storage_path, 'metadata.json'),
