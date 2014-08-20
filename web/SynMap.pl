@@ -546,7 +546,6 @@ sub gen_org_menu {
         ORG_MENU => 1,
         NUM      => $num,
         ORG_NAME => $name,
-        ORG_DESC => $desc
     );
 
     if ($dsg and $USER->has_access_to_genome($dsg)) {
@@ -679,36 +678,52 @@ sub read_file {
 
 sub get_orgs {
     my %opts = @_;
-    my $name = $opts{name};
-    my $desc = $opts{desc};
+    my $search = $opts{search};
     my $oid  = $opts{oid};
     my $i    = $opts{i};
 
     #get rid of trailing white-space
-    $name =~ s/^\s+//g if $name;
-    $name =~ s/\s+$//g if $name;
-    $desc =~ s/^\s+//g if $desc;
-    $desc =~ s/\s+$//g if $desc;
+    $search =~ s/^\s+//g if $search;
+    $search =~ s/\s+$//g if $search;
+    $search = "" if $search && $search =~ /Search/; #need to clear to get full org count
 
-    $name = "" if $name && $name =~ /Search/; #need to clear to get full org count
-    $desc = "" if $desc && $desc =~ /Search/; #need to clear to get full org count
-    
     my @organisms;
     my $org_count;
-    if ($oid) {
-        my $org = $coge->resultset("Organism")->find($oid);
-        $name = $org->name if $org;
-        push @organisms, $org if $name;
-    }
-    elsif ($name) {
-        @organisms = $coge->resultset("Organism")->search( { name => { like => "%" . $name . "%" } } );
-    }
-    elsif ($desc) {
-        @organisms = $coge->resultset("Organism")->search( { description => { like => "%" . $desc . "%" } } );
-    }
-    else {
+
+
+    # Create terms for search
+    my @terms = split /\s+/, $search;
+
+    if (scalar @terms or $oid)  {
+        my @constraints = map {
+            -or => [{ name => {like => qq{%$_%}}},
+                    { description => {like => qq{%$_%}}}]
+        } @terms;
+
+        @organisms = $coge->resultset("Organism")->search({
+            -or => [
+                -and => \@constraints,
+                { organism_id => $oid },
+            ]
+        });
+    } else {
         $org_count = $coge->resultset("Organism")->count;
     }
+
+    #if ($oid) {
+    #    my $org = $coge->resultset("Organism")->find($oid);
+    #    $name = $org->name if $org;
+    #    push @organisms, $org if $name;
+    #}
+    #elsif ($name) {
+    #    @organisms = $coge->resultset("Organism")->search( { name => { like => "%" . $name . "%" } } );
+    #}
+    #elsif ($desc) {
+    #    @organisms = $coge->resultset("Organism")->search( { description => { like => "%" . $desc . "%" } } );
+    #}
+    #else {
+    #    $org_count = $coge->resultset("Organism")->count;
+    #}
 
     my @opts;
     foreach my $item ( sort { uc( $a->name ) cmp uc( $b->name ) } @organisms ) {
@@ -717,18 +732,18 @@ sub get_orgs {
         $option .= ">" . $item->name . " (id" . $item->id . ")</OPTION>";
         push @opts, $option;
     }
-    
-    unless ( @opts && ( $name || $desc ) ) {
+
+    unless ( @opts && $search ) {
         return qq{<span name="org_id$i" id="org_id$i"></span>};
     }
-    
+
     $org_count = scalar @opts unless $org_count;
     my $html;
     $html .= qq{<span class="small info">Organisms: (}
       . $org_count
       . qq{)</span>\n<BR>\n};
 
-    
+
     $html .= qq{<SELECT id="org_id$i" SIZE="5" MULTIPLE onChange="get_genome_info_chain($i)" class="coge-fill-width">\n}
           . join( "\n", @opts )
           . "\n</SELECT>\n";
@@ -760,8 +775,8 @@ sub get_genome_info {
         $org_desc = join(
             "; ",
             map {
-                    qq{<span class="link" onclick="\$('#org_desc}
-                  . qq{$org_num').val('$_').focus();search_bar('org_desc$org_num'); timing('org_desc$org_num')">$_</span>}
+                    qq{<span class="link" onclick="}
+                  . qq{search_bar('$_', '#org_name$org_num'); timing('org_name$org_num')">$_</span>}
               } split /\s*;\s*/,
             $org->description
         );
