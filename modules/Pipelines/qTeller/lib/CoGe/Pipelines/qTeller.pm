@@ -438,7 +438,7 @@ sub create_parse_cufflinks_job {
 }
 
 sub create_load_csv_job {
-    my ($md, $gid, $csv, $user, $annotations, $staging_dir) = @_;
+    my ($md, $gid, $csv, $user, $annotations, $staging_dir, $wid) = @_;
     my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
@@ -452,6 +452,7 @@ sub create_load_csv_job {
             ['-version', '"'.$md->{version}.'"', 0],
             ['-restricted', $md->{restricted}, 0],
             ['-gid', $gid, 0],
+            ['-wid', $wid, 0],
             ['-source_name', '"'.$md->{source_name}.'"', 0],
             ['-types', qq{"Expression"}, 0],
             ['-annotations', $annotations, 0],
@@ -473,7 +474,7 @@ sub create_load_csv_job {
 }
 
 sub create_load_bam_job {
-    my ($md, $gid, $bam, $user, $annotations, $staging_dir) = @_;
+    my ($md, $gid, $bam, $user, $annotations, $staging_dir, $wid) = @_;
     my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
@@ -487,6 +488,7 @@ sub create_load_bam_job {
             ['-version', '"'.$md->{version}.'"', 0],
             ['-restricted', $md->{restricted}, 0],
             ['-gid', $gid, 0],
+            ['-wid', $wid, 0],
             ['-source_name', '"'.$md->{source_name}.'"', 0],
             ['-types', qq{"RNAseq;BAM"}, 0],
             ['-annotations', $annotations, 0],
@@ -508,7 +510,7 @@ sub create_load_bam_job {
 }
 
 sub create_load_bed_job {
-    my ($md, $gid, $bed, $user, $annotations, $staging_dir) = @_;
+    my ($md, $gid, $bed, $user, $annotations, $staging_dir, $wid) = @_;
     my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
@@ -522,6 +524,7 @@ sub create_load_bed_job {
             ['-version', '"'.$md->{version}.'"', 0],
             ['-restricted', $md->{restricted}, 0],
             ['-gid', $gid, 0],
+            ['-wid', $wid, 0],
             ['-source_name', '"'.$md->{source_name}.'"', 0],
             ['-types', qq{"Expression"}, 0],
             ['-annotations', $annotations, 0],
