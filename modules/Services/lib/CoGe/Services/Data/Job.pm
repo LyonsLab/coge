@@ -13,7 +13,7 @@ use CoGe::Accessory::TDS;
 sub fetch {
     my $self = shift;
     my $id = $self->stash('id');
-
+    
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
     
@@ -56,9 +56,9 @@ sub fetch {
         };
         
         if (defined $task->{output}) {
-            foreach (split(/\\n/, $task->{output})) {
-                next unless ($_ =~ /^log:/);
-                $_ =~ s/^log: //;
+            foreach (split(/\n/, $task->{output})) {
+                next unless ($_ =~ /^log\: /);
+                $_ =~ s/^log\: //;
                 $t->{log} .= $_ . "\n";
             }
         }
