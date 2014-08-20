@@ -540,12 +540,12 @@ sub gen_org_menu {
     $name = "Search" unless $name;
     $desc = "Search" unless $desc;
     my ($dsg) = $coge->resultset('Genome')->find($dsgid);
-    
+
     my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'partials/organism_menu.tmpl' );
     $template->param(
         ORG_MENU => 1,
         NUM      => $num,
-        ORG_NAME => $name,
+        SEARCH   => $name,
     );
 
     if ($dsg and $USER->has_access_to_genome($dsg)) {
@@ -558,10 +558,10 @@ sub gen_org_menu {
             feattype => $feattype_param
         );
 
-        $template->param( 
+        $template->param(
             DSG_INFO       => $dsg_info,
             FEATTYPE_MENU  => $feattype_menu,
-            GENOME_MESSAGE => $message 
+            GENOME_MESSAGE => $message
         );
     }
     else {
@@ -569,7 +569,7 @@ sub gen_org_menu {
         $dsgid = 0;
     }
 
-    $template->param( 'ORG_LIST' => get_orgs( name => $name, i => $num, oid => $oid ) );
+    $template->param( 'ORG_LIST' => get_orgs( search => $name, i => $num, oid => $oid ) );
 
     my ($dsg_menu) = gen_dsg_menu( oid => $oid, dsgid => $dsgid, num => $num );
     $template->param( DSG_MENU => $dsg_menu );
@@ -690,9 +690,8 @@ sub get_orgs {
     my @organisms;
     my $org_count;
 
-
     # Create terms for search
-    my @terms = split /\s+/, $search;
+    my @terms = split /\s+/, $search if defined $search;
 
     if (scalar @terms or $oid)  {
         my @constraints = map {
@@ -710,31 +709,12 @@ sub get_orgs {
         $org_count = $coge->resultset("Organism")->count;
     }
 
-    #if ($oid) {
-    #    my $org = $coge->resultset("Organism")->find($oid);
-    #    $name = $org->name if $org;
-    #    push @organisms, $org if $name;
-    #}
-    #elsif ($name) {
-    #    @organisms = $coge->resultset("Organism")->search( { name => { like => "%" . $name . "%" } } );
-    #}
-    #elsif ($desc) {
-    #    @organisms = $coge->resultset("Organism")->search( { description => { like => "%" . $desc . "%" } } );
-    #}
-    #else {
-    #    $org_count = $coge->resultset("Organism")->count;
-    #}
-
     my @opts;
     foreach my $item ( sort { uc( $a->name ) cmp uc( $b->name ) } @organisms ) {
         my $option = "<OPTION value=\"" . $item->id . "\"";
         $option .= " selected" if $oid && $oid == $item->id;
         $option .= ">" . $item->name . " (id" . $item->id . ")</OPTION>";
         push @opts, $option;
-    }
-
-    unless ( @opts && $search ) {
-        return qq{<span name="org_id$i" id="org_id$i"></span>};
     }
 
     $org_count = scalar @opts unless $org_count;
