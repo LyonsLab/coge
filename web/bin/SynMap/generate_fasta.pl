@@ -154,6 +154,7 @@ sub gen_fasta {
                 }
                 next unless $chr_sequence{ $feat->chromosome };
 
+                my $start_index;
                 # Check that the start location is greater than 1
                 if ($start < 1) {
                     carp "feature start location is less than 1, start=$start";
