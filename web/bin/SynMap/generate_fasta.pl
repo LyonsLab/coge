@@ -5,6 +5,7 @@ no warnings 'redefine';
 umask(0);
 
 use Benchmark;
+use Carp;
 use DBI;
 use Getopt::Long;
 use Parallel::ForkManager;
