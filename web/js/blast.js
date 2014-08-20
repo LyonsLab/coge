@@ -211,6 +211,7 @@ function overlap_checkboxes() {
 
 function generate_blast(accn, filename) {
     $.ajax({
+    	type: "POST",
         data: {
             fname: 'generate_blast',
             accn: accn,
@@ -224,6 +225,7 @@ function generate_blast(accn, filename) {
 
 function generate_feat_list(accn, filename) {
     $.ajax({
+    	type: "POST",
         data: {
             fname: 'generate_feat_list',
             accn: accn,
@@ -237,6 +239,7 @@ function generate_feat_list(accn, filename) {
 
 function generate_tab_deliminated(accn, filename) {
     $.ajax({
+    	type: "POST",
         data: {
             fname: 'generate_tab_deliminated',
             accn: accn,
@@ -250,6 +253,7 @@ function generate_tab_deliminated(accn, filename) {
 
 function export_to_excel(accn, filename) {
     $.ajax({
+    	type: "POST",
         data: {
             fname: 'export_to_excel',
             accn: accn,
@@ -263,6 +267,7 @@ function export_to_excel(accn, filename) {
 
 function export_top_hits(accn, filename) {
     $.ajax({
+    	type: "POST",
         data: {
             fname: 'export_top_hits',
             accn: accn,
@@ -276,6 +281,7 @@ function export_top_hits(accn, filename) {
 
 function export_fasta_file(accn) {
     $.ajax({
+    	type: "POST",
         data: {
             fname: 'export_fasta_file',
             accn: accn
@@ -288,6 +294,7 @@ function export_fasta_file(accn) {
 
 function export_CodeOn(accn) {
     $.ajax({
+    	type: "POST",
         data: {
             fname: 'export_CodeOn',
             accn: accn
@@ -300,6 +307,7 @@ function export_CodeOn(accn) {
 
 function overlap_feats_parse(accn) {
     $.ajax({
+    	type: "POST",
         data: {
             fname: 'overlap_feats_parse',
             accn: accn
