@@ -698,7 +698,7 @@ sub create_experiments_from_batch {
 
     # Setup log file, staging, and results paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
-    $workflow->logfile( catfile($staging_dir, 'debug.log') );
+    $workflow->logfile( catfile($result_dir, 'debug.log') );
 
     # Create list of files to load
     my @staged_files;
