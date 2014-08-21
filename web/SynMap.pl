@@ -717,6 +717,10 @@ sub get_orgs {
         push @opts, $option;
     }
 
+    unless ( @opts && @organisms) {
+        return qq{<span name="org_id$i" id="org_id$i"></span>};
+    }
+
     $org_count = scalar @opts unless $org_count;
     my $html;
     $html .= qq{<span class="small info">Organisms: (}
