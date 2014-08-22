@@ -276,6 +276,9 @@ function irods_get_path (path) {
 
 			result.items.forEach(
 				function(obj) {
+					var name = decodeURI(obj.name); // mdb added 8/14/14 issue 441
+					
+					// Build row in to be displayed
 					var icon;
 					if (obj.type == 'directory') {
 						icon = '<span class="ui-icon ui-icon-folder-collapsed"></span>';
@@ -283,7 +286,7 @@ function irods_get_path (path) {
 					else {
 						icon = '<span class="ui-icon ui-icon-document"></span>';
 					}
-					tr = $('<tr class="'+obj.type+'"><td style="white-space:nowrap;">'+icon+obj.name+'</td><td>'+obj.size+'</td><td>'+obj.timestamp+'</td></tr>');
+					tr = $('<tr class="'+obj.type+'"><td style="white-space:nowrap;">'+icon+name+'</td><td>'+obj.size+'</td><td>'+obj.timestamp+'</td></tr>');
 
 					if (obj.type == 'directory') {
 						$(tr).click(
