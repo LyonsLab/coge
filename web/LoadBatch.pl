@@ -25,7 +25,7 @@ use Data::Dumper;
 no warnings 'redefine';
 
 use vars qw(
-  $P $PAGE_TITLE $TEMPDIR $BINDIR $USER $coge $FORM $LINK
+  $P $PAGE_TITLE $TEMPDIR $BINDIR $USER $coge $FORM $LINK $EMBED
   %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $JOB_ID
 );
 
@@ -43,6 +43,8 @@ $BINDIR     = $P->{SCRIPTDIR}; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
 $JOB_ID  = $FORM->Vars->{'job_id'};
 $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
+
+$EMBED = $FORM->param('embed');
 
 $MAX_SEARCH_RESULTS = 100;
 
@@ -63,27 +65,43 @@ $MAX_SEARCH_RESULTS = 100;
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 
 sub generate_html {
-    my $html;
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( PAGE_TITLE => $PAGE_TITLE,
-    				  PAGE_LINK  => $LINK,
-    				  HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= ' ' . $USER->last_name
-      if ( $USER->first_name && $USER->last_name );
-    $template->param( USER     => $name );
-    $template->param( LOGO_PNG => $PAGE_TITLE . "-logo.png" );
-    $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-    my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-    $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
+    # Check for finished result
+    if ($JOB_ID) {
+        my $log = get_load_log(workflow_id => $JOB_ID);
+        if ($log) {
+            my $res = decode_json($log);
+            if ($res->{notebook_id}) {
+                my $url = 'NotebookView.pl?nid=' . $res->{notebook_id};
+                print $FORM->redirect(-url => $url);
+            }
+        }
+    }
+    
+    my $template;
 
-    $template->param( BODY       => generate_body() );
-    $template->param( ADJUST_BOX => 1 );
-
-    $html .= $template->output;
-    return $html;
+    $EMBED = $FORM->param('embed');
+    if ($EMBED) {
+        $template =
+          HTML::Template->new(
+            filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
+    }
+    else {    
+        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+        $template->param( PAGE_TITLE => $PAGE_TITLE,
+        				  PAGE_LINK  => $LINK,
+        				  HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+        my $name = $USER->user_name;
+        $name = $USER->first_name if $USER->first_name;
+        $name .= ' ' . $USER->last_name
+          if ( $USER->first_name && $USER->last_name );
+        $template->param( USER     => $name );
+        $template->param( LOGO_PNG => $PAGE_TITLE . "-logo.png" );
+        $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
+        $template->param( ADJUST_BOX => 1 );
+    }
+    
+    $template->param( BODY => generate_body() );
+    return $template->output;
 }
 
 sub generate_body {
@@ -114,6 +132,7 @@ sub generate_body {
     }
 
     $template->param(
+        EMBED       => $EMBED,
     	LOAD_ID     => $LOAD_ID,
     	JOB_ID      => $JOB_ID,
         STATUS_URL  => 'api/v1/jobs/',
@@ -394,6 +413,16 @@ sub load_batch {
     # Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
         url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id
+    );
+    
+    # Log it
+    CoGe::Accessory::Web::log_history(
+        db          => $coge,
+        workflow_id => $workflow_id,
+        user_id     => $USER->id,
+        page        => "LoadBatch",
+        description => 'Load batch '.scalar(@files).' experiments into notebook "'.$name.'"',
+        link        => $tiny_link
     );
 
     return encode_json({ job_id => $workflow_id, link => $tiny_link });

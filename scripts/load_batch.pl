@@ -152,15 +152,6 @@ if ($result_dir) {
     );
 }
 
-# Yay!
-CoGe::Accessory::Web::log_history(
-    db          => $coge,
-    user_id     => $user->id,
-    page        => "LoadBatch",
-    description => 'load batch experiments',
-    link        => 'NotebookView.pl?nid=' . $notebook->id
-);
-
 print STDOUT "log: Loaded $exp_count experiments, skipped ", scalar(@failed_experiments) , "\n";
 #close($log);
 
@@ -272,6 +263,11 @@ sub process_dir {
 
     unless ($load_count) {
         print STDOUT "log: error: no experiment files found\n";
+        exit(-1);
+    }
+    
+    unless (@experiments) {
+        print STDOUT "log: error: none of the experiments loaded successfully\n";
         exit(-1);
     }
     
@@ -418,8 +414,8 @@ sub create_notebook {
     CoGe::Accessory::Web::log_history(
         db          => $coge,
         user_id     => $user->id,
-        page        => "User",
-        description => 'create notebook id' . $list->id
+        page        => "LoadBatch",
+        description => 'Create notebook "'.$name.'" id' . $list->id
     );
 
     return $list;
