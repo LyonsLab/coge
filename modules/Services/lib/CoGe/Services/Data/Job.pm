@@ -9,6 +9,7 @@ use CoGeX;
 use CoGe::Services::Auth;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::TDS;
+use CoGe::Core::Storage qw( get_workflow_paths );
 
 sub fetch {
     my $self = shift;
@@ -42,6 +43,8 @@ sub fetch {
 #        });
 #        return;
 #    }
+
+    # TODO COGE-472: add read from "debug.log" in results path if JEX no longer has the log
     
     # Add tasks (if any)
     my @tasks;
@@ -56,7 +59,8 @@ sub fetch {
         };
         
         if (defined $task->{output}) {
-            foreach (split(/\n/, $task->{output})) {
+            foreach (split(/\\n/, $task->{output})) {
+                print STDERR $_, "\n";
                 next unless ($_ =~ /^log\: /);
                 $_ =~ s/^log\: //;
                 $t->{log} .= $_ . "\n";
@@ -68,9 +72,10 @@ sub fetch {
     
     # Add results (if any)
     #FIXME add routine to Storage.pm to get results path
-    my $result_dir = catdir($conf->{SECTEMPDIR}, 'results', 'experiment', $user->name, $id);
+    my ( undef, $result_dir ) = get_workflow_paths( $user->name, $id ); # FIXME mdb 8/22/14 directory "experiments" used to be here so whatever puts results there is broken now
     my @results;
     if (-r $result_dir) {
+        # Get list of result files in results path
         opendir(my $fh, $result_dir);
         foreach my $file ( readdir($fh) ) {
             my $fullpath = catfile($result_dir, $file);
