@@ -151,7 +151,7 @@ sub actions {
         {
             NAME       => "SynMap",
             ID         => 4,
-            LOGO       => "picts/SynMap.svg",
+            LOGO       => "picts/SynMap-inverse.svg",
             ACTION     => qq{<a href="./SynMap.pl">SynMap</a>},
             LINK       => qq{./SynMap.pl},
             SCREENSHOT => "picts/preview/SynMap.png",
