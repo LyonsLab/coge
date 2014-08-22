@@ -27,7 +27,9 @@ use strict;
 use warnings;
 
 use CoGe::Accessory::Web;
-#use Data::Dumper;
+use URI::Escape qw(uri_unescape);
+use URI::Escape::JavaScript qw(escape unescape);
+use Data::Dumper;
 use IPC::System::Simple qw(capture system $EXITVAL EXIT_ANY);
 
 BEGIN {
@@ -44,12 +46,17 @@ BEGIN {
 sub irods_ils {
     my $path = shift;
     $path = '' unless $path;
-
+    my %opts = @_;
+    my $escape_output = $opts{escape_output} if (%opts);
     #print STDERR "irods_ils: path=$path\n";
     my $env_file = _irods_get_env_file();
     return { error => "Error: iRODS env file missing" } unless $env_file;
 
-    my $cmd = "export irodsEnvFile='$env_file'; ils -l $path 2>&1";
+    $path = uri_unescape($path); # mdb added 8/15/14 issue 441
+    print STDERR $path, "\n";
+
+    my $cmd = "export irodsEnvFile='$env_file'; ils -l '$path' 2>&1";
+#    print STDERR $cmd, "\n";
 
 #	print STDERR "cmd: $cmd\n";
 #	my @ils = `$cmd`; # old way of executing command, replaced by better error checking below
@@ -57,47 +64,59 @@ sub irods_ils {
     if ($EXITVAL) {
         return { error => "Error: ils rc=$EXITVAL" };
     }
+#    print STDERR Dumper \@ils, "\n";
 
-    $path = shift @ils;
+    #$path = shift @ils; # mdb removed 8/15/14 issue 441
+    shift @ils; # skip first line showing path # mdb added 8/15/14 issue 441
 
     #	if ($path =~ /^ERROR/) { # iRODS error message
     #		my $result = { type => 'error', name => $path };
     #		return wantarray ? ($result) : [$result];
     #	}
-    chomp($path);
-    chop($path);
+    
+    # mdb removed 8/15/14 issue 441
+    #chomp($path);
+    #chop($path);
 
     my @result;
     foreach my $line (@ils) {
         my ( $type, $backup, $size, $timestamp, $name );
-
         chomp $line;
         if ( $line =~ /^\s*C\-/ ) {    # directory
             $type = 'directory';
-            ($name) = $line =~ /([^\/\s]+)\s*$/;
-            if ($name) { $name .= '/'; }
+            ($name) = $line =~ /([^\/]+)\s*$/; # mdb modified 8/14/14 issue 441
+            if ($name) { $name =~ s/\s*$//; $name .= '/'; }
             else       { $name = 'error' }
             ( $size, $timestamp ) = ( '', '' );
         }
         else {                         # file
             $type = 'file';
-            ( undef, undef, $backup, undef, $size, $timestamp, undef, $name ) =
-              split( /\s+/, $line );
+            #( undef, undef, $backup, undef, $size, $timestamp, undef, $name ) = split( /\s+/, $line ); # mdb removed 8/14/14 issue 441
+            ($backup, $size, $timestamp, $name) = $line =~ /\s+\S+\s+(\d+)\s+\S+\s+(\S+)\s+(\S+)\s+\S+\s+(\S+)/; # mdb added 8/14/14 issue 441
         }
 		next if $backup;
-
+		
+		my $path2;
+		if ($escape_output) {
+		    $type      = escape($type);
+            $size      = escape($size);
+            $timestamp = escape($timestamp);
+            $name      = escape($name);
+            $path2     = escape($path . '/' . $name);
+		}
+		
         push @result,
           {
             type      => $type,
             size      => $size,
             timestamp => $timestamp,
             name      => $name,
-            path      => $path . '/' . $name
+            path      => $path2
           };
     }
-    @result =
-      sort { $a->{type} cmp $b->{type} } @result;    # directories before files
+    @result = sort { $a->{type} cmp $b->{type} } @result;    # directories before files
 
+#    print STDERR Dumper \@result, "\n";
     return { items => \@result };
 }
 
@@ -120,12 +139,16 @@ sub irods_chksum {
 sub irods_iget {
     my ( $src, $dest, $opts ) = @_;
     my $no_execute = ( $opts and $opts->{no_execute} ); # mdb added 4/10/14 for REST API, get command name but don't execute
+    $src = '' unless (defined $src);
+    $dest = '' unless (defined $dest);
+    $src = unescape($src); # mdb added 8/15/14 issue 441
+    $dest = unescape($dest); # mdb added 8/15/14 issue 441
 
-    #print STDERR "irods_iget $src $dest\n";
+    print STDERR "irods_iget $src $dest\n";
     my $env_file = _irods_get_env_file();
     return unless $env_file;
 
-    my $cmd = "export irodsEnvFile='$env_file'; iget -fT " . ($src || '') . ' ' . ($dest || '');
+    my $cmd = "export irodsEnvFile='$env_file'; iget -fT '$src' '$dest'";
     return $cmd if $no_execute;
     #print STDERR "cmd: $cmd\n";
     my @result = `$cmd`;
