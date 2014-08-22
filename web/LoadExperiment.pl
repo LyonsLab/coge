@@ -14,7 +14,7 @@ use CoGe::Core::Storage qw(create_experiment get_workflow_paths);
 use CoGe::Pipelines::qTeller qw(run);
 use HTML::Template;
 use JSON::XS;
-use URI::Escape::JavaScript qw(escape);
+#use URI::Escape::JavaScript qw(escape);
 use File::Path;
 use File::Spec::Functions;
 use File::Copy;
@@ -101,8 +101,8 @@ sub generate_html {
         $template->param( USER     => $name );
         $template->param( LOGO_PNG => $PAGE_TITLE . "-logo.png" );
         $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-        my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-        $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
+#        my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+#        $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
         $template->param( ADJUST_BOX => 1 );
     }
 
@@ -158,7 +158,7 @@ sub generate_body {
 sub irods_get_path {
     my %opts      = @_;
     my $path      = $opts{path};
-
+    #print STDERR "irods_get_path: $path\n";
     my $username = $USER->name;
     my $basepath = $P->{IRODSDIR};
     $basepath =~ s/\<USER\>/$username/;
@@ -169,7 +169,8 @@ sub irods_get_path {
         return;
     }
 
-    my $result = CoGe::Accessory::IRODS::irods_ils($path);
+    my $result = CoGe::Accessory::IRODS::irods_ils($path, escape_output => 1);
+    #print STDERR "irods_get_path ", Dumper $result, "\n";
     my $error  = $result->{error};
     if ($error) {
         my $email = $P->{SUPPORT_EMAIL};
@@ -189,8 +190,7 @@ sub irods_get_path {
         );
         return encode_json( { error => $error } );
     }
-    return encode_json(
-        { path => $path, items => $result->{items} } );
+    return encode_json( { path => $path, items => $result->{items} } );
 }
 
 sub irods_get_file {
