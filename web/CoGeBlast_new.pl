@@ -2366,11 +2366,24 @@ sub export_top_hits {
     # Filter top scoring hits
     my %hsp;
     foreach my $accn ( split( /,/, $accn_list ) ) {
-        next if $accn =~ /no$/;
-        my ( $featid, $hsp_num, $dsgid ) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
-        #my $dsg = $coge->resultset("Genome")->find($dsgid);
-        #my ($feat) = $coge->resultset("Feature")->find($featid);
-        #my ($name) = $feat->names;
+	my ($hsp_num, $dsgid);
+        if ($accn =~ /no$/) {
+		my $accn_with_commas = $accn;
+            $accn_with_commas =~ tr/_/,/;
+            ( $hsp_num, $dsgid ) = $accn_with_commas =~ /(\d+),(\d+),\w*_?\d+,\d+no$/;
+        }
+        else {
+		if ( $accn =~ tr/_/_/ > 2 ) {
+                	my $accn_with_commas = $accn;
+                	$accn_with_commas =~ tr/_/,/;
+                	( $hsp_num, $dsgid ) =
+                  	$accn_with_commas =~
+                  		/(\d+),(\d+),(\w*_?\d+),(\d+),(\d+),(\d+.?\d*)/;
+            	}
+            	else {
+                	( undef, $hsp_num, $dsgid ) = $accn =~ /(\d+)_(\d+)_(\d+)/;
+            	}
+        }
         $sth->execute( $hsp_num . "_" . $dsgid ) || die "unable to execute";
         my ( $qname, $salign, $score );
         while ( my $hsp_info = $sth->fetchrow_hashref() ) { # FIXME: mdb asks "why is this looped?"

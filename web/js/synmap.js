@@ -12,10 +12,10 @@ function get_organism_chain(type,val,i)
 	$('#dsgid'+i).html('');
 	
     $('#org_list').html('<input type=hidden id = "org_id"+i><font class="loading"></font>');
-    if (type == 'name')
-    	get_orgs(['args__name','args__'+val,'args__i','args__'+i], ['org_list'+i]);
-    else if (type == 'desc') 
-    	get_orgs(['args__desc','args__'+val,'args__i','args__'+i], ['org_list'+i]);
+  //  if (type == 'name')
+    	get_orgs(['args__search','args__'+val,'args__i','args__'+i], ['org_list'+i]);
+//    else if (type == 'desc') 
+//   	get_orgs(['args__desc','args__'+val,'args__i','args__'+i], ['org_list'+i]);
     //$('#dsg_info'+i).html('<div class="loading dna_small small">loading. . .</div>');
     $('#dsg_info'+i).html('<div class="small note indent">loading... <img src="picts/ajax-loader.gif"/></div>');
     ajax_wait("gen_dsg_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['dsg_menu"+i+"', 'genome_message"+i+"']);");
@@ -32,6 +32,12 @@ function get_genome_info_chain(i) {
     $('#depth_org_2').html($('#org_id2 option:selected').html());
 
     ajax_wait("get_genome_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],[handle_dsg_info]);");
+}
+
+function search_bar(text, divId) {
+    console.log(divId);
+    var el = $(divId);
+    el.val(el.val() + " " + text);
 }
 
 function close_dialog(dialog) {
@@ -193,15 +199,15 @@ function timing(val, val2){
 
     if (namere.exec(val)) {
         if (val2) {
-            get_organism_chain('name',$('#'+val).val(),i[0])
+            get_organism_chain('search',$('#'+val).val(),i[0])
         } else {
-            pageObj.pageobjtime = setTimeout("get_organism_chain('name',$('#"+val+"').val(),i[0])",500);
+            pageObj.pageobjtime = setTimeout("get_organism_chain('search',$('#"+val+"').val(),i[0])",500);
         }
     } else if (descre.exec(val)) {
         if (val2) {
-            get_organism_chain('desc',$('#'+val).val(),i[0])
+            get_organism_chain('search',$('#'+val).val(),i[0])
         } else {
-            pageObj.pageobjtime = setTimeout("get_organism_chain('desc',$('#"+val+"').val(),i[0])",200);
+            pageObj.pageobjtime = setTimeout("get_organism_chain('search',$('#"+val+"').val(),i[0])",200);
         }
     }
 }
