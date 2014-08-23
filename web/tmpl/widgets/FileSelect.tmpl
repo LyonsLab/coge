@@ -291,7 +291,6 @@ function irods_get_path (path) {
 					if (obj.type == 'directory') {
 						$(tr).click(
 							function() {
-								console.log(obj.path);
 								irods_get_path(obj.path);
 							}
 						);
