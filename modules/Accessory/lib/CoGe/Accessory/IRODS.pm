@@ -53,10 +53,8 @@ sub irods_ils {
     return { error => "Error: iRODS env file missing" } unless $env_file;
 
     $path = uri_unescape($path); # mdb added 8/15/14 issue 441
-    print STDERR $path, "\n";
 
     my $cmd = "export irodsEnvFile='$env_file'; ils -l '$path' 2>&1";
-#    print STDERR $cmd, "\n";
 
 #	print STDERR "cmd: $cmd\n";
 #	my @ils = `$cmd`; # old way of executing command, replaced by better error checking below
@@ -80,6 +78,7 @@ sub irods_ils {
 
     my @result;
     foreach my $line (@ils) {
+        #print STDERR $line, "\n";
         my ( $type, $backup, $size, $timestamp, $name );
         chomp $line;
         if ( $line =~ /^\s*C\-/ ) {    # directory
@@ -96,13 +95,13 @@ sub irods_ils {
         }
 		next if $backup;
 		
-		my $path2;
+		my $path2 = $path;
 		if ($escape_output) {
 		    $type      = escape($type);
             $size      = escape($size);
             $timestamp = escape($timestamp);
-            $name      = escape($name);
             $path2     = escape($path . '/' . $name);
+            $name      = escape($name);
 		}
 		
         push @result,
@@ -144,7 +143,10 @@ sub irods_iget {
     $src = unescape($src); # mdb added 8/15/14 issue 441
     $dest = unescape($dest); # mdb added 8/15/14 issue 441
 
-    print STDERR "irods_iget $src $dest\n";
+    #$src =~ s/ /\\ /;
+    #$dest =~ s/ /\\ /;
+
+    #print STDERR "irods_iget $src $dest\n";
     my $env_file = _irods_get_env_file();
     return unless $env_file;
 
@@ -187,7 +189,7 @@ sub irods_imeta {
 		}
 
 	    my $cmd = "export irodsEnvFile='$env_file'; imeta add -d '" . $dest . "' '" . $k . "' '" . $v . "'";
-	    print STDERR "cmd: $cmd\n";
+	    #print STDERR "cmd: $cmd\n";
 	    my @result = `$cmd`;
 	    #print STDERR "@result";
 	}
