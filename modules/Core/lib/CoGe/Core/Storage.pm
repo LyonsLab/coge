@@ -166,8 +166,7 @@ sub index_genome_file {
     my $cmd = "$samtools faidx $file_path";
     qx{ $cmd };
     if ( $? != 0 ) {
-        print STDERR
-          "Storage::index_genome_file: command failed with rc=$?: $cmd\n";
+        print STDERR "Storage::index_genome_file: command failed with rc=$?: $cmd\n";
         return $?;
     }
 
@@ -182,8 +181,7 @@ sub index_genome_file {
         $cmd = "$razip -c $file_path > $file_path.razf";
         qx{ $cmd };
         if ( $? != 0 ) {
-            print STDERR
-              "Storage::index_genome_file: command failed with rc=$?: $cmd\n";
+            print STDERR "Storage::index_genome_file: command failed with rc=$?: $cmd\n";
             return $?;
         }
 
@@ -191,8 +189,7 @@ sub index_genome_file {
         $cmd = "$samtools faidx $file_path.razf";
         qx{ $cmd };
         if ( $? != 0 ) {
-            print STDERR
-              "Storage::index_genome_file: command failed with rc=$?: $cmd\n";
+            print STDERR "Storage::index_genome_file: command failed with rc=$?: $cmd\n";
             return $?;
         }
     }
@@ -615,7 +612,7 @@ sub create_experiment {
     my $metadata = $opts{metadata};
     my $options = $opts{options};
 
-    print STDERR (caller(0))[3], "\n";
+    #print STDERR (caller(0))[3], "\n";
 
     my $conf = CoGe::Accessory::Web::get_defaults();
 
@@ -678,7 +675,7 @@ sub create_experiments_from_batch {
     my $files = $opts{files};
     my $metadata = $opts{metadata};
 
-    print STDERR (caller(0))[3], "\n", Dumper $files, "\n";
+    #print STDERR (caller(0))[3], "\n", Dumper $files, "\n";
 
     my $conf = CoGe::Accessory::Web::get_defaults();
 
@@ -776,7 +773,7 @@ sub create_genome_from_file {
     my $files = $opts{files};
     my $metadata = $opts{metadata};
 
-    print STDERR (caller(0))[3], "\n";
+    #print STDERR (caller(0))[3], "\n";
 
     # Connect to workflow engine and get an id
     my $conf = CoGe::Accessory::Web::get_defaults();
@@ -832,7 +829,7 @@ sub create_genome_from_NCBI {
     my $user = $opts{user};
     my $accns = $opts{accns};
 
-    print STDERR (caller(0))[3], "\n";
+    #print STDERR (caller(0))[3], "\n";
 
     # Connect to workflow engine and get an id
     my $conf = CoGe::Accessory::Web::get_defaults();
@@ -1036,7 +1033,7 @@ sub create_annotation_dataset {
     my $files = $opts{files};
     my $metadata = $opts{metadata};
 
-    print STDERR (caller(0))[3], "\n";
+    #print STDERR (caller(0))[3], "\n";
 
     # Connect to workflow engine and get an id
     my $conf = CoGe::Accessory::Web::get_defaults();
