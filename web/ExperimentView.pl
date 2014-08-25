@@ -656,13 +656,14 @@ sub _get_experiment_info {
     my $allow_edit = $USER->is_admin || $USER->is_owner_editor( experiment => $eid );
     my $gid = $exp->genome->id;
 
+    my $types;
     foreach my $type ( $exp->types ) {
-       my $info = $type->name;
-       $info .= ": " . $type->description if $type->description;
+       $types .= $type->name;
+       $types .= ": " . $type->description if $type->description;
 
        if ($allow_edit) {
            # NOTE: it is undesirable to have a javascript call in a DB object, but it works
-           $info .=
+           $types .=
                "<span onClick=\"remove_experiment_type({eid: '"
              . $exp->id
              . "', etid: '"
@@ -681,7 +682,7 @@ sub _get_experiment_info {
         { title => "Genome", value => $exp->genome->info_html },
         { title => "Source", value => $exp->source->info_html },
         { title => "Version", value => $exp->version },
-        { title => "Types", value => },
+        { title => "Tags", value => $types },
         { title => "Notebooks", value => },
         { title => "Restricted", value => $exp->restricted ? "Yes" : "No"},
     ];
