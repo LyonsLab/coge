@@ -78,10 +78,13 @@ $(document).ready(function(){
 
     $("#file_type_selector").on("change", function() {
         var alignment = $("#alignment");
+        var pipeline =$("#fastq-pipeline");
         if ($(this).val() === "fastq") {
            alignment.slideDown();
+           pipeline.slideDown();
         } else {
            alignment.slideUp();
+           pipeline.slideUp();
         }
     });
 
@@ -579,7 +582,7 @@ function update_dialog(request, user, identifier, formatter) {
 	<div class="small info">
 		Complete the form below to describe the experiment data.
 		<div class="alert"><span class="small glyphicon glyphicon-asterisk"></span> denotes a required field</div>
-	</div> 
+	</div>
 
 	<table class="small" style="padding-top:0.5em;">
 	  <tr>
@@ -654,12 +657,16 @@ function update_dialog(request, user, identifier, formatter) {
 	    <td>
 	        <input name="aligner" type="radio" value="gsnap" checked>
 	        <label for="gsnap">GSNAP</label>
-	
+
 	        <input name="aligner" type="radio" value="tophat">
 	        <label for="gsnap">TopHat/Bowtie2</label>
 	    </td>
 	  </tr>
 	</table>
+
+    <div id="fastq-pipeline" class="info small hidden">
+        This experiment will be processed using the <a href="https://genomevolution.org/wiki/index.php?title=RNASeq_Pipeline">RNASeq Pipeline</a>
+    </div>
 </div>
 
 <div class="middle" style="padding-top:1em;">
