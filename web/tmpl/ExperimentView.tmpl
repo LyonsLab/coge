@@ -27,8 +27,8 @@ $(document).ready(function() {
 
     $("#progress_dialog").dialog({modal: true});
 
-    $("#edit_type_name").autocomplete({
-        source: function() { get_experiment_types(); },
+    $("#edit_tag_name").autocomplete({
+        source: function() { get_experiment_tags(); },
         select: function(event, ui) { get_type_description( ui.item.label ); }
     });
 
@@ -150,24 +150,24 @@ function make_experiment_private () {
 function add_experiment_type () {
     $.ajax({
         data: {
-            fname: 'add_experiment_type',
+            fname: 'add_experiment_tag',
             eid: eid
         },
         success : function(data) {
-            $("#experiment_type_edit_box").dialog({
+            $("#experiment_tag_edit_box").dialog({
                 beforeClose:
                     function() {
-                        $("#edit_type_name").autocomplete('close');
+                        $("#edit_tag_name").autocomplete('close');
                     }
             });
-            $("#experiment_type_edit_box").html(data).dialog('open');
+            $("#experiment_tag_edit_box").html(data).dialog('open');
         }
     });
 }
 
 function add_tag_to_experiment () {
-    var name = $('#edit_type_name').val();
-    var description = $('#edit_type_description').val();
+    var name = $('#edit_tag_name').val();
+    var description = $('#edit_tag_description').val();
 
     if (name) {
         $.ajax({
@@ -179,7 +179,7 @@ function add_tag_to_experiment () {
             },
             success : function(val) {
                 get_experiment_info();
-                $("#experiment_type_edit_box").dialog('close');
+                $("#experiment_tag_edit_box").dialog('close');
             },
         });
     }
@@ -638,26 +638,26 @@ function remove_annotation (eaid) {
     });
 }
 
-function get_experiment_types () {
+function get_experiment_tags () {
     $.ajax({
         data: {
-            fname: 'get_experiment_types'
+            fname: 'get_experiment_tags'
         },
         success : function(val) {
             var items = jQuery.parseJSON(val);
-            $("#edit_type_name").autocomplete("option", "source", items).autocomplete("search");
+            $("#edit_tag_name").autocomplete("option", "source", items).autocomplete("search");
         },
     });
 }
 
-function get_type_description (name) {
+function get_tag_description (name) {
     $.ajax({
         data: {
-            fname: 'get_type_description',
+            fname: 'get_tag_description',
             name: name
         },
         success : function(data) {
-            $("#edit_type_description").html(data);
+            $("#edit_tag_description").html(data);
         },
     });
 }
@@ -735,15 +735,15 @@ function get_type_description (name) {
 
 <div id="experiment_info_edit_box" class="dialog_box" title="Edit Experiment Info" style="display:none;"></div>
 
-<div id="experiment_type_edit_box" class="dialog_box" title="Add Experiment Tag" style="display:none;">
+<div id="experiment_tag_edit_box" class="dialog_box" title="Add Experiment Tag" style="display:none;">
   <table class="small">
    <tr>
     <td>Name:</td>
-    <td><input id="edit_type_name" size="53" value=""></td>
+    <td><input id="edit_tag_name" size="53" value=""></td>
    </tr>
    <tr valign="top">
     <td>Description:</td>
-    <td><textarea id="edit_type_description" rows="5" cols="50"></textarea></td>
+    <td><textarea id="edit_tag_description" rows="5" cols="50"></textarea></td>
    </tr>
   </table>
   <span onClick="add_tag_to_experiment();" class='ui-button ui-corner-all coge-button'>Add</span>

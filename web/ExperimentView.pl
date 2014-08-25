@@ -45,8 +45,8 @@ $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID .
     make_experiment_public     => \&make_experiment_public,
     make_experiment_private    => \&make_experiment_private,
     add_tag_to_experiment      => \&add_tag_to_experiment,
-    get_experiment_types       => \&get_experiment_types,
-    get_type_description       => \&get_type_description,
+    get_experiment_tags        => \&get_experiment_tags,
+    get_tag_description        => \&get_tag_description,
     remove_experiment_type     => \&remove_experiment_type,
     get_annotations            => \&get_annotations,
     add_annotation             => \&add_annotation,
@@ -188,7 +188,7 @@ sub add_tag_to_experiment {
 }
 
 #FIXME: Types should be more generic and be referred to as TAGS
-sub get_experiment_types {
+sub get_experiment_tags {
     #my %opts = @_;
 
     my %unique;
@@ -201,7 +201,7 @@ sub get_experiment_types {
     return encode_json( [ sort keys %unique ] );
 }
 
-sub get_type_description {
+sub get_tag_description {
     my %opts = @_;
     my $name = $opts{name};
     return unless ($name);
