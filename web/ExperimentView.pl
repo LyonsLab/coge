@@ -47,7 +47,7 @@ $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID .
     add_tag_to_experiment      => \&add_tag_to_experiment,
     get_experiment_tags        => \&get_experiment_tags,
     get_tag_description        => \&get_tag_description,
-    remove_experiment_type     => \&remove_experiment_type,
+    remove_experiment_tag      => \&remove_experiment_tag,
     get_annotations            => \&get_annotations,
     add_annotation             => \&add_annotation,
     update_annotation          => \&update_annotation,
@@ -215,7 +215,7 @@ sub linkify {
     return "<span class='link' onclick=\"window.open('$link')\">$desc</span>";
 }
 
-sub remove_experiment_type {
+sub remove_experiment_tag {
     my %opts = @_;
     my $eid  = $opts{eid};
     return "No experiment ID specified" unless $eid;
@@ -664,7 +664,7 @@ sub _get_experiment_info {
        if ($allow_edit) {
            # NOTE: it is undesirable to have a javascript call in a DB object, but it works
            $types .=
-               "<span onClick=\"remove_experiment_type({eid: '"
+               "<span onClick=\"remove_experiment_tag({eid: '"
              . $exp->id
              . "', etid: '"
              . $type->id
