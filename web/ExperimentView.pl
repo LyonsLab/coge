@@ -44,7 +44,7 @@ $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID .
     get_sources                => \&get_sources,
     make_experiment_public     => \&make_experiment_public,
     make_experiment_private    => \&make_experiment_private,
-    add_type_to_experiment     => \&add_type_to_experiment,
+    add_tag_to_experiment      => \&add_tag_to_experiment,
     get_experiment_types       => \&get_experiment_types,
     get_type_description       => \&get_type_description,
     remove_experiment_type     => \&remove_experiment_type,
@@ -153,7 +153,7 @@ sub make_experiment_private {
     return 1;
 }
 
-sub add_type_to_experiment {
+sub add_tag_to_experiment {
     my %opts = @_;
     my $eid  = $opts{eid};
     return 0 unless $eid;

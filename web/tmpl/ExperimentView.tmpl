@@ -165,14 +165,14 @@ function add_experiment_type () {
     });
 }
 
-function add_type_to_experiment () {
+function add_tag_to_experiment () {
     var name = $('#edit_type_name').val();
     var description = $('#edit_type_description').val();
 
     if (name) {
         $.ajax({
             data: {
-                fname: 'add_type_to_experiment',
+                fname: 'add_tag_to_experiment',
                 eid: eid,
                 name: name,
                 description: description
@@ -735,7 +735,7 @@ function get_type_description (name) {
 
 <div id="experiment_info_edit_box" class="dialog_box" title="Edit Experiment Info" style="display:none;"></div>
 
-<div id="experiment_type_edit_box" class="dialog_box" title="Add Experiment Type" style="display:none;">
+<div id="experiment_type_edit_box" class="dialog_box" title="Add Experiment Tag" style="display:none;">
   <table class="small">
    <tr>
     <td>Name:</td>
@@ -746,7 +746,7 @@ function get_type_description (name) {
     <td><textarea id="edit_type_description" rows="5" cols="50"></textarea></td>
    </tr>
   </table>
-  <span onClick="add_type_to_experiment();" class='ui-button ui-corner-all coge-button'>Add</span>
+  <span onClick="add_tag_to_experiment();" class='ui-button ui-corner-all coge-button'>Add</span>
 </div>
 
 <div id="progress_dialog" class="hidden dialog_box">
