@@ -489,7 +489,7 @@ sub export_experiment_irods {
 
         my $i = 1;
         foreach my $type (@types) {
-            my $key = (scalar @types > 1) ? "Experiment Type $i" : "Experiment Type";
+            my $key = (scalar @types > 1) ? "Experiment Tag $i" : "Experiment Tag";
             $meta{$key} = $type->name;
             $i++;
         }
