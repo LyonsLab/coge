@@ -1,9 +1,9 @@
 <TMPL_IF NAME="MAIN">
 <script src="./js/coge/utils.js"></script>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
-<SCRIPT language="JavaScript">
+<script type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></script>
+<script type="text/javascript" src="./js/jquery.tablesorter.pager.js"></script>
+<script type="text/javascript" src="./js/jquery.fileupload.js"></script>
+<script type="text/javascript">
 
 const STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
 const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
@@ -766,7 +766,7 @@ function get_type_description (name) {
 </TMPL_IF>
 
 <TMPL_IF NAME="EDIT_EXPERIMENT_INFO">
-	<SCRIPT>
+	<script>
 	$(function() {
 	    $("#edit_source").autocomplete({
 	        source:
@@ -781,7 +781,7 @@ function get_type_description (name) {
 	            }
 	    });
 	});
-	</SCRIPT>
+	</script>
 	<table class="small">
 	 <tr>
 	  <td>Name:</td>
