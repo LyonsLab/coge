@@ -148,6 +148,10 @@ sub types {
     shift->experiment_types(@_);
 }
 
+sub tags {
+    shift->experiment_types(@_);
+}
+
 ################################################ subroutine header begin ##
 
 =head2 experiment_types
