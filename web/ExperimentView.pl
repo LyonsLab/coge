@@ -463,7 +463,7 @@ sub export_experiment_irods {
 
     unless($statusCode) {
         my $genome = $experiment->genome;
-        my @types = $experiment->types;
+        my @types = $experiment->tags;
         my @notebooks = $experiment->notebooks;
         my $dir = get_irods_path();
         my $dest = File::Spec->catdir($dir, basename($file));
@@ -656,18 +656,18 @@ sub _get_experiment_info {
     my $allow_edit = $USER->is_admin || $USER->is_owner_editor( experiment => $eid );
     my $gid = $exp->genome->id;
 
-    my $types;
-    foreach my $type ( $exp->types ) {
-       $types .= $type->name;
-       $types .= ": " . $type->description if $type->description;
+    my $tags;
+    foreach my $tag ( $exp->tags ) {
+       $tags .= $tag->name;
+       $tags .= ": " . $tag->description if $tag->description;
 
        if ($allow_edit) {
            # NOTE: it is undesirable to have a javascript call in a DB object, but it works
-           $types .=
+           $tags .=
                "<span onClick=\"remove_experiment_tag({eid: '"
              . $exp->id
              . "', etid: '"
-             . $type->id
+             . $tag->id
              . "'});\" class=\"link ui-icon ui-icon-trash\"></span>";
        }
     }
@@ -682,7 +682,7 @@ sub _get_experiment_info {
         { title => "Genome", value => $exp->genome->info_html },
         { title => "Source", value => $exp->source->info_html },
         { title => "Version", value => $exp->version },
-        { title => "Tags", value => $types },
+        { title => "Tags", value => $tags },
         { title => "Notebooks", value => },
         { title => "Restricted", value => $exp->restricted ? "Yes" : "No"},
     ];
