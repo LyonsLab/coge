@@ -1173,6 +1173,8 @@ qq{<table class="small ui-widget-content ui-corner-all"><tr><th>Query Seq<th>}
     $template->param( BLAST_RESULTS => 1 );
     $template->param( DATA_FILES =>
           gen_data_file_summary( prog => $prog, results => $results ) );
+
+    $template->param(LINK => $link);
     my $html = $template->output;
 
     my $temp = qq{

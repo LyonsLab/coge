@@ -173,7 +173,7 @@
             cache: false,
         });
 
-        var pageObj = {
+        pageObj = {
             waittime: 1000,
             locations: "<TMPL_VAR NAME=LOCATIONS>",
             gstid: "<TMPL_VAR NAME=GSTID>",
@@ -647,6 +647,12 @@
         <span class="bold text">Download</span>
         <TMPL_VAR NAME="DATA_FILES">
     </div>
+    <p>
+        Regenerate this analysis:
+        <a href="<TMPL_VAR NAME=LINK>">
+            <TMPL_VAR NAME="LINK">
+        </a>
+    </p>
 </div>
 <hr>
 </TMPL_IF>
