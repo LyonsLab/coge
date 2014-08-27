@@ -37,7 +37,7 @@ jQuery(document).ready(function(){
 	setup_button_states();
 
 	// Show indicator if not on main site
-	if (document.URL.indexOf('genomevolution.org') == -1) {
+	if (document.URL.indexOf('genomevolution.org') == -1 || document.URL.indexOf('coge.iplantcollaborative.org') == -1) {
 		$('#dev').html('*** Development ***');
 	}
 });
