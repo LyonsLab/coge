@@ -160,7 +160,7 @@ accn: foreach my $accn (@accns) {
 
 	my $genbank = new CoGe::Accessory::GenBank();
 	$genbank->debug(1);
-	$genbank->logfile($log);
+	$genbank->logfile(*STDOUT);
 	$genbank->max_entries($max_entries) if $max_entries;
 	$genbank->get_genbank_from_ncbi(
 		file => "$tmpdir/$accn.gbk",
