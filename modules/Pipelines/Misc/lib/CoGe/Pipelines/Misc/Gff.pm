@@ -20,32 +20,35 @@ BEGIN {
 }
 
 sub generate_gff {
+    my ($inputs, $conf) = @_;
+
     my %args = (
         annos   => 0,
         id_type => 0,
         cds     => 0,
         nu      => 0,
         upa     => 0,
-        @_
     );
+
+    @args{keys $inputs} = values $inputs;
 
     # Check for a genome or dataset id
     return unless $args{gid};
 
     # Generate the output filename
-    my $organism = sanitize_name($args{basename});
+    my $organism = "gff";
     my @attributes = qw(annos cds id_type nu upa);
     my $param_string = join "-", map { $_ . $args{$_} } @attributes;
     my $filename = $organism . "_" . $param_string . ".gff";
-    my $path = get_download_path($args{secure_tmp}, $args{gid});
+    my $path = get_download_path($conf->{SECTEMPDIR}, $args{gid});
     my $output_file = catfile($path, $filename);
 
     return $output_file, (
-        cmd     => catfile($args{script_dir}, "coge_gff.pl"),
+        cmd     => catfile($conf->{SCRIPTDIR}, "coge_gff.pl"),
         args    => [
             ['-id', $args{gid}, 0],
             ['-f', $filename, 0],
-            ['-config', $args{conf}, 0],
+            ['-config', $conf->{_CONFIG_PATH}, 0],
             # Parameters
             ['-cds', $args{cds}, 0],
             ['-annos', $args{annos}, 0],

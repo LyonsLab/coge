@@ -14,6 +14,31 @@ has 'parameters' => (
     required  => 1
 );
 
-requires qw(is_valid has_access execute);
+has 'user'  => (
+    is        => 'ro',
+    required  => 1
+);
+
+has 'db' => (
+    is        => 'ro',
+    required  => 1
+);
+
+has 'jex' => (
+    is        => 'ro',
+    required  => 1
+);
+
+sub execute {
+    my ($self, $workflow) = @_;
+
+    my $resp = $self->jex->submit_workflow($workflow);
+    my $success = $self->jex->is_successful($resp);
+
+    return {
+        job_id => $resp->{id},
+        success => $success ? JSON::true : JSON::false
+    };
+}
 
 1;

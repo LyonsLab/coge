@@ -143,6 +143,7 @@ Pipelines/Misc/lib/CoGe/Pipelines/Misc/Features.pm
 Pipelines/Misc/lib/CoGe/Pipelines/Misc/Gff.pm
 Pipelines/Misc/lib/CoGe/Pipelines/Misc/Tbl.pm
 Pipelines/SynMap/lib/CoGe/Pipelines/SynMap.pm
+Pipelines/lib/CoGe/Pipelines/PipelineFactory.pm
 Services/lib/CoGe/Services/Auth.pm
 Services/lib/CoGe/Services/Routes.pm
 Services/lib/CoGe/Services/Data/Experiment.pm
@@ -159,3 +160,5 @@ Services/lib/CoGe/Services/JBrowse/Configuration.pm
 Services/lib/CoGe/Services/JBrowse/Experiment.pm
 Services/lib/CoGe/Services/JBrowse/Sequence.pm
 Services/lib/CoGe/Services/JBrowse/Feature.pm
+Requests/lib/CoGe/Request/Request.pm
+Requests/lib/CoGe/Request/RequestFactory.pm

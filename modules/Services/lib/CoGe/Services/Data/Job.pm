@@ -10,14 +10,54 @@ use CoGe::Services::Auth;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::TDS;
 use CoGe::Core::Storage qw( get_workflow_paths );
+use CoGe::Requests::RequestFactory;
+use CoGe::Pipelines::PipelineFactory;
+
+sub add {
+    my $self = shift;
+    my $payload = $self->req->json;
+
+    # Authenticate user and connect to the database
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+
+    # User authentication is required
+    unless (defined $user) {
+        return $self->render(json => {
+            error => { Auth => "Access denied" }
+        });
+    }
+
+    my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
+    my $request_factor = CoGe::Requests::RequestFactory->new(db => $db, user => $user, jex => $jex);
+    my $request_handler = $request_factor->get($payload);
+
+    # Validate the request has all required fields
+    unless ($request_handler and $request_handler->is_valid) {
+        return $self->render(json => {
+            error => { Invalid => "The request was not valid." }
+        });
+    }
+
+    # Check users permissions to execute the request
+    unless ($request_handler->has_access) {
+        return $self->render(json => {
+            error => { Auth => "Access denied" }
+        });
+    }
+
+    my $pipeline_factory = CoGe::Pipelines::PipelineFactory->new(conf => $conf);
+    my $workflow = $pipeline_factory->get($payload);
+
+    return $self->render(json => $request_handler->execute($workflow));
+}
 
 sub fetch {
     my $self = shift;
     my $id = $self->stash('id');
-    
+
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
-    
+
     # User authentication is required
     unless (defined $user) {
         $self->render(json => {
@@ -35,7 +75,7 @@ sub fetch {
         });
         return;
     }
-    
+
 #    unless ($job_status->{status} =~ /completed|running/i) {
 #        $self->render(json => {
 #            id => int($id),
@@ -45,7 +85,7 @@ sub fetch {
 #    }
 
     # TODO COGE-472: add read from "debug.log" in results path if JEX no longer has the log
-    
+
     # Add tasks (if any)
     my @tasks;
     foreach my $task (@{$job_status->{jobs}}) {
@@ -57,7 +97,7 @@ sub fetch {
             status => $task->{status},
             log => undef
         };
-        
+
         if (defined $task->{output}) {
             foreach (split(/\\n/, $task->{output})) {
                 print STDERR $_, "\n";
@@ -66,10 +106,10 @@ sub fetch {
                 $t->{log} .= $_ . "\n";
             }
         }
-        
+
         push @tasks, $t;
     }
-    
+
     # Add results (if any)
     #FIXME add routine to Storage.pm to get results path
     my ( undef, $result_dir ) = get_workflow_paths( $user->name, $id ); # FIXME mdb 8/22/14 directory "experiments" used to be here so whatever puts results there is broken now
@@ -80,7 +120,7 @@ sub fetch {
         foreach my $file ( readdir($fh) ) {
             my $fullpath = catfile($result_dir, $file);
             next unless -f $fullpath;
-    
+
             my $name = basename($file);
             push @results, {
                 type => 'http',
