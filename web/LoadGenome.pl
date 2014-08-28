@@ -213,9 +213,7 @@ sub irods_get_path {
 sub irods_get_file {
     my %opts = @_;
     my $path = $opts{path};
-    
     $path = unescape($path);
-
     my ($filename)   = $path =~ /([^\/]+)\s*$/;
     my ($remotepath) = $path =~ /(.*)$filename$/;
 

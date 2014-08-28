@@ -14,7 +14,7 @@ use CoGe::Core::Storage qw(create_experiment get_workflow_paths);
 use CoGe::Pipelines::qTeller qw(run);
 use HTML::Template;
 use JSON::XS;
-#use URI::Escape::JavaScript qw(escape);
+use URI::Escape::JavaScript qw(escape unescape);
 use File::Path;
 use File::Spec::Functions;
 use File::Copy;
@@ -158,6 +158,7 @@ sub generate_body {
 sub irods_get_path {
     my %opts      = @_;
     my $path      = $opts{path};
+    $path = unescape($path);
     #print STDERR "irods_get_path: $path\n";
     my $username = $USER->name;
     my $basepath = $P->{IRODSDIR};
@@ -196,7 +197,7 @@ sub irods_get_path {
 sub irods_get_file {
     my %opts = @_;
     my $path = $opts{path};
-
+    $path = unescape($path);
     my ($filename)   = $path =~ /([^\/]+)\s*$/;
     my ($remotepath) = $path =~ /(.*)$filename$/;
 
