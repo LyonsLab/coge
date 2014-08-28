@@ -12,7 +12,7 @@ use CoGe::Core::Storage qw(create_experiments_from_batch get_workflow_paths);
 use CoGe::Core::Genome qw(genomecmp);
 use HTML::Template;
 use JSON::XS;
-use URI::Escape::JavaScript qw(escape);
+use URI::Escape::JavaScript qw(escape unescape);
 use File::Path;
 use File::Copy;
 use File::Basename;
@@ -150,7 +150,7 @@ sub generate_body {
 sub irods_get_path {
     my %opts      = @_;
     my $path      = $opts{path};
-
+    $path = unescape($path);
     my $username = $USER->name;
     my $basepath = $P->{IRODSDIR};
     $basepath =~ s/\<USER\>/$username/;
@@ -161,7 +161,7 @@ sub irods_get_path {
         return;
     }
 
-    my $result = CoGe::Accessory::IRODS::irods_ils($path);
+    my $result = CoGe::Accessory::IRODS::irods_ils($path, escape_output => 1);
     my $error  = $result->{error};
     if ($error) {
         my $email = $P->{SUPPORT_EMAIL};
@@ -188,7 +188,7 @@ sub irods_get_path {
 sub irods_get_file {
     my %opts = @_;
     my $path = $opts{path};
-
+    $path = unescape($path);
     my ($filename)   = $path =~ /([^\/]+)\s*$/;
     my ($remotepath) = $path =~ /(.*)$filename$/;
 
