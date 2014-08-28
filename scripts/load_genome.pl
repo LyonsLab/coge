@@ -10,7 +10,7 @@ use Data::Dumper;
 use Getopt::Long;
 use File::Path;
 use File::Touch;
-use File::Basename qw( basename );
+use File::Basename qw( basename dirname );
 use File::Spec::Functions qw( catdir catfile );
 use URI::Escape::JavaScript qw(unescape);
 use POSIX qw(ceil);
@@ -113,6 +113,7 @@ $port = $P->{DBPORT};
 $user = $P->{DBUSER};
 $pass = $P->{DBPASS};
 my $GUNZIP = $P->{GUNZIP};
+my $TAR = $P->{TAR};
 
 # Process each file into staging area
 my %sequences;
@@ -121,8 +122,17 @@ my $numSequences;
 my @files = split( ',', $fasta_files );
 foreach my $file (@files) {
     my $filename = basename($file);# =~ /^.+\/([^\/]+)$/;
+    my $path = dirname($file);
 
     # Decompress file if necessary
+    if ( $file =~ /\.tgz|\.tar\.gz$/ ) {
+        print STDOUT "log: Unarchiving/decompressing '$filename'\n";
+        my $orig = $file;
+        my $filelist = execute( $TAR . ' -xvf ' . $file ); # mdb added 7/31/14 issue 438
+        chomp(@$filelist);
+        push @files, map { catfile($path, $_) } @$filelist;
+        next;
+    }
     if ( $file =~ /\.gz$/ ) {
         print STDOUT "log: Decompressing '$filename'\n";
         #execute($GUNZIP . ' ' . $file); # mdb removed 7/31/14 issue 438
@@ -539,10 +549,13 @@ sub process_fasta_file {
 sub execute { # FIXME move into Util.pm
     my $cmd = shift;
     print STDOUT "$cmd\n";
+    
     my @cmdOut    = qx{$cmd};
     my $cmdStatus = $?;
     if ( $cmdStatus != 0 ) {
         print STDOUT "log: error: command failed with rc=$cmdStatus: $cmd\n";
         exit(-1);
     }
+    
+    return \@cmdOut;
 }
