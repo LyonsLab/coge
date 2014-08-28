@@ -218,12 +218,10 @@ function activate_on_input(input_id, button_id) {
 }
 
 function resolve_path(path) {
-	if (path == '.') {
+	if (path == '.')
 		return pageObj.current_path;
-	}
-	else if (path == '..') {
+	else if (path == '..')
 		return pageObj.parent_path;
-	}
 	return path;
 }
 
@@ -262,7 +260,7 @@ function irods_get_path (path) {
 			}
 
 			$('#ids_table').html('');
-			var parent_path = result.path.split('/').slice(0,-2).join('/') + '/';
+			var parent_path = result.path.replace(/\/$/, '').split('/').slice(0,-1).join('/') + '/';
 
 			// Save for later resolve_path()
 			pageObj.parent_path = parent_path;
