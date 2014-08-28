@@ -79,6 +79,10 @@ sub startup {
         ->to("group#items", id => undef);
 
     # Job routes
+    $r->put("/jobs")
+        ->name("jobs-add")
+        ->to("job#add");
+
     $r->get("/jobs/:id" => [id => qr/\d+/])
         ->name("jobs-fetch")
         ->to("job#fetch", id => undef);
