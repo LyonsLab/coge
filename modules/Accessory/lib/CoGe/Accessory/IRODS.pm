@@ -91,7 +91,7 @@ sub irods_ils {
         else {                         # file
             $type = 'file';
             #( undef, undef, $backup, undef, $size, $timestamp, undef, $name ) = split( /\s+/, $line ); # mdb removed 8/14/14 issue 441
-            ($backup, $size, $timestamp, $name) = $line =~ /\s+\S+\s+(\d+)\s+\S+\s+(\S+)\s+(\S+)\s+\S+\s+(\S+)/; # mdb added 8/14/14 issue 441
+            ($backup, $size, $timestamp, $name) = $line =~ /\s+\S+\s+(\d+)\s+\S+\s+(\S+)\s+(\S+)\s+\S+\s+(.+)/; # mdb added 8/14/14 issue 441
         }
 		next if $backup;
 		

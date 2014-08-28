@@ -276,8 +276,6 @@ function irods_get_path (path) {
 
 			result.items.forEach(
 				function(obj) {
-					var name = decodeURI(obj.name); // mdb added 8/14/14 issue 441
-					
 					// Build row in to be displayed
 					var icon;
 					if (obj.type == 'directory') {
@@ -286,8 +284,11 @@ function irods_get_path (path) {
 					else {
 						icon = '<span class="ui-icon ui-icon-document"></span>';
 					}
-					tr = $('<tr class="'+obj.type+'"><td style="white-space:nowrap;">'+icon+name+'</td><td>'+obj.size+'</td><td>'+obj.timestamp+'</td></tr>');
-
+					tr = $('<tr class="'+ obj.type +'"><td style="white-space:nowrap;">' 
+							+ icon
+							+ decodeURIComponent(obj.name) + '</td><td>'
+							+ decodeURIComponent(obj.size) + '</td><td>' 
+							+ decodeURIComponent(obj.timestamp) + '</td></tr>'); // mdb added decodeURI 8/14/14 issue 441
 					if (obj.type == 'directory') {
 						$(tr).click(
 							function() {
@@ -298,7 +299,7 @@ function irods_get_path (path) {
 					else {
 						$(tr).click(
 							function() {
-								if ( add_file_to_list(obj.name, 'irods://'+obj.path) ) {
+								if ( add_file_to_list(decodeURIComponent(obj.name), 'irods://'+obj.path) ) {
 									irods_get_file(obj.path);
 								}
 								else {
