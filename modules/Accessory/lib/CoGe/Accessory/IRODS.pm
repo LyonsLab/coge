@@ -29,6 +29,8 @@ use warnings;
 use CoGe::Accessory::Web;
 use URI::Escape qw(uri_unescape);
 use URI::Escape::JavaScript qw(escape unescape);
+use File::Basename qw( basename );
+use File::Spec::Functions qw( catdir catfile );
 use Data::Dumper;
 use IPC::System::Simple qw(capture system $EXITVAL EXIT_ANY);
 
@@ -83,7 +85,7 @@ sub irods_ils {
         chomp $line;
         if ( $line =~ /^\s*C\-/ ) {    # directory
             $type = 'directory';
-            ($name) = $line =~ /([^\/]+)\s*$/; # mdb modified 8/14/14 issue 441
+            ($name) = basename($line);# $line =~ /([^\/]+)\s*$/; # mdb modified 8/14/14 issue 441
             if ($name) { $name =~ s/\s*$//; $name .= '/'; }
             else       { $name = 'error' }
             ( $size, $timestamp ) = ( '', '' );
@@ -95,12 +97,12 @@ sub irods_ils {
         }
 		next if $backup;
 		
-		my $path2 = $path;
+		my $path2 = catfile($path, $name);
 		if ($escape_output) {
 		    $type      = escape($type);
             $size      = escape($size);
             $timestamp = escape($timestamp);
-            $path2     = escape($path . '/' . $name);
+            $path2     = escape($path2);
             $name      = escape($name);
 		}
 		
@@ -115,7 +117,7 @@ sub irods_ils {
     }
     @result = sort { $a->{type} cmp $b->{type} } @result;    # directories before files
 
-#    print STDERR Dumper \@result, "\n";
+    #print STDERR Dumper \@result, "\n";
     return { items => \@result };
 }
 
