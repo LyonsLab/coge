@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use File::Spec::Functions;
+use URI::Escape::JavaScript qw(escape);
 
 use CoGe::Accessory::Utils;
 use CoGe::Core::Genome qw(get_download_path);
@@ -16,7 +17,7 @@ BEGIN {
 
     $VERSION = 0.1;
     @ISA = qw ( Exporter );
-    @EXPORT = qw (generate_gff);
+    @EXPORT = qw (generate_gff generate_results);
 }
 
 sub generate_gff {
@@ -56,8 +57,25 @@ sub generate_gff {
             ['-id_type', $args{id_type}, 0],
             ['-upa', $args{upa}, 0],
         ],
-        outputs => [$output_file]
+        outputs => [$output_file],
+        description => "Generating gff..."
     );
+}
+
+sub generate_results {
+   my ($input, $type, $result_dir, $conf) = @_;
+
+   return (
+        cmd     => catfile($conf->{SCRIPTDIR}, "generate_results.pl"),
+        args    => [
+            ['-input_files', escape($input), 0],
+            ['-type', $type, 0],
+            ['-result_dir', $result_dir, 0]
+        ],
+        inputs  => [$input],
+        outputs => [catfile($result_dir, "1")],
+        description => "Generating results..."
+   );
 }
 
 1;
