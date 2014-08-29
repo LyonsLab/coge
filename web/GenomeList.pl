@@ -45,10 +45,10 @@ $LIST_TYPE =
     get_gc                   => \&get_gc,
     get_aa_usage             => \&get_aa_usage,
     get_codon_usage          => \&get_codon_usage,
-    generate_excel_file      => \&generate_excel_file,
-    generate_csv_file        => \&generate_csv_file,
     gc_content               => \&gc_content,
     gen_data                 => \&gen_data,
+    send_to_xls              => \&send_to_xls,
+    send_to_csv              => \&send_to_csv,
     send_to_fasta            => \&send_to_fasta,
     send_to_msa              => \&send_to_msa,
     send_to_SynFind          => \&send_to_SynFind,
@@ -871,7 +871,7 @@ sub send_to_fasta {
     return $file;
 }
 
-sub generate_excel_file {
+sub send_to_xls {
     my %args      = @_;
     my $accn_list = $args{accn};
     $accn_list =~ s/^,//;
@@ -937,7 +937,7 @@ sub generate_excel_file {
     return $file;
 }
 
-sub generate_csv_file {
+sub send_to_csv {
     my %args      = @_;
     my $accn_list = $args{accn};
     $accn_list =~ s/^,//;
