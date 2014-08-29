@@ -45,7 +45,7 @@ sub add {
         });
     }
 
-    my $pipeline_factory = CoGe::Pipelines::PipelineFactory->new(conf => $conf);
+    my $pipeline_factory = CoGe::Pipelines::PipelineFactory->new(conf => $conf, user => $user, jex => $jex);
     my $workflow = $pipeline_factory->get($payload);
 
     return $self->render(json => $request_handler->execute($workflow));
