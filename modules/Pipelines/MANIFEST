@@ -1,1 +1,3 @@
 lib/CoGe/Pipelines/PipelineFactory.pm
+lib/CoGe/Builder/Buildable.pm
+lib/CoGe/Builder/GffBuilder.pm

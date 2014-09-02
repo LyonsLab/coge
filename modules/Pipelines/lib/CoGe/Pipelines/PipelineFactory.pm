@@ -2,16 +2,12 @@ package CoGe::Pipelines::PipelineFactory;
 
 use Moose;
 
-use File::Spec::Functions;
-
-use CoGe::Pipelines::Misc::Gff;
-use CoGe::Accessory::Workflow;
+use CoGe::Builder::GffBuilder;
 
 has 'conf' => (
     is => 'ro',
     required => 1
 );
-
 
 has 'user' => (
     is  => 'ro',
@@ -26,23 +22,27 @@ has 'jex' => (
 sub get {
     my ($self, $message) = @_;
 
-    my ($options, $params) = ($message->{options}, $message->{parameters});
-    my $workflow;
+    my $options = {
+        params   => $message->{parameters},
+        options  => $message->{options},
+        jex      => $self->jex,
+        user     => $self->user,
+        conf     => $self->conf
+    };
+
+    my $builder;
 
     if ($message->{type} eq "gff_export") {
-        $workflow = $self->jex->create_workflow(name => "generate gff", init => 1);
-
-        my $result_dir = catdir($self->conf->{SECTEMPDIR}, "results", $self->user->name, $workflow->id);
-        my $dest_type = $options->{dest_type};
-        $dest_type = "http" unless $dest_type;
-
-        my ($output, %job) = generate_gff($params, $self->conf);
-        $workflow->logfile(catfile($result_dir, "debug.log"));
-        $workflow->add_job(%job);
-        $workflow->add_job(generate_results($output, $dest_type, $result_dir, $self->conf));
+        $builder = CoGe::Builder::GffBuilder->new($options);
+    } else {
+        return;
     }
 
-    return $workflow;
+    # Construct the workflow
+    $builder->build;
+
+    # Fetch the workflow constructed
+    return $builder->get;
 }
 
 1;

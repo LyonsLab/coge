@@ -143,6 +143,8 @@ Pipelines/Misc/lib/CoGe/Pipelines/Misc/Features.pm
 Pipelines/Misc/lib/CoGe/Pipelines/Misc/Gff.pm
 Pipelines/Misc/lib/CoGe/Pipelines/Misc/Tbl.pm
 Pipelines/SynMap/lib/CoGe/Pipelines/SynMap.pm
+Pipelines/lib/CoGe/Builder/Buildable.pm
+Pipelines/lib/CoGe/Builder/GffBuilder.pm
 Pipelines/lib/CoGe/Pipelines/PipelineFactory.pm
 Services/lib/CoGe/Services/Auth.pm
 Services/lib/CoGe/Services/Routes.pm
