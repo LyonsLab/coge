@@ -3,6 +3,7 @@ package CoGe::Builder::GffBuilder;
 use Moose;
 
 use CoGe::Pipelines::Misc::Gff;
+use CoGe::Pipelines::Misc::IPut;
 
 use File::Spec::Functions;
 use Data::Dumper;
@@ -21,6 +22,12 @@ sub build {
 
     my ($output, %job) = generate_gff($self->params, $self->conf);
     $self->workflow->add_job(%job);
+
+    if ($dest_type eq "irods") {
+        %job = export_to_irods($output, $self->options, $self->user);
+        $self->workflow->add_job(%job);
+    }
+
     $self->workflow->add_job(generate_results($output, $dest_type, $result_dir, $self->conf));
 }
 
