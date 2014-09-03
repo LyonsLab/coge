@@ -163,13 +163,15 @@ sub irods_iget {
 }
 
 sub irods_iput {
-    my ( $src, $dest ) = @_;
+    my ( $src, $dest, $opts) = @_;
+    my $no_execute = ( $opts and $opts->{no_execute} ); # erb added 9/03/14 for REST API, get command name but don't execute
 
     #print STDERR "irods_iput $src $dest\n";
     my $env_file = _irods_get_env_file();
     return unless $env_file;
 
     my $cmd = "export irodsEnvFile='$env_file'; iput -fT $src $dest";
+    return $cmd if $no_execute;
     #print STDERR "cmd: $cmd\n";
     my @result = `$cmd`;
     #print STDERR "@result";
