@@ -12,8 +12,8 @@ use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::TDS;
 use CoGe::Core::Storage qw( get_workflow_paths );
-use CoGe::Requests::RequestFactory;
-use CoGe::Pipelines::PipelineFactory;
+use CoGe::Factory::RequestFactory;
+use CoGe::Factory::PipelineFactory;
 
 sub add {
     my $self = shift;
@@ -30,7 +30,7 @@ sub add {
     }
 
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
-    my $request_factor = CoGe::Requests::RequestFactory->new(db => $db, user => $user, jex => $jex);
+    my $request_factor = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex);
     my $request_handler = $request_factor->get($payload);
 
     # Validate the request has all required fields
@@ -47,7 +47,7 @@ sub add {
         });
     }
 
-    my $pipeline_factory = CoGe::Pipelines::PipelineFactory->new(conf => $conf, user => $user, jex => $jex);
+    my $pipeline_factory = CoGe::Factory::PipelineFactory->new(conf => $conf, user => $user, jex => $jex);
     my $workflow = $pipeline_factory->get($payload);
 
     return $self->render(json => $request_handler->execute($workflow));

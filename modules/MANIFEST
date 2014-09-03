@@ -135,9 +135,10 @@ Graphics/lib/CoGe/Graphics/Feature/Flag.pm
 Graphics/lib/CoGe/Graphics/Feature/Quant.pm
 Graphics/t/001_load.t
 Graphics/t/002_load.t
-Pipelines/lib/CoGe/Pipelines/PipelineFactory.pm
 Pipelines/lib/CoGe/Builder/Buildable.pm
 Pipelines/lib/CoGe/Builder/GffBuilder.pm
+Pipelines/lib/CoGe/Factory/PipelineFactory.pm
+Pipelines/lib/CoGe/Factory/RequestFactory.pm
 Pipelines/lib/CoGe/Pipelines/FindSNPs.pm
 Pipelines/lib/CoGe/Pipelines/qTeller.pm
 Pipelines/lib/CoGe/Pipelines/SynMap.pm

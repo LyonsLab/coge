@@ -1,4 +1,4 @@
-package CoGe::Requests::RequestFactory;
+package CoGe::Factory::RequestFactory;
 
 use Moose;
 use CoGe::Requests::GffRequest;
