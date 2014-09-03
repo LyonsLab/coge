@@ -3,6 +3,7 @@ package CoGe::Pipelines::Misc::Gff;
 use strict;
 use warnings;
 
+use File::Basename qw(basename);
 use File::Spec::Functions;
 use URI::Escape::JavaScript qw(escape);
 
@@ -17,7 +18,7 @@ BEGIN {
 
     $VERSION = 0.1;
     @ISA = qw ( Exporter );
-    @EXPORT = qw (generate_gff generate_results);
+    @EXPORT = qw (generate_gff generate_results link_results);
 }
 
 sub generate_gff {
@@ -62,6 +63,21 @@ sub generate_gff {
     );
 }
 
+sub link_results {
+   my ($input, $result_dir, $conf) = @_;
+
+   return (
+        cmd     => catfile($conf->{SCRIPTDIR}, "link_results.pl"),
+        args    => [
+            ['-input_files', escape($input), 0],
+            ['-result_dir', $result_dir, 0]
+        ],
+        inputs  => [$input],
+        outputs => [catfile($result_dir, basename($input))],
+        description => "Generating results..."
+   );
+}
+
 sub generate_results {
    my ($input, $type, $result_dir, $conf) = @_;
 
@@ -72,7 +88,7 @@ sub generate_results {
             ['-type', $type, 0],
             ['-result_dir', $result_dir, 0]
         ],
-        inputs  => [$input],
+        inputs  => [],
         outputs => [catfile($result_dir, "1")],
         description => "Generating results..."
    );
