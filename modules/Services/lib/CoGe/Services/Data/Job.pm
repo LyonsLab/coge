@@ -1,5 +1,6 @@
 package CoGe::Services::Data::Job;
 
+use Mojo::Asset::File;
 use Mojo::Base 'Mojolicious::Controller';
 #use IO::Compress::Gzip 'gzip';
 use Data::Dumper;
@@ -7,6 +8,7 @@ use File::Basename qw( basename );
 use File::Spec::Functions qw( catdir catfile );
 use CoGeX;
 use CoGe::Services::Auth;
+use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::TDS;
 use CoGe::Core::Storage qw( get_workflow_paths );
@@ -125,7 +127,7 @@ sub fetch {
             push @results, {
                 type => 'http',
                 name => $name,
-                path => $conf->{SERVER}.'api/v1/jobs/'.$id.'/results/'.$name # FIXME move api path into conf file ...?
+                path => url_for('api/v1/jobs/'.$id.'/results/'.$name) # FIXME move api path into conf file ...?
             };
         }
         closedir($fh);
@@ -143,6 +145,7 @@ sub results {
     my $self = shift;
     my $id = $self->stash('id');
     my $name = $self->stash('name');
+    my $format = $self->stash('format');
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
@@ -155,11 +158,9 @@ sub results {
         return;
     }
 
-    #FIXME add routine to Storage.pm to get results path
-    my $result_dir = catdir($conf->{SECTEMPDIR}, 'results', 'experiment', $user->name, $id);
+    $name = "$name.$format" if $format;
+    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $id);
     my $result_file = catfile($result_dir, $name);
-
-#    print STDERR $result_file, "\n";
 
     unless (-r $result_file) {
         $self->render(json => {
@@ -168,9 +169,15 @@ sub results {
         return;
     }
 
-    my $pResult = CoGe::Accessory::TDS::read($result_file);
-
-    $self->render(json => $pResult);
+    # Either download the file or display the results
+    if ($name eq "1") {
+        my $pResult = CoGe::Accessory::TDS::read($result_file);
+        $self->render(json => $pResult);
+    } else {
+        $self->res->headers->content_disposition("attachment; filename=$name;");
+        $self->res->content->asset(Mojo::Asset::File->new(path => $result_file));
+        $self->rendered(200);
+    }
 }
 
 1;
