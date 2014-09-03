@@ -35,12 +35,13 @@ use Data::Dumper;
 use IPC::System::Simple qw(capture system $EXITVAL EXIT_ANY);
 
 BEGIN {
-    use vars qw ($VERSION @ISA @EXPORT $IRODS_METADATA_PREFIX $IRODS_ENV);
+    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK $IRODS_METADATA_PREFIX $IRODS_ENV);
     require Exporter;
 
     $VERSION = 0.1;
     @ISA     = qw (Exporter);
     @EXPORT = qw( irods_ils irods_imeta irods_iget irods_chksum irods_iput $IRODS_METADATA_PREFIX );
+    @EXPORT_OK = qw( irods_get_base_path );
 
     $IRODS_METADATA_PREFIX = 'ipc-coge-';
 }
@@ -197,6 +198,13 @@ sub irods_imeta {
 	}
 
     return;
+}
+
+sub irods_get_base_path {
+    my $username = shift;
+    my $basepath = CoGe::Accessory::Web::get_defaults()->{IRODSDIR};
+    $basepath =~ s/\<USER\>/$username/;
+    return $basepath;
 }
 
 sub irods_set_env {
