@@ -1,4 +1,0 @@
-MANIFEST
-Makefile.PL
-lib/CoGe/Request/Request.pm
-lib/CoGe/Request/RequestFactory.pm
