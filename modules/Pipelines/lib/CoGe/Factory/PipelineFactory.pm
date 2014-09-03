@@ -1,4 +1,4 @@
-package CoGe::Pipelines::PipelineFactory;
+package CoGe::Factory::PipelineFactory;
 
 use Moose;
 
