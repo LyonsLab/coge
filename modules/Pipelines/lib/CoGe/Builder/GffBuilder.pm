@@ -15,10 +15,11 @@ sub build {
     $self->init_workflow($self->jex);
     return unless $self->workflow->id;
 
-    my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name,
-                                                        $self->workflow->id);
+    my (undef, $result_dir) = get_workflow_paths($self->user->name,
+                                                 $self->workflow->id);
 
-    my $dest_type = $self->options->{dest_type} or "http";
+    my $dest_type = $self->options->{dest_type};
+    $dest_type = "http" unless $dest_type;
 
     $self->workflow->logfile(catfile($result_dir, "debug.log"));
 
@@ -26,11 +27,12 @@ sub build {
     $self->workflow->add_job(%job);
 
     if ($dest_type eq "irods") {
-        %job = export_to_irods($output, $self->options, $self->user);
+        ($output, %job) = export_to_irods($output, $self->options, $self->user);
         $self->workflow->add_job(%job);
+        $self->workflow->add_job(generate_results($output, $dest_type, $result_dir, $self->conf));
+    } else {
+        $self->workflow->add_job(link_results($output, $result_dir, $self->conf));
     }
-
-    $self->workflow->add_job(generate_results($output, $dest_type, $result_dir, $self->conf));
 }
 
 sub init_workflow {
