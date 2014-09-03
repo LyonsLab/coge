@@ -2,6 +2,7 @@ package CoGe::Builder::GffBuilder;
 
 use Moose;
 
+use CoGe::Core::Storage;
 use CoGe::Pipelines::Misc::Gff;
 use CoGe::Pipelines::Misc::IPut;
 
@@ -14,9 +15,10 @@ sub build {
     $self->init_workflow($self->jex);
     return unless $self->workflow->id;
 
-    my $result_dir = catdir($self->conf->{SECTEMPDIR}, "results", $self->user->name, $self->workflow->id);
-    my $dest_type = $self->options->{dest_type};
-    $dest_type = "http" unless $dest_type;
+    my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name,
+                                                        $self->workflow->id);
+
+    my $dest_type = $self->options->{dest_type} or "http";
 
     $self->workflow->logfile(catfile($result_dir, "debug.log"));
 
