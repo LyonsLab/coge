@@ -2,6 +2,7 @@ package CoGe::Builder::ExperimentBuilder;
 
 use Moose;
 
+use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage qw(get_experiment_files get_workflow_paths);
@@ -34,9 +35,12 @@ sub build {
     $self->workflow->add_job(%job);
 
     if ($dest_type eq "irods") {
-        my ($output, %job) = export_to_irods($cache_file, $self->options, $self->user);
-        $self->workflow->add_job(%job);
-        $self->workflow->add_job(generate_results($output, $dest_type, $result_dir, $self->conf));
+        my $base = $self->options->{dest_path};
+        $base = irods_get_base_path($self->user->name) unless $base;
+        my $dest = catfile($base, $filename);
+
+        $self->workflow->add_job(export_to_irods($cache_file, $dest));
+        $self->workflow->add_job(generate_results($dest, $dest_type, $result_dir, $self->conf));
 
     } else {
         $self->workflow->add_job(link_results($cache_file, $result_dir, $self->conf));

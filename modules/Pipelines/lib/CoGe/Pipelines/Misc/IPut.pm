@@ -6,7 +6,7 @@ use File::Basename qw(basename);
 use File::Spec::Functions;
 use URI::Escape::JavaScript qw(escape);
 
-use CoGe::Accessory::IRODS qw(irods_get_base_path irods_iput);
+use CoGe::Accessory::IRODS qw(irods_iput);
 use CoGe::Accessory::Utils;
 
 BEGIN {
@@ -19,14 +19,10 @@ BEGIN {
 }
 
 sub export_to_irods {
-    my ($src, $options, $user) = @_;
+    my ($src, $dest) = @_;
 
-    my $base = $options->{dest_path};
-    $base = irods_get_base_path($user->name) unless $base;
-    my $output = catfile($base, basename($src));
-
-    return $output, (
-        cmd => irods_iput($src, $output, { no_execute => 1 }),
+    return (
+        cmd => irods_iput($src, $dest, { no_execute => 1 }),
         description => "Exporting file to IRODS",
         args => [],
         inputs => [$src],
