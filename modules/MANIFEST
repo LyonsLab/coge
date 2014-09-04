@@ -148,7 +148,7 @@ Pipelines/lib/CoGe/Pipelines/Misc/Features.pm
 Pipelines/lib/CoGe/Pipelines/Misc/Gff.pm
 Pipelines/lib/CoGe/Pipelines/Misc/Tbl.pm
 Pipelines/lib/CoGe/Request/Request.pm
-Pipelines/lib/CoGe/Request/GffRequest.pm
+Pipelines/lib/CoGe/Request/GenomeRequest.pm
 Pipelines/lib/CoGe/Request/RequestFactory.pm
 Services/lib/CoGe/Services/Auth.pm
 Services/lib/CoGe/Services/Routes.pm
