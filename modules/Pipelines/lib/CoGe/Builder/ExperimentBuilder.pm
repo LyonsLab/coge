@@ -1,0 +1,61 @@
+package CoGe::Builder::ExperimentBuilder;
+
+use Moose;
+
+use CoGe::Accessory::Web qw(url_for);
+use CoGe::Accessory::Utils;
+use CoGe::Core::Storage qw(get_experiment_files get_workflow_paths);
+use CoGe::Pipelines::Common::Results;
+use CoGe::Pipelines::Experiment;
+use CoGe::Pipelines::Misc::IPut;
+
+use File::Spec::Functions;
+use Data::Dumper;
+
+sub build {
+    my $self = shift;
+
+    $self->init_workflow($self->jex);
+    return unless $self->workflow->id;
+
+    my (undef, $result_dir) = get_workflow_paths($self->user->name,
+                                                 $self->workflow->id);
+
+    my $dest_type = $self->options->{dest_type};
+    $dest_type = "http" unless $dest_type;
+
+    my $eid = $self->params->{eid};
+    my $filename = "experiment_$eid.tar.gz";
+    my $cache_dir = $self->get_download_path($eid);
+    my $cache_file = catfile($cache_dir, $filename);
+    $self->workflow->logfile(catfile($result_dir, "debug.log"));
+
+    my %job = export_experiment($self->params, $cache_file, $self->conf);
+    $self->workflow->add_job(%job);
+
+    if ($dest_type eq "irods") {
+        my ($output, %job) = export_to_irods($cache_file, $self->options, $self->user);
+        $self->workflow->add_job(%job);
+        $self->workflow->add_job(generate_results($output, $dest_type, $result_dir, $self->conf));
+
+    } else {
+        $self->workflow->add_job(link_results($cache_file, $result_dir, $self->conf));
+    }
+}
+
+sub init_workflow {
+    my ($self, $jex) = @_;
+
+    $self->workflow($jex->create_workflow(name => "Get experiment files", init => 1));
+}
+
+sub get_download_path {
+    my $self = shift;
+    my $unique_path = get_unique_id();
+    my @paths = ($self->conf->{SECTEMPDIR}, "ExperimentView/downloads", shift, $unique_path);
+    return File::Spec->catdir(@paths);
+}
+
+with qw(CoGe::Builder::Buildable);
+
+1;
