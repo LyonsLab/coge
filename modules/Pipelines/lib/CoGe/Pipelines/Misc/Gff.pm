@@ -18,7 +18,7 @@ BEGIN {
 
     $VERSION = 0.1;
     @ISA = qw ( Exporter );
-    @EXPORT = qw (generate_gff generate_results link_results);
+    @EXPORT = qw (generate_gff);
 }
 
 sub generate_gff {
@@ -62,36 +62,4 @@ sub generate_gff {
         description => "Generating gff..."
     );
 }
-
-sub link_results {
-   my ($input, $result_dir, $conf) = @_;
-
-   return (
-        cmd     => catfile($conf->{SCRIPTDIR}, "link_results.pl"),
-        args    => [
-            ['-input_files', escape($input), 0],
-            ['-result_dir', $result_dir, 0]
-        ],
-        inputs  => [$input],
-        outputs => [catfile($result_dir, basename($input))],
-        description => "Generating results..."
-   );
-}
-
-sub generate_results {
-   my ($input, $type, $result_dir, $conf) = @_;
-
-   return (
-        cmd     => catfile($conf->{SCRIPTDIR}, "generate_results.pl"),
-        args    => [
-            ['-input_files', escape($input), 0],
-            ['-type', $type, 0],
-            ['-result_dir', $result_dir, 0]
-        ],
-        inputs  => [],
-        outputs => [catfile($result_dir, "1")],
-        description => "Generating results..."
-   );
-}
-
 1;

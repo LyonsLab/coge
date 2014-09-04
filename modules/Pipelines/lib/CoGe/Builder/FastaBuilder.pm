@@ -4,7 +4,7 @@ use Moose;
 
 use CoGe::Accessory::Web qw(url_for);
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
-use CoGe::Pipelines::Misc::Gff;
+use CoGe::Pipelines::Common::Results;
 use CoGe::Pipelines::Misc::IPut;
 
 use File::Spec::Functions;
@@ -34,9 +34,6 @@ sub build {
     } else {
         $self->workflow->add_job(link_results($genome, $result_dir, $self->conf));
     }
-}
-
-sub export_results {
 }
 
 sub init_workflow {
