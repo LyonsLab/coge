@@ -545,12 +545,17 @@ function blastOff(dialog, results, basename) {
     var blastable_db = $('#genome_choice').getLength(1);
 
     var _results = $(results);
+
     var status_dialog = $(dialog).dialog({
         title: 'Running CoGeBlast ...',
         modal: true,
         width: 500,
-        resizable: false,
-        autoOpen: true
+        autoOpen: false
+    });
+
+    // Close results then display dialog
+    _results.slideUp(function() {
+        status_dialog.dialog("open");
     });
 
     var options = {
