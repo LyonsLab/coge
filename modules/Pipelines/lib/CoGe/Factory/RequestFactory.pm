@@ -1,7 +1,7 @@
 package CoGe::Factory::RequestFactory;
 
 use Moose;
-use CoGe::Requests::GffRequest;
+use CoGe::Requests::GenomeRequest;
 
 has 'user'    => (
     is        => 'ro',
@@ -21,14 +21,20 @@ has 'jex'     => (
 sub get {
     my ($self, $message) = @_;
 
+    my $options = {
+        db         => $self->db,
+        jex        => $self->jex,
+        user       => $self->user,
+        options    => $message->{options},
+        parameters => $message->{parameters}
+    };
+
     if ($message->{type} eq "gff_export") {
-        return CoGe::Requests::GffRequest->new(
-            db         => $self->db,
-            jex        => $self->jex,
-            user       => $self->user,
-            options    => $message->{options},
-            parameters => $message->{parameters}
-        );
+        return CoGe::Requests::GenomeRequest->new($options);
+    }
+
+    if ($message->{type} eq "fasta_export") {
+        return CoGe::Requests::GenomeRequest->new($options);
     }
 }
 

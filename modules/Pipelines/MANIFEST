@@ -13,5 +13,5 @@ lib/CoGe/Pipelines/Misc/Features.pm
 lib/CoGe/Pipelines/Misc/Gff.pm
 lib/CoGe/Pipelines/Misc/Tbl.pm
 lib/CoGe/Request/Request.pm
-lib/CoGe/Request/GffRequest.pm
+lib/CoGe/Request/GenomeRequest.pm
 lib/CoGe/Request/RequestFactory.pm
