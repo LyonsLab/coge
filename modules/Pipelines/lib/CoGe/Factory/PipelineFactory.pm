@@ -4,6 +4,7 @@ use Moose;
 
 use CoGe::Builder::GffBuilder;
 use CoGe::Builder::FastaBuilder;
+use CoGe::Builder::ExperimentBuilder;
 
 has 'conf' => (
     is => 'ro',
@@ -37,6 +38,8 @@ sub get {
         $builder = CoGe::Builder::GffBuilder->new($options);
     } elsif ($message->{type} eq "fasta_export") {
         $builder = CoGe::Builder::FastaBuilder->new($options);
+    } elsif ($message->{type} eq "experiment_export") {
+        $builder = CoGe::Builder::ExperimentBuilder->new($options);
     } else {
         return;
     }
