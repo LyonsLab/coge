@@ -3,6 +3,7 @@ package CoGe::Builder::GffBuilder;
 use Moose;
 
 use CoGe::Core::Storage;
+use CoGe::Pipelines::Common::Results;
 use CoGe::Pipelines::Misc::Gff;
 use CoGe::Pipelines::Misc::IPut;
 
