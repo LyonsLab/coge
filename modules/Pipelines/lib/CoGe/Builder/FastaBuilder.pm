@@ -2,6 +2,7 @@ package CoGe::Builder::FastaBuilder;
 
 use Moose;
 
+use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Web qw(url_for);
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
 use CoGe::Pipelines::Common::Results;
@@ -24,13 +25,16 @@ sub build {
 
     $self->workflow->logfile(catfile($result_dir, "debug.log"));
 
-    my $genome = get_genome_file($self->params->{gid});
+    my $gid = $self->params->{gid};
+    my $genome = get_genome_file($gid);
 
     if ($dest_type eq "irods") {
-        my ($output, %job) = export_to_irods($genome, $self->options, $self->user);
-        $self->workflow->add_job(%job);
-        $self->workflow->add_job(generate_results($output, $dest_type, $result_dir, $self->conf));
+        my $base = $self->options->{dest_path};
+        $base = irods_get_base_path($self->user->name) unless $base;
+        my $dest = catfile($base, "genome_$gid.faa");
 
+        $self->workflow->add_job(export_to_irods($genome, $dest));
+        $self->workflow->add_job(generate_results($dest, $dest_type, $result_dir, $self->conf));
     } else {
         $self->workflow->add_job(link_results($genome, $result_dir, $self->conf));
     }

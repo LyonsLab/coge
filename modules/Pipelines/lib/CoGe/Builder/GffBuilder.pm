@@ -2,11 +2,13 @@ package CoGe::Builder::GffBuilder;
 
 use Moose;
 
+use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Core::Storage;
 use CoGe::Pipelines::Common::Results;
 use CoGe::Pipelines::Misc::Gff;
 use CoGe::Pipelines::Misc::IPut;
 
+use File::Basename qw(basename);
 use File::Spec::Functions;
 use Data::Dumper;
 
@@ -28,9 +30,12 @@ sub build {
     $self->workflow->add_job(%job);
 
     if ($dest_type eq "irods") {
-        ($output, %job) = export_to_irods($output, $self->options, $self->user);
-        $self->workflow->add_job(%job);
-        $self->workflow->add_job(generate_results($output, $dest_type, $result_dir, $self->conf));
+        my $base = $self->options->{dest_path};
+        $base = irods_get_base_path($self->user->name) unless $base;
+        my $dest = catfile($base, basename($output));
+
+        $self->workflow->add_job(export_to_irods($output, $dest));
+        $self->workflow->add_job(generate_results($dest, $dest_type, $result_dir, $self->conf));
     } else {
         $self->workflow->add_job(link_results($output, $result_dir, $self->conf));
     }
