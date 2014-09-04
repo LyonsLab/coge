@@ -3,6 +3,7 @@ package CoGe::Factory::PipelineFactory;
 use Moose;
 
 use CoGe::Builder::GffBuilder;
+use CoGe::Builder::FastaBuilder;
 
 has 'conf' => (
     is => 'ro',
@@ -34,6 +35,8 @@ sub get {
 
     if ($message->{type} eq "gff_export") {
         $builder = CoGe::Builder::GffBuilder->new($options);
+    } elsif ($message->{type} eq "fasta_export") {
+        $builder = CoGe::Builder::FastaBuilder->new($options);
     } else {
         return;
     }
