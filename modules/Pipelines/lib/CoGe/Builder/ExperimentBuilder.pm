@@ -39,7 +39,7 @@ sub build {
         $base = irods_get_base_path($self->user->name) unless $base;
         my $dest = catfile($base, $filename);
 
-        $self->workflow->add_job(export_to_irods($cache_file, $dest));
+        $self->workflow->add_job(export_to_irods($cache_file, $dest, $self->options->{overwrite}));
         $self->workflow->add_job(generate_results($dest, $dest_type, $result_dir, $self->conf));
 
     } else {

@@ -33,7 +33,7 @@ sub build {
         $base = irods_get_base_path($self->user->name) unless $base;
         my $dest = catfile($base, "genome_$gid.faa");
 
-        $self->workflow->add_job(export_to_irods($genome, $dest));
+        $self->workflow->add_job(export_to_irods($genome, $dest, $self->options->{overwrite}));
         $self->workflow->add_job(generate_results($dest, $dest_type, $result_dir, $self->conf));
     } else {
         $self->workflow->add_job(link_results($genome, $result_dir, $self->conf));
