@@ -19,10 +19,12 @@ BEGIN {
 }
 
 sub export_to_irods {
-    my ($src, $dest) = @_;
+    my ($src, $dest, $overwrite) = @_;
+
+    $overwrite = 0 unless defined $overwrite;
 
     return (
-        cmd => irods_iput($src, $dest, { no_execute => 1 }),
+        cmd => irods_iput($src, $dest, { no_execute => 1, overwrite => $overwrite }),
         description => "Exporting file to IRODS",
         args => [],
         inputs => [$src],
