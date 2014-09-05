@@ -540,13 +540,12 @@ sub gen_org_menu {
     $name = "Search" unless $name;
     $desc = "Search" unless $desc;
     my ($dsg) = $coge->resultset('Genome')->find($dsgid);
-    
+
     my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'partials/organism_menu.tmpl' );
     $template->param(
         ORG_MENU => 1,
         NUM      => $num,
-        ORG_NAME => $name,
-        ORG_DESC => $desc
+        SEARCH   => $name,
     );
 
     if ($dsg and $USER->has_access_to_genome($dsg)) {
@@ -559,10 +558,10 @@ sub gen_org_menu {
             feattype => $feattype_param
         );
 
-        $template->param( 
+        $template->param(
             DSG_INFO       => $dsg_info,
             FEATTYPE_MENU  => $feattype_menu,
-            GENOME_MESSAGE => $message 
+            GENOME_MESSAGE => $message
         );
     }
     else {
@@ -570,7 +569,7 @@ sub gen_org_menu {
         $dsgid = 0;
     }
 
-    $template->param( 'ORG_LIST' => get_orgs( name => $name, i => $num, oid => $oid ) );
+    $template->param( 'ORG_LIST' => get_orgs( search => $name, i => $num, oid => $oid ) );
 
     my ($dsg_menu) = gen_dsg_menu( oid => $oid, dsgid => $dsgid, num => $num );
     $template->param( DSG_MENU => $dsg_menu );
@@ -640,12 +639,11 @@ sub gen_dsg_menu {
     return ( qq{<span id="dsgid$num" class="hidden"></span>}, '') unless (@dsg_menu);
 
     #my $dsg_menu = qq{<select id="dsgid$num" onChange="\$('#dsg_info$num').html('<div class=dna_small class="loading" class="small">loading. . .</div>'); get_genome_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],[handle_dsg_info])">};
-    my $dsg_menu = 
+    my $dsg_menu =
         qq{<span class="coge-padded-top">} .
         qq{<span class="small text">Genomes: </span>} .
-        qq{<select id="dsgid$num" style="max-width:400px;" "onChange="get_genome_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],[handle_dsg_info])">} .
-        qq{</span>};
-    
+        qq{<select id="dsgid$num" style="max-width:400px;" onChange="get_genome_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],[handle_dsg_info])">} ;
+
     foreach (
         sort {
                  versioncmp( $b->[2]->version, $a->[2]->version )
@@ -661,6 +659,7 @@ sub gen_dsg_menu {
         $dsg_menu .= qq{<OPTION VALUE=$numt $selected>$name</option>};
     }
     $dsg_menu .= "</select>";
+    $dsg_menu .= "</span>";
 
     return ( $dsg_menu, $message );
 }
@@ -679,34 +678,34 @@ sub read_file {
 
 sub get_orgs {
     my %opts = @_;
-    my $name = $opts{name};
-    my $desc = $opts{desc};
+    my $search = $opts{search};
     my $oid  = $opts{oid};
     my $i    = $opts{i};
 
     #get rid of trailing white-space
-    $name =~ s/^\s+//g if $name;
-    $name =~ s/\s+$//g if $name;
-    $desc =~ s/^\s+//g if $desc;
-    $desc =~ s/\s+$//g if $desc;
+    $search =~ s/^\s+//g if $search;
+    $search =~ s/\s+$//g if $search;
+    $search = "" if $search && $search =~ /Search/; #need to clear to get full org count
 
-    $name = "" if $name && $name =~ /Search/; #need to clear to get full org count
-    $desc = "" if $desc && $desc =~ /Search/; #need to clear to get full org count
-    
     my @organisms;
     my $org_count;
-    if ($oid) {
-        my $org = $coge->resultset("Organism")->find($oid);
-        $name = $org->name if $org;
-        push @organisms, $org if $name;
-    }
-    elsif ($name) {
-        @organisms = $coge->resultset("Organism")->search( { name => { like => "%" . $name . "%" } } );
-    }
-    elsif ($desc) {
-        @organisms = $coge->resultset("Organism")->search( { description => { like => "%" . $desc . "%" } } );
-    }
-    else {
+
+    # Create terms for search
+    my @terms = split /\s+/, $search if defined $search;
+
+    if (scalar @terms or $oid)  {
+        my @constraints = map {
+            -or => [{ name => {like => qq{%$_%}}},
+                    { description => {like => qq{%$_%}}}]
+        } @terms;
+
+        @organisms = $coge->resultset("Organism")->search({
+            -or => [
+                -and => \@constraints,
+                { organism_id => $oid },
+            ]
+        });
+    } else {
         $org_count = $coge->resultset("Organism")->count;
     }
 
@@ -717,18 +716,18 @@ sub get_orgs {
         $option .= ">" . $item->name . " (id" . $item->id . ")</OPTION>";
         push @opts, $option;
     }
-    
-    unless ( @opts && ( $name || $desc ) ) {
+
+    unless ( @opts && @organisms) {
         return qq{<span name="org_id$i" id="org_id$i"></span>};
     }
-    
+
     $org_count = scalar @opts unless $org_count;
     my $html;
     $html .= qq{<span class="small info">Organisms: (}
       . $org_count
       . qq{)</span>\n<BR>\n};
 
-    
+
     $html .= qq{<SELECT id="org_id$i" SIZE="5" MULTIPLE onChange="get_genome_info_chain($i)" class="coge-fill-width">\n}
           . join( "\n", @opts )
           . "\n</SELECT>\n";
@@ -760,8 +759,8 @@ sub get_genome_info {
         $org_desc = join(
             "; ",
             map {
-                    qq{<span class="link" onclick="\$('#org_desc}
-                  . qq{$org_num').val('$_').focus();search_bar('org_desc$org_num'); timing('org_desc$org_num')">$_</span>}
+                    qq{<span class="link" onclick="}
+                  . qq{search_bar('$_', '#org_name$org_num'); timing('org_name$org_num')">$_</span>}
               } split /\s*;\s*/,
             $org->description
         );
@@ -792,7 +791,7 @@ sub get_genome_info {
         $html_dsg_info .= "<tr><td>DNA content: <td>GC: $percent_gc%, AT: $percent_at%, N: $percent_n%, X: $percent_x%";
     }
     else {
-        $html_dsg_info .= qq{<tr><td>DNA content: <td id=gc_content$org_num class='link' onclick="get_gc($dsgid, 'gc_content$org_num')">Click to retrieve};
+        $html_dsg_info .= qq{<tr><td>DNA content: <td id='gc_content$org_num' class='link' onclick="get_gc($dsgid, 'gc_content$org_num')">Click to retrieve};
     }
     $html_dsg_info .= "<tr><td>Total length: <td>" . commify($chr_length);
     $html_dsg_info .= "<tr><td>Contains plasmid" if $plasmid;
@@ -805,7 +804,7 @@ sub get_genome_info {
     }
     if ($dsg->deleted)
       {
-    $html_dsg_info = "<span class='alert'>This genome has been deleted and cannot be used in this analysis.</span>  <a href=GenomeInfo.pl?gid=$dsgid target=_new>More information</a>.";
+    $html_dsg_info = "<span class='alert'>This genome has been deleted and cannot be used in this analysis.</span>  <a href='GenomeInfo.pl?gid=$dsgid' target=_new>More information</a>.";
       }
 
     my $message;
@@ -1466,6 +1465,20 @@ sub go {
     $feat_type1 = "protein" if $blast == 5 && $feat_type1 eq "CDS"; #blastp time
     $feat_type2 = "protein" if $blast == 5 && $feat_type2 eq "CDS"; #blastp time
 
+
+    # Sort by genome id
+    (
+        $dsgid1,     $genome1,              $org_name1,
+        $feat_type1, $depth_org_1_ratio, $dsgid2,     $genome2,
+        $org_name2,  $feat_type2, $depth_org_2_ratio
+      )
+      = (
+        $dsgid2,     $genome2,              $org_name2,
+        $feat_type2, $depth_org_2_ratio, $dsgid1,     $genome1,
+        $org_name1,  $feat_type1, $depth_org_1_ratio
+      ) if ( $dsgid2 lt $dsgid1 );
+
+
     ############################################################################
     # Generate Fasta files
     ############################################################################
@@ -1557,18 +1570,6 @@ sub go {
         CoGe::Accessory::Web::write_log( " " x (2) . $org_name2,
             $cogeweb->logfile );
     }
-
-    # Sort by genome id
-    (
-        $dsgid1,     $genome1,              $org_name1,  $fasta1,
-        $feat_type1, $depth_org_1_ratio, $dsgid2,     $genome2,
-        $org_name2,  $fasta2,            $feat_type2, $depth_org_2_ratio
-      )
-      = (
-        $dsgid2,     $genome2,              $org_name2,  $fasta2,
-        $feat_type2, $depth_org_2_ratio, $dsgid1,     $genome1,
-        $org_name1,  $fasta1,            $feat_type1, $depth_org_1_ratio
-      ) if ( $dsgid2 lt $dsgid1 );
 
     ############################################################################
     # Generate blastdb files
@@ -2335,7 +2336,7 @@ sub go {
         "$json_basename.json",
     ];
 
-    if (-r $dag_file12_all) {
+    if ($dag_file12_all) {
         push @$dot_args, [ '-d', $dag_file12_all, 0 ];
         push @$dot_inputs, $dag_file12_all;
         push @$dot_outputs, "$json_basename.all.json";

@@ -1,4 +1,5 @@
 #!/usr/bin/perl -w
+
 use strict;
 use warnings;
 use CGI;
@@ -57,14 +58,17 @@ no warnings 'redefine';
 # for security purposes
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
-use vars qw($P $PAGE_TITLE $PAGE_NAME $LINK
-  $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $GENOMETHREADER
+use vars qw($P $PAGE_TITLE $PAGE_NAME $LINK $DATE
+  $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $GENOMETHREADER
   $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge
   $NUM_SEQS $MAX_SEQS $MAX_PROC %FUNCTION);
 
 $FORM                 = new CGI;
 $CGI::POST_MAX        = 60 * 1024 * 1024;    # 24MB
 $CGI::DISABLE_UPLOADS = 0;
+
+$PAGE_TITLE = 'GEvo';
+$PAGE_NAME  = "$PAGE_TITLE.pl";
 
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     cgi => $FORM,
@@ -74,11 +78,9 @@ $CGI::DISABLE_UPLOADS = 0;
 $ENV{PATH} = $P->{COGEDIR};
 
 #print Dumper $P;
-$PAGE_TITLE = 'GEvo';
-$PAGE_NAME  = "$PAGE_TITLE.pl";
 $BL2SEQ     = $P->{BL2SEQ};
 $BLASTZ     = $P->{LASTZ};
-$BLASTZ .= " --ambiguous=iupac";
+$BLASTZ     .= " --ambiguous=iupac";
 $LAGAN          = $P->{LAGAN};
 $CHAOS          = $P->{CHAOS};
 $GENOMETHREADER = $P->{GENOMETHREADER};
@@ -86,6 +88,12 @@ $DIALIGN        = $P->{DIALIGN};
 $TEMPDIR        = $P->{TEMPDIR} . "GEvo";
 $TEMPURL        = $P->{TEMPURL} . "GEvo";
 $MAX_PROC       = $P->{MAX_PROC};
+
+$DATE = sprintf(
+    "%04d-%02d-%02d %02d:%02d:%02d",
+    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
+      ->(localtime)
+);
 
 #for chaos
 $ENV{'LAGAN_DIR'} = $P->{LAGANDIR};
@@ -99,11 +107,6 @@ $BENCHMARK = 1;
 $NUM_SEQS  = 2;         #SHABARI EDIT
 $MAX_SEQS  = 25;
 $|         = 1;         # turn off buffering
-$DATE      = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
 
@@ -1288,27 +1291,26 @@ qq{<div><a href = "http://genome.lbl.gov/vista/mvista/instructions.shtml">VISTA<
     $synfile  =~ s/$TEMPDIR/$TEMPURL/;
     $annofile =~ s/$TEMPDIR/$TEMPURL/;
     $html .=
-qq{<div><a href="http://cas-bioinfo.cas.unt.edu/mgsv/index.php" target=_new>mGSV</a> <a href = "$annofile" target=_new>Annotation File</a></div>};
+qq{<div><a href="http://cas-bioinfo.cas.unt.edu/mgsv/index.php" target=_new>mGSV</a> <a href="$annofile" target=_new>Annotation File</a></div>};
     $html .=
-qq{<div><a href="http://cas-bioinfo.cas.unt.edu/mgsv/index.php" target=_new>mGSV</a> <a href = "$synfile" target=_new>Synteny File</a></div>};
+qq{<div><a href="http://cas-bioinfo.cas.unt.edu/mgsv/index.php" target=_new>mGSV</a> <a href="$synfile" target=_new>Synteny File</a></div>};
 
-    $html .= qq{<td class=dropmenu><td><span class=bold>Image Files</span>};
+    $html .= qq{<td class="dropmenu"><td><span class="bold">Image Files</span>};
     foreach my $item (@sets) {
         my $png = $TEMPURL . "/" . basename( $item->{png_filename} );
         $html .=
-          qq{<br><a href ="$png" target=_new>} . $item->{obj}->accn . "</a>";
+          qq{<br><a href="$png" target=_new>} . $item->{obj}->accn . "</a>";
     }
-    $html .= qq{<td class=dropmenu><td><span class=bold>SQLite db</span>};
+    $html .= qq{<td class="dropmenu"><td><span class="bold">SQLite db</span>};
     my $dbname = $TEMPURL . "/" . basename( $cogeweb->sqlitefile );
 
     $html .= "<div><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
-    $html .= qq{<td class=dropmenu><td><span class=bold>Log File</span>};
+    $html .= qq{<td class="dropmenu"><td><span class="bold">Log File</span>};
     my $logfile = $TEMPURL . "/" . basename( $cogeweb->logfile );
     $html .= "<div><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
-    $html .= qq{<td class=dropmenu><td><span class=bold>GEvo Links</span>};
-    $html .= qq{<div id=tiny_link></div>};
-    $html .=
-qq{<div><a href="GEvo_direct.pl?name=$basefilename" target=_new>Results only</a></div></td>};
+    $html .= qq{<td class="dropmenu"><td><span class="bold">Return to this analysis</span>};
+    $html .= qq{<div id="tiny_link"></div>};
+    #$html .= qq{<div><a href="GEvo_direct.pl?name=$basefilename" target=_new>Results only</a></div></td>}; # mdb removed 8/20/14 issue 467
 
     my (@ncbi_links);
     foreach my $item (@sets) {
@@ -1621,6 +1623,10 @@ sub initialize_sqlite {
     my $dbfile = $cogeweb->sqlitefile;
     return if -r $dbfile;
     my $dbh = DBI->connect( "dbi:SQLite:dbname=$dbfile", "", "" );
+    unless (defined $dbh) {
+        print STDERR "Gevo.pl ERROR connecting to sqlite file\n";
+        return;
+    }
     my $create = qq{
 CREATE TABLE image_data
 (
@@ -4755,8 +4761,7 @@ sub get_tiny_url {
         url     => $url,
         log_msg => "GEvo link",
     );
-    my $html .=
-qq{<a href=$tiny onclick=window.open('$tiny') target =_new>$tiny<br>(See log file for full link)</a>};
+    my $html .= qq{<a href="$tiny" onclick="window.open('$tiny');" target=_new>$tiny</a>};
     return $html;
 }
 

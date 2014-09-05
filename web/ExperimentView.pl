@@ -5,7 +5,7 @@ use CGI;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
-use CoGe::Core::Storage qw(get_workflow_paths);
+use CoGe::Core::Storage qw(get_workflow_paths get_log data_type);
 use CoGe::Core::Genome qw(genomecmp);
 use HTML::Template;
 use JSON::XS;
@@ -44,10 +44,10 @@ $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID .
     get_sources                => \&get_sources,
     make_experiment_public     => \&make_experiment_public,
     make_experiment_private    => \&make_experiment_private,
-    add_type_to_experiment     => \&add_type_to_experiment,
-    get_experiment_types       => \&get_experiment_types,
-    get_type_description       => \&get_type_description,
-    remove_experiment_type     => \&remove_experiment_type,
+    add_tag_to_experiment      => \&add_tag_to_experiment,
+    get_experiment_tags        => \&get_experiment_tags,
+    get_tag_description        => \&get_tag_description,
+    remove_experiment_tag      => \&remove_experiment_tag,
     get_annotations            => \&get_annotations,
     add_annotation             => \&add_annotation,
     update_annotation          => \&update_annotation,
@@ -60,7 +60,8 @@ $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID .
     get_file_urls              => \&get_file_urls,
     find_snps                  => \&find_snps,
     get_progress_log           => \&get_progress_log,
-    send_error_report          => \&send_error_report,
+    get_load_log               => \&get_load_log,
+    send_error_report          => \&send_error_report
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -73,8 +74,10 @@ sub edit_experiment_info {
     my $exp = $coge->resultset('Experiment')->find($eid);
     my $desc = ( $exp->description ? $exp->description : '' );
 
+
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+
     $template->param(
         EDIT_EXPERIMENT_INFO => 1,
         EID                  => $eid,
@@ -150,7 +153,7 @@ sub make_experiment_private {
     return 1;
 }
 
-sub add_type_to_experiment {
+sub add_tag_to_experiment {
     my %opts = @_;
     my $eid  = $opts{eid};
     return 0 unless $eid;
@@ -184,7 +187,8 @@ sub add_type_to_experiment {
     return 1;
 }
 
-sub get_experiment_types {
+#FIXME: Types should be more generic and be referred to as TAGS
+sub get_experiment_tags {
     #my %opts = @_;
 
     my %unique;
@@ -197,7 +201,7 @@ sub get_experiment_types {
     return encode_json( [ sort keys %unique ] );
 }
 
-sub get_type_description {
+sub get_tag_description {
     my %opts = @_;
     my $name = $opts{name};
     return unless ($name);
@@ -211,7 +215,7 @@ sub linkify {
     return "<span class='link' onclick=\"window.open('$link')\">$desc</span>";
 }
 
-sub remove_experiment_type {
+sub remove_experiment_tag {
     my %opts = @_;
     my $eid  = $opts{eid};
     return "No experiment ID specified" unless $eid;
@@ -459,7 +463,7 @@ sub export_experiment_irods {
 
     unless($statusCode) {
         my $genome = $experiment->genome;
-        my @types = $experiment->types;
+        my @types = $experiment->tags;
         my @notebooks = $experiment->notebooks;
         my $dir = get_irods_path();
         my $dest = File::Spec->catdir($dir, basename($file));
@@ -485,7 +489,7 @@ sub export_experiment_irods {
 
         my $i = 1;
         foreach my $type (@types) {
-            my $key = (scalar @types > 1) ? "Experiment Type $i" : "Experiment Type";
+            my $key = (scalar @types > 1) ? "Experiment Tag $i" : "Experiment Tag";
             $meta{$key} = $type->name;
             $i++;
         }
@@ -606,7 +610,7 @@ sub gen_html {
         );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     }
-
+    
     $template->param( BODY => gen_body() );
     return $template->output;
 }
@@ -632,7 +636,8 @@ sub gen_body {
         JOB_ID          => $JOB_ID,
         STATUS_URL      => 'jex/status/',
         ALIGNMENT_TYPE  => ($exp->data_type == 3), # FIXME: hardcoded type value
-        PUBLIC          => $USER->user_name eq "public" ? 1 : 0
+        PUBLIC          => $USER->user_name eq "public" ? 1 : 0,
+        ADMIN_AREA      => $USER->is_admin
     );
     $template->param( EXPERIMENT_INFO => get_experiment_info( eid => $eid ) || undef );
     $template->param( EXPERIMENT_ANNOTATIONS => get_annotations( eid => $eid ) || undef );
@@ -640,7 +645,8 @@ sub gen_body {
     return $template->output;
 }
 
-sub get_experiment_info {
+
+sub _get_experiment_info {
     my %opts  = @_;
     my $eid   = $opts{eid};
     my ($exp) = $coge->resultset('Experiment')->find($eid);
@@ -650,30 +656,59 @@ sub get_experiment_info {
     my $allow_edit = $USER->is_admin || $USER->is_owner_editor( experiment => $eid );
     my $gid = $exp->genome->id;
 
-    my $html;
-    $html .= $exp->annotation_pretty_print_html( allow_delete => $allow_edit );
+    my $tags;
+    foreach my $tag ( $exp->tags ) {
+       $tags .= $tag->name;
+       $tags .= ": " . $tag->description if $tag->description;
 
-    $html .= "<div class='panel'>";
-
-    if ($allow_edit) {
-        $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="edit_experiment_info();">Edit Info</span>};
-        $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="\$('#experiment_type_edit_box').dialog('open');">Add Type</span>};
+       if ($allow_edit) {
+           # NOTE: it is undesirable to have a javascript call in a DB object, but it works
+           $tags .=
+               "<span onClick=\"remove_experiment_tag({eid: '"
+             . $exp->id
+             . "', etid: '"
+             . $tag->id
+             . "'});\" class=\"link ui-icon ui-icon-trash\"></span>";
+       }
     }
 
-    if ( $USER->is_admin || $USER->is_owner( experiment => $eid ) ) {
-        if ( $exp->restricted ) {
-            $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="make_experiment_public();">Make Public</span>};
-        }
-        else {
-            $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="make_experiment_private();">Make Private</span>};
-        }
-    }
     my $view_link = "GenomeView.pl?embed=$EMBED&gid=$gid&tracks=experiment$eid";
-    $html .= qq{<a style="color:inherit;" class='ui-button ui-corner-all coge-button' href=$view_link>View</a>};
 
-    $html .= "</div>";
+    my $fields = [
+        { title => "ID", value => $exp->id },
+        { title => "Name", value => $exp->name},
+        { title => "Description", value => $exp->description},
+        { title => "Data Type", value => data_type($exp->data_type) },
+        { title => "Genome", value => $exp->genome->info_html },
+        { title => "Source", value => $exp->source->info_html },
+        { title => "Version", value => $exp->version },
+        { title => "Tags", value => $tags },
+        { title => "Notebooks", value => },
+        { title => "Restricted", value => $exp->restricted ? "Yes" : "No"},
+    ];
 
-    return $html;
+    push @$fields, { title => "Note", value => "This experiment has been deleted" } if $exp->deleted;
+
+    return {
+        fields => $fields,
+        genome_view_url  => $view_link,
+        editable => $allow_edit,
+        restricted => $exp->restricted
+    };
+}
+
+sub get_experiment_info {
+    my $data = _get_experiment_info(@_);
+
+    my $template_file = catfile($P->{TMPLDIR}, "widgets", "experiment_info_table.tmpl");
+    my $info_table = HTML::Template->new(filename => $template_file);
+
+    $info_table->param(fields => $data->{fields});
+    $info_table->param(genome_view_url => $data->{genome_view_url});
+    $info_table->param(editable => $data->{editable});
+    $info_table->param(restricted => $data->{restricted});
+
+    return $info_table->output;
 }
 
 sub search_annotation_types {
@@ -767,7 +802,7 @@ sub find_snps {
 }
 
 sub get_progress_log {
-    my %opts         = @_;
+    my %opts = @_;
     my $workflow_id = $opts{workflow_id};
     return unless $workflow_id;
 
@@ -786,51 +821,17 @@ sub get_progress_log {
         }
     );
 }
-#sub get_progress_log {
-#    my $logfile = catfile($TEMPDIR, 'staging', 'load_experiment', 'log.txt');
-#    open( my $fh, $logfile ) or
-#        return encode_json( { status => -1, log => "Error opening log file" } );
-#
-#    my @lines = ();
-#    my ($eid, $nid, $new_load_id);
-#    my $status = 0;
-#    my $message = '';
-#    while (<$fh>) {
-#        push @lines, $1 if ( $_ =~ /^log: (.+)/i );
-#        if ( $_ =~ /All done/i ) {
-#            $status = 1;
-#
-#            # Generate a new load session ID in case the user chooses to
-#            # reuse the form to start another load.
-#            $new_load_id = get_unique_id();
-#
-#            last;
-#        }
-#        elsif ( $_ =~ /experiment id: (\d+)/i ) {
-#            $eid = $1;
-#        }
-#        elsif ( $_ =~ /log: error: input file is empty/i ) {
-#            $status = -2;
-#            $message = 'No SNPs were detected in this experiment';
-#            last;
-#        }
-#        elsif ( $_ =~ /log: error/i ) {
-#            $status = -1;
-#            last;
-#        }
-#    }
-#
-#    close($fh);
-#
-#    return encode_json(
-#        {
-#            status        => $status,
-#            experiment_id => $eid,
-#            new_load_id   => $new_load_id,
-#            message       => $message
-#        }
-#    );
-#}
+
+sub get_load_log {
+    my %opts = @_;
+    my $eid = $opts{eid};
+    my $getEverything = $opts{get_everything};
+    return unless $eid;
+    
+    my $log = get_log( item_id => $eid, item_type => 'experiment', getEverything => $getEverything, html => 1 );
+    
+    return $log;
+}
 
 sub send_error_report {
     my %opts = @_;

@@ -1,3 +1,4 @@
+/* global window, document, coge*/
 var coge = window.coge = (function(ns) {
     ns.utils = {
         ascending: function(a, b) {
@@ -24,17 +25,22 @@ var coge = window.coge = (function(ns) {
             return copy;
         },
         post: function(action, params) {
-            var form = document.createElement("form");
+            var key,
+                input,
+                form = document.createElement("form");
+
             form.method = "post";
             form.action = action;
-            form.setAttribute("target", "_self");
+            form.setAttribute("target", "_blank");
+            form.setAttribute("enctype", "multipart/form-data");
 
-            for(var key in params) {
-                var input = document.createElement("input");
-                input.name = key;
-                input.value = params[key];
-
-                form.appendChild(input);
+            for(key in params) {
+                if (params.hasOwnProperty(key)) {
+                    input = document.createElement("textarea");
+                    input.name = key;
+                    input.value = params[key];
+                    form.appendChild(input);
+                }
             }
 
             form.submit("action");

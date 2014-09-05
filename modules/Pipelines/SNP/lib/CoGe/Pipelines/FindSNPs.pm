@@ -72,7 +72,7 @@ sub run {
         create_samtools_job($filtered_file, $genome->id, $bam_file)
     );
     $workflow->add_job(
-        create_load_experiment_job(catfile($staging_dir, 'snps.vcf'), $user, $experiment)
+        create_load_experiment_job(catfile($staging_dir, 'snps.vcf'), $user, $experiment, $workflow->id)
     );
 
     # Submit the workflow
@@ -168,7 +168,7 @@ sub create_samtools_job {
 }
 
 sub create_load_experiment_job {
-    my ($vcf, $user, $experiment) = @_;
+    my ($vcf, $user, $experiment, $wid) = @_;
 
     my $cmd = catfile(($CONF->{SCRIPTDIR}, "load_experiment.pl"));
     my $output_path = catdir($staging_dir, "load_experiment");
@@ -186,11 +186,11 @@ sub create_load_experiment_job {
             ['-version', $experiment->version, 0],
             ['-restricted', $experiment->restricted, 0],
             ['-gid', $experiment->genome->id, 0],
+            ['-wid', $wid, 0],
             ['-source_name', '"'.$experiment->source->name.'"', 0],
             ['-types', qq{"SNP"}, 0],
             ['-annotations', $annotations, 0],
             ['-staging_dir', "./load_experiment", 0],
-            ['-result_dir', $result_dir, 0],
             ['-file_type', "vcf", 0],
             ['-data_file', "$vcf", 0],
             ['-config', $CONF->{_CONFIG_PATH}, 1]

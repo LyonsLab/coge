@@ -14,7 +14,7 @@ use CoGe::Core::Storage qw(create_experiment get_workflow_paths);
 use CoGe::Pipelines::qTeller qw(run);
 use HTML::Template;
 use JSON::XS;
-use URI::Escape::JavaScript qw(escape);
+use URI::Escape::JavaScript qw(escape unescape);
 use File::Path;
 use File::Spec::Functions;
 use File::Copy;
@@ -101,8 +101,8 @@ sub generate_html {
         $template->param( USER     => $name );
         $template->param( LOGO_PNG => $PAGE_TITLE . "-logo.png" );
         $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-        my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-        $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
+#        my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+#        $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
         $template->param( ADJUST_BOX => 1 );
     }
 
@@ -158,7 +158,8 @@ sub generate_body {
 sub irods_get_path {
     my %opts      = @_;
     my $path      = $opts{path};
-
+    $path = unescape($path);
+    #print STDERR "irods_get_path: $path\n";
     my $username = $USER->name;
     my $basepath = $P->{IRODSDIR};
     $basepath =~ s/\<USER\>/$username/;
@@ -169,7 +170,8 @@ sub irods_get_path {
         return;
     }
 
-    my $result = CoGe::Accessory::IRODS::irods_ils($path);
+    my $result = CoGe::Accessory::IRODS::irods_ils($path, escape_output => 1);
+    #print STDERR "irods_get_path ", Dumper $result, "\n";
     my $error  = $result->{error};
     if ($error) {
         my $email = $P->{SUPPORT_EMAIL};
@@ -189,14 +191,13 @@ sub irods_get_path {
         );
         return encode_json( { error => $error } );
     }
-    return encode_json(
-        { path => $path, items => $result->{items} } );
+    return encode_json( { path => $path, items => $result->{items} } );
 }
 
 sub irods_get_file {
     my %opts = @_;
     my $path = $opts{path};
-
+    $path = unescape($path);
     my ($filename)   = $path =~ /([^\/]+)\s*$/;
     my ($remotepath) = $path =~ /(.*)$filename$/;
 
@@ -431,6 +432,7 @@ sub load_experiment {
     my $items       = $opts{items};
     my $file_type	= $opts{file_type};
     my $aligner     = $opts{aligner};
+    my $ignore_missing_chrs = $opts{ignore_missing_chrs};
 
 	# Added EL: 10/24/2013.  Solves the problem when restricted is unchecked.
 	# Otherwise, command-line call fails with next arg being passed to
@@ -477,20 +479,6 @@ sub load_experiment {
             files => [ $data_file ],
             alignment_type => $aligner
         );
-        # Setup call to analysis script
-#        my $cmd =
-#            catfile($P->{SCRIPTDIR}, 'qteller.pl') . ' '
-#            . "-gid $gid "
-#            . '-uid ' . $USER->id . ' '
-#            . "-alignment $aligner "
-#            . '-name "' . escape($name) . '" '
-#            . '-desc "' . escape($description) . '" '
-#            . '-version "' . escape($version) . '" '
-#            . "-restricted ". $restricted . ' '
-#            . '-source_name "' . escape($source_name) . '" '
-#            . "-staging_dir $stagepath "
-#            . '-data_file "' . escape( join( ',', @files ) ) . '" '
-#            . "-config $CONFIGFILE";
     }
     # Else, all other file types
     else {
@@ -506,7 +494,10 @@ sub load_experiment {
                 restricted => $restricted,
             },
             files => [ $data_file ],
-            file_type => $file_type
+            file_type => $file_type,
+            options => {
+                ignoreMissing => $ignore_missing_chrs
+            }
         );
     }
     unless ($workflow_id) {

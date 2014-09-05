@@ -1,15 +1,16 @@
 <TMPL_IF NAME="MAIN">
 <script src="./js/coge/utils.js"></script>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
-<SCRIPT language="JavaScript">
+<script type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></script>
+<script type="text/javascript" src="./js/jquery.tablesorter.pager.js"></script>
+<script type="text/javascript" src="./js/jquery.fileupload.js"></script>
+<script type="text/javascript">
 
 const STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
 const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
 
 var eid = '<TMPL_VAR NAME="EID">';
 var job_id = '<TMPL_VAR NAME="JOB_ID">';
+var newLoad = false;
 
 $(document).ready(function() {
     pageObj = new Object();
@@ -26,8 +27,8 @@ $(document).ready(function() {
 
     $("#progress_dialog").dialog({modal: true});
 
-    $("#edit_type_name").autocomplete({
-        source: function() { get_experiment_types(); },
+    $("#edit_tag_name").autocomplete({
+        source: function() { get_experiment_tags(); },
         select: function(event, ui) { get_type_description( ui.item.label ); }
     });
 
@@ -149,36 +150,36 @@ function make_experiment_private () {
 function add_experiment_type () {
     $.ajax({
         data: {
-            fname: 'add_experiment_type',
+            fname: 'add_experiment_tag',
             eid: eid
         },
         success : function(data) {
-            $("#experiment_type_edit_box").dialog({
+            $("#experiment_tag_edit_box").dialog({
                 beforeClose:
                     function() {
-                        $("#edit_type_name").autocomplete('close');
+                        $("#edit_tag_name").autocomplete('close');
                     }
             });
-            $("#experiment_type_edit_box").html(data).dialog('open');
+            $("#experiment_tag_edit_box").html(data).dialog('open');
         }
     });
 }
 
-function add_type_to_experiment () {
-    var name = $('#edit_type_name').val();
-    var description = $('#edit_type_description').val();
+function add_tag_to_experiment () {
+    var name = $('#edit_tag_name').val();
+    var description = $('#edit_tag_description').val();
 
     if (name) {
         $.ajax({
             data: {
-                fname: 'add_type_to_experiment',
+                fname: 'add_tag_to_experiment',
                 eid: eid,
                 name: name,
                 description: description
             },
             success : function(val) {
                 get_experiment_info();
-                $("#experiment_type_edit_box").dialog('close');
+                $("#experiment_tag_edit_box").dialog('close');
             },
         });
     }
@@ -214,7 +215,6 @@ function download_files() {
     //CLEAR DIALOG
     reset_dialog();
 
-
     $.ajax({
         data: {
             fname: "get_file_urls",
@@ -239,6 +239,48 @@ function download_files() {
             }
         }
     });
+}
+
+function toggle_load_log() { // TODO: shared with GenomeInfo.pl, move to module
+	var btn = $('#log_button');
+	var log = $('#log_contents');
+	var spinner = $('#log_spinner');
+	
+	var setVisible = function(visible) { // TODO: i want to use jQuery.toggle() instead, oh well
+    	if (visible) {
+			log.removeClass('hidden');
+	    	btn.html('Hide');
+	    	spinner.animate({opacity:0});
+    	}
+    	else {
+    		log.addClass('hidden');
+    		btn.html('Show');
+    		spinner.animate({opacity:0});
+    	}
+	}
+	
+	if (log.is(":hidden")) {
+		if (log.html() == '') {
+			spinner.css({opacity:1});
+			$.ajax({
+		        data: {
+		            fname: 'get_load_log',
+		            eid: eid
+		        },
+		        success: function(data) {
+		        	if (data)
+		        		log.html(data);
+		        	else
+		        		log.html('<span class="alert">Error: log file not found</span>');
+		        	setVisible(true);
+		        }
+		    });
+		}
+		else
+			setVisible(true);
+	}
+	else
+		setVisible(false);
 }
 
 function export_data() {
@@ -303,7 +345,8 @@ function find_snps() {
         .dialog({ autoOpen: true, title: "Finding SNPs ..." });
 
     $('#progress_log').html('Initializing ...');
-
+    newLoad = true;
+    
     $.ajax({
         data: {
             fname: 'find_snps',
@@ -485,12 +528,14 @@ function progress_failed(obj) {
     }
     $('#ok_button').fadeIn();
 
-    $.ajax({
-        data: {
-            fname: "send_error_report",
-            job_id: job_id
-        }
-    });
+    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
+	    $.ajax({
+	        data: {
+	            fname: "send_error_report",
+	            job_id: job_id
+	        }
+	    });
+    }
 }
 
 function progress_succeeded(obj) {
@@ -593,26 +638,26 @@ function remove_annotation (eaid) {
     });
 }
 
-function get_experiment_types () {
+function get_experiment_tags () {
     $.ajax({
         data: {
-            fname: 'get_experiment_types'
+            fname: 'get_experiment_tags'
         },
         success : function(val) {
             var items = jQuery.parseJSON(val);
-            $("#edit_type_name").autocomplete("option", "source", items).autocomplete("search");
+            $("#edit_tag_name").autocomplete("option", "source", items).autocomplete("search");
         },
     });
 }
 
-function get_type_description (name) {
+function get_tag_description (name) {
     $.ajax({
         data: {
-            fname: 'get_type_description',
+            fname: 'get_tag_description',
             name: name
         },
         success : function(data) {
-            $("#edit_type_description").html(data);
+            $("#edit_tag_description").html(data);
         },
     });
 }
@@ -648,7 +693,8 @@ function get_type_description (name) {
 			                <span class="title5">Download:</span>
 			            </td>
 			            <td>
-			                <span class="data5 link" onclick="download_files();">Experiment Data</span>
+			                <span class="data5 link" onclick="download_files();">All Experiment Data<!--</span>&nbsp|
+			                <span class="data5 link" onclick="download_load_log();">Load Progress Log</span>-->
 			            </td>
 			        </tr>
                     <TMPL_UNLESS NAME="PUBLIC">
@@ -689,18 +735,18 @@ function get_type_description (name) {
 
 <div id="experiment_info_edit_box" class="dialog_box" title="Edit Experiment Info" style="display:none;"></div>
 
-<div id="experiment_type_edit_box" class="dialog_box" title="Add Experiment Type" style="display:none;">
+<div id="experiment_tag_edit_box" class="dialog_box" title="Add Experiment Tag" style="display:none;">
   <table class="small">
    <tr>
     <td>Name:</td>
-    <td><input id="edit_type_name" size="53" value=""></td>
+    <td><input id="edit_tag_name" size="53" value=""></td>
    </tr>
    <tr valign="top">
     <td>Description:</td>
-    <td><textarea id="edit_type_description" rows="5" cols="50"></textarea></td>
+    <td><textarea id="edit_tag_description" rows="5" cols="50"></textarea></td>
    </tr>
   </table>
-  <span onClick="add_type_to_experiment();" class='ui-button ui-corner-all coge-button'>Add</span>
+  <span onClick="add_tag_to_experiment();" class='ui-button ui-corner-all coge-button'>Add</span>
 </div>
 
 <div id="progress_dialog" class="hidden dialog_box">
@@ -720,43 +766,54 @@ function get_type_description (name) {
 </TMPL_IF>
 
 <TMPL_IF NAME="EDIT_EXPERIMENT_INFO">
-<SCRIPT>
-$(function() {
-    $("#edit_source").autocomplete({
-        source:
-            function() {
-                get_sources();
-            },
-        select:
-            function(event, ui) {
-                $("#edit_source").val( ui.item.label );
-                $("#edit_source_id").val( ui.item.value );
-                return false;
-            }
-    });
-});
-</SCRIPT>
-<table class="small">
- <tr>
-  <td>Name:</td>
-  <td><input id="edit_name" type="textbox" size="53" value="<TMPL_VAR NAME='NAME'>"></td>
- </tr>
- <tr>
-  <td>Description:</td>
-  <td><textarea id="edit_desc" rows="5" cols="50"><TMPL_VAR NAME='DESC'></textarea></td>
- </tr>
- <tr>
-  <td>Source:</td>
-  <td>
-   <input id="edit_source" size="53" value="<TMPL_VAR NAME='SOURCE'>">
-   <input id="edit_source_id" type="hidden" value="<TMPL_VAR NAME='SOURCE_ID'>">
-  </td>
- </tr>
- <tr>
-  <td>Version:</td>
-  <td><input id="edit_version" type="textbox" size="53" value="<TMPL_VAR NAME='VERSION'>"></td>
- </tr>
-</table>
-<br>
-<span onClick="update_experiment_info();" class='ui-button ui-corner-all coge-button'>Update</span>
+	<script>
+	$(function() {
+	    $("#edit_source").autocomplete({
+	        source:
+	            function() {
+	                get_sources();
+	            },
+	        select:
+	            function(event, ui) {
+	                $("#edit_source").val( ui.item.label );
+	                $("#edit_source_id").val( ui.item.value );
+	                return false;
+	            }
+	    });
+	});
+	</script>
+	<table class="small">
+	 <tr>
+	  <td>Name:</td>
+	  <td><input id="edit_name" type="textbox" size="53" value="<TMPL_VAR NAME='NAME'>"></td>
+	 </tr>
+	 <tr>
+	  <td>Description:</td>
+	  <td><textarea id="edit_desc" rows="5" cols="50"><TMPL_VAR NAME='DESC'></textarea></td>
+	 </tr>
+	 <tr>
+	  <td>Source:</td>
+	  <td>
+	   <input id="edit_source" size="53" value="<TMPL_VAR NAME='SOURCE'>">
+	   <input id="edit_source_id" type="hidden" value="<TMPL_VAR NAME='SOURCE_ID'>">
+	  </td>
+	 </tr>
+	 <tr>
+	  <td>Version:</td>
+	  <td><input id="edit_version" type="textbox" size="53" value="<TMPL_VAR NAME='VERSION'>"></td>
+	 </tr>
+	</table>
+	<br>
+	<span onClick="update_experiment_info();" class='ui-button ui-corner-all coge-button'>Update</span>
+</TMPL_IF>
+
+<TMPL_IF NAME='ADMIN_AREA'>
+	<br><br><hr>
+	<div class="bold text padded">Admin Functions</div>
+	<div class="small padded">
+		<span>Load Log:</span>
+	    <span id="log_button" onclick="toggle_load_log();" class='ui-button ui-corner-all coge-button' style="width:3em; margin-bottom:1em; overflow:auto;">Show</span>
+	    <img id="log_spinner" src="picts/ajax-loader.gif" style="opacity: 0;"/>
+	    <div id="log_contents" class="border hidden padded coge-code" style="border:1px solid gray; color: navy;"></div>
+	</div>
 </TMPL_IF>
