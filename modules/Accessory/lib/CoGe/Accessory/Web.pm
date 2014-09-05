@@ -1044,7 +1044,7 @@ sub url_for {
     $BASE_URL =~ s/\/$//;
 
     # Strip BASE URL from SERVER
-    $SERVER =~ s/$BASE_URL//;
+    $SERVER =~ s/$BASE_URL//i;
 
     # Strip scheme and /
     $SERVER =~ s/\/*$//;
