@@ -1,3 +1,7 @@
+<tmpl_if name="ADMIN_ONLY">
+        YOU ARE NOT AN ADMIN!
+</tmpl_if>
+
 <TMPL_IF NAME='MAIN'>
 <script type="text/javascript" src="js/coge/utils.js"></script>
 <SCRIPT type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
@@ -32,75 +36,134 @@
 
 <script>
 
-$(function() {
-	<TMPL_IF NAME='SHOW_RESULTS'>
-		timing('org_search');
-		$("._result").fadeIn();
-	</TMPL_IF>
-
-	//Auto-show results
-	if ($('#org_search').val()) {
-		timing('org_search');
-	}
-
-	$(".dialog").dialog({ autoOpen: false} );
-
-	//Initialize AJAX
-	$.ajaxSetup({
-		type: "GET",
-		url: "<TMPL_VAR NAME='PAGE NAME'>",
-		dataType: "html",
-		cache: false,
-	});
-});
-
 var timestamps = new Array();
 
-function search_organisms (search_term) {
-	//console.log(search_term);
-	if (search_term.length > 2) {
-		timestamps['search_organisms'] = new Date().getTime();
-		$.ajax({
-			data: {
-				fname: 'search_organisms',
-				search_term: search_term,
-				timestamp: timestamps['search_organisms']
-			},
-			success : function(data) {
-				//console.log(data);
-				var obj = jQuery.parseJSON(data);
-				if (obj && obj.items && obj.timestamp == timestamps['search_organisms']) {
-					var genomeCounter = 0;
-					for(var i = 0; i < obj.items.length; i++) {
-					   //console.log(obj.items[i].label);  This works!
-					   genomeCounter++;
+function search_stuff (search_term) {
+	if(search_term.length > 2) {
+	//if(search_term[0].search_term.length > 2) {
+		//console.log("Submit");
+		//for(var i = 0; i < search_term.length; i++) {
+			//console.log(search_term[i]);
+		//}
+
+        	timestamps['search_stuff'] = new Date().getTime();
+        	$.ajax({
+			//type: "POST",
+			//dataType: "json",
+			//contentType: "application/json; charset=utf8",
+        		data: {
+                        	fname: 'search_stuff',
+                        	search_term: search_term,
+                        	timestamp: timestamps['search_stuff']
+                        },
+                        success : function(data) {
+                                //console.log(data);
+                                var obj = jQuery.parseJSON(data);
+				//console.log(obj.items[0].type);
+
+				var userCounter = 0, orgCounter = 0, genCounter = 0, expCounter = 0, noteCounter = 0, usrgroupCounter = 0;
+				var userList = "", orgList = "", genList = "", expList = "", noteList = "", usrgroupList = "";
+
+				for (var i = 0; i < obj.items.length; i++) {
+
+					if (obj && obj.items && obj.timestamp == timestamps['search_stuff']) {
+
+		                                if (obj.items[i].type == "user") {
+	                                	        userList = userList + "<tr><td><span>" + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ")</span></td></tr>";
+	                                        	userCounter++;
+		              	                }
+
+						if (obj.items[i].type == "organism") {
+                                           		orgList = orgList + "<tr><td><span>" + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ")"  + "</span></td></tr>";
+                                           		orgCounter++;
+						}
+
+						if (obj.items[i].type == "genome") {
+							genList = genList + "<tr><td><span>" + (obj.items[i].label) + " <a href=\"GenomeInfo.pl?gid=" + (obj.items[i].id) + "\">Info</a></span></td></tr>"
+							genCounter++;
+						}
+
+						if (obj.items[i].type == "experiment") {
+                                                        expList = expList + "<tr><td><span>" + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ")</span></td></tr>";
+                                                        expCounter++;
+                                                }
+
+						if (obj.items[i].type == "notebook") {
+                                                        noteList = noteList + "<tr><td><span>" + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ")</span></td></tr>";
+                                                        noteCounter++;
+                                                }
+						
+						if (obj.items[i].type == "user_group") {
+                                                        usrgroupList = usrgroupList + "<tr><td><span>" + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ")</span></td></tr>";
+                                                        usrgroupCounter++;
+                                                }
 					}
-					console.log("Genomes: " + genomeCounter);
-					//$("#edit_organism").autocomplete({source: obj.items}).autocomplete("search");
-				
 				}
-			},
-		});
+
+				//Populate the html with the results
+				$(".result").fadeIn( 'slow');
+
+				//user
+                                $('#userCount').html("Users: " + userCounter);
+				$('#userList').html(userList);
+				if(userCounter <= 10) {
+                                        $( "#userList" ).show();
+					$( "#userArrow" ).find('img').toggle();
+                                }
+
+				//organism
+				$('#orgCount').html("Organisms: " + orgCounter);
+                                $('#orgList').html(orgList);
+				if(orgCounter <= 10) {
+                                        $( "#orgList" ).show();
+					$( "#orgArrow" ).find('img').toggle();
+                                }
+
+				//genome
+				$('#genCount').html("Genomes: " + genCounter);
+                                $('#genList').html(genList);
+				if(genCounter <= 10) {
+                                        $( "#genList" ).show();
+					$( "#genArrow" ).find('img').toggle();
+                                }
+
+				//experiment
+				$('#expCount').html("Experiments: " + expCounter);
+                                $('#expList').html(expList);
+				if(expCounter <= 10) {
+                                        $( "#expList" ).show();
+					$( "#expArrow" ).find('img').toggle();
+                                }
+
+				//notebook
+				$('#noteCount').html("Notebooks: " + noteCounter);
+                                $('#noteList').html(noteList);
+				if(noteCounter <= 10) {
+                                        $( "#noteList" ).show();
+					$( "#noteArrow" ).find('img').toggle();
+                                }
+
+				//user group
+				$('#usrgroupCount').html("User Groups: " + usrgroupCounter);
+                                $('#usrgroupList').html(usrgroupList);
+				if(usrgroupCounter <= 10) {
+                                        $( "#usrgroupList" ).show();
+					$( "#usrGArrow" ).find('img').toggle();
+                                }
+
+                       	},
+                });
 	}
 }
 
-function search_users (search_term) {
-	timestamps['search_users'] = new Date().getTime();
-	$.ajax({
-		data: {
-			fname: 'search_users',
-			search_term: search_term,
-			timestamp: timestamps['search_users']
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			if (obj && obj.items && obj.timestamp == timestamps['search_users']) {
-				$("#edit_user").autocomplete({source: obj.items});
-				$("#edit_user").autocomplete("search");
-			}
-		},
-	});
+function show_table(id) {
+	$(id).fadeToggle('fast');	
 }
+
+function toggle_arrow(id) {
+	$(id).find('img').toggle();
+}
+
 
 function update_dialog(request, user, identifier, formatter) {
     var get_status = function () {
@@ -227,119 +290,72 @@ function wait_to_search (search_func, search_term) {
 	);
 }
 
-//$(document).ready(function(){
-//	$.ajaxSetup({
-//		type: "POST",
-//		url: "<TMPL_VAR NAME=PAGE_NAME>",
-//		dataType: "html",
-//		cache: false,
-//	});
-//        $('#group_table').tablesorter({
-//		cssAsc: 'headerSortUp',		// Class name for ascending sorting action to header
-//		cssDesc: 'headerSortDown',	// Class name for descending sorting action to header
-//		cssHeader: 'header',			// Class name for headers (th's)
-//		widgets: ['zebra'],
-//		headers: {0: {sorter: false},},	//don't allow sort on the first column
-//		});
-//});
-
-
-/*
-function run_ajax(opts){
-      if (!opts){opts={};}
-      divid = opts.divid; //where results will be displayed in page
-      stuff = opts.stuff; //example of passing in some stuff
-
-      // create a new closure who's scope does *not*
-      // include the `divid` value so that callback will
-      // not clobber the `divid` variable
-      var create_callback = function(divid) {
-              var local_divid = divid;
-              return function (data) {
-                  $('#'+local_divid).html(data);
-              };
-          };
-
-      $.ajax({
-        data: {
-     	   jquery_ajax: 1,
-	   fname: 'test_ajax',
-   	   stuff: stuff
-           },
-        success : create_callback(divid)
-      });
-}*/
 
 </SCRIPT>
 <div class="coge-bg inline padded ui-widget-content ui-corner-all">
 
 	    <td>Search:</td>
 	    <td>
-	      <tmpl_if name=SEARCH>
-	        <input id="edit_organism" type="search" placeholder="Search" onkeyup="wait_to_search(search_organisms, this.value);" value="<tmpl_var name=ORGANISM_NAME>"size="50" spellcheck="false" />
-	      <tmpl_else>
-	        <input id="edit_organism" type="search" placeholder="Search" onkeyup="wait_to_search(search_organisms, this.value);" size="50" spellcheck="false" />
-	      </tmpl_if>
+	        <input id="search_token" type="search" placeholder="Search" onkeyup="wait_to_search(search_stuff, this.value);" size="50" spellcheck="false" />
+		<!--<input id="search_token" type="search" placeholder="Search" onkeyup="search_stuff(this.value);" size="50" spellcheck="false" />-->
 	    </td>
 </div>
 
-<table cellspacing="15" class="hidden _result" style="border-top:1px solid lightgray;">
-	<tr class="hidden _result">
-	   <td>
-		<span class="coge-table-header">Organisms: </span>
-		<span class='small' id='org_count'><TMPL_VAR NAME="ORG_COUNT"></span>
-		<div id="org_list"><TMPL_VAR NAME="ORG_LIST"></div>
-	   </td>
-	   <td valign='top'>
-		<div class="coge-table-header">Organism Information</div>
-		<div id='org_info' class="ui-corner-all ui-widget-content"></div>
-	   </td>
-	</tr>
-</table>
+<div style="padding-top:10px;" class="hidden result">
+	
+	<div style="padding-top:10px;">
+	<span id='orgCount' class='coge-table-header' style='color:119911;'></span>
+		<div id="orgArrow" onclick="toggle_arrow('#orgArrow');show_table('#orgList')" style='display:inline;'>
+                	<img src="picts/arrow-down-icon.png" class="link" style="width:10px;height:10px;display:none;"/>
+			<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+		</div>
+	<table cellspacing="5" class="hidden" id='orgList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
+	</div>
 
-<!--The following is commented out for possible later use.-->
-<!--This is a blank page.  Use it to create a new page for CoGe!
-<div id=stuff>LALA</div>
-<DIV class = link id=output onclick="run_ajax({stuff: $('#stuff').html(), divid: 'stuff'});">Click here!</DIV>
+	<div style="padding-top:10px;">
+	<span id='genCount' class='coge-table-header' style='color:119911;'></span>
+		<div id="genArrow" onclick="toggle_arrow('#genArrow');show_table('#genList')" style='display:inline;'>
+                        <img src="picts/arrow-down-icon.png" class="link" style="width:10px;height:10px;display:none;"/>
+                        <img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+                </div>
+	<table cellspacing="5" class="hidden" id='genList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
+	</div>
 
-Here is a sortable table (the first column is not able to be sorted upon):<br>
-<TABLE id=group_table class="small ui-widget-content ui-corner-all">
- <THEAD align=left>
-  <TR>
-   <TH>Name</TH>
-   <TH>Description</TH>
-   <TH>Members</TH>
-   <TH>Role</TH>
-   <TH>Permissions</TH>
-   <TH>Genomes</TH>
-  </TR>
- </THEAD>
- <tbody align=left valign="top" id="group_table_body" class=small>
-  <TR>
-   <TD>1</TD>
-   <TD>2</TD>
-   <TD>1</TD>
-   <TD>2</TD>
-   <TD>1</TD>
-   <TD>2</TD>
-  </TR>
-  <TR>
-   <TD>2</TD>
-   <TD>1</TD>
-   <TD>2</TD>
-   <TD>1</TD>
-   <TD>2</TD>
-   <TD>1</TD>
-  </TR>
-  <TR>
-   <TD>3</TD>
-   <TD>3</TD>
-   <TD>3</TD>
-   <TD>4</TD>
-   <TD>4</TD>
-   <TD>4</TD>
-  </TR>
- </tbody>
-</TABLE>-->
+	<div style="padding-top:10px;">
+	<span id='userCount' class='coge-table-header' style='color:119911;'></span>
+		<div id="userArrow" onclick="toggle_arrow('#userArrow');show_table('#userList')" style='display:inline;'>
+                        <img src="picts/arrow-down-icon.png" class="link" style="width:10px;height:10px;display:none;"/>
+                        <img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+                </div>
+	<table cellspacing="5" class="hidden" id='userList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
+	</div>
+
+	<div style="padding-top:10px;">
+	<span id='usrgroupCount' class='coge-table-header' style='color:119911;'></span>
+		<div id="usrGArrow" onclick="toggle_arrow('#usrGArrow');show_table('#usrgroupList')" style='display:inline;'>
+                        <img src="picts/arrow-down-icon.png" class="link" style="width:10px;height:10px;display:none;"/>
+                        <img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+                </div>
+	<table cellspacing="5" class="hidden" id='usrgroupList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
+	</div>
+
+	<div style="padding-top:10px;">
+	<span id='noteCount' class='coge-table-header' style='color:119911;'></span>
+		<div id="noteArrow" onclick="toggle_arrow('#noteArrow');show_table('#noteList')" style='display:inline;'>
+                        <img src="picts/arrow-down-icon.png" class="link" style="width:10px;height:10px;display:none;"/>
+                        <img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+                </div>
+	<table cellspacing="5" class="hidden" id='noteList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
+	</div>
+
+	<div style="padding-top:10px;">
+	<span id='expCount' class='coge-table-header' style='color:119911;'></span>
+		<div id="expArrow" onclick="toggle_arrow('#expArrow');show_table('#expList')" style='display:inline;'>
+                        <img src="picts/arrow-down-icon.png" class="link" style="width:10px;height:10px;display:none;"/>
+                        <img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+                </div>
+	<table cellspacing="5" class="hidden" id='expList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
+	</div>
+</div>
 
 </TMPL_IF>
