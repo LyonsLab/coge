@@ -18,7 +18,7 @@ use File::Basename;
 use File::Spec::Functions qw( catdir catfile );
 use File::Listing qw(parse_dir);
 use URI;
-use URI::Escape::JavaScript qw(escape);
+use URI::Escape::JavaScript qw(escape unescape);
 use LWP::Simple;
 use XML::Simple;
 use DateTime;
@@ -155,6 +155,9 @@ sub generate_body {
 sub irods_get_path {
     my %opts      = @_;
     my $path      = $opts{path};
+    #print STDERR $path, "\n";
+    
+    $path = unescape($path);
 
     my $username = $user->name;
     my $basepath = $P->{IRODSDIR};
@@ -166,8 +169,10 @@ sub irods_get_path {
         return;
     }
 
-    my $result = CoGe::Accessory::IRODS::irods_ils($path);
+    my $result = CoGe::Accessory::IRODS::irods_ils($path, escape_output => 1);
     my $error  = $result->{error};
+
+    #print STDERR Dumper $result, "\n";
 
     if ($error) {
         # Test for recent new account.  The iPlant IRODS isn't ready for a few
@@ -208,14 +213,14 @@ sub irods_get_path {
 sub irods_get_file {
     my %opts = @_;
     my $path = $opts{path};
-
+    $path = unescape($path);
     my ($filename)   = $path =~ /([^\/]+)\s*$/;
     my ($remotepath) = $path =~ /(.*)$filename$/;
 
     my $localpath     = 'irods/' . $remotepath;
-    my $localfullpath = $TEMPDIR . $localpath;
-    $localpath .= '/' . $filename;
-    my $localfilepath = $localfullpath . '/' . $filename;
+    my $localfullpath = catdir($TEMPDIR . $localpath);
+    $localpath = catfile($localpath, $filename);
+    my $localfilepath = catfile($localfullpath, $filename);
     #print STDERR "get_file $path $filename $localfilepath\n";
 
     my $do_get = 1;
@@ -441,7 +446,6 @@ sub load_genome {
     my $user_name    = $opts{user_name};
     my $keep_headers = $opts{keep_headers};
     my $items        = $opts{items};
-
 	#print STDERR "load_genome: organism_id=$organism_id name=$name description=$description version=$version type_id=$type_id restricted=$restricted\n";
 
 	# Added EL: 7/8/2013.  Solves the problem when restricted is unchecked.
@@ -509,7 +513,7 @@ sub load_genome {
 
     # Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
-        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id . "&embed=" . $EMBED
+        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id . "&embed=" . ( $EMBED ? 1 : 0 )
     );
     
     # Log it

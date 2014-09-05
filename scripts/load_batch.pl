@@ -13,7 +13,7 @@ use Data::Dumper;
 
 use vars qw(
     $staging_dir $file_str $notebook_name $notebook_desc $gid $user_name
-    $config $log_file $user $genome $result_dir
+    $config $log_file $user $genome $result_dir $wid @failed_experiments
 );
 
 my $DEBUG = 0;
@@ -28,6 +28,7 @@ GetOptions(
     "name=s"        => \$notebook_name,  # notebook name (JS escaped)
     "desc=s"        => \$notebook_desc,  # notebook description (JS escaped)
     "gid=s"         => \$gid,            # genome id
+    "wid=s"         => \$wid,            # workflow id
     "user_name=s"   => \$user_name,      # user name
     "config=s"      => \$config,         # CoGe config file
     #"log_file=s"    => \$log_file        # optional log file # mdb removed 8/1/14 - logging sent to STDOUT as part of jex changes
@@ -151,16 +152,7 @@ if ($result_dir) {
     );
 }
 
-# Yay!
-CoGe::Accessory::Web::log_history(
-    db          => $coge,
-    user_id     => $user->id,
-    page        => "LoadBatch",
-    description => 'load batch experiments',
-    link        => 'NotebookView.pl?nid=' . $notebook->id
-);
-
-print STDOUT "log: Loaded $exp_count experiments\n";
+print STDOUT "log: Loaded $exp_count experiments, skipped ", scalar(@failed_experiments) , "\n";
 #close($log);
 
 # Create "log.done" file to indicate completion to JEX
@@ -240,6 +232,7 @@ sub process_dir {
 
     # Load all experiment files in directory
     my @experiments;
+    my $load_count = 0;
     opendir( my $fh, $dir ) or die;
     my @contents = sort readdir($fh);
     foreach my $item ( @contents ) {
@@ -256,20 +249,28 @@ sub process_dir {
                     next;
                 }
             }
+            $load_count++;
             my $eid = process_file(
                 file     => "$dir/$item",
                 metadata => $md
             );
-            push @experiments, int($eid) if $eid;
+            if ($eid) {
+                push @experiments, int($eid);
+            }
         }
     }
     closedir($fh);
 
-    unless (@experiments) {
+    unless ($load_count) {
         print STDOUT "log: error: no experiment files found\n";
         exit(-1);
     }
-
+    
+    unless (@experiments) {
+        print STDOUT "log: error: none of the experiments loaded successfully\n";
+        exit(-1);
+    }
+    
     # Create notebook of experiments
     my $notebook = create_notebook(name => $notebook_name, desc => $notebook_desc, item_list => \@experiments);
     unless ($notebook) {
@@ -277,6 +278,7 @@ sub process_dir {
         exit(-1);
     }
     print STDOUT "notebook id: ".$notebook->id."\n";
+    print STDOUT "log: ----------------------------------------------------\n";
     print STDOUT "log: Created notebook '$notebook_name'\n";
     return ($notebook, \@experiments);
 }
@@ -309,19 +311,23 @@ sub process_file {
     die unless ($name and $gid and $source and $user);
 
     # Run load script
+    print STDOUT "log: ----------------------------------------------------\n";
     print STDOUT "log: Loading experiment '$name'\n";
     $file = escape($file);
     my $cmd = catfile($P->{SCRIPTDIR}, 'load_experiment.pl') . ' ' .
         "-config $config -user_name '".$user->user_name."' -restricted 1 -name '$name' -desc '$description' " .
-        "-version '$version' -gid $gid -source_name '$source' " .
+        "-version '$version' -wid $wid -gid $gid -source_name '$source' " .
         "-staging_dir $exp_staging_dir -install_dir ".$P->{EXPDIR}." -data_file '$file' ";
         #"-log_file $log_file"; # reuse log so that all experiment loads are present
     print STDOUT "Running: " . $cmd, "\n";
     return if ($DEBUG);
     my $output = qx{ $cmd };
+    print STDOUT $output;
     if ( $? != 0 ) {
-        print STDOUT "log: error: load_experiment.pl failed with rc=$?\n";
-        exit(-1);
+        print STDOUT "load_experiment.pl failed with rc=$?\n",
+                     "log: error: Experiment '$name' was not loaded due to an error\n";
+        push @failed_experiments, $name;
+        return; #exit(-1); # keep going
     }
     #open( $log, ">>$log_file" ) or die "Error opening log file $log_file"; # Reopen log file
     print STDOUT "log: Experiment '$name' loaded successfully\n";
@@ -408,8 +414,8 @@ sub create_notebook {
     CoGe::Accessory::Web::log_history(
         db          => $coge,
         user_id     => $user->id,
-        page        => "User",
-        description => 'create notebook id' . $list->id
+        page        => "LoadBatch",
+        description => 'Create notebook "'.$name.'" id' . $list->id
     );
 
     return $list;

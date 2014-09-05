@@ -968,6 +968,7 @@ sub send_email {
     my $to      = $opts{to};
     my $subject = $opts{subject};
     my $body    = $opts{body};
+    return unless ($from and $to and $subject);
 
     print STDERR "Sending email: from=$from to=$to subject=$subject\nbody:\n$body\n";
 

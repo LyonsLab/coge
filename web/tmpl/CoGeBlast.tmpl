@@ -1,6 +1,5 @@
 <TMPL_IF NAME="MAIN">
-    <div id="results" class="hidden"></div>
-
+    <div id="results" class="padded hidden"></div>
   <tmpl_if name="BETA">
     <div class="small" style="padding-bottom: 5px; color: dimgray;">
         <span class="large">Welcome to the <span class="alert">new beta version</span> of CoGeBlast.</span><br>If you experience any difficulties
@@ -125,115 +124,114 @@
         <span id="run_blast" class='ui-button ui-button-go ui-corner-all coge-button-lg'>Run CoGe Blast</span>
     </div>
 
-<tmpl_include name="/widgets/Overlay.tmpl">
+    <tmpl_include name="/widgets/Overlay.tmpl">
 
-<div id="status_dialog" class="dialog_box hidden">
-    <div class="dialog-text small ui-widget-content ui-corner-all inline" style="overflow-y:auto;width:450px;height:200px;color:dimgray;padding: 5px;">
+    <div id="status_dialog" class="dialog_box hidden">
+        <div class="dialog-text small ui-widget-content ui-corner-all inline" style="overflow-y:auto;width:450px;height:200px;color:dimgray;padding: 5px;">
+        </div>
+
+        <ul class="dialog-error horizontal padded hidden">
+            <li id="error_msg">An error occurred <img src="picts/thumbs_down.png"></li>
+            <li class="dialog-log small"></li>
+            <li id="cancel_button" class="ui-button ui-corner-all ui-button-go r coge-button">
+                <span onClick="$('#status_dialog').dialog('close');" >
+                    Close
+                </span>
+            </li>
+        </ul>
+
+        <ul class="dialog-complete horizontal padded hidden">
+            <li>
+                <span>Finished!</span>
+                <img src="picts/thumbs_up.png">
+            </li>
+            <li id="ok_button" class="ui-button ui-corner-all r coge-button">
+                <span onClick="$('#status_dialog').dialog('close');" >
+                    OK
+                </span>
+            </li>
+        </ul>
+
+        <ul class="dialog-running padded">
+            <li class="bottom">
+                <span id="loading_msg">Please wait ...</span>
+                <img src="picts/ajax-loader.gif"/>
+            </li>
+        </ul>
+        <div class="dialog-link link small" style="color:dimgray; padding-left: 5px;"></div>
     </div>
 
-    <ul class="dialog-error horizontal padded hidden">
-        <li id="error_msg">An error occurred <img src="picts/thumbs_down.png"></li>
-        <li class="dialog-log small"></li>
-        <li id="cancel_button" class="ui-button ui-corner-all ui-button-go r coge-button">
-            <span onClick="$('#status_dialog').dialog('close');" >
-                Close
-            </span>
-        </li>
-    </ul>
+    <script type="text/javascript" src="js/coge/utils.js"></script>
+    <script type="text/javascript" src="js/blast.js"></script>
+    <script type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></script>
+    <script>
+    $(function() {
+        $.ajaxSetup({
+            type: "GET",
+            url: '<TMPL_VAR NAME="PAGE_NAME">',
+            dataType: "html",
+            cache: false,
+        });
 
-    <ul class="dialog-complete horizontal padded hidden">
-        <li>
-            <span>Finished!</span>
-            <img src="picts/thumbs_up.png">
-        </li>
-        <li id="ok_button" class="ui-button ui-corner-all r coge-button">
-            <span onClick="$('#status_dialog').dialog('close');" >
-                OK
-            </span>
-        </li>
-    </ul>
+        pageObj = {
+            waittime: 1000,
+            locations: "<TMPL_VAR NAME=LOCATIONS>",
+            gstid: "<TMPL_VAR NAME=GSTID>",
+            fid: "<TMPL_VAR NAME=FEATID>",
+            tempdir: "<TMPL_VAR NAME=TEMPDIR>",
+            seqview: "<TMPL_VAR NAME=SEQVIEW>" || 0
+        };
 
-    <ul class="dialog-running padded">
-        <li class="bottom">
-            <span id="loading_msg">Please wait ...</span>
-            <img src="picts/ajax-loader.gif"/>
-        </li>
-    </ul>
-    <div class="dialog-link link small" style="color:dimgray; padding-left: 5px;"></div>
-</div>
+        $(".dialog_box").dialog({ autoOpen: false, width: 500 });
 
-<script type="text/javascript" src="js/coge/utils.js"></script>
-<script type="text/javascript" src="js/blast.js"></script>
-<script type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></script>
-<script>
-$(function() {
-    $.ajaxSetup({
-        type: "GET",
-        url: '<TMPL_VAR NAME="PAGE_NAME">',
-        dataType: "html",
-        cache: false,
-    });
+        <TMPL_VAR NAME="document_ready">
 
-    var pageObj = {
-        waittime: 1000,
-        locations: "<TMPL_VAR NAME=LOCATIONS>",
-        gstid: "<TMPL_VAR NAME=GSTID>",
-        fid: "<TMPL_VAR NAME=FEATID>",
-        tempdir: "<TMPL_VAR NAME=TEMPDIR>",
-        seqview: "<TMPL_VAR NAME=SEQVIEW>" || 0
-    };
+        $("#tabs").tabs({
+            select: function(event, ui) {
+                var button = $("#run_blast");
+                switch(ui.index) {
+                    case 0:
+                        button.unbind().click(run_coge_blast).html("Run CoGe Blast");
+                        break;
+                    case 1:
+                        button.unbind().click(function() {
+                            select_blast();
+                            ga('send', 'event', 'cogeblast', 'run', 'ncbi');
+                        }).html("Run NCBI Blast");
+                        break;
+                }
+            }
+        }).show();
 
-    $(".dialog_box").dialog({ autoOpen: false, width: 500 });
+        // Initialize CoGe Blast
+        $("#run_blast").click(run_coge_blast);
 
-    <TMPL_VAR NAME="document_ready">
+        blast_param_on_select('coge_radio','coge');
+        blast_param(); //blast_param([],[animate_params]);
+        database_param(); //database_param([],['database']);
 
-    $("#tabs").tabs({
-        select: function(event, ui) {
-            var button = $("#run_blast");
-            switch(ui.index) {
-                case 0:
-                    button.unbind().click(run_coge_blast).html("Run CoGe Blast");
-                    break;
-                case 1:
-                    button.unbind().click(function() {
-                        select_blast();
-                        ga('send', 'event', 'cogeblast', 'run', 'ncbi');
-                    }).html("Run NCBI Blast");
-                    break;
+        if (+"<tmpl_var name=RUN>") {
+            run_coge_blast();
+        }
+
+        //Object Generation
+        if(+pageObj.seqview){
+            var featid = "<TMPL_VAR NAME=FEATID>";
+            if ((featid) && (featid!=0)){
+                seqObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=DSGID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>, pageObj.seqview,'<TMPL_VAR NAME=CHR>',<TMPL_VAR NAME=RC>,featid);
+            }
+            else{
+                seqObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=DSGID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>, pageObj.seqview,'<TMPL_VAR NAME=CHR>',<TMPL_VAR NAME=RC>);
             }
         }
-    }).show();
-
-    // Initialize CoGe Blast
-    $("#run_blast").click(run_coge_blast);
-
-    blast_param_on_select('coge_radio','coge');
-    blast_param(); //blast_param([],[animate_params]);
-    database_param(); //database_param([],['database']);
-
-    if (+"<tmpl_var name=RUN>") {
-        run_coge_blast();
-    }
-
-    //Object Generation
-    if(+pageObj.seqview){
-        var featid = "<TMPL_VAR NAME=FEATID>";
-        if ((featid) && (featid!=0)){
-            seqObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=DSGID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>, pageObj.seqview,'<TMPL_VAR NAME=CHR>',<TMPL_VAR NAME=RC>,featid);
-        }
+        //TODO - handle js object error when checking for value when it hasn't been instantiated
         else{
-            seqObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=DSGID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>, pageObj.seqview,'<TMPL_VAR NAME=CHR>',<TMPL_VAR NAME=RC>);
+            seqObj = new Object();
         }
-    }
-    //TODO - handle js object error when checking for value when it hasn't been instantiated
-    else{
-        seqObj = new Object();
-    }
 
-    get_seq('coge_radio');
-});
-</script>
-
+        get_seq('coge_radio');
+    });
+    </script>
 </TMPL_IF> <!-- MAIN -->
 
 <TMPL_IF NAME="BLAST_NU">
@@ -633,6 +631,7 @@ $(function() {
                     <option value="seqview">Sequence View</option>
                     <option value="xls">Excel File</option>
                     <option value="tab">Tab Delimited FIle</option>
+                    <option value="tophits">Top Hits File</option>
                     <option value="list">Feature List</option>
                     <option value="blast">CoGeBlast</option>
                     <option value="phylo">Phylogenetics</option>
@@ -648,6 +647,13 @@ $(function() {
         <span class="bold text">Download</span>
         <TMPL_VAR NAME="DATA_FILES">
     </div>
+    <p>
+        Regenerate this analysis:
+        <a href="<TMPL_VAR NAME=LINK>">
+            <TMPL_VAR NAME="LINK">
+        </a>
+    </p>
 </div>
+<hr>
 </TMPL_IF>
 

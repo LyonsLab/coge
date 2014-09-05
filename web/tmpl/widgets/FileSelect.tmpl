@@ -218,12 +218,10 @@ function activate_on_input(input_id, button_id) {
 }
 
 function resolve_path(path) {
-	if (path == '.') {
+	if (path == '.')
 		return pageObj.current_path;
-	}
-	else if (path == '..') {
+	else if (path == '..')
 		return pageObj.parent_path;
-	}
 	return path;
 }
 
@@ -262,7 +260,7 @@ function irods_get_path (path) {
 			}
 
 			$('#ids_table').html('');
-			var parent_path = result.path.split('/').slice(0,-2).join('/') + '/';
+			var parent_path = result.path.replace(/\/$/, '').split('/').slice(0,-1).join('/') + '/';
 
 			// Save for later resolve_path()
 			pageObj.parent_path = parent_path;
@@ -276,6 +274,7 @@ function irods_get_path (path) {
 
 			result.items.forEach(
 				function(obj) {
+					// Build row in to be displayed
 					var icon;
 					if (obj.type == 'directory') {
 						icon = '<span class="ui-icon ui-icon-folder-collapsed"></span>';
@@ -283,8 +282,11 @@ function irods_get_path (path) {
 					else {
 						icon = '<span class="ui-icon ui-icon-document"></span>';
 					}
-					tr = $('<tr class="'+obj.type+'"><td style="white-space:nowrap;">'+icon+obj.name+'</td><td>'+obj.size+'</td><td>'+obj.timestamp+'</td></tr>');
-
+					tr = $('<tr class="'+ obj.type +'"><td style="white-space:nowrap;">' 
+							+ icon
+							+ decodeURIComponent(obj.name) + '</td><td>'
+							+ decodeURIComponent(obj.size) + '</td><td>' 
+							+ decodeURIComponent(obj.timestamp) + '</td></tr>'); // mdb added decodeURI 8/14/14 issue 441
 					if (obj.type == 'directory') {
 						$(tr).click(
 							function() {
@@ -295,7 +297,7 @@ function irods_get_path (path) {
 					else {
 						$(tr).click(
 							function() {
-								if ( add_file_to_list(obj.name, 'irods://'+obj.path) ) {
+								if ( add_file_to_list(decodeURIComponent(obj.name), 'irods://'+obj.path) ) {
 									irods_get_file(obj.path);
 								}
 								else {

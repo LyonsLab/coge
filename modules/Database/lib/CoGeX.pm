@@ -43,7 +43,8 @@ LICENSE file included with this module.
 =cut
 
 BEGIN {
-    use vars qw( %pool ); # persistent db connection pool
+    use vars qw( %pool $VERSION ); # persistent db connection pool
+    $VERSION = 5.6;
 }
 
 ################################################ subroutine header begin ##

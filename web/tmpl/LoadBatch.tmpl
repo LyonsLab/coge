@@ -34,9 +34,11 @@ const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
 var timestamps = new Array();
 var load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
 var job_id = '<TMPL_VAR NAME="JOB_ID">';
+var embed = '<TMPL_VAR NAME="EMBED">';
 var experiment_id;
 var notebook_id;
 var pageObj = {};
+var newLoad = false;
 
 $(document).ready(function(){
     $.ajaxSetup({
@@ -177,6 +179,7 @@ function load_batch() {
     reset_log();
     $('#load_dialog').dialog('open');
     $('#load_log').html('Initializing ...');
+    newLoad = true;
 
     $.ajax({
         data: {
@@ -233,7 +236,7 @@ function load_failed() {
 	var msg =
 		'<div class="alert">' +
 		'The CoGe Support Team has been notified of this error but please ' + 
-		'feel free to contact us at <a href="mailto:coge.genome@gmail.com">coge.genome@gmail.com</a> ' +
+		'feel free to contact us at <a href="mailto:<TMPL_VAR NAME=SUPPORT_EMAIL>"><TMPL_VAR NAME=SUPPORT_EMAIL></a> ' +
 		'and we can help to determine the cause.' +
 		'</div>';
 	var log = $('#load_log');
@@ -244,13 +247,15 @@ function load_failed() {
     $('#error_msg').fadeIn();
     $('#cancel_load_button').fadeIn();
 
-    $.ajax({
-        data: {
-            fname: "send_error_report",
-            load_id: load_id,
-            job_id: job_id
-        }
-    });
+    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
+	    $.ajax({
+	        data: {
+	            fname: "send_error_report",
+	            load_id: load_id,
+	            job_id: job_id
+	        }
+	    });
+    }
 }
 
 function load_succeeded(obj) {
