@@ -684,6 +684,10 @@ sub get_tiny_link {
 #    my $disable_logging = $opts{disable_logging};    # flag
 
     $url =~ s/:::/__/g;
+
+    #FIXME: Hack for tiny link service
+    $url =~ s/&/;/g;
+
     my $request_url = "https://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url";
 
 # mdb removed 1/8/14, issue 272
