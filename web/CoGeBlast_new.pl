@@ -710,7 +710,6 @@ sub blast_search {
         zchaining  => $zchaining,
         zthreshold => $zthreshold,
         zmask      => $zmask,
-        run        => 1,
 
         #Genomes
         dsgid      => $blastable
@@ -912,8 +911,34 @@ sub get_results {
 
     my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
 
-    my $url = $P->{SERVER} . $PAGE_NAME . "?dsgid=$blastable";
-    $url .= ";fid=$fid" if ($fid);
+    my %params = (
+        color_hsps => $color_hsps,
+        program    => $program,
+        expect     => $expect,
+        job_title  => $job_title,
+        wordsize   => $wordsize,
+        comp       => $comp,
+        matrix     => $matrix,
+        gapcost    => $gapcost,
+        match_scor => $match_score,
+        filter_que => $filter_query,
+        resultslim => $resultslimit,
+        basename   => $basename,
+        zwordsize  => $zwordsize,
+        zgap_start => $zgap_start,
+        zgap_exten => $zgap_extension,
+        zchaining  => $zchaining,
+        zthreshold => $zthreshold,
+        zmask      => $zmask,
+
+        #Genomes
+        dsgid      => $blastable
+    );
+
+    # Optional parameters
+    $params{fid} = $fid if $fid;
+
+    my $url = url_for($PAGE_NAME, %params);
 
     my $link = CoGe::Accessory::Web::get_tiny_link(url => $url);
 
