@@ -1940,7 +1940,7 @@ sub get_gff {
     $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export gff");
-    my ($output, %task) = generate_gff(%args);
+    my ($output, %task) = generate_gff(\%args, $config);
     $workflow->add_job(%task);
 
     my $response = $JEX->submit_workflow($workflow);
@@ -1972,7 +1972,7 @@ sub export_gff {
     $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export gff");
-    my ($output, %task) = generate_gff(%args);
+    my ($output, %task) = generate_gff(\%args, $config);
     $workflow->add_job(%task);
 
     my $response = $JEX->submit_workflow($workflow);
