@@ -38,7 +38,7 @@ jQuery(document).ready(function(){
 
 	// Show indicator if not on main site
 	if (document.URL.indexOf('genomevolution.org') == -1 && document.URL.indexOf('coge.iplantcollaborative.org') == -1) {
-		$('#dev').html('*** Development ***');
+        $('#brand').addClass("dev");
 	}
 });
 
@@ -166,7 +166,6 @@ $(document).ready( function() {
                 </ul>
             </span>
         </div>
-        <div id="dev" class='small alert'></div>
     </TMPL_UNLESS>
 
     <div id="brand">

@@ -1110,6 +1110,17 @@ header {
     text-shadow: #555555 1px 1px;
 }
 
+#brand {
+    float: left;
+}
+
+.dev:after {
+    content: " *** Development ***";
+    font-size: 80%;
+    color: red;
+    margin-left: 1em;
+}
+
 /* CoGepedia Wiki Feed */
 
 #wikifeed {
