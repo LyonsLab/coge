@@ -455,6 +455,31 @@ sub is_reader {
 
 ################################################ subroutine header begin ##
 
+=head2 is_creator
+
+ Usage     : $self->(dsg=>$dsg)
+ Purpose   : checks to see if a user is the reader of a genome or dataset or list
+ Returns   : 1/0
+ Argument  : dsg=>genome object
+             ds=>dataset object
+             list=>list object
+ Throws    : None
+ Comments  :
+
+=cut
+
+################################################## subroutine header end ##
+
+sub is_creator {
+	my $self = shift;
+	return unless $self->id; # ignore public user
+	my %opts = @_;
+	$opts{role_id} = 5;#'creator';
+	return is_role($self, %opts);
+}
+
+################################################ subroutine header begin ##
+
 =head2 is_role
 
  Usage     : $self->(dsg=>$dsg)
