@@ -39,8 +39,8 @@ while (<$fh>) {
     my ($seqid, undef, $type, $start, $end, $score, $strand, undef, $attr) = split("\t");
     next if $type eq 'exon';
     
-    my ($name) = $attr =~ /ID=(\w+)/;
-    my ($fpkm) = $attr =~ /fpkm=([\.\d]+)/;
+    my ($name) = $attr =~ /ID=(\w+)/i;
+    my ($fpkm) = $attr =~ /fpkm=([\.\d]+)/i;
     
     if ($maxScore > 0) {
         $score = normalize($score, $LOG_TRANSFORM) / $maxScore;
