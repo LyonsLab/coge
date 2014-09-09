@@ -486,6 +486,7 @@ sub gen_html {
     $template->param( BOX_NAME => "Feature Selection" );
     my $body = gen_body();
     $template->param( BODY => $body );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
 
     #	$template->param(ADJUST_BOX=>1);
     $html .= $template->output;

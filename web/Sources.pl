@@ -173,6 +173,7 @@ sub gen_html {
     				  LOGO_PNG   => "SourceView-logo.png" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => gen_body() );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
 
     #$template->param( BOX_NAME   => " Data Sources:" );
     #$template->param( ADJUST_BOX => 1 );

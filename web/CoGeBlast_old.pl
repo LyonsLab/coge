@@ -132,6 +132,7 @@ sub gen_html {
       HTML::Template->new( filename => $P->{TMPLDIR} . 'CoGeBlast.tmpl' );
     $prebox->param( RESULTS_DIV => 1 );
     $template->param( PREBOX => $prebox->output );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
     $html .= $template->output;
 }
 

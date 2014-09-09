@@ -47,6 +47,7 @@ sub gen_html {
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => gen_body() );
     $template->param( ADJUST_BOX => 1 );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
 
     #	$name .= $name =~ /s$/ ? "'" : "'s";
     #	$template->param( BOX_NAME => $name . " groups" );

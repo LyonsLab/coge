@@ -139,6 +139,7 @@ sub gen_html {
             message    => $warning,
         )
     );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
 
     $html .= $template->output;
     return $html;

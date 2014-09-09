@@ -106,6 +106,7 @@ sub gen_html {
     else {
         $template->param( BODY => "Can't read or find file $report_file" );
     }
+    $template->param( ADMIN_ONLY => $USER->is_admin );
     my $html;
     $html .= $template->output;
     return $html;
