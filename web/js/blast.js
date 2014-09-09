@@ -726,8 +726,14 @@ function update_dialog(request, identifier, result, formatter, args) {
         }
     };
 
+    var showImmediately = function (started) {
+        return (Date.now() - started) < 3000;
+    };
+
     var fetch_results = function(completed, attempts) {
         dialog = $(identifier);
+
+        var started = Date.now();
 
         $.ajax({
             data: args,
@@ -735,8 +741,13 @@ function update_dialog(request, identifier, result, formatter, args) {
             success: function(data) {
                 if (completed && data.success) {
                     handle_results(result, data);
-                    dialog.find('.dialog-running').hide();
-                    dialog.find('.dialog-complete').slideDown();
+
+                    if (showImmediately(started)) {
+                        dialog.dialog('close');
+                    } else {
+                        dialog.find('.dialog-running').hide();
+                        dialog.find('.dialog-complete').slideDown();
+                    }
                 } else {
                     handle_results(result, data);
                     dialog.find('.dialog-running').hide();
