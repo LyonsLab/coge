@@ -1246,6 +1246,7 @@ function checkRequestSize(url) {
             dataType: "json",
             success: function(data) {
                 if (!data.error) {
+                    $('.box').css("float", "left");
                     overlay.hide();
                     $("#synmap_zoom_box").draggable();
                     $('#results').html(data.html).slideDown();
@@ -1337,6 +1338,7 @@ function checkRequestSize(url) {
             dataType: 'json',
             data: params,
             success: function(data) {
+                $('.box').css("float", "left");
                 $("#overlay").hide();
                 status_dialog.dialog('open');
 
@@ -1364,6 +1366,7 @@ function checkRequestSize(url) {
                 }
             },
             error: function(err) {
+                $('.box').css("float", "left");
                 $("#overlay").hide();
                 status_dialog.dialog('open');
                 status_dialog.find('#text').html(pageObj.failed).addClass("alert");
