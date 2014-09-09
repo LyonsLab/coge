@@ -21,61 +21,61 @@
 
 
 <div id="logout_dialog" class="hidden dialog_box" title="Log out of CoGe">
-	<div style="text-align:center;padding:30px;">
-		<div class="info">Would you like to log out of all iPlant applications?</div>
-		<br><br>
-		<span onClick="location.href='index.pl?logout_coge=1';" style="font-size:0.75em;margin:15px;padding:5px;" class='ui-button ui-corner-all'>Log out of CoGe only</span>
-		<span onClick="location.href='index.pl?logout_all=1';" style="font-size:0.75em;margin:15px;padding:5px;" class='ui-button ui-corner-all'>Log out of all iPlant services</span>
-	</div>
+    <div style="text-align:center;padding:30px;">
+        <div class="info">Would you like to log out of all iPlant applications?</div>
+        <br><br>
+        <span onClick="location.href='index.pl?logout_coge=1';" style="font-size:0.75em;margin:15px;padding:5px;" class='ui-button ui-corner-all'>Log out of CoGe only</span>
+        <span onClick="location.href='index.pl?logout_all=1';" style="font-size:0.75em;margin:15px;padding:5px;" class='ui-button ui-corner-all'>Log out of all iPlant services</span>
+    </div>
 </div>
 
 <TMPL_VAR NAME="JAVASCRIPT">
 <script>
 jQuery(document).ready(function(){
-	pageObj = new Object();
-	if (jQuery.browser.msie) {browserAlert()};
-	setup_button_states();
+    pageObj = new Object();
+    if (jQuery.browser.msie) {browserAlert()};
+    setup_button_states();
 
-	// Show indicator if not on main site
-	if (document.URL.indexOf('genomevolution.org') == -1 && document.URL.indexOf('coge.iplantcollaborative.org') == -1) {
+    // Show indicator if not on main site
+    if (document.URL.indexOf('genomevolution.org') == -1 && document.URL.indexOf('coge.iplantcollaborative.org') == -1) {
         $('#brand').addClass("dev");
-	}
+    }
 });
 
 function browserAlert(){
-	$('#main_alert').html('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
-	alert('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
+    $('#main_alert').html('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
+    alert('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
 }
 
 //set up the jquery ui button behavior
 function setup_button_states (id) {
 //$(function() {
-	     //button effects on events
+         //button effects on events
            var item;
 
            if (id) { item='#'+id; }
            else { item = '.ui-button'; }
-	     $(item+':not(.ui-state-disabled)')
-			.hover(	function(){
-				$(this).addClass("ui-state-hover");
-			},
-				function(){
-				$(this).removeClass("ui-state-hover");
-			});
-	     $(item+':not(.ui-button-toggle)') //buttons that aren't toggle-able
+         $(item+':not(.ui-state-disabled)')
+            .hover( function(){
+                $(this).addClass("ui-state-hover");
+            },
+                function(){
+                $(this).removeClass("ui-state-hover");
+            });
+         $(item+':not(.ui-button-toggle)') //buttons that aren't toggle-able
                         .mousedown(function(){
-                        	$(this).addClass("ui-state-active");
+                            $(this).addClass("ui-state-active");
                         })
-			.mouseup(function(){
-			        $(this).removeClass("ui-state-active");
-                       	});
+            .mouseup(function(){
+                    $(this).removeClass("ui-state-active");
+                        });
              $(item+'.ui-button-toggle') // buttons that are toggle-able
                        .click(function(){
-				if( $(this).hasClass('ui-state-active') ){
-				    $(this).removeClass("ui-state-active");
-				    }
-				else { $(this).addClass("ui-state-active");
-				}
+                if( $(this).hasClass('ui-state-active') ){
+                    $(this).removeClass("ui-state-active");
+                    }
+                else { $(this).addClass("ui-state-active");
+                }
                         });
 
 }
@@ -94,15 +94,15 @@ function add_button_states (ids) {
 
 //initialize superfish plugin (dropdown menu)
 $(document).ready( function() {
-	$('ul.sf-menu').supersubs({
+    $('ul.sf-menu').supersubs({
             minWidth:    8,   // minimum width of sub-menus in em units
             maxWidth:    27,   // maximum width of sub-menus in em units
             extraWidth:  1     // extra width can ensure lines don't sometimes turn over
                                // due to slight rounding differences and font-family
-		     }).superfish({
-	    delay: 300
-	});
-	$('#menubar').css('visibility', 'visible'); // mdb added 10/21/13 -- hidden on startup to prevent "glitching" in rendering
+             }).superfish({
+        delay: 300
+    });
+    $('#menubar').css('visibility', 'visible'); // mdb added 10/21/13 -- hidden on startup to prevent "glitching" in rendering
 });
 
 </script>
