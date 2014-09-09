@@ -43,6 +43,7 @@ sub gen_html {
     #	$name .= $name =~ /s$/ ? "'" : "'s";
     #	$template->param( BOX_NAME   => $name . " Data Lists:" );
     $template->param( ADJUST_BOX => 1 );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
     return $template->output;
 }
 

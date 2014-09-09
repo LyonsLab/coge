@@ -78,6 +78,7 @@ sub gen_html {
     $template->param( BODY      => $body );
     $template->param( SEQ_NAMES => $seq_names ) if $seq_names;
     $template->param( SEQS      => $seqs ) if $seqs;
+    $template->param( ADMIN_ONLY => $USER->is_admin );
     $html .= $template->output;
     return $html;
 }

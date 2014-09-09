@@ -56,9 +56,11 @@ sub generate_html {
         ADJUST_BOX => 1,
         LOGO_PNG   => "CoGe-logo.png",
         BODY       => generate_body(),
+        ADMIN_ONLY => $USER->is_admin
     );
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
+    $template->param( ADMIN_ONLY => $USER->is_admin );
 
     return $template->output;
 }

@@ -130,6 +130,7 @@ sub gen_html {
 
     $template->param( BODY       => gen_body() );
     $template->param( ADJUST_BOX => 1 );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
 
     return $template->output;
 }

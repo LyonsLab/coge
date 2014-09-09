@@ -54,6 +54,7 @@ sub gen_html {
                       TITLE      => "GEvo direct:  reviewing past results.", 
                       PAGE_TITLE => "GEvo direct" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
+    $template->param( ADMIN_ONLY => $USER->is_admin );
     
     return $template->output;
 }

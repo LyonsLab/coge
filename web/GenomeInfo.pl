@@ -2055,6 +2055,8 @@ sub generate_html {
     }
 
     $template->param( BODY => generate_body() );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
+
     return $template->output;
 }
 

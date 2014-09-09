@@ -218,6 +218,7 @@ sub gen_html {
         $prebox->param( RESULTS_DIV => 1 );
         $template->param( PREBOX     => $prebox->output );
         $template->param( ADJUST_BOX => 1 );
+        $template->param( ADMIN_ONLY => $USER->is_admin );
         $html .= $template->output;
     }
     return $html;

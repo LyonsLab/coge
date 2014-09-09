@@ -288,6 +288,7 @@ sub gen_html {
     $template->param( LOGO_PNG => "SynMap-logo.png" );
     $template->param( BODY     => $body );
     $template->param( HELP     => "/wiki/index.php?title=SynMap" );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
     $html .= $template->output;
     return $html;
 }

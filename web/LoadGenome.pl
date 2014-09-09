@@ -107,6 +107,7 @@ sub generate_html {
         $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
     
         $template->param( ADJUST_BOX => 1 );
+        $template->param( ADMIN_ONLY => $user->is_admin );
     }
     
     $template->param( BODY => generate_body() );

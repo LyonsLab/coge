@@ -58,6 +58,7 @@ sub gen_html {
     my ( $body, $org_name ) = gen_body();
     $template->param( BODY     => $body );
     $template->param( BOX_NAME => $org_name );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
     $html .= $template->output;
     return $html;
 }
