@@ -37,11 +37,14 @@ sub generate_gff {
     # Check for a genome or dataset id
     return unless $args{gid};
 
+    # Set the default basename as the id if the basename is not set
+    $args{basename} = $args{gid} unless $args{basename};
+
     # Generate the output filename
     my $organism = "gff";
     my @attributes = qw(annos cds id_type nu upa);
     my $param_string = join "-", map { $_ . $args{$_} } @attributes;
-    my $filename = $organism . "_" . $param_string . ".gff";
+    my $filename = $args{basename} . "_" . $param_string . ".gff";
     my $path = get_download_path($conf->{SECTEMPDIR}, $args{gid});
     my $output_file = catfile($path, $filename);
 
