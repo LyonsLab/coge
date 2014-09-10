@@ -19,6 +19,11 @@ has 'params' => (
     required => 1
 );
 
+has 'db' => (
+    is => 'ro',
+    required => 1
+);
+
 has 'jex' => (
     is => 'ro',
     required => 1
