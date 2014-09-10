@@ -11,6 +11,7 @@ use CoGe::Pipelines::Misc::IPut;
 use File::Basename qw(basename);
 use File::Spec::Functions;
 use Data::Dumper;
+use URI::Escape::JavaScript qw(escape);
 
 sub build {
     my $self = shift;
@@ -25,6 +26,10 @@ sub build {
     $dest_type = "http" unless $dest_type;
 
     $self->workflow->logfile(catfile($result_dir, "debug.log"));
+
+
+    my $genome = $self->db->resultset("Genome")->find($self->params->{gid});
+    $self->params->{basename} = escape($genome->organism->name);
 
     my ($output, %job) = generate_gff($self->params, $self->conf);
     $self->workflow->add_job(%job);
