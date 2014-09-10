@@ -1234,6 +1234,15 @@ header {
     overflow-y: scroll;
 }
 
+
+.menubar .login {
+    display: block;
+    float: none;
+    margin-top: 2.25em;
+    color:gray;
+    margin-right:50px;
+}
+
 /*
 .box > div,
 .box > section,
@@ -1268,6 +1277,12 @@ header {
 
 /* Large Devices, Wide Screens */
 @media(min-width: 1200px) {
+    .menubar .login {
+        float: left;
+        display: inline;
+        margin-top: 0;
+    }
+
     .coge-summary > a img {
         width: 4.5em;
         height: 4.5em;
