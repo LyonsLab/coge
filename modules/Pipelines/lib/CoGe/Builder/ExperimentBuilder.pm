@@ -26,7 +26,11 @@ sub build {
     $dest_type = "http" unless $dest_type;
 
     my $eid = $self->params->{eid};
-    my $filename = "experiment_$eid.tar.gz";
+    my $experiment = $self->db->resultset('Experiment')->find($eid);
+    my $exp_name = $experiment->name;
+       $exp_name = $eid unless $exp_name;
+
+    my $filename = "experiment_$exp_name.tar.gz";
     my $cache_dir = $self->get_download_path($eid);
     my $cache_file = catfile($cache_dir, $filename);
     $self->workflow->logfile(catfile($result_dir, "debug.log"));

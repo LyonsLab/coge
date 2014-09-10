@@ -459,7 +459,7 @@ sub export_experiment_irods {
     my $experiment = $coge->resultset('Experiment')->find($eid);
     return $ERROR unless $USER->has_access_to_experiment($experiment);
 
-    my ($statusCode, $file) = generate_export($eid);
+    my ($statusCode, $file) = generate_export($experiment);
 
     unless($statusCode) {
         my $genome = $experiment->genome;
@@ -519,8 +519,13 @@ sub export_experiment_irods {
 }
 
 sub generate_export {
-    my $eid = shift;
-    my $filename = "experiment_$eid.tar.gz";
+    my $experiment = shift;
+    my $eid = $experiment->id;
+
+    my $exp_name = $experiment->name;
+       $exp_name = $eid unless $exp_name;
+
+    my $filename = "experiment_$exp_name.tar.gz";
 
     my $conf = File::Spec->catdir($P->{COGEDIR}, "coge.conf");
     my $script = File::Spec->catdir($P->{SCRIPTDIR}, "export_experiment.pl");
@@ -558,7 +563,7 @@ sub get_file_urls {
     my $experiment = $coge->resultset('Experiment')->find($eid);
     return 0 unless $USER->has_access_to_experiment($experiment);
 
-    my ($statusCode, $file) = generate_export($eid);
+    my ($statusCode, $file) = generate_export($experiment);
 
     unless($statusCode) {
         my $dir = basename(dirname($file));
