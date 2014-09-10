@@ -10,6 +10,7 @@ use CoGe::Pipelines::Misc::IPut;
 
 use File::Spec::Functions;
 use Data::Dumper;
+use URI::Escape::JavaScript qw(escape);
 
 sub build {
     my $self = shift;
@@ -26,17 +27,22 @@ sub build {
     $self->workflow->logfile(catfile($result_dir, "debug.log"));
 
     my $gid = $self->params->{gid};
-    my $genome = get_genome_file($gid);
+    my $genome = $self->db->resultset("Genome")->find($gid);
+    my $genome_file = get_genome_file($gid);
 
     if ($dest_type eq "irods") {
         my $base = $self->options->{dest_path};
         $base = irods_get_base_path($self->user->name) unless $base;
-        my $dest = catfile($base, "genome_$gid.faa");
 
-        $self->workflow->add_job(export_to_irods($genome, $dest, $self->options->{overwrite}));
+        my $genome_name = escape($genome->organism->name);
+           $genome_name = $gid unless $genome_name;
+
+        my $dest = catfile($base, "genome_$genome_name.faa");
+
+        $self->workflow->add_job(export_to_irods($genome_file, $dest, $self->options->{overwrite}));
         $self->workflow->add_job(generate_results($dest, $dest_type, $result_dir, $self->conf));
     } else {
-        $self->workflow->add_job(link_results($genome, $result_dir, $self->conf));
+        $self->workflow->add_job(link_results($genome_file, $result_dir, $self->conf));
     }
 }
 
