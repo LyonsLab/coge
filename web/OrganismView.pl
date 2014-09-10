@@ -62,7 +62,6 @@ $MAX_DS_LENGTH = 10000000;
     get_total_length_for_ds => \&get_total_length_for_ds,
     get_chr_length_hist     => \&get_chr_length_hist,
     update_genomelist       => \&update_genomelist,
-    parse_for_GenoList      => \&parse_for_GenoList,
     get_genome_list_for_org => \&get_genome_list_for_org,
     add_to_irods            => \&add_to_irods,
     make_genome_public      => \&make_genome_public,
@@ -102,12 +101,6 @@ sub dispatch {
     #    else{
     #	print $FORM->header, gen_html();
     #    }
-}
-
-sub parse_for_GenoList {
-    my $genomelist = shift;
-    my $url        = "GenomeList.pl?dsgid=$genomelist";
-    return $url;
 }
 
 sub gen_html {
