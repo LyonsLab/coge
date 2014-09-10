@@ -16,11 +16,6 @@ var pageObj = {};
  * Accessory functions
  */
 
-//FIXME: Wrapper around window.open due to perl cgi ajax limitation
-function send_to_url(url){
-    window.open(url);
-}
-
 function comparator(a, b) {
     return (a > b) ? 1 : (a < b) ? -1 : 0;
 }
@@ -188,7 +183,7 @@ function send_to_GenoList(){
         return;
     }
     var genolist = $('#genomelist_choice').getLength(1);
-    parse_for_GenoList(['args__'+genolist],[send_to_url]);
+    window.open("GenomeList.pl?dsgid=" + genolist, "_self");
 }
 
 
