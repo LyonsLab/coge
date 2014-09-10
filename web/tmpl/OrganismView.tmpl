@@ -190,14 +190,6 @@ function add_all_genomes_from_org(val){
 	}
 }
 
-function get_organism_name_chain(val) {
-    get_orgs(['args__name','args__'+val, 'args__dsgid','dsg_id'], [get_org_info_chain]);
-}
-
-function get_organism_desc_chain(val) {
-    get_orgs(['args__desc','args__'+val, 'args__dsgid','dsg_id'], [get_org_info_chain]);
-}
-
 function get_organism_chain(val) {
 	get_orgs(['args__name','args__'+val, 'args__desc','args__'+val, 'args__dsgid','dsg_id'], [get_org_info_chain]);
 }
