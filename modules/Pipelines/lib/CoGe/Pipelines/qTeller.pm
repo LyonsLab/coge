@@ -60,7 +60,7 @@ sub run {
     $workflow->logfile( catfile($staging_dir, 'log_main.txt') );
 
     # Check if genome has annotations
-    my $annotated = has_annotations($genome, $db);
+    my $annotated = has_annotations($genome->id, $db);
 
     # Set metadata for the pipeline being used
     my $annotations = generate_metadata($alignment, $annotated);
