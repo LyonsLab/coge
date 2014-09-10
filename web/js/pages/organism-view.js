@@ -1,4 +1,4 @@
-/*global $*/
+/*global $,window */
 
 //
 // Initialize jQuery AJAX
@@ -10,6 +10,41 @@ $.ajaxSetup({
         cache: false,
 });
 
+var pageObj = {};
+
+/*
+ * Accessory functions
+ */
+
+function timing(val){
+    var searchterm = $('#org_search').val();
+
+    if (pageObj.time) {
+        clearTimeout(pageObj.time);
+    }
+
+    if (!searchterm || searchterm.length < 3 || !val) {
+        $("._orgviewresult").hide();
+        $('#busy').animate({opacity:0});
+    }
+    else {
+        $('#busy').animate({opacity:1});
+        pageObj.time = setTimeout("get_organism_chain($('#org_search').val())", 500);
+    }
+}
+
+function ajax_wait (val){
+    if (ajax.length) {
+        setTimeout("ajax_wait("+'"'+val+'"'+")",100);
+        return;
+    }
+    eval(val);
+}
+
+//FIXME: Wrapper around window.open due to perl cgi ajax limitation
+function send_to_url(url){
+    window.open(url);
+}
 
 function comparator(a, b) {
     return (a > b) ? 1 : (a < b) ? -1 : 0;
@@ -83,30 +118,9 @@ $.fn.getLength = function(val){
     return opt_length;
 };
 
-function ajax_wait (val){
-    if (ajax.length) {
-        setTimeout("ajax_wait("+'"'+val+'"'+")",100);
-        return;
-    }
-    eval(val);
-}
-
-function send_to_GenoList(){
-    var check = $('#genomelist_choice').getLength();
-    if(($('#blank').val())||(check==0)){
-        alert('You have not selected any Genomes to examine. You must select at least one.');
-        return;
-    }
-    var genolist = $('#genomelist_choice').getLength(1);
-    parse_for_GenoList(['args__'+genolist],[send_to_url]);
-}
-
-function add_all_genomes(){
-    $('#dsg_id option').each(function(){
-            add_to_genomelist_nowarn($(this).text(),$(this).attr("value"));
-    });
-    $('#geno_list').dialog('option', 'width', 500).dialog('open');
-}
+/*
+ * Genome List
+ */
 
 function counting() {
     var count=0;
@@ -116,17 +130,6 @@ function counting() {
     $('#count').html('Genome Count:'+count);
 }
 
-function remove_selected_genomes(){
-    $('#genomelist_choice option:selected').each(function() {
-            //$('#'+$(this).val()).remove();
-            $(this).remove();
-    });
-    counting();
-}
-
-function send_to_url(url){
-    window.open(url);
-}
 
 function add_to_genomelist_nowarn(genome_name,gstid)
 {
@@ -157,19 +160,32 @@ function add_to_genomelist(genome_name,gstid) {
 
 }
 
-function open_aa_usage_table (html) {
-    $('#aa_usage_table').html(html);
-    $('#aa_table').tablesorter();
+function add_all_genomes(){
+    $('#dsg_id option').each(function(){
+            add_to_genomelist_nowarn($(this).text(),$(this).attr("value"));
+    });
+    $('#geno_list').dialog('option', 'width', 500).dialog('open');
 }
 
+function remove_selected_genomes(){
+    $('#genomelist_choice option:selected').each(function() {
+            //$('#'+$(this).val()).remove();
+            $(this).remove();
+    });
+    counting();
+}
+
+
 function clear_genome_list(){
-    var listlength = $('#genomelist_choice')[0].length;
-    for(var i=0; i < listlength; i++)
-    {
+    var i,
+        listlength = $('#genomelist_choice')[0].length;
+
+    for(i=0; i < listlength; i++) {
         $('#'+$('#genomelist_choice')[0][0].id).remove();
     }
     counting();
 }
+
 
 function add_all_org(){
     $("#org_id option").each(function(){
@@ -189,6 +205,21 @@ function add_all_genomes_from_org(val){
         }
     }
 }
+
+function send_to_GenoList(){
+    var check = $('#genomelist_choice').getLength();
+    if(($('#blank').val())||(check==0)){
+        alert('You have not selected any Genomes to examine. You must select at least one.');
+        return;
+    }
+    var genolist = $('#genomelist_choice').getLength(1);
+    parse_for_GenoList(['args__'+genolist],[send_to_url]);
+}
+
+
+/*
+ * Searching
+ */
 
 function get_organism_chain(val) {
     get_orgs(['args__name','args__'+val, 'args__desc','args__'+val, 'args__dsgid','dsg_id'], [get_org_info_chain]);
@@ -263,36 +294,11 @@ function populate_dataset_chr_info (chr_info, viewer, get_seq){
     $("._orgviewresult").fadeIn();
 }
 
-function launch_seqview(dsgid, chr, dsid) {
-    start = $('#start').val();
-    stop = $('#stop').val();
-    window.open("SeqView.pl?dsgid="+dsgid+"&dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop);
-}
+/*
+ * Services and Resources
+ */
 
-function launch_viewer (dsgid, chr) {
-    x = $('#x').val();
-    z = $('#z').val();
-    if (z > 12) z=12;
-    link = "GenomeView.pl?z="+z+"&x="+x+"&gid="+dsgid+"&chr="+chr;
-    window.open(link);
-}
-
-function timing(val){
-    if (pageObj.time)
-        clearTimeout(pageObj.time);
-
-    var searchterm = $('#org_search').val();
-    if (!searchterm || searchterm.length < 3 || !val) {
-        $("._orgviewresult").hide();
-        $('#busy').animate({opacity:0});
-    }
-    else {
-        $('#busy').animate({opacity:1});
-        pageObj.time = setTimeout("get_organism_chain($('#org_search').val())", 500);
-    }
-}
-
-function get_feat_gc(opts){
+function get_feat_gc(opts) {
     opts = opts || {};
     chr = opts.chr;
     typeid = opts.typeid;
@@ -328,11 +334,11 @@ function edit_genome_info (dsgid) {
             fname: 'edit_genome_info',
             dsgid: dsgid,
         },
-            success : function(val) {
-                $('#edit_genome_info').html(val);
-                $('#edit_genome_info').dialog('open');
-                get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);
-            },
+        success : function(val) {
+            $('#edit_genome_info').html(val);
+            $('#edit_genome_info').dialog('open');
+            get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);
+        },
     });
 }
 
@@ -384,4 +390,27 @@ function export_bed () {
     var link = "bin/export/coge2bed.pl?gid=";
     link += $('#dsg_id').val();
     window.open(link);
+}
+
+function launch_seqview(dsgid, chr, dsid) {
+    start = $('#start').val();
+    stop = $('#stop').val();
+    window.open("SeqView.pl?dsgid="+dsgid+"&dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop);
+}
+
+function launch_viewer (dsgid, chr) {
+    x = $('#x').val();
+    z = $('#z').val();
+    if (z > 12) z=12;
+    link = "GenomeView.pl?z="+z+"&x="+x+"&gid="+dsgid+"&chr="+chr;
+    window.open(link);
+}
+
+/*
+ * DOM manipulation functions
+ */
+
+function open_aa_usage_table (html) {
+    $('#aa_usage_table').html(html);
+    $('#aa_table').tablesorter();
 }
