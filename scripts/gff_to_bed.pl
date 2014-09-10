@@ -37,16 +37,17 @@ while (<$fh>) {
     $lineNum++;
     chomp;
     my ($seqid, undef, $type, $start, $end, $score, $strand, undef, $attr) = split("\t");
-    next if $type eq 'exon';
     
     my ($name) = $attr =~ /ID=(\w+)/i;
+    $name = '' if (!defined($name));
     my ($fpkm) = $attr =~ /fpkm=([\.\d]+)/i;
+    $fpkm = '' if (!defined($fpkm));
     
     if ($maxScore > 0) {
         $score = normalize($score, $LOG_TRANSFORM) / $maxScore;
     }
     
-    die "Error: invalid parameters at line $lineNum\n" if (!defined($name) || !defined($fpkm));
+    #die "Error: invalid parameters at line $lineNum\n" if (!defined($name) || !defined($fpkm));
     print join("\t", $seqid, $start, $end, $name, $score, $strand, $fpkm), "\n";
 }
 
