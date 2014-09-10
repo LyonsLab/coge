@@ -6,6 +6,11 @@ use CoGe::Builder::GffBuilder;
 use CoGe::Builder::FastaBuilder;
 use CoGe::Builder::ExperimentBuilder;
 
+has 'db' => (
+    is => 'ro',
+    required => 1
+);
+
 has 'conf' => (
     is => 'ro',
     required => 1
@@ -27,6 +32,7 @@ sub get {
     my $options = {
         params   => $message->{parameters},
         options  => $message->{options},
+        db       => $self->db,
         jex      => $self->jex,
         user     => $self->user,
         conf     => $self->conf
