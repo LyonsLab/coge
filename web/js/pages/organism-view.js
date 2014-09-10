@@ -16,31 +16,6 @@ var pageObj = {};
  * Accessory functions
  */
 
-function timing(val){
-    var searchterm = $('#org_search').val();
-
-    if (pageObj.time) {
-        clearTimeout(pageObj.time);
-    }
-
-    if (!searchterm || searchterm.length < 3 || !val) {
-        $("._orgviewresult").hide();
-        $('#busy').animate({opacity:0});
-    }
-    else {
-        $('#busy').animate({opacity:1});
-        pageObj.time = setTimeout("get_organism_chain($('#org_search').val())", 500);
-    }
-}
-
-function ajax_wait (val){
-    if (ajax.length) {
-        setTimeout("ajax_wait("+'"'+val+'"'+")",100);
-        return;
-    }
-    eval(val);
-}
-
 //FIXME: Wrapper around window.open due to perl cgi ajax limitation
 function send_to_url(url){
     window.open(url);
@@ -292,6 +267,25 @@ function populate_dataset_chr_info (chr_info, viewer, get_seq){
     setup_button_states();
     $('#busy').animate({opacity:0});
     $("._orgviewresult").fadeIn();
+}
+
+function timing(val){
+    var searchterm = $('#org_search').val();
+
+    if (pageObj.time) {
+        clearTimeout(pageObj.time);
+    }
+
+    if (!searchterm || searchterm.length < 3 || !val) {
+        $("._orgviewresult").hide();
+        $('#busy').animate({opacity:0});
+    }
+    else {
+        $('#busy').animate({opacity:1});
+        pageObj.time = setTimeout(function() {
+            get_organism_chain($('#org_search').val())
+        }, 500);
+    }
 }
 
 /*
