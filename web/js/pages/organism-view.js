@@ -6,7 +6,7 @@
 $.ajaxSetup({
         type: "GET",
         url: "OrganismView.pl",
-        dataType: "html",
+        dataType: "json",
         cache: false,
 });
 
@@ -87,6 +87,76 @@ $.fn.getLength = function(val){
 
     return opt_length;
 };
+
+/*
+ * DOM manipulation only
+ */
+function get_value(item) {
+    if (Object.prototype.toString.apply(item) === "[object Array]") {
+        return item[0];
+    }
+
+    return item;
+}
+
+function get_organism_id() {
+    return get_value($("#org_id").val());
+}
+
+function get_genome_id() {
+    return get_value($("#dsg_id").val());
+}
+
+function get_dataset_id() {
+    return get_value($("#ds_id").val());
+}
+function get_chromosome_id() {
+    return get_value($("#chr").val());
+}
+
+function export_gff () {
+    var link = "bin/export/coge_gff.pl?dsgid=";
+    link += $('#dsg_id').val();
+    if ($('#cds_only')[0].checked) {link += ";cds=1";}
+    if ($('#annos')[0].checked) {link += ";annos=1";}
+    if ($('#name_unique')[0].checked) {link += ";nu=1";}
+    if ($('#upa')[0].checked) {link += ";upa=1";}
+    link += ";id_type="+$('#gff_id_type').val();
+    $('#export_gff_link').html("<a href="+link+" target=_new>Link: "+ link+"</a>");
+    window.open(link);
+}
+
+function export_tbl () {
+    var link = "bin/export/export_NCBI_TBL.pl?dsgid=";
+    link += $('#dsg_id').val();
+    window.open(link);
+}
+
+function export_bed () {
+    var link = "bin/export/coge2bed.pl?gid=";
+    link += $('#dsg_id').val();
+    window.open(link);
+}
+
+function launch_seqview(dsgid, chr, dsid) {
+    start = $('#start').val();
+    stop = $('#stop').val();
+    window.open("SeqView.pl?dsgid="+dsgid+"&dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop);
+}
+
+function launch_viewer (dsgid, chr) {
+    x = $('#x').val();
+    z = $('#z').val();
+    if (z > 12) z=12;
+    link = "GenomeView.pl?z="+z+"&x="+x+"&gid="+dsgid+"&chr="+chr;
+    window.open(link);
+}
+
+function open_aa_usage_table (html) {
+    $('#aa_usage_table').html(html);
+    $('#aa_table').tablesorter();
+}
+
 
 /*
  * Genome List
@@ -186,82 +256,171 @@ function send_to_GenoList(){
     window.open("GenomeList.pl?dsgid=" + genolist, "_self");
 }
 
-
 /*
  * Searching
  */
 
+//FIXME: Remove name and desc for search
 function get_organism_chain(val) {
-    get_orgs(['args__name','args__'+val, 'args__desc','args__'+val, 'args__dsgid','dsg_id'], [get_org_info_chain]);
+    $('#org_count,org_list').html("");
+
+    $.ajax({
+        data: {
+            fname: "get_orgs",
+            jquery_ajax: 1,
+            name: val,
+            desc: val,
+            dsgid: get_genome_id()
+        },
+        success: function(response) {
+            if (response.organisms) {
+                $('#org_list').html(response.organisms);
+            }
+
+            if (response.count * 1) {
+                $('#org_count').html(response.count);
+                $('#allorg').show();
+            } else {
+                $('#allorg').hide();
+            }
+        },
+        error: function () {
+            $('#org_list').html('<span class="small alert">The results could not be loaded.</span>');
+        }
+    }).always(get_org_info_chain);
 }
 
-function get_org_info_chain(val, val2) {
-    if (val) $('#org_list').html(val);
-    if (val2*1) {
-        $('#org_count').html(val2);
-        $('#allorg').show();
-    }
-    else $('#allorg').hide();
-    get_org_info(['args__oid','org_id'],[genome_chain]);
-}
+function get_org_info_chain() {
+    $.ajax({
+        data: {
+            fname: "get_org_info",
+            jquery_ajax: 1,
+            oid: get_organism_id()
+        },
+        success: function(response) {
+            if (response.organism) {
+                $('#org_info').html(response.organism);
+            }
 
-function get_dataset_name_chain(val) {
-    if (val) {
-        get_dataset(['args__dsname','args__'+val], [dataset_info_chain]);
-        $('#org_list').html('<hidden id="org_id">');
-        $('#dsg_list').html('<hidden id="dsg_id">');
-        $('#org_count,#dsg_info,#dsg_count').html(' ');
-    }
-    else get_orgs([],[dataset_chain]);
+            if (response.error) {
+                $('#org_info').html(response.error);
+            }
+
+            $('#dsg_list').html('<hidden id="dsg_id">');
+            $('#dsg_count,#dsg_info,#ds_count,#ds_info,#chr_list,#chr_count,#chr_info,#viewer,#get_seq').empty();
+            $('#ds_list').html('<hidden id="ds_id">');
+        },
+        error: function () {
+            $('#org_info').html('<span class="small alert">The results could not be loaded.</span>');
+        }
+    }).always(genome_chain);
 }
 
 function genome_chain(val) {
-    if (val) $('#org_info').html(val);
-    get_genomes(['args__oid','org_id','args__dsgid','dsg_id'],[genome_info_chain]);
-    $('#dsg_list').html('<hidden id="dsg_id">');
-    $('#dsg_count,#dsg_info,#ds_count,#ds_info,#chr_list,#chr_count,#chr_info,#viewer,#get_seq').empty();
-    $('#ds_list').html('<hidden id="ds_id">');
+    $.ajax({
+        data: {
+            fname: "get_genomes",
+            jquery_ajax: 1,
+            oid: get_organism_id(),
+            dsgid: get_genome_id()
+        },
+        success: function(response) {
+            if (response.error) $('#dsg_list').html(response.error);
+            if (response.genomes) $('#dsg_list').html(response.genomes);
+            if (response.count) $('#dsg_count').html(response.count);
+            $('#dsg_info').html('<span class="small alert">loading...</span>');
+            $('#ds_list').html('<span class="small alert">loading...</span>');
+            $('#chr_info').html('<span class="small alert">loading...</span>');
+        },
+        error: function () {
+            $('#dsg_list').html('<span class="small alert">The results could not be loaded.</span>');
+        }
+    }).always(genome_info_chain);
 }
 
-function genome_info_chain(val, val2) {
-    if (val) $('#dsg_list').html(val);
-    if (val2) $('#dsg_count').html(val2);
-    $('#dsg_info').html('<span class="small alert">loading...</span>');
-    get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);
+function genome_info_chain() {
+    $.ajax({
+        data: {
+            fname: "get_genome_info",
+            jquery_ajax: 1,
+            dsgid: get_genome_id()
+        },
+        success: function (response) {
+            if (response.genome) {
+                $('#dsg_info').html(response.genome);
+            } else {
+                $('#dsg_info').html(response.error);
+            }
+        },
+        error: function () {
+            $('#dsg_info').html('<span class="small alert">The results could not be loaded.</span>');
+        }
+    }).always(dataset_chain);
 }
 
-function dataset_chain(val) {
-    if (val) {$('#dsg_info').html(val);}
-    get_dataset(['args__dsgid','dsg_id'],[dataset_info_chain]);
+function dataset_chain() {
+    $.ajax({
+        data: {
+            fname: "get_dataset",
+            jquery_ajax: 1,
+            dsgid: get_genome_id()
+        },
+        success: function (response) {
+            if (response.error) $('#ds_list').html(response.error);
+            if (response.datasets) $('#ds_list').html(response.datasets);
+            if (response.count) $('#ds_count').html(response.count);
+            $('#ds_info').html('<span class="small alert">loading...</span>');
+            $('#chr_info').html('<span class="small alert">loading...</span>');
+            $('#chr_list').html('<span class="small alert">loading...</span>');
+            $('#chr_count,#viewer,#get_seq').empty();
+        },
+        error: function () {
+            $('#ds_list').html('<span class="small alert">The results could not be loaded.</span>');
+        }
+    }).always(dataset_info_chain);
 }
 
-function recent_dataset_chain() {
-    get_dataset(['args__oid','recent_org_id'],[dataset_info_chain]);
+function dataset_info_chain() {
+    $.ajax({
+        data: {
+            jquery_ajax: 1,
+            fname: "get_dataset_info",
+            jquery_ajax: 1,
+            dsid: get_dataset_id()
+        },
+        success: function (response) {
+            if (response.dataset) $('#ds_info').html(response.dataset);
+            if (response.chromosomes) $('#chr_list').html(response.chromosomes);
+            if (response.count) $('#chr_count').html(response.count);
+            $('#viewer,#get_seq,#feature_count_data').empty();
+        },
+        error: function() {
+            $('#ds_info').html('<span class="small alert">The results could not be loaded.</span>');
+            $('#chr_list').html('<span class="small alert">The results could not be loaded.</span>');
+        }
+    }).always(dataset_chr_info_chain);
 }
 
-function dataset_info_chain(val, val2) {
-    if (val) $('#ds_list').html(val);
-    if (val2) $('#ds_count').html(val2);
-    $('#ds_info').html('<span class="small alert">loading...</span>');
-    $('#chr_list,#chr_count,#chr_info,#viewer,#get_seq').empty();
-    get_dataset_info(['ds_id'],[dataset_chr_info_chain]);
-}
-
-function dataset_chr_info_chain(val, val2, val3) {
-    if (val) $('#ds_info').html(val);
-    if (val2) $('#chr_list').html(val2);
-    if (val3) $('#chr_count').html(val3);
-    $('#viewer,#get_seq,#feature_count_data').empty();
-    get_dataset_chr_info(['ds_id', 'chr', 'dsg_id'],[populate_dataset_chr_info]);
-}
-
-function populate_dataset_chr_info (chr_info, viewer, get_seq){
-    $('#chr_info').html(chr_info);
-    $('#viewer').html(viewer);
-    $('#get_seq').html(get_seq);
-    setup_button_states();
-    $('#busy').animate({opacity:0});
-    $("._orgviewresult").fadeIn();
+function dataset_chr_info_chain() {
+    $.ajax({
+        data: {
+            fname: "get_dataset_chr_info",
+            jquery_ajax: 1,
+            dsid: get_dataset_id(),
+            chr: get_chromosome_id()
+        },
+        success: function (response) {
+            $('#chr_info').html(response.chromosome);
+            $('#viewer').html(response.viewer);
+            $('#get_seq').html(response.seqview);
+            setup_button_states();
+            $('#busy').animate({opacity:0});
+            $("._orgviewresult").fadeIn();
+        },
+        error: function() {
+            $('#chr_info').html('<span class="small alert">The results could not be loaded.</span>');
+        }
+    });
 }
 
 function timing(val){
@@ -299,6 +458,7 @@ function get_feat_gc(opts) {
     $('#gc_histogram').html('loading...');
 
     $.ajax({
+        dataType: "html",
         data: {
             dsgid: dsgid[0],
             jquery_ajax: 1,
@@ -314,92 +474,4 @@ function get_feat_gc(opts) {
             $('#gc_histogram').html(data);
         }
     });
-}
-
-function edit_genome_info (dsgid) {
-    $.ajax({
-        data: {
-            jquery_ajax: 1,
-            fname: 'edit_genome_info',
-            dsgid: dsgid,
-        },
-        success : function(val) {
-            $('#edit_genome_info').html(val);
-            $('#edit_genome_info').dialog('open');
-            get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);
-        },
-    });
-}
-
-function update_genome_info (dsgid) {
-    dsg_name = $('#dsg_name').val();
-    dsg_desc = $('#dsg_desc').val();
-    dsg_ver = $('#dsg_ver').val();
-    dsg_message = $('#dsg_message').val();
-    dsg_link = $('#dsg_link').val();
-    $.ajax({
-            data: {
-                jquery_ajax: 1,
-                fname: 'update_genome_info',
-                dsgid: dsgid,
-                name: dsg_name,
-                desc: dsg_desc,
-                ver: dsg_ver,
-                message: dsg_message,
-                link: dsg_link
-            },
-            success : function(val) {
-                if (val != 1) {alert(val);}
-                $('#edit_genome_info').html('');
-                $('#edit_genome_info').dialog('close');
-                get_genome_info(['args__dsgid','dsg_id'], [dataset_chain]);
-            },
-    });
-}
-
-function export_gff () {
-    var link = "bin/export/coge_gff.pl?dsgid=";
-    link += $('#dsg_id').val();
-    if ($('#cds_only')[0].checked) {link += ";cds=1";}
-    if ($('#annos')[0].checked) {link += ";annos=1";}
-    if ($('#name_unique')[0].checked) {link += ";nu=1";}
-    if ($('#upa')[0].checked) {link += ";upa=1";}
-    link += ";id_type="+$('#gff_id_type').val();
-    $('#export_gff_link').html("<a href="+link+" target=_new>Link: "+ link+"<\a>");
-    window.open(link);
-}
-
-function export_tbl () {
-    var link = "bin/export/export_NCBI_TBL.pl?dsgid=";
-    link += $('#dsg_id').val();
-    window.open(link);
-}
-
-function export_bed () {
-    var link = "bin/export/coge2bed.pl?gid=";
-    link += $('#dsg_id').val();
-    window.open(link);
-}
-
-function launch_seqview(dsgid, chr, dsid) {
-    start = $('#start').val();
-    stop = $('#stop').val();
-    window.open("SeqView.pl?dsgid="+dsgid+"&dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop);
-}
-
-function launch_viewer (dsgid, chr) {
-    x = $('#x').val();
-    z = $('#z').val();
-    if (z > 12) z=12;
-    link = "GenomeView.pl?z="+z+"&x="+x+"&gid="+dsgid+"&chr="+chr;
-    window.open(link);
-}
-
-/*
- * DOM manipulation functions
- */
-
-function open_aa_usage_table (html) {
-    $('#aa_usage_table').html(html);
-    $('#aa_table').tablesorter();
 }

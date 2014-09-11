@@ -6,6 +6,7 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw( commify );
 use HTML::Template;
+use JSON;
 use Data::Dumper;
 use CGI::Ajax;
 use Benchmark;
@@ -49,7 +50,6 @@ $MAX_DS_LENGTH = 10000000;
     gen_data                => \&gen_data,
     get_orgs                => \&get_orgs,
     get_org_info            => \&get_org_info,
-    get_recent_orgs         => \&get_recent_orgs,
     get_start_stop          => \&get_start_stop,
     get_feature_counts      => \&get_feature_counts,
     get_gc_for_chromosome   => \&get_gc_for_chromosome,
@@ -66,9 +66,9 @@ $MAX_DS_LENGTH = 10000000;
     add_to_irods            => \&add_to_irods,
     make_genome_public      => \&make_genome_public,
     make_genome_private     => \&make_genome_private,
-    edit_genome_info        => \&edit_genome_info,
-    update_genome_info      => \&update_genome_info,
 );
+
+#CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 my $pj = new CGI::Ajax(%FUNCTION);
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
@@ -99,7 +99,7 @@ sub dispatch {
     }
 
     #    else{
-    #	print $FORM->header, gen_html();
+    #  print $FORM->header, gen_html();
     #    }
 }
 
@@ -162,11 +162,10 @@ sub gen_body {
     $template->param( ORG_SEARCH => $org_name ) if $org_name;
 
     my ( $org_list, $org_count ) =
-      get_orgs( name => $org_name, oid => $oid, dsgid => $dsgid );
+      get_orgs( name => $org_name, oid => $oid, dsgid => $dsgid, no_json => 1);
     $template->param( ORG_LIST  => $org_list );
     $template->param( ORG_COUNT => $org_count );
 
-    #$template->param(RECENT=>get_recent_orgs());
     my ($ds) = $coge->resultset('Dataset')->resolve($dsid) if $dsid;
     $dsname = $ds->name if $ds;
     $dsname = "Search" unless $dsname;
@@ -217,123 +216,16 @@ sub make_genome_private {
     return 1;
 }
 
-sub update_genome_info {
-    my %opts  = @_;
-    my $dsgid = $opts{dsgid};
-    return "No DSGID specified" unless $dsgid;
-    return "Permission denied."
-      unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
-    my $dsg     = $coge->resultset('Genome')->find($dsgid);
-    my $name    = $opts{name};
-    my $desc    = $opts{desc};
-    my $ver     = $opts{ver};
-    my $message = $opts{message};
-    my $link    = $opts{link};
-    $dsg->name($name);
-    $dsg->description($desc);
-    $dsg->version($ver);
-    $dsg->message($message);
-    $dsg->link($link);
-    $dsg->update;
-    return 1;
-}
-
-sub edit_genome_info {
-    my %opts  = @_;
-    my $dsgid = $opts{dsgid};
-    return "No DSGID specified" unless $dsgid;
-    return "Permission denied."
-      unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
-    my $dsg     = $coge->resultset('Genome')->find($dsgid);
-    my $name    = $dsg->name;
-    my $desc    = $dsg->description;
-    my $ver     = $dsg->version;
-    my $message = $dsg->message;
-    my $link    = $dsg->link;
-    my $html = qq{
-
-<table class=small>
- <tr>
-  <td>Name:</td>
-  <td><input type=text id=dsg_name size=50 value="$name"></td>
- </tr>
- <tr>
-  <td>Description:</td>
-  <td><input type=text id=dsg_desc size=50 value="$desc"></td>
- </tr>
- <tr>
-  <td>Version:</td>
-  <td><input type=text id=dsg_ver size=5 value="$ver"></td>
- </tr>
- <tr>
-  <td>Message:</td>
-  <td><textarea id=dsg_message cols=50 rows=5>$message</textarea></td>
- </tr>
- <tr>
-  <td>Link:</td>
-  <td><input type=text id=dsg_link size=50 value="$link"></td>
- </tr>
-</table>
-<span class="ui-button ui-corner-all coge-button" onClick="update_genome_info('$dsgid')">Update</span>
-};
-    return $html;
-}
-
-sub get_recent_orgs {
-    my %opts  = @_;
-    my $limit = $opts{limit} || 100;
-    my @db    = $coge->resultset("Dataset")->search(
-        { restricted => 0 },
-        {
-            distinct => "organism.name",
-            join     => "organism",
-            order_by => "me.date desc",
-            rows     => $limit
-        }
-    );
-
-    my $i = 0;
-    my @opts;
-    my %org_names;
-    foreach my $item (@db) {
-        $i++;
-        my $date = $item->date;
-        $date =~ s/\s.*//;
-
-        #next if $USER->user_name =~ /public/i && $item->organism->restricted;
-        next if $org_names{ $item->organism->name };
-        $org_names{ $item->organism->name } = 1;
-        push @opts,
-            "<OPTION value=\""
-          . $item->organism->id . "\">"
-          . $date . " "
-          . $item->organism->name . " (id"
-          . $item->organism->id . ") "
-          . "</OPTION>";
-    }
-
-    my $html;
-    #$html .= qq{<FONT CLASS ="small">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
-    unless (@opts) {
-        $html .= qq{<input type="hidden" name="org_id" id="org_id">};
-        return $html;
-    }
-    #print STDERR $i . '+++++++++++++\n';
-    $html .= qq{<SELECT class="small ui-widget ui-widget-content ui-corner-all" id="recent_org_id" SIZE="5" MULTIPLE onChange="recent_dataset_chain()" >\n}
-          . join( "\n", @opts )
-          . "\n</SELECT>\n";
-    $html =~ s/OPTION/OPTION SELECTED/;
-    return $html;
-}
-
 sub get_orgs {
     my %opts  = @_;
     my $name  = $opts{name};
     my $desc  = $opts{desc};
     my $oid   = $opts{oid};
     my $dsgid = $opts{dsgid};
+    my $no_json = $opts{no_json};
 
-    return ('', 0) unless ($name || $desc);
+    return ('', 0) unless ($name || $desc) and not $no_json;
+    return encode_json({organisms => '', count => 0}) unless ($name || $desc);
 
     my $dsg   = $coge->resultset('Genome')->find($dsgid) if $dsgid;
     $dsg = undef unless $USER->has_access_to_genome($dsg);
@@ -350,7 +242,12 @@ sub get_orgs {
         return (
             qq{<input type="hidden" name="org_id" id="org_id" /><span class="small alert">Please refine your search</span>},
             scalar(@db)
-        );
+        ) if $no_json;
+
+        return encode_json({
+            organisms => qq{<input type="hidden" name="org_id" id="org_id" /><span class="small alert">Please refine your search</span>},
+            count => scalar(@db)
+        });
     }
 
     my @opts;
@@ -367,10 +264,11 @@ sub get_orgs {
     }
     my $html;
     if ( ( $name || $desc ) && !@opts ) {
-        $html .= qq{<input type="hidden" name="org_id" id="org_id"><span class="small alert">No organisms found</span>};
-        return $html, 0;
+        my $message = "No organisms found";
+        return ($message, 0) if $no_json;
+        return encode_json({ organisms => $message, count => 0 });
     }
-    $html .= qq{<SELECT class="small ui-widget ui-widget-content ui-corner-all" id="org_id" size="5" MULTIPLE onChange="get_org_info(['args__oid','org_id'],[genome_chain])" >\n};
+    $html .= qq{<SELECT class="small ui-widget ui-widget-content ui-corner-all" id="org_id" size="5" MULTIPLE onChange="get_org_info_chain()" >\n};
     $html .= join( "\n", @opts );
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/ unless $html =~ /SELECTED/;
@@ -380,7 +278,8 @@ sub get_orgs {
     $opts .= "oid=$oid;"     if $oid;
     $opts .= "dsgid=$dsgid;" if $dsgid;
     $html .= qq{<!--<div class="padded"><span class='ui-button ui-corner-all coge-button' onclick="window.open('get_org_list.pl$opts');">Download Organism List</span></div>-->};
-    return $html, scalar(@db);
+    return $html, scalar(@db) if $no_json;
+    return encode_json({ organisms => $html, count => scalar(@db)});
 }
 
 sub update_genomelist {
@@ -399,10 +298,13 @@ sub get_org_info {
     my %opts = @_;
 
     my $oid = $opts{oid};
-    return " " unless $oid;
+    return encode_json({error => "A organism was not specified"}) unless $oid;
+
     my $org = $coge->resultset("Organism")->find($oid);
-    return "Unable to find an organism for id: $oid\n" unless $org;
-    
+    return encode_json({
+        organism => "Unable to find an organism for id: $oid\n"
+    }) unless $org;
+
     my $html;
     $html .=
       "<span class='alert'>Private Organism!  Authorized Use Only!</span><br>"
@@ -440,7 +342,9 @@ qq{<img onclick="window.open('http://www.google.com/search?q=$search_term')" src
     $html .= "</table>";
 
     #    $html .= "</div>";
-    return $html;
+    return encode_json({
+        organism => $html
+    });
 }
 
 sub get_genome_list_for_org {
@@ -515,14 +419,19 @@ sub get_genomes {
     if (@opts) {
 
 #	$html = qq{<FONT CLASS ="small">Dataset group count: }.scalar (@opts).qq{</FONT>\n<BR>\n};
-        $html .= qq{<SELECT class="small ui-widget ui-widget-content ui-corner-all" style="max-width:500px;" id="dsg_id" size="5" MULTIPLE onChange="get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);" >\n};
+        $html .= qq{<SELECT class="small ui-widget ui-widget-content ui-corner-all" style="max-width:500px;" id="dsg_id" size="5" MULTIPLE onChange="genome_info_chain();" >\n};
         $html .= join( "\n", @opts );
         $html =~ s/OPTION/OPTION SELECTED/ unless $html =~ /SELECTED/i;
     }
     else {
         $html .= qq{<input type = hidden name="dsg_id" id="dsg_id">};
     }
-    return $html, scalar @opts;
+
+    my $message = "No genomes found";
+
+    return encode_json({ error => $message }) unless scalar @opts > 0;
+
+    return encode_json({ genomes => $html, count => scalar @opts });
 }
 
 sub add_to_irods {
@@ -552,9 +461,9 @@ sub add_to_irods {
 sub get_genome_info {
     my %opts  = @_;
     my $dsgid = $opts{dsgid};
-    return " " unless $dsgid;
+    return encode_json({ error  => "A genome was not specified" }) unless $dsgid;
     my $dsg = $coge->resultset("Genome")->find($dsgid);
-    return "Unable to get genome object for id: $dsgid" unless $dsg;
+    return encode_json({ error => "Unable to get genome object for id: $dsgid" }) unless $dsg;
 
     my $html;
     my $total_length = $dsg->length;
@@ -607,7 +516,7 @@ sub get_genome_info {
           . qq{<td id="dsg_features"></td>}
           . "</table>";
 
-    return $html;
+    return encode_json({ genome => $html });
 }
 
 sub get_dataset {
@@ -616,7 +525,10 @@ sub get_dataset {
     my $dsname = $opts{dsname};
     my $dsid   = $opts{dsid};
 
-    return qq{<input type="hidden" name="ds_id" id="ds_id">}, 0 unless ($dsid || $dsname || $dsgid);
+    return encode_json({
+        error => "No datasets found",
+        counts => 0
+    }) unless ($dsid || $dsname || $dsgid);
 
     if ($dsid) {
         my ($ds) = $coge->resultset('Dataset')->resolve($dsid);
@@ -677,18 +589,28 @@ sub get_dataset {
     else {
         $html .= qq{<input type="hidden" name="ds_id" id="ds_id">};
     }
-    return $html, scalar @opts;
+
+     return encode_json({ datasets => $html, count => scalar @opts });
 }
 
 sub get_dataset_info {
-    my $dsid = shift;
-    return qq{<input type="hidden" id="chr" value="">}, " ", 0
-      unless ($dsid); # error flag for empty dataset
+    my %opts = @_;
+    my $dsid = $opts{dsid};
+
+    return encode_json({
+        dataset => qq{A dataset was not specified <input type="hidden" id="chr" value="">},
+        chromosomes => "No chromosomes found",
+        count => 0
+    }) unless ($dsid); # error flag for empty dataset
 
     my $ds = $coge->resultset("Dataset")->find($dsid);
     unless ($ds) {
         print STDERR "get_dataset_info: unable to find dataset object for id: $dsid";
-        return qq{<input type="hidden" id="chr" value="">}, " ", 0;
+        return encode_json({
+            dataset => qq{A dataset could not be found. <input type="hidden" id="chr" value="">},
+            chromosomes => "<select><option>No chromosomes found</option></select>",
+            count => 0
+        }); # error flag for empty dataset
     }
 
 	my $chr_num_limit = 20;
@@ -803,26 +725,41 @@ sub get_dataset_info {
     my $chr_count = $chr_num;
     $chr_count .= " <span class='note'> (only $chr_num_limit largest listed)</span>"
       if ( $chr_count > $chr_num_limit );
-      
-    return $html, $html2, $chr_count;
+
+    return encode_json({
+        dataset => $html,
+        chromosomes => $html2,
+        count => $chr_count
+    });
 }
 
 sub get_dataset_chr_info {
-    my $dsid  = shift;
-    my $chr   = shift;
-    my $dsgid = shift;
+    my %opts = @_;
+    my $dsid  = $opts{dsid};
+    my $chr   = $opts{chr};
+    my $dsgid = $opts{dsgid};
+
     $dsgid = 0 unless defined $dsgid;
     $dsid  = 0 unless $dsid;
     unless ( $dsid && defined $chr && $chr ne '' )    # error flag for empty dataset
     {
-        return "", "", "";
+        return encode_json({
+            chromosome => "A chromosome was not specified",
+            viewer => "",
+            seqview => ""
+        });
     }
     my $start = "'start'";
     my $stop  = "'stop'";
     my $html .= "<table>";
     $html .= "<tr valign=top><td><table class=\"small annotation_table\">";
     my $ds = $coge->resultset("Dataset")->find($dsid);
-    return $html unless $ds;
+    return encode_json({
+        chromosome => $html,
+        viewer => "",
+        seqview => ""
+    }) unless $ds;
+
     my $length = 0;
     $length = $ds->last_chromosome_position($chr) if defined $chr;
     my $gc =
@@ -871,7 +808,12 @@ sub get_dataset_chr_info {
          . qq{<tr><td colspan=2><span style="font-size:1em" class='ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left' onClick="launch_seqview('$dsgid', '$chr','$dsid')"><span class="ui-icon ui-icon-newwin"></span>Get Sequence</span>}
          . qq{</table>};
     }
-    return $html, $viewer, $seq_grab;
+
+    return encode_json({
+        chromosome => $html,
+        viewer => $viewer,
+        seqview => $seq_grab
+    });
 }
 
 sub get_feature_counts {
