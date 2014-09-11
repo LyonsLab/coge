@@ -283,8 +283,11 @@ function get_organism_chain(val) {
             } else {
                 $('#allorg').hide();
             }
+        },
+        error: function () {
+            $('#org_list').html('<span class="small alert">The results could not be loaded.</span>');
         }
-    }).then(get_org_info_chain);
+    }).always(get_org_info_chain);
 }
 
 function get_org_info_chain() {
@@ -305,8 +308,11 @@ function get_org_info_chain() {
             $('#dsg_list').html('<hidden id="dsg_id">');
             $('#dsg_count,#dsg_info,#ds_count,#ds_info,#chr_list,#chr_count,#chr_info,#viewer,#get_seq').empty();
             $('#ds_list').html('<hidden id="ds_id">');
+        },
+        error: function () {
+            $('#org_info').html('<span class="small alert">The results could not be loaded.</span>');
         }
-    }).then(genome_chain);
+    }).always(genome_chain);
 }
 
 function genome_chain(val) {
@@ -321,8 +327,13 @@ function genome_chain(val) {
             if (response.genomes) $('#dsg_list').html(response.genomes);
             if (response.count) $('#dsg_count').html(response.count);
             $('#dsg_info').html('<span class="small alert">loading...</span>');
+            $('#ds_list').html('<span class="small alert">loading...</span>');
+            $('#chr_info').html('<span class="small alert">loading...</span>');
+        },
+        error: function () {
+            $('#dsg_list').html('<span class="small alert">The results could not be loaded.</span>');
         }
-    }).then(genome_info_chain);
+    }).always(genome_info_chain);
 }
 
 function genome_info_chain() {
@@ -337,8 +348,11 @@ function genome_info_chain() {
             } else {
                 $('#dsg_info').html(response.error);
             }
+        },
+        error: function () {
+            $('#dsg_info').html('<span class="small alert">The results could not be loaded.</span>');
         }
-    }).then(dataset_chain);
+    }).always(dataset_chain);
 }
 
 function dataset_chain() {
@@ -352,9 +366,14 @@ function dataset_chain() {
             if (response.datasets) $('#ds_list').html(response.datasets);
             if (response.count) $('#ds_count').html(response.count);
             $('#ds_info').html('<span class="small alert">loading...</span>');
-            $('#chr_list,#chr_count,#chr_info,#viewer,#get_seq').empty();
+            $('#chr_info').html('<span class="small alert">loading...</span>');
+            $('#chr_list').html('<span class="small alert">loading...</span>');
+            $('#chr_count,#viewer,#get_seq').empty();
+        },
+        error: function () {
+            $('#ds_list').html('<span class="small alert">The results could not be loaded.</span>');
         }
-    }).then(dataset_info_chain);
+    }).always(dataset_info_chain);
 }
 
 function dataset_info_chain() {
@@ -369,8 +388,12 @@ function dataset_info_chain() {
             if (response.chromosomes) $('#chr_list').html(response.chromosomes);
             if (response.count) $('#chr_count').html(response.count);
             $('#viewer,#get_seq,#feature_count_data').empty();
+        },
+        error: function() {
+            $('#ds_info').html('<span class="small alert">The results could not be loaded.</span>');
+            $('#chr_list').html('<span class="small alert">The results could not be loaded.</span>');
         }
-    }).then(dataset_chr_info_chain);
+    }).always(dataset_chr_info_chain);
 }
 
 function dataset_chr_info_chain() {
@@ -387,6 +410,9 @@ function dataset_chr_info_chain() {
             setup_button_states();
             $('#busy').animate({opacity:0});
             $("._orgviewresult").fadeIn();
+        },
+        error: function() {
+            $('#chr_info').html('<span class="small alert">The results could not be loaded.</span>');
         }
     });
 }
