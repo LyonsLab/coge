@@ -50,7 +50,6 @@ $MAX_DS_LENGTH = 10000000;
     gen_data                => \&gen_data,
     get_orgs                => \&get_orgs,
     get_org_info            => \&get_org_info,
-    get_recent_orgs         => \&get_recent_orgs,
     get_start_stop          => \&get_start_stop,
     get_feature_counts      => \&get_feature_counts,
     get_gc_for_chromosome   => \&get_gc_for_chromosome,
@@ -67,8 +66,6 @@ $MAX_DS_LENGTH = 10000000;
     add_to_irods            => \&add_to_irods,
     make_genome_public      => \&make_genome_public,
     make_genome_private     => \&make_genome_private,
-#    edit_genome_info        => \&edit_genome_info,
-#    update_genome_info      => \&update_genome_info,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -136,7 +133,6 @@ sub gen_body {
     $template->param( ORG_LIST  => $org_list );
     $template->param( ORG_COUNT => $org_count );
 
-    #$template->param(RECENT=>get_recent_orgs());
     my ($ds) = $coge->resultset('Dataset')->resolve($dsid) if $dsid;
     $dsname = $ds->name if $ds;
     $dsname = "Search" unless $dsname;
@@ -185,115 +181,6 @@ sub make_genome_private {
         $ds->update;
     }
     return 1;
-}
-
-sub update_genome_info {
-    my %opts  = @_;
-    my $dsgid = $opts{dsgid};
-    return "No DSGID specified" unless $dsgid;
-    return "Permission denied."
-      unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
-    my $dsg     = $coge->resultset('Genome')->find($dsgid);
-    my $name    = $opts{name};
-    my $desc    = $opts{desc};
-    my $ver     = $opts{ver};
-    my $message = $opts{message};
-    my $link    = $opts{link};
-    $dsg->name($name);
-    $dsg->description($desc);
-    $dsg->version($ver);
-    $dsg->message($message);
-    $dsg->link($link);
-    $dsg->update;
-    return 1;
-}
-
-sub edit_genome_info {
-    my %opts  = @_;
-    my $dsgid = $opts{dsgid};
-    return "No DSGID specified" unless $dsgid;
-    return "Permission denied."
-      unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
-    my $dsg     = $coge->resultset('Genome')->find($dsgid);
-    my $name    = $dsg->name;
-    my $desc    = $dsg->description;
-    my $ver     = $dsg->version;
-    my $message = $dsg->message;
-    my $link    = $dsg->link;
-    my $html = qq{
-
-<table class=small>
- <tr>
-  <td>Name:</td>
-  <td><input type=text id=dsg_name size=50 value="$name"></td>
- </tr>
- <tr>
-  <td>Description:</td>
-  <td><input type=text id=dsg_desc size=50 value="$desc"></td>
- </tr>
- <tr>
-  <td>Version:</td>
-  <td><input type=text id=dsg_ver size=5 value="$ver"></td>
- </tr>
- <tr>
-  <td>Message:</td>
-  <td><textarea id=dsg_message cols=50 rows=5>$message</textarea></td>
- </tr>
- <tr>
-  <td>Link:</td>
-  <td><input type=text id=dsg_link size=50 value="$link"></td>
- </tr>
-</table>
-<span class="ui-button ui-corner-all coge-button" onClick="update_genome_info('$dsgid')">Update</span>
-};
-    return $html;
-}
-
-sub get_recent_orgs {
-    my %opts  = @_;
-    my $limit = $opts{limit} || 100;
-    my @db    = $coge->resultset("Dataset")->search(
-        { restricted => 0 },
-        {
-            distinct => "organism.name",
-            join     => "organism",
-            order_by => "me.date desc",
-            rows     => $limit
-        }
-    );
-
-    my $i = 0;
-    my @opts;
-    my %org_names;
-    foreach my $item (@db) {
-        $i++;
-        my $date = $item->date;
-        $date =~ s/\s.*//;
-
-        #next if $USER->user_name =~ /public/i && $item->organism->restricted;
-        next if $org_names{ $item->organism->name };
-        $org_names{ $item->organism->name } = 1;
-        push @opts,
-            "<OPTION value=\""
-          . $item->organism->id . "\">"
-          . $date . " "
-          . $item->organism->name . " (id"
-          . $item->organism->id . ") "
-          . "</OPTION>";
-    }
-
-    my $html;
-    #$html .= qq{<FONT CLASS ="small">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
-    unless (@opts) {
-        $html .= qq{<input type="hidden" name="org_id" id="org_id">};
-        return $html;
-    }
-    #print STDERR $i . '+++++++++++++\n';
-    $html .= qq{<SELECT class="small ui-widget ui-widget-content ui-corner-all" id="recent_org_id" SIZE="5" MULTIPLE onChange="recent_dataset_chain()" >\n}
-          . join( "\n", @opts )
-          . "\n</SELECT>\n";
-    $html =~ s/OPTION/OPTION SELECTED/;
-    return $html;
 }
 
 sub get_orgs {
