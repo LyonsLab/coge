@@ -104,10 +104,10 @@ sub generate_html {
 #        my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
 #        $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
         $template->param( ADJUST_BOX => 1 );
+        $template->param( ADMIN_ONLY => $USER->is_admin );
     }
 
     $template->param( BODY => generate_body() );
-    $template->param( ADMIN_ONLY => $USER->is_admin );
     return $template->output;
 }
 
