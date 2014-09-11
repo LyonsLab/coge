@@ -231,9 +231,9 @@ sub get_orgs {
     }
     my $html;
     if ( ( $name || $desc ) && !@opts ) {
-        $html .= qq{<input type="hidden" name="org_id" id="org_id"><span class="small alert">No organisms found</span>};
-        return ($html, 0) if $no_json;
-        return encode_json({ organisms => $html, count => 0 });
+        my $message = "No organisms found";
+        return ($message, 0) if $no_json;
+        return encode_json({ organisms => $message, count => 0 });
     }
     $html .= qq{<SELECT class="small ui-widget ui-widget-content ui-corner-all" id="org_id" size="5" MULTIPLE onChange="get_org_info_chain()" >\n};
     $html .= join( "\n", @opts );
@@ -265,7 +265,7 @@ sub get_org_info {
     my %opts = @_;
 
     my $oid = $opts{oid};
-    return encode_json({error => "No organism specified"}) unless $oid;
+    return encode_json({error => "A organism was not specified"}) unless $oid;
 
     my $org = $coge->resultset("Organism")->find($oid);
     return encode_json({
@@ -394,6 +394,10 @@ sub get_genomes {
         $html .= qq{<input type = hidden name="dsg_id" id="dsg_id">};
     }
 
+    my $message = "No genomes found";
+
+    return encode_json({ error => $message }) unless scalar @opts > 0;
+
     return encode_json({ genomes => $html, count => scalar @opts });
 }
 
@@ -489,7 +493,7 @@ sub get_dataset {
     my $dsid   = $opts{dsid};
 
     return encode_json({
-        datasets => qq{<input type="hidden" name="ds_id" id="ds_id">},
+        error => "No datasets found",
         counts => 0
     }) unless ($dsid || $dsname || $dsgid);
 
@@ -553,7 +557,7 @@ sub get_dataset {
         $html .= qq{<input type="hidden" name="ds_id" id="ds_id">};
     }
 
-    return return encode_json({ datasets => $html, count => scalar @opts });
+     return encode_json({ datasets => $html, count => scalar @opts });
 }
 
 sub get_dataset_info {
@@ -561,8 +565,8 @@ sub get_dataset_info {
     my $dsid = $opts{dsid};
 
     return encode_json({
-        dataset => qq{<input type="hidden" id="chr" value="">},
-        chromosomes => " ",
+        dataset => qq{A dataset was not specified <input type="hidden" id="chr" value="">},
+        chromosomes => "No chromosomes found",
         count => 0
     }) unless ($dsid); # error flag for empty dataset
 
@@ -570,8 +574,8 @@ sub get_dataset_info {
     unless ($ds) {
         print STDERR "get_dataset_info: unable to find dataset object for id: $dsid";
         return encode_json({
-            dataset => qq{<input type="hidden" id="chr" value="">},
-            chromosomes => " ",
+            dataset => qq{A dataset could not be found. <input type="hidden" id="chr" value="">},
+            chromosomes => "<select><option>No chromosomes found</option></select>",
             count => 0
         }); # error flag for empty dataset
     }
@@ -707,7 +711,7 @@ sub get_dataset_chr_info {
     unless ( $dsid && defined $chr && $chr ne '' )    # error flag for empty dataset
     {
         return encode_json({
-            chromosome => "",
+            chromosome => "A chromosome was not specified",
             viewer => "",
             seqview => ""
         });

@@ -91,19 +91,27 @@ $.fn.getLength = function(val){
 /*
  * DOM manipulation only
  */
+function get_value(item) {
+    if (Object.prototype.toString.apply(item) === "[object Array]") {
+        return item[0];
+    }
+
+    return item;
+}
+
 function get_organism_id() {
-    return $("#org_id").val()[0];
+    return get_value($("#org_id").val());
 }
 
 function get_genome_id() {
-    return $("#dsg_id").val()[0];
+    return get_value($("#dsg_id").val());
 }
 
 function get_dataset_id() {
-    return $("#ds_id").val()[0];
+    return get_value($("#ds_id").val());
 }
 function get_chromosome_id() {
-    return $("#chr").val()[0];
+    return get_value($("#chr").val());
 }
 
 function export_gff () {
@@ -254,6 +262,8 @@ function send_to_GenoList(){
 
 //FIXME: Remove name and desc for search
 function get_organism_chain(val) {
+    $('#org_count,org_list').html("");
+
     $.ajax({
         data: {
             fname: "get_orgs",
@@ -288,6 +298,10 @@ function get_org_info_chain() {
                 $('#org_info').html(response.organism);
             }
 
+            if (response.error) {
+                $('#org_info').html(response.error);
+            }
+
             $('#dsg_list').html('<hidden id="dsg_id">');
             $('#dsg_count,#dsg_info,#ds_count,#ds_info,#chr_list,#chr_count,#chr_info,#viewer,#get_seq').empty();
             $('#ds_list').html('<hidden id="ds_id">');
@@ -303,6 +317,7 @@ function genome_chain(val) {
             dsgid: get_genome_id()
         },
         success: function(response) {
+            if (response.error) $('#dsg_list').html(response.error);
             if (response.genomes) $('#dsg_list').html(response.genomes);
             if (response.count) $('#dsg_count').html(response.count);
             $('#dsg_info').html('<span class="small alert">loading...</span>');
@@ -319,6 +334,8 @@ function genome_info_chain() {
         success: function (response) {
             if (response.genome) {
                 $('#dsg_info').html(response.genome);
+            } else {
+                $('#dsg_info').html(response.error);
             }
         }
     }).then(dataset_chain);
@@ -331,6 +348,7 @@ function dataset_chain() {
             dsgid: get_genome_id()
         },
         success: function (response) {
+            if (response.error) $('#ds_list').html(response.error);
             if (response.datasets) $('#ds_list').html(response.datasets);
             if (response.count) $('#ds_count').html(response.count);
             $('#ds_info').html('<span class="small alert">loading...</span>');
