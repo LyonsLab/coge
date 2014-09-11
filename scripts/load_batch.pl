@@ -2,6 +2,7 @@
 use strict;
 use CoGeX;
 use CoGe::Accessory::Web qw(get_defaults);
+use CoGe::Core::Notebook qw(add_items_to_notebook);
 use File::Path;
 use File::Basename;
 use File::Spec::Functions qw(catdir catfile);
@@ -12,8 +13,8 @@ use URI::Escape::JavaScript qw(escape unescape);
 use Data::Dumper;
 
 use vars qw(
-    $staging_dir $file_str $notebook_name $notebook_desc $gid $user_name
-    $config $log_file $user $genome $result_dir $wid @failed_experiments
+    $staging_dir $file_str $notebook_name $notebook_desc $gid $nid $user_name
+    $config $log_file $user $genome $notebook $result_dir $wid @failed_experiments
 );
 
 my $DEBUG = 0;
@@ -24,10 +25,11 @@ my $DELIMITER = '\t';
 GetOptions(
     "staging_dir=s" => \$staging_dir,    # temporary staging path
     "result_dir=s"  => \$result_dir,     # results path
-    "files=s"       => \$file_str,      # input data file (JS escape)
+    "files=s"       => \$file_str,       # input data file (JS escape)
     "name=s"        => \$notebook_name,  # notebook name (JS escaped)
     "desc=s"        => \$notebook_desc,  # notebook description (JS escaped)
     "gid=s"         => \$gid,            # genome id
+    "nid=s"         => \$nid,            # optional notebook id, otherwise new notebook created
     "wid=s"         => \$wid,            # workflow id
     "user_name=s"   => \$user_name,      # user name
     "config=s"      => \$config,         # CoGe config file
@@ -77,6 +79,15 @@ unless ($genome) {
     exit(-1);
 }
 
+# Retrieve notebook
+if ($nid) {
+    $notebook = $coge->resultset('List')->find( { list_id => $nid } );
+    unless ($notebook) {
+        print STDOUT "log: error finding notebook id$nid\n";
+        exit(-1);
+    }
+}
+
 # Retrieve user
 $user = $coge->resultset('User')->find( { user_name => $user_name } );
 unless ($user) {
@@ -101,7 +112,7 @@ foreach my $file (@files) {
     # Untar file if necessary
     if ( $file =~ /\.tar$/ ) {
         print STDOUT "log: Extracting files\n";
-        execute( $P->{TAR}.' -xf '.$file_str.' --directory '.$data_dir );
+        execute( $P->{TAR}.' -xf '.$file.' --directory '.$data_dir );
     }
     else {
         print STDERR "matt: $file\n";
@@ -137,7 +148,7 @@ if ($metadata_file) {
 
 # Load each experiment file
 my $exp_count = 0;
-my ($notebook, $exp_ids) = process_dir($data_dir, $metadata);
+($notebook, my $exp_ids) = process_dir($data_dir, $metadata, $notebook);
 
 # Save result document
 if ($result_dir) {
@@ -227,6 +238,7 @@ sub trim {
 sub process_dir {
     my $dir = shift;
     my $metadata = shift;
+    my $notebook = shift;
 
     print STDOUT "process_dir: $dir\n";
 
@@ -271,15 +283,28 @@ sub process_dir {
         exit(-1);
     }
     
-    # Create notebook of experiments
-    my $notebook = create_notebook(name => $notebook_name, desc => $notebook_desc, item_list => \@experiments);
-    unless ($notebook) {
-        print STDOUT "log: error: failed to create notebook '$notebook_name'\n";
-        exit(-1);
-    }
-    print STDOUT "notebook id: ".$notebook->id."\n";
     print STDOUT "log: ----------------------------------------------------\n";
-    print STDOUT "log: Created notebook '$notebook_name'\n";
+    
+    # Use specified notebook
+    if ($notebook) {
+        my @item_list = map { [ $_, 3 ] } @experiments; #FIXME hardcoded item type
+        unless ( add_items_to_notebook(db => $coge, user => $user, notebook => $notebook, item_list => \@item_list) )
+        {
+            print STDOUT "log: error: failed to add experiments to existing notebook\n";
+            exit(-1);            
+        }
+        print STDOUT "log: Added items to existing notebook '", $notebook->name, "' id", $notebook->id, "\n";
+    }
+    # Otherwise, create notebook of experiments
+    else {
+        $notebook = create_notebook(name => $notebook_name, desc => $notebook_desc, item_list => \@experiments); #FIXME use CoGe::Core::Notebook::create_notebook instead
+        unless ($notebook) {
+            print STDOUT "log: error: failed to create notebook '$notebook_name'\n";
+            exit(-1);
+        }
+        print STDOUT "log: Created notebook '", $notebook->name, "' id", $notebook->id, "\n";
+    }
+    
     return ($notebook, \@experiments);
 }
 
@@ -365,7 +390,7 @@ sub process_file {
     return $eid;
 }
 
-sub create_notebook {
+sub create_notebook { #FIXME use routine CoGe::Core::Notebook
     my %opts    = @_;
     my $name    = $opts{name};
     my $desc    = $opts{desc};

@@ -1,30 +1,29 @@
 <TMPL_IF NAME='MAIN'>
 <script type="text/javascript" src="js/coge/utils.js"></script>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
+<script type="text/javascript" src="js/coge/services.js"></script>
+<script type="text/javascript" src="js/jquery.fileupload.js"></script>
 
 <style type="text/css">
-
 @font-face {
-        font-family: 'Glyphicons Halflings';
-        src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot');
+    font-family: 'Glyphicons Halflings';
+    src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot');
 	src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.woff') format('woff'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.ttf') format('truetype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');}
 
 .glyphicon {
-        position: relative;
-        top: 1px;
-        display: inline-block;
-        font-family: 'Glyphicons Halflings';
-        font-style: normal;
-        font-weight: normal;
-        line-height: 1;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
+    position: relative;
+    top: 1px;
+    display: inline-block;
+    font-family: 'Glyphicons Halflings';
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 .glyphicon-asterisk:before {
-        content: "\2a";
+    content: "\2a";
 }
-
 </style>
 
 <SCRIPT language="JavaScript">
@@ -36,9 +35,11 @@ var load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
 var job_id = '<TMPL_VAR NAME="JOB_ID">';
 var embed = '<TMPL_VAR NAME="EMBED">';
 var experiment_id;
-var notebook_id;
+var notebook_id = '<TMPL_VAR NAME="NOTEBOOK_ID">';
+var genome_id = '<TMPL_VAR NAME="GENOME_ID">';
 var pageObj = {};
 var newLoad = false;
+var user_name = '<TMPL_VAR NAME="USER">';
 
 $(document).ready(function(){
     $.ajaxSetup({
@@ -48,8 +49,6 @@ $(document).ready(function(){
         cache: false,
     });
 
-    pageObj.user = "<tmpl_var name=USER>";
-
     $(".dialog_box").dialog({autoOpen: false, width: 500});
     $('#load_dialog').dialog("widget").find('.ui-dialog-titlebar-close').hide();
     $('#load_dialog').dialog({modal: true, closeOnEscape: false})
@@ -58,11 +57,22 @@ $(document).ready(function(){
         source:[],
         select: function(event, ui) {
             $('#edit_genome').val(ui.item.label);
-            $('#gid').val(ui.item.value);
+            genome_id = ui.item.value;
             return false; // Prevent the widget from inserting the value.
         },
         focus: function(event, ui) {
-            //$("#edit_genome").val(ui.item.label);
+            return false; // Prevent the widget from inserting the value.
+        }
+    });
+    
+    $("#edit_notebook").autocomplete({
+        source:[],
+        select: function(event, ui) {
+            $('#edit_notebook').val(ui.item.label);
+            notebook_id = ui.item.value;
+            return false; // Prevent the widget from inserting the value.
+        },
+        focus: function(event, ui) {
             return false; // Prevent the widget from inserting the value.
         }
     });
@@ -71,7 +81,7 @@ $(document).ready(function(){
     if (job_id) {
         $('#loading_msg').hide();
         $('#load_dialog').dialog('open');
-        update_dialog(STATUS_URL + job_id, pageObj.user, "#load_dialog", progress_formatter);
+        update_dialog(STATUS_URL + job_id, user_name, "#load_dialog", progress_formatter);
     }
 });
 
@@ -139,15 +149,14 @@ function load_batch() {
 	// Validate other fields
     var name = $('#edit_name').val();
     var description = $('#edit_description').val();
-    var genome = $('#edit_genome').val();
-    var gid = $('#gid').val();
 
-    if (!name) {
-    	error_help('Please specify a name.');
+    if (!genome_id) {
+    	error_help('Please specify a genome.');
         return;
     }
-    if (!genome || genome == 'Search') {
-    	error_help('Please specify a genome.');
+    
+    if (!name) {
+    	error_help('Please specify a name.');
         return;
     }
 
@@ -161,9 +170,12 @@ function load_batch() {
         return;
     }
 
-    var user_name = $('#edit_user').val(); // only exists if admin
-    if (user_name == 'Search') { user_name = ''; }
+    var assignee_user_name = $('#edit_user').val(); // input only exists if admin
 
+    // if Notebook field was cleared then ignore it and create new one based on name
+    if ( !$('#edit_notebook').val() )
+    	notebook_id = '';
+    
     // Prevent concurrent executions - issue 101
     if ( $("#load_dialog").dialog( "isOpen" ) )
         return;
@@ -187,8 +199,9 @@ function load_batch() {
             load_id: load_id,
             name: name,
             description: description,
-            gid: gid,
-            user_name: user_name,
+            gid: genome_id,
+            nid: notebook_id,
+            assignee_user_name: assignee_user_name,
             items: json,
             timestamp: new Date().getTime()
         },
@@ -206,7 +219,7 @@ function load_batch() {
             if (obj.job_id) { // JEX status for load FASTQ
                 job_id = obj.job_id;
                 window.history.pushState({}, "Title", PAGE_NAME + "?job_id=" + obj.job_id); // Add job_id to browser URL
-                update_dialog(STATUS_URL + obj.job_id,  pageObj.user, "#load_dialog", progress_formatter);
+                update_dialog(STATUS_URL + obj.job_id,  user_name, "#load_dialog", progress_formatter);
             }
         }
         // TODO: handle error, show in status dialog
@@ -346,18 +359,28 @@ function search_users (search_term) {
     });
 }
 
-function get_sources () {
-    $.ajax({
-        data: {
-            fname: 'get_sources',
-        },
-        success : function(data) {
-            var obj = jQuery.parseJSON(data);
-            if (obj) {
-                $("#edit_source").autocomplete({source: obj});
-            }
-        },
-    });
+function search_notebooks (search_term) {
+	coge.services.search_notebooks(
+		search_term, 
+		user_name, 
+		function(obj) {
+			var notebooks = obj.notebooks;
+			if (notebooks && notebooks.length > 0) {
+				var items = [];
+				notebooks.forEach(function(n) {
+					var label = n.name + (n.description ? ': ' + n.description : '');
+					//TODO //if (n.restricted) label = "\u00ae" + label; // (R)// Add (R) html symbol
+	                items.push({
+	                	label: label,
+	                	value: n.id
+	                });
+	            });
+	            $("#edit_notebook")
+	            	.autocomplete({source: items})
+	            	.autocomplete("search");
+	        }
+		}
+	);
 }
 
 function progress_formatter(item) {
@@ -534,10 +557,15 @@ function update_dialog(request, user, identifier, formatter) {
 	    <td>Genome:</td>
 	    <td>
 	      <input id="edit_genome" type="search" placeholder="Search" spellcheck="false" onkeypress="wait_to_search(search_genomes, this);" size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
-	      <input id="gid" type="hidden" value="<TMPL_VAR NAME='GENOME_ID'>" />
 	      <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
 	    </td>
 	  </tr>
+	  <tr>
+	    <td>Notebook:</td>
+	    <td>
+	      <input id="edit_notebook" type="search" placeholder="Search" spellcheck="false" onkeypress="wait_to_search(search_notebooks, this);" size="50" value="<TMPL_VAR NAME='NOTEBOOK_NAME'>" />
+	    </td>
+	  </tr>	  
 	</table>
 </div>
 

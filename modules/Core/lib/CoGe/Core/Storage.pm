@@ -669,8 +669,10 @@ sub create_experiment {
 
 sub create_experiments_from_batch {
     my %opts = @_;
-    my $genome = $opts{genome}; # genome object or id
-    my $user = $opts{user};
+    my $genome = $opts{genome};     # genome object or id
+    my $notebook = $opts{notebook}; # optional notebook object or id
+    my $user = $opts{user};         # user running the job
+    my $assignee = $opts{assignee}; # user object or id to assign to
     my $irods = $opts{irods};
     my $files = $opts{files};
     my $metadata = $opts{metadata};
@@ -680,6 +682,10 @@ sub create_experiments_from_batch {
     my $conf = CoGe::Accessory::Web::get_defaults();
 
     my $gid = $genome =~ /^\d+$/ ? $genome : $genome->id;
+    my $nid;
+    if ($notebook) {
+        $nid = $notebook =~ /^\d+$/ ? $notebook : $notebook->id;
+    }
 
     # Connect to workflow engine and get an id
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
@@ -712,9 +718,13 @@ sub create_experiments_from_batch {
         $workflow->add_job(%load_params);
         push @staged_files, $load_params{outputs}[0];
     }
+    
+    # Change user if "assign to user" specified
+    my $user_name = $user->name;
+    $user_name = $assignee->name if ($assignee);
 
     # Create load job
-    %load_params = _create_load_batch_job($conf, $metadata, $gid, $workflow->id, $user->name, \@staged_files, $staging_dir, $result_dir);
+    %load_params = _create_load_batch_job($conf, $metadata, $gid, $workflow->id, $user->name, \@staged_files, $staging_dir, $result_dir, $nid);
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
@@ -925,14 +935,14 @@ sub _create_load_experiment_job {
 }
 
 sub _create_load_batch_job {
-    my ($conf, $metadata, $gid, $wid, $user_name, $files, $staging_dir, $result_dir) = @_;
+    my ($conf, $metadata, $gid, $wid, $user_name, $files, $staging_dir, $result_dir, $nid) = @_;
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_batch.pl");
     return unless $cmd; # SCRIPTDIR undefined
 
     #my $file_str = join(',', map { basename($_) } @$files);
     my $file_str = join(',', @$files);
 
-    return (
+    my %params = (
         cmd => $cmd,
         script => undef,
         args => [
@@ -955,6 +965,10 @@ sub _create_load_batch_job {
         ],
         description => "Loading batch experiments..."
     );
+    
+    push $params{args}, ['-nid', $nid, 0] if ($nid);
+    
+    return %params;
 }
 
 sub _create_load_genome_job {
