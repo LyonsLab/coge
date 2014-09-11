@@ -308,7 +308,6 @@ function genome_chain(val) {
             $('#dsg_info').html('<span class="small alert">loading...</span>');
         }
     }).then(genome_info_chain);
-//    get_genomes(['args__oid','org_id','args__dsgid','dsg_id'],[genome_info_chain]);
 }
 
 function genome_info_chain() {
@@ -322,7 +321,7 @@ function genome_info_chain() {
                 $('#dsg_info').html(response.genome);
             }
         }
-    }).then(dataset_chain)
+    }).then(dataset_chain);
 }
 
 function dataset_chain() {
@@ -340,25 +339,7 @@ function dataset_chain() {
     }).then(dataset_info_chain);
 }
 
-//FIXME: Duplicates functionality of dataset_chain
-//erb 9/11/2014 - recent organisms has been disabled amaking this function unused
-//function recent_dataset_chain() {
-//    $.ajax({
-//        data: {
-//            fname: "get_dataset",
-//            oid: $("#recent_org_id").val()[0]
-//        },
-//        success: function (response) {
-//            if (response.datasets) $('#ds_list').html(response.datasets);
-//            if (response.count) $('#ds_count').html(response.count);
-//            $('#ds_info').html('<span class="small alert">loading...</span>');
-//            $('#chr_list,#chr_count,#chr_info,#viewer,#get_seq').empty();
-//        }
-//    }).then(dataset_info_chain);
-//}
-
 function dataset_info_chain() {
-    console.log(get_dataset_id());
     $.ajax({
         data: {
             jquery_ajax: 1,
@@ -442,46 +423,5 @@ function get_feat_gc(opts) {
         success: function(data) {
             $('#gc_histogram').html(data);
         }
-    });
-}
-
-function edit_genome_info (dsgid) {
-    $.ajax({
-        data: {
-            jquery_ajax: 1,
-            fname: 'edit_genome_info',
-            dsgid: dsgid,
-        },
-        success : function(val) {
-            $('#edit_genome_info').html(val);
-            $('#edit_genome_info').dialog('open');
-            get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);
-        },
-    });
-}
-
-function update_genome_info (dsgid) {
-    dsg_name = $('#dsg_name').val();
-    dsg_desc = $('#dsg_desc').val();
-    dsg_ver = $('#dsg_ver').val();
-    dsg_message = $('#dsg_message').val();
-    dsg_link = $('#dsg_link').val();
-    $.ajax({
-            data: {
-                jquery_ajax: 1,
-                fname: 'update_genome_info',
-                dsgid: dsgid,
-                name: dsg_name,
-                desc: dsg_desc,
-                ver: dsg_ver,
-                message: dsg_message,
-                link: dsg_link
-            },
-            success : function(val) {
-                if (val != 1) {alert(val);}
-                $('#edit_genome_info').html('');
-                $('#edit_genome_info').dialog('close');
-                get_genome_info(['args__dsgid','dsg_id'], [dataset_chain]);
-            },
     });
 }
