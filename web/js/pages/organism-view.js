@@ -294,6 +294,7 @@ function get_org_info_chain() {
     $.ajax({
         data: {
             fname: "get_org_info",
+            jquery_ajax: 1,
             oid: get_organism_id()
         },
         success: function(response) {
@@ -319,6 +320,7 @@ function genome_chain(val) {
     $.ajax({
         data: {
             fname: "get_genomes",
+            jquery_ajax: 1,
             oid: get_organism_id(),
             dsgid: get_genome_id()
         },
@@ -340,6 +342,7 @@ function genome_info_chain() {
     $.ajax({
         data: {
             fname: "get_genome_info",
+            jquery_ajax: 1,
             dsgid: get_genome_id()
         },
         success: function (response) {
@@ -359,6 +362,7 @@ function dataset_chain() {
     $.ajax({
         data: {
             fname: "get_dataset",
+            jquery_ajax: 1,
             dsgid: get_genome_id()
         },
         success: function (response) {
@@ -381,6 +385,7 @@ function dataset_info_chain() {
         data: {
             jquery_ajax: 1,
             fname: "get_dataset_info",
+            jquery_ajax: 1,
             dsid: get_dataset_id()
         },
         success: function (response) {
@@ -400,6 +405,7 @@ function dataset_chr_info_chain() {
     $.ajax({
         data: {
             fname: "get_dataset_chr_info",
+            jquery_ajax: 1,
             dsid: get_dataset_id(),
             chr: get_chromosome_id()
         },
