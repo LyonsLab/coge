@@ -55,13 +55,13 @@ sub gen_html {
         $template->param( TITLE      => qq{},
         			 	  PAGE_TITLE => qq{GroupView},
         				  PAGE_LINK  => $LINK,
-        				  LOGO_PNG   => "GroupView-logo.png" );
+        				  LOGO_PNG   => "GroupView-logo.png",
+        				  ADMIN_ONLY => $USER->is_admin );
         $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
         $template->param( ADJUST_BOX => 1 );
     }
     
     $template->param( BODY => gen_body() );
-    $template->param( ADMIN_ONLY => $USER->is_admin );
     return $template->output;
 }
 
