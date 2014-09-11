@@ -68,7 +68,40 @@ $MAX_DS_LENGTH = 10000000;
     make_genome_private     => \&make_genome_private,
 );
 
-CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
+#CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
+my $pj = new CGI::Ajax(%FUNCTION);
+$pj->JSDEBUG(0);
+$pj->DEBUG(0);
+
+if ( $FORM->param('jquery_ajax') ) {
+    dispatch();
+}
+else {
+    print $pj->build_html( $FORM, \&gen_html );
+}
+
+#print "Content-Type: text/html\n\n";print gen_html($FORM);
+
+sub dispatch {
+    my %args  = $FORM->Vars;
+    my $fname = $args{'fname'};
+    if ($fname) {
+
+        #my %args = $cgi->Vars;
+        #print STDERR Dumper \%args;
+        if ( $args{args} ) {
+            my @args_list = split( /,/, $args{args} );
+            print $FORM->header, $FUNCTION{$fname}->(@args_list);
+        }
+        else {
+            print $FORM->header, $FUNCTION{$fname}->(%args);
+        }
+    }
+
+    #    else{
+    #  print $FORM->header, gen_html();
+    #    }
+}
 
 sub gen_html {
     my $html;
