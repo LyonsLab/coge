@@ -378,18 +378,23 @@ sub load_batch {
     my %opts        = @_;
     my $name        = $opts{name};
     my $description = $opts{description};
-    my $user_name   = $opts{user_name};
+    my $assignee_user_name = $opts{assignee_user_name}; # to assign genome to (admin-only)
     my $gid         = $opts{gid};
+    my $nid         = $opts{nid};
+    $nid = '' unless $nid;
     my $items       = $opts{items};
 
-	# print STDERR "load_batch: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
+	print STDERR "load_batch: ", Dumper \%opts, "\n";
 
     # Check login
-    if ( !$user_name || !$USER->is_admin ) {
-        $user_name = $USER->user_name;
-    }
-    if ($user_name eq 'public') {
+    if ($USER->user_name eq 'public') {
         return encode_json({ error => 'Not logged in' });
+    }
+    
+    # Get user object if assigning to another user (admin-only)
+    my $assignee;
+    if ( $assignee_user_name && $USER->is_admin ) {
+        $assignee = $coge->resultset('User')->search({ user_name => $assignee_user_name });
     }
 
     # Check data items
@@ -401,6 +406,8 @@ sub load_batch {
     my ($workflow_id, $error_msg) = create_experiments_from_batch(
         genome => $gid,
         user => $USER,
+        assignee => $assignee,
+        notebook => $nid,
         metadata => {
             name => $name,
             description => $description
