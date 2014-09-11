@@ -53,7 +53,7 @@ $(function() {
     </td>
     <td valign='top'>
       <div class="coge-table-header">Organism Information</div>
-      <div id='org_info' class="ui-corner-all ui-widget-content"></div>
+      <div id='org_info' class="small ui-corner-all ui-widget-content padded"></div>
     </td>
   </tr>
 
@@ -63,7 +63,7 @@ $(function() {
       <div style="vertical-align: top;" id="dsg_list"><TMPL_VAR NAME="DSG_LIST"></div>
     <td valign='top'>
       <div class="coge-table-header">Genome Information</div>
-      <div id="dsg_info" class="small ui-corner-all ui-widget-content"><TMPL_VAR NAME="DSG_INFO"></div>
+      <div id="dsg_info" class="small ui-corner-all ui-widget-content padded"><TMPL_VAR NAME="DSG_INFO"></div>
     </td>
   </tr>
 
@@ -74,7 +74,7 @@ $(function() {
     </td>
     <td valign="top">
       <div class="coge-table-header">Dataset Information</div>
-      <div id="ds_info" class="small ui-corner-all ui-widget-content"><TMPL_VAR NAME="DS_INFO"></div>
+      <div id="ds_info" class="small ui-corner-all ui-widget-content padded"><TMPL_VAR NAME="DS_INFO"></div>
     </td>
   </tr>
 
@@ -85,7 +85,7 @@ $(function() {
     </td>
     <td valign="top">
       <div class="coge-table-header">Chromosome information</div>
-      <div id="chr_info" class="small ui-corner-all ui-widget-content"><TMPL_VAR NAME="CHR_INFO"></div>
+      <div id="chr_info" class="small ui-corner-all ui-widget-content padded"><TMPL_VAR NAME="CHR_INFO"></div>
     </td>
   </tr>
 
@@ -108,7 +108,6 @@ $(function() {
 <div class="dialog_box hidden" id="wobble_gc_diff_histogram" title="(CDS GC - wobble GC) Content Histogram"></div>
 <div class="dialog_box hidden" id="codon_usage_table" title="Codon Usage Table"></div>
 <div class="dialog_box hidden" id="aa_usage_table" title="Amino Acid Usage Table"></div>
-<div class="dialog_box hidden" id="edit_genome_info" title="Edit Genome Information"></div>
 <div class="dialog_box hidden" id="chromosome_hist" title="Chromosome Size"></div>
 
 <div class="dialog hidden" title="Genome List" id="geno_list">
