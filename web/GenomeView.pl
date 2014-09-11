@@ -35,13 +35,13 @@ sub gen_html {
             USER => ( $USER->user_name eq "public" ? '' : $USER->display_name ),
             PAGE_TITLE => 'Genome Viewer',
             LOGO_PNG   => "$PAGE_TITLE-logo.png",
-            ADJUST_BOX => 1
+            ADJUST_BOX => 1,
+            ADMIN_ONLY => $USER->is_admin
         );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     }
     
     $template->param( BODY => gen_body() );
-    $template->param( ADMIN_ONLY => $USER->is_admin );
     return $template->output;
 }
 

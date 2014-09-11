@@ -2052,12 +2052,12 @@ sub generate_html {
             USER       => $name,
             LOGO_PNG   => $PAGE_TITLE . "-logo.png",
             ADJUST_BOX => 1,
-            LOGON      => ( $USER->user_name ne "public" )
+            LOGON      => ( $USER->user_name ne "public" ),
+            ADMIN_ONLY => $USER->is_admin
         );
     }
 
     $template->param( BODY => generate_body() );
-    $template->param( ADMIN_ONLY => $USER->is_admin );
 
     return $template->output;
 }
