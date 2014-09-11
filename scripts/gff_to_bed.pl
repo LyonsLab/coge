@@ -18,14 +18,26 @@ die "Usage:  perl gff_to_bed.pl <input_file> > <output_file>\n" unless (defined 
 open(my $fh, $filename) or 
     die("Error: cannot open file '$filename'\n");
 
-# Determine max normalized score
+# Determine max normalized score & save mRNA FPKMs
 my $lineNum = 0;
 my $maxScore = 0;
+my %mrnaScores;
 while (<$fh>) {
     $lineNum++;
     my @col = split("\t");
+    my $type  = $col[2];
+    next unless ($type =~ /mrna/i);
     my $score = $col[5];
+    my $attr  = $col[8];
     die "Error: missing score value at line $lineNum\n" if ($score eq '.');
+    
+    # Save mRNA score & fpkm
+    my ($id) = $attr =~ /ID=(\w+)/i;
+    my ($fpkm) = $attr =~ /fpkm=([\.\d]+)/i;
+    die "Error: mRNA missing ID and FPKM attributes at line $lineNum\n" unless (defined($id) && defined($fpkm));
+    $mrnaScores{$id} = $fpkm;
+
+    # Max score
     $score = normalize($score, $LOG_TRANSFORM);
     $maxScore = $score if ($score > $maxScore);
 }
@@ -37,18 +49,19 @@ while (<$fh>) {
     $lineNum++;
     chomp;
     my ($seqid, undef, $type, $start, $end, $score, $strand, undef, $attr) = split("\t");
+    next unless ($type eq 'exon');
+    die "Error: missing score value at line $lineNum\n" unless (defined $score);
     
-    my ($name) = $attr =~ /ID=(\w+)/i;
-    $name = '' if (!defined($name));
-    my ($fpkm) = $attr =~ /fpkm=([\.\d]+)/i;
-    $fpkm = '' if (!defined($fpkm));
-    
+    my ($parent) = $attr =~ /Parent=(\w+)/i;
+    die "Error: exon is missing PARENT attribute at line $lineNum\n" unless (defined $parent);
+
     if ($maxScore > 0) {
         $score = normalize($score, $LOG_TRANSFORM) / $maxScore;
     }
+
+    my $fpkm = $mrnaScores{$parent};
     
-    #die "Error: invalid parameters at line $lineNum\n" if (!defined($name) || !defined($fpkm));
-    print join("\t", $seqid, $start, $end, $name, $score, $strand, $fpkm), "\n";
+    print join("\t", $seqid, $start, $end, $parent, $score, $strand, $fpkm), "\n";
 }
 
 close($fh);
