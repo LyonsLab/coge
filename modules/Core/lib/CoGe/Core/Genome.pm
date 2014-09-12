@@ -77,7 +77,7 @@ sub search_genomes {
         ]
     });
 
-    return @genomes;
+    return wantarray ? @genomes : \@genomes;
 }
 
 sub get_wobble_histogram {
