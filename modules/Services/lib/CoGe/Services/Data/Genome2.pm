@@ -2,6 +2,7 @@ package CoGe::Services::Data::Genome2;
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 use CoGeX;
+use CoGe::Core::Genome qw(search_genomes);
 use CoGe::Services::Auth;
 
 sub search {
@@ -18,16 +19,7 @@ sub search {
     #my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
     my ($db, $user) = CoGe::Services::Auth::init($self);
 
-    # Search genomes
-    my $search_term2 = '%' . $search_term . '%';
-    my @genomes = $db->resultset("Genome")->search(
-        \[
-            'genome_id = ? OR name LIKE ? OR description LIKE ?',
-            [ 'genome_id', $search_term  ],
-            [ 'name',        $search_term2 ],
-            [ 'description', $search_term2 ]
-        ]
-    );
+    my @genomes = search_genomes(db => $db, user => $user, search => $search_term);
 
     # Filter response
     my @filtered = grep {
@@ -54,7 +46,8 @@ sub fetch {
     #my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
     my ($db, $user) = CoGe::Services::Auth::init($self);
 
-    my $genome = $db->resultset("Genome")->find($id);
+    my $genome = search_genomes(db => $db, gid => $id);
+
     unless (defined $genome) {
         $self->render(json => {
             error => { Error => "Item not found"}
