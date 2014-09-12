@@ -138,12 +138,16 @@ sub format_time_diff {
 sub split_string {
     my $string = shift;
 
+    return unless defined $string;
+
     #remove trailing and leading white-space
-    $string =~ s/^\s+//g if $string;
-    $string =~ s/\s+$//g if $string;
+    $string =~ s/^\s+//g;
+    $string =~ s/\s+$//g;
 
     # Create terms for search
-    return split /\s+/, $string if defined $string;
+    my @terms = split /\s+/, $string;
+
+    return wantarray ? @terms : \@terms;
 }
 
 sub execute {
