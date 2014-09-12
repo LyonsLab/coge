@@ -9,6 +9,7 @@ use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils qw( commify );
+use CoGe::Core::Genome qw( search_genomes );
 use CoGe::Pipelines::SynMap qw(generate_pseudo_assembly);
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
@@ -540,7 +541,6 @@ sub gen_org_menu {
 
     $name = "Search" unless $name;
     $desc = "Search" unless $desc;
-    my ($dsg) = $coge->resultset('Genome')->find($dsgid);
 
     my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'partials/organism_menu.tmpl' );
     $template->param(
@@ -548,6 +548,8 @@ sub gen_org_menu {
         NUM      => $num,
         SEARCH   => $name,
     );
+
+    my ($dsg) = search_genomes(db => $coge, gid => $dsgid);
 
     if ($dsg and $USER->has_access_to_genome($dsg)) {
         my $org = $dsg->organism;
