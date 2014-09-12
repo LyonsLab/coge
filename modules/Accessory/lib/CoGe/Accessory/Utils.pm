@@ -31,7 +31,7 @@ use Data::GUID;
 use Data::Dumper;
 
 BEGIN {
-    use vars qw ($VERSION $FASTA_LINE_LEN @ISA @EXPORT);
+    use vars qw ($VERSION $FASTA_LINE_LEN @ISA @EXPORT @EXPORT_OK);
     require Exporter;
 
     $VERSION = 0.1;
@@ -40,6 +40,8 @@ BEGIN {
     @EXPORT =
       qw( units commify print_fasta get_unique_id get_link_coords format_time_diff sanitize_name
         execute );
+
+    @EXPORT_OK = qw (split_string);
 }
 
 sub units {
@@ -131,6 +133,17 @@ sub format_time_diff {
     $elapsed .= "${s}s" if $s > 0 && $d <= 0;
 
     return $elapsed;
+}
+
+sub split_string {
+    my $string = shift;
+
+    #remove trailing and leading white-space
+    $string =~ s/^\s+//g if $string;
+    $string =~ s/\s+$//g if $string;
+
+    # Create terms for search
+    return split /\s+/, $string if defined $string;
 }
 
 sub execute {
