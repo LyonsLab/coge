@@ -1235,7 +1235,7 @@ header {
 }
 
 
-.menubar .login {
+.coge-menubar .login {
     display: block;
     float: none;
     margin-top: 2.25em;
@@ -1277,7 +1277,7 @@ header {
 
 /* Large Devices, Wide Screens */
 @media(min-width: 1200px) {
-    .menubar .login {
+    .coge-menubar .login {
         float: left;
         display: inline;
         margin-top: 0;
