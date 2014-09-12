@@ -38,7 +38,7 @@ BEGIN {
     $FASTA_LINE_LEN = 80;
     @ISA     = qw (Exporter);
     @EXPORT =
-      qw( units commify print_fasta get_unique_id get_link_coords format_time_diff sanitize_name
+      qw( units commify print_fasta get_unique_id get_link_coords format_time_diff sanitize_string
         execute );
 
     @EXPORT_OK = qw (split_string);
@@ -99,20 +99,20 @@ sub get_link_coords { # mdb added 11/20/13 issue 254
 	return ($start, $stop);
 }
 
-sub sanitize_name {
-    my $org = shift;
+sub sanitize_string {
+    my $string = shift;
 
-    $org =~ s/\///g;
-    $org =~ s/\s+/_/g;
-    $org =~ s/\(//g;
-    $org =~ s/\)//g;
-    $org =~ s/://g;
-    $org =~ s/;//g;
-    $org =~ s/#/_/g;
-    $org =~ s/'//g;
-    $org =~ s/"//g;
+    $string =~ s/\///g;
+    $string =~ s/\s+/_/g;
+    $string =~ s/\(//g;
+    $string =~ s/\)//g;
+    $string =~ s/://g;
+    $string =~ s/;//g;
+    $string =~ s/#/_/g;
+    $string =~ s/'//g;
+    $string =~ s/"//g;
 
-    return $org;
+    return $string;
 }
 
 sub format_time_diff {

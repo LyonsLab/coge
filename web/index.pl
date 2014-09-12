@@ -10,7 +10,7 @@ use Data::Dumper;
 use CGI::Log;
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Utils qw( units commify sanitize_name );
+use CoGe::Accessory::Utils qw( units commify sanitize_string );
 use JSON qw(encode_json);
 use POSIX 'ceil';
 
