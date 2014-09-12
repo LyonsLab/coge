@@ -6,8 +6,9 @@ use warnings;
 use File::Spec::Functions;
 use Sort::Versions;
 
+use CoGeX;
 use CoGe::Accessory::TDS qw(write read);
-use CoGe::Accessory::Utils;
+use CoGe::Accessory::Utils qw(split_string);
 use CoGe::Core::Storage qw(get_genome_path);
 
 BEGIN {
@@ -20,7 +21,7 @@ BEGIN {
         get_wobble_histogram get_wobble_gc_diff_histogram get_feature_type_gc_histogram
         get_download_path);
 
-    @EXPORT_OK = qw(genomecmp);
+    @EXPORT_OK = qw(genomecmp search_genomes);
 }
 
 my @LOCATIONS_PREFETCH = (
@@ -48,6 +49,35 @@ sub genomecmp($$) {
       || $a->type->id <=> $b->type->id
       || $namea cmp $nameb
       || $b->id cmp $a->id;
+}
+
+sub search_genomes {
+    my %opts = @_;
+    my $db = $opts{db};
+    my $user = $opts{user};
+    my $search = $opts{search};
+    my $gid = $opts{gid};
+
+    # Search for a single genome if given the gid
+    return $db->resultset("Genome")->find($gid) if $gid;
+
+    my @terms = split_string($search);
+    return unless @terms;
+
+    my @constraints = map {
+        -or => [{ name => {like => qq{%$_%}}},
+                { description => {like => qq{%$_%}}},
+                { genome_id =>   {like  => qq{%$_%}}}]
+    } @terms;
+
+    my @genomes = $db->resultset("Genome")->search({
+        -or => [
+            -and => \@constraints,
+            { genome_id => $gid },
+        ]
+    });
+
+    return @genomes;
 }
 
 sub get_wobble_histogram {
