@@ -5,7 +5,7 @@ use CGI;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Jex;
-use CoGe::Accessory::Utils qw(sanitize_name get_unique_id commify execute);
+use CoGe::Accessory::Utils qw(sanitize_string get_unique_id commify execute);
 use CoGe::Accessory::IRODS qw(irods_iput irods_imeta);
 use CoGe::Core::Genome;
 use CoGe::Core::Experiment qw(experimentcmp);
@@ -607,7 +607,7 @@ sub export_features {
 
     my $workflow = $JEX->create_workflow(name => "Export features");
 
-    my $basename = sanitize_name($genome->organism->name . "-ft-" . $ft->name);
+    my $basename = sanitize_string($genome->organism->name . "-ft-" . $ft->name);
 
     $args{script_dir} = $config->{SCRIPTDIR};
     $args{secure_tmp} = $config->{SECTEMPDIR};
@@ -1805,7 +1805,7 @@ sub get_tbl {
 
     $args{script_dir} = $config->{SCRIPTDIR};
     $args{secure_tmp} = $config->{SECTEMPDIR};
-    $args{basename} = sanitize_name($dsg->organism->name);
+    $args{basename} = sanitize_string($dsg->organism->name);
     $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export Tbl");
@@ -1835,7 +1835,7 @@ sub export_tbl {
 
     $args{script_dir} = $config->{SCRIPTDIR};
     $args{secure_tmp} = $config->{SECTEMPDIR};
-    $args{basename} = sanitize_name($dsg->organism->name);
+    $args{basename} = sanitize_string($dsg->organism->name);
     $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export Tbl");
@@ -1871,7 +1871,7 @@ sub get_bed {
 
     $args{script_dir} = $config->{SCRIPTDIR};
     $args{secure_tmp} = $config->{SECTEMPDIR};
-    $args{basename} = sanitize_name($dsg->organism->name);
+    $args{basename} = sanitize_string($dsg->organism->name);
     $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export bed file");
@@ -1902,7 +1902,7 @@ sub export_bed {
 
     $args{script_dir} = $config->{SCRIPTDIR};
     $args{secure_tmp} = $config->{SECTEMPDIR};
-    $args{basename} = sanitize_name($dsg->organism->name);
+    $args{basename} = sanitize_string($dsg->organism->name);
     $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export bed file");
