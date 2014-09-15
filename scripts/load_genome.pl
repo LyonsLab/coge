@@ -283,24 +283,6 @@ unless ($conn) {
     exit(-1);
 }
 
-
-# Add creator connector
-my $creator_conn       = $coge->resultset('UserConnector')->create(
-    {
-        parent_id   => $user->id,
-        parent_type => $node_types->{user},
-        child_id    => $genome->id,
-        child_type  => $node_types->{genome},
-        role_id     => 5                        # FIXME hardcoded
-    }
-);
-
-unless ($conn) {
-    print STDOUT "log: error creating user connector\n";
-    exit(-1);
-}
-
-
 # Create datasets
 my %datasets;
 foreach my $file (@files) {
