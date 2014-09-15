@@ -330,14 +330,6 @@ sub owner {
     }
 }
 
-sub creator {
-    my $self = shift;
-
-    foreach ( $self->user_connectors( { role_id => 5 } ) ) {    #FIXME hardcoded
-        return $_->parent;
-    }
-}
-
 ################################################ subroutine header begin ##
 
 =head2 get_genomic_sequence

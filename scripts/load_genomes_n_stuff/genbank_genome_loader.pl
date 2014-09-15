@@ -735,21 +735,20 @@ if ( $GO and ( $user_id or $user_name ) ) {
     }
 
     # mdb removed 6/17/14 issue 394 - don't create a user connector for NCBI loaded genomes
-    # erb added 9/09/2014 issue 409 - add user connector for the creator of the genome
-    my $node_types = CoGeX::node_types();
-    my $conn       = $coge->resultset('UserConnector')->create(
-       {
-           parent_id   => $user->id,
-           parent_type => $node_types->{user},
-           child_id    => $genome->id,
-           child_type  => $node_types->{genome},
-           role_id     => 5                       # FIXME hardcoded creator role
-       }
-    );
-    unless ($conn) {
-       print STDOUT "log: error creating user connector\n";
-       exit(-1);
-    }
+    #my $node_types = CoGeX::node_types();
+    #my $conn       = $coge->resultset('UserConnector')->create(
+    #   {
+    #       parent_id   => $user->id,
+    #       parent_type => $node_types->{user},
+    #       child_id    => $genome->id,
+    #       child_type  => $node_types->{genome},
+    #       role_id     => 2                       # FIXME hardcoded creator role
+    #   }
+    #);
+    #unless ($conn) {
+    #   print STDOUT "log: error creating user connector\n";
+    #   exit(-1);
+    #}
 
     # Log in history
     CoGe::Accessory::Web::log_history(
