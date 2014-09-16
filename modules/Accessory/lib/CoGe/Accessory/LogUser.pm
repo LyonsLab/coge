@@ -14,10 +14,9 @@ sub get_user {
     my %opts        = @_;
     my $cookie_name = $opts{cookie_name};
     my $coge        = $opts{coge};
-    my %cookies     = fetch CGI::Cookie;
     my ( $user, $uid, $session );    # = "Public";
 
-    my $session = get_cookie_session(cookie_name => $cookie);
+    my $session = get_cookie_session(cookie_name => $cookie_name);
 
     if ($session) {
         my ($user_session) = $coge->resultset("UserSession")->find( { session => $session } );
