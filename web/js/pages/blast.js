@@ -1,3 +1,10 @@
+/*global $ */
+
+var concat = String.prototype.concat;
+var cache = {};
+var SEQUENCE_CACHE = {};
+
+
 function run_coge_blast() {
     reset_basename();
 
@@ -17,6 +24,16 @@ function generate_basefile() {
 }
 
 function blast_param(blast_type, translate, version) {
+    var cache_id;
+    try {
+        cache_id = concat.call(blast_type, translate, version);
+    } catch(e) { return console.error(e); }
+
+    if (cache[cache_id]) {
+        var entry = cache[cache_id];
+        return animate_params(entry.html, entry.version, entry.pro);
+    }
+
     $.ajax({
         data: {
             fname: 'blast_param',
@@ -26,18 +43,33 @@ function blast_param(blast_type, translate, version) {
         },
         success : function(data) {
             var obj = jQuery.parseJSON(data);
+            cache[cache_id] = obj;
             animate_params(obj.html, obj.version, obj.pro);
         },
     });
 }
 
 function database_param(program) {
-    $.ajax({
+    var cache_id = program,
+        deferred = $.Deferred(),
+        entry;
+
+    if (cache[cache_id]) {
+        entry = cache[cache_id];
+        deferred.resolve(entry);
+
+        $('#database').html(entry);
+
+        return deferred.promise();
+    }
+
+    return $.ajax({
         data: {
             fname: 'database_param',
             program: program,
         },
         success : function(data) {
+            cache[cache_id] = data;
             $('#database').html(data);
         },
     });
@@ -1055,9 +1087,6 @@ function get_radio(which_type,val){
     if ($('#'+which_type)[0].checked) { return val+"_blast_type_n"; }
     else { return val+"_blast_type_p"; }
 }
-
-var concat = String.prototype.concat;
-var SEQUENCE_CACHE = {};
 
 function get_seq(which_type) {
     var cache_id,
