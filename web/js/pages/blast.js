@@ -22,17 +22,26 @@ function generate_basefile() {
 }
 
 function blast_param(blast_type, translate, version) {
-    var cache_id;
+    var cache_id,
+        deferred = $.Deferred();
+
+    //FIXME: This is hack to cover an issue with blast_param being called twice
     try {
         cache_id = concat.call(blast_type, translate, version);
-    } catch(e) { return console.error(e); }
+    } catch(e) {
+        console.error(e);
+        deferred.reject('invalid arguments passed');
+        return deferred.promise();
+    }
 
     if (cache[cache_id]) {
         var entry = cache[cache_id];
-        return animate_params(entry.html, entry.version, entry.pro);
+        deferred.resolve(entry);
+        animate_params(entry.html, entry.version, entry.pro);
+        return deferred.promise();
     }
 
-    $.ajax({
+    return $.ajax({
         data: {
             fname: 'blast_param',
             blast_type: blast_type,
@@ -1092,6 +1101,7 @@ function get_seq(which_type) {
         dsgid = seqObj.dsgid,
         featid = seqObj.featid,
         chr = seqObj.chr,
+        deferred = $.Deferred(),
         program = get_radio(which_type,"coge");
 
     if (featid) {
@@ -1099,12 +1109,13 @@ function get_seq(which_type) {
                                seqObj.downstream, seqObj.rc, seqObj.gstid);
 
         if (cache[cache_id]) {
+            deferred.resolve(cache[cache_id]);
             $('#seq_box').val(cache[cache_id]);
-            return;
+            return deferred.promise();
         }
 
         $('#seq_box').val('Loading ...');
-        $.ajax({
+        return $.ajax({
             data: {
                 fname: 'get_sequence',
                 fid: featid,
@@ -1127,11 +1138,12 @@ function get_seq(which_type) {
                                seqObj.downstream, seqObj.gstid);
 
         if (cache[cache_id]) {
+            deferred.resolve(cache[cache_id]);
             $('#seq_box').val(cache[cache_id]);
-            return;
+            return deferred.promise();
         }
 
-        $.ajax({
+        return $.ajax({
             data: {
                 fname: 'get_sequence',
                 dsid: dsid,
@@ -1149,7 +1161,7 @@ function get_seq(which_type) {
     }
     else if (pageObj.locations) {
         $('#seq_box').val('Loading ...');
-        $.ajax({
+        return $.ajax({
             data: {
                 fname: 'get_sequence',
                 blast_type: program,
@@ -1161,6 +1173,8 @@ function get_seq(which_type) {
         });
     }
     else {
+        deferred.resolve("");
+        return deferred.promise();
         //$('#seq_box').val('');
         //return;
     }
