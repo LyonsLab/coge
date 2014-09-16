@@ -1,24 +1,50 @@
-/*global $ */
+/*global $,jQuery,pageObj,document */
 
 var concat = String.prototype.concat;
 var cache = {};
 
-function run_coge_blast() {
-    reset_basename();
-
-    generate_basefile().then(function(basename) {
-        pageObj.basename = basename;
-        blastOff("#status_dialog", "#results");
-        ga('send', 'event', 'cogeblast', 'run', 'coge');
-    });
+function update_gapcost(pro) {
+    $('.gapcosts').hide();
+    if(pro)
+    {
+      var val = $('#matrix').val();
+      $('#gapcosts_'+val).toggle();
+    }
+    else
+    {
+      var str = $('#match_score').val();
+      var num1 = str.substr(0,1);
+      var num2 = str.substr(2);
+      $('#gapcosts_'+num1+num2).toggle();
+    }
 }
 
-function generate_basefile() {
-    return $.ajax({
-        data: {
-            fname: 'generate_basefile',
-        }
-    });
+function update_gapcost_ncbi(pro) {
+    $('.ncbi_gapcosts').hide();
+    if(pro)
+    {
+      var val = $('#ncbi_matrix').val();
+      $('#ncbi_gapcosts_'+val).toggle();
+    }
+    else
+    {
+      var str = $('#ncbi_match_score').val();
+      var num1 = str.substr(0,1);
+      var num2 = str.substr(2);
+       $('#ncbi_gapcosts_'+num1+num2).toggle();
+    }
+}
+
+
+function animate_params (html,version,pro){
+    if(version === "coge_radio") {
+        $('#pro_or_nu_param').hide(0).html(html).toggle();
+        update_gapcost(pro);
+    }
+    else{
+        $('#ncbi_pro_or_nu_param').hide(0).html(html).toggle();
+        update_gapcost_ncbi(pro);
+    }
 }
 
 function blast_param(blast_type, translate, version) {
@@ -108,6 +134,11 @@ function update_info_box(featid) {
     });
 }
 
+function loading(id,msg) {
+    var message = '<font class="loading">Loading '+msg+' . . .</font>';
+    $('#'+id).html(message);
+}
+
 function update_hsp_info (featid) {
     loading('image_info','Information');
     loading('query_image','Image');
@@ -129,10 +160,72 @@ function update_hsp_info (featid) {
     });
 }
 
-function loading(id,msg) {
-    var message = '<font class="loading">Loading '+msg+' . . .</font>';
-    $('#'+id).html(message);
+function update_checkbox(name, dist, hspid, id){
+    $('#feat'+hspid).html(name);
+    $('#dist'+hspid).html(dist);
+    var id_array = [];
+    if (id) {
+        id_array = id.split(',');
+
+        // mdb removed 5/19/14 issue 382 - jquery not working with html injection
+        //$('#checkbox'+id_array[0]).attr("id","checkbox"+id_array[1]);
+        //$('#'+id_array[0]).attr("value",id_array[1]).attr("id",id_array[1]);
+
+        // mdb added 5/19/14 issue 382
+        var old_id = id_array[0];
+        var new_id = id_array[1];
+        var e = document.getElementById('checkbox' + old_id);
+        e.id = "checkbox" + new_id;
+        e = document.getElementById(old_id);
+        e.id = e.value = new_id;
+    }
 }
+
+function init_table () {
+    $.tablesorter.addParser({
+        id: 'percent',
+        is: function() { return false; },
+        format: function(s) { return s.replace(/%/,''); },
+        type: 'numeric'
+    });
+
+    $(function(){
+        $("#hsp_result_table").tablesorter({
+            //sortColumn: 'HSP#',               // Integer or String of the name of the column to sort by.
+            sortClassAsc: 'headerSortUp',       // Class name for ascending sorting action to header
+            sortClassDesc: 'headerSortDown',    // Class name for descending sorting action to header
+            headerClass: 'header',              // Class name for headers (th's)
+            widgets: ['zebra'],
+            textExtraction: 'complex',
+            headers: {0: {sorter: false},
+                      4: {sorter: 'digit'},
+                      5: {sorter: 'digit'},
+                      6: {sorter: 'digit'},
+                      7: {sorter: 'percent'},
+                      8: {sorter: 'digit'},
+                      9: {sorter: 'percent'},
+                      10: {sorter: 'digit'},
+                      11: {sorter: 'percent'}
+            },
+            sortList: [[2,0],[5,0]]
+        });
+    });
+}
+
+//Need to instantiate this seperately from other dialog boxes, need to do this AFTER results are generated
+function init_table_opts() {
+    //substaniate dialog box
+    $("#table_opts_dialog").dialog({ height: 240,
+                            width: 746,
+                            autoOpen: false,
+    });
+
+    //button effects on events
+    $('#table_opts').click(function() {
+        $('#table_opts_dialog').dialog('open');
+    });
+}
+
 
 // FIXME mdb 3/8/13 - instead of separate ajax requests, all HSP's should be handled in one
 function fill_nearby_feats(id_array) { // mdb rewritten 3/8/13 issue 47
@@ -168,7 +261,7 @@ function fill_nearby_feats(id_array) { // mdb rewritten 3/8/13 issue 47
 
 function click_all_feat_links(feature_links) { // mdb rewritten 3/8/13 issue 47
     var link_array = feature_links.split(',');
-    var id_array = new Array();
+    var id_array = [];
 
     link_array.forEach(
         function(element, index, array) {
@@ -179,27 +272,6 @@ function click_all_feat_links(feature_links) { // mdb rewritten 3/8/13 issue 47
     );
 
     fill_nearby_feats(id_array);
-}
-
-function update_checkbox(name, dist, hspid, id){
-    $('#feat'+hspid).html(name);
-    $('#dist'+hspid).html(dist);
-    var id_array = new Array();
-    if (id) {
-        id_array = id.split(',');
-
-        // mdb removed 5/19/14 issue 382 - jquery not working with html injection
-        //$('#checkbox'+id_array[0]).attr("id","checkbox"+id_array[1]);
-        //$('#'+id_array[0]).attr("value",id_array[1]).attr("id",id_array[1]);
-
-        // mdb added 5/19/14 issue 382
-        var old_id = id_array[0];
-        var new_id = id_array[1];
-        var e = document.getElementById('checkbox' + old_id);
-        e.id = "checkbox" + new_id;
-        e = document.getElementById(old_id);
-        e.id = e.value = new_id;
-    }
 }
 
 function overlap_checkboxes() {
@@ -219,7 +291,7 @@ function overlap_checkboxes() {
     else if (action == "fasta")
         export_fasta_file(accn);
     else if (action == "seqview") {
-        var locations = new Array();
+        var locations = [];
         $('#hsp_result_table :checkbox').each(function(){
             if (this.checked) {
                 var loc = $(this).parents('tr').find('.location').html();
@@ -532,6 +604,25 @@ function get_ncbi_params(){
 function reset_basename(){
     if(pageObj.basename) pageObj.basename=0;
 }
+
+function generate_basefile() {
+    return $.ajax({
+        data: {
+            fname: 'generate_basefile',
+        }
+    });
+}
+
+function run_coge_blast() {
+    reset_basename();
+
+    generate_basefile().then(function(basename) {
+        pageObj.basename = basename;
+        blastOff("#status_dialog", "#results");
+        ga('send', 'event', 'cogeblast', 'run', 'coge');
+    });
+}
+
 
 function blastOff(dialog, results, basename) {
     var validator = $('#validator').hide();
@@ -908,51 +999,6 @@ function handle_results(selector, data) {
     check_display();
 }
 
-function init_table () {
-    $.tablesorter.addParser({
-        id: 'percent',
-        is: function(s) { return false; },
-        format: function(s) { return s.replace(/%/,''); },
-        type: 'numeric'
-    });
-
-    $(function(){
-        $("#hsp_result_table").tablesorter({
-            //sortColumn: 'HSP#',               // Integer or String of the name of the column to sort by.
-            sortClassAsc: 'headerSortUp',       // Class name for ascending sorting action to header
-            sortClassDesc: 'headerSortDown',    // Class name for descending sorting action to header
-            headerClass: 'header',              // Class name for headers (th's)
-            widgets: ['zebra'],
-            textExtraction: 'complex',
-            headers: {0: {sorter: false},
-                      4: {sorter: 'digit'},
-                      5: {sorter: 'digit'},
-                      6: {sorter: 'digit'},
-                      7: {sorter: 'percent'},
-                      8: {sorter: 'digit'},
-                      9: {sorter: 'percent'},
-                      10: {sorter: 'digit'},
-                      11: {sorter: 'percent'}
-            },
-            sortList: [[2,0],[5,0]]
-        });
-    });
-}
-
-//Need to instantiate this seperately from other dialog boxes, need to do this AFTER results are generated
-function init_table_opts() {
-    //substaniate dialog box
-    $("#table_opts_dialog").dialog({ height: 240,
-                            width: 746,
-                            autoOpen: false,
-    });
-
-    //button effects on events
-    $('#table_opts').click(function() {
-        $('#table_opts_dialog').dialog('open');
-    });
-}
-
 function ncbi_blast(url) {
     if (url == 1) {
         alert('You have not selected a BLAST program! Please select a program to run.');
@@ -978,38 +1024,6 @@ function ncbi_blast(url) {
             if ($('#comp_adj').is(':hidden')) {window.open(url+'&MATRIX_NAME='+matrix);}
             else {window.open(url+'&MATRIX_NAME='+matrix+'&COMPOSITION_BASED_STATISTICS='+comp);}
         }
-    }
-}
-
-function update_gapcost(pro) {
-    $('.gapcosts').hide();
-    if(pro)
-    {
-      var val = $('#matrix').val();
-      $('#gapcosts_'+val).toggle();
-    }
-    else
-    {
-      var str = $('#match_score').val();
-      var num1 = str.substr(0,1);
-      var num2 = str.substr(2);
-      $('#gapcosts_'+num1+num2).toggle();
-    }
-}
-
-function update_gapcost_ncbi(pro) {
-    $('.ncbi_gapcosts').hide();
-    if(pro)
-    {
-      var val = $('#ncbi_matrix').val();
-      $('#ncbi_gapcosts_'+val).toggle();
-    }
-    else
-    {
-      var str = $('#ncbi_match_score').val();
-      var num1 = str.substr(0,1);
-      var num2 = str.substr(2);
-       $('#ncbi_gapcosts_'+num1+num2).toggle();
     }
 }
 
@@ -1210,17 +1224,6 @@ function blast_param_on_select(which_type, val) {
                 $('#word_size').val(8);
             }
         }
-    }
-}
-
-function animate_params (html,version,pro){
-    if(version == "coge_radio") {
-        $('#pro_or_nu_param').hide(0).html(html).toggle();
-        update_gapcost(pro);
-    }
-    else{
-        $('#ncbi_pro_or_nu_param').hide(0).html(html).toggle();
-        update_gapcost_ncbi(pro);
     }
 }
 
