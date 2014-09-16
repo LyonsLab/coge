@@ -2,8 +2,6 @@
 
 var concat = String.prototype.concat;
 var cache = {};
-var SEQUENCE_CACHE = {};
-
 
 function run_coge_blast() {
     reset_basename();
@@ -1100,8 +1098,8 @@ function get_seq(which_type) {
         cache_id = concat.call(featid, program, seqObj.upstream,
                                seqObj.downstream, seqObj.rc, seqObj.gstid);
 
-        if (SEQUENCE_CACHE[cache_id]) {
-            $('#seq_box').val(SEQUENCE_CACHE[cache_id]);
+        if (cache[cache_id]) {
+            $('#seq_box').val(cache[cache_id]);
             return;
         }
 
@@ -1117,7 +1115,7 @@ function get_seq(which_type) {
                 gstid: seqObj.gstid
             },
             success : function(html) {
-                SEQUENCE_CACHE[cache_id] = html;
+                cache[cache_id] = html;
                 $('#seq_box').val(html);
             },
         });
@@ -1128,8 +1126,8 @@ function get_seq(which_type) {
         cache_id = concat.call(dsid, dsgid, program, seqObj.upstream,
                                seqObj.downstream, seqObj.gstid);
 
-        if (SEQUENCE_CACHE[cache_id]) {
-            $('#seq_box').val(SEQUENCE_CACHE[cache_id]);
+        if (cache[cache_id]) {
+            $('#seq_box').val(cache[cache_id]);
             return;
         }
 
@@ -1144,7 +1142,7 @@ function get_seq(which_type) {
                 gstid: seqObj.gstid
             },
             success : function(html) {
-                SEQUENCE_CACHE[cache_id] = html;
+                cache[cache_id] = html;
                 $('#seq_box').val(html);
             },
         });
