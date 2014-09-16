@@ -1056,13 +1056,26 @@ function get_radio(which_type,val){
     else { return val+"_blast_type_p"; }
 }
 
+var concat = String.prototype.concat;
+var SEQUENCE_CACHE = {};
+
 function get_seq(which_type) {
-    dsid = seqObj.dsid;
-    dsgid = seqObj.dsgid;
-    featid = seqObj.featid;
-    chr = seqObj.chr;
-        var program = get_radio(which_type,"coge");
+    var cache_id,
+        dsid = seqObj.dsid,
+        dsgid = seqObj.dsgid,
+        featid = seqObj.featid,
+        chr = seqObj.chr,
+        program = get_radio(which_type,"coge");
+
     if (featid) {
+        cache_id = concat.call(featid, program, seqObj.upstream,
+                               seqObj.downstream, seqObj.rc, seqObj.gstid);
+
+        if (SEQUENCE_CACHE[cache_id]) {
+            $('#seq_box').val(SEQUENCE_CACHE[cache_id]);
+            return;
+        }
+
         $('#seq_box').val('Loading ...');
         $.ajax({
             data: {
@@ -1075,12 +1088,22 @@ function get_seq(which_type) {
                 gstid: seqObj.gstid
             },
             success : function(html) {
+                SEQUENCE_CACHE[cache_id] = html;
                 $('#seq_box').val(html);
             },
         });
     }
     else if (chr) {
         $('#seq_box').val('Loading ...');
+
+        cache_id = concat.call(dsid, dsgid, program, seqObj.upstream,
+                               seqObj.downstream, seqObj.gstid);
+
+        if (SEQUENCE_CACHE[cache_id]) {
+            $('#seq_box').val(SEQUENCE_CACHE[cache_id]);
+            return;
+        }
+
         $.ajax({
             data: {
                 fname: 'get_sequence',
@@ -1092,6 +1115,7 @@ function get_seq(which_type) {
                 gstid: seqObj.gstid
             },
             success : function(html) {
+                SEQUENCE_CACHE[cache_id] = html;
                 $('#seq_box').val(html);
             },
         });
