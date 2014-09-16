@@ -372,7 +372,7 @@ sub logout_coge { # mdb added 3/24/14, issue 329
     my $coge        = $opts{coge};
     my $user        = $opts{user};
     my $form        = $opts{form}; # CGI form for calling page
-    my $url         = $opts{this_url};
+    my $url         = $opts{url};
     $url = $form->url() unless $url;
     print STDERR "Web::logout_coge url=", ($url ? $url : ''), "\n";
 
@@ -390,7 +390,7 @@ sub logout_cas {
     my $coge        = $opts{coge};
     my $user        = $opts{user};
     my $form        = $opts{form}; # CGI form for calling page
-    my $url         = $opts{this_url};
+    my $url         = $opts{url};
     $url = $form->url() unless $url;
     print STDERR "Web::logout_cas url=", ($url ? $url : ''), "\n";
 
