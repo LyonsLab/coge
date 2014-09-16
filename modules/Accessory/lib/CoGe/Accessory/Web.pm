@@ -18,7 +18,7 @@ use LWP::UserAgent;
 use JSON;
 use HTTP::Request;
 use XML::Simple;
-use CoGe::Accessory::LogUser;
+use CoGe::Accessory::LogUser qw(get_cookie_session);
 use Digest::MD5 qw(md5_base64);
 use POSIX qw(!tmpnam !tmpfile);
 use Mail::Mailer;
@@ -377,7 +377,9 @@ sub logout_coge { # mdb added 3/24/14, issue 329
     print STDERR "Web::logout_coge url=", ($url ? $url : ''), "\n";
 
     # Delete user session from db
-    my $session_id = get_session_id($user->user_name, $ENV{REMOTE_ADDR});
+    my $session_id = get_cookie_session(cookie_name => $CONF->{COOKIE_NAME})
+        || get_session_id($user->user_name, $ENV{REMOTE_ADDR});
+
     my ($session) = $coge->resultset('UserSession')->find( { session => $session_id } );
     $session->delete if $session;
 
@@ -395,7 +397,9 @@ sub logout_cas {
     print STDERR "Web::logout_cas url=", ($url ? $url : ''), "\n";
 
     # Delete user session from db
-    my $session_id = get_session_id($user->user_name, $ENV{REMOTE_ADDR});
+    my $session_id = get_cookie_session(cookie_name => $CONF->{COOKIE_NAME})
+        || get_session_id($user->user_name, $ENV{REMOTE_ADDR});
+
     my ($session) = $coge->resultset('UserSession')->find( { session => $session_id } );
     $session->delete if $session;
 
