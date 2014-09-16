@@ -5,6 +5,10 @@ use CGI::Cookie;
 use Data::Dumper;
 use CoGeX::Result::User;
 
+use Exporter 'import';
+our @EXPORT_OK = qw(get_cookie_session);
+
+#FIXME: Should have no knowledge of cookies but only sessions
 sub get_user {
     my $self        = shift;
     my %opts        = @_;
@@ -13,13 +17,13 @@ sub get_user {
     my %cookies     = fetch CGI::Cookie;
     my ( $user, $uid, $session );    # = "Public";
 
-    #print STDERR "LogUser::get_user cookie=$cookie_name " . (defined $cookies{$cookie_name} ? 'exists' : '!exists') . "\n";
-    if ( $cookie_name && ref $cookies{$cookie_name} ) {
-        my %session = $cookies{$cookie_name}->value;
-        $session = $session{session};
+    my $session = get_cookie_session(cookie_name => $cookie);
+
+    if ($session) {
         my ($user_session) = $coge->resultset("UserSession")->find( { session => $session } );
         $user = $user_session->user if $user_session;
     }
+
     unless ($user) {
         $user = new CoGeX::Result::User;
         $user->user_name("public");
@@ -28,6 +32,22 @@ sub get_user {
     return ($user);
 }
 
+#FIXME: Move into Web.pm
+sub get_cookie_session {
+    my %opts        = @_;
+    my $cookie_name = $opts{cookie_name};
+    my %cookies     = fetch CGI::Cookie;
+
+    #print STDERR "LogUser::get_user cookie=$cookie_name " . (defined $cookies{$cookie_name} ? 'exists' : '!exists') . "\n";
+    if ( $cookie_name && ref $cookies{$cookie_name} ) {
+        my %session = $cookies{$cookie_name}->value;
+        return $session{session};
+    }
+
+    return undef;
+}
+
+#FIXME: Belongs in Web.pm
 sub gen_cookie {
     my $self        = shift;
     my %opts        = @_;
