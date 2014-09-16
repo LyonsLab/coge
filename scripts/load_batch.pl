@@ -212,7 +212,7 @@ sub get_metadata {
         # Make sure required fields are present
         my $filename = $fields{Filename};
         if (!$filename or !$fields{Name}) {
-            print STDOUT "log: error: missing required column:\nline $lineNum: $line\n";
+            print STDOUT "log: error: missing required column at line $lineNum: $line\n";
             exit(-1);
         }
         if ($data{$filename}) {
