@@ -9,7 +9,7 @@ use HTML::Template;
 use Data::Dumper;
 use CGI::Log;
 use CoGeX;
-use CoGe::Accessory::Web;
+use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils qw( units commify sanitize_name );
 use JSON qw(encode_json);
 use POSIX 'ceil';
@@ -28,7 +28,7 @@ if ($FORM->param('logout_coge')) {
         coge        => $coge,
         user        => $USER,
         form        => $FORM,
-        url         => $P->{SERVER} . '/index.pl'
+        url         => url_for('index.pl')
     );
 }
 elsif ($FORM->param('logout_all')) {
@@ -37,7 +37,7 @@ elsif ($FORM->param('logout_all')) {
         coge        => $coge,
         user        => $USER,
         form        => $FORM,
-        url			=> $P->{SERVER} . '/index.pl' # mdb added 12/10/13 -- was redirecting to wrong url
+        url         => url_for('index.pl')
     );
 }
 
