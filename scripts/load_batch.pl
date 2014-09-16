@@ -55,6 +55,11 @@ if ($user_name eq 'public') {
     exit(-1);
 }
 
+unless ($gid) {
+    print STDOUT "log: error: genome id parameter 'gid' not specified\n";
+    exit(-1);
+}
+
 # Load config file
 my $P;
 if ($config) {
@@ -73,10 +78,12 @@ unless ($coge) {
 }
 
 # Retrieve genome
-$genome = $coge->resultset('Genome')->find( { genome_id => $gid } );
-unless ($genome) {
-    print STDOUT "log: error finding genome id$gid\n";
-    exit(-1);
+if ($gid) {
+    $genome = $coge->resultset('Genome')->find( { genome_id => $gid } );
+    unless ($genome) {
+        print STDOUT "log: error finding genome id$gid\n";
+        exit(-1);
+    }
 }
 
 # Retrieve notebook
@@ -115,8 +122,6 @@ foreach my $file (@files) {
         execute( $P->{TAR}.' -xf '.$file.' --directory '.$data_dir );
     }
     else {
-        print STDERR "matt: $file\n";
-        print STDERR "matt: " . catfile($data_dir, $filename) . "\n";
         my $cmd = "cp $file $data_dir/$filename";
         execute($cmd);
 #        unless ( copy( $file, catfile($data_dir, $filename) ) ) {
@@ -143,8 +148,10 @@ if ($metadata_file) {
         print STDOUT "log: error: no metadata loaded\n";
         exit(-1);
     }
-    print STDOUT Dumper($metadata), "\n";
+    print STDOUT "METADATA:\n", Dumper($metadata), "\n";
 }
+
+#------------------------------------------------------------------------------
 
 # Load each experiment file
 my $exp_count = 0;
