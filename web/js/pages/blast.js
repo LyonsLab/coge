@@ -1273,6 +1273,7 @@ function Blast(params) {
 
     this.defaults = {
         type: 'coge_blast_type_n',
+        match_score: null,
         program: null
     };
 
@@ -1294,6 +1295,11 @@ $.extend(Blast.prototype, {
         select_by_value(elements, 'checked', this.params['color']);
     },
 
+    _select_match_score: function () {
+        var elements = $('#match_score option');
+        select_by_value(elements, 'selected', this.params['match_score']);
+    },
+
     update_display: function () {
         // Select the blast type (nucleotide vs protein)
         this._select_type();
@@ -1303,6 +1309,9 @@ $.extend(Blast.prototype, {
 
         // Select the blast hit coloring scheme
         this._select_color_by();
+
+        // Set the match score to be used
+        this._select_match_score();
     }
 });
 
