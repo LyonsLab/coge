@@ -1280,6 +1280,12 @@ function Blast(params) {
         gapcost: null,
         filtered: 'T',
         composition: 1,
+        blastz_wordsize: 8,
+        blastz_gap_start: 400,
+        blastz_gap_extension: 30,
+        blastz_chaining: 0,
+        blastz_threshold: 3000,
+        blastz_mask: 0,
         program: null
     };
 
@@ -1340,11 +1346,22 @@ $.extend(Blast.prototype, {
         $("#comp_adj").val(this.params['composition']);
     },
 
+    _select_blastz_options: function () {
+        $('#blastz_wordsize').val(this.params['blastz_wordsize']);
+        $('#blastz_gap_start').val(this.params['blastz_gap_start']);
+        $('#blastz_gap_extension').val(this.params['blastz_gap_extension']);
+        $('#blastz_threshold').val(this.params['blastz_threshold']);
+        $('#blastz_mask').val(this.params['blastz_mask']);
+
+        var elements =$('#blastz_chaining options');
+        select_by_value(elements, 'selected', this.params['blastz_chaining'])
+    },
+
     update_display: function () {
         // Select the blast type (nucleotide vs protein)
         this._select_type();
 
-        // Set the blast tool being used
+        // Set the blast tool being used (depends on type)
         this._select_program();
 
         // Select the blast hit coloring scheme
@@ -1370,6 +1387,9 @@ $.extend(Blast.prototype, {
 
         // Select the composition adjustments
         this._select_composition();
+
+        // Set blastz specific options
+        this._select_blastz_options();
     }
 });
 
