@@ -26,7 +26,7 @@ GetOptions(
     "staging_dir=s" => \$staging_dir,    # temporary staging path
     "result_dir=s"  => \$result_dir,     # results path
     "files=s"       => \$file_str,       # input data file (JS escape)
-    "name=s"        => \$notebook_name,  # notebook name (JS escaped)
+    "name=s"        => \$notebook_name,  # notebook name (JS escaped) if not nid
     "desc=s"        => \$notebook_desc,  # notebook description (JS escaped)
     "gid=s"         => \$gid,            # genome id
     "nid=s"         => \$nid,            # optional notebook id, otherwise new notebook created
@@ -145,7 +145,7 @@ print "METADATA:\n", Dumper($metadata), "\n";
 
 #------------------------------------------------------------------------------
 
-# Load each experiment file
+# Load each data file
 ($notebook, my $items) = process_dir($data_dir, $metadata, $notebook);
 
 # Save result document
@@ -242,23 +242,23 @@ sub process_dir {
             $md = $metadata->{$item};
         }
         else {
-            print "log: warning: no metadata for file '$item', skipping file ...\n";
+            print "log: warning: no metadata for file $item, skipping file ...\n";
             next;
         }
         
         # Call appropriate loader based on file type
         my $path = catdir($staging_dir, ++$total_count);
         my ($item_id, $item_type);
-        if ( $item =~ /\.csv|\.tsv|.bed|\.gff||\.vcf|\.bam|\.fastq/ ) { # experiment
+        if ( $item =~ /\.csv|\.tsv|.bed|\.gff|\.vcf|\.bam|\.fastq/i ) { # experiment
             $item_id = process_experiment( file => "$dir/$item", metadata => $md, path => $path );
             $item_type = 3; # FIXME hardcoded type
         }
-        elsif ( $item =~ /\.fa|\.fasta/ ) { # genome
-            $item_id = process_genome( file => "$dir/$item", metadata => $md );
+        elsif ( $item =~ /\.fa|\.faa|\.fasta/i ) { # genome
+            $item_id = process_genome( file => "$dir/$item", metadata => $md, path => $path );
             $item_type = 2; # FIXME hardcoded type
         }
         else {
-            print "log: warning: unknown file type for '$item', skipping file ...\n";
+            print "log: warning: unknown file type for $item, skipping file ...\n";
             next;
         }
         
@@ -270,7 +270,7 @@ sub process_dir {
 
     unless ($load_count) {
         print "log: error: no data files can be loaded, check that file extensions and metadata fields are correct ",
-              "<a href='https://genomevolution.org/wiki/index.php/LoadBatch'>here</a>", "\n";
+              "<a href='https://genomevolution.org/wiki/index.php/LoadBatch'>here</a>.", "\n";
         exit(-1);
     }
     
@@ -282,8 +282,7 @@ sub process_dir {
     print "log: ----------------------------------------------------\n";
     
     # Print summary of files loaded
-    my %itemsTypeCount;
-    map { $itemsTypeCount{ note_type_name($_->item_type) }++ } @loaded;
+    my %itemsTypeCount; map { $itemsTypeCount{ CoGeX->node_type_name($_->{item_type}) }++ } @loaded;
     print "log: Number of items loaded: $load_count (", ($total_count - $load_count) ," failed or skipped)\n";
     foreach my $type (keys %itemsTypeCount) {
         print 'log: ', $type, ': ', $itemsTypeCount{$type};
@@ -321,26 +320,26 @@ sub process_genome { #TODO merge with process_experiment?
     die unless ($file && $md && $path);
 
     # Check params and set defaults - FIXME better way to handle capitalized keys as one-liner
-    my $md_missing;
     my $name;
     $name = $md->{Name} if ($md and $md->{Name});
     $name = $md->{name} if ($md and $md->{name});
-    $md_missing = 'name';
     my $description = '';
     $description = $md->{Description} if ($md and $md->{Description});
     $description = $md->{description} if ($md and $md->{description});
     my $source = $user->display_name;
     $source      = $md->{Source} if ($md and $md->{Source});
     $source      = $md->{source} if ($md and $md->{source});
-    $md_missing = 'source';
     my $version = 1;
     $version     = $md->{Version} if ($md and $md->{Version});
     $version     = $md->{version} if ($md and $md->{version});
     my $restricted = 1;
     $restricted = ($md->{Restricted} eq 'yes') if ($md and $md->{Restricted});
     $restricted = ($md->{restricted} eq 'yes') if ($md and $md->{restricted});
-    if ($md_missing) {
-        print "log: error: missing required '$md_missing' metadata field for file ", basename($file), ", skipping file ...\n";
+    my $organism_id;
+    $organism_id = $md->{Organism} if ($md and $md->{Organism});
+    $organism_id = $md->{organism} if ($md and $md->{organism});
+    unless ($name && $organism_id) {
+        print "log: error: missing required metadata field for file ", basename($file), ", skipping file ...\n";
         return;
     }
 
@@ -351,8 +350,8 @@ sub process_genome { #TODO merge with process_experiment?
     my $install_dir = $P->{SEQDIR};
     my $cmd = catfile($P->{SCRIPTDIR}, 'load_genome.pl') . ' ' .
         "-config $config -user_name '".$user->user_name."' -restricted 1 -name '$name' -desc '$description' " .
-        "-version '$version' -wid $wid -source_name '$source' " .
-        "-staging_dir $path -install_dir $install_dir -data_file '$file' ";
+        "-version '$version' -source_name '$source' -organism_id $organism_id " .
+        "-staging_dir $path -install_dir $install_dir -fasta_files '$file' ";
     print "Running: ", $cmd, "\n";
     my $output = qx{ $cmd }; # TODO: use run() here instead?
     print $output;
@@ -376,7 +375,7 @@ sub process_genome { #TODO merge with process_experiment?
 
     foreach my $column_name (keys %$md) {
         # Skip built-in fields
-        next if (grep { /$column_name/i } ('filename', 'name', 'description', 'source', 'version', 'restricted', 'genome'));
+        next if (grep { /$column_name/i } ('filename', 'name', 'description', 'source', 'version', 'restricted', 'genome', 'organism'));
 
         # Add annotation
         my $type = $coge->resultset('AnnotationType')->find_or_create( { name => $column_name } );
@@ -402,18 +401,15 @@ sub process_experiment {
     die unless ($file && $md && $path);
 
     # Check params and set defaults
-    my $md_missing;
     my $name;
     $name = $md->{Name} if ($md and $md->{Name});
     $name = $md->{name} if ($md and $md->{name});
-    $md_missing = 'name';
     my $description = '';
     $description = $md->{Description} if ($md and $md->{Description});
     $description = $md->{description} if ($md and $md->{description});
     my $source = $user->display_name;
     $source      = $md->{Source} if ($md and $md->{Source});
     $source      = $md->{source} if ($md and $md->{source});
-    $md_missing = 'source';
     my $version = 1;
     $version     = $md->{Version} if ($md and $md->{Version});
     $version     = $md->{version} if ($md and $md->{version});
@@ -423,9 +419,8 @@ sub process_experiment {
     my $genome_id;
     $genome_id = $md->{Genome} if ($md and $md->{Genome});
     $genome_id = $md->{genome} if ($md and $md->{genome});
-    $md_missing = 'genome';
-    if ($md_missing) {
-        print "log: error: missing required '$md_missing' metadata field for file ", basename($file), ", skipping file ...\n";
+    unless ($name && $genome_id) {
+        print "log: error: missing required metadata field for file ", basename($file), ", skipping file ...\n";
         return;
     }
 
@@ -484,7 +479,7 @@ sub create_notebook { #FIXME use routine CoGe::Core::Notebook
     my $name    = $opts{name};
     my $desc    = $opts{desc};
     my $item_list = $opts{item_list};    # optional
-    my $type_id = 2; # hardcoded to "experiment" type
+    my $type_id = 2; # hardcoded to "mixed" type
 
     $name = '' unless defined $name;
     $desc = '' unless defined $desc;
@@ -494,8 +489,8 @@ sub create_notebook { #FIXME use routine CoGe::Core::Notebook
         {
             name         => $name,
             description  => $desc,
-            list_type_id => $type_id,
-            restricted => 1
+            list_type_id => 5, # FIXME hardcoded to 5
+            restricted   => 1
         }
     );
     return unless $list;
@@ -517,8 +512,8 @@ sub create_notebook { #FIXME use routine CoGe::Core::Notebook
         my $conn = $coge->resultset('ListConnector')->find_or_create(
             {
                 parent_id  => $list->id,
-                child_id   => $_,
-                child_type => 3 # hardcoded to "experiment" type
+                child_id   => $_->{item_id},
+                child_type => $_->{item_type}
             }
         );
         return unless $conn;
