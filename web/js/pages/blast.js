@@ -1277,6 +1277,7 @@ function Blast(params) {
         evalue: 1e-3,
         word_size: 8,
         limit: 100,
+        gapcost: null,
         filtered: 'T',
         program: null
     };
@@ -1322,6 +1323,18 @@ $.extend(Blast.prototype, {
         select_by_value(elements, 'checked', this.params['filtered'])
     },
 
+    _select_gapcost: function($element) {
+        var matchPattern = /[,]/g;
+        var val = $element.val().replace(matchPattern, "");
+
+        //FIXME: This should really only be one gap cost element
+        $('.gapcosts').hide()
+        var gapcost = $('#gapcosts_' + val).toggle();
+
+        // Select the option
+        gapcost.val(this.params['gapcost']);
+    },
+
     update_display: function () {
         // Select the blast type (nucleotide vs protein)
         this._select_type();
@@ -1346,6 +1359,9 @@ $.extend(Blast.prototype, {
 
         // Set whether the query sequence will be filtered
         this._select_filtered();
+
+        // Selects the gap cost select and option
+        this._select_gapcost($("#match_score"));
     }
 });
 
