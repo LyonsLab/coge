@@ -1291,7 +1291,7 @@ function Blast(params) {
         wordsize: 8,
         limit: 100,
         gapcost: null,
-        filtered: 'T',
+        filtered: 1,
         composition: 1,
         blastz_wordsize: 8,
         blastz_gap_start: 400,
