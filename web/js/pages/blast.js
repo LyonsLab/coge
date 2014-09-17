@@ -1261,6 +1261,51 @@ function org_search(desc_search){
     );
 }
 
+
+function select_by_value($elements, value) {
+    return $elements.filter(function() {
+        return this.value === value;
+    }).prop('checked', true);
+}
+
+function Blast(params) {
+    this.params = params || {};
+
+    this.defaults = {
+        type: 'coge_blast_type_n',
+        program: null
+    };
+
+    this.params = $.extend(this.defaults, this.params);
+};
+
+$.extend(Blast.prototype, {
+    _select_type: function () {
+        var elements = $('input[name="cogeblast"]');
+        select_by_value(elements, this.params['type']);
+    },
+
+    _select_program: function () {
+        $("#" + this.params['type']).val(this.params['program']);
+    },
+
+    _select_color_by: function () {
+        var elements = $('input[name="color_by"]');
+        select_by_value(elements, this.params['color']);
+    },
+
+    update_display: function () {
+        // Select the blast type (nucleotide vs protein)
+        this._select_type();
+
+        // Set the blast tool being used
+        this._select_program();
+
+        // Select the blast hit coloring scheme
+        this._select_color_by();
+    }
+});
+
 function adjust_blast_types(val){
     if(val == 1){
         if($('#ncbi_blast_type').is(":hidden")){
