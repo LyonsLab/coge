@@ -1264,7 +1264,7 @@ function org_search(desc_search){
 
 function select_by_value($elements, property, value) {
     return $elements.filter(function() {
-        return this.value === value;
+        return this.value === String(value);
     }).prop(property, true);
 }
 
