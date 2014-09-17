@@ -1274,6 +1274,7 @@ function Blast(params) {
     this.defaults = {
         type: 'coge_blast_type_n',
         match_score: null,
+        matrix_score: null,
         evalue: 1e-3,
         word_size: 8,
         limit: 100,
@@ -1310,6 +1311,11 @@ $.extend(Blast.prototype, {
     _select_match_score: function () {
         var elements = $('#match_score option');
         select_by_value(elements, 'selected', this.params['match_score']);
+    },
+
+    _select_matrix_score: function () {
+        var elements = $('#matrix');
+        select_by_value(elements, 'selected', this.params['matrix_score']);
     },
 
     _select_evalue: function () {
@@ -1357,13 +1363,7 @@ $.extend(Blast.prototype, {
         select_by_value(elements, 'selected', this.params['blastz_chaining'])
     },
 
-    update_display: function () {
-        // Select the blast type (nucleotide vs protein)
-        this._select_type();
-
-        // Set the blast tool being used (depends on type)
-        this._select_program();
-
+    update_default: function () {
         // Select the blast hit coloring scheme
         this._select_color_by();
 
@@ -1383,13 +1383,53 @@ $.extend(Blast.prototype, {
         this._select_filtered();
 
         // Selects the gap cost select and option
+        this._select_gapcost($("#match_score"));
+    },
+
+    update_blastz: function (argument) {
+        // Set blastz specific options
+        this._select_blastz_options();
+    },
+
+    update_protein: function () {
+        // Set the matrix score to be used
+        this._select_matrix_score();
+
+        // Set the e-value parameter
+        this._select_evalue();
+
+        // Set the word size parameter
+        this._select_word_size();
+
+        // Set the result limits
+        this._select_limit();
+
+        // Set whether the query sequence will be filtered
+        this._select_filtered();
+
+        // Selects the gap cost select and option
         this._select_gapcost($("#matrix"));
 
         // Select the composition adjustments
         this._select_composition();
+    },
 
-        // Set blastz specific options
-        this._select_blastz_options();
+    update_display: function () {
+        // Select the blast type (nucleotide vs protein)
+        this._select_type();
+
+        // Set the blast tool being used (depends on type)
+        this._select_program();
+
+        // Select the blast hit coloring scheme
+        this._select_color_by();
+
+        switch (this.params['program']) {
+            case 'lastz': this.update_blastz(); break;
+            case 'tblastx': this.update_protein(); break;
+            case 'tblastn': this.update_protein(); break;
+            default: this.update_default(); break;
+        }
     }
 });
 
