@@ -1287,7 +1287,7 @@ function Blast(params) {
         match_score: null,
         matrix_score: null,
         evalue: 1e-3,
-        word_size: 8,
+        wordsize: 8,
         limit: 100,
         gapcost: null,
         filtered: 'T',
