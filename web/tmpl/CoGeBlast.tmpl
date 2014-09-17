@@ -219,9 +219,29 @@
         // Initialize CoGe Blast
         $("#run_blast").click(run_coge_blast);
 
-        blast_param_on_select('coge_radio','coge');
-        blast_param(); //blast_param([],[animate_params]);
-        database_param(); //database_param([],['database']);
+        var queryParams = getParamsFromUrl();
+
+        var analysis = new Blast({
+            type: queryParams['type'],
+            color: queryParams['color_hsps'],
+            match_score: queryParams['match_score'],
+            matrix_score: queryParams['matrix'],
+            evalue: queryParams['expect'],
+            wordsize: queryParams['wordsize'],
+            limit: queryParams['resultslimit'],
+            gapcost: queryParams['gapcost'],
+            filtered: queryParams['filter_query'],
+            composition: queryParams['comp'],
+            blastz_wordsize: queryParams['zwordsize'],
+            blastz_gap_start: queryParams['zgap_start'],
+            blastz_gap_extension: queryParams['zgap_exten'],
+            blastz_chaining: queryParams['zchaining'],
+            blastz_threshold: queryParams['zthreshold'],
+            blastz_mask: queryParams['zmask'],
+            program: queryParams['program']
+        });
+
+        analysis.update_display();
 
         if (+"<tmpl_var name=RUN>") {
             run_coge_blast();
@@ -242,6 +262,7 @@
             seqObj = new Object();
         }
 
+        // sequence fetching
         get_seq('coge_radio');
     });
     </script>
