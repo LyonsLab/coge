@@ -1326,7 +1326,7 @@ $.extend(Blast.prototype, {
     },
 
     _select_matrix_score: function () {
-        var elements = $('#matrix');
+        var elements = $('#matrix option');
         select_by_value(elements, 'selected', this.params['matrix_score']);
     },
 
