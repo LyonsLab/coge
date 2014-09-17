@@ -1277,6 +1277,7 @@ function Blast(params) {
         evalue: 1e-3,
         word_size: 8,
         limit: 100,
+        filtered: 'T',
         program: null
     };
 
@@ -1316,6 +1317,11 @@ $.extend(Blast.prototype, {
         $('#resultslimit').val(this.params['limit']);
     },
 
+    _select_filtered: function () {
+        var elements = $('input[name="filter_query"]');
+        select_by_value(elements, 'checked', this.params['filtered'])
+    },
+
     update_display: function () {
         // Select the blast type (nucleotide vs protein)
         this._select_type();
@@ -1337,6 +1343,9 @@ $.extend(Blast.prototype, {
 
         // Set the result limits
         this._select_limit();
+
+        // Set whether the query sequence will be filtered
+        this._select_filtered();
     }
 });
 
