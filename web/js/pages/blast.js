@@ -1276,6 +1276,7 @@ function Blast(params) {
         match_score: null,
         evalue: 1e-3,
         word_size: 8,
+        limit: 100,
         program: null
     };
 
@@ -1311,6 +1312,10 @@ $.extend(Blast.prototype, {
         $("#word_size").val(this.params['wordsize']);
     },
 
+    _select_limit: function () {
+        $('#resultslimit').val(this.params['limit']);
+    },
+
     update_display: function () {
         // Select the blast type (nucleotide vs protein)
         this._select_type();
@@ -1329,6 +1334,9 @@ $.extend(Blast.prototype, {
 
         // Set the word size parameter
         this._select_word_size();
+
+        // Set the result limits
+        this._select_limit();
     }
 });
 
