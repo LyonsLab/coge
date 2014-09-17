@@ -1274,6 +1274,7 @@ function Blast(params) {
     this.defaults = {
         type: 'coge_blast_type_n',
         match_score: null,
+        evalue: 1e-3,
         program: null
     };
 
@@ -1300,6 +1301,11 @@ $.extend(Blast.prototype, {
         select_by_value(elements, 'selected', this.params['match_score']);
     },
 
+    _select_evalue: function () {
+        var elements = $('#e_value option');
+        select_by_value(elements, 'selected', this.params['evalue']);
+    },
+
     update_display: function () {
         // Select the blast type (nucleotide vs protein)
         this._select_type();
@@ -1312,6 +1318,9 @@ $.extend(Blast.prototype, {
 
         // Set the match score to be used
         this._select_match_score();
+
+        // Set the e-value parameter
+        this._select_evalue();
     }
 });
 
