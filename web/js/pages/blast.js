@@ -1356,8 +1356,9 @@ $.extend(Blast.prototype, {
         $('.gapcosts').hide()
         var gapcost = $('#gapcosts_' + val).toggle();
 
-        // Select the option
-        gapcost.val(this.params['gapcost']);
+        // Requires a space between characters
+        cost = this.params['gapcost'].split("").join(" ");
+        gapcost.val(cost);
     },
 
     _select_composition: function () {
