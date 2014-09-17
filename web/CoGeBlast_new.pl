@@ -637,6 +637,7 @@ sub blast_search {
     my $expect     = $opts{expect};
     my $job_title  = $opts{job_title};
     my $wordsize   = $opts{wordsize};
+    my $type       = $opts{type};
 
     #$wordsize=11 if $program eq "blastn";
     my $comp         = $opts{comp};
@@ -711,9 +712,10 @@ sub blast_search {
         zchaining    => $zchaining,
         zthreshold   => $zthreshold,
         zmask        => $zmask,
+        type         => $type,
 
         #Genomes
-        dsgid      => $blastable
+        dsgid        => $blastable,
     );
 
     # Optional parameters

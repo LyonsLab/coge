@@ -576,7 +576,7 @@ function get_params(){
 
     var comp = $('#comp_adj').val();
     var seq = $('#seq_box').val();
-    return {w : word_size, e : expect,g : gapcost,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq, zw : zwordsize, zgs : zgap_start, zge : zgap_extension, zc : zchaining, zt : zthreshold, zm : zmask, fq : filter_query, rl : reslimit};
+    return {w : word_size, e : expect,g : gapcost,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq, zw : zwordsize, zgs : zgap_start, zge : zgap_extension, zc : zchaining, zt : zthreshold, zm : zmask, fq : filter_query, rl : reslimit, type: radio };
 }
 
 function get_ncbi_params(){
@@ -711,6 +711,7 @@ function blastOff(dialog, results, basename) {
         blastable:      blastable_db,
         fid:            pageObj.fid,
         width:          page_width,
+        type:           params.type,
         color_hsps:     $('#color_by').val(),
     };
 
