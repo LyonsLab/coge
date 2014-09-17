@@ -1279,6 +1279,7 @@ function Blast(params) {
         limit: 100,
         gapcost: null,
         filtered: 'T',
+        composition: 1,
         program: null
     };
 
@@ -1335,6 +1336,10 @@ $.extend(Blast.prototype, {
         gapcost.val(this.params['gapcost']);
     },
 
+    _select_composition: function () {
+        $("#comp_adj").val(this.params['composition']);
+    },
+
     update_display: function () {
         // Select the blast type (nucleotide vs protein)
         this._select_type();
@@ -1361,7 +1366,10 @@ $.extend(Blast.prototype, {
         this._select_filtered();
 
         // Selects the gap cost select and option
-        this._select_gapcost($("#match_score"));
+        this._select_gapcost($("#matrix"));
+
+        // Select the composition adjustments
+        this._select_composition();
     }
 });
 
