@@ -1262,10 +1262,10 @@ function org_search(desc_search){
 }
 
 
-function select_by_value($elements, value) {
+function select_by_value($elements, property, value) {
     return $elements.filter(function() {
         return this.value === value;
-    }).prop('checked', true);
+    }).prop(property, true);
 }
 
 function Blast(params) {
@@ -1282,7 +1282,7 @@ function Blast(params) {
 $.extend(Blast.prototype, {
     _select_type: function () {
         var elements = $('input[name="cogeblast"]');
-        select_by_value(elements, this.params['type']);
+        select_by_value(elements, 'checked', this.params['type']);
     },
 
     _select_program: function () {
@@ -1291,7 +1291,7 @@ $.extend(Blast.prototype, {
 
     _select_color_by: function () {
         var elements = $('input[name="color_by"]');
-        select_by_value(elements, this.params['color']);
+        select_by_value(elements, 'checked', this.params['color']);
     },
 
     update_display: function () {
