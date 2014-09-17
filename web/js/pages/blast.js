@@ -1275,6 +1275,7 @@ function Blast(params) {
         type: 'coge_blast_type_n',
         match_score: null,
         evalue: 1e-3,
+        word_size: 8,
         program: null
     };
 
@@ -1306,6 +1307,10 @@ $.extend(Blast.prototype, {
         select_by_value(elements, 'selected', this.params['evalue']);
     },
 
+    _select_word_size: function () {
+        $("#word_size").val(this.params['wordsize']);
+    },
+
     update_display: function () {
         // Select the blast type (nucleotide vs protein)
         this._select_type();
@@ -1321,6 +1326,9 @@ $.extend(Blast.prototype, {
 
         // Set the e-value parameter
         this._select_evalue();
+
+        // Set the word size parameter
+        this._select_word_size();
     }
 });
 
