@@ -1452,6 +1452,21 @@ $.extend(Blast.prototype, {
     }
 });
 
+function getParamsFromUrl() {
+    var query = location.search.substr(1),
+        data = query.split(/[&;]/),
+        params = {},
+        pair, i;
+
+    for(i = 0; i < data.length; i++) {
+        pair = data[i].split("=");
+        params[pair[0]] = pair[1];
+    }
+
+    return params;
+}
+
+
 function adjust_blast_types(val){
     if(val == 1){
         if($('#ncbi_blast_type').is(":hidden")){
