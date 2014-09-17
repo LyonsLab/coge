@@ -1199,6 +1199,8 @@ function blast_param_on_select(which_type, val) {
     program = $('#'+radio).val();
     database_param(program); //database_param([radio], ['database']);
 
+    var promise;
+
     $('#blast_parameters').hide();
     $('#blastz_parameters').hide();
 
@@ -1208,23 +1210,32 @@ function blast_param_on_select(which_type, val) {
     else {
         $('#blast_parameters').toggle();
         if ((program == 'blastx') || (program == 'tblastx')) {
-            blast_param("blast_type_p", 1, which_type); //blast_param(['args__blast_type','args__'+"blast_type_p",'args__translate','args__1','args__version','args__'+which_type],[animate_params]);
-            $('#word_size').val(3);
+            promise = blast_param("blast_type_p", 1, which_type); //blast_param(['args__blast_type','args__'+"blast_type_p",'args__translate','args__1','args__version','args__'+which_type],[animate_params]);
+            promise.then(function() {
+                $('#word_size').val(3);
+            });
         }
         else if ((program == 'blastp') || (program == 'tblastn')) {
-            blast_param("blast_type_p", 0, which_type); //blast_param(['args__blast_type','args__'+"blast_type_p",'args__version','args__'+which_type],[animate_params]);
-            $('#word_size').val(3);
+            promise = blast_param("blast_type_p", 0, which_type); //blast_param(['args__blast_type','args__'+"blast_type_p",'args__version','args__'+which_type],[animate_params]);
+            promise.then(function() {
+                $('#word_size').val(3);
+            })
         }
         else {
-            blast_param('', 0, which_type); //blast_param(['args__version','args__'+which_type],[animate_params]);
-            if (program == "dcmega") {
-                $('#word_size').val(11);
-            }
-            else {
-                $('#word_size').val(8);
-            }
+            promise = blast_param('', 0, which_type); //blast_param(['args__version','args__'+which_type],[animate_params]);
+
+            promise.then(function() {
+                if (program == "dcmega") {
+                    $('#word_size').val(11);
+                }
+                else {
+                    $('#word_size').val(8);
+                }
+            })
         }
     }
+
+    return promise;
 }
 
 function org_search(desc_search){
@@ -1415,6 +1426,8 @@ $.extend(Blast.prototype, {
     },
 
     update_display: function () {
+        var self = this;
+
         // Select the blast type (nucleotide vs protein)
         this._select_type();
 
@@ -1424,12 +1437,18 @@ $.extend(Blast.prototype, {
         // Select the blast hit coloring scheme
         this._select_color_by();
 
-        switch (this.params['program']) {
-            case 'lastz': this.update_blastz(); break;
-            case 'tblastx': this.update_protein(); break;
-            case 'tblastn': this.update_protein(); break;
-            default: this.update_default(); break;
-        }
+        // Dispatch fetch the blast parameters'
+        var promise = blast_param_on_select('coge_radio', 'coge');
+
+        // Set the options after the parameters have been returned
+        promise.always(function() {
+            switch (self.params['program']) {
+                case 'lastz': self.update_blastz(); break;
+                case 'tblastx': self.update_protein(); break;
+                case 'tblastn': self.update_protein(); break;
+                default: self.update_default(); break;
+            }
+        })
     }
 });
 
