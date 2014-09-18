@@ -590,7 +590,7 @@ function get_ncbi_params(){
         var num1 = match_mismatch.substr(0,1);
         var num2 = match_mismatch.substr(2);
     }
-    var gapcost = $('#ncbi_gapcosts_'+num1+num2).val();
+    var gapcost = escape($('#ncbi_gapcosts_'+num1+num2).val());
     var job_title = escape($('#job_title').val());
     var program = $('#'+radio).val();
 
@@ -1001,31 +1001,41 @@ function handle_results(selector, data) {
 }
 
 function ncbi_blast(url) {
+    var params = get_ncbi_params(),
+        pairs = [],
+        options,
+        request;
+
     if (url == 1) {
-        alert('You have not selected a BLAST program! Please select a program to run.');
+        return alert('You have not selected a BLAST program! Please select a program to run.');
     }
-    else {
-        var params = get_ncbi_params();
-        seq = params.s;
-        seq = seq.replace(/\n/,'%0D');
-        db = params.db;
-        expect = params.e;
-        job_title = params.j;
-        word_size = params.w;
-        comp = params.c;
-        matrix = params.m
-        match_score = params.mm;
 
-        url = url+'&DATABASE='+db+'&EXPECT='+expect+'&QUERY='+seq+'&JOB_TITLE='+job_title+'&WORD_SIZE='+word_size;
+    options = {
+        "DATABASE": params.db,
+        "EXPECT": params.e,
+        "QUERY": params.s.replace(/\n/,'%0D'),
+        "WORD_SIZE": params.w,
+        "JOB_TITLE": params.j
+    };
 
-        if (program == 'blastn') {
-            window.open(url+'&MATCH_SCORES='+match_score);
-        }
-        else {
-            if ($('#comp_adj').is(':hidden')) {window.open(url+'&MATRIX_NAME='+matrix);}
-            else {window.open(url+'&MATRIX_NAME='+matrix+'&COMPOSITION_BASED_STATISTICS='+comp);}
+    if (program == 'blastn') {
+        options["MATCH_SCORES"] = params.mm
+    } else {
+        options["MATRIX_NAME"] = params.matrix;
+
+        if (!$('#comp_adj').is(':hidden')) {
+            options["COMPOSITION_BASED_STATISTICS"] = params.c;
         }
     }
+
+    for(key in options) {
+        if (options.hasOwnProperty(key)) {
+            pairs.push(concat.call(key, "=", options[key]));
+        }
+    }
+
+    request = concat.call(url, "&", pairs.join("&"));
+    location.href = request;
 }
 
 $.fn.getLength = function(val){
