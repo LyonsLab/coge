@@ -590,7 +590,7 @@ function get_ncbi_params(){
         var num1 = match_mismatch.substr(0,1);
         var num2 = match_mismatch.substr(2);
     }
-    var gapcost = escape($('#ncbi_gapcosts_'+num1+num2).val());
+    var gapcost = $('#ncbi_gapcosts_'+num1+num2).val();
     var job_title = escape($('#job_title').val());
     var program = $('#'+radio).val();
 
@@ -1015,6 +1015,7 @@ function ncbi_blast(url) {
         "EXPECT": params.e,
         "QUERY": params.s.replace(/\n/,'%0D'),
         "WORD_SIZE": params.w,
+        "GAP_COSTS": params.g,
         "JOB_TITLE": params.j
     };
 
