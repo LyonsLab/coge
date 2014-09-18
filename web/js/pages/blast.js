@@ -1297,6 +1297,20 @@ function select_by_value($elements, property, value) {
     }).prop(property, true);
 }
 
+
+function Ncbi(params) {
+    this.params = params || {};
+
+    this.params = $.extend(this.defaults, this.params);
+}
+
+$.extend(Ncbi.prototype, {
+    update_display: function () {
+
+    }
+});
+
+
 function Blast(params) {
     this.params = params || {};
 
