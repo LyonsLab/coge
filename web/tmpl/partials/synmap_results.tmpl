@@ -13,12 +13,12 @@
         </div>
     </tmpl_if>
 <div id="data">
+<!--
     <ul>
         <li class="small"><a href="#results-1">Current Version</a></li>
-        <!--<li class="small"><a href="#results-2">Test Version</a></li>-->
+        <li class="small"><a href="#results-2">Test Version</a></li>
     </ul>
 
-<!--
 <div id="results-2">
     <div class="info padded" style="padding-bottom: 15px;">
     This is the new, experimental CoGe dotplot viewer!<br><br>It employs the latest HTML5 browser technology
@@ -67,7 +67,7 @@
     </div>
 </div>
 -->
-<div id="results-1" class="hidden">
+<div id="results-1">
     <div class="ui-widget-content ui-corner-all padded" id="synmap_zoom_box"
     style="width: 350px; z-index: 1;">Zoom SynMap:
         <table class="small">
@@ -231,14 +231,14 @@ $(document).ready(function(){
         histogram = synmap.Histogram("#histogram"),
         MAXIMUM_SIZE = 268435456;
 
-    $("#data").tabs({
-        select: function(event, ui) {
-            if (ui.index === 1 && !plots) {
-                setTimeout(setup, 200);
-            }
-        }
-    });
-
+//    $("#data").tabs({
+//        select: function(event, ui) {
+//            if (ui.index === 1 && !plots) {
+//                setTimeout(setup, 200);
+//            }
+//        }
+//    });
+//
 //    // Swap tabs if BETA is set
 //    $("#data").tabs("select", (+BETA) ? 1 : 0);
 //
