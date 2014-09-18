@@ -1035,6 +1035,12 @@ function ncbi_blast(url) {
         }
     }
 
+    // Find the selected tab
+    var hash = $(".ui-tabs-selected:first a").attr("href");
+    var parts = location.href.split(/[#?]/g);
+
+    history.pushState(null, null, concat.call(parts[0], "?", pairs.join("&"), hash));
+
     request = concat.call(url, "&", pairs.join("&"));
     location.href = request;
 }
