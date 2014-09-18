@@ -1368,8 +1368,10 @@ $.extend(Blast.prototype, {
         var gapcost = $('#gapcosts_' + val).toggle();
 
         // Requires a space between characters
-        cost = this.params['gapcost'].split("").join(" ");
-        gapcost.val(cost);
+        if (this.params['gapcost']) {
+            cost = this.params['gapcost'].split("").join(" ");
+            gapcost.val(cost);
+        }
     },
 
     _select_composition: function () {
