@@ -3270,17 +3270,17 @@ sub get_results {
         });
     }
 
-    unless(-r $json_file and -s $json_file ) {
-        return encode_json({
-            error => "The json file could not be found."
-        });
-    }
+    #unless(-r $json_file and -s $json_file ) {
+    #    return encode_json({
+    #        error => "The json file could not be found."
+    #    });
+    #}
 
-    if($ks_type and -s $hist_json_file == 0) {
-        return encode_json({
-            error => "The histogram json file could not be found."
-        });
-    }
+    #if($ks_type and -s $hist_json_file == 0) {
+    #    return encode_json({
+    #        error => "The histogram json file could not be found."
+    #    });
+    #}
 
     my $log = $cogeweb->logfile;
     $log =~ s/$DIR/$URL/;
