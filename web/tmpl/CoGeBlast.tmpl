@@ -207,6 +207,7 @@
                         button.unbind().click(run_coge_blast).html("Run CoGe Blast");
                         break;
                     case 1:
+                        blast_param_on_select('ncbi_radio','ncbi');
                         button.unbind().click(function() {
                             select_blast();
                             ga('send', 'event', 'cogeblast', 'run', 'ncbi');
