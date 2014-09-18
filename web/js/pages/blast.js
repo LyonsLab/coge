@@ -591,7 +591,7 @@ function get_ncbi_params(){
         var num2 = match_mismatch.substr(2);
     }
     var gapcost = $('#ncbi_gapcosts_'+num1+num2).val();
-    var job_title = $('#job_title').val();
+    var job_title = escape($('#job_title').val());
     var program = $('#'+radio).val();
 
     var matrix = $('#ncbi_matrix').val();
@@ -1399,7 +1399,7 @@ $.extend(Blast.prototype, {
         this._select_gapcost($("#match_score"));
     },
 
-    update_blastz: function (argument) {
+    update_blastz: function () {
         // Set blastz specific options
         this._select_blastz_options();
     },
