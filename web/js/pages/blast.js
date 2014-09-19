@@ -711,7 +711,7 @@ function blastOff(dialog, results, basename) {
         fid:            pageObj.fid,
         width:          page_width,
         type:           params.type,
-        color_hsps:     $('#color_by').val(),
+        color_hsps:     $('#color_by:checked').val(),
     };
 
     $.ajax({
