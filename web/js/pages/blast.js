@@ -80,6 +80,7 @@ function blast_param(blast_type, translate, version) {
 
 function database_param(program) {
     var cache_id = program,
+        database = $("#database"),
         deferred = $.Deferred(),
         entry;
 
@@ -87,7 +88,7 @@ function database_param(program) {
         entry = cache[cache_id];
         deferred.resolve(entry);
 
-        $('#database').html(entry);
+        database.html(entry);
 
         return deferred.promise();
     }
@@ -99,7 +100,7 @@ function database_param(program) {
         },
         success : function(data) {
             cache[cache_id] = data;
-            $('#database').html(data);
+            database.html(data);
         },
     });
 }
@@ -1221,7 +1222,7 @@ function get_seq(which_type) {
 }
 
 function blast_param_on_select(which_type, val) {
-    var promise
+    var promise,
         wordsize = $("#word_size");
 
     radio = get_radio(which_type, val);
