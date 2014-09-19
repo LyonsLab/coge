@@ -1297,6 +1297,64 @@ function select_by_value($elements, property, value) {
     }).prop(property, true);
 }
 
+var TypeSelectorMixin = {
+    _select_type: function () {
+        var elements = this.root.find('input[name="cogeblast"]');
+        console.log(elements);
+        select_by_value(elements, 'checked', this.params['type']);
+    },
+
+    _select_program: function () {
+        var program = this.params['program'];
+        console.log(program);
+        this.root.find("#" + this.params['type']).val(program);
+    }
+};
+
+var ProteinMixin = {
+    _select_composition: function () {
+        this.root.find("#comp_adj").val(this.params['composition']);
+    }
+};
+
+var ScoringMixin = {
+    // This belongs in NucleotideMixin
+    _select_match_score: function () {
+        var elements = this.root.find('#match_score option');
+        select_by_value(elements, 'selected', this.params['match_score']);
+    },
+
+    // This belongs in ProteinMixin
+    _select_matrix_score: function () {
+        var elements = this.root.find('#matrix option');
+        select_by_value(elements, 'selected', this.params['matrix_score']);
+    },
+
+    _select_evalue: function () {
+        var elements = this.root.find('#e_value option');
+        select_by_value(elements, 'selected', this.params['evalue']);
+    },
+
+    // Tightly coupled to matrix/match scoring for picking the gapcost select
+    _select_gapcost: function($element) {
+        var matchPattern = /[,]/g;
+        var val = $element.val().replace(matchPattern, "");
+
+        //FIXME: This should really only be one gap cost element
+        this.root.find('.gapcosts').hide()
+        var gapcost = this.root.find('#gapcosts_' + val).toggle();
+
+        // Requires a space between characters
+        if (this.params['gapcost']) {
+            cost = this.params['gapcost'].split("").join(" ");
+            gapcost.val(cost);
+        }
+    },
+
+    _select_word_size: function () {
+        this.root.find("#word_size").val(this.params['wordsize']);
+    }
+};
 
 function Ncbi(params) {
     this.params = params || {};
