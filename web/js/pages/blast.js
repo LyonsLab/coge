@@ -1019,6 +1019,13 @@ function ncbi_blast(url) {
         "JOB_TITLE": params.j
     };
 
+    var radio = get_radio('ncbi_radio','ncbi');
+
+    //FIXME: CoGe specific options should not be included in ncbi-blast url
+    options = $.extend(options, {
+        program: $("#" + radio).val()
+    });
+
     if (program == 'blastn') {
         options["MATCH_SCORES"] = params.mm
     } else {
