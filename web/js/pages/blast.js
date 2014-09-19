@@ -1300,7 +1300,6 @@ function select_by_value($elements, property, value) {
 var TypeSelectorMixin = {
     _select_type: function () {
         var elements = this.root.find('input[name="cogeblast"]');
-        console.log(elements);
         select_by_value(elements, 'checked', this.params['type']);
     },
 
@@ -1345,7 +1344,7 @@ var ScoringMixin = {
 
         // Requires a space between characters
         if (this.params['gapcost']) {
-            cost = this.params['gapcost'].split("").join(" ");
+            cost = this.params['gapcost'].split(/\s*/).join(" ");
             gapcost.val(cost);
         }
     },
