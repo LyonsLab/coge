@@ -1023,7 +1023,8 @@ function ncbi_blast(url) {
 
     //FIXME: CoGe specific options should not be included in ncbi-blast url
     options = $.extend(options, {
-        program: $("#" + radio).val()
+        program: $("#" + radio).val(),
+        type: radio
     });
 
     if (program == 'blastn') {
@@ -1317,9 +1318,8 @@ function select_by_value($elements, property, value) {
 }
 
 var TypeSelectorMixin = {
-    _select_type: function () {
-        var elements = this.root.find('input[name="cogeblast"]');
-        select_by_value(elements, 'checked', this.params['type']);
+    _select_type: function ($elements) {
+        select_by_value($elements, 'checked', this.params['type']);
     },
 
     _select_program: function () {
@@ -1453,7 +1453,8 @@ $.extend(Ncbi.prototype, TypeSelectorMixin, ScoringMixin, ProteinMixin, {
         var self = this;
 
         // Select the blast type (nucleotide vs protein)
-        this._select_type();
+        var elements = this.root.find('input[name="ncbiblast"]');
+        this._select_type(elements);
 
         // Set the blast tool being used (depends on type)
         this._select_program();
@@ -1575,7 +1576,8 @@ $.extend(Blast.prototype, TypeSelectorMixin, ScoringMixin, ProteinMixin, {
         var self = this;
 
         // Select the blast type (nucleotide vs protein)
-        this._select_type();
+        var elements = this.root.find('input[name="cogeblast"]');
+        this._select_type(elements);
 
         // Set the blast tool being used (depends on type)
         this._select_program();
