@@ -998,6 +998,7 @@ function handle_results(selector, data) {
     check_display();
 }
 
+//FIXME: separate ncbi and coge parameters
 function ncbi_blast(url) {
     var params = get_ncbi_params(),
         pairs = [],
@@ -1395,7 +1396,6 @@ function Ncbi(selector, params) {
 $.extend(Ncbi.prototype, TypeSelectorMixin, ScoringMixin, ProteinMixin, {
     _select_filter: function () {
         var elements = this.root.find("#complexity option");
-        console.log(elements);
         select_by_value(elements, 'selected', this.params['filter']);
     },
 

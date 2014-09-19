@@ -201,31 +201,6 @@
 
         // Initialize CoGe Blast
         $("#run_blast").click(run_coge_blast);
-
-        var queryParams = getParamsFromUrl();
-
-        var analysis = new Blast("#coge-params", {
-            type: queryParams['type'],
-            color: queryParams['color_hsps'],
-            match_score: queryParams['match_score'],
-            matrix_score: queryParams['matrix'],
-            evalue: queryParams['expect'],
-            wordsize: queryParams['wordsize'],
-            limit: queryParams['resultslimit'],
-            gapcost: queryParams['gapcost'],
-            filtered: queryParams['filter_query'],
-            composition: queryParams['comp'],
-            blastz_wordsize: queryParams['zwordsize'],
-            blastz_gap_start: queryParams['zgap_start'],
-            blastz_gap_extension: queryParams['zgap_exten'],
-            blastz_chaining: queryParams['zchaining'],
-            blastz_threshold: queryParams['zthreshold'],
-            blastz_mask: queryParams['zmask'],
-            program: queryParams['program']
-        });
-
-        analysis.update_display();
-
         if (+"<tmpl_var name=RUN>") {
             run_coge_blast();
         }
@@ -240,10 +215,13 @@
                 seqObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=DSGID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>, pageObj.seqview,'<TMPL_VAR NAME=CHR>',<TMPL_VAR NAME=RC>);
             }
         }
+
         //TODO - handle js object error when checking for value when it hasn't been instantiated
         else{
             seqObj = new Object();
         }
+
+        var initialized = false;
 
         $("#tabs").tabs({
             show: function(event, ui) {
@@ -252,6 +230,33 @@
                     case 0:
                         adjust_blast_types();
                         button.unbind().click(run_coge_blast).html("Run CoGe Blast");
+
+                        if (!initialized) {
+                            var queryParams = getParamsFromUrl();
+
+                            var analysis = new Blast("#coge-params", {
+                                type: queryParams['type'],
+                                color: queryParams['color_hsps'],
+                                match_score: queryParams['match_score'],
+                                matrix_score: queryParams['matrix'],
+                                evalue: queryParams['expect'],
+                                wordsize: queryParams['wordsize'],
+                                limit: queryParams['resultslimit'],
+                                gapcost: queryParams['gapcost'],
+                                filtered: queryParams['filter_query'],
+                                composition: queryParams['comp'],
+                                blastz_wordsize: queryParams['zwordsize'],
+                                blastz_gap_start: queryParams['zgap_start'],
+                                blastz_gap_extension: queryParams['zgap_exten'],
+                                blastz_chaining: queryParams['zchaining'],
+                                blastz_threshold: queryParams['zthreshold'],
+                                blastz_mask: queryParams['zmask'],
+                                program: queryParams['program']
+                            });
+
+                            analysis.update_display();
+                            initialized = true;
+                        }
                         break;
                     case 1:
                         adjust_blast_types(1);
@@ -260,6 +265,26 @@
                             select_blast();
                             ga('send', 'event', 'cogeblast', 'run', 'ncbi');
                         }).html("Run NCBI Blast");
+
+                        if (!initialized) {
+                            var queryParams = getParamsFromUrl();
+
+                            var analysis = new Ncbi("#ncbi-params", {
+                                type: queryParams['type'],
+                                match_score: queryParams['MATCH_SCORES'],
+                                matrix_score: queryParams['MATRIX_NAME'],
+                                evalue: queryParams['expect'],
+                                wordsize: queryParams['WORD_SIZE'],
+                                limit: queryParams['resultslimit'],
+                                gapcost: queryParams['GAP_COSTS'],
+                                filter: queryParams['filter'],
+                                composition: queryParams['comp'],
+                                program: queryParams['program']
+                            });
+
+                            analysis.update_display();
+                            initialized = true;
+                        }
                         break;
                 }
             }
