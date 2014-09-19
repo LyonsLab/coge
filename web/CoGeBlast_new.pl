@@ -693,6 +693,12 @@ sub blast_search {
 
     my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
 
+    my $gap;
+
+    if ( $gapcost && $gapcost =~ /^(\d+)\s+(\d+)/ ) {
+        $gap = qq[$1,$2];
+    }
+
     my %params = (
         color_hsps   => $color_hsps,
         program      => $program,
@@ -701,7 +707,7 @@ sub blast_search {
         wordsize     => $wordsize,
         comp         => $comp,
         matrix       => $matrix,
-        gapcost      => $gapcost,
+        gapcost      => $gap,
         match_score  => $match_score,
         filter_query => $filter_query,
         resultslimit => $resultslimit,
