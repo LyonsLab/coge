@@ -1394,39 +1394,11 @@ function Blast(selector, params) {
     this.params = $.extend(this.defaults, this.params);
     this.root = $(selector);
 };
-
-$.extend(Blast.prototype, {
-    _select_type: function () {
-        var elements = $('input[name="cogeblast"]');
-        select_by_value(elements, 'checked', this.params['type']);
-    },
-
-    _select_program: function () {
-        $("#" + this.params['type']).val(this.params['program']);
-    },
-
+//FIXME: Extract similar functionality into a Mixin
+$.extend(Blast.prototype, TypeSelectorMixin, ScoringMixin, ProteinMixin, {
     _select_color_by: function () {
         var elements = $('input[name="color_by"]');
         select_by_value(elements, 'checked', this.params['color']);
-    },
-
-    _select_match_score: function () {
-        var elements = $('#match_score option');
-        select_by_value(elements, 'selected', this.params['match_score']);
-    },
-
-    _select_matrix_score: function () {
-        var elements = $('#matrix option');
-        select_by_value(elements, 'selected', this.params['matrix_score']);
-    },
-
-    _select_evalue: function () {
-        var elements = $('#e_value option');
-        select_by_value(elements, 'selected', this.params['evalue']);
-    },
-
-    _select_word_size: function () {
-        $("#word_size").val(this.params['wordsize']);
     },
 
     _select_limit: function () {
@@ -1436,25 +1408,6 @@ $.extend(Blast.prototype, {
     _select_filtered: function () {
         var elements = $('input[name="filter_query"]');
         select_by_value(elements, 'checked', this.params['filtered'])
-    },
-
-    _select_gapcost: function($element) {
-        var matchPattern = /[,]/g;
-        var val = $element.val().replace(matchPattern, "");
-
-        //FIXME: This should really only be one gap cost element
-        $('.gapcosts').hide()
-        var gapcost = $('#gapcosts_' + val).toggle();
-
-        // Requires a space between characters
-        if (this.params['gapcost']) {
-            cost = this.params['gapcost'].split("").join(" ");
-            gapcost.val(cost);
-        }
-    },
-
-    _select_composition: function () {
-        $("#comp_adj").val(this.params['composition']);
     },
 
     _select_blastz_options: function () {
@@ -1531,7 +1484,7 @@ $.extend(Blast.prototype, {
         // Select the blast hit coloring scheme
         this._select_color_by();
 
-        // Dispatch fetch the blast parameters'
+        // dispatch fetch the blast parameters'
         var promise = blast_param_on_select('coge_radio', 'coge');
 
         // Set the options after the parameters have been returned
