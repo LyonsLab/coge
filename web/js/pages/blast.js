@@ -1382,7 +1382,7 @@ function Ncbi(selector, params) {
         wordsize: 8,
         limit: 100,
         gapcost: null,
-        filtered: 1,
+        filter: 0,
         composition: 1,
         program: null
     };
@@ -1393,6 +1393,12 @@ function Ncbi(selector, params) {
 }
 
 $.extend(Ncbi.prototype, TypeSelectorMixin, ScoringMixin, ProteinMixin, {
+    _select_filter: function () {
+        var elements = this.root.find("#complexity option");
+        console.log(elements);
+        select_by_value(elements, 'selected', this.params['filter']);
+    },
+
     update_nucleotide: function () {
         // Set the match score to be used
         this._select_match_score();
@@ -1403,8 +1409,8 @@ $.extend(Ncbi.prototype, TypeSelectorMixin, ScoringMixin, ProteinMixin, {
         // Set the word size parameter
         this._select_word_size();
 
-        // Set whether the query sequence will be filtered
-        //this._select_filtered();
+        // Set the filter to be used
+        this._select_filter();
 
         // Selects the gap cost select and option
         this._select_gapcost(this.root.find("#match_score"));
@@ -1420,8 +1426,8 @@ $.extend(Ncbi.prototype, TypeSelectorMixin, ScoringMixin, ProteinMixin, {
         // Set the word size parameter
         this._select_word_size();
 
-        // Set whether the query sequence will be filtered
-        //this._select_filtered();
+        // Set the filter to be used
+        this._select_filter();
 
         // Selects the gap cost select and option
         this._select_gapcost(this.root.find("#matrix"));
