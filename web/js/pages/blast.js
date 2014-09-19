@@ -1393,8 +1393,62 @@ function Ncbi(selector, params) {
 }
 
 $.extend(Ncbi.prototype, TypeSelectorMixin, ScoringMixin, ProteinMixin, {
-    update_display: function () {
+    update_nucleotide: function () {
+        // Set the match score to be used
+        this._select_match_score();
 
+        // Set the e-value parameter
+        this._select_evalue();
+
+        // Set the word size parameter
+        this._select_word_size();
+
+        // Set whether the query sequence will be filtered
+        //this._select_filtered();
+
+        // Selects the gap cost select and option
+        this._select_gapcost(this.root.find("#match_score"));
+    },
+
+    update_default: function () {
+        // Set the matrix score to be used
+        this._select_matrix_score();
+
+        // Set the e-value parameter
+        this._select_evalue();
+
+        // Set the word size parameter
+        this._select_word_size();
+
+        // Set whether the query sequence will be filtered
+        //this._select_filtered();
+
+        // Selects the gap cost select and option
+        this._select_gapcost(this.root.find("#matrix"));
+
+        // Select the composition adjustments
+        this._select_composition();
+    },
+
+    update_display: function () {
+        var self = this;
+
+        // Select the blast type (nucleotide vs protein)
+        this._select_type();
+
+        // Set the blast tool being used (depends on type)
+        this._select_program();
+
+        // dispatch fetch the blast parameters'
+        var promise = blast_param_on_select('ncbi_radio', 'ncbi');
+
+        // Set the options after the parameters have been returned
+        promise.always(function() {
+            switch (self.params['program']) {
+                case 'blastn': self.update_nucleotide(); break;
+                default: self.update_default(); break;
+            }
+        })
     }
 });
 
