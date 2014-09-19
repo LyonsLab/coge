@@ -1370,7 +1370,21 @@ var ScoringMixin = {
 function Ncbi(selector, params) {
     this.params = params || {};
 
-    this.params = $.extend(this.defaults, this.params);
+    this.defaults = {
+        type: 'coge_blast_type_n',
+        match_score: null,
+        matrix_score: null,
+        evalue: 1e-3,
+        wordsize: 8,
+        limit: 100,
+        gapcost: null,
+        filtered: 1,
+        composition: 1,
+        program: null
+    };
+
+    //FIXME: Replace with underscore ie: _.map if library is included
+    this.params = map($.extend(this.defaults, this.params), unescape);
     this.root = $(selector);
 }
 
