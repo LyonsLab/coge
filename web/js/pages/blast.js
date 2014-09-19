@@ -1494,7 +1494,8 @@ function Blast(selector, params) {
         program: null
     };
 
-    this.params = $.extend(this.defaults, this.params);
+    //FIXME: Replace with underscore ie: _.map if library is included
+    this.params = map($.extend(this.defaults, this.params), unescape);
     this.root = $(selector);
 };
 
