@@ -1363,7 +1363,7 @@ var ScoringMixin = {
 
         // Requires a space between characters
         if (this.params['gapcost']) {
-            cost = this.params['gapcost'].split(/\s*/).join(" ");
+            cost = this.params['gapcost'].split(/[\s+,]/).join(" ");
             gapcost.val(cost);
         }
     },
