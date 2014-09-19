@@ -204,7 +204,7 @@
 
         var queryParams = getParamsFromUrl();
 
-        var analysis = new Blast({
+        var analysis = new Blast("#coge-params", {
             type: queryParams['type'],
             color: queryParams['color_hsps'],
             match_score: queryParams['match_score'],

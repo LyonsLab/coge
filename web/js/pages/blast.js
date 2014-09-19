@@ -1356,10 +1356,11 @@ var ScoringMixin = {
     }
 };
 
-function Ncbi(params) {
+function Ncbi(selector, params) {
     this.params = params || {};
 
     this.params = $.extend(this.defaults, this.params);
+    this.root = $(selector);
 }
 
 $.extend(Ncbi.prototype, {
@@ -1368,8 +1369,7 @@ $.extend(Ncbi.prototype, {
     }
 });
 
-
-function Blast(params) {
+function Blast(selector, params) {
     this.params = params || {};
 
     this.defaults = {
@@ -1392,6 +1392,7 @@ function Blast(params) {
     };
 
     this.params = $.extend(this.defaults, this.params);
+    this.root = $(selector);
 };
 
 $.extend(Blast.prototype, {
