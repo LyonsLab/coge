@@ -878,6 +878,8 @@ sub get_results {
     my $filter_query = $opts{filter_query};
     my $resultslimit = $opts{resultslimit} || $RESULTSLIMIT;
     my $basename     = $opts{basename};
+    my $type = $opts{type};
+
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(
         basename => $basename,
         tempdir  => $TEMPDIR
@@ -933,6 +935,7 @@ sub get_results {
         zchaining    => $zchaining,
         zthreshold   => $zthreshold,
         zmask        => $zmask,
+        type         => $type,
 
         #Genomes
         dsgid      => $blastable
