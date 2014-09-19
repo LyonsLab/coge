@@ -1306,7 +1306,6 @@ var TypeSelectorMixin = {
 
     _select_program: function () {
         var program = this.params['program'];
-        console.log(program);
         this.root.find("#" + this.params['type']).val(program);
     }
 };
@@ -1363,7 +1362,7 @@ function Ncbi(selector, params) {
     this.root = $(selector);
 }
 
-$.extend(Ncbi.prototype, {
+$.extend(Ncbi.prototype, TypeSelectorMixin, ScoringMixin, ProteinMixin, {
     update_display: function () {
 
     }
@@ -1394,7 +1393,7 @@ function Blast(selector, params) {
     this.params = $.extend(this.defaults, this.params);
     this.root = $(selector);
 };
-//FIXME: Extract similar functionality into a Mixin
+
 $.extend(Blast.prototype, TypeSelectorMixin, ScoringMixin, ProteinMixin, {
     _select_color_by: function () {
         var elements = $('input[name="color_by"]');
