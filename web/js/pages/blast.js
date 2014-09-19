@@ -1463,7 +1463,7 @@ $.extend(Blast.prototype, TypeSelectorMixin, ScoringMixin, ProteinMixin, {
         this._select_filtered();
 
         // Selects the gap cost select and option
-        this._select_gapcost($("#match_score"));
+        this._select_gapcost(this.root.find("#match_score"));
     },
 
     update_blastz: function () {
@@ -1488,7 +1488,7 @@ $.extend(Blast.prototype, TypeSelectorMixin, ScoringMixin, ProteinMixin, {
         this._select_filtered();
 
         // Selects the gap cost select and option
-        this._select_gapcost($("#matrix"));
+        this._select_gapcost(this.root.find("#matrix"));
 
         // Select the composition adjustments
         this._select_composition();
