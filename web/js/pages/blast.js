@@ -4,45 +4,41 @@ var concat = String.prototype.concat;
 var cache = {};
 
 function update_gapcost(pro) {
-    $('.gapcosts').hide();
-    if(pro)
-    {
-      var val = $('#matrix').val();
-      $('#gapcosts_'+val).toggle();
-    }
-    else
-    {
-      var str = $('#match_score').val();
+    var root = $("#coge-params");
+    root.find('.gapcosts').hide();
+    if(pro) {
+      var val = root.find('#matrix').val();
+      root.find('#gapcosts_'+val).toggle();
+    } else {
+      var str = root.find('#match_score').val();
       var num1 = str.substr(0,1);
       var num2 = str.substr(2);
-      $('#gapcosts_'+num1+num2).toggle();
+      root.find('#gapcosts_'+num1+num2).toggle();
     }
 }
 
 function update_gapcost_ncbi(pro) {
-    $('.ncbi_gapcosts').hide();
-    if(pro)
-    {
-      var val = $('#ncbi_matrix').val();
-      $('#ncbi_gapcosts_'+val).toggle();
-    }
-    else
-    {
-      var str = $('#ncbi_match_score').val();
+    var root = $("#ncbi-params");
+    root.find('.gapcosts').hide();
+
+    if(pro) {
+      var val = root.find('#_matrix').val();
+      root.find('#gapcosts_'+val).toggle();
+    } else {
+      var str = root.find('#match_score').val();
       var num1 = str.substr(0,1);
       var num2 = str.substr(2);
-       $('#ncbi_gapcosts_'+num1+num2).toggle();
+      root.find('#gapcosts_'+num1+num2).toggle();
     }
 }
 
 
 function animate_params (html,version,pro){
     if(version === "coge_radio") {
-        $('#pro_or_nu_param').hide(0).html(html).toggle();
+        $("#coge-params").find('#pro_or_nu_param').hide(0).html(html).toggle();
         update_gapcost(pro);
-    }
-    else{
-        $('#ncbi_pro_or_nu_param').hide(0).html(html).toggle();
+    } else {
+        $("#ncbi-params").find('#pro_or_nu_param').hide(0).html(html).toggle();
         update_gapcost_ncbi(pro);
     }
 }
@@ -544,58 +540,60 @@ function show_seq(seq,name,num,dsid,chr,start,stop, rc) {
 }
 
 function get_params(){
+    var root = $("#coge-params");
     radio = get_radio("coge_radio","coge");
-    var word_size = $('#word_size').val();
-    var expect = $('#e_value').val();
-    var match_mismatch = $('#match_score').val();
-    var matrix = $('#matrix').val();
-    var program = $('#'+radio).val();
+    var word_size = root.find('#word_size').val();
+    var expect = root.find('#e_value').val();
+    var match_mismatch = root.find('#match_score').val();
+    var matrix = root.find('#matrix').val();
+    var program = root.find('#'+radio).val();
 
     var gapcost;
     if (program == "blastn" || program == 'mega' || program == 'dcmega')
     {
         var num1 = match_mismatch.substr(0,1);
         var num2 = match_mismatch.substr(2);
-        gapcost = $('#gapcosts_'+num1+num2).val();
+        gapcost = root.find('#gapcosts_'+num1+num2).val();
     }
     else
     {
-        gapcost = $('#gapcosts_'+matrix).val();
+        gapcost = root.find('#gapcosts_'+matrix).val();
     }
 
     var filter_query = 0;
-    if ($('#filter_query')[0].checked) {filter_query=1;}
-    var reslimit = $('#resultslimit').val();
+    if (root.find('#filter_query')[0].checked) {filter_query=1;}
+    var reslimit = root.find('#resultslimit').val();
     //blastz parameters
-    var zwordsize = $('#blastz_wordsize').val();
-    var zgap_start = $('#blastz_gap_start').val();
-    var zgap_extension = $('#blastz_gap_extension').val();
-    var zchaining = $('#blastz_chaining').val();
-    var zthreshold = $('#blastz_threshold').val();
-    var zmask = $('#blastz_mask').val();
+    var zwordsize = root.find('#blastz_wordsize').val();
+    var zgap_start = root.find('#blastz_gap_start').val();
+    var zgap_extension = root.find('#blastz_gap_extension').val();
+    var zchaining = root.find('#blastz_chaining').val();
+    var zthreshold = root.find('#blastz_threshold').val();
+    var zmask = root.find('#blastz_mask').val();
 
-    var comp = $('#comp_adj').val();
+    var comp = root.find('#comp_adj').val();
     var seq = $('#seq_box').val();
     return {w : word_size, e : expect,g : gapcost,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq, zw : zwordsize, zgs : zgap_start, zge : zgap_extension, zc : zchaining, zt : zthreshold, zm : zmask, fq : filter_query, rl : reslimit, type: radio };
 }
 
 function get_ncbi_params(){
+    var root = $("#ncbi-params");
     radio = get_radio("ncbi_radio","ncbi");
-    var word_size = $('#ncbi_word_size').val();
-    var expect = $('#ncbi_e_value').val();
-    var db = $('#ncbi_db').val();
-    var match_mismatch = $('#ncbi_match_score').val();
+    var word_size = root.find('#word_size').val();
+    var expect = root.find('#e_value').val();
+    var db = root.find('#db').val();
+    var match_mismatch = root.find('#match_score').val();
     if (match_mismatch)
     {
         var num1 = match_mismatch.substr(0,1);
         var num2 = match_mismatch.substr(2);
     }
-    var gapcost = $('#ncbi_gapcosts_'+num1+num2).val();
-    var job_title = escape($('#job_title').val());
-    var program = $('#'+radio).val();
+    var gapcost = root.find('#gapcosts_'+num1+num2).val();
+    var job_title = escape(root.find('#job_title').val());
+    var program = root.find('#'+radio).val();
 
-    var matrix = $('#ncbi_matrix').val();
-    var comp = $('#ncbi_comp_adj').val();
+    var matrix = root.find('#matrix').val();
+    var comp = root.find('#comp_adj').val();
     var seq = $('#seq_box').val();
 
     return {w : word_size, e : expect, db : db,g : gapcost,j : job_title,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq};
@@ -1117,7 +1115,7 @@ $.fn.sortSelect = function(){
 
 function select_blast() {
     var radio = get_radio('ncbi_radio','ncbi');
-    //get_url([radio],[ncbi_blast]);
+
     $.ajax({
         data: {
             fname: 'get_url',
@@ -1129,9 +1127,13 @@ function select_blast() {
     });
 }
 
+//FIXME: Replace with a simplified jquery selector
 function get_radio(which_type,val){
-    if ($('#'+which_type)[0].checked) { return val+"_blast_type_n"; }
-    else { return val+"_blast_type_p"; }
+    if ($('#'+which_type)[0].checked) {
+        return val+"_blast_type_n";
+    } else {
+        return val+"_blast_type_p";
+    }
 }
 
 function get_seq(which_type) {
@@ -1141,7 +1143,8 @@ function get_seq(which_type) {
         featid = seqObj.featid,
         chr = seqObj.chr,
         deferred = $.Deferred(),
-        program = get_radio(which_type,"coge");
+        program = get_radio(which_type,"coge")
+        seqbox = $("#seq_box");
 
     if (featid) {
         cache_id = concat.call(featid, program, seqObj.upstream,
@@ -1149,11 +1152,12 @@ function get_seq(which_type) {
 
         if (cache[cache_id]) {
             deferred.resolve(cache[cache_id]);
-            $('#seq_box').val(cache[cache_id]);
+            seqbox.val(cache[cache_id]);
             return deferred.promise();
         }
 
-        $('#seq_box').val('Loading ...');
+        seqbox.val('Loading ...');
+
         return $.ajax({
             data: {
                 fname: 'get_sequence',
@@ -1166,11 +1170,10 @@ function get_seq(which_type) {
             },
             success : function(html) {
                 cache[cache_id] = html;
-                $('#seq_box').val(html);
+                seqbox.val(html);
             },
         });
-    }
-    else if (chr) {
+    } else if (chr) {
         $('#seq_box').val('Loading ...');
 
         cache_id = concat.call(dsid, dsgid, program, seqObj.upstream,
@@ -1197,9 +1200,9 @@ function get_seq(which_type) {
                 $('#seq_box').val(html);
             },
         });
-    }
-    else if (pageObj.locations) {
-        $('#seq_box').val('Loading ...');
+    } else if (pageObj.locations) {
+        seqbox.val('Loading ...');
+
         return $.ajax({
             data: {
                 fname: 'get_sequence',
@@ -1207,54 +1210,48 @@ function get_seq(which_type) {
                 locations: pageObj.locations
             },
             success : function(html) {
-                $('#seq_box').val(html);
+                seqbox.val(html);
             },
         });
-    }
-    else {
+    } else {
         deferred.resolve("");
         return deferred.promise();
-        //$('#seq_box').val('');
-        //return;
     }
 }
 
 function blast_param_on_select(which_type, val) {
+    var promise
+        wordsize = $("#word_size");
+
     radio = get_radio(which_type, val);
     program = $('#'+radio).val();
-    database_param(program); //database_param([radio], ['database']);
-
-    var promise;
+    database_param(program);
 
     $('#blast_parameters').hide();
     $('#blastz_parameters').hide();
 
     if (program == 'lastz') {
         $('#blastz_parameters').toggle();
-    }
-    else {
+    } else {
         $('#blast_parameters').toggle();
-        if ((program == 'blastx') || (program == 'tblastx')) {
-            promise = blast_param("blast_type_p", 1, which_type); //blast_param(['args__blast_type','args__'+"blast_type_p",'args__translate','args__1','args__version','args__'+which_type],[animate_params]);
-            promise.then(function() {
-                $('#word_size').val(3);
-            });
-        }
-        else if ((program == 'blastp') || (program == 'tblastn')) {
-            promise = blast_param("blast_type_p", 0, which_type); //blast_param(['args__blast_type','args__'+"blast_type_p",'args__version','args__'+which_type],[animate_params]);
-            promise.then(function() {
-                $('#word_size').val(3);
-            })
-        }
-        else {
-            promise = blast_param('', 0, which_type); //blast_param(['args__version','args__'+which_type],[animate_params]);
 
+        if ((program == 'blastx') || (program == 'tblastx')) {
+            promise = blast_param("blast_type_p", 1, which_type);
+            promise.then(function() {
+                wordsize.val(3);
+            });
+        } else if ((program == 'blastp') || (program == 'tblastn')) {
+            promise = blast_param("blast_type_p", 0, which_type);
+            promise.then(function() {
+                wordsize.val(3);
+            })
+        } else {
+            promise = blast_param('', 0, which_type);
             promise.then(function() {
                 if (program == "dcmega") {
-                    $('#word_size').val(11);
-                }
-                else {
-                    $('#word_size').val(8);
+                    wordsize.val(11);
+                } else {
+                    wordsize.val(8);
                 }
             })
         }
@@ -1562,7 +1559,7 @@ function adjust_blast_types(val){
 }
 
 function matrix_view (){
-    var matrix = $('#matrix').val();
+    var matrix = $("#coge-params").find('#matrix').val();
     window.open('MatrixView.pl?matrix='+matrix);
 }
 
