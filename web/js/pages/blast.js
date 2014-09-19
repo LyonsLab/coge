@@ -1291,6 +1291,19 @@ function org_search(desc_search){
 }
 
 
+function map(object, func) {
+    var key,
+        result = {};
+
+    for(key in object) {
+        if (object.hasOwnProperty(key)) {
+            result[key] = func(object[key]);
+        }
+    }
+
+    return result;
+}
+
 function select_by_value($elements, property, value) {
     return $elements.filter(function() {
         return this.value === String(value);
