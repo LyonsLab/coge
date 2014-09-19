@@ -1447,9 +1447,6 @@ $.extend(Blast.prototype, TypeSelectorMixin, ScoringMixin, ProteinMixin, {
     },
 
     update_default: function () {
-        // Select the blast hit coloring scheme
-        this._select_color_by();
-
         // Set the match score to be used
         this._select_match_score();
 
