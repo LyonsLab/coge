@@ -1051,8 +1051,8 @@ function ncbi_blast(url) {
         options["MATCH_SCORES"] = params.mm;
         coge_options["match_score"] = params.mm;
     } else {
-        options["MATRIX_NAME"] = params.matrix;
-        coge_options["matrix"] = params.matrix;
+        options["MATRIX_NAME"] = params.m;
+        coge_options["matrix"] = params.m;
 
         if (!$('#comp_adj').is(':hidden')) {
             options["COMPOSITION_BASED_STATISTICS"] = params.c;
