@@ -54,16 +54,25 @@ sub _filter_snps {
 }
 
 sub _samtools {
+    my $opts = shift;
     my $cmd = $CONFIG->{SAMTOOLS};
-    return "";
+    my $subtask = $opts->{subtask};
+
+    return qq[$cmd $subtask];
 }
 
 sub _bcftools {
+    my $opts = shift;
     my $cmd = $CONFIG->{BCFTOOLS};
-    return "";
+    my $subtask = $opts->{subtask};
+
+    return qq[$cmd $subtask];
 }
 
 sub _vcfutils {
+    my $opts = shift;
     my $cmd = $CONFIG->{VCFUTILS};
-    return "";
+    my $subtask = $opts->{subtask};
+
+    return qq[$cmd $subtask];
 }
