@@ -578,22 +578,29 @@ function get_params(){
 }
 
 function get_ncbi_params(){
+    var gapcost,
+        num1,
+        num2;
+
     var root = $("#ncbi-params");
     radio = get_radio("ncbi_radio","ncbi");
     var word_size = root.find('#word_size').val();
     var expect = root.find('#e_value').val();
     var db = root.find('#db').val();
     var match_mismatch = root.find('#match_score').val();
-    if (match_mismatch)
-    {
-        var num1 = match_mismatch.substr(0,1);
-        var num2 = match_mismatch.substr(2);
+    var matrix = root.find('#matrix').val();
+
+    if (match_mismatch) {
+        num1 = match_mismatch.substr(0,1);
+        num2 = match_mismatch.substr(2);
+        gapcost = root.find('#gapcosts_'+num1+num2).val();
+    } else {
+        gapcost = root.find('#gapcosts_'+matrix).val();
     }
-    var gapcost = root.find('#gapcosts_'+num1+num2).val();
+
     var job_title = escape(root.find('#job_title').val());
     var program = root.find('#'+radio).val();
 
-    var matrix = root.find('#matrix').val();
     var comp = root.find('#comp_adj').val();
     var seq = $('#seq_box').val();
     var filter = $("#complexity").val();
