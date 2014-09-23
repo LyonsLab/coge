@@ -1300,15 +1300,26 @@ function org_search(desc_search){
 
 function map(object, func) {
     var key,
-        result = {};
+        result = [];
 
     for(key in object) {
         if (object.hasOwnProperty(key)) {
-            result[key] = func(object[key]);
+            result.push(func(object[key], key, object));
         }
     }
 
     return result;
+}
+
+function toObject(pairs) {
+    return pairs.reduce(function(a, b) {
+        a[b[0]] = b[1];
+        return a;
+    }, {});
+}
+
+function unescapify(value, key) {
+    return [key, unescape(value)];
 }
 
 function select_by_value($elements, property, value) {
@@ -1391,7 +1402,7 @@ function Ncbi(selector, params) {
     };
 
     //FIXME: Replace with underscore ie: _.map if library is included
-    this.params = map($.extend(this.defaults, this.params), unescape);
+    this.params = toObject(map($.extend(this.defaults, this.params), unescapify));
     this.root = $(selector);
 }
 
@@ -1495,7 +1506,7 @@ function Blast(selector, params) {
     };
 
     //FIXME: Replace with underscore ie: _.map if library is included
-    this.params = map($.extend(this.defaults, this.params), unescape);
+    this.params = toObject(map($.extend(this.defaults, this.params), unescapify));
     this.root = $(selector);
 };
 
