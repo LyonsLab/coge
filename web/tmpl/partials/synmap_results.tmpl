@@ -13,6 +13,7 @@
         </div>
     </tmpl_if>
 <div id="data">
+<!--
     <ul>
         <li class="small"><a href="#results-1">Current Version</a></li>
         <li class="small"><a href="#results-2">Test Version</a></li>
@@ -65,7 +66,8 @@
         </h3>
     </div>
 </div>
-<div id="results-1" class="hidden">
+-->
+<div id="results-1">
     <div class="ui-widget-content ui-corner-all padded" id="synmap_zoom_box"
     style="width: 350px; z-index: 1;">Zoom SynMap:
         <table class="small">
@@ -229,205 +231,205 @@ $(document).ready(function(){
         histogram = synmap.Histogram("#histogram"),
         MAXIMUM_SIZE = 268435456;
 
-    $("#data").tabs({
-        select: function(event, ui) {
-            if (ui.index === 1 && !plots) {
-                setTimeout(setup, 200);
-            }
-        }
-    });
-
-    // Swap tabs if BETA is set
-    $("#data").tabs("select", (+BETA) ? 1 : 0);
-
-    function setup() {
-        var request = checkRequestSize(SYNTENIC_URL);
-            plots = synmap.PlotViewer(dotplot[0], "nucleotides");
-
-        synmap.Resizable(plots);
-        synmap.Draggable(plots);
-
-        request.then(function() {
-            var size;
-
-            if (request.status === 200) {
-                size = +request.getResponseHeader("Content-Length")
-            }
-
-            if (size > MAXIMUM_SIZE) {
-                message = "The analysis was too large to be displayed." +
-                    " Support for larger analyses will be added in the future.";
-                $("#dotplot-errors").html(message);
-                dotplot.remove();
-                $(".toolbar").remove();
-            } else {
-                sortHandler = function() {
-                    var sortfunc;
-
-                    dotplot.find(".spinner").remove();
-                    sortField= sortType.val();
-                    sortButton.attr("disabled", "disabled");
-
-                    if (sortField === "length") {
-                        sortfunc = sortBy(sortField);
-                    } else {
-                        sortfunc = inverse(sortBy(sortField, compareAlphaNumeric));
-                    }
-
-                    plots.setSort(sortfunc);
-                    plots.loadPlots(raw);
-                    plots.toggleLayer("syntenic_pairs", true);
-                    plots.toggleLayer("pairs", allpoints.is(":checked"));
-                    plots.toggleLayer("syntenic_blocks", boxes.is(":checked"));
-                };
-                $("#toolbar").buttonset();
-
-                sortType.on("change", function(e) {
-                    if ($(this).val() === sortField) {
-                        sortButton.attr("disabled", "disabled");
-                        sortButton.unbind();
-                    } else {
-                        sortButton.removeAttr("disabled");
-                        sortButton.on("click", sortHandler);
-                    }
-                });
-
-                allpoints.unbind().on("change", function() {
-                    plots.toggleLayer("pairs", $(this).is(":checked"));
-                });
-
-                boxes.on("click", function(e) {
-                    plots.toggleLayer("syntenic_blocks", $(this).is(":checked"));
-                });
-
-                $("#reset").on("click", function(e) {
-                    plots.reset();
-                });
-
-                var response = $.ajax({
-                    url: SYNTENIC_URL,
-                    dataType: "json"
-                });
-
-                //FIXME This should only be called when the file exists
-                response.then(function(json) {
-                    raw = json;
-                    var request = checkRequestSize(ALLPOINTS_URL);
-
-                    request.then(function() {
-                        var size;
-                        if (request.status === 200) {
-                            size = +request.getResponseHeader("Content-Length")
-                        }
-
-                        if (size < MAXIMUM_SIZE) {
-                            $.getJSON(ALLPOINTS_URL, function(json) {
-                                for (var layer in json.layers) {
-                                    raw.layers[layer] = json.layers[layer];
-                                    sortHandler();
-
-                                    //FIXME This should only be called when the file exists
-                                    $.getJSON(HIST_URL, loadHistogram);
-                                }
-                            });
-                        } else {
-                            var label = $("label[for=" +allpoints.attr("id") + "]");
-                            label.attr("title", "Can't display non-syntenic matches too much data.");
-                            label.css("border-bottom", "1px dotted");
-                            allpoints.attr("disabled", "disabled");
-                            allpoints.unbind();
-
-                            //FIXME This should only be called when the file exists
-                            $.getJSON(HIST_URL, loadHistogram);
-                        }
-
-                    });
-                    sortHandler();
-                });
-            }
-        });
-    }
-
-    function loadHistogram(json) {
-        $("#histogram").removeClass("hidden");
-
-        var select_data,
-            models,
-            selector;
-
-        models = _.map(json.datasets.histogram, function(dataset) {
-            return {
-                title: dataset.title,
-                data: synmap.Dataset(dataset.data)
-            };
-        });
-
-        transform_selector = synmap.Dropdown("#transform", [
-            { title: "No transformation", data: function(x) { return x; }},
-            { title: "Log10", data: transform }
-        ]);
-        transform_selector.selected(function(func, index) {
-            histogram.setTransform(func, index);
-            updateColors();
-        });
-
-        color_selector = coge.color.dropdown("#color_selector");
-        color_selector.selected(function(colorScheme) {
-            histogram.setColorScheme(colorScheme);
-            updateColors();
-        });
-        data_selector = synmap.Dropdown("#hist_data", models);
-        data_selector.selected(function(model) {
-            histogram.setModel(model);
-            var index = histogram.getSelectedTransform();
-            if (index !== undefined) {
-                transform_selector.select(index);
-            } else {
-                transform_selector.select(0);
-            }
-
-            updateColors();
-        });
-
-        histogram.onSelection(plots.filter);
-        // Update the model and color scheme
-        data_selector.select(0);
-        color_selector.select(0);
-
-        synmap.Resizable(histogram);
-        synmap.Draggable(histogram);
-
-        // attach color scheme updating to change event
-        plots.onChanged(updateColors);
-    }
-
-    //FIXME: This should be something that is controlled by the plot
-    function updateColors() {
-        var layer = plots.getLayer("syntenic_pairs"),
-            colors = histogram.colors(transform);
-
-        for(var key in colors) {
-            if (key in layer.lines) {
-                layer.lines[key].color = colors[key];
-            }
-        }
-
-        plots.update();
-    }
-
-    function transform(data) {
-        // non-zero min
-        var extent = d3.extent(data.filter(function(x) {
-            return x !== 0;
-        }));
-
-        return data.map(function(item) {
-            if (item === 0) item = extent[0];
-            if (item === 0) return 0;
-
-            return coge.utils.log10(item);
-        });
-    }
+//    $("#data").tabs({
+//        select: function(event, ui) {
+//            if (ui.index === 1 && !plots) {
+//                setTimeout(setup, 200);
+//            }
+//        }
+//    });
+//
+//    // Swap tabs if BETA is set
+//    $("#data").tabs("select", (+BETA) ? 1 : 0);
+//
+//    function setup() {
+//        var request = checkRequestSize(SYNTENIC_URL);
+//            plots = synmap.PlotViewer(dotplot[0], "nucleotides");
+//
+//        synmap.Resizable(plots);
+//        synmap.Draggable(plots);
+//
+//        request.then(function() {
+//            var size;
+//
+//            if (request.status === 200) {
+//                size = +request.getResponseHeader("Content-Length")
+//            }
+//
+//            if (size > MAXIMUM_SIZE) {
+//                message = "The analysis was too large to be displayed." +
+//                    " Support for larger analyses will be added in the future.";
+//                $("#dotplot-errors").html(message);
+//                dotplot.remove();
+//                $(".toolbar").remove();
+//            } else {
+//                sortHandler = function() {
+//                    var sortfunc;
+//
+//                    dotplot.find(".spinner").remove();
+//                    sortField= sortType.val();
+//                    sortButton.attr("disabled", "disabled");
+//
+//                    if (sortField === "length") {
+//                        sortfunc = sortBy(sortField);
+//                    } else {
+//                        sortfunc = inverse(sortBy(sortField, compareAlphaNumeric));
+//                    }
+//
+//                    plots.setSort(sortfunc);
+//                    plots.loadPlots(raw);
+//                    plots.toggleLayer("syntenic_pairs", true);
+//                    plots.toggleLayer("pairs", allpoints.is(":checked"));
+//                    plots.toggleLayer("syntenic_blocks", boxes.is(":checked"));
+//                };
+//                $("#toolbar").buttonset();
+//
+//                sortType.on("change", function(e) {
+//                    if ($(this).val() === sortField) {
+//                        sortButton.attr("disabled", "disabled");
+//                        sortButton.unbind();
+//                    } else {
+//                        sortButton.removeAttr("disabled");
+//                        sortButton.on("click", sortHandler);
+//                    }
+//                });
+//
+//                allpoints.unbind().on("change", function() {
+//                    plots.toggleLayer("pairs", $(this).is(":checked"));
+//                });
+//
+//                boxes.on("click", function(e) {
+//                    plots.toggleLayer("syntenic_blocks", $(this).is(":checked"));
+//                });
+//
+//                $("#reset").on("click", function(e) {
+//                    plots.reset();
+//                });
+//
+//                var response = $.ajax({
+//                    url: SYNTENIC_URL,
+//                    dataType: "json"
+//                });
+//
+//                //FIXME This should only be called when the file exists
+//                response.then(function(json) {
+//                    raw = json;
+//                    var request = checkRequestSize(ALLPOINTS_URL);
+//
+//                    request.then(function() {
+//                        var size;
+//                        if (request.status === 200) {
+//                            size = +request.getResponseHeader("Content-Length")
+//                        }
+//
+//                        if (size < MAXIMUM_SIZE) {
+//                            $.getJSON(ALLPOINTS_URL, function(json) {
+//                                for (var layer in json.layers) {
+//                                    raw.layers[layer] = json.layers[layer];
+//                                    sortHandler();
+//
+//                                    //FIXME This should only be called when the file exists
+//                                    $.getJSON(HIST_URL, loadHistogram);
+//                                }
+//                            });
+//                        } else {
+//                            var label = $("label[for=" +allpoints.attr("id") + "]");
+//                            label.attr("title", "Can't display non-syntenic matches too much data.");
+//                            label.css("border-bottom", "1px dotted");
+//                            allpoints.attr("disabled", "disabled");
+//                            allpoints.unbind();
+//
+//                            //FIXME This should only be called when the file exists
+//                            $.getJSON(HIST_URL, loadHistogram);
+//                        }
+//
+//                    });
+//                    sortHandler();
+//                });
+//            }
+//        });
+//    }
+//
+//    function loadHistogram(json) {
+//        $("#histogram").removeClass("hidden");
+//
+//        var select_data,
+//            models,
+//            selector;
+//
+//        models = _.map(json.datasets.histogram, function(dataset) {
+//            return {
+//                title: dataset.title,
+//                data: synmap.Dataset(dataset.data)
+//            };
+//        });
+//
+//        transform_selector = synmap.Dropdown("#transform", [
+//            { title: "No transformation", data: function(x) { return x; }},
+//            { title: "Log10", data: transform }
+//        ]);
+//        transform_selector.selected(function(func, index) {
+//            histogram.setTransform(func, index);
+//            updateColors();
+//        });
+//
+//        color_selector = coge.color.dropdown("#color_selector");
+//        color_selector.selected(function(colorScheme) {
+//            histogram.setColorScheme(colorScheme);
+//            updateColors();
+//        });
+//        data_selector = synmap.Dropdown("#hist_data", models);
+//        data_selector.selected(function(model) {
+//            histogram.setModel(model);
+//            var index = histogram.getSelectedTransform();
+//            if (index !== undefined) {
+//                transform_selector.select(index);
+//            } else {
+//                transform_selector.select(0);
+//            }
+//
+//            updateColors();
+//        });
+//
+//        histogram.onSelection(plots.filter);
+//        // Update the model and color scheme
+//        data_selector.select(0);
+//        color_selector.select(0);
+//
+//        synmap.Resizable(histogram);
+//        synmap.Draggable(histogram);
+//
+//        // attach color scheme updating to change event
+//        plots.onChanged(updateColors);
+//    }
+//
+//    //FIXME: This should be something that is controlled by the plot
+//    function updateColors() {
+//        var layer = plots.getLayer("syntenic_pairs"),
+//            colors = histogram.colors(transform);
+//
+//        for(var key in colors) {
+//            if (key in layer.lines) {
+//                layer.lines[key].color = colors[key];
+//            }
+//        }
+//
+//        plots.update();
+//    }
+//
+//    function transform(data) {
+//        // non-zero min
+//        var extent = d3.extent(data.filter(function(x) {
+//            return x !== 0;
+//        }));
+//
+//        return data.map(function(item) {
+//            if (item === 0) item = extent[0];
+//            if (item === 0) return 0;
+//
+//            return coge.utils.log10(item);
+//        });
+//    }
 });
 </script>
 </tmpl_if>
