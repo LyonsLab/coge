@@ -596,8 +596,9 @@ function get_ncbi_params(){
     var matrix = root.find('#matrix').val();
     var comp = root.find('#comp_adj').val();
     var seq = $('#seq_box').val();
+    var filter = $("#complexity").val();
 
-    return {w : word_size, e : expect, db : db,g : gapcost,j : job_title,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq};
+    return {w : word_size, e : expect, db : db,g : gapcost,j : job_title,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq, f: filter};
 }
 
 function reset_basename(){
@@ -1002,8 +1003,10 @@ function handle_results(selector, data) {
 //FIXME: separate ncbi and coge parameters
 function ncbi_blast(url) {
     var params = get_ncbi_params(),
-        pairs = [],
+        pairs,
+        coge_pairs,
         options,
+        coge_options,
         request;
 
     if (url == 1) {
@@ -1022,32 +1025,44 @@ function ncbi_blast(url) {
     var radio = get_radio('ncbi_radio','ncbi');
 
     //FIXME: CoGe specific options should not be included in ncbi-blast url
-    options = $.extend(options, {
+    coge_options = {
         program: $("#" + radio).val(),
-        type: radio
-    });
+        expect: params.e,
+        database: params.db,
+        word_size: params.w,
+        gapcost: params.g,
+        job: params.j,
+        type: radio,
+        fid: seqObj.featid,
+        filter: params.f
+    };
 
     if (program == 'blastn') {
-        options["MATCH_SCORES"] = params.mm
+        options["MATCH_SCORES"] = params.mm;
+        coge_options["match_score"] = params.mm;
     } else {
         options["MATRIX_NAME"] = params.matrix;
+        coge_options["matrix"] = params.matrix;
 
         if (!$('#comp_adj').is(':hidden')) {
             options["COMPOSITION_BASED_STATISTICS"] = params.c;
+            coge_options["comp"] = params.c;
         }
     }
 
-    for(key in options) {
-        if (options.hasOwnProperty(key)) {
-            pairs.push(concat.call(key, "=", options[key]));
-        }
-    }
+    var parameterify = function(value, key) {
+        return concat.call(key, "=", value);
+    };
+
+    //FIXME: Replace with underscore ie: _.map if library is included
+    pairs = map(options, parameterify)
+    coge_pairs = map(coge_options, parameterify);
 
     // Find the selected tab
     var hash = $(".ui-tabs-selected:first a").attr("href");
     var parts = location.href.split(/[#?]/g);
 
-    history.pushState(null, null, concat.call(parts[0], "?", pairs.join("&"), hash));
+    history.pushState(null, null, concat.call(parts[0], "?", coge_pairs.join("&"), hash));
 
     request = concat.call(url, "&", pairs.join("&"));
     location.href = request;
@@ -1297,7 +1312,7 @@ function org_search(desc_search){
     );
 }
 
-
+//FIXME: remove if underscore library is included
 function map(object, func) {
     var key,
         result = [];
@@ -1311,6 +1326,7 @@ function map(object, func) {
     return result;
 }
 
+//FIXME: remove if underscore library is included
 function toObject(pairs) {
     return pairs.reduce(function(a, b) {
         a[b[0]] = b[1];
