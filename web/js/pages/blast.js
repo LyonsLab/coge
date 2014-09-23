@@ -22,7 +22,7 @@ function update_gapcost_ncbi(pro) {
     root.find('.gapcosts').hide();
 
     if(pro) {
-      var val = root.find('#_matrix').val();
+      var val = root.find('#matrix').val();
       root.find('#gapcosts_'+val).toggle();
     } else {
       var str = root.find('#match_score').val();
