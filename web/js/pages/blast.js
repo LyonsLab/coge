@@ -1033,9 +1033,12 @@ function ncbi_blast(url) {
         gapcost: params.g,
         job: params.j,
         type: radio,
-        fid: seqObj.featid,
         filter: params.f
     };
+
+    if(seqObj.featid) {
+        options["fid"] = seqObj.featid;
+    }
 
     if (program == 'blastn') {
         options["MATCH_SCORES"] = params.mm;
