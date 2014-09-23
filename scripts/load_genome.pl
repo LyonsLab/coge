@@ -82,6 +82,7 @@ $source_desc = unescape($source_desc) if ($source_desc);
 $restricted  = '0' if ( not defined $restricted );
 $split       = 0 if ( not defined $split ); 	# split fasta into chr/ files (legacy method)
 $compress    = 0 if ( not defined $compress ); 	# RAZF compress the fasta file
+$type_id     = 1 if ( not defined $type_id );   # default genomic seq type to "unmasked"
 
 if (not $source_id and not $source_name) {
 	print STDOUT "log: error: source not specified, use source_id or source_name\n";

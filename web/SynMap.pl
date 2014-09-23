@@ -2319,47 +2319,47 @@ sub go {
         description => "Generating images...",
     );
 
-    my $dot_args = [
-        [ '-cf', $config->{_CONFIG_PATH}, 0 ],
-        [ '-genome1', $dsgid1, 0 ],
-        [ '-genome2', $dsgid2, 0 ],
-        [ '-a', $final_dagchainer_file, 1 ],
-        [ '-b', $json_basename, 1 ],
-    ];
-
-    push @$dot_args, [ '-ksdb', $ks_db,   1 ] if $ks_db;
-
-    my $dot_inputs = [
-        $final_dagchainer_file,
-    ];
-
-    my $dot_outputs = [
-        "$json_basename.json",
-    ];
-
-    if ($dag_file12_all) {
-        push @$dot_args, [ '-d', $dag_file12_all, 0 ];
-        push @$dot_inputs, $dag_file12_all;
-        push @$dot_outputs, "$json_basename.all.json";
-    }
-
-    if ($ks_db) {
-        push @$dot_inputs, $ks_db if $ks_db;
-        push @$dot_outputs, "$json_basename.datasets.json";
-    }
-
-    $workflow->add_job(
-        cmd         => $DOTPLOT_DOTS,
-        script      => undef,
-        args        => $dot_args,
-        inputs      => $dot_inputs,
-        outputs     => $dot_outputs,
-        description => "Generating dotplot dots...",
-    );
-
-    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "Added dotplot generation",
-        $cogeweb->logfile );
+#    my $dot_args = [
+#        [ '-cf', $config->{_CONFIG_PATH}, 0 ],
+#        [ '-genome1', $dsgid1, 0 ],
+#        [ '-genome2', $dsgid2, 0 ],
+#        [ '-a', $final_dagchainer_file, 1 ],
+#        [ '-b', $json_basename, 1 ],
+#    ];
+#
+#    push @$dot_args, [ '-ksdb', $ks_db,   1 ] if $ks_db;
+#
+#    my $dot_inputs = [
+#        $final_dagchainer_file,
+#    ];
+#
+#    my $dot_outputs = [
+#        "$json_basename.json",
+#    ];
+#
+#    if ($dag_file12_all) {
+#        push @$dot_args, [ '-d', $dag_file12_all, 0 ];
+#        push @$dot_inputs, $dag_file12_all;
+#        push @$dot_outputs, "$json_basename.all.json";
+#    }
+#
+#    if ($ks_db) {
+#        push @$dot_inputs, $ks_db if $ks_db;
+#        push @$dot_outputs, "$json_basename.datasets.json";
+#    }
+#
+#    $workflow->add_job(
+#        cmd         => $DOTPLOT_DOTS,
+#        script      => undef,
+#        args        => $dot_args,
+#        inputs      => $dot_inputs,
+#        outputs     => $dot_outputs,
+#        description => "Generating dotplot dots...",
+#    );
+#
+#    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+#    CoGe::Accessory::Web::write_log( "Added dotplot generation",
+#        $cogeweb->logfile );
 
     ############################################################################
     # Post Processing
@@ -3270,17 +3270,17 @@ sub get_results {
         });
     }
 
-    unless(-r $json_file and -s $json_file ) {
-        return encode_json({
-            error => "The json file could not be found."
-        });
-    }
+    #unless(-r $json_file and -s $json_file ) {
+    #    return encode_json({
+    #        error => "The json file could not be found."
+    #    });
+    #}
 
-    if($ks_type and -s $hist_json_file == 0) {
-        return encode_json({
-            error => "The histogram json file could not be found."
-        });
-    }
+    #if($ks_type and -s $hist_json_file == 0) {
+    #    return encode_json({
+    #        error => "The histogram json file could not be found."
+    #    });
+    #}
 
     my $log = $cogeweb->logfile;
     $log =~ s/$DIR/$URL/;
@@ -3291,9 +3291,9 @@ sub get_results {
     $results->param( error    => $problem ) if $problem;
     $results->param( warning  => $warn )    if $warn;
     $results->param( log      => $log );
-    $results->param( json     => $json_file );
-    $results->param( allpairs => $all_json_file );
-    $results->param( hist     => $hist_json_file );
+    #$results->param( json     => $json_file );
+    #$results->param( allpairs => $all_json_file );
+    #$results->param( hist     => $hist_json_file );
     $results->param( beta     => 1) if $opts{beta};
 
     ##print out all the datafiles created

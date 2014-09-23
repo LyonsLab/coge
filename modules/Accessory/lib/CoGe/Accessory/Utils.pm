@@ -39,7 +39,7 @@ BEGIN {
     @ISA     = qw (Exporter);
     @EXPORT =
       qw( units commify print_fasta get_unique_id get_link_coords format_time_diff sanitize_name
-        execute );
+        execute trim );
 }
 
 sub units {
@@ -63,6 +63,15 @@ sub commify {
     my $text = reverse $_[0];
     $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
     return scalar reverse $text;
+}
+
+sub trim {
+    my $s = shift;
+    $s =~ s/^\s+//;
+    $s =~ s/\s+$//;
+    $s =~ s/^\"//;
+    $s =~ s/\"$//;
+    return $s;
 }
 
 sub print_fasta {
@@ -135,12 +144,18 @@ sub format_time_diff {
 
 sub execute {
     my $cmd = shift;
+    my $error_msg = shift; # optional
 
     my @cmdOut = qx{$cmd};
     my $cmdStatus = $?;
 
     if ($cmdStatus != 0) {
-        say STDERR "error: command failed with rc=$cmdStatus: $cmd";
+        if ($error_msg) {
+            print STDERR $error_msg;
+        }
+        else {
+            say STDERR "error: command failed with rc=$cmdStatus: $cmd";
+        }
     }
 
     return $cmdStatus;
