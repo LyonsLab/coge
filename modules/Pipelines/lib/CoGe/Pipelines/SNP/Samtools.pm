@@ -6,9 +6,12 @@ use strict;
 
 use Carp;
 
+use CoGe::Accessory::Web;
+
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(build);
+our $CONFIG = CoGe::Accessory::Web::get_defaults();
 
 sub build {
     carp "Not Implemented";
@@ -51,13 +54,16 @@ sub _filter_snps {
 }
 
 sub _samtools {
+    my $cmd = $CONFIG->{SAMTOOLS};
     return "";
 }
 
 sub _bcftools {
+    my $cmd = $CONFIG->{BCFTOOLS};
     return "";
 }
 
 sub _vcfutils {
+    my $cmd = $CONFIG->{VCFUTILS};
     return "";
 }
