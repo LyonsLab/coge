@@ -1443,6 +1443,12 @@ $.extend(Ncbi.prototype, TypeSelectorMixin, ScoringMixin, ProteinMixin, {
         select_by_value(elements, 'selected', this.params['filter']);
     },
 
+    _select_job_title: function () {
+        if (this.params['job']) {
+            this.root.find("#job_title").val(this.params['job']);
+        }
+    },
+
     update_nucleotide: function () {
         // Set the match score to be used
         this._select_match_score();
@@ -1495,6 +1501,10 @@ $.extend(Ncbi.prototype, TypeSelectorMixin, ScoringMixin, ProteinMixin, {
 
         // Set the blast tool being used (depends on type)
         this._select_program();
+
+
+        // Set the title of the job
+        this._select_job_title();
 
         // dispatch fetch the blast parameters'
         var promise = blast_param_on_select('ncbi_radio', 'ncbi');
