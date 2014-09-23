@@ -1026,7 +1026,8 @@ function ncbi_blast(url) {
         "QUERY": params.s.replace(/\n/,'%0D'),
         "WORD_SIZE": params.w,
         "GAP_COSTS": params.g,
-        "JOB_TITLE": params.j
+        "JOB_TITLE": params.j,
+        "FILTER": params.f
     };
 
     var radio = get_radio('ncbi_radio','ncbi');
