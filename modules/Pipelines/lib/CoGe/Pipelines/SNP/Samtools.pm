@@ -5,6 +5,7 @@ use warnings;
 use strict;
 
 use Carp;
+use File::Basename qw(basename);
 
 use CoGe::Accessory::Web;
 
@@ -25,11 +26,14 @@ sub _find_snps {
         _bcftools($options->{bcf}),
     );
 
+    # Get the name of the output file
+    my $output = basename($options->{output});
+
     # Pipe commands together
     my $command = join "|", @subcommands;
 
     return {
-        command => $command,
+        command => qq[$command - > $options],
         inputs => $options->{inputs},
         outputs => $options->{outputs},
     };
@@ -43,11 +47,14 @@ sub _filter_snps {
         _vcfutils($options->{vcf}),
     );
 
+    # Get the name of the output file
+    my $output = basename($options->{output});
+
     # Pipe commands together
     my $command = join "|", @subcommands;
 
     return {
-        command => $command,
+        command => qq[$command > $output],
         inputs => $options->{inputs},
         outputs => $options->{outputs},
     };
