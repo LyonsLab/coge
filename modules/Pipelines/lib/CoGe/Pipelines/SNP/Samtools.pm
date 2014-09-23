@@ -14,12 +14,12 @@ sub build {
     carp "Not Implemented";
 }
 
-sub find_snps {
+sub _find_snps {
     my $options = shift;
 
     my @subcommands =  (
-        pileup($options),
-        bcftools($options),
+        _samtools($options->{samtools}),
+        _bcftools($options->{bcf}),
     );
 
     # Pipe commands together
@@ -27,15 +27,17 @@ sub find_snps {
 
     return {
         command => $command,
+        inputs => $options->{inputs},
+        outputs => $options->{outputs},
     };
 }
 
-sub filter_snps {
+sub _filter_snps {
     my $options = shift;
 
     my @subcommands =  (
-        bcftools($options),
-        vcfutils($options),
+        _bcftools($options->{bcf}),
+        _vcfutils($options->{vcf}),
     );
 
     # Pipe commands together
@@ -43,17 +45,19 @@ sub filter_snps {
 
     return {
         command => $command,
+        inputs => $options->{inputs},
+        outputs => $options->{outputs},
     };
 }
 
-sub samtools {
+sub _samtools {
     return "";
 }
 
-sub bcftools {
+sub _bcftools {
     return "";
 }
 
-sub vcfutils {
+sub _vcfutils {
     return "";
 }
