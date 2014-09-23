@@ -1076,7 +1076,7 @@ function ncbi_blast(url) {
     history.pushState(null, null, concat.call(parts[0], "?", coge_pairs.join("&"), hash));
 
     request = concat.call(url, "&", pairs.join("&"));
-    location.href = request;
+    window.open(request);
 }
 
 $.fn.getLength = function(val){
