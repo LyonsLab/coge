@@ -104,14 +104,14 @@ my @files = split( ',', $file_str );
 foreach my $file (@files) {
     my $filename = basename($file);
 
-    # Decompress file if necessary
+    # Decompress file (if necessary) into staging area
     if ( $file =~ /\.gz$/ ) {
         print "log: Decompressing '$filename'\n";
         $file =~ s/\.gz$//;
-        run( $P->{GUNZIP} . ' -c ' . $file . '.gz' . ' > ' . $file );
+        run( $P->{GUNZIP} . ' -c ' . $file.'.gz' . ' > ' . $file );
     }
 
-    # Untar file if necessary - TODO: do this before gunzip if tar.gz file
+    # Untar file (if necessary) into staging area - TODO: do this before gunzip if tar.gz file
     if ( $file =~ /\.tar$/ ) {
         print "log: Extracting files\n";
         run( $P->{TAR}.' -xf '.$file.' --directory '.$data_dir );
@@ -530,8 +530,9 @@ sub create_notebook { #FIXME use routine CoGe::Core::Notebook
     return $list;
 }
 
-sub run { 
+sub run {
     my $cmd = shift;
+    print "run:  $cmd\n";
     my $rc = execute($cmd);
     if ( $rc != 0 ) {
         print "log: error: command failed with rc=$rc: $cmd\n";
