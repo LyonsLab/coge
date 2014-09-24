@@ -416,10 +416,10 @@ sub process_experiment {
     my $restricted = 1;
     $restricted = ($md->{Restricted} eq 'yes') if ($md and $md->{Restricted});
     $restricted = ($md->{restricted} eq 'yes') if ($md and $md->{restricted});
-    my $genome_id;
+    my $genome_id = $gid;
     $genome_id = $md->{Genome} if ($md and $md->{Genome});
     $genome_id = $md->{genome} if ($md and $md->{genome});
-    unless ($name && $genome_id) {
+    unless ($name) { #($name && $genome_id) {
         print "log: error: missing required metadata field for file ", basename($file), ", skipping file ...\n";
         return;
     }
