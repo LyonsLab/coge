@@ -161,29 +161,6 @@ sub gen_body {
     );
     $prefs = {} unless $prefs;
 
-    my $color_hsps = $form->param( "color_hsps" );
-    my $program    = $form->param( "program" );
-    my $expect     = $form->param( "expect" );
-    my $job_title  = $form->param( "job_title" );
-    my $wordsize   = $form->param( "wordsize" );
-
-    #$wordsize=11 if $program eq "blastn";
-    my $comp         = $form->param( "comp" );
-    my $matrix       = $form->param( "matrix" );
-    my $gapcost      = $form->param( "gapcost" );
-    my $match_score  = $form->param( "matchscore" );
-    my $filter_query = $form->param( "filter_query" );
-    my $resultslimit = $form->param( "resultslimit" );
-    my $basename     = $form->param( "basename" );
-
-    #blastz params
-    my $zwordsize      = $form->param( "zwordsize" );
-    my $zgap_start     = $form->param( "zgap_start" );
-    my $zgap_extension = $form->param( "zgap_extension" );
-    my $zchaining      = $form->param( "zchaining" );
-    my $zthreshold     = $form->param( "zthreshold" );
-    my $zmask          = $form->param( "zmask" );
-
     $template->param(
         MAIN       => 1,
         UPSTREAM   => $upstream,
@@ -660,6 +637,7 @@ sub blast_search {
     my $expect     = $opts{expect};
     my $job_title  = $opts{job_title};
     my $wordsize   = $opts{wordsize};
+    my $type       = $opts{type};
 
     #$wordsize=11 if $program eq "blastn";
     my $comp         = $opts{comp};
@@ -715,6 +693,12 @@ sub blast_search {
 
     my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
 
+    my $gap;
+
+    if ( $gapcost && $gapcost =~ /^(\d+)\s+(\d+)/ ) {
+        $gap = qq[$1,$2];
+    }
+
     my %params = (
         color_hsps   => $color_hsps,
         program      => $program,
@@ -723,7 +707,7 @@ sub blast_search {
         wordsize     => $wordsize,
         comp         => $comp,
         matrix       => $matrix,
-        gapcost      => $gapcost,
+        gapcost      => $gap,
         match_score  => $match_score,
         filter_query => $filter_query,
         resultslimit => $resultslimit,
@@ -734,9 +718,10 @@ sub blast_search {
         zchaining    => $zchaining,
         zthreshold   => $zthreshold,
         zmask        => $zmask,
+        type         => $type,
 
         #Genomes
-        dsgid      => $blastable
+        dsgid        => $blastable,
     );
 
     # Optional parameters
@@ -899,6 +884,8 @@ sub get_results {
     my $filter_query = $opts{filter_query};
     my $resultslimit = $opts{resultslimit} || $RESULTSLIMIT;
     my $basename     = $opts{basename};
+    my $type = $opts{type};
+
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(
         basename => $basename,
         tempdir  => $TEMPDIR
@@ -954,6 +941,7 @@ sub get_results {
         zchaining    => $zchaining,
         zthreshold   => $zthreshold,
         zmask        => $zmask,
+        type         => $type,
 
         #Genomes
         dsgid      => $blastable
