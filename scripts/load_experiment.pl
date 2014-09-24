@@ -178,7 +178,7 @@ my %genome_chr = map { $_ => 1 } $genome->chromosomes;
 # Validate the data file
 print STDOUT "log: Validating data file\n";
 if (-s $staged_data_file == 0) {
-    print STDOUT "log: error: input file '$staged_data_file' is empty\n";
+    print STDOUT "log: error: input file '", basename($staged_data_file), "' is empty\n";
     exit(-1);
 }
 my ($count, $pChromosomes, $format);
