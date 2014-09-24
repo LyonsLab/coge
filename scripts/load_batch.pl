@@ -104,26 +104,28 @@ my @files = split( ',', $file_str );
 foreach my $file (@files) {
     my $filename = basename($file);
 
-    # Decompress file (if necessary) into staging area
-    if ( $file =~ /\.gz$/ ) {
-        print "log: Decompressing '$filename'\n";
-        $file =~ s/\.gz$//;
-        run( $P->{GUNZIP} . ' -c ' . $file.'.gz' . ' > ' . $file );
-    }
+    # Decompress file (if necessary) - removed, let the load_genome/experiment do this
+#    if ( $file =~ /\.gz$/ ) {
+#        print "log: Decompressing '$filename'\n";
+#        $filename =~ s/\.gz$//;
+#        run( $P->{GUNZIP}.' -c '.$file.' > '.catfile($data_dir, $filename) );
+#        next;
+#    }
 
-    # Untar file (if necessary) into staging area - TODO: do this before gunzip if tar.gz file
-    if ( $file =~ /\.tar$/ ) {
+    # Untar file (if necessary) - TODO: do this before gunzip if tar.gz file
+    if ( $file =~ /\.tar$/ || $file =~ /\.tar\.gz$/) {
         print "log: Extracting files\n";
         run( $P->{TAR}.' -xf '.$file.' --directory '.$data_dir );
+        next;
     }
-    else {
-        run("cp $file $data_dir/$filename");
-#        unless ( copy( $file, catfile($data_dir, $filename) ) ) {
-#            print "log: error copying file:\n";
-#            print "log: $!\n";
-#            exit(-1);
-#       }
-    }
+    
+    # Otherwise just copy the file as is
+    run("cp $file $data_dir/$filename");
+#    unless ( copy( $file, catfile($data_dir, $filename) ) ) {
+#        print "log: error copying file:\n";
+#        print "log: $!\n";
+#        exit(-1);
+#   }
 }
 
 # Find metadata file
