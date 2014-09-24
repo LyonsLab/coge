@@ -208,11 +208,21 @@ if ( $count == 0 ) {
 print STDOUT "log: Successfully read " . commify($count) . " lines\n";
 
 # Verify that chromosome names in input file match those for genome
+my $print_limit = 50;
 foreach ( sort keys %genome_chr ) {
     print STDOUT "genome chromosome $_\n";
+    if ($print_limit-- == 0) {
+        print STDOUT "... (stopping here, too many genome chromosomes to show)\n";
+        last;
+    }
 }
+$print_limit = 50;
 foreach ( sort keys %$pChromosomes ) {
     print STDOUT "input chromosome $_\n";
+    if ($print_limit-- == 0) {
+        print STDOUT "... stopping here, too many input chromosomes to show\n";
+        last;
+    }
 }
 if (not $ignore_missing_chr) {
 	my $error = 0;
