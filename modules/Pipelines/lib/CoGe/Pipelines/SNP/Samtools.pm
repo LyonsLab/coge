@@ -55,7 +55,7 @@ sub _filter_snps {
 
     return {
         command => qq[$command > $output],
-        inputs => $options->{inputs},
+        inputs  => $options->{inputs},
         outputs => $options->{outputs},
     };
 }
@@ -64,22 +64,34 @@ sub _samtools {
     my $opts = shift;
     my $cmd = $CONFIG->{SAMTOOLS};
     my $subtask = $opts->{subtask};
+    my $args = $opts->{args};
 
-    return qq[$cmd $subtask];
+    # Filter parameters and create parameter string
+    my @params = map { qq[-$_ @{$args->{$_}}] } grep { @{$args->{$_}} } keys $args;
+
+    return qq[$cmd $subtask @params @{$opts->{inputs}}];
 }
 
 sub _bcftools {
     my $opts = shift;
-    my $cmd = $CONFIG->{BCFTOOLS};
+    my $cmd = $CONFIG->{SAMTOOLS};
     my $subtask = $opts->{subtask};
+    my $args = $opts->{args};
 
-    return qq[$cmd $subtask];
+    # Filter parameters and create parameter string
+    my @params = map { qq[-$_ @{$args->{$_}}] } grep { @{$args->{$_}} } keys $args;
+
+    return qq[$cmd $subtask @params @{$opts->{inputs}}];
 }
 
 sub _vcfutils {
     my $opts = shift;
-    my $cmd = $CONFIG->{VCFUTILS};
+    my $cmd = $CONFIG->{SAMTOOLS};
     my $subtask = $opts->{subtask};
+    my $args = $opts->{args};
 
-    return qq[$cmd $subtask];
+    # Filter parameters and create parameter string
+    my @params = map { qq[-$_ @{$args->{$_}}] } grep { @{$args->{$_}} } keys $args;
+
+    return qq[$cmd $subtask @params @{$opts->{inputs}}];
 }
