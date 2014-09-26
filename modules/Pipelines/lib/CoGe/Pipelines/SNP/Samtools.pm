@@ -15,15 +15,14 @@ our @EXPORT_OK = qw(build);
 our $CONFIG = CoGe::Accessory::Web::get_defaults();
 
 sub build {
-    carp "Not Implemented";
 }
 
 sub _find_snps {
     my $options = shift;
 
     my @subcommands =  (
-        _samtools($options->{samtools}),
-        _bcftools($options->{bcf}),
+        _subcommand($options->{samtools}),
+        _subcommand($options->{bcf}),
     );
 
     # Get the name of the output file
@@ -43,8 +42,8 @@ sub _filter_snps {
     my $options = shift;
 
     my @subcommands =  (
-        _bcftools($options->{bcf}),
-        _vcfutils($options->{vcf}),
+        _subcommand($options->{bcf}),
+        _subcommand($options->{vcf}),
     );
 
     # Get the name of the output file
@@ -60,33 +59,9 @@ sub _filter_snps {
     };
 }
 
-sub _samtools {
+sub _subcommand {
     my $opts = shift;
-    my $cmd = $CONFIG->{SAMTOOLS};
-    my $subtask = $opts->{subtask};
-    my $args = $opts->{args};
-
-    # Filter parameters and create parameter string
-    my @params = map { qq[-$_ @{$args->{$_}}] } grep { @{$args->{$_}} } keys $args;
-
-    return qq[$cmd $subtask @params @{$opts->{inputs}}];
-}
-
-sub _bcftools {
-    my $opts = shift;
-    my $cmd = $CONFIG->{SAMTOOLS};
-    my $subtask = $opts->{subtask};
-    my $args = $opts->{args};
-
-    # Filter parameters and create parameter string
-    my @params = map { qq[-$_ @{$args->{$_}}] } grep { @{$args->{$_}} } keys $args;
-
-    return qq[$cmd $subtask @params @{$opts->{inputs}}];
-}
-
-sub _vcfutils {
-    my $opts = shift;
-    my $cmd = $CONFIG->{SAMTOOLS};
+    my $cmd = $opts->{command};
     my $subtask = $opts->{subtask};
     my $args = $opts->{args};
 
