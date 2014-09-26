@@ -18,44 +18,103 @@ sub build {
 }
 
 sub _find_snps {
-    my $options = shift;
+    my $opts = shift;
 
-    my @subcommands =  (
-        _subcommand($options->{samtools}),
-        _subcommand($options->{bcf}),
-    );
+    my @subopts = [
+        {
+            command => $CONFIG->{SAMTOOLS},
+            subtask => "mpileup",
+            args    => {
+                u => [],
+                f => [],
+            },
+            inputs => [
+                $opts->{reference},
+                $opts->{align1},
+                $opts->{align2},
+            ],
+        },
+        {
+            command => $CONFIG->{BCFTOOLS},
+            subtask => "view",
+            args    => {
+                b => [],
+                v => [],
+                c => [],
+                g => [],
+            },
+            inputs => [
+            ],
+        },
+    ];
 
-    # Get the name of the output file
-    my $output = basename($options->{output});
+    # Generate subcommand strings
+    my @subcommands =  map { _subcommand($_) } @subopts;
 
     # Pipe commands together
     my $command = join "|", @subcommands;
 
+    # Get the name of the output file
+    my $output = qq[$opts->{basename}.raw.bcf];
+
     return {
-        command => qq[$command - > $options],
-        inputs => $options->{inputs},
-        outputs => $options->{outputs},
+        command => qq[$command - > $output],
+        inputs => [
+            catfile($opts->{result_dir}, $opts->{reference}),
+            catfile($opts->{result_dir}, $opts->{align1}),
+            catfile($opts->{result_dir}, $opts->{align2}),
+        ],
+        outputs => [
+            catfile($opts->{result_dir}, $output),
+        ],
     };
 }
 
 sub _filter_snps {
-    my $options = shift;
+    my $opts = shift;
+    my $depth = $opts->{depth} || 100;
+
+    my $subopts = [
+        bcf => {
+            command => $CONFIG->{BCFTOOLS},
+            subtask => "view",
+            args    => {
+            },
+            inputs => [
+                $opts->{snps}
+            ],
+        },
+
+        vcf => {
+            command => $CONFIG->{VCFTOOLS},
+            subtask => "varFilter",
+            args    => {
+                D => [$depth]
+            },
+            inputs => [
+            ],
+        },
+    ];
 
     my @subcommands =  (
-        _subcommand($options->{bcf}),
-        _subcommand($options->{vcf}),
+        _subcommand($subopts->{bcf}),
+        _subcommand($subopts->{vcf}),
     );
-
-    # Get the name of the output file
-    my $output = basename($options->{output});
 
     # Pipe commands together
     my $command = join "|", @subcommands;
 
+    # Get the name of the output file
+    my $output = qq[$opts->{basename}.flt.vcf];
+
     return {
-        command => qq[$command > $output],
-        inputs  => $options->{inputs},
-        outputs => $options->{outputs},
+        cmd => qq[$command > $output],
+        inputs  => [
+            catfile($opts->{result_dir}, $opts->{snps}),
+        ],
+        outputs => [
+            catfile($opts->{result_dir}, $output),
+        ],
     };
 }
 
