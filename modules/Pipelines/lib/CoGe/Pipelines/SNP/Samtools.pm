@@ -65,8 +65,8 @@ sub _subcommand {
     my $subtask = $opts->{subtask};
     my $args = $opts->{args};
 
-    # Filter parameters and create parameter string
-    my @params = map { qq[-$_ @{$args->{$_}}] } grep { @{$args->{$_}} } keys $args;
+    # create parameter string
+    my @params = map { @{$args->{$_}} ? qq[-$_ @{$args->{$_}}] : qq[-$_] } keys $args;
 
     return qq[$cmd $subtask @params @{$opts->{inputs}}];
 }
