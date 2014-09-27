@@ -8,7 +8,8 @@ use CoGe::Accessory::Utils qw( commify );
 use HTML::Template;
 use JSON;
 use Data::Dumper;
-use CGI::Ajax;
+#use CGI::Ajax;
+use JSON::XS;
 use Benchmark;
 use File::Path;
 use Benchmark qw(:all);
@@ -18,9 +19,12 @@ use Sort::Versions;
 
 no warnings 'redefine';
 
-use vars qw($P $PAGE_NAME $PAGE_TITLE $LINK
-  $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM
-  %FUNCTION $P $SERVER $MAX_NUM_ORGANISM_RESULTS $MAX_DS_LENGTH);
+use vars qw(
+    $P $PAGE_NAME $PAGE_TITLE $LINK
+    $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM
+    %FUNCTION $P $SERVER $MAX_NUM_ORGANISM_RESULTS $MAX_NUM_CHROMOSOME_RESULTS
+    $MAX_DS_LENGTH
+);
 
 $| = 1;    # turn off buffering
 
@@ -38,15 +42,16 @@ $TEMPURL   = $P->{TEMPURL} . "/$PAGE_TITLE";
 $SERVER    = $P->{SERVER};
 $HISTOGRAM = $P->{HISTOGRAM};
 
-$MAX_NUM_ORGANISM_RESULTS = 5000;
+$MAX_NUM_ORGANISM_RESULTS = 500; #5000; # mdb changed 9/25/14, COGE-504
+$MAX_NUM_CHROMOSOME_RESULTS = 20;
 $MAX_DS_LENGTH = 10000000;
 
 %FUNCTION = (
     get_genomes             => \&get_genomes,
     get_genome_info         => \&get_genome_info,
-    get_dataset             => \&get_dataset,
+    get_datasets            => \&get_datasets,
     get_dataset_info        => \&get_dataset_info,
-    get_dataset_chr_info    => \&get_dataset_chr_info,
+    get_chr_info            => \&get_chr_info,
     gen_data                => \&gen_data,
     get_orgs                => \&get_orgs,
     get_org_info            => \&get_org_info,
@@ -62,25 +67,25 @@ $MAX_DS_LENGTH = 10000000;
     get_total_length_for_ds => \&get_total_length_for_ds,
     get_chr_length_hist     => \&get_chr_length_hist,
     update_genomelist       => \&update_genomelist,
-    get_genome_list_for_org => \&get_genome_list_for_org,
+#    get_genome_list_for_org => \&get_genome_list_for_org,
     add_to_irods            => \&add_to_irods,
     make_genome_public      => \&make_genome_public,
     make_genome_private     => \&make_genome_private,
 );
 
-#CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
-my $pj = new CGI::Ajax(%FUNCTION);
-$pj->JSDEBUG(0);
-$pj->DEBUG(0);
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
+#my $pj = new CGI::Ajax(%FUNCTION);
+#$pj->JSDEBUG(0);
+#$pj->DEBUG(0);
 
-if ( $FORM->param('jquery_ajax') ) {
-    dispatch();
-}
-else {
-    print $pj->build_html( $FORM, \&gen_html );
-}
+#if ( $FORM->param('jquery_ajax') ) {
+#    dispatch();
+#}
+#else {
+#    print $pj->build_html( $FORM, \&gen_html );
+#}
 
-#print "Content-Type: text/html\n\n";print gen_html($FORM);
+#print "Content-Type: text/html\n\n";print gen_html($FORM); # for CGI::Ajax debugging
 
 sub dispatch {
     my %args  = $FORM->Vars;
@@ -104,83 +109,98 @@ sub dispatch {
 }
 
 sub gen_html {
-    my $html;
     my ( $body, $seq_names, $seqs ) = gen_body();
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+    
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( PAGE_TITLE => 'OrganismView',
+                      LOGO_PNG => "OrganismView-logo.png",
     				  PAGE_LINK  => $LINK,
     				  HEAD       => qq{},
-    				  HELP       => "/wiki/index.php?title=OrganismView" );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param( USER     => $name );
-    $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-    $template->param( LOGO_PNG => "OrganismView-logo.png" );
-    $template->param( BODY     => $body );
-    $template->param( ADMIN_ONLY => $USER->is_admin );
+    				  HELP       => "/wiki/index.php?title=OrganismView" ,
+    				  ADMIN_ONLY => $USER->is_admin,
+                      USER     => $USER->display_name || ''
+    );
+    $template->param( LOGON    => 1 ) unless ($USER->user_name eq "public");
+    $template->param( BODY => $body );
 
-    $html .= $template->output;
-    return $html;
+    return $template->output;
 }
 
 sub gen_body {
     my $form = shift || $FORM;
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'OrganismView.tmpl' );
     my $org_name = $form->param('org_name');
-    my $desc     = $form->param('org_desc');
     my $oid      = $form->param('oid');
-    my $org      = $coge->resultset('Organism')->resolve($oid) if $oid;
     my $dsname   = $form->param('dsname');
     my $dsid     = $form->param('dsid');
-    my $dsgid    = $form->param('dsgid');
-    $dsgid = $form->param('gid') if ( $form->param('gid') );
-    my ($dsg) = $coge->resultset('Genome')->find($dsgid) if $dsgid;
-    $template->param( SHOW_RESULTS => 1 ) if ($dsgid or $dsid or $desc or $oid or $org or $dsname);
+    my $gid    = $form->param('dsgid');
+       $gid    = $form->param('gid') if ( $form->param('gid') );
 
-    my $link = "http://" . $P->{SERVER} . $PAGE_NAME . "?";
-    my @params;
-    push @params, "org_name=" . $org_name if $org_name;
-    push @params, "org_desc=" . $desc     if $desc;
-    push @params, "oid=" . $oid           if $oid;
-    push @params, "dsname=" . $dsname     if $dsname;
-    push @params, "dsid=" . $dsid         if $dsid;
-    push @params, "dsgid=" . $dsgid       if $dsgid;
-    $link .= join ";", @params;
-    $link = CoGe::Accessory::Web::get_tiny_link(
-        db      => $coge,
-        user_id => $USER->id,
-        page    => $PAGE_NAME,
-        url     => $link
-    ) if @params;
+    # Build tiny link - link is now returned by Web->init()
+#    my $link = "http://" . $P->{SERVER} . $PAGE_NAME . "?";
+#    my @params;
+#    push @params, "org_name=" . $org_name if $org_name;
+#    push @params, "org_desc=" . $desc     if $desc;
+#    push @params, "oid=" . $oid           if $oid;
+#    push @params, "dsname=" . $dsname     if $dsname;
+#    push @params, "dsid=" . $dsid         if $dsid;
+#    push @params, "dsgid=" . $gid         if $gid;
+#    $link .= join ";", @params;
+#    $link = CoGe::Accessory::Web::get_tiny_link(
+#        db      => $coge,
+#        user_id => $USER->id,
+#        page    => $PAGE_NAME,
+#        url     => $link
+#    ) if @params;
 
-    $org      = $dsg->organism if $dsg;
-    $org_name = $org->name     if $org;
-    $org_name .= $desc if $desc; # mdb added 4/22/14 combined org name & desc searches into single input
-    $template->param( ORG_SEARCH => $org_name ) if $org_name;
-
-    my ( $org_list, $org_count ) =
-      get_orgs( name => $org_name, oid => $oid, dsgid => $dsgid, no_json => 1);
-    $template->param( ORG_LIST  => $org_list );
-    $template->param( ORG_COUNT => $org_count );
-
-    my ($ds) = $coge->resultset('Dataset')->resolve($dsid) if $dsid;
-    $dsname = $ds->name if $ds;
-    $dsname = "Search" unless $dsname;
-    $template->param( DS_NAME => $dsname );
-    $dsname = "" if $dsname =~ /Search/;
-    my ( $dslist, $dscount ) = get_dataset( dsname => $dsname, dsid => $dsid )
-      if $dsname;
+    # Initialize template
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'OrganismView.tmpl' );
+    unless ($gid || $dsid || $oid || $dsname || $org_name) {
+        return $template->output;
+    }
+    $template->param( SHOW_RESULTS  => 1 );
+    
+    # Get organism if specified
+    my $organism;
+    if ($oid) {
+        $organism = $coge->resultset('Organism')->find($oid);
+        return $template->output unless $organism;
+    }
+    
+    # Get organisms and insert into template
+    my ( $org_list, $org_count, $selected_oid ) = get_orgs( name => $org_name, oid => $oid, gid => $gid, output => 'html' );
+    if ($org_list) {
+        $template->param( 
+            ORG_LIST  => $org_list,
+            ORG_COUNT => $org_count 
+        );
+        
+        # Get organism info
+        my $org_info = get_org_info(oid => $selected_oid, output => 'html');
+        $template->param( ORG_INFO => $org_info ) if $org_info;
+        
+    }
+    
+    my ( $genome_list, $genome_count, $selected_gid ) = get_genomes( oid => $selected_oid, gid => $gid, output => 'html' );
+    $template->param( GENOME_LIST => $genome_list );
+    $template->param( GENOME_COUNT => $genome_count );
+    
+    my $genome_info = get_genome_info( gid => $selected_gid, output => 'html' );
+    $template->param( GENOME_INFO => $genome_info );
+    
+    # Get datasets and insert into template
+    my ( $dslist, $dscount, $selected_dsid ) = get_datasets( gid => $selected_gid, dsid => $dsid, dsname => $dsname );
     $template->param( DS_LIST  => $dslist )  if $dslist;
     $template->param( DS_COUNT => $dscount ) if $dscount;
-    my $dsginfo = "<input type='hidden' id='gstid'>";
-    $dsginfo .=
-      $dsgid
-      ? "<input type='hidden' id='dsg_id' value='$dsgid'>"
-      : "<input type='hidden' id='dsg_id'>";
-    $template->param( DSG_INFO => $dsginfo );
+
+#    my $ds_info = get_dataset_info( gid => $selected_dsid, output => 'html' );
+#    $template->param( DS_INFO => $ds_info );    
+
+    # Finish template
+    $template->param( ORG_SEARCH  => $org_name ) if $org_name;
+    $template->param( ORGANISM_ID => $oid)  if ($selected_oid);
+    $template->param( GENOME_ID   => $gid ) if ($selected_gid);
+    $template->param( DATASET_ID  => $dsid)  if ($dsid);
+
     return $template->output;
 }
 
@@ -217,69 +237,87 @@ sub make_genome_private {
 }
 
 sub get_orgs {
-    my %opts  = @_;
-    my $name  = $opts{name};
-    my $desc  = $opts{desc};
-    my $oid   = $opts{oid};
-    my $dsgid = $opts{dsgid};
-    my $no_json = $opts{no_json};
+    my %opts = @_;
+    my $name    = $opts{name};
+    my $desc    = $opts{desc};
+    my $oid     = $opts{oid};
+    my $gid     = $opts{gid};
+    my $output  = $opts{output} || 'json';
+    
+    print STDERR "matt: get_orgs\n";
+    print STDERR Dumper \%opts, "\n";
 
-    return ('', 0) unless ($name || $desc) and not $no_json;
-    return encode_json({organisms => '', count => 0}) unless ($name || $desc);
-
-    my $dsg   = $coge->resultset('Genome')->find($dsgid) if $dsgid;
-    $dsg = undef unless $USER->has_access_to_genome($dsg);
-
-    my $search_term = '%' . $name . '%';
-    my @db = $coge->resultset("Organism")->search(
-        \[
-            'name LIKE ? OR description LIKE ?',
-            [ 'name', $search_term ], [ 'description', $search_term ]
-        ]
-    );
-
-    if (@db > $MAX_NUM_ORGANISM_RESULTS) {
-        return (
-            qq{<input type="hidden" name="org_id" id="org_id" /><span class="small alert">Please refine your search</span>},
-            scalar(@db)
-        ) if $no_json;
-
-        return encode_json({
-            organisms => qq{<input type="hidden" name="org_id" id="org_id" /><span class="small alert">Please refine your search</span>},
-            count => scalar(@db)
-        });
+    unless ($name || $desc || $oid || $gid) {
+        return if ($output eq 'html');
+        return encode_json({organisms => '', count => 0});
     }
-
-    my @opts;
-    foreach my $item ( sort { uc( $a->name ) cmp uc( $b->name ) } @db ) {
-        my $option = "<OPTION value=\"" . $item->id . "\"";
-        $option .= " SELECTED" if $oid && $item->id == $oid;
-        $option .= " SELECTED" if $dsg && $item->id == $dsg->organism->id;
-        my $name = $item->name;
-        if ( length($name) > 50 ) {
-            $name = substr( $name, 0, 50 ) . "...";
+    
+    my %organisms;
+    
+    # Set organism by specified genome id
+    my $genome;
+    if ($gid) {
+        $genome = $coge->resultset('Genome')->find($gid);
+        if ($USER->has_access_to_genome($genome)) {
+            my $org = $genome->organism;
+            $organisms{$org->id} = $org;
         }
-        $option .= ">" . $name . " (id" . $item->id . ")</OPTION>";
+        else {
+            $genome = undef;
+        }
+    }
+    else {
+        # Get organisms by specified organism name/desc/id
+        if ($name || $desc || $oid) {
+            # Search organisms in db
+            my $search_term = '%' . $name . '%';
+            my @orgs = $coge->resultset("Organism")->search(
+                \[
+                    'organism_id = ? OR name LIKE ? OR description LIKE ?',
+                    [ 'organism_id', $oid ], [ 'name', $search_term ], [ 'description', $search_term ]
+                ]
+            );
+    
+            # Limit results
+            if (@orgs > $MAX_NUM_ORGANISM_RESULTS) {
+                my $results = qq{<option class="small alert">Too many results to show (}.@orgs.qq{), please refine your search</option>};
+                return ( $results, scalar(@orgs) ) if ($output eq 'html');
+                return encode_json({
+                    organisms => $results,
+                    count => scalar(@orgs)
+                });
+            }
+            
+            %organisms = map { $_->id => $_ } @orgs;
+        }
+    }
+    
+    # Build options list of organisms
+    my @opts;
+    my $selected = 0;
+    foreach my $item ( sort { uc( $a->name ) cmp uc( $b->name ) } values %organisms ) {
+        my $option = "<option value=\"" . $item->id . "\"";
+        if ( scalar(@opts) == 0 || ($oid && $item->id == $oid) || ($genome && $item->id == $genome->organism_id) ) {
+            $option .= " selected";
+            $selected = scalar(@opts); # index
+            $oid = $item->id;
+        }
+        my $name = $item->name;
+        $name = substr( $name, 0, 50 ) . "..." if ( length($name) > 50 );
+        $option .= ">" . $name . " (id" . $item->id . ")</option>\n";
         push @opts, $option;
     }
-    my $html;
-    if ( ( $name || $desc ) && !@opts ) {
+    unless (@opts) {
         my $message = "No organisms found";
-        return ($message, 0) if $no_json;
+        return ($message, 0) if ($output eq 'html');
         return encode_json({ organisms => $message, count => 0 });
     }
-    $html .= qq{<SELECT class="small ui-widget ui-widget-content ui-corner-all" id="org_id" size="5" MULTIPLE onChange="get_org_info_chain()" >\n};
-    $html .= join( "\n", @opts );
-    $html .= "\n</SELECT>\n";
-    $html =~ s/OPTION/OPTION SELECTED/ unless $html =~ /SELECTED/;
-    my $opts = "?";
-    $opts .= "name=$name;"   if $name;
-    $opts .= "desc=$desc;"   if $desc;
-    $opts .= "oid=$oid;"     if $oid;
-    $opts .= "dsgid=$dsgid;" if $dsgid;
-    $html .= qq{<!--<div class="padded"><span class='ui-button ui-corner-all coge-button' onclick="window.open('get_org_list.pl$opts');">Download Organism List</span></div>-->};
-    return $html, scalar(@db) if $no_json;
-    return encode_json({ organisms => $html, count => scalar(@db)});
+    
+    my $html = join('\n', @opts);
+    #print STDERR "html $oid:\n$html\n";
+    
+    return $html, scalar(@opts), $oid if ($output eq 'html');
+    return encode_json({ organisms => $html, count => scalar(@opts), selected_id => $oid });
 }
 
 sub update_genomelist {
@@ -296,28 +334,30 @@ sub update_genomelist {
 
 sub get_org_info {
     my %opts = @_;
-
     my $oid = $opts{oid};
-    return encode_json({error => "A organism was not specified"}) unless $oid;
+    my $output = $opts{output} || 'json';
+    
+    print STDERR "matt: get_org_info\n", Dumper \%opts, "\n";
+    
+    return encode_json({error => "An organism was not specified"}) unless $oid;
 
-    my $org = $coge->resultset("Organism")->find($oid);
-    return encode_json({
-        organism => "Unable to find an organism for id: $oid\n"
-    }) unless $org;
+    # Get organisms
+    my $organism = $coge->resultset("Organism")->find($oid);
+    unless ($organism) {
+        return encode_json({ organism => "Unable to find an organism for id: $oid\n" });
+    }
 
-    my $html;
-    $html .=
-      "<span class='alert'>Private Organism!  Authorized Use Only!</span><br>"
-      if $org->restricted;
-    $html .= qq{<table class='small annotation_table' style="margin:3px;">};
-    $html .= qq{<tr><td>Name:};
-    $html .= qq{<td>} . $org->name;
+    my $html = 
+          qq{<table class='annotation_table' style="margin:3px;">}
+        . qq{<tr><td>Name:</td>}
+        . qq{<td>} . $organism->name . qq{</td>}
+        . qq{</tr>};
 
-    if ( $org->description ) {
+    if ( $organism->description ) {
         $html .= qq{<tr><td class='top'>Description:<td>};
 
         my $desc_len;
-        foreach my $item ( split( /;/, $org->description ) ) {
+        foreach my $item ( split( /;/, $organism->description ) ) {
             $item =~ s/^\s+//;
             $item =~ s/\s+$//;
             $html .= "<a href=OrganismView.pl?org_desc=$item>$item</a>;";
@@ -328,110 +368,111 @@ sub get_org_info {
             }
         }
     }
-    $html .=
-"<tr><td>Links:<td><a href='OrganismView.pl?oid=$oid' target=_new>OrganismView</a>&nbsp|&nbsp<a href='CodeOn.pl?oid=$oid' target=_new>CodeOn</a>";
-    $html .= "<tr><td>Search:<td>";
-    my $search_term = $org->name;
-    $html .=
-qq{<img onclick="window.open('http://www.ncbi.nlm.nih.gov/taxonomy?term=$search_term')" src = "picts/other/NCBI-icon.png" title="NCBI" class=link>&nbsp};
-    $html .=
-qq{<img onclick="window.open('http://en.wikipedia.org/w/index.php?title=Special%3ASearch&search=$search_term')" src = "picts/other/wikipedia-icon.png" title="Wikipedia" class=link>&nbsp};
+    
+    $html .= qq{<tr>}
+        . qq{<td>Tools:</td><td><a href='OrganismView.pl?oid=$oid' target=_new>OrganismView</a>&nbsp|&nbsp<a href='CodeOn.pl?oid=$oid' target=_new>CodeOn</a></td>}
+        . qq{<tr><td>Search:</td><td>};
+    my $search_term = $organism->name;
+    $html .= qq{<img onclick="window.open('http://www.ncbi.nlm.nih.gov/taxonomy?term=$search_term')" src = "picts/other/NCBI-icon.png" title="NCBI" class=link>&nbsp}
+          .  qq{<img onclick="window.open('http://en.wikipedia.org/w/index.php?title=Special%3ASearch&search=$search_term')" src = "picts/other/wikipedia-icon.png" title="Wikipedia" class=link>&nbsp};
     $search_term =~ s/\s+/\+/g;
-    $html .=
-qq{<img onclick="window.open('http://www.google.com/search?q=$search_term')" src="picts/other/google-icon.png" title="Google" class=link>};
-    $html .= "</table>";
+    $html .= qq{<img onclick="window.open('http://www.google.com/search?q=$search_term')" src="picts/other/google-icon.png" title="Google" class=link>}
+          .  qq{</table>};
 
-    #    $html .= "</div>";
-    return encode_json({
-        organism => $html
-    });
+    #print STDERR "html:\n$html";
+    return $html if ($output eq 'html');
+    return encode_json({ organism => $html });
 }
 
-sub get_genome_list_for_org {
-    my %opts = @_;
-    my $oid  = $opts{oid};
-    my $org  = $coge->resultset("Organism")->find($oid);
-    my @opts;
-    if ($org) {
-        my @dsg;
-        foreach my $dsg ( $org->genomes ) {
-            next if $dsg->deleted;
-            next unless $USER->has_access_to_genome($dsg);
-            $dsg->name( $org->name ) unless $dsg->name;
-            push @dsg, $dsg;
-        }
-        @opts = map {
-                $_->id . "%%"
-              . $_->name . " (v"
-              . $_->version
-              . ", dsgid"
-              . $_->id . "): "
-              . $_->genomic_sequence_type->name
-          } sort {
-            versioncmp( $b->version, $a->version )
-              || $a->type->id <=> $b->type->id
-              || $a->name cmp $b->name
-              || $b->id cmp $a->id
-          } @dsg;
-    }
-
-    my $res = join( "&&", @opts );
-}
+#sub get_genome_list_for_org {
+#    my %opts = @_;
+#    my $oid  = $opts{oid};
+#    
+#    my $org  = $coge->resultset("Organism")->find($oid);
+#    
+#    my @opts;
+#    if ($org) {
+#        my @dsg;
+#        foreach my $dsg ( $org->genomes ) {
+#            next if $dsg->deleted;
+#            next unless $USER->has_access_to_genome($dsg);
+#            $dsg->name( $org->name ) unless $dsg->name;
+#            push @dsg, $dsg;
+#        }
+#        @opts = map {
+#                $_->id . "%%"
+#              . $_->name . " (v"
+#              . $_->version
+#              . ", dsgid"
+#              . $_->id . "): "
+#              . $_->genomic_sequence_type->name
+#          } sort {
+#            versioncmp( $b->version, $a->version )
+#              || $a->type->id <=> $b->type->id
+#              || $a->name cmp $b->name
+#              || $b->id cmp $a->id
+#          } @dsg;
+#    }
+#
+#    return join( "&&", @opts );
+#}
 
 sub get_genomes {
     my %opts  = @_;
     my $oid   = $opts{oid};
-    my $dsgid = $opts{dsgid};
-    my $org   = $coge->resultset("Organism")->find($oid);
+    my $gid = $opts{gid};
+    my $output = $opts{output} || 'json';
+    
+    my $org = $coge->resultset("Organism")->find($oid);
+    return unless $org;
+    
     my @opts;
-    my %selected;
-    $selected{$dsgid} = "SELECTED" if $dsgid;
+    
     if ($org) {
-        my @dsg;
-        foreach my $dsg ( $org->genomes ) {
-            next if $dsg->deleted;
-            next unless $USER->has_access_to_genome($dsg);
-            push @dsg, $dsg;
-        }
-        foreach my $dsg (@dsg) {
-            $selected{ $dsg->id } = " " unless $selected{ $dsg->id };
-        }
         no warnings 'uninitialized'; # disable warnings for undef values in sort
-        foreach my $item (
+        foreach my $genome (
             sort {
                      versioncmp( $b->version, $a->version )
                   || $a->type->id <=> $b->type->id
                   || $a->name cmp $b->name
                   || $b->id cmp $a->id
-            } @dsg
+            } $org->genomes
           )
         {
+            next if $genome->deleted;
+            next unless $USER->has_access_to_genome($genome);
+            
+            my $selected = '';
+            if ( scalar(@opts) == 0 || ($gid && $gid == $genome->id) ) {
+                $selected = 'selected'; # index
+                $gid = $genome->id;
+            }
+            
             my $string =
                 "<OPTION value=\""
-              . $item->id . "\" "
-              . $selected{ $item->id } . ">"
-              . $item->info
+              . $genome->id . "\" "
+              . $selected
+              . ">"
+              . $genome->info
               . "</OPTION>";
             push @opts, $string;
         }
     }
     my $html;
     if (@opts) {
-
-#	$html = qq{<FONT CLASS ="small">Dataset group count: }.scalar (@opts).qq{</FONT>\n<BR>\n};
-        $html .= qq{<SELECT class="small ui-widget ui-widget-content ui-corner-all" style="max-width:500px;" id="dsg_id" size="5" MULTIPLE onChange="genome_info_chain();" >\n};
         $html .= join( "\n", @opts );
         $html =~ s/OPTION/OPTION SELECTED/ unless $html =~ /SELECTED/i;
-    }
-    else {
-        $html .= qq{<input type = hidden name="dsg_id" id="dsg_id">};
     }
 
     my $message = "No genomes found";
 
-    return encode_json({ error => $message }) unless scalar @opts > 0;
-
-    return encode_json({ genomes => $html, count => scalar @opts });
+    unless (scalar(@opts) > 0) {
+        return $message, 0 if ($output eq 'html');
+        return encode_json({ error => $message });
+    }
+    
+    return $html, scalar(@opts), $gid if ($output eq 'html');
+    return encode_json({ genomes => $html, count => scalar(@opts), selected_id => $gid });
 }
 
 sub add_to_irods {
@@ -460,8 +501,13 @@ sub add_to_irods {
 
 sub get_genome_info {
     my %opts  = @_;
-    my $dsgid = $opts{dsgid};
+    my $dsgid = $opts{gid};
+    my $output = $opts{output} || 'json';
+    print STDERR "genome_info_chain\n", Dumper \%opts, "\n";
+    
+    
     return encode_json({ error  => "A genome was not specified" }) unless $dsgid;
+    
     my $dsg = $coge->resultset("Genome")->find($dsgid);
     return encode_json({ error => "Unable to get genome object for id: $dsgid" }) unless $dsg;
 
@@ -469,26 +515,22 @@ sub get_genome_info {
     my $total_length = $dsg->length;
 
     my $chr_num = $dsg->chromosome_count();#$dsg->genomic_sequences->count();
-    $html .= qq{<table>} . "<tr class='top'><td><table class='small annotation_table'>";
-    $html .= qq{<tr><td>Name:</td><td>} . $dsg->name . qq{</td></tr>}
-      if $dsg->name;
-    $html .=
-      qq{<tr><td>Description:</td><td>} . $dsg->description . qq{</td></tr>}
-      if $dsg->description;
+    $html .= qq{<table><tr class='top'><td><table class='small annotation_table'>};
+    $html .= qq{<tr><td>Name:</td><td>} . $dsg->name . qq{</td></tr>} if $dsg->name;
+    $html .= qq{<tr><td>Description:</td><td>} . $dsg->description . qq{</td></tr>} if $dsg->description;
 
     my $gstid    = $dsg->genomic_sequence_type->id;
     my $gst_name = $dsg->genomic_sequence_type->name;
     $gst_name .= ": " . $dsg->type->description if $dsg->type->description;
     $html .=
-        qq{<tr><td>Sequence type <a href="SeqType.pl">?</a>: <td>}
-      . $gst_name
-      . qq{ (gstid$gstid)<input type=hidden id=gstid value=}
-      . $gstid
-      . qq{></td></tr>}
+        qq{<tr><td>Genome ID: </td><td>$dsgid</td>}
+      . qq{<tr><td>Sequence type <a href="SeqType.pl">?</a>: </td>}
+      . qq{<td>$gst_name (gstid$gstid) </td>}
+      . qq{</tr>}
       . qq{<tr><td>Length: </td>}
-      . qq{<td><div style="float: left;"> }
-      . commify($total_length)
-      . " bp </div>";
+      . qq{<td class='l'> }. commify($total_length) . qq{ bp</td>}
+      . qq{</tr>}
+      . qq{</div>};
 
     # mdb removed 7/31/13 issue 77
     #    my $seq_file = $dsg->file_path;
@@ -497,175 +539,164 @@ sub get_genome_info {
     #    $seq_file =~ s/$cogedir/$cogeurl/i;
     my $seq_url = "services/service.pl/sequence/$dsgid";#my $seq_url = "services/JBrowse/service.pl/sequence/$dsgid"; # mdb added 7/31/13 issue 77 # mdb changed 8/9/14
 
-    $html .= "<tr><td>Links:</td>"
+    $html .= "<tr><td>Tools:</td>"
      . qq{<td>}
      . qq{<a href="GenomeInfo.pl?gid=$dsgid"><strong>GenomeInfo</strong></a>}
      . qq{&nbsp|&nbsp}
-     . "<a href='OrganismView.pl?dsgid=$dsgid' target=_new>OrganismView</a>&nbsp|&nbsp<a href='CodeOn.pl?dsgid=$dsgid' target=_new>CodeOn</a>"
+     . qq{<a href='OrganismView.pl?dsgid=$dsgid' target=_new>OrganismView</a>&nbsp|&nbsp<a href='CodeOn.pl?dsgid=$dsgid' target=_new>CodeOn</a>}
      . qq{&nbsp|&nbsp}
      . qq{<span class='link' onclick="window.open('SynMap.pl?dsgid1=$dsgid;dsgid2=$dsgid');">SynMap</span>}
      . qq{&nbsp|&nbsp}
-     . qq{<span class='link' onclick="window.open('CoGeBlast.pl?dsgid=$dsgid');">CoGeBlast</span>};
+     . qq{<span class='link' onclick="window.open('CoGeBlast.pl?dsgid=$dsgid');">CoGeBlast</span>}
+     . qq{&nbsp|&nbsp}
+     . qq{<span class="link" onClick="update_genomelist(['args__genomeid','args__$dsgid'],[add_to_genomelist]);\$('#geno_list').dialog('option', 'width', 500).dialog('open');">GenomeList</span></td></tr>}
+     . "</table></td>"
+     . qq{<td id="dsg_features"></td>}
+     . "</table>";
+
 
 #temporarily removed until this is connected correctly for individual users
 #    $html .= qq{&nbsp|&nbsp};
 #    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$dsgid'],['irods']);">Send To iPlant Data Store</span>};
-    $html .= "</td></tr>"
-          . qq{<tr><td colspan="2"><span class="link" onClick="update_genomelist(['args__genomeid','args__$dsgid'],[add_to_genomelist]);\$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add to Genome List</span></td></tr>}
-          . "</table></td>"
-          . qq{<td id="dsg_features"></td>}
-          . "</table>";
 
+    return $html if ($output eq 'html');
     return encode_json({ genome => $html });
 }
 
-sub get_dataset {
+sub get_datasets {
     my %opts   = @_;
-    my $dsgid  = $opts{dsgid};
-    my $dsname = $opts{dsname};
+    my $gid    = $opts{gid};
     my $dsid   = $opts{dsid};
+    my $dsname = $opts{dsname};
+    my $output = $opts{output} || 'json';
+    print STDERR "get_datasets\n", Dumper \%opts, "\n";
 
-    return encode_json({
-        error => "No datasets found",
-        counts => 0
-    }) unless ($dsid || $dsname || $dsgid);
-
-    if ($dsid) {
-        my ($ds) = $coge->resultset('Dataset')->resolve($dsid);
-        $dsname = $ds->name;
+    unless ($dsid || $dsname || $gid) {
+        return "No datasets found" if ($output eq 'html');
+        return encode_json({
+            error => "No datasets found",
+            counts => 0
+        });
     }
+    
+    my @datasets;
 
-    my $html;
-    my @opts;
-    if ($dsgid) {
-        my $dsg = $coge->resultset("Genome")->find($dsgid);
-        @opts = map {
-                "<OPTION value=\""
-              . $_->id . "\">"
-              . $_->name . " (v"
-              . $_->version
-              . ", dsid"
-              . $_->id
-              . ")</OPTION>"
-          } sort { versioncmp ($b->version, $a->version) || $a->name cmp $b->name }
-          $dsg->datasets
-          if $dsg;
-
-    }
-    elsif ($dsname) {
-        my @ds =
-          $coge->resultset("Dataset")
-          ->search( { name => { like => "%" . $dsname . "%" } } );
-
-        my %orgs;
-        foreach my $item (
-            sort {
-                $b->version <=> $a->version
-                  || uc( $a->name ) cmp uc( $b->name )
-            } @ds
-          )
-        {
-            next unless $USER->has_access_to_dataset($item);
-            my $option =
-                "<OPTION value=\""
-              . $item->id . "\">"
-              . $item->name . "(v"
-              . $item->version . ", id"
-              . $item->id
-              . ")</OPTION>";
-            if ( $dsid && $dsid == $item->id ) {
-                $option =~ s/(<OPTION)/$1 selected/;
-            }
-            push @opts, $option;
-            $orgs{ $item->organism->id } = $item->organism;
+    if ($gid) {
+        my @conns = $coge->resultset("DatasetConnector")->search({genome_id => $gid});
+        foreach (@conns) {
+            push @datasets, $_->dataset;
         }
     }
-    if (@opts) {
-        $html .= qq{<SELECT class="small ui-widget ui-widget-content ui-corner-all" id="ds_id" SIZE="5" MULTIPLE onChange="dataset_info_chain()" >\n};
-        $html .= join( "\n", @opts );
-        $html .= "\n</SELECT>\n";
-        $html =~ s/OPTION/OPTION SELECTED/ unless $dsid;
+    elsif ($dsid || $dsname) {
+        # Search datasets in db
+        my $search_term = '%' . $dsname . '%' if ($dsname);
+        @datasets = $coge->resultset("Dataset")->search(
+            \[
+                'dataset_id = ? OR name LIKE ? OR description LIKE ?',
+                [ 'dataset_id', $dsid ], [ 'name', $search_term ], [ 'description', $search_term ]
+            ]
+        );
+
+        # Limit results
+        if (@datasets > $MAX_NUM_ORGANISM_RESULTS) {
+            my $results = qq{<option class="small alert">Too many results to show (}.scalar(@datasets).qq{), please refine your search</option>};
+            return ( $results, scalar(@datasets) ) if ($output eq 'html');
+            return encode_json({
+                datasets => $results,
+                count => scalar(@datasets)
+            });
+        }
     }
-    else {
-        $html .= qq{<input type="hidden" name="ds_id" id="ds_id">};
+    
+    my @opts;
+    foreach my $item (sort { $b->version <=> $a->version || uc( $a->name ) cmp uc( $b->name ) } @datasets) {
+        #next unless $USER->has_access_to_dataset($item);
+        my $selected = '';
+        if ( scalar(@opts) == 0 || ($dsid && $dsid == $item->id) ) {
+            $selected = 'selected'; # index
+            $dsid = $item->id;
+        }
+        push @opts,
+            qq{<option $selected value="}
+          . $item->id . qq{">}
+          . $item->name . "(v"
+          . $item->version . ", id"
+          . $item->id
+          . qq{)</option>};
     }
 
-     return encode_json({ datasets => $html, count => scalar @opts });
+    my $html .= join( "\n", @opts );
+
+    return $html, scalar(@opts), $dsid if ($output eq 'html');
+    return encode_json({ datasets => $html, count => scalar(@opts), selected_id => $dsid });
 }
 
 sub get_dataset_info {
     my %opts = @_;
     my $dsid = $opts{dsid};
-
-    return encode_json({
-        dataset => qq{A dataset was not specified <input type="hidden" id="chr" value="">},
-        chromosomes => "No chromosomes found",
-        count => 0
-    }) unless ($dsid); # error flag for empty dataset
-
-    my $ds = $coge->resultset("Dataset")->find($dsid);
-    unless ($ds) {
-        print STDERR "get_dataset_info: unable to find dataset object for id: $dsid";
+    my $output = $opts{output} || 'json';
+    print STDERR "get_dataset_info $dsid\n";
+    
+    # Get dataset
+    my $ds;
+    if ($dsid) {
+        $ds = $coge->resultset("Dataset")->find($dsid);
+    }
+    unless ($ds and $dsid) {
+        my $error = "Dataset dsid" . ( $dsid ? $dsid : '[undef]' ) . " not found";
+        return $error,0 if ($output eq 'html');
         return encode_json({
-            dataset => qq{A dataset could not be found. <input type="hidden" id="chr" value="">},
-            chromosomes => "<select><option>No chromosomes found</option></select>",
-            count => 0
-        }); # error flag for empty dataset
+            error => $error,
+            counts => 0
+        });
     }
 
-	my $chr_num_limit = 20;
-    my $html = "";
-    $html .= "<span class='alert small'>Restricted dataset</span><br>"
-      if $ds->restricted;
-    $html .= "<table>"
-          . "<tr valign='top'><td><table class=\"small annotation_table\">";
-    my $dataset = $ds->name;
-    $dataset .= ": " . $ds->description if $ds->description;
-    $dataset =
-      " <a href=\"" . $ds->link . "\" target=_new\>" . $dataset . "</a>"
-      if $ds->link;
+    #
+    # Get dataset info
+    #
+    my $html_ds;
+    $html_ds .= qq{<div class='alert small'>Restricted dataset</div>} if $ds->restricted;
+    $html_ds .= qq{<table><tr valign='top'><td><table class="small annotation_table">};
+    
+    my $ds_name  = $ds->name;
+    $ds_name .= ": " . $ds->description if $ds->description;
+    $ds_name = " <a href=\"" . $ds->link . "\" target=_new\>" . $ds_name . "</a>" if $ds->link;
     my $source_name = $ds->data_source->name;
     $source_name .= ": " . $ds->data_source->description
       if $ds->data_source->description;
     my $link = $ds->data_source->link;
 
     $link = "http://" . $link if ( $link && $link !~ /http/ );
-    $source_name =
-      "<a href =\"" . $link . "\" target=_new\>" . $source_name . "</a>"
-      if $ds->data_source->link;
-    $html .= qq{<tr><td>Name: <td>$dataset} . "\n"
-          . qq{<tr><td><span class="link" onclick="window.open('Sources.pl')">Data Source:</span> <td>$source_name (id}
-          . $ds->data_source->id . qq{)} . "\n"
-          . qq{<tr><td>Version: <td>} . $ds->version . "\n"
-          . qq{<tr><td>Organism:<td class="link"><a href="OrganismView.pl?oid=}
-          . $ds->organism->id
-          . qq{" target=_new>}
-          . $ds->organism->name
-          . "</a>\n"
-          . qq{<tr><td>Date deposited: <td>} . $ds->date . "\n";
+    $source_name = qq{<a href="$link" target=_new>$source_name</a>} if $ds->data_source->link;
+    $html_ds .= 
+          qq{<tr>}
+        . qq{<td>Name: <td>$ds_name (id} . $ds->id . qq{)</td>}
+        . qq{<tr><td><span class="link" onclick="window.open('Sources.pl')">Source:</span> <td>$source_name (id} . $ds->data_source->id . qq{)}
+        . qq{<tr><td>Version: <td>} . $ds->version
+        . qq{<tr><td>Organism:<td class="link"><a href="OrganismView.pl?oid=}
+        . $ds->organism->id
+        . qq{" target=_new>}
+        . $ds->organism->name 
+        . qq{</a>}
+        . qq{<td>Created: <td>} . $ds->date
+        . qq{</tr>};
 
-    my $html2;
+    #
+    # Get chromosome list - FIXME why is this here and not in separate routine? mdb, 9/26/14
+    #
+    my $html_chr;
     my $total_length = $ds->total_length( ftid => 4 );
     my $chr_num = $ds->chromosome_count( ftid => 4 );
 
     my %chr;
-
-# mdb removed 5/29/14 - doesn't work when chr name strings are returned from get_chromosomes() instead of db objects
-#    map { $chr{ $_->chromosome } = { length => $_->stop } }
-#      ( $ds->get_chromosomes( ftid => 4, length => 1, limit => $chr_num_limit )
-#      );    #the chromosome feature type in coge is 301
-
-    # mdb added 5/29/14
     my $tmp_count = 0;
-    foreach my $c ( $ds->get_chromosomes( ftid => 4, length => 1, limit => $chr_num_limit ) ) {
-        if (ref($c) =~ /CoGeX/ ) {
-            $chr{ $c->chromosome } = { length => $c->stop }
-        }
-        else {
-            $chr{ $c } = { length => 0 };
-        }
+    foreach my $c ( $ds->get_chromosomes( ftid => 4, length => 1, limit => $MAX_NUM_CHROMOSOME_RESULTS ) ) {
+        if (ref($c) =~ /CoGeX/ ) { $chr{$c->chromosome} = { length => $c->stop }; }
+        else { $chr{ $c } = { length => 0 }; }
     }
 
+    # Build chromosome options list
+    my $selected_chr;
     if ($chr_num) {
         my $count = 100000;
         foreach my $item ( sort keys %chr ) {
@@ -676,64 +707,60 @@ sub get_dataset_info {
         }
         
         my @chr =
-          $chr_num > $chr_num_limit
+          $chr_num > $MAX_NUM_CHROMOSOME_RESULTS
           ? sort { $chr{$b}{length} <=> $chr{$a}{length} } keys %chr
           : sort { $chr{$a}{num} <=> $chr{$b}{num} || $a cmp $b } keys %chr;
       
-        my $size = scalar @chr;
-        $size = 5 if $size > 5;
-        my $select;
-        $select .= qq{<SELECT class="small ui-widget ui-widget-content ui-corner-all" id="chr" size="$size" onChange="dataset_chr_info_chain()" >\n};
-        $select .= join(
-            "\n",
-            map {
-                    "<OPTION value=\"$_\">"
-                  . $_ . " ("
-                  . commify( $chr{$_}{length} )
-                  . " bp)</OPTION>"
-              } @chr
-        ) . "\n";
-        $select =~ s/OPTION/OPTION SELECTED/;
-        $select .= "\n</SELECT>\n";
-
-        $html2 .= $select;
+        my @opts;
+        foreach (@chr) {
+            my $selected = '';
+            if (@opts == 0) {
+                $selected_chr = $_;
+                $selected = 'selected';
+            }
+            push @opts, 
+                qq{<option $selected value="$_">$_ (}.commify( $chr{$_}{length} ).qq{ bp)</option>};
+        }
+        $html_chr .= join('', @opts);
     }
     else {
-        $html2 .= qq{<input type="hidden" id="chr" value="">};
-        $html2 .= "<tr><td>No chromosomes";
+        $html_chr .= qq{<input type="hidden" id="chr" value="">};
+        $html_chr .= "<tr><td>No chromosomes</td></tr>";
     }
-    $html .= "<tr><td>Chromosome count:<td><div style=\"float: left;\">" . commify($chr_num)
+    $html_chr .= "<tr><td>Chromosome count:<td><div style=\"float: left;\">" . commify($chr_num)
           .  "<tr><td>Total length:<td><div style=\"float: left;\">" . commify($total_length) . " bp ";
+    
     my $gc = 
-      $total_length && $total_length < $MAX_DS_LENGTH && $chr_num && $chr_num < $chr_num_limit
+      $total_length && $total_length < $MAX_DS_LENGTH && $chr_num && $chr_num < $MAX_NUM_CHROMOSOME_RESULTS
       ? get_gc_for_chromosome( dsid => $ds->id )
       : 0;
     $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id="dataset_gc" class="link" onclick="gen_data(['args__loading...'],['dataset_gc']);\$('#dataset_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for %GC content</div>}
       if $total_length;
-    $html .= $gc if $gc;
-    $html .= qq{<tr><td>Links:</td>}
+    $html_chr .= $gc if $gc;
+    $html_chr .= qq{<tr><td>Tools:</td>}
           . "<td>"
           . "<a href='OrganismView.pl?dsid=$dsid' target=_new>OrganismView</a>"
           . qq{</td></tr>};
     my $feat_string = qq{<tr><td><div id="ds_feature_count" class="link" onclick="gen_data(['args__loading...'],['ds_features']);get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['ds_features']);">Click for Features</div></td></tr>};
-    $html .= $feat_string;
+    $html_chr .= $feat_string;
 
-    $html .= qq{</table></td>}
+    $html_chr .= qq{</table></td>}
           . qq{<td id="ds_features"></td>}
           . qq{</table>};
 
     my $chr_count = $chr_num;
-    $chr_count .= " <span class='note'> (only $chr_num_limit largest listed)</span>"
-      if ( $chr_count > $chr_num_limit );
+    $chr_count .= " <span class='note'> (only $MAX_NUM_CHROMOSOME_RESULTS largest listed)</span>"
+      if ( $chr_count > $MAX_NUM_CHROMOSOME_RESULTS );
 
     return encode_json({
-        dataset => $html,
-        chromosomes => $html2,
-        count => $chr_count
+        dataset => $html_ds,
+        chromosomes => $html_chr,
+        count => $chr_count,
+        selected_chr => $selected_chr
     });
 }
 
-sub get_dataset_chr_info {
+sub get_chr_info {
     my %opts = @_;
     my $dsid  = $opts{dsid};
     my $chr   = $opts{chr};
@@ -771,22 +798,18 @@ sub get_dataset_chr_info {
       ? $gc
       : qq{<div style="float: left; text-indent: 1em;" id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chromosome_gc']);">Click for %GC content</div>};
     $length = commify($length) . " bp ";
-    $html .= qq{
-<tr><td>Chromosome:</td><td>$chr</td></tr>
-<tr><td>Nucleotides:</td><td>$length</td><td>$gc</td></tr>
-};
+    $html .= qq{<tr><td>Chromosome ID:</td><td>$chr</td></tr>}
+          .  qq{<tr><td>Nucleotides:</td><td>$length</td><td>$gc</td></tr>};
 
-    $html .= qq{
-<tr><td>Noncoding sequence:<td colspan=2><div id=noncoding_gc class="link" onclick = "gen_data(['args__loading...'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['noncoding_gc']);">Click for %GC content</div>
-} if $length;
+    $html .= qq{<tr><td>Noncoding sequence:<td colspan=2><div id=noncoding_gc class="link" onclick = "gen_data(['args__loading...'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['noncoding_gc']);">Click for %GC content</div>}
+        if $length;
 
-    my $feat_string = qq{
-<tr><td><div id="feature_count" onclick="gen_data(['args__loading...'],['chr_features']);get_feature_counts(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chr_features']);">Click for Features</div></td></tr>};
-
-    $html .= $feat_string;
-    $html .= "</table></td>";
-    $html .= qq{<td id=chr_features></td>};
-    $html .= qq{</table>};
+#    my $feat_string = qq{<tr><td><div id="feature_count" onclick="gen_data(['args__loading...'],['chr_features']);get_feature_counts(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chr_features']);">Click for Features</div></td></tr>};
+#    $html .= $feat_string;
+#    $html .= qq{</table></td>";
+#    $html .= qq{<td id="chr_features"></td>};
+#    $html .= qq{</table>};
+    
     my $viewer;
     if ( defined $chr ) {
         $viewer .= qq{<div class="coge-table-header _orgviewresult">Genome Viewer</div>}
