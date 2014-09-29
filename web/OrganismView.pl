@@ -181,19 +181,26 @@ sub gen_body {
     }
     
     my ( $genome_list, $genome_count, $selected_gid ) = get_genomes( oid => $selected_oid, gid => $gid, output => 'html' );
-    $template->param( GENOME_LIST => $genome_list );
+    $template->param( GENOME_LIST  => $genome_list );
     $template->param( GENOME_COUNT => $genome_count );
     
     my $genome_info = get_genome_info( gid => $selected_gid, output => 'html' );
     $template->param( GENOME_INFO => $genome_info );
     
     # Get datasets and insert into template
-    my ( $dslist, $dscount, $selected_dsid ) = get_datasets( gid => $selected_gid, dsid => $dsid, dsname => $dsname );
+    my ( $dslist, $dscount, $selected_dsid ) = get_datasets( gid => $selected_gid, dsid => $dsid, dsname => $dsname, output => 'html' );
     $template->param( DS_LIST  => $dslist )  if $dslist;
     $template->param( DS_COUNT => $dscount ) if $dscount;
 
-#    my $ds_info = get_dataset_info( gid => $selected_dsid, output => 'html' );
-#    $template->param( DS_INFO => $ds_info );    
+    my ( $ds_info, $chr_list, $chr_count, $selected_chr ) = get_dataset_info( dsid => $selected_dsid, output => 'html' );
+    $template->param( DS_INFO  => $ds_info );
+    $template->param( CHR_LIST => $chr_list );
+
+    # Get chromosome info and insert into template
+    my ( $chr_info, $viewer, $seqview ) = get_chr_info( dsid => $selected_dsid, chr => $selected_chr, output => 'html' );
+    $template->param( CHR_INFO => $chr_info );
+    $template->param( VIEWER   => $viewer );
+    $template->param( GET_SEQ  => $seqview );
 
     # Finish template
     $template->param( ORG_SEARCH  => $org_name ) if $org_name;
@@ -609,12 +616,13 @@ sub get_datasets {
     }
     
     my @opts;
+    my $selected_id;
     foreach my $item (sort { $b->version <=> $a->version || uc( $a->name ) cmp uc( $b->name ) } @datasets) {
         #next unless $USER->has_access_to_dataset($item);
         my $selected = '';
         if ( scalar(@opts) == 0 || ($dsid && $dsid == $item->id) ) {
             $selected = 'selected'; # index
-            $dsid = $item->id;
+            $selected_id = $item->id;
         }
         push @opts,
             qq{<option $selected value="}
@@ -627,8 +635,8 @@ sub get_datasets {
 
     my $html .= join( "\n", @opts );
 
-    return $html, scalar(@opts), $dsid if ($output eq 'html');
-    return encode_json({ datasets => $html, count => scalar(@opts), selected_id => $dsid });
+    return $html, scalar(@opts), $selected_id if ($output eq 'html');
+    return encode_json({ datasets => $html, count => scalar(@opts), selected_id => $selected_id });
 }
 
 sub get_dataset_info {
@@ -678,14 +686,14 @@ sub get_dataset_info {
         . qq{" target=_new>}
         . $ds->organism->name 
         . qq{</a>}
-        . qq{<td>Created: <td>} . $ds->date
-        . qq{</tr>};
+        . qq{</tr>}
+        . qq{<tr><td>Created: </td><td>} . $ds->date . qq{</td></tr>};
 
     #
     # Get chromosome list - FIXME why is this here and not in separate routine? mdb, 9/26/14
     #
     my $html_chr;
-    my $total_length = $ds->total_length( ftid => 4 );
+    my $total_length = $ds->total_length( ftid => 4 ); # FIXME hardcoded ftid value
     my $chr_num = $ds->chromosome_count( ftid => 4 );
 
     my %chr;
@@ -727,31 +735,32 @@ sub get_dataset_info {
         $html_chr .= qq{<input type="hidden" id="chr" value="">};
         $html_chr .= "<tr><td>No chromosomes</td></tr>";
     }
-    $html_chr .= "<tr><td>Chromosome count:<td><div style=\"float: left;\">" . commify($chr_num)
+    $html_ds .= "<tr><td>Chromosomes:</td><td><div style=\"float: left;\">" . commify($chr_num)
           .  "<tr><td>Total length:<td><div style=\"float: left;\">" . commify($total_length) . " bp ";
     
     my $gc = 
       $total_length && $total_length < $MAX_DS_LENGTH && $chr_num && $chr_num < $MAX_NUM_CHROMOSOME_RESULTS
       ? get_gc_for_chromosome( dsid => $ds->id )
       : 0;
-    $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id="dataset_gc" class="link" onclick="gen_data(['args__loading...'],['dataset_gc']);\$('#dataset_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for %GC content</div>}
-      if $total_length;
-    $html_chr .= $gc if $gc;
-    $html_chr .= qq{<tr><td>Tools:</td>}
+#    $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id="dataset_gc" class="link" onclick="gen_data(['args__loading...'],['dataset_gc']);\$('#dataset_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for %GC content</div>}
+#      if $total_length;
+    $html_ds .= $gc if $gc;
+    $html_ds .= qq{<tr><td>Tools:</td>}
           . "<td>"
           . "<a href='OrganismView.pl?dsid=$dsid' target=_new>OrganismView</a>"
           . qq{</td></tr>};
-    my $feat_string = qq{<tr><td><div id="ds_feature_count" class="link" onclick="gen_data(['args__loading...'],['ds_features']);get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['ds_features']);">Click for Features</div></td></tr>};
-    $html_chr .= $feat_string;
+#    my $feat_string = qq{<tr><td><div id="ds_feature_count" class="link" onclick="gen_data(['args__loading...'],['ds_features']);get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['ds_features']);">Click for Features</div></td></tr>};
+#    $html_chr .= $feat_string;
 
-    $html_chr .= qq{</table></td>}
+    $html_ds .= qq{</table></td>}
           . qq{<td id="ds_features"></td>}
           . qq{</table>};
 
     my $chr_count = $chr_num;
     $chr_count .= " <span class='note'> (only $MAX_NUM_CHROMOSOME_RESULTS largest listed)</span>"
       if ( $chr_count > $MAX_NUM_CHROMOSOME_RESULTS );
-
+    
+    return $html_ds, $html_chr, $chr_count, $selected_chr if ($output eq 'html');
     return encode_json({
         dataset => $html_ds,
         chromosomes => $html_chr,
@@ -765,28 +774,35 @@ sub get_chr_info {
     my $dsid  = $opts{dsid};
     my $chr   = $opts{chr};
     my $dsgid = $opts{dsgid};
+    my $output  = $opts{output} || 'json';
 
     $dsgid = 0 unless defined $dsgid;
     $dsid  = 0 unless $dsid;
     unless ( $dsid && defined $chr && $chr ne '' )    # error flag for empty dataset
     {
+        return "A chromosome was not specified" if ($output eq 'html');
         return encode_json({
             chromosome => "A chromosome was not specified",
-            viewer => "",
-            seqview => ""
+            viewer => '',
+            seqview => ''
         });
     }
+    
+    # Get dataset from db
+    my $ds = $coge->resultset("Dataset")->find($dsid);
+    unless ($ds) {
+        return "A chromosome was not specified" if ($output eq 'html');
+        return encode_json({
+            chromosome => '',
+            viewer => '',
+            seqview => ''
+        });
+    }
+
     my $start = "'start'";
     my $stop  = "'stop'";
-    my $html .= "<table>";
-    $html .= "<tr valign=top><td><table class=\"small annotation_table\">";
-    my $ds = $coge->resultset("Dataset")->find($dsid);
-    return encode_json({
-        chromosome => $html,
-        viewer => "",
-        seqview => ""
-    }) unless $ds;
-
+    my $html = "<table class=\"small annotation_table\">";
+    
     my $length = 0;
     $length = $ds->last_chromosome_position($chr) if defined $chr;
     my $gc =
@@ -801,37 +817,42 @@ sub get_chr_info {
     $html .= qq{<tr><td>Chromosome ID:</td><td>$chr</td></tr>}
           .  qq{<tr><td>Nucleotides:</td><td>$length</td><td>$gc</td></tr>};
 
-    $html .= qq{<tr><td>Noncoding sequence:<td colspan=2><div id=noncoding_gc class="link" onclick = "gen_data(['args__loading...'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['noncoding_gc']);">Click for %GC content</div>}
+    $html .= qq{<tr><td>Noncoding sequence:</td>}
+          .  qq{<td colspan=2><span class="link" onclick="gen_data(['args__loading...'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['noncoding_gc']);">Click for %GC content</span></td>}
+          .  qq{</tr>}
         if $length;
 
 #    my $feat_string = qq{<tr><td><div id="feature_count" onclick="gen_data(['args__loading...'],['chr_features']);get_feature_counts(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chr_features']);">Click for Features</div></td></tr>};
 #    $html .= $feat_string;
 #    $html .= qq{</table></td>";
 #    $html .= qq{<td id="chr_features"></td>};
-#    $html .= qq{</table>};
+    $html .= qq{</table>};
     
+    # Generate html for launch & seq retrieval buttons
     my $viewer;
     if ( defined $chr ) {
         $viewer .= qq{<div class="coge-table-header _orgviewresult">Genome Viewer</div>}
-         . "<table class=\"small ui-corner-all ui-widget-content _orgviewresult\">"
-         . "<tr><td nowrap>Starting location: "
+         . qq{<table class="small ui-corner-all ui-widget-content _orgviewresult">}
+         . qq{<tr><td nowrap>Starting location: </td>}
          . qq{<td><input type="text" size=10 value="20000" id="x">}
          . qq{<tr><td >Zoom level:<td><input type = "text" size=10 value ="6" id = "z">}
-         . qq{<tr><td colspan=2><span style="font-size:1em" class='ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left' onClick="launch_viewer('$dsgid', '$chr')"><span class="ui-icon ui-icon-newwin"></span>Launch Genome Viewer</span>}
-         . "</table>";
+         . qq{<tr><td colspan=2><span style="font-size:1em" class='ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left' onClick="launch_viewer('$dsgid', '$chr')">}
+         . qq{<span class="ui-icon ui-icon-newwin"></span>Launch Genome Viewer</span>}
+         . qq{</table>};
     }
     my $seq_grab;
     if ( defined $chr ) {
         $seq_grab .= qq{<div class="coge-table-header _orgviewresult">Genomic Sequence Retrieval</div>}
          . qq{<table class=\"small ui-corner-all ui-widget-content _orgviewresult padded\">}
-         . "<tr><td>Start position: "
+         . qq{<tr><td>Start position: }
          . qq{<td><input type="text" size=10 value="1" id="start">}
-         . "<tr><td>End position: "
+         . qq{<tr><td>End position: }
          . qq{<td><input type="text" size=10 value="100000" id="stop">}
          . qq{<tr><td colspan=2><span style="font-size:1em" class='ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left' onClick="launch_seqview('$dsgid', '$chr','$dsid')"><span class="ui-icon ui-icon-newwin"></span>Get Sequence</span>}
          . qq{</table>};
     }
 
+    return $html, $viewer, $seq_grab if ($output eq 'html');
     return encode_json({
         chromosome => $html,
         viewer => $viewer,
