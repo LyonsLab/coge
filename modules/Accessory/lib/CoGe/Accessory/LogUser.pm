@@ -16,7 +16,7 @@ sub get_user {
     my $coge        = $opts{coge};
     my ( $user, $uid, $session );    # = "Public";
 
-    my $session = get_cookie_session(cookie_name => $cookie_name);
+    $session = get_cookie_session(cookie_name => $cookie_name);
 
     if ($session) {
         my ($user_session) = $coge->resultset("UserSession")->find( { session => $session } );
