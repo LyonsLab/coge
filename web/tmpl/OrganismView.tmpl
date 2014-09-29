@@ -18,97 +18,109 @@ $(function() {
 
 </script>
 
-<div class="padded">
-    <div class="bold text">Search for organisms and genomes</div>
-    <div class="small padded middle">
-        Organism:
-        <input type="search" placeholder="Search" spellcheck="false" size="50" value="<TMPL_VAR NAME=ORG_SEARCH>" name="org_search" id="org_search" onkeyup='search_organisms("org_search");'>
-        <span class='ui-button ui-corner-all coge-button' onClick="search_organisms('org_search');">
-            <span class="ui-icon ui-icon-arrowrefresh-1-w"></span>
-        </span>
-        <img id="busy" src="picts/ajax-loader.gif" style="opacity:0;"/>
+<div class="row row-margin padded">
+    <div class="col-md-12">
+        <div class="bold text">Search for organisms and genomes</div>
+        <div class="small padded middle">
+            Organism:
+            <input type="search" placeholder="Search" spellcheck="false" size="50" value="<TMPL_VAR NAME=ORG_SEARCH>" name="org_search" id="org_search" onkeyup='search_organisms("org_search");'>
+            <span class='ui-button ui-corner-all coge-button' onClick="search_organisms('org_search');">
+                <span class="ui-icon ui-icon-arrowrefresh-1-w"></span>
+            </span>
+            <img id="busy" src="picts/ajax-loader.gif" style="opacity:0;"/>
+        </div>
     </div>
 </div>
 
 <div id='no_results' class="coge-padded-top" style='display:none;'></div>
 
 <div id='results' style="display:none;border-bottom:1px solid lightgray;">
-    <div>
-        <span class="coge-table-header">Organisms:</span>
-        <span class='small info' id='org_count'><TMPL_VAR NAME="ORG_COUNT"></span>
-        <div id="org_list">
-            <select class="small ui-widget ui-widget-content ui-corner-all" id="org_id" size="5" MULTIPLE>}
-              <TMPL_VAR NAME="ORG_LIST">
-            </select>
+
+    <div class="row row-margin">
+        <div class="col-md-4">
+            <span class="coge-table-header">Organisms:</span>
+            <span class='small info' id='org_count'><TMPL_VAR NAME="ORG_COUNT"></span>
+            <div id="org_list">
+                <select class="select small ui-widget ui-widget-content ui-corner-all" id="org_id" size="5" MULTIPLE>}
+                <TMPL_VAR NAME="ORG_LIST">
+                </select>
+            </div>
         </div>
-    </div>
-    
-    <div>
-        <div class="coge-table-header">Organism Information</div>
-        <div id='org_info' class="ui-corner-all ui-widget-content padded">
-            <TMPL_VAR NAME="ORG_INFO">
+
+        <div class="col-md-8">
+            <div class="coge-table-header">Organism Information</div>
+            <div id='org_info' class="ui-corner-all ui-widget-content padded">
+                <TMPL_VAR NAME="ORG_INFO">
+            </div>
         </div>
     </div>
 
-	<div>
-	    <span class="coge-table-header">Genomes:</span>
-	    <span class='small' id='genome_count'>
-	        <TMPL_VAR NAME="GENOME_COUNT">
-	    </span>
-	    <div style="vertical-align: top;" id="genome_list">
-	        <select class="small ui-widget ui-widget-content ui-corner-all" style="max-width:500px;" size="5" MULTIPLE>
-	            <TMPL_VAR NAME="GENOME_LIST">
-	        </select>
-	    </div>
-	</div>
-	
-	<div>
-	    <div class="coge-table-header">Genome Information</div>
-	    <div id="genome_info" class="ui-corner-all ui-widget-content padded">
-	        <TMPL_VAR NAME="GENOME_INFO">
-	    </div>
-	</div>
-	
-	<div>
-	      <span class="coge-table-header">Datasets: </span>
-	      <span class="small" id="ds_count"><TMPL_VAR NAME="DS_COUNT"></span>
-	      <div id="ds_list" style="vertical-align: top;">
-	        <select class="small ui-widget ui-widget-content ui-corner-all" size="5" MULTIPLE>
-	            <TMPL_VAR NAME="DS_LIST">
-	        </select>
-	      </div>
-	</div>
-	
-	<div>
-	    <div class="coge-table-header">Dataset Information</div>
-	    <div id="ds_info" class="ui-corner-all ui-widget-content padded">
-	        <TMPL_VAR NAME="DS_INFO">
-	    </div>
-	</div>
-	
-	<div>
-	    <span class="coge-table-header">Chromosomes:</span>
-	    <span class='small' id='chr_count'><TMPL_VAR NAME="CHR_COUNT"></span>
-	    <div id="chr_list" style="vertical-align: top;">
-	        <select class="small ui-widget ui-widget-content ui-corner-all" size="5">
-	            <TMPL_VAR NAME="CHR_LIST">
-	        </select>
-	    </div>
-	</div>
-	
-	<div>
-	    <div class="coge-table-header">Chromosome Information</div>
-	    <div id="chr_info" class="ui-corner-all ui-widget-content padded"><TMPL_VAR NAME="CHR_INFO"></div>
-	</div>
-	
-	<div>
-	      <div class="inline top" id="viewer">
-	          <TMPL_VAR NAME="VIEWER">
-	      </div>
-	      <div class="inline top" id="get_seq">
-	          <TMPL_VAR NAME="GET_SEQ">
-	      </div>
-	</div>
+    <div class="row row-margin">
+        <div class="col-md-4">
+            <span class="coge-table-header">Genomes:</span>
+            <span class='small' id='genome_count'>
+                <TMPL_VAR NAME="GENOME_COUNT">
+            </span>
+            <div style="vertical-align: top;" id="genome_list">
+                <select class="select small ui-widget ui-widget-content ui-corner-all" size="5" MULTIPLE>
+                    <TMPL_VAR NAME="GENOME_LIST">
+                </select>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="coge-table-header">Genome Information</div>
+            <div id="genome_info" class="small ui-corner-all ui-widget-content padded">
+                <TMPL_VAR NAME="GENOME_INFO">
+            </div>
+        </div>
+    </div>
+
+    <div class="row row-margin">
+        <div class="col-md-4">
+            <span class="coge-table-header">Datasets: </span>
+            <span class="small" id="ds_count"><TMPL_VAR NAME="DS_COUNT"></span>
+            <div style="vertical-align: top;" id="ds_list">
+                <select class="select small ui-widget ui-widget-content ui-corner-all" id="ds_id" SIZE="5" MULTIPLE >
+                    <TMPL_VAR NAME="DS_LIST">
+                </select>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="coge-table-header">Dataset Information</div>
+            <div id="ds_info" class="small ui-corner-all ui-widget-content padded">
+                <TMPL_VAR NAME="DS_INFO">
+            </div>
+        </div>
+    </div>
+
+    <div class="row row-margin">
+        <div class="col-md-4">
+            <span class="coge-table-header">Chromosomes:</span>
+            <span class='small' id='chr_count'><TMPL_VAR NAME="CHR_COUNT"></span>
+            <div id="chr_list" style="vertical-align: top;">
+                <select class="select small ui-widget ui-widget-content ui-corner-all" size="5">
+                    <TMPL_VAR NAME="CHR_LIST">
+                </select>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="coge-table-header">Chromosome Information</div>
+            <div id="chr_info" class="ui-corner-all ui-widget-content padded">
+                <TMPL_VAR NAME="CHR_INFO">
+            </div>
+        </div>
+    </div>
+
+    <div>
+          <div class="inline top" id="viewer">
+              <TMPL_VAR NAME="VIEWER">
+          </div>
+          <div class="inline top" id="get_seq">
+              <TMPL_VAR NAME="GET_SEQ">
+          </div>
+    </div>
 </div>
 
 <div class="dialog_box hidden" id="gc_histogram" title="Histogram of GC Content"><input type="hidden" id="feat_gc_min"></div>
