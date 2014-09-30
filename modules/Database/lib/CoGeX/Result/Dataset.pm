@@ -538,8 +538,9 @@ sub get_chromosomes {
     my $self   = shift;
     my %opts   = @_;
     my $ftid   = $opts{ftid};   #feature_type_id for feature_type of name "chromosome";
-    my $length = $opts{length}; #opts to return length of chromosomes as well
-    my $limit  = $opts{limit};  #opt to set the number of chromosomes to return, sorted by size
+    my $length = $opts{length}; #option to return length of chromosomes as well
+    my $limit  = $opts{limit};  #optional number of chromosomes to return, sorted by size
+    my $max    = $opts{max};    #optional number of chromosomes to avoid slow query, sorted by size
     my @data;
 
     #this query is faster if the feature_type_id of feature_type "chromosome" is known.
@@ -554,8 +555,15 @@ sub get_chromosomes {
         $search->{name}      = "chromosome";
         $search_type->{join} = "feature_type";
     }
+    
+    if ($max && $self->features( $search, $search_type )->count() > $max ) {
+        return;
+    }
 
-    $search_type->{rows} = $limit if $limit;
+    if ($limit) {
+        $search_type->{rows} = $limit;
+    }
+    
     if ($length) {
         @data = $self->features( $search, $search_type );
     }
