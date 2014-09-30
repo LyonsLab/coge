@@ -27,7 +27,7 @@ function init(params) {
 	    $('#results').fadeIn();
     } else {
 	    $('#results').hide();
-	    $('#no_results').html('Enter a search term').show();
+	    $('#no_results').html('No matching results found').show();
     }
 	
     // Setup event handlers
@@ -212,7 +212,7 @@ function dataset_chain() {
             if (response.count) $('#ds_count').html(response.count);
             $('#ds_info').html(SPINNER);//'<span class="small alert">&nbsp;loading...&nbsp;&nbsp;&nbsp;</span>');
             $('#chr_info').html(SPINNER);//'<span class="small alert">&nbsp;loading...&nbsp;&nbsp;&nbsp;</span>');
-            $('#chr_list > select').html('<option class="small alert">&nbsp;loading...&nbsp;&nbsp;&nbsp;</option>');
+            $('#chr_list > select').html('<option>&nbsp;loading...&nbsp;&nbsp;&nbsp;</option>');
             $('#chr_count,#viewer,#get_seq').empty();
             page.dsid = response.selected_id;
         },
@@ -266,7 +266,8 @@ function chr_info_chain() {
                  $('#get_seq').html(response.seqview).show();
             }
             else {
-            	$('#chr_info').hide();
+                 $('#chr_info').hide();
+                 $('#chr_info').parent().hide();
             	 $('#viewer').hide();
                  $('#get_seq').hide();
             }
