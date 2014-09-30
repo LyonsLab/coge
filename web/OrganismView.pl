@@ -90,7 +90,6 @@ sub dispatch {
     my %args  = $FORM->Vars;
     my $fname = $args{'fname'};
     if ($fname) {
-
         #my %args = $cgi->Vars;
         #print STDERR Dumper \%args;
         if ( $args{args} ) {
@@ -101,7 +100,6 @@ sub dispatch {
             print $FORM->header, $FUNCTION{$fname}->(%args);
         }
     }
-
     #    else{
     #  print $FORM->header, gen_html();
     #    }
@@ -139,10 +137,9 @@ sub gen_body {
     unless ($gid || $dsid || $oid || $dsname || $org_name) {
         return $template->output;
     }
-    $template->param( SHOW_RESULTS  => 1 );
     
     # Get organisms and insert into template
-    my ( $org_list, $org_count, $selected_oid ) = get_orgs( name => $org_name, oid => $oid, gid => $gid, dsid => $dsid, output => 'html' );
+    my ( $org_list, $org_count, $selected_oid ) = get_orgs( name => $org_name, oid => $oid, gid => $gid, dsid => $dsid, dsname => $dsname, output => 'html' );
     if ($org_list) {
         $template->param( 
             ORG_LIST  => $org_list,
@@ -182,6 +179,8 @@ sub gen_body {
     $template->param( ORGANISM_ID => $oid)  if ($selected_oid);
     $template->param( GENOME_ID   => $gid ) if ($selected_gid);
     $template->param( DATASET_ID  => $dsid)  if ($dsid);
+    
+    $template->param( SHOW_RESULTS  => ($org_count > 0) );
 
     return $template->output;
 }
@@ -220,11 +219,12 @@ sub make_genome_private {
 
 sub get_orgs {
     my %opts = @_;
-    my $name    = $opts{name};  # organism name
-    my $desc    = $opts{desc};  # organism description
-    my $oid     = $opts{oid};   # organism id
-    my $gid     = $opts{gid};   # genome id
-    my $dsid    = $opts{dsid};  # dataset id
+    my $name    = $opts{name};   # organism name
+    my $desc    = $opts{desc};   # organism description
+    my $oid     = $opts{oid};    # organism id
+    my $gid     = $opts{gid};    # genome id
+    my $dsid    = $opts{dsid};   # dataset id
+    my $dsname  = $opts{dsname}; # dataset name
     my $output  = $opts{output} || 'json';
     
     print STDERR "get_orgs\n", Dumper \%opts, "\n";
@@ -240,16 +240,31 @@ sub get_orgs {
             $organisms{$genome->organism_id} = $genome->organism;
         }
     }
-    elsif ($dsid) {
-        my $dataset = $coge->resultset('Dataset')->find($dsid);
-        if ($USER->has_access_to_dataset($dataset)) {
-            my @ds_genomes = $dataset->genomes;
-            map { $genomes{$_->id} = $_ } @ds_genomes;
-            map { $organisms{$_->organism_id} = $_->organism } @ds_genomes;
+    elsif ($dsid || $dsname) {
+        my @datasets;
+        
+        if ($dsid) {
+            my $ds = $coge->resultset('Dataset')->find($dsid);
+            push @datasets, $ds if ($ds);
+        }
+        if ($dsname && length $dsname > 5) {
+            my $search_term = '%' . $dsname . '%';
+            my @ds = $coge->resultset('Dataset')->search(\[
+                    'dataset_id = ? OR name LIKE ? OR description LIKE ?',
+                    [ 'dataset_id', ($dsid ? $dsid : 0) ], [ 'name', $search_term ], [ 'description', $search_term ]
+                ]);
+            push @datasets, @ds if (@ds);
+        }
+        
+        foreach my $dataset (@datasets) {
+            if ($USER->has_access_to_dataset($dataset)) {
+                my @ds_genomes = $dataset->genomes;
+                map { $genomes{$_->id} = $_ } @ds_genomes;
+                map { $organisms{$_->organism_id} = $_->organism } @ds_genomes;
+            }
         }
     }
     elsif ($oid || $name || $desc) {
-        # Search organisms in db
         my $search_term = '%' . $name . '%';
         my @orgs = $coge->resultset("Organism")->search(
             \[
@@ -277,26 +292,24 @@ sub get_orgs {
     
     # Build html options list of organisms
     my @opts;
-    my $selected = 0;
     foreach my $_ ( sort { uc( $a->name ) cmp uc( $b->name ) } values %organisms ) {
         my $this_id = $_->id;
         my $this_name = $_->name;
-        my $option = "<option value=\"" . $this_id . "\"";
-        
+
         # Set selected option if first or specified by user - FIXME rewrite this
+        my $selected;
         if ( ($oid && $this_id == $oid) || ($gid && $this_id == $genomes{$gid}->organism->id) ) {
-            $option .= " selected";
-            $selected = scalar(@opts); # index
+            $selected = "selected";
             $oid = $this_id;
         }
         elsif (scalar(@opts) == 0) {
-            $option .= " selected";
-            $selected = scalar(@opts); # index
+            $selected = "selected"; # index
             $oid = $this_id;    
         }
         
         $name = substr( $this_name, 0, 50 ) . "..." if ( length($this_name) > 50 );
-        $option .= ">" . $this_name . " (id" . $this_id . ")</option>\n";
+        my $text = "$this_name (id$this_id)";
+        my $option = qq{<option $selected title="$text" value="$this_id">$text</option>};
         push @opts, $option;
     }
     unless (@opts) {
@@ -306,7 +319,7 @@ sub get_orgs {
     }
     
     my $html = join('\n', @opts);
-    print STDERR "html:\n$html\n";
+#    print STDERR "html:\n$html\n";
     
     return $html, scalar(@opts), $oid if ($output eq 'html');
     return encode_json({ organisms => $html, count => scalar(@opts), selected_id => $oid });
@@ -450,7 +463,8 @@ sub get_genomes {
                 $selected_gid = $genome->id;
             }
             
-            push @opts, qq{<OPTION value="}.$genome->id.qq{" $selected>}.$genome->info.qq{</OPTION>};
+            my $info = $genome->info;
+            push @opts, qq{<OPTION title="$info" value="}.$genome->id.qq{" $selected>$info</OPTION>};
         }
     }
     my $html;
@@ -716,13 +730,14 @@ sub get_dataset_info {
                 $selected_chr = $_;
                 $selected = 'selected';
             }
+            
             push @opts, 
                 qq{<option $selected value="$_">$_ (}.commify( $chr{$_}{length} ).qq{ bp)</option>};
         }
         $html_chr .= join('', @opts);
     }
     elsif ($chr_num) {
-        $html_chr .= "<option>Too many chromosomes to query</option>";
+        $html_chr .= "<option>Too many chromosomes (".commify($chr_num).") to query</option>";
     }
     else {
         $html_chr .= "<option>No chromosomes</option>";
@@ -806,18 +821,20 @@ sub get_chr_info {
       $length < $MAX_DS_LENGTH
       ? get_gc_for_chromosome( dsid => $ds->id, chr => $chr )
       : 0;
-    $gc =
-        $gc
-      ? $gc
-      : qq{<div style="float: left; text-indent: 1em;" id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chromosome_gc']);">Click for %GC content</div>};
+#    $gc =
+#        $gc
+#      ? $gc
+#      : qq{<div style="float: left; text-indent: 1em;" id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chromosome_gc']);">Click for %GC content</div>};
     $length = commify($length) . " bp ";
     $html .= qq{<tr><td>Chromosome ID:</td><td>$chr</td></tr>}
-          .  qq{<tr><td>Nucleotides:</td><td>$length</td><td>$gc</td></tr>};
+          .  qq{<tr><td>Nucleotides:</td><td>$length</td>}
+          #.  qq{<td>$gc</td>}
+          .  qq{</tr>};
 
-    $html .= qq{<tr><td>Noncoding sequence:</td>}
-          .  qq{<td colspan='2'><span class="link" onclick="gen_data(['args__loading...'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['noncoding_gc']);">Click for %GC content</span></td>}
-          .  qq{</tr>}
-        if $length;
+#    $html .= qq{<tr><td>Noncoding sequence:</td>}
+#          .  qq{<td colspan='2'><span class="link" onclick="gen_data(['args__loading...'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['noncoding_gc']);">Click for %GC content</span></td>}
+#          .  qq{</tr>}
+#        if $length;
 
 #    my $feat_string = qq{<tr><td><div id="feature_count" onclick="gen_data(['args__loading...'],['chr_features']);get_feature_counts(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chr_features']);">Click for Features</div></td></tr>};
 #    $html .= $feat_string;
