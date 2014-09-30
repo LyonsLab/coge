@@ -5,6 +5,7 @@
  */
 
 var page;
+var SPINNER = '<img src="picts/ajax-loader.gif"/>';
 
 function init(params) {
 	page = params;
@@ -30,12 +31,8 @@ function init(params) {
     }
 	
     // Setup event handlers
-	$('#org_list > select').on('change', '', function (event) {
-		org_list_event();
-	});
-	$('#genome_list > select').on('change', '', function (event) {
-		genome_list_event();
-	});
+	$('#org_list > select').on('change', '', org_list_event);
+	$('#genome_list > select').on('change', '', genome_list_event);
 	$('#ds_list > select').on('change', '', dataset_list_event);	
 	$('#chr_list > select').on('change', '', chr_list_event);
 }
@@ -64,7 +61,7 @@ function genome_list_event() {
 
 function dataset_list_event() {
 	console.log('dataset_list_event');
-	var gid = $('#dataset_list_event > select').find(':selected').val();
+	var gid = $('#dataset_list > select').find(':selected').val();
 	if (gid) {
 		page.gid = gid;
 		dataset_info_chain();
@@ -96,7 +93,7 @@ function get_organism_chain(search_term) {
             jquery_ajax: 1,
             name: search_term,
             desc: search_term,
-            dsgid: page.gid
+            //gid: page.gid
         },
         success: function(response) {
             if (response.organisms)
@@ -144,7 +141,8 @@ function get_org_info_chain() {
             if (response.error)
                 $('#org_info').html(response.error);
             $('#genome_list > select').html('');
-            $('#dsg_count,#dsg_info,#ds_count,#ds_info,#chr_list,#chr_count,#chr_info,#viewer,#get_seq').empty();
+            $('#genome_count,#genome_info,#ds_count,#ds_info,#chr_list > select,#chr_count,#chr_info,#viewer,#get_seq').empty();
+            //$('#genome_list > select,#genome_info,#ds_list > select,#ds_info,#chr_info').html(SPINNER); // TODO
         },
         error: function () {
             $('#org_info').html('<span class="small alert">The results could not be loaded.</span>');
@@ -159,7 +157,7 @@ function genome_chain() {
             fname: "get_genomes",
             jquery_ajax: 1,
             oid: page.oid,
-            gid: page.gid
+            //gid: page.gid
         },
         success: function(response) {
         	if (!response) return;
@@ -171,7 +169,7 @@ function genome_chain() {
             }
             if (response.count) 
             	$('#genome_count').html(response.count);
-            //$('#dsg_info,#ds_list,#chr_info').html('<span class="small alert">loading...</span>');
+            $('#ds_list > select,#genome_info,#ds_info,#chr_info').html(SPINNER);
         },
         error: function () {
             $('#genome_list > select').html('<span class="small alert">The results could not be loaded.</span>');
@@ -212,8 +210,8 @@ function dataset_chain() {
             if (response.error) $('#ds_list > select').html(response.error);
             if (response.datasets) $('#ds_list > select').html(response.datasets);
             if (response.count) $('#ds_count').html(response.count);
-            $('#ds_info').html('<span class="small alert">loading...</span>');
-            $('#chr_info').html('<span class="small alert">loading...</span>');
+            $('#ds_info').html(SPINNER);//'<span class="small alert">loading...</span>');
+            $('#chr_info').html(SPINNER);//'<span class="small alert">loading...</span>');
             $('#chr_list > select').html('<span class="small alert">loading...</span>');
             $('#chr_count,#viewer,#get_seq').empty();
             page.dsid = response.selected_id;
@@ -235,7 +233,8 @@ function dataset_info_chain() {
             dsid: page.dsid
         },
         success: function (response) {
-        	if (response.error) $('#ds_info').html(response.error);
+        	console.log(response);
+        	//if (response.error) $('#ds_info').html(response.error);
             if (response.dataset) $('#ds_info').html(response.dataset);
             if (response.chromosomes) $('#chr_list > select').html(response.chromosomes);
             if (response.count) $('#chr_count').html(response.count);
@@ -259,13 +258,22 @@ function chr_info_chain() {
             chr: page.chr
         },
         success: function (response) {
-            $('#chr_info').html(response.chromosome);
-            $('#viewer').html(response.viewer); // mdb
-            $('#get_seq').html(response.seqview);
+        	console.log(response);
+            if (response.chr_info) {
+            	 $('#chr_info').html(response.chr_info).show();
+            	 $('#chr_info').parent().show(); // see kludge in tmpl
+            	 $('#viewer').html(response.viewer).show();
+                 $('#get_seq').html(response.seqview).show();
+            }
+            else {
+            	$('#chr_info').hide();
+            	 $('#viewer').hide();
+                 $('#get_seq').hide();
+            }
             setup_button_states();
         },
         error: function() {
-            $('#chr_info').html('<span class="small alert">The results could not be loaded.</span>');
+            $('#chr_info').html('<span class="small alert">The results could not be loaded.</span>').show();
         }
     });
 }
