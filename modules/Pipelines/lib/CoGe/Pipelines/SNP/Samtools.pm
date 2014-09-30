@@ -11,6 +11,7 @@ use File::Basename qw(fileparse basename);
 
 use CoGe::Core::Storage qw(get_genome_file get_experiment_files get_workflow_paths);
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Jex;
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -19,22 +20,26 @@ our $CONFIG = CoGe::Accessory::Web::get_defaults();
 our $JEX = CoGe::Accessory::Jex->new( host => $CONFIG->{JOBSERVER}, port => $CONFIG->{JOBPORT} );
 
 sub run {
-    my $opts = shift;
+    my %opts = @_;
 
     # Required arguments
-    my $experiment = $opts->{experment};
-    my $user = $opts->{user};
+    my $experiment = $opts{experiment} or croak "An experiment must be specified";
+    my $user = $opts{user} or croak "A user was not specified";
 
     my $workflow = $JEX->create_workflow( name => 'Running the SNP-finder pipeline', init => 1 );
+    my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
+    $workflow->logfile( catfile($staging_dir, 'debug.log') );
+
     my @jobs = build({
         experiment => $experiment,
+        staging_dir => $staging_dir,
         user => $user,
         wid  => $workflow->id,
     });
 
     # Add all the jobs to the workflow
     foreach (@jobs) {
-        $workflow->add_job($_);
+        $workflow->add_job(%{$_});
     }
 
     # Submit the workflow
@@ -53,9 +58,9 @@ sub build {
     my $experiment = $opts->{experiment};
     my $user = $opts->{user};
     my $wid = $opts->{wid};
+    my $staging_dir = $opts->{staging_dir};
 
     my $genome = $experiment->genome;
-    my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $wid );
     my $fasta_cache_dir = catdir($CONFIG->{CACHEDIR}, $genome->id, "fasta");
 
     my $fasta_file = get_genome_file($genome->id);
@@ -67,10 +72,10 @@ sub build {
     my $conf = {
         staging_dir    => $staging_dir,
 
-        fasta          => $reheader_fasta,
         bam            => $bam_file,
-        bcf            => qq[snps.raw.bcf],
-        vcf            => qq[snps.flt.vcf],
+        fasta          => catfile($fasta_cache_dir,, $reheader_fasta),
+        bcf            => catfile($staging_dir, qq[snps.raw.bcf]),
+        vcf            => catfile($staging_dir, qq[snps.flt.vcf]),
 
         experiment     => $experiment,
         username       => $user->name,
@@ -79,17 +84,20 @@ sub build {
         gid            => $genome->id,
     };
 
+    my @jobs;
+
     # Build all the job
-    return (
-        create_fasta_reheader_job({
-            fasta => $fasta_file,
-            cache_dir => $fasta_cache_dir,
-            reheader_fasta => $reheader_fasta,
-        }),
-        create_find_snps_job($conf),
-        create_filter_snps_job($conf),
-        create_load_vcf_job($conf),
-    );
+    push @jobs, create_fasta_reheader_job({
+        fasta => $fasta_file,
+        cache_dir => $fasta_cache_dir,
+        reheader_fasta => $reheader_fasta,
+    });
+
+    push @jobs, create_find_snps_job($conf);
+    push @jobs, create_filter_snps_job($conf);
+    push @jobs, create_load_vcf_job($conf);
+
+    return @jobs;
 }
 
 sub create_fasta_reheader_job {
@@ -124,7 +132,6 @@ sub create_find_snps_job {
     my $opts = shift;
 
     # Required arguments
-    my $staging_dir = $opts->{staging_dir};
     my $reference = $opts->{fasta};
     my $alignment = $opts->{bam};
     my $snps = $opts->{bcf};
@@ -138,8 +145,8 @@ sub create_find_snps_job {
                 f => [],
             },
             inputs => [
-                $reference,
-                $alignment,
+                basename($reference),
+                basename($alignment),
             ],
         },
         bcf => {
@@ -164,14 +171,17 @@ sub create_find_snps_job {
     # Pipe commands together
     my $command = join " | ", @subcommands;
 
+    # Get the output filename
+    my $output = basename($snps);
+
     return {
-        cmd => qq[$command - > $snps],
+        cmd => qq[$command - > $output],
         inputs => [
-            catfile($staging_dir, $reference),
-            catfile($staging_dir, $alignment),
+            $reference,
+            $alignment,
         ],
         outputs => [
-            catfile($staging_dir, $snps),
+            $snps,
         ],
         description => "Finding SNPs using SAMtools method ...",
     };
@@ -181,7 +191,6 @@ sub create_filter_snps_job {
     my $opts = shift;
 
     # Required arguments
-    my $staging_dir = $opts->{staging_dir};
     my $snps = $opts->{bcf};
     my $filtered_snps = $opts->{vcf};
 
@@ -195,7 +204,7 @@ sub create_filter_snps_job {
             args    => {
             },
             inputs => [
-                $snps,
+                basename($snps),
             ],
         },
 
@@ -218,13 +227,16 @@ sub create_filter_snps_job {
     # Pipe commands together
     my $command = join " | ", @subcommands;
 
+    # Get the output filename
+    my $output = basename($filtered_snps);
+
     return {
-        cmd => qq[$command > $filtered_snps],
+        cmd => qq[$command > $output],
         inputs  => [
-            catfile($staging_dir, $snps),
+            $snps,
         ],
         outputs => [
-            catfile($staging_dir, $filtered_snps),
+            $filtered_snps,
         ],
         description => "Filtering SNPs ...",
     };
@@ -246,7 +258,7 @@ sub create_load_vcf_job {
     my $output_path = catdir($staging_dir, "load_experiment");
     my $exp_name = $experiment->name;
 
-    return (
+    return {
         cmd => $cmd,
         script => undef,
         args => [
@@ -274,7 +286,7 @@ sub create_load_vcf_job {
             catfile($output_path, "log.done"),
         ],
         description => "Load SNPs as new experiment ..."
-    );
+    };
 }
 
 sub to_filename { # FIXME: move into Utils module
