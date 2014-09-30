@@ -5,8 +5,8 @@
 <script type="text/javascript" src="./js/jquery.fileupload.js"></script>
 <script type="text/javascript">
 
-const STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
-const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
+var STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
+var PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
 
 var eid = '<TMPL_VAR NAME="EID">';
 var job_id = '<TMPL_VAR NAME="JOB_ID">';
@@ -43,7 +43,32 @@ $(document).ready(function() {
         $('#progress_dialog').dialog({ autoOpen: true, title: "Finding SNPs ..." });
         update_dialog(STATUS_URL + job_id, "#progress_dialog", progress_formatter);
     }
+
+    init();
 });
+
+function init() {
+    var snp_finder = $("#snp_finder");
+    var selector = snp_finder.find("select");
+    var button = snp_finder.find("button").prop("disabled", 1);
+
+    selector.on("change", function(ev) {
+        var method = $(this).val();
+
+        button.unbind()
+              .removeAttr("disabled")
+              .on("click", function() { find_snps(method) });
+
+        switch(method) {
+            case "coge": break;
+            case "samtools": break;
+            default: {
+                button.unbind().attr("disabled", "disabled");
+                break;
+            }
+        }
+    });
+}
 
 function set_annotation_table() {
     $('#experiment_annotation_table').tablesorter({widgets: ['zebra']});
@@ -327,7 +352,7 @@ function export_data() {
     });
 }
 
-function find_snps() {
+function find_snps(method) {
     // Prevent concurrent executions
     if ( $("#progress_dialog").dialog( "isOpen" ) )
         return;
@@ -346,11 +371,12 @@ function find_snps() {
 
     $('#progress_log').html('Initializing ...');
     newLoad = true;
-    
+
     $.ajax({
         data: {
             fname: 'find_snps',
             eid: eid,
+            method: method,
             timestamp: new Date().getTime()
         },
         success : function(data) {
@@ -708,16 +734,22 @@ function get_tag_description (name) {
 		            </tr>
                     </TMPL_UNLESS>
 		            <TMPL_IF NAME="ALIGNMENT_TYPE">
-		            <tr>
-		                <td>
-			                <span class="title5">Analyze:</span>
-			            </td>
-			            <td>
-			                <span class="data5 link" ondblclick="find_snps()" onclick="find_snps()">Find SNPs</span>
-		                </td>
-			        </tr>
+                    <tr>
+                        <td colspan="2">
+                            <div id="snp_finder">
+                                <select>
+                                    <option selected="selected">-- Select a SNP Finding method --</option>
+                                    <option value="coge" class="data5 link">CoGe method</option>
+                                    <option value="samtools" class="data5 link">Samtools method</option>
+                                </select>
+                                <button class="ui-button ui-corner-all">Find SNPs</button>
+                            </div>
+                        </td>
+                    </tr>
 			        </TMPL_IF>
 			    </table>
+                <div>
+                </div>
 		    </div>
 		</td>
 	</tr>
