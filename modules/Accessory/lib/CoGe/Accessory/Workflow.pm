@@ -40,10 +40,10 @@ sub add_job {
     my ( $self, %opts ) = @_;
     my $cmd         = $opts{cmd};
     my $script      = "" unless defined( $opts{script} );
-    my $args        = $opts{args};
-    my $inputs      = $opts{inputs};
+    my $args        = $opts{args} || [];
+    my $inputs      = $opts{inputs} || [];
     my $options     = $opts{options};
-    my $outputs     = $opts{outputs};
+    my $outputs     = $opts{outputs} || [];
     my $description = $opts{description};
     my $size        = $self->jobs;
     my $overwrite;
