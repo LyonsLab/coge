@@ -27,7 +27,7 @@ function init(params) {
 	    $('#results').fadeIn();
     } else {
 	    $('#results').hide();
-	    $('#no_results').html('No matching results found').show();
+	    $('#no_results').html('<div class="note" style="padding-left:1em;">No matching results found</div>').show();
     }
 	
     // Setup event handlers
