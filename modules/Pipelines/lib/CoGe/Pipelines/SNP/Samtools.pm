@@ -73,7 +73,7 @@ sub build {
         staging_dir    => $staging_dir,
 
         bam            => $bam_file,
-        fasta          => catfile($fasta_cache_dir,, $reheader_fasta),
+        fasta          => catfile($fasta_cache_dir, $reheader_fasta),
         bcf            => catfile($staging_dir, qq[snps.raw.bcf]),
         vcf            => catfile($staging_dir, qq[snps.flt.vcf]),
 
