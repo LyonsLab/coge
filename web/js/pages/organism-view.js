@@ -210,9 +210,9 @@ function dataset_chain() {
             if (response.error) $('#ds_list > select').html(response.error);
             if (response.datasets) $('#ds_list > select').html(response.datasets);
             if (response.count) $('#ds_count').html(response.count);
-            $('#ds_info').html(SPINNER);//'<span class="small alert">loading...</span>');
-            $('#chr_info').html(SPINNER);//'<span class="small alert">loading...</span>');
-            $('#chr_list > select').html('<span class="small alert">loading...</span>');
+            $('#ds_info').html(SPINNER);//'<span class="small alert">&nbsp;loading...&nbsp;&nbsp;&nbsp;</span>');
+            $('#chr_info').html(SPINNER);//'<span class="small alert">&nbsp;loading...&nbsp;&nbsp;&nbsp;</span>');
+            $('#chr_list > select').html('<option class="small alert">&nbsp;loading...&nbsp;&nbsp;&nbsp;</option>');
             $('#chr_count,#viewer,#get_seq').empty();
             page.dsid = response.selected_id;
         },

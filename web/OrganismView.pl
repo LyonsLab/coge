@@ -722,7 +722,7 @@ sub get_dataset_info {
         $html_chr .= join('', @opts);
     }
     elsif ($chr_num) {
-        $html_chr .= "<option>Too many chromosomes</option>";
+        $html_chr .= "<option>Too many chromosomes to query</option>";
     }
     else {
         $html_chr .= "<option>No chromosomes</option>";
