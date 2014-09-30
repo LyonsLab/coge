@@ -784,11 +784,10 @@ sub get_chr_info {
     my %opts = @_;
     my $dsid  = $opts{dsid};
     my $chr   = $opts{chr};
-    my $dsgid = $opts{dsgid};
+    my $gid   = $opts{gid};
     my $output  = $opts{output} || 'json';
     print STDERR "get_chr_info $dsid ",($chr ? $chr : ''),"\n";
 
-    $dsgid = 0 unless defined $dsgid;
     $dsid  = 0 unless $dsid;
     unless ( $dsid && defined $chr && $chr ne '' ) # error flag for empty dataset
     {
@@ -843,26 +842,28 @@ sub get_chr_info {
     $html .= qq{</table>};
     
     # Generate html for launch & seq retrieval buttons
+    $gid = 0 unless defined $gid;
     my $viewer;
     if ( defined $chr ) {
-        $viewer .= qq{<div class="coge-table-header _orgviewresult">Genome Viewer</div>}
-         . qq{<table class="small ui-corner-all ui-widget-content _orgviewresult">}
-         . qq{<tr><td nowrap>Starting location: </td>}
+        $viewer .= qq{<div class="coge-table-header">Genome Viewer</div>}
+         . qq{<table class="small ui-corner-all ui-widget-content">}
+         . qq{<tr><td nowrap>Start: </td>}
          . qq{<td><input type="text" size=10 value="20000" id="x">}
-         . qq{<tr><td >Zoom level:<td><input type = "text" size=10 value ="6" id = "z">}
-         . qq{<tr><td colspan=2><span style="font-size:1em" class='ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left' onClick="launch_viewer('$dsgid', '$chr')">}
+         #. qq{<tr><td >Zoom level:<td><input type = "text" size=10 value ="6" id = "z">}
+         . qq{<tr><td colspan=2><span style="font-size:1em" class='ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left' onClick="launch_viewer()">}
          . qq{<span class="ui-icon ui-icon-newwin"></span>Launch Genome Viewer</span>}
          . qq{</table>};
     }
     my $seq_grab;
     if ( defined $chr ) {
-        $seq_grab .= qq{<div class="coge-table-header _orgviewresult">Genomic Sequence Retrieval</div>}
-         . qq{<table class=\"small ui-corner-all ui-widget-content _orgviewresult padded\">}
-         . qq{<tr><td>Start position: }
+        $seq_grab .= qq{<div class="coge-table-header">Genomic Sequence Retrieval</div>}
+         . qq{<table class=\"small ui-corner-all ui-widget-content padded\">}
+         . qq{<tr><td>Start: }
          . qq{<td><input type="text" size=10 value="1" id="start">}
-         . qq{<tr><td>End position: }
-         . qq{<td><input type="text" size=10 value="100000" id="stop">}
-         . qq{<tr><td colspan=2><span style="font-size:1em" class='ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left' onClick="launch_seqview('$dsgid', '$chr','$dsid')"><span class="ui-icon ui-icon-newwin"></span>Get Sequence</span>}
+         . qq{End: <input type="text" size=10 value="100000" id="stop">}
+         . qq{<tr><td colspan=2>}
+         . qq{<span style="font-size:1em" class='ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left' onClick="launch_seqview()">}
+         . qq{<span class="ui-icon ui-icon-newwin"></span>Get Sequence</span>}
          . qq{</table>};
     }
 
