@@ -112,13 +112,15 @@ $(function() {
     </div>
 
     <div>
-          <div class="inline top" id="viewer">
+          <div id="viewer" class="inline top">
               <TMPL_VAR NAME="VIEWER">
           </div>
-          <div class="inline top" id="get_seq">
+          <div id="get_seq" class="inline top" style="padding-right:1em;">
               <TMPL_VAR NAME="GET_SEQ">
           </div>
     </div>
+    
+    <br><br>
 </div>
 
 <div class="dialog_box hidden" id="gc_histogram" title="Histogram of GC Content"><input type="hidden" id="feat_gc_min"></div>
