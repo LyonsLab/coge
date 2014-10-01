@@ -134,13 +134,12 @@ sub gen_body {
 
     # Initialize template
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'OrganismView.tmpl' );
-    unless ($gid || $dsid || $oid || $dsname || $org_name) {
-        return $template->output;
-    }
+    
+    $template->param( ORG_SEARCH  => $org_name ) if $org_name;
     
     # Get organisms and insert into template
     my ( $org_list, $org_count, $selected_oid ) = get_orgs( name => $org_name, oid => $oid, gid => $gid, dsid => $dsid, dsname => $dsname, output => 'html' );
-    if ($org_list) {
+    if ($org_count) {
         $template->param( 
             ORG_LIST  => $org_list,
             ORG_COUNT => $org_count 
@@ -149,6 +148,10 @@ sub gen_body {
         # Get organism info
         my $org_info = get_org_info(oid => $selected_oid, output => 'html');
         $template->param( ORG_INFO => $org_info ) if $org_info;
+    }
+    else {
+        $template->param( NO_RESULTS  => $org_list );
+        return $template->output;
     }
     
     my ( $genome_list, $genome_count, $selected_gid ) = get_genomes( oid => $selected_oid, gid => $gid, output => 'html' );
@@ -169,20 +172,16 @@ sub gen_body {
 
     # Get chromosome info and insert into template
     my ( $chr_info, $viewer, $seqview ) = get_chr_info( dsid => $selected_dsid, chr => $selected_chr, output => 'html' );
-    print STDERR 'chr_info ', Dumper $chr_info, "\n";
     $template->param( CHR_INFO => $chr_info ) if ($chr_info);
     $template->param( VIEWER   => $viewer ) if ($viewer);
     $template->param( GET_SEQ  => $seqview ) if ($seqview);
 
     # Finish template
-    $template->param( ORG_SEARCH  => $org_name ) if $org_name;
     $template->param( ORGANISM_ID => $oid)  if ($selected_oid);
     $template->param( GENOME_ID   => $gid ) if ($selected_gid);
     $template->param( DATASET_ID  => $dsid)  if ($dsid);
     $template->param( CHR_ID      => $selected_chr) if ($selected_chr);
     
-    $template->param( SHOW_RESULTS  => ($org_count > 0) );
-
     return $template->output;
 }
 
@@ -248,7 +247,7 @@ sub get_orgs {
             my $ds = $coge->resultset('Dataset')->find($dsid);
             push @datasets, $ds if ($ds);
         }
-        if ($dsname && length $dsname > 5) {
+        if ($dsname && length($dsname) > 5) {
             my $search_term = '%' . $dsname . '%';
             my @ds = $coge->resultset('Dataset')->search(\[
                     'dataset_id = ? OR name LIKE ? OR description LIKE ?',
@@ -258,37 +257,50 @@ sub get_orgs {
         }
         
         foreach my $dataset (@datasets) {
-            if ($USER->has_access_to_dataset($dataset)) {
-                my @ds_genomes = $dataset->genomes;
-                map { $genomes{$_->id} = $_ } @ds_genomes;
-                map { $organisms{$_->organism_id} = $_->organism } @ds_genomes;
+            my @ds_genomes = $dataset->genomes;
+            foreach my $genome (@ds_genomes) {
+                if ($USER->has_access_to_genome($genome)) {
+                    $genomes{$genome->id} = $genome;
+                    $organisms{$genome->organism_id} = $genome->organism };
             }
         }
     }
     elsif ($oid || $name || $desc) {
-        my $search_term = '%' . $name . '%';
-        my @orgs = $coge->resultset("Organism")->search(
-            \[
-                'organism_id = ? OR name LIKE ? OR description LIKE ?',
-                [ 'organism_id', $oid ], [ 'name', $search_term ], [ 'description', $search_term ]
-            ]
-        );
-
-        # Limit results
-        if (@orgs > $MAX_NUM_ORGANISM_RESULTS) {
-            my $results = qq{<option class="small alert">Too many results to show (}.@orgs.qq{), please refine your search</option>};
-            return ( $results, scalar(@orgs) ) if ($output eq 'html');
-            return encode_json({
-                organisms => $results,
-                count => scalar(@orgs)
-            });
+        my @orgs;
+        if ($oid) {
+            my $org = $coge->resultset("Organism")->find($oid);
+            push @orgs, $org if ($org);
+        }
+        else {
+            my $search_term = '%' . $name . '%';
+            @orgs = $coge->resultset("Organism")->search(
+                \[
+                    'name LIKE ? OR description LIKE ?',
+                    [ 'name', $search_term ], [ 'description', $search_term ]
+                ]
+            );
         }
         
-        %organisms = map { $_->id => $_ } @orgs;
+        # Limit results
+        if (@orgs > $MAX_NUM_ORGANISM_RESULTS) {
+            my $msg = qq{Too many results to show (}.@orgs.qq{), please refine your search.};
+            return $msg if ($output eq 'html');
+            return encode_json({ error => $msg });
+        }
+        elsif (@orgs) {
+            %organisms = map { $_->id => $_ } @orgs;
+        }
     }
     else {
-        return if ($output eq 'html');
-        return encode_json({organisms => '', count => 0});
+        my $msg = 'Please enter a search term.';
+        return $msg, 0 if ($output eq 'html');
+        return encode_json({ error => $msg });
+    }
+    
+    unless (keys %organisms) {
+        my $msg = 'No matching results were found.';
+        return $msg, 0 if ($output eq 'html');
+        return encode_json({ error => $msg });
     }
     
     # Build html options list of organisms
@@ -297,9 +309,13 @@ sub get_orgs {
         my $this_id = $_->id;
         my $this_name = $_->name;
 
-        # Set selected option if first or specified by user - FIXME rewrite this
+        # Set selected option if first or specified by user - FIXME there is a bettery way
         my $selected;
         if ( ($oid && $this_id == $oid) || ($gid && $this_id == $genomes{$gid}->organism->id) ) {
+            $selected = "selected";
+            $oid = $this_id;
+        }
+        elsif ($dsid) {
             $selected = "selected";
             $oid = $this_id;
         }
@@ -314,9 +330,8 @@ sub get_orgs {
         push @opts, $option;
     }
     unless (@opts) {
-        my $message = "No organisms found";
-        return ($message, 0) if ($output eq 'html');
-        return encode_json({ organisms => $message, count => 0 });
+        return ('', 0) if ($output eq 'html');
+        return encode_json({ organisms => '', count => 0 });
     }
     
     my $html = join('\n', @opts);
@@ -481,7 +496,7 @@ sub get_genomes {
         return encode_json({ error => $message });
     }
     
-    print STDERR Dumper { genomes => $html, count => scalar(@opts), selected_id => $selected_gid }, "\n";
+    #print STDERR Dumper { genomes => $html, count => scalar(@opts), selected_id => $selected_gid }, "\n";
     return $html, scalar(@opts), $selected_gid if ($output eq 'html');
     return encode_json({ genomes => $html, count => scalar(@opts), selected_id => $selected_gid });
 }
@@ -501,8 +516,7 @@ sub add_to_irods {
     my ($ds) = $dsg->datasets;
     $cmd .= " -tag 'source_name=" . $ds->name . "'";
     $cmd .= " -tag 'source_link=" . $ds->link . "'" if $ds->link;
-    $cmd .=
-" -tag 'imported_from=CoGe: http://genomevolution.org/CoGe/OrganismView.pl?dsgid=$dsgid'";
+    $cmd .= " -tag 'imported_from=CoGe: http://genomevolution.org/CoGe/OrganismView.pl?dsgid=$dsgid'";
     system($cmd);
     print STDERR $cmd;
 
@@ -603,13 +617,17 @@ sub get_datasets {
         my @ds = $genome->datasets;
         push @datasets, @ds;
     }
-    elsif ($dsid || $dsname) {
+    elsif ($dsid) {
+        my $dataset = $coge->resultset("Dataset")->find($dsid);
+        push @datasets, $dataset if ($dataset);
+    }
+    elsif ($dsname) {
         # Search datasets in db
         my $search_term = '%' . $dsname . '%' if ($dsname);
         @datasets = $coge->resultset("Dataset")->search(
             \[
-                'dataset_id = ? OR name LIKE ? OR description LIKE ?',
-                [ 'dataset_id', $dsid ], [ 'name', $search_term ], [ 'description', $search_term ]
+                'name LIKE ? OR description LIKE ?',
+                [ 'name', $search_term ], [ 'description', $search_term ]
             ]
         );
     }
@@ -629,7 +647,11 @@ sub get_datasets {
     foreach my $item (sort { $b->version <=> $a->version || uc( $a->name ) cmp uc( $b->name ) } @datasets) {
         #next unless $USER->has_access_to_dataset($item);
         my $selected = '';
-        if ( scalar(@opts) == 0 || ($dsid && $dsid == $item->id) ) {
+        if ($dsid && $dsid == $item->id) {
+            $selected = 'selected'; # index
+            $selected_id = $item->id;
+        }
+        elsif ( scalar(@opts) == 0 ) {
             $selected = 'selected'; # index
             $selected_id = $item->id;
         }
@@ -766,12 +788,12 @@ sub get_dataset_info {
     $chr_count .= " <span class='note'> (only $MAX_NUM_CHROMOSOME_RESULTS largest listed)</span>"
       if ( $chr_count > $MAX_NUM_CHROMOSOME_RESULTS );
     
-    print STDERR Dumper {
-            dataset => $html_ds,
-            chromosomes => $html_chr,
-            count => $chr_count,
-            selected_chr => $selected_chr
-        }, "\n";
+#    print STDERR Dumper {
+#            dataset => $html_ds,
+#            chromosomes => $html_chr,
+#            count => $chr_count,
+#            selected_chr => $selected_chr
+#        }, "\n";
     return $html_ds, $html_chr, $chr_count, $selected_chr if ($output eq 'html');
     return encode_json({
         dataset => $html_ds,
@@ -868,11 +890,11 @@ sub get_chr_info {
          . qq{</table>};
     }
 
-    print STDERR Dumper {
-        chr_info => $html,
-        viewer => $viewer,
-        seqview => $seq_grab
-    }, "\n";
+#    print STDERR Dumper {
+#        chr_info => $html,
+#        viewer => $viewer,
+#        seqview => $seq_grab
+#    }, "\n";
     return $html, $viewer, $seq_grab if ($output eq 'html');
     return encode_json({
         chr_info => $html,

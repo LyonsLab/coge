@@ -22,12 +22,11 @@ function init(params) {
 	$(".dialog").dialog({ autoOpen: false});
     
     // Auto-show results
-    if (page.show_results) {
-	    //search_organisms();
-	    $('#results').fadeIn();
+    if (page.init_msg) {
+    	$('#results').hide();
+  	    $('#no_results').html(page.init_msg).show();
     } else {
-	    $('#results').hide();
-	    $('#no_results').html('<div class="note" style="padding-left:1em;">No matching results found</div>').show();
+    	$('#results').fadeIn();
     }
 	
     // Setup event handlers
@@ -46,7 +45,7 @@ function org_list_event() {
 	var oid = $('#org_list > select').find(':selected').val();
 	if (oid) {
 		page.oid = oid;
-		get_org_info_chain();
+		organism_info_chain();
 	}
 }
 
@@ -82,11 +81,9 @@ function chr_list_event() {
  */
 
 //FIXME: Remove name and desc for search
-function get_organism_chain(search_term) {
-	console.log("get_organism_chain");
+function organism_chain(search_term) {
+	console.log("organism_chain");
 
-	//$('#org_count,org_list').html("");
-    
     return $.ajax({
         data: {
             fname: "get_orgs",
@@ -96,34 +93,38 @@ function get_organism_chain(search_term) {
             //gid: page.gid
         },
         success: function(response) {
-            if (response.organisms)
+            if (response.error)
+            	return;
+            
+            if (response.organisms) {
+            	// We got orgs to show
             	$('#org_list > select').html(response.organisms);
-        	$('#org_count').html(response.count);
+            	$('#org_count').html(response.count);
+        		return;
+            }
         },
         error: function () {
-            $('#org_list > select').html('<span class="small alert">The results could not be loaded.</span>');
+            $('#no_results').html('There was an error and the results could not be loaded.');
+            // TODO add more detailed error message
         }
-    }).always(function() {
-    	var org_count = $('#org_count').html();
-    	console.log('orgs: '+org_count);
-    	if (org_count) {
-    		var oid = $('#org_list > select').find(':selected').val();
-    		if (!oid)
-    			oid = $('#org_list > select').first().val();
-    		page.oid = oid;
-    		get_org_info_chain();
+    }).always(function(response) {
+    	console.log(response);
+    	if (!response.error) {
+    		page.oid = response.selected_id;
+    		organism_info_chain();
+    		
     		$('#no_results').hide();
     		$('#results').show();
     	}
     	else {
     		$('#results').hide();
-    		$('#no_results').html('No matching organisms were found').show();
+    		$('#no_results').html(response.error).show();
     	}
     });
 }
 
-function get_org_info_chain() {
-	console.log('get_org_info_chain '+page.oid);
+function organism_info_chain() {
+	console.log('organism_info_chain '+page.oid);
     $.ajax({
         data: {
             fname: "get_org_info",
@@ -313,7 +314,7 @@ function search_organisms() {
         $('#busy').animate({opacity:1});
         pageObj.time = setTimeout(function() {
         	var search_term = $('#org_search').val();
-            get_organism_chain(search_term)
+            organism_chain(search_term)
             	.always(function() {
             		$('#busy').animate({opacity:0});
             	});
