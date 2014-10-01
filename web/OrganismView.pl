@@ -179,6 +179,7 @@ sub gen_body {
     $template->param( ORGANISM_ID => $oid)  if ($selected_oid);
     $template->param( GENOME_ID   => $gid ) if ($selected_gid);
     $template->param( DATASET_ID  => $dsid)  if ($dsid);
+    $template->param( CHR_ID      => $selected_chr) if ($selected_chr);
     
     $template->param( SHOW_RESULTS  => ($org_count > 0) );
 
