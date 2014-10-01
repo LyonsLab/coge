@@ -36,7 +36,9 @@ sub init {
     }
 
     # Check for existing user session
-    my $session_id = CoGe::Accessory::Web::get_session_id($username, $remote_ip);
+    my $session_id = $mojo->cookie($conf->{COOKIE_NAME});
+    $session_id =~ s/session&//;
+
     my $session = $db->resultset('UserSession')->find( { session => $session_id } );
 
     # TODO add expiration to session table and check it here
