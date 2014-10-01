@@ -8,7 +8,7 @@ $(function() {
         gid:  "<TMPL_VAR NAME='GENOME_ID'>",
         dsid: "<TMPL_VAR NAME='DATASET_ID'>",
         chr:  "<TMPL_VAR NAME='CHR_ID'>",
-        show_results: "<TMPL_VAR NAME='SHOW_RESULTS'>"
+        init_msg: "<TMPL_VAR NAME='NO_RESULTS'>"
     });
     
     // a terrible kludge
@@ -32,7 +32,7 @@ $(function() {
     </div>
 </div>
 
-<div id='no_results' style='display:none;'></div>
+<div id='no_results' class="note" style='display:none;padding-left:1em;'></div>
 
 <div id='results' style="display:none;border-bottom:1px solid lightgray;">
 
