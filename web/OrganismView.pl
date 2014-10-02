@@ -65,7 +65,7 @@ $MAX_DS_LENGTH = 10000000;
     get_wobble_gc_diff      => \&get_wobble_gc_diff,
     get_total_length_for_ds => \&get_total_length_for_ds,
     get_chr_length_hist     => \&get_chr_length_hist,
-    update_genomelist       => \&update_genomelist,
+    get_genome_name         => \&get_genome_name,
 #    get_genome_list_for_org => \&get_genome_list_for_org,
     add_to_irods            => \&add_to_irods,
     make_genome_public      => \&make_genome_public,
@@ -341,16 +341,14 @@ sub get_orgs {
     return encode_json({ organisms => $html, count => scalar(@opts), selected_id => $oid });
 }
 
-sub update_genomelist {
-    my %opts      = @_;
-    my $genome_id = $opts{genomeid};
-    return unless $genome_id;
-    my $dsg = $coge->resultset("Genome")->find($genome_id);
-    my $genome_name;
-    $genome_name = $dsg->name;
-    $genome_name = $dsg->organism->name unless $genome_name;
-    $genome_name .= " (v" . $dsg->version . ")";
-    return $genome_name, $genome_id;
+sub get_genome_name {
+    my %opts = @_;
+    my $gid  = $opts{gid};
+    return encode_json({ error => 'Missing gid parameter' }) unless $gid;
+    
+    my $genome = $coge->resultset("Genome")->find($gid);
+    return encode_json({ error => 'Could not find the genome' }) unless $genome;
+    return encode_json({ gid => $gid, info => $genome->info });
 }
 
 sub get_org_info {
@@ -526,19 +524,19 @@ sub add_to_irods {
 
 sub get_genome_info {
     my %opts  = @_;
-    my $dsgid = $opts{gid};
+    my $gid = $opts{gid};
     my $output = $opts{output} || 'json';
     print STDERR "get_genome_info\n", Dumper \%opts, "\n";
     
-    unless ($dsgid) {
+    unless ($gid) {
         return "A genome was not specified" if ($output eq 'html');
         return encode_json({ error  => "A genome was not specified" });
     }
     
-    my $dsg = $coge->resultset("Genome")->find($dsgid);
-    unless ($dsgid) {
-        return "Unable to get genome object for id: $dsgid" if ($output eq 'html');
-        return encode_json({ error => "Unable to get genome object for id: $dsgid" });
+    my $dsg = $coge->resultset("Genome")->find($gid);
+    unless ($gid) {
+        return "Unable to get genome object for id: $gid" if ($output eq 'html');
+        return encode_json({ error => "Unable to get genome object for id: $gid" });
     }    
 
     my $total_length = $dsg->length;
@@ -554,7 +552,7 @@ sub get_genome_info {
     my $gst_name = $dsg->genomic_sequence_type->name;
     $gst_name .= ": " . $dsg->type->description if $dsg->type->description;
     $html .=
-        qq{<tr><td>Genome ID: </td><td>$dsgid</td>}
+        qq{<tr><td>Genome ID: </td><td>$gid</td>}
       . qq{<tr><td>Sequence type <a href="SeqType.pl">?</a>: </td>}
       . qq{<td>$gst_name (gstid$gstid) </td>}
       . qq{</tr>}
@@ -568,19 +566,20 @@ sub get_genome_info {
     #    my $cogedir  = $P->{COGEDIR};
     #    my $cogeurl  = $P->{URL};
     #    $seq_file =~ s/$cogedir/$cogeurl/i;
-    my $seq_url = "services/service.pl/sequence/$dsgid";#my $seq_url = "services/JBrowse/service.pl/sequence/$dsgid"; # mdb added 7/31/13 issue 77 # mdb changed 8/9/14
+    my $seq_url = "services/service.pl/sequence/$gid";#my $seq_url = "services/JBrowse/service.pl/sequence/$gid"; # mdb added 7/31/13 issue 77 # mdb changed 8/9/14
 
     $html .= "<tr><td>Tools:</td>"
      . qq{<td>}
-     . qq{<a href="GenomeInfo.pl?gid=$dsgid"><strong>GenomeInfo</strong></a>}
+     . qq{<a href="GenomeInfo.pl?gid=$gid"><strong>GenomeInfo</strong></a>}
      . qq{&nbsp|&nbsp}
-     . qq{<a href='OrganismView.pl?dsgid=$dsgid' target=_new>OrganismView</a>&nbsp|&nbsp<a href='CodeOn.pl?dsgid=$dsgid' target=_new>CodeOn</a>}
+     . qq{<a href='OrganismView.pl?dsgid=$gid' target=_new>OrganismView</a>&nbsp|&nbsp<a href='CodeOn.pl?dsgid=$gid' target=_new>CodeOn</a>}
      . qq{&nbsp|&nbsp}
-     . qq{<span class='link' onclick="window.open('SynMap.pl?dsgid1=$dsgid;dsgid2=$dsgid');">SynMap</span>}
+     . qq{<span class='link' onclick="window.open('SynMap.pl?dsgid1=$gid;dsgid2=$gid');">SynMap</span>}
      . qq{&nbsp|&nbsp}
-     . qq{<span class='link' onclick="window.open('CoGeBlast.pl?dsgid=$dsgid');">CoGeBlast</span>}
+     . qq{<span class='link' onclick="window.open('CoGeBlast.pl?dsgid=$gid');">CoGeBlast</span>}
      . qq{&nbsp|&nbsp}
-     . qq{<span class="link" onClick="update_genomelist(['args__genomeid','args__$dsgid'],[add_to_genomelist]);\$('#geno_list').dialog('option', 'width', 500).dialog('open');">GenomeList</span></td></tr>}
+     . qq{<span class="link" onClick="add_genome_to_list($gid);">Add to GenomeList</span>}
+     . qq{</td></tr>}
      #. qq{</table></td>}
      #. qq{<td id="dsg_features"></td>}
      . qq{</table>};
@@ -588,7 +587,7 @@ sub get_genome_info {
 
 #temporarily removed until this is connected correctly for individual users
 #    $html .= qq{&nbsp|&nbsp};
-#    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$dsgid'],['irods']);">Send To iPlant Data Store</span>};
+#    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$gid'],['irods']);">Send To iPlant Data Store</span>};
 
     return $html if ($output eq 'html');
     return encode_json({ genome => $html });
