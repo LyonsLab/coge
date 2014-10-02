@@ -3,6 +3,7 @@ package CoGe::Services::Auth;
 use Mojo::UserAgent;
 use Data::Dumper;
 use CoGe::Accessory::Web;
+use URI::Escape::JavaScript qw(unescape);
 
 # FIXME move these into coge.conf someday
 our $AUTH_API_URL = 'foundation.iplantc.org/auth-v1';
@@ -36,7 +37,7 @@ sub init {
     }
 
     # Check for existing user session
-    my $session_id = $mojo->cookie($conf->{COOKIE_NAME});
+    my $session_id = unescape($mojo->cookie($conf->{COOKIE_NAME}));
     $session_id =~ s/session&//;
 
     my $session = $db->resultset('UserSession')->find( { session => $session_id } );
