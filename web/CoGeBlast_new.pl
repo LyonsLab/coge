@@ -861,6 +861,7 @@ sub blast_search {
     return encode_json({
         id => $response->{id},
         link => $link,
+        logfile => $TEMPURL . "/" . $cogeweb->basefilename . ".log",
         success => $JEX->is_successful($response) ? JSON::true : JSON::false
     })
 }
