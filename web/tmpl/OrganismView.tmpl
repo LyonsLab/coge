@@ -130,17 +130,21 @@ $(function() {
 <div class="dialog_box hidden" id="aa_usage_table" title="Amino Acid Usage Table"></div>
 <div class="dialog_box hidden" id="chromosome_hist" title="Chromosome Size"></div>
 
-<div class="dialog hidden" title="Genome List" id="geno_list">
-    <span id=count class="small count">Genome Count: 0</span><br>
-    <select id="genomelist_choice" SIZE="10" MULTIPLE>
-        <option id="blank" value=null>No Genome Selected</option>
-    </select>
-    <br>
-    <span class="ui-button ui-corner-all coge-button" onClick="$('#genomelist_choice').sortSelect()">Sort List Alphabetically</span><br><br>
-    <span class="ui-button ui-corner-all coge-button" onClick="send_to_GenoList()">Send to GenomeList</span><br><br>
-    <span class="ui-button ui-corner-all coge-button" onClick="remove_selected_genomes();">Remove</span><br><br>
-    <span class="ui-button ui-corner-all coge-button" onClick="clear_genome_list()">Clear</span><br>
-    <div id="add_all_search"></div>
+<div class="dialog hidden" title="Genome List" id="dialog_genomelist">
+	<div class="small info">Genomes: <span id="genomelist_count" class="bold">0<span></div>
+	<div>
+	    <div class="r">
+			<span class="ui-button ui-corner-all coge-button-sm" style="margin-top:0.5em;" onClick="remove_selected_genomes();">Remove</span><br>
+			<span class="ui-button ui-corner-all coge-button-sm" style="margin-top:0.5em;" onClick="clear_genome_list()">Clear</span><br>
+			<span class="ui-button ui-corner-all coge-button-sm" style="margin-top:0.5em;" onClick="$('#genomelist').sortSelect()">Sort</span><br>
+		</div>
+    	<select id="genomelist" MULTIPLE size="10" style="width:32em">
+        	<option id="genomelist_blank" value="null">No Genome Selected</option>
+        </select>
+    </div>
+    <div>
+		<div class="ui-button ui-corner-all coge-button-sm" style="margin-top:0.5em;" onClick="send_to_genomelist()">Send to GenomeList</div>
+	</div>
 </div>
 
 <div class="dialog hidden" title="GFF Exporter" id="gff_export">
