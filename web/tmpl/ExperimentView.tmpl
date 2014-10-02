@@ -62,6 +62,7 @@ function init() {
         switch(method) {
             case "coge": break;
             case "samtools": break;
+            case "platypus": break;
             default: {
                 button.unbind().attr("disabled", "disabled");
                 break;
@@ -741,6 +742,7 @@ function get_tag_description (name) {
                                     <option selected="selected">-- Select a SNP Finding method --</option>
                                     <option value="coge" class="data5 link">CoGe method</option>
                                     <option value="samtools" class="data5 link">Samtools method</option>
+                                    <option value="platypus" class="data5 link">Platypus method</option>
                                 </select>
                                 <button class="ui-button ui-corner-all">Find SNPs</button>
                             </div>

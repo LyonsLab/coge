@@ -6,7 +6,8 @@ use File::Basename qw(basename);
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(create_fasta_reheader_job create_load_vcf_job
-                 create_find_snps_job create_filter_snps_job);
+                 create_find_snps_job create_filter_snps_job
+                 create_platypus_job);
 our $CONFIG = CoGe::Accessory::Web::get_defaults();
 
 sub create_fasta_reheader_job {
@@ -82,6 +83,35 @@ sub create_load_vcf_job {
             catfile($output_path, "log.done"),
         ],
         description => "Load SNPs as new experiment ..."
+    };
+}
+
+sub create_platypus_job {
+    my $opts = shift;
+
+    # Required arguments
+    my $reference = $opts->{fasta};
+    my $alignment = $opts->{bam};
+    my $vcf = $opts->{vcf};
+
+    my $PLATYPUS = $CONFIG->{PLATYPUS} || "Platypus.py";
+
+    return {
+        cmd => qq[$PLATYPUS callVariants],
+        args =>  [
+            ["--bamFiles", $alignment, 0],
+            ["--refFile", $reference, 0],
+            ["--output", $vcf, 1],
+            ["--verbosity", 0, 0],
+        ],
+        inputs => [
+            $alignment,
+            $reference,
+        ],
+        outputs => [
+            $vcf,
+        ],
+        description => "Finding SNPS using Platypus method ..."
     };
 }
 
