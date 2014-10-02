@@ -87,7 +87,6 @@ function organism_chain(search_term) {
     return $.ajax({
         data: {
             fname: "get_orgs",
-            jquery_ajax: 1,
             name: search_term,
             desc: search_term,
             //gid: page.gid
@@ -108,7 +107,6 @@ function organism_chain(search_term) {
             // TODO add more detailed error message
         }
     }).always(function(response) {
-    	console.log(response);
     	if (!response.error) {
     		page.oid = response.selected_id;
     		organism_info_chain();
@@ -128,7 +126,6 @@ function organism_info_chain() {
     $.ajax({
         data: {
             fname: "get_org_info",
-            jquery_ajax: 1,
             oid: page.oid
         },
         success: function(response) {
@@ -155,12 +152,10 @@ function genome_chain() {
     $.ajax({
         data: {
             fname: "get_genomes",
-            jquery_ajax: 1,
             oid: page.oid,
             //gid: page.gid
         },
         success: function(response) {
-console.log(response);
         	if (!response) return;
             if (response.error) 
             	$('#genome_list > select').html('<option>'+response.error+'</option>');
@@ -194,7 +189,6 @@ function genome_info_chain() {
 	    $.ajax({
 	        data: {
 	            fname: "get_genome_info",
-	            jquery_ajax: 1,
 	            gid: page.gid
 	        },
 	        success: function (response) {
@@ -220,7 +214,6 @@ function dataset_chain() {
     $.ajax({
         data: {
             fname: "get_datasets",
-            jquery_ajax: 1,
             gid: page.gid
         },
         success: function (response) {
@@ -236,7 +229,6 @@ function dataset_chain() {
             $('#ds_list').parent().show();
         },
         error: function (response) {
-        	console.log(response);
             $('#ds_list > select').html('<span class="small alert">Datasets could not be loaded.</span>');
         }
     }).always(dataset_info_chain);
@@ -246,13 +238,10 @@ function dataset_info_chain() {
 	console.log('dataset_info_chain '+page.dsid);
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: "get_dataset_info",
-            jquery_ajax: 1,
             dsid: page.dsid
         },
         success: function (response) {
-        	console.log(response);
         	//if (response.error) $('#ds_info').html(response.error);
             if (response.dataset) $('#ds_info').html(response.dataset);
             if (response.chromosomes) $('#chr_list > select').html(response.chromosomes);
@@ -274,13 +263,11 @@ function chr_info_chain() {
     $.ajax({
         data: {
             fname: "get_chr_info",
-            jquery_ajax: 1,
             gid: page.gid,
             dsid: page.dsid,
             chr: page.chr
         },
         success: function (response) {
-        	console.log(response);
             if (response.chr_info) {
             	 $('#chr_info').html(response.chr_info).show();
             	 $('#chr_info').parent().show(); // see kludge in tmpl
@@ -349,7 +336,6 @@ function get_feat_gc(opts) {
         dataType: "html",
         data: {
             dsgid: dsgid[0],
-            jquery_ajax: 1,
             fname: 'get_gc_for_feature_type',
             dsid: dsid,
             typeid: typeid,
@@ -419,68 +405,96 @@ function open_aa_usage_table (html) {
  * Genome List
  */
 
-function counting() {
-    var count=0;
-    if($('#blank').val()){ count =0;}
-    else { count = $('#genomelist_choice')[0].length;}
-        if(count==0) { $('#genomelist_choice').html('<option id="blank" value=null>No genome selected</option>') ; }
-    $('#count').html('Genome Count:'+count);
+function get_genomelist_count() {
+    var count = 0;
+    
+    if ($('#genomelist_blank').val())
+    	count = 0;
+    else
+    	count = $('#genomelist')[0].length;
+    
+    if (count == 0) 
+    	$('#genomelist').html('<option id="genomelist_blank" value=null>No genome selected</option>');
+    
+    $('#genomelist_count').html(count);
+    
+    return count;
 }
 
 
 function add_to_genomelist_nowarn(genome_name,gstid)
 {
     var check = $('#'+gstid).val();
-    if (check){
-
+    if (check)
         return;
-    }else{
-        var html = '<option id='+gstid+' value='+gstid+ ' >'+genome_name+'</option>';
-        //alert(html);
-        $('#blank').remove();
-        $('#genomelist_choice').append(html);
-        counting();
+    else {
+        $('#genomelist_blank').remove();
+        $('#genomelist').append('<option id='+gstid+' value='+gstid+ ' >'+genome_name+'</option>');
+        get_genomelist_count();
     }
 }
 
-function add_to_genomelist(genome_name,gstid) {
-    var check = $('#'+gstid).val();
-    if (check){
-        alert('You have already added '+genome_name+'.');
+function add_genome_to_list(gid) { // mdb added 10/2/14 COGE-512
+	if (!gid) {
+		alert('Internal error (add_genome_to_list)');
+		return;
+	}
+	
+	if ( $('#genomelist option[value="'+gid+'"]').html() ) {
+		alert('You have already added this genome.');
         return;
-    }
-    var html = '<option id='+gstid+' value='+gstid+ ' >'+genome_name+'</option>';
-    //alert(html);
-    $('#blank').remove();
-    $('#genomelist_choice').append(html);
-    counting();
-
+	}
+	
+	$.ajax({
+        data: {
+        	fname: 'get_genome_name',
+            gid: gid,
+        },
+        success: function(response) {
+        	if (!response) {
+        		alert("Error: couldn't retrieve genome");
+        		return;
+        	}
+        	else if (response.error || !response.info) {
+        		alert('Error: '+response);
+        		return;
+        	}
+        	
+            $('#genomelist_blank').remove();
+            $('#genomelist').append('<option title="'+response.info+'" value="'+gid+'">'+response.info+'</option>');
+            get_genomelist_count();
+            
+            $('#dialog_genomelist').dialog('option', 'width', '32.5em').dialog('open');
+        }
+    });
 }
 
 function add_all_genomes(){
     $('#dsg_id option').each(function(){
         add_to_genomelist_nowarn($(this).text(),$(this).attr("value"));
     });
-    $('#geno_list').dialog('option', 'width', 500).dialog('open');
+    $('#dialog_genomelist').dialog('option', 'width', '32.5em').dialog('open');
 }
 
 function remove_selected_genomes(){
-    $('#genomelist_choice option:selected').each(function() {
+    $('#genomelist option:selected').each(function() {
             //$('#'+$(this).val()).remove();
             $(this).remove();
     });
-    counting();
+    get_genomelist_count();
 }
 
 
 function clear_genome_list(){
-    var i,
-        listlength = $('#genomelist_choice')[0].length;
+    var i, num_genomes = get_genomelist_count();
 
-    for(i=0; i < listlength; i++) {
-        $('#'+$('#genomelist_choice')[0][0].id).remove();
-    }
-    counting();
+//    for(i=0; i < num_genomes; i++) {
+//        $('#'+$('#genomelist')[0][0].id).remove();
+//    }
+    
+    $('#genomelist').empty();
+    
+    get_genomelist_count();
 }
 
 
@@ -490,7 +504,7 @@ function clear_genome_list(){
 //    });
 //}
 
-function add_all_genomes_from_org(val){
+function add_all_genomes_from_org(val) {
     if (val.length>0) {
         var genomes = val.split("&&");
         var i=0;
@@ -503,20 +517,25 @@ function add_all_genomes_from_org(val){
     }
 }
 
-function send_to_GenoList(){
-    var check = $('#genomelist_choice').getLength();
-    if(($('#blank').val())||(check==0)){
-        alert('You have not selected any Genomes to examine. You must select at least one.');
+function send_to_genomelist() {
+    var num_genomes = $('#genomelist').getLength();
+    if ( $('#genomelist_blank').val() || (num_genomes == 0) ) {
+        alert('You have not selected any genomes to add. You must select at least one.');
         return;
     }
-    var genolist = $('#genomelist_choice').getLength(1);
-    window.open("GenomeList.pl?dsgid=" + genolist, "_self");
+    
+    var list = $('#genomelist option');
+    var ids = [];
+    for (var i = 0;  i < num_genomes;  i++)
+    	ids.push(list[i].value);
+    gid_list = ids.join(",");
+    window.open("GenomeList.pl?dsgid=" + gid_list, "_self");
 }
 
 /*
  * jQuery extensions
  */
-$.fn.sortSelect = function(){
+$.fn.sortSelect = function() {
     this.each(function() {
         var i,
             opts = this.options,
