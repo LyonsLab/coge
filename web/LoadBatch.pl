@@ -138,7 +138,7 @@ sub generate_body {
     	JOB_ID      => $JOB_ID,
         STATUS_URL  => 'api/v1/jobs/',
         DEFAULT_TAB              => 0,
-        MAX_IRODS_LIST_FILES     => 100,
+        MAX_IRODS_LIST_FILES     => 500,
         MAX_IRODS_TRANSFER_FILES => 30,
         MAX_FTP_FILES            => 30,
         USER                     => $USER->user_name

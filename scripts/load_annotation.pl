@@ -360,7 +360,7 @@ my @name_buffer;    # buffer for bulk inserts into FeatureName table
                     $seen_locs{$start}{$stop} = 1;
                     print STDOUT "Adding location $chr:(" . $start . "-" . $stop . ", $strand)\n" if $DEBUG;
                     $loaded_annot++;
-                    batch_add_async(
+                    batch_add(
                         \@loc_buffer,
                         'Location',
                         {
@@ -388,7 +388,7 @@ my @name_buffer;    # buffer for bulk inserts into FeatureName table
                       ( $master ? " (MASTER)" : '' ), "\n"
                       if $DEBUG;
 
-                    batch_add_async(
+                    batch_add(
                         \@name_buffer,
                         'FeatureName',
                         {    #my $feat_name = $feat->add_to_feature_names({
@@ -411,7 +411,7 @@ my @name_buffer;    # buffer for bulk inserts into FeatureName table
                             }
                             my $link = $annos{$tmp}{$anno}{link};
                             print STDOUT "Adding annotation ($type_name): $anno\n" . ( $link ? "\tlink: $link" : '' ) . "\n" if $DEBUG;
-                            batch_add_async(
+                            batch_add(
                                 \@anno_buffer,
                                 'FeatureAnnotation',
                                 {
@@ -488,15 +488,15 @@ sub batch_add_async {
         if ( @$buffer >= $DB_BATCH_SZ or not defined $item ) {
             print STDOUT "Async populate $table_name " . @$buffer . "\n";
             if ( !defined( my $child_pid = fork() ) ) {
-	      print STDOUT "Cannot fork: $!";
-	      batch_add(@_);
-	      return;
-	    }
-	    elsif ( $child_pid == 0 ) {
-	      print STDOUT "child running to populate $table_name\n";
-	      $coge->resultset($table_name)->populate($buffer) if (@$buffer);
-	      exit;
-	    }
+                print STDOUT "Cannot fork: $!";
+                batch_add(@_);
+                return;
+            }
+    	    elsif ( $child_pid == 0 ) {
+    	       print STDOUT "child running to populate $table_name\n";
+    	       $coge->resultset($table_name)->populate($buffer) if (@$buffer);
+    	       exit;
+    	    }
             @$buffer = ();
         }
     }
