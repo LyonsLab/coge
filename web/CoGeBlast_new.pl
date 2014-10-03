@@ -2105,6 +2105,13 @@ sub overlap_feats_parse    #Send to GEvo
             my ( $hspnum, $dsgid );
             ( $featid, $hspnum, $dsgid ) = $featid =~ m/^(\d+)_(\d+)_(\d+)$/;
             my ($dsg) = $coge->resultset('Genome')->find($dsgid);
+
+            if ($dsg->deleted) {
+                my $name = $dsg->organism->name;
+                my $error_message = "The genome $name was marked as deleted";
+                return encode_json({error => $error_message });
+            }
+
             $featid .= "_" . $dsg->type->id if $dsg;
             push @list, $featid;
         }
