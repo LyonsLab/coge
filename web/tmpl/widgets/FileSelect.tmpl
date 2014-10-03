@@ -255,7 +255,7 @@ function irods_get_path (path) {
 				return;
 			}
 			if (result.items.length > <TMPL_VAR NAME='MAX_IRODS_LIST_FILES'>) {
-				alert("Too many files (" + filelist.length + ") at specified location, limit is <TMPL_VAR NAME='MAX_IRODS_LIST_FILES'>.");
+				alert("Too many files (" + result.items.length + ") to display, the limit is <TMPL_VAR NAME='MAX_IRODS_LIST_FILES'>.");
 				return;
 			}
 
@@ -348,7 +348,7 @@ function irods_get_all_files (path) {
 				return;
 			}
 			if (result.items.length > <TMPL_VAR NAME='MAX_IRODS_TRANSFER_FILES'>) {
-				alert("Too many files (" + filelist.length + ") at specified location, limit is <TMPL_VAR NAME='MAX_IRODS_TRANSFER_FILES'>.");
+				alert("Too many files (" + result.items.length + ") to retrieve at one time, the limit is <TMPL_VAR NAME='MAX_IRODS_TRANSFER_FILES'>.");
 				return;
 			}
 
