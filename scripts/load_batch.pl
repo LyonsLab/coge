@@ -238,6 +238,12 @@ sub process_dir {
         next if ($item =~ /^\./); # skip hidden files
         next if ($item =~ /\.txt$/); # skip metadata file
         
+        # Check for subdirectories in tarball
+        if (-d "$dir/$item") {
+            print "log: warning: '$item' is a directory, skipping ...\n";
+            next;
+        }
+        
         # Get metadata entry for file
         my $md = ();
         if ($metadata->{$item}) {
