@@ -150,7 +150,7 @@ sub generate_body {
         FILE_SELECT_SINGLE       => 1,
         DEFAULT_TAB              => 0,
         DISABLE_IRODS_GET_ALL    => 1,
-        MAX_IRODS_LIST_FILES     => 100,
+        MAX_IRODS_LIST_FILES     => 1000,
         MAX_IRODS_TRANSFER_FILES => 30,
         MAX_FTP_FILES            => 30,
         USER                     => $USER->user_name
