@@ -51,7 +51,7 @@ sub generate_gff {
     return $output_file, (
         cmd     => catfile($conf->{SCRIPTDIR}, "coge_gff.pl"),
         args    => [
-            ['-id', $args{gid}, 0],
+            ['-gid', $args{gid}, 0],
             ['-f', $filename, 0],
             ['-config', $conf->{_CONFIG_PATH}, 0],
             # Parameters

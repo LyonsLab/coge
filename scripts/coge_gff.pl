@@ -14,8 +14,8 @@ our ($DEBUG, $db, $user, $pass, $id, $config, $host, $port, $P,
 
 GetOptions(
     "debug=s"                         => \$DEBUG,
-    "id=i"                            => \$id,
-    "staging_dir=s"                  => \$staging_dir,
+    "gid=i"                           => \$id,
+    "staging_dir=s"                   => \$staging_dir,
     "filename|f=s"                    => \$filename,
     "annos=i"                         => \$annos,
     "cds=i"                           => \$cds,
