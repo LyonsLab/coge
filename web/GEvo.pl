@@ -4493,7 +4493,15 @@ qq{<SELECT name="dsgid$num" id="dsgid$num" onChange="feat_search(['args__accn','
     }
     $html .= "</select>";
     $html .= "<span class=small>($count)</span>" if $count > 1;
-    return ( $html, $num, $featid );
+
+    return ( $html, $num, $featid ) if $count > 0;
+
+
+    $html = qq{<select name="dsgid$num" id="dsgid$num" onChange="feat_search(['args__accn','accn$num','args__dsid', 'dsid$num','args__dsgid', 'dsgid$num', 'args__num','args__$num', 'args__featid', 'args__$featid'],['feat$num']);">};
+
+    $html .= "<option>The genome has been deleted</option></select>";
+
+    return ( $html, $num, $featid);
 }
 
 sub save_settings_gevo {
@@ -4570,6 +4578,12 @@ qq{<span class="small">Genome: </span><SELECT name="dsgid$num" id="dsgid$num">};
             $dsg_menu .= "<option>Restricted</option>";
             next;
         }
+
+        if ($dsg->deleted) {
+            $dsg_menu .= "<option>The genome has been been deleted</option>";
+            next;
+        }
+
         my $dsgid_tmp = $item->id;
         my $title;
         $title = $item->name . " " if $item->name;

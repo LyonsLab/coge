@@ -133,14 +133,15 @@ sub init {
 	            url => 'http://' . $ENV{SERVER_NAME} . $ENV{REQUEST_URI},
 	        );
 
+            # erb 10/07/2014 - remove unused generic logging issue 516
 	        # Log this page access
-	        CoGe::Accessory::Web::log_history(
-		        db          => $db,
-		        user_id     => $user->id,
-		       	page        => $page_title,
-		      	description => 'page access',
-		        link        => $link
-		    );
+            #CoGe::Accessory::Web::log_history(
+		    #    db          => $db,
+		    #    user_id     => $user->id,
+		    #   	page        => $page_title,
+		    #  	description => 'page access',
+		    #    link        => $link
+		    #);
 		}
     }
 

@@ -280,7 +280,7 @@ sub create_gff_generation_job {
         script => undef,
         args => [
             ['-f', $name, 0],
-            ['-download_dir', '.', 0],
+            ['-staging_dir', '.', 0],
             ['-gid', $genome->id, 0],
             ['-upa', 1, 0],
             ['-id_type', "name", 0],
