@@ -43,11 +43,14 @@ our (
     $ALGO_LOOKUP,  $GZIP,          $GUNZIP,         %FUNCTIONS,
     $JEX,          $GENE_ORDER,    $PAGE_TITLE,     $KSCALC,
     $GEN_FASTA,    $RUN_ALIGNMENT, $RUN_COVERAGE,   $GEVO_LINKS,
-    $PROCESS_DUPS, $DOTPLOT_DOTS,
+    $PROCESS_DUPS, $DOTPLOT_DOTS,  $SEQUENCE_SIZE_LIMIT
 );
 
 $DEBUG = 0;
 $|     = 1;    # turn off buffering
+
+# Limit the maximum genome size for genomic-genomic
+$SEQUENCE_SIZE_LIMIT = 50_000_000;
 
 $FORM       = new CGI;
 $PAGE_TITLE = "SynMap";
@@ -1324,6 +1327,15 @@ sub go {
     ############################################################################
     my $feat_type1 = $opts{feat_type1};
     my $feat_type2 = $opts{feat_type2};
+
+    # Block large genomic-genomic jobs from running
+    if (($feat_type1 == 2 && $genome1->length > $SEQUENCE_SIZE_LIMIT) &&
+        ($feat_type2 == 2 && $genome2->length > $SEQUENCE_SIZE_LIMIT)) {
+        return encode_json({
+            success => JSON::false,
+            error => "The analysis was blocked: comparing unmasked genomic sequences that are large."
+        });
+    }
 
     my $basename = $opts{basename};
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(
