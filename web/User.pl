@@ -1363,11 +1363,10 @@ sub get_contents {
             my $id = $_->{id};
             my $isRunning = $_->{status} =~ /running/i;
             my $isCancelled = $_->{status} =~ /cancelled/i;
-            my $star_icon = '<img name="'.$id.'" ' . ( $_->{is_important} ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"' ) . ' ' . 'width="15" height="15" class="link" style="vertical-align:middle;" ' . 'onclick="toggle_star(this);"' . ' title="Favorite this analysis"/>';
-            #<span id="cancel_button" onClick="cancel_jobs();" class="invisible item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
-            my $cancel_icon = '<img name="'.$id.'" title="Cancel this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/cancel.png" width="15" onclick="cancel_job_dialog('.($_->{workflow_id} ? $_->{workflow_id} : '').');"/>';
-            my $restart_icon = qq{<img name="$id" title="Restart this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/refresh-icon.png" width="15" onclick="restart_job('}.($_->{link} ? $_->{link} : '').qq{');"/>};
-            my $comment_icon = qq{<img name="$id" title="Add comment" class="link" height="15" style="vertical-align:middle;" src="picts/comment-icon.png" width="15" onclick="comment_dialog($id, '$_->{comment}');" />};
+            my $star_icon    = qq{<img title="Favorite this analysis" }.( $_->{is_important} ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"' ).qq{ width="15" height="15" class="link" style="vertical-align:middle;" onclick="toggle_star(this);" />};
+            my $cancel_icon  = qq{<img title="Cancel this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/cancel.png" width="15" onclick="cancel_job_dialog('}.($_->{workflow_id} ? $_->{workflow_id} : '').qq{');"/>};
+            my $restart_icon = qq{<img title="Restart this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/refresh-icon.png" width="15" onclick="restart_job('}.($_->{link} ? $_->{link} : '').qq{');"/>};
+            my $comment_icon = qq{<img title="Add comment" class="link" height="15" style="vertical-align:middle;" src="picts/comment-icon.png" width="15" onclick="comment_dialog($id, '$_->{comment}');" />};
             my $info_html = format_job_status($_->{status}).' '.$_->{start_time}.' | '. $_->{elapsed}.' | '.$_->{page}.' | '.$_->{description} . ($_->{comment} ? ' | ' . $_->{comment} : '') . ($_->{workflow_id} ? ' | id' . $_->{workflow_id} : '');
             push @rows,
               {
@@ -1376,7 +1375,7 @@ sub get_contents {
                 CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_analyses},
                 CONTENTS_ITEM_INFO => $info_html,
                 CONTENTS_ITEM_LINK => $_->{link},
-                CONTENTS_ITEM_ICON => $star_icon . ' ' . $comment_icon . ($isRunning ? ' ' . $cancel_icon : '') . ($isCancelled ? ' ' . $restart_icon : ''),
+                CONTENTS_ITEM_ICON => $star_icon . ' ' . $comment_icon . ' ' . ($isCancelled ? $restart_icon : '') . ' ' . ($isRunning ? $cancel_icon : ''),
               };
         }
     }

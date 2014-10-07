@@ -189,20 +189,20 @@ function getURLParameter(name) {
     );
 }
 
-function poll() {
+function poll(sync) {
 	// Refresh contents
-	get_contents(1, pageObj.content_type);
+	get_contents(sync, pageObj.content_type);
 	
 	// Refresh item info cache
 	clear_info_cache();
 }
 
-function schedule_poll(when) {
+function schedule_poll(when, not_sync) { 
 	cancel_poll();
 
 	if (when !== undefined) {
 		timers['poll'] = window.setTimeout(
-			function() { poll(); },
+			function() { poll(!not_sync); },
 			when
 		);
 		return;
@@ -212,7 +212,7 @@ function schedule_poll(when) {
 	var idleTime = new Date().getTime() - timestamps['idle'];
 	if (idleTime < IDLE_TIME) {
 		timers['poll'] = window.setTimeout(
-			function() { poll(); },
+			function() { poll(!not_sync); },
 			POLL_TIME
 		);
 	}
@@ -700,7 +700,7 @@ function cancel_job(id) {
 			},
 			success : function(rc) {
 				if (rc) {
-					schedule_poll(0);
+					schedule_poll(0, 1);
 	            }
 			}
 		});
@@ -720,7 +720,7 @@ function restart_job(link) {
 		// restart command.
 		var w = window.open(link,'_blank', 'toolbar=no,status=no,menubar=no,scrollbars=no,resizable=no,left=10000,top=10000,width=1,height=1,visible=none', ''); 
 		setTimeout(function() {
-				schedule_poll(0);
+				schedule_poll(0, 1);
 				w.close();
 			},
 			5000
