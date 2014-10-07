@@ -1333,7 +1333,9 @@ sub go {
         ($feat_type2 == 2 && $genome2->length > $SEQUENCE_SIZE_LIMIT)) {
         return encode_json({
             success => JSON::false,
-            error => "The analysis was blocked: comparing unmasked genomic sequences that are large."
+            error => "The analysis was blocked: " .
+                     "a comparison of two unmasked and unannotated genomes larger than 50Mb requires many days to weeks to finish. " .
+                     "Please use at least one annotated genome in the analysis."
         });
     }
 
