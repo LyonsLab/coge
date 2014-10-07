@@ -39,7 +39,7 @@ $ENV{PATH} = join ":",
 #print STDERR Dumper \%ENV;
 
 $TEMPDIR  = $P->{TEMPDIR} . "SynMap";
-$MAX_PROC = $P->{MAX_PROC} * 2;
+$MAX_PROC = $P->{MAX_PROC};
 $NWALIGN  = $P->{NWALIGN};
 
 $DBNAME = $P->{DBNAME};
@@ -386,7 +386,7 @@ sub initialize_nwalign_servers {
             )
           )
         {
-            system("$NWALIGN --server $start_port &");
+            system("/usr/bin/nice $NWALIGN --server $start_port &");
         }
 
         push @ports, $start_port;

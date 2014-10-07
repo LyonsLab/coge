@@ -422,6 +422,11 @@ function overlap_feats_parse(accn) {
         },
         success : function(data) {
             var obj = jQuery.parseJSON(data);
+
+            if (obj.error) {
+                return alert(obj.error);
+            }
+
             if (obj) {
                 if (obj.count > 10) {
                     var remove = obj.count - 10;
