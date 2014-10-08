@@ -202,7 +202,7 @@ function schedule_poll(when) {
 
 	if (when !== undefined) {
 		timers['poll'] = window.setTimeout(
-			function() { poll(sync); },
+			function() { poll(1); },
 			when
 		);
 		return;
@@ -212,7 +212,7 @@ function schedule_poll(when) {
 	var idleTime = new Date().getTime() - timestamps['idle'];
 	if (idleTime < IDLE_TIME) {
 		timers['poll'] = window.setTimeout(
-			function() { poll(sync); },
+			function() { poll(1); },
 			POLL_TIME
 		);
 	}
@@ -723,7 +723,7 @@ function restart_job(link) {
 				poll(0);//schedule_poll(0); // FIXME mdb changed 10/7/14, reevaluate someday
 				w.close();
 			},
-			10*1000
+			5*1000
 		);
 	}
 }
