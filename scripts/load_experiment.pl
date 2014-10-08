@@ -91,7 +91,10 @@ $name        = unescape($name);
 $description = unescape($description);
 $version     = unescape($version);
 $source_name = unescape($source_name);
-$restricted  = '0' if ( not defined $restricted );
+
+# Set default parameters
+$restricted  = '0' unless (defined $restricted);
+$ignore_missing_chr = '1' unless (defined $ignore_missing_chr); # mdb added 10/6/14 easier just to make this the default
 
 if ($user_name eq 'public') {
 	print STDOUT "log: error: not logged in\n";
@@ -224,14 +227,18 @@ foreach ( sort keys %$pChromosomes ) {
         last;
     }
 }
-if (not $ignore_missing_chr) {
-	my $error = 0;
-	foreach ( sort keys %$pChromosomes ) {
-	    if ( not defined $genome_chr{$_} ) {
-	        print STDOUT "log: chromosome '$_' not found in genome\n";
-	        $error++;
-	    }
+	
+my $missing_chr_error = 0;
+foreach ( sort keys %$pChromosomes ) {
+	if ( not defined $genome_chr{$_} ) { # don't repeat same error message
+		if ($missing_chr_error < 5) {
+			print STDOUT "log: chromosome '$_' not found in genome, skipping (only showing first 5) ...\n";
+		}
+	        $missing_chr_error++;
 	}
+}
+
+if (not $ignore_missing_chr) {
 	if ($error) {
 	    print STDOUT "log: error: input chromosome names don't match genome\n";
 	    exit(-1);

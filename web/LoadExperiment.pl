@@ -497,7 +497,7 @@ sub load_experiment {
             files => [ $data_file ],
             file_type => $file_type,
             options => {
-                ignoreMissing => $ignore_missing_chrs
+                ignoreMissing => 1,#$ignore_missing_chrs # mdb added 10/6/14 easier just to make this the default
             }
         );
     }
