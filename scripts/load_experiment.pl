@@ -239,7 +239,7 @@ foreach ( sort keys %$pChromosomes ) {
 }
 
 if (not $ignore_missing_chr) {
-	if ($error) {
+	if ($missing_chr_error) {
 	    print STDOUT "log: error: input chromosome names don't match genome\n";
 	    exit(-1);
 	}
