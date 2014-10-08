@@ -197,8 +197,7 @@ function poll(sync) {
 	clear_info_cache();
 }
 
-function schedule_poll(when, not_sync) { 
-	var sync = (not_sync ? 0 : 1);
+function schedule_poll(when) { 
 	cancel_poll();
 
 	if (when !== undefined) {
@@ -701,7 +700,7 @@ function cancel_job(id) {
 			},
 			success : function(rc) {
 				if (rc) {
-					schedule_poll(0);
+					poll(0);//schedule_poll(0); // FIXME mdb changed 10/7/14, reevaluate someday
 	            }
 			}
 		});
@@ -721,10 +720,10 @@ function restart_job(link) {
 		// restart command.
 		var w = window.open(link,'_blank', 'toolbar=no,status=no,menubar=no,scrollbars=no,resizable=no,left=10000,top=10000,width=1,height=1,visible=none', ''); 
 		setTimeout(function() {
-				schedule_poll(0);
+				poll(0);//schedule_poll(0); // FIXME mdb changed 10/7/14, reevaluate someday
 				w.close();
 			},
-			5000
+			10*1000
 		);
 	}
 }
