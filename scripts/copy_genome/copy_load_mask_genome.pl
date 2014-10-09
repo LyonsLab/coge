@@ -147,7 +147,7 @@ sub load_genome {
 
     my ($ds) = $genome->datasets;
 
-    $cmd .= ($ds ? " -source_id " . $ds->data_source->id : " -source_name ''");
+    $cmd .= ($ds ? " -source_id " . $ds->data_source->id : " -source_name Unknown");
     $cmd .= " -user_id " . $uid if $uid;
     $cmd .= " -version '" . $genome->version . "'";
     #$cmd .= " -ds_name '" . $ds->name . "'";
