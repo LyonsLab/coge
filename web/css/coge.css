@@ -1533,3 +1533,17 @@ header {
     box-sizing: border-box;
     width: 100%;
 }
+
+
+.alert-box {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.alert-box-warn {
+    color: #bf1e1e;
+    background-color: #ed8c8c;
+    border-color: #e34a4a;
+}

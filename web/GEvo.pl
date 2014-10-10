@@ -224,6 +224,8 @@ sub gen_body {
     }
     my @seq_nums;
     my @seq_sub;
+
+    my $index = 1;
     for ( my $i = 1 ; $i <= $num_seqs ; $i++ ) {
         my (
             $draccn, $pos,   $chr,  $fid, $dsid,
@@ -231,7 +233,7 @@ sub gen_body {
         );
 
         #order by which genomi regions are displayed, top to bottom
-        $display_order = $i unless $display_order;
+        $display_order = $index unless $display_order;
         $draccn = $form->param( "accn" . $i ) if $form->param( "accn" . $i );
         $pos    = $form->param( "x" . $i )    if $form->param( "x" . $i );
         $chr = $form->param( "chr" . $i ) if defined $form->param( "chr" . $i );
@@ -252,6 +254,8 @@ sub gen_body {
             my ($feat) = $coge->resultset('Feature')->find($fid);
             ($draccn) = $feat->names if $feat;
 
+            # Check for all genomes being deleted
+            next scalar grep { $_->deleted } $feat->dataset->genomes;
             unless ($draccn)                    #no name!  This is a problem
             {
                 $pos  = $feat->start;
@@ -259,6 +263,39 @@ sub gen_body {
                 $dsid = $feat->dataset_id;
             }
         }
+
+        # Check if all genomes have been deleted
+        if ($dsid && !$draccn) {
+            my $dataset = $coge->resultset("Dataset")->find($dsid);
+
+            if ($dataset) {
+                next unless grep { $_ && !$_->deleted } $dataset->genomes;
+            }
+        }
+
+        ## Check if the genome was deleted
+        if ($dsgid && !$draccn) {
+            my $genome = $coge->resultset('Genome')->find($dsgid);
+            next unless $genome && $genome->deleted;
+        }
+
+        if ($draccn) {
+            my $rs = $coge->resultset('Dataset')->search(
+                { 'feature_names.name' => uri_unescape($draccn), },
+                {
+                    'join' => { 'features' => 'feature_names', },
+                }
+            );
+
+            if ($rs) {
+                while (my $ds = $rs->next()) {
+                    if ($ds) {
+                        next unless grep { $_ && !$_->deleted } $ds->genomes;
+                    }
+                }
+            }
+        }
+
         my $drup = $form->param( 'dr' . $i . 'up' )
           if defined $form->param( 'dr' . $i . 'up' );
         my $drdown = $form->param( 'dr' . $i . 'down' )
@@ -291,15 +328,16 @@ sub gen_body {
         my $refy = "checked" if $form->param( 'ref' . $i );
         my $refn = "checked" unless $refy;
         my $org_title;
-        my $dsg_menu = qq{<input type="hidden" id="dsgid$i"};
+        my $dsg_menu = qq{<input type="hidden" id="dsgid$index"};
         $dsg_menu .= qq{value ="$dsgid"} if $dsgid;
         $dsg_menu .= qq{>};
+
         ( $org_title, $dsid, $gstid, $dsgid, $dsg_menu ) = get_org_info(
             dsid    => $dsid,
             chr     => $chr,
             gstid   => $gstid,
             dsgid   => $dsgid,
-            seq_num => $i
+            seq_num => $index,
         ) if $pos;
 
         # mdb added 11/20/13 issue 254
@@ -316,7 +354,7 @@ sub gen_body {
         	$stop = $gbstart + $gblength-1 + $drdown;
         }
 
-        push @seq_nums, { SEQ_NUM => $i, };
+        push @seq_nums, { SEQ_NUM => $index, };
         my %opts = (
             SEQ_NUM   => $display_order,
             REV_YES   => $revy,
@@ -352,6 +390,7 @@ qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>
           if $pos;
         push @seq_sub, {%opts};
 
+        $index++;
     }
     @seq_sub =
       sort { $a->{SEQ_NUM} <=> $b->{SEQ_NUM} } @seq_sub;  #sort based on seq_num
@@ -437,6 +476,11 @@ qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>
     $show_gene_space = 0 unless $show_gene_space;
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo.tmpl' );
+
+    # Check if a genome was specified
+    my $error = (scalar @seq_sub < $num_seqs) ? 1 : 0;
+
+    $template->param( ERROR             => $error );
     $template->param( PAD_GS            => $pad_gs );
     $template->param( APPLY_ALL         => $apply_all );
     $template->param( IMAGE_WIDTH       => $image_width );
@@ -614,7 +658,7 @@ qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>
     $spike_len = $form->param('spike_len') if defined $form->param('spike_len');
     $template->param( SPIKE_LEN     => $spike_len );
     $template->param( SEQ_RETRIEVAL => 1 );
-    $template->param( NUM_SEQS      => $num_seqs );
+    $template->param( NUM_SEQS      => scalar @seq_sub);
 
     # $template->param(COLOR_NUM=>$num_colors);
     $message .= "<BR/>" if $message;
