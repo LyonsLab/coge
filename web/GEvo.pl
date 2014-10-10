@@ -265,7 +265,7 @@ sub gen_body {
         }
 
         # Check if all genomes have been deleted
-        if ($dsid && !$draccn) {
+        if ($dsid) {
             my $dataset = $coge->resultset("Dataset")->find($dsid);
 
             if ($dataset) {
@@ -274,9 +274,9 @@ sub gen_body {
         }
 
         ## Check if the genome was deleted
-        if ($dsgid && !$draccn) {
+        if ($dsgid) {
             my $genome = $coge->resultset('Genome')->find($dsgid);
-            next unless $genome && $genome->deleted;
+            next unless $genome && !$genome->deleted;
         }
 
         if ($draccn) {
