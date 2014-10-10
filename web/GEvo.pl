@@ -254,8 +254,11 @@ sub gen_body {
             my ($feat) = $coge->resultset('Feature')->find($fid);
             ($draccn) = $feat->names if $feat;
 
-            # Check for all genomes being deleted
-            next scalar grep { $_->deleted } $feat->dataset->genomes;
+            # Check for available genomes
+            next unless grep {
+                $_ && !$_->deleted && $USER->has_access_to_genome($_)
+            } $feat->dataset->genomes;
+
             unless ($draccn)                    #no name!  This is a problem
             {
                 $pos  = $feat->start;
@@ -269,14 +272,16 @@ sub gen_body {
             my $dataset = $coge->resultset("Dataset")->find($dsid);
 
             if ($dataset) {
-                next unless grep { $_ && !$_->deleted } $dataset->genomes;
+                next unless grep {
+                    $_ && !$_->deleted && $USER->has_access_to_genome($_)
+                } $dataset->genomes;
             }
         }
 
         ## Check if the genome was deleted
         if ($dsgid) {
             my $genome = $coge->resultset('Genome')->find($dsgid);
-            next unless $genome && !$genome->deleted;
+            next unless $genome && !$genome->deleted && $USER->has_access_to_genome($genome);
         }
 
         if ($draccn) {
@@ -290,7 +295,9 @@ sub gen_body {
             if ($rs) {
                 while (my $ds = $rs->next()) {
                     if ($ds) {
-                        next unless grep { $_ && !$_->deleted } $ds->genomes;
+                        next unless grep {
+                            $_ && !$_->deleted && $USER->has_access_to_genome($_)
+                        } $ds->genomes;
                     }
                 }
             }
