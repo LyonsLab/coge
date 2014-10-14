@@ -1382,7 +1382,7 @@ sub get_contents {
     
     #print STDERR "get_contents: time6=" . ((time - $start_time)*1000) . "\n";
     if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity_loads} ) {
-        my $loads = filter_jobs($jobs, ['loadgenome', 'loadexperiment', 'loadannotation', 'loadbatch']);
+        my $loads = filter_jobs($jobs, ['loadgenome', 'loadexperiment', 'loadannotation', 'loadbatch', 'genomeinfo']);
         foreach (@$loads) {
             my $isRunning = $_->{status} =~ /running/i;
             my $info_html = format_job_status($_->{status}).' '.$_->{start_time}.' | '. $_->{elapsed}.' | '.$_->{page}.' | '.$_->{description} . ($_->{workflow_id} ? ' | id' . $_->{workflow_id} : '');
