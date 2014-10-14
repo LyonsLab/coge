@@ -45,6 +45,8 @@ sub generate_gff {
     my @attributes = qw(annos cds id_type nu upa);
     my $param_string = join "-", map { $_ . $args{$_} } @attributes;
     my $filename = $args{basename} . "_" . $param_string . ".gff";
+    $filename =~ s/\s+/_/g;
+    $filename =~ s/\)|\(/_/g;
     my $path = get_download_path($conf->{SECTEMPDIR}, $args{gid});
     my $output_file = catfile($path, $filename);
 
