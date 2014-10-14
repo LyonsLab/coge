@@ -5,10 +5,11 @@ use strict;
 my $data_file = shift;
 
 if (!validate_fastq_data_file($data_file)) {
-    print STDERR "error: file contains no data\n";
+    print STDOUT "log: error: file contains no data\n";
     exit(-1);
 }
 
+print STDOUT "log: file has been verified successfully\n";
 system("touch $data_file.validated");
 exit;
 
@@ -27,12 +28,12 @@ sub validate_fastq_data_file {
             my $line3 = <$in>;   #chomp $line3;
             my $qual  = <$in>;   chomp $qual;
 
+            $count++;
+
             if (length $seq != length $qual) {
-                print STDERR "error: invalid record (length seq != length qual)";
+                print STDOUT "log: error: invalid record (length seq != length qual) line=$count\n";
                 exit(-1);
             }
-
-            $count++;
         }
     }
     close($in);

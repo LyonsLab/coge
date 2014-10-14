@@ -57,7 +57,7 @@ sub run {
 
     # Setup log file, staging, and results paths
     my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
-    $workflow->logfile( catfile($staging_dir, 'log_main.txt') );
+    $workflow->logfile( catfile($result_dir, 'debug.log') );
 
     # Check if genome has annotations
     my $annotated = has_annotations($genome->id, $db);
