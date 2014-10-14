@@ -127,7 +127,9 @@ sub fetch {
             push @results, {
                 type => 'http',
                 name => $name,
-                path => url_for('api/v1/jobs/'.$id.'/results/'.$name) # FIXME move api path into conf file ...?
+                path => url_for('api/v1/jobs/'.$id.'/results/'.$name,
+                    username => $user->name
+                ) # FIXME move api path into conf file ...?
             };
         }
         closedir($fh);
