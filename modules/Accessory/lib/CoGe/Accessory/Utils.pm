@@ -107,19 +107,19 @@ sub get_link_coords { # mdb added 11/20/13 issue 254
 }
 
 sub sanitize_name {
-    my $org = shift;
+    my $name = shift;
 
-    $org =~ s/\///g;
-    $org =~ s/\s+/_/g;
-    $org =~ s/\(//g;
-    $org =~ s/\)//g;
-    $org =~ s/://g;
-    $org =~ s/;//g;
-    $org =~ s/#/_/g;
-    $org =~ s/'//g;
-    $org =~ s/"//g;
+    $name =~ s/\///g;
+    $name =~ s/\s+/_/g;
+    $name =~ s/\(//g;
+    $name =~ s/\)//g;
+    $name =~ s/://g;
+    $name =~ s/;//g;
+    $name =~ s/#/_/g;
+    $name =~ s/'//g;
+    $name =~ s/"//g;
 
-    return $org;
+    return $name;
 }
 
 sub format_time_diff {
