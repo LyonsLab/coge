@@ -542,6 +542,17 @@ sub process_gff_file {
         $chr =~ s/chromosome//i;
         $chr =~ s/^chr//i;
         $chr =~ s/^_//i;
+            $chr =~ s/^lcl\|//;
+            $chr =~ s/^gi\|//;
+                $chr = "0" if $chr =~ /^0+$/; #EL added 2/13/14 to catch cases where chromosome name is 00 (or something like that)
+            $chr =~ s/^0+// unless $chr eq '0';
+            $chr =~ s/^_+//;
+            $chr =~ s/\s+/ /;
+            $chr =~ s/^\s//;
+            $chr =~ s/\s$//;
+            $chr =~ s/\//_/; # mdb added 12/17/13 issue 266 - replace '/' with '_'
+            $chr =~ s/\|$//; # mdb added 3/14/14 issue 332 - remove trailing pipes
+    
 	    $chr = "0" if $chr =~ /^0+$/; #EL added 2/13/14 to catch chromosomes with names like "00"
         $chr =~ s/^0//g unless $chr eq '0';
         ($chr) = split( /\s+/, $chr );
