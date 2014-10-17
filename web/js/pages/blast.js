@@ -729,6 +729,7 @@ function blastOff(dialog, results, basename) {
 
     $.ajax({
         type: "POST",
+        url: "CoGeBlast.pl",
         dataType: 'json',
         data: options,
         success : function(response) {
