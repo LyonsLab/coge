@@ -1938,7 +1938,7 @@ sub get_gff {
 
     $args{script_dir} = $config->{SCRIPTDIR};
     $args{secure_tmp} = $config->{SECTEMPDIR};
-    $args{basename} = $dsg->organism->name;
+    $args{basename} = sanitize_name($dsg->organism->name);
     $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export gff");
@@ -1970,7 +1970,7 @@ sub export_gff {
 
     $args{script_dir} = $config->{SCRIPTDIR};
     $args{secure_tmp} = $config->{SECTEMPDIR};
-    $args{basename} = $dsg->organism->name;
+    $args{basename} = sanitize_name($dsg->organism->name);
     $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export gff");
