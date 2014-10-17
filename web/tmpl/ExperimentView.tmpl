@@ -612,6 +612,20 @@ function remove_experiment_type (opts) {
     });
 }
 
+function remove_experiment_tag (opts) {
+    etid = opts.etid;
+    $.ajax({
+        data: {
+            fname: 'remove_experiment_tag',
+            eid: eid,
+            etid: etid,
+        },
+        success : function(val) {
+            get_experiment_info();
+        },
+    });
+}
+
 function get_annotations() {
     $.ajax({
         data: {
