@@ -1166,7 +1166,24 @@ function get_content_dialog(id, request, chromosome) {
     })
 }
 
-</SCRIPT>
+function get_experiments(e) {
+    e.preventDefault();
+    var experiments = $("#experiments");
+
+    $.ajax({
+        data: {
+            fname: 'get_experiments',
+            gid: genome_id
+        },
+
+        success:function(data) {
+            experiments.hide().html(data);
+            experiments.slideDown();
+        }
+    });
+}
+
+</script>
 
 <div class="dialog_box hidden" id="chromosome_hist" title="Chromosome Size"></div>
 <div class="dialog_box hidden" id="gc_histogram" title="Chromosome Size"></div>
@@ -1270,7 +1287,7 @@ function get_content_dialog(id, request, chromosome) {
     </tr>
 </table>
 
-<div class="bold text" style="padding-top:1em;">Experiments</div>
+<div class="bold text" style="padding-top:1em;">Experiments (<tmpl_var name="EXP_COUNT">)</div>
 <TMPL_IF NAME='EXPERIMENTS'>
     <table class="small ui-widget-content ui-corner-all">
         <tr>
@@ -1507,6 +1524,13 @@ Are you sure you want to move this genome into your trash?<p>
         <TMPL_VAR NAME="EXPERIMENT_INFO"><br>
     </TMPL_LOOP>
 </TMPL_IF>
+
+<TMPL_IF NAME='NOEXPERIMENTS'>
+    <div id="experiments" class="padded">
+        <a href="#" onclick="get_experiments(window.event);">Click to display all Experiments</a>
+    </div>
+</TMPL_IF>
+
 
 <TMPL_IF NAME='DO_DATASETS'>
     <TMPL_LOOP NAME="DATASET_LOOP">
