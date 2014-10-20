@@ -99,6 +99,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     get_wobble_gc              => \&get_wobble_gc,
     get_wobble_gc_diff         => \&get_wobble_gc_diff,
     get_codon_usage            => \&get_codon_usage,
+    get_experiments            => \&get_experiments,
     %ajax
 );
 
@@ -2077,6 +2078,20 @@ sub generate_body {
     my $user_can_edit = $USER->is_admin || $USER->is_owner_editor( dsg => $gid );
     my $user_can_delete = $USER->is_admin || $USER->is_owner( dsg => $gid );
 
+
+    my $exp_count = $genome->experiments->count( { deleted => 0 } );
+    my $experiments;
+
+    if ($exp_count < 20) {
+        $experiments = get_experiments( genome => $genome );
+    } else {
+        my $summary_template =
+        HTML::Template->new( filename => $config->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+
+        $summary_template->param(NOEXPERIMENTS => 1);
+        $experiments = $summary_template->output;
+    }
+
     $template->param( OID => $genome->organism->id );
 
     $template->param(
@@ -2089,7 +2104,8 @@ sub generate_body {
         LOGON           => ( $USER->user_name ne "public" ),
         GENOME_ANNOTATIONS => get_annotations( gid => $gid ) || undef,
         DEFAULT_TYPE    => 'note', # default annotation type
-        EXPERIMENTS     => get_experiments( genome => $genome ) || undef,
+        EXP_COUNT       => $exp_count,
+        EXPERIMENTS     => $experiments || undef,
         DATASETS        => get_datasets( genome => $genome, exclude_seq => 1 ) || undef,
         USER_CAN_EDIT   => $user_can_edit,
         USER_CAN_ADD    => $user_can_edit, #( !$genome->restricted or $user_can_edit ), # mdb removed 2/19/14, not sure why it ever existed
