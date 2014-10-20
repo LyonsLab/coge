@@ -767,12 +767,11 @@ sub blast_search {
         push @$args, ['-p', 'F', 1];
 
         my $dbpath = File::Spec->catdir(($BLASTDBDIR, $dsgid));
-        mkpath($dbpath, 0, 0775);
         my $db = File::Spec->catdir(($dbpath, $dsgid));
-        my $outputs = ["$db.nhr", "$db.nin", "$db.nsq"];
+        my $outputs = [[$dbpath, 1]]; #["$db.nhr", "$db.nin", "$db.nsq"];
 
         $workflow->add_job(
-            cmd     => $FORMATDB,
+            cmd     => "mkdir $dsgid && cd $dsgid && $FORMATDB",
             script  => undef,
             args    => $args,
             inputs  => undef,
@@ -839,7 +838,7 @@ sub blast_search {
             cmd     => "/usr/bin/nice",
             script  => undef,
             args    => $args,
-            inputs  => [$fasta_file, "$db.nhr", "$db.nin", "$db.nsq"],
+            inputs  => [$fasta_file, [$dbpath, 1]],
             outputs => [$outfile],
             description => "Blasting sequence against $name"
         );
