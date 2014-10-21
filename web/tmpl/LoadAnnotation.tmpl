@@ -109,7 +109,7 @@ function create_source() {
 function reset_log() {
 	$('#load_log').html('');
 	$('#loading_msg').show();
-	$('#finished_msg,#error_msg,#ok_button,#finish_button,#cancel_button').hide();
+	$('#finished_msg,#error_msg,#ok_button,#finish_button,#cancel_button,#logfile').hide();
 }
 
 function check_login() {
@@ -355,7 +355,8 @@ function update_dialog(request, user, identifier, formatter) {
             pageObj.error++;
             if (pageObj.error > 3) {
                 workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
-                load_failed();
+                var logfile = json.results[0].path;
+                load_failed(logfile);
                 return;
             }
         } else {
@@ -409,9 +410,9 @@ function update_dialog(request, user, identifier, formatter) {
                 || current_status == "cancelled")
         {
             workflow_status.find('span').addClass('alert');
-            get_load_log(function(result) {
-                load_failed(result);
-            });
+
+            var logfile = json.results[0].path;
+            load_failed(logfile);
         }
         else if (current_status == "notfound") {
             setTimeout(callback, timeout);
@@ -430,7 +431,7 @@ function update_dialog(request, user, identifier, formatter) {
     get_status();
 }
 
-function load_failed() {
+function load_failed(logfile) {
 	// mdb added 6/24/14 - temporary message until JEX logging is improved
 	var msg =
 		'<div class="alert">' +
@@ -441,9 +442,11 @@ function load_failed() {
 	var log = $('#load_log');
 	log.html( log.html() + msg );
 
+    var logfile = $("#logfile a").attr("href", logfile);
+
     // Update dialog
     $('#loading_msg').hide();
-    $('#error_msg').fadeIn();
+    $('#error_msg,#logfile').fadeIn();
     $('#cancel_button').fadeIn();
 
     if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
@@ -636,6 +639,7 @@ function more() {
 	  <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all coge-button">Load Another</span>
 	  <span id="finish_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all coge-button">GenomeView</span>
 	  <span id="cancel_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go coge-button">Cancel</span>
+      <span id="logfile" class="hidden"><a href="">Logfile</a></span>
   </div>
 </div>
 
