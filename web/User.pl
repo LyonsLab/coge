@@ -609,6 +609,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
 
     my ( %user_rows, %group_rows, %notebook_rows );
     foreach my $conn ( values %userconn ) {
+	next unless $conn->role; #EL added 10/21/14 so solve a problem for a user where the share dialog wouldn't appear for his genomes, and an fatal error was being thrown due to role->name with role being undefined.  Genomes with problems were IDs: 24576, 24721, 24518, 24515, 24564, 24566, 24568, 24562, 24571 
         if ( $conn->is_parent_user ) {
             my $user = $conn->parent;
             $user_rows{ $user->id } = {
