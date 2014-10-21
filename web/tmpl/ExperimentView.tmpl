@@ -787,12 +787,14 @@ function get_tag_description (name) {
     <div id="progress_log" class="small padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:415px;height:200px;color:dimgray;">
     </div>
     <br>
-    <span id="progress_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
-    <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
-    <span id="custom_msg" class="hidden"></span>
-    <span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
-    <span id="ok_button" onClick="reset_load();" class="hidden r ui-button ui-corner-all coge-button">OK</span>
-    <span id="experiment_view_button" class="hidden r ui-button ui-corner-all coge-button">ExperimentView</span>
+    <div class="coge-buttonset">
+        <span id="progress_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
+        <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
+        <span id="custom_msg" class="hidden"></span>
+        <span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
+        <span id="ok_button" onClick="reset_load();" class="hidden r ui-button ui-corner-all coge-button">OK</span>
+        <span id="experiment_view_button" class="hidden r ui-button ui-corner-all coge-button">ExperimentView</span>
+    </div>
 </div>
 
 <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'>
