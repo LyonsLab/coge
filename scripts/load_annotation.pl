@@ -226,7 +226,7 @@ unless ( $seen_types{gene} ) {
 print STDOUT "log: Annotation types:\n", join(
     "\n",
     map {
-        "log: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" . $_ . "\t"
+        "log: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" . $_ . ": "
           . commify( $seen_types{$_} )
       } sort keys %seen_types
   ),
@@ -235,7 +235,7 @@ print STDOUT "log: Annotation types:\n", join(
 print STDOUT "log: Data types:\n", join(
     "\n",
     map {
-        "log: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" . $_ . "\t"
+        "log: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" . $_ . ": "
           . commify( $seen_attr{$_} )
       } sort keys %seen_attr
   ),
