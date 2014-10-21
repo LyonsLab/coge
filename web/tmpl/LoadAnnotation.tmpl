@@ -355,7 +355,11 @@ function update_dialog(request, user, identifier, formatter) {
             pageObj.error++;
             if (pageObj.error > 3) {
                 workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
-                var logfile = json.results[0].path;
+                var logfile;
+
+                if (json.results.length) {
+                    logfile = json.results[0].path;
+                }
                 load_failed(logfile);
                 return;
             }
@@ -411,7 +415,11 @@ function update_dialog(request, user, identifier, formatter) {
         {
             workflow_status.find('span').addClass('alert');
 
-            var logfile = json.results[0].path;
+            var logfile;
+
+            if (json.results.length) {
+                logfile = json.results[0].path;
+            }
             load_failed(logfile);
         }
         else if (current_status == "notfound") {
@@ -442,11 +450,14 @@ function load_failed(logfile) {
 	var log = $('#load_log');
 	log.html( log.html() + msg );
 
-    var logfile = $("#logfile a").attr("href", logfile);
+    if (logfile) {
+        $("#logfile a").attr("href", logfile);
+        $("#logfile").fadeIn();
+    }
 
     // Update dialog
     $('#loading_msg').hide();
-    $('#error_msg,#logfile').fadeIn();
+    $('#error_msg').fadeIn();
     $('#cancel_button').fadeIn();
 
     if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
