@@ -29,7 +29,7 @@ sub run {
 
     my $workflow = $JEX->create_workflow( name => 'Running the SNP-finder pipeline', init => 1 );
     my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
-    $workflow->logfile( catfile($staging_dir, 'debug.log') );
+    $workflow->logfile( catfile($result_dir, 'debug.log') );
 
     my @jobs = build({
         experiment => $experiment,
@@ -92,6 +92,11 @@ sub build {
         fasta => $fasta_file,
         cache_dir => $fasta_cache_dir,
         reheader_fasta => $reheader_fasta,
+    });
+
+    push @jobs, create_fasta_index_job({
+        fasta => catfile($fasta_cache_dir, $reheader_fasta),
+        cache_dir => $fasta_cache_dir,
     });
 
     push @jobs, create_platypus_job($conf);

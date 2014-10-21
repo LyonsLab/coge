@@ -5,9 +5,10 @@ use File::Basename qw(basename);
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT = qw(create_fasta_reheader_job create_load_vcf_job
-                 create_find_snps_job create_filter_snps_job
-                 create_platypus_job);
+our @EXPORT = qw(create_fasta_reheader_job create_fasta_index_job
+                 create_load_vcf_job create_find_snps_job
+                 create_filter_snps_job create_platypus_job);
+
 our $CONFIG = CoGe::Accessory::Web::get_defaults();
 
 sub create_fasta_reheader_job {
@@ -35,6 +36,32 @@ sub create_fasta_reheader_job {
             catfile($cache_dir, $reheader_fasta),
         ],
         description => "Filter fasta file...",
+    };
+}
+
+sub create_fasta_index_job {
+    my $opts = shift;
+
+    # Required arguments
+    my $fasta = $opts->{fasta};
+    my $cache_dir = $opts->{cache_dir};
+
+    my $fasta_name = basename($fasta);
+    my $fasta_index = qq[$fasta_name.fai];
+
+    return {
+        cmd => $CONFIG->{SAMTOOLS} || "samtools",
+        script => undef,
+        args => [
+            ["faidx", $fasta, 1],
+        ],
+        inputs => [
+            $fasta,
+        ],
+        outputs => [
+            catfile($cache_dir, $fasta_index),
+        ],
+        description => "Index fasta file...",
     };
 }
 
@@ -94,6 +121,7 @@ sub create_platypus_job {
     my $alignment = $opts->{bam};
     my $vcf = $opts->{vcf};
 
+    my $index = qq[$reference.fai];
     my $PLATYPUS = $CONFIG->{PLATYPUS} || "Platypus.py";
 
     return {
@@ -107,6 +135,7 @@ sub create_platypus_job {
         inputs => [
             $alignment,
             $reference,
+            $index,
         ],
         outputs => [
             $vcf,
