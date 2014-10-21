@@ -159,7 +159,7 @@ function create_source() {
 function reset_log() {
     $('#load_log').html('');
     $('#loading_msg').show();
-    $('#ok_button,#error_msg,#finished_msg,#finish_load_experiment_button,#cancel_load_experiment_button').hide();
+    $('#ok_button,#error_msg,#finished_msg,#finish_load_experiment_button,#cancel_load_experiment_button,#logfile').hide();
 }
 
 function check_login() {
@@ -300,7 +300,7 @@ function get_load_log(callback) {
     });
 }
 
-function load_failed() {
+function load_failed(logfile) {
 	// mdb added 6/24/14 - temporary message until JEX logging is improved
 	var msg =
 		'<div class="alert">' +
@@ -311,9 +311,12 @@ function load_failed() {
 	var log = $('#load_log');
 	log.html( log.html() + msg );
 
+
+    var logfile = $("#logfile a").attr("href", logfile);
+
     // Update dialog
     $('#loading_msg').hide();
-    $('#error_msg,#cancel_load_experiment_button').fadeIn();
+    $('#error_msg,#cancel_load_experiment_button,#logfile').fadeIn();
 
     if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
 	    $.ajax({
@@ -500,7 +503,8 @@ function update_dialog(request, user, identifier, formatter) {
             pageObj.error++;
             if (pageObj.error > 3) {
                 workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
-                load_failed();
+                var logfile = json.results[0].path;
+                load_failed(logfile);
                 return;
             }
         } else {
@@ -555,9 +559,9 @@ function update_dialog(request, user, identifier, formatter) {
                 || current_status == "cancelled")
         {
             workflow_status.find('span').addClass('alert');
-            get_load_log(function(result) {
-                load_failed(result);
-            });
+
+            var logfile = json.results[0].path;
+            load_failed(logfile);
         }
         else if (current_status == "notfound") {
             setTimeout(callback, timeout);
@@ -693,6 +697,7 @@ function update_dialog(request, user, identifier, formatter) {
 	  <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Load Another</span>
 	  <span id="finish_load_experiment_button" style="display:none;float:right;" class="ui-button ui-corner-all">ExperimentView</span>
 	  <span id="cancel_load_experiment_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
+      <span id="logfile" class="hidden"><a href="">Logfile</a></span>
   </div>
 </div>
 
