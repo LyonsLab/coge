@@ -73,6 +73,7 @@ sub create_load_vcf_job {
     my $username = $opts->{username};
     my $source_name = $opts->{source_name};
     my $staging_dir = $opts->{staging_dir};
+    my $result_dir = $opts->{result_dir};
     my $annotations = $opts->{annotations};
     my $wid = $opts->{wid};
     my $gid = $opts->{gid};
@@ -98,6 +99,7 @@ sub create_load_vcf_job {
             ['-annotations', $annotations, 0],
             ['-staging_dir', "./load_experiment", 0],
             ['-file_type', "vcf", 0],
+            ['-result_dir', "'".$result_dir."'", 0],
             ['-data_file', qq[$vcf], 0],
             ['-config', $CONFIG->{_CONFIG_PATH}, 1]
         ],

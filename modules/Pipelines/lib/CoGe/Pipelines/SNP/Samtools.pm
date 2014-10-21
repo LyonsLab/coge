@@ -34,6 +34,7 @@ sub run {
     my @jobs = build({
         experiment => $experiment,
         staging_dir => $staging_dir,
+        result_dir => $result_dir,
         user => $user,
         wid  => $workflow->id,
     });
@@ -60,6 +61,7 @@ sub build {
     my $user = $opts->{user};
     my $wid = $opts->{wid};
     my $staging_dir = $opts->{staging_dir};
+    my $result_dir = $opts->{result_dir};
 
     my $genome = $experiment->genome;
     my $fasta_cache_dir = catdir($CONFIG->{CACHEDIR}, $genome->id, "fasta");
@@ -72,6 +74,7 @@ sub build {
 
     my $conf = {
         staging_dir => $staging_dir,
+        result_dir  => $result_dir,
 
         bam         => $bam_file,
         fasta       => catfile($fasta_cache_dir, $reheader_fasta),
