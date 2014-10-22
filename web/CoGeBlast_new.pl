@@ -396,6 +396,39 @@ sub get_url {
     }
 }
 
+sub generate_blastdb_job {
+    my %opts = @_;
+
+    # required arguments
+    my $title = $opts{title};
+    my $fasta = $opts{fasta};
+    my $type = $opts{type};
+    my $out  = $opts{out};
+    my $outdir = $opts{outdir};
+
+    my $logfile = $opts{logfile} || "db.log";
+    my $BLASTDB = $P->{MAKEBLASTDB} || "makeblastdb";
+
+    my $args = [
+        ["-in", $fasta, 0],
+        ["-out", $out, 0],
+        ["-dbtype", $type, 0],
+        ["-title", qq{"$title"}, 0],
+        ["-logfile", $logfile, 0],
+    ];
+
+    my $base = basename($outdir);
+
+    return (
+        cmd => "mkdir $base && cd $base && $BLASTDB",
+        script  => undef,
+        args    => $args,
+        inputs  => undef,
+        outputs => [[$outdir, 1]],
+        description => "Generating blastable database..."
+    );
+}
+
 sub blast_param {
     my %opts      = @_;
     my $seq_type  = $opts{blast_type} || "blast_type_n";
@@ -758,31 +791,39 @@ sub blast_search {
         next unless -s $fasta_file;
 
         my $name = $dsg->organism->name;
-        my $args = [
-            ['-i', $dbfasta, 0],
-            ['-t', qq{"$name"}, 0],
-            ['-n', $dsgid, 1],
-        ];
+        #my $args = [
+        #    ['-i', $dbfasta, 0],
+        #    ['-t', qq{"$name"}, 0],
+        #    ['-n', $dsgid, 1],
+        #];
 
-        push @$args, ['-p', 'F', 1];
+        #push @$args, ['-p', 'F', 1];
 
         my $dbpath = File::Spec->catdir(($BLASTDBDIR, $dsgid));
         my $db = File::Spec->catdir(($dbpath, $dsgid));
-        my $outputs = [[$dbpath, 1]]; #["$db.nhr", "$db.nin", "$db.nsq"];
+        #my $outputs = [[$dbpath, 1]]; #["$db.nhr", "$db.nin", "$db.nsq"];
 
-        $workflow->add_job(
-            cmd     => "mkdir $dsgid && cd $dsgid && $FORMATDB",
-            script  => undef,
-            args    => $args,
-            inputs  => undef,
-            outputs => $outputs,
-            description => "Generating blastable database..."
-        );
+        $workflow->add_job(generate_blastdb_job(
+            title   => $name,
+            out     => $dsgid,
+            fasta   => $dbfasta,
+            type    => "nucl",
+            outdir  => $dbpath,
+        ));
+
+        #$workflow->add_job(
+        #    cmd     => "mkdir $dsgid && cd $dsgid && $FORMATDB",
+        #    script  => undef,
+        #    args    => $args,
+        #    inputs  => undef,
+        #    outputs => $outputs,
+        #    description => "Generating blastable database..."
+        #);
 
         my $outfile = $cogeweb->basefile . "-$count.$program";
 
         my $cmd = $BLAST_PROGS->{$program};
-        $args = [
+        my $args = [
             [ '', '--adjustment=10', 1 ],
             [ '', $BLAST_PROGS->{$program}, 0 ],
         ];
