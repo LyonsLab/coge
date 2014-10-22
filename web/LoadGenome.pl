@@ -708,7 +708,7 @@ sub send_error_report {
     my $job_id = $opts{job_id};
 
     # Get the staging directory
-    my ($staging_dir, $result_dir) = get_workflow_paths($USER->name, $job_id);
+    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $job_id);
 
     my $url = $P->{SERVER} . "$PAGE_TITLE.pl?";
     $url .= "job_id=$job_id;" if $job_id;
