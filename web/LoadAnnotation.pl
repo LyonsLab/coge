@@ -580,10 +580,8 @@ sub send_error_report {
     my $load_id = $opts{load_id};
     my $job_id = $opts{job_id};
 
-    my @paths= ($P->{SECTEMPDIR}, $PAGE_TITLE, $USER->name, $load_id, "staging");
-
     # Get the staging directory
-    my $staging_dir = File::Spec->catdir(@paths);
+    my ($staging_dir, $result_dir) = get_workflow_paths($USER->name, $job_id);
 
     my $url = $P->{SERVER} . "$PAGE_TITLE.pl?";
     $url .= "job_id=$job_id;" if $job_id;
@@ -598,6 +596,7 @@ sub send_error_report {
         . $USER->id . ' '
         . $USER->date . "\n\n"
         . "staging_directory: $staging_dir\n\n"
+        . "result_directory: $result_dir\n\n"
         . "tiny link: $url\n\n";
     $body .= get_load_log();
 
