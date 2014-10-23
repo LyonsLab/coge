@@ -4,6 +4,7 @@ use v5.10;
 use strict;
 
 use CGI;
+use Data::Validate::URI qw(is_uri);
 use JSON::XS;
 use HTML::Template;
 use Sort::Versions;
@@ -1366,7 +1367,12 @@ sub get_contents {
             my $isCancelled = $_->{status} =~ /cancelled/i;
             my $star_icon    = qq{<img title="Favorite this analysis" }.( $_->{is_important} ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"' ).qq{ width="15" height="15" class="link" style="vertical-align:middle;" onclick="toggle_star(this);" />};
             my $cancel_icon  = qq{<img title="Cancel this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/cancel.png" width="15" onclick="cancel_job_dialog('}.($_->{workflow_id} ? $_->{workflow_id} : '').qq{');"/>};
+
+            $_->{link} = undef unless is_uri($_->{link});
+
             my $restart_icon = qq{<img title="Restart this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/refresh-icon.png" width="15" onclick="restart_job('}.($_->{link} ? $_->{link} : '').qq{');"/>};
+
+
             my $comment_icon = qq{<img title="Add comment" class="link" height="15" style="vertical-align:middle;" src="picts/comment-icon.png" width="15" onclick="comment_dialog($id, '$_->{comment}');" />};
             my $info_html = format_job_status($_->{status}).' '.$_->{start_time}.' | '. $_->{elapsed}.' | '.$_->{page}.' | '.$_->{description} . ($_->{comment} ? ' | ' . $_->{comment} : '') . ($_->{workflow_id} ? ' | id' . $_->{workflow_id} : '');
             push @rows,
@@ -1385,6 +1391,8 @@ sub get_contents {
     if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity_loads} ) {
         my $loads = filter_jobs($jobs, ['loadgenome', 'loadexperiment', 'loadannotation', 'loadbatch', 'genomeinfo']);
         foreach (@$loads) {
+            $_->{link} = undef unless is_uri($_->{link});
+
             my $isRunning = $_->{status} =~ /running/i;
             my $info_html = format_job_status($_->{status}).' '.$_->{start_time}.' | '. $_->{elapsed}.' | '.$_->{page}.' | '.$_->{description} . ($_->{workflow_id} ? ' | id' . $_->{workflow_id} : '');
             push @rows,

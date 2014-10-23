@@ -494,6 +494,10 @@ function open_item(item_type, title, link) {
 	if (item_type == ITEM_TYPE_GROUP) // FIXME this is a kludge
 		group_dialog();
 	else {
+        if (!link) {
+            return alert("The following link could not be generated");
+        }
+
 		title = title + "<br><a class='xsmall' href='"+link+"' target='_blank'>[Open in new tab]</a> ";
 		link = link + "&embed=1";
 		console.log(link);
