@@ -4,6 +4,7 @@ use v5.10;
 use strict;
 use base 'Class::Accessor';
 use Data::Dumper;
+use Data::Validate::URI qw(is_uri);
 use Carp qw(cluck);
 use CoGeX;
 use DBIxProfiler;
@@ -704,15 +705,22 @@ sub get_tiny_link {
 
     # mdb added 1/8/14, issue 272
     my $ua = new LWP::UserAgent;
+    my $response;
+
 	$ua->timeout(5);
 	my $response = $ua->get($request_url);
 	if ($response->is_success) {
-        return $response->decoded_content;
+        $response = $response->decoded_content;
 	}
 	else {
         cluck "Unable to produce tiny url from server falling back to url";
         return $url;
 	}
+
+    # check if the tiny link is a validate url
+    return $url unless is_uri($response);
+
+    return $response;
 
     # Log the page
 # mdb removed 10/10/13 -- Move logging functionality out of this to fix issue 167
