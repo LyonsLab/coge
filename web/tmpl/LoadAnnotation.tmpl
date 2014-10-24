@@ -312,7 +312,8 @@ function progress_formatter(item) {
         var p = item.log.split("\n");
 
         var pElements = p.map(function(item) {
-            return $("<div></div>").html(unescape(item));
+            var norm = item.replace(/\\t/g, " ").replace(/\\'/g, "'");
+            return $("<div></div>").append(norm);
         });
 
         var log = $("<div></div>").html(pElements).addClass("padded");
