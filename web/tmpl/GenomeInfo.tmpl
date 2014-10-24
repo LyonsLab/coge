@@ -243,7 +243,7 @@ function export_features_to_irods(id, feature, isGenome, type) {
     });
 }
 
-function wait_to_search (search_func, search_term) {
+function debounce_search(search_func, search_term) {
     pageObj.search_term = search_term;
 
     if (pageObj.time) {
@@ -1477,7 +1477,7 @@ Are you sure you want to move this genome into your trash?<p>
       <tr>
         <td>Organism:</td>
         <td>
-          <input id="edit_organism" type="search" onkeyup="wait_to_search(search_organisms, this.value);" size="50" value="<TMPL_VAR NAME='ORGANISM'>"/>
+          <input id="edit_organism" type="search" onkeyup="debounce_search(search_organisms, this.value);" size="50" value="<TMPL_VAR NAME='ORGANISM'>"/>
           <!--<span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all coge-button'>New</span>-->
         </td>
       </tr>
