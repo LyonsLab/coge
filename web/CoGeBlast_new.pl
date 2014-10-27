@@ -2548,9 +2548,11 @@ sub export_to_excel {
     $worksheet->write( 0, 6, "E-value" );
     $worksheet->write( 0, 7, "Percent ID" );
     $worksheet->write( 0, 8, "Score" );
+
     unless ( $accn_list =~ /no/ ) {
-        $worksheet->write( 0, 9,  "Closest Feature" );
-        $worksheet->write( 0, 10, "Distance" );
+        $worksheet->write( 0, 9, "CoGe Feature ID" );
+        $worksheet->write( 0, 10,  "Closest Feature" );
+        $worksheet->write( 0, 11, "Distance" );
     }
 
     my (
@@ -2618,9 +2620,10 @@ sub export_to_excel {
             $worksheet->write( $i, 6, $eval );
             $worksheet->write( $i, 7, $pid );
             $worksheet->write( $i, 8, $score );
-            $worksheet->write( $i, 9, $P->{SERVER} . "FeatView.pl?accn=$name",
+            $worksheet->write( $i, 9, $feat->id );
+            $worksheet->write( $i, 10, $P->{SERVER} . "FeatView.pl?accn=$name",
                 $name );
-            $worksheet->write( $i, 10, $distance );
+            $worksheet->write( $i, 11, $distance );
         }
 
         $i++;
@@ -2648,7 +2651,7 @@ sub generate_tab_deliminated {
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
 
-    my $str = "Name\tHSP No.\tE-value\tPerc ID\tScore\tOrganism\n";
+    my $str = "Name\tHSP No.\tE-value\tPerc ID\tScore\tOrganism\tCoge Feature ID\n";
 
     foreach my $accn ( split( /,/, $accn_list ) ) {
         next if $accn =~ /no$/;
@@ -2665,7 +2668,7 @@ sub generate_tab_deliminated {
             $pid   = $info->{pid};
             $score = $info->{score};
         }
-        $str .= "$name\t$hsp_num\t$pval\t$pid\t$score\t$org\n";
+        $str .= "$name\t$hsp_num\t$pval\t$pid\t$score\t$org\t$featid\n";
     }
     $str =~ s/\n$//;
 
