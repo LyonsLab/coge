@@ -2548,12 +2548,9 @@ sub export_to_excel {
     $worksheet->write( 0, 6, "E-value" );
     $worksheet->write( 0, 7, "Percent ID" );
     $worksheet->write( 0, 8, "Score" );
-
-    unless ( $accn_list =~ /no/ ) {
-        $worksheet->write( 0, 9, "CoGe Feature ID" );
-        $worksheet->write( 0, 10,  "Closest Feature" );
-        $worksheet->write( 0, 11, "Distance" );
-    }
+    $worksheet->write( 0, 9, "CoGe Feature ID" );
+    $worksheet->write( 0, 10,  "Closest Feature" );
+    $worksheet->write( 0, 11, "Distance" );
 
     my (
         $org,   $chr,      $pos,    $hsp_no, $eval,   $pid,
