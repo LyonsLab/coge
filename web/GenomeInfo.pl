@@ -1490,16 +1490,7 @@ sub export_fasta_irods {
     #TODO need to check rc of iput and abort if failure occurred
 
     # Set IRODS metadata for object #TODO need to change these to use Accessory::IRODS::IRODS_METADATA_PREFIX
-    my %meta = (
-            'Imported From' => "CoGe: http://genomevolution.org",
-            'CoGe OrganismView Link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
-            'CoGe GenomeInfo Link'=> "http://genomevolution.org/CoGe/GenomeInfo.pl?gid=".$genome->id,
-            'CoGe Genome ID'   => $genome->id,
-            'Organism Name'    => $genome->organism->name,
-            'Organism Taxonomy'    => $genome->organism->description,
-            'Version'     => $genome->version,
-            'Type'        => $genome->type->info,
-           );
+    my %meta = get_metadata();
     my $i = 1;
     my @sources = $genome->source;
     foreach my $item (@sources) {
@@ -1824,6 +1815,21 @@ sub get_tbl {
     return encode_json(\%json);
 }
 
+sub get_metadata {
+    my $genome = shift;
+
+    return (
+        'Imported From' => "CoGe: http://genomevolution.org",
+        'CoGe OrganismView Link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
+        'CoGe GenomeInfo Link'=> "http://genomevolution.org/CoGe/GenomeInfo.pl?gid=".$genome->id,
+        'CoGe Genome ID'   => $genome->id,
+        'Organism Name'    => $genome->organism->name,
+        'Organism Taxonomy'    => $genome->organism->description,
+        'Version'     => $genome->version,
+        'Type'        => $genome->type->info,
+    );
+}
+
 sub export_tbl {
     my %args = @_;
     my $dsg = $coge->resultset('Genome')->find($args{gid});
@@ -1848,6 +1854,7 @@ sub export_tbl {
     my $success = $JEX->wait_for_completion($response->{id});
 
     my (%json, %meta);
+    %meta = get_metadata($dsg);
     $json{file} = basename($output);
 
     if($success) {
@@ -1914,6 +1921,7 @@ sub export_bed {
     say STDERR "RESPONSE ID: " . $response->{id};
     my $success = $JEX->wait_for_completion($response->{id});
     my (%json, %meta);
+    %meta = get_metadata($dsg);
 
     $json{file} = basename($output);
 
@@ -1968,6 +1976,7 @@ sub export_gff {
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
     my (%json, %meta);
+    %meta = get_metadata($dsg);
 
     $args{script_dir} = $config->{SCRIPTDIR};
     $args{secure_tmp} = $config->{SECTEMPDIR};
