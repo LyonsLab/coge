@@ -790,8 +790,8 @@ sub search_share {
 # 		"user_name LIKE '$search_term' OR first_name LIKE '$search_term' OR last_name LIKE '$search_term'"))
     foreach ( $coge->resultset('User')->all ) {
         next
-          unless ( $_->user_name =~ /$search_term/i
-            || $_->display_name =~ /$search_term/i );
+          unless ( escape($_->user_name) =~ /$search_term/i
+            || escape($_->display_name) =~ /$search_term/i );
         my $label = $_->display_name . ' (' . $_->user_name . ')';
         my $value = $_->id . ':' . $ITEM_TYPE{user};
         push @results, { 'label' => $label, 'value' => $value };
@@ -799,7 +799,7 @@ sub search_share {
 
     # Search for matching groups
     foreach ( $coge->resultset('UserGroup')->all ) {
-        next unless ( $_->name =~ /$search_term/i );
+        next unless ( escape($_->name) =~ /$search_term/i );
         my $label = $_->name . ' (' . $_->role->name . ' group)';
         my $value = $_->id . ':' . $ITEM_TYPE{group};
         push @results, { 'label' => $label, 'value' => $value };
