@@ -962,11 +962,9 @@ sub get_previous_analyses {
             $data{ds1}  = $ds1;
             $data{ds2}  = $ds2;
             
-            my $genome1;
             $genome1 .= $genome1->name if $genome1->name;
             $genome1 .= ": "        if $genome1;
             $genome1 .= $ds1->data_source->name;
-            my $genome2;
             $genome2 .= $genome2->name if $genome2->name;
             $genome2 .= ": "        if $genome2;
             $genome2 .= $ds2->data_source->name;
