@@ -705,12 +705,12 @@ sub get_tiny_link {
 
     # mdb added 1/8/14, issue 272
     my $ua = new LWP::UserAgent;
-    my $response;
+    my $response_url;
 
 	$ua->timeout(5);
 	my $response = $ua->get($request_url);
 	if ($response->is_success) {
-        $response = $response->decoded_content;
+        $response_url = $response->decoded_content;
 	}
 	else {
         cluck "Unable to produce tiny url from server falling back to url";
@@ -718,9 +718,9 @@ sub get_tiny_link {
 	}
 
     # check if the tiny link is a validate url
-    return $url unless is_uri($response);
+    return $url unless is_uri($response_url);
 
-    return $response;
+    return $response_url;
 
     # Log the page
 # mdb removed 10/10/13 -- Move logging functionality out of this to fix issue 167

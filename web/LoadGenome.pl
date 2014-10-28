@@ -17,6 +17,7 @@ use File::Copy qw(copy);
 use File::Basename;
 use File::Spec::Functions qw( catdir catfile );
 use File::Listing qw(parse_dir);
+use File::Slurp;
 use URI;
 use URI::Escape::JavaScript qw(escape unescape);
 use LWP::Simple;
@@ -609,6 +610,23 @@ sub create_organism {
     return $organism->id;
 }
 
+sub get_debug_log {
+    my %opts         = @_;
+    my $workflow_id = $opts{workflow_id};
+    return unless $workflow_id;
+    #TODO authenticate user access to workflow
+
+    my (undef, $results_path) = get_workflow_paths($user->name, $workflow_id);
+    return unless (-r $results_path);
+
+    my $result_file = catfile($results_path, 'debug.log');
+    return unless (-r $result_file);
+
+    my $result = read_file($result_file);
+    return $result;
+}
+
+
 sub search_organisms {
     my %opts        = @_;
     my $search_term = $opts{search_term};
@@ -725,7 +743,8 @@ sub send_error_report {
         . "staging_directory: $staging_dir\n\n"
         . "result_directory: $result_dir\n\n"
         . "tiny link: $url\n\n";
-    #$body .= get_load_log();
+
+    $body .= get_debug_log(workflow_id => $job_id);
 
     CoGe::Accessory::Web::send_email(
         from    => $email,
