@@ -19,7 +19,7 @@ use Benchmark;
 use vars qw($staging_dir $install_dir $fasta_files $irods_files
   $name $description $link $version $type_id $restricted $message
   $organism_id $source_id $source_name $source_desc $user_id $user_name
-  $keep_headers $split $compress $result_dir
+  $keep_headers $split $compress $result_dir $creator_id
   $host $port $db $user $pass $config
   $P $MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE $MAX_CHR_NAME_LENGTH );
 
@@ -46,6 +46,7 @@ GetOptions(
     "source_name=s" => \$source_name,    # data source name (JS escaped)
     "source_desc=s" => \$source_desc,    # data source description (JS escaped)
     "user_id=i"		=> \$user_id,		 # user ID
+    "creator_id=i"	=> \$creator_id,     # user ID to set genome creator
     "user_name=s"   => \$user_name,      # user name
     "keep_headers=i" => \$keep_headers,  # flag to keep original headers (no parsing)
     "split=i"    => \$split,       # split fasta into chr directory
@@ -215,13 +216,26 @@ die "Error creating/finding data source" unless $datasource;
 print STDOUT "datasource id: " . $datasource->id . "\n";
 
 # Retrieve user
-my $user;
+my ($user, $creator);
 if ($user_id) {
 	$user = $coge->resultset('User')->find($user_id);
 }
 else {
 	$user = $coge->resultset('User')->find( { user_name => $user_name } );
 }
+
+unless ($user) {
+    print STDOUT "log: error finding user '$user_name'\n";
+    exit(-1);
+}
+
+# Retreive creator
+if ($creator_id) {
+    $creator = $coge->resultset('User')->find($creator_id);
+}
+
+$creator = $user unless $creator;
+
 
 # Create genome
 my $genome = $coge->resultset('Genome')->create(
@@ -233,7 +247,7 @@ my $genome = $coge->resultset('Genome')->create(
         version                  => $version,
         organism_id              => $organism->id,
         genomic_sequence_type_id => $type_id,
-        creator_id               => $user->id,
+        creator_id               => $creator->id,
         restricted               => $restricted,
     }
 );
@@ -266,10 +280,6 @@ if ( -e $install_dir ) {
 }
 
 # Make user owner of new genome
-unless ($user) {
-    print STDOUT "log: error finding user '$user_name'\n";
-    exit(-1);
-}
 my $node_types = CoGeX::node_types();
 
 # Add owner connector
