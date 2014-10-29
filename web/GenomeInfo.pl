@@ -900,7 +900,7 @@ sub get_genome_info {
     );
 
     my $owner = $genome->owner;
-    my $creator = $genome->owner;
+    my $creator = $genome->creator;
     my $groups = ($genome->restricted ? join(', ', map { $_->name } $USER->groups_with_access($genome))
                                                    : undef);
     $template->param( groups_with_access => $groups) if $groups;

@@ -96,6 +96,8 @@ __PACKAGE__->add_columns(
     },
     "deleted",
     { data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
+    "creator_id",
+    { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
 );
 
 __PACKAGE__->set_primary_key("genome_id");
@@ -114,6 +116,10 @@ __PACKAGE__->belongs_to(
 __PACKAGE__->belongs_to(
     "genomic_sequence_type" => "CoGeX::Result::GenomicSequenceType",
     'genomic_sequence_type_id'
+);
+__PACKAGE__->belongs_to(
+    "creator" => "CoGeX::Result::User",
+    "creator_id",
 );
 __PACKAGE__->has_many(
     "genome_annotations" => "CoGeX::Result::GenomeAnnotation",
