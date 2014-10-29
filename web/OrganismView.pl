@@ -551,11 +551,22 @@ sub get_genome_info {
     my $gstid    = $dsg->genomic_sequence_type->id;
     my $gst_name = $dsg->genomic_sequence_type->name;
     $gst_name .= ": " . $dsg->type->description if $dsg->type->description;
+
+
+    my $owner = $dsg->owner;
+    my $owner_field;
+
+    if ($owner) {
+        my $username = $owner->display_name;
+        $owner_field = qq{<tr><td>Owner:</td><td>$username</td></tr>};
+    }
+
     $html .=
         qq{<tr><td>Genome ID: </td><td>$gid</td>}
       . qq{<tr><td>Sequence type <a href="SeqType.pl">?</a>: </td>}
       . qq{<td>$gst_name (gstid$gstid) </td>}
       . qq{</tr>}
+      . $owner_field
       . qq{<tr><td>Length: </td>}
       . qq{<td class='l'> }. commify($total_length) . qq{ bp</td>}
       . qq{</tr>}
