@@ -747,6 +747,8 @@ sub users_with_access {
 		my $list = $conn->parent_list;
 		foreach ($list->user_connectors) {
 			my $user = $_->parent;
+            next unless defined $user;
+
 			$users{$user->id} = $user;
 		}
 		foreach ($list->group_connectors) {
