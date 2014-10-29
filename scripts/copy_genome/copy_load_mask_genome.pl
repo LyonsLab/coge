@@ -146,11 +146,11 @@ sub load_genome {
     $cmd .= " -link 'OrganismView.pl?gid=" . $genome->id . "'";
 
     my ($ds) = $genome->datasets;
-    my $creator_id = $genome->creator;
+    my $creator = $genome->creator;
 
     $cmd .= ($ds ? " -source_id " . $ds->data_source->id : " -source_name Unknown");
     $cmd .= " -user_id " . $uid if $uid;
-    $cmd .= " -creator_id " . $creator_id if $creator_id;
+    $cmd .= " -creator_id " . $creator->id if $creator;
 
     $cmd .= " -version '" . $genome->version . "'";
     #$cmd .= " -ds_name '" . $ds->name . "'";
