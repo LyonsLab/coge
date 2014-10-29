@@ -214,6 +214,15 @@ else {
 die "Error creating/finding data source" unless $datasource;
 print STDOUT "datasource id: " . $datasource->id . "\n";
 
+# Retrieve user
+my $user;
+if ($user_id) {
+	$user = $coge->resultset('User')->find($user_id);
+}
+else {
+	$user = $coge->resultset('User')->find( { user_name => $user_name } );
+}
+
 # Create genome
 my $genome = $coge->resultset('Genome')->create(
     {
@@ -224,7 +233,8 @@ my $genome = $coge->resultset('Genome')->create(
         version                  => $version,
         organism_id              => $organism->id,
         genomic_sequence_type_id => $type_id,
-        restricted               => $restricted
+        creator_id               => $user->id,
+        restricted               => $restricted,
     }
 );
 unless ($genome) {
@@ -256,13 +266,6 @@ if ( -e $install_dir ) {
 }
 
 # Make user owner of new genome
-my $user;
-if ($user_id) {
-	$user = $coge->resultset('User')->find($user_id);
-}
-else {
-	$user = $coge->resultset('User')->find( { user_name => $user_name } );
-}
 unless ($user) {
     print STDOUT "log: error finding user '$user_name'\n";
     exit(-1);
