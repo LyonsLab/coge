@@ -271,6 +271,12 @@ function click_all_feat_links(feature_links) { // mdb rewritten 3/8/13 issue 47
     fill_nearby_feats(id_array);
 }
 
+function popup_blocker_check(windowObject) {
+    if (!windowObject) {
+        alert("Unable to open a new window check your popup blocker settings.");
+    }
+}
+
 function overlap_checkboxes() {
     var accn = "";
     $('#hsp_result_table :checkbox').each(function() {
@@ -295,7 +301,8 @@ function overlap_checkboxes() {
                 locations.push(loc);
             }
         });
-        window.open("SeqView.pl?locations=" + locations.join(','));
+
+        popup_blocker_check(window.open("SeqView.pl?locations=" + locations.join(',')));
     }
     else if (action == "phylo")
         export_fasta_file(accn);
@@ -326,7 +333,7 @@ function generate_blast(accn, filename) {
             filename: filename,
         },
         success : function(data) {
-            window.open(data);
+            popup_blocker_check(window.open(data));
         },
     });
 }
@@ -340,7 +347,7 @@ function generate_feat_list(accn, filename) {
             filename: filename,
         },
         success : function(data) {
-            window.open(data);
+            popup_blocker_check(window.open(data));
         },
     });
 }
@@ -354,7 +361,7 @@ function generate_tab_deliminated(accn, filename) {
             filename: filename,
         },
         success : function(data) {
-            window.open(data);
+            popup_blocker_check(window.open(data));
         },
     });
 }
@@ -368,7 +375,7 @@ function export_to_excel(accn, filename) {
             filename: filename,
         },
         success : function(data) {
-            window.open(data);
+            popup_blocker_check(window.open(data));
         },
     });
 }
@@ -382,7 +389,7 @@ function export_top_hits(accn, filename) {
             filename: filename,
         },
         success : function(data) {
-            window.open(data);
+            popup_blocker_check(window.open(data));
         },
     });
 }
@@ -395,7 +402,7 @@ function export_fasta_file(accn) {
             accn: accn
         },
         success : function(data) {
-            window.open(data);
+            popup_blocker_check(window.open(data));
         },
     });
 }
@@ -408,7 +415,7 @@ function export_CodeOn(accn) {
             accn: accn
         },
         success : function(data) {
-            window.open(data);
+            popup_blocker_check(window.open(data));
         },
     });
 }
@@ -433,7 +440,7 @@ function overlap_feats_parse(accn) {
                     alert("You have exceeded the number of features you can send to GEvo ( 10 Max ). You currently have "+obj.count+" selected. Please uncheck "+remove+" of your checked item(s).");
                 }
                 else {
-                    window.open(obj.url);
+                    popup_blocker_check(window.open(obj.url));
                 }
             }
         },
@@ -447,7 +454,7 @@ function export_hsp_info() {
             filename: pageObj.basename
         },
         success : function(data) {
-            window.open(data);
+            popup_blocker_check(window.open(data));
         },
     });
 }
@@ -459,7 +466,7 @@ function export_hsp_query_fasta() {
             filename: pageObj.basename
         },
         success : function(data) {
-            window.open(data);
+            popup_blocker_check(window.open(data));
         },
     });
 }
@@ -472,7 +479,7 @@ function export_hsp_subject_fasta(dna) {
             dna: dna,
         },
         success : function(data) {
-            window.open(data);
+            popup_blocker_check(window.open(data));
         },
     });
 }
@@ -484,7 +491,7 @@ function export_alignment_file() {
             filename: pageObj.basename,
         },
         success : function(data) {
-            window.open(data);
+            popup_blocker_check(window.open(data));
         },
     });
 }
@@ -540,7 +547,7 @@ function show_seq(seq,name,num,dsid,chr,start,stop, rc) {
     var regex = /^\d+$/;
     if (regex.test(dsid) && dsid != 0 && which_seq == "Subject") {
         var seqview = "SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop+"&rc="+rc;
-        $('#sequence_popup').dialog('option','buttons',{"View Sequence in SeqView": function() { window.open(seqview); }});
+        $('#sequence_popup').dialog('option','buttons',{"View Sequence in SeqView": function() { popup_blocker_check(window.open(seqview)); }});
     }
     $('#sequence_popup').html(html).dialog('open');
 }
@@ -1082,7 +1089,7 @@ function ncbi_blast(url) {
     history.pushState(null, null, concat.call(parts[0], "?", coge_pairs.join("&"), hash));
 
     request = concat.call(url, "&", pairs.join("&"));
-    window.open(request);
+    popup_blocker_check(window.open(request));
 }
 
 $.fn.getLength = function(val){
@@ -1690,7 +1697,7 @@ function adjust_blast_types(val){
 
 function matrix_view (){
     var matrix = $("#coge-params").find('#matrix').val();
-    window.open('MatrixView.pl?matrix='+matrix);
+    popup_blocker_check(window.open('MatrixView.pl?matrix='+matrix));
 }
 
 function toggle_hsp_column(index) {
