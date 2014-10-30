@@ -28,8 +28,8 @@ use Benchmark;
 no warnings 'redefine';
 
 use vars qw(
-    $P $PAGE_TITLE $USER $LINK $coge %FUNCTION $FORM %ITEM_TYPE 
-    $MAX_SEARCH_RESULTS $JEX
+    $P $PAGE_TITLE $USER $LINK $coge %FUNCTION $FORM %ITEM_TYPE
+    $MAX_SEARCH_RESULTS $JEX $node_types
 );
 
 $PAGE_TITLE = 'User';
@@ -48,7 +48,7 @@ $JEX = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT}
 
 $MAX_SEARCH_RESULTS = 100;
 
-my $node_types = CoGeX::node_types();
+$node_types = CoGeX::node_types();
 
 # Content/toc types
 # note: adding new values is okay, but don't change existing values or 
