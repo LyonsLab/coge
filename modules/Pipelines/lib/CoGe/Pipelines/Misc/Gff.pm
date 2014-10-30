@@ -32,7 +32,7 @@ sub generate_gff {
         upa     => 0,
     );
 
-    @args{keys $inputs} = values $inputs;
+    @args{keys $inputs} = (values $inputs);
 
     # Check for a genome or dataset id
     return unless $args{gid};
