@@ -9,7 +9,8 @@ use CoGe::Accessory::Web;
 use Benchmark;
 
 use vars
-  qw($P $PAGE_TITLE $USER $coge %FUNCTION $FORM %ITEM_TYPE $MAX_SEARCH_RESULTS);
+  qw($P $PAGE_TITLE $USER $coge %FUNCTION $FORM %ITEM_TYPE $MAX_SEARCH_RESULTS
+     $node_types);
 
 $PAGE_TITLE = 'UserGraph';
 
@@ -19,7 +20,7 @@ $FORM = new CGI;
     page_title => $PAGE_TITLE
 );
 
-my $node_types = CoGeX::node_types();
+$node_types = CoGeX::node_types();
 
 %FUNCTION = (
     get_user_nodes => \&get_user_nodes,
