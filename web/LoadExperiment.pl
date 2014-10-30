@@ -247,7 +247,7 @@ sub load_from_ftp {
             }
         }
         else {                                              # file
-            my ($filename) = $url =~ /([^\/]+)\s*$/;
+            my ($filename) = $url =~ /([^\/]+?)(?:\?|$)/;
             push @files, { name => $filename, url => $url };
         }
     }
