@@ -2,112 +2,92 @@
 use v5.14;
 use strict;
 
-use GD;
-use Getopt::Long;
-
 use CoGeX;
 use CoGe::Accessory::Web;
+
 use DBI;
 use Data::Dumper;
-use DBI;
+use Getopt::Long;
+use JSON::XS qw(encode_json);
+use List::Util qw(reduce max min);
 use POSIX;
 use Sort::Versions;
-use JSON::XS;
 
 our ($P, $dagfile, $alignfile, $genomeid1, $genomeid2, $help, $coge, $CHR1,
-     $CHR2, $basename, $ks_db, $assemble, $GZIP, $GUNZIP, $URL, $conffile,
+     $CHR2, $basename, $ks_db, $assemble, $GZIP, $GUNZIP, $URL, $config,
      %all_pairs, %base_data, %ks_data, $DEBUG);
 
 GetOptions(
-    "dagfile|d=s"         => \$dagfile,      #all dots
-    "alignfile|a=s"       => \$alignfile,    #syntenic dots
-    "genomeid1|genome1=i" => \$genomeid1,
-    "genomeid2|genome2=i" => \$genomeid2,
-    "help|h"              => \$help,
-    "chr1|c1=s"           => \$CHR1,
-    "chr2|c2=s"           => \$CHR2,
-    "basename|b=s"        => \$basename,
-    "ksdb|ks_db=s"        => \$ks_db,
-    "debug|dbg=i"         => \$DEBUG,
-    "config_file|cf=s"    => \$conffile,
+    "dagfile|d=s"      => \$dagfile,      #all dots
+    "alignfile|a=s"    => \$alignfile,    #syntenic dots
+    "genome1|gid1=i"   => \$genomeid1,
+    "genome2|gid2=i"   => \$genomeid2,
+    "help|h"           => \$help,
+    "chr1|c1=s"        => \$CHR1,
+    "chr2|c2=s"        => \$CHR2,
+    "basename|b=s"     => \$basename,
+    "ksdb|ks_db=s"     => \$ks_db,
+    "debug|dbg=i"      => \$DEBUG,
+    "config_file|cf=s" => \$config,
 );
 
-$P      = CoGe::Accessory::Web::get_defaults($conffile);
 $GZIP   = $P->{GZIP};
 $GUNZIP = $P->{GUNZIP};
 $URL    = $P->{URL};
 
+if($config) {
+    $P          = CoGe::Accessory::Web::get_defaults($config);
+    my $db      = $P->{DBNAME};
+    my $host    = $P->{DBHOST};
+    my $port    = $P->{DBPORT};
+    my $user    = $P->{DBUSER};
+    my $pass    = $P->{DBPASS};
+    my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
+
+    $coge = CoGeX->connect( $connstr, $user, $pass );
+}
+
+unless ($coge) {
+    die "error: unable to connect to the database";
+}
+
 usage() if $help;
-unless ( ( defined $dagfile && -r $dagfile )
-    || -r $alignfile
-    || -r "$alignfile.gz" )
-{
-    print qq{
-Need to define an input file for dots.  Either the syntenic pairs file or the alignment file.
-};
+
+my $has_alignfile = (defined $alignfile && -r $alignfile);
+my $has_dagfile = (defined $dagfile && -r $dagfile );
+my $has_ksfile = (defined $ks_db && -r $ks_db);
+
+unless ($has_alignfile || $has_dagfile) {
+    say STDERR "Need to define an input file for dots. Either the syntenic pairs file or the alignment file.";
     usage();
 }
 
-if ( defined $dagfile and !( -r $dagfile || -r $dagfile . ".gz" ) ) {
-    warn "dagfile specified but not present or readable: $!";
-}
-
-$dagfile = CoGe::Accessory::Web::gunzip($dagfile)
-  if $dagfile;    # && $dagfile =~ /\.gz$/;
-$alignfile = CoGe::Accessory::Web::gunzip($alignfile)
-  if $alignfile;    # && $alignfile =~ /\.gz$/;
-
-if ( $alignfile && -r $alignfile && $alignfile =~ /\.gz$/ ) {
-    print "Problem decompressing $alignfile.\n";
-    exit;
-}
-
-if ( $dagfile && -r $dagfile && $dagfile =~ /\.gz$/ ) {
-    print "Problem decompressing $dagfile.\n";
-    exit;
-}
-
 $basename = "test" unless $basename;
-$coge = CoGeX->dbconnect($P);
 
 my ($genome1) = $coge->resultset('Genome')->find($genomeid1);
 my ($genome2) = $coge->resultset('Genome')->find($genomeid2);
+
 unless ($genome1) {
-    warn "No genome found with dbid $genomeid1\n";
-    return;
+    die "error: No genome found with dbid $genomeid1\n";
 }
+
 unless ($genome2) {
-    warn "No genome found with dbid $genomeid2\n";
-    return;
+    die "error: No genome found with dbid $genomeid2\n";
 }
 
-#get display order of chromosomes, get genome information
-my ($org1info) = get_genome_info(
-    genome => $genome1,
-    chr    => $CHR1,
-);
-
-my ($org2info) = get_genome_info(
-    genome => $genome2,
-    chr    => $CHR2,
-);
+# get display order of chromosomes, get genome information
+my ($org1info) = get_genome_info(genome => $genome1, chr => $CHR1);
+my ($org2info) = get_genome_info(genome => $genome2, chr => $CHR2);
 
 #not sure that these are needed if gene order is encoded in dag files
 #get_gene_info( genomeid => $genomeid1, info => $org1info );
 #get_gene_info( genomeid => $genomeid2, info => $org2info );
 
-my $org1length = 0;
-map { $org1length += $_->{length} } values %$org1info;
-my $org2length = 0;
-map { $org2length += $_->{length} } values %$org2info;
-unless ( $org1length && $org2length ) {
-    print STDERR qq{
-Error:  one or both of the genomes has no effective length:
- Org1:  $org1length
- Org2:  $org2length
-  };
-    exit;
-}
+my $org1length = reduce { $a + $b } 0, (values $org1info);
+my $org2length = reduce { $a + $b } 0, (values $org2info);
+
+die "Organism 1 has an effective length of zero" unless $org1length;
+die "Organism 2 has an effective length of zero" unless $org2length;
 
 #add org_info to json_data now that order has been determined
 add_genome_to_json(
@@ -115,20 +95,24 @@ add_genome_to_json(
     org_data  => $org1info,
     genomeid  => $genomeid1
 );
+
 add_genome_to_json(
     json_data => \%base_data,
     org_data  => $org2info,
     genomeid  => $genomeid2
 );
 
-my $pairs = get_pairs( file => $alignfile, chr1 => $CHR1, chr2 => $CHR2 )
-  if $alignfile && $ks_db && -r $alignfile && -r $ks_db;
+my $pairs;
 
-#get syntenic gene pairs for ks_data (if needed)
+if ($has_ksfile && $has_alignfile) {
+    $pairs = get_pairs( file => $alignfile, chr1 => $CHR1, chr2 => $CHR2 );
+}
+
+# get syntenic gene pairs for ks_data (if needed)
 my $ksdata = get_ksdata(
     ks_db => $ks_db,
     pairs => $pairs
-) if $ks_db && -r $ks_db;
+) if $has_ksfile;
 
 my %ks_json;
 $ks_json{datasets}{histogram}{kn}{layer} = "syntenic_pairs";
@@ -140,7 +124,7 @@ $ks_json{datasets}{histogram}{ks}{title} = "Kn Values";
 $ks_json{datasets}{features}{layer} = "syntenic_pairs";
 $ks_json{datasets}{features}{title} = "Features";
 
-#get dots for all matches
+# get dots for all matches
 get_dots(
     file      => $dagfile,
     org1      => $org1info,
@@ -150,9 +134,9 @@ get_dots(
     ksdata    => $ksdata,
     ks_json   => \%ks_json,
     json_data => \%all_pairs
-) if defined $dagfile && -r $dagfile;
+) if $has_dagfile;
 
-#get_syntenic_dots
+# get_syntenic_dots
 my $box_coords = get_dots(
     file           => $alignfile,
     org1           => $org1info,
@@ -169,7 +153,6 @@ $base_data{layers}{syntenic_blocks}{style} = {
 };
 
 #write out JSON file of dots"
-
 if (%base_data) {
     print Dumper \%base_data if $DEBUG;
     open( OUT, ">" . $basename . ".json" ) || die "$!";
@@ -192,7 +175,35 @@ if (%ks_json) {
     close OUT;
 }
 
-#This function appears to parse dagchainer output, generated in SynMap.pl, and draw the results to the GD graphics context.
+sub parse_line {
+    my @field = split(/\t/, shift);
+    my @item1 = split(/\|\|/, $field[1]);
+    my @item2 = split(/\|\|/, $field[5]);
+
+    my ( undef, $chr1 ) = split(/_/, $field[0], 2);
+    my ( undef, $chr2 ) = split(/_/, $field[4], 2);
+
+    # absolute positions
+    my ($s1, $e1, $s2, $e2) = (int($field[2]), int($field[3]), int($field[6]), int($field[7]));
+
+    # relative position
+    my ( $gene_order_1, $gene_order_2 ) = ( $item1[7], $item2[7] );
+
+    return {
+        chr1 => $chr1,
+        chr2 => $chr2,
+        fid1 => $item1[6],
+        fid2 => $item2[6],
+        s1   => $s1,
+        e1   => $e1,
+        s2   => $s2,
+        e2   => $e2,
+        g1   => $gene_order_1,
+        g2   => $gene_order_2,
+    };
+}
+
+# This function appears to parse dagchainer output, generated in SynMap.pl
 sub get_dots {
     my %opts      = @_;
     my $file      = $opts{file};
@@ -202,108 +213,57 @@ sub get_dots {
     my $genomeid2 = $opts{genomeid2};
     my $ksdata    = $opts{ksdata};
     my $ks_json   = $opts{ks_json};
-    my $json_data =
-      $opts{json_data}; #EL: 9/12/2013: holder for data to be converted to a JSON string to test better dotplot viewer
-    my $syntenic_pairs =
-      $opts{syntenic_pairs}; #flag for whether these are syntenic gene pairs or general matches
-    $syntenic_pairs = 0 unless defined $syntenic_pairs;
+
+    # EL: 9/12/2013: holder for data to be converted to a JSON string to test
+    # better dotplot viewer
+    my $json_data = $opts{json_data};
+
+    #flag for whether these are syntenic gene pairs or general matches
+    my $syntenic_pairs = $opts{syntenic_pairs} // 0;
 
     my $data_label = $syntenic_pairs ? "syntenic_pairs" : "pairs";
-
     my $has_ksdata = keys %$ksdata ? 1 : 0;
 
+    #this is where the problem lies!
     open( IN, $file )
-      || die "Can't open $file: $!";    #this is where the problem lies!
-
-    my ($boxes, $block_chr1, $block_chr2);
+      || die "Can't open $file: $!";
 
     #for storing bounds of syntenic blocks
-    my ( $block_min_nt_1, $block_min_nt_2, $block_max_nt_1, $block_max_nt_2 );
-
-    #for storing bounds of syntenic blocks
-    my ($block_min_gene_1, $block_min_gene_2,  $block_max_gene_1, $block_max_gene_2);
+    my ($block_min_nt_1,   $block_min_nt_2,     $block_max_nt_1,
+        $block_min_gene_1, $block_min_gene_2,   $block_max_gene_1,
+        $block_max_gene_2, $boxes, $block_chr1, $block_max_nt_2,
+        $block_chr2);
 
     my ($count, $block_count) = (0, 0);
+
     while (<IN>) {
         chomp;
-        if (/^#/) {
-            my $block = [int($block_min_nt_1), int($block_max_nt_1), int($block_min_nt_2), int($block_max_nt_2)];
-
-            if (defined $block_min_nt_1
-                && defined $block_min_nt_2
-                && defined $block_max_nt_1
-                && defined $block_max_nt_2
-                && defined $block_min_gene_1
-                && defined $block_min_gene_2
-                && defined $block_max_gene_1
-                && defined $block_max_gene_2) {
-
-                $boxes->{$block_chr1}{$block_chr2}{$block_count} = $block;
-                #coordinates is an array of values with: start1, stop1, start2, stop2
-                #nucleotides=>[int($block_min_nt_1), int($block_max_nt_1), int($block_min_nt_2), int($block_max_nt_2)],
-                #genes=>[int($block_min_gene_1), int($block_max_gene_1), int($block_min_gene_2), int($block_max_gene_2)],
-                $block_count++;
-            };
-
-            $block_min_nt_1   = undef;
-            $block_min_nt_2   = undef;
-            $block_max_nt_1   = undef;
-            $block_max_nt_2   = undef;
-            $block_min_gene_1 = undef;
-            $block_min_gene_2 = undef;
-            $block_max_gene_1 = undef;
-            $block_max_gene_2 = undef;
-            $block_chr1 = undef;
-            $block_chr2 = undef;
-        }
-
         next if /^#/;
         next unless $_;
 
-        my @line = split(/\t/);
+        my $fields = parse_line($_);
+
+        my $fid1 = $fields->{fid1};
+        my $fid2 = $fields->{fid2};
         my $ks_vals;
-        my @item1 = split(/\|\|/, $line[1]);
-        my @item2 = split(/\|\|/, $line[5]);
-        my $fid1  = $item1[6];
-        my $fid2  = $item2[6];
+
         if ($has_ksdata) {
             $ks_vals = $ksdata->{$fid1}{$fid2} if $ksdata->{$fid1}{$fid2};
         }
-        my ( undef, $chr1 ) = split(/_/, $line[0], 2);
-        my ( undef, $chr2 ) = split(/_/, $line[4], 2);
-        my $special = 0; #stupid variable name so that if we are viewing a single chr to single chr comparison within the same organism, this will make collinear matches appear on the inverse section
-        if ( defined $CHR1 && defined $CHR2 ) {
-            if ( $CHR1 eq $chr2 && $CHR2 eq $chr1 ) {
-                $special = 1;
-                ( $chr1, $chr2 ) = ( $chr2, $chr1 );
-            }
-            else {
-                next if $chr1 ne $CHR1;
-                next if $chr2 ne $CHR2;
-            }
-        }
-        #sometimes there will be data that is skipped, e.g. where chromosome="random";
+
+        my $chr1 = $fields->{chr1};
+        my $chr2 = $fields->{chr1};
+
+        # sometimes there will be data that is skipped, e.g. where
+        # chromosome="random";
         next unless (defined $org1->{$chr1} && defined $org2->{$chr2});
 
-        #absolute positions
-        my ($s1, $e1, $s2, $e2) = (int($line[2]), int($line[3]), int($line[6]), int($line[7]));
+        # Find max and min distance for entry 1
+        my ($s1, $e1, $g1) = ($fields->{s1}, $fields->{e1}, $fields->{g1});
         my ($nt_min_1, $nt_max_1) = sort {$a <=> $b} ($s1, $e1);
-        my ($nt_min_2, $nt_max_2) = sort {$a <=> $b} ($s2, $e2);
 
-        #relative position
-        my ( $gene_order_1, $gene_order_2 ) = ( $item1[7], $item2[7] );
-#        my $data_item = {
-#			 chr1   => $chr1,
-#			 chr2   => $chr2,
-#			 feat1  => int($fid1),
-#			 feat2  => int($fid2),
-#			 #coordinates is an array of values with: start1, stop1, start2, stop2
-#			 nucleotides=>[int($nt_min_1), int($nt_max_1), int($nt_min_2), int($nt_max_2)],
-#			 genes=>[int($gene_order_1), int($gene_order_1), int($gene_order_2), int($gene_order_2)],
-#			};
-#        $data_item->{ks_data} = $ks_vals
-#          if $ks_vals;    #check with Evan if missing data should still have key
-#        push @{ $json_data->{$genomeid1}{$genomeid2}{$data_label} }, $data_item;
+        my ($s2, $e2, $g2) = ($fields->{s2}, $fields->{e2}, $fields->{g2});
+        my ($nt_min_2, $nt_max_2) = sort {$a <=> $b} ($s2, $e2);
 
         # Complement coordinates if chromosome is complemented
         if ($org1->{$chr1}{rev}) {
@@ -314,6 +274,19 @@ sub get_dots {
             $s2 = int($org2->{$chr2}{length}) - $s2;
             $e2 = int($org2->{$chr2}{length}) - $e2;
         }
+
+#        my $data_item = {
+#            chr1   => $chr1,
+#            chr2   => $chr2,
+#            feat1  => int($fid1),
+#            feat2  => int($fid2),
+#            #coordinates is an array of values with: start1, stop1, start2, stop2
+#            nucleotides=>[int($nt_min_1), int($nt_max_1), int($nt_min_2), int($nt_max_2)],
+#            genes=>[int($gene_order_1), int($gene_order_1), int($gene_order_2), int($gene_order_2)],
+#           };
+#        $data_item->{ks_data} = $ks_vals
+#          if $ks_vals;    #check with Evan if missing data should still have key
+#        push @{ $json_data->{$genomeid1}{$genomeid2}{$data_label} }, $data_item;
 
         if ($ks_vals) {
             $ks_json{datasets}{features}{data}{$count} = $ks_vals->{features};
@@ -334,44 +307,63 @@ sub get_dots {
                 strokeStyle => "rgb(0, 150, 0)"
             };
         }
-        #syntenic blocks
-        $block_min_nt_1 = $nt_min_1 unless $block_min_nt_1;
-        $block_min_nt_1 = $nt_min_1 if $nt_min_1 < $block_min_nt_1;
-        $block_min_nt_2 = $nt_min_2 unless $block_min_nt_2;
-        $block_min_nt_2 = $nt_min_2 if $nt_min_2 < $block_min_nt_2;
-        $block_max_nt_1 = $nt_max_1 unless $block_max_nt_1;
-        $block_max_nt_1 = $nt_max_1 if $nt_max_1 > $block_max_nt_1;
-        $block_max_nt_2 = $nt_max_2 unless $block_max_nt_2;
-        $block_max_nt_2 = $nt_max_2 if $nt_max_2 > $block_max_nt_2;
 
-        $block_min_gene_1 = $gene_order_1 unless $block_min_gene_1;
-        $block_min_gene_1 = $gene_order_1 if $gene_order_1 < $block_min_gene_1;
-        $block_min_gene_2 = $gene_order_2 unless $block_min_gene_2;
-        $block_min_gene_2 = $gene_order_2 if $gene_order_2 < $block_min_gene_2;
-        $block_max_gene_1 = $gene_order_1 unless $block_max_gene_1;
-        $block_max_gene_1 = $gene_order_1 if $gene_order_1 > $block_max_gene_1;
-        $block_max_gene_2 = $gene_order_2 unless $block_max_gene_2;
-        $block_max_gene_2 = $gene_order_2 if $gene_order_2 > $block_max_gene_2;
+        #syntenic blocks in nucleotides
+        $block_min_nt_1 = min grep { defined $_ } ($nt_min_1, $block_min_nt_1);
+        $block_min_nt_2 = min grep { defined $_ } ($nt_min_2, $block_min_nt_2);
+        $block_max_nt_1 = max grep { defined $_ } ($nt_max_1, $block_max_nt_1);
+        $block_max_nt_2 = max grep { defined $_ } ($nt_max_2, $block_max_nt_2);
+
+        #syntenic blocks in genes
+        $block_min_gene_1 = min grep { defined $_ } ($g1, $block_min_gene_1);
+        $block_min_gene_2 = min grep { defined $_ } ($g2, $block_min_gene_2);
+        $block_max_gene_1 = max grep { defined $_ } ($g1, $block_max_gene_1);
+        $block_max_gene_2 = max grep { defined $_ } ($g2, $block_max_gene_2);
 
         $block_chr1 = $chr1;
         $block_chr2 = $chr2;
+
         $count++;
+
+    } continue {
+        if (/^#/) {
+            if (defined $block_min_nt_1
+                && defined $block_min_nt_2
+                && defined $block_max_nt_1
+                && defined $block_max_nt_2
+                && defined $block_min_gene_1
+                && defined $block_min_gene_2
+                && defined $block_max_gene_1
+                && defined $block_max_gene_2) {
+
+                #coordinates is an array of values with: start1, stop1, start2, stop2
+                $boxes->{$block_chr1}{$block_chr2}{$block_count++} = [
+                    int($block_min_nt_1),
+                    int($block_max_nt_1),
+                    int($block_min_nt_2),
+                    int($block_max_nt_2),
+                    #int($block_min_gene_1),
+                    #int($block_max_gene_1),
+                    #int($block_min_gene_2),
+                    #int($block_max_gene_2),
+                ];
+            };
+
+            # Reset chromosome-chromosome block
+            $block_min_nt_1   = undef;
+            $block_min_nt_2   = undef;
+            $block_max_nt_1   = undef;
+            $block_max_nt_2   = undef;
+            $block_min_gene_1 = undef;
+            $block_min_gene_2 = undef;
+            $block_max_gene_1 = undef;
+            $block_max_gene_2 = undef;
+            $block_chr1       = undef;
+            $block_chr2       = undef;
+        }
     }
 
     close IN;
-    $boxes->{$block_chr1}{$block_chr2}{$block_count} =
-       #coordinates is an array of values with: start1, stop1, start2, stop2
-       [int($block_min_nt_1), int($block_max_nt_1), int($block_min_nt_2), int($block_max_nt_2)]
-       #nucleotides=>[int($block_min_nt_1), int($block_max_nt_1), int($block_min_nt_2), int($block_max_nt_2)],
-       #genes=>[int($block_min_gene_1), int($block_max_gene_1), int($block_min_gene_2), int($block_max_gene_2)],
-      if defined $block_min_nt_1
-          && defined $block_min_nt_2
-          && defined $block_max_nt_1
-          && defined $block_max_nt_2
-          && defined $block_min_gene_1
-          && defined $block_min_gene_2
-          && defined $block_max_gene_1
-          && defined $block_max_gene_2;
 
     return $boxes;
 }
@@ -487,12 +479,12 @@ SELECT count(distinct(feature_id))
         my ($gene_count) = $dbh->selectrow_array($query);
 
         push $chrs, {
-				    name   => $chr,
-				    nucleotides => int( $org_data->{$chr}{length} ),
-#				    genes => int( $gene_count ),
-#				    id     => int( $order++ )
-				    , #eric changed from 'order' to 'id'.  Make sure that it isn't assumed to be an order.  See if this value can be dropped
-		};
+                    name   => $chr,
+                    nucleotides => int( $org_data->{$chr}{length} ),
+#                   genes => int( $gene_count ),
+#                   id     => int( $order++ )
+                    , #eric changed from 'order' to 'id'.  Make sure that it isn't assumed to be an order.  See if this value can be dropped
+        };
       }
     $data{chromosomes} = $chrs;
     $json_data->{genomes}{$genomeid} = \%data;
@@ -505,66 +497,13 @@ Welcome to $0
 
 This generates JSON formatted data for Syntenic Dotplots
 
-General JSON data structure
-
-data
-   |
-   -genomes: (array) genomes being compared
-          | (hash)
-          -genome_id1
-                    | (hash)
-                    -genome_id2
-                              | (hash)
-                              - id=genome_id
-                              - orgId=organism_id
-                              - orgName=organism_name
-                              - name=organism_name
-                              - chromosomes
-                                          | (array)
-                                          -name=chromosome_name
-                                          -nucleotides=chromosome_length
-                                          -genes=gene_length
-                                          -id=arbitrary_id
-                              - pairs:  Pairs of non-syntenic matches between genomes.  This is optional
-                                    | (array)
-                                    - chr1   = chromosome of match-mate 1
-                                    - feat1  = feature_id of match-mate 1 (may be '0' if a genomic hit)
-                                    - chr2   = chromosome of match-mate 2
-                                    - feat2  = feature_id of match-mate 2 (may be '0' if a genomic hit)
-
-                                    #location coordinates are an array of values: start1, stop1, start2, stop2
-                                    - nucleotides = [start1, stop1, start2, stop2]
-                                    - genes       = [start1, stop1, start2, stop2]
-
-                              - syntenic_pairs:  Pairs of syntenic matches between genomes.
-                                    | (array)
-                                    - chr1   = chromosome of match-mate 1
-                                    - feat1  = feature_id of match-mate 1 (may be '0' if a genomic hit)
-                                    - chr2   = chromosome of match-mate 2
-                                    - feat2  = feature_id of match-mate 2 (may be '0' if a genomic hit)
-
-                                    #location coordinates are an array of values: start1, stop1, start2, stop2
-                                    - nucleotides = [start1, stop1, start2, stop2]
-                                    - genes       = [start1, stop1, start2, stop2]
-
-                                    - ks_data: optional.
-                                            | (hash)
-                                            - KS  =  Synonymous mutation rate
-                                            - KN  =  Nonsynonymous mutation rate
-                                    - syntenic_blocks:
-                                                    | (array)
-                                                    #location coordinates are an array of values: start1, stop1, start2, stop2
-                                                    - nucleotides = [start1, stop1, start2, stop2]
-                                                    - genes       = [start1, stop1, start2, stop2]
-           -<additional genome pairs>
-
 dagfile      | d       path to dag file containing all the hits
 
 alignfile    | a       path to .aligncoords file generated by
                        dagchainer containing just the diags
-genomeid1       | genome1 | gid1    database id of genome on x-axis
+genomeid1    | genome1 | gid1    database id of genome on x-axis
 
-genomeid2       | genome2 | gid1    database id of genome on y-axis
+genomeid2    | genome2 | gid1    database id of genome on y-axis
 
 confile      | cf      CoGe configuration file for getting various parameters for connecting to database, etc.
 
@@ -580,5 +519,5 @@ ks_db        | ksdb    specify a sqlite database with synonymous/nonsynonymous d
 help         | h       print this message
 
 };
-    exit;
+    exit 1;
 }
