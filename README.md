@@ -13,7 +13,7 @@ Installation
 sudo cpan App::cpanminus
 ```
 
-## Third party modules
+### Third party modules
 ```bash
 cat modules.txt | xargs sudo cpanm
 ```
