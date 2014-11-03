@@ -14,6 +14,8 @@ use CGI::Cookie;
 use File::Path;
 use File::Basename;
 use File::Temp;
+use File::Spec::Functions;
+use HTML::Template;
 use LWP::Simple qw(!get !head !getprint !getstore !mirror);
 use LWP::UserAgent;
 use JSON;
@@ -60,7 +62,8 @@ BEGIN {
     @ISA     = ( qw (Exporter Class::Accessor) );
     @EXPORT  = qw( get_session_id );
     @EXPORT_OK = qw( check_filename_taint check_taint gunzip gzip send_email
-                     get_defaults set_defaults url_for get_job schedule_job );
+                     get_defaults set_defaults url_for get_job schedule_job
+                     render_template );
 
     $PAYLOAD_ERROR = "The request could not be decoded";
     $NOT_FOUND = "The action could not be found";
@@ -149,6 +152,22 @@ sub init {
     print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . " page_title=" . ($page_title ? $page_title : '') . " user=" . ($user ? $user->name : '') . "\n";
 
     return ( $db, $user, $CONF, $link );
+}
+
+sub render_template {
+    my ($template_name, $opts) = @_;
+
+    my $template_file = catfile(get_defaults()->{TMPLDIR}, $template_name);
+
+    unless(-r $template_file) {
+        cluck "error: template=$template_file could not be found";
+        return;
+    }
+
+    my $template = HTML::Template->new( filename => $template_file );
+
+    $template->param($opts);
+    return $template->output;
 }
 
 sub get_defaults {
