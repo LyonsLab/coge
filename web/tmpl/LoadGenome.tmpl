@@ -180,7 +180,7 @@ function reset_log() {
 	$('#load_log').html('');
 	$('#loading_msg').show();
 	$('#finished_msg,#error_msg,#ok_button,#logfile').hide();
-	$('#finish_button,#cancel_button').hide();
+	$('#finish_actions,#cancel_button').hide();
 }
 
 function check_login() {
@@ -420,7 +420,7 @@ function load_succeeded(obj) {
 
     // Update dialog
     $('#loading_msg').hide();
-    $('#finished_msg,#finish_button,#ok_button').fadeIn();
+    $('#finished_msg,#finish_actions,#ok_button').fadeIn();
 }
 
 function reset_load() {
@@ -429,8 +429,14 @@ function reset_load() {
     $('#load_dialog').dialog('close');
 }
 
-function continue_to_view() {
-	window.location.href = "GenomeInfo.pl?embed=" + embed + "&gid=" + genome_id;
+function handle_action() {
+    var action = $("#finish_actions select").val() || "genome";
+
+    if (action === "genome") {
+	    window.location.href = "GenomeInfo.pl?embed=" + embed + "&gid=" + genome_id;
+    } else if (action === "annotation") {
+	    window.location.href = "LoadAnnotation.pl?embed=" + embed + "&gid=" + genome_id;
+    }
 }
 
 function wait_to_search (search_func, search_term) {
@@ -1020,7 +1026,13 @@ function update_dialog(request, user, identifier, formatter) {
 	  <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
 	  <span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
 	  <span id="ok_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">Load Another</span>
-	  <span id="finish_button" onClick="continue_to_view();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">Continue to GenomeInfo</span>
+      <span id="finish_actions" class="hidden">
+        <select>
+            <option value="genome">Continue to GenomeInfo</option>
+            <option value="annotation">Add Annotations</option>
+        </select>
+	    <span onClick="handle_action();" style="float:right;" class="ui-button ui-corner-all coge-button">Go</span>
+      </span>
 	  <span id="cancel_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go coge-button">Cancel</span>
       <span id="logfile" class="hidden"><a href="">Logfile</a></span>
   </div>
