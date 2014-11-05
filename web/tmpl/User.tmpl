@@ -386,8 +386,10 @@ function default_info() {
 		case ITEM_TYPE_NOTEBOOK:
 		case ITEM_TYPE_GENOME:
 		case ITEM_TYPE_EXPERIMENT:
-			text = "These are data items that you added to the system.<br><br>" +
-				"Hover over an item to view additional info. Select one or more items to share, organize, delete, or send them to one of CoGe's tools.";
+			text = "<p>These are data items that you added to the system.</p>"
+				+ "<p><b>Hover over</b> an item to view additional info.</p>"
+                + "<p><b>Single-click</b> to select one or more items to share, organize, delete, or send them to one of CoGe's tools.</p>"
+                + "<p><b>Double-click</b> an item for a detailed view of the item.</p>";
 			break;
 		case ITEM_TYPE_GROUP:
 			text = "You are a member of these user groups.<br><br>" +
@@ -470,6 +472,7 @@ function update_info() {
 	}
 	
 	update_icons();
+    selection_hint();
 }
 
 function click_item(item) {
@@ -519,6 +522,7 @@ function clear_selected_items() {
 	$('.coge-list-item,.coge-selected').removeClass('coge-selected');
 	$('#contents_table input[type=checkbox]').filter(':checked').prop('checked', false);
 	update_icons();
+    selection_hint();
 	selected_item_id = null;
 }
 
@@ -646,6 +650,14 @@ function update_icons(on) {
 		$('.item-button:not(#add_button)').removeClass('coge-disabled');
 	else
 		$('.item-button:not(#add_button)').addClass('coge-disabled');
+}
+
+function selection_hint() {
+	var selected = get_selected_items();
+	if ( selected.length == 1)
+		$('#selected-hint').removeClass('hidden');
+	else
+		$('#selected-hint').addClass('hidden');
 }
 
 function toc_select(toc_id) {
@@ -1401,6 +1413,7 @@ function toggle_star(img) {
 		<span id="undelete_button" onClick="undelete_items();" class="invisible item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
 		-->
 		<input id="search_input" type="search" placeholder="Search" size="25" style="float:right;margin-right:15px;vertical-align:top;border:1px solid lightgray;" onkeyup="filter_contents();" onsearch="filter_contents();" />
+        <div id="selected-hint" class="hidden small info" style="float:right; margin-right: 15px;"><b>Double-click</b> for detailed view</div>
 		<span id="refresh_label" class="xsmall hidden info" style="float:right;padding-right:25px;">Refreshing...</span>
 	</div>
 
