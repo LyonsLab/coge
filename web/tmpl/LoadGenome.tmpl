@@ -436,6 +436,8 @@ function handle_action() {
 	    window.location.href = "GenomeInfo.pl?embed=" + embed + "&gid=" + genome_id;
     } else if (action === "annotation") {
 	    window.location.href = "LoadAnnotation.pl?embed=" + embed + "&gid=" + genome_id;
+    } else if (action === "new") {
+        reset_load();
     }
 }
 
@@ -1025,13 +1027,14 @@ function update_dialog(request, user, identifier, formatter) {
   <div class="coge-buttonset">
 	  <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
 	  <span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
-	  <span id="ok_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">Load Another</span>
       <span id="finish_actions" class="hidden">
-        <select>
-            <option value="genome">Continue to GenomeInfo</option>
+	    <span onClick="handle_action();" class="ui-button ui-corner-all coge-button r">Continue</span>
+        <select class="r">
+            <option value="genome">Go to GenomeInfo</option>
             <option value="annotation">Add Annotations</option>
+            <option value="new">Load Another</option>
         </select>
-	    <span onClick="handle_action();" style="float:right;" class="ui-button ui-corner-all coge-button">Go</span>
+        <div class="r">Next Step:</div>
       </span>
 	  <span id="cancel_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go coge-button">Cancel</span>
       <span id="logfile" class="hidden"><a href="">Logfile</a></span>
