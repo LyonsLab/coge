@@ -255,14 +255,14 @@ sub create_fasta_filter_job {
         script => undef,
         args => [
             ["", $fasta, 1],
-            ["", $name . ".filtered.fasta", 0]
+            ["", $name . ".filtered.fa", 0]
         ],
         inputs => [
             $fasta,
             $validated
         ],
         outputs => [
-            catfile($FASTA_CACHE_DIR, $name . ".filtered.fasta")
+            catfile($FASTA_CACHE_DIR, $name . ".filtered.fa")
         ],
         description => "Filtering genome sequence..."
     );
