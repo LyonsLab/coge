@@ -291,7 +291,7 @@ sub get_annotations {
         $html .= '</tbody></table>';
     }
     elsif ($user_can_edit) {
-        $html .= '<table class="ui-widget-content ui-corner-all small padded note"><tr><td>There a no additional metadata items for this experiment.</tr></td></table>';
+        $html .= '<table class="ui-widget-content ui-corner-all small padded note"><tr><td>There are no additional metadata items for this experiment.</tr></td></table>';
     }
 
     if ($user_can_edit) {
