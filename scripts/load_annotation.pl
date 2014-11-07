@@ -88,7 +88,7 @@ $pass = $P->{DBPASS};
 $GUNZIP = $P->{GUNZIP};
 if ( not -e $GUNZIP )
 {
-    print STDOUT "log: error: can't find required command(s)\n";
+  print STDOUT "log: error: can't find required command(s)\n";
     exit(-1);
 }
 
@@ -103,7 +103,7 @@ unless ( -e $data_file ) {
 my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
 my $coge = CoGeX->connect( $connstr, $user, $pass );
 unless ($coge) {
-    print STDOUT "log: couldn't connect to database\n";
+  print STDOUT "log: couldn't connect to database\n";
     exit(-1);
 }
 
@@ -168,6 +168,11 @@ my @skip_names_re = qw(
 
   intron
   _E\d
+  ^CDS$
+  ^exon$
+  ^tss$
+  ^tts$
+  ^intron$
 );
 
 # Decompress file if necessary
@@ -204,7 +209,7 @@ unless ( $seen_types{gene} ) {
                     $strand = $loc->{strand} if $loc->{strand};
                     $strand = 1 unless (defined $strand); # mdb added 11/7/13 issue 248 - set default strand to '+'
                     $chr    = $loc->{chr};
-                }
+		  }
                 foreach my $loc ( @{ $name->{$type}{loc} } ) {
                     $loc->{strand} = $strand;
                 }
@@ -253,7 +258,7 @@ my $datasource = $coge->resultset('DataSource')->find_or_create( { name => $sour
 unless ($datasource) {
     print STDOUT "log: error creating data source\n";
     exit(-1);
-}
+  }
 
 # Create dataset
 my $dataset = $coge->resultset('Dataset')->create(
@@ -306,8 +311,8 @@ my @name_buffer;    # buffer for bulk inserts into FeatureName table
             print STDOUT "log: Loaded " . commify($loaded_annot) . " annotations (" . ( $pctLoaded ? $pctLoaded : '<1' ) . "%)\n\n"
               if ( $loaded_annot and ( $loaded_annot % 1000 ) == 0 );
 
-            foreach my $feat_type ( sort { $a cmp $b } keys %{ $data{$chr_loc}{$name} } ) {
-                print STDOUT "\n" if $DEBUG;
+		foreach my $feat_type ( sort { $a cmp $b } keys %{ $data{$chr_loc}{$name} } ) {
+		  print STDOUT "\n" if $DEBUG;
 
                 my ($start, $stop, $strand, $chr);
                 my $loc = $data{$chr_loc}{$name}{$feat_type}{loc};
