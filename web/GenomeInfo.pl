@@ -1209,7 +1209,7 @@ sub get_experiments {
         push @rows, \%row;
     }
     
-    return '<span class="padded note">There a no experiments for this genome.</span>' unless @rows;
+    return '<span class="padded note">There are no experiments for this genome.</span>' unless @rows;
 
     my $template = HTML::Template->new( filename => $config->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
