@@ -522,7 +522,7 @@ sub generate_export {
     my $experiment = shift;
     my $eid = $experiment->id;
 
-    my $exp_name = $experiment->name;
+    my $exp_name = sanitize_name($experiment->name);
        $exp_name = $eid unless $exp_name;
 
     my $filename = "experiment_$exp_name.tar.gz";
@@ -534,7 +534,7 @@ sub generate_export {
 
     my $cmd = "$script -eid $eid -config $conf -dir $workdir -output $filename -a 1";
 
-    return (execute($cmd),  File::Spec->catdir(($workdir, $filename)));
+    return (execute($cmd), File::Spec->catdir(($workdir, $filename)));
 }
 
 sub get_download_path {
@@ -568,7 +568,7 @@ sub get_file_urls {
     unless($statusCode) {
         my $dir = basename(dirname($file));
         my $url = get_download_url(id => $eid, dir => $dir, file => $file);
-        return encode_json({ files => [$url] });
+        return encode_json({ filename => basename($file), url => $url });
     };
 
     return encode_json({ error => 1 });
