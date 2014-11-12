@@ -99,7 +99,6 @@ div.footer {
 	height: 55px;
 	clear: both;
 	border-top: 1px solid lightgray;
-    z-index: -1;
 }
 
 div.panel {
