@@ -54,6 +54,7 @@ sub run {
 
     # Create the workflow
     my $workflow = $jex->create_workflow( name => 'Running the qTeller pipeline', init => 1 );
+    my $wid = $workflow->id;
 
     # Setup log file, staging, and results paths
     my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
@@ -125,16 +126,16 @@ sub run {
         push @jobs, \%parse_cuff;
 
         # Load csv experiment
-        my %load_csv = create_load_csv_job($metadata, $gid, @{$parse_cuff{outputs}}[0], $user, $annotations, $staging_dir);
+        my %load_csv = create_load_csv_job($metadata, $gid, @{$parse_cuff{outputs}}[0], $user, $annotations, $staging_dir, $wid);
         push @jobs, \%load_csv;
     }
 
     # Load bam experiment
-    my %load_bam = create_load_bam_job($metadata, $gid, $bam, $user, $annotations, $staging_dir);
+    my %load_bam = create_load_bam_job($metadata, $gid, $bam, $user, $annotations, $staging_dir, $wid);
     push @jobs, \%load_bam;
 
     # Load bed experiment
-    my %load_bed = create_load_bed_job($metadata, $gid, @{$filtered_bed{outputs}}[0], $user, $annotations, $staging_dir);
+    my %load_bed = create_load_bed_job($metadata, $gid, @{$filtered_bed{outputs}}[0], $user, $annotations, $staging_dir, $wid);
     push @jobs, \%load_bed;
 
     # Create notebook
