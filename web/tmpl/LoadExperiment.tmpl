@@ -717,11 +717,13 @@ function setup_wizard(options) {
                 $done.attr("disabled", 1);
             },
 
-            next: function() {
+            next: function(options) {
+                options = (options || {});
+
                 var cur = steps[currentIndex],
                     next = steps[currentIndex + 1];
 
-                if ((cur.validated = cur.validateFn())) {
+                if (options.force || (cur.validated = cur.validateFn())) {
                 } else {
                     return;
                 }
