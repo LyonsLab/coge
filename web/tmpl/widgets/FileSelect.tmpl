@@ -230,6 +230,8 @@ function irods_get_path (path) {
 
 	path = resolve_path(path);
 
+    $('#ids_loading');
+
 	$.ajax({
 		data: {
 			fname: 'irods_get_path',
