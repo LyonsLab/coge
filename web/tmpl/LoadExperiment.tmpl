@@ -1,6 +1,6 @@
 <TMPL_IF NAME='MAIN'>
 <script type="text/javascript" src="js/coge/utils.js"></script>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
+<script language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></script>
 
 <style type="text/css">
 
@@ -893,79 +893,84 @@ function update_aligner() {
     </div>
 
     <div class="step" data-title="Options" data-step="3" data-validate="options">
-        <div class="form-field">
-            <label class="col-md-2">Aligner:</label>
-            <div id="alignment">
-                <input name="aligner" type="radio" value="gsnap" checked onchange="update_aligner()">
-                <label for="gsnap">GSNAP</label>
 
-                <input name="aligner" type="radio" value="tophat" onchange="update_aligner()">
-                <label for="gsnap">TopHat/Bowtie2</label>
-            </div>
-        </div>
-
-        <div class="form-field">
-            <label class="col-md-2">Samtools (mpileup):</label>
-            <div>
-                <label>-Q:</label>
-                <input id="Q" type="number" value="5"/>
-            </div>
-        </div>
-
-        <div id="gsnap" class="form-section">
-            <h4>GSNAP Options</h4>
+        <div class="form-section">
+            <h4>RNA-Seq Options</h4>
             <div class="form-field">
-                <label class="col-md-2">CutAdapt:</label>
-                <div class="form-group">
-                    <div class="form-entry">
-                        <label>-q:</label>
-                        <input id="q" type="number" value="5"/>
-                    </div>
-                    <div class="form-entry">
-                        <label>-m:</label>
-                        <input id="m" type="number" value="5"/>
-                    </div>
-                    <div class="form-entry">
-                        <label>--quality-base:</label>
-                        <input id="quality" type="number" value="5"/>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-field">
-                <label class="col-md-2">Alignment:</label>
-                <div class="form-group">
-                    <div class="form-entry">
-                        <label>-n:</label>
-                        <input id="n" type="number" value="5"/>
-                    </div>
-
-                    <div class="form-entry">
-                        <label>-Q:</label>
-                        <input id="Q" type="number" value="5"/>
-                    </div>
-                    <div class="form-entry">
-                        <label>--gap-mode:</label>
-                        <select id="gap">
-                            <option>none</option>
-                        </select>
-                    </div>
-                    <div class="form-entry">
-                        <label>--no-fails:</label>
-                        <input id="fail" type="checkbox" checked/>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tophat" class="form-section hidden">
-            <h4>TopHat Options</h4>
-
-            <div class="form-field">
-                <label class="col-md-2">TopHat:</label>
+                <label class="col-md-2">Samtools (mpileup):</label>
                 <div>
-                    <label>-g:</label>
-                    <input id="g" type="number" value="5"/>
+                    <label>-Q:</label>
+                    <input id="Q" type="number" value="5"/>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h4>Alignment Options</h4>
+
+            <div class="form-field">
+                <label class="col-md-2">Aligner:</label>
+                <div id="alignment">
+                    <input name="aligner" type="radio" value="gsnap" checked onchange="update_aligner()">
+                    <label for="gsnap">GSNAP</label>
+
+                    <input name="aligner" type="radio" value="tophat" onchange="update_aligner()">
+                    <label for="gsnap">TopHat/Bowtie2</label>
+                </div>
+            </div>
+
+            <div id="gsnap">
+                <div class="form-field">
+                    <label class="col-md-2">CutAdapt:</label>
+                    <div class="form-group">
+                        <div class="form-entry">
+                            <label>-q:</label>
+                            <input id="q" type="number" value="5"/>
+                        </div>
+                        <div class="form-entry">
+                            <label>-m:</label>
+                            <input id="m" type="number" value="5"/>
+                        </div>
+                        <div class="form-entry">
+                            <label>--quality-base:</label>
+                            <input id="quality" type="number" value="5"/>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label class="col-md-2">Alignment:</label>
+                    <div class="form-group">
+                        <div class="form-entry">
+                            <label>-n:</label>
+                            <input id="n" type="number" value="5"/>
+                        </div>
+
+                        <div class="form-entry">
+                            <label>-Q:</label>
+                            <input id="Q" type="number" value="5"/>
+                        </div>
+                        <div class="form-entry">
+                            <label>--gap-mode:</label>
+                            <select id="gap">
+                                <option>none</option>
+                            </select>
+                        </div>
+                        <div class="form-entry">
+                            <label>--no-fails:</label>
+                            <input id="fail" type="checkbox" checked/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tophat" class="hidden">
+                <div class="form-field">
+                    <label class="col-md-2">TopHat:</label>
+                    <div>
+                        <label>-g:</label>
+                        <input id="g" type="number" value="5"/>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1071,6 +1076,10 @@ function update_aligner() {
             </div>
             <div class="form-field">
                 <label class="col-md-2">Send an email:</label>
+                <input id="email" type="checkbox">
+            </div>
+            <div class="form-field">
+                <label class="col-md-2">Share:</label>
                 <input id="email" type="checkbox">
             </div>
         </div>
