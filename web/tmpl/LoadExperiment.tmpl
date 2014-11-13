@@ -118,6 +118,7 @@ function file_finished(size, url) {
         exp = /(:?fastq|fq)/;
 
     var isFastq = exp.test.bind(exp);
+    files.forEach(autodetect_file_type);
 
     if (files.map(getPath).some(isFastq)) {
         $("#file_type_selector")
@@ -639,6 +640,25 @@ function description() {
     }
 
     return true;
+}
+
+var QUANT_FILE_TYPES = /(:?csv|tsv|bed|gff|gtf)$/;
+var POLY_FILE_TYPES = /(:?vcf)$/;
+var ALIGN_FILE_TYPES =/(:?bam)$/;
+var SEQ_FILE_TYPES = /(:?fastq|fq)$/;
+
+function autodetect_file_type(file) {
+    var stripped_file = file.replace(/.gz$/, '');
+
+    switch (true) {
+        case QUANT_FILE_TYPES.test(stripped_file): return "quant";
+        case POLY_FILE_TYPES.test(stripped_file): return "poly";
+        case ALIGN_FILE_TYPES.test(stripped_file): return "align";
+        case SEQ_FILE_TYPES.test(stripped_file): return "seq";
+        default:
+            error_help("The file type could not be auto detected please select the filetype");
+            return;
+    }
 }
 
 function data() {
