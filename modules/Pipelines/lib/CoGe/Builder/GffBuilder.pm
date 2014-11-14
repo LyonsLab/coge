@@ -19,14 +19,12 @@ sub build {
     $self->init_workflow($self->jex);
     return unless $self->workflow->id;
 
-    my (undef, $result_dir) = get_workflow_paths($self->user->name,
-                                                 $self->workflow->id);
+    my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
 
     my $dest_type = $self->options->{dest_type};
     $dest_type = "http" unless $dest_type;
 
     $self->workflow->logfile(catfile($result_dir, "debug.log"));
-
 
     my $genome = $self->db->resultset("Genome")->find($self->params->{gid});
     $self->params->{basename} = sanitize_name($genome->organism->name);
@@ -38,7 +36,7 @@ sub build {
         my $base = $self->options->{dest_path};
         $base = irods_get_base_path($self->user->name) unless $base;
         my $dest = catfile($base, basename($output));
-        my $irods_done = catfile($result_dir, "irods.done");
+        my $irods_done = catfile($staging_dir, "irods.done");
 
         $self->workflow->add_job(export_to_irods($output, $dest, $self->options->{overwrite}, $irods_done));
         $self->workflow->add_job(generate_results($dest, $dest_type, $result_dir, $self->conf, $irods_done));
