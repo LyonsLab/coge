@@ -575,14 +575,6 @@ function update_dialog(request, user, identifier, formatter) {
 
 </script>
 
-<!--
-    Features
-
-    1. A user cannot proceed if a step is not valid
-    2. A wizard has controls to go back, forward
-    3. A wizard is finished when all steps have been completed
- -->
-
 <div id="wizard" class="wizard wizard-coge">
     <div class="header">
         <h3 class="title">Load Experiment</h3>
@@ -671,6 +663,185 @@ function update_dialog(request, user, identifier, formatter) {
     </div>
 
     <div class="step" data-title="Options" data-step="3" data-validate="options">
+        <div id="fastq" class="hidden">
+            <div class="form-section">
+                <h4>RNA-Seq Options</h4>
+                <div class="form-field">
+                    <label class="col-md-2">Samtools (mpileup):</label>
+                    <div>
+                        <label>-Q:</label>
+                        <input id="Q" type="number" value="5"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h4>Alignment Options</h4>
+
+                <div class="form-field">
+                    <label class="col-md-2">Aligner:</label>
+                    <div id="alignment">
+                        <input name="aligner" type="radio" value="gsnap" checked onchange="update_aligner()">
+                        <label for="gsnap">GSNAP</label>
+
+                        <input name="aligner" type="radio" value="tophat" onchange="update_aligner()">
+                        <label for="gsnap">TopHat/Bowtie2</label>
+                    </div>
+                </div>
+
+                <div id="gsnap">
+                    <div class="form-field">
+                        <label class="col-md-2">CutAdapt:</label>
+                        <div class="form-group">
+                            <div class="form-entry">
+                                <label>-q:</label>
+                                <input id="q" type="number" value="5"/>
+                            </div>
+                            <div class="form-entry">
+                                <label>-m:</label>
+                                <input id="m" type="number" value="5"/>
+                            </div>
+                            <div class="form-entry">
+                                <label>--quality-base:</label>
+                                <input id="quality" type="number" value="5"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field">
+                        <label class="col-md-2">Alignment:</label>
+                        <div class="form-group">
+                            <div class="form-entry">
+                                <label>-n:</label>
+                                <input id="n" type="number" value="5"/>
+                            </div>
+
+                            <div class="form-entry">
+                                <label>-Q:</label>
+                                <input id="Q" type="number" value="5"/>
+                            </div>
+                            <div class="form-entry">
+                                <label>--gap-mode:</label>
+                                <select id="gap">
+                                    <option>none</option>
+                                </select>
+                            </div>
+                            <div class="form-entry">
+                                <label>--no-fails:</label>
+                                <input id="fail" type="checkbox" checked/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tophat" class="hidden">
+                    <div class="form-field">
+                        <label class="col-md-2">TopHat:</label>
+                        <div>
+                            <label>-g:</label>
+                            <input id="g" type="number" value="5"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h4>SNP Options</h4>
+
+                <div class="form-field">
+                    <label class="col-md-2">Find SNPs:</label>
+
+                    <label >Enable:</label>
+                    <input id="snps" type="checkbox" onchange="update_snp(window.event)">
+
+                    <label>Method:</label>
+                    <select id="snp-method" disabled>
+                        <option value="coge">CoGe Method</option>
+                        <option value="samtools">Samtools Method</option>
+                        <option value="platypus">Platypus Method</option>
+                        <option value="gatk">GATK Method</option>
+                    </select>
+                </div>
+
+                <div id="snp-wrapper" class="hidden">
+                    <div id="coge" class="hidden">
+                        <div class="form-field">
+                            <label class="col-md-2">CoGe Options:</label>
+                            <div class="form-group">
+                                <div class="form-entry">
+                                    <label>minimum read depth:</label>
+                                    <input id="min-read" type="number" value="10"/>
+                                </div>
+                                <div class="form-entry">
+                                    <label>minimum base quality:</label>
+                                    <input id="min-base" type="number" value="20"/>
+                                </div>
+                                <div class="form-entry">
+                                    <label>minimum high-quality allele count:</label>
+                                    <input id="allele-count" type="number" value="4"/>
+                                </div>
+                                <div class="form-entry">
+                                    <label>minimum allele frequency:</label>
+                                    <input id="min-allele-freq" type="number" step="0.1" value="0.1"/>
+                                </div>
+                                <div class="form-entry">
+                                    <label>scale for FAST quality encoding:</label>
+                                    <input id="scale" type="number" value="32"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="samtools" class="form-field hidden">
+                        <label class="col-md-2">Samtools Options</label>
+
+                        <div class="form-group">
+                            <div class="form-entry">
+                                <label>minimum read depth:</label>
+                                <input id="min-read-depth" type="number" value="6"/>
+                            </div>
+                            <div class="form-entry">
+                                <label>maximum read depth:</label>
+                                <input id="max-read-depth" type="number" value="10"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="platypus" class="form-field hidden">
+                        <label class="col-md-2">Platypus Options:</label>
+                        <div class="form-group">
+                            <div class="form-entry">
+                                <label>-g:</label>
+                                <input type="number" value="5"/>
+                            </div>
+                            <div class="form-entry">
+                                <label>-g:</label>
+                                <input type="number" value="5"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="gatk" class="form-field hidden">
+                        <label class="col-md-2">GATK Options:</label>
+                        <div class="form-group">
+                            <div class="form-entry">
+                                <label>-g:</label>
+                                <input type="number" value="5"/>
+                            </div>
+                            <div class="form-entry">
+                                <label>-g:</label>
+                                <input type="number" value="5"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="align">alignment options</div>
+        <div id="poly">polymorphism options</div>
+        <div id="quant">quantitative options</div>
+
         <div class="form-section">
             <h4>Misc Options</h4>
 
@@ -702,183 +873,6 @@ function update_dialog(request, user, identifier, formatter) {
         <button class="next ui-button ui-corner-all r">Next</button>
     </div>
 </div>
-
-<div id="fastq" class="hidden">
-    <div class="form-section">
-        <h4>RNA-Seq Options</h4>
-        <div class="form-field">
-            <label class="col-md-2">Samtools (mpileup):</label>
-            <div>
-                <label>-Q:</label>
-                <input id="Q" type="number" value="5"/>
-            </div>
-        </div>
-    </div>
-
-    <div class="form-section">
-        <h4>Alignment Options</h4>
-
-        <div class="form-field">
-            <label class="col-md-2">Aligner:</label>
-            <div id="alignment">
-                <input name="aligner" type="radio" value="gsnap" checked onchange="update_aligner()">
-                <label for="gsnap">GSNAP</label>
-
-                <input name="aligner" type="radio" value="tophat" onchange="update_aligner()">
-                <label for="gsnap">TopHat/Bowtie2</label>
-            </div>
-        </div>
-
-        <div id="gsnap">
-            <div class="form-field">
-                <label class="col-md-2">CutAdapt:</label>
-                <div class="form-group">
-                    <div class="form-entry">
-                        <label>-q:</label>
-                        <input id="q" type="number" value="5"/>
-                    </div>
-                    <div class="form-entry">
-                        <label>-m:</label>
-                        <input id="m" type="number" value="5"/>
-                    </div>
-                    <div class="form-entry">
-                        <label>--quality-base:</label>
-                        <input id="quality" type="number" value="5"/>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-field">
-                <label class="col-md-2">Alignment:</label>
-                <div class="form-group">
-                    <div class="form-entry">
-                        <label>-n:</label>
-                        <input id="n" type="number" value="5"/>
-                    </div>
-
-                    <div class="form-entry">
-                        <label>-Q:</label>
-                        <input id="Q" type="number" value="5"/>
-                    </div>
-                    <div class="form-entry">
-                        <label>--gap-mode:</label>
-                        <select id="gap">
-                            <option>none</option>
-                        </select>
-                    </div>
-                    <div class="form-entry">
-                        <label>--no-fails:</label>
-                        <input id="fail" type="checkbox" checked/>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tophat" class="hidden">
-            <div class="form-field">
-                <label class="col-md-2">TopHat:</label>
-                <div>
-                    <label>-g:</label>
-                    <input id="g" type="number" value="5"/>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="form-section">
-        <h4>SNP Options</h4>
-
-        <div class="form-field">
-            <label class="col-md-2">Find SNPs:</label>
-
-            <label >Enable:</label>
-            <input id="snps" type="checkbox" onchange="update_snp(window.event)">
-
-            <label>Method:</label>
-            <select id="snp-method" disabled>
-                <option value="coge">CoGe Method</option>
-                <option value="samtools">Samtools Method</option>
-                <option value="platypus">Platypus Method</option>
-                <option value="gatk">GATK Method</option>
-            </select>
-        </div>
-
-        <div id="snp-wrapper" class="hidden">
-            <div id="coge" class="hidden">
-                <div class="form-field">
-                    <label class="col-md-2">CoGe Options:</label>
-                    <div class="form-group">
-                        <div class="form-entry">
-                            <label>minimum read depth:</label>
-                            <input id="min-read" type="number" value="10"/>
-                        </div>
-                        <div class="form-entry">
-                            <label>minimum base quality:</label>
-                            <input id="min-base" type="number" value="20"/>
-                        </div>
-                        <div class="form-entry">
-                            <label>minimum high-quality allele count:</label>
-                            <input id="allele-count" type="number" value="4"/>
-                        </div>
-                        <div class="form-entry">
-                            <label>minimum allele frequency:</label>
-                            <input id="min-allele-freq" type="number" step="0.1" value="0.1"/>
-                        </div>
-                        <div class="form-entry">
-                            <label>scale for FAST quality encoding:</label>
-                            <input id="scale" type="number" value="32"/>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="samtools" class="form-field hidden">
-                <label class="col-md-2">Samtools Options</label>
-
-                <div class="form-group">
-                    <div class="form-entry">
-                        <label>minimum read depth:</label>
-                        <input id="min-read-depth" type="number" value="6"/>
-                    </div>
-                    <div class="form-entry">
-                        <label>maximum read depth:</label>
-                        <input id="max-read-depth" type="number" value="10"/>
-                    </div>
-                </div>
-            </div>
-
-            <div id="platypus" class="form-field hidden">
-                <label class="col-md-2">Platypus Options:</label>
-                <div class="form-group">
-                    <div class="form-entry">
-                        <label>-g:</label>
-                        <input type="number" value="5"/>
-                    </div>
-                    <div class="form-entry">
-                        <label>-g:</label>
-                        <input type="number" value="5"/>
-                    </div>
-                </div>
-            </div>
-
-            <div id="gatk" class="form-field hidden">
-                <label class="col-md-2">GATK Options:</label>
-                <div class="form-group">
-                    <div class="form-entry">
-                        <label>-g:</label>
-                        <input type="number" value="5"/>
-                    </div>
-                    <div class="form-entry">
-                        <label>-g:</label>
-                        <input type="number" value="5"/>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
 
 <!--
 <div class="bold text" style="padding-top:1em;">Describe the Experiment</div>
