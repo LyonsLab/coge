@@ -26,6 +26,22 @@ function error_help(s) {
         .fadeOut(1500);
 }
 
+function check_login() {
+    var logged_in = false;
+
+    $.ajax({
+        async: false,
+        data: {
+            fname: 'check_login',
+        },
+        success : function(rc) {
+            logged_in = rc;
+        }
+    });
+
+    return logged_in;
+}
+
 function description() {
     var name = $('#edit_name').val();
     var description = $('#edit_description').val();
