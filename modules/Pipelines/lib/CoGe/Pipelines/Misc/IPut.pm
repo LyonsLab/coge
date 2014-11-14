@@ -19,16 +19,20 @@ BEGIN {
 }
 
 sub export_to_irods {
-    my ($src, $dest, $overwrite) = @_;
+    my ($src, $dest, $overwrite, $done_file) = @_;
 
     $overwrite = 0 unless defined $overwrite;
 
-    return (
-        cmd => irods_iput($src, $dest, { no_execute => 1, overwrite => $overwrite }),
+    my $cmd = irods_iput($src, $dest, { no_execute => 1, overwrite => $overwrite });
+
+    my $filename = basename($done_file);
+
+   return (
+        cmd => qq[$cmd && touch $filename],
         description => "Exporting file to IRODS",
         args => [],
         inputs => [$src],
-        outputs => []
+        outputs => [$done_file]
     );
 }
 

@@ -37,7 +37,7 @@ sub link_results {
 }
 
 sub generate_results {
-   my ($input, $type, $result_dir, $conf) = @_;
+   my ($input, $type, $result_dir, $conf, $dependency) = @_;
 
    return (
         cmd     => catfile($conf->{SCRIPTDIR}, "generate_results.pl"),
@@ -46,7 +46,7 @@ sub generate_results {
             ['-type', $type, 0],
             ['-result_dir', $result_dir, 0]
         ],
-        inputs  => [],
+        inputs  => [$dependency],
         outputs => [catfile($result_dir, "1")],
         description => "Generating results..."
    );
