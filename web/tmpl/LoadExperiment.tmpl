@@ -169,22 +169,6 @@ function reset_log() {
     $('#ok_button,#error_msg,#finished_msg,#finish_load_experiment_button,#cancel_load_experiment_button,#logfile').hide();
 }
 
-function check_login() {
-    var logged_in = false;
-
-    $.ajax({
-        async: false,
-        data: {
-            fname: 'check_login',
-        },
-        success : function(rc) {
-            logged_in = rc;
-        }
-    });
-
-    return logged_in;
-}
-
 function load_experiment() {
     var name = $('#edit_name').val();
     var description = $('#edit_description').val();
