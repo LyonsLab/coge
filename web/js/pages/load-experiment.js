@@ -103,13 +103,33 @@ function data() {
         return;
     }
 
-    file_type = autodetect_file_type(items[0].path);
+    if (file_type === "autodetect") {
+        file_type = autodetect_file_type(items[0].path);
+    }
 
     if (!file_type) {
         return error_help("The file type could not be auto detected please select the filetype");
     }
 
-    var json = JSON.stringify(items);
+    $('#fastq,#poly,#quant,#align').addClass('hidden');
+
+    if (QUANT_FILE_TYPES.test(file_type)) {
+        $("#quant").removeClass("hidden");
+    }
+
+    if (POLY_FILE_TYPES.test(file_type)) {
+        $("#poly").removeClass("hidden");
+    }
+
+    if (SEQ_FILE_TYPES.test(file_type)) {
+        $("#fastq").removeClass("hidden");
+    }
+
+    if (ALIGN_FILE_TYPES.test(file_type)) {
+        $("#align").removeClass("hidden");
+    }
+
+    //var json = JSON.stringify(items);
 
     return true;
 }
