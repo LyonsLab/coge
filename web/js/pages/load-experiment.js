@@ -1,5 +1,8 @@
 /*global document,$,alert,window,JSON */
 
+// Global experiment data
+var current_experiment = {};
+
 // Support file types
 var QUANT_FILE_TYPES = /(:?csv|tsv|bed|gff|gtf)$/;
 var POLY_FILE_TYPES = /(:?vcf)$/;
@@ -85,13 +88,24 @@ function description() {
         return;
     }
 
+    $.extend(current_experiment, {
+        description: {
+            name: name,
+            description: description,
+            version: version,
+            restricted: restricted,
+            genome: genome,
+            gid: gid
+        }
+    });
+
     return true;
 }
 
 //FIXME: Add support for multiple files
 function data() {
     var items = get_selected_files();
-    var file_type = $("#select_file_type option:selected").val();
+    var file_type = items[0].file_type = $("#select_file_type option:selected").val();
 
     if (items === null) {
         error_help('Files are still being transferred, please wait.');
@@ -104,7 +118,7 @@ function data() {
     }
 
     if (file_type === "autodetect") {
-        file_type = autodetect_file_type(items[0].path);
+        file_type = items[0].file_type = autodetect_file_type(items[0].path);
     }
 
     if (!file_type) {
@@ -129,7 +143,9 @@ function data() {
         $("#align").removeClass("hidden");
     }
 
-    //var json = JSON.stringify(items);
+    $.extend(current_experiment, {
+        data: items
+    });
 
     return true;
 }
@@ -273,5 +289,5 @@ function update_aligner() {
 
 function initialize() {
     var Wizard = setup_wizard({ success: load_experiment });
-    wizard = new Wizard();
+    var wizard = new Wizard();
 }
