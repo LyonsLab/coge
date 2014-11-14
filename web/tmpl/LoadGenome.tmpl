@@ -329,47 +329,6 @@ function get_load_log(callback) {
         }
     });
 }
-//function get_load_log() {
-//	$.ajax({
-//		data: {
-//			dataType: 'text',
-//			fname: 'get_load_log',
-//			load_id: load_id
-//		},
-//		success : function(data) {
-//			if (!data) { // workaround for issue #45, jquery intermittently dropping payload
-//				setTimeout(function() { get_load_log(); }, 1000);
-//				return;
-//			}
-//
-//			var obj = jQuery.parseJSON(data);
-//			if (obj.log) {
-//				$('#load_genome_log').html(obj.log.join('<BR>'));
-//				var height = $('#load_genome_log')[0].scrollHeight;
-//	    		$("#load_genome_log").animate({ scrollTop: height}, 500);
-//    		}
-//
-//			if (obj.status == 1) {  // finished successfully
-//				// Update load_id in case user reuses page to load again
-//				load_id = obj.new_load_id;
-//
-//				$('#genome_id').val( obj.genome_id );
-//				$('#loading_msg').hide();
-//				$('#finished_msg').fadeIn();
-//				$('#ok_button').fadeIn();
-//				$('#finish_load_genome_button').fadeIn();
-//			}
-//			else if (obj.status == -1) { // error occurred
-//				$('#loading_msg').hide();
-//				$('#error_msg').fadeIn();
-//				$('#cancel_load_genome_button').fadeIn();
-//			}
-//			else { // not done yet, continue polling
-//				setTimeout(function() { get_load_log(); }, 1000);
-//			}
-//		}
-//	});
-//}
 
 function load_failed(obj) {
 	// Handle special case of genbank load of existing genome
