@@ -1,4 +1,4 @@
-/*global $ */
+/*global document,$,alert,window,JSON */
 
 // Support file types
 var QUANT_FILE_TYPES = /(:?csv|tsv|bed|gff|gtf)$/;
@@ -9,7 +9,7 @@ var SEQ_FILE_TYPES = /(:?fastq|fq)$/;
 function autodetect_file_type(file) {
     var stripped_file = file.replace(/.gz$/, '');
 
-    switch (stripped_file) {
+    switch (true) {
         case QUANT_FILE_TYPES.test(stripped_file): return "quant";
         case POLY_FILE_TYPES.test(stripped_file): return "poly";
         case ALIGN_FILE_TYPES.test(stripped_file): return "align";
