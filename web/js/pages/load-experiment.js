@@ -63,24 +63,25 @@ function description() {
     }
 
     var source = $('#edit_source').val();
-    if (!source || source == 'Search') {
+    if (!source || source === 'Search') {
         error_help('Please specify a data source.');
         return;
     }
 
-    if (!genome || genome == 'Search') {
+    if (!genome || genome === 'Search') {
         error_help('Please specify a genome.');
         return;
     }
 
     // Prevent concurrent executions - issue 101
-    if ( $("#load_dialog").dialog( "isOpen" ) )
+    if ( $("#load_dialog").dialog( "isOpen" ) ) {
         return;
+    }
 
     // Make sure user is still logged-in - issue 206
     if (!check_login()) {
         alert('Your session has expired, please log in again.');
-        location.reload(true)
+        window.location.reload(true);
         return;
     }
 
@@ -92,11 +93,12 @@ function data() {
     var items = get_selected_files();
     var file_type = $("#select_file_type option:selected").val();
 
-    if (items == null) {
+    if (items === null) {
         error_help('Files are still being transferred, please wait.');
         return;
     }
-    else if (items.length == 0) {
+
+    if (items.length === 0) {
         error_help('Please select a data file.');
         return;
     }
