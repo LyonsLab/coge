@@ -3,6 +3,7 @@ package CoGe::Builder::GffBuilder;
 use Moose;
 
 use CoGe::Accessory::IRODS qw(irods_get_base_path);
+use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGe::Core::Storage;
 use CoGe::Pipelines::Common::Results;
 use CoGe::Pipelines::Misc::Gff;
@@ -11,7 +12,6 @@ use CoGe::Pipelines::Misc::IPut;
 use File::Basename qw(basename);
 use File::Spec::Functions;
 use Data::Dumper;
-use URI::Escape::JavaScript qw(escape);
 
 sub build {
     my $self = shift;
@@ -29,7 +29,7 @@ sub build {
 
 
     my $genome = $self->db->resultset("Genome")->find($self->params->{gid});
-    $self->params->{basename} = escape($genome->organism->name);
+    $self->params->{basename} = sanitize_name($genome->organism->name);
 
     my ($output, %job) = generate_gff($self->params, $self->conf);
     $self->workflow->add_job(%job);
@@ -38,9 +38,10 @@ sub build {
         my $base = $self->options->{dest_path};
         $base = irods_get_base_path($self->user->name) unless $base;
         my $dest = catfile($base, basename($output));
+        my $irods_done = catfile($result_dir, "irods.done");
 
-        $self->workflow->add_job(export_to_irods($output, $dest, $self->options->{overwrite}));
-        $self->workflow->add_job(generate_results($dest, $dest_type, $result_dir, $self->conf));
+        $self->workflow->add_job(export_to_irods($output, $dest, $self->options->{overwrite}, $irods_done));
+        $self->workflow->add_job(generate_results($dest, $dest_type, $result_dir, $self->conf, $irods_done));
     } else {
         $self->workflow->add_job(link_results($output, $result_dir, $self->conf));
     }
