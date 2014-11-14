@@ -753,14 +753,14 @@ if ( $GO && $user ) {
     #   exit(-1);
     #}
 
-    # Log in history
-    CoGe::Accessory::Web::log_history(
-        db          => $coge,
-        user_id     => $user->id,
-        page        => "LoadGenome",
-        description => 'load genome id' . $genome->id,
-        link        => 'GenomeInfo.pl?gid=' . $genome->id
-    );
+    # Log in history - mdb removed 11/14/14, this logging is redundant to LoadGenome.pl
+#    CoGe::Accessory::Web::log_history(
+#        db          => $coge,
+#        user_id     => $user->id,
+#        page        => "LoadGenome",
+#        description => 'load genome id' . $genome->id,
+#        link        => 'GenomeInfo.pl?gid=' . $genome->id
+#    );
 }
 
 # Save result document
@@ -828,7 +828,7 @@ sub fasta_genomic_sequence {
     $seq =~ s/\n//g;
 
     my $seqlen = length $seq;
-    if ( my ($item) = $genome->get_genomic_sequence( { chromosome => $chr } ) ) {
+    if ( my ($item) = $genome->get_genomic_sequence( chromosome => $chr ) ) {
         my $prev_length = $item->sequence_length;
         print STDOUT "$chr has previously been added to this genome.  Previous length: $prev_length.  Currently length: $seqlen.  Skipping.\n";
         return;
