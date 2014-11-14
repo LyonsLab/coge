@@ -293,8 +293,12 @@ function load_genome() {
 		},
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
-			if (obj && obj.error) {
-				alert(obj.error);
+			if (!obj || obj.error) {
+				if (!obj)
+					alert("Error: load_genome: invalid response from server");
+				else
+					alert(obj.error);
+				reset_load();
 				return;
 			}
 
@@ -987,13 +991,15 @@ function update_dialog(request, user, identifier, formatter) {
 	  <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
 	  <span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
       <span id="finish_actions" class="hidden">
-	    <span onClick="handle_action();" class="ui-button ui-corner-all coge-button r">Continue</span>
-        <select class="r">
-            <option value="genome">Go to GenomeInfo</option>
-            <option value="annotation">Add Annotations</option>
-            <option value="new">Load Another</option>
-        </select>
-        <div class="r">Next Step:</div>
+	    <span onClick="handle_action();" class="ui-button ui-corner-all coge-button r">GO</span>
+	    <span class="r" style="padding-top:5px;">
+	        <select>
+	            <option value="genome">View Genome</option>
+	            <option value="annotation">Load Annotations</option>
+	            <option value="new">Load Another Genome</option>
+	        </select>
+        </span>
+        <span class="r" style="padding-right:0.5em; padding-top:6px;">Next Step:</span>
       </span>
 	  <span id="cancel_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go coge-button">Cancel</span>
       <span id="logfile" class="hidden"><a href="">Logfile</a></span>

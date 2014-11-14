@@ -468,10 +468,6 @@ sub load_genome {
     $items = decode_json($items);
     my @files = map { catfile($TEMPDIR, $_->{path}) } @$items;
 
-    # Check organism
-    my $organism = $coge->resultset('Organism')->find($organism_id);
-    return unless $organism;
-
     # Setup staging area
     my $stagepath = catdir($TEMPDIR, 'staging');
     mkpath $stagepath;
@@ -487,12 +483,14 @@ sub load_genome {
     }
 
     # Submit workflow to add genome
-    my ($workflow_id, $error_msg);
+    my ($workflow_id, $error_msg, $info);
     if (@accns) { # NCBI accession numbers specified
         ($workflow_id, $error_msg) = create_genome_from_NCBI(
             user => $user,
             accns => \@accns
         );
+        
+        $info = 'from NCBI accn ' . join(', ', @accns);
     }
     else { # File-based load
         ($workflow_id, $error_msg) = create_genome_from_file(
@@ -508,6 +506,17 @@ sub load_genome {
             },
             files => \@files
         );
+        
+        # Check organism
+        my $organism = $coge->resultset('Organism')->find($organism_id);
+        return unless $organism;
+        
+        # Set description for logging
+        $info = '<i>"' . $organism->name;
+        $info .= " " . $name if $name;
+        $info .= ": " . $description if $description;
+        $info .= " (v" . $version . ")";
+        $info .= '"</i>';
     }
     unless ($workflow_id) {
         return encode_json({ error => "Workflow submission failed: " . $error_msg });
@@ -519,11 +528,6 @@ sub load_genome {
     );
     
     # Log it
-    my $info = '<i>"' . $organism->name;
-    $info .= " " . $name if $name;
-    $info .= ": " . $description if $description;
-    $info .= " (v" . $version . ")";
-    $info .= '"</i>';
     CoGe::Accessory::Web::log_history(
         db          => $coge,
         workflow_id => $workflow_id,
