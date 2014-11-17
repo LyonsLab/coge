@@ -107,7 +107,6 @@ $(document).ready(function(){
 });
 
 function file_selected(filename, url) {
-    $('#file_select_dialog').dialog('close');
     $('#select_file_button').hide();
     $('#select_file_type').show();
     $('#files').show();
@@ -873,111 +872,6 @@ function update_dialog(request, user, identifier, formatter) {
         <button class="next ui-button ui-corner-all r">Next</button>
     </div>
 </div>
-
-<!--
-<div class="bold text" style="padding-top:1em;">Describe the Experiment</div>
-<div class="coge-bg inline padded ui-widget-content ui-corner-all">
-	<div class="small info">
-		Complete the form below to describe the experiment data.
-		<div class="alert"><span class="small glyphicon glyphicon-asterisk"></span> denotes a required field</div>
-	</div>
-
-	<table class="small" style="padding-top:0.5em;">
-	  <tr>
-	    <td>Name:</td>
-	    <td>
-		    <input id="edit_name" type="textbox" size="50" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" />
-		    <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>Description:</td>
-	    <td><textarea id="edit_description" rows="5" cols="50" ><TMPL_VAR NAME='DESC'></textarea></td>
-	  </tr>
-	  <tr>
-	    <td>Version:</td>
-	    <td>
-	    	<input id="edit_version" type="textbox" size="10" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" />
-	    	<span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>Source:</td>
-	    <td>
-	      <input id="edit_source" type="search" placeholder="Search" size="50" spellcheck="false" onclick='$(this).autocomplete("search");' />
-	      <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
-	      <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>Restricted?</td>
-	    <td><input id="restricted" type="checkbox" checked></td>
-	  </tr>
-	  <tr>
-	    <td>Genome:</td>
-	    <td>
-	      <input id="edit_genome" type="search" placeholder="Search" spellcheck="false" onclick='$(this).autocomplete("search");' onkeypress="wait_to_search(search_genomes, this);" size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
-	      <input id="gid" type="hidden" value="<TMPL_VAR NAME='GENOME_ID'>" />
-	      <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
-	    </td>
-	  </tr>
-	  <tr>
-	    <td style="vertical-align:middle;">Data file:</td>
-	    <td>
-	      <table id='file_table' class="ui-corner-all coge-outline" style="background-color:white;font-size:1em;display:inline;"></table>
-	      <span id="select_file_button" onClick="$('#file_select_dialog').dialog('open');" class='ui-button ui-corner-all'> Select Data File</span>
-	      <span id="select_file_type" class="hidden" style="padding-left:15px;vertical-align:5px;">
-	          File type:
-	          <select id="file_type_selector">
-	            <option value="autodetect">Detect from filename</option>
-	            <optgroup label="Quantitative">
-	              <option value="csv">Comma-separated value (CSV)</option>
-	              <option value="tsv">Tab-separated value (TSV)</option>
-	              <option value="bed">BED</option>
-	              <option value="gff">GFF/GTF</option>
-	            </optgroup>
-	            <optgroup label="Polymorphism">
-	              <option value="vcf">VCF</option>
-	            </optgroup>
-	            <optgroup label="Alignment">
-	              <option value="bam">BAM</option>
-	            </optgroup>
-	            <optgroup label="Sequence">
-	              <option value="fastq">FASTQ, FQ</option>
-	            </optgroup>
-	          </select>
-	      </span>
-	      <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
-	    </td>
-	  </tr>
-	  <tr id="alignment" class="hidden">
-	    <td>Aligner:</td>
-	    <td>
-	        <input name="aligner" type="radio" value="gsnap" checked>
-	        <label for="gsnap">GSNAP</label>
-
-	        <input name="aligner" type="radio" value="tophat">
-	        <label for="gsnap">TopHat/Bowtie2</label>
-	    </td>
-	  </tr>
-	</table>
-
-    <div id="fastq-pipeline" class="info small hidden">
-        This experiment will be processed using the <a href="https://genomevolution.org/wiki/index.php?title=RNASeq_Pipeline">RNASeq Pipeline</a>
-    </div>
-</div>
-
-<div class="middle" style="padding-top:1em;">
-	<span onClick="load_experiment();" style="font-size:1em;" class='ui-button ui-corner-all ui-button-go'>Load Experiment</span>
-	<span id='error_help_text' class='indent alert italic'></span>
-</div>
-
--->
-
-<div id="file_select_dialog" class="dialog_box" title="Select Data File ..." style="display:none;">
-  <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
-  <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all">Done</span>
-</div> <!-- file_select_dialog -->
 
 <div id="load_dialog" class="dialog_box" title="Loading Experiment ..." style="display:none;">
   <div id="load_log" class="small padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
