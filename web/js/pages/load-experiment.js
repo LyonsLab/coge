@@ -192,9 +192,20 @@ var setup_wizard = function () {
         $prev.click(this.prev.bind(this));
         $next.click(this.next.bind(this));
         $done.click(this.done.bind(this));
+
+        this.initialize();
     }
 
     my.prototype = {
+        initialize: function() {
+            this.el = $($("#wizard-template").html());
+            this.tabs = this.el.find("#section");
+            this.next = this.el.find(".next");
+            this.prev = this.el.find(".prev");
+            this.done = this.el.find(".done");
+            this.viewer = this.el.find("#step-container");
+        },
+
         prev: function() {
             var cur = steps[currentIndex],
                 prev = steps[currentIndex - 1];
@@ -295,6 +306,7 @@ function update_aligner() {
 }
 
 function initialize() {
+    var root = $("#wizard-container");
     var Wizard = setup_wizard();
     wizard = new Wizard({ success: load_experiment });
 
@@ -310,4 +322,6 @@ function initialize() {
         gsnap: $($("#gsnap-template").html()),
         tophat: $($("#tophat-template").html())
     };
+
+    //root.append(wizard.el);
 }
