@@ -200,11 +200,12 @@ var setup_wizard = function () {
     my.prototype = {
         initialize: function() {
             this.el = $($("#wizard-template").html());
-            this.tabs = this.el.find("#section");
+            this.tabs = this.el.find(".sections");
             this.next = this.el.find(".next");
             this.prev = this.el.find(".prev");
             this.done = this.el.find(".done");
             this.viewer = this.el.find("#step-container");
+            this.notifications = this.el.find("#error_help_text");
         },
 
         prev: function() {
@@ -257,6 +258,13 @@ var setup_wizard = function () {
             }
 
             $prev.removeAttr("disabled")
+        },
+
+        message: function(message) {
+            this.notifications.html(message)
+                .show()
+                .delay(10*1000)
+                .fadeOut(1500);
         },
 
         done: function() {
