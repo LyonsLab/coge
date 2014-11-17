@@ -692,60 +692,7 @@ function update_dialog(request, user, identifier, formatter) {
                     </div>
                 </div>
 
-                <div id="gsnap">
-                    <div class="form-field">
-                        <label class="col-md-2">CutAdapt:</label>
-                        <div class="form-group">
-                            <div class="form-entry">
-                                <label>-q:</label>
-                                <input id="q" type="number" value="5"/>
-                            </div>
-                            <div class="form-entry">
-                                <label>-m:</label>
-                                <input id="m" type="number" value="5"/>
-                            </div>
-                            <div class="form-entry">
-                                <label>--quality-base:</label>
-                                <input id="quality" type="number" value="5"/>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-field">
-                        <label class="col-md-2">Alignment:</label>
-                        <div class="form-group">
-                            <div class="form-entry">
-                                <label>-n:</label>
-                                <input id="n" type="number" value="5"/>
-                            </div>
-
-                            <div class="form-entry">
-                                <label>-Q:</label>
-                                <input id="Q" type="number" value="5"/>
-                            </div>
-                            <div class="form-entry">
-                                <label>--gap-mode:</label>
-                                <select id="gap">
-                                    <option>none</option>
-                                </select>
-                            </div>
-                            <div class="form-entry">
-                                <label>--no-fails:</label>
-                                <input id="fail" type="checkbox" checked/>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="tophat" class="hidden">
-                    <div class="form-field">
-                        <label class="col-md-2">TopHat:</label>
-                        <div>
-                            <label>-g:</label>
-                            <input id="g" type="number" value="5"/>
-                        </div>
-                    </div>
-                </div>
+                <div id="align-container" class="hidden"></div>
             </div>
 
             <div class="form-section">
@@ -766,8 +713,7 @@ function update_dialog(request, user, identifier, formatter) {
                     </select>
                 </div>
 
-                <div id="snp-wrapper" class="hidden">
-                </div>
+                <div id="snp-wrapper" class="hidden"></div>
             </div>
         </div>
 
@@ -863,8 +809,67 @@ function update_dialog(request, user, identifier, formatter) {
     <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all">Create</span>
 </div>
 
+<!-- Alignment Templates -->
+<script id="tophat-template" type="text/template">
+    <div id="tophat">
+        <div class="form-field">
+            <label class="col-md-2">TopHat:</label>
+            <div>
+                <label>-g:</label>
+                <input id="g" type="number" value="5"/>
+            </div>
+        </div>
+    </div>
+</script>
 
-<!-- Templates -->
+<script id="gsnap-template" type="text/template">
+    <div id="gsnap">
+        <div class="form-field">
+            <label class="col-md-2">CutAdapt:</label>
+            <div class="form-group">
+                <div class="form-entry">
+                    <label>-q:</label>
+                    <input id="q" type="number" value="5"/>
+                </div>
+                <div class="form-entry">
+                    <label>-m:</label>
+                    <input id="m" type="number" value="5"/>
+                </div>
+                <div class="form-entry">
+                    <label>--quality-base:</label>
+                    <input id="quality" type="number" value="5"/>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-field">
+            <label class="col-md-2">Alignment:</label>
+            <div class="form-group">
+                <div class="form-entry">
+                    <label>-n:</label>
+                    <input id="n" type="number" value="5"/>
+                </div>
+
+                <div class="form-entry">
+                    <label>-Q:</label>
+                    <input id="Q" type="number" value="5"/>
+                </div>
+                <div class="form-entry">
+                    <label>--gap-mode:</label>
+                    <select id="gap">
+                        <option>none</option>
+                    </select>
+                </div>
+                <div class="form-entry">
+                    <label>--no-fails:</label>
+                    <input id="nofail" type="checkbox" checked/>
+                </div>
+            </div>
+        </div>
+    </div>
+</script>
+
+<!-- SNP Finder Templates -->
 <script id="coge-snp-template" type="text/template">
     <div id="coge">
         <div class="form-field">

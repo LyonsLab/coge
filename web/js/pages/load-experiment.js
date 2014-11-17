@@ -9,6 +9,10 @@ var POLY_FILE_TYPES = /(:?vcf)$/;
 var ALIGN_FILE_TYPES =/(:?bam)$/;
 var SEQ_FILE_TYPES = /(:?fastq|fq)$/;
 
+// Template support
+var snp_templates  = {};
+var align_templates = {};
+
 function autodetect_file_type(file) {
     var stripped_file = file.replace(/.gz$/, '');
 
@@ -253,7 +257,12 @@ var setup_wizard = function () {
     return my;
 };
 
-var snp_templates  = {};
+function render_template(template, container) {
+    container.empty()
+        .hide()
+        .append(template)
+        .slideDown();
+}
 
 function update_snp(ev) {
     var enabled = $(ev.target).is(":checked"),
@@ -269,17 +278,8 @@ function update_snp(ev) {
 
         method.unbind().change(function() {
             var selected = $("#snp-method").val();
-            var templateKey;
-            wrapper.hide();
 
-            for(templateKey in snp_templates) {
-                if (snp_templates.hasOwnProperty(templateKey)) {
-                    snp_templates[templateKey].remove();
-                }
-            }
-
-            snp_templates[selected].appendTo(wrapper);
-            wrapper.slideDown();
+            render_template(snp_templates[selected], wrapper);
         });
     } else {
         method.attr("disabled", 1);
@@ -288,9 +288,10 @@ function update_snp(ev) {
 }
 
 function update_aligner() {
-    var aligner = $("#alignment").find(":checked").val();
-    $("#gsnap,#tophat").hide();
-    $(document.getElementById(aligner)).slideDown();
+    var selected = $("#alignment").find(":checked").val();
+    var container = $("#align-container");
+
+    render_template(align_templates[selected], container);
 }
 
 function initialize() {
@@ -303,5 +304,10 @@ function initialize() {
         gatk: $($("#samtools-snp-template").html()),
         platypus: $($("#platypus-snp-template").html()),
         samtools: $($("#gatk-snp-template").html())
+    };
+
+    align_templates = {
+        gsnap: $($("#gsnap-template").html()),
+        tophat: $($("#tophat-template").html())
     };
 }
