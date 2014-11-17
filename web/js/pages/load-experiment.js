@@ -267,23 +267,23 @@ function render_template(template, container) {
 function update_snp(ev) {
     var enabled = $(ev.target).is(":checked"),
         method = $("#snp-method"),
-        wrapper = $("#snp-wrapper");
+        container = $("#snp-container");
 
     var el = $(document.getElementById(method.val()));
 
     if (enabled) {
         el.show();
         method.removeAttr("disabled");
-        wrapper.slideDown();
+        container.slideDown();
 
         method.unbind().change(function() {
             var selected = $("#snp-method").val();
 
-            render_template(snp_templates[selected], wrapper);
+            render_template(snp_templates[selected], container);
         });
     } else {
         method.attr("disabled", 1);
-        wrapper.slideUp();
+        container.slideUp();
     }
 }
 
