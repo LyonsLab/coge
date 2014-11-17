@@ -253,6 +253,8 @@ var setup_wizard = function () {
     return my;
 };
 
+var snp_templates  = {};
+
 function update_snp(ev) {
     var enabled = $(ev.target).is(":checked"),
         method = $("#snp-method"),
@@ -261,17 +263,23 @@ function update_snp(ev) {
     var el = $(document.getElementById(method.val()));
 
     if (enabled) {
-        $("#coge,#platypus,#samtools,#gatk").hide();
         el.show();
         method.removeAttr("disabled");
         wrapper.slideDown();
 
         method.unbind().change(function() {
             var selected = $("#snp-method").val();
+            var templateKey;
+            wrapper.hide();
 
-            $("#coge,#platypus,#samtools,#gatk").hide();
-            var el = $(document.getElementById(selected));
-            el.slideDown();
+            for(templateKey in snp_templates) {
+                if (snp_templates.hasOwnProperty(templateKey)) {
+                    snp_templates[templateKey].remove();
+                }
+            }
+
+            snp_templates[selected].appendTo(wrapper);
+            wrapper.slideDown();
         });
     } else {
         method.attr("disabled", 1);
@@ -288,4 +296,12 @@ function update_aligner() {
 function initialize() {
     var Wizard = setup_wizard();
     wizard = new Wizard({ success: load_experiment });
+
+    // Create psudeo templates
+    snp_templates = {
+        coge: $($("#coge-snp-template").html()),
+        gatk: $($("#samtools-snp-template").html()),
+        platypus: $($("#platypus-snp-template").html()),
+        samtools: $($("#gatk-snp-template").html())
+    };
 }
