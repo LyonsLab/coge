@@ -155,7 +155,7 @@ function options() {
     return true;
 }
 
-function setup_wizard(options) {
+var setup_wizard = function () {
     var el = $("#wizard"),
         $next = el.find(".next"),
         $prev = el.find(".prev"),
@@ -182,78 +182,76 @@ function setup_wizard(options) {
     steps[currentIndex].el.show();
     steps[currentIndex].title.addClass("active");
 
-    function my () {}
+    function my (options) {
+        this.options = options || {};
 
-    my.prototype = (function() {
-        return {
-            prev: function() {
-                var cur = steps[currentIndex],
-                    prev = steps[currentIndex - 1];
+        $prev.click(this.prev.bind(this));
+        $next.click(this.next.bind(this));
+        $done.click(this.done.bind(this));
+    }
 
-                if ((currentIndex - 1) >= 0) {
-                    cur.el.slideUp();
-                    cur.title.removeClass("active");
-                    prev.el.slideDown();
-                    prev.title.addClass("active");
+    my.prototype = {
+        prev: function() {
+            var cur = steps[currentIndex],
+                prev = steps[currentIndex - 1];
 
-                    currentIndex--;
-                } else {
-                    $prev.attr("disabled", 1);
-                }
+            if ((currentIndex - 1) >= 0) {
+                cur.el.slideUp();
+                cur.title.removeClass("active");
+                prev.el.slideDown();
+                prev.title.addClass("active");
 
-                if (currentIndex == 0) {
-                    $prev.attr("disabled", 1);
-                }
-
-                $next.removeAttr("disabled")
-                $done.attr("disabled", 1);
-            },
-
-            next: function(options) {
-                options = (options || {});
-
-                var cur = steps[currentIndex],
-                    next = steps[currentIndex + 1];
-
-                if (options.force || (cur.validated = cur.validateFn())) {
-                } else {
-                    return;
-                }
-
-                if ((currentIndex + 1) < steps.length) {
-                    cur.el.slideUp();
-                    cur.title.removeClass("active");
-                    next.el.slideDown();
-                    next.title.addClass("active");
-
-                    currentIndex++;
-                } else {
-                    $next.attr("disabled", 1);
-                    $done.removeAttr("disabled");
-                }
-
-                if (currentIndex == (steps.length - 1)) {
-                    $next.attr("disabled", 1);
-                    $done.removeAttr("disabled");
-                }
-
-                $prev.removeAttr("disabled")
-            },
-
-            done: function() {
-                if ((currentIndex + 1) === steps.length) {
-                    options.success();
-                }
+                currentIndex--;
+            } else {
+                $prev.attr("disabled", 1);
             }
-        };
-    }());
 
-    $prev.click(my.prototype.prev);
-    $next.click(my.prototype.next);
-    $done.click(my.prototype.done);
+            if (currentIndex == 0) {
+                $prev.attr("disabled", 1);
+            }
+
+            $next.removeAttr("disabled")
+            $done.attr("disabled", 1);
+        },
+
+        next: function() {
+            var cur = steps[currentIndex],
+                next = steps[currentIndex + 1];
+
+            if (this.options.force || (cur.validated = cur.validateFn())) {
+            } else {
+                return;
+            }
+
+            if ((currentIndex + 1) < steps.length) {
+                cur.el.slideUp();
+                cur.title.removeClass("active");
+                next.el.slideDown();
+                next.title.addClass("active");
+
+                currentIndex++;
+            } else {
+                $next.attr("disabled", 1);
+                $done.removeAttr("disabled");
+            }
+
+            if (currentIndex == (steps.length - 1)) {
+                $next.attr("disabled", 1);
+                $done.removeAttr("disabled");
+            }
+
+            $prev.removeAttr("disabled")
+        },
+
+        done: function() {
+            if ((currentIndex + 1) === steps.length) {
+                this.options.success();
+            }
+        }
+    };
 
     return my;
-}
+};
 
 function update_snp(ev) {
     var enabled = $(ev.target).is(":checked"),
@@ -288,6 +286,6 @@ function update_aligner() {
 }
 
 function initialize() {
-    var Wizard = setup_wizard({ success: load_experiment });
-    var wizard = new Wizard();
+    var Wizard = setup_wizard();
+    var wizard = new Wizard({ success: load_experiment });
 }
