@@ -578,6 +578,8 @@ function update_dialog(request, user, identifier, formatter) {
 
 </script>
 
+<div id="wizard-container"></div>
+
 <div id="wizard" class="wizard wizard-coge">
     <div class="header">
         <h3 class="title">Load Experiment</h3>
@@ -808,6 +810,27 @@ function update_dialog(request, user, identifier, formatter) {
     <br>
     <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all">Create</span>
 </div>
+
+
+<!-- Wizard Templates -->
+<script id="wizard-template" type="text/template">
+<div id="wizard" class="wizard wizard-coge">
+    <div class="header">
+        <h3 class="title">Load Experiment</h3>
+        <div class="sections">
+        </div>
+    </div>
+
+    <div id='error_help_text' class='alert-box alert-box-warn hidden'></div>
+    <div id="step-container"></div>
+
+    <div class="nav-control coge-buttonset">
+        <button class="prev ui-button ui-corner-all" disabled>Previous</button>
+        <button class="done ui-button ui-corner-all r" disabled>Start Loading</button>
+        <button class="next ui-button ui-corner-all r">Next</button>
+    </div>
+</div
+</script>
 
 <!-- Alignment Templates -->
 <script id="tophat-template" type="text/template">
