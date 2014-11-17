@@ -208,6 +208,17 @@ var setup_wizard = function () {
             this.notifications = this.el.find("#error_help_text");
         },
 
+        render: function() {
+            console.log(this.tabs);
+            var titles = this.steps.map(function(step) {
+                return $("<div></div>", { text:  step.title });
+            });
+
+            this.tabs.html(titles);
+            titles[0].addClass("active");
+            this.viewer.html(this.steps[0].el);
+        },
+
         prev: function() {
             var cur = steps[currentIndex],
                 prev = steps[currentIndex - 1];
@@ -287,7 +298,7 @@ var setup_wizard = function () {
 
 function DataView(experiment) {
     this.experiment = experiment || {};
-    this.title = "Describe your experiment";
+    this.title = "Data";
     this.initialize();
 }
 
@@ -311,6 +322,7 @@ $.extend(DescriptionView.prototype, {
 
 function OptionsView() {
     this.initialize();
+    this.title = "Options";
 }
 
 $.extend(OptionsView.prototype, {
@@ -321,6 +333,7 @@ $.extend(OptionsView.prototype, {
 
 function ConfirmationView() {
     this.initialize();
+    this.title = "Review and Load";
 }
 
 $.extend(ConfirmationView.prototype, {
@@ -374,6 +387,7 @@ function initialize_wizard() {
     wizard.addStep(new DataView());
     wizard.addStep(new OptionsView());
     wizard.addStep(new ConfirmationView());
+    wizard.render();
 
     // Create psudeo templates
     snp_templates = {
