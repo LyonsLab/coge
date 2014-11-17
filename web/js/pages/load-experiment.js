@@ -214,11 +214,11 @@ var setup_wizard = function () {
             $done.attr("disabled", 1);
         },
 
-        next: function() {
+        next: function(opts) {
             var cur = steps[currentIndex],
                 next = steps[currentIndex + 1];
 
-            if (this.options.force || (cur.validated = cur.validateFn())) {
+            if (opts.force || (cur.validated = cur.validateFn())) {
             } else {
                 return;
             }
@@ -287,5 +287,5 @@ function update_aligner() {
 
 function initialize() {
     var Wizard = setup_wizard();
-    var wizard = new Wizard({ success: load_experiment });
+    wizard = new Wizard({ success: load_experiment });
 }
