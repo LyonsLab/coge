@@ -48,6 +48,7 @@ var experiment_id;
 var notebook_id;
 var pageObj = {};
 var newLoad = false;
+var wizard;
 
 $(document).ready(function(){
 	// Configure jQuery ajax
@@ -107,7 +108,7 @@ $(document).ready(function(){
     });
     </TMPL_IF>
 
-    initialize();
+    wizard = initialize_wizard();
 });
 
 function file_selected(filename, url) {
@@ -914,7 +915,7 @@ function update_dialog(request, user, identifier, formatter) {
     </div>
 </script>
 
-<script id="option-template" type="text/template">
+<script id="options-template" type="text/template">
     <div class="step" data-title="Options" data-step="3" data-validate="options">
         <div id="fastq" class="hidden">
             <div class="form-section">

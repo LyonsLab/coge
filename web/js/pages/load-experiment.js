@@ -188,6 +188,7 @@ var setup_wizard = function () {
 
     function my (options) {
         this.options = options || {};
+        this.steps = [];
 
         $prev.click(this.prev.bind(this));
         $next.click(this.next.bind(this));
@@ -262,11 +263,63 @@ var setup_wizard = function () {
             if ((currentIndex + 1) === steps.length) {
                 this.options.success();
             }
+        },
+
+        addStep: function(step, index) {
+            if (index !== undefined && index < this.steps.length) {
+                this.steps.slice(index, 0, step);
+            } else {
+                this.steps.push(step);
+            }
         }
     };
 
     return my;
 };
+
+function DataView(experiment) {
+    this.experiment = experiment || {};
+    this.title = "Describe your experiment";
+    this.initialize();
+}
+
+$.extend(DataView.prototype, {
+    initialize: function() {
+        this.el = $($("#data-template").html());
+    }
+});
+
+function DescriptionView(experiment) {
+    this.experiment = experiment || {};
+    this.title = "Describe your experiment";
+    this.initialize();
+}
+
+$.extend(DescriptionView.prototype, {
+    initialize: function() {
+        this.el = $($("#description-template").html());
+    }
+});
+
+function OptionsView() {
+    this.initialize();
+}
+
+$.extend(OptionsView.prototype, {
+    initialize: function() {
+        this.el = $($("options-template").html());
+    }
+});
+
+function ConfirmationView() {
+    this.initialize();
+}
+
+$.extend(ConfirmationView.prototype, {
+    initialize: function() {
+        this.el = $($("#confirm-template").html());
+    }
+});
 
 function render_template(template, container) {
     container.empty()
@@ -305,10 +358,14 @@ function update_aligner() {
     render_template(align_templates[selected], container);
 }
 
-function initialize() {
+function initialize_wizard() {
     var root = $("#wizard-container");
     var Wizard = setup_wizard();
-    wizard = new Wizard({ success: load_experiment });
+    var wizard = new Wizard({ success: load_experiment });
+    wizard.addStep(new DescriptionView());
+    wizard.addStep(new DataView());
+    wizard.addStep(new OptionsView());
+    wizard.addStep(new ConfirmationView());
 
     // Create psudeo templates
     snp_templates = {
@@ -323,5 +380,6 @@ function initialize() {
         tophat: $($("#tophat-template").html())
     };
 
-    //root.append(wizard.el);
+//    root.append(wizard.el);
+    return wizard;
 }
