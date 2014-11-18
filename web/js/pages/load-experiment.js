@@ -291,6 +291,21 @@ function DescriptionView(experiment) {
 $.extend(DescriptionView.prototype, {
     initialize: function() {
         this.el = $($("#description-template").html());
+
+        // jQuery UI features
+        this.el.find("#edit_genome").autocomplete({
+            source:[],
+            select: function(event, ui) {
+                $(this).val(ui.item.label);
+                $('#gid').val(ui.item.value);
+                return false; // Prevent the widget from inserting the value.
+            },
+
+            focus: function(event, ui) {
+                //$("#edit_genome").val(ui.item.label);
+                return false; // Prevent the widget from inserting the value.
+            }
+        });
     },
 
     is_valid: function() {
