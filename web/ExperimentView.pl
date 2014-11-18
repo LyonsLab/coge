@@ -15,7 +15,7 @@ use File::Path;
 use File::Slurp;
 use File::Spec::Functions qw(catdir catfile);
 use Sort::Versions;
-use CoGe::Pipelines::FindSNPs;
+use CoGe::Pipelines::CoGeSNPs;
 use CoGe::Pipelines::SNP::Samtools;
 use CoGe::Pipelines::SNP::Platypus;
 use Data::Dumper;
@@ -777,7 +777,7 @@ sub select_snp_pipeline {
     my $method = shift;
 
     my %pipelines = (
-        coge => \&CoGe::Pipelines::FindSNPs::run,
+        coge => \&CoGe::Pipelines::SNP::CoGeSNPs::run,
         samtools => \&CoGe::Pipelines::SNP::Samtools::run,
         platypus  => \&CoGe::Pipelines::SNP::Platypus::run,
     );
