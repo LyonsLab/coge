@@ -69,19 +69,6 @@ $(document).ready(function(){
     // Initialize drop-downs
     get_sources();
 
-    $("#edit_genome").autocomplete({
-        source:[],
-        select: function(event, ui) {
-            $('#edit_genome').val(ui.item.label);
-            $('#gid').val(ui.item.value);
-            return false; // Prevent the widget from inserting the value.
-        },
-        focus: function(event, ui) {
-            //$("#edit_genome").val(ui.item.label);
-            return false; // Prevent the widget from inserting the value.
-        }
-    });
-
     // Open status dialog
     if (job_id) {
         $('#loading_msg').hide();
