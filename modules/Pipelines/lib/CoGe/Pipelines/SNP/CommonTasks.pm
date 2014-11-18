@@ -1,4 +1,4 @@
-package CoGe::Pipelines::SNP::Tasks;
+package CoGe::Pipelines::SNP::CommonTasks;
 
 use File::Spec::Functions qw(catdir catfile);
 use File::Basename qw(basename);

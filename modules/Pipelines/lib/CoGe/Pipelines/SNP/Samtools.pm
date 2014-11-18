@@ -12,7 +12,7 @@ use CoGe::Accessory::Jex;
 use CoGe::Accessory::Utils qw(to_filename);
 use CoGe::Accessory::Web;
 use CoGe::Core::Storage qw(get_genome_file get_experiment_files get_workflow_paths);
-use CoGe::Pipelines::SNP::Tasks;
+use CoGe::Pipelines::SNP::CommonTasks;
 
 require Exporter;
 our @ISA = qw(Exporter);

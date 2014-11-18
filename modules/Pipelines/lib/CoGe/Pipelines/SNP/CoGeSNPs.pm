@@ -1,4 +1,4 @@
-package CoGe::Pipelines::FindSNPs;
+package CoGe::Pipelines::CoGeSNPs;
 
 use v5.14;
 use strict;
