@@ -46,7 +46,7 @@ sub build {
         $self->workflow->add_job(export_to_irods($cache_file, $dest, $self->options->{overwrite}, $irods_done));
         $self->workflow->add_job(generate_results($dest, $dest_type, $result_dir, $self->conf, $irods_done));
     } else {
-        $self->workflow->add_job(link_results($cache_file, $result_dir, $self->conf));
+        $self->workflow->add_job(link_results($cache_file, $cache_file, $result_dir, $self->conf));
     }
 }
 

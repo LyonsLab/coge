@@ -32,16 +32,17 @@ sub build {
     my ($output, %job) = generate_gff($self->params, $self->conf);
     $self->workflow->add_job(%job);
 
-    if ($dest_type eq "irods") {
-        my $base = $self->options->{dest_path};
-        $base = irods_get_base_path($self->user->name) unless $base;
-        my $dest = catfile($base, basename($output));
+    if ($dest_type eq "irods") { # irods export
+        my $irods_base = $self->options->{dest_path};
+        $irods_base = irods_get_base_path($self->user->name) unless $irods_base;
+        my $irods_dest = catfile($irods_base, basename($output));
         my $irods_done = catfile($staging_dir, "irods.done");
 
-        $self->workflow->add_job(export_to_irods($output, $dest, $self->options->{overwrite}, $irods_done));
-        $self->workflow->add_job(generate_results($dest, $dest_type, $result_dir, $self->conf, $irods_done));
-    } else {
-        $self->workflow->add_job(link_results($output, $result_dir, $self->conf));
+        $self->workflow->add_job( export_to_irods($output, $irods_dest, $self->options->{overwrite}, $irods_done) );
+        $self->workflow->add_job( generate_results($irods_dest, $dest_type, $result_dir, $self->conf, $irods_done) );
+    } 
+    else { # http download
+        $self->workflow->add_job( link_results($output, $output, $result_dir, $self->conf) );
     }
 }
 
