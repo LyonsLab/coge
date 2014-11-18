@@ -326,6 +326,11 @@ $.extend(Wizard.prototype, {
     },
 
     submit: function() {
+        if (!check_login()) {
+            this.message('Your session has expired, please log in again.');
+            return;
+        }
+
         if (this.at_last()) {
             this.options.success();
         }
@@ -452,13 +457,6 @@ $.extend(DescriptionView.prototype, {
 
         // Prevent concurrent executions - issue 101
         if ( $("#load_dialog").dialog( "isOpen" ) ) {
-            return false;
-        }
-
-        // Make sure user is still logged-in - issue 206
-        if (!check_login()) {
-            alert('Your session has expired, please log in again.');
-            window.location.reload(true);
             return false;
         }
 
