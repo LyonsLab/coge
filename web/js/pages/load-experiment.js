@@ -242,59 +242,103 @@ var setup_wizard = function () {
             $done.attr("disabled", 1);
         },
 
-        next: function(opts) {
-            var cur = steps[currentIndex],
-                next = steps[currentIndex + 1];
+function Wizard(options) {
+    this.options = options || {};
+    this.steps = [];
+    this.currentIndex = 0;
+    this.initialize();
+}
 
-            if (opts.force || (cur.validated = cur.validateFn())) {
-            } else {
-                return;
-            }
+$.extend(Wizard.prototype, {
+    initialize: function() {
+        this.el = $($("#wizard-template").html());
+        this.tabs = this.el.find(".sections");
+        this.next = this.el.find(".next");
+        this.prev = this.el.find(".prev");
+        this.done = this.el.find(".done");
+        this.viewer = this.el.find("#step-container");
+        this.notifications = this.el.find("#error_help_text");
 
-            if ((currentIndex + 1) < steps.length) {
-                cur.el.slideUp();
-                cur.title.removeClass("active");
-                next.el.slideDown();
-                next.title.addClass("active");
+        // jQuery events
+        this.prev.unbind().click(this.movePrevious.bind(this));
+        this.next.unbind().click(this.moveNext.bind(this));
+        this.done.unbind().click(this.submit.bind(this));
+    },
 
-                currentIndex++;
-            } else {
-                $next.attr("disabled", 1);
-                $done.removeAttr("disabled");
-            }
+    at_first: function() {
+        return this.currentIndex === 0;
+    },
 
-            if (currentIndex == (steps.length - 1)) {
-                $next.attr("disabled", 1);
-                $done.removeAttr("disabled");
-            }
+    at_last: function() {
+        return this.currentIndex >= (this.steps.length - 1);
+    },
 
-            $prev.removeAttr("disabled")
-        },
+    render: function() {
+        var titles = this.steps.map(function(step) {
+            return $("<div></div>", { text:  step.title });
+        });
 
-        message: function(message) {
-            this.notifications.html(message)
-                .show()
-                .delay(10*1000)
-                .fadeOut(1500);
-        },
+        this.tabs.html(titles);
+        titles[this.currentIndex].addClass("active");
 
-        done: function() {
-            if ((currentIndex + 1) === steps.length) {
-                this.options.success();
-            }
-        },
-
-        addStep: function(step, index) {
-            if (index !== undefined && index < this.steps.length) {
-                this.steps.slice(index, 0, step);
-            } else {
-                this.steps.push(step);
-            }
+        var step = this.steps[this.currentIndex];
+        if (step.render) {
+            step.render();
         }
-    };
+        this.viewer.html(step.el);
 
-    return my;
-};
+        if (this.at_first()) {
+            this.prev.attr("disabled", 1);
+        } else {
+            this.prev.removeAttr("disabled");
+        }
+
+        if (this.at_last()) {
+            this.next.attr("disabled", 1);
+            this.done.removeAttr("disabled");
+        } else {
+            this.next.removeAttr("disabled");
+            this.done.attr("disabled", 1);
+        }
+    },
+
+    movePrevious: function() {
+        if (!this.at_first()) {
+            this.currentIndex--;
+            this.render();
+        }
+    },
+
+    moveNext: function() {
+        var step = this.steps[this.currentIndex];
+
+        if (!this.at_last() && step.is_valid()) {
+            this.currentIndex++;
+            this.render();
+        }
+    },
+
+    message: function(message) {
+        this.notifications.html(message)
+            .show()
+            .delay(10*1000)
+            .fadeOut(1500);
+    },
+
+    submit: function() {
+        if (this.at_last()) {
+            this.options.success();
+        }
+    },
+
+    addStep: function(step, index) {
+        if (index !== undefined && index < this.steps.length) {
+            this.steps.slice(index, 0, step);
+        } else {
+            this.steps.push(step);
+        }
+    }
+});
 
 function DataView(experiment) {
     this.experiment = experiment || {};
@@ -305,6 +349,20 @@ function DataView(experiment) {
 $.extend(DataView.prototype, {
     initialize: function() {
         this.el = $($("#data-template").html());
+        this.file_selector = $($("#selector-template").html());
+        this.selector_container = this.el.find("#selector_container");
+    },
+
+    render: function() {
+        //FIXME: This selector should be another view
+        var selector = this.file_selector.clone();
+        this.selector_container.empty();
+        selector.appendTo(this.selector_container);
+        selector.tabs();
+    },
+
+    is_valid: function() {
+        return true;
     }
 });
 
@@ -317,6 +375,64 @@ function DescriptionView(experiment) {
 $.extend(DescriptionView.prototype, {
     initialize: function() {
         this.el = $($("#description-template").html());
+    },
+
+    is_valid: function() {
+        return true;
+        var name = this.el.find('#edit_name').val();
+        var description = this.el.find('#edit_description').val();
+        var version = this.el.find('#edit_version').val();
+        var restricted = $('#restricted').is(':checked');
+        var genome = this.el.find('#edit_genome').val();
+        var gid = this.el.find('#gid').val();
+        var aligner = this.el.find("#alignment").find(":checked").val();
+        var ignore_cb = this.el.find('#ignore_missing_chrs');
+        var ignore_missing_chrs = ignore_cb.is(':checked');
+
+        if (!name) {
+            error_help('Please specify an experiment name.');
+            return false;
+        }
+        if (!version) {
+            error_help('Please specify an experiment version.');
+            return false;
+        }
+
+        var source = $('#edit_source').val();
+        if (!source || source === 'Search') {
+            error_help('Please specify a data source.');
+            return false;
+        }
+
+        if (!genome || genome === 'Search') {
+            error_help('Please specify a genome.');
+            return false;
+        }
+
+        // Prevent concurrent executions - issue 101
+        if ( $("#load_dialog").dialog( "isOpen" ) ) {
+            return false;
+        }
+
+        // Make sure user is still logged-in - issue 206
+        if (!check_login()) {
+            alert('Your session has expired, please log in again.');
+            window.location.reload(true);
+            return false;
+        }
+
+        $.extend(this.experiment, {
+            description: {
+                name: name,
+                description: description,
+                version: version,
+                restricted: restricted,
+                genome: genome,
+                gid: gid
+            }
+        });
+
+        return true;
     }
 });
 
@@ -328,6 +444,9 @@ function OptionsView() {
 $.extend(OptionsView.prototype, {
     initialize: function() {
         this.el = $($("options-template").html());
+    },
+    is_valid: function() {
+        return true;
     }
 });
 
@@ -339,6 +458,9 @@ function ConfirmationView() {
 $.extend(ConfirmationView.prototype, {
     initialize: function() {
         this.el = $($("#confirm-template").html());
+    },
+    is_valid: function() {
+        return true;
     }
 });
 
@@ -381,7 +503,6 @@ function update_aligner() {
 
 function initialize_wizard() {
     var root = $("#wizard-container");
-    var Wizard = setup_wizard();
     var wizard = new Wizard({ success: load_experiment });
     wizard.addStep(new DescriptionView());
     wizard.addStep(new DataView());

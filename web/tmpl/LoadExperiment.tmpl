@@ -885,6 +885,7 @@ function update_dialog(request, user, identifier, formatter) {
 
 <script id="data-template" type="text/template">
     <div class="step" data-title="Data" data-step="2" data-validate="data">
+        <div id="selector_container"></div>
         <div id="files" class="hidden">
             Data file:
             <table id='file_table' class="ui-corner-all coge-outline" style="background-color:white;font-size:1em;display:inline;"></table>
@@ -1137,6 +1138,73 @@ function update_dialog(request, user, identifier, formatter) {
                 <input type="number" value="5"/>
             </div>
         </div>
+    </div>
+</script>
+
+<!-- FIXME: Have this as a separate plugin -->
+<script id="selector-template" type="text/template">
+    <div id='tabs' style='margin-top:0.5em;margin-bottom:1em;'>
+    <ul>
+        <li class="small"><a href="#tab-1">iPlant Data Store</a></li>
+        <li class="small"><a href="#tab-2">FTP/HTTP</a></li>
+        <li class="small"><a href="#tab-3">Upload</a></li>
+        <TMPL_IF NAME='ENABLE_NCBI'>
+        <li class="small"><a href="#tab-4">NCBI</a></li>
+        </TMPL_IF>
+    </ul>
+
+    <div id="tab-1" class="small">
+        <div style="white-space:nowrap;border-bottom:1px solid gray;">
+            <img id="ids_loading" src="picts/ajax-loader.gif" style="float:right;"/>
+            <span class='link' onclick='irods_get_path()'><span class='ui-icon ui-icon-home'></span>Home</span>
+            <span class='link' style='padding-left:15px;' onclick='irods_get_path("..")'><span class='ui-icon ui-icon-arrowreturnthick-1-n'></span>Go Up</span>
+            <span class='link' style='padding-left:15px;' onclick='irods_get_path(".")'><span class='ui-icon ui-icon-refresh'></span>Refresh</span>
+            <TMPL_UNLESS NAME='DISABLE_IRODS_GET_ALL'>
+            <span class='link' style='padding-left:15px;' onclick='irods_get_all_files(".")'><span class='ui-icon ui-icon-transferthick-e-w'></span>Get All Files</span>
+            </TMPL_UNLESS>
+        </div>
+        <div id="ids_current_path" style="word-wrap:break-word; font-weight:bold; padding-top:10px;"></div>
+        <div style="overflow-y:auto;height:154px;">
+            <table id="ids_table" class="small" style="width:100%;"></table>
+        </div>
+    </div>
+
+    <div id="tab-2" class="small" style="height:200px;">
+        Enter the location of the file or directory to retrieve.<br><br>
+        URL: <input id="input_url" size="60" style="color:gray;"/>
+        <span id="ftp_get_button" onClick="load_from_ftp();" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'> Get </span><br>
+        <div class="link" onclick="$(this).hide(); $('#ftp_login').fadeIn();" style="padding-top:5px;">Login (optional)...</div>
+        <div id="ftp_login" style="display:none;padding-top:5px;">
+            Username: <input id="input_username" size="15" style="color:gray;"/>
+            Password: <input id="input_password" size="15" style="color:gray;"/>
+        </div>
+        <br>
+        <div id="ftp_status" class="note"></div>
+        <br>
+        <span class="note">Note: FTP/HTTP transfers, including login information, are not secure (encrypted).</span>
+    </div>
+
+    <div id="tab-3" class="small" style="height:200px;">
+        Select a file to upload from your computer.  This method is best for smaller files (less than 200MB, 2GB maximum).
+        For larger files use the iPlant Data Store. <br><br><br>
+        File: <input id="input_upload_file" name="input_upload_file" type="file" size="30" data-url='<TMPL_VAR NAME="PAGE_NAME">' />
+    </div>
+
+    <TMPL_IF NAME='ENABLE_NCBI'>
+    <div id="tab-4" class="small" style="height:200px;">
+        Enter the NCBI accession number of the item to add.<br><br>
+        <div>
+        <span>Accession: <input id="input_accn" size="15" /></span>
+        <span id="ncbi_get_button" onClick="load_from_ncbi();" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'> Get </span>
+        <span id="ncbi_status" class="note" style="padding-left:15px;min-height:50px;"></span>
+        </div>
+        <div class="note" style="padding-top:20px">
+            Note: The organism, version, type, and source fields do not need to be specified.  The restricted option
+            is ignored, all data from NCBI is made public.
+        </div>
+    </div>
+    </TMPL_IF>
+
     </div>
 </script>
 
