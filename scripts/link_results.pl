@@ -16,7 +16,7 @@ our ($result_dir, $input_files, $output_files);
 GetOptions(
     "result_dir=s"   => \$result_dir,     # results path
     "input_files=s"  => \$input_files,    # comma-separated list (JS escaped) of files
-    "output_files=s" => \$output_files,   # optional comma-separated list (JS escaped) of files
+    "output_files=s" => \$output_files,   # optional comma-separated list (JS escaped) of link names
 );
 
 mkpath($result_dir);
@@ -26,13 +26,13 @@ my @infiles  = split(',', $input_files);
 my @outfiles = split(',', $output_files);
 
 # We require at least one result file
-exit 1 unless @files;
+exit 1 unless @infiles;
 
-for (my $i = 0;  $i < scalar(@files);  $i++) {
+for (my $i = 0;  $i < scalar(@infiles);  $i++) {
     my $inf  = $infiles[$i];
     my $outf = $inf;
     $outf = $outfiles[$i] if (@outfiles && $outfiles[$i]);
 
     # Exit failure if symlink fails
-    exit 1 unless symlink( $outf, catfile($result_dir, basename($inf)) );
+    exit 1 unless symlink( $inf, catfile($result_dir, basename($outf)) );
 }
