@@ -581,199 +581,6 @@ function update_dialog(request, user, identifier, formatter) {
 
 <div id="wizard-container"></div>
 
-<div id="wizard" class="wizard wizard-coge hidden">
-    <div class="header">
-        <h3 class="title">Load Experiment</h3>
-        <div class="sections">
-        </div>
-    </div>
-
-    <div id='error_help_text' class='alert-box alert-box-warn hidden'></div>
-
-    <div class="step" data-title="Describe your Experiment" data-step="1" data-validate="description">
-
-        <div class="form-field">
-            <label class="col-md-2">Name:</label>
-            <input id="edit_name" type="textbox" class="col-md-8" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" />
-            <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
-        </div>
-
-        <div class="form-field">
-            <label class="col-md-2">Description:</label>
-            <textarea id="edit_description" class="col-md-8 no-resize" rows="5" cols="50" ><TMPL_VAR NAME='DESC'></textarea>
-        </div>
-
-        <div class="form-field">
-            <label class="col-md-2">Version:</label>
-            <input id="edit_version" type="textbox" class="col-md-8" size="10" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" />
-            <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
-        </div>
-
-        <div class="form-field">
-            <label class="col-md-2">Source:</label>
-
-            <div>
-                <input id="edit_source" type="search" class="col-md-6" placeholder="Search" size="50" spellcheck="false" onclick='$(this).autocomplete("search");' />
-
-                <div class="col-md-2">
-                    <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
-                </div>
-            </div>
-
-            <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
-        </div>
-
-        <div class="form-field">
-            <label class="col-md-2">Restricted?</label>
-            <input id="restricted" type="checkbox" checked>
-        </div>
-
-        <div class="form-field">
-            <label class="col-md-2">Genome:</label>
-            <input class="col-md-8" id="edit_genome" type="search" placeholder="Search" spellcheck="false" onclick='$(this).autocomplete("search");' onkeypress="wait_to_search(search_genomes, this);" size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
-            <input id="gid" type="hidden" value="<TMPL_VAR NAME='GENOME_ID'>" />
-            <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
-        </div>
-    </div>
-
-    <div class="step" data-title="Data" data-step="2" data-validate="data">
-        <div id="files" class="hidden">
-            Data file:
-            <table id='file_table' class="ui-corner-all coge-outline" style="background-color:white;font-size:1em;display:inline;"></table>
-            <span id="select_file_type" class="hidden" style="padding-left:15px;vertical-align:5px;">
-                File type:
-                <select id="file_type_selector">
-                    <option value="autodetect">Detect from filename</option>
-                    <optgroup label="Quantitative">
-                    <option value="csv">Comma-separated value (CSV)</option>
-                    <option value="tsv">Tab-separated value (TSV)</option>
-                    <option value="bed">BED</option>
-                    <option value="gff">GFF/GTF</option>
-                    </optgroup>
-                    <optgroup label="Polymorphism">
-                    <option value="vcf">VCF</option>
-                    </optgroup>
-                    <optgroup label="Alignment">
-                    <option value="bam">BAM</option>
-                    </optgroup>
-                    <optgroup label="Sequence">
-                    <option value="fastq">FASTQ, FQ</option>
-                    </optgroup>
-                </select>
-
-                <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
-            </span>
-        </div>
-    </div>
-
-    <div class="step" data-title="Options" data-step="3" data-validate="options">
-        <div id="fastq" class="hidden">
-            <div class="form-section">
-                <h4>RNA-Seq Options</h4>
-                <div class="form-field">
-                    <label class="col-md-2">Samtools (mpileup):</label>
-                    <div>
-                        <label>-Q:</label>
-                        <input id="Q" type="number" value="5"/>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-section">
-                <h4>Alignment Options</h4>
-
-                <div class="form-field">
-                    <label class="col-md-2">Aligner:</label>
-                    <div id="alignment">
-                        <input name="aligner" type="radio" value="gsnap" checked onchange="update_aligner()">
-                        <label for="gsnap">GSNAP</label>
-
-                        <input name="aligner" type="radio" value="tophat" onchange="update_aligner()">
-                        <label for="gsnap">TopHat/Bowtie2</label>
-                    </div>
-                </div>
-
-                <div id="align-container" class="hidden"></div>
-            </div>
-
-            <div class="form-section">
-                <h4>SNP Options</h4>
-
-                <div class="form-field">
-                    <label class="col-md-2">Find SNPs:</label>
-
-                    <label >Enable:</label>
-                    <input id="snps" type="checkbox" onchange="update_snp(window.event)">
-
-                    <label>Method:</label>
-                    <select id="snp-method" disabled>
-                        <option value="coge">CoGe Method</option>
-                        <option value="samtools">Samtools Method</option>
-                        <option value="platypus">Platypus Method</option>
-                        <option value="gatk">GATK Method</option>
-                    </select>
-                </div>
-
-                <div id="snp-container" class="hidden"></div>
-            </div>
-        </div>
-
-        <!-- TODO: Add remaining options -->
-        <div id="align" class="hidden"></div>
-        <div id="poly"  class="hidden"></div>
-        <div id="quant" class="hidden"></div>
-
-        <div class="form-section">
-            <h4>Misc Options</h4>
-
-            <div class="form-field">
-                <label class="col-md-2">Add to notebook:</label>
-                <input id="notebook" type="checkbox">
-            </div>
-            <div class="form-field">
-                <label class="col-md-2">Send an email:</label>
-                <input id="email" type="checkbox">
-            </div>
-
-            <!-- TODO: Add ability to share the genome
-            <div class="form-field">
-                <label class="col-md-2">Share:</label>
-                <input id="email" type="checkbox">
-            </div>
-            -->
-        </div>
-    </div>
-
-    <div class="step" data-title="Review and Load" data-step="3" data-validate="options">
-        Test 4
-    </div>
-
-    <div class="nav-control coge-buttonset">
-        <button class="prev ui-button ui-corner-all" disabled>Previous</button>
-        <button class="done ui-button ui-corner-all r" disabled>Start Loading</button>
-        <button class="next ui-button ui-corner-all r">Next</button>
-    </div>
-</div>
-
-
-<!-- Admin area -->
-<TMPL_IF NAME='ADMIN_AREA'>
-    <br><br><hr>
-    <div class="bold text">Admin Functions</div>
-    <div class="small">
-        <div>
-            Assign to user:
-            <input id="edit_user" type="search" placeholder="Search" spellcheck="false" onkeyup="wait_to_search(search_users, this.value);" size="20" />
-        </div>
-        <!--
-        <div>
-            Ignore missing chromosomes?
-            <input id="ignore_missing_chrs" type="checkbox" />
-        </div>
-        -->
-    </div>
-</TMPL_IF>
-
 <!-- DIALOGS -->
 <div id="load_dialog" class="dialog_box" title="Loading Experiment ..." style="display:none;">
     <div id="load_log" class="small padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
@@ -990,6 +797,23 @@ function update_dialog(request, user, identifier, formatter) {
             </div>
             -->
         </div>
+
+        <TMPL_IF NAME='ADMIN_AREA'>
+            <hr>
+            <div class="form-section">
+                <h4>Admin</h4>
+                <div class="form-field">
+                    <label class="col-md-2">Assign to user:</label>
+                    <input id="edit_user" type="search" placeholder="Search" spellcheck="false" onkeyup="wait_to_search(search_users, this.value);" size="20" />
+                </div>
+                <!--
+                <div class="form-field">
+                    <label>Ignore missing chromosomes?</label>
+                    <input id="ignore_missing_chrs" type="checkbox" />
+                </div>
+                -->
+            </div>
+        </TMPL_IF>
     </div>
 </script>
 
