@@ -129,6 +129,7 @@ $.extend(Wizard.prototype, {
     message: function(message) {
         this.notifications.html(message)
             .show()
+            .stop()
             .delay(10*1000)
             .fadeOut(1500);
     },
