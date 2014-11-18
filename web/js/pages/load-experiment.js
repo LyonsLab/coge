@@ -354,11 +354,52 @@ $.extend(DataView.prototype, {
     },
 
     render: function() {
-        //FIXME: This selector should be another view
+        //FIXME: This selector should be in another view
         var selector = this.file_selector.clone();
         this.selector_container.empty();
         selector.appendTo(this.selector_container);
         selector.tabs();
+
+        irods_get_path();
+
+        selector.find('#input_url').bind('keyup focus click', function() {
+            var button = selector.find("#ftp_get_button"),
+                button-disabled = !selector.find("#input_url").val();
+
+            button.toggleClass("ui-state-disabled", button-disabled);
+        });
+
+        selector.find('#input_accn').bind('keyup focus click', function() {
+            var button = selector.find("#ncbi_get_button"),
+                button-disabled = !selector.find("#input_accn").val();
+
+            button.toggleClass("ui-state-disabled", button-disabled);
+        });
+
+        selector.find('#input_upload_file').fileupload({
+            dataType: 'json',
+            add: this.add.bind(this),
+            done this.uploaded.bind(this):
+        });
+    },
+
+    add: function(e, data) {
+        var filename = data.files[0].name;
+        if ( !add_file_to_list(filename, 'file://'+filename) ) {
+            alert('File already exists.');
+        } else {
+            // mdb 10/29/13 - moved from above to prevent stale load_id value, issue 236
+            $('#input_upload_file').fileupload('option', { formData: {
+                fname: 'upload_file',
+                load_id: load_id
+            }});
+
+            data.submit();
+        }
+    },
+
+    uploaded: function(e, data) {
+        finish_file_in_list('file', 'file://'+data.result.filename, data.result.path, data.result.size);
     },
 
     is_valid: function() {
