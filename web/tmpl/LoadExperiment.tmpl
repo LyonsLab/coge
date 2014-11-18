@@ -89,13 +89,6 @@ $(document).ready(function(){
         update_dialog(STATUS_URL + job_id, pageObj.user, "#load_dialog", progress_formatter);
     }
 
-    <TMPL_IF NAME="ADMIN_AREA">
-    $("#edit_user").autocomplete({
-        source:[],
-        focus: function() { return false; },
-    });
-    </TMPL_IF>
-
     wizard = initialize_wizard();
 });
 

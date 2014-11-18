@@ -363,6 +363,13 @@ $.extend(OptionsView.prototype, {
         return true;
     },
 
+    render: function() {
+        this.el.find("#edit_user").unbind().autocomplete({
+            source:[],
+            focus: function() { return false; },
+        });
+    },
+
     update_snp: function (ev) {
         var enabled = $(ev.target).is(":checked"),
             method = $("#snp-method"),
