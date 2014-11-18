@@ -581,7 +581,7 @@ function update_dialog(request, user, identifier, formatter) {
 
 <div id="wizard-container"></div>
 
-<div id="wizard" class="wizard wizard-coge">
+<div id="wizard" class="wizard wizard-coge hidden">
     <div class="header">
         <h3 class="title">Load Experiment</h3>
         <div class="sections">
@@ -637,8 +637,6 @@ function update_dialog(request, user, identifier, formatter) {
     </div>
 
     <div class="step" data-title="Data" data-step="2" data-validate="data">
-        <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
-
         <div id="files" class="hidden">
             Data file:
             <table id='file_table' class="ui-corner-all coge-outline" style="background-color:white;font-size:1em;display:inline;"></table>
@@ -812,7 +810,6 @@ function update_dialog(request, user, identifier, formatter) {
     <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all">Create</span>
 </div>
 
-
 <!-- Wizard Templates -->
 <script id="wizard-template" type="text/template">
 <div id="wizard" class="wizard wizard-coge">
@@ -918,7 +915,7 @@ function update_dialog(request, user, identifier, formatter) {
 
 <script id="options-template" type="text/template">
     <div class="step" data-title="Options" data-step="3" data-validate="options">
-        <div id="fastq" class="hidden">
+        <div id="fastq">
             <div class="form-section">
                 <h4>RNA-Seq Options</h4>
                 <div class="form-field">
@@ -936,10 +933,10 @@ function update_dialog(request, user, identifier, formatter) {
                 <div class="form-field">
                     <label class="col-md-2">Aligner:</label>
                     <div id="alignment">
-                        <input name="aligner" type="radio" value="gsnap" checked onchange="update_aligner()">
+                        <input name="aligner" type="radio" value="gsnap" checked>
                         <label for="gsnap">GSNAP</label>
 
-                        <input name="aligner" type="radio" value="tophat" onchange="update_aligner()">
+                        <input name="aligner" type="radio" value="tophat">
                         <label for="gsnap">TopHat/Bowtie2</label>
                     </div>
                 </div>
@@ -954,7 +951,7 @@ function update_dialog(request, user, identifier, formatter) {
                     <label class="col-md-2">Find SNPs:</label>
 
                     <label >Enable:</label>
-                    <input id="snps" type="checkbox" onchange="update_snp(window.event)">
+                    <input id="snps" type="checkbox">
 
                     <label>Method:</label>
                     <select id="snp-method" disabled>
@@ -998,6 +995,12 @@ function update_dialog(request, user, identifier, formatter) {
 
 <script id="confirm-template" type="text/template">
     <div class="step" data-title="Review and Load" data-step="3" data-validate="options">
+        <h3>Description</h3>
+        <div class="confirm-description"></div>
+        <h3>Data</h3>
+        <div class="confirm-data"></div>
+        <h3>Options</h3>
+        <div class="confirm-options"></div>
     </div>
 </script>
 
@@ -1058,6 +1061,13 @@ function update_dialog(request, user, identifier, formatter) {
                 </div>
             </div>
         </div>
+    </div>
+</script>
+
+<script id="summary-pair-template" type="text/template">
+    <div>
+        <span class="name"></span>:
+        <span class="data"></span>
     </div>
 </script>
 
