@@ -1556,6 +1556,15 @@ header {
     background-color: transparent;
 }
 
+.wizard h1,
+.wizard h2,
+.wizard h3,
+.wizard h4,
+.wizard h5 {
+    margin: 0;
+}
+
+
 .wizard-coge {
     border-color: #ccc;
     background-color: #f5f5f5;
