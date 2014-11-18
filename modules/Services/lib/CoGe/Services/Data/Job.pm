@@ -175,7 +175,8 @@ sub results {
     if ($name eq "1") {
         my $pResult = CoGe::Accessory::TDS::read($result_file);
         $self->render(json => $pResult);
-    } else {
+    } 
+    else {
         $self->res->headers->content_disposition("attachment; filename=$name;");
         $self->res->content->asset(Mojo::Asset::File->new(path => $result_file));
         $self->rendered(200);

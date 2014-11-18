@@ -106,18 +106,21 @@ sub get_link_coords { # mdb added 11/20/13 issue 254
 	return ($start, $stop);
 }
 
-sub sanitize_name {
+# Convert a string to filename-friendly version
+sub sanitize_name { 
     my $name = shift;
+    
+    return unless (defined $name);
 
-    $name =~ s/\///g;
-    $name =~ s/\s+/_/g;
-    $name =~ s/\(//g;
-    $name =~ s/\)//g;
-    $name =~ s/://g;
-    $name =~ s/;//g;
-    $name =~ s/#/_/g;
-    $name =~ s/'//g;
-    $name =~ s/"//g;
+    $name =~ s/\///g;   # remove /
+    $name =~ s/\s+/_/g; # replace whitespace with _
+    $name =~ s/\(//g;   # remove (
+    $name =~ s/\)//g;   # remove )
+    $name =~ s/://g;    # remove :
+    $name =~ s/;//g;    # remove ;
+    $name =~ s/#/_/g;   # replace # with _
+    $name =~ s/'//g;    # remove '
+    $name =~ s/"//g;    # remove "
 
     return $name;
 }
