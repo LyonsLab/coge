@@ -22,16 +22,17 @@ BEGIN {
 }
 
 sub link_results {
-   my ($input, $result_dir, $conf) = @_;
+   my ($input, $output, $result_dir, $conf) = @_;
 
    return (
         cmd     => catfile($conf->{SCRIPTDIR}, "link_results.pl"),
         args    => [
             ['-input_files', escape($input), 0],
+            ['-output_files', escape($output), 0],
             ['-result_dir', $result_dir, 0]
         ],
         inputs  => [$input],
-        outputs => [catfile($result_dir, basename($input))],
+        outputs => [catfile($result_dir, basename($output))],
         description => "Generating results..."
    );
 }
