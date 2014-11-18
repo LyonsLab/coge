@@ -365,7 +365,12 @@ $.extend(DataView.prototype, {
         selector.appendTo(this.selector_container);
         selector.tabs();
 
-        irods_get_path();
+        //FIXME: selector view should track the current path
+        if (pageObj.current_path) {
+            irods_get_path(pageObj.curren_path);
+        } else {
+            irods_get_path();
+        }
 
         selector.find('#input_url').bind('keyup focus click', function() {
             var button = selector.find("#ftp_get_button"),
