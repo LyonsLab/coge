@@ -47,6 +47,39 @@ function check_login() {
     return logged_in;
 }
 
+function LayoutView(options) {
+    this.template = $(options.template);
+    this.layout = options.layout;
+    this.initialize();
+}
+
+$.extend(LayoutView.prototype, {
+    initialize: function() {
+        this.el = $(this.template.html());
+    },
+
+    renderLayout: function() {
+        var elementId, section, view;
+
+        for (elementId in this.layout) {
+            if (this.layout.hasOwnProperty(elementId)) {
+                section = this.el.find(elementId);
+                view = this.layout[elementId];
+
+                if (view.render) {
+                    view.render();
+                }
+
+                section.html(view.el);
+            }
+        }
+    },
+
+    updateLayout: function(layout) {
+        this.layout = $.extend({}, this.layout, layout);
+    }
+});
+
 //
 // Requires a done callback and a data object to pass to the callback
 //
