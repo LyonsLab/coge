@@ -79,22 +79,17 @@ $(document).ready(function(){
 function file_selected(filename, url) {
     $('#select_file_button').hide();
     $('#select_file_type').show();
+    $("#select_file_type option:first").attr("selected", "selected");
     $('#files').show();
 }
 
 function file_finished(size, url) {
-    var files = get_selected_files(),
-        exp = /(:?fastq|fq)/;
-
-    var isFastq = exp.test.bind(exp);
+    var files = get_selected_files();
     var paths = files.map(getPath);
-    paths.forEach(autodetect_file_type);
+    var file_type = autodetect_file_type(paths[0])
 
-    if (paths.some(isFastq)) {
-        $("#file_type_selector")
-            .find("option[value=fastq]")
-            .prop("selected", true)
-            .change();
+    if (file_type) {
+        $("#file_type_selector").val(file_type);
     }
 }
 
@@ -551,7 +546,7 @@ function update_dialog(request, user, identifier, formatter) {
             <span id="select_file_type" class="hidden" style="padding-left:15px;vertical-align:5px;">
                 File type:
                 <select id="file_type_selector">
-                    <option value="autodetect">Detect from filename</option>
+                    <option value="">Select a file type</option>
                     <optgroup label="Quantitative">
                     <option value="csv">Comma-separated value (CSV)</option>
                     <option value="tsv">Tab-separated value (TSV)</option>
