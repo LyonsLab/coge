@@ -5,7 +5,7 @@
 <TMPL_IF NAME='MAIN'>
 <script type="text/javascript" src="js/pages/load-experiment.js"></script>
 <script type="text/javascript" src="js/coge/utils.js"></script>
-<script type="text/javascript" src="./js/jquery.fileupload.js"></script>
+<script type="text/javascript" src="js/jquery.fileupload.js"></script>
 
 <style type="text/css">
 
@@ -65,9 +65,6 @@ $(document).ready(function(){
     $(".dialog_box").dialog({autoOpen: false, width: 500});
     $('#load_dialog').dialog("widget").find('.ui-dialog-titlebar-close').hide();
     $('#load_dialog').dialog({modal: true, closeOnEscape: false})
-
-    // Initialize drop-downs
-    get_sources();
 
     // Open status dialog
     if (job_id) {
@@ -272,20 +269,6 @@ function search_users (search_term) {
             if (obj && obj.items) {
                 $("#edit_user").autocomplete({source: obj.items});
                 $("#edit_user").autocomplete("search");
-            }
-        },
-    });
-}
-
-function get_sources () {
-    $.ajax({
-        data: {
-            fname: 'get_sources',
-        },
-        success : function(data) {
-            var obj = jQuery.parseJSON(data);
-            if (obj) {
-                $("#edit_source").autocomplete({source: obj});
             }
         },
     });
