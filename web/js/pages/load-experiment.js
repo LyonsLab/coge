@@ -126,13 +126,14 @@ $.extend(Wizard.prototype, {
         if (!this.at_last() && step.is_valid()) {
             this.currentIndex++;
             this.render();
+            this.notifications.stop(true, true).fadeOut(1500);
         }
     },
 
     message: function(message) {
         this.notifications.html(message)
             .show()
-            .stop()
+            .stop(true, true)
             .delay(10*1000)
             .fadeOut(1500);
     },
