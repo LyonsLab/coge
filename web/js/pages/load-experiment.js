@@ -411,74 +411,23 @@ function render_template(template, container) {
         .slideDown();
 }
 
-
-function GeneralOptionsView() {
+function FastqView() {
     this.initialize();
 }
 
-$.extend(GeneralOptionsView.prototype, {
+$.extend(FastqView.prototype, {
     initialize: function() {
-        this.el = $($("#general-options-template").html());
-    },
-});
-
-function AdminOptionsView() {
-    this.initialize();
-}
-
-$.extend(AdminOptionsView.prototype, {
-    initialize: function() {
-        this.el = $($("#admin-options-template").html());
-    },
-});
-
-function OptionsView(experiment) {
-    this.experiment = experiment;
-    this.title = "Options";
-    this.initialize();
-}
-
-$.extend(OptionsView.prototype, {
-    initialize: function() {
-        //FIXME: convert into a view
-        this.fastq_view = { el: $($("#fastq-template").html()) } ;
-        this.snp_container = this.fastq_view.el.find("#snp-container");
-        this.align_container = this.fastq_view.el.find("#align-container");
-
-        this.admin_view = new AdminOptionsView();
-        this.general_view = new GeneralOptionsView();
-
-        this.layout_view = new LayoutView({
-            template: "#options-layout-template",
-
-            layout: {
-                "#admin-options": this.admin_view,
-                "#analysis-options": this.fastq_view,
-                "#general-options": this.general_view
-            }
-        });
-
-        this.el = this.layout_view.el;
-    },
-
-    is_valid: function() {
-        return true;
+        this.el = $($("#fastq-template").html());
+        this.snp_container = this.el.find("#snp-container");
+        this.align_container = this.el.find("#align-container");
     },
 
     render: function() {
         var self = this;
 
-        this.layout_view.renderLayout();
-
-        // jQuery UI
-        this.el.find("#edit_user").unbind().autocomplete({
-            source:[],
-            focus: function() { return false; },
-        });
-
         // jQuery events
-        this.el.find("#snps").change(this.update_snp.bind(this));
-        this.el.find("[name=aligner]").change(this.update_aligner.bind(this));
+        this.el.find("#snps").unbind().change(this.update_snp.bind(this));
+        this.el.find("[name=aligner]").unbind().change(this.update_aligner.bind(this));
         this.el.find("#snp-method").unbind().change(function() {
             var selected = $(this).val();
             render_template(snp_templates[selected], self.snp_container);
@@ -507,6 +456,80 @@ $.extend(OptionsView.prototype, {
         var selected = $("#alignment").find(":checked").val();
         render_template(align_templates[selected], this.align_container);
     }
+});
+
+function GeneralOptionsView() {
+    this.initialize();
+}
+
+$.extend(GeneralOptionsView.prototype, {
+    initialize: function() {
+        this.el = $($("#general-options-template").html());
+    },
+});
+
+function AdminOptionsView() {
+    this.initialize();
+}
+
+$.extend(AdminOptionsView.prototype, {
+    initialize: function() {
+        this.el = $($("#admin-options-template").html());
+    },
+
+    render: function() {
+        // jQuery UI
+        this.el.find("#edit_user").unbind().autocomplete({
+            source:[],
+            focus: function() { return false; },
+        });
+    }
+});
+
+function OptionsView(experiment) {
+    this.experiment = experiment;
+    this.title = "Options";
+    this.initialize();
+}
+
+$.extend(OptionsView.prototype, {
+    initialize: function() {
+        this.fastq_view = new FastqView();
+        this.admin_view = new AdminOptionsView();
+        this.general_view = new GeneralOptionsView();
+
+        this.layout_view = new LayoutView({
+            template: "#options-layout-template",
+
+            layout: {
+                "#admin-options": this.admin_view,
+                "#analysis-options": this.fastq_view,
+                "#general-options": this.general_view
+            }
+        });
+
+        this.el = this.layout_view.el;
+    },
+
+    is_valid: function() {
+        //if (!this.fastq_view.is_valid()) {
+        //    return false;
+        //}
+
+        //if (!this.general_view.is_valid()) {
+        //    return false;
+        //}
+
+        //if (!this.admin_view.is_valid()) {
+        //    return false;
+        //}
+
+        return true;
+    },
+
+    render: function() {
+        this.layout_view.renderLayout();
+    },
 });
 
 function ConfirmationView(experiment) {
