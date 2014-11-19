@@ -571,6 +571,8 @@ $.extend(ConfirmationView.prototype, {
     renderData: function(data) {
         var index, newpair;
 
+        this.data.empty();
+
         for(index = 0; index < data.length; index++) {
             newpair = this.pair_template.clone();
             newpair.find(".name").html("File");
