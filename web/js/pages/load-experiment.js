@@ -4,24 +4,22 @@
 var current_experiment = {};
 
 // Support file types
-var QUANT_FILE_TYPES = /(:?csv|tsv|bed|gff|gtf)$/;
-var POLY_FILE_TYPES = /(:?vcf)$/;
-var ALIGN_FILE_TYPES =/(:?bam)$/;
-var SEQ_FILE_TYPES = /(:?fastq|fq)$/;
+var SUPPORTED_FILES = [
+    "csv", "tsv", "bed", "gff", "gtf", "vcf", "bam", "fastq", "fq"
+];
+
+var FILE_TYPE_PATTERNS = new RegExp("(:?" + SUPPORTED_FILES.join("|") + ")$");
 
 // Template support
 var snp_templates  = {};
 var align_templates = {};
 
+
 function autodetect_file_type(file) {
     var stripped_file = file.replace(/.gz$/, '');
 
-    switch (true) {
-        case QUANT_FILE_TYPES.test(stripped_file): return "quant";
-        case POLY_FILE_TYPES.test(stripped_file): return "poly";
-        case ALIGN_FILE_TYPES.test(stripped_file): return "align";
-        case SEQ_FILE_TYPES.test(stripped_file): return "seq";
-        default: return;
+    if (FILE_TYPE_PATTERNS.test(stripped_file)) {
+        return stripped_file.match(FILE_TYPE_PATTERNS)[0];
     }
 }
 
@@ -252,31 +250,9 @@ $.extend(DataView.prototype, {
             return false;
         }
 
-        if (file_type === "autodetect") {
-            file_type = items[0].file_type = autodetect_file_type(items[0].path);
-        }
-
         if (!file_type) {
-            error_help("The file type could not be auto detected please select the filetype");
+            error_help("Please select the file type to continue");
             return false;
-        }
-
-        $('#fastq,#poly,#quant,#align').addClass('hidden');
-
-        if (QUANT_FILE_TYPES.test(file_type)) {
-            $("#quant").removeClass("hidden");
-        }
-
-        if (POLY_FILE_TYPES.test(file_type)) {
-            $("#poly").removeClass("hidden");
-        }
-
-        if (SEQ_FILE_TYPES.test(file_type)) {
-            $("#fastq").removeClass("hidden");
-        }
-
-        if (ALIGN_FILE_TYPES.test(file_type)) {
-            $("#align").removeClass("hidden");
         }
 
         $.extend(current_experiment, {
