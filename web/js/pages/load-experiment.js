@@ -326,7 +326,7 @@ $.extend(DescriptionView.prototype, {
 
         // Reset gid when item has changed
         this.edit_genome.unbind().change(function() {
-            self.gid = undefined;
+            self.experiment.gid = undefined;
         });
 
         // jQuery UI features
@@ -433,6 +433,8 @@ $.extend(OptionsView.prototype, {
             el.show();
             method.removeAttr("disabled");
             container.slideDown();
+            var initial = $("#snp-method").val();
+            render_template(snp_templates[initial], container);
 
             method.unbind().change(function() {
                 var selected = $("#snp-method").val();
