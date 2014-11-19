@@ -407,8 +407,8 @@ function OptionsView(experiment) {
 $.extend(OptionsView.prototype, {
     initialize: function() {
         this.el = $($("#options-template").html());
-        this.el.find("[name=aligner]").change(this.update_aligner.bind(this));
-        this.el.find("#snps").change(this.update_snp.bind(this));
+        this.snp_container = this.el.find("#snp-container");
+        this.align_container = this.el.find("#align-container");
     },
 
     is_valid: function() {
@@ -416,42 +416,44 @@ $.extend(OptionsView.prototype, {
     },
 
     render: function() {
+        var self = this;
+
+        // jQuery UI
         this.el.find("#edit_user").unbind().autocomplete({
             source:[],
             focus: function() { return false; },
+        });
+
+        // jQuery events
+        this.el.find("#snps").change(this.update_snp.bind(this));
+        this.el.find("[name=aligner]").change(this.update_aligner.bind(this));
+        this.el.find("#snp-method").unbind().change(function() {
+            var selected = $(this).val();
+            render_template(snp_templates[selected], self.snp_container);
         });
     },
 
     update_snp: function (ev) {
         var enabled = $(ev.target).is(":checked"),
-            method = $("#snp-method"),
-            container = $("#snp-container");
+            method = this.el.find("#snp-method");
 
         var el = $(document.getElementById(method.val()));
 
         if (enabled) {
             el.show();
             method.removeAttr("disabled");
-            container.slideDown();
+            this.snp_container.slideDown();
             var initial = $("#snp-method").val();
-            render_template(snp_templates[initial], container);
-
-            method.unbind().change(function() {
-                var selected = $("#snp-method").val();
-
-                render_template(snp_templates[selected], container);
-            });
+            render_template(snp_templates[initial], this.snp_container);
         } else {
             method.attr("disabled", 1);
-            container.slideUp();
+            this.snp_container.slideUp();
         }
     },
 
     update_aligner: function() {
         var selected = $("#alignment").find(":checked").val();
-        var container = $("#align-container");
-
-        render_template(align_templates[selected], container);
+        render_template(align_templates[selected], this.align_container);
     }
 });
 
