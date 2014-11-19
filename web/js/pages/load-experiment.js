@@ -439,9 +439,25 @@ function OptionsView(experiment) {
 
 $.extend(OptionsView.prototype, {
     initialize: function() {
-        this.el = $($("#options-template").html());
-        this.snp_container = this.el.find("#snp-container");
-        this.align_container = this.el.find("#align-container");
+        //FIXME: convert into a view
+        this.fastq_view = { el: $($("#fastq-template").html()) } ;
+        this.snp_container = this.fastq_view.el.find("#snp-container");
+        this.align_container = this.fastq_view.el.find("#align-container");
+
+        this.admin_view = new AdminOptionsView();
+        this.general_view = new GeneralOptionsView();
+
+        this.layout_view = new LayoutView({
+            template: "#options-layout-template",
+
+            layout: {
+                "#admin-options": this.admin_view,
+                "#analysis-options": this.fastq_view,
+                "#general-options": this.general_view
+            }
+        });
+
+        this.el = this.layout_view.el;
     },
 
     is_valid: function() {
@@ -450,6 +466,8 @@ $.extend(OptionsView.prototype, {
 
     render: function() {
         var self = this;
+
+        this.layout_view.renderLayout();
 
         // jQuery UI
         this.el.find("#edit_user").unbind().autocomplete({

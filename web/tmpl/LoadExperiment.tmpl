@@ -73,7 +73,7 @@ $(document).ready(function(){
         update_dialog(STATUS_URL + job_id, pageObj.user, "#load_dialog", progress_formatter);
     }
 
-    wizard = initialize_wizard();
+    wizard = initialize_wizard({ admin: is_admin });
 });
 
 function file_selected(filename, url) {
@@ -618,7 +618,7 @@ function update_dialog(request, user, identifier, formatter) {
 </div>
 </script>
 
-<script id="options-template" type="text/template">
+<script id="fastq-template" type="text/template">
     <div class="step" data-title="Options" data-step="3" data-validate="options">
         <div id="fastq">
             <div class="form-section">
@@ -675,43 +675,6 @@ function update_dialog(request, user, identifier, formatter) {
         <div id="align" class="hidden"></div>
         <div id="poly"  class="hidden"></div>
         <div id="quant" class="hidden"></div>
-
-        <div class="form-section">
-            <h4>Misc Options</h4>
-
-            <div class="form-field">
-                <label class="col-md-2">Add to notebook:</label>
-                <input id="notebook" type="checkbox">
-            </div>
-            <div class="form-field">
-                <label class="col-md-2">Send an email:</label>
-                <input id="email" type="checkbox">
-            </div>
-
-            <!-- TODO: Add ability to share the genome
-            <div class="form-field">
-                <label class="col-md-2">Share:</label>
-                <input id="email" type="checkbox">
-            </div>
-            -->
-        </div>
-
-        <TMPL_IF NAME='ADMIN_AREA'>
-            <hr>
-            <div class="form-section">
-                <h4>Admin</h4>
-                <div class="form-field">
-                    <label class="col-md-2">Assign to user:</label>
-                    <input id="edit_user" type="search" placeholder="Search" spellcheck="false" onkeyup="wait_to_search(search_users, this.value);" size="20" />
-                </div>
-                <!--
-                <div class="form-field">
-                    <label>Ignore missing chromosomes?</label>
-                    <input id="ignore_missing_chrs" type="checkbox" />
-                </div>
-                -->
-            </div>
-        </TMPL_IF>
     </div>
 </script>
 
