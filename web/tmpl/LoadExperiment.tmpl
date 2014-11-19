@@ -59,6 +59,8 @@ $(document).ready(function(){
         cache: false,
     });
 
+    var is_admin = Boolean("<TMPL_VAR NAME=ADMIN_AREA>");
+
     pageObj.user = "<tmpl_var name=USER>";
 
     // Configure dialogs
