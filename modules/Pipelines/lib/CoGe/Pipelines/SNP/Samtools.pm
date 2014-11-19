@@ -27,7 +27,7 @@ sub run {
     my $experiment = $opts{experiment} or croak "An experiment must be specified";
     my $user = $opts{user} or croak "A user was not specified";
 
-    my $workflow = $JEX->create_workflow( name => 'Running the SNP-finder pipeline', init => 1 );
+    my $workflow = $JEX->create_workflow( name => 'Running the SAMtools SNP-finder pipeline', init => 1 );
     my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
     $workflow->logfile( catfile($staging_dir, 'debug.log') );
 
