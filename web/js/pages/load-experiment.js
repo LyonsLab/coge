@@ -410,6 +410,27 @@ function render_template(template, container) {
         .slideDown();
 }
 
+
+function GeneralOptionsView() {
+    this.initialize();
+}
+
+$.extend(GeneralOptionsView.prototype, {
+    initialize: function() {
+        this.el = $($("#general-options-template").html());
+    },
+});
+
+function AdminOptionsView() {
+    this.initialize();
+}
+
+$.extend(AdminOptionsView.prototype, {
+    initialize: function() {
+        this.el = $($("#admin-options-template").html());
+    },
+});
+
 function OptionsView(experiment) {
     this.experiment = experiment;
     this.title = "Options";

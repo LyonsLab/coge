@@ -570,6 +570,54 @@ function update_dialog(request, user, identifier, formatter) {
     </div>
 </script>
 
+<script id="options-layout-template" type="text/template">
+<div>
+    <div id="analysis-options"></div>
+    <div id="general-options"></div>
+    <hr>
+    <div id="admin-options"></div>
+</div>
+</script>
+
+<script id="admin-options-template" type="text/template">
+<div class="form-section">
+    <h4>Admin</h4>
+    <div class="form-field">
+        <label class="col-md-2">Assign to user:</label>
+        <input id="edit_user" type="search" placeholder="Search" spellcheck="false" onkeyup="wait_to_search(search_users, this.value);" size="20" />
+    </div>
+    <!--
+    <div class="form-field">
+        <label>Ignore missing chromosomes?</label>
+        <input id="ignore_missing_chrs" type="checkbox" />
+    </div>
+    -->
+</div>
+</script>
+
+<script id="general-options-template" type="text/template">
+<div class="form-section">
+    <h4>General Options</h4>
+
+    <div class="form-field">
+        <label class="col-md-2">Add to notebook:</label>
+        <input id="notebook" type="checkbox">
+    </div>
+
+    <div class="form-field">
+        <label class="col-md-2">Send an email:</label>
+        <input id="email" type="checkbox">
+    </div>
+
+    <!-- TODO: Add ability to share the genome
+    <div class="form-field">
+        <label class="col-md-2">Share:</label>
+        <input id="email" type="checkbox">
+    </div>
+    -->
+</div>
+</script>
+
 <script id="options-template" type="text/template">
     <div class="step" data-title="Options" data-step="3" data-validate="options">
         <div id="fastq">
