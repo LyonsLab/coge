@@ -285,6 +285,7 @@ $.extend(DataView.prototype, {
 
 function DescriptionView(experiment) {
     this.experiment = experiment;
+    this.sources = undefined;
     this.title = "Describe your experiment";
     this.initialize();
 }
@@ -292,9 +293,33 @@ function DescriptionView(experiment) {
 $.extend(DescriptionView.prototype, {
     initialize: function() {
         this.el = $($("#description-template").html());
+        this.edit_source = this.el.find("#edit_source");
+        this.edit_genome = this.el.find("#edit_genome");
 
+        this.get_sources();
+    },
+
+    get_sources: function() {
+        var self = this;
+
+        return $.ajax({
+            dataType: "json",
+            data: {
+                fname: 'get_sources',
+            },
+            success : function(sources) {
+                self.sources = sources;
+
+                if (sources) {
+                    self.edit_source.autocomplete({source: sources});
+                }
+            },
+        });
+    },
+
+    render: function() {
         // jQuery UI features
-        this.el.find("#edit_genome").autocomplete({
+        this.edit_genome.autocomplete({
             source:[],
             select: function(event, ui) {
                 $(this).val(ui.item.label);
@@ -307,6 +332,8 @@ $.extend(DescriptionView.prototype, {
                 return false; // Prevent the widget from inserting the value.
             }
         });
+
+        this.edit_source.autocomplete({source: this.sources});
     },
 
     is_valid: function() {
@@ -519,7 +546,6 @@ function initialize_wizard() {
         platypus: $($("#platypus-snp-template").html()),
         samtools: $($("#gatk-snp-template").html())
     };
-
     align_templates = {
         gsnap: $($("#gsnap-template").html()),
         tophat: $($("#tophat-template").html())
