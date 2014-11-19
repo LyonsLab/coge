@@ -469,7 +469,7 @@ $.extend(ConfirmationView.prototype, {
         this.description = this.el.find(".confirm-description");
         this.data = this.el.find(".confirm-data");
         this.options = this.el.find(".confirm-options");
-        this.pair = $($("#summary-pair-template").html());
+        this.pair_template = $($("#summary-pair-template").html());
     },
 
     render: function() {
@@ -485,7 +485,7 @@ $.extend(ConfirmationView.prototype, {
         // Description Confirmation
         for(key in description) {
             if (description.hasOwnProperty(key)) {
-                newpair = this.pair.clone();
+                newpair = this.pair_template.clone();
                 newpair.find(".name").html(key);
                 newpair.find(".data").html(description[key]);
                 this.description.append(newpair);
@@ -497,7 +497,7 @@ $.extend(ConfirmationView.prototype, {
         var index, newpair;
 
         for(index = 0; index < data.length; index++) {
-            newpair = this.pair.clone();
+            newpair = this.pair_template.clone();
             newpair.find(".name").html("File");
             newpair.find(".data").html(data[index].path);
             this.data.append(newpair);
