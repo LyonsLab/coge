@@ -66,11 +66,12 @@ $.extend(LayoutView.prototype, {
                 section = this.el.find(elementId);
                 view = this.layout[elementId];
 
+                section.empty();
+                section.html(view.el);
+
                 if (view.render) {
                     view.render();
                 }
-
-                section.html(view.el);
             }
         }
     },
