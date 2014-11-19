@@ -51,7 +51,7 @@ function check_login() {
 // Requires a done callback and a data object to pass to the callback
 //
 function Wizard(options) {
-    this.done = options.done;
+    this.completed = options.completed;
     this.data = options.data;
     this.steps = [];
     this.currentIndex = 0;
@@ -144,7 +144,7 @@ $.extend(Wizard.prototype, {
         }
 
         if (this.at_last()) {
-            this.done(this.data);
+            this.completed(this.data);
         }
     },
 
@@ -524,7 +524,7 @@ function load(experiment) {
 
 function initialize_wizard() {
     var root = $("#wizard-container");
-    var wizard = new Wizard({ done: load, data: current_experiment });
+    var wizard = new Wizard({ completed: load, data: current_experiment });
     wizard.addStep(new DescriptionView(current_experiment));
     wizard.addStep(new DataView(current_experiment));
     wizard.addStep(new OptionsView(current_experiment));
