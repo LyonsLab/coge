@@ -115,6 +115,7 @@ $.extend(Wizard.prototype, {
         if (!this.at_first()) {
             this.currentIndex--;
             this.render();
+            this.notifications.stop(true, true).fadeOut(1500);
         }
     },
 
@@ -147,6 +148,7 @@ $.extend(Wizard.prototype, {
         }
     },
 
+    // Expects a view with render, is_valid methods and a element property el
     addStep: function(step, index) {
         if (index !== undefined && index < this.steps.length) {
             this.steps.slice(index, 0, step);
