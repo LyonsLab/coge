@@ -322,12 +322,19 @@ $.extend(DescriptionView.prototype, {
     },
 
     render: function() {
+        var self = this;
+
+        // Reset gid when item has changed
+        this.edit_genome.unbind().change(function() {
+            self.gid = undefined;
+        });
+
         // jQuery UI features
         this.edit_genome.autocomplete({
             source:[],
             select: function(event, ui) {
                 $(this).val(ui.item.label);
-                $('#gid').val(ui.item.value);
+                self.experiment.gid = ui.item.value;
                 return false; // Prevent the widget from inserting the value.
             },
 
@@ -346,7 +353,6 @@ $.extend(DescriptionView.prototype, {
         var version = this.el.find('#edit_version').val();
         var restricted = $('#restricted').is(':checked');
         var genome = this.el.find('#edit_genome').val();
-        var gid = this.el.find('#gid').val();
         var aligner = this.el.find("#alignment").find(":checked").val();
         var ignore_cb = this.el.find('#ignore_missing_chrs');
         var ignore_missing_chrs = ignore_cb.is(':checked');
@@ -366,7 +372,7 @@ $.extend(DescriptionView.prototype, {
             return false;
         }
 
-        if (!genome || genome === 'Search') {
+        if (!genome || genome === 'Search' || !this.experiment.gid) {
             error_help('Please specify a genome.');
             return false;
         }
@@ -378,7 +384,6 @@ $.extend(DescriptionView.prototype, {
                 version: version,
                 restricted: restricted,
                 genome: genome,
-                gid: gid
             }
         });
 
