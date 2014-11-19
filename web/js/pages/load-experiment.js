@@ -302,12 +302,13 @@ $.extend(DescriptionView.prototype, {
     render: function() {
         var self = this;
 
-        // Reset gid when item has changed
+        // jQuery Events
         this.edit_genome.unbind().change(function() {
+            // Reset gid when item has changed
             self.experiment.gid = undefined;
         });
 
-        // jQuery UI features
+        // jQuery UI
         this.edit_genome.autocomplete({
             source:[],
             select: function(event, ui) {
