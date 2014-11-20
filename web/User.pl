@@ -23,7 +23,7 @@ use CoGe::Core::Genome qw(genomecmp);
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
-use CoGe::Accessory::Utils qw(format_time_diff js_escape);
+use CoGe::Accessory::Utils qw(format_time_diff js_escape html_escape);
 use Benchmark;
 no warnings 'redefine';
 
@@ -1285,7 +1285,7 @@ sub get_contents {
 	 		    CONTENTS_ITEM_ID => $group->id,
 	 			CONTENTS_ITEM_TYPE => $ITEM_TYPE{group},
 	 			CONTENTS_ITEM_DELETED => $group->deleted,
-	 			CONTENTS_ITEM_INFO => $group->info,
+	 			CONTENTS_ITEM_INFO => html_escape( $group->info ),
 	 			CONTENTS_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
 	 			CONTENTS_ITEM_LINK =>  'GroupView.pl?ugid=' . $group->id,
 	 			CONTENTS_ITEM_SELECTABLE => 1
@@ -1301,7 +1301,7 @@ sub get_contents {
                 CONTENTS_ITEM_TYPE => $ITEM_TYPE{notebook},
                 CONTENTS_ITEM_DELETED => $list->deleted,
                 CONTENTS_ITEM_SHARED => !$roles->{2}{ $list->id }, #FIXME hardcoded role id
-                CONTENTS_ITEM_INFO => $list->info,
+                CONTENTS_ITEM_INFO => html_escape( $list->info ),
                 CONTENTS_ITEM_ICON => '<img src="picts/notebook-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
                 CONTENTS_ITEM_LINK => 'NotebookView.pl?nid=' . $list->id,
                 CONTENTS_ITEM_SELECTABLE => 1
@@ -1318,7 +1318,7 @@ sub get_contents {
                 CONTENTS_ITEM_TYPE    => $ITEM_TYPE{genome},
                 CONTENTS_ITEM_DELETED => $genome->deleted,
                 CONTENTS_ITEM_SHARED  => !$roles->{2}{ $genome->id }, #FIXME hardcoded role id
-                CONTENTS_ITEM_INFO => $genome->info,
+                CONTENTS_ITEM_INFO => html_escape($genome->info),
                 CONTENTS_ITEM_ICON => '<img src="picts/dna-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
                 CONTENTS_ITEM_LINK => 'GenomeInfo.pl?gid=' . $genome->id,
                 CONTENTS_ITEM_SELECTABLE => 1
@@ -1335,7 +1335,7 @@ sub get_contents {
                 CONTENTS_ITEM_TYPE    => $ITEM_TYPE{experiment},
                 CONTENTS_ITEM_DELETED => $experiment->deleted,
                 CONTENTS_ITEM_SHARED => !$roles->{2}{ $experiment->id },    #FIXME hardcoded role id
-                CONTENTS_ITEM_INFO => $experiment->info( source => $sourceIdToName{ $experiment->data_source_id } ),
+                CONTENTS_ITEM_INFO => html_escape( $experiment->info( source => $sourceIdToName{ $experiment->data_source_id } ) ),
                 CONTENTS_ITEM_ICON => '<img src="picts/testtube-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
                 CONTENTS_ITEM_LINK => 'ExperimentView.pl?eid=' . $experiment->id,
                 CONTENTS_ITEM_SELECTABLE => 1
