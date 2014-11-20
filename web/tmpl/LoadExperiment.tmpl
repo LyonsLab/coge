@@ -93,6 +93,9 @@ function file_finished(size, url) {
     if (file_type) {
         $("#file_type_selector").val(file_type);
     }
+
+    //FIXME: Hack to get around uploader callback not working in DataView
+    current_experiment.new_data = files;
 }
 
 function getPath(item) {
