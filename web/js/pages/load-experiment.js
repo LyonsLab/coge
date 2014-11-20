@@ -631,21 +631,12 @@ $.extend(DataView.prototype, {
         //FIXME: This is a hack to get around the uploader callbacks not working
         var items = this.experiment.new_data;
 
-        if (!items.length) {
+        if (!items || items.length === 0) {
+            error_help('Please select a data file.');
             return false;
         }
 
         items[0].file_type = this.el.find("#select_file_type option:selected").val();
-
-        if (items === null) {
-            error_help('Files are still being transferred, please wait.');
-            return false;
-        }
-
-        if (items.length === 0) {
-            error_help('Please select a data file.');
-            return false;
-        }
 
         if(!items[0].file_type) {
             error_help("Please select the file type to continue");
