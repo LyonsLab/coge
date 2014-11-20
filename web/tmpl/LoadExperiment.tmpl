@@ -549,6 +549,7 @@ var notebook_id;
 var pageObj = {};
 var newLoad = false;
 var wizard;
+var is_admin = Boolean("<TMPL_VAR NAME=ADMIN_AREA>");
 
 $(document).ready(function(){
 	// Configure jQuery ajax
@@ -559,7 +560,6 @@ $(document).ready(function(){
         cache: false,
     });
 
-    var is_admin = Boolean("<TMPL_VAR NAME=ADMIN_AREA>");
 
     pageObj.user = "<tmpl_var name=USER>";
 
