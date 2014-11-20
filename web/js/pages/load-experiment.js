@@ -57,6 +57,363 @@ function check_login() {
     return logged_in;
 }
 
+function file_selected(filename, url) {
+    $('#select_file_button').hide();
+    $('#select_file_type').show();
+    $("#select_file_type option:first").attr("selected", "selected");
+    $('#files').show();
+}
+
+function file_finished(size, url) {
+    var files = get_selected_files();
+    var paths = files.map(getPath);
+    var file_type = autodetect_file_type(paths[0])
+
+    if (file_type) {
+        $("#file_type_selector").val(file_type);
+    }
+
+    //FIXME: Hack to get around uploader callback not working in DataView
+    current_experiment.new_data = files;
+}
+
+function getPath(item) {
+    return item.path;
+}
+
+function file_canceled() {
+    $('#select_file_type').hide()
+        .find("option[value=autodetect")
+        .prop("selected", true)
+        .change();
+
+    $('#files').hide();
+    $('#select_file_button').show();
+}
+
+function create_source() {
+    var name = $('#edit_source_name').val();
+    var desc = $('#edit_source_desc').val();
+    var link = $('#edit_source_link').val();
+    $.ajax({
+        data: {
+            fname: 'create_source',
+            name: name,
+            desc: desc,
+            link: link,
+        },
+        success : function(name) {
+            $('#create_new_source_dialog').dialog('close');
+            if (name) {
+                $('#edit_source').val(name);
+            }
+        }
+    });
+}
+
+function get_load_log(callback) {
+    $.ajax({
+        data: {
+            dataType: 'text',
+            fname: 'get_load_log',
+            workflow_id: job_id,
+            timestamp: new Date().getTime()
+        },
+        success : function(data) {
+            if (callback) {
+                var obj = jQuery.parseJSON(data);
+                callback(obj);
+                return;
+            }
+        }
+    });
+}
+
+function wait_to_search (search_func, search_obj) {
+    var search_term = search_obj.value;
+    if (!search_term || search_term.length >= 2) {
+        if (pageObj.time) {
+            clearTimeout(pageObj.time);
+        }
+
+        pageObj.time = setTimeout(
+            function() {
+                search_func(search_obj.value);
+            },
+            250
+        );
+    }
+}
+
+function search_genomes (search_term) {
+    $.ajax({
+        data: {
+            fname: 'search_genomes',
+            search_term: search_term,
+            timestamp: new Date().getTime()
+        },
+        success : function(data) {
+            var obj = jQuery.parseJSON(data);
+            if (obj.items) {
+                obj.items.forEach(function(element) {
+                    element.label = element.label.replace(/&reg;/g, "\u00ae"); // (R)
+                });
+                $("#edit_genome").autocomplete({source: obj.items});
+                $("#edit_genome").autocomplete("search");
+            }
+        },
+    });
+}
+
+function search_users (search_term) {
+    $.ajax({
+        data: {
+            fname: 'search_users',
+            search_term: search_term,
+            timestamp: new Date().getTime()
+        },
+        success : function(data) {
+            var obj = jQuery.parseJSON(data);
+            if (obj && obj.items) {
+                $("#edit_user").autocomplete({source: obj.items});
+                $("#edit_user").autocomplete("search");
+            }
+        },
+    });
+}
+
+function load_failed(logfile) {
+    // mdb added 6/24/14 - temporary message until JEX logging is improved
+    var msg =
+        '<div class="alert">' +
+        'The CoGe Support Team has been notified of this error but please ' +
+        'feel free to contact us at <a href="mailto:' + SUPPORT_EMAIL + '">' +
+        SUPPORT_EMAIL + '</a> ' +
+        'and we can help to determine the cause.' +
+        '</div>';
+    var log = $('#load_log');
+    log.html( log.html() + msg );
+
+
+    if (logfile) {
+        $("#logfile a").attr("href", logfile);
+        $('#logfile').fadeIn();
+    }
+
+    // Update dialog
+    $('#loading_msg').hide();
+    $('#error_msg,#cancel_load_experiment_button').fadeIn();
+
+    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
+        $.ajax({
+            data: {
+                fname: "send_error_report",
+                load_id: load_id,
+                job_id: job_id
+            }
+        });
+    }
+}
+
+function load_succeeded(obj) {
+    // Update globals
+    experiment_id = obj.experiment_id; // for continuing to ExperimentView
+    notebook_id   = obj.notebook_id;   // for continuing to NotebookView
+
+    // Update dialog
+    $('#loading_msg').hide();
+    $('#finished_msg,#ok_button').fadeIn();
+    if (notebook_id) { // qTeller pipeline experiment load
+        $('#finish_load_experiment_button')
+            .html('NotebookView').fadeIn()
+            .unbind().on('click', function() {
+                window.location.href = "NotebookView.pl?nid=" + notebook_id;
+        });
+    }
+    else { // normal experiment load
+        $('#finish_load_experiment_button')
+            .html('Continue to ExperimentView').fadeIn()
+            .unbind().on('click', function() {
+                window.location.href = "ExperimentView.pl?embed=" + embed + "&eid=" + experiment_id;
+        });
+    }
+}
+
+function reset_load() {
+    window.history.pushState({}, "Title", PAGE_NAME);
+    $('#load_dialog').dialog('close');
+
+    // Reset file selector
+    file_canceled();
+    clear_list();
+}
+
+
+function progress_formatter(item) {
+    var msg;
+    var row = $('<li>'+ item.description + ' </li>');
+
+    var job_status = $('<span></span>');
+
+    if (item.status == 'scheduled')
+        job_status.append(item.status).addClass('down bold');
+    else if (item.status == 'completed')
+        job_status.append(item.status).addClass('completed bold');
+    else if (item.status == 'running')
+        job_status.append(item.status).addClass('running bold');
+    else if (item.status == 'skipped')
+        job_status.append("already generated").addClass('skipped bold');
+    else if (item.status == 'cancelled')
+        job_status.append(item.status).addClass('alert bold');
+    else if (item.status == 'failed')
+        job_status.append(item.status).addClass('alert bold');
+    else
+        return;
+
+    row.append(job_status);
+
+    if (item.elapsed)  {
+        row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
+    }
+
+    if (item.log) {
+        var p = item.log.split("\n");
+
+        var pElements = p.map(function(item) {
+            var norm = item.replace(/\\t/g, " ").replace(/\\'/g, "'");
+            return $("<div></div>").html(norm);
+        });
+
+        var log = $("<div></div>").html(pElements).addClass("padded");
+        row.append(log);
+    }
+
+    return row;
+}
+
+function update_dialog(request, user, identifier, formatter) {
+    var get_status = function () {
+        $.ajax({
+            type: 'GET',
+            url: request,
+            dataType: 'json',
+            data: {
+                username: user
+            },
+            success: update_callback,
+            error: update_callback,
+            xhrFields: {
+                withCredentials: true
+            }
+        });
+    };
+
+    var update_callback = function(json) {
+        var dialog = $(identifier);
+        var workflow_status = $("<p></p>");
+        var data = $("<ul></ul>");
+        var results = [];
+        var current_status;
+        var timeout = 2000;
+
+        var callback = function() {
+            update_dialog(request, user, identifier, formatter);
+        }
+
+        if (json.error) {
+            pageObj.error++;
+            if (pageObj.error > 3) {
+                workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
+                var logfile;
+
+                if (json.results.length) {
+                    logfile = json.results[0].path;
+                }
+                load_failed(logfile);
+                return;
+            }
+        } else {
+            pageObj.error = 0;
+        }
+
+        if (json.status) {
+            current_status = json.status.toLowerCase();
+            workflow_status
+                .html("Workflow status: ")
+                .append( $('<span></span>').html(json.status) )
+                .addClass('bold');
+        } else {
+            setTimeout(callback, timeout);
+            return;
+        }
+
+        if (json.tasks) {
+            var jobs = json.tasks;
+            for (var index = 0; index < jobs.length; index++) {
+                var item = formatter(jobs[index]);
+                if (item) {
+                    results.push(item);
+                }
+            }
+        }
+
+        if (!dialog.dialog('isOpen')) {
+            return;
+        }
+
+        //FIXME Update when a workflow supports elapsed time
+        if (current_status == "completed") {
+            var total = json.tasks.reduce(function(a, b) {
+                if (!b.elapsed) return a;
+
+                return a + b.elapsed;
+            }, 0);
+
+            var duration = coge.utils.toPrettyDuration(total);
+
+            workflow_status.append("<br>Finished in " + duration);
+            workflow_status.find('span').addClass('completed');
+            get_load_log(function(result) {
+                load_succeeded(result);
+            });
+
+        }
+        else if (current_status == "failed"
+                || current_status == "error"
+                || current_status == "terminated"
+                || current_status == "cancelled")
+        {
+            workflow_status.find('span').addClass('alert');
+
+            if (json.results.length) {
+                logfile = json.results[0].path;
+            }
+            load_failed(logfile);
+        }
+        else if (current_status == "notfound") {
+            setTimeout(callback, timeout);
+            return;
+        }
+        else {
+            workflow_status.find('span').addClass('running');
+            setTimeout(callback, timeout);
+        }
+
+        results.push(workflow_status);
+        data.append(results);
+        dialog.find('#load_log').html(data);
+    };
+
+    get_status();
+}
+
+function reset_log() {
+    $('#load_log').html('');
+    $('#loading_msg').show();
+    $('#ok_button,#error_msg,#finished_msg,#finish_load_experiment_button,#cancel_load_experiment_button,#logfile').hide();
+}
+
+
 function LayoutView(options) {
     this.template = $(options.template);
     this.layout = options.layout;
