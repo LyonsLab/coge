@@ -597,13 +597,18 @@ function load(experiment) {
     $('#load_log').html('Initializing ...');
     newLoad = true;
 
+    var payload = $.extend({fname: "load_experiment"}, experiment);
+
     $.ajax({
-        data: experiment,
         dataType: "json",
+        type: "POST",
+        data: JSON.stringify(payload),
         contentType: "application/json",
         success: function(obj) {
             if (obj && obj.error) {
-                alert(obj.error);
+                if (obj.error.PAYLOAD)  {
+                    alert(obj.error.PAYLOAD);
+                }
                 return;
             }
 
