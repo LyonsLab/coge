@@ -411,6 +411,48 @@ function render_template(template, container) {
         .slideDown();
 }
 
+function PolymorphismView() {
+    this.initialize();
+}
+
+$.extend(PolymorphismView.prototype, {
+    initialize: function() {
+        this.el = $($("#poly-template").html());
+    },
+
+    is_valid: function() {
+        return true;
+    },
+});
+
+function AlignmentView() {
+    this.initialize();
+}
+
+$.extend(AlignmentView.prototype, {
+    initialize: function() {
+        this.el = $($("#align-template").html());
+    },
+
+    is_valid: function() {
+        return true;
+    },
+});
+
+function QuantativeView(){
+    this.initialize();
+}
+
+$.extend(QuantativeView.prototype, {
+    initialize: function() {
+        this.el = $($("#quant-template").html());
+    },
+
+    is_valid: function() {
+        return true;
+    },
+});
+
 function FastqView() {
     this.initialize();
 }
@@ -455,7 +497,11 @@ $.extend(FastqView.prototype, {
     update_aligner: function() {
         var selected = $("#alignment").find(":checked").val();
         render_template(align_templates[selected], this.align_container);
-    }
+    },
+
+    is_valid: function() {
+        return true;
+    },
 });
 
 function GeneralOptionsView() {
@@ -465,6 +511,10 @@ function GeneralOptionsView() {
 $.extend(GeneralOptionsView.prototype, {
     initialize: function() {
         this.el = $($("#general-options-template").html());
+    },
+
+    is_valid: function() {
+        return true;
     },
 });
 
@@ -483,7 +533,11 @@ $.extend(AdminOptionsView.prototype, {
             source:[],
             focus: function() { return false; },
         });
-    }
+    },
+
+    is_valid: function() {
+        return true;
+    },
 });
 
 function OptionsView(experiment) {
