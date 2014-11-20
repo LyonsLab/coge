@@ -25,11 +25,6 @@ var QUANT_FILES = [
 var SUPPORTED_FILES = concat.call(QUANT_FILES, ALIGN_FILES, SEQ_FILES, POLY_FILES);
 var FILE_TYPE_PATTERNS = new RegExp("(:?" + SUPPORTED_FILES.join("|") + ")$");
 
-// Template support
-var snp_templates  = {};
-var align_templates = {};
-
-
 function autodetect_file_type(file) {
     var stripped_file = file.replace(/.gz$/, '');
 
@@ -480,6 +475,18 @@ $.extend(FastqView.prototype, {
         this.el = $($("#fastq-template").html());
         this.snp_container = this.el.find("#snp-container");
         this.align_container = this.el.find("#align-container");
+
+        this.align_templates = {
+            gsnap: $($("#gsnap-template").html()),
+            tophat: $($("#tophat-template").html())
+        };
+
+        this.snp_templates = {
+            coge: $($("#coge-snp-template").html()),
+            gatk: $($("#samtools-snp-template").html()),
+            platypus: $($("#platypus-snp-template").html()),
+            samtools: $($("#gatk-snp-template").html())
+        };
     },
 
     render: function() {
@@ -490,7 +497,7 @@ $.extend(FastqView.prototype, {
         this.el.find("[name=aligner]").unbind().change(this.update_aligner.bind(this));
         this.el.find("#snp-method").unbind().change(function() {
             var selected = $(this).val();
-            render_template(snp_templates[selected], self.snp_container);
+            render_template(this.snp_templates[selected], self.snp_container);
         });
     },
 
@@ -505,7 +512,7 @@ $.extend(FastqView.prototype, {
             method.removeAttr("disabled");
             this.snp_container.slideDown();
             var initial = $("#snp-method").val();
-            render_template(snp_templates[initial], this.snp_container);
+            render_template(this.snp_templates[initial], this.snp_container);
         } else {
             method.attr("disabled", 1);
             this.snp_container.slideUp();
@@ -514,7 +521,7 @@ $.extend(FastqView.prototype, {
 
     update_aligner: function() {
         var selected = $("#alignment").find(":checked").val();
-        render_template(align_templates[selected], this.align_container);
+        render_template(this.align_templates[selected], this.align_container);
     },
 
     is_valid: function() {
@@ -728,18 +735,6 @@ function initialize_wizard() {
     wizard.addStep(new OptionsView(current_experiment));
     wizard.addStep(new ConfirmationView(current_experiment));
     wizard.render();
-
-    // Create psudeo templates
-    snp_templates = {
-        coge: $($("#coge-snp-template").html()),
-        gatk: $($("#samtools-snp-template").html()),
-        platypus: $($("#platypus-snp-template").html()),
-        samtools: $($("#gatk-snp-template").html())
-    };
-    align_templates = {
-        gsnap: $($("#gsnap-template").html()),
-        tophat: $($("#tophat-template").html())
-    };
 
     root.append(wizard.el);
     return wizard;
