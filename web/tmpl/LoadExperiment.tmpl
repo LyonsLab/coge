@@ -3,10 +3,6 @@
 </TMPL_IF>
 
 <TMPL_IF NAME='MAIN'>
-<script type="text/javascript" src="js/pages/load-experiment.js"></script>
-<script type="text/javascript" src="js/coge/utils.js"></script>
-<script type="text/javascript" src="js/jquery.fileupload.js"></script>
-
 <style type="text/css">
 
 @font-face {
@@ -34,51 +30,6 @@
 .jstree li a ins { display:none !important; }
 .jstree.jstree-focused { background:white; }
 </style>
-
-<script type="text/javascript">
-
-const STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
-const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
-var SUPPORT_EMAIL = '<TMPL_VAR NAME=SUPPORT_EMAIL>';
-
-var timestamps = new Array();
-var load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
-var job_id = '<TMPL_VAR NAME="JOB_ID">';
-var embed = '<TMPL_VAR NAME="EMBED">';
-var experiment_id;
-var notebook_id;
-var pageObj = {};
-var newLoad = false;
-var wizard;
-
-$(document).ready(function(){
-	// Configure jQuery ajax
-    $.ajaxSetup({
-        type: "GET",
-        url: PAGE_NAME,
-        dataType: "html",
-        cache: false,
-    });
-
-    var is_admin = Boolean("<TMPL_VAR NAME=ADMIN_AREA>");
-
-    pageObj.user = "<tmpl_var name=USER>";
-
-    // Configure dialogs
-    $(".dialog_box").dialog({autoOpen: false, width: 500});
-    $('#load_dialog').dialog("widget").find('.ui-dialog-titlebar-close').hide();
-    $('#load_dialog').dialog({modal: true, closeOnEscape: false})
-
-    // Open status dialog
-    if (job_id) {
-        $('#loading_msg').hide();
-        $('#load_dialog').dialog('open');
-        update_dialog(STATUS_URL + job_id, pageObj.user, "#load_dialog", progress_formatter);
-    }
-
-    wizard = initialize_wizard({ admin: is_admin });
-});
-</script>
 
 <div id="wizard-container"></div>
 
@@ -578,7 +529,56 @@ $(document).ready(function(){
     </div>
 </script>
 
+<!-- FileSelect javascript and html -->
 <div id="selector-wrapper" class="hidden">
     <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
 </div>
+
+<!-- Scripts -->
+<script type="text/javascript">
+const STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
+const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
+var SUPPORT_EMAIL = '<TMPL_VAR NAME=SUPPORT_EMAIL>';
+
+var timestamps = new Array();
+var load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
+var job_id = '<TMPL_VAR NAME="JOB_ID">';
+var embed = '<TMPL_VAR NAME="EMBED">';
+var experiment_id;
+var notebook_id;
+var pageObj = {};
+var newLoad = false;
+var wizard;
+
+$(document).ready(function(){
+	// Configure jQuery ajax
+    $.ajaxSetup({
+        type: "GET",
+        url: PAGE_NAME,
+        dataType: "html",
+        cache: false,
+    });
+
+    var is_admin = Boolean("<TMPL_VAR NAME=ADMIN_AREA>");
+
+    pageObj.user = "<tmpl_var name=USER>";
+
+    // Configure dialogs
+    $(".dialog_box").dialog({autoOpen: false, width: 500});
+    $('#load_dialog').dialog("widget").find('.ui-dialog-titlebar-close').hide();
+    $('#load_dialog').dialog({modal: true, closeOnEscape: false})
+
+    // Open status dialog
+    if (job_id) {
+        $('#loading_msg').hide();
+        $('#load_dialog').dialog('open');
+        update_dialog(STATUS_URL + job_id, pageObj.user, "#load_dialog", progress_formatter);
+    }
+
+    wizard = initialize_wizard({ admin: is_admin });
+});
+</script>
+<script type="text/javascript" src="js/pages/load-experiment.js"></script>
+<script type="text/javascript" src="js/coge/utils.js"></script>
+<script type="text/javascript" src="js/jquery.fileupload.js"></script>
 </TMPL_IF> <!-- MAIN -->
