@@ -256,6 +256,7 @@ $.extend(DataView.prototype, {
         });
     },
 
+    //FIXME: Does not get called
     add: function(e, data) {
         var filename = data.files[0].name;
 
@@ -272,6 +273,7 @@ $.extend(DataView.prototype, {
         }
     },
 
+    //FIXME: Does not get called
     uploaded: function(e, data) {
         this.files.push({
             name: 'file://'+data.result.filename,
@@ -283,7 +285,8 @@ $.extend(DataView.prototype, {
     },
 
     is_valid: function() {
-        var items = get_selected_files();
+        //FIXME: This is a hack to get around the uploader callbacks not working
+        var items = this.experiment.new_data;
 
         if (!items.length) {
             return false;
@@ -601,7 +604,8 @@ $.extend(OptionsView.prototype, {
             return;
         }
 
-        //FIXME: A generic analysis view should allow for multiple
+        //FIXME: A aggregate view should add analysis options
+        // for multiple file types
         if ($.inArray(file_type, POLY_FILES) > -1) {
             this.analysis_view = new PolymorphismView();
         }
