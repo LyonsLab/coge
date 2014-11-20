@@ -1096,6 +1096,15 @@ $.extend(ConfirmationView.prototype, {
 
     renderOptions: function(options) {
         this.options.empty();
+
+        for(key in options) {
+            if (options.hasOwnProperty(key)) {
+                newpair = this.pair_template.clone();
+                newpair.find(".name").html(key);
+                newpair.find(".data").html(String(options[key]));
+                this.options.append(newpair);
+            }
+        }
     },
 
     is_valid: function() {
