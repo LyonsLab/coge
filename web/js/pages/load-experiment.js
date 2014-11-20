@@ -279,6 +279,7 @@ $.extend(DataView.prototype, {
         finish_file_in_list('file', 'file://'+data.result.filename, data.result.path, data.result.size);
     },
 
+    //FIXME: Add multiple file support
     is_valid: function() {
         //FIXME: This is a hack to get around the uploader callbacks not working
         var items = this.experiment.new_data;
@@ -546,6 +547,7 @@ $.extend(FastqView.prototype, {
 });
 
 function GeneralOptionsView() {
+    this.data = {};
     this.initialize();
 }
 
@@ -555,37 +557,46 @@ $.extend(GeneralOptionsView.prototype, {
     },
 
     is_valid: function() {
+        this.data.notebook = $("#notebook").is(":checked");
+        this.data.email = $("#email").is(":checked");
+
         return true;
     },
 
     get_options: function() {
-        return {};
+        return this.data;
     },
 });
 
 function AdminOptionsView() {
+    this.data = {};
     this.initialize();
 }
 
 $.extend(AdminOptionsView.prototype, {
     initialize: function() {
         this.el = $($("#admin-options-template").html());
+        this.edit_user = this.el.find("#edit_user");
     },
 
     render: function() {
         // jQuery UI
-        this.el.find("#edit_user").unbind().autocomplete({
+        this.edit_user.unbind().autocomplete({
             source:[],
             focus: function() { return false; },
         });
     },
 
     is_valid: function() {
+        //var ignore_cb = this.el.find('#ignore_missing_chrs');
+        //this.ignore_missing_chrs = ignore_cb.is(':checked');
+        this.data.user = this.edit_user.val();
+
         return true;
     },
 
     get_options: function() {
-        return {};
+        return this.data;
     },
 });
 
