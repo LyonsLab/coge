@@ -423,18 +423,20 @@ sub check_login {
 }
 
 sub load_experiment {
-    my %opts        = @_;
-    my $name        = $opts{name};
-    my $description = $opts{description};
-    my $version     = $opts{version};
-    my $source_name = $opts{source_name};
-    my $restricted  = $opts{restricted};
-    my $user_name   = $opts{user_name};
-    my $gid         = $opts{gid};
-    my $items       = $opts{items};
-    my $file_type	= $opts{file_type};
-    my $aligner     = $opts{aligner};
-    my $ignore_missing_chrs = $opts{ignore_missing_chrs};
+    my $opts = shift;
+
+    my $name        = $opts->{description}->{name};
+    my $description = $opts->{description}->{description};
+    my $version     = $opts->{description}->{version};
+    my $source_name = $opts->{description}->{source_name};
+    my $restricted  = $opts->{description}->{restricted};
+    my $user_name   = $opts->{description}->{user_name};
+    my $gid         = $opts->{gid};
+    my $items       = $opts->{data};
+    my $file_type	= $opts->{data}[0]->{file_type};
+    my $aligner     = $opts->{aligner};
+    my $load_id     = $opts->{load_id};
+    my $ignore_missing_chrs = $opts->{ignore_missing_chrs};
 
 	# Added EL: 10/24/2013.  Solves the problem when restricted is unchecked.
 	# Otherwise, command-line call fails with next arg being passed to
@@ -443,7 +445,6 @@ sub load_experiment {
 
 	# print STDERR "load_experiment: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
     return encode_json({ error => "No data items" }) unless $items;
-    $items = decode_json($items);
 
     # Check login
     if ( !$user_name || !$USER->is_admin ) {
@@ -452,6 +453,8 @@ sub load_experiment {
     if ($user_name eq 'public') {
         return encode_json({ error => 'Not logged in' });
     }
+
+    $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $load_id. '/';
 
     # Setup staging area
     my $stagepath = catdir($TEMPDIR, 'staging');
