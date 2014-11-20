@@ -1091,7 +1091,7 @@ function load(experiment) {
     $('#load_log').html('Initializing ...');
     newLoad = true;
 
-    var payload = $.extend({fname: "load_experiment"}, experiment);
+    var payload = $.extend({fname: "load_experiment", load_id: load_id}, experiment);
 
     $.ajax({
         dataType: "json",
