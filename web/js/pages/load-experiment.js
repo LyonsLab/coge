@@ -954,8 +954,9 @@ $.extend(AdminOptionsView.prototype, {
     },
 });
 
-function OptionsView(experiment) {
-    this.experiment = experiment;
+function OptionsView(opts) {
+    this.experiment = opts.experiment;
+    this.admin = opts.admin;
     this.title = "Options";
     this.initialize();
 }
@@ -968,10 +969,13 @@ $.extend(OptionsView.prototype, {
             template: "#options-layout-template",
 
             layout: {
-                "#admin-options": this.admin_view,
                 "#general-options": this.general_view
             }
         });
+
+        if (this.admin) {
+            this.layout_view.updateLayout({"#admin-options": this.admin_view});
+        }
 
         this.el = this.layout_view.el;
     },
@@ -985,13 +989,16 @@ $.extend(OptionsView.prototype, {
             return false;
         }
 
-        if (!this.admin_view.is_valid()) {
-            return false;
+        var data = $.extend({}, this.general_view.get_options(),
+                                this.analysis_view.get_options());
+        if (this.admin) {
+            if (!this.admin_view.is_valid()) {
+                return false;
+            }
+
+            $.extend(data, this.admin_view.get_options());
         }
 
-        var data = $.extend({}, this.admin_view.get_options(),
-                                this.general_view.get_options(),
-                                this.analysis_view.get_options());
         this.experiment.options = data;
 
         return true;
@@ -1115,19 +1122,19 @@ function load(experiment) {
             // Start status update
             if (obj.job_id) { // JEX status for load FASTQ
                 job_id = obj.job_id;
-                window.history.pushState({}, "Title", PAGE_NAME + "?job_id=" + obj.job_id); // Add job_id to browser URL
+                window.history.pushState({}, "Title", "LoadExperiment.pl" + "?job_id=" + obj.job_id); // Add job_id to browser URL
                 update_dialog(STATUS_URL + obj.job_id, pageObj.user, "#load_dialog", progress_formatter);
             }
         }
     });
 }
 
-function initialize_wizard() {
+function initialize_wizard(opts) {
     var root = $("#wizard-container");
     var wizard = new Wizard({ completed: load, data: current_experiment });
     wizard.addStep(new DescriptionView(current_experiment));
     wizard.addStep(new DataView(current_experiment));
-    wizard.addStep(new OptionsView(current_experiment));
+    wizard.addStep(new OptionsView({experiment: current_experiment, admin: opts.admin}));
     wizard.addStep(new ConfirmationView(current_experiment));
     wizard.render();
 
