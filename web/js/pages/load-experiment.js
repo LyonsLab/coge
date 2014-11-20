@@ -288,7 +288,7 @@ $.extend(DataView.prototype, {
             return false;
         }
 
-        var file_type = items[0].file_type = this.el.find("#select_file_type option:selected").val();
+        items[0].file_type = this.el.find("#select_file_type option:selected").val();
 
         if (items === null) {
             error_help('Files are still being transferred, please wait.');
@@ -300,7 +300,7 @@ $.extend(DataView.prototype, {
             return false;
         }
 
-        if (!file_type) {
+        if(!items[0].file_type) {
             error_help("Please select the file type to continue");
             return false;
         }
@@ -380,9 +380,6 @@ $.extend(DescriptionView.prototype, {
         var version = this.el.find('#edit_version').val();
         var restricted = $('#restricted').is(':checked');
         var genome = this.el.find('#edit_genome').val();
-        var aligner = this.el.find("#alignment").find(":checked").val();
-        var ignore_cb = this.el.find('#ignore_missing_chrs');
-        var ignore_missing_chrs = ignore_cb.is(':checked');
 
         if (!name) {
             error_help('Please specify an experiment name.');
@@ -557,8 +554,8 @@ $.extend(GeneralOptionsView.prototype, {
     },
 
     is_valid: function() {
-        this.data.notebook = $("#notebook").is(":checked");
-        this.data.email = $("#email").is(":checked");
+        this.data.notebook = this.el.find("#notebook").is(":checked");
+        this.data.email = this.el.find("#email").is(":checked");
 
         return true;
     },
@@ -647,8 +644,8 @@ $.extend(OptionsView.prototype, {
     render: function() {
         var file_type = this.experiment.data[0].file_type;
 
-        //FIXME: Report an error
         if (!file_type) {
+            error_help("Please set the file type.");
             return;
         }
 
