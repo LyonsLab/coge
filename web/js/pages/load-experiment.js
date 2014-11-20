@@ -436,6 +436,10 @@ $.extend(PolymorphismView.prototype, {
     is_valid: function() {
         return true;
     },
+
+    get_options: function() {
+        return {};
+    },
 });
 
 function AlignmentView() {
@@ -450,6 +454,10 @@ $.extend(AlignmentView.prototype, {
     is_valid: function() {
         return true;
     },
+
+    get_options: function() {
+        return {};
+    },
 });
 
 function QuantativeView(){
@@ -463,6 +471,10 @@ $.extend(QuantativeView.prototype, {
 
     is_valid: function() {
         return true;
+    },
+
+    get_options: function() {
+        return {};
     },
 });
 
@@ -527,6 +539,10 @@ $.extend(FastqView.prototype, {
     is_valid: function() {
         return true;
     },
+
+    get_options: function() {
+        return {};
+    },
 });
 
 function GeneralOptionsView() {
@@ -540,6 +556,10 @@ $.extend(GeneralOptionsView.prototype, {
 
     is_valid: function() {
         return true;
+    },
+
+    get_options: function() {
+        return {};
     },
 });
 
@@ -562,6 +582,10 @@ $.extend(AdminOptionsView.prototype, {
 
     is_valid: function() {
         return true;
+    },
+
+    get_options: function() {
+        return {};
     },
 });
 
@@ -600,9 +624,15 @@ $.extend(OptionsView.prototype, {
             return false;
         }
 
+        var data = $.extend({}, this.admin_view.get_options(),
+                                this.general_view.get_options(),
+                                this.analysis_view.get_options());
+        this.experiment.options = data;
+
         return true;
     },
 
+    //FIXME: Add multiple file support
     render: function() {
         var file_type = this.experiment.data[0].file_type;
 
