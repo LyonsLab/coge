@@ -39,7 +39,7 @@ BEGIN {
     @ISA     = qw (Exporter);
     @EXPORT =
       qw( units commify print_fasta get_unique_id get_link_coords format_time_diff sanitize_name
-        execute trim );
+        execute trim js_escape );
 }
 
 sub units {
@@ -71,6 +71,13 @@ sub trim {
     $s =~ s/\s+$//;
     $s =~ s/^\"//;
     $s =~ s/\"$//;
+    return $s;
+}
+
+sub js_escape {
+    my $s = shift;
+    $s =~ s/\'/\\'/g;
+    $s =~ s/\"/\\"/g;
     return $s;
 }
 

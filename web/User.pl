@@ -23,7 +23,7 @@ use CoGe::Core::Genome qw(genomecmp);
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
-use CoGe::Accessory::Utils qw(format_time_diff);
+use CoGe::Accessory::Utils qw(format_time_diff js_escape);
 use Benchmark;
 no warnings 'redefine';
 
@@ -281,7 +281,7 @@ sub get_item_info {
         }
         $html .= '</div>';
         
-        my $info = 'Genome <i>' . $genome->info . '</i>';
+        my $info = 'Genome <i>' . js_escape($genome->info) . '</i>';
         my $edit_link = qq{open_item('$item_type','$info','GenomeInfo.pl?gid=$item_id');};
         my $view_link = qq{open_item('$item_type','$info','GenomeView.pl?gid=$item_id&tracks=sequence%2Cfeatures');};
         my $load_link = qq{open_item('$item_type','$info','LoadAnnotation.pl?gid=$item_id');};
@@ -325,7 +325,7 @@ sub get_item_info {
         $html .= '</div>';
         
         my $gid = $experiment->genome_id;
-        my $info = 'Experiment <i>' . $experiment->info . '</i>';
+        my $info = 'Experiment <i>' . js_escape($experiment->info) . '</i>';
         my $edit_link = qq{open_item('$item_type','$info','ExperimentView.pl?eid=$item_id');};
         my $view_link = qq{open_item('$item_type','$info','GenomeView.pl?gid=$gid&tracks=experiment$item_id');};
         
