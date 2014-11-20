@@ -563,16 +563,13 @@ function OptionsView(experiment) {
 
 $.extend(OptionsView.prototype, {
     initialize: function() {
-        this.fastq_view = new FastqView();
         this.admin_view = new AdminOptionsView();
         this.general_view = new GeneralOptionsView();
-
         this.layout_view = new LayoutView({
             template: "#options-layout-template",
 
             layout: {
                 "#admin-options": this.admin_view,
-                "#analysis-options": this.fastq_view,
                 "#general-options": this.general_view
             }
         });
@@ -581,22 +578,47 @@ $.extend(OptionsView.prototype, {
     },
 
     is_valid: function() {
-        //if (!this.fastq_view.is_valid()) {
-        //    return false;
-        //}
+        if (!this.analysis_view.is_valid()) {
+            return false;
+        }
 
-        //if (!this.general_view.is_valid()) {
-        //    return false;
-        //}
+        if (!this.general_view.is_valid()) {
+            return false;
+        }
 
-        //if (!this.admin_view.is_valid()) {
-        //    return false;
-        //}
+        if (!this.admin_view.is_valid()) {
+            return false;
+        }
 
         return true;
     },
 
     render: function() {
+        var file_type = this.experiment.data[0].file_type;
+
+        //FIXME: Report an error
+        if (!file_type) {
+            return;
+        }
+
+        //FIXME: A generic analysis view should allow for multiple
+        if ($.inArray(file_type, POLY_FILES) > -1) {
+            this.analysis_view = new PolymorphismView();
+        }
+        else if ($.inArray(file_type, SEQ_FILES) > -1) {
+            this.analysis_view = new FastqView();
+        }
+        else if ($.inArray(file_type, QUANT_FILES) > -1) {
+            this.analysis_view = new QuantativeView();
+        }
+        else if ($.inArray(file_type, ALIGN_FILES) > -1) {
+            this.analysis_view = new AlignmentView();
+        }
+
+        this.layout_view.updateLayout(
+            {"#analysis-options": this.analysis_view}
+        );
+
         this.layout_view.renderLayout();
     },
 });
