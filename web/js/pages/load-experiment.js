@@ -494,11 +494,11 @@ $.extend(Wizard.prototype, {
         }
 
         if (this.at_last()) {
-            this.next.attr("disabled", 1);
-            this.done.removeAttr("disabled");
+            this.next.hide();
+            this.done.show();
         } else {
-            this.next.removeAttr("disabled");
-            this.done.attr("disabled", 1);
+            this.next.show();
+            this.done.hide();
         }
     },
 
