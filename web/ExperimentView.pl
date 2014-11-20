@@ -245,7 +245,7 @@ sub get_annotations {
     my %groups;
     my $num_annot = 0;
     foreach my $a ( $exp->annotations ) {
-        my $group = ( $a->type->group ? $a->type->group->name : undef);
+        my $group = ( $a->type->group ? $a->type->group->name : '');
         my $type = $a->type->name;
         push @{ $groups{$group}{$type} }, $a if (defined $group and defined $type);
         $num_annot++;
