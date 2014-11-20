@@ -1138,6 +1138,6 @@ function initialize_wizard(opts) {
     wizard.addStep(new ConfirmationView(current_experiment));
     wizard.render();
 
-    root.append(wizard.el);
+    root.html(wizard.el);
     return wizard;
 }
