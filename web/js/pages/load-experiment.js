@@ -1,13 +1,28 @@
 /*global document,$,alert,window,JSON */
 
+var concat = Array.prototype.concat;
+
 // Global experiment data
 var current_experiment = {};
 
 // Support file types
-var SUPPORTED_FILES = [
-    "csv", "tsv", "bed", "gff", "gtf", "vcf", "bam", "fastq", "fq"
+var POLY_FILES = [
+    "vcf"
 ];
 
+var ALIGN_FILES = [
+    "bam"
+];
+
+var SEQ_FILES = [
+    "fastq", "fq"
+];
+
+var QUANT_FILES = [
+    "csv", "tsv", "bed", "gff", "gtf"
+];
+
+var SUPPORTED_FILES = concat.call(QUANT_FILES, ALIGN_FILES, SEQ_FILES, POLY_FILES);
 var FILE_TYPE_PATTERNS = new RegExp("(:?" + SUPPORTED_FILES.join("|") + ")$");
 
 // Template support
