@@ -239,16 +239,6 @@ function load_succeeded(obj) {
     }
 }
 
-function reset_load() {
-    window.history.pushState({}, "Title", PAGE_NAME);
-    $('#load_dialog').dialog('close');
-
-    // Reset file selector
-    file_canceled();
-    clear_list();
-}
-
-
 function progress_formatter(item) {
     var msg;
     var row = $('<li>'+ item.description + ' </li>');
@@ -1129,7 +1119,17 @@ function load(experiment) {
     });
 }
 
+function reset_load() {
+    window.history.pushState({}, "Title", PAGE_NAME);
+    $('#load_dialog').dialog('close');
+
+    initialize_wizard({admin: is_admin});
+    $('#wizard-container').hide().slideDown();
+}
+
 function initialize_wizard(opts) {
+    //FIXME: This should be private variable
+    current_experiment = {};
     var root = $("#wizard-container");
     var wizard = new Wizard({ completed: load, data: current_experiment });
     wizard.addStep(new DescriptionView(current_experiment));
