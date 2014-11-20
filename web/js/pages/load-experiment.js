@@ -660,8 +660,10 @@ $.extend(DataView.prototype, {
     }
 });
 
-function DescriptionView(experiment) {
-    this.experiment = experiment;
+function DescriptionView(opts) {
+    this.experiment = opts.experiment;
+    this.description = opts.description;
+    this.gid = opts.gid;
     this.sources = undefined;
     this.title = "Describe your experiment";
     this.initialize();
@@ -672,8 +674,20 @@ $.extend(DescriptionView.prototype, {
         this.el = $($("#description-template").html());
         this.edit_source = this.el.find("#edit_source");
         this.edit_genome = this.el.find("#edit_genome");
-
         this.get_sources();
+
+        if (this.description) {
+            this.el.find('#edit_name').val(this.description.name);
+            this.el.find('#edit_description').val(this.description.description);
+            this.el.find('#edit_version').val(this.description.version);
+            this.edit_source.val(this.description.source);
+
+            if (!this.description.restricted) {
+                this.el.find('#restricted').removeAttr('checked');
+            }
+
+            this.el.find('#edit_genome').val(this.description.genome);
+        }
     },
 
     get_sources: function() {
@@ -700,7 +714,7 @@ $.extend(DescriptionView.prototype, {
         // jQuery Events
         this.edit_genome.unbind().change(function() {
             // Reset gid when item has changed
-            self.experiment.gid = undefined;
+            self.gid = undefined;
         });
 
         // jQuery UI
@@ -708,7 +722,7 @@ $.extend(DescriptionView.prototype, {
             source:[],
             select: function(event, ui) {
                 $(this).val(ui.item.label);
-                self.experiment.gid = ui.item.value;
+                self.gid = ui.item.value;
                 return false; // Prevent the widget from inserting the value.
             },
 
@@ -725,7 +739,7 @@ $.extend(DescriptionView.prototype, {
         var name = this.el.find('#edit_name').val();
         var description = this.el.find('#edit_description').val();
         var version = this.el.find('#edit_version').val();
-        var restricted = $('#restricted').is(':checked');
+        var restricted = this.el.find('#restricted').is(':checked');
         var genome = this.el.find('#edit_genome').val();
 
         if (!name) {
@@ -743,7 +757,7 @@ $.extend(DescriptionView.prototype, {
             return false;
         }
 
-        if (!genome || genome === 'Search' || !this.experiment.gid) {
+        if (!genome || genome === 'Search' || !this.gid) {
             error_help('Please specify a genome.');
             return false;
         }
@@ -754,8 +768,11 @@ $.extend(DescriptionView.prototype, {
                 description: description,
                 version: version,
                 restricted: restricted,
+                source: source,
                 genome: genome,
-            }
+            },
+
+            gid: this.gid
         });
 
         return true;
@@ -934,7 +951,9 @@ $.extend(AdminOptionsView.prototype, {
     is_valid: function() {
         //var ignore_cb = this.el.find('#ignore_missing_chrs');
         //this.ignore_missing_chrs = ignore_cb.is(':checked');
-        this.data.user = this.edit_user.val();
+        if (this.edit_user.val()) {
+            this.data.user = this.edit_user.val();
+        }
 
         return true;
     },
@@ -1123,7 +1142,12 @@ function reset_load() {
     window.history.pushState({}, "Title", PAGE_NAME);
     $('#load_dialog').dialog('close');
 
-    initialize_wizard({admin: is_admin});
+    initialize_wizard({
+        admin: is_admin,
+        description: current_experiment.description,
+        gid: current_experiment.gid
+    });
+
     $('#wizard-container').hide().slideDown();
 }
 
@@ -1132,7 +1156,11 @@ function initialize_wizard(opts) {
     current_experiment = {};
     var root = $("#wizard-container");
     var wizard = new Wizard({ completed: load, data: current_experiment });
-    wizard.addStep(new DescriptionView(current_experiment));
+    wizard.addStep(new DescriptionView({
+        experiment: current_experiment,
+        description: opts.description,
+        gid: opts.gid
+    }));
     wizard.addStep(new DataView(current_experiment));
     wizard.addStep(new OptionsView({experiment: current_experiment, admin: opts.admin}));
     wizard.addStep(new ConfirmationView(current_experiment));
