@@ -15,7 +15,7 @@ use File::Path;
 use File::Slurp;
 use File::Spec::Functions qw(catdir catfile);
 use Sort::Versions;
-use CoGe::Pipelines::CoGeSNPs;
+use CoGe::Pipelines::SNP::CoGeSNPs;
 use CoGe::Pipelines::SNP::Samtools;
 use CoGe::Pipelines::SNP::Platypus;
 use Data::Dumper;
