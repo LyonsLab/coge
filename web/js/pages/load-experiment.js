@@ -862,7 +862,7 @@ $.extend(FastqView.prototype, {
         this.el.find("[name=aligner]").unbind().change(this.update_aligner.bind(this));
         this.el.find("#snp-method").unbind().change(function() {
             var selected = $(this).val();
-            render_template(this.snp_templates[selected], self.snp_container);
+            render_template(self.snp_templates[selected], self.snp_container);
         });
     },
 
