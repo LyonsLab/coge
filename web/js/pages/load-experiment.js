@@ -598,12 +598,12 @@ $.extend(DataView.prototype, {
         });
     },
 
-    //FIXME: Does not get called
+    //FIXME: Add files to file list view and mark as being transferred
     add: function(e, data) {
         var filename = data.files[0].name;
 
         if ( !add_file_to_list(filename, 'file://'+filename) ) {
-            alert('File already exists.');
+            error_help('File already exists.');
         } else {
             // mdb 10/29/13 - moved from above to prevent stale load_id value, issue 236
             $('#input_upload_file').fileupload('option', { formData: {
@@ -615,14 +615,8 @@ $.extend(DataView.prototype, {
         }
     },
 
-    //FIXME: Does not get called
+    //FIXME: Update files to a completed state after transfer
     uploaded: function(e, data) {
-        this.files.push({
-            name: 'file://'+data.result.filename,
-            path: data.result.path,
-            size: units(data.result.size)
-        });
-
         finish_file_in_list('file', 'file://'+data.result.filename, data.result.path, data.result.size);
     },
 
