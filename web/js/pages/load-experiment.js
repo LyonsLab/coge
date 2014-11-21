@@ -826,6 +826,7 @@ $.extend(QuantativeView.prototype, {
 });
 
 function FastqView() {
+    this.data = {};
     this.initialize();
 }
 
@@ -884,11 +885,33 @@ $.extend(FastqView.prototype, {
     },
 
     is_valid: function() {
+        // SNP pipeline
+        var enabled = this.el.find("#snps").is(":checked"),
+            method = this.el.find("#snp-method").val();
+
+        if (method === "coge") {
+            this.data.snps = {
+                method: method,
+            };
+        } else if (method === "samtools") {
+            this.data.snps = {
+                method: method,
+            };
+        } else if (method === "gatk") {
+            this.data.snps = {
+                method: method,
+            };
+        } else if (method === "platypus") {
+            this.data.snps = {
+                method: method,
+            };
+        }
+
         return true;
     },
 
     get_options: function() {
-        return {};
+        return this.data;
     },
 });
 
