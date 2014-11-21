@@ -843,22 +843,28 @@ $.extend(FastqView.prototype, {
 
         this.snp_templates = {
             coge: $($("#coge-snp-template").html()),
-            gatk: $($("#samtools-snp-template").html()),
+            samtools: $($("#samtools-snp-template").html()),
             platypus: $($("#platypus-snp-template").html()),
-            samtools: $($("#gatk-snp-template").html())
+            gatk: $($("#gatk-snp-template").html())
         };
     },
 
     render: function() {
         var self = this;
 
+        var method = this.el.find("#snp-method");
+
         // jQuery events
         this.el.find("#snps").unbind().change(this.update_snp.bind(this));
         this.el.find("[name=aligner]").unbind().change(this.update_aligner.bind(this));
-        this.el.find("#snp-method").unbind().change(function() {
+        method.unbind().change(function() {
             var selected = $(this).val();
             render_template(self.snp_templates[selected], self.snp_container);
         });
+
+        if (this.data.snps) {
+            method.val(this.data.snps.method);
+        }
     },
 
     update_snp: function (ev) {
@@ -868,6 +874,7 @@ $.extend(FastqView.prototype, {
         var el = $(document.getElementById(method.val()));
 
         if (enabled) {
+            this.data.snps = $.extend({}, this.data.snps, { method: method });
             el.show();
             method.removeAttr("disabled");
             this.snp_container.slideDown();
@@ -892,16 +899,23 @@ $.extend(FastqView.prototype, {
         if (method === "coge") {
             this.data.snps = {
                 method: method,
+                min_read: this.el.find("#min-read").val(),
+                min_base: this.el.find("#min-base").val(),
+                allele_count: this.el.find("#allele-count").val(),
+                allele_freq: this.el.find("#allele-freq").val(),
+                scale: this.el.find("#scale").val()
             };
         } else if (method === "samtools") {
             this.data.snps = {
                 method: method,
+                min_read: this.el.find("#min-read").val(),
+                max_read: this.el.find("#max-read").val(),
             };
-        } else if (method === "gatk") {
+        } else if (method === "platypus") {
             this.data.snps = {
                 method: method,
             };
-        } else if (method === "platypus") {
+        } else if (method === "gatk") {
             this.data.snps = {
                 method: method,
             };
