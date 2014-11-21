@@ -430,13 +430,18 @@ sub load_experiment {
     my $version     = $opts->{description}->{version};
     my $source_name = $opts->{description}->{source_name};
     my $restricted  = $opts->{description}->{restricted};
-    my $user_name   = $opts->{description}->{user_name};
+    my $user_name   = $opts->{options}->{user_name};
     my $gid         = $opts->{gid};
     my $items       = $opts->{data};
     my $file_type	= $opts->{data}[0]->{file_type};
-    my $aligner     = $opts->{aligner};
     my $load_id     = $opts->{load_id};
+    my $options     = $opts->{options};
     my $ignore_missing_chrs = $opts->{ignore_missing_chrs};
+    my $aligner;
+
+    if ($options && $options->{aligner}) {
+        $aligner = $options->{aligner}->{tool};
+    }
 
 	# Added EL: 10/24/2013.  Solves the problem when restricted is unchecked.
 	# Otherwise, command-line call fails with next arg being passed to
