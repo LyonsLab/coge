@@ -15,7 +15,9 @@ use File::Path;
 use File::Slurp;
 use File::Spec::Functions qw(catdir catfile);
 use Sort::Versions;
-use CoGe::Pipelines::FindSNPs qw( run );
+use CoGe::Pipelines::SNP::CoGeSNPs;
+use CoGe::Pipelines::SNP::Samtools;
+use CoGe::Pipelines::SNP::Platypus;
 use Data::Dumper;
 
 use vars qw(
@@ -771,10 +773,24 @@ sub get_annotation_type_groups {
     return encode_json( [ sort keys %unique ] );
 }
 
+sub select_snp_pipeline {
+    my $method = shift;
+
+    my %pipelines = (
+        coge => \&CoGe::Pipelines::SNP::CoGeSNPs::run,
+        samtools => \&CoGe::Pipelines::SNP::Samtools::run,
+        platypus  => \&CoGe::Pipelines::SNP::Platypus::run,
+    );
+
+    # Select pipeline
+    return $pipelines{$method} || $pipelines{coge};
+}
+
 sub find_snps {
     my %opts        = @_;
     my $user_name   = $opts{user_name};
     my $eid         = $opts{eid};
+    my $method      = $opts{method};
 
     # Check login
     if ( !$user_name || !$USER->is_admin ) {
@@ -788,12 +804,16 @@ sub find_snps {
     my $experiment = $coge->resultset('Experiment')->find($eid);
     return encode_json({ error => 'Experiment not found' }) unless $experiment;
 
-    # Submit workflow to generate experiment
-    my ($workflow_id, $error_msg) = CoGe::Pipelines::FindSNPs::run(
-        db => $coge,
-        experiment => $experiment,
-        user => $USER
-    );
+    my ($workflow_id, $error_msg);
+
+    eval {
+        # Select the pipeline to be used
+        my $dispatch = select_snp_pipeline($method);
+
+        # Submit workflow to generate experiment
+        ($workflow_id, $error_msg) = $dispatch->(db => $coge, experiment => $experiment, user => $USER);
+    };
+
     unless ($workflow_id) {
         print STDERR $error_msg, "\n";
         return encode_json({ error => "Workflow submission failed: " . $error_msg });

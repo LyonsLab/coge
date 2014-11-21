@@ -29,6 +29,7 @@ use warnings;
 use POSIX qw( ceil );
 use Data::GUID;
 use Data::Dumper;
+use File::Basename qw(fileparse);
 
 BEGIN {
     use vars qw ($VERSION $FASTA_LINE_LEN @ISA @EXPORT);
@@ -37,9 +38,11 @@ BEGIN {
     $VERSION = 0.1;
     $FASTA_LINE_LEN = 80;
     @ISA     = qw (Exporter);
-    @EXPORT =
-      qw( units commify print_fasta get_unique_id get_link_coords format_time_diff sanitize_name
-        execute trim js_escape html_escape );
+    @EXPORT = qw( 
+        units commify print_fasta get_unique_id get_link_coords 
+        format_time_diff sanitize_name execute 
+        trim js_escape html_escape to_filename
+    );
 }
 
 sub units {
@@ -156,6 +159,11 @@ sub format_time_diff {
     $elapsed .= "${s}s" if $s > 0 && $d <= 0;
 
     return $elapsed;
+}
+
+sub to_filename {
+    my ($name, undef, undef) = fileparse(shift, qr/\.[^.]*/);
+    return $name;
 }
 
 sub execute {
