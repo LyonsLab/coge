@@ -161,7 +161,7 @@ sub create_find_snps_job {
         outputs => [
             $snps,
         ],
-        description => "Finding SNPs using SAMtools method ...",
+        description => "Identifying SNPs using SAMtools method ...",
     };
 }
 
