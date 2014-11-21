@@ -771,75 +771,15 @@ function render_template(template, container) {
         .slideDown();
 }
 
-function PolymorphismView() {
-    this.initialize();
-}
-
-$.extend(PolymorphismView.prototype, {
-    initialize: function() {
-        this.el = $($("#poly-template").html());
-    },
-
-    is_valid: function() {
-        return true;
-    },
-
-    get_options: function() {
-        return {};
-    },
-});
-
-function AlignmentView() {
-    this.initialize();
-}
-
-$.extend(AlignmentView.prototype, {
-    initialize: function() {
-        this.el = $($("#align-template").html());
-    },
-
-    is_valid: function() {
-        return true;
-    },
-
-    get_options: function() {
-        return {};
-    },
-});
-
-function QuantativeView(){
-    this.initialize();
-}
-
-$.extend(QuantativeView.prototype, {
-    initialize: function() {
-        this.el = $($("#quant-template").html());
-    },
-
-    is_valid: function() {
-        return true;
-    },
-
-    get_options: function() {
-        return {};
-    },
-});
-
-function FastqView() {
+function FindSNPView() {
     this.data = {};
     this.initialize();
-}
+};
 
-$.extend(FastqView.prototype, {
+$.extend(FindSNPView.prototype, {
     initialize: function() {
-        this.el = $($("#fastq-template").html());
+        this.el = $($("#snp-template").html());
         this.snp_container = this.el.find("#snp-container");
-        this.align_container = this.el.find("#align-container");
-
-        this.align_templates = {
-            gsnap: $($("#gsnap-template").html()),
-            tophat: $($("#tophat-template").html())
-        };
 
         this.snp_templates = {
             coge: $($("#coge-snp-template").html()),
@@ -853,10 +793,7 @@ $.extend(FastqView.prototype, {
         var self = this;
 
         var method = this.el.find("#snp-method");
-
-        // jQuery events
         this.el.find("#snps").unbind().change(this.update_snp.bind(this));
-        this.el.find("[name=aligner]").unbind().click(this.update_aligner.bind(this));
 
         method.unbind().change(function() {
             var selected = $(this).val();
@@ -866,8 +803,6 @@ $.extend(FastqView.prototype, {
         if (this.data.snps) {
             method.val(this.data.snps.method);
         }
-
-        this.update_aligner();
     },
 
     update_snp: function (ev) {
@@ -881,45 +816,15 @@ $.extend(FastqView.prototype, {
             el.show();
             method.removeAttr("disabled");
             this.snp_container.slideDown();
-            var initial = $("#snp-method").val();
-            render_template(this.snp_templates[initial], this.snp_container);
+            var selected = $("#snp-method").val();
+            render_template(this.snp_templates[selected], this.snp_container);
         } else {
             method.attr("disabled", 1);
             this.snp_container.slideUp();
         }
     },
 
-    update_aligner: function() {
-        var selected = this.el.find("#alignment").find(":checked").val();
-        render_template(this.align_templates[selected], this.align_container);
-    },
-
     is_valid: function() {
-        var aligner = this.el.find("#alignment :checked").val();
-
-        if (aligner === "gsnap") {
-            this.data = {
-                aligner: {
-                    tool: "gsnap",
-                    n: this.el.find("#n").val(),
-                    Q: this.el.find("#Q").val(),
-                    gap: this.el.find("#gap").val(),
-                    nofail: this.el.find("#nofail").is(":checked")
-                },
-
-                cutadapt: {
-                    q: this.el.find("#q").val(),
-                    m: this.el.find("#m").val(),
-                    quality: this.el.find("#quality").val()
-                }
-            };
-        } else {
-            this.data = {
-                tool: "tophat",
-                g: this.el.find("#g").val(),
-            }
-        }
-
         // SNP pipeline
         var enabled = this.el.find("#snps").is(":checked");
         var method = this.el.find("#snp-method").val();
@@ -950,12 +855,183 @@ $.extend(FastqView.prototype, {
                 };
             }
         }
+        return true;
+    },
+
+    get_options: function() {
+        return this.data;
+    },
+});
+
+function AlignmentView() {
+    this.data = {};
+    this.initialize();
+}
+
+$.extend(AlignmentView.prototype, {
+    initialize:function() {
+        this.el = $($("#align-template").html());
+        this.align_container = this.el.find("#align-container");
+        this.align_templates = {
+            gsnap: $($("#gsnap-template").html()),
+            tophat: $($("#tophat-template").html())
+        };
+    },
+
+    render: function() {
+        // jQuery events
+        this.el.find("[name=aligner]").unbind().click(this.update_aligner.bind(this));
+        this.update_aligner();
+    },
+
+    update_aligner: function() {
+        var selected = this.el.find("#alignment :checked").val();
+        render_template(this.align_templates[selected], this.align_container);
+    },
+
+    is_valid: function() {
+        var aligner = this.el.find("#alignment :checked").val();
+
+        if (aligner === "gsnap") {
+            this.data = {
+                aligner: {
+                    tool: "gsnap",
+                    n: this.el.find("#n").val(),
+                    Q: this.el.find("#Q").val(),
+                    gap: this.el.find("#gap").val(),
+                    nofail: this.el.find("#nofail").is(":checked")
+                },
+
+                cutadapt: {
+                    q: this.el.find("#q").val(),
+                    m: this.el.find("#m").val(),
+                    quality: this.el.find("#quality").val()
+                }
+            };
+        } else {
+            this.data = {
+                tool: "tophat",
+                g: this.el.find("#g").val(),
+            }
+        }
 
         return true;
     },
 
     get_options: function() {
         return this.data;
+    }
+});
+
+function PolymorphismView() {
+    this.initialize();
+}
+
+$.extend(PolymorphismView.prototype, {
+    initialize: function() {
+        this.el = $($("#poly-template").html());
+    },
+
+    is_valid: function() {
+        return true;
+    },
+
+    get_options: function() {
+        return {};
+    },
+});
+
+function AlignmentOptionView() {
+    this.initialize();
+}
+
+$.extend(AlignmentOptionView.prototype, {
+    initialize: function() {
+        this.snp_view = new FindSNPView();
+
+        this.layout_view = new LayoutView({
+            template: "#align-option-template",
+
+            layout: {
+                "#snp-view": this.snp_view
+            }
+        });
+
+        this.el = this.layout_view.el;
+    },
+
+    render: function() {
+        this.layout_view.renderLayout();
+    },
+
+    is_valid: function() {
+        return this.snp_view.is_valid();
+    },
+
+    get_options: function() {
+        return this.snp_view.get_options();
+    },
+});
+
+function QuantativeView(){
+    this.initialize();
+}
+
+$.extend(QuantativeView.prototype, {
+    initialize: function() {
+        this.el = $($("#quant-template").html());
+    },
+
+    is_valid: function() {
+        return true;
+    },
+
+    get_options: function() {
+        return {};
+    },
+});
+
+function FastqView() {
+    this.initialize();
+}
+
+$.extend(FastqView.prototype, {
+    initialize: function() {
+        this.snp_view = new FindSNPView();
+        this.align_view = new AlignmentView();
+
+        this.layout_view = new LayoutView({
+            template: "#fastq-template",
+
+            layout: {
+                "#snp-view": this.snp_view,
+                "#align-view": this.align_view
+            }
+        });
+
+        // pass through to the layout
+        this.el = this.layout_view.el;
+    },
+
+    render: function() {
+        this.layout_view.renderLayout();
+    },
+
+    is_valid: function() {
+        if (!this.snp_view.is_valid()) {
+            return false;
+        }
+
+        if (!this.align_view.is_valid()) {
+            return false;
+        }
+
+        return true;
+    },
+
+    get_options: function() {
+        return $.extend(this.snp_view.get_options(),
+                        this.align_view.get_options());
     },
 });
 
@@ -1086,7 +1162,7 @@ $.extend(OptionsView.prototype, {
             this.analysis_view = new QuantativeView();
         }
         else if ($.inArray(file_type, ALIGN_FILES) > -1) {
-            this.analysis_view = new AlignmentView();
+            this.analysis_view = new AlignmentOptionView();
         }
 
         this.layout_view.updateLayout(
