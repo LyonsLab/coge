@@ -1,4 +1,4 @@
-package CoGe::Pipelines::FindSNPs;
+package CoGe::Pipelines::SNP::CoGeSNPs;
 
 use v5.14;
 use strict;
@@ -89,7 +89,7 @@ sub to_filename { # FIXME: move into Utils module
     return $name;
 }
 
-sub create_fasta_reheader_job {
+sub create_fasta_reheader_job { # FIXME mdb 11/19/14 - replace with version in CommonTasks
     my ($fasta, $gid, $output) = @_;
 
     my $cmd = catfile($CONF->{SCRIPTDIR}, "fasta_reheader.pl");
@@ -112,7 +112,7 @@ sub create_fasta_reheader_job {
     );
 }
 
-sub create_fasta_index_job {
+sub create_fasta_index_job { # FIXME mdb 11/19/14 - replace with version in CommonTasks
     my ($fasta, $gid) = @_;
 
     my $samtools = $CONF->{SAMTOOLS};
@@ -167,7 +167,7 @@ sub create_samtools_job {
     );
 }
 
-sub create_load_experiment_job {
+sub create_load_experiment_job { # FIXME mdb 11/19/14 - replace with version in CommonTasks
     my ($vcf, $user, $experiment, $wid) = @_;
 
     my $cmd = catfile(($CONF->{SCRIPTDIR}, "load_experiment.pl"));
