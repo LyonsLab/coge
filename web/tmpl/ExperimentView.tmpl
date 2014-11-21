@@ -43,33 +43,7 @@ $(document).ready(function() {
         $('#progress_dialog').dialog({ autoOpen: true, title: "Finding SNPs ..." });
         update_dialog(STATUS_URL + job_id, "#progress_dialog", progress_formatter);
     }
-
-    init();
 });
-
-function init() {
-    var snp_finder = $("#snp_finder");
-    var selector = snp_finder.find("select");
-    var button = snp_finder.find("button").prop("disabled", 1);
-
-    selector.on("change", function(ev) {
-        var method = $(this).val();
-
-        button.unbind()
-              .removeAttr("disabled")
-              .on("click", function() { find_snps(method) });
-
-        switch(method) {
-            case "coge": break;
-            case "samtools": break;
-            case "platypus": break;
-            default: {
-                button.unbind().attr("disabled", "disabled");
-                break;
-            }
-        }
-    });
-}
 
 function set_annotation_table() {
     $('#experiment_annotation_table').tablesorter({widgets: ['zebra']});
@@ -362,6 +336,9 @@ function find_snps(method) {
     if (!check_and_report_login())
         return;
 
+    // Close Find SNPs dialog
+    $(find_snps_dialog).dialog('close');
+    
     // Clear dialog
     reset_dialog();
 
@@ -372,6 +349,9 @@ function find_snps(method) {
 
     $('#progress_log').html('Initializing ...');
     newLoad = true;
+    
+    // Get method selected by user
+    var method = $('#find_snps_method').val()
 
     $.ajax({
         data: {
@@ -736,17 +716,12 @@ function get_tag_description (name) {
                     </TMPL_UNLESS>
 		            <TMPL_IF NAME="ALIGNMENT_TYPE">
                     <tr>
-                        <td colspan="2">
-                            <div id="snp_finder">
-                                <select>
-                                    <option selected="selected">-- Select a SNP Finding method --</option>
-                                    <option value="coge" class="data5 link">CoGe method</option>
-                                    <option value="samtools" class="data5 link">Samtools method</option>
-                                    <option value="platypus" class="data5 link">Platypus method</option>
-                                </select>
-                                <button class="ui-button ui-corner-all">Find SNPs</button>
-                            </div>
-                        </td>
+                    	<td>
+                    		<span class="title5">Analyze:</span>
+                    	</td>
+                    	<td>
+                    		<span class="data5 link" ondblclick="$(find_snps_dialog).dialog('open');" onclick="$(find_snps_dialog).dialog('open');">Find SNPs</span>
+                    	</td>
                     </tr>
 			        </TMPL_IF>
 			    </table>
@@ -767,9 +742,9 @@ function get_tag_description (name) {
 </div>
 </TMPL_IF>
 
-<div id="experiment_info_edit_box" class="dialog_box" title="Edit Experiment Info" style="display:none;"></div>
+<div id="experiment_info_edit_box" class="dialog_box hidden" title="Edit Experiment Info"></div>
 
-<div id="experiment_tag_edit_box" class="dialog_box" title="Add Experiment Tag" style="display:none;">
+<div id="experiment_tag_edit_box" class="dialog_box hidden" title="Add Experiment Tag">
   <table class="small">
    <tr>
     <td>Name:</td>
@@ -781,6 +756,28 @@ function get_tag_description (name) {
    </tr>
   </table>
   <span onClick="add_tag_to_experiment();" class='ui-button ui-corner-all coge-button'>Add</span>
+</div>
+
+<div id="find_snps_dialog" class="dialog_box hidden" title="Find SNPs">
+	<div class="info coge-padded-top">
+		Select a method for determining SNPs.
+	</div>
+	<br>
+	<table class="small">
+		<tr>
+			<td>Method: </td>
+			<td>
+				<select id="find_snps_method">
+				    <option value="coge" selected>CoGe SNP-finder</option>
+				    <option value="samtools" disabled>SAMtools</option>
+				    <option value="platypus" disabled>Platypus</option>
+				    <option value="gatk" disabled>GATK</option>
+			    </select>
+			</td>
+		</tr>
+	</table>
+	<br><br>
+	<span onClick="find_snps();" class='ui-button ui-corner-all coge-button'>Find SNPs</span>
 </div>
 
 <div id="progress_dialog" class="hidden dialog_box">
