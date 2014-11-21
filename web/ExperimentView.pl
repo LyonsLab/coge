@@ -777,9 +777,10 @@ sub select_snp_pipeline {
     my $method = shift;
 
     my %pipelines = (
-        coge => \&CoGe::Pipelines::SNP::CoGeSNPs::run,
-        samtools => \&CoGe::Pipelines::SNP::Samtools::run,
+        coge      => \&CoGe::Pipelines::SNP::CoGeSNPs::run,
+        samtools  => \&CoGe::Pipelines::SNP::Samtools::run,
         platypus  => \&CoGe::Pipelines::SNP::Platypus::run,
+        gatk      => \&CoGe::Pipelines::SNP::GATK::run,
     );
 
     # Select pipeline
