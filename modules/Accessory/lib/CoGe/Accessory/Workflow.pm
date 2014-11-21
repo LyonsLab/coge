@@ -49,7 +49,7 @@ sub add_job {
     my $overwrite;
 
     # Set default
-    $options //= {};
+    $options //= {}; #/
 
     if ( defined( $opts{overwrite} ) && $opts{overwrite} > 0 ) {
         $overwrite = 1;
@@ -73,6 +73,17 @@ sub add_job {
     );
 
     return scalar( $self->jobs() ) > $size;
+}
+
+sub add_jobs {
+    my ($self, $jobs) = @_;
+    
+    my $rc = 1;
+    foreach (@$jobs) {
+        $rc &= $self->add_job(%{$_});
+    }
+    
+    return $rc;
 }
 
 __PACKAGE__->meta->make_immutable;
