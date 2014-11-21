@@ -89,6 +89,9 @@ function file_canceled() {
 
     $('#files').hide();
     $('#select_file_button').show();
+
+    //FIXME: Hack to get around removing file
+    current_experiment.new_data = undefined;
 }
 
 function create_source() {
