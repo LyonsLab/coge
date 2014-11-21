@@ -5,8 +5,8 @@
 <script type="text/javascript" src="./js/jquery.fileupload.js"></script>
 <script type="text/javascript">
 
-const STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
-const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
+var STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
+var PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
 
 var eid = '<TMPL_VAR NAME="EID">';
 var job_id = '<TMPL_VAR NAME="JOB_ID">';
@@ -328,7 +328,7 @@ function export_data() {
     });
 }
 
-function find_snps() {
+function find_snps(method) {
     // Prevent concurrent executions
     if ( $("#progress_dialog").dialog( "isOpen" ) )
         return;
@@ -337,6 +337,9 @@ function find_snps() {
     if (!check_and_report_login())
         return;
 
+    // Close Find SNPs dialog
+    $(find_snps_dialog).dialog('close');
+    
     // Clear dialog
     reset_dialog();
 
@@ -348,10 +351,14 @@ function find_snps() {
     $('#progress_log').html('Initializing ...');
     newLoad = true;
     
+    // Get method selected by user
+    var method = $('#find_snps_method').val()
+
     $.ajax({
         data: {
             fname: 'find_snps',
             eid: eid,
+            method: method,
             timestamp: new Date().getTime()
         },
         success : function(data) {
@@ -723,16 +730,18 @@ function get_tag_description (name) {
 		            </tr>
                     </TMPL_UNLESS>
 		            <TMPL_IF NAME="ALIGNMENT_TYPE">
-		            <tr>
-		                <td>
-			                <span class="title5">Analyze:</span>
-			            </td>
-			            <td>
-			                <span class="data5 link" ondblclick="find_snps()" onclick="find_snps()">Find SNPs</span>
-		                </td>
-			        </tr>
+                    <tr>
+                    	<td>
+                    		<span class="title5">Analyze:</span>
+                    	</td>
+                    	<td>
+                    		<span class="data5 link" ondblclick="$(find_snps_dialog).dialog('open');" onclick="$(find_snps_dialog).dialog('open');">Find SNPs</span>
+                    	</td>
+                    </tr>
 			        </TMPL_IF>
 			    </table>
+                <div>
+                </div>
 		    </div>
 		</td>
 	</tr>
@@ -748,9 +757,9 @@ function get_tag_description (name) {
 </div>
 </TMPL_IF>
 
-<div id="experiment_info_edit_box" class="dialog_box" title="Edit Experiment Info" style="display:none;"></div>
+<div id="experiment_info_edit_box" class="dialog_box hidden" title="Edit Experiment Info"></div>
 
-<div id="experiment_tag_edit_box" class="dialog_box" title="Add Experiment Tag" style="display:none;">
+<div id="experiment_tag_edit_box" class="dialog_box hidden" title="Add Experiment Tag">
   <table class="small">
    <tr>
     <td>Name:</td>
@@ -764,16 +773,40 @@ function get_tag_description (name) {
   <span onClick="add_tag_to_experiment();" class='ui-button ui-corner-all coge-button'>Add</span>
 </div>
 
+<div id="find_snps_dialog" class="dialog_box hidden" title="Find SNPs">
+	<div class="info coge-padded-top">
+		Select a method for determining SNPs.
+	</div>
+	<br>
+	<table class="small">
+		<tr>
+			<td>Method: </td>
+			<td>
+				<select id="find_snps_method">
+				    <option value="coge" selected>CoGe SNP-finder</option>
+				    <option value="samtools">SAMtools</option>
+				    <option value="platypus">Platypus</option>
+				    <option value="gatk" disabled>GATK</option>
+			    </select>
+			</td>
+		</tr>
+	</table>
+	<br><br>
+	<span onClick="find_snps();" class='ui-button ui-corner-all coge-button'>Identify SNPs</span>
+</div>
+
 <div id="progress_dialog" class="hidden dialog_box">
     <div id="progress_log" class="small padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:415px;height:200px;color:dimgray;">
     </div>
     <br>
-    <span id="progress_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
-    <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
-    <span id="custom_msg" class="hidden"></span>
-    <span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
-    <span id="ok_button" onClick="reset_load();" class="hidden r ui-button ui-corner-all coge-button">OK</span>
-    <span id="experiment_view_button" class="hidden r ui-button ui-corner-all coge-button">ExperimentView</span>
+    <div class="coge-buttonset">
+        <span id="progress_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
+        <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
+        <span id="custom_msg" class="hidden"></span>
+        <span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
+        <span id="ok_button" onClick="reset_load();" class="hidden r ui-button ui-corner-all coge-button">OK</span>
+        <span id="experiment_view_button" class="hidden r ui-button ui-corner-all coge-button">ExperimentView</span>
+    </div>
 </div>
 
 <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'>
