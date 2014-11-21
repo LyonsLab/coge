@@ -38,9 +38,11 @@ BEGIN {
     $VERSION = 0.1;
     $FASTA_LINE_LEN = 80;
     @ISA     = qw (Exporter);
-    @EXPORT =
-      qw( units commify print_fasta get_unique_id get_link_coords format_time_diff sanitize_name
-        execute trim to_filename);
+    @EXPORT = qw( 
+        units commify print_fasta get_unique_id get_link_coords 
+        format_time_diff sanitize_name execute 
+        trim js_escape html_escape to_filename
+    );
 }
 
 sub units {
@@ -72,6 +74,19 @@ sub trim {
     $s =~ s/\s+$//;
     $s =~ s/^\"//;
     $s =~ s/\"$//;
+    return $s;
+}
+
+sub js_escape {
+    my $s = shift;
+    $s =~ s/\'/\\'/g;
+    $s =~ s/\"/\\"/g;
+    return $s;
+}
+
+sub html_escape {
+    my $s = shift;
+    $s =~ s/\'/\&\#8216\;/g;
     return $s;
 }
 

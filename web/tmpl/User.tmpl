@@ -505,8 +505,9 @@ function open_item(item_type, title, link) {
 		link = link + "&embed=1";
 		console.log(link);
 		var height = $(window).height() * 0.8;
-		var d = $('<div class="dialog_box" title="'+title+'"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
+		var d = $('<div class="dialog_box"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
 			.dialog({
+				title: title,
 				width: '80%',
 				height: height//'80%'
 			})
