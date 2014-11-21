@@ -2,12 +2,14 @@ package CoGe::Pipelines::SNP::CommonTasks;
 
 use File::Spec::Functions qw(catdir catfile);
 use File::Basename qw(basename);
+use Data::Dumper;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT = qw(create_fasta_reheader_job create_fasta_index_job
-                 create_load_vcf_job create_find_snps_job
-                 create_filter_snps_job create_platypus_job);
+our @EXPORT = qw(
+    create_fasta_reheader_job create_fasta_index_job create_load_vcf_job 
+    create_bam_index_job
+);
 
 our $CONFIG = CoGe::Accessory::Web::get_defaults();
 
@@ -15,9 +17,9 @@ sub create_fasta_reheader_job {
     my $opts = shift;
 
     # Required arguments
-    my $fasta = $opts->{fasta};
+    my $fasta          = $opts->{fasta};
     my $reheader_fasta = $opts->{reheader_fasta};
-    my $cache_dir = $opts->{cache_dir};
+    my $cache_dir      = $opts->{cache_dir};
 
     my $cmd = catfile($CONFIG->{SCRIPTDIR}, "fasta_reheader.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
@@ -41,9 +43,9 @@ sub create_fasta_reheader_job {
 
 sub create_fasta_index_job {
     my $opts = shift;
-
+    
     # Required arguments
-    my $fasta = $opts->{fasta};
+    my $fasta     = $opts->{fasta};
     my $cache_dir = $opts->{cache_dir};
 
     my $fasta_name = basename($fasta);
@@ -62,6 +64,28 @@ sub create_fasta_index_job {
             catfile($cache_dir, $fasta_index),
         ],
         description => "Index fasta file...",
+    };
+}
+
+sub create_bam_index_job { # note: this task hasn't been tested
+    my $opts = shift;
+    
+    # Required arguments
+    my $input_bam = $opts->{input_bam};
+
+    return {
+        cmd => $CONFIG->{SAMTOOLS} || "samtools",
+        script => undef,
+        args => [
+            ["index", $input_bam, 1],
+        ],
+        inputs => [
+            $input_bam,
+        ],
+        outputs => [
+            qw[$input_bam.bai]
+        ],
+        description => "Index bam file...",
     };
 }
 
@@ -113,165 +137,6 @@ sub create_load_vcf_job {
         ],
         description => "Load SNPs as new experiment ..."
     };
-}
-
-sub create_platypus_job {
-    my $opts = shift;
-
-    # Required arguments
-    my $reference = $opts->{fasta};
-    my $alignment = $opts->{bam};
-    my $vcf = $opts->{vcf};
-
-    my $index = qq[$reference.fai];
-    my $PLATYPUS = $CONFIG->{PLATYPUS} || "Platypus.py";
-
-    return {
-        cmd => qq[$PLATYPUS callVariants],
-        args =>  [
-            ["--bamFiles", $alignment, 0],
-            ["--refFile", $reference, 0],
-            ["--output", $vcf, 1],
-            ["--verbosity", 0, 0],
-        ],
-        inputs => [
-            $alignment,
-            $reference,
-            $index,
-        ],
-        outputs => [
-            $vcf,
-        ],
-        description => "Finding SNPS using Platypus method ..."
-    };
-}
-
-sub create_find_snps_job {
-    my $opts = shift;
-
-    # Required arguments
-    my $reference = $opts->{fasta};
-    my $alignment = $opts->{bam};
-    my $snps = $opts->{bcf};
-
-    my $subopts = {
-        samtools => {
-            command => $CONFIG->{SAMTOOLS} || "samtools",
-            subtask => "mpileup",
-            args    => {
-                u => [],
-                f => [],
-            },
-            inputs => [
-                basename($reference),
-                basename($alignment),
-            ],
-        },
-        bcf => {
-            command => $CONFIG->{BCFTOOLS} || "bcftools",
-            subtask => "view",
-            args    => {
-                b => [],
-                v => [],
-                c => [],
-                g => [],
-            },
-            inputs => [
-            ],
-        },
-    };
-
-    my @subcommands =  (
-        _subcommand($subopts->{samtools}),
-        _subcommand($subopts->{bcf}),
-    );
-
-    # Pipe commands together
-    my $command = join " | ", @subcommands;
-
-    # Get the output filename
-    my $output = basename($snps);
-
-    return {
-        cmd => qq[$command - > $output],
-        inputs => [
-            $reference,
-            $alignment,
-        ],
-        outputs => [
-            $snps,
-        ],
-        description => "Finding SNPs using SAMtools method ...",
-    };
-}
-
-sub create_filter_snps_job {
-    my $opts = shift;
-
-    # Required arguments
-    my $snps = $opts->{bcf};
-    my $filtered_snps = $opts->{vcf};
-
-    # Optional arguments
-    my $depth = $opts->{depth} || 100;
-
-    my $subopts = {
-        bcf => {
-            command => $CONFIG->{BCFTOOLS} || "bcftools",
-            subtask => "view",
-            args    => {
-            },
-            inputs => [
-                basename($snps),
-            ],
-        },
-
-        vcf => {
-            command => $CONFIG->{VCFTOOLS} || "vcfutils.pl",
-            subtask => "varFilter",
-            args    => {
-                D => [$depth],
-            },
-            inputs => [
-            ],
-        },
-    };
-
-    my @subcommands =  (
-        _subcommand($subopts->{bcf}),
-        _subcommand($subopts->{vcf}),
-    );
-
-    # Pipe commands together
-    my $command = join " | ", @subcommands;
-
-    # Get the output filename
-    my $output = basename($filtered_snps);
-
-    return {
-        cmd => qq[$command > $output],
-        inputs  => [
-            $snps,
-        ],
-        outputs => [
-            $filtered_snps,
-        ],
-        description => "Filtering SNPs ...",
-    };
-}
-
-sub _subcommand {
-    my $opts = shift;
-    my $cmd = $opts->{command};
-    my $subtask = $opts->{subtask};
-    my $args = $opts->{args};
-
-    # create parameter string
-    my @params = map { @{$args->{$_}} ? qq[-$_ @{$args->{$_}}] : qq[-$_] } keys %{$args};
-
-    my @inputs = @{$opts->{inputs}} if $opts->{inputs};
-
-    return qq[$cmd $subtask @params @inputs];
 }
 
 1;
