@@ -22,22 +22,23 @@ BEGIN {
 }
 
 sub link_results {
-   my ($input, $result_dir, $conf) = @_;
+   my ($input, $output, $result_dir, $conf) = @_;
 
    return (
         cmd     => catfile($conf->{SCRIPTDIR}, "link_results.pl"),
         args    => [
             ['-input_files', escape($input), 0],
+            ['-output_files', escape($output), 0],
             ['-result_dir', $result_dir, 0]
         ],
         inputs  => [$input],
-        outputs => [catfile($result_dir, basename($input))],
+        outputs => [catfile($result_dir, basename($output))],
         description => "Generating results..."
    );
 }
 
 sub generate_results {
-   my ($input, $type, $result_dir, $conf) = @_;
+   my ($input, $type, $result_dir, $conf, $dependency) = @_;
 
    return (
         cmd     => catfile($conf->{SCRIPTDIR}, "generate_results.pl"),
@@ -46,7 +47,7 @@ sub generate_results {
             ['-type', $type, 0],
             ['-result_dir', $result_dir, 0]
         ],
-        inputs  => [],
+        inputs  => [$dependency],
         outputs => [catfile($result_dir, "1")],
         description => "Generating results..."
    );

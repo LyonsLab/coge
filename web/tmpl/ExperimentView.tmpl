@@ -208,8 +208,7 @@ function download_files() {
     // Open status dialog right away
     $('#progress_dialog').dialog('open');
     $('#progress_log').html(
-            "<br>The download is being generated<br><br>" +
-            "File: experiment_" + eid + ".tar.gz"
+        "<br>The download is being generated<br><br>"
     );
 
     //CLEAR DIALOG
@@ -222,13 +221,15 @@ function download_files() {
         },
         dataType: "json",
         success : function(json) {
-            if (json.files) {  // finished successfully
+            if (json.url) {  // finished successfully
                 $('#progress_msg').hide();
                 $('#finished_msg').fadeIn();
                 $('#ok_button').fadeIn();
 
+                $("#progress_log").append("File: " + json.filename);
+
                 $("#progress_dialog").on("dialogclose", function(ui, event) {
-                    json.files.forEach(coge.utils.open);
+                    coge.utils.open(json.url);
                 });
             }
             else { // error occurred
