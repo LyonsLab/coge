@@ -856,7 +856,8 @@ $.extend(FastqView.prototype, {
 
         // jQuery events
         this.el.find("#snps").unbind().change(this.update_snp.bind(this));
-        this.el.find("[name=aligner]").unbind().change(this.update_aligner.bind(this));
+        this.el.find("[name=aligner]").unbind().click(this.update_aligner.bind(this));
+
         method.unbind().change(function() {
             var selected = $(this).val();
             render_template(self.snp_templates[selected], self.snp_container);
@@ -865,6 +866,8 @@ $.extend(FastqView.prototype, {
         if (this.data.snps) {
             method.val(this.data.snps.method);
         }
+
+        this.update_aligner();
     },
 
     update_snp: function (ev) {
@@ -887,38 +890,65 @@ $.extend(FastqView.prototype, {
     },
 
     update_aligner: function() {
-        var selected = $("#alignment").find(":checked").val();
+        var selected = this.el.find("#alignment").find(":checked").val();
         render_template(this.align_templates[selected], this.align_container);
     },
 
     is_valid: function() {
-        // SNP pipeline
-        var enabled = this.el.find("#snps").is(":checked"),
-            method = this.el.find("#snp-method").val();
+        var aligner = this.el.find("#alignment :checked").val();
 
-        if (method === "coge") {
-            this.data.snps = {
-                method: method,
-                min_read: this.el.find("#min-read").val(),
-                min_base: this.el.find("#min-base").val(),
-                allele_count: this.el.find("#allele-count").val(),
-                allele_freq: this.el.find("#allele-freq").val(),
-                scale: this.el.find("#scale").val()
+        if (aligner === "gsnap") {
+            this.data = {
+                aligner: {
+                    tool: "gsnap",
+                    n: this.el.find("#n").val(),
+                    Q: this.el.find("#Q").val(),
+                    gap: this.el.find("#gap").val(),
+                    nofail: this.el.find("#nofail").is(":checked")
+                },
+
+                cutadapt: {
+                    q: this.el.find("#q").val(),
+                    m: this.el.find("#m").val(),
+                    quality: this.el.find("#quality").val()
+                }
             };
-        } else if (method === "samtools") {
-            this.data.snps = {
-                method: method,
-                min_read: this.el.find("#min-read").val(),
-                max_read: this.el.find("#max-read").val(),
-            };
-        } else if (method === "platypus") {
-            this.data.snps = {
-                method: method,
-            };
-        } else if (method === "gatk") {
-            this.data.snps = {
-                method: method,
-            };
+        } else {
+            this.data = {
+                tool: "tophat",
+                g: this.el.find("#g").val(),
+            }
+        }
+
+        // SNP pipeline
+        var enabled = this.el.find("#snps").is(":checked");
+        var method = this.el.find("#snp-method").val();
+
+        if (enabled) {
+            if (method === "coge") {
+                this.data.snps = {
+                    method: method,
+                    min_read: this.el.find("#min-read").val(),
+                    min_base: this.el.find("#min-base").val(),
+                    allele_count: this.el.find("#allele-count").val(),
+                    allele_freq: this.el.find("#allele-freq").val(),
+                    scale: this.el.find("#scale").val()
+                };
+            } else if (method === "samtools") {
+                this.data.snps = {
+                    method: method,
+                    min_read: this.el.find("#min-read").val(),
+                    max_read: this.el.find("#max-read").val(),
+                };
+            } else if (method === "platypus") {
+                this.data.snps = {
+                    method: method,
+                };
+            } else if (method === "gatk") {
+                this.data.snps = {
+                    method: method,
+                };
+            }
         }
 
         return true;
