@@ -7,6 +7,7 @@ use strict;
 use Carp;
 use Data::Dumper;
 use File::Spec::Functions qw(catdir catfile);
+use File::Basename qw(basename);
 
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Utils qw(to_filename);
@@ -103,6 +104,134 @@ sub build {
     push @jobs, create_load_vcf_job($conf);
 
     return @jobs;
+}
+
+sub create_find_snps_job {
+    my $opts = shift;
+
+    # Required arguments
+    my $reference = $opts->{fasta};
+    my $alignment = $opts->{bam};
+    my $snps = $opts->{bcf};
+
+    my $subopts = {
+        samtools => {
+            command => $CONFIG->{SAMTOOLS} || "samtools",
+            subtask => "mpileup",
+            args    => {
+                u => [],
+                f => [],
+            },
+            inputs => [
+                basename($reference),
+                basename($alignment),
+            ],
+        },
+        bcf => {
+            command => $CONFIG->{BCFTOOLS} || "bcftools",
+            subtask => "view",
+            args    => {
+                b => [],
+                v => [],
+                c => [],
+                g => [],
+            },
+            inputs => [
+            ],
+        },
+    };
+
+    my @subcommands =  (
+        _subcommand($subopts->{samtools}),
+        _subcommand($subopts->{bcf}),
+    );
+
+    # Pipe commands together
+    my $command = join " | ", @subcommands;
+
+    # Get the output filename
+    my $output = basename($snps);
+
+    return {
+        cmd => qq[$command - > $output],
+        inputs => [
+            $reference,
+            $alignment,
+        ],
+        outputs => [
+            $snps,
+        ],
+        description => "Finding SNPs using SAMtools method ...",
+    };
+}
+
+sub create_filter_snps_job {
+    my $opts = shift;
+
+    # Required arguments
+    my $snps = $opts->{bcf};
+    my $filtered_snps = $opts->{vcf};
+
+    # Optional arguments
+    my $depth = $opts->{depth} || 100;
+
+    my $subopts = {
+        bcf => {
+            command => $CONFIG->{BCFTOOLS} || "bcftools",
+            subtask => "view",
+            args    => {
+            },
+            inputs => [
+                basename($snps),
+            ],
+        },
+
+        vcf => {
+            command => $CONFIG->{VCFTOOLS} || "vcfutils.pl",
+            subtask => "varFilter",
+            args    => {
+                D => [$depth],
+            },
+            inputs => [
+            ],
+        },
+    };
+
+    my @subcommands =  (
+        _subcommand($subopts->{bcf}),
+        _subcommand($subopts->{vcf}),
+    );
+
+    # Pipe commands together
+    my $command = join " | ", @subcommands;
+
+    # Get the output filename
+    my $output = basename($filtered_snps);
+
+    return {
+        cmd => qq[$command > $output],
+        inputs  => [
+            $snps,
+        ],
+        outputs => [
+            $filtered_snps,
+        ],
+        description => "Filtering SNPs ...",
+    };
+}
+
+sub _subcommand {
+    my $opts = shift;
+    my $cmd = $opts->{command};
+    my $subtask = $opts->{subtask};
+    my $args = $opts->{args};
+
+    # create parameter string
+    my @params = map { @{$args->{$_}} ? qq[-$_ @{$args->{$_}}] : qq[-$_] } keys %{$args};
+
+    my @inputs = @{$opts->{inputs}} if $opts->{inputs};
+
+    return qq[$cmd $subtask @params @inputs];
 }
 
 sub generate_experiment_metadata {
