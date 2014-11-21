@@ -105,17 +105,17 @@ sub build {
             input_bam => catfile($staging_dir, $processed_bam_file2),
             output_vcf => catfile($staging_dir, $output_vcf_file)
         }),
-#        create_load_vcf_job({
-#            experiment  => $experiment,
-#            username    => $user->name,
-#            source_name => $experiment->source->name,
-#            staging_dir => $staging_dir,
-#            result_dir  => $result_dir,
-#            annotations => generate_experiment_metadata(),
-#            wid         => $wid,
-#            gid         => $genome->id,
-#            vcf         => $output_vcf_file
-#        })
+        create_load_vcf_job({
+            experiment  => $experiment,
+            username    => $user->name,
+            source_name => $experiment->source->name,
+            staging_dir => $staging_dir,
+            result_dir  => $result_dir,
+            annotations => generate_experiment_metadata(),
+            wid         => $wid,
+            gid         => $genome->id,
+            vcf         => $output_vcf_file
+        })
     );
 
     return @jobs;
@@ -220,7 +220,7 @@ sub create_gatk_job {
         outputs => [
             $output_vcf,
         ],
-        description => "Finding SNPs using GATK method ..."
+        description => "Identifying SNPs using GATK method ..."
     };
 }
 
