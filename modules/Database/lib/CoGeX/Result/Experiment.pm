@@ -6,6 +6,8 @@ use base 'DBIx::Class::Core';
 use File::Spec::Functions;
 use Data::Dumper;
 use POSIX;
+use Switch;
+
 use CoGe::Accessory::Annotation;
 
 =head1 NAME
@@ -150,6 +152,19 @@ sub types {
 
 sub tags {
     shift->experiment_types(@_);
+}
+
+sub data_type_desc {
+    my $self = shift;
+    
+    # Experiment Data Types
+    switch ($self->data_type) {
+        case 1 { return 'quantitative'; } # Quantitative data
+        case 2 { return 'polymorphism'; } # Polymorphism data
+        case 3 { return 'alignment';    } # Alignments
+        case 4 { return 'marker';       } # Markers
+        else   { return 'unknown';      }
+    }    
 }
 
 ################################################ subroutine header begin ##
