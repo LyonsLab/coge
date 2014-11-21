@@ -76,23 +76,6 @@ sub build {
     my $processed_bam_file2 = to_filename($bam_file) . '.processed2.bam';
     my $output_vcf_file = qq[snps.flt.vcf];
 
-#    my $conf = {
-#        staging_dir => $staging_dir,
-#        result_dir  => $result_dir,
-#
-#        bam         => $bam_file,
-#        fasta       => catfile($fasta_cache_dir, $reheader_fasta),
-#        bcf         => catfile($staging_dir, qq[snps.raw.bcf]),
-#        vcf         => catfile($staging_dir, qq[snps.flt.vcf]),
-#
-#        annotations => generate_experiment_metadata(),
-#        experiment  => $experiment,
-#        username    => $user->name,
-#        source_name => $experiment->source->name,
-#        wid         => $wid,
-#        gid         => $genome->id,
-#    };
-
     # Build all the jobs -- TODO create cache for bam files
     my @jobs = (
         create_fasta_reheader_job({
