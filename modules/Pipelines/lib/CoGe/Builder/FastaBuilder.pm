@@ -4,13 +4,14 @@ use Moose;
 
 use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Web qw(url_for);
+use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
 use CoGe::Pipelines::Common::Results;
 use CoGe::Pipelines::Misc::IPut;
 
 use File::Spec::Functions;
 use Data::Dumper;
-use URI::Escape::JavaScript qw(escape);
+#use URI::Escape::JavaScript qw(escape);
 
 sub build {
     my $self = shift;
@@ -18,38 +19,43 @@ sub build {
     $self->init_workflow($self->jex);
     return unless $self->workflow->id;
 
-    my (undef, $result_dir) = get_workflow_paths($self->user->name,
-                                                 $self->workflow->id);
+    my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
 
     my $dest_type = $self->options->{dest_type};
-    $dest_type = "http" unless $dest_type;
+       $dest_type = "http" unless $dest_type;
 
     $self->workflow->logfile(catfile($result_dir, "debug.log"));
 
+    # Get genome data file path
     my $gid = $self->params->{gid};
     my $genome = $self->db->resultset("Genome")->find($gid);
     my $genome_file = get_genome_file($gid);
 
-    if ($dest_type eq "irods") {
-        my $base = $self->options->{dest_path};
-        $base = irods_get_base_path($self->user->name) unless $base;
+    # Determine name of exported file
+    my $genome_name = sanitize_name($genome->organism->name);#escape($genome->organism->name);
+       $genome_name = 'genome_'.$gid unless $genome_name;
+    my $output_file = $genome_name.'.faa';
 
-        my $genome_name = escape($genome->organism->name);
-           $genome_name = $gid unless $genome_name;
+    # Setup tasks to export/download the file
+    if ($dest_type eq "irods") { # irods export
+        my $irods_base = $self->options->{dest_path};
+        $irods_base = irods_get_base_path($self->user->name) unless $irods_base;
 
-        my $dest = catfile($base, "genome_$genome_name.faa");
+        my $irods_dest = catfile($irods_base, $output_file);
+        my $irods_done = catfile($staging_dir, "irods.done");
 
-        $self->workflow->add_job(export_to_irods($genome_file, $dest, $self->options->{overwrite}));
-        $self->workflow->add_job(generate_results($dest, $dest_type, $result_dir, $self->conf));
-    } else {
-        $self->workflow->add_job(link_results($genome_file, $result_dir, $self->conf));
+        $self->workflow->add_job( export_to_irods($genome_file, $irods_dest, $self->options->{overwrite}, $irods_done) );
+        $self->workflow->add_job( generate_results($irods_dest, $dest_type, $result_dir, $self->conf, $irods_done) );
+    }
+    else { # http download
+        $self->workflow->add_job( link_results($genome_file, $output_file, $result_dir, $self->conf) );
     }
 }
 
 sub init_workflow {
     my ($self, $jex) = @_;
 
-    $self->workflow($jex->create_workflow(name => "Get fasta file", init => 1));
+    $self->workflow( $jex->create_workflow(name => "Get fasta file", init => 1) );
 }
 
 with qw(CoGe::Builder::Buildable);

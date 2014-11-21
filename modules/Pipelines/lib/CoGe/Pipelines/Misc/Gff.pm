@@ -5,7 +5,6 @@ use warnings;
 
 use File::Basename qw(basename);
 use File::Spec::Functions;
-use URI::Escape::JavaScript qw(escape);
 
 use CoGe::Accessory::Utils;
 use CoGe::Core::Genome qw(get_download_path);
@@ -32,7 +31,7 @@ sub generate_gff {
         upa     => 0,
     );
 
-    @args{keys $inputs} = (values $inputs);
+    @args{(keys $inputs)} = (values $inputs);
 
     # Check for a genome or dataset id
     return unless $args{gid};

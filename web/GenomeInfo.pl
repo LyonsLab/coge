@@ -1490,7 +1490,7 @@ sub export_fasta_irods {
     #TODO need to check rc of iput and abort if failure occurred
 
     # Set IRODS metadata for object #TODO need to change these to use Accessory::IRODS::IRODS_METADATA_PREFIX
-    my %meta = get_metadata();
+    my %meta = get_metadata($genome);
     my $i = 1;
     my @sources = $genome->source;
     foreach my $item (@sources) {
