@@ -234,58 +234,18 @@
                 </div>
             </div>
 
-            <div class="form-section">
-                <h4>Alignment Options</h4>
+            <div id="align-view"></div>
 
-                <div class="form-field">
-                    <label class="col-md-2">Aligner:</label>
-                    <div id="alignment">
-                        <input name="aligner" type="radio" value="gsnap" checked>
-                        <label for="gsnap">GSNAP</label>
-
-                        <input name="aligner" type="radio" value="tophat">
-                        <label for="gsnap">TopHat/Bowtie2</label>
-                    </div>
-                </div>
-
-                <div id="align-container" class="hidden"></div>
-            </div>
-
-            <div class="form-section">
-                <h4>SNP Options</h4>
-
-                <div class="form-field">
-                    <label class="col-md-2">Find SNPs:</label>
-
-                    <label >Enable:</label>
-                    <input id="snps" type="checkbox">
-
-                    <label>Method:</label>
-                    <select id="snp-method" disabled>
-                        <option value="coge">CoGe Method</option>
-                        <option value="samtools">Samtools Method</option>
-                        <option value="platypus">Platypus Method</option>
-                        <option value="gatk">GATK Method</option>
-                    </select>
-                </div>
-
-                <div id="snp-container" class="hidden"></div>
-            </div>
+            <div id="snp-view"></div>
         </div>
     </div>
 </script>
 
+
 <!-- TODO: Add template options -->
-<script id="align-template" type="text/template">
+<script id="align-option-template" type="text/template">
 <div>
-    <div class="form-section">
-        <h4>SNPs</h4>
-        <div class="form-field">
-            <label class="col-md-2">Find SNPs:</label>
-            <input id="snps" type="checkbox">
-            <span class="info">loads a separate experiment</span>
-        </div>
-    </div>
+    <div id="snp-view"></div>
 </div>
 </script>
 
@@ -315,6 +275,26 @@
 </script>
 
 <!-- Alignment Templates -->
+
+<script id="align-template" type="text/template">
+<div class="form-section">
+    <h4>Alignment Options</h4>
+
+    <div class="form-field">
+        <label class="col-md-2">Aligner:</label>
+        <div id="alignment">
+            <input name="aligner" type="radio" value="gsnap" checked>
+            <label for="gsnap">GSNAP</label>
+
+            <input name="aligner" type="radio" value="tophat">
+            <label for="gsnap">TopHat/Bowtie2</label>
+        </div>
+    </div>
+
+    <div id="align-container" class="hidden"></div>
+</div>
+</script>
+
 <script id="tophat-template" type="text/template">
     <div id="tophat">
         <div class="form-field">
@@ -380,6 +360,30 @@
         <span class="data"></span>
     </div>
 </script>
+
+<script id="snp-template" type="text/template">
+    <div class="form-section">
+        <h4>SNP Options</h4>
+
+        <div class="form-field">
+            <label class="col-md-2">Find SNPs:</label>
+
+            <label >Enable:</label>
+            <input id="snps" type="checkbox">
+
+            <label>Method:</label>
+            <select id="snp-method" disabled>
+                <option value="coge">CoGe Method</option>
+                <option value="samtools">Samtools Method</option>
+                <option value="platypus">Platypus Method</option>
+                <option value="gatk">GATK Method</option>
+            </select>
+        </div>
+
+        <div id="snp-container" class="hidden"></div>
+    </div>
+</script>
+
 
 <!-- SNP Finder Templates -->
 <script id="coge-snp-template" type="text/template">
