@@ -135,7 +135,7 @@ sub create_platypus_job {
         outputs => [
             $vcf,
         ],
-        description => "Finding SNPs using Platypus method ..."
+        description => "Identifying SNPs using Platypus method ..."
     };
 }
 
