@@ -222,25 +222,24 @@
 
 <script id="fastq-template" type="text/template">
     <div class="step" data-title="Options" data-step="3" data-validate="options">
-        <div id="fastq">
-            <div class="form-section">
-                <h4>RNA-Seq Options</h4>
-                <div class="form-field">
-                    <label class="col-md-2">Samtools (mpileup):</label>
-                    <div>
-                        <label>-Q:</label>
-                        <input id="depth" type="number" value="5"/>
-                    </div>
-                </div>
-            </div>
-
-            <div id="align-view"></div>
-
-            <div id="snp-view"></div>
-        </div>
+        <div id="rna-seq-view"></div>
+        <div id="align-view"></div>
+        <div id="snp-view"></div>
     </div>
 </script>
 
+<script id="rna-seq-template" type="text/template">
+    <div class="form-section">
+        <h4>RNA-Seq Options</h4>
+        <div class="form-field">
+            <label class="col-md-2">Samtools (mpileup):</label>
+            <div>
+                <label>-Q:</label>
+                <input id="depth" type="number" value="5"/>
+            </div>
+        </div>
+    </div>
+</script>
 
 <!-- TODO: Add template options -->
 <script id="align-option-template" type="text/template">
