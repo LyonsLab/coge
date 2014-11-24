@@ -1011,14 +1011,14 @@ $.extend(RNASeqView.prototype, {
     },
 
     is_valid: function() {
-        this.data.seq = {
-            depth: this.el.find("#depth").val()
-        };
-
         return true;
     },
 
     get_options: function() {
+        this.data.seq = {
+            depth: this.el.find("#depth").val()
+        };
+
         return this.data;
     },
 
@@ -1058,6 +1058,10 @@ $.extend(FastqView.prototype, {
         }
 
         if (!this.align_view.is_valid()) {
+            return false;
+        }
+
+        if (!this.rna_seq_view.is_valid()) {
             return false;
         }
 
