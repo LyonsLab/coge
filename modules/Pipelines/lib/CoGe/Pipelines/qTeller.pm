@@ -34,6 +34,7 @@ sub run {
     my $files = $opts{files};
     my $metadata = $opts{metadata};
     my $alignment = $opts{alignment_type};
+    my $options = $opts{options};
 
     my $gid = $genome->id;
 
@@ -82,7 +83,13 @@ sub run {
     push @jobs, \%filter;
 
     # Cleanup fastq
-    my %trimmed = create_cutadapt_job($fastq, "$fastq.validated", $staging_dir);
+    my %trimmed = create_cutadapt_job({
+        fastq => $fastq,
+        validated => "$fastq.validated",
+        staging_dir => $staging_dir,
+        cutadapt => $options->{cutadapt},
+    });
+
     my $trimmed_fastq = @{$trimmed{outputs}}[0];
     push @jobs, \%trimmed;
 
@@ -95,18 +102,35 @@ sub run {
     }
 
     if ($alignment eq "tophat") {
-        ($bam, @steps) = tophat_pipeline($gid, $filtered_fasta, $trimmed_fastq,
-            $gff_file, $staging_dir);
+        ($bam, @steps) = tophat_pipeline({
+            gid => $gid,
+            fasta => $filtered_fasta,
+            fastq => $trimmed_fastq,
+            gff => $gff_file,
+            staging_dir => $staging_dir,
+            aligner => $options->{aligner}
+        });
     }
     else {
-        ($bam, @steps) = gsnap_pipeline($gid, $filtered_fasta, $trimmed_fastq, $staging_dir);
+        ($bam, @steps) = gsnap_pipeline({
+            gid => $gid,
+            fasta => $filtered_fasta,
+            fastq => $trimmed_fastq,
+            staging_dir => $staging_dir,
+            aligner => $options->{aligner}
+        });
     }
 
     # Join alignment pipeline
     @jobs = (@jobs, @steps);
 
     # Generate bed file
-    my %bed = create_bed_file_job($bam, $staging_dir);
+    my %bed = create_bed_file_job({
+        bam => $bam,
+        staging_dir => $staging_dir,
+        seq => $options->{seq},
+    });
+
     push @jobs, \%bed;
 
     # Filter bed file
@@ -302,20 +326,30 @@ sub create_gff_generation_job {
 }
 
 sub create_cutadapt_job {
-    my $fastq = shift;
-    my $validated = shift;
-    my $staging_dir = shift;
+    my $opts = shift;
+
+    # Required arguments
+    my $fastq = $opts->{fastq};
+    my $validated = $opts->{validated};
+    my $staging_dir = $opts->{staging_dir};
+
+    # Optional arguments
+    my $cutadapt= $opts->{cutadapt} // {};
+    my $q = $cutadapt->{q} // 25;
+    my $quality = $cutadapt->{quality} // 64;
+    my $m = $cutadapt->{m} // 17;
+
     my $name = to_filename($fastq);
     my $cmd = $CONF->{CUTADAPT};
     die "ERROR: CUTADAPT is not in the config." unless ($cmd);
 
     return (
-        cmd => $cmd,
+        cmd => qq[$cmd > /dev/null],
         script => undef,
         args => [
-            ['-q', 25, 0],
-            #['--quality-base=64', '', 0],
-            ['-m', 17, 0],
+            ['-q', $q, 0],
+            ["--quality-base=$quality", '', 0],
+            ['-m', $m, 0],
             ['', $fastq, 1],
             ['-o', $name . '.trimmed.fastq', 1],
         ],
@@ -357,8 +391,16 @@ sub create_cufflinks_job {
 }
 
 sub create_bed_file_job {
-    my $bam = shift;
-    my $staging_dir = shift;
+    my $opts = shift;
+
+    # Required arguments
+    my $bam = $opts->{bam};
+    my $staging_dir = $opts->{staging_dir};
+
+    # Optional arguments
+    my $seq = $opts->{seq} // {};
+    my $Q = $seq->{Q} // 20;
+
     my $name = to_filename($bam);
     my $cmd = $CONF->{SAMTOOLS};
     my $PILE_TO_BED = catfile($CONF->{SCRIPTDIR}, "pileup_to_bed.pl");
@@ -371,7 +413,7 @@ sub create_bed_file_job {
         args => [
             ['mpileup', '', 0],
             ['-D', '', 0],
-            ['-Q', 20, 0],
+            ['-Q', $Q, 0],
             ['', $bam, 1],
             ['|', 'perl', 0],
             [$PILE_TO_BED, '', 0],
@@ -600,13 +642,27 @@ sub create_notebook_job {
 # GSNAP PIPELINE AND JOBS
 #
 sub gsnap_pipeline {
-    my ($gid, $fasta, $fastq, $staging_dir) = @_;
+    my $opts = shift;
+
+    # Required arguments
+    my $gid = $opts->{gid};
+    my $fasta = $opts->{fasta};
+    my $fastq = $opts->{fastq};
+    my $staging_dir = $opts->{staging_dir};
+
+    # Optional arguments
+    my $aligner = $opts->{aligner} // {};
 
     # Generate index
     my %gmap = create_gmap_index_job($gid, $fasta);
 
     # Generate sam file
-    my %gsnap = create_gsnap_job($fastq, @{@{$gmap{outputs}}[0]}[0], $staging_dir);
+    my %gsnap = create_gsnap_job({
+        fastq => $fastq,
+        gmap => @{@{$gmap{outputs}}[0]}[0],
+        staging_dir => $staging_dir,
+        aligner => $aligner,
+    });
 
     # Generate and sort bam
     my %bam = create_samtools_bam_job(@{$gsnap{outputs}}[0], $staging_dir);
@@ -648,29 +704,44 @@ sub create_gmap_index_job {
 }
 
 sub create_gsnap_job {
-    my ($fastq, $gmap, $staging_dir) = @_;
+    my $opts = shift;
+
+    # Required arguments
+    my $fastq = $opts->{fastq};
+    my $gmap = $opts->{gmap};
+    my $staging_dir = $opts->{staging_dir};
+
+    # Optional arguments
+    my $aligner = $opts->{aligner};
+    my $gapmode = $aligner->{gap} // "none";
+    my $Q = $aligner->{Q} // 1;
+    my $n = $aligner->{n} // 5;
+    my $nofail = $aligner->{nofail} // 1;
+
     my $name = basename($gmap);
     my $cmd = $CONF->{GSNAP};
     die "ERROR: GSNAP is not in the config." unless ($cmd);
 
+    my $args = [
+        ["-D", ".", 0],
+        ["-d", $name, 0],
+        ["--nthreads=32", '', 0],
+        ["-n", $n, 0],
+        ["--format=sam", '', 0],
+        ["--gmap-mode=$gapmode", "", 1],
+        ["--batch=5", $fastq, 0],
+    ];
+
+    push $args, ["-Q", "", 0] if $Q;
+    push $args, ["--nofails", "", 1] if $nofail;
+
     return (
-        cmd => $cmd,
+        cmd => qq[$cmd > $name.sam],
         script => undef,
         options => {
             "allow-zero-length" => JSON::false,
         },
-        args => [
-            ["-D", ".", 0],
-            ["-d", $name, 0],
-            ["--nthreads=32", '', 0],
-            ["-n", 5, 0],
-            ["--format=sam", '', 0],
-            ["-Q", '', 0],
-            ["--gmap-mode=none", '', 0],
-            ["--nofails", $fastq, 1],
-            ["--batch=5",'',0],
-            [">", $name . ".sam", 1]
-        ],
+        args => $args,
         inputs => [
             $fastq,
             [$gmap, 1]
@@ -736,17 +807,30 @@ sub create_samtools_sort_job {
 # TopHat pipeline
 #
 sub tophat_pipeline {
-    my ($gid, $fasta, $fastq, $gff, $staging_dir) = @_;
+    my $opts = shift;
+
+    # Required arguments
+    my $gid = $opts->{gid};
+    my $fasta = $opts->{fasta};
+    my $fastq = $opts->{fastq};
+    my $gff = $opts->{gff};
+    my $staging_dir = $opts->{staging_dir};
+
+    # Optional arguments
+    my $aligner = $opts->{aligner} // {};
+
     my $BOWTIE_CACHE_DIR = catdir($CACHE, $gid, "bowtie_index");
 
     my ($index, %bowtie) = create_bowtie_index_job($gid, $fasta);
-    my %tophat = create_tophat_job(
+    my %tophat = create_tophat_job({
         staging_dir => $staging_dir,
         fastq => $fastq,
         fasta => $fasta,
         gff   => $gff,
         index_name => $index,
-        index_files => ($bowtie{outputs}));
+        index_files => ($bowtie{outputs}),
+        g =>  $aligner->{g},
+    });
 
     # Return the bam output name and jobs required
     return @{$tophat{outputs}}[0], (
@@ -786,30 +870,38 @@ sub create_bowtie_index_job {
 }
 
 sub create_tophat_job {
-    my %opts = @_;
-    my $staging_dir = $opts{staging_dir};
-    my $cmd = $CONF->{TOPHAT};
-    my $name = basename($opts{index_name});
+    my $opts = shift;
 
+    # Required arguments
+    my $fasta = $opts->{fasta};
+    my $fastq = $opts->{fastq};
+    my $gff = $opts->{gff};
+    my $staging_dir = $opts->{staging_dir};
+    my @index_files = @{$opts->{index_files}};
+    my $name = basename($opts->{index_name});
+
+    # Optional arguments
+    my $g = $opts->{g} // 1;
+
+    my $cmd = $CONF->{TOPHAT};
     die "ERROR: TOPHAT is not in the config." unless ($cmd);
 
     my $args = [
         ["-o", ".", 0],
-        ["-g", "1", 0],
+        ["-g", $g, 0],
         ["-p", '32', 0],
         ["", $name, 1],
-        ["", $opts{fastq}, 1]
+        ["", $fastq, 1]
     ];
 
     my $inputs = [
-        $opts{fasta},
-        $opts{fastq},
-        @{$opts{index_files}}
+        $fasta,
+        $fastq,
     ];
 
     # add gff file if genome has annotations
-    unshift @$args, ["-G", $opts{gff}, 1] if $opts{gff};
-    unshift @$inputs, $opts{gff} if $opts{gff};
+    unshift @$args, ["-G", $gff, 1] if $gff;
+    unshift @$inputs, $gff if $gff;
 
     return (
         cmd => $cmd,

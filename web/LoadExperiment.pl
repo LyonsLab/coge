@@ -487,7 +487,8 @@ sub load_experiment {
                 restricted => $restricted
             },
             files => [ $data_file ],
-            alignment_type => $aligner
+            alignment_type => $aligner,
+            options => $options
         );
     }
     # Else, all other file types
