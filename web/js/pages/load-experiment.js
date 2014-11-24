@@ -917,8 +917,10 @@ $.extend(AlignmentView.prototype, {
             };
         } else {
             this.data = {
-                tool: "tophat",
-                g: this.el.find("#g").val(),
+                aligner: {
+                    tool: "tophat",
+                    g: this.el.find("#g").val(),
+                }
             }
         }
 
