@@ -5,7 +5,7 @@ var concat = Array.prototype.concat;
 // Global experiment data
 var current_experiment = {};
 
-// Support file types
+// Supported file types
 var POLY_FILES = [
     "vcf"
 ];
@@ -90,7 +90,7 @@ function file_canceled() {
     $('#files').hide();
     $('#select_file_button').show();
 
-    //FIXME: Hack to get around removing file
+    //FIXME: Hack to get around removing the file
     current_experiment.new_data = undefined;
 }
 
@@ -601,7 +601,7 @@ $.extend(DataView.prototype, {
         });
     },
 
-    //FIXME: Add files to file list view and mark as being transferred
+    //FIXME: Add files to file list view and mark them as being transferred
     add: function(e, data) {
         var filename = data.files[0].name;
 
@@ -798,6 +798,7 @@ $.extend(FindSNPView.prototype, {
         var method = this.el.find("#snp-method");
         this.el.find("#snps").unbind().change(this.update_snp.bind(this));
 
+        // Events to rebind when the view is added to the dom
         method.unbind().change(function() {
             var selected = $(this).val();
             render_template(self.snp_templates[selected], self.snp_container);
@@ -808,6 +809,7 @@ $.extend(FindSNPView.prototype, {
         }
     },
 
+    // Callback to display the selected snp pipeline
     update_snp: function (ev) {
         var enabled = $(ev.target).is(":checked"),
             method = this.el.find("#snp-method");
@@ -887,6 +889,7 @@ $.extend(AlignmentView.prototype, {
         this.update_aligner();
     },
 
+    // Callback to display the selected aligner
     update_aligner: function() {
         var selected = this.el.find("#alignment :checked").val();
         render_template(this.align_templates[selected], this.align_container);
@@ -895,6 +898,7 @@ $.extend(AlignmentView.prototype, {
     is_valid: function() {
         var aligner = this.el.find("#alignment :checked").val();
 
+        // Pick the aligner and set the options
         if (aligner === "gsnap") {
             this.data = {
                 aligner: {
@@ -1120,6 +1124,7 @@ $.extend(OptionsView.prototype, {
         this.el = this.layout_view.el;
     },
 
+    // Validate and add all options to the experiment
     is_valid: function() {
         if (!this.analysis_view.is_valid()) {
             return false;
@@ -1153,7 +1158,7 @@ $.extend(OptionsView.prototype, {
             return;
         }
 
-        //FIXME: A aggregate view should add analysis options
+        //FIXME: An aggregate view should add analysis options
         // for multiple file types
         if ($.inArray(file_type, POLY_FILES) > -1) {
             this.analysis_view = new PolymorphismView();
@@ -1172,6 +1177,7 @@ $.extend(OptionsView.prototype, {
             {"#analysis-options": this.analysis_view}
         );
 
+        // Render the views added to the layout view
         this.layout_view.renderLayout();
     },
 });
@@ -1197,6 +1203,7 @@ $.extend(ConfirmationView.prototype, {
         this.renderOptions(this.experiment.options);
     },
 
+    // Render description summary
     renderDescription: function(description) {
         var key, newpair;
         this.description.empty();
@@ -1212,6 +1219,7 @@ $.extend(ConfirmationView.prototype, {
         }
     },
 
+    // Render data files summary
     renderData: function(data) {
         var index, newpair;
 
@@ -1225,6 +1233,7 @@ $.extend(ConfirmationView.prototype, {
         }
     },
 
+    // Render options summary
     renderOptions: function(options) {
         this.options.empty();
 
@@ -1238,6 +1247,7 @@ $.extend(ConfirmationView.prototype, {
         }
     },
 
+    // Validates the confirmation view (nothing to do here)
     is_valid: function() {
         return true;
     }
@@ -1250,6 +1260,7 @@ function load(experiment) {
     $('#load_log').html('Initializing ...');
     newLoad = true;
 
+    // Add the dispatch method and load id to the payload
     var payload = $.extend({fname: "load_experiment", load_id: load_id}, experiment);
 
     $.ajax({
@@ -1282,6 +1293,7 @@ function reset_load() {
     window.history.pushState({}, "Title", PAGE_NAME);
     $('#load_dialog').dialog('close');
 
+    // Reset the wizard and set description step
     initialize_wizard({
         admin: is_admin,
         description: current_experiment.description,
@@ -1292,7 +1304,7 @@ function reset_load() {
 }
 
 function initialize_wizard(opts) {
-    //FIXME: This should be private variable
+    //FIXME: This should be a private variable
     current_experiment = {};
     var root = $("#wizard-container");
     var wizard = new Wizard({ completed: load, data: current_experiment });
@@ -1304,8 +1316,11 @@ function initialize_wizard(opts) {
     wizard.addStep(new DataView(current_experiment));
     wizard.addStep(new OptionsView({experiment: current_experiment, admin: opts.admin}));
     wizard.addStep(new ConfirmationView(current_experiment));
+
+    // Render all the wizard sub views
     wizard.render();
 
+    // Add the wizard to the document
     root.html(wizard.el);
     return wizard;
 }
