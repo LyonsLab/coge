@@ -1000,12 +1000,37 @@ $.extend(QuantativeView.prototype, {
     },
 });
 
+function RNASeqView() {
+    this.initialize();
+    this.data = {};
+}
+
+$.extend(RNASeqView.prototype, {
+    initialize: function() {
+        this.el = $($("#rna-seq-template").html());
+    },
+
+    is_valid: function() {
+        this.data.seq = {
+            depth: this.el.find("#depth").val()
+        };
+
+        return true;
+    },
+
+    get_options: function() {
+        return this.data;
+    },
+
+})
+
 function FastqView() {
     this.initialize();
 }
 
 $.extend(FastqView.prototype, {
     initialize: function() {
+        this.rna_seq_view = new RNASeqView();
         this.snp_view = new FindSNPView();
         this.align_view = new AlignmentView();
 
@@ -1013,6 +1038,7 @@ $.extend(FastqView.prototype, {
             template: "#fastq-template",
 
             layout: {
+                "#rna-seq-view": this.rna_seq_view,
                 "#snp-view": this.snp_view,
                 "#align-view": this.align_view
             }
@@ -1039,7 +1065,8 @@ $.extend(FastqView.prototype, {
     },
 
     get_options: function() {
-        return $.extend(this.snp_view.get_options(),
+        return $.extend(this.rna_seq_view.get_options(),
+                        this.snp_view.get_options(),
                         this.align_view.get_options());
     },
 });
