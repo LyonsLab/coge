@@ -904,7 +904,7 @@ $.extend(AlignmentView.prototype, {
                 aligner: {
                     tool: "gsnap",
                     n: this.el.find("#n").val(),
-                    Q: this.el.find("#Q").val(),
+                    Q: this.el.find("#Q").is(":checked"),
                     gap: this.el.find("#gap").val(),
                     nofail: this.el.find("#nofail").is(":checked")
                 },
