@@ -149,7 +149,7 @@ sub gen_body {
         return $template->output;
     }
     else {
-        return "No dataset_group (genome) or experiment ids were specified.";
+        return "No genomes/experiments were specified.";
     }
 }
 
