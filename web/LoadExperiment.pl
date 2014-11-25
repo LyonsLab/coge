@@ -470,12 +470,13 @@ sub load_experiment {
 
     # Determine fastq file type
     my ($workflow_id, $error_msg);
-    if ( $file_type eq 'fastq' || is_fastq_file($data_file) ) {
-        # Get genome
-        my $genome = $coge->resultset('Genome')->find($gid);
 
+    # Get genome
+    my $genome = $coge->resultset('Genome')->find($gid);
+
+    if ( $file_type eq 'fastq' || is_fastq_file($data_file) ) {
         # Submit workflow to generate experiment
-        ($workflow_id, $error_msg) = CoGe::Pipelines::qTeller::run(
+        ($workflow_id, $error_msg) = CoGe::Pipelines::qTeller::run({
             db => $coge,
             genome => $genome,
             user => $USER,
@@ -486,9 +487,10 @@ sub load_experiment {
                 source_name => $source_name,
                 restricted => $restricted
             },
-            files => [ $data_file ],
-            alignment_type => $aligner
-        );
+            files => [ { path => $data_file, type => 'fastq' } ],
+            alignment_type => $aligner,
+            options => $options
+            });
     }
     # Else, all other file types
     else {

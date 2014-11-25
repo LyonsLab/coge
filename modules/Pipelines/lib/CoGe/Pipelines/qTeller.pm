@@ -17,34 +17,21 @@ use CoGe::Accessory::Jex;
 use CoGe::Core::Storage qw(get_genome_file get_experiment_files get_workflow_paths);
 use CoGe::Accessory::Web qw(get_defaults);
 
+our $CONF = CoGe::Accessory::Web::get_defaults();
+
 BEGIN {
-    use vars qw ($VERSION @ISA @EXPORT $CACHE $CONF);
+    use vars qw ($VERSION @ISA @EXPORT $CACHE @EXPORT_OK);
     require Exporter;
 
     $VERSION = 0.1;
     @ISA     = qw (Exporter);
     @EXPORT = qw( run );
+    @EXPORT_OK = qw(build);
 }
 
 sub run {
-    my %opts = @_;
-    my $db = $opts{db};
-    my $genome = $opts{genome};
-    my $user = $opts{user};
-    my $files = $opts{files};
-    my $metadata = $opts{metadata};
-    my $alignment = $opts{alignment_type};
-
-    my $gid = $genome->id;
-
-    $CONF = CoGe::Accessory::Web::get_defaults();
-
-    $CACHE = $CONF->{CACHEDIR};
-    die "ERROR: CACHEDIR not specified in config" unless $CACHE;
-    mkpath($CACHE, 0, 0777) unless -r $CACHE;
-
-    # Set default alignment program if alignment is not set or incorrect
-    $alignment = "gsnap" unless $alignment and $alignment =~ /tophat|gsnap/;
+    my $opts = shift;
+    my $user = $opts->{user};
 
     # Connect to workflow engine and get an id
     my $jex = CoGe::Accessory::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
@@ -60,6 +47,53 @@ sub run {
     my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
     $workflow->logfile( catfile($result_dir, 'debug.log') );
 
+    my $options = {
+        result_dir => $staging_dir,
+        staging_dir => $staging_dir,
+        wid  => $wid,
+        %{$opts},
+    };
+
+    my @jobs = build($options);
+
+    for my $job (@jobs) {
+        $workflow->add_job(%{$job});
+    }
+
+    #say STDERR "WORKFLOW DUMP\n" . Dumper($workflow) if $DEBUG;
+    #say STDERR "JOB NOT SCHEDULED TEST MODE" and exit(0) if $test;
+
+    # Submit the workflow
+    my $result = $jex->submit_workflow($workflow);
+    if ($result->{status} =~ /error/i) {
+        return (undef, "Could not submit workflow");
+    }
+
+    return ($result->{id}, undef);
+}
+
+sub build {
+    my $opts = shift;
+    my $db = $opts->{db};
+    my $genome = $opts->{genome};
+    my $user = $opts->{user};
+    my $files = $opts->{files};
+    my $metadata = $opts->{metadata};
+    my $alignment = $opts->{alignment_type};
+    my $staging_dir = $opts->{staging_dir};
+    my $result_dir = $opts->{result_dir};
+    my $wid = $opts->{wid};
+    my $options = $opts->{options};
+
+    my $gid = $genome->id;
+
+    $CACHE = $CONF->{CACHEDIR};
+    die "ERROR: CACHEDIR not specified in config" unless $CACHE;
+    mkpath($CACHE, 0, 0777) unless -r $CACHE;
+
+    # Set default alignment program if alignment is not set or incorrect
+    $alignment = "gsnap" unless $alignment and $alignment =~ /tophat|gsnap/;
+
     # Check if genome has annotations
     my $annotated = has_annotations($genome->id, $db);
 
@@ -67,22 +101,30 @@ sub run {
     my $annotations = generate_metadata($alignment, $annotated);
 
     my $fasta = get_genome_file($gid);
-    my $fastq = shift(@$files);
+    my $input_file = shift(@$files);
+    my $file_type = $input_file->{type};
+    my $fastq = $input_file->{path};
 
     my (@jobs, @steps, $bam, $include_csv);
-
-    # Validate the fastq file
-    # XXX: Add job dependencies
-    my %validate = create_validate_fastq_job($fastq);
-    push @jobs, \%validate;
 
     # Filter the fasta file (clean up headers)
     my %filter = create_fasta_filter_job($gid, $fasta, "$fastq.validated");
     my $filtered_fasta = @{$filter{outputs}}[0];
     push @jobs, \%filter;
 
+    # Validate the fastq file
+    # XXX: Add job dependencies
+    my %validate = create_validate_fastq_job($fastq);
+    push @jobs, \%validate;
+
     # Cleanup fastq
-    my %trimmed = create_cutadapt_job($fastq, "$fastq.validated", $staging_dir);
+    my %trimmed = create_cutadapt_job({
+        fastq => $fastq,
+        validated => "$fastq.validated",
+        staging_dir => $staging_dir,
+        cutadapt => $options->{cutadapt},
+    });
+
     my $trimmed_fastq = @{$trimmed{outputs}}[0];
     push @jobs, \%trimmed;
 
@@ -95,18 +137,35 @@ sub run {
     }
 
     if ($alignment eq "tophat") {
-        ($bam, @steps) = tophat_pipeline($gid, $filtered_fasta, $trimmed_fastq,
-            $gff_file, $staging_dir);
+        ($bam, @steps) = tophat_pipeline({
+            gid => $gid,
+            fasta => $filtered_fasta,
+            fastq => $trimmed_fastq,
+            gff => $gff_file,
+            staging_dir => $staging_dir,
+            aligner => $options->{aligner}
+        });
     }
     else {
-        ($bam, @steps) = gsnap_pipeline($gid, $filtered_fasta, $trimmed_fastq, $staging_dir);
+        ($bam, @steps) = gsnap_pipeline({
+            gid => $gid,
+            fasta => $filtered_fasta,
+            fastq => $trimmed_fastq,
+            staging_dir => $staging_dir,
+            aligner => $options->{aligner}
+        });
     }
 
     # Join alignment pipeline
     @jobs = (@jobs, @steps);
 
     # Generate bed file
-    my %bed = create_bed_file_job($bam, $staging_dir);
+    my %bed = create_bed_file_job({
+        bam => $bam,
+        staging_dir => $staging_dir,
+        seq => $options->{seq},
+    });
+
     push @jobs, \%bed;
 
     # Filter bed file
@@ -142,20 +201,7 @@ sub run {
     my %notebook = create_notebook_job($metadata, $include_csv, 1, 1, $user, $annotations, $staging_dir, $result_dir);
     push @jobs, \%notebook;
 
-    for my $job (@jobs) {
-        $workflow->add_job(%{$job});
-    }
-
-    #say STDERR "WORKFLOW DUMP\n" . Dumper($workflow) if $DEBUG;
-    #say STDERR "JOB NOT SCHEDULED TEST MODE" and exit(0) if $test;
-
-    # Submit the workflow
-    my $result = $jex->submit_workflow($workflow);
-    if ($result->{status} =~ /error/i) {
-        return (undef, "Could not submit workflow");
-    }
-
-    return ($result->{id}, undef);
+    return wantarray ? @jobs : \@jobs;
 }
 
 sub generate_metadata {
@@ -302,20 +348,30 @@ sub create_gff_generation_job {
 }
 
 sub create_cutadapt_job {
-    my $fastq = shift;
-    my $validated = shift;
-    my $staging_dir = shift;
+    my $opts = shift;
+
+    # Required arguments
+    my $fastq = $opts->{fastq};
+    my $validated = $opts->{validated};
+    my $staging_dir = $opts->{staging_dir};
+
+    # Optional arguments
+    my $cutadapt= $opts->{cutadapt} // {};
+    my $q = $cutadapt->{q} // 25;
+    my $quality = $cutadapt->{quality} // 64;
+    my $m = $cutadapt->{m} // 17;
+
     my $name = to_filename($fastq);
     my $cmd = $CONF->{CUTADAPT};
     die "ERROR: CUTADAPT is not in the config." unless ($cmd);
 
     return (
-        cmd => $cmd,
+        cmd => qq[$cmd > /dev/null],
         script => undef,
         args => [
-            ['-q', 25, 0],
-            #['--quality-base=64', '', 0],
-            ['-m', 17, 0],
+            ['-q', $q, 0],
+            ["--quality-base=$quality", '', 0],
+            ['-m', $m, 0],
             ['', $fastq, 1],
             ['-o', $name . '.trimmed.fastq', 1],
         ],
@@ -357,8 +413,16 @@ sub create_cufflinks_job {
 }
 
 sub create_bed_file_job {
-    my $bam = shift;
-    my $staging_dir = shift;
+    my $opts = shift;
+
+    # Required arguments
+    my $bam = $opts->{bam};
+    my $staging_dir = $opts->{staging_dir};
+
+    # Optional arguments
+    my $seq = $opts->{seq} // {};
+    my $Q = $seq->{Q} // 20;
+
     my $name = to_filename($bam);
     my $cmd = $CONF->{SAMTOOLS};
     my $PILE_TO_BED = catfile($CONF->{SCRIPTDIR}, "pileup_to_bed.pl");
@@ -371,7 +435,7 @@ sub create_bed_file_job {
         args => [
             ['mpileup', '', 0],
             ['-D', '', 0],
-            ['-Q', 20, 0],
+            ['-Q', $Q, 0],
             ['', $bam, 1],
             ['|', 'perl', 0],
             [$PILE_TO_BED, '', 0],
@@ -600,13 +664,27 @@ sub create_notebook_job {
 # GSNAP PIPELINE AND JOBS
 #
 sub gsnap_pipeline {
-    my ($gid, $fasta, $fastq, $staging_dir) = @_;
+    my $opts = shift;
+
+    # Required arguments
+    my $gid = $opts->{gid};
+    my $fasta = $opts->{fasta};
+    my $fastq = $opts->{fastq};
+    my $staging_dir = $opts->{staging_dir};
+
+    # Optional arguments
+    my $aligner = $opts->{aligner} // {};
 
     # Generate index
     my %gmap = create_gmap_index_job($gid, $fasta);
 
     # Generate sam file
-    my %gsnap = create_gsnap_job($fastq, @{@{$gmap{outputs}}[0]}[0], $staging_dir);
+    my %gsnap = create_gsnap_job({
+        fastq => $fastq,
+        gmap => @{@{$gmap{outputs}}[0]}[0],
+        staging_dir => $staging_dir,
+        aligner => $aligner,
+    });
 
     # Generate and sort bam
     my %bam = create_samtools_bam_job(@{$gsnap{outputs}}[0], $staging_dir);
@@ -648,29 +726,44 @@ sub create_gmap_index_job {
 }
 
 sub create_gsnap_job {
-    my ($fastq, $gmap, $staging_dir) = @_;
+    my $opts = shift;
+
+    # Required arguments
+    my $fastq = $opts->{fastq};
+    my $gmap = $opts->{gmap};
+    my $staging_dir = $opts->{staging_dir};
+
+    # Optional arguments
+    my $aligner = $opts->{aligner};
+    my $gapmode = $aligner->{gap} // "none";
+    my $Q = $aligner->{Q} // 1;
+    my $n = $aligner->{n} // 5;
+    my $nofail = $aligner->{nofail} // 1;
+
     my $name = basename($gmap);
     my $cmd = $CONF->{GSNAP};
     die "ERROR: GSNAP is not in the config." unless ($cmd);
 
+    my $args = [
+        ["-D", ".", 0],
+        ["-d", $name, 0],
+        ["--nthreads=32", '', 0],
+        ["-n", $n, 0],
+        ["--format=sam", '', 0],
+        ["--gmap-mode=$gapmode", "", 1],
+        ["--batch=5", $fastq, 0],
+    ];
+
+    push $args, ["-Q", "", 0] if $Q;
+    push $args, ["--nofails", "", 1] if $nofail;
+
     return (
-        cmd => $cmd,
+        cmd => qq[$cmd > $name.sam],
         script => undef,
         options => {
             "allow-zero-length" => JSON::false,
         },
-        args => [
-            ["-D", ".", 0],
-            ["-d", $name, 0],
-            ["--nthreads=32", '', 0],
-            ["-n", 5, 0],
-            ["--format=sam", '', 0],
-            ["-Q", '', 0],
-            ["--gmap-mode=none", '', 0],
-            ["--nofails", $fastq, 1],
-            ["--batch=5",'',0],
-            [">", $name . ".sam", 1]
-        ],
+        args => $args,
         inputs => [
             $fastq,
             [$gmap, 1]
@@ -736,17 +829,30 @@ sub create_samtools_sort_job {
 # TopHat pipeline
 #
 sub tophat_pipeline {
-    my ($gid, $fasta, $fastq, $gff, $staging_dir) = @_;
+    my $opts = shift;
+
+    # Required arguments
+    my $gid = $opts->{gid};
+    my $fasta = $opts->{fasta};
+    my $fastq = $opts->{fastq};
+    my $gff = $opts->{gff};
+    my $staging_dir = $opts->{staging_dir};
+
+    # Optional arguments
+    my $aligner = $opts->{aligner} // {};
+
     my $BOWTIE_CACHE_DIR = catdir($CACHE, $gid, "bowtie_index");
 
     my ($index, %bowtie) = create_bowtie_index_job($gid, $fasta);
-    my %tophat = create_tophat_job(
+    my %tophat = create_tophat_job({
         staging_dir => $staging_dir,
         fastq => $fastq,
         fasta => $fasta,
         gff   => $gff,
         index_name => $index,
-        index_files => ($bowtie{outputs}));
+        index_files => ($bowtie{outputs}),
+        g =>  $aligner->{g},
+    });
 
     # Return the bam output name and jobs required
     return @{$tophat{outputs}}[0], (
@@ -786,30 +892,38 @@ sub create_bowtie_index_job {
 }
 
 sub create_tophat_job {
-    my %opts = @_;
-    my $staging_dir = $opts{staging_dir};
-    my $cmd = $CONF->{TOPHAT};
-    my $name = basename($opts{index_name});
+    my $opts = shift;
 
+    # Required arguments
+    my $fasta = $opts->{fasta};
+    my $fastq = $opts->{fastq};
+    my $gff = $opts->{gff};
+    my $staging_dir = $opts->{staging_dir};
+    my @index_files = @{$opts->{index_files}};
+    my $name = basename($opts->{index_name});
+
+    # Optional arguments
+    my $g = $opts->{g} // 1;
+
+    my $cmd = $CONF->{TOPHAT};
     die "ERROR: TOPHAT is not in the config." unless ($cmd);
 
     my $args = [
         ["-o", ".", 0],
-        ["-g", "1", 0],
+        ["-g", $g, 0],
         ["-p", '32', 0],
         ["", $name, 1],
-        ["", $opts{fastq}, 1]
+        ["", $fastq, 1]
     ];
 
     my $inputs = [
-        $opts{fasta},
-        $opts{fastq},
-        @{$opts{index_files}}
+        $fasta,
+        $fastq,
     ];
 
     # add gff file if genome has annotations
-    unshift @$args, ["-G", $opts{gff}, 1] if $opts{gff};
-    unshift @$inputs, $opts{gff} if $opts{gff};
+    unshift @$args, ["-G", $gff, 1] if $gff;
+    unshift @$inputs, $gff if $gff;
 
     return (
         cmd => $cmd,
