@@ -593,7 +593,7 @@ sub remove_annotation {
 sub gen_html {
     my $template;
 
-    $EMBED = $FORM->param('embed');
+    $EMBED = $FORM->param('embed') || 0;
     if ($EMBED) {
         $template =
           HTML::Template->new(
@@ -690,9 +690,9 @@ sub _get_experiment_info {
         { title => "Genome", value => $exp->genome->info_html },
         { title => "Source", value => $exp->source->info_html },
         { title => "Version", value => $exp->version },
-        { title => "Tags", value => $tags },
-        { title => "Notebooks", value => },
-        { title => "Restricted", value => $exp->restricted ? "Yes" : "No"},
+        { title => "Tags", value => $tags || '' },
+        { title => "Notebooks", value => join(',', map { $_->name } $exp->notebooks) || '' },
+        { title => "Restricted", value => $exp->restricted ? "Yes" : "No" },
     ];
 
     push @$fields, { title => "Note", value => "This experiment has been deleted" } if $exp->deleted;
