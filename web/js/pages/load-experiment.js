@@ -818,13 +818,14 @@ $.extend(FindSNPView.prototype, {
         var el = $(document.getElementById(method.val()));
 
         if (enabled) {
-            this.data.snps = $.extend({}, this.data.snp_params, { method: method });
+            this.data.snp_params = $.extend({}, this.data.snp_params, { method: method.val() });
             el.show();
             method.removeAttr("disabled");
             this.snp_container.slideDown();
             var selected = $("#snp-method").val();
             render_template(this.snp_templates[selected], this.snp_container);
         } else {
+            this.data.snp_params = undefined;
             method.attr("disabled", 1);
             this.snp_container.slideUp();
         }
