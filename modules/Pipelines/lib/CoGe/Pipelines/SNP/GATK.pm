@@ -28,10 +28,12 @@ sub run {
     my $experiment = $opts{experiment} or croak "An experiment must be specified";
     my $user = $opts{user} or croak "A user was not specified";
 
+    # Create an empty workflow
     my $workflow = $JEX->create_workflow( name => 'Running the GATK SNP-finder pipeline', init => 1 );
     my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
     $workflow->logfile( catfile($staging_dir, 'debug.log') );
 
+    # Create the job descriptions
     my @jobs = build({
         experiment => $experiment,
         staging_dir => $staging_dir,
@@ -76,7 +78,7 @@ sub build {
     my $processed_bam_file2 = to_filename($bam_file) . '.processed2.bam';
     my $output_vcf_file = qq[snps.flt.vcf];
 
-    # Build all the jobs -- TODO create cache for bam files
+    # Build all the jobs -- TODO create cache for processed bam files
     my @jobs = (
         create_fasta_reheader_job({
             fasta => $fasta_file,
