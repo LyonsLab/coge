@@ -17,35 +17,21 @@ use CoGe::Accessory::Jex;
 use CoGe::Core::Storage qw(get_genome_file get_experiment_files get_workflow_paths);
 use CoGe::Accessory::Web qw(get_defaults);
 
+our $CONF = CoGe::Accessory::Web::get_defaults();
+
 BEGIN {
-    use vars qw ($VERSION @ISA @EXPORT $CACHE $CONF);
+    use vars qw ($VERSION @ISA @EXPORT $CACHE @EXPORT_OK);
     require Exporter;
 
     $VERSION = 0.1;
     @ISA     = qw (Exporter);
     @EXPORT = qw( run );
+    @EXPORT_OK = qw(build);
 }
 
 sub run {
-    my %opts = @_;
-    my $db = $opts{db};
-    my $genome = $opts{genome};
-    my $user = $opts{user};
-    my $files = $opts{files};
-    my $metadata = $opts{metadata};
-    my $alignment = $opts{alignment_type};
-    my $options = $opts{options};
-
-    my $gid = $genome->id;
-
-    $CONF = CoGe::Accessory::Web::get_defaults();
-
-    $CACHE = $CONF->{CACHEDIR};
-    die "ERROR: CACHEDIR not specified in config" unless $CACHE;
-    mkpath($CACHE, 0, 0777) unless -r $CACHE;
-
-    # Set default alignment program if alignment is not set or incorrect
-    $alignment = "gsnap" unless $alignment and $alignment =~ /tophat|gsnap/;
+    my $opts = shift;
+    my $user = $opts->{user};
 
     # Connect to workflow engine and get an id
     my $jex = CoGe::Accessory::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
@@ -61,6 +47,53 @@ sub run {
     my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
     $workflow->logfile( catfile($result_dir, 'debug.log') );
 
+    my $options = {
+        result_dir => $staging_dir,
+        staging_dir => $staging_dir,
+        wid  => $wid,
+        %{$opts},
+    };
+
+    my @jobs = build($options);
+
+    for my $job (@jobs) {
+        $workflow->add_job(%{$job});
+    }
+
+    #say STDERR "WORKFLOW DUMP\n" . Dumper($workflow) if $DEBUG;
+    #say STDERR "JOB NOT SCHEDULED TEST MODE" and exit(0) if $test;
+
+    # Submit the workflow
+    my $result = $jex->submit_workflow($workflow);
+    if ($result->{status} =~ /error/i) {
+        return (undef, "Could not submit workflow");
+    }
+
+    return ($result->{id}, undef);
+}
+
+sub build {
+    my $opts = shift;
+    my $db = $opts->{db};
+    my $genome = $opts->{genome};
+    my $user = $opts->{user};
+    my $files = $opts->{files};
+    my $metadata = $opts->{metadata};
+    my $alignment = $opts->{alignment_type};
+    my $staging_dir = $opts->{staging_dir};
+    my $result_dir = $opts->{result_dir};
+    my $wid = $opts->{wid};
+    my $options = $opts->{options};
+
+    my $gid = $genome->id;
+
+    $CACHE = $CONF->{CACHEDIR};
+    die "ERROR: CACHEDIR not specified in config" unless $CACHE;
+    mkpath($CACHE, 0, 0777) unless -r $CACHE;
+
+    # Set default alignment program if alignment is not set or incorrect
+    $alignment = "gsnap" unless $alignment and $alignment =~ /tophat|gsnap/;
+
     # Check if genome has annotations
     my $annotated = has_annotations($genome->id, $db);
 
@@ -68,19 +101,21 @@ sub run {
     my $annotations = generate_metadata($alignment, $annotated);
 
     my $fasta = get_genome_file($gid);
-    my $fastq = shift(@$files);
+    my $input_file = shift(@$files);
+    my $file_type = $input_file->{type};
+    my $fastq = $input_file->{path};
 
     my (@jobs, @steps, $bam, $include_csv);
-
-    # Validate the fastq file
-    # XXX: Add job dependencies
-    my %validate = create_validate_fastq_job($fastq);
-    push @jobs, \%validate;
 
     # Filter the fasta file (clean up headers)
     my %filter = create_fasta_filter_job($gid, $fasta, "$fastq.validated");
     my $filtered_fasta = @{$filter{outputs}}[0];
     push @jobs, \%filter;
+
+    # Validate the fastq file
+    # XXX: Add job dependencies
+    my %validate = create_validate_fastq_job($fastq);
+    push @jobs, \%validate;
 
     # Cleanup fastq
     my %trimmed = create_cutadapt_job({
@@ -166,20 +201,7 @@ sub run {
     my %notebook = create_notebook_job($metadata, $include_csv, 1, 1, $user, $annotations, $staging_dir, $result_dir);
     push @jobs, \%notebook;
 
-    for my $job (@jobs) {
-        $workflow->add_job(%{$job});
-    }
-
-    #say STDERR "WORKFLOW DUMP\n" . Dumper($workflow) if $DEBUG;
-    #say STDERR "JOB NOT SCHEDULED TEST MODE" and exit(0) if $test;
-
-    # Submit the workflow
-    my $result = $jex->submit_workflow($workflow);
-    if ($result->{status} =~ /error/i) {
-        return (undef, "Could not submit workflow");
-    }
-
-    return ($result->{id}, undef);
+    return wantarray ? @jobs : \@jobs;
 }
 
 sub generate_metadata {
