@@ -957,11 +957,13 @@ function AlignmentOptionView() {
 $.extend(AlignmentOptionView.prototype, {
     initialize: function() {
         this.snp_view = new FindSNPView();
+        this.rna_seq_view = new RNASeqView();
 
         this.layout_view = new LayoutView({
             template: "#align-option-template",
 
             layout: {
+                "#rna-seq-view": this.rna_seq_view,
                 "#snp-view": this.snp_view
             }
         });
@@ -978,7 +980,8 @@ $.extend(AlignmentOptionView.prototype, {
     },
 
     get_options: function() {
-        return this.snp_view.get_options();
+        return $.extend(this.snp_view.get_options(),
+                        this.rna_seq_view.get_options());
     },
 });
 
