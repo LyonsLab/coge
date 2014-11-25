@@ -40,7 +40,7 @@ $(document).ready(function() {
     if (job_id) {
         reset_dialog();
         $('#progress_msg').hide();
-        $('#progress_dialog').dialog({ autoOpen: true, title: "Finding SNPs ..." });
+        $('#progress_dialog').dialog({ autoOpen: true, title: "Identifying SNPs ..." });
         update_dialog(STATUS_URL + job_id, "#progress_dialog", progress_formatter);
     }
 });
@@ -346,7 +346,7 @@ function find_snps(method) {
     // Open status dialog right away
     $('#progress_dialog')
         .unbind()
-        .dialog({ autoOpen: true, title: "Finding SNPs ..." });
+        .dialog({ autoOpen: true, title: "Identifying SNPs ..." });
 
     $('#progress_log').html('Initializing ...');
     newLoad = true;
