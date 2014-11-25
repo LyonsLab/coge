@@ -16,8 +16,7 @@ use vars qw($P $PAGE_TITLE $PAGE_NAME $LINK
 
 $DATE = sprintf(
     "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
+    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }->(localtime)
 );
 
 $PAGE_TITLE = 'GenomeList';
@@ -36,8 +35,7 @@ $COGEDIR   = $P->{COGEDIR};
 $URL       = $P->{URL};
 $HISTOGRAM = $P->{HISTOGRAM};
 
-$LIST_TYPE =
-  $coge->resultset('ListType')->find_or_create( { name => 'genome' } );
+$LIST_TYPE = $coge->resultset('ListType')->find_or_create( { name => 'genome' } );
 
 %FUNCTION = (
     gen_html                 => \&gen_html,
@@ -71,12 +69,9 @@ sub gen_html {
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( PAGE_TITLE => 'GenomeList',
     				  PAGE_LINK  => $LINK,
-    				  HELP       => '/wiki/index.php?title=GenomeList' );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param( USER       => $name );
-    $template->param( LOGO_PNG   => "GenomeList-logo.png" );
+    				  HELP       => '/wiki/index.php?title=GenomeList',
+                      USER       => $USER->display_name,
+                      LOGO_PNG   => "GenomeList-logo.png" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( DATE       => $DATE );
     $template->param( BODY       => $body );
