@@ -59,8 +59,10 @@ $node_types = $coge->node_types();
     search_annotation_types    => \&search_annotation_types,
     get_annotation_type_groups => \&get_annotation_type_groups,
     delete_list                => \&delete_list,
-    send_to_blast              => \&send_to_blast,
+    send_to_genomelist         => \&send_to_genomelist,
+    send_to_experimentlist     => \&send_to_experimentlist,
     send_to_featlist           => \&send_to_featlist,
+    send_to_blast              => \&send_to_blast,
     send_to_msa                => \&send_to_msa,
     send_to_gevo               => \&send_to_gevo,
     send_to_synfind            => \&send_to_synfind,
@@ -1284,6 +1286,22 @@ sub send_to_blast {
     #my $accn_list = join(',', map { $_->id } $list->genomes);
     #my $url = "CoGeBlast.pl?dsgid=$accn_list";
     my $url = "CoGeBlast.pl?lid=$lid";
+    return encode_json( { url => $url } );
+}
+
+sub send_to_genomelist {
+    my %opts = @_;
+    my $lid  = $opts{lid};
+    return unless $lid;
+    my $url = "GenomeList.pl?lid=$lid";
+    return encode_json( { url => $url } );
+}
+
+sub send_to_experimentlist {
+    my %opts = @_;
+    my $lid  = $opts{lid};
+    return unless $lid;
+    my $url = "ExperimentList.pl?lid=$lid";
     return encode_json( { url => $url } );
 }
 
