@@ -222,20 +222,26 @@
 
 <script id="fastq-template" type="text/template">
     <div class="step">
-        <div id="rna-seq-view"></div>
         <div id="align-view"></div>
+        <div id="expression-view"></div>
         <div id="snp-view"></div>
     </div>
 </script>
 
-<script id="rna-seq-template" type="text/template">
+<script id="expression-template" type="text/template">
     <div class="form-section">
-        <h4>RNA-Seq Options</h4>
+        <h4>Expression Analysis</h4>
         <div class="form-field">
-            <label class="col-md-2">Samtools (mpileup):</label>
-            <div>
+            <label class="col-md-2">Run Analysis:</label>
+
+            <label>Enable:</label>
+            <input id="expression" type="checkbox">
+        </div>
+        <div id="expression-container" class="form-field hidden">
+            <label class="col-md-2">Expression options:</label>
+            <div class="form-group">
                 <label>-Q:</label>
-                <input id="depth" type="number" value="5"/>
+                <input id="depth" type="number" value="5">
             </div>
         </div>
     </div>
@@ -243,7 +249,7 @@
 
 <script id="align-option-template" type="text/template">
 <div>
-    <div id="rna-seq-view"></div>
+    <div id="expression-view"></div>
     <div id="snp-view"></div>
 </div>
 </script>
@@ -277,7 +283,7 @@
 
 <script id="align-template" type="text/template">
 <div class="form-section">
-    <h4>Alignment Options</h4>
+    <h4>Alignment</h4>
 
     <div class="form-field">
         <label class="col-md-2">Aligner:</label>
@@ -362,10 +368,10 @@
 
 <script id="snp-template" type="text/template">
     <div class="form-section">
-        <h4>SNP Options</h4>
+        <h4>SNP Identification Analysis</h4>
 
         <div class="form-field">
-            <label class="col-md-2">Find SNPs:</label>
+            <label class="col-md-2">Run Analysis:</label>
 
             <label >Enable:</label>
             <input id="snps" type="checkbox">
@@ -383,12 +389,11 @@
     </div>
 </script>
 
-
 <!-- SNP Finder Templates -->
 <script id="coge-snp-template" type="text/template">
     <div id="coge">
         <div class="form-field">
-            <label class="col-md-2">CoGe Options:</label>
+            <label class="col-md-2">CoGe:</label>
             <div class="form-group">
                 <div class="form-entry">
                     <label>minimum read depth:</label>
@@ -417,7 +422,7 @@
 
 <script id="samtools-snp-template" type="text/template">
     <div id="samtools" class="form-field">
-        <label class="col-md-2">Samtools Options</label>
+        <label class="col-md-2">Samtools:</label>
 
         <div class="form-group">
             <div class="form-entry">
@@ -434,7 +439,7 @@
 
 <script id="platypus-snp-template" type="text/template">
     <div id="platypus" class="form-field">
-        <label class="col-md-2">Platypus Options:</label>
+        <label class="col-md-2">Platypus:</label>
         <!--
         <div class="form-group">
             <div class="form-entry">
@@ -452,7 +457,7 @@
 
 <script id="gatk-snp-template" type="text/template">
     <div id="gatk" class="form-field">
-        <label class="col-md-2">GATK Options:</label>
+        <label class="col-md-2">GATK:</label>
         <!--
         <div class="form-group">
             <div class="form-entry">
