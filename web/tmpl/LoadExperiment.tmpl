@@ -232,13 +232,12 @@
     <div class="form-section">
         <h4>Expression Analysis</h4>
         <div class="form-field">
-            <label class="col-md-2">Run Analysis:</label>
-
-            <label>Enable:</label>
+            <label class="col-md-2">Enable:</label>
             <input id="expression" type="checkbox">
         </div>
+
         <div id="expression-container" class="form-field hidden">
-            <label class="col-md-2">Expression options:</label>
+            <label class="col-md-2">Options:</label>
             <div class="form-group">
                 <label>-Q:</label>
                 <input id="depth" type="number" value="5">
@@ -371,12 +370,12 @@
         <h4>SNP Identification Analysis</h4>
 
         <div class="form-field">
-            <label class="col-md-2">Run Analysis:</label>
-
-            <label >Enable:</label>
+            <label class="col-md-2">Enable:</label>
             <input id="snps" type="checkbox">
+        </div>
 
-            <label>Method:</label>
+        <div class="form-field">
+            <label class="col-md-2">Method:</label>
             <select id="snp-method" disabled>
                 <option value="coge">CoGe Method</option>
                 <option value="samtools">Samtools Method</option>
