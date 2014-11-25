@@ -25,6 +25,7 @@ var QUANT_FILES = [
 var SUPPORTED_FILES = concat.call(QUANT_FILES, ALIGN_FILES, SEQ_FILES, POLY_FILES);
 var FILE_TYPE_PATTERNS = new RegExp("(:?" + SUPPORTED_FILES.join("|") + ")$");
 
+// Returns the file extension detected or undefined
 function autodetect_file_type(file) {
     var stripped_file = file.replace(/.gz$/, '');
 
@@ -817,7 +818,7 @@ $.extend(FindSNPView.prototype, {
         var el = $(document.getElementById(method.val()));
 
         if (enabled) {
-            this.data.snps = $.extend({}, this.data.snps, { method: method });
+            this.data.snps = $.extend({}, this.data.snp_params, { method: method });
             el.show();
             method.removeAttr("disabled");
             this.snp_container.slideDown();
@@ -836,7 +837,7 @@ $.extend(FindSNPView.prototype, {
 
         if (enabled) {
             if (method === "coge") {
-                this.data.snps = {
+                this.data.snp_params = {
                     method: method,
                     min_read: this.el.find("#min-read").val(),
                     min_base: this.el.find("#min-base").val(),
@@ -845,17 +846,17 @@ $.extend(FindSNPView.prototype, {
                     scale: this.el.find("#scale").val()
                 };
             } else if (method === "samtools") {
-                this.data.snps = {
+                this.data.snp_params = {
                     method: method,
                     min_read: this.el.find("#min-read").val(),
                     max_read: this.el.find("#max-read").val(),
                 };
             } else if (method === "platypus") {
-                this.data.snps = {
+                this.data.snp_params = {
                     method: method,
                 };
             } else if (method === "gatk") {
-                this.data.snps = {
+                this.data.snp_params = {
                     method: method,
                 };
             }
@@ -901,7 +902,7 @@ $.extend(AlignmentView.prototype, {
         // Pick the aligner and set the options
         if (aligner === "gsnap") {
             this.data = {
-                aligner: {
+                aligner_params: {
                     tool: "gsnap",
                     n: this.el.find("#n").val(),
                     Q: this.el.find("#Q").is(":checked"),
@@ -909,7 +910,7 @@ $.extend(AlignmentView.prototype, {
                     nofail: this.el.find("#nofail").is(":checked")
                 },
 
-                cutadapt: {
+                cutadapt_params: {
                     q: this.el.find("#q").val(),
                     m: this.el.find("#m").val(),
                     quality: this.el.find("#quality").val()
@@ -917,7 +918,7 @@ $.extend(AlignmentView.prototype, {
             };
         } else {
             this.data = {
-                aligner: {
+                aligner_params: {
                     tool: "tophat",
                     g: this.el.find("#g").val(),
                 }
@@ -1018,7 +1019,7 @@ $.extend(RNASeqView.prototype, {
     },
 
     get_options: function() {
-        this.data.seq = {
+        this.data.expression_params = {
             depth: this.el.find("#depth").val()
         };
 
