@@ -90,7 +90,7 @@ sub build {
 
     my @jobs;
 
-    # Build all the job
+    # Build all the jobs
     push @jobs, create_fasta_reheader_job({
         fasta => $fasta_file,
         cache_dir => $fasta_cache_dir,

@@ -15,8 +15,9 @@ use URI::Escape::JavaScript qw(unescape);
 use CoGe::Accessory::TDS qw(read);
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Jex;
-use CoGe::Core::Storage qw(get_genome_file get_experiment_files get_workflow_paths);
 use CoGe::Accessory::Web qw(get_defaults get_job schedule_job);
+use CoGe::Accessory::Utils qw(to_filename);
+use CoGe::Core::Storage qw(get_genome_file get_experiment_files get_workflow_paths);
 
 BEGIN {
     use vars qw ($VERSION @ISA @EXPORT);
@@ -63,10 +64,10 @@ sub run {
     # Setup the jobs
     my $filtered_file = to_filename($fasta_file) . ".filtered.fasta";
     $workflow->add_job(
-        create_fasta_reheader_job($fasta_file, $genome->id, $filtered_file)
+        create_fasta_reheader_job(fasta => $fasta_file, reheader_fasta => $filtered_file, cache_dir => $FASTA_CACHE_DIR)
     );
     $workflow->add_job(
-        create_fasta_index_job($filtered_file, $genome->id)
+        create_fasta_index_job(fasta => $filtered_file, cache_dir => $FASTA_CACHE_DIR)
     );
     $workflow->add_job(
         create_samtools_job($filtered_file, $genome->id, $bam_file)
@@ -82,57 +83,6 @@ sub run {
     }
 
     return ($result->{id}, undef);
-}
-
-sub to_filename { # FIXME: move into Utils module
-    my ($name, undef, undef) = fileparse(shift, qr/\.[^.]*/);
-    return $name;
-}
-
-sub create_fasta_reheader_job { # FIXME mdb 11/19/14 - replace with version in CommonTasks
-    my ($fasta, $gid, $output) = @_;
-
-    my $cmd = catfile($CONF->{SCRIPTDIR}, "fasta_reheader.pl");
-    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
-
-    return (
-        cmd => $cmd,
-        script => undef,
-        args => [
-            ["", $fasta, 1],
-            ["", $output, 0]
-        ],
-        inputs => [
-            $fasta
-        ],
-        outputs => [
-            catfile($FASTA_CACHE_DIR, $output)
-        ],
-        description => "Filter fasta file..."
-    );
-}
-
-sub create_fasta_index_job { # FIXME mdb 11/19/14 - replace with version in CommonTasks
-    my ($fasta, $gid) = @_;
-
-    my $samtools = $CONF->{SAMTOOLS};
-    die "ERROR: SAMTOOLS not specified in config" unless $samtools;
-
-    return (
-        cmd => $samtools,
-        script => undef,
-        args => [
-            ['faidx', '', 0],
-            ['', $fasta, 1]
-        ],
-        inputs => [
-            catfile($FASTA_CACHE_DIR, $fasta)
-        ],
-        outputs => [
-            catfile($FASTA_CACHE_DIR, $fasta) . '.fai'
-        ],
-        description => "Index fasta file..."
-    );
 }
 
 sub create_samtools_job {

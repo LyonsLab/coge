@@ -48,7 +48,7 @@ sub run {
     $workflow->logfile( catfile($result_dir, 'debug.log') );
 
     my $options = {
-        result_dir => $staging_dir,
+        result_dir => $result_dir,
         staging_dir => $staging_dir,
         wid  => $wid,
         %{$opts},
@@ -92,7 +92,7 @@ sub build {
     mkpath($CACHE, 0, 0777) unless -r $CACHE;
 
     # Set default alignment program if alignment is not set or incorrect
-    $alignment = "gsnap" unless $alignment and $alignment =~ /tophat|gsnap/;
+    $alignment = "gsnap" unless ($alignment and $alignment =~ /tophat|gsnap/);
 
     # Check if genome has annotations
     my $annotated = has_annotations($genome->id, $db);
@@ -395,6 +395,7 @@ sub create_cufflinks_job {
         cmd => $cmd,
         script => undef,
         args => [
+            ['-q', '', 0], # suppress output other than warning/error messages
             ['-u', '', 0],
             ['-b', $fasta, 1],
             ['-p', 24, 0],
