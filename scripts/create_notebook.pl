@@ -114,12 +114,15 @@ sub main {
     # Save result document
     if ($result_dir) {
         mkpath($result_dir);
-        CoGe::Accessory::TDS::write(
+        my $rc = CoGe::Accessory::TDS::write(
             catfile($result_dir, '1'),
             {
                 notebook_id => int($notebook->id)
             }
         );
+        unless ($rc) {
+            print STDOUT "Error: couldn't write result file\n";
+        }
     }
 }
 
