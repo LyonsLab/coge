@@ -903,7 +903,7 @@ $.extend(AlignmentView.prototype, {
         // Pick the aligner and set the options
         if (aligner === "gsnap") {
             this.data = {
-                aligner_params: {
+                alignment_params: {
                     tool: "gsnap",
                     n: this.el.find("#n").val(),
                     Q: this.el.find("#Q").is(":checked"),
@@ -919,7 +919,7 @@ $.extend(AlignmentView.prototype, {
             };
         } else {
             this.data = {
-                aligner_params: {
+                alignment_params: {
                     tool: "tophat",
                     g: this.el.find("#g").val(),
                 }
