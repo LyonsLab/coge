@@ -5,7 +5,7 @@ use File::Basename qw(basename);
 use URI::Escape::JavaScript qw(escape);
 use Data::Dumper;
 
-use CoGe::Accessory::Utils;
+use CoGe::Accessory::Utils qw(sanitize_name to_filename);
 use CoGe::Accessory::IRODS qw(irods_iput);
 use CoGe::Core::Genome qw(get_download_path);
 
@@ -14,8 +14,9 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw(
     generate_results link_results generate_bed export_experiment
     generate_tbl export_to_irods generate_gff generate_features copy_and_mask
-    create_fasta_reheader_job create_fasta_index_job create_load_vcf_job 
-    create_bam_index_job
+    create_fasta_reheader_job create_fasta_index_job create_load_vcf_job
+    create_bam_index_job create_gff_generation_job create_fasta_filter_job
+    create_alignment_workflow
 );
 
 our $CONFIG = CoGe::Accessory::Web::get_defaults();
@@ -256,7 +257,7 @@ sub create_fasta_reheader_job {
 
 sub create_fasta_index_job {
     my $opts = shift;
-    
+
     # Required arguments
     my $fasta     = $opts->{fasta};
     my $cache_dir = $opts->{cache_dir};
@@ -282,7 +283,7 @@ sub create_fasta_index_job {
 
 sub create_bam_index_job { # note: this task hasn't been tested
     my $opts = shift;
-    
+
     # Required arguments
     my $input_bam = $opts->{input_bam};
 
@@ -375,12 +376,12 @@ sub create_validate_fastq_job {
 
 sub create_fasta_filter_job {
     my %opts = shift;
-    
+
     # Required params
     my $gid = $opts{gid};
     my $fasta = $opts{fasta};
     my $validated = $opts{validated};
-    
+
     my $name = to_filename($fasta);
     my $cmd = catfile($CONFIG->{SCRIPTDIR}, "fasta_reheader.pl");
     my $fasta_cache_dir = catdir($CONFIG->{CACHE}, $gid, "fasta");
@@ -405,18 +406,22 @@ sub create_fasta_filter_job {
 
 sub create_cutadapt_job {
     my %opts = shift;
-    
+
     # Required params
     my $fastq = $opts{fastq};
     my $validated = $opts{validated};
     my $staging_dir = $opts{staging_dir};
-    
+
     # Optional arguments
     my $cutadapt_params = $opts->{cutadapt_params} // {}; #/
     my $q = $cutadapt_params->{q} // 25; #/
     my $quality = $cutadapt_params->{quality} // 64; #/
     my $m = $cutadapt_params->{m} // 17; #/
-    
+
+    my $inputs = [ $fastq ];
+
+    push @{$inputs}, $validated if $validated;
+
     my $name = to_filename($fastq);
     my $cmd = $CONF->{CUTADAPT};
 
@@ -430,10 +435,7 @@ sub create_cutadapt_job {
             ['', $fastq, 1],
             ['-o', $name . '.trimmed.fastq', 1],
         ],
-        inputs => [
-            $fastq,
-            $validated
-        ],
+        inputs => $inputs,
         outputs => [
             catfile($staging_dir, $name . '.trimmed.fastq')
         ],
@@ -443,14 +445,18 @@ sub create_cutadapt_job {
 
 sub create_gff_generation_job {
     my %opts = shift;
-    
+
     # Required params
     my $gid = $opts{gid};
     my $organism_name => $opts{organism_name};
     my $validated = $opts{validated};
-    
+
     my $cmd = catfile($CONF->{SCRIPTDIR}, "coge_gff.pl");
     my $name = sanitize_name($organism_name) . "-1-name-0-0-id-" . $gid . "-1.gff";
+
+    my $inputs = [ $CONF->{_CONFIG_PATH} ];
+
+    push @{$inputs}, $validated if $validated;
 
     return (
         cmd => $cmd,
@@ -466,10 +472,7 @@ sub create_gff_generation_job {
             ['-nu', 1, 0],
             ['-config', $CONF->{_CONFIG_PATH}, 1],
         ],
-        inputs => [
-            $CONF->{_CONFIG_PATH},
-            $validated
-        ],
+        inputs => $inputs,
         outputs => [
             catdir($CACHE, $gid, "gff", $name)
         ],
@@ -710,7 +713,7 @@ sub create_gsnap_job {
     my $Q = $aligner->{Q} // 1; #/
     my $n = $aligner->{n} // 5; #/
     my $nofail = $aligner->{nofail} // 1; #/
-    
+
     my $name = basename($gmap);
     my $cmd = $CONF->{GSNAP};
 
@@ -749,11 +752,13 @@ sub create_alignment_workflow {
     my $opts = shift;
 
     # Required arguments
-    my $fastq = $opts{fastq}; # input file
-    my $fasta = $opts{fasta}; # reference sequence
-    my $genome = $opts{genome}; # genome object
-    my $staging_dir = $opts{staging_dir};
-    my $alignment_type = $opts{alignment_type}; # "tophat" or "gsnap"
+    my $fastq = $opts->{fastq}; # input file
+    my $fasta = $opts->{fasta}; # reference sequence
+    my $genome = $opts->{genome}; # genome object
+    my $staging_dir = $opts->{staging_dir};
+    my $alignment_type = $opts->{alignment_type}; # "tophat" or "gsnap"
+    my $annotated = $opts->{annotated};
+    my $options = $opts->{options}; # Options for cutadapt and aligner
 
     my $gid = $genome->id;
     my @jobs;
@@ -767,11 +772,18 @@ sub create_alignment_workflow {
     push @jobs, \%filter;
 
     # Cleanup fastq
-    my %trimmed = create_cutadapt_job(fastq => $fastq, validated => "$fastq.validated", staging_dir => $staging_dir);
+    my %trimmed = create_cutadapt_job({
+        fastq => $fastq,
+        validated => "$fastq.validated",
+        staging_dir => $staging_dir,
+        cutadapt => $options->{cutadapt_params},
+    });
+
     my $trimmed_fastq = @{$trimmed{outputs}}[0];
     push @jobs, \%trimmed;
 
     my $gff_file;
+
     # Generate gff if genome annotated
     if ($annotated) {
         my %gff = create_gff_generation_job(gid => $genome->id, organism_name => $genome->organism->name, validated => "$fastq.validated");
@@ -780,18 +792,32 @@ sub create_alignment_workflow {
     }
 
     my ($bam, @steps);
+
     if ($alignment_type eq 'tophat') {
-        ($bam, @steps) = create_tophat_workflow($gid, $filtered_fasta, $trimmed_fastq, $gff_file, $staging_dir);
+        ($bam, @steps) = tophat_pipeline({
+            gid => $gid,
+            fasta => $filtered_fasta,
+            fastq => $trimmed_fastq,
+            gff => $gff_file,
+            staging_dir => $staging_dir,
+            aligner_params => $options->{alignment_params},
+        });
     }
     elsif ($alignment_type eq 'gsnap') {
-        ($bam, @steps) = create_gsnap_workflow($gid, $filtered_fasta, $trimmed_fastq, $staging_dir);
+        ($bam, @steps) = gsnap_pipeline({
+            gid => $gid,
+            fasta => $filtered_fasta,
+            fastq => $trimmed_fastq,
+            staging_dir => $staging_dir,
+            alignment_params => $options->{alignment_params},
+        });
     }
     else {
         print STDERR "Error: unrecognized alignment '$alignment'\n";
     }
     push @jobs, @steps;
-    
-    return (\@jobs, $bam);
+
+    return (\@jobs, $bam, $filtered_fasta, $gff_file);
 }
 
 1;
