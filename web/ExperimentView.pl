@@ -18,6 +18,7 @@ use Sort::Versions;
 use CoGe::Pipelines::SNP::CoGeSNPs;
 use CoGe::Pipelines::SNP::Samtools;
 use CoGe::Pipelines::SNP::Platypus;
+use CoGe::Pipelines::SNP::GATK;
 use Data::Dumper;
 
 use vars qw(
@@ -805,16 +806,10 @@ sub find_snps {
     my $experiment = $coge->resultset('Experiment')->find($eid);
     return encode_json({ error => 'Experiment not found' }) unless $experiment;
 
-    my ($workflow_id, $error_msg);
-
-    eval {
-        # Select the pipeline to be used
-        my $dispatch = select_snp_pipeline($method);
-
-        # Submit workflow to generate experiment
-        ($workflow_id, $error_msg) = $dispatch->(db => $coge, experiment => $experiment, user => $USER);
-    };
-
+    # Select the pipeline to be used and submit the workflow
+    my $dispatch = select_snp_pipeline($method);
+    my ($workflow_id, $error_msg) = $dispatch->(db => $coge, experiment => $experiment, user => $USER);
+    
     unless ($workflow_id) {
         print STDERR $error_msg, "\n";
         return encode_json({ error => "Workflow submission failed: " . $error_msg });
