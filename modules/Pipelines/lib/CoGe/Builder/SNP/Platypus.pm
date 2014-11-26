@@ -1,4 +1,4 @@
-package CoGe::Pipelines::SNP::Platypus;
+package CoGe::Builder::SNP::Platypus;
 
 use v5.14;
 use warnings;
@@ -12,7 +12,7 @@ use CoGe::Accessory::Web;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Utils qw(to_filename);
 use CoGe::Core::Storage qw(get_genome_file get_experiment_files get_workflow_paths);
-use CoGe::Pipelines::SNP::CommonTasks;
+use CoGe::Builder::CommonTasks;
 
 require Exporter;
 our @ISA = qw(Exporter);

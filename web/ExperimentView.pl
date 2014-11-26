@@ -15,10 +15,10 @@ use File::Path;
 use File::Slurp;
 use File::Spec::Functions qw(catdir catfile);
 use Sort::Versions;
-use CoGe::Pipelines::SNP::CoGeSNPs;
-use CoGe::Pipelines::SNP::Samtools;
-use CoGe::Pipelines::SNP::Platypus;
-use CoGe::Pipelines::SNP::GATK;
+use CoGe::Builder::SNP::CoGeSNPs;
+use CoGe::Builder::SNP::Samtools;
+use CoGe::Builder::SNP::Platypus;
+use CoGe::Builder::SNP::GATK;
 use Data::Dumper;
 
 use vars qw(
@@ -778,10 +778,10 @@ sub select_snp_pipeline {
     my $method = shift;
 
     my %pipelines = (
-        coge      => \&CoGe::Pipelines::SNP::CoGeSNPs::run,
-        samtools  => \&CoGe::Pipelines::SNP::Samtools::run,
-        platypus  => \&CoGe::Pipelines::SNP::Platypus::run,
-        gatk      => \&CoGe::Pipelines::SNP::GATK::run,
+        coge      => \&CoGe::Builder::SNP::CoGeSNPs::run,
+        samtools  => \&CoGe::Builder::SNP::Samtools::run,
+        platypus  => \&CoGe::Builder::SNP::Platypus::run,
+        gatk      => \&CoGe::Builder::SNP::GATK::run,
     );
 
     # Select pipeline

@@ -1,4 +1,4 @@
-package CoGe::Builder::ExperimentBuilder;
+package CoGe::Builder::Export::Experiment;
 
 use Moose;
 
@@ -6,9 +6,7 @@ use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage qw(get_experiment_files get_workflow_paths);
-use CoGe::Pipelines::Common::Results;
-use CoGe::Pipelines::Experiment;
-use CoGe::Pipelines::Misc::IPut;
+use CoGe::Builder::CommonTasks;
 
 use File::Spec::Functions;
 use Data::Dumper;

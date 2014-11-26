@@ -1,4 +1,4 @@
-package CoGe::Pipelines::qTeller;
+package CoGe::Builder::Expression::qTeller;
 
 use v5.14;
 use strict;

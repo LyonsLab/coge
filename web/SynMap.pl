@@ -9,7 +9,7 @@ use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils qw( commify );
-use CoGe::Pipelines::SynMap qw(generate_pseudo_assembly);
+use CoGe::Builder::Tools::SynMap qw(generate_pseudo_assembly);
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
