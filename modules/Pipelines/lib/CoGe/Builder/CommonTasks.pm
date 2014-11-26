@@ -1,19 +1,231 @@
-package CoGe::Pipelines::SNP::CommonTasks;
+package CoGe::Builder::CommonTasks;
 
 use File::Spec::Functions qw(catdir catfile);
 use File::Basename qw(basename);
+use URI::Escape::JavaScript qw(escape);
 use Data::Dumper;
 
 use CoGe::Accessory::Utils;
+use CoGe::Accessory::IRODS qw(irods_iput);
+use CoGe::Core::Genome qw(get_download_path);
 
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(
+    generate_results link_results generate_bed export_experiment
+    generate_tbl export_to_irods generate_gff generate_features copy_and_mask
     create_fasta_reheader_job create_fasta_index_job create_load_vcf_job 
     create_bam_index_job
 );
 
 our $CONFIG = CoGe::Accessory::Web::get_defaults();
+
+sub link_results {
+   my ($input, $output, $result_dir, $conf) = @_;
+
+   return (
+        cmd     => catfile($conf->{SCRIPTDIR}, "link_results.pl"),
+        args    => [
+            ['-input_files', escape($input), 0],
+            ['-output_files', escape($output), 0],
+            ['-result_dir', $result_dir, 0]
+        ],
+        inputs  => [$input],
+        outputs => [catfile($result_dir, basename($output))],
+        description => "Generating results..."
+   );
+}
+
+sub generate_results {
+   my ($input, $type, $result_dir, $conf, $dependency) = @_;
+
+   return (
+        cmd     => catfile($conf->{SCRIPTDIR}, "generate_results.pl"),
+        args    => [
+            ['-input_files', escape($input), 0],
+            ['-type', $type, 0],
+            ['-result_dir', $result_dir, 0]
+        ],
+        inputs  => [$dependency],
+        outputs => [catfile($result_dir, "1")],
+        description => "Generating results..."
+   );
+}
+
+sub copy_and_mask {
+    my %args = (
+        mask => 0,
+        seq_only => 0,
+        @_
+    );
+
+    my $desc = $args{mask} ? "Copying and masking genome" : "Copying genome";
+    $desc .= " (no annotations)" if $args{seq_only};
+    $desc .= "...";
+
+    my $cmd = "/copy_genome/copy_load_mask_genome.pl";
+
+    return (
+        cmd   => catfile($args{script_dir}, $cmd),
+        args  => [
+            ["-conf", $args{conf}, 0],
+            ["-gid", $args{gid}, 0],
+            ["-uid", $args{uid}, 0],
+            ["-mask", $args{mask}, 0],
+            ["-staging_dir", $args{staging_dir}, 0],
+            ["-result_dir", $args{result_dir}, 0],
+            ["-sequence_only", $args{seq_only}, 0]
+        ],
+        description => $desc
+    );
+}
+
+sub generate_bed {
+    my %args = @_;
+
+    # Check for a genome or dataset id
+    return unless $args{gid};
+
+    # Generate file name
+    my $basename = $args{basename};
+    my $filename = "$basename" . "_id" . $args{gid} . ".bed";
+    my $path = get_download_path($args{secure_tmp}, $args{gid});
+    my $output_file = catfile($path, $filename);
+
+    return $output_file, (
+        cmd  => catfile($args{script_dir}, "coge2bed.pl"),
+        args => [
+            ['-gid', $args{gid}, 0],
+            ['-f', $filename, 0],
+            ['-config', $args{conf}, 0],
+        ],
+        outputs => [$output_file]
+    );
+}
+
+sub generate_features {
+    my %args = @_;
+
+    my $filename = $args{basename} . "-gid-" . $args{gid};
+    $filename .= "-prot" if $args{protein};
+    $filename .= ".fasta";
+    my $path = get_download_path($args{secure_tmp}, $args{gid});
+    my $output_file = catfile($path, $filename);
+
+    return $output_file, (
+        cmd    => catfile($args{script_dir}, "export_features_by_type.pl"),
+        args   => [
+            ["-config", $args{conf}, 0],
+            ["-f", $filename, 0],
+            ["-gid", $args{gid}, 0],
+            ["-ftid", $args{fid}, 0],
+            ["-prot", $args{protein}, 0],
+        ],
+        outputs => [$output_file]
+    );
+}
+
+sub generate_tbl {
+    my %args = @_;
+
+    # Generate filename
+    my $organism = $args{basename};
+    my $filename = $organism . "id" . $args{gid} . "_tbl.txt";
+    my $path = get_download_path($args{secure_tmp}, $args{gid});
+    my $output_file = catfile($path, $filename);
+
+    return $output_file, (
+        cmd     => catfile($args{script_dir}, "export_NCBI_TBL.pl"),
+        args    => [
+            ['-gid', $args{gid}, 0],
+            ['-f', $filename, 0],
+            ["-config", $args{conf}, 0]
+        ],
+        outputs => [$output_file]
+    );
+}
+
+sub export_experiment {
+    my ($params, $output, $conf) = @_;
+
+    return (
+        cmd => catdir($conf->{SCRIPTDIR}, "export_experiment.pl"),
+        description => "Generating experiment files",
+        args => [
+            ["-eid", $params->{eid}, 0],
+            ["-output", $output, 1],
+            ["-conf", $conf->{_CONFIG_PATH}, 0],
+            ["-dir", ".", ""]
+        ],
+        inputs => [],
+        outputs => [$output]
+    );
+}
+
+sub export_to_irods {
+    my ($src, $dest, $overwrite, $done_file) = @_;
+
+    $overwrite = 0 unless defined $overwrite;
+
+    my $cmd = irods_iput($src, $dest, { no_execute => 1, overwrite => $overwrite });
+
+    my $filename = basename($done_file);
+
+   return (
+        cmd => qq[$cmd && touch $filename],
+        description => "Exporting file to IRODS",
+        args => [],
+        inputs => [$src],
+        outputs => [$done_file]
+    );
+}
+
+sub generate_gff {
+    my ($inputs, $conf) = @_;
+
+    my %args = (
+        annos   => 0,
+        id_type => 0,
+        cds     => 0,
+        nu      => 0,
+        upa     => 0,
+    );
+
+    @args{(keys $inputs)} = (values $inputs);
+
+    # Check for a genome or dataset id
+    return unless $args{gid};
+
+    # Set the default basename as the id if the basename is not set
+    $args{basename} = $args{gid} unless $args{basename};
+
+    # Generate the output filename
+    my $organism = "gff";
+    my @attributes = qw(annos cds id_type nu upa);
+    my $param_string = join "-", map { $_ . $args{$_} } @attributes;
+    my $filename = $args{basename} . "_" . $param_string . ".gff";
+    $filename =~ s/\s+/_/g;
+    $filename =~ s/\)|\(/_/g;
+    my $path = get_download_path($conf->{SECTEMPDIR}, $args{gid});
+    my $output_file = catfile($path, $filename);
+
+    return $output_file, (
+        cmd     => catfile($conf->{SCRIPTDIR}, "coge_gff.pl"),
+        args    => [
+            ['-gid', $args{gid}, 0],
+            ['-f', $filename, 0],
+            ['-config', $conf->{_CONFIG_PATH}, 0],
+            # Parameters
+            ['-cds', $args{cds}, 0],
+            ['-annos', $args{annos}, 0],
+            ['-nu', $args{nu}, 0],
+            ['-id_type', $args{id_type}, 0],
+            ['-upa', $args{upa}, 0],
+        ],
+        outputs => [$output_file],
+        description => "Generating gff..."
+    );
+}
 
 sub create_fasta_reheader_job {
     my $opts = shift;

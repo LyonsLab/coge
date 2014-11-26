@@ -1,4 +1,4 @@
-package CoGe::Pipelines::SynMap;
+package CoGe::Builder::Tools::SynMap;
 
 use v5.14;
 use strict;

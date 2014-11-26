@@ -1,4 +1,4 @@
-package CoGe::Pipelines::SNP::CoGeSNPs;
+package CoGe::Builder::SNP::CoGeSNPs;
 
 use v5.14;
 use strict;
@@ -62,6 +62,9 @@ sub run {
     my $bam_file = shift @$files;
 
     # Setup the jobs
+    
+    
+    
     my $filtered_file = to_filename($fasta_file) . ".filtered.fasta";
     $workflow->add_job(
         create_fasta_reheader_job(fasta => $fasta_file, reheader_fasta => $filtered_file, cache_dir => $FASTA_CACHE_DIR)

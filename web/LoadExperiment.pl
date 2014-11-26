@@ -11,7 +11,7 @@ use CoGe::Accessory::TDS;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Genome qw(genomecmp);
 use CoGe::Core::Storage qw(create_experiment get_workflow_paths);
-use CoGe::Pipelines::qTeller qw(run);
+use CoGe::Builder::Expression::qTeller qw(run);
 use HTML::Template;
 use JSON::XS;
 use URI::Escape::JavaScript qw(escape unescape);
@@ -459,9 +459,8 @@ sub load_experiment {
         return encode_json({ error => 'Not logged in' });
     }
 
-    $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $load_id. '/';
-
     # Setup staging area
+    $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $load_id. '/';
     my $stagepath = catdir($TEMPDIR, 'staging');
     mkpath $stagepath;
 
@@ -476,7 +475,7 @@ sub load_experiment {
 
     if ( $file_type eq 'fastq' || is_fastq_file($data_file) ) {
         # Submit workflow to generate experiment
-        ($workflow_id, $error_msg) = CoGe::Pipelines::qTeller::run({
+        ($workflow_id, $error_msg) = CoGe::Builder::Expression::qTeller::run({
             db => $coge,
             genome => $genome,
             user => $USER,
