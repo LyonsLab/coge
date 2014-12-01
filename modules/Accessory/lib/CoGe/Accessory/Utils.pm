@@ -79,6 +79,7 @@ sub trim {
 
 sub js_escape {
     my $s = shift;
+    $s =~ s/[\x00-\x1f]/ /g; # remove non-printable ascii chars
     $s =~ s/\'/\\'/g;
     $s =~ s/\"/\\"/g;
     return $s;
@@ -86,7 +87,8 @@ sub js_escape {
 
 sub html_escape {
     my $s = shift;
-    $s =~ s/\'/\&\#8216\;/g;
+    $s =~ s/[\x00-\x1f]/ /g; # remove non-printable ascii chars
+    $s =~ s/\'/\&\#8216\;/g; # convert apostrophe char
     return $s;
 }
 
