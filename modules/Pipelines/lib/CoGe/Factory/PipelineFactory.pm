@@ -2,9 +2,9 @@ package CoGe::Factory::PipelineFactory;
 
 use Moose;
 
-use CoGe::Builder::GffBuilder;
-use CoGe::Builder::FastaBuilder;
-use CoGe::Builder::ExperimentBuilder;
+use CoGe::Builder::Export::Gff;
+use CoGe::Builder::Export::Fasta;
+use CoGe::Builder::Export::Experiment;
 
 has 'db' => (
     is => 'ro',
@@ -41,11 +41,11 @@ sub get {
     my $builder;
 
     if ($message->{type} eq "gff_export") {
-        $builder = CoGe::Builder::GffBuilder->new($options);
+        $builder = CoGe::Builder::Export::Gff->new($options);
     } elsif ($message->{type} eq "fasta_export") {
-        $builder = CoGe::Builder::FastaBuilder->new($options);
+        $builder = CoGe::Builder::Export::Fasta->new($options);
     } elsif ($message->{type} eq "experiment_export") {
-        $builder = CoGe::Builder::ExperimentBuilder->new($options);
+        $builder = CoGe::Builder::Export::Experiment->new($options);
     } else {
         return;
     }
