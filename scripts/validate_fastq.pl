@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 
 use strict;
+use File::Basename qw( basename );
 
 my $data_file = shift;
 
@@ -16,9 +17,22 @@ exit;
 #-------------------------------------------------------------------------------
 sub validate_fastq_data_file {
     my $filepath = shift;
+    my $filename = basename($filepath);
     my $count = 0;
-
-    # Validate file
+    
+    # Ensure size
+    unless ( -s $filepath ) {
+        print STDOUT "log: error: '$filename' is zero-length\n";
+        exit(-1);
+    }
+    
+    # Ensure text file
+    if ( -B $filepath ) {
+        print STDOUT "log: error: '$filename' is a binary file\n";
+        exit(-1);
+    }
+    
+    # Validate records
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
     my $line;
     while( $line = <$in> ) {
@@ -31,7 +45,11 @@ sub validate_fastq_data_file {
             $count++;
 
             if (length $seq != length $qual) {
-                print STDOUT "log: error: invalid record (length seq != length qual) line=$count\n";
+                print STDOUT "log: error: invalid record \#$count: sequence line length differs from quality line length)\n",
+                             "$line",
+                             "$seq\n",
+                             "$line3",
+                             "$qual\n";
                 exit(-1);
             }
         }
