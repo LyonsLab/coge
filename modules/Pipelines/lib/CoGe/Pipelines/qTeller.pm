@@ -71,6 +71,12 @@ sub run {
 
     my (@jobs, @steps, $bam, $include_csv);
 
+    # Unzip the file if necessary
+    if ( $fastq =~ /\.gz$/ ) {
+        push @jobs, create_gunzip_job($fastq);
+        $fastq =~ s/\.gz$//;
+    }
+
     # Validate the fastq file
     # XXX: Add job dependencies
     my %validate = create_validate_fastq_job($fastq);
@@ -218,6 +224,27 @@ sub has_annotations {
     );
 
     return $count > 0;
+}
+
+sub create_gunzip_job {
+    my $input_file = shift;
+    my $output_file = $input_file;
+    $output_file =~ s/\.gz$//;
+
+    my $cmd = $CONF->{GUNZIP} || 'gunzip';
+
+    return {
+        cmd => "$cmd -c $input_file > $output_file",
+        script => undef,
+        args => [],
+        inputs => [
+            $input_file
+        ],
+        outputs => [
+            $output_file
+        ],
+        description => "Decompressing data file..."
+    };
 }
 
 sub create_validate_fastq_job {
