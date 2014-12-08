@@ -9,7 +9,6 @@ if (!validate_fastq_data_file($data_file)) {
     exit(-1);
 }
 
-print STDOUT "log: file has been verified successfully\n";
 system("touch $data_file.validated");
 exit;
 
