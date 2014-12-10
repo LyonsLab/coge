@@ -1,4 +1,4 @@
-package CoGe::Requests::ExperimentRequest;
+package CoGe::Requests::Experiment;
 
 use Moose;
 use CoGe::Requests::Request;
