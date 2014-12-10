@@ -451,28 +451,28 @@ sub process_fasta_file {
         s/\n*\>//g;
         next unless $_;
         my ( $name, $seq ) = split /\n/, $_, 2;
-	#print STDERR $name,"\tlength: ",length($seq),"\n";
-	#2/17/14:  Note by EL:  THere is a problem where the following types of 
-	#          regex sbustitutions fail if the string is longer then about 1G 
-	#          (http://www.perlmonks.org/?node_id=754854).  Need to take these 
-	#          strings and divide them into smaller pieces for processing.
-
-	my @groups;
-	my $seq_length = length($seq);
-	if ($seq_length > 1000000) {
-		my $n = ceil($seq_length/1000000);
-		@groups = unpack "a$n" x (($seq_length/$n)-1) . "a*", $seq;
-	}
-	else {
-		push @groups, $seq;
-	}
-        my $new_seq;
-	foreach my $item (@groups) {
-		$item =~ s/\n//g;
-        	$item =~ s/\r//g; # mdb added 11/22/13 issue 255 - remove Windows-style CRLF
-		$new_seq .= $item;
-	}
- 	$seq = $new_seq;
+    	#print STDERR $name,"\tlength: ",length($seq),"\n";
+    	#2/17/14:  Note by EL:  THere is a problem where the following types of 
+    	#          regex sbustitutions fail if the string is longer then about 1G 
+    	#          (http://www.perlmonks.org/?node_id=754854).  Need to take these 
+    	#          strings and divide them into smaller pieces for processing.
+    
+    	my @groups;
+    	my $seq_length = length($seq);
+    	if ($seq_length > 1000000) {
+    		my $n = ceil($seq_length/1000000);
+    		@groups = unpack "a$n" x (($seq_length/$n)-1) . "a*", $seq;
+    	}
+    	else {
+    		push @groups, $seq;
+    	}
+            my $new_seq;
+    	foreach my $item (@groups) {
+    		$item =~ s/\n//g;
+            	$item =~ s/\r//g; # mdb added 11/22/13 issue 255 - remove Windows-style CRLF
+    		$new_seq .= $item;
+    	}
+     	$seq = $new_seq;
         $seq =~ s/\s+$//; # mdb added 12/17/13 issue 267 - trim trailing whitespace
         # Note: not removing spaces from within sequence because sometimes spaces are
         # used ambiguously to indicate gaps.  We will be strict and force error
