@@ -1,4 +1,4 @@
-package CoGe::Requests::GenomeRequest;
+package CoGe::Requests::Genome;
 
 use Moose;
 use CoGe::Requests::Request;

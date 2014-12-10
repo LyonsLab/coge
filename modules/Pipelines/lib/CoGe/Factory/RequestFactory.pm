@@ -1,8 +1,8 @@
 package CoGe::Factory::RequestFactory;
 
 use Moose;
-use CoGe::Requests::ExperimentRequest;
-use CoGe::Requests::GenomeRequest;
+use CoGe::Request::Experiment;
+use CoGe::Request::Genome;
 
 has 'user'    => (
     is        => 'ro',
@@ -31,15 +31,15 @@ sub get {
     };
 
     if ($message->{type} eq "gff_export") {
-        return CoGe::Requests::GenomeRequest->new($options);
+        return CoGe::Request::Genome->new($options);
     }
 
     if ($message->{type} eq "fasta_export") {
-        return CoGe::Requests::GenomeRequest->new($options);
+        return CoGe::Request::Genome->new($options);
     }
 
     if ($message->{type} eq "experiment_export") {
-        return CoGe::Requests::ExperimentRequest->new($options);
+        return CoGe::Request::Experiment->new($options);
     }
 }
 
