@@ -23,7 +23,7 @@ use vars qw($staging_dir $install_dir $fasta_files $irods_files
   $host $port $db $user $pass $config
   $P $MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE $MAX_CHR_NAME_LENGTH );
 
-$MAX_CHROMOSOMES     = 200000;    # max number of chromosomes or contigs
+$MAX_CHROMOSOMES     = 200 * 1000;    # max number of chromosomes or contigs
 $MAX_PRINT           = 50;
 $MAX_SEQUENCE_SIZE   = 5 * 1024 * 1024 * 1024;    # 5 gig
 $MAX_CHR_NAME_LENGTH = 255;
@@ -452,7 +452,10 @@ sub process_fasta_file {
         next unless $_;
         my ( $name, $seq ) = split /\n/, $_, 2;
 	#print STDERR $name,"\tlength: ",length($seq),"\n";
-	#2/17/14:  Note by EL:  THere is a problem where the following type sof regex sbustitutions fail if the string is longer then about 1G (http://www.perlmonks.org/?node_id=754854).  Need to take these strings and divide them into smaller pieces for processing
+	#2/17/14:  Note by EL:  THere is a problem where the following types of 
+	#          regex sbustitutions fail if the string is longer then about 1G 
+	#          (http://www.perlmonks.org/?node_id=754854).  Need to take these 
+	#          strings and divide them into smaller pieces for processing.
 
 	my @groups;
 	my $seq_length = length($seq);
