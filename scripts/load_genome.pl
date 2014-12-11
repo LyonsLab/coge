@@ -255,7 +255,7 @@ unless ($genome) {
     print STDOUT "log: error creating genome\n";
     exit(-1);
 }
-print STDOUT "genome id: " . $genome->id . "\n";
+print STDOUT "log: Created genome id" . $genome->id . "\n";
 
 # Determine installation path
 unless ($install_dir) {
