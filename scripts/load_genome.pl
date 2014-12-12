@@ -439,52 +439,58 @@ sub process_fasta_file {
     my $pSeq       = shift;
     my $filepath   = shift;
     my $target_dir = shift;
-
     print STDOUT "process_fasta_file: $filepath\n";
-    $/ = "\n>";
-    open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
-
+    
     my $fileSize    = -s $filepath;
     my $lineNum     = 0;
     my $totalLength = 0;
-    while (<$in>) {
-        s/\n*\>//g;
-        next unless $_;
-        my ( $name, $seq ) = split /\n/, $_, 2;
-    	#print STDERR $name,"\tlength: ",length($seq),"\n";
-    	#2/17/14:  Note by EL:  THere is a problem where the following types of 
-    	#          regex sbustitutions fail if the string is longer then about 1G 
-    	#          (http://www.perlmonks.org/?node_id=754854).  Need to take these 
-    	#          strings and divide them into smaller pieces for processing.
     
-    	my @groups;
-    	my $seq_length = length($seq);
-    	if ($seq_length > 1000000) {
-    		my $n = ceil($seq_length/1000000);
-    		@groups = unpack "a$n" x (($seq_length/$n)-1) . "a*", $seq;
-    	}
-    	else {
-    		push @groups, $seq;
-    	}
-            my $new_seq;
-    	foreach my $item (@groups) {
-    		$item =~ s/\n//g;
-            	$item =~ s/\r//g; # mdb added 11/22/13 issue 255 - remove Windows-style CRLF
-    		$new_seq .= $item;
-    	}
-     	$seq = $new_seq;
-        $seq =~ s/\s+$//; # mdb added 12/17/13 issue 267 - trim trailing whitespace
-        # Note: not removing spaces from within sequence because sometimes spaces are
-        # used ambiguously to indicate gaps.  We will be strict and force error
-        # if spaces are present.
+    # Open fasta file
+    my $in; # file handle
+    unless (open( $in, $filepath )) {
+        print STDOUT "log: error: Error opening file for reading: $!\n";
+        exit(-1);
+    }
+    
+    # Process fasta file by sections
+    $/ = '>'; # set file parsing delimiter
+    while (my $section = <$in>) {
         $lineNum++;
-
+        
+        # Process the section in chunks.  There is a known problem where
+        # Perl substitions fail on strings larger than 1GB.
+        my $sectionName;
+        my $sectionLen = length($section);
+        my $filteredSeq;
+        my $CHUNK_LEN = 1*1000;
+        my $ofs = 0;
+        while ($ofs < $sectionLen) {
+            my $chunk = substr($section, $ofs, $CHUNK_LEN);
+            $ofs += $CHUNK_LEN;
+            
+            $chunk =~ s/>//g;
+            $chunk =~ s/^\n+//m;
+            $chunk =~ s/\n+$//m;
+            next unless $chunk;
+            
+            if ($ofs == $CHUNK_LEN) { # first chunk
+                ( $sectionName, $chunk ) = split(/\n/, $chunk, 2);
+            }
+            elsif ($sectionLen < $ofs) { # last chunk
+                $chunk =~ s/\s+$//; # trim trailing whitespace
+            }
+            $chunk =~ s/\n//g;
+            $filteredSeq .= $chunk;
+        }
+        next unless $filteredSeq;
+    
+        # Convert refseq (chromosome) name
         my $chr;
-        if ($keep_headers) {
-            $chr = $name;
+        if ($keep_headers) { # Don't modify refseq name
+            $chr = $sectionName;
         }
         else {
-            ($chr) = split( /\s+/, $name );
+            ($chr) = split( /\s+/, $sectionName );
             $chr =~ s/^lcl\|//;
             $chr =~ s/^gi\|//;
             $chr =~ s/chromosome//i;
@@ -504,7 +510,7 @@ sub process_fasta_file {
             print STDOUT "log: error parsing section header, line $lineNum, name='$name'\n";
             exit(-1);
         }
-        if ( length $seq == 0 ) {
+        if ( length $filteredSeq == 0 ) {
             print STDOUT "log: warning: skipping zero-length section '$chr'\n";
             next;
         }
@@ -516,38 +522,37 @@ sub process_fasta_file {
             print STDOUT "log: error: Duplicate section name '$chr'\n";
             exit(-1);
         }
-        if ( $seq =~ /\W/ ) {
+        if ( $filteredSeq =~ /\W/ ) {
             print STDOUT "log: error: sequence on line $lineNum contains non-alphanumeric characters, perhaps this is not a FASTA file?\n";
             exit(-1);
         }
-
-        my $filename = basename($filepath);#$filepath =~ /^.+\/([^\/]+)$/;
 
         # Append sequence to master file
         open( my $out, ">>$target_dir/genome.faa" );
         my $head = $chr =~ /^\d+$/ ? "gi" : "lcl";
         $head .= "|" . $chr;
-        print_fasta($out, $head, \$seq); #print $out "$head\n$seq\n";
+        print_fasta($out, $head, \$filteredSeq);
         close($out);
 
         # Create individual file for chromosome
         if ($split) {
             mkpath("$target_dir/chr");
             open( $out, ">$target_dir/chr/$chr" );
-            print $out $seq;
+            print $out $filteredSeq;
             close($out);
         }
 
-        $pSeq->{$chr} = { size => length $seq, file => $filepath };
+        $pSeq->{$chr} = { size => length $filteredSeq, file => $filepath };
 
         # Print log message
         my $count = keys %$pSeq;
-        $totalLength += length $seq;
+        $totalLength += length $filteredSeq;
         if ( $count > $MAX_CHROMOSOMES or $totalLength > $MAX_SEQUENCE_SIZE ) {
             return $totalLength;
         }
         if ( $count <= $MAX_PRINT ) {
-            print STDOUT "log: Processed chr '$chr' in $filename (".commify(length($seq))." bp)\n";
+            my $filename = basename($filepath);
+            print STDOUT "log: Processed chr '$chr' in $filename (".commify(length($filteredSeq))." bp)\n";
         }
         elsif ( $count == $MAX_PRINT + 1 ) {
             print STDOUT "log: (only showing first $MAX_PRINT chromosomes)\n";
