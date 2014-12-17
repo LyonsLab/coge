@@ -147,8 +147,8 @@ Pipelines/lib/CoGe/Builder/CommonTasks.pm
 Pipelines/lib/CoGe/Builder/Expression/qTeller.pm
 Pipelines/lib/CoGe/Builder/Tools/SynMap.pm
 Pipelines/lib/CoGe/Request/Request.pm
-Pipelines/lib/CoGe/Request/GenomeRequest.pm
-Pipelines/lib/CoGe/Request/RequestFactory.pm
+Pipelines/lib/CoGe/Request/Genome.pm
+Pipelines/lib/CoGe/Request/Experiment.pm
 Pipelines/lib/CoGe/Factory/PipelineFactory.pm
 Pipelines/lib/CoGe/Factory/RequestFactory.pm
 Services/lib/CoGe/Services/Auth.pm
