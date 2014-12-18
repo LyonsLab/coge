@@ -29,9 +29,10 @@ sub add {
         });
     }
 
+    # Create request to validate input
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
-    my $request_factor = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex);
-    my $request_handler = $request_factor->get($payload);
+    my $request_factory = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex);
+    my $request_handler = $request_factory->get($payload);
 
     # Validate the request has all required fields
     unless ($request_handler and $request_handler->is_valid) {
@@ -47,6 +48,7 @@ sub add {
         });
     }
 
+    # Create pipeline to execute job
     my $pipeline_factory = CoGe::Factory::PipelineFactory->new(conf => $conf, user => $user, jex => $jex, db => $db);
     my $workflow = $pipeline_factory->get($payload);
 
