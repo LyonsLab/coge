@@ -30,25 +30,28 @@ BEGIN {
 
 sub run {
     my %opts = @_;
+    my $user = $opts{user};
+    my $genome = $opts{genome};
+    my $input_file = $opts{input_file};
+    my $metadata = $opts{metadata};
+    croak "Missing parameters" unless ($user and $genome and $input_file and $metadata);
 
-    # Required arguments
-    my $user = $opts{user} or croak "A user was not specified";
-
+    # Create the workflow
     my $workflow = $JEX->create_workflow( name => 'Running the SAMtools SNP-finder pipeline', init => 1 );
     my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
     $workflow->logfile( catfile($result_dir, 'debug.log') );
 
+    # Build the workflow
     my @jobs = build({
         staging_dir => $staging_dir,
         result_dir => $result_dir,
         user => $user,
         wid  => $workflow->id,
+        genome => $genome,
+        input_file => $input_file,
+        metadata => $metadata,
     });
-
-    # Add all the jobs to the workflow
-    foreach (@jobs) {
-        $workflow->add_job(%{$_});
-    }
+    $workflow->add_jobs(\@jobs);
 
     # Submit the workflow
     my $result = $JEX->submit_workflow($workflow);
@@ -106,7 +109,7 @@ sub build {
     push @jobs, create_filter_snps_job($conf);
     push @jobs, create_load_vcf_job($conf);
 
-    return @jobs;
+    return wantarray ? @jobs : \@jobs;
 }
 
 sub create_find_snps_job {

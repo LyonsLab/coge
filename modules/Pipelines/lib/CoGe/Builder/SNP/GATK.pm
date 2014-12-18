@@ -23,24 +23,27 @@ our $JEX = CoGe::Accessory::Jex->new( host => $CONFIG->{JOBSERVER}, port => $CON
 
 sub run {
     my %opts = @_;
+    my $user = $opts{user};
+    my $genome = $opts{genome};
+    my $input_file = $opts{input_file};
+    my $metadata = $opts{metadata};
+    croak "Missing parameters" unless ($user and $genome and $input_file and $metadata);
 
-    # Required arguments
-    my $user = $opts{user} or croak "A user was not specified";
-
-    # Create an empty workflow
+    # Create a workflow
     my $workflow = $JEX->create_workflow( name => 'Running the GATK SNP-finder pipeline', init => 1 );
     my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
     $workflow->logfile( catfile($result_dir, 'debug.log') );
 
-    # Create the job descriptions
+    # Build the workflow
     my @jobs = build({
         staging_dir => $staging_dir,
         result_dir => $result_dir,
         user => $user,
         wid  => $workflow->id,
+        genome => $genome,
+        input_file => $input_file,
+        metadata => $metadata,
     });
-
-    # Add all the jobs to the workflow
     $workflow->add_jobs(\@jobs);
 
     # Submit the workflow
@@ -116,7 +119,7 @@ sub build {
         })
     );
 
-    return @jobs;
+    return wantarray ? @jobs : \@jobs;
 }
 
 sub create_fasta_dict_job {

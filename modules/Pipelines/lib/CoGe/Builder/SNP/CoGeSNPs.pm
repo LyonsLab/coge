@@ -4,6 +4,7 @@ use v5.14;
 use strict;
 use warnings;
 
+use Carp;
 use Data::Dumper qw(Dumper);
 use File::Basename qw(fileparse basename dirname);
 use File::Path qw(mkpath);
@@ -34,8 +35,11 @@ our $FASTA_CACHE_DIR;
 
 sub run {
     my %opts = @_;
-    my $db = $opts{db};
     my $user = $opts{user};
+    my $genome = $opts{genome};
+    my $input_file = $opts{input_file};
+    my $metadata = $opts{metadata};
+    croak "Missing parameters" unless ($user and $genome and $input_file and $metadata);
 
     # Connect to workflow engine and get an id
     my $jex = CoGe::Accessory::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
@@ -50,17 +54,17 @@ sub run {
     my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
     $workflow->logfile( catfile($result_dir, 'debug.log') );
 
+    # Build the workflow
     my @jobs = build({
         staging_dir => $staging_dir,
         result_dir => $result_dir,
         user => $user,
         wid  => $workflow->id,
+        genome => $genome,
+        input_file => $input_file,
+        metadata => $metadata,
     });
-
-    # Add all the jobs to the workflow
-    foreach (@jobs) {
-        $workflow->add_job(%{$_});
-    }
+    $workflow->add_jobs(\@jobs);
 
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);
@@ -105,7 +109,7 @@ sub build {
         metadata => $metadata
     });
     
-    return @jobs;
+    return wantarray ? @jobs : \@jobs;
 }
 
 sub create_samtools_job {
@@ -188,7 +192,7 @@ sub generate_experiment_metadata {
         qq{note|Minimum high-quality (PHRED >= 20) allele count of 4},
         qq{note|Minimum allele frequency of 10%}
     );
-    return '"' . join(';', @annotations) . '"';
+    return join(';', @annotations);
 }
 
 1;
