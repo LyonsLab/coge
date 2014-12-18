@@ -30,15 +30,13 @@ sub get {
         parameters => $message->{parameters}
     };
 
-    if ($message->{type} eq "gff_export") {
+    if ($message->{type} eq "export_gff" ||
+        $message->{type} eq "export_fasta")
+    {
         return CoGe::Request::Genome->new($options);
     }
-
-    if ($message->{type} eq "fasta_export") {
-        return CoGe::Request::Genome->new($options);
-    }
-
-    if ($message->{type} eq "experiment_export") {
+    elsif ($message->{type} eq "export_experiment") 
+    {
         return CoGe::Request::Experiment->new($options);
     }
 }
