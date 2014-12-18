@@ -469,4 +469,17 @@ sub info_html {
       . "</span>";
 }
 
+sub to_hash {
+    my $self = shift;
+    return {
+        id => $self->id,
+        name => $self->name,
+        description => $self->description,
+        version => $self->version,
+        source_name => $self->source->name,
+        restricted => $self->restricted,
+        data_type => $self->data_type
+    };
+}
+
 1;
