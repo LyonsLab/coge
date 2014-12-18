@@ -11,29 +11,34 @@ use File::Basename qw(basename);
 
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Utils qw(to_filename);
-use CoGe::Accessory::Web;
-use CoGe::Core::Storage qw(get_genome_file get_experiment_files get_workflow_paths);
+use CoGe::Accessory::Web qw(get_defaults);
+use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
 use CoGe::Builder::CommonTasks;
 
-require Exporter;
-our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(build run);
-our $CONFIG = CoGe::Accessory::Web::get_defaults();
-our $JEX = CoGe::Accessory::Jex->new( host => $CONFIG->{JOBSERVER}, port => $CONFIG->{JOBPORT} );
+our $CONF = CoGe::Accessory::Web::get_defaults();
+our $JEX = CoGe::Accessory::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
+
+BEGIN {
+    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK);
+    require Exporter;
+
+    $VERSION   = 0.1;
+    @ISA       = qw(Exporter);
+    @EXPORT    = qw(run build);
+    #@EXPORT_OK = qw(build);
+}
 
 sub run {
     my %opts = @_;
 
     # Required arguments
-    my $experiment = $opts{experiment} or croak "An experiment must be specified";
     my $user = $opts{user} or croak "A user was not specified";
 
     my $workflow = $JEX->create_workflow( name => 'Running the SAMtools SNP-finder pipeline', init => 1 );
     my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
-    $workflow->logfile( catfile($staging_dir, 'debug.log') );
+    $workflow->logfile( catfile($result_dir, 'debug.log') );
 
     my @jobs = build({
-        experiment => $experiment,
         staging_dir => $staging_dir,
         result_dir => $result_dir,
         user => $user,
@@ -58,46 +63,44 @@ sub build {
     my $opts = shift;
 
     # Required arguments
-    my $experiment = $opts->{experiment};
+    my $genome = $opts->{genome};
+    my $input_file = $opts->{input_file}; # path to bam file
     my $user = $opts->{user};
     my $wid = $opts->{wid};
     my $staging_dir = $opts->{staging_dir};
     my $result_dir = $opts->{result_dir};
+    my $metadata = $opts->{metadata};
 
-    my $genome = $experiment->genome;
-    my $fasta_cache_dir = catdir($CONFIG->{CACHEDIR}, $genome->id, "fasta");
-
-    my $fasta_file = get_genome_file($genome->id);
-    my $files = get_experiment_files($experiment->id, $experiment->data_type);
-    my $bam_file = shift @$files;
-    my $basename = to_filename($bam_file);
-    my $reheader_fasta =  to_filename($fasta_file) . ".filtered.fasta";
+    my $gid = $genome->id;
+    my $FASTA_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "fasta");
+    die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
+    my $fasta_file = get_genome_file($gid);
+    my $reheader_fasta =  to_filename($fasta_file) . ".reheader.fasta";
 
     my $conf = {
         staging_dir => $staging_dir,
         result_dir  => $result_dir,
 
-        bam         => $bam_file,
-        fasta       => catfile($fasta_cache_dir, $reheader_fasta),
+        bam         => $input_file,
+        fasta       => catfile($FASTA_CACHE_DIR, $reheader_fasta),
         bcf         => catfile($staging_dir, qq[snps.raw.bcf]),
         vcf         => catfile($staging_dir, qq[snps.flt.vcf]),
 
         annotations => generate_experiment_metadata(),
-        experiment  => $experiment,
         username    => $user->name,
-        source_name => $experiment->source->name,
+        metadata    => $metadata,
         wid         => $wid,
-        gid         => $genome->id,
+        gid         => $gid,
     };
 
     my @jobs;
 
     # Build all the job
-    push @jobs, create_fasta_reheader_job({
+    push @jobs, create_fasta_reheader_job(
         fasta => $fasta_file,
-        cache_dir => $fasta_cache_dir,
         reheader_fasta => $reheader_fasta,
-    });
+        cache_dir => $FASTA_CACHE_DIR
+    );
 
     push @jobs, create_find_snps_job($conf);
     push @jobs, create_filter_snps_job($conf);
@@ -116,7 +119,7 @@ sub create_find_snps_job {
 
     my $subopts = {
         samtools => {
-            command => $CONFIG->{SAMTOOLS} || "samtools",
+            command => $CONF->{SAMTOOLS} || "samtools",
             subtask => "mpileup",
             args    => {
                 u => [],
@@ -128,7 +131,7 @@ sub create_find_snps_job {
             ],
         },
         bcf => {
-            command => $CONFIG->{BCFTOOLS} || "bcftools",
+            command => $CONF->{BCFTOOLS} || "bcftools",
             subtask => "view",
             args    => {
                 b => [],
@@ -177,7 +180,7 @@ sub create_filter_snps_job {
 
     my $subopts = {
         bcf => {
-            command => $CONFIG->{BCFTOOLS} || "bcftools",
+            command => $CONF->{BCFTOOLS} || "bcftools",
             subtask => "view",
             args    => {
             },
@@ -187,7 +190,7 @@ sub create_filter_snps_job {
         },
 
         vcf => {
-            command => $CONFIG->{VCFTOOLS} || "vcfutils.pl",
+            command => $CONF->{VCFTOOLS} || "vcfutils.pl",
             subtask => "varFilter",
             args    => {
                 D => [$depth],
@@ -238,7 +241,7 @@ sub generate_experiment_metadata {
     my @annotations = (
         qq{http://genomevolution.org/wiki/index.php/Identifying_SNPs||note|Generated by CoGe's SNP-finder Pipeline (SAMtools method)},
     );
-    return '"' . join(';', @annotations) . '"';
+    return join(';', @annotations);
 }
 
 

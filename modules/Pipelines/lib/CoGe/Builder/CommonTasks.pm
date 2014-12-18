@@ -7,7 +7,9 @@ use Data::Dumper;
 
 use CoGe::Accessory::Utils qw(sanitize_name to_filename);
 use CoGe::Accessory::IRODS qw(irods_iput);
+use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Core::Genome qw(get_download_path);
+use CoGe::Core::Storage qw(get_genome_file);
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -15,17 +17,17 @@ our @EXPORT = qw(
     generate_results link_results generate_bed export_experiment
     generate_tbl export_to_irods generate_gff generate_features copy_and_mask
     create_fasta_reheader_job create_fasta_index_job create_load_vcf_job
-    create_bam_index_job create_gff_generation_job create_fasta_filter_job
-    create_alignment_workflow
+    create_bam_index_job create_gff_generation_job
+    create_alignment_workflow 
 );
 
-our $CONFIG = CoGe::Accessory::Web::get_defaults();
+our $CONF = CoGe::Accessory::Web::get_defaults();
 
 sub link_results {
    my ($input, $output, $result_dir, $conf) = @_;
 
    return (
-        cmd     => catfile($conf->{SCRIPTDIR}, "link_results.pl"),
+        cmd     => catfile($CONF->{SCRIPTDIR}, "link_results.pl"),
         args    => [
             ['-input_files', escape($input), 0],
             ['-output_files', escape($output), 0],
@@ -41,7 +43,7 @@ sub generate_results {
    my ($input, $type, $result_dir, $conf, $dependency) = @_;
 
    return (
-        cmd     => catfile($conf->{SCRIPTDIR}, "generate_results.pl"),
+        cmd     => catfile($CONF->{SCRIPTDIR}, "generate_results.pl"),
         args    => [
             ['-input_files', escape($input), 0],
             ['-type', $type, 0],
@@ -150,12 +152,12 @@ sub export_experiment {
     my ($params, $output, $conf) = @_;
 
     return (
-        cmd => catdir($conf->{SCRIPTDIR}, "export_experiment.pl"),
+        cmd => catdir($CONF->{SCRIPTDIR}, "export_experiment.pl"),
         description => "Generating experiment files",
         args => [
             ["-eid", $params->{eid}, 0],
             ["-output", $output, 1],
-            ["-conf", $conf->{_CONFIG_PATH}, 0],
+            ["-conf", $CONF->{_CONFIG_PATH}, 0],
             ["-dir", ".", ""]
         ],
         inputs => [],
@@ -207,15 +209,15 @@ sub generate_gff {
     my $filename = $args{basename} . "_" . $param_string . ".gff";
     $filename =~ s/\s+/_/g;
     $filename =~ s/\)|\(/_/g;
-    my $path = get_download_path($conf->{SECTEMPDIR}, $args{gid});
+    my $path = get_download_path($CONF->{SECTEMPDIR}, $args{gid});
     my $output_file = catfile($path, $filename);
 
     return $output_file, (
-        cmd     => catfile($conf->{SCRIPTDIR}, "coge_gff.pl"),
+        cmd     => catfile($CONF->{SCRIPTDIR}, "coge_gff.pl"),
         args    => [
             ['-gid', $args{gid}, 0],
             ['-f', $filename, 0],
-            ['-config', $conf->{_CONFIG_PATH}, 0],
+            ['-config', $CONF->{_CONFIG_PATH}, 0],
             # Parameters
             ['-cds', $args{cds}, 0],
             ['-annos', $args{annos}, 0],
@@ -229,14 +231,14 @@ sub generate_gff {
 }
 
 sub create_fasta_reheader_job {
-    my $opts = shift;
+    my %opts = @_;
 
     # Required arguments
-    my $fasta          = $opts->{fasta};
-    my $reheader_fasta = $opts->{reheader_fasta};
-    my $cache_dir      = $opts->{cache_dir};
+    my $fasta          = $opts{fasta};
+    my $reheader_fasta = $opts{reheader_fasta} ? $opts{reheader_fasta} : to_filename($fasta) . ".reheader.fasta";
+    my $cache_dir      = $opts{cache_dir};
 
-    my $cmd = catfile($CONFIG->{SCRIPTDIR}, "fasta_reheader.pl");
+    my $cmd = catfile($CONF->{SCRIPTDIR}, "fasta_reheader.pl");
 
     return {
         cmd => $cmd,
@@ -251,22 +253,19 @@ sub create_fasta_reheader_job {
         outputs => [
             catfile($cache_dir, $reheader_fasta),
         ],
-        description => "Filter fasta file...",
+        description => "Reheader fasta file...",
     };
 }
 
 sub create_fasta_index_job {
-    my $opts = shift;
-
-    # Required arguments
-    my $fasta     = $opts->{fasta};
-    my $cache_dir = $opts->{cache_dir};
-
-    my $fasta_name = basename($fasta);
-    my $fasta_index = qq[$fasta_name.fai];
+    my %opts = @_;
+    
+    # Required params
+    my $fasta = $opts{fasta};
+    my $cache_dir = $opts{cache_dir};
 
     return {
-        cmd => $CONFIG->{SAMTOOLS} || "samtools",
+        cmd => $CONF->{SAMTOOLS} || "samtools",
         script => undef,
         args => [
             ["faidx", $fasta, 1],
@@ -275,20 +274,20 @@ sub create_fasta_index_job {
             $fasta,
         ],
         outputs => [
-            catfile($cache_dir, $fasta_index),
+            catfile($cache_dir, basename($fasta) . '.fai'),
         ],
         description => "Index fasta file...",
     };
 }
 
-sub create_bam_index_job { # note: this task hasn't been tested
-    my $opts = shift;
+sub create_bam_index_job {
+    my %opts = @_;
 
     # Required arguments
-    my $input_bam = $opts->{input_bam};
+    my $input_bam = $opts{input_bam};
 
     return {
-        cmd => $CONFIG->{SAMTOOLS} || "samtools",
+        cmd => $CONF->{SAMTOOLS} || "samtools",
         script => undef,
         args => [
             ["index", $input_bam, 1],
@@ -297,7 +296,7 @@ sub create_bam_index_job { # note: this task hasn't been tested
             $input_bam,
         ],
         outputs => [
-            qw[$input_bam.bai]
+            qq[$input_bam.bai]
         ],
         description => "Index bam file...",
     };
@@ -307,9 +306,8 @@ sub create_load_vcf_job {
     my $opts = shift;
 
     # Required arguments
-    my $experiment = $opts->{experiment}; # existing experiment from which the new experiment is being created
+    my $metadata = $opts{metadata};
     my $username = $opts->{username};
-    my $source_name = $opts->{source_name};
     my $staging_dir = $opts->{staging_dir};
     my $result_dir = $opts->{result_dir};
     my $annotations = $opts->{annotations};
@@ -317,39 +315,87 @@ sub create_load_vcf_job {
     my $gid = $opts->{gid};
     my $vcf = $opts->{vcf};
 
-    my $cmd = catfile(($CONFIG->{SCRIPTDIR}, "load_experiment.pl"));
-    my $output_path = catdir($staging_dir, "load_experiment");
-    my $exp_name = $experiment->name;
+    my $cmd = catfile(($CONF->{SCRIPTDIR}, "load_experiment.pl"));
+    my $output_path = catdir($staging_dir, "load_vcf");
 
     return {
         cmd => $cmd,
         script => undef,
         args => [
-            ['-user_name', $username, 0],
-            ['-name', qq["$exp_name (SNPs)"], 0],
+            ['-user_name', qq["$username"], 0],
+            ['-name', "'".$metadata->{name}." (SNPs)". "'", 0],
             ['-desc', qq{"Single nucleotide polymorphisms"}, 0],
-            ['-version', $experiment->version, 0],
-            ['-restricted', $experiment->restricted, 0],
+            ['-version', "'".$metadata->{version}."'", 0],
+            ['-restricted', "'".$metadata->{restricted}."'", 0],
             ['-gid', $gid, 0],
             ['-wid', $wid, 0],
-            ['-source_name', qq["$source_name"], 0],
+            ['-source_name', "'".$metadata->{source}."'", 0],
             ['-types', qq{"SNP"}, 0],
-            ['-annotations', $annotations, 0],
-            ['-staging_dir', "./load_experiment", 0],
-            ['-file_type', "vcf", 0],
-            ['-result_dir', "'".$result_dir."'", 0],
-            ['-data_file', qq[$vcf], 0],
-            ['-config', $CONFIG->{_CONFIG_PATH}, 1]
+            ['-annotations', qq["$annotations"], 0],
+            ['-staging_dir', "./load_vcf", 0],
+            ['-file_type', qq["vcf"], 0],
+            ['-result_dir', $result_dir, 0],
+            ['-data_file', $vcf, 0],
+            ['-config', $CONF->{_CONFIG_PATH}, 1]
         ],
         inputs => [
-            $CONFIG->{_CONFIG_PATH},
+            $CONF->{_CONFIG_PATH},
             $opts->{vcf},
         ],
         outputs => [
-            [$output_path, 1],
+            [$output_path, '1'],
             catfile($output_path, "log.done"),
         ],
         description => "Load SNPs as new experiment ..."
+    };
+}
+
+sub create_load_bam_job {
+    my %opts = @_;
+    #print STDERR "CommonTasks::create_load_bam_job ", Dumper \%opts, "\n";
+
+    # Required arguments
+    my $user = $opts{user};
+    my $metadata = $opts{metadata};
+    my $staging_dir = $opts{staging_dir};
+    my $result_dir = $opts{result_dir};
+    my $annotations = $opts{annotations};
+    my $wid = $opts{wid};
+    my $gid = $opts{gid};
+    my $bam_file = $opts{bam_file};
+    
+    my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
+    my $output_path = catdir($staging_dir, "load_bam");
+
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ['-user_name', $user->name, 0],
+            ['-name', "'" . $metadata->{name} . " (Alignment)" . "'", 0],
+            ['-desc', "'" . $metadata->{description} . "'", 0],
+            ['-version', "'" . $metadata->{version} . "'", 0],
+            ['-restricted', "'" . $metadata->{restricted} . "'", 0],
+            ['-gid', $gid, 0],
+            ['-wid', $wid, 0],
+            ['-source_name', "'" . $metadata->{source} . "'", 0],
+            ['-types', qq{"BAM"}, 0],
+            ['-annotations', qq["$annotations"], 0],
+            ['-staging_dir', "./load_bam", 0],
+            ['-file_type', qq["bam"], 0],
+            ['-result_dir', $result_dir, 0],
+            ['-data_file', $bam_file, 0],
+            ['-config', $CONF->{_CONFIG_PATH}, 1]
+        ],
+        inputs => [
+            $CONF->{_CONFIG_PATH},
+            $bam_file,
+        ],
+        outputs => [
+            [$output_path, '1'],
+            catfile($output_path, "log.done"),
+        ],
+        description => "Loading alignment as new experiment ..."
     };
 }
 
@@ -358,7 +404,7 @@ sub create_validate_fastq_job {
 
     my $cmd = catfile($CONF->{SCRIPTDIR}, "validate_fastq.pl");
 
-    return (
+    return {
         cmd => $cmd,
         script => undef,
         args => [
@@ -371,41 +417,11 @@ sub create_validate_fastq_job {
             "$fastq.validated"
         ],
         description => "Validating fastq file..."
-    );
-}
-
-sub create_fasta_filter_job {
-    my %opts = shift;
-
-    # Required params
-    my $gid = $opts{gid};
-    my $fasta = $opts{fasta};
-    my $validated = $opts{validated};
-
-    my $name = to_filename($fasta);
-    my $cmd = catfile($CONFIG->{SCRIPTDIR}, "fasta_reheader.pl");
-    my $fasta_cache_dir = catdir($CONFIG->{CACHE}, $gid, "fasta");
-
-    return (
-        cmd => $cmd,
-        script => undef,
-        args => [
-            ["", $fasta, 1],
-            ["", $name . ".filtered.fa", 0]
-        ],
-        inputs => [
-            $fasta,
-            $validated
-        ],
-        outputs => [
-            catfile($fasta_cache_dir, $name . ".filtered.fa")
-        ],
-        description => "Filtering genome sequence..."
-    );
+    };
 }
 
 sub create_cutadapt_job {
-    my %opts = shift;
+    my %opts = @_;
 
     # Required params
     my $fastq = $opts{fastq};
@@ -419,19 +435,18 @@ sub create_cutadapt_job {
     my $m = $cutadapt_params->{m} // 17; #/
 
     my $inputs = [ $fastq ];
-
     push @{$inputs}, $validated if $validated;
 
     my $name = to_filename($fastq);
     my $cmd = $CONF->{CUTADAPT};
 
-    return (
+    return {
         cmd => qq[$cmd > /dev/null],
         script => undef,
         args => [
             ['-q', $q, 0],
-            ['--quality-base=$quality', '', 0],
-            ['-m', $m, 0],
+            ["--quality-base=$quality", '', 0],
+            ["-m", $m, 0],
             ['', $fastq, 1],
             ['-o', $name . '.trimmed.fastq', 1],
         ],
@@ -440,25 +455,24 @@ sub create_cutadapt_job {
             catfile($staging_dir, $name . '.trimmed.fastq')
         ],
         description => "Running cutadapt..."
-    );
+    };
 }
 
 sub create_gff_generation_job {
-    my %opts = shift;
+    my %opts = @_;
 
     # Required params
     my $gid = $opts{gid};
-    my $organism_name => $opts{organism_name};
+    my $organism_name = $opts{organism_name};
     my $validated = $opts{validated};
 
     my $cmd = catfile($CONF->{SCRIPTDIR}, "coge_gff.pl");
     my $name = sanitize_name($organism_name) . "-1-name-0-0-id-" . $gid . "-1.gff";
 
     my $inputs = [ $CONF->{_CONFIG_PATH} ];
-
     push @{$inputs}, $validated if $validated;
 
-    return (
+    return {
         cmd => $cmd,
         script => undef,
         args => [
@@ -474,24 +488,24 @@ sub create_gff_generation_job {
         ],
         inputs => $inputs,
         outputs => [
-            catdir($CACHE, $gid, "gff", $name)
+            catdir($CONF->{CACHEDIR}, $gid, "gff", $name)
         ],
         description => "Generating genome annotations gff..."
-    );
+    };
 }
 
 sub create_tophat_workflow {
-    my $opts = shift;
+    my %opts = @_;
 
     # Required arguments
-    my $gid = $opts->{gid};
-    my $fasta = $opts->{fasta};
-    my $fastq = $opts->{fastq};
-    my $gff = $opts->{gff};
-    my $staging_dir = $opts->{staging_dir};
+    my $gid = $opts{gid};
+    my $fasta = $opts{fasta};
+    my $fastq = $opts{fastq};
+    my $gff = $opts{gff};
+    my $staging_dir = $opts{staging_dir};
 
     # Optional arguments
-    my $alignment_params = $opts->{alignment_params} // {}; #/
+    my $alignment_params = $opts{alignment_params} // {}; #/
 
     my ($index, %bowtie) = create_bowtie_index_job($gid, $fasta);
     my %tophat = create_tophat_job({
@@ -501,7 +515,7 @@ sub create_tophat_workflow {
         gff   => $gff,
         index_name => $index,
         index_files => ($bowtie{outputs}),
-        g =>  $alignment_params->{g},
+        g => $alignment_params->{g},
     });
 
     # Return the bam output name and jobs required
@@ -516,7 +530,7 @@ sub create_bowtie_index_job {
     my $fasta = shift;
     my $name = to_filename($fasta);
     my $cmd = $CONF->{BOWTIE_BUILD};
-    my $BOWTIE_CACHE_DIR = catdir($CACHE, $gid, "bowtie_index");
+    my $BOWTIE_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bowtie_index");
     die "ERROR: BOWTIE_BUILD is not in the config." unless ($cmd);
 
     return catdir($BOWTIE_CACHE_DIR, $name), (
@@ -591,16 +605,16 @@ sub create_tophat_job {
 }
 
 sub create_gsnap_workflow {
-    my $opts = shift;
+    my %opts = @_;
 
     # Required arguments
-    my $gid = $opts->{gid};
-    my $fasta = $opts->{fasta};
-    my $fastq = $opts->{fastq};
-    my $staging_dir = $opts->{staging_dir};
+    my $gid = $opts{gid};
+    my $fasta = $opts{fasta};
+    my $fastq = $opts{fastq};
+    my $staging_dir = $opts{staging_dir};
 
     # Optional arguments
-    my $alignment_params = $opts->{alignment_params} // {}; #/
+    my $alignment_params = $opts{alignment_params} // {}; #/
 
     # Generate index
     my %gmap = create_gmap_index_job($gid, $fasta);
@@ -631,7 +645,7 @@ sub create_gmap_index_job {
     my $fasta = shift;
     my $name = to_filename($fasta);
     my $cmd = $CONF->{GMAP_BUILD};
-    my $GMAP_CACHE_DIR = catdir($CACHE, $gid, "gmap_index");
+    my $GMAP_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "gmap_index");
 
     return (
         cmd => $cmd,
@@ -749,75 +763,105 @@ sub create_gsnap_job {
 }
 
 sub create_alignment_workflow {
-    my $opts = shift;
+    my %opts = @_;
 
     # Required arguments
-    my $fastq = $opts->{fastq}; # input file
-    my $fasta = $opts->{fasta}; # reference sequence
-    my $genome = $opts->{genome}; # genome object
-    my $staging_dir = $opts->{staging_dir};
-    my $alignment_type = $opts->{alignment_type}; # "tophat" or "gsnap"
-    my $annotated = $opts->{annotated};
-    my $options = $opts->{options}; # Options for cutadapt and aligner
+    my $user = $opts{user};
+    my $wid = $opts{wid}; # workflow ID
+    my $fastq = $opts{input_file}; # input fastq file
+    my $genome = $opts{genome}; # genome object
+    my $staging_dir = $opts{staging_dir};
+    my $result_dir = $opts{result_dir};
+    my $metadata = $opts{metadata};
+    my $options = $opts{options}; # Options for cutadapt and aligner
+    my $alignment_type = $options->{alignment_params}->{tool}; # "tophat" or "gsnap"
+    #print STDERR "CommonTasks::create_alignment_workflow ", Dumper $options, "\n";
 
     my $gid = $genome->id;
-    my @jobs;
+    my $FASTA_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "fasta");
+    die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
+    my @tasks;
 
     # Validate the fastq file
-    push @jobs, create_validate_fastq_job($fastq);
+    push @tasks, create_validate_fastq_job($fastq);
 
-    # Filter the fasta file (clean up headers)
-    my %filter = create_fasta_filter_job(gid => $gid, fasta => $fasta, validated => "$fastq.validated");
-    my $filtered_fasta = @{$filter{outputs}}[0];
-    push @jobs, \%filter;
+    # Reheader the fasta file
+    my $fasta = get_genome_file($genome->id);
+    my $reheader_fasta = to_filename($fasta) . ".reheader.fasta";
+    push @tasks, create_fasta_reheader_job(
+        fasta => $fasta,
+        reheader_fasta => $reheader_fasta,
+        cache_dir => $FASTA_CACHE_DIR
+    );
 
-    # Cleanup fastq
-    my %trimmed = create_cutadapt_job({
+    # Index the fasta file
+    push @tasks, create_fasta_index_job(
+        fasta => $reheader_fasta,
+        cache_dir => $FASTA_CACHE_DIR
+    );
+
+    # Trim the fastq file
+    my $trimmed = create_cutadapt_job(
         fastq => $fastq,
         validated => "$fastq.validated",
         staging_dir => $staging_dir,
-        cutadapt => $options->{cutadapt_params},
-    });
-
-    my $trimmed_fastq = @{$trimmed{outputs}}[0];
-    push @jobs, \%trimmed;
-
-    my $gff_file;
+        cutadapt => $options->{alignment_params}->{cutadapt_params},
+    );
+    my $trimmed_fastq = @{$trimmed->{outputs}}[0];
+    push @tasks, $trimmed;
 
     # Generate gff if genome annotated
-    if ($annotated) {
-        my %gff = create_gff_generation_job(gid => $genome->id, organism_name => $genome->organism->name, validated => "$fastq.validated");
-        $gff_file = @{$gff{outputs}}[0];
-        push @jobs, \%gff;
+    my $gff_file;
+    if ( $genome->has_gene_features ) {
+        my $gff = create_gff_generation_job(
+            gid => $gid,
+            organism_name => $genome->organism->name,
+            validated => "$fastq.validated"
+        );
+        $gff_file = @{$gff->{outputs}}[0];
+        push @tasks, $gff;
     }
 
-    my ($bam, @steps);
-
+    # Add aligner workflow
+    my ($bam, @alignment_tasks);
     if ($alignment_type eq 'tophat') {
-        ($bam, @steps) = tophat_pipeline({
+        ($bam, @alignment_tasks) = create_tophat_workflow(
             gid => $gid,
-            fasta => $filtered_fasta,
+            fasta => $reheader_fasta,
             fastq => $trimmed_fastq,
             gff => $gff_file,
             staging_dir => $staging_dir,
             aligner_params => $options->{alignment_params},
-        });
+        );
     }
     elsif ($alignment_type eq 'gsnap') {
-        ($bam, @steps) = gsnap_pipeline({
+        ($bam, @alignment_tasks) = create_gsnap_workflow(
             gid => $gid,
-            fasta => $filtered_fasta,
+            fasta => $reheader_fasta,
             fastq => $trimmed_fastq,
             staging_dir => $staging_dir,
             alignment_params => $options->{alignment_params},
-        });
+        );
     }
     else {
         print STDERR "Error: unrecognized alignment '$alignment'\n";
+        return;
     }
-    push @jobs, @steps;
+    push @tasks, @alignment_tasks;
 
-    return (\@jobs, $bam, $filtered_fasta, $gff_file);
+    # Load alignment
+    push @tasks, create_load_bam_job(
+        user => $user,
+        metadata => $metadata,
+        staging_dir => $staging_dir,
+        result_dir => $result_dir,
+        annotations => '', #FIXME 12/12/14
+        wid => $wid,
+        gid => $gid,
+        bam_file => $bam
+    );
+
+    return (\@tasks, $bam, $reheader_fasta, $gff_file);
 }
 
 1;
