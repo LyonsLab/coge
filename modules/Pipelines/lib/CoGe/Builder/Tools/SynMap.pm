@@ -25,7 +25,7 @@ sub generate_pseudo_assembly {
         name => "Generate Pseudo Assembly"
     );
 
-    $workflow->add_job(
+    $workflow->add_job({
         cmd  => catfile($config->{SCRIPTDIR}, $cmd),
         args => [
             ["-cfg", $config->{_CONFIG_PATH}, 1],
@@ -36,7 +36,7 @@ sub generate_pseudo_assembly {
         inputs    => [$input, $config->{_CONFIG_PATH}],
         outputs   => [$output],
         description => "Generating pseudo assembly"
-    );
+    });
 
     my $response = $JEX->submit_workflow($workflow);
 

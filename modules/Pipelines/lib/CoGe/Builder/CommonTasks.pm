@@ -18,7 +18,7 @@ our @EXPORT = qw(
     generate_tbl export_to_irods generate_gff generate_features copy_and_mask
     create_fasta_reheader_job create_fasta_index_job create_load_vcf_job
     create_bam_index_job create_gff_generation_job
-    create_alignment_workflow 
+    create_alignment_workflow create_load_experiment_job
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -26,7 +26,7 @@ our $CONF = CoGe::Accessory::Web::get_defaults();
 sub link_results {
    my ($input, $output, $result_dir, $conf) = @_;
 
-   return (
+   return {
         cmd     => catfile($CONF->{SCRIPTDIR}, "link_results.pl"),
         args    => [
             ['-input_files', escape($input), 0],
@@ -36,13 +36,13 @@ sub link_results {
         inputs  => [$input],
         outputs => [catfile($result_dir, basename($output))],
         description => "Generating results..."
-   );
+   };
 }
 
 sub generate_results {
    my ($input, $type, $result_dir, $conf, $dependency) = @_;
 
-   return (
+   return {
         cmd     => catfile($CONF->{SCRIPTDIR}, "generate_results.pl"),
         args    => [
             ['-input_files', escape($input), 0],
@@ -52,7 +52,7 @@ sub generate_results {
         inputs  => [$dependency],
         outputs => [catfile($result_dir, "1")],
         description => "Generating results..."
-   );
+   };
 }
 
 sub copy_and_mask {
@@ -174,13 +174,13 @@ sub export_to_irods {
 
     my $filename = basename($done_file);
 
-   return (
+   return {
         cmd => qq[$cmd && touch $filename],
         description => "Exporting file to IRODS",
         args => [],
         inputs => [$src],
         outputs => [$done_file]
-    );
+   };
 }
 
 sub generate_gff {
@@ -347,6 +347,54 @@ sub create_load_vcf_job {
             catfile($output_path, "log.done"),
         ],
         description => "Load SNPs as new experiment ..."
+    };
+}
+
+sub create_load_experiment_job {
+    my %opts = @_;
+
+    # Required arguments
+    my $user = $opts{user};
+    my $metadata = $opts{metadata};
+    my $staging_dir = $opts{staging_dir};
+    my $result_dir = $opts{result_dir};
+    my $annotations = $opts{annotations} || '';
+    my $wid = $opts{wid};
+    my $gid = $opts{gid};
+    my $input_file = $opts{input_file};
+    
+    my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
+    my $output_path = catdir($staging_dir, "load_experiment");
+
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ['-gid', $gid, 0],
+            ['-wid', $wid, 0],
+            ['-user_name', $user->name, 0],
+            ['-name', "'" . $metadata->{name} . "'", 0],
+            ['-desc', "'" . $metadata->{description} . "'", 0],
+            ['-version', "'" . $metadata->{version} . "'", 0],
+            ['-restricted', "'" . $metadata->{restricted} . "'", 0],
+            ['-source_name', "'" . $metadata->{source} . "'", 0],
+            #['-types', qq{"BAM"}, 0],
+            ['-annotations', qq["$annotations"], 0],
+            ['-staging_dir', "./load_experiment", 0],
+            #['-file_type', qq["bam"], 0],
+            ['-result_dir', $result_dir, 0],
+            ['-data_file', $input_file, 0],
+            ['-config', $CONF->{_CONFIG_PATH}, 1]
+        ],
+        inputs => [
+            $CONF->{_CONFIG_PATH},
+            $input_file,
+        ],
+        outputs => [
+            [$output_path, '1'],
+            catfile($output_path, "log.done"),
+        ],
+        description => "Loading experiment ..."
     };
 }
 
