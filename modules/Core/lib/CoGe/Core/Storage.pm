@@ -646,7 +646,7 @@ sub create_experiment {
         unless ( %load_params ) {
             return (undef, "Could not create iget task");
         }
-        $workflow->add_job(%load_params);
+        $workflow->add_job(\%load_params);
         push @staged_files, $load_params{outputs}[0];
     }
 
@@ -656,7 +656,7 @@ sub create_experiment {
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
-    $workflow->add_job(%load_params);
+    $workflow->add_job(\%load_params);
 
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);
@@ -715,7 +715,7 @@ sub create_experiments_from_batch {
         unless ( %load_params ) {
             return (undef, "Could not create iget task");
         }
-        $workflow->add_job(%load_params);
+        $workflow->add_job(\%load_params);
         push @staged_files, $load_params{outputs}[0];
     }
     
@@ -728,7 +728,7 @@ sub create_experiments_from_batch {
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
-    $workflow->add_job(%load_params);
+    $workflow->add_job(\%load_params);
 
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);
@@ -814,7 +814,7 @@ sub create_genome_from_file {
         unless ( %load_params ) {
             return (undef, "Could not create iget task");
         }
-        $workflow->add_job(%load_params);
+        $workflow->add_job(\%load_params);
         push @staged_files, $load_params{outputs}[0];
     }
 
@@ -823,7 +823,7 @@ sub create_genome_from_file {
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
-    $workflow->add_job(%load_params);
+    $workflow->add_job(\%load_params);
 
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);
@@ -863,7 +863,7 @@ sub create_genome_from_NCBI {
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
-    $workflow->add_job(%load_params);
+    $workflow->add_job(\%load_params);
 
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);
@@ -1078,7 +1078,7 @@ sub create_annotation_dataset {
         unless ( %load_params ) {
             return (undef, "Could not create iget task");
         }
-        $workflow->add_job(%load_params);
+        $workflow->add_job(\%load_params);
         push @staged_files, $load_params{outputs}[0];
     }
 
@@ -1087,7 +1087,7 @@ sub create_annotation_dataset {
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
-    $workflow->add_job(%load_params);
+    $workflow->add_job(\%load_params);
 
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);
