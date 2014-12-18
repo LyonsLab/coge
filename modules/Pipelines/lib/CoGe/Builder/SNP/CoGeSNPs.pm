@@ -17,7 +17,8 @@ use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web qw(get_defaults get_job schedule_job);
 use CoGe::Accessory::Utils qw(to_filename);
-use CoGe::Core::Storage qw(get_genome_file get_experiment_files get_workflow_paths);
+use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
+use CoGe::Builder::CommonTasks;
 
 BEGIN {
     use vars qw ($VERSION @ISA @EXPORT);
@@ -25,21 +26,16 @@ BEGIN {
 
     $VERSION = 0.1;
     @ISA     = qw (Exporter);
-    @EXPORT = qw( run );
+    @EXPORT = qw( build run );
 }
 
-our ($CONF, $staging_dir, $result_dir, $METADATA, $FASTA_CACHE_DIR );
+our $CONF = CoGe::Accessory::Web::get_defaults();
+our $FASTA_CACHE_DIR;
 
 sub run {
     my %opts = @_;
     my $db = $opts{db};
-    my $experiment = $opts{experiment};
     my $user = $opts{user};
-
-    my $eid = $experiment->id;
-    my $genome = $experiment->genome;
-
-    $CONF = CoGe::Accessory::Web::get_defaults();
 
     # Connect to workflow engine and get an id
     my $jex = CoGe::Accessory::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
@@ -51,33 +47,20 @@ sub run {
     my $workflow = $jex->create_workflow( name => 'Running the SNP-finder pipeline', init => 1 );
 
     # Setup log file, staging, and results paths
-    ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
-    $workflow->logfile( catfile($staging_dir, 'log_main.txt') );
+    my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
+    $workflow->logfile( catfile($result_dir, 'debug.log') );
 
-    $FASTA_CACHE_DIR = catdir($CONF->{CACHEDIR}, $genome->id, "fasta");
-    die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
+    my @jobs = build({
+        staging_dir => $staging_dir,
+        result_dir => $result_dir,
+        user => $user,
+        wid  => $workflow->id,
+    });
 
-    my $fasta_file = get_genome_file($genome->id);
-    my $files = get_experiment_files($eid, $experiment->data_type);
-    my $bam_file = shift @$files;
-
-    # Setup the jobs
-    
-    
-    
-    my $filtered_file = to_filename($fasta_file) . ".filtered.fasta";
-    $workflow->add_job(
-        create_fasta_reheader_job(fasta => $fasta_file, reheader_fasta => $filtered_file, cache_dir => $FASTA_CACHE_DIR)
-    );
-    $workflow->add_job(
-        create_fasta_index_job(fasta => $filtered_file, cache_dir => $FASTA_CACHE_DIR)
-    );
-    $workflow->add_job(
-        create_samtools_job($filtered_file, $genome->id, $bam_file)
-    );
-    $workflow->add_job(
-        create_load_experiment_job(catfile($staging_dir, 'snps.vcf'), $user, $experiment, $workflow->id)
-    );
+    # Add all the jobs to the workflow
+    foreach (@jobs) {
+        $workflow->add_job(%{$_});
+    }
 
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);
@@ -88,8 +71,45 @@ sub run {
     return ($result->{id}, undef);
 }
 
+sub build {
+    my $opts = shift;
+
+    # Required arguments
+    my $genome = $opts->{genome};
+    my $input_file = $opts->{input_file}; # path to bam file
+    my $user = $opts->{user};
+    my $wid = $opts->{wid};
+    my $staging_dir = $opts->{staging_dir};
+    my $result_dir = $opts->{result_dir};
+    my $metadata = $opts->{metadata};
+
+    my $gid = $genome->id;
+    my $fasta_file = get_genome_file($gid);
+    my $reheader_fasta =  to_filename($fasta_file) . ".reheader.fasta";
+
+    $FASTA_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "fasta");
+    die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
+
+    # Setup the jobs
+    my @jobs;
+    push @jobs, create_fasta_reheader_job(fasta => $fasta_file, reheader_fasta => $reheader_fasta, cache_dir => $FASTA_CACHE_DIR);
+    push @jobs, create_fasta_index_job(fasta => $reheader_fasta, cache_dir => $FASTA_CACHE_DIR);
+    push @jobs, create_samtools_job($reheader_fasta, $gid, $input_file, $staging_dir);
+    push @jobs, create_load_vcf_job({
+        username => $user->name,
+        staging_dir => $staging_dir,
+        result_dir => $result_dir,
+        wid => $wid,
+        gid => $gid,
+        vcf => catfile($staging_dir, 'snps.vcf'),
+        metadata => $metadata
+    });
+    
+    return @jobs;
+}
+
 sub create_samtools_job {
-    my ($fasta, $gid, $bam) = @_;
+    my ($fasta, $gid, $bam, $staging_dir) = @_;
 
     my $samtools = $CONF->{SAMTOOLS};
     die "ERROR: SAMTOOLS not specified in config" unless $samtools;
@@ -97,7 +117,7 @@ sub create_samtools_job {
     die "ERROR: SCRIPTDIR not specified in config" unless $script;
     my $output_name = 'snps.vcf';
 
-    return (
+    return {
         cmd => $samtools,
         script => undef,
         args => [
@@ -117,48 +137,48 @@ sub create_samtools_job {
             catfile($staging_dir, $output_name)
         ],
         description => "Identifying SNPs using the CoGe method ..."
-    );
+    };
 }
 
-sub create_load_experiment_job { # FIXME mdb 11/19/14 - replace with version in CommonTasks
-    my ($vcf, $user, $experiment, $wid) = @_;
-
-    my $cmd = catfile(($CONF->{SCRIPTDIR}, "load_experiment.pl"));
-    my $output_path = catdir($staging_dir, "load_experiment");
-
-    # Set metadata for the pipeline being used
-    my $annotations = generate_experiment_metadata();
-
-    return (
-        cmd => $cmd,
-        script => undef,
-        args => [
-            ['-user_name', $user->name, 0],
-            ['-name', '"'.$experiment->name.' (SNPs)'.'"', 0],
-            ['-desc', qq{"Single nucleotide polymorphisms"}, 0],
-            ['-version', $experiment->version, 0],
-            ['-restricted', $experiment->restricted, 0],
-            ['-gid', $experiment->genome->id, 0],
-            ['-wid', $wid, 0],
-            ['-source_name', '"'.$experiment->source->name.'"', 0],
-            ['-types', qq{"SNP"}, 0],
-            ['-annotations', $annotations, 0],
-            ['-staging_dir', "./load_experiment", 0],
-            ['-file_type', "vcf", 0],
-            ['-data_file', "$vcf", 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 1]
-        ],
-        inputs => [
-            $CONF->{_CONFIG_PATH},
-            $vcf
-        ],
-        outputs => [
-            [$output_path, 1],
-            catfile($output_path, "log.done"),
-        ],
-        description => "Load SNPs as new experiment ..."
-    );
-}
+#sub create_load_experiment_job { # FIXME mdb 11/19/14 - replace with version in CommonTasks
+#    my ($vcf, $user, $experiment, $wid) = @_;
+#
+#    my $cmd = catfile(($CONF->{SCRIPTDIR}, "load_experiment.pl"));
+#    my $output_path = catdir($staging_dir, "load_experiment");
+#
+#    # Set metadata for the pipeline being used
+#    my $annotations = generate_experiment_metadata();
+#
+#    return (
+#        cmd => $cmd,
+#        script => undef,
+#        args => [
+#            ['-user_name', $user->name, 0],
+#            ['-name', '"'.$experiment->name.' (SNPs)'.'"', 0],
+#            ['-desc', qq{"Single nucleotide polymorphisms"}, 0],
+#            ['-version', $experiment->version, 0],
+#            ['-restricted', $experiment->restricted, 0],
+#            ['-gid', $experiment->genome->id, 0],
+#            ['-wid', $wid, 0],
+#            ['-source_name', '"'.$experiment->source->name.'"', 0],
+#            ['-types', qq{"SNP"}, 0],
+#            ['-annotations', $annotations, 0],
+#            ['-staging_dir', "./load_experiment", 0],
+#            ['-file_type', "vcf", 0],
+#            ['-data_file', "$vcf", 0],
+#            ['-config', $CONF->{_CONFIG_PATH}, 1]
+#        ],
+#        inputs => [
+#            $CONF->{_CONFIG_PATH},
+#            $vcf
+#        ],
+#        outputs => [
+#            [$output_path, 1],
+#            catfile($output_path, "log.done"),
+#        ],
+#        description => "Load SNPs as new experiment ..."
+#    );
+#}
 
 sub generate_experiment_metadata {
     my @annotations = (

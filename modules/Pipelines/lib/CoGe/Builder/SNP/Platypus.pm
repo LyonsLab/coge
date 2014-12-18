@@ -16,15 +16,14 @@ use CoGe::Builder::CommonTasks;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(build run);
-our $CONFIG = CoGe::Accessory::Web::get_defaults();
-our $JEX = CoGe::Accessory::Jex->new( host => $CONFIG->{JOBSERVER}, port => $CONFIG->{JOBPORT} );
+our @EXPORT = qw(build run);
+our $CONF = CoGe::Accessory::Web::get_defaults();
+our $JEX = CoGe::Accessory::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
 
 sub run {
     my %opts = @_;
 
     # Required arguments
-    my $experiment = $opts{experiment} or croak "An experiment must be specified";
     my $user = $opts{user} or croak "A user was not specified";
 
     my $workflow = $JEX->create_workflow( name => 'Running the Playtpus SNP-finder pipeline', init => 1 );
@@ -32,7 +31,6 @@ sub run {
     $workflow->logfile( catfile($result_dir, 'debug.log') );
 
     my @jobs = build({
-        experiment => $experiment,
         staging_dir => $staging_dir,
         result_dir => $result_dir,
         user => $user,
@@ -57,50 +55,51 @@ sub build {
     my $opts = shift;
 
     # Required arguments
-    my $experiment = $opts->{experiment};
+    my $genome = $opts->{genome};
+    my $input_file = $opts->{input_file}; # path to bam file
     my $user = $opts->{user};
     my $wid = $opts->{wid};
     my $staging_dir = $opts->{staging_dir};
     my $result_dir = $opts->{result_dir};
+    my $metadata = $opts->{metadata};
 
-    my $genome = $experiment->genome;
-    my $fasta_cache_dir = catdir($CONFIG->{CACHEDIR}, $genome->id, "fasta");
-
-    my $fasta_file = get_genome_file($genome->id);
-    my $files = get_experiment_files($experiment->id, $experiment->data_type);
-    my $bam_file = shift @$files;
-    my $basename = to_filename($bam_file);
-    my $reheader_fasta =  to_filename($fasta_file) . ".filtered.fasta";
+    my $gid = $genome->id;
+    my $FASTA_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "fasta");
+    die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
+    my $fasta_file = get_genome_file($gid);
+    my $reheader_fasta =  to_filename($fasta_file) . ".reheader.fasta";
 
     my $conf = {
         staging_dir => $staging_dir,
         result_dir  => $result_dir,
 
-        bam         => $bam_file,
-        fasta       => catfile($fasta_cache_dir, $reheader_fasta),
+        bam         => $input_file,
+        fasta       => catfile($FASTA_CACHE_DIR, $reheader_fasta),
         vcf         => catfile($staging_dir, qq[snps.vcf]),
 
         annotations => generate_experiment_metadata(),
-        experiment  => $experiment,
         username    => $user->name,
-        source_name => $experiment->source->name,
+        metadata    => $metadata,
         wid         => $wid,
-        gid         => $genome->id,
+        gid         => $gid
     };
 
-    my @jobs;
-
     # Build all the jobs
-    push @jobs, create_fasta_reheader_job({
+    my @jobs;
+    push @jobs, create_fasta_reheader_job(
         fasta => $fasta_file,
-        cache_dir => $fasta_cache_dir,
         reheader_fasta => $reheader_fasta,
-    });
+        cache_dir => $FASTA_CACHE_DIR
+    );
 
-    push @jobs, create_fasta_index_job({
-        fasta => catfile($fasta_cache_dir, $reheader_fasta),
-        cache_dir => $fasta_cache_dir,
-    });
+    push @jobs, create_fasta_index_job(
+        fasta => catfile($FASTA_CACHE_DIR, $reheader_fasta),
+        cache_dir => $FASTA_CACHE_DIR,
+    );
+    
+    push @jobs, create_bam_index_job(
+        input_bam => $input_file
+    );
 
     push @jobs, create_platypus_job($conf);
     push @jobs, create_load_vcf_job($conf);
@@ -117,7 +116,7 @@ sub create_platypus_job {
     my $vcf = $opts->{vcf};
 
     my $index = qq[$reference.fai];
-    my $PLATYPUS = $CONFIG->{PLATYPUS} || "Platypus.py";
+    my $PLATYPUS = $CONF->{PLATYPUS} || "Platypus.py";
 
     return {
         cmd => qq[$PLATYPUS callVariants],
