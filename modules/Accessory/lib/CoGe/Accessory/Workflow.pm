@@ -4,6 +4,7 @@ use warnings;
 use 5.10.0;
 
 use Moose;
+use Data::Dumper;
 
 # Attributes
 has 'id' => (
@@ -37,21 +38,22 @@ has 'jobs' => (
 
 # Public functions
 sub add_job {
-    my ( $self, %opts ) = @_;
-    my $cmd         = $opts{cmd};
-    my $script      = "" unless defined( $opts{script} );
-    my $args        = $opts{args} || [];
-    my $inputs      = $opts{inputs} || [];
-    my $options     = $opts{options};
-    my $outputs     = $opts{outputs} || [];
-    my $description = $opts{description};
+    my ( $self, $opts ) = @_;
+    #print STDERR 'Workflow::add_job ', Dumper $opts, "\n";
+    my $cmd         = $opts->{cmd};
+    my $script      = "" unless defined( $opts->{script} );
+    my $args        = $opts->{args} || [];
+    my $inputs      = $opts->{inputs} || [];
+    my $options     = $opts->{options};
+    my $outputs     = $opts->{outputs} || [];
+    my $description = $opts->{description};
     my $size        = $self->jobs;
     my $overwrite;
 
     # Set default
     $options //= {}; #/
 
-    if ( defined( $opts{overwrite} ) && $opts{overwrite} > 0 ) {
+    if ( defined( $opts->{overwrite} ) && $opts->{overwrite} > 0 ) {
         $overwrite = 1;
     }
     else {
@@ -77,10 +79,11 @@ sub add_job {
 
 sub add_jobs {
     my ($self, $jobs) = @_;
+    #print STDERR Dumper "Workflow::add_jobs ", $jobs, "\n";
     
     my $rc = 1;
     foreach (@$jobs) {
-        $rc &= $self->add_job(%{$_});
+        $rc &= $self->add_job($_);
     }
     
     return $rc;

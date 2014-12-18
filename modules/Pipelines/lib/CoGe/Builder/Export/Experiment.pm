@@ -33,7 +33,7 @@ sub build {
     $self->workflow->logfile(catfile($result_dir, "debug.log"));
 
     my %job = export_experiment($self->params, $cache_file, $self->conf);
-    $self->workflow->add_job(%job);
+    $self->workflow->add_job(\%job);
 
     if ($dest_type eq "irods") {
         my $base = $self->options->{dest_path};
