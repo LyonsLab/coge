@@ -1,12 +1,8 @@
 #! /usr/bin/perl -w
 
 use strict;
+
 use CGI;
-use CoGe::Accessory::Web;
-use CoGe::Accessory::IRODS;
-use CoGe::Accessory::Utils;
-use CoGe::Core::Storage qw(get_workflow_paths get_log data_type);
-use CoGe::Core::Genome qw(genomecmp);
 use HTML::Template;
 use JSON::XS;
 use Spreadsheet::WriteExcel;
@@ -15,11 +11,18 @@ use File::Path;
 use File::Slurp;
 use File::Spec::Functions qw(catdir catfile);
 use Sort::Versions;
+use Switch;
+use Data::Dumper;
+
+use CoGe::Accessory::Web;
+use CoGe::Accessory::IRODS;
+use CoGe::Accessory::Utils;
+use CoGe::Core::Storage qw(get_workflow_paths get_experiment_files get_log data_type);
+use CoGe::Core::Genome qw(genomecmp);
 use CoGe::Builder::SNP::CoGeSNPs;
 use CoGe::Builder::SNP::Samtools;
 use CoGe::Builder::SNP::Platypus;
 use CoGe::Builder::SNP::GATK;
-use Data::Dumper;
 
 use vars qw(
     $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION $ERROR
@@ -774,20 +777,6 @@ sub get_annotation_type_groups {
     return encode_json( [ sort keys %unique ] );
 }
 
-sub select_snp_pipeline {
-    my $method = shift;
-
-    my %pipelines = (
-        coge      => \&CoGe::Builder::SNP::CoGeSNPs::run,
-        samtools  => \&CoGe::Builder::SNP::Samtools::run,
-        platypus  => \&CoGe::Builder::SNP::Platypus::run,
-        gatk      => \&CoGe::Builder::SNP::GATK::run,
-    );
-
-    # Select pipeline
-    return $pipelines{$method} || $pipelines{coge};
-}
-
 sub find_snps {
     my %opts        = @_;
     my $user_name   = $opts{user_name};
@@ -806,12 +795,40 @@ sub find_snps {
     my $experiment = $coge->resultset('Experiment')->find($eid);
     return encode_json({ error => 'Experiment not found' }) unless $experiment;
 
-    # Select the pipeline to be used and submit the workflow
-    my $dispatch = select_snp_pipeline($method);
-    my ($workflow_id, $error_msg) = $dispatch->(db => $coge, experiment => $experiment, user => $USER);
+    # Select the pipeline to be used -- TODO move this into subroutine, common with LoadExperiment.pm
+    my $dispatch;
+#    switch ($method) { 
+#        case 'coge'     { $dispatch = \&CoGe::Builder::SNP::CoGeSNPs::run }
+#        case 'samtools' { $dispatch = \&CoGe::Builder::SNP::Samtools::run }
+#        case 'platypus' { $dispatch = \&CoGe::Builder::SNP::Platypus::run }
+#        case 'gatk'     { $dispatch = \&CoGe::Builder::SNP::GATK::run }
+#    }
+    if ($method eq 'coge') {
+        $dispatch = \&CoGe::Builder::SNP::CoGeSNPs::run;
+    }
+    elsif ($method eq 'samtools') {
+        $dispatch = \&CoGe::Builder::SNP::Samtools::run;
+    }
+    elsif ($method eq 'platypus') {
+        $dispatch = \&CoGe::Builder::SNP::Platypus::run;
+    }
+    elsif ($method eq 'gatk') {
+        $dispatch = \&CoGe::Builder::SNP::GATK::run;
+    }
+    else {
+        print STDERR "ExperimentView::find_snps unknown method\n";
+        return;
+    }
     
+    # Submit the workflow
+    my ($workflow_id, $error_msg) = $dispatch->(
+        user => $USER, 
+        genome => $experiment->genome,
+        input_file => get_experiment_files($experiment->id, $experiment->data_type)->[0],
+        metadata => $experiment->to_hash
+    );
     unless ($workflow_id) {
-        print STDERR $error_msg, "\n";
+        print STDERR "ExperimentView::find_snps $error_msg\n";
         return encode_json({ error => "Workflow submission failed: " . $error_msg });
     }
 
