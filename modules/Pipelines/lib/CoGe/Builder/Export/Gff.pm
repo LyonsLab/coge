@@ -28,7 +28,7 @@ sub build {
     $self->params->{basename} = sanitize_name($genome->organism->name);
 
     my ($output, %job) = generate_gff($self->params, $self->conf);
-    $self->workflow->add_job(%job);
+    $self->workflow->add_job(\%job);
 
     if ($dest_type eq "irods") { # irods export
         my $irods_base = $self->options->{dest_path};

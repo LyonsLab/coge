@@ -1192,14 +1192,14 @@ sub go_synfind {
             [ "--fasta",        $fasta,     1 ]
         ];
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $GEN_FASTA,
             description => "Generating fasta file...",
             script      => undef,
             args        => $fasta_args,
             inputs      => undef,
             outputs     => [$fasta]
-        );
+        });
 
         my $bed_args = [
             [ " -cf ",  $config->{_CONFIG_PATH}, 0 ],
@@ -1207,14 +1207,14 @@ sub go_synfind {
             [ '>',      $BEDDIR . $dsgid . ".bed", 1 ]
         ];
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $DATASETGROUP2BED,
             description => "Creating bed files...",
             script      => undef,
             args        => $bed_args,
             inputs      => undef,
             outputs     => [ $BEDDIR . $dsgid . ".bed" ]
-        );
+        });
     }
 
     #query is the first item on this list.
@@ -1282,14 +1282,14 @@ sub go_synfind {
             $blast_cmd = $LAST;
         }
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $blast_cmd,
             description => "Running blast ($algo) algorithm...",
             script      => undef,
             args        => $blast_args,
             inputs      => [ $target->{query_fasta}, $target->{target_fasta} ],
             outputs     => [ $target->{blastfile} ]
-        );
+        });
 
         #######################################################################
         # Convert Blast
@@ -1301,14 +1301,14 @@ sub go_synfind {
         my $convert_inputs = [ $target->{blastfile} ];
         my $convert_outputs = [ $target->{converted_blastfile}, ];
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $CONVERT_BLAST,
             description => "Converting blast file to short names...",
             script      => undef,
             args        => $convert_args,
             inputs      => $convert_inputs,
             outputs     => $convert_outputs
-        );
+        });
 
         #######################################################################
         # Blast 2 Raw
@@ -1332,14 +1332,14 @@ sub go_synfind {
             #$target->{filtered_blastfile} . ".s.localdups",
         ];
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $BLAST2RAW,
             description => "Finding and removing local duplications...",
             script      => undef,
             args        => $raw_args,
             inputs      => $raw_inputs,
             outputs     => $raw_outputs
-        );
+        });
 
         #######################################################################
         # Synteny Score
@@ -1365,14 +1365,14 @@ sub go_synfind {
 
         my $synteny_score_outputs = [ $target->{synteny_score_db}, ];
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $SYNTENY_SCORE,
             description => "Running Synteny Score...",
             script      => undef,
             args        => $synteny_score_args,
             inputs      => $synteny_score_inputs,
             outputs     => $synteny_score_outputs,
-        );
+        });
     }
 
     CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
