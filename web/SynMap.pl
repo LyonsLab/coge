@@ -1536,14 +1536,14 @@ sub go {
         push @fasta1args, [ "--feature_type", $feat_type1, 1 ];
         push @fasta1args, [ "--fasta",        $fasta1,     1 ];
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $GEN_FASTA,
             script      => undef,
             args        => \@fasta1args,
             inputs      => undef,
             outputs     => [$fasta1],
             description => "Generating fasta file...",
-        );
+        });
 
         CoGe::Accessory::Web::write_log( "Added fasta file generation for:",
             $cogeweb->logfile );
@@ -1568,14 +1568,14 @@ sub go {
         push @fasta2args, [ "--feature_type", $feat_type2, 1 ];
         push @fasta2args, [ "--fasta",        $fasta2,     1 ];
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $GEN_FASTA,
             script      => undef,
             args        => \@fasta2args,
             inputs      => undef,
             outputs     => [$fasta2],
             description => "Generating fasta file...",
-        );
+        });
 
         CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
         CoGe::Accessory::Web::write_log( "Added fasta file generation for:",
@@ -1606,14 +1606,14 @@ sub go {
         push @blastdb_files, "$basename" . "in";
         push @blastdb_files, "$basename" . "hr";
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $FORMATDB,
             script      => undef,
             args        => \@blastdbargs,
             inputs      => [$fasta2],
             outputs     => \@blastdb_files,
             description => "Generating BlastDB...",
-        );
+        });
 
         CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
         CoGe::Accessory::Web::write_log( "Added BlastDB generation",
@@ -1686,14 +1686,14 @@ sub go {
 
         ( undef, $cmd ) = CoGe::Accessory::Web::check_taint($cmd);
         push @blastdb_files, $fasta;
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $cmd,
             script      => undef,
             args        => \@blastargs,
             inputs      => \@blastdb_files,
             outputs     => [$outfile],
             description => "Running genome comparison...",
-        );
+        });
     }
 
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
@@ -1725,14 +1725,14 @@ sub go {
     push @bedoutputs, $raw_blastfile if ( $raw_blastfile =~ /genomic/ );
 #    push @bedoutputs, "$raw_blastfile.orig" if ( $raw_blastfile =~ /genomic/ );
     push @bedoutputs, "$raw_blastfile.new" if ( $raw_blastfile =~ /genomic/ );
-    $workflow->add_job(
+    $workflow->add_job({
         cmd         => $BLAST2BED,
         script      => undef,
         args        => \@blastargs,
         inputs      => [$raw_blastfile],
         outputs     => \@bedoutputs,
         description => "Creating .bed files...",
-    );
+    });
 
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Added .bed files creation",
@@ -1764,14 +1764,14 @@ sub go {
     push @rawoutputs, $qlocaldups;
     push @rawoutputs, $slocaldups;
 
-    $workflow->add_job(
+    $workflow->add_job({
         cmd         => $BLAST2RAW,
         script      => undef,
         args        => \@rawargs,
         inputs      => [ $raw_blastfile, $query_bed, $subject_bed ],
         outputs     => \@rawoutputs,
         description => "Filtering tandem dups...",
-    );
+    });
 
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
     my $msg = "Added Filtering results of tandem ";
@@ -1814,14 +1814,14 @@ sub go {
       if $subject_dup_file;
     push @dagtoolargs, [ '>', $dag_file12_all, 1 ];
 
-    $workflow->add_job(
+    $workflow->add_job({
         cmd         => $DAG_TOOL,
         script      => undef,
         args        => \@dagtoolargs,
         inputs      => [$filtered_blastfile],
         outputs     => [$dag_file12_all],
         description => "Formatting for DagChainer...",
-    );
+    });
 
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log(
@@ -1850,14 +1850,14 @@ sub go {
         push @geneorderargs, [ "--feature1", $feat_type1,               1 ];
         push @geneorderargs, [ "--feature2", $feat_type2,               1 ];
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $GENE_ORDER,
             script      => undef,
             args        => \@geneorderargs,
             inputs      => [$dag_file12_all],
             outputs     => [$dag_file12_all_geneorder],
             description => "Converting to genomic order...",
-        );
+        });
 
         $all_file = $dag_file12_all_geneorder;
         $dag_file12 .= ".go";
@@ -1939,14 +1939,14 @@ sub go {
         $merged_dagchainer_file = "$dagchainer_file.merged";
         push @dagargs, [ "--merge", $merged_dagchainer_file, 1 ];
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $RUN_DAGCHAINER,
             script      => undef,
             args        => \@dagargs,
             inputs      => [$dag_file12],
             outputs     => [$merged_dagchainer_file],
             description => "Running DAGChainer (with merge)...",
-        );
+        });
         $post_dagchainer_file = $merged_dagchainer_file;
         CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
         CoGe::Accessory::Web::write_log(
@@ -1959,14 +1959,14 @@ sub go {
     else {
         push @dagargs, [ ">", $dagchainer_file, 1 ];
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $RUN_DAGCHAINER,
             script      => undef,
             args        => \@dagargs,
             inputs      => [$dag_file12],
             outputs     => [$dagchainer_file],
             description => "Running DAGChainer...",
-        );
+        });
 
         $post_dagchainer_file = $dagchainer_file;
         CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
@@ -1989,14 +1989,14 @@ sub go {
         push @mergeargs, [ '--outfile',      $merged_dagchainer_file, 1 ];
         push @mergeargs, [ '--max_distance', $Dm,                     1 ];
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $RUN_ALIGNMENT,
             script      => undef,
             args        => \@mergeargs,
             inputs      => [$dagchainer_file],
             outputs     => [$merged_dagchainer_file],
             description => "Merging Syntenic Blocks...",
-        );
+        });
         CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
         CoGe::Accessory::Web::write_log(
             "Added Merge Syntenic Blocks"
@@ -2045,14 +2045,14 @@ sub go {
         push @depthargs, [ '--depth_ratio_org2', $depth_org_2_ratio, 1 ];
         push @depthargs, [ '--depth_overlap',    $depth_overlap,     1 ];
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $RUN_COVERAGE,
             script      => undef,
             args        => \@depthargs,
             inputs      => [$post_dagchainer_file_w_nearby],
             outputs     => [$quota_align_coverage],
             description => "Calculating Syntenic depth...",
-        );
+        });
 
         CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
         CoGe::Accessory::Web::write_log(
@@ -2080,14 +2080,14 @@ sub go {
         push @positionargs, [ '', "$final_dagchainer_file.gcoords", 1 ];
         push @positionargs, [ "--positional", '', 1 ];
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $GENE_ORDER,
             script      => undef,
             args        => \@positionargs,
             inputs      => [$final_dagchainer_file],
             outputs     => ["$final_dagchainer_file.gcoords"],
             description => "Converting to genomic coordinates...",
-        );
+        });
 
         CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
         CoGe::Accessory::Web::write_log(
@@ -2151,14 +2151,14 @@ sub go {
             push @ksargs, [ '--dbfile',    $ks_db,                  1 ];
             push @ksargs, [ '--blockfile', $ks_blocks_file,         1 ];
 
-            $workflow->add_job(
+            $workflow->add_job({
                 cmd         => $KSCALC,
                 script      => undef,
                 args        => \@ksargs,
                 inputs      => [$final_dagchainer_file],
                 outputs     => [ $ks_blocks_file, $ks_db ],
                 description => "Calculating synonymous changes (slow)...",
-            );
+            });
 
             CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
             CoGe::Accessory::Web::write_log(
@@ -2180,14 +2180,14 @@ sub go {
             push @svgargs, [ '--output', $ks_blocks_file, 1 ];
 
             $svg_file = $ks_blocks_file . ".svg";
-            $workflow->add_job(
+            $workflow->add_job({
                 cmd         => $SVG_DOTPLOT,
                 script      => undef,
                 args        => \@svgargs,
                 inputs      => [$ks_blocks_file],
                 outputs     => [$svg_file],
                 description => "Generating svg image...",
-            );
+            });
 
             CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
             CoGe::Accessory::Web::write_log( "Added generation of svg dotplot",
@@ -2211,14 +2211,14 @@ sub go {
 
         $svg_file = $final_dagchainer_file . ".svg";
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $SVG_DOTPLOT,
             script      => undef,
             args        => \@svgargs,
             inputs      => [$final_dagchainer_file],
             outputs     => [$svg_file],
             description => "Generating svg image...",
-        );
+        });
 
         CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
         CoGe::Accessory::Web::write_log( "Added generation of svg dotplot",
@@ -2321,7 +2321,7 @@ sub go {
     push @plotoutputs, $hist     if $ks_db;
     push @plotoutputs, $spa_file if $assemble;
 
-    $workflow->add_job(
+    $workflow->add_job({
         cmd         => $DOTPLOT,
         script      => undef,
         args        => \@plotargs,
@@ -2329,7 +2329,7 @@ sub go {
         outputs     => \@plotoutputs,
         overwrite   => $regen_images,
         description => "Generating images...",
-    );
+    });
 
 #    my $dot_args = [
 #        [ '-cf', $config->{_CONFIG_PATH}, 0 ],
@@ -2387,14 +2387,14 @@ sub go {
         ['--outfile', $raw_blastfile . ".s.tandems",  1 ],
     ];
 
-    $workflow->add_job(
+    $workflow->add_job({
         cmd         => $PROCESS_DUPS,
         script      => undef,
         args        => $subject_dup_args,
         inputs      => [$slocaldups], #[$raw_blastfile . ".s.localdups"],
         outputs     => [$raw_blastfile . ".s.tandems"],
         description => "Processing Subject Tandem Duplicate File...",
-    );
+    });
 
     my $query_dup_args = [
         ['--config',  $config->{_CONFIG_PATH},                         0 ],
@@ -2402,14 +2402,14 @@ sub go {
         ['--outfile', $raw_blastfile . ".q.tandems",  1 ],
     ];
 
-    $workflow->add_job(
+    $workflow->add_job({
         cmd         => $PROCESS_DUPS,
         script      => undef,
         args        => $query_dup_args,
         inputs      => [$qlocaldups], #[$raw_blastfile . ".q.localdups"],
         outputs     => [$raw_blastfile . ".q.tandems"],
         description => "Processing Query Tandem Duplicate File...",
-    );
+    });
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Added Processing of Tandem Duplicate Files",
         $cogeweb->logfile );
@@ -2424,14 +2424,14 @@ sub go {
         ['--outfile', $condensed, 1],
     ];
 
-    $workflow->add_job(
+    $workflow->add_job({
         cmd         => $GEVO_LINKS,
         script      => undef,
         args        => $link_args,
         inputs      => [$final_dagchainer_file],
         outputs      => [$condensed],
         description => "Generating GEvo links...",
-    );
+    });
 
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Added GEvo links generation", $cogeweb->logfile);
