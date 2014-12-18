@@ -12,6 +12,7 @@ use CoGe::Accessory::Utils;
 use CoGe::Core::Genome qw(genomecmp);
 use CoGe::Core::Storage qw(create_experiment get_workflow_paths);
 use CoGe::Builder::Expression::qTeller qw(run);
+use CoGe::Builder::Tools::LoadExperiment qw(run);
 use HTML::Template;
 use JSON::XS;
 use URI::Escape::JavaScript qw(escape unescape);
@@ -424,32 +425,15 @@ sub check_login {
 
 sub load_experiment {
     my $opts = shift;
-
-    my $name        = $opts->{description}->{name};
-    my $description = $opts->{description}->{description};
-    my $version     = $opts->{description}->{version};
-    my $source_name = $opts->{description}->{source_name};
-    my $restricted  = $opts->{description}->{restricted};
     my $user_name   = $opts->{options}->{user_name};
     my $gid         = $opts->{gid};
-    my $items       = $opts->{data};
-    my $file_type	= $opts->{data}[0]->{file_type};
     my $load_id     = $opts->{load_id};
+    my $data        = $opts->{data};
+    my $metadata    = $opts->{description};
     my $options     = $opts->{options};
-    my $ignore_missing_chrs = $opts->{ignore_missing_chrs};
-    my $aligner;
+    #print STDERR "LoadExperiment::load_experiment ", Dumper $opts, "\n";
 
-    if ($options && $options->{aligner}) {
-        $aligner = $options->{aligner}->{tool};
-    }
-
-	# Added EL: 10/24/2013.  Solves the problem when restricted is unchecked.
-	# Otherwise, command-line call fails with next arg being passed to
-	# restricted as option
-	$restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
-
-	# print STDERR "load_experiment: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
-    return encode_json({ error => "No data items" }) unless $items;
+    return encode_json({ error => "No data items" }) unless $data;
 
     # Check login
     if ( !$user_name || !$USER->is_admin ) {
@@ -459,60 +443,32 @@ sub load_experiment {
         return encode_json({ error => 'Not logged in' });
     }
 
-    # Setup staging area
-    $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $load_id. '/';
+    # Setup file staging area
+    $TEMPDIR = catdir($P->{SECTEMPDIR}, $PAGE_TITLE, $USER->name, $load_id);
     my $stagepath = catdir($TEMPDIR, 'staging');
     mkpath $stagepath;
 
-    # Setup path to file
-    my $data_file = $TEMPDIR . $items->[0]->{path};
-
-    # Determine fastq file type
-    my ($workflow_id, $error_msg);
+    # Setup path to staged data file
+    my $data_file = catfile($TEMPDIR, $data->[0]->{path});
+    my $data_type = $data->[0]->{file_type};
 
     # Get genome
     my $genome = $coge->resultset('Genome')->find($gid);
+    unless ($genome) {
+        return encode_json({ error => 'Genome not found' });
+    }
+    # TODO add permissions check here -- or will it happen in Request::Genome?
 
-    if ( $file_type eq 'fastq' || is_fastq_file($data_file) ) {
-        # Submit workflow to generate experiment
-        ($workflow_id, $error_msg) = CoGe::Builder::Expression::qTeller::run({
-            db => $coge,
-            genome => $genome,
-            user => $USER,
-            metadata => {
-                name => $name,
-                description => $description,
-                version => $version,
-                source_name => $source_name,
-                restricted => $restricted
-            },
-            files => [ { path => $data_file, type => 'fastq' } ],
-            alignment_type => $aligner,
-            options => $options
-            });
-    }
-    # Else, all other file types
-    else {
-    	# Submit workflow to generate experiment
-        ($workflow_id, $error_msg) = create_experiment(
-            genome => $gid,
-            user => $USER,
-            metadata => {
-                name => $name,
-                description => $description,
-                version => $version,
-                source_name => $source_name,
-                restricted => $restricted,
-            },
-            files => [ $data_file ],
-            file_type => $file_type,
-            options => {
-                ignoreMissing => 1,#$ignore_missing_chrs # mdb added 10/6/14 easier just to make this the default
-            }
-        );
-    }
+    my ($workflow_id, $error_msg) = CoGe::Builder::Tools::LoadExperiment::run({
+        user => $USER,
+        genome => $genome,
+        metadata => $metadata,
+        data => [ { path => $data_file, type => $data_type } ],
+        options => $options
+    });
+
     unless ($workflow_id) {
-        print STDERR $error_msg, "\n";
+        #print STDERR $error_msg, "\n";
         return encode_json({ error => "Workflow submission failed: " . $error_msg });
     }
 
@@ -522,6 +478,9 @@ sub load_experiment {
     );
     
     # Log it
+    my $name        = $metadata->{name};
+    my $description = $metadata->{description};
+    my $version     = $metadata->{version};
     my $info = '<i>"';
     $info .= $name if $name;
     $info .= ": " . $description if $description;
@@ -537,11 +496,6 @@ sub load_experiment {
     );
     
     return encode_json({ job_id => $workflow_id, link => $link });
-}
-
-sub is_fastq_file {
-    my $filename = shift;
-    return ($filename =~ /fastq$/ || $filename =~ /fastq\.gz$/ || $filename =~ /fq$/ || $filename =~ /fq\.gz$/);
 }
 
 sub execute { # FIXME this code is duplicate in other places like load_genome.pl
@@ -599,7 +553,7 @@ sub search_genomes
     my %opts        = @_;
     my $search_term = $opts{search_term};
     my $timestamp   = $opts{timestamp};
-    print STDERR "$search_term $timestamp\n";
+    #print STDERR "$search_term $timestamp\n";
     return unless $search_term;
 
     # Perform search
@@ -642,7 +596,7 @@ sub search_genomes
     }
 
     my @items;
-    print STDERR Dumper \@items, "\n";
+    #print STDERR Dumper \@items, "\n";
     foreach ( sort genomecmp values %unique ) {    #(keys %unique) {
         push @items, { label => $_->info, value => $_->id };
     }
