@@ -42,7 +42,7 @@ GetOptions(
     "name=s"        => \$name,           # experiment name (JS escaped)
     "desc=s"        => \$description,    # experiment description (JS escaped)
     "version=s"     => \$version,        # experiment version (JS escaped)
-    "restricted=i"  => \$restricted,     # experiment restricted flag
+    "restricted=s"  => \$restricted,     # experiment restricted flag (0|1 or false|true)
     "source_name=s" => \$source_name,    # experiment source name (JS escaped)
     "gid=s"         => \$gid,            # genome id
     "wid=s"         => \$wid,            # workflow id
@@ -93,7 +93,7 @@ $version     = unescape($version);
 $source_name = unescape($source_name);
 
 # Set default parameters
-$restricted  = '0' unless (defined $restricted);
+$restricted  = '0' unless (defined $restricted && lc($restricted) eq 'true');
 $ignore_missing_chr = '1' unless (defined $ignore_missing_chr); # mdb added 10/6/14 easier just to make this the default
 
 if ($user_name eq 'public') {
