@@ -38,15 +38,18 @@ sub get {
         conf     => $self->conf
     };
 
+    # Select pipeline builder
     my $builder;
-
-    if ($message->{type} eq "gff_export") {
+    if ($message->{type} eq "export_gff") {
         $builder = CoGe::Builder::Export::Gff->new($options);
-    } elsif ($message->{type} eq "fasta_export") {
+    } 
+    elsif ($message->{type} eq "export_fasta") {
         $builder = CoGe::Builder::Export::Fasta->new($options);
-    } elsif ($message->{type} eq "experiment_export") {
+    } 
+    elsif ($message->{type} eq "export_experiment") {
         $builder = CoGe::Builder::Export::Experiment->new($options);
-    } else {
+    } 
+    else {
         return;
     }
 
