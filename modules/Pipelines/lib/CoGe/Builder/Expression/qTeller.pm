@@ -49,21 +49,15 @@ sub run {
     my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
     $workflow->logfile( catfile($result_dir, 'debug.log') );
 
+    # Build the workflow
     my $options = {
         result_dir => $result_dir,
         staging_dir => $staging_dir,
         wid  => $wid,
         %{$opts},
     };
-
     my @jobs = build($options);
-
-    for my $job (@jobs) {
-        $workflow->add_job(%{$job});
-    }
-
-    #say STDERR "WORKFLOW DUMP\n" . Dumper($workflow) if $DEBUG;
-    #say STDERR "JOB NOT SCHEDULED TEST MODE" and exit(0) if $test;
+    $workflow->add_jobs(\@jobs);
 
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);
