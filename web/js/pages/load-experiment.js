@@ -908,13 +908,12 @@ $.extend(AlignmentView.prototype, {
                     n: this.el.find("#n").val(),
                     Q: this.el.find("#Q").is(":checked"),
                     gap: this.el.find("#gap").val(),
-                    nofail: this.el.find("#nofail").is(":checked")
-                },
-
-                cutadapt_params: {
-                    q: this.el.find("#q").val(),
-                    m: this.el.find("#m").val(),
-                    quality: this.el.find("#quality").val()
+                    nofail: this.el.find("#nofail").is(":checked"),
+                    cutadapt_params: {
+                        q: this.el.find("#q").val(),
+                        m: this.el.find("#m").val(),
+                        quality: this.el.find("#quality").val()
+                    }
                 }
             };
         } else {
@@ -1320,10 +1319,10 @@ function load(experiment) {
     var payload = $.extend({fname: "load_experiment", load_id: load_id}, experiment);
 
     $.ajax({
-        dataType: "json",
-        type: "POST",
-        data: JSON.stringify(payload),
+    	type: "POST",
+    	dataType: "json",
         contentType: "application/json",
+        data: JSON.stringify(payload),
         success: function(obj) {
             if (obj && obj.error) {
                 if (obj.error.PAYLOAD)  {
