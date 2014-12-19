@@ -144,7 +144,7 @@ sub track_config {
             type         => "CoGe/View/Track/CoGeFeatures",
             description  => "note, description",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
-            onClick      => "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
+            onClick      => "https://$SERVER_NAME/coge/FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
             maxFeatureScreenDensity => 20,
             maxHeight               => 100000,
             minSubfeatureWidth      => 4,
@@ -178,7 +178,7 @@ sub track_config {
                 type         => "JBrowse/View/Track/HTMLFeatures",
                 storeClass   => "JBrowse/Store/SeqFeature/REST",
                 region_stats => 1, # see HTMLFeatures.js, force calls to stats/region instead of stats/global
-                onClick => "FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end};type=$type_name",
+                onClick      => "https://$SERVER_NAME/coge/FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end};type=$type_name",
                 maxFeatureScreenDensity => 1000,     #50,
                 maxHeight               => 100000,
                 style                   => {
@@ -223,7 +223,7 @@ sub track_config {
                     type         => "CoGe/View/Track/CoGeFeatures",
                     description  => "note, description",
                     storeClass   => "JBrowse/Store/SeqFeature/REST",
-                    onClick      => "FeatAnno.pl?ds=$dsid;chr={chr};start={start};stop={end}",
+                    onClick      => "https://$SERVER_NAME/coge/FeatAnno.pl?ds=$dsid;chr={chr};start={start};stop={end}",
                     maxFeatureScreenDensity => 20,
                     maxHeight               => 100000,
                     minSubfeatureWidth      => 4,
@@ -257,7 +257,7 @@ sub track_config {
                         type         => "JBrowse/View/Track/HTMLFeatures",
                         storeClass   => "JBrowse/Store/SeqFeature/REST",
                         region_stats => 1, # see HTMLFeatures.js, force calls to stats/region instead of stats/global
-                        onClick => "FeatAnno.pl?ds=$dsid;chr={chr};start={start};stop={end};type=$type_name",
+                        onClick      => "https://$SERVER_NAME/coge/FeatAnno.pl?ds=$dsid;chr={chr};start={start};stop={end};type=$type_name",
                         maxFeatureScreenDensity => 1000,     #50,
                         maxHeight               => 100000,
                         style                   => {
