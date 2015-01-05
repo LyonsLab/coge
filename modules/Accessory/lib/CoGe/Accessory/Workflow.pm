@@ -5,6 +5,7 @@ use 5.10.0;
 
 use Moose;
 use Data::Dumper;
+use Data::Compare;
 
 # Attributes
 has 'id' => (
@@ -47,34 +48,41 @@ sub add_job {
     my $options     = $opts->{options};
     my $outputs     = $opts->{outputs} || [];
     my $description = $opts->{description};
-    my $size        = $self->jobs;
     my $overwrite;
 
-    # Set default
+    # Set defaults
     $options //= {}; #/
 
+    # Build job object
     if ( defined( $opts->{overwrite} ) && $opts->{overwrite} > 0 ) {
         $overwrite = 1;
     }
     else {
         $overwrite = 0;
     }
+    my $job = {
+        cmd         => $cmd,
+        options     => $options,
+        script      => $script,
+        args        => $args,
+        description => $description,
+        overwrite   => $overwrite,
+        inputs      => $inputs,
+        outputs     => $outputs,
+    };
 
-    push(
-        @{ $self->jobs },
-        {
-            cmd         => $cmd,
-            options     => $options,
-            script      => $script,
-            args        => $args,
-            description => $description,
-            overwrite   => $overwrite,
-            inputs      => $inputs,
-            outputs     => $outputs,
+    # mdb added 1/5/15 - prevent duplicate jobs, JEX doesn't handle them correctly
+    foreach (@{$self->jobs}) {
+        if (Compare($_, $job)) {
+            print STDERR "Workflow::add_job warning: skipping duplicate job\n";
+            return 1;
         }
-    );
+    }
+    
+    # Add job to workflow
+    push @{$self->jobs}, $job;
 
-    return scalar( $self->jobs() ) > $size;
+    return 1;
 }
 
 sub add_jobs {
