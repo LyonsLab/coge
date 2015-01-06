@@ -1330,7 +1330,7 @@ qq{<br><a href="http://genomevolution.org/wiki/index.php/Gobe" class="small" sty
       . basename($all_file)
       . "\" target=_new>all sequences</A></font></DIV>\n";
     $html .=
-qq{<td class=dropmenu><td><span class=bold>Third part systemannotation files</span>};
+qq{<td class="dropmenu"><td><span class="bold">Third party system annotation files</span>};
     foreach my $item (@sets) {
         my $anno_file = generate_annotation(%$item);
         next unless $anno_file;
