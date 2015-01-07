@@ -573,11 +573,8 @@ sub annotation_pretty_print_html {
 		$name = "<b>" . $name . "</b>"
 		  if $primary_name && $primary_name eq $name;
 		$anno_type->add_Annot(
-"<span class=\"data5 link\" onclick=\"window.open('FeatView.pl?accn="
-			  . $accn
-			  . "');\">"
-			  . $name
-			  . "</span>" );
+            "<span class=\"data5 link\" onclick=\"window.open('FeatView.pl?accn=" . $accn . "');\">" . $name . "</span>" 
+		);
 	}
 	$anno_obj->add_Annot($anno_type);
 	unless ($minimal) {
@@ -593,11 +590,12 @@ sub annotation_pretty_print_html {
 
 		my ($temp_start, $temp_stop) = get_link_coords($start, $stop);
 		my @links = (
-			"<span class='data5 link' onclick =\"window.open('CoGeBlast.pl?fid=$fid')\">CoGeBlast</span>",
-			"<span class='data5 link' onclick =\"window.open('FastaView.pl?fid=$fid')\">Fasta</span>",
-			#"<span class='data5 link' onclick =\"window.open('GenomeView.pl?chr=$chr&gid=$gid&start=$start&z=6')\">GenomeView</span>", # mdb removed 11/18/13 issue 220, 254
-			"<span class='data5 link' onclick =\"window.open('GenomeView.pl?gid=$gid&loc=$chr:$temp_start..$temp_stop')\">GenomeView</span>", # mdb added 11/18/13 issue 220, 254 - fix for jbrowse
-			"<span class='data5 link' onclick =\"window.open('SynFind.pl?fid=$fid')\">SynFind</span>",
+			"<span class='data5 link' onclick=\"window.open('CoGeBlast.pl?fid=$fid')\">CoGeBlast</span>",
+			"<span class='data5 link' onclick=\"window.open('FastaView.pl?fid=$fid')\">Fasta</span>",
+			#"<span class='data5 link' onclick=\"window.open('GenomeView.pl?chr=$chr&gid=$gid&start=$start&z=6')\">GenomeView</span>", # mdb removed 11/18/13 issue 220, 254
+			"<span class='data5 link' onclick=\"window.open('GenomeView.pl?gid=$gid&loc=$chr:$temp_start..$temp_stop')\">GenomeView</span>", # mdb added 11/18/13 issue 220, 254 - fix for jbrowse
+			"<span class='data5 link' onclick=\"window.open('SynFind.pl?fid=$fid')\">SynFind</span>",
+			"<span class='data5 link' onclick=\"window.open('FeatView.pl?fid=$fid&gstid=$gstid')\">FeatView</span>"
 		);
 
         my $P = $opts{P};
@@ -681,50 +679,42 @@ sub annotation_pretty_print_html {
 		my $location = "Chr " . $chr . " ";
 
 #    $location .= join (", ", map {$_->start."-".$_->stop} sort {$a->start <=> $b->start} $self->locs);
-		$location .=
-		  commify( $self->start ) . "-" . commify( $self->stop );
+		$location .= commify( $self->start ) . "-" . commify( $self->stop );
 		$location .= " (" . $strand . ")";
 		my $featid = $self->id;
 		$anno_obj->add_Annot(
 			new CoGe::Accessory::Annotation(
-				Type =>
-				  "<tr><td nowrap='true'><span class=\"title5\">Length</span>",
-				Values =>
-				  [ "<span class='data5'>" . $self->length . " nt</span>" ],
+				Type => "<tr><td nowrap='true'><span class=\"title5\">Length</span>",
+				Values => [ "<span class='data5'>" . $self->length . " nt</span>" ],
 				Type_delimit => ":<td>",
 				Val_delimit  => " "
 			)
 		  )
 		  unless $minimal;
 
-#	$location = qq{<span class="data5 link" onclick="window.open('$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand&gstid=$gstid')" >}.$location."</span>" if $loc_link;
-		$location =
-qq{<span class="data5 link" onclick="window.open('$loc_link?featid=$featid&gstid=$gstid')" >}
-		  . $location
-		  . "</span>"
-		  if $loc_link;
+#		$location = qq{<span class="data5 link" onclick="window.open('$loc_link?featid=$featid&gstid=$gstid')" >}
+#		  . $location
+#		  . "</span>"
+#		  if $loc_link;
 		$location = qq{<span class="data">$location</span>};
 		$anno_obj->add_Annot(
 			new CoGe::Accessory::Annotation(
-				Type =>
-"<tr><td nowrap='true'><span class=\"title5 link\"><span onclick=\"window.open('GenomeView.pl?chr=$chr&gid=$gid&start=$start&z=6')\" >Location</span></span>",
-				Values       => [$location],
+				Type         => "<tr><td nowrap='true'><span class=\"title5\">Location</span>",
+				Values       => ["<span class='data5'>".$location."</span>"],
 				Type_delimit => ":<td>",
 				Val_delimit  => " "
 			)
 		);
 
 		my $ds      = $self->dataset();
-		my $dataset =
-qq{<span class="data5 link" onclick="window.open('OrganismView.pl?dsid=}
+		my $dataset = qq{<span class="data5 link" onclick="window.open('OrganismView.pl?dsid=}
 		  . $ds->id . "')\">"
 		  . $ds->name . " (v"
 		  . $ds->version . ")";
 		$dataset .= "</span>";
 		$anno_obj->add_Annot(
 			new CoGe::Accessory::Annotation(
-				Type =>
-				  "<tr><td nowrap='true'><span class=\"title5\">Dataset</span>",
+				Type         => "<tr><td nowrap='true'><span class=\"title5\">Dataset</span>",
 				Values       => [$dataset],
 				Type_delimit => ":<td>",
 				Val_delimit  => " "
@@ -734,8 +724,7 @@ qq{<span class="data5 link" onclick="window.open('OrganismView.pl?dsid=}
 		my @genomes;
 		foreach my $dsg ( $ds->genomes ) {
 			my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
-			my $genome =
-qq{<span class="data5 link" onclick="window.open('GenomeInfo.pl?gid=}
+			my $genome = qq{<span class="data5 link" onclick="window.open('GenomeInfo.pl?gid=}
 			  . $dsg->id . "')\">"
 			  . $name . " (v"
 			  . $dsg->version . ")";
@@ -743,8 +732,7 @@ qq{<span class="data5 link" onclick="window.open('GenomeInfo.pl?gid=}
 		}
 		$anno_obj->add_Annot(
 			new CoGe::Accessory::Annotation(
-				Type =>
-				  "<tr><td nowrap='true'><span class=\"title5\">Genome</span>",
+				Type         => "<tr><td nowrap='true'><span class=\"title5\">Genome</span>",
 				Values       => \@genomes,
 				Type_delimit => ":<td>",
 				Val_delimit  => " "
