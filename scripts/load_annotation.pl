@@ -540,7 +540,7 @@ sub process_gff_file {
 
         my @line = split( /\t/, $line );
         if ( @line != 9 ) {
-            log_line("Incorrect format (too many columns)", $line_num, $line);
+            log_line("Incorrect format (wrong number of columns, expecting 9)", $line_num, $line);
             return 0;
         }
         my ($chr, $type, $start, $stop, $strand, $attr) = ($line[0], $line[2], $line[3], $line[4], $line[6], $line[8]);
