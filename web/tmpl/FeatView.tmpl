@@ -1,194 +1,164 @@
 <SCRIPT language="JavaScript">
 
-$(document).ready(function(){
-  $('#accn').focus();
-
+$(function() {
+	$('#accn').focus();
+	$(".dialog").dialog({ autoOpen: false} );
+    if ($('#accn').val())
+    	search_chain(0);
 });
 
-$(function() {
- $(".dialog").dialog({ autoOpen: false} );
- });
-
 function search_chain(val) {
- $('#data_table').show(0);
- accnminlen = 3;
- annominlen = 8;
- $('#anno').hide();
- $('#accn_list').hide();
- $('#Source').hide();
- $('#FeatType').hide();
- var searched = 0;
- if ((val == 1)){
-   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >');
-   $('#anno').show();
-   searched=1;
-   go_cogesearch();
-
- }
- else if ($('#accn').val().length > accnminlen) {
-   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >');
-   $('#anno').show();
-   searched=1;
-   go_cogesearch();
- }
- else if ($('#annosearch').val().length > annominlen) {
-   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >');
-   $('#anno').show();
-   searched=1;
-   go_cogesearch();
- }
-
- if (!searched)
-  {
-    $('anno').html('Search not run.');
-  }
-
+	$('#data_table').show(0);
+	accnminlen = 3;
+	annominlen = 8;
+	$('#anno').hide();
+	$('#accn_list').hide();
+	$('#Source').hide();
+	$('#FeatType').hide();
+	var searched = 0;
+	if ((val == 1)){
+	    $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >').show();
+	    searched=1;
+	    go_cogesearch();
+	}
+	else if ($('#accn').val().length > accnminlen) {
+ 	    $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >').show();
+ 	    searched=1;
+	    go_cogesearch();
+	}
+	else if ($('#annosearch').val().length > annominlen) {
+	    $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >').show();
+	    searched=1;
+	    go_cogesearch();
+	}
+	
+	if (!searched)
+	    $('anno').html('Search not run.').show();
 }
 
 function go_cogesearch () {
-// cogesearch(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org_id','org_id', 'args__feat_name_wild','feat_name_wild', 'args__feat_anno_wild', 'feat_anno_wild','args__org_name','org_name','args__org_desc','org_desc'],[source_search_chain]);
- cogesearch(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org_id','org_id', 'args__org_name','org_name','args__org_desc','org_desc'],[source_search_chain]);
+//	cogesearch(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org_id','org_id', 'args__feat_name_wild','feat_name_wild', 'args__feat_anno_wild', 'feat_anno_wild','args__org_name','org_name','args__org_desc','org_desc'],[source_search_chain]);
+	cogesearch(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org_id','org_id', 'args__org_name','org_name','args__org_desc','org_desc'],[source_search_chain]);
 }
 
 function source_search_chain (val) {
- if (val) {$('#accn_list').html(val);$('#accn_list').show()}
- source_search(['args__accn','accn_select', 'args__org_id','org_id','args__org_name','org_name','args__org_desc','org_desc'], [get_types_chain]);
+	if (val)
+		$('#accn_list').html(val).show()
+	source_search(['args__accn','accn_select', 'args__org_id','org_id','args__org_name','org_name','args__org_desc','org_desc'], [get_types_chain]);
 }
 
 function get_types_chain (val1) {
- if (val1) {$('#Source').html(val1);$('#Source').show();}
- get_types(['args__accn','accn_select', 'args__dsid','dsid', 'args__ftid','type'],[get_anno_chain]);
+	if (val1)
+		$('#Source').html(val1).show();
+	get_types(['args__accn','accn_select', 'args__dsid','dsid', 'args__ftid','type'],[get_anno_chain]);
 }
 
 function get_anno_chain (val1,val2) {
- if (val1) {
-   $('#FeatType').html(val1);
-   $('#FeatType').show();
-   if ($('#add_all').is(":hidden")) {$('#add_all').show(0);}
-   if ($('#remove').is(":hidden")) {$('#remove').show(0);}
-   if ($('#clear').is(":hidden")) {$('#clear').show(0);}
-   if ($('#send').is(":hidden")) {$('#send').show(0);}
- }
- as = $('#accn_select').val();
- tn = $('#Type_name').val();
- get_anno(['args__accn','accn_select', 'args__type','Type_name', 'args__dsid','dsid','args__gstid','args__'+val2],[show_anno]);
+	if (val1) {
+		$('#FeatType').html(val1).show();
+		if ($('#add_all').is(":hidden")) $('#add_all').show(0);
+		if ($('#remove').is(":hidden")) $('#remove').show(0);
+		if ($('#clear').is(":hidden")) $('#clear').show(0);
+		if ($('#send').is(":hidden")) $('#send').show(0);
+	}
+	as = $('#accn_select').val();
+	tn = $('#Type_name').val();
+	get_anno(['args__accn','accn_select', 'args__type','Type_name', 'args__dsid','dsid','args__gstid','args__'+val2],[show_anno]);
 }
 
-function show_anno (anno)
- {
- $('#anno').html(anno);
-setup_button_states();
- }
-
-function timing(val){
-  namere = /name/;
-  descre = /desc/;
-  if (namere.exec(val))
-   {
-    $('#org_desc').val("Search").css({fontStyle: "italic"});
-    searchterm = $('#'+val).val();
-   }
-  else if (descre.exec(val))
-   {
-    $('#org_name').val("Search").css({fontStyle: "italic"}); ;
-    searchterm = $('#'+val).val();
-   }
-  var searchterm;
-  if (!searchterm) {val=0;}
-  if(searchterm == "Search")
-  {
-    searchterm = "";
-  }
-  if (pageObj.search && pageObj.search+val == searchterm+val)
-   {
-    return;
-   }
-  pageObj.search=searchterm+val;
-  if (pageObj.time){
-   clearTimeout(pageObj.time);
-  }
-  re = /(\d+)/;
-  i = re.exec(val);
-  if (namere.exec(val))
-   {
-     pageObj.time = setTimeout("get_orgs(['args__type','args__name','args__search','org_name'],['org_list'])",500);
-   }
-  else if (descre.exec(val))
-   {
-     pageObj.time = setTimeout("get_orgs(['args__type','args__desc','args__search','org_desc'],['org_list'])",500);
-   }
+function show_anno (anno) {
+	$('#anno').html(anno);
+	setup_button_states();
 }
 
-$(document).ready(function(){
-    if ($('#accn').val()) {search_chain(0);}
-});
+function timing(val) {
+	var searchterm;
+	
+	namere = /name/;
+	descre = /desc/;
+	if (namere.exec(val)) {
+	    $('#org_desc').val("Search").css({fontStyle: "italic"});
+	    searchterm = $('#'+val).val();
+	}
+	else if (descre.exec(val)) {
+	    $('#org_name').val("Search").css({fontStyle: "italic"}); ;
+	    searchterm = $('#'+val).val();
+	}
+	
+	if (!searchterm) val=0;
+	if (searchterm == "Search")
+	    searchterm = "";
+	if (pageObj.search && pageObj.search+val == searchterm + val)
+		return;
+	pageObj.search = searchterm + val;
+	if (pageObj.time)
+	    clearTimeout(pageObj.time);
+	re = /(\d+)/;
+	i = re.exec(val);
+	if (namere.exec(val))
+	    pageObj.time = setTimeout("get_orgs(['args__type','args__name','args__search','org_name'],['org_list'])",500);
+	else if (descre.exec(val))
+	    pageObj.time = setTimeout("get_orgs(['args__type','args__desc','args__search','org_desc'],['org_list'])",500);
+}
 
 function add_to_featlist(featname, featid, gstid){
-  //alert(featname+","+featid);
-  var check = $('#'+featid+"_"+gstid).val();
-  if (check){
-   alert('You have already added '+featname+'.');
-   return;
-  }
-  var html = '<option id='+featid+'_'+gstid+' value='+featid+'_'+gstid+ ' >'+featname+'</option>';
-  //alert(html);
-  $('#blank').remove();
-  $('#featlist_choice').prepend(html);
-  counting();
+	var check = $('#'+featid+"_"+gstid).val();
+	if (check){
+	    alert('You have already added '+featname+'.');
+	    return;
+	}
+	var html = '<option id='+featid+'_'+gstid+' value='+featid+'_'+gstid+ ' >'+featname+'</option>';
+	$('#blank').remove();
+	$('#featlist_choice').prepend(html);
+	counting();
 }
 
 function add_all (val) {
- var id_array = val.split('||');
- for (var i =0; i < id_array.length; i++)
-  {
-      var item = id_array[i].split('::');
-      var html = '<option id='+item[0]+' value='+item[0]+ ' >'+item[1]+'</option>';
-     $('#featlist_choice').append(html);
-  }
-  if (val) {$('#blank').remove();}
-  $('#featlist_choice').sortSelect();
-  counting();
-  $('#add_all_search').html('');
-  $('#add_all').show();
+	var id_array = val.split('||');
+	for (var i =0; i < id_array.length; i++) {
+		var item = id_array[i].split('::');
+	    var html = '<option id='+item[0]+' value='+item[0]+ ' >'+item[1]+'</option>';
+	    $('#featlist_choice').append(html);
+	}
+	if (val) 
+		$('#blank').remove();
+	$('#featlist_choice').sortSelect();
+	counting();
+	$('#add_all_search').html('');
+	$('#add_all').show();
 }
 
 function clear_feat_list(){
-  var listlength = $('#featlist_choice').getLength();
-  for (var i=0; i<listlength;i++)
-   {
-     $('#'+$('#featlist_choice')[0][0].id).remove();
-   }
-  counting();
+	var listlength = $('#featlist_choice').getLength();
+	for (var i=0; i<listlength;i++) 
+	    $('#'+$('#featlist_choice')[0][0].id).remove();
+	counting();
 }
 
 $.fn.sortSelect = function(){
   this.each(
-	  function()
-	  {
-	  	if(this.nodeName.toLowerCase() != "select"){
+	  function() {
+	  	if (this.nodeName.toLowerCase() != "select"){
 	  	  return;}
 	  	var opts = this.options;
 	  	var sortArray = [];
-	  	for(var i=0;i<opts.length;i++)
-	  	{
+	  	for (var i=0;i<opts.length;i++) {
 	  		sortArray[i] = {
-	  				v: opts[i].value,
-	  				t: opts[i].text,
-	  				d: opts[i].id,
-	  				}
+  				v: opts[i].value,
+  				t: opts[i].text,
+  				d: opts[i].id,
+  			}
 	  	}
 	  	sortArray.sort(
-	  			function(obj1,obj2)
-	  			{
-	  				obj1t = obj1.t.toLowerCase(),
-	  				obj2t = obj2.t.toLowerCase();
-	  				if(obj1t == obj2t){
-	  				  return 0;}
-	  				return obj1t < obj2t ? -1 : 1;
-	  			}
+  			function(obj1,obj2) {
+  				obj1t = obj1.t.toLowerCase(),
+  				obj2t = obj2.t.toLowerCase();
+  				if(obj1t == obj2t){
+  				  return 0;}
+  				return obj1t < obj2t ? -1 : 1;
+  			}
 	  	);
-	  	for(var i=0;i<opts.length;i++)
-	  	{
+	  	for (var i=0;i<opts.length;i++) {
 	  		opts[i].id = sortArray[i].d;
 	  		opts[i].text = sortArray[i].t;
 	  		opts[i].value = sortArray[i].v;
@@ -199,60 +169,62 @@ $.fn.sortSelect = function(){
 };
 
 function send_to_FeatList(){
-  var check = $('#featlist_choice').getLength();
-  if(($('#blank').val())||(check==0)){
-    alert('You have not selected any features to examine. You must select at least one.');
-    return;
-  }
-  var featlist = $('#featlist_choice').getLength(1);
-  parse_for_FeatList(['args__'+featlist],[send_to_url]);
+	var check = $('#featlist_choice').getLength();
+	if (($('#blank').val())||(check==0)){
+	    alert('You have not selected any features to examine. You must select at least one.');
+	    return;
+	}
+	var featlist = $('#featlist_choice').getLength(1);
+	parse_for_FeatList(['args__'+featlist],[send_to_url]);
 }
 
 function send_to_url(url){
-  window.open(url);
+	window.open(url);
 }
 
 function counting(){
-  var count;
-  if($('#blank').val()) {count = 0;}
-  else {count = $('#featlist_choice').getLength();}
-  if (count == 0) {$('#featlist_choice').html('<option id=blank value=null>No Feature Selected</option>');}
-  $('.count').html('Feature Count: '+count);
+	var count;
+	if ($('#blank').val())
+		count = 0;
+	else 
+		count = $('#featlist_choice').getLength();
+	if (count == 0) 
+		$('#featlist_choice').html('<option id=blank value=null>No Feature Selected</option>');
+	$('.count').html('Feature Count: '+count);
 }
 
 $.fn.getLength = function(val){
-  var opt_length;
-  var blastable;
-  this.each(
-  	function()
-  	{
-  		var opts = this.options;
-  		opt_length = opts.length;
-  		if (opt_length == 0) {return opt_length;}
-  		blastable = opts[0].id;
-  		if (val){
-  		  for(var i=1;i<opts.length;i++)
-	  	  {
-	  		blastable += ","+opts[i].id;
-	  		//need to chopoff last comma
-	  	  }
-  		}
-  	}
-  );
-  if(val) return blastable;
-  else return opt_length;
+	var opt_length;
+	var blastable;
+	this.each(
+		function() {
+	  		var opts = this.options;
+	  		opt_length = opts.length;
+	  		if (opt_length == 0) 
+	  			return opt_length;
+	  		blastable = opts[0].id;
+	  		if (val) {
+	  		  for(var i=1;i<opts.length;i++) {
+		  		blastable += ","+opts[i].id;
+		  		//need to chopoff last comma
+		  	  }
+	  		}
+	  	}
+	);
+	if (val) return blastable;
+	else return opt_length;
 };
 
-function onEnter(e){
-  if (!e){
-   var e = window.event;}
-  if(e.which == 13){
-search_chain(1);
- }
+function onEnter(e) {
+	if (!e) 
+		var e = window.event;
+	if (e.which == 13) 
+		search_chain(1);
 }
 
 function search_bar(div_id){
-  if($('#'+div_id).val() == "Search") $('#'+div_id).val("").css({fontStyle: "normal"});
+	if($('#'+div_id).val() == "Search") 
+		$('#'+div_id).val("").css({fontStyle: "normal"});
 }
 
 </SCRIPT>
@@ -323,7 +295,7 @@ function search_bar(div_id){
     </table>
 </div>
 
-<div id="anno" class="hidden coge-result"><TMPL_VAR NAME="FID_ANNO"></DIV>
+<div id="anno" class="coge-result"><TMPL_VAR NAME="FID_ANNO"></div>
 
 <div class="dialog" id="codon_table" title="Codon Usage Table"></div>
 <div class="dialog" id="aa_table" title="Amino Acid Usage Table"></div>
