@@ -528,7 +528,10 @@ sub process_fasta_file {
         }
 
         # Append sequence to master file
-        open( my $out, ">>$target_dir/genome.faa" );
+        unless (open( my $out, ">>$target_dir/genome.faa" )) {
+            print STDOUT "log: error: Couldn't open genome.faa\n";
+            exit(-1);
+        }
         my $head = $chr =~ /^\d+$/ ? "gi" : "lcl";
         $head .= "|" . $chr;
         print_fasta($out, $head, \$filteredSeq);
