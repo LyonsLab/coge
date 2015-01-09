@@ -482,11 +482,12 @@ sub batch_add {
             print STDOUT "Populate $table_name " . @$buffer . "\n";
             my $startTime = time;
             #$coge->resultset($table_name)->populate($buffer) if (@$buffer); # mdb removed 1/7/14 -- defaulting to single-insert due to missing primary key value, see http://search.cpan.org/~ribasushi/DBIx-Class-0.082810/lib/DBIx/Class/ResultSet.pm#populate
+            my $dbh = $coge->storage->dbh;
             my @columns = keys %{$buffer->[0]};
             my $stmt = "INSERT $table_name ( " . join(',', @columns) . " ) VALUES " .
-                join(',', map { '(' . join(',', map {"'$_'"} values %$_) . ')' } @$buffer) . ';';
-            unless ($coge->storage->dbh->do($stmt)) {
-                print STDOUT "error: batch insert for table '$table_name' failed: $stmt\n";
+                join(',', map { '(' . join(',', map { $dbh->quote($_) } values %$_) . ')' } @$buffer) . ';';
+            unless ($dbh->do($stmt)) {
+                print STDOUT "log: error: database batch insertion for table '$table_name' failed: $stmt\n";
                 exit(-1);
             }
             print STDOUT "Time: ", (time - $startTime), "\n";
@@ -495,31 +496,29 @@ sub batch_add {
     }
 }
 
-sub batch_add_async {
-#  batch_add(@_);
-#  return;
-    my $buffer     = shift;
-    my $table_name = shift;
-    my $item       = shift;
-
-    if ( defined $buffer ) {
-        push @$buffer, $item if ( defined $item );
-        if ( @$buffer >= $DB_BATCH_SZ or not defined $item ) {
-            print STDOUT "Async populate $table_name " . @$buffer . "\n";
-            if ( !defined( my $child_pid = fork() ) ) {
-                print STDOUT "Cannot fork: $!";
-                batch_add(@_);
-                return;
-            }
-    	    elsif ( $child_pid == 0 ) {
-    	       print STDOUT "child running to populate $table_name\n";
-    	       $coge->resultset($table_name)->populate($buffer) if (@$buffer);
-    	       exit;
-    	    }
-            @$buffer = ();
-        }
-    }
-}
+#sub batch_add_async {
+#    my $buffer     = shift;
+#    my $table_name = shift;
+#    my $item       = shift;
+#
+#    if ( defined $buffer ) {
+#        push @$buffer, $item if ( defined $item );
+#        if ( @$buffer >= $DB_BATCH_SZ or not defined $item ) {
+#            print STDOUT "Async populate $table_name " . @$buffer . "\n";
+#            if ( !defined( my $child_pid = fork() ) ) {
+#                print STDOUT "Cannot fork: $!";
+#                batch_add(@_);
+#                return;
+#            }
+#    	    elsif ( $child_pid == 0 ) {
+#    	       print STDOUT "child running to populate $table_name\n";
+#    	       $coge->resultset($table_name)->populate($buffer) if (@$buffer);
+#    	       exit;
+#    	    }
+#            @$buffer = ();
+#        }
+#    }
+#}
 
 sub process_gff_file {
     print STDOUT "process_gff_file: $data_file\n";
