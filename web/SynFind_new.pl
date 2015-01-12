@@ -122,7 +122,7 @@ sub gen_html {
     $template->param( TITLE      => 'SynFind: Syntenic Compiler',
                       PAGE_TITLE => 'SynFind',
                       #HELP       => '/wiki/index.php?title=SynFind' );
-		      HELP	 => $P->{SERVER} );
+		      HELP	 => $config->{SERVER} );
 
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;

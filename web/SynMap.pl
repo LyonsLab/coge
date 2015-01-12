@@ -291,7 +291,7 @@ sub gen_html {
     $template->param( LOGO_PNG => "CoGe.svg" );
     $template->param( BODY     => $body );
     #$template->param( HELP     => "/wiki/index.php?title=SynMap" );
-    $template->param( HELP     => $P->{SERVER} );
+    $template->param( HELP     => $config->{SERVER} );
     $template->param( ADMIN_ONLY => $USER->is_admin );
     $html .= $template->output;
     return $html;
