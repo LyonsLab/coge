@@ -110,10 +110,12 @@ sub gen_html {
     
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( PAGE_TITLE => 'OrganismView',
-                      LOGO_PNG => "OrganismView-logo.png",
+		      TITLE      => 'OrganismView: Search Organisms and Genomes',
+                      LOGO_PNG => "CoGe.svg",
     				  PAGE_LINK  => $LINK,
     				  HEAD       => qq{},
-    				  HELP       => "/wiki/index.php?title=OrganismView" ,
+    				  #HELP       => "/wiki/index.php?title=OrganismView" ,
+				  HELP 	     => "/",
     				  ADMIN_ONLY => $USER->is_admin,
                       USER     => $USER->display_name || ''
     );

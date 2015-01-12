@@ -31,10 +31,12 @@ sub gen_html {
     else {    
         $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param(
-            HELP => "/wiki/index.php?title=$PAGE_TITLE",
+            #HELP => "/wiki/index.php?title=$PAGE_TITLE",
+	    HELP => '/',
             USER => ( $USER->user_name eq "public" ? '' : $USER->display_name ),
             PAGE_TITLE => 'Genome Viewer',
-            LOGO_PNG   => "$PAGE_TITLE-logo.png",
+	    TITLE      => 'Genome Viewer',
+            LOGO_PNG   => "CoGe.svg",
             ADJUST_BOX => 1,
             ADMIN_ONLY => $USER->is_admin
         );

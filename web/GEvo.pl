@@ -175,11 +175,12 @@ sub gen_html {
     my $html;    # =  "Content-Type: text/html\n\n";
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( LOGO_PNG   => "GEvo-logo.png" );
-    $template->param( TITLE      => 'Genome Evolution Analysis',
+    $template->param( LOGO_PNG   => "CoGe.svg" );
+    $template->param( TITLE      => 'GEvo: Genome Evolution Analysis',
     				  PAGE_TITLE => 'GEvo',
     				  PAGE_LINK  => $LINK,
-    				  HELP       => '/wiki/index.php?title=GEvo' );
+    				  #HELP       => '/wiki/index.php?title=GEvo' );
+				  HELP       => '/' );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
