@@ -391,17 +391,11 @@ sub load_annotation {
     my $link        = $opts{link};
     my $version     = $opts{version};
     my $source_name = $opts{source_name};
-    my $restricted  = $opts{restricted};
     my $user_name   = $opts{user_name};
     my $gid         = $opts{gid};
     my $items       = $opts{items};
 
-    # print STDERR "load_annotation: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
-
-	# Added EL: 10/24/2013.  Solves the problem when restricted is unchecked.
-	# Otherwise, command-line call fails with next arg being passed to
-	# restricted as option
-    $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
+    # print STDERR "load_annotation: name=$name description=$description version=$version gid=$gid\n";
 
     # Check login
     if ( !$user_name || !$USER->is_admin ) {
@@ -436,7 +430,6 @@ sub load_annotation {
             link => $link,
             version => $version,
             source_name => $source_name,
-            restricted => $restricted,
             genome_id => $gid
         },
         files => \@files

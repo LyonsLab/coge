@@ -571,12 +571,17 @@ sub gen_dsg_menu {
       )
     {
         next unless $USER->has_access_to_genome($dsg);
+            #added by EHL 12/30/2014
+            next if $dsg->deleted;
+            ######
+
         $dsgid = $dsg->id unless $dsgid;
         my $name = join( ", ", map { $_->name } $dsg->source ) . ": ";
 
  #$name .= $dsg->name ? $dsg->name : $dsg->datasets->[0]->name;
  #$name .= ", ";
  #$name .= $dsg->type->name." (v".$dsg->version.") ".commify($dsg->length)."nt";
+	$name .= " (id ". $dsg->id.") ";
         $name .= $dsg->name . ", " if $dsg->name; # : $dsg->datasets->[0]->name;
         $name .= "v"
           . $dsg->version . " "
@@ -621,6 +626,10 @@ sub get_dsg_for_menu {
             $coge->resultset('Genome')->search( { organism_id => [@orgids] } ) )
         {
             next unless $USER->has_access_to_genome($dsg);
+            #added by EHL 12/30/2014
+            next if $dsg->deleted;
+            ######
+
             $dsgs{ $dsg->id } = $dsg;
         }
     }
@@ -630,6 +639,9 @@ sub get_dsg_for_menu {
         foreach my $dsgid ( split( /,/, $dsgids ) ) {
             my $dsg = $coge->resultset('Genome')->find($dsgid);
             next unless $USER->has_access_to_genome($dsg);
+            #added by EHL 12/30/2014
+            next if $dsg->deleted;
+            ######
             $dsgs{ $dsg->id } = $dsg;
         }
     }
@@ -643,6 +655,7 @@ sub get_dsg_for_menu {
         $html .=
             $dsg->id . "::"
           . $org_name . " ("
+          . "id " . $dsg->id . " "
           . $ds->data_source->name . " "
           . $dsg->type->name . " v"
           . $dsg->version . ")";
