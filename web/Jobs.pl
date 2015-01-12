@@ -129,16 +129,17 @@ sub gen_html {
     my $html;
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( HELP => "/wiki/index.php?title=$PAGE_TITLE" );
+    #$template->param( HELP => "/wiki/index.php?title=$PAGE_TITLE" );
+    $template->param( HELP => "/" );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER => $name );
     $template->param(
-        TITLE      => qq{},
+        TITLE      => qq{Jobs},
         PAGE_TITLE => $PAGE_TITLE,
         PAGE_LINK  => $LINK,
-        LOGO_PNG   => "$PAGE_TITLE-logo.png"
+        LOGO_PNG   => "CoGe.svg"
     );
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY => gen_body() );

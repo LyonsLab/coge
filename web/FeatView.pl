@@ -471,12 +471,14 @@ sub gen_html {
     my $html;
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( LOGO_PNG => "FeatView-logo.png" );
+    $template->param( LOGO_PNG => "CoGe.svg" );
 
     #$template->param(TITLE=>'Feature Viewer');
     $template->param( PAGE_TITLE => 'FeatView',
+		      TITLE      => 'FeatView',
                       PAGE_LINK  => $LINK,
-                      HELP       => "/wiki/index.php?title=FeatView" );
+                      #HELP       => "/wiki/index.php?title=FeatView" );
+		      HELP       => '/' );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;

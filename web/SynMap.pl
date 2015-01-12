@@ -278,7 +278,7 @@ sub gen_html {
     my $template =
       HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( PAGE_TITLE => 'SynMap' );
-    $template->param( TITLE      => 'Whole Genome Synteny' );
+    $template->param( TITLE      => 'SynMap: Whole Genome Synteny' );
     $template->param( HEAD       => qq{} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
@@ -288,9 +288,10 @@ sub gen_html {
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
 
     #$template->param(ADJUST_BOX=>1);
-    $template->param( LOGO_PNG => "SynMap-logo.png" );
+    $template->param( LOGO_PNG => "CoGe.svg" );
     $template->param( BODY     => $body );
-    $template->param( HELP     => "/wiki/index.php?title=SynMap" );
+    #$template->param( HELP     => "/wiki/index.php?title=SynMap" );
+    $template->param( HELP     => "/" );
     $template->param( ADMIN_ONLY => $USER->is_admin );
     $html .= $template->output;
     return $html;

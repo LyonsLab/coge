@@ -117,17 +117,18 @@ sub gen_html {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
 
-    #$template->param(TITLE=>'CoGe BLAST Analysis');
+    $template->param(TITLE=>'CoGe BLAST Analysis');
     $template->param( PAGE_TITLE => 'BLAST',
     				  PAGE_LINK  => $LINK,
-    				  HELP       => '/wiki/index.php?title=CoGeBlast' );
+    				  #HELP       => '/wiki/index.php?title=CoGeBlast' );
+				  HELP       => '/' );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= ' ' . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER => $name );
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-    $template->param( LOGO_PNG => "CoGeBlast-logo.png" );
+    $template->param( LOGO_PNG => "CoGe.svg" );
 
     $template->param( ADMIN_ONLY => $USER->is_admin );
     #	$template->param( BOX_NAME   => 'CoGeBlast Settings' );

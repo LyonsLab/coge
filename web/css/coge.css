@@ -1114,12 +1114,12 @@ header {
     float: left;
 }
 
-.dev:after {
+/*.dev:after {
     content: " *** Development ***";
     font-size: 80%;
     color: red;
     margin-left: 1em;
-}
+}*/
 
 /* CoGepedia Wiki Feed */
 

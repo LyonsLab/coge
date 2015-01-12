@@ -98,10 +98,12 @@ sub gen_html {
           if $USER->first_name && $USER->last_name;
         $template->param(
             USER       => $name,
-            HELP       => "/wiki/index.php?title=$PAGE_TITLE",
+            #HELP       => "/wiki/index.php?title=$PAGE_TITLE",
+	    HELP       => "/" );
             PAGE_TITLE => $PAGE_TITLE,
+	    TITLE      => "NotebookView",
             PAGE_LINK  => $LINK,
-            LOGO_PNG   => "$PAGE_TITLE-logo.png",
+            LOGO_PNG   => "CoGe.svg",
             ADJUST_BOX => 1
         );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";

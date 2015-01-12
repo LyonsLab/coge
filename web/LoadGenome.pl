@@ -93,15 +93,17 @@ sub generate_html {
     else {
         $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param( PAGE_TITLE => $PAGE_TITLE,
+					  TITLE      => "LoadGenome",
         				  PAGE_LINK  => $LINK,
-    					  HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+    					  #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+					  HELP       => "/" );
         my $name = $user->user_name;
         $name = $user->first_name if $user->first_name;
         $name .= ' ' . $user->last_name
           if ( $user->first_name && $user->last_name );
         $template->param(
             USER     => $name,
-            LOGO_PNG => $PAGE_TITLE . "-logo.png",
+            LOGO_PNG => "CoGe.svg",
         );
         $template->param( LOGON => 1 ) unless $user->user_name eq "public";
         my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};

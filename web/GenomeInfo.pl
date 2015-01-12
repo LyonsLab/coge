@@ -2057,10 +2057,12 @@ sub generate_html {
           HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param(
             PAGE_TITLE => $PAGE_TITLE,
+	    TITLE      => 'GenomeInfo'
             PAGE_LINK  => $LINK,
-            HELP       => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl',
+            #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl',
+	    HELP       => '/',
             USER       => $name,
-            LOGO_PNG   => $PAGE_TITLE . "-logo.png",
+            LOGO_PNG   => "CoGe.svg",
             ADJUST_BOX => 1,
             LOGON      => ( $USER->user_name ne "public" ),
             ADMIN_ONLY => $USER->is_admin

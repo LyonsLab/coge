@@ -119,9 +119,10 @@ sub gen_html {
     my ($body) = gen_body();
 
     my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( TITLE      => 'Syntenic Compiler',
+    $template->param( TITLE      => 'SynFind: Syntenic Compiler',
                       PAGE_TITLE => 'SynFind',
-                      HELP       => '/wiki/index.php?title=SynFind' );
+                      #HELP       => '/wiki/index.php?title=SynFind' );
+		      HELP	 => '/' );
 
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
@@ -129,7 +130,7 @@ sub gen_html {
     $template->param( USER     => $name );
 
     $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-    $template->param( LOGO_PNG => "SynFind-logo.png" );
+    $template->param( LOGO_PNG => "CoGe.svg" );
     #$template->param(BOX_NAME=>'SynFind Settings');
     $template->param( ADJUST_BOX => 1 );
     $template->param( BODY       => $body );
