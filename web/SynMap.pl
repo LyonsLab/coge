@@ -278,7 +278,7 @@ sub gen_html {
     my $template =
       HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( PAGE_TITLE => 'SynMap' );
-    $template->param( TITLE      => 'SynMap: Whole Genome Synteny' );
+    $template->param( TITLE      => 'SynMap: Whole Genome Synteny Analysis' );
     $template->param( HEAD       => qq{} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;

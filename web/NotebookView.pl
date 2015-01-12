@@ -99,7 +99,7 @@ sub gen_html {
         $template->param(
             USER       => $name,
             #HELP       => "/wiki/index.php?title=$PAGE_TITLE",
-	    HELP       => $P->{SERVER} );
+	    HELP       => $P->{SERVER},
             PAGE_TITLE => $PAGE_TITLE,
 	    TITLE      => "NotebookView",
             PAGE_LINK  => $LINK,
