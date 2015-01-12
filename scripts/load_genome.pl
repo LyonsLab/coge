@@ -528,7 +528,8 @@ sub process_fasta_file {
         }
 
         # Append sequence to master file
-        unless (open( my $out, ">>$target_dir/genome.faa" )) {
+	my $out;
+        unless (open( $out, ">>$target_dir/genome.faa" )) {
             print STDOUT "log: error: Couldn't open genome.faa\n";
             exit(-1);
         }
