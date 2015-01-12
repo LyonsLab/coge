@@ -1328,8 +1328,9 @@ sub go {
     my $feat_type2 = $opts{feat_type2};
 
     # Block large genomic-genomic jobs from running
-    if (($feat_type1 == 2 && $genome1->length > $SEQUENCE_SIZE_LIMIT) &&
-        ($feat_type2 == 2 && $genome2->length > $SEQUENCE_SIZE_LIMIT)) {
+    if (($feat_type1 == 2 && $genome1->length > $SEQUENCE_SIZE_LIMIT && !$genome1->type->name =~/hard/i) &&
+        ($feat_type2 == 2 && $genome2->length > $SEQUENCE_SIZE_LIMIT && !$genome2->type->name =~/hard/i)) {
+         
         return encode_json({
             success => JSON::false,
             error => "The analysis was blocked: " .
