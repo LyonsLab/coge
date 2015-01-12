@@ -226,8 +226,7 @@ sub get_orgs {
     my $dsid    = $opts{dsid};   # dataset id
     my $dsname  = $opts{dsname}; # dataset name
     my $output  = $opts{output} || 'json';
-    
-    print STDERR "get_orgs\n", Dumper \%opts, "\n";
+    #print STDERR "get_orgs\n", Dumper \%opts, "\n";
 
     my (%organisms, %genomes, %datasets);
     
