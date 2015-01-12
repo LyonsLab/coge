@@ -677,8 +677,7 @@ sub annotation_pretty_print_html {
 		}
 
 		my $location = "Chr " . $chr . " ";
-
-#    $location .= join (", ", map {$_->start."-".$_->stop} sort {$a->start <=> $b->start} $self->locs);
+#       $location .= join (", ", map {$_->start."-".$_->stop} sort {$a->start <=> $b->start} $self->locs);
 		$location .= commify( $self->start ) . "-" . commify( $self->stop );
 		$location .= " (" . $strand . ")";
 		my $featid = $self->id;
@@ -696,7 +695,7 @@ sub annotation_pretty_print_html {
 #		  . $location
 #		  . "</span>"
 #		  if $loc_link;
-		$location = qq{<span class="data">$location</span>};
+		$location = qq{<span class="data link" onclick="window.open('GenomeView.pl?gid=$gid&loc=$chr:$temp_start..$temp_stop')">$location</span>};
 		$anno_obj->add_Annot(
 			new CoGe::Accessory::Annotation(
 				Type         => "<tr><td nowrap='true'><span class=\"title5\">Location</span>",
