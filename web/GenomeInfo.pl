@@ -2060,7 +2060,7 @@ sub generate_html {
 	    TITLE      => 'GenomeInfo'
             PAGE_LINK  => $LINK,
             #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl',
-	    HELP       => '/',
+	    HELP       => $P->{SERVER},
             USER       => $name,
             LOGO_PNG   => "CoGe.svg",
             ADJUST_BOX => 1,

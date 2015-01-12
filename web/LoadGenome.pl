@@ -96,7 +96,7 @@ sub generate_html {
 					  TITLE      => "LoadGenome",
         				  PAGE_LINK  => $LINK,
     					  #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
-					  HELP       => "/" );
+					  HELP       => $P->{SERVER} );
         my $name = $user->user_name;
         $name = $user->first_name if $user->first_name;
         $name .= ' ' . $user->last_name

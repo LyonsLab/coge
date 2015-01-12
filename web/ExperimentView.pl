@@ -612,7 +612,7 @@ sub gen_html {
 	    TITLE      => 'ExperimentView',
             PAGE_LINK  => $LINK,
             #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE,
-	    HELP       => '/',
+	    HELP       => $P->{SERVER},
             USER       => $name,
             LOGO_PNG   => "CoGe.svg",
             ADJUST_BOX => 1,

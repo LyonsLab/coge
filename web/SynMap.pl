@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#! /usr/bin/perl -w
 use v5.10;
 use strict;
 no warnings 'redefine';
@@ -291,7 +291,7 @@ sub gen_html {
     $template->param( LOGO_PNG => "CoGe.svg" );
     $template->param( BODY     => $body );
     #$template->param( HELP     => "/wiki/index.php?title=SynMap" );
-    $template->param( HELP     => "/" );
+    $template->param( HELP     => $P->{SERVER} );
     $template->param( ADMIN_ONLY => $USER->is_admin );
     $html .= $template->output;
     return $html;

@@ -119,7 +119,7 @@ sub gen_html {
 				  TITLE      => 'Experiments'
     				  PAGE_LINK  => $LINK,
     				  #HELP => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl' );
-				  HELP       => '/' );
+				  HELP       => $P->{SERVER} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= ' ' . $USER->last_name

@@ -180,7 +180,7 @@ sub gen_html {
     				  PAGE_TITLE => 'GEvo',
     				  PAGE_LINK  => $LINK,
     				  #HELP       => '/wiki/index.php?title=GEvo' );
-				  HELP       => '/' );
+				  HELP       => $P->{SERVER} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
