@@ -2057,7 +2057,7 @@ sub generate_html {
           HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param(
             PAGE_TITLE => $PAGE_TITLE,
-	    TITLE      => 'GenomeInfo'
+	    TITLE      => 'GenomeInfo',
             PAGE_LINK  => $LINK,
             #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl',
 	    HELP       => $config->{SERVER},
