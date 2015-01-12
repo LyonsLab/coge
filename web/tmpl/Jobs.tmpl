@@ -112,7 +112,7 @@ $(document).ready(function(){
     });
 
     var linkformatter = function(row, cell, value, columnDef, dataContext) {
-        return '<a href="' + dataContext['link'] + '" >'
+        return '<a href="' + dataContext['link'] + '" target="_blank">'
         + dataContext['link'] + '</a>'
     }
     var columns = [
