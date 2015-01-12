@@ -1069,6 +1069,10 @@ li {
     box-shadow: 0px 5px 1px -3px rgba(0,0,0,0.25);
 }
 
+h3 {
+    color: dimgray;
+}
+
 h4 {
     margin: 0;
     padding: 5px;
