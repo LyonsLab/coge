@@ -36,7 +36,7 @@ $PAGE_TITLE = 'User';
 
 $FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-	page_title => $PAGE_TITLE,
+    page_title => $PAGE_TITLE,
     cgi => $FORM
 );
 
@@ -81,15 +81,15 @@ $node_types = CoGeX::node_types();
     search_share                    => \&search_share,
     add_items_to_user_or_group      => \&add_items_to_user_or_group,
     remove_items_from_user_or_group => \&remove_items_from_user_or_group,
-	add_users_to_group				=> \&add_users_to_group,
-	remove_user_from_group			=> \&remove_user_from_group,
+    add_users_to_group			=> \&add_users_to_group,
+    remove_user_from_group		=> \&remove_user_from_group,
     get_group_dialog                => \&get_group_dialog,
-    change_group_role				=> \&change_group_role,
+    change_group_role			=> \&change_group_role,
     send_items_to                   => \&send_items_to,
     create_new_group                => \&create_new_group,
     create_new_notebook             => \&create_new_notebook,
     toggle_star                     => \&toggle_star,
-    cancel_job						=> \&cancel_job,
+    cancel_job				=> \&cancel_job,
     comment_job                     => \&comment_job
 );
 
@@ -99,7 +99,7 @@ sub gen_html {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     #$template->param( HELP => "/wiki/index.php?title=$PAGE_TITLE" );
-    $template->param( HELP       => "/" );
+    $template->param( HELP       => $P->{SERVER} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;

@@ -77,7 +77,7 @@ sub gen_html {
     $template->param( TITLE      => 'HSP Viewer' );
     $template->param( PAGE_TITLE => 'HSPView' );
     #$template->param( HELP       => "/wiki/index.php?title=HSPView" );
-    $template->param( HELP       => '/' );
+    $template->param( HELP       => $P->{SERVER} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;

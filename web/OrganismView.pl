@@ -115,7 +115,7 @@ sub gen_html {
     				  PAGE_LINK  => $LINK,
     				  HEAD       => qq{},
     				  #HELP       => "/wiki/index.php?title=OrganismView" ,
-				  HELP 	     => "/",
+				  HELP       => $P->{SERVER},
     				  ADMIN_ONLY => $USER->is_admin,
                       USER     => $USER->display_name || ''
     );

@@ -19,7 +19,6 @@
 
 <BODY <TMPL_VAR NAME="BODY_ONLOAD">>
 
-
 <div id="logout_dialog" class="hidden dialog_box" title="Log out of CoGe">
     <div style="text-align:center;padding:30px;">
         <div class="info">Would you like to log out of all iPlant applications?</div>
@@ -118,8 +117,8 @@ $(document).ready( function() {
 <header class="clearfix">
     <div id="brand">
         <TMPL_IF NAME="LOGO_PNG">
-            <a href="http://www.genomevolution.org/<TMPL_VAR NAME=HELP>">
-                <img style="vertical-align:bottom;height:5em" class="l" src='picts/<TMPL_VAR NAME="LOGO_PNG">'>
+            <a href="<TMPL_VAR NAME=HELP>">
+                <img style="vertical-align:bottom;height:4em" class="l" src='picts/<TMPL_VAR NAME="LOGO_PNG">'>
             </a>
         </TMPL_IF>
     </div>
@@ -176,12 +175,10 @@ $(document).ready( function() {
 
         </div>
     </TMPL_UNLESS>
-
-
     <noscript>
     Welcome to CoGe -- a new system for a new kind of comparative genomics.  CoGe is designed for easily visualizing, comparing, and understanding the evolution, struture and dynamics of genomes.
 
     Unfortunately, we have detected that your browser currently has JavaScript disabled. In order for CoGe to function properly, JavaScript must be enabled in your browser. For instruction on how to do so in Mozilla Firefox, please click <a href="http://www.mozilla.org/support/firefox/options#content" target="_blank">here</a>. After enabling JavaScript, simply refresh the page, or click <a href="javascript:location.reload(true);" target="_self">here</a>.
     </noscript>
 </header>
-<span class="tagline"><TMPL_VAR NAME="TITLE"></span>
+<div class="tagline"><TMPL_VAR NAME="TITLE"></div>

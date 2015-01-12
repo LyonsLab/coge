@@ -461,10 +461,10 @@ sub gen_html {
 
     #$template->param(TITLE=>'Feature Viewer');
     $template->param( PAGE_TITLE => 'FeatView',
-		      TITLE      => 'FeatView',
+		      TITLE      => 'FeatView: Search Features Across Organisms',
                       PAGE_LINK  => $LINK,
                       #HELP       => "/wiki/index.php?title=FeatView" );
-		      HELP       => '/' );
+		      HELP       => $P->{SERVER} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;

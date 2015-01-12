@@ -96,7 +96,7 @@ sub generate_html {
 					  TITLE      => "LoadExperiment",
         				  PAGE_LINK  => $LINK,
         				  #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
-					  HELP       => "/" );
+					  HELP       => $P->{SERVER} );
         my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
         $name .= ' ' . $USER->last_name

@@ -71,7 +71,7 @@ sub gen_html {
 		      TITLE      => 'GenomeList',		
     		      PAGE_LINK  => $LINK,
     		      #HELP       => '/wiki/index.php?title=GenomeList',
-		      HELP       => '/',
+		      HELP       => $P->{SERVER},
                       USER       => $USER->display_name,
                       LOGO_PNG   => "CoGe.svg" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";

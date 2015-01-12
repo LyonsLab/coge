@@ -88,7 +88,7 @@ sub gen_html {
 				  TITLE      => 'FastaView',
     				  PAGE_LINK  => $LINK,
     				  #HELP       => '/wiki/index.php?title=FastaView' );
-				  HELP       => '/' );
+				  HELP       => $P->{SERVER} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
