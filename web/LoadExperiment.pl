@@ -93,10 +93,10 @@ sub generate_html {
     else {
         $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param( PAGE_TITLE => $PAGE_TITLE,
-					  TITLE      => "LoadExperiment",
+					      TITLE      => "Load Experiment",
         				  PAGE_LINK  => $LINK,
         				  #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
-					  HELP       => $P->{SERVER} );
+					      HELP       => $P->{SERVER} );
         my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
         $name .= ' ' . $USER->last_name
