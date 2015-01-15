@@ -59,7 +59,7 @@ GetOptions(
 );
 
 
-my @QUANT_TYPES = qw(csv tsv bed);
+my @QUANT_TYPES = qw(csv tsv bed wig);
 my @MARKER_TYPES = qw(gff gtf gff3);
 my @OTHER_TYPES = qw(bam vcf);
 
@@ -441,8 +441,10 @@ sub detect_data_type {
         #print STDOUT "log: Detecting file type\n";
         ($filetype) = lc($filepath) =~ /\.([^\.]+)$/;
     }
+    
+    $filetype = lc($filetype);
 
-    if ( grep { $_ eq $filetype } @QUANT_TYPES ) { #TODO add 'bigbed', 'wig', 'bigwig'
+    if ( grep { $_ eq $filetype } @QUANT_TYPES ) {
         print STDOUT "log: Detected a quantitative file ($filetype)\n";
         return ($filetype, $DATA_TYPE_QUANT);
     }
@@ -464,17 +466,19 @@ sub detect_data_type {
     }
 }
 
-# Quant file can be .csv or .bed formats
-sub validate_quant_data_file {
+# Parses multiple line-based file formats for quant data
+sub validate_quant_data_file { #TODO this routine is getting long, break into subroutines
     my %opts = @_;
     my $filepath = $opts{file};
     my $filetype = $opts{file_type};
     my $genome_chr = $opts{genome_chr};
     my %chromosomes;
-    my $line_num = 1;
+    my $line_num = 0;
     my $count;
     my $hasLabels = 0;
     my $hasVal2   = 0;
+    my $bedType; # only used for BED formats
+    my ($stepSpan, $stepChr); # only used for WIG format
 
     print STDOUT "validate_quant_data_file: $filepath\n";
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
@@ -482,29 +486,79 @@ sub validate_quant_data_file {
     open( my $out, ">$outfile" );
     while ( my $line = <$in> ) {
         $line_num++;
-        next if ( $line =~ /^\s*#/ ); # skip comments
+        next if ( $line =~ /^\s*#/ ); # skip comment lines
         chomp $line;
-        next unless $line; # skip blanks
-
+        next unless $line; # skip blank lines
+        
         # Interpret tokens according to file type
         my @tok;
         my ( $chr, $start, $stop, $strand, $val1, $val2, $label );
-        if ($filetype eq 'csv') {
+        if ($filetype eq 'csv') { # CoGe format, comma-separated
         	@tok = split( /,/, $line );
         	( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
         }
-        elsif ($filetype eq 'tsv') {
+        elsif ($filetype eq 'tsv') { # CoGe format, tab-separated
         	@tok = split( /\s+/, $line );
         	( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
         }
-        elsif ($filetype eq 'bed') {
-        	next if ( $line =~ /^track/ );
-        	@tok = split( /\s+/, $line );
-        	( $chr, $start, $stop, $label, $val1, $strand ) = @tok;
-        	$val2 = $tok[6] if (@tok >= 7);
+        elsif ($filetype eq 'wig') {
+            next if ( $line =~ /^track/ ); # ignore "track" line
+            if ( $line =~ /^variableStep/i ) { # handle step definition line
+                if ($line =~ /chrom=(\w+)/i) {
+                    $stepChr = $1;
+                }
+                
+                $stepSpan = 1;
+                if ($line =~ /span=(\d+)/i) {
+                    $stepSpan = $1;
+                }
+                next;
+            }
+            elsif ( $line =~ /^fixedStep/i ) {
+                log_line('fixedStep wiggle format is no currently supported', $line_num, $line);
+                return;
+            }
+            
+            if (not defined $stepSpan or not defined $stepChr) {
+                log_line('missing or invalid wiggle step definition line', $line_num, $line);
+                return;
+            }
+            
+            @tok = split( /\s+/, $line );
+            ( $start, $val1 ) = @tok;
+            $stop = $start + $stepSpan - 1;
+            $chr = $stepChr;
+            $strand = '.'; # determine strand by val1 polarity   
         }
-        else {
-        	die; # sanity check
+        elsif ($filetype eq 'bed') {
+            # Check for track type for BED files
+            if ( $line =~ /^track/ ) {
+                undef $bedType;
+                if ($line =~ /type=(\w+)/i) {
+                    $bedType = lc($1);
+                }
+                next;
+            }
+        
+            # Handle different BED formats
+            @tok = split( /\s+/, $line );
+            if ($bedType eq 'bedgraph') { # UCSC bedGraph: http://genome.ucsc.edu/goldenPath/help/bedgraph.html
+                ( $chr, $start, $stop, $val1 ) = @tok;
+                $strand = '.'; # determine strand by val1 polarity
+            }
+            else { # UCSC standard BED: http://genome.ucsc.edu/FAQ/FAQformat.html#format1
+                ( $chr, $start, $stop, $label, $val1, $strand ) = @tok;
+                $val2 = $tok[6] if (@tok >= 7); # non-standard CoGe usage
+            }
+            
+            # Adjust coordinates from base-0 to base-1
+            if (defined $start and defined $stop) {
+                $start += 1;
+                $stop += 1;
+            }
+        }
+        else { # unknown file type (should never happen)
+        	die;
         }
 
         # Validate mandatory fields
@@ -513,7 +567,12 @@ sub validate_quant_data_file {
             or not defined $stop
             or not defined $strand )
         {
-            log_line('missing value in a column', $line_num, $line);
+            my $missing;
+            $missing = 'chr'    unless $chr;
+            $missing = 'start'  unless $start;
+            $missing = 'stop'   unless $stop;
+            $missing = 'strand' unless $strand;
+            log_line("missing value in a column: $missing", $line_num, $line);
             return;
         }
 
@@ -521,7 +580,7 @@ sub validate_quant_data_file {
         if ($allow_negative and $val1 < 0) {
 	       $val1 = abs($val1);
         }
-        # mdb added 3/13/14 issue 331
+        # mdb added 3/13/14 issue 331 - set strand based on polarity of value
         elsif ($strand eq '.') {
             $strand = ($val1 >= 0 ? 1 : -1);
             $val1 = abs($val1);
@@ -532,6 +591,7 @@ sub validate_quant_data_file {
             return;
         }
 
+        # Munge chr name for CoGe
 		$chr = fix_chromosome_id($chr, $genome_chr);
         if (!$chr) {
             log_line('trouble parsing chromosome', $line_num, $line);
@@ -551,6 +611,7 @@ sub validate_quant_data_file {
         }
         print $out join( ",", @fields ), "\n";
 
+        # Keep track of seen chromosome names for later use
         $chromosomes{$chr}++;
         $count++;
     }
