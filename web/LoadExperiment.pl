@@ -419,7 +419,7 @@ sub upload_file {
 }
 
 sub check_login {
-	print STDERR $USER->user_name . ' ' . int($USER->is_public) . "\n";
+	#print STDERR "LoadExperiment::check_login ", $USER->user_name, ' ', int($USER->is_public), "\n";
 	return ($USER && !$USER->is_public);
 }
 
@@ -509,7 +509,7 @@ sub execute { # FIXME this code is duplicate in other places like load_genome.pl
     }
 }
 
-sub get_load_log {
+sub get_load_log { #TODO remove this and use API instead
     my %opts         = @_;
     my $workflow_id = $opts{workflow_id};
     return unless $workflow_id;
