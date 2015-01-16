@@ -41,7 +41,7 @@ BEGIN {
     @EXPORT = qw( 
         units commify print_fasta get_unique_id get_link_coords 
         format_time_diff sanitize_name execute 
-        trim js_escape html_escape to_filename
+        trim js_escape html_escape to_filename to_pathname
     );
 }
 
@@ -164,6 +164,11 @@ sub format_time_diff {
 sub to_filename {
     my ($name, undef, undef) = fileparse(shift, qr/\.[^.]*/);
     return $name;
+}
+
+sub to_pathname {
+    my (undef, $path, undef) = fileparse(shift, qr/\.[^.]*/);
+    return $path;
 }
 
 sub execute {
