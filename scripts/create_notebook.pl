@@ -11,12 +11,13 @@ use Getopt::Long qw(GetOptions);
 use JSON qw(decode_json);
 use URI::Escape::JavaScript qw(unescape);
 
-use CoGe::Core::Notebook qw( create_notebook );
-use CoGe::Core::Metadata qw( create_annotations );
+use CoGe::Accessory::Utils qw(to_pathname);
+use CoGe::Core::Notebook qw(create_notebook);
+use CoGe::Core::Metadata qw(create_annotations);
 use CoGeX;
 
 our ($LOG, $DEBUG, $PAGE, $P, $db, $host, $port, $user, $pass, $config,
-     $name, $description, $version, $type, $userid, $restricted, $result_dir,
+     $name, $description, $version, $type, $userid, $restricted, $result_file,
      $annotations, @ITEMS);
 
 GetOptions(
@@ -25,7 +26,7 @@ GetOptions(
     # General configuration options
     "log=s"             => \$LOG,
     "config|cfg=s"      => \$config,
-    "result_dir=s"      => \$result_dir, # results path
+    "result_file=s"      => \$result_file, # results file
 
     # Notebook options
     "page=s"            => \$PAGE, # The reference page
@@ -38,9 +39,13 @@ GetOptions(
 
 $| = 1;
 
+# Check required parameters
 die "ERROR: user id not specified use userid" unless $userid;
 die "ERROR: no items found" unless @ARGV;
 die "ERROR: notebook name not specified" unless $name;
+
+# Set default parameters
+$restricted  = '0' unless (defined $restricted && lc($restricted) eq 'true');
 
 sub setup {
     $P    = CoGe::Accessory::Web::get_defaults($config);
@@ -98,8 +103,8 @@ sub main {
         desc       => $description,
         type_id    => $type,
         item_list  => \@ids,
-        restricted => $restricted);
-
+        restricted => $restricted
+    );
     exit(-1) unless $notebook;
 
     # Create annotations
@@ -107,21 +112,29 @@ sub main {
         CoGe::Core::Metadata::create_annotations(db => $coge, target => $notebook, annotations => $annotations, locked => 1);
     }
 
+    # Save notebook ID in log file
     open(my $fh, ">>", $LOG);
     say $fh "notebook id: " . $notebook->id;
     close($fh);
 
     # Save result document
-    if ($result_dir) {
+    if ($result_file) {
+        my $result_dir = to_pathname($result_file);
         mkpath($result_dir);
         my $rc = CoGe::Accessory::TDS::write(
-            catfile($result_dir, '1'),
+            $result_file,
             {
-                notebook_id => int($notebook->id)
+                type => 'notebook',
+                id => int($notebook->id),
+                name => $name,
+                description => $description,
+                type_id => $type,
+                restricted => $restricted
             }
         );
         unless ($rc) {
             print STDOUT "Error: couldn't write result file\n";
+            exit(-1);
         }
     }
 }

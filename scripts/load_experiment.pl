@@ -6,17 +6,17 @@ use CoGeX;
 use Getopt::Long;
 use File::Path;
 use File::Touch;
-use File::Basename qw( basename );
-use File::Spec::Functions qw( catdir catfile );
+use File::Basename qw(basename);
+use File::Spec::Functions qw(catdir catfile);
 use URI::Escape::JavaScript qw(unescape);
 use JSON::XS;
 use CoGe::Accessory::Web qw(get_defaults);
-use CoGe::Accessory::Utils qw( commify );
-use CoGe::Core::Metadata qw( create_annotations );
+use CoGe::Accessory::Utils qw(commify to_pathname);
+use CoGe::Core::Metadata qw(create_annotations);
 use CoGe::Accessory::TDS;
 
-use vars qw($staging_dir $result_dir $install_dir $data_file $file_type $log_file
-  $name $description $version $restricted $ignore_missing_chr
+use vars qw($staging_dir $result_file $install_dir $data_file $file_type 
+  $name $description $version $restricted $ignore_missing_chr $log_file
   $gid $source_name $user_name $config $allow_negative $disable_range_check
   $annotations $types $wid
   $host $port $db $user $pass $P);
@@ -36,7 +36,7 @@ my $MIN_GFF_COLUMNS = 9;
 GetOptions(
     "staging_dir=s" => \$staging_dir,    # temporary staging path
     "install_dir=s" => \$install_dir,    # final installation path
-    "result_dir=s"  => \$result_dir,     # results path
+    "result_file=s" => \$result_file,    # results file
     "data_file=s"   => \$data_file,      # input data file (JS escape)
     "file_type=s"   => \$file_type,		 # input file type
     "name=s"        => \$name,           # experiment name (JS escaped)
@@ -62,7 +62,6 @@ GetOptions(
 my @QUANT_TYPES = qw(csv tsv bed);
 my @MARKER_TYPES = qw(gff gtf gff3);
 my @OTHER_TYPES = qw(bam vcf);
-
 my @SUPPORTED_TYPES = (@QUANT_TYPES, @MARKER_TYPES, @OTHER_TYPES);
 
 # Open log file
@@ -398,12 +397,23 @@ print STDOUT "$cmd\n";
 `$cmd`;
 
 # Save result document
-if ($result_dir) {
+if ($result_file) {
+    my $result_dir = to_pathname($result_file);
     mkpath($result_dir);
     CoGe::Accessory::TDS::write(
-        catfile($result_dir, '1'),
+        $result_file,
         {
-            experiment_id => int($experiment->id)
+            type => 'experiment',
+            id => int($experiment->id),
+            name        => $name,
+            description => $description,
+            version     => $version,
+            #link       => $link, #FIXME
+            data_source_id => $data_source->id,
+            data_type      => $data_type,
+            row_count      => $count,
+            genome_id      => $gid,
+            restricted     => $restricted
         }
     );
 }
