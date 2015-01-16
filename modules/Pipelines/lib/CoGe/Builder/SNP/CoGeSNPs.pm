@@ -89,7 +89,7 @@ sub build {
 
     my $gid = $genome->id;
     my $fasta_file = get_genome_file($gid);
-    my $reheader_fasta =  to_filename($fasta_file) . ".reheader.fasta";
+    my $reheader_fasta =  to_filename($fasta_file) . ".reheader.faa";
 
     $FASTA_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "fasta");
     die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
@@ -97,7 +97,7 @@ sub build {
     # Setup the jobs
     my @jobs;
     push @jobs, create_fasta_reheader_job(fasta => $fasta_file, reheader_fasta => $reheader_fasta, cache_dir => $FASTA_CACHE_DIR);
-    push @jobs, create_fasta_index_job(fasta => $reheader_fasta, cache_dir => $FASTA_CACHE_DIR);
+    push @jobs, create_fasta_index_job(fasta => catfile($FASTA_CACHE_DIR, $reheader_fasta), cache_dir => $FASTA_CACHE_DIR);
     push @jobs, create_samtools_job($reheader_fasta, $gid, $input_file, $staging_dir);
     push @jobs, create_load_vcf_job({
         username => $user->name,
