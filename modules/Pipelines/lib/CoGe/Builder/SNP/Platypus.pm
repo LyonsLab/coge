@@ -70,7 +70,7 @@ sub build {
     my $FASTA_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "fasta");
     die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
     my $fasta_file = get_genome_file($gid);
-    my $reheader_fasta =  to_filename($fasta_file) . ".reheader.fasta";
+    my $reheader_fasta =  to_filename($fasta_file) . ".reheader.faa";
 
     my $conf = {
         staging_dir => $staging_dir,

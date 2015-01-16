@@ -70,7 +70,7 @@ sub build {
     # Get genome and associated files/paths
     my $fasta_cache_dir = catdir($CONFIG->{CACHEDIR}, $genome->id, "fasta");
     my $fasta_file = get_genome_file($genome->id);
-    my $reheader_fasta = to_filename($fasta_file) . ".reheader.fasta";
+    my $reheader_fasta = to_filename($fasta_file) . ".reheader.faa";
     my $reheader_fasta_path = catfile($fasta_cache_dir, $reheader_fasta);
     
     # Get experiment input file
