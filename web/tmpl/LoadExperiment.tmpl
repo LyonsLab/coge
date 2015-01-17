@@ -49,6 +49,8 @@
         <span id="cancel_load_experiment_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
         <span id="logfile" class="hidden"><a href="">Logfile</a></span>
     </div>
+    <div id="results" class="padded">
+    </div>
 </div>
 
 <div id="create_new_source_dialog" class="dialog_box" title="Create New Source" style="display:none;">
@@ -201,14 +203,16 @@
 <div class="form-section">
     <h4>General Options</h4>
 
-    <div class="form-field">
+    <div class="form-field coge-disabled">
         <label class="col-md-2">Add to notebook:</label>
-        <input id="notebook" type="checkbox">
+        <input id="notebook" type="checkbox" disabled>
+        <span class="italic"> Coming soon!</span>
     </div>
 
-    <div class="form-field">
+    <div class="form-field coge-disabled">
         <label class="col-md-2">Send an email:</label>
-        <input id="email" type="checkbox">
+        <input id="email" type="checkbox" disabled>
+        <span class="italic"> Coming soon!</span>
     </div>
 
     <!-- TODO: Add ability to share the genome
@@ -377,10 +381,10 @@
         <div class="form-field">
             <label class="col-md-2">Method:</label>
             <select id="snp-method" disabled>
-                <option value="coge">CoGe Method</option>
-                <option value="samtools">Samtools Method</option>
-                <option value="platypus">Platypus Method</option>
-                <option value="gatk" disabled>GATK Method -- coming soon!</option>
+                <option value="coge">CoGe Basic</option>
+                <option value="samtools">SAMtools</option>
+                <option value="platypus">Platypus</option>
+                <option value="gatk" disabled>GATK -- coming soon!</option>
             </select>
         </div>
 
