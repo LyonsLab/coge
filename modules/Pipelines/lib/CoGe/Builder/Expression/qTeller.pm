@@ -94,7 +94,7 @@ sub build {
 
     # Filter the fasta file (clean up headers)
     my $fasta = get_genome_file($gid);
-    my $reheader_fasta = to_filename($fasta) . ".reheader.fasta";
+    my $reheader_fasta = to_filename($fasta) . ".reheader.faa";
     push @jobs, create_fasta_reheader_job( fasta => $fasta, reheader_fasta => $reheader_fasta, cache_dir => $FASTA_CACHE_DIR );
     
     # Generate gff if genome annotated
@@ -131,16 +131,16 @@ sub build {
         push @jobs, $parse_cuff;
 
         # Load csv experiment
-        my $load_csv = create_load_csv_job($metadata, $gid, @{$parse_cuff->{outputs}}[0], $user, $annotations, $staging_dir, $wid);
+        my $load_csv = create_load_csv_job($metadata, $gid, @{$parse_cuff->{outputs}}[0], $user, $annotations, $staging_dir, $wid, $result_dir);
         push @jobs, $load_csv;
     }
 
     # Load bam experiment
-    my $load_bam = create_load_bam_job($metadata, $gid, $input_file, $user, $annotations, $staging_dir, $wid);
+    my $load_bam = create_load_bam_job($metadata, $gid, $input_file, $user, $annotations, $staging_dir, $wid, $result_dir);
     push @jobs, $load_bam;
 
     # Load bed experiment
-    my $load_bed = create_load_bed_job($metadata, $gid, @{$filtered_bed->{outputs}}[0], $user, $annotations, $staging_dir, $wid);
+    my $load_bed = create_load_bed_job($metadata, $gid, @{$filtered_bed->{outputs}}[0], $user, $annotations, $staging_dir, $wid, $result_dir);
     push @jobs, $load_bed;
 
     # Create notebook
@@ -194,7 +194,6 @@ sub generate_metadata {
 #}
 
 sub create_cufflinks_job {
-    print STDERR "cufflinks ", Dumper \@_, "\n";
     my ($gff, $fasta, $bam, $staging_dir) = @_;
     my $cmd = $CONF->{CUFFLINKS};
     die "ERROR: CUFFLINKS is not in the config." unless ($cmd);
@@ -314,7 +313,7 @@ sub create_parse_cufflinks_job {
 }
 
 sub create_load_csv_job {
-    my ($md, $gid, $csv, $user, $annotations, $staging_dir, $wid) = @_;
+    my ($md, $gid, $csv, $user, $annotations, $staging_dir, $wid, $result_dir) = @_;
     my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
@@ -335,6 +334,7 @@ sub create_load_csv_job {
             ['-staging_dir', "./csv", 0],
             ['-file_type', "csv", 0],
             ['-data_file', $csv, 0],
+            ['-result_file', catfile($result_dir, 'transcript_fpkm'), 0],
             ['-config', $CONF->{_CONFIG_PATH}, 1]
         ],
         inputs => [
@@ -350,7 +350,7 @@ sub create_load_csv_job {
 }
 
 sub create_load_bam_job {
-    my ($md, $gid, $bam, $user, $annotations, $staging_dir, $wid) = @_;
+    my ($md, $gid, $bam, $user, $annotations, $staging_dir, $wid, $result_dir) = @_;
     my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
@@ -371,6 +371,7 @@ sub create_load_bam_job {
             ['-staging_dir', "./bam", 0],
             ['-file_type', "bam", 0],
             ['-data_file', "$bam", 0],
+            ['-result_file', catfile($result_dir, 'mapped_reads'), 0],
             ['-config', $CONF->{_CONFIG_PATH}, 1]
         ],
         inputs => [
@@ -386,7 +387,7 @@ sub create_load_bam_job {
 }
 
 sub create_load_bed_job {
-    my ($md, $gid, $bed, $user, $annotations, $staging_dir, $wid) = @_;
+    my ($md, $gid, $bed, $user, $annotations, $staging_dir, $wid, $result_dir) = @_;
     my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
@@ -407,6 +408,7 @@ sub create_load_bed_job {
             ['-staging_dir', "./bed", 0],
             ['-file_type', "bed", 0],
             ['-data_file', "$bed", 0],
+            ['-result_file', catfile($result_dir, 'read_depth'), 0],
             ['-config', $CONF->{_CONFIG_PATH}, 1]
         ],
         inputs => [
@@ -427,6 +429,8 @@ sub create_notebook_job {
     my $cmd = catfile($CONF->{SCRIPTDIR}, "create_notebook.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
+    my $result_file = catfile($result_dir, 'notebook');
+
     my $args = [
         ['-uid', $user->id, 0],
         ['-name', '"'.$md->{name}.'"', 0],
@@ -437,7 +441,7 @@ sub create_notebook_job {
         ['-annotations', qq{"$annotations"}, 0],
         ['-config', $CONF->{_CONFIG_PATH}, 1],
         ['-log', catfile($staging_dir, "log.txt"), 0],
-        ['-result_dir', $result_dir, 0]
+        ['-result_file', $result_file, 0],
     ];
 
     my $inputs = [$CONF->{_CONFIG_PATH}];
@@ -465,9 +469,7 @@ sub create_notebook_job {
         script => undef,
         args => $args,
         inputs => $inputs,
-        outputs => [
-            catfile($result_dir, '1')
-        ],
+        outputs => [ $result_file ],
         description => "Creating notebook..."
     };
 }

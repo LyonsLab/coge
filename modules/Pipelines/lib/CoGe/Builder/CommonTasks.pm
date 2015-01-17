@@ -235,7 +235,7 @@ sub create_fasta_reheader_job {
 
     # Required arguments
     my $fasta          = $opts{fasta};
-    my $reheader_fasta = $opts{reheader_fasta} ? $opts{reheader_fasta} : to_filename($fasta) . ".reheader.fasta";
+    my $reheader_fasta = $opts{reheader_fasta} ? $opts{reheader_fasta} : to_filename($fasta) . '.reheader.faa';
     my $cache_dir      = $opts{cache_dir};
 
     my $cmd = catfile($CONF->{SCRIPTDIR}, "fasta_reheader.pl");
@@ -245,7 +245,7 @@ sub create_fasta_reheader_job {
         script => undef,
         args => [
             ["", $fasta, 1],
-            ["", $reheader_fasta, 0],
+            ["", $reheader_fasta, 0]
         ],
         inputs => [
             $fasta,
@@ -274,7 +274,7 @@ sub create_fasta_index_job {
             $fasta,
         ],
         outputs => [
-            catfile($cache_dir, basename($fasta) . '.fai'),
+            $fasta . '.fai',
         ],
         description => "Index fasta file...",
     };
@@ -334,7 +334,7 @@ sub create_load_vcf_job {
             ['-annotations', qq["$annotations"], 0],
             ['-staging_dir', "./load_vcf", 0],
             ['-file_type', qq["vcf"], 0],
-            ['-result_dir', $result_dir, 0],
+            ['-result_file', catfile($result_dir, 'snps'), 0],
             ['-data_file', $vcf, 0],
             ['-config', $CONF->{_CONFIG_PATH}, 1]
         ],
@@ -382,7 +382,7 @@ sub create_load_experiment_job {
             ['-annotations', qq["$annotations"], 0],
             ['-staging_dir', "./load_experiment", 0],
             #['-file_type', qq["bam"], 0],
-            ['-result_dir', $result_dir, 0],
+            ['-result_file', catfile($result_dir, 'experiment'), 0],
             ['-data_file', $input_file, 0],
             ['-config', $CONF->{_CONFIG_PATH}, 1]
         ],
@@ -431,7 +431,7 @@ sub create_load_bam_job {
             ['-annotations', qq["$annotations"], 0],
             ['-staging_dir', "./load_bam", 0],
             ['-file_type', qq["bam"], 0],
-            ['-result_dir', $result_dir, 0],
+            ['-result_file', catfile($result_dir, 'mapped_reads'), 0],
             ['-data_file', $bam_file, 0],
             ['-config', $CONF->{_CONFIG_PATH}, 1]
         ],
@@ -512,13 +512,13 @@ sub create_gff_generation_job {
     # Required params
     my $gid = $opts{gid};
     my $organism_name = $opts{organism_name};
-    my $validated = $opts{validated};
+    #my $validated = $opts{validated}; # mdb removed 1/5/15 -- why is this here?
 
     my $cmd = catfile($CONF->{SCRIPTDIR}, "coge_gff.pl");
     my $name = sanitize_name($organism_name) . "-1-name-0-0-id-" . $gid . "-1.gff";
 
     my $inputs = [ $CONF->{_CONFIG_PATH} ];
-    push @{$inputs}, $validated if $validated;
+    #push @{$inputs}, $validated if $validated;
 
     return {
         cmd => $cmd,
@@ -636,6 +636,9 @@ sub create_tophat_job {
     # add gff file if genome has annotations
     unshift @$args, ["-G", $gff, 1] if $gff;
     unshift @$inputs, $gff if $gff;
+    
+    # add index files
+    push @$inputs, @index_files;
 
     return (
         cmd => $cmd,
@@ -810,7 +813,7 @@ sub create_gsnap_job {
     );
 }
 
-sub create_alignment_workflow {
+sub create_alignment_workflow { #TODO make this into a pipeline module
     my %opts = @_;
 
     # Required arguments
@@ -835,7 +838,7 @@ sub create_alignment_workflow {
 
     # Reheader the fasta file
     my $fasta = get_genome_file($genome->id);
-    my $reheader_fasta = to_filename($fasta) . ".reheader.fasta";
+    my $reheader_fasta = to_filename($fasta) . ".reheader.faa";
     push @tasks, create_fasta_reheader_job(
         fasta => $fasta,
         reheader_fasta => $reheader_fasta,
@@ -844,7 +847,7 @@ sub create_alignment_workflow {
 
     # Index the fasta file
     push @tasks, create_fasta_index_job(
-        fasta => $reheader_fasta,
+        fasta => catfile($FASTA_CACHE_DIR, $reheader_fasta),
         cache_dir => $FASTA_CACHE_DIR
     );
 
@@ -864,7 +867,7 @@ sub create_alignment_workflow {
         my $gff = create_gff_generation_job(
             gid => $gid,
             organism_name => $genome->organism->name,
-            validated => "$fastq.validated"
+            #validated => "$fastq.validated"
         );
         $gff_file = @{$gff->{outputs}}[0];
         push @tasks, $gff;
@@ -875,7 +878,7 @@ sub create_alignment_workflow {
     if ($alignment_type eq 'tophat') {
         ($bam, @alignment_tasks) = create_tophat_workflow(
             gid => $gid,
-            fasta => $reheader_fasta,
+            fasta => catfile($FASTA_CACHE_DIR, $reheader_fasta),
             fastq => $trimmed_fastq,
             gff => $gff_file,
             staging_dir => $staging_dir,
