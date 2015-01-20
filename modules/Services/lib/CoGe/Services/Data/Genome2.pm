@@ -28,11 +28,27 @@ sub search {
             [ 'description', $search_term2 ]
         ]
     );
+    
+    # Search organisms
+    my @organisms = $db->resultset("Organism")->search(
+        \[
+            'name LIKE ? OR description LIKE ?',
+            [ 'name',        $search_term2 ],
+            [ 'description', $search_term2 ]
+        ]
+    );
+    
+    # Combine matching genomes and organisms, preventing duplicates
+    my %unique;
+    map { $unique{ $_->id } = $_ } @genomes;
+    foreach my $organism (@organisms) {
+        map { $unique{ $_->id } = $_ } $organism->genomes;
+    }
 
     # Filter response
     my @filtered = grep {
         !$_->restricted || (defined $user && $user->has_access_to_genome($_))
-    } @genomes;
+    } values %unique;
 
     # Format response
     my @result = map {
@@ -40,6 +56,11 @@ sub search {
         id => int($_->id),
         name => $_->name,
         description => $_->description,
+        organism => { #FIXME inefficient use of ORM
+            id => int($_->organism->id),
+            name => $_->organism->name,
+            description => $_->organism->description
+        }
       }
     } @filtered;
 
