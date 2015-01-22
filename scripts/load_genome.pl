@@ -480,6 +480,7 @@ sub process_fasta_file {
                 $chunk =~ s/\s+$//; # trim trailing whitespace
             }
             $chunk =~ s/\n//g;
+            $chunk =~ s/\r//g;
             $filteredSeq .= $chunk;
         }
         next unless $filteredSeq;
