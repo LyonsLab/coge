@@ -34,6 +34,9 @@
 .jstree.jstree-focused { background:white; }
 </style>
 
+
+<script src="js/coge/utils.js"></script>
+<script src="js/coge/colors.js"</script>
 <script>
 
 var timestamps = new Array();
@@ -292,6 +295,29 @@ function wait_to_search (search_func, search_term) {
 
 
 </SCRIPT>
+
+<section id="tabs" class="ui-tabs ui-widget ui-widget-content ui-corner-all" style="margin-top: 0.5em; min-width: 645px;">
+    <ul class="ui-tabs-nav ui-helper-reset ui-helper-clearfix ui-widget-header ui-corner-all">
+        <li class="small ui-state-default ui-corner-top ui-tabs-selected ui-state-active"><a href="#tab-1">Search</a></li>
+        <li class="small ui-state-default ui-corner-top ui-tabs-selected ui-state-active"><a href="#tab-2">Analysis Options</a></li>
+        <li class="small ui-state-default ui-corner-top ui-tabs-selected ui-state-active"><a href="#tab-3">Display Options</a></li>
+    </ul>
+
+    <div id="tab-1">
+        <div class="alert"><tmpl_var name=error></div>
+        <ul>
+            <li style="display:inline-block; padding: 5px 0 5px 0; vertical-align:top;">
+                    <tmpl_var name=org_menu1>
+            </li>
+            <li style="display:inline-block; padding: 5px 0 5px 0; vertical-align:top;">
+                    <tmpl_var name=org_menu2>
+            </li>
+        </ul>
+    </div>
+    <!--close tab-1 -->
+
+</section>
+
 <div class="coge-bg inline padded ui-widget-content ui-corner-all">
 
 	    <td>Search:</td>
