@@ -714,8 +714,8 @@ sub validate_vcf_data_file {
             { name => 'id',    type => 'text' },
             { name => 'ref',   type => 'key' },
             { name => 'alt',   type => 'key' },
-            { name => 'qual',  type => 'double' },
-            { name => 'info',  type => 'text' }
+            { name => 'qual',  type => 'double' }
+            #{ name => 'info',  type => 'text' }
         ]
     };
 
