@@ -122,6 +122,22 @@ $(document).ready( function() {
             </a>
         </TMPL_IF>
     </div>
+    
+    <!--CoGe icon on main page only-->
+    <!--<div id="logo">
+        <TMPL_IF NAME="LOGO_IMAGE">
+            <a href="<TMPL_VAR NAME=HELP>">
+                <img style="vertical-align:bottom;height:3.5em" class="l" src='picts/<TMPL_VAR NAME="LOGO_IMAGE">'>
+            </a>
+        </TMPL_IF>
+    </div>-->
+
+    <!--CoGe icon on all pages-->
+    <div id="logo">
+        <a href="<TMPL_VAR NAME=HELP>">
+            <img style="vertical-align:bottom;height:3.5em" class="l" src='picts/CoGeCircuitLeaf1.svg'>
+        </a>
+    </div>
 
     <TMPL_UNLESS NAME="MENU">
         <div id="menubar" class="coge-menubar r" style="visibility:hidden;">
