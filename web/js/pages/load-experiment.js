@@ -219,28 +219,31 @@ function load_failed(logfile) {
     }
 }
 
-function load_succeeded(obj) {
-    // Update globals
-    experiment_id = obj.experiment_id; // for continuing to ExperimentView
-    notebook_id   = obj.notebook_id;   // for continuing to NotebookView
-
+function load_succeeded(results) {
+	console.log(results);
+	
     // Update dialog
     $('#loading_msg').hide();
     $('#finished_msg,#ok_button').fadeIn();
-    if (notebook_id) { // qTeller pipeline experiment load
-        $('#finish_load_experiment_button')
-            .html('NotebookView').fadeIn()
-            .unbind().on('click', function() {
-                window.location.href = "NotebookView.pl?nid=" + notebook_id;
-        });
-    }
-    else { // normal experiment load
-        $('#finish_load_experiment_button')
-            .html('Continue to ExperimentView').fadeIn()
-            .unbind().on('click', function() {
-                window.location.href = "ExperimentView.pl?embed=" + embed + "&eid=" + experiment_id;
-        });
-    }
+//    if (notebook_id) { // qTeller pipeline experiment load
+//        $('#finish_load_experiment_button')
+//            .html('NotebookView').fadeIn()
+//            .unbind().on('click', function() {
+//                window.location.href = "NotebookView.pl?nid=" + notebook_id;
+//        });
+//    }
+//    else { // normal experiment load
+//        $('#finish_load_experiment_button')
+//            .html('Continue to ExperimentView').fadeIn()
+//            .unbind().on('click', function() {
+//                window.location.href = "ExperimentView.pl?embed=" + embed + "&eid=" + experiment_id;
+//        });
+//    }
+    
+    $("#results").html("<div>Here are the results:</div>");
+    results.forEach(function(result) {
+    	$("#results").append("<div><a href='"+result.path+"'>"+result.name+"</a></div>");
+    });
 }
 
 function progress_formatter(item) {
@@ -301,7 +304,7 @@ function update_dialog(request, user, identifier, formatter) {
             }
         });
     };
-
+    
     var update_callback = function(json) {
         var dialog = $(identifier);
         var workflow_status = $("<p></p>");
@@ -367,10 +370,15 @@ function update_dialog(request, user, identifier, formatter) {
 
             workflow_status.append("<br>Finished in " + duration);
             workflow_status.find('span').addClass('completed');
-            get_load_log(function(result) {
-                load_succeeded(result);
-            });
-
+//            get_load_log(function(result) {
+//                load_succeeded(result);
+//            });
+            if (json.results && json.results.length) {
+            	load_succeeded(json.results);
+            }
+            else {
+            	alert('Error: no results found!');
+            }
         }
         else if (current_status == "failed"
                 || current_status == "error"
