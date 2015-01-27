@@ -532,7 +532,7 @@ sub generate_export {
     my $conf = File::Spec->catdir($P->{COGEDIR}, "coge.conf");
     my $script = File::Spec->catdir($P->{SCRIPTDIR}, "export_experiment.pl");
     my $workdir = get_download_path($eid);
-    my $resdir = $P->{RESOURCESDIR};
+    my $resdir = $P->{RESOURCEDIR};
 
     my $cmd = "$script -eid $eid -config $conf -dir $workdir -output $filename -a 1";
 

@@ -67,7 +67,7 @@ unless ($coge) {
 
 my $experiment = $coge->resultset('Experiment')->find($eid);
 my $archive = File::Spec->catdir($workdir, $filename);
-my $resdir = $P->{RESOURCESDIR};
+my $resdir = $P->{RESOURCEDIR};
 
 unless (-r $archive and -r "$archive.finished") {
     my @file_list = export_annotations();
