@@ -146,9 +146,7 @@ sub generate_body {
     	LOAD_ID     => $LOAD_ID,
     	JOB_ID      => $JOB_ID,
         STATUS_URL  => 'api/v1/jobs/',
-        FILE_SELECT_SINGLE       => 1,
         DEFAULT_TAB              => 0,
-        DISABLE_IRODS_GET_ALL    => 1,
         MAX_IRODS_LIST_FILES     => 1000,
         MAX_IRODS_TRANSFER_FILES => 30,
         MAX_FTP_FILES            => 30,
@@ -436,12 +434,15 @@ sub load_experiment {
     my $items       = $opts{items};
     my $file_type	= $opts{file_type};
     my $aligner     = $opts{aligner};
+    my $read_type   = $opts{read_type};
+    my $trim_reads  = $opts{trim_reads};
     my $ignore_missing_chrs = $opts{ignore_missing_chrs};
 
 	# Added EL: 10/24/2013.  Solves the problem when restricted is unchecked.
 	# Otherwise, command-line call fails with next arg being passed to
 	# restricted as option
 	$restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
+	$trim_reads = ( $trim_reads && $trim_reads eq 'true' ) ? 1 : 0;
 
 	# print STDERR "load_experiment: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
     return encode_json({ error => "No data items" }) unless $items;
@@ -459,12 +460,20 @@ sub load_experiment {
     my $stagepath = catdir($TEMPDIR, 'staging');
     mkpath $stagepath;
 
-    # Setup path to file
-    my $data_file = $TEMPDIR . $items->[0]->{path};
+    # Setup paths to data files
+    my @files = map { catfile($TEMPDIR, $_->{path}) } @$items;
+
+    # Check multiple files (if more than one file then all should be FASTQ)
+    my $numFastq = 0;
+    foreach (@files) {
+        $numFastq++ if (is_fastq_file($_));
+    }
+    return return encode_json({ error => 'Unsupported combination of file types' }) if ($numFastq > 0 and $numFastq != @files);
+    return return encode_json({ error => 'Too many files' }) if ($numFastq == 0 and @files > 1);
 
     # Determine fastq file type
     my ($workflow_id, $error_msg);
-    if ( $file_type eq 'fastq' || is_fastq_file($data_file) ) {
+    if ( $file_type eq 'fastq' || is_fastq_file($files[0]) ) {
         # Get genome
         my $genome = $coge->resultset('Genome')->find($gid);
 
@@ -480,8 +489,10 @@ sub load_experiment {
                 source_name => $source_name,
                 restricted => $restricted
             },
-            files => [ $data_file ],
-            alignment_type => $aligner
+            files => \@files,
+            alignment_type => $aligner,
+            read_type => $read_type,
+            trim_reads => $trim_reads
         );
     }
     # Else, all other file types
@@ -497,7 +508,7 @@ sub load_experiment {
                 source_name => $source_name,
                 restricted => $restricted,
             },
-            files => [ $data_file ],
+            files => \@files,
             file_type => $file_type,
             options => {
                 ignoreMissing => 1,#$ignore_missing_chrs # mdb added 10/6/14 easier just to make this the default
@@ -592,7 +603,7 @@ sub search_genomes
     my %opts        = @_;
     my $search_term = $opts{search_term};
     my $timestamp   = $opts{timestamp};
-    print STDERR "$search_term $timestamp\n";
+    #print STDERR "$search_term $timestamp\n";
     return unless $search_term;
 
     # Perform search
@@ -635,7 +646,7 @@ sub search_genomes
     }
 
     my @items;
-    print STDERR Dumper \@items, "\n";
+    #print STDERR Dumper \@items, "\n";
     foreach ( sort genomecmp values %unique ) {    #(keys %unique) {
         push @items, { label => $_->info, value => $_->id };
     }

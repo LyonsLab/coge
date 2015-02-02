@@ -16,6 +16,7 @@ use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Jex;
 use CoGe::Core::Storage qw(get_genome_file get_experiment_files get_workflow_paths);
 use CoGe::Accessory::Web qw(get_defaults);
+use CoGe::Accessory::Utils;
 
 BEGIN {
     use vars qw ($VERSION @ISA @EXPORT $CACHE $CONF);
@@ -34,6 +35,8 @@ sub run {
     my $files = $opts{files};
     my $metadata = $opts{metadata};
     my $alignment = $opts{alignment_type};
+    my $read_type = $opts{read_type};
+    my $trim_reads = $opts{trim_reads};
 
     my $gid = $genome->id;
 
@@ -66,46 +69,58 @@ sub run {
     # Set metadata for the pipeline being used
     my $annotations = generate_metadata($alignment, $annotated);
 
+    # Get the genome sequence FASTA file
     my $fasta = get_genome_file($gid);
-    my $fastq = shift(@$files);
 
-    my (@jobs, @steps, $bam, $include_csv);
+    my @jobs;
 
-    # Unzip the file if necessary
-    if ( $fastq =~ /\.gz$/ ) {
-        push @jobs, create_gunzip_job($fastq);
-        $fastq =~ s/\.gz$//;
+    # Process the fastq input files
+    my (@validated, @trimmed);
+    foreach my $file (@$files) {
+        # Decompress (if necessary)
+        my $done_file;
+        if ( $file =~ /\.gz$/ ) {
+            push @jobs, create_gunzip_job($file);
+            $file =~ s/\.gz$//;
+            $done_file = "$file.decompressed";
+        }
+        
+        # Validate
+        my %validate = create_validate_fastq_job($file, $done_file);
+        push @validated, @{$validate{outputs}}[0];
+        push @jobs, \%validate;
+    
+        # Trim
+        if ($trim_reads) {
+            my %trimmed = create_cutadapt_job($file, "$file.validated", $staging_dir);
+            push @trimmed, @{$trimmed{outputs}}[0];
+            push @jobs, \%trimmed;
+        }
+        else {
+            push @trimmed, $file;
+        }
     }
-
-    # Validate the fastq file
-    # XXX: Add job dependencies
-    my %validate = create_validate_fastq_job($fastq);
-    push @jobs, \%validate;
-
+        
     # Filter the fasta file (clean up headers)
-    my %filter = create_fasta_filter_job($gid, $fasta, "$fastq.validated");
+    my %filter = create_fasta_filter_job($gid, $fasta);#, "$f.validated");
     my $filtered_fasta = @{$filter{outputs}}[0];
     push @jobs, \%filter;
-
-    # Cleanup fastq
-    my %trimmed = create_cutadapt_job($fastq, "$fastq.validated", $staging_dir);
-    my $trimmed_fastq = @{$trimmed{outputs}}[0];
-    push @jobs, \%trimmed;
 
     my $gff_file;
     # Generate gff if genome annotated
     if ($annotated) {
-        my %gff = create_gff_generation_job($genome, "$fastq.validated");
+        my %gff = create_gff_generation_job($genome);#, "$fastq.validated");
         $gff_file = @{$gff{outputs}}[0];
         push @jobs, \%gff;
     }
 
+    # Setup alignment program
+    my ($bam, @steps);
     if ($alignment eq "tophat") {
-        ($bam, @steps) = tophat_pipeline($gid, $filtered_fasta, $trimmed_fastq,
-            $gff_file, $staging_dir);
+        ($bam, @steps) = tophat_pipeline($gid, $filtered_fasta, \@trimmed, \@validated, $read_type, $gff_file, $staging_dir);
     }
     else {
-        ($bam, @steps) = gsnap_pipeline($gid, $filtered_fasta, $trimmed_fastq, $staging_dir);
+        ($bam, @steps) = gsnap_pipeline($gid, $filtered_fasta, \@trimmed, \@validated, $read_type, $staging_dir);
     }
 
     # Join alignment pipeline
@@ -120,6 +135,7 @@ sub run {
     push @jobs, \%filtered_bed;
 
     # Check for annotations required by cufflinks
+    my $include_csv;
     if ($annotated) {
         $include_csv = 1;
 
@@ -152,7 +168,7 @@ sub run {
         $workflow->add_job(%{$job});
     }
 
-    #say STDERR "WORKFLOW DUMP\n" . Dumper($workflow) if $DEBUG;
+    say STDERR "WORKFLOW DUMP\n" . Dumper($workflow);
     #say STDERR "JOB NOT SCHEDULED TEST MODE" and exit(0) if $test;
 
     # Submit the workflow
@@ -188,11 +204,6 @@ sub generate_metadata {
     push @annotations, qq{note|cufflinks} if $annotated;
 
     return '"' . join(';', @annotations) . '"';
-}
-
-sub to_filename {
-    my ($name, undef, undef) = fileparse(shift, qr/\.[^.]*/);
-    return $name;
 }
 
 sub sanitize_organism_name {
@@ -234,24 +245,31 @@ sub create_gunzip_job {
     my $cmd = $CONF->{GUNZIP} || 'gunzip';
 
     return {
-        cmd => "$cmd -c $input_file > $output_file",
+        cmd => "$cmd -c $input_file > $output_file ;  touch $output_file.decompressed",
         script => undef,
         args => [],
         inputs => [
             $input_file
         ],
         outputs => [
-            $output_file
+            $output_file,
+            "$output_file.decompressed"
         ],
-        description => "Decompressing data file..."
+        description => "Decompressing " . to_filename($input_file) . "..."
     };
 }
 
 sub create_validate_fastq_job {
     my $fastq = shift;
+    my $done_file = shift;
 
     my $cmd = catfile($CONF->{SCRIPTDIR}, "validate_fastq.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+
+    my $inputs = [
+        $fastq
+    ];
+    push @$inputs, $done_file if ($done_file);
 
     return (
         cmd => $cmd,
@@ -259,20 +277,19 @@ sub create_validate_fastq_job {
         args => [
             ["", $fastq, 1]
         ],
-        inputs => [
-            $fastq
-        ],
+        inputs => $inputs,
         outputs => [
             "$fastq.validated"
         ],
-        description => "Validating fastq file..."
+        description => "Validating " . to_filename($fastq) . "..."
     );
 }
 
 sub create_fasta_filter_job {
     my $gid = shift;
     my $fasta = shift;
-    my $validated = shift;
+    #my $validated = shift;
+    
     my $name = to_filename($fasta);
     my $cmd = catfile($CONF->{SCRIPTDIR}, "fasta_reheader.pl");
     my $FASTA_CACHE_DIR = catdir($CACHE, $gid, "fasta");
@@ -287,7 +304,7 @@ sub create_fasta_filter_job {
         ],
         inputs => [
             $fasta,
-            $validated
+            #$validated # mdb removed 1/28/15 -- can start gff generate while fastq being validated
         ],
         outputs => [
             catfile($FASTA_CACHE_DIR, $name . ".filtered.fa")
@@ -298,7 +315,7 @@ sub create_fasta_filter_job {
 
 sub create_gff_generation_job {
     my $genome = shift;
-    my $validated = shift;
+    #my $validated = shift;
     my $cmd = catfile($CONF->{SCRIPTDIR}, "coge_gff.pl");
     my $org_name = sanitize_organism_name($genome->organism->name);
     my $name = "$org_name-1-name-0-0-id-" . $genome->id . "-1.gff";
@@ -319,7 +336,7 @@ sub create_gff_generation_job {
         ],
         inputs => [
             $CONF->{_CONFIG_PATH},
-            $validated
+            #$validated # mdb removed 1/28/15 -- can start gff generate while fastq being validated
         ],
         outputs => [
             catdir($CACHE, $genome->id, "gff", $name)
@@ -353,7 +370,7 @@ sub create_cutadapt_job {
         outputs => [
             catfile($staging_dir, $name . '.trimmed.fastq')
         ],
-        description => "Running cutadapt..."
+        description => "Trimming (cutadapt) " . to_filename($fastq) . "..."
     );
 }
 
@@ -366,6 +383,7 @@ sub create_cufflinks_job {
         cmd => $cmd,
         script => undef,
         args => [
+            ['-q', '', 0], # quiet mode, otherwise cufflinks prints too much progress output
             ['-u', '', 0],
             ['-b', $fasta, 1],
             ['-p', 24, 0],
@@ -627,13 +645,13 @@ sub create_notebook_job {
 # GSNAP PIPELINE AND JOBS
 #
 sub gsnap_pipeline {
-    my ($gid, $fasta, $fastq, $staging_dir) = @_;
+    my ($gid, $fasta, $fastq, $validated, $read_type, $staging_dir) = @_;
 
     # Generate index
     my %gmap = create_gmap_index_job($gid, $fasta);
 
     # Generate sam file
-    my %gsnap = create_gsnap_job($fastq, @{@{$gmap{outputs}}[0]}[0], $staging_dir);
+    my %gsnap = create_gsnap_job($fastq, $validated, $read_type, @{@{$gmap{outputs}}[0]}[0], $staging_dir);
 
     # Generate and sort bam
     my %bam = create_samtools_bam_job(@{$gsnap{outputs}}[0], $staging_dir);
@@ -675,10 +693,34 @@ sub create_gmap_index_job {
 }
 
 sub create_gsnap_job {
-    my ($fastq, $gmap, $staging_dir) = @_;
+    my ($fastq, $validated, $read_type, $gmap, $staging_dir) = @_;
     my $name = basename($gmap);
     my $cmd = $CONF->{GSNAP};
     die "ERROR: GSNAP is not in the config." unless ($cmd);
+
+    my $args = [
+        ["-D", ".", 0],
+        ["-d", $name, 0],
+        ["--nthreads=32", '', 0],
+        ["-n", 5, 0],
+        ["--format=sam", '', 0],
+        ["-Q", '', 0],
+        ["--gmap-mode=none", '', 0],
+        ["--nofails", '', 0],
+        ["--batch=5", '', 0]
+    ];
+    
+    if ($read_type eq 'single') {
+        push @$args, ['--force-single-end', '', 0];
+    }
+    
+    # Sort fastq files in case of paired-end reads, 
+    # see http://research-pub.gene.com/gmap/src/README
+    foreach (sort @$fastq) { 
+        push @$args, ["", $_, 1];
+    }
+    
+    push @$args, [">", $name . ".sam", 1];
 
     return (
         cmd => $cmd,
@@ -686,20 +728,10 @@ sub create_gsnap_job {
         options => {
             "allow-zero-length" => JSON::false,
         },
-        args => [
-            ["-D", ".", 0],
-            ["-d", $name, 0],
-            ["--nthreads=32", '', 0],
-            ["-n", 5, 0],
-            ["--format=sam", '', 0],
-            ["-Q", '', 0],
-            ["--gmap-mode=none", '', 0],
-            ["--nofails", $fastq, 1],
-            ["--batch=5",'',0],
-            [">", $name . ".sam", 1]
-        ],
+        args => $args,
         inputs => [
-            $fastq,
+            @$fastq,
+            @$validated,
             [$gmap, 1]
         ],
         outputs => [
@@ -763,14 +795,16 @@ sub create_samtools_sort_job {
 # TopHat pipeline
 #
 sub tophat_pipeline {
-    my ($gid, $fasta, $fastq, $gff, $staging_dir) = @_;
+    my ($gid, $fasta, $fastq, $validated, $read_type, $gff, $staging_dir) = @_;
     my $BOWTIE_CACHE_DIR = catdir($CACHE, $gid, "bowtie_index");
 
     my ($index, %bowtie) = create_bowtie_index_job($gid, $fasta);
     my %tophat = create_tophat_job(
         staging_dir => $staging_dir,
         fastq => $fastq,
+        validated => $validated,
         fasta => $fasta,
+        read_type => $read_type,
         gff   => $gff,
         index_name => $index,
         index_files => ($bowtie{outputs}));
@@ -815,41 +849,87 @@ sub create_bowtie_index_job {
 sub create_tophat_job {
     my %opts = @_;
     my $staging_dir = $opts{staging_dir};
+    my $fasta       = $opts{fasta};
+    my $fastq       = $opts{fastq};
+    my $validated   = $opts{validated};
+    my $read_type   = $opts{read_type};
+    my $gff         = $opts{gff};
+    my $index_name  = basename($opts{index_name});
+    
     my $cmd = $CONF->{TOPHAT};
-    my $name = basename($opts{index_name});
-
     die "ERROR: TOPHAT is not in the config." unless ($cmd);
-
-    my $args = [
-        ["-o", ".", 0],
-        ["-g", "1", 0],
-        ["-p", '32', 0],
-        ["", $name, 1],
-        ["", $opts{fastq}, 1]
-    ];
-
+    $cmd = 'nice ' . $cmd; # run at lower priority
+    
+    # Setup input dependencies
     my $inputs = [
-        $opts{fasta},
-        $opts{fastq},
+        $fasta,
+        @$fastq,
+        @$validated,
         @{$opts{index_files}}
     ];
 
-    # add gff file if genome has annotations
-    unshift @$args, ["-G", $opts{gff}, 1] if $opts{gff};
-    unshift @$inputs, $opts{gff} if $opts{gff};
+    # Set basic required args
+#    my $args = [
+#        ["-o", ".", 0],
+#        ["-g", "1", 0],
+#        ["-p", '32', 0],
+#        ["", $index_name, 1]
+#    ];
+    
+    # Add gff file arg (if genome has annotations)
+#    if ($gff) {
+#        unshift @$args, ["-G", $gff, 1];
+#        unshift @$inputs, $gff;
+#    }
+    
+    my $arg_str;
+    $arg_str .= $cmd . ' ';
+    $arg_str .= "-G $gff " if ($gff);
+    $arg_str .= "-o . -g 1 -p 32 $index_name ";
+    #$arg_str .= join(' ', @$fastq);
+    
+    # Add fastq file args
+#    if ($read_type eq 'paired') { # paired-end
+#        # Split files into two groups as required by TopHat,
+#        # see http://ccb.jhu.edu/software/tophat/manual.shtml
+#        my @m1 = grep { $_ =~ /\S+\_R1\.\S+?/ } @$fastq;
+#        my @m2 = grep { $_ =~ /\S+\_R2\.\S+?/ } @$fastq;
+#        #print STDERR "m1: ", join(',', @m1), "\n";
+#        #print STDERR "m2: ", join(',', @m2), "\n";
+#        die "error: invalid paired-end files" unless (@m1 and @m2);
+#        push @$args, ["", join(',', sort @m1), 0];
+#        push @$args, ["", join(',', sort @m2), 0];
+#    }
+#    else { # single-ended
+#        push @$args, ["", join(',', @$fastq), 0];
+#    }
 
+#    return (
+#        cmd => $cmd,
+#        script => undef,
+#        options => {
+#            "allow-zero-length" => JSON::false
+#        },
+#        args => $args,
+#        inputs => $inputs,
+#        outputs => [
+#            catfile($staging_dir, "accepted_hits.bam")
+#        ],
+#        description => "Running tophat..."
+#    );
     return (
-        cmd => $cmd,
+        cmd => catfile($CONF->{SCRIPTDIR}, 'tophat.pl'),
         script => undef,
-        options => {
-            "allow-zero-length" => JSON::false,
-        },
-        args => $args,
+        args => [
+            [$read_type, '', 0],
+            ['"'.$arg_str.'"', '', 0],
+            ['', join(' ', @$fastq), 0]
+        ],
         inputs => $inputs,
         outputs => [
             catfile($staging_dir, "accepted_hits.bam")
         ],
-        description => "Running tophat..."
+        description => "Running tophat..."        
     );
 }
 
