@@ -77,15 +77,10 @@ $(document).ready(function(){
     });
 
     $("#file_type_selector").on("change", function() {
-        var alignment = $("#alignment");
-        var pipeline =$("#fastq-pipeline");
-        if ($(this).val() === "fastq") {
-           alignment.slideDown();
-           pipeline.slideDown();
-        } else {
-           alignment.slideUp();
-           pipeline.slideUp();
-        }
+        if ($(this).val() === "fastq")
+            $("#select_options").slideDown();
+        else
+            $("#select_options").slideUp();
     });
 
     // Open status dialog
@@ -104,15 +99,18 @@ $(document).ready(function(){
 });
 
 function file_selected(filename, url) {
-    $('#file_select_dialog').dialog('close');
-    $('#select_file_button').hide();
-    $('#select_file_type').show();
+	$('#no_files').hide();
+	$('#file_select_dialog').dialog('close');
+	$('#files_clear').removeClass('ui-state-disabled');
+	$('#select_file_type')
+		.removeClass('coge-disabled')
+		.children()
+		.prop('disabled', false);
 }
 
 function file_finished(size, url) {
     var files = get_selected_files(),
         exp = /(:?fastq|fq)/;
-
     var isFastq = exp.test.bind(exp);
 
     if (files.map(getPath).some(isFastq)) {
@@ -121,19 +119,30 @@ function file_finished(size, url) {
             .prop("selected", true)
             .change();
     }
+    else {
+    	$("#add_data").addClass("ui-state-disabled");
+    }
+}
+
+function file_canceled() {
+    var files = get_selected_files();
+    if (!files.length) {
+    	$('#select_file_type')
+    		.addClass("coge-disabled")
+    		.children()
+    		.prop("disabled", true);
+    	
+        $('#select_file_type')
+	        .find("option[value=autodetect")
+	        .prop("selected", true)
+	        .change();
+    	
+    	$("#add_data").removeClass("ui-state-disabled");
+    }
 }
 
 function getPath(item) {
     return item.path;
-}
-
-function file_canceled() {
-    $('#select_file_type').hide()
-        .find("option[value=autodetect")
-        .prop("selected", true)
-        .change();
-
-    $('#select_file_button').show();
 }
 
 function create_source() {
@@ -178,12 +187,16 @@ function check_login() {
     return logged_in;
 }
 
+var error_help_timeout;
 function error_help(s) {
 	$('#error_help_text')
 		.html(s)
-		.show()
-		.delay(10*1000)
-		.fadeOut(1500);
+		.show();
+	
+	clearTimeout(error_help_timeout);
+	error_help_timeout = setTimeout(function() {
+		$('#error_help_text').fadeOut(1500);
+	}, 15*1000);
 }
 
 function load_experiment() {
@@ -194,9 +207,11 @@ function load_experiment() {
     var genome = $('#edit_genome').val();
     var gid = $('#gid').val();
     var file_type = $("#select_file_type option:selected").val();
-    var aligner = $("#alignment").find(":checked").val();
+    var aligner = $("#aligner").find(":checked").val();
+    var read_type = $("#read_type").find(":checked").val();
     var ignore_cb = $('#ignore_missing_chrs');
     var ignore_missing_chrs = ignore_cb.is(':checked');
+    var trim_reads = $('#trim_reads').is(':checked');
 
     if (!name) {
     	error_help('Please specify an experiment name.');
@@ -258,13 +273,16 @@ function load_experiment() {
             items: json,
             file_type: file_type,
             aligner: aligner,
+            read_type: read_type,
+            trim_reads: trim_reads,
             ignore_missing_chrs: ignore_missing_chrs,
             timestamp: new Date().getTime()
         },
         success : function(data) {
             var obj = jQuery.parseJSON(data);
             if (obj && obj.error) {
-                alert(obj.error);
+            	$('#load_log').html('<p>Error: ' + obj.error + '</p>');
+            	load_failed();
                 return;
             }
 
@@ -362,7 +380,7 @@ function reset_load() {
 
     // Reset file selector
     file_canceled();
-    clear_list();
+    clear_list(); // in FileSelect.tmpl
 }
 
 function wait_to_search (search_func, search_obj) {
@@ -504,6 +522,7 @@ function update_dialog(request, user, identifier, formatter) {
         }
 
         if (json.error) {
+        	console.log('json.error: '+json.error);
             pageObj.error++;
             if (pageObj.error > 3) {
                 workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
@@ -591,7 +610,7 @@ function update_dialog(request, user, identifier, formatter) {
 }
 </script>
 
-<div class="bold text" style="padding-top:1em;">Describe the Experiment</div>
+<div class="bold text" style="padding-top:1em;">1 - Describe the Experiment</div>
 <div class="coge-bg inline padded ui-widget-content ui-corner-all">
 	<div class="small info">
 		Complete the form below to describe the experiment data.
@@ -637,56 +656,85 @@ function update_dialog(request, user, identifier, formatter) {
 	      <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
 	    </td>
 	  </tr>
-	  <tr>
-	    <td style="vertical-align:middle;">Data file:</td>
-	    <td>
-	      <table id='file_table' class="ui-corner-all coge-outline" style="background-color:white;font-size:1em;display:inline;"></table>
-	      <span id="select_file_button" onClick="$('#file_select_dialog').dialog('open');" class='ui-button ui-corner-all'> Select Data File</span>
-	      <span id="select_file_type" class="hidden" style="padding-left:15px;vertical-align:5px;">
-	          File type:
-	          <select id="file_type_selector">
-	            <option value="autodetect">Detect from filename</option>
-	            <optgroup label="Quantitative">
-	              <option value="csv">Comma-separated value (CSV)</option>
-	              <option value="tsv">Tab-separated value (TSV)</option>
-	              <option value="bed">BED</option>
-	              <option value="wig">WIG</option>
-	            </optgroup>
-	            <optgroup label="Marker">
-	              <option value="gff">GFF/GTF</option>
-	            </optgroup>
-	            <optgroup label="Polymorphism">
-	              <option value="vcf">VCF</option>
-	            </optgroup>
-	            <optgroup label="Alignment">
-	              <option value="bam">BAM</option>
-	            </optgroup>
-	            <optgroup label="Sequence">
-	              <option value="fastq">FASTQ, FQ</option>
-	            </optgroup>
-	          </select>
-	      </span>
-	      <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
-	    </td>
-	  </tr>
-	  <tr id="alignment" class="hidden">
-	    <td>Aligner:</td>
-	    <td>
-	        <input name="aligner" type="radio" value="gsnap" checked>
-	        <label for="gsnap">GSNAP</label>
-
-	        <input name="aligner" type="radio" value="tophat">
-	        <label for="gsnap">TopHat/Bowtie2</label>
-	    </td>
-	  </tr>
 	</table>
+</div>
 
-    <div id="fastq-pipeline" class="info small hidden">
-        This experiment will be processed using the <a href="https://genomevolution.org/wiki/index.php?title=RNASeq_Pipeline">RNASeq Pipeline</a>
+<div class="bold text" style="padding-top:2em;">2 - Add Data</div>
+<div class="coge-bg inline padded ui-widget-content ui-corner-all">
+	<div class="small info" style="width:50em; padding-bottom:1em;">
+	  Use the <b>Add Data</b> button to select the data items to be loaded from:<br>
+	  <span class="indent">1) iPlant Data Store, 2) FTP/HTTP site, 3) Browser upload</span><br>
+	  Currently only one data file may be added per load, except for FASTQ files.
+	</div>
+	<div class="l" style="padding-right:0.75em;">
+		<span id="add_data" onClick="$('#file_select_dialog').dialog('open')" class='ui-button ui-corner-all coge-button'>Add Data</span><br>
+		<span id="files_clear" onClick="clear_list(); $('#add_data').removeClass('ui-state-disabled');" class='ui-state-disabled ui-button ui-corner-all coge-button' style="margin-top:0.5em;">Clear List</span>
+	</div>
+	<div class="padded" style="background-color: white; overflow:hidden; width:auto; min-height:8em; border:1px solid lightgray; margin-right:5px; margin-bottom:5px;">
+		<div class="small bold text">Files:</div>
+		<div>
+			<div id="no_files" class="indent small padded note">You haven't added any files yet, click "Add Data"</div>
+			<table id='file_table' class="small padded"></table>
+		</div>
+	</div>
+    <div id="select_file_type" class="small coge-disabled" style="padding-left:8em;">
+		File type:
+		<select id="file_type_selector" disabled>
+	        <option value="autodetect">Detect from filename</option>
+	        <optgroup label="Quantitative">
+	          <option value="csv">Comma-separated value (CSV)</option>
+	          <option value="tsv">Tab-separated value (TSV)</option>
+	          <option value="bed">BED</option>
+	          <option value="wig">WIG</option>
+	        </optgroup>
+	        <optgroup label="Marker">
+	          <option value="gff">GFF/GTF</option>
+	        </optgroup>
+	        <optgroup label="Polymorphism">
+	          <option value="vcf">VCF</option>
+	        </optgroup>
+	        <optgroup label="Alignment">
+	          <option value="bam">BAM</option>
+	        </optgroup>
+	        <optgroup label="Sequence">
+	          <option value="fastq">FASTQ, FQ</option>
+	        </optgroup>
+	    </select>
     </div>
 </div>
 
-<div class="middle" style="padding-top:1em;">
+<div id="select_options" class="hidden">
+	<div class="bold text" style="padding-top:2em;">3 - Select Options</div>
+	<div class="small coge-bg inline coge-padded ui-widget-content ui-corner-all">
+	    <div id="fastq-pipeline" class="info">
+	    	The data will be processed using CoGe's <a href="https://genomevolution.org/wiki/index.php?title=RNASeq_Pipeline">RNASeq Pipeline</a>.
+	    </div>
+		<div id="aligner" class="coge-padded-top">
+		    Alignment Program:
+		    <input name="aligner" type="radio" value="gsnap" checked>
+		    <label for="gsnap">GSNAP</label>
+		    <input name="aligner" type="radio" value="tophat">
+		    <label for="gsnap">TopHat/Bowtie2</label>
+		</div>
+		<div id="read_type" class="coge-padded-top">
+		    Read Type:
+		    <input name="read_type" type="radio" value="single" checked>
+		    <label for="single">Single-ended</label>
+		    <input name="read_type" type="radio" value="paired">
+		    <label for="paired">Paired-end</label>
+	    </div>
+	    <div class="coge-padded-top">
+	    	Trim reads using cutadapt? <input id="trim_reads" type="checkbox" checked>
+	    </div>
+	    <div class="note coge-padded-top">
+	    	Note: paired-end files must indicate mate-pair number at the end <br>
+	    	of the filename (as is standard with Illumina-generated files).<br>
+	    	Example:  XXXX_<b>R1</b>.fastq and XXXX_<b>R2</b>.fastq
+	    </div>
+	</div>
+</div>
+
+<div class="middle" style="padding-top:2em;">
 	<span onClick="load_experiment();" style="font-size:1em;" class='ui-button ui-corner-all ui-button-go'>Load Experiment</span>
 	<span id='error_help_text' class='indent alert italic'></span>
 </div>
