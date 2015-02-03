@@ -16,7 +16,8 @@ use Data::Dumper;
 sub build {
     my $self = shift;
 
-    $self->init_workflow($self->jex);
+    # Initialize workflow
+    $self->workflow( $self->jex->create_workflow(name => "Export FASTA", init => 1) );
     return unless $self->workflow->id;
 
     my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
@@ -27,6 +28,7 @@ sub build {
     $self->workflow->logfile(catfile($result_dir, "debug.log"));
 
     # Get genome data file path
+    return unless (defined $self->params && $self->params->{gid});
     my $gid = $self->params->{gid};
     my $genome = $self->db->resultset("Genome")->find($gid);
     my $genome_file = get_genome_file($gid);
@@ -50,12 +52,8 @@ sub build {
     else { # http download
         $self->workflow->add_job( link_results($genome_file, $output_file, $result_dir, $self->conf) );
     }
-}
-
-sub init_workflow {
-    my ($self, $jex) = @_;
-
-    $self->workflow( $jex->create_workflow(name => "Get fasta file", init => 1) );
+    
+    return 1;
 }
 
 with qw(CoGe::Builder::Buildable);
