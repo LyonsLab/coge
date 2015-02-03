@@ -58,7 +58,7 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
 #      . ") bpPerBin=$bpPerBin\n";
 
     # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
+    my ( $db, $user ) = CoGe::Accessory::Web->init;
 
     # Retrieve experiments
     my @all_experiments;
@@ -186,7 +186,7 @@ sub features {
     }
 
     # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
+    my ( $db, $user ) = CoGe::Accessory::Web->init;
 
     # Retrieve experiments
     my @all_experiments;
