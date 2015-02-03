@@ -239,6 +239,11 @@ sub notebooks {
     shift->lists(@_);
 }
 
+sub notebooks_desc {
+    my $self = shift;
+    return join(',', map {local $_ = $_->name; s/&reg;\s*//; $_ } $self->notebooks) || '';
+}
+
 # mdb: These functions were consolidated for all item types (genome, experiment,
 # notebook, etc) into User.pm functions users_with_access() and groups_with_access().
 #sub groups {
@@ -554,6 +559,10 @@ sub get_genomic_sequence {
 sub file_path {
     my $self = shift;
     return CoGe::Core::Storage::get_genome_file( $self->id );
+}
+
+sub storage_path {
+    return shift->file_path;
 }
 
 # mdb added 8/6/13, issue #157
@@ -1186,6 +1195,28 @@ sub info_html {
       . qq{")'>}
       . $info
       . "</span>";
+}
+
+sub info_file {
+    my $self = shift;
+    
+    my $restricted = ($self->restricted) ? "yes" : "no";
+    my $genome_name = $self->genome->info;
+    $genome_name =~ s/&reg;\s*//;
+
+    my @lines = (
+        qq{"Name","} . $self->name . '"',
+        qq{"Description","} . $self->description . '"',
+        qq{"Source","} . $self->source->info . '"',
+        qq{"Version","} . $self->version . '"',
+        qq{"Organism","} . $self->organism->name . '"',
+        qq{"Sequence Type", "} . $self->genomic_sequence_type->name . '"',
+        qq{"Notebooks","} . $self->notebooks_desc . '"',
+        qq{"Restricted","$restricted"},
+    );
+    push @lines, qq{"Link","} . $self->link . '"' if ($self->link);
+
+    return join("\n", @lines);
 }
 
 ############################################### subroutine header begin ##
