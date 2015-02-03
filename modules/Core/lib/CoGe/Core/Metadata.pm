@@ -1,7 +1,9 @@
 package CoGe::Core::Metadata;
+
 use v5.14;
 use strict;
 use warnings;
+
 use Data::Dumper qw(Dumper);
 
 use CoGeX;
@@ -12,7 +14,7 @@ BEGIN {
 
     $VERSION = 0.0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw( create_annotations );
+    @EXPORT = qw( create_annotations export_annotations );
 }
 
 sub create_annotations {
@@ -105,6 +107,58 @@ sub create_annotations {
     }
 
     return \@result;
+}
+
+sub export_annotations {
+    my %opts = @_;
+    my $annotations = $opts{annotations}; # array ref of DBIX Annotation objects
+    my $export_path = $opts{export_path}; # export directory
+    
+    return () unless (defined($annotations) and @$annotations);
+
+    my @files = ();
+    my $annotation_file = File::Spec->catdir($export_path, "annotations.csv");
+    push @files, basename($annotation_file);
+
+    unless (-r $annotation_file) {
+        open(my $fh, ">", $annotation_file);
+
+        say $fh "#Type Group, Type, Annotation, Link, Image filename";
+        foreach my $a ( @$annotations ) {
+            my $group = (
+                defined $a->type->group
+                ? '"' . $a->type->group->name . '","' . $a->type->name . '"'
+                : '"' . $a->type->name . '",""'
+            );
+
+            my $info = $a->info;
+            my $url = defined($a->link) ? $a->link : "";
+
+            # Escape quotes
+            $info =~ s/"/\"/g;
+
+            if ($a->image) {
+                my $filename = $a->image->filename;
+                my $img =  File::Spec->catdir($export_path, $filename);
+
+                eval {
+                    open(my $imh, ">", $img) or die "image=$filename could not be generated";
+                    print $imh $a->image->image;
+                    close($imh);
+
+                    push @files, $filename;
+                };
+
+                say $fh "log: error: $@" if ($@);
+                say $fh qq{$group,"$info","$url","$filename"};
+            } else {
+                say $fh qq{$group,"$info","$url",""};
+            }
+        }
+        close($fh);
+    }
+
+    return @files;
 }
 
 1;
