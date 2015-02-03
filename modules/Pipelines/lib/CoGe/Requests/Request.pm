@@ -29,7 +29,7 @@ has 'jex' => (
     required  => 1
 );
 
-our $NOT_FOUND = "the job could be found";
+our $NOT_FOUND = "the specified job type could not be found";
 
 sub execute {
     my ($self, $workflow) = @_;
