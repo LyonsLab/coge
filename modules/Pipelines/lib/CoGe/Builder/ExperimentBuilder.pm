@@ -7,7 +7,6 @@ use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage qw(get_experiment_files get_workflow_paths);
 use CoGe::Pipelines::Common::Results;
-use CoGe::Pipelines::Experiment;
 use CoGe::Pipelines::Misc::IPut;
 
 use File::Spec::Functions;
@@ -16,7 +15,7 @@ use Data::Dumper;
 sub build {
     my $self = shift;
 
-    $self->init_workflow($self->jex);
+    $self->workflow( $self->jex->create_workflow(name => "Export experiment", init => 1) );
     return unless $self->workflow->id;
 
     my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
@@ -43,24 +42,40 @@ sub build {
         my $dest = catfile($base, $filename);
         my $irods_done = catfile($staging_dir, "irods.done");
 
-        $self->workflow->add_job(export_to_irods($cache_file, $dest, $self->options->{overwrite}, $irods_done));
-        $self->workflow->add_job(generate_results($dest, $dest_type, $result_dir, $self->conf, $irods_done));
-    } else {
-        $self->workflow->add_job(link_results($cache_file, $cache_file, $result_dir, $self->conf));
+        $self->workflow->add_job( export_to_irods($cache_file, $dest, $self->options->{overwrite}, $irods_done) );
+        $self->workflow->add_job( generate_results($dest, $dest_type, $result_dir, $self->conf, $irods_done)) ;
+    } 
+    else {
+        $self->workflow->add_job( link_results($cache_file, $cache_file, $result_dir, $self->conf) );
     }
+    
+    return 1;
 }
 
-sub init_workflow {
-    my ($self, $jex) = @_;
-
-    $self->workflow($jex->create_workflow(name => "Get experiment files", init => 1));
-}
-
-sub get_download_path {
+sub get_download_path { #TODO merge with similar subroutine in GenomeBuilder.pm and move into Storage.pm
     my $self = shift;
+    my $eid = shift;
     my $unique_path = get_unique_id();
-    my @paths = ($self->conf->{SECTEMPDIR}, "ExperimentView/downloads", shift, $unique_path);
+    my @paths = ($self->conf->{SECTEMPDIR}, 'downloads', 'experiments', $eid, $unique_path);
     return File::Spec->catdir(@paths);
+}
+
+sub export_experiment {
+    my ($params, $output, $conf) = @_;
+
+    return (
+        cmd => catdir($conf->{SCRIPTDIR}, "export_experiment_or_genome.pl"),
+        description => "Generating experiment files",
+        args => [
+            ["-id", $params->{eid}, 0],
+            ["-type", '"experiment"', 0],
+            ["-output", $output, 1],
+            ["-conf", $conf->{_CONFIG_PATH}, 0],
+            ["-dir", ".", ""]
+        ],
+        inputs => [],
+        outputs => [$output]
+    );
 }
 
 with qw(CoGe::Builder::Buildable);
