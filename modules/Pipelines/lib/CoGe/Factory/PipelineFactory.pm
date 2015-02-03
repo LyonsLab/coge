@@ -5,6 +5,7 @@ use Moose;
 use CoGe::Builder::GffBuilder;
 use CoGe::Builder::FastaBuilder;
 use CoGe::Builder::ExperimentBuilder;
+use CoGe::Builder::GenomeBuilder;
 
 has 'db' => (
     is => 'ro',
@@ -39,19 +40,28 @@ sub get {
     };
 
     my $builder;
-
-    if ($message->{type} eq "gff_export") {
+    if ($message->{type} eq "export_gff") {
         $builder = CoGe::Builder::GffBuilder->new($options);
-    } elsif ($message->{type} eq "fasta_export") {
+    } 
+    elsif ($message->{type} eq "export_fasta") {
         $builder = CoGe::Builder::FastaBuilder->new($options);
-    } elsif ($message->{type} eq "experiment_export") {
+    } 
+    elsif ($message->{type} eq "export_experiment") {
         $builder = CoGe::Builder::ExperimentBuilder->new($options);
-    } else {
-        return;
+    }
+    elsif ($message->{type} eq "export_genome") {
+        $builder = CoGe::Builder::GenomeBuilder->new($options);
+    } 
+    else {
+        print STDERR "CoGe::Factory::PipelineFactory: unknown job type '", ($message->{type} ? $message->{type} : ''), "'\n";
+        return; # error: unknown job type
     }
 
     # Construct the workflow
-    $builder->build;
+    unless ($builder->build) {
+        print STDERR "CoGe::Factory::PipelineFactory: build failed\n";
+        return; # error: build failed
+    }
 
     # Fetch the workflow constructed
     return $builder->get;
