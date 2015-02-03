@@ -93,7 +93,7 @@ sub generate_html {
     else {
         $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param( PAGE_TITLE => $PAGE_TITLE,
-					  TITLE      => "LoadGenome",
+					      TITLE      => "Load Genome",
         				  PAGE_LINK  => $LINK,
     					  #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
 					  HELP       => $P->{SERVER} );
