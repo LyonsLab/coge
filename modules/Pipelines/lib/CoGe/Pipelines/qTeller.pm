@@ -697,6 +697,7 @@ sub create_gsnap_job {
     my $name = basename($gmap);
     my $cmd = $CONF->{GSNAP};
     die "ERROR: GSNAP is not in the config." unless ($cmd);
+    $cmd = 'nice ' . $cmd; # run at lower priority
 
     my $args = [
         ["-D", ".", 0],
@@ -725,9 +726,10 @@ sub create_gsnap_job {
     return (
         cmd => $cmd,
         script => undef,
-        options => {
-            "allow-zero-length" => JSON::false,
-        },
+# mdb removed 2/2/15 -- fails on zero-length validation input
+#        options => {
+#            "allow-zero-length" => JSON::false,
+#        },
         args => $args,
         inputs => [
             @$fastq,
