@@ -18,6 +18,8 @@ use CoGe::Factory::PipelineFactory;
 sub add {
     my $self = shift;
     my $payload = $self->req->json;
+    #print STDERR 'payload: ', Dumper $payload, "\n";
+    #print STDERR 'req: ', Dumper $self->req, "\n";
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
@@ -29,26 +31,31 @@ sub add {
         });
     }
 
-    my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
-    my $request_factor = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex);
-    my $request_handler = $request_factor->get($payload);
-
     # Validate the request has all required fields
+    my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
+    my $request_factory = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex);
+    my $request_handler = $request_factory->get($payload);
     unless ($request_handler and $request_handler->is_valid) {
         return $self->render(json => {
-            error => { Invalid => "The request was not valid." }
+            error => { Invalid => "Invalid request" }
         });
     }
 
     # Check users permissions to execute the request
     unless ($request_handler->has_access) {
         return $self->render(json => {
-            error => { Auth => "Access denied" }
+            error => { Auth => "Request denied" }
         });
     }
 
+    # Generate the workflow
     my $pipeline_factory = CoGe::Factory::PipelineFactory->new(conf => $conf, user => $user, jex => $jex, db => $db);
     my $workflow = $pipeline_factory->get($payload);
+    unless ($workflow) {
+        return $self->render(json => {
+            error => { Error => "Failed to generate pipeline" }
+        });
+    }
 
     return $self->render(json => $request_handler->execute($workflow));
 }
