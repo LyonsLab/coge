@@ -135,7 +135,7 @@ my $cmd;
 
 # Copy input data file to staging area
 # If running via JEX the file will already be there
-my ($filename) = basename($data_file);#$data_file =~ /^.+\/([^\/]+)$/;
+my ($filename) = basename($data_file);
 my $staged_data_file = $staging_dir . '/' . $filename;
 unless (-r $staged_data_file) {
     $cmd = "cp -f '$data_file' $staging_dir";

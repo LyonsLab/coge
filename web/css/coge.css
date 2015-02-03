@@ -978,8 +978,16 @@ li {
     padding: 5px;
 }
 
+.coge-padded {
+    padding: 0.625em;
+}
+
 .coge-padded-top {
     padding-top: 0.625em;
+}
+
+.coge-padded-left {
+    padding-left: 0.625em;
 }
 
 .coge-padded-large {
