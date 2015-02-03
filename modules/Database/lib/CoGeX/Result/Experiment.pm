@@ -224,6 +224,11 @@ sub notebooks {
     shift->lists(@_);
 }
 
+sub notebooks_desc {
+    my $self = shift;
+    return join(',', map {local $_ = $_->name; s/&reg;\s*//; $_ } $self->notebooks) || '';
+}
+
 #sub groups {
 #	my $self = shift;
 #	my %opts = @_;
@@ -452,6 +457,28 @@ sub info_html {
       . qq{")'>}
       . $info
       . "</span>";
+}
+
+sub info_file {
+    my $self = shift;
+    
+    my $restricted = ($self->restricted) ? "yes" : "no";
+    my $types = join ",", map($_->name, $self->types);
+    my $genome_name = $self->genome->info;
+    $genome_name =~ s/&reg;\s*//;
+
+    my @lines = (
+        qq{"Name","} . $self->name . '"',
+        qq{"Description","} . $self->description . '"',
+        qq{"Genome","$genome_name"},
+        qq{"Source","} . $self->source->info . '"',
+        qq{"Version","} . $self->version . '"',
+        qq{"Types","$types"},
+        qq{"Notebooks","} . $self->notebooks_desc . '"',
+        qq{"Restricted","$restricted"}
+    );
+
+    return join("\n", @lines);
 }
 
 1;
