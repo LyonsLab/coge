@@ -137,6 +137,9 @@ Graphics/t/001_load.t
 Graphics/t/002_load.t
 Pipelines/lib/CoGe/Builder/Buildable.pm
 Pipelines/lib/CoGe/Builder/GffBuilder.pm
+Pipelines/lib/CoGe/Builder/FastaBuilder.pm
+Pipelines/lib/CoGe/Builder/GenomeBuilder.pm
+Pipelines/lib/CoGe/Builder/ExperimentBuilder.pm
 Pipelines/lib/CoGe/Factory/PipelineFactory.pm
 Pipelines/lib/CoGe/Factory/RequestFactory.pm
 Pipelines/lib/CoGe/Pipelines/SNP/CoGeSNPs.pm
