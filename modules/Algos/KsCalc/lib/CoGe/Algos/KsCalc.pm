@@ -605,7 +605,7 @@ sub _generate_DNA_alignment {
             $d1 = substr( $self->dna1, $d1p, 3 );
             $d1p += 3;
         }
-        if ( $p2 eq "-" ) {
+        if ( $p2 and $p2 eq "-" ) {
             $d2 = "---";
         }
         else {
