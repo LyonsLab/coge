@@ -139,7 +139,8 @@ def gc_features(environ, start_response):
         
     try:
         # Get chromosome subsequence using interbase coordinates
-        string = fetch_sequence(genome_id, chr_id, start+1, end+1, environ['HTTP_COOKIE']) # mdb restored cookie 1/6/15 for PAG # mdb removed cookie 12/11/14 to get this track to work in Sean Davey's (GEISHA project) JBrowse instance
+        cookie = get_cookie(environ)
+        string = fetch_sequence(genome_id, chr_id, start+1, end+1, cookie)
 
         # Set bucketSize
         sizes = {'20': 1, '10': 1, '5': 2, '2': 5, '1': 25, '0.5': 75}
@@ -314,7 +315,8 @@ def an_features(environ, start_response): # mdb rewritten 11/8/13 issue 246 - ad
                     if row[3] == 'CDS' and is_overlapping(int(row[0]), int(row[1]), int(start), int(end)):
                         if not seq:
                             # Get chromosome subsequence using interbase coordinates
-                            seq = fetch_sequence(genome_id, chr_id, int(min_start), int(max_stop), environ['HTTP_COOKIE'])
+                            cookie = get_cookie(environ)
+                            seq = fetch_sequence(genome_id, chr_id, int(min_start), int(max_stop), cookie)
                             
                         if (int(row[2]) == 1): # plus strand
                             count, total = calc_wobble(seq, int(row[0])-int(min_start), int(row[1])-int(min_start))
@@ -448,6 +450,12 @@ def reverse_complement(dna):
 
 def bin(start, end, bpPerBin):
     return max(0, int((start + end) / 2 / bpPerBin))
+
+def get_cookie(environ): # mdb added 2/5/15 for GEISHA-JBrowse, COGE-585
+    try:
+        return environ['HTTP_COOKIE']
+    except KeyError:
+        return None
 
 urls = [
     (r'stats/global$',
