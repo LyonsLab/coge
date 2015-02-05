@@ -613,10 +613,8 @@ qq{<span class=link onclick=window.open('OrganismView.pl?org_desc=$_')>$_</span>
         # mdb removed 7/31/13 issue 77
         #        my $file      = $dsg->file_path;
         #        $file =~ s/$COGEDIR/$URL/;
-        my $seq_url = "services/JBrowse/service.pl/sequence/$dsgid"
-          ;    # mdb added 7/31/13 issue 77
-        $type = $type
-          . "<br><a href='$seq_url'>Fasta</a><br><a href='bin/export/coge_gff.pl?dsgid=$dsgid;annos=1'>GFF File</a>";
+        my $seq_url = "api/v1/legacy/sequence/$dsgid"; #"services/JBrowse/service.pl/sequence/$dsgid"; # mdb changed 2/5/15, COGE-289
+        $type = $type . "<br><a href='$seq_url'>Fasta</a><br><a href='bin/export/coge_gff.pl?dsgid=$dsgid;annos=1'>GFF File</a>";
         my ($ds_source) = $dsg->source;
         my $source      = $ds_source->name;
         my $source_link = $ds_source->link;
@@ -916,8 +914,8 @@ sub send_to_xls {
         #my ($wgc, $wat) = $dsg->wobble_content;
         #$wat*=100;
         #$wgc*=100;
-        my $seq_url = $P->{SERVER}."services/JBrowse/service.pl/sequence/$dsgid";    # EHL Added 8/29/14
-        my $GFF_url = $P->{SERVER}."bin/export/coge_gff.pl?dsgid=$dsgid;annos=1";    # EHL Added 8/29/14
+        my $seq_url = $P->{SERVER}."api/v1/legacy/sequence/$dsgid"; #"services/JBrowse/service.pl/sequence/$dsgid"; # mdb changed 2/5/15, COGE-289
+        my $GFF_url = $P->{SERVER}."bin/export/coge_gff.pl?dsgid=$dsgid;annos=1";
         $worksheet->write( $i, 0, $name );
         $worksheet->write( $i, 1, $desc );
         $worksheet->write( $i, 2, $source );

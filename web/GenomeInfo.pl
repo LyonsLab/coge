@@ -2027,11 +2027,9 @@ sub get_download_url {
     my $dsgid = $args{dsgid};
     my $filename = basename($args{file});
 
-    my @url = ($config->{SERVER}, "services/JBrowse",
-        "service.pl/download/GenomeInfo",
+    return join('/', $config->{SERVER}, 
+        'api/v1/legacy/download/GenomeInfo', #"services/JBrowse/service.pl/download/GenomeInfo", # mdb changed 2/5/15 COGE-289
         "?gid=$dsgid&file=$filename");
-
-    return join "/", @url;
 }
 
 sub get_download_path {
@@ -2123,7 +2121,8 @@ sub generate_body {
         USER_CAN_DELETE => $user_can_delete,
         DELETED         => $genome->deleted,
         IRODS_HOME      => get_irods_path(),
-        USER => $USER->user_name
+        USER            => $USER->user_name,
+        DOWNLOAD_URL    => $config->{SERVER}."api/v1/legacy/sequence/$gid"
     );
 
     if ( $USER->is_admin ) {

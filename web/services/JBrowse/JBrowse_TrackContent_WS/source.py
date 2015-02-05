@@ -70,7 +70,8 @@ def fetch_sequence(genome_id, chr_id, start, stop, cookie_string):
         return
 
     url = service.format(base=config['SERVER'],
-        service='services/JBrowse/service.pl',
+        #service='services/JBrowse/service.pl',
+        service='api/v1/legacy/', # mdb added 2/5/15, COGE-289
         id=genome_id, chr=chr_id, start=start, stop=stop)
 
 
