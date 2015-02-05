@@ -578,7 +578,7 @@ sub get_genome_info {
     #    my $cogedir  = $P->{COGEDIR};
     #    my $cogeurl  = $P->{URL};
     #    $seq_file =~ s/$cogedir/$cogeurl/i;
-    my $seq_url = "services/service.pl/sequence/$gid";#my $seq_url = "services/JBrowse/service.pl/sequence/$gid"; # mdb added 7/31/13 issue 77 # mdb changed 8/9/14
+    my $seq_url = "api/v1/legacy/sequence/$gid"; #"services/service.pl/sequence/$gid"; # mdb changed 2/5/15, COGE-289
 
     $html .= "<tr><td>Tools:</td>"
      . qq{<td>}

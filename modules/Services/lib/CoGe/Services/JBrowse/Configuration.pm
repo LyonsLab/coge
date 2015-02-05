@@ -1,15 +1,18 @@
 package CoGe::Services::JBrowse::Configuration;
 use base 'CGI::Application';
+
 use Switch;
-use CoGeX;
-use CoGe::Accessory::Web;
-use CoGe::Core::Experiment qw(experimentcmp);
 use JSON;
 use URI::Escape qw(uri_escape);
 use Data::Dumper;
 use Sort::Versions;
-use Cwd 'abs_path';
-use Time::HiRes qw ( time );
+use Cwd qw(abs_path);
+use Time::HiRes qw(time);
+use File::Spec::Functions qw(catdir);
+
+use CoGeX;
+use CoGe::Accessory::Web;
+use CoGe::Core::Experiment qw(experimentcmp);
 
 my %expTypeToName = (
     1 => 'quant',
@@ -67,14 +70,16 @@ sub track_config {
     my $self = shift;
     my $gid  = $self->query->param('gid');
     print STDERR "JBrowse::Configuration::track_config gid=$gid\n";
+    #my $start_time = time; # for performance testing
     
-    # Get server name for constructing URLs.
-    my $SERVER_NAME = $ENV{SERVER_NAME}; # mdb added 12/11/14 for COGE-568
-
     # Connect to the database
-    my ( $db, $user ) = CoGe::Accessory::Web->init;
+    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
 
-    #	my $start_time = time;
+    # Get server name for constructing URLs.
+    my $SERVER_NAME = $conf->{SERVER};#$ENV{SERVER_NAME}; # mdb added 12/11/14 for COGE-568
+    my $JBROWSE_API = $SERVER_NAME . 'api/v1/jbrowse'; #TODO move to config file
+    #print STDERR "SERVER_NAME = $SERVER_NAME\n";
+    #print STDERR "JBROWSE_API = $JBROWSE_API\n";
 
     # Get genome
     my $genome = $db->resultset('Genome')->find($gid);
@@ -93,7 +98,7 @@ sub track_config {
     # Add reference sequence track
     push @tracks, {
         chunkSize     => 20000,
-        baseUrl       => "https://$SERVER_NAME/services/JBrowse/service.pl/sequence/$gid/",
+        baseUrl       => "$JBROWSE_API/sequence/$gid/", #"https://$SERVER_NAME/services/JBrowse/service.pl/sequence/$gid/",
         type          => "SequenceTrack",
         storeClass    => "JBrowse/Store/SeqFeature/REST",
         label         => "sequence",
@@ -109,7 +114,7 @@ sub track_config {
 
     # Add GC content track
     push @tracks, {
-        baseUrl    => "https://$SERVER_NAME/coge/services/JBrowse/track/gc/$gid/",
+        baseUrl    => "$JBROWSE_API/track/gc/$gid/", #"$SERVER_NAME/coge/services/JBrowse/track/gc/$gid/",
         type       => "CoGe/View/Track/GC_Content",
         storeClass => "JBrowse/Store/SeqFeature/REST",
         track      => "gc_content",
@@ -136,7 +141,7 @@ sub track_config {
     if (@feat_type_names) {
         # Add main overall composite track
         push @tracks, {
-            baseUrl      => "https://$SERVER_NAME/coge/services/JBrowse/track/annotation/$gid/",
+            baseUrl      => "$JBROWSE_API/track/annotation/$gid/",
             autocomplete => "all",
             track        => "features",
             label        => "features",
@@ -144,7 +149,7 @@ sub track_config {
             type         => "CoGe/View/Track/CoGeFeatures",
             description  => "note, description",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
-            onClick      => "https://$SERVER_NAME/coge/FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
+            onClick      => "$SERVER_NAME/FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
             maxFeatureScreenDensity => 20,
             maxHeight               => 100000,
             minSubfeatureWidth      => 4,
@@ -170,7 +175,7 @@ sub track_config {
         # Add a track for each feature type
         foreach my $type_name ( sort @feat_type_names ) {
             push @tracks, {
-                baseUrl => "https://$SERVER_NAME/coge/services/JBrowse/track/annotation/$gid/types/$type_name/",
+                baseUrl => "$JBROWSE_API/track/annotation/$gid/types/$type_name/",
                 autocomplete => "all",
                 track        => "features$type_name",
                 label        => "features$type_name",
@@ -178,7 +183,7 @@ sub track_config {
                 type         => "JBrowse/View/Track/HTMLFeatures",
                 storeClass   => "JBrowse/Store/SeqFeature/REST",
                 region_stats => 1, # see HTMLFeatures.js, force calls to stats/region instead of stats/global
-                onClick      => "https://$SERVER_NAME/coge/FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end};type=$type_name",
+                onClick      => "$SERVER_NAME/FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end};type=$type_name",
                 maxFeatureScreenDensity => 1000,     #50,
                 maxHeight               => 100000,
                 style                   => {
@@ -215,7 +220,7 @@ sub track_config {
 
                 # Add overall feature track
                 push @tracks, {
-                    baseUrl      => "https://$SERVER_NAME/coge/services/JBrowse/track/annotation/$gid/datasets/$dsid",
+                    baseUrl      => "$JBROWSE_API/track/annotation/$gid/datasets/$dsid",
                     autocomplete => "all",
                     track        => "features_ds".$dsid,
                     label        => "features_ds".$dsid,
@@ -223,7 +228,7 @@ sub track_config {
                     type         => "CoGe/View/Track/CoGeFeatures",
                     description  => "note, description",
                     storeClass   => "JBrowse/Store/SeqFeature/REST",
-                    onClick      => "https://$SERVER_NAME/coge/FeatAnno.pl?ds=$dsid;chr={chr};start={start};stop={end}",
+                    onClick      => "$SERVER_NAME/FeatAnno.pl?ds=$dsid;chr={chr};start={start};stop={end}",
                     maxFeatureScreenDensity => 20,
                     maxHeight               => 100000,
                     minSubfeatureWidth      => 4,
@@ -249,7 +254,7 @@ sub track_config {
                 # Add a track for each feature type
                 foreach my $type_name ( sort @feat_type_names ) {
                     push @tracks, {
-                        baseUrl => "https://$SERVER_NAME/coge/services/JBrowse/track/annotation/$gid/types/$type_name/",
+                        baseUrl => "$JBROWSE_API/track/annotation/$gid/types/$type_name/",
                         autocomplete => "all",
                         track        => 'features_ds'.$dsid.'_'.$type_name,
                         label        => 'features_ds'.$dsid.'_'.$type_name,
@@ -257,7 +262,7 @@ sub track_config {
                         type         => "JBrowse/View/Track/HTMLFeatures",
                         storeClass   => "JBrowse/Store/SeqFeature/REST",
                         region_stats => 1, # see HTMLFeatures.js, force calls to stats/region instead of stats/global
-                        onClick      => "https://$SERVER_NAME/coge/FeatAnno.pl?ds=$dsid;chr={chr};start={start};stop={end};type=$type_name",
+                        onClick      => "$SERVER_NAME/FeatAnno.pl?ds=$dsid;chr={chr};start={start};stop={end};type=$type_name",
                         maxFeatureScreenDensity => 1000,     #50,
                         maxHeight               => 100000,
                         style                   => {
@@ -351,7 +356,7 @@ sub track_config {
         }
 
         push @tracks, {
-            baseUrl      => "https://$SERVER_NAME/services/JBrowse/service.pl/experiment/$eid/",
+            baseUrl      => "$JBROWSE_API/experiment/$eid/",
             autocomplete => "all",
             track        => "experiment$eid",
             label        => "experiment$eid",
@@ -404,7 +409,7 @@ sub track_config {
     if ( keys %all_experiments ) {
         push @tracks, {
             key     => 'All Experiments',
-            baseUrl => "https://$SERVER_NAME/services/JBrowse/service.pl/experiment/genome/$gid/",
+            baseUrl => "$JBROWSE_API/experiment/genome/$gid/",
             autocomplete => "all",
             track        => "notebook0",
             label        => "notebook0",
@@ -432,7 +437,7 @@ sub track_config {
         my $nid = $n->id;
         push @tracks, {
             key     => ( $n->restricted ? '&reg; ' : '' ) . $n->name,
-            baseUrl => "https://$SERVER_NAME/services/JBrowse/service.pl/experiment/notebook/$nid/",
+            baseUrl => "$JBROWSE_API/experiment/notebook/$nid/",
             autocomplete => "all",
             track        => "notebook$nid",
             label        => "notebook$nid",
