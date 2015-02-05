@@ -2121,7 +2121,8 @@ sub generate_body {
         USER_CAN_DELETE => $user_can_delete,
         DELETED         => $genome->deleted,
         IRODS_HOME      => get_irods_path(),
-        USER => $USER->user_name
+        USER            => $USER->user_name,
+        DOWNLOAD_URL    => $config->{SERVER}."api/v1/legacy/sequence/$gid"
     );
 
     if ( $USER->is_admin ) {
