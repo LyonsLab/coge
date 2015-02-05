@@ -1906,11 +1906,11 @@ sub go {
 
     #length of a gap (average distance expected between two syntenic genes)
     my $gap = defined( $opts{g} ) ? $opts{g} : floor( $dagchainer_D / 2 );
-
+    $gap = 1 if $gap < 1;
     $dagchainer_file = $dag_file12;
-    $dagchainer_file .= "_D$dagchainer_D" if $dagchainer_D;
-    $dagchainer_file .= "_g$gap"          if $gap;
-    $dagchainer_file .= "_A$dagchainer_A" if $dagchainer_A;
+    $dagchainer_file .= "_D$dagchainer_D" if defined $dagchainer_D;
+    $dagchainer_file .= "_g$gap"          if defined $gap;
+    $dagchainer_file .= "_A$dagchainer_A" if defined $dagchainer_A;
     $dagchainer_file .= "_Dm$Dm"          if $dag_merge_enabled;
     $dagchainer_file .= "_gm$gm"          if $dag_merge_enabled;
     $dagchainer_file .= ".aligncoords";
@@ -1919,9 +1919,9 @@ sub go {
     my @dagargs = ();
     push @dagargs, [ "-E", "0.05", 1 ];
     push @dagargs, [ "-i",   $dag_file12,   1 ];
-    push @dagargs, [ "-D",   $dagchainer_D, 1 ] if $dagchainer_D;
-    push @dagargs, [ "-g",   $gap,          1 ] if $gap;
-    push @dagargs, [ "-A",   $dagchainer_A, 1 ] if $dagchainer_A;
+    push @dagargs, [ "-D",   $dagchainer_D, 1 ] if defined $dagchainer_D;
+    push @dagargs, [ "-g",   $gap,          1 ] if defined $gap;
+    push @dagargs, [ "-A",   $dagchainer_A, 1 ] if defined $dagchainer_A;
     push @dagargs, [ "--Dm", $Dm,           1 ] if $dag_merge_enabled;
     push @dagargs, [ "--m",  $gm,           1 ] if $dag_merge_enabled;
     push @dagargs, [ "--new_behavior", "", 1 ] if $self_comparision;
@@ -2753,11 +2753,12 @@ sub get_results {
 
     #length of a gap (average distance expected between two syntenic genes)
     my $gap = defined( $opts{g} ) ? $opts{g} : floor( $dagchainer_D / 2 );
+    $gap = 1 if $gap < 1;
 
     $dagchainer_file = $dag_file12;
-    $dagchainer_file .= "_D$dagchainer_D" if $dagchainer_D;
-    $dagchainer_file .= "_g$gap"          if $gap;
-    $dagchainer_file .= "_A$dagchainer_A" if $dagchainer_A;
+    $dagchainer_file .= "_D$dagchainer_D" if defined $dagchainer_D;
+    $dagchainer_file .= "_g$gap"          if defined $gap;
+    $dagchainer_file .= "_A$dagchainer_A" if defined $dagchainer_A;
     $dagchainer_file .= "_Dm$Dm"          if $dag_merge_enabled;
     $dagchainer_file .= "_gm$gm"          if $dag_merge_enabled;
     $dagchainer_file .= ".aligncoords";
