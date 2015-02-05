@@ -8,7 +8,7 @@
     }
 
     var JBrowse;
-    function init_JBrowse(id, callback) {
+    function init_JBrowse(id, apiBaseUrl, callback) { // mdb added apiBaseUrl, 2/3/15 COGE-289
 	    require( { baseUrl: 'js/jbrowse/src',
 	    		   packages: [ 'dojo', 'dijit', 'dojox', 'jszlib',
 	    		               { name: 'lazyload', main: 'lazyload' },
@@ -22,12 +22,13 @@
 	      		var queryParams = ioQuery.queryToObject( window.location.search.slice(1) );
 	            var gid = queryParams.gid || queryParams.dsgid;
 	            //var dataRoot = queryParams.data || 'data';
+	            if (!apiBaseUrl) apiBaseUrl = '';
 	            var config = {
 	                containerID: id,
 	                browserRoot: 'js/jbrowse/',
-	                refSeqs: 'services/JBrowse/service.pl/config/refseq/?gid='+gid,//refSeqs: dataRoot + "/seq/refSeqs.json",
+	                refSeqs: apiBaseUrl + '/config/refseq/?gid=' + gid, //'services/JBrowse/service.pl/config/refseq/?gid='+gid, //refSeqs: dataRoot + "/seq/refSeqs.json",
 	                baseUrl: '/',//'js/jbrowse/',//dataRoot+'/', // mdb changed 1/15/14 for JBrowse-1.11.1
-	                include: ['services/JBrowse/service.pl/config/tracks/?gid='+gid],//include: ['jbrowse_conf.json', dataRoot + "/trackList.json"],
+	                include: [apiBaseUrl + '/config/tracks/?gid=' + gid], //['services/JBrowse/service.pl/config/tracks/?gid='+gid], //include: ['jbrowse_conf.json', dataRoot + "/trackList.json"],
 	                //nameUrl: dataRoot + "/names/root.json",
 	                defaultTracks: "sequence,features",
 	                queryParams: queryParams,
