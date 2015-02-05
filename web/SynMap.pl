@@ -3060,13 +3060,15 @@ sub get_results {
         # mdb added 9/20/13 issue 77
         print_debug(msg => "$feat_type1 $feat_type2");
 
+        my $sequence_url = "api/v1/legacy/sequence"; #"services/JBrowse/service.pl/sequence"; # mdb changed 2/5/15, COGE-289
+
         my $fasta1_url = _filename_to_link(
-            url  => ( $feat_type1 eq "genomic" ? "services/JBrowse/service.pl/sequence/$dsgid1" : undef ),
+            url  => ( $feat_type1 eq "genomic" ? "$sequence_url/$dsgid1" : undef ),
             file => ( $feat_type1 eq "genomic" ? undef : $FASTADIR . "/$dsgid1-$feat_type1.fasta" ),
             msg  => qq{Fasta file for $org_name1: $feat_type1}
         );
         my $fasta2_url = _filename_to_link(
-            url  => ( $feat_type2 eq "genomic" ? "services/JBrowse/service.pl/sequence/$dsgid2" : undef ),
+            url  => ( $feat_type2 eq "genomic" ? "$sequence_url/$dsgid2" : undef ),
             file => ( $feat_type2 eq "genomic" ? undef : $FASTADIR . "/$dsgid2-$feat_type2.fasta" ),
             msg  => qq{Fasta file for $org_name2: $feat_type2}
         );
