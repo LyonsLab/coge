@@ -538,7 +538,10 @@ function update_dialog(request, user, identifier, formatter) {
             pageObj.error = 0;
         }
 
-        if (json.status) {
+        // json.status = 'error' is due to JEX timeout
+        if (json.status 
+        		&& json.status != 'error') // mdb added 2/5/15 - keep retrying if JEX timeout
+        {
             current_status = json.status.toLowerCase();
             workflow_status
             	.html("Workflow status: ")
@@ -581,7 +584,7 @@ function update_dialog(request, user, identifier, formatter) {
 
         }
         else if (current_status == "failed"
-                || current_status == "error"
+                //|| current_status == "error" // mdb removed 2/5/15 - keep retrying if JEX timeout
                 || current_status == "terminated"
                 || current_status == "cancelled")
         {
