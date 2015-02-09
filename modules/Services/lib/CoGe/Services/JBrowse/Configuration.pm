@@ -11,6 +11,7 @@ use Time::HiRes qw(time);
 use File::Spec::Functions qw(catdir);
 
 use CoGeX;
+use CoGeDBI qw(get_table get_user_access_table get_experiments get_distinct_feat_types);
 use CoGe::Accessory::Web;
 use CoGe::Core::Experiment qw(experimentcmp);
 
@@ -18,6 +19,8 @@ my %expTypeToName = (
     1 => 'quant',
     2 => 'snp'
 );
+
+my $DEBUG_PERFORMANCE = 0;
 
 sub setup {
     my $self = shift;
@@ -70,16 +73,15 @@ sub track_config {
     my $self = shift;
     my $gid  = $self->query->param('gid');
     print STDERR "JBrowse::Configuration::track_config gid=$gid\n";
-    #my $start_time = time; # for performance testing
+    my $start_time = time; # for performance testing
     
     # Connect to the database
     my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
 
-    # Get server name for constructing URLs.
+    # Get server name for constructing URLs
     my $SERVER_NAME = $conf->{SERVER};#$ENV{SERVER_NAME}; # mdb added 12/11/14 for COGE-568
     my $JBROWSE_API = $SERVER_NAME . 'api/v1/jbrowse'; #TODO move to config file
-    #print STDERR "SERVER_NAME = $SERVER_NAME\n";
-    #print STDERR "JBROWSE_API = $JBROWSE_API\n";
+    #print STDERR "SERVER_NAME = $SERVER_NAME\n", "JBROWSE_API = $JBROWSE_API\n";
 
     # Get genome
     my $genome = $db->resultset('Genome')->find($gid);
@@ -95,7 +97,9 @@ sub track_config {
 
     my @tracks;
 
+    #
     # Add reference sequence track
+    #
     push @tracks, {
         chunkSize     => 20000,
         baseUrl       => "$JBROWSE_API/sequence/$gid/", #"https://$SERVER_NAME/services/JBrowse/service.pl/sequence/$gid/",
@@ -112,7 +116,9 @@ sub track_config {
         }
     };
 
+    #
     # Add GC content track
+    #
     push @tracks, {
         baseUrl    => "$JBROWSE_API/track/gc/$gid/", #"$SERVER_NAME/coge/services/JBrowse/track/gc/$gid/",
         type       => "CoGe/View/Track/GC_Content",
@@ -134,9 +140,11 @@ sub track_config {
         }
     };
 
-    #print STDERR 'time1: ' . (time - $start_time) . "\n";
+    print STDERR 'time1: ' . (time - $start_time) . "\n" if $DEBUG_PERFORMANCE;
 
+    #
     # Add overall feature group for all datasets
+    #
     my @feat_type_names = grep( !/chromosome/, $genome->distinct_feature_type_names ); # exclude "chromosome" features
     if (@feat_type_names) {
         # Add main overall composite track
@@ -158,8 +166,8 @@ sub track_config {
                 arrowheadClass           => "arrowhead",
                 className                => "generic_parent",
                 maxDescriptionLength     => 70,
-                showLabels               => JSON::true,#'true',
-                centerChildrenVertically => JSON::true,#'true',
+                showLabels               => JSON::true,
+                centerChildrenVertically => JSON::true,
                 subfeatureClasses        => { match_part => "match_part7" }
             },
 
@@ -171,6 +179,8 @@ sub track_config {
                 collapsed => 1 #FIXME move into CSS
             }
         };
+        
+        print STDERR 'time1a: ' . (time - $start_time) . "\n" if $DEBUG_PERFORMANCE;
 
         # Add a track for each feature type
         foreach my $type_name ( sort @feat_type_names ) {
@@ -192,9 +202,9 @@ sub track_config {
                     histScale                => 0.002,
                     minSubfeatureWidth       => 6,
                     maxDescriptionLength     => 70,
-                    showLabels               => JSON::true,#'true',
+                    showLabels               => JSON::true,
                     description              => "note, description",
-                    centerChildrenVertically => JSON::true,#'true',
+                    centerChildrenVertically => JSON::true,
                     subfeatureClasses        => { match_part => "match_part7" }
                 },
 
@@ -209,8 +219,12 @@ sub track_config {
             };
         }
     }
+    
+    print STDERR 'time1b: ' . (time - $start_time) . "\n" if $DEBUG_PERFORMANCE;
 
+    #
     # Add a feature group for each dataset
+    #
     if ( @{$genome->datasets} > 1) {
         foreach my $ds ( sort { $a->name cmp $b->name } $genome->datasets ) {
             @feat_type_names = grep( !/chromosome/, $ds->distinct_feature_type_names ); # exclude "chromosome" features
@@ -237,8 +251,8 @@ sub track_config {
                         arrowheadClass           => "arrowhead",
                         className                => "generic_parent",
                         maxDescriptionLength     => 70,
-                        showLabels               => JSON::true,#'true',
-                        centerChildrenVertically => JSON::true,#'true',
+                        showLabels               => JSON::true,
+                        centerChildrenVertically => JSON::true,
                         subfeatureClasses        => { match_part => "match_part7" }
                     },
 
@@ -271,9 +285,9 @@ sub track_config {
                             histScale                => 0.002,
                             minSubfeatureWidth       => 6,
                             maxDescriptionLength     => 70,
-                            showLabels               => JSON::true,#'true',
+                            showLabels               => JSON::true,
                             description              => "note, description",
-                            centerChildrenVertically => JSON::true,#'true',
+                            centerChildrenVertically => JSON::true,
                             subfeatureClasses        => { match_part => "match_part7" }
                         },
 
@@ -291,29 +305,40 @@ sub track_config {
         }
     }
 
-    #print STDERR 'time2: ' . (time - $start_time) . "\n";
+    print STDERR 'time2: ' . (time - $start_time) . "\n" if $DEBUG_PERFORMANCE;
 
+    #
     # Add experiment tracks
-    my %all_notebooks;
-    my %all_experiments;
-    my %expByNotebook;
-    foreach $e ( sort experimentcmp $genome->experiments ) {
-        next if ( $e->deleted );
-        next unless $user->has_access_to_experiment($e);
-        my $eid = $e->id;
-        $all_experiments{$eid} = $e;
+    #
+    my %experiments;    # all experiments hashed by id -- used later for creating "All Experiments" section
+    my %notebooks;      # all notebokos hashed by id -- used later for creating individual notebooks
+    my %expByNotebook;  # all experiments hashed by notebook id -- used later for creating individual notebooks
+   
+    # mdb added 2/9/15 for performance improvement, COGE-166
+    my $connectors = get_user_access_table($db->storage->dbh, $user->id);
+    my $allNotebooks = get_table($db->storage->dbh, 'list');
+    my $allNotebookConn = get_table($db->storage->dbh, 'list_connector', ['child_id', 'list_connector_id'], {child_type => 3});
 
-        # Make a list of notebook id's
+    foreach $e ( sort experimentcmp get_experiments($db->storage->dbh, $genome->id) ) { # sort experimentcmp $genome->experiments
+        next if ( $e->{deleted} );
+        my $eid = $e->{experiment_id};
+        next if ($e->{restricted} && !$user->admin && !$connectors->{3}{$eid}); #next unless $user->has_access_to_experiment($e);
+        $experiments{$eid} = $e;
+
+        # Build a list of notebook id's
         my @notebooks;
-        foreach my $n ( $e->notebooks ) {
-        	next if ($n->deleted);
-            push @notebooks, $n->id;
-            $all_notebooks{ $n->id } = $n;
-            push @{ $expByNotebook{ $n->id } },
+        foreach my $conn (values %{$allNotebookConn->{$eid}}) {
+            my $nid = $conn->{parent_id};
+            my $n = $allNotebooks->{$nid};
+            next if $n->{deleted};
+            next if ($n->{restricted} && !$user->admin && !$connectors->{1}{$nid});
+            push @notebooks, $nid;
+            $notebooks{$nid} = $n;
+            push @{ $expByNotebook{$nid} },
               {
-                id   => $e->id,
-                name => $e->name,
-                type => $expTypeToName{ $e->data_type }
+                id   => $eid,
+                name => $e->{name},
+                type => $expTypeToName{ $e->{data_type} }
               };
         }
         push @notebooks, 0;    # add fake "all experiments" notebook
@@ -331,25 +356,25 @@ sub track_config {
         #		}
 
         my ($type, $featureScale, $histScale, $labelScale);
-        if (!$e->data_type or $e->data_type == 1) { #FIXME hardcoded data_type 'quantitative'
+        if (!$e->{data_type} or $e->{data_type} == 1) { #FIXME hardcoded data_type 'quantitative'
 			$type = 'CoGe/View/Track/Wiggle/MultiXYPlot';
 			$featureScale = 0.001;
 			$histScale = 0.05;
 			$labelScale = 0.1;
 		}
-		elsif ($e->data_type == 2) { #FIXME hardcoded data_type 'polymorphism'
+		elsif ($e->{data_type} == 2) { #FIXME hardcoded data_type 'polymorphism'
 			$type = 'CoGe/View/Track/CoGeVariants';
 			$featureScale = 0.0001;
 			$histScale = 0.01;
 			$labelScale = 0.5;
 		}
-		elsif ($e->data_type == 3) { #FIXME hardcoded data_type 'alignment'
+		elsif ($e->{data_type} == 3) { #FIXME hardcoded data_type 'alignment'
 			$type = 'CoGe/View/Track/CoGeAlignment';#"JBrowse/View/Track/Alignments2";
 			$featureScale = 0.005;
 			$histScale = 0.01;
 			$labelScale = 0.5;
 		}
-        elsif ($e->data_type == 4) { #FIXME hardcoded data_type 'marker'
+        elsif ($e->{data_type} == 4) { #FIXME hardcoded data_type 'marker'
             $type = "JBrowse/View/Track/HTMLFeatures";
             $histScale = 0.002;
             $labelScale = 0.5;
@@ -360,7 +385,7 @@ sub track_config {
             autocomplete => "all",
             track        => "experiment$eid",
             label        => "experiment$eid",
-            key          => ( $e->restricted ? '&reg; ' : '' ) . $e->name,
+            key          => ( $e->{restricted} ? '&reg; ' : '' ) . $e->{name},
             type         => $type,
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             region_feature_densities => 1, # enable histograms in store
@@ -368,7 +393,7 @@ sub track_config {
                 featureScale => $featureScale,
                 histScale    => $histScale,
                 labelScale   => $labelScale,
-                showLabels   => JSON::true,#'true',
+                showLabels   => JSON::true,
                 className    => '{type}',
                 histCss      => 'background-color:' . getFeatureColor($eid),
                 featureCss   => 'background-color:' . getFeatureColor($eid)
@@ -388,8 +413,8 @@ sub track_config {
                     'coge-tracklist-info'
                 ],
                 collapsed   => 1, #FIXME move into CSS
-                name        => $e->name,
-                description => $e->description,
+                name        => $e->{name},
+                description => $e->{description},
                 notebooks   => ( @notebooks ? \@notebooks : undef ),
                 annotations => ( @annotations ? \@annotations : undef ),
                 onClick     => "ExperimentView.pl?embed=1&eid=$eid",
@@ -403,10 +428,12 @@ sub track_config {
         };
     }
 
-    #	print STDERR 'time3: ' . (time - $start_time) . "\n";
+    print STDERR 'time3: ' . (time - $start_time) . "\n" if $DEBUG_PERFORMANCE;
 
+    #
     # Create a fake "All Experiments" notebook track
-    if ( keys %all_experiments ) {
+    #
+    if ( keys %experiments ) {
         push @tracks, {
             key     => 'All Experiments',
             baseUrl => "$JBROWSE_API/experiment/genome/$gid/",
@@ -425,18 +452,19 @@ sub track_config {
                 collapsed   => 1, #FIXME move into CSS
                 name        => 'All Experiments',
                 description => '',
-                count       => keys %all_experiments,
-                #experiments => [ values %all_experiments ],
+                count       => keys %experiments,
+                #experiments => [ values %experiments ],
             }
         };
     }
 
+    #
     # Add notebook tracks
-    foreach my $n ( sort { $a->name cmp $b->name } values %all_notebooks ) {
-        next unless $user->has_access_to_list($n);
-        my $nid = $n->id;
+    #
+    foreach my $n ( sort { $a->{name} cmp $b->{name} } values %notebooks ) {
+        my $nid = $n->{list_id};
         push @tracks, {
-            key     => ( $n->restricted ? '&reg; ' : '' ) . $n->name,
+            key     => ( $n->{restricted} ? '&reg; ' : '' ) . $n->{name},
             baseUrl => "$JBROWSE_API/experiment/notebook/$nid/",
             autocomplete => "all",
             track        => "notebook$nid",
@@ -456,9 +484,10 @@ sub track_config {
                     'coge-tracklist-info'
                 ],
                 collapsed   => 1, #FIXME move into CSS
-                name        => $n->name,
-                description => $n->description,
-                editable    => $user->is_admin || $user->is_owner_editor( list => $n ) || undef,
+                name        => $n->{name},
+                description => $n->{description},
+                #editable    => $user->is_admin || $user->is_owner_editor( list => $n ) || undef, # mdb removed 2/6/15
+                editable    => $user->is_admin || $connectors->{1}{$nid} == 2 || $connectors->{1}{$nid} == 3 || undef, # mdb added 2/6/15 #TODO move this obscure code into an API
                 experiments => ( @{ $expByNotebook{$nid} } ? $expByNotebook{$nid} : undef ),
                 count       => scalar @{ $expByNotebook{$nid} },
                 onClick     => "NotebookView.pl?embed=1&lid=$nid",
@@ -472,7 +501,7 @@ sub track_config {
         };
     }
 
-#	print STDERR 'time4: ' . (time - $start_time) . "\n";print STDERR 'time1: ' . (time - $start_time) . "\n";
+    print STDERR 'time4: ' . (time - $start_time) . "\n" if $DEBUG_PERFORMANCE;
 
     return encode_json(
         {
@@ -481,9 +510,6 @@ sub track_config {
             plugins       => ['CoGe'],
             trackSelector => {
                 type => 'CoGe/View/TrackList/CoGe',
-
-                # plugin-specific stuff
-                # <none>
             },
             tracks => \@tracks,
         }
