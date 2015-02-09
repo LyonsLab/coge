@@ -322,7 +322,7 @@ sub track_config {
     foreach $e ( sort experimentcmp get_experiments($db->storage->dbh, $genome->id) ) { # sort experimentcmp $genome->experiments
         next if ( $e->{deleted} );
         my $eid = $e->{experiment_id};
-        next if ($e->{restricted} && !$user->admin && !$connectors->{3}{$eid}); #next unless $user->has_access_to_experiment($e);
+        next if ($e->{restricted} && !$user->admin && defined $connectors && !$connectors->{3}{$eid}); #next unless $user->has_access_to_experiment($e); #TODO move into an API
         $experiments{$eid} = $e;
 
         # Build a list of notebook id's
@@ -487,7 +487,7 @@ sub track_config {
                 name        => $n->{name},
                 description => $n->{description},
                 #editable    => $user->is_admin || $user->is_owner_editor( list => $n ) || undef, # mdb removed 2/6/15
-                editable    => $user->is_admin || $connectors->{1}{$nid} == 2 || $connectors->{1}{$nid} == 3 || undef, # mdb added 2/6/15 #TODO move this obscure code into an API
+                editable    => $user->is_admin || (defined $connectors && ($connectors->{1}{$nid} == 2 || $connectors->{1}{$nid} == 3)) || undef, # mdb added 2/6/15 #TODO move this obscure code into an API
                 experiments => ( @{ $expByNotebook{$nid} } ? $expByNotebook{$nid} : undef ),
                 count       => scalar @{ $expByNotebook{$nid} },
                 onClick     => "NotebookView.pl?embed=1&lid=$nid",

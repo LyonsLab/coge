@@ -72,6 +72,7 @@ sub get_user_access_table {
     my $dbh = shift;         # database connection handle
     my $user_id = shift;     # user id
     #my $child_type = shift;  # optional child_type
+    return unless $user_id;
     
     # Get user connections
     my $query = "SELECT * FROM user_connector WHERE parent_type=5 AND parent_id=$user_id";
