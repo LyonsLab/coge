@@ -7,7 +7,7 @@ use CoGe::Accessory::Utils qw( commify );
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web;
-use CoGe::Core::List qw(listcmp);
+use CoGe::Core::Notebook qw(notebookcmp);
 use CGI;
 use JSON::XS;
 use HTML::Template;
@@ -717,7 +717,7 @@ sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
 
     # Build select items out of results
     my $html;
-    foreach my $n ( sort listcmp @notebooks ) {
+    foreach my $n ( sort notebookcmp @notebooks ) {
         my $item_spec = 1 . ':' . $n->id; #FIXME magic number for item_type
         $html .= "<option value='$item_spec'>" . $n->info . "</option><br>\n";
     }
