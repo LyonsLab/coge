@@ -9,7 +9,7 @@ use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils qw( commify get_link_coords );
 use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
-use CoGe::Core::List qw(listcmp);
+use CoGe::Core::Notebook qw(notebookcmp);
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
@@ -117,17 +117,18 @@ sub gen_html {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
 
-    #$template->param(TITLE=>'CoGe BLAST Analysis');
+    $template->param(TITLE=>'CoGeBLAST: Perform BLAST Analysis');
     $template->param( PAGE_TITLE => 'BLAST',
     				  PAGE_LINK  => $LINK,
-    				  HELP       => '/wiki/index.php?title=CoGeBlast' );
+    				  #HELP       => '/wiki/index.php?title=CoGeBlast' );
+				  HELP       => $P->{SERVER} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= ' ' . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER => $name );
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-    $template->param( LOGO_PNG => "CoGeBlast-logo.png" );
+    $template->param( LOGO_PNG => "CoGe.svg" );
 
     $template->param( ADMIN_ONLY => $USER->is_admin );
     #	$template->param( BOX_NAME   => 'CoGeBlast Settings' );
@@ -570,12 +571,17 @@ sub gen_dsg_menu {
       )
     {
         next unless $USER->has_access_to_genome($dsg);
+            #added by EHL 12/30/2014
+            next if $dsg->deleted;
+            ######
+
         $dsgid = $dsg->id unless $dsgid;
         my $name = join( ", ", map { $_->name } $dsg->source ) . ": ";
 
  #$name .= $dsg->name ? $dsg->name : $dsg->datasets->[0]->name;
  #$name .= ", ";
  #$name .= $dsg->type->name." (v".$dsg->version.") ".commify($dsg->length)."nt";
+	$name .= " (id ". $dsg->id.") ";
         $name .= $dsg->name . ", " if $dsg->name; # : $dsg->datasets->[0]->name;
         $name .= "v"
           . $dsg->version . " "
@@ -620,6 +626,10 @@ sub get_dsg_for_menu {
             $coge->resultset('Genome')->search( { organism_id => [@orgids] } ) )
         {
             next unless $USER->has_access_to_genome($dsg);
+            #added by EHL 12/30/2014
+            next if $dsg->deleted;
+            ######
+
             $dsgs{ $dsg->id } = $dsg;
         }
     }
@@ -629,6 +639,9 @@ sub get_dsg_for_menu {
         foreach my $dsgid ( split( /,/, $dsgids ) ) {
             my $dsg = $coge->resultset('Genome')->find($dsgid);
             next unless $USER->has_access_to_genome($dsg);
+            #added by EHL 12/30/2014
+            next if $dsg->deleted;
+            ######
             $dsgs{ $dsg->id } = $dsg;
         }
     }
@@ -642,6 +655,7 @@ sub get_dsg_for_menu {
         $html .=
             $dsg->id . "::"
           . $org_name . " ("
+          . "id " . $dsg->id . " "
           . $ds->data_source->name . " "
           . $dsg->type->name . " v"
           . $dsg->version . ")";
@@ -3123,7 +3137,7 @@ sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
 
     # Build select items out of results
     my $html;
-    foreach my $n ( sort listcmp @notebooks ) {
+    foreach my $n ( sort notebookcmp @notebooks ) {
         my $item_spec = 1 . ':' . $n->id; #FIXME magic number for item_type
         $html .= "<option value='$item_spec'>" . $n->info . "</option><br>\n";
     }

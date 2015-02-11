@@ -1347,6 +1347,7 @@ function toggle_star(img) {
 
 </script>
 
+<!--
 <div id="top_panel">
 	<div style="width:100%;float:left;border-bottom:1px solid lightgray;">
 		<span id="hide_panel_button" onClick="hide_top_panel();" class="link ui-icon ui-icon-minus" style="float:right;margin-left:20px;margin-right:5px;border:1px solid lightgray;"></span>
@@ -1368,6 +1369,7 @@ function toggle_star(img) {
 	</div>
 	<div style="clear:both;height:13px;"></div>
 </div>
+-->
 
 <div id="bottom-panel" style="width:100%;">
 	<div style="float:right;width:200px;">
@@ -1396,7 +1398,7 @@ function toggle_star(img) {
 		<span id="share_button" onClick="share_dialog();" class="coge-icon coge-disabled glyphicon glyphicon-user item-button invisible" style="margin-right:5px;" title="Share Selected Items"></span>
 		<span id="notebook_button" onClick="add_to_notebook_dialog();" class="coge-icon coge-disabled glyphicon glyphicon-folder-open item-button invisible" style="margin-right:5px;" title="Add Selected Items to Notebook"></span>
 		<span id="edit_button" onClick="edit_dialog();" class="coge-icon coge-disabled glyphicon glyphicon-cog item-button invisible" style="margin-right:5px;" title="Edit Selected Items"></span>
-		<span id="delete_button" onClick="delete_items();" class="coge-icon coge-disabled glyphicon glyphicon-trash item-button invisible" style="margin-right:5px;" title="Undelete Selected Items"></span>
+		<span id="delete_button" onClick="delete_items();" class="coge-icon coge-disabled glyphicon glyphicon-trash item-button invisible" style="margin-right:5px;" title="Delete Selected Items"></span>
 		<span id="send_button" onClick="send_menu();" class="coge-icon coge-disabled glyphicon glyphicon-arrow-right item-button invisible" style="margin-right:5px;" title="Send Selected Items to ..."></span>
 		<span id="undelete_button" onClick="undelete_items();" class="coge-icon coge-disabled glyphicon glyphicon-asterisk item-button invisible" style="margin-right:5px;" title="Undelete Selected Items"></span>
 		<ul id="send_menu" class="small hidden">
@@ -1419,7 +1421,7 @@ function toggle_star(img) {
 	</div>
 
 	<div id="contents_panel" class="small panel">
-		<div id="contents_table" style="overflow:auto;height:70%;border-top:1px solid lightgray;">
+		<div id="contents_table" style="overflow:auto;height:80%;border-top:1px solid lightgray;">
 			<TMPL_VAR NAME='CONTENTS'>
 		</div>
 	</div>

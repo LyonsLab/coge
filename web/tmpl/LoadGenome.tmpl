@@ -898,9 +898,9 @@ function update_dialog(request, user, identifier, formatter) {
 			<span id="files_clear" onClick="clear_list();" class='ui-state-disabled ui-button ui-corner-all coge-button' style="margin-top:0.5em;">Clear List</span>
 		</div>
 		<div class="padded" style="background-color: white; overflow:hidden; width:auto; min-height:8em; border:1px solid lightgray; margin-right:5px; margin-bottom:5px;">
-			<div class="small bold text">Selected files:</div>
+			<div class="small bold text">Files:</div>
 			<div>
-				<div id="no_files" class="indent small padded note">You haven't selected any files yet, click "Add Data"</div>
+				<div id="no_files" class="indent small padded note">You haven't added any files yet, click "Add Data"</div>
 				<table id='file_table' class="small padded"></table>
 			</div>
 		</div>
@@ -994,7 +994,7 @@ function update_dialog(request, user, identifier, formatter) {
 	    <span onClick="handle_action();" class="ui-button ui-corner-all coge-button r">GO</span>
 	    <span class="r" style="padding-top:5px;">
 	        <select>
-	            <option value="genome">View Genome</option>
+	            <option value="genome">View Genome Info</option>
 	            <option value="annotation">Load Annotations</option>
 	            <option value="new">Load Another Genome</option>
 	        </select>

@@ -150,7 +150,7 @@ sub gen_body {
         return $template->output;
     }
     else {
-        return "No dataset_group (genome) ids were specified.";
+        return "No genomes were specified.";
     }
 }
 
@@ -166,7 +166,7 @@ sub generate_table {
         my $desc = $dsg->description ? $dsg->description : join(
             "; ",
             map {
-qq{<span class=link onclick=window.open('OrganismView.pl?org_desc=$_')>$_</span>}
+                qq{<span class=link onclick=window.open('OrganismView.pl?org_desc=$_')>$_</span>}
               } split /;\s*/,
             $dsg->organism->description
         );

@@ -10,6 +10,7 @@ use Data::Dumper;
 use Getopt::Long;
 use File::Spec::Functions;
 use File::Path;
+use URI::Escape::JavaScript qw(escape);
 
 use vars qw($conf_file $coge $gid $restricted $P $mask $uid $staging_dir $result_dir $seq_only);
 
@@ -24,7 +25,7 @@ GetOptions(
     "sequence_only=i"  => \$seq_only, #flag for only copying the sequences -- no structural annotations
 );
 
-$staging_dir //= ".";
+$staging_dir //= "."; #/
 # Open log file
 $| = 1;
 unless ($staging_dir) {
@@ -141,7 +142,7 @@ sub load_genome {
     $cmd .= " -staging_dir " . $staging_dir;
     $cmd .= " -result_dir " . $result_dir;
     $cmd .= " -organism_id " . $genome->organism->id;
-    $cmd .= " -name '" . $genome->name . "'" if $genome->name;
+    $cmd .= " -name '" . escape($genome->name) . "'" if $genome->name;
     $cmd .= " -message 'Copy of genome gid:" . $genome->id . "'";
     $cmd .= " -link 'OrganismView.pl?gid=" . $genome->id . "'";
 
@@ -152,7 +153,7 @@ sub load_genome {
     $cmd .= " -user_id " . $uid if $uid;
     $cmd .= " -creator_id " . $creator->id if $creator;
 
-    $cmd .= " -version '" . $genome->version . "'";
+    $cmd .= " -version '" . escape($genome->version) . "'";
     #$cmd .= " -ds_name '" . $ds->name . "'";
     #$cmd .= " -ds_desc '" . $ds->description . "'" if $ds->description;
     $cmd .= " -type_id " . $stid;

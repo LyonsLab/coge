@@ -110,10 +110,12 @@ sub gen_html {
     
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( PAGE_TITLE => 'OrganismView',
-                      LOGO_PNG => "OrganismView-logo.png",
+		      TITLE      => 'OrganismView: Search Organisms and Genomes',
+                      LOGO_PNG => "CoGe.svg",
     				  PAGE_LINK  => $LINK,
     				  HEAD       => qq{},
-    				  HELP       => "/wiki/index.php?title=OrganismView" ,
+    				  #HELP       => "/wiki/index.php?title=OrganismView" ,
+				  HELP       => $P->{SERVER},
     				  ADMIN_ONLY => $USER->is_admin,
                       USER     => $USER->display_name || ''
     );
@@ -226,8 +228,7 @@ sub get_orgs {
     my $dsid    = $opts{dsid};   # dataset id
     my $dsname  = $opts{dsname}; # dataset name
     my $output  = $opts{output} || 'json';
-    
-    print STDERR "get_orgs\n", Dumper \%opts, "\n";
+    #print STDERR "get_orgs\n", Dumper \%opts, "\n";
 
     my (%organisms, %genomes, %datasets);
     
@@ -577,7 +578,7 @@ sub get_genome_info {
     #    my $cogedir  = $P->{COGEDIR};
     #    my $cogeurl  = $P->{URL};
     #    $seq_file =~ s/$cogedir/$cogeurl/i;
-    my $seq_url = "services/service.pl/sequence/$gid";#my $seq_url = "services/JBrowse/service.pl/sequence/$gid"; # mdb added 7/31/13 issue 77 # mdb changed 8/9/14
+    my $seq_url = "api/v1/legacy/sequence/$gid"; #"services/service.pl/sequence/$gid"; # mdb changed 2/5/15, COGE-289
 
     $html .= "<tr><td>Tools:</td>"
      . qq{<td>}

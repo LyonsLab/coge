@@ -536,7 +536,7 @@ sub generate_export {
     my $conf = File::Spec->catdir($P->{COGEDIR}, "coge.conf");
     my $script = File::Spec->catdir($P->{SCRIPTDIR}, "export_experiment.pl");
     my $workdir = get_download_path($eid);
-    my $resdir = $P->{RESOURCESDIR};
+    my $resdir = $P->{RESOURCEDIR};
 
     my $cmd = "$script -eid $eid -config $conf -dir $workdir -output $filename -a 1";
 
@@ -555,11 +555,9 @@ sub get_download_url {
     my $dir = $args{dir};
     my $filename = basename($args{file});
 
-    my @url = ($P->{SERVER}, "services/JBrowse",
-        "service.pl/download/ExperimentView",
+    return join('/', $P->{SERVER}, 
+        'api/v1/legacy/download/ExperimentView', #"services/JBrowse/service.pl/download/ExperimentView", # mdb changed 2/5/15 COGE-289
         "?eid=$id&dir=$dir&file=$filename");
-
-    return join "/", @url;
 }
 
 sub get_file_urls {
@@ -613,10 +611,12 @@ sub gen_html {
           if ( $USER->first_name && $USER->last_name );
         $template->param(
             PAGE_TITLE => $PAGE_TITLE,
+	    TITLE      => 'ExperimentView',
             PAGE_LINK  => $LINK,
-            HELP       => '/wiki/index.php?title=' . $PAGE_TITLE,
+            #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE,
+	    HELP       => $P->{SERVER},
             USER       => $name,
-            LOGO_PNG   => "$PAGE_TITLE-logo.png",
+            LOGO_PNG   => "CoGe.svg",
             ADJUST_BOX => 1,
         );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";

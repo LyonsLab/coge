@@ -89,14 +89,16 @@ sub generate_html {
     else {
         $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param( PAGE_TITLE => $PAGE_TITLE,
+					  TITLE      => "LoadAnnotation",
         				  PAGE_LINK  => $LINK,
-        				  HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+        				  #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+					  HELP       => $P->{SERVER} );
         my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
         $name .= ' ' . $USER->last_name
           if ( $USER->first_name && $USER->last_name );
         $template->param( USER     => $name );
-        $template->param( LOGO_PNG => $PAGE_TITLE . "-logo.png" );
+        $template->param( LOGO_PNG => "CoGe.svg" );
         $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
     
         my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
@@ -389,17 +391,11 @@ sub load_annotation {
     my $link        = $opts{link};
     my $version     = $opts{version};
     my $source_name = $opts{source_name};
-    my $restricted  = $opts{restricted};
     my $user_name   = $opts{user_name};
     my $gid         = $opts{gid};
     my $items       = $opts{items};
 
-    # print STDERR "load_annotation: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
-
-	# Added EL: 10/24/2013.  Solves the problem when restricted is unchecked.
-	# Otherwise, command-line call fails with next arg being passed to
-	# restricted as option
-    $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
+    # print STDERR "load_annotation: name=$name description=$description version=$version gid=$gid\n";
 
     # Check login
     if ( !$user_name || !$USER->is_admin ) {
@@ -434,7 +430,6 @@ sub load_annotation {
             link => $link,
             version => $version,
             source_name => $source_name,
-            restricted => $restricted,
             genome_id => $gid
         },
         files => \@files

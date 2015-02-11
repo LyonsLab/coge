@@ -89,14 +89,16 @@ sub generate_html {
     else {    
         $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param( PAGE_TITLE => $PAGE_TITLE,
+					  TITLE      => "LoadBatch",
         				  PAGE_LINK  => $LINK,
-        				  HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+        				  #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+					  HELP       => $P->{SERVER} );
         my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
         $name .= ' ' . $USER->last_name
           if ( $USER->first_name && $USER->last_name );
         $template->param( USER     => $name );
-        $template->param( LOGO_PNG => $PAGE_TITLE . "-logo.png" );
+        $template->param( LOGO_PNG => "CoGe.svg" );
         $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
         $template->param( ADJUST_BOX => 1 );
         $template->param( ADMIN_ONLY => $USER->is_admin );
