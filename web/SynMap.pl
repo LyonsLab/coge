@@ -3171,7 +3171,7 @@ sub get_results {
 
         if ($spa_url and $assemble) {
             $spa_result = $spa_url
-                . qq{<a href="#" class="small" onclick="coge.synmap.submit_assembly(window.event, '$dagchainer_file', '$dsgid1', '$dsgid2');">}
+                . qq{<a href="#" onclick="coge.synmap.submit_assembly(window.event, '$dagchainer_file', '$dsgid1', '$dsgid2');">}
                 . qq{Generate Pseudo-Assembled Genomic Sequence}
                 . qq{</a>};
         }
@@ -3255,7 +3255,7 @@ sub get_results {
         ########################################################################
 
         $results->param( link => $tiny_link );
-    my ($ks_file) = $ks_db =~ /([^\/]*)$/;
+        my ($ks_file) = $ks_db =~ /([^\/]*)$/;
         if ($ks_type) {
             my $link = "SynSub.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;file=$ks_file";
             $results->param( synsub => $link );
