@@ -175,11 +175,12 @@ sub gen_html {
     my $html;    # =  "Content-Type: text/html\n\n";
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( LOGO_PNG   => "GEvo-logo.png" );
-    $template->param( TITLE      => 'Genome Evolution Analysis',
+    $template->param( LOGO_PNG   => "CoGe.svg" );
+    $template->param( TITLE      => 'GEvo: Genome Evolution Analysis',
     				  PAGE_TITLE => 'GEvo',
     				  PAGE_LINK  => $LINK,
-    				  HELP       => '/wiki/index.php?title=GEvo' );
+    				  #HELP       => '/wiki/index.php?title=GEvo' );
+				  HELP       => $P->{SERVER} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
@@ -1330,7 +1331,7 @@ qq{<br><a href="http://genomevolution.org/wiki/index.php/Gobe" class="small" sty
       . basename($all_file)
       . "\" target=_new>all sequences</A></font></DIV>\n";
     $html .=
-qq{<td class=dropmenu><td><span class=bold>Third part systemannotation files</span>};
+qq{<td class="dropmenu"><td><span class="bold">Third party system annotation files</span>};
     foreach my $item (@sets) {
         my $anno_file = generate_annotation(%$item);
         next unless $anno_file;

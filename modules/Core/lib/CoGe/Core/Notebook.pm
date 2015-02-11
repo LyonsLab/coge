@@ -14,7 +14,7 @@ BEGIN {
 
     $VERSION = 0.0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw( create_notebook search_notebooks add_items_to_notebook %ITEM_TYPE );
+    @EXPORT = qw( create_notebook search_notebooks add_items_to_notebook notebookcmp %ITEM_TYPE );
 
     my $node_types = CoGeX::node_types();
 
@@ -147,6 +147,18 @@ sub add_items_to_notebook {
     }
 
     return 1;
+}
+
+sub notebookcmp($$) {
+    my ($a, $b) = $_;
+
+    my $namea = "";
+    my $nameb = "";
+
+    $namea = $a->name if defined $a and $a->name;
+    $nameb = $b->name if defined $b and $b->name;
+
+    $namea cmp $nameb;
 }
 
 1;

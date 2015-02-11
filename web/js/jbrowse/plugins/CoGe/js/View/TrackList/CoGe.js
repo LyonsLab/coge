@@ -405,8 +405,7 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                 			// Else, it's not inside a notebook
                 			new ConfirmDialog({
                     				title: 'Delete ' + coge.type + '?',
-                    				message: 'Really delete this ' + coge.type + '?  '
-                    					+ (coge.type == 'experiment' ? 'Deleting it will move it to the trash.' : 'Deleting it is permanent.')
+                    				message: 'Really delete this ' + coge.type + '?  Deleting it will move it to the trash.'
                 				})
                                 .show( dojo.hitch(this, function( confirmed ) {
                                      if( confirmed ) {

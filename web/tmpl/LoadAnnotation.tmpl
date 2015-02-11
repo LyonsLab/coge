@@ -133,7 +133,6 @@ function load_annotation() {
 	var description = $('#edit_description').val();
 	var link = $('#edit_link').val();
 	var version = $('#edit_version').val();
-	var restricted = $('#restricted').is(':checked');
 	var genome = $('#edit_genome').val();
 	var gid = $('#gid').val();
 
@@ -191,7 +190,6 @@ function load_annotation() {
 			description: description,
 			link: link,
 			version: version,
-			restricted: restricted,
 			gid: gid,
 			source_name: source,
 			user_name: user_name,
@@ -589,10 +587,6 @@ function more() {
 	      <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all coge-button'>New</span>
 	      <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
 	    </td>
-	  </tr>
-	  <tr>
-	    <td>Restricted?</td>
-	    <td><input id="restricted" type="checkbox" checked></td>
 	  </tr>
 	  <tr>
 	    <td>Genome:</td>

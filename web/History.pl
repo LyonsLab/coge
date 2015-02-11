@@ -33,7 +33,8 @@ sub gen_html {
     my $html;
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( HELP => "/wiki/index.php?title=$PAGE_TITLE" );
+    #$template->param( HELP => "/wiki/index.php?title=$PAGE_TITLE" );
+    $template->param( HELP       => $P->{SERVER} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
@@ -41,8 +42,9 @@ sub gen_html {
 
     #$template->param( TITLE      => qq{User History} );
     $template->param( PAGE_TITLE => $PAGE_TITLE,
+                      TITLE => 'History',
     				  PAGE_LINK  => $LINK,
-    				  LOGO_PNG   => "$PAGE_TITLE-logo.png" );
+    				  LOGO_PNG   => "CoGe.svg" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => gen_body() );
     $template->param( ADMIN_ONLY => $USER->is_admin );

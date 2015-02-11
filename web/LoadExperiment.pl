@@ -94,14 +94,16 @@ sub generate_html {
     else {
         $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param( PAGE_TITLE => $PAGE_TITLE,
+					      TITLE      => "Load Experiment",
         				  PAGE_LINK  => $LINK,
-        				  HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+        				  #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+					      HELP       => $P->{SERVER} );
         my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
         $name .= ' ' . $USER->last_name
           if ( $USER->first_name && $USER->last_name );
         $template->param( USER     => $name );
-        $template->param( LOGO_PNG => $PAGE_TITLE . "-logo.png" );
+        $template->param( LOGO_PNG => "CoGe.svg" );
         $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
 #        my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
 #        $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
@@ -145,9 +147,7 @@ sub generate_body {
     	LOAD_ID     => $LOAD_ID,
     	JOB_ID      => $JOB_ID,
         STATUS_URL  => 'api/v1/jobs/',
-        FILE_SELECT_SINGLE       => 1,
         DEFAULT_TAB              => 0,
-        DISABLE_IRODS_GET_ALL    => 1,
         MAX_IRODS_LIST_FILES     => 1000,
         MAX_IRODS_TRANSFER_FILES => 30,
         MAX_FTP_FILES            => 30,
@@ -424,13 +424,13 @@ sub check_login {
 }
 
 sub load_experiment {
-    my $opts = shift;
-    my $user_name   = $opts->{options}->{user_name};
-    my $gid         = $opts->{gid};
-    my $load_id     = $opts->{load_id};
-    my $data        = $opts->{data};
-    my $metadata    = $opts->{description};
-    my $options     = $opts->{options};
+    my %opts        = @_;
+    my $user_name   = $opts{options}->{user_name};
+    my $gid         = $opts{gid};
+    my $load_id     = $opts{load_id};
+    my $data        = $opts{data};
+    my $metadata    = $opts{description};
+    my $options     = $opts{options};
     #print STDERR "LoadExperiment::load_experiment ", Dumper $opts, "\n";
 
     return encode_json({ error => "No data items" }) unless $data;
@@ -449,8 +449,16 @@ sub load_experiment {
     mkpath $stagepath;
 
     # Setup path to staged data file
-    my $data_file = catfile($TEMPDIR, $data->[0]->{path});
+    my @data_files = map { catfile($TEMPDIR, $_->{path}) } @$data;
     my $data_type = $data->[0]->{file_type};
+    
+    # Check multiple files (if more than one file then all should be FASTQ)
+    my $numFastq = 0;
+    foreach (@data_files) {
+        $numFastq++ if (is_fastq_file($_));
+    }
+    return return encode_json({ error => 'Unsupported combination of file types' }) if ($numFastq > 0 and $numFastq != @data_files);
+    return return encode_json({ error => 'Too many files' }) if ($numFastq == 0 and @data_files > 1);
 
     # Get genome
     my $genome = $coge->resultset('Genome')->find($gid);

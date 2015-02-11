@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#! /usr/bin/perl -w
 use v5.10;
 use strict;
 no warnings 'redefine';
@@ -278,7 +278,7 @@ sub gen_html {
     my $template =
       HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( PAGE_TITLE => 'SynMap' );
-    $template->param( TITLE      => 'Whole Genome Synteny' );
+    $template->param( TITLE      => 'SynMap: Whole Genome Synteny Analysis' );
     $template->param( HEAD       => qq{} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
@@ -288,9 +288,10 @@ sub gen_html {
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
 
     #$template->param(ADJUST_BOX=>1);
-    $template->param( LOGO_PNG => "SynMap-logo.png" );
+    $template->param( LOGO_PNG => "CoGe.svg" );
     $template->param( BODY     => $body );
-    $template->param( HELP     => "/wiki/index.php?title=SynMap" );
+    #$template->param( HELP     => "/wiki/index.php?title=SynMap" );
+    $template->param( HELP     => $config->{SERVER} );
     $template->param( ADMIN_ONLY => $USER->is_admin );
     $html .= $template->output;
     return $html;
@@ -1327,8 +1328,9 @@ sub go {
     my $feat_type2 = $opts{feat_type2};
 
     # Block large genomic-genomic jobs from running
-    if (($feat_type1 == 2 && $genome1->length > $SEQUENCE_SIZE_LIMIT) &&
-        ($feat_type2 == 2 && $genome2->length > $SEQUENCE_SIZE_LIMIT)) {
+    if (($feat_type1 == 2 && $genome1->length > $SEQUENCE_SIZE_LIMIT && !$genome1->type->name =~/hard/i) &&
+        ($feat_type2 == 2 && $genome2->length > $SEQUENCE_SIZE_LIMIT && !$genome2->type->name =~/hard/i)) {
+         
         return encode_json({
             success => JSON::false,
             error => "The analysis was blocked: " .
@@ -1904,11 +1906,11 @@ sub go {
 
     #length of a gap (average distance expected between two syntenic genes)
     my $gap = defined( $opts{g} ) ? $opts{g} : floor( $dagchainer_D / 2 );
-
+    $gap = 1 if $gap < 1;
     $dagchainer_file = $dag_file12;
-    $dagchainer_file .= "_D$dagchainer_D" if $dagchainer_D;
-    $dagchainer_file .= "_g$gap"          if $gap;
-    $dagchainer_file .= "_A$dagchainer_A" if $dagchainer_A;
+    $dagchainer_file .= "_D$dagchainer_D" if defined $dagchainer_D;
+    $dagchainer_file .= "_g$gap"          if defined $gap;
+    $dagchainer_file .= "_A$dagchainer_A" if defined $dagchainer_A;
     $dagchainer_file .= "_Dm$Dm"          if $dag_merge_enabled;
     $dagchainer_file .= "_gm$gm"          if $dag_merge_enabled;
     $dagchainer_file .= ".aligncoords";
@@ -1917,9 +1919,9 @@ sub go {
     my @dagargs = ();
     push @dagargs, [ "-E", "0.05", 1 ];
     push @dagargs, [ "-i",   $dag_file12,   1 ];
-    push @dagargs, [ "-D",   $dagchainer_D, 1 ] if $dagchainer_D;
-    push @dagargs, [ "-g",   $gap,          1 ] if $gap;
-    push @dagargs, [ "-A",   $dagchainer_A, 1 ] if $dagchainer_A;
+    push @dagargs, [ "-D",   $dagchainer_D, 1 ] if defined $dagchainer_D;
+    push @dagargs, [ "-g",   $gap,          1 ] if defined $gap;
+    push @dagargs, [ "-A",   $dagchainer_A, 1 ] if defined $dagchainer_A;
     push @dagargs, [ "--Dm", $Dm,           1 ] if $dag_merge_enabled;
     push @dagargs, [ "--m",  $gm,           1 ] if $dag_merge_enabled;
     push @dagargs, [ "--new_behavior", "", 1 ] if $self_comparision;
@@ -2751,11 +2753,12 @@ sub get_results {
 
     #length of a gap (average distance expected between two syntenic genes)
     my $gap = defined( $opts{g} ) ? $opts{g} : floor( $dagchainer_D / 2 );
+    $gap = 1 if $gap < 1;
 
     $dagchainer_file = $dag_file12;
-    $dagchainer_file .= "_D$dagchainer_D" if $dagchainer_D;
-    $dagchainer_file .= "_g$gap"          if $gap;
-    $dagchainer_file .= "_A$dagchainer_A" if $dagchainer_A;
+    $dagchainer_file .= "_D$dagchainer_D" if defined $dagchainer_D;
+    $dagchainer_file .= "_g$gap"          if defined $gap;
+    $dagchainer_file .= "_A$dagchainer_A" if defined $dagchainer_A;
     $dagchainer_file .= "_Dm$Dm"          if $dag_merge_enabled;
     $dagchainer_file .= "_gm$gm"          if $dag_merge_enabled;
     $dagchainer_file .= ".aligncoords";
@@ -3057,13 +3060,15 @@ sub get_results {
         # mdb added 9/20/13 issue 77
         print_debug(msg => "$feat_type1 $feat_type2");
 
+        my $sequence_url = "api/v1/legacy/sequence"; #"services/JBrowse/service.pl/sequence"; # mdb changed 2/5/15, COGE-289
+
         my $fasta1_url = _filename_to_link(
-            url  => ( $feat_type1 eq "genomic" ? "services/JBrowse/service.pl/sequence/$dsgid1" : undef ),
+            url  => ( $feat_type1 eq "genomic" ? "$sequence_url/$dsgid1" : undef ),
             file => ( $feat_type1 eq "genomic" ? undef : $FASTADIR . "/$dsgid1-$feat_type1.fasta" ),
             msg  => qq{Fasta file for $org_name1: $feat_type1}
         );
         my $fasta2_url = _filename_to_link(
-            url  => ( $feat_type2 eq "genomic" ? "services/JBrowse/service.pl/sequence/$dsgid2" : undef ),
+            url  => ( $feat_type2 eq "genomic" ? "$sequence_url/$dsgid2" : undef ),
             file => ( $feat_type2 eq "genomic" ? undef : $FASTADIR . "/$dsgid2-$feat_type2.fasta" ),
             msg  => qq{Fasta file for $org_name2: $feat_type2}
         );

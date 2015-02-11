@@ -10,7 +10,7 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
-use CoGe::Core::List qw(listcmp);
+use CoGe::Core::Notebook qw(notebookcmp);
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
@@ -59,8 +59,10 @@ $node_types = $coge->node_types();
     search_annotation_types    => \&search_annotation_types,
     get_annotation_type_groups => \&get_annotation_type_groups,
     delete_list                => \&delete_list,
-    send_to_blast              => \&send_to_blast,
+    send_to_genomelist         => \&send_to_genomelist,
+    send_to_experimentlist     => \&send_to_experimentlist,
     send_to_featlist           => \&send_to_featlist,
+    send_to_blast              => \&send_to_blast,
     send_to_msa                => \&send_to_msa,
     send_to_gevo               => \&send_to_gevo,
     send_to_synfind            => \&send_to_synfind,
@@ -96,10 +98,12 @@ sub gen_html {
           if $USER->first_name && $USER->last_name;
         $template->param(
             USER       => $name,
-            HELP       => "/wiki/index.php?title=$PAGE_TITLE",
+            #HELP       => "/wiki/index.php?title=$PAGE_TITLE",
+	    HELP       => $P->{SERVER},
             PAGE_TITLE => $PAGE_TITLE,
+	    TITLE      => "NotebookView",
             PAGE_LINK  => $LINK,
-            LOGO_PNG   => "$PAGE_TITLE-logo.png",
+            LOGO_PNG   => "CoGe.svg",
             ADJUST_BOX => 1
         );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
@@ -658,7 +662,7 @@ sub get_list_contents {
         }
 
         $first = 1;
-        foreach my $list ( sort listcmp $list->lists ) {
+        foreach my $list ( sort notebookcmp $list->lists ) {
             $html .= "<tr valign='top'>"
               . ( $first-- > 0
                 ? "<th align='right' class='title5' rowspan='$list_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Notebooks ($list_count):</th>"
@@ -837,7 +841,7 @@ sub search_mystuff {
 
 # mdb: nested notebooks not supported
 #    $type = $node_types->{list};
-#    foreach my $l ( $USER->lists ) {       #(sort listcmp $USER->lists) {
+#    foreach my $l ( $USER->lists ) {       #(sort notebookcmp $USER->lists) {
 #        next if ( $l->id == $list->id );    # can't add a list to itself!
 #        next if ( $l->locked );             # exclude user's master list
 #        if ( !$search_term or $l->info =~ /$search_term/i ) {
@@ -1181,7 +1185,7 @@ sub search_lists
 
     # Build select items out of results
     my $html;
-    foreach my $n ( sort listcmp @notebooks ) {
+    foreach my $n ( sort notebookcmp @notebooks ) {
         my $item_spec = 1 . ':' . $n->id;    #FIXME magic number for item_type
         $html .= "<option value='$item_spec'>" . $n->info . "</option><br>\n";
     }
@@ -1284,6 +1288,22 @@ sub send_to_blast {
     #my $accn_list = join(',', map { $_->id } $list->genomes);
     #my $url = "CoGeBlast.pl?dsgid=$accn_list";
     my $url = "CoGeBlast.pl?lid=$lid";
+    return encode_json( { url => $url } );
+}
+
+sub send_to_genomelist {
+    my %opts = @_;
+    my $lid  = $opts{lid};
+    return unless $lid;
+    my $url = "GenomeList.pl?lid=$lid";
+    return encode_json( { url => $url } );
+}
+
+sub send_to_experimentlist {
+    my %opts = @_;
+    my $lid  = $opts{lid};
+    return unless $lid;
+    my $url = "ExperimentList.pl?lid=$lid";
     return encode_json( { url => $url } );
 }
 
