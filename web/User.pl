@@ -549,7 +549,7 @@ sub get_roles {
 
     my $html;
     foreach my $role ( $coge->resultset('Role')->all() ) {
-        next if ($role->name =~ /admin/i && !$USER->is_admin); # skip admin
+        next if ($role->name =~ /admin/i);# && !$USER->is_admin); # skip admin
         next if ($role->name =~ /owner/i && !$USER->is_admin); # skip owner
         my $name = $role->name;
         $name .= ": " . $role->description if $role->description;
