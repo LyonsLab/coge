@@ -13,6 +13,7 @@ use JSON::XS;
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Utils qw( commify );
 use CoGe::Core::Metadata qw( create_annotations );
+use CoGe::Core::Genome qw(fix_chromosome_id);
 use CoGe::Accessory::TDS;
 
 use vars qw($staging_dir $result_dir $install_dir $data_file $file_type $log_file
@@ -592,9 +593,10 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
         }
 
         # Munge chr name for CoGe
+        ($chr) = split(/\s+/, $chr);
 		$chr = fix_chromosome_id($chr, $genome_chr);
-        if (!$chr) {
-            log_line('trouble parsing chromosome', $line_num, $line);
+        unless (defined $chr) {
+            log_line("trouble parsing sequence ID '$old_chr'", $line_num, $line);
             return;
         }
         $strand = $strand =~ /-/ ? -1 : 1;

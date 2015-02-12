@@ -4,6 +4,7 @@ use strict;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Core::Storage qw( index_genome_file get_tiered_path );
+use CoGe::Core::Genome qw( fix_chromosome_id );
 use CoGe::Accessory::Utils qw( commify units print_fasta );
 use CoGe::Accessory::IRODS qw( irods_imeta $IRODS_METADATA_PREFIX );
 use Data::Dumper;
@@ -491,19 +492,8 @@ sub process_fasta_file {
             $chr = $sectionName;
         }
         else {
-            ($chr) = split( /\s+/, $sectionName );
-            $chr =~ s/^lcl\|//;
-            $chr =~ s/^gi\|//;
-            $chr =~ s/chromosome//i;
-            $chr =~ s/^chr//i;
-	        $chr = "0" if $chr =~ /^0+$/; #EL added 2/13/14 to catch cases where chromosome name is 00 (or something like that)
-            $chr =~ s/^0+// unless $chr eq '0';
-            $chr =~ s/^_+//;
-            $chr =~ s/\s+/ /;
-            $chr =~ s/^\s//;
-            $chr =~ s/\s$//;
-            $chr =~ s/\//_/; # mdb added 12/17/13 issue 266 - replace '/' with '_'
-            $chr =~ s/\|$//; # mdb added 3/14/14 issue 332 - remove trailing pipes
+            ($chr) = split(/\s+/, $sectionName);
+            $chr = fix_chromosome_id($chr);
         }
 
         # Check validity of chr name and sequence
