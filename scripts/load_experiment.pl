@@ -596,7 +596,7 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
         ($chr) = split(/\s+/, $chr);
 		$chr = fix_chromosome_id($chr, $genome_chr);
         unless (defined $chr) {
-            log_line("trouble parsing sequence ID '$old_chr'", $line_num, $line);
+            log_line("trouble parsing sequence ID", $line_num, $line);
             return;
         }
         $strand = $strand =~ /-/ ? -1 : 1;
@@ -917,35 +917,4 @@ sub execute { # FIXME move into Util.pm
 sub log_line {
     my ( $msg, $line_num, $line ) = @_;
     print STDOUT "log: error at line $line_num: $msg\n", "log: ", substr($line, 0, 100), "\n";    
-}
-
-sub fix_chromosome_id {
-	my $chr = shift;
-	my $genome_chr = shift;
-
-    # Fix chromosome identifier
-    $chr =~ s/^lcl\|//;
-    $chr =~ s/chromosome//i;
-    $chr =~ s/^chr//i;
-    $chr =~ s/^0+//;
-    $chr =~ s/^_+//;
-    $chr =~ s/\s+/ /;
-    $chr =~ s/^\s//;
-    $chr =~ s/\s$//;
-
-	# Hack to deal with converting 'chloroplast' and 'mitochondia' to 'C' and 'M' if needed
-    if (   $chr =~ /^chloroplast$/i
-        && !$genome_chr->{$chr}
-        && $genome_chr->{"C"} )
-    {
-        $chr = "C";
-    }
-    if (   $chr =~ /^mitochondria$/i
-        && !$genome_chr->{$chr}
-        && $genome_chr->{"M"} )
-    {
-        $chr = "M";
-    }
-
-	return $chr;
 }
