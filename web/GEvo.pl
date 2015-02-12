@@ -4486,7 +4486,7 @@ sub dataset_search {
  };
         foreach my $id (
             sort {
-                     $sources{$b}{version} <=> $sources{$a}{version}
+                     $sources{$b}{version} cmp $sources{$a}{version}
                   || $sources{$a}{typeid} <=> $sources{$b}{typeid}
             } keys %sources
           )
@@ -4720,31 +4720,26 @@ sub feat_search {
     }
     @feats = sort { $a->type->name cmp $b->type->name } @feats;
     unshift @feats, @genes if @genes;
+
+    my $feat_count;
     my $html;
     if (@feats) {
-
-        $html .= qq{
-<SELECT name = "featid$num" id = "featid$num" >
-  };
+        $html .= qq{<SELECT name="featid$num" id="featid$num">};
         foreach my $feat (@feats) {
-            my $loc = "("
-              . $feat->type->name
-              . ") Chr:"
-              . (
-                $feat->locations > 0 ? $feat->locations->next->chromosome : '' )
-              . " "
-              . commify( $feat->start ) . "-"
-              . commify( $feat->stop );
+            next unless $feat->dataset->id == $dsid; # mdb added 2/12/15 COGE-588
+            my $loc = "(" . $feat->type->name . ") Chr:"
+              . ( $feat->locations > 0 ? $feat->locations->next->chromosome : '' )
+              . " " . commify( $feat->start ) . "-" . commify( $feat->stop );
             $loc =~ s/(complement)|(join)//g;
             my $fid = $feat->id;
             $fid .= "_" . $gstid if $gstid;
-            $html .= qq {  <option value="$fid"};
-            $html .= qq { selected } if $featid && $featid == $feat->id;
+            $html .= qq{  <option value="$fid"};
+            $html .= qq{ selected } if $featid && $featid == $feat->id;
             $html .= qq{>$loc \n};
+            $feat_count++;
         }
         $html .= qq{</SELECT>\n};
-        my $count = scalar @feats;
-        $html .= qq{<font class=small>($count)</font>} if $count > 1;
+        $html .= qq{<font class="small">($feat_count)</font>} if $feat_count > 1;
     }
     else {
         $html .= qq{<input type="hidden" id="featid$num">\n};
