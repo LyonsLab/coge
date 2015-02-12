@@ -12,6 +12,7 @@ use URI::Escape;
 use URI::Escape::JavaScript qw(unescape);
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Utils qw( commify units );
+use CoGe::Core::Genome qw(fix_chromosome_id);
 use List::Util qw( min max );
 use Benchmark;
 
@@ -555,26 +556,9 @@ sub process_gff_file {
         next if $type eq "protein";
 
         # Process and check chromosomes
-        #$chr =~ s/ig_//;
-        $chr =~ s/%.*//;
-        $chr =~ s/chromosome//i;
-        $chr =~ s/^chr//i;
-        $chr =~ s/^_//i;
-            $chr =~ s/^lcl\|//;
-            $chr =~ s/^gi\|//;
-                $chr = "0" if $chr =~ /^0+$/; #EL added 2/13/14 to catch cases where chromosome name is 00 (or something like that)
-            $chr =~ s/^0+// unless $chr eq '0';
-            $chr =~ s/^_+//;
-            $chr =~ s/\s+/ /;
-            $chr =~ s/^\s//;
-            $chr =~ s/\s$//;
-            $chr =~ s/\//_/; # mdb added 12/17/13 issue 266 - replace '/' with '_'
-            $chr =~ s/\|$//; # mdb added 3/14/14 issue 332 - remove trailing pipes
-    
-	    $chr = "0" if $chr =~ /^0+$/; #EL added 2/13/14 to catch chromosomes with names like "00"
-        $chr =~ s/^0//g unless $chr eq '0';
-        ($chr) = split( /\s+/, $chr );
-        unless ( $valid_chrs{$chr} ) {
+        ($chr) = split(/\s+/, $chr);
+        $chr = fix_chromosome_id($chr, \%valid_chrs);
+        unless ( defined $chr && $valid_chrs{$chr} ) {
             log_line("Chromosome '$chr' does not exist in the dataset", $line_num, $line);
             next if ($allow_all_chr);
             return 0;
