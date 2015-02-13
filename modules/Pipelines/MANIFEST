@@ -11,6 +11,7 @@ lib/CoGe/Builder/SNP/Samtools.pm
 lib/CoGe/Builder/CommonTasks.pm
 lib/CoGe/Builder/Expression/qTeller.pm
 lib/CoGe/Builder/Tools/SynMap.pm
+lib/CoGe/Builder/Tools/LoadExperiment.pm
 lib/CoGe/Request/Request.pm
 lib/CoGe/Request/GenomeRequest.pm
 lib/CoGe/Request/RequestFactory.pm
