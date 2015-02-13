@@ -19,7 +19,7 @@
          <li>Paste-in query sequences
          <li>Find and select any number of organisms and genomes to search against
          <li>Configure the analysis parameters
-         <li>Click the <strong>Run CoGe Blast</strong> button to start the analysis
+         <li>Click the <strong>Run CoGe BLAST</strong> button to start the analysis
        </ol>
 
        Results:
@@ -229,7 +229,7 @@
                 switch(ui.index) {
                     case 0:
                         adjust_blast_types();
-                        button.unbind().click(run_coge_blast).html("Run CoGe Blast");
+                        button.unbind().click(run_coge_blast).html("Run CoGe BLAST");
 
                         if (!initialized) {
                             var queryParams = getParamsFromUrl();
