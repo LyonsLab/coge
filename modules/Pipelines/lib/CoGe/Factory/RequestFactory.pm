@@ -31,7 +31,8 @@ sub get {
     };
 
     if ($message->{type} eq "export_gff" ||
-        $message->{type} eq "export_fasta")
+        $message->{type} eq "export_fasta" ||
+        $message->{type} eq "load_experiment")
     {
         return CoGe::Request::Genome->new($options);
     }

@@ -2,10 +2,6 @@ package CoGe::Factory::PipelineFactory;
 
 use Moose;
 
-use CoGe::Builder::Export::Gff;
-use CoGe::Builder::Export::Fasta;
-use CoGe::Builder::Export::Experiment;
-
 has 'db' => (
     is => 'ro',
     required => 1
@@ -48,7 +44,10 @@ sub get {
     } 
     elsif ($message->{type} eq "export_experiment") {
         $builder = CoGe::Builder::Export::Experiment->new($options);
-    } 
+    }
+    elsif ($message->{type} eq "load_experiment") {
+        $builder = CoGe::Builder::Load::Experiment->new($options);
+    }
     else {
         return;
     }
