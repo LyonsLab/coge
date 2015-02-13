@@ -42,6 +42,7 @@ BEGIN {
         units commify print_fasta get_unique_id get_link_coords 
         format_time_diff sanitize_name execute 
         trim js_escape html_escape to_filename to_pathname
+        is_fastq_file
     );
 }
 
@@ -190,6 +191,11 @@ sub execute {
     }
 
     return $cmdStatus;
+}
+
+sub is_fastq_file {
+    my $filename = shift;
+    return ($filename =~ /fastq$/ || $filename =~ /fastq\.gz$/ || $filename =~ /fq$/ || $filename =~ /fq\.gz$/);
 }
 
 1;
