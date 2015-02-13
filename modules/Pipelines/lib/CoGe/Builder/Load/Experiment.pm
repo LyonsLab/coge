@@ -1,4 +1,4 @@
-package CoGe::Builder::Tools::LoadExperiment;
+package CoGe::Builder::Load::Experiment;
 
 use v5.14;
 use strict;
