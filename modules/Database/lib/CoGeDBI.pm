@@ -29,6 +29,7 @@ LICENSE file included with this module.
 use strict;
 use warnings;
 use DBI;
+use Hash::Merge::Simple qw(merge);
 use Data::Dumper;
 
 BEGIN {
@@ -109,10 +110,10 @@ sub get_user_access_table {
         #print STDERR Dumper $results3, "\n"; 
     }
     
-    my %combined = (%$results1, %$results2, %$results3);
+    my $combined = merge($results1, $results2, $results3);
     #print STDERR Dumper \%combined, "\n";
     
-    return \%combined;
+    return $combined;
 }
 
 sub get_experiments {
