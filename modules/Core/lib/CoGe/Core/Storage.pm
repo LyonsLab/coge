@@ -53,8 +53,9 @@ BEGIN {
     $VERSION = 0.1;
     @ISA     = qw (Exporter);
     @EXPORT = qw(
-      get_tiered_path get_workflow_paths get_log
+      get_tiered_path get_workflow_paths get_upload_path get_log
       get_genome_file index_genome_file get_genome_seq get_genome_path
+      get_genome_cache_path
       get_experiment_path get_experiment_files get_experiment_data
       create_experiment create_experiments_from_batch
       create_genome_from_file create_genome_from_NCBI
@@ -106,6 +107,19 @@ sub get_tiered_path {
     my $path   = catdir( $level0, $level1, $level2, $id );
 
     return $path;
+}
+
+sub get_genome_cache_path {
+    my $gid = shift;
+    return unless $gid;
+    
+    my $cache_dir = CoGe::Accessory::Web::get_defaults()->{'CACHEDIR'};
+    unless ($cache_dir) {
+        print STDERR "Storage::get_genome_cache_path missing CACHEDIR\n";
+        return;
+    }
+    
+    return catdir($cache_dir, $gid, "fasta");
 }
 
 sub get_genome_path {
@@ -768,6 +782,17 @@ sub get_workflow_paths {
     $results_path = catdir($tmp_path, 'results', $user_name, $workflow_id);
     
     return ($staging_path, $results_path);
+}
+
+sub get_upload_path {
+    my ( $user_name, $load_id ) = remove_self(@_); # required because this routine is called internally and externally, is there a better way?
+    unless ($user_name && $load_id) {
+         print STDERR "Storage::get_upload_path ERROR: missing required param\n";
+        return;
+    }
+    
+    my $conf = CoGe::Accessory::Web::get_defaults();
+    return catdir($conf->{SECTEMPDIR}, $user_name, $load_id);
 }
 
 sub remove_self { # TODO move to Utils.pm
