@@ -167,7 +167,8 @@ function post_to_prosite () {
 function post_to_phylogeny_fr () {
  var seq = $('#seq_text').val();
  seq = seq.replace(/\*/g,"");
- var url = "http://www.phylogeny.fr/version2_cgi/simple_phylogeny.cgi";
+ //var url = "http://www.phylogeny.fr/version2_cgi/simple_phylogeny.cgi"; // mdb removed 2/18/15 COGE-584
+ var url = "http://phylogeny.lirmm.fr/phylo_cgi/simple_phylogeny.cgi"; // mdb added 2/18/15 COGE-584
  var myForm = document.createElement("FORM");
  myForm.method="post" ;
  myForm.action=url;
