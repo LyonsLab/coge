@@ -520,7 +520,7 @@ sub export_experiment_irods {
     return basename($file);
 }
 
-sub generate_export {
+sub generate_export { #TODO replace with ExperimentBuilder.pm
     my $experiment = shift;
     my $eid = $experiment->id;
 
@@ -530,19 +530,19 @@ sub generate_export {
     my $filename = "experiment_$exp_name.tar.gz";
 
     my $conf = File::Spec->catdir($P->{COGEDIR}, "coge.conf");
-    my $script = File::Spec->catdir($P->{SCRIPTDIR}, "export_experiment.pl");
+    my $script = File::Spec->catdir($P->{SCRIPTDIR}, "export_experiment_or_genome.pl");
     my $workdir = get_download_path($eid);
-    my $resdir = $P->{RESOURCESDIR};
+    my $resdir = $P->{RESOURCEDIR};
 
-    my $cmd = "$script -eid $eid -config $conf -dir $workdir -output $filename -a 1";
+    my $cmd = "$script -id $eid -type 'experiment' -config $conf -dir $workdir -output $filename";
 
     return (execute($cmd), File::Spec->catdir(($workdir, $filename)));
 }
 
-sub get_download_path {
+sub get_download_path { #TODO replace with ExperimentBuilder.pm
+    my $eid = shift;
     my $unique_path = get_unique_id();
-    my @paths = ($P->{SECTEMPDIR}, "ExperimentView/downloads", shift, $unique_path);
-    return File::Spec->catdir(@paths);
+    return File::Spec->catdir( $P->{SECTEMPDIR}, 'downloads', 'experiments', $eid, $unique_path );
 }
 
 sub get_download_url {
@@ -593,7 +593,7 @@ sub remove_annotation {
 sub gen_html {
     my $template;
 
-    $EMBED = $FORM->param('embed');
+    $EMBED = $FORM->param('embed') || 0;
     if ($EMBED) {
         $template =
           HTML::Template->new(
@@ -692,8 +692,8 @@ sub _get_experiment_info {
         { title => "Genome", value => $exp->genome->info_html },
         { title => "Source", value => $exp->source->info_html },
         { title => "Version", value => $exp->version },
-        { title => "Tags", value => $tags },
-        { title => "Notebooks", value => },
+        { title => "Tags", value => $tags || undef},
+        { title => "Notebooks", value => $exp->notebooks_desc },
         { title => "Restricted", value => $exp->restricted ? "Yes" : "No"},
     ];
 

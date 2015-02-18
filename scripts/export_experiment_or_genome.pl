@@ -1,82 +1,95 @@
 #!/usr/bin/perl -w
 
 use strict;
-use Data::Dumper;
+
 use CoGeX;
+use CoGe::Core::Metadata qw(export_annotations);
+
 use File::Basename;
 use File::Path;
 use File::Spec;
 use Getopt::Long;
-use URI::Escape::JavaScript qw(unescape);
+use Data::Dumper;
 
-our ( $eid, $include_metadata, $config, $workdir, $filename, $annotations,
-      $P, $db, $host, $port, $user, $pass);
+our ( $id, $type, $config, $workdir, $output_filename, $resdir);
 
 GetOptions(
-    "eid=i"             => \$eid,
-    "output=s"          => \$filename,
-    "directory|dir=s"   => \$workdir,
-    "annotations|a=s"   => \$annotations,
-
-    # Database params
-    "host|h=s"          => \$host,
-    "port|p=s"          => \$port,
-    "database|db=s"     => \$db,
-    "user|u=s"          => \$user,
-    "password|pw=s"     => \$pass,
-
-    # Or use configuration
-    "config=s" => \$config
+    "id=i"             => \$id,       # exeriment/genome id
+    "type=s"           => \$type,     # 'experiment' or 'genome'
+    "output=s"         => \$output_filename, # output tarball filename
+    "directory|dir=s"  => \$workdir,  # output directory,
+    "files=s"          => \$files,    # optional additional input files
+    "config=s"         => \$config    # CoGe configuration file
 );
 
-$| = 1;
+$| = 1; # enable autoflushing
 
+# Open log file
 mkpath($workdir, 0, 0755) unless -r $workdir;
-
-my $logfile = File::Spec->catdir($workdir, "$filename.log");
+my $logfile = File::Spec->catdir($workdir, "$output_filename.log");
 open (my $logh, ">", $logfile) or die "Error opening log file";
 
-if ($config) {
-    $P    = CoGe::Accessory::Web::get_defaults($config);
-    $db   = $P->{DBNAME};
-    $host = $P->{DBHOST};
-    $port = $P->{DBPORT};
-    $user = $P->{DBUSER};
-    $pass = $P->{DBPASS};
+# Verify required options
+unless ($id) {
+    say $logh "log: error: experiment/genome not specified, use 'id' option";
+    exit(-1);
 }
-
-if (not $eid) {
-    say $logh "log: error: experiment not specified use eid";
+$type = lc($type);
+unless ($type && ($type eq 'experiment' || $type eq 'genome')) {
+    say $logh "log: error: type not specified, use 'type' option";
+    exit(-1);
+}
+unless ($output_filename) {
+    say $logh "log: error: output file not specified, use 'output' option";
+    exit(-1);
+}
+unless ($config) {
+    say $logh "log: error: config file not specified, use 'config' option";
     exit(-1);
 }
 
-if (not $filename) {
-    say $logh "log: error: output file not specified use output";
+# Open config file
+my $P = CoGe::Accessory::Web::get_defaults($config);
+
+$resdir = $P->{RESOURCEDIR};
+unless ($resdir) {
+    say $logh "missing RESOURCEDIR setting in config file";
     exit(-1);
 }
 
-my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
-my $coge = CoGeX->connect( $connstr, $user, $pass );
+# Connect to DB
+my $connstr = "dbi:mysql:dbname=".$P->{DBNAME}.";host=".$P->{DBHOST}.";port=".$P->{DBPORT}.";";
+my $coge = CoGeX->connect( $connstr, $P->{DBUSER}, $P->{DBPASS} );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
-
 unless ($coge) {
     say $logh "log: error: couldn't connect to database";
     exit(-1);
 }
 
-my $experiment = $coge->resultset('Experiment')->find($eid);
-my $archive = File::Spec->catdir($workdir, $filename);
-my $resdir = $P->{RESOURCESDIR};
+# Generate output tarball
+my $archive = File::Spec->catdir($workdir, $output_filename);
+
+my $sourceObj;
+if ($type eq 'experiment') {
+    $sourceObj = $coge->resultset('Experiment')->find($id);
+}
+elsif ($type eq 'genome') {
+    $sourceObj = $coge->resultset('Genome')->find($id);
+}
+
+my @annotations = $sourceObj->annotations;
+@annotations = () unless @annotations;
 
 unless (-r $archive and -r "$archive.finished") {
-    my @file_list = export_annotations();
+    my @file_list = export_annotations( annotations => \@annotations, export_path => $workdir );
+    push @files_list, split(',', $files);
     copy_readme();
-    my $info = export_info();
+    my $info = export_info( $sourceObj->info_file );
 
-    my $files = $experiment->storage_path;
-    my $cmd = "tar -czf $archive --exclude=log.txt --directory $files .";
-    $cmd .= " --transform 's,^,/experiment_$eid/,'";
+    my $input_dir = $sourceObj->storage_path;
+    my $cmd = "tar -czf $archive --exclude=log.txt --directory $input_dir .";
+    $cmd .= " --transform 's,^,/".$type."_".$id."/,'";
     $cmd .= " --directory $workdir $info";
     $cmd .= " " . join " ", @file_list if @file_list;
     $cmd .= " README.txt";
@@ -85,81 +98,23 @@ unless (-r $archive and -r "$archive.finished") {
     system("touch $archive.finished");
 }
 
+exit;
+#-------------------------------------------------------------------------------
+
 sub copy_readme {
-    my $readme = File::Spec->catdir(($workdir, "README.txt"));
-    system("cp $resdir/experiment.README.txt $readme");
+    my $readme = File::Spec->catdir($workdir, "README.txt");
+    system("cp $resdir/$type.README.txt $readme");
 }
 
 sub export_info {
+    my $info = shift;
+    
     my $info_file = File::Spec->catdir($workdir, "info.csv");
-
     unless (-r $info_file) {
-        my $res = ($experiment->restricted) ? "yes" : "no";
-        my $types = join ",", map($_->name, $experiment->types);
-        my $notebooks = join ",", map {local $_ = $_->name; s/&reg;\s*//; $_ } $experiment->notebooks;
-
-        my $genome_name = $experiment->genome->info;
-        $genome_name =~ s/&reg;\s*//;
-
         open(my $fh, ">", $info_file);
-        say $fh qq{"Name","} . $experiment->name . '"';
-        say $fh qq{"Description","} . $experiment->description . '"';
-        say $fh qq{"Genome","$genome_name"};
-        say $fh qq{"Source","} . $experiment->source->info . '"';
-        say $fh qq{"Version","} . $experiment->version . '"';
-        say $fh qq{"Types","$types"};
-        say $fh qq{"Notebooks","$notebooks"};
-        say $fh qq{"Restricted","$res"};
+        say $fh $info;
         close($fh);
     }
 
     return basename($info_file);
-}
-
-sub export_annotations {
-    return () unless (defined($experiment->annotations) and $experiment->annotations->count);
-
-    my @files = ();
-    my $annotation_file = File::Spec->catdir($workdir, "annotations.csv");
-    push @files, basename($annotation_file);
-
-    unless (-r $annotation_file) {
-        open(my $fh, ">", $annotation_file);
-
-        say $fh "#Type Group, Type, Annotation, Link, Image filename";
-        foreach my $a ( $experiment->annotations ) {
-            my $group = (
-                defined $a->type->group
-                ? '"' . $a->type->group->name . '","' . $a->type->name . '"'
-                : '"' . $a->type->name . '",""'
-            );
-
-            my $info = $a->info;
-            my $url = defined($a->link) ? $a->link : "";
-
-            # Escape quotes
-            $info =~ s/"/\"/g;
-
-            if ($a->image) {
-                my $filename = $a->image->filename;
-                my $img =  File::Spec->catdir($workdir, $filename);
-
-                eval {
-                    open(my $imh, ">", $img) or die "image=$filename could not be generated";
-                    print $imh $a->image->image;
-                    close($imh);
-
-                    push @files, $filename;
-                };
-
-                say $logh "log: error: $@" if ($@);
-                say $fh qq{$group,"$info","$url","$filename"};
-            } else {
-                say $fh qq{$group,"$info","$url",""};
-            }
-        }
-        close($fh);
-    }
-
-    return @files;
 }
