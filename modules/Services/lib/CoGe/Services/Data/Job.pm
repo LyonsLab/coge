@@ -37,7 +37,7 @@ sub add {
     # Validate the request has all required fields
     unless ($request_handler and $request_handler->is_valid) {
         return $self->render(json => {
-            error => { Invalid => "The request was not valid." }
+            error => { Invalid => "Invalid request" }
         });
     }
 
