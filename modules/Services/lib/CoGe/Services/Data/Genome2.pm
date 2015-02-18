@@ -111,6 +111,7 @@ sub fetch {
             name => $genome->type->name,
             description => $genome->type->description,
         },
+        chromosome_count => int($genome->chromosome_count),
         experiments => [ map { int($_->id) } $genome->experiments ],
         metadata => \@metadata,
         restricted => $genome->restricted ? Mojo::JSON->true : Mojo::JSON->false,
