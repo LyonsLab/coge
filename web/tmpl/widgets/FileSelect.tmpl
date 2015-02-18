@@ -30,7 +30,7 @@ function get_selected_files() {
 		}
 	);
 
-	if (transferring) {
+	if (transferring || !items.length) {
 		return null;
 	}
 
