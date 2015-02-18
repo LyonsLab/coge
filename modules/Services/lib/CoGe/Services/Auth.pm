@@ -70,11 +70,12 @@ sub validate {
     return unless ($username and $token);
     print STDERR "CoGe::Services::Auth::validate: username=$username token=$token\n";
 
-    # Validate ticket
     # Note: Mojolicious requires IO::Socket::SSL 1.75, do "cpan upgrade IO::Socket::SSL"
     my $ua = Mojo::UserAgent->new;
-    my $url = 'https://'.$username.':'.$token.'@'.$AUTH_API_URL.'/list';
-    my $res = $ua->get($url)->res;
+    
+    # Agave API
+    my $url = 'https://agave.iplantc.org:443/profiles/v2'; # test token against API, hardcoded URL for now
+    my $res = $ua->get($url, { Authorization => "Bearer $token" })->res;
     #print STDERR Dumper $res, "\n";
     unless ($res and $res->{message} eq 'OK') {
         print STDERR 'CoGe::Services::Auth::validate: user agent error, message=',
@@ -82,13 +83,31 @@ sub validate {
             ' url=', $url, "\n";
         return;
     }
-    my $authResponse = $res->json;
-    unless ($authResponse and $authResponse->{status} eq 'success') {
+    my $authResponse = $res->{content}->{post_buffer};
+    unless ($authResponse and $authResponse =~ /success/) { #FIXME this is a hack because the response is weird
         print STDERR 'CoGe::Services::Auth::validate: failed to authenticate, message=',
             ($authResponse ? $authResponse->{message} : 'undef'),
             ' url=', $url, "\n";
         return;
     }
+    
+    # Foundation API
+#    my $url = 'https://'.$username.':'.$token.'@'.$AUTH_API_URL.'/list';
+#    my $res = $ua->get($url)->res;
+#    #print STDERR Dumper $res, "\n";
+#    unless ($res and $res->{message} eq 'OK') {
+#        print STDERR 'CoGe::Services::Auth::validate: user agent error, message=',
+#            ($res ? $res->{message} : 'undef'),
+#            ' url=', $url, "\n";
+#        return;
+#    }
+#    my $authResponse = $res->json;
+#    unless ($authResponse and $authResponse->{status} eq 'success') {
+#        print STDERR 'CoGe::Services::Auth::validate: failed to authenticate, message=',
+#            ($authResponse ? $authResponse->{message} : 'undef'),
+#            ' url=', $url, "\n";
+#        return;
+#    }
 
     return 1;
 }
