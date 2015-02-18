@@ -34,7 +34,7 @@
 
 <!-- DIALOGS -->
 <div id="load_dialog" class="dialog_box" title="Loading Experiment ..." style="display:none;">
-    <div id="load_log" class="small padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
+    <div id="load_log" class="small padded coge-border-bottom" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
     </div>
     <br>
     <div id="loading_msg">
@@ -42,8 +42,8 @@
         Please wait ... <img src="picts/ajax-loader.gif"/>
     </div>
     <div class="coge-buttonset">
-        <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
-        <span id="error_msg" style="display:none;">An error occurred <img src="picts/thumbs_down.png"></span>
+        <span id="finished_msg" style="display:none;color:green;">Finished!</span>
+        <span id="error_msg" style="display:none;color:red;">An error occurred</span>
         <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Load Another</span>
         <span id="finish_load_experiment_button" style="display:none;float:right;" class="ui-button ui-corner-all">ExperimentView</span>
         <span id="cancel_load_experiment_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
@@ -70,28 +70,17 @@
     <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all">Create</span>
 </div>
 
-<<<<<<< HEAD
 <!-- Wizard Templates -->
 <script id="wizard-template" type="text/template">
 <div id="wizard" class="wizard wizard-coge">
     <div class="header">
-        <h3 class="title">Load Experiment</h3>
+        <!--<h3 class="title">Load Experiment</h3>-->
         <div class="sections">
         </div>
     </div>
-=======
-    $("#file_type_selector").on("change", function() {
-        if ($(this).val() === "fastq")
-            $("#select_options").slideDown();
-        else
-            $("#select_options").slideUp();
-    });
->>>>>>> master
-
     <div id='error_help_text' class='alert-box alert-box-warn hidden'></div>
     <div id="step-container"></div>
 
-<<<<<<< HEAD
     <div class="nav-control coge-buttonset">
         <button class="prev ui-button ui-corner-all" disabled>Previous</button>
         <button class="done ui-button ui-corner-all r">Start Loading</button>
@@ -153,9 +142,9 @@
 <script id="data-template" type="text/template">
     <div class="step">
         <div id="selector_container"></div>
-        <div id="files" class="hidden">
-            Data file:
-            <table id='file_table' class="ui-corner-all coge-outline" style="background-color:white;font-size:1em;display:inline;"></table>
+        <div id="files" class="hidden coge-padded">
+            Selected file(s):<br>
+            <table id="file_table" class="small" style="background-color:white;display:inline;"></table>
             <span id="select_file_type" class="hidden" style="padding-left:15px;vertical-align:5px;">
                 File type:
                 <select id="file_type_selector">
@@ -176,8 +165,6 @@
                     <option value="fastq">FASTQ, FQ</option>
                     </optgroup>
                 </select>
-
-                <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
             </span>
         </div>
     </div>
@@ -212,54 +199,6 @@
 <script id="general-options-template" type="text/template">
 <div class="form-section">
     <h4>General Options</h4>
-=======
-function file_selected(filename, url) {
-	$('#no_files').hide();
-	$('#file_select_dialog').dialog('close');
-	$('#files_clear').removeClass('ui-state-disabled');
-	$('#select_file_type')
-		.removeClass('coge-disabled')
-		.children()
-		.prop('disabled', false);
-}
-
-function file_finished(size, url) {
-    var files = get_selected_files(),
-        exp = /(:?fastq|fq)/;
-    var isFastq = exp.test.bind(exp);
-
-    if (files.map(getPath).some(isFastq)) {
-        $("#file_type_selector")
-            .find("option[value=fastq]")
-            .prop("selected", true)
-            .change();
-    }
-    else {
-    	$("#add_data").addClass("ui-state-disabled");
-    }
-}
-
-function file_canceled() {
-    var files = get_selected_files();
-    if (!files.length) {
-    	$('#select_file_type')
-    		.addClass("coge-disabled")
-    		.children()
-    		.prop("disabled", true);
-    	
-        $('#select_file_type')
-	        .find("option[value=autodetect")
-	        .prop("selected", true)
-	        .change();
-    	
-    	$("#add_data").removeClass("ui-state-disabled");
-    }
-}
-
-function getPath(item) {
-    return item.path;
-}
->>>>>>> master
 
     <div class="form-field coge-disabled">
         <label class="col-md-2">Add to notebook:</label>
@@ -290,7 +229,6 @@ function getPath(item) {
     </div>
 </script>
 
-<<<<<<< HEAD
 <script id="expression-template" type="text/template">
     <div class="form-section">
         <h4>Expression Analysis</h4>
@@ -315,46 +253,6 @@ function getPath(item) {
     <div id="snp-view"></div>
 </div>
 </script>
-=======
-var error_help_timeout;
-function error_help(s) {
-	$('#error_help_text')
-		.html(s)
-		.show();
-	
-	clearTimeout(error_help_timeout);
-	error_help_timeout = setTimeout(function() {
-		$('#error_help_text').fadeOut(1500);
-	}, 15*1000);
-}
-
-function load_experiment() {
-    var name = $('#edit_name').val();
-    var description = $('#edit_description').val();
-    var version = $('#edit_version').val();
-    var restricted = $('#restricted').is(':checked');
-    var genome = $('#edit_genome').val();
-    var gid = $('#gid').val();
-    var file_type = $("#select_file_type option:selected").val();
-    var aligner = $("#aligner").find(":checked").val();
-    var read_type = $("#read_type").find(":checked").val();
-    var ignore_cb = $('#ignore_missing_chrs');
-    var ignore_missing_chrs = ignore_cb.is(':checked');
-    var trim_reads = $('#trim_reads').is(':checked');
-
-    if (!name) {
-    	error_help('Please specify an experiment name.');
-        return;
-    }
-    if (!version) {
-    	error_help('Please specify an experiment version.');
-        return;
-    }
-    if (!genome || genome == 'Search') {
-    	error_help('Please specify a genome.');
-        return;
-    }
->>>>>>> master
 
 <script id="poly-template" type="text/template">
 <div></div>
@@ -383,67 +281,26 @@ function load_experiment() {
 
 <!-- Alignment Templates -->
 
-<<<<<<< HEAD
 <script id="align-template" type="text/template">
 <div class="form-section">
     <h4>Alignment</h4>
-=======
-    // Open status dialog right away - issue 101
-    reset_log();
-    $('#load_dialog').dialog('open');
-    $('#load_log').html('Initializing ...');
-    newLoad = true;
-
-    $.ajax({
-        data: {
-            fname: 'load_experiment',
-            load_id: load_id,
-            name: name,
-            description: description,
-            version: version,
-            restricted: restricted,
-            gid: gid,
-            source_name: source,
-            items: json,
-            file_type: file_type,
-            aligner: aligner,
-            read_type: read_type,
-            trim_reads: trim_reads,
-            ignore_missing_chrs: ignore_missing_chrs,
-            timestamp: new Date().getTime()
-        },
-        success : function(data) {
-            var obj = jQuery.parseJSON(data);
-            if (obj && obj.error) {
-            	$('#load_log').html('<p>Error: ' + obj.error + '</p>');
-            	load_failed();
-                return;
-            }
-
-            // Set link in status dialog
-            $('#loading_msg span a').attr('href', obj.link).html(obj.link);
-
-            // Start status update
-            if (obj.job_id) { // JEX status for load FASTQ
-                job_id = obj.job_id;
-                window.history.pushState({}, "Title", PAGE_NAME + "?job_id=" + obj.job_id); // Add job_id to browser URL
-                update_dialog(STATUS_URL + obj.job_id, pageObj.user, "#load_dialog", progress_formatter);
-            }
-        }
-        // TODO: handle ajax error, show in status dialog
-    });
-}
->>>>>>> master
 
     <div class="form-field">
         <label class="col-md-2">Aligner:</label>
         <div id="alignment">
             <input name="aligner" type="radio" value="gsnap" checked>
             <label for="gsnap">GSNAP</label>
-
             <input name="aligner" type="radio" value="tophat">
             <label for="gsnap">TopHat/Bowtie2</label>
         </div>
+        
+        <label class="col-md-2 coge-padded-top">Read Type:</label>
+        <div id="read_type" class="coge-padded-top">
+		    <input name="read_type" type="radio" value="single" checked>
+		    <label for="single">Single-ended</label>
+		    <input name="read_type" type="radio" value="paired">
+		    <label for="paired">Paired-end</label>
+	    </div>
     </div>
 
     <div id="align-container" class="hidden"></div>
@@ -509,19 +366,12 @@ function load_experiment() {
     </div>
 </script>
 
-<<<<<<< HEAD
 <script id="summary-pair-template" type="text/template">
     <div>
         <span class="name"></span>:
         <span class="data"></span>
     </div>
 </script>
-=======
-    // Reset file selector
-    file_canceled();
-    clear_list(); // in FileSelect.tmpl
-}
->>>>>>> master
 
 <script id="snp-template" type="text/template">
     <div class="form-section">
@@ -685,7 +535,6 @@ function load_experiment() {
     </div>
     </TMPL_IF>
 
-<<<<<<< HEAD
     </div>
 </script>
 
@@ -696,274 +545,23 @@ function load_experiment() {
 
 <!-- Scripts -->
 <script type="text/javascript">
-const STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
-const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
-var SUPPORT_EMAIL = '<TMPL_VAR NAME=SUPPORT_EMAIL>';
-=======
-function update_dialog(request, user, identifier, formatter) {
-    var get_status = function () {
-        $.ajax({
-            type: 'GET',
-            url: request,
-            dataType: 'json',
-            data: {
-                username: user
-            },
-            success: update_callback,
-            error: update_callback,
-            xhrFields: {
-                withCredentials: true
-            }
-        });
-    };
+const API_JOBS_URL  = '<TMPL_VAR NAME="API_JOBS_URL">';
+const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
+const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
+const USER_NAME     = '<TMPL_VAR NAME="USER">'
+const IS_ADMIN      = Boolean('<TMPL_VAR NAME="ADMIN_AREA">');
 
-    var update_callback = function(json) {
-        var dialog = $(identifier);
-        var workflow_status = $("<p></p>");
-        var data = $("<ul></ul>");
-        var results = [];
-        var current_status;
-        var timeout = 2000;
-
-        var callback = function() {
-            update_dialog(request, user, identifier, formatter);
-        }
-
-        if (json.error) {
-        	console.log('json.error: '+json.error);
-            pageObj.error++;
-            if (pageObj.error > 3) {
-                workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
-                var logfile;
-
-                if (json.results.length) {
-                    logfile = json.results[0].path;
-                }
-                load_failed(logfile);
-                return;
-            }
-        } else {
-            pageObj.error = 0;
-        }
-
-        // json.status = 'error' is due to JEX timeout
-        if (json.status 
-        		&& json.status != 'error') // mdb added 2/5/15 - keep retrying if JEX timeout
-        {
-            current_status = json.status.toLowerCase();
-            workflow_status
-            	.html("Workflow status: ")
-            	.append( $('<span></span>').html(json.status) )
-            	.addClass('bold');
-        } else {
-            setTimeout(callback, timeout);
-            return;
-        }
-
-        if (json.tasks) {
-            var jobs = json.tasks;
-            for (var index = 0; index < jobs.length; index++) {
-                var item = formatter(jobs[index]);
-                if (item) {
-                    results.push(item);
-                }
-            }
-        }
-
-        if (!dialog.dialog('isOpen')) {
-            return;
-        }
-
-        //FIXME Update when a workflow supports elapsed time
-        if (current_status == "completed") {
-            var total = json.tasks.reduce(function(a, b) {
-                if (!b.elapsed) return a;
-
-                return a + b.elapsed;
-            }, 0);
-
-            var duration = coge.utils.toPrettyDuration(total);
-
-            workflow_status.append("<br>Finished in " + duration);
-            workflow_status.find('span').addClass('completed');
-            get_load_log(function(result) {
-                load_succeeded(result);
-            });
-
-        }
-        else if (current_status == "failed"
-                //|| current_status == "error" // mdb removed 2/5/15 - keep retrying if JEX timeout
-                || current_status == "terminated"
-                || current_status == "cancelled")
-        {
-            workflow_status.find('span').addClass('alert');
-
-            if (json.results.length) {
-                logfile = json.results[0].path;
-            }
-            load_failed(logfile);
-        }
-        else if (current_status == "notfound") {
-            setTimeout(callback, timeout);
-            return;
-        }
-        else {
-            workflow_status.find('span').addClass('running');
-            setTimeout(callback, timeout);
-        }
-
-        results.push(workflow_status);
-        data.append(results);
-        dialog.find('#load_log').html(data);
-    };
-
-    get_status();
-}
-</script>
-
-<div class="bold text" style="padding-top:1em;">1 - Describe the Experiment</div>
-<div class="coge-bg inline padded ui-widget-content ui-corner-all">
-	<div class="small info">
-		Complete the form below to describe the experiment data.
-		<div class="alert"><span class="small glyphicon glyphicon-asterisk"></span> denotes a required field</div>
-	</div>
-
-	<table class="small" style="padding-top:0.5em;">
-	  <tr>
-	    <td>Name:</td>
-	    <td>
-		    <input id="edit_name" type="textbox" size="50" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" />
-		    <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>Description:</td>
-	    <td><textarea id="edit_description" rows="5" cols="50" ><TMPL_VAR NAME='DESC'></textarea></td>
-	  </tr>
-	  <tr>
-	    <td>Version:</td>
-	    <td>
-	    	<input id="edit_version" type="textbox" size="10" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" />
-	    	<span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>Source:</td>
-	    <td>
-	      <input id="edit_source" type="search" placeholder="Search" size="50" spellcheck="false" onclick='$(this).autocomplete("search");' />
-	      <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
-	      <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>Restricted?</td>
-	    <td><input id="restricted" type="checkbox" checked></td>
-	  </tr>
-	  <tr>
-	    <td>Genome:</td>
-	    <td>
-	      <input id="edit_genome" type="search" placeholder="Search" spellcheck="false" onclick='$(this).autocomplete("search");' onkeypress="wait_to_search(search_genomes, this);" size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
-	      <input id="gid" type="hidden" value="<TMPL_VAR NAME='GENOME_ID'>" />
-	      <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
-	    </td>
-	  </tr>
-	</table>
-</div>
-
-<div class="bold text" style="padding-top:2em;">2 - Add Data</div>
-<div class="coge-bg inline padded ui-widget-content ui-corner-all">
-	<div class="small info" style="width:50em; padding-bottom:1em;">
-	  Use the <b>Add Data</b> button to select the data items to be loaded from:<br>
-	  <span class="indent">1) iPlant Data Store, 2) FTP/HTTP site, 3) Browser upload</span><br>
-	  Currently only one data file may be added per load, except for FASTQ files.
-	</div>
-	<div class="l" style="padding-right:0.75em;">
-		<span id="add_data" onClick="$('#file_select_dialog').dialog('open')" class='ui-button ui-corner-all coge-button'>Add Data</span><br>
-		<span id="files_clear" onClick="clear_list(); $('#add_data').removeClass('ui-state-disabled');" class='ui-state-disabled ui-button ui-corner-all coge-button' style="margin-top:0.5em;">Clear List</span>
-	</div>
-	<div class="padded" style="background-color: white; overflow:hidden; width:auto; min-height:8em; border:1px solid lightgray; margin-right:5px; margin-bottom:5px;">
-		<div class="small bold text">Files:</div>
-		<div>
-			<div id="no_files" class="indent small padded note">You haven't added any files yet, click "Add Data"</div>
-			<table id='file_table' class="small padded"></table>
-		</div>
-	</div>
-    <div id="select_file_type" class="small coge-disabled" style="padding-left:8em;">
-		File type:
-		<select id="file_type_selector" disabled>
-	        <option value="autodetect">Detect from filename</option>
-	        <optgroup label="Quantitative">
-	          <option value="csv">Comma-separated value (CSV)</option>
-	          <option value="tsv">Tab-separated value (TSV)</option>
-	          <option value="bed">BED</option>
-	          <option value="wig">WIG</option>
-	        </optgroup>
-	        <optgroup label="Marker">
-	          <option value="gff">GFF/GTF</option>
-	        </optgroup>
-	        <optgroup label="Polymorphism">
-	          <option value="vcf">VCF</option>
-	        </optgroup>
-	        <optgroup label="Alignment">
-	          <option value="bam">BAM</option>
-	        </optgroup>
-	        <optgroup label="Sequence">
-	          <option value="fastq">FASTQ, FQ</option>
-	        </optgroup>
-	    </select>
-    </div>
-</div>
-
-<div id="select_options" class="hidden">
-	<div class="bold text" style="padding-top:2em;">3 - Select Options</div>
-	<div class="small coge-bg inline coge-padded ui-widget-content ui-corner-all">
-	    <div id="fastq-pipeline" class="info">
-	    	The data will be processed using CoGe's <a href="https://genomevolution.org/wiki/index.php?title=RNASeq_Pipeline">RNASeq Pipeline</a>.
-	    </div>
-		<div id="aligner" class="coge-padded-top">
-		    Alignment Program:
-		    <input name="aligner" type="radio" value="gsnap" checked>
-		    <label for="gsnap">GSNAP</label>
-		    <input name="aligner" type="radio" value="tophat">
-		    <label for="gsnap">TopHat/Bowtie2</label>
-		</div>
-		<div id="read_type" class="coge-padded-top">
-		    Read Type:
-		    <input name="read_type" type="radio" value="single" checked>
-		    <label for="single">Single-ended</label>
-		    <input name="read_type" type="radio" value="paired">
-		    <label for="paired">Paired-end</label>
-	    </div>
-	    <div class="coge-padded-top">
-	    	Trim reads using cutadapt? <input id="trim_reads" type="checkbox" checked>
-	    </div>
-	    <div class="note coge-padded-top">
-	    	Note: paired-end files must indicate mate-pair number at the end <br>
-	    	of the filename (as is standard with Illumina-generated files).<br>
-	    	Example:  XXXX_<b>R1</b>.fastq and XXXX_<b>R2</b>.fastq
-	    </div>
-	</div>
-</div>
-
-<div class="middle" style="padding-top:2em;">
-	<span onClick="load_experiment();" style="font-size:1em;" class='ui-button ui-corner-all ui-button-go'>Load Experiment</span>
-	<span id='error_help_text' class='indent alert italic'></span>
-</div>
->>>>>>> master
-
-var timestamps = new Array();
 var load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
 var job_id = '<TMPL_VAR NAME="JOB_ID">';
 var embed = '<TMPL_VAR NAME="EMBED">';
 var experiment_id;
 var notebook_id;
-var pageObj = {};
+var pageObj = {}; //FIXME get rid of this
 var newLoad = false;
 var wizard;
-var is_admin = Boolean("<TMPL_VAR NAME=ADMIN_AREA>");
 
 $(document).ready(function(){
-	// Configure jQuery ajax
+	// Set jQuery AJAX defaults
     $.ajaxSetup({
         type: "GET",
         url: PAGE_NAME,
@@ -971,22 +569,27 @@ $(document).ready(function(){
         cache: false,
     });
 
-
-    pageObj.user = "<tmpl_var name=USER>";
-
     // Configure dialogs
     $(".dialog_box").dialog({autoOpen: false, width: 500});
     $('#load_dialog').dialog("widget").find('.ui-dialog-titlebar-close').hide();
-    $('#load_dialog').dialog({modal: true, closeOnEscape: false})
+    $('#load_dialog').dialog({modal: true, closeOnEscape: false});
+    $("#load_dialog").dialog({
+    	resizeStop: function(event, ui) {
+    		var log = $('#load_log');
+    		var widthChange = ui.size.width - ui.originalSize.width;
+    		var heightChange = ui.size.height - ui.originalSize.height;
+    		log.css({ width: log.width() + widthChange, height: log.height() + heightChange });
+    	}
+    });
 
     // Open status dialog
     if (job_id) {
         $('#loading_msg').hide();
         $('#load_dialog').dialog('open');
-        update_dialog(STATUS_URL + job_id, pageObj.user, "#load_dialog", progress_formatter);
+        update_dialog(API_JOBS_URL + job_id, USER_NAME, "#load_dialog", progress_formatter);
     }
 
-    wizard = initialize_wizard({ admin: is_admin });
+    wizard = initialize_wizard({ admin: IS_ADMIN });
 });
 </script>
 <script type="text/javascript" src="js/pages/load-experiment.js"></script>

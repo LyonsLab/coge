@@ -61,7 +61,6 @@ function check_login() {
 function file_selected(filename, url) {
     $('#select_file_button').hide();
     $('#select_file_type').show();
-    $("#select_file_type option:first").attr("selected", "selected");
     $('#files').show();
 }
 
@@ -70,11 +69,12 @@ function file_finished(size, url) {
     var paths = files.map(getPath);
     var file_type = autodetect_file_type(paths[0])
 
-    if (file_type) {
+    if (file_type)
         $("#file_type_selector").val(file_type);
-    }
 
     //FIXME: Hack to get around uploader callback not working in DataView
+    if (!current_experiment.options)
+    	current_experiment.options = {};
     current_experiment.new_data = files;
 }
 
@@ -83,13 +83,17 @@ function getPath(item) {
 }
 
 function file_canceled() {
-    $('#select_file_type').hide()
-        .find("option[value=autodetect")
-        .prop("selected", true)
-        .change();
-
-    $('#files').hide();
-    $('#select_file_button').show();
+    if (!get_selected_files()) {
+    	$('#select_file_type')
+    		.hide()
+	        .find("option[value=autodetect")
+	        .prop("selected", true)
+	        .change();
+    	
+    	$('#files').hide();
+    	
+    	$("#select_file_type option:first").attr("selected", "selected");
+    }
 
     //FIXME: Hack to get around removing the file
     current_experiment.new_data = undefined;
@@ -354,9 +358,8 @@ function update_dialog(request, user, identifier, formatter) {
             }
         }
 
-        if (!dialog.dialog('isOpen')) {
+        if (!dialog.dialog('isOpen'))
             return;
-        }
 
         //FIXME Update when a workflow supports elapsed time
         if (current_status == "completed") {
@@ -494,16 +497,14 @@ $.extend(Wizard.prototype, {
         titles[this.currentIndex].addClass("active");
 
         var step = this.steps[this.currentIndex];
-        if (step.render) {
+        if (step.render)
             step.render();
-        }
         this.viewer.html(step.el);
 
-        if (this.at_first()) {
+        if (this.at_first())
             this.prev.attr("disabled", 1);
-        } else {
+        else
             this.prev.removeAttr("disabled");
-        }
 
         if (this.at_last()) {
             this.next.hide();
@@ -546,18 +547,16 @@ $.extend(Wizard.prototype, {
             return;
         }
 
-        if (this.at_last()) {
+        if (this.at_last())
             this.completed(this.data);
-        }
     },
 
     // Expects a view with render, is_valid methods and a element property el
     addStep: function(step, index) {
-        if (index !== undefined && index < this.steps.length) {
+        if (index !== undefined && index < this.steps.length)
             this.steps.slice(index, 0, step);
-        } else {
+        else
             this.steps.push(step);
-        }
     }
 });
 
@@ -583,11 +582,10 @@ $.extend(DataView.prototype, {
         selector.tabs();
 
         //FIXME: selector view should track the current path
-        if (pageObj.current_path) {
+        if (pageObj.current_path)
             irods_get_path(pageObj.current_path);
-        } else {
+        else
             irods_get_path();
-        }
 
         selector.find('#input_url').bind('keyup focus click', function() {
             var button = selector.find("#ftp_get_button"),
@@ -616,8 +614,9 @@ $.extend(DataView.prototype, {
 
         if ( !add_file_to_list(filename, 'file://'+filename) ) {
             error_help('File already exists.');
-        } else {
-            // mdb 10/29/13 - moved from above to prevent stale load_id value, issue 236
+        } 
+        else {
+            // mdb added 10/29/13 - prevent stale load_id value, COGE-236
             $('#input_upload_file').fileupload('option', { formData: {
                 fname: 'upload_file',
                 load_id: load_id
@@ -636,23 +635,18 @@ $.extend(DataView.prototype, {
     is_valid: function() {
         //FIXME: This is a hack to get around the uploader callbacks not working
         var items = this.experiment.new_data;
-
         if (!items || items.length === 0) {
             error_help('Please select a data file.');
             return false;
         }
 
         items[0].file_type = this.el.find("#select_file_type option:selected").val();
-
-        if(!items[0].file_type) {
+        if (!items[0].file_type) {
             error_help("Please select the file type to continue");
             return false;
         }
 
-        $.extend(current_experiment, {
-            data: items
-        });
-
+        this.experiment.data = items;
         return true;
     }
 });
@@ -679,9 +673,8 @@ $.extend(DescriptionView.prototype, {
             this.el.find('#edit_version').val(this.description.version);
             this.edit_source.val(this.description.source);
 
-            if (!this.description.restricted) {
+            if (!this.description.restricted)
                 this.el.find('#restricted').removeAttr('checked');
-            }
 
             this.el.find('#edit_genome').val(this.description.genome);
         }
@@ -698,9 +691,8 @@ $.extend(DescriptionView.prototype, {
             success : function(sources) {
                 self.sources = sources;
 
-                if (sources) {
+                if (sources)
                     self.edit_source.autocomplete({source: sources});
-                }
             },
         });
     },
@@ -743,6 +735,7 @@ $.extend(DescriptionView.prototype, {
             error_help('Please specify an experiment name.');
             return false;
         }
+        
         if (!version) {
             error_help('Please specify an experiment version.');
             return false;
@@ -760,7 +753,7 @@ $.extend(DescriptionView.prototype, {
         }
 
        $.extend(this.experiment, {
-            description: {
+            metadata: {
                 name: name,
                 description: description,
                 version: version,
@@ -780,7 +773,7 @@ function render_template(template, container) {
     container.empty()
         .hide()
         .append(template)
-        .slideDown();
+        .show();//.slideDown();
 }
 
 function FindSNPView() {
@@ -917,11 +910,12 @@ $.extend(AlignmentView.prototype, {
                     Q: this.el.find("#Q").is(":checked"),
                     gap: this.el.find("#gap").val(),
                     nofail: this.el.find("#nofail").is(":checked"),
-                    cutadapt_params: {
-                        q: this.el.find("#q").val(),
-                        m: this.el.find("#m").val(),
-                        quality: this.el.find("#quality").val()
-                    }
+                    read_type: this.el.find("#read_type :checked").val()
+                },
+                cutadapt_params: {
+                    q: this.el.find("#q").val(),
+                    m: this.el.find("#m").val(),
+                    quality: this.el.find("#quality").val()
                 }
             };
         } else {
@@ -929,6 +923,7 @@ $.extend(AlignmentView.prototype, {
                 alignment_params: {
                     tool: "tophat",
                     g: this.el.find("#g").val(),
+                    read_type: this.el.find("#read_type :checked").val()
                 }
             }
         }
@@ -1083,17 +1078,14 @@ $.extend(FastqView.prototype, {
     },
 
     is_valid: function() {
-        if (!this.snp_view.is_valid()) {
+        if (!this.snp_view.is_valid())
             return false;
-        }
 
-        if (!this.align_view.is_valid()) {
+        if (!this.align_view.is_valid())
             return false;
-        }
 
-        if (!this.expression_view.is_valid()) {
+        if (!this.expression_view.is_valid())
             return false;
-        }
 
         return true;
     },
@@ -1174,48 +1166,35 @@ $.extend(OptionsView.prototype, {
         this.general_view = new GeneralOptionsView();
         this.layout_view = new LayoutView({
             template: "#options-layout-template",
-
             layout: {
                 "#general-options": this.general_view
             }
         });
 
-        if (this.admin) {
+        if (this.admin)
             this.layout_view.updateLayout({"#admin-options": this.admin_view});
-        }
 
         this.el = this.layout_view.el;
     },
 
     // Validate and add all options to the experiment
     is_valid: function() {
-        if (!this.analysis_view.is_valid()) {
+        if (!this.analysis_view.is_valid() || !this.general_view.is_valid())
             return false;
-        }
 
-        if (!this.general_view.is_valid()) {
-            return false;
-        }
-
-        var data = $.extend({}, this.general_view.get_options(),
-                                this.analysis_view.get_options());
+        var options = $.extend({}, this.general_view.get_options(), this.analysis_view.get_options());
         if (this.admin) {
-            if (!this.admin_view.is_valid()) {
+            if (!this.admin_view.is_valid())
                 return false;
-            }
-
-            $.extend(data, this.admin_view.get_options());
+            $.extend(options, this.admin_view.get_options());
         }
 
-        this.experiment.options = data;
-
+        $.extend(this.experiment.options, options);
         return true;
     },
 
-    //FIXME: Add multiple file support
     render: function() {
         var file_type = this.experiment.data[0].file_type;
-
         if (!file_type) {
             error_help("Please set the file type.");
             return;
@@ -1223,18 +1202,14 @@ $.extend(OptionsView.prototype, {
 
         //FIXME: An aggregate view should add analysis options
         // for multiple file types
-        if ($.inArray(file_type, POLY_FILES) > -1) {
+        if ($.inArray(file_type, POLY_FILES) > -1)
             this.analysis_view = new PolymorphismView();
-        }
-        else if ($.inArray(file_type, SEQ_FILES) > -1) {
+        else if ($.inArray(file_type, SEQ_FILES) > -1)
             this.analysis_view = new FastqView();
-        }
-        else if ($.inArray(file_type, QUANT_FILES) > -1) {
+        else if ($.inArray(file_type, QUANT_FILES) > -1)
             this.analysis_view = new QuantativeView();
-        }
-        else if ($.inArray(file_type, ALIGN_FILES) > -1) {
+        else if ($.inArray(file_type, ALIGN_FILES) > -1)
             this.analysis_view = new AlignmentOptionView();
-        }
 
         this.layout_view.updateLayout(
             {"#analysis-options": this.analysis_view}
@@ -1248,20 +1223,20 @@ $.extend(OptionsView.prototype, {
 function ConfirmationView(experiment) {
     this.experiment = experiment;
     this.initialize();
-    this.title = "Review and Load";
+    this.title = "Review and Submit";
 }
 
 $.extend(ConfirmationView.prototype, {
     initialize: function() {
         this.el = $($("#confirm-template").html());
         this.description = this.el.find(".confirm-description");
-        this.data = this.el.find(".confirm-data");
         this.options = this.el.find(".confirm-options");
+        this.data = this.el.find(".confirm-data");
         this.pair_template = $($("#summary-pair-template").html());
     },
 
     render: function() {
-        this.renderDescription(this.experiment.description);
+        this.renderDescription(this.experiment.metadata);
         this.renderData(this.experiment.data);
         this.renderOptions(this.experiment.options);
     },
@@ -1316,6 +1291,56 @@ $.extend(ConfirmationView.prototype, {
     }
 });
 
+function submit_job(request, success_callback, error_callback) { //TODO move into js/coge/services.js
+    $.ajax({
+    	type: "PUT",
+    	url: API_JOBS_URL + '?username=' + USER_NAME,
+    	dataType: "json",
+        contentType: "application/json",
+        data: JSON.stringify(request), // string required for PUT requests
+        success: function(response) {
+            if (response && response.error) {
+                if (response.error.PAYLOAD)  {
+                    alert(response.error.PAYLOAD);
+                }
+                return;
+            }
+            
+            if (success_callback)
+            	success_callback(response);
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+        	console.log('submit_job: error: ' + textStatus);
+        	if (errorThrown)
+        		console.log(errorThrown);
+        	if (error_callback)
+        		error_callback(jqXHR, textStatus, errorThrown);
+        }
+    });
+}
+
+function fetch_job(id, success_callback) { //TODO move into js/coge/services.js
+	if (!id) return;
+	
+    $.ajax({
+    	type: "GET",
+    	url: API_JOBS_URL + id + '?username=' + USER_NAME,
+    	dataType: "json",
+        contentType: "application/json",
+        success: function(response) {
+            if (response && response.error) {
+                if (response.error.PAYLOAD)  {
+                    alert(response.error.PAYLOAD);
+                }
+                return;
+            }
+            
+            if (success_callback)
+            	success_callback();
+        }
+    });
+}
+	
 function load(experiment) {
     // Open status dialog right away - issue 101
     reset_log();
@@ -1323,33 +1348,67 @@ function load(experiment) {
     $('#load_log').html('Initializing ...');
     newLoad = true;
 
-    // Add the dispatch method and load id to the payload
-    var payload = $.extend({fname: "load_experiment", load_id: load_id}, experiment);
+	// Convert request into format for job service
+	var request = {
+		type: 'load_experiment',
+		parameters: {
+			gid: experiment.gid,
+			metadata: experiment.metadata,
+			alignment_params: experiment.options.alignment_params,
+			trimming_params: experiment.options.cutadapt_params,
+			expression_params: experiment.options.expression_params,
+			snp_params: experiment.options.snp_params
+		},
+		options: {
+			load_id: load_id,
+			email: experiment.options.email,
+			notebook: experiment.options.notebook,
+			source_data: experiment.data
+		}
+	};
+    
+    submit_job(request, 
+    	function(response) {
+	        // Set link in status dialog
+	        //$('#loading_msg span a').attr('href', response.link).html(response.link);
+	
+	        // Start status update
+	        if (response.job_id) {
+	            job_id = response.job_id;
+	            window.history.pushState({}, "Title", "LoadExperiment.pl" + "?job_id=" + job_id); // Add job_id to browser URL
+	            update_dialog(API_JOBS_URL + job_id, USER_NAME, "#load_dialog", progress_formatter);
+	        }
+	    },
+	    function(jqXHR, textStatus, errorThrown) {
+	    	$('#load_log').html('An error occurred:  ' + textStatus);
+	    }
+	);
 
-    $.ajax({
-    	type: "POST",
-    	dataType: "json",
-        contentType: "application/json",
-        data: JSON.stringify(payload),
-        success: function(obj) {
-            if (obj && obj.error) {
-                if (obj.error.PAYLOAD)  {
-                    alert(obj.error.PAYLOAD);
-                }
-                return;
-            }
-
-            // Set link in status dialog
-            $('#loading_msg span a').attr('href', obj.link).html(obj.link);
-
-            // Start status update
-            if (obj.job_id) { // JEX status for load FASTQ
-                job_id = obj.job_id;
-                window.history.pushState({}, "Title", "LoadExperiment.pl" + "?job_id=" + obj.job_id); // Add job_id to browser URL
-                update_dialog(STATUS_URL + obj.job_id, pageObj.user, "#load_dialog", progress_formatter);
-            }
-        }
-    });
+//    var payload = $.extend({fname: "load_experiment", load_id: load_id}, experiment);
+//    $.ajax({
+//    	type: "POST",
+//    	dataType: "json",
+//        contentType: "application/json",
+//        data: JSON.stringify(payload),
+//        success: function(obj) {
+//            if (obj && obj.error) {
+//                if (obj.error.PAYLOAD)  {
+//                    alert(obj.error.PAYLOAD);
+//                }
+//                return;
+//            }
+//
+//            // Set link in status dialog
+//            $('#loading_msg span a').attr('href', obj.link).html(obj.link);
+//
+//            // Start status update
+//            if (obj.job_id) { // JEX status for load FASTQ
+//                job_id = obj.job_id;
+//                window.history.pushState({}, "Title", "LoadExperiment.pl" + "?job_id=" + obj.job_id); // Add job_id to browser URL
+//                update_dialog(STATUS_URL + obj.job_id, USER_NAME, "#load_dialog", progress_formatter);
+//            }
+//        }
+//    });
 }
 
 function reset_load() {
@@ -1358,7 +1417,7 @@ function reset_load() {
 
     // Reset the wizard and set description step
     initialize_wizard({
-        admin: is_admin,
+        admin: IS_ADMIN,
         description: current_experiment.description,
         gid: current_experiment.gid
     });
@@ -1367,7 +1426,6 @@ function reset_load() {
 }
 
 function initialize_wizard(opts) {
-    //FIXME: This should be a private variable
     current_experiment = {};
     var root = $("#wizard-container");
     var wizard = new Wizard({ completed: load, data: current_experiment });
