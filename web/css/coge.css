@@ -1017,6 +1017,10 @@ li {
     border: 1px solid lightgray;
 }
 
+.coge-border-bottom {
+    border-bottom: 1px solid lightgray;
+}
+
 /* Alignment */
 .top {
     vertical-align: top;
@@ -1557,6 +1561,9 @@ header {
     border-color: #e34a4a;
 }
 
+/*
+ * Wizard component
+ */
 
 .wizard {
     box-sizing: border-box;
@@ -1573,7 +1580,6 @@ header {
 .wizard h5 {
     margin: 0;
 }
-
 
 .wizard-coge {
     border-color: #ccc;
@@ -1593,13 +1599,12 @@ header {
 
 .wizard .sections div {
     display: inline-block;
-    padding-left: 15px;
+    padding-right: 2em;
 }
 
 .wizard .sections {
     color: #999;
 }
-
 
 .wizard .title {
     float: left;
@@ -1621,7 +1626,8 @@ header {
 }
 
 .header .active {
-    color: #000;
+    color: #119911;
+    font-size: larger;
 }
 
 .wizard .step .required:after {

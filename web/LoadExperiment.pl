@@ -3,19 +3,11 @@
 # NOTE: this file shares a lot of code with LoadGenome.pl, replicate changes when applicable.
 
 use strict;
+
 use CGI;
-use CoGeX;
-use CoGe::Accessory::Web;
-use CoGe::Accessory::IRODS;
-use CoGe::Accessory::TDS;
-use CoGe::Accessory::Utils;
-use CoGe::Core::Genome qw(genomecmp);
-use CoGe::Core::Storage qw(create_experiment get_workflow_paths);
-use CoGe::Builder::Expression::qTeller qw(run);
-use CoGe::Builder::Tools::LoadExperiment qw(run);
 use HTML::Template;
 use JSON::XS;
-use URI::Escape::JavaScript qw(escape unescape);
+use URI::Escape::JavaScript qw(unescape);
 use File::Path;
 use File::Spec::Functions;
 use File::Copy;
@@ -27,6 +19,16 @@ use LWP::Simple;
 use URI;
 use Sort::Versions;
 use Data::Dumper;
+
+use CoGeX;
+use CoGe::Accessory::Web;
+use CoGe::Accessory::IRODS;
+use CoGe::Accessory::TDS;
+use CoGe::Accessory::Utils;
+use CoGe::Core::Genome qw(genomecmp);
+use CoGe::Core::Storage qw(get_workflow_paths get_upload_path);
+use CoGe::Builder::Load::Experiment qw(run);
+
 no warnings 'redefine';
 
 use vars qw(
@@ -46,7 +48,7 @@ $CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
 
 $JOB_ID  = $FORM->Vars->{'job_id'};
 $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
-$TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
+$TEMPDIR = get_upload_path($USER->name, $LOAD_ID); #$P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 
 $EMBED = $FORM->param('embed');
 
@@ -143,10 +145,10 @@ sub generate_body {
     }
 
     $template->param(
-        EMBED       => $EMBED,
-    	LOAD_ID     => $LOAD_ID,
-    	JOB_ID      => $JOB_ID,
-        STATUS_URL  => 'api/v1/jobs/',
+        EMBED        => $EMBED,
+    	LOAD_ID      => $LOAD_ID,
+    	JOB_ID       => $JOB_ID,
+        API_JOBS_URL => 'api/v1/jobs/', #TODO move into config file or module
         DEFAULT_TAB              => 0,
         MAX_IRODS_LIST_FILES     => 1000,
         MAX_IRODS_TRANSFER_FILES => 30,
@@ -424,16 +426,15 @@ sub check_login {
 }
 
 sub load_experiment {
-    my %opts        = @_;
-    my $user_name   = $opts{options}->{user_name};
-    my $gid         = $opts{gid};
-    my $load_id     = $opts{load_id};
-    my $data        = $opts{data};
-    my $metadata    = $opts{description};
-    my $options     = $opts{options};
+    my $opts        = shift;
+    my $user_name   = $opts->{options}->{user_name};
+    my $gid         = $opts->{gid};
+    my $load_id     = $opts->{load_id};
+    my $data        = $opts->{data};
+    my $metadata    = $opts->{description};
+    my $options     = $opts->{options};
     #print STDERR "LoadExperiment::load_experiment ", Dumper $opts, "\n";
-
-    return encode_json({ error => "No data items" }) unless $data;
+    return encode_json({ error => "No data items" }) unless (defined $data && @$data);
 
     # Check login
     if ( !$user_name || !$USER->is_admin ) {
@@ -444,21 +445,20 @@ sub load_experiment {
     }
 
     # Setup file staging area
-    $TEMPDIR = catdir($P->{SECTEMPDIR}, $PAGE_TITLE, $USER->name, $load_id);
+    $TEMPDIR = get_upload_path($user_name, $LOAD_ID); #catdir($P->{SECTEMPDIR}, $PAGE_TITLE, $USER->name, $load_id);
     my $stagepath = catdir($TEMPDIR, 'staging');
     mkpath $stagepath;
 
-    # Setup path to staged data file
-    my @data_files = map { catfile($TEMPDIR, $_->{path}) } @$data;
-    my $data_type = $data->[0]->{file_type};
+    # Setup paths to staged data files
+    my $numFastq = 0;
+    foreach (@$data) {
+        $_->{path} = catfile($TEMPDIR, $_->{path});
+        $numFastq++ if (is_fastq_file($_->{path}));
+    }
     
     # Check multiple files (if more than one file then all should be FASTQ)
-    my $numFastq = 0;
-    foreach (@data_files) {
-        $numFastq++ if (is_fastq_file($_));
-    }
-    return return encode_json({ error => 'Unsupported combination of file types' }) if ($numFastq > 0 and $numFastq != @data_files);
-    return return encode_json({ error => 'Too many files' }) if ($numFastq == 0 and @data_files > 1);
+    return encode_json({ error => 'Unsupported combination of file types' }) if ($numFastq > 0 and $numFastq != @$data);
+    return encode_json({ error => 'Too many files' }) if ($numFastq == 0 and @$data > 1);
 
     # Get genome
     my $genome = $coge->resultset('Genome')->find($gid);
@@ -467,14 +467,14 @@ sub load_experiment {
     }
     # TODO add permissions check here -- or will it happen in Request::Genome?
 
+    # Build and submit workflow
     my ($workflow_id, $error_msg) = CoGe::Builder::Tools::LoadExperiment::run({
         user => $USER,
         genome => $genome,
         metadata => $metadata,
-        data => [ { path => $data_file, type => $data_type } ],
+        data => $data,
         options => $options
     });
-
     unless ($workflow_id) {
         #print STDERR $error_msg, "\n";
         return encode_json({ error => "Workflow submission failed: " . $error_msg });
@@ -695,7 +695,8 @@ sub send_error_report {
         . "result_directory: $result_dir\n\n"
         . "tiny link: $url\n\n";
 
-    $body .= get_debug_log(workflow_id => $job_id);
+    my $log = get_debug_log(workflow_id => $job_id);
+    $body .= $log if $log;
 
     CoGe::Accessory::Web::send_email(
         from    => $email,
