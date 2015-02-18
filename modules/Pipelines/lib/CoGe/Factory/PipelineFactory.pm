@@ -2,6 +2,8 @@ package CoGe::Factory::PipelineFactory;
 
 use Moose;
 
+use CoGe::Builder::Load::Experiment;
+
 has 'db' => (
     is => 'ro',
     required => 1
@@ -25,7 +27,7 @@ has 'jex' => (
 sub get {
     my ($self, $message) = @_;
 
-    my $options = {
+    my $request = {
         params   => $message->{parameters},
         options  => $message->{options},
         db       => $self->db,
@@ -37,23 +39,27 @@ sub get {
     # Select pipeline builder
     my $builder;
     if ($message->{type} eq "export_gff") {
-        $builder = CoGe::Builder::Export::Gff->new($options);
+        $builder = CoGe::Builder::Export::Gff->new($request);
     } 
     elsif ($message->{type} eq "export_fasta") {
-        $builder = CoGe::Builder::Export::Fasta->new($options);
+        $builder = CoGe::Builder::Export::Fasta->new($request);
     } 
     elsif ($message->{type} eq "export_experiment") {
-        $builder = CoGe::Builder::Export::Experiment->new($options);
+        $builder = CoGe::Builder::Export::Experiment->new($request);
     }
     elsif ($message->{type} eq "load_experiment") {
-        $builder = CoGe::Builder::Load::Experiment->new($options);
+        $builder = CoGe::Builder::Load::Experiment->new($request);
     }
     else {
         return;
     }
 
     # Construct the workflow
-    $builder->build;
+    my $rc = $builder->build;
+    unless ($rc) {
+        print STDERR "PipelineFactory::get build failed\n";
+        return;
+    }
 
     # Fetch the workflow constructed
     return $builder->get;

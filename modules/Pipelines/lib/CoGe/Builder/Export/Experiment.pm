@@ -8,13 +8,14 @@ use CoGe::Accessory::Utils;
 use CoGe::Core::Storage qw(get_experiment_files get_workflow_paths);
 use CoGe::Builder::CommonTasks;
 
-use File::Spec::Functions;
+use File::Spec::Functions qw(catdir catfile);
 use Data::Dumper;
 
 sub build {
     my $self = shift;
 
-    $self->init_workflow($self->jex);
+    # Initialize workflow
+    $self->workflow($self->jex->create_workflow(name => "Get experiment files", init => 1));
     return unless $self->workflow->id;
 
     my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
@@ -46,12 +47,8 @@ sub build {
     } else {
         $self->workflow->add_job(link_results($cache_file, $cache_file, $result_dir, $self->conf));
     }
-}
-
-sub init_workflow {
-    my ($self, $jex) = @_;
-
-    $self->workflow($jex->create_workflow(name => "Get experiment files", init => 1));
+    
+    return 1;
 }
 
 sub get_download_path {

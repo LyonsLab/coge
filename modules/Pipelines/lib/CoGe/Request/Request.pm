@@ -1,4 +1,4 @@
-package CoGe::Requests::Request;
+package CoGe::Request::Request;
 
 use Moose::Role;
 

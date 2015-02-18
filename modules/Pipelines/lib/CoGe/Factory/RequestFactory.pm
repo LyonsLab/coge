@@ -21,6 +21,7 @@ has 'jex'     => (
 
 sub get {
     my ($self, $message) = @_;
+    return unless (defined $message->{type});
 
     my $options = {
         db         => $self->db,

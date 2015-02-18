@@ -49,6 +49,8 @@ sub build {
     else { # http download
         $self->workflow->add_job( link_results($genome_file, $output_file, $result_dir, $self->conf) );
     }
+    
+    return 1;
 }
 
 sub init_workflow {
