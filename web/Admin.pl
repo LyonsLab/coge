@@ -7,6 +7,8 @@ use HTML::Template;
 use JSON qw(encode_json);
 use Data::Dumper;
 use List::Compare;
+use CoGeX::Result::User;
+use Data::Dumper;
 no warnings 'redefine';
 
 use vars qw($P $PAGE_NAME $USER $BASEFILE $coge $cogeweb %FUNCTION $FORM $MAX_SEARCH_RESULTS);
@@ -14,12 +16,14 @@ use vars qw($P $PAGE_NAME $USER $BASEFILE $coge $cogeweb %FUNCTION $FORM $MAX_SE
 $FORM = new CGI;
 ( $coge, $USER, $P ) = CoGe::Accessory::Web->init( cgi => $FORM );
 
+my $node_types = CoGeX::node_types();
 $MAX_SEARCH_RESULTS = 400;
 
 %FUNCTION = (
     search_organisms     => \&search_organisms,
     search_users	 => \&search_users,
     search_stuff	 => \&search_stuff,
+    user_info		 => \&user_info,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -82,9 +86,10 @@ sub search_stuff {
     #say STDERR Dumper(\@searchArray);
 	
     #Set the special conditions
-    my $type = "none";
-    my @restricted = [-or => [restricted => 0, restricted => 1]];
-    my @deleted = [deleted => 0];
+    my $type = "none"; 							#Specifies a particular field to show
+    my @restricted = [-or => [restricted => 0, restricted => 1]];	#Specifies either restricted(1) OR unrestriced(0) results. Default is all.
+    my @deleted = [-or => [deleted => 0, deleted => 1]];		#Specifies either deleted(1) OR non-deleted(0) results. Defaults is all.
+    #my @deleted = [deleted => 0];					#Specifies either deleted(1) OR non-deleted(0) results. Default is non-deleted.
     for (my $i = 0; $i < @specialTerms; $i++) {
 	if ($specialTerms[$i]{tag} eq 'type') {
 		$type = $specialTerms[$i]{term};
@@ -92,21 +97,21 @@ sub search_stuff {
 	if ($specialTerms[$i]{tag} eq 'restricted') {
 		@restricted = [restricted => $specialTerms[$i]{term}];
 		if($type eq "none") {
-			$type = 'restricted';
+			$type = 'restricted';	#Sets the "type" so that only fields relevant to restriction are shown. (i.e. there are no restricted users.)
 		}
 	}
 	if ($specialTerms[$i]{tag} eq 'deleted' && ($specialTerms[$i]{term} eq '0' || $specialTerms[$i]{term} eq '1')) {
                 @deleted = [deleted => $specialTerms[$i]{term}];
 		if($type eq "none") {
-                        $type = 'deleted';
+                        $type = 'deleted'; 	#Sets the "type" so that only fields relevant to deletion are shown. (i.e. there are no deleted users).
                 }
         }
-	if ($specialTerms[$i]{tag} eq 'deleted' && $specialTerms[$i]{term} eq '*') {
-                @deleted = [-or => [deleted => 0, deleted => 1]];
-		if($type eq "none") {
-                        $type = 'deleted';
-                }
-        }
+	#if ($specialTerms[$i]{tag} eq 'deleted' && $specialTerms[$i]{term} eq '*') {
+        #        @deleted = [-or => [deleted => 0, deleted => 1]];
+	#	if($type eq "none") {
+        #                $type = 'deleted';
+        #        }
+        #}
     }
 
     # Perform organism search
@@ -118,7 +123,7 @@ sub search_stuff {
     	my @organisms = $coge->resultset("Organism")->search({
 		-and => [
 			@orgArray,
-	    	],			
+	    	],
 	});
 
 
@@ -158,7 +163,7 @@ sub search_stuff {
    	});
     
    	foreach ( sort { $a->id cmp $b->id } @genomes ) {
-    		push @results, { 'type' => "genome", 'label' => $_->info, 'id' => $_->id };
+    		push @results, { 'type' => "genome", 'label' => $_->info, 'id' => $_->id, 'deleted' => $_->deleted };
     	}
 
     	# Perform direct genome search (by genome ID)
@@ -175,7 +180,7 @@ sub search_stuff {
     	});
 
     	foreach ( sort { $a->id cmp $b->id } @genomeIDs ) {
-		push @results, { 'type' => "genome", 'label' => $_->info, 'id' => $_->id };
+		push @results, { 'type' => "genome", 'label' => $_->info, 'id' => $_->id, 'deleted' => $_->deleted };
     	}
     }
 
@@ -195,7 +200,7 @@ sub search_stuff {
         });
 
 	foreach ( sort { $a->name cmp $b->name } @experiments ) {
-        	push @results, { 'type' => "experiment", 'label' => $_->name, 'id' => $_->id };
+        	push @results, { 'type' => "experiment", 'label' => $_->name, 'id' => $_->id, 'deleted' => $_->deleted };
     	}
     }
 
@@ -215,7 +220,7 @@ sub search_stuff {
         });
 
     	foreach ( sort { $a->name cmp $b->name } @notebooks ) {
-        	push @results, { 'type' => "notebook", 'label' => $_->name, 'id' => $_->id };
+        	push @results, { 'type' => "notebook", 'label' => $_->info, 'id' => $_->id, 'deleted' => $_->deleted };
     	}
     }
 
@@ -234,11 +239,80 @@ sub search_stuff {
         });
 
     	foreach ( sort { $a->name cmp $b->name } @userGroup ) {
-        	push @results, { 'type' => "user_group", 'label' => $_->name, 'id' => $_->id };
+        	push @results, { 'type' => "user_group", 'label' => $_->name, 'id' => $_->id, 'deleted' => $_->deleted };
     	}
     }
-
+    #print STDERR "Successful search";
     return encode_json( { timestamp => $timestamp, items => \@results } );
+}
+
+sub user_info {
+	#print STDERR "Hello? Is anyone there?";
+	#print STDERR "@_\n";
+
+	my %opts        = @_;
+    	my $search_term = $opts{search_term};
+	my $search_type = $opts{search_type};
+    	my $timestamp   = $opts{timestamp};
+	
+	print STDERR "$search_term\n";
+	
+	my $user;
+	if ($search_type eq "user") {
+		$user = $coge->resultset("User")->find( $search_term );
+	}
+	if ($search_type eq "group") {
+		$user = $coge->resultset("UserGroup")->find( $search_term );
+	}
+	my @results; 
+	my @users; 
+	push(@users, $user);
+
+	my $child;
+	if ($search_type eq "user") {
+		foreach ($user->child_connectors({child_type=>6})) {
+			$child = $_->child;
+			push(@users, $child);
+			#push @results, { 'type' => "user_group", 'label' => $child->name, 'id' => $child->id, 'deleted' => $child->deleted};
+		}		
+	}
+
+	foreach my $currentUser (@users) {
+		my @current;
+		
+		# Find notebooks
+		foreach ($currentUser->child_connectors({child_type=>1})) {
+			$child = $_->child;
+			#push @results, { 'type' => "notebook", 'label' => $child->name, 'id' => $child->id, 'info' => $child->info};
+			push @current, { 'type' => "notebook", 'label' => $child->info, 'id' => $child->id, 'role' => $_->role_id, 'deleted' => $child->deleted};
+		}
+		
+		# Find genomes
+		foreach ($currentUser->child_connectors({child_type=>2})) {
+			$child = $_->child;
+			push @current, { 'type' => "genome", 'label' => $child->info, 'id' => $child->id, 'role' => $_->role_id, 'deleted' => $child->deleted};
+		}
+		
+		# Find experiments
+		foreach ($currentUser->child_connectors({child_type=>3})) {
+			$child = $_->child;
+			push @current, { 'type' => "experiment", 'label' => $child->name, 'id' => $child->id, 'info' => $child->info, 'role' => $_->role_id, 'deleted' => $child->deleted};
+			#push @current, { 'type' => "experiment", 'label' => $child->info, 'id' => $child->id, 'role' => $_->role_id, 'deleted' => $child->deleted};
+		}	
+
+		# Find users if searching a user group
+		if ( $search_type eq "group" ) {
+         		foreach ( $user->users ) {
+				push @current, { 'type' => "user", 'label' => $_->name, 'id' => $_->id};
+			}
+        	}
+		
+		push @results, { 'user' => $currentUser->name, 'user_id' => $currentUser->id, 'result' => \@current };
+	}
+
+
+	#print STDERR Dumper(@results);
+	return encode_json( { timestamp => $timestamp, items => \@results } );
 }
 
 #Evan's modular stuff
