@@ -760,7 +760,7 @@ sub validate_bam_data_file {
 	$cmd = "$SAMTOOLS view -H $filepath";
 	print STDOUT $cmd, "\n";
     my @header = qx{$cmd};
-    print STDOUT "Old header:\n", @header;
+    #print STDOUT "Old header:\n", @header;
     execute($cmd);
 
 	# Parse the chromosome names out of the header
