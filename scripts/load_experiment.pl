@@ -543,7 +543,7 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
         
             # Handle different BED formats
             @tok = split( /\s+/, $line );
-            if ($bedType eq 'bedgraph') { # UCSC bedGraph: http://genome.ucsc.edu/goldenPath/help/bedgraph.html
+            if (defined $bedType && $bedType eq 'bedgraph') { # UCSC bedGraph: http://genome.ucsc.edu/goldenPath/help/bedgraph.html
                 ( $chr, $start, $stop, $val1 ) = @tok;
                 $strand = '.'; # determine strand by val1 polarity
             }
@@ -559,7 +559,7 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
             }
         }
         else { # unknown file type (should never happen)
-        	die;
+        	die "fatal error: unknown file type!";
         }
 
         # Validate mandatory fields
