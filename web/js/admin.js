@@ -1,3 +1,5 @@
+var ITEM_TYPE_USER = 5; //TODO: This is duplicated elsewhere, move to a common location
+
 $(function () {
 	    // Configure dialogs
     $(".dialog_box").dialog({autoOpen: false, width: 500});
@@ -58,7 +60,7 @@ function search_stuff (search_term) {
                                                                 genList = genList + "<span>";
                                                         }
 							genList = genList + (obj.items[i].label) + " <a href=\"GenomeInfo.pl?gid=" + (obj.items[i].id) + "\">Info </a>";
-							genList = genList + "<button onclick='open_dialog()'>Add to User</button>"
+							genList = genList + "<button onclick='share_dialog(" + obj.items[i].id + ")'>Add to User</button>"
 							genList = genList + "</span></td></tr>";
 							genCounter++;
 						}
@@ -199,7 +201,8 @@ function toggle_master() {
 }
 
 function open_dialog() {
-	$("#addUserDialog").dialog("open");
+	console.log("Open_dialog called");
+	$("#user_dialog").dialog("open");
 }
 
 function add_to_user() {
@@ -207,10 +210,6 @@ function add_to_user() {
 	//var user = prompt("Enter a user name or ID");
 	//console.log(user);
 }
-
-//$(function () {
-//    $("#addUserDialog").dialog();
-//});
 
 var previous = 0; //indicates the previous user searched, used by search_user
 
@@ -439,7 +438,63 @@ function user_info(userID, search_type) {
 	});
 }
 
-function update_dialog(request, user, identifier, formatter) {
+/*function search_users (search_term) {
+        if (search_term.length > 2) {
+		search_term = search_term + " type:user"
+                timestamps['search_organisms'] = new Date().getTime();
+                $.ajax({
+                        data: {
+                                fname: 'search_stuff',
+                                search_term: search_term,
+                                timestamp: timestamps['search_stuff']
+                        },
+                        success : function(data) {
+                                var obj = jQuery.parseJSON(data);
+                                if (obj && obj.items && obj.timestamp == timestamps['search_stuff']) {
+                                        $("#user_field").autocomplete({source: obj.items}).autocomplete("search");
+                                }
+                        },
+                });
+        }
+}*/
+
+function share_dialog(id) {
+	var item_list = "content_" + id + "_2";  //selected.map(function(){return this.parentNode.id;}).get().join(',');
+	$.ajax({
+		data: {
+			fname: 'get_share_dialog',
+			item_list: item_list,
+		},
+		success : function(data) {
+			$('#share_dialog').html(data).dialog({width:500}).dialog('open');
+		}
+	});
+}
+
+function search_share () {
+	var search_term = $('#share_input').attr('value');
+
+	//$("#wait_notebook").animate({opacity:1});
+	timestamps['search_share'] = new Date().getTime()
+
+	$.ajax({
+		data: {
+			fname: 'search_share',
+			search_term: search_term,
+			timestamp: timestamps['search_share']
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj && obj.timestamp == timestamps['search_share'] && obj.items) {
+				//console.log(obj.items);
+				$("#share_input").autocomplete({source: obj.items}).autocomplete("search");
+				//$("#wait_notebook").animate({opacity:0});
+			}
+		},
+	});
+}
+
+/*function update_dialog(request, user, identifier, formatter) {
     var get_status = function () {
         $.ajax({
             type: 'GET',
@@ -545,7 +600,7 @@ function update_dialog(request, user, identifier, formatter) {
     };
 
     get_status();
-}
+}*/
 
 function wait_to_search (search_func, search_term) {
 	//console.log(search_term);
