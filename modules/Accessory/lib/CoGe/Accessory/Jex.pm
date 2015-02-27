@@ -7,6 +7,7 @@ use Moose;
 use JSON::XS;
 use ZMQ::LibZMQ3;
 use ZMQ::Constants qw/:all/;
+
 use CoGe::Accessory::Workflow;
 
 # Attributes
@@ -75,7 +76,7 @@ sub submit_workflow {
             jobs     => $workflow->jobs(),
         },
     };
-
+    
     return _send_request($self, $request);
 }
 
@@ -167,7 +168,7 @@ sub get_all_workflows {
 
     $response = _send_request($self, $request);
     $workflows = $response->{workflows} if $response and $response->{workflows};
-    $workflows //= [];
+    $workflows //= []; #/
 
     return $workflows;
 }
@@ -185,7 +186,7 @@ sub find_workflows {
 
     $response = _send_request($self, $request);
     $workflows = $response->{workflows} if $response and $response->{workflows};
-    $workflows //= [];
+    $workflows //= []; #/
 
     return $workflows;
 }
