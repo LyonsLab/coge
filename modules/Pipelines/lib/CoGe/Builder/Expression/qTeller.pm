@@ -26,46 +26,8 @@ BEGIN {
     require Exporter;
 
     $VERSION = 0.1;
-    @ISA     = qw (Exporter);
-    @EXPORT = qw( run );
-    @EXPORT_OK = qw(build);
-}
-
-sub run {
-    my $opts = shift;
-    my $user = $opts->{user};
-
-    # Connect to workflow engine and get an id
-    my $jex = CoGe::Accessory::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
-    unless (defined $jex) {
-        return (undef, "Could not connect to JEX");
-    }
-
-    # Create the workflow
-    my $workflow = $jex->create_workflow( name => 'Running the qTeller pipeline', init => 1 );
-    my $wid = $workflow->id;
-
-    # Setup log file, staging, and results paths
-    my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
-    $workflow->logfile( catfile($result_dir, 'debug.log') );
-
-    # Build the workflow
-    my $options = {
-        result_dir => $result_dir,
-        staging_dir => $staging_dir,
-        wid  => $wid,
-        %{$opts},
-    };
-    my @jobs = build($options);
-    $workflow->add_jobs(\@jobs);
-
-    # Submit the workflow
-    my $result = $jex->submit_workflow($workflow);
-    if ($result->{status} =~ /error/i) {
-        return (undef, "Could not submit workflow");
-    }
-
-    return ($result->{id}, undef);
+    @ISA     = qw(Exporter);
+    @EXPORT  = qw(build);
 }
 
 sub build {
@@ -74,12 +36,12 @@ sub build {
     my $user = $opts{user};
     my $input_file = $opts{input_file}; # path to bam file
     my $metadata = $opts{metadata};
-    my $staging_dir = $opts{staging_dir};
-    my $result_dir = $opts{result_dir};
     my $wid = $opts{wid};
     my $options = $opts{options};
-    #print STDERR "qTeller::build ", Dumper $metadata, "\n";
+    my $params = $opts{params};
 
+    # Setup paths
+    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
     my $gid = $genome->id;
     my $FASTA_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "fasta");
     die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
@@ -90,32 +52,36 @@ sub build {
     # Set metadata for the pipeline being used
     my $annotations = ""; #FIXME generate_metadata($alignment, $isAnnotated);
 
-    my @jobs;
+    my @tasks;
 
-    # Filter the fasta file (clean up headers)
+    # Reheader the fasta file
     my $fasta = get_genome_file($gid);
     my $reheader_fasta = to_filename($fasta) . ".reheader.faa";
-    push @jobs, create_fasta_reheader_job( fasta => $fasta, reheader_fasta => $reheader_fasta, cache_dir => $FASTA_CACHE_DIR );
+    push @tasks, create_fasta_reheader_job( 
+        fasta => $fasta, 
+        reheader_fasta => $reheader_fasta, 
+        cache_dir => $FASTA_CACHE_DIR
+    );
     
-    # Generate gff if genome annotated
+    # Generate cached gff if genome is annotated
     my $gff_file;
     if ($isAnnotated) {
         my $gff = create_gff_generation_job(gid => $gid, organism_name => $genome->organism->name);
-        $gff_file = @{$gff->{outputs}}[0];
-        push @jobs, $gff;
+        $gff_file = $gff->{outputs}->[0];
+        push @tasks, $gff;
     }
 
-    # Generate bed file
+    # Generate bed file of read depth
     my $bed = create_bed_file_job(
         bam => $input_file,
         staging_dir => $staging_dir,
-        seq => $options->{expression_params},
+        params => $params,
     );
-    push @jobs, $bed;
+    push @tasks, $bed;
 
     # Filter bed file
-    my $filtered_bed = create_filter_bed_file_job(@{$bed->{outputs}}[0], $staging_dir);
-    push @jobs, $filtered_bed;
+    my $filtered_bed = create_filter_bed_file_job($bed->{outputs}->[0], $staging_dir);
+    push @tasks, $filtered_bed;
 
     # Check for annotations required by cufflinks
     my $include_csv;
@@ -124,30 +90,53 @@ sub build {
 
         # Run cufflinks
         my $cuff = create_cufflinks_job($gff_file, catfile($FASTA_CACHE_DIR, $reheader_fasta), $input_file, $staging_dir);
-        push @jobs, $cuff;
+        push @tasks, $cuff;
 
         # Convert final output into csv
-        my $parse_cuff = create_parse_cufflinks_job(@{$cuff->{outputs}}[0], $staging_dir);
-        push @jobs, $parse_cuff;
+        my $parse_cuff = create_parse_cufflinks_job($cuff->{outputs}->[0], $staging_dir);
+        push @tasks, $parse_cuff;
 
         # Load csv experiment
-        my $load_csv = create_load_csv_job($metadata, $gid, @{$parse_cuff->{outputs}}[0], $user, $annotations, $staging_dir, $wid, $result_dir);
-        push @jobs, $load_csv;
+        push @tasks, create_load_csv_job(
+            metadata => $metadata, 
+            gid => $gid, 
+            csv => $parse_cuff->{outputs}->[0], 
+            user => $user, 
+            annotations => $annotations,
+            wid => $wid, 
+            staging_dir => $staging_dir, 
+            result_dir => $result_dir
+        );
     }
 
     # Load bam experiment
-    my $load_bam = create_load_bam_job($metadata, $gid, $input_file, $user, $annotations, $staging_dir, $wid, $result_dir);
-    push @jobs, $load_bam;
+    push @tasks, create_load_bam_job(
+        wid => $wid,
+        metadata => $metadata, 
+        gid => $gid, 
+        bam_file => $input_file, 
+        user => $user, 
+        annotations => $annotations, 
+        staging_dir => $staging_dir, 
+        result_dir => $result_dir
+    );
 
     # Load bed experiment
-    my $load_bed = create_load_bed_job($metadata, $gid, @{$filtered_bed->{outputs}}[0], $user, $annotations, $staging_dir, $wid, $result_dir);
-    push @jobs, $load_bed;
+    push @tasks, create_load_bed_job($metadata, $gid, @{$filtered_bed->{outputs}}[0], $user, $annotations, $staging_dir, $wid, $result_dir);
 
     # Create notebook
-    my $notebook = create_notebook_job($metadata, $include_csv, 1, 1, $user, $annotations, $staging_dir, $result_dir);
-    push @jobs, $notebook;
+    push @tasks, create_notebook_job(
+        metadata => $metadata, 
+        include_csv => $include_csv, 
+        include_bam => 1, 
+        include_bed => 1, 
+        user => $user, 
+        annotations => $annotations, 
+        staging_dir => $staging_dir, 
+        result_dir => $result_dir
+    );
 
-    return wantarray ? @jobs : \@jobs;
+    return wantarray ? @tasks : \@tasks;
 }
 
 sub generate_metadata {
@@ -176,22 +165,6 @@ sub generate_metadata {
 
     return join(';', @annotations);
 }
-
-# mdb removed 12/12/14 - replaced by CoGeX::Genome::has_gene_features
-#sub has_annotations {
-#    my ($gid, $db) = @_;
-#
-#    #FIXME Remove hardcoded values
-#    my $count = $db->resultset('Feature')->count(
-#        {
-#            feature_type_id => [ 1, 2, 3 ],
-#            genome_id       => $gid
-#        },
-#        { join => [ { dataset => 'dataset_connectors' } ], }
-#    );
-#
-#    return $count > 0;
-#}
 
 sub create_cufflinks_job {
     my ($gff, $fasta, $bam, $staging_dir) = @_;
@@ -228,8 +201,8 @@ sub create_bed_file_job {
     my $staging_dir = $opts{staging_dir};
 
     # Optional arguments
-    my $seq = $opts{seq} // {};
-    my $Q = $seq->{Q} // 20;
+    my $params = $opts{params} // {}; #/
+    my $Q = $params->{Q} // 20; #/
 
     my $name = to_filename($bam);
     my $cmd = $CONF->{SAMTOOLS};
@@ -313,7 +286,16 @@ sub create_parse_cufflinks_job {
 }
 
 sub create_load_csv_job {
-    my ($md, $gid, $csv, $user, $annotations, $staging_dir, $wid, $result_dir) = @_;
+    my %opts = @_;
+    my $metadata = $opts{metadata};
+    my $gid = $opts{gid};
+    my $csv = $opts{csv};
+    my $user = $opts{user};
+    my $annotations = $opts{annotations};
+    my $staging_dir = $opts{staging_dir};
+    my $result_dir = $opts{result_dir};
+    my $wid = $opts{wid};
+    
     my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
@@ -322,16 +304,16 @@ sub create_load_csv_job {
         script => undef,
         args => [
             ['-user_name', $user->name, 0],
-            ['-name', '"'.$md->{name}.' (FPKM)'.'"', 0],
+            ['-name', '"'.$metadata->{name}.' (FPKM)'.'"', 0],
             ['-desc', qq{"Transcript expression measurements"}, 0],
-            ['-version', '"'.$md->{version}.'"', 0],
-            ['-restricted', $md->{restricted}, 0],
+            ['-version', '"'.$metadata->{version}.'"', 0],
+            ['-restricted', $metadata->{restricted}, 0],
+            ['-source_name', '"'.$metadata->{source}.'"', 0],
             ['-gid', $gid, 0],
             ['-wid', $wid, 0],
-            ['-source_name', '"'.$md->{source}.'"', 0],
             ['-types', qq{"Expression"}, 0],
             ['-annotations', qq{"$annotations"}, 0],
-            ['-staging_dir', "./csv", 0],
+            ['-staging_dir', "./load_csv", 0],
             ['-file_type', "csv", 0],
             ['-data_file', $csv, 0],
             ['-result_file', catfile($result_dir, 'transcript_fpkm'), 0],
@@ -342,47 +324,10 @@ sub create_load_csv_job {
             $csv
         ],
         outputs => [
-            [catdir($staging_dir, "csv"), 1],
-            catfile($staging_dir, "csv/log.done"),
+            [catdir($staging_dir, "load_csv"), 1],
+            catfile($staging_dir, "load_csv/log.done"),
         ],
         description => "Loading expression data..."
-    };
-}
-
-sub create_load_bam_job {
-    my ($md, $gid, $bam, $user, $annotations, $staging_dir, $wid, $result_dir) = @_;
-    my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
-    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
-
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => [
-            ['-user_name', $user->name, 0],
-            ['-name', '"'.$md->{name}." (alignment)".'"', 0],
-            ['-desc', qq{"Mapped reads"}, 0],
-            ['-version', '"'.$md->{version}.'"', 0],
-            ['-restricted', $md->{restricted}, 0],
-            ['-gid', $gid, 0],
-            ['-wid', $wid, 0],
-            ['-source_name', '"'.$md->{source}.'"', 0],
-            ['-types', qq{"RNAseq;BAM"}, 0],
-            ['-annotations', qq{"$annotations"}, 0],
-            ['-staging_dir', "./bam", 0],
-            ['-file_type', "bam", 0],
-            ['-data_file', "$bam", 0],
-            ['-result_file', catfile($result_dir, 'mapped_reads'), 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 1]
-        ],
-        inputs => [
-            $CONF->{_CONFIG_PATH},
-            $bam,
-        ],
-        outputs => [
-            [catdir($staging_dir, "bam"), 1],
-            catfile($staging_dir, "bam/log.done"),
-        ],
-        description => "Loading mapped reads..."
     };
 }
 
@@ -390,7 +335,7 @@ sub create_load_bed_job {
     my ($md, $gid, $bed, $user, $annotations, $staging_dir, $wid, $result_dir) = @_;
     my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
-
+    
     return {
         cmd => $cmd,
         script => undef,
@@ -405,7 +350,7 @@ sub create_load_bed_job {
             ['-source_name', '"'.$md->{source}.'"', 0],
             ['-types', qq{"Expression"}, 0],
             ['-annotations', qq{"$annotations"}, 0],
-            ['-staging_dir', "./bed", 0],
+            ['-staging_dir', "./load_bed", 0],
             ['-file_type', "bed", 0],
             ['-data_file', "$bed", 0],
             ['-result_file', catfile($result_dir, 'read_depth'), 0],
@@ -416,15 +361,23 @@ sub create_load_bed_job {
             $bed,
         ],
         outputs => [
-            [catdir($staging_dir, "bed"), 1],
-            catfile($staging_dir, "bed/log.done"),
+            [catdir($staging_dir, "load_bed"), 1],
+            catfile($staging_dir, "load_bed/log.done"),
         ],
         description => "Loading read depth..."
     };
 }
 
 sub create_notebook_job {
-    my ($md, $csv, $bam, $bed, $user, $annotations, $staging_dir, $result_dir) = @_;
+    my %opts = @_;
+    my $metadata = $opts{metadata};
+    my $include_csv = $opts{include_csv};
+    my $include_bam = $opts{include_bam};
+    my $include_bed = $opts{include_bed};
+    my $user = $opts{user};
+    my $annotations = $opts{annotations};
+    my $staging_dir = $opts{staging_dir};
+    my $result_dir = $opts{result_dir};
     
     my $cmd = catfile($CONF->{SCRIPTDIR}, "create_notebook.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
@@ -433,35 +386,33 @@ sub create_notebook_job {
 
     my $args = [
         ['-uid', $user->id, 0],
-        ['-name', '"'.$md->{name}.'"', 0],
-        ['-desc', '"'.$md->{description}.'"', 0],
+        ['-name', '"'.$metadata->{name}.'"', 0],
+        ['-desc', '"'.$metadata->{description}.'"', 0],
         ['-page', '""', 0],
         ['-type', 2, 0],
-        ['-restricted', $md->{restricted}, 0],
+        ['-restricted', $metadata->{restricted}, 0],
         ['-annotations', qq{"$annotations"}, 0],
         ['-config', $CONF->{_CONFIG_PATH}, 1],
         ['-log', catfile($staging_dir, "log.txt"), 0],
         ['-result_file', $result_file, 0],
     ];
 
-    my $inputs = [$CONF->{_CONFIG_PATH}];
+    my $inputs = [ $CONF->{_CONFIG_PATH} ];
 
-    if ($bed) {
-        push @$args, ['', "bed/log.txt", 0];
-        push @$inputs, [catdir($staging_dir, "bed"), 1];
-        push @$inputs, catfile($staging_dir, "bed/log.done"),
+    if ($include_bed) {
+        push @$args, ['', "load_bed/log.txt", 0];
+        push @$inputs, [catdir($staging_dir, "load_bed"), 1];
+        push @$inputs, catfile($staging_dir, "load_bed/log.done"),
     }
-
-    if ($bam) {
-        push @$args, ['', "bam/log.txt", 0];
-        push @$inputs, [catdir($staging_dir, "bam"), 1];
-        push @$inputs, catfile($staging_dir, "bam/log.done");
+    if ($include_bam) {
+        push @$args, ['', "load_bam/log.txt", 0];
+        push @$inputs, [catdir($staging_dir, "load_bam"), 1];
+        push @$inputs, catfile($staging_dir, "load_bam/log.done");
     }
-
-    if ($csv) {
-        push @$args, ['', "csv/log.txt", 0];
-        push @$inputs, [catdir($staging_dir, "csv"), 1];
-        push @$inputs, catfile($staging_dir, "csv/log.done");
+    if ($include_csv) {
+        push @$args, ['', "load_csv/log.txt", 0];
+        push @$inputs, [catdir($staging_dir, "load_csv"), 1];
+        push @$inputs, catfile($staging_dir, "load_csv/log.done");
     }
 
     return {

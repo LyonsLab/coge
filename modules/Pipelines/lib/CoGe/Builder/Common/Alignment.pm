@@ -1,7 +1,5 @@
 package CoGe::Builder::Common::Alignment;
 
-use Moose;
-
 use strict;
 use warnings;
 
@@ -11,60 +9,35 @@ use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_upload_path ge
 use CoGe::Accessory::Utils qw(is_fastq_file to_filename);
 use CoGe::Builder::CommonTasks;
 
+our $CONF = CoGe::Accessory::Web::get_defaults();
+
+BEGIN {
+    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK);
+    require Exporter;
+
+    $VERSION = 0.1;
+    @ISA     = qw (Exporter);
+    @EXPORT_OK = qw(build);
+}
+
 sub build {
-    my $self = shift;
+    my %opts = @_;
+    my $user        = $opts{user};
+    my $wid         = $opts{wid};
+    my $input_files = $opts{input_files};
+    my $genome      = $opts{genome};
+    my $metadata    = $opts{metadata};
+    my $options     = $opts{options};
+    my $alignment_params = $opts{alignment_params};
+    my $cutadapt_params  = $opts{cutadapt_params};
     
-    # Validate inputs and set defaults
-    unless ($self->options && $self->params) {
-        print STDERR "Alignment::build missing options or params\n";
-        return;
-    }
-    
-    my $gid = $self->params->{gid};
-    unless ($gid) {
-        print STDERR "Alignment::build missing gid\n";
-        return;
-    }
-    
-    my $data = $self->options->{source_data};
-    unless (defined $data && @$data) {
-        print STDERR "Alignment::build missing source_data\n";
-        return;
-    }
-    
-    my $alignment_params = $self->params->{alignment_params};
-    unless ($alignment_params) {
-        print STDERR "Alignment::build missing alignment_params\n";
-        return;
-    }
-    
-    my $read_type = $self->params->{alignment_params}{read_type};
-    unless ($read_type) {
-        print STDERR "Alignment::build missing read_type\n";
-        return;
-    }
-    
-    my $metadata = $self->params->{metadata};
-    unless ($metadata) {
-        print STDERR "Alignment::build missing metadata\n";
-        return;
-    }
-    
-    # Initialize workflow
-    unless ($self->workflow) {
-        $self->workflow( $self->jex->create_workflow(name => "Align reads to reference", init => 1) );
-        return unless $self->workflow->id;
-    }
-    
-    my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
-    
-    # Build workflow steps -----------------------------------------------------
     my @tasks;
     
     # Setup paths to data files
     #FIXME this is for LoadExperiment, also need to handle IRODS/FTP/HTTP data from API
-    my $upload_dir = get_upload_path($self->user->name, $self->options->{load_id});
-    my @files = map { catfile($upload_dir, $_->{path}) } @$data;
+    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
+    my $upload_dir = get_upload_path($user->name, $options->{load_id});
+    my @files = map { catfile($upload_dir, $_->{path}) } @$input_files;
 
     # Check multiple files (if more than one file then all should be FASTQ)
     my $numFastq = 0;
@@ -97,7 +70,7 @@ sub build {
                 fastq => $file, 
                 validated => "$file.validated", 
                 staging_dir => $staging_dir,
-                params => $self->params->{cutadapt_params}
+                params => $cutadapt_params
             );
             push @trimmed, @{$trim_task->{outputs}}[0];
             push @tasks, $trim_task;
@@ -108,6 +81,7 @@ sub build {
     }
 
     # Get genome cache path
+    my $gid = $genome->id;
     my $fasta_cache_dir = get_genome_cache_path($gid);
 
     # Reheader the fasta file
@@ -125,11 +99,6 @@ sub build {
         cache_dir => $fasta_cache_dir
     );
     
-    # Get genome (needed for organism name next)
-    my $genome = $self->db->resultset('Genome')->find($gid);
-    return unless ($genome);
-    # TODO add permissions check here -- or will it happen in Request::Genome?
-
     # Generate gff if genome annotated
     my $gff_file;
     if ( $genome->has_gene_features ) {
@@ -150,7 +119,7 @@ sub build {
             fasta => catfile($fasta_cache_dir, $reheader_fasta),
             fastq => \@trimmed,
             validated => \@validated,
-            read_type => $read_type,
+            read_type => $alignment_params->{read_type},
             gff => $gff_file,
             staging_dir => $staging_dir,
             params => $alignment_params,
@@ -162,7 +131,7 @@ sub build {
             fasta => $reheader_fasta,
             fastq => \@trimmed,
             validated => \@validated,
-            read_type => $read_type,
+            read_type => $alignment_params->{read_type},
             staging_dir => $staging_dir,
             params => $alignment_params,
         );
@@ -175,27 +144,23 @@ sub build {
 
     # Load alignment
     push @tasks, create_load_bam_job(
-        user => $self->user,
+        user => $user,
         metadata => $metadata,
         staging_dir => $staging_dir,
         result_dir => $result_dir,
         annotations => '', #FIXME 12/12/14
-        wid => $self->workflow->id,
+        wid => $wid,
         gid => $gid,
         bam_file => $bam
     );
     
-    # Add all tasks to workflow
-    $self->workflow->add_jobs(\@tasks);
-
     # Save outputs for retrieval by downstream tasks
-    $self->outputs->{reheader_fasta} = $reheader_fasta;
-    $self->outputs->{bam} = $bam;
-    $self->outputs->{gff} = $gff_file;
-    #return (\@tasks, $bam, $reheader_fasta, $gff_file);
-    return 1;
+    my %outputs;
+    $outputs{reheader_fasta} = $reheader_fasta;
+    $outputs{bam_file} = $bam;
+    $outputs{gff_file} = $gff_file;
+    
+    return (\@tasks, \%outputs);
 }
-
-with qw(CoGe::Builder::Buildable);
 
 1;
