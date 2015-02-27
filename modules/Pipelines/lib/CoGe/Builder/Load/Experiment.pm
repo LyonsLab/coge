@@ -3,160 +3,126 @@ package CoGe::Builder::Load::Experiment;
 use Moose;
 
 use Data::Dumper qw(Dumper);
-use File::Spec::Functions qw(catdir catfile);
 use Switch;
+use File::Spec::Functions qw(catfile);
 
 use CoGe::Core::Storage qw(get_workflow_paths);
 use CoGe::Builder::CommonTasks;
-use CoGe::Builder::Common::Alignment;
-#use CoGe::Builder::SNP::CoGeSNPs qw(build);
-#use CoGe::Builder::SNP::Samtools qw(build);
-#use CoGe::Builder::SNP::Platypus qw(build);
-#use CoGe::Builder::SNP::GATK qw(build);
-
-#sub run {
-#    my $self = shift;
-#    my $opts = shift;
-#    my $user = $opts->{user};
-#
-#    # Connect to workflow engine and get an id
-#    my $jex = CoGe::Accessory::Jex->new( host => $self->conf->{JOBSERVER}, port => $self->conf->{JOBPORT} );
-#    unless (defined $jex) {
-#        return (undef, "Could not connect to JEX");
-#    }
-#
-#    # Create the workflow
-#    my $workflow = $jex->create_workflow( name => 'Loading/analyzing experiment data', init => 1 );
-#    my $wid = $workflow->id;
-#
-#    # Setup log file, staging, and results paths
-#    my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
-#    $workflow->logfile( catfile($result_dir, 'debug.log') );
-#
-#    my $tasks = build({
-#        result_dir => $result_dir,
-#        staging_dir => $staging_dir,
-#        wid => $wid,
-#        %{$opts},
-#    });
-#    $workflow->add_jobs($tasks);
-#
-#    # Submit the workflow
-#    my $result = $jex->submit_workflow($workflow);
-#    if ($result->{status} =~ /error/i) {
-#        return (undef, "Could not submit workflow");
-#    }
-#
-#    return ($result->{id}, undef);
-#}
+use CoGe::Builder::Common::Alignment qw(build);
+use CoGe::Builder::Expression::qTeller qw(build);
+use CoGe::Builder::SNP::CoGeSNPs qw(build);
+use CoGe::Builder::SNP::Samtools qw(build);
+use CoGe::Builder::SNP::Platypus qw(build);
+use CoGe::Builder::SNP::GATK qw(build);
 
 sub build {
     my $self = shift;
     
     # Validate inputs
-    return unless ($self->params->{gid});
+    my $gid = $self->params->{gid};
+    return unless $gid;
     my $data = $self->options->{source_data};
     return unless (defined $data && @$data);
+    my $metadata = $self->params->{metadata};
+    return unless $metadata;
+    
+    # mdb added 2/25/15 - convert from Mojolicious boolean: bless( do{\\(my $o = 1)}, 'Mojo::JSON::_Bool' )
+    $metadata->{restricted} = $metadata->{restricted} ? 1 : 0;
+
+    # Get genome
+    my $genome = $self->db->resultset('Genome')->find($gid);
+    return unless $genome;
+    # TODO add permissions check here -- or will it happen in Request::Genome?
     
     # Initialize workflow
     $self->workflow($self->jex->create_workflow(name => "Load Experiment", init => 1));
     return unless $self->workflow->id;
     
     my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
+    $self->workflow->logfile(catfile($result_dir, "debug.log"));
     
     # Build workflow steps
-    my $file_type = $data->[0]->{file_type};
+    my @tasks;
+    my $file_type = $data->[0]->{file_type}; # type of first data file
     
     if ( $file_type eq 'fastq' || $file_type eq 'bam' ) {
         my $bam_file;
         
         if ( $file_type eq 'fastq' ) {
             # Add alignment workflow
-            my $builder = CoGe::Builder::Common::Alignment->new({
-                params   => $self->params,
-                options  => $self->options,
-                db       => $self->db,
-                workflow => $self->workflow,
-                user     => $self->user,
-                conf     => $self->conf
-            });
-            my $rc = $builder->build;
-            return unless ($rc);
-            $bam_file = $builder->outputs->{bam};
-#            (my $alignment_tasks, $bam_file, my $reheader_fasta, my $gff_file) = create_alignment_workflow(
-#                user => $self->user,
-#                wid => $self->workflow->id,
-#                input_file => $input_file,
-#                genome => $genome,
-#                staging_dir => $staging_dir,
-#                result_dir => $result_dir,
-#                metadata => $metadata,
-#                options => $options
-#            );
-#            push @tasks, @$alignment_tasks;
+            my ($alignment_tasks, $alignment_outputs) = CoGe::Builder::Common::Alignment::build(
+                user => $self->user,
+                wid => $self->workflow->id,
+                input_files => $data,
+                genome => $genome,
+                metadata => $metadata,
+                options => $self->options,
+                cutadapt_params => $self->params->{cutadapt_params},
+                alignment_params => $self->params->{alignment_params}
+            );
+            push @tasks, @$alignment_tasks;
+            $bam_file = $alignment_outputs->{bam_file};
         }
         elsif ( $file_type eq 'bam' ) {
             $bam_file = $data->[0]->{path};
         }
-        else { # error
-            die;
+        else { # error -- should never happen
+            die "invalid file type";
         }
         
-#        # Add expression workflow (if specified)
-#        if ( $options->{expression_params} ) {
-#            my @expression_tasks = CoGe::Builder::Expression::qTeller::build(
-#                user => $self->user,
-#                wid => $wid,
-#                genome => $genome,
-#                staging_dir => $staging_dir,
-#                result_dir => $result_dir,
-#                input_file => $bam_file,
-#                metadata => $metadata,
-#                options => $options
-#            );
-#            push @tasks, @expression_tasks;
-#        }
-#        
-#        # Add SNP workflow (if specified)
-#        if ( $options->{snp_params} ) {
-#            my $method = $options->{snp_params}->{method};
-#            my $params = {
-#                user => $self->user,
-#                wid => $wid,
-#                genome => $genome,
-#                staging_dir => $staging_dir,
-#                result_dir => $result_dir,
-#                input_file => $bam_file,
-#                metadata => $metadata,
-#                options => $options
-#            };
-#            
-#            my @snp_tasks;
-#            switch ($method) { # TODO move this into subroutine
-#                case 'coge'     { @snp_tasks = CoGe::Builder::SNP::CoGeSNPs::build($params); }
-#                case 'samtools' { @snp_tasks = CoGe::Builder::SNP::Samtools::build($params); }
-#                case 'platypus' { @snp_tasks = CoGe::Builder::SNP::Platypus::build($params); }
-#                case 'gatk'     { @snp_tasks = CoGe::Builder::SNP::GATK::build($params); }
-#            }
-#            push @tasks, @snp_tasks;
-#        }
-#    }
-#    # Else, all other file types
-#    else {
-#        # Submit workflow to generate experiment
-#        push @tasks, create_load_experiment_job(
-#            user => $self->user,
-#            staging_dir => $staging_dir,
-#            result_dir => $result_dir,
-#            wid => $wid,
-#            gid => $genome->id,
-#            input_file => $input_file,
-#            metadata => $metadata
-#        );
+        # Add expression workflow (if specified)
+        if ( $self->params->{expression_params} ) {
+            my @expression_tasks = CoGe::Builder::Expression::qTeller::build(
+                user => $self->user,
+                wid => $self->workflow->id,
+                genome => $genome,
+                input_file => $bam_file,
+                metadata => $metadata,
+                options => $self->options,
+                params => $self->params->{expression_params}
+            );
+            push @tasks, @expression_tasks;
+        }
+        
+        # Add SNP workflow (if specified)
+        if ( $self->params->{snp_params} ) {
+            my $method = $self->params->{snp_params}->{method};
+            my $params = {
+                user => $self->user,
+                wid => $self->workflow->id,
+                genome => $genome,
+                input_file => $bam_file,
+                metadata => $metadata,
+                options => $self->options
+            };
+            
+            my @snp_tasks;
+            switch ($method) { # TODO move this into subroutine
+                case 'coge'     { @snp_tasks = CoGe::Builder::SNP::CoGeSNPs::build($params); }
+                case 'samtools' { @snp_tasks = CoGe::Builder::SNP::Samtools::build($params); }
+                case 'platypus' { @snp_tasks = CoGe::Builder::SNP::Platypus::build($params); }
+                case 'gatk'     { @snp_tasks = CoGe::Builder::SNP::GATK::build($params); }
+                else            { die "unknown SNP method"; }
+            }
+            push @tasks, @snp_tasks;
+        }
+    }
+    # Else, all other file types
+    else {
+        # Submit workflow to generate experiment
+        push @tasks, create_load_experiment_job(
+            user => $self->user,
+            staging_dir => $staging_dir,
+            result_dir => $result_dir,
+            wid => $self->workflow->id,
+            gid => $genome->id,
+            input_file => $data->[0]->{path},
+            metadata => $metadata
+        );
     }
 
 #    print STDERR Dumper \@tasks, "\n";
-#    $self->workflow->add_jobs(\@tasks);
+    $self->workflow->add_jobs(\@tasks);
     
     return 1;
 }

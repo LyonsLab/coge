@@ -1,5 +1,8 @@
 package CoGe::Builder::CommonTasks;
 
+use strict;
+use warnings;
+
 use File::Spec::Functions qw(catdir catfile);
 use File::Basename qw(basename);
 use URI::Escape::JavaScript qw(escape);
@@ -18,7 +21,7 @@ our @EXPORT = qw(
     create_fasta_reheader_job create_fasta_index_job create_load_vcf_job
     create_bam_index_job create_gff_generation_job create_load_experiment_job
     create_validate_fastq_job create_cutadapt_job create_tophat_workflow
-    create_gsnap_workflow create_load_bam_job
+    create_gsnap_workflow create_load_bam_job create_gunzip_job
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -230,6 +233,28 @@ sub generate_gff {
     );
 }
 
+sub create_gunzip_job {
+    my $input_file = shift;
+    my $output_file = $input_file;
+    $output_file =~ s/\.gz$//;
+
+    my $cmd = $CONF->{GUNZIP} || 'gunzip';
+
+    return {
+        cmd => "$cmd -c $input_file > $output_file ;  touch $output_file.decompressed",
+        script => undef,
+        args => [],
+        inputs => [
+            $input_file
+        ],
+        outputs => [
+            $output_file,
+            "$output_file.decompressed"
+        ],
+        description => "Decompressing " . to_filename($input_file) . "..."
+    };
+}
+
 sub create_fasta_reheader_job {
     my %opts = @_;
 
@@ -306,7 +331,7 @@ sub create_load_vcf_job {
     my $opts = shift;
 
     # Required arguments
-    my $metadata = $opts{metadata};
+    my $metadata = $opts->{metadata};
     my $username = $opts->{username};
     my $staging_dir = $opts->{staging_dir};
     my $result_dir = $opts->{result_dir};
@@ -562,17 +587,17 @@ sub create_tophat_workflow {
 
     my ($index, %bowtie) = create_bowtie_index_job($gid, $fasta);
     
-    my %tophat = create_tophat_job({
+    my %tophat = create_tophat_job(
         staging_dir => $staging_dir,
         fasta => $fasta,
-        gff   => $gff,
+        fastq => $fastq,
+        validated => $validated,
+        gff => $gff,
         index_name => $index,
         index_files => ($bowtie{outputs}),
         read_type => $read_type,
-        fastq => $fastq,
-        validated => $validated,
-        g => $alignment_params->{g},
-    });
+        g => $params->{g},
+    );
 
     # Return the bam output name and jobs required
     return @{$tophat{outputs}}[0], (
@@ -613,38 +638,39 @@ sub create_bowtie_index_job {
 }
 
 sub create_tophat_job {
-    my $opts = shift;
+    my %opts = @_;
 
     # Required arguments
-    my $fasta = $opts->{fasta};
-    my $fastq = $opts->{fastq};
-    my $validated = $opts->{validated};
-    my $read_type = $opts{read_type};
-    my $gff = $opts->{gff};
-    my $staging_dir = $opts->{staging_dir};
-    my @index_files = @{$opts->{index_files}};
-    my $name = basename($opts->{index_name});
+    my $staging_dir = $opts{staging_dir};
+    my $fasta       = $opts{fasta};
+    my $fastq       = $opts{fastq};
+    my $validated   = $opts{validated};
+    my $read_type   = $opts{read_type} // 'single'; #/
+    my $gff         = $opts{gff};
+    my $index_name  = basename($opts{index_name});
+    my $index_files = $opts{index_files};
 
     # Optional arguments
-    my $g = $opts->{g} // 1; #/
-
-    my $cmd = $CONF->{TOPHAT};
-    die "ERROR: TOPHAT is not in the config." unless $cmd;
-    $cmd = 'nice ' . $cmd; # run at lower priority
+    my $g = $opts{g} // 1; #/
 
     # Setup input dependencies
     my $inputs = [
         $fasta,
         @$fastq,
         @$validated,
-        @{$opts{index_files}}
+        @$index_files
     ];
+    push @$inputs, $gff if $gff;
 
     # Build up command/arguments string
+    my $cmd = $CONF->{TOPHAT};
+    die "ERROR: TOPHAT is not in the config." unless $cmd;
+    $cmd = 'nice ' . $cmd; # run at lower priority
+    
     my $arg_str;
     $arg_str .= $cmd . ' ';
     $arg_str .= "-G $gff " if ($gff);
-    $arg_str .= "-o . -g 1 -p 32 $index_name ";
+    $arg_str .= "-o . -g $g -p 32 $index_name ";
 
     return (
         cmd => catfile($CONF->{SCRIPTDIR}, 'tophat.pl'), # this script was created because JEX can't handle TopHat's paired-end argument syntax
@@ -784,6 +810,7 @@ sub create_gsnap_job {
     my $validated = $opts->{validated};
     my $gmap = $opts->{gmap};
     my $staging_dir = $opts->{staging_dir};
+    my $read_type = $opts->{read_type};
 
     # Optional arguments
     my $params = $opts->{params};
