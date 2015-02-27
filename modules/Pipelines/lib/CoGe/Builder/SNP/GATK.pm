@@ -36,8 +36,6 @@ sub run {
 
     # Build the workflow
     my @jobs = build({
-        staging_dir => $staging_dir,
-        result_dir => $result_dir,
         user => $user,
         wid  => $workflow->id,
         genome => $genome,
@@ -63,11 +61,10 @@ sub build {
     my $input_file = $opts->{input_file}; # path to bam file
     my $user        = $opts->{user};
     my $wid         = $opts->{wid};
-    my $staging_dir = $opts->{staging_dir};
-    my $result_dir  = $opts->{result_dir};
     my $metadata    = $opts->{metadata};
 
     # Get genome and associated files/paths
+    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
     my $fasta_cache_dir = catdir($CONFIG->{CACHEDIR}, $genome->id, "fasta");
     my $fasta_file = get_genome_file($genome->id);
     my $reheader_fasta = to_filename($fasta_file) . ".reheader.faa";
