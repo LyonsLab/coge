@@ -51,6 +51,7 @@ sub get {
         $builder = CoGe::Builder::Load::Experiment->new($request);
     }
     else {
+        print STDERR "PipelineFactory::get unknown type\n";
         return;
     }
 
