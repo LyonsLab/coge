@@ -56,7 +56,16 @@ sub search {
         id => int($_->id),
         name => $_->name,
         description => $_->description,
-        organism => { #FIXME inefficient use of ORM
+        link => $_->link,
+        version => $_->version,
+        organism_id  => int($_->organism->id),
+        sequence_type => {
+            name => $_->type->name,
+            description => $_->type->description,
+        },
+        restricted => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+        chromosome_count => int($_->chromosome_count),
+        organism => {
             id => int($_->organism->id),
             name => $_->organism->name,
             description => $_->organism->description
@@ -106,15 +115,19 @@ sub fetch {
         description => $genome->description,
         link => $genome->link,
         version => $genome->version,
-        organism_id  => int($genome->organism->id),
+        restricted => $genome->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+        organism => {
+            id => int($genome->organism->id),
+            name => $genome->organism->name,
+            description => $genome->organism->description
+        },
         sequence_type => {
             name => $genome->type->name,
             description => $genome->type->description,
         },
         chromosome_count => int($genome->chromosome_count),
         experiments => [ map { int($_->id) } $genome->experiments ],
-        metadata => \@metadata,
-        restricted => $genome->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+        metadata => \@metadata
     });
 }
 
