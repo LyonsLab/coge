@@ -154,7 +154,7 @@ sub get_job {
 sub is_successful {
     my ($self, $response) = @_;
 
-    return $response and not $response->{status} =~ /error/i;
+    return $response && lc($response->{status}) ne 'error';
 }
 
 sub get_all_workflows {
