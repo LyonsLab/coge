@@ -13,7 +13,6 @@ use Getopt::Long qw(GetOptions);
 use JSON qw(decode_json);
 use URI::Escape::JavaScript qw(unescape);
 
-use CoGe::Accessory::TDS qw(read);
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web qw(get_defaults get_job schedule_job);
@@ -55,14 +54,14 @@ sub run {
     $workflow->logfile( catfile($result_dir, 'debug.log') );
 
     # Build the workflow
-    my @jobs = build({
+    my @tasks = build({
         user => $user,
         wid  => $workflow->id,
         genome => $genome,
         input_file => $input_file,
         metadata => $metadata,
     });
-    $workflow->add_jobs(\@jobs);
+    $workflow->add_jobs(\@tasks);
 
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);
@@ -82,6 +81,7 @@ sub build {
     my $user = $opts->{user};
     my $wid = $opts->{wid};
     my $metadata = $opts->{metadata};
+    my $params = $opts->{params};
 
     # Setup paths
     my $gid = $genome->id;
@@ -93,12 +93,27 @@ sub build {
     $FASTA_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "fasta");
     die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
 
-    # Setup the jobs
-    my @jobs;
-    push @jobs, create_fasta_reheader_job(fasta => $fasta_file, reheader_fasta => $reheader_fasta, cache_dir => $FASTA_CACHE_DIR);
-    push @jobs, create_fasta_index_job(fasta => catfile($FASTA_CACHE_DIR, $reheader_fasta), cache_dir => $FASTA_CACHE_DIR);
-    push @jobs, create_samtools_job($reheader_fasta, $gid, $input_file, $staging_dir);
-    push @jobs, create_load_vcf_job({
+    # Build the workflow's tasks
+    my @tasks;
+    push @tasks, create_fasta_reheader_job(
+        fasta => $fasta_file, 
+        reheader_fasta => $reheader_fasta, 
+        cache_dir => $FASTA_CACHE_DIR
+    );
+    
+    push @tasks, create_fasta_index_job(
+        fasta => catfile($FASTA_CACHE_DIR, $reheader_fasta), 
+        cache_dir => $FASTA_CACHE_DIR
+    );
+    
+    push @tasks, create_samtools_job(
+        reheader_fasta => $reheader_fasta, 
+        gid => $gid, 
+        input_file => $input_file, 
+        staging_dir => $staging_dir
+    );
+    
+    my $load_vcf_task = create_load_vcf_job({
         username => $user->name,
         staging_dir => $staging_dir,
         result_dir => $result_dir,
@@ -107,17 +122,49 @@ sub build {
         vcf => catfile($staging_dir, 'snps.vcf'),
         metadata => $metadata
     });
+    push @tasks, $load_vcf_task;
     
-    return wantarray ? @jobs : \@jobs;
+    # Save outputs for retrieval by downstream tasks
+    my @done_files = (
+        $load_vcf_task->{outputs}->[1]
+    );
+    
+    my %results = (
+        metadata => generate_additional_metadata(),
+        done_files => \@done_files
+    );
+
+    return (\@tasks, \%results);
 }
 
 sub create_samtools_job {
-    my ($fasta, $gid, $bam, $staging_dir) = @_;
+    my %opts = @_;
 
+    # Required arguments
+    my $reheader_fasta = $opts{reheader_fasta};
+    my $gid = $opts{gid};
+    my $bam_file = $opts{input_file};
+    my $staging_dir = $opts{staging_dir};
+    
+    # Optional arguments
+    my $params = $opts{params};
+    my $min_read_depth   = $params->{'min-read-depth'} || 10;
+    my $min_base_quality = $params->{'min-base-quality'} || 20;
+    my $min_allele_freq  = $params->{'min-allele-freq'} || 0.1;
+    my $min_allele_count = $params->{'min-allele-count'} || 4;
+    my $scale            = $params->{scale} || 32;
+    
+    die "ERROR: SAMTOOLS not specified in config" unless $CONF->{SAMTOOLS};
     my $samtools = $CONF->{SAMTOOLS};
-    die "ERROR: SAMTOOLS not specified in config" unless $samtools;
-    my $script = catfile($CONF->{SCRIPTDIR}, 'pileup_SNPs.pl');
-    die "ERROR: SCRIPTDIR not specified in config" unless $script;
+    
+    die "ERROR: SCRIPTDIR not specified in config" unless $CONF->{SCRIPTDIR};
+    my $filter_script = catfile($CONF->{SCRIPTDIR}, 'pileup_SNPs.pl');
+    $filter_script .= ' min_read_depth=' . $min_read_depth;
+    $filter_script .= ' min_base_quality=' . $min_base_quality;
+    $filter_script .= ' min_allele_freq=' . $min_allele_freq;
+    $filter_script .= ' min_allele_count=' . $min_allele_count;
+    $filter_script .= ' quality_scale=' . $scale;
+    
     my $output_name = 'snps.vcf';
 
     return {
@@ -126,15 +173,15 @@ sub create_samtools_job {
         args => [
             ['mpileup', '', 0],
             ['-f', '', 0],
-            ['', $fasta, 1],
-            ['', $bam, 1],
-            ['|', $script, 0],
+            ['', $reheader_fasta, 1],
+            ['', $bam_file, 1],
+            ['|', $filter_script, 0],
             ['>', $output_name,  0]
         ],
         inputs => [
-            catfile($FASTA_CACHE_DIR, $fasta),
-            catfile($FASTA_CACHE_DIR, $fasta) . '.fai',
-            $bam
+            catfile($FASTA_CACHE_DIR, $reheader_fasta),
+            catfile($FASTA_CACHE_DIR, $reheader_fasta) . '.fai',
+            $bam_file
         ],
         outputs => [
             catfile($staging_dir, $output_name)
@@ -143,55 +190,21 @@ sub create_samtools_job {
     };
 }
 
-#sub create_load_experiment_job { # FIXME mdb 11/19/14 - replace with version in CommonTasks
-#    my ($vcf, $user, $experiment, $wid) = @_;
-#
-#    my $cmd = catfile(($CONF->{SCRIPTDIR}, "load_experiment.pl"));
-#    my $output_path = catdir($staging_dir, "load_experiment");
-#
-#    # Set metadata for the pipeline being used
-#    my $annotations = generate_experiment_metadata();
-#
-#    return (
-#        cmd => $cmd,
-#        script => undef,
-#        args => [
-#            ['-user_name', $user->name, 0],
-#            ['-name', '"'.$experiment->name.' (SNPs)'.'"', 0],
-#            ['-desc', qq{"Single nucleotide polymorphisms"}, 0],
-#            ['-version', $experiment->version, 0],
-#            ['-restricted', $experiment->restricted, 0],
-#            ['-gid', $experiment->genome->id, 0],
-#            ['-wid', $wid, 0],
-#            ['-source_name', '"'.$experiment->source->name.'"', 0],
-#            ['-types', qq{"SNP"}, 0],
-#            ['-annotations', $annotations, 0],
-#            ['-staging_dir', "./load_experiment", 0],
-#            ['-file_type', "vcf", 0],
-#            ['-data_file', "$vcf", 0],
-#            ['-config', $CONF->{_CONFIG_PATH}, 1]
-#        ],
-#        inputs => [
-#            $CONF->{_CONFIG_PATH},
-#            $vcf
-#        ],
-#        outputs => [
-#            [$output_path, 1],
-#            catfile($output_path, "log.done"),
-#        ],
-#        description => "Load SNPs as new experiment ..."
-#    );
-#}
+sub generate_additional_metadata {
+    my $params = shift;
+    my $min_read_depth   = $params->{'min-read-depth'} || 10;
+    my $min_base_quality = $params->{'min-base-quality'} || 20;
+    my $min_allele_freq  = $params->{'min-allele-freq'} || 0.1;
+    my $min_allele_count = $params->{'min-allele-count'} || 4;
+    my $scale            = $params->{scale} || 32;
 
-sub generate_experiment_metadata {
     my @annotations = (
-        qq{http://genomevolution.org/wiki/index.php/Identifying_SNPs||note|Generated by CoGe's SNP-finder Pipeline (CoGe method)},
-        qq{note|Read depth generated by samtools mpileup},
-        qq{note|Minimum read depth of 10},
-        qq{note|Minimum high-quality (PHRED >= 20) allele count of 4},
-        qq{note|Minimum allele frequency of 10%}
+        qq{note|SNPs generated using CoGe method},
+        qq{note|Minimum read depth of $min_read_depth},
+        qq{note|Minimum high-quality (PHRED >= $min_base_quality) allele count of $min_allele_count, FASTQ encoding $scale},
+        qq{note|Minimum allele frequency of } . $min_allele_freq * 100 . '%'
     );
-    return join(';', @annotations);
+    return \@annotations;
 }
 
 1;
