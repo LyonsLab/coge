@@ -6,9 +6,9 @@ CoGe::Core::Storage
 
 =head1 SYNOPSIS
 
-Abstraction layer on top of genome storage sub-system created for issues
-77 and 157.  All accesses to genome FASTA sequences should go through this
-module.
+Abstraction layer on top of storage sub-system created for issues
+77 and 157.  All accesses to genome FASTA sequences, experiment data files, etc. 
+should go through this module.
 
 =head1 DESCRIPTION
 
@@ -25,7 +25,6 @@ LICENSE file included with this module.
 
 =cut
 
-#use v5.14;
 use strict;
 use warnings;
 
@@ -55,7 +54,8 @@ BEGIN {
     @EXPORT = qw(
       get_tiered_path get_workflow_paths get_upload_path get_log
       get_genome_file index_genome_file get_genome_seq get_genome_path
-      get_genome_cache_path
+      get_genome_cache_path get_workflow_results add_workflow_result
+      get_workflow_results_file
       get_experiment_path get_experiment_files get_experiment_data
       create_experiment create_experiments_from_batch
       create_genome_from_file create_genome_from_NCBI
@@ -71,9 +71,7 @@ BEGIN {
 }
 
 ################################################ subroutine header begin ##
-
 =head2 get_tiered_path
-
  Usage     :
  Purpose   : This method determines the correct directory structure for storing
              the files for a genome/experiment.
@@ -90,11 +88,8 @@ BEGIN {
              ./0/0/2/ will hold files 2000-2999
              ./0/1/0 will hold files 1000000-1000999
              ./level0/level1/level2/
-
 See Also   :
-
 =cut
-
 ################################################## subroutine header end ##
 
 sub get_tiered_path {
@@ -626,8 +621,6 @@ sub create_experiment {
     my $metadata = $opts{metadata};
     my $options = $opts{options};
 
-    #print STDERR (caller(0))[3], "\n";
-
     my $conf = CoGe::Accessory::Web::get_defaults();
 
     my $gid = $genome =~ /^\d+$/ ? $genome : $genome->id;
@@ -690,8 +683,6 @@ sub create_experiments_from_batch {
     my $irods = $opts{irods};
     my $files = $opts{files};
     my $metadata = $opts{metadata};
-
-    #print STDERR (caller(0))[3], "\n", Dumper $files, "\n";
 
     my $conf = CoGe::Accessory::Web::get_defaults();
 
@@ -766,7 +757,6 @@ sub get_workflow_paths {
     my $tmp_path = CoGe::Accessory::Web::get_defaults()->{SECTEMPDIR};
     my ($staging_path, $results_path);
     if (!$user_name) {
-        # TODO maybe putting username in filepath isn't worth debug convenience
         my $staging_dir = catdir($tmp_path, 'staging');
         my @tmp = read_dir($staging_dir);
         my @wdir = grep { -d "$staging_dir/$_/$workflow_id" } read_dir($staging_dir);
@@ -784,6 +774,46 @@ sub get_workflow_paths {
     return ($staging_path, $results_path);
 }
 
+sub add_workflow_result {
+    my ( $user_name, $workflow_id, $result ) = @_;
+    unless ($user_name && $workflow_id && $result) {
+        print STDERR "Storage::add_result ERROR: missing required param\n";
+        return;
+    }
+    
+    my (undef, $results_path) = get_workflow_paths($user_name, $workflow_id);
+    my $results_file = catfile($results_path, '.results');
+    
+    return CoGe::Accessory::TDS::append($results_file, { results => [ $result ] });
+}
+
+sub get_workflow_results {
+    my ( $user_name, $workflow_id ) = @_;
+    unless ($user_name && $workflow_id) {
+        print STDERR "Storage::get_workflow_results ERROR: missing required param\n";
+        return;
+    }
+    
+    my (undef, $results_path) = get_workflow_paths($user_name, $workflow_id);
+    my $results_file = catfile($results_path, '.results');
+    
+    my $results = CoGe::Accessory::TDS::read($results_file);
+    return unless ($results && $results->{results} && @{$results->{results}});
+    return $results->{results};
+}
+
+sub get_workflow_results_file {
+    my ( $user_name, $workflow_id ) = remove_self(@_); # required because this routine is called internally and externally, is there a better way?
+    unless ($user_name && $workflow_id) {
+        print STDERR "Storage::get_workflow_results_file ERROR: missing required param\n";
+        return;
+    }
+    
+    my (undef, $results_path) = get_workflow_paths($user_name, $workflow_id);
+    my $results_file = catfile($results_path, '.results');
+    return $results_file;
+}
+
 sub get_upload_path {
     my ( $user_name, $load_id ) = remove_self(@_); # required because this routine is called internally and externally, is there a better way?
     unless ($user_name && $load_id) {
@@ -792,7 +822,7 @@ sub get_upload_path {
     }
     
     my $conf = CoGe::Accessory::Web::get_defaults();
-    return catdir($conf->{SECTEMPDIR}, $user_name, $load_id);
+    return catdir($conf->{SECTEMPDIR}, 'uploads', $user_name, $load_id);
 }
 
 sub remove_self { # TODO move to Utils.pm
@@ -807,8 +837,6 @@ sub create_genome_from_file {
     my $irods = $opts{irods};
     my $files = $opts{files};
     my $metadata = $opts{metadata};
-
-    #print STDERR (caller(0))[3], "\n";
 
     # Connect to workflow engine and get an id
     my $conf = CoGe::Accessory::Web::get_defaults();
@@ -863,8 +891,6 @@ sub create_genome_from_NCBI {
     my %opts = @_;
     my $user = $opts{user};
     my $accns = $opts{accns};
-
-    #print STDERR (caller(0))[3], "\n";
 
     # Connect to workflow engine and get an id
     my $conf = CoGe::Accessory::Web::get_defaults();
@@ -1071,8 +1097,6 @@ sub create_annotation_dataset {
     my $irods = $opts{irods};
     my $files = $opts{files};
     my $metadata = $opts{metadata};
-
-    #print STDERR (caller(0))[3], "\n";
 
     # Connect to workflow engine and get an id
     my $conf = CoGe::Accessory::Web::get_defaults();
