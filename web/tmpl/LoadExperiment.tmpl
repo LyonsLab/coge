@@ -33,23 +33,22 @@
 <div id="wizard-container"></div>
 
 <!-- DIALOGS -->
-<div id="load_dialog" class="dialog_box" title="Loading Experiment ..." style="display:none;">
-    <div id="load_log" class="small padded coge-border-bottom" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
+<div id="load_dialog" class="dialog_box" title="Loading Experiment ..." style="display:none;overflow:hidden;">
+    <div id="load_log" class="small padded coge-border-bottom" style="overflow-y:auto;color:dimgray;height:400px;">
     </div>
     <br>
     <div id="loading_msg">
-        <span class="small" style="float:right;">Link: <a></a></span>
-        Please wait ... <img src="picts/ajax-loader.gif"/>
+        <span id="load_link" class="small" style="float:right;"></span>
+        <span>Please wait ... <img src="picts/ajax-loader.gif"/></span>
+        <div id="load_error" class="small hidden alert"></div>
     </div>
     <div class="coge-buttonset">
-        <span id="finished_msg" style="display:none;color:green;">Finished!</span>
-        <span id="error_msg" style="display:none;color:red;">An error occurred</span>
+        <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
+        <span id="error_msg" style="display:none;color:red;">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
         <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Load Another</span>
         <span id="finish_load_experiment_button" style="display:none;float:right;" class="ui-button ui-corner-all">ExperimentView</span>
         <span id="cancel_load_experiment_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
         <span id="logfile" class="hidden"><a href="">Logfile</a></span>
-    </div>
-    <div id="results" class="padded">
     </div>
 </div>
 
@@ -241,7 +240,7 @@
             <label class="col-md-2">Options:</label>
             <div class="form-group">
                 <label>-Q:</label>
-                <input id="depth" type="number" value="5">
+                <input id="-Q" type="number" value="20">
             </div>
         </div>
     </div>
@@ -261,9 +260,8 @@
 <script id="quant-template" type="text/template">
 <div>
     <p>
-        You can read more about the
-        <a href="https://genomevolution.org/wiki/index.php/LoadExperiment#CSV_File_Format">File Format</a> that
-        CoGe expects.
+        For details on supported file formats, see 
+        <a href="https://genomevolution.org/wiki/index.php/LoadExperiment#CSV_File_Format">this article</a>.
     </p>
 </div>
 </script>
@@ -313,7 +311,7 @@
             <label class="col-md-2">TopHat:</label>
             <div>
                 <label>-g:</label>
-                <input id="g" type="number" value="5"/>
+                <input id="-g" type="number" value="1"/>
             </div>
         </div>
     </div>
@@ -326,15 +324,15 @@
             <div class="form-group">
                 <div class="form-entry">
                     <label>-q:</label>
-                    <input id="q" type="number" value="5"/>
+                    <input id="-q" type="number" value="25"/>
                 </div>
                 <div class="form-entry">
                     <label>-m:</label>
-                    <input id="m" type="number" value="5"/>
+                    <input id="-m" type="number" value="17"/>
                 </div>
                 <div class="form-entry">
                     <label>--quality-base:</label>
-                    <input id="quality" type="number" value="5"/>
+                    <input id="--quality-base" type="number" value="32"/>
                 </div>
             </div>
         </div>
@@ -344,22 +342,22 @@
             <div class="form-group">
                 <div class="form-entry">
                     <label>-n:</label>
-                    <input id="n" type="number" value="5"/>
+                    <input id="-n" type="number" value="5"/>
                 </div>
 
                 <div class="form-entry">
                     <label>-Q:</label>
-                    <input id="Q" type="checkbox" checked/>
+                    <input id="-Q" type="checkbox" checked/>
                 </div>
                 <div class="form-entry">
                     <label>--gap-mode:</label>
-                    <select id="gap">
+                    <select id="--gap-mode">
                         <option>none</option>
                     </select>
                 </div>
                 <div class="form-entry">
-                    <label>--no-fails:</label>
-                    <input id="nofail" type="checkbox" checked/>
+                    <label>--nofails:</label>
+                    <input id="--nofails" type="checkbox" checked/>
                 </div>
             </div>
         </div>
@@ -375,7 +373,7 @@
 
 <script id="snp-template" type="text/template">
     <div class="form-section">
-        <h4>SNP Identification Analysis</h4>
+        <h4>SNP Identification</h4>
 
         <div class="form-field">
             <label class="col-md-2">Enable:</label>
@@ -404,19 +402,19 @@
             <div class="form-group">
                 <div class="form-entry">
                     <label>minimum read depth:</label>
-                    <input id="min-read" type="number" value="10"/>
+                    <input id="min-read-depth" type="number" value="10"/>
                 </div>
                 <div class="form-entry">
                     <label>minimum base quality:</label>
-                    <input id="min-base" type="number" value="20"/>
+                    <input id="min-base-quality" type="number" value="20"/>
                 </div>
                 <div class="form-entry">
                     <label>minimum high-quality allele count:</label>
-                    <input id="allele-count" type="number" value="4"/>
+                    <input id="min-allele-count" type="number" value="4"/>
                 </div>
                 <div class="form-entry">
                     <label>minimum allele frequency:</label>
-                    <input id="allele-freq" type="number" step="0.1" value="0.1"/>
+                    <input id="min-allele-freq" type="number" step="0.1" value="0.1"/>
                 </div>
                 <div class="form-entry">
                     <label>scale for FAST quality encoding:</label>
@@ -434,11 +432,11 @@
         <div class="form-group">
             <div class="form-entry">
                 <label>minimum read depth:</label>
-                <input id="min-read" type="number" value="6"/>
+                <input id="min-read-depth" type="number" value="6"/>
             </div>
             <div class="form-entry">
                 <label>maximum read depth:</label>
-                <input id="max-read" type="number" value="10"/>
+                <input id="max-read-depth" type="number" value="10"/>
             </div>
         </div>
     </div>
@@ -551,16 +549,15 @@ const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
 const USER_NAME     = '<TMPL_VAR NAME="USER">'
 const IS_ADMIN      = Boolean('<TMPL_VAR NAME="ADMIN_AREA">');
 
-var load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
-var job_id = '<TMPL_VAR NAME="JOB_ID">';
-var embed = '<TMPL_VAR NAME="EMBED">';
-var experiment_id;
-var notebook_id;
-var pageObj = {}; //FIXME get rid of this
+var LOAD_ID = load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
+var WORKFLOW_ID = '<TMPL_VAR NAME="WORKFLOW_ID">';
+var EMBED = '<TMPL_VAR NAME="EMBED">';
+
+var pageObj = {}; //FIXME get rid of this -- used by FileSelect
 var newLoad = false;
 var wizard;
 
-$(document).ready(function(){
+$(document).ready(function() {
 	// Set jQuery AJAX defaults
     $.ajaxSetup({
         type: "GET",
@@ -570,12 +567,18 @@ $(document).ready(function(){
     });
 
     // Configure dialogs
-    $(".dialog_box").dialog({autoOpen: false, width: 500});
+    $(".dialog_box").dialog({autoOpen: false});
+    
+    var log = $('#load_log');
+    log.height( $( window ).height() * 0.6 );
+    
     $('#load_dialog').dialog("widget").find('.ui-dialog-titlebar-close').hide();
-    $('#load_dialog').dialog({modal: true, closeOnEscape: false});
     $("#load_dialog").dialog({
+    	modal: true,
+    	width: '60%',
+    	closeOnEscape: false,
     	resizeStop: function(event, ui) {
-    		var log = $('#load_log');
+    		//console.log('resizeStop ' + ui.size.width + ' ' + ui.size.height + ' ' + ui.originalSize.width + ' ' + ui.originalSize.height);
     		var widthChange = ui.size.width - ui.originalSize.width;
     		var heightChange = ui.size.height - ui.originalSize.height;
     		log.css({ width: log.width() + widthChange, height: log.height() + heightChange });
@@ -583,10 +586,9 @@ $(document).ready(function(){
     });
 
     // Open status dialog
-    if (job_id) {
-        $('#loading_msg').hide();
-        $('#load_dialog').dialog('open');
-        update_dialog(API_JOBS_URL + job_id, USER_NAME, "#load_dialog", progress_formatter);
+    if (WORKFLOW_ID) {
+    	load_begin();
+        update_dialog(API_JOBS_URL + WORKFLOW_ID, USER_NAME, "#load_dialog", progress_formatter);
     }
 
     wizard = initialize_wizard({ admin: IS_ADMIN });
