@@ -15,11 +15,10 @@ BEGIN {
     require Exporter;
 
     $VERSION = 0.1;
-    @ISA = qw ( Exporter );
-    @EXPORT = qw ( has_statistic get_gc_stats get_noncoding_gc_stats
+    @ISA = qw( Exporter );
+    @EXPORT = qw( has_statistic get_gc_stats get_noncoding_gc_stats
         get_wobble_histogram get_wobble_gc_diff_histogram get_feature_type_gc_histogram
-        get_download_path);
-
+        get_download_path fix_chromosome_id );
     @EXPORT_OK = qw(genomecmp);
 }
 
@@ -417,4 +416,48 @@ sub _generate_noncoding_gc_stats {
         x     => $x  / $total,
     };
 }
+
+# Used by the load scripts:  load_genome.pl, load_experiment.pl, and load_annotation.pl
+# mdb consolidated from load scripts into this module, 2/11/15 COGE-587
+sub fix_chromosome_id { 
+    my $chr = shift;        # chr id to fix
+    my $genome_chr = shift; # optional hash ref of existing chromosome ids for genome
+    return unless defined $chr;
+
+    # Fix chromosome identifier
+    $chr =~ s/^lcl\|//;
+    $chr =~ s/^gi\|//;
+    $chr =~ s/chromosome//i;
+    $chr =~ s/^chr//i;
+    $chr = "0" if $chr =~ /^0+$/; #EL added 2/13/14 chromosome name is 00 (or something like that)
+    $chr =~ s/^0+// unless $chr eq '0';
+    $chr =~ s/^_+//;
+    $chr =~ s/\s+/ /;
+    $chr =~ s/^\s//;
+    $chr =~ s/\s$//;
+    $chr =~ s/\//_/; # mdb added 12/17/13 issue 266 - replace '/' with '_'
+    $chr =~ s/\|$//; # mdb added 3/14/14 issue 332 - remove trailing pipes
+    $chr =~ s/\(/_/; # mdb added 2/11/15 COGE-587 - replace '(' with '_'
+    $chr =~ s/\)/_/; # mdb added 2/11/15 COGE-587 - replace ')' with '_'
+    return if ($chr eq '');
+
+    # Convert 'chloroplast' and 'mitochondia' to 'C' and 'M' if needed
+    if (defined $genome_chr) {
+        if (   $chr =~ /^chloroplast$/i
+            && !$genome_chr->{$chr}
+            && $genome_chr->{"C"} )
+        {
+            $chr = "C";
+        }
+        if (   $chr =~ /^mitochondria$/i
+            && !$genome_chr->{$chr}
+            && $genome_chr->{"M"} )
+        {
+            $chr = "M";
+        }
+    }
+
+    return $chr;
+}
+
 1;
