@@ -27,9 +27,10 @@ sub build {
     my $input_files = $opts{input_files};
     my $genome      = $opts{genome};
     my $metadata    = $opts{metadata};
+    my $additional_metadata = $opts{additional_metadata};
     my $options     = $opts{options};
     my $alignment_params = $opts{alignment_params};
-    my $cutadapt_params  = $opts{cutadapt_params};
+    my $trimming_params  = $opts{trimming_params};
     
     my @tasks;
     
@@ -70,9 +71,9 @@ sub build {
                 fastq => $file, 
                 validated => "$file.validated", 
                 staging_dir => $staging_dir,
-                params => $cutadapt_params
+                params => $trimming_params
             );
-            push @trimmed, @{$trim_task->{outputs}}[0];
+            push @trimmed, $trim_task->{outputs}->[0];
             push @tasks, $trim_task;
         }
         else {
@@ -99,22 +100,22 @@ sub build {
         cache_dir => $fasta_cache_dir
     );
     
-    # Generate gff if genome annotated
-    my $gff_file;
-    if ( $genome->has_gene_features ) {
-        my $gff_task = create_gff_generation_job(
-            gid => $gid,
-            organism_name => $genome->organism->name,
-            #validated => "$fastq.validated"
-        );
-        $gff_file = @{$gff_task->{outputs}}[0];
-        push @tasks, $gff_task;
-    }
-
     # Add aligner workflow
-    my ($bam, @alignment_tasks);
+    my ($alignment_tasks, $alignment_results);
     if ($alignment_params->{tool} eq 'tophat') {
-        ($bam, @alignment_tasks) = create_tophat_workflow(
+        # Generate gff if genome annotated
+        my $gff_file;
+        if ( $genome->has_gene_features ) {
+            my $gff_task = create_gff_generation_job(
+                gid => $gid,
+                organism_name => $genome->organism->name,
+                #validated => "$fastq.validated"
+            );
+            $gff_file = $gff_task->{outputs}->[0];
+            push @tasks, $gff_task;
+        }
+        
+        ($alignment_tasks, $alignment_results) = create_tophat_workflow(
             gid => $gid,
             fasta => catfile($fasta_cache_dir, $reheader_fasta),
             fastq => \@trimmed,
@@ -126,9 +127,9 @@ sub build {
         );
     }
     elsif ($alignment_params->{tool} eq 'gsnap') {
-        ($bam, @alignment_tasks) = create_gsnap_workflow(
+        ($alignment_tasks, $alignment_results) = create_gsnap_workflow(
             gid => $gid,
-            fasta => $reheader_fasta,
+            fasta => catfile($fasta_cache_dir, $reheader_fasta),
             fastq => \@trimmed,
             validated => \@validated,
             read_type => $alignment_params->{read_type},
@@ -140,27 +141,67 @@ sub build {
         print STDERR "Error: unrecognized alignment tool '", $alignment_params->{tool}, "'\n";
         return;
     }
-    push @tasks, @alignment_tasks;
+    push @tasks, @$alignment_tasks;
+
+    # Sort and index the bam output file
+    my $bam_file = $alignment_results->{bam_file};
+    my $sort_bam_task = create_bam_sort_job(
+        input_file => $bam_file, 
+        staging_dir => $staging_dir
+    );
+    push @tasks, $sort_bam_task;
+    my $sorted_bam_file = $sort_bam_task->{outputs}->[0];
+    
+    push @tasks, create_bam_index_job(
+        input_file => $sorted_bam_file
+    );
 
     # Load alignment
-    push @tasks, create_load_bam_job(
+    my $load_task = create_load_bam_job(
         user => $user,
         metadata => $metadata,
         staging_dir => $staging_dir,
         result_dir => $result_dir,
-        annotations => '', #FIXME 12/12/14
+        annotations => $additional_metadata,
         wid => $wid,
         gid => $gid,
-        bam_file => $bam
+        bam_file => $sorted_bam_file
     );
+    push @tasks, $load_task;
     
     # Save outputs for retrieval by downstream tasks
-    my %outputs;
-    $outputs{reheader_fasta} = $reheader_fasta;
-    $outputs{bam_file} = $bam;
-    $outputs{gff_file} = $gff_file;
+    my %results = (
+        bam_file => $sorted_bam_file,
+        metadata => generate_additional_metadata($trimming_params, $alignment_params),
+        done_files => [
+            $sorted_bam_file,
+            $load_task->{outputs}->[1]
+        ]
+    );
     
-    return (\@tasks, \%outputs);
+    return (\@tasks, \%results);
+}
+
+sub generate_additional_metadata {
+    my ($trimming_params, $alignment_params) = @_;
+    my @annotations;
+    
+    if ($trimming_params) {
+        push @annotations, 'note|cutadapt '. join(' ', map { $_.' '.$trimming_params->{$_} } ('-q', '--quality-base', '-m'));
+    }
+
+    if ($alignment_params->{tool}) {
+        if ($alignment_params->{tool} eq 'tophat') { # tophat
+            push @annotations, qq{note|bowtie2_build};
+            push @annotations, 'note|tophat ' . join(' ', map { $_.' '.$alignment_params->{$_} } ('-g'));
+        }
+        else { # gsnap
+            push @annotations, qq{note|gmap_build};
+            push @annotations, 'note|gsnap ' . join(' ', map { $_.' '.$alignment_params->{$_} } ('-n', '-Q', '--gap-mode', '--nofails'));
+        }
+    }
+    
+    return \@annotations;
 }
 
 1;
