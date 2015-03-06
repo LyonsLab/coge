@@ -29,22 +29,20 @@ has 'jex' => (
     required  => 1
 );
 
-our $NOT_FOUND = "the job could be found";
-
 sub execute {
     my ($self, $workflow) = @_;
 
     # Check for workflow
     return {
         success => JSON::false,
-        error => { Invalid => $NOT_FOUND }
+        error => { Invalid => "job not found" }
     } unless $workflow;
 
     my $resp = $self->jex->submit_workflow($workflow);
     my $success = $self->jex->is_successful($resp);
 
     return {
-        job_id => $resp->{id},
+        id => $resp->{id},
         success => $success ? JSON::true : JSON::false
     };
 }
