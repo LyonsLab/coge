@@ -12,6 +12,7 @@ use CoGe::Accessory::Utils qw(sanitize_name to_filename);
 use CoGe::Accessory::IRODS qw(irods_iput);
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Core::Genome qw(get_download_path);
+use CoGe::Core::Storage qw(get_workflow_results_file);
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -22,6 +23,7 @@ our @EXPORT = qw(
     create_bam_index_job create_gff_generation_job create_load_experiment_job
     create_validate_fastq_job create_cutadapt_job create_tophat_workflow
     create_gsnap_workflow create_load_bam_job create_gunzip_job
+    create_notebook_job create_bam_sort_job
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -301,29 +303,30 @@ sub create_fasta_index_job {
         outputs => [
             $fasta . '.fai',
         ],
-        description => "Index fasta file...",
+        description => "Indexing fasta file...",
     };
 }
 
 sub create_bam_index_job {
     my %opts = @_;
+    #print STDERR 'create_bam_index_job ', Dumper \%opts, "\n";
 
     # Required arguments
-    my $input_bam = $opts{input_bam};
+    my $input_file = $opts{input_file}; # bam file
 
     return {
         cmd => $CONF->{SAMTOOLS} || "samtools",
         script => undef,
         args => [
-            ["index", $input_bam, 1],
+            ["index", $input_file, 1],
         ],
         inputs => [
-            $input_bam,
+            $input_file,
         ],
         outputs => [
-            qq[$input_bam.bai]
+            $input_file . '.bai'
         ],
-        description => "Index bam file...",
+        description => "Indexing bam file...",
     };
 }
 
@@ -336,12 +339,15 @@ sub create_load_vcf_job {
     my $staging_dir = $opts->{staging_dir};
     my $result_dir = $opts->{result_dir};
     my $annotations = $opts->{annotations};
+       $annotations = '' unless $annotations;
     my $wid = $opts->{wid};
     my $gid = $opts->{gid};
     my $vcf = $opts->{vcf};
 
     my $cmd = catfile(($CONF->{SCRIPTDIR}, "load_experiment.pl"));
     my $output_path = catdir($staging_dir, "load_vcf");
+    
+    my $result_file = get_workflow_results_file($username, $wid);
 
     return {
         cmd => $cmd,
@@ -359,7 +365,6 @@ sub create_load_vcf_job {
             ['-annotations', qq["$annotations"], 0],
             ['-staging_dir', "./load_vcf", 0],
             ['-file_type', qq["vcf"], 0],
-            ['-result_file', catfile($result_dir, 'snps'), 0],
             ['-data_file', $vcf, 0],
             ['-config', $CONF->{_CONFIG_PATH}, 1]
         ],
@@ -370,8 +375,9 @@ sub create_load_vcf_job {
         outputs => [
             [$output_path, '1'],
             catfile($output_path, "log.done"),
+            $result_file
         ],
-        description => "Load SNPs as new experiment ..."
+        description => "Loading SNPs as new experiment ..."
     };
 }
 
@@ -390,6 +396,8 @@ sub create_load_experiment_job {
     
     my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
     my $output_path = catdir($staging_dir, "load_experiment");
+    
+    my $result_file = get_workflow_results_file($user->name, $wid);
 
     return {
         cmd => $cmd,
@@ -407,7 +415,6 @@ sub create_load_experiment_job {
             ['-annotations', qq["$annotations"], 0],
             ['-staging_dir', "./load_experiment", 0],
             #['-file_type', qq["bam"], 0],
-            ['-result_file', catfile($result_dir, 'experiment'), 0],
             ['-data_file', $input_file, 0],
             ['-config', $CONF->{_CONFIG_PATH}, 1]
         ],
@@ -418,6 +425,7 @@ sub create_load_experiment_job {
         outputs => [
             [$output_path, '1'],
             catfile($output_path, "log.done"),
+            $result_file
         ],
         description => "Loading experiment ..."
     };
@@ -432,7 +440,7 @@ sub create_load_bam_job {
     my $metadata = $opts{metadata};
     my $staging_dir = $opts{staging_dir};
     my $result_dir = $opts{result_dir};
-    my $annotations = $opts{annotations};
+    my $annotations = $opts{annotations} || '';
     my $wid = $opts{wid};
     my $gid = $opts{gid};
     my $bam_file = $opts{bam_file};
@@ -441,6 +449,8 @@ sub create_load_bam_job {
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
     
     my $output_path = catdir($staging_dir, "load_bam");
+    
+    my $result_file = get_workflow_results_file($user->name, $wid);
 
     return {
         cmd => $cmd,
@@ -458,17 +468,17 @@ sub create_load_bam_job {
             ['-annotations', qq["$annotations"], 0],
             ['-staging_dir', "./load_bam", 0],
             ['-file_type', qq["bam"], 0],
-            ['-result_file', catfile($result_dir, 'mapped_reads'), 0],
             ['-data_file', $bam_file, 0],
             ['-config', $CONF->{_CONFIG_PATH}, 1]
         ],
         inputs => [
             $CONF->{_CONFIG_PATH},
-            $bam_file,
+            $bam_file
         ],
         outputs => [
             [$output_path, '1'],
             catfile($output_path, "log.done"),
+            $result_file
         ],
         description => "Loading alignment as new experiment ..."
     };
@@ -508,9 +518,9 @@ sub create_cutadapt_job {
 
     # Optional arguments
     my $params = $opts{params} // {}; #/
-    my $q = $params->{q} // 25; #/
-    my $quality = $params->{quality} // 64; #/
-    my $m = $params->{m} // 17; #/
+    my $q = $params->{'-q'} // 25; #/
+    my $quality = $params->{'--quality-base'} // 32; #/
+    my $m = $params->{'-m'} // 17; #/
 
     my $inputs = [ $fastq ];
     push @{$inputs}, $validated if $validated;
@@ -532,7 +542,7 @@ sub create_cutadapt_job {
         outputs => [
             catfile($staging_dir, $name . '.trimmed.fastq')
         ],
-        description => "Running cutadapt..."
+        description => "Trimming (cutadapt) $name..."
     };
 }
 
@@ -568,7 +578,7 @@ sub create_gff_generation_job {
         outputs => [
             catdir($CONF->{CACHEDIR}, $gid, "gff", $name)
         ],
-        description => "Generating genome annotations gff..."
+        description => "Generating genome annotations GFF file..."
     };
 }
 
@@ -577,7 +587,6 @@ sub create_tophat_workflow {
 
     # Required arguments
     my $gid = $opts{gid};
-    my $read_type = $opts{read_type};
     my $fasta = $opts{fasta};
     my $fastq = $opts{fastq};
     my $validated = $opts{validated};
@@ -595,15 +604,15 @@ sub create_tophat_workflow {
         gff => $gff,
         index_name => $index,
         index_files => ($bowtie{outputs}),
-        read_type => $read_type,
-        g => $params->{g},
+        params => $params,
     );
 
     # Return the bam output name and jobs required
-    return @{$tophat{outputs}}[0], (
-        \%bowtie,
-        \%tophat
+    my @tasks = ( \%bowtie, \%tophat );
+    my %results = (
+        bam_file => $tophat{outputs}->[0]
     );
+    return \@tasks, \%results;
 }
 
 sub create_bowtie_index_job {
@@ -645,13 +654,14 @@ sub create_tophat_job {
     my $fasta       = $opts{fasta};
     my $fastq       = $opts{fastq};
     my $validated   = $opts{validated};
-    my $read_type   = $opts{read_type} // 'single'; #/
     my $gff         = $opts{gff};
     my $index_name  = basename($opts{index_name});
     my $index_files = $opts{index_files};
+    my $params      = $opts{params};
 
     # Optional arguments
-    my $g = $opts{g} // 1; #/
+    my $g = $params->{'-g'} // 1; #/
+    my $read_type = $params->{read_type} // 'single'; #/
 
     # Setup input dependencies
     my $inputs = [
@@ -684,7 +694,7 @@ sub create_tophat_job {
         outputs => [
             catfile($staging_dir, "accepted_hits.bam")
         ],
-        description => "Running tophat..."        
+        description => "Aligning sequences (tophat)..."
     );
 }
 
@@ -692,16 +702,12 @@ sub create_gsnap_workflow {
     my %opts = @_;
 
     # Required arguments
+    my $staging_dir = $opts{staging_dir};
     my $gid = $opts{gid};
     my $fasta = $opts{fasta};
     my $fastq = $opts{fastq};
     my $validated = $opts{validated};
-    my $read_type = $opts{read_type};
-    my $staging_dir = $opts{staging_dir};
-    my $params = $opts{params};
-
-    # Optional arguments
-    my $alignment_params = $opts{alignment_params} // {}; #/
+    my $params = $opts{params} // {}; #/
 
     # Generate index
     my %gmap = create_gmap_index_job($gid, $fasta);
@@ -710,23 +716,24 @@ sub create_gsnap_workflow {
     my %gsnap = create_gsnap_job({
         fastq => $fastq,
         validated => $validated,
-        read_type => $read_type,
-        gmap => @{@{$gmap{outputs}}[0]}[0],
+        gmap => $gmap{outputs}->[0]->[0],
         staging_dir => $staging_dir,
         params => $params,
     });
 
-    # Generate and sort bam
-    my %bam = create_samtools_bam_job(@{$gsnap{outputs}}[0], $staging_dir);
-    my %sorted_bam = create_samtools_sort_job(@{$bam{outputs}}[0], $staging_dir);
+    # Convert sam file to bam
+    my %bam = create_samtools_bam_job($gsnap{outputs}->[0], $staging_dir);
 
     # Return the bam output name and jobs required
-    return @{$sorted_bam{outputs}}[0], (
+    my @tasks = (
         \%gmap,
         \%gsnap,
-        \%bam,
-        \%sorted_bam
+        \%bam
     );
+    my %results = (
+        bam_file => $bam{outputs}->[0]
+    );
+    return \@tasks, \%results;
 }
 
 sub create_gmap_index_job {
@@ -757,8 +764,9 @@ sub create_gmap_index_job {
 sub create_samtools_bam_job {
     my $samfile = shift;
     my $staging_dir = shift;
-    my $name = to_filename($samfile);
-    my $cmd = $CONF->{SAMTOOLS};
+    
+    my $filename = to_filename($samfile);
+    my $cmd = $CONF->{SAMTOOLS} || 'samtools';
 
     return (
         cmd => $cmd,
@@ -766,40 +774,44 @@ sub create_samtools_bam_job {
         args => [
             ["view", '', 0],
             ["-bS", $samfile, 1],
-            [">", $name . ".bam", 0]
+            [">", $filename . ".bam", 0]
         ],
         inputs => [
             $samfile
         ],
         outputs => [
-            catfile($staging_dir, $name . ".bam")
+            catfile($staging_dir, $filename . ".bam")
         ],
         description => "Generating bam file..."
     );
 }
 
-sub create_samtools_sort_job {
-    my $bam = shift;
-    my $staging_dir = shift;
-    my $name = to_filename($bam);
-    my $cmd = $CONF->{SAMTOOLS};
+sub create_bam_sort_job {
+    my %opts = @_;
 
-    return (
+    # Required arguments
+    my $input_file = $opts{input_file}; # bam file
+    my $staging_dir = $opts{staging_dir};
+    
+    my $filename = to_filename($input_file);
+    my $cmd = $CONF->{SAMTOOLS} || 'samtools';
+
+    return {
         cmd => $cmd,
         script => undef,
         args => [
             ["sort", '', 0],
-            ["", $bam, 1],
-            ["", $name . "-sorted", 1]
+            ["", $input_file, 1],
+            ["", $filename . "-sorted", 1]
         ],
         inputs => [
-            $bam
+            $input_file
         ],
         outputs => [
-            catfile($staging_dir, $name . "-sorted.bam")
+            catfile($staging_dir, $filename . "-sorted.bam")
         ],
         description => "Sorting bam file..."
-    );
+    };
 }
 
 sub create_gsnap_job {
@@ -810,14 +822,14 @@ sub create_gsnap_job {
     my $validated = $opts->{validated};
     my $gmap = $opts->{gmap};
     my $staging_dir = $opts->{staging_dir};
-    my $read_type = $opts->{read_type};
 
     # Optional arguments
     my $params = $opts->{params};
-    my $gapmode = $params->{gap} // "none"; #/
-    my $Q = $params->{Q} // 1; #/
-    my $n = $params->{n} // 5; #/
-    my $nofail = $params->{nofail} // 1; #/
+    my $read_type = $params->{'read_type'} // "single"; #/
+    my $gapmode = $params->{'--gap-mode'} // "none"; #/
+    my $Q = $params->{'-Q'} // 1; #/
+    my $n = $params->{'-n'} // 5; #/
+    my $nofails = $params->{'--nofails'} // 1; #/
 
     my $name = basename($gmap);
     
@@ -836,7 +848,7 @@ sub create_gsnap_job {
     ];
 
     push @$args, ["-Q", "", 0] if $Q;
-    push @$args, ["--nofails", "", 1] if $nofail;
+    push @$args, ["--nofails", "", 1] if $nofails;
     push @$args, ['--force-single-end', '', 0] if ($read_type eq 'single');
     
     # Sort fastq files in case of paired-end reads, 
@@ -863,8 +875,55 @@ sub create_gsnap_job {
         outputs => [
             catfile($staging_dir, $name . ".sam")
         ],
-        description => "Running gsnap..."
+        description => "Aligning sequences (gsnap)..."
     );
+}
+
+sub create_notebook_job {
+    my %opts = @_;
+    my $user = $opts{user};
+    my $wid = $opts{wid};
+    my $metadata = $opts{metadata};
+    my $annotations = $opts{annotations}; # array ref
+    my $staging_dir = $opts{staging_dir};
+    my $done_files = $opts{done_files};
+    
+    my $cmd = catfile($CONF->{SCRIPTDIR}, "create_notebook.pl");
+    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+
+    my $result_file = get_workflow_results_file($user->name, $wid);
+    
+    my $log_file = catfile($staging_dir, "create_notebook", "log.txt");
+    
+    my $annotations_str = '';
+    $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
+    
+    my $args = [
+        ['-uid', $user->id, 0],
+        ['-wid', $wid, 0],
+        ['-name', '"'.$metadata->{name}.'"', 0],
+        ['-desc', '"'.$metadata->{description}.'"', 0],
+        ['-type', 2, 0],
+        ['-restricted', $metadata->{restricted}, 0],
+        ['-annotations', qq{"$annotations_str"}, 0],
+        ['-config', $CONF->{_CONFIG_PATH}, 1],
+        ['-log', $log_file, 0]
+    ];
+
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => $args,
+        inputs => [ 
+            $CONF->{_CONFIG_PATH},
+            @$done_files
+        ],
+        outputs => [ 
+            $result_file,
+            $log_file
+        ],
+        description => "Creating notebook of results..."
+    };
 }
 
 1;
