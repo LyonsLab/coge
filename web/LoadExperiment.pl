@@ -9,7 +9,6 @@ use HTML::Template;
 use JSON::XS;
 use URI::Escape::JavaScript qw(unescape);
 use File::Path;
-use File::Spec::Functions;
 use File::Copy;
 use File::Basename;
 use File::Spec::Functions qw(catdir catfile);
@@ -27,13 +26,12 @@ use CoGe::Accessory::TDS;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Genome qw(genomecmp);
 use CoGe::Core::Storage qw(get_workflow_paths get_upload_path);
-use CoGe::Builder::Load::Experiment qw(run);
 
 no warnings 'redefine';
 
 use vars qw(
   $P $PAGE_TITLE $TEMPDIR $USER $coge $FORM $LINK $EMBED
-  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $JOB_ID
+  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $WORKFLOW_ID
 );
 
 $PAGE_TITLE = 'LoadExperiment';
@@ -44,11 +42,13 @@ $FORM = new CGI;
     page_title => $PAGE_TITLE
 );
 
-$CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
+$CONFIGFILE = catfile($ENV{COGE_HOME}, 'coge.conf');
 
-$JOB_ID  = $FORM->Vars->{'job_id'};
+# Get workflow_id and load_id for previous load if specified.  Otherwise
+# generate a new load_id for data upload.
+$WORKFLOW_ID = $FORM->Vars->{'wid'} || $FORM->Vars->{'job_id'}; # wid is new name, job_id is legacy name
 $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
-$TEMPDIR = get_upload_path($USER->name, $LOAD_ID); #$P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
+$TEMPDIR = get_upload_path($USER->name, $LOAD_ID);
 
 $EMBED = $FORM->param('embed');
 
@@ -60,12 +60,10 @@ $MAX_SEARCH_RESULTS = 1000;
     load_from_ftp           => \&load_from_ftp,
     ftp_get_file            => \&ftp_get_file,
     upload_file             => \&upload_file,
-    load_experiment         => \&load_experiment,
     get_sources             => \&get_sources,
     create_source           => \&create_source,
     search_genomes          => \&search_genomes,
     search_users            => \&search_users,
-    get_load_log            => \&get_load_log,
     check_login			    => \&check_login,
     send_error_report       => \&send_error_report
 );
@@ -73,43 +71,33 @@ $MAX_SEARCH_RESULTS = 1000;
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 
 sub generate_html {
-    # Check for finished result
-    if ($JOB_ID) {
-        my $log = get_load_log(workflow_id => $JOB_ID);
-        if ($log) {
-            my $res = decode_json($log);
-            if ($res->{experiment_id}) {
-                my $url = 'ExperimentView.pl?eid=' . $res->{experiment_id};
-                print $FORM->redirect(-url => $url);
-            }
-        }
-    }
+    # Check for finished result # mdb removed 3/4/15 no longer auto-redirect, make user select result
+#    if ($LOAD_ID) {
+#        my $log = get_load_log(workflow_id => $WORKFLOW_ID);
+#        if ($log) {
+#            my $res = decode_json($log);
+#            if ($res->{experiment_id}) {
+#                my $url = 'ExperimentView.pl?eid=' . $res->{experiment_id};
+#                print $FORM->redirect(-url => $url);
+#            }
+#        }
+#    }
     
     my $template;
     
     $EMBED = $FORM->param('embed');
     if ($EMBED) {
-        $template =
-          HTML::Template->new(
-            filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
+        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
     }
     else {
         $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param( PAGE_TITLE => $PAGE_TITLE,
 					      TITLE      => "Load Experiment",
         				  PAGE_LINK  => $LINK,
-        				  #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
-					      HELP       => $P->{SERVER} );
-        my $name = $USER->user_name;
-        $name = $USER->first_name if $USER->first_name;
-        $name .= ' ' . $USER->last_name
-          if ( $USER->first_name && $USER->last_name );
-        $template->param( USER     => $name );
-        $template->param( LOGO_PNG => "CoGe.svg" );
-        $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-#        my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-#        $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
-        $template->param( ADJUST_BOX => 1 );
+					      HELP       => $P->{SERVER},
+					      ADJUST_BOX => 1,
+                          LOGO_PNG   => "CoGe.svg" );
+        $template->param( LOGON      => 1 ) unless $USER->is_public;
         $template->param( ADMIN_ONLY => $USER->is_admin );
     }
 
@@ -118,18 +106,13 @@ sub generate_html {
 }
 
 sub generate_body {
-    if ( $USER->user_name eq 'public' ) {
-        my $template =
-          HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-        $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
-        $template->param( LOGIN     => 1 );
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+    $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
+                      
+    if ( $USER->is_public ) {
+        $template->param( LOGIN => 1 );
         return $template->output;
     }
-
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
-    $template->param( MAIN      => 1 );
-    $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
 
     my $gid = $FORM->param('gid');
     if ($gid) {
@@ -145,9 +128,10 @@ sub generate_body {
     }
 
     $template->param(
+        MAIN         => 1,
         EMBED        => $EMBED,
     	LOAD_ID      => $LOAD_ID,
-    	JOB_ID       => $JOB_ID,
+    	WORKFLOW_ID  => $WORKFLOW_ID,
         API_JOBS_URL => 'api/v1/jobs/', #TODO move into config file or module
         DEFAULT_TAB              => 0,
         MAX_IRODS_LIST_FILES     => 1000,
@@ -208,10 +192,10 @@ sub irods_get_file {
 
     #	print STDERR "irods_get_file $path $filename\n";
 
-    my $localpath     = 'irods/' . $remotepath;
-    my $localfullpath = $TEMPDIR . $localpath;
-    $localpath .= '/' . $filename;
-    my $localfilepath = $localfullpath . '/' . $filename;
+    my $localpath     = catdir('irods', $remotepath);
+    my $localfullpath = catdir($TEMPDIR, $localpath);
+    $localpath = catfile($localpath, $filename);
+    my $localfilepath = catfile($localfullpath, $filename);
 
     my $do_get = 1;
 
@@ -277,8 +261,8 @@ sub ftp_get_file {
     # print STDERR "$type $filepath $filename $username $password\n";
     return unless ( $type and $filepath and $filename );
 
-    my $path         = 'ftp/' . $filepath . '/' . $filename;
-    my $fullfilepath = $TEMPDIR . 'ftp/' . $filepath;
+    my $path         = catdir('ftp', $filepath, $filename);
+    my $fullfilepath = catdir($TEMPDIR, 'ftp', $filepath);
     mkpath($fullfilepath);
 
     # Simplest method (but doesn't allow login)
@@ -399,14 +383,13 @@ sub upload_file {
     my $size = 0;
     my $path;
     if ($fh) {
-        my $tmpfilename =
-          $FORM->tmpFileName( $FORM->param('input_upload_file') );
-        $path = 'upload/' . $filename;
-        my $targetpath = $TEMPDIR . 'upload/';
+        my $tmpfilename = $FORM->tmpFileName( $FORM->param('input_upload_file') );
+        $path = catfile('upload', $filename);
+        my $targetpath = catdir($TEMPDIR, 'upload');
         mkpath($targetpath);
-        $targetpath .= $filename;
+        $targetpath = catfile($targetpath, $filename);
 
-        #		print STDERR "temp files: $tmpfilename $targetpath\n";
+        #print STDERR "temp files: $tmpfilename $targetpath\n";
         copy( $tmpfilename, $targetpath );
         $size = -s $fh;
     }
@@ -423,121 +406,6 @@ sub upload_file {
 sub check_login {
 	#print STDERR "LoadExperiment::check_login ", $USER->user_name, ' ', int($USER->is_public), "\n";
 	return ($USER && !$USER->is_public);
-}
-
-sub load_experiment {
-    my $opts        = shift;
-    my $user_name   = $opts->{options}->{user_name};
-    my $gid         = $opts->{gid};
-    my $load_id     = $opts->{load_id};
-    my $data        = $opts->{data};
-    my $metadata    = $opts->{description};
-    my $options     = $opts->{options};
-    #print STDERR "LoadExperiment::load_experiment ", Dumper $opts, "\n";
-    return encode_json({ error => "No data items" }) unless (defined $data && @$data);
-
-    # Check login
-    if ( !$user_name || !$USER->is_admin ) {
-        $user_name = $USER->user_name;
-    }
-    if ($user_name eq 'public') {
-        return encode_json({ error => 'Not logged in' });
-    }
-
-    # Setup file staging area
-    $TEMPDIR = get_upload_path($user_name, $LOAD_ID); #catdir($P->{SECTEMPDIR}, $PAGE_TITLE, $USER->name, $load_id);
-    my $stagepath = catdir($TEMPDIR, 'staging');
-    mkpath $stagepath;
-
-    # Setup paths to staged data files
-    my $numFastq = 0;
-    foreach (@$data) {
-        $_->{path} = catfile($TEMPDIR, $_->{path});
-        $numFastq++ if (is_fastq_file($_->{path}));
-    }
-    
-    # Check multiple files (if more than one file then all should be FASTQ)
-    return encode_json({ error => 'Unsupported combination of file types' }) if ($numFastq > 0 and $numFastq != @$data);
-    return encode_json({ error => 'Too many files' }) if ($numFastq == 0 and @$data > 1);
-
-    # Get genome
-    my $genome = $coge->resultset('Genome')->find($gid);
-    unless ($genome) {
-        return encode_json({ error => 'Genome not found' });
-    }
-    # TODO add permissions check here -- or will it happen in Request::Genome?
-
-    # Build and submit workflow
-    my ($workflow_id, $error_msg) = CoGe::Builder::Tools::LoadExperiment::run({
-        user => $USER,
-        genome => $genome,
-        metadata => $metadata,
-        data => $data,
-        options => $options
-    });
-    unless ($workflow_id) {
-        #print STDERR $error_msg, "\n";
-        return encode_json({ error => "Workflow submission failed: " . $error_msg });
-    }
-
-    # Get tiny link
-    my $link = CoGe::Accessory::Web::get_tiny_link(
-        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id
-    );
-    
-    # Log it
-    my $name        = $metadata->{name};
-    my $description = $metadata->{description};
-    my $version     = $metadata->{version};
-    my $info = '<i>"';
-    $info .= $name if $name;
-    $info .= ": " . $description if $description;
-    $info .= " (v" . $version . ")";
-    $info .= '"</i>';
-    CoGe::Accessory::Web::log_history(
-        db          => $coge,
-        workflow_id => $workflow_id,
-        user_id     => $USER->id,
-        page        => "LoadExperiment",
-        description => 'Load experiment ' . $info,
-        link        => $link
-    );
-    
-    return encode_json({ job_id => $workflow_id, link => $link });
-}
-
-sub execute { # FIXME this code is duplicate in other places like load_genome.pl
-    my ($cmd, $log) = @_;
-    print $log "$cmd\n" if $log;
-    my @cmdOut = qx{$cmd};
-    my $cmdStatus = $?;
-    if ( $cmdStatus != 0 ) {
-        print $log "log: error: command failed with rc=$cmdStatus: $cmd\n" if $log;
-        CORE::exit(-1);
-    }
-}
-
-sub get_load_log { #TODO remove this and use API instead
-    my %opts         = @_;
-    my $workflow_id = $opts{workflow_id};
-    return unless $workflow_id;
-    #TODO authenticate user access to workflow
-
-    my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
-    return unless (-r $results_path);
-
-    my $result_file = catfile($results_path, '1');
-    return unless (-r $result_file);
-
-    my $result = CoGe::Accessory::TDS::read($result_file);
-    return unless $result;
-
-    return encode_json(
-        {
-            experiment_id => $result->{experiment_id},
-            notebook_id   => $result->{notebook_id}
-        }
-    );
 }
 
 sub get_debug_log {
@@ -675,6 +543,10 @@ sub send_error_report {
     my %opts = @_;
     my $load_id = $opts{load_id};
     my $job_id = $opts{job_id};
+    unless ($load_id and $job_id) {
+        print STDERR "LoadExperiment::send_error_report: missing required params\n";
+        return;
+    }
 
     # Get the staging directory
     my ($staging_dir, $result_dir) = get_workflow_paths($USER->name, $job_id);

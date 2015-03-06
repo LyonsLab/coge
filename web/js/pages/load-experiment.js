@@ -119,24 +119,6 @@ function create_source() {
     });
 }
 
-function get_load_log(callback) {
-    $.ajax({
-        data: {
-            dataType: 'text',
-            fname: 'get_load_log',
-            workflow_id: job_id,
-            timestamp: new Date().getTime()
-        },
-        success : function(data) {
-            if (callback) {
-                var obj = jQuery.parseJSON(data);
-                callback(obj);
-                return;
-            }
-        }
-    });
-}
-
 function wait_to_search (search_func, search_obj) {
     var search_term = search_obj.value;
     if (!search_term || search_term.length >= 2) {
@@ -190,6 +172,13 @@ function search_users (search_term) {
     });
 }
 
+function load_begin() {
+    // Open status dialog right away - issue 101
+    reset_log();
+    $('#load_dialog').dialog('open');
+    $('#load_log').html('Initializing ...');
+}
+
 function load_failed(logfile) {
     // mdb added 6/24/14 - temporary message until JEX logging is improved
     var msg =
@@ -201,7 +190,6 @@ function load_failed(logfile) {
         '</div>';
     var log = $('#load_log');
     log.html( log.html() + msg );
-
 
     if (logfile) {
         $("#logfile a").attr("href", logfile);
@@ -217,37 +205,16 @@ function load_failed(logfile) {
             data: {
                 fname: "send_error_report",
                 load_id: load_id,
-                job_id: job_id
+                job_id: WORKFLOW_ID
             }
         });
     }
 }
 
-function load_succeeded(results) {
-	console.log(results);
-	
+function load_succeeded() {
     // Update dialog
     $('#loading_msg').hide();
     $('#finished_msg,#ok_button').fadeIn();
-//    if (notebook_id) { // qTeller pipeline experiment load
-//        $('#finish_load_experiment_button')
-//            .html('NotebookView').fadeIn()
-//            .unbind().on('click', function() {
-//                window.location.href = "NotebookView.pl?nid=" + notebook_id;
-//        });
-//    }
-//    else { // normal experiment load
-//        $('#finish_load_experiment_button')
-//            .html('Continue to ExperimentView').fadeIn()
-//            .unbind().on('click', function() {
-//                window.location.href = "ExperimentView.pl?embed=" + embed + "&eid=" + experiment_id;
-//        });
-//    }
-    
-    $("#results").html("<div>Here are the results:</div>");
-    results.forEach(function(result) {
-    	$("#results").append("<div><a href='"+result.path+"'>"+result.name+"</a></div>");
-    });
 }
 
 function progress_formatter(item) {
@@ -292,6 +259,18 @@ function progress_formatter(item) {
     return row;
 }
 
+function format_result(result) {
+	if (result.type === 'experiment') {
+		var url = 'ExperimentView.pl?eid=' + result.id;
+		return "<div><a href='"+url+"'>Experiment '"+result.name+"'</a></div>";
+	}
+	else if (result.type === 'notebook') {
+		var url = 'NotebookView.pl?nid=' + result.id;
+		return "<div><a href='"+url+"'>Notebook '"+result.name+"'</a></div>";
+	}
+}
+
+var workflow_start_time;
 function update_dialog(request, user, identifier, formatter) {
     var get_status = function () {
         $.ajax({
@@ -312,30 +291,58 @@ function update_dialog(request, user, identifier, formatter) {
     var update_callback = function(json) {
         var dialog = $(identifier);
         var workflow_status = $("<p></p>");
-        var data = $("<ul></ul>");
+        var log_content = $("<ul></ul>");
         var results = [];
         var current_status;
-        var timeout = 2000;
+        var refresh_interval = 2000;
+        var retry_interval = 5*1000;
+        
+        // Set refresh rate based on elapsed time
+        if (!workflow_start_time)
+        	workflow_start_time = new Date().getTime();
+        var run_time = new Date().getTime() - workflow_start_time;
+        if (run_time > 10*60*1000)
+        	refresh_interval = 60*1000;
+        else if (run_time > 5*60*1000)
+        	refresh_interval = 30*1000;
+        else if (run_time > 60*1000)
+        	refresh_interval = 15*1000;
+        //console.log('Refresh run_time=' + run_time + ' refresh_interval=' + refresh_interval);
 
         var callback = function() {
             update_dialog(request, user, identifier, formatter);
         }
 
-        if (json.error) {
+        if (!json || json.error) {
             pageObj.error++;
-            if (pageObj.error > 3) {
-                workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
-                var logfile;
-
-                if (json.results.length) {
-                    logfile = json.results[0].path;
-                }
-                load_failed(logfile);
-                return;
+            if ('Auth' in json.error) {
+            	dialog.find('#loading_msg').html('Login required to continue');
+            	dialog.find('#load_log')
+            		.css({'font-size': '1em'})
+            		.html("<br>Your session has expired.<br><br>" + 
+            			"Please log in again by clicking " +
+            			"<a onclick='login_cas();' style='font-weight:bold'>here</a>.");
+            	return;
             }
-        } else {
-            pageObj.error = 0;
+            else {
+            	//mdb removed 3/5/15 -- retry indefinitely
+//	            if (pageObj.error > 3) {
+//	                workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
+//	                var logfile;
+//		                if (json.results.length) {
+//	                    logfile = json.results[0].path;
+//	                }
+//	                load_failed(logfile);
+//	                return;
+//	            }
+	            $("#load_error").html('Server not responding ('+pageObj.error+')').show();
+	            setTimeout(callback, retry_interval);
+	            return;
+            }
         }
+        
+        pageObj.error = 0;
+        $("#load_error").hide();
 
         if (json.status) {
             current_status = json.status.toLowerCase();
@@ -343,8 +350,10 @@ function update_dialog(request, user, identifier, formatter) {
                 .html("Workflow status: ")
                 .append( $('<span></span>').html(json.status) )
                 .addClass('bold');
-        } else {
-            setTimeout(callback, timeout);
+        } 
+        else {
+        	console.log('Error: missing status');
+            setTimeout(callback, refresh_interval);
             return;
         }
 
@@ -352,14 +361,19 @@ function update_dialog(request, user, identifier, formatter) {
             var jobs = json.tasks;
             for (var index = 0; index < jobs.length; index++) {
                 var item = formatter(jobs[index]);
-                if (item) {
+                if (item)
                     results.push(item);
-                }
             }
         }
+        else {
+        	console.log('Error: missing tasks');
+        }
 
-        if (!dialog.dialog('isOpen'))
+        // Sanity check -- progress dialog should be open
+        if (!dialog.dialog('isOpen')) {
+        	console.log('Error: progress dialog is closed');
             return;
+        }
 
         //FIXME Update when a workflow supports elapsed time
         if (current_status == "completed") {
@@ -373,15 +387,8 @@ function update_dialog(request, user, identifier, formatter) {
 
             workflow_status.append("<br>Finished in " + duration);
             workflow_status.find('span').addClass('completed');
-//            get_load_log(function(result) {
-//                load_succeeded(result);
-//            });
-            if (json.results && json.results.length) {
+            if (json.results && json.results.length) 
             	load_succeeded(json.results);
-            }
-            else {
-            	alert('Error: no results found!');
-            }
         }
         else if (current_status == "failed"
                 || current_status == "error"
@@ -390,23 +397,32 @@ function update_dialog(request, user, identifier, formatter) {
         {
             workflow_status.find('span').addClass('alert');
 
-            if (json.results.length) {
+            if (json.results && json.results.length)
                 logfile = json.results[0].path;
-            }
             load_failed(logfile);
         }
         else if (current_status == "notfound") {
-            setTimeout(callback, timeout);
+        	console.log('Error: status is "notfound"');
+            setTimeout(callback, refresh_interval);
             return;
         }
         else {
             workflow_status.find('span').addClass('running');
-            setTimeout(callback, timeout);
+            setTimeout(callback, refresh_interval);
         }
 
         results.push(workflow_status);
-        data.append(results);
-        dialog.find('#load_log').html(data);
+        log_content.append(results);
+        
+        if (json.results && json.results.length) {
+        	log_content.append("<div class='bold'>Here are the results:</div>");
+    	    json.results.forEach(function(result) {
+    	    	var html = format_result(result);
+    	    	log_content.append(html);
+    	    });
+        }
+        
+        dialog.find('#load_log').html(log_content);
     };
 
     get_status();
@@ -414,6 +430,7 @@ function update_dialog(request, user, identifier, formatter) {
 
 function reset_log() {
     $('#load_log').html('');
+    $('#load_link').html('');
     $('#loading_msg').show();
     $('#ok_button,#error_msg,#finished_msg,#finish_load_experiment_button,#cancel_load_experiment_button,#logfile').hide();
 }
@@ -653,7 +670,7 @@ $.extend(DataView.prototype, {
 
 function DescriptionView(opts) {
     this.experiment = opts.experiment;
-    this.description = opts.description;
+    this.metadata = opts.metadata;
     this.gid = opts.gid;
     this.sources = undefined;
     this.title = "Describe your experiment";
@@ -667,16 +684,16 @@ $.extend(DescriptionView.prototype, {
         this.edit_genome = this.el.find("#edit_genome");
         this.get_sources();
 
-        if (this.description) {
-            this.el.find('#edit_name').val(this.description.name);
-            this.el.find('#edit_description').val(this.description.description);
-            this.el.find('#edit_version').val(this.description.version);
-            this.edit_source.val(this.description.source);
+        if (this.metadata) {
+            this.el.find('#edit_name').val(this.metadata.name);
+            this.el.find('#edit_description').val(this.metadata.description);
+            this.el.find('#edit_version').val(this.metadata.version);
+            this.edit_source.val(this.metadata.source);
 
-            if (!this.description.restricted)
+            if (!this.metadata.restricted)
                 this.el.find('#restricted').removeAttr('checked');
 
-            this.el.find('#edit_genome').val(this.description.genome);
+            this.el.find('#edit_genome').val(this.metadata.genome);
         }
     },
 
@@ -839,27 +856,27 @@ $.extend(FindSNPView.prototype, {
 
         if (enabled) {
             if (method === "coge") {
-                this.data.snp_params = {
+                this.data.snp_params = { //TODO this can be automated
                     method: method,
-                    min_read: this.el.find("#min-read").val(),
-                    min_base: this.el.find("#min-base").val(),
-                    allele_count: this.el.find("#allele-count").val(),
-                    allele_freq: this.el.find("#allele-freq").val(),
+                    'min-read-depth':   this.el.find("#min-read-depth").val(),
+                    'min-base-quality': this.el.find("#min-base-quality").val(),
+                    'min-allele-count': this.el.find("#min-allele-count").val(),
+                    'min-allele-freq':  this.el.find("#min-allele-freq").val(),
                     scale: this.el.find("#scale").val()
                 };
             } else if (method === "samtools") {
                 this.data.snp_params = {
                     method: method,
-                    min_read: this.el.find("#min-read").val(),
-                    max_read: this.el.find("#max-read").val(),
+                    'min-read-depth': this.el.find("#min-read-depth").val(),
+                    'max-read-depth': this.el.find("#max-read-depth").val(),
                 };
             } else if (method === "platypus") {
                 this.data.snp_params = {
-                    method: method,
+                    method: method
                 };
             } else if (method === "gatk") {
                 this.data.snp_params = {
-                    method: method,
+                    method: method
                 };
             }
         }
@@ -904,25 +921,25 @@ $.extend(AlignmentView.prototype, {
         // Pick the aligner and set the options
         if (aligner === "gsnap") {
             this.data = {
-                alignment_params: {
+                alignment_params: { //TODO is there a way to automate this parameter passing?
                     tool: "gsnap",
-                    n: this.el.find("#n").val(),
-                    Q: this.el.find("#Q").is(":checked"),
-                    gap: this.el.find("#gap").val(),
-                    nofail: this.el.find("#nofail").is(":checked"),
+                    '-n': this.el.find("[id='-n']").val(),
+                    '-Q': this.el.find("[id='-Q']").is(":checked"),
+                    '--gap-mode': this.el.find("[id='--gap-mode']").val(),
+                    '--nofails': this.el.find("[id='--nofails']").is(":checked"),
                     read_type: this.el.find("#read_type :checked").val()
                 },
-                cutadapt_params: {
-                    q: this.el.find("#q").val(),
-                    m: this.el.find("#m").val(),
-                    quality: this.el.find("#quality").val()
+                trimming_params: {
+                    '-q': this.el.find("[id='-q']").val(),
+                    '-m': this.el.find("[id='-m']").val(),
+                    '--quality-base': this.el.find("[id='--quality-base'").val()
                 }
             };
         } else {
             this.data = {
                 alignment_params: {
                     tool: "tophat",
-                    g: this.el.find("#g").val(),
+                    '-g': this.el.find("[id='-g']").val(),
                     read_type: this.el.find("#read_type :checked").val()
                 }
             }
@@ -1040,7 +1057,7 @@ $.extend(ExpressionView.prototype, {
     get_options: function() {
         if (this.enabled) {
             this.data.expression_params = {
-                depth: this.el.find("#depth").val()
+                '-Q': this.el.find("[id='-Q']").val()
             };
         }
 
@@ -1243,14 +1260,13 @@ $.extend(ConfirmationView.prototype, {
 
     // Render description summary
     renderDescription: function(description) {
-        var key, newpair;
         this.description.empty();
 
-        // Description Confirmation
+        var key, newpair;
         for(key in description) {
             if (description.hasOwnProperty(key)) {
                 newpair = this.pair_template.clone();
-                newpair.find(".name").html(key);
+                newpair.find(".name").html(capitalizeFirstLetter(key));
                 newpair.find(".data").html(description[key]);
                 this.description.append(newpair);
             }
@@ -1259,14 +1275,14 @@ $.extend(ConfirmationView.prototype, {
 
     // Render data files summary
     renderData: function(data) {
-        var index, newpair;
-
         this.data.empty();
 
+        var index, newpair;
         for(index = 0; index < data.length; index++) {
             newpair = this.pair_template.clone();
             newpair.find(".name").html("File");
-            newpair.find(".data").html(data[index].path);
+            var filename = data[index].path.replace(/^.*[\\\/]/, '')
+            newpair.find(".data").html(filename);
             this.data.append(newpair);
         }
     },
@@ -1275,11 +1291,14 @@ $.extend(ConfirmationView.prototype, {
     renderOptions: function(options) {
         this.options.empty();
 
+        var key, newpair;
         for(key in options) {
             if (options.hasOwnProperty(key)) {
+            	var val = String(options[key]);
+            	if (typeof options[key] === 'object') val = objToString(options[key]);
                 newpair = this.pair_template.clone();
-                newpair.find(".name").html(key);
-                newpair.find(".data").html(String(options[key]));
+                newpair.find(".name").html(capitalizeFirstLetter(key.replace('_', ' ')));
+                newpair.find(".data").html(val);
                 this.options.append(newpair);
             }
         }
@@ -1291,6 +1310,20 @@ $.extend(ConfirmationView.prototype, {
     }
 });
 
+function objToString(obj) {
+    var str = '<br>';
+    for (var p in obj) {
+        if (obj.hasOwnProperty(p)) {
+            str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + p + ': ' + obj[p] + '<br>';
+        }
+    }
+    return str;
+}
+
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
 function submit_job(request, success_callback, error_callback) { //TODO move into js/coge/services.js
     $.ajax({
     	type: "PUT",
@@ -1299,13 +1332,6 @@ function submit_job(request, success_callback, error_callback) { //TODO move int
         contentType: "application/json",
         data: JSON.stringify(request), // string required for PUT requests
         success: function(response) {
-            if (response && response.error) {
-                if (response.error.PAYLOAD)  {
-                    alert(response.error.PAYLOAD);
-                }
-                return;
-            }
-            
             if (success_callback)
             	success_callback(response);
         },
@@ -1340,22 +1366,23 @@ function fetch_job(id, success_callback) { //TODO move into js/coge/services.js
         }
     });
 }
-	
+
 function load(experiment) {
-    // Open status dialog right away - issue 101
-    reset_log();
-    $('#load_dialog').dialog('open');
-    $('#load_log').html('Initializing ...');
+	load_begin();
     newLoad = true;
 
 	// Convert request into format for job service
 	var request = {
 		type: 'load_experiment',
+		requester: {
+			page: PAGE_NAME,
+			user_name: USER_NAME
+		},
 		parameters: {
 			gid: experiment.gid,
 			metadata: experiment.metadata,
 			alignment_params: experiment.options.alignment_params,
-			trimming_params: experiment.options.cutadapt_params,
+			trimming_params: experiment.options.trimming_params,
 			expression_params: experiment.options.expression_params,
 			snp_params: experiment.options.snp_params
 		},
@@ -1364,51 +1391,37 @@ function load(experiment) {
 			email: experiment.options.email,
 			notebook: experiment.options.notebook,
 			source_data: experiment.data
-		}
+		},
 	};
     
     submit_job(request, 
-    	function(response) {
+    	function(response) { // success callback
+    		if (!response) {
+    			$('#load_log').append('<div class="alert">Error: empty response from server</div>');
+    			load_failed();
+    			return;
+    		}
+    		else if (!response.success || !response.id) {
+    			$('#load_log').append('<div class="alert">Error: failed to start workflow</div>');
+    			load_failed();
+    			return;
+    		}
+    		
 	        // Set link in status dialog
-	        //$('#loading_msg span a').attr('href', response.link).html(response.link);
+    		if (response.site_url) {
+	    		var link = $('<a>'+response.site_url+'</a>').attr('href', response.site_url);
+		        $('#load_link').html('Link: ').append(link);
+    		}
 	
 	        // Start status update
-	        if (response.job_id) {
-	            job_id = response.job_id;
-	            window.history.pushState({}, "Title", "LoadExperiment.pl" + "?job_id=" + job_id); // Add job_id to browser URL
-	            update_dialog(API_JOBS_URL + job_id, USER_NAME, "#load_dialog", progress_formatter);
-	        }
+            window.history.pushState({}, "Title", "LoadExperiment.pl" + "?wid=" + response.id); // Add workflow id to browser URL
+            update_dialog(API_JOBS_URL + response.id, USER_NAME, "#load_dialog", progress_formatter);
 	    },
-	    function(jqXHR, textStatus, errorThrown) {
-	    	$('#load_log').html('An error occurred:  ' + textStatus);
+	    function(jqXHR, textStatus, errorThrown) { // error callback
+	    	$('#load_log').append('<div class="alert">Error: ' + textStatus + '</div>');
+	    	load_failed();
 	    }
 	);
-
-//    var payload = $.extend({fname: "load_experiment", load_id: load_id}, experiment);
-//    $.ajax({
-//    	type: "POST",
-//    	dataType: "json",
-//        contentType: "application/json",
-//        data: JSON.stringify(payload),
-//        success: function(obj) {
-//            if (obj && obj.error) {
-//                if (obj.error.PAYLOAD)  {
-//                    alert(obj.error.PAYLOAD);
-//                }
-//                return;
-//            }
-//
-//            // Set link in status dialog
-//            $('#loading_msg span a').attr('href', obj.link).html(obj.link);
-//
-//            // Start status update
-//            if (obj.job_id) { // JEX status for load FASTQ
-//                job_id = obj.job_id;
-//                window.history.pushState({}, "Title", "LoadExperiment.pl" + "?job_id=" + obj.job_id); // Add job_id to browser URL
-//                update_dialog(STATUS_URL + obj.job_id, USER_NAME, "#load_dialog", progress_formatter);
-//            }
-//        }
-//    });
 }
 
 function reset_load() {
@@ -1418,11 +1431,11 @@ function reset_load() {
     // Reset the wizard and set description step
     initialize_wizard({
         admin: IS_ADMIN,
-        description: current_experiment.description,
+        metadata: current_experiment.metadata,
         gid: current_experiment.gid
     });
 
-    $('#wizard-container').hide().slideDown();
+    $('#wizard-container').hide().fadeIn();
 }
 
 function initialize_wizard(opts) {
@@ -1431,7 +1444,7 @@ function initialize_wizard(opts) {
     var wizard = new Wizard({ completed: load, data: current_experiment });
     wizard.addStep(new DescriptionView({
         experiment: current_experiment,
-        description: opts.description,
+        metadata: opts.metadata,
         gid: opts.gid
     }));
     wizard.addStep(new DataView(current_experiment));
