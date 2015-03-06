@@ -508,6 +508,10 @@ sub get_experiment_data {
             print STDERR "Storage::get_experiment_data: error $? executing command: $cmd\n";
             return;
         }
+        
+        # Return if error message detected (starts with '[')
+        map { return if (/^\[/) } @cmdOut; # mdb added 5/6/15 COGE-594
+        
         return \@cmdOut;
     }
     else {
