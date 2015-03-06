@@ -11,7 +11,8 @@ use File::Spec::Functions qw(catdir catfile);
 use URI::Escape::JavaScript qw(unescape);
 use JSON::XS;
 use CoGe::Accessory::Web qw(get_defaults);
-use CoGe::Accessory::Utils qw(commify to_pathname);
+use CoGe::Accessory::Utils qw( commify to_pathname );
+use CoGe::Core::Genome qw(fix_chromosome_id);
 use CoGe::Accessory::TDS;
 use CoGe::Core::Storage qw(add_workflow_result);
 use CoGe::Core::Metadata qw(create_annotations);
@@ -597,9 +598,10 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
         }
 
         # Munge chr name for CoGe
+        ($chr) = split(/\s+/, $chr);
 		$chr = fix_chromosome_id($chr, $genome_chr);
-        if (!$chr) {
-            log_line('trouble parsing chromosome', $line_num, $line);
+        unless (defined $chr) {
+            log_line("trouble parsing sequence ID", $line_num, $line);
             return;
         }
         $strand = $strand =~ /-/ ? -1 : 1;
@@ -920,35 +922,4 @@ sub execute { # FIXME move into Util.pm
 sub log_line {
     my ( $msg, $line_num, $line ) = @_;
     print STDOUT "log: error at line $line_num: $msg\n", "log: ", substr($line, 0, 100), "\n";    
-}
-
-sub fix_chromosome_id {
-	my $chr = shift;
-	my $genome_chr = shift;
-
-    # Fix chromosome identifier
-    $chr =~ s/^lcl\|//;
-    $chr =~ s/chromosome//i;
-    $chr =~ s/^chr//i;
-    $chr =~ s/^0+//;
-    $chr =~ s/^_+//;
-    $chr =~ s/\s+/ /;
-    $chr =~ s/^\s//;
-    $chr =~ s/\s$//;
-
-	# Hack to deal with converting 'chloroplast' and 'mitochondia' to 'C' and 'M' if needed
-    if (   $chr =~ /^chloroplast$/i
-        && !$genome_chr->{$chr}
-        && $genome_chr->{"C"} )
-    {
-        $chr = "C";
-    }
-    if (   $chr =~ /^mitochondria$/i
-        && !$genome_chr->{$chr}
-        && $genome_chr->{"M"} )
-    {
-        $chr = "M";
-    }
-
-	return $chr;
 }

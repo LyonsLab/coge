@@ -84,21 +84,30 @@ sub get_user_access_table {
     
     # Get group connections for user
     my $groups_str = join(',', map { $_->{child_id} } values %{$results1->{6}});
-    $query = "SELECT * FROM user_connector WHERE parent_type=6 AND parent_id IN ($groups_str)";
-    #$query .= " AND child_type=$child_type" if ($child_type);
-    $sth = $dbh->prepare($query);
-    $sth->execute();
-    my $results2 = $sth->fetchall_hashref(['child_type', 'child_id']);
-    #print STDERR Dumper $results2, "\n";
+    my $results2 = {};
+    if ($groups_str) {
+        $query = "SELECT * FROM user_connector WHERE parent_type=6 AND parent_id IN ($groups_str)";
+        #$query .= " AND child_type=$child_type" if ($child_type);
+        $sth = $dbh->prepare($query);
+        $sth->execute();
+        $results2 = $sth->fetchall_hashref(['child_type', 'child_id']);
+        #print STDERR Dumper $results2, "\n";
+    }
     
     # Get list connections for user and user's groups
-    my $lists_str = join(',', map { $_->{child_id} } values %{$results1->{1}}, values %{$results2->{1}});
-    my $query = "SELECT * FROM list_connector WHERE parent_id IN ($lists_str)";
-    #$query .= " AND child_type=$child_type" if ($child_type);
-    my $sth = $dbh->prepare($query);
-    $sth->execute();
-    my $results3 = $sth->fetchall_hashref(['child_type', 'child_id']);
-    #print STDERR Dumper $results3, "\n"; 
+    my $lists_str = join(',', map { $_->{child_id} } 
+        (defined $results1 && defined $results1->{1} ? values %{$results1->{1}} : ()), 
+        (defined $results2 && defined $results2->{1} ? values %{$results2->{1}} : ())
+    );
+    my $results3 = {};
+    if ($lists_str) {
+        my $query = "SELECT * FROM list_connector WHERE parent_id IN ($lists_str)";
+        #$query .= " AND child_type=$child_type" if ($child_type);
+        my $sth = $dbh->prepare($query);
+        $sth->execute();
+        $results3 = $sth->fetchall_hashref(['child_type', 'child_id']);
+        #print STDERR Dumper $results3, "\n"; 
+    }
     
     my %combined = (%$results1, %$results2, %$results3);
     #print STDERR Dumper \%combined, "\n";
