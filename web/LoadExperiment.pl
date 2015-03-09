@@ -94,11 +94,12 @@ sub generate_html {
         $template->param( PAGE_TITLE => $PAGE_TITLE,
 					      TITLE      => "Load Experiment",
         				  PAGE_LINK  => $LINK,
-					      HELP       => $P->{SERVER},
+					      HELP       => $P->{SERVER} || '',
 					      ADJUST_BOX => 1,
-                          LOGO_PNG   => "CoGe.svg" );
+                          LOGO_PNG   => "CoGe.svg",
+                          ADMIN_ONLY => $USER->is_admin
+        );
         $template->param( LOGON      => 1 ) unless $USER->is_public;
-        $template->param( ADMIN_ONLY => $USER->is_admin );
     }
 
     $template->param( BODY => generate_body() );
@@ -108,25 +109,25 @@ sub generate_html {
 sub generate_body {
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
-                      
+    
+    # Force login
     if ( $USER->is_public ) {
         $template->param( LOGIN => 1 );
         return $template->output;
     }
 
+    # Set genome ID if specified
     my $gid = $FORM->param('gid');
     if ($gid) {
         my $genome = $coge->resultset('Genome')->find($gid);
-
-        #TODO check permissions
-        if ($genome) {
+        if ($genome && $USER->has_access_to_genome($genome)) {
             $template->param(
                 GENOME_NAME => $genome->info,
                 GENOME_ID   => $genome->id
             );
         }
     }
-
+    
     $template->param(
         MAIN         => 1,
         EMBED        => $EMBED,
