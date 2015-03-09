@@ -474,7 +474,7 @@ $.extend(LayoutView.prototype, {
 // Requires a done callback and a data object to pass to the callback
 //
 function Wizard(options) {
-    this.completed = options.completed;
+    this.onCompleted = options.onCompleted;
     this.data = options.data;
     this.steps = [];
     this.currentIndex = 0;
@@ -565,7 +565,7 @@ $.extend(Wizard.prototype, {
         }
 
         if (this.at_last())
-            this.completed(this.data);
+            this.onCompleted(this.data);
     },
 
     // Expects a view with render, is_valid methods and a element property el
@@ -1217,8 +1217,7 @@ $.extend(OptionsView.prototype, {
             return;
         }
 
-        //FIXME: An aggregate view should add analysis options
-        // for multiple file types
+        //FIXME: An aggregate view should add analysis options for multiple file types
         if ($.inArray(file_type, POLY_FILES) > -1)
             this.analysis_view = new PolymorphismView();
         else if ($.inArray(file_type, SEQ_FILES) > -1)
@@ -1441,7 +1440,7 @@ function reset_load() {
 function initialize_wizard(opts) {
     current_experiment = {};
     var root = $("#wizard-container");
-    var wizard = new Wizard({ completed: load, data: current_experiment });
+    var wizard = new Wizard({ onCompleted: load, data: current_experiment });
     wizard.addStep(new DescriptionView({
         experiment: current_experiment,
         metadata: opts.metadata,
