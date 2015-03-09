@@ -158,6 +158,7 @@ function update_table() {
 
 function get_anno(fid, num) {
    $.ajax({
+      url: "FeatList.pl",
       data: {
         jquery_ajax: 1,
         fname: 'get_anno',

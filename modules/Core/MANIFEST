@@ -1,4 +1,8 @@
 MANIFEST
 Makefile.PL
-lib/CoGe/Core/Genome.pm
 lib/CoGe/Core/Experiment.pm
+lib/CoGe/Core/Genome.pm
+lib/CoGe/Core/List.pm
+lib/CoGe/Core/Metadata.pm
+lib/CoGe/Core/Notebook.pm
+lib/CoGe/Core/Storage.pm

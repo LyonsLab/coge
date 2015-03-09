@@ -16,8 +16,7 @@ use vars qw($P $PAGE_TITLE $PAGE_NAME $LINK
 
 $DATE = sprintf(
     "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
+    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }->(localtime)
 );
 
 $PAGE_TITLE = 'GenomeList';
@@ -36,8 +35,7 @@ $COGEDIR   = $P->{COGEDIR};
 $URL       = $P->{URL};
 $HISTOGRAM = $P->{HISTOGRAM};
 
-$LIST_TYPE =
-  $coge->resultset('ListType')->find_or_create( { name => 'genome' } );
+$LIST_TYPE = $coge->resultset('ListType')->find_or_create( { name => 'genome' } );
 
 %FUNCTION = (
     gen_html                 => \&gen_html,
@@ -45,14 +43,14 @@ $LIST_TYPE =
     get_gc                   => \&get_gc,
     get_aa_usage             => \&get_aa_usage,
     get_codon_usage          => \&get_codon_usage,
-    generate_excel_file      => \&generate_excel_file,
-    generate_csv_file        => \&generate_csv_file,
     gc_content               => \&gc_content,
     gen_data                 => \&gen_data,
+    send_to_xls              => \&send_to_xls,
+    send_to_csv              => \&send_to_csv,
     send_to_fasta            => \&send_to_fasta,
     send_to_msa              => \&send_to_msa,
     send_to_SynFind          => \&send_to_SynFind,
-    send_to_blast            => \&send_to_blast,
+	     send_to_blast            => \&send_to_blast,
     send_to_GenomeList       => \&send_to_GenomeList,
     send_to_list             => \&send_to_list,
     get_wobble_gc            => \&get_wobble_gc,
@@ -70,17 +68,17 @@ sub gen_html {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( PAGE_TITLE => 'GenomeList',
-    				  PAGE_LINK  => $LINK,
-    				  HELP       => '/wiki/index.php?title=GenomeList' );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param( USER       => $name );
-    $template->param( LOGO_PNG   => "GenomeList-logo.png" );
+		      TITLE      => 'GenomeList',		
+    		      PAGE_LINK  => $LINK,
+    		      #HELP       => '/wiki/index.php?title=GenomeList',
+		      HELP       => $P->{SERVER},
+                      USER       => $USER->display_name,
+                      LOGO_PNG   => "CoGe.svg" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( DATE       => $DATE );
     $template->param( BODY       => $body );
     $template->param( ADJUST_BOX => 1 );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
     $html .= $template->output;
 }
 
@@ -131,7 +129,7 @@ sub cds_wgc_hist {
                         { 'dataset' => { 'dataset_connectors' => 'genome' } }
                     ],
                     prefetch => [
-                        'locations',
+				 'locations',
                         { 'dataset' => { 'dataset_connectors' => 'genome' } }
                     ],
                 }
@@ -343,7 +341,7 @@ sub get_gc_for_feature_type {
                   && $perc_gc < $min;    #check for limits
             next
               if defined $max
-                  && $max =~ /\d+/
+		&& $max =~ /\d+/
                   && $perc_gc > $max;    #check for limits
             push @data, sprintf( "%.2f", $perc_gc );
             push @fids, $feat->id . "_" . $gstid;
@@ -502,7 +500,7 @@ sub gen_body {
             my $list = $coge->resultset('List')->find($_);
             next unless ($list);
             foreach ( $list->genomes ) {
-                push @$dsgids, $_->id;
+	      push @$dsgids, $_->id;
             }
         }
     }
@@ -661,7 +659,7 @@ qq{<span class=link onclick=window.open('OrganismView.pl?org_desc=$_')>$_</span>
     }
     $count--;
     return \@table, $count;
-}
+  }
 
 sub get_feature_counts {
     my %opts  = @_;
@@ -714,7 +712,7 @@ sub gen_data {
 }
 
 sub read_file {
-    my $file = "$TEMPDIR/$BASEFILE.featlist";
+  my $file = "$TEMPDIR/$BASEFILE.featlist";
     my @featlist;
     unless ( -r $file ) {
         warn "unable to read file $file for feature ids\n";
@@ -820,7 +818,7 @@ sub send_to_list          #send to list
             parent_id   => $USER->id,
             parent_type => 5,           # FIXME hardcoded to "user"
             child_id    => $list->id,
-            child_type  => 1,           # FIXME hardcoded to "list"
+	 child_type  => 1,           # FIXME hardcoded to "list"
             role_id     => 2,           # FIXME hardcoded to "owner"
         }
     );
@@ -871,9 +869,9 @@ sub send_to_fasta {
     return $file;
 }
 
-sub generate_excel_file {
+sub send_to_xls {
     my %args      = @_;
-    my $accn_list = $args{accn};
+    my $accn_list = $args{accn_list};
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
     $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
@@ -891,12 +889,14 @@ sub generate_excel_file {
     $worksheet->write( 0, 4,  "Sequence Type" );
     $worksheet->write( 0, 5,  "Chr Count" );
     $worksheet->write( 0, 6,  "Length (bp)" );
-    $worksheet->write( 0, 7,  "Percent GC" );
-    $worksheet->write( 0, 8,  "Percent AT" );
-    $worksheet->write( 0, 9,  "Percent N|X" );
-    $worksheet->write( 0, 10, "OrganismView Link" );
+#    $worksheet->write( 0, 7,  "Percent GC" );
+    $worksheet->write( 0, 7,  "Fasta Link" );
+    $worksheet->write( 0, 8,  "GFF Link" );
+    $worksheet->write( 0, 9, "OrganismView Link" );
 
+    
     foreach my $dsgid ( split( /,/, $accn_list ) ) {
+
         my ($dsg) = $coge->resultset("Genome")->find($dsgid);
         next unless $dsg;
 
@@ -909,14 +909,15 @@ sub generate_excel_file {
         my $length     = $dsg->length;
         my $chr_count  = $dsg->chromosome_count;
         my $type       = $dsg->type->name;
-        my ( $gc, $at, $n ) = $dsg->percent_gc();
+        my ( $gc, $at, $n );# = $dsg->percent_gc();
         $at *= 100;
         $gc *= 100;
 
         #my ($wgc, $wat) = $dsg->wobble_content;
         #$wat*=100;
         #$wgc*=100;
-
+        my $seq_url = $P->{SERVER}."services/JBrowse/service.pl/sequence/$dsgid";    # EHL Added 8/29/14
+        my $GFF_url = $P->{SERVER}."bin/export/coge_gff.pl?dsgid=$dsgid;annos=1";    # EHL Added 8/29/14
         $worksheet->write( $i, 0, $name );
         $worksheet->write( $i, 1, $desc );
         $worksheet->write( $i, 2, $source );
@@ -924,11 +925,11 @@ sub generate_excel_file {
         $worksheet->write( $i, 4, $type );
         $worksheet->write( $i, 5, $chr_count );
         $worksheet->write( $i, 6, $length );
-        $worksheet->write( $i, 7, $gc . '%' );
-        $worksheet->write( $i, 8, $at . '%' );
-        $worksheet->write( $i, 9, $n . '%' );
-        $worksheet->write( $i, 10,
-            $P->{SERVER} . 'OrganismView.pl?dsgid=' . $dsgid );
+        $worksheet->write( $i, 7, $seq_url );
+        $worksheet->write( $i, 8, $GFF_url );
+#        $worksheet->write( $i, 9, $n . '%' );
+        $worksheet->write( $i, 9,
+            $P->{SERVER} . 'OrganismView.pl?gid=' . $dsgid );
 
         $i++;
     }
@@ -937,7 +938,7 @@ sub generate_excel_file {
     return $file;
 }
 
-sub generate_csv_file {
+sub send_to_csv {
     my %args      = @_;
     my $accn_list = $args{accn};
     $accn_list =~ s/^,//;

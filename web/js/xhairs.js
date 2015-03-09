@@ -9,7 +9,6 @@ function loadstuff(imageURL) {
 
     //console.log("DEBUG MESSAGE: onLoad worked!");
 
-    console.log(imageURL);
     //Create image object and load the synteny image
     syn_image = new Image();
     syn_image.src = imageURL;

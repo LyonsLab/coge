@@ -14,11 +14,11 @@ BEGIN {
 
     $VERSION = 0.0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw( create_notebook add_item_to_notebook %ITEM_TYPE );
+    @EXPORT = qw( create_notebook search_notebooks add_items_to_notebook %ITEM_TYPE );
 
     my $node_types = CoGeX::node_types();
 
-    %ITEM_TYPE = (    # content/toc types
+    %ITEM_TYPE = (    # content/toc types   # FIXME doesn't belong here, and also view constants and database constants
         all                 => 100,
         mine                => 101,
         shared              => 102,
@@ -34,22 +34,48 @@ BEGIN {
     );
 }
 
-sub create_notebook {
+sub search_notebooks {
     my %opts = @_;
     my $db = $opts{db};
+    my $search_term = $opts{search_term}; # id value, or keyword in name/description
+    my $user = $opts{user}; # optional database user object
+    return unless $db and $search_term;
+
+    # Search genomes
+    my $search_term2 = '%' . $search_term . '%';
+    my @notebooks = $db->resultset("List")->search(
+        \[
+            'list_id = ? OR name LIKE ? OR description LIKE ?',
+            [ 'list_id',     $search_term  ],
+            [ 'name',        $search_term2 ],
+            [ 'description', $search_term2 ]
+        ]
+    );
+
+    # Filter result by permissions
+    my @filtered = grep {
+        !$_->restricted || (defined $user && $user->has_access_to_list($_))
+    } @notebooks;
+
+    return \@notebooks;
+}
+
+sub create_notebook {
+    my %opts = @_;
+    my $db = $opts{db}; #FIXME use add_to_* functions to create new connectors and remove this param
     my $user = $opts{user};
     my $name    = $opts{name};
     my $desc    = $opts{desc};
     my $type_id = $opts{type_id};
     my $PAGE = $opts{PAGE};
-    $PAGE //= "";
+    $PAGE //= ""; #/
 
     return unless $name and $type_id and $db and $user;
     my $items = $opts{item_list}; # optional
     return if ( $user->user_name eq "public" );
 
     # Create the new list
-    my $list = $db->resultset('List')->create(
+    my $notebook = $db->resultset('List')->create(
         {
             name         => $name,
             description  => $desc,
@@ -59,14 +85,14 @@ sub create_notebook {
             restricted => 1
         }
     );
-    return unless $list;
+    return unless $notebook;
 
     # Set user as owner
     my $conn = $db->resultset('UserConnector')->create(
         {
             parent_id   => $user->id,
             parent_type => 5,           #FIXME hardcoded to "user"
-            child_id    => $list->id,
+            child_id    => $notebook->id,
             child_type  => 1,           #FIXME hardcoded to "list"
             role_id     => 2            #FIXME hardcoded to "owner"
         }
@@ -74,7 +100,7 @@ sub create_notebook {
     return unless $conn;
 
     # Add selected items to new notebook
-    add_items_to_notebook( user => $user, db => $db, nid => $list->id, item_list => $items)
+    add_items_to_notebook( user => $user, db => $db, notebook => $notebook, item_list => $items)
       if ($items);
 
     # Record in log
@@ -82,46 +108,39 @@ sub create_notebook {
         db          => $db,
         user_id     => $user->id,
         page        => "$PAGE",
-        description => 'create notebook id' . $list->id
+        description => 'create notebook id' . $notebook->id
     );
 
-    return $list;
+    return $notebook;
 }
 
 sub add_items_to_notebook {
     my %opts = @_;
-    my $db = $opts{db};
-    my $user = $opts{user};
-    my $nid  = $opts{nid};
-
-    return unless $nid and $db and $user;
-
-    my $items = $opts{item_list};
-    return unless $items;
-
-    # print STDERR "add_items_to_notebook $nid $item_list\n";
-
-    my $notebook = $db->resultset('List')->find($nid);
+    my $db       = $opts{db}; #FIXME use add_to_* functions to create new connectors and remove this param
+    my $user     = $opts{user};     # user object
+    my $notebook = $opts{notebook}; # notebook object
+    my $items    = $opts{item_list}; # array ref to array refs of item_id, item_type
+    return unless ($db and $notebook and $user and $items);
+    #print STDERR "add_items_to_notebook\n";
+    
+    # Check permissions
     return unless $user->has_access_to_list($notebook);
 
+    # Create connections for each item
     foreach (@$items) {
         my ( $item_id, $item_type ) = @$_;
-        say STDERR "ITEMS: $item_id $item_type";
-        next unless ( $item_id and $item_type );
-        next
-          unless ( $item_type eq $ITEM_TYPE{notebook}
-            or $item_type eq $ITEM_TYPE{genome}
-            or $item_type eq $ITEM_TYPE{experiment} );
+        return unless ( $item_id and $item_type );
+        return unless ( $item_type eq $ITEM_TYPE{genome} or $item_type eq $ITEM_TYPE{experiment} );
 
         #TODO check access permission on each item
 
-        # print STDERR "add_item_to_notebook $item_id $item_type\n";
+        #print STDERR "add_items_to_notebook $item_id $item_type\n";
 
         my $conn = $db->resultset('ListConnector')->find_or_create(
             {
-                parent_id  => $nid,
-                child_id   => $item_id,
-                child_type => $item_type
+                parent_id   => $notebook->id,
+                child_id    => $item_id,
+                child_type  => $item_type
             }
         );
         return unless $conn;

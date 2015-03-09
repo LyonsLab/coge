@@ -1,6 +1,6 @@
-<script src="./js/sswap.js"></script>
-<SCRIPT language="JavaScript">
-
+<script type="text/javascript" src="js/coge/utils.js"></script>
+<script type="text/javascript" src="./js/sswap.js"></script>
+<script type="text/javascript">
 $(document).ready(function(){
 	// Show indicator if not on main site
 	if (document.URL.indexOf('genomevolution.org') == -1) {
@@ -181,6 +181,31 @@ function post_to_phylogeny_fr () {
  document.body.removeChild(myForm);
 
 }
+
+function post_to_mafft() {
+    var MAFFT_URL = "http://mafft.cbrc.jp/alignment/server/cgi-bin/mafft5.cgi",
+        seq = $('#seq_text').val();
+
+    coge.utils.post(MAFFT_URL, {
+        senddata: seq.replace(/\*/g,""),
+        outorder: "aligned",
+        strategy: "auto",
+        "case": "casedefault",
+        scorematrix: "bl 62",
+        scorematrixnuc: "kimura 200",
+        op: "1.53",
+        ep: "0.0",
+        unalignlevel: "0",
+        direction: "inputdirection",
+        gapscore: "newscore",
+        "mafftE_n": "50",
+        "mafftE_e": "1e-10",
+        referenceseq: "top",
+        harrplot: "plotandalignment",
+        harrplotscorethreshold: "39"
+    });
+}
+
 </script>
 
 <TABLE>
@@ -202,8 +227,8 @@ function post_to_phylogeny_fr () {
    <TR>
    <td><span class='ui-button ui-corner-all'id="prot_button" onclick="update_seqs(1)">Protein Sequence</span>
    <td><span class='ui-button ui-corner-all'id="dna_button" onclick="update_seqs(0)">DNA Sequence</span>
-   <td><span class='ui-button ui-corner-all'id="prot_text_button" onclick="update_seqs(1,1)">Plain Text</span>
-   <td><span class='ui-button ui-corner-all'id="dna_text_button" onclick="update_seqs(0,1)"> Plain Text</span>
+   <td><span class='ui-button ui-corner-all'id="prot_text_button" onclick="update_seqs(1,1)">Download</span>
+   <td><span class='ui-button ui-corner-all'id="dna_text_button" onclick="update_seqs(0,1)"> Download</span>
    <td><span class='ui-button ui-corner-all'id="blast_button"onclick="window.open('CoGeBlast.pl?featid='+$('#fids').val())">CoGe Blast</span>
  </TR>
   </TABLE>
@@ -234,6 +259,9 @@ function post_to_phylogeny_fr () {
     <tr align=top>
     <td><span onClick="post_to_phylogeny_fr();" class='ui-button ui-corner-all'>Phylogeny.fr</span>
     <td>One click phylogeny at <a href="http://www.phylogeny.fr" target=_new>Phylogeny.fr</a><br>
+    <tr>
+    <td><span onclick="post_to_mafft();" class='ui-button ui-corner-all'>MATTF</span></td>
+    <td>Run <a href="http://mafft.cbrc.jp/alignment/server/index.html">MAFFT</a> on the sequence(s)</td>
     <tr id="genfam" class="hidden">
     <td><span onclick="post_to_genfam();" class='ui-button ui-corner-all'>Send to GenFam</span>
     </table>

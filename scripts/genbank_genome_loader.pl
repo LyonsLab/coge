@@ -18,12 +18,12 @@ use Getopt::Long;
 
 my ($HELP, $DEBUG, $GO, $ERASE, @files);
 GetOptions(
-	   'help|h'=>\$HELP,
-	   'debug|d|verbose|v'=>\$DEBUG,
-	   'file|f=s'=>\@files,
-	   'go|g'=>\$GO,
-	   'delete|erase|e'=>\$ERASE,
-	  );
+       'help|h'=>\$HELP,
+       'debug|d|verbose|v'=>\$DEBUG,
+       'file|f=s'=>\@files,
+       'go|g'=>\$GO,
+       'delete|erase|e'=>\$ERASE,
+      );
 $HELP = 1 unless @files;
 $GO = 1 if $ERASE; #set to 1 to actually make db calls.
 help() if $HELP;
@@ -52,65 +52,65 @@ foreach my $longfile ( @files ) {
 #    print Dumper $entry;
     unless ($organism && $data_source && $data_information)
       {
-	# first do the file-specific stuff
-	$organism = $genome->get_organism_obj->find_or_create(
-								 {
-								  name=>$entry->source(),
-#								  name=>$entry->organism(),
-								  description=>$entry->organism_long()
-								 })  if $GO;
-	if ( $DEBUG ) {
-	  print "organism_obj FoC: name - ", $entry->organism(), "\n";
-	  print "organism_obj FoC: description - ", $entry->organism_long(), "\n";
-	  print "-="x30, "\n";
-	  print "organism_obj returned: ", $organism->id(), "\n" if $organism;
-	}
+    # first do the file-specific stuff
+    $organism = $genome->get_organism_obj->find_or_create(
+                                 {
+                                  name=>$entry->source(),
+#                                 name=>$entry->organism(),
+                                  description=>$entry->organism_long()
+                                 })  if $GO;
+    if ( $DEBUG ) {
+      print "organism_obj FoC: name - ", $entry->organism(), "\n";
+      print "organism_obj FoC: description - ", $entry->organism_long(), "\n";
+      print "-="x30, "\n";
+      print "organism_obj returned: ", $organism->id(), "\n" if $organism;
+    }
 
-	$data_source = $genome->get_data_source_obj()->find_or_create(
-									 {
-									  name=>'NCBI',
-									  description=>"National Center for Biotechnology Information",
-									  link=>'www.ncbi.nih.gov'
-									 }) if $GO;
-	if ( $DEBUG ) {
-	  print "data_source_obj FoC: name - NCBI\n";
-	  print "data_source_obj FoC: description - National Center for Biotechnology Information\n";
-	  print "data_source_obj FoC: link - www.ncbi.nih.gov\n";
-	  print "-="x30, "\n";
-	  print "data_source_obj returned: ", $data_source->id(), "\n" if $data_source;
-	}
+    $data_source = $genome->get_data_source_obj()->find_or_create(
+                                     {
+                                      name=>'NCBI',
+                                      description=>"National Center for Biotechnology Information",
+                                      link=>'www.ncbi.nih.gov'
+                                     }) if $GO;
+    if ( $DEBUG ) {
+      print "data_source_obj FoC: name - NCBI\n";
+      print "data_source_obj FoC: description - National Center for Biotechnology Information\n";
+      print "data_source_obj FoC: link - www.ncbi.nih.gov\n";
+      print "-="x30, "\n";
+      print "data_source_obj returned: ", $data_source->id(), "\n" if $data_source;
+    }
 
-	my $data_information_desc = "LOCUS: "     . $entry->locus();
-	$data_information_desc   .= ", ACCESSION: " . $entry->accession();
-	$data_information_desc   .= ", VERSION: "   . $entry->version();
+    my $data_information_desc = "LOCUS: "     . $entry->locus();
+    $data_information_desc   .= ", ACCESSION: " . $entry->accession();
+    $data_information_desc   .= ", VERSION: "   . $entry->version();
 
-	$data_information = $genome->get_data_information_obj()->find_or_create(
-										{
-										 name                => $file,
-										 description                => $data_information_desc,
-										 link                => $longfile, # run this from the same level
-										 # as the file you're parsing,
-										 # the link will be correctly set
-										 organism_id         => $organism->id,
-										 data_source_id      => $data_source->id(),
-										 version=>$entry->version,
-										})  if $GO;
-	if ( $DEBUG ) {
-	  print "data_information_obj FoC: name - ", $file, "\n";
-	  print "data_information_obj FoC: description - ", $data_information_desc, "\n";
-	  print "data_information_obj FoC: link - ", $longfile, "\n";
-	  print "data_information_obj FoC: organism_id - ", $organism->id(), "\n" if $organism;
-	  print "data_information_obj FoC: data_source_id - ", $data_source->id(), "\n" if $data_source;
-	  print "-="x30, "\n";
-	  print "data_information_obj returned: ", $data_information->id(), "\n" if $data_information;
-	}
-	if ($ERASE)
-	  {
-	    print "Clearing database of entries associated with ".$data_information->name.". . .";
-	    $data_information->delete();
-	    print "finished!\n";
-	    exit;
-	  }
+    $data_information = $genome->get_data_information_obj()->find_or_create(
+                                        {
+                                         name                => $file,
+                                         description                => $data_information_desc,
+                                         link                => $longfile, # run this from the same level
+                                         # as the file you're parsing,
+                                         # the link will be correctly set
+                                         organism_id         => $organism->id,
+                                         data_source_id      => $data_source->id(),
+                                         version=>$entry->version,
+                                        })  if $GO;
+    if ( $DEBUG ) {
+      print "data_information_obj FoC: name - ", $file, "\n";
+      print "data_information_obj FoC: description - ", $data_information_desc, "\n";
+      print "data_information_obj FoC: link - ", $longfile, "\n";
+      print "data_information_obj FoC: organism_id - ", $organism->id(), "\n" if $organism;
+      print "data_information_obj FoC: data_source_id - ", $data_source->id(), "\n" if $data_source;
+      print "-="x30, "\n";
+      print "data_information_obj returned: ", $data_information->id(), "\n" if $data_information;
+    }
+    if ($ERASE)
+      {
+        print "Clearing database of entries associated with ".$data_information->name.". . .";
+        $data_information->delete();
+        print "finished!\n";
+        exit;
+      }
       }
     my $chromosome = "1";
 
@@ -145,19 +145,19 @@ foreach my $longfile ( @files ) {
 
         if ( exists $quals->{chromosome} ) {
           $chromosome = $quals->{chromosome};
-	  $chromosome =~ s/\s//g;
+      $chromosome =~ s/\s//g;
           $chromosome = arabic( $chromosome ) if isroman($chromosome); #if roman, convert to arabic
         }
         print "FEATURE: source - chromosome = $chromosome\n" if $DEBUG;
 
         #generate name based on organism name and chromosome
         my $feat_name = $genome->get_feature_name_obj->create(
-							      {
-							       name        => $organism->name,
-							       description => "Chromosome " . $chromosome,
-							       feature_id  => $db_feature->id
-							      }
-							     ) if $GO;
+                                  {
+                                   name        => $organism->name,
+                                   description => "Chromosome " . $chromosome,
+                                   feature_id  => $db_feature->id
+                                  }
+                                 ) if $GO;
         if ( $DEBUG ) {
           print "feature_name_obj C: name - ", $organism->name(), "\n" if $organism;
           print "feature_name_obj C: description - ", "Chromosome $chromosome", "\n";
@@ -168,11 +168,11 @@ foreach my $longfile ( @files ) {
 
         #generate name for accession
         $feat_name = $genome->get_feature_name_obj->create(
-							   {
-							    name       => $entry->accession,
-							    feature_id => $db_feature->id()
-							   }
-							  ) if $GO;
+                               {
+                                name       => $entry->accession,
+                                feature_id => $db_feature->id()
+                               }
+                              ) if $GO;
         if ( $DEBUG ) {
           print "feature_name_obj C: name - ", $entry->accession(), "\n";
           print "feature_name_obj C: feature_id - ", $db_feature->id(), "\n" if $db_feature;
@@ -182,11 +182,11 @@ foreach my $longfile ( @files ) {
 
         #generate name for version
         $feat_name = $genome->get_feature_name_obj->create(
-							   {
-							    name       => $entry->accession.".".$entry->version,
-							    feature_id => $db_feature->id
-							   }
-							  ) if $GO;
+                               {
+                                name       => $entry->accession.".".$entry->version,
+                                feature_id => $db_feature->id
+                               }
+                              ) if $GO;
         if ( $DEBUG ) {
           print "feature_name_obj C: name - ", $entry->accession.".".$entry->version(), "\n";
           print "feature_name_obj C: feature_id - ", $db_feature->id(), "\n" if $db_feature;
@@ -195,11 +195,11 @@ foreach my $longfile ( @files ) {
         }
         #generate name for GI
         $feat_name = $genome->get_feature_name_obj->create(
-							   {
-							    name       => "GI:".$entry->gi,
-							    feature_id => $db_feature->id
-							   }
-							  ) if $GO;
+                               {
+                                name       => "GI:".$entry->gi,
+                                feature_id => $db_feature->id
+                               }
+                              ) if $GO;
         if ( $DEBUG ) {
           print "feature_name_obj C: name - ", "GI:".$entry->gi(), "\n";
           print "feature_name_obj C: feature_id - ", $db_feature->id(), "\n" if $db_feature;
@@ -214,30 +214,30 @@ foreach my $longfile ( @files ) {
       $loc_string =~ s/join//;
       $loc_string =~ s/\(|\)//g;
       foreach my $loc (split /,/,$loc_string)
-	{
-	  $loc =~ s/<|>//g;
-	  my ($start, $stop) = split /\.\./, $loc;
-	  $stop = $start unless $stop;
-	  die "problem with start $start or stop $stop\n" unless $start =~ /^\d+$/ && $stop =~ /^\d+$/;
-	  my $location = $genome->get_location_obj->create(
-							   {
-							    feature_id => $db_feature->id,
-							    start      => $start,
-							    stop       => $stop,
-							    strand     => $feature->strand,
-							    chromosome => $chromosome
-							   }
-							  ) if $GO;
-	  if ( $DEBUG ) {
-	    print "location_obj C: feature_id - ", $db_feature->id(), "\n" if $db_feature;
-	    print "location_obj C: start - ", $start, "\n";
-	    print "location_obj C: stop - ", $stop, "\n";
-	    print "location_obj C: strand - ", $feature->strand(), "\n";
-	    print "location_obj C: chromosome - ", $chromosome, "\n";
-	    print "-="x30, "\n";
-	    print "location_obj returned: ", $location->id(), "\n" if $location;
-	  }
-	}
+    {
+      $loc =~ s/<|>//g;
+      my ($start, $stop) = split /\.\./, $loc;
+      $stop = $start unless $stop;
+      die "problem with start $start or stop $stop\n" unless $start =~ /^\d+$/ && $stop =~ /^\d+$/;
+      my $location = $genome->get_location_obj->create(
+                               {
+                                feature_id => $db_feature->id,
+                                start      => $start,
+                                stop       => $stop,
+                                strand     => $feature->strand,
+                                chromosome => $chromosome
+                               }
+                              ) if $GO;
+      if ( $DEBUG ) {
+        print "location_obj C: feature_id - ", $db_feature->id(), "\n" if $db_feature;
+        print "location_obj C: start - ", $start, "\n";
+        print "location_obj C: stop - ", $stop, "\n";
+        print "location_obj C: strand - ", $feature->strand(), "\n";
+        print "location_obj C: chromosome - ", $chromosome, "\n";
+        print "-="x30, "\n";
+        print "location_obj returned: ", $location->id(), "\n" if $location;
+      }
+    }
       # now work through the qualifiers for this feature
       # start by getting the hashref of qualifiers
       my $annot = $feature->qualifiers();
@@ -317,13 +317,13 @@ foreach my $longfile ( @files ) {
               description => "translation",
             }
           ) if $GO;
-	  if ( $DEBUG )
-	    {
-	      print "seq_type_obj C: name - protein\n";
-	      print "seq_type_obj C: description - translation\n";
-	      print "-="x30, "\n";
-	      print "seq_type_obj returned: ", $seq_type->id(), "\n" if $seq_type;
-	    }
+      if ( $DEBUG )
+        {
+          print "seq_type_obj C: name - protein\n";
+          print "seq_type_obj C: description - translation\n";
+          print "-="x30, "\n";
+          print "seq_type_obj returned: ", $seq_type->id(), "\n" if $seq_type;
+        }
           my $sequence = $genome->get_sequence_obj->create(
             {
               sequence_type_id => $seq_type->id(),
@@ -331,14 +331,14 @@ foreach my $longfile ( @files ) {
               feature_id       => $db_feature->id(),
             }
           ) if $GO;
-	  if ( $DEBUG )
-	    {
-	      print "seq_obj C: data = ".$annot->{$anno}."\n";
-	      print "seq_obj C: sequence_type_id ", $seq_type->id(), "\n" if $seq_type;
-	      print "seq_obj C: feature_id - ", $db_feature->id(), "\n" if $db_feature;
-	      print "-="x30, "\n";
-	      print "seq_obj returned: ", $sequence->id(), "\n" if $sequence;
-	    }
+      if ( $DEBUG )
+        {
+          print "seq_obj C: data = ".$annot->{$anno}."\n";
+          print "seq_obj C: sequence_type_id ", $seq_type->id(), "\n" if $seq_type;
+          print "seq_obj C: feature_id - ", $db_feature->id(), "\n" if $db_feature;
+          print "-="x30, "\n";
+          print "seq_obj returned: ", $sequence->id(), "\n" if $sequence;
+        }
         }
         elsif ( $anno eq "note")
         {
@@ -350,101 +350,101 @@ foreach my $longfile ( @files ) {
           {
             #                  $1        $2            $3
             if ( $go_raw =~ /go_/ ) {
-	      while ($go_raw =~ /(go_.*?):\s+(.*?)\[goid G?O?:?(.*?)\]/g) {
-		#example:
-		#go_function: nucleic acid binding [goid 0003676]
-		my $anno_type_group =
-		  $genome->get_annotation_type_group_obj->find_or_create( { name => $1 } ) if $GO;
-		if ( $DEBUG )
-		  {
-		    print "annotation_type_group_obj FoC: name - ", $1, "\n";
-		    print "-="x30, "\n";
-		    print "annotation_type_group_obj returned: ", $anno_type_group->id(), "\n" if $anno_type_group;
-		  }
+          while ($go_raw =~ /(go_.*?):\s+(.*?)\[goid G?O?:?(.*?)\]/g) {
+        #example:
+        #go_function: nucleic acid binding [goid 0003676]
+        my $anno_type_group =
+          $genome->get_annotation_type_group_obj->find_or_create( { name => $1 } ) if $GO;
+        if ( $DEBUG )
+          {
+            print "annotation_type_group_obj FoC: name - ", $1, "\n";
+            print "-="x30, "\n";
+            print "annotation_type_group_obj returned: ", $anno_type_group->id(), "\n" if $anno_type_group;
+          }
 
-		# $1 should be "go_function"
-		my $anno_type = $genome->get_annotation_type_obj->find_or_create(
-										 {
-										  name => $3,    #this should be "0003676"
-										  annotation_type_group_id => $anno_type_group->id(),
-										 }
-										) if $GO;
-		if ( $DEBUG ) {
-		  print "annotation_type_obj FoC: name - ", $3, "\n";
-		  print "annotation_type_obj FoC: annotation_type_group_id - ",
-		    $anno_type_group->id(), "\n" if $anno_type_group;
-		  print "-="x30, "\n";
-		  print "annotation_type_obj returned: ", $anno_type->id(), "\n" if $anno_type;
-		}
+        # $1 should be "go_function"
+        my $anno_type = $genome->get_annotation_type_obj->find_or_create(
+                                         {
+                                          name => $3,    #this should be "0003676"
+                                          annotation_type_group_id => $anno_type_group->id(),
+                                         }
+                                        ) if $GO;
+        if ( $DEBUG ) {
+          print "annotation_type_obj FoC: name - ", $3, "\n";
+          print "annotation_type_obj FoC: annotation_type_group_id - ",
+            $anno_type_group->id(), "\n" if $anno_type_group;
+          print "-="x30, "\n";
+          print "annotation_type_obj returned: ", $anno_type->id(), "\n" if $anno_type;
+        }
 
-		my $sub_anno = $genome->get_annotation_obj->create(
-								   {
-								    annotation => $2,    #this should be "nucleic acid binding"
-								    feature_id         => $db_feature->id,
-								    annotation_type_id => $anno_type->id
-								   }
-								  )  if $GO;
-		if ( $DEBUG ) {
-		  print "annotation_obj C: annotation - ", $2, "\n";
-		  print "annotation_obj C: feature_id - ", $db_feature->id(), "\n" if $db_feature;
-		  print "-="x30, "\n";
-		  print "annotation_obj returned: ", $sub_anno->id(), "\n" if $sub_anno;
-		}
-	      }
+        my $sub_anno = $genome->get_annotation_obj->create(
+                                   {
+                                    annotation => $2,    #this should be "nucleic acid binding"
+                                    feature_id         => $db_feature->id,
+                                    annotation_type_id => $anno_type->id
+                                   }
+                                  )  if $GO;
+        if ( $DEBUG ) {
+          print "annotation_obj C: annotation - ", $2, "\n";
+          print "annotation_obj C: feature_id - ", $db_feature->id(), "\n" if $db_feature;
+          print "-="x30, "\n";
+          print "annotation_obj returned: ", $sub_anno->id(), "\n" if $sub_anno;
+        }
+          }
             } else {
               $leftover .= " " . $go_raw if $go_raw;
             }
             # now just add the note remainder
-	    $leftover =~ s/^\s+//;
-	    $leftover =~ s/\s+$//;
-	    if ($leftover)
-	      {
-		my $anno_type =
+        $leftover =~ s/^\s+//;
+        $leftover =~ s/\s+$//;
+        if ($leftover)
+          {
+        my $anno_type =
                   $genome->get_annotation_type_obj->find_or_create( { name => $anno } ) if $GO;
-		if ( $DEBUG ) {
-		  print "annotation_type_obj FoC: name - ", $anno, "\n";
-		  print "-="x30, "\n";
-		  print "annotation_type_obj returned: ", $anno_type->id(), "\n" if $anno_type;
-		}
+        if ( $DEBUG ) {
+          print "annotation_type_obj FoC: name - ", $anno, "\n";
+          print "-="x30, "\n";
+          print "annotation_type_obj returned: ", $anno_type->id(), "\n" if $anno_type;
+        }
 
-		my $sub_anno = $genome->get_annotation_obj->find_or_create(
-									   {
-									    annotation         => $leftover,
-									    feature_id         => $db_feature->id(),
-									    annotation_type_id => $anno_type->id(),
-									   }
-									  ) if $GO;
-		if ( $DEBUG ) {
-		  print "annotation_obj C: annotation - ", $leftover, "\n";
-		  print "annotation_obj C: feature_id - ", $db_feature->id(), "\n" if $db_feature;
-		  print "-="x30, "\n";
-		  print "annotation_obj returned: ", $sub_anno->id(), "\n" if $sub_anno;
-		}
-	      }
+        my $sub_anno = $genome->get_annotation_obj->find_or_create(
+                                       {
+                                        annotation         => $leftover,
+                                        feature_id         => $db_feature->id(),
+                                        annotation_type_id => $anno_type->id(),
+                                       }
+                                      ) if $GO;
+        if ( $DEBUG ) {
+          print "annotation_obj C: annotation - ", $leftover, "\n";
+          print "annotation_obj C: feature_id - ", $db_feature->id(), "\n" if $db_feature;
+          print "-="x30, "\n";
+          print "annotation_obj returned: ", $sub_anno->id(), "\n" if $sub_anno;
+        }
+          }
           }
         }
         else           ##everything else
         {
           my $anno_type = $genome->get_annotation_type_obj->find_or_create( { name => $anno, } )  if $GO;
-	  if ( $DEBUG ) {
-	    print "annotation_type_obj FoC: name - ", $anno, "\n";
-	    print "-="x30, "\n";
-	    print "annotation_type_obj returned: ", $anno_type->id(), "\n" if $anno_type;
-	  }
-	  my $sub_anno = $genome->get_annotation_obj->create(
-							     {
-							      annotation         => $annot->{$anno},
-							      feature_id         => $db_feature->id(),
-							      annotation_type_id => $anno_type->id(),
-							     }
-							    ) if $GO;
-	  if ( $DEBUG ) {
-	    print "annotation_obj C: annotation - ", $annot->{$anno}, "\n";
-	    print "annotation_obj C: feature_id - ", $db_feature->id(), "\n" if $db_feature;
-	    print "-="x30, "\n";
-	    print "annotation_obj returned: ", $sub_anno->id(), "\n" if $sub_anno;
-	  }
-	}
+      if ( $DEBUG ) {
+        print "annotation_type_obj FoC: name - ", $anno, "\n";
+        print "-="x30, "\n";
+        print "annotation_type_obj returned: ", $anno_type->id(), "\n" if $anno_type;
+      }
+      my $sub_anno = $genome->get_annotation_obj->create(
+                                 {
+                                  annotation         => $annot->{$anno},
+                                  feature_id         => $db_feature->id(),
+                                  annotation_type_id => $anno_type->id(),
+                                 }
+                                ) if $GO;
+      if ( $DEBUG ) {
+        print "annotation_obj C: annotation - ", $annot->{$anno}, "\n";
+        print "annotation_obj C: feature_id - ", $db_feature->id(), "\n" if $db_feature;
+        print "-="x30, "\n";
+        print "annotation_obj returned: ", $sub_anno->id(), "\n" if $sub_anno;
+      }
+    }
       }
       print "\n" if $DEBUG;
     } #end "feature" while
@@ -470,16 +470,16 @@ sub load_genomic_sequence
     my $gso = $genome->get_genomic_sequence_obj;
     while ($i < $seqlen)
       {
-	my $str = substr($seq,$i,$len);
-	my $start = $i+1;
-	my $stop = $i + length $str;
-	$gso->create({start=>$start,
+    my $str = substr($seq,$i,$len);
+    my $start = $i+1;
+    my $stop = $i + length $str;
+    $gso->create({start=>$start,
                       stop=>$stop,
                       chromosome=>$chr,
                       sequence_data=>$str,
                       data_information_id=>$di->id,
                   }) if $GO;
-	$i += $len;
+    $i += $len;
       }
   }
 

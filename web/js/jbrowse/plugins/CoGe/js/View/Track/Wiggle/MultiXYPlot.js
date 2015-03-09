@@ -147,7 +147,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         if (config.showBackground) {
             dojo.forEach( features, function(f,i) {
                 var fRect = featureRects[i];
-                var score = ( f.get('score') > 0 ? 1 : -1 );
+                var score = ( f.get('score') >= 0 ? 1 : -1 );
                 fRect.t = toY(score);
                 context.fillStyle = 'lightgray';
                 if( fRect.t <= canvasHeight ) { // if the rectangle is visible at all

@@ -1,0 +1,37 @@
+<table cellpadding="0" class="ui-widget-content ui-corner-all">
+    <tbody>
+    <tmpl_loop name="fields">
+        <tr>
+            <td class="title5">
+                <tmpl_var name="title"/>:
+            </td>
+            <td class="data5">
+                <tmpl_var name="value"/>
+            </td>
+        </tr>
+    </tmpl_loop>
+    </tbody>
+</table>
+<div class="panel coge-buttonset">
+    <tmpl_if name="editable">
+            <span class="ui-button ui-corner-all" onclick="edit_experiment_info();">
+                Edit Info
+            </span>
+            <span class="ui-button ui-corner-all" onclick="$('#experiment_tag_edit_box').dialog('open');">
+                Add Tag
+            </span>
+        <tmpl_if name="restricted">
+            <span class="ui-button ui-corner-all" onclick="make_experiment_public();">
+                Make Public
+            </span>
+        <tmpl_else>
+            <span class="ui-button ui-corner-all" onclick="make_experiment_private();">
+                Make Private
+            </span>
+        </tmpl_if>
+    </tmpl_if>
+
+    <a style="color: inherit;" class="ui-button ui-corner-all" href="<tmpl_var name=genome_view_url>">
+        View
+    </a>
+</div>

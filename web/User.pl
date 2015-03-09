@@ -4,6 +4,7 @@ use v5.10;
 use strict;
 
 use CGI;
+use Data::Validate::URI qw(is_uri);
 use JSON::XS;
 use HTML::Template;
 use Sort::Versions;
@@ -16,24 +17,26 @@ use File::stat;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Jex;
+use CoGe::Core::List qw(listcmp);
 use CoGe::Core::Experiment qw(experimentcmp);
+use CoGe::Core::Genome qw(genomecmp);
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
-use CoGe::Accessory::Utils qw(format_time_diff);
+use CoGe::Accessory::Utils qw(format_time_diff js_escape html_escape);
 use Benchmark;
 no warnings 'redefine';
 
 use vars qw(
-    $P $PAGE_TITLE $USER $LINK $coge %FUNCTION $FORM %ITEM_TYPE 
-    $MAX_SEARCH_RESULTS $JEX
+    $P $PAGE_TITLE $USER $LINK $coge %FUNCTION $FORM %ITEM_TYPE
+    $MAX_SEARCH_RESULTS $JEX $node_types
 );
 
 $PAGE_TITLE = 'User';
 
 $FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
-	page_title => $PAGE_TITLE,
+    page_title => $PAGE_TITLE,
     cgi => $FORM
 );
 
@@ -45,7 +48,7 @@ $JEX = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT}
 
 $MAX_SEARCH_RESULTS = 100;
 
-my $node_types = CoGeX::node_types();
+$node_types = CoGeX::node_types();
 
 # Content/toc types
 # note: adding new values is okay, but don't change existing values or 
@@ -78,15 +81,15 @@ my $node_types = CoGeX::node_types();
     search_share                    => \&search_share,
     add_items_to_user_or_group      => \&add_items_to_user_or_group,
     remove_items_from_user_or_group => \&remove_items_from_user_or_group,
-	add_users_to_group				=> \&add_users_to_group,
-	remove_user_from_group			=> \&remove_user_from_group,
+    add_users_to_group			=> \&add_users_to_group,
+    remove_user_from_group		=> \&remove_user_from_group,
     get_group_dialog                => \&get_group_dialog,
-    change_group_role				=> \&change_group_role,
+    change_group_role			=> \&change_group_role,
     send_items_to                   => \&send_items_to,
     create_new_group                => \&create_new_group,
     create_new_notebook             => \&create_new_notebook,
     toggle_star                     => \&toggle_star,
-    cancel_job						=> \&cancel_job,
+    cancel_job				=> \&cancel_job,
     comment_job                     => \&comment_job
 );
 
@@ -95,7 +98,8 @@ CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 sub gen_html {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( HELP => "/wiki/index.php?title=$PAGE_TITLE" );
+    #$template->param( HELP => "/wiki/index.php?title=$PAGE_TITLE" );
+    $template->param( HELP       => $P->{SERVER} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
@@ -103,11 +107,13 @@ sub gen_html {
 
     #$template->param( TITLE      => 'User Profile' );
     $template->param( PAGE_TITLE => 'User Profile',
+				  TITLE      => "My Profile",
     				  PAGE_LINK  => $LINK,
-    				  LOGO_PNG   => "MyProfile-logo.png" );
+    				  LOGO_PNG   => "CoGe.svg" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => gen_body() );
     $template->param( ADJUST_BOX => 1 );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
 
     return $template->output;
 }
@@ -277,7 +283,7 @@ sub get_item_info {
         }
         $html .= '</div>';
         
-        my $info = 'Genome <i>' . $genome->info . '</i>';
+        my $info = 'Genome <i>' . js_escape($genome->info) . '</i>';
         my $edit_link = qq{open_item('$item_type','$info','GenomeInfo.pl?gid=$item_id');};
         my $view_link = qq{open_item('$item_type','$info','GenomeView.pl?gid=$item_id&tracks=sequence%2Cfeatures');};
         my $load_link = qq{open_item('$item_type','$info','LoadAnnotation.pl?gid=$item_id');};
@@ -321,7 +327,7 @@ sub get_item_info {
         $html .= '</div>';
         
         my $gid = $experiment->genome_id;
-        my $info = 'Experiment <i>' . $experiment->info . '</i>';
+        my $info = 'Experiment <i>' . js_escape($experiment->info) . '</i>';
         my $edit_link = qq{open_item('$item_type','$info','ExperimentView.pl?eid=$item_id');};
         my $view_link = qq{open_item('$item_type','$info','GenomeView.pl?gid=$gid&tracks=experiment$item_id');};
         
@@ -606,6 +612,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
 
     my ( %user_rows, %group_rows, %notebook_rows );
     foreach my $conn ( values %userconn ) {
+	next unless $conn->role; #EL added 10/21/14 so solve a problem for a user where the share dialog wouldn't appear for his genomes, and an fatal error was being thrown due to role->name with role being undefined.  Genomes with problems were IDs: 24576, 24721, 24518, 24515, 24564, 24566, 24568, 24562, 24571 
         if ( $conn->is_parent_user ) {
             my $user = $conn->parent;
             $user_rows{ $user->id } = {
@@ -642,6 +649,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
 
         foreach my $conn ( $notebook->user_connectors ) {
             my $user = $conn->parent;
+            next unless $user;
             $users{ $user->id } = {
                 NOTEBOOK_USER_FULL_NAME => $user->display_name,
                 NOTEBOOK_USER_NAME      => $user->name
@@ -784,8 +792,8 @@ sub search_share {
 # 		"user_name LIKE '$search_term' OR first_name LIKE '$search_term' OR last_name LIKE '$search_term'"))
     foreach ( $coge->resultset('User')->all ) {
         next
-          unless ( $_->user_name =~ /$search_term/i
-            || $_->display_name =~ /$search_term/i );
+          unless ( escape($_->user_name) =~ /$search_term/i
+            || escape($_->display_name) =~ /$search_term/i );
         my $label = $_->display_name . ' (' . $_->user_name . ')';
         my $value = $_->id . ':' . $ITEM_TYPE{user};
         push @results, { 'label' => $label, 'value' => $value };
@@ -793,7 +801,7 @@ sub search_share {
 
     # Search for matching groups
     foreach ( $coge->resultset('UserGroup')->all ) {
-        next unless ( $_->name =~ /$search_term/i );
+        next unless ( escape($_->name) =~ /$search_term/i );
         my $label = $_->name . ' (' . $_->role->name . ' group)';
         my $value = $_->id . ':' . $ITEM_TYPE{group};
         push @results, { 'label' => $label, 'value' => $value };
@@ -1279,7 +1287,7 @@ sub get_contents {
 	 		    CONTENTS_ITEM_ID => $group->id,
 	 			CONTENTS_ITEM_TYPE => $ITEM_TYPE{group},
 	 			CONTENTS_ITEM_DELETED => $group->deleted,
-	 			CONTENTS_ITEM_INFO => $group->info,
+	 			CONTENTS_ITEM_INFO => html_escape( $group->info ),
 	 			CONTENTS_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
 	 			CONTENTS_ITEM_LINK =>  'GroupView.pl?ugid=' . $group->id,
 	 			CONTENTS_ITEM_SELECTABLE => 1
@@ -1295,7 +1303,7 @@ sub get_contents {
                 CONTENTS_ITEM_TYPE => $ITEM_TYPE{notebook},
                 CONTENTS_ITEM_DELETED => $list->deleted,
                 CONTENTS_ITEM_SHARED => !$roles->{2}{ $list->id }, #FIXME hardcoded role id
-                CONTENTS_ITEM_INFO => $list->info,
+                CONTENTS_ITEM_INFO => html_escape( $list->info ),
                 CONTENTS_ITEM_ICON => '<img src="picts/notebook-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
                 CONTENTS_ITEM_LINK => 'NotebookView.pl?nid=' . $list->id,
                 CONTENTS_ITEM_SELECTABLE => 1
@@ -1312,7 +1320,7 @@ sub get_contents {
                 CONTENTS_ITEM_TYPE    => $ITEM_TYPE{genome},
                 CONTENTS_ITEM_DELETED => $genome->deleted,
                 CONTENTS_ITEM_SHARED  => !$roles->{2}{ $genome->id }, #FIXME hardcoded role id
-                CONTENTS_ITEM_INFO => $genome->info,
+                CONTENTS_ITEM_INFO => html_escape($genome->info),
                 CONTENTS_ITEM_ICON => '<img src="picts/dna-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
                 CONTENTS_ITEM_LINK => 'GenomeInfo.pl?gid=' . $genome->id,
                 CONTENTS_ITEM_SELECTABLE => 1
@@ -1329,7 +1337,7 @@ sub get_contents {
                 CONTENTS_ITEM_TYPE    => $ITEM_TYPE{experiment},
                 CONTENTS_ITEM_DELETED => $experiment->deleted,
                 CONTENTS_ITEM_SHARED => !$roles->{2}{ $experiment->id },    #FIXME hardcoded role id
-                CONTENTS_ITEM_INFO => $experiment->info( source => $sourceIdToName{ $experiment->data_source_id } ),
+                CONTENTS_ITEM_INFO => html_escape( $experiment->info( source => $sourceIdToName{ $experiment->data_source_id } ) ),
                 CONTENTS_ITEM_ICON => '<img src="picts/testtube-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
                 CONTENTS_ITEM_LINK => 'ExperimentView.pl?eid=' . $experiment->id,
                 CONTENTS_ITEM_SELECTABLE => 1
@@ -1359,11 +1367,15 @@ sub get_contents {
             my $id = $_->{id};
             my $isRunning = $_->{status} =~ /running/i;
             my $isCancelled = $_->{status} =~ /cancelled/i;
-            my $star_icon = '<img name="'.$id.'" ' . ( $_->{is_important} ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"' ) . ' ' . 'width="15" height="15" class="link" style="vertical-align:middle;" ' . 'onclick="toggle_star(this);"' . ' title="Favorite this analysis"/>';
-            #<span id="cancel_button" onClick="cancel_jobs();" class="invisible item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
-            my $cancel_icon = '<img name="'.$id.'" title="Cancel this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/cancel.png" width="15" onclick="cancel_job_dialog('.($_->{workflow_id} ? $_->{workflow_id} : '').');"/>';
-            my $restart_icon = qq{<img name="$id" title="Restart this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/refresh-icon.png" width="15" onclick="restart_job('}.($_->{link} ? $_->{link} : '').qq{');"/>};
-            my $comment_icon = qq{<img name="$id" title="Add comment" class="link" height="15" style="vertical-align:middle;" src="picts/comment-icon.png" width="15" onclick="comment_dialog($id, '$_->{comment}');" />};
+            my $star_icon    = qq{<img title="Favorite this analysis" }.( $_->{is_important} ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"' ).qq{ width="15" height="15" class="link" style="vertical-align:middle;" onclick="toggle_star(this);" />};
+            my $cancel_icon  = qq{<img title="Cancel this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/cancel.png" width="15" onclick="cancel_job_dialog('}.($_->{workflow_id} ? $_->{workflow_id} : '').qq{');"/>};
+
+            $_->{link} = undef unless is_uri($_->{link});
+
+            my $restart_icon = qq{<img title="Restart this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/refresh-icon.png" width="15" onclick="restart_job('}.($_->{link} ? $_->{link} : '').qq{');"/>};
+
+
+            my $comment_icon = qq{<img title="Add comment" class="link" height="15" style="vertical-align:middle;" src="picts/comment-icon.png" width="15" onclick="comment_dialog($id, '$_->{comment}');" />};
             my $info_html = format_job_status($_->{status}).' '.$_->{start_time}.' | '. $_->{elapsed}.' | '.$_->{page}.' | '.$_->{description} . ($_->{comment} ? ' | ' . $_->{comment} : '') . ($_->{workflow_id} ? ' | id' . $_->{workflow_id} : '');
             push @rows,
               {
@@ -1372,15 +1384,17 @@ sub get_contents {
                 CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_analyses},
                 CONTENTS_ITEM_INFO => $info_html,
                 CONTENTS_ITEM_LINK => $_->{link},
-                CONTENTS_ITEM_ICON => $star_icon . ' ' . $comment_icon . ($isRunning ? ' ' . $cancel_icon : '') . ($isCancelled ? ' ' . $restart_icon : ''),
+                CONTENTS_ITEM_ICON => $star_icon . ' ' . $comment_icon . ' ' . ($isCancelled ? $restart_icon : '') . ' ' . ($isRunning ? $cancel_icon : ''),
               };
         }
     }
     
     #print STDERR "get_contents: time6=" . ((time - $start_time)*1000) . "\n";
     if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity_loads} ) {
-        my $loads = filter_jobs($jobs, ['loadgenome', 'loadexperiment', 'loadannotation', 'loadbatch']);
+        my $loads = filter_jobs($jobs, ['loadgenome', 'loadexperiment', 'loadannotation', 'loadbatch', 'genomeinfo']);
         foreach (@$loads) {
+            $_->{link} = undef unless is_uri($_->{link});
+
             my $isRunning = $_->{status} =~ /running/i;
             my $info_html = format_job_status($_->{status}).' '.$_->{start_time}.' | '. $_->{elapsed}.' | '.$_->{page}.' | '.$_->{description} . ($_->{workflow_id} ? ' | id' . $_->{workflow_id} : '');
             push @rows,
@@ -1829,21 +1843,6 @@ sub toggle_star {
     $entry->update();
 
     return not $status;
-}
-
-# FIXME these comparison routines are duplicated elsewhere
-sub genomecmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    $a->organism->name cmp $b->organism->name
-      || versioncmp( $b->version, $a->version )
-      || $a->type->id <=> $b->type->id
-      || $a->name cmp $b->name
-      || $b->id cmp $a->id;
-}
-
-sub listcmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    $a->name cmp $b->name;
 }
 
 sub groupcmp {

@@ -132,6 +132,7 @@ sub gen_html {
     $template->param( LOGO_PNG => "FeatListView-logo.png" );
     $template->param( BODY     => $body );
     $template->param( POSTBOX  => gen_foot() );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
     my $html;
     $html .= $template->output;
     return $html;

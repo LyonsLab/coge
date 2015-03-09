@@ -4,6 +4,7 @@ use strict;
 use CGI;
 use CoGeX;
 use CoGe::Accessory::Web;
+use CoGe::Core::Genome qw(genomecmp);
 use HTML::Template;
 use Sort::Versions;
 no warnings 'redefine';
@@ -103,20 +104,23 @@ sub generate_html {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( PAGE_TITLE => $PAGE_TITLE,
+				  TITLE      => 'Genomes',
     				  PAGE_LINK  => $LINK,
-    				  HELP       => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl' );
+    				  #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl' );
+				  HELP       => $P->{SERVER} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= ' ' . $USER->last_name
       if ( $USER->first_name && $USER->last_name );
     $template->param( USER     => $name );
-    $template->param( LOGO_PNG => $PAGE_TITLE . "-logo.png" );
+    $template->param( LOGO_PNG => "CoGe.svg" );
     $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
     my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
     $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
 
     $template->param( BODY       => generate_body() );
     $template->param( ADJUST_BOX => 1 );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
 
     return $template->output;
 }
@@ -129,14 +133,4 @@ sub generate_body {
     $template->param( GENOME_TABLE => get_genomes_for_user() );
 
     return $template->output;
-}
-
-# FIXME this comparison routine is duplicated elsewhere
-sub genomecmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    $a->organism->name cmp $b->organism->name
-      || versioncmp( $b->version, $a->version )
-      || $a->type->id <=> $b->type->id
-      || $a->name cmp $b->name
-      || $b->id cmp $a->id;
 }

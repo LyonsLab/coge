@@ -1,536 +1,177 @@
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
-<script language="javascript">
+<script type="text/javascript" src="js/jquery.tablesorter.2.0.3.js"></script>
+<script type="text/javascript" src="js/pages/organism-view.js"></script>
+<script type="text/javascript">
 
 $(function() {
-	<TMPL_IF NAME='SHOW_RESULTS'>
-		timing('org_search');
-		$("._orgviewresult").fadeIn();
-	</TMPL_IF>
-
-	// Auto-show results
-    if ($('#org_search').val()) {
-        timing('org_search');
-    }
-
-    $(".dialog").dialog({ autoOpen: false} );
-
-    // Initialize jQuery AJAX
-    $.ajaxSetup({
-        type: "GET",
-        url: "<TMPL_VAR NAME='PAGE_NAME'>",
-        dataType: "html",
-        cache: false,
+    init({
+        oid:  "<TMPL_VAR NAME='ORGANISM_ID'>",
+        gid:  "<TMPL_VAR NAME='GENOME_ID'>",
+        dsid: "<TMPL_VAR NAME='DATASET_ID'>",
+        chr:  "<TMPL_VAR NAME='CHR_ID'>",
+        init_msg: "<TMPL_VAR NAME='NO_RESULTS'>"
     });
+    
+    // a terrible kludge
+    if ( $('#chr_info').is(':empty') )
+    	$('#chr_info').parent().hide();
 });
 
-$.fn.sortSelect = function(){
-  this.each(
-          function()
-          {
-                if(this.nodeName.toLowerCase() != "select"){
-                  return;}
-                var opts = this.options;
-                var sortArray = [];
-                for(var i=0;i<opts.length;i++)
-                {
-                        sortArray[i] = {
-                                        v: opts[i].value,
-                                        t: opts[i].text,
-                                        d: opts[i].id,
-                                        }
-                }
-                sortArray.sort(
-                                function(obj1,obj2)
-                                {
-                                        obj1t = obj1.t.toLowerCase(),
-                                        obj2t = obj2.t.toLowerCase();
-                                        if(obj1t == obj2t){
-                                          return 0;}
-                                        return obj1t < obj2t ? -1 : 1;
-                                }
-                );
-                for(var i=0;i<opts.length;i++)
-                {
-                        opts[i].id = sortArray[i].d;
-                        opts[i].text = sortArray[i].t;
-                        opts[i].value = sortArray[i].v;
-                }
-          }
-        );
-        return this;
-};
-
-function ajax_wait (val){
-if (ajax.length)
-   {
-    setTimeout("ajax_wait("+'"'+val+'"'+")",100);
-    return;
-   }
-  eval(val);
-}
-$.fn.getLength = function(val){
-  var opt_length;
-  var blastable;
-  this.each(
-        function()
-        {
-                var opts = this.options;
-                opt_length = opts.length;
-                if (opt_length == 0) {return opt_length;}
-                blastable = opts[0].id;
-                if (val){
-                  for(var i=1;i<opts.length;i++)
-                  {
-                        blastable += ","+opts[i].id;
-                        //need to chopoff last comma
-                  }
-                }
-        }
-  );
-  if(val) return blastable;
-  else return opt_length;
-};
-
-function send_to_GenoList(){
-  var check = $('#genomelist_choice').getLength();
-  if(($('#blank').val())||(check==0)){
-    alert('You have not selected any Genomes to examine. You must select at least one.');
-    return;
-  }
-  var genolist = $('#genomelist_choice').getLength(1);
-  parse_for_GenoList(['args__'+genolist],[send_to_url]);
-}
-
-function add_all_genomes(){
-	$('#dsg_id option').each(function(){
-		add_to_genomelist_nowarn($(this).text(),$(this).attr("value"));
-	});
-	$('#geno_list').dialog('option', 'width', 500).dialog('open');
-}
-
-function remove_selected_genomes(){
-  $('#genomelist_choice option:selected').each(function() {
-          //$('#'+$(this).val()).remove();
-	  $(this).remove();
-  });
-  counting();
-}
-
-function send_to_url(url){
-  window.open(url);
-}
-
-function add_to_genomelist_nowarn(genome_name,gstid)
-{
-	var check = $('#'+gstid).val();
-	  if (check){
-
-	   return;
-	  }else{
-	  var html = '<option id='+gstid+' value='+gstid+ ' >'+genome_name+'</option>';
-	  //alert(html);
-	  $('#blank').remove();
-	  $('#genomelist_choice').append(html);
-	  counting();
-	}
-}
-
-function add_to_genomelist(genome_name,gstid) {
-	var check = $('#'+gstid).val();
-	  if (check){
-	   alert('You have already added '+genome_name+'.');
-	   return;
-	  }
-	  var html = '<option id='+gstid+' value='+gstid+ ' >'+genome_name+'</option>';
-	  //alert(html);
-	  $('#blank').remove();
-	  $('#genomelist_choice').append(html);
-	  counting();
-
-}
-
-function open_aa_usage_table (html) {
-    $('#aa_usage_table').html(html);
-    $('#aa_table').tablesorter();
-}
-
-function clear_genome_list(){
-	var listlength = $('#genomelist_choice')[0].length;
-	for(var i=0; i < listlength; i++)
-	{
-		$('#'+$('#genomelist_choice')[0][0].id).remove();
-	}
-	counting();
-}
-
-function counting(){
-	var count=0;
-	if($('#blank').val()){ count =0;}
-	else { count = $('#genomelist_choice')[0].length;}
-	if(count==0) { $('#genomelist_choice').html('<option id="blank" value=null>No genome selected</option>') ; }
-	$('#count').html('Genome Count:'+count);
-}
-
-function add_all_org(){
-	$("#org_id option").each(function(){
-		 get_genome_list_for_org(['args__oid','args__'+$(this).attr('value')],[add_all_genomes_from_org]);
-	});
-}
-
-function add_all_genomes_from_org(val){
-	if (val.length>0) {
-		var genomes = val.split("&&");
-		var i=0;
-		for(i=0; i < genomes.length;i++) {
-			var genome = genomes[i].split('%%');
-			if (genome.length>1) {
-				add_to_genomelist_nowarn(genome[1],genome[0]);
-			}
-		}
-	}
-}
-
-function get_organism_name_chain(val) {
-    get_orgs(['args__name','args__'+val, 'args__dsgid','dsg_id'], [get_org_info_chain]);
-}
-
-function get_organism_desc_chain(val) {
-    get_orgs(['args__desc','args__'+val, 'args__dsgid','dsg_id'], [get_org_info_chain]);
-}
-
-function get_organism_chain(val) {
-	get_orgs(['args__name','args__'+val, 'args__desc','args__'+val, 'args__dsgid','dsg_id'], [get_org_info_chain]);
-}
-
-function get_org_info_chain(val, val2) {
-	if (val) $('#org_list').html(val);
-	if (val2*1) {
-		$('#org_count').html(val2);
-		$('#allorg').show();
-	}
-	else $('#allorg').hide();
-	get_org_info(['args__oid','org_id'],[genome_chain]);
-}
-
-function get_dataset_name_chain(val) {
-    if (val) {
-    	get_dataset(['args__dsname','args__'+val], [dataset_info_chain]);
-    	$('#org_list').html('<hidden id="org_id">');
-    	$('#dsg_list').html('<hidden id="dsg_id">');
-    	$('#org_count,#dsg_info,#dsg_count').html(' ');
-    }
-    else get_orgs([],[dataset_chain]);
-}
-
-function genome_chain(val) {
-    if (val) $('#org_info').html(val);
-    get_genomes(['args__oid','org_id','args__dsgid','dsg_id'],[genome_info_chain]);
-    $('#dsg_list').html('<hidden id="dsg_id">');
-    $('#dsg_count,#dsg_info,#ds_count,#ds_info,#chr_list,#chr_count,#chr_info,#viewer,#get_seq').empty();
-    $('#ds_list').html('<hidden id="ds_id">');
-}
-
-function genome_info_chain(val, val2) {
-	if (val) $('#dsg_list').html(val);
-	if (val2) $('#dsg_count').html(val2);
-	$('#dsg_info').html('<span class="small alert">loading...</span>');
-	get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);
-}
-
-function dataset_chain(val) {
-	if (val) {$('#dsg_info').html(val);}
-	get_dataset(['args__dsgid','dsg_id'],[dataset_info_chain]);
-}
-
-function recent_dataset_chain() {
-	get_dataset(['args__oid','recent_org_id'],[dataset_info_chain]);
-}
-
-function dataset_info_chain(val, val2) {
-	if (val) $('#ds_list').html(val);
-	if (val2) $('#ds_count').html(val2);
-	$('#ds_info').html('<span class="small alert">loading...</span>');
-	$('#chr_list,#chr_count,#chr_info,#viewer,#get_seq').empty();
-	get_dataset_info(['ds_id'],[dataset_chr_info_chain]);
-}
-
-function dataset_chr_info_chain(val, val2, val3) {
-	if (val) $('#ds_info').html(val);
-	if (val2) $('#chr_list').html(val2);
-	if (val3) $('#chr_count').html(val3);
-	$('#viewer,#get_seq,#feature_count_data').empty();
-	get_dataset_chr_info(['ds_id', 'chr', 'dsg_id'],[populate_dataset_chr_info]);
-}
-
-function populate_dataset_chr_info (chr_info, viewer, get_seq){
-	$('#chr_info').html(chr_info);
-	$('#viewer').html(viewer);
-	$('#get_seq').html(get_seq);
-	setup_button_states();
-	$('#busy').animate({opacity:0});
-	$("._orgviewresult").fadeIn();
-}
-
-function launch_seqview(dsgid, chr, dsid) {
-    start = $('#start').val();
-    stop = $('#stop').val();
-    window.open("SeqView.pl?dsgid="+dsgid+"&dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop);
-}
-
-function launch_viewer (dsgid, chr) {
-    x = $('#x').val();
-    z = $('#z').val();
-    if (z > 12) z=12;
-    link = "GenomeView.pl?z="+z+"&x="+x+"&gid="+dsgid+"&chr="+chr;
-    window.open(link);
-}
-
-function timing(val){
-	if (pageObj.time)
-		clearTimeout(pageObj.time);
-
-	var searchterm = $('#org_search').val();
-	if (!searchterm || searchterm.length < 3 || !val) {
-		$("._orgviewresult").hide();
-		$('#busy').animate({opacity:0});
-	}
-	else {
-		$('#busy').animate({opacity:1});
-		pageObj.time = setTimeout("get_organism_chain($('#org_search').val())", 500);
-	}
-}
-
-function get_feat_gc(opts){
- if (!opts){opts={};}
- chr = opts.chr;
- typeid = opts.typeid;
- min = $('#feat_gc_min').val();
- max = $('#feat_gc_max').val();
- hist_type = $('#feat_hist_type').val();
- dsid = opts.dsid;
- dsgid = $('#dsg_id').val();
- $('#gc_histogram').html('loading...');
-
- $.ajax({
-   data: {
-	  dsgid: dsgid[0],
-	  jquery_ajax: 1,
-          fname: 'get_gc_for_feature_type',
-	  dsid: dsid,
-	  typeid: typeid,
-	  chr: chr,
-	  min: min,
-	  max: max,
-	  hist_type: hist_type,
-         },
-   success: function(data) {$('#gc_histogram').html(data);}
- });
-}
-
-function edit_genome_info (dsgid) {
- $.ajax({
-        data: {
-     	   jquery_ajax: 1,
-	   fname: 'edit_genome_info',
-	   dsgid: dsgid,
-           },
-        success : function(val) {
-	      $('#edit_genome_info').html(val);
-	      $('#edit_genome_info').dialog('open');
-	      get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);
-	},
-      });
-}
-
-function update_genome_info (dsgid) {
-    dsg_name = $('#dsg_name').val();
-    dsg_desc = $('#dsg_desc').val();
-    dsg_ver = $('#dsg_ver').val();
-    dsg_message = $('#dsg_message').val();
-    dsg_link = $('#dsg_link').val();
-    $.ajax({
-        data: {
-     	    jquery_ajax: 1,
-     	    fname: 'update_genome_info',
-     	    dsgid: dsgid,
-     	    name: dsg_name,
-     	    desc: dsg_desc,
-     	    ver: dsg_ver,
-     	    message: dsg_message,
-     	    link: dsg_link
-        },
-        success : function(val) {
-        	if (val != 1) {alert(val);}
-        	$('#edit_genome_info').html('');
-        	$('#edit_genome_info').dialog('close');
-        	get_genome_info(['args__dsgid','dsg_id'], [dataset_chain]);
-        },
-    });
-}
-
-function export_gff () {
-    var server = '<TMPL_VAR NAME="SERVER">';
-    var link = server+"bin/export/coge_gff.pl?dsgid=";
-    link += $('#dsg_id').val();
-    if ($('#cds_only')[0].checked) {link += ";cds=1";}
-    if ($('#annos')[0].checked) {link += ";annos=1";}
-    if ($('#name_unique')[0].checked) {link += ";nu=1";}
-    if ($('#upa')[0].checked) {link += ";upa=1";}
-    link += ";id_type="+$('#gff_id_type').val();
-    $('#export_gff_link').html("<a href="+link+" target=_new>Link: "+ link+"<\a>");
-    window.open(link);
-}
-
-function export_tbl () {
-    var server = '<TMPL_VAR NAME="SERVER">';
-    var link = server+"bin/export/export_NCBI_TBL.pl?dsgid=";
-    link += $('#dsg_id').val();
-    window.open(link);
-}
-
-function export_bed () {
-    var server = '<TMPL_VAR NAME="SERVER">';
-    var link = server+"bin/export/coge2bed.pl?gid=";
-    link += $('#dsg_id').val();
-    window.open(link);
-}
 </script>
 
-<div class="padded">
-	<div class="bold text">Search for organisms and genomes</div>
-	<div class="small padded middle" style="width:50%;">
-		Organism: <input type="search" placeholder="Search" spellcheck="false" size="50" value="<TMPL_VAR NAME=ORG_SEARCH>" name="org_search" id="org_search" onkeyup='timing("org_search");'>
-		<span class='ui-button ui-corner-all coge-button' onClick="timing('org_search');">
-			<span class="ui-icon ui-icon-arrowrefresh-1-w"></span>
-		</span>
-		<img id="busy" src="picts/ajax-loader.gif" style="opacity:0;"/>
-	</div>
+<div class="row row-margin padded">
+    <div class="col-md-12">
+        <div class="small padded middle">
+            <input type="search" placeholder="Search" spellcheck="false" style="font-size:1.25em;" size="50" value="<TMPL_VAR NAME=ORG_SEARCH>" name="org_search" id="org_search" onkeyup='search_organisms("org_search");'>
+            <span class='ui-button ui-corner-all coge-button' onClick="search_organisms('org_search');">
+                <span class="ui-icon ui-icon-arrowrefresh-1-w"></span>
+            </span>
+            <img id="busy" src="picts/ajax-loader.gif" style="opacity:0;"/>
+        </div>
+    </div>
 </div>
 
-<table cellspacing="15" class="hidden _orgviewresult" style="border-top:1px solid lightgray;">
-  <!--
-  <TR><TD valign='top'>
-   <table class="ui-widget-content ui-corner-all" style="min-width:330px;">
-    <tr>
-      <td>Organism Name:</td>
-      <td>
-      </td>
-    </tr>
-    <tr>
-      <td>Organism Description:<td><input type="text" size=15 value="<TMPL_VAR NAME="ORG_DESC">" name = "org_desc" id="org_desc" style="font-style:italic" onFocus="search_bar('org_desc')" onKeyUp='timing("org_desc");'><span class='ui-button ui-corner-all' onClick="timing('org_desc');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
-    <tr>
-      <td>Dataset Name:<td><input type="text" size=15 value="<TMPL_VAR NAME="DS_NAME">" name="ds_name" style="font-style:italic" id="ds_name" onFocus="search_bar('ds_name')" onKeyUp='timing("ds_name");' ><span class='ui-button ui-corner-all' onClick="timing('ds_name');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
-  </table>
-  -->
+<div id='no_results' class="note" style='display:none;padding-left:1em;'></div>
 
-  <tr class="hidden _orgviewresult">
-    <td>
-      <span class="coge-table-header">Organisms: </span><span class='small' id='org_count'><TMPL_VAR NAME="ORG_COUNT"></span>
-      <div id="org_list"><TMPL_VAR NAME="ORG_LIST"></div>
-      <!--
-   	  <span class="ui-button ui-corner-all" id='allorg' onClick="add_all_org();$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add all to Genome List</span><br>
-      -->
-    </td>
-    <td valign='top'>
-      <div class="coge-table-header">Organism Information</div>
-      <div id='org_info' class="ui-corner-all ui-widget-content"></div>
-    </td>
-  </tr>
+<div id='results' style="display:none;border-bottom:1px solid lightgray;">
 
-  <tr class="hidden _orgviewresult" valign='top'>
-    <td>
-      <span class="coge-table-header">Genomes: </span><span class='small' id='dsg_count'><TMPL_VAR NAME="DSG_COUNT"></span>
-      <div style="vertical-align: top;" id="dsg_list"><TMPL_VAR NAME="DSG_LIST"></div>
-    <td valign='top'>
-      <div class="coge-table-header">Genome Information</div>
-      <div id="dsg_info" class="small ui-corner-all ui-widget-content"><TMPL_VAR NAME="DSG_INFO"></div>
-    </td>
-  </tr>
+    <div class="row row-margin">
+        <div class="col-md-4">
+            <span class="coge-table-header">Organisms:</span>
+            <span class='small info' id='org_count'><TMPL_VAR NAME="ORG_COUNT"></span>
+            <div id="org_list">
+                <select class="select small ui-widget ui-widget-content ui-corner-all" id="org_id" size="5" MULTIPLE>}
+                <TMPL_VAR NAME="ORG_LIST">
+                </select>
+            </div>
+        </div>
 
-  <tr class="hidden _orgviewresult" valign="top">
-    <td>
-      <span class="coge-table-header">Datasets: </span><span class=small id=ds_count><TMPL_VAR NAME="DS_COUNT"></span>
-      <div style="vertical-align: top;" id="ds_list"><TMPL_VAR NAME="DS_LIST"></div>
-    </td>
-    <td valign="top">
-      <div class="coge-table-header">Dataset Information</div>
-      <div id="ds_info" class="small ui-corner-all ui-widget-content"><TMPL_VAR NAME="DS_INFO"></div>
-    </td>
-  </tr>
+        <div class="col-md-8">
+            <div class="coge-table-header">Organism Information</div>
+            <div id='org_info' class="ui-corner-all ui-widget-content padded">
+                <TMPL_VAR NAME="ORG_INFO">
+            </div>
+        </div>
+    </div>
 
-  <tr class="hidden _orgviewresult" valign="top">
-    <td>
-      <span class="coge-table-header">Chromosomes: </span><span class='small' id='chr_count'><TMPL_VAR NAME="CHR_COUNT"></span>
-      <div style="vertical-align: top;" id="chr_list"><TMPL_VAR NAME="CHR_LIST"></div>
-    </td>
-    <td valign="top">
-      <div class="coge-table-header">Chromosome information</div>
-      <div id="chr_info" class="small ui-corner-all ui-widget-content"><TMPL_VAR NAME="CHR_INFO"></div>
-    </td>
-  </tr>
+    <div class="row row-margin">
+        <div class="col-md-4">
+            <span class="coge-table-header">Genomes:</span>
+            <span class='small' id='genome_count'>
+                <TMPL_VAR NAME="GENOME_COUNT">
+            </span>
+            <div style="vertical-align: top;" id="genome_list">
+                <select class="select small ui-widget ui-widget-content ui-corner-all" size="5" MULTIPLE>
+                    <TMPL_VAR NAME="GENOME_LIST">
+                </select>
+            </div>
+        </div>
 
-  <tr class="hidden _orgviewresult" valign="top">
-    <td>
-      <div id="gn_list"><TMPL_VAR NAME="GN_LIST"></div>
-    </td>
-  </tr>
+        <div class="col-md-8">
+            <div class="coge-table-header">Genome Information</div>
+            <div id="genome_info" class="ui-corner-all ui-widget-content padded">
+                <TMPL_VAR NAME="GENOME_INFO">
+            </div>
+        </div>
+    </div>
 
-  <tr nowrap>
-    <td colspan="2" align="left" valign="top" nowrap>
-  	  <div class="inline top" id="viewer"></div>
-      <div class="inline top" id="get_seq"></div>
-    </td>
-  </tr>
-</table>
+    <div class="row row-margin">
+        <div class="col-md-4">
+            <span class="coge-table-header">Datasets: </span>
+            <span class="small" id="ds_count"><TMPL_VAR NAME="DS_COUNT"></span>
+            <div style="vertical-align: top;" id="ds_list">
+                <select class="select small ui-widget ui-widget-content ui-corner-all" id="ds_id" SIZE="5" MULTIPLE >
+                    <TMPL_VAR NAME="DS_LIST">
+                </select>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="coge-table-header">Dataset Information</div>
+            <div id="ds_info" class="small ui-corner-all ui-widget-content padded">
+                <TMPL_VAR NAME="DS_INFO">
+            </div>
+        </div>
+    </div>
+
+    <div class="row row-margin">
+        <div class="col-md-4">
+            <span class="coge-table-header">Chromosomes:</span>
+            <span class='small' id='chr_count'><TMPL_VAR NAME="CHR_COUNT"></span>
+            <div id="chr_list" style="vertical-align: top;">
+                <select class="select small ui-widget ui-widget-content ui-corner-all" size="5">
+                    <TMPL_VAR NAME="CHR_LIST">
+                </select>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="coge-table-header">Chromosome Information</div>
+            <div id="chr_info" class="ui-corner-all ui-widget-content padded"><TMPL_VAR NAME="CHR_INFO"></div>
+        </div>
+    </div>
+
+    <div>
+          <div id="viewer" class="inline top">
+              <TMPL_VAR NAME="VIEWER">
+          </div>
+          <div id="get_seq" class="inline top" style="padding-right:1em;">
+              <TMPL_VAR NAME="GET_SEQ">
+          </div>
+    </div>
+    
+    <br><br>
+</div>
 
 <div class="dialog_box hidden" id="gc_histogram" title="Histogram of GC Content"><input type="hidden" id="feat_gc_min"></div>
 <div class="dialog_box hidden" id="wobble_gc_histogram" title="Histogram of Wobble GC Content for CDS"></div>
 <div class="dialog_box hidden" id="wobble_gc_diff_histogram" title="(CDS GC - wobble GC) Content Histogram"></div>
 <div class="dialog_box hidden" id="codon_usage_table" title="Codon Usage Table"></div>
 <div class="dialog_box hidden" id="aa_usage_table" title="Amino Acid Usage Table"></div>
-<div class="dialog_box hidden" id="edit_genome_info" title="Edit Genome Information"></div>
 <div class="dialog_box hidden" id="chromosome_hist" title="Chromosome Size"></div>
 
-<div class="dialog hidden" title="Genome List" id="geno_list">
-	<span id=count class="small count">Genome Count: 0</span><br>
-    <select id="genomelist_choice" SIZE="10" MULTIPLE>
-		<option id="blank" value=null>No Genome Selected</option>
-	</select>
-	<br>
-    <span class="ui-button ui-corner-all coge-button" onClick="$('#genomelist_choice').sortSelect()">Sort List Alphabetically</span><br><br>
-    <span class="ui-button ui-corner-all coge-button" onClick="send_to_GenoList()">Send to GenomeList</span><br><br>
-    <span class="ui-button ui-corner-all coge-button" onClick="remove_selected_genomes();">Remove</span><br><br>
-    <span class="ui-button ui-corner-all coge-button" onClick="clear_genome_list()">Clear</span><br>
-    <div id="add_all_search"></div>
+<div class="dialog hidden" title="Genome List" id="dialog_genomelist">
+	<div class="small info">Genomes: <span id="genomelist_count" class="bold">0<span></div>
+	<div>
+	    <div class="r">
+			<span class="ui-button ui-corner-all coge-button-sm" style="margin-top:0.5em;" onClick="remove_selected_genomes();">Remove</span><br>
+			<span class="ui-button ui-corner-all coge-button-sm" style="margin-top:0.5em;" onClick="clear_genome_list()">Clear</span><br>
+			<span class="ui-button ui-corner-all coge-button-sm" style="margin-top:0.5em;" onClick="$('#genomelist').sortSelect()">Sort</span><br>
+		</div>
+    	<select id="genomelist" MULTIPLE size="10" style="width:32em">
+        	<option id="genomelist_blank" value="null">No Genome Selected</option>
+        </select>
+    </div>
+    <div>
+		<div class="ui-button ui-corner-all coge-button-sm" style="margin-top:0.5em;" onClick="send_to_genomelist()">Send to GenomeList</div>
+	</div>
 </div>
 
 <div class="dialog hidden" title="GFF Exporter" id="gff_export">
-	<table class="small">
-	 <tr>
-	   <td>Do not generate features for ncRNA genes (CDS genes only)</td>
-	   <td><input type=checkbox name="cds_only" id="cds_only"></td>
-	 </tr>
-	 <tr>
-	   <td>Include feature annotations (descriptive text; Geneontology; etc)</td>
-	   <td><input type=checkbox name="annos" id="annos" checked></td>
-	 </tr>
-	 <tr>
-	   <td>Ensure that GFF Name tag is unique for each feature</td>
-	   <td><input type=checkbox name="name_unique" id="name_unique" checked></td>
-	 </tr>
-	 <tr>
-	   <td>Do not propagate duplicate annotations to children</td>
-	   <td><input type=checkbox name="upa" id="upa" checked></td>
-	 </tr>
-	 <tr>
-	   <td>For GFF "ID" and "Parent" tags, use unique:
-	   <td>
-	     <select id="gff_id_type">
-	       <option value="name" selected>Name</option>
-	       <option value="num">Number</option>
-	     </select>
-	 </tr>
-	</table>
-	<span class="ui-button ui-corner-all coge-button" onClick="export_gff('$dsgid')">Export GFF File</span><br><br>
-	<span class="small" id="export_gff_link"></span>
+    <table class="small">
+     <tr>
+       <td>Do not generate features for ncRNA genes (CDS genes only)</td>
+       <td><input type=checkbox name="cds_only" id="cds_only"></td>
+     </tr>
+     <tr>
+       <td>Include feature annotations (descriptive text; Geneontology; etc)</td>
+       <td><input type=checkbox name="annos" id="annos" checked></td>
+     </tr>
+     <tr>
+       <td>Ensure that GFF Name tag is unique for each feature</td>
+       <td><input type=checkbox name="name_unique" id="name_unique" checked></td>
+     </tr>
+     <tr>
+       <td>Do not propagate duplicate annotations to children</td>
+       <td><input type=checkbox name="upa" id="upa" checked></td>
+     </tr>
+     <tr>
+       <td>For GFF "ID" and "Parent" tags, use unique:
+       <td>
+         <select id="gff_id_type">
+           <option value="name" selected>Name</option>
+           <option value="num">Number</option>
+         </select>
+     </tr>
+    </table>
+    <span class="ui-button ui-corner-all coge-button" onClick="export_gff()">Export GFF File</span><br><br>
+    <span class="small" id="export_gff_link"></span>
 </div>

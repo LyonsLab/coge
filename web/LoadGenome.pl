@@ -17,8 +17,9 @@ use File::Copy qw(copy);
 use File::Basename;
 use File::Spec::Functions qw( catdir catfile );
 use File::Listing qw(parse_dir);
+use File::Slurp;
 use URI;
-use URI::Escape::JavaScript qw(escape);
+use URI::Escape::JavaScript qw(escape unescape);
 use LWP::Simple;
 use XML::Simple;
 use DateTime;
@@ -92,21 +93,24 @@ sub generate_html {
     else {
         $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param( PAGE_TITLE => $PAGE_TITLE,
+					      TITLE      => "Load Genome",
         				  PAGE_LINK  => $LINK,
-    					  HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+    					  #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+					  HELP       => $P->{SERVER} );
         my $name = $user->user_name;
         $name = $user->first_name if $user->first_name;
         $name .= ' ' . $user->last_name
           if ( $user->first_name && $user->last_name );
         $template->param(
             USER     => $name,
-            LOGO_PNG => $PAGE_TITLE . "-logo.png",
+            LOGO_PNG => "CoGe.svg",
         );
         $template->param( LOGON => 1 ) unless $user->user_name eq "public";
         my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
         $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
     
         $template->param( ADJUST_BOX => 1 );
+        $template->param( ADMIN_ONLY => $user->is_admin );
     }
     
     $template->param( BODY => generate_body() );
@@ -134,7 +138,7 @@ sub generate_body {
         SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
         ENABLE_NCBI              => 1,
         DEFAULT_TAB              => 0,
-        MAX_IRODS_LIST_FILES     => 100,
+        MAX_IRODS_LIST_FILES     => 1000,
         MAX_IRODS_TRANSFER_FILES => 30,
         MAX_FTP_FILES            => 30,
         USER                     => $user->user_name
@@ -155,6 +159,9 @@ sub generate_body {
 sub irods_get_path {
     my %opts      = @_;
     my $path      = $opts{path};
+    #print STDERR $path, "\n";
+    
+    $path = unescape($path);
 
     my $username = $user->name;
     my $basepath = $P->{IRODSDIR};
@@ -166,8 +173,10 @@ sub irods_get_path {
         return;
     }
 
-    my $result = CoGe::Accessory::IRODS::irods_ils($path);
+    my $result = CoGe::Accessory::IRODS::irods_ils($path, escape_output => 1);
     my $error  = $result->{error};
+
+    #print STDERR Dumper $result, "\n";
 
     if ($error) {
         # Test for recent new account.  The iPlant IRODS isn't ready for a few
@@ -208,14 +217,14 @@ sub irods_get_path {
 sub irods_get_file {
     my %opts = @_;
     my $path = $opts{path};
-
+    $path = unescape($path);
     my ($filename)   = $path =~ /([^\/]+)\s*$/;
     my ($remotepath) = $path =~ /(.*)$filename$/;
 
     my $localpath     = 'irods/' . $remotepath;
-    my $localfullpath = $TEMPDIR . $localpath;
-    $localpath .= '/' . $filename;
-    my $localfilepath = $localfullpath . '/' . $filename;
+    my $localfullpath = catdir($TEMPDIR . $localpath);
+    $localpath = catfile($localpath, $filename);
+    my $localfilepath = catfile($localfullpath, $filename);
     #print STDERR "get_file $path $filename $localfilepath\n";
 
     my $do_get = 1;
@@ -255,7 +264,7 @@ sub load_from_ftp {
             }
         }
         else {                                              # file
-            my ($filename) = $url =~ /([^\/]+)\s*$/;
+            my ($filename) = $url =~ /([^\/]+?)(?:\?|$)/;
             push @files, { name => $filename, url => $url };
         }
     }
@@ -441,7 +450,6 @@ sub load_genome {
     my $user_name    = $opts{user_name};
     my $keep_headers = $opts{keep_headers};
     my $items        = $opts{items};
-
 	#print STDERR "load_genome: organism_id=$organism_id name=$name description=$description version=$version type_id=$type_id restricted=$restricted\n";
 
 	# Added EL: 7/8/2013.  Solves the problem when restricted is unchecked.
@@ -462,10 +470,6 @@ sub load_genome {
     $items = decode_json($items);
     my @files = map { catfile($TEMPDIR, $_->{path}) } @$items;
 
-    # Check organism
-    my $organism = $coge->resultset('Organism')->find($organism_id);
-    return unless $organism;
-
     # Setup staging area
     my $stagepath = catdir($TEMPDIR, 'staging');
     mkpath $stagepath;
@@ -481,12 +485,14 @@ sub load_genome {
     }
 
     # Submit workflow to add genome
-    my ($workflow_id, $error_msg);
+    my ($workflow_id, $error_msg, $info);
     if (@accns) { # NCBI accession numbers specified
         ($workflow_id, $error_msg) = create_genome_from_NCBI(
             user => $user,
             accns => \@accns
         );
+        
+        $info = 'from NCBI accn ' . join(', ', @accns);
     }
     else { # File-based load
         ($workflow_id, $error_msg) = create_genome_from_file(
@@ -502,6 +508,17 @@ sub load_genome {
             },
             files => \@files
         );
+        
+        # Check organism
+        my $organism = $coge->resultset('Organism')->find($organism_id);
+        return unless $organism;
+        
+        # Set description for logging
+        $info = '<i>"' . $organism->name;
+        $info .= " " . $name if $name;
+        $info .= ": " . $description if $description;
+        $info .= " (v" . $version . ")";
+        $info .= '"</i>';
     }
     unless ($workflow_id) {
         return encode_json({ error => "Workflow submission failed: " . $error_msg });
@@ -509,15 +526,10 @@ sub load_genome {
 
     # Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
-        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id . "&embed=" . $EMBED
+        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id . "&embed=" . ( $EMBED ? 1 : 0 )
     );
     
     # Log it
-    my $info = '<i>"' . $organism->name;
-    $info .= " " . $name if $name;
-    $info .= ": " . $description if $description;
-    $info .= " (v" . $version . ")";
-    $info .= '"</i>';
     CoGe::Accessory::Web::log_history(
         db          => $coge,
         workflow_id => $workflow_id,
@@ -603,6 +615,23 @@ sub create_organism {
 
     return $organism->id;
 }
+
+sub get_debug_log {
+    my %opts         = @_;
+    my $workflow_id = $opts{workflow_id};
+    return unless $workflow_id;
+    #TODO authenticate user access to workflow
+
+    my (undef, $results_path) = get_workflow_paths($user->name, $workflow_id);
+    return unless (-r $results_path);
+
+    my $result_file = catfile($results_path, 'debug.log');
+    return unless (-r $result_file);
+
+    my $result = read_file($result_file);
+    return $result;
+}
+
 
 sub search_organisms {
     my %opts        = @_;
@@ -702,10 +731,8 @@ sub send_error_report {
     my $load_id = $opts{load_id};
     my $job_id = $opts{job_id};
 
-    my @paths= ($P->{SECTEMPDIR}, $PAGE_TITLE, $user->name, $load_id, "staging");
-
     # Get the staging directory
-    my $staging_dir = File::Spec->catdir(@paths);
+    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $job_id);
 
     my $url = $P->{SERVER} . "$PAGE_TITLE.pl?";
     $url .= "job_id=$job_id;" if $job_id;
@@ -720,8 +747,10 @@ sub send_error_report {
         . $user->id . ' '
         . $user->date . "\n\n"
         . "staging_directory: $staging_dir\n\n"
+        . "result_directory: $result_dir\n\n"
         . "tiny link: $url\n\n";
-    #$body .= get_load_log();
+
+    $body .= get_debug_log(workflow_id => $job_id);
 
     CoGe::Accessory::Web::send_email(
         from    => $email,

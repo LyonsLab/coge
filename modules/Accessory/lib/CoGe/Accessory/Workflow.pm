@@ -40,16 +40,16 @@ sub add_job {
     my ( $self, %opts ) = @_;
     my $cmd         = $opts{cmd};
     my $script      = "" unless defined( $opts{script} );
-    my $args        = $opts{args};
-    my $inputs      = $opts{inputs};
+    my $args        = $opts{args} || [];
+    my $inputs      = $opts{inputs} || [];
     my $options     = $opts{options};
-    my $outputs     = $opts{outputs};
+    my $outputs     = $opts{outputs} || [];
     my $description = $opts{description};
     my $size        = $self->jobs;
     my $overwrite;
 
     # Set default
-    $options //= {};
+    $options //= {}; #/
 
     if ( defined( $opts{overwrite} ) && $opts{overwrite} > 0 ) {
         $overwrite = 1;
@@ -73,6 +73,17 @@ sub add_job {
     );
 
     return scalar( $self->jobs() ) > $size;
+}
+
+sub add_jobs {
+    my ($self, $jobs) = @_;
+    
+    my $rc = 1;
+    foreach (@$jobs) {
+        $rc &= $self->add_job(%{$_});
+    }
+    
+    return $rc;
 }
 
 __PACKAGE__->meta->make_immutable;

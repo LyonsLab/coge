@@ -97,6 +97,7 @@ sub gen_html {
     $template->param( BOX_NAME   => 'Aragorn Search Settings' );
     $template->param( ADJUST_BOX => 1 );
     $template->param( BODY       => $body );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
     my $prebox =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'CoGeAlign.tmpl' );
     $prebox->param( RESULTS_DIV => 1 );

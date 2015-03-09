@@ -1,65 +1,58 @@
 <tmpl_if name="org_menu">
     <section class="ui-widget-content ui-corner-all resizable coge-bg" style="float: left; padding: 0.3em; height: auto; width:625px;">
-        <div class="bold text">Organism <tmpl_var name="num"></div>
+            <div class="searchbar">
+                <div class="search-header">
+                    Organism <tmpl_var name="num">:
+                </div>
 
-        <div class="padded">
-	        <div class="small" style="padding-top: 1em;">
-	            <label class="text">Name:</label>
-	            <input type="search" size="30"
-	                name = "org_name<tmpl_var name=num>"
-	                id="org_name<tmpl_var name=num>"
-	                style="font-style:italic"
-	                onKeyUp="timing('org_name<tmpl_var name=num>');"
-	                placeholder="<tmpl_var name=org_name>">
-	            <span class="ui-button ui-corner-all coge-button" onClick="timing('org_name<tmpl_var name=num>');">
-	                <span class="ui-icon ui-icon-arrowrefresh-1-w"></span>
-	            </span>
-	
-	            <label class="hidden text" style="padding-left: 2em;">Description:</label>
-	            <input class="hidden" type="search" size="10"
-	                name="org_desc<tmpl_var name=num>"
-	                id="org_desc<tmpl_var name=num>"
-	                style="font-style:italic"
-	                onKeyUp="timing('org_desc<tmpl_var name=num>');"
-	                placeholder="<tmpl_var name=org_desc>">
-	            <span class="hidden ui-button ui-corner-all coge-button" onClick="timing('org_desc<tmpl_var name=num>');">
-	                <span class="ui-icon ui-icon-arrowrefresh-1-w"></span>
-	            </span>
-	        </div>
-	
-	        <div id="org_list<tmpl_var name=num>" class="coge-padded-top">
-	            <tmpl_var name="org_list">
-	        </div>
-	
-	        <table>
-	            <tr>
-	                <td>
-	                    <span id="dsg_menu<tmpl_var name=num>">
-	                        	<tmpl_var name="dsg_menu">
-	                    </span>
-	                <!--</td>
-	                <td>-->
-	                    <span id="feattype_menu<tmpl_var name=num>" class="left">
-	                        <tmpl_if name="feattype_menu">
-	                            <tmpl_var name="feattype_menu">
-	                        <tmpl_else>
-	                            <input type="hidden" id="feat_type<tmpl_var name=num>">
-	                        </tmpl_if>
-	                    </span>
-	                </td>
-	            </tr>
-	            <tr>
-	                <td colspan="3">
-	                    <div id="genome_message<tmpl_var name=num>">
-	                        <tmpl_var name="genome_message">
-	                    </div>
-	                </td>
-	            </tr>
-	        </table>
-	
-	        <div style="vertical-align:top;" id="dsg_info<tmpl_var name=num>">
-	            <tmpl_var name="dsg_info">
-	        </div>
-	    </div>
+                <div class="search-button">
+                    <span class="ui-button ui-corner-all coge-button" onClick="timing('org_name<tmpl_var name=num>');">
+                        <span class="glyphicon glyphicon-search"></span>
+                    </span>
+                </div>
+
+                <div class="search-field">
+                    <input type="search"
+                        name = "org_name<tmpl_var name=num>"
+                        id="org_name<tmpl_var name=num>"
+                        style="font-style:italic"
+                        onKeyUp="timing('org_name<tmpl_var name=num>');"
+                        placeholder="<tmpl_var name=SEARCH>" />
+                </div>
+            </div>
+
+            <div id="org_list<tmpl_var name=num>" class="coge-padded-top">
+                <tmpl_var name="ORG_LIST">
+            </div>
+
+            <table>
+                <tr>
+                    <td>
+                        <span id="dsg_menu<tmpl_var name=num>">
+                                <tmpl_var name="dsg_menu">
+                        </span>
+                    <!--</td>
+                    <td>-->
+                        <span id="feattype_menu<tmpl_var name=num>" class="left">
+                            <tmpl_if name="feattype_menu">
+                                <tmpl_var name="feattype_menu">
+                            <tmpl_else>
+                                <input type="hidden" id="feat_type<tmpl_var name=num>">
+                            </tmpl_if>
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3">
+                        <div id="genome_message<tmpl_var name=num>">
+                            <tmpl_var name="genome_message">
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <div style="vertical-align:top;" id="dsg_info<tmpl_var name=num>">
+                <tmpl_var name="dsg_info">
+            </div>
     </section>
 </tmpl_if>

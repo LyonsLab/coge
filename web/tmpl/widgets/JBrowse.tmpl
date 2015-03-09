@@ -46,7 +46,9 @@
 	                    // and 'overview' parameters forced to 1.
 	                    return browser.makeCurrentViewURL({ nav: 1, tracklist: 1, overview: 1 });
 	                },
-	                updateBrowserURL: true
+	                updateBrowserURL: true,
+	                refSeqDropdown: true,		// mdb added 12/11/14, issue COGE-567
+	                refSeqSelectorMaxSize: 1000	// mdb added 12/11/14, issue COGE-567
 	            };
 
 	            JBrowse = new Browser( config );

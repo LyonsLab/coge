@@ -1,5 +1,5 @@
-<tmpl_if name="login">
-	<tmpl_include name="widgets/Login.tmpl">
+<tmpl_if name="admin_only">
+    <tmpl_include name="widgets/AdminOnly.tmpl">
 </tmpl_if>
 
 <tmpl_if name="main">
@@ -69,10 +69,8 @@ $(document).ready(function(){
             tool = item['tool'] ? item['tool'].toLowerCase() : '',
             status = item['status'] ? item['status'].toLowerCase() : '',
             started = item['started'] ? item['started'].toLowerCase() : '',
-            completed = item['completed'] ? item['completed'].toLowerCase() : ''
-<tmpl_if name="admin_area">
-            ,user = item['user'] ? item['user'].toLowerCase() : ''
-</tmpl_if>;
+            completed = item['completed'] ? item['completed'].toLowerCase() : '',
+            user = item['user'] ? item['user'].toLowerCase() : '';
 
         if (args.searchType == 1) {
             if (args.searchString != "" &&
@@ -81,9 +79,7 @@ $(document).ready(function(){
                 status.indexOf(args.searchString) == -1 &&
                 started.indexOf(args.searchString) == -1 &&
                 completed.indexOf(args.searchString) == -1
-<tmpl_if name="admin_area">
-                && user.indexOf(args.searchString) == -1
-</tmpl_if>) {
+                && user.indexOf(args.searchString) == -1) {
                 return false;
             }
         } else {
@@ -93,9 +89,8 @@ $(document).ready(function(){
                 status.indexOf(args.searchString) != -1 ||
                 started.indexOf(args.searchString) != -1 ||
                 completed.indexOf(args.searchString) != -1
-<tmpl_if name="admin_area">
-                || user.indexOf(args.searchString) != -1
-</tmpl_if>) {
+
+                || user.indexOf(args.searchString) != -1 ) {
                 return false;
             }
         }
@@ -117,7 +112,7 @@ $(document).ready(function(){
     });
 
     var linkformatter = function(row, cell, value, columnDef, dataContext) {
-        return '<a href="' + dataContext['link'] + '" >'
+        return '<a href="' + dataContext['link'] + '" target="_blank">'
         + dataContext['link'] + '</a>'
     }
     var columns = [
@@ -129,13 +124,11 @@ $(document).ready(function(){
             sortable: true},
         {id: 'elapsed', name: 'Elapsed', field: 'elapsed', minWidth: 55,
             sortable: true},
-<tmpl_if name="admin_area">
         {id: 'user', name: 'User', field: 'user', sortable: true, minWidth: 75},
-</tmpl_if>
         {id: 'tool', name: 'Tool', field: 'tool', minWidth: 75,
             sortable: true},
         {id: 'link', name: 'Link to Analysis', field: 'link', minWidth: 250,
-            sortable: true, formatter: linkformatter },
+            sortable: false, formatter: linkformatter },
         {id: 'status', name: 'Status', field: 'status', minWidth: 75,
             sortable: true}
     ];
@@ -183,13 +176,14 @@ function update_filter() {
 
 function cancel_job() {
     submit_task("cancel_job", function(row) {
-        return row.status.toLowerCase() == 'running'
+        return row.status.toLowerCase() === 'running'
     });
 }
 
 function restart_job() {
     submit_task("restart_job", function(row) {
-        return row.status.toLowerCase() != 'running';
+        return row.status.toLowerCase() === 'cancelled' ||
+               row.status.toLowerCase() === 'stopped';
     });
 }
 
@@ -201,6 +195,9 @@ function submit_task(task, predicate) {
     });
 
     var validRows = selectedRows.filter(predicate);
+
+    // No rows were valid
+    if (!validRows.length) return;
 
     jQuery.each(validRows, function(index,row) {
         var argument_list =  {
@@ -220,6 +217,9 @@ function submit_task(task, predicate) {
             }
         });
     });
+
+    // Deselect all rows
+    window.jobs.grid.setSelectedRows([]);
 }
 </script>
 </tmpl_if>

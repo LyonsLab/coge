@@ -1,4 +1,4 @@
-<SCRIPT language="JavaScript">
+<script type="text/javascript">
 // Begin Widget API -----------------------------------------------------------
 
 // Required global vars
@@ -218,12 +218,10 @@ function activate_on_input(input_id, button_id) {
 }
 
 function resolve_path(path) {
-	if (path == '.') {
+	if (path == '.')
 		return pageObj.current_path;
-	}
-	else if (path == '..') {
+	else if (path == '..')
 		return pageObj.parent_path;
-	}
 	return path;
 }
 
@@ -257,12 +255,12 @@ function irods_get_path (path) {
 				return;
 			}
 			if (result.items.length > <TMPL_VAR NAME='MAX_IRODS_LIST_FILES'>) {
-				alert("Too many files (" + filelist.length + ") at specified location, limit is <TMPL_VAR NAME='MAX_IRODS_LIST_FILES'>.");
+				alert("Too many files (" + result.items.length + ") to display, the limit is <TMPL_VAR NAME='MAX_IRODS_LIST_FILES'>.");
 				return;
 			}
 
 			$('#ids_table').html('');
-			var parent_path = result.path.split('/').slice(0,-2).join('/') + '/';
+			var parent_path = result.path.replace(/\/$/, '').split('/').slice(0,-1).join('/') + '/';
 
 			// Save for later resolve_path()
 			pageObj.parent_path = parent_path;
@@ -276,6 +274,7 @@ function irods_get_path (path) {
 
 			result.items.forEach(
 				function(obj) {
+					// Build row in to be displayed
 					var icon;
 					if (obj.type == 'directory') {
 						icon = '<span class="ui-icon ui-icon-folder-collapsed"></span>';
@@ -283,8 +282,11 @@ function irods_get_path (path) {
 					else {
 						icon = '<span class="ui-icon ui-icon-document"></span>';
 					}
-					tr = $('<tr class="'+obj.type+'"><td style="white-space:nowrap;">'+icon+obj.name+'</td><td>'+obj.size+'</td><td>'+obj.timestamp+'</td></tr>');
-
+					tr = $('<tr class="'+ obj.type +'"><td style="white-space:nowrap;">' 
+							+ icon
+							+ decodeURIComponent(obj.name) + '</td><td>'
+							+ decodeURIComponent(obj.size) + '</td><td>' 
+							+ decodeURIComponent(obj.timestamp) + '</td></tr>'); // mdb added decodeURI 8/14/14 issue 441
 					if (obj.type == 'directory') {
 						$(tr).click(
 							function() {
@@ -295,7 +297,7 @@ function irods_get_path (path) {
 					else {
 						$(tr).click(
 							function() {
-								if ( add_file_to_list(obj.name, 'irods://'+obj.path) ) {
+								if ( add_file_to_list(decodeURIComponent(obj.name), 'irods://'+obj.path) ) {
 									irods_get_file(obj.path);
 								}
 								else {
@@ -346,7 +348,7 @@ function irods_get_all_files (path) {
 				return;
 			}
 			if (result.items.length > <TMPL_VAR NAME='MAX_IRODS_TRANSFER_FILES'>) {
-				alert("Too many files (" + filelist.length + ") at specified location, limit is <TMPL_VAR NAME='MAX_IRODS_TRANSFER_FILES'>.");
+				alert("Too many files (" + result.items.length + ") to retrieve at one time, the limit is <TMPL_VAR NAME='MAX_IRODS_TRANSFER_FILES'>.");
 				return;
 			}
 
@@ -483,7 +485,7 @@ function load_from_ncbi() {
 		},
 	});
 }
-</SCRIPT>
+</script>
 
 <div id='tabs' style='margin-top:0.5em;margin-bottom:1em;'>
   <ul>
@@ -496,7 +498,7 @@ function load_from_ncbi() {
   </ul>
 
   <div id="tab-1" class="small">
-	<div style="white-space:nowrap;border-bottom:1px solid gray;>
+	<div style="white-space:nowrap;border-bottom:1px solid gray;">
 		<img id="ids_loading" src="picts/ajax-loader.gif" style="float:right;"/>
 		<span class='link' onclick='irods_get_path()'><span class='ui-icon ui-icon-home'></span>Home</span>
 		<span class='link' style='padding-left:15px;' onclick='irods_get_path("..")'><span class='ui-icon ui-icon-arrowreturnthick-1-n'></span>Go Up</span>
@@ -505,7 +507,7 @@ function load_from_ncbi() {
 		<span class='link' style='padding-left:15px;' onclick='irods_get_all_files(".")'><span class='ui-icon ui-icon-transferthick-e-w'></span>Get All Files</span>
 		</TMPL_UNLESS>
 	</div>
-	<div id="ids_current_path" style="font-weight:bold;padding-top:10px;"></div>
+	<div id="ids_current_path" style="word-wrap:break-word; font-weight:bold; padding-top:10px;"></div>
     <div style="overflow-y:auto;height:154px;">
     	<table id="ids_table" class="small" style="width:100%;"></table>
     </div>

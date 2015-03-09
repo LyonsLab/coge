@@ -5,10 +5,11 @@ no warnings('redefine');
 
 use CoGeX;
 use CoGe::Accessory::Jex;
-use CoGe::Accessory::Web;
+use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils qw( commify get_link_coords );
 use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
+use CoGe::Core::List qw(listcmp);
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
@@ -88,6 +89,7 @@ $BLAST_PROGS   = {
     export_fasta_file        => \&export_fasta_file,
     export_CodeOn            => \&export_CodeOn,
     export_to_excel          => \&export_to_excel,
+    export_top_hits          => \&export_top_hits,
     generate_tab_deliminated => \&generate_tab_deliminated,
     generate_feat_list       => \&generate_feat_list,
     generate_blast           => \&generate_blast,
@@ -104,6 +106,7 @@ $BLAST_PROGS   = {
     get_orgs                 => \&get_orgs,
     read_log                 => \&CoGe::Accessory::Web::read_log,
     save_settings            => \&save_settings,
+    get_results              => \&get_results,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -114,25 +117,23 @@ sub gen_html {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
 
-    #$template->param(TITLE=>'CoGe BLAST Analysis');
+    $template->param(TITLE=>'CoGeBLAST: Perform BLAST Analysis');
     $template->param( PAGE_TITLE => 'BLAST',
     				  PAGE_LINK  => $LINK,
-    				  HELP       => '/wiki/index.php?title=CoGeBlast' );
+    				  #HELP       => '/wiki/index.php?title=CoGeBlast' );
+				  HELP       => $P->{SERVER} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= ' ' . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER => $name );
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-    $template->param( LOGO_PNG => "CoGeBlast-logo.png" );
+    $template->param( LOGO_PNG => "CoGe.svg" );
 
+    $template->param( ADMIN_ONLY => $USER->is_admin );
     #	$template->param( BOX_NAME   => 'CoGeBlast Settings' );
     #	$template->param( ADJUST_BOX => 1 );
     $template->param( BODY => $body );
-    my $prebox =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'CoGeBlast.tmpl' );
-    $prebox->param( RESULTS_DIV => 1 );
-    $template->param( PREBOX => $prebox->output );
     $html .= $template->output;
 }
 
@@ -396,6 +397,39 @@ sub get_url {
     }
 }
 
+sub generate_blastdb_job {
+    my %opts = @_;
+
+    # required arguments
+    my $title = $opts{title};
+    my $fasta = $opts{fasta};
+    my $type = $opts{type};
+    my $out  = $opts{out};
+    my $outdir = $opts{outdir};
+
+    my $logfile = $opts{logfile} || "db.log";
+    my $BLASTDB = $P->{MAKEBLASTDB} || "makeblastdb";
+
+    my $args = [
+        ["-in", $fasta, 0],
+        ["-out", $out, 0],
+        ["-dbtype", $type, 0],
+        ["-title", qq{"$title"}, 0],
+        ["-logfile", $logfile, 0],
+    ];
+
+    my $base = basename($outdir);
+
+    return (
+        cmd => "mkdir $base && cd $base && $BLASTDB",
+        script  => undef,
+        args    => $args,
+        inputs  => undef,
+        outputs => [[$outdir, 1]],
+        description => "Generating blastable database..."
+    );
+}
+
 sub blast_param {
     my %opts      = @_;
     my $seq_type  = $opts{blast_type} || "blast_type_n";
@@ -537,12 +571,17 @@ sub gen_dsg_menu {
       )
     {
         next unless $USER->has_access_to_genome($dsg);
+            #added by EHL 12/30/2014
+            next if $dsg->deleted;
+            ######
+
         $dsgid = $dsg->id unless $dsgid;
         my $name = join( ", ", map { $_->name } $dsg->source ) . ": ";
 
  #$name .= $dsg->name ? $dsg->name : $dsg->datasets->[0]->name;
  #$name .= ", ";
  #$name .= $dsg->type->name." (v".$dsg->version.") ".commify($dsg->length)."nt";
+	$name .= " (id ". $dsg->id.") ";
         $name .= $dsg->name . ", " if $dsg->name; # : $dsg->datasets->[0]->name;
         $name .= "v"
           . $dsg->version . " "
@@ -587,6 +626,10 @@ sub get_dsg_for_menu {
             $coge->resultset('Genome')->search( { organism_id => [@orgids] } ) )
         {
             next unless $USER->has_access_to_genome($dsg);
+            #added by EHL 12/30/2014
+            next if $dsg->deleted;
+            ######
+
             $dsgs{ $dsg->id } = $dsg;
         }
     }
@@ -596,6 +639,9 @@ sub get_dsg_for_menu {
         foreach my $dsgid ( split( /,/, $dsgids ) ) {
             my $dsg = $coge->resultset('Genome')->find($dsgid);
             next unless $USER->has_access_to_genome($dsg);
+            #added by EHL 12/30/2014
+            next if $dsg->deleted;
+            ######
             $dsgs{ $dsg->id } = $dsg;
         }
     }
@@ -609,6 +655,7 @@ sub get_dsg_for_menu {
         $html .=
             $dsg->id . "::"
           . $org_name . " ("
+          . "id " . $dsg->id . " "
           . $ds->data_source->name . " "
           . $dsg->type->name . " v"
           . $dsg->version . ")";
@@ -637,6 +684,7 @@ sub blast_search {
     my $expect     = $opts{expect};
     my $job_title  = $opts{job_title};
     my $wordsize   = $opts{wordsize};
+    my $type       = $opts{type};
 
     #$wordsize=11 if $program eq "blastn";
     my $comp         = $opts{comp};
@@ -663,13 +711,15 @@ sub blast_search {
     #this is where the dsgids are stored -- stupid name
     my $blastable = $opts{blastable};
 
-    if (!$seq) {
-        return alert("Please specify a sequence of characters to be blasted.");
-    }
+    return encode_json({
+        success => JSON::false,
+        error => "Please specified a sequence of characters to be blasted."
+    }) unless $seq;
 
-    if (!$blastable) {
-        return alert("Please select genomes to be blasted.");
-    }
+    return encode_json({
+        success => JSON::false,
+        error => "Please select genomes to be blasted."
+    }) unless $blastable;
 
     my @dsg_ids = split( /,/, $blastable );
 
@@ -690,8 +740,41 @@ sub blast_search {
 
     my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
 
-    my $url = $P->{SERVER} . $PAGE_NAME . "?dsgid=$blastable";
-    $url .= ";fid=$fid" if ($fid);
+    my $gap;
+
+    if ( $gapcost && $gapcost =~ /^(\d+)\s+(\d+)/ ) {
+        $gap = qq[$1,$2];
+    }
+
+    my %params = (
+        color_hsps   => $color_hsps,
+        program      => $program,
+        expect       => $expect,
+        job_title    => $job_title,
+        wordsize     => $wordsize,
+        comp         => $comp,
+        matrix       => $matrix,
+        gapcost      => $gap,
+        match_score  => $match_score,
+        filter_query => $filter_query,
+        resultslimit => $resultslimit,
+        basename     => $basename,
+        zwordsize    => $zwordsize,
+        zgap_start   => $zgap_start,
+        zgap_exten   => $zgap_extension,
+        zchaining    => $zchaining,
+        zthreshold   => $zthreshold,
+        zmask        => $zmask,
+        type         => $type,
+
+        #Genomes
+        dsgid        => $blastable,
+    );
+
+    # Optional parameters
+    $params{fid} = $fid if $fid;
+
+    my $url = url_for($PAGE_NAME, %params);
 
     my $link = CoGe::Accessory::Web::get_tiny_link(url => $url);
 
@@ -704,9 +787,7 @@ sub blast_search {
 
     CoGe::Accessory::Web::write_log( "process $$", $cogeweb->logfile );
 
-    $width = 400
-      unless $width =~
-          /^\d+$/;    #something wrong with how width is calculated in tmpl file
+    $width = 400 unless $width =~ /^\d+$/;    #something wrong with how width is calculated in tmpl file
 
     my $t1 = new Benchmark;
     my ( $fasta_file, $query_seqs_info ) = create_fasta_file($seq);
@@ -724,31 +805,39 @@ sub blast_search {
         next unless -s $fasta_file;
 
         my $name = $dsg->organism->name;
-        my $args = [
-            ['-i', $dbfasta, 0],
-            ['-t', qq{"$name"}, 0],
-            ['-n', $dsgid, 1],
-        ];
+        #my $args = [
+        #    ['-i', $dbfasta, 0],
+        #    ['-t', qq{"$name"}, 0],
+        #    ['-n', $dsgid, 1],
+        #];
 
-        push @$args, ['-p', 'F', 1];
+        #push @$args, ['-p', 'F', 1];
 
         my $dbpath = File::Spec->catdir(($BLASTDBDIR, $dsgid));
-        mkpath($dbpath, 0, 0775);
         my $db = File::Spec->catdir(($dbpath, $dsgid));
-        my $outputs = ["$db.nhr", "$db.nin", "$db.nsq"];
+        #my $outputs = [[$dbpath, 1]]; #["$db.nhr", "$db.nin", "$db.nsq"];
 
-        $workflow->add_job(
-            cmd     => $FORMATDB,
-            script  => undef,
-            args    => $args,
-            inputs  => undef,
-            outputs => $outputs
-        );
+        $workflow->add_job(generate_blastdb_job(
+            title   => $name,
+            out     => $dsgid,
+            fasta   => $dbfasta,
+            type    => "nucl",
+            outdir  => $dbpath,
+        ));
+
+        #$workflow->add_job(
+        #    cmd     => "mkdir $dsgid && cd $dsgid && $FORMATDB",
+        #    script  => undef,
+        #    args    => $args,
+        #    inputs  => undef,
+        #    outputs => $outputs,
+        #    description => "Generating blastable database..."
+        #);
 
         my $outfile = $cogeweb->basefile . "-$count.$program";
 
         my $cmd = $BLAST_PROGS->{$program};
-        $args = [
+        my $args = [
             [ '', '--adjustment=10', 1 ],
             [ '', $BLAST_PROGS->{$program}, 0 ],
         ];
@@ -804,14 +893,15 @@ sub blast_search {
             cmd     => "/usr/bin/nice",
             script  => undef,
             args    => $args,
-            inputs  => [$fasta_file, "$db.nhr", "$db.nin", "$db.nsq"],
-            outputs => [$outfile]
+            inputs  => [$fasta_file, [$dbpath, 1]],
+            outputs => [$outfile],
+            description => "Blasting sequence against $name"
         );
 
         $count++;
     }
 
-    my $status = $JEX->submit_workflow($workflow);
+    my $response = $JEX->submit_workflow($workflow);
 
     my $log = CoGe::Accessory::Web::log_history(
         db          => $coge,
@@ -819,24 +909,157 @@ sub blast_search {
         page        => $PAGE_TITLE,
         description => $log_msg,
         link        => $link,
-        workflow_id => $status->{id}
-    ) if $status and $status->{id};
+        workflow_id => $response->{id}
+    ) if $response and $response->{id};
 
-    $JEX->wait_for_completion( $status->{id} );
+    return encode_json({
+        id => $response->{id},
+        link => $link,
+        logfile => $TEMPURL . "/" . $cogeweb->basefilename . ".log",
+        success => $JEX->is_successful($response) ? JSON::true : JSON::false
+    })
+}
+
+sub get_results {
+    my %opts = @_;
+
+    #	print STDERR Dumper \%opts;
+
+    my $color_hsps = $opts{color_hsps};
+    my $program    = $opts{program};
+    my $expect     = $opts{expect};
+    my $job_title  = $opts{job_title};
+    my $wordsize   = $opts{wordsize};
+
+    #$wordsize=11 if $program eq "blastn";
+    my $comp         = $opts{comp};
+    my $matrix       = $opts{matrix};
+    my $gapcost      = $opts{gapcost};
+    my $match_score  = $opts{matchscore};
+    my $filter_query = $opts{filter_query};
+    my $resultslimit = $opts{resultslimit} || $RESULTSLIMIT;
+    my $basename     = $opts{basename};
+    my $type = $opts{type};
+
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(
+        basename => $basename,
+        tempdir  => $TEMPDIR
+    );
+
+    #blastz params
+    my $zwordsize      = $opts{zwordsize};
+    my $zgap_start     = $opts{zgap_start};
+    my $zgap_extension = $opts{zgap_extension};
+    my $zchaining      = $opts{zchaining};
+    my $zthreshold     = $opts{zthreshold};
+    my $zmask          = $opts{zmask};
+
+    my $seq = $opts{seq};
+    #this is where the dsgids are stored -- stupid name
+    my $blastable = $opts{blastable};
+
+    my @dsg_ids = split( /,/, $blastable );
+
+    my $width = $opts{width};
+    my $fid   = $opts{fid};
+
+    my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
+        user_id => $USER->id,
+        page    => "GenomeList",
+        url     => $P->{SERVER} . "GenomeList.pl?dsgid=$blastable"
+    );
+
+    my $list_link =
+        qq{<a href="$genomes_url" target_"blank">}
+      . @dsg_ids
+      . ' genome'
+      . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
+
+    my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
+
+    my %params = (
+        color_hsps   => $color_hsps,
+        program      => $program,
+        expect       => $expect,
+        job_title    => $job_title,
+        wordsize     => $wordsize,
+        comp         => $comp,
+        matrix       => $matrix,
+        gapcost      => $gapcost,
+        match_score  => $match_score,
+        filter_query => $filter_query,
+        resultslimit => $resultslimit,
+        basename     => $basename,
+        zwordsize    => $zwordsize,
+        zgap_start   => $zgap_start,
+        zgap_exten   => $zgap_extension,
+        zchaining    => $zchaining,
+        zthreshold   => $zthreshold,
+        zmask        => $zmask,
+        type         => $type,
+
+        #Genomes
+        dsgid      => $blastable
+    );
+
+    # Optional parameters
+    $params{fid} = $fid if $fid;
+
+    my $url = url_for($PAGE_NAME, %params);
+
+    my $link = CoGe::Accessory::Web::get_tiny_link(url => $url);
+
+    my ($tiny_id) = $link =~ /\/(\w+)$/;
+    my $workflow = $JEX->create_workflow(
+        name    => "cogeblast-$tiny_id",
+        id      => 0,
+        logfile => $cogeweb->logfile
+    );
+
+    CoGe::Accessory::Web::write_log( "process $$", $cogeweb->logfile );
+
+    $width = 400
+      unless $width =~
+          /^\d+$/;    #something wrong with how width is calculated in tmpl file
+
+    my $t1 = new Benchmark;
+    my ( $fasta_file, $query_seqs_info ) = create_fasta_file($seq);
+    my $opts;
+    my $pre_command;
+    my $x;
+    ( $x, $pre_command ) = CoGe::Accessory::Web::check_taint($pre_command);
+    my @results;
+    my $count = 1;
+    my $t2    = new Benchmark;
+
+    foreach my $dsgid (@dsg_ids) {
+        my ( $org, $dbfasta, $dsg ) = get_blast_db($dsgid);
+        next unless $dbfasta;
+        next unless -s $fasta_file;
+
+        my $outfile = $cogeweb->basefile . "-$count.$program";
+
+        push @results,
+          {
+            file     => $outfile,
+            organism => $org,
+            dsg      => $dsg
+          };
+
+        $count++;
+    }
 
     my @completed;
 
     foreach my $item (@results) {
         next unless -r $item->{file};
-        my $command = $item->{command};
         my $outfile = $item->{file};
-        my $ta      = new Benchmark;
+
         my $report =
           $outfile =~ /lastz/
           ? new CoGe::Accessory::blastz_report( { file => $outfile } )
           : new CoGe::Accessory::blast_report( { file => $outfile } );
-        my $tb = new Benchmark;
-        my $itime = timestr( timediff( $tb, $ta ) );
+
         $item->{report} = $report;
         my $file = $report->file();
         $file =~ s/$TEMPDIR//;
@@ -844,12 +1067,9 @@ sub blast_search {
         $item->{link} = $file;
         push @completed, $item;
     }
-    my $t3 = new Benchmark;
-    CoGe::Accessory::Web::write_log( "Initializing sqlite database",
-        $cogeweb->logfile );
+
     initialize_sqlite();
-    my $t4 = new Benchmark;
-    CoGe::Accessory::Web::write_log( "Generating Results", $cogeweb->logfile );
+
     my ( $html, $click_all_links ) = gen_results_page(
         results         => \@completed,
         width           => $width,
@@ -859,22 +1079,12 @@ sub blast_search {
         query_seqs_info => $query_seqs_info,
         link            => $link
     );
-    my $t5              = new Benchmark;
-    my $init_time       = timestr( timediff( $t2, $t1 ) );
-    my $blast_time      = timestr( timediff( $t3, $t2 ) );
-    my $dbinit_time     = timestr( timediff( $t4, $t3 ) );
-    my $resultpage_time = timestr( timediff( $t5, $t4 ) );
-    my $benchmark       = qq{
-Time to initialize:              $init_time
-Time to blast:                   $blast_time
-Time to initialize sqlite:       $dbinit_time
-Time to generate results page:   $resultpage_time
-};
-    CoGe::Accessory::Web::write_log( "$benchmark", $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "Finished!",  $cogeweb->logfile );
 
-    return encode_json(
-        { html => $html, click_all_links => $click_all_links } );
+    return encode_json ({
+        html => $html,
+        click_all_links => $click_all_links,
+        success => JSON::true
+    });
 }
 
 sub gen_results_page {
@@ -929,7 +1139,7 @@ sub gen_results_page {
                 my $id = $hsp->number . '_' . $dsg->id;
                 $click_all_links .= $id . ',';
 
-#my $feat_link = qq{<span class="link" onclick="fill_nearby_feats('$id','true')">Click for Closest Feature</span>};
+                #my $feat_link = qq{<span class="link" onclick="fill_nearby_feats('$id','true')">Click for Closest Feature</span>};
                 my $feat_link = qq{<span>Loading...</span>};
 
                 my $qname = $hsp->query_name;
@@ -951,7 +1161,7 @@ sub gen_results_page {
                   if $hsp->{color};
                 my $rc = $hsp->strand =~ /-/ ? 1 : 0;
                 my $seqview_link =
-qq{<span class="small link" onclick="window.open('SeqView.pl?dsid=}
+                  qq{<span class="small link" onclick="window.open('SeqView.pl?dsid=}
                   . $ds->id
                   . qq{;chr=$chr;start=}
                   . $hsp->subject_start
@@ -966,8 +1176,7 @@ qq{<span class="small link" onclick="window.open('SeqView.pl?dsid=}
                     ID        => $id,
                     QUERY_SEQ => $qname,
                     HSP_ORG   => $org,
-                    HSP =>
-qq{<span class="link" title="Click for HSP information" onclick="update_hsp_info('table_row$id');">}
+                    HSP => qq{<span class="link" title="Click for HSP information" onclick="update_hsp_info('table_row$id');">}
                       . $hsp->number
                       . "</span>",
                     HSP_EVAL   => $hsp->pval,
@@ -1084,6 +1293,8 @@ qq{<table class="small ui-widget-content ui-corner-all"><tr><th>Query Seq<th>}
     $template->param( BLAST_RESULTS => 1 );
     $template->param( DATA_FILES =>
           gen_data_file_summary( prog => $prog, results => $results ) );
+
+    $template->param(LINK => $link);
     my $html = $template->output;
 
     my $temp = qq{
@@ -1092,11 +1303,6 @@ qq{<table class="small ui-widget-content ui-corner-all"><tr><th>Query Seq<th>}
 <span id='link_shown' style='display:none;' class='small infobox'>Use this link to return to this page at any time: <span class='link' onclick=window.open('$link');><b>$link</b></span></span>
 </span>};
 
-    my $box_template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'box.tmpl' );
-    $box_template->param( BOX_NAME => 'CoGeBlast Results ' . $temp );
-    $box_template->param( BODY     => $html );
-    my $outhtml = $box_template->output;
     my $t2      = new Benchmark;
 
     my $figure_time = timestr( timediff( $t1, $t0 ) );
@@ -1108,7 +1314,7 @@ Time to gen images:              $figure_time
 Time to gen results:             $render_time
 };
     CoGe::Accessory::Web::write_log( $benchmark, $cogeweb->logfile );
-    return $outhtml, $click_all_links;
+    return $html, $click_all_links;
 }
 
 sub gen_data_file_summary {
@@ -1374,15 +1580,10 @@ qq{<span class=small>Hits colored by Identity.  <span style="color:#AA0000">Min:
 
             $image_file       =~ s/$TEMPDIR/$TEMPURL/;
             $large_image_file =~ s/$TEMPDIR/$TEMPURL/;
-            my $blast_link;
-            $blast_link .=
-qq{<span class =\"small link\" onclick="window.open('GenomeInfo.pl?gid=}
+            my $blast_link = qq{<span class="small link" onclick="window.open('GenomeInfo.pl?gid=}
               . $data{$org}{dsg}->id
               . qq{')">$org</span><br>};
-            $blast_link .=
-                "<a class =\"small\" href="
-              . $data{$org}{file}
-              . " target=_new>Blast Report</a> ";
+              #. "<a class =\"small\" href=" . $data{$org}{file} . " target=_new>Blast Report</a> "; # mdb removed 8/7/14 - redundant with blast report in Analysis Files section
             $blast_link .= $data{$org}{extra} if $data{$org}{extra};
             $blast_link .= "<br>";
             push @dsgids, $data{$org}{dsg}->id;
@@ -1398,12 +1599,10 @@ qq{<span class =\"small link\" onclick="window.open('GenomeInfo.pl?gid=}
             push @data,
               {
                 DB_NAME => $blast_link,
-                CHR_IMAGE =>
-"<img style=\"position:relative; z-index=1;\" src=$image_file ismap usemap='#"
+                CHR_IMAGE => "<img style=\"position:relative; z-index=1;\" src=$image_file ismap usemap='#"
                   . $cogeweb->basefilename . "_"
                   . "$count' border=0>$image_map",
-                ENLARGE =>
-"<a href='#' onClick='enlarge_picture_window($count);' class='small large_image'>Enlarge</a>"
+                ENLARGE => "<a href='#' onClick='enlarge_picture_window($count);' class='small large_image'>Enlarge</a>"
               };    #, DIV_STYLE=>'style="position:absolute;"'};
 
             $count++;
@@ -1960,6 +2159,13 @@ sub overlap_feats_parse    #Send to GEvo
             my ( $hspnum, $dsgid );
             ( $featid, $hspnum, $dsgid ) = $featid =~ m/^(\d+)_(\d+)_(\d+)$/;
             my ($dsg) = $coge->resultset('Genome')->find($dsgid);
+
+            if ($dsg->deleted) {
+                my $name = $dsg->organism->name;
+                my $error_message = "The genome $name was marked as deleted";
+                return encode_json({error => $error_message });
+            }
+
             $featid .= "_" . $dsg->type->id if $dsg;
             push @list, $featid;
         }
@@ -2272,17 +2478,73 @@ sub export_fasta_file {
     return $url;
 }
 
+sub export_top_hits {
+    my %opts      = @_;
+    my $accn_list = $opts{accn};
+    my $filename  = $opts{filename};
+    return unless (defined $accn_list and defined $filename);
+
+    # Setup file path and SQLite DB
+    my $web = CoGe::Accessory::Web::initialize_basefile( basename => $filename, tempdir  => $TEMPDIR );
+    my $dbh = DBI->connect( "dbi:SQLite:dbname=" . $web->sqlitefile, "", "" );
+    my $sth = $dbh->prepare( qq{SELECT * FROM hsp_data WHERE name = ?} );
+
+    $accn_list =~ s/^,//;
+    $accn_list =~ s/,$//;
+
+    # Filter top scoring hits
+    my %hsp;
+    foreach my $accn ( split( /,/, $accn_list ) ) {
+	my ($hsp_num, $dsgid);
+        if ($accn =~ /no$/) {
+		my $accn_with_commas = $accn;
+            $accn_with_commas =~ tr/_/,/;
+            ( $hsp_num, $dsgid ) = $accn_with_commas =~ /(\d+),(\d+),\w*_?\d+,\d+no$/;
+        }
+        else {
+		if ( $accn =~ tr/_/_/ > 2 ) {
+                	my $accn_with_commas = $accn;
+                	$accn_with_commas =~ tr/_/,/;
+                	( $hsp_num, $dsgid ) =
+                  	$accn_with_commas =~
+                  		/(\d+),(\d+),(\w*_?\d+),(\d+),(\d+),(\d+.?\d*)/;
+            	}
+            	else {
+                	( undef, $hsp_num, $dsgid ) = $accn =~ /(\d+)_(\d+)_(\d+)/;
+            	}
+        }
+        $sth->execute( $hsp_num . "_" . $dsgid ) || die "unable to execute";
+        my ( $qname, $salign, $score );
+        while ( my $hsp_info = $sth->fetchrow_hashref() ) { # FIXME: mdb asks "why is this looped?"
+            #print STDERR Dumper $info, "\n";
+            $qname  = $hsp_info->{qname};
+            $salign = $hsp_info->{salign};
+            $score  = $hsp_info->{score};
+        }
+        if ( !defined $hsp{$qname} || $score > $hsp{$qname}{score} ) {
+            $hsp{$qname}{fasta} = ">$qname\n$salign\n";
+            $hsp{$qname}{score} = $score;
+        }
+    }
+    #print STDERR Dumper \%hsp, "\n";
+
+    # Generate top hits file
+    open( my $fh, "> $TEMPDIR/$filename-tophits.fasta" );
+    foreach my $qname (sort keys %hsp) {
+        print $fh $hsp{$qname}{fasta};
+    }
+    close($fh);
+    
+    return "$TEMPURL/$filename-tophits.fasta";
+}
+
 sub export_to_excel {
     my %opts      = @_;
     my $accn_list = $opts{accn};
     my $filename  = $opts{filename};
 
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(
-        basename => $filename,
-        tempdir  => $TEMPDIR
-    );
-    my $dbh =
-      DBI->connect( "dbi:SQLite:dbname=" . $cogeweb->sqlitefile, "", "" );
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile( basename => $filename, tempdir  => $TEMPDIR );
+    my $dbh = DBI->connect( "dbi:SQLite:dbname=" . $cogeweb->sqlitefile, "", "" );
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
 
     my $workbook = Spreadsheet::WriteExcel->new("$TEMPDIR/Excel_$filename.xls");
@@ -2300,10 +2562,9 @@ sub export_to_excel {
     $worksheet->write( 0, 6, "E-value" );
     $worksheet->write( 0, 7, "Percent ID" );
     $worksheet->write( 0, 8, "Score" );
-    unless ( $accn_list =~ /no/ ) {
-        $worksheet->write( 0, 9,  "Closest Feature" );
-        $worksheet->write( 0, 10, "Distance" );
-    }
+    $worksheet->write( 0, 9, "CoGe Feature ID" );
+    $worksheet->write( 0, 10,  "Closest Feature" );
+    $worksheet->write( 0, 11, "Distance" );
 
     my (
         $org,   $chr,      $pos,    $hsp_no, $eval,   $pid,
@@ -2370,9 +2631,10 @@ sub export_to_excel {
             $worksheet->write( $i, 6, $eval );
             $worksheet->write( $i, 7, $pid );
             $worksheet->write( $i, 8, $score );
-            $worksheet->write( $i, 9, $P->{SERVER} . "FeatView.pl?accn=$name",
+            $worksheet->write( $i, 9, $feat->id );
+            $worksheet->write( $i, 10, $P->{SERVER} . "FeatView.pl?accn=$name",
                 $name );
-            $worksheet->write( $i, 10, $distance );
+            $worksheet->write( $i, 11, $distance );
         }
 
         $i++;
@@ -2400,7 +2662,7 @@ sub generate_tab_deliminated {
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
 
-    my $str = "Name\tHSP No.\tE-value\tPerc ID\tScore\tOrganism\n";
+    my $str = "Name\tHSP No.\tE-value\tPerc ID\tScore\tOrganism\tCoge Feature ID\n";
 
     foreach my $accn ( split( /,/, $accn_list ) ) {
         next if $accn =~ /no$/;
@@ -2417,7 +2679,7 @@ sub generate_tab_deliminated {
             $pid   = $info->{pid};
             $score = $info->{score};
         }
-        $str .= "$name\t$hsp_num\t$pval\t$pid\t$score\t$org\n";
+        $str .= "$name\t$hsp_num\t$pval\t$pid\t$score\t$org\t$featid\n";
     }
     $str =~ s/\n$//;
 
@@ -2889,12 +3151,6 @@ sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
     }
 
     return encode_json( { timestamp => $timestamp, html => $html } );
-}
-
-# FIXME mdb 8/29/12 - this routine is redundantly declared (e.g. ListView.pl, GroupView.pl)
-sub listcmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    $a->name cmp $b->name;
 }
 
 sub get_list_preview {

@@ -2,20 +2,22 @@
 use strict;
 use CoGeX;
 use CoGe::Accessory::Web qw(get_defaults);
+use CoGe::Accessory::Utils qw( trim execute );
+use CoGe::Core::Notebook qw(add_items_to_notebook);
 use File::Path;
 use File::Basename;
 use File::Spec::Functions qw(catdir catfile);
 use File::Touch;
+use File::Copy qw(copy);
 use Getopt::Long;
 use URI::Escape::JavaScript qw(escape unescape);
 use Data::Dumper;
 
 use vars qw(
-    $staging_dir $data_file $notebook_name $notebook_desc $gid $user_name
-    $config $log_file $user $genome $result_dir
+    $staging_dir $file_str $notebook_name $notebook_desc $gid $nid $user_name
+    $config $log_file $user $genome $notebook $result_dir $wid @failed_experiments
 );
 
-my $DEBUG = 0;
 my $DELIMITER = '\t';
 
 #-------------------------------------------------------------------------------
@@ -23,30 +25,33 @@ my $DELIMITER = '\t';
 GetOptions(
     "staging_dir=s" => \$staging_dir,    # temporary staging path
     "result_dir=s"  => \$result_dir,     # results path
-    "data_file=s"   => \$data_file,      # input data file (JS escape)
-    "name=s"        => \$notebook_name,  # notebook name (JS escaped)
+    "files=s"       => \$file_str,       # input data file (JS escape)
+    "name=s"        => \$notebook_name,  # notebook name (JS escaped) if not nid
     "desc=s"        => \$notebook_desc,  # notebook description (JS escaped)
     "gid=s"         => \$gid,            # genome id
+    "nid=s"         => \$nid,            # optional notebook id, otherwise new notebook created
+    "wid=s"         => \$wid,            # workflow id
     "user_name=s"   => \$user_name,      # user name
     "config=s"      => \$config,         # CoGe config file
-    #"log_file=s"    => \$log_file        # optional log file # mdb removed 8/1/14 - logging sent to STDOUT as part of jex changes
 );
 
-# Open log file
 $| = 1;
-#$log_file = "$staging_dir/log.txt" unless $log_file;
+die unless ($staging_dir);
 mkpath($staging_dir) unless -r $staging_dir;
-#open( my $log, ">>$log_file" ) or die "Error opening log file $log_file";
-#$log->autoflush(1);
-print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
+print "Starting $0 (pid $$)\n", qx/ps -o args $$/;
 
 # Process and verify parameters
-$data_file     = unescape($data_file);
+$file_str      = unescape($file_str);
 $notebook_name = unescape($notebook_name);
 $notebook_desc = unescape($notebook_desc);
 
 if ($user_name eq 'public') {
-    print STDOUT "log: error: not logged in\n";
+    print "log: error: not logged in\n";
+    exit(-1);
+}
+
+unless ($gid) {
+    print "log: error: genome id parameter 'gid' not specified\n";
     exit(-1);
 }
 
@@ -63,60 +68,87 @@ else {
 my $connstr = "dbi:mysql:dbname=".$P->{DBNAME}.";host=".$P->{DBHOST}.";port=".$P->{DBPORT}.";";
 my $coge = CoGeX->connect( $connstr, $P->{DBUSER}, $P->{DBPASS} );
 unless ($coge) {
-    print STDOUT "log: error: couldn't connect to database\n";
+    print "log: error: couldn't connect to database\n";
     exit(-1);
 }
 
 # Retrieve genome
-$genome = $coge->resultset('Genome')->find( { genome_id => $gid } );
-unless ($genome) {
-    print STDOUT "log: error finding genome id$gid\n";
-    exit(-1);
+if ($gid) {
+    $genome = $coge->resultset('Genome')->find( { genome_id => $gid } );
+    unless ($genome) {
+        print "log: error finding genome id$gid\n";
+        exit(-1);
+    }
+}
+
+# Retrieve notebook
+if ($nid) {
+    $notebook = $coge->resultset('List')->find( { list_id => $nid } );
+    unless ($notebook) {
+        print "log: error finding notebook id$nid\n";
+        exit(-1);
+    }
 }
 
 # Retrieve user
 $user = $coge->resultset('User')->find( { user_name => $user_name } );
 unless ($user) {
-    print STDOUT "log: error finding user '$user_name'\n";
+    print "log: error finding user '$user_name'\n";
     exit(-1);
 }
 
-# Untar data file
+# Process each file into staging area
 my $data_dir = catdir($staging_dir, 'data');
-unless (-r $data_file) {
-    print STDOUT "log: error: cannot access data file\n";
-    exit(-1);
-}
-unless ($data_file =~ /\.tar\.gz$/) {
-    print STDOUT "log: error: data file needs to be a tarball (end with .tar.gz)\n";
-    exit(-1);
-}
-print STDOUT "log: Decompressing/extracting data\n";
 mkpath($data_dir);
-execute( $P->{TAR}.' -xf '.$data_file.' --directory '.$data_dir );
+my @files = split( ',', $file_str );
+foreach my $file (@files) {
+    my $filename = basename($file);
+
+    # Decompress file (if necessary) - removed, let the load_genome/experiment do this
+#    if ( $file =~ /\.gz$/ ) {
+#        print "log: Decompressing '$filename'\n";
+#        $filename =~ s/\.gz$//;
+#        run( $P->{GUNZIP}.' -c '.$file.' > '.catfile($data_dir, $filename) );
+#        next;
+#    }
+
+    # Untar file (if necessary) - TODO: do this before gunzip if tar.gz file
+    if ( $file =~ /\.tar$/ || $file =~ /\.tar\.gz$/) {
+        print "log: Extracting files\n";
+        run( $P->{TAR}.' -xf '.$file.' --directory '.$data_dir );
+        next;
+    }
+    
+    # Otherwise just copy the file as is
+    run("cp $file $data_dir/$filename");
+#    unless ( copy( $file, catfile($data_dir, $filename) ) ) {
+#        print "log: error copying file:\n";
+#        print "log: $!\n";
+#        exit(-1);
+#   }
+}
 
 # Find metadata file
 my ($metadata_file) = glob("$data_dir/*.txt");
 unless ($metadata_file) { # require a metadata file for now but could be optional in the future
-    print STDOUT "log: error: cannot find .txt metadata file\n";
+    print "log: error: cannot find .txt metadata file\n";
     exit(-1);
 }
 
 # Load metadata file
 my $metadata;
-if ($metadata_file) {
-    print STDOUT "log: Loading metadata file '".fileparse($metadata_file)."'\n";
-    $metadata = get_metadata($metadata_file);
-    unless ($metadata) {
-        print STDOUT "log: error: no metadata loaded\n";
-        exit(-1);
-    }
-    print STDOUT Dumper($metadata), "\n";
+print "log: Loading metadata file '".fileparse($metadata_file)."'\n";
+$metadata = get_metadata($metadata_file);
+unless ($metadata) {
+    print "log: error: no metadata loaded\n";
+    exit(-1);
 }
+print "METADATA:\n", Dumper($metadata), "\n";
 
-# Load each experiment file
-my $exp_count = 0;
-my ($notebook, $exp_ids) = process_dir($data_dir, $metadata);
+#------------------------------------------------------------------------------
+
+# Load each data file
+($notebook, my $items) = process_dir($data_dir, $metadata, $notebook);
 
 # Save result document
 if ($result_dir) {
@@ -126,22 +158,10 @@ if ($result_dir) {
         {
             genome_id => int($genome->id),
             notebook_id => int($notebook->id),
-            experiments => $exp_ids
+            #experiments => $exp_ids
         }
     );
 }
-
-# Yay!
-CoGe::Accessory::Web::log_history(
-    db          => $coge,
-    user_id     => $user->id,
-    page        => "LoadBatch",
-    description => 'load batch experiments',
-    link        => 'NotebookView.pl?nid=' . $notebook->id
-);
-
-print STDOUT "log: Loaded $exp_count experiments\n";
-#close($log);
 
 # Create "log.done" file to indicate completion to JEX
 my $logdonefile = "$staging_dir/log.done";
@@ -168,32 +188,29 @@ sub get_metadata {
         unless (@header) {
             @header = map { trim($_) } split($DELIMITER, $line);
             if (!@header) {
-                print STDOUT "log: error: empty header line\n";
+                print "log: error: empty header line\n";
                 exit(-1);
             }
-#            print STDERR Dumper \@header,"\n";
             next;
         }
 
         # Parse data line
         my @tok = map { trim($_) } split($DELIMITER, $line);
         if (@tok < @header) {
-            print STDOUT "log: error: missing fields (", scalar(@tok), "<", scalar(@header), ") on line $lineNum\n";
-#            print STDERR Dumper \@tok,"\n";
+            print "log: error: missing fields (", scalar(@tok), "<", scalar(@header), ") on line $lineNum\n";
             exit(-1);
         }
         my $i = 0;
         my %fields = map { $_ => $tok[$i++] } @header;
-        #print STDERR Dumper \%fields, "\n";
 
         # Make sure required fields are present
         my $filename = $fields{Filename};
         if (!$filename or !$fields{Name}) {
-            print STDOUT "log: error: missing required column:\nline $lineNum: $line\n";
+            print "log: error: missing required column at line $lineNum: $line\n";
             exit(-1);
         }
         if ($data{$filename}) {
-            print STDOUT "log: error: duplicate filename '$filename'\n";
+            print "log: error: duplicate filename '$filename'\n";
             exit(-1);
         }
 
@@ -203,72 +220,193 @@ sub get_metadata {
     return \%data;
 }
 
-sub trim {
-    my $s = shift;
-    $s =~ s/^\s+//;
-    $s =~ s/\s+$//;
-    $s =~ s/^\"//;
-    $s =~ s/\"$//;
-    return $s;
-}
-
 sub process_dir {
     my $dir = shift;
     my $metadata = shift;
+    my $notebook = shift;
 
-    print STDOUT "process_dir: $dir\n";
+    print "process_dir: $dir\n";
 
-    # Load all experiment files in directory
-    my @experiments;
+    # Load all data files in directory
+    my @loaded;
+    my $total_count = 0;
+    my $load_count = 0;
     opendir( my $fh, $dir ) or die;
     my @contents = sort readdir($fh);
     foreach my $item ( @contents ) {
-        next if ($item =~ /^\./);
-        print STDOUT "item: $dir/$item\n";
-        if ( $item =~ /\.csv|\.bam|\.bed/ && -r "$dir/$item" ) { # file
-            my $md = ();
-            if ($metadata) {
-                if ($metadata->{$item}) {
-                    $md = $metadata->{$item};
-                }
-                else {
-                    print STDOUT "WARNING: no metadata for $item, skipping ...\n";
-                    next;
-                }
-            }
-            my $eid = process_file(
-                file     => "$dir/$item",
-                metadata => $md
-            );
-            push @experiments, int($eid) if $eid;
+        print "process_dir: $dir/$item\n";
+        next if ($item =~ /^\./); # skip hidden files
+        next if ($item =~ /\.txt$/); # skip metadata file
+        
+        # Check for subdirectories in tarball
+        if (-d "$dir/$item") {
+            print "log: warning: '$item' is a directory, skipping ...\n";
+            next;
         }
+        
+        # Get metadata entry for file
+        my $md = ();
+        if ($metadata->{$item}) {
+            $md = $metadata->{$item};
+        }
+        else {
+            print "log: warning: no metadata for file $item, skipping file ...\n";
+            next;
+        }
+        
+        # Call appropriate loader based on file type
+        my $path = catdir($staging_dir, ++$total_count);
+        my ($item_id, $item_type);
+        if ( $item =~ /\.csv|\.tsv|.bed|\.gff|\.vcf|\.bam|\.fastq/i ) { # experiment
+            $item_id = process_experiment( file => "$dir/$item", metadata => $md, path => $path );
+            $item_type = 3; # FIXME hardcoded type
+        }
+        elsif ( $item =~ /\.fa|\.faa|\.fasta/i ) { # genome
+            $item_id = process_genome( file => "$dir/$item", metadata => $md, path => $path );
+            $item_type = 2; # FIXME hardcoded type
+        }
+        else {
+            print "log: warning: unknown file type for $item, skipping file ...\n";
+            next;
+        }
+        
+        next unless ($item_id); # skip if load error
+        $load_count++;
+        push @loaded, { item_type => int($item_type), item_id => int($item_id) };
     }
     closedir($fh);
 
-    unless (@experiments) {
-        print STDOUT "log: error: no experiment files found\n";
+    unless ($load_count) {
+        print "log: error: no data files can be loaded, check that file extensions and metadata fields are correct ",
+              "<a href='https://genomevolution.org/wiki/index.php/LoadBatch'>here</a>.", "\n";
         exit(-1);
     }
-
-    # Create notebook of experiments
-    my $notebook = create_notebook(name => $notebook_name, desc => $notebook_desc, item_list => \@experiments);
-    unless ($notebook) {
-        print STDOUT "log: error: failed to create notebook '$notebook_name'\n";
+    
+    unless (@loaded) {
+        print "log: error: none of the data files were loaded successfully\n";
         exit(-1);
     }
-    print STDOUT "notebook id: ".$notebook->id."\n";
-    print STDOUT "log: Created notebook '$notebook_name'\n";
-    return ($notebook, \@experiments);
+    
+    print "log: ----------------------------------------------------\n";
+    
+    # Print summary of files loaded
+    my %itemsTypeCount; map { $itemsTypeCount{ CoGeX->node_type_name($_->{item_type}) }++ } @loaded;
+    print "log: Number of items loaded: $load_count (", ($total_count - $load_count) ," failed or skipped)\n";
+    foreach my $type (keys %itemsTypeCount) {
+        print 'log: ', $type, ': ', $itemsTypeCount{$type};
+    }
+    
+    # Use specified notebook
+    if ($notebook) {
+        my @item_list = map { [ $_->{item_id}, $_->{item_type} ] } @loaded;
+        unless ( add_items_to_notebook(db => $coge, user => $user, notebook => $notebook, item_list => \@item_list) ) # FIXME change item_list to hash param
+        {
+            print "log: error: failed to add experiments to existing notebook\n";
+            exit(-1);
+        }
+        print "log: Added items to existing notebook '", $notebook->name, "' id", $notebook->id, "\n";
+    }
+    # Otherwise, create notebook of experiments
+    else {
+        $notebook = create_notebook(name => $notebook_name, desc => $notebook_desc, item_list => \@loaded); #FIXME use CoGe::Core::Notebook::create_notebook instead
+        unless ($notebook) {
+            print "log: error: failed to create notebook '$notebook_name'\n";
+            exit(-1);
+        }
+        print "log: Created notebook '", $notebook->name, "' id", $notebook->id, "\n";
+    }
+    
+    return ($notebook, \@loaded);
 }
 
-sub process_file {
+
+sub process_genome { #TODO merge with process_experiment?
     my %opts = @_;
     my $file = $opts{file};
     my $md   = $opts{metadata};
+    my $path = $opts{path};
+    die unless ($file && $md && $path);
 
-    $exp_count++;
+    # Check params and set defaults - FIXME better way to handle capitalized keys as one-liner
+    my $name;
+    $name = $md->{Name} if ($md and $md->{Name});
+    $name = $md->{name} if ($md and $md->{name});
+    my $description = '';
+    $description = $md->{Description} if ($md and $md->{Description});
+    $description = $md->{description} if ($md and $md->{description});
+    my $source = $user->display_name;
+    $source      = $md->{Source} if ($md and $md->{Source});
+    $source      = $md->{source} if ($md and $md->{source});
+    my $version = 1;
+    $version     = $md->{Version} if ($md and $md->{Version});
+    $version     = $md->{version} if ($md and $md->{version});
+    my $restricted = 1;
+    $restricted = ($md->{Restricted} eq 'yes') if ($md and $md->{Restricted});
+    $restricted = ($md->{restricted} eq 'yes') if ($md and $md->{restricted});
+    my $organism_id;
+    $organism_id = $md->{Organism} if ($md and $md->{Organism});
+    $organism_id = $md->{organism} if ($md and $md->{organism});
+    unless ($name && $organism_id) {
+        print "log: error: missing required metadata field for file ", basename($file), ", skipping file ...\n";
+        return;
+    }
 
-    my $exp_staging_dir = catdir($staging_dir, $exp_count);
+    # Run load script
+    print "log: ----------------------------------------------------\n";
+    print "log: Loading genome '$name'\n";
+    $file = escape($file);
+    my $install_dir = $P->{SEQDIR};
+    my $cmd = catfile($P->{SCRIPTDIR}, 'load_genome.pl') . ' ' .
+        "-config $config -user_name '".$user->user_name."' -restricted 1 -name '$name' -desc '$description' " .
+        "-version '$version' -source_name '$source' -organism_id $organism_id " .
+        "-staging_dir $path -install_dir $install_dir -fasta_files '$file' ";
+    print "Running: ", $cmd, "\n";
+    my $output = qx{ $cmd }; # TODO: use run() here instead?
+    print $output;
+    if ( $? != 0 ) {
+        print "load_genome.pl failed with rc=$?\n",
+              "log: error: Genome '$name' was not loaded due to an error\n";
+        return;
+    }
+
+    # Extract genome id from output
+    my ($id) = $output =~ /genome id: (\d+)/;
+    unless ($id) {
+        print "log: error: unable to retrieve genome id from result\n";
+        exit(-1);
+    }
+    print "log: Genome '$name' id$id loaded successfully\n";
+
+    # Add user-defined metadata fields to genome
+    my $g = $coge->resultset('Genome')->find($id);
+    die unless $g;
+
+    foreach my $column_name (keys %$md) {
+        # Skip built-in fields
+        next if (grep { /$column_name/i } ('filename', 'name', 'description', 'source', 'version', 'restricted', 'genome', 'organism'));
+
+        # Add annotation
+        my $type = $coge->resultset('AnnotationType')->find_or_create( { name => $column_name } );
+        die unless ($type);
+        $g->add_to_experiment_annotations(
+            {
+                annotation_type_id => $type->id,
+                annotation         => $md->{$column_name}
+            }
+        );
+    }
+
+    # TODO add support for "_link" option
+
+    return $id;
+}
+
+sub process_experiment {
+    my %opts = @_;
+    my $file = $opts{file};
+    my $md   = $opts{metadata};
+    my $path = $opts{path};
+    die unless ($file && $md && $path);
 
     # Check params and set defaults
     my $name;
@@ -286,65 +424,70 @@ sub process_file {
     my $restricted = 1;
     $restricted = ($md->{Restricted} eq 'yes') if ($md and $md->{Restricted});
     $restricted = ($md->{restricted} eq 'yes') if ($md and $md->{restricted});
-    die unless ($name and $gid and $source and $user);
+    my $genome_id = $gid;
+    $genome_id = $md->{Genome} if ($md and $md->{Genome});
+    $genome_id = $md->{genome} if ($md and $md->{genome});
+    unless ($name) { #($name && $genome_id) {
+        print "log: error: missing required metadata field for file ", basename($file), ", skipping file ...\n";
+        return;
+    }
 
     # Run load script
-    print STDOUT "log: Loading experiment '$name'\n";
+    print "log: ----------------------------------------------------\n";
+    print "log: Loading experiment '$name'\n";
     $file = escape($file);
+    my $install_dir = $P->{EXPDIR};
     my $cmd = catfile($P->{SCRIPTDIR}, 'load_experiment.pl') . ' ' .
         "-config $config -user_name '".$user->user_name."' -restricted 1 -name '$name' -desc '$description' " .
-        "-version '$version' -gid $gid -source_name '$source' " .
-        "-staging_dir $exp_staging_dir -install_dir ".$P->{EXPDIR}." -data_file '$file' ";
-        #"-log_file $log_file"; # reuse log so that all experiment loads are present
-    print STDOUT "Running: " . $cmd, "\n";
-    return if ($DEBUG);
-    my $output = qx{ $cmd };
+        "-version '$version' -wid $wid -gid $gid -source_name '$source' " .
+        "-staging_dir $path -install_dir $install_dir -data_file '$file' ";
+    print "Running: ", $cmd, "\n";
+    my $output = qx{ $cmd }; # TODO: use run() here?
+    print $output;
     if ( $? != 0 ) {
-        print STDOUT "log: error: load_experiment.pl failed with rc=$?\n";
-        exit(-1);
+        print "load_experiment.pl failed with rc=$?\n",
+              "log: error: Experiment '$name' was not loaded due to an error\n";
+        return;
     }
-    #open( $log, ">>$log_file" ) or die "Error opening log file $log_file"; # Reopen log file
-    print STDOUT "log: Experiment '$name' loaded successfully\n";
 
     # Extract experiment id from output
-    my ($eid) = $output =~ /experiment id: (\d+)/;
-    if (!$eid) {
-        print STDOUT "log: error: unable to retrieve experiment id\n";
+    my ($id) = $output =~ /experiment id: (\d+)/;
+    unless ($id) {
+        print "log: error: unable to retrieve experiment id\n";
         exit(-1);
     }
-    print STDOUT "Captured experiment id $eid\n";
+    print "log: Experiment '$name' id$id loaded successfully\n";
 
-    # Add experiment annotations from metadata file
-    if ($md) {
-        my $exp = $coge->resultset('Experiment')->find($eid);
-        die unless $exp;
+    # Add Add user-defined metadata fields to experiment
+    my $exp = $coge->resultset('Experiment')->find($id);
+    die unless $exp;
 
-        foreach my $column_name (keys %$md) {
-            # Skip built-in fields
-            next if (grep { /$column_name/i } ('filename', 'name', 'description', 'source', 'version', 'restricted'));
+    foreach my $column_name (keys %$md) {
+        # Skip built-in fields
+        next if (grep { /$column_name/i } ('filename', 'name', 'description', 'source', 'version', 'restricted', 'genome'));
 
-            # Add annotation
-            my $type = $coge->resultset('AnnotationType')->find_or_create( { name => $column_name } );
-            $exp->add_to_experiment_annotations(
-                {
-                    annotation_type_id => $type->id,
-                    annotation         => $md->{$column_name}
-                }
-            );
-        }
-
-        # TODO add support for "_link" option
+        # Add annotation
+        my $type = $coge->resultset('AnnotationType')->find_or_create( { name => $column_name } );
+        die unless ($type);
+        $exp->add_to_experiment_annotations(
+            {
+                annotation_type_id => $type->id,
+                annotation         => $md->{$column_name}
+            }
+        );
     }
 
-    return $eid;
+    # TODO add support for "_link" option
+
+    return $id;
 }
 
-sub create_notebook {
+sub create_notebook { #FIXME use routine CoGe::Core::Notebook
     my %opts    = @_;
     my $name    = $opts{name};
     my $desc    = $opts{desc};
     my $item_list = $opts{item_list};    # optional
-    my $type_id = 2; # hardcoded to "experiment" type
+    my $type_id = 2; # hardcoded to "mixed" type
 
     $name = '' unless defined $name;
     $desc = '' unless defined $desc;
@@ -354,8 +497,8 @@ sub create_notebook {
         {
             name         => $name,
             description  => $desc,
-            list_type_id => $type_id,
-            restricted => 1
+            list_type_id => 5, # FIXME hardcoded to 5
+            restricted   => 1
         }
     );
     return unless $list;
@@ -377,8 +520,8 @@ sub create_notebook {
         my $conn = $coge->resultset('ListConnector')->find_or_create(
             {
                 parent_id  => $list->id,
-                child_id   => $_,
-                child_type => 3 # hardcoded to "experiment" type
+                child_id   => $_->{item_id},
+                child_type => $_->{item_type}
             }
         );
         return unless $conn;
@@ -388,20 +531,19 @@ sub create_notebook {
     CoGe::Accessory::Web::log_history(
         db          => $coge,
         user_id     => $user->id,
-        page        => "User",
-        description => 'create notebook id' . $list->id
+        page        => "LoadBatch",
+        description => 'Create notebook "'.$name.'" id' . $list->id
     );
 
     return $list;
 }
 
-sub execute { # FIXME move into Util.pm
+sub run {
     my $cmd = shift;
-    print STDOUT "$cmd\n";
-    my @cmdOut    = qx{$cmd};
-    my $cmdStatus = $?;
-    if ( $cmdStatus != 0 ) {
-        print STDOUT "log: error: command failed with rc=$cmdStatus: $cmd\n";
+    print "run:  $cmd\n";
+    my $rc = execute($cmd);
+    if ( $rc != 0 ) {
+        print "log: error: command failed with rc=$rc: $cmd\n";
         exit(-1);
     }
 }

@@ -193,7 +193,7 @@ sub find_workflows {
 # Private functions
 sub _send_request {
     my ($self, $request) = @_;
-    my ($submitted, $TIMEOUT) = (time, 30000);
+    my ($submitted, $TIMEOUT) = (time, 30);
 
     # Set the default response as an error in case a response is not recieved.
     my $response = { status => "error" };
@@ -204,11 +204,12 @@ sub _send_request {
         $json_request = encode_json($request);
         $socket = zmq_socket($self->_context, ZMQ_REQ);
 
+        zmq_setsockopt($socket, ZMQ_LINGER, 0);
         zmq_connect($socket, _connection_string($self->host, $self->port));
         zmq_sendmsg($socket, $json_request, ZMQ_NOBLOCK);
         while ((time - $submitted) < $TIMEOUT && not defined($msg)) {
             $msg = zmq_recvmsg($socket, ZMQ_NOBLOCK);
-            sleep 0.01;
+            sleep 0.1;
         }
 
         zmq_close($socket);

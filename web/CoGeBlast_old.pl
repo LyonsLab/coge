@@ -8,6 +8,7 @@ use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw( commify );
 use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
+use CoGe::Core::List qw(listcmp);
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
@@ -131,6 +132,7 @@ sub gen_html {
       HTML::Template->new( filename => $P->{TMPLDIR} . 'CoGeBlast.tmpl' );
     $prebox->param( RESULTS_DIV => 1 );
     $template->param( PREBOX => $prebox->output );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
     $html .= $template->output;
 }
 
@@ -2893,12 +2895,6 @@ sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
     $html = "<option disabled='disabled'>No matches</option>" unless $html;
 
     return encode_json( { timestamp => $timestamp, html => $html } );
-}
-
-# FIXME mdb 8/29/12 - this routine is redundantly declared (e.g. ListView.pl, GroupView.pl)
-sub listcmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    $a->name cmp $b->name;
 }
 
 sub get_list_preview {

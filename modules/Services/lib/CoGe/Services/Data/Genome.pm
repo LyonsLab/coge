@@ -154,7 +154,7 @@ sub load {
 #    $cmd .= "-config $CONFIGFILE"; #"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
 
     my ($workflow_id, $error_msg) = create_genome_from_file(
-        user => $user, 
+        user => $user,
         metadata => {
             name => escape($data->{name}),
             description => escape($data->{description}),

@@ -29,6 +29,7 @@ use warnings;
 use POSIX qw( ceil );
 use Data::GUID;
 use Data::Dumper;
+use File::Basename qw(fileparse);
 
 BEGIN {
     use vars qw ($VERSION $FASTA_LINE_LEN @ISA @EXPORT);
@@ -37,9 +38,11 @@ BEGIN {
     $VERSION = 0.1;
     $FASTA_LINE_LEN = 80;
     @ISA     = qw (Exporter);
-    @EXPORT =
-      qw( units commify print_fasta get_unique_id get_link_coords format_time_diff sanitize_name
-        execute );
+    @EXPORT = qw( 
+        units commify print_fasta get_unique_id get_link_coords 
+        format_time_diff sanitize_name execute 
+        trim js_escape html_escape to_filename
+    );
 }
 
 sub units {
@@ -63,6 +66,30 @@ sub commify {
     my $text = reverse $_[0];
     $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
     return scalar reverse $text;
+}
+
+sub trim {
+    my $s = shift;
+    $s =~ s/^\s+//;
+    $s =~ s/\s+$//;
+    $s =~ s/^\"//;
+    $s =~ s/\"$//;
+    return $s;
+}
+
+sub js_escape {
+    my $s = shift;
+    $s =~ s/[\x00-\x1f]/ /g; # remove non-printable ascii chars
+    $s =~ s/\'/\\'/g;
+    $s =~ s/\"/\\"/g;
+    return $s;
+}
+
+sub html_escape {
+    my $s = shift;
+    $s =~ s/[\x00-\x1f]/ /g; # remove non-printable ascii chars
+    $s =~ s/\'/\&\#8216\;/g; # convert apostrophe char
+    return $s;
 }
 
 sub print_fasta {
@@ -97,20 +124,23 @@ sub get_link_coords { # mdb added 11/20/13 issue 254
 	return ($start, $stop);
 }
 
-sub sanitize_name {
-    my $org = shift;
+# Convert a string to filename-friendly version
+sub sanitize_name { 
+    my $name = shift;
+    
+    return unless (defined $name);
 
-    $org =~ s/\///g;
-    $org =~ s/\s+/_/g;
-    $org =~ s/\(//g;
-    $org =~ s/\)//g;
-    $org =~ s/://g;
-    $org =~ s/;//g;
-    $org =~ s/#/_/g;
-    $org =~ s/'//g;
-    $org =~ s/"//g;
+    $name =~ s/\///g;   # remove /
+    $name =~ s/\s+/_/g; # replace whitespace with _
+    $name =~ s/\(//g;   # remove (
+    $name =~ s/\)//g;   # remove )
+    $name =~ s/://g;    # remove :
+    $name =~ s/;//g;    # remove ;
+    $name =~ s/#/_/g;   # replace # with _
+    $name =~ s/'//g;    # remove '
+    $name =~ s/"//g;    # remove "
 
-    return $org;
+    return $name;
 }
 
 sub format_time_diff {
@@ -133,14 +163,25 @@ sub format_time_diff {
     return $elapsed;
 }
 
+sub to_filename {
+    my ($name, undef, undef) = fileparse(shift, qr/\.[^.]*/);
+    return $name;
+}
+
 sub execute {
     my $cmd = shift;
+    my $error_msg = shift; # optional
 
     my @cmdOut = qx{$cmd};
     my $cmdStatus = $?;
 
     if ($cmdStatus != 0) {
-        say STDERR "error: command failed with rc=$cmdStatus: $cmd";
+        if ($error_msg) {
+            print STDERR $error_msg;
+        }
+        else {
+            say STDERR "error: command failed with rc=$cmdStatus: $cmd";
+        }
     }
 
     return $cmdStatus;

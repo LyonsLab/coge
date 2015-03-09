@@ -87,6 +87,7 @@ sub gen_html {
     $template->param( LOGO_PNG => "TreeView-logo.png" );
     $template->param( BODY     => $body );
     $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
+    $template->param( ADMIN_ONLY => $USER->is_admin );
     $html .= $template->output;
     return $html;
 }

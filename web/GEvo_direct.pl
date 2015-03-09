@@ -3,20 +3,19 @@
 use strict;
 use Data::Dumper;
 use CGI;
+use CGI::Ajax;
 use Image::Size;
 use HTML::Template;
-use CoGe::Accessory::LogUser;
-use CoGe::Accessory::Web;
-use CGI::Ajax;
 use Digest::MD5 qw(md5_base64);
 use DBI;
 use File::Path;
+#use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Web;
 no warnings 'redefine';
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
-use vars
-  qw ($P $FORM $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $USER $DATE $TEMPDIR $TEMPURL $COOKIE_NAME $coge);
+use vars qw ($P $FORM $USER $TEMPDIR $TEMPURL $LINK $PAGE_TITLE $PAGE_NAME $coge);
 $P = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
 
@@ -25,33 +24,13 @@ $TEMPDIR = $P->{TEMPDIR} . "GEvo";
 $TEMPURL = $P->{TEMPURL} . "GEvo";
 mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
 
-$DATE = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-$COOKIE_NAME = $P->{COOKIE_NAME};
+$PAGE_TITLE = "GEvo_direct";
+$PAGE_NAME  = "$PAGE_TITLE.pl";
 
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
+    cgi => $FORM,
+    page_title => $PAGE_TITLE
+);
 
 my $pj = new CGI::Ajax(
     gen_html => \&gen_html,
@@ -65,18 +44,18 @@ $pj->js_encode_function('escape');
 print $FORM->header, gen_html();
 
 sub gen_html {
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( BODY => gen_body() );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param( USER       => $name );
-    $template->param( HELP       => "/wiki/index.php?title=GEvo_direct" );
+    $template->param( USER       => $name,
+                      HELP       => "/wiki/index.php?title=GEvo_direct",
+                      TITLE      => "GEvo direct:  reviewing past results.", 
+                      PAGE_TITLE => "GEvo direct" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE       => $DATE );
-    $template->param( TITLE      => "GEvo direct:  reviewing past results." );
-    $template->param( PAGE_TITLE => "GEvo direct" );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
+    
     return $template->output;
 }
 

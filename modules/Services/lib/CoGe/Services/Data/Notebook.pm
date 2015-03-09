@@ -3,6 +3,7 @@ use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 use CoGeX;
 use CoGe::Services::Auth;
+use CoGe::Core::Notebook;
 
 sub search {
     my $self = shift;
@@ -17,21 +18,8 @@ sub search {
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
 
-    # Search genomes
-    my $search_term2 = '%' . $search_term . '%';
-    my @notebooks = $db->resultset("List")->search(
-        \[
-            'list_id = ? OR name LIKE ? OR description LIKE ?',
-            [ 'list_id', $search_term  ],
-            [ 'name',        $search_term2 ],
-            [ 'description', $search_term2 ]
-        ]
-    );
-
-    # Filter response
-    my @filtered = grep {
-        !$_->restricted || (defined $user && $user->has_access_to_list($_))
-    } @notebooks;
+    # Search notebooks and filter based on user permissions
+    my $aNotebooks = search_notebooks(db => $db, search_term => $search_term, user => $user);
 
     # Format response
     my @result = map {
@@ -40,7 +28,7 @@ sub search {
         name => $_->name,
         description => $_->description
       }
-    } @filtered;
+    } @$aNotebooks;
 
     $self->render(json => { notebooks => \@result });
 }
