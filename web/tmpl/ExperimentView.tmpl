@@ -328,6 +328,51 @@ function export_data() {
     });
 }
 
+function render_template(template, container) {
+    container.empty()
+        .hide()
+        .append(template)
+        .show();//.slideDown();
+}
+
+function dialog_snp_options() {
+	var dialog = $('<div class="dialog_box small" style="padding:1em;"></div>');
+	var template = $($("#snp-template2").html());
+
+    var options_templates = {
+        coge: $($("#coge-snp-template").html()),
+        samtools: $($("#samtools-snp-template").html()),
+        platypus: $($("#platypus-snp-template").html()),
+        gatk: $($("#gatk-snp-template").html())
+    };
+    
+	var run_button = $('<span class="r ui-button ui-corner-all coge-button" style="margin-right:2em;"> Run </span>');
+	run_button.click(function() {
+		console.log("click");
+	});
+	
+	var update = function() {
+        var selected = $(this).val();
+        if (!selected) selected = 'coge';
+        template.append(run_button);
+        render_template(options_templates[selected], options_container);
+        render_template(template, dialog);
+    };
+	
+    var options_container = template.find('#snp-container');
+    options_container.removeClass('hidden');
+    var method = template.find('#snp-method');
+    method.removeAttr("disabled");
+    $(document).on('change', '#snp-method', update);
+	
+    update();
+//    render_template(options_templates['coge'], options_container);
+//	render_template(template, dialog);
+	
+	dialog.dialog({ width: '35em', title: "Select SNP Analysis Options"})
+		.dialog('open');
+}
+
 function find_snps(method) {
     // Prevent concurrent executions
     if ( $("#progress_dialog").dialog( "isOpen" ) )
@@ -735,7 +780,7 @@ function get_tag_description (name) {
                     		<span class="title5">Analyze:</span>
                     	</td>
                     	<td>
-                    		<span class="data5 link" ondblclick="$(find_snps_dialog).dialog('open');" onclick="$(find_snps_dialog).dialog('open');">Find SNPs</span>
+                    		<span class="data5 link" ondblclick="dialog_snp_options();" onclick="dialog_snp_options();">Identify SNPs</span>
                     	</td>
                     </tr>
 			        </TMPL_IF>
@@ -865,3 +910,5 @@ function get_tag_description (name) {
 	    <div id="log_contents" class="border hidden padded coge-code" style="border:1px solid gray; color: navy;"></div>
 	</div>
 </TMPL_IF>
+
+<TMPL_INCLUDE "widgets/pipeline-options.tmpl">
