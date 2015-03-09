@@ -1,4 +1,31 @@
 <tmpl_if name=MAIN>
+<style>
+div.deleted { display: none; }
+
+@font-face {
+	font-family: 'Glyphicons Halflings';
+	src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot');
+	src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.woff') format('woff'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.ttf') format('truetype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');
+}
+
+.glyphicon {
+	position: relative;
+	top: 1px;
+	display: inline-block;
+	font-family: 'Glyphicons Halflings';
+	font-style: normal;
+	font-weight: normal;
+	line-height: 1;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+.glyphicon-search:before {
+	content: "\e003";
+}
+}
+</style>
+
 <tmpl_if name=results>
     <section id="results" class="ui-widget-content ui-corner-all">
         <tmpl_var name=results>
@@ -302,6 +329,8 @@
                         <option value="-1" <tmpl_var name="spa_more_select"> > more
                     </select>
                           pieces (contigs, scaffolds, etc)
+		    </span><br>
+		    <span class ="small">(Note: SPA is not compatible with syntenic depth or merging syntenic blocks.  If SPA is selected with those options, your dotplot image will fail to be drawn.)</span>
                 <li>
                     <label>Hide contigs without synteny?</label>
                     <input type="checkbox" name="show_non_syn" id="show_non_syn" value="true" <tmpl_var name="show_non_syn">><span><br>
@@ -372,16 +401,16 @@
 <tmpl_include name="/widgets/Overlay.tmpl">
 
 <!-- Load scripts last for loading -->
-<script src="js/coge/utils.js"></script>
-<script src="js/coge/colors.js"</script>
-<script src="js/synmap.js"></script>
+<script type="text/javascript" src="js/coge/utils.js"></script>
+<script type="text/javascript" src="js/coge/colors.js"</script>
+<script type="text/javascript" src="js/pages/synmap.js"></script>
 <link href="js/vendor/bioplot/dist/bioplot.min.css" rel="stylesheet" />
-<script src="js/vendor/underscore/underscore.js"></script>
-<script src="js/vendor/d3/d3.min.js"></script>
-<script src="js/vendor/jdot/dist/jdot.js"></script>
-<script src="js/vendor/bioplot/dist/bioplot.js"></script>
-<script src="js/xhairs.js"></script>
-<script src="js/synmap.js"></script>
+<script type="text/javascript" src="js/vendor/underscore/underscore.js"></script>
+<script type="text/javascript" src="js/vendor/d3/d3.min.js"></script>
+<script type="text/javascript" src="js/vendor/jdot/dist/jdot.js"></script>
+<script type="text/javascript" src="js/vendor/bioplot/dist/bioplot.js"></script>
+<script type="text/javascript" src="js/pages/synmap.js"></script>
+<script type="text/javascript" src="js/xhairs.js"></script>
 <script type="text/javascript">
 $(function(){
     <tmpl_var name=display_dagchainer_settings>

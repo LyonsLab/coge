@@ -9,12 +9,14 @@ use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils;
 use CoGe::Accessory::IRODS;
 use CoGe::Core::Storage qw( create_annotation_dataset get_workflow_paths );
+use CoGe::Core::Genome qw(genomecmp);
 use HTML::Template;
 use JSON::XS;
 use URI::Escape::JavaScript qw(escape);
 use File::Path;
 use File::Copy;
 use File::Basename;
+use File::Slurp;
 use File::Spec::Functions qw( catdir catfile );
 use File::Listing qw(parse_dir);
 use LWP::Simple;
@@ -87,20 +89,23 @@ sub generate_html {
     else {
         $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param( PAGE_TITLE => $PAGE_TITLE,
+					  TITLE      => "LoadAnnotation",
         				  PAGE_LINK  => $LINK,
-        				  HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+        				  #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+					  HELP       => $P->{SERVER} );
         my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
         $name .= ' ' . $USER->last_name
           if ( $USER->first_name && $USER->last_name );
         $template->param( USER     => $name );
-        $template->param( LOGO_PNG => $PAGE_TITLE . "-logo.png" );
+        $template->param( LOGO_PNG => "CoGe.svg" );
         $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
     
         my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
         $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
     
         $template->param( ADJUST_BOX => 1 );
+        $template->param( ADMIN_ONLY => $USER->is_admin );
     }
     
     $template->param( BODY => generate_body() );
@@ -148,7 +153,7 @@ sub generate_body {
         FILE_SELECT_SINGLE       => 1,
         DEFAULT_TAB              => 0,
         DISABLE_IRODS_GET_ALL    => 1,
-        MAX_IRODS_LIST_FILES     => 100,
+        MAX_IRODS_LIST_FILES     => 1000,
         MAX_IRODS_TRANSFER_FILES => 30,
         MAX_FTP_FILES            => 30,
         USER                     => $USER->user_name
@@ -241,7 +246,7 @@ sub load_from_ftp {
             }
         }
         else {                                              # file
-            my ($filename) = $url =~ /([^\/]+)\s*$/;
+            my ($filename) = $url =~ /([^\/]+?)(?:\?|$)/;
             push @files, { name => $filename, url => $url };
         }
     }
@@ -386,17 +391,11 @@ sub load_annotation {
     my $link        = $opts{link};
     my $version     = $opts{version};
     my $source_name = $opts{source_name};
-    my $restricted  = $opts{restricted};
     my $user_name   = $opts{user_name};
     my $gid         = $opts{gid};
     my $items       = $opts{items};
 
-    # print STDERR "load_annotation: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
-
-	# Added EL: 10/24/2013.  Solves the problem when restricted is unchecked.
-	# Otherwise, command-line call fails with next arg being passed to
-	# restricted as option
-    $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
+    # print STDERR "load_annotation: name=$name description=$description version=$version gid=$gid\n";
 
     # Check login
     if ( !$user_name || !$USER->is_admin ) {
@@ -431,7 +430,6 @@ sub load_annotation {
             link => $link,
             version => $version,
             source_name => $source_name,
-            restricted => $restricted,
             genome_id => $gid
         },
         files => \@files
@@ -543,16 +541,6 @@ sub search_genomes {
     return encode_json( { timestamp => $timestamp, items => \@items } );
 }
 
-# FIXME this comparison routine is duplicated elsewhere
-sub genomecmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    $a->organism->name cmp $b->organism->name
-      || versioncmp( $b->version, $a->version )
-      || $a->type->id <=> $b->type->id
-      || $a->name cmp $b->name
-      || $b->id cmp $a->id;
-}
-
 sub get_sources {
 
     #my %opts = @_;
@@ -583,15 +571,29 @@ sub create_source {
     return $name;
 }
 
+sub get_debug_log {
+    my %opts         = @_;
+    my $workflow_id = $opts{workflow_id};
+    return unless $workflow_id;
+    #TODO authenticate user access to workflow
+
+    my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
+    return unless (-r $results_path);
+
+    my $result_file = catfile($results_path, 'debug.log');
+    return unless (-r $result_file);
+
+    my $result = read_file($result_file);
+    return $result;
+}
+
 sub send_error_report {
     my %opts = @_;
     my $load_id = $opts{load_id};
     my $job_id = $opts{job_id};
 
-    my @paths= ($P->{SECTEMPDIR}, $PAGE_TITLE, $USER->name, $load_id, "staging");
-
     # Get the staging directory
-    my $staging_dir = File::Spec->catdir(@paths);
+    my ($staging_dir, $result_dir) = get_workflow_paths($USER->name, $job_id);
 
     my $url = $P->{SERVER} . "$PAGE_TITLE.pl?";
     $url .= "job_id=$job_id;" if $job_id;
@@ -606,8 +608,10 @@ sub send_error_report {
         . $USER->id . ' '
         . $USER->date . "\n\n"
         . "staging_directory: $staging_dir\n\n"
+        . "result_directory: $result_dir\n\n"
         . "tiny link: $url\n\n";
-    $body .= get_load_log();
+
+    $body .= get_debug_log(workflow_id => $job_id);
 
     CoGe::Accessory::Web::send_email(
         from    => $email,

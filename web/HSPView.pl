@@ -73,10 +73,11 @@ sub gen_html {
     my $form = shift || $FORM;
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( LOGO_PNG   => "HSPView-logo.png" );
+    $template->param( LOGO_PNG   => "CoGe.svg" );
     $template->param( TITLE      => 'HSP Viewer' );
     $template->param( PAGE_TITLE => 'HSPView' );
-    $template->param( HELP       => "/wiki/index.php?title=HSPView" );
+    #$template->param( HELP       => "/wiki/index.php?title=HSPView" );
+    $template->param( HELP       => $P->{SERVER} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
@@ -106,6 +107,7 @@ sub gen_html {
     else {
         $template->param( BODY => "Can't read or find file $report_file" );
     }
+    $template->param( ADMIN_ONLY => $USER->is_admin );
     my $html;
     $html .= $template->output;
     return $html;

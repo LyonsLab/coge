@@ -1,4 +1,5 @@
 #!/usr/bin/perl -w
+
 use strict;
 use warnings;
 use CGI;
@@ -57,14 +58,17 @@ no warnings 'redefine';
 # for security purposes
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
-use vars qw($P $PAGE_TITLE $PAGE_NAME $LINK
-  $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $GENOMETHREADER
+use vars qw($P $PAGE_TITLE $PAGE_NAME $LINK $DATE
+  $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $GENOMETHREADER
   $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge
   $NUM_SEQS $MAX_SEQS $MAX_PROC %FUNCTION);
 
 $FORM                 = new CGI;
 $CGI::POST_MAX        = 60 * 1024 * 1024;    # 24MB
 $CGI::DISABLE_UPLOADS = 0;
+
+$PAGE_TITLE = 'GEvo';
+$PAGE_NAME  = "$PAGE_TITLE.pl";
 
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     cgi => $FORM,
@@ -74,11 +78,9 @@ $CGI::DISABLE_UPLOADS = 0;
 $ENV{PATH} = $P->{COGEDIR};
 
 #print Dumper $P;
-$PAGE_TITLE = 'GEvo';
-$PAGE_NAME  = "$PAGE_TITLE.pl";
 $BL2SEQ     = $P->{BL2SEQ};
 $BLASTZ     = $P->{LASTZ};
-$BLASTZ .= " --ambiguous=iupac";
+$BLASTZ     .= " --ambiguous=iupac";
 $LAGAN          = $P->{LAGAN};
 $CHAOS          = $P->{CHAOS};
 $GENOMETHREADER = $P->{GENOMETHREADER};
@@ -86,6 +88,12 @@ $DIALIGN        = $P->{DIALIGN};
 $TEMPDIR        = $P->{TEMPDIR} . "GEvo";
 $TEMPURL        = $P->{TEMPURL} . "GEvo";
 $MAX_PROC       = $P->{MAX_PROC};
+
+$DATE = sprintf(
+    "%04d-%02d-%02d %02d:%02d:%02d",
+    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
+      ->(localtime)
+);
 
 #for chaos
 $ENV{'LAGAN_DIR'} = $P->{LAGANDIR};
@@ -99,11 +107,6 @@ $BENCHMARK = 1;
 $NUM_SEQS  = 2;         #SHABARI EDIT
 $MAX_SEQS  = 25;
 $|         = 1;         # turn off buffering
-$DATE      = sprintf(
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
-);
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
 
@@ -172,11 +175,12 @@ sub gen_html {
     my $html;    # =  "Content-Type: text/html\n\n";
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( LOGO_PNG   => "GEvo-logo.png" );
-    $template->param( TITLE      => 'Genome Evolution Analysis',
+    $template->param( LOGO_PNG   => "CoGe.svg" );
+    $template->param( TITLE      => 'GEvo: Genome Evolution Analysis',
     				  PAGE_TITLE => 'GEvo',
     				  PAGE_LINK  => $LINK,
-    				  HELP       => '/wiki/index.php?title=GEvo' );
+    				  #HELP       => '/wiki/index.php?title=GEvo' );
+				  HELP       => $P->{SERVER} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
@@ -184,6 +188,7 @@ sub gen_html {
     $template->param( LOGON  => 1 ) unless $USER->user_name eq "public";
     $template->param( NO_BOX => 1 );
     $template->param( BODY   => gen_body() );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
     my $prebox = HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo.tmpl' );
     $prebox->param( RESULTS_DIV => 1 );
     $template->param( PREBOX     => $prebox->output );
@@ -220,6 +225,8 @@ sub gen_body {
     }
     my @seq_nums;
     my @seq_sub;
+
+    my $index = 1;
     for ( my $i = 1 ; $i <= $num_seqs ; $i++ ) {
         my (
             $draccn, $pos,   $chr,  $fid, $dsid,
@@ -227,7 +234,7 @@ sub gen_body {
         );
 
         #order by which genomi regions are displayed, top to bottom
-        $display_order = $i unless $display_order;
+        $display_order = $index unless $display_order;
         $draccn = $form->param( "accn" . $i ) if $form->param( "accn" . $i );
         $pos    = $form->param( "x" . $i )    if $form->param( "x" . $i );
         $chr = $form->param( "chr" . $i ) if defined $form->param( "chr" . $i );
@@ -248,6 +255,11 @@ sub gen_body {
             my ($feat) = $coge->resultset('Feature')->find($fid);
             ($draccn) = $feat->names if $feat;
 
+            # Check for available genomes
+            next unless grep {
+                $_ && !$_->deleted && $USER->has_access_to_genome($_)
+            } $feat->dataset->genomes;
+
             unless ($draccn)                    #no name!  This is a problem
             {
                 $pos  = $feat->start;
@@ -255,6 +267,43 @@ sub gen_body {
                 $dsid = $feat->dataset_id;
             }
         }
+
+        # Check if all genomes have been deleted
+        if ($dsid) {
+            my $dataset = $coge->resultset("Dataset")->find($dsid);
+
+            if ($dataset) {
+                next unless grep {
+                    $_ && !$_->deleted && $USER->has_access_to_genome($_)
+                } $dataset->genomes;
+            }
+        }
+
+        ## Check if the genome was deleted
+        if ($dsgid) {
+            my $genome = $coge->resultset('Genome')->find($dsgid);
+            next unless $genome && !$genome->deleted && $USER->has_access_to_genome($genome);
+        }
+
+        if ($draccn) {
+            my $rs = $coge->resultset('Dataset')->search(
+                { 'feature_names.name' => uri_unescape($draccn), },
+                {
+                    'join' => { 'features' => 'feature_names', },
+                }
+            );
+
+            if ($rs) {
+                while (my $ds = $rs->next()) {
+                    if ($ds) {
+                        next unless grep {
+                            $_ && !$_->deleted && $USER->has_access_to_genome($_)
+                        } $ds->genomes;
+                    }
+                }
+            }
+        }
+
         my $drup = $form->param( 'dr' . $i . 'up' )
           if defined $form->param( 'dr' . $i . 'up' );
         my $drdown = $form->param( 'dr' . $i . 'down' )
@@ -287,15 +336,16 @@ sub gen_body {
         my $refy = "checked" if $form->param( 'ref' . $i );
         my $refn = "checked" unless $refy;
         my $org_title;
-        my $dsg_menu = qq{<input type="hidden" id="dsgid$i"};
+        my $dsg_menu = qq{<input type="hidden" id="dsgid$index"};
         $dsg_menu .= qq{value ="$dsgid"} if $dsgid;
         $dsg_menu .= qq{>};
+
         ( $org_title, $dsid, $gstid, $dsgid, $dsg_menu ) = get_org_info(
             dsid    => $dsid,
             chr     => $chr,
             gstid   => $gstid,
             dsgid   => $dsgid,
-            seq_num => $i
+            seq_num => $index,
         ) if $pos;
 
         # mdb added 11/20/13 issue 254
@@ -312,7 +362,7 @@ sub gen_body {
         	$stop = $gbstart + $gblength-1 + $drdown;
         }
 
-        push @seq_nums, { SEQ_NUM => $i, };
+        push @seq_nums, { SEQ_NUM => $index, };
         my %opts = (
             SEQ_NUM   => $display_order,
             REV_YES   => $revy,
@@ -348,6 +398,7 @@ qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>
           if $pos;
         push @seq_sub, {%opts};
 
+        $index++;
     }
     @seq_sub =
       sort { $a->{SEQ_NUM} <=> $b->{SEQ_NUM} } @seq_sub;  #sort based on seq_num
@@ -433,6 +484,11 @@ qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>
     $show_gene_space = 0 unless $show_gene_space;
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo.tmpl' );
+
+    # Check if a genome was specified
+    my $error = (scalar @seq_sub < $num_seqs) ? 1 : 0;
+
+    $template->param( ERROR             => $error );
     $template->param( PAD_GS            => $pad_gs );
     $template->param( APPLY_ALL         => $apply_all );
     $template->param( IMAGE_WIDTH       => $image_width );
@@ -610,7 +666,7 @@ qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>
     $spike_len = $form->param('spike_len') if defined $form->param('spike_len');
     $template->param( SPIKE_LEN     => $spike_len );
     $template->param( SEQ_RETRIEVAL => 1 );
-    $template->param( NUM_SEQS      => $num_seqs );
+    $template->param( NUM_SEQS      => scalar @seq_sub);
 
     # $template->param(COLOR_NUM=>$num_colors);
     $message .= "<BR/>" if $message;
@@ -1275,7 +1331,7 @@ qq{<br><a href="http://genomevolution.org/wiki/index.php/Gobe" class="small" sty
       . basename($all_file)
       . "\" target=_new>all sequences</A></font></DIV>\n";
     $html .=
-qq{<td class=dropmenu><td><span class=bold>Third part systemannotation files</span>};
+qq{<td class="dropmenu"><td><span class="bold">Third party system annotation files</span>};
     foreach my $item (@sets) {
         my $anno_file = generate_annotation(%$item);
         next unless $anno_file;
@@ -1288,27 +1344,26 @@ qq{<div><a href = "http://genome.lbl.gov/vista/mvista/instructions.shtml">VISTA<
     $synfile  =~ s/$TEMPDIR/$TEMPURL/;
     $annofile =~ s/$TEMPDIR/$TEMPURL/;
     $html .=
-qq{<div><a href="http://cas-bioinfo.cas.unt.edu/mgsv/index.php" target=_new>mGSV</a> <a href = "$annofile" target=_new>Annotation File</a></div>};
+qq{<div><a href="http://cas-bioinfo.cas.unt.edu/mgsv/index.php" target=_new>mGSV</a> <a href="$annofile" target=_new>Annotation File</a></div>};
     $html .=
-qq{<div><a href="http://cas-bioinfo.cas.unt.edu/mgsv/index.php" target=_new>mGSV</a> <a href = "$synfile" target=_new>Synteny File</a></div>};
+qq{<div><a href="http://cas-bioinfo.cas.unt.edu/mgsv/index.php" target=_new>mGSV</a> <a href="$synfile" target=_new>Synteny File</a></div>};
 
-    $html .= qq{<td class=dropmenu><td><span class=bold>Image Files</span>};
+    $html .= qq{<td class="dropmenu"><td><span class="bold">Image Files</span>};
     foreach my $item (@sets) {
         my $png = $TEMPURL . "/" . basename( $item->{png_filename} );
         $html .=
-          qq{<br><a href ="$png" target=_new>} . $item->{obj}->accn . "</a>";
+          qq{<br><a href="$png" target=_new>} . $item->{obj}->accn . "</a>";
     }
-    $html .= qq{<td class=dropmenu><td><span class=bold>SQLite db</span>};
+    $html .= qq{<td class="dropmenu"><td><span class="bold">SQLite db</span>};
     my $dbname = $TEMPURL . "/" . basename( $cogeweb->sqlitefile );
 
     $html .= "<div><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
-    $html .= qq{<td class=dropmenu><td><span class=bold>Log File</span>};
+    $html .= qq{<td class="dropmenu"><td><span class="bold">Log File</span>};
     my $logfile = $TEMPURL . "/" . basename( $cogeweb->logfile );
     $html .= "<div><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
-    $html .= qq{<td class=dropmenu><td><span class=bold>GEvo Links</span>};
-    $html .= qq{<div id=tiny_link></div>};
-    $html .=
-qq{<div><a href="GEvo_direct.pl?name=$basefilename" target=_new>Results only</a></div></td>};
+    $html .= qq{<td class="dropmenu"><td><span class="bold">Return to this analysis</span>};
+    $html .= qq{<div id="tiny_link"></div>};
+    #$html .= qq{<div><a href="GEvo_direct.pl?name=$basefilename" target=_new>Results only</a></div></td>}; # mdb removed 8/20/14 issue 467
 
     my (@ncbi_links);
     foreach my $item (@sets) {
@@ -1621,6 +1676,10 @@ sub initialize_sqlite {
     my $dbfile = $cogeweb->sqlitefile;
     return if -r $dbfile;
     my $dbh = DBI->connect( "dbi:SQLite:dbname=$dbfile", "", "" );
+    unless (defined $dbh) {
+        print STDERR "Gevo.pl ERROR connecting to sqlite file\n";
+        return;
+    }
     my $create = qq{
 CREATE TABLE image_data
 (
@@ -4486,7 +4545,15 @@ qq{<SELECT name="dsgid$num" id="dsgid$num" onChange="feat_search(['args__accn','
     }
     $html .= "</select>";
     $html .= "<span class=small>($count)</span>" if $count > 1;
-    return ( $html, $num, $featid );
+
+    return ( $html, $num, $featid ) if $count > 0;
+
+
+    $html = qq{<select name="dsgid$num" id="dsgid$num" onChange="feat_search(['args__accn','accn$num','args__dsid', 'dsid$num','args__dsgid', 'dsgid$num', 'args__num','args__$num', 'args__featid', 'args__$featid'],['feat$num']);">};
+
+    $html .= "<option>The genome has been deleted</option></select>";
+
+    return ( $html, $num, $featid);
 }
 
 sub save_settings_gevo {
@@ -4563,6 +4630,12 @@ qq{<span class="small">Genome: </span><SELECT name="dsgid$num" id="dsgid$num">};
             $dsg_menu .= "<option>Restricted</option>";
             next;
         }
+
+        if ($dsg->deleted) {
+            $dsg_menu .= "<option>The genome has been been deleted</option>";
+            next;
+        }
+
         my $dsgid_tmp = $item->id;
         my $title;
         $title = $item->name . " " if $item->name;
@@ -4755,8 +4828,7 @@ sub get_tiny_url {
         url     => $url,
         log_msg => "GEvo link",
     );
-    my $html .=
-qq{<a href=$tiny onclick=window.open('$tiny') target =_new>$tiny<br>(See log file for full link)</a>};
+    my $html .= qq{<a href="$tiny" onclick="window.open('$tiny');" target=_new>$tiny</a>};
     return $html;
 }
 

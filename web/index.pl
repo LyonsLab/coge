@@ -9,7 +9,7 @@ use HTML::Template;
 use Data::Dumper;
 use CGI::Log;
 use CoGeX;
-use CoGe::Accessory::Web;
+use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils qw( units commify sanitize_name );
 use JSON qw(encode_json);
 use POSIX 'ceil';
@@ -28,7 +28,7 @@ if ($FORM->param('logout_coge')) {
         coge        => $coge,
         user        => $USER,
         form        => $FORM,
-        url         => $P->{SERVER} . '/index.pl'
+        url         => url_for('index.pl')
     );
 }
 elsif ($FORM->param('logout_all')) {
@@ -37,7 +37,7 @@ elsif ($FORM->param('logout_all')) {
         coge        => $coge,
         user        => $USER,
         form        => $FORM,
-        url			=> $P->{SERVER} . '/index.pl' # mdb added 12/10/13 -- was redirecting to wrong url
+        url         => url_for('index.pl')
     );
 }
 
@@ -51,14 +51,18 @@ sub generate_html {
         TITLE => 'Accelerating <span style="color: #119911">Co</span>mparative <span style="color: #119911">Ge</span>nomics',
         PAGE_TITLE => 'Comparative Genomics',
         PAGE_LINK  => $LINK,
-        HELP       => '/wiki/index.php',
+        #HELP       => '/wiki/index.php',
+	HELP       => $P->{SERVER},
         USER       => $USER->display_name || undef,
         ADJUST_BOX => 1,
-        LOGO_PNG   => "CoGe-logo.png",
+        LOGO_PNG   => "CoGe.svg",
+	LOGO_IMAGE => "CoGeCircuitLeaf1.svg",
         BODY       => generate_body(),
+        ADMIN_ONLY => $USER->is_admin
     );
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
+    $template->param( ADMIN_ONLY => $USER->is_admin );
 
     return $template->output;
 }
@@ -122,13 +126,13 @@ sub generate_body {
 sub actions {
     my @actions = (
         {
-            ID         => 6,
+            ID         => 5,
             LOGO       => "picts/GEvo.svg",
             ACTION     => qq{<a href="./GEvo.pl">GEvo</a>},
             LINK       => qq{./GEvo.pl},
             SCREENSHOT => "picts/preview/GEvo.png",
             NAME       => "GEvo",
-            DESC       => qq{Compare sequences and genomic regions to discover patterns of genome evolution.<br><a href ="GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1" target=_new>Example</a>},
+            DESC       => qq{Compare sequences and genomic regions to discover patterns of genome evolution.<br><a href ="GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1">Example</a>},
         },
         {
             NAME       => "OrganismView",
@@ -137,7 +141,7 @@ sub actions {
             ACTION     => qq{<a href="./OrganismView.pl">OrganismView</a>},
             LINK       => qq{./OrganismView.pl},
             SCREENSHOT => "picts/preview/OrganismView.png",
-            DESC       => qq{Search for organisms, get an overview of their genomic make-up, and visualize them using a dynamic, interactive genome browser.<br><a href="OrganismView.pl?org_name=W3110" target=_new>Example</a>},
+            DESC       => qq{Search for organisms, get an overview of their genomic make-up, and visualize them using a dynamic, interactive genome browser.<br><a href="OrganismView.pl?org_name=W3110">Example</a>},
         },
         {
             NAME       => "CoGeBlast",
@@ -150,8 +154,8 @@ sub actions {
         },
         {
             NAME       => "SynMap",
-            ID         => 4,
-            LOGO       => "picts/SynMap.svg",
+            ID         => 3,
+            LOGO       => "picts/SynMap-inverse.svg",
             ACTION     => qq{<a href="./SynMap.pl">SynMap</a>},
             LINK       => qq{./SynMap.pl},
             SCREENSHOT => "picts/preview/SynMap.png",
@@ -166,6 +170,15 @@ sub actions {
             SCREENSHOT => "picts/preview/SynMap.png",
             DESC       => qq{Search CoGe's annotation database for homologs.<br><a href="SynFind.pl?dsgid=3068;fid=40603528;run=1">Example</a>},
         },
+	{
+	    NAME       => "FeatView",
+	    ID         => 6,
+	    LOGO       => "picts/FeatView.svg",
+	    ACTION     => qq{<a href="./FeatView.pl">FeatView</a>},
+	    LINK       => qq{./FeatView.pl},
+	    SCREENSHOT => "picts/preview/FeatView.png",
+	    DESC       => qq{Search for a gene by name across all genomes in CoGe.<br><a href="FeatView.pl?fid=488137061&gstid=1">Example</a>},
+	},
 #       {
 # 		   {
 # 		    ID => 7,

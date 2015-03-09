@@ -85,6 +85,7 @@ sub gen_html {
     #$template->param(LOGO_PNG=>"CoGeBlast-logo.png");
     $template->param( BOX_NAME => 'CoGe: Feature Map' );
     $template->param( BODY     => $body );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
     $html .= $template->output;
 }
 

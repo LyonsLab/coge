@@ -123,6 +123,7 @@ sub gen_html {
     #    $template->param(BOX_NAME=>'SynFind Settings');
     $template->param( ADJUST_BOX => 1 );
     $template->param( BODY       => $body );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
     my $prebox =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'SynFind.tmpl' );
     $prebox->param( RESULTS_DIV => 1 );

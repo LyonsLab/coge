@@ -19,63 +19,62 @@
 
 <BODY <TMPL_VAR NAME="BODY_ONLOAD">>
 
-
 <div id="logout_dialog" class="hidden dialog_box" title="Log out of CoGe">
-	<div style="text-align:center;padding:30px;">
-		<div class="info">Would you like to log out of all iPlant applications?</div>
-		<br><br>
-		<span onClick="location.href='index.pl?logout_coge=1';" style="font-size:0.75em;margin:15px;padding:5px;" class='ui-button ui-corner-all'>Log out of CoGe only</span>
-		<span onClick="location.href='index.pl?logout_all=1';" style="font-size:0.75em;margin:15px;padding:5px;" class='ui-button ui-corner-all'>Log out of all iPlant services</span>
-	</div>
+    <div style="text-align:center;padding:30px;">
+        <div class="info">Would you like to log out of all iPlant applications?</div>
+        <br><br>
+        <span onClick="location.href='index.pl?logout_coge=1';" style="font-size:0.75em;margin:15px;padding:5px;" class='ui-button ui-corner-all'>Log out of CoGe only</span>
+        <span onClick="location.href='index.pl?logout_all=1';" style="font-size:0.75em;margin:15px;padding:5px;" class='ui-button ui-corner-all'>Log out of all iPlant services</span>
+    </div>
 </div>
 
 <TMPL_VAR NAME="JAVASCRIPT">
 <script>
 jQuery(document).ready(function(){
-	pageObj = new Object();
-	if (jQuery.browser.msie) {browserAlert()};
-	setup_button_states();
+    pageObj = new Object();
+    if (jQuery.browser.msie) {browserAlert()};
+    setup_button_states();
 
-	// Show indicator if not on main site
-	if (document.URL.indexOf('genomevolution.org') == -1) {
-		$('#dev').html('*** Development ***');
-	}
+    // Show indicator if not on main site
+    if (document.URL.indexOf('genomevolution.org') == -1 && document.URL.indexOf('coge.iplantcollaborative.org') == -1) {
+        $('#brand').addClass("dev");
+    }
 });
 
 function browserAlert(){
-	$('#main_alert').html('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
-	alert('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
+    $('#main_alert').html('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
+    alert('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
 }
 
 //set up the jquery ui button behavior
 function setup_button_states (id) {
 //$(function() {
-	     //button effects on events
+         //button effects on events
            var item;
 
            if (id) { item='#'+id; }
            else { item = '.ui-button'; }
-	     $(item+':not(.ui-state-disabled)')
-			.hover(	function(){
-				$(this).addClass("ui-state-hover");
-			},
-				function(){
-				$(this).removeClass("ui-state-hover");
-			});
-	     $(item+':not(.ui-button-toggle)') //buttons that aren't toggle-able
+         $(item+':not(.ui-state-disabled)')
+            .hover( function(){
+                $(this).addClass("ui-state-hover");
+            },
+                function(){
+                $(this).removeClass("ui-state-hover");
+            });
+         $(item+':not(.ui-button-toggle)') //buttons that aren't toggle-able
                         .mousedown(function(){
-                        	$(this).addClass("ui-state-active");
+                            $(this).addClass("ui-state-active");
                         })
-			.mouseup(function(){
-			        $(this).removeClass("ui-state-active");
-                       	});
+            .mouseup(function(){
+                    $(this).removeClass("ui-state-active");
+                        });
              $(item+'.ui-button-toggle') // buttons that are toggle-able
                        .click(function(){
-				if( $(this).hasClass('ui-state-active') ){
-				    $(this).removeClass("ui-state-active");
-				    }
-				else { $(this).addClass("ui-state-active");
-				}
+                if( $(this).hasClass('ui-state-active') ){
+                    $(this).removeClass("ui-state-active");
+                    }
+                else { $(this).addClass("ui-state-active");
+                }
                         });
 
 }
@@ -94,49 +93,77 @@ function add_button_states (ids) {
 
 //initialize superfish plugin (dropdown menu)
 $(document).ready( function() {
-	$('ul.sf-menu').supersubs({
+    $('ul.sf-menu').supersubs({
             minWidth:    8,   // minimum width of sub-menus in em units
             maxWidth:    27,   // maximum width of sub-menus in em units
             extraWidth:  1     // extra width can ensure lines don't sometimes turn over
                                // due to slight rounding differences and font-family
-		     }).superfish({
-	    delay: 300
-	});
-	$('#menubar').css('visibility', 'visible'); // mdb added 10/21/13 -- hidden on startup to prevent "glitching" in rendering
+             }).superfish({
+        delay: 300
+    });
+    $('#menubar').css('visibility', 'visible'); // mdb added 10/21/13 -- hidden on startup to prevent "glitching" in rendering
 });
 
 </script>
 
 <div style="min-height:100%">
-    <!--
+
+<!--
     <div class="error-box">
-    Please note:  the iPlant Data Store will be unavailable Tuesday, April 15th for scheduled maintenance, preventing data import into CoGe.
+    Please note:  the iPlant Data Store will be unavailable Tuesday, December 16th for scheduled maintenance, preventing data import into CoGe.
     </div>
-    -->
+-->
 
 <header class="clearfix">
-    <TMPL_UNLESS NAME="MENU">
-        <div id="menubar" class="r" style="visibility:hidden;">
-            <span style="float:left;color:gray; margin-right:50px;">
-                <TMPL_IF NAME="LOGON">
-                    <span class="small">You are logged-in as <b><TMPL_VAR NAME="USER"></b> - <span onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');" class="small bold link">Sign-out</span></span>
-                <TMPL_ELSE>
-                    <span class="small">Welcome! You are not logged-in ... <a href="javascript:void(0)" onClick="login_cas();return true;" class="small"><b>Sign-in</b></a> <a href="http://genomevolution.org/wiki/index.php/How_to_get_a_CoGe_account" target=_login_info><br>New here? Get a CoGe account.</a></span>
-            </TMPL_IF>
-            </span>
+    <div id="brand">
+        <TMPL_IF NAME="LOGO_PNG">
+            <a href="<TMPL_VAR NAME=HELP>">
+                <img style="vertical-align:bottom;height:3.5em" class="l" src='picts/<TMPL_VAR NAME="LOGO_PNG">'>
+            </a>
+        </TMPL_IF>
+    </div>
+    
+    <!--CoGe icon on main page only-->
+    <!--<div id="logo">
+        <TMPL_IF NAME="LOGO_IMAGE">
+            <a href="<TMPL_VAR NAME=HELP>">
+                <img style="vertical-align:bottom;height:3.5em" class="l" src='picts/<TMPL_VAR NAME="LOGO_IMAGE">'>
+            </a>
+        </TMPL_IF>
+    </div>-->
 
+    <!--CoGe icon on all pages-->
+    <div id="logo">
+        <a href="<TMPL_VAR NAME=HELP>">
+            <img style="vertical-align:bottom;height:3.5em" class="l" src='picts/CoGeCircuitLeaf1.svg'>
+        </a>
+    </div>
+
+    <TMPL_UNLESS NAME="MENU">
+        <div id="menubar" class="coge-menubar r" style="visibility:hidden;">
             <span style="float:right; margin-right: 20px;">
                 <ul class="sf-menu">
                     <li><a href="User.pl" target="_self">My Profile</a></li>
                     <li><a href='User.pl?p=106' target="_self">My History</a></li>
+                    <tmpl_if name="ADMIN_ONLY">
+                        <li><a href='javascript:void(0)'>Admin</a>
+                            <ul>
+                                <li><a href="Jobs.pl">Jobs</a></li>
+                                <li><a href="History.pl">History</a></li>
+                                <li><a href="Groups.pl">Groups</a></li>
+                                <li><a href="Genomes.pl">Genomes</a></li>
+                                <li><a href="Experiments.pl">Experiments</a></li>
+                            </ul>
+                        </li>
+                    </tmpl_if>
                     <li><a href='javascript:void(0)'>Tools</a>
                         <ul>
-                            <li><a href="OrganismView.pl" target="_self">OrganismView</a></li>
-                            <li><a href="CoGeBlast.pl" target="_self">CoGeBlast</a></li>
-                            <li><a href="FeatView.pl" target="_self">FeatView</a></li>
-                            <li><a href="SynFind.pl" target="_self">SynFind</a></li>
-                            <li><a href="SynMap.pl" target="_self">SynMap</a></li>
-                            <li><a href="GEvo.pl" target="_self">GEvo</a></li>
+                            <li><a href="OrganismView.pl">OrganismView</a></li>
+                            <li><a href="CoGeBlast.pl">CoGeBlast</a></li>
+                            <li><a href="FeatView.pl">FeatView</a></li>
+                            <li><a href="SynFind.pl">SynFind</a></li>
+                            <li><a href="SynMap.pl">SynMap</a></li>
+                            <li><a href="GEvo.pl">GEvo</a></li>
                         </ul>
                     </li>
                     <li><a href='javascript:void(0)'>Help</a>
@@ -154,22 +181,20 @@ $(document).ready( function() {
                     <li><a href="./" target="_self">Home</a></li>
                 </ul>
             </span>
+            <span class="login">
+                <TMPL_IF NAME="LOGON">
+                    <span class="small">You are logged-in as <b><TMPL_VAR NAME="USER"></b> - <span onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');" class="small bold link">Sign-out</span></span>
+                <TMPL_ELSE>
+                    <span class="small">Welcome! You are not logged-in ... <a href="javascript:void(0)" onClick="login_cas();return true;" class="small"><b>Sign-in</b></a> <a href="http://genomevolution.org/wiki/index.php/How_to_get_a_CoGe_account" target=_login_info><br>New here? Get a CoGe account.</a></span>
+            </TMPL_IF>
+            </span>
+
         </div>
-        <div id="dev" class='small alert'></div>
     </TMPL_UNLESS>
-
-    <div id="brand">
-        <TMPL_IF NAME="LOGO_PNG">
-            <a href="http://www.genomevolution.org/<TMPL_VAR NAME=HELP>">
-                <img style="vertical-align:bottom;" class="l" src='picts/<TMPL_VAR NAME="LOGO_PNG">'>
-            </a>
-        </TMPL_IF>
-        <span class="tagline l"><TMPL_VAR NAME="TITLE"></span>
-    </div>
-
     <noscript>
     Welcome to CoGe -- a new system for a new kind of comparative genomics.  CoGe is designed for easily visualizing, comparing, and understanding the evolution, struture and dynamics of genomes.
 
     Unfortunately, we have detected that your browser currently has JavaScript disabled. In order for CoGe to function properly, JavaScript must be enabled in your browser. For instruction on how to do so in Mozilla Firefox, please click <a href="http://www.mozilla.org/support/firefox/options#content" target="_blank">here</a>. After enabling JavaScript, simply refresh the page, or click <a href="javascript:location.reload(true);" target="_self">here</a>.
     </noscript>
 </header>
+<div class="tagline"><TMPL_VAR NAME="TITLE"></div>

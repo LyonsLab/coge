@@ -139,8 +139,7 @@ def gc_features(environ, start_response):
         
     try:
         # Get chromosome subsequence using interbase coordinates
-        string = fetch_sequence(genome_id, chr_id, start+1, end+1,
-                environ['HTTP_COOKIE'])
+        string = fetch_sequence(genome_id, chr_id, start+1, end+1, environ['HTTP_COOKIE']) # mdb restored cookie 1/6/15 for PAG # mdb removed cookie 12/11/14 to get this track to work in Sean Davey's (GEISHA project) JBrowse instance
 
         # Set bucketSize
         sizes = {'20': 1, '10': 1, '5': 2, '2': 5, '1': 25, '0.5': 75}

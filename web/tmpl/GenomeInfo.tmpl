@@ -6,13 +6,14 @@
 
 <script language="javascript">
 
-const PAGE_NAME = "<TMPL_VAR NAME=PAGE_NAME>";
-
 var job_id = "<TMPL_VAR NAME=JOB_ID>",
     genome_id = "<TMPL_VAR NAME=GID>",
     load_id = "<TMPL_VAR NAME=LOAD_ID>",
     default_type = "<TMPL_VAR NAME=DEFAULT_TYPE>",
-    irods_home_path = "<TMPL_VAR NAME=IRODS_HOME>";
+    irods_home_path = "<TMPL_VAR NAME=IRODS_HOME>",
+    PAGE_NAME = "<TMPL_VAR NAME=PAGE_NAME>",
+    DISCOVERY_ENVIRONMENT = "https://de.iplantcollaborative.org/de/?type=data&folder=",
+    newLoad = false;
 
 // EXPORT DIALOG GLOBALS
 var irods_home = $("<p>Sending to: " + irods_home_path + "</p>");
@@ -141,6 +142,48 @@ function chr_hist (dsgid) {
     });
 }
 
+function toggle_load_log() {
+	var btn = $('#log_button');
+	var log = $('#log_contents');
+	var spinner = $('#log_spinner');
+	
+	var setVisible = function(visible) { // TODO: i want to use jQuery.toggle() instead, oh well
+    	if (visible) {
+			log.removeClass('hidden');
+	    	btn.html('Hide');
+	    	spinner.animate({opacity:0});
+    	}
+    	else {
+    		log.addClass('hidden');
+    		btn.html('Show');
+    		spinner.animate({opacity:0});
+    	}
+	}
+	
+	if (log.is(":hidden")) {
+		if (log.html() == '') {
+			spinner.css({opacity:1});
+			$.ajax({
+		        data: {
+		            fname: 'get_load_log',
+		            gid: genome_id
+		        },
+		        success: function(data) {
+		        	if (data)
+		        		log.html(data);
+		        	else
+		        		log.html('<span class="alert">Error: log file not found</span>');
+		        	setVisible(true);
+		        }
+		    });
+		}
+		else
+			setVisible(true);
+	}
+	else
+		setVisible(false);
+}
+
 function export_features_to_irods(id, feature, isGenome, type) {
     // Prevent concurrent executions
     if ( $("#export_dialog").dialog( "isOpen" ) )
@@ -164,18 +207,19 @@ function export_features_to_irods(id, feature, isGenome, type) {
         fid: feature
     };
 
+    var link = $("<a></a>")
+            .addClass("bold")
+            .attr("href", DISCOVERY_ENVIRONMENT.concat(irods_home_path))
+            .html(irods_home_path);
+
     if (data.protein) {
         $('#export_log').html(
-                "<br>Copying protein sequences to <br><br>" +
-                '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
-                irods_home_path + '</a>'
-        );
+            "<br>Copying protein sequences to <br><br>"
+        ).append(link);
     } else {
         $('#export_log').html(
-                    "<br>Copying nucleotide sequences to <br><br>" +
-                '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
-                irods_home_path + '</a>'
-        );
+            "<br>Copying nucleotide sequences to <br><br>"
+        ).append(link);
 
     }
 
@@ -199,7 +243,7 @@ function export_features_to_irods(id, feature, isGenome, type) {
     });
 }
 
-function wait_to_search (search_func, search_term) {
+function debounce_search(search_func, search_term) {
     pageObj.search_term = search_term;
 
     if (pageObj.time) {
@@ -543,11 +587,18 @@ function export_gff() {
         // RESET DIALOG
         reset_dialog();
 
-        var title = $("<h4>Generating gff file</h4>");
+        var title = $("<h4>Generating gff and copying file</h4>");
+
+
+        var link = $("<a></a>")
+                .addClass("bold")
+                .attr("href", DISCOVERY_ENVIRONMENT.concat(irods_home_path))
+                .html(irods_home_path);
 
         $("#export_log")
             .html(title)
-            .append(note)
+            .append(link)
+            .append(note);
 
         $("#export_dialog")
             .unbind()
@@ -593,11 +644,14 @@ function export_tbl() {
         .unbind()
         .dialog('open');
 
+    var link = $("<a></a>")
+            .addClass("bold")
+            .attr("href", DISCOVERY_ENVIRONMENT.concat(irods_home_path))
+            .html(irods_home_path);
+
     $('#export_log').html(
-            "<br>Copying this genomes's TBL file to <br><br>" +
-            '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
-            irods_home_path + '</a>'
-    );
+        "<br>Copying this genomes's TBL file to <br><br>"
+    ).append(link);
 
     $.ajax({
         dataType: "json",
@@ -634,11 +688,14 @@ function export_bed() {
         .unbind()
         .dialog('open');
 
+    var link = $("<a></a>")
+            .addClass("bold")
+            .attr("href", DISCOVERY_ENVIRONMENT.concat(irods_home_path))
+            .html(irods_home_path);
+
     $('#export_log').html(
-            "<br>Generating/copying this genomes's BED file to <br><br>" +
-            '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
-            irods_home_path + '</a>'
-    );
+        "<br>Generating/copying this genomes's BED file to <br><br>"
+    ).append(link);
 
     $.ajax({
         dataType: "json",
@@ -674,11 +731,14 @@ function export_fasta_irods() {
         .unbind()
         .dialog('open');
 
+    var link = $("<a></a>")
+            .addClass("bold")
+            .attr("href", DISCOVERY_ENVIRONMENT.concat(irods_home_path))
+            .html(irods_home_path);
+
     $('#export_log').html(
-            "<br>Copying this genomes's FASTA file to <br><br>" +
-            '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
-            irods_home_path + '</a>'
-    );
+            "<br>Copying this genomes's FASTA file to <br><br>"
+    ).append(link);
 
     $.ajax({
         data: {
@@ -723,7 +783,7 @@ function load_failed(obj) {
 		var msg =
 			'<div class="alert">' +
 			'The CoGe Support Team has been notified of this error but please ' + 
-			'feel free to contact us at <a href="mailto:coge.genome@gmail.com">coge.genome@gmail.com</a> ' +
+			'feel free to contact us at <a href="mailto:<TMPL_VAR NAME=SUPPORT_EMAIL>"><TMPL_VAR NAME=SUPPORT_EMAIL></a> ' +
 			'and we can help to determine the cause.' +
 			'</div>';
 		var log = $('#load_log');
@@ -735,13 +795,15 @@ function load_failed(obj) {
     $('#error_msg').fadeIn();
     $('#cancel_button').fadeIn();
 
-    $.ajax({
-        data: {
-            fname: "send_error_report",
-            load_id: load_id,
-            job_id: job_id
-        }
-    });
+    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
+	    $.ajax({
+	        data: {
+	            fname: "send_error_report",
+	            load_id: load_id,
+	            job_id: job_id
+	        }
+	    });
+    }
 }
 
 function load_succeeded(obj) {
@@ -788,18 +850,11 @@ function copy_genome(mask, seq_only) {
 
     // Open status dialog right away - issue 101
     reset_log();
-    if (mask) {
-        $('#load_dialog').dialog('option', 'title', 'Copying & Masking Genome');
-    }
-    else if (seq_only) {
-        $('#load_dialog').dialog('option', 'title', 'Copying Genome (No Annotations)');
-    }
-    else {
-        $('#load_dialog').dialog('option', 'title', 'Copying Genome');
-    }
+
     $('#load_dialog').dialog('open');
 //   $('#status_log').html('Initializing ...');
-
+    newLoad = true;
+    
     $.ajax({
         dataType: "json",
         data: {
@@ -860,7 +915,8 @@ function progress_formatter(item) {
         var p = item.log.split("\n");
 
         var pElements = p.map(function(item) {
-            return $("<div></div>").html(item);
+            var norm = item.replace(/\\t/g, " ").replace(/\\'/g, "'");
+            return $("<div></div>").append(norm);
         });
 
         var log = $("<div></div>").html(pElements).addClass("padded");
@@ -982,7 +1038,7 @@ function get_load_log(callback) {
     $.ajax({
         dataType:    'json',
         data: {
-            fname:       'get_load_log',
+            fname:       'get_progress_log',
             workflow_id: job_id,
             timestamp:   new Date().getTime()
         },
@@ -1111,7 +1167,25 @@ function get_content_dialog(id, request, chromosome) {
     })
 }
 
-</SCRIPT>
+function get_experiments(e) {
+    e.preventDefault();
+    var experiments = $("#experiments");
+    experiments.html("Loading experiments... ").append(spinner.clone());
+
+    $.ajax({
+        data: {
+            fname: 'get_experiments',
+            gid: genome_id
+        },
+
+        success:function(data) {
+            experiments.hide().html(data);
+            experiments.slideDown();
+        }
+    });
+}
+
+</script>
 
 <div class="dialog_box hidden" id="chromosome_hist" title="Chromosome Size"></div>
 <div class="dialog_box hidden" id="gc_histogram" title="Chromosome Size"></div>
@@ -1215,7 +1289,7 @@ function get_content_dialog(id, request, chromosome) {
     </tr>
 </table>
 
-<div class="bold text" style="padding-top:1em;">Experiments</div>
+<div class="bold text" style="padding-top:1em;">Experiments (<tmpl_var name="EXP_COUNT">)</div>
 <TMPL_IF NAME='EXPERIMENTS'>
     <table class="small ui-widget-content ui-corner-all">
         <tr>
@@ -1301,7 +1375,7 @@ Are you sure you want to move this genome into your trash?<p>
     <span id="export_ok_button" onClick="$('#export_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all coge-button">OK</span>
 </div>
 
-<div id="load_dialog" class="hidden dialog_box" title="Copying Genome ...">
+<div id="load_dialog" class="hidden dialog_box" title="Copying Genome">
 	<div id="load_log" class="small text padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;">
 	</div>
 	<br>
@@ -1360,6 +1434,12 @@ Are you sure you want to move this genome into your trash?<p>
             <td class='title5' style='white-space:nowrap;'>Restricted:</td>
             <td class='data5'><TMPL_VAR NAME="RESTRICTED"></td>
         </tr>
+        <tmpl_if name="creator">
+        <tr>
+            <td class='title5' style='white-space:nowrap;'>Added By:</td>
+            <td class='data5'><TMPL_VAR NAME="creator"></td>
+        </tr>
+        </tmpl_if>
         <tmpl_if name="owner">
         <tr>
             <td class='title5' style='white-space:nowrap;'>Owner:</td>
@@ -1396,7 +1476,7 @@ Are you sure you want to move this genome into your trash?<p>
       <tr>
         <td>Organism:</td>
         <td>
-          <input id="edit_organism" type="search" onkeyup="wait_to_search(search_organisms, this.value);" size="50" value="<TMPL_VAR NAME='ORGANISM'>"/>
+          <input id="edit_organism" type="search" onkeyup="debounce_search(search_organisms, this.value);" size="50" value="<TMPL_VAR NAME='ORGANISM'>"/>
           <!--<span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all coge-button'>New</span>-->
         </td>
       </tr>
@@ -1445,6 +1525,13 @@ Are you sure you want to move this genome into your trash?<p>
     </TMPL_LOOP>
 </TMPL_IF>
 
+<TMPL_IF NAME='NOEXPERIMENTS'>
+    <div id="experiments" class="padded">
+        <a href="#" onclick="get_experiments(window.event);">Click to display all Experiments</a>
+    </div>
+</TMPL_IF>
+
+
 <TMPL_IF NAME='DO_DATASETS'>
     <TMPL_LOOP NAME="DATASET_LOOP">
         <tr>
@@ -1491,12 +1578,20 @@ Are you sure you want to move this genome into your trash?<p>
         });
     }
     </script>
-    <br><br><hr>
-    <span class="bold text">Admin Functions</span><br>
-    <div class="small">
-        Assign to user:
-        <input id="edit_user" type="search" placeholder="Search" onkeyup="wait_to_search(search_users, this.value);" size="10" />
-        <span onClick="update_owner();" class='ui-button ui-corner-all coge-button'>Go</span>
-    </div>
-    <br>
+    <hr>
+    <div class="bold text">Admin Functions</div>
+    
+    <div class="small padded">
+    	<div>
+	        Assign to user:
+	        <input id="edit_user" type="search" placeholder="Search" onkeyup="wait_to_search(search_users, this.value);" size="10" />
+	        <span onClick="update_owner();" class='ui-button ui-corner-all coge-button'>Go</span>
+        </div>
+        <div>
+			<span>Load Log:</span>
+		    <span id="log_button" onclick="toggle_load_log();" class='ui-button ui-corner-all coge-button' style="width:3em; margin-bottom:1em; overflow:auto;">Show</span>
+		    <img id="log_spinner" src="picts/ajax-loader.gif" style="opacity: 0;"/>
+		    <div id="log_contents" class="border hidden padded coge-code" style="border:1px solid gray; color: navy;"></div>
+	    </div>
+	</div>
 </TMPL_IF>

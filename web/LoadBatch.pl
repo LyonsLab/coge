@@ -9,21 +9,24 @@ use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage qw(create_experiments_from_batch get_workflow_paths);
+use CoGe::Core::Genome qw(genomecmp);
 use HTML::Template;
 use JSON::XS;
-use URI::Escape::JavaScript qw(escape);
+use URI::Escape::JavaScript qw(escape unescape);
 use File::Path;
 use File::Copy;
 use File::Basename;
+use File::Slurp;
 use File::Spec::Functions qw( catdir catfile );
 use File::Listing qw(parse_dir);
 use LWP::Simple;
 use URI;
 use Sort::Versions;
+use Data::Dumper;
 no warnings 'redefine';
 
 use vars qw(
-  $P $PAGE_TITLE $TEMPDIR $BINDIR $USER $coge $FORM $LINK
+  $P $PAGE_TITLE $TEMPDIR $BINDIR $USER $coge $FORM $LINK $EMBED
   %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $JOB_ID
 );
 
@@ -41,6 +44,8 @@ $BINDIR     = $P->{SCRIPTDIR}; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
 $JOB_ID  = $FORM->Vars->{'job_id'};
 $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
+
+$EMBED = $FORM->param('embed');
 
 $MAX_SEARCH_RESULTS = 100;
 
@@ -61,27 +66,46 @@ $MAX_SEARCH_RESULTS = 100;
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 
 sub generate_html {
-    my $html;
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( PAGE_TITLE => $PAGE_TITLE,
-    				  PAGE_LINK  => $LINK,
-    				  HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= ' ' . $USER->last_name
-      if ( $USER->first_name && $USER->last_name );
-    $template->param( USER     => $name );
-    $template->param( LOGO_PNG => $PAGE_TITLE . "-logo.png" );
-    $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-    my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-    $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
+    # Check for finished result
+    if ($JOB_ID) {
+        my $log = get_load_log(workflow_id => $JOB_ID);
+        if ($log) {
+            my $res = decode_json($log);
+            if ($res->{notebook_id}) {
+                my $url = 'NotebookView.pl?nid=' . $res->{notebook_id};
+                print $FORM->redirect(-url => $url);
+            }
+        }
+    }
+    
+    my $template;
 
-    $template->param( BODY       => generate_body() );
-    $template->param( ADJUST_BOX => 1 );
-
-    $html .= $template->output;
-    return $html;
+    $EMBED = $FORM->param('embed');
+    if ($EMBED) {
+        $template =
+          HTML::Template->new(
+            filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
+    }
+    else {    
+        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+        $template->param( PAGE_TITLE => $PAGE_TITLE,
+					  TITLE      => "LoadBatch",
+        				  PAGE_LINK  => $LINK,
+        				  #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+					  HELP       => $P->{SERVER} );
+        my $name = $USER->user_name;
+        $name = $USER->first_name if $USER->first_name;
+        $name .= ' ' . $USER->last_name
+          if ( $USER->first_name && $USER->last_name );
+        $template->param( USER     => $name );
+        $template->param( LOGO_PNG => "CoGe.svg" );
+        $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
+        $template->param( ADJUST_BOX => 1 );
+        $template->param( ADMIN_ONLY => $USER->is_admin );
+    }
+    
+    $template->param( BODY => generate_body() );
+    return $template->output;
 }
 
 sub generate_body {
@@ -112,13 +136,12 @@ sub generate_body {
     }
 
     $template->param(
+        EMBED       => $EMBED,
     	LOAD_ID     => $LOAD_ID,
     	JOB_ID      => $JOB_ID,
         STATUS_URL  => 'api/v1/jobs/',
-        FILE_SELECT_SINGLE       => 1,
         DEFAULT_TAB              => 0,
-        DISABLE_IRODS_GET_ALL    => 1,
-        MAX_IRODS_LIST_FILES     => 100,
+        MAX_IRODS_LIST_FILES     => 1000,
         MAX_IRODS_TRANSFER_FILES => 30,
         MAX_FTP_FILES            => 30,
         USER                     => $USER->user_name
@@ -131,7 +154,7 @@ sub generate_body {
 sub irods_get_path {
     my %opts      = @_;
     my $path      = $opts{path};
-
+    $path = unescape($path);
     my $username = $USER->name;
     my $basepath = $P->{IRODSDIR};
     $basepath =~ s/\<USER\>/$username/;
@@ -142,7 +165,7 @@ sub irods_get_path {
         return;
     }
 
-    my $result = CoGe::Accessory::IRODS::irods_ils($path);
+    my $result = CoGe::Accessory::IRODS::irods_ils($path, escape_output => 1);
     my $error  = $result->{error};
     if ($error) {
         my $email = $P->{SUPPORT_EMAIL};
@@ -169,7 +192,7 @@ sub irods_get_path {
 sub irods_get_file {
     my %opts = @_;
     my $path = $opts{path};
-
+    $path = unescape($path);
     my ($filename)   = $path =~ /([^\/]+)\s*$/;
     my ($remotepath) = $path =~ /(.*)$filename$/;
 
@@ -217,7 +240,7 @@ sub load_from_ftp {
             }
         }
         else {                                              # file
-            my ($filename) = $url =~ /([^\/]+)\s*$/;
+            my ($filename) = $url =~ /([^\/]+?)(?:\?|$)/;
             push @files, { name => $filename, url => $url };
         }
     }
@@ -358,34 +381,41 @@ sub load_batch {
     my %opts        = @_;
     my $name        = $opts{name};
     my $description = $opts{description};
-    my $user_name   = $opts{user_name};
+    my $assignee_user_name = $opts{assignee_user_name}; # to assign genome to (admin-only)
     my $gid         = $opts{gid};
+    my $nid         = $opts{nid};
+    $nid = '' unless $nid;
     my $items       = $opts{items};
 
-	# print STDERR "load_batch: name=$name description=$description version=$version restricted=$restricted gid=$gid\n";
+	print STDERR "load_batch: ", Dumper \%opts, "\n";
 
     # Check login
-    if ( !$user_name || !$USER->is_admin ) {
-        $user_name = $USER->user_name;
-    }
-    if ($user_name eq 'public') {
+    if ($USER->user_name eq 'public') {
         return encode_json({ error => 'Not logged in' });
+    }
+    
+    # Get user object if assigning to another user (admin-only)
+    my $assignee;
+    if ( $assignee_user_name && $USER->is_admin ) {
+        $assignee = $coge->resultset('User')->search({ user_name => $assignee_user_name });
     }
 
     # Check data items
     return encode_json({ error => 'No files specified' }) unless $items;
     $items = decode_json($items);
-    my $data_file = catdir($TEMPDIR, $items->[0]->{path});
+    my @files = map { catfile($TEMPDIR, $_->{path}) } @$items;
 
     # Submit workflow
     my ($workflow_id, $error_msg) = create_experiments_from_batch(
         genome => $gid,
         user => $USER,
+        assignee => $assignee,
+        notebook => $nid,
         metadata => {
             name => $name,
             description => $description
         },
-        files => [ $data_file ]
+        files => \@files
     );
     unless ($workflow_id) {
         return encode_json({ error => "Workflow submission failed: " . $error_msg });
@@ -394,6 +424,16 @@ sub load_batch {
     # Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
         url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id
+    );
+    
+    # Log it
+    CoGe::Accessory::Web::log_history(
+        db          => $coge,
+        workflow_id => $workflow_id,
+        user_id     => $USER->id,
+        page        => "LoadBatch",
+        description => 'Load batch '.scalar(@files).' experiments into notebook "'.$name.'"',
+        link        => $tiny_link
     );
 
     return encode_json({ job_id => $workflow_id, link => $tiny_link });
@@ -478,16 +518,6 @@ sub search_genomes
     return encode_json( { timestamp => $timestamp, items => \@items } );
 }
 
-# FIXME this comparison routine is duplicated elsewhere
-sub genomecmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    $a->organism->name cmp $b->organism->name
-      || versioncmp( $b->version, $a->version )
-      || $a->type->id <=> $b->type->id
-      || $a->name cmp $b->name
-      || $b->id cmp $a->id;
-}
-
 sub search_users {
     my %opts        = @_;
     my $search_term = $opts{search_term};
@@ -520,15 +550,29 @@ sub search_users {
     );
 }
 
+sub get_debug_log {
+    my %opts         = @_;
+    my $workflow_id = $opts{workflow_id};
+    return unless $workflow_id;
+    #TODO authenticate user access to workflow
+
+    my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
+    return unless (-r $results_path);
+
+    my $result_file = catfile($results_path, 'debug.log');
+    return unless (-r $result_file);
+
+    my $result = read_file($result_file);
+    return $result;
+}
+
 sub send_error_report {
     my %opts = @_;
     my $load_id = $opts{load_id};
     my $job_id = $opts{job_id};
 
-    my @paths= ($P->{SECTEMPDIR}, $PAGE_TITLE, $USER->name, $load_id, "staging");
-
     # Get the staging directory
-    my $staging_dir = File::Spec->catdir(@paths);
+    my ($staging_dir, $result_dir) = get_workflow_paths($USER->name, $job_id);
 
     my $url = $P->{SERVER} . "$PAGE_TITLE.pl?";
     $url .= "job_id=$job_id;" if $job_id;
@@ -543,8 +587,10 @@ sub send_error_report {
         . $USER->id . ' '
         . $USER->date . "\n\n"
         . "staging_directory: $staging_dir\n\n"
+        . "result_directory: $result_dir\n\n"
         . "tiny link: $url\n\n";
-    $body .= get_load_log();
+
+    $body .= get_debug_log(workflow_id => $job_id);
 
     CoGe::Accessory::Web::send_email(
         from    => $email,

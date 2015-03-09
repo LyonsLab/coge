@@ -76,15 +76,22 @@ sub get_jobs_for_user {
         my($id, $name, $submitted, $completed, $status) = @{$_};
 
         my $start_time = localtime($submitted)->strftime('%F %I:%M%P');
-        my $end_time = localtime($completed)->strftime('%F %I:%M%P');
-        my $diff = $completed - $submitted;
+        my $end_time = "";
+        my $diff;
 
-          $workflow_results{$id} = {
+        if ($completed) {
+            $end_time = localtime($completed)->strftime('%F %I:%M%P') if $completed;
+            $diff = $completed - $submitted;
+        } else {
+            $diff = time - $submitted;
+        }
+
+        $workflow_results{$id} = {
             status    => $status,
-            started   => $start_time, #$_->start_time,
-            completed => $end_time, #$_->end_time ? $_->end_time : '',
-            elapsed   => format_time_diff($diff), #$_->elapsed_time(),
-          };
+            started   => $start_time,
+            completed => $end_time,
+            elapsed   => format_time_diff($diff)
+        };
     }
 
     my $index = 1;
@@ -97,7 +104,7 @@ sub get_jobs_for_user {
         push @job_items, {
             id => int($index++),
             workflow_id => $_->workflow_id,
-            user  => $users{$_->user_id},
+            user  => $users{$_->user_id} || "public",
             tool  => $_->page,
             link  => $_->link,
             %{$entry}
@@ -122,29 +129,32 @@ sub gen_html {
     my $html;
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( HELP => "/wiki/index.php?title=$PAGE_TITLE" );
+    #$template->param( HELP => "/wiki/index.php?title=$PAGE_TITLE" );
+    $template->param( HELP => $P->{SERVER} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER => $name );
     $template->param(
-        TITLE      => qq{},
+        TITLE      => qq{Jobs},
         PAGE_TITLE => $PAGE_TITLE,
         PAGE_LINK  => $LINK,
-        LOGO_PNG   => "$PAGE_TITLE-logo.png"
+        LOGO_PNG   => "CoGe.svg"
     );
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY => gen_body() );
     $template->param( ADJUST_BOX => 1 );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
+
     $html .= $template->output;
 }
 
 sub gen_body {
-    if ( $USER->is_public ) {
+    unless ( $USER->is_admin ) {
         my $template =
           HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
         $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
-        $template->param( LOGIN     => 1 );
+        $template->param( ADMIN_ONLY => 1 );
         return $template->output;
     }
 
@@ -152,7 +162,7 @@ sub gen_body {
       HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param( PAGE_NAME  => "$PAGE_TITLE.pl" );
     $template->param( MAIN       => 1 );
-    $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
+
     return $template->output;
 }
 

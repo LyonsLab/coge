@@ -5,6 +5,7 @@ no warnings 'redefine';
 umask(0);
 
 use Benchmark;
+use Carp;
 use DBI;
 use Getopt::Long;
 use Parallel::ForkManager;
@@ -152,9 +153,19 @@ sub gen_fasta {
                         chr => uc( $feat->chromosome ) );
                 }
                 next unless $chr_sequence{ $feat->chromosome };
+
+                my $start_index;
+                # Check that the start location is greater than 1
+                if ($start < 1) {
+                    carp "feature start location is less than 1, start=$start";
+                    $start_index = 0;
+                } else {
+                    $start_index = $start - 1;
+                }
+
                 my $subseq = substr(
                     $chr_sequence{ $feat->chromosome },
-                    $start - 1,
+                    $start_index,
                     $stop - $start + 1
                 );
                 #unless ($subseq) {

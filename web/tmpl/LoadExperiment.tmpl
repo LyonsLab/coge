@@ -30,7 +30,7 @@
 .jstree.jstree-focused { background:white; }
 </style>
 
-<SCRIPT language="JavaScript">
+<script type="text/javascript">
 
 const STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
 const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
@@ -42,6 +42,7 @@ var embed = '<TMPL_VAR NAME="EMBED">';
 var experiment_id;
 var notebook_id;
 var pageObj = {};
+var newLoad = false;
 
 $(document).ready(function(){
 	// Configure jQuery ajax
@@ -71,17 +72,19 @@ $(document).ready(function(){
         },
         focus: function(event, ui) {
             //$("#edit_genome").val(ui.item.label);
-        	console.log('matt');
             return false; // Prevent the widget from inserting the value.
         }
     });
 
     $("#file_type_selector").on("change", function() {
         var alignment = $("#alignment");
+        var pipeline =$("#fastq-pipeline");
         if ($(this).val() === "fastq") {
            alignment.slideDown();
+           pipeline.slideDown();
         } else {
            alignment.slideUp();
+           pipeline.slideUp();
         }
     });
 
@@ -91,6 +94,13 @@ $(document).ready(function(){
         $('#load_dialog').dialog('open');
         update_dialog(STATUS_URL + job_id, pageObj.user, "#load_dialog", progress_formatter);
     }
+    
+    <TMPL_IF NAME="ADMIN_AREA">
+    $("#edit_user").autocomplete({
+        source:[],
+        focus: function() { return false; },
+    });
+    </TMPL_IF>
 });
 
 function file_selected(filename, url) {
@@ -149,7 +159,7 @@ function create_source() {
 function reset_log() {
     $('#load_log').html('');
     $('#loading_msg').show();
-    $('#ok_button,#error_msg,#finished_msg,#finish_load_experiment_button,#cancel_load_experiment_button').hide();
+    $('#ok_button,#error_msg,#finished_msg,#finish_load_experiment_button,#cancel_load_experiment_button,#logfile').hide();
 }
 
 function check_login() {
@@ -185,6 +195,8 @@ function load_experiment() {
     var gid = $('#gid').val();
     var file_type = $("#select_file_type option:selected").val();
     var aligner = $("#alignment").find(":checked").val();
+    var ignore_cb = $('#ignore_missing_chrs');
+    var ignore_missing_chrs = ignore_cb.is(':checked');
 
     if (!name) {
     	error_help('Please specify an experiment name.');
@@ -231,6 +243,7 @@ function load_experiment() {
     reset_log();
     $('#load_dialog').dialog('open');
     $('#load_log').html('Initializing ...');
+    newLoad = true;
 
     $.ajax({
         data: {
@@ -245,6 +258,7 @@ function load_experiment() {
             items: json,
             file_type: file_type,
             aligner: aligner,
+            ignore_missing_chrs: ignore_missing_chrs,
             timestamp: new Date().getTime()
         },
         success : function(data) {
@@ -286,28 +300,36 @@ function get_load_log(callback) {
     });
 }
 
-function load_failed() {
+function load_failed(logfile) {
 	// mdb added 6/24/14 - temporary message until JEX logging is improved
 	var msg =
 		'<div class="alert">' +
 		'The CoGe Support Team has been notified of this error but please ' + 
-		'feel free to contact us at <a href="mailto:coge.genome@gmail.com">coge.genome@gmail.com</a> ' +
+		'feel free to contact us at <a href="mailto:<TMPL_VAR NAME=SUPPORT_EMAIL>"><TMPL_VAR NAME=SUPPORT_EMAIL></a> ' +
 		'and we can help to determine the cause.' +
 		'</div>';
 	var log = $('#load_log');
 	log.html( log.html() + msg );
 
+
+    if (logfile) {
+        $("#logfile a").attr("href", logfile);
+        $('#logfile').fadeIn();
+    }
+
     // Update dialog
     $('#loading_msg').hide();
     $('#error_msg,#cancel_load_experiment_button').fadeIn();
 
-    $.ajax({
-        data: {
-            fname: "send_error_report",
-            load_id: load_id,
-            job_id: job_id
-        }
-    });
+    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
+	    $.ajax({
+	        data: {
+	            fname: "send_error_report",
+	            load_id: load_id,
+	            job_id: job_id
+	        }
+	    });
+    }
 }
 
 function load_succeeded(obj) {
@@ -345,7 +367,6 @@ function reset_load() {
 
 function wait_to_search (search_func, search_obj) {
     var search_term = search_obj.value;
-    console.log(search_term);
     if (!search_term || search_term.length >= 2) {
         if (pageObj.time) {
             clearTimeout(pageObj.time);
@@ -442,7 +463,8 @@ function progress_formatter(item) {
         var p = item.log.split("\n");
 
         var pElements = p.map(function(item) {
-            return $("<div></div>").html(item);
+            var norm = item.replace(/\\t/g, " ").replace(/\\'/g, "'");
+            return $("<div></div>").html(norm);
         });
 
         var log = $("<div></div>").html(pElements).addClass("padded");
@@ -485,7 +507,12 @@ function update_dialog(request, user, identifier, formatter) {
             pageObj.error++;
             if (pageObj.error > 3) {
                 workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
-                load_failed();
+                var logfile;
+
+                if (json.results.length) {
+                    logfile = json.results[0].path;
+                }
+                load_failed(logfile);
                 return;
             }
         } else {
@@ -540,9 +567,11 @@ function update_dialog(request, user, identifier, formatter) {
                 || current_status == "cancelled")
         {
             workflow_status.find('span').addClass('alert');
-            get_load_log(function(result) {
-                load_failed(result);
-            });
+
+            if (json.results.length) {
+                logfile = json.results[0].path;
+            }
+            load_failed(logfile);
         }
         else if (current_status == "notfound") {
             setTimeout(callback, timeout);
@@ -560,14 +589,14 @@ function update_dialog(request, user, identifier, formatter) {
 
     get_status();
 }
-</SCRIPT>
+</script>
 
 <div class="bold text" style="padding-top:1em;">Describe the Experiment</div>
 <div class="coge-bg inline padded ui-widget-content ui-corner-all">
 	<div class="small info">
 		Complete the form below to describe the experiment data.
 		<div class="alert"><span class="small glyphicon glyphicon-asterisk"></span> denotes a required field</div>
-	</div> 
+	</div>
 
 	<table class="small" style="padding-top:0.5em;">
 	  <tr>
@@ -621,6 +650,9 @@ function update_dialog(request, user, identifier, formatter) {
 	              <option value="csv">Comma-separated value (CSV)</option>
 	              <option value="tsv">Tab-separated value (TSV)</option>
 	              <option value="bed">BED</option>
+	              <option value="wig">WIG</option>
+	            </optgroup>
+	            <optgroup label="Marker">
 	              <option value="gff">GFF/GTF</option>
 	            </optgroup>
 	            <optgroup label="Polymorphism">
@@ -642,12 +674,16 @@ function update_dialog(request, user, identifier, formatter) {
 	    <td>
 	        <input name="aligner" type="radio" value="gsnap" checked>
 	        <label for="gsnap">GSNAP</label>
-	
+
 	        <input name="aligner" type="radio" value="tophat">
 	        <label for="gsnap">TopHat/Bowtie2</label>
 	    </td>
 	  </tr>
 	</table>
+
+    <div id="fastq-pipeline" class="info small hidden">
+        This experiment will be processed using the <a href="https://genomevolution.org/wiki/index.php?title=RNASeq_Pipeline">RNASeq Pipeline</a>
+    </div>
 </div>
 
 <div class="middle" style="padding-top:1em;">
@@ -674,6 +710,7 @@ function update_dialog(request, user, identifier, formatter) {
 	  <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Load Another</span>
 	  <span id="finish_load_experiment_button" style="display:none;float:right;" class="ui-button ui-corner-all">ExperimentView</span>
 	  <span id="cancel_load_experiment_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
+      <span id="logfile" class="hidden"><a href="">Logfile</a></span>
   </div>
 </div>
 
@@ -697,26 +734,20 @@ function update_dialog(request, user, identifier, formatter) {
 </div>
 
 <TMPL_IF NAME='ADMIN_AREA'>
-<script>
-$(document).ready(function() {
-    $("#edit_user").autocomplete({
-        source:[],
-        focus: function() { return false; },
-    });
-});
-</script>
-
-<br><br><hr>
-<span style="color:dimgray;font-weight:bold;">Admin Functions</span><br>
-<table class="small ui-widget-content ui-corner-all">
-  <tr>
-    <td>Assign to user:</td>
-    <td>
-      <input id="edit_user" type="search" placeholder="Search" spellcheck="false" onkeyup="wait_to_search(search_users, this.value);" size="10" />
-    </td>
-  </tr>
-</table>
-<br>
+	<br><br><hr>
+	<div class="bold text">Admin Functions</div>
+	<div class="small">
+	    <div>
+	        Assign to user:
+	    	<input id="edit_user" type="search" placeholder="Search" spellcheck="false" onkeyup="wait_to_search(search_users, this.value);" size="20" />
+	    </div>
+	    <!--
+	    <div>
+	    	Ignore missing chromosomes?
+	    	<input id="ignore_missing_chrs" type="checkbox" />
+	    </div>
+	    -->
+    </div>
 </TMPL_IF>
 
 </TMPL_IF> <!-- MAIN -->

@@ -83,6 +83,7 @@ sub gen_html {
     $template->param( DATE     => $DATE );
     $template->param( LOGO_PNG => "MatrixView-logo.png" );
     $template->param( BODY     => $body );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
     $html .= $template->output;
     return $html;
 }

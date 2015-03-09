@@ -83,6 +83,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     get_gff                    => \&get_gff,
     get_tbl                    => \&get_tbl,
     get_load_log               => \&get_load_log,
+    get_progress_log           => \&get_progress_log,
     export_bed                 => \&export_bed,
     export_gff                 => \&export_gff,
     export_tbl                 => \&export_tbl,
@@ -98,6 +99,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     get_wobble_gc              => \&get_wobble_gc,
     get_wobble_gc_diff         => \&get_wobble_gc_diff,
     get_codon_usage            => \&get_codon_usage,
+    get_experiments            => \&get_experiments,
     %ajax
 );
 
@@ -898,10 +900,12 @@ sub get_genome_info {
     );
 
     my $owner = $genome->owner;
+    my $creator = $genome->creator;
     my $groups = ($genome->restricted ? join(', ', map { $_->name } $USER->groups_with_access($genome))
                                                    : undef);
     $template->param( groups_with_access => $groups) if $groups;
     $template->param( OWNER => $owner->display_name ) if $owner;
+    $template->param( CREATOR => $creator->display_name ) if $creator;
     $template->param( GID => $genome->id );
 
     return $template->output;
@@ -1205,7 +1209,7 @@ sub get_experiments {
         push @rows, \%row;
     }
     
-    return '<span class="padded note">There a no experiments for this genome.</span>' unless @rows;
+    return '<span class="padded note">There are no experiments for this genome.</span>' unless @rows;
 
     my $template = HTML::Template->new( filename => $config->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
@@ -1298,6 +1302,7 @@ sub copy_genome {
     my $workflow = $JEX->create_workflow(name => $desc, init => 1);
 
     my ($staging_dir, $result_dir) = get_workflow_paths($USER->name, $workflow->id);
+    $workflow->logfile( catfile($result_dir, 'debug.log') );
 
     $args{uid} = $USER->id;
     $args{conf} = $config->{_CONFIG_PATH};
@@ -1336,6 +1341,17 @@ sub copy_genome {
 }
 
 sub get_load_log {
+    my %opts = @_;
+    my $gid = $opts{gid};
+    my $getEverything = $opts{get_everything};
+    return unless $gid;
+    
+    my $log = get_log( item_id => $gid, item_type => 'genome', getEverything => $getEverything, html => 1 );
+    
+    return $log;
+}
+
+sub get_progress_log {
     my %opts         = @_;
     my $workflow_id = $opts{workflow_id};
     return unless $workflow_id;
@@ -1474,16 +1490,7 @@ sub export_fasta_irods {
     #TODO need to check rc of iput and abort if failure occurred
 
     # Set IRODS metadata for object #TODO need to change these to use Accessory::IRODS::IRODS_METADATA_PREFIX
-    my %meta = (
-            'Imported From' => "CoGe: http://genomevolution.org",
-            'CoGe OrganismView Link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
-            'CoGe GenomeInfo Link'=> "http://genomevolution.org/CoGe/GenomeInfo.pl?gid=".$genome->id,
-            'CoGe Genome ID'   => $genome->id,
-            'Organism Name'    => $genome->organism->name,
-            'Organism Taxonomy'    => $genome->organism->description,
-            'Version'     => $genome->version,
-            'Type'        => $genome->type->info,
-           );
+    my %meta = get_metadata($genome);
     my $i = 1;
     my @sources = $genome->source;
     foreach my $item (@sources) {
@@ -1808,6 +1815,21 @@ sub get_tbl {
     return encode_json(\%json);
 }
 
+sub get_metadata {
+    my $genome = shift;
+
+    return (
+        'Imported From' => "CoGe: http://genomevolution.org",
+        'CoGe OrganismView Link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
+        'CoGe GenomeInfo Link'=> "http://genomevolution.org/CoGe/GenomeInfo.pl?gid=".$genome->id,
+        'CoGe Genome ID'   => $genome->id,
+        'Organism Name'    => $genome->organism->name,
+        'Organism Taxonomy'    => $genome->organism->description,
+        'Version'     => $genome->version,
+        'Type'        => $genome->type->info,
+    );
+}
+
 sub export_tbl {
     my %args = @_;
     my $dsg = $coge->resultset('Genome')->find($args{gid});
@@ -1832,6 +1854,7 @@ sub export_tbl {
     my $success = $JEX->wait_for_completion($response->{id});
 
     my (%json, %meta);
+    %meta = get_metadata($dsg);
     $json{file} = basename($output);
 
     if($success) {
@@ -1898,6 +1921,7 @@ sub export_bed {
     say STDERR "RESPONSE ID: " . $response->{id};
     my $success = $JEX->wait_for_completion($response->{id});
     my (%json, %meta);
+    %meta = get_metadata($dsg);
 
     $json{file} = basename($output);
 
@@ -1923,11 +1947,11 @@ sub get_gff {
 
     $args{script_dir} = $config->{SCRIPTDIR};
     $args{secure_tmp} = $config->{SECTEMPDIR};
-    $args{basename} = $dsg->organism->name;
+    $args{basename} = sanitize_name($dsg->organism->name);
     $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export gff");
-    my ($output, %task) = generate_gff(%args);
+    my ($output, %task) = generate_gff(\%args, $config);
     $workflow->add_job(%task);
 
     my $response = $JEX->submit_workflow($workflow);
@@ -1952,14 +1976,15 @@ sub export_gff {
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
     my (%json, %meta);
+    %meta = get_metadata($dsg);
 
     $args{script_dir} = $config->{SCRIPTDIR};
     $args{secure_tmp} = $config->{SECTEMPDIR};
-    $args{basename} = $dsg->organism->name;
+    $args{basename} = sanitize_name($dsg->organism->name);
     $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export gff");
-    my ($output, %task) = generate_gff(%args);
+    my ($output, %task) = generate_gff(\%args, $config);
     $workflow->add_job(%task);
 
     my $response = $JEX->submit_workflow($workflow);
@@ -2032,16 +2057,20 @@ sub generate_html {
           HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param(
             PAGE_TITLE => $PAGE_TITLE,
+	    TITLE      => 'GenomeInfo',
             PAGE_LINK  => $LINK,
-            HELP       => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl',
+            #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl',
+	    HELP       => $config->{SERVER},
             USER       => $name,
-            LOGO_PNG   => $PAGE_TITLE . "-logo.png",
+            LOGO_PNG   => "CoGe.svg",
             ADJUST_BOX => 1,
-            LOGON      => ( $USER->user_name ne "public" )
+            LOGON      => ( $USER->user_name ne "public" ),
+            ADMIN_ONLY => $USER->is_admin
         );
     }
 
     $template->param( BODY => generate_body() );
+
     return $template->output;
 }
 
@@ -2060,6 +2089,20 @@ sub generate_body {
     my $user_can_edit = $USER->is_admin || $USER->is_owner_editor( dsg => $gid );
     my $user_can_delete = $USER->is_admin || $USER->is_owner( dsg => $gid );
 
+
+    my $exp_count = $genome->experiments->count( { deleted => 0 } );
+    my $experiments;
+
+    if ($exp_count < 20) {
+        $experiments = get_experiments( genome => $genome );
+    } else {
+        my $summary_template =
+        HTML::Template->new( filename => $config->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+
+        $summary_template->param(NOEXPERIMENTS => 1);
+        $experiments = $summary_template->output;
+    }
+
     $template->param( OID => $genome->organism->id );
 
     $template->param(
@@ -2072,7 +2115,8 @@ sub generate_body {
         LOGON           => ( $USER->user_name ne "public" ),
         GENOME_ANNOTATIONS => get_annotations( gid => $gid ) || undef,
         DEFAULT_TYPE    => 'note', # default annotation type
-        EXPERIMENTS     => get_experiments( genome => $genome ) || undef,
+        EXP_COUNT       => $exp_count,
+        EXPERIMENTS     => $experiments || undef,
         DATASETS        => get_datasets( genome => $genome, exclude_seq => 1 ) || undef,
         USER_CAN_EDIT   => $user_can_edit,
         USER_CAN_ADD    => $user_can_edit, #( !$genome->restricted or $user_can_edit ), # mdb removed 2/19/14, not sure why it ever existed

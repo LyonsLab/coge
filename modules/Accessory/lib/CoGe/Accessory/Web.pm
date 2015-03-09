@@ -4,6 +4,7 @@ use v5.10;
 use strict;
 use base 'Class::Accessor';
 use Data::Dumper;
+use Data::Validate::URI qw(is_uri);
 use Carp qw(cluck);
 use CoGeX;
 use DBIxProfiler;
@@ -13,11 +14,14 @@ use CGI::Cookie;
 use File::Path;
 use File::Basename;
 use File::Temp;
+use File::Spec::Functions;
+use HTML::Template;
 use LWP::Simple qw(!get !head !getprint !getstore !mirror);
 use LWP::UserAgent;
+use JSON;
 use HTTP::Request;
 use XML::Simple;
-use CoGe::Accessory::LogUser;
+use CoGe::Accessory::LogUser qw(get_cookie_session);
 use Digest::MD5 qw(md5_base64);
 use POSIX qw(!tmpnam !tmpfile);
 use Mail::Mailer;
@@ -46,7 +50,8 @@ LICENSE file included with this module.
 
 =cut
 
-our($CONF, $VERSION, @ISA, @EXPORT, @EXPORT_OK, $Q, $TEMPDIR, $BASEDIR);
+our($CONF, $VERSION, @ISA, @EXPORT, @EXPORT_OK, $Q, $TEMPDIR, $BASEDIR,
+    $PAYLOAD_ERROR, $NOT_FOUND);
 
 BEGIN {
     require Exporter;
@@ -57,7 +62,11 @@ BEGIN {
     @ISA     = ( qw (Exporter Class::Accessor) );
     @EXPORT  = qw( get_session_id );
     @EXPORT_OK = qw( check_filename_taint check_taint gunzip gzip send_email
-                     get_defaults set_defaults url_for get_job schedule_job );
+                     get_defaults set_defaults url_for get_job schedule_job
+                     render_template );
+
+    $PAYLOAD_ERROR = "The request could not be decoded";
+    $NOT_FOUND = "The action could not be found";
 
     __PACKAGE__->mk_accessors(
         'restricted_orgs', 'basefilename', 'basefile', 'logfile',
@@ -74,8 +83,6 @@ sub init {
     my $debug  = $opts{debug};  # optional flag for enabling debugging messages
     my $page_title = $opts{page_title}; # optional page title
     my $ticket_type = $opts{ticket_type}; #optional ticket type (saml or proxy)
-
-    say STDERR $ENV{REMOTE_ADDR};
 
     if ($cgi) {
     	$ticket = $cgi->param('ticket') || undef;
@@ -130,20 +137,37 @@ sub init {
 	            url => 'http://' . $ENV{SERVER_NAME} . $ENV{REQUEST_URI},
 	        );
 
+            # erb 10/07/2014 - remove unused generic logging issue 516
 	        # Log this page access
-	        CoGe::Accessory::Web::log_history(
-		        db          => $db,
-		        user_id     => $user->id,
-		       	page        => $page_title,
-		      	description => 'page access',
-		        link        => $link
-		    );
+            #CoGe::Accessory::Web::log_history(
+		    #    db          => $db,
+		    #    user_id     => $user->id,
+		    #   	page        => $page_title,
+		    #  	description => 'page access',
+		    #    link        => $link
+		    #);
 		}
     }
 
     print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . " page_title=" . ($page_title ? $page_title : '') . " user=" . ($user ? $user->name : '') . "\n";
 
     return ( $db, $user, $CONF, $link );
+}
+
+sub render_template {
+    my ($template_name, $opts) = @_;
+
+    my $template_file = catfile(get_defaults()->{TMPLDIR}, $template_name);
+
+    unless(-r $template_file) {
+        cluck "error: template=$template_file could not be found";
+        return;
+    }
+
+    my $template = HTML::Template->new( filename => $template_file );
+
+    $template->param($opts);
+    return $template->output;
 }
 
 sub get_defaults {
@@ -191,22 +215,48 @@ sub is_ajax {
 
 sub dispatch {
     my ( $self, $form, $functions, $default_sub ) = self_or_default(@_);
-    my %args  = $form->Vars;
-    my $fname = $args{'fname'};
-    if ($fname) {
-    	die "Web::dispatch: function '$fname' not found!" if (not defined $functions->{$fname});
-        #my %args = $form->Vars;
-        #print STDERR Dumper \%args;
-        if ( $args{args} ) {
-            my @args_list = split( /,/, $args{args} );
-            print $form->header, $functions->{$fname}->(@args_list);
+    my $content_type = $ENV{'CONTENT_TYPE'};
+
+    if ($content_type =~ /application\/json/) {
+        my $payload = $form->param('POSTDATA');
+        my ($params, $resp);
+
+        eval {
+            $params = decode_json($payload) if $payload;
+        };
+
+        if ($params) {
+            my $fname = $params->{fname};
+
+            if (not defined $functions->{$fname}) {
+                carp "Web::dispatch: function '$fname' not found!";
+                $resp = encode_json({ error => { NOT_FOUND => $NOT_FOUND }});
+            } else {
+                $resp = $functions->{$fname}->($params);
+            }
+        } else {
+            $resp = encode_json({ error => { PAYLOAD => $PAYLOAD_ERROR }});
+        }
+
+        print $form->header, $resp;
+    } else {
+        my %args  = $form->Vars;
+        my $fname = $args{'fname'};
+        if ($fname) {
+            die "Web::dispatch: function '$fname' not found!" if (not defined $functions->{$fname});
+            #my %args = $form->Vars;
+            #print STDERR Dumper \%args;
+            if ( $args{args} ) {
+                my @args_list = split( /,/, $args{args} );
+                print $form->header, $functions->{$fname}->(@args_list);
+            }
+            else {
+                print $form->header, $functions->{$fname}->(%args);
+            }
         }
         else {
-            print $form->header, $functions->{$fname}->(%args);
+            print $form->header, $default_sub->();
         }
-    }
-    else {
-        print $form->header, $default_sub->();
     }
 }
 
@@ -343,12 +393,14 @@ sub logout_coge { # mdb added 3/24/14, issue 329
     my $coge        = $opts{coge};
     my $user        = $opts{user};
     my $form        = $opts{form}; # CGI form for calling page
-    my $url         = $opts{this_url};
+    my $url         = $opts{url};
     $url = $form->url() unless $url;
     print STDERR "Web::logout_coge url=", ($url ? $url : ''), "\n";
 
     # Delete user session from db
-    my $session_id = get_session_id($user->user_name, $ENV{REMOTE_ADDR});
+    my $session_id = get_cookie_session(cookie_name => $CONF->{COOKIE_NAME})
+        || get_session_id($user->user_name, $ENV{REMOTE_ADDR});
+
     my ($session) = $coge->resultset('UserSession')->find( { session => $session_id } );
     $session->delete if $session;
 
@@ -361,12 +413,14 @@ sub logout_cas {
     my $coge        = $opts{coge};
     my $user        = $opts{user};
     my $form        = $opts{form}; # CGI form for calling page
-    my $url         = $opts{this_url};
+    my $url         = $opts{url};
     $url = $form->url() unless $url;
     print STDERR "Web::logout_cas url=", ($url ? $url : ''), "\n";
 
     # Delete user session from db
-    my $session_id = get_session_id($user->user_name, $ENV{REMOTE_ADDR});
+    my $session_id = get_cookie_session(cookie_name => $CONF->{COOKIE_NAME})
+        || get_session_id($user->user_name, $ENV{REMOTE_ADDR});
+
     my ($session) = $coge->resultset('UserSession')->find( { session => $session_id } );
     $session->delete if $session;
 
@@ -655,6 +709,10 @@ sub get_tiny_link {
 #    my $disable_logging = $opts{disable_logging};    # flag
 
     $url =~ s/:::/__/g;
+
+    #FIXME: Hack for tiny link service
+    $url =~ s/&/;/g;
+
     my $request_url = "https://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url";
 
 # mdb removed 1/8/14, issue 272
@@ -666,15 +724,22 @@ sub get_tiny_link {
 
     # mdb added 1/8/14, issue 272
     my $ua = new LWP::UserAgent;
+    my $response_url;
+
 	$ua->timeout(5);
 	my $response = $ua->get($request_url);
 	if ($response->is_success) {
-        return $response->decoded_content;
+        $response_url = $response->decoded_content;
 	}
 	else {
         cluck "Unable to produce tiny url from server falling back to url";
         return $url;
 	}
+
+    # check if the tiny link is a validate url
+    return $url unless is_uri($response_url);
+
+    return $response_url;
 
     # Log the page
 # mdb removed 10/10/13 -- Move logging functionality out of this to fix issue 167
@@ -970,6 +1035,7 @@ sub send_email {
     my $to      = $opts{to};
     my $subject = $opts{subject};
     my $body    = $opts{body};
+    return unless ($from and $to and $subject);
 
     print STDERR "Sending email: from=$from to=$to subject=$subject\nbody:\n$body\n";
 
@@ -1014,7 +1080,7 @@ sub url_for {
     $BASE_URL =~ s/\/$//;
 
     # Strip BASE URL from SERVER
-    $SERVER =~ s/$BASE_URL//;
+    $SERVER =~ s/$BASE_URL//i;
 
     # Strip scheme and /
     $SERVER =~ s/\/*$//;

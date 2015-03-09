@@ -338,7 +338,7 @@ sub has_access_to_experiment {
 sub has_access_to_dataset {
 	my ($self, $ds) = @_;
 	return 0 unless $ds;
-	return 1 if (not $ds->restricted or $self->is_admin); # public dataset or superuser
+	return 1 if ($self->is_admin);#if (not $ds->restricted or $self->is_admin); # public dataset or superuser
 	return 0 if ($self->is_public); # deny public user for restricted dataset
 
 	my $dsid = $ds->id;
@@ -747,6 +747,8 @@ sub users_with_access {
 		my $list = $conn->parent_list;
 		foreach ($list->user_connectors) {
 			my $user = $_->parent;
+            next unless defined $user;
+
 			$users{$user->id} = $user;
 		}
 		foreach ($list->group_connectors) {

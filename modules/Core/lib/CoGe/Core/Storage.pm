@@ -38,6 +38,8 @@ use File::Basename;
 use POSIX qw(floor);
 use File::Spec::Functions;
 use File::Path qw(mkpath);
+use File::Find qw(find);
+use File::Slurp;
 use List::Util qw[min max];
 use File::Slurp;
 use JSON::XS qw(decode_json);
@@ -45,19 +47,20 @@ use Data::Dumper;
 use POSIX qw(ceil);
 
 BEGIN {
-    use vars qw ($VERSION @ISA @EXPORT $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER);
+    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER);
     require Exporter;
 
     $VERSION = 0.1;
     @ISA     = qw (Exporter);
     @EXPORT = qw(
-      get_tiered_path get_workflow_paths
+      get_tiered_path get_workflow_paths get_log
       get_genome_file index_genome_file get_genome_seq get_genome_path
       get_experiment_path get_experiment_files get_experiment_data
       create_experiment create_experiments_from_batch
       create_genome_from_file create_genome_from_NCBI
       create_annotation_dataset reverse_complement
     );
+    @EXPORT_OK = qw(data_type);
 
     # Experiment Data Types
     $DATA_TYPE_QUANT  = 1; # Quantitative data
@@ -163,8 +166,7 @@ sub index_genome_file {
     my $cmd = "$samtools faidx $file_path";
     qx{ $cmd };
     if ( $? != 0 ) {
-        print STDERR
-          "Storage::index_genome_file: command failed with rc=$?: $cmd\n";
+        print STDERR "Storage::index_genome_file: command failed with rc=$?: $cmd\n";
         return $?;
     }
 
@@ -179,8 +181,7 @@ sub index_genome_file {
         $cmd = "$razip -c $file_path > $file_path.razf";
         qx{ $cmd };
         if ( $? != 0 ) {
-            print STDERR
-              "Storage::index_genome_file: command failed with rc=$?: $cmd\n";
+            print STDERR "Storage::index_genome_file: command failed with rc=$?: $cmd\n";
             return $?;
         }
 
@@ -188,8 +189,7 @@ sub index_genome_file {
         $cmd = "$samtools faidx $file_path.razf";
         qx{ $cmd };
         if ( $? != 0 ) {
-            print STDERR
-              "Storage::index_genome_file: command failed with rc=$?: $cmd\n";
+            print STDERR "Storage::index_genome_file: command failed with rc=$?: $cmd\n";
             return $?;
         }
     }
@@ -516,6 +516,92 @@ sub get_experiment_data {
     }
 }
 
+sub get_log {
+    my %opts = @_;
+    my $item_id = $opts{item_id}; # required
+    my $item_type  = $opts{item_type}; # required
+    my $getEverything = $opts{getEverything}; # optional - not finished
+    my $html = $opts{html}; # optional
+    #print STDERR Dumper \%opts, "\n";
+    return unless ($item_id and $item_type);
+    
+    my $storage_path;
+    if ($item_type eq 'genome') { #TODO use hash of function refs for this instead
+        $storage_path = get_genome_path($item_id);
+    }
+    elsif ($item_type eq 'experiment') {
+        $storage_path = get_experiment_path($item_id);
+    }
+        
+    my $old_log_file = catfile($storage_path, 'log.txt');
+    
+    my $log_file;
+    if (-e $old_log_file) { # Old logging method pre-JEX
+        $log_file = $old_log_file;
+    }
+    else { # Current JEX logging method
+        # Get workflow id
+        my $metadata_file = catfile($storage_path, 'metadata.json');
+        if (! -e $metadata_file) {
+            print STDERR "Storage::get_log cannot find log file\n";
+            return;
+        }
+        my $md = CoGe::Accessory::TDS::read($metadata_file);
+        my $workflow_id = $md->{workflow_id};
+        
+        # Determine path
+        my (undef, $results_path) = get_workflow_paths(undef, $workflow_id);
+        $log_file = catfile($results_path, 'debug.log');
+    }
+    
+    # Read-in log file
+    open(my $fh, $log_file);
+    my $log = read_file($fh); # should be a relatively small file, read it all at once
+    #my @log = <$fh>;
+    #print STDERR \@log, "\n";
+    close($fh);
+    
+    if ($html) {
+        # Convert newlines/tabs to HTML equivalents
+        $log =~ s/\t/&nbsp;&nbsp;&nbsp;&nbsp;/g;
+        $log =~ s/\\t/&nbsp;&nbsp;&nbsp;&nbsp;/g;
+        $log =~ s/\n/<br>/g;
+        $log =~ s/\\n/<br>/g;
+    }
+    
+    # Parse out content - NOT WORKING YET, LEFT OFF HERE
+#    if (!$getEverything) {
+#        #my @sections = $log =~ m{Command Output:(.*)#########################}sg;
+#        
+#        my $i = 0;
+#        my @sections;
+#        my $capture = 0;
+#        my $line;
+#        foreach (@log) {
+#            if (/^Command Output:/) {
+#                if ($capture) {
+#                    $capture = 1;
+#                    $line = '';
+#                }
+#            }
+#            elsif (/#########################$/) {
+#                $capture = 0;
+#                $i++;
+#            }
+#            elsif ($capture) {
+#                $line .= $_;
+#                print $line, "\n";
+#                push @{$sections[$i]}, $line;
+#            }
+#        }
+#        
+#        print STDERR \@sections, "\n";
+#        #my @lines = split("/\/\n", ${sections[0]});
+#    }
+    
+    return $log;
+}
+
 sub create_experiment {
     my %opts = @_;
     my $genome = $opts{genome}; # genome object or id
@@ -524,8 +610,9 @@ sub create_experiment {
     my $files = $opts{files};
     my $file_type = $opts{file_type};
     my $metadata = $opts{metadata};
+    my $options = $opts{options};
 
-    print STDERR (caller(0))[3], "\n";
+    #print STDERR (caller(0))[3], "\n";
 
     my $conf = CoGe::Accessory::Web::get_defaults();
 
@@ -564,7 +651,8 @@ sub create_experiment {
     }
 
     # Create load job
-    %load_params = _create_load_experiment_job($conf, $metadata, $gid, $user->name, $staging_dir, \@staged_files, $file_type, $result_dir);
+    my $ignoreMissing = ( $options->{ignoreMissing} ? 1 : 0 );
+    %load_params = _create_load_experiment_job($conf, $metadata, $gid, $workflow->id, $user->name, $staging_dir, \@staged_files, $file_type, $result_dir, $ignoreMissing);
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
@@ -581,17 +669,23 @@ sub create_experiment {
 
 sub create_experiments_from_batch {
     my %opts = @_;
-    my $genome = $opts{genome}; # genome object or id
-    my $user = $opts{user};
+    my $genome = $opts{genome};     # genome object or id
+    my $notebook = $opts{notebook}; # optional notebook object or id
+    my $user = $opts{user};         # user running the job
+    my $assignee = $opts{assignee}; # user object or id to assign to
     my $irods = $opts{irods};
     my $files = $opts{files};
     my $metadata = $opts{metadata};
 
-    print STDERR (caller(0))[3], "\n";
+    #print STDERR (caller(0))[3], "\n", Dumper $files, "\n";
 
     my $conf = CoGe::Accessory::Web::get_defaults();
 
     my $gid = $genome =~ /^\d+$/ ? $genome : $genome->id;
+    my $nid;
+    if ($notebook) {
+        $nid = $notebook =~ /^\d+$/ ? $notebook : $notebook->id;
+    }
 
     # Connect to workflow engine and get an id
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
@@ -607,7 +701,7 @@ sub create_experiments_from_batch {
 
     # Setup log file, staging, and results paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
-    $workflow->logfile( catfile($staging_dir, 'workflow.log') );
+    $workflow->logfile( catfile($result_dir, 'debug.log') );
 
     # Create list of files to load
     my @staged_files;
@@ -624,9 +718,13 @@ sub create_experiments_from_batch {
         $workflow->add_job(%load_params);
         push @staged_files, $load_params{outputs}[0];
     }
+    
+    # Change user if "assign to user" specified
+    my $user_name = $user->name;
+    $user_name = $assignee->name if ($assignee);
 
     # Create load job
-    %load_params = _create_load_batch_job($conf, $metadata, $gid, $user->name, \@staged_files, $staging_dir, $result_dir);
+    %load_params = _create_load_batch_job($conf, $metadata, $gid, $workflow->id, $user->name, \@staged_files, $staging_dir, $result_dir, $nid);
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
@@ -646,14 +744,29 @@ sub create_experiments_from_batch {
 # and underscores.
 sub get_workflow_paths {
     my ( $user_name, $workflow_id ) = remove_self(@_); # required because this routine is called internally and externally, is there a better way?
-    unless ($user_name and $workflow_id) {
+    unless ($workflow_id) {
         print STDERR "Storage::get_workflow_paths ERROR: missing required param\n";
         return;
     }
-
+    
     my $tmp_path = CoGe::Accessory::Web::get_defaults()->{SECTEMPDIR};
-    my $staging_path = catdir($tmp_path, 'staging', $user_name, $workflow_id);
-    my $results_path = catdir($tmp_path, 'results', $user_name, $workflow_id);
+    my ($staging_path, $results_path);
+    if (!$user_name) {
+        # TODO maybe putting username in filepath isn't worth debug convenience
+        my $staging_dir = catdir($tmp_path, 'staging');
+        my @tmp = read_dir($staging_dir);
+        my @wdir = grep { -d "$staging_dir/$_/$workflow_id" } read_dir($staging_dir);
+        print STDERR Dumper "wdir:\n", \@wdir, "\n";
+        if (@wdir != 1) {
+            print STDERR "Storage::get_workflow_paths ERROR: ambiguous user directory\n";
+            return;
+        }
+        $user_name = $wdir[0];
+    }
+
+    $staging_path = catdir($tmp_path, 'staging', $user_name, $workflow_id);
+    $results_path = catdir($tmp_path, 'results', $user_name, $workflow_id);
+    
     return ($staging_path, $results_path);
 }
 
@@ -670,7 +783,7 @@ sub create_genome_from_file {
     my $files = $opts{files};
     my $metadata = $opts{metadata};
 
-    print STDERR (caller(0))[3], "\n";
+    #print STDERR (caller(0))[3], "\n";
 
     # Connect to workflow engine and get an id
     my $conf = CoGe::Accessory::Web::get_defaults();
@@ -726,7 +839,7 @@ sub create_genome_from_NCBI {
     my $user = $opts{user};
     my $accns = $opts{accns};
 
-    print STDERR (caller(0))[3], "\n";
+    #print STDERR (caller(0))[3], "\n";
 
     # Connect to workflow engine and get an id
     my $conf = CoGe::Accessory::Web::get_defaults();
@@ -782,7 +895,7 @@ sub _create_iget_job {
 }
 
 sub _create_load_experiment_job {
-    my ($conf, $metadata, $gid, $user_name, $staging_dir, $files, $file_type, $result_dir) = @_;
+    my ($conf, $metadata, $gid, $wid, $user_name, $staging_dir, $files, $file_type, $result_dir, $ignoreMissing) = @_;
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_experiment.pl");
     return unless $cmd; # SCRIPTDIR undefined
 
@@ -799,6 +912,7 @@ sub _create_load_experiment_job {
             ['-version', '"' . $metadata->{version} . '"', 0],
             ['-restricted', ( $metadata->{restricted} ? 1 : 0 ), 0],
             ['-gid', $gid, 0],
+            ['-wid', $wid, 0],
             ['-source_name', '"' . $metadata->{source_name} . '"', 0],
             #['-types', qq{"Expression"}, 0], # FIXME
             #['-annotations', $ANNOTATIONS, 0],
@@ -806,7 +920,8 @@ sub _create_load_experiment_job {
             ['-file_type', $file_type, 0], # FIXME
             ['-data_file', "'".$file_str."'", 0],
             ['-config', $conf->{_CONFIG_PATH}, 1],
-            ['-result_dir', "'".$result_dir."'", 0]
+            ['-result_dir', "'".$result_dir."'", 0],
+            ['-ignore-missing-chr', $ignoreMissing, 0]
         ],
         inputs => [
             ($conf->{_CONFIG_PATH}, @$files)
@@ -820,23 +935,14 @@ sub _create_load_experiment_job {
 }
 
 sub _create_load_batch_job {
-    my ($conf, $metadata, $gid, $user_name, $files, $staging_dir, $result_dir) = @_;
+    my ($conf, $metadata, $gid, $wid, $user_name, $files, $staging_dir, $result_dir, $nid) = @_;
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_batch.pl");
     return unless $cmd; # SCRIPTDIR undefined
 
-    my $file_str = join(',', map { basename($_) } @$files);
+    #my $file_str = join(',', map { basename($_) } @$files);
+    my $file_str = join(',', @$files);
 
-#    my $cmd =
-#        "$BINDIR/load_batch.pl "
-#      . "-user_name $user_name "
-#      . '-name "' . escape($name) . '" '
-#      . '-desc "' . escape($description) . '" '
-#      . "-gid $gid "
-#      . "-staging_dir $stagepath "
-#      . '-data_file "' . escape( join( ',', @files ) ) . '" '
-#      . "-config $CONFIGFILE";
-
-    return (
+    my %params = (
         cmd => $cmd,
         script => undef,
         args => [
@@ -844,9 +950,10 @@ sub _create_load_batch_job {
             ['-name', '"' . $metadata->{name} . '"', 0],
             ['-desc', '"' . $metadata->{description} . '"', 0],
             ['-gid', $gid, 0],
+            ['-wid', $wid, 0],
             ['-staging_dir', "'".$staging_dir."'", 0],
             ['-result_dir', "'".$result_dir."'", 0],
-            ['-data_file', "'".$file_str."'", 0],
+            ['-files', "'".$file_str."'", 0],
             ['-config', $conf->{_CONFIG_PATH}, 1]
         ],
         inputs => [
@@ -858,6 +965,10 @@ sub _create_load_batch_job {
         ],
         description => "Loading batch experiments..."
     );
+    
+    push $params{args}, ['-nid', $nid, 0] if ($nid);
+    
+    return %params;
 }
 
 sub _create_load_genome_job {
@@ -936,7 +1047,7 @@ sub create_annotation_dataset {
     my $files = $opts{files};
     my $metadata = $opts{metadata};
 
-    print STDERR (caller(0))[3], "\n";
+    #print STDERR (caller(0))[3], "\n";
 
     # Connect to workflow engine and get an id
     my $conf = CoGe::Accessory::Web::get_defaults();
@@ -1027,6 +1138,17 @@ sub reverse_complement { #TODO move into Util.pm
     my $rcseq = reverse($seq);
     $rcseq =~ tr/ATCGatcg/TAGCtagc/;
     return $rcseq;
+}
+
+sub data_type {
+    my $data_type = shift;
+
+    # Experiment Data Types
+    return "Quantitative" if $data_type == $DATA_TYPE_QUANT;
+    return "Polymorphism" if $data_type == $DATA_TYPE_POLY;
+    return "Alignment" if $data_type == $DATA_TYPE_ALIGN;
+    return "Marker" if $data_type == $DATA_TYPE_MARKER;
+    return "Unknown";
 }
 
 1;

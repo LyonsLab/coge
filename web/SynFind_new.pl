@@ -7,6 +7,7 @@ use CoGe::Accessory::Utils qw( commify );
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web;
+use CoGe::Core::List qw(listcmp);
 use CGI;
 use JSON::XS;
 use HTML::Template;
@@ -118,9 +119,10 @@ sub gen_html {
     my ($body) = gen_body();
 
     my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( TITLE      => 'Syntenic Compiler',
+    $template->param( TITLE      => 'SynFind: Syntenic Compiler',
                       PAGE_TITLE => 'SynFind',
-                      HELP       => '/wiki/index.php?title=SynFind' );
+                      #HELP       => '/wiki/index.php?title=SynFind' );
+		      HELP	 => $config->{SERVER} );
 
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
@@ -128,10 +130,11 @@ sub gen_html {
     $template->param( USER     => $name );
 
     $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-    $template->param( LOGO_PNG => "SynFind-logo.png" );
+    $template->param( LOGO_PNG => "CoGe.svg" );
     #$template->param(BOX_NAME=>'SynFind Settings');
     $template->param( ADJUST_BOX => 1 );
     $template->param( BODY       => $body );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
 
     my $prebox = HTML::Template->new( filename => $config->{TMPLDIR} . 'SynFind.tmpl' );
     $prebox->param( RESULTS_DIV => 1 );
@@ -345,12 +348,16 @@ sub gen_dsg_menu { #FIXME: dup'ed in CoGeBlast.pl
       )
     {
         next unless $USER->has_access_to_genome($dsg);
+        #added by EHL 12/30/2014
+        next if $dsg->deleted; #skip deleted genomes
+        ######	
         $dsgid = $dsg->id unless $dsgid;
         my $name = join( ", ", map { $_->name } $dsg->source ) . ": ";
 
  #$name .= $dsg->name ? $dsg->name : $dsg->datasets->[0]->name;
  #$name .= ", ";
  #$name .= $dsg->type->name." (v".$dsg->version.") ".commify($dsg->length)."nt";
+	$name .= " (id ". $dsg->id.") ";
         $name .= $dsg->name . ", " if $dsg->name; # : $dsg->datasets->[0]->name;
         $name .= "v"
           . $dsg->version . " "
@@ -395,6 +402,9 @@ sub get_dsg_for_menu { #FIXME: dup'ed in CoGeBlast.pl
             $coge->resultset('Genome')->search( { organism_id => [@orgids] } ) )
         {
             next unless $USER->has_access_to_genome($dsg);
+	    #added by EHL 12/30/2014
+	    next if $dsg->deleted;
+            ######
             $dsgs{ $dsg->id } = $dsg;
         }
     }
@@ -404,6 +414,9 @@ sub get_dsg_for_menu { #FIXME: dup'ed in CoGeBlast.pl
         foreach my $dsgid ( split( /,/, $dsgids ) ) {
             my $dsg = $coge->resultset('Genome')->find($dsgid);
             next unless $USER->has_access_to_genome($dsg);
+            #added by EHL 12/30/2014
+            next if $dsg->deleted;
+            ######
             $dsgs{ $dsg->id } = $dsg;
         }
     }
@@ -417,6 +430,7 @@ sub get_dsg_for_menu { #FIXME: dup'ed in CoGeBlast.pl
         $html .=
             $dsg->id . "::"
           . $org_name . " ("
+          . "id " . $dsg->id . " "
           . $ds->data_source->name . " "
           . $dsg->type->name . " v"
           . $dsg->version . ")";
@@ -754,12 +768,6 @@ sub get_genomes_for_list {
     }
 
     return $genomes;
-}
-
-# FIXME mdb 8/29/12 - this routine is redundantly declared (e.g. ListView.pl, GroupView.pl)
-sub listcmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    $a->name cmp $b->name;
 }
 
 sub cogefeatsearch {
@@ -1707,7 +1715,7 @@ sub get_results {
                 query_dsgid      => $source_dsgid,
                 unique_gene_link => $unique_gene_link );
     $html .= "<br><strong>Downloads</strong><br>"
-        . qq{<a href=$log_file target=_new class="small">Log File</a><br>};
+        . qq{<a href="$log_file" target=_new class="small">Log File</a><br>};
 
     foreach my $item (@target_info) {
         # mdb added 10/8/13
@@ -2570,7 +2578,7 @@ sub get_master_histograms {
         my $genome = $coge->resultset('Genome')->find( $item->{dsgid2} );
         next unless $genome;
 
-        $html .= qq{<span class="link" onclick='window.open("OrganismView.pl?dsgid=} . $item->{dsgid2} . "\")'>" . $genome->info . "</span>";
+        $html .= qq{<span class="small link" onclick='window.open("OrganismView.pl?dsgid=} . $item->{dsgid2} . "\")'>" . $genome->info . "</span>";
         $html .= '<div>';
         if ( $query_dsgid eq $item->{dsgid2} ) {
             $html .= "<span class='small'>(self-self comparison: self-self syntenic regions ignored)</span><br>";

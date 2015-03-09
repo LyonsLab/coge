@@ -1,4 +1,5 @@
 @import url(coge-spinner.css);
+@import url(layout.css);
 
 .coge-dialog-content {
     height: 12.5em;
@@ -186,8 +187,6 @@ div.panel {
   border:1px solid lightgray;
   text-align:center;
   padding:5px;
-  margin:5px;
-  margin-bottom:10px;
   margin-left:auto;
   margin-right:auto;
   color:dimgray;
@@ -325,6 +324,10 @@ div.panel {
 .coge-table-header {
     color: dimgray;
     font-weight: bold;
+}
+
+.coge-code {
+    font-family: "Courier New";
 }
 
 .tht {
@@ -1064,6 +1067,10 @@ li {
     box-shadow: 0px 5px 1px -3px rgba(0,0,0,0.25);
 }
 
+h3 {
+    color: dimgray;
+}
+
 h4 {
     margin: 0;
     padding: 5px;
@@ -1101,9 +1108,20 @@ header {
     margin-left: 0.5em;
     white-space: nowrap;
     font-size: 1.75em; /* 26/16 = 1.75 */
+    font-weight: bold;
     color: #c0c0c0;
-    text-shadow: #555555 1px 1px;
 }
+
+#brand {
+    float: left;
+}
+
+/*.dev:after {
+    content: " *** Development ***";
+    font-size: 80%;
+    color: red;
+    margin-left: 1em;
+}*/
 
 /* CoGepedia Wiki Feed */
 
@@ -1218,6 +1236,15 @@ header {
     overflow-y: scroll;
 }
 
+
+.coge-menubar .login {
+    display: block;
+    float: none;
+    margin-top: 2.25em;
+    color:gray;
+    margin-right:50px;
+}
+
 /*
 .box > div,
 .box > section,
@@ -1252,6 +1279,12 @@ header {
 
 /* Large Devices, Wide Screens */
 @media(min-width: 1200px) {
+    .coge-menubar .login {
+        float: left;
+        display: inline;
+        margin-top: 0;
+    }
+
     .coge-summary > a img {
         width: 4.5em;
         height: 4.5em;
@@ -1466,4 +1499,52 @@ header {
     content: " ";
     display: table;
     clear:both;
+}
+
+/*
+ * Search bar widget
+ */
+
+.searchbar {
+}
+
+.searchbar > .search-header {
+    float: left;
+}
+
+.searchbar > .search-button {
+    float: right;
+}
+
+.searchbar > .search-field {
+    width: auto;
+    overflow: hidden;
+    position: relative;
+}
+
+.search-button ~ .search-field {
+    padding-right: 10px;
+}
+
+.search-header ~ .search-field {
+    padding-left: 10px;
+}
+
+.searchbar > .search-field > input {
+    box-sizing: border-box;
+    width: 100%;
+}
+
+
+.alert-box {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.alert-box-warn {
+    color: #bf1e1e;
+    background-color: #ed8c8c;
+    border-color: #e34a4a;
 }

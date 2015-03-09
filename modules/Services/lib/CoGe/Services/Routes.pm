@@ -79,6 +79,10 @@ sub startup {
         ->to("group#items", id => undef);
 
     # Job routes
+    $r->put("/jobs")
+        ->name("jobs-add")
+        ->to("job#add");
+
     $r->get("/jobs/:id" => [id => qr/\d+/])
         ->name("jobs-fetch")
         ->to("job#fetch", id => undef);
@@ -86,6 +90,11 @@ sub startup {
     $r->get("/jobs/:id/results/:name" => { id => qr/\d+/, name => qr/\w+/ })
         ->name("jobs-results")
         ->to("job#results", id => undef, name => undef);
+
+    $r->any("*" => sub {
+        my $c = shift;
+        $c->render(status => 404, json => { error => {Error => "Resource not found" }});
+    });
 }
 
 1;

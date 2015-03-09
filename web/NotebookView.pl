@@ -9,6 +9,8 @@ use List::Util qw(first);
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Core::Experiment qw(experimentcmp);
+use CoGe::Core::Genome qw(genomecmp);
+use CoGe::Core::List qw(listcmp);
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
@@ -57,8 +59,10 @@ $node_types = $coge->node_types();
     search_annotation_types    => \&search_annotation_types,
     get_annotation_type_groups => \&get_annotation_type_groups,
     delete_list                => \&delete_list,
-    send_to_blast              => \&send_to_blast,
+    send_to_genomelist         => \&send_to_genomelist,
+    send_to_experimentlist     => \&send_to_experimentlist,
     send_to_featlist           => \&send_to_featlist,
+    send_to_blast              => \&send_to_blast,
     send_to_msa                => \&send_to_msa,
     send_to_gevo               => \&send_to_gevo,
     send_to_synfind            => \&send_to_synfind,
@@ -94,16 +98,19 @@ sub gen_html {
           if $USER->first_name && $USER->last_name;
         $template->param(
             USER       => $name,
-            HELP       => "/wiki/index.php?title=$PAGE_TITLE",
+            #HELP       => "/wiki/index.php?title=$PAGE_TITLE",
+	    HELP       => $P->{SERVER},
             PAGE_TITLE => $PAGE_TITLE,
+	    TITLE      => "NotebookView",
             PAGE_LINK  => $LINK,
-            LOGO_PNG   => "$PAGE_TITLE-logo.png",
+            LOGO_PNG   => "CoGe.svg",
             ADJUST_BOX => 1
         );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
 
         #$template->param( BOX_NAME	 => $name . " list" );
         #$template->param( TITLE     => 'Managing Data' );
+        $template->param( ADMIN_ONLY => $USER->is_admin );
     }
 
     $template->param( BODY => gen_body() );
@@ -1245,22 +1252,7 @@ sub get_annotation_type_groups {
     return encode_json( [ sort keys %unique ] );
 }
 
-# FIXME these comparison routines are duplicated elsewhere
-sub genomecmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    $a->organism->name cmp $b->organism->name
-      || versioncmp( $b->version, $a->version )
-      || $a->type->id <=> $b->type->id
-      || $a->name cmp $b->name
-      || $b->id cmp $a->id;
-}
-
 sub featurecmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    $a->name cmp $b->name;
-}
-
-sub listcmp {
     no warnings 'uninitialized';    # disable warnings for undef values in sort
     $a->name cmp $b->name;
 }
@@ -1296,6 +1288,22 @@ sub send_to_blast {
     #my $accn_list = join(',', map { $_->id } $list->genomes);
     #my $url = "CoGeBlast.pl?dsgid=$accn_list";
     my $url = "CoGeBlast.pl?lid=$lid";
+    return encode_json( { url => $url } );
+}
+
+sub send_to_genomelist {
+    my %opts = @_;
+    my $lid  = $opts{lid};
+    return unless $lid;
+    my $url = "GenomeList.pl?lid=$lid";
+    return encode_json( { url => $url } );
+}
+
+sub send_to_experimentlist {
+    my %opts = @_;
+    my $lid  = $opts{lid};
+    return unless $lid;
+    my $url = "ExperimentList.pl?lid=$lid";
     return encode_json( { url => $url } );
 }
 

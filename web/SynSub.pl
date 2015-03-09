@@ -89,6 +89,7 @@ sub gen_html {
     $template->param( DATE => $DATE );
     $template->param( LOGO_PNG => "SynSub-logo.png" );
     $template->param( BODY     => $body );
+    $template->param( ADMIN_ONLY => $USER->is_admin );
     my $html = $template->output;
     return $html;
 }

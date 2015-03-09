@@ -9,17 +9,19 @@ use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::TDS;
 use CoGe::Accessory::Utils;
+use CoGe::Core::Genome qw(genomecmp);
 use CoGe::Core::Storage qw(create_experiment get_workflow_paths);
 use CoGe::Pipelines::qTeller qw(run);
 use HTML::Template;
 use JSON::XS;
-use URI::Escape::JavaScript qw(escape);
+use URI::Escape::JavaScript qw(escape unescape);
 use File::Path;
 use File::Spec::Functions;
 use File::Copy;
 use File::Basename;
 use File::Spec::Functions qw(catdir catfile);
 use File::Listing qw(parse_dir);
+use File::Slurp;
 use LWP::Simple;
 use URI;
 use Sort::Versions;
@@ -91,18 +93,21 @@ sub generate_html {
     else {
         $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param( PAGE_TITLE => $PAGE_TITLE,
+					      TITLE      => "Load Experiment",
         				  PAGE_LINK  => $LINK,
-        				  HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+        				  #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
+					      HELP       => $P->{SERVER} );
         my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
         $name .= ' ' . $USER->last_name
           if ( $USER->first_name && $USER->last_name );
         $template->param( USER     => $name );
-        $template->param( LOGO_PNG => $PAGE_TITLE . "-logo.png" );
+        $template->param( LOGO_PNG => "CoGe.svg" );
         $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-        my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-        $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
+#        my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+#        $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
         $template->param( ADJUST_BOX => 1 );
+        $template->param( ADMIN_ONLY => $USER->is_admin );
     }
 
     $template->param( BODY => generate_body() );
@@ -144,7 +149,7 @@ sub generate_body {
         FILE_SELECT_SINGLE       => 1,
         DEFAULT_TAB              => 0,
         DISABLE_IRODS_GET_ALL    => 1,
-        MAX_IRODS_LIST_FILES     => 100,
+        MAX_IRODS_LIST_FILES     => 1000,
         MAX_IRODS_TRANSFER_FILES => 30,
         MAX_FTP_FILES            => 30,
         USER                     => $USER->user_name
@@ -157,7 +162,8 @@ sub generate_body {
 sub irods_get_path {
     my %opts      = @_;
     my $path      = $opts{path};
-
+    $path = unescape($path);
+    #print STDERR "irods_get_path: $path\n";
     my $username = $USER->name;
     my $basepath = $P->{IRODSDIR};
     $basepath =~ s/\<USER\>/$username/;
@@ -168,7 +174,8 @@ sub irods_get_path {
         return;
     }
 
-    my $result = CoGe::Accessory::IRODS::irods_ils($path);
+    my $result = CoGe::Accessory::IRODS::irods_ils($path, escape_output => 1);
+    #print STDERR "irods_get_path ", Dumper $result, "\n";
     my $error  = $result->{error};
     if ($error) {
         my $email = $P->{SUPPORT_EMAIL};
@@ -188,14 +195,13 @@ sub irods_get_path {
         );
         return encode_json( { error => $error } );
     }
-    return encode_json(
-        { path => $path, items => $result->{items} } );
+    return encode_json( { path => $path, items => $result->{items} } );
 }
 
 sub irods_get_file {
     my %opts = @_;
     my $path = $opts{path};
-
+    $path = unescape($path);
     my ($filename)   = $path =~ /([^\/]+)\s*$/;
     my ($remotepath) = $path =~ /(.*)$filename$/;
 
@@ -243,7 +249,7 @@ sub load_from_ftp {
             }
         }
         else {                                              # file
-            my ($filename) = $url =~ /([^\/]+)\s*$/;
+            my ($filename) = $url =~ /([^\/]+?)(?:\?|$)/;
             push @files, { name => $filename, url => $url };
         }
     }
@@ -430,6 +436,7 @@ sub load_experiment {
     my $items       = $opts{items};
     my $file_type	= $opts{file_type};
     my $aligner     = $opts{aligner};
+    my $ignore_missing_chrs = $opts{ignore_missing_chrs};
 
 	# Added EL: 10/24/2013.  Solves the problem when restricted is unchecked.
 	# Otherwise, command-line call fails with next arg being passed to
@@ -476,20 +483,6 @@ sub load_experiment {
             files => [ $data_file ],
             alignment_type => $aligner
         );
-        # Setup call to analysis script
-#        my $cmd =
-#            catfile($P->{SCRIPTDIR}, 'qteller.pl') . ' '
-#            . "-gid $gid "
-#            . '-uid ' . $USER->id . ' '
-#            . "-alignment $aligner "
-#            . '-name "' . escape($name) . '" '
-#            . '-desc "' . escape($description) . '" '
-#            . '-version "' . escape($version) . '" '
-#            . "-restricted ". $restricted . ' '
-#            . '-source_name "' . escape($source_name) . '" '
-#            . "-staging_dir $stagepath "
-#            . '-data_file "' . escape( join( ',', @files ) ) . '" '
-#            . "-config $CONFIGFILE";
     }
     # Else, all other file types
     else {
@@ -505,7 +498,10 @@ sub load_experiment {
                 restricted => $restricted,
             },
             files => [ $data_file ],
-            file_type => $file_type
+            file_type => $file_type,
+            options => {
+                ignoreMissing => 1,#$ignore_missing_chrs # mdb added 10/6/14 easier just to make this the default
+            }
         );
     }
     unless ($workflow_id) {
@@ -575,6 +571,22 @@ sub get_load_log {
     );
 }
 
+sub get_debug_log {
+    my %opts         = @_;
+    my $workflow_id = $opts{workflow_id};
+    return unless $workflow_id;
+    #TODO authenticate user access to workflow
+
+    my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
+    return unless (-r $results_path);
+
+    my $result_file = catfile($results_path, 'debug.log');
+    return unless (-r $result_file);
+
+    my $result = read_file($result_file);
+    return $result;
+}
+
 sub search_genomes
 {    # FIXME: common with LoadAnnotation et al., move into web service
     my %opts        = @_;
@@ -629,16 +641,6 @@ sub search_genomes
     }
 
     return encode_json( { timestamp => $timestamp, items => \@items } );
-}
-
-# FIXME this comparison routine is duplicated elsewhere
-sub genomecmp {
-    no warnings 'uninitialized';    # disable warnings for undef values in sort
-    $a->organism->name cmp $b->organism->name
-      || versioncmp( $b->version, $a->version )
-      || $a->type->id <=> $b->type->id
-      || $a->name cmp $b->name
-      || $b->id cmp $a->id;
 }
 
 sub search_users {
@@ -705,10 +707,8 @@ sub send_error_report {
     my $load_id = $opts{load_id};
     my $job_id = $opts{job_id};
 
-    my @paths= ($P->{SECTEMPDIR}, $PAGE_TITLE, $USER->name, $load_id, "staging");
-
     # Get the staging directory
-    my $staging_dir = File::Spec->catdir(@paths);
+    my ($staging_dir, $result_dir) = get_workflow_paths($USER->name, $job_id);
 
     my $url = $P->{SERVER} . "$PAGE_TITLE.pl?";
     $url .= "job_id=$job_id;" if $job_id;
@@ -723,8 +723,10 @@ sub send_error_report {
         . $USER->id . ' '
         . $USER->date . "\n\n"
         . "staging_directory: $staging_dir\n\n"
+        . "result_directory: $result_dir\n\n"
         . "tiny link: $url\n\n";
-    $body .= get_load_log();
+
+    $body .= get_debug_log(workflow_id => $job_id);
 
     CoGe::Accessory::Web::send_email(
         from    => $email,
