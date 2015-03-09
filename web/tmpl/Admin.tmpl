@@ -100,7 +100,8 @@
 
 <div id="userInfo" class="hidden" style"position:relative;">
 	<div id="userHeader" style="padding-left:20px;">
-		<button onclick="toggle_master()">Back</button>
+		<button onclick="toggle_master()">Back to Search</button>
+		<button onclick="refresh_data()">Refresh Data</button>
 	</div>
 
 	<div id="userResults" style="position:relative;left:20px;padding-top:10px;padding-bottom:10px;" class="hidden result">
@@ -159,7 +160,7 @@
 						<img src="picts/user-icon.png" width="11" height="11"/>
 						<span style="color:dimgray;"><TMPL_VAR NAME="USER_FULL_NAME"> (<TMPL_VAR NAME="USER_NAME">) - <TMPL_VAR NAME="USER_ROLE"><span>
 						<TMPL_IF NAME="USER_DELETE">
-							<span onClick="$(this.parentNode).fadeOut('slow'); remove_items_from_user_or_group('<TMPL_VAR NAME=USER_ITEM>');" class="link ui-icon ui-icon-close"></span>
+							<span onClick="$(this.parentNode).fadeOut('slow'); remove_items_from_user_or_group('<TMPL_VAR NAME=USER_ITEM>', '<TMPL_VAR NAME=ITEM_ID>', '<TMPL_VAR NAME=ITEM_TYPE>');" class="link ui-icon ui-icon-close"></span>
 						</TMPL_IF>
 						<br>
 					</div>
@@ -169,7 +170,7 @@
 						<img src="picts/group-icon.png" width="11" height="11"/>
 						<span style="color:dimgray;"><TMPL_VAR NAME="GROUP_NAME"> (group) - <TMPL_VAR NAME="GROUP_ROLE"></span>
 						<TMPL_IF NAME="GROUP_DELETE">
-							<span onClick="$(this.parentNode).fadeOut('slow'); remove_items_from_user_or_group('<TMPL_VAR NAME=GROUP_ITEM>');" class="link ui-icon ui-icon-close"></span>
+							<span onClick="$(this.parentNode).fadeOut('slow'); remove_items_from_user_or_group('<TMPL_VAR NAME=GROUP_ITEM>', '<TMPL_VAR NAME=ITEM_ID>', '<TMPL_VAR NAME=ITEM_TYPE>');" class="link ui-icon ui-icon-close"></span>
 						</TMPL_IF>
 						<br>
 						<TMPL_LOOP NAME="GROUP_USER_LOOP">
@@ -205,7 +206,7 @@
 				<span style="color:dimgray">Enter names or groups:</span><br>
 				<input id="share_input" type="search" maxlength="40" spellcheck="false" style="width:20em;border:1px solid lightgray;" onclick='$(this).autocomplete("search");' onkeyup="wait_to_search(search_share, this.value);" />
 				<select id="share_role_select" class="hidden"><TMPL_VAR NAME="ROLES"></select>
-				<span href="javascript:void(0)" onClick="add_items_to_user_or_group();" class='ui-button ui-corner-all coge-button'>Add</span>
+				<span href="javascript:void(0)" onClick="edit_access(<TMPL_VAR NAME=ITEM_ID>, <TMPL_VAR NAME=ITEM_TYPE>);" class='ui-button ui-corner-all coge-button'>Add</span>
 			<TMPL_ELSE>
 				<span style="color:dimgray">
 					You don't have permission to modify the selected item(s).
