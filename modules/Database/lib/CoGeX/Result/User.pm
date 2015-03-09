@@ -851,6 +851,7 @@ sub all_child_connectors { #FIXME optimize by mimicking child_by_type_and_id, co
 }
 
 sub children { #FIXME have this use child_by_type_and_id
+
 	my $self = shift;
 	return unless $self->id; # ignore public user
 	my %opts = @_;
