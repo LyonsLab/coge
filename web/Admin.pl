@@ -24,14 +24,15 @@ my $node_types = CoGeX::node_types();
 #print STDERR $node_types->{user};
 
 %FUNCTION = (
-    search_organisms     	=> \&search_organisms,
-    search_users	 	=> \&search_users,
-    search_stuff	 	=> \&search_stuff,
-    user_info		 	=> \&user_info,
-    add_items_to_user_or_group 	=> \&add_items_to_user_or_group,
-    get_share_dialog		=> \&get_share_dialog,
-    get_roles			=> \&get_roles,
-    search_share 		=> \&search_share,
+    search_organisms     		=> \&search_organisms,
+    search_users	 		=> \&search_users,
+    search_stuff	 		=> \&search_stuff,
+    user_info		 		=> \&user_info,
+    add_items_to_user_or_group 		=> \&add_items_to_user_or_group,
+    remove_items_from_user_or_group 	=> \&remove_items_from_user_or_group,
+    get_share_dialog			=> \&get_share_dialog,
+    get_roles				=> \&get_roles,
+    search_share 			=> \&search_share,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -57,12 +58,12 @@ sub gen_html {
 sub gen_body {
     #print STDERR "BODY\n";
     # Hide this page if the user is not an Admin
-    #unless ( $USER->is_admin ) {
-    #    my $template =
-    #      HTML::Template->new( filename => $P->{TMPLDIR} . "Admin.tmpl" );
-    #    $template->param( ADMIN_ONLY     => 1 );
-    #    return $template->output;
-    #}
+    unless ( $USER->is_admin ) {
+        my $template =
+          HTML::Template->new( filename => $P->{TMPLDIR} . "Admin.tmpl" );
+        $template->param( ADMIN_ONLY     => 1 );
+        return $template->output;
+    }
 
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'Admin.tmpl' );
@@ -338,13 +339,19 @@ sub add_items_to_user_or_group {
     my @items = split( ',', $item_list );
     return unless @items;
 
+    #print STDERR Dumper(\@items);
+    #print STDERR "\n$target_item\n";
+    #print STDERR "$role_id\n";
+
     my ( $target_id, $target_type ) = $target_item =~ /(\d+)\:(\d+)/;
+    #print STDERR "$target_id $target_type\n";
     return unless ( $target_id and $target_type );
 
     # Verify that user has access to each item
     my @verified;
     foreach my $item (@items) {
         my ( $item_id, $item_type ) = $item =~ /content_(\d+)_(\d+)/;
+	#print STDERR "$item_id $item_type\n";
         next unless ( $item_id and $item_type );
 
         # print STDERR "add_items_to_user_or_group $item_id $item_type\n";
@@ -365,17 +372,20 @@ sub add_items_to_user_or_group {
         }
     }
 
+    #print STDERR Dumper(\@verified);
+
     # Assign each item to user/group
     # print STDERR "add_items_to_user_or_group $target_id $target_type\n";
     #TODO verify that user can use specified role (for admin/owner roles)
     if ( $target_type == $node_types->{user} ) {
         my $user = $coge->resultset('User')->find($target_id);
+	#print STDERR "$user\n";
         return unless $user;
 
         foreach (@verified) {
             my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
 
-            # print STDERR "   user: $item_id $item_type\n";
+             #print STDERR "   user: $item_id $item_type\n";
 
             # Remove previous connection
             foreach (
@@ -402,17 +412,22 @@ sub add_items_to_user_or_group {
                     role_id     => $role_id
                 }
             );
+	    #print STDERR "$conn\n";
             return unless $conn;
         }
     }
     elsif ( $target_type == $node_types->{group} ) {
         my $group = $coge->resultset('UserGroup')->find($target_id);
+	
         return unless $group;
 
         foreach (@verified) {
             my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
 
-            # print STDERR "   group: $item_id $item_type\n";
+            #print STDERR "   group: $item_id $item_type\n";
+	    #my $var = $group->role_id;
+	    #print STDERR "$target_id $var\n";
+	    
             my $conn = $coge->resultset('UserConnector')->find_or_create(
                 {
                     parent_id   => $target_id,
@@ -429,8 +444,80 @@ sub add_items_to_user_or_group {
     return get_share_dialog( item_list => $item_list );
 }
 
+sub remove_items_from_user_or_group {
+    my %opts        = @_;
+    my $target_item = $opts{target_item};
+    #print STDERR "$target_item\n";
+    return unless $target_item;
+    my $item_list = $opts{item_list};
+    my @items = split( ',', $item_list );
+    #print STDERR Dumper(\@items);
+    return unless @items;
+
+    my ( $target_id, $target_type ) = $target_item =~ /(\d+)\:(\d+)/;
+    #print STDERR "remove target $target_id $target_type\n";
+    next unless ( $target_id and $target_type );
+
+    foreach (@items) {
+        my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
+        #print STDERR "remove_item_from_user $item_id $item_type\n";
+        next unless ( $item_id and $item_type );
+
+        if ( $item_type == $node_types->{genome} ) {
+            my $genome = $coge->resultset('Genome')->find($item_id);
+            next unless ( $USER->has_access_to_genome($genome) );
+
+            my $conn = $coge->resultset('UserConnector')->find(
+                {
+                    parent_id   => $target_id,
+                    parent_type => $target_type,
+                    child_id    => $genome->id,
+                    child_type  => $node_types->{genome}
+                }
+            );
+            return unless $conn;
+
+            $conn->delete;
+        }
+        elsif ( $item_type == $node_types->{experiment} ) {
+            my $experiment = $coge->resultset('Experiment')->find($item_id);
+            next unless $USER->has_access_to_experiment($experiment);
+
+            my $conn = $coge->resultset('UserConnector')->find(
+                {
+                    parent_id   => $target_id,
+                    parent_type => $target_type,            #FIXME hardcoded
+                    child_id    => $experiment->id,
+                    child_type  => $node_types->{experiment}
+                }
+            );
+            return unless $conn;
+
+            $conn->delete;
+        }
+        elsif ( $item_type == $node_types->{notebook} ) {
+            my $notebook = $coge->resultset('List')->find($item_id);
+            next unless $USER->has_access_to_list($notebook);
+
+            my $conn = $coge->resultset('UserConnector')->find(
+                {
+                    parent_id   => $target_id,
+                    parent_type => $target_type,          #FIXME hardcoded
+                    child_id    => $notebook->id,
+                    child_type  => $node_types->{notebook}
+                }
+            );
+            return unless $conn;
+
+            $conn->delete;
+        }
+    }
+
+    return get_share_dialog( item_list => $item_list );
+}
+
 sub get_share_dialog {    #FIXME this routine needs to be optimized
-print STDERR "GetShare called.\n";
+    #print STDERR "GetShare called.\n";
     my %opts      = @_;
     my $item_list = $opts{item_list};
     #print STDERR Dumper($item_list);
@@ -440,8 +527,10 @@ print STDERR "GetShare called.\n";
     my ( %userconn, %notebooks );
     my $isPublic   = 0;
     my $isEditable = 1;
+    my $item_id;
+    my $item_type;
     foreach (@items) {
-        my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
+        ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
 	#print STDERR $item_id;
 	#print STDERR "\n!";
 	#print STDERR $item_type;
@@ -484,10 +573,12 @@ print STDERR "GetShare called.\n";
 	next unless $conn->role; #EL added 10/21/14 so solve a problem for a user where the share dialog wouldn't appear for his genomes, and an fatal error was being thrown due to role->name with role being undefined.  Genomes with problems were IDs: 24576, 24721, 24518, 24515, 24564, 24566, 24568, 24562, 24571 
         if ( $conn->is_parent_user ) {
             my $user = $conn->parent;
-	    print STDERR $user;
-	    print STDERR "\nYo\n";
+	    #print STDERR $user;
+	    #print STDERR "\nYo\n";
             $user_rows{ $user->id } = {
-                USER_ITEM      => $user->id . ':' . $conn->parent_type,
+		ITEM_ID        => $item_id,
+		ITEM_TYPE      => $item_type,
+	        USER_ITEM      => $user->id . ':' . $conn->parent_type,
                 USER_FULL_NAME => $user->display_name,
                 USER_NAME      => $user->name,
                 USER_ROLE      => $conn->role->name,
@@ -497,15 +588,17 @@ print STDERR "GetShare called.\n";
         }
         elsif ( $conn->is_parent_group ) {
             my $group = $conn->parent;
-
+	
             my @users = map {
                 {
                     GROUP_USER_FULL_NAME => $_->display_name,
                     GROUP_USER_NAME      => $_->name
                 }
             } sort usercmp $group->users;
-
+	
             $group_rows{ $group->id } = {
+		ITEM_ID      => $item_id,
+		ITEM_TYPE    => $item_type,
                 GROUP_ITEM   => $group->id . ':' . $conn->parent_type,
                 GROUP_NAME   => $group->name,
                 GROUP_ROLE   => $group->role->name,
@@ -559,6 +652,8 @@ print STDERR "GetShare called.\n";
               values %notebook_rows
         ],
         ROLES => get_roles('reader'),
+	ITEM_ID => $item_id,
+        ITEM_TYPE => $item_type,
     );
 
     if ($isPublic) {
@@ -622,6 +717,11 @@ sub search_share {
     }
 
     return encode_json( { timestamp => $timestamp, items => \@results } );
+}
+
+sub usercmp {
+    no warnings 'uninitialized';    # disable warnings for undef values in sort
+    $a->display_name cmp $b->display_name;
 }
 
 #Evan's modular stuff

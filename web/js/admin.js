@@ -48,7 +48,7 @@ function search_stuff (search_term) {
 		              	                }
 
 						if (obj.items[i].type == "organism") {
-                                           		orgList = orgList + "<tr><td><span>" + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ")"  + "</span></td></tr>";
+                                           		orgList = orgList + "<tr><td><span>" + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ")" + "</span></td></tr>";
                                            		orgCounter++;
 						}
 
@@ -60,7 +60,7 @@ function search_stuff (search_term) {
                                                                 genList = genList + "<span>";
                                                         }
 							genList = genList + (obj.items[i].label) + " <a href=\"GenomeInfo.pl?gid=" + (obj.items[i].id) + "\">Info </a>";
-							genList = genList + "<button onclick='share_dialog(" + obj.items[i].id + ")'>Add to User</button>"
+							genList = genList + "<button onclick='share_dialog(" + obj.items[i].id + ", 2 )'>Edit Access</button>";
 							genList = genList + "</span></td></tr>";
 							genCounter++;
 						}
@@ -72,7 +72,9 @@ function search_stuff (search_term) {
                                                         } else {
                                                                 expList = expList + "<span>";
                                                         }
-							expList = expList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ")</span></td></tr>";
+							expList = expList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ") ";
+							expList = expList + "<button onclick='share_dialog(" + obj.items[i].id + ", 3 )'>Edit Access</button>";
+							expList = expList + "</span></td></tr>";
                                                         expCounter++;
                                                 }
 
@@ -83,7 +85,9 @@ function search_stuff (search_term) {
                                                         } else {
                                                                 noteList = noteList + "<span>";
                                                         }
-							noteList = noteList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ")</span></td></tr>";
+							noteList = noteList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ") ";
+							noteList = noteList + "<button onclick='share_dialog(" + obj.items[i].id + ", 1 )'>Edit Access</button>";
+							NoteList = noteList + "</span></td></tr>";
                                                         noteCounter++;
                                                 }
 						
@@ -196,6 +200,12 @@ function toggle_arrow(id) {
 }
 
 function toggle_master() {
+	if (current_page == 0) {
+		current_page = 1;
+	} else {
+		current_page = 0;
+	}
+
 	$('#master').fadeToggle('slow');
 	$('#userInfo').fadeToggle('slow');
 }
@@ -205,16 +215,66 @@ function open_dialog() {
 	$("#user_dialog").dialog("open");
 }
 
-function add_to_user() {
-	console.log("Add_To_User called");
-	//var user = prompt("Enter a user name or ID");
-	//console.log(user);
+function edit_access(id, type) {
+	//console.log("edit_access called " + id + " " + type);
+
+        //var selected = get_selected_items();
+	var selected = "content_" + id + "_" + type;
+
+        var target_item = $('#share_input').data('select_id');
+        var role_id = $('#share_role_select').val();
+        if (target_item && selected.length) {
+                var item_list = selected; //.map(function(){return this.parentNode.id;}).get().join(',');
+                $.ajax({
+                        data: {
+                                fname: 'add_items_to_user_or_group',
+                                target_item: target_item,
+                                role_id: role_id,
+                                item_list: item_list,
+                        },
+                        success : function(data) {
+                                if (data) {
+                                        $('#share_dialog').html(data);
+                                        //refresh_info_cache();
+                                }
+                        }
+                });
+        }
 }
 
-var previous = 0; //indicates the previous user searched, used by search_user
+function remove_items_from_user_or_group(target_item, id, type) {
+	console.log("" + target_item + " " + id + " " + type);
+	var selected = "content_" + id + "_" + type; //get_selected_items();
+	if (target_item && selected.length) {
+		var item_list = selected; //.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				fname: 'remove_items_from_user_or_group',
+				target_item: target_item,
+				item_list: item_list,
+			},
+			success : function(data) {
+				if (data) {
+					$('#share_dialog').html(data);
+					//refresh_info_cache();
+				}
+			}
+		});
+	}
+}
+
+//indicates the previous user searched, used by search_user and refresh_data
+var previous = 0;
+var previous_type = 0;
+
+// indicates the part of the ADmin page currently being displayed. 0 --> "master", 1 --> "user info"
+var current_page = 0;
 
 function search_user(userID, search_type) {
-	toggle_master();
+	if (current_page == 0) {	
+		toggle_master();
+		//current_page=1;
+	}
 	if(previous != userID) {
 		//$('#userResults').hide();
 		$('#userResults').html("Loading...");
@@ -222,18 +282,12 @@ function search_user(userID, search_type) {
 		user_info(userID, search_type);
 	}
 	previous = userID;
+	previous_type = search_type;
 }
 
-function backsearch_user(userID, search_type) {
-	//console.log(userID);
-	//var search_term = userID + " type:user";
-	//console.log(search_term);
-	//toggle_master();
-	//$('#search_token').attr('value', search_term);
-	//wait_to_search(search_stuff, search_term);
-
-	toggle_master();
-	search_user(userID, search_type);
+function refresh_data() {
+	$('#userResults').html("Loading...");
+	user_info(previous, previous_type);
 }
 
 function user_info(userID, search_type) {
@@ -288,7 +342,9 @@ function user_info(userID, search_type) {
                                                 	} else {
                                                         	genList = genList + "<span>";
                                                 	}
-                                                	genList = genList + (current.label) + " <a href=\"GenomeInfo.pl?gid=" + (current.id) + "\">Info</a></span></td></tr>";
+                                                	genList = genList + (current.label) + " <a href=\"GenomeInfo.pl?gid=" + (current.id) + "\">Info </a>";
+							genList = genList + "<button onclick='share_dialog(" + current.id + ", 2 )'>Edit Access</button>";
+							genList = genList + "</span></td></tr>";
                                                 	genCounter++;
       						}
 
@@ -308,7 +364,9 @@ function user_info(userID, search_type) {
                                                 	} else {
                                                         	expList = expList + "<span>";
                                                 	}
-                                                	expList = expList + (current.label) + " (ID: " + (current.id) + ")</span></td></tr>";
+                                                	expList = expList + (current.label) + " (ID: " + (current.id) + ") "
+							expList = expList + "<button onclick='share_dialog(" + current.id + ", 3 )'>Edit Access</button>";;
+							expList = expList + "</span></td></tr>";
                                                 	expCounter++;
                                         	}
 						
@@ -328,14 +386,16 @@ function user_info(userID, search_type) {
                                                 	} else {
                                                         	noteList = noteList + "<span>";
                                                 	}
-                                                	noteList = noteList + (current.label) + " (ID: " + (current.id) + ")</span></td></tr>";
-                                        	        noteCounter++;
+                                                	noteList = noteList + (current.label) + " (ID: " + (current.id) + ") ";
+							noteList = noteList + "<button onclick='share_dialog(" + current.id + ", 1 )'>Edit Access</button>";
+                                        	        noteList = noteList + "</span></td></tr>";
+							noteCounter++;
                                         	}
 						
 						if (current.type == "user") {
                                                         userList = userList + "<tr><td><span>";
                                                         userList = userList + (current.label) + " (ID: " + (current.id) + ") ";
-                                                        userList = userList + "<button onclick=\"backsearch_user(" + current.id + ",'user')\">Search</button>";
+                                                        userList = userList + "<button onclick=\"search_user(" + current.id + ",'user')\">Search</button>";
                                                         userList = userList + "</span></td></tr>";
                                                         userCounter++;
                                                 }
@@ -458,8 +518,9 @@ function user_info(userID, search_type) {
         }
 }*/
 
-function share_dialog(id) {
-	var item_list = "content_" + id + "_2";  //selected.map(function(){return this.parentNode.id;}).get().join(',');
+function share_dialog(id, type) {
+	var item_list = "content_" + id + "_" + type;  //selected.map(function(){return this.parentNode.id;}).get().join(',');
+	console.log(item_list);
 	$.ajax({
 		data: {
 			fname: 'get_share_dialog',
