@@ -359,7 +359,7 @@ sub add_items_to_user_or_group {
         # print STDERR "add_items_to_user_or_group $item_id $item_type\n";
         if ( $item_type == $node_types->{genome} ) {
             my $genome = $coge->resultset('Genome')->find($item_id);
-            next unless ( $USER->has_access_to_genome($genome) );
+            next unless ( $USER->has_access_to_genome($genome) || $USER->is_admin);
             push @verified, $item;
         }
         elsif ( $item_type == $node_types->{experiment} ) {
@@ -570,6 +570,8 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
         }
     }
 
+	$isEditable = 1 if ($USER->is_admin);
+
     my ( %user_rows, %group_rows, %notebook_rows );
     foreach my $conn ( values %userconn ) {
 	next unless $conn->role; #EL added 10/21/14 so solve a problem for a user where the share dialog wouldn't appear for his genomes, and an fatal error was being thrown due to role->name with role being undefined.  Genomes with problems were IDs: 24576, 24721, 24518, 24515, 24564, 24566, 24568, 24562, 24571 
@@ -604,7 +606,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
                 GROUP_ITEM   => $group->id . ':' . $conn->parent_type,
                 GROUP_NAME   => $group->name,
                 GROUP_ROLE   => $group->role->name,
-                GROUP_DELETE => $USER->is_owner_editor( group => $group->id ),
+                GROUP_DELETE => $USER->is_owner_editor( group => $group->id ) || $USER->is_admin,
                 GROUP_USER_LOOP => \@users
             };
         }
