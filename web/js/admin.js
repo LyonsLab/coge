@@ -26,7 +26,7 @@ function search_stuff (search_term) {
                         	search_term: search_term,
                         	timestamp: timestamps['search_stuff']
                         },
-                        success : function(data) {
+                success : function(data) {
 				//console.log("data received");
                                 //console.log(data);
                                 var obj = jQuery.parseJSON(data);
@@ -72,7 +72,7 @@ function search_stuff (search_term) {
                                                         } else {
                                                                 expList = expList + "<span>";
                                                         }
-							expList = expList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ") ";
+							expList = expList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ") <a href=\"ExperimentView.pl?eid=" + (obj.items[i].id) + "\">Info </a>";
 							expList = expList + "<button onclick='share_dialog(" + obj.items[i].id + ", 3 )'>Edit Access</button>";
 							expList = expList + "</span></td></tr>";
                                                         expCounter++;
@@ -85,7 +85,7 @@ function search_stuff (search_term) {
                                                         } else {
                                                                 noteList = noteList + "<span>";
                                                         }
-							noteList = noteList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ") ";
+							noteList = noteList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ") <a href=\"NotebookView.pl?lid=" + (obj.items[i].id) + "\">Info </a>";
 							noteList = noteList + "<button onclick='share_dialog(" + obj.items[i].id + ", 1 )'>Edit Access</button>";
 							NoteList = noteList + "</span></td></tr>";
                                                         noteCounter++;
@@ -364,8 +364,8 @@ function user_info(userID, search_type) {
                                                 	} else {
                                                         	expList = expList + "<span>";
                                                 	}
-                                                	expList = expList + (current.label) + " (ID: " + (current.id) + ") "
-							expList = expList + "<button onclick='share_dialog(" + current.id + ", 3 )'>Edit Access</button>";;
+                                                	expList = expList + (current.label) + " (ID: " + (current.id) + ") <a href=\"ExperimentView.pl?eid=" + (current.id) + "\">Info </a>";
+							expList = expList + "<button onclick='share_dialog(" + current.id + ", 3 )'>Edit Access</button>";
 							expList = expList + "</span></td></tr>";
                                                 	expCounter++;
                                         	}
@@ -386,7 +386,7 @@ function user_info(userID, search_type) {
                                                 	} else {
                                                         	noteList = noteList + "<span>";
                                                 	}
-                                                	noteList = noteList + (current.label) + " (ID: " + (current.id) + ") ";
+                                                	noteList = noteList + (current.label) + " (ID: " + (current.id) + ") <a href=\"NotebookView.pl?lid=" + (current.id) + "\">Info </a>";
 							noteList = noteList + "<button onclick='share_dialog(" + current.id + ", 1 )'>Edit Access</button>";
                                         	        noteList = noteList + "</span></td></tr>";
 							noteCounter++;
