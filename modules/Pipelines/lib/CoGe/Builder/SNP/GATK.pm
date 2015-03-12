@@ -12,7 +12,7 @@ use File::Basename qw(basename);
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Utils qw(to_filename);
 use CoGe::Accessory::Web;
-use CoGe::Core::Storage qw(get_genome_file get_experiment_files get_workflow_paths);
+use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
 use CoGe::Builder::CommonTasks;
 
 require Exporter;
