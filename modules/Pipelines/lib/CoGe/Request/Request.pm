@@ -4,8 +4,8 @@ use Moose::Role;
 
 has 'options' => (
     is        => 'ro',
-    isa       => 'HashRef',
-    required  => 1
+    #isa       => 'HashRef',
+    #required  => 1
 );
 
 has 'parameters' => (
@@ -35,15 +35,21 @@ sub execute {
     # Check for workflow
     return {
         success => JSON::false,
-        error => { Invalid => "job not found" }
+        error => { Error => "failed to build workflow" }
     } unless $workflow;
 
     my $resp = $self->jex->submit_workflow($workflow);
     my $success = $self->jex->is_successful($resp);
+    
+    unless ($success) {
+        return {
+            success => JSON::false
+        }
+    }
 
     return {
         id => $resp->{id},
-        success => $success ? JSON::true : JSON::false
+        success => JSON::true
     };
 }
 
