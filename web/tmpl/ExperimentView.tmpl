@@ -1,15 +1,22 @@
 <TMPL_IF NAME="MAIN">
 <script src="./js/coge/utils.js"></script>
+<script src="./js/coge/services.js"></script>
+<script src="./js/coge/progress.js"></script>
+<script src="./js/pages/experiment-view.js"></script>
 <script type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></script>
 <script type="text/javascript" src="./js/jquery.tablesorter.pager.js"></script>
 <script type="text/javascript" src="./js/jquery.fileupload.js"></script>
 <script type="text/javascript">
 
-var STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
-var PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
+const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
+const STATUS_URL    = '<TMPL_VAR NAME="STATUS_URL">';
+const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
+const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
+const USER_NAME     = '<TMPL_VAR NAME="USER_NAME">';
+const IRODS_HOME    = '<TMPL_VAR NAME=IRODS_HOME>';
 
-var eid = '<TMPL_VAR NAME="EID">';
-var job_id = '<TMPL_VAR NAME="JOB_ID">';
+var EID = '<TMPL_VAR NAME="EID">';
+var JOB_ID = '<TMPL_VAR NAME="JOB_ID">';
 var newLoad = false;
 
 $(document).ready(function() {
@@ -25,7 +32,7 @@ $(document).ready(function() {
 
     $(".dialog_box").dialog({autoOpen: 0, width: 450});
 
-    $("#progress_dialog").dialog({modal: true});
+    //$("#progress_dialog").dialog({modal: true});
 
     $("#edit_tag_name").autocomplete({
         source: function() { get_experiment_tags(); },
@@ -34,700 +41,27 @@ $(document).ready(function() {
 
     set_annotation_table();
 
-    init_annotation_dialog(eid, '<TMPL_VAR NAME="DEFAULT_TYPE">');
+    init_annotation_dialog(EID, '<TMPL_VAR NAME="DEFAULT_TYPE">');
 
+    // Initialize CoGe packages
+    coge.services.init({
+    	baseUrl: API_BASE_URL,
+    	userName: USER_NAME
+    });
+    
+    coge.progress.init({
+    	supportEmail: SUPPORT_EMAIL,
+    	onReset: reset_location
+    });
+    
+    snpMenu.init();
+    
     // Open status dialog
-    if (job_id) {
-        reset_dialog();
-        $('#progress_msg').hide();
-        $('#progress_dialog').dialog({ autoOpen: true, title: "Identifying SNPs ..." });
-        update_dialog(STATUS_URL + job_id, "#progress_dialog", progress_formatter);
+    if (JOB_ID) {
+    	coge.progress.begin();
+    	coge.progress.update(JOB_ID);
     }
 });
-
-function set_annotation_table() {
-    $('#experiment_annotation_table').tablesorter({widgets: ['zebra']});
-}
-
-function get_experiment_info() {
-    $.ajax({
-        data: {
-            fname: 'get_experiment_info',
-            eid: eid,
-        },
-        success : function (data) {
-            $('#experiment_info').html(data);
-        }
-    });
-}
-
-function edit_experiment_info() {
-    $.ajax({
-        data: {
-            fname: 'edit_experiment_info',
-            eid: eid,
-        },
-        success : function(data) {
-            var obj = jQuery.parseJSON(data);
-            $("#experiment_info_edit_box").html(obj.output).dialog('open');
-        },
-    });
-}
-
-function update_experiment_info (){
-    var name = $('#edit_name').val();
-    if (!name) {
-        alert('Please specify a name.');
-        return;
-    }
-
-    var version = $('#edit_version').val();
-    if (!version) {
-        alert('Please specify a version');
-        return;
-    }
-
-    var source_id = parseInt( $('#edit_source_id').val() );
-    if (!source_id) {
-        alert('Please specify a source');
-        return;
-    }
-
-    var desc = $('#edit_desc').val();
-
-    $.ajax({
-        data: {
-            fname: 'update_experiment_info',
-            eid: eid,
-            name: name,
-            desc: desc,
-            source_id: source_id,
-            version: version
-        },
-        success : function(val) {
-            get_experiment_info();
-            $("#experiment_info_edit_box").dialog('close');
-        }
-    });
-}
-
-function get_sources () {
-    $.ajax({
-        data: {
-            fname: 'get_sources'
-        },
-        success : function(data) {
-            var items = jQuery.parseJSON(data);
-            $("#edit_source").autocomplete("option", "source", items).autocomplete("search");
-        }
-    });
-}
-
-function make_experiment_public () {
-    $.ajax({
-        data: {
-            fname: 'make_experiment_public',
-            eid: eid
-        },
-        success : function(val) {
-            get_experiment_info();
-        }
-    });
-}
-
-function make_experiment_private () {
-    $.ajax({
-        data: {
-            fname: 'make_experiment_private',
-            eid: eid
-        },
-        success : function(val) {
-            get_experiment_info();
-        }
-    });
-}
-
-function add_experiment_type () {
-    $.ajax({
-        data: {
-            fname: 'add_experiment_tag',
-            eid: eid
-        },
-        success : function(data) {
-            $("#experiment_tag_edit_box").dialog({
-                beforeClose:
-                    function() {
-                        $("#edit_tag_name").autocomplete('close');
-                    }
-            });
-            $("#experiment_tag_edit_box").html(data).dialog('open');
-        }
-    });
-}
-
-function add_tag_to_experiment () {
-    var name = $('#edit_tag_name').val();
-    var description = $('#edit_tag_description').val();
-
-    if (name) {
-        $.ajax({
-            data: {
-                fname: 'add_tag_to_experiment',
-                eid: eid,
-                name: name,
-                description: description
-            },
-            success : function(val) {
-                get_experiment_info();
-                $("#experiment_tag_edit_box").dialog('close');
-            },
-        });
-    }
-    else { alert ('Error: Must have type name specified!');}
-}
-
-function reset_dialog() {
-    $('#progress_msg').show();
-    $('#finished_msg,#error_msg,#custom_msg,#ok_button,#experiment_view_button').hide();
-}
-
-function reset_load() {
-	$('#progress_dialog').dialog('close');
-	window.history.pushState({}, "Title", PAGE_NAME + "?eid=" + eid);
-}
-
-function download_files() {
-    $("#progress_dialog")
-        .unbind()
-        .dialog("option", "title", "Preparing Download");
-
-    // Prevent concurrent executions
-    if ( $("#progress_dialog").dialog( "isOpen" ) )
-        return;
-
-    // Open status dialog right away
-    $('#progress_dialog').dialog('open');
-    $('#progress_log').html(
-        "<br>The download is being generated<br><br>"
-    );
-
-    //CLEAR DIALOG
-    reset_dialog();
-
-    $.ajax({
-        data: {
-            fname: "get_file_urls",
-            eid: eid
-        },
-        dataType: "json",
-        success : function(json) {
-            if (json.url) {  // finished successfully
-                $('#progress_msg').hide();
-                $('#finished_msg').fadeIn();
-                $('#ok_button').fadeIn();
-
-                $("#progress_log").append("File: " + json.filename);
-
-                $("#progress_dialog").on("dialogclose", function(ui, event) {
-                    coge.utils.open(json.url);
-                });
-            }
-            else { // error occurred
-                $('#progress_msg').hide();
-                $('#finished_msg').hide();
-                $('#error_msg').fadeIn();
-                $('#ok_button').fadeIn();
-            }
-        }
-    });
-}
-
-function toggle_load_log() { // TODO: shared with GenomeInfo.pl, move to module
-	var btn = $('#log_button');
-	var log = $('#log_contents');
-	var spinner = $('#log_spinner');
-	
-	var setVisible = function(visible) { // TODO: i want to use jQuery.toggle() instead, oh well
-    	if (visible) {
-			log.removeClass('hidden');
-	    	btn.html('Hide');
-	    	spinner.animate({opacity:0});
-    	}
-    	else {
-    		log.addClass('hidden');
-    		btn.html('Show');
-    		spinner.animate({opacity:0});
-    	}
-	}
-	
-	if (log.is(":hidden")) {
-		if (log.html() == '') {
-			spinner.css({opacity:1});
-			$.ajax({
-		        data: {
-		            fname: 'get_load_log',
-		            eid: eid
-		        },
-		        success: function(data) {
-		        	if (data)
-		        		log.html(data);
-		        	else
-		        		log.html('<span class="alert">Error: log file not found</span>');
-		        	setVisible(true);
-		        }
-		    });
-		}
-		else
-			setVisible(true);
-	}
-	else
-		setVisible(false);
-}
-
-function export_data() {
-    // Prevent concurrent executions
-    if ( $("#progress_dialog").dialog( "isOpen" ) )
-        return;
-
-    // Make sure user is still logged-in
-    if (!check_and_report_login())
-        return;
-
-    //CLEAR DIALOG
-    reset_dialog();
-
-    // Open status dialog right away
-    $('#progress_dialog')
-        .unbind()
-        .dialog({ autoOpen: true, title: "Exporting ..."});
-
-    $('#progress_log').html(
-            "<br>Copying this experiment's data files to <br><br>" +
-            '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/"><TMPL_VAR NAME=IRODS_HOME></a>'
-    );
-
-    $.ajax({
-        data: {
-            fname: 'export_experiment_irods',
-            eid: eid
-        },
-        success : function(filename) {
-            if (filename) {  // finished successfully
-                $('#progress_msg').hide();
-                $('#finished_msg').fadeIn();
-                $('#ok_button').fadeIn();
-                $('#progress_log').append('<br><br>File: ' + filename);
-            }
-            else { // error occurred
-                $('#progress_msg').hide();
-                $('#finished_msg').hide();
-                $('#error_msg').fadeIn();
-                $('#ok_button').fadeIn();
-            }
-        }
-    });
-}
-
-function render_template(template, container) {
-    container.empty()
-        .hide()
-        .append(template)
-        .show();//.slideDown();
-}
-
-function dialog_snp_options() {
-	var dialog = $('<div class="dialog_box small" style="padding:1em;"></div>');
-	var template = $($("#snp-template2").html());
-
-    var options_templates = {
-        coge: $($("#coge-snp-template").html()),
-        samtools: $($("#samtools-snp-template").html()),
-        platypus: $($("#platypus-snp-template").html()),
-        gatk: $($("#gatk-snp-template").html())
-    };
-    
-	var run_button = $('<span class="r ui-button ui-corner-all coge-button" style="margin-right:2em;"> Run </span>');
-	run_button.click(function() {
-		console.log("click");
-	});
-	
-	var update = function() {
-        var selected = $(this).val();
-        if (!selected) selected = 'coge';
-        template.append(run_button);
-        render_template(options_templates[selected], options_container);
-        render_template(template, dialog);
-    };
-	
-    var options_container = template.find('#snp-container');
-    options_container.removeClass('hidden');
-    var method = template.find('#snp-method');
-    method.removeAttr("disabled");
-    $(document).on('change', '#snp-method', update);
-	
-    update();
-//    render_template(options_templates['coge'], options_container);
-//	render_template(template, dialog);
-	
-	dialog.dialog({ width: '35em', title: "Select SNP Analysis Options"})
-		.dialog('open');
-}
-
-function find_snps(method) {
-    // Prevent concurrent executions
-    if ( $("#progress_dialog").dialog( "isOpen" ) )
-        return;
-
-    // Make sure user is still logged-in
-    if (!check_and_report_login())
-        return;
-
-    // Close Find SNPs dialog
-    $(find_snps_dialog).dialog('close');
-    
-    // Clear dialog
-    reset_dialog();
-
-    // Open status dialog right away
-    $('#progress_dialog')
-        .unbind()
-        .dialog({ autoOpen: true, title: "Identifying SNPs ..." });
-
-    $('#progress_log').html('Initializing ...');
-    newLoad = true;
-    
-    // Get method selected by user
-    var method = $('#find_snps_method').val()
-
-    $.ajax({
-        data: {
-            fname: 'find_snps',
-            eid: eid,
-            method: method,
-            timestamp: new Date().getTime()
-        },
-        success : function(data) {
-            var obj = jQuery.parseJSON(data);
-            if (obj && obj.error) {
-                alert(obj.error);
-                return;
-            }
-
-            // Set link in status dialog
-            $('#progress_msg span a').attr('href', obj.link).html(obj.link);
-
-            // Start status update
-            if (obj.job_id) { // JEX status for load FASTQ
-                job_id = obj.job_id;
-                window.history.pushState({}, "Title", PAGE_NAME + "?eid=" + eid + "&job_id=" + obj.job_id); // Add job_id to browser URL
-                update_dialog(STATUS_URL + obj.job_id, "#progress_dialog", progress_formatter);
-            }
-        }
-        // TODO: handle error, show in status dialog
-    });
-}
-
-function update_dialog(request, identifier, formatter) {
-    var get_status = function () {
-        $.ajax({
-            type: 'GET',
-            url: request,
-            dataType: 'json',
-            success: update_callback,
-            error: update_callback,
-        });
-    };
-
-    var update_callback = function(json) {
-        var dialog = $(identifier);
-        var workflow_status = $("<p></p>");
-        var data = $("<ul></ul>");
-        var results = [];
-        var current_status;
-        var timeout = 2000;
-
-        var callback = function() {
-            update_dialog(request, identifier, formatter);
-        }
-
-        if (json.error) {
-            pageObj.error++;
-            if (pageObj.error > 3) {
-                workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
-                progress_failed();
-                return;
-            }
-        } else {
-            pageObj.error = 0;
-        }
-
-        if (json.status) {
-            current_status = json.status.toLowerCase();
-            workflow_status.html("Workflow status: ");
-            workflow_status.append($('<span></span>').html(json.status));
-            workflow_status.addClass('bold');
-        } else {
-            setTimeout(callback, timeout);
-            return;
-        }
-
-        if (json.jobs) {
-            var jobs = json.jobs;
-            for (var index = 0; index < jobs.length; index++) {
-                var item = formatter(jobs[index]);
-                if (item) {
-                    results.push(item);
-                }
-            }
-        }
-
-        if (!dialog.dialog('isOpen')) {
-            return;
-        }
-
-        //FIXME Update when a workflow supports elapsed time
-        if (current_status == "completed") {
-            var total = json.jobs.reduce(function(a, b) {
-                if (!b.elapsed) return a;
-                return a + b.elapsed;
-            }, 0);
-
-            var duration = coge.utils.toPrettyDuration(total);
-
-            workflow_status.append("<br>Finished in " + duration);
-            workflow_status.find('span').addClass('completed');
-            get_progress_log(function(result) {
-                progress_succeeded(result);
-            });
-        }
-        else if (current_status == "failed"
-                || current_status == "error"
-                || current_status == "terminated"
-                || current_status == "cancelled")
-        {
-            workflow_status.find('span').addClass('alert');
-            get_progress_log(function(result) {
-            	progress_failed(result);
-            });
-        }
-        else if (current_status == "notfound") {
-            setTimeout(callback, timeout);
-            return;
-        }
-        else {
-            workflow_status.find('span').addClass('running');
-            setTimeout(callback, timeout);
-        }
-
-        results.push(workflow_status);
-        data.append(results);
-        dialog.find('#progress_log').html(data);
-    };
-
-    get_status();
-}
-
-function progress_formatter(item) {
-    var msg;
-    var row = $('<li>'+ item.description + ' </li>');
-
-    var job_status = $('<span></span>');
-
-    if (item.status == 'scheduled') {
-        job_status.append(item.status);
-        job_status.addClass('down');
-        job_status.addClass('bold');
-    } else if (item.status == 'completed') {
-        job_status.append(item.status);
-        job_status.addClass('completed');
-        job_status.addClass('bold');
-    } else if (item.status == 'running') {
-        job_status.append(item.status);
-        job_status.addClass('running');
-        job_status.addClass('bold');
-    } else if (item.status == 'skipped') {
-        job_status.append("already generated");
-        job_status.addClass('skipped');
-        job_status.addClass('bold');
-    } else if (item.status == 'cancelled') {
-        job_status.append(item.status);
-        job_status.addClass('alert');
-        job_status.addClass('bold');
-    } else if (item.status == 'failed') {
-        job_status.append(item.status);
-        job_status.addClass('alert');
-        job_status.addClass('bold');
-    } else {
-        return;
-    }
-
-    row.append(job_status);
-
-    if (item.elapsed)  {
-        row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
-    }
-
-    return row;
-}
-
-function progress_failed(obj) {
-    // Update dialog
-    $('#progress_msg').hide();
-    if (obj && obj.status == -2 && obj.message) {
-    	$('#custom_msg').html(obj.message).fadeIn();
-    }
-    else {
-    	$('#error_msg').fadeIn();
-    }
-    $('#ok_button').fadeIn();
-
-    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
-	    $.ajax({
-	        data: {
-	            fname: "send_error_report",
-	            job_id: job_id
-	        }
-	    });
-    }
-}
-
-function progress_succeeded(obj) {
-    // Update globals
-    experiment_id = obj.experiment_id;  // for continuing to ExperimentView
-
-    // Update dialog
-    $('#progress_msg').hide();
-    $('#finished_msg').fadeIn();
-    $('#ok_button').fadeIn();
-    { // normal experiment load
-        $('#experiment_view_button')
-            .html('ExperimentView').fadeIn()
-            .unbind().on('click', function() {
-                window.location.href = "ExperimentView.pl?eid=" + experiment_id;
-        });
-    }
-}
-
-function get_progress_log(callback) {
-    $.ajax({
-        data: {
-            dataType: 'text',
-            fname: 'get_progress_log',
-            workflow_id: job_id,
-            timestamp: new Date().getTime()
-        },
-        success : function(data) {
-            if (callback) {
-            	var obj = jQuery.parseJSON(data);
-                callback(obj);
-                return;
-            }
-        }
-    });
-}
-
-function check_login() {
-    var logged_in = false;
-
-    $.ajax({
-        async: false,
-        data: {
-            fname: 'check_login'
-        },
-        success : function(rc) {
-            logged_in = rc;
-        }
-    });
-
-    return logged_in;
-}
-
-function check_and_report_login() {
-    if (!check_login()) {
-        alert('Your session has expired, please log in again.');
-        location.reload(true);
-        return false;
-    }
-    return true;
-}
-
-function remove_experiment_type (opts) {
-    etid = opts.etid;
-    $.ajax({
-        data: {
-            fname: 'remove_experiment_type',
-            eid: eid,
-            etid: etid,
-        },
-        success : function(val) {
-            get_experiment_info();
-        },
-    });
-}
-
-function remove_experiment_tag (opts) {
-    etid = opts.etid;
-    $.ajax({
-        data: {
-            fname: 'remove_experiment_tag',
-            eid: eid,
-            etid: etid,
-        },
-        success : function(val) {
-            get_experiment_info();
-        },
-    });
-}
-
-function get_annotations() {
-    $.ajax({
-        data: {
-            fname: 'get_annotations',
-            eid: eid,
-        },
-        success : function(data) {
-            $('#experiment_annotations').html(data);
-            set_annotation_table();
-        }
-    });
-}
-
-function remove_annotation (eaid) {
-    $.ajax({
-        data: {
-            fname: 'remove_annotation',
-            eid: eid,
-            eaid: eaid,
-        },
-        success : function() {
-            get_annotations();
-        },
-    });
-}
-
-function get_experiment_tags () {
-    $.ajax({
-        data: {
-            fname: 'get_experiment_tags'
-        },
-        success : function(val) {
-            var items = jQuery.parseJSON(val);
-            $("#edit_tag_name").autocomplete("option", "source", items).autocomplete("search");
-        },
-    });
-}
-
-function get_tag_description (name) {
-    $.ajax({
-        data: {
-            fname: 'get_tag_description',
-            name: name
-        },
-        success : function(data) {
-            $("#edit_tag_description").html(data);
-        },
-    });
-}
 </SCRIPT>
 
 <table>
@@ -760,8 +94,7 @@ function get_tag_description (name) {
 			                <span class="title5">Download:</span>
 			            </td>
 			            <td>
-			                <span class="data5 link" onclick="download_files();">All Experiment Data<!--</span>&nbsp|
-			                <span class="data5 link" onclick="download_load_log();">Load Progress Log</span>-->
+			                <span class="data5 link" onclick="download_files();">All Experiment Data
 			            </td>
 			        </tr>
                     <TMPL_UNLESS NAME="PUBLIC">
@@ -780,7 +113,7 @@ function get_tag_description (name) {
                     		<span class="title5">Analyze:</span>
                     	</td>
                     	<td>
-                    		<span class="data5 link" ondblclick="dialog_snp_options();" onclick="dialog_snp_options();">Identify SNPs</span>
+                    		<span class="data5 link" ondblclick="snpMenu.open();" onclick="snpMenu.open();">Identify SNPs</span>
                     	</td>
                     </tr>
 			        </TMPL_IF>
@@ -840,23 +173,13 @@ function get_tag_description (name) {
 	<span onClick="find_snps();" class='ui-button ui-corner-all coge-button'>Identify SNPs</span>
 </div>
 
-<div id="progress_dialog" class="hidden dialog_box">
-    <div id="progress_log" class="small padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:415px;height:200px;color:dimgray;">
-    </div>
-    <br>
-    <div class="coge-buttonset">
-        <span id="progress_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
-        <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
-        <span id="custom_msg" class="hidden"></span>
-        <span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
-        <span id="ok_button" onClick="reset_load();" class="hidden r ui-button ui-corner-all coge-button">OK</span>
-        <span id="experiment_view_button" class="hidden r ui-button ui-corner-all coge-button">ExperimentView</span>
-    </div>
-</div>
+<TMPL_INCLUDE NAME="widgets/Progress.tmpl">
 
 <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'>
 
-</TMPL_IF>
+<TMPL_INCLUDE "widgets/pipeline-options.tmpl">
+
+</TMPL_IF> <!-- MAIN -->
 
 <TMPL_IF NAME="EDIT_EXPERIMENT_INFO">
 	<script>
@@ -910,5 +233,3 @@ function get_tag_description (name) {
 	    <div id="log_contents" class="border hidden padded coge-code" style="border:1px solid gray; color: navy;"></div>
 	</div>
 </TMPL_IF>
-
-<TMPL_INCLUDE "widgets/pipeline-options.tmpl">

@@ -602,19 +602,12 @@ sub gen_html {
             filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
     }
     else {
-        $template =
-          HTML::Template->new(
-            filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-        my $name = $USER->user_name;
-        $name = $USER->first_name if $USER->first_name;
-        $name .= ' ' . $USER->last_name
-          if ( $USER->first_name && $USER->last_name );
+        $template = HTML::Template->new(filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param(
             PAGE_TITLE => $PAGE_TITLE,
             TITLE      => 'ExperimentView',
             PAGE_LINK  => $LINK,
             HELP       => $P->{SERVER},
-            USER       => $name,
             LOGO_PNG   => "CoGe.svg",
             ADJUST_BOX => 1,
         );
@@ -635,11 +628,11 @@ sub gen_body {
 
     my $gid = $exp->genome_id;
 
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param(
         MAIN            => 1,
         PAGE_NAME       => $PAGE_TITLE . '.pl',
+        USER_NAME       => $USER->name,
         EID             => $eid,
         DEFAULT_TYPE    => 'note',
         rows            => commify($exp->row_count),
@@ -648,7 +641,8 @@ sub gen_body {
         STATUS_URL      => 'jex/status/',
         ALIGNMENT_TYPE  => ($exp->data_type == 3), # FIXME: hardcoded type value
         PUBLIC          => $USER->user_name eq "public" ? 1 : 0,
-        ADMIN_AREA      => $USER->is_admin
+        ADMIN_AREA      => $USER->is_admin,
+        API_BASE_URL    => 'api/v1/', #TODO move into config file or module
     );
     $template->param( EXPERIMENT_INFO => get_experiment_info( eid => $eid ) || undef );
     $template->param( EXPERIMENT_ANNOTATIONS => get_annotations( eid => $eid ) || undef );
@@ -774,69 +768,6 @@ sub get_annotation_type_groups {
     }
 
     return encode_json( [ sort keys %unique ] );
-}
-
-sub find_snps {
-    my %opts        = @_;
-    my $user_name   = $opts{user_name};
-    my $eid         = $opts{eid};
-    my $method      = $opts{method};
-
-    # Check login
-    if ( !$user_name || !$USER->is_admin ) {
-        $user_name = $USER->user_name;
-    }
-    if ($user_name eq 'public') {
-        return encode_json({ error => 'Not logged in' });
-    }
-
-    # Get experiment
-    my $experiment = $coge->resultset('Experiment')->find($eid);
-    return encode_json({ error => 'Experiment not found' }) unless $experiment;
-
-    # Select the pipeline to be used -- TODO move this into subroutine, common with LoadExperiment.pm
-    my $dispatch;
-#    switch ($method) { 
-#        case 'coge'     { $dispatch = \&CoGe::Builder::SNP::CoGeSNPs::run }
-#        case 'samtools' { $dispatch = \&CoGe::Builder::SNP::Samtools::run }
-#        case 'platypus' { $dispatch = \&CoGe::Builder::SNP::Platypus::run }
-#        case 'gatk'     { $dispatch = \&CoGe::Builder::SNP::GATK::run }
-#    }
-    if ($method eq 'coge') {
-        $dispatch = \&CoGe::Builder::SNP::CoGeSNPs::run;
-    }
-    elsif ($method eq 'samtools') {
-        $dispatch = \&CoGe::Builder::SNP::Samtools::run;
-    }
-    elsif ($method eq 'platypus') {
-        $dispatch = \&CoGe::Builder::SNP::Platypus::run;
-    }
-    elsif ($method eq 'gatk') {
-        $dispatch = \&CoGe::Builder::SNP::GATK::run;
-    }
-    else {
-        print STDERR "ExperimentView::find_snps unknown method\n";
-        return;
-    }
-    
-    # Submit the workflow
-    my ($workflow_id, $error_msg) = $dispatch->(
-        user => $USER, 
-        genome => $experiment->genome,
-        input_file => get_experiment_files($experiment->id, $experiment->data_type)->[0],
-        metadata => $experiment->to_hash
-    );
-    unless ($workflow_id) {
-        print STDERR "ExperimentView::find_snps $error_msg\n";
-        return encode_json({ error => "Workflow submission failed: " . $error_msg });
-    }
-
-    # Get tiny link
-    my $link = CoGe::Accessory::Web::get_tiny_link(
-        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id
-    );
-
-    return encode_json({ job_id => $workflow_id, link => $link });
 }
 
 sub get_progress_log {

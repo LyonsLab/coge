@@ -33,25 +33,6 @@
 <div id="wizard-container"></div>
 
 <!-- DIALOGS -->
-<div id="load_dialog" class="dialog_box" title="Loading Experiment ..." style="display:none;overflow:hidden;">
-    <div id="load_log" class="small padded coge-border-bottom" style="overflow-y:auto;color:dimgray;height:400px;">
-    </div>
-    <br>
-    <div id="loading_msg">
-        <span id="load_link" class="small" style="float:right;"></span>
-        <span>Please wait ... <img src="picts/ajax-loader.gif"/></span>
-        <div id="load_error" class="small hidden alert"></div>
-    </div>
-    <div class="coge-buttonset">
-        <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
-        <span id="error_msg" style="display:none;color:red;">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
-        <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Load Another</span>
-        <span id="finish_load_experiment_button" style="display:none;float:right;" class="ui-button ui-corner-all">ExperimentView</span>
-        <span id="cancel_load_experiment_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
-        <span id="logfile" class="hidden"><a href="">Logfile</a></span>
-    </div>
-</div>
-
 <div id="create_new_source_dialog" class="dialog_box" title="Create New Source" style="display:none;">
     <table class="small">
         <tr>
@@ -73,7 +54,6 @@
 <script id="wizard-template" type="text/template">
 <div id="wizard" class="wizard wizard-coge">
     <div class="header">
-        <!--<h3 class="title">Load Experiment</h3>-->
         <div class="sections">
         </div>
     </div>
@@ -461,14 +441,14 @@
     </div>
 </script>
 
-<!-- FileSelect javascript and html -->
 <div id="selector-wrapper" class="hidden">
     <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
 </div>
 
-<!-- Scripts -->
+<TMPL_INCLUDE NAME="widgets/Progress.tmpl">
+
 <script type="text/javascript">
-const API_JOBS_URL  = '<TMPL_VAR NAME="API_JOBS_URL">';
+const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
 const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
 const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
 const USER_NAME     = '<TMPL_VAR NAME="USER">'
@@ -494,26 +474,22 @@ $(document).ready(function() {
     // Configure dialogs
     $(".dialog_box").dialog({autoOpen: false});
     
-    var log = $('#load_log');
-    log.height( $( window ).height() * 0.6 );
+    // Initialize CoGe packages
+    coge.services.init({
+    	baseUrl: API_BASE_URL,
+    	userName: USER_NAME
+    });
     
-    $('#load_dialog').dialog("widget").find('.ui-dialog-titlebar-close').hide();
-    $("#load_dialog").dialog({
-    	modal: true,
-    	width: '60%',
-    	closeOnEscape: false,
-    	resizeStop: function(event, ui) {
-    		//console.log('resizeStop ' + ui.size.width + ' ' + ui.size.height + ' ' + ui.originalSize.width + ' ' + ui.originalSize.height);
-    		var widthChange = ui.size.width - ui.originalSize.width;
-    		var heightChange = ui.size.height - ui.originalSize.height;
-    		log.css({ width: log.width() + widthChange, height: log.height() + heightChange });
-    	}
+    coge.progress.init({
+    	title: "Loading Experiment",
+    	supportEmail: SUPPORT_EMAIL,
+    	onReset: reset_load
     });
 
     // Open status dialog
     if (WORKFLOW_ID) {
-    	load_begin();
-        update_dialog(API_JOBS_URL + WORKFLOW_ID, USER_NAME, "#load_dialog", progress_formatter);
+    	coge.progress.begin();
+    	coge.progress.update(WORKFLOW_ID);
     }
 
     wizard = initialize_wizard({ admin: IS_ADMIN });
@@ -521,5 +497,7 @@ $(document).ready(function() {
 </script>
 <script type="text/javascript" src="js/pages/load-experiment.js"></script>
 <script type="text/javascript" src="js/coge/utils.js"></script>
+<script type="text/javascript" src="js/coge/services.js"></script>
+<script type="text/javascript" src="js/coge/progress.js"></script>
 <script type="text/javascript" src="js/jquery.fileupload.js"></script>
 </TMPL_IF> <!-- MAIN -->
