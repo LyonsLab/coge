@@ -12,6 +12,7 @@ var coge = window.coge = (function(ns) {
         open: function(link) {
             window.open(link, "_self");
         },
+        
         shuffle: function(array) {
             var copy = array.slice(0), n = array.length, tmp, i;
 
@@ -24,6 +25,7 @@ var coge = window.coge = (function(ns) {
 
             return copy;
         },
+        
         post: function(action, params) {
             var key,
                 input,
@@ -45,6 +47,7 @@ var coge = window.coge = (function(ns) {
 
             form.submit("action");
         },
+        
         toPrettyDuration: function(seconds) {
             var fields = [
                 [parseInt((seconds / 86400).toFixed(1), 10), " day"],
@@ -63,6 +66,10 @@ var coge = window.coge = (function(ns) {
 
         log10: function(value) {
             return Math.log(value) / Math.log(10);
+        },
+        
+        ucfirst: function(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
         }
     };
 
