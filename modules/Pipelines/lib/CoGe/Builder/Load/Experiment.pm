@@ -52,7 +52,7 @@ sub build {
         
         # Align fastq file or take existing bam
         my ($alignment_tasks, $alignment_results);
-        if ( $file_type eq 'fastq' ) {
+        if ( $file_type && $file_type eq 'fastq' ) {
             # Add alignment workflow
             ($alignment_tasks, $alignment_results) = CoGe::Builder::Common::Alignment::build(
                 user => $self->user,
@@ -69,8 +69,19 @@ sub build {
             push @done_files, @{$alignment_results->{done_files}};
             $result_count++;
         }
-        elsif ( $file_type eq 'bam' ) {
-            $bam_file = $data->[0]->{path};
+        elsif ( $file_type && $file_type eq 'bam' ) {
+            my $upload_dir = get_upload_path($self->user->name, $self->options->{load_id});
+            $bam_file = catfile($upload_dir, $data->[0]->{path});
+        
+            push @tasks, create_load_bam_job(
+                user => $self->user,
+                metadata => $metadata,
+                staging_dir => $staging_dir,
+                result_dir => $result_dir,
+                wid => $self->workflow->id,
+                gid => $gid,
+                bam_file => $bam_file
+            );
         }
         else { # error -- should never happen
             die "invalid file type";
