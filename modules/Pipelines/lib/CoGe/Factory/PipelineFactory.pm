@@ -3,6 +3,7 @@ package CoGe::Factory::PipelineFactory;
 use Moose;
 
 use CoGe::Builder::Load::Experiment;
+use CoGe::Builder::Analyze::IdentifySNPs;
 
 has 'db' => (
     is => 'ro',
@@ -49,6 +50,9 @@ sub get {
     }
     elsif ($message->{type} eq "load_experiment") {
         $builder = CoGe::Builder::Load::Experiment->new($request);
+    }
+    elsif ($message->{type} eq "analyze_snps") {
+        $builder = CoGe::Builder::Analyze::IdentifySNPs->new($request);
     }
     else {
         print STDERR "PipelineFactory::get unknown type\n";
