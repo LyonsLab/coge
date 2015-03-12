@@ -16,7 +16,7 @@ use CoGe::Accessory::TDS qw(read);
 use CoGe::Accessory::Utils qw(to_filename);
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Workflow;
-use CoGe::Core::Storage qw(get_genome_file get_experiment_files get_workflow_paths get_workflow_results_file);
+use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_workflow_results_file);
 use CoGe::Builder::CommonTasks;
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
