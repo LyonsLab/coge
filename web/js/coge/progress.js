@@ -16,7 +16,6 @@ var coge = window.coge = (function(namespace) {
 			var c = this.container = $('<div class="dialog_box progress"></div>');
 			c.dialog({ 
 				title: opts.title || 'Progress',
-				width: '35em',
 				autoOpen: false
 			});
 			
@@ -27,7 +26,7 @@ var coge = window.coge = (function(namespace) {
 			
 			// Setup resize handler
 			var log = this.container.find(".log");
-		    log.height( $( window ).height() * 0.6 );
+		    log.height( $( window ).height() * 0.5 );
 		    c.dialog({
 		    	modal: true,
 		    	width: '60%',
@@ -67,7 +66,7 @@ var coge = window.coge = (function(namespace) {
 				this.container.dialog({width: opts.width});
 			
 			if (opts && opts.height)
-				this.container.dialog({height: opts.height});
+				this.container.find(".log").height(opts.height);
 			
 		    var log = this.container.find('.log');
 		    if (opts && opts.content)
