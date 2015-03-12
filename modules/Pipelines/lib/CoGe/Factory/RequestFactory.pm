@@ -2,6 +2,7 @@ package CoGe::Factory::RequestFactory;
 
 use Moose;
 use CoGe::Request::Experiment;
+use CoGe::Request::ExperimentAnalysis;
 use CoGe::Request::Genome;
 
 has 'user'    => (
@@ -40,6 +41,10 @@ sub get {
     elsif ($message->{type} eq "export_experiment") 
     {
         return CoGe::Request::Experiment->new($options);
+    }
+    elsif ($message->{type} eq "analyze_snps") 
+    {
+        return CoGe::Request::ExperimentAnalysis->new($options);
     }
 }
 
