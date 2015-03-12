@@ -1562,6 +1562,44 @@ header {
 }
 
 /*
+ * Progress dialog component
+ */
+.progress {
+    overflow: hidden;
+}
+
+.progress .log {
+    overflow-y: auto;
+    padding: 0.25em;
+    color: dimgray;
+    height: 400px;
+    font-size: 0.875em;
+    border-bottom: 1px solid lightgray;
+}
+
+.progress .msg {
+    
+}
+
+.progress .error {
+    color: red;
+    font-size: 1em;
+}
+
+.progress .ok {
+    
+}
+
+.progress li {
+    padding: 0.15em;
+}
+
+.progress .link {
+    font-size: 0.875em;
+}
+ 
+
+/*
  * Wizard component
  */
 
