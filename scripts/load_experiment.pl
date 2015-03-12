@@ -205,10 +205,7 @@ elsif ( $data_type == $DATA_TYPE_MARKER ) {
     ( $staged_data_file, $format, $count, $pChromosomes ) =
       validate_gff_data_file( file => $staged_data_file, genome_chr => \%genome_chr );
 }
-if ( not defined $count ) { # parse error in validate
-    exit(-1);
-}
-if ( $count == 0 ) {
+if ( !$count ) {
     print STDOUT "log: error: file contains no data\n";
     exit(-1);
 }
