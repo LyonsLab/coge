@@ -543,7 +543,7 @@ sub generate_export {
     return (execute($cmd), File::Spec->catdir(($workdir, $filename)));
 }
 
-sub get_download_path {
+sub get_download_path { #TODO move into Storage.pm
     my $unique_path = get_unique_id();
     my @paths = ($P->{SECTEMPDIR}, "ExperimentView/downloads", shift, $unique_path);
     return File::Spec->catdir(@paths);
