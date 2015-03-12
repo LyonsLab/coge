@@ -133,7 +133,7 @@ sub generate_body {
         EMBED        => $EMBED,
     	LOAD_ID      => $LOAD_ID,
     	WORKFLOW_ID  => $WORKFLOW_ID,
-        API_JOBS_URL => 'api/v1/jobs/', #TODO move into config file or module
+        API_BASE_URL => 'api/v1/', #TODO move into config file or module
         DEFAULT_TAB              => 0,
         MAX_IRODS_LIST_FILES     => 1000,
         MAX_IRODS_TRANSFER_FILES => 30,

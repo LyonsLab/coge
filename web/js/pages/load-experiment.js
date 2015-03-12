@@ -42,7 +42,7 @@ function error_help(s) {
         .fadeOut(1500);
 }
 
-function check_login() {
+function check_login() { //TODO move to services.js
     var logged_in = false;
 
     $.ajax({
@@ -172,269 +172,258 @@ function search_users (search_term) {
     });
 }
 
-function load_begin() {
-    // Open status dialog right away - issue 101
-    reset_log();
-    $('#load_dialog').dialog('open');
-    $('#load_log').html('Initializing ...');
-}
+//function load_begin() {
+//    // Open status dialog right away - issue 101
+//    reset_log();
+//    $('#load_dialog').dialog('open');
+//    $('#load_log').html('Initializing ...');
+//}
 
-function load_failed(logfile) {
-    // mdb added 6/24/14 - temporary message until JEX logging is improved
-    var msg =
-        '<div class="alert">' +
-        'The CoGe Support Team has been notified of this error but please ' +
-        'feel free to contact us at <a href="mailto:' + SUPPORT_EMAIL + '">' +
-        SUPPORT_EMAIL + '</a> ' +
-        'and we can help to determine the cause.' +
-        '</div>';
-    var log = $('#load_log');
-    log.html( log.html() + msg );
+//function load_failed(logfile) {
+//    // mdb added 6/24/14 - temporary message until JEX logging is improved
+//    var msg =
+//        '<div class="alert">' +
+//        'The CoGe Support Team has been notified of this error but please ' +
+//        'feel free to contact us at <a href="mailto:' + SUPPORT_EMAIL + '">' +
+//        SUPPORT_EMAIL + '</a> ' +
+//        'and we can help to determine the cause.' +
+//        '</div>';
+//    var log = $('#load_log');
+//    log.html( log.html() + msg );
+//
+//    if (logfile) {
+//        $("#logfile a").attr("href", logfile);
+//        $('#logfile').fadeIn();
+//    }
+//
+//    // Update dialog
+//    $('#loading_msg').hide();
+//    $('#error_msg,#cancel_load_experiment_button').fadeIn();
+//
+//    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
+//        $.ajax({
+//            data: {
+//                fname: "send_error_report",
+//                load_id: load_id,
+//                job_id: WORKFLOW_ID
+//            }
+//        });
+//    }
+//}
 
-    if (logfile) {
-        $("#logfile a").attr("href", logfile);
-        $('#logfile').fadeIn();
-    }
+//function load_succeeded() {
+//    // Update dialog
+//    $('#loading_msg').hide();
+//    $('#finished_msg,#ok_button').fadeIn();
+//}
 
-    // Update dialog
-    $('#loading_msg').hide();
-    $('#error_msg,#cancel_load_experiment_button').fadeIn();
+//function progress_formatter(item) {
+//    var msg;
+//    var row = $('<li>'+ item.description + ' </li>');
+//
+//    var job_status = $('<span></span>');
+//
+//    if (item.status == 'scheduled')
+//        job_status.append(item.status).addClass('down bold');
+//    else if (item.status == 'completed')
+//        job_status.append(item.status).addClass('completed bold');
+//    else if (item.status == 'running')
+//        job_status.append(item.status).addClass('running bold');
+//    else if (item.status == 'skipped')
+//        job_status.append("already generated").addClass('skipped bold');
+//    else if (item.status == 'cancelled')
+//        job_status.append(item.status).addClass('alert bold');
+//    else if (item.status == 'failed')
+//        job_status.append(item.status).addClass('alert bold');
+//    else
+//        return;
+//
+//    row.append(job_status);
+//
+//    if (item.elapsed)  {
+//        row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
+//    }
+//
+//    if (item.log) {
+//        var p = item.log.split("\n");
+//
+//        var pElements = p.map(function(item) {
+//            var norm = item.replace(/\\t/g, " ").replace(/\\'/g, "'");
+//            return $("<div></div>").html(norm);
+//        });
+//
+//        var log = $("<div></div>").html(pElements).addClass("padded");
+//        row.append(log);
+//    }
+//
+//    return row;
+//}
 
-    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
-        $.ajax({
-            data: {
-                fname: "send_error_report",
-                load_id: load_id,
-                job_id: WORKFLOW_ID
-            }
-        });
-    }
-}
+//var workflow_start_time;
+//function update_dialog(job_id, identifier, formatter) { //update_dialog(request, user, identifier, formatter) {
+////    var get_status = function () { 
+////        $.ajax({
+////            type: 'GET',
+////            url: request,
+////            dataType: 'json',
+////            data: {
+////                username: user
+////            },
+////            success: update_callback,
+////            error: update_callback,
+////            xhrFields: {
+////                withCredentials: true
+////            }
+////        });
+////    };
+//    
+//    var update_callback = function(json) {
+//        var dialog = $(identifier);
+//        var workflow_status = $("<p></p>");
+//        var log_content = $("<ul></ul>");
+//        var results = [];
+//        var current_status;
+//        var refresh_interval = 2000;
+//        var retry_interval = 5*1000;
+//        
+//        // Set refresh rate based on elapsed time
+//        if (!workflow_start_time)
+//        	workflow_start_time = new Date().getTime();
+//        var run_time = new Date().getTime() - workflow_start_time;
+//        if (run_time > 10*60*1000)
+//        	refresh_interval = 60*1000;
+//        else if (run_time > 5*60*1000)
+//        	refresh_interval = 30*1000;
+//        else if (run_time > 60*1000)
+//        	refresh_interval = 15*1000;
+//        //console.log('Refresh run_time=' + run_time + ' refresh_interval=' + refresh_interval);
+//
+//        var callback = function() {
+//            update_dialog(job_id, identifier, formatter);
+//        }
+//
+//        if (!json || json.error) {
+//            pageObj.error++;
+//            if ('Auth' in json.error) {
+//            	dialog.find('#loading_msg').html('Login required to continue');
+//            	dialog.find('#load_log')
+//            		.css({'font-size': '1em'})
+//            		.html("<br>Your session has expired.<br><br>" + 
+//            			"Please log in again by clicking " +
+//            			"<a onclick='login_cas();' style='font-weight:bold'>here</a>.");
+//            	return;
+//            }
+//            else {
+//            	//mdb removed 3/5/15 -- retry indefinitely
+////	            if (pageObj.error > 3) {
+////	                workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
+////	                var logfile;
+////		                if (json.results.length) {
+////	                    logfile = json.results[0].path;
+////	                }
+////	                load_failed(logfile);
+////	                return;
+////	            }
+//	            $("#load_error").html('Server not responding ('+pageObj.error+')').show();
+//	            setTimeout(callback, retry_interval);
+//	            return;
+//            }
+//        }
+//        
+//        pageObj.error = 0;
+//        $("#load_error").hide();
+//
+//        if (json.status) {
+//            current_status = json.status.toLowerCase();
+//            workflow_status
+//                .html("Workflow status: ")
+//                .append( $('<span></span>').html(json.status) )
+//                .addClass('bold');
+//        } 
+//        else {
+//        	console.log('Error: missing status');
+//            setTimeout(callback, refresh_interval);
+//            return;
+//        }
+//
+//        if (json.tasks) {
+//            var jobs = json.tasks;
+//            for (var index = 0; index < jobs.length; index++) {
+//                var item = formatter(jobs[index]);
+//                if (item)
+//                    results.push(item);
+//            }
+//        }
+//        else {
+//        	console.log('Error: missing tasks');
+//        }
+//
+//        // Sanity check -- progress dialog should be open
+//        if (!dialog.dialog('isOpen')) {
+//        	console.log('Error: progress dialog is closed');
+//            return;
+//        }
+//
+//        //FIXME Update when a workflow supports elapsed time
+//        if (current_status == "completed") {
+//            var total = json.tasks.reduce(function(a, b) {
+//                if (!b.elapsed) return a;
+//
+//                return a + b.elapsed;
+//            }, 0);
+//
+//            var duration = coge.utils.toPrettyDuration(total);
+//
+//            workflow_status.append("<br>Finished in " + duration);
+//            workflow_status.find('span').addClass('completed');
+//            if (json.results && json.results.length) 
+//            	load_succeeded(json.results);
+//        }
+//        else if (current_status == "failed"
+//                || current_status == "error"
+//                || current_status == "terminated"
+//                || current_status == "cancelled")
+//        {
+//            workflow_status.find('span').addClass('alert');
+//
+//            if (json.results && json.results.length)
+//                logfile = json.results[0].path;
+//            load_failed(logfile);
+//        }
+//        else if (current_status == "notfound") {
+//        	console.log('Error: status is "notfound"');
+//            setTimeout(callback, refresh_interval);
+//            return;
+//        }
+//        else {
+//            workflow_status.find('span').addClass('running');
+//            setTimeout(callback, refresh_interval);
+//        }
+//
+//        results.push(workflow_status);
+//        log_content.append(results);
+//        
+//        if (json.results && json.results.length) {
+//        	log_content.append("<div class='bold'>Here are the results:</div>");
+//    	    json.results.forEach(function(result) {
+//    	    	var html = format_result(result);
+//    	    	log_content.append(html);
+//    	    });
+//        }
+//        
+//        dialog.find('#load_log').html(log_content);
+//    };
+//
+//    //get_status();
+//    coge.services.fetch_job(job_id, update_callback, update_callback);
+//}
 
-function load_succeeded() {
-    // Update dialog
-    $('#loading_msg').hide();
-    $('#finished_msg,#ok_button').fadeIn();
-}
-
-function progress_formatter(item) {
-    var msg;
-    var row = $('<li>'+ item.description + ' </li>');
-
-    var job_status = $('<span></span>');
-
-    if (item.status == 'scheduled')
-        job_status.append(item.status).addClass('down bold');
-    else if (item.status == 'completed')
-        job_status.append(item.status).addClass('completed bold');
-    else if (item.status == 'running')
-        job_status.append(item.status).addClass('running bold');
-    else if (item.status == 'skipped')
-        job_status.append("already generated").addClass('skipped bold');
-    else if (item.status == 'cancelled')
-        job_status.append(item.status).addClass('alert bold');
-    else if (item.status == 'failed')
-        job_status.append(item.status).addClass('alert bold');
-    else
-        return;
-
-    row.append(job_status);
-
-    if (item.elapsed)  {
-        row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
-    }
-
-    if (item.log) {
-        var p = item.log.split("\n");
-
-        var pElements = p.map(function(item) {
-            var norm = item.replace(/\\t/g, " ").replace(/\\'/g, "'");
-            return $("<div></div>").html(norm);
-        });
-
-        var log = $("<div></div>").html(pElements).addClass("padded");
-        row.append(log);
-    }
-
-    return row;
-}
-
-function format_result(result) {
-	if (result.type === 'experiment') {
-		var url = 'ExperimentView.pl?eid=' + result.id;
-		return "<div><a href='"+url+"'>Experiment '"+result.name+"'</a></div>";
-	}
-	else if (result.type === 'notebook') {
-		var url = 'NotebookView.pl?nid=' + result.id;
-		return "<div><a href='"+url+"'>Notebook '"+result.name+"'</a></div>";
-	}
-}
-
-var workflow_start_time;
-function update_dialog(request, user, identifier, formatter) {
-    var get_status = function () {
-        $.ajax({
-            type: 'GET',
-            url: request,
-            dataType: 'json',
-            data: {
-                username: user
-            },
-            success: update_callback,
-            error: update_callback,
-            xhrFields: {
-                withCredentials: true
-            }
-        });
-    };
-    
-    var update_callback = function(json) {
-        var dialog = $(identifier);
-        var workflow_status = $("<p></p>");
-        var log_content = $("<ul></ul>");
-        var results = [];
-        var current_status;
-        var refresh_interval = 2000;
-        var retry_interval = 5*1000;
-        
-        // Set refresh rate based on elapsed time
-        if (!workflow_start_time)
-        	workflow_start_time = new Date().getTime();
-        var run_time = new Date().getTime() - workflow_start_time;
-        if (run_time > 10*60*1000)
-        	refresh_interval = 60*1000;
-        else if (run_time > 5*60*1000)
-        	refresh_interval = 30*1000;
-        else if (run_time > 60*1000)
-        	refresh_interval = 15*1000;
-        //console.log('Refresh run_time=' + run_time + ' refresh_interval=' + refresh_interval);
-
-        var callback = function() {
-            update_dialog(request, user, identifier, formatter);
-        }
-
-        if (!json || json.error) {
-            pageObj.error++;
-            if ('Auth' in json.error) {
-            	dialog.find('#loading_msg').html('Login required to continue');
-            	dialog.find('#load_log')
-            		.css({'font-size': '1em'})
-            		.html("<br>Your session has expired.<br><br>" + 
-            			"Please log in again by clicking " +
-            			"<a onclick='login_cas();' style='font-weight:bold'>here</a>.");
-            	return;
-            }
-            else {
-            	//mdb removed 3/5/15 -- retry indefinitely
-//	            if (pageObj.error > 3) {
-//	                workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
-//	                var logfile;
-//		                if (json.results.length) {
-//	                    logfile = json.results[0].path;
-//	                }
-//	                load_failed(logfile);
-//	                return;
-//	            }
-	            $("#load_error").html('Server not responding ('+pageObj.error+')').show();
-	            setTimeout(callback, retry_interval);
-	            return;
-            }
-        }
-        
-        pageObj.error = 0;
-        $("#load_error").hide();
-
-        if (json.status) {
-            current_status = json.status.toLowerCase();
-            workflow_status
-                .html("Workflow status: ")
-                .append( $('<span></span>').html(json.status) )
-                .addClass('bold');
-        } 
-        else {
-        	console.log('Error: missing status');
-            setTimeout(callback, refresh_interval);
-            return;
-        }
-
-        if (json.tasks) {
-            var jobs = json.tasks;
-            for (var index = 0; index < jobs.length; index++) {
-                var item = formatter(jobs[index]);
-                if (item)
-                    results.push(item);
-            }
-        }
-        else {
-        	console.log('Error: missing tasks');
-        }
-
-        // Sanity check -- progress dialog should be open
-        if (!dialog.dialog('isOpen')) {
-        	console.log('Error: progress dialog is closed');
-            return;
-        }
-
-        //FIXME Update when a workflow supports elapsed time
-        if (current_status == "completed") {
-            var total = json.tasks.reduce(function(a, b) {
-                if (!b.elapsed) return a;
-
-                return a + b.elapsed;
-            }, 0);
-
-            var duration = coge.utils.toPrettyDuration(total);
-
-            workflow_status.append("<br>Finished in " + duration);
-            workflow_status.find('span').addClass('completed');
-            if (json.results && json.results.length) 
-            	load_succeeded(json.results);
-        }
-        else if (current_status == "failed"
-                || current_status == "error"
-                || current_status == "terminated"
-                || current_status == "cancelled")
-        {
-            workflow_status.find('span').addClass('alert');
-
-            if (json.results && json.results.length)
-                logfile = json.results[0].path;
-            load_failed(logfile);
-        }
-        else if (current_status == "notfound") {
-        	console.log('Error: status is "notfound"');
-            setTimeout(callback, refresh_interval);
-            return;
-        }
-        else {
-            workflow_status.find('span').addClass('running');
-            setTimeout(callback, refresh_interval);
-        }
-
-        results.push(workflow_status);
-        log_content.append(results);
-        
-        if (json.results && json.results.length) {
-        	log_content.append("<div class='bold'>Here are the results:</div>");
-    	    json.results.forEach(function(result) {
-    	    	var html = format_result(result);
-    	    	log_content.append(html);
-    	    });
-        }
-        
-        dialog.find('#load_log').html(log_content);
-    };
-
-    get_status();
-}
-
-function reset_log() {
-    $('#load_log').html('');
-    $('#load_link').html('');
-    $('#loading_msg').show();
-    $('#ok_button,#error_msg,#finished_msg,#finish_load_experiment_button,#cancel_load_experiment_button,#logfile').hide();
-}
-
+//function reset_log() {
+//    $('#load_log').html('');
+//    $('#load_link').html('');
+//    $('#loading_msg').show();
+//    $('#ok_button,#error_msg,#finished_msg,#finish_load_experiment_button,#cancel_load_experiment_button,#logfile').hide();
+//}
 
 function LayoutView(options) {
     this.template = $(options.template);
@@ -855,8 +844,9 @@ $.extend(FindSNPView.prototype, {
         var method = this.el.find("#snp-method").val();
 
         if (enabled) {
+        	//TODO this can be automated
             if (method === "coge") {
-                this.data.snp_params = { //TODO this can be automated
+                this.data.snp_params = {
                     method: method,
                     'min-read-depth':   this.el.find("#min-read-depth").val(),
                     'min-base-quality': this.el.find("#min-base-quality").val(),
@@ -1265,7 +1255,7 @@ $.extend(ConfirmationView.prototype, {
         for(key in description) {
             if (description.hasOwnProperty(key)) {
                 newpair = this.pair_template.clone();
-                newpair.find(".name").html(capitalizeFirstLetter(key));
+                newpair.find(".name").html(coge.utils.ucfirst(key));
                 newpair.find(".data").html(description[key]);
                 this.description.append(newpair);
             }
@@ -1296,7 +1286,7 @@ $.extend(ConfirmationView.prototype, {
             	var val = String(options[key]);
             	if (typeof options[key] === 'object') val = objToString(options[key]);
                 newpair = this.pair_template.clone();
-                newpair.find(".name").html(capitalizeFirstLetter(key.replace('_', ' ')));
+                newpair.find(".name").html(coge.utils.ucfirst(key.replace('_', ' ')));
                 newpair.find(".data").html(val);
                 this.options.append(newpair);
             }
@@ -1319,55 +1309,10 @@ function objToString(obj) {
     return str;
 }
 
-function capitalizeFirstLetter(string) {
-    return string.charAt(0).toUpperCase() + string.slice(1);
-}
-
-function submit_job(request, success_callback, error_callback) { //TODO move into js/coge/services.js
-    $.ajax({
-    	type: "PUT",
-    	url: API_JOBS_URL + '?username=' + USER_NAME,
-    	dataType: "json",
-        contentType: "application/json",
-        data: JSON.stringify(request), // string required for PUT requests
-        success: function(response) {
-            if (success_callback)
-            	success_callback(response);
-        },
-        error: function(jqXHR, textStatus, errorThrown) {
-        	console.log('submit_job: error: ' + textStatus);
-        	if (errorThrown)
-        		console.log(errorThrown);
-        	if (error_callback)
-        		error_callback(jqXHR, textStatus, errorThrown);
-        }
-    });
-}
-
-function fetch_job(id, success_callback) { //TODO move into js/coge/services.js
-	if (!id) return;
-	
-    $.ajax({
-    	type: "GET",
-    	url: API_JOBS_URL + id + '?username=' + USER_NAME,
-    	dataType: "json",
-        contentType: "application/json",
-        success: function(response) {
-            if (response && response.error) {
-                if (response.error.PAYLOAD)  {
-                    alert(response.error.PAYLOAD);
-                }
-                return;
-            }
-            
-            if (success_callback)
-            	success_callback();
-        }
-    });
-}
-
 function load(experiment) {
-	load_begin();
+	// TODO make sure still logged in
+	
+	coge.progress.begin();
     newLoad = true;
 
 	// Convert request into format for job service
@@ -1393,39 +1338,29 @@ function load(experiment) {
 		},
 	};
     
-    submit_job(request, 
+    coge.services.submit_job(request, 
     	function(response) { // success callback
     		if (!response) {
-    			$('#load_log').append('<div class="alert">Error: empty response from server</div>');
-    			load_failed();
+    			coge.progress.failed("Error: empty response from server");
     			return;
     		}
     		else if (!response.success || !response.id) {
-    			$('#load_log').append('<div class="alert">Error: failed to start workflow</div>');
-    			load_failed();
+    			coge.progress.failed("Error: failed to start workflow");
     			return;
     		}
     		
-	        // Set link in status dialog
-    		if (response.site_url) {
-	    		var link = $('<a>'+response.site_url+'</a>').attr('href', response.site_url);
-		        $('#load_link').html('Link: ').append(link);
-    		}
-	
 	        // Start status update
             window.history.pushState({}, "Title", "LoadExperiment.pl" + "?wid=" + response.id); // Add workflow id to browser URL
-            update_dialog(API_JOBS_URL + response.id, USER_NAME, "#load_dialog", progress_formatter);
+            coge.progress.update(response.id, response.site_url);
 	    },
 	    function(jqXHR, textStatus, errorThrown) { // error callback
-	    	$('#load_log').append('<div class="alert">Error: ' + textStatus + '</div>');
-	    	load_failed();
+	    	coge.progress.failed('Error: ' + textStatus);
 	    }
 	);
 }
 
 function reset_load() {
     window.history.pushState({}, "Title", PAGE_NAME);
-    $('#load_dialog').dialog('close');
 
     // Reset the wizard and set description step
     initialize_wizard({
