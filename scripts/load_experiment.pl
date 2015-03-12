@@ -809,7 +809,7 @@ sub validate_bam_data_file {
 		$cmd = "rm -f $filepath";
 		execute($cmd);
 	}
-	else {
+	elsif ($filepath ne $newfilepath) { # mdb added condition 3/12/15 -- possible that original file is named "alignment.bam"
 		# Rename original bam file
 		$cmd = "mv $filepath $newfilepath";
 		execute($cmd);
