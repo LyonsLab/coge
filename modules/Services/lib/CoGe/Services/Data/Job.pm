@@ -31,7 +31,7 @@ sub add {
 
     # Create request to validate input
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
-    my $request_factory = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex);
+    my $request_factory = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex); #FIXME why jex here?
     my $request_handler = $request_factory->get($payload);
 
     # Validate the request has all required fields
@@ -54,10 +54,12 @@ sub add {
     my $response = $request_handler->execute($workflow);
     
     # Get tiny link #FIXME should this be moved client-side?
-    if ($payload->{requester} && $payload->{requester}->{page}) { # request is from web page - API requests will not have a 'requester' field
-        my $page = $payload->{requester}->{page};
-        my $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . $page . "?wid=" . $workflow->id );
-        $response->{site_url} = $link if ($link);
+    if ($response->{success}) {
+        if ($payload->{requester} && $payload->{requester}->{page}) { # request is from web page - external API requests will not have a 'requester' field
+            my $page = $payload->{requester}->{page};
+            my $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . $page . "?wid=" . $workflow->id );
+            $response->{site_url} = $link if ($link);
+        }
     }
 
     return $self->render(json => $response);
