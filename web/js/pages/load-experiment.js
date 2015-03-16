@@ -508,9 +508,9 @@ $.extend(Wizard.prototype, {
         this.viewer.html(step.el);
 
         if (this.at_first())
-            this.prev.attr("disabled", 1);
+            this.prev.hide();//this.prev.attr("disabled", 1);
         else
-            this.prev.removeAttr("disabled");
+            this.prev.removeAttr("disabled").show();
 
         if (this.at_last()) {
             this.next.hide();

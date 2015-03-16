@@ -333,6 +333,11 @@
                     <label>--gap-mode:</label>
                     <select id="--gap-mode">
                         <option>none</option>
+                        <option>all</option>
+                        <option>pairsearch</option>
+                        <option>indel_knownsplice</option>
+                        <option>terminal</option>
+                        <option>improve</option>
                     </select>
                 </div>
                 <div class="form-entry">
@@ -351,28 +356,8 @@
     </div>
 </script>
 
-<script id="snp-template" type="text/template">
-    <div class="form-section">
-        <h4>SNP Identification</h4>
-
-        <div class="form-field">
-            <label class="col-md-2">Enable:</label>
-            <input id="snps" type="checkbox">
-        </div>
-
-        <div class="form-field">
-            <label class="col-md-2">Method:</label>
-            <select id="snp-method" disabled>
-                <option value="coge">CoGe Basic</option>
-                <option value="samtools">SAMtools</option>
-                <option value="platypus">Platypus</option>
-                <option value="gatk" disabled>GATK -- coming soon!</option>
-            </select>
-        </div>
-
-        <div id="snp-container" class="hidden"></div>
-    </div>
-</script>
+<!-- SNP pipeline options -->
+<TMPL_INCLUDE NAME='widgets/pipeline-options.tmpl'> 
 
 <!-- FIXME: Have this as a separate plugin -->
 <script id="selector-template" type="text/template">
