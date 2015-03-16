@@ -51,7 +51,7 @@ var coge = window.coge = (function(namespace) {
 		
 		reset_log: function() {
 			var c = this.container;
-			c.find('.log,.link').html('');
+			c.find('.log,.progress-link').html('');
 			c.find('.msg').show('');
 		    c.find('.ok,.error,.finished,.done,.cancel,.logfile').hide();
 		},
@@ -85,7 +85,7 @@ var coge = window.coge = (function(namespace) {
 			var c = this.container;
 			
 		    // Update dialog
-		    c.find('.msg').hide();
+		    c.find('.msg,.progress-link').hide();
 		    c.find('.finished,.ok').fadeIn();
 		    c.find('.log').append(string)
 		    
@@ -113,7 +113,7 @@ var coge = window.coge = (function(namespace) {
 //		    }
 
 		    // Update dialog
-		    c.find('.msg,.link').hide();
+		    c.find('.msg,.progress-link').hide();
 		    c.find('.error,.cancel').fadeIn();
 
 //		    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
@@ -157,7 +157,7 @@ var coge = window.coge = (function(namespace) {
 				this.job_id = job_id;
 			if (url) {
 				this.url = url;
-				this.container.find('.link').html('Link: <a href="'+url+'">'+url+'</a>');
+				this.container.find('.progress-link').html('Link: <a href="'+url+'">'+url+'</a>').show();
 			}
 			
 			var self = this;
@@ -265,7 +265,7 @@ var coge = window.coge = (function(namespace) {
 		        log_content.append(results);
 		        
 		        if (json.results && json.results.length) {
-		        	log_content.append("<div class='bold'>Here are the results:</div>");
+		        	log_content.append("<div class='bold'>Here are the results (click to open):</div>");
 		    	    json.results.forEach(function(result) {
 		    	    	var html = self.format_result(result);
 		    	    	log_content.append(html);
@@ -284,11 +284,11 @@ var coge = window.coge = (function(namespace) {
 		format_result: function(result) {
 			if (result.type === 'experiment') {
 				var url = 'ExperimentView.pl?eid=' + result.id;
-				return "<div><a href='"+url+"'>Experiment '"+result.name+"'</a></div>";
+				return "<div><a href='"+url+"'><img src='picts/testtube-icon.png' width='15' height='15'/> Experiment '"+result.name+"'</a></div>";
 			}
 			else if (result.type === 'notebook') {
 				var url = 'NotebookView.pl?nid=' + result.id;
-				return "<div><a href='"+url+"'>Notebook '"+result.name+"'</a></div>";
+				return "<div><a href='"+url+"'><img src='picts/notebook-icon.png' width='15' height='15'/> Notebook '"+result.name+"'</a></div>";
 			}
 		},
 		
@@ -315,9 +315,8 @@ var coge = window.coge = (function(namespace) {
 
 		    row.append(job_status);
 
-		    if (item.elapsed)  {
+		    if (item.elapsed)
 		        row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
-		    }
 
 		    if (item.log) {
 		        var p = item.log.split("\n");
