@@ -3,6 +3,7 @@ package CoGeX::Result::Job;
 use v5.10;
 use strict;
 use warnings;
+no warnings 'experimental';
 
 #use DateTime;
 #use DateTime::Format::HTTP;
