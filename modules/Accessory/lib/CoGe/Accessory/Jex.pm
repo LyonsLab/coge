@@ -1,12 +1,14 @@
 package CoGe::Accessory::Jex;
+
+use v5.10;
 use strict;
 use warnings;
-use v5.10;
 
 use Moose;
 use JSON::XS;
 use ZMQ::LibZMQ3;
 use ZMQ::Constants qw/:all/;
+use Switch;
 use CoGe::Accessory::Workflow;
 
 # Attributes
@@ -86,13 +88,13 @@ sub wait_for_completion {
     while (1) {
         $status = get_status($self, $id);
 
-        given ($status) {
-            when (/completed/i)  { return 1; }
-            when (/notfound/i)   { return 0; }
-            when (/failed/i)     { return 0; }
-            when (/terminated/i) { return 0; }
-            when (/error/i)      { return 0; }
-            default {
+        switch ($status) {
+            case /completed/i  { return 1; }
+            case /notfound/i   { return 0; }
+            case /failed/i     { return 0; }
+            case /terminated/i { return 0; }
+            case /error/i      { return 0; }
+            else {
                 sleep $wait;
                 $wait = $wait + 0.25;
             }
