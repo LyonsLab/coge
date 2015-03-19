@@ -11,12 +11,7 @@ use File::Spec::Functions qw(catdir catfile);
 use URI::Escape::JavaScript qw(unescape);
 use JSON::XS;
 use CoGe::Accessory::Web qw(get_defaults);
-<<<<<<< HEAD
-use CoGe::Accessory::Utils qw( commify );
-use CoGe::Core::Metadata qw( create_annotations );
-=======
 use CoGe::Accessory::Utils qw( commify to_pathname );
->>>>>>> origin/load_experiment2
 use CoGe::Core::Genome qw(fix_chromosome_id);
 use CoGe::Accessory::TDS;
 use CoGe::Core::Storage qw(add_workflow_result);

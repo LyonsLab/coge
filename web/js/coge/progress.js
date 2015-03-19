@@ -1,5 +1,5 @@
 /* 
- * CoGe Progess Dialog
+ * CoGe Progress Dialog
  */
 
 var coge = window.coge = (function(namespace) {
