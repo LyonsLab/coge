@@ -23,6 +23,7 @@ GD::Graph::Data
 GD::Graph::bars
 GD::Graph::histogram
 GD::Simple
+Hash::Merge::Simple
 HTML::Template
 HTTP::Request
 IPC::System::Simple
