@@ -1253,10 +1253,14 @@ $.extend(ConfirmationView.prototype, {
 
         var key, newpair;
         for(key in description) {
+        	console.log(key + ' ' + description[key]);
             if (description.hasOwnProperty(key)) {
+            	var value = description[key];
+            	if (typeof value === "boolean")
+            		value = (value ? "yes" : "no");
                 newpair = this.pair_template.clone();
                 newpair.find(".name").html(coge.utils.ucfirst(key));
-                newpair.find(".data").html(description[key]);
+                newpair.find(".data").html(value);
                 this.description.append(newpair);
             }
         }
