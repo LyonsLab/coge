@@ -420,14 +420,14 @@ sub generate_blastdb_job {
 
     my $base = basename($outdir);
 
-    return (
+    return {
         cmd => "mkdir $base && cd $base && $BLASTDB",
         script  => undef,
         args    => $args,
         inputs  => undef,
         outputs => [[$outdir, 1]],
         description => "Generating blastable database..."
-    );
+    };
 }
 
 sub blast_param {
@@ -889,14 +889,14 @@ sub blast_search {
             dsg      => $dsg
           };
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd     => "/usr/bin/nice",
             script  => undef,
             args    => $args,
             inputs  => [$fasta_file, [$dbpath, 1]],
             outputs => [$outfile],
             description => "Blasting sequence against $name"
-        );
+        });
 
         $count++;
     }

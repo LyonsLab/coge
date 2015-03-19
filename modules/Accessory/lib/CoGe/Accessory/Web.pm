@@ -60,10 +60,9 @@ BEGIN {
     $VERSION = 0.1;
     $TEMPDIR = $BASEDIR . "tmp";
     @ISA     = ( qw (Exporter Class::Accessor) );
-    @EXPORT  = qw( get_session_id );
-    @EXPORT_OK = qw( check_filename_taint check_taint gunzip gzip send_email
-                     get_defaults set_defaults url_for get_job schedule_job
-                     render_template );
+    @EXPORT  = qw( get_session_id check_filename_taint check_taint gunzip gzip 
+                   send_email get_defaults set_defaults url_for get_job 
+                   schedule_job render_template );
 
     $PAYLOAD_ERROR = "The request could not be decoded";
     $NOT_FOUND = "The action could not be found";
@@ -173,16 +172,17 @@ sub render_template {
 sub get_defaults {
     return $CONF if ($CONF);
 
-    my ( $self, $param_file ) = self_or_default(@_);
-    $param_file = $BASEDIR . "/coge.conf" unless defined $param_file;
-#    print STDERR "Web::get_defaults $param_file\n";
-    unless ( -r $param_file ) {
+    my ( $self, $conf_file ) = self_or_default(@_);
+    $conf_file = $BASEDIR . "/coge.conf" unless defined $conf_file;
+    #print STDERR "Web::get_defaults $conf_file\n";
+    unless ( -r $conf_file ) {
         print STDERR
-qq{Either no parameter file specified or unable to read paramer file ($param_file).
-A valid parameter file must be specified or very little will work!};
+qq{Either no configuration file was specified or unable to read file ($conf_file).
+A valid configuration file must be specified or very little will work!};
         return 0;
     }
-    open( IN, $param_file );
+    
+    open( IN, $conf_file );
     my %items;
     while (<IN>) {
         chomp;
@@ -194,7 +194,7 @@ A valid parameter file must be specified or very little will work!};
     close IN;
 
     # mdb added 4/10/14 - add path to the file that was loaded
-    $items{_CONFIG_PATH} = $param_file;
+    $items{_CONFIG_PATH} = $conf_file;
 
     $CONF = \%items;
     return $CONF;

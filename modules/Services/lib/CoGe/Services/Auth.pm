@@ -19,7 +19,7 @@ sub init {
     print STDERR "CoGe::Services::Auth::init: username=", ($username ? $username : ''), " token=", ($token ? $token : ''), " remote_ip=", ($remote_ip ? $remote_ip : ''), "\n";
 
     # Get config
-    my $conf = CoGe::Accessory::Web::get_defaults();
+    my $conf = get_defaults();
     unless (defined $conf) {
         print STDERR "CoGe::Services::Auth::init: couldn't load config file\n";
         return;

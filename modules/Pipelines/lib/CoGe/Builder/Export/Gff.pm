@@ -1,13 +1,11 @@
-package CoGe::Builder::GffBuilder;
+package CoGe::Builder::Export::Gff;
 
 use Moose;
 
 use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGe::Core::Storage;
-use CoGe::Pipelines::Common::Results;
-use CoGe::Pipelines::Misc::Gff;
-use CoGe::Pipelines::Misc::IPut;
+use CoGe::Builder::CommonTasks;
 
 use File::Basename qw(basename);
 use File::Spec::Functions;
@@ -30,7 +28,7 @@ sub build {
     $self->params->{basename} = sanitize_name($genome->organism->name);
 
     my ($output, %job) = generate_gff($self->params, $self->conf);
-    $self->workflow->add_job(%job);
+    $self->workflow->add_job(\%job);
 
     if ($dest_type eq "irods") { # irods export
         my $irods_base = $self->options->{dest_path};
@@ -44,6 +42,8 @@ sub build {
     else { # http download
         $self->workflow->add_job( link_results($output, $output, $result_dir, $self->conf) );
     }
+    
+    return 1;
 }
 
 sub init_workflow {

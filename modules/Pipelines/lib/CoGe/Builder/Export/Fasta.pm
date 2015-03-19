@@ -1,4 +1,4 @@
-package CoGe::Builder::FastaBuilder;
+package CoGe::Builder::Export::Fasta;
 
 use Moose;
 
@@ -6,8 +6,7 @@ use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
-use CoGe::Pipelines::Common::Results;
-use CoGe::Pipelines::Misc::IPut;
+use CoGe::Builder::CommonTasks;
 
 use File::Spec::Functions;
 use Data::Dumper;
@@ -50,6 +49,8 @@ sub build {
     else { # http download
         $self->workflow->add_job( link_results($genome_file, $output_file, $result_dir, $self->conf) );
     }
+    
+    return 1;
 }
 
 sub init_workflow {
