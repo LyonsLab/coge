@@ -4,25 +4,41 @@
 # Author:   Matt Bomhoff
 # Created:  5/13/14
 #------------------------------------------------------------------------------
-my $MIN_ALLELE_FREQ = 0.1; # min allele frequency
-my $MIN_ALLELE_COUNT = 4;  # min high-quality depth of allele
-my $MIN_DEPTH = 10;        # overall min depth, regardless of quality
-my $MIN_BASE_QUAL = 20;    # definition of HQ (High Quality)
-   $MIN_BASE_QUAL += 33;   # scale for FASTQ encoding
-#-------------------------------------------------------------------------------
 
 use warnings;
 use strict;
+
+use Getopt::Long qw(GetOptions);
+
+our ($min_read_depth, $min_allele_freq, $min_allele_count, $min_base_quality, $quality_scale);
+
+GetOptions(
+    "min_read_depth=s"   => \$min_read_depth,
+    "min_allele_freq=s"  => \$min_allele_freq,
+    "min_allele_count=s" => \$min_allele_count,
+    "min_base_quality=s" => \$min_base_quality,
+    "quality_scale=s"    => \$quality_scale,
+);
+
+# Set defaults
+$min_allele_freq = 0.1 unless (defined $min_allele_freq); # min allele frequency
+$min_allele_count = 4 unless (defined $min_allele_count); # min high-quality depth of allele
+$min_read_depth = 10 unless (defined $min_read_depth);    # overall min depth, regardless of quality
+$quality_scale = 32 unless (defined $quality_scale);      # scale for FASTQ encoding
+unless (defined $min_base_quality) {
+    $min_base_quality = 20; # definition of HQ (High Quality)
+    $min_base_quality += $quality_scale + 1; 
+}
 
 # Print VCF header
 #TODO
 
 my $parsex = qr/^(\S+)\t(\S+)\t(\S+)\t(\S+)\t(\S+)\t(\S+)/;
 my $line;
-while ($line = <>) {
+while ($line = <STDIN>) {
     chomp $line;
     my ($ref, $pos, $refAllele, $depth, $seq, $qual) = $line =~ $parsex;
-    next unless ($depth and $depth >= $MIN_DEPTH);
+    next unless ($depth and $depth >= $min_read_depth);
 
     my ($hqDepth, $pAlleles) = getHQAlleles($refAllele, \$seq, \$qual);
 
@@ -31,7 +47,7 @@ while ($line = <>) {
     foreach my $b (keys %$pAlleles) {
         next if ($b eq $refAllele); # skip reference allele
         my $freq = $pAlleles->{$b} / $hqDepth;
-        if ($freq >= $MIN_ALLELE_FREQ and $pAlleles->{$b} >= $MIN_ALLELE_COUNT) {
+        if ($freq >= $min_allele_freq and $pAlleles->{$b} >= $min_allele_count) {
             $filtered{$b} = { freq => $freq, depth => $pAlleles->{$b} };
         }
     }
@@ -93,7 +109,7 @@ sub getHQAlleles {
 
         my $q = $aq[$j++];
         die "error 2: $i $j $$pseq $$pqual\n" if (not defined $q);
-        if ($q >= $MIN_BASE_QUAL and $c ne 'N') {
+        if ($q >= $min_base_quality and $c ne 'N') {
             $c = $refbase if ($c eq '.' or $c eq ',');
             $c = uc($c);
             next if ($c =~ /[^ACGT]/);

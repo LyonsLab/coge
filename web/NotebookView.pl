@@ -98,10 +98,9 @@ sub gen_html {
           if $USER->first_name && $USER->last_name;
         $template->param(
             USER       => $name,
-            #HELP       => "/wiki/index.php?title=$PAGE_TITLE",
-	    HELP       => $P->{SERVER},
+	        HELP       => $P->{SERVER},
             PAGE_TITLE => $PAGE_TITLE,
-	    TITLE      => "NotebookView",
+            TITLE      => "NotebookView",
             PAGE_LINK  => $LINK,
             LOGO_PNG   => "CoGe.svg",
             ADJUST_BOX => 1

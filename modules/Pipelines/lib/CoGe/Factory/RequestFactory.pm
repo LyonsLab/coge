@@ -1,8 +1,9 @@
 package CoGe::Factory::RequestFactory;
 
 use Moose;
-use CoGe::Requests::ExperimentRequest;
-use CoGe::Requests::GenomeRequest;
+use CoGe::Request::Experiment;
+use CoGe::Request::ExperimentAnalysis;
+use CoGe::Request::Genome;
 
 has 'user'    => (
     is        => 'ro',
@@ -21,6 +22,7 @@ has 'jex'     => (
 
 sub get {
     my ($self, $message) = @_;
+    return unless (defined $message->{type});
 
     my $options = {
         db         => $self->db,
@@ -30,16 +32,19 @@ sub get {
         parameters => $message->{parameters}
     };
 
-    if ($message->{type} eq "gff_export") {
-        return CoGe::Requests::GenomeRequest->new($options);
+    if ($message->{type} eq "export_gff" ||
+        $message->{type} eq "export_fasta" ||
+        $message->{type} eq "load_experiment")
+    {
+        return CoGe::Request::Genome->new($options);
     }
-
-    if ($message->{type} eq "fasta_export") {
-        return CoGe::Requests::GenomeRequest->new($options);
+    elsif ($message->{type} eq "export_experiment") 
+    {
+        return CoGe::Request::Experiment->new($options);
     }
-
-    if ($message->{type} eq "experiment_export") {
-        return CoGe::Requests::ExperimentRequest->new($options);
+    elsif ($message->{type} eq "analyze_snps") 
+    {
+        return CoGe::Request::ExperimentAnalysis->new($options);
     }
 }
 

@@ -9,6 +9,10 @@ has 'workflow' => (
     isa  => 'CoGe::Accessory::Workflow'
 );
 
+has 'jex' => (
+    is => 'ro',
+);
+
 has 'options' => (
     is => 'ro',
     required => 1
@@ -24,11 +28,6 @@ has 'db' => (
     required => 1
 );
 
-has 'jex' => (
-    is => 'ro',
-    required => 1
-);
-
 has 'user' => (
     is => 'ro',
     required => 1
@@ -37,6 +36,11 @@ has 'user' => (
 has 'conf' => (
     is => 'ro',
     required => 1
+);
+
+has 'outputs' => (
+    is => 'rw',
+    default => sub { {} } # initialize to empty hash
 );
 
 sub get {

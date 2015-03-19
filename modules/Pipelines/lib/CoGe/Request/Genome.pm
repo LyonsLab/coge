@@ -1,7 +1,7 @@
-package CoGe::Requests::GenomeRequest;
+package CoGe::Request::Genome;
 
 use Moose;
-use CoGe::Requests::Request;
+use CoGe::Request::Request;
 use JSON;
 
 sub is_valid {
@@ -21,5 +21,5 @@ sub has_access {
     return $self->user->has_access_to_genome($genome);
 }
 
-with qw(CoGe::Requests::Request);
+with qw(CoGe::Request::Request);
 1;
