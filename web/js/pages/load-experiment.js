@@ -530,7 +530,7 @@ $.extend(Wizard.prototype, {
         if (!this.at_first()) {
             this.currentIndex--;
             this.render();
-            this.notifications.stop(true, true).fadeOut(1500);
+            this.notifications.stop(true, true).hide();
         }
     },
 
@@ -540,7 +540,7 @@ $.extend(Wizard.prototype, {
         if (!this.at_last() && step.is_valid()) {
             this.currentIndex++;
             this.render();
-            this.notifications.stop(true, true).fadeOut(1500);
+            this.notifications.stop(true, true).hide();
         }
     },
 
