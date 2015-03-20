@@ -84,11 +84,12 @@ function getPath(item) {
 
 function file_canceled() {
     if (!get_selected_files()) {
-    	$('#select_file_type')
-    		.hide()
-	        .find("option[value=autodetect")
-	        .prop("selected", true)
-	        .change();
+// mdb removed 2/20/15 -- causes js error in Firefox
+//    	$('#select_file_type')
+//    		.hide()
+//	        .find("option[value=autodetect")
+//	        .prop("selected", true)
+//	        .change();
     	
     	$('#files').hide();
     	
