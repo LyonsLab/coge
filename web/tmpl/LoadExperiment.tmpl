@@ -53,6 +53,7 @@
 <!-- Wizard Templates -->
 <script id="wizard-template" type="text/template">
 <div id="wizard" class="wizard wizard-coge">
+	<div class="r small link">Need help?</div>
     <div class="header">
         <div class="sections">
         </div>
@@ -436,6 +437,7 @@
 const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
 const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
 const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
+const HELP_URL      = '<TMPL_VAR NAME="HELP_URL">';
 const USER_NAME     = '<TMPL_VAR NAME="USER">'
 const IS_ADMIN      = Boolean('<TMPL_VAR NAME="ADMIN_AREA">');
 
@@ -477,7 +479,10 @@ $(document).ready(function() {
     	coge.progress.update(WORKFLOW_ID);
     }
 
-    wizard = initialize_wizard({ admin: IS_ADMIN });
+    wizard = initialize_wizard({ 
+    	admin: IS_ADMIN,
+    	helpUrl: HELP_URL
+    });
 });
 </script>
 <script type="text/javascript" src="js/pages/load-experiment.js"></script>

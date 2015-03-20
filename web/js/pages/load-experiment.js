@@ -467,11 +467,11 @@ function Wizard(options) {
     this.data = options.data;
     this.steps = [];
     this.currentIndex = 0;
-    this.initialize();
+    this.initialize(options);
 }
 
 $.extend(Wizard.prototype, {
-    initialize: function() {
+    initialize: function(options) {
         this.el = $($("#wizard-template").html());
         this.tabs = this.el.find(".sections");
         this.next = this.el.find(".next");
@@ -479,11 +479,15 @@ $.extend(Wizard.prototype, {
         this.done = this.el.find(".done");
         this.viewer = this.el.find("#step-container");
         this.notifications = this.el.find("#error_help_text");
+        this.help = this.el.find(".link");
 
         // jQuery events
         this.prev.unbind().click(this.movePrevious.bind(this));
         this.next.unbind().click(this.moveNext.bind(this));
         this.done.unbind().click(this.submit.bind(this));
+        this.help.unbind().click(function() {
+        	window.open(options.helpUrl);
+        });
     },
 
     at_first: function() {
@@ -1253,7 +1257,6 @@ $.extend(ConfirmationView.prototype, {
 
         var key, newpair;
         for(key in description) {
-        	console.log(key + ' ' + description[key]);
             if (description.hasOwnProperty(key)) {
             	var value = description[key];
             	if (typeof value === "boolean")
@@ -1379,7 +1382,11 @@ function reset_load() {
 function initialize_wizard(opts) {
     current_experiment = {};
     var root = $("#wizard-container");
-    var wizard = new Wizard({ onCompleted: load, data: current_experiment });
+    var wizard = new Wizard({ 
+    	onCompleted: load, 
+    	data: current_experiment, 
+    	helpUrl: opts.helpUrl 
+    });
     wizard.addStep(new DescriptionView({
         experiment: current_experiment,
         metadata: opts.metadata,
