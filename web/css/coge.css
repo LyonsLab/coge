@@ -109,10 +109,6 @@ div.panel {
   white-space: pre;
 }
 
-.header {
-	font-weight: bold;
-}
-
 .title {
   color: #000099;
   font-style: oblique;
@@ -1633,6 +1629,7 @@ header {
 
 .wizard .sections {
     float: left;
+    font-weight: bold;
 }
 
 .wizard .sections div {
