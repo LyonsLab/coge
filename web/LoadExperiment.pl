@@ -97,7 +97,8 @@ sub generate_html {
 					      HELP       => $P->{SERVER} || '', #FIXME rename to HOME
 					      ADJUST_BOX => 1,
                           LOGO_PNG   => "CoGe.svg",
-                          ADMIN_ONLY => $USER->is_admin
+                          ADMIN_ONLY => $USER->is_admin,
+                          USER       => $USER->display_name
         );
         $template->param( LOGON      => 1 ) unless $USER->is_public;
     }
