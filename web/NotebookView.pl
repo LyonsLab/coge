@@ -1274,6 +1274,8 @@ sub delete_list {
     $list->deleted(!$list->deleted); # do undelete if already deleted
     $list->update;
 
+    #FIXME: Add logging for this function
+
     return 1;
 }
 
