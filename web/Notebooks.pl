@@ -5,7 +5,7 @@ use CGI;
 use HTML::Template;
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Core::List qw(listcmp);
+use CoGe::Core::Notebook qw(notebookcmp);
 
 use vars qw( $P $PAGE_TITLE $USER $coge %FUNCTION $FORM $LINK );
 
@@ -133,8 +133,8 @@ sub get_lists_for_user {
     my %seen_list_ids
       ;    #for admins -- their lists are listed first, then all lists
     my @list_info;
-    @lists = sort listcmp @lists;
-    push @lists, sort listcmp @admin_lists;
+    @lists = sort notebookcmp @lists;
+    push @lists, sort notebookcmp @admin_lists;
     foreach my $list (@lists) {
 
         #next if ($list->is_owner && !$USER->is_admin); # skip owner lists

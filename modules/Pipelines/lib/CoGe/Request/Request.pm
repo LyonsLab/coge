@@ -1,11 +1,11 @@
-package CoGe::Requests::Request;
+package CoGe::Request::Request;
 
 use Moose::Role;
 
 has 'options' => (
     is        => 'ro',
-    isa       => 'HashRef',
-    required  => 1
+    #isa       => 'HashRef',
+    #required  => 1
 );
 
 has 'parameters' => (
@@ -29,23 +29,27 @@ has 'jex' => (
     required  => 1
 );
 
-our $NOT_FOUND = "the specified job type could not be found";
-
 sub execute {
     my ($self, $workflow) = @_;
 
     # Check for workflow
     return {
         success => JSON::false,
-        error => { Invalid => $NOT_FOUND }
+        error => { Error => "failed to build workflow" }
     } unless $workflow;
 
     my $resp = $self->jex->submit_workflow($workflow);
     my $success = $self->jex->is_successful($resp);
+    
+    unless ($success) {
+        return {
+            success => JSON::false
+        }
+    }
 
     return {
-        job_id => $resp->{id},
-        success => $success ? JSON::true : JSON::false
+        id => $resp->{id},
+        success => JSON::true
     };
 }
 

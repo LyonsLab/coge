@@ -13,12 +13,19 @@ BEGIN {
     @EXPORT_OK = qw(experimentcmp);
 }
 
-sub experimentcmp($$) {
+sub experimentcmp($$) { # for sorting DBI-X objects or DBI hashes
     my ($a, $b) = @_;
 
-    versioncmp( $b->version, $a->version )
-      || $a->name cmp $b->name
-      || $b->id cmp $a->id;
+    if ( ref($a) eq 'HASH' && ref($b) eq 'HASH' ) { # DBI
+        versioncmp( $b->{version}, $a->{version} )
+          || $a->{name} cmp $b->{name}
+          || $b->{id} cmp $a->{id};
+    }
+    else { # DBI-X
+        versioncmp( $b->version, $a->version )
+          || $a->name cmp $b->name
+          || $b->id cmp $a->id;
+    }
 }
 
 1;

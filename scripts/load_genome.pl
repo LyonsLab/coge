@@ -4,6 +4,7 @@ use strict;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Core::Storage qw( index_genome_file get_tiered_path );
+use CoGe::Core::Genome qw( fix_chromosome_id );
 use CoGe::Accessory::Utils qw( commify units print_fasta );
 use CoGe::Accessory::IRODS qw( irods_imeta $IRODS_METADATA_PREFIX );
 use Data::Dumper;
@@ -19,7 +20,7 @@ use Benchmark;
 use vars qw($staging_dir $install_dir $fasta_files $irods_files
   $name $description $link $version $type_id $restricted $message
   $organism_id $source_id $source_name $source_desc $user_id $user_name
-  $keep_headers $split $compress $result_dir $creator_id
+  $keep_headers $split $compress $result_dir $creator_id $ignore_chr_limit
   $host $port $db $user $pass $config
   $P $MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE $MAX_CHR_NAME_LENGTH );
 
@@ -49,6 +50,7 @@ GetOptions(
     "creator_id=i"	=> \$creator_id,     # user ID to set genome creator
     "user_name=s"   => \$user_name,      # user name
     "keep_headers=i" => \$keep_headers,  # flag to keep original headers (no parsing)
+    "ignore_chr_limit=i" => \$ignore_chr_limit, # flag to ignore chromosome/contig limit # mdb added 3/9/15 COGE-595
     "split=i"    => \$split,       # split fasta into chr directory
     "compress=i" => \$compress,    # compress fasta into RAZF before indexing
     "config=s"   => \$config       # configuration file
@@ -157,7 +159,7 @@ foreach my $file (@files) {
           . units($MAX_SEQUENCE_SIZE) . "\n";
         exit(-1);
     }
-    if ( $numSequences > $MAX_CHROMOSOMES ) {
+    if ( !$ignore_chr_limit && $numSequences > $MAX_CHROMOSOMES ) {
         print STDOUT
           "log: error: too many sequences, limit is $MAX_CHROMOSOMES\n";
         exit(-1);
@@ -480,6 +482,7 @@ sub process_fasta_file {
                 $chunk =~ s/\s+$//; # trim trailing whitespace
             }
             $chunk =~ s/\n//g;
+            $chunk =~ s/\r//g;
             $filteredSeq .= $chunk;
         }
         next unless $filteredSeq;
@@ -490,19 +493,8 @@ sub process_fasta_file {
             $chr = $sectionName;
         }
         else {
-            ($chr) = split( /\s+/, $sectionName );
-            $chr =~ s/^lcl\|//;
-            $chr =~ s/^gi\|//;
-            $chr =~ s/chromosome//i;
-            $chr =~ s/^chr//i;
-	        $chr = "0" if $chr =~ /^0+$/; #EL added 2/13/14 to catch cases where chromosome name is 00 (or something like that)
-            $chr =~ s/^0+// unless $chr eq '0';
-            $chr =~ s/^_+//;
-            $chr =~ s/\s+/ /;
-            $chr =~ s/^\s//;
-            $chr =~ s/\s$//;
-            $chr =~ s/\//_/; # mdb added 12/17/13 issue 266 - replace '/' with '_'
-            $chr =~ s/\|$//; # mdb added 3/14/14 issue 332 - remove trailing pipes
+            ($chr) = split(/\s+/, $sectionName);
+            $chr = fix_chromosome_id($chr);
         }
 
         # Check validity of chr name and sequence
@@ -551,7 +543,7 @@ sub process_fasta_file {
         # Print log message
         my $count = keys %$pSeq;
         $totalLength += length $filteredSeq;
-        if ( $count > $MAX_CHROMOSOMES or $totalLength > $MAX_SEQUENCE_SIZE ) {
+        if ( !$ignore_chr_limit && ($count > $MAX_CHROMOSOMES or $totalLength > $MAX_SEQUENCE_SIZE) ) {
             return $totalLength;
         }
         if ( $count <= $MAX_PRINT ) {

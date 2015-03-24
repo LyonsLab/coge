@@ -30,7 +30,7 @@ function get_selected_files() {
 		}
 	);
 
-	if (transferring) {
+	if (transferring || !items.length) {
 		return null;
 	}
 
@@ -229,6 +229,8 @@ function irods_get_path (path) {
 	$('#ids_loading').fadeIn();
 
 	path = resolve_path(path);
+
+    $('#ids_loading');
 
 	$.ajax({
 		data: {

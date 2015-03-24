@@ -1,4 +1,4 @@
-package CoGe::Builder::ExperimentBuilder;
+package CoGe::Builder::Export::Experiment;
 
 use Moose;
 
@@ -6,15 +6,15 @@ use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage qw(get_experiment_files get_workflow_paths);
-use CoGe::Pipelines::Common::Results;
-use CoGe::Pipelines::Misc::IPut;
+use CoGe::Builder::CommonTasks;
 
-use File::Spec::Functions;
+use File::Spec::Functions qw(catdir catfile);
 use Data::Dumper;
 
 sub build {
     my $self = shift;
 
+    # Initialize workflow
     $self->workflow( $self->jex->create_workflow(name => "Export experiment", init => 1) );
     return unless $self->workflow->id;
 
@@ -34,7 +34,7 @@ sub build {
     $self->workflow->logfile(catfile($result_dir, "debug.log"));
 
     my %job = export_experiment($self->params, $cache_file, $self->conf);
-    $self->workflow->add_job(%job);
+    $self->workflow->add_job(\%job);
 
     if ($dest_type eq "irods") {
         my $base = $self->options->{dest_path};
@@ -52,7 +52,7 @@ sub build {
     return 1;
 }
 
-sub get_download_path { #TODO merge with similar subroutine in GenomeBuilder.pm and move into Storage.pm
+sub get_download_path { #TODO move into Storage.pm
     my $self = shift;
     my $eid = shift;
     my $unique_path = get_unique_id();

@@ -56,6 +56,7 @@ sub generate_html {
         USER       => $USER->display_name || undef,
         ADJUST_BOX => 1,
         LOGO_PNG   => "CoGe.svg",
+	LOGO_IMAGE => "CoGeCircuitLeaf1.svg",
         BODY       => generate_body(),
         ADMIN_ONLY => $USER->is_admin
     );

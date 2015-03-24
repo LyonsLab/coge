@@ -19,7 +19,7 @@
          <li>Paste-in query sequences
          <li>Find and select any number of organisms and genomes to search against
          <li>Configure the analysis parameters
-         <li>Click the <strong>Run CoGe Blast</strong> button to start the analysis
+         <li>Click the <strong>Run CoGe BLAST</strong> button to start the analysis
        </ol>
 
        Results:
@@ -128,13 +128,13 @@
     </div>
 
     <div style="padding: 0 1.4em 1em; box-sizing: border-box;">
-        <div class="bold text">Query Sequences(s)</div>
+        <div class="bold text">Query Sequence(s)</div>
         <textarea id="seq_box" name="seq_box" style='width: 100%; color:gray;' class="ui-corner-all ui-widget-content coge-section" spellcheck='false' wrap="off" cols="80"
         placeholder="<TMPL_VAR NAME="SEQUENCE">" rows="15"></textarea>
     </div>
   </div> <!-- tabs -->
     <div class="padded" style='margin-top:0.75em;'>
-        <span id="run_blast" class='ui-button ui-button-go ui-corner-all coge-button-lg'>Run CoGe Blast</span>
+        <span id="run_blast" class='ui-button ui-button-go ui-corner-all coge-button-lg'>Run CoGe BLAST</span>
     </div>
 
     <tmpl_include name="/widgets/Overlay.tmpl">
@@ -209,7 +209,7 @@
         if(+pageObj.seqview){
             var featid = "<TMPL_VAR NAME=FEATID>";
             if ((featid) && (featid!=0)){
-                seqObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=DSGID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>, pageObj.seqview,'<TMPL_VAR NAME=CHR>',<TMPL_VAR NAME=RC>,featid);
+                seqObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,0, <TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>, pageObj.seqview,'<TMPL_VAR NAME=CHR>',<TMPL_VAR NAME=RC>,featid);
             }
             else{
                 seqObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=DSGID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>, pageObj.seqview,'<TMPL_VAR NAME=CHR>',<TMPL_VAR NAME=RC>);
@@ -229,7 +229,7 @@
                 switch(ui.index) {
                     case 0:
                         adjust_blast_types();
-                        button.unbind().click(run_coge_blast).html("Run CoGe Blast");
+                        button.unbind().click(run_coge_blast).html("Run CoGe BLAST");
 
                         if (!initialized) {
                             var queryParams = getParamsFromUrl();

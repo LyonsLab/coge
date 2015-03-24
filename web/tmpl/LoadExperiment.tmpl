@@ -1,9 +1,9 @@
+<TMPL_IF NAME='LOGIN'>
+    <TMPL_INCLUDE NAME="widgets/Login.tmpl">
+</TMPL_IF>
+
 <TMPL_IF NAME='MAIN'>
-<script type="text/javascript" src="js/coge/utils.js"></script>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
-
 <style type="text/css">
-
 @font-face {
 	font-family: 'Glyphicons Halflings';
 	src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot');
@@ -30,22 +30,427 @@
 .jstree.jstree-focused { background:white; }
 </style>
 
+<div id="wizard-container"></div>
+
+<!-- DIALOGS -->
+<div id="create_new_source_dialog" class="dialog_box" title="Create New Source" style="display:none;">
+    <table class="small">
+        <tr>
+            <td>Name:</td>
+            <td><input id="edit_source_name" type="textbox" size="53" onkeyup="activate_on_input('edit_source_name', 'create_source_button');" /></td>
+        </tr><tr>
+            <td>Description:</td>
+            <td><textarea id="edit_source_desc" rows="5" cols="50" ></textarea></td>
+        </tr><tr>
+            <td>Link:</td>
+            <td><input id="edit_source_link" type="textbox" size="53" /></td>
+            </tr>
+    </table>
+    <br>
+    <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all">Create</span>
+</div>
+
+<!-- Wizard Templates -->
+<script id="wizard-template" type="text/template">
+<div id="wizard" class="wizard wizard-coge">
+    <div class="header">
+        <div class="sections">
+        </div>
+        <div class="r small link">Need help?</div>
+    </div>
+    <div id='error_help_text' class='alert-box alert-box-warn hidden'></div>
+    <div id="step-container"></div>
+
+    <div class="nav-control coge-buttonset">
+        <button class="done ui-button ui-corner-all r">Start Loading</button>
+        <button class="next ui-button ui-corner-all r">Next</button>
+        <button class="prev ui-button ui-corner-all" disabled>Previous</button>
+    </div>
+</div
+</script>
+
+<!-- Step Templates-->
+<script id="description-template" type="text/template">
+    <div class="step">
+
+        <div class="form-field">
+            <label class="col-md-2">Name:</label>
+            <input id="edit_name" type="textbox" class="col-md-8" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" />
+            <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
+        </div>
+
+        <div class="form-field">
+            <label class="col-md-2">Description:</label>
+            <textarea id="edit_description" class="col-md-8 no-resize" rows="5" cols="50" ><TMPL_VAR NAME='DESC'></textarea>
+        </div>
+
+        <div class="form-field">
+            <label class="col-md-2">Version:</label>
+            <input id="edit_version" type="textbox" class="col-md-8" size="10" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" />
+            <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
+        </div>
+
+        <div class="form-field">
+            <label class="col-md-2">Source:</label>
+
+            <div>
+                <input id="edit_source" type="search" class="col-md-6" placeholder="Search" size="50" spellcheck="false" onclick='$(this).autocomplete("search");' />
+
+                <div class="col-md-2">
+                    <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
+                </div>
+            </div>
+
+            <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
+        </div>
+
+        <div class="form-field">
+            <label class="col-md-2">Restricted?</label>
+            <input id="restricted" type="checkbox" checked>
+        </div>
+
+        <div class="form-field">
+            <label class="col-md-2">Genome:</label>
+            <input class="col-md-8" id="edit_genome" type="search" placeholder="Search" spellcheck="false" onclick='$(this).autocomplete("search");' onkeypress="wait_to_search(search_genomes, this);" size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
+            <input id="gid" type="hidden" value="<TMPL_VAR NAME='GENOME_ID'>" />
+            <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
+        </div>
+    </div>
+</script>
+
+
+<script id="data-template" type="text/template">
+    <div class="step">
+        <div id="selector_container"></div>
+        <div id="files" class="hidden coge-padded">
+            Selected file(s):<br>
+            <table id="file_table" class="small" style="background-color:white;display:inline;"></table>
+            <span id="select_file_type" class="hidden" style="padding-left:15px;vertical-align:5px;">
+                File type:
+                <select id="file_type_selector">
+                    <option value="">Select a file type</option>
+                    <optgroup label="Quantitative">
+                    <option value="csv">Comma-separated value (CSV)</option>
+                    <option value="tsv">Tab-separated value (TSV)</option>
+                    <option value="bed">BED</option>
+                    <option value="gff">GFF/GTF</option>
+                    </optgroup>
+                    <optgroup label="Polymorphism">
+                    <option value="vcf">VCF</option>
+                    </optgroup>
+                    <optgroup label="Alignment">
+                    <option value="bam">BAM</option>
+                    </optgroup>
+                    <optgroup label="Sequence">
+                    <option value="fastq">FASTQ, FQ</option>
+                    </optgroup>
+                </select>
+            </span>
+        </div>
+    </div>
+</script>
+
+<script id="options-layout-template" type="text/template">
+<div>
+    <div id="analysis-options"></div>
+    <hr>
+    <div id="general-options"></div>
+    <hr>
+    <div id="admin-options"></div>
+</div>
+</script>
+
+<script id="admin-options-template" type="text/template">
+<div class="form-section">
+    <h4>Admin</h4>
+    <div class="form-field">
+        <label class="col-md-2">Assign to user:</label>
+        <input id="edit_user" type="search" placeholder="Search" spellcheck="false" onkeyup="wait_to_search(search_users, this.value);" size="20" />
+    </div>
+    <!--
+    <div class="form-field">
+        <label>Ignore missing chromosomes?</label>
+        <input id="ignore_missing_chrs" type="checkbox" />
+    </div>
+    -->
+</div>
+</script>
+
+<script id="general-options-template" type="text/template">
+<div class="form-section">
+    <h4>General Options</h4>
+
+    <div class="form-field coge-disabled">
+        <label class="col-md-2">Add to notebook:</label>
+        <input id="notebook" type="checkbox" disabled>
+        <span class="italic"> Coming soon!</span>
+    </div>
+
+    <div class="form-field coge-disabled">
+        <label class="col-md-2">Send an email:</label>
+        <input id="email" type="checkbox" disabled>
+        <span class="italic"> Coming soon!</span>
+    </div>
+
+    <!-- TODO: Add ability to share the genome
+    <div class="form-field">
+        <label class="col-md-2">Share:</label>
+        <input id="email" type="checkbox">
+    </div>
+    -->
+</div>
+</script>
+
+<script id="fastq-template" type="text/template">
+    <div class="step">
+        <div id="align-view"></div>
+        <div id="expression-view"></div>
+        <div id="snp-view"></div>
+    </div>
+</script>
+
+<script id="expression-template" type="text/template">
+    <div class="form-section">
+        <h4>Expression Analysis</h4>
+        <div class="form-field">
+            <label class="col-md-2">Enable:</label>
+            <input id="expression" type="checkbox">
+        </div>
+
+        <div id="expression-container" class="form-field hidden">
+            <label class="col-md-2">Options:</label>
+            <div class="form-group">
+                <label>-Q:</label>
+                <input id="-Q" type="number" value="20">
+            </div>
+        </div>
+    </div>
+</script>
+
+<script id="align-option-template" type="text/template">
+<div>
+    <div id="expression-view"></div>
+    <div id="snp-view"></div>
+</div>
+</script>
+
+<script id="poly-template" type="text/template">
+<div></div>
+</script>
+
+<script id="quant-template" type="text/template">
+<div>
+    <p>
+        For details on supported file formats, see 
+        <a href="https://genomevolution.org/wiki/index.php/LoadExperiment#CSV_File_Format">this article</a>.
+    </p>
+</div>
+</script>
+
+<script id="confirm-template" type="text/template">
+    <div class="step info" data-title="Review and Load" data-step="3" data-validate="options">
+        <h3>Description</h3>
+        <div class="confirm-description padded"></div>
+        <h3>Data</h3>
+        <div class="confirm-data padded"></div>
+        <h3>Options</h3>
+        <div class="confirm-options padded"></div>
+    </div>
+</script>
+
+<!-- Alignment Templates -->
+
+<script id="align-template" type="text/template">
+<div class="form-section">
+    <h4>Alignment</h4>
+
+    <div class="form-field">
+        <label class="col-md-2">Aligner:</label>
+        <div id="alignment">
+            <input name="aligner" type="radio" value="gsnap" checked>
+            <label for="gsnap">GSNAP</label>
+            <input name="aligner" type="radio" value="tophat">
+            <label for="gsnap">TopHat/Bowtie2</label>
+        </div>
+        
+        <label class="col-md-2 coge-padded-top">Read Type:</label>
+        <div id="read_type" class="coge-padded-top">
+		    <input name="read_type" type="radio" value="single" checked>
+		    <label for="single">Single-ended</label>
+		    <input name="read_type" type="radio" value="paired">
+		    <label for="paired">Paired-end</label>
+	    </div>
+    </div>
+
+    <div id="align-container" class="hidden"></div>
+</div>
+</script>
+
+<script id="tophat-template" type="text/template">
+    <div id="tophat">
+        <div class="form-field">
+            <label class="col-md-2">TopHat:</label>
+            <div>
+                <label>-g:</label>
+                <input id="-g" type="number" value="1"/>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script id="gsnap-template" type="text/template">
+    <div id="gsnap">
+        <div class="form-field">
+            <label class="col-md-2">CutAdapt:</label>
+            <div class="form-group">
+                <div class="form-entry">
+                    <label>-q:</label>
+                    <input id="-q" type="number" value="25"/>
+                </div>
+                <div class="form-entry">
+                    <label>-m:</label>
+                    <input id="-m" type="number" value="17"/>
+                </div>
+                <div class="form-entry">
+                    <label>--quality-base:</label>
+                    <input id="--quality-base" type="number" value="32"/>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-field">
+            <label class="col-md-2">Alignment:</label>
+            <div class="form-group">
+                <div class="form-entry">
+                    <label>-n:</label>
+                    <input id="-n" type="number" value="5"/>
+                </div>
+
+                <div class="form-entry">
+                    <label>-Q:</label>
+                    <input id="-Q" type="checkbox" checked/>
+                </div>
+                <div class="form-entry">
+                    <label>--gap-mode:</label>
+                    <select id="--gap-mode">
+                        <option>none</option>
+                        <option>all</option>
+                        <option>pairsearch</option>
+                        <option>indel_knownsplice</option>
+                        <option>terminal</option>
+                        <option>improve</option>
+                    </select>
+                </div>
+                <div class="form-entry">
+                    <label>--nofails:</label>
+                    <input id="--nofails" type="checkbox" checked/>
+                </div>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script id="summary-pair-template" type="text/template">
+    <div>
+        <span class="name"></span>:
+        <span class="data"></span>
+    </div>
+</script>
+
+<!-- SNP pipeline options -->
+<TMPL_INCLUDE NAME='widgets/pipeline-options.tmpl'> 
+
+<!-- FIXME: Have this as a separate plugin -->
+<script id="selector-template" type="text/template">
+    <div id='tabs' style='margin-top:0.5em;margin-bottom:1em;'>
+    <ul>
+        <li class="small"><a href="#tab-1">iPlant Data Store</a></li>
+        <li class="small"><a href="#tab-2">FTP/HTTP</a></li>
+        <li class="small"><a href="#tab-3">Upload</a></li>
+        <TMPL_IF NAME='ENABLE_NCBI'>
+        <li class="small"><a href="#tab-4">NCBI</a></li>
+        </TMPL_IF>
+    </ul>
+
+    <div id="tab-1" class="small">
+        <div style="white-space:nowrap;border-bottom:1px solid gray;">
+            <img id="ids_loading" src="picts/ajax-loader.gif" style="float:right;"/>
+            <span class='link' onclick='irods_get_path()'><span class='ui-icon ui-icon-home'></span>Home</span>
+            <span class='link' style='padding-left:15px;' onclick='irods_get_path("..")'><span class='ui-icon ui-icon-arrowreturnthick-1-n'></span>Go Up</span>
+            <span class='link' style='padding-left:15px;' onclick='irods_get_path(".")'><span class='ui-icon ui-icon-refresh'></span>Refresh</span>
+            <TMPL_UNLESS NAME='DISABLE_IRODS_GET_ALL'>
+            <span class='link' style='padding-left:15px;' onclick='irods_get_all_files(".")'><span class='ui-icon ui-icon-transferthick-e-w'></span>Get All Files</span>
+            </TMPL_UNLESS>
+        </div>
+        <div id="ids_current_path" style="word-wrap:break-word; font-weight:bold; padding-top:10px;"></div>
+        <div style="overflow-y:auto;height:154px;">
+            <table id="ids_table" class="small" style="width:100%;"></table>
+        </div>
+    </div>
+
+    <div id="tab-2" class="small" style="height:200px;">
+        Enter the location of the file or directory to retrieve.<br><br>
+        URL: <input id="input_url" size="60" style="color:gray;"/>
+        <span id="ftp_get_button" onClick="load_from_ftp();" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'> Get </span><br>
+        <div class="link" onclick="$(this).hide(); $('#ftp_login').fadeIn();" style="padding-top:5px;">Login (optional)...</div>
+        <div id="ftp_login" style="display:none;padding-top:5px;">
+            Username: <input id="input_username" size="15" style="color:gray;"/>
+            Password: <input id="input_password" size="15" style="color:gray;"/>
+        </div>
+        <br>
+        <div id="ftp_status" class="note"></div>
+        <br>
+        <span class="note">Note: FTP/HTTP transfers, including login information, are not secure (encrypted).</span>
+    </div>
+
+    <div id="tab-3" class="small" style="height:200px;">
+        Select a file to upload from your computer.  This method is best for smaller files (less than 200MB, 2GB maximum).
+        For larger files use the iPlant Data Store. <br><br><br>
+        File: <input id="input_upload_file" name="input_upload_file" type="file" size="30" data-url='<TMPL_VAR NAME="PAGE_NAME">' />
+    </div>
+
+    <TMPL_IF NAME='ENABLE_NCBI'>
+    <div id="tab-4" class="small" style="height:200px;">
+        Enter the NCBI accession number of the item to add.<br><br>
+        <div>
+        <span>Accession: <input id="input_accn" size="15" /></span>
+        <span id="ncbi_get_button" onClick="load_from_ncbi();" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'> Get </span>
+        <span id="ncbi_status" class="note" style="padding-left:15px;min-height:50px;"></span>
+        </div>
+        <div class="note" style="padding-top:20px">
+            Note: The organism, version, type, and source fields do not need to be specified.  The restricted option
+            is ignored, all data from NCBI is made public.
+        </div>
+    </div>
+    </TMPL_IF>
+
+    </div>
+</script>
+
+<div id="selector-wrapper" class="hidden">
+    <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
+</div>
+
+<TMPL_INCLUDE NAME="widgets/Progress.tmpl">
+
 <script type="text/javascript">
+const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
+const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
+const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
+const HELP_URL      = '<TMPL_VAR NAME="HELP_URL">';
+const USER_NAME     = '<TMPL_VAR NAME="USER">'
+const IS_ADMIN      = Boolean('<TMPL_VAR NAME="ADMIN_AREA">');
 
-const STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
-const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
+var LOAD_ID = load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
+var WORKFLOW_ID = '<TMPL_VAR NAME="WORKFLOW_ID">';
+var EMBED = '<TMPL_VAR NAME="EMBED">';
 
-var timestamps = new Array();
-var load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
-var job_id = '<TMPL_VAR NAME="JOB_ID">';
-var embed = '<TMPL_VAR NAME="EMBED">';
-var experiment_id;
-var notebook_id;
-var pageObj = {};
+var pageObj = {}; //FIXME get rid of this -- used by FileSelect
 var newLoad = false;
+var wizard;
 
-$(document).ready(function(){
-	// Configure jQuery ajax
+$(document).ready(function() {
+	// Set jQuery AJAX defaults
     $.ajaxSetup({
         type: "GET",
         url: PAGE_NAME,
@@ -53,705 +458,36 @@ $(document).ready(function(){
         cache: false,
     });
 
-    pageObj.user = "<tmpl_var name=USER>";
-
     // Configure dialogs
-    $(".dialog_box").dialog({autoOpen: false, width: 500});
-    $('#load_dialog').dialog("widget").find('.ui-dialog-titlebar-close').hide();
-    $('#load_dialog').dialog({modal: true, closeOnEscape: false})
-
-    // Initialize drop-downs
-    get_sources();
-
-    $("#edit_genome").autocomplete({
-        source:[],
-        select: function(event, ui) {
-            $('#edit_genome').val(ui.item.label);
-            $('#gid').val(ui.item.value);
-            return false; // Prevent the widget from inserting the value.
-        },
-        focus: function(event, ui) {
-            //$("#edit_genome").val(ui.item.label);
-            return false; // Prevent the widget from inserting the value.
-        }
+    $(".dialog_box").dialog({autoOpen: false});
+    
+    // Initialize CoGe packages
+    coge.services.init({
+    	baseUrl: API_BASE_URL,
+    	userName: USER_NAME
     });
-
-    $("#file_type_selector").on("change", function() {
-        var alignment = $("#alignment");
-        var pipeline =$("#fastq-pipeline");
-        if ($(this).val() === "fastq") {
-           alignment.slideDown();
-           pipeline.slideDown();
-        } else {
-           alignment.slideUp();
-           pipeline.slideUp();
-        }
+    
+    coge.progress.init({
+    	title: "Loading Experiment",
+    	supportEmail: SUPPORT_EMAIL,
+    	onReset: reset_load
     });
 
     // Open status dialog
-    if (job_id) {
-        $('#loading_msg').hide();
-        $('#load_dialog').dialog('open');
-        update_dialog(STATUS_URL + job_id, pageObj.user, "#load_dialog", progress_formatter);
+    if (WORKFLOW_ID) {
+    	coge.progress.begin();
+    	coge.progress.update(WORKFLOW_ID);
     }
-    
-    <TMPL_IF NAME="ADMIN_AREA">
-    $("#edit_user").autocomplete({
-        source:[],
-        focus: function() { return false; },
+
+    wizard = initialize_wizard({ 
+    	admin: IS_ADMIN,
+    	helpUrl: HELP_URL
     });
-    </TMPL_IF>
 });
-
-function file_selected(filename, url) {
-    $('#file_select_dialog').dialog('close');
-    $('#select_file_button').hide();
-    $('#select_file_type').show();
-}
-
-function file_finished(size, url) {
-    var files = get_selected_files(),
-        exp = /(:?fastq|fq)/;
-
-    var isFastq = exp.test.bind(exp);
-
-    if (files.map(getPath).some(isFastq)) {
-        $("#file_type_selector")
-            .find("option[value=fastq]")
-            .prop("selected", true)
-            .change();
-    }
-}
-
-function getPath(item) {
-    return item.path;
-}
-
-function file_canceled() {
-    $('#select_file_type').hide()
-        .find("option[value=autodetect")
-        .prop("selected", true)
-        .change();
-
-    $('#select_file_button').show();
-}
-
-function create_source() {
-    var name = $('#edit_source_name').val();
-    var desc = $('#edit_source_desc').val();
-    var link = $('#edit_source_link').val();
-    $.ajax({
-        data: {
-            fname: 'create_source',
-            name: name,
-            desc: desc,
-            link: link,
-        },
-        success : function(name) {
-            $('#create_new_source_dialog').dialog('close');
-            if (name) {
-                $('#edit_source').val(name);
-            }
-        }
-    });
-}
-
-function reset_log() {
-    $('#load_log').html('');
-    $('#loading_msg').show();
-    $('#ok_button,#error_msg,#finished_msg,#finish_load_experiment_button,#cancel_load_experiment_button,#logfile').hide();
-}
-
-function check_login() {
-    var logged_in = false;
-
-    $.ajax({
-        async: false,
-        data: {
-            fname: 'check_login',
-        },
-        success : function(rc) {
-            logged_in = rc;
-        }
-    });
-
-    return logged_in;
-}
-
-function error_help(s) {
-	$('#error_help_text')
-		.html(s)
-		.show()
-		.delay(10*1000)
-		.fadeOut(1500);
-}
-
-function load_experiment() {
-    var name = $('#edit_name').val();
-    var description = $('#edit_description').val();
-    var version = $('#edit_version').val();
-    var restricted = $('#restricted').is(':checked');
-    var genome = $('#edit_genome').val();
-    var gid = $('#gid').val();
-    var file_type = $("#select_file_type option:selected").val();
-    var aligner = $("#alignment").find(":checked").val();
-    var ignore_cb = $('#ignore_missing_chrs');
-    var ignore_missing_chrs = ignore_cb.is(':checked');
-
-    if (!name) {
-    	error_help('Please specify an experiment name.');
-        return;
-    }
-    if (!version) {
-    	error_help('Please specify an experiment version.');
-        return;
-    }
-    if (!genome || genome == 'Search') {
-    	error_help('Please specify a genome.');
-        return;
-    }
-
-    var source = $('#edit_source').val();
-    if (!source || source == 'Search') {
-    	error_help('Please specify a data source.');
-        return;
-    }
-
-    var items = get_selected_files();
-    if (items == null) {
-    	error_help('Files are still being transferred, please wait.');
-        return;
-    }
-    else if (items.length == 0) {
-    	error_help('Please select a data file.');
-        return;
-    }
-    var json = JSON.stringify(items);
-
-    // Prevent concurrent executions - issue 101
-    if ( $("#load_dialog").dialog( "isOpen" ) )
-        return;
-
-    // Make sure user is still logged-in - issue 206
-    if (!check_login()) {
-        alert('Your session has expired, please log in again.');
-        location.reload(true)
-        return;
-    }
-
-    // Open status dialog right away - issue 101
-    reset_log();
-    $('#load_dialog').dialog('open');
-    $('#load_log').html('Initializing ...');
-    newLoad = true;
-
-    $.ajax({
-        data: {
-            fname: 'load_experiment',
-            load_id: load_id,
-            name: name,
-            description: description,
-            version: version,
-            restricted: restricted,
-            gid: gid,
-            source_name: source,
-            items: json,
-            file_type: file_type,
-            aligner: aligner,
-            ignore_missing_chrs: ignore_missing_chrs,
-            timestamp: new Date().getTime()
-        },
-        success : function(data) {
-            var obj = jQuery.parseJSON(data);
-            if (obj && obj.error) {
-                alert(obj.error);
-                return;
-            }
-
-            // Set link in status dialog
-            $('#loading_msg span a').attr('href', obj.link).html(obj.link);
-
-            // Start status update
-            if (obj.job_id) { // JEX status for load FASTQ
-                job_id = obj.job_id;
-                window.history.pushState({}, "Title", PAGE_NAME + "?job_id=" + obj.job_id); // Add job_id to browser URL
-                update_dialog(STATUS_URL + obj.job_id, pageObj.user, "#load_dialog", progress_formatter);
-            }
-        }
-        // TODO: handle ajax error, show in status dialog
-    });
-}
-
-function get_load_log(callback) {
-    $.ajax({
-        data: {
-            dataType: 'text',
-            fname: 'get_load_log',
-            workflow_id: job_id,
-            timestamp: new Date().getTime()
-        },
-        success : function(data) {
-            if (callback) {
-            	var obj = jQuery.parseJSON(data);
-                callback(obj);
-                return;
-            }
-        }
-    });
-}
-
-function load_failed(logfile) {
-	// mdb added 6/24/14 - temporary message until JEX logging is improved
-	var msg =
-		'<div class="alert">' +
-		'The CoGe Support Team has been notified of this error but please ' + 
-		'feel free to contact us at <a href="mailto:<TMPL_VAR NAME=SUPPORT_EMAIL>"><TMPL_VAR NAME=SUPPORT_EMAIL></a> ' +
-		'and we can help to determine the cause.' +
-		'</div>';
-	var log = $('#load_log');
-	log.html( log.html() + msg );
-
-
-    if (logfile) {
-        $("#logfile a").attr("href", logfile);
-        $('#logfile').fadeIn();
-    }
-
-    // Update dialog
-    $('#loading_msg').hide();
-    $('#error_msg,#cancel_load_experiment_button').fadeIn();
-
-    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
-	    $.ajax({
-	        data: {
-	            fname: "send_error_report",
-	            load_id: load_id,
-	            job_id: job_id
-	        }
-	    });
-    }
-}
-
-function load_succeeded(obj) {
-    // Update globals
-    experiment_id = obj.experiment_id; // for continuing to ExperimentView
-    notebook_id   = obj.notebook_id;   // for continuing to NotebookView
-
-    // Update dialog
-    $('#loading_msg').hide();
-    $('#finished_msg,#ok_button').fadeIn();
-    if (notebook_id) { // qTeller pipeline experiment load
-        $('#finish_load_experiment_button')
-            .html('NotebookView').fadeIn()
-            .unbind().on('click', function() {
-                window.location.href = "NotebookView.pl?nid=" + notebook_id;
-        });
-    }
-    else { // normal experiment load
-        $('#finish_load_experiment_button')
-            .html('Continue to ExperimentView').fadeIn()
-            .unbind().on('click', function() {
-                window.location.href = "ExperimentView.pl?embed=" + embed + "&eid=" + experiment_id;
-        });
-    }
-}
-
-function reset_load() {
-    window.history.pushState({}, "Title", PAGE_NAME);
-    $('#load_dialog').dialog('close');
-
-    // Reset file selector
-    file_canceled();
-    clear_list();
-}
-
-function wait_to_search (search_func, search_obj) {
-    var search_term = search_obj.value;
-    if (!search_term || search_term.length >= 2) {
-        if (pageObj.time) {
-            clearTimeout(pageObj.time);
-        }
-
-        pageObj.time = setTimeout(
-            function() {
-                search_func(search_obj.value);
-            },
-            250
-        );
-    }
-}
-
-function search_genomes (search_term) {
-    $.ajax({
-        data: {
-            fname: 'search_genomes',
-            search_term: search_term,
-            timestamp: new Date().getTime()
-        },
-        success : function(data) {
-            var obj = jQuery.parseJSON(data);
-            if (obj.items) {
-                obj.items.forEach(function(element) {
-                    element.label = element.label.replace(/&reg;/g, "\u00ae"); // (R)
-                });
-                $("#edit_genome").autocomplete({source: obj.items});
-                $("#edit_genome").autocomplete("search");
-            }
-        },
-    });
-}
-
-function search_users (search_term) {
-    $.ajax({
-        data: {
-            fname: 'search_users',
-            search_term: search_term,
-            timestamp: new Date().getTime()
-        },
-        success : function(data) {
-            var obj = jQuery.parseJSON(data);
-            if (obj && obj.items) {
-                $("#edit_user").autocomplete({source: obj.items});
-                $("#edit_user").autocomplete("search");
-            }
-        },
-    });
-}
-
-function get_sources () {
-    $.ajax({
-        data: {
-            fname: 'get_sources',
-        },
-        success : function(data) {
-            var obj = jQuery.parseJSON(data);
-            if (obj) {
-                $("#edit_source").autocomplete({source: obj});
-            }
-        },
-    });
-}
-
-function progress_formatter(item) {
-    var msg;
-    var row = $('<li>'+ item.description + ' </li>');
-
-    var job_status = $('<span></span>');
-
-    if (item.status == 'scheduled')
-        job_status.append(item.status).addClass('down bold');
-    else if (item.status == 'completed')
-        job_status.append(item.status).addClass('completed bold');
-    else if (item.status == 'running')
-        job_status.append(item.status).addClass('running bold');
-    else if (item.status == 'skipped')
-        job_status.append("already generated").addClass('skipped bold');
-    else if (item.status == 'cancelled')
-        job_status.append(item.status).addClass('alert bold');
-    else if (item.status == 'failed')
-        job_status.append(item.status).addClass('alert bold');
-    else
-        return;
-
-    row.append(job_status);
-
-    if (item.elapsed)  {
-        row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
-    }
-
-    if (item.log) {
-        var p = item.log.split("\n");
-
-        var pElements = p.map(function(item) {
-            var norm = item.replace(/\\t/g, " ").replace(/\\'/g, "'");
-            return $("<div></div>").html(norm);
-        });
-
-        var log = $("<div></div>").html(pElements).addClass("padded");
-        row.append(log);
-    }
-
-    return row;
-}
-
-function update_dialog(request, user, identifier, formatter) {
-    var get_status = function () {
-        $.ajax({
-            type: 'GET',
-            url: request,
-            dataType: 'json',
-            data: {
-                username: user
-            },
-            success: update_callback,
-            error: update_callback,
-            xhrFields: {
-                withCredentials: true
-            }
-        });
-    };
-
-    var update_callback = function(json) {
-        var dialog = $(identifier);
-        var workflow_status = $("<p></p>");
-        var data = $("<ul></ul>");
-        var results = [];
-        var current_status;
-        var timeout = 2000;
-
-        var callback = function() {
-            update_dialog(request, user, identifier, formatter);
-        }
-
-        if (json.error) {
-            pageObj.error++;
-            if (pageObj.error > 3) {
-                workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
-                var logfile;
-
-                if (json.results.length) {
-                    logfile = json.results[0].path;
-                }
-                load_failed(logfile);
-                return;
-            }
-        } else {
-            pageObj.error = 0;
-        }
-
-        if (json.status) {
-            current_status = json.status.toLowerCase();
-            workflow_status
-            	.html("Workflow status: ")
-            	.append( $('<span></span>').html(json.status) )
-            	.addClass('bold');
-        } else {
-            setTimeout(callback, timeout);
-            return;
-        }
-
-        if (json.tasks) {
-            var jobs = json.tasks;
-            for (var index = 0; index < jobs.length; index++) {
-                var item = formatter(jobs[index]);
-                if (item) {
-                    results.push(item);
-                }
-            }
-        }
-
-        if (!dialog.dialog('isOpen')) {
-            return;
-        }
-
-        //FIXME Update when a workflow supports elapsed time
-        if (current_status == "completed") {
-            var total = json.tasks.reduce(function(a, b) {
-                if (!b.elapsed) return a;
-
-                return a + b.elapsed;
-            }, 0);
-
-            var duration = coge.utils.toPrettyDuration(total);
-
-            workflow_status.append("<br>Finished in " + duration);
-            workflow_status.find('span').addClass('completed');
-            get_load_log(function(result) {
-                load_succeeded(result);
-            });
-
-        }
-        else if (current_status == "failed"
-                || current_status == "error"
-                || current_status == "terminated"
-                || current_status == "cancelled")
-        {
-            workflow_status.find('span').addClass('alert');
-
-            if (json.results.length) {
-                logfile = json.results[0].path;
-            }
-            load_failed(logfile);
-        }
-        else if (current_status == "notfound") {
-            setTimeout(callback, timeout);
-            return;
-        }
-        else {
-            workflow_status.find('span').addClass('running');
-            setTimeout(callback, timeout);
-        }
-
-        results.push(workflow_status);
-        data.append(results);
-        dialog.find('#load_log').html(data);
-    };
-
-    get_status();
-}
 </script>
-
-<div class="bold text" style="padding-top:1em;">Describe the Experiment</div>
-<div class="coge-bg inline padded ui-widget-content ui-corner-all">
-	<div class="small info">
-		Complete the form below to describe the experiment data.
-		<div class="alert"><span class="small glyphicon glyphicon-asterisk"></span> denotes a required field</div>
-	</div>
-
-	<table class="small" style="padding-top:0.5em;">
-	  <tr>
-	    <td>Name:</td>
-	    <td>
-		    <input id="edit_name" type="textbox" size="50" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" />
-		    <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>Description:</td>
-	    <td><textarea id="edit_description" rows="5" cols="50" ><TMPL_VAR NAME='DESC'></textarea></td>
-	  </tr>
-	  <tr>
-	    <td>Version:</td>
-	    <td>
-	    	<input id="edit_version" type="textbox" size="10" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" />
-	    	<span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>Source:</td>
-	    <td>
-	      <input id="edit_source" type="search" placeholder="Search" size="50" spellcheck="false" onclick='$(this).autocomplete("search");' />
-	      <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
-	      <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>Restricted?</td>
-	    <td><input id="restricted" type="checkbox" checked></td>
-	  </tr>
-	  <tr>
-	    <td>Genome:</td>
-	    <td>
-	      <input id="edit_genome" type="search" placeholder="Search" spellcheck="false" onclick='$(this).autocomplete("search");' onkeypress="wait_to_search(search_genomes, this);" size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
-	      <input id="gid" type="hidden" value="<TMPL_VAR NAME='GENOME_ID'>" />
-	      <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
-	    </td>
-	  </tr>
-	  <tr>
-	    <td style="vertical-align:middle;">Data file:</td>
-	    <td>
-	      <table id='file_table' class="ui-corner-all coge-outline" style="background-color:white;font-size:1em;display:inline;"></table>
-	      <span id="select_file_button" onClick="$('#file_select_dialog').dialog('open');" class='ui-button ui-corner-all'> Select Data File</span>
-	      <span id="select_file_type" class="hidden" style="padding-left:15px;vertical-align:5px;">
-	          File type:
-	          <select id="file_type_selector">
-	            <option value="autodetect">Detect from filename</option>
-	            <optgroup label="Quantitative">
-	              <option value="csv">Comma-separated value (CSV)</option>
-	              <option value="tsv">Tab-separated value (TSV)</option>
-	              <option value="bed">BED</option>
-	              <option value="wig">WIG</option>
-	            </optgroup>
-	            <optgroup label="Marker">
-	              <option value="gff">GFF/GTF</option>
-	            </optgroup>
-	            <optgroup label="Polymorphism">
-	              <option value="vcf">VCF</option>
-	            </optgroup>
-	            <optgroup label="Alignment">
-	              <option value="bam">BAM</option>
-	            </optgroup>
-	            <optgroup label="Sequence">
-	              <option value="fastq">FASTQ, FQ</option>
-	            </optgroup>
-	          </select>
-	      </span>
-	      <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
-	    </td>
-	  </tr>
-	  <tr id="alignment" class="hidden">
-	    <td>Aligner:</td>
-	    <td>
-	        <input name="aligner" type="radio" value="gsnap" checked>
-	        <label for="gsnap">GSNAP</label>
-
-	        <input name="aligner" type="radio" value="tophat">
-	        <label for="gsnap">TopHat/Bowtie2</label>
-	    </td>
-	  </tr>
-	</table>
-
-    <div id="fastq-pipeline" class="info small hidden">
-        This experiment will be processed using the <a href="https://genomevolution.org/wiki/index.php?title=RNASeq_Pipeline">RNASeq Pipeline</a>
-    </div>
-</div>
-
-<div class="middle" style="padding-top:1em;">
-	<span onClick="load_experiment();" style="font-size:1em;" class='ui-button ui-corner-all ui-button-go'>Load Experiment</span>
-	<span id='error_help_text' class='indent alert italic'></span>
-</div>
-
-<div id="file_select_dialog" class="dialog_box" title="Select Data File ..." style="display:none;">
-  <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
-  <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all">Done</span>
-</div> <!-- file_select_dialog -->
-
-<div id="load_dialog" class="dialog_box" title="Loading Experiment ..." style="display:none;">
-  <div id="load_log" class="small padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
-  </div>
-  <br>
-  <div id="loading_msg">
-    <span class="small" style="float:right;">Link: <a></a></span>
-    Please wait ... <img src="picts/ajax-loader.gif"/>
-  </div>
-  <div class="coge-buttonset">
-	  <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
-	  <span id="error_msg" style="display:none;">An error occurred <img src="picts/thumbs_down.png"></span>
-	  <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Load Another</span>
-	  <span id="finish_load_experiment_button" style="display:none;float:right;" class="ui-button ui-corner-all">ExperimentView</span>
-	  <span id="cancel_load_experiment_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Cancel</span>
-      <span id="logfile" class="hidden"><a href="">Logfile</a></span>
-  </div>
-</div>
-
-<div id="create_new_source_dialog" class="dialog_box" title="Create New Source" style="display:none;">
-  <table class="small">
-    <tr>
-      <td>Name:</td>
-      <td><input id="edit_source_name" type="textbox" size="53" onkeyup="activate_on_input('edit_source_name', 'create_source_button');" /></td>
-    </tr>
-    <tr>
-      <td>Description:</td>
-      <td><textarea id="edit_source_desc" rows="5" cols="50" ></textarea></td>
-    </tr>
-    <tr>
-      <td>Link:</td>
-      <td><input id="edit_source_link" type="textbox" size="53" /></td>
-    </tr>
-  </table>
-  <br>
-  <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all">Create</span>
-</div>
-
-<TMPL_IF NAME='ADMIN_AREA'>
-	<br><br><hr>
-	<div class="bold text">Admin Functions</div>
-	<div class="small">
-	    <div>
-	        Assign to user:
-	    	<input id="edit_user" type="search" placeholder="Search" spellcheck="false" onkeyup="wait_to_search(search_users, this.value);" size="20" />
-	    </div>
-	    <!--
-	    <div>
-	    	Ignore missing chromosomes?
-	    	<input id="ignore_missing_chrs" type="checkbox" />
-	    </div>
-	    -->
-    </div>
-</TMPL_IF>
-
+<script type="text/javascript" src="js/pages/load-experiment.js"></script>
+<script type="text/javascript" src="js/coge/utils.js"></script>
+<script type="text/javascript" src="js/coge/services.js"></script>
+<script type="text/javascript" src="js/coge/progress.js"></script>
+<script type="text/javascript" src="js/jquery.fileupload.js"></script>
 </TMPL_IF> <!-- MAIN -->
-
-<TMPL_IF NAME='LOGIN'>
-    <TMPL_INCLUDE NAME="widgets/Login.tmpl">
-</TMPL_IF>

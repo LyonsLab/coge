@@ -6,20 +6,21 @@ use CoGeX;
 use Getopt::Long;
 use File::Path;
 use File::Touch;
-use File::Basename qw( basename );
-use File::Spec::Functions qw( catdir catfile );
+use File::Basename qw(basename);
+use File::Spec::Functions qw(catdir catfile);
 use URI::Escape::JavaScript qw(unescape);
 use JSON::XS;
 use CoGe::Accessory::Web qw(get_defaults);
-use CoGe::Accessory::Utils qw( commify );
-use CoGe::Core::Metadata qw( create_annotations );
+use CoGe::Accessory::Utils qw( commify to_pathname );
+use CoGe::Core::Genome qw(fix_chromosome_id);
 use CoGe::Accessory::TDS;
+use CoGe::Core::Storage qw(add_workflow_result);
+use CoGe::Core::Metadata qw(create_annotations);
 
-use vars qw($staging_dir $result_dir $install_dir $data_file $file_type $log_file
+use vars qw($staging_dir $result_file $install_dir $data_file $file_type 
   $name $description $version $restricted $ignore_missing_chr
   $gid $source_name $user_name $config $allow_negative $disable_range_check
-  $annotations $types $wid
-  $host $port $db $user $pass $P);
+  $annotations $types $wid $host $port $db $user $pass $P);
 
 #FIXME: use these from Storage.pm instead of redeclaring them
 my $DATA_TYPE_QUANT  = 1; # Quantitative data
@@ -36,13 +37,13 @@ my $MIN_GFF_COLUMNS = 9;
 GetOptions(
     "staging_dir=s" => \$staging_dir,    # temporary staging path
     "install_dir=s" => \$install_dir,    # final installation path
-    "result_dir=s"  => \$result_dir,     # results path
+#    "result_file=s" => \$result_file,    # results file
     "data_file=s"   => \$data_file,      # input data file (JS escape)
     "file_type=s"   => \$file_type,		 # input file type
     "name=s"        => \$name,           # experiment name (JS escaped)
     "desc=s"        => \$description,    # experiment description (JS escaped)
     "version=s"     => \$version,        # experiment version (JS escaped)
-    "restricted=i"  => \$restricted,     # experiment restricted flag
+    "restricted=s"  => \$restricted,     # experiment restricted flag (0|1 or false|true)
     "source_name=s" => \$source_name,    # experiment source name (JS escaped)
     "gid=s"         => \$gid,            # genome id
     "wid=s"         => \$wid,            # workflow id
@@ -55,24 +56,23 @@ GetOptions(
     "ignore-missing-chr=i" => \$ignore_missing_chr,
     "allow_negative=i"     => \$allow_negative,
     "disable_range_check"  => \$disable_range_check, # allow any value in val1 column
-    #"log_file=s"           => \$log_file # mdb removed 8/1/14 - logging sent to STDOUT as part of jex changes
 );
 
+$| = 1;
+print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
 
+# Setup supported file types
 my @QUANT_TYPES = qw(csv tsv bed wig);
 my @MARKER_TYPES = qw(gff gtf gff3);
 my @OTHER_TYPES = qw(bam vcf);
-
 my @SUPPORTED_TYPES = (@QUANT_TYPES, @MARKER_TYPES, @OTHER_TYPES);
 
-# Open log file
-$| = 1;
-die unless ($staging_dir);
-#$log_file = catfile($staging_dir, 'log.txt') unless $log_file;
+# Setup staging path
+unless ($staging_dir) {
+    print STDOUT "log: error: staging_dir argument is missing\n";
+    exit(-1);
+}
 mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
-#open( my $log, ">>$log_file" ) or die "Error opening log file $log_file";
-#$log->autoflush(1);
-print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
 
 # Prevent loading again (issue #417)
 my $logdonefile = "$staging_dir/log.done";
@@ -82,24 +82,30 @@ if (-e $logdonefile) {
 }
 
 # Process and verify parameters
-if (!$wid) {
-    print STDOUT "log: error: required workflow ID not specified\n";
-    exit(-1);
-}
 $data_file   = unescape($data_file);
 $name        = unescape($name);
 $description = unescape($description);
 $version     = unescape($version);
 $source_name = unescape($source_name);
 
-# Set default parameters
-$restricted  = '0' unless (defined $restricted);
-$ignore_missing_chr = '1' unless (defined $ignore_missing_chr); # mdb added 10/6/14 easier just to make this the default
-
-if ($user_name eq 'public') {
-	print STDOUT "log: error: not logged in\n";
+unless ($wid) {
+    print STDOUT "log: error: required workflow ID not specified\n";
     exit(-1);
 }
+
+unless ($data_file && -r $data_file) {
+    print STDOUT "log: error: cannot access input data file\n";
+    exit(-1);
+}
+
+if ($user_name eq 'public') {
+    print STDOUT "log: error: not logged in\n";
+    exit(-1);
+}
+
+# Set default parameters
+$restricted  = '1' unless (defined $restricted && (lc($restricted) eq 'false' || $restricted eq '0'));
+$ignore_missing_chr = '1' unless (defined $ignore_missing_chr); # mdb added 10/6/14 easier just to make this the default
 
 # Load config file
 unless ($config) {
@@ -131,13 +137,12 @@ if (   not $FASTBIT_LOAD
     exit(-1);
 }
 
-my $cmd;
-
 # Copy input data file to staging area
 # If running via JEX the file will already be there
-my ($filename) = basename($data_file);#$data_file =~ /^.+\/([^\/]+)$/;
+my ($filename) = basename($data_file);
 my $staged_data_file = $staging_dir . '/' . $filename;
 unless (-r $staged_data_file) {
+    my $cmd;
     $cmd = "cp -f '$data_file' $staging_dir";
     `$cmd`;
 }
@@ -145,7 +150,6 @@ unless (-r $staged_data_file) {
 # Decompress file if necessary
 if ( $staged_data_file =~ /\.gz$/ ) {
     my $cmd = $GUNZIP . ' ' . $staged_data_file;
-    #print STDERR "$cmd\n";
     print STDOUT "log: Decompressing '$filename'\n";
     `$cmd`;
     $staged_data_file =~ s/\.gz$//;
@@ -201,10 +205,7 @@ elsif ( $data_type == $DATA_TYPE_MARKER ) {
     ( $staged_data_file, $format, $count, $pChromosomes ) =
       validate_gff_data_file( file => $staged_data_file, genome_chr => \%genome_chr );
 }
-if ( not defined $count ) { # parse error in validate
-    exit(-1);
-}
-if ( $count == 0 ) {
+if ( !$count ) {
     print STDOUT "log: error: file contains no data\n";
     exit(-1);
 }
@@ -263,7 +264,7 @@ if ( $data_type == $DATA_TYPE_QUANT
 
 	#TODO redirect fastbit output to log file instead of stderr
 	print STDOUT "log: Generating database\n";
-	$cmd = "$FASTBIT_LOAD -d $staging_dir -m \"$data_spec\" -t $staged_data_file";
+	my $cmd = "$FASTBIT_LOAD -d $staging_dir -m \"$data_spec\" -t $staged_data_file";
 	print STDOUT $cmd, "\n";
 	my $rc = system($cmd);
 	if ( $rc != 0 ) {
@@ -272,8 +273,7 @@ if ( $data_type == $DATA_TYPE_QUANT
 	}
 
 	print STDOUT "log: Indexing database (may take a few minutes)\n";
-	$cmd =
-	"$FASTBIT_QUERY -d $staging_dir -v -b \"<binning precision=2/><encoding equality/>\"";
+	$cmd = "$FASTBIT_QUERY -d $staging_dir -v -b \"<binning precision=2/><encoding equality/>\"";
 	print STDOUT $cmd, "\n";
 	$rc = system($cmd);
 	if ( $rc != 0 ) {
@@ -388,7 +388,7 @@ unless (-r $storage_path) {
 	print STDOUT "log: error: could not create installation path\n";
 	exit(-1);
 }
-$cmd = "cp -r $staging_dir/* $storage_path"; #FIXME use perl copy and detect failure
+my $cmd = "cp -r $staging_dir/* $storage_path"; #FIXME use perl copy and detect failure
 print STDOUT "$cmd\n";
 `$cmd`;
 
@@ -397,16 +397,22 @@ $cmd = "chmod -R a+r $storage_path";
 print STDOUT "$cmd\n";
 `$cmd`;
 
-# Save result document
-if ($result_dir) {
-    mkpath($result_dir);
-    CoGe::Accessory::TDS::write(
-        catfile($result_dir, '1'),
-        {
-            experiment_id => int($experiment->id)
-        }
-    );
-}
+# Save result
+add_workflow_result($user_name, $wid, 
+    {
+        type => 'experiment',
+        id => int($experiment->id),
+        name        => $name,
+        description => $description,
+        version     => $version,
+        #link       => $link, #FIXME
+        data_source_id => $data_source->id,
+        data_type   => $data_type, #FIXME convert from number to string identifier
+        row_count   => $count,
+        genome_id   => $gid,
+        restricted  => $restricted
+    }
+);
 
 # Add experiment ID to log - mdb added 8/19/14, needed after log output was moved to STDOUT for jex
 my $logtxtfile = "$staging_dir/log.txt";
@@ -414,7 +420,7 @@ open(my $logh, '>', $logtxtfile);
 print $logh "experiment id: " . $experiment->id . "\n";
 close($logh);
 
-# Save job_id in experiment data path
+# Save job_id in experiment data path -- #TODO move into own routine in Storage.pm
 CoGe::Accessory::TDS::write(
     catfile($storage_path, 'metadata.json'),
     {
@@ -424,9 +430,6 @@ CoGe::Accessory::TDS::write(
 
 # Create "log.done" file to indicate completion to JEX
 touch($logdonefile);
-
-#print STDOUT "log: All done!\n";
-#close($log);
 
 exit;
 
@@ -542,7 +545,7 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
         
             # Handle different BED formats
             @tok = split( /\s+/, $line );
-            if ($bedType eq 'bedgraph') { # UCSC bedGraph: http://genome.ucsc.edu/goldenPath/help/bedgraph.html
+            if (defined $bedType && $bedType eq 'bedgraph') { # UCSC bedGraph: http://genome.ucsc.edu/goldenPath/help/bedgraph.html
                 ( $chr, $start, $stop, $val1 ) = @tok;
                 $strand = '.'; # determine strand by val1 polarity
             }
@@ -558,7 +561,7 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
             }
         }
         else { # unknown file type (should never happen)
-        	die;
+        	die "fatal error: unknown file type!";
         }
 
         # Validate mandatory fields
@@ -592,9 +595,10 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
         }
 
         # Munge chr name for CoGe
+        ($chr) = split(/\s+/, $chr);
 		$chr = fix_chromosome_id($chr, $genome_chr);
-        if (!$chr) {
-            log_line('trouble parsing chromosome', $line_num, $line);
+        unless (defined $chr) {
+            log_line("trouble parsing sequence ID", $line_num, $line);
             return;
         }
         $strand = $strand =~ /-/ ? -1 : 1;
@@ -660,7 +664,7 @@ sub validate_vcf_data_file {
 
         # Validate format
         if ( @tok < $MIN_VCF_COLUMNS ) {
-              log_line('more columns expected ('.@tok.' < '.$MIN_VCF_COLUMNS.')', $line_num, $line);
+            log_line('more columns expected ('.@tok.' < '.$MIN_VCF_COLUMNS.')', $line_num, $line);
             return;
         }
 
@@ -714,8 +718,8 @@ sub validate_vcf_data_file {
             { name => 'id',    type => 'text' },
             { name => 'ref',   type => 'key' },
             { name => 'alt',   type => 'key' },
-            { name => 'qual',  type => 'double' },
-            { name => 'info',  type => 'text' }
+            { name => 'qual',  type => 'double' }
+            #{ name => 'info',  type => 'text' }
         ]
     };
 
@@ -758,7 +762,7 @@ sub validate_bam_data_file {
 	$cmd = "$SAMTOOLS view -H $filepath";
 	print STDOUT $cmd, "\n";
     my @header = qx{$cmd};
-    print STDOUT "Old header:\n", @header;
+    #print STDOUT "Old header:\n", @header;
     execute($cmd);
 
 	# Parse the chromosome names out of the header
@@ -802,7 +806,7 @@ sub validate_bam_data_file {
 		$cmd = "rm -f $filepath";
 		execute($cmd);
 	}
-	else {
+	elsif ($filepath ne $newfilepath) { # mdb added condition 3/12/15 -- possible that original file is named "alignment.bam"
 		# Rename original bam file
 		$cmd = "mv $filepath $newfilepath";
 		execute($cmd);
@@ -915,35 +919,4 @@ sub execute { # FIXME move into Util.pm
 sub log_line {
     my ( $msg, $line_num, $line ) = @_;
     print STDOUT "log: error at line $line_num: $msg\n", "log: ", substr($line, 0, 100), "\n";    
-}
-
-sub fix_chromosome_id {
-	my $chr = shift;
-	my $genome_chr = shift;
-
-    # Fix chromosome identifier
-    $chr =~ s/^lcl\|//;
-    $chr =~ s/chromosome//i;
-    $chr =~ s/^chr//i;
-    $chr =~ s/^0+//;
-    $chr =~ s/^_+//;
-    $chr =~ s/\s+/ /;
-    $chr =~ s/^\s//;
-    $chr =~ s/\s$//;
-
-	# Hack to deal with converting 'chloroplast' and 'mitochondia' to 'C' and 'M' if needed
-    if (   $chr =~ /^chloroplast$/i
-        && !$genome_chr->{$chr}
-        && $genome_chr->{"C"} )
-    {
-        $chr = "C";
-    }
-    if (   $chr =~ /^mitochondria$/i
-        && !$genome_chr->{$chr}
-        && $genome_chr->{"M"} )
-    {
-        $chr = "M";
-    }
-
-	return $chr;
 }

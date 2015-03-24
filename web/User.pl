@@ -17,7 +17,7 @@ use File::stat;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Jex;
-use CoGe::Core::List qw(listcmp);
+use CoGe::Core::Notebook qw(notebookcmp);
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
 use CoGeX::ResultSet::Experiment;
@@ -549,7 +549,7 @@ sub get_roles {
 
     my $html;
     foreach my $role ( $coge->resultset('Role')->all() ) {
-        next if ($role->name =~ /admin/i && !$USER->is_admin); # skip admin
+        next if ($role->name =~ /admin/i);# && !$USER->is_admin); # skip admin
         next if ($role->name =~ /owner/i && !$USER->is_admin); # skip owner
         my $name = $role->name;
         $name .= ": " . $role->description if $role->description;
@@ -1297,7 +1297,7 @@ sub get_contents {
 
     if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{notebook} )
     {
-        foreach my $list ( sort listcmp values %{ $children->{1} } ) { #FIXME hardcoded type
+        foreach my $list ( sort notebookcmp values %{ $children->{1} } ) { #FIXME hardcoded type
             push @rows, {
                 CONTENTS_ITEM_ID => $list->id,
                 CONTENTS_ITEM_TYPE => $ITEM_TYPE{notebook},
@@ -1664,7 +1664,7 @@ sub search_notebooks
 
     # Build select items out of results
     my $html;
-    foreach my $n ( sort listcmp @notebooks ) {
+    foreach my $n ( sort notebookcmp @notebooks ) {
         $html .=
           "<option value='" . $n->id . "'>" . $n->info . "</option><br>\n";
     }
