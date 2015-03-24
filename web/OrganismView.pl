@@ -611,7 +611,7 @@ sub get_datasets {
     my $dsid   = $opts{dsid};
     my $dsname = $opts{dsname};
     my $output = $opts{output} || 'json';
-    print STDERR "get_datasets\n", Dumper \%opts, "\n";
+#    print STDERR "get_datasets\n", Dumper \%opts, "\n";
 
     unless ($dsid || $dsname || $gid) {
         return "No datasets found" if ($output eq 'html');
