@@ -1,4 +1,4 @@
-package CoGe::Builder::ExperimentBuilder;
+package CoGe::Builder::Export::Experiment;
 
 use Moose;
 
@@ -6,17 +6,16 @@ use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage qw(get_experiment_files get_workflow_paths);
-use CoGe::Pipelines::Common::Results;
-use CoGe::Pipelines::Experiment;
-use CoGe::Pipelines::Misc::IPut;
+use CoGe::Builder::CommonTasks;
 
-use File::Spec::Functions;
+use File::Spec::Functions qw(catdir catfile);
 use Data::Dumper;
 
 sub build {
     my $self = shift;
 
-    $self->init_workflow($self->jex);
+    # Initialize workflow
+    $self->workflow($self->jex->create_workflow(name => "Get experiment files", init => 1));
     return unless $self->workflow->id;
 
     my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
@@ -35,7 +34,7 @@ sub build {
     $self->workflow->logfile(catfile($result_dir, "debug.log"));
 
     my %job = export_experiment($self->params, $cache_file, $self->conf);
-    $self->workflow->add_job(%job);
+    $self->workflow->add_job(\%job);
 
     if ($dest_type eq "irods") {
         my $base = $self->options->{dest_path};
@@ -48,12 +47,8 @@ sub build {
     } else {
         $self->workflow->add_job(link_results($cache_file, $cache_file, $result_dir, $self->conf));
     }
-}
-
-sub init_workflow {
-    my ($self, $jex) = @_;
-
-    $self->workflow($jex->create_workflow(name => "Get experiment files", init => 1));
+    
+    return 1;
 }
 
 sub get_download_path {

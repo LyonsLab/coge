@@ -1,6 +1,8 @@
 package CoGe::Services::Routes;
 use Mojo::Base "Mojolicious";
 
+use Data::Dumper;
+
 sub startup {
     my $self = shift;
 

@@ -41,7 +41,8 @@ BEGIN {
     @EXPORT = qw( 
         units commify print_fasta get_unique_id get_link_coords 
         format_time_diff sanitize_name execute 
-        trim js_escape html_escape to_filename
+        trim js_escape html_escape to_filename to_pathname
+        is_fastq_file
     );
 }
 
@@ -168,6 +169,11 @@ sub to_filename {
     return $name;
 }
 
+sub to_pathname {
+    my (undef, $path, undef) = fileparse(shift, qr/\.[^.]*/);
+    return $path;
+}
+
 sub execute {
     my $cmd = shift;
     my $error_msg = shift; # optional
@@ -185,6 +191,11 @@ sub execute {
     }
 
     return $cmdStatus;
+}
+
+sub is_fastq_file {
+    my $filename = shift;
+    return ($filename =~ /fastq$/ || $filename =~ /fastq\.gz$/ || $filename =~ /fq$/ || $filename =~ /fq\.gz$/);
 }
 
 1;
