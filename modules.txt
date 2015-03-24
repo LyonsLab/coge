@@ -30,6 +30,7 @@ IPC::System::Simple
 Image::Size
 JSON
 JSON::XS
+List::Compare
 LWP::Simple
 LWP::Simple::Post
 LWP::UserAgent
