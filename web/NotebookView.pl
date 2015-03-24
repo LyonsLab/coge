@@ -10,7 +10,7 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
-use CoGe::Core::List qw(listcmp);
+use CoGe::Core::Notebook qw(notebookcmp);
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
@@ -98,10 +98,9 @@ sub gen_html {
           if $USER->first_name && $USER->last_name;
         $template->param(
             USER       => $name,
-            #HELP       => "/wiki/index.php?title=$PAGE_TITLE",
-	    HELP       => $P->{SERVER},
+	        HELP       => $P->{SERVER},
             PAGE_TITLE => $PAGE_TITLE,
-	    TITLE      => "NotebookView",
+            TITLE      => "NotebookView",
             PAGE_LINK  => $LINK,
             LOGO_PNG   => "CoGe.svg",
             ADJUST_BOX => 1
@@ -662,7 +661,7 @@ sub get_list_contents {
         }
 
         $first = 1;
-        foreach my $list ( sort listcmp $list->lists ) {
+        foreach my $list ( sort notebookcmp $list->lists ) {
             $html .= "<tr valign='top'>"
               . ( $first-- > 0
                 ? "<th align='right' class='title5' rowspan='$list_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Notebooks ($list_count):</th>"
@@ -841,7 +840,7 @@ sub search_mystuff {
 
 # mdb: nested notebooks not supported
 #    $type = $node_types->{list};
-#    foreach my $l ( $USER->lists ) {       #(sort listcmp $USER->lists) {
+#    foreach my $l ( $USER->lists ) {       #(sort notebookcmp $USER->lists) {
 #        next if ( $l->id == $list->id );    # can't add a list to itself!
 #        next if ( $l->locked );             # exclude user's master list
 #        if ( !$search_term or $l->info =~ /$search_term/i ) {
@@ -1185,7 +1184,7 @@ sub search_lists
 
     # Build select items out of results
     my $html;
-    foreach my $n ( sort listcmp @notebooks ) {
+    foreach my $n ( sort notebookcmp @notebooks ) {
         my $item_spec = 1 . ':' . $n->id;    #FIXME magic number for item_type
         $html .= "<option value='$item_spec'>" . $n->info . "</option><br>\n";
     }
@@ -1273,6 +1272,8 @@ sub delete_list {
 
     $list->deleted(!$list->deleted); # do undelete if already deleted
     $list->update;
+
+    #FIXME: Add logging for this function
 
     return 1;
 }

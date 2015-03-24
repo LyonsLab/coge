@@ -9,7 +9,7 @@ use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils qw( commify get_link_coords );
 use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
-use CoGe::Core::List qw(listcmp);
+use CoGe::Core::Notebook qw(notebookcmp);
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
@@ -420,14 +420,14 @@ sub generate_blastdb_job {
 
     my $base = basename($outdir);
 
-    return (
+    return {
         cmd => "mkdir $base && cd $base && $BLASTDB",
         script  => undef,
         args    => $args,
         inputs  => undef,
         outputs => [[$outdir, 1]],
         description => "Generating blastable database..."
-    );
+    };
 }
 
 sub blast_param {
@@ -889,14 +889,14 @@ sub blast_search {
             dsg      => $dsg
           };
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd     => "/usr/bin/nice",
             script  => undef,
             args    => $args,
             inputs  => [$fasta_file, [$dbpath, 1]],
             outputs => [$outfile],
             description => "Blasting sequence against $name"
-        );
+        });
 
         $count++;
     }
@@ -3137,7 +3137,7 @@ sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
 
     # Build select items out of results
     my $html;
-    foreach my $n ( sort listcmp @notebooks ) {
+    foreach my $n ( sort notebookcmp @notebooks ) {
         my $item_spec = 1 . ':' . $n->id; #FIXME magic number for item_type
         $html .= "<option value='$item_spec'>" . $n->info . "</option><br>\n";
     }

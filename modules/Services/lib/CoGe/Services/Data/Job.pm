@@ -11,7 +11,7 @@ use CoGe::Services::Auth;
 use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::TDS;
-use CoGe::Core::Storage qw( get_workflow_paths );
+use CoGe::Core::Storage qw( get_workflow_paths get_workflow_results );
 use CoGe::Factory::RequestFactory;
 use CoGe::Factory::PipelineFactory;
 
@@ -31,6 +31,11 @@ sub add {
         });
     }
 
+    # Create request to validate input
+    my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
+    my $request_factory = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex); #FIXME why jex here?
+    my $request_handler = $request_factory->get($payload);
+
     # Validate the request has all required fields
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
     my $request_factory = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex);
@@ -48,7 +53,7 @@ sub add {
         });
     }
 
-    # Generate the workflow
+    # Create pipeline to execute job
     my $pipeline_factory = CoGe::Factory::PipelineFactory->new(conf => $conf, user => $user, jex => $jex, db => $db);
     my $workflow = $pipeline_factory->get($payload);
     unless ($workflow) {
@@ -56,8 +61,18 @@ sub add {
             error => { Error => "Failed to generate pipeline" }
         });
     }
+    my $response = $request_handler->execute($workflow);
+    
+    # Get tiny link #FIXME should this be moved client-side?
+    if ($response->{success}) {
+        if ($payload->{requester} && $payload->{requester}->{page}) { # request is from web page - external API requests will not have a 'requester' field
+            my $page = $payload->{requester}->{page};
+            my $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . $page . "?wid=" . $workflow->id );
+            $response->{site_url} = $link if ($link);
+        }
+    }
 
-    return $self->render(json => $request_handler->execute($workflow));
+    return $self->render(json => $response);
 }
 
 sub fetch {
@@ -93,7 +108,7 @@ sub fetch {
 #        return;
 #    }
 
-    # TODO COGE-472: add read from "debug.log" in results path if JEX no longer has the log
+    # TODO COGE-472: add read from "debug.log" in results path if JEX no longer has the log in memory
 
     # Add tasks (if any)
     my @tasks;
@@ -120,37 +135,39 @@ sub fetch {
     }
 
     # Add results (if any)
-    #FIXME add routine to Storage.pm to get results path
-    my ( undef, $result_dir ) = get_workflow_paths( $user->name, $id ); # FIXME mdb 8/22/14 directory "experiments" used to be here so whatever puts results there is broken now
-    my @results;
-    if (-r $result_dir) {
-        # Get list of result files in results path
-        opendir(my $fh, $result_dir);
-        foreach my $file ( readdir($fh) ) {
-            my $fullpath = catfile($result_dir, $file);
-            next unless -f $fullpath;
+    # mdb removed 2/27/15 for load_experiment2
+#    my ( undef, $result_dir ) = get_workflow_paths( $user->name, $id );
+#    my @results;
+#    if (-r $result_dir) {
+#        # Get list of result files in results path
+#        opendir(my $fh, $result_dir);
+#        foreach my $file ( readdir($fh) ) {
+#            my $fullpath = catfile($result_dir, $file);
+#            next unless -f $fullpath;
+#
+#            my $name = basename($file);
+#            push @results, {
+#                type => 'http',
+#                name => $name,
+#                path => url_for('api/v1/jobs/'.$id.'/results/'.$name,
+#                    username => $user->name
+#                ) # FIXME move api path into conf file ...?
+#            };
+#        }
+#        closedir($fh);
+#    }
 
-            my $name = basename($file);
-            push @results, {
-                type => 'http',
-                name => $name,
-                path => url_for('api/v1/jobs/'.$id.'/results/'.$name,
-                    username => $user->name
-                ) # FIXME move api path into conf file ...?
-            };
-        }
-        closedir($fh);
-    }
+    my $results = get_workflow_results($user->name, $id);
 
     $self->render(json => {
         id => int($id),
         status => $job_status->{status},
         tasks => \@tasks,
-        results => \@results
+        results => $results
     });
 }
 
-sub results {
+sub results { #TODO remove this, no longer necessary in load_experiment2
     my $self = shift;
     my $id = $self->stash('id');
     my $name = $self->stash('name');

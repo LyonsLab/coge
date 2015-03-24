@@ -10,12 +10,7 @@ use CoGe::Accessory::IRODS qw(irods_iput irods_imeta);
 use CoGe::Core::Genome;
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Storage;
-
-use CoGe::Pipelines::Misc::Bed;
-use CoGe::Pipelines::Misc::Copy;
-use CoGe::Pipelines::Misc::Features;
-use CoGe::Pipelines::Misc::Gff;
-use CoGe::Pipelines::Misc::Tbl;
+use CoGe::Builder::CommonTasks;
 
 use HTML::Template;
 use JSON::XS;
@@ -616,7 +611,7 @@ sub export_features {
     $args{basename} = $basename;
 
     my ($output, %task) = generate_features(%args);
-    $workflow->add_job(%task);
+    $workflow->add_job(\%task);
 
     my $response = $JEX->submit_workflow($workflow);
     say STDERR "RESPONSE ID: " . $response->{id};
@@ -1311,7 +1306,7 @@ sub copy_genome {
     $args{result_dir} = $result_dir;
 
     my %task = copy_and_mask(%args);
-    $workflow->add_job(%task);
+    $workflow->add_job(\%task);
 
     my $response = $JEX->submit_workflow($workflow);
 
@@ -1802,7 +1797,7 @@ sub get_tbl {
 
     my $workflow = $JEX->create_workflow(name => "Export Tbl");
     my ($output, %task) = generate_tbl(%args);
-    $workflow->add_job(%task);
+    $workflow->add_job(\%task);
 
     my $response = $JEX->submit_workflow($workflow);
     say STDERR "RESPONSE ID: " . $response->{id};
@@ -1847,7 +1842,7 @@ sub export_tbl {
 
     my $workflow = $JEX->create_workflow(name => "Export Tbl");
     my ($output, %task) = generate_tbl(%args);
-    $workflow->add_job(%task);
+    $workflow->add_job(\%task);
 
     my $response = $JEX->submit_workflow($workflow);
     say STDERR "RESPONSE ID: " . $response->{id};
@@ -1884,7 +1879,7 @@ sub get_bed {
 
     my $workflow = $JEX->create_workflow(name => "Export bed file");
     my ($output, %task) = generate_bed(%args);
-    $workflow->add_job(%task);
+    $workflow->add_job(\%task);
 
     my $response = $JEX->submit_workflow($workflow);
     say STDERR "RESPONSE ID: " . $response->{id};
@@ -1915,7 +1910,7 @@ sub export_bed {
 
     my $workflow = $JEX->create_workflow(name => "Export bed file");
     my ($output, %task) = generate_bed(%args);
-    $workflow->add_job(%task);
+    $workflow->add_job(\%task);
 
     my $response = $JEX->submit_workflow($workflow);
     say STDERR "RESPONSE ID: " . $response->{id};
@@ -1952,7 +1947,7 @@ sub get_gff {
 
     my $workflow = $JEX->create_workflow(name => "Export gff");
     my ($output, %task) = generate_gff(\%args, $config);
-    $workflow->add_job(%task);
+    $workflow->add_job(\%task);
 
     my $response = $JEX->submit_workflow($workflow);
     say STDERR "RESPONSE ID: " . $response->{id};
@@ -1985,7 +1980,7 @@ sub export_gff {
 
     my $workflow = $JEX->create_workflow(name => "Export gff");
     my ($output, %task) = generate_gff(\%args, $config);
-    $workflow->add_job(%task);
+    $workflow->add_job(\%task);
 
     my $response = $JEX->submit_workflow($workflow);
     say STDERR "RESPONSE ID: " . $response->{id};
@@ -2027,11 +2022,9 @@ sub get_download_url {
     my $dsgid = $args{dsgid};
     my $filename = basename($args{file});
 
-    my @url = ($config->{SERVER}, "services/JBrowse",
-        "service.pl/download/GenomeInfo",
+    return join('/', $config->{SERVER}, 
+        'api/v1/legacy/download/GenomeInfo', #"services/JBrowse/service.pl/download/GenomeInfo", # mdb changed 2/5/15 COGE-289
         "?gid=$dsgid&file=$filename");
-
-    return join "/", @url;
 }
 
 sub get_download_path {
@@ -2119,11 +2112,12 @@ sub generate_body {
         EXPERIMENTS     => $experiments || undef,
         DATASETS        => get_datasets( genome => $genome, exclude_seq => 1 ) || undef,
         USER_CAN_EDIT   => $user_can_edit,
-        USER_CAN_ADD    => $user_can_edit, #( !$genome->restricted or $user_can_edit ), # mdb removed 2/19/14, not sure why it ever existed
+        USER_CAN_ADD    => ( !$genome->restricted or $user_can_edit ), # mdb removed 2/19/14, not sure why it ever existed
         USER_CAN_DELETE => $user_can_delete,
         DELETED         => $genome->deleted,
         IRODS_HOME      => get_irods_path(),
-        USER => $USER->user_name
+        USER            => $USER->user_name,
+        DOWNLOAD_URL    => $config->{SERVER}."api/v1/legacy/sequence/$gid"
     );
 
     if ( $USER->is_admin ) {

@@ -5,6 +5,8 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
+use Data::Dumper;
+
 =head1 NAME
 
 CoGeX::Result::UserConnector
@@ -21,6 +23,20 @@ The C<user_connector> table is used to associate C<list,experiment,genome,featur
  use CoGeX;
 
 =head1 METHODS
+
+=head1 AUTHORS
+
+ Matt Bomhoff
+
+=head1 COPYRIGHT
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl itself.
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+=head1 SEE ALSO
 
 =cut
 
@@ -53,11 +69,13 @@ __PACKAGE__->belongs_to("genome"     	=> "CoGeX::Result::Genome",     { "foreign
 					 prefetch=>['genomic_sequence_type', 'organism'],
 					} );
 __PACKAGE__->belongs_to("feature"    	=> "CoGeX::Result::Feature",    { "foreign.feature_id" => "self.child_id" } );
-__PACKAGE__->belongs_to("list" 		 	=> "CoGeX::Result::List", 		{ "foreign.list_id" => "self.child_id" },
-			{
-			 join =>['child_connectors', 'list_type'],
-			 prefetch => ['child_connectors','list_type'],
-			});
+__PACKAGE__->belongs_to("list" 		 	=> "CoGeX::Result::List", 		{ "foreign.list_id" => "self.child_id" } );
+# mdb removed 3/17/15 due to error after upgrade to ubuntu 14.04 and perl 5.18.2:
+#   DBIx::Class::ResultSet::single(): single() can not be used on resultsets collapsing a has_many. Use find( \\%cond ) or next() instead at /usr/local/lib/perl/5.18.2/CoGeX/Result/UserConnector.pm line 226
+#			{
+#			 join =>['child_connectors', 'list_type'],
+#			 prefetch => ['child_connectors','list_type'],
+#			});
 __PACKAGE__->belongs_to("role" 		 	=> "CoGeX::Result::Role", "role_id" );
 
 ################################################ subroutine header begin ##
@@ -206,21 +224,21 @@ See Also   :
 sub child
 {
 	my $self = shift;
-
+	
 	if ($self->is_child_experiment) {
-		return $self->experiment();
+		return $self->experiment;
 	}
 	elsif ($self->is_child_genome) {
-		return $self->genome();
+		return $self->genome;
 	}
 	elsif ($self->is_child_feature) {
-		return $self->feature();
+		return $self->feature;
 	}
 	elsif ($self->is_child_list) {
-		return $self->list();
+		return $self->list;
 	}
 	elsif ($self->is_child_group) {
-		return $self->child_group();
+		return $self->child_group;
 	}
 	else {
 		warn "Unknown type ".$self->child_type."\n";
@@ -230,19 +248,3 @@ sub child
 }
 
 1;
-
-=head1 AUTHORS
-
- Matt Bomhoff
-
-=head1 COPYRIGHT
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl itself.
-
-The full text of the license can be found in the
-LICENSE file included with this module.
-
-=head1 SEE ALSO
-
-=cut

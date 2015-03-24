@@ -2,10 +2,9 @@ package CoGe::Factory::PipelineFactory;
 
 use Moose;
 
-use CoGe::Builder::GffBuilder;
-use CoGe::Builder::FastaBuilder;
-use CoGe::Builder::ExperimentBuilder;
-use CoGe::Builder::GenomeBuilder;
+use CoGe::Builder::Export::Fasta;
+use CoGe::Builder::Load::Experiment;
+use CoGe::Builder::Analyze::IdentifySNPs;
 
 has 'db' => (
     is => 'ro',
@@ -30,7 +29,7 @@ has 'jex' => (
 sub get {
     my ($self, $message) = @_;
 
-    my $options = {
+    my $request = {
         params   => $message->{parameters},
         options  => $message->{options},
         db       => $self->db,
@@ -39,28 +38,33 @@ sub get {
         conf     => $self->conf
     };
 
+    # Select pipeline builder
     my $builder;
     if ($message->{type} eq "export_gff") {
-        $builder = CoGe::Builder::GffBuilder->new($options);
+        $builder = CoGe::Builder::Export::Gff->new($request);
     } 
     elsif ($message->{type} eq "export_fasta") {
-        $builder = CoGe::Builder::FastaBuilder->new($options);
+        $builder = CoGe::Builder::Export::Fasta->new($request);
     } 
     elsif ($message->{type} eq "export_experiment") {
-        $builder = CoGe::Builder::ExperimentBuilder->new($options);
+        $builder = CoGe::Builder::Export::Experiment->new($request);
     }
-    elsif ($message->{type} eq "export_genome") {
-        $builder = CoGe::Builder::GenomeBuilder->new($options);
-    } 
+    elsif ($message->{type} eq "load_experiment") {
+        $builder = CoGe::Builder::Load::Experiment->new($request);
+    }
+    elsif ($message->{type} eq "analyze_snps") {
+        $builder = CoGe::Builder::Analyze::IdentifySNPs->new($request);
+    }
     else {
-        print STDERR "CoGe::Factory::PipelineFactory: unknown job type '", ($message->{type} ? $message->{type} : ''), "'\n";
-        return; # error: unknown job type
+        print STDERR "PipelineFactory::get unknown type\n";
+        return;
     }
 
     # Construct the workflow
-    unless ($builder->build) {
-        print STDERR "CoGe::Factory::PipelineFactory: build failed\n";
-        return; # error: build failed
+    my $rc = $builder->build;
+    unless ($rc) {
+        print STDERR "PipelineFactory::get build failed\n";
+        return;
     }
 
     # Fetch the workflow constructed

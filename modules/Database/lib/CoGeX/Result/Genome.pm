@@ -1128,6 +1128,16 @@ sub distinct_feature_type_names {
     return wantarray ? keys %names : [ keys %names ];
 }
 
+sub has_gene_features {
+    my $self = shift;
+    
+    foreach ($self->distinct_feature_type_ids) { # FIXME use grep instead
+        return 1 if ($_ == 1 || $_ == 2 || $_ == 3); # FIXME hardcoded feature types
+    }
+    
+    return 0;
+}
+
 sub source {
     my $self = shift;
     my %sources;
