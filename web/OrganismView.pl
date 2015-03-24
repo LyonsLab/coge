@@ -356,8 +356,7 @@ sub get_org_info {
     my %opts = @_;
     my $oid = $opts{oid};
     my $output = $opts{output} || 'json';
-    
-    print STDERR "get_org_info\n", Dumper \%opts, "\n";
+#    print STDERR "get_org_info\n", Dumper \%opts, "\n";
     
     return encode_json({error => "An organism was not specified"}) unless $oid;
 
@@ -442,8 +441,7 @@ sub get_genomes {
     my $oid   = $opts{oid};
     my $gid = $opts{gid};
     my $output = $opts{output} || 'json';
-    
-    print STDERR "get_genomes oid=",($oid ? $oid : '')," gid=",($gid ? $gid : ''), "\n";
+#    print STDERR "get_genomes oid=",($oid ? $oid : '')," gid=",($gid ? $gid : ''), "\n";
     
     my $org = $coge->resultset("Organism")->find($oid);
     return unless $org;
@@ -517,7 +515,7 @@ sub add_to_irods {
     $cmd .= " -tag 'source_link=" . $ds->link . "'" if $ds->link;
     $cmd .= " -tag 'imported_from=CoGe: http://genomevolution.org/CoGe/OrganismView.pl?dsgid=$dsgid'";
     system($cmd);
-    print STDERR $cmd;
+#    print STDERR $cmd;
 
     #return $cmd;
     return "Complete!";
@@ -527,7 +525,7 @@ sub get_genome_info {
     my %opts  = @_;
     my $gid = $opts{gid};
     my $output = $opts{output} || 'json';
-    print STDERR "get_genome_info\n", Dumper \%opts, "\n";
+#    print STDERR "get_genome_info\n", Dumper \%opts, "\n";
     
     unless ($gid) {
         return "A genome was not specified" if ($output eq 'html');
@@ -685,7 +683,7 @@ sub get_dataset_info {
     my %opts = @_;
     my $dsid = $opts{dsid};
     my $output = $opts{output} || 'json';
-    print STDERR "get_dataset_info $dsid\n";
+#    print STDERR "get_dataset_info $dsid\n";
     
     # Get dataset
     my $ds;
@@ -820,7 +818,7 @@ sub get_chr_info {
     my $chr   = $opts{chr};
     my $gid   = $opts{gid};
     my $output  = $opts{output} || 'json';
-    print STDERR "get_chr_info $dsid ",($chr ? $chr : ''),"\n";
+#    print STDERR "get_chr_info $dsid ",($chr ? $chr : ''),"\n";
 
     $dsid  = 0 unless $dsid;
     unless ( $dsid && defined $chr && $chr ne '' ) # error flag for empty dataset
