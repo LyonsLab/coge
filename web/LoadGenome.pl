@@ -95,15 +95,9 @@ sub generate_html {
         $template->param( PAGE_TITLE => $PAGE_TITLE,
 					      TITLE      => "Load Genome",
         				  PAGE_LINK  => $LINK,
-    					  #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
-					  HELP       => $P->{SERVER} );
-        my $name = $user->user_name;
-        $name = $user->first_name if $user->first_name;
-        $name .= ' ' . $user->last_name
-          if ( $user->first_name && $user->last_name );
-        $template->param(
-            USER     => $name,
-            LOGO_PNG => "CoGe.svg",
+					      HELP       => $P->{SERVER}, #TODO rename to HOME
+                          USER       => $user->display_name,
+                          LOGO_PNG   => "CoGe.svg",
         );
         $template->param( LOGON => 1 ) unless $user->user_name eq "public";
         my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};

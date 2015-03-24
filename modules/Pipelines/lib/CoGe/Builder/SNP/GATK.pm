@@ -1,4 +1,4 @@
-package CoGe::Pipelines::SNP::GATK;
+package CoGe::Builder::SNP::GATK;
 
 use v5.14;
 use warnings;
@@ -12,35 +12,36 @@ use File::Basename qw(basename);
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Utils qw(to_filename);
 use CoGe::Accessory::Web;
-use CoGe::Core::Storage qw(get_genome_file get_experiment_files get_workflow_paths);
-use CoGe::Pipelines::SNP::CommonTasks;
+use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
+use CoGe::Builder::CommonTasks;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(build run);
+our @EXPORT = qw(build run);
 our $CONFIG = CoGe::Accessory::Web::get_defaults();
 our $JEX = CoGe::Accessory::Jex->new( host => $CONFIG->{JOBSERVER}, port => $CONFIG->{JOBPORT} );
 
 sub run {
     my %opts = @_;
+    my $user = $opts{user};
+    my $genome = $opts{genome};
+    my $input_file = $opts{input_file};
+    my $metadata = $opts{metadata};
+    croak "Missing parameters" unless ($user and $genome and $input_file and $metadata);
 
-    # Required arguments
-    my $experiment = $opts{experiment} or croak "An experiment must be specified";
-    my $user = $opts{user} or croak "A user was not specified";
-
+    # Create a workflow
     my $workflow = $JEX->create_workflow( name => 'Running the GATK SNP-finder pipeline', init => 1 );
     my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
-    $workflow->logfile( catfile($staging_dir, 'debug.log') );
+    $workflow->logfile( catfile($result_dir, 'debug.log') );
 
+    # Build the workflow
     my @jobs = build({
-        experiment => $experiment,
-        staging_dir => $staging_dir,
-        result_dir => $result_dir,
         user => $user,
         wid  => $workflow->id,
+        genome => $genome,
+        input_file => $input_file,
+        metadata => $metadata,
     });
-
-    # Add all the jobs to the workflow
     $workflow->add_jobs(\@jobs);
 
     # Submit the workflow
@@ -56,43 +57,41 @@ sub build {
     my $opts = shift;
 
     # Required arguments
-    my $experiment  = $opts->{experiment};
+    my $genome = $opts->{genome};
+    my $input_file = $opts->{input_file}; # path to bam file
     my $user        = $opts->{user};
     my $wid         = $opts->{wid};
-    my $staging_dir = $opts->{staging_dir};
-    my $result_dir  = $opts->{result_dir};
+    my $metadata    = $opts->{metadata};
 
     # Get genome and associated files/paths
-    my $genome = $experiment->genome;
+    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
     my $fasta_cache_dir = catdir($CONFIG->{CACHEDIR}, $genome->id, "fasta");
     my $fasta_file = get_genome_file($genome->id);
-    my $reheader_fasta = to_filename($fasta_file) . ".filtered.fasta";
+    my $reheader_fasta = to_filename($fasta_file) . ".reheader.faa";
     my $reheader_fasta_path = catfile($fasta_cache_dir, $reheader_fasta);
     
     # Get experiment input file
-    my $files = get_experiment_files($experiment->id, $experiment->data_type);
-    my $bam_file = shift @$files;
-    my $processed_bam_file = to_filename($bam_file) . '.processed.bam';
-    my $processed_bam_file2 = to_filename($bam_file) . '.processed2.bam';
+    my $processed_bam_file = to_filename($input_file) . '.processed.bam';
+    my $processed_bam_file2 = to_filename($input_file) . '.processed2.bam';
     my $output_vcf_file = qq[snps.flt.vcf];
 
-    # Build all the jobs -- TODO create cache for bam files
+    # Build all the jobs -- TODO create cache for processed bam files
     my @jobs = (
-        create_fasta_reheader_job({
+        create_fasta_reheader_job(
             fasta => $fasta_file,
             reheader_fasta => $reheader_fasta,
             cache_dir => $fasta_cache_dir,
-        }),
-        create_fasta_index_job({
+        ),
+        create_fasta_index_job(
             fasta => $reheader_fasta_path,
             cache_dir => $fasta_cache_dir
-        }),
+        ),
         create_fasta_dict_job({
             fasta => $reheader_fasta_path,
             cache_dir => $fasta_cache_dir
         }),
         create_add_readgroups_job({
-            input_bam => $bam_file,
+            input_bam => $input_file,
             output_bam => catfile($staging_dir, $processed_bam_file),
         }),
         create_reorder_sam_job({
@@ -106,9 +105,8 @@ sub build {
             output_vcf => catfile($staging_dir, $output_vcf_file)
         }),
         create_load_vcf_job({
-            experiment  => $experiment,
             username    => $user->name,
-            source_name => $experiment->source->name,
+            metadata    => $metadata,
             staging_dir => $staging_dir,
             result_dir  => $result_dir,
             annotations => generate_experiment_metadata(),
@@ -118,7 +116,7 @@ sub build {
         })
     );
 
-    return @jobs;
+    return wantarray ? @jobs : \@jobs;
 }
 
 sub create_fasta_dict_job {
@@ -226,7 +224,7 @@ sub create_gatk_job {
 
 sub generate_experiment_metadata {
     my @annotations = (
-        qq{http://genomevolution.org/wiki/index.php/Identifying_SNPs||note|Generated by CoGe's SNP-finder Pipeline},
+        qq{http://genomevolution.org/wiki/index.php/Identifying_SNPs||note|Generated by CoGe's SNP-finder Pipeline (GATK method)},
     );
     return '"' . join(';', @annotations) . '"';
 }

@@ -67,12 +67,10 @@ sub create_notebook {
     my $name    = $opts{name};
     my $desc    = $opts{desc};
     my $type_id = $opts{type_id};
-    my $PAGE = $opts{PAGE};
-    $PAGE //= ""; #/
-
-    return unless $name and $type_id and $db and $user;
+    my $page    = $opts{page};
+    return unless ($name and $type_id and $db and $user);
     my $items = $opts{item_list}; # optional
-    return if ( $user->user_name eq "public" );
+    return if ( $user->is_public );
 
     # Create the new list
     my $notebook = $db->resultset('List')->create(
@@ -104,12 +102,14 @@ sub create_notebook {
       if ($items);
 
     # Record in log
-    CoGe::Accessory::Web::log_history(
-        db          => $db,
-        user_id     => $user->id,
-        page        => "$PAGE",
-        description => 'create notebook id' . $notebook->id
-    );
+    if ($page) {
+        CoGe::Accessory::Web::log_history(
+            db          => $db,
+            user_id     => $user->id,
+            page        => "$page",
+            description => 'create notebook id' . $notebook->id
+        );
+    }
 
     return $notebook;
 }
@@ -130,7 +130,8 @@ sub add_items_to_notebook {
     foreach (@$items) {
         my ( $item_id, $item_type ) = @$_;
         return unless ( $item_id and $item_type );
-        return unless ( $item_type eq $ITEM_TYPE{genome} or $item_type eq $ITEM_TYPE{experiment} );
+        $item_type = $ITEM_TYPE{$item_type} if ($item_type eq 'genome' or $item_type eq 'experiment');
+        return unless ( $item_type eq $ITEM_TYPE{genome} or $item_type eq $ITEM_TYPE{experiment});
 
         #TODO check access permission on each item
 

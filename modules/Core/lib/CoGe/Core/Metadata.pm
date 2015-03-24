@@ -19,6 +19,7 @@ sub create_annotations {
     my %opts = @_;
     my $db = $opts{db};
     my $target = $opts{target};           # experiment, genome, or list object
+    my ($target_id, $target_type) = ($opts{target_id}, $opts{target_type}); # or an experiment/genome/list id and type
     my $annotations = $opts{annotations}; # semicolon-separated list of annotations (link:group:type:text;...)
     my $locked = $opts{locked};           # boolean
 
@@ -64,38 +65,58 @@ sub create_annotations {
             return;
         }
 
+        # Fetch target DBIX object if id/type given
+        if ($target_id && $target_type) {
+            if (lc($target_type) eq 'experiment') {
+                $target = $db->resultset('Experiment')->find($target_id);
+            }
+            if (lc($target_type) eq 'genome') {
+                $target = $db->resultset('Genome')->find($target_id);
+            }
+            if (lc($target_type) eq 'notebook') {
+                $target = $db->resultset('List')->find($target_id);
+            }
+        }
+        
         # Create annotation
-        if (ref($target) =~ /Experiment/) {
-            $anno = $db->resultset('ExperimentAnnotation')->create({
-                experiment_id => $target->id,
-                annotation_type_id => ($type ? $type->id : undef),
-                annotation => $anno_text,
-                link => $link,
-                locked => $locked
-            }); # null description
-        }
-        elsif (ref($target) =~ /Genome/) {
-            $anno = $db->resultset('GenomeAnnotation')->create({
-                genome_id => $target->id,
-                annotation_type_id => ($type ? $type->id : undef),
-                annotation => $anno_text,
-                link => $link,
-                locked => $locked
-            }); # null description
-        }
-        elsif (ref($target) =~ /List/) {
-            $anno = $db->resultset('ListAnnotation')->create({
-                list_id => $target->id,
-                annotation_type_id => ($type ? $type->id : undef),
-                annotation => $anno_text,
-                link => $link,
-                locked => $locked
-            }); # null description
+        if ($target) {
+            if (ref($target) =~ /Experiment/) {
+                $anno = $db->resultset('ExperimentAnnotation')->create({
+                    experiment_id => $target->id,
+                    annotation_type_id => ($type ? $type->id : undef),
+                    annotation => $anno_text,
+                    link => $link,
+                    locked => $locked
+                }); # null description
+            }
+            elsif (ref($target) =~ /Genome/) {
+                $anno = $db->resultset('GenomeAnnotation')->create({
+                    genome_id => $target->id,
+                    annotation_type_id => ($type ? $type->id : undef),
+                    annotation => $anno_text,
+                    link => $link,
+                    locked => $locked
+                }); # null description
+            }
+            elsif (ref($target) =~ /List/) {
+                $anno = $db->resultset('ListAnnotation')->create({
+                    list_id => $target->id,
+                    annotation_type_id => ($type ? $type->id : undef),
+                    annotation => $anno_text,
+                    link => $link,
+                    locked => $locked
+                }); # null description
+            }
+            else {
+                print STDERR "unknown target type\n";
+                return;
+            }
         }
         else {
-            print STDERR "unknown target type\n";
+            print STDERR "target not found\n";
             return;
         }
+        
         unless ($anno) {
             print STDERR "error creating annotation\n";
             return;
