@@ -55,6 +55,7 @@ sub init {
 
     # Otherwise, get user info and add to DB
     if (!$user) {
+        print STDERR "CoGe::Services::Auth::init: failed to find user '", $username, "'\n";
         # TODO get user info from iPlant user API and add user to database
         return ( $db, undef, $conf ); # tempfix
     }
@@ -109,6 +110,7 @@ sub validate {
 #        return;
 #    }
 
+    print STDERR "CoGe::Services::Auth::validate: success!\n";
     return 1;
 }
 
