@@ -31,14 +31,9 @@ sub add {
         });
     }
 
-    # Create request to validate input
+    # Create request and validate the required fields
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
     my $request_factory = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex); #FIXME why jex here?
-    my $request_handler = $request_factory->get($payload);
-
-    # Validate the request has all required fields
-    my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
-    my $request_factory = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex);
     my $request_handler = $request_factory->get($payload);
     unless ($request_handler and $request_handler->is_valid) {
         return $self->render(json => {
