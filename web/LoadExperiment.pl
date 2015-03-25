@@ -92,13 +92,13 @@ sub generate_html {
     else {
         $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param( PAGE_TITLE => $PAGE_TITLE,
-					      TITLE      => "Load Experiment",
-        				  PAGE_LINK  => $LINK,
-					      HELP       => $P->{SERVER} || '', #FIXME rename to HOME
-					      ADJUST_BOX => 1,
+		          TITLE      => "Load Experiment",
+        	          PAGE_LINK  => $LINK,
+			  HELP       => $P->{SERVER} || '', #FIXME rename to HOME
+			  ADJUST_BOX => 1,
                           LOGO_PNG   => "CoGe.svg",
                           ADMIN_ONLY => $USER->is_admin,
-                          USER       => $USER->display_name
+                          USER       => $USER->display_name || ''
         );
         $template->param( LOGON      => 1 ) unless $USER->is_public;
     }
