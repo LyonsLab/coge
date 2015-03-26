@@ -3,6 +3,8 @@ package CoGe::Factory::PipelineFactory;
 use Moose;
 
 use CoGe::Builder::Export::Fasta;
+use CoGe::Builder::Export::Gff;
+use CoGe::Builder::Export::Experiment;
 use CoGe::Builder::Load::Experiment;
 use CoGe::Builder::Analyze::IdentifySNPs;
 
