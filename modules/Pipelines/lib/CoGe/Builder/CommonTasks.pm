@@ -17,7 +17,7 @@ use CoGe::Core::Storage qw(get_workflow_results_file);
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(
-    generate_results link_results generate_bed export_experiment
+    generate_results link_results generate_bed 
     generate_tbl export_to_irods generate_gff generate_features copy_and_mask
     create_fasta_reheader_job create_fasta_index_job create_load_vcf_job
     create_bam_index_job create_gff_generation_job create_load_experiment_job
@@ -150,23 +150,6 @@ sub generate_tbl {
             ["-config", $args{conf}, 0]
         ],
         outputs => [$output_file]
-    );
-}
-
-sub export_experiment {
-    my ($params, $output, $conf) = @_;
-
-    return (
-        cmd => catdir($CONF->{SCRIPTDIR}, "export_experiment.pl"),
-        description => "Generating experiment files",
-        args => [
-            ["-eid", $params->{eid}, 0],
-            ["-output", $output, 1],
-            ["-conf", $CONF->{_CONFIG_PATH}, 0],
-            ["-dir", ".", ""]
-        ],
-        inputs => [],
-        outputs => [$output]
     );
 }
 
