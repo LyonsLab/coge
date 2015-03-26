@@ -33,8 +33,9 @@
 </div>
 
 <script type="text/javascript">
-	function login_cas(){
-		document.location.href='https://auth.iplantcollaborative.org/cas/loginPost?service='+document.location.href; // mdb removed 12/5/13 - Hackathon
+	function login_cas() {
+		document.location.href = '<TMPL_VAR NAME=CAS_URL>' + '/loginPost?service=' + document.location.href; // mdb added 3/25/15 for cas update
+		//document.location.href='https://auth.iplantcollaborative.org/cas/loginPost?service='+document.location.href; // mdb removed 3/25/15
 		//document.location.href='https://gucumatz.iplantcollaborative.org/cas/loginPost?service='+document.location.href; // mdb added 12/5/13 - for Hackathon1
 		return true;
 	}
