@@ -303,6 +303,7 @@ sub ftp_get_file {
     $request->authorization_basic( $username, $password )
       if ( $username and $password );
 
+    print STDERR Dumper $ua->requests_redirectable, "\n";
     #print STDERR "request uri: " . $request->uri . "\n";
     $request->content_type("text/xml; charset=utf-8");
     my $response = $ua->request($request);
@@ -325,7 +326,7 @@ sub ftp_get_file {
         return encode_json(
             {
                 path      => $path,
-                size      => "Failed: $status"
+                error     => "Failed: $status"
             }
         );
     }

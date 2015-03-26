@@ -13,26 +13,30 @@ function get_selected_files() {
 	var items = new Array();
 	var transferring = 0;
 
-	$('#file_table tr').each(
+	$('#file_table').find('tr').each(
 		function() {
-			//FIXME optimize this
-			var path = $(this).data('path');
-			if (path) {
-				items.push({
-					'type': $(this).data('type'),
-					'path': path,
-				});
-			}
-			else { // file is still transferring
-				transferring++;
-				return;
+			console.log(this);
+			var error = $(this).data('error');
+			if (!error) {
+				var path = $(this).data('path');
+				var type = $(this).data('type');
+				
+				if (path) { // file is finished
+					items.push({
+						'type': type,
+						'path': path,
+					});
+				}
+				else { // file is still transferring
+					transferring++;
+					return;
+				}
 			}
 		}
 	);
 
-	if (transferring || !items.length) {
+	if (transferring || !items.length)
 		return null;
-	}
 
 	return items;
 }
@@ -134,11 +138,35 @@ function add_file_to_list(filename, url) {
 	$('#file_table').append(tr).show();
 
 	// Call template user's generic hander if defined
-	if (typeof file_selected == 'function') {
+	if (typeof file_selected === 'function') {
 		file_selected(filename, url);
 	}
 
 	return 1;
+}
+
+function vilify_file_in_list(url, error) {
+	// Find item in list and set error
+	var tr = $('#file_table tr').filter(
+		function() {
+			return (url == $(this).data('url'));
+		}
+	);
+	$(tr).data({
+		error: true
+	});
+	
+	$(tr).children().last().remove();
+	
+	$(tr).append(
+		$('<td><span style="margin-right:15px;">' + (error ? error : 'failed') + '</span></td>' +
+		  '<td><span onClick="cancel_callback(this);" class="link ui-icon ui-icon-closethick"></span></td>')
+			.css({
+				'font-style': 'normal',
+				'color': 'red'
+			})
+			.fadeIn()
+	);
 }
 
 function finish_file_in_list(type, url, path, size) {
@@ -149,8 +177,8 @@ function finish_file_in_list(type, url, path, size) {
 		}
 	);
 	$(tr).data({
-		'path': path,
-		'type': type
+		path: path,
+		type: type
 	});
 
 	// Animate completion in list
@@ -168,35 +196,32 @@ function finish_file_in_list(type, url, path, size) {
 	});
 
 	// Call template user's generic hander if defined
-	if (typeof file_finished == 'function') {
+	if (typeof file_finished === 'function')
 		file_finished(size, url);
-	}
 }
 
 function cancel_callback(that) {
 	// Remove from file list
-	$(that).closest('tr').hide('fast',
+	$(that).parents('tr').hide('fast',
 		function() {
 			$(this).remove();
 
-			// Hide table if empty
-			if ($('#file_table tr').length == 0) {
-				$('#file_table').hide();
-			}
+			// Hide table if empty // mdb removed 3/25/15 -- handled in calling code
+//			var file_table = $('#file_table');
+//			if (file_table.find('tr').length == 0)
+//				file_table.hide();
 
 			// Call template user's generic hander if defined
-			if (typeof file_canceled == 'function') {
+			if (typeof file_canceled === 'function')
 				file_canceled();
-			}
 		}
 	);
 }
 
 function activate_on_input(input_id, button_id) {
 	var a;
-	if (input_id instanceof Array) {
+	if (input_id instanceof Array) 
 		a = input_id;
-	}
 	else {
 		a = new Array(1);
 		a[0] = input_id;
@@ -204,17 +229,14 @@ function activate_on_input(input_id, button_id) {
 
 	var hide = a.length;
 	for (var i in a) {
-		if ( $('#'+a[i]).val() ) {
+		if ( $('#'+a[i]).val() ) 
 			hide--;
-		}
 	}
 
-	if (hide) {
+	if (hide)
 		$('#'+button_id).addClass('ui-state-disabled');
-	}
-	else {
+	else
 		$('#'+button_id).removeClass('ui-state-disabled');
-	}
 }
 
 function resolve_path(path) {
@@ -242,9 +264,8 @@ function irods_get_path (path) {
 			$('#ids_loading').fadeOut();
 
 			var result = jQuery.parseJSON(data);
-			if (result == null) {
+			if (result == null) 
 				return;
-			}
 			if (result.error) {
 				$('#ids_table')
 					.html('<tr><td><span class="alert">'
@@ -402,6 +423,12 @@ function ftp_get_file(url, username, password) {
 		},
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
+			if (!obj || obj.error) {
+				console.error('ftp_get_file error: ' + (obj.error ? obj.error : 'null'));
+				vilify_file_in_list(url, obj.error);
+				return;
+			}
+			
 			finish_file_in_list('ftp', url, obj.path, obj.size);
 		},
 	});
