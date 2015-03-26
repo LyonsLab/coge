@@ -530,6 +530,13 @@ sub login_cas_saml {
     my $coge        = $opts{coge};          # db object
 	print STDERR "Web::login_cas_saml ticket=$ticket this_url=$this_url\n";
 
+    my $cas_url = get_defaults()->{CAS_URL};
+    unless ($cas_url) {
+        print STDERR "Web::login_cas_saml: error: CAS_URL not defined in configuration file\n";
+        return;
+    }
+
+    # Build and execute SAML request
     my $ua = new LWP::UserAgent;
     my $request =
         '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">'
@@ -540,18 +547,20 @@ sub login_cas_saml {
     my $request_ua =
       HTTP::Request->new(
         #POST => 'https://gucumatz.iplantcollaborative.org/cas/samlValidate?TARGET=' # mdb added 12/5/13 - Hackathon1
-        POST => get_defaults()->{CAS_URL} . '/samlValidate?TARGET=' . $this_url );
+        POST => $cas_url . '/samlValidate?TARGET=' . $this_url );
     $request_ua->content($request);
     $request_ua->content_type("text/xml; charset=utf-8");
     my $response = $ua->request($request_ua);
+    print STDERR "SAML response: ", Dumper $response, "\n";
     my $result   = $response->content;
-    print STDERR $result, "\n";
-    my ($uname, $fname, $lname, $email);
-    if ($result) {
-        ( $uname, $fname, $lname, $email ) = parse_saml_response($result);
-    }
+    print STDERR "SAML result: ", Dumper $result, "\n";
+    return unless $result;
+    
+    # Parse user info out of SAML response
+    my ( $uname, $fname, $lname, $email ) = parse_saml_response($result);
     return unless $uname; # Not logged in
 
+    # Find user in database
     my ($coge_user) = $coge->resultset('User')->search( { user_name => $uname } );
     unless ($coge_user) {
         # Create new user
