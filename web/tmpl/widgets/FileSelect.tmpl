@@ -15,7 +15,6 @@ function get_selected_files() {
 
 	$('#file_table').find('tr').each(
 		function() {
-			console.log(this);
 			var error = $(this).data('error');
 			if (!error) {
 				var path = $(this).data('path');
