@@ -3,6 +3,8 @@
 use strict;
 use CGI;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw(format_time_diff);
+use CoGe::Accessory::Jex;
 use HTML::Template;
 use JSON qw(encode_json);
 use Data::Dumper;
@@ -11,13 +13,17 @@ use CoGeX;
 use CoGeX::Result::User;
 use Data::Dumper;
 use URI::Escape::JavaScript qw(escape unescape);
+use Time::Piece;
 no warnings 'redefine';
 
 use vars
-  qw($P $PAGE_NAME $USER $BASEFILE $coge $cogeweb %FUNCTION $FORM $MAX_SEARCH_RESULTS %ITEM_TYPE);
+  qw($P $PAGE_NAME $USER $BASEFILE $coge $cogeweb %FUNCTION $FORM $MAX_SEARCH_RESULTS %ITEM_TYPE $JEX);
 
 $FORM = new CGI;
 ( $coge, $USER, $P ) = CoGe::Accessory::Web->init( cgi => $FORM );
+
+$JEX =
+  CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
 
 $MAX_SEARCH_RESULTS = 400;
 
@@ -38,6 +44,9 @@ my $node_types = CoGeX::node_types();
 	delete_genome                   => \&delete_genome,
 	delete_list                     => \&delete_list,
 	delete_experiment               => \&delete_experiment,
+    cancel_job                      => \&cancel_job,
+    restart_job                     => \&restart_job,
+    get_jobs                        => \&get_jobs_for_user,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -102,7 +111,7 @@ sub search_stuff {
 			$searchArray[$i] = { 'like', '%' . $searchArray[$i] . '%' };
 		}
 		else {
-			my @splitTerm = split( ':', $searchArray[$i] );
+			my @splitTerm = split( '::', $searchArray[$i] );
 			splice( @searchArray, $i, 1 );
 			$i--;
 			push @specialTerms,
@@ -959,59 +968,139 @@ sub delete_experiment {
     return 1;
 }
 
-#Evan's modular stuff
-#sub search_genomem {
-#	# terms is an any array ference tags is a hash references
-#	my ($terms, $tags, $organism_rs) = @_;
-#
-#	my @relevant_fields = qw(name description restricted access_count):
-#
-#	%organisms_tags{@relevant_fields} = $tags->{@relevant_fields};
-#	$organism_tags = # ... filters tags to only organism search
-#
-#	my $search1 = $coge->resultset("Organism")->search({
-#		-or {
-#			-and {
-#				create_like_fields($terms)
-#			},
-#			$organism_tags
-#		}
-#	}) ;
-#
-#	# Query only if organism rs exists
-#	my $search2 = $organism_rs->dosomething if $organism_rs;
-#
-#	return join $search1 $search2;
-#}
+#Jobs tab
+sub get_jobs_for_user {
+	#print STDERR "Get jobs called\n";
+    my @entries;
 
-#sub search_users {
-#    my %opts        = @_;
-#    my $search_term = $opts{search_term};
-#    my $timestamp   = $opts{timestamp};
-#
-#    #print STDERR "$search_term $timestamp\n";
-#    return unless $search_term;
-#
-#    # Perform search
-#    $search_term = '%' . $search_term . '%';
-#    my @users = $coge->resultset("User")->search(
-#        \[
-#            'user_name LIKE ? OR first_name LIKE ? OR last_name LIKE ?',
-#            [ 'user_name',  $search_term ],
-#            [ 'first_name', $search_term ],
-#            [ 'last_name',  $search_term ]
-#        ]
-#    );
-#
-#    # Limit number of results displayed
-#    # if (@users > $MAX_SEARCH_RESULTS) {
-#    # 	return encode_json({timestamp => $timestamp, items => undef});
-#    # }
-#
-#    return encode_json(
-#        {
-#            timestamp => $timestamp,
-#            items     => [ sort map { $_->user_name } @users ]
-#        }
-#    );
-#}
+    if ( $USER->is_admin ) {
+        @entries = $coge->resultset('Log')->search(
+            #{ description => { 'not like' => 'page access' } },
+            {
+                type     => { '!='  => 0 },
+                workflow_id  => { "!=" => undef}
+            },
+            { order_by => { -desc => 'time' } },
+        );
+    }
+    else {
+        @entries = $coge->resultset('Log')->search(
+            {
+                user_id => $USER->id,
+                workflow_id  => { "!=" => undef},
+
+                #{ description => { 'not like' => 'page access' } }
+                type => { '!=' => 0 }
+            },
+            { order_by => { -desc => 'time' } },
+        );
+    }
+
+    my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
+    my @workflows = map { $_->workflow_id } @entries;
+    
+    #print STDERR Dumper(\@workflows);
+    
+    my $workflows = $JEX->find_workflows(@workflows);
+
+    my @job_items;
+    my %workflow_results;
+
+    foreach (@{$workflows}) {
+        my($id, $name, $submitted, $completed, $status) = @{$_};
+
+        my $start_time = localtime($submitted)->strftime('%F %I:%M%P');
+        my $end_time = "";
+        my $diff;
+
+        if ($completed) {
+            $end_time = localtime($completed)->strftime('%F %I:%M%P') if $completed;
+            $diff = $completed - $submitted;
+        } else {
+            $diff = time - $submitted;
+        }
+
+        $workflow_results{$id} = {
+            status    => $status,
+            started   => $start_time,
+            completed => $end_time,
+            elapsed   => format_time_diff($diff)
+        };
+    }
+
+    my $index = 1;
+    foreach (@entries) {
+        my $entry = $workflow_results{$_->workflow_id};
+
+        # A log entry must correspond to a workflow
+        next unless $entry;
+
+        push @job_items, {
+            id => int($index++),
+            workflow_id => $_->workflow_id,
+            user  => $users{$_->user_id} || "public",
+            tool  => $_->page,
+            link  => $_->link,
+            %{$entry}
+        };
+    }
+
+    my @filtered;
+
+    # Filter repeated entries
+    foreach (reverse @job_items) {
+        my $wid = $_->{workflow_id};
+        next if (defined $wid and defined $workflow_results{$wid}{seen});
+        $workflow_results{$wid}{seen}++ if (defined $wid);
+
+        unshift @filtered, $_;
+    }
+
+    return encode_json({ jobs => \@filtered });
+}
+
+sub cancel_job {
+    my $job_id = _check_job_args(@_);
+
+    return encode_json( {} ) unless defined($job_id);
+
+    my $status = $JEX->get_status( $job_id );
+
+    if ( $status =~ /scheduled|running|notfound/i ) {
+        return encode_json({ status => $JEX->terminate( $job_id ) });
+    } else {
+        return encode_json( {} );
+    }
+}
+
+sub restart_job {
+    my $job_id = _check_job_args(@_);
+
+    return encode_json( {} ) unless defined($job_id);
+
+    my $status = $JEX->get_status( $job_id );
+
+    if ( $status =~ /running/i ) {
+        return encode_json( {} );
+    } else {
+        return encode_json({ status => $JEX->restart( $job_id ) });
+    }
+}
+
+sub cmp_by_start_time {
+    my $job1 = shift;
+    my $job2 = shift;
+
+    $job1->start_time cmp $job2->start_time;
+}
+
+sub _check_job_args {
+    my %args   = @_;
+    my $job_id = $args{job};
+
+    if ( not defined($job_id) ) {
+        say STDERR "Job.pl: a job id was not given to cancel_job.";
+    }
+
+    return $job_id;
+}
