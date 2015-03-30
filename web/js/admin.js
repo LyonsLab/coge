@@ -3,6 +3,103 @@ var ITEM_TYPE_USER = 5; //TODO: This is duplicated elsewhere, move to a common l
 $(function () {
 	// Configure dialogs
     $(".dialog_box").dialog({autoOpen: false, width: 500});
+    $("#search_bar").keyup(function (e) {
+        Slick.GlobalEditorLock.cancelCurrentEdit();
+
+        if (e.which == 27) { // Clear on Esc
+            this.value = "";
+        }
+        update_filter();
+    });
+    $("#show_select,#search_type").change(function(e) {
+        update_filter();
+    });
+    
+    //Initialize Jobs tab
+    var searchFilter = function(item, args) {
+        var link = item['link'] ? item['link'].toLowerCase() : '',
+            tool = item['tool'] ? item['tool'].toLowerCase() : '',
+            status = item['status'] ? item['status'].toLowerCase() : '',
+            started = item['started'] ? item['started'].toLowerCase() : '',
+            completed = item['completed'] ? item['completed'].toLowerCase() : '',
+            user = item['user'] ? item['user'].toLowerCase() : '';
+
+        if (args.searchType == 1) {
+            if (args.searchString != "" &&
+                link.indexOf(args.searchString) == -1 &&
+                tool.indexOf(args.searchString) == -1 &&
+                status.indexOf(args.searchString) == -1 &&
+                started.indexOf(args.searchString) == -1 &&
+                completed.indexOf(args.searchString) == -1
+                && user.indexOf(args.searchString) == -1) {
+                return false;
+            }
+        } else {
+            if (args.searchString != "" &&
+                link.indexOf(args.searchString) != -1 ||
+                tool.indexOf(args.searchString) != -1 ||
+                status.indexOf(args.searchString) != -1 ||
+                started.indexOf(args.searchString) != -1 ||
+                completed.indexOf(args.searchString) != -1
+
+                || user.indexOf(args.searchString) != -1 ) {
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    var options = {
+        editable: true,
+        enableCellNavigation: true,
+        asyncEditorLoading: true,
+        forceFitColumns: true,
+        filter: searchFilter,
+        comparator: coge.ascending,
+    };
+
+    var checkbox = new Slick.CheckboxSelectColumn({
+            cssClass: 'slick-cell-checkboxsel'
+    });
+
+    var linkformatter = function(row, cell, value, columnDef, dataContext) {
+        return '<a href="' + dataContext['link'] + '" target="_blank">'
+        + dataContext['link'] + '</a>'
+    }
+    var columns = [
+        checkbox.getColumnDefinition(),
+        {id: 'id', name: 'Id', field: 'workflow_id', maxWidth: 50, sortable: true},
+        {id: 'started', name: 'Started', field: 'started', minWidth: 75,
+            sortable: true},
+        {id: 'completed', name: 'Completed', field: 'completed', minWidth: 75,
+            sortable: true},
+        {id: 'elapsed', name: 'Elapsed', field: 'elapsed', minWidth: 55,
+            sortable: true},
+        {id: 'user', name: 'User', field: 'user', sortable: true, minWidth: 75},
+        {id: 'tool', name: 'Tool', field: 'tool', minWidth: 75,
+            sortable: true},
+        {id: 'link', name: 'Link to Analysis', field: 'link', minWidth: 250,
+            sortable: false, formatter: linkformatter },
+        {id: 'status', name: 'Status', field: 'status', minWidth: 75,
+            sortable: true}
+    ];
+
+    window.jobs = new coge.Grid('#jobs', options, columns);
+    jobs.grid.registerPlugin(checkbox);
+    $.ajax({
+        dataType: 'json',
+        data: {
+            jquery_ajax: 1,
+            fname: 'get_jobs',
+            time_range: 0,
+        },
+        success: function(data) {
+            jobs.load(data.jobs);
+            entries = data.length;
+            $("#filter_busy").hide();
+        }
+    });
 });
 
 var timestamps = new Array();
@@ -209,7 +306,6 @@ function toggle_master() {
 }
 
 function open_dialog() {
-	console.log("Open_dialog called");
 	$("#user_dialog").dialog("open");
 }
 
@@ -241,7 +337,6 @@ function edit_access(id, type) {
 }
 
 function remove_items_from_user_or_group(target_item, id, type) {
-	console.log("" + target_item + " " + id + " " + type);
 	var selected = "content_" + id + "_" + type; //get_selected_items();
 	if (target_item && selected.length) {
 		var item_list = selected; //.map(function(){return this.parentNode.id;}).get().join(',');
@@ -276,7 +371,6 @@ function search_user(userID, search_type) {
 	if(previous_user != userID) {
 		//$('#userResults').hide();
 		$('#userResults').html("Loading...");
-		console.log("Before search.");
 		user_info(userID, search_type);
 	}
 	previous_user = userID;
@@ -296,7 +390,6 @@ function refresh_data() {
 function user_info(userID, search_type) {
 
 	var search_term = userID;
-	//console.log(search_term);
 	timestamps['user_info'] = new Date().getTime();
 	$.ajax({
 		data: {
@@ -317,11 +410,6 @@ function user_info(userID, search_type) {
 
         		var genList = "", expList = "", noteList = "", userList = "";
         		var genCounter = 0, expCounter = 0, noteCounter = 0, userCounter = 0;
-
-        		//for (var j = 0; j < obj.items[i].result.length; j++) {
-        		//	console.log(current);
-        		//}				
-
 				
         		//for each object belonging to that user, populate tables
         		for (var j = 0; j < obj.items[i].result.length; j++) {
@@ -463,8 +551,6 @@ function user_info(userID, search_type) {
         	} //end of all users loop
 
         	$('#userResults').html(htmlBlock);
-			
-        	console.log("After search.");
         	//$('#userResults').show();
 
         	if(search_type == 'group') {
@@ -506,7 +592,6 @@ function user_info(userID, search_type) {
 
 function share_dialog(id, type) {
 	var item_list = "content_" + id + "_" + type;  //selected.map(function(){return this.parentNode.id;}).get().join(',');
-	console.log(item_list);
 	$.ajax({
 		data: {
 			fname: 'get_share_dialog',
@@ -584,114 +669,6 @@ function delete_item (id, type) {
 	refresh_data();
 }
 
-/*function update_dialog(request, user, identifier, formatter) {
-    var get_status = function () {
-        $.ajax({
-            type: 'GET',
-            url: request,
-            dataType: 'json',
-            data: {
-                username: user
-            },
-            success: update_callback,
-            error: update_callback,
-            xhrFields: {
-                withCredentials: true
-            }
-        });
-    };
-
-    var update_callback = function(json) {
-        var dialog = $(identifier);
-        var workflow_status = $("<p></p>");
-        var data = $("<ul></ul>");
-        var results = [];
-        var current_status;
-        var timeout = 2000;
-
-        var callback = function() {
-            update_dialog(request, user, identifier, formatter);
-        }
-
-        if (json.error) {
-            pageObj.error++;
-            if (pageObj.error > 3) {
-                workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
-                load_failed();
-                return;
-            }
-        } else {
-            pageObj.error = 0;
-        }
-
-        if (json.status) {
-            current_status = json.status.toLowerCase();
-            workflow_status.html("Workflow status: ");
-            workflow_status.append($('<span></span>').html(json.status));
-            workflow_status.addClass('bold');
-        } else {
-            setTimeout(callback, timeout);
-            return;
-        }
-
-        if (json.tasks) {
-            var jobs = json.tasks;
-            for (var index = 0; index < jobs.length; index++) {
-                var item = formatter(jobs[index]);
-                if (item) {
-                    results.push(item);
-                }
-            }
-        }
-
-        if (!dialog.dialog('isOpen')) {
-            return;
-        }
-
-        //FIXME Update when a workflow supports elapsed time
-        if (current_status == "completed") {
-            var total = json.tasks.reduce(function(a, b) {
-                if (!b.elapsed) return a;
-
-                return a + b.elapsed;
-            }, 0);
-
-            var duration = coge.utils.toPrettyDuration(total);
-
-            workflow_status.append("<br>Finished in " + duration);
-            workflow_status.find('span').addClass('completed');
-            get_load_log(function(result) {
-                load_succeeded(result);
-            });
-
-        }
-        else if (current_status == "failed"
-                || current_status == "error"
-                || current_status == "terminated"
-                || current_status == "cancelled")
-        {
-            workflow_status.find('span').addClass('alert');
-            get_load_log(function(result) {
-                load_failed(result);
-            });
-        }
-        else if (current_status == "notfound") {
-            setTimeout(callback, timeout);
-            return;
-        }
-        else {
-            workflow_status.find('span').addClass('running');
-            setTimeout(callback, timeout);
-        }
-
-        results.push(workflow_status);
-        data.append(results);
-        dialog.find('#load_log').html(data);
-    };
-
-    get_status();
-}*/
-
 function wait_to_search (search_func, search_term) {
 	//console.log(search_term);
 	pageObj.search_term = search_term;
@@ -708,5 +685,65 @@ function wait_to_search (search_func, search_term) {
 		},
 		1000
 	);
+}
+
+//The following javascript deals with Tab2, the Jobs tab
+function update_filter() {
+    jobs.dataView.setFilterArgs({
+        show: $('#show_select').val(),
+        searchType: $('#search_type').val(),
+        searchString: $('#search_bar').val().toLowerCase()
+    });
+
+    jobs.filter();
+    $('#filter_count').html('Showing ' + jobs.dataView.getLength() + ' of ' + entries + ' results');
+}
+
+function cancel_job() {
+    submit_task("cancel_job", function(row) {
+        return row.status.toLowerCase() === 'running'
+    });
+}
+
+function restart_job() {
+    submit_task("restart_job", function(row) {
+        return row.status.toLowerCase() === 'cancelled' ||
+               row.status.toLowerCase() === 'stopped';
+    });
+}
+
+function submit_task(task, predicate) {
+    var selectedIndexes = window.jobs.grid.getSelectedRows();
+
+    var selectedRows = selectedIndexes.map(function(item) {
+        return window.jobs.dataView.getItem(item);
+    });
+
+    var validRows = selectedRows.filter(predicate);
+
+    // No rows were valid
+    if (!validRows.length) return;
+
+    jQuery.each(validRows, function(index,row) {
+        var argument_list =  {
+            fname: task,
+            job: row.workflow_id,
+        };
+
+        $.ajax({
+            type: "GET",
+            dataType: "json",
+            data: argument_list,
+            success: function(data) {
+                if (data.status) {
+                    row.status = data.status;
+                    window.jobs.dataView.updateItem(row.id, row);
+                }
+            }
+        });
+    });
+
+    // Deselect all rows
+    window.jobs.grid.setSelectedRows([]);
 }
 
