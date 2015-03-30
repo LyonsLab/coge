@@ -110,11 +110,18 @@ sub init {
 		    );
     	}
     	else {
-		    ($user) = login_cas_saml(
+#    	    ($user) = login_cas_saml(
+#                cookie_name => $CONF->{COOKIE_NAME},
+#                ticket   => $ticket,
+#                coge     => $db,
+#                this_url => $url
+#            );
+		    ($user) = login_cas4(
 		    	cookie_name => $CONF->{COOKIE_NAME},
-		        ticket   => $ticket,
-		        coge     => $db,
-		        this_url => $url
+		        ticket      => $ticket,
+		        db          => $db,
+		        this_url    => $url,
+		        server      => $CONF->{SERVER}
 		    );
     	}
     }
@@ -674,6 +681,42 @@ sub parse_saml_response2 {
 		print STDERR "parse_saml_response: ".$user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email."\n";
         return ( $user_id, $user_fname, $user_lname, $user_email );
     }
+}
+
+# mdb added 3/27/15 for DE cas4 upgrade
+# See http://jasig.github.io/cas/development/protocol/CAS-Protocol-Specification.html
+sub login_cas4 {
+    my ( $self, %opts ) = self_or_default(@_);
+    my $cookie_name = $opts{cookie_name};
+    my $ticket      = $opts{ticket};        # CAS ticket from iPlant
+    my $this_url    = $opts{this_url};      # URL that CAS redirected to
+    my $db          = $opts{db};            # db object
+    my $server      = $opts{server};        # server -- this was added to get apache proxying to work with cas
+    print STDERR "Web::login_cas4 ticket=$ticket this_url=$this_url\n";
+    #print STDERR Dumper \%ENV, "\n";
+
+    my $cas_url = get_defaults()->{CAS_URL};
+    unless ($cas_url) {
+        print STDERR "Web::login_cas4: error: CAS_URL not defined in configuration file\n";
+        return;
+    }
+    
+    # mdb: this is a hack to get our Apache proxy user sandboxes to work with CAS validation
+    my $uri = $ENV{SCRIPT_NAME};
+    $uri =~ s/^\///;
+    my $page_url .= $ENV{HTTP_X_FORWARDED_HOST} . $uri;
+    
+    my $agent = new LWP::UserAgent;
+    my $request = HTTP::Request->new( GET => $cas_url . '/serviceValidate?service=' . $page_url . '&ticket=' . $ticket );
+    #$request_ua->content($request);
+    #$request_ua->content_type("text/xml; charset=utf-8");
+    my $response = $agent->request($request);
+    #print STDERR "cas4 response: ", Dumper $response, "\n";
+    my $result   = $response->content;
+    print STDERR "cas result: ", Dumper $result, "\n";
+    return unless $result;
+    
+    return;
 }
 
 sub ajax_func {
