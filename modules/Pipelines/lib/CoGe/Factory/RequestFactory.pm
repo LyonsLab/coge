@@ -22,7 +22,7 @@ has 'jex'     => (
 
 sub get {
     my ($self, $message) = @_;
-    unless (defined $message && defined ) {
+    unless (defined $message && defined $message->{type}) {
         print STDERR "RequestFactory: error: invalid message\n";
         return;
     }
