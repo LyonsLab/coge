@@ -90,6 +90,7 @@ sub gen_html {
     $template->param( LOGO_PNG => "SynSub-logo.png" );
     $template->param( BODY     => $body );
     $template->param( ADMIN_ONLY => $USER->is_admin );
+    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     my $html = $template->output;
     return $html;
 }

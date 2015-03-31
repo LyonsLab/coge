@@ -98,7 +98,8 @@ sub generate_html {
 			  ADJUST_BOX => 1,
                           LOGO_PNG   => "CoGe.svg",
                           ADMIN_ONLY => $USER->is_admin,
-                          USER       => $USER->display_name || ''
+                          USER       => $USER->display_name || '',
+                          CAS_URL    => $P->{CAS_URL} || ''
         );
         $template->param( LOGON      => 1 ) unless $USER->is_public;
     }

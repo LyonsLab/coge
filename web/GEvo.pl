@@ -189,6 +189,7 @@ sub gen_html {
     $template->param( NO_BOX => 1 );
     $template->param( BODY   => gen_body() );
     $template->param( ADMIN_ONLY => $USER->is_admin );
+    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     my $prebox = HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo.tmpl' );
     $prebox->param( RESULTS_DIV => 1 );
     $template->param( PREBOX     => $prebox->output );
