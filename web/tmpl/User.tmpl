@@ -227,19 +227,7 @@ div.deleted { display: none; }
 </div>
 
 <script type="text/javascript">
-const ITEM_TYPE_ALL 				= '<TMPL_VAR NAME="ITEM_TYPE_ALL">',
-	  ITEM_TYPE_MINE 				= '<TMPL_VAR NAME="ITEM_TYPE_MINE">',
-	  ITEM_TYPE_SHARED 				= '<TMPL_VAR NAME="ITEM_TYPE_SHARED">',
-	  ITEM_TYPE_TRASH 				= '<TMPL_VAR NAME="ITEM_TYPE_TRASH">',
-	  ITEM_TYPE_ACTIVITY_SUMMARY  	= '<TMPL_VAR NAME="ITEM_TYPE_ACTIVITY_SUMMARY">',
-	  ITEM_TYPE_ACTIVITY_ANALYSES	= '<TMPL_VAR NAME="ITEM_TYPE_ACTIVITY_ANALYSES">',
-	  ITEM_TYPE_ACTIVITY_LOADS		= '<TMPL_VAR NAME="ITEM_TYPE_ACTIVITY_LOADS">',
-	  ITEM_TYPE_ACTIVITY_VIZ		= '<TMPL_VAR NAME="ITEM_TYPE_ACTIVITY_VIZ">',
-	  ITEM_TYPE_USER 				= '<TMPL_VAR NAME="ITEM_TYPE_USER">',
-	  ITEM_TYPE_GROUP 				= '<TMPL_VAR NAME="ITEM_TYPE_GROUP">',
-	  ITEM_TYPE_NOTEBOOK 			= '<TMPL_VAR NAME="ITEM_TYPE_NOTEBOOK">',
-	  ITEM_TYPE_GENOME 				= '<TMPL_VAR NAME="ITEM_TYPE_GENOME">',
-	  ITEM_TYPE_EXPERIMENT			= '<TMPL_VAR NAME="ITEM_TYPE_EXPERIMENT">';
+const ITEM_TYPES = <TMPL_VAR NAME="ITEM_TYPES">;
 const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
 </script>
 <script type="text/javascript" src="js/pages/user.js"></script>
@@ -296,7 +284,7 @@ const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
 		    		$("#share_input")
 		    			.val( ui.item.label )
 		    			.data('select_id', ui.item.value);
-		    		if (ui.item.value.split(':')[1] == ITEM_TYPE_USER) {
+		    		if (ui.item.value.split(':')[1] == ITEM_TYPES.user) {
 		    			$('#share_role_select').show();
 		    		}
 		    		else {
