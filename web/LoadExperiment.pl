@@ -121,7 +121,7 @@ sub generate_body {
     my $gid = $FORM->param('gid');
     if ($gid) {
         my $genome = $coge->resultset('Genome')->find($gid);
-        if ($genome && $USER->has_access_to_genome($genome)) {
+        if ($genome && $USER->has_access_to_genome($genome)) { # check permission
             $template->param(
                 GENOME_NAME => $genome->info,
                 GENOME_ID   => $genome->id
