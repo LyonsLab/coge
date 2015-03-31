@@ -112,10 +112,11 @@ sub gen_html {
 }
 
 sub gen_body {
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    
     if ( $USER->user_name eq 'public' ) {
-        my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-        $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
-        $template->param( LOGIN     => 1 );
+        $template->param( PAGE_NAME => "$PAGE_TITLE.pl",
+                          LOGIN     => 1 );
         return $template->output;
     }
 
@@ -135,7 +136,6 @@ sub gen_body {
    # 	}
    # }
 
-    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
         PAGE_NAME   => "$PAGE_TITLE.pl",
         MAIN        => 1,
@@ -147,14 +147,8 @@ sub gen_body {
             $USER->image_id
             ? 'image.pl?id=' . $USER->image_id
             : 'picts/smiley_default.png'
-        )
-    );
-
-    foreach ( keys %ITEM_TYPE ) {
-        $template->param( 'ITEM_TYPE_' . uc($_) => $ITEM_TYPE{$_} );
-    }
-
-    $template->param(
+        ),
+        ITEM_TYPES     => encode_json(\%ITEM_TYPE),
         TOC            => get_toc(),
         CONTENTS       => get_contents( html_only => 1 ),
         ROLES          => get_roles('reader'),
