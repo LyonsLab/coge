@@ -121,6 +121,7 @@ sub generate_html {
     $template->param( BODY       => generate_body() );
     $template->param( ADJUST_BOX => 1 );
     $template->param( ADMIN_ONLY => $USER->is_admin );
+    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
 
     return $template->output;
 }

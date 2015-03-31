@@ -142,6 +142,7 @@ sub gen_html {
         )
     );
     $template->param( ADMIN_ONLY => $USER->is_admin );
+    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
 
     $html .= $template->output;
     return $html;

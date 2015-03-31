@@ -110,14 +110,14 @@ sub gen_html {
     
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( PAGE_TITLE => 'OrganismView',
-		      TITLE      => 'OrganismView: Search Organisms and Genomes',
-                      LOGO_PNG => "CoGe.svg",
+		              TITLE      => 'OrganismView: Search Organisms and Genomes',
+                      LOGO_PNG   => "CoGe.svg",
     				  PAGE_LINK  => $LINK,
     				  HEAD       => qq{},
-    				  #HELP       => "/wiki/index.php?title=OrganismView" ,
-				  HELP       => $P->{SERVER},
+				      HELP       => $P->{SERVER},
     				  ADMIN_ONLY => $USER->is_admin,
-                      USER     => $USER->display_name || ''
+                      USER       => $USER->display_name || '',
+                      CAS_URL    => $P->{CAS_URL} || ''
     );
     $template->param( LOGON    => 1 ) unless ($USER->user_name eq "public");
     $template->param( BODY => $body );

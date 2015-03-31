@@ -110,19 +110,12 @@ sub init {
 		    );
     	}
     	else {
-#    	    ($user) = login_cas_saml(
-#                cookie_name => $CONF->{COOKIE_NAME},
-#                ticket   => $ticket,
-#                coge     => $db,
-#                this_url => $url
-#            );
-		    ($user) = login_cas4(
-		    	cookie_name => $CONF->{COOKIE_NAME},
-		        ticket      => $ticket,
-		        db          => $db,
-		        this_url    => $url,
-		        server      => $CONF->{SERVER}
-		    );
+    	    ($user) = login_cas_saml(
+                cookie_name => $CONF->{COOKIE_NAME},
+                ticket   => $ticket,
+                coge     => $db,
+                this_url => $url
+            );
     	}
     }
     ($user) = CoGe::Accessory::LogUser->get_user(
@@ -558,7 +551,7 @@ sub login_cas_saml {
     $request_ua->content($request);
     $request_ua->content_type("text/xml; charset=utf-8");
     my $response = $ua->request($request_ua);
-    print STDERR "SAML response: ", Dumper $response, "\n";
+    #print STDERR "SAML response: ", Dumper $response, "\n";
     my $result   = $response->content;
     print STDERR "SAML result: ", Dumper $result, "\n";
     return unless $result;

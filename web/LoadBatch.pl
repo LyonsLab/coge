@@ -102,6 +102,7 @@ sub generate_html {
         $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
         $template->param( ADJUST_BOX => 1 );
         $template->param( ADMIN_ONLY => $USER->is_admin );
+        $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     }
     
     $template->param( BODY => generate_body() );
