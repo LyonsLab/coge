@@ -58,7 +58,7 @@ $(function() {
 	// Get starting page from URL if set
 	var toc_id = parseInt( getURLParameter('p') );
 	if (!toc_id || toc_id == 'null') {
-		toc_id = ITEM_TYPE_MINE;
+		toc_id = ITEM_TYPES.mine;
 	}
 
 	// Initialize main panels
@@ -193,39 +193,39 @@ function get_from_info_cache(id) {
 function default_info() {
 	var text = "";
 	switch(pageObj.content_type) {
-		case ITEM_TYPE_ACTIVITY_SUMMARY:
+		case ITEM_TYPES.activity_summary:
 			text = "Here is a summary of all analyses you have performed.";
 			break;
-		case ITEM_TYPE_ACTIVITY_ANALYSES:
+		case ITEM_TYPES.activity_analyses:
 			text = "These are the analyses you have performed or started.<br><br>" + 
 				"Select an analysis to open the current progress or finished result in a new tab.<br><br>" +
 				"Use the icons to the left of each analysis to 'Favorite' it, add comments, or cancel (if running).";
 			break;
-		case ITEM_TYPE_ACTIVITY_LOADS:
+		case ITEM_TYPES.activity_loads:
 			text = "These are the data loading workflows you have performed or started.<br><br>" +
 				"Select an item to open the current progress or finished result in a new tab.";
 			break;
-		case ITEM_TYPE_ACTIVITY_VIZ:
+		case ITEM_TYPES.activity_viz:
 			text = "Woah, cool!";
 			break;
-		case ITEM_TYPE_TRASH:
+		case ITEM_TYPES.trash:
 			text = "These are items you deleted.<br><br>" +
 				"Hover over an item to view additional info. Select one or more items to undelete.";
 			break;
-		case ITEM_TYPE_SHARED:
+		case ITEM_TYPES.shared:
 			text = "These are data items that your collaborators shared with you.<br><br>" +
 				"Hover over an item to view additional info. Select one or more items to share with others or add to a notebook.";
 			break;
-		case ITEM_TYPE_MINE:
-		case ITEM_TYPE_NOTEBOOK:
-		case ITEM_TYPE_GENOME:
-		case ITEM_TYPE_EXPERIMENT:
+		case ITEM_TYPES.mine:
+		case ITEM_TYPES.notebook:
+		case ITEM_TYPES.genome:
+		case ITEM_TYPES.experiment:
 			text = "<p>These are data items that you added to the system.</p>"
 				+ "<p><b>Hover over</b> an item to view additional info.</p>"
                 + "<p><b>Single-click</b> to select one or more items to share, organize, delete, or send them to one of CoGe's tools.</p>"
                 + "<p><b>Double-click</b> an item for a detailed view of the item.</p>";
 			break;
-		case ITEM_TYPE_GROUP:
+		case ITEM_TYPES.group:
 			text = "You are a member of these user groups.<br><br>" +
 				"Hover over a group to view additional info. Select one or more groups to edit or delete."; 
 			break;
@@ -328,7 +328,7 @@ function select_item(item) {
 }
 
 function open_item(item_type, title, link) {
-	if (item_type == ITEM_TYPE_GROUP) // FIXME this is a kludge
+	if (item_type == ITEM_TYPES.group) // FIXME this is a kludge
 		group_dialog();
 	else {
         if (!link) {
@@ -438,29 +438,29 @@ function filter_contents() {
 			var item_type = get_item_type(this);
 			var show;
 
-			if (pageObj.content_type == ITEM_TYPE_GROUP) {
-				show = item_type == ITEM_TYPE_GROUP
+			if (pageObj.content_type == ITEM_TYPES.group) {
+				show = item_type == ITEM_TYPES.group
 						&& !$(this).hasClass('deleted');
 			}
-			else if (pageObj.content_type == ITEM_TYPE_MINE) {
+			else if (pageObj.content_type == ITEM_TYPES.mine) {
 				show = !$(this).hasClass('deleted')
 						&& !$(this).hasClass('shared')
-						&& item_type != ITEM_TYPE_ACTIVITY_SUMMARY 
-						&& item_type != ITEM_TYPE_ACTIVITY_ANALYSES
-						&& item_type != ITEM_TYPE_ACTIVITY_LOADS
-						&& item_type != ITEM_TYPE_ACTIVITY_VIZ
-						&& item_type != ITEM_TYPE_GROUP
-						&& item_type != ITEM_TYPE_NOTEBOOK;
+						&& item_type != ITEM_TYPES.activity_summary 
+						&& item_type != ITEM_TYPES.activity_analyses
+						&& item_type != ITEM_TYPES.activity_loads
+						&& item_type != ITEM_TYPES.activity_viz
+						&& item_type != ITEM_TYPES.group
+						&& item_type != ITEM_TYPES.notebook;
 			}
-			else if (pageObj.content_type == ITEM_TYPE_SHARED) {
+			else if (pageObj.content_type == ITEM_TYPES.shared) {
 				show = $(this).hasClass('shared')
 						&& !$(this).hasClass('deleted')
-						&& item_type != ITEM_TYPE_ACTIVITY_SUMMARY 
-						&& item_type != ITEM_TYPE_ACTIVITY_ANALYSES
-						&& item_type != ITEM_TYPE_ACTIVITY_LOADS
-						&& item_type != ITEM_TYPE_ACTIVITY_VIZ;
+						&& item_type != ITEM_TYPES.activity_summary 
+						&& item_type != ITEM_TYPES.activity_analyses
+						&& item_type != ITEM_TYPES.activity_loads
+						&& item_type != ITEM_TYPES.activity_viz;
 			}
-			else if (pageObj.content_type == ITEM_TYPE_TRASH) {
+			else if (pageObj.content_type == ITEM_TYPES.trash) {
 				show = $(this).hasClass('deleted');
 			}
 			else {
@@ -506,34 +506,34 @@ function toc_select(toc_id) {
 	
 	// Show/hide action icons based on type of data
 	switch(toc_id) {
-		case ITEM_TYPE_MINE:
-		case ITEM_TYPE_GENOME:
-		case ITEM_TYPE_EXPERIMENT:
+		case ITEM_TYPES.mine:
+		case ITEM_TYPES.genome:
+		case ITEM_TYPES.experiment:
 			$('#undelete_button,#edit_button,#add_button').hide();
 			$('#share_button,#notebook_button,#delete_button,#send_button').show();
 			break;
-		case ITEM_TYPE_NOTEBOOK:
+		case ITEM_TYPES.notebook:
 			$('#undelete_button,#edit_button,#notebook_button').hide();
 			$('#share_button,#delete_button,#send_button,#add_button').show();
 			break;
-		case ITEM_TYPE_TRASH:
+		case ITEM_TYPES.trash:
 			$('#share_button,#notebook_button,#edit_button,#delete_button,#send_button,#add_button').hide();
 			$('#undelete_button').show();
 			break;
-		case ITEM_TYPE_GROUP:
+		case ITEM_TYPES.group:
 			$('#notebook_button,#send_button,#share_button,#undelete_button').hide();
 			$('#edit_button,#delete_button,#add_button').show();
 			break;
-		case ITEM_TYPE_SHARED:
+		case ITEM_TYPES.shared:
 			$('#edit_button,#delete_button,#send_button,#undelete_button,#add_button').hide();
 			$('#share_button,#notebook_button').show();
 			break;
-		case ITEM_TYPE_ACTIVITY_ANALYSES:
-		case ITEM_TYPE_ACTIVITY_LOADS:
+		case ITEM_TYPES.activity_analyses:
+		case ITEM_TYPES.activity_loads:
 			$('#share_button,#notebook_button,#edit_button,#delete_button,#send_button,#undelete_button,#add_button').hide(); // hide all
 			break;
-		case ITEM_TYPE_ACTIVITY_SUMMARY:
-		case ITEM_TYPE_ACTIVITY_VIZ:
+		case ITEM_TYPES.activity_summary:
+		case ITEM_TYPES.activity_viz:
 			$('#share_button,#notebook_button,#edit_button,#delete_button,#send_button,#undelete_button,#add_button').hide(); // hide all
 			$('#search_input').hide();
 			break;
@@ -951,10 +951,10 @@ function remove_user_from_group(user_id) {
 }
 
 function edit_dialog() {
-	if (pageObj.content_type == ITEM_TYPE_GROUP) {
+	if (pageObj.content_type == ITEM_TYPES.group) {
 		group_dialog();
 	}
-//	else if (pageObj.content_type == ITEM_TYPE_NOTEBOOK) {
+//	else if (pageObj.content_type == ITEM_TYPES.notebook) {
 //		add_to_notebook_dialog();
 //	}
 }
@@ -1054,9 +1054,9 @@ function create_notebook_dialog() {
 }
 
 function add_dialog() {
-	if (pageObj.content_type == ITEM_TYPE_GROUP) {
+	if (pageObj.content_type == ITEM_TYPES.group) {
 		create_group_dialog();
-	} else if (pageObj.content_type == ITEM_TYPE_NOTEBOOK) {
+	} else if (pageObj.content_type == ITEM_TYPES.notebook) {
 		create_notebook_dialog();
     }
 }
@@ -1080,7 +1080,7 @@ function create_new_group() {
         success: function(rc) {
             if (rc) {
             	schedule_poll(0);
-            	toc_select(ITEM_TYPE_GROUP);
+            	toc_select(ITEM_TYPES.group);
             }
         },
         complete: function() {
@@ -1115,7 +1115,7 @@ function create_new_notebook() {
         success: function(rc) {
             if (rc) {
             	schedule_poll(0);
-            	toc_select(ITEM_TYPE_NOTEBOOK);
+            	toc_select(ITEM_TYPES.notebook);
             }
         },
         complete: function() {
