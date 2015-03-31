@@ -81,48 +81,39 @@ $node_types = CoGeX::node_types();
     search_share                    => \&search_share,
     add_items_to_user_or_group      => \&add_items_to_user_or_group,
     remove_items_from_user_or_group => \&remove_items_from_user_or_group,
-    add_users_to_group			=> \&add_users_to_group,
-    remove_user_from_group		=> \&remove_user_from_group,
+    add_users_to_group			    => \&add_users_to_group,
+    remove_user_from_group		    => \&remove_user_from_group,
     get_group_dialog                => \&get_group_dialog,
-    change_group_role			=> \&change_group_role,
+    change_group_role			    => \&change_group_role,
     send_items_to                   => \&send_items_to,
     create_new_group                => \&create_new_group,
     create_new_notebook             => \&create_new_notebook,
     toggle_star                     => \&toggle_star,
-    cancel_job				=> \&cancel_job,
+    cancel_job				        => \&cancel_job,
     comment_job                     => \&comment_job
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    #$template->param( HELP => "/wiki/index.php?title=$PAGE_TITLE" );
-    $template->param( HELP       => $P->{SERVER} );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param( USER => $name );
-
-    #$template->param( TITLE      => 'User Profile' );
-    $template->param( PAGE_TITLE => 'User Profile',
-				  TITLE      => "My Profile",
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+    $template->param( HELP       => $P->{SERVER} || '',
+                      USER       => $USER->display_name,
+                      PAGE_TITLE => 'User Profile',
+				      TITLE      => "My Profile",
     				  PAGE_LINK  => $LINK,
-    				  LOGO_PNG   => "CoGe.svg" );
+    				  LOGO_PNG   => "CoGe.svg",
+    				  ADJUST_BOX => 1,
+                      ADMIN_ONLY => $USER->is_admin,
+                      CAS_URL    => $P->{CAS_URL} || '' );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => gen_body() );
-    $template->param( ADJUST_BOX => 1 );
-    $template->param( ADMIN_ONLY => $USER->is_admin );
-    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
-
     return $template->output;
 }
 
 sub gen_body {
     if ( $USER->user_name eq 'public' ) {
-        my $template =
-          HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+        my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
         $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
         $template->param( LOGIN     => 1 );
         return $template->output;
@@ -144,16 +135,10 @@ sub gen_body {
    # 	}
    # }
 
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
-        PAGE_NAME => "$PAGE_TITLE.pl",
-        MAIN      => 1
-    );
-
-    #$template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
-
-    $template->param(
+        PAGE_NAME   => "$PAGE_TITLE.pl",
+        MAIN        => 1,
         USER_NAME   => $USER->user_name,
         USER_ID     => $USER->id,
         FULL_NAME   => $USER->display_name,
