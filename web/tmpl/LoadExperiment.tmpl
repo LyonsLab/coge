@@ -112,7 +112,6 @@
         <div class="form-field">
             <label class="col-md-2">Genome:</label>
             <input class="col-md-8" id="edit_genome" type="search" placeholder="Search" spellcheck="false" onclick='$(this).autocomplete("search");' onkeypress="wait_to_search(search_genomes, this);" size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
-            <input id="gid" type="hidden" value="<TMPL_VAR NAME='GENOME_ID'>" />
             <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
         </div>
     </div>
@@ -440,6 +439,7 @@ const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
 const HELP_URL      = '<TMPL_VAR NAME="HELP_URL">';
 const USER_NAME     = '<TMPL_VAR NAME="USER">'
 const IS_ADMIN      = Boolean('<TMPL_VAR NAME="ADMIN_AREA">');
+const GENOME_ID     = '<TMPL_VAR NAME="GENOME_ID">';
 
 var LOAD_ID = load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
 var WORKFLOW_ID = '<TMPL_VAR NAME="WORKFLOW_ID">';
@@ -481,7 +481,8 @@ $(document).ready(function() {
 
     wizard = initialize_wizard({ 
     	admin: IS_ADMIN,
-    	helpUrl: HELP_URL
+    	helpUrl: HELP_URL,
+    	gid: GENOME_ID
     });
 });
 </script>
