@@ -1,4 +1,10 @@
 <TMPL_IF NAME="MAIN">
+
+<link rel="stylesheet" href="js/vendor/slickgrid/slick.grid.css" type="text/css"/>
+<link rel="stylesheet" href="js/vendor/slickgrid/controls/slick.pager.css" type="text/css"/>
+<link rel="stylesheet" href="js/vendor/slickgrid/css/smoothness/jquery-ui-1.8.16.custom.css" type="text/css"/>
+<link rel="stylesheet" href="js/vendor/slickgrid/controls/slick.columnpicker.css" type="text/css"/>
+
 <div id="add_to_notebook_dialog" class="dialog_box hidden" title="Add Items to Notebook">
 	<table class="small">
 		<tr align='left'>
@@ -230,7 +236,19 @@ div.deleted { display: none; }
 const ITEM_TYPES = <TMPL_VAR NAME="ITEM_TYPES">;
 const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
 </script>
+
 <script type="text/javascript" src="js/pages/user.js"></script>
+
+<script src="js/vendor/slickgrid/lib/jquery-ui-1.8.16.custom.min.js"></script>
+<script src="js/vendor/slickgrid/lib/jquery.event.drag-2.2.js"></script>
+<script src="js/vendor/slickgrid/slick.core.js"></script>
+<script src="js/vendor/slickgrid/slick.formatters.js"></script>
+<script src="js/vendor/slickgrid/slick.editors.js"></script>
+<script src="js/vendor/slickgrid/plugins/slick.rowselectionmodel.js"></script>
+<script src="js/vendor/slickgrid/slick.grid.js"></script>
+<script src="js/vendor/slickgrid/slick.dataview.js"></script>
+<script src="js/vendor/slickgrid/controls/slick.pager.js"></script>
+<script src="js/vendor/slickgrid/controls/slick.columnpicker.js"></script>
 </TMPL_IF> <!-- MAIN -->
 
 <TMPL_IF NAME="DO_TOC">

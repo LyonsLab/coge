@@ -66,19 +66,19 @@ $(function() {
 	toc_select(toc_id); // initialize toc panel
 
 	// Setup idle timer
-	$(document).mousemove(function() {
-		var currentTime = new Date().getTime();
-		var idleTime = currentTime - timestamps['idle'];
-		timestamps['idle'] = currentTime;
-
-		if (idleTime > IDLE_TIME) {
-			// User was idle for a while, refresh page
-			schedule_poll(0);
-		}
-	});
+//	$(document).mousemove(function() {
+//		var currentTime = new Date().getTime();
+//		var idleTime = currentTime - timestamps['idle'];
+//		timestamps['idle'] = currentTime;
+//
+//		if (idleTime > IDLE_TIME) {
+//			// User was idle for a while, refresh page
+//			schedule_poll(0);
+//		}
+//	});
 
 	// Initiate refresh loop
-	schedule_poll();
+	//schedule_poll();
 
 	// Initialize add-to-notebook dialog
 	window.setTimeout(search_notebooks, 1000);
@@ -113,7 +113,132 @@ $(function() {
     		}
     	}
     });
+    
+    initGrid();
 });
+
+function pad(string, size) {
+    while (string.length < size) string = "0" + string;
+    return string;
+}
+
+const MONTHS = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ];
+
+function initGrid() {
+	var columns = [
+	   	{ id: "name", name: "Name", field: "name", sortable: true, cssClass: "cell-normal",
+	   		formatter: function( row, cell, value, columnDef, data ) {
+	   		    var desc = 
+	   		    	(data.restricted ? '&reg; ' : '') +
+	   		    	(data.organism ? data.organism : '') +
+	   		    	(data.name ? data.name : '') +
+	   		    	(data.description ? data.description : '') +
+	   		    	' (v' + data.version + ', id' + data.id + ')';
+//	   		    desc += ': ' . $self->genomic_sequence_type->name
+//	   		      if $self->genomic_sequence_type;
+	            return '<span>' + desc + '</span>';
+	   		}
+	    },
+	   	{ id: "date", name: "Date added", field: "date", sortable: true, cssClass: "cell-normal",
+	    	formatter: function( row, cell, value, columnDef, data ) {
+	    		var date = new Date(data.date);
+	    		var today = new Date();
+	    		var diffDays = Math.round(Math.abs((today.getTime() - date.getTime())/(24*60*60*1000)));
+	    		var dateStr;
+	    		if (diffDays == 0) //(date.setHours(0,0,0,0) == today.setHours(0,0,0,0)) // same day as today
+	    			dateStr = (date.getHours() % 12) + ':' + pad(date.getMinutes(), 2) + ' ' + (date.getHours() < 12 ? 'am' : 'pm');
+	    		else if (diffDays == 1)
+	    			dateStr = 'Yesterday';
+	    		else if (diffDays <= 4)
+	    			dateStr = diffDays + ' days ago';
+	    		else if (date.getFullYear() == today.getFullYear()) // same year 
+	    			dateStr = MONTHS[date.getMonth()] + ' ' + date.getDate()
+	    		else // last year or older
+	    			dateStr = MONTHS[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+	    		return '<span>' + dateStr + '</span>';
+	    	}
+	   	},
+	];
+	
+	var options = {
+		editable: true,
+		enableCellNavigation: true,
+		asyncEditorLoading: true,
+		forceFitColumns: true,
+	};
+	
+	var dataView = new Slick.Data.DataView({ inlineFilters: true });
+	grid = new Slick.Grid("#contents_table", dataView, columns, options);
+
+	var columnpicker = new Slick.Controls.ColumnPicker(columns, grid, options);
+
+//	grid.onCellChange.subscribe(function (e, args) {
+//		$.ajax({
+//			data: {
+//				jquery_ajax: 1,
+//				fname: 'update_comment',
+//				log_id: args.item.id,
+//				comment: args.item.comment
+//			},
+//			success: function() {
+//				dataView.updateItem(args.item.id, args.item);
+//			}
+//		});
+//	});
+
+//	grid.onSort.subscribe(function (e, args) {
+//		sortcol = args.sortCol.field;
+//		dataView.sort(comparer, args.sortAsc);
+//	});
+
+	// Wire up model events to drive the grid
+	dataView.onRowCountChanged.subscribe(function (e, args) {
+		grid.updateRowCount();
+		grid.render();
+		if ($("#contents_table").is(":not(visible)")) {
+			$("#contents_table").slideDown();
+		}
+	});
+	dataView.onRowsChanged.subscribe(function (e, args) {
+		grid.invalidateRows(args.rows);
+		grid.render();
+	});
+
+	// Wire up the show selector to apply the filter to the model
+//	$("#show_select,#search_type").change(function (e) {
+//		updateFilter();
+//	});
+
+	// Wire up the search textbox to apply the filter to the model
+//	$("#search_input").keyup(function (e) {
+//		Slick.GlobalEditorLock.cancelCurrentEdit();
+//
+//		if (e.which == 27) { // Clear on Esc
+//			this.value = "";
+//		}
+//
+//		updateFilter();
+//	});
+	
+	$.ajax({
+		dataType: 'json',
+		data: {
+			fname: 'get_contents2',
+		},
+		success : function(data) {
+			dataView.beginUpdate();
+			dataView.setItems(data.items);
+//			dataView.setFilterArgs({
+//				show: 0,
+//				searchType: 1,
+//				searchString: ''
+//			});
+//			dataView.setFilter(myFilter);
+			dataView.endUpdate();
+//			updateFilter();
+		}
+	});
+}
 
 function getURLParameter(name) {
     return decodeURI(
