@@ -74,7 +74,7 @@ $node_types = CoGeX::node_types();
     get_item_info                   => \&get_item_info,
     delete_items                    => \&delete_items,
     undelete_items                  => \&undelete_items,
-    get_contents                    => \&get_contents,
+    get_contents2                    => \&get_contents2,
     search_notebooks                => \&search_notebooks,
     add_items_to_notebook           => \&add_items_to_notebook,
     get_share_dialog                => \&get_share_dialog,
@@ -114,27 +114,11 @@ sub gen_html {
 sub gen_body {
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     
-    if ( $USER->user_name eq 'public' ) {
+    if ( $USER->is_public ) {
         $template->param( PAGE_NAME => "$PAGE_TITLE.pl",
                           LOGIN     => 1 );
         return $template->output;
     }
-
-   # Other user specified as param, only allow access if collaborator
-   # my $user = $USER;
-   # my $uid = $FORM->param('uid');
-   # if ($uid) {
-   # 	return '' if (!$USER->is_admin && !$USER->has_collaborator($uid));
-   # 	$user = $coge->resultset('User')->find($uid);
-   # }
-   # else {
-   # 	my $uname = $FORM->param('name');
-   # 	if ($uname) {
-   # 		my $u = $coge->resultset('User')->find({user_name => $uname});
-   # 		return '' if (!$u || (!$USER->is_admin && !$USER->has_collaborator($u)));
-   # 		$user = $u;
-   # 	}
-   # }
 
     $template->param(
         PAGE_NAME   => "$PAGE_TITLE.pl",
@@ -150,7 +134,7 @@ sub gen_body {
         ),
         ITEM_TYPES     => encode_json(\%ITEM_TYPE),
         TOC            => get_toc(),
-        CONTENTS       => get_contents( html_only => 1 ),
+        #CONTENTS       => get_contents( html_only => 1 ),
         ROLES          => get_roles('reader'),
         NOTEBOOK_TYPES => get_notebook_types('mixed')
     );
@@ -1218,6 +1202,67 @@ sub get_toc {    # table of contents
     $template->param( DO_TOC        => 1,
                       TOC_ITEM_LOOP => \@rows );
     return $template->output;
+}
+
+sub get_contents2 {
+    my %opts = @_;
+    my $type = $opts{item_type};
+    $type = $ITEM_TYPE{all} unless $type;
+    my $timestamp = $opts{timestamp};
+    
+    # Preload stuff for speed (needed for genome/experiment sorting and info routines)
+    #FIXME which would be faster, children_by_type_role_id or joins?
+    my %sourceIdToName =
+      map { $_->id => $_->name } $coge->resultset('DataSource')->all();
+
+    # Get all items for this user (genomes, experiments, notebooks)
+    #my $t1    = new Benchmark;
+    my ( $children, $roles ) = $USER->children_by_type_role_id;
+
+    my @items;
+
+    #print STDERR "get_contents: time2=" . ((time - $start_time)*1000) . "\n";
+    if ( $type == $ITEM_TYPE{genome} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine} )
+    {
+        foreach my $genome ( sort genomecmp values %{ $children->{2} } ) { #FIXME hardcoded type
+            push @items, {
+                type    => $ITEM_TYPE{genome},
+                id      => $genome->id,
+                name    => $genome->name,
+                description => $genome->description,
+                organism => $genome->organism->name,
+                version => $genome->version,
+                deleted => $genome->deleted,
+                shared  => !$roles->{2}{ $genome->id }, #FIXME hardcoded role id
+                #info    => html_escape($genome->info),
+                #icon    => '<img src="picts/dna-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
+                #link    => 'GenomeInfo.pl?gid=' . $genome->id,
+                selectable => 1,
+                date     => $genome->date
+            };
+        }
+    }
+    
+    #print STDERR "get_contents: time3=" . ((time - $start_time)*1000) . "\n";
+#    if ( $type == $ITEM_TYPE{experiment} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine} )
+#    {
+#        foreach my $experiment ( sort experimentcmp values %{ $children->{3} } ) { #FIXME hardcoded type
+#            push @items, {
+#                id      => $experiment->id,
+#                type    => $ITEM_TYPE{experiment},
+#                deleted => $experiment->deleted,
+#                shared  => !$roles->{2}{ $experiment->id },    #FIXME hardcoded role id
+#                name    => html_escape( $experiment->info( source => $sourceIdToName{ $experiment->data_source_id } ) ),
+#                icon    => '<img src="picts/testtube-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
+#                link    => 'ExperimentView.pl?eid=' . $experiment->id,
+#                selectable => 1,
+#                date    => $experiment->date
+#            };
+#        }
+#    }
+    
+#    print STDERR Dumper \@items, "\n";
+    return encode_json({ items => \@items });
 }
 
 sub get_contents {
