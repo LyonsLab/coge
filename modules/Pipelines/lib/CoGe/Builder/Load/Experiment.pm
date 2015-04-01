@@ -35,7 +35,11 @@ sub build {
     # TODO add permissions check here -- or will it happen in Request::Genome?
     
     # Initialize workflow
-    $self->workflow($self->jex->create_workflow(name => "Load Experiment", init => 1));
+    my $info = '"' . $metadata->{name};
+    $info .= ": " . $metadata->{description} if $metadata->{description};
+    $info .= " (v" . $metadata->{version} . ")";
+    $info .= '"';
+    $self->workflow($self->jex->create_workflow(name => "Load Experiment " . $info, init => 1));
     return unless $self->workflow->id;
     
     my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);

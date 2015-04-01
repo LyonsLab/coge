@@ -1177,6 +1177,8 @@ $.extend(OptionsView.prototype, {
             this.layout_view.updateLayout({"#admin-options": this.admin_view});
 
         this.el = this.layout_view.el;
+        
+        this.experiment.options = {};
     },
 
     // Validate and add all options to the experiment
